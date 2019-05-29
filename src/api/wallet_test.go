@@ -799,7 +799,58 @@ func TestWalletTransactionsHandler(t *testing.T) {
 			if tc.body.walletID != "" {
 				v.Add("id", tc.body.walletID)
 			}
+			if tc.body.verbose != "" {
+				v.Add("verbose", tc.body.verbose)
+			}
 		}
+		save := endpoint
+		if tc.body.verbose != "" {
+			endpoint += "/verbose" + v.Encode()
+
+			req, err := http.NewRequest(tc.method, endpoint, nil)
+			require.NoError(t, err)
+
+			setCSRFParameters(t, tokenValid, req)
+
+			rr := httptest.NewRecorder()
+
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway)
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "got `%v` want `%v`",
+				tc.name, status, tc.status)
+
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
+				return
+			}
+
+			if tc.verbose {
+				var msg UnconfirmedTxnsVerboseResponse
+				err = json.Unmarshal(rr.Body.Bytes(), &msg)
+				require.NoError(t, err)
+				// require.Equal on whole response might result in flaky tests as there is a time field attached to unconfirmed txn response
+				require.IsType(t, msg, tc.responseBody)
+				require.Len(t, msg.Transactions, 1)
+				require.Equal(t, msg.Transactions[0].Transaction, tc.responseBody.(UnconfirmedTxnsVerboseResponse).Transactions[0].Transaction)
+			} else {
+				var msg UnconfirmedTxnsResponse
+				err = json.Unmarshal(rr.Body.Bytes(), &msg)
+				require.NoError(t, err)
+				// require.Equal on whole response might result in flaky tests as there is a time field attached to unconfirmed txn response
+				require.IsType(t, msg, tc.responseBody)
+				require.Len(t, msg.Transactions, 1)
+				require.Equal(t, msg.Transactions[0].Transaction, tc.responseBody.(UnconfirmedTxnsResponse).Transactions[0].Transaction)
+			}
+
+			endpoint = save
+		}
+
 		if len(v) > 0 {
 			endpoint += "?" + v.Encode()
 		}

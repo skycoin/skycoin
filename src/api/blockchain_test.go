@@ -1019,7 +1019,53 @@ func TestGetBlocks(t *testing.T) {
 					v.Add("seqs", tc.body.Seqs)
 				}
 			}
+			save := endpoint
+			if tc.body.Verbose != "" {
+				endpoint += "/verbose"
+				var reqBody io.Reader
+				if len(v) > 0 {
+					if tc.method == http.MethodPost {
+						reqBody = strings.NewReader(v.Encode())
+					} else {
+						endpoint += "?" + v.Encode()
+					}
+				}
 
+				req, err := http.NewRequest(tc.method, endpoint, reqBody)
+				require.NoError(t, err)
+
+				if tc.method == http.MethodPost {
+					req.Header.Set("Content-Type", ContentTypeForm)
+				}
+
+				setCSRFParameters(t, tokenValid, req)
+
+				rr := httptest.NewRecorder()
+				handler := newServerMux(defaultMuxConfig(), gateway)
+
+				handler.ServeHTTP(rr, req)
+
+				status := rr.Code
+				require.Equal(t, tc.status, status, "wrong status code: got `%v` want `%v`", status, tc.status)
+
+				if status != http.StatusOK {
+					require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+						strings.TrimSpace(rr.Body.String()), status, tc.err)
+				} else {
+					if tc.verbose {
+						var msg *readable.BlocksVerbose
+						err = json.Unmarshal(rr.Body.Bytes(), &msg)
+						require.NoError(t, err)
+						require.Equal(t, tc.response, msg)
+					} else {
+						var msg *readable.Blocks
+						err = json.Unmarshal(rr.Body.Bytes(), &msg)
+						require.NoError(t, err)
+						require.Equal(t, tc.response, msg)
+					}
+				}
+				endpoint = save
+			}
 			var reqBody io.Reader
 			if len(v) > 0 {
 				if tc.method == http.MethodPost {

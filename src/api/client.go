@@ -953,7 +953,7 @@ func (c *Client) PendingTransactionsVerbose() ([]readable.UnconfirmedTransaction
 	}
 	return v, nil
 }
-// PendingTransactionsVerbose makes a request to GET /api/v1/pendingTxs/verbose
+// PendingTransactionsVerboseInPath makes a request to GET /api/v1/pendingTxs/verbose
 func (c *Client) PendingTransactionsVerboseInPath() ([]readable.UnconfirmedTransactionVerbose, error) {
 	var v []readable.UnconfirmedTransactionVerbose
 	if err := c.Get("/api/v1/pendingTxs/verbose", &v); err != nil {

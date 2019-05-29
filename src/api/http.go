@@ -475,7 +475,10 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	webHandlerV2("/wallet/transaction/sign", walletSignTransactionHandler(gateway), map[string][]string{
 		http.MethodPost: []string{EndpointsWallet},
 	})
-	webHandlerV1("/wallet/transactions", walletTransactionsHandler(gateway), map[string][]string{
+	webHandlerV1("/wallet/transactions/verbose", walletTransactionsHandler(gateway, true), map[string][]string{
+		http.MethodGet: []string{EndpointsWallet},
+	})
+	webHandlerV1("/wallet/transactions", walletTransactionsHandler(gateway, false), map[string][]string{
 		http.MethodGet: []string{EndpointsWallet},
 	})
 	webHandlerV1("/wallet/update", walletUpdateHandler(gateway), map[string][]string{
@@ -517,14 +520,24 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	webHandlerV1("/blockchain/progress", blockchainProgressHandler(gateway), map[string][]string{
 		http.MethodGet: []string{EndpointsRead, EndpointsStatus},
 	})
-	webHandlerV1("/block", blockHandler(gateway), map[string][]string{
+	webHandlerV1("/block/verbose", blockHandler(gateway, true), map[string][]string{
 		http.MethodGet: []string{EndpointsRead},
 	})
-	webHandlerV1("/blocks", blocksHandler(gateway), map[string][]string{
+	webHandlerV1("/block", blockHandler(gateway, false), map[string][]string{
+		http.MethodGet: []string{EndpointsRead},
+	})
+	webHandlerV1("/blocks/verbose", blocksHandler(gateway, true), map[string][]string{
 		http.MethodGet:  []string{EndpointsRead},
 		http.MethodPost: []string{EndpointsRead},
 	})
-	webHandlerV1("/last_blocks", lastBlocksHandler(gateway), map[string][]string{
+	webHandlerV1("/blocks", blocksHandler(gateway, false), map[string][]string{
+		http.MethodGet:  []string{EndpointsRead},
+		http.MethodPost: []string{EndpointsRead},
+	})
+	webHandlerV1("/last_blocks/verbose", lastBlocksHandler(gateway, true), map[string][]string{
+		http.MethodGet: []string{EndpointsRead},
+	})
+	webHandlerV1("/last_blocks", lastBlocksHandler(gateway, false), map[string][]string{
 		http.MethodGet: []string{EndpointsRead},
 	})
 
@@ -551,11 +564,24 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	})
 
 	// Transaction related endpoints
-	webHandlerV1("/pendingTxs", pendingTxnsHandler(gateway), map[string][]string{
+	webHandlerV1("/pendingTxs/verbose", pendingTxnsHandler(gateway, true), map[string][]string{
 		http.MethodGet: []string{EndpointsRead},
 	})
-	webHandlerV1("/transaction", transactionHandler(gateway), map[string][]string{
+	webHandlerV1("/pendingTxs", pendingTxnsHandler(gateway, false), map[string][]string{
 		http.MethodGet: []string{EndpointsRead},
+	})
+	webHandlerV1("/transaction/verbose", transactionHandler(gateway, true, false), map[string][]string{
+		http.MethodGet: []string{EndpointsRead},
+	})
+	webHandlerV1("/transaction/encoded", transactionHandler(gateway, false, true), map[string][]string{
+		http.MethodGet: []string{EndpointsRead},
+	})
+	webHandlerV1("/transaction", transactionHandler(gateway, false, false), map[string][]string{
+		http.MethodGet: []string{EndpointsRead},
+	})
+	webHandlerV2("/transaction/unspent", transactionHandlerV2(gateway), map[string][]string{
+		// http.MethodGet:  []string{EndpointsRead},
+		http.MethodPost: []string{EndpointsTransaction},
 	})
 	webHandlerV2("/transaction", transactionHandlerV2(gateway), map[string][]string{
 		// http.MethodGet:  []string{EndpointsRead},
@@ -564,7 +590,11 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	webHandlerV2("/transaction/verify", verifyTxnHandler(gateway), map[string][]string{
 		http.MethodPost: []string{EndpointsRead},
 	})
-	webHandlerV1("/transactions", transactionsHandler(gateway), map[string][]string{
+	webHandlerV1("/transactions/verbose", transactionsHandler(gateway, true), map[string][]string{
+		http.MethodGet:  []string{EndpointsRead},
+		http.MethodPost: []string{EndpointsRead},
+	})
+	webHandlerV1("/transactions", transactionsHandler(gateway, false), map[string][]string{
 		http.MethodGet:  []string{EndpointsRead},
 		http.MethodPost: []string{EndpointsRead},
 	})
@@ -616,7 +646,10 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	})
 
 	// Storage endpoint
-	webHandlerV2("/data", storageHandler(gateway), map[string][]string{
+	webHandlerV2("/data/single", storageHandler(gateway, true), map[string][]string{
+		http.MethodGet:    []string{EndpointsStorage},
+	})
+	webHandlerV2("/data", storageHandler(gateway, false), map[string][]string{
 		http.MethodGet:    []string{EndpointsStorage},
 		http.MethodPost:   []string{EndpointsStorage},
 		http.MethodDelete: []string{EndpointsStorage},

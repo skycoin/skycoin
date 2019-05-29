@@ -91,7 +91,7 @@ func parseBoolFlag(v string) (bool, error) {
 // 	hash [transaction hash string]
 //  seq [int]
 // 	Note: only one of hash or seq is allowed
-func blockHandler(gateway Gatewayer) http.HandlerFunc {
+func blockHandler(gateway Gatewayer, isVerbose bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -136,7 +136,7 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		if verbose {
+		if verbose || isVerbose {
 			var b *coin.SignedBlock
 			var inputs [][]visor.TransactionInput
 
@@ -206,7 +206,7 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 //	end [int]
 //  seqs [comma separated list of ints]
 //  verbose [bool]
-func blocksHandler(gateway Gatewayer) http.HandlerFunc {
+func blocksHandler(gateway Gatewayer, isVerbose bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet && r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -276,7 +276,7 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		if verbose {
+		if verbose || isVerbose {
 			var blocks []coin.SignedBlock
 			var inputs [][][]visor.TransactionInput
 			var err error
@@ -341,7 +341,7 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 // Args:
 //	num [int]
 //  verbose [bool]
-func lastBlocksHandler(gateway Gatewayer) http.HandlerFunc {
+func lastBlocksHandler(gateway Gatewayer, isVerbose bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -361,7 +361,7 @@ func lastBlocksHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if verbose {
+		if verbose || isVerbose {
 			blocks, inputs, err := gateway.GetLastBlocksVerbose(n)
 			if err != nil {
 				wh.Error500(w, err.Error())

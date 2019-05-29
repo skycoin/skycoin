@@ -43,7 +43,7 @@ type Blockchainer interface {
 	ExecuteBlock(tx *dbutil.Tx, sb *coin.SignedBlock) error
 	VerifyBlockTxnConstraints(tx *dbutil.Tx, txn coin.Transaction) error
 	VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction, signed TxnSignedFlag) error
-	VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, verifyParams params.VerifyTxn, signed TxnSignedFlag) (*coin.SignedBlock, coin.UxArray, error)
+	VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, distParams params.Distribution, verifyParams params.VerifyTxn, signed TxnSignedFlag) (*coin.SignedBlock, coin.UxArray, error)
 	TransactionFee(tx *dbutil.Tx, hours uint64) coin.FeeCalculator
 }
 
@@ -51,10 +51,10 @@ type Blockchainer interface {
 // accessing the unconfirmed transaction pool
 type UnconfirmedTransactionPooler interface {
 	SetTransactionsAnnounced(tx *dbutil.Tx, hashes map[cipher.SHA256]int64) error
-	InjectTransaction(tx *dbutil.Tx, bc Blockchainer, t coin.Transaction, verifyParams params.VerifyTxn) (bool, *ErrTxnViolatesSoftConstraint, error)
+	InjectTransaction(tx *dbutil.Tx, bc Blockchainer, t coin.Transaction, distParams params.Distribution, verifyParams params.VerifyTxn) (bool, *ErrTxnViolatesSoftConstraint, error)
 	AllRawTransactions(tx *dbutil.Tx) (coin.Transactions, error)
 	RemoveTransactions(tx *dbutil.Tx, txns []cipher.SHA256) error
-	Refresh(tx *dbutil.Tx, bc Blockchainer, verifyParams params.VerifyTxn) ([]cipher.SHA256, error)
+	Refresh(tx *dbutil.Tx, bc Blockchainer, distParams params.Distribution, verifyParams params.VerifyTxn) ([]cipher.SHA256, error)
 	RemoveInvalid(tx *dbutil.Tx, bc Blockchainer) ([]cipher.SHA256, error)
 	FilterKnown(tx *dbutil.Tx, txns []cipher.SHA256) ([]cipher.SHA256, error)
 	GetKnown(tx *dbutil.Tx, txns []cipher.SHA256) (coin.Transactions, error)

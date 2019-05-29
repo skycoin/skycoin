@@ -87,7 +87,7 @@ type Config struct {
 // HealthConfig configuration data exposed in /health
 type HealthConfig struct {
 	BuildInfo       readable.BuildInfo
-	CoinName        string
+	Fiber           readable.FiberConfig
 	DaemonUserAgent useragent.Data
 }
 
@@ -390,6 +390,10 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 			handler = headerCheck(apiVersion, c.host, c.hostWhitelist, handler)
 		}
 
+		if apiVersion == apiVersion2 {
+			handler = ContentTypeJSONRequired(handler)
+		}
+
 		handler = basicAuth(apiVersion, c.username, c.password, "skycoin daemon", handler)
 		handler = gziphandler.GzipHandler(handler)
 		mux.Handle(endpoint, handler)
@@ -415,7 +419,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 
 	indexHandler := newIndexHandler(c.appLoc, c.enableGUI)
 	if !c.disableCSP {
-		indexHandler = CSPHandler(indexHandler)
+		indexHandler = CSPHandler(indexHandler, ContentSecurityPolicy)
 	}
 	webHandler(apiVersion1, "/", indexHandler, nil)
 
@@ -427,7 +431,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 
 		fs := http.FileServer(http.Dir(c.appLoc))
 		if !c.disableCSP {
-			fs = CSPHandler(fs)
+			fs = CSPHandler(fs, ContentSecurityPolicy)
 		}
 
 		for _, fileInfo := range fileInfos {

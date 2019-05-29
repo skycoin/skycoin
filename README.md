@@ -60,9 +60,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
 - [Integrating Skycoin with your application](#integrating-skycoin-with-your-application)
 - [Contributing a node to the network](#contributing-a-node-to-the-network)
 - [Creating a new coin](#creating-a-new-coin)
-- [Running with a custom coin hour burn factor](#running-with-a-custom-coin-hour-burn-factor)
-- [Running with a custom max transaction size](#running-with-a-custom-max-transaction-size)
-- [Running with a custom max decimal places](#running-with-a-custom-max-decimal-places)
+- [Daemon CLI Options](#daemon-cli-options)
 - [URI Specification](#uri-specification)
 - [Wire protocol user agent](#wire-protocol-user-agent)
 - [Development](#development)
@@ -196,7 +194,6 @@ Also, the [skycoin/skycoindev-vscode docker image](docker/images/dev-vscode/READ
 to facilitate the setup of the development process with [Visual Studio Code](https://code.visualstudio.com)
 and useful tools included in `skycoin/skycoindev-cli`.
 
-
 ## API Documentation
 
 ### REST API
@@ -224,44 +221,9 @@ Only add Skycoin nodes with high uptime and a static IP address (such as a Skyco
 
 See the [newcoin tool README](./cmd/newcoin/README.md)
 
-## Running with a custom coin hour burn factor
+## Daemon CLI Options
 
-The coin hour burn factor is the denominator in the ratio of coinhours that must be burned by a transaction.
-For example, a burn factor of 2 means 1/2 of hours must be burned. A burn factor of 10 means 1/10 of coin hours must be burned.
-
-The coin hour burn factor can be configured with a `USER_BURN_FACTOR` envvar. It cannot be configured through the command line.
-
-```sh
-$ USER_BURN_FACTOR=999 ./run-client.sh
-```
-
-This burn factor applies to user-created transactions.
-
-To control the burn factor in other scenarios, use `-burn-factor-unconfirmed` and `-burn-factor-create-block`.
-
-## Running with a custom max transaction size
-
-```sh
-$ USER_MAX_TXN_SIZE=1024 ./run-client.sh
-```
-
-This maximum transaction size applies to user-created transactions.
-
-To control the transaction size in other scenarios, use `-max-txn-size-unconfirmed` and `-max-txn-size-create-block`.
-
-To control the max block size, use `-max-block-size`.
-
-Transaction and block size are measured in bytes.
-
-## Running with a custom max decimal places
-
-```sh
-$ USER_MAX_DECIMALS=4 ./run-client.sh
-```
-
-This maximum transaction size applies to user-created transactions.
-
-To control the maximum decimals in other scenarios, use `-max-decimals-unconfirmed` and `-max-decimals-create-block`.
+See the [Skycoin Daemon CLI options](./cmd/skycoin/README.md)
 
 ## URI Specification
 
@@ -656,13 +618,14 @@ Instructions for doing this:
 
 #### Translations
 
-You can find information about how to work with translation files in the [Translations README](/src/gui/static/src/assets/i18n/README.md).
+You can find information about how to work with translation files in the [Translations README](./src/gui/static/src/assets/i18n/README.md).
 
 ### Releases
 
 #### Update the version
 
 0. If the `master` branch has commits that are not in `develop` (e.g. due to a hotfix applied to `master`), merge `master` into `develop`
+0. Make sure the translations are up to date. See the [i18n README](./src/gui/static/src/assets/i18n/README.md) for instructions on how to update translations and how to check if they are up to date.
 0. Compile the `src/gui/static/dist/` to make sure that it is up to date (see [Wallet GUI Development README](src/gui/static/README.md))
 0. Update version strings to the new version in the following files: `electron/package-lock.json`, `electron/package.json`, `electron/skycoin/current-skycoin.json`, `src/cli/cli.go`, `src/gui/static/src/current-skycoin.json`, `src/cli/integration/testdata/status*.golden`, `template/coin.template`, `README.md` files .
 0. If changes require a new database verification on the next upgrade, update `src/skycoin/skycoin.go`'s `DBVerifyCheckpointVersion` value
@@ -698,6 +661,8 @@ Performs these actions before releasing:
     * Load a test wallet with nonzero balance from seed to confirm wallet loading works
     * Send coins to another wallet to confirm spending works
     * Restart the client, confirm that it reloads properly
+* For both the Android and iOS mobile wallets, configure the node url to be https://staging.node.skycoin.net
+  and test all operations to ensure it will work with the new node version.
 
 #### Creating release builds
 

@@ -111,12 +111,6 @@ type StorageRequest struct {
 //     key: key
 //     val: value
 func addStorageValueHandler(w http.ResponseWriter, r *http.Request, gateway Gatewayer) {
-	if r.Header.Get("Content-Type") != ContentTypeJSON {
-		resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
-		writeHTTPResponse(w, resp)
-		return
-	}
-
 	var req StorageRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())

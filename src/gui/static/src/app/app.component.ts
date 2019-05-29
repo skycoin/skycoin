@@ -1,6 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import 'rxjs/add/operator/takeWhile';
-import { TranslateService } from '@ngx-translate/core';
 import { MatDialog } from '@angular/material';
 
 import { AppService } from './services/app.service';

@@ -1,18 +1,22 @@
-import { Component, Input, OnDestroy, OnInit } from '@angular/core';
-import { ExchangeOrder } from '../../../../app.datatypes';
+import { Component, Input, OnDestroy, Output, EventEmitter } from '@angular/core';
+import { ExchangeOrder, StoredExchangeOrder, ConfirmationData } from '../../../../app.datatypes';
 import { ExchangeService } from '../../../../services/exchange.service';
 import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
 import { MatDialog, MatDialogConfig } from '@angular/material';
 import { ISubscription } from 'rxjs/Subscription';
+import { Observable } from 'rxjs/Observable';
+import { showConfirmationModal } from '../../../../utils';
+import { BlockchainService } from '../../../../services/blockchain.service';
+import { environment } from '../../../../../environments/environment';
 
 @Component({
   selector: 'app-exchange-status',
   templateUrl: './exchange-status.component.html',
   styleUrls: ['./exchange-status.component.scss'],
 })
-export class ExchangeStatusComponent implements OnInit, OnDestroy {
-  @Input() order: ExchangeOrder;
-
+export class ExchangeStatusComponent implements OnDestroy {
+  private readonly TEST_MODE = environment.swaplab.activateTestMode;
+  private readonly TEST_ERROR = environment.swaplab.endStatusInError;
   readonly statuses = [
     'user_waiting',
     'market_waiting_confirmations',
@@ -23,7 +27,28 @@ export class ExchangeStatusComponent implements OnInit, OnDestroy {
     'error',
   ];
 
+  loading = true;
+  showError = false;
+  expanded = false;
+
   private subscription: ISubscription;
+  private testStatusIndex = 0;
+  private order: ExchangeOrder;
+
+  _orderDetails: StoredExchangeOrder;
+  @Input() set orderDetails(val: StoredExchangeOrder) {
+    const oldOrderDetails = this._orderDetails;
+    this._orderDetails = val;
+
+    if (val !== null && (!oldOrderDetails || oldOrderDetails.id !== val.id)) {
+      this.exchangeService.lastViewedOrder = this._orderDetails;
+      this.testStatusIndex = 0;
+      this.loading = true;
+      this.getStatus();
+    }
+  }
+
+  @Output() goBack = new EventEmitter<void>();
 
   get fromCoin() {
     return this.order.pair.split('/')[0].toUpperCase();
@@ -43,6 +68,7 @@ export class ExchangeStatusComponent implements OnInit, OnDestroy {
 
     return {
       text: `exchange.statuses.${status}`,
+      info: `exchange.statuses.${status}-info`,
       params,
     };
   }
@@ -70,20 +96,8 @@ export class ExchangeStatusComponent implements OnInit, OnDestroy {
   constructor(
     private exchangeService: ExchangeService,
     private dialog: MatDialog,
+    public blockchainService: BlockchainService,
   ) { }
-
-  ngOnInit() {
-    const fromAmount = this.order.fromAmount;
-
-    this.subscription = this.exchangeService.status(this.order.id).subscribe(order => {
-      this.order = { ...order, fromAmount };
-      this.exchangeService.lastOrder = this.order;
-
-      if (this.exchangeService.isOrderFinished(order)) {
-        this.subscription.unsubscribe();
-      }
-    });
-  }
 
   ngOnDestroy() {
     this.subscription.unsubscribe();
@@ -93,5 +107,59 @@ export class ExchangeStatusComponent implements OnInit, OnDestroy {
     const config = new MatDialogConfig();
     config.data = { address };
     this.dialog.open(QrCodeComponent, config);
+  }
+
+  toggleDetails() {
+    this.expanded = !this.expanded;
+  }
+
+  close() {
+    if (this.loading || this.exchangeService.isOrderFinished(this.order)) {
+      this.goBack.emit();
+    } else {
+      const confirmationData: ConfirmationData = {
+        text: 'exchange.details.back-alert',
+        headerText: 'confirmation.header-text',
+        confirmButtonText: 'confirmation.confirm-button',
+        cancelButtonText: 'confirmation.cancel-button',
+      };
+
+      showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+        if (confirmationResult) {
+          this.goBack.emit();
+        }
+      });
+    }
+  }
+
+  private getStatus(delay = 0) {
+    if (this.subscription) {
+      this.subscription.unsubscribe();
+    }
+
+    const fromAmount = this._orderDetails.fromAmount;
+
+    if (this.TEST_MODE && this.TEST_ERROR && this.testStatusIndex === this.statuses.length - 2) {
+      this.testStatusIndex = this.statuses.length - 1;
+    }
+
+    this.subscription = Observable.of(0).delay(delay).flatMap(() => {
+      return this.exchangeService.status(
+        !this.TEST_MODE ? this._orderDetails.id : '4729821d-390d-4ef8-a31e-2465d82a142f',
+        !this.TEST_MODE ? null : this.statuses[this.testStatusIndex++],
+      );
+    }).subscribe(order => {
+      this.order = { ...order, fromAmount };
+      this._orderDetails.id = order.id;
+      this.exchangeService.lastViewedOrder = this._orderDetails;
+
+      if (!this.exchangeService.isOrderFinished(order)) {
+        this.getStatus(this.TEST_MODE ? 3000 : 30000);
+      } else {
+        this.exchangeService.lastViewedOrder = null;
+      }
+
+      this.loading = false;
+    }, () => this.showError = true);
   }
 }

@@ -68,6 +68,13 @@ mat-progress-bar {
 
   .-value {
     word-break: break-all;
+
+    .info-icon {
+      display: inline;
+      font-size: 14px;
+      color: lighten($grey, 40%);
+      vertical-align: text-bottom;
+    }
   }
 }
 
@@ -89,4 +96,24 @@ mat-progress-bar {
   vertical-align: middle;
   color: $blue;
   margin-left: 10px;
+}
+
+.expand {
+  color: $blue;
+  cursor: pointer;
+  font-size: 13px;
+
+  mat-icon {
+    color: $blue;
+    padding: 0;
+    display: inline;
+    vertical-align: middle;
+    font-size: 13px;
+  }
+}
+
+.buttons {
+  width: 100%;
+  text-align: center;
+  margin-top: 10px;
 }

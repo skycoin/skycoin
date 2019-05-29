@@ -294,19 +294,25 @@ export class WalletService {
       changeAddress = wallet.addresses[0].address;
     }
 
-    const useV2Endpoint = unsigned || wallet.isHardware;
+    const useV2Endpoint = !!wallet.isHardware;
+
+    const params = {
+      hours_selection: hoursSelection,
+      wallet_id: wallet ? wallet.filename : null,
+      password: password,
+      addresses: addresses,
+      unspents: unspents,
+      to: destinations,
+      change_address: changeAddress,
+    };
+
+    if (!useV2Endpoint) {
+      params['unsigned'] = unsigned;
+    }
 
     let response: Observable<PreviewTransaction> = this.apiService.post(
       useV2Endpoint ? 'transaction' : 'wallet/transaction',
-      {
-        hours_selection: hoursSelection,
-        wallet_id: wallet ? wallet.filename : null,
-        password: password,
-        addresses: addresses,
-        unspents: unspents,
-        to: destinations,
-        change_address: changeAddress,
-      },
+      params,
       {
         json: true,
       },

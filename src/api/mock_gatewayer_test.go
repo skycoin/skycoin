@@ -1295,6 +1295,20 @@ func (_m *MockGatewayer) VerifyTxnVerbose(txn *coin.Transaction, signed visor.Tx
 	return r0, r1, r2
 }
 
+// VisorConfig provides a mock function with given fields:
+func (_m *MockGatewayer) VisorConfig() visor.Config {
+	ret := _m.Called()
+
+	var r0 visor.Config
+	if rf, ok := ret.Get(0).(func() visor.Config); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(visor.Config)
+	}
+
+	return r0
+}
+
 // WalletCreateTransaction provides a mock function with given fields: wltID, p, wp
 func (_m *MockGatewayer) WalletCreateTransaction(wltID string, p transaction.Params, wp visor.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error) {
 	ret := _m.Called(wltID, p, wp)

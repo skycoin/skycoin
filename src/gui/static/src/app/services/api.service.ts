@@ -123,8 +123,8 @@ export class ApiService {
     return this.post('wallet/' + (wallet.encrypted ? 'decrypt' : 'encrypt'), { id: wallet.filename, password });
   }
 
-  get(url, params = null, options: any = {}) {
-    return this.http.get(this.getUrl(url, params, !!options.v2), this.returnRequestOptions(options))
+  get(url, params = null, options: any = {}, useV2 = false) {
+    return this.http.get(this.getUrl(url, params, useV2), this.returnRequestOptions(options))
       .map((res: any) => res.json())
       .catch((error: any) => this.processConnectionError(error));
   }
@@ -190,7 +190,7 @@ export class ApiService {
     return this.url + (useV2 ? 'v2/' : 'v1/') + url + '?' + this.getQueryString(options);
   }
 
-  private processConnectionError(error: any): Observable<void> {
+  processConnectionError(error: any): Observable<void> {
     if (error) {
       if (typeof error['_body'] === 'string') {
 

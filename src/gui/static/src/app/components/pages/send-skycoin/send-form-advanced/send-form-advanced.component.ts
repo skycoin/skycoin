@@ -480,9 +480,9 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
         }
 
         if (!this.previewTx) {
-            this.processingSubscription = this.walletService.injectTransaction(transaction.encoded)
-              .subscribe(() => this.showSuccess(), error => this.showError(error));
-          } else {
+          this.processingSubscription = this.walletService.injectTransaction(transaction.encoded)
+            .subscribe(() => this.showSuccess(), error => this.showError(error));
+        } else {
           let amount = new BigNumber('0');
           this.destinations.map(destination => amount = amount.plus(destination.coins));
 
@@ -522,6 +522,8 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.form.get('addresses').setValue(null);
     this.form.get('outputs').setValue(null);
     this.form.get('changeAddress').setValue('');
+
+    this.wallet = null;
 
     while (this.destControls.length > 0) {
       (this.form.get('destinations') as FormArray).removeAt(0);

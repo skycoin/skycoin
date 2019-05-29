@@ -52,7 +52,7 @@
 
 @media (min-width: 768px) and (max-width: 991px) {
   .-buttons-container.navbar.light {
-    background: inherit !important;
+    border-radius: 20px;
 
     app-button ::ng-deep .button-container {
       display: block;

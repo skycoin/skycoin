@@ -364,10 +364,17 @@ func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if err := gateway.InjectBroadcastTransaction(txn); err != nil {
-			if daemon.IsBroadcastFailure(err) {
-				wh.Error503(w, err.Error())
-			} else {
-				wh.Error500(w, err.Error())
+			switch err.(type) {
+			case visor.ErrTxnViolatesUserConstraint,
+				visor.ErrTxnViolatesHardConstraint,
+				visor.ErrTxnViolatesSoftConstraint:
+				wh.Error400(w, err.Error())
+			default:
+				if daemon.IsBroadcastFailure(err) {
+					wh.Error503(w, err.Error())
+				} else {
+					wh.Error500(w, err.Error())
+				}
 			}
 			return
 		}
@@ -487,12 +494,6 @@ func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
-			writeHTTPResponse(w, resp)
-			return
-		}
-
-		if r.Header.Get("Content-Type") != ContentTypeJSON {
-			resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
 			writeHTTPResponse(w, resp)
 			return
 		}

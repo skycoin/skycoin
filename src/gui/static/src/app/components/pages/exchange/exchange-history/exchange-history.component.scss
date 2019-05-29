@@ -7,16 +7,25 @@ button {
   border-bottom: 1px solid #eff0f0;
   cursor: pointer;
 
-  .wrapper {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
   .info {
     font-size: 13px;
     line-height: 22px;
     color: $black;
+
+    div {
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+
+      mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+        position: relative;
+        top: 3px;
+        margin: 0px 5px;
+      }
+    }
 
     .grey {
       color: $grey;

@@ -328,6 +328,7 @@ type IntroductionMessage struct {
 	c                    *gnet.MessageContext `enc:"-"`
 	UserAgent            useragent.Data       `enc:"-"`
 	UnconfirmedVerifyTxn params.VerifyTxn     `enc:"-"`
+	GenesisHash          cipher.SHA256        `enc:"-"`
 
 	// Mirror is a random value generated on client startup that is used to identify self-connections
 	Mirror uint32
@@ -346,20 +347,21 @@ type IntroductionMessage struct {
 	// MaxTxnSize          uint32 // max txn size for announced txns
 	// MaxDropletPrecision uint8 // maximum number of decimal places for announced txns
 	// UserAgent           string `enc:",maxlen=256"`
+	// GenesisHash         cipher.SHA256 // genesis block hash
 	Extra []byte `enc:",omitempty"`
 }
 
 // NewIntroductionMessage creates introduction message
-func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey cipher.PubKey, userAgent string, verifyParams params.VerifyTxn) *IntroductionMessage {
+func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey cipher.PubKey, userAgent string, verifyParams params.VerifyTxn, genesisHash cipher.SHA256) *IntroductionMessage {
 	return &IntroductionMessage{
 		Mirror:          mirror,
 		ProtocolVersion: version,
 		ListenPort:      port,
-		Extra:           newIntroductionMessageExtra(pubkey, userAgent, verifyParams),
+		Extra:           newIntroductionMessageExtra(pubkey, userAgent, verifyParams, genesisHash),
 	}
 }
 
-func newIntroductionMessageExtra(pubkey cipher.PubKey, userAgent string, verifyParams params.VerifyTxn) []byte {
+func newIntroductionMessageExtra(pubkey cipher.PubKey, userAgent string, verifyParams params.VerifyTxn, genesisHash cipher.SHA256) []byte {
 	if len(userAgent) > useragent.MaxLen {
 		logger.WithFields(logrus.Fields{
 			"userAgent": userAgent,
@@ -378,13 +380,15 @@ func newIntroductionMessageExtra(pubkey cipher.PubKey, userAgent string, verifyP
 	userAgentSerialized := encoder.SerializeString(userAgent)
 	verifyParamsSerialized := encoder.Serialize(verifyParams)
 
-	extra := make([]byte, len(pubkey)+len(userAgentSerialized)+len(verifyParamsSerialized))
+	extra := make([]byte, len(pubkey)+len(userAgentSerialized)+len(verifyParamsSerialized)+len(genesisHash))
 
 	copy(extra[:len(pubkey)], pubkey[:])
 	i := len(pubkey)
 	copy(extra[i:], verifyParamsSerialized)
 	i += len(verifyParamsSerialized)
 	copy(extra[i:], userAgentSerialized)
+	i += len(userAgentSerialized)
+	copy(extra[i:i+len(genesisHash)], genesisHash[:])
 
 	return extra
 }
@@ -502,13 +506,16 @@ func (intro *IntroductionMessage) Verify(dc DaemonConfig, logFields logrus.Field
 	// v25 sends blockchain pubkey and user agent
 	// v24 and v25 check the blockchain pubkey and user agent, would accept message with no Pubkey and user agent
 	// v26 would check the blockchain pubkey and reject if not matched or not provided, and parses a user agent
-	if len(intro.Extra) == 0 {
+	// v26 adds genesis hash
+	// v27 would require and check the genesis hash
+	extraLen := len(intro.Extra)
+	if extraLen == 0 {
 		logger.WithFields(logFields).Warning("Blockchain pubkey is not provided")
 		return ErrDisconnectBlockchainPubkeyNotProvided
 	}
 
 	var bcPubKey cipher.PubKey
-	if len(intro.Extra) < len(bcPubKey) {
+	if extraLen < len(bcPubKey) {
 		logger.WithFields(logFields).Warning("Extra data length does not meet the minimum requirement")
 		return ErrDisconnectInvalidExtraData
 	}
@@ -523,7 +530,7 @@ func (intro *IntroductionMessage) Verify(dc DaemonConfig, logFields logrus.Field
 	}
 
 	i := len(bcPubKey)
-	if len(intro.Extra) < i+9 {
+	if extraLen < i+9 {
 		logger.WithFields(logFields).Warning("IntroductionMessage transaction verification parameters could not be deserialized: not enough data")
 		return ErrDisconnectInvalidExtraData
 	}
@@ -532,6 +539,7 @@ func (intro *IntroductionMessage) Verify(dc DaemonConfig, logFields logrus.Field
 		logger.Critical().WithError(err).WithFields(logFields).Warning("unconfirmedVerifyTxn params could not be deserialized")
 		return ErrDisconnectInvalidExtraData
 	}
+	i += 9
 
 	if err := intro.UnconfirmedVerifyTxn.Validate(); err != nil {
 		logger.WithError(err).WithFields(logFields).WithFields(logrus.Fields{
@@ -551,8 +559,8 @@ func (intro *IntroductionMessage) Verify(dc DaemonConfig, logFields logrus.Field
 		}
 	}
 
-	userAgentSerialized := intro.Extra[len(bcPubKey)+9:]
-	userAgent, _, err := encoder.DeserializeString(userAgentSerialized, useragent.MaxLen)
+	userAgentSerialized := intro.Extra[i:]
+	userAgent, userAgentLen, err := encoder.DeserializeString(userAgentSerialized, useragent.MaxLen)
 	if err != nil {
 		logger.WithError(err).WithFields(logFields).Warning("Extra data user agent string could not be deserialized")
 		return ErrDisconnectInvalidExtraData
@@ -563,6 +571,14 @@ func (intro *IntroductionMessage) Verify(dc DaemonConfig, logFields logrus.Field
 		logger.WithError(err).WithFields(logFields).WithField("userAgent", userAgent).Warning("User agent is invalid")
 		return ErrDisconnectInvalidUserAgent
 	}
+	i += int(userAgentLen)
+
+	remainingLen := extraLen - i
+	if remainingLen > 0 && remainingLen < len(intro.GenesisHash) {
+		logger.WithFields(logFields).Warning("Extra data genesis hash could not be deserialized: not enough data")
+		return ErrDisconnectInvalidExtraData
+	}
+	copy(intro.GenesisHash[:], intro.Extra[i:])
 
 	return nil
 }
@@ -1346,7 +1362,7 @@ func (gtm *GiveTxnsMessage) process(d daemoner) {
 			logger.WithError(err).WithField("txid", txn.Hash().Hex()).Warning("Failed to record transaction")
 			continue
 		} else if softErr != nil {
-			logger.WithError(err).WithField("txid", txn.Hash().Hex()).Warning("Transaction soft violation")
+			logger.WithError(softErr).WithField("txid", txn.Hash().Hex()).Warning("Transaction soft violation")
 			// Allow soft txn violations to rebroadcast
 		} else if known {
 			logger.WithField("txid", txn.Hash().Hex()).Debug("Duplicate transaction")

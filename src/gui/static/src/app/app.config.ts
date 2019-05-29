@@ -14,17 +14,12 @@ export const AppConfig = {
     },
     {
       code: 'zh',
-      name: 'Chinese',
+      name: '中文',
       iconName: 'zh.png',
     },
     {
-      code: 'ru',
-      name: 'Russian',
-      iconName: 'ru.png',
-    },
-    {
       code: 'es',
-      name: 'Spanish',
+      name: 'Español',
       iconName: 'es.png',
     },
   ],

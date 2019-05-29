@@ -19,12 +19,15 @@ import { HwWalletService } from './hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
 import { catchError, map } from 'rxjs/operators';
 import { AppConfig } from '../app.config';
+import { Http } from '@angular/http';
 
 declare var Cipher: any;
 
 export enum HwSecurityWarnings {
   NeedsBackup,
   NeedsPin,
+  FirmwareVersionNotVerified,
+  OutdatedFirmware,
 }
 
 export interface HwFeaturesResponse {
@@ -47,6 +50,7 @@ export class WalletService {
     private hwWalletService: HwWalletService,
     private translate: TranslateService,
     private ngZone: NgZone,
+    private http: Http,
   ) {
     this.loadData();
     this.startDataRefreshSubscription();
@@ -155,33 +159,91 @@ export class WalletService {
   }
 
   getHwFeaturesAndUpdateData(wallet: Wallet): Observable<HwFeaturesResponse> {
-    if (wallet.isHardware) {
-      return this.hwWalletService.getFeatures().map(result => {
-        wallet.label = result.rawResponse.label ? result.rawResponse.label : (result.rawResponse.deviceId ? result.rawResponse.deviceId : result.rawResponse.device_id);
+    if (!wallet || wallet.isHardware) {
+
+      let lastestFirmwareVersion: string;
+
+      return this.http.get('http://localhost:4200/assets/temp/hw-wallet-version.txt')
+      .catch(() => Observable.of(null))
+      .flatMap((res: any) => {
+        if (res) {
+          lastestFirmwareVersion = res.text();
+        } else {
+          lastestFirmwareVersion = null;
+        }
+
+        return this.hwWalletService.getFeatures();
+      })
+      .map(result => {
+        let lastestFirmwareVersionReaded = false;
+        let firmwareUpdated = false;
+
+        if (lastestFirmwareVersion) {
+          lastestFirmwareVersion = lastestFirmwareVersion.trim();
+          const versionParts = lastestFirmwareVersion.split('.');
+
+          if (versionParts.length === 3) {
+            lastestFirmwareVersionReaded = true;
+
+            const numVersionParts = versionParts.map(value => Number.parseInt(value));
+
+            const devMajorVersion = !AppConfig.useHwWalletDaemon ? result.rawResponse.majorVersion : result.rawResponse.fw_major;
+            const devMinorVersion = !AppConfig.useHwWalletDaemon ? result.rawResponse.minorVersion : result.rawResponse.fw_minor;
+            const devPatchVersion = !AppConfig.useHwWalletDaemon ? result.rawResponse.patchVersion : result.rawResponse.fw_patch;
+
+            if (devMajorVersion > numVersionParts[0]) {
+              firmwareUpdated = true;
+            } else {
+              if (devMajorVersion === numVersionParts[0]) {
+                if (devMinorVersion > numVersionParts[1]) {
+                  firmwareUpdated = true;
+                } else {
+                  if (devMinorVersion === numVersionParts[1] && devPatchVersion >= numVersionParts[2]) {
+                    firmwareUpdated = true;
+                  }
+                }
+              }
+            }
+          }
+        }
 
         const warnings: HwSecurityWarnings[] = [];
+        let hasHwSecurityWarnings = false;
 
-        wallet.hasHwSecurityWarnings = false;
         if (!AppConfig.useHwWalletDaemon) {
           if (result.rawResponse.needsBackup) {
             warnings.push(HwSecurityWarnings.NeedsBackup);
-            wallet.hasHwSecurityWarnings = true;
+            hasHwSecurityWarnings = true;
           }
           if (!result.rawResponse.pinProtection) {
             warnings.push(HwSecurityWarnings.NeedsPin);
-            wallet.hasHwSecurityWarnings = true;
+            hasHwSecurityWarnings = true;
           }
         } else {
           if (result.rawResponse.needs_backup) {
             warnings.push(HwSecurityWarnings.NeedsBackup);
-            wallet.hasHwSecurityWarnings = true;
+            hasHwSecurityWarnings = true;
           }
           if (!result.rawResponse.pin_protection) {
             warnings.push(HwSecurityWarnings.NeedsPin);
-            wallet.hasHwSecurityWarnings = true;
+            hasHwSecurityWarnings = true;
           }
         }
-        this.saveHardwareWallets();
+
+        if (!lastestFirmwareVersionReaded) {
+          warnings.push(HwSecurityWarnings.FirmwareVersionNotVerified);
+        } else {
+          if (!firmwareUpdated) {
+            warnings.push(HwSecurityWarnings.OutdatedFirmware);
+            hasHwSecurityWarnings = true;
+          }
+        }
+
+        if (wallet) {
+          wallet.label = result.rawResponse.label ? result.rawResponse.label : (result.rawResponse.deviceId ? result.rawResponse.deviceId : result.rawResponse.device_id);
+          wallet.hasHwSecurityWarnings = hasHwSecurityWarnings;
+          this.saveHardwareWallets();
+        }
 
         const response = {
           features: result.rawResponse,

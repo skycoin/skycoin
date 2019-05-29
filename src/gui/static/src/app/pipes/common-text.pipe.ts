@@ -1,19 +1,23 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { AppConfig } from '../app.config';
+import { AppService } from '../services/app.service';
 
 @Pipe({
   name: 'commonText',
+  pure: false,
 })
 export class CommonTextPipe implements PipeTransform {
+
+  constructor(
+    private appService: AppService,
+  ) { }
+
   transform(value: any) {
     if (value === 'hours') {
-      return AppConfig.hoursNamePlural;
-    } else if (value === 'hour') {
-      return AppConfig.hoursNameSingular;
+      return this.appService.hoursName;
     } else if (value === 'coin') {
-      return AppConfig.coinName;
+      return this.appService.coinName;
     } else if (value === 'coinFull') {
-      return AppConfig.coinName;
+      return this.appService.coinName;
     }
 
     return '';

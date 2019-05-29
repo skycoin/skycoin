@@ -1,16 +1,18 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { AppConfig } from '../app.config';
 import { DecimalPipe } from '@angular/common';
 import { BlockchainService } from '../services/blockchain.service';
+import { AppService } from '../services/app.service';
 
 @Pipe({
   name: 'amount',
+  pure: false,
 })
 export class AmountPipe implements PipeTransform {
 
   constructor(
     private decimalPipe: DecimalPipe,
     private blockchainService: BlockchainService,
+    private appService: AppService,
   ) { }
 
   transform(value: any, showingCoins = true, partToReturn = '') {
@@ -25,7 +27,7 @@ export class AmountPipe implements PipeTransform {
       }
     }
     if (partToReturn !== 'first') {
-      response += showingCoins ? AppConfig.coinName : (firstPart !== '1' ? AppConfig.hoursNamePlural : AppConfig.hoursNameSingular);
+      response += showingCoins ? this.appService.coinName : this.appService.hoursName;
     }
 
     return response;

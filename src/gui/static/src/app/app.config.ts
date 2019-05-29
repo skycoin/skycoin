@@ -2,11 +2,6 @@ export const AppConfig = {
   otcEnabled: false,
   maxHardwareWalletAddresses: 1,
 
-  fullCoinName: 'Skycoin',
-  coinName: 'SKY',
-  hoursNameSingular: 'Coin Hour',
-  hoursNamePlural: 'Coin Hours',
-
   languages: [{
       code: 'en',
       name: 'English',

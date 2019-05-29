@@ -7,6 +7,10 @@ import BigNumber from 'bignumber.js';
 export class AppService {
   error: number;
   version: Version;
+  fullCoinName = ' ';
+  coinName = ' ';
+  hoursName = ' ';
+  explorerUrl = ' ';
 
   get burnRate() {
     return this.burnRateInternal;
@@ -22,6 +26,12 @@ export class AppService {
     this.apiService.get('health').subscribe(response => {
         this.version = response.version;
         this.burnRateInternal = new BigNumber(response.user_verify_transaction.burn_factor);
+
+        this.fullCoinName = response.fiber.display_name;
+        this.coinName = response.fiber.ticker;
+        this.hoursName = response.fiber.coin_hours_display_name;
+        this.explorerUrl = response.fiber.explorer_url;
+
         if (!response.csrf_enabled) {
           this.error = 3;
         }

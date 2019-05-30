@@ -1,3 +1,5 @@
+// NOTE: some  code for using the hw wallet js library was left here only for precaution and should be deleted soon.
+
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
 import { Subscriber } from 'rxjs/Subscriber';

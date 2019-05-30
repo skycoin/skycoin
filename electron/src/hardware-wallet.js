@@ -1,3 +1,12 @@
+// Code for using the hw wallet js library. Here only for precaution, should be deleted soon.
+// If for some reason it have be reactivated, it should be checked, since due to various updates
+// in the js library and the hw wallet firmware some parts could fail. Also, for reactivating it
+// code should be uncommented in install-dependencies.sh and the package.son file must have the
+// following dependency (probably updated to the lastest commit):
+// "hardware-wallet-js": "git+https://git@github.com/skycoin/hardware-wallet-js.git#ddf7265"
+//
+// More changes could be needed in /src/gui/static/src/app/services/hw-wallet.service.ts
+
 /*
 'use strict'
 

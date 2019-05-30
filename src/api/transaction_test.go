@@ -1384,8 +1384,8 @@ func TestGetTransactions(t *testing.T) {
 					v.Add("verbose", tc.httpBody.verbose)
 				}
 			}
-			save  := endpoint
 			if tc.httpBody.verbose != "" {
+				save  := endpoint
 				endpoint += "/verbose"
 
 				var reqBody io.Reader

@@ -52,6 +52,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Don't send wire protocol messages that exceed the configured 256kB limit, which caused peers to disconnect from the sender
 - #2348 Fix panic in `skycoin-cli` `transaction` command if no (zero) arguments are passed. Exactly one argument is expected.
 - #2373 Fix and clean-up further panics with various `skycoin-cli` commands which were not correctly handling arguments.
+    - lastBlocks, checkdb
 
 ### Changed
 

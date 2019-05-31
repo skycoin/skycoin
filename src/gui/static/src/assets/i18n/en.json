@@ -344,7 +344,8 @@
       "too-many-inputs-outputs": "The transaction has too many inputs or outputs for the hardware wallet. Please try again creating several smaller transactions, each one with a smaller number of recipients (if the current transaction has many) or coins.",
       "daemon-connection": "Problem connecting to the hardware wallet service.",
       "timeout": "The operation was cancelled due to inactivity.",
-      "invalid-address": "Invalid address."
+      "invalid-address": "Invalid address.",
+      "not-in-firmware-mode": "To use this option the hardware wallet must be in firmware mode."
     },
     "security-warning" : {
       "title": "Security warning",
@@ -361,9 +362,12 @@
       "configured-detected": "Hardware wallet detected. The device is identified in the wallets list as:",
       "security-warnings-title": "Security warnings",
       "security-warning-title": "Security warning",
+      "unchecked-version-warning": "It was not possible to verify if the firmware of your hardware wallet is up to date. This could be due to problems with your internet connection or because the service is in maintenance.",
+      "outdated-version-warning": "The firmware of your hardware wallet is outdated. To stay safe, we recommend you to update it as soon as possible. To do this, select the \"Update firmware\" option.",
       "backup-warning": "You should backup the hardware wallet seed or you could lose access to the funds in case of problems. To do this, select the \"Create a backup\" option.",
       "pin-warning": "The connected hardware wallet does not have a PIN. The PIN code protects the hardware wallet in case of loss, theft and hacks. To create a PIN code, select the \"Create PIN code\" option.",
       "options": "Options:",
+      "update-firmware": "Update firmware",
       "configure-automatically": "Configure automatically",
       "restore-backup": "Restore backup",
       "create-backup": "Create a backup",
@@ -374,6 +378,20 @@
       "delete-pin": "Delete PIN code",
       "forgotten-pin1": "If you can not access the wallet because you have forgotten the PIN, you can wipe the hardware wallet and then restore it with the seed by clicking",
       "forgotten-pin2": "here."
+    },
+    "update-firmware-warning" : {
+      "title": "Outdated Firmware",
+      "text": "WARNING: the firmware in your hardware wallet is outdated. To stay safe, it is recommended to update it.",
+      "cancel": "Cancel",
+      "update": "Update"
+    },
+    "update-firmware" : {
+      "title": "Update Firmware",
+      "text": "To update the firmware of your hardware wallet you must connect it in firmware mode (connect it to the computer while pressing the two physical buttons of the device). WARNING: before continuing you must have a backup of your seed or you can permanently lose access to the funds.",
+      "check": "I understand the risks and want to continue",
+      "completed": "The firmware update has been sent to the hardware wallet. Please continue the process on the device.",
+      "connection-error": "It was not possible download the firmware. This could be due to problems with your internet connection or because the service is in maintenance.",
+      "timeout": "The operation was cancelled due to inactivity. Please disconnect the device, reconnect it and try again."
     },
     "generate-seed" : {
       "text": "Before proceeding, you can select the number of words you want the seed to have. The seed is a list of words that can be used to recover access to the coins in case of problems. Both values are safe, so if you do not have a special reason for selecting one or the other, you can leave the default value.",

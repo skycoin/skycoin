@@ -46,18 +46,22 @@
       [icon]="msgIcons.HardwareWallet"
     ></app-hw-message>
 
-    <div class="alert-box" *ngIf="currentState === states.ConfiguredConnected && (needsBackup || needsPin)">
+    <div class="alert-box" *ngIf="securityWarnings.length > 0">
       <mat-icon>error</mat-icon>
       <div>
-        <div class="title">{{ (needsBackup && needsPin ? 'hardware-wallet.options.security-warnings-title' : 'hardware-wallet.options.security-warning-title') | translate}}</div>
-        <div *ngIf="needsBackup">{{ needsPin ? '1)' : '' }} {{ 'hardware-wallet.options.backup-warning' | translate}}</div>
-        <br *ngIf="needsBackup && needsPin"/>
-        <div *ngIf="needsPin">{{ needsBackup ? '2)' : '' }} {{ 'hardware-wallet.options.pin-warning' | translate}}</div>
+        <div class="title">{{ (securityWarnings.length > 1 ? 'hardware-wallet.options.security-warnings-title' : 'hardware-wallet.options.security-warning-title') | translate}}</div>
+        <ng-container *ngFor="let warning of securityWarnings; let i = index">
+          <div>{{ securityWarnings.length > 1 ? ((i + 1) + ')') : '' }} {{ warning | translate}}</div>
+          <br *ngIf="i < securityWarnings.length - 1"/>
+        </ng-container>
       </div>
     </div>
 
     <div class="options-label">{{ 'hardware-wallet.options.options' | translate }}</div>
     <div class="option-buttons-container select-address-theme">
+      <button mat-button color="primary" (click)="update()" *ngIf="outdatedFirmware">
+        <div class="label -blinking">{{ 'hardware-wallet.options.update-firmware' | translate }}</div>
+      </button>
       <div *ngIf="currentState === states.NewConnected">
         <button mat-button color="primary" (click)="generateMnemonic()">
           <div class="label">{{ 'hardware-wallet.options.configure-automatically' | translate }}</div>

@@ -48,16 +48,16 @@ export class HwWalletDaemonService {
     return this.checkResponse(this.http.post(
       this.url + route,
       !sendFormData ? JSON.stringify(params) : this.apiService.getQueryString(params),
-      this.returnRequestOptions(sendFormData),
+      this.returnRequestOptions(sendFormData, false),
     ));
   }
 
-  put(route: string) {
+  put(route: string, params: any = null, sendMultipartFormData = false, smallTimeout = false) {
     return this.checkResponse(this.http.put(
       this.url + route,
-      null,
-      this.returnRequestOptions(),
-    ));
+      params,
+      this.returnRequestOptions(false, sendMultipartFormData),
+    ), false, smallTimeout);
   }
 
   delete(route: string) {
@@ -67,9 +67,9 @@ export class HwWalletDaemonService {
     ));
   }
 
-  private checkResponse(response: Observable<any>, checkingConnected = false) {
+  private checkResponse(response: Observable<any>, checkingConnected = false, smallTimeout = false) {
     return response
-      .timeout(50000)
+      .timeout(smallTimeout ? 3000 : 50000)
       .flatMap((res: any) => {
         const finalResponse = res.json();
 
@@ -128,10 +128,12 @@ export class HwWalletDaemonService {
       });
   }
 
-  private returnRequestOptions(sendFormData = false) {
+  private returnRequestOptions(sendFormData = false, sendMultipartFormData = false) {
     const options = new RequestOptions();
     options.headers = new Headers();
-    options.headers.append('Content-Type', !sendFormData ? 'application/json' : 'application/x-www-form-urlencoded');
+    if (!sendMultipartFormData) {
+      options.headers.append('Content-Type', !sendFormData ? 'application/json' : 'application/x-www-form-urlencoded');
+    }
 
     return options;
   }

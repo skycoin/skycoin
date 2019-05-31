@@ -54,6 +54,8 @@ export function getHardwareWalletErrorMsg(hwWalletService: HwWalletService, tran
       return translateService.instant('hardware-wallet.errors.timeout');
     } else if (error.result === OperationResults.Disconnected) {
       return translateService.instant('hardware-wallet.general.error-disconnected');
+    } else if (error.result === OperationResults.NotInFirmwareMode) {
+      return translateService.instant('hardware-wallet.errors.not-in-firmware-mode');
     }
   }
 

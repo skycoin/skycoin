@@ -27,6 +27,11 @@ export enum HwSecurityWarnings {
   NeedsPin,
 }
 
+export interface HwFeaturesResponse {
+  features: any;
+  securityWarnings: HwSecurityWarnings[];
+}
+
 @Injectable()
 export class WalletService {
 
@@ -149,26 +154,44 @@ export class WalletService {
     });
   }
 
-  updateWalletHasHwSecurityWarnings(wallet: Wallet): Observable<HwSecurityWarnings[]> {
+  getHwFeaturesAndUpdateData(wallet: Wallet): Observable<HwFeaturesResponse> {
     if (wallet.isHardware) {
       return this.hwWalletService.getFeatures().map(result => {
+        wallet.label = result.rawResponse.label ? result.rawResponse.label : (result.rawResponse.deviceId ? result.rawResponse.deviceId : result.rawResponse.device_id);
+
         const warnings: HwSecurityWarnings[] = [];
 
         wallet.hasHwSecurityWarnings = false;
-        if (result.rawResponse.needsBackup) {
-          warnings.push(HwSecurityWarnings.NeedsBackup);
-          wallet.hasHwSecurityWarnings = true;
-        }
-        if (!result.rawResponse.pinProtection) {
-          warnings.push(HwSecurityWarnings.NeedsPin);
-          wallet.hasHwSecurityWarnings = true;
+        if (!AppConfig.useHwWalletDaemon) {
+          if (result.rawResponse.needsBackup) {
+            warnings.push(HwSecurityWarnings.NeedsBackup);
+            wallet.hasHwSecurityWarnings = true;
+          }
+          if (!result.rawResponse.pinProtection) {
+            warnings.push(HwSecurityWarnings.NeedsPin);
+            wallet.hasHwSecurityWarnings = true;
+          }
+        } else {
+          if (result.rawResponse.needs_backup) {
+            warnings.push(HwSecurityWarnings.NeedsBackup);
+            wallet.hasHwSecurityWarnings = true;
+          }
+          if (!result.rawResponse.pin_protection) {
+            warnings.push(HwSecurityWarnings.NeedsPin);
+            wallet.hasHwSecurityWarnings = true;
+          }
         }
         this.saveHardwareWallets();
 
-        return warnings;
+        const response = {
+          features: result.rawResponse,
+          securityWarnings: warnings,
+        };
+
+        return response;
       });
     } else {
-      return Observable.of([]);
+      return null;
     }
   }
 
@@ -321,11 +344,11 @@ export class WalletService {
       const data = useV2Endpoint ? transaction.data : transaction;
 
       if (wallet.isHardware) {
-        if (data.transaction.inputs.length > 8) {
-          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs'));
+        if (data.transaction.inputs.length > 7) {
+          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs-outputs'));
         }
-        if (data.transaction.outputs.length > 8) {
-          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-outputs'));
+        if (data.transaction.outputs.length > 7) {
+          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs-outputs'));
         }
       }
 
@@ -578,7 +601,7 @@ export class WalletService {
         }
       });
 
-      this.hwWalletService.saveWalletsDataSync(JSON.stringify(hardwareWallets));
+      this.hwWalletService.saveWalletsData(JSON.stringify(hardwareWallets));
 
       this.wallets.next(wallets);
     });
@@ -617,25 +640,33 @@ export class WalletService {
   }
 
   private loadData(): void {
-    this.apiService.getWallets().first().subscribe(
-      recoveredWallets => {
-        let wallets: Wallet[] = [];
-        if (this.hwWalletService.hwWalletCompatibilityActivated) {
-          this.loadHardwareWallets(wallets);
-        }
-        wallets = wallets.concat(recoveredWallets);
+    let wallets: Wallet[] = [];
+    let softwareWallets: Wallet[] = [];
+
+    this.apiService.getWallets().first().flatMap(recoveredWallets => {
+      softwareWallets = recoveredWallets;
+
+      if (this.hwWalletService.hwWalletCompatibilityActivated) {
+        return this.loadHardwareWallets(wallets);
+      }
+
+      return Observable.of(null);
+
+    }).subscribe(() => {
+        wallets = wallets.concat(softwareWallets);
         this.wallets.next(wallets);
-      },
-      () => this.initialLoadFailed.next(true),
-    );
+    }, () => this.initialLoadFailed.next(true));
   }
 
-  private loadHardwareWallets(wallets: Wallet[]) {
-    const storedWallets: string = this.hwWalletService.getSavedWalletsDataSync();
-    if (storedWallets) {
-      const loadedWallets: Wallet[] = JSON.parse(storedWallets);
-      loadedWallets.map(wallet => wallets.push(wallet));
-    }
+  private loadHardwareWallets(wallets: Wallet[]): Observable<any> {
+    return this.hwWalletService.getSavedWalletsData().map(storedWallets => {
+      if (storedWallets) {
+        const loadedWallets: Wallet[] = JSON.parse(storedWallets);
+        loadedWallets.map(wallet => wallets.push(wallet));
+      }
+
+      return null;
+    });
   }
 
   private retrieveInputAddress(input: string) {

@@ -9,40 +9,48 @@ enum States {
   Processing,
   ReturnedSuccess,
   ReturnedRefused,
+  WrongPin,
   Failed,
   DaemonError,
   Timeout,
 }
 
 @Component({
-  selector: 'app-hw-backup-dialog',
-  templateUrl: './hw-backup-dialog.component.html',
-  styleUrls: ['./hw-backup-dialog.component.scss'],
+  selector: 'app-hw-remove-pin-dialog',
+  templateUrl: './hw-remove-pin-dialog.component.html',
+  styleUrls: ['./hw-remove-pin-dialog.component.scss'],
 })
-export class HwBackupDialogComponent extends HwDialogBaseComponent<HwBackupDialogComponent> {
+export class HwRemovePinDialogComponent extends HwDialogBaseComponent<HwRemovePinDialogComponent> {
 
   currentState: States = States.Initial;
   states = States;
+  confirmed = false;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: ChildHwDialogParams,
-    public dialogRef: MatDialogRef<HwBackupDialogComponent>,
+    public dialogRef: MatDialogRef<HwRemovePinDialogComponent>,
     private hwWalletService: HwWalletService,
   ) {
     super(hwWalletService, dialogRef);
   }
 
-  requestBackup() {
+  setConfirmed(event) {
+    this.confirmed = event.checked;
+  }
+
+  requestRemoval() {
     this.currentState = States.Processing;
 
-    this.operationSubscription = this.hwWalletService.backup().subscribe(
+    this.operationSubscription = this.hwWalletService.removePin().subscribe(
       () => {
-        this.currentState = States.ReturnedSuccess;
         this.data.requestOptionsComponentRefresh(null, true);
+        this.currentState = States.ReturnedSuccess;
       },
       err => {
         if (err.result && err.result === OperationResults.FailedOrRefused) {
           this.currentState = States.ReturnedRefused;
+        } else if (err.result && err.result === OperationResults.WrongPin) {
+          this.currentState = States.WrongPin;
         } else if (err.result && err.result === OperationResults.DaemonError) {
           this.currentState = States.DaemonError;
         } else if (err.result && err.result === OperationResults.Timeout) {

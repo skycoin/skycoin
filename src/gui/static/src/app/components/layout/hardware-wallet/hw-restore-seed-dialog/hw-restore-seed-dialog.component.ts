@@ -14,6 +14,8 @@ enum States {
   WrongWord,
   WrongSeed,
   InvalidSeed,
+  DaemonError,
+  Timeout,
 }
 
 @Component({
@@ -60,8 +62,14 @@ export class HwRestoreSeedDialogComponent extends HwDialogBaseComponent<HwRestor
           this.currentState = States.WrongWord;
         } else if (err.result && err.result === OperationResults.InvalidSeed) {
           this.currentState = States.InvalidSeed;
+        } else if (err.result && err.result === OperationResults.DaemonError) {
+          this.currentState = States.DaemonError;
         } else if (err.result && err.result === OperationResults.WrongSeed) {
           this.currentState = States.WrongSeed;
+        } else if (err.result && err.result === OperationResults.Timeout) {
+          this.currentState = States.Timeout;
+        } else if (err.result && err.result === OperationResults.Disconnected) {
+          this.closeModal();
         } else {
           this.currentState = States.Failed;
         }

@@ -2,7 +2,7 @@
   class="modal"
   [headline]="(justCheckingSeed ? 'hardware-wallet.options.confirm-seed' : 'hardware-wallet.options.restore-backup') | translate"
   [dialog]="dialogRef"
-  [disableDismiss]="currentState === states.Initial">
+  [disableDismiss]="currentState === states.Processing">
 
   <div *ngIf="currentState === states.Initial">
     <app-hw-message
@@ -34,7 +34,7 @@
   </div>
 
   <app-hw-message *ngIf="currentState === states.Processing"
-    [text]="'hardware-wallet.general.confirm-and-more' | translate"
+    [text]="(justCheckingSeed ? 'hardware-wallet.general.follow' : 'hardware-wallet.general.confirm-and-more') | translate"
     [icon]="msgIcons.Confirm"
   ></app-hw-message>
 
@@ -65,6 +65,16 @@
 
   <app-hw-message *ngIf="currentState === states.Failed"
     [text]="'hardware-wallet.general.simple-error' | translate"
+    [icon]="msgIcons.Error"
+  ></app-hw-message>
+
+  <app-hw-message *ngIf="currentState === states.DaemonError"
+    [text]="'hardware-wallet.errors.daemon-connection' | translate"
+    [icon]="msgIcons.Error"
+  ></app-hw-message>
+
+  <app-hw-message *ngIf="currentState === states.Timeout"
+    [text]="'hardware-wallet.errors.timeout' | translate"
     [icon]="msgIcons.Error"
   ></app-hw-message>
 

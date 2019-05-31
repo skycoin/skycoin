@@ -1,6 +1,7 @@
 import { MatSnackBar, MatSnackBarConfig } from '@angular/material';
 import { HwWalletService, OperationResults } from '../services/hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
+import { AppConfig } from '../app.config';
 
 export function parseResponseMessage(body: string): string {
   if (typeof body === 'object') {
@@ -34,19 +35,27 @@ export function showSnackbarError(snackbar: MatSnackBar, body: string, duration 
 }
 
 export function getHardwareWalletErrorMsg(hwWalletService: HwWalletService, translateService: TranslateService, error: any): string {
-  if (!hwWalletService.getDeviceConnectedSync()) {
+  if (!AppConfig.useHwWalletDaemon && !window['ipcRenderer'].sendSync('hwGetDeviceConnectedSync')) {
     return translateService.instant('hardware-wallet.general.error-disconnected');
-  } else {
-    if (error.result) {
-      if (error.result === OperationResults.FailedOrRefused) {
-        return translateService.instant('hardware-wallet.general.refused');
-      } else if (error.result === OperationResults.WrongPin) {
-        return translateService.instant('hardware-wallet.general.error-incorrect-pin');
-      } else if (error.result === OperationResults.IncorrectHardwareWallet) {
-        return translateService.instant('hardware-wallet.general.error-incorrect-wallet');
-      }
-    }
-
-    return translateService.instant('hardware-wallet.general.generic-error');
   }
+
+  if (error.result) {
+    if (error.result === OperationResults.FailedOrRefused) {
+      return translateService.instant('hardware-wallet.general.refused');
+    } else if (error.result === OperationResults.WrongPin) {
+      return translateService.instant('hardware-wallet.general.error-incorrect-pin');
+    } else if (error.result === OperationResults.IncorrectHardwareWallet) {
+      return translateService.instant('hardware-wallet.general.error-incorrect-wallet');
+    } else if (error.result === OperationResults.DaemonError) {
+      return translateService.instant('hardware-wallet.errors.daemon-connection');
+    } else if (error.result === OperationResults.InvalidAddress) {
+      return translateService.instant('hardware-wallet.errors.invalid-address');
+    } else if (error.result === OperationResults.Timeout) {
+      return translateService.instant('hardware-wallet.errors.timeout');
+    } else if (error.result === OperationResults.Disconnected) {
+      return translateService.instant('hardware-wallet.general.error-disconnected');
+    }
+  }
+
+  return translateService.instant('hardware-wallet.general.generic-error');
 }

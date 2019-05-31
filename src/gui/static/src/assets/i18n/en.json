@@ -333,6 +333,7 @@
       "error-incorrect-pin": "Unable to perform the operation. The PIN you have entered is not correct.",
       "confirm": "Please, confirm the operation in the hardware wallet.",
       "confirm-and-more": "Please, confirm the operation in the hardware wallet and follow the instructions.",
+      "follow": "Please, follow the instructions indicated in the hardware wallet.",
       "close": "Close",
       "cancel": "Cancel",
       "continue": "Continue",
@@ -340,8 +341,10 @@
       "refused": "The operation failed or was canceled."
     },
     "errors": {
-      "too-many-inputs": "The transaction has too many inputs and can not be processed. Please contact technical support.",
-      "too-many-outputs": "The transaction has too many outputs and can not be processed. Please contact technical support."
+      "too-many-inputs-outputs": "The transaction has too many inputs or outputs for the hardware wallet. Please try again creating several smaller transactions, each one with a smaller number of recipients (if the current transaction has many) or coins.",
+      "daemon-connection": "Problem connecting to the hardware wallet service.",
+      "timeout": "The operation was cancelled due to inactivity.",
+      "invalid-address": "Invalid address."
     },
     "security-warning" : {
       "title": "Security warning",
@@ -368,6 +371,7 @@
       "confirm-seed": "Confirm seed",
       "create-pin": "Create PIN code",
       "change-pin": "Change PIN code",
+      "delete-pin": "Delete PIN code",
       "forgotten-pin1": "If you can not access the wallet because you have forgotten the PIN, you can wipe the hardware wallet and then restore it with the seed by clicking",
       "forgotten-pin2": "here."
     },
@@ -408,6 +412,10 @@
     },
     "change-pin" : {
       "pin-mismatch": "Unable to perform the operation. Two PINs you have entered do not match."
+    },
+    "remove-pin" : {
+      "warning": "WARNING: It is not recommended to remove the PIN code from your hardware wallet, as it will be vulnerable to being used by unauthorized persons.",
+      "check": "I understand the risks and want to continue"
     },
     "enter-pin" : {
       "title": "Enter PIN",

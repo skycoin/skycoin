@@ -8,12 +8,14 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync"
 	"time"
 
 	"github.com/boltdb/bolt"
 
 	"github.com/amherag/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/cipher/encoder"
 	"github.com/amherag/skycoin/src/coin"
 	"github.com/amherag/skycoin/src/util/elapse"
 	"github.com/amherag/skycoin/src/visor/blockdb"
@@ -298,4 +300,89 @@ func shaFileID(dbPath string) (string, error) {
 	sum := h.Sum(nil)
 	encodedSum := base64.RawURLEncoding.EncodeToString(sum[:8])
 	return encodedSum, nil
+}
+
+// VerifyDBSkyencoderSafe verifies that the skyencoder generated code has the same result as the encoder
+// for all data in the blockchain
+func VerifyDBSkyencoderSafe(db *dbutil.DB, quit <-chan struct{}) error {
+	return db.View("VerifyDBSkyencoderSafe", func(tx *dbutil.Tx) error {
+		return verifyDBSkyencoderSafe(tx, quit)
+	})
+}
+
+func verifyDBSkyencoderSafe(tx *dbutil.Tx, quit <-chan struct{}) error {
+	if quit == nil {
+		quit = make(chan struct{})
+	}
+
+	// blockdb
+	if err := blockdb.VerifyDBSkyencoderSafe(tx, quit); err != nil {
+		if err == blockdb.ErrVerifyStopped {
+			return ErrVerifyStopped
+		}
+		return err
+	}
+
+	// historydb
+	if err := historydb.VerifyDBSkyencoderSafe(tx, quit); err != nil {
+		if err == historydb.ErrVerifyStopped {
+			return ErrVerifyStopped
+		}
+		return err
+	}
+
+	// visor
+	if err := dbutil.ForEach(tx, UnconfirmedTxnsBkt, func(_, v []byte) error {
+		select {
+		case <-quit:
+			return ErrVerifyStopped
+		default:
+		}
+
+		var b1 UnconfirmedTransaction
+		if err := decodeUnconfirmedTransactionExact(v, &b1); err != nil {
+			return err
+		}
+
+		var b2 UnconfirmedTransaction
+		if err := encoder.DeserializeRawExact(v, &b2); err != nil {
+			return err
+		}
+
+		if !reflect.DeepEqual(b1, b2) {
+			return errors.New("UnconfirmedTxnsBkt unconfirmed transaction mismatch")
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	if err := dbutil.ForEach(tx, UnconfirmedUnspentsBkt, func(_, v []byte) error {
+		select {
+		case <-quit:
+			return ErrVerifyStopped
+		default:
+		}
+
+		var b1 UxArray
+		if err := decodeUxArrayExact(v, &b1); err != nil {
+			return err
+		}
+
+		var b2 coin.UxArray
+		if err := encoder.DeserializeRawExact(v, &b2); err != nil {
+			return err
+		}
+
+		if !reflect.DeepEqual(b1.UxArray, b2) {
+			return errors.New("UnconfirmedUnspentsBkt ux out slice mismatch")
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/amherag/skycoin/src/cipher"
 	"github.com/amherag/skycoin/src/coin"
+	"github.com/amherag/skycoin/src/util/mathutil"
 	"github.com/amherag/skycoin/src/util/timeutil"
 	"github.com/amherag/skycoin/src/visor"
 )
@@ -134,7 +135,7 @@ func NewBlockTransactionVerbose(txn coin.Transaction, inputs []visor.Transaction
 
 	var hoursIn uint64
 	for _, i := range inputs {
-		if _, err := coin.AddUint64(hoursIn, i.CalculatedHours); err != nil {
+		if _, err := mathutil.AddUint64(hoursIn, i.CalculatedHours); err != nil {
 			logger.Critical().Warningf("Ignoring NewBlockTransactionVerbose summing txn %s input hours error: %v", txID.Hex(), err)
 		}
 		hoursIn += i.CalculatedHours
@@ -142,7 +143,7 @@ func NewBlockTransactionVerbose(txn coin.Transaction, inputs []visor.Transaction
 
 	var hoursOut uint64
 	for _, o := range txn.Out {
-		if _, err := coin.AddUint64(hoursOut, o.Hours); err != nil {
+		if _, err := mathutil.AddUint64(hoursOut, o.Hours); err != nil {
 			logger.Critical().Warningf("Ignoring NewBlockTransactionVerbose summing txn %s outputs hours error: %v", txID.Hex(), err)
 		}
 

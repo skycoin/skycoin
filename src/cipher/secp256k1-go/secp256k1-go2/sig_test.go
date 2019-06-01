@@ -6,6 +6,43 @@ import (
 	"testing"
 )
 
+func TestSigForceLowS(t *testing.T) {
+	// Check that forceLowS forces the S point to the lower half of the curve
+	var sec, msg, non Number
+	sec.SetHex("7A642C99F7719F57D8F4BEB11A303AFCD190243A51CED8782CA6D3DBE014D146")
+	msg.SetHex("DD72CBF2203C1A55A411EEC4404AF2AFB2FE942C434B23EFE46E9F04DA8433CA")
+	non.SetHex("9F3CD9AB0F32911BFDE39AD155F527192CE5ED1F51447D63C4F154C118DA598E")
+
+	// The signature when forceLowS is true
+	sigHexLowS := "8c20a668be1b5a910205de46095023fe4823a3757f4417114168925f28193bff520ce833da9313d726f2a4d481e3195a5dd8e935a6c7f4dc260ed4c66ebe6da7"
+	// The signature when forceLowS is false
+	sigHexHighS := "8c20a668be1b5a910205de46095023fe4823a3757f4417114168925f28193bffadf317cc256cec28d90d5b2b7e1ce6a45cd5f3b10880ab5f99c389c66177d39a"
+
+	var sig Signature
+	var recid int
+	res := sig.Sign(&sec, &msg, &non, &recid)
+	if res != 1 {
+		t.Error("res failed", res)
+		return
+	}
+
+	if forceLowS {
+		if recid != 0 {
+			t.Error("recid should be 0 because of forceLowS")
+		}
+		if sigHexLowS != hex.EncodeToString(sig.Bytes()) {
+			t.Error("forceLowS did not modify the S point as expected")
+		}
+	} else {
+		if recid != 1 {
+			t.Error("recid should be 1")
+		}
+		if sigHexHighS != hex.EncodeToString(sig.Bytes()) {
+			t.Error("the S point should not be modified")
+		}
+	}
+}
+
 func TestSigRecover(t *testing.T) {
 	var vs = [][6]string{
 		{
@@ -87,7 +124,9 @@ func TestSigVerify(t *testing.T) {
 		t.Fail()
 	}
 
-	key.ParsePubkey(xy)
+	if err := key.ParsePubkey(xy); err != nil {
+		t.Errorf("ParsePubkey failed: %v", err)
+	}
 	if !sig.Verify(&key, &msg) {
 		t.Error("sig.Verify 2")
 	}

@@ -1,5 +1,6 @@
 @import 'theme/variables';
 @import 'theme/tables';
+@import 'theme/_modals';
 @import '~bootstrap/scss/bootstrap-grid.scss';
 @import '~bootstrap/scss/utilities/_display.scss';
 
@@ -115,6 +116,21 @@ button.active {
 mat-spinner.in-button .mat-spinner path {
   stroke: #000;
   opacity: 0.3;
+}
+
+mat-spinner.in-button {
+  display: inline-block;
+  margin-left: 10px;
+  
+  &.small {
+    height: 18px !important;
+    width: 18px !important;
+  
+    svg {
+      height: 18px !important;
+      width: 18px !important;
+    }
+  }
 }
 
 snack-bar-container {
@@ -236,6 +252,42 @@ mat-spinner.in-button svg {
 .empty-row {
   padding: 0 1.2rem !important;
   line-height: 50px !important;
+}
+
+/**
+Alerts
+ */
+
+.alert-box {
+  color: $red;
+  font-size: 12px;
+  padding: 0 10px;
+  line-height: 1.5;
+  background-color: #ffdede;
+  padding: 15px;
+  display: flex;
+  margin-bottom: 20px;
+
+  .title {
+    font-size: 20px;
+  }
+
+  mat-icon {
+    margin-top: 5px;
+    margin-right: 10px;
+    animation: alert-blinking 1s linear infinite;
+  }
+
+  mat-checkbox {
+    margin-top: 10px;
+    display: inline-block;
+  }
+}
+
+@keyframes alert-blinking {
+  50% {
+    opacity: 0.2;
+  }
 }
 
 /**
@@ -364,4 +416,35 @@ On-boarding components
   .mat-dialog-content {
     max-height: 80vh !important;
   }
+}
+
+.mouse-disabled {
+  pointer-events: none;
+}
+
+.coin-selector-container {
+  display: inline-block;
+  margin-left: 5px;
+  margin-bottom: 5px;
+}
+
+.coins-value-label {
+  font-size: 10px;
+  margin-top: 1px;
+  padding: 3px 10px;
+  background-color: $grey-lightest;
+  border-radius: 4px;
+
+  span {
+    opacity: 0.5;
+  }
+}
+
+.red {
+  color: $red;
+}
+
+.element-disabled {
+  pointer-events: none;
+  opacity: 0.5;
 }

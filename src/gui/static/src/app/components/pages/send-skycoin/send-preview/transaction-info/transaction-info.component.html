@@ -14,7 +14,7 @@
         </ng-container>
         <ng-container *ngIf="!isPreview">
           <div class="-data">
-            <span>{{ 'tx.date' | translate }}:</span> <span>{{ transaction.timestamp * 1000 | date:'short' }}</span>
+            <span>{{ 'tx.date' | translate }}:</span> <span>{{ transaction.timestamp | dateTime }}</span>
           </div>
           <div class="-data">
             <span>{{ 'tx.status' | translate }}:</span> <span>{{ (transaction.confirmed ? 'tx.confirmed' : 'tx.pending') | translate }}</span>
@@ -23,18 +23,18 @@
         <div class="-data">
           <span>{{ 'tx.hours' | translate }}:</span>
           <span>
-            {{ transaction.hoursSent.decimalPlaces(0).toString() | number:'1.0-0' }} {{ !isPreview && transaction.balance.isGreaterThan(0) ? ('tx.hours-received' | translate) : ('tx.hours-sent' | translate) }}
+            {{ transaction.hoursSent.decimalPlaces(0).toString() | number:'1.0-0' }} {{ hoursText | translate }}
             |
             {{ transaction.hoursBurned.decimalPlaces(0).toString() | number:'1.0-0' }} {{ 'tx.hours-burned' | translate }}
           </span>
         </div>
-        <div class="-data">
+        <div class="-data" *ngIf="!isPreview">
           <span>{{ 'tx.id' | translate }}:</span> <span>{{ transaction.txid }}</span>
         </div>
       </div>
 
       <div class="col-md-3 -tx-price">
-        <div class="-icon" [ngClass]="{ '-incoming': !isPreview && transaction.balance.isGreaterThan(0) }">
+        <div class="-icon" [ngClass]="{ '-incoming': !isPreview && transaction.balance.isGreaterThan(0) && !transaction.coinsMovedInternally }">
           <img src="/assets/img/send-blue.png">
         </div>
         <h4>{{ transaction.balance.decimalPlaces(6).toString() | number:'1.0-6' }} {{ 'common.coin-id' | translate }}</h4>

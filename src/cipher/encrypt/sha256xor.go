@@ -221,7 +221,8 @@ func (s Sha256Xor) Decrypt(data []byte, password []byte) ([]byte, error) {
 	}
 
 	l := binary.LittleEndian.Uint32(dataLenBytes)
-	if l > math.MaxUint32 {
+
+	if uint64(buf.Len()) > math.MaxUint32 {
 		return nil, ErrDataTooLarge
 	}
 

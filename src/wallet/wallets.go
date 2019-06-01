@@ -1,16 +1,13 @@
 package wallet
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
-	"github.com/amherag/skycoin/src/util/file"
+	"github.com/amherag/skycoin/src/cipher"
 )
 
 // Wallets wallets map
@@ -77,28 +74,6 @@ func loadWallet(fn string) (*Wallet, error) {
 	return w, nil
 }
 
-func backupWltFile(src, dst string) error { // nolint: deadcode,unused,megacheck
-	if _, err := os.Stat(dst); err == nil {
-		return fmt.Errorf("%v file already exist", dst)
-	}
-
-	b, err := ioutil.ReadFile(src)
-	if err != nil {
-		return err
-	}
-
-	n, err := file.CopyFile(dst, bytes.NewBuffer(b))
-	if err != nil {
-		return err
-	}
-
-	// check if the content bytes are equal.
-	if n != int64(len(b)) {
-		return errors.New("copy file failed")
-	}
-	return nil
-}
-
 // add add walet to current wallet
 func (wlts Wallets) add(w *Wallet) error {
 	if _, dup := wlts[w.Filename()]; dup {
@@ -115,11 +90,8 @@ func (wlts Wallets) remove(id string) {
 }
 
 // get returns wallet by wallet id
-func (wlts Wallets) get(id string) (*Wallet, bool) {
-	if w, ok := wlts[id]; ok {
-		return w, true
-	}
-	return nil, false
+func (wlts Wallets) get(id string) *Wallet {
+	return wlts[id]
 }
 
 // set sets a wallet into the map
@@ -146,4 +118,34 @@ func (wlts Wallets) ToReadable() []*ReadableWallet {
 	})
 
 	return rw
+}
+
+// containsDuplicate returns true if there is a duplicate wallet
+// (identified by the first address in the wallet) and return the ID of that wallet
+// and the first address if true
+func (wlts Wallets) containsDuplicate() (string, cipher.Address, bool) {
+	m := make(map[cipher.Address]struct{}, len(wlts))
+	for wltID, wlt := range wlts {
+		if len(wlt.Entries) == 0 {
+			continue
+		}
+		addr := wlt.Entries[0].SkycoinAddress()
+		if _, ok := m[addr]; ok {
+			return wltID, addr, true
+		}
+
+		m[addr] = struct{}{}
+	}
+
+	return "", cipher.Address{}, false
+}
+
+// containsEmpty returns true there is an empty wallet and the ID of that wallet if true
+func (wlts Wallets) containsEmpty() (string, bool) {
+	for wltID, wlt := range wlts {
+		if len(wlt.Entries) == 0 {
+			return wltID, true
+		}
+	}
+	return "", false
 }

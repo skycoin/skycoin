@@ -6,8 +6,8 @@ import (
 )
 
 // TransactionIsLocked returns true if the transaction spends locked outputs
-func TransactionIsLocked(inUxs coin.UxArray) bool {
-	lockedAddrs := params.GetLockedDistributionAddresses()
+func TransactionIsLocked(d params.Distribution, inUxs coin.UxArray) bool {
+	lockedAddrs := d.LockedAddresses()
 	lockedAddrsMap := make(map[string]struct{})
 	for _, a := range lockedAddrs {
 		lockedAddrsMap[a] = struct{}{}

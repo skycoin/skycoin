@@ -7,7 +7,6 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3" -->
 
 - [Install](#install)
-	- [Enable command autocomplete](#enable-command-autocomplete)
 - [Environment Setting](#environment-setting)
 	- [RPC_ADDR](#rpc_addr)
 	- [RPC_USER](#rpc_user)
@@ -27,19 +26,27 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 	- [Broadcast a raw transaction](#broadcast-a-raw-transaction)
 	- [Create a wallet](#create-a-wallet)
 	- [Add addresses to a wallet](#add-addresses-to-a-wallet)
+	- [Encrypt Wallet](#encrypt-wallet)
+	- [Examples](#examples)
+	- [Decrypt Wallet](#decrypt-wallet)
+	- [Example](#example)
 	- [Last blocks](#last-blocks)
 	- [List wallet addresses](#list-wallet-addresses)
 	- [List wallets](#list-wallets)
-    - [Rich list](#rich-list)
+	- [Rich list](#rich-list)
 	- [Send](#send)
+	- [Show Seed](#show-seed)
 	- [Show Config](#show-config)
 	- [Status](#status)
 	- [Get transaction](#get-transaction)
+	- [Get address transactions](#get-address-transactions)
 	- [Verify address](#verify-address)
 	- [Check wallet balance](#check-wallet-balance)
 	- [See wallet directory](#see-wallet-directory)
 	- [List wallet transaction history](#list-wallet-transaction-history)
 	- [List wallet outputs](#list-wallet-outputs)
+	- [Richlist](#richlist)
+	- [Address Count](#address-count)
 	- [CLI version](#cli-version)
 - [Note](#note)
 
@@ -53,26 +60,13 @@ $ cd $GOPATH/src/github.com/skycoin/skycoin/cmd/cli
 $ ./install.sh
 ```
 
-### Enable command autocomplete
-
-If you are in `bash`, run the following command:
-
-```bash
-$ PROG=skycoin-cli source $GOPATH/src/github.com/skycoin/skycoin/cmd/cli/autocomplete/bash_autocomplete
-```
-
-If you are in `zsh`, please replace the `bash_autocomplete` with `zsh_autocomplete` in the previous command.
-
-To avoid run the command everytime when you start a new terminal session, you can copy the script into
-you `~/.bashrc` or `~/.zshrc` file.
-
 ## Environment Setting
 
 The CLI uses environment variable to manage the configurations.
 
 ### RPC_ADDR
 
-CLI will connect to skycoin node RPC address `http://127.0.0.1:6420` by default.
+CLI will connect to skycoin node REST API address `http://127.0.0.1:6420` by default.
 You can change the address by setting the `RPC_ADDR` environment variable
 with the following command:
 
@@ -123,49 +117,51 @@ After the installation, you can run `skycoin-cli` to see the usage:
 ```
 $ skycoin-cli
 
-NAME:
-   skycoin-cli - the skycoin command line interface
-
 USAGE:
-   skycoin-cli [global options] command [command options] [arguments...]
+  skycoin-cli [command] [flags] [arguments...]
 
-VERSION:
-   0.25.0-rc1
+DESCRIPTION:
+    The skycoin command line interface
 
 COMMANDS:
-     addPrivateKey         Add a private key to specific wallet
-     addressBalance        Check the balance of specific addresses
-     addressGen            Generate skycoin or bitcoin addresses
-     fiberAddressGen       Generate addresses and seeds for a new fiber coin.
-     addressOutputs        Display outputs of specific addresses
-     blocks                Lists the content of a single block or a range of blocks
-     broadcastTransaction  Broadcast a raw transaction to the network
-     checkdb               Verify the database
-     createRawTransaction  Create a raw transaction to be broadcast to the network later
-     decodeRawTransaction  Decode raw transaction
-     decryptWallet         Decrypt wallet
-     encryptWallet         Encrypt wallet
-     lastBlocks            Displays the content of the most recently N generated blocks
-     listAddresses         Lists all addresses in a given wallet
-     listWallets           Lists all wallets stored in the wallet directory
-     send                  Send skycoin from a wallet or an address to a recipient address
-     showConfig            Show cli configuration
-     showSeed              Show wallet seed
-     status                Check the status of current skycoin node
-     transaction           Show detail info of specific transaction
-     verifyAddress         Verify a skycoin address
-     version
-     walletCreate          Generate a new wallet
-     walletAddAddresses    Generate additional addresses for a wallet
-     walletBalance         Check the balance of a wallet
-     walletDir             Displays wallet folder address
-     walletHistory         Display the transaction history of specific wallet. Requires skycoin node rpc.
-     walletOutputs         Display outputs of specific wallet
-     help, h               Shows a list of commands or help for one command
+  addPrivateKey        Add a private key to specific wallet
+  addressBalance       Check the balance of specific addresses
+  addressGen           Generate skycoin or bitcoin addresses
+  addressOutputs       Display outputs of specific addresses
+  addressTransactions  Show detail for transaction associated with one or more specified addresses
+  blocks               Lists the content of a single block or a range of blocks
+  broadcastTransaction Broadcast a raw transaction to the network
+  checkdb              Verify the database
+  createRawTransaction Create a raw transaction to be broadcast to the network later
+  decodeRawTransaction Decode raw transaction
+  decryptWallet        Decrypt wallet
+  encryptWallet        Encrypt wallet
+  fiberAddressGen      Generate addresses and seeds for a new fiber coin
+  help                 Help about any command
+  lastBlocks           Displays the content of the most recently N generated blocks
+  listAddresses        Lists all addresses in a given wallet
+  listWallets          Lists all wallets stored in the wallet directory
+  richlist             Get skycoin richlist
+  send                 Send skycoin from a wallet or an address to a recipient address
+  showConfig           Show cli configuration
+  showSeed             Show wallet seed
+  status               Check the status of current skycoin node
+  transaction          Show detail info of specific transaction
+  verifyAddress        Verify a skycoin address
+  version              List the current version of Skycoin components
+  walletAddAddresses   Generate additional addresses for a wallet
+  walletBalance        Check the balance of a wallet
+  walletCreate         Generate a new wallet
+  walletDir            Displays wallet folder address
+  walletHistory        Display the transaction history of specific wallet. Requires skycoin node rpc.
+  walletOutputs        Display outputs of specific wallet
 
-GLOBAL OPTIONS:
-   --help, -h     show help
-   --version, -v  print the version
+FLAGS:
+  -h, --help      help for skycoin-cli
+      --version   version for skycoin-cli
+
+Use "skycoin-cli [command] --help" for more information about a command.
+
 ENVIRONMENT VARIABLES:
     RPC_ADDR: Address of RPC node. Must be in scheme://host format. Default "http://127.0.0.1:6420"
     RPC_USER: Username for RPC API, if enabled in the RPC.
@@ -180,14 +176,14 @@ ENVIRONMENT VARIABLES:
 Add a private key to a skycoin wallet.
 
 ```bash
-$ skycoin-cli addPrivateKey [command options] [private key]
+$ skycoin-cli addPrivateKey [flags] [private key]
 ```
 
 ```
-OPTIONS:
-    -f value [wallet file or path] private key will be added to this wallet
-    if not specified then default wallet ($HOME/.skycoin/wallets//wallets/skycoin_cli.wlt)
-    will be used
+FLAGS:
+  -h, --help                 help for addPrivateKey
+  -p, --password string      Wallet password
+  -f, --wallet-file string   wallet file or path. If no path is specified your default wallet path will be used.
 ```
 
 #### Example
@@ -267,20 +263,21 @@ $ skycoin-cli addressBalance 2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc 2GgFvqoyk9RjwVz
 Generate new skycoin or bitcoin addresses.
 
 ```bash
-$ skycoin-cli addressGen [command options] [arguments...]
+$ skycoin-cli addressGen [flags]
 ```
 
 ```
-OPTIONS:
-        --num value, -n value    Number of addresses to generate (default: 1)
-        --coin value, -c value   Coin type. Must be skycoin or bitcoin. If bitcoin, secret keys are in Wallet Import Format instead of hex. (default: "skycoin")
-        --label value, -l value  Wallet label to use when printing or writing a wallet file
-        --hex                    Use hex(sha256sum(rand(1024))) (CSPRNG-generated) as the seed if not seed is not provided
-        --seed value, -s value   Seed for deterministic key generation. Will use bip39 as the seed if not provided.
-        --entropy value          Entropy of the autogenerated bip39 seed, when the seed is not provided. Can be 128 or 256 (default: 128)
-        --hide-secrets, --hs     Hide the secret key and seed from the output when printing a JSON wallet file
-        --mode value, -m value   Output mode. Options are wallet (prints a full JSON wallet), addresses (prints addresses in plain text), secrets (prints secret keys in plain text) (default: "addresses")
-        --encrypt, -e            Encrypt the wallet when printing a JSON wallet
+FLAGS:
+  -c, --coin string    Coin type. Must be skycoin or bitcoin. If bitcoin, secret keys are in Wallet Import Format instead of hex. (default "skycoin")
+  -x, --encrypt        Encrypt the wallet when printing a JSON wallet
+  -e, --entropy int    Entropy of the autogenerated bip39 seed, when the seed is not provided. Can be 128 or 256 (default 128)
+      --hex            Use hex(sha256sum(rand(1024))) (CSPRNG-generated) as the seed if not seed is not provided
+  -i, --hide-secrets   Hide the secret key and seed from the output when printing a JSON wallet file
+  -l, --label string   Wallet label to use when printing or writing a wallet file
+  -m, --mode string    Output mode. Options are wallet (prints a full JSON wallet), addresses (prints addresses in plain text), secrets (prints secret keys in plain text) (default "wallet")
+  -n, --num int        Number of addresses to generate (default 1)
+  -s, --seed string    Seed for deterministic key generation. Will use bip39 as the seed if not provided.
+  -t, --strict-seed    Seed should be a valid bip39 mnemonic seed.
 ```
 
 #### Examples
@@ -449,21 +446,21 @@ skycoin-cli addressGen --num 2 --hex
 
 ### Generate distribution addresses for a new fiber coin
 ```bash
-skycoin-cli fiberAddressGen [command options] [arguments...]
+skycoin-cli fiberAddressGen [flags]
 ```
 
 ```
 DESCRIPTION:
-        Addresses are written in a format that can be copied into fiber.toml
-for configuring distribution addresses. Addresses along with their seeds are written to a csv file,
-these seeds can be imported into the wallet to access distribution coins.
+    Addresses are written in a format that can be copied into fiber.toml
+    for configuring distribution addresses. Addresses along with their seeds are written to a csv file,
+    these seeds can be imported into the wallet to access distribution coins.
 
-OPTIONS:
-        --num value, -n value         Number of addresses to generate (default: 100)
-        --entropy value, -e value     Entropy of the autogenerated bip39 seeds. Can be 128 or 256 (default: 128)
-        --addrs-file value, -a value  Output file for the generated addresses in fiber.toml format (default: "addresses.txt")
-        --seeds-file value, -s value  Output file for the generated addresses and seeds in a csv (default: "seeds.csv")
-        --overwrite, -o               Allow overwriting any existing addrs-file or seeds-file
+FLAGS:
+  -a, --addres-file string   Output file for the generated addresses in fiber.toml format (default "addresses.txt")
+  -e, --entropy int          Entropy of the autogenerated bip39 seeds. Can be 128 or 256 (default 128)
+  -n, --num int              Number of addresses to generate (default 100)
+  -o, --overwrite            Allow overwriting any existing addrs-file or seeds-file
+  -s, --seeds-file string    Output file for the generated addresses and seeds in a csv (default "seeds.csv")
 ```
 
 
@@ -530,7 +527,7 @@ skycoin-cli addressOutputs tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V 29fDBQuJs2MDLymJsj
 </details>
 
 ### Check block data
-Get block data of a range of blocks.
+Lists the content of a single block or a range of blocks
 
 ```bash
 $ skycoin-cli blocks [starting block or single block seq] [ending block seq]
@@ -666,19 +663,20 @@ Create a raw transaction that can be broadcasted later.
 A raw transaction is a binary encoded hex string.
 
 ```bash
-$ skycoin-cli createRawTransaction [command options] [to address] [amount]
+$ skycoin-cli createRawTransaction [flags] [to address] [amount]
 ```
 
 ```
-OPTIONS:
-        -f value    [wallet file or path], From wallet
-        -a value    [address] From address
-        -c value    [changeAddress] Specify different change address.
-                          By default the from address or a wallets coinbase address will be used.
-        -m value    [send to many] use JSON string to set multiple receive addresses and coins,
-                          example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'
-        --json, -j  Returns the results in JSON format.
-        --csv value  [filepath] CSV file containing addresses and amounts to send
+FLAGS:
+  -a, --address string          From address
+  -c, --change-address string   Specify different change address.
+                                By default the from address or a wallets coinbase address will be used.
+      --csv  string         CSV file containing addresses and amounts to send
+  -j, --json                    Returns the results in JSON format.
+  -m, --many string             use JSON string to set multiple receive addresses and coins,
+                                example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'
+  -p, --password string         Wallet password
+  -f, --wallet-file string      wallet file or path. If no path is specified your default wallet path will be used.
 ```
 
 #### Examples
@@ -813,19 +811,22 @@ ee700309aba9b8b552f1c932a667c3701eff98e71c0e5b0e807485cea28170e5
 Create a new skycoin wallet.
 
 ```bash
-$ skycoin-cli walletCreate [command options]
+$ skycoin-cli walletCreate [flags]
 ```
 
 ```
-OPTIONS:
-        -r        A random alpha numeric seed will be generated for you
-        --rd      A random seed consisting of 12 dictionary words will be generated for you (default)
-        -s value  Your seed
-        -n value  [numberOfAddresses] Number of addresses to generate
-                            By default 1 address is generated. (default: 1)
-        -f value  [walletName] Name of wallet. The final format will be "yourName.wlt".
-                             If no wallet name is specified a generic name will be selected. (default: "skycoin_cli.wlt")
-        -l value  [label] Label used to idetify your wallet.
+FLAGS:
+  -x, --crypto-type string   The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor (default "scrypt-chacha20poly1305")
+  -e, --encrypt              Create encrypted wallet.
+  -l, --label string         Label used to idetify your wallet.
+  -m, --mnemonic             A mnemonic seed consisting of 12 dictionary words will be generated
+  -n, --num uint             [numberOfAddresses] Number of addresses to generate
+                                 By default 1 address is generated. (default 1)
+  -p, --password string      Wallet password
+  -r, --random               A random alpha numeric seed will be generated
+  -s, --seed string          Your seed
+  -f, --wallet-file string   Name of wallet. The final format will be "yourName.wlt".
+                                 If no wallet name is specified a generic name will be selected. (default "skycoin_cli.wlt")
 ```
 
 #### Examples
@@ -901,7 +902,7 @@ $ skycoin-cli walletCreate -r
 
 ##### Create a wallet with a 12 word mnemomic seed
 ```bash
-$ skycoin-cli walletCreate -rd
+$ skycoin-cli walletCreate -rm
 ```
 
 <details>
@@ -1082,14 +1083,15 @@ $ skycoin-cli walletCreate -l "cli wallet"
 Add new addresses to a skycoin wallet.
 
 ```bash
-$ skycoin-cli walletAddAddresses [command options]
+$ skycoin-cli walletAddAddresses [flags]
 ```
 
 ```
-OPTIONS:
-        -n value    [numberOfAddresses]  Number of addresses to generate (default: 1)
-        -f value    [wallet file or path] Generate addresses in the wallet (default: $HOME/.skycoin/wallets//wallets/skycoin_cli.wlt)
-        --json, -j  Returns the results in JSON format
+FLAGS:
+  -j, --json                 Returns the results in JSON format
+  -n, --num uint             Number of addresses to generate (default 1)
+  -p, --password string      wallet password
+  -f, --wallet-file string   Generate addresses in the wallet (default "$HOME/.skycoin/wallets/skycoin_cli.wlt")
 ```
 
 ##### Add an address to the default wallet
@@ -1146,6 +1148,139 @@ $ skycoin-cli walletAddAddresses --json
  ]
 }
 ```
+</details>
+
+### Encrypt Wallet
+Encrypt a wallet seed
+
+```bash
+$ skycoin-cli encryptWallet [flags]
+```
+
+```
+FLAGS:
+  -x, --crypto-type string   The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor
+  -h, --help                 help for encryptWallet
+  -p, --password string      wallet password
+```
+
+### Examples
+#### Encrypt wallet
+```bash
+$ skycoin-cli encryptWallet -p test
+```
+
+<details>
+ <summary>View Output</summary>
+
+ ```json
+ {
+     "meta": {
+         "coin": "skycoin",
+         "cryptoType": "scrypt-chacha20poly1305",
+         "encrypted": "true",
+         "filename": "skycoin_cli.wlt",
+         "label": "",
+         "lastSeed": "",
+         "secrets": "dgB7Im4iOjEwNDg1NzYsInIiOjgsInAiOjEsImtleUxlbiI6MzIsInNhbHQiOiJRNVRSVHh0VFpieERpUWt0dnkzc01SYTl6U0t2aFJqVlpUUHQzeldSVGs4PSIsIm5vbmNlIjoiSUt5VG8zdWdGdFY3MWYxTiJ9LB7Cu3bvZFzsmKqToPi3bjARIRfmhL8HBUdnwLzS5Rxu4uw1tIlDDmEKUpgDWV3RvB+xDz3sHchQr5BpK72LDOwbZ6BubMHovTqC4+lx9hKc2qnDGwsymxLQJHQrQ23DkHMioSUVYNZv1/DwzJ2qI0WIOTkb+L34e9f60YV+2zF7v+C/nTS8AjMwjGYldKinPEjyDXkpxB2d4Sd3EnfUm8u76TvTKxqZpZ/tr+in/OfRsJsN7dC7rMFRZukoCJYNnWv/wgPn/NMu4DIxqF+WUQhCsCgqk6oMderdK/E/xtLJmKnbHRLH4PO/Dh4ypLXg2EzW+JBN6RpzVEXxYdvVCqmKfs7d+hnHWDmDtCLGqYyPsUa+d4PPhylruNE=",
+         "seed": "",
+         "tm": "1540305209",
+         "type": "deterministic",
+         "version": "0.2"
+     },
+     "entries": [
+         {
+             "address": "2gvvvS5jziMDQTUPB98LFipCTDjm1H723k2",
+             "public_key": "032fe2ceacabc1a6acad8c93bd3493a3570fb76a9f8dc625dd200d13f96abed3e0",
+             "secret_key": ""
+         }
+     ]
+ }
+ ```
+</details>
+
+
+#### Encrypt wallet with different crypto type
+```bash
+$ skycoin-cli encryptWallet -x sha256-xor -p test
+```
+
+<details>
+ <summary>View Output</summary>
+
+ ```json
+ {
+     "meta": {
+         "coin": "skycoin",
+         "cryptoType": "sha256-xor",
+         "encrypted": "true",
+         "filename": "skycoin_cli.wlt",
+         "label": "",
+         "lastSeed": "",
+         "secrets": "mJ4g+/NgncOVp7gKIZqVPysmrRYKjprSuMvvpq3HLt7ajjMOheEdyU0PGtueDQADIhhTFZlQh/eaaYXF3fecS7OrGa79F+2lRRdD7Tva/MueiL9TL0ng12x0I7dXkUVsXLTl3MJK27JwS9hKedcVvnmFysJA6W3lX2aE7Qn+v6cyMbfgR8r89OHGaUZ9SPZn2HKOhhIcXt66Q/t0kVWU0XEH+G
+ xUyX23ksN3scQoAshVidLAgXwpkgExEl+qjCpDNQga3MncZV+WuQxpIKodJ3l5TKoJAA0/Taz9O9Se0tIoiK2ls2m6JUayev3Id0+hkmNNSUKQ53Ni3xwjNzZXoPQAemMWpkdUSv8qNuhh7C/4gBBrZROM6ZyxmsdlWgcG0Yfrh8o505D0i4mtubkdZSGi8Djm9j1mpWTZi3VuUjtGvBAmH3Qzdma+nvORZj11QuEuCcO+
+ 8jmQB9bVxcTL9u4Nan2+cYijVNul93m7xWik/mSB7uIFVIJAm4kSMiJm",
+         "seed": "",
+         "tm": "1540305209",
+         "type": "deterministic",
+         "version": "0.2"
+     },
+     "entries": [
+         {
+             "address": "2gvvvS5jziMDQTUPB98LFipCTDjm1H723k2",
+             "public_key": "032fe2ceacabc1a6acad8c93bd3493a3570fb76a9f8dc625dd200d13f96abed3e0",
+             "secret_key": ""
+         }
+     ]
+ }
+ ```
+</details>
+
+### Decrypt Wallet
+Decrypt a wallet seed
+
+```bash
+$ skycoin-cli decryptWallet [flags]
+```
+
+```
+FLAGS:
+  -h, --help              help for decryptWallet
+  -p, --password string   wallet password
+```
+
+### Example
+```bash
+$ skycoin-cli decryptWallet -p test
+```
+
+<details>
+ <summary>View Output</summary>
+
+ ```json
+ {
+     "meta": {
+         "coin": "skycoin",
+         "cryptoType": "",
+         "encrypted": "false",
+         "filename": "skycoin_cli.wlt",
+         "label": "",
+         "lastSeed": "522dba68fe58c179f3467f9e799c02b25552143b250626cc03281faa28c262c0",
+         "secrets": "",
+         "seed": "select salute trip target blur short link suspect river ready senior bleak",
+         "tm": "1540305209",
+         "type": "deterministic",
+         "version": "0.2"
+     },
+     "entries": [
+         {
+             "address": "2gvvvS5jziMDQTUPB98LFipCTDjm1H723k2",
+             "public_key": "032fe2ceacabc1a6acad8c93bd3493a3570fb76a9f8dc625dd200d13f96abed3e0",
+             "secret_key": "080bfb86463da87e06f816c4326a11b84806c9744235bb7ce7bc8d63acb4f6c2"
+         }
+     ]
+ }
+ ```
 </details>
 
 ### Last blocks
@@ -1498,12 +1633,12 @@ $ skycoin-cli listWallets
 Returns the top N address (default 20) balances (based on unspent outputs). Optionally include distribution addresses (exluded by default).
 
 ```bash
-$ skycoin-cli richList [top N addresses] [include distribution addresses]
+$ skycoin-cli richlist [top N addresses] [include distribution addresses]
 ```
 
 #### Example
 ```bash
-$ skycoin-cli richList 5 false
+$ skycoin-cli richlist 5 false
 ```
 
 <details>
@@ -1546,20 +1681,20 @@ $ skycoin-cli richList 5 false
 Make a skycoin transaction.
 
 ```bash
-$ skycoin-cli send [command options] [to address] [amount]
+$ skycoin-cli send [flags] [to address] [amount]
 ```
 
 ```
-OPTIONS:
-        -f value    [wallet file or path] From wallet. If no path is specified your default wallet
-                    (`$HOME/.skycoin/wallets/skycoin_cli.wlt`) path will be used.
-        -a value    [address] From address
-        -c value    [changeAddress] Specify change address, by default the from address or
-                          the wallet's coinbase address will be used
-        -m value    [send to many] use JSON string to set multiple recive addresses and coins,
-                          example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'
-        --json, -j  Returns the results in JSON format.
-        --csv value  [filepath] CSV file containing addresses and amounts to send
+FLAGS:
+  -a, --address string          From address
+  -c, --change-address string   Specify different change address.
+                                By default the from address or a wallets coinbase address will be used.
+      --csv  string         CSV file containing addresses and amounts to send
+  -j, --json                    Returns the results in JSON format.
+  -m, --many string             use JSON string to set multiple receive addresses and coins,
+                                example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'
+  -p, --password string         Wallet password
+  -f, --wallet-file string      wallet file or path. If no path is specified your default wallet path will be used.
 ```
 
 #### Examples
@@ -1626,6 +1761,33 @@ $ skycoin-cli send -f $WALLET_PATH -a $FROM_ADDRESS --json $RECIPIENT_ADDRESS $A
 ```
 </details>
 
+### Show Seed
+Show seed of a specified wallet.
+The default wallet `($HOME/wallets/skycoin_cli.wlt)` will be used if no wallet was specified.
+The wallet file is configured through `WALLET_NAME` env var.
+
+
+```bash
+$ skycoin-cli showSeed [flags]
+```
+
+```
+FLAGS:
+  -j, --json                 Returns the results in JSON format.
+  -p, --password string      Wallet password
+```
+
+#### Example
+```bash
+$ skycoin-cli showSeed
+```
+<details>
+ <summary>View Output</summary>
+ ```
+ eternal turtle seek nominee narrow much melody kite worth giggle shrimp horse
+ ```
+</details>
+
 ### Show Config
 Show the CLI tool's local configuration.
 
@@ -1646,6 +1808,7 @@ $ skycoin-cli showConfig
     "rpc_address": "http://127.0.0.1:6420"
 }
 ```
+</details>
 
 ### Status
 #### Example
@@ -1675,12 +1838,12 @@ $ skycoin-cli status
             "time_since_last_block": "7m44s"
         },
         "version": {
-            "version": "0.24.1",
+            "version": "0.25.0",
             "commit": "620405485d3276c16c0379bc3b88b588e34c45e1",
             "branch": "develop"
         },
 	    "coin": "skycoin",
-	    "user_agent": "skycoin:0.25.0-rc1",
+	    "user_agent": "skycoin:0.25.0",
         "open_connections": 8,
         "outgoing_connections": 5,
         "incoming_connections": 3,
@@ -1689,17 +1852,24 @@ $ skycoin-cli status
         "csp_enabled": true,
         "wallet_api_enabled": true,
         "gui_enabled": true,
-        "unversioned_api_enabled": false,
-        "json_rpc_enabled": false,
         "user_verify_transaction": {
-            "burn_factor": 2,
+            "burn_factor": 10,
             "max_transaction_size": 32768,
             "max_decimals": 3
         },
         "unconfirmed_verify_transaction": {
-            "burn_factor": 2,
+            "burn_factor": 10,
             "max_transaction_size": 32768,
             "max_decimals": 3
+        },
+        "started_at": 1558864387,
+        "fiber": {
+            "name": "skycoin",
+            "display_name": "Skycoin",
+            "ticker": "SKY",
+            "coin_hours_display_name": "Coin Hours",
+            "coin_hours_ticker": "SCH",
+            "explorer_url": "https://explorer.skycoin.net"
         }
     },
     "cli_config": {
@@ -1762,6 +1932,399 @@ $ skycoin-cli transaction 824d421a25f81aa7565d042a54b3e1e8fdc58bed4eefe8f8a90748
      }
  }
 }
+```
+</details>
+
+### Get address transactions
+Get transaction for one or more addresses - including listing of both inputs and outputs.
+
+```bash
+$ skycoin-cli addressTransactions [addr1 addr2 addr3]
+```
+
+#### Example
+#### Single Address
+```bash
+$ skycoin-cli addressTransactions 21YPgFwkLxQ1e9JTCZ43G7JUyCaGRGqAsda
+```
+
+<details>
+ <summary>View Output</summary>
+
+```json
+[
+    {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 66119,
+            "block_seq": 21213
+        },
+        "time": 1523180676,
+        "txn": {
+            "timestamp": 1523180676,
+            "length": 220,
+            "type": 0,
+            "txid": "8cdf82ec42e8316007ed99c0b1de1d0dfd9221c757f41fdec0b36009df74085f",
+            "inner_hash": "c543f08bfe7b99a19f7bc4068a02e437ed4a043130e976551188c4d38b89ce8d",
+            "fee": 726,
+            "sigs": [
+                "f1021744902892eb47c60f7240ce6964de3c7bf77777ce267b58df8879e208e57bd044d15a36d78bebab2897c2c61ecbbceb348cfc45152efb105960799364c401"
+            ],
+            "inputs": [
+                {
+                    "uxid": "5d69d22aff5957a18194c443557d97ec18707e4db8ee7e9a4bb8a7eef642fdff",
+                    "owner": "tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V",
+                    "coins": "16.000000",
+                    "hours": 1432,
+                    "calculated_hours": 1452
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "0020ae8da2bcc7657f3b234cbb59e0fd2486c53d7ef3f05cda6ff613587c8441",
+                    "dst": "3vbfHxPzMuyFJvgHdAoqmFnyg6k8HiLyxd",
+                    "coins": "1.000000",
+                    "hours": 1
+                },
+                {
+                    "uxid": "9d79ad07a90fee10b59bea1bd6f566f0b69f6bf9a9e735c1bec4b0e5eb4b33cb",
+                    "dst": "21YPgFwkLxQ1e9JTCZ43G7JUyCaGRGqAsda",
+                    "coins": "15.000000",
+                    "hours": 725
+                }
+            ]
+        }
+    },
+    {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 66111,
+            "block_seq": 21221
+        },
+        "time": 1523184376,
+        "txn": {
+            "timestamp": 1523184376,
+            "length": 183,
+            "type": 0,
+            "txid": "f3c5cfd462d95e724b7d35b1688c53f25a5f358f2eb9a6f87b63cdf31deb2bf8",
+            "inner_hash": "8269589c228be4bc33d75f6ee5b334856e8680b7d6ec275f897406c01da8340b",
+            "fee": 370,
+            "sigs": [
+                "33879494d644df45b5c6c7111c0e453cd42f6fe718614a9411d9fbabd57ab24749813cdf47424dcac5ed097a0de0ac7b557154d2ec93f81b12b1dfdee5138df701"
+            ],
+            "inputs": [
+                {
+                    "uxid": "9d79ad07a90fee10b59bea1bd6f566f0b69f6bf9a9e735c1bec4b0e5eb4b33cb",
+                    "owner": "21YPgFwkLxQ1e9JTCZ43G7JUyCaGRGqAsda",
+                    "coins": "15.000000",
+                    "hours": 725,
+                    "calculated_hours": 739
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "c51b2692aa9f296a3cd2f37b14f39c496c82f5c5ae01c54701ea60b7353f27e2",
+                    "dst": "tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V",
+                    "coins": "15.000000",
+                    "hours": 369
+                }
+            ]
+        }
+    }
+]
+```
+</details>
+
+#### Multiple Address
+```bash
+$ skycoin-cli addressTransactions 21YPgFwkLxQ1e9JTCZ43G7JUyCaGRGqAsda 3vbfHxPzMuyFJvgHdAoqmFnyg6k8HiLyxd
+```
+
+<details>
+ <summary>View Output</summary>
+
+```json
+[
+    {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 66143,
+            "block_seq": 21189
+        },
+        "time": 1523176026,
+        "txn": {
+            "timestamp": 1523176026,
+            "length": 220,
+            "type": 0,
+            "txid": "ee700309aba9b8b552f1c932a667c3701eff98e71c0e5b0e807485cea28170e5",
+            "inner_hash": "247bd0f0a1cf39fa51ea3eca044e4d9cbb28fff5376e90e2eb008c9fe0af3843",
+            "fee": 1442,
+            "sigs": [
+                "cf5869cb1b21da4da98bdb5dca57b1fd5a6fcbefd37d4f1eb332b21233f92cd62e00d8e2f1c8545142eaeed8fada1158dd0e552d3be55f18dd60d7e85407ef4f00"
+            ],
+            "inputs": [
+                {
+                    "uxid": "05e524872c838de517592c9a495d758b8ab2ec32d3e4d3fb131023a424386634",
+                    "owner": "tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V",
+                    "coins": "17.000000",
+                    "hours": 139,
+                    "calculated_hours": 2875
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "2f146924431e8c9b84a53d4d823acefb92515a264956d873ac86066c608af418",
+                    "dst": "3vbfHxPzMuyFJvgHdAoqmFnyg6k8HiLyxd",
+                    "coins": "1.000000",
+                    "hours": 1
+                },
+                {
+                    "uxid": "5d69d22aff5957a18194c443557d97ec18707e4db8ee7e9a4bb8a7eef642fdff",
+                    "dst": "tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V",
+                    "coins": "16.000000",
+                    "hours": 1432
+                }
+            ]
+        }
+    },
+    {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 66142,
+            "block_seq": 21190
+        },
+        "time": 1523176126,
+        "txn": {
+            "timestamp": 1523176126,
+            "length": 183,
+            "type": 0,
+            "txid": "8c137774a2485beeaa3f8e861097ba6dffb144fb2c2f2c357c9261a324b02013",
+            "inner_hash": "92da4c2d6e93a6f0a62899225a9195b95eb274f8e926b0a2ce5d259f84015014",
+            "fee": 1,
+            "sigs": [
+                "84f9c7b5d1f88245b53d50e4e8d4fd8719089768940a4ff9d8c3d88b15c300e57f91fa07a0789bbfac8e7c77aebda83d39c6b77aa80cd70a613bf175c316b6cc00"
+            ],
+            "inputs": [
+                {
+                    "uxid": "2f146924431e8c9b84a53d4d823acefb92515a264956d873ac86066c608af418",
+                    "owner": "3vbfHxPzMuyFJvgHdAoqmFnyg6k8HiLyxd",
+                    "coins": "1.000000",
+                    "hours": 1,
+                    "calculated_hours": 1
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "5250017c47070e011cc71c44472d5ab8e957c25c9c57fc7885e0a4301c7c014c",
+                    "dst": "tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V",
+                    "coins": "1.000000",
+                    "hours": 0
+                }
+            ]
+        }
+    },
+    {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 66119,
+            "block_seq": 21213
+        },
+        "time": 1523180676,
+        "txn": {
+            "timestamp": 1523180676,
+            "length": 220,
+            "type": 0,
+            "txid": "8cdf82ec42e8316007ed99c0b1de1d0dfd9221c757f41fdec0b36009df74085f",
+            "inner_hash": "c543f08bfe7b99a19f7bc4068a02e437ed4a043130e976551188c4d38b89ce8d",
+            "fee": 726,
+            "sigs": [
+                "f1021744902892eb47c60f7240ce6964de3c7bf77777ce267b58df8879e208e57bd044d15a36d78bebab2897c2c61ecbbceb348cfc45152efb105960799364c401"
+            ],
+            "inputs": [
+                {
+                    "uxid": "5d69d22aff5957a18194c443557d97ec18707e4db8ee7e9a4bb8a7eef642fdff",
+                    "owner": "tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V",
+                    "coins": "16.000000",
+                    "hours": 1432,
+                    "calculated_hours": 1452
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "0020ae8da2bcc7657f3b234cbb59e0fd2486c53d7ef3f05cda6ff613587c8441",
+                    "dst": "3vbfHxPzMuyFJvgHdAoqmFnyg6k8HiLyxd",
+                    "coins": "1.000000",
+                    "hours": 1
+                },
+                {
+                    "uxid": "9d79ad07a90fee10b59bea1bd6f566f0b69f6bf9a9e735c1bec4b0e5eb4b33cb",
+                    "dst": "21YPgFwkLxQ1e9JTCZ43G7JUyCaGRGqAsda",
+                    "coins": "15.000000",
+                    "hours": 725
+                }
+            ]
+        }
+    },
+    {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 66118,
+            "block_seq": 21214
+        },
+        "time": 1523180976,
+        "txn": {
+            "timestamp": 1523180976,
+            "length": 220,
+            "type": 0,
+            "txid": "be67302e8f6f579423ba38be29de0de19815ec3c91352c6540e5f75439eb9f22",
+            "inner_hash": "ef091437da13980547e33aa8647cdd1462384ec73cd57caf289e5410e3a96cf0",
+            "fee": 2243,
+            "sigs": [
+                "d8636af89bf7f7c6aeaf32a994f8efc6e62bc25bd4e2d7b0a4deeb1e0e2888c234895f978e051985964f8b522e7d68794b90d6404809464d6c86af7153d5896e01"
+            ],
+            "inputs": [
+                {
+                    "uxid": "c981f19ff129c5746940cbf4e57383bcdf524a02055219c629e5fc4ff74067ab",
+                    "owner": "tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V",
+                    "coins": "3.000000",
+                    "hours": 111,
+                    "calculated_hours": 4486
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "ba74051563bbe6aac1836780770a66bf782a4b3a90c5ea341b43cb85a7f9d51b",
+                    "dst": "3vbfHxPzMuyFJvgHdAoqmFnyg6k8HiLyxd",
+                    "coins": "1.000000",
+                    "hours": 1
+                },
+                {
+                    "uxid": "80ad81c7de66f2839b24896340890c77a79b8409abdf8e9956f5e3b65baa545b",
+                    "dst": "tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V",
+                    "coins": "2.000000",
+                    "hours": 2242
+                }
+            ]
+        }
+    },
+    {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 66117,
+            "block_seq": 21215
+        },
+        "time": 1523181146,
+        "txn": {
+            "timestamp": 1523181146,
+            "length": 183,
+            "type": 0,
+            "txid": "5b6318a95f32487a6340f35a03cd46cba8c87d261e80ad3106a0e67d4cd4601b",
+            "inner_hash": "33144c33224f1a59f75fba415a67834260e7253958d7130a0e9c0fe342ff608e",
+            "fee": 1,
+            "sigs": [
+                "231ac8febcb4b34f6742e2c6b20690c09acffea135707fb5b6679b9cf943b9b529a06cb161e3b51d0c37e5126ce9dbf59e87eaeac511ae06d2beca5d2300611500"
+            ],
+            "inputs": [
+                {
+                    "uxid": "0020ae8da2bcc7657f3b234cbb59e0fd2486c53d7ef3f05cda6ff613587c8441",
+                    "owner": "3vbfHxPzMuyFJvgHdAoqmFnyg6k8HiLyxd",
+                    "coins": "1.000000",
+                    "hours": 1,
+                    "calculated_hours": 1
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "2a5d9458199c977779347d160f7db4978059c70217c44f8fc34716be43b7c6f1",
+                    "dst": "tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V",
+                    "coins": "1.000000",
+                    "hours": 0
+                }
+            ]
+        }
+    },
+    {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 66112,
+            "block_seq": 21220
+        },
+        "time": 1523184176,
+        "txn": {
+            "timestamp": 1523184176,
+            "length": 183,
+            "type": 0,
+            "txid": "4acd61d7aa7dfe20795e517d7560643d049036af9451bcbd762793bcb6a4a6de",
+            "inner_hash": "c01a389f1018cf41d4ef36d550162999d82211f24f3d8b2cbf40a88edfaf690b",
+            "fee": 1,
+            "sigs": [
+                "8ce6eff33887a8c2e31b669138163e2bcc2161782754d79c3a4c6839b4cf1fbc5a7d5e0576060d0378fbd9ee5c0f4863f949c77e7f724a4d66d75b2aed9123ae00"
+            ],
+            "inputs": [
+                {
+                    "uxid": "ba74051563bbe6aac1836780770a66bf782a4b3a90c5ea341b43cb85a7f9d51b",
+                    "owner": "3vbfHxPzMuyFJvgHdAoqmFnyg6k8HiLyxd",
+                    "coins": "1.000000",
+                    "hours": 1,
+                    "calculated_hours": 1
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "a0777af14223bbbd5aeb8bf3cfd6ba94c776c6eec731310caaaaee49b9feb9a5",
+                    "dst": "tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V",
+                    "coins": "1.000000",
+                    "hours": 0
+                }
+            ]
+        }
+    },
+    {
+        "status": {
+            "confirmed": true,
+            "unconfirmed": false,
+            "height": 66111,
+            "block_seq": 21221
+        },
+        "time": 1523184376,
+        "txn": {
+            "timestamp": 1523184376,
+            "length": 183,
+            "type": 0,
+            "txid": "f3c5cfd462d95e724b7d35b1688c53f25a5f358f2eb9a6f87b63cdf31deb2bf8",
+            "inner_hash": "8269589c228be4bc33d75f6ee5b334856e8680b7d6ec275f897406c01da8340b",
+            "fee": 370,
+            "sigs": [
+                "33879494d644df45b5c6c7111c0e453cd42f6fe718614a9411d9fbabd57ab24749813cdf47424dcac5ed097a0de0ac7b557154d2ec93f81b12b1dfdee5138df701"
+            ],
+            "inputs": [
+                {
+                    "uxid": "9d79ad07a90fee10b59bea1bd6f566f0b69f6bf9a9e735c1bec4b0e5eb4b33cb",
+                    "owner": "21YPgFwkLxQ1e9JTCZ43G7JUyCaGRGqAsda",
+                    "coins": "15.000000",
+                    "hours": 725,
+                    "calculated_hours": 739
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "c51b2692aa9f296a3cd2f37b14f39c496c82f5c5ae01c54701ea60b7353f27e2",
+                    "dst": "tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V",
+                    "coins": "15.000000",
+                    "hours": 369
+                }
+            ]
+        }
+    }
+]
 ```
 </details>
 
@@ -1947,7 +2510,7 @@ $ skycoin-cli walletBalance ~/.skycoin/wallets/2018_04_01_198c.wlt
 Get the current skycoin wallet directory.
 
 ```bash
-$ skycoin-cli walletDir [command options]
+$ skycoin-cli walletDir [flags]
 ```
 
 ```
@@ -1987,12 +2550,12 @@ $ skycoin-cli walletDir --json
 Show all previous transactions made by the addresses in a wallet.
 
 ```bash
-$ skycoin-cli walletHistory [command options]
+$ skycoin-cli walletHistory [flags]
 ```
 
 ```
-OPTIONS:
-        -f value  [wallet file or path] From wallet. If no path is specified your default wallet path will be used.
+FLAGS:
+        -f value  wallet file or path. If no path is specified your default wallet path will be used.
 ```
 
 #### Examples
@@ -2090,16 +2653,105 @@ $ skycoin-cli walletHistory $WALLET_PATH
 ```
 </details>
 
+### Richlist
+Returns top N address (default 20) balances (based on unspent outputs). Optionally include distribution addresses (exluded by default).
+
+```bash
+$ skycoin-cli richlist [top N addresses (20 default)] [include distribution addresses (false default)]
+```
+
+```
+FLAGS:
+  -h, --help   help for richlist
+```
+
+#### Example
+##### Without distribution addresses
+```bash
+$ skycoin-cli richlist 2
+```
+<details>
+ <summary>View Output</summary>
+
+```json
+{
+    "richlist": [
+        {
+            "address": "zVzkqNj3Ueuzo54sbACcYBqqGBPCGAac5W",
+            "coins": "2922927.299000",
+            "locked": false
+        },
+        {
+            "address": "2iNNt6fm9LszSWe51693BeyNUKX34pPaLx8",
+            "coins": "675256.308000",
+            "locked": false
+        }
+    ]
+}
+```
+</details>
+
+##### Including distribution addresses
+```bash
+$ skycoin-cli richlist 2 true
+```
+
+<details>
+ <summary>View Output</summary>
+
+```json
+{
+    "richlist": [
+        {
+            "address": "zVzkqNj3Ueuzo54sbACcYBqqGBPCGAac5W",
+            "coins": "2922927.299000",
+            "locked": false
+        },
+        {
+            "address": "ejJjiCwp86ykmFr5iTJ8LxQXJ2wJPTYmkm",
+            "coins": "1000000.010000",
+            "locked": true
+        }
+    ]
+}
+```
+</details>
+
+### Address Count
+Returns the count of all addresses that currenty have unspent outputs (coins) associated with them.
+
+```bash
+$ skycoin-cli addresscount
+```
+
+```
+FLAGS:
+  -h, --help   help for richlist
+```
+
+#### Example
+```bash
+$ skycoin-cli addresscount
+```
+<details>
+ <summary>View Output</summary>
+
+```json
+12961
+```
+</details>
+
+
 ### CLI version
 Get version of current skycoin cli.
 
 ```bash
-$ skycoin-cli version [command options]
+$ skycoin-cli version [flags]
 ```
 
 ```
-OPTIONS:
-        --json, -j  Returns the results in JSON format
+FLAGS:
+  -j, --json   Returns the results in JSON format
 ```
 
 #### Examples

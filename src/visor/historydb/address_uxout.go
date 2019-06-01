@@ -2,7 +2,6 @@ package historydb
 
 import (
 	"github.com/amherag/skycoin/src/cipher"
-	"github.com/amherag/skycoin/src/cipher/encoder"
 	"github.com/amherag/skycoin/src/visor/dbutil"
 )
 
@@ -13,16 +12,21 @@ var AddressUxBkt = []byte("address_in")
 type addressUx struct{}
 
 // get return nil on not found.
-func (au *addressUx) get(tx *dbutil.Tx, address cipher.Address) ([]cipher.SHA256, error) {
-	var uxHashes []cipher.SHA256
+func (au *addressUx) get(tx *dbutil.Tx, addr cipher.Address) ([]cipher.SHA256, error) {
+	var uxHashes hashesWrapper
 
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, AddressUxBkt, address.Bytes(), &uxHashes); err != nil {
+	v, err := dbutil.GetBucketValueNoCopy(tx, AddressUxBkt, addr.Bytes())
+	if err != nil {
 		return nil, err
-	} else if !ok {
+	} else if v == nil {
 		return nil, nil
 	}
 
-	return uxHashes, nil
+	if err := decodeHashesWrapperExact(v, &uxHashes); err != nil {
+		return nil, err
+	}
+
+	return uxHashes.Hashes, nil
 }
 
 // add adds a hash to an address's hash list
@@ -40,7 +44,15 @@ func (au *addressUx) add(tx *dbutil.Tx, address cipher.Address, uxHash cipher.SH
 	}
 
 	hashes = append(hashes, uxHash)
-	return dbutil.PutBucketValue(tx, AddressUxBkt, address.Bytes(), encoder.Serialize(hashes))
+
+	buf, err := encodeHashesWrapper(&hashesWrapper{
+		Hashes: hashes,
+	})
+	if err != nil {
+		return err
+	}
+
+	return dbutil.PutBucketValue(tx, AddressUxBkt, address.Bytes(), buf)
 }
 
 // isEmpty checks if the addressUx bucket is empty

@@ -4,23 +4,16 @@ import (
 	"fmt"
 	"reflect"
 
-	gcli "github.com/urfave/cli"
+	"github.com/spf13/cobra"
 )
 
-func versionCmd() gcli.Command {
-	name := "version"
-	return gcli.Command{
-		Name:      name,
-		ArgsUsage: "List the current version of Skycoin components",
-		Usage:     " ",
-		Flags: []gcli.Flag{
-			gcli.BoolFlag{
-				Name:  "json,j",
-				Usage: "Returns the results in JSON format",
-			},
-		},
-		OnUsageError: onCommandUsageError(name),
-		Action: func(c *gcli.Context) error {
+func versionCmd() *cobra.Command {
+	versionCmd := &cobra.Command{
+		Use:          "version",
+		Short:        "List the current version of Skycoin components",
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
+		RunE: func(c *cobra.Command, _ []string) error {
 			var ver = struct {
 				Skycoin string `json:"skycoin"`
 				Cli     string `json:"cli"`
@@ -33,8 +26,11 @@ func versionCmd() gcli.Command {
 				Version,
 			}
 
-			jsonFmt := c.Bool("json")
-			if jsonFmt {
+			jsonOutput, err := c.Flags().GetBool("json")
+			if err != nil {
+				return err
+			}
+			if jsonOutput {
 				return printJSON(ver)
 			}
 
@@ -47,5 +43,8 @@ func versionCmd() gcli.Command {
 			return nil
 		},
 	}
-	// Commands = append(Commands, cmd)
+
+	versionCmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format")
+
+	return versionCmd
 }

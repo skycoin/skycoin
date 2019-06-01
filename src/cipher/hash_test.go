@@ -111,6 +111,44 @@ func TestSHA256MustSet(t *testing.T) {
 	require.True(t, bytes.Equal(h[:], b))
 }
 
+func TestRipemd160FromBytes(t *testing.T) {
+	b := randBytes(t, 20)
+	h, err := Ripemd160FromBytes(b)
+	require.NoError(t, err)
+	require.True(t, bytes.Equal(b[:], h[:]))
+
+	b = randBytes(t, 19)
+	_, err = Ripemd160FromBytes(b)
+	require.Equal(t, errors.New("Invalid ripemd160 length"), err)
+
+	b = randBytes(t, 21)
+	_, err = Ripemd160FromBytes(b)
+	require.Equal(t, errors.New("Invalid ripemd160 length"), err)
+
+	_, err = Ripemd160FromBytes(nil)
+	require.Equal(t, errors.New("Invalid ripemd160 length"), err)
+}
+
+func TestMustRipemd160FromBytes(t *testing.T) {
+	b := randBytes(t, 20)
+	h := MustRipemd160FromBytes(b)
+	require.True(t, bytes.Equal(b[:], h[:]))
+
+	b = randBytes(t, 19)
+	require.Panics(t, func() {
+		MustRipemd160FromBytes(b)
+	})
+
+	b = randBytes(t, 21)
+	require.Panics(t, func() {
+		MustRipemd160FromBytes(b)
+	})
+
+	require.Panics(t, func() {
+		MustRipemd160FromBytes(nil)
+	})
+}
+
 func TestSHA256Set(t *testing.T) {
 	h := SHA256{}
 	err := h.Set(randBytes(t, 33))

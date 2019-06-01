@@ -6,6 +6,104 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Document the daemon's CLI options
+
+### Fixed
+
+- #2287 A `Content-Type` with a `charset` specified, for example `application/json; charset=utf-8`, will not return an HTTP 415 error anymore
+- Fix `fiber.toml` transaction verification parameters ignored by newcoin
+
+### Changed
+
+- Add `display_name`, `ticker`, `coin_hours_display_name`, `coin_hours_ticker`, `explorer_url` to the `/health` endpoint response
+
+### Removed
+
+- Remove `-arbitrating` option from the daemon CLI options
+- Remove `-print-web-interface-address` option from the daemon CLI options
+
+## [0.26.0] - 2019-05-21
+
+### Added
+
+- When sending coins in the UI, the user can choose to send in SKY, or the equivalent amount of SKY in USD
+- Add the option for changing the language of the GUI.
+- Add Spanish and Simplified Chinese language options
+- Add genesis block hash in `INTR` message
+- Add `bip32` package for preliminary HD wallet support
+- Add CLI `checkDBDecoding` command to verify the `skyencoder`-generated binary decoders match the reflect-based decoder
+- Add CLI `addresscount` command to return the count of addresses that currently have unspent outputs (coins) associated with them.
+- Add `-max-inc-msg-len` and `-max-out-msg-len` options to control the size of incoming and outgoing wire messages
+- Add `-disable-header-check` flag to disable Host/Origin/Referer header checks for the node APIs
+- Add `header_check_enabled` parameter in the `/health` endpoint response
+- Add `unsigned` option to `POST /api/v1/wallet/transaction` to create unsigned transactions from a wallet
+- Add `unsigned` option to `POST /api/v2/transaction/verify` for verifying an unsigned transaction
+- Add `POST /api/v2/wallet/transaction/sign` to sign an unsigned transaction with a wallet
+- Add `POST /api/v2/transaction` to create an unsigned transaction from addresses or unspent outputs without a wallet
+- Add `/api/v2/data` APIs for transaction notes and generic key-value storage.
+- Update `/metrics` endpoint to add metrics from `/health`: `unspent_outputs`, `unconfirmed_txns`, `time_since_last_block_seconds`, `open_connections`, `outgoing_connections`, `incoming_connections`, `start_at`, `uptime_seconds`, `last_block_seq`.
+
+### Fixed
+
+- Return a v2-style error for disabled API endpoints
+- #2172 Fix electron build failure for linux systems
+- Don't send wire protocol messages that exceed the configured 256kB limit, which caused peers to disconnect from the sender
+- #2348 Fix panic in `skycoin-cli` `transaction` command if no (zero) arguments are passed. Exactly one argument is expected.
+
+### Changed
+
+- Duplicate wallets in the wallets folder will prevent the application from starting
+- An empty wallet in the wallets folder will prevent the application from starting
+- Use [`skyencoder`](https://github.com/skycoin/skyencoder)-generated binary encoders/decoders for network and database data, instead of the reflect-based encoders/decoders in `cipher/encoder`.
+- Add `/api/v1/resendUnconfirmedTxns` to the `WALLET` API set
+- In `POST /api/v1/wallet/transaction`, moved `wallet` parameters to the top level of the object
+- Incoming wire message size limit increased to 1024kB
+- Clients restrict the maximum number of blocks they will send in a `GiveBlocksMessage` to 20
+- `POST /api/v2/wallet/seed/verify` returns an error if the seed's checksum is invalid
+- Increase the detail of error messages for invalid seeds sent to `POST /api/v2/wallet/seed/verify`
+- Move package `github.com/skycoin/skycoin/src/cipher/go-bip39` to `github.com/skycoin/skycoin/src/cipher/bip39`
+- The `Content-Security-Policy` header was modified to make it stricter
+- Update `INTR` message verify logic to reject connection if blockchain pubkey not matched or provided
+- Change the coinhour burn rate to 10%
+
+### Removed
+
+- `/api/v1/explorer/address` endpoint (use `GET /api/v1/transactions?verbose=1` instead). See https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#migrating-from--api-v1-explorer-address
+- The unversioned REST API (the `-enable-unversioned-api` is removed, prefix your API requests with `/api/v1` if they don't have an `/api/vx` prefix already). See https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#migrating-from-the-unversioned-api
+- JSON-RPC 2.0 interface (this is no longer used by the CLI tool, and the REST API supports everything the JSON-RPC 2.0 API does). See https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#migrating-from-the-jsonrpc-api
+- `/api/v1/wallet/spend` endpoint (use `POST /api/v1/wallet/transaction` followed by `POST /api/v1/injectTransaction` instead). See https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#migrating-from--api-v1-spend
+- Remove shell autocomplete files
+
+## [0.25.1] - 2019-02-08
+
+### Added
+
+- Add CLI `addressTransactions` command
+- Add `/api/v2/wallet/seed/verify` to verify if seed is a valid bip39 mnemonic seed
+- Filter transactions in the History view in the UI
+
+### Fixed
+
+- `/api/v1/health` will return correct build info when running Docker containers based on `skycoin/skycoin` mainnet image.
+- #2083, Windows desktop wallet sometimes shows "Error#1" on start
+
+### Changed
+
+- Extend URI specification to allow plain addresses (i.e. without a `skycoin:` prefix)
+- Switch `skycoin-cli` from `urfave/cli` to `spf13/cobra`.
+  Now all options of a cli command must only use `--` prefix instead of a mix of `--` and `-` prefixes.
+  `-` prefix is only allowed when using shorthand notation.
+- Use an optimized `base58` library for faster address decoding and encoding.
+- `/api/v1/injectTransaction` will return 400 error for invalid transactions.
+
+### Removed
+
+- Remove libskycoin source code. Migrated to https://github.com/skycoin/libskycoin
+
+## [0.25.0] - 2018-12-19
+
 ### Upcoming deprecated method removal notice
 
 In the v0.26.0 these features and functions will be removed.  If you have a need for any of these features, let us know.
@@ -55,10 +153,9 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - Complete support for `cipher` package in `libskycoin` C API.
 - Add `coin`, `wallet`, `util/droplet` and `util/fee` methods as part of `libskycoin` C API
 - Add `make update-golden-files` to `Makefile`
-- Add CLI `richList` command
+- Add CLI `richlist` command
 - Add `util/droplet` and `util/fee` API's as part of `libskycoin`
 - Implement SWIG interfaces in order to generate client libraries for multiple programming languages
-
 
 ### Fixed
 
@@ -427,6 +524,9 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - #350 Wallet name always 'undefined' after loading wallet from seed
 
 [Unreleased]: https://github.com/skycoin/skycoin/compare/master...develop
+[0.26.0]: https://github.com/skycoin/skycoin/compare/v0.25.1...v0.26.0
+[0.25.1]: https://github.com/skycoin/skycoin/compare/v0.25.0...v0.25.1
+[0.25.0]: https://github.com/skycoin/skycoin/compare/v0.24.1...v0.25.0
 [0.24.1]: https://github.com/skycoin/skycoin/compare/v0.24.0...v0.24.1
 [0.24.0]: https://github.com/skycoin/skycoin/compare/v0.23.0...v0.24.0
 [0.23.0]: https://github.com/skycoin/skycoin/compare/v0.22.0...v0.23.0

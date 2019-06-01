@@ -50,7 +50,7 @@ func TestCSRFWrapper(t *testing.T) {
 	methods := []string{http.MethodPost, http.MethodPut, http.MethodDelete}
 	cases := []string{tokenInvalid, tokenExpired, tokenEmpty, tokenInvalidSignature}
 
-	for _, endpoint := range endpoints {
+	for endpoint := range endpointsMethods {
 		for _, method := range methods {
 			for _, c := range cases {
 				name := fmt.Sprintf("%s %s %s", method, endpoint, c)
@@ -62,16 +62,19 @@ func TestCSRFWrapper(t *testing.T) {
 
 					setCSRFParameters(t, c, req)
 
+					isAPIV2 := strings.HasPrefix(endpoint, "/api/v2")
+					if isAPIV2 {
+						req.Header.Set("Content-Type", ContentTypeJSON)
+					}
+
 					rr := httptest.NewRecorder()
 					handler := newServerMux(muxConfig{
-						host:                 configuredHost,
-						appLoc:               ".",
-						enableJSON20RPC:      true,
-						enableUnversionedAPI: true,
-						disableCSRF:          false,
-						disableCSP:           true,
-						enabledAPISets:       allAPISetsEnabled,
-					}, gateway, nil)
+						host:           configuredHost,
+						appLoc:         ".",
+						disableCSRF:    false,
+						disableCSP:     true,
+						enabledAPISets: allAPISetsEnabled,
+					}, gateway)
 
 					handler.ServeHTTP(rr, req)
 
@@ -88,7 +91,7 @@ func TestCSRFWrapper(t *testing.T) {
 						errMsg = ErrCSRFExpired
 					}
 
-					if strings.HasPrefix(endpoint, "/api/v2") {
+					if isAPIV2 {
 						require.Equal(t, fmt.Sprintf("{\n    \"error\": {\n        \"message\": \"%s\",\n        \"code\": 403\n    }\n}", errMsg), rr.Body.String())
 					} else {
 						require.Equal(t, fmt.Sprintf("403 Forbidden - %s\n", errMsg), rr.Body.String())
@@ -106,14 +109,12 @@ func TestCSRFWrapperConcurrent(t *testing.T) {
 	gateway := &MockGatewayer{}
 
 	handler := newServerMux(muxConfig{
-		host:                 configuredHost,
-		appLoc:               ".",
-		enableJSON20RPC:      true,
-		enableUnversionedAPI: true,
-		disableCSRF:          false,
-		disableCSP:           true,
-		enabledAPISets:       allAPISetsEnabled,
-	}, gateway, nil)
+		host:           configuredHost,
+		appLoc:         ".",
+		disableCSRF:    false,
+		disableCSP:     true,
+		enabledAPISets: allAPISetsEnabled,
+	}, gateway)
 
 	var wg sync.WaitGroup
 
@@ -121,7 +122,7 @@ func TestCSRFWrapperConcurrent(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			for _, endpoint := range endpoints {
+			for endpoint := range endpointsMethods {
 				for _, method := range methods {
 					for _, c := range cases {
 						name := fmt.Sprintf("%s %s %s", method, endpoint, c)
@@ -131,6 +132,11 @@ func TestCSRFWrapperConcurrent(t *testing.T) {
 							require.NoError(t, err)
 
 							setCSRFParameters(t, c, req)
+
+							isAPIV2 := strings.HasPrefix(endpoint, "/api/v2")
+							if isAPIV2 {
+								req.Header.Set("Content-Type", ContentTypeJSON)
+							}
 
 							rr := httptest.NewRecorder()
 
@@ -149,7 +155,7 @@ func TestCSRFWrapperConcurrent(t *testing.T) {
 								errMsg = ErrCSRFExpired
 							}
 
-							if strings.HasPrefix(endpoint, "/api/v2") {
+							if isAPIV2 {
 								require.Equal(t, fmt.Sprintf("{\n    \"error\": {\n        \"message\": \"%s\",\n        \"code\": 403\n    }\n}", errMsg), rr.Body.String())
 							} else {
 								require.Equal(t, fmt.Sprintf("403 Forbidden - %s\n", errMsg), rr.Body.String())
@@ -185,13 +191,12 @@ func TestCSRF(t *testing.T) {
 
 		rr := httptest.NewRecorder()
 		handler := newServerMux(muxConfig{
-			host:            configuredHost,
-			appLoc:          ".",
-			enableJSON20RPC: true,
-			disableCSRF:     false,
-			disableCSP:      true,
-			enabledAPISets:  allAPISetsEnabled,
-		}, gateway, nil)
+			host:           configuredHost,
+			appLoc:         ".",
+			disableCSRF:    false,
+			disableCSP:     true,
+			enabledAPISets: allAPISetsEnabled,
+		}, gateway)
 
 		handler.ServeHTTP(rr, req)
 
@@ -207,7 +212,7 @@ func TestCSRF(t *testing.T) {
 	gateway := &MockGatewayer{}
 	cfg := defaultMuxConfig()
 	cfg.disableCSRF = false
-	handler := newServerMux(cfg, gateway, nil)
+	handler := newServerMux(cfg, gateway)
 
 	// non-GET request to /csrf is invalid
 	req, err := http.NewRequest(http.MethodPost, "/api/v1/csrf", nil)
@@ -220,7 +225,7 @@ func TestCSRF(t *testing.T) {
 
 	// CSRF disabled 404s
 	cfg.disableCSRF = true
-	handler = newServerMux(cfg, gateway, nil)
+	handler = newServerMux(cfg, gateway)
 
 	req, err = http.NewRequest(http.MethodGet, "/api/v1/csrf", nil)
 	require.NoError(t, err)
@@ -231,7 +236,7 @@ func TestCSRF(t *testing.T) {
 	require.Equal(t, http.StatusNotFound, rr.Code)
 
 	cfg.disableCSRF = false
-	handler = newServerMux(cfg, gateway, nil)
+	handler = newServerMux(cfg, gateway)
 
 	// Request a CSRF token, use it in a request
 	req, err = http.NewRequest(http.MethodGet, "/api/v1/csrf", nil)

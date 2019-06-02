@@ -15,7 +15,6 @@ import (
 
 	"encoding/hex"
 	
-	"github.com/amherag/skycoin/src/coin"
 	"github.com/amherag/skycoin/src/cipher"
 	"github.com/amherag/skycoin/src/util/logging"
 )

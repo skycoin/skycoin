@@ -103,14 +103,14 @@ func (c Params) Validate() error {
 	// Auto mode would distribute hours to the outputs and could hypothetically
 	// avoid assigning duplicate hours in many cases, but the complexity for doing
 	// so is very high, so also reject duplicate (address, coins) for auto mode.
-	outputs := make(map[coin.TransactionOutput]struct{}, len(c.To))
-	for _, to := range c.To {
-		outputs[to] = struct{}{}
-	}
+	// outputs := make(map[coin.TransactionOutput]struct{}, len(c.To))
+	// for _, to := range c.To {
+	// 	outputs[to] = struct{}{}
+	// }
 
-	if len(outputs) != len(c.To) {
-		return ErrDuplicateReceiver
-	}
+	// if len(outputs) != len(c.To) {
+	// 	return ErrDuplicateReceiver
+	// }
 
 	switch c.HoursSelection.Type {
 	case HoursSelectionTypeAuto:

@@ -54,8 +54,8 @@ func NewMessageConfig(prefix string, m interface{}) MessageConfig {
 //go:generate skyencoder -unexported -struct AnnounceTxnsMessage
 //go:generate skyencoder -unexported -struct DisconnectMessage
 //go:generate skyencoder -unexported -struct IPAddr
-//go:generate skyencoder -unexported -output-path . -package daemon -struct SignedBlock github.com/skycoin/skycoin/src/coin
-//go:generate skyencoder -unexported -output-path . -package daemon -struct Transaction github.com/skycoin/skycoin/src/coin
+//go:generate skyencoder -unexported -output-path . -package daemon -struct SignedBlock github.com/amherag/skycoin/src/coin
+//go:generate skyencoder -unexported -output-path . -package daemon -struct Transaction github.com/amherag/skycoin/src/coin
 
 // Creates and populates the message configs
 func getMessageConfigs() []MessageConfig {

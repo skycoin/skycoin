@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/fiber"
-	"github.com/skycoin/skycoin/src/kvstorage"
+	"github.com/amherag/skycoin/src/coin"
+	"github.com/amherag/skycoin/src/fiber"
+	"github.com/amherag/skycoin/src/kvstorage"
 
 	"log"
 

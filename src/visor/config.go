@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/params"
+	"github.com/amherag/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/params"
 )
 
 // Config configuration parameters for the Visor

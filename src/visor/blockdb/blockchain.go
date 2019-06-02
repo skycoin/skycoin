@@ -20,8 +20,8 @@ var (
 	ErrNoHeadBlock = fmt.Errorf("found no head block")
 )
 
-//go:generate skyencoder -unexported -struct Block -output-path . -package blockdb github.com/skycoin/skycoin/src/coin
-//go:generate skyencoder -unexported -struct UxOut -output-path . -package blockdb github.com/skycoin/skycoin/src/coin
+//go:generate skyencoder -unexported -struct Block -output-path . -package blockdb github.com/amherag/skycoin/src/coin
+//go:generate skyencoder -unexported -struct UxOut -output-path . -package blockdb github.com/amherag/skycoin/src/coin
 //go:generate skyencoder -unexported -struct hashPairsWrapper
 //go:generate skyencoder -unexported -struct hashesWrapper
 //go:generate skyencoder -unexported -struct sigWrapper

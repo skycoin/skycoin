@@ -274,7 +274,7 @@ func create(p Params, auxs coin.AddressUxOuts, headTime uint64, callCount int, m
 		}
 
 		p.HoursSelection.ShareFactor = &oneDecimal
-		return create(p, auxs, headTime, 1)
+		return create(p, auxs, headTime, 1, mainExprs)
 	}
 
 	if changeCoins > 0 {
@@ -316,7 +316,7 @@ func create(p Params, auxs coin.AddressUxOuts, headTime uint64, callCount int, m
 			txn.Out[i].ProgramState = updatedPS
 		}
 
-		if err := txn.PushOutput(changeAddress, changeCoins, changeHours); err != nil {
+		if err := txn.PushOutput(changeAddress, changeCoins, changeHours, updatedPS); err != nil {
 			logger.Critical().WithError(err).Error("PushOutput failed")
 			return nil, nil, err
 		}

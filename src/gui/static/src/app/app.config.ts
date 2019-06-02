@@ -1,6 +1,8 @@
 export const AppConfig = {
   otcEnabled: false,
   maxHardwareWalletAddresses: 1,
+  useHwWalletDaemon: true,
+
   urlForVersionChecking: 'https://version.skycoin.net/skycoin/version.txt',
   walletDownloadUrl: 'https://www.skycoin.net/downloads/',
 

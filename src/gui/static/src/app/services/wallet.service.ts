@@ -19,12 +19,20 @@ import { HwWalletService } from './hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
 import { catchError, map } from 'rxjs/operators';
 import { AppConfig } from '../app.config';
+import { Http } from '@angular/http';
 
 declare var Cipher: any;
 
 export enum HwSecurityWarnings {
   NeedsBackup,
   NeedsPin,
+  FirmwareVersionNotVerified,
+  OutdatedFirmware,
+}
+
+export interface HwFeaturesResponse {
+  features: any;
+  securityWarnings: HwSecurityWarnings[];
 }
 
 @Injectable()
@@ -42,6 +50,7 @@ export class WalletService {
     private hwWalletService: HwWalletService,
     private translate: TranslateService,
     private ngZone: NgZone,
+    private http: Http,
   ) {
     this.loadData();
     this.startDataRefreshSubscription();
@@ -149,26 +158,102 @@ export class WalletService {
     });
   }
 
-  updateWalletHasHwSecurityWarnings(wallet: Wallet): Observable<HwSecurityWarnings[]> {
-    if (wallet.isHardware) {
-      return this.hwWalletService.getFeatures().map(result => {
+  getHwFeaturesAndUpdateData(wallet: Wallet): Observable<HwFeaturesResponse> {
+    if (!wallet || wallet.isHardware) {
+
+      let lastestFirmwareVersion: string;
+
+      return this.http.get('http://localhost:4200/assets/temp/hw-wallet-version.txt')
+      .catch(() => Observable.of(null))
+      .flatMap((res: any) => {
+        if (res) {
+          lastestFirmwareVersion = res.text();
+        } else {
+          lastestFirmwareVersion = null;
+        }
+
+        return this.hwWalletService.getFeatures();
+      })
+      .map(result => {
+        let lastestFirmwareVersionReaded = false;
+        let firmwareUpdated = false;
+
+        if (lastestFirmwareVersion) {
+          lastestFirmwareVersion = lastestFirmwareVersion.trim();
+          const versionParts = lastestFirmwareVersion.split('.');
+
+          if (versionParts.length === 3) {
+            lastestFirmwareVersionReaded = true;
+
+            const numVersionParts = versionParts.map(value => Number.parseInt(value));
+
+            const devMajorVersion = !AppConfig.useHwWalletDaemon ? result.rawResponse.majorVersion : result.rawResponse.fw_major;
+            const devMinorVersion = !AppConfig.useHwWalletDaemon ? result.rawResponse.minorVersion : result.rawResponse.fw_minor;
+            const devPatchVersion = !AppConfig.useHwWalletDaemon ? result.rawResponse.patchVersion : result.rawResponse.fw_patch;
+
+            if (devMajorVersion > numVersionParts[0]) {
+              firmwareUpdated = true;
+            } else {
+              if (devMajorVersion === numVersionParts[0]) {
+                if (devMinorVersion > numVersionParts[1]) {
+                  firmwareUpdated = true;
+                } else {
+                  if (devMinorVersion === numVersionParts[1] && devPatchVersion >= numVersionParts[2]) {
+                    firmwareUpdated = true;
+                  }
+                }
+              }
+            }
+          }
+        }
+
         const warnings: HwSecurityWarnings[] = [];
+        let hasHwSecurityWarnings = false;
 
-        wallet.hasHwSecurityWarnings = false;
-        if (result.rawResponse.needsBackup) {
-          warnings.push(HwSecurityWarnings.NeedsBackup);
-          wallet.hasHwSecurityWarnings = true;
+        if (!AppConfig.useHwWalletDaemon) {
+          if (result.rawResponse.needsBackup) {
+            warnings.push(HwSecurityWarnings.NeedsBackup);
+            hasHwSecurityWarnings = true;
+          }
+          if (!result.rawResponse.pinProtection) {
+            warnings.push(HwSecurityWarnings.NeedsPin);
+            hasHwSecurityWarnings = true;
+          }
+        } else {
+          if (result.rawResponse.needs_backup) {
+            warnings.push(HwSecurityWarnings.NeedsBackup);
+            hasHwSecurityWarnings = true;
+          }
+          if (!result.rawResponse.pin_protection) {
+            warnings.push(HwSecurityWarnings.NeedsPin);
+            hasHwSecurityWarnings = true;
+          }
         }
-        if (!result.rawResponse.pinProtection) {
-          warnings.push(HwSecurityWarnings.NeedsPin);
-          wallet.hasHwSecurityWarnings = true;
-        }
-        this.saveHardwareWallets();
 
-        return warnings;
+        if (!lastestFirmwareVersionReaded) {
+          warnings.push(HwSecurityWarnings.FirmwareVersionNotVerified);
+        } else {
+          if (!firmwareUpdated) {
+            warnings.push(HwSecurityWarnings.OutdatedFirmware);
+            hasHwSecurityWarnings = true;
+          }
+        }
+
+        if (wallet) {
+          wallet.label = result.rawResponse.label ? result.rawResponse.label : (result.rawResponse.deviceId ? result.rawResponse.deviceId : result.rawResponse.device_id);
+          wallet.hasHwSecurityWarnings = hasHwSecurityWarnings;
+          this.saveHardwareWallets();
+        }
+
+        const response = {
+          features: result.rawResponse,
+          securityWarnings: warnings,
+        };
+
+        return response;
       });
     } else {
-      return Observable.of([]);
+      return null;
     }
   }
 
@@ -321,11 +406,11 @@ export class WalletService {
       const data = useV2Endpoint ? transaction.data : transaction;
 
       if (wallet.isHardware) {
-        if (data.transaction.inputs.length > 8) {
-          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs'));
+        if (data.transaction.inputs.length > 7) {
+          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs-outputs'));
         }
-        if (data.transaction.outputs.length > 8) {
-          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-outputs'));
+        if (data.transaction.outputs.length > 7) {
+          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs-outputs'));
         }
       }
 
@@ -578,7 +663,7 @@ export class WalletService {
         }
       });
 
-      this.hwWalletService.saveWalletsDataSync(JSON.stringify(hardwareWallets));
+      this.hwWalletService.saveWalletsData(JSON.stringify(hardwareWallets));
 
       this.wallets.next(wallets);
     });
@@ -617,25 +702,33 @@ export class WalletService {
   }
 
   private loadData(): void {
-    this.apiService.getWallets().first().subscribe(
-      recoveredWallets => {
-        let wallets: Wallet[] = [];
-        if (this.hwWalletService.hwWalletCompatibilityActivated) {
-          this.loadHardwareWallets(wallets);
-        }
-        wallets = wallets.concat(recoveredWallets);
+    let wallets: Wallet[] = [];
+    let softwareWallets: Wallet[] = [];
+
+    this.apiService.getWallets().first().flatMap(recoveredWallets => {
+      softwareWallets = recoveredWallets;
+
+      if (this.hwWalletService.hwWalletCompatibilityActivated) {
+        return this.loadHardwareWallets(wallets);
+      }
+
+      return Observable.of(null);
+
+    }).subscribe(() => {
+        wallets = wallets.concat(softwareWallets);
         this.wallets.next(wallets);
-      },
-      () => this.initialLoadFailed.next(true),
-    );
+    }, () => this.initialLoadFailed.next(true));
   }
 
-  private loadHardwareWallets(wallets: Wallet[]) {
-    const storedWallets: string = this.hwWalletService.getSavedWalletsDataSync();
-    if (storedWallets) {
-      const loadedWallets: Wallet[] = JSON.parse(storedWallets);
-      loadedWallets.map(wallet => wallets.push(wallet));
-    }
+  private loadHardwareWallets(wallets: Wallet[]): Observable<any> {
+    return this.hwWalletService.getSavedWalletsData().map(storedWallets => {
+      if (storedWallets) {
+        const loadedWallets: Wallet[] = JSON.parse(storedWallets);
+        loadedWallets.map(wallet => wallets.push(wallet));
+      }
+
+      return null;
+    });
   }
 
   private retrieveInputAddress(input: string) {

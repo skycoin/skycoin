@@ -96,10 +96,16 @@ import { Bip39WordListService } from './services/bip39-word-list.service';
 import { HwDialogBaseComponent } from './components/layout/hardware-wallet/hw-dialog-base.component';
 import { HwConfirmTxDialogComponent } from './components/layout/hardware-wallet/hw-confirm-tx-dialog/hw-confirm-tx-dialog.component';
 import { HwConfirmAddressDialogComponent } from './components/layout/hardware-wallet/hw-confirm-address-dialog/hw-confirm-address-dialog.component';
+import { HwWalletDaemonService } from './services/hw-wallet-daemon.service';
+import { HwWalletPinService } from './services/hw-wallet-pin.service';
+import { HwWalletSeedWordService } from './services/hw-wallet-seed-word.service';
 import { LanguageService } from './services/language.service';
 import { SelectLanguageComponent } from './components/layout/select-language/select-language.component';
 import { ExchangeHistoryComponent } from './components/pages/exchange/exchange-history/exchange-history.component';
 import { StorageService } from './services/storage.service';
+import { HwRemovePinDialogComponent } from './components/layout/hardware-wallet/hw-remove-pin-dialog/hw-remove-pin-dialog.component';
+import { HwUpdateFirmwareDialogComponent } from './components/layout/hardware-wallet/hw-update-firmware-dialog/hw-update-firmware-dialog.component';
+import { HwUpdateAlertDialogComponent } from './components/layout/hardware-wallet/hw-update-alert-dialog/hw-update-alert-dialog.component';
 
 
 const ROUTES = [
@@ -232,6 +238,9 @@ const ROUTES = [
     HwConfirmAddressDialogComponent,
     SelectLanguageComponent,
     ExchangeHistoryComponent,
+    HwRemovePinDialogComponent,
+    HwUpdateFirmwareDialogComponent,
+    HwUpdateAlertDialogComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -260,6 +269,9 @@ const ROUTES = [
     HwConfirmAddressDialogComponent,
     SelectLanguageComponent,
     ExchangeHistoryComponent,
+    HwRemovePinDialogComponent,
+    HwUpdateFirmwareDialogComponent,
+    HwUpdateAlertDialogComponent,
   ],
   imports: [
     BrowserModule,
@@ -307,6 +319,9 @@ const ROUTES = [
     WizardGuardService,
     HwWalletService,
     Bip39WordListService,
+    HwWalletDaemonService,
+    HwWalletPinService,
+    HwWalletSeedWordService,
     LanguageService,
     StorageService,
   ],

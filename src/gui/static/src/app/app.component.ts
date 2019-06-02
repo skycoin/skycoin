@@ -9,6 +9,8 @@ import { HwPinDialogComponent } from './components/layout/hardware-wallet/hw-pin
 import { HwSeedWordDialogComponent } from './components/layout/hardware-wallet/hw-seed-word-dialog/hw-seed-word-dialog.component';
 import { Bip39WordListService } from './services/bip39-word-list.service';
 import { HwConfirmTxDialogComponent } from './components/layout/hardware-wallet/hw-confirm-tx-dialog/hw-confirm-tx-dialog.component';
+import { HwWalletPinService } from './services/hw-wallet-pin.service';
+import { HwWalletSeedWordService } from './services/hw-wallet-seed-word.service';
 import { LanguageService } from './services/language.service';
 import { openChangeLanguageModal } from './utils';
 
@@ -23,11 +25,13 @@ export class AppComponent implements OnInit {
     private languageService: LanguageService,
     walletService: WalletService,
     hwWalletService: HwWalletService,
+    hwWalletPinService: HwWalletPinService,
+    hwWalletSeedWordService: HwWalletSeedWordService,
     private bip38WordList: Bip39WordListService,
     private dialog: MatDialog,
   ) {
-    hwWalletService.requestPinComponent = HwPinDialogComponent;
-    hwWalletService.requestWordComponent = HwSeedWordDialogComponent;
+    hwWalletPinService.requestPinComponent = HwPinDialogComponent;
+    hwWalletSeedWordService.requestWordComponent = HwSeedWordDialogComponent;
     hwWalletService.signTransactionConfirmationComponent = HwConfirmTxDialogComponent;
 
     walletService.initialLoadFailed.subscribe(failed => {

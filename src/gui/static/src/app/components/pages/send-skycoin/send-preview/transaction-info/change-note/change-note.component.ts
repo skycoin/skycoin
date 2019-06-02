@@ -60,6 +60,7 @@ export class ChangeNoteComponent implements OnInit, OnDestroy {
 
     if (this.originalNote === newNote) {
       this.closePopup();
+
       return;
     }
 

@@ -20,6 +20,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { catchError, map } from 'rxjs/operators';
 import { AppConfig } from '../app.config';
 import { Http } from '@angular/http';
+import { StorageService, StorageType } from './storage.service';
 
 declare var Cipher: any;
 
@@ -51,6 +52,7 @@ export class WalletService {
     private translate: TranslateService,
     private ngZone: NgZone,
     private http: Http,
+    private storageService: StorageService,
   ) {
     this.loadData();
     this.startDataRefreshSubscription();
@@ -527,8 +529,18 @@ export class WalletService {
     }
   }
 
-  injectTransaction(encodedTx: string) {
-    return this.apiService.post('injectTransaction', { rawtx: encodedTx }, { json: true });
+  injectTransaction(encodedTx: string, note: string): Observable<boolean> {
+    return this.apiService.post('injectTransaction', { rawtx: encodedTx }, { json: true })
+      .flatMap(txId => {
+        if (!note) {
+          return Observable.of(false);
+        } else {
+          return this.storageService.store(StorageType.NOTES, txId, note)
+            .retryWhen(errors => errors.delay(1000).take(3).concat(Observable.throw(-1)))
+            .catch(err => err === -1 ? Observable.of(-1) : err)
+            .map(result => result === -1 ? false : true);
+        }
+      });
   }
 
   transaction(txid: string): Observable<any> {
@@ -549,6 +561,7 @@ export class WalletService {
 
   transactions(): Observable<NormalTransaction[]> {
     let wallets: Wallet[];
+    let transactions: NormalTransaction[];
     const addressesMap: Map<string, boolean> = new Map<string, boolean>();
 
 
@@ -561,7 +574,16 @@ export class WalletService {
       addresses.map(add => addressesMap.set(add.address, true));
 
       return this.apiService.getTransactions(addresses);
-    }).map(transactions => {
+    }).flatMap(recoveredTransactions => {
+      transactions = recoveredTransactions;
+
+      return this.storageService.get(StorageType.NOTES, null);
+    }).map(notes => {
+      const notesMap: Map<string, string> = new Map<string, string>();
+      Object.keys(notes.data).forEach(key => {
+        notesMap.set(key, notes.data[key]);
+      });
+
       return transactions
         .sort((a, b) =>  b.timestamp - a.timestamp)
         .map(transaction => {
@@ -626,6 +648,11 @@ export class WalletService {
           let outputsHours = new BigNumber('0');
           transaction.outputs.map(output => outputsHours = outputsHours.plus(new BigNumber(output.hours)));
           transaction.hoursBurned = inputsHours.minus(outputsHours);
+
+          const txNote = notesMap.get(transaction.txid);
+          if (txNote) {
+            transaction.note = txNote;
+          }
 
           return transaction;
         });

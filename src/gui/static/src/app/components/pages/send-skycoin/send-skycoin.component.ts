@@ -49,6 +49,7 @@ export class SendSkycoinComponent implements OnDestroy {
     transaction.from = this.formData.form.wallet.label;
     transaction.to = this.formData.to;
     transaction.balance = this.formData.amount;
+    transaction.note = this.formData.form.note;
 
     return transaction;
   }

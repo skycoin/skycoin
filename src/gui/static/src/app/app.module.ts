@@ -106,6 +106,7 @@ import { StorageService } from './services/storage.service';
 import { HwRemovePinDialogComponent } from './components/layout/hardware-wallet/hw-remove-pin-dialog/hw-remove-pin-dialog.component';
 import { HwUpdateFirmwareDialogComponent } from './components/layout/hardware-wallet/hw-update-firmware-dialog/hw-update-firmware-dialog.component';
 import { HwUpdateAlertDialogComponent } from './components/layout/hardware-wallet/hw-update-alert-dialog/hw-update-alert-dialog.component';
+import { ChangeNoteComponent } from './components/pages/send-skycoin/send-preview/transaction-info/change-note/change-note.component';
 
 
 const ROUTES = [
@@ -241,6 +242,7 @@ const ROUTES = [
     HwRemovePinDialogComponent,
     HwUpdateFirmwareDialogComponent,
     HwUpdateAlertDialogComponent,
+    ChangeNoteComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -272,6 +274,7 @@ const ROUTES = [
     HwRemovePinDialogComponent,
     HwUpdateFirmwareDialogComponent,
     HwUpdateAlertDialogComponent,
+    ChangeNoteComponent,
   ],
   imports: [
     BrowserModule,

@@ -81,6 +81,8 @@ export class SendVerifyComponent implements OnDestroy {
   private finishSending(passwordDialog?: any) {
     this.showBusy();
 
+    const note = this.transaction.note.trim();
+
     this.sendSubscription = this.walletService.signTransaction(
       this.transaction.wallet,
       passwordDialog ? passwordDialog.password : null,
@@ -90,8 +92,12 @@ export class SendVerifyComponent implements OnDestroy {
         passwordDialog.close();
       }
 
-      return this.walletService.injectTransaction(result.encoded);
-    }).subscribe(() => {
+      return this.walletService.injectTransaction(result.encoded, note);
+    }).subscribe(noteSaved => {
+      if (note && !noteSaved) {
+        showSnackbarError(this.snackbar, this.translate.instant('send.error-saving-note'));
+      }
+
       this.sendButton.setSuccess();
       this.sendButton.setDisabled();
 

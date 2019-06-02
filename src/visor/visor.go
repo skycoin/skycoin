@@ -130,7 +130,7 @@ func (vs *Visor) Init() error {
 	}
 
 	return vs.db.Update("visor init", func(tx *dbutil.Tx) error {
-		if err := vs.maybeCreateGenesisBlock(tx); err != nil {
+		if err := vs.maybeCreateGenesisBlock(tx, []byte{}); err != nil {
 			return err
 		}
 
@@ -980,7 +980,7 @@ func (vs *Visor) GetTransactions(flts []TxFilter) ([]Transaction, error) {
 func (vs *Visor) GetProgramState(flts []TxFilter) ([]byte, error) {
 	var prgrmState []byte
 
-	if err := vs.DB.View("GetProgramState", func(tx *dbutil.Tx) error {
+	if err := vs.db.View("GetProgramState", func(tx *dbutil.Tx) error {
 		var err error
 		prgrmState, err = vs.getProgramState(tx, flts)
 		return err

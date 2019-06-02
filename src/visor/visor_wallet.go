@@ -465,7 +465,7 @@ func (vs *Visor) createTransactionTx(tx *dbutil.Tx, p transaction.Params, wp Cre
 		return nil, nil, err
 	}
 
-	txn, uxb, err := transaction.Create(p, auxs, head.Time())
+	txn, uxb, err := transaction.Create(p, auxs, head.Time(), p.MainExpressions)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/amherag/skycoin/src/cipher"
 )
 
 //go:generate skyencoder -struct BlockHeader -unexported
@@ -203,7 +203,7 @@ func CreateUnspents(bh BlockHeader, txn Transaction) UxArray {
 				Address:        txn.Out[i].Address,
 				Coins:          txn.Out[i].Coins,
 				Hours:          txn.Out[i].Hours,
-				ProgramState:   tx.Out[i].ProgramState,
+				ProgramState:   txn.Out[i].ProgramState,
 			},
 		}
 	}
@@ -232,7 +232,7 @@ func CreateUnspent(bh BlockHeader, txn Transaction, outIndex int) (UxOut, error)
 			Address:        txn.Out[outIndex].Address,
 			Coins:          txn.Out[outIndex].Coins,
 			Hours:          txn.Out[outIndex].Hours,
-			ProgramState:   tx.Out[outIndex].ProgramState,
+			ProgramState:   txn.Out[outIndex].ProgramState,
 		},
 	}, nil
 }

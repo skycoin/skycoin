@@ -31,11 +31,7 @@ export class HwWalletDaemonService {
     private hwWalletPinService: HwWalletPinService,
     private hwWalletSeedWordService: HwWalletSeedWordService,
     private ngZone: NgZone,
-  ) {
-    if (AppConfig.useHwWalletDaemon) {
-      this.checkHw(false);
-    }
-  }
+  ) { }
 
   get(route: string) {
     return this.checkResponse(this.http.get(

@@ -30,7 +30,7 @@ let splashLoaded = false
 let dev = process.argv.find(arg => arg === 'dev') ? true : false;
 
 // Force everything localhost, in case of a leak
-app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1, EXCLUDE api.coinpaprika.com, EXCLUDE swaplab.cc');
+app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1, EXCLUDE api.coinpaprika.com, EXCLUDE swaplab.cc, EXCLUDE version.skycoin.net, EXCLUDE downloads.skycoin.net');
 app.commandLine.appendSwitch('ssl-version-fallback-min', 'tls1.2');
 app.commandLine.appendSwitch('--no-proxy-server');
 app.setAsDefaultProtocolClient('skycoin');

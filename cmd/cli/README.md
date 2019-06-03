@@ -7,7 +7,6 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3" -->
 
 - [Install](#install)
-	- [Enable command autocomplete](#enable-command-autocomplete)
 - [Environment Setting](#environment-setting)
 	- [RPC_ADDR](#rpc_addr)
 	- [RPC_USER](#rpc_user)
@@ -47,7 +46,7 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 	- [List wallet transaction history](#list-wallet-transaction-history)
 	- [List wallet outputs](#list-wallet-outputs)
 	- [Richlist](#richlist)
-    - [Address Count](#address-count)
+	- [Address Count](#address-count)
 	- [CLI version](#cli-version)
 - [Note](#note)
 
@@ -60,19 +59,6 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 $ cd $GOPATH/src/github.com/skycoin/skycoin/cmd/cli
 $ ./install.sh
 ```
-
-### Enable command autocomplete
-
-If you are in `bash`, run the following command:
-
-```bash
-$ PROG=skycoin-cli source $GOPATH/src/github.com/skycoin/skycoin/cmd/cli/autocomplete/bash_autocomplete
-```
-
-If you are in `zsh`, please replace the `bash_autocomplete` with `zsh_autocomplete` in the previous command.
-
-To avoid run the command everytime when you start a new terminal session, you can copy the script into
-you `~/.bashrc` or `~/.zshrc` file.
 
 ## Environment Setting
 
@@ -1867,14 +1853,23 @@ $ skycoin-cli status
         "wallet_api_enabled": true,
         "gui_enabled": true,
         "user_verify_transaction": {
-            "burn_factor": 2,
+            "burn_factor": 10,
             "max_transaction_size": 32768,
             "max_decimals": 3
         },
         "unconfirmed_verify_transaction": {
-            "burn_factor": 2,
+            "burn_factor": 10,
             "max_transaction_size": 32768,
             "max_decimals": 3
+        },
+        "started_at": 1558864387,
+        "fiber": {
+            "name": "skycoin",
+            "display_name": "Skycoin",
+            "ticker": "SKY",
+            "coin_hours_display_name": "Coin Hours",
+            "coin_hours_ticker": "SCH",
+            "explorer_url": "https://explorer.skycoin.net"
         }
     },
     "cli_config": {
@@ -2736,7 +2731,7 @@ FLAGS:
 
 #### Example
 ```bash
-$ skycoin-cli addresscount 
+$ skycoin-cli addresscount
 ```
 <details>
  <summary>View Output</summary>

@@ -125,7 +125,7 @@ func TestHealthHandler(t *testing.T) {
 			}
 			tc.cfg.health.BuildInfo = buildInfo
 
-			tc.cfg.health.CoinName = "skycoin"
+			tc.cfg.health.Fiber.Name = "skycoin"
 			tc.cfg.health.DaemonUserAgent = useragent.Data{
 				Coin:    "skycoin",
 				Version: "0.25.0",
@@ -242,7 +242,7 @@ func TestHealthHandler(t *testing.T) {
 			require.Equal(t, tc.cfg.enableGUI, r.GUIEnabled)
 			require.Equal(t, tc.walletAPIEnabled, r.WalletAPIEnabled)
 
-			require.Equal(t, uint32(2), r.UserVerifyTxn.BurnFactor)
+			require.Equal(t, uint32(10), r.UserVerifyTxn.BurnFactor)
 			require.Equal(t, uint32(32*1024), r.UserVerifyTxn.MaxTransactionSize)
 			require.Equal(t, uint8(3), r.UserVerifyTxn.MaxDropletPrecision)
 

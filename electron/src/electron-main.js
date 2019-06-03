@@ -235,6 +235,12 @@ function createWindow(url) {
     });
   }
 
+  // Open links with target='_blank' in the default browser.
+  win.webContents.on('new-window', function(e, url) {
+    e.preventDefault();
+    require('electron').shell.openExternal(url);
+  });
+
   // create application's main menu
   var template = [{
     label: 'Skycoin',

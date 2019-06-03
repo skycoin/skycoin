@@ -545,7 +545,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 				To: []coin.TransactionOutput{
 					{
 						Address: addrs[0],
-						Hours:   50,
+						Hours:   90,
 						Coins:   2e6,
 					},
 				},

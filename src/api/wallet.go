@@ -691,12 +691,6 @@ func walletVerifySeedHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Header.Get("Content-Type") != ContentTypeJSON {
-		resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
-		writeHTTPResponse(w, resp)
-		return
-	}
-
 	var req VerifySeedRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
@@ -871,12 +865,6 @@ func walletRecoverHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
-			writeHTTPResponse(w, resp)
-			return
-		}
-
-		if r.Header.Get("Content-Type") != ContentTypeJSON {
-			resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
 			writeHTTPResponse(w, resp)
 			return
 		}

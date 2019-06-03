@@ -81,6 +81,9 @@
             <img src="../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address)" class="qr-code-button">
             <span>{{ address }}</span>
           </div>
+          <div class="-item" *ngIf="transaction.note">
+            <span>{{ 'history.note' | translate }}: <span class="note">{{ transaction.note }}</span></span>
+          </div>
         </div>
         <div class="-balance">
           <h4>{{ transaction.balance.decimalPlaces(6).toString() | number:'1.0-6' }} {{ 'common.coin-id' | translate }}</h4>

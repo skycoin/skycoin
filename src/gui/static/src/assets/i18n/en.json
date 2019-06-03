@@ -173,7 +173,8 @@
     "from-label": "Send from",
     "to-label": "Send to",
     "amount-label": "Amount",
-    "notes-label": "Notes",
+    "personal-note-label": "Personal note",
+    "personal-note-help": "Use this field to add a text for allowing you to identify the transaction in the future. This text is saved locally, so it will only be visible from this computer",
     "wallet-label": "Wallet",
     "addresses-label": "Addresses",
     "invalid-amount": "Please enter a valid amount",
@@ -201,7 +202,8 @@
     "back-button": "Back",
     "simple": "Simple",
     "advanced": "Advanced",
-    "select-wallet": "Select Wallet"
+    "select-wallet": "Select Wallet",
+    "error-saving-note": "The transaction was successfully sent, but it was not possible to save the note."
   },
 
   "reset": {
@@ -222,6 +224,8 @@
     "coins": "Coins",
     "hours": "Hours",
     "id": "Tx ID",
+    "note": "Note",
+    "without-note": "Without note",
     "show-more": "Show more",
     "hours-moved": "moved",
     "hours-sent": "sent",
@@ -232,6 +236,12 @@
     "confirmed": "Confirmed",
     "pending": "Pending",
     "current-rate": "Calculated at the current rate"
+  },
+
+  "edit-note": {
+    "title": "Edit note",
+    "cancel-button": "Cancel",
+    "change-button": "Change"
   },
 
   "backup": {
@@ -290,6 +300,7 @@
     "received": "Received",
     "receiving": "Receiving",
     "pending": "Pending",
+    "note": "Note",
     "no-txs": "You have no transaction history",
     "no-txs-filter": "There are no transactions matching the current filter criteria",
     "no-filter": "No filter active (press to select wallets/addresses)",
@@ -333,6 +344,7 @@
       "error-incorrect-pin": "Unable to perform the operation. The PIN you have entered is not correct.",
       "confirm": "Please, confirm the operation in the hardware wallet.",
       "confirm-and-more": "Please, confirm the operation in the hardware wallet and follow the instructions.",
+      "follow": "Please, follow the instructions indicated in the hardware wallet.",
       "close": "Close",
       "cancel": "Cancel",
       "continue": "Continue",
@@ -340,8 +352,11 @@
       "refused": "The operation failed or was canceled."
     },
     "errors": {
-      "too-many-inputs": "The transaction has too many inputs and can not be processed. Please contact technical support.",
-      "too-many-outputs": "The transaction has too many outputs and can not be processed. Please contact technical support."
+      "too-many-inputs-outputs": "The transaction has too many inputs or outputs for the hardware wallet. Please try again creating several smaller transactions, each one with a smaller number of recipients (if the current transaction has many) or coins.",
+      "daemon-connection": "Problem connecting to the hardware wallet service.",
+      "timeout": "The operation was cancelled due to inactivity.",
+      "invalid-address": "Invalid address.",
+      "not-in-firmware-mode": "To use this option the hardware wallet must be in firmware mode."
     },
     "security-warning" : {
       "title": "Security warning",
@@ -358,9 +373,12 @@
       "configured-detected": "Hardware wallet detected. The device is identified in the wallets list as:",
       "security-warnings-title": "Security warnings",
       "security-warning-title": "Security warning",
+      "unchecked-version-warning": "It was not possible to verify if the firmware of your hardware wallet is up to date. This could be due to problems with your internet connection or because the service is in maintenance.",
+      "outdated-version-warning": "The firmware of your hardware wallet is outdated. To stay safe, we recommend you to update it as soon as possible. To do this, select the \"Update firmware\" option.",
       "backup-warning": "You should backup the hardware wallet seed or you could lose access to the funds in case of problems. To do this, select the \"Create a backup\" option.",
       "pin-warning": "The connected hardware wallet does not have a PIN. The PIN code protects the hardware wallet in case of loss, theft and hacks. To create a PIN code, select the \"Create PIN code\" option.",
       "options": "Options:",
+      "update-firmware": "Update firmware",
       "configure-automatically": "Configure automatically",
       "restore-backup": "Restore backup",
       "create-backup": "Create a backup",
@@ -368,8 +386,23 @@
       "confirm-seed": "Confirm seed",
       "create-pin": "Create PIN code",
       "change-pin": "Change PIN code",
+      "delete-pin": "Delete PIN code",
       "forgotten-pin1": "If you can not access the wallet because you have forgotten the PIN, you can wipe the hardware wallet and then restore it with the seed by clicking",
       "forgotten-pin2": "here."
+    },
+    "update-firmware-warning" : {
+      "title": "Outdated Firmware",
+      "text": "WARNING: the firmware in your hardware wallet is outdated. To stay safe, it is recommended to update it.",
+      "cancel": "Cancel",
+      "update": "Update"
+    },
+    "update-firmware" : {
+      "title": "Update Firmware",
+      "text": "To update the firmware of your hardware wallet you must connect it in firmware mode (connect it to the computer while pressing the two physical buttons of the device). WARNING: before continuing you must have a backup of your seed or you can permanently lose access to the funds.",
+      "check": "I understand the risks and want to continue",
+      "completed": "The firmware update has been sent to the hardware wallet. Please continue the process on the device.",
+      "connection-error": "It was not possible download the firmware. This could be due to problems with your internet connection or because the service is in maintenance.",
+      "timeout": "The operation was cancelled due to inactivity. Please disconnect the device, reconnect it and try again."
     },
     "generate-seed" : {
       "text": "Before proceeding, you can select the number of words you want the seed to have. The seed is a list of words that can be used to recover access to the coins in case of problems. Both values are safe, so if you do not have a special reason for selecting one or the other, you can leave the default value.",
@@ -408,6 +441,10 @@
     },
     "change-pin" : {
       "pin-mismatch": "Unable to perform the operation. Two PINs you have entered do not match."
+    },
+    "remove-pin" : {
+      "warning": "WARNING: It is not recommended to remove the PIN code from your hardware wallet, as it will be vulnerable to being used by unauthorized persons.",
+      "check": "I understand the risks and want to continue"
     },
     "enter-pin" : {
       "title": "Enter PIN",

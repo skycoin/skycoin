@@ -27,12 +27,6 @@ func addressVerifyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Header.Get("Content-Type") != ContentTypeJSON {
-		resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
-		writeHTTPResponse(w, resp)
-		return
-	}
-
 	var req VerifyAddressRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())

@@ -2,7 +2,7 @@ import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { Wallet, ConfirmationData } from '../../../../app.datatypes';
 import { WalletService } from '../../../../services/wallet.service';
 import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
-import { ChangeNameComponent } from '../change-name/change-name.component';
+import { ChangeNameComponent, ChangeNameData } from '../change-name/change-name.component';
 import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { MatSnackBar } from '@angular/material';
@@ -27,6 +27,7 @@ export class WalletDetailComponent implements OnDestroy {
   creatingAddress = false;
 
   private howManyAddresses: number;
+  private preparingToEdit = false;
 
   constructor(
     private dialog: MatDialog,
@@ -42,10 +43,29 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   editWallet() {
-    const config = new MatDialogConfig();
-    config.width = '566px';
-    config.data = this.wallet;
-    this.dialog.open(ChangeNameComponent, config);
+    this.snackbar.dismiss();
+
+    if (this.wallet.isHardware) {
+      if (this.preparingToEdit) {
+        return;
+      }
+
+      this.preparingToEdit = true;
+      this.hwWalletService.checkIfCorrectHwConnected(this.wallet.addresses[0].address)
+        .flatMap(() => this.walletService.getHwFeaturesAndUpdateData(this.wallet))
+        .subscribe(
+          () => {
+            this.continueEditWallet();
+            this.preparingToEdit = false;
+          },
+          err => {
+            showSnackbarError(this.snackbar, getHardwareWalletErrorMsg(this.hwWalletService, this.translateService, err));
+            this.preparingToEdit = false;
+          },
+        );
+    } else {
+      this.continueEditWallet();
+    }
   }
 
   newAddress() {
@@ -110,6 +130,8 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   deleteWallet() {
+    this.snackbar.dismiss();
+
     const confirmationData: ConfirmationData = {
       text: this.translateService.instant('wallet.delete-confirmation', {name: this.wallet.label}),
       headerText: 'confirmation.header-text',
@@ -157,6 +179,8 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   confirmAddress(address, addressIndex, showCompleteConfirmation) {
+    this.snackbar.dismiss();
+
     this.hwWalletService.checkIfCorrectHwConnected(this.wallet.addresses[0].address).subscribe(response => {
       const data = new AddressConfirmationParams();
       data.address = address;
@@ -249,5 +273,13 @@ export class WalletDetailComponent implements OnDestroy {
         },
       );
     }
+  }
+
+  private continueEditWallet() {
+    const config = new MatDialogConfig();
+    config.width = '566px';
+    config.data = new ChangeNameData();
+    (config.data as ChangeNameData).wallet = this.wallet;
+    this.dialog.open(ChangeNameComponent, config);
   }
 }

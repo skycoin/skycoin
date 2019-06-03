@@ -1,0 +1,48 @@
+<app-modal class="modal" [headline]="'hardware-wallet.update-firmware.title' | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Processing">
+  <div *ngIf="currentState === states.Initial">
+    <app-hw-message
+      [text]="'hardware-wallet.update-firmware.text' | translate"
+      [icon]="msgIcons.Warning"
+    ></app-hw-message>
+
+    <div class="-check-container">
+      <mat-checkbox type="checkbox"
+                    class="-check"
+                    [checked]="confirmed"
+                    (change)="setConfirmed($event)">{{ 'hardware-wallet.update-firmware.check' | translate }}
+      </mat-checkbox>
+    </div>
+
+    <div class="-buttons">
+      <app-button (action)="closeModal()" [disabled]="currentState === states.Processing">
+        {{ 'hardware-wallet.general.cancel' | translate }}
+      </app-button>
+      <app-button (action)="startUpdating()" class="primary" [disabled]="!confirmed" #button>
+        {{ 'hardware-wallet.general.continue' | translate }}
+      </app-button>
+    </div>
+  </div>
+
+  <div *ngIf="currentState !== states.Initial">
+      <app-hw-message *ngIf="currentState === states.Processing"
+      [text]="'hardware-wallet.general.confirm' | translate"
+      [icon]="msgIcons.Confirm"
+    ></app-hw-message>
+
+    <app-hw-message *ngIf="currentState === states.ReturnedSuccess"
+      [text]="'hardware-wallet.general.completed' | translate"
+      [icon]="msgIcons.Success"
+    ></app-hw-message>
+
+    <app-hw-message *ngIf="currentState === states.ReturnedTimeout"
+      [text]="'hardware-wallet.update-firmware.timeout' | translate"
+      [icon]="msgIcons.Error"
+    ></app-hw-message>
+
+    <div class="-buttons" *ngIf="currentState !== states.Processing">
+      <app-button (action)="closeModal()" class="primary">
+        {{ 'hardware-wallet.general.close' | translate }}
+      </app-button>
+    </div>
+  </div>
+</app-modal>

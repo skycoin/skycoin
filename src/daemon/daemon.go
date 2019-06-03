@@ -161,6 +161,8 @@ type DaemonConfig struct { // nolint: golint
 	Address string
 	// BlockchainPubkey blockchain pubkey string
 	BlockchainPubkey cipher.PubKey
+	// GenesisHash genesis block hash
+	GenesisHash cipher.SHA256
 	// TCP/UDP port for connections
 	Port int
 	// Directory where application data is stored
@@ -966,6 +968,7 @@ func (dm *Daemon) onConnectEvent(e ConnectEvent) {
 		dm.config.BlockchainPubkey,
 		dm.config.userAgent,
 		dm.config.UnconfirmedVerifyTxn,
+		dm.config.GenesisHash,
 	)); err != nil {
 		logger.WithFields(fields).WithError(err).Error("Send IntroductionMessage failed")
 		return

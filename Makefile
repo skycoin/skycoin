@@ -1,11 +1,16 @@
 .DEFAULT_GOAL := help
 .PHONY: run run-help test test-386 test-amd64 check check-newcoin
-.PHONY: integration-test-stable integration-test-stable-disable-csrf
+.PHONY: integration-tests-stable
+.PHONY: integration-test-stable
+.PHONY: integration-test-stable-disable-csrf
+.PHONY: integration-test-stable-disable-wallet-api
+.PHONY: integration-test-stable-disable-seed-api
+.PHONY: integration-test-stable-enable-seed-api
+.PHONY: integration-test-stable-enable-seed-api
+.PHONY: integration-test-stable-disable-gui
+.PHONY: integration-test-stable-db-no-unconfirmed
+.PHONY: integration-test-stable-auth
 .PHONY: integration-test-live integration-test-live-wallet
-.PHONY: integration-test-disable-wallet-api integration-test-disable-seed-api
-.PHONY: integration-test-enable-seed-api integration-test-enable-seed-api
-.PHONY: integration-test-disable-gui integration-test-disable-gui
-.PHONY: integration-test-db-no-unconfirmed integration-test-auth
 .PHONY: install-linters format release clean-release clean-coverage
 .PHONY: install-deps-ui build-ui build-ui-travis help newcoin merge-coverage
 .PHONY: generate update-golden-files
@@ -61,11 +66,16 @@ check-newcoin: newcoin ## Check that make newcoin succeeds and no templated file
 	@if [ "$(shell git diff ./cmd/skycoin/skycoin_test.go | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
 	@if [ "$(shell git diff ./src/params/params.go | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
 
-check: lint clean-coverage test test-386 \
-	integration-test-stable integration-test-stable-disable-csrf \
-	integration-test-disable-wallet-api integration-test-disable-seed-api \
-	integration-test-enable-seed-api integration-test-disable-gui \
-	integration-test-auth integration-test-db-no-unconfirmed check-newcoin ## Run tests and linters
+check: lint clean-coverage test test-386 integration-tests-stable check-newcoin ## Run tests and linters
+
+integration-tests-stable: integration-test-stable \
+	integration-test-stable-disable-csrf \
+	integration-test-stable-disable-wallet-api \
+	integration-test-stable-disable-seed-api \
+	integration-test-stable-enable-seed-api \
+	integration-test-stable-disable-gui \
+	integration-test-stable-auth \
+	integration-test-stable-db-no-unconfirmed ## Run all stable integration tests
 
 integration-test-stable: ## Run stable integration tests
 	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -c -x -n enable-csrf-header-check
@@ -75,6 +85,21 @@ integration-test-stable-disable-header-check: ## Run stable integration tests wi
 
 integration-test-stable-disable-csrf: ## Run stable integration tests with CSRF disabled
 	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -n disable-csrf
+
+integration-test-stable-disable-wallet-api: ## Run disable wallet api integration tests
+	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-disable-wallet-api.sh
+
+integration-test-stable-enable-seed-api: ## Run enable seed api integration test
+	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-enable-seed-api.sh
+
+integration-test-stable-disable-gui: ## Run tests with the GUI disabled
+	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-disable-gui.sh
+
+integration-test-stable-db-no-unconfirmed: ## Run stable tests against the stable database that has no unconfirmed transactions
+	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -d -n no-unconfirmed
+
+integration-test-stable-auth: ## Run stable tests with HTTP Basic auth enabled
+	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-auth.sh
 
 integration-test-live: ## Run live integration tests
 	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c
@@ -90,21 +115,6 @@ integration-test-live-disable-csrf: ## Run live integration tests against a node
 
 integration-test-live-disable-networking: ## Run live integration tests against a node with networking disabled (requires wallet)
 	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c -k
-
-integration-test-disable-wallet-api: ## Run disable wallet api integration tests
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-disable-wallet-api.sh
-
-integration-test-enable-seed-api: ## Run enable seed api integration test
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-enable-seed-api.sh
-
-integration-test-disable-gui: ## Run tests with the GUI disabled
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-disable-gui.sh
-
-integration-test-db-no-unconfirmed: ## Run stable tests against the stable database that has no unconfirmed transactions
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -d -n no-unconfirmed
-
-integration-test-auth: ## Run stable tests with HTTP Basic auth enabled
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-auth.sh
 
 install-linters: ## Install linters
 	go get -u github.com/FiloSottile/vendorcheck
@@ -174,6 +184,7 @@ generate: ## Generate test interface mocks and struct encoders
 	mv ./src/visor/blockdb/mock_unspent_pooler_test.go ./src/visor/mock_unspent_pooler_test.go
 	sed -i "" -e 's/package blockdb/package visor/g' ./src/visor/mock_unspent_pooler_test.go
 	sed -i "" -e 's/AddressHashes/blockdb.AddressHashes/g' ./src/visor/mock_unspent_pooler_test.go
+	goimports -w -local github.com/skycoin/skycoin ./src/visor/mock_unspent_pooler_test.go
 
 install-generators: ## Install tools used by go generate
 	go get github.com/vektra/mockery/.../

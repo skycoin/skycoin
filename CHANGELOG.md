@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - #2287 A `Content-Type` with a `charset` specified, for example `application/json; charset=utf-8`, will not return an HTTP 415 error anymore
 - Fix `fiber.toml` transaction verification parameters ignored by newcoin
+- #2373 Fix and clean-up further panics with various `skycoin-cli` commands (lastBlocks, checkdb) which were not correctly handling arguments.
 
 ### Changed
 
@@ -51,7 +52,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - #2172 Fix electron build failure for linux systems
 - Don't send wire protocol messages that exceed the configured 256kB limit, which caused peers to disconnect from the sender
 - #2348 Fix panic in `skycoin-cli` `transaction` command if no (zero) arguments are passed. Exactly one argument is expected.
-- #2373 Fix and clean-up further panics with various `skycoin-cli` commands (lastBlocks, checkdb) which were not correctly handling arguments.
 
 ### Changed
 

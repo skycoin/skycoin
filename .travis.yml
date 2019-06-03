@@ -58,6 +58,13 @@ before_script:
 
 services:
   - xvfb
+  - docker
+addons:
+  apt:
+    packages:
+      - docker-ce
+script:
+  - make build-deb DEB_PACKAGE_DESCRIPTION="Skycoin Demo" DEB_PACKAGE_NAME=skycoin BINARY_NAME=skycoin
 
 script:
   - make check-newcoin

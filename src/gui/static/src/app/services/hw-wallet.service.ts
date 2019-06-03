@@ -147,9 +147,9 @@ export class HwWalletService {
 
   get hwWalletCompatibilityActivated(): boolean {
     if (!AppConfig.useHwWalletDaemon) {
-      return !environment.production && window['isElectron'] && window['ipcRenderer'].sendSync('hwCompatibilityActivated');
+      return window['isElectron'] && window['ipcRenderer'].sendSync('hwCompatibilityActivated');
     } else {
-      return !environment.production;
+      return true;
     }
   }
 

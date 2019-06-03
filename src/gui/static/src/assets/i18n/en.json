@@ -173,7 +173,8 @@
     "from-label": "Send from",
     "to-label": "Send to",
     "amount-label": "Amount",
-    "notes-label": "Notes",
+    "personal-note-label": "Personal note",
+    "personal-note-help": "Use this field to add a text for allowing you to identify the transaction in the future. This text is saved locally, so it will only be visible from this computer",
     "wallet-label": "Wallet",
     "addresses-label": "Addresses",
     "invalid-amount": "Please enter a valid amount",
@@ -201,7 +202,8 @@
     "back-button": "Back",
     "simple": "Simple",
     "advanced": "Advanced",
-    "select-wallet": "Select Wallet"
+    "select-wallet": "Select Wallet",
+    "error-saving-note": "The transaction was successfully sent, but it was not possible to save the note."
   },
 
   "reset": {
@@ -222,6 +224,8 @@
     "coins": "Coins",
     "hours": "Hours",
     "id": "Tx ID",
+    "note": "Note",
+    "without-note": "Without note",
     "show-more": "Show more",
     "hours-moved": "moved",
     "hours-sent": "sent",
@@ -232,6 +236,12 @@
     "confirmed": "Confirmed",
     "pending": "Pending",
     "current-rate": "Calculated at the current rate"
+  },
+
+  "edit-note": {
+    "title": "Edit note",
+    "cancel-button": "Cancel",
+    "change-button": "Change"
   },
 
   "backup": {
@@ -290,6 +300,7 @@
     "received": "Received",
     "receiving": "Receiving",
     "pending": "Pending",
+    "note": "Note",
     "no-txs": "You have no transaction history",
     "no-txs-filter": "There are no transactions matching the current filter criteria",
     "no-filter": "No filter active (press to select wallets/addresses)",

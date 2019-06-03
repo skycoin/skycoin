@@ -21,6 +21,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
 import { PriceService } from '../../../../services/price.service';
 import { SendFormComponent } from '../send-form/send-form.component';
+import { ChangeNoteComponent } from '../send-preview/transaction-info/change-note/change-note.component';
 
 @Component({
   selector: 'app-send-form-advanced',
@@ -33,6 +34,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   @Input() formData: any;
   @Output() onFormSubmitted = new EventEmitter<any>();
 
+  maxNoteChars = ChangeNoteComponent.MAX_NOTE_CHARS;
   form: FormGroup;
   wallet: Wallet;
   addresses = [];
@@ -83,6 +85,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
         [this.createDestinationFormGroup()],
         this.validateDestinations.bind(this),
       ),
+      note: [''],
     });
 
     this.subscriptions = this.form.get('wallet').valueChanges.subscribe(wallet => {
@@ -311,7 +314,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   private fillForm() {
     this.addresses = this.formData.form.wallet.addresses;
 
-    ['wallet', 'addresses', 'changeAddress'].forEach(name => {
+    ['wallet', 'addresses', 'changeAddress', 'note'].forEach(name => {
       this.form.get(name).setValue(this.formData.form[name]);
     });
 
@@ -479,9 +482,16 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
           passwordDialog.close();
         }
 
+        const note = this.form.value.note.trim();
         if (!this.previewTx) {
-          this.processingSubscription = this.walletService.injectTransaction(transaction.encoded)
-            .subscribe(() => this.showSuccess(), error => this.showError(error));
+          this.processingSubscription = this.walletService.injectTransaction(transaction.encoded, note)
+            .subscribe(noteSaved => {
+              if (note && !noteSaved) {
+                showSnackbarError(this.snackbar, this.translate.instant('send.error-saving-note'));
+              }
+
+              this.showSuccess();
+            }, error => this.showError(error));
         } else {
           let amount = new BigNumber('0');
           this.destinations.map(destination => amount = amount.plus(destination.coins));
@@ -497,6 +507,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
               allUnspentOutputs: this.loadingUnspentOutputs ? null : this.allUnspentOutputs,
               outputs: this.form.get('outputs').value,
               currency: this.selectedCurrency,
+              note: note,
             },
             amount: amount,
             to: this.destinations.map(d => d.address),
@@ -522,6 +533,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.form.get('addresses').setValue(null);
     this.form.get('outputs').setValue(null);
     this.form.get('changeAddress').setValue('');
+    this.form.get('note').setValue('');
 
     this.wallet = null;
 

@@ -17,6 +17,7 @@ import { BlockchainService } from '../../../../services/blockchain.service';
 import { showConfirmationModal } from '../../../../utils';
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
 import { PriceService } from '../../../../services/price.service';
+import { ChangeNoteComponent } from '../send-preview/transaction-info/change-note/change-note.component';
 
 @Component({
   selector: 'app-send-form',
@@ -32,6 +33,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
   @Input() formData: any;
   @Output() onFormSubmitted = new EventEmitter<any>();
 
+  maxNoteChars = ChangeNoteComponent.MAX_NOTE_CHARS;
   form: FormGroup;
   transactions = [];
   previewTx: boolean;
@@ -215,9 +217,16 @@ export class SendFormComponent implements OnInit, OnDestroy {
           passwordDialog.close();
         }
 
+        const note = this.form.value.note.trim();
         if (!this.previewTx) {
-          this.processingSubscription = this.walletService.injectTransaction(transaction.encoded)
-            .subscribe(() => this.showSuccess(), error => this.showError(error));
+          this.processingSubscription = this.walletService.injectTransaction(transaction.encoded, note)
+            .subscribe(noteSaved => {
+              if (note && !noteSaved) {
+                showSnackbarError(this.snackbar, this.translate.instant('send.error-saving-note'));
+              }
+
+              this.showSuccess();
+            }, error => this.showError(error));
         } else {
           this.onFormSubmitted.emit({
             form: {
@@ -225,6 +234,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
               address: this.form.value.address,
               amount: this.form.value.amount,
               currency: this.selectedCurrency,
+              note: note,
             },
             amount: new BigNumber(this.form.value.amount),
             to: [this.form.value.address],
@@ -269,6 +279,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
       wallet: ['', Validators.required],
       address: ['', Validators.required],
       amount: ['', Validators.required],
+      note: [''],
     });
 
     this.subscriptions.add(this.form.get('wallet').valueChanges.subscribe(value => {
@@ -344,6 +355,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
     this.form.get('wallet').setValue('');
     this.form.get('address').setValue('');
     this.form.get('amount').setValue('');
+    this.form.get('note').setValue('');
     this.selectedCurrency = DoubleButtonActive.LeftButton;
   }
 

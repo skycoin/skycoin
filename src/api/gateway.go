@@ -83,6 +83,7 @@ type Visorer interface {
 	GetAllUnconfirmedTransactionsVerbose() ([]visor.UnconfirmedTransaction, [][]visor.TransactionInput, error)
 	GetTransaction(txid cipher.SHA256) (*visor.Transaction, error)
 	GetTransactionWithInputs(txid cipher.SHA256) (*visor.Transaction, []visor.TransactionInput, error)
+	GetProgramState(flts []visor.TxFilter) ([]byte, error)
 	GetTransactions(flts []visor.TxFilter) ([]visor.Transaction, error)
 	GetTransactionsWithInputs(flts []visor.TxFilter) ([]visor.Transaction, [][]visor.TransactionInput, error)
 	GetWalletUnconfirmedTransactions(wltID string) ([]visor.UnconfirmedTransaction, error)

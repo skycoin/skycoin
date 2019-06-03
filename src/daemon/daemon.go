@@ -1262,7 +1262,7 @@ func checkBroadcastTxnRecipients(connections *Connections, ids []uint64, txn coi
 		if c.UserAgent.Empty() {
 			if err := verifyUserTxnAgainstPeer(txn, head, inputs, params.VerifyTxn{
 				BurnFactor:          2,
-				MaxTransactionSize:  32 * 1024,
+				MaxTransactionSize:  5 * 1024 * 1024,
 				MaxDropletPrecision: 3,
 			}); err != nil {
 				logger.WithFields(logrus.Fields{

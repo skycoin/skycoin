@@ -365,7 +365,7 @@ func (c *Config) postProcess() error {
 	}
 
 	// Compute genesis block hash
-	gb, err := coin.NewGenesisBlock(c.Node.genesisAddress, c.Node.GenesisCoinVolume, c.Node.GenesisTimestamp)
+	gb, err := coin.NewGenesisBlock(c.Node.genesisAddress, c.Node.GenesisCoinVolume, c.Node.GenesisTimestamp, []byte{})
 	if err != nil {
 		panicIfError(err, "Create genesis hash failed")
 	}

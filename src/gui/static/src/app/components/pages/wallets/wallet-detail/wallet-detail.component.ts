@@ -130,6 +130,8 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   deleteWallet() {
+    this.snackbar.dismiss();
+
     const confirmationData: ConfirmationData = {
       text: this.translateService.instant('wallet.delete-confirmation', {name: this.wallet.label}),
       headerText: 'confirmation.header-text',
@@ -177,6 +179,8 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   confirmAddress(address, addressIndex, showCompleteConfirmation) {
+    this.snackbar.dismiss();
+
     this.hwWalletService.checkIfCorrectHwConnected(this.wallet.addresses[0].address).subscribe(response => {
       const data = new AddressConfirmationParams();
       data.address = address;

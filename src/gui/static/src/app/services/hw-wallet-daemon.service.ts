@@ -31,11 +31,7 @@ export class HwWalletDaemonService {
     private hwWalletPinService: HwWalletPinService,
     private hwWalletSeedWordService: HwWalletSeedWordService,
     private ngZone: NgZone,
-  ) {
-    if (AppConfig.useHwWalletDaemon) {
-      this.checkHw(false);
-    }
-  }
+  ) { }
 
   get(route: string) {
     return this.checkResponse(this.http.get(
@@ -69,7 +65,7 @@ export class HwWalletDaemonService {
 
   private checkResponse(response: Observable<any>, checkingConnected = false, smallTimeout = false) {
     return response
-      .timeout(smallTimeout ? 3000 : 50000)
+      .timeout(smallTimeout ? 5000 : 50000)
       .flatMap((res: any) => {
         const finalResponse = res.json();
 

@@ -264,7 +264,7 @@ func NewDaemonConfig() DaemonConfig {
 		UnconfirmedVerifyTxn:         params.UserVerifyTxn,
 		MaxOutgoingMessageLength:     256 * 1024,
 		MaxIncomingMessageLength:     1024 * 1024,
-		MaxBlockTransactionsSize:     32768,
+		MaxBlockTransactionsSize:     5 * 1024 * 1024,
 	}
 }
 

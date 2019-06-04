@@ -90,4 +90,4 @@ deploy:
   region: $AWS_REGION
   on:
     repo: skycoin/skycoin
-    branch: master
+    tags: true

@@ -21,6 +21,7 @@ import { catchError, map } from 'rxjs/operators';
 import { AppConfig } from '../app.config';
 import { Http } from '@angular/http';
 import { StorageService, StorageType } from './storage.service';
+import { shouldUpgradeVersion } from '../utils/semver';
 
 declare var Cipher: any;
 
@@ -165,7 +166,7 @@ export class WalletService {
 
       let lastestFirmwareVersion: string;
 
-      return this.http.get('http://localhost:4200/assets/temp/hw-wallet-version.txt')
+      return this.http.get(AppConfig.urlForHwWalletVersionChecking)
       .catch(() => Observable.of(null))
       .flatMap((res: any) => {
         if (res) {
@@ -187,7 +188,7 @@ export class WalletService {
           if (versionParts.length === 3) {
             lastestFirmwareVersionReaded = true;
 
-            const numVersionParts = versionParts.map(value => Number.parseInt(value));
+            const numVersionParts = versionParts.map(value => Number.parseInt(value.replace(/\D/g, '')));
 
             const devMajorVersion = !AppConfig.useHwWalletDaemon ? result.rawResponse.majorVersion : result.rawResponse.fw_major;
             const devMinorVersion = !AppConfig.useHwWalletDaemon ? result.rawResponse.minorVersion : result.rawResponse.fw_minor;

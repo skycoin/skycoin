@@ -3,6 +3,7 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"json"
 
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
@@ -70,6 +71,48 @@ func decodeRawTxnCmd() *cobra.Command {
 			}
 
 			return printJSON(rTxn)
+		},
+	}
+}
+
+func encodeJSONTxnCmd() *cobra.Command {
+	return &cobra.Command{
+		Short:                 "Encode JSON transaction",
+		Use:                   "encodeJsonTransaction [file path or -]",
+		DisableFlagsInUseLine: true,
+		SilenceUsage:          true,
+		Args:                  cobra.ExactArgs(1),
+		RunE: func(_ *cobra.Command, args []string) error {
+			jsonFilePath := args[0]
+			var jsonFile *os.File
+			var err error
+			if jsonFilePath == "-" {
+				jsonFile = os.Stdin
+				err = nil
+				jsonFilePath = "<stdin>"
+			} else {
+				jsonFile, err = os.Open(jsonFilePath)
+			}
+			if err != nil {
+				return fmt.Error("open file failed %s:\n %v", jsonFilePath, err)
+			}
+			var rTxn readable.Transaction
+			err = json.NewDecoder(jsonFile).Decode(&rTxn)
+			if err != nil {
+				return fmt.Errorf("invalid JSON transaction: %v", err)
+			}
+
+			if txn, err := rTxn.GetObject(); err != nil {
+				return err
+			}
+			if rawTxn, err := txn.SerializeHex(); err != nil {
+				return err
+			}
+			return printJSON(struct {
+				RawTx string `json:"rawtx"`
+			}{
+				RawTx: rawTxn,
+			})
 		},
 	}
 }

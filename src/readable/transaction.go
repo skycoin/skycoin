@@ -209,9 +209,11 @@ func (rTxn *Transaction) GetObject() (*coin.Transaction, error) {
 	// Do not check length field in transaction header
 	if rTxn.InnerHash != "" {
 		if h, err := cipher.SHA256FromHex(rTxn.InnerHash); err != nil {
-			txn.InnerHash = h
+			return nil, fmt.Errorf("Invalid inner hash: %s", err)
 		} else {
-			return nil, fmt.Errorf("Invalid inner hash %s. Expected %s", rTxn.InnerHash, txn.InnerHash.Hex())
+			if txn.InnerHash != h {
+				return nil, fmt.Errorf("Invalid inner hash %s. Expected %s", rTxn.InnerHash, txn.InnerHash.Hex())
+			}
 		}
 	}
 	return &txn, nil

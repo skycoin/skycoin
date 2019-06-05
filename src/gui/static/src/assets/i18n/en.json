@@ -398,8 +398,12 @@
       "update": "Update"
     },
     "update-firmware" : {
-      "title": "Update Firmware",
-      "text": "To update the firmware of your hardware wallet you must connect it in firmware mode (connect it to the computer while pressing the two physical buttons of the device). WARNING: before continuing you must have a backup of your seed or you can permanently lose access to the funds.",
+      "title-connecting": "Connecting...",
+      "title-update": "Update Firmware",
+      "title-install": "Install Firmware",
+      "text-bootloader": "WARNING: if you have already configured this device, before continuing you must have a backup of your seed or you could permanently lose access to the funds.",
+      "text-not-bootloader": "To update the firmware of your hardware wallet you must connect it in bootloader mode (connect it to the computer while pressing the two physical buttons of the device). WARNING: if you have already configured this device, before continuing you must have a backup of your seed or you could permanently lose access to the funds.",
+      "text-no-firmware": "Welcome. The currently connected wallet hardware does not have a firmware (internal software), we will install one so you can start using it. NOTE: if you have already configured this device and want to recover the funds, you will need your seed.",
       "check": "I understand the risks and want to continue",
       "completed": "The firmware update has been sent to the hardware wallet. Please continue the process on the device.",
       "connection-error": "It was not possible download the firmware. This could be due to problems with your internet connection or because the service is in maintenance.",

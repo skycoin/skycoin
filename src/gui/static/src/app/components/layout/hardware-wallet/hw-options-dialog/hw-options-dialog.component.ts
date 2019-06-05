@@ -77,6 +77,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
   ngOnDestroy() {
     super.ngOnDestroy();
     this.removeDialogSubscription();
+    this.removeOperationSubscription();
   }
 
   hwConnectionChanged(connected: boolean) {
@@ -196,14 +197,12 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
     this.wallet = null;
     this.currentState = States.Processing;
 
-    this.hwWalletService.getDeviceConnected().subscribe(connected => {
+    this.removeOperationSubscription();
+
+    this.operationSubscription = this.hwWalletService.getDeviceConnected().subscribe(connected => {
       if (!connected) {
         this.currentState = States.Disconnected;
       } else {
-        if (this.operationSubscription) {
-          this.operationSubscription.unsubscribe();
-        }
-
         this.operationSubscription = this.hwWalletService.getAddresses(1, 0).subscribe(
           response => {
             this.walletService.wallets.first().subscribe(wallets => {
@@ -268,6 +267,12 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
         this.currentState = States.Error;
       }
     });
+  }
+
+  private removeOperationSubscription() {
+    if (this.operationSubscription) {
+      this.operationSubscription.unsubscribe();
+    }
   }
 
   private openUpdateWarning() {

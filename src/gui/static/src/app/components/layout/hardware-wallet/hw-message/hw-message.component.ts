@@ -22,6 +22,7 @@ export class HwMessageComponent {
   @Input() linkText: string;
   @Input() upperBigText: string;
   @Input() lowerBigText: string;
+  @Input() lowerLightText: string;
   @Output() linkClicked = new EventEmitter();
 
   icons = MessageIcons;

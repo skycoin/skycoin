@@ -147,9 +147,9 @@ export class HwWalletService {
 
   get hwWalletCompatibilityActivated(): boolean {
     if (!AppConfig.useHwWalletDaemon) {
-      return !environment.production && window['isElectron'] && window['ipcRenderer'].sendSync('hwCompatibilityActivated');
+      return window['isElectron'] && window['ipcRenderer'].sendSync('hwCompatibilityActivated');
     } else {
-      return !environment.production;
+      return true;
     }
   }
 
@@ -301,13 +301,13 @@ export class HwWalletService {
           return Observable.throw(response);
         }
 
-        return this.http.get('http://localhost:4200/assets/temp/hw-wallet-version.txt')
+        return this.http.get(AppConfig.urlForHwWalletVersionChecking)
           .catch(() => Observable.throw({ _body: this.translate.instant('hardware-wallet.update-firmware.connection-error') }))
           .map((res: any) => res.text())
           .flatMap((res: any) => {
             const lastestFirmwareVersion = res.trim();
 
-            return this.http.get('http://localhost:4200/assets/temp/skyfirmware_' + lastestFirmwareVersion + '.bin', { responseType: ResponseContentType.Blob })
+            return this.http.get(AppConfig.hwWalletDownloadUrlAndPrefix + lastestFirmwareVersion + '.bin', { responseType: ResponseContentType.Blob })
               .map(firmwareResponse => firmwareResponse.blob())
               .catch(() => Observable.throw({ _body: this.translate.instant('hardware-wallet.update-firmware.connection-error') }))
               .flatMap(firmware => {

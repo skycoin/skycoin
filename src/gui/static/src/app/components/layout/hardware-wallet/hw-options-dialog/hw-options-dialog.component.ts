@@ -47,6 +47,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
   states = States;
   walletName = '';
   customErrorMsg = '';
+  firmwareVersion = '';
 
   securityWarnings: string[] = [];
   firmwareVersionNotVerified: boolean;
@@ -184,6 +185,8 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
       if (!dontUpdateWallet) {
         this.walletName = this.wallet.label;
       }
+
+      this.firmwareVersion = response.features.fw_major + '.' + response.features.fw_minor + '.' + response.features.fw_patch;
 
       return response;
     });

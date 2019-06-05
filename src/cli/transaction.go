@@ -1,9 +1,10 @@
 package cli
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
-	"json"
+	"os"
 
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
@@ -94,7 +95,7 @@ func encodeJSONTxnCmd() *cobra.Command {
 				jsonFile, err = os.Open(jsonFilePath)
 			}
 			if err != nil {
-				return fmt.Error("open file failed %s:\n %v", jsonFilePath, err)
+				return fmt.Errorf("open file failed %s:\n %v", jsonFilePath, err)
 			}
 			var rTxn readable.Transaction
 			err = json.NewDecoder(jsonFile).Decode(&rTxn)
@@ -102,10 +103,12 @@ func encodeJSONTxnCmd() *cobra.Command {
 				return fmt.Errorf("invalid JSON transaction: %v", err)
 			}
 
-			if txn, err := rTxn.GetObject(); err != nil {
+			txn, err := rTxn.GetObject()
+			if err != nil {
 				return err
 			}
-			if rawTxn, err := txn.SerializeHex(); err != nil {
+			rawTxn, err := txn.SerializeHex()
+			if err != nil {
 				return err
 			}
 			return printJSON(struct {

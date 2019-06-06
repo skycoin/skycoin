@@ -40,6 +40,18 @@ export class OperationResult {
   rawResponse: any;
 }
 
+export interface Input {
+  hashIn: string;
+  index: number;
+}
+
+export interface Output {
+  address: string;
+  coin: number;
+  hour: number;
+  address_index?: number;
+}
+
 interface EventData {
   event: string;
   successTexts?: string[];
@@ -482,7 +494,7 @@ export class HwWalletService {
     });
   }
 
-  signTransaction(inputs: any, outputs: any): Observable<OperationResult> {
+  signTransaction(inputs: Input[], outputs: Output[]): Observable<OperationResult> {
     this.signTransactionDialog = this.dialog.open(this.signTransactionConfirmationComponentInternal, <MatDialogConfig> {
       width: '450px',
     });

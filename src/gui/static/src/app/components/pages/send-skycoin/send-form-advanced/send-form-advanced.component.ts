@@ -6,7 +6,6 @@ import { PasswordDialogComponent } from '../../../layout/password-dialog/passwor
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { showSnackbarError, getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { Subscription, ISubscription } from 'rxjs/Subscription';
-import { NavBarService } from '../../../../services/nav-bar.service';
 import { SelectAddressComponent } from './select-address/select-address';
 import { BigNumber } from 'bignumber.js';
 import { Output as UnspentOutput, Wallet, Address, ConfirmationData } from '../../../../app.datatypes';
@@ -67,15 +66,12 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     private formBuilder: FormBuilder,
     private dialog: MatDialog,
     private snackbar: MatSnackBar,
-    private navbarService: NavBarService,
     private hwWalletService: HwWalletService,
     private translate: TranslateService,
     private priceService: PriceService,
   ) { }
 
   ngOnInit() {
-    this.navbarService.showSwitch('send.simple', 'send.advanced');
-
     this.form = this.formBuilder.group({
       wallet: ['', Validators.required],
       addresses: [null],
@@ -145,7 +141,6 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.closeGetOutputsSubscriptions();
     this.closeSyncCheckSubscription();
     this.subscriptions.unsubscribe();
-    this.navbarService.hideSwitch();
     this.snackbar.dismiss();
     this.destinationSubscriptions.forEach(s => s.unsubscribe());
   }

@@ -1,4 +1,4 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { NavBarService } from '../../../services/nav-bar.service';
 import { ISubscription } from 'rxjs/Subscription';
 import { DoubleButtonActive } from '../../layout/double-button/double-button.component';
@@ -8,7 +8,7 @@ import { DoubleButtonActive } from '../../layout/double-button/double-button.com
   templateUrl: './send-skycoin.component.html',
   styleUrls: ['./send-skycoin.component.scss'],
 })
-export class SendSkycoinComponent implements OnDestroy {
+export class SendSkycoinComponent implements OnInit, OnDestroy {
   showForm = true;
   formData: any;
   activeForm: DoubleButtonActive;
@@ -18,8 +18,12 @@ export class SendSkycoinComponent implements OnDestroy {
 
   constructor(
     private navbarService: NavBarService,
-  ) {
-    this.subscription = navbarService.activeComponent.subscribe(value => {
+  ) { }
+
+  ngOnInit() {
+    this.navbarService.showSwitch('send.simple', 'send.advanced');
+
+    this.subscription = this.navbarService.activeComponent.subscribe(value => {
       this.activeForm = value;
       this.formData = null;
     });
@@ -27,6 +31,7 @@ export class SendSkycoinComponent implements OnDestroy {
 
   ngOnDestroy() {
     this.subscription.unsubscribe();
+    this.navbarService.hideSwitch();
   }
 
   onFormSubmitted(data) {

@@ -8,7 +8,6 @@ import { PasswordDialogComponent } from '../../../layout/password-dialog/passwor
 import { MatDialog, MatSnackBar, MatDialogConfig } from '@angular/material';
 import { showSnackbarError, getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { ISubscription, Subscription } from 'rxjs/Subscription';
-import { NavBarService } from '../../../../services/nav-bar.service';
 import { BigNumber } from 'bignumber.js';
 import { Wallet, ConfirmationData } from '../../../../app.datatypes';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
@@ -54,7 +53,6 @@ export class SendFormComponent implements OnInit, OnDestroy {
     public walletService: WalletService,
     private dialog: MatDialog,
     private snackbar: MatSnackBar,
-    private navbarService: NavBarService,
     private hwWalletService: HwWalletService,
     private translate: TranslateService,
     priceService: PriceService,
@@ -66,7 +64,6 @@ export class SendFormComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.navbarService.showSwitch('send.simple', 'send.advanced');
     this.initForm();
   }
 
@@ -76,7 +73,6 @@ export class SendFormComponent implements OnInit, OnDestroy {
     }
     this.subscriptions.unsubscribe();
     this.closeSyncCheckSubscription();
-    this.navbarService.hideSwitch();
     this.snackbar.dismiss();
   }
 

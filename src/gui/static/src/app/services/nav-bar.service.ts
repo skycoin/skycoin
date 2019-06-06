@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import { DoubleButtonActive } from '../components/layout/double-button/double-button.component';
 
 @Injectable()
 export class NavBarService {
@@ -13,6 +14,7 @@ export class NavBarService {
   }
 
   showSwitch(leftText, rightText) {
+    this.setActiveComponent(DoubleButtonActive.LeftButton);
     this.switchVisible = true;
     this.leftText = leftText;
     this.rightText = rightText;

@@ -66,8 +66,14 @@ func encodeSizeBlockBody(obj *BlockBody) uint64 {
 			// x.Hours
 			i2 += 8
 
+			// x.ProgramState
+			i2 += 4 + uint64(len(x.ProgramState))
+
 			i1 += uint64(len(x.Out)) * i2
 		}
+
+		// x.MainExpressions
+		i1 += 4 + uint64(len(x.MainExpressions))
 
 		i0 += i1
 	}
@@ -194,7 +200,29 @@ func encodeBlockBodyToBuffer(buf []byte, obj *BlockBody) error {
 			// x.Hours
 			e.Uint64(x.Hours)
 
+			// x.ProgramState length check
+			if uint64(len(x.ProgramState)) > math.MaxUint32 {
+				return errors.New("x.ProgramState length exceeds math.MaxUint32")
+			}
+
+			// x.ProgramState length
+			e.Uint32(uint32(len(x.ProgramState)))
+
+			// x.ProgramState copy
+			e.CopyBytes(x.ProgramState)
+
 		}
+
+		// x.MainExpressions length check
+		if uint64(len(x.MainExpressions)) > math.MaxUint32 {
+			return errors.New("x.MainExpressions length exceeds math.MaxUint32")
+		}
+
+		// x.MainExpressions length
+		e.Uint32(uint32(len(x.MainExpressions)))
+
+		// x.MainExpressions copy
+		e.CopyBytes(x.MainExpressions)
 
 	}
 
@@ -382,7 +410,48 @@ func decodeBlockBody(buf []byte, obj *BlockBody) (uint64, error) {
 								obj.Transactions[z1].Out[z3].Hours = i
 							}
 
+							{
+								// obj.Transactions[z1].Out[z3].ProgramState
+
+								ul, err := d.Uint32()
+								if err != nil {
+									return 0, err
+								}
+
+								length := int(ul)
+								if length < 0 || length > len(d.Buffer) {
+									return 0, encoder.ErrBufferUnderflow
+								}
+
+								if length != 0 {
+									obj.Transactions[z1].Out[z3].ProgramState = make([]byte, length)
+
+									copy(obj.Transactions[z1].Out[z3].ProgramState[:], d.Buffer[:length])
+									d.Buffer = d.Buffer[length:]
+								}
+							}
 						}
+					}
+				}
+
+				{
+					// obj.Transactions[z1].MainExpressions
+
+					ul, err := d.Uint32()
+					if err != nil {
+						return 0, err
+					}
+
+					length := int(ul)
+					if length < 0 || length > len(d.Buffer) {
+						return 0, encoder.ErrBufferUnderflow
+					}
+
+					if length != 0 {
+						obj.Transactions[z1].MainExpressions = make([]byte, length)
+
+						copy(obj.Transactions[z1].MainExpressions[:], d.Buffer[:length])
+						d.Buffer = d.Buffer[length:]
 					}
 				}
 			}

@@ -565,6 +565,29 @@ func (_m *MockGatewayer) GetLastBlocksVerbose(num uint64) ([]coin.SignedBlock, [
 	return r0, r1, r2
 }
 
+// GetProgramState provides a mock function with given fields: flts
+func (_m *MockGatewayer) GetProgramState(flts []visor.TxFilter) ([]byte, error) {
+	ret := _m.Called(flts)
+
+	var r0 []byte
+	if rf, ok := ret.Get(0).(func([]visor.TxFilter) []byte); ok {
+		r0 = rf(flts)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]byte)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]visor.TxFilter) error); ok {
+		r1 = rf(flts)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetRichlist provides a mock function with given fields: includeDistribution
 func (_m *MockGatewayer) GetRichlist(includeDistribution bool) (visor.Richlist, error) {
 	ret := _m.Called(includeDistribution)

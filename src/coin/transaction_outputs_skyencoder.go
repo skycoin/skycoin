@@ -29,6 +29,9 @@ func encodeSizeTransactionOutputs(obj *transactionOutputs) uint64 {
 		// x.Hours
 		i1 += 8
 
+		// x.ProgramState
+		i1 += 4 + uint64(len(x.ProgramState))
+
 		i0 += uint64(len(obj.Out)) * i1
 	}
 
@@ -86,6 +89,17 @@ func encodeTransactionOutputsToBuffer(buf []byte, obj *transactionOutputs) error
 
 		// x.Hours
 		e.Uint64(x.Hours)
+
+		// x.ProgramState length check
+		if uint64(len(x.ProgramState)) > math.MaxUint32 {
+			return errors.New("x.ProgramState length exceeds math.MaxUint32")
+		}
+
+		// x.ProgramState length
+		e.Uint32(uint32(len(x.ProgramState)))
+
+		// x.ProgramState copy
+		e.CopyBytes(x.ProgramState)
 
 	}
 
@@ -157,6 +171,26 @@ func decodeTransactionOutputs(buf []byte, obj *transactionOutputs) (uint64, erro
 					obj.Out[z1].Hours = i
 				}
 
+				{
+					// obj.Out[z1].ProgramState
+
+					ul, err := d.Uint32()
+					if err != nil {
+						return 0, err
+					}
+
+					length := int(ul)
+					if length < 0 || length > len(d.Buffer) {
+						return 0, encoder.ErrBufferUnderflow
+					}
+
+					if length != 0 {
+						obj.Out[z1].ProgramState = make([]byte, length)
+
+						copy(obj.Out[z1].ProgramState[:], d.Buffer[:length])
+						d.Buffer = d.Buffer[length:]
+					}
+				}
 			}
 		}
 	}

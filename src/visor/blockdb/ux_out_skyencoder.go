@@ -2,6 +2,9 @@
 package blockdb
 
 import (
+	"errors"
+	"math"
+
 	"github.com/amherag/skycoin/src/cipher/encoder"
 	"github.com/amherag/skycoin/src/coin"
 )
@@ -30,6 +33,9 @@ func encodeSizeUxOut(obj *coin.UxOut) uint64 {
 
 	// obj.Body.Hours
 	i0 += 8
+
+	// obj.Body.ProgramState
+	i0 += 4 + uint64(len(obj.Body.ProgramState))
 
 	return i0
 }
@@ -78,6 +84,17 @@ func encodeUxOutToBuffer(buf []byte, obj *coin.UxOut) error {
 
 	// obj.Body.Hours
 	e.Uint64(obj.Body.Hours)
+
+	// obj.Body.ProgramState length check
+	if uint64(len(obj.Body.ProgramState)) > math.MaxUint32 {
+		return errors.New("obj.Body.ProgramState length exceeds math.MaxUint32")
+	}
+
+	// obj.Body.ProgramState length
+	e.Uint32(uint32(len(obj.Body.ProgramState)))
+
+	// obj.Body.ProgramState copy
+	e.CopyBytes(obj.Body.ProgramState)
 
 	return nil
 }
@@ -151,6 +168,27 @@ func decodeUxOut(buf []byte, obj *coin.UxOut) (uint64, error) {
 			return 0, err
 		}
 		obj.Body.Hours = i
+	}
+
+	{
+		// obj.Body.ProgramState
+
+		ul, err := d.Uint32()
+		if err != nil {
+			return 0, err
+		}
+
+		length := int(ul)
+		if length < 0 || length > len(d.Buffer) {
+			return 0, encoder.ErrBufferUnderflow
+		}
+
+		if length != 0 {
+			obj.Body.ProgramState = make([]byte, length)
+
+			copy(obj.Body.ProgramState[:], d.Buffer[:length])
+			d.Buffer = d.Buffer[length:]
+		}
 	}
 
 	return uint64(len(buf) - len(d.Buffer)), nil

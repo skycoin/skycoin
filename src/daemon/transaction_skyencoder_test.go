@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/amherag/skycoin/src/cipher/encoder"
+	"github.com/amherag/skycoin/src/coin"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/skycoin/encodertest"
-	"github.com/amherag/skycoin/src/cipher/encoder"
-	"github.com/amherag/skycoin/src/coin"
 )
 
 func newEmptyTransactionForEncodeTest() *coin.Transaction {

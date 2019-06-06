@@ -62,8 +62,14 @@ func encodeSizeTransaction(obj *Transaction) uint64 {
 		// x.Hours
 		i1 += 8
 
+		// x.ProgramState
+		i1 += 4 + uint64(len(x.ProgramState))
+
 		i0 += uint64(len(obj.Txn.Out)) * i1
 	}
+
+	// obj.Txn.MainExpressions
+	i0 += 4 + uint64(len(obj.Txn.MainExpressions))
 
 	// obj.BlockSeq
 	i0 += 8
@@ -174,7 +180,29 @@ func encodeTransactionToBuffer(buf []byte, obj *Transaction) error {
 		// x.Hours
 		e.Uint64(x.Hours)
 
+		// x.ProgramState length check
+		if uint64(len(x.ProgramState)) > math.MaxUint32 {
+			return errors.New("x.ProgramState length exceeds math.MaxUint32")
+		}
+
+		// x.ProgramState length
+		e.Uint32(uint32(len(x.ProgramState)))
+
+		// x.ProgramState copy
+		e.CopyBytes(x.ProgramState)
+
 	}
+
+	// obj.Txn.MainExpressions length check
+	if uint64(len(obj.Txn.MainExpressions)) > math.MaxUint32 {
+		return errors.New("obj.Txn.MainExpressions length exceeds math.MaxUint32")
+	}
+
+	// obj.Txn.MainExpressions length
+	e.Uint32(uint32(len(obj.Txn.MainExpressions)))
+
+	// obj.Txn.MainExpressions copy
+	e.CopyBytes(obj.Txn.MainExpressions)
 
 	// obj.BlockSeq
 	e.Uint64(obj.BlockSeq)
@@ -342,7 +370,48 @@ func decodeTransaction(buf []byte, obj *Transaction) (uint64, error) {
 					obj.Txn.Out[z2].Hours = i
 				}
 
+				{
+					// obj.Txn.Out[z2].ProgramState
+
+					ul, err := d.Uint32()
+					if err != nil {
+						return 0, err
+					}
+
+					length := int(ul)
+					if length < 0 || length > len(d.Buffer) {
+						return 0, encoder.ErrBufferUnderflow
+					}
+
+					if length != 0 {
+						obj.Txn.Out[z2].ProgramState = make([]byte, length)
+
+						copy(obj.Txn.Out[z2].ProgramState[:], d.Buffer[:length])
+						d.Buffer = d.Buffer[length:]
+					}
+				}
 			}
+		}
+	}
+
+	{
+		// obj.Txn.MainExpressions
+
+		ul, err := d.Uint32()
+		if err != nil {
+			return 0, err
+		}
+
+		length := int(ul)
+		if length < 0 || length > len(d.Buffer) {
+			return 0, encoder.ErrBufferUnderflow
+		}
+
+		if length != 0 {
+			obj.Txn.MainExpressions = make([]byte, length)
+
+			copy(obj.Txn.MainExpressions[:], d.Buffer[:length])
+			d.Buffer = d.Buffer[length:]
 		}
 	}
 

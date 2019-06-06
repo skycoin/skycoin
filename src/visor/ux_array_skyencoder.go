@@ -101,6 +101,17 @@ func encodeUxArrayToBuffer(buf []byte, obj *UxArray) error {
 		// x.Body.Hours
 		e.Uint64(x.Body.Hours)
 
+		// x.Body.ProgramState length check
+		if uint64(len(x.Body.ProgramState)) > math.MaxUint32 {
+			return errors.New("x.Body.ProgramState length exceeds math.MaxUint32")
+		}
+
+		// x.Body.ProgramState length
+		e.Uint32(uint32(len(x.Body.ProgramState)))
+
+		// x.Body.ProgramState copy
+		e.CopyBytes(x.Body.ProgramState)
+
 	}
 
 	return nil
@@ -194,6 +205,26 @@ func decodeUxArray(buf []byte, obj *UxArray) (uint64, error) {
 					obj.UxArray[z1].Body.Hours = i
 				}
 
+				{
+					// obj.UxArray[z1].Body.ProgramState
+
+					ul, err := d.Uint32()
+					if err != nil {
+						return 0, err
+					}
+
+					length := int(ul)
+					if length < 0 || length > len(d.Buffer) {
+						return 0, encoder.ErrBufferUnderflow
+					}
+
+					if length != 0 {
+						obj.UxArray[z1].Body.ProgramState = make([]byte, length)
+
+						copy(obj.UxArray[z1].Body.ProgramState[:], d.Buffer[:length])
+						d.Buffer = d.Buffer[length:]
+					}
+				}
 			}
 		}
 	}

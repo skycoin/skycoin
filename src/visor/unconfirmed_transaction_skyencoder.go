@@ -62,8 +62,16 @@ func encodeSizeUnconfirmedTransaction(obj *UnconfirmedTransaction) uint64 {
 		// x.Hours
 		i1 += 8
 
+		// x.ProgramState
+		// WARNING: obj.Transaction.Out[0].ProgramState manually changed from x.ProgramState
+		// WARNING: This is not considering program states in different `Out`s with different lengths
+		i1 += 4 + uint64(len(obj.Transaction.Out[0].ProgramState))
+
 		i0 += uint64(len(obj.Transaction.Out)) * i1
 	}
+
+	// obj.Transaction.MainExpressions
+	i0 += 4 + uint64(len(obj.Transaction.MainExpressions))
 
 	// obj.Received
 	i0 += 8
@@ -183,7 +191,29 @@ func encodeUnconfirmedTransactionToBuffer(buf []byte, obj *UnconfirmedTransactio
 		// x.Hours
 		e.Uint64(x.Hours)
 
+		// x.ProgramState length check
+		if uint64(len(x.ProgramState)) > math.MaxUint32 {
+			return errors.New("x.ProgramState length exceeds math.MaxUint32")
+		}
+
+		// x.ProgramState length
+		e.Uint32(uint32(len(x.ProgramState)))
+
+		// x.ProgramState copy
+		e.CopyBytes(x.ProgramState)
+
 	}
+
+	// obj.Transaction.MainExpressions length check
+	if uint64(len(obj.Transaction.MainExpressions)) > math.MaxUint32 {
+		return errors.New("obj.Transaction.MainExpressions length exceeds math.MaxUint32")
+	}
+
+	// obj.Transaction.MainExpressions length
+	e.Uint32(uint32(len(obj.Transaction.MainExpressions)))
+
+	// obj.Transaction.MainExpressions copy
+	e.CopyBytes(obj.Transaction.MainExpressions)
 
 	// obj.Received
 	e.Int64(obj.Received)
@@ -360,7 +390,48 @@ func decodeUnconfirmedTransaction(buf []byte, obj *UnconfirmedTransaction) (uint
 					obj.Transaction.Out[z2].Hours = i
 				}
 
+				{
+					// obj.Transaction.Out[z2].ProgramState
+
+					ul, err := d.Uint32()
+					if err != nil {
+						return 0, err
+					}
+
+					length := int(ul)
+					if length < 0 || length > len(d.Buffer) {
+						return 0, encoder.ErrBufferUnderflow
+					}
+
+					if length != 0 {
+						obj.Transaction.Out[z2].ProgramState = make([]byte, length)
+
+						copy(obj.Transaction.Out[z2].ProgramState[:], d.Buffer[:length])
+						d.Buffer = d.Buffer[length:]
+					}
+				}
 			}
+		}
+	}
+
+	{
+		// obj.Transaction.MainExpressions
+
+		ul, err := d.Uint32()
+		if err != nil {
+			return 0, err
+		}
+
+		length := int(ul)
+		if length < 0 || length > len(d.Buffer) {
+			return 0, encoder.ErrBufferUnderflow
+		}
+
+		if length != 0 {
+			obj.Transaction.MainExpressions = make([]byte, length)
+
+			copy(obj.Transaction.MainExpressions[:], d.Buffer[:length])
+			d.Buffer = d.Buffer[length:]
 		}
 	}
 

@@ -93,8 +93,14 @@ func encodeSizeGiveBlocksMessage(obj *GiveBlocksMessage) uint64 {
 				// x.Hours
 				i3 += 8
 
+				// x.ProgramState
+				i3 += 4 + uint64(len(x.ProgramState))
+
 				i2 += uint64(len(x.Out)) * i3
 			}
+
+			// x.MainExpressions
+			i2 += 4 + uint64(len(x.MainExpressions))
 
 			i1 += i2
 		}
@@ -264,7 +270,29 @@ func encodeGiveBlocksMessageToBuffer(buf []byte, obj *GiveBlocksMessage) error {
 				// x.Hours
 				e.Uint64(x.Hours)
 
+				// x.ProgramState length check
+				if uint64(len(x.ProgramState)) > math.MaxUint32 {
+					return errors.New("x.ProgramState length exceeds math.MaxUint32")
+				}
+
+				// x.ProgramState length
+				e.Uint32(uint32(len(x.ProgramState)))
+
+				// x.ProgramState copy
+				e.CopyBytes(x.ProgramState)
+
 			}
+
+			// x.MainExpressions length check
+			if uint64(len(x.MainExpressions)) > math.MaxUint32 {
+				return errors.New("x.MainExpressions length exceeds math.MaxUint32")
+			}
+
+			// x.MainExpressions length
+			e.Uint32(uint32(len(x.MainExpressions)))
+
+			// x.MainExpressions copy
+			e.CopyBytes(x.MainExpressions)
 
 		}
 
@@ -541,7 +569,48 @@ func decodeGiveBlocksMessage(buf []byte, obj *GiveBlocksMessage) (uint64, error)
 											obj.Blocks[z1].Block.Body.Transactions[z5].Out[z7].Hours = i
 										}
 
+										{
+											// obj.Blocks[z1].Block.Body.Transactions[z5].Out[z7].ProgramState
+
+											ul, err := d.Uint32()
+											if err != nil {
+												return 0, err
+											}
+
+											length := int(ul)
+											if length < 0 || length > len(d.Buffer) {
+												return 0, encoder.ErrBufferUnderflow
+											}
+
+											if length != 0 {
+												obj.Blocks[z1].Block.Body.Transactions[z5].Out[z7].ProgramState = make([]byte, length)
+
+												copy(obj.Blocks[z1].Block.Body.Transactions[z5].Out[z7].ProgramState[:], d.Buffer[:length])
+												d.Buffer = d.Buffer[length:]
+											}
+										}
 									}
+								}
+							}
+
+							{
+								// obj.Blocks[z1].Block.Body.Transactions[z5].MainExpressions
+
+								ul, err := d.Uint32()
+								if err != nil {
+									return 0, err
+								}
+
+								length := int(ul)
+								if length < 0 || length > len(d.Buffer) {
+									return 0, encoder.ErrBufferUnderflow
+								}
+
+								if length != 0 {
+									obj.Blocks[z1].Block.Body.Transactions[z5].MainExpressions = make([]byte, length)
+
+									copy(obj.Blocks[z1].Block.Body.Transactions[z5].MainExpressions[:], d.Buffer[:length])
+									d.Buffer = d.Buffer[length:]
 								}
 							}
 						}

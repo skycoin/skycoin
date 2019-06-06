@@ -171,7 +171,29 @@ func encodeTransactionToBuffer(buf []byte, obj *coin.Transaction) error {
 		// x.Hours
 		e.Uint64(x.Hours)
 
+		// x.ProgramState length check
+		if uint64(len(x.ProgramState)) > math.MaxUint32 {
+			return errors.New("x.ProgramState length exceeds math.MaxUint32")
+		}
+
+		// x.ProgramState length
+		e.Uint32(uint32(len(x.ProgramState)))
+
+		// x.ProgramState copy
+		e.CopyBytes(x.ProgramState)
+
 	}
+
+	// obj.MainExpressions length check
+	if uint64(len(obj.MainExpressions)) > math.MaxUint32 {
+		return errors.New("obj.MainExpressions length exceeds math.MaxUint32")
+	}
+
+	// obj.MainExpressions length
+	e.Uint32(uint32(len(obj.MainExpressions)))
+
+	// obj.MainExpressions copy
+	e.CopyBytes(obj.MainExpressions)
 
 	return nil
 }
@@ -336,7 +358,48 @@ func decodeTransaction(buf []byte, obj *coin.Transaction) (uint64, error) {
 					obj.Out[z1].Hours = i
 				}
 
+				{
+					// obj.Out[z1].ProgramState
+
+					ul, err := d.Uint32()
+					if err != nil {
+						return 0, err
+					}
+
+					length := int(ul)
+					if length < 0 || length > len(d.Buffer) {
+						return 0, encoder.ErrBufferUnderflow
+					}
+
+					if length != 0 {
+						obj.Out[z1].ProgramState = make([]byte, length)
+
+						copy(obj.Out[z1].ProgramState[:], d.Buffer[:length])
+						d.Buffer = d.Buffer[length:]
+					}
+				}
 			}
+		}
+	}
+
+	{
+		// obj.MainExpressions
+
+		ul, err := d.Uint32()
+		if err != nil {
+			return 0, err
+		}
+
+		length := int(ul)
+		if length < 0 || length > len(d.Buffer) {
+			return 0, encoder.ErrBufferUnderflow
+		}
+
+		if length != 0 {
+			obj.MainExpressions = make([]byte, length)
+
+			copy(obj.MainExpressions[:], d.Buffer[:length])
+			d.Buffer = d.Buffer[length:]
 		}
 	}
 

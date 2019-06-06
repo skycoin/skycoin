@@ -22,7 +22,10 @@
     </span>
   </div>
   <div class="-button" (click)="editWallet()">
-    <span class="-img -edit-wallet">{{ 'wallet.edit' | translate }}</span>
+    <span [ngClass]="{ '-img -edit-wallet': !preparingToEdit, '-disabled-span': preparingToEdit, '-enabled-span': !preparingToEdit }">
+      <mat-spinner *ngIf="preparingToEdit" class="in-button small"></mat-spinner>
+      {{ 'wallet.edit' | translate }}
+    </span>
   </div>
 </div>
 

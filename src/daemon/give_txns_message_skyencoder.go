@@ -68,7 +68,9 @@ func encodeSizeGiveTxnsMessage(obj *GiveTxnsMessage) uint64 {
 			i2 += 8
 
 			// x.ProgramState
-			i2 += 4 + uint64(len(x.ProgramState))
+			// WARNING: x.Out[0].ProgramState manually changed from x.ProgramState
+			// WARNING: This is not considering program states in different `Out`s with different lengths
+			i2 += 4 + uint64(len(x.Out[0].ProgramState))
 
 			i1 += uint64(len(x.Out)) * i2
 		}

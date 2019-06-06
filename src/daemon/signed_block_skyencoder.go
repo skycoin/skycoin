@@ -89,8 +89,9 @@ func encodeSizeSignedBlock(obj *coin.SignedBlock) uint64 {
 			i2 += 8
 
 			// x.ProgramState
-			// WARNING: x.Out.ProgramState manually changed from x.ProgramState
-			i2 += 4 + uint64(len(x.Out.ProgramState))
+			// WARNING: x.Out[0].ProgramState manually changed from x.ProgramState
+			// WARNING: This is not considering program states in different `Out`s with different lengths
+			i2 += 4 + uint64(len(x.Out[0].ProgramState))
 
 			i1 += uint64(len(x.Out)) * i2
 		}
@@ -248,18 +249,21 @@ func encodeSignedBlockToBuffer(buf []byte, obj *coin.SignedBlock) error {
 			e.Uint64(x.Hours)
 
 			// x.ProgramState length check
-			// WARNING: x.Out.ProgramState manually changed from x.ProgramState
-			if uint64(len(x.Out.ProgramState)) > math.MaxUint32 {
+			// WARNING: x.Out[0].ProgramState manually changed from x.ProgramState
+			// WARNING: This is not considering program states in different `Out`s with different lengths
+			if uint64(len(x.Out[0].ProgramState)) > math.MaxUint32 {
 				return errors.New("x.ProgramState length exceeds math.MaxUint32")
 			}
 
 			// x.ProgramState length
-			// WARNING: x.Out.ProgramState manually changed from x.ProgramState
-			e.Uint32(uint32(len(x.Out.ProgramState)))
+			// WARNING: x.Out[0].ProgramState manually changed from x.ProgramState
+			// WARNING: This is not considering program states in different `Out`s with different lengths
+			e.Uint32(uint32(len(x.Out[0].ProgramState)))
 
 			// x.ProgramState copy
-			// WARNING: x.Out.ProgramState manually changed from x.ProgramState
-			e.CopyBytes(x.Out.ProgramState)
+			// WARNING: x.Out[0].ProgramState manually changed from x.ProgramState
+			// WARNING: This is not considering program states in different `Out`s with different lengths
+			e.CopyBytes(x.Out[0].ProgramState)
 
 		}
 

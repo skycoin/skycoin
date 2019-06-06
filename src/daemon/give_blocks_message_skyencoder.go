@@ -94,7 +94,9 @@ func encodeSizeGiveBlocksMessage(obj *GiveBlocksMessage) uint64 {
 				i3 += 8
 
 				// x.ProgramState
-				i3 += 4 + uint64(len(x.ProgramState))
+				// WARNING: x.Out[0].ProgramState manually changed from x.ProgramState
+				// WARNING: This is not considering program states in different `Out`s with different lengths
+				i3 += 4 + uint64(len(x.Out[0].ProgramState))
 
 				i2 += uint64(len(x.Out)) * i3
 			}

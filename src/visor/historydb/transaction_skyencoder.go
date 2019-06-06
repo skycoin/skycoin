@@ -63,7 +63,9 @@ func encodeSizeTransaction(obj *Transaction) uint64 {
 		i1 += 8
 
 		// x.ProgramState
-		i1 += 4 + uint64(len(x.ProgramState))
+		// WARNING: obj.Txn.Out[0].ProgramState manually changed from x.ProgramState
+		// WARNING: This is not considering program states in different `Out`s with different lengths
+		i1 += 4 + uint64(len(obj.Txn.Out[0].ProgramState))
 
 		i0 += uint64(len(obj.Txn.Out)) * i1
 	}

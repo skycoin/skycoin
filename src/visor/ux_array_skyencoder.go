@@ -39,6 +39,10 @@ func encodeSizeUxArray(obj *UxArray) uint64 {
 		// x.Body.Hours
 		i1 += 8
 
+		// WARNING: this whole entry was manually added
+		// WARNING: This is not considering program states in different `Out`s with different lengths
+		i1 += 4 + uint64(len(obj.UxArray[0].Body.ProgramState))
+
 		i0 += uint64(len(obj.UxArray)) * i1
 	}
 

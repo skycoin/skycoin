@@ -35,6 +35,12 @@ export enum OperationResults {
   NotInFirmwareMode,
 }
 
+export class TxData {
+  address: string;
+  coins: BigNumber;
+  hours: BigNumber;
+}
+
 export class OperationResult {
   result: OperationResults;
   rawResponse: any;
@@ -483,8 +489,22 @@ export class HwWalletService {
   }
 
   signTransaction(inputs: any, outputs: any): Observable<OperationResult> {
+
+    const previewData: TxData[] = [];
+    outputs.forEach(output => {
+      if (output.address_index === undefined || output.address_index === null) {
+        const currentOutput = new TxData();
+        currentOutput.address = output.address;
+        currentOutput.coins = new BigNumber(output.coin).dividedBy(1000000);
+        currentOutput.hours = new BigNumber(output.hour);
+
+        previewData.push(currentOutput);
+      }
+    });
+
     this.signTransactionDialog = this.dialog.open(this.signTransactionConfirmationComponentInternal, <MatDialogConfig> {
-      width: '450px',
+      width: '560px',
+      data: previewData,
     });
 
     return this.cancelLastAction().flatMap(() => {

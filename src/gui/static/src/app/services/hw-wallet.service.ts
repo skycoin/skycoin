@@ -230,6 +230,24 @@ export class HwWalletService {
           ),
         );
       }
+    }).flatMap(response => {
+      return this.verifyAddresses(response.rawResponse, 0)
+        .catch(() => Observable.throw({ _body: this.translate.instant('hardware-wallet.errors.invalid-address-generated') }))
+        .map(() => response);
+    });
+  }
+
+  private verifyAddresses(addresses: string[], currentIndex: number): Observable<any> {
+    const params = {
+      address: addresses[currentIndex],
+    }
+
+    return this.apiService.post('address/verify', params, {}, true).flatMap(() => {
+      if (currentIndex !== addresses.length - 1) {
+        return this.verifyAddresses(addresses, currentIndex + 1);
+      } else {
+        return Observable.of(0);
+      }
     });
   }
 

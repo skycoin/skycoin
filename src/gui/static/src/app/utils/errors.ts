@@ -1,7 +1,8 @@
-import { MatSnackBar, MatSnackBarConfig } from '@angular/material';
 import { HwWalletService, OperationResults } from '../services/hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
 import { AppConfig } from '../app.config';
+import { MsgBarService } from '../services/msg-bar.service';
+import { MsgBarConfig, MsgBarIcons, MsgBarColors } from '../components/layout/msg-bar/msg-bar.component';
 
 export function parseResponseMessage(body: string): string {
   if (typeof body === 'object') {
@@ -27,12 +28,16 @@ export function parseResponseMessage(body: string): string {
   return body;
 }
 
-export function showSnackbarError(snackbar: MatSnackBar, body: string, duration = 300000) {
-  const config = new MatSnackBarConfig();
-  config.duration = duration;
+export function showSnackbarError(msgBarService: MsgBarService, body: string) {
+  const config = new MsgBarConfig();
+  config.text = parseResponseMessage(body);
+  config.title = 'errors.error'
+  config.icon = MsgBarIcons.error;
+  config.color = MsgBarColors.red;
 
-  snackbar.open(parseResponseMessage(body), null, config);
+  msgBarService.show(config);
 }
+
 
 export function getHardwareWalletErrorMsg(hwWalletService: HwWalletService, translateService: TranslateService, error: any): string {
   if (!AppConfig.useHwWalletDaemon && !window['ipcRenderer'].sendSync('hwGetDeviceConnectedSync')) {

@@ -1,0 +1,10 @@
+<div class="main-container" *ngIf="visible">
+  <div [class]="'internal-container ' + (config.color ? config.color : 'red-background')">
+    <div class="icon-container" *ngIf="config.icon"><mat-icon>{{ config.icon }}</mat-icon></div>
+    <div class="text-container">
+      <div class="title" *ngIf="config.title">{{ config.title | translate }}</div>
+      <div class="text">{{ config.text | translate }}</div>
+    </div>
+    <div class="close-container"><mat-icon (click)="hide()">close</mat-icon></div>
+  </div>
+</div>

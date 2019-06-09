@@ -46,7 +46,6 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -107,6 +106,8 @@ import { HwRemovePinDialogComponent } from './components/layout/hardware-wallet/
 import { HwUpdateFirmwareDialogComponent } from './components/layout/hardware-wallet/hw-update-firmware-dialog/hw-update-firmware-dialog.component';
 import { HwUpdateAlertDialogComponent } from './components/layout/hardware-wallet/hw-update-alert-dialog/hw-update-alert-dialog.component';
 import { ChangeNoteComponent } from './components/pages/send-skycoin/send-preview/transaction-info/change-note/change-note.component';
+import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
+import { MsgBarService } from './services/msg-bar.service';
 
 
 const ROUTES = [
@@ -243,6 +244,7 @@ const ROUTES = [
     HwUpdateFirmwareDialogComponent,
     HwUpdateAlertDialogComponent,
     ChangeNoteComponent,
+    MsgBarComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -292,7 +294,6 @@ const ROUTES = [
     MatProgressBarModule,
     MatProgressSpinnerModule,
     MatSelectModule,
-    MatSnackBarModule,
     MatTabsModule,
     MatToolbarModule,
     MatTooltipModule,
@@ -327,6 +328,7 @@ const ROUTES = [
     HwWalletSeedWordService,
     LanguageService,
     StorageService,
+    MsgBarService,
   ],
   bootstrap: [AppComponent],
 })

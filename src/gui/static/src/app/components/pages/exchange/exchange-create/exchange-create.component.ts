@@ -13,7 +13,7 @@ import { ExchangeService } from '../../../../services/exchange.service';
 import { ExchangeOrder, TradingPair, StoredExchangeOrder } from '../../../../app.datatypes';
 import { ISubscription, Subscription } from 'rxjs/Subscription';
 import 'rxjs/add/observable/merge';
-import { MatDialog, MatDialogConfig, MatSnackBar } from '@angular/material';
+import { MatDialog, MatDialogConfig } from '@angular/material';
 import { showSnackbarError } from '../../../../utils/errors';
 import { SelectAddressComponent } from '../../send-skycoin/send-form-advanced/select-address/select-address';
 import { WalletService } from '../../../../services/wallet.service';
@@ -21,6 +21,7 @@ import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/operator/switchMap';
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { TranslateService } from '@ngx-translate/core';
+import { MsgBarService } from '../../../../services/msg-bar.service';
 
 @Component({
   selector: 'app-exchange-create',
@@ -67,7 +68,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
     private exchangeService: ExchangeService,
     private walletService: WalletService,
     private formBuilder: FormBuilder,
-    private snackbar: MatSnackBar,
+    private msgBarService: MsgBarService,
     private dialog: MatDialog,
     private blockchainService: BlockchainService,
     private translateService: TranslateService,
@@ -81,7 +82,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.subscriptions.unsubscribe();
     this.removeExchangeSubscription();
-    this.snackbar.dismiss();
+    this.msgBarService.hide();
 
     if (this.priceUpdateSubscription) {
       this.priceUpdateSubscription.unsubscribe();
@@ -140,7 +141,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
           this.exchangeButton.resetState();
           this.exchangeButton.setEnabled();
           this.exchangeButton.setError(err);
-          showSnackbarError(this.snackbar, err);
+          showSnackbarError(this.msgBarService, err);
         });
       } else {
         this.showInvalidAddress();
@@ -156,7 +157,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
 
     const errMsg = this.translateService.instant('exchange.invalid-address');
     this.exchangeButton.setError(errMsg);
-    showSnackbarError(this.snackbar, errMsg);
+    showSnackbarError(this.msgBarService, errMsg);
   }
 
   private createForm() {

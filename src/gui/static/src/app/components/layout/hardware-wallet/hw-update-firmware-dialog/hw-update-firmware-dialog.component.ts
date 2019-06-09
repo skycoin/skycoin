@@ -3,9 +3,9 @@ import { MatDialogRef } from '@angular/material/dialog';
 import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 import { ButtonComponent } from '../../button/button.component';
-import { MatSnackBar } from '@angular/material';
 import { showSnackbarError, getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { TranslateService } from '@ngx-translate/core';
+import { MsgBarService } from '../../../../services/msg-bar.service';
 
 enum States {
   Initial,
@@ -32,7 +32,7 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
   constructor(
     public dialogRef: MatDialogRef<HwUpdateFirmwareDialogComponent>,
     private hwWalletService: HwWalletService,
-    private snackbar: MatSnackBar,
+    private msgBarService: MsgBarService,
     private translateService: TranslateService,
   ) {
     super(hwWalletService, dialogRef);
@@ -40,7 +40,7 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
 
   ngOnDestroy() {
     super.ngOnDestroy();
-    this.snackbar.dismiss();
+    this.msgBarService.hide();
   }
 
   setConfirmed(event) {
@@ -48,7 +48,7 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
   }
 
   startUpdating() {
-    this.snackbar.dismiss();
+    this.msgBarService.hide();
     this.currentState = States.Processing;
 
     this.operationSubscription = this.hwWalletService.updateFirmware().subscribe(
@@ -65,12 +65,12 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
             const errorMsg = getHardwareWalletErrorMsg(this.hwWalletService, this.translateService, err);
             setTimeout(() => {
               this.button.setError(errorMsg);
-              showSnackbarError(this.snackbar, errorMsg);
+              showSnackbarError(this.msgBarService, errorMsg);
             });
           } else {
             setTimeout(() => {
               this.button.setError(err);
-              showSnackbarError(this.snackbar, err);
+              showSnackbarError(this.msgBarService, err);
             });
           }
 

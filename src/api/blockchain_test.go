@@ -557,6 +557,45 @@ func TestGetBlock(t *testing.T) {
 			if tc.verboseStr != "" {
 				v.Add("verbose", tc.verboseStr)
 			}
+			save := endpoint
+			if tc.verboseStr != "" {
+				endpoint += "/verbose" + v.Encode()
+
+				req, err := http.NewRequest(tc.method, endpoint, nil)
+				require.NoError(t, err)
+				req.Header.Add("Content-Type", ContentTypeForm)
+
+				setCSRFParameters(t, tokenValid, req)
+
+				rr := httptest.NewRecorder()
+
+				cfg := defaultMuxConfig()
+				cfg.disableCSRF = false
+
+				handler := newServerMux(cfg, gateway)
+				handler.ServeHTTP(rr, req)
+
+				status := rr.Code
+				require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
+
+				if status != http.StatusOK {
+					require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()))
+				} else {
+					if tc.verbose {
+						var msg *readable.BlockVerbose
+						err := json.Unmarshal(rr.Body.Bytes(), &msg)
+						require.NoError(t, err)
+						require.Equal(t, tc.response.(*readable.BlockVerbose), msg)
+					} else {
+						var msg *readable.Block
+						err := json.Unmarshal(rr.Body.Bytes(), &msg)
+						require.NoError(t, err)
+						require.Equal(t, tc.response.(*readable.Block), msg)
+					}
+				}
+				endpoint = save
+			}
+
 			if len(v) > 0 {
 				endpoint += "?" + v.Encode()
 			}
@@ -980,7 +1019,53 @@ func TestGetBlocks(t *testing.T) {
 					v.Add("seqs", tc.body.Seqs)
 				}
 			}
+			save := endpoint
+			if tc.body.Verbose != "" {
+				endpoint += "/verbose"
+				var reqBody io.Reader
+				if len(v) > 0 {
+					if tc.method == http.MethodPost {
+						reqBody = strings.NewReader(v.Encode())
+					} else {
+						endpoint += "?" + v.Encode()
+					}
+				}
 
+				req, err := http.NewRequest(tc.method, endpoint, reqBody)
+				require.NoError(t, err)
+
+				if tc.method == http.MethodPost {
+					req.Header.Set("Content-Type", ContentTypeForm)
+				}
+
+				setCSRFParameters(t, tokenValid, req)
+
+				rr := httptest.NewRecorder()
+				handler := newServerMux(defaultMuxConfig(), gateway)
+
+				handler.ServeHTTP(rr, req)
+
+				status := rr.Code
+				require.Equal(t, tc.status, status, "wrong status code: got `%v` want `%v`", status, tc.status)
+
+				if status != http.StatusOK {
+					require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+						strings.TrimSpace(rr.Body.String()), status, tc.err)
+				} else {
+					if tc.verbose {
+						var msg *readable.BlocksVerbose
+						err = json.Unmarshal(rr.Body.Bytes(), &msg)
+						require.NoError(t, err)
+						require.Equal(t, tc.response, msg)
+					} else {
+						var msg *readable.Blocks
+						err = json.Unmarshal(rr.Body.Bytes(), &msg)
+						require.NoError(t, err)
+						require.Equal(t, tc.response, msg)
+					}
+				}
+				endpoint = save
+			}
 			var reqBody io.Reader
 			if len(v) > 0 {
 				if tc.method == http.MethodPost {
@@ -1183,6 +1268,46 @@ func TestGetLastBlocks(t *testing.T) {
 			if tc.body.Verbose != "" {
 				v.Add("verbose", tc.body.Verbose)
 			}
+			save := endpoint
+			if tc.body.Verbose != "" {
+				endpoint += "/verbose"
+				if len(v) > 0 {
+					endpoint += "?" + v.Encode()
+				}
+
+				req, err := http.NewRequest(tc.method, endpoint, nil)
+				require.NoError(t, err)
+
+				setCSRFParameters(t, tokenValid, req)
+
+				rr := httptest.NewRecorder()
+
+				handler := newServerMux(defaultMuxConfig(), gateway)
+
+				handler.ServeHTTP(rr, req)
+
+				status := rr.Code
+				require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
+
+				if status != http.StatusOK {
+					require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+						strings.TrimSpace(rr.Body.String()), status, tc.err)
+				} else {
+					if tc.verbose {
+						var msg *readable.BlocksVerbose
+						err = json.Unmarshal(rr.Body.Bytes(), &msg)
+						require.NoError(t, err)
+						require.Equal(t, tc.response, msg)
+					} else {
+						var msg *readable.Blocks
+						err = json.Unmarshal(rr.Body.Bytes(), &msg)
+						require.NoError(t, err)
+						require.Equal(t, tc.response, msg)
+					}
+				}
+				endpoint = save
+			}
+
 			if len(v) > 0 {
 				endpoint += "?" + v.Encode()
 			}

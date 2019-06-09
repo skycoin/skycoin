@@ -24,7 +24,7 @@ import (
 // URI: /api/v1/pendingTxs
 // Args:
 //	verbose: [bool] include verbose transaction input data
-func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
+func pendingTxnsHandler(gateway Gatewayer, isVerbose bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -37,7 +37,7 @@ func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if verbose {
+		if verbose || isVerbose {
 			txns, inputs, err := gateway.GetAllUnconfirmedTransactionsVerbose()
 			if err != nil {
 				wh.Error500(w, err.Error())
@@ -83,7 +83,7 @@ type TransactionEncodedResponse struct {
 //	txid: transaction hash
 //	verbose: [bool] include verbose transaction input data
 //  encoded: [bool] return as a raw encoded transaction
-func transactionHandler(gateway Gatewayer) http.HandlerFunc {
+func transactionHandler(gateway Gatewayer, isVerbose bool, isEncoded bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			wh.Error405(w)
@@ -108,7 +108,7 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if verbose && encoded {
+		if (verbose && encoded) || (verbose && isEncoded) || (encoded && isVerbose) {
 			wh.Error400(w, "verbose and encoded cannot be combined")
 			return
 		}
@@ -119,7 +119,7 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if verbose {
+		if verbose || isVerbose {
 			txn, inputs, err := gateway.GetTransactionWithInputs(h)
 			if err != nil {
 				wh.Error500(w, err.Error())
@@ -150,7 +150,7 @@ func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if encoded {
+		if encoded || isEncoded {
 			txnHex, err := txn.Transaction.SerializeHex()
 			if err != nil {
 				wh.Error500(w, err.Error())
@@ -256,7 +256,7 @@ func NewTransactionsWithStatusVerbose(txns []visor.Transaction, inputs [][]visor
 //     addrs: Comma separated addresses [optional, returns all transactions if no address provided]
 //     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
 //	   verbose: [bool] include verbose transaction input data
-func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
+func transactionsHandler(gateway Gatewayer, isVerbose bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet && r.Method != http.MethodPost {
 			wh.Error405(w)
@@ -291,7 +291,7 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 			flts = append(flts, visor.NewConfirmedTxFilter(confirmed))
 		}
 
-		if verbose {
+		if verbose || isVerbose {
 			txns, inputs, err := gateway.GetTransactionsWithInputs(flts)
 			if err != nil {
 				wh.Error500(w, err.Error())

@@ -173,7 +173,9 @@ var endpointsMethods = map[string][]string{
 	"/api/v2/transaction": []string{
 		http.MethodPost,
 	},
-
+	"/api/v2/data/single": []string{
+		http.MethodGet,
+	},
 	"/api/v2/data": []string{
 		http.MethodGet,
 		http.MethodPost,

@@ -10,11 +10,11 @@ import (
 // Dispatches /data endpoint.
 // Method: GET, POST, DELETE
 // URI: /api/v2/data
-func storageHandler(gateway Gatewayer) http.HandlerFunc {
+func storageHandler(gateway Gatewayer, isSingle bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			getStorageValuesHandler(w, r, gateway)
+			getStorageValuesHandler(w, r, gateway, isSingle)
 		case http.MethodPost:
 			addStorageValueHandler(w, r, gateway)
 		case http.MethodDelete:
@@ -27,15 +27,20 @@ func storageHandler(gateway Gatewayer) http.HandlerFunc {
 }
 
 // serves GET requests for /data enpdoint
-func getStorageValuesHandler(w http.ResponseWriter, r *http.Request, gateway Gatewayer) {
+func getStorageValuesHandler(w http.ResponseWriter, r *http.Request, gateway Gatewayer, isSingle bool) {
 	storageType := r.FormValue("type")
 	if storageType == "" {
 		resp := NewHTTPErrorResponse(http.StatusBadRequest, "type is required")
 		writeHTTPResponse(w, resp)
 		return
 	}
-
 	key := r.FormValue("key")
+
+	if isSingle && key == "" {
+		resp := NewHTTPErrorResponse(http.StatusBadRequest, "key is required")
+		writeHTTPResponse(w, resp)
+		return
+	}
 
 	if key == "" {
 		getAllStorageValuesHandler(w, gateway, kvstorage.Type(storageType))

@@ -31,7 +31,7 @@ export function parseResponseMessage(body: string): string {
 export function showSnackbarError(msgBarService: MsgBarService, body: string) {
   const config = new MsgBarConfig();
   config.text = parseResponseMessage(body);
-  config.title = 'errors.error'
+  config.title = 'errors.error';
   config.icon = MsgBarIcons.error;
   config.color = MsgBarColors.red;
 

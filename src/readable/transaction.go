@@ -208,7 +208,8 @@ func (rTxn *Transaction) GetObject() (*coin.Transaction, error) {
 	}
 	// Do not check length field in transaction header
 	if rTxn.InnerHash != "" {
-		if h, err := cipher.SHA256FromHex(rTxn.InnerHash); err != nil {
+		h, err := cipher.SHA256FromHex(rTxn.InnerHash)
+		if err != nil {
 			return nil, fmt.Errorf("Invalid inner hash: %s", err)
 		}
 		if txn.InnerHash != h {

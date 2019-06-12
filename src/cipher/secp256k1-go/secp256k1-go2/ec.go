@@ -2,9 +2,6 @@ package secp256k1go
 
 import (
 	"bytes"
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 )
 
@@ -158,35 +155,39 @@ func GeneratePublicKey(k []byte) []byte {
 	return pk.Bytes()
 }
 
-func randBytes(n int) []byte {
-	b := make([]byte, n)
-	_, err := rand.Read(b)
-	if err != nil {
-		panic(err)
-	}
-	return b
-}
-
-func sumSHA256(b []byte) []byte {
-	sha256Hash := sha256.New()
-	// sha256.Write never returns an error
-	sha256Hash.Write(b) // nolint: errcheck
-	sum := sha256Hash.Sum(nil)
-	return sum[:]
-}
-
 func init() {
-	for true {
-		b := randBytes(32)
-		b2 := hex.EncodeToString(b)
-		h := sumSHA256([]byte(b2))
-		if SeckeyIsValid(h) != 1 {
-			fmt.Println("found sha256(value) that generates invalid secret key")
-			fmt.Println("value(hex):", b2)
-			fmt.Println("hash(hex):", hex.EncodeToString(h))
-			panic("done")
+	/* Code snippet to brute force inputs whose sha256 hash is not a valid secret key*/
+	/*
+		randBytes := func(n int) []byte {
+			b := make([]byte, n)
+			_, err := rand.Read(b)
+			if err != nil {
+				panic(err)
+			}
+			return b
 		}
-	}
+		sha256Hash := sha256.New()
+
+		for true {
+			b := randBytes(32)
+
+			sha256Hash.Reset()
+			sha256Hash.Write(b)
+			h := sha256Hash.Sum(nil)
+
+			code := SeckeyIsValid(h)
+			if code == -1 {
+				fmt.Println("found sha256(value) that generates invalid secret key")
+				fmt.Println("value(hex):", hex.EncodeToString(b))
+				fmt.Println("hash(hex):", hex.EncodeToString(h))
+				fmt.Println("validity code:", code)
+				panic("done")
+				// if code == -1 {
+				// 	panic("done")
+				// }
+			}
+		}
+	*/
 }
 
 // SeckeyIsValid 1 on success

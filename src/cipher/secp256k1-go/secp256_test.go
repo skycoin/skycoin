@@ -650,7 +650,9 @@ func Test_Abnormal_Keys(t *testing.T) {
 	}
 }
 
-//problem seckeys
+// problematic seckeys
+// See: https://github.com/piotrnar/gocoin/issues/15
+// For additional information on the origin of these test vectors
 var _testSeckey = []string{
 	"08efb79385c9a8b0d1c6f5f6511be0c6f6c2902963d874a3a4bacc18802528d3",
 	"78298d9ecdc0640c9ae6883201a53f4518055442642024d23c45858f45d0c3e6",
@@ -734,5 +736,43 @@ func Test_Abnormal_Keys3(t *testing.T) {
 			t.Errorf("recovered do not match")
 		}
 	}
+}
 
+func TestGenerateSecretRetries(t *testing.T) {
+	// Tests that generateDeterministicKeyPair retries key generation
+	// until it finds a valid seckey
+
+	cases := []struct {
+		seed string
+		sec  string
+		pub  string
+	}{
+		{
+			seed: "67c53b28b8c7b06be53b490c28c0a3b77724b5c31c4bf12b71cd44c6bb4586f3",
+			sec:  "020bba05e8cdbabcdccd078ba77305c728aa064407a6c617d5d0239a38fcdd8379",
+			pub:  "8da26362f073a32d6437cd97ed09e56f53fa96882afcdcdf1865b1035ace6f2f",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.seed, func(t *testing.T) {
+			ds, err := hex.DecodeString(tc.seed)
+			if err != nil {
+				t.Fatalf("hex.DecodeString(%s) failed: %v", tc.seed, err)
+				return
+			}
+
+			sec, pub := generateDeterministicKeyPair(ds)
+
+			hsec := hex.EncodeToString(sec)
+			if hsec != tc.sec {
+				t.Fatalf("secret key does not match %s != %s", hsec, tc.sec)
+			}
+
+			hpub := hex.EncodeToString(pub)
+			if hpub != tc.pub {
+				t.Fatalf("public key does not match %s != %s", hpub, tc.pub)
+			}
+		})
+	}
 }

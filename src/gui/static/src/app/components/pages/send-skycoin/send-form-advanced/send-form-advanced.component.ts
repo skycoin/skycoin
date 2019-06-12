@@ -6,6 +6,7 @@ import { PasswordDialogComponent } from '../../../layout/password-dialog/passwor
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { showSnackbarError, getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { Subscription, ISubscription } from 'rxjs/Subscription';
+import { NavBarService } from '../../../../services/nav-bar.service';
 import { SelectAddressComponent } from './select-address/select-address';
 import { BigNumber } from 'bignumber.js';
 import { Output as UnspentOutput, Wallet, Address, ConfirmationData } from '../../../../app.datatypes';
@@ -66,12 +67,15 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     private formBuilder: FormBuilder,
     private dialog: MatDialog,
     private snackbar: MatSnackBar,
+    private navbarService: NavBarService,
     private hwWalletService: HwWalletService,
     private translate: TranslateService,
     private priceService: PriceService,
   ) { }
 
   ngOnInit() {
+    this.navbarService.showSwitch('send.simple', 'send.advanced', DoubleButtonActive.RightButton);
+
     this.form = this.formBuilder.group({
       wallet: ['', Validators.required],
       addresses: [null],
@@ -141,6 +145,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.closeGetOutputsSubscriptions();
     this.closeSyncCheckSubscription();
     this.subscriptions.unsubscribe();
+    this.navbarService.hideSwitch();
     this.snackbar.dismiss();
     this.destinationSubscriptions.forEach(s => s.unsubscribe());
   }
@@ -452,6 +457,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       this.previewButton.setDisabled();
     }
     this.busy = true;
+    this.navbarService.disableSwitch();
   }
 
   private createTransaction(passwordDialog?: any) {
@@ -509,6 +515,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
             transaction,
           });
           this.busy = false;
+          this.navbarService.enableSwitch();
         }
       }, error => {
         if (passwordDialog) {
@@ -637,6 +644,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
   private showSuccess() {
     this.busy = false;
+    this.navbarService.enableSwitch();
     this.sendButton.setSuccess();
     this.resetForm();
 
@@ -647,6 +655,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
   private showError(error) {
     this.busy = false;
+    this.navbarService.enableSwitch();
     showSnackbarError(this.snackbar, error);
     this.previewButton.resetState().setEnabled();
     this.sendButton.resetState().setEnabled();

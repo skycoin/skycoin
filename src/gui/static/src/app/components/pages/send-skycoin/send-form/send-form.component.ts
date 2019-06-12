@@ -8,6 +8,7 @@ import { PasswordDialogComponent } from '../../../layout/password-dialog/passwor
 import { MatDialog, MatSnackBar, MatDialogConfig } from '@angular/material';
 import { showSnackbarError, getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { ISubscription, Subscription } from 'rxjs/Subscription';
+import { NavBarService } from '../../../../services/nav-bar.service';
 import { BigNumber } from 'bignumber.js';
 import { Wallet, ConfirmationData } from '../../../../app.datatypes';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
@@ -53,6 +54,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
     public walletService: WalletService,
     private dialog: MatDialog,
     private snackbar: MatSnackBar,
+    private navbarService: NavBarService,
     private hwWalletService: HwWalletService,
     private translate: TranslateService,
     priceService: PriceService,
@@ -64,6 +66,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.navbarService.showSwitch('send.simple', 'send.advanced');
     this.initForm();
   }
 
@@ -73,6 +76,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
     }
     this.subscriptions.unsubscribe();
     this.closeSyncCheckSubscription();
+    this.navbarService.hideSwitch();
     this.snackbar.dismiss();
   }
 
@@ -187,6 +191,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
       this.previewButton.setDisabled();
     }
     this.busy = true;
+    this.navbarService.disableSwitch();
   }
 
   private createTransaction(passwordDialog?: any) {
@@ -237,6 +242,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
             transaction,
           });
           this.busy = false;
+          this.navbarService.enableSwitch();
         }
       },
       error => {
@@ -255,6 +261,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
   private showSuccess() {
     this.busy = false;
+    this.navbarService.enableSwitch();
     this.sendButton.setSuccess();
     this.resetForm();
 
@@ -265,6 +272,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
   private showError(error) {
     this.busy = false;
+    this.navbarService.enableSwitch();
     showSnackbarError(this.snackbar, error);
     this.previewButton.resetState().setEnabled();
     this.sendButton.resetState().setEnabled();

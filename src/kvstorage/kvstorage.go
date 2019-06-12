@@ -2,6 +2,7 @@ package kvstorage
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/skycoin/skycoin/src/util/file"
@@ -15,20 +16,20 @@ var (
 
 // kvStorage is a key-value storage for storing arbitrary data
 type kvStorage struct {
-	fileName string
-	data     map[string]string
+	fn   string
+	data map[string]string
 	sync.RWMutex
 }
 
-// newKVStorage constructs new storage instance using the file with the `fileName`
+// newKVStorage constructs new storage instance using the file with the filename
 // to persist data
-func newKVStorage(fileName string) (*kvStorage, error) {
+func newKVStorage(fn string) (*kvStorage, error) {
 	storage := kvStorage{
-		fileName: fileName,
+		fn: fn,
 	}
 
-	if err := file.LoadJSON(fileName, &storage.data); err != nil {
-		return nil, err
+	if err := file.LoadJSON(fn, &storage.data); err != nil {
+		return nil, fmt.Errorf("newKVStorage LoadJSON(%s) failed: %v", fn, err)
 	}
 
 	return &storage, nil
@@ -106,5 +107,5 @@ func (s *kvStorage) remove(key string) error {
 
 // flush persists data to file
 func (s *kvStorage) flush() error {
-	return file.SaveJSON(s.fileName, s.data, 0600)
+	return file.SaveJSON(s.fn, s.data, 0600)
 }

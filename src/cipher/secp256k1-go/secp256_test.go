@@ -748,6 +748,8 @@ func TestGenerateSecretRetries(t *testing.T) {
 		pub  string
 	}{
 		{
+			// This seed's first sha256 hash is not a valid secret key,
+			// so it will try the next one
 			seed: "67c53b28b8c7b06be53b490c28c0a3b77724b5c31c4bf12b71cd44c6bb4586f3",
 			sec:  "020bba05e8cdbabcdccd078ba77305c728aa064407a6c617d5d0239a38fcdd8379",
 			pub:  "8da26362f073a32d6437cd97ed09e56f53fa96882afcdcdf1865b1035ace6f2f",

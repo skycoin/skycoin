@@ -36,7 +36,6 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
   deviceHasFirmware = true;
 
   private checkDeviceSubscription: ISubscription;
-  private mustCheckDevice = true;
 
   get title(): string {
     if (this.currentState === States.Connecting) {
@@ -73,7 +72,6 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
   ngOnDestroy() {
     super.ngOnDestroy();
     this.snackbar.dismiss();
-    this.mustCheckDevice = false;
     this.closeCheckDeviceSubscription();
   }
 
@@ -85,7 +83,6 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
     this.snackbar.dismiss();
     this.currentState = States.Processing;
 
-    this.mustCheckDevice = false;
     this.closeCheckDeviceSubscription();
 
     this.operationSubscription = this.hwWalletService.updateFirmware().subscribe(
@@ -111,7 +108,6 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
             });
           }
 
-          this.mustCheckDevice = true;
           this.checkDevice(false);
 
           this.currentState = States.Initial;
@@ -125,25 +121,26 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
 
     this.checkDeviceSubscription = Observable.of(0).delay(delay ? 1000 : 0).flatMap(() => this.hwWalletService.getFeatures(false)).subscribe(response => {
       this.deviceInBootloaderMode = response.rawResponse.bootloader_mode;
-      this.deviceHasFirmware = response.rawResponse.firmware_present;
+      if (this.deviceInBootloaderMode) {
+        this.deviceHasFirmware = response.rawResponse.firmware_present;
+      } else {
+        this.deviceHasFirmware = true;
+      }
 
       if (this.currentState === States.Connecting) {
         this.currentState = States.Initial;
       }
 
-      if (this.mustCheckDevice) {
-        this.checkDevice();
-      }
-    }, err => {
+      this.checkDevice();
+    }, () => {
       this.deviceInBootloaderMode = false;
+      this.deviceHasFirmware = true;
 
       if (this.currentState === States.Connecting) {
         this.currentState = States.Initial;
       }
 
-      if (this.mustCheckDevice) {
-        this.checkDevice();
-      }
+      this.checkDevice();
     });
   }
 

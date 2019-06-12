@@ -25,7 +25,7 @@
 
   <div *ngIf="currentState !== states.Initial">
     <app-hw-message *ngIf="currentState === states.Connecting"
-      [text]="'hardware-wallet.options.connecting' | translate"
+      [text]="'hardware-wallet.update-firmware.title-connecting' | translate"
       [icon]="msgIcons.Spinner"
     ></app-hw-message>
 

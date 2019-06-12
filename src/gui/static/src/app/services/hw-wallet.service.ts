@@ -240,7 +240,7 @@ export class HwWalletService {
   private verifyAddresses(addresses: string[], currentIndex: number): Observable<any> {
     const params = {
       address: addresses[currentIndex],
-    }
+    };
 
     return this.apiService.post('address/verify', params, {}, true).flatMap(() => {
       if (currentIndex !== addresses.length - 1) {

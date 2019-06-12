@@ -365,14 +365,14 @@ func (xyz *XYZ) Add(r, b *XYZ) {
 }
 
 // ECmultGen r = a*G
-//TODO: Change to returning result
-//TODO: input should not be pointer
-func ECmultGen(r *XYZ, a *Number) {
+func ECmultGen(a Number) XYZ {
 	var n Number
+	var r XYZ
 	n.Set(&a.Int)
 	r.SetXY(&prec[0][n.rshX(4)])
 	for j := 1; j < 64; j++ {
-		r.AddXY(r, &prec[j][n.rshX(4)])
+		r.AddXY(&r, &prec[j][n.rshX(4)])
 	}
-	r.AddXY(r, &fin)
+	r.AddXY(&r, &fin)
+	return r
 }

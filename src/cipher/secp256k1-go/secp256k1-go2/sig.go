@@ -2,7 +2,7 @@ package secp256k1go
 
 import (
 	"bytes"
-	"log"
+	"fmt"
 )
 
 // Signature represents the signature
@@ -11,13 +11,12 @@ type Signature struct {
 }
 
 // Verify verify the signature
-func (sig *Signature) Verify(pubkey *XY, message *Number) (ret bool) {
+func (sig *Signature) Verify(pubkey *XY, message *Number) bool {
 	var r2 Number
-	ret = sig.recompute(&r2, pubkey, message) && sig.R.Cmp(&r2.Int) == 0
-	return
+	return sig.recompute(&r2, pubkey, message) && sig.R.Cmp(&r2.Int) == 0
 }
 
-func (sig *Signature) recompute(r2 *Number, pubkey *XY, message *Number) (ret bool) {
+func (sig *Signature) recompute(r2 *Number, pubkey *XY, message *Number) bool {
 	var sn, u1, u2 Number
 
 	sn.modInv(&sig.S, &TheCurve.Order)
@@ -28,24 +27,24 @@ func (sig *Signature) recompute(r2 *Number, pubkey *XY, message *Number) (ret bo
 	pubkeyj.SetXY(pubkey)
 
 	pubkeyj.ECmult(&pr, &u2, &u1)
-	if !pr.IsInfinity() {
-		var xr Field
-		pr.getX(&xr)
-		xr.Normalize()
-		var xrb [32]byte
-		xr.GetB32(xrb[:])
-		r2.SetBytes(xrb[:])
-		r2.Mod(&r2.Int, &TheCurve.Order.Int)
-		ret = true
+	if pr.IsInfinity() {
+		return false
 	}
 
-	return
+	var xr Field
+	pr.getX(&xr)
+	xr.Normalize()
+	var xrb [32]byte
+	xr.GetB32(xrb[:])
+	r2.SetBytes(xrb[:])
+	r2.Mod(&r2.Int, &TheCurve.Order.Int)
+
+	return true
 }
 
 // Recover recovers a pubkey XY point given the message that was signed to create
 // this signature.
-// TODO: return type, or nil on failure
-func (sig *Signature) Recover(pubkey *XY, m *Number, recid int) (ret bool) {
+func (sig *Signature) Recover(pubkey *XY, msg *Number, recid int) bool {
 	var rx, rn, u1, u2 Number
 	var fx Field
 	var x XY
@@ -68,7 +67,7 @@ func (sig *Signature) Recover(pubkey *XY, m *Number, recid int) (ret bool) {
 
 	xj.SetXY(&x)
 	rn.modInv(&sig.R, &TheCurve.Order)
-	u1.modMul(&rn, m, &TheCurve.Order)
+	u1.modMul(&rn, msg, &TheCurve.Order)
 	u1.Sub(&TheCurve.Order.Int, &u1.Int)
 	u2.modMul(&rn, &sig.S, &TheCurve.Order)
 	xj.ECmult(&qj, &u2, &u1)
@@ -80,16 +79,17 @@ func (sig *Signature) Recover(pubkey *XY, m *Number, recid int) (ret bool) {
 // Sign signs the signature
 func (sig *Signature) Sign(seckey, message, nonce *Number, recid *int) int {
 	var r XY
-	var rp XYZ
 	var n Number
 	var b [32]byte
 
-	ECmultGen(&rp, nonce)
+	// r = nonce*G
+	rp := ECmultGen(*nonce)
 	r.SetXYZ(&rp)
 	r.X.Normalize()
 	r.Y.Normalize()
 	r.X.GetB32(b[:])
 	sig.R.SetBytes(b[:])
+
 	if recid != nil {
 		*recid = 0
 		if sig.R.Cmp(&TheCurve.Order.Int) >= 0 {
@@ -99,15 +99,18 @@ func (sig *Signature) Sign(seckey, message, nonce *Number, recid *int) int {
 			*recid |= 1
 		}
 	}
+
 	sig.R.mod(&TheCurve.Order)
 	n.modMul(&sig.R, seckey, &TheCurve.Order)
 	n.Add(&n.Int, &message.Int)
 	n.mod(&TheCurve.Order)
 	sig.S.modInv(nonce, &TheCurve.Order)
 	sig.S.modMul(&sig.S, &n, &TheCurve.Order)
+
 	if sig.S.Sign() == 0 {
 		return 0
 	}
+
 	if sig.S.IsOdd() {
 		sig.S.Sub(&TheCurve.Order.Int, &sig.S.Int)
 		if recid != nil {
@@ -129,7 +132,7 @@ func (sig *Signature) Sign(seckey, message, nonce *Number, recid *int) int {
 // R and S should be in big-endian encoding.
 func (sig *Signature) ParseBytes(v []byte) {
 	if len(v) != 64 {
-		log.Panic("Signature.ParseBytes requires 64 bytes")
+		panic("Signature.ParseBytes requires 64 bytes")
 	}
 	sig.R.SetBytes(v[0:32])
 	sig.S.SetBytes(v[32:64])
@@ -153,7 +156,7 @@ func (sig *Signature) Bytes() []byte {
 	}
 
 	if len(r) != 32 || len(s) != 32 {
-		log.Panicf("signature size invalid: %d, %d", len(r), len(s))
+		panic(fmt.Sprintf("signature size invalid: %d, %d", len(r), len(s)))
 	}
 
 	res := new(bytes.Buffer)
@@ -170,15 +173,15 @@ func (sig *Signature) Bytes() []byte {
 		var sig2 Signature
 		sig2.ParseBytes(ret)
 		if !bytes.Equal(sig.R.Bytes(), sig2.R.Bytes()) {
-			log.Panic("serialization failed 1")
+			panic("serialization failed 1")
 		}
 		if !bytes.Equal(sig.S.Bytes(), sig2.S.Bytes()) {
-			log.Panic("serialization failed 2")
+			panic("serialization failed 2")
 		}
 	}
 
 	if len(res.Bytes()) != 64 {
-		log.Panic()
+		panic("Signature.Bytes result bytes must be 64 bytes long")
 	}
 	return res.Bytes()
 }

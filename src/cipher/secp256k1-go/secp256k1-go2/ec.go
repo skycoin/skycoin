@@ -2,7 +2,10 @@ package secp256k1go
 
 import (
 	"bytes"
-	"log"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
 )
 
 // DecompressPoint decompresses point
@@ -24,16 +27,16 @@ func DecompressPoint(X []byte, off bool, Y []byte) {
 
 // RecoverPublicKey recovers a public key from a signature and the message it signed.
 // Returns nil on error with an int error code. Returns 1 on success.
-func RecoverPublicKey(sigByte, h []byte, recid int) ([]byte, int) {
-	if len(sigByte) != 64 {
-		log.Panic("must pass in 64 byte pubkey")
+func RecoverPublicKey(sigBytes, msgBytes []byte, recid int) ([]byte, int) {
+	if len(sigBytes) != 64 {
+		panic("must pass in 64 byte pubkey")
 	}
 
 	var pubkey XY
 	var sig Signature
 	var msg Number
 
-	sig.ParseBytes(sigByte[0:64])
+	sig.ParseBytes(sigBytes[0:64])
 
 	if sig.R.Sign() <= 0 || sig.R.Cmp(&TheCurve.Order.Int) >= 0 {
 		if sig.R.Sign() == 0 {
@@ -51,7 +54,7 @@ func RecoverPublicKey(sigByte, h []byte, recid int) ([]byte, int) {
 		return nil, -5
 	}
 
-	msg.SetBytes(h)
+	msg.SetBytes(msgBytes)
 	if !sig.Recover(&pubkey, &msg, recid) {
 		return nil, -6
 	}
@@ -74,38 +77,37 @@ func Multiply(xy, k []byte) []byte {
 	pk.SetXYZ(&xyz)
 
 	if !pk.IsValid() {
-		log.Panic()
+		panic("Multiply pk is invalid")
 	}
 	return pk.Bytes()
 }
 
-//test assumptions
+// test assumptions
 func pubkeyTest(pk XY) {
 	if !pk.IsValid() {
-		log.Panic("IMPOSSIBLE3: pubkey invalid")
+		panic("IMPOSSIBLE3: pubkey invalid")
 	}
 	var pk2 XY
 	if err := pk2.ParsePubkey(pk.Bytes()); err != nil {
-		log.Panicf("IMPOSSIBLE2: parse failed: %v", err)
+		panic(fmt.Sprintf("IMPOSSIBLE2: parse failed: %v", err))
 	}
 	if !pk2.IsValid() {
-		log.Panic("IMPOSSIBLE3: parse failed non valid key")
+		panic("IMPOSSIBLE3: parse failed non valid key")
 	}
 	if PubkeyIsValid(pk2.Bytes()) != 1 {
-		log.Panic("IMPOSSIBLE4: pubkey failed")
+		panic("IMPOSSIBLE4: pubkey failed")
 	}
 }
 
 // BaseMultiply base multiply
 func BaseMultiply(k []byte) []byte {
-	var r XYZ
 	var n Number
 	var pk XY
 	n.SetBytes(k)
-	ECmultGen(&r, &n)
+	r := ECmultGen(n)
 	pk.SetXYZ(&r)
 	if !pk.IsValid() {
-		log.Panic() // should not occur
+		panic("BaseMultiply pk is invalid") // should not occur
 	}
 
 	pubkeyTest(pk)
@@ -116,14 +118,13 @@ func BaseMultiply(k []byte) []byte {
 // BaseMultiplyAdd computes G*k + xy
 // Returns 33 bytes out (compressed pubkey).
 func BaseMultiplyAdd(xy, k []byte) []byte {
-	var r XYZ
 	var n Number
 	var pk XY
 	if err := pk.ParsePubkey(xy); err != nil {
 		return nil
 	}
 	n.SetBytes(k)
-	ECmultGen(&r, &n)
+	r := ECmultGen(n)
 	r.AddXY(&r, &pk)
 	pk.SetXYZ(&r)
 
@@ -135,9 +136,8 @@ func BaseMultiplyAdd(xy, k []byte) []byte {
 // The secret key must 32 bytes.
 func GeneratePublicKey(k []byte) []byte {
 	if len(k) != 32 {
-		log.Panic("secret key length must be 32 bytes")
+		panic("secret key length must be 32 bytes")
 	}
-	var r XYZ
 	var n Number
 	var pk XY
 
@@ -146,16 +146,47 @@ func GeneratePublicKey(k []byte) []byte {
 	// must be less than order of curve
 	n.SetBytes(k)
 	if n.Sign() <= 0 || n.Cmp(&TheCurve.Order.Int) >= 0 {
-		log.Panic("only call for valid seckey, check that seckey is valid first")
+		panic("only call for valid seckey, check that seckey is valid first")
 		return nil
 	}
-	ECmultGen(&r, &n)
+	r := ECmultGen(n)
 	pk.SetXYZ(&r)
 	if !pk.IsValid() {
-		log.Panic("public key derived from secret key is unexpectedly valid") // should not occur
+		panic("public key derived from secret key is unexpectedly valid") // should not occur
 	}
 	pubkeyTest(pk)
 	return pk.Bytes()
+}
+
+func randBytes(n int) []byte {
+	b := make([]byte, n)
+	_, err := rand.Read(b)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func sumSHA256(b []byte) []byte {
+	sha256Hash := sha256.New()
+	// sha256.Write never returns an error
+	sha256Hash.Write(b) // nolint: errcheck
+	sum := sha256Hash.Sum(nil)
+	return sum[:]
+}
+
+func init() {
+	for true {
+		b := randBytes(32)
+		b2 := hex.EncodeToString(b)
+		h := sumSHA256([]byte(b2))
+		if SeckeyIsValid(h) != 1 {
+			fmt.Println("found sha256(value) that generates invalid secret key")
+			fmt.Println("value(hex):", b2)
+			fmt.Println("hash(hex):", hex.EncodeToString(h))
+			panic("done")
+		}
+	}
 }
 
 // SeckeyIsValid 1 on success
@@ -164,7 +195,7 @@ func GeneratePublicKey(k []byte) []byte {
 // must be less than order of curve
 func SeckeyIsValid(seckey []byte) int {
 	if len(seckey) != 32 {
-		log.Panic()
+		panic("SeckeyIsValid seckey must be 32 bytes")
 	}
 	var n Number
 	n.SetBytes(seckey)
@@ -183,7 +214,7 @@ func SeckeyIsValid(seckey []byte) int {
 // PubkeyIsValid returns 1 on success
 func PubkeyIsValid(pubkey []byte) int {
 	if len(pubkey) != 33 {
-		log.Panic("public key length must be 33 bytes")
+		panic("public key length must be 33 bytes")
 		return -2
 	}
 	var pubkey1 XY
@@ -192,7 +223,7 @@ func PubkeyIsValid(pubkey []byte) int {
 	}
 
 	if !bytes.Equal(pubkey1.Bytes(), pubkey) {
-		log.Panic("pubkey parses but serialize/deserialize roundtrip fails")
+		panic("pubkey parses but serialize/deserialize roundtrip fails")
 	}
 
 	if !pubkey1.IsValid() {

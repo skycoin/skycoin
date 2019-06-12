@@ -193,10 +193,10 @@ new_seckey:
 }
 
 // Secp256k1Hash double SHA256, salted with ECDH operation in curve
-func Secp256k1Hash(hash []byte) []byte {
-	hash = SumSHA256(hash)
+func Secp256k1Hash(seed []byte) []byte {
+	hash := SumSHA256(seed)
 	_, seckey := generateDeterministicKeyPair(hash)            // seckey1 is usually sha256 of hash
-	pubkey, _ := generateDeterministicKeyPair(SumSHA256(hash)) // SumSHA256(hash) equals seckey usually
+	pubkey, _ := generateDeterministicKeyPair(SumSHA256(hash)) // SumSHA256(hash) usually equals seckey
 	ecdh := ECDH(pubkey, seckey)                               // raise pubkey to power of seckey in curve
 	return SumSHA256(append(hash, ecdh...))                    // append signature to sha256(seed) and hash
 }

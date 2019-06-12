@@ -74,7 +74,7 @@ func (xy *XY) ParsePubkey(pub []byte) error {
 // eventually "<03> <X>"
 //33 bytes
 func (xy XY) Bytes() []byte {
-	xy.X.Normalize() // See GitHub issue #15
+	xy.X.Normalize() // See https://github.com/piotrnar/gocoin/issues/15
 
 	raw := make([]byte, 33)
 	if xy.Y.IsOdd() {
@@ -89,8 +89,8 @@ func (xy XY) Bytes() []byte {
 // BytesUncompressed returns serialized key in uncompressed format "<04> <X> <Y>"
 //65 bytes
 func (xy *XY) BytesUncompressed() (raw []byte) {
-	xy.X.Normalize() // See GitHub issue #15
-	xy.Y.Normalize() // See GitHub issue #15
+	xy.X.Normalize() // See https://github.com/piotrnar/gocoin/issues/15
+	xy.Y.Normalize() // See https://github.com/piotrnar/gocoin/issues/15
 
 	raw = make([]byte, 65)
 	raw[0] = 0x04
@@ -232,7 +232,7 @@ func (xy *XY) SetXO(X *Field, odd bool) {
 		xy.Y.Negate(&xy.Y, 1)
 	}
 
-	//r.X.Normalize() // See GitHub issue #15
+	//r.X.Normalize() // See https://github.com/piotrnar/gocoin/issues/15
 	xy.Y.Normalize()
 }
 

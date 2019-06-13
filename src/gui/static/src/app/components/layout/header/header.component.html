@@ -31,10 +31,10 @@
     color="primary"
     [mode]="querying ? 'query' : 'determinate'"
     [value]="percentage * 100"></mat-progress-bar>
-  <mat-toolbar class="notification-bar" *ngIf="updateAvailable">
+  <mat-toolbar class="notification-bar" *ngIf="appService.updateAvailable">
     <div>
       {{ 'header.update1' | translate }}
-      <a href="https://www.skycoin.net/downloads/" target="_blank">v{{ releaseVersion }}</a>
+      <a [href]="walletDownloadUrl" target="_blank">v{{ appService.lastestVersion }}</a>
       {{ 'header.update2' | translate }}
     </div>
   </mat-toolbar>

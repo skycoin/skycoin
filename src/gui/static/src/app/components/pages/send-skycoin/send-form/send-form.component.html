@@ -40,6 +40,13 @@
       </span>
     </div>
   </div>
+  <div class="form-field">
+    <label for="note">
+      {{ 'send.personal-note-label' | translate }}
+      <mat-icon [matTooltip]="'send.personal-note-help' | translate">help</mat-icon>
+    </label>
+    <input formControlName="note" id="note" [maxlength]="maxNoteChars" [attr.disabled]="busy ? 'true' : null">
+  </div>
   <div class="-buttons">
     <app-button #previewButton (action)="preview()" [disabled]="!form.valid">
       {{ 'send.preview-button' | translate }}

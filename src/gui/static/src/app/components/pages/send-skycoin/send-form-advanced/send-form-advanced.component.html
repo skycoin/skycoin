@@ -151,6 +151,14 @@
     <input formControlName="changeAddress" id="change-address" (keydown.enter)="preview()" [attr.disabled]="busy ? 'true' : null">
   </div>
 
+  <div class="form-field">
+    <label for="note">
+      {{ 'send.personal-note-label' | translate }}
+      <mat-icon [matTooltip]="'send.personal-note-help' | translate">help</mat-icon>
+    </label>
+    <input formControlName="note" id="note" [maxlength]="maxNoteChars" [attr.disabled]="busy ? 'true' : null">
+  </div>
+
   <div class="-autohours" [ngClass]="{'element-disabled' : busy}">
     <div class="row">
       <div class="col-xl-4 col-lg-5 col-md-7">

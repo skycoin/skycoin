@@ -1,3 +1,12 @@
+// Code for using the hw wallet js library. Here only for precaution, should be deleted soon.
+// If for some reason it have be reactivated, it should be checked, since due to various updates
+// in the js library and the hw wallet firmware some parts could fail. Also, for reactivating it
+// code should be uncommented in install-dependencies.sh and the package.son file must have the
+// following dependency (probably updated to the lastest commit):
+// "hardware-wallet-js": "git+https://git@github.com/skycoin/hardware-wallet-js.git#ddf7265"
+//
+// More changes could be needed in /src/gui/static/src/app/services/hw-wallet.service.ts
+
 /*
 'use strict'
 
@@ -115,11 +124,11 @@ const pinEvent = function() {
 };
 
 ipcMain.on('hwSendPin', (event, pin) => {
-  if (pin) {
-    lastPinPromiseResolve(pin);
-  } else {
-    lastPinPromiseReject(new Error("Cancelled"))
-  }
+  lastPinPromiseResolve(pin);
+});
+
+ipcMain.on('hwCancelPin', (event) => {
+  lastPinPromiseReject(new Error("Cancelled"))
 });
 
 let lastSeedWordPromiseResolve;
@@ -222,6 +231,14 @@ ipcMain.on('hwSignTransaction', (event, requestId, inputs, outputs) => {
   promise.then(
     result => { console.log("Sign transaction promise resolved", result); event.sender.send('hwSignTransactionResponse', requestId, result); },
     error => { console.log("Sign transaction promise errored: ", error); event.sender.send('hwSignTransactionResponse', requestId, { error: error.toString() }); }
+  );
+});
+
+ipcMain.on('hwChangeLabel', (event, requestId, label) => {
+  const promise = deviceWallet.devApplySettings(null, label, null, pinEvent);
+  promise.then(
+    result => { console.log("Change label promise resolved", result); event.sender.send('hwChangeLabelResponse', requestId, result); },
+    error => { console.log("Change label promise errored: ", error); event.sender.send('hwChangeLabelResponse', requestId, { error: error.toString() }); }
   );
 });
 

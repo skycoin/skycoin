@@ -1,0 +1,15 @@
+<app-modal class="modal" [headline]="'hardware-wallet.update-firmware-warning.title' | translate" [dialog]="dialogRef">
+  <app-hw-message
+    [text]="'hardware-wallet.update-firmware-warning.text' | translate"
+    [icon]="msgIcons.Warning"
+  ></app-hw-message>
+
+  <div class="-buttons">
+    <app-button (action)="closeModal()">
+      {{ 'hardware-wallet.update-firmware-warning.cancel' | translate }}
+    </app-button>
+    <app-button (action)="update()" class="primary">
+      {{ 'hardware-wallet.update-firmware-warning.update' | translate }}
+    </app-button>
+  </div>
+</app-modal>

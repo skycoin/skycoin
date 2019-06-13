@@ -1,0 +1,19 @@
+<app-modal class="modal" [headline]="'edit-note.title' | translate" [dialog]="dialogRef" [disableDismiss]="button && button.isLoading()">
+  <div [formGroup]="form">
+    <div class="form-field">
+      <label for="note">
+        {{ 'send.personal-note-label' | translate }}
+        <mat-icon [matTooltip]="'send.personal-note-help' | translate">help</mat-icon>
+      </label>
+      <input formControlName="note" id="note" (keydown.enter)="changeNote()" [maxlength]="maxNoteChars">
+    </div>
+  </div>
+  <div class="-buttons">
+    <app-button (action)="closePopup()">
+      {{ 'edit-note.cancel-button' | translate }}
+    </app-button>
+    <app-button (action)="changeNote()" class="primary" #button>
+      {{ 'edit-note.change-button' | translate }}
+    </app-button>
+  </div>
+</app-modal>

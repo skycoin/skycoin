@@ -50,8 +50,19 @@ h4 {
     width: 60px;
     flex-shrink: 0;
   }
-  span:last-child {
-    word-break: break-all;
+  span:nth-child(2) {
+    word-break: break-word;
+  }
+
+  mat-icon {
+    font-size: 20px;
+    padding-left: 5px;
+    color: $gradient-blue-dark;
+    cursor: pointer;
+  }
+
+  .-grey {
+    color: $grey;
   }
 
   &.-more {

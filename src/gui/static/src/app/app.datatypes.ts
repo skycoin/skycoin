@@ -33,6 +33,7 @@ export class Transaction {
   hoursSent?: BigNumber;
   hoursBurned?: BigNumber;
   coinsMovedInternally?: boolean;
+  note?: string;
 }
 
 export class PreviewTransaction extends Transaction {

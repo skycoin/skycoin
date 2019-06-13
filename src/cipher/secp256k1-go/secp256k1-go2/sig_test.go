@@ -2,21 +2,27 @@ package secp256k1go
 
 import (
 	"encoding/hex"
-	"strconv"
+	"fmt"
 	"testing"
 )
 
 func TestSigForceLowS(t *testing.T) {
+	// forceLowS was a hardcoded parameter that forced the Signature's S point
+	// to be "low", i.e. below the half-order of the curve.
+	// This is necessary to break signature malleability and should always be on,
+	// so the forceLowS parameter was removed, and the current code is equivalent
+	// to forceLowS=true.
+
 	// Check that forceLowS forces the S point to the lower half of the curve
 	var sec, msg, non Number
 	sec.SetHex("7A642C99F7719F57D8F4BEB11A303AFCD190243A51CED8782CA6D3DBE014D146")
 	msg.SetHex("DD72CBF2203C1A55A411EEC4404AF2AFB2FE942C434B23EFE46E9F04DA8433CA")
 	non.SetHex("9F3CD9AB0F32911BFDE39AD155F527192CE5ED1F51447D63C4F154C118DA598E")
 
-	// The signature when forceLowS is true
+	// The signature when forceLowS is true (not malleable)
 	sigHexLowS := "8c20a668be1b5a910205de46095023fe4823a3757f4417114168925f28193bff520ce833da9313d726f2a4d481e3195a5dd8e935a6c7f4dc260ed4c66ebe6da7"
-	// The signature when forceLowS is false
-	sigHexHighS := "8c20a668be1b5a910205de46095023fe4823a3757f4417114168925f28193bffadf317cc256cec28d90d5b2b7e1ce6a45cd5f3b10880ab5f99c389c66177d39a"
+	// The signature when forceLowS is false (malleable)
+	// "8c20a668be1b5a910205de46095023fe4823a3757f4417114168925f28193bffadf317cc256cec28d90d5b2b7e1ce6a45cd5f3b10880ab5f99c389c66177d39a"
 
 	var sig Signature
 	var recid int
@@ -26,40 +32,38 @@ func TestSigForceLowS(t *testing.T) {
 		return
 	}
 
-	if forceLowS {
-		if recid != 0 {
-			t.Error("recid should be 0 because of forceLowS")
-		}
-		if sigHexLowS != hex.EncodeToString(sig.Bytes()) {
-			t.Error("forceLowS did not modify the S point as expected")
-		}
-	} else {
-		if recid != 1 {
-			t.Error("recid should be 1")
-		}
-		if sigHexHighS != hex.EncodeToString(sig.Bytes()) {
-			t.Error("the S point should not be modified")
-		}
+	if recid != 0 {
+		t.Error("recid should be 0 because of forceLowS")
+	}
+	if sigHexLowS != hex.EncodeToString(sig.Bytes()) {
+		t.Error("forceLowS did not modify the S point as expected")
 	}
 }
 
 func TestSigRecover(t *testing.T) {
-	var vs = [][6]string{
+	cases := []struct {
+		r     string
+		s     string
+		msg   string
+		recid int
+		x     string
+		y     string
+	}{
 		{
-			"6028b9e3a31c9e725fcbd7d5d16736aaaafcc9bf157dfb4be62bcbcf0969d488",
-			"036d4a36fa235b8f9f815aa6f5457a607f956a71a035bf0970d8578bf218bb5a",
-			"9cff3da1a4f86caf3683f865232c64992b5ed002af42b321b8d8a48420680487",
-			"0",
-			"56dc5df245955302893d8dda0677cc9865d8011bc678c7803a18b5f6faafec08",
-			"54b5fbdcd8fac6468dac2de88fadce6414f5f3afbb103753e25161bef77705a6",
+			r:     "6028b9e3a31c9e725fcbd7d5d16736aaaafcc9bf157dfb4be62bcbcf0969d488",
+			s:     "036d4a36fa235b8f9f815aa6f5457a607f956a71a035bf0970d8578bf218bb5a",
+			msg:   "9cff3da1a4f86caf3683f865232c64992b5ed002af42b321b8d8a48420680487",
+			recid: 0,
+			x:     "56dc5df245955302893d8dda0677cc9865d8011bc678c7803a18b5f6faafec08",
+			y:     "54b5fbdcd8fac6468dac2de88fadce6414f5f3afbb103753e25161bef77705a6",
 		},
 		{
-			"b470e02f834a3aaafa27bd2b49e07269e962a51410f364e9e195c31351a05e50",
-			"560978aed76de9d5d781f87ed2068832ed545f2b21bf040654a2daff694c8b09",
-			"9ce428d58e8e4caf619dc6fc7b2c2c28f0561654d1f80f322c038ad5e67ff8a6",
-			"1",
-			"15b7e7d00f024bffcd2e47524bb7b7d3a6b251e23a3a43191ed7f0a418d9a578",
-			"bf29a25e2d1f32c5afb18b41ae60112723278a8af31275965a6ec1d95334e840",
+			r:     "b470e02f834a3aaafa27bd2b49e07269e962a51410f364e9e195c31351a05e50",
+			s:     "560978aed76de9d5d781f87ed2068832ed545f2b21bf040654a2daff694c8b09",
+			msg:   "9ce428d58e8e4caf619dc6fc7b2c2c28f0561654d1f80f322c038ad5e67ff8a6",
+			recid: 1,
+			x:     "15b7e7d00f024bffcd2e47524bb7b7d3a6b251e23a3a43191ed7f0a418d9a578",
+			y:     "bf29a25e2d1f32c5afb18b41ae60112723278a8af31275965a6ec1d95334e840",
 		},
 	}
 
@@ -67,28 +71,26 @@ func TestSigRecover(t *testing.T) {
 	var pubkey, exp XY
 	var msg Number
 
-	for i := range vs {
-		sig.R.SetHex(vs[i][0])
-		sig.S.SetHex(vs[i][1])
-		msg.SetHex(vs[i][2])
-		rid, err := strconv.ParseInt(vs[i][3], 10, 32)
-		if err != nil {
-			t.Fail()
-		}
+	for _, tc := range cases {
+		t.Run(fmt.Sprintf("%s,%s", tc.r, tc.s), func(t *testing.T) {
+			sig.R.SetHex(tc.r)
+			sig.S.SetHex(tc.s)
+			msg.SetHex(tc.msg)
 
-		exp.X.SetHex(vs[i][4])
-		exp.Y.SetHex(vs[i][5])
+			exp.X.SetHex(tc.x)
+			exp.Y.SetHex(tc.y)
 
-		if sig.Recover(&pubkey, &msg, int(rid)) {
-			if !exp.X.Equals(&pubkey.X) {
-				t.Error("X mismatch at vector", i)
+			if sig.Recover(&pubkey, &msg, tc.recid) {
+				if !exp.X.Equals(&pubkey.X) {
+					t.Error("X mismatch")
+				}
+				if !exp.Y.Equals(&pubkey.Y) {
+					t.Error("Y mismatch")
+				}
+			} else {
+				t.Error("sig.recover fialed")
 			}
-			if !exp.Y.Equals(&pubkey.Y) {
-				t.Error("Y mismatch at vector", i)
-			}
-		} else {
-			t.Error("sig.recover fialed")
-		}
+		})
 	}
 }
 
@@ -143,24 +145,14 @@ func TestSigSign(t *testing.T) {
 	if res != 1 {
 		t.Error("res failed", res)
 	}
-	if forceLowS {
-		if recid != 0 {
-			t.Error("recid failed", recid)
-		}
-	} else {
-		if recid != 1 {
-			t.Error("recid failed", recid)
-		}
+	if recid != 0 {
+		t.Error("recid failed", recid)
 	}
 	non.SetHex("98f9d784ba6c5c77bb7323d044c0fc9f2b27baa0a5b0718fe88596cc56681980")
 	if sig.R.Cmp(&non.Int) != 0 {
 		t.Error("R failed", sig.R.String())
 	}
-	if forceLowS {
-		non.SetHex("1ca662aaefd6cc958ba4604fea999db133a75bf34c13334dabac7124ff0cfcc1")
-	} else {
-		non.SetHex("E3599D551029336A745B9FB01566624D870780F363356CEE1425ED67D1294480")
-	}
+	non.SetHex("1ca662aaefd6cc958ba4604fea999db133a75bf34c13334dabac7124ff0cfcc1")
 	if sig.S.Cmp(&non.Int) != 0 {
 		t.Error("S failed", sig.S.String())
 	}

@@ -27,7 +27,7 @@ func pubkeyFromSeckey(seckey []byte) []byte {
 		return nil
 	}
 
-	var pubkey = secp.GeneratePublicKey(seckey) // always returns true
+	pubkey := secp.GeneratePublicKey(seckey) // always returns true
 	if pubkey == nil {
 		log.Panic("ERROR: impossible, secp.BaseMultiply always returns true")
 		return nil
@@ -146,11 +146,11 @@ func UncompressedPubkeyFromSeckey(seckey []byte) []byte {
 	return uncompressedPubkey
 }
 
-// generateDeterministicKeyPair generates deterministic keypair with weak SHA256 hash of seed.
+// deterministicKeyPairIteratorStep generates deterministic keypair with weak SHA256 hash of seed.
 // internal use only
-func generateDeterministicKeyPair(seed []byte) ([]byte, []byte) {
+func deterministicKeyPairIteratorStep(seed []byte) ([]byte, []byte) {
 	if len(seed) != 32 {
-		log.Panic("ERROR: generateDeterministicKeyPair: seed must be 32 bytes")
+		log.Panic("ERROR: deterministicKeyPairIteratorStep: seed must be 32 bytes")
 	}
 
 	const seckeyLen = 32
@@ -162,30 +162,30 @@ new_seckey:
 
 	if secp.SeckeyIsValid(seckey) != 1 {
 		if DebugPrint {
-			log.Printf("generateDeterministicKeyPair, secp.SeckeyIsValid fail")
+			log.Printf("deterministicKeyPairIteratorStep, secp.SeckeyIsValid fail")
 		}
 		goto new_seckey //regen
 	}
 
 	pubkey := secp.GeneratePublicKey(seckey)
 	if pubkey == nil {
-		log.Panic("ERROR: generateDeterministicKeyPair: GeneratePublicKey failed, impossible, secp.BaseMultiply always returns true")
+		log.Panic("ERROR: deterministicKeyPairIteratorStep: GeneratePublicKey failed, impossible, secp.BaseMultiply always returns true")
 		goto new_seckey
 	}
 
 	if len(pubkey) != 33 {
-		log.Panic("ERROR: generateDeterministicKeyPair: impossible, pubkey length wrong")
+		log.Panic("ERROR: deterministicKeyPairIteratorStep: impossible, pubkey length wrong")
 	}
 
 	if ret := secp.PubkeyIsValid(pubkey); ret != 1 {
-		log.Panicf("ERROR: generateDeterministicKeyPair: PubkeyIsValid failed, ret=%d", ret)
+		log.Panicf("ERROR: deterministicKeyPairIteratorStep: PubkeyIsValid failed, ret=%d", ret)
 	}
 
 	if ret := VerifyPubkey(pubkey); ret != 1 {
 		log.Printf("seckey= %s", hex.EncodeToString(seckey))
 		log.Printf("pubkey= %s", hex.EncodeToString(pubkey))
 
-		log.Panicf("ERROR: generateDeterministicKeyPair: VerifyPubkey failed, ret=%d", ret)
+		log.Panicf("ERROR: deterministicKeyPairIteratorStep: VerifyPubkey failed, ret=%d", ret)
 		goto new_seckey
 	}
 
@@ -195,10 +195,12 @@ new_seckey:
 // Secp256k1Hash double SHA256, salted with ECDH operation in curve
 func Secp256k1Hash(seed []byte) []byte {
 	hash := SumSHA256(seed)
-	_, seckey := generateDeterministicKeyPair(hash)            // seckey1 is usually sha256 of hash
-	pubkey, _ := generateDeterministicKeyPair(SumSHA256(hash)) // SumSHA256(hash) usually equals seckey
-	ecdh := ECDH(pubkey, seckey)                               // raise pubkey to power of seckey in curve
-	return SumSHA256(append(hash, ecdh...))                    // append signature to sha256(seed) and hash
+	_, seckey := deterministicKeyPairIteratorStep(hash) // seckey1 is usually sha256 of hash
+	pubkeySeed := SumSHA256(hash)
+	pubkey, _ := deterministicKeyPairIteratorStep(pubkeySeed) // SumSHA256(hash) usually equals seckey
+	ecdh := ECDH(pubkey, seckey)                              // raise pubkey to power of seckey in curve
+	out := SumSHA256(append(hash, ecdh...))                   // append signature to sha256(seed) and hash
+	return out
 }
 
 // GenerateDeterministicKeyPair generate a single secure key
@@ -214,7 +216,7 @@ func GenerateDeterministicKeyPair(seed []byte) ([]byte, []byte) {
 func DeterministicKeyPairIterator(seedIn []byte) ([]byte, []byte, []byte) {
 	seed1 := Secp256k1Hash(seedIn) // make it difficult to derive future seckeys from previous seckeys
 	seed2 := SumSHA256(append(seedIn, seed1...))
-	pubkey, seckey := generateDeterministicKeyPair(seed2) // this is our seckey
+	pubkey, seckey := deterministicKeyPairIteratorStep(seed2) // this is our seckey
 	return seed1, pubkey, seckey
 }
 

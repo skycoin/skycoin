@@ -204,7 +204,6 @@ func TestPrecompileGej(t *testing.T) {
 func TestMultGen(t *testing.T) {
 	var nonce Number
 	var ex, ey, ez Field
-	var r XYZ
 	nonce.SetHex("9E3CD9AB0F32911BFDE39AD155F527192CE5ED1F51447D63C4F154C118DA598E")
 	r := ECmultGen(nonce)
 	ex.SetHex("02D1BF36D37ACD68E4DD00DB3A707FD176A37E42F81AEF9386924032D3428FF0")

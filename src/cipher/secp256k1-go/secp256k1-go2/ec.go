@@ -155,45 +155,12 @@ func GeneratePublicKey(k []byte) []byte {
 	return pk.Bytes()
 }
 
-func init() {
-	/* Code snippet to brute force inputs whose sha256 hash is not a valid secret key*/
-	/*
-		randBytes := func(n int) []byte {
-			b := make([]byte, n)
-			_, err := rand.Read(b)
-			if err != nil {
-				panic(err)
-			}
-			return b
-		}
-		sha256Hash := sha256.New()
-
-		for true {
-			b := randBytes(32)
-
-			sha256Hash.Reset()
-			sha256Hash.Write(b)
-			h := sha256Hash.Sum(nil)
-
-			code := SeckeyIsValid(h)
-			if code == -1 {
-				fmt.Println("found sha256(value) that generates invalid secret key")
-				fmt.Println("value(hex):", hex.EncodeToString(b))
-				fmt.Println("hash(hex):", hex.EncodeToString(h))
-				fmt.Println("validity code:", code)
-				panic("done")
-				// if code == -1 {
-				// 	panic("done")
-				// }
-			}
-		}
-	*/
-}
-
 // SeckeyIsValid 1 on success
-// must not be zero
-// must not be negative
-// must be less than order of curve
+// Must be 32 bytes
+// Must not be zero
+// Must not be negative
+// Must be less than order of curve
+// The probability of any 32 bytes being an invalid secret key is ~2^-128
 func SeckeyIsValid(seckey []byte) int {
 	if len(seckey) != 32 {
 		panic("SeckeyIsValid seckey must be 32 bytes")

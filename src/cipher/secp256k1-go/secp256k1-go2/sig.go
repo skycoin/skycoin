@@ -76,7 +76,7 @@ func (sig *Signature) Recover(pubkey *XY, msg *Number, recid int) bool {
 	return true
 }
 
-// Sign signs the signature
+// Sign signs the signature. Returns 1 on success, 0 on failure
 func (sig *Signature) Sign(seckey, message, nonce *Number, recid *int) int {
 	var r XY
 	var n Number
@@ -93,9 +93,11 @@ func (sig *Signature) Sign(seckey, message, nonce *Number, recid *int) int {
 	if recid != nil {
 		*recid = 0
 		if sig.R.Cmp(&TheCurve.Order.Int) >= 0 {
+			fmt.Println("sig.R.Cmp(&TheCurve.Order.Int) >= 0, recid |= 2")
 			*recid |= 2
 		}
 		if r.Y.IsOdd() {
+			fmt.Println("r.Y.IsOdd(), recid |= 1")
 			*recid |= 1
 		}
 	}

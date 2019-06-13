@@ -42,6 +42,48 @@ func (sig *Signature) recompute(r2 *Number, pubkey *XY, message *Number) bool {
 	return true
 }
 
+/*
+Reference code for Signature.Recover
+
+https://github.com/bitcoin-core/secp256k1/blob/e541a90ef6461007d9c6a74b9f9a7fb8aa34aaa8/src/modules/recovery/main_impl.h
+
+static int secp256k1_ecdsa_sig_recover(const secp256k1_ecmult_context *ctx, const secp256k1_scalar *sigr, const secp256k1_scalar* sigs, secp256k1_ge *pubkey, const secp256k1_scalar *message, int recid) {
+    unsigned char brx[32];
+    secp256k1_fe fx;
+    secp256k1_ge x;
+    secp256k1_gej xj;
+    secp256k1_scalar rn, u1, u2;
+    secp256k1_gej qj;
+    int r;
+
+    if (secp256k1_scalar_is_zero(sigr) || secp256k1_scalar_is_zero(sigs)) {
+        return 0;
+    }
+
+    secp256k1_scalar_get_b32(brx, sigr);
+    r = secp256k1_fe_set_b32(&fx, brx);
+    (void)r;
+    VERIFY_CHECK(r); // brx comes from a scalar, so is less than the order; certainly less than p
+    if (recid & 2) {
+        if (secp256k1_fe_cmp_var(&fx, &secp256k1_ecdsa_const_p_minus_order) >= 0) {
+            return 0;
+        }
+        secp256k1_fe_add(&fx, &secp256k1_ecdsa_const_order_as_fe);
+    }
+    if (!secp256k1_ge_set_xo_var(&x, &fx, recid & 1)) {
+        return 0;
+    }
+    secp256k1_gej_set_ge(&xj, &x);
+    secp256k1_scalar_inverse_var(&rn, sigr);
+    secp256k1_scalar_mul(&u1, &rn, message);
+    secp256k1_scalar_negate(&u1, &u1);
+    secp256k1_scalar_mul(&u2, &rn, sigs);
+    secp256k1_ecmult(ctx, &qj, &xj, &u2, &u1);
+    secp256k1_ge_set_gej_var(pubkey, &qj);
+    return !secp256k1_gej_is_infinity(&qj);
+}
+*/
+
 // Recover recovers a pubkey XY point given the message that was signed to create
 // this signature.
 func (sig *Signature) Recover(pubkey *XY, msg *Number, recid int) bool {
@@ -49,6 +91,10 @@ func (sig *Signature) Recover(pubkey *XY, msg *Number, recid int) bool {
 	var fx Field
 	var x XY
 	var xj, qj XYZ
+
+	if sig.R.Sign() == 0 || sig.S.Sign() == 0 {
+		return false
+	}
 
 	rx.Set(&sig.R.Int)
 	if (recid & 2) != 0 {
@@ -72,8 +118,7 @@ func (sig *Signature) Recover(pubkey *XY, msg *Number, recid int) bool {
 	u2.modMul(&rn, &sig.S, &TheCurve.Order)
 	xj.ECmult(&qj, &u2, &u1)
 	pubkey.SetXYZ(&qj)
-
-	return true
+	return !qj.IsInfinity()
 }
 
 /*

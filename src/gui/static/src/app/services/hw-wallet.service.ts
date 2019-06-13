@@ -373,7 +373,6 @@ export class HwWalletService {
           this.hwWalletDaemonService.post(
             '/configure_pin_code',
             params,
-            true,
           ),
           ['PIN removed'],
         );

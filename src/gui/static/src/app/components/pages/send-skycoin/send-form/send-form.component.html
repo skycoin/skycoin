@@ -7,8 +7,8 @@
         <option *ngFor="let wallet of walletService.all() | async" [disabled]="!wallet.coins || wallet.coins.isLessThanOrEqualTo(0)" [ngValue]="wallet">
           {{ wallet.label }} -
           <span *ngIf="wallet.coins && wallet.hours">
-            {{ (wallet.coins ? wallet.coins.decimalPlaces(6).toString() : 0) | amount }}
-            ({{ wallet.hours.decimalPlaces(0).toString() | amount:false }})
+            {{ (wallet.coins ? wallet.coins.toString() : 0) | amount }}
+            ({{ wallet.hours.toString() | amount:false }})
           </span>
         </option>
       </select>

@@ -6,8 +6,8 @@
         <option disabled hidden [ngValue]="''">{{ 'send.select-wallet' | translate }}</option>
         <ng-container *ngFor="let wallet of walletService.all() | async">
           <option [disabled]="!wallet.coins || wallet.coins.isLessThanOrEqualTo(0)" [ngValue]="wallet">
-            {{ wallet.label }} - {{ (wallet.coins ? wallet.coins.decimalPlaces(6).toString() : 0) | amount }}
-            ({{ wallet.hours.decimalPlaces(0).toString() | amount:false }})
+            {{ wallet.label }} - {{ (wallet.coins ? wallet.coins.toString() : 0) | amount }}
+            ({{ wallet.hours.toString() | amount:false }})
           </option>
         </ng-container>
       </select>
@@ -30,13 +30,13 @@
           [attr.disabled]="busy ? 'true' : null"
           [ngClass]="{'element-disabled' : busy}">
           <mat-option *ngFor="let addr of addresses" [value]="addr">
-            {{ addr.address }} - {{ (addr.coins ? addr.coins.decimalPlaces(6).toString() : 0) | amount }}
-            ({{ addr.hours.decimalPlaces(0).toString() | amount:false }})
+            {{ addr.address }} - {{ (addr.coins ? addr.coins.toString() : 0) | amount }}
+            ({{ addr.hours.toString() | amount:false }})
           </mat-option>
           <mat-select-trigger>
             <div *ngFor="let address of form.get('addresses').value">
-              {{ address.address }} - {{ (address.coins ? address.coins.decimalPlaces(6).toString() : 0) | amount }}
-              ({{ address.hours.decimalPlaces(0).toString() | amount:false }})
+              {{ address.address }} - {{ (address.coins ? address.coins.toString() : 0) | amount }}
+              ({{ address.hours.toString() | amount:false }})
             </div>
           </mat-select-trigger>
         </mat-select>
@@ -59,13 +59,13 @@
           [attr.disabled]="busy ? 'true' : null"
           [ngClass]="{'element-disabled' : busy}">
           <mat-option *ngFor="let out of unspentOutputs" [value]="out">
-            {{ out.hash }} - {{ (out.coins ? out.coins.decimalPlaces(6).toString() : 0) | amount }}
-            ({{ out.calculated_hours.decimalPlaces(0).toString() | amount:false }})
+            {{ out.hash }} - {{ (out.coins ? out.coins.toString() : 0) | amount }}
+            ({{ out.calculated_hours.toString() | amount:false }})
           </mat-option>
           <mat-select-trigger *ngIf="form.get('outputs').value && form.get('outputs').value.length > 0">
             <div *ngFor="let out of form.get('outputs').value">
-              {{ out.hash }} - {{ (out.coins ? out.coins.decimalPlaces(6).toString() : 0) | amount }}
-              ({{ out.calculated_hours.decimalPlaces(0).toString() | amount:false }})
+              {{ out.hash }} - {{ (out.coins ? out.coins.toString() : 0) | amount }}
+              ({{ out.calculated_hours.toString() | amount:false }})
             </div>
           </mat-select-trigger>
           <mat-select-trigger *ngIf="!form.get('outputs').value || form.get('outputs').value.length === 0">
@@ -77,15 +77,15 @@
     <div class="form-field -available-msg">
       <span>{{ 'send.available-msg-part1' | translate }}</span>
       <span class="value">
-        {{ availableCoins.decimalPlaces(6).toString() | amount }}
+        {{ availableCoins.toString() | amount }}
       </span>
       <span>{{ 'send.available-msg-part2' | translate }}</span>
       <span class="value">
-        {{ availableHours.decimalPlaces(0).toString() | amount:false }}
+        {{ availableHours.toString() | amount:false }}
       </span>
       <span>{{ 'send.available-msg-part3' | translate }}</span>
       <span class="value">
-        {{ minimumFee.decimalPlaces(0).toString() | amount:false }}
+        {{ minimumFee.toString() | amount:false }}
       </span>
       <span>{{ 'send.available-msg-part4' | translate }}</span>
     </div>

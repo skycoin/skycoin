@@ -102,7 +102,7 @@
         <div class="-img"></div>
         <div class="-item">
           <div class="-key">{{ 'exchange.you-get' | translate }}</div>
-          <div class="-value">{{ order.toAmount | number:('1.0-' + blockchainService.currentMaxDecimals) }}</div>
+          <div class="-value">{{ order.toAmount | amount:true:'first' }}</div>
         </div>
       </div>
 

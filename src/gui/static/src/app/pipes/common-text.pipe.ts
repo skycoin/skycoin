@@ -17,7 +17,7 @@ export class CommonTextPipe implements PipeTransform {
     } else if (value === 'coin') {
       return this.appService.coinName;
     } else if (value === 'coinFull') {
-      return this.appService.coinName;
+      return this.appService.fullCoinName;
     }
 
     return '';

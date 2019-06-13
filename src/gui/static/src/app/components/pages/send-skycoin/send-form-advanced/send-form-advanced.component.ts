@@ -4,7 +4,7 @@ import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog, MatDialogConfig } from '@angular/material';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { ButtonComponent } from '../../../layout/button/button.component';
-import { showSnackbarError, getHardwareWalletErrorMsg } from '../../../../utils/errors';
+import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { Subscription, ISubscription } from 'rxjs/Subscription';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { SelectAddressComponent } from './select-address/select-address';
@@ -488,7 +488,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
           this.processingSubscription = this.walletService.injectTransaction(transaction.encoded, note)
             .subscribe(noteSaved => {
               if (note && !noteSaved) {
-                showSnackbarError(this.msgBarService, this.translate.instant('send.error-saving-note'));
+                this.msgBarService.showError(this.translate.instant('send.error-saving-note'));
               }
 
               this.showSuccess();
@@ -653,7 +653,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
   private showError(error) {
     this.busy = false;
-    showSnackbarError(this.msgBarService, error);
+    this.msgBarService.showError(error);
     this.previewButton.resetState().setEnabled();
     this.sendButton.resetState().setEnabled();
   }

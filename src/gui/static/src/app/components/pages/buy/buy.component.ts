@@ -6,7 +6,6 @@ import { Address, PurchaseOrder, Wallet } from '../../../app.datatypes';
 import { ButtonComponent } from '../../layout/button/button.component';
 import { Subscription } from 'rxjs/Subscription';
 import { MsgBarService } from '../../../services/msg-bar.service';
-import { showSnackbarError } from '../../../utils/errors';
 
 @Component({
   selector: 'app-buy',
@@ -66,7 +65,7 @@ export class BuyComponent implements OnInit, OnDestroy {
       console.log('changing wallet value', filename);
       this.purchaseService.generate(wallet).subscribe(
         order => this.saveData(order),
-        error => showSnackbarError(this.msgBarService, error.toString()),
+        error => this.msgBarService.showError(error.toString()),
       );
     });
   }

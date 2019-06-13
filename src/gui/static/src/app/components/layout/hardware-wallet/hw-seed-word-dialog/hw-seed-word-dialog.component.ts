@@ -8,7 +8,6 @@ import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 import { ISubscription } from 'rxjs/Subscription';
 import { MsgBarService } from '../../../../services/msg-bar.service';
-import { showSnackbarError } from '../../../../utils/errors';
 
 @Component({
   selector: 'app-hw-seed-word-dialog',
@@ -63,9 +62,9 @@ export class HwSeedWordDialogComponent extends HwDialogBaseComponent<HwSeedWordD
             this.dialogRef.close((this.form.value.word as string).trim().toLowerCase());
           } else {
             if (validation === null) {
-              showSnackbarError(this.msgBarService, this.translateService.instant('hardware-wallet.seed-word.error-loading-words'));
+              this.msgBarService.showError(this.translateService.instant('hardware-wallet.seed-word.error-loading-words'));
             } else {
-              showSnackbarError(this.msgBarService, this.translateService.instant('hardware-wallet.seed-word.error-invalid-word'));
+              this.msgBarService.showError(this.translateService.instant('hardware-wallet.seed-word.error-invalid-word'));
             }
           }
         }

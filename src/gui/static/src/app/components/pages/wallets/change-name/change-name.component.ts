@@ -7,7 +7,7 @@ import { ButtonComponent } from '../../../layout/button/button.component';
 import { MessageIcons } from '../../../layout/hardware-wallet/hw-message/hw-message.component';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
-import { getHardwareWalletErrorMsg, showSnackbarError } from '../../../../utils/errors';
+import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { ISubscription } from 'rxjs/Subscription';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 
@@ -119,7 +119,7 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
               response.errorMsg = getHardwareWalletErrorMsg(this.hwWalletService, this.translateService, err);
               this.dialogRef.close(response);
             } else {
-              showSnackbarError(this.msgBarService, getHardwareWalletErrorMsg(this.hwWalletService, this.translateService, err));
+              this.msgBarService.showError(getHardwareWalletErrorMsg(this.hwWalletService, this.translateService, err));
               this.currentState = States.Initial;
               if (this.button) {
                 this.button.resetState();

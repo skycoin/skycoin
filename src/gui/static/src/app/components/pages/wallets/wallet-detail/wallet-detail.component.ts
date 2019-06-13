@@ -5,7 +5,7 @@ import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dial
 import { ChangeNameComponent, ChangeNameData } from '../change-name/change-name.component';
 import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
-import { showSnackbarError, getHardwareWalletErrorMsg } from '../../../../utils/errors';
+import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { NumberOfAddressesComponent } from '../number-of-addresses/number-of-addresses';
 import { TranslateService } from '@ngx-translate/core';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
@@ -59,7 +59,7 @@ export class WalletDetailComponent implements OnDestroy {
             this.preparingToEdit = false;
           },
           err => {
-            showSnackbarError(this.msgBarService, getHardwareWalletErrorMsg(this.hwWalletService, this.translateService, err));
+            this.msgBarService.showError(getHardwareWalletErrorMsg(this.hwWalletService, this.translateService, err));
             this.preparingToEdit = false;
           },
         );
@@ -193,7 +193,7 @@ export class WalletDetailComponent implements OnDestroy {
       config.data = data;
       this.dialog.open(HwConfirmAddressDialogComponent, config);
     }, err => {
-      showSnackbarError(this.msgBarService, getHardwareWalletErrorMsg(this.hwWalletService, this.translateService, err));
+      this.msgBarService.showError(getHardwareWalletErrorMsg(this.hwWalletService, this.translateService, err));
     });
   }
 
@@ -265,9 +265,9 @@ export class WalletDetailComponent implements OnDestroy {
       procedure.subscribe(() => this.creatingAddress = false,
         err => {
           if (!this.wallet.isHardware ) {
-            showSnackbarError(this.msgBarService, err);
+            this.msgBarService.showError(err);
           } else {
-            showSnackbarError(this.msgBarService, getHardwareWalletErrorMsg(this.hwWalletService, this.translateService, err));
+            this.msgBarService.showError(getHardwareWalletErrorMsg(this.hwWalletService, this.translateService, err));
           }
           this.creatingAddress = false;
         },

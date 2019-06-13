@@ -3,7 +3,7 @@ import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatDialogRef } from '@angular/material';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ButtonComponent } from '../button/button.component';
-import { parseResponseMessage, showSnackbarError } from '../../../utils/errors';
+import { parseResponseMessage } from '../../../utils/errors';
 import { Subject } from 'rxjs/Subject';
 import { ISubscription } from 'rxjs/Subscription';
 import { TranslateService } from '@ngx-translate/core';
@@ -138,7 +138,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
 
     error = error ? error : this.errors['errors.error-decrypting'];
 
-    showSnackbarError(this.msgBarService, error);
+    this.msgBarService.showError(error);
     this.button.setError(error);
     this.working = false;
   }

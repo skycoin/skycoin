@@ -3,7 +3,7 @@ import { MatDialogRef } from '@angular/material/dialog';
 import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 import { ButtonComponent } from '../../button/button.component';
-import { showSnackbarError, getHardwareWalletErrorMsg } from '../../../../utils/errors';
+import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { TranslateService } from '@ngx-translate/core';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 
@@ -65,12 +65,12 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
             const errorMsg = getHardwareWalletErrorMsg(this.hwWalletService, this.translateService, err);
             setTimeout(() => {
               this.button.setError(errorMsg);
-              showSnackbarError(this.msgBarService, errorMsg);
+              this.msgBarService.showError(errorMsg);
             });
           } else {
             setTimeout(() => {
               this.button.setError(err);
-              showSnackbarError(this.msgBarService, err);
+              this.msgBarService.showError(err);
             });
           }
 

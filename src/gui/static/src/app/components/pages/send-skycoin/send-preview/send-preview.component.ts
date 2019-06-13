@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, OnDestroy, Output, ViewChild } from '@a
 import { WalletService } from '../../../../services/wallet.service';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { MatDialogConfig, MatDialog } from '@angular/material';
-import { showSnackbarError, getHardwareWalletErrorMsg } from '../../../../utils/errors';
+import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { PreviewTransaction, Wallet } from '../../../../app.datatypes';
 import { ISubscription } from 'rxjs/Subscription';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
@@ -96,7 +96,7 @@ export class SendVerifyComponent implements OnDestroy {
       return this.walletService.injectTransaction(result.encoded, note);
     }).subscribe(noteSaved => {
       if (note && !noteSaved) {
-        showSnackbarError(this.msgBarService, this.translate.instant('send.error-saving-note'));
+        this.msgBarService.showError(this.translate.instant('send.error-saving-note'));
       }
 
       this.sendButton.setSuccess();
@@ -121,7 +121,7 @@ export class SendVerifyComponent implements OnDestroy {
   }
 
   private showError(error) {
-    showSnackbarError(this.msgBarService, error);
+    this.msgBarService.showError(error);
     this.sendButton.resetState().setError(error);
     this.backButton.resetState().setEnabled();
   }

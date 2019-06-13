@@ -6,7 +6,6 @@ import { Params, ActivatedRoute, Router } from '@angular/router';
 import { Observable } from 'rxjs/Observable';
 import { WalletService } from '../../../services/wallet.service';
 import { Wallet } from '../../../app.datatypes';
-import { showSnackbarError } from '../../../utils/errors';
 import { MsgBarService } from '../../../services/msg-bar.service';
 
 @Component({
@@ -79,7 +78,7 @@ export class ResetPasswordComponent implements OnDestroy {
         }, 2000);
       }, error => {
         this.resetButton.setError(error);
-        showSnackbarError(this.msgBarService, error);
+        this.msgBarService.showError(error);
       });
   }
 

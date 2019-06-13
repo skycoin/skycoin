@@ -27,7 +27,12 @@ export class MsgBarComponent {
   constructor() { }
 
   show() {
-    this.visible = true;
+    if (this.visible) {
+      this.visible = false;
+      setTimeout(() => this.visible = true, 32);
+    } else {
+      this.visible = true;
+    }
   }
 
   hide() {

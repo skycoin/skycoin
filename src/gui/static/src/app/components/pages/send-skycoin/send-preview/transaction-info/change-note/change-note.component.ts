@@ -5,7 +5,6 @@ import { ISubscription } from 'rxjs/Subscription';
 import { ButtonComponent } from '../../../../../layout/button/button.component';
 import { Transaction } from '../../../../../../app.datatypes';
 import { StorageService, StorageType } from '../../../../../../services/storage.service';
-import { showSnackbarError } from '../../../../../../utils/errors';
 import { MsgBarService } from '../../../../../../services/msg-bar.service';
 
 @Component({
@@ -70,7 +69,7 @@ export class ChangeNoteComponent implements OnInit, OnDestroy {
     this.OperationSubscription = this.storageService.store(StorageType.NOTES, this.data.txid, newNote).subscribe(() => {
       this.dialogRef.close(newNote);
     }, error => {
-      showSnackbarError(this.msgBarService, error);
+      this.msgBarService.showError(error);
       this.button.resetState().setEnabled();
     });
   }

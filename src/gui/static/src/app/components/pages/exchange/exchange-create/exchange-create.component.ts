@@ -14,7 +14,6 @@ import { ExchangeOrder, TradingPair, StoredExchangeOrder } from '../../../../app
 import { ISubscription, Subscription } from 'rxjs/Subscription';
 import 'rxjs/add/observable/merge';
 import { MatDialog, MatDialogConfig } from '@angular/material';
-import { showSnackbarError } from '../../../../utils/errors';
 import { SelectAddressComponent } from '../../send-skycoin/send-form-advanced/select-address/select-address';
 import { WalletService } from '../../../../services/wallet.service';
 import { Observable } from 'rxjs/Observable';
@@ -141,7 +140,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
           this.exchangeButton.resetState();
           this.exchangeButton.setEnabled();
           this.exchangeButton.setError(err);
-          showSnackbarError(this.msgBarService, err);
+          this.msgBarService.showError(err);
         });
       } else {
         this.showInvalidAddress();
@@ -157,7 +156,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
 
     const errMsg = this.translateService.instant('exchange.invalid-address');
     this.exchangeButton.setError(errMsg);
-    showSnackbarError(this.msgBarService, errMsg);
+    this.msgBarService.showError(errMsg);
   }
 
   private createForm() {

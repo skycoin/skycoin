@@ -7,7 +7,6 @@ import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { Wallet } from '../../../../app.datatypes';
 import { ChangeNameComponent, ChangeNameData } from '../../../pages/wallets/change-name/change-name.component';
-import { showSnackbarError } from '../../../../utils/errors';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 
 enum States {
@@ -80,7 +79,7 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
         if (result && !result.errorMsg) {
           this.closeModal();
         } else if (result.errorMsg) {
-          showSnackbarError(this.msgBarService, result.errorMsg);
+          this.msgBarService.showError(result.errorMsg);
         }
       });
     }

@@ -32,7 +32,7 @@ export enum OperationResults {
   DaemonError,
   InvalidAddress,
   Timeout,
-  NotInFirmwareMode,
+  NotInBootloaderMode,
 }
 
 export class TxData {
@@ -300,7 +300,7 @@ export class HwWalletService {
       return this.getFeatures(false).flatMap(result => {
         if (!result.rawResponse.bootloader_mode) {
           const response: OperationResult = {
-            result: OperationResults.NotInFirmwareMode,
+            result: OperationResults.NotInBootloaderMode,
             rawResponse: null,
           };
 
@@ -516,15 +516,6 @@ export class HwWalletService {
         return this.createRequestResponse(requestId);
       } else {
         this.prepare();
-
-        const returnIndexes = [];
-        for (let i = 0; i < (outputs as any[]).length; i++) {
-          if ((outputs as any[])[i].address_index !== null && (outputs as any[])[i].address_index !== undefined) {
-            returnIndexes.push((outputs as any[])[i].address_index);
-          } else {
-            break;
-          }
-        }
 
         const params = {
           transaction_inputs: (inputs as any[]).map(val => {

@@ -99,7 +99,7 @@ export class HwWalletDaemonService {
       })
       .catch((error: any) => {
         if (error && error.name && error.name === 'TimeoutError') {
-          this.put('/cancel').map(() => HwWalletDaemonService.errorCancelled).subscribe();
+          this.put('/cancel').subscribe();
 
           return Observable.throw({_body: HwWalletDaemonService.errorTimeout });
         }

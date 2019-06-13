@@ -39,6 +39,7 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
 
   private newLabel: string;
   private hwConnectionSubscription: ISubscription;
+  private operationSubscription: ISubscription;
 
   constructor(
     public dialogRef: MatDialogRef<ChangeNameComponent>,
@@ -73,6 +74,9 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
     if (this.hwConnectionSubscription) {
       this.hwConnectionSubscription.unsubscribe();
     }
+    if (this.operationSubscription) {
+      this.operationSubscription.unsubscribe();
+    }
   }
 
   closePopup() {
@@ -94,14 +98,14 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
     this.newLabel = newLabel;
 
     if (!this.data.wallet.isHardware) {
-      this.walletService.renameWallet(this.data.wallet, this.newLabel)
+      this.operationSubscription = this.walletService.renameWallet(this.data.wallet, this.newLabel)
         .subscribe(() => this.dialogRef.close(this.newLabel));
     } else {
       if (this.data.newName) {
         this.currentState = States.WaitingForConfirmation;
       }
 
-      this.hwWalletService.checkIfCorrectHwConnected(this.data.wallet.addresses[0].address)
+      this.operationSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.data.wallet.addresses[0].address)
         .flatMap(() => {
           this.currentState = States.WaitingForConfirmation;
 

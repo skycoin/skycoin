@@ -32,7 +32,7 @@
         <div class="-img"></div>
         <div class="-item">
           <div class="-key">{{ 'exchange.you-send' | translate }}</div>
-          <div class="-value">{{ order.fromAmount }}</div>
+          <div class="-value">{{ order.fromAmount }} {{ fromCoin }}</div>
         </div>
       </div>
 
@@ -102,7 +102,7 @@
         <div class="-img"></div>
         <div class="-item">
           <div class="-key">{{ 'exchange.you-get' | translate }}</div>
-          <div class="-value">{{ order.toAmount | number:('1.0-' + blockchainService.currentMaxDecimals) }}</div>
+          <div class="-value">{{ order.toAmount | number:('1.0-' + blockchainService.currentMaxDecimals) }} {{ toCoin }}</div>
         </div>
       </div>
 

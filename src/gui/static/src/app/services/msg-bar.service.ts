@@ -25,7 +25,7 @@ export class MsgBarService {
     config.title = 'errors.error';
     config.icon = MsgBarIcons.error;
     config.color = MsgBarColors.red;
-  
+
     this.show(config);
   }
 }

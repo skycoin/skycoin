@@ -29,7 +29,7 @@
         (onStateChange)="changeActiveCurrency($event)"
       ></app-double-button>
     </div>
-    <input formControlName="amount" id="amount" (keydown.enter)="preview()" [attr.disabled]="busy ? 'true' : null">
+    <input formControlName="amount" id="amount" [attr.disabled]="busy ? 'true' : null">
     <div class="coins-value-label" [ngClass]="{ red: value >= 0 && valueGreaterThanBalance }" *ngIf="price">
       <span *ngIf="value < 0">{{ 'send.invalid-amount' | translate }}</span>
       <span *ngIf="value >= 0 && selectedCurrency === doubleButtonActive.LeftButton">
@@ -45,7 +45,7 @@
       {{ 'send.personal-note-label' | translate }}
       <mat-icon [matTooltip]="'send.personal-note-help' | translate">help</mat-icon>
     </label>
-    <input formControlName="note" id="note" [maxlength]="maxNoteChars" [attr.disabled]="busy ? 'true' : null">
+    <input formControlName="note" id="note" (keydown.enter)="preview()" [maxlength]="maxNoteChars" [attr.disabled]="busy ? 'true' : null">
   </div>
   <div class="-buttons">
     <app-button #previewButton (action)="preview()" [disabled]="!form.valid">

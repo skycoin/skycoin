@@ -41,8 +41,8 @@ export interface HwFeaturesResponse {
 export class WalletService {
 
   addresses: Address[];
-  wallets: Subject<Wallet[]> = new ReplaySubject<Wallet[]>();
-  pendingTxs: Subject<any[]> = new ReplaySubject<any[]>();
+  wallets: Subject<Wallet[]> = new ReplaySubject<Wallet[]>(1);
+  pendingTxs: Subject<any[]> = new ReplaySubject<any[]>(1);
   dataRefreshSubscription: Subscription;
 
   initialLoadFailed: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
@@ -533,6 +533,8 @@ export class WalletService {
   injectTransaction(encodedTx: string, note: string): Observable<boolean> {
     return this.apiService.post('injectTransaction', { rawtx: encodedTx }, { json: true })
       .flatMap(txId => {
+        setTimeout(() => this.startDataRefreshSubscription(), 32);
+
         if (!note) {
           return Observable.of(false);
         } else {

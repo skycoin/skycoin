@@ -151,7 +151,7 @@
         {{ 'send.change-address-select' | translate }} <mat-icon>keyboard_arrow_down</mat-icon>
       </span>
     </label>
-    <input formControlName="changeAddress" id="change-address" (keydown.enter)="preview()" [attr.disabled]="busy ? 'true' : null">
+    <input formControlName="changeAddress" id="change-address" [attr.disabled]="busy ? 'true' : null">
   </div>
 
   <div class="form-field">
@@ -159,7 +159,7 @@
       {{ 'send.personal-note-label' | translate }}
       <mat-icon [matTooltip]="'send.personal-note-help' | translate">help</mat-icon>
     </label>
-    <input formControlName="note" id="note" [maxlength]="maxNoteChars" [attr.disabled]="busy ? 'true' : null">
+    <input formControlName="note" id="note" (keydown.enter)="preview()" [maxlength]="maxNoteChars" [attr.disabled]="busy ? 'true' : null">
   </div>
 
   <div class="-autohours" [ngClass]="{'element-disabled' : busy}">

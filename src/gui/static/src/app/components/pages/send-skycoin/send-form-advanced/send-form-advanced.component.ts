@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog, MatSnackBar, MatDialogConfig } from '@angular/material';
@@ -71,6 +71,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     private hwWalletService: HwWalletService,
     private translate: TranslateService,
     private priceService: PriceService,
+    private changeDetector: ChangeDetectorRef,
   ) { }
 
   ngOnInit() {
@@ -153,6 +154,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   preview() {
     this.previewTx = true;
     this.checkBeforeSending();
+    this.changeDetector.detectChanges();
   }
 
   send() {

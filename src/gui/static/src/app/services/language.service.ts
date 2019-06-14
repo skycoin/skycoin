@@ -18,8 +18,8 @@ export class LanguageData {
 
 @Injectable()
 export class LanguageService {
-  currentLanguage = new ReplaySubject<LanguageData>();
-  selectedLanguageLoaded = new ReplaySubject<boolean>();
+  currentLanguage = new ReplaySubject<LanguageData>(1);
+  selectedLanguageLoaded = new ReplaySubject<boolean>(1);
 
   private readonly storageKey = 'lang';
   private subscription: ISubscription;

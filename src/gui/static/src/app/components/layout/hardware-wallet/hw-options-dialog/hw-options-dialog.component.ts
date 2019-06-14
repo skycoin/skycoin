@@ -160,7 +160,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
       this.dialogSubscription.unsubscribe();
     }
   }
-  
+
   private updateSecurityWarningsAndData(dontUpdateWallet = false): Observable<HwFeaturesResponse> {
     this.securityWarnings = [];
 

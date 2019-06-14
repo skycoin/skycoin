@@ -51,7 +51,7 @@ export class AppService {
         .subscribe((response: Response) => {
           this.lastestVersionInternal = response.text().trim();
           if (this.lastestVersionInternal.startsWith('v')) {
-            this.lastestVersionInternal = this.lastestVersionInternal.substr(1)
+            this.lastestVersionInternal = this.lastestVersionInternal.substr(1);
           }
           this.updateAvailableInternal = shouldUpgradeVersion(this.version.version, this.lastestVersionInternal);
         });

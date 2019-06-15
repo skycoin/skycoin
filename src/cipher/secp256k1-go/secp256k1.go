@@ -221,6 +221,23 @@ func DeterministicKeyPairIterator(seedIn []byte) ([]byte, []byte, []byte) {
 	return seed1, pubkey, seckey
 }
 
+func newRandomNonceNumber() secp.Number {
+	nonce := RandByte(32)
+	var n secp.Number
+	n.SetBytes(nonce)
+	return n
+}
+
+// newSigningNonce creates a nonce for signing. This is the `k` parameter in
+// ECDSA signing. `k` must be 0 < k < n, where `n` is the order of the curve
+func newSigningNonce() secp.Number {
+	nonce := newRandomNonceNumber()
+	for nonce.Sign() == 0 || nonce.Cmp(&secp.TheCurve.Order.Int) >= 0 {
+		nonce = newRandomNonceNumber()
+	}
+	return nonce
+}
+
 // Sign sign hash, returns a compact recoverable signature
 func Sign(msg []byte, seckey []byte) []byte {
 	if len(seckey) != 32 {
@@ -232,21 +249,27 @@ func Sign(msg []byte, seckey []byte) []byte {
 	if len(msg) == 0 {
 		panic("Sign, message nil")
 	}
-	var nonce = RandByte(32)
-	var sig = make([]byte, 65)
+	if len(msg) != 32 {
+		panic("Sign, message must be 32 bytes")
+	}
+
+	nonce := newSigningNonce()
+	sig := make([]byte, 65)
 	var recid int // recovery byte, used to recover pubkey from sig
 
 	var cSig secp.Signature
 
 	var seckey1 secp.Number
 	var msg1 secp.Number
-	var nonce1 secp.Number
 
 	seckey1.SetBytes(seckey)
 	msg1.SetBytes(msg)
-	nonce1.SetBytes(nonce)
 
-	ret := cSig.Sign(&seckey1, &msg1, &nonce1, &recid)
+	if msg1.Sign() == 0 {
+		panic("Sign: message is 0")
+	}
+
+	ret := cSig.Sign(&seckey1, &msg1, &nonce, &recid)
 
 	if ret != 1 {
 		panic("Secp25k1-go, Sign, signature operation failed")

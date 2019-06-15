@@ -37,12 +37,17 @@ export interface HwFeaturesResponse {
   securityWarnings: HwSecurityWarnings[];
 }
 
+export interface PendingTransactions {
+  user: any[];
+  all: any[];
+}
+
 @Injectable()
 export class WalletService {
 
   addresses: Address[];
   wallets: Subject<Wallet[]> = new ReplaySubject<Wallet[]>(1);
-  pendingTxs: Subject<any[]> = new ReplaySubject<any[]>(1);
+  pendingTxs: Subject<PendingTransactions> = new ReplaySubject<PendingTransactions>(1);
   dataRefreshSubscription: Subscription;
 
   initialLoadFailed: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
@@ -305,11 +310,7 @@ export class WalletService {
     });
   }
 
-  allPendingTransactions(): Observable<any> {
-    return Observable.timer(0, 10000).flatMap(() => this.apiService.get('pendingTxs', {verbose: 1}));
-  }
-
-  pendingTransactions(): Observable<any> {
+  pendingTransactions(): Observable<PendingTransactions> {
     return this.pendingTxs.asObservable();
   }
 
@@ -799,7 +800,10 @@ export class WalletService {
     this.apiService.get('pendingTxs', { verbose: true })
       .flatMap((transactions: any) => {
         if (transactions.length === 0) {
-          return Observable.of([]);
+          return Observable.of({
+            user: [],
+            all: [],
+          });
         }
 
         return this.wallets.first().map((wallets: Wallet[]) => {
@@ -808,10 +812,15 @@ export class WalletService {
             wallet.addresses.forEach(address => walletAddresses.add(address.address));
           });
 
-          return transactions.filter(tran => {
+          const userTransactions = transactions.filter(tran => {
             return tran.transaction.inputs.some(input => walletAddresses.has(input.owner)) ||
             tran.transaction.outputs.some(output => walletAddresses.has(output.dst));
           });
+
+          return {
+            user: userTransactions,
+            all: transactions,
+          };
         });
       })
       .subscribe(transactions => this.pendingTxs.next(transactions));

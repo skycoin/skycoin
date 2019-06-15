@@ -22,7 +22,7 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
     private navbarService: NavBarService,
   ) {
     this.navbarSubscription = this.navbarService.activeComponent.subscribe(value => {
-      this.loadTransactions(value);
+      this.startCheckingTransactions(value);
     });
   }
 
@@ -31,27 +31,21 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.transactionsSubscription.unsubscribe();
+    this.removeTransactionsSubscription();
     this.navbarSubscription.unsubscribe();
     this.navbarService.hideSwitch();
   }
 
-  private loadTransactions(value) {
-    const method = value === DoubleButtonActive.LeftButton ? 'pendingTransactions' : 'allPendingTransactions';
-
+  private startCheckingTransactions(value) {
     this.transactions = null;
 
-    if (this.transactionsSubscription) {
-      this.transactionsSubscription.unsubscribe();
-    }
+    this.removeTransactionsSubscription();
 
-    if (method === 'pendingTransactions') {
-      this.walletService.startDataRefreshSubscription();
-    }
-
-    this.transactionsSubscription = this.walletService[method]().subscribe(transactions => {
-      this.transactions = this.mapTransactions(transactions);
+    this.transactionsSubscription = this.walletService.pendingTransactions().subscribe(transactions => {
+      this.transactions = this.mapTransactions(value === DoubleButtonActive.LeftButton ? transactions.user : transactions.all);
     });
+
+    this.walletService.startDataRefreshSubscription();
   }
 
   private mapTransactions(transactions) {
@@ -71,5 +65,11 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
 
       return transaction;
     });
+  }
+
+  private removeTransactionsSubscription() {
+    if (this.transactionsSubscription) {
+      this.transactionsSubscription.unsubscribe();
+    }
   }
 }

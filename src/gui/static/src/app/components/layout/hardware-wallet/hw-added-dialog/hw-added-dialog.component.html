@@ -24,7 +24,7 @@
   </div>
 
   <div class="-buttons" *ngIf="currentState === states.Finished || currentState === states.Failed">
-    <app-button (action)="saveNameAndCloseModal()" class="primary" [disabled]="!form.valid">
+    <app-button (action)="currentState === states.Finished ? saveNameAndCloseModal() : closeModal()" class="primary" [disabled]="currentState === states.Finished && !form.valid">
       {{ 'hardware-wallet.general.close' | translate }}
     </app-button>
   </div>

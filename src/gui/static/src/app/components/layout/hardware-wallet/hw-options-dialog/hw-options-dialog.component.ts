@@ -77,6 +77,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
   ngOnDestroy() {
     super.ngOnDestroy();
     this.removeDialogSubscription();
+    this.removeOperationSubscription();
   }
 
   hwConnectionChanged(connected: boolean) {
@@ -196,14 +197,12 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
     this.wallet = null;
     this.currentState = States.Processing;
 
-    this.hwWalletService.getDeviceConnected().subscribe(connected => {
+    this.removeOperationSubscription();
+
+    this.operationSubscription = this.hwWalletService.getDeviceConnected().subscribe(connected => {
       if (!connected) {
         this.currentState = States.Disconnected;
       } else {
-        if (this.operationSubscription) {
-          this.operationSubscription.unsubscribe();
-        }
-
         this.operationSubscription = this.hwWalletService.getFeatures(false).subscribe(result => {
           if (result.rawResponse.bootloader_mode) {
             this.openUpdateDialog();
@@ -224,7 +223,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
   private continueCheckingWallet(suggestToUpdate) {
     this.operationSubscription = this.hwWalletService.getAddresses(1, 0).subscribe(
       response => {
-        this.walletService.wallets.first().subscribe(wallets => {
+        this.operationSubscription = this.walletService.wallets.first().subscribe(wallets => {
           const alreadySaved = wallets.some(wallet => {
             const found = wallet.addresses[0].address === response.rawResponse[0] && wallet.isHardware;
             if (found) {
@@ -278,6 +277,12 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
         }
       },
     );
+  }
+
+  private removeOperationSubscription() {
+    if (this.operationSubscription) {
+      this.operationSubscription.unsubscribe();
+    }
   }
 
   private openUpdateWarning() {

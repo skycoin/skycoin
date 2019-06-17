@@ -170,7 +170,7 @@ export class ApiService {
     return headers;
   }
 
-  getQueryString(parameters = null) {
+  private getQueryString(parameters = null) {
     if (!parameters) {
       return '';
     }

@@ -355,6 +355,7 @@
       "too-many-inputs-outputs": "The transaction has too many inputs or outputs for the hardware wallet. Please try again creating several smaller transactions, each one with a smaller number of recipients (if the current transaction has many) or coins.",
       "daemon-connection": "Problem connecting to the hardware wallet service.",
       "timeout": "The operation was cancelled due to inactivity or because the device did not respond. Please try again.",
+      "invalid-address-generated": "There was a problem with the address generator and the operation had to be canceled for security.",
       "invalid-address": "Invalid address.",
       "not-in-firmware-mode": "To use this option the hardware wallet must be in firmware mode."
     },
@@ -398,8 +399,12 @@
       "update": "Update"
     },
     "update-firmware" : {
-      "title": "Update Firmware",
-      "text": "To update the firmware of your hardware wallet you must connect it in firmware mode (connect it to the computer while pressing the two physical buttons of the device). WARNING: before continuing you must have a backup of your seed or you can permanently lose access to the funds.",
+      "title-connecting": "Connecting...",
+      "title-update": "Update Firmware",
+      "title-install": "Install Firmware",
+      "text-bootloader": "WARNING: if you have already configured this device, before continuing you must have a backup of your seed or you could permanently lose access to the funds.",
+      "text-not-bootloader": "To update the firmware of your hardware wallet you must connect it in bootloader mode (connect it to the computer while pressing the two physical buttons of the device). WARNING: if you have already configured this device, before continuing you must have a backup of your seed or you could permanently lose access to the funds.",
+      "text-no-firmware": "Welcome. The currently connected wallet hardware does not have a firmware (internal software), we will install one so you can start using it. NOTE: if you have already configured this device and want to recover the funds, you will need your seed.",
       "check": "I understand the risks and want to continue",
       "completed": "The firmware update has been sent to the hardware wallet. Please continue the process on the device.",
       "connection-error": "It was not possible download the firmware. This could be due to problems with your internet connection or because the service is in maintenance.",
@@ -464,7 +469,11 @@
       "part3": "If you wish, you can also use the numpad on your keyboard to enter the PIN. However, as in the previous example, if the PIN is \"23\", you can not simply type \"23\" with the numpad, but you will have to press the keys that are in the position where the numbers 2 and 3 are shown on the screen of the hardware wallet."
     },
     "create-tx" : {
-      "title": "Create transaction"
+      "title": "Create transaction",
+      "upper-text": "Please confirm the operation in the hardware wallet after verifying if the following data matches EXACTLY with the transaction you wish to send and with those shown by the hardware wallet:",
+      "lower-text": "If any data does not correspond to what the hardware wallet shows or the transaction you wish to send, cancel the operation in your hardware wallet.",
+      "send-p1": "and",
+      "send-p2": "to"
     },
     "confirm-address" : {
       "title": "Confirm address",

@@ -55,7 +55,10 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
         this.currentState = States.Finished;
         this.data.requestOptionsComponentRefresh();
       });
-    }, () => {
+    }, err => {
+      if (err['_body']) {
+        this.errorMsg = err['_body'];
+      }
       this.currentState = States.Failed;
       this.data.requestOptionsComponentRefresh(this.errorMsg);
     });

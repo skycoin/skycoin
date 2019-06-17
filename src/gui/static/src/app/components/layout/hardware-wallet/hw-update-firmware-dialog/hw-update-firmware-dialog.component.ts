@@ -6,8 +6,11 @@ import { ButtonComponent } from '../../button/button.component';
 import { MatSnackBar } from '@angular/material';
 import { showSnackbarError, getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { TranslateService } from '@ngx-translate/core';
+import { ISubscription } from 'rxjs/Subscription';
+import { Observable } from 'rxjs/Observable';
 
 enum States {
+  Connecting,
   Initial,
   Processing,
   ReturnedSuccess,
@@ -25,9 +28,36 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
 
   @ViewChild('button') button: ButtonComponent;
 
-  currentState: States = States.Initial;
+  currentState: States = States.Connecting;
   states = States;
   confirmed = false;
+
+  deviceInBootloaderMode = false;
+  deviceHasFirmware = true;
+
+  private checkDeviceSubscription: ISubscription;
+
+  get title(): string {
+    if (this.currentState === States.Connecting) {
+      return 'hardware-wallet.update-firmware.title-connecting';
+    } else if (this.deviceHasFirmware) {
+      return 'hardware-wallet.update-firmware.title-update';
+    }
+
+    return 'hardware-wallet.update-firmware.title-install';
+  }
+
+  get text(): string {
+    if (!this.deviceHasFirmware) {
+      return 'hardware-wallet.update-firmware.text-no-firmware';
+    }
+
+    if (this.deviceInBootloaderMode) {
+      return 'hardware-wallet.update-firmware.text-bootloader';
+    }
+
+    return 'hardware-wallet.update-firmware.text-not-bootloader';
+  }
 
   constructor(
     public dialogRef: MatDialogRef<HwUpdateFirmwareDialogComponent>,
@@ -36,11 +66,13 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
     private translateService: TranslateService,
   ) {
     super(hwWalletService, dialogRef);
+    this.checkDevice(false);
   }
 
   ngOnDestroy() {
     super.ngOnDestroy();
     this.snackbar.dismiss();
+    this.closeCheckDeviceSubscription();
   }
 
   setConfirmed(event) {
@@ -50,6 +82,8 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
   startUpdating() {
     this.snackbar.dismiss();
     this.currentState = States.Processing;
+
+    this.closeCheckDeviceSubscription();
 
     this.operationSubscription = this.hwWalletService.updateFirmware().subscribe(
       () => {
@@ -74,9 +108,45 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
             });
           }
 
+          this.checkDevice(false);
+
           this.currentState = States.Initial;
         }
       },
     );
+  }
+
+  private checkDevice(delay = true) {
+    this.closeCheckDeviceSubscription();
+
+    this.checkDeviceSubscription = Observable.of(0).delay(delay ? 1000 : 0).flatMap(() => this.hwWalletService.getFeatures(false)).subscribe(response => {
+      this.deviceInBootloaderMode = response.rawResponse.bootloader_mode;
+      if (this.deviceInBootloaderMode) {
+        this.deviceHasFirmware = response.rawResponse.firmware_present;
+      } else {
+        this.deviceHasFirmware = true;
+      }
+
+      if (this.currentState === States.Connecting) {
+        this.currentState = States.Initial;
+      }
+
+      this.checkDevice();
+    }, () => {
+      this.deviceInBootloaderMode = false;
+      this.deviceHasFirmware = true;
+
+      if (this.currentState === States.Connecting) {
+        this.currentState = States.Initial;
+      }
+
+      this.checkDevice();
+    });
+  }
+
+  private closeCheckDeviceSubscription() {
+    if (this.checkDeviceSubscription) {
+      this.checkDeviceSubscription.unsubscribe();
+    }
   }
 }

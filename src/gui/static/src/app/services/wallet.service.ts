@@ -22,8 +22,7 @@ import { AppConfig } from '../app.config';
 import { Http } from '@angular/http';
 import { StorageService, StorageType } from './storage.service';
 import { shouldUpgradeVersion } from '../utils/semver';
-
-declare var Cipher: any;
+import { TxEncoder } from '../utils/tx-encoder';
 
 export enum HwSecurityWarnings {
   NeedsBackup,
@@ -409,10 +408,10 @@ export class WalletService {
       const data = useV2Endpoint ? transaction.data : transaction;
 
       if (wallet.isHardware) {
-        if (data.transaction.inputs.length > 7) {
+        if (data.transaction.inputs.length > 8) {
           throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs-outputs'));
         }
-        if (data.transaction.outputs.length > 7) {
+        if (data.transaction.outputs.length > 8) {
           throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs-outputs'));
         }
       }
@@ -421,6 +420,7 @@ export class WalletService {
         ...data.transaction,
         hoursBurned: new BigNumber(data.transaction.fee),
         encoded: data.encoded_transaction,
+        innerHash: data.transaction.inner_hash,
       };
     });
 
@@ -516,10 +516,11 @@ export class WalletService {
       });
 
       return this.hwWalletService.signTransaction(hwInputs, hwOutputs).flatMap(signatures => {
-        const rawTransaction = Cipher.PrepareTransactionWithSignatures(
-          JSON.stringify(txInputs),
-          JSON.stringify(txOutputs),
-          JSON.stringify(signatures.rawResponse),
+        const rawTransaction = TxEncoder.encode(
+          hwInputs,
+          hwOutputs,
+          signatures.rawResponse,
+          transaction.innerHash,
         );
 
         return Observable.of( {

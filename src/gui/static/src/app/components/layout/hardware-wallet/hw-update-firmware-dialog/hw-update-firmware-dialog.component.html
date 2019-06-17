@@ -1,11 +1,11 @@
-<app-modal class="modal" [headline]="'hardware-wallet.update-firmware.title' | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Processing">
+<app-modal class="modal" [headline]="this.title | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Processing">
   <div *ngIf="currentState === states.Initial">
     <app-hw-message
-      [text]="'hardware-wallet.update-firmware.text' | translate"
-      [icon]="msgIcons.Warning"
+      [text]="(text | translate)"
+      [icon]="deviceHasFirmware ? msgIcons.Warning : msgIcons.HardwareWallet"
     ></app-hw-message>
 
-    <div class="-check-container">
+    <div class="-check-container" *ngIf="deviceHasFirmware">
       <mat-checkbox type="checkbox"
                     class="-check"
                     [checked]="confirmed"
@@ -17,15 +17,20 @@
       <app-button (action)="closeModal()" [disabled]="currentState === states.Processing">
         {{ 'hardware-wallet.general.cancel' | translate }}
       </app-button>
-      <app-button (action)="startUpdating()" class="primary" [disabled]="!confirmed" #button>
+      <app-button (action)="startUpdating()" class="primary" [disabled]="deviceHasFirmware && !confirmed" #button>
         {{ 'hardware-wallet.general.continue' | translate }}
       </app-button>
     </div>
   </div>
 
   <div *ngIf="currentState !== states.Initial">
-      <app-hw-message *ngIf="currentState === states.Processing"
-      [text]="'hardware-wallet.general.confirm' | translate"
+    <app-hw-message *ngIf="currentState === states.Connecting"
+      [text]="'hardware-wallet.update-firmware.title-connecting' | translate"
+      [icon]="msgIcons.Spinner"
+    ></app-hw-message>
+
+     <app-hw-message *ngIf="currentState === states.Processing"
+      [text]="'hardware-wallet.general.follow' | translate"
       [icon]="msgIcons.Confirm"
     ></app-hw-message>
 

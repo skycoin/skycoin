@@ -684,7 +684,7 @@ func TestEncodeJSONTransaction(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := execCommandCombinedOutput("TestEncodeJsonTransaction", pathToGoldenFile(tc.goldenFile))
+			output, err := execCommandCombinedOutput("encodeJsonTransaction", pathToGoldenFile(tc.goldenFile))
 			if err != nil {
 				require.Error(t, err, "exit status 1")
 				require.Equal(t, tc.errMsg, output)

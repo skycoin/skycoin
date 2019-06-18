@@ -67,28 +67,86 @@ func TestSigRecover(t *testing.T) {
 		},
 	}
 
-	var sig Signature
-	var pubkey, exp XY
-	var msg Number
-
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("%s,%s", tc.r, tc.s), func(t *testing.T) {
+			var sig Signature
+			var pubkey, expectedPubkey XY
+			var msg Number
+
 			sig.R.SetHex(tc.r)
 			sig.S.SetHex(tc.s)
 			msg.SetHex(tc.msg)
 
-			exp.X.SetHex(tc.x)
-			exp.Y.SetHex(tc.y)
+			expectedPubkey.X.SetHex(tc.x)
+			expectedPubkey.Y.SetHex(tc.y)
 
 			if sig.Recover(&pubkey, &msg, tc.recid) {
-				if !exp.X.Equals(&pubkey.X) {
+				if !expectedPubkey.X.Equals(&pubkey.X) {
 					t.Error("X mismatch")
 				}
-				if !exp.Y.Equals(&pubkey.Y) {
+				if !expectedPubkey.Y.Equals(&pubkey.Y) {
 					t.Error("Y mismatch")
 				}
 			} else {
-				t.Error("sig.recover fialed")
+				t.Error("sig.Recover failed")
+			}
+		})
+	}
+}
+
+func TestSigRecover2(t *testing.T) {
+	cases := []struct {
+		msg          string
+		sig          string
+		pubkey       string
+		recoverFails bool
+	}{
+		{
+			msg:    "016b81623cf98f45879f3a48fa34af77dde44b2ffa0ddd2bf9edb386f76ec0ef",
+			sig:    "d2a8ec2b29ce3cf3e6048296188adff4b5dfcb337c1d1157f28654e445bb940b4e47d6b0c7ba43d072bf8618775f123a435e8d1a150cb39bbb1aa80da8c57ea100",
+			pubkey: "03c0b0e24d55255f7aefe3da7a947a63028b573f45356a9c22e9a3c103fd00c3d1",
+		},
+
+		{
+			msg:    "176b81623cf98f45879f3a48fa34af77dde44b2ffa0ddd2bf9edb386f76ec0ef",
+			sig:    "d2a8ec2b20ce3cf3e6048296188adff4b5dfcb337c1d1157f28654e445bb940b4e47d6b0c7ba43d072bf8618775f123a435e8d1a150cb39bbb1aa80da8c57ea100",
+			pubkey: "03cee91b6d329e00c344ad5d67cfd00d885ec36e8975b5d9097738939cb8c08b31",
+		},
+		{
+			msg:          "176b81623cf98f45879f3a48fa34af77dde44b2ffa0ddd2bf9edb386f76ec0ef",
+			sig:          "d201ec2b29ce3cf3e6048296188adff4b5dfcb337c1d1157f28654e445bb940b4e47d6b0c7ba43d072bf8618775f123a435e8d1a150cb39bbb1aa80da8c57ea100",
+			recoverFails: true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(fmt.Sprintf("%s-%s", tc.msg, tc.sig), func(t *testing.T) {
+			var sig Signature
+			var pubkey XY
+			var msg Number
+
+			sigBytes, err := hex.DecodeString(tc.sig)
+			if err != nil {
+				t.Error("invalid sig hex")
+			}
+			recid := int(sigBytes[64])
+			sig.R.SetBytes(sigBytes[:32])
+			sig.S.SetBytes(sigBytes[32:64])
+			msg.SetHex(tc.msg)
+
+			if sig.Recover(&pubkey, &msg, recid) {
+				if tc.recoverFails {
+					t.Error("sig.Recover expected to fail")
+				}
+
+				pubkeyHex := hex.EncodeToString(pubkey.Bytes())
+				if tc.pubkey != pubkeyHex {
+					t.Errorf("pubkey does not match %s != %s", tc.pubkey, pubkeyHex)
+				}
+			} else {
+				if !tc.recoverFails {
+					t.Error("sig.Recover failed")
+				}
 			}
 		})
 	}
@@ -155,6 +213,10 @@ func TestSigSign(t *testing.T) {
 	non.SetHex("1ca662aaefd6cc958ba4604fea999db133a75bf34c13334dabac7124ff0cfcc1")
 	if sig.S.Cmp(&non.Int) != 0 {
 		t.Error("S failed", sig.S.String())
+	}
+	expectSig := "98f9d784ba6c5c77bb7323d044c0fc9f2b27baa0a5b0718fe88596cc566819801ca662aaefd6cc958ba4604fea999db133a75bf34c13334dabac7124ff0cfcc1"
+	if expectSig != hex.EncodeToString(sig.Bytes()) {
+		t.Error("signature doesnt match")
 	}
 }
 

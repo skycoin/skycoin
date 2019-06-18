@@ -56,7 +56,13 @@ func RecoverPublicKey(sigBytes, msgBytes []byte, recid int) ([]byte, int) {
 		return nil, -6
 	}
 
-	return pubkey.Bytes(), 1
+	pkb := pubkey.Bytes()
+
+	if PubkeyIsValid(pkb) != 1 {
+		return nil, -7
+	}
+
+	return pkb, 1
 }
 
 // Multiply standard EC multiplacation k(xy)

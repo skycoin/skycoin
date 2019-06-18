@@ -391,7 +391,6 @@ func VerifySignature(msg []byte, sig []byte, pubkey1 []byte) int {
 }
 
 // RecoverPubkey recovers the public key from the signature
-//recovery of pubkey means correct signature
 func RecoverPubkey(msg []byte, sig []byte) []byte {
 	if len(sig) != 65 {
 		panic("sig length must be 65 bytes")

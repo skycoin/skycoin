@@ -297,10 +297,6 @@ func Test_Secp256_04(t *testing.T) {
 	}
 }
 
-// test random signatures against fixed messages; should fail
-//crashes:
-//	-SIPA look at this
-
 func randSig() []byte {
 	sig := RandByte(65)
 	sig[32] &= 0x70

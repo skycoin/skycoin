@@ -70,9 +70,8 @@ func (xy *XY) ParsePubkey(pub []byte) error {
 	return nil
 }
 
-// Bytes Returns serialized key in in compressed format: "<02> <X>",
-// eventually "<03> <X>"
-//33 bytes
+// Bytes returns the compressed public key (33 bytes) in the format
+// "<0x03> <X>" or <0x02> <X>". The leading byte is 0x03 if the Y point is odd.
 func (xy XY) Bytes() []byte {
 	xy.X.Normalize() // See https://github.com/piotrnar/gocoin/issues/15
 

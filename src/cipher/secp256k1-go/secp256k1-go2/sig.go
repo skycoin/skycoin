@@ -192,11 +192,9 @@ func (sig *Signature) Sign(seckey, message, nonce *Number, recid *int) int {
 		// it requires finding the discrete log of some P where P.x >= order,
 		// and only 1 in about 2^127 points meet this criteria.
 		if sig.R.Cmp(&TheCurve.Order.Int) >= 0 {
-			fmt.Println("sig.R.Cmp(&TheCurve.Order.Int) >= 0, recid |= 2")
 			*recid |= 2
 		}
 		if r.Y.IsOdd() {
-			fmt.Println("r.Y.IsOdd(), recid |= 1")
 			*recid |= 1
 		}
 	}

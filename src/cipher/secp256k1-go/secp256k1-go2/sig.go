@@ -3,6 +3,7 @@ package secp256k1go
 import (
 	"bytes"
 	"fmt"
+	"log"
 )
 
 // Signature represents the signature
@@ -183,7 +184,7 @@ func (sig *Signature) Sign(seckey, message, nonce *Number, recid *int) int {
 	sig.R.SetBytes(b[:])
 
 	if sig.R.Sign() == 0 {
-		panic("sig R value should not be 0")
+		log.Panic("sig R value should not be 0")
 	}
 
 	if recid != nil {
@@ -225,7 +226,7 @@ func (sig *Signature) Sign(seckey, message, nonce *Number, recid *int) int {
 // R and S should be in big-endian encoding.
 func (sig *Signature) ParseBytes(v []byte) {
 	if len(v) != 64 {
-		panic("Signature.ParseBytes requires 64 bytes")
+		log.Panic("Signature.ParseBytes requires 64 bytes")
 	}
 	sig.R.SetBytes(v[0:32])
 	sig.S.SetBytes(v[32:64])
@@ -249,15 +250,15 @@ func (sig *Signature) Bytes() []byte {
 	}
 
 	if len(r) != 32 || len(s) != 32 {
-		panic(fmt.Sprintf("signature size invalid: %d, %d", len(r), len(s)))
+		log.Panic(fmt.Sprintf("signature size invalid: %d, %d", len(r), len(s)))
 	}
 
 	res := new(bytes.Buffer)
 	if _, err := res.Write(r); err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 	if _, err := res.Write(s); err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 
 	//test
@@ -266,15 +267,15 @@ func (sig *Signature) Bytes() []byte {
 		var sig2 Signature
 		sig2.ParseBytes(ret)
 		if !bytes.Equal(sig.R.Bytes(), sig2.R.Bytes()) {
-			panic("serialization failed 1")
+			log.Panic("serialization failed 1")
 		}
 		if !bytes.Equal(sig.S.Bytes(), sig2.S.Bytes()) {
-			panic("serialization failed 2")
+			log.Panic("serialization failed 2")
 		}
 	}
 
 	if len(res.Bytes()) != 64 {
-		panic("Signature.Bytes result bytes must be 64 bytes long")
+		log.Panic("Signature.Bytes result bytes must be 64 bytes long")
 	}
 	return res.Bytes()
 }

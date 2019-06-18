@@ -20,32 +20,32 @@ var DebugPrint = false
 // may return nil
 func pubkeyFromSeckey(seckey []byte) []byte {
 	if len(seckey) != 32 {
-		panic("seckey length invalid")
+		log.Panic("seckey length invalid")
 	}
 
 	if secp.SeckeyIsValid(seckey) != 1 {
-		panic("always ensure seckey is valid")
+		log.Panic("always ensure seckey is valid")
 		return nil
 	}
 
 	pubkey := secp.GeneratePublicKey(seckey) // always returns true
 	if pubkey == nil {
-		panic("ERROR: impossible, secp.BaseMultiply always returns true")
+		log.Panic("ERROR: impossible, secp.BaseMultiply always returns true")
 		return nil
 	}
 	if len(pubkey) != 33 {
-		panic("ERROR: impossible, invalid pubkey length")
+		log.Panic("ERROR: impossible, invalid pubkey length")
 	}
 
 	if ret := secp.PubkeyIsValid(pubkey); ret != 1 {
-		panic(fmt.Sprintf("ERROR: pubkey invald, ret=%d", ret))
+		log.Panic(fmt.Sprintf("ERROR: pubkey invald, ret=%d", ret))
 		return nil
 	}
 
 	if ret := VerifyPubkey(pubkey); ret != 1 {
 		log.Printf("seckey= %s", hex.EncodeToString(seckey))
 		log.Printf("pubkey= %s", hex.EncodeToString(pubkey))
-		panic(fmt.Sprintf("ERROR: pubkey verification failed, for deterministic. ret=%d", ret))
+		log.Panic(fmt.Sprintf("ERROR: pubkey verification failed, for deterministic. ret=%d", ret))
 		return nil
 	}
 
@@ -66,11 +66,11 @@ new_seckey:
 
 	pubkey = pubkeyFromSeckey(seckey)
 	if pubkey == nil {
-		panic("IMPOSSIBLE: pubkey invalid from valid seckey")
+		log.Panic("IMPOSSIBLE: pubkey invalid from valid seckey")
 		goto new_seckey
 	}
 	if ret := secp.PubkeyIsValid(pubkey); ret != 1 {
-		panic(fmt.Sprintf("ERROR: Pubkey invalid, ret=%d", ret))
+		log.Panic(fmt.Sprintf("ERROR: Pubkey invalid, ret=%d", ret))
 		goto new_seckey
 	}
 
@@ -84,16 +84,16 @@ func PubkeyFromSeckey(seckey []byte) []byte {
 	// TODO: must match, result of private key from deterministic gen?
 	// deterministic gen will always return a valid private key
 	if len(seckey) != 32 {
-		panic("PubkeyFromSeckey: invalid length")
+		log.Panic("PubkeyFromSeckey: invalid length")
 	}
 
 	pubkey := pubkeyFromSeckey(seckey)
 	if pubkey == nil {
-		panic("ERRROR: impossible, pubkey generation failed")
+		log.Panic("ERRROR: impossible, pubkey generation failed")
 		return nil
 	}
 	if ret := secp.PubkeyIsValid(pubkey); ret != 1 {
-		panic(fmt.Sprintf("ERROR: Pubkey invalid, ret=%d", ret))
+		log.Panic(fmt.Sprintf("ERROR: Pubkey invalid, ret=%d", ret))
 		return nil
 	}
 
@@ -103,18 +103,18 @@ func PubkeyFromSeckey(seckey []byte) []byte {
 // UncompressPubkey uncompresses pubkey
 func UncompressPubkey(pubkey []byte) []byte {
 	if VerifyPubkey(pubkey) != 1 {
-		panic("cannot uncompress invalid pubkey")
+		log.Panic("cannot uncompress invalid pubkey")
 		return nil
 	}
 
 	var pubXY secp.XY
 	if err := pubXY.ParsePubkey(pubkey); err != nil {
-		panic(fmt.Sprintf("ERROR: impossible, pubkey parse fail: %v", err))
+		log.Panic(fmt.Sprintf("ERROR: impossible, pubkey parse fail: %v", err))
 	}
 
 	var pubkey2 = pubXY.BytesUncompressed()
 	if pubkey2 == nil {
-		panic("ERROR: pubkey, uncompression fail")
+		log.Panic("ERROR: pubkey, uncompression fail")
 		return nil
 	}
 
@@ -125,22 +125,22 @@ func UncompressPubkey(pubkey []byte) []byte {
 // should only need pubkey, not private key
 func UncompressedPubkeyFromSeckey(seckey []byte) []byte {
 	if len(seckey) != 32 {
-		panic("UncompressedPubkeyFromSeckey: invalid length")
+		log.Panic("UncompressedPubkeyFromSeckey: invalid length")
 	}
 
 	pubkey := PubkeyFromSeckey(seckey)
 	if pubkey == nil {
-		panic("Generating seckey from pubkey, failed")
+		log.Panic("Generating seckey from pubkey, failed")
 		return nil
 	}
 
 	if VerifyPubkey(pubkey) != 1 {
-		panic("ERROR: impossible, Pubkey generation succeeded but pubkey validation failed")
+		log.Panic("ERROR: impossible, Pubkey generation succeeded but pubkey validation failed")
 	}
 
 	var uncompressedPubkey = UncompressPubkey(pubkey)
 	if uncompressedPubkey == nil {
-		panic("decompression failed")
+		log.Panic("decompression failed")
 		return nil
 	}
 
@@ -151,7 +151,7 @@ func UncompressedPubkeyFromSeckey(seckey []byte) []byte {
 // internal use only
 func deterministicKeyPairIteratorStep(seed []byte) ([]byte, []byte) {
 	if len(seed) != 32 {
-		panic("ERROR: deterministicKeyPairIteratorStep: seed must be 32 bytes")
+		log.Panic("ERROR: deterministicKeyPairIteratorStep: seed must be 32 bytes")
 	}
 
 	const seckeyLen = 32
@@ -170,23 +170,23 @@ new_seckey:
 
 	pubkey := secp.GeneratePublicKey(seckey)
 	if pubkey == nil {
-		panic("ERROR: deterministicKeyPairIteratorStep: GeneratePublicKey failed, impossible, secp.BaseMultiply always returns true")
+		log.Panic("ERROR: deterministicKeyPairIteratorStep: GeneratePublicKey failed, impossible, secp.BaseMultiply always returns true")
 		goto new_seckey
 	}
 
 	if len(pubkey) != 33 {
-		panic("ERROR: deterministicKeyPairIteratorStep: impossible, pubkey length wrong")
+		log.Panic("ERROR: deterministicKeyPairIteratorStep: impossible, pubkey length wrong")
 	}
 
 	if ret := secp.PubkeyIsValid(pubkey); ret != 1 {
-		panic(fmt.Sprintf("ERROR: deterministicKeyPairIteratorStep: PubkeyIsValid failed, ret=%d", ret))
+		log.Panic(fmt.Sprintf("ERROR: deterministicKeyPairIteratorStep: PubkeyIsValid failed, ret=%d", ret))
 	}
 
 	if ret := VerifyPubkey(pubkey); ret != 1 {
 		log.Printf("seckey= %s", hex.EncodeToString(seckey))
 		log.Printf("pubkey= %s", hex.EncodeToString(pubkey))
 
-		panic(fmt.Sprintf("ERROR: deterministicKeyPairIteratorStep: VerifyPubkey failed, ret=%d", ret))
+		log.Panic(fmt.Sprintf("ERROR: deterministicKeyPairIteratorStep: VerifyPubkey failed, ret=%d", ret))
 		goto new_seckey
 	}
 
@@ -241,16 +241,16 @@ func newSigningNonce() secp.Number {
 // Sign sign hash, returns a compact recoverable signature
 func Sign(msg []byte, seckey []byte) []byte {
 	if len(seckey) != 32 {
-		panic("Sign, Invalid seckey length")
+		log.Panic("Sign, Invalid seckey length")
 	}
 	if secp.SeckeyIsValid(seckey) != 1 {
-		panic("Attempting to sign with invalid seckey")
+		log.Panic("Attempting to sign with invalid seckey")
 	}
 	if len(msg) == 0 {
-		panic("Sign, message nil")
+		log.Panic("Sign, message nil")
 	}
 	if len(msg) != 32 {
-		panic("Sign, message must be 32 bytes")
+		log.Panic("Sign, message must be 32 bytes")
 	}
 
 	nonce := newSigningNonce()
@@ -266,13 +266,13 @@ func Sign(msg []byte, seckey []byte) []byte {
 	msg1.SetBytes(msg)
 
 	if msg1.Sign() == 0 {
-		panic("Sign: message is 0")
+		log.Panic("Sign: message is 0")
 	}
 
 	ret := cSig.Sign(&seckey1, &msg1, &nonce, &recid)
 
 	if ret != 1 {
-		panic("Secp25k1-go, Sign, signature operation failed")
+		log.Panic("Secp25k1-go, Sign, signature operation failed")
 	}
 
 	sigBytes := cSig.Bytes()
@@ -280,12 +280,12 @@ func Sign(msg []byte, seckey []byte) []byte {
 		sig[i] = sigBytes[i]
 	}
 	if len(sigBytes) != 64 {
-		panic(fmt.Sprintf("Invalid signature byte count: %d", len(sigBytes)))
+		log.Panic(fmt.Sprintf("Invalid signature byte count: %d", len(sigBytes)))
 	}
 	sig[64] = byte(recid)
 
 	if recid > 4 {
-		panic("invalid recovery id")
+		log.Panic("invalid recovery id")
 	}
 
 	return sig
@@ -329,7 +329,7 @@ func VerifyPubkey(pubkey []byte) int {
 func VerifySignatureValidity(sig []byte) int {
 	//64+1
 	if len(sig) != 65 {
-		panic("VerifySignatureValidity: sig len is not 65 bytes")
+		log.Panic("VerifySignatureValidity: sig len is not 65 bytes")
 		return 0
 	}
 	//malleability check:
@@ -349,13 +349,13 @@ func VerifySignatureValidity(sig []byte) int {
 // Returns 1 on success
 func VerifySignature(msg []byte, sig []byte, pubkey1 []byte) int {
 	if msg == nil || len(sig) == 0 || len(pubkey1) == 0 {
-		panic("VerifySignature, ERROR: invalid input, empty slices")
+		log.Panic("VerifySignature, ERROR: invalid input, empty slices")
 	}
 	if len(sig) != 65 {
-		panic("VerifySignature, invalid signature length")
+		log.Panic("VerifySignature, invalid signature length")
 	}
 	if len(pubkey1) != 33 {
-		panic("VerifySignature, invalid pubkey length")
+		log.Panic("VerifySignature, invalid pubkey length")
 	}
 
 	if len(msg) == 0 {
@@ -380,7 +380,7 @@ func VerifySignature(msg []byte, sig []byte, pubkey1 []byte) int {
 	}
 
 	if len(pubkey2) != 33 {
-		panic("recovered pubkey length invalid") // sanity check
+		log.Panic("recovered pubkey length invalid") // sanity check
 	}
 
 	if !bytes.Equal(pubkey1, pubkey2) {
@@ -393,7 +393,7 @@ func VerifySignature(msg []byte, sig []byte, pubkey1 []byte) int {
 // RecoverPubkey recovers the public key from the signature
 func RecoverPubkey(msg []byte, sig []byte) []byte {
 	if len(sig) != 65 {
-		panic("sig length must be 65 bytes")
+		log.Panic("sig length must be 65 bytes")
 	}
 
 	var recid = int(sig[64])
@@ -408,10 +408,10 @@ func RecoverPubkey(msg []byte, sig []byte) []byte {
 	}
 
 	if pubkey == nil {
-		panic("ERROR: impossible, pubkey nil and ret == 1")
+		log.Panic("ERROR: impossible, pubkey nil and ret == 1")
 	}
 	if len(pubkey) != 33 {
-		panic("pubkey length wrong")
+		log.Panic("pubkey length wrong")
 	}
 
 	return pubkey
@@ -420,11 +420,11 @@ func RecoverPubkey(msg []byte, sig []byte) []byte {
 // ECDH raise a pubkey to the power of a seckey
 func ECDH(pub []byte, sec []byte) []byte {
 	if len(sec) != 32 {
-		panic("secret key must be 32 bytes")
+		log.Panic("secret key must be 32 bytes")
 	}
 
 	if len(pub) != 33 {
-		panic("public key must be 33 bytes")
+		log.Panic("public key must be 33 bytes")
 	}
 
 	if VerifySeckey(sec) != 1 {
@@ -446,7 +446,7 @@ func ECDH(pub []byte, sec []byte) []byte {
 		return nil
 	}
 	if len(pubkeyOut) != 33 {
-		panic("ERROR: impossible, invalid pubkey length")
+		log.Panic("ERROR: impossible, invalid pubkey length")
 	}
 	return pubkeyOut
 }

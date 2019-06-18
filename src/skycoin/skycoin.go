@@ -364,7 +364,7 @@ func NewCoin(config Config, logger *logging.Logger) *Coin {
 func (c *Coin) initLogFile() (*os.File, error) {
 	logDir := filepath.Join(c.config.Node.DataDirectory, "logs")
 	if err := createDirIfNotExist(logDir); err != nil {
-		c.logger.WithError(err).Error("createDirIfNotExist(%s) failed", logDir)
+		c.logger.WithError(err).Errorf("createDirIfNotExist(%s) failed", logDir)
 		return nil, fmt.Errorf("createDirIfNotExist(%s) failed: %v", logDir, err)
 	}
 
@@ -374,7 +374,7 @@ func (c *Coin) initLogFile() (*os.File, error) {
 
 	f, err := os.OpenFile(logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
-		c.logger.WithError(err).Error("os.OpenFile(%s) failed", logfile)
+		c.logger.WithError(err).Errorf("os.OpenFile(%s) failed", logfile)
 		return nil, err
 	}
 

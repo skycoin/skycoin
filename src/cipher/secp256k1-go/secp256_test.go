@@ -570,7 +570,6 @@ func Test_Secp256k1_Hash(t *testing.T) {
 }
 
 func Test_Secp256k1_Equal(t *testing.T) {
-
 	for i := 0; i < 64; i++ {
 		seed := RandByte(128)
 
@@ -584,7 +583,6 @@ func Test_Secp256k1_Equal(t *testing.T) {
 }
 
 func Test_ECDH(t *testing.T) {
-
 	pubkey1, seckey1 := GenerateKeyPair()
 	pubkey2, seckey2 := GenerateKeyPair()
 
@@ -602,11 +600,9 @@ func Test_ECDH(t *testing.T) {
 	if !bytes.Equal(puba, pubb) {
 		t.Fail()
 	}
-
 }
 
 func Test_ECDH2(t *testing.T) {
-
 	for i := 0; i < 16*1024; i++ {
 
 		pubkey1, seckey1 := GenerateKeyPair()

@@ -66,7 +66,7 @@ func RecoverPublicKey(sigBytes, msgBytes []byte, recid int) ([]byte, int) {
 	return pkb, 1
 }
 
-// Multiply standard EC multiplacation k(xy)
+// Multiply standard EC multiplication k(xy)
 // xy is the compressed public key format (33 bytes long)
 func Multiply(xy, k []byte) []byte {
 	var pk XY

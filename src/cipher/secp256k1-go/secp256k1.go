@@ -418,7 +418,7 @@ func RecoverPubkey(msg []byte, sig []byte) []byte {
 }
 
 // ECDH raise a pubkey to the power of a seckey
-func ECDH(pub []byte, sec []byte) []byte {
+func ECDH(pub, sec []byte) []byte {
 	if len(sec) != 32 {
 		log.Panic("secret key must be 32 bytes")
 	}

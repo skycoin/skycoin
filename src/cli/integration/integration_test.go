@@ -678,8 +678,7 @@ func TestEncodeJSONTransaction(t *testing.T) {
 	}
 
 	pathToGoldenFile := func(filename string) string {
-		goPath := os.Getenv("GOPATH")
-		return filepath.Join(goPath, "src", "github.com", "skycoin", "skycoin", "src", "cli", "integration", "testdata", filename)
+		return filepath.Join(testFixturesDir, filename)
 	}
 
 	for _, tc := range tt {

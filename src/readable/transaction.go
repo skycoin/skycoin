@@ -67,22 +67,6 @@ func NewTransactionOutput(txn *coin.TransactionOutput, txid cipher.SHA256) (*Tra
 	}, nil
 }
 
-// GetObject retrieves coin.TransactionOutput corresponding to its readable representation
-func (rTxn *TransactionOutput) GetObject() (*coin.TransactionOutput, error) {
-	txn := coin.TransactionOutput{}
-	var err error
-	txn.Address, err = cipher.DecodeBase58Address(rTxn.Address)
-	if err != nil {
-		return nil, fmt.Errorf("Invalid address : %s", err)
-	}
-	txn.Coins, err = droplet.FromString(rTxn.Coins)
-	if err != nil {
-		return nil, fmt.Errorf("Invalid coins format : %s", err)
-	}
-	txn.Hours = rTxn.Hours
-	return &txn, nil
-}
-
 // NewTransactionInput creates a TransactionInput from a visor.TransactionInput
 func NewTransactionInput(input visor.TransactionInput) (TransactionInput, error) {
 	coinStr, err := droplet.ToString(input.UxOut.Body.Coins)
@@ -169,54 +153,6 @@ func NewTransactionWithTimestamp(txn coin.Transaction, isGenesis bool, timestamp
 	}
 	newTxn.Timestamp = timestamp
 	return newTxn, nil
-}
-
-// GetObject retrieves coin.Transaction corresponding to its readable representation. The transaction should be validated against hard and soft constraints before transmission.
-func (rTxn *Transaction) GetObject() (*coin.Transaction, error) {
-	txn := coin.Transaction{}
-	for _, rIn := range rTxn.In {
-		h, err := cipher.SHA256FromHex(rIn)
-		if err == nil {
-			err = txn.PushInput(h)
-		}
-		if err != nil {
-			return nil, fmt.Errorf("input hash %s: %s", rIn, err)
-		}
-	}
-	for i, rOut := range rTxn.Out {
-		o, err := rOut.GetObject()
-		if err == nil {
-			err = txn.PushOutput(o.Address, o.Coins, o.Hours)
-		}
-		if err != nil {
-			return nil, fmt.Errorf("output #%d: %s", i, err)
-		}
-	}
-	txn.Sigs = make([]cipher.Sig, len(rTxn.Sigs))
-	for i, rSig := range rTxn.Sigs {
-		if s, err := cipher.SigFromHex(rSig); err == nil {
-			txn.Sigs[i] = s
-		} else {
-			return nil, err
-		}
-	}
-	if err := txn.UpdateHeader(); err != nil {
-		return nil, err
-	}
-	if txn.Type != rTxn.Type {
-		return nil, errors.New("Transaction header mismatch")
-	}
-	// Do not check length field in transaction header
-	if rTxn.InnerHash != "" {
-		h, err := cipher.SHA256FromHex(rTxn.InnerHash)
-		if err != nil {
-			return nil, fmt.Errorf("Invalid inner hash: %s", err)
-		}
-		if txn.InnerHash != h {
-			return nil, fmt.Errorf("Invalid inner hash %s. Expected %s", rTxn.InnerHash, txn.InnerHash.Hex())
-		}
-	}
-	return &txn, nil
 }
 
 // UnconfirmedTransactions represents a readable unconfirmed transaction

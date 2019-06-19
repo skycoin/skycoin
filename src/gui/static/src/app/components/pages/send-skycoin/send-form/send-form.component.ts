@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import 'rxjs/add/operator/delay';
@@ -57,6 +57,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
     private navbarService: NavBarService,
     private hwWalletService: HwWalletService,
     private translate: TranslateService,
+    private changeDetector: ChangeDetectorRef,
     priceService: PriceService,
   ) {
     this.subscriptions = priceService.price.subscribe(price => {
@@ -83,6 +84,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
   preview() {
     this.previewTx = true;
     this.checkBeforeSending();
+    this.changeDetector.detectChanges();
   }
 
   send() {

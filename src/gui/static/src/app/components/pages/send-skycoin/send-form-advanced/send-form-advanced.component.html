@@ -96,7 +96,7 @@
       {{ 'send.destinations-label' | translate }}
       <mat-icon [matTooltip]="('send.destinations-help' + (this.autoHours ? '1' : '2')) | translate">help</mat-icon>
     </label>
-    <div class="coin-selector-container" *ngIf="price" [ngClass]="{ disabled: busy }">
+    <div class="coin-selector-container" *ngIf="price" [ngClass]="{ 'element-disabled': busy }">
       <app-double-button
         [leftButtonText]="'coin' | commonText"
         [rightButtonText]="'common.usd' | translate"

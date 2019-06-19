@@ -20,7 +20,7 @@
   </div>
   <div class="form-field">
     <label for="amount" class="amount-label">{{ 'send.amount-label' | translate }}</label>
-    <div class="coin-selector-container" *ngIf="price" [ngClass]="{ disabled: busy }">
+    <div class="coin-selector-container" *ngIf="price" [ngClass]="{ 'element-disabled': busy }">
       <app-double-button
         [leftButtonText]="'coin' | commonText"
         [rightButtonText]="'common.usd' | translate"

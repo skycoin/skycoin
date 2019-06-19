@@ -23,6 +23,7 @@
     </div>
     <app-double-button
       *ngIf="navbarService.switchVisible"
+      [ngClass]="{'-switch': true, 'element-disabled': navbarService.switchDiabled}"
       class="-switch"
       [leftButtonText]="navbarService.leftText | translate"
       [rightButtonText]="navbarService.rightText | translate"

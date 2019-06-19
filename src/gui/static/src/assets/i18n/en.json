@@ -354,7 +354,7 @@
     "errors": {
       "too-many-inputs-outputs": "The transaction has too many inputs or outputs for the hardware wallet. Please try again creating several smaller transactions, each one with a smaller number of recipients (if the current transaction has many) or coins.",
       "daemon-connection": "Problem connecting to the hardware wallet service.",
-      "timeout": "The operation was cancelled due to inactivity.",
+      "timeout": "The operation was cancelled due to inactivity or because the device did not respond. Please try again.",
       "invalid-address-generated": "There was a problem with the address generator and the operation had to be canceled for security.",
       "invalid-address": "Invalid address.",
       "not-in-firmware-mode": "To use this option the hardware wallet must be in firmware mode."

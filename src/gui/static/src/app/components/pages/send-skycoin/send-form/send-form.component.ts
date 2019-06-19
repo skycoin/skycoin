@@ -191,6 +191,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
       this.previewButton.setDisabled();
     }
     this.busy = true;
+    this.navbarService.disableSwitch();
   }
 
   private createTransaction(passwordDialog?: any) {
@@ -241,6 +242,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
             transaction,
           });
           this.busy = false;
+          this.navbarService.enableSwitch();
         }
       },
       error => {
@@ -259,6 +261,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
   private showSuccess() {
     this.busy = false;
+    this.navbarService.enableSwitch();
     this.sendButton.setSuccess();
     this.resetForm();
 
@@ -269,6 +272,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
   private showError(error) {
     this.busy = false;
+    this.navbarService.enableSwitch();
     showSnackbarError(this.snackbar, error);
     this.previewButton.resetState().setEnabled();
     this.sendButton.resetState().setEnabled();

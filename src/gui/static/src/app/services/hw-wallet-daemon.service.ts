@@ -65,7 +65,7 @@ export class HwWalletDaemonService {
 
   private checkResponse(response: Observable<any>, checkingConnected = false, smallTimeout = false) {
     return response
-      .timeout(smallTimeout ? 5000 : 50000)
+      .timeout(smallTimeout ? 30000 : 50000)
       .flatMap((res: any) => {
         const finalResponse = res.json();
 

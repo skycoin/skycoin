@@ -7,8 +7,8 @@
         <div class="-headers">
           <div class="-width-250">{{ (i === 0 ? 'wallet.hardware-wallet' : 'wallet.wallet') | translate }}</div>
           <div class="-flex-fill"></div>
-          <div class="-width-130 -text-right">{{ 'common.coin-id' | translate }}</div>
-          <div class="-width-130 -text-right">{{ 'common.coin-hours' | translate }}</div>
+          <div class="-width-130 -text-right">{{ 'coin' | commonText }}</div>
+          <div class="-width-130 -text-right">{{ 'hours' | commonText }}</div>
         </div>
 
         <div class="-wallets" *ngFor="let wallet of (i === 0 ? hardwareWallets : wallets)">
@@ -26,8 +26,8 @@
                     [matTooltip]="'wallet.hw-security-warning' | translate"
                     *ngIf="wallet.hasHwSecurityWarnings && wallet.isHardware">
               </div>
-              <div class="-width-130 -coins">{{ (wallet.coins ? wallet.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }}</div>
-              <div class="-width-130 -hours">{{ (wallet.hours ? wallet.hours.decimalPlaces(0).toString() : 0) | number:'1.0-0' }}</div>
+              <div class="-width-130 -coins">{{ (wallet.coins ? wallet.coins.toString() : 0) | amount:true:'first' }}</div>
+              <div class="-width-130 -hours">{{ (wallet.hours ? wallet.hours.toString() : 0) | amount:false:'first' }}</div>
               <div class="-expand">
                 <img src="../../../../assets/img/chevron-right-grey.png"
                     [ngClass]="{'rotate-270': wallet.opened, 'rotate-90': !wallet.opened}">

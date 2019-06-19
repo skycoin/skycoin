@@ -6,8 +6,8 @@
         <option disabled hidden [ngValue]="''">{{ 'send.select-wallet' | translate }}</option>
         <ng-container *ngFor="let wallet of walletService.all() | async">
           <option [disabled]="!wallet.coins || wallet.coins.isLessThanOrEqualTo(0)" [ngValue]="wallet">
-            {{ wallet.label }} - {{ (wallet.coins ? wallet.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
-            ({{ wallet.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ 'common.coin-hours' | translate }})
+            {{ wallet.label }} - {{ (wallet.coins ? wallet.coins.toString() : 0) | amount }}
+            ({{ wallet.hours.toString() | amount:false }})
           </option>
         </ng-container>
       </select>
@@ -30,13 +30,13 @@
           [attr.disabled]="busy ? 'true' : null"
           [ngClass]="{'element-disabled' : busy}">
           <mat-option *ngFor="let addr of addresses" [value]="addr">
-            {{ addr.address }} - {{ (addr.coins ? addr.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
-            ({{ addr.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ 'common.coin-hours' | translate }})
+            {{ addr.address }} - {{ (addr.coins ? addr.coins.toString() : 0) | amount }}
+            ({{ addr.hours.toString() | amount:false }})
           </mat-option>
           <mat-select-trigger>
             <div *ngFor="let address of form.get('addresses').value">
-              {{ address.address }} - {{ (address.coins ? address.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
-              ({{ address.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ 'common.coin-hours' | translate }})
+              {{ address.address }} - {{ (address.coins ? address.coins.toString() : 0) | amount }}
+              ({{ address.hours.toString() | amount:false }})
             </div>
           </mat-select-trigger>
         </mat-select>
@@ -59,13 +59,13 @@
           [attr.disabled]="busy ? 'true' : null"
           [ngClass]="{'element-disabled' : busy}">
           <mat-option *ngFor="let out of unspentOutputs" [value]="out">
-            {{ out.hash }} - {{ (out.coins ? out.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
-            ({{ out.calculated_hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ 'common.coin-hours' | translate }})
+            {{ out.hash }} - {{ (out.coins ? out.coins.toString() : 0) | amount }}
+            ({{ out.calculated_hours.toString() | amount:false }})
           </mat-option>
           <mat-select-trigger *ngIf="form.get('outputs').value && form.get('outputs').value.length > 0">
             <div *ngFor="let out of form.get('outputs').value">
-              {{ out.hash }} - {{ (out.coins ? out.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
-              ({{ out.calculated_hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ 'common.coin-hours' | translate }})
+              {{ out.hash }} - {{ (out.coins ? out.coins.toString() : 0) | amount }}
+              ({{ out.calculated_hours.toString() | amount:false }})
             </div>
           </mat-select-trigger>
           <mat-select-trigger *ngIf="!form.get('outputs').value || form.get('outputs').value.length === 0">
@@ -77,18 +77,15 @@
     <div class="form-field -available-msg">
       <span>{{ 'send.available-msg-part1' | translate }}</span>
       <span class="value">
-        {{ availableCoins.decimalPlaces(6).toString() | number:'1.0-6' }}
-        {{ 'common.coin-id' | translate }}
+        {{ availableCoins.toString() | amount }}
       </span>
       <span>{{ 'send.available-msg-part2' | translate }}</span>
       <span class="value">
-        {{ availableHours.decimalPlaces(0).toString() | number:'1.0-6' }}
-        {{ 'common.coin-hours' | translate }}
+        {{ availableHours.toString() | amount:false }}
       </span>
       <span>{{ 'send.available-msg-part3' | translate }}</span>
       <span class="value">
-        {{ minimumFee.decimalPlaces(0).toString() | number:'1.0-6' }}
-        {{ 'common.coin-hours' | translate }}
+        {{ minimumFee.toString() | amount:false }}
       </span>
       <span>{{ 'send.available-msg-part4' | translate }}</span>
     </div>
@@ -101,7 +98,7 @@
     </label>
     <div class="coin-selector-container" *ngIf="price" [ngClass]="{ disabled: busy }">
       <app-double-button
-        [leftButtonText]="'common.coin-id' | translate"
+        [leftButtonText]="'coin' | commonText"
         [rightButtonText]="'common.usd' | translate"
         className="light small"
         [activeButton]="selectedCurrency"
@@ -117,7 +114,7 @@
         <div class="col-md-3">
           <div class="-input-addon">
             <input formControlName="coins" [attr.disabled]="busy ? 'true' : null">
-            <span>{{ (selectedCurrency === doubleButtonActive.LeftButton ? 'common.coin-id' : 'common.usd') | translate }}</span>
+            <span>{{ selectedCurrency === doubleButtonActive.LeftButton ? ('coin' | commonText) : ('common.usd' | translate) }}</span>
           </div>
           <div class="coins-value-label" *ngIf="price">
             <span *ngIf="values[i] < 0">{{ 'send.invalid-amount' | translate }}</span>
@@ -125,14 +122,14 @@
               &#x007e; {{ values[i] | number:'1.0-2' }} {{ 'common.usd' | translate }}
             </span>
             <span *ngIf="values[i] >= 0 && selectedCurrency === doubleButtonActive.RightButton">
-              &#x007e; {{ values[i] | number:('1.0-' + blockchainService.currentMaxDecimals) }} {{ 'common.coin-id' | translate }}
+              &#x007e; {{ values[i] | amount }}
             </span>
           </div>
         </div>
         <div class="col-lg-3 col-md-4">
           <div [ngClass]="{ '-input-addon': true, '-hidden': autoHours }">
             <input formControlName="hours" [attr.disabled]="busy ? 'true' : null">
-            <span>{{ 'common.coin-hours' | translate }}</span>
+            <span>{{ 'hours' | commonText }}</span>
           </div>
         </div>
         <div class="col-md-1 -icons" [ngClass]="{'element-disabled' : busy}">

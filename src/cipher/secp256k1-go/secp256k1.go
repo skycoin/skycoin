@@ -215,9 +215,14 @@ func GenerateDeterministicKeyPair(seed []byte) ([]byte, []byte) {
 // Feeds SHA256 back into function to generate sequence of seckeys
 // If private key is disclosed, should not be able to compute future or past keys in sequence
 func DeterministicKeyPairIterator(seedIn []byte) ([]byte, []byte, []byte) {
+	fmt.Println("seedIn:", hex.EncodeToString(seedIn))
 	seed1 := Secp256k1Hash(seedIn) // make it difficult to derive future seckeys from previous seckeys
+	fmt.Println("seed1:", hex.EncodeToString(seed1))
 	seed2 := SumSHA256(append(seedIn, seed1...))
+	fmt.Println("seed2:", hex.EncodeToString(seed2))
 	pubkey, seckey := deterministicKeyPairIteratorStep(seed2) // this is our seckey
+	fmt.Println("pubkey:", hex.EncodeToString(pubkey))
+	fmt.Println("seckey:", hex.EncodeToString(seckey))
 	return seed1, pubkey, seckey
 }
 

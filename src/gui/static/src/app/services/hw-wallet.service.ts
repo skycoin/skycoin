@@ -608,7 +608,7 @@ export class HwWalletService {
             return Observable.throw(response);
           }
       } else {
-        return Observable.throw(this.dispatchEvent(0, 'cancelled by user', false, true));
+        return Observable.throw(this.dispatchEvent(0, 'canceled by user', false, true));
       }
     });
   }
@@ -654,7 +654,7 @@ export class HwWalletService {
           result = OperationResults.FailedOrRefused;
         } else if (responseContent.includes('PIN invalid')) {
           result = OperationResults.WrongPin;
-        } else if (responseContent.includes('cancelled by user')) {
+        } else if (responseContent.includes('canceled by user')) {
           result = OperationResults.FailedOrRefused;
         } else if (responseContent.includes('Expected WordAck after Button')) {
           result = OperationResults.FailedOrRefused;

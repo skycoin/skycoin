@@ -14,7 +14,7 @@ export class HwWalletDaemonService {
 
   public static readonly errorCancelled = 'Cancelled';
   public static readonly errorConnectingWithTheDaemon = 'Error connecting with the hw wallet service';
-  public static readonly errorTimeout = 'The operation was cancelled due to inactivity';
+  public static readonly errorTimeout = 'The operation was canceled due to inactivity';
   private readonly url = 'http://127.0.0.1:9510/api/v1';
 
   private checkHwSubscription: ISubscription;

@@ -177,7 +177,7 @@ func (rw *ReadableWallet) Load(filename string) error {
 func (rw *ReadableWallet) timestamp() int64 {
 	// Intentionally ignore the error when parsing the timestamp,
 	// if it isn't valid or is missing it will be set to 0
-	x, _ := strconv.ParseInt(rw.Meta[metaTimestamp], 10, 64) // nolint: errcheck
+	x, _ := strconv.ParseInt(rw.Meta[metaTimestamp], 10, 64) //nolint:errcheck
 	return x
 }
 

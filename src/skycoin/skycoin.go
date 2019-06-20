@@ -302,7 +302,7 @@ func (c *Coin) Run() error {
 			go func() {
 				select {
 				case <-cancelLaunchBrowser:
-					c.logger.Warning("Browser launching cancelled")
+					c.logger.Warning("Browser launching canceled")
 
 					// Wait a moment just to make sure the http interface is up
 				case <-time.After(time.Millisecond * 100):

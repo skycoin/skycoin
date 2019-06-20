@@ -17,7 +17,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
-func randBytes(t *testing.T, n uint64) []byte { // nolint: unparam
+func randBytes(t *testing.T, n uint64) []byte { //nolint:unparam
 	const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	var bytes = make([]byte, n)
 	_, err := rand.Read(bytes)
@@ -532,18 +532,18 @@ func TestSerializeAtomicPanics(t *testing.T) {
 func TestDeserializeAtomicPanics(t *testing.T) {
 	var y int8
 	require.PanicsWithValue(t, "DeserializeAtomic unhandled type", func() {
-		_, _ = DeserializeAtomic(nil, y) // nolint: errcheck
+		_, _ = DeserializeAtomic(nil, y) //nolint:errcheck
 	})
 
 	var x float32
 	require.PanicsWithValue(t, "DeserializeAtomic unhandled type", func() {
-		_, _ = DeserializeAtomic(nil, &x) // nolint: errcheck
+		_, _ = DeserializeAtomic(nil, &x) //nolint:errcheck
 	})
 
 	var tst TestStruct5a
 	d := make([]byte, 8)
 	require.PanicsWithValue(t, "DeserializeAtomic unhandled type", func() {
-		_, _ = DeserializeAtomic(d, &tst) // nolint: errcheck
+		_, _ = DeserializeAtomic(d, &tst) //nolint:errcheck
 	})
 }
 
@@ -1147,13 +1147,13 @@ func TestRandomGarbage(t *testing.T) {
 	for j := 0; j < 100; j++ {
 		for i := uint64(0); i < size*2; i++ {
 			b := randBytes(t, i)
-			_, _ = DeserializeRaw(b, &y) // nolint: errcheck
+			_, _ = DeserializeRaw(b, &y) //nolint:errcheck
 		}
 	}
 
 	for i := 0; i < 10000; i++ {
 		b := randBytes(t, size)
-		_, _ = DeserializeRaw(b, &y) // nolint: errcheck
+		_, _ = DeserializeRaw(b, &y) //nolint:errcheck
 	}
 }
 
@@ -1256,7 +1256,7 @@ func TestDeserializeMaxLenExceeded(t *testing.T) {
 
 	var z Baz
 	require.Panics(t, func() {
-		_, _ = DeserializeRaw(b, &z) // nolint: errcheck
+		_, _ = DeserializeRaw(b, &z) //nolint:errcheck
 	})
 
 	// maxlen for final omitempty byte array

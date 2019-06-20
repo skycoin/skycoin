@@ -70,7 +70,7 @@ func (xyz *XYZ) Equals(b *XYZ) bool {
 	return xyz.X.Equals(&b.X) && xyz.Y.Equals(&b.Y) && xyz.Z.Equals(&b.Z)
 }
 
-func (xyz *XYZ) precomp(w int) (pre []XYZ) { // nolint: unparam
+func (xyz *XYZ) precomp(w int) (pre []XYZ) { //nolint:unparam
 	var d XYZ
 	pre = make([]XYZ, (1 << (uint(w) - 2)))
 	pre[0] = *xyz

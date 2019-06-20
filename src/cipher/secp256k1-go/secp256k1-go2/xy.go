@@ -177,7 +177,7 @@ func (xy *XY) SetXYZ(a *XYZ) {
 	xy.Y = a.Y
 }
 
-func (xy *XY) precomp(w int) []XY { // nolint: unused,megacheck
+func (xy *XY) precomp(w int) []XY { //nolint:unused,megacheck
 	pre := make([]XY, (1 << (uint(w) - 2)))
 	pre[0] = *xy
 	var X, d, tmp XYZ

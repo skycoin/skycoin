@@ -78,7 +78,7 @@ func addressTransactionsCmd() *cobra.Command {
 	return &cobra.Command{
 		Short: "Show detail for transaction associated with one or more specified addresses",
 		Use:   "addressTransactions [address list]",
-		Long: `Display transactions for specific addresses, seperate multiple addresses with a space,
+		Long: `Display transactions for specific addresses, separate multiple addresses with a space,
         example: addressTransactions addr1 addr2 addr3`,
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
@@ -171,7 +171,7 @@ func pendingTransactionsCmd() *cobra.Command {
 	pendingTxnsCmd.Flags().BoolP("verbose", "v", false,
 		`Require the transaction inputs to include the owner address, coins, hours and calculated hours.
 	The hours are the original hours the output was created with.
-	The calculated hours are calculated based upon the current system time, and provide an approximate 
+	The calculated hours are calculated based upon the current system time, and provide an approximate
 	coin hour value of the output if it were to be confirmed at that instant.`)
 
 	return pendingTxnsCmd

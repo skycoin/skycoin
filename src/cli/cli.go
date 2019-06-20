@@ -296,7 +296,7 @@ func printJSON(obj interface{}) error {
 func readPasswordFromTerminal() ([]byte, error) {
 	// Promotes to enter the wallet password
 	fmt.Fprint(os.Stdout, "enter password:")
-	bp, err := terminal.ReadPassword(int(syscall.Stdin)) // nolint: unconvert
+	bp, err := terminal.ReadPassword(int(syscall.Stdin)) //nolint:unconvert
 	if err != nil {
 		return nil, err
 	}

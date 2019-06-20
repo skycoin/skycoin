@@ -194,7 +194,7 @@ func createUnencryptedWallet(t *testing.T) (string, func()) {
 	return createTempWallet(t, false)
 }
 
-func createEncryptedWallet(t *testing.T) (string, func()) { // nolint: unparam
+func createEncryptedWallet(t *testing.T) (string, func()) { //nolint:unparam
 	return createTempWallet(t, true)
 }
 
@@ -1883,7 +1883,7 @@ func testKnownBlocks(t *testing.T) {
 	scanBlocks(t, "0", "180")
 }
 
-func scanBlocks(t *testing.T, start, end string) { // nolint: unparam
+func scanBlocks(t *testing.T, start, end string) { //nolint:unparam
 	outputs, err := execCommandCombinedOutput("blocks", start, end)
 	require.NoError(t, err)
 
@@ -2416,7 +2416,7 @@ func isTxConfirmed(t *testing.T, txid string) bool {
 }
 
 // checkCoinhours checks if the address coinhours in transaction are correct
-func checkCoinsAndCoinhours(t *testing.T, tx *cli.TxnResult, addr string, coins, coinhours uint64) { // nolint: unparam
+func checkCoinsAndCoinhours(t *testing.T, tx *cli.TxnResult, addr string, coins, coinhours uint64) { //nolint:unparam
 	addrCoinhoursMap := make(map[string][]readable.TransactionOutput)
 	for _, o := range tx.Transaction.Transaction.Out {
 		addrCoinhoursMap[o.Address] = append(addrCoinhoursMap[o.Address], o)
@@ -2444,7 +2444,7 @@ func checkCoinsAndCoinhours(t *testing.T, tx *cli.TxnResult, addr string, coins,
 // prepareAndCheckWallet prepares wallet for live testing.
 // Returns *wallet.Wallet, total coin, total hours.
 // Confirms that the wallet meets the minimal requirements of coins and coinhours.
-func prepareAndCheckWallet(t *testing.T, miniCoins, miniCoinHours uint64) (*wallet.Wallet, uint64, uint64) { // nolint: unparam
+func prepareAndCheckWallet(t *testing.T, miniCoins, miniCoinHours uint64) (*wallet.Wallet, uint64, uint64) { //nolint:unparam
 	walletDir, walletName := getWalletPathFromEnv(t)
 	walletPath := filepath.Join(walletDir, walletName)
 	// Checks if the wallet does exist

@@ -763,7 +763,7 @@ func TestCreate(t *testing.T) {
 	}
 }
 
-func makeUxOut(t *testing.T, s cipher.SecKey, coins, hours uint64) coin.UxOut { // nolint: unparam
+func makeUxOut(t *testing.T, s cipher.SecKey, coins, hours uint64) coin.UxOut { //nolint:unparam
 	body := makeUxBody(t, s, coins, hours)
 	tm := rand.Int31n(1000)
 	seq := rand.Int31n(100)

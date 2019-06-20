@@ -93,7 +93,7 @@ func TestBip32SeedSignatures(t *testing.T) {
 	}
 }
 
-func traverseFiles(dir string, filenameTemplate string) ([]string, error) { // nolint: unparam
+func traverseFiles(dir string, filenameTemplate string) ([]string, error) { //nolint:unparam
 	files := make([]string, 0)
 	if err := filepath.Walk(dir, func(_ string, f os.FileInfo, _ error) error {
 		if !f.IsDir() {

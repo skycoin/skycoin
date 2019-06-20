@@ -83,7 +83,7 @@ func (d *digest) Write(p []byte) (nn int, err error) {
 	return
 }
 
-func (d0 *digest) Sum(in []byte) []byte { // nolint: golint
+func (d0 *digest) Sum(in []byte) []byte { //nolint:golint
 	// Make a copy of d0 so that caller can keep writing and summing.
 	d := *d0
 
@@ -93,9 +93,9 @@ func (d0 *digest) Sum(in []byte) []byte { // nolint: golint
 	tmp[0] = 0x80
 	if tc%64 < 56 {
 
-		d.Write(tmp[0 : 56-tc%64]) // nolint: errcheck,gosec
+		d.Write(tmp[0 : 56-tc%64]) //nolint:errcheck,gosec
 	} else {
-		d.Write(tmp[0 : 64+56-tc%64]) // nolint: errcheck,gosec
+		d.Write(tmp[0 : 64+56-tc%64]) //nolint:errcheck,gosec
 	}
 
 	// Length in bits.
@@ -103,7 +103,7 @@ func (d0 *digest) Sum(in []byte) []byte { // nolint: golint
 	for i := uint(0); i < 8; i++ {
 		tmp[i] = byte(tc >> (8 * i))
 	}
-	d.Write(tmp[0:8]) // nolint: errcheck,gosec
+	d.Write(tmp[0:8]) //nolint:errcheck,gosec
 
 	if d.nx != 0 {
 		panic("d.nx != 0")

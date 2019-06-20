@@ -25,7 +25,7 @@ func setupTmpDir(t *testing.T) (string, func()) {
 	}
 
 	return tmpDir, func() {
-		_ = os.RemoveAll(tmpDir) // nolint: errcheck
+		_ = os.RemoveAll(tmpDir) //nolint:errcheck
 	}
 }
 

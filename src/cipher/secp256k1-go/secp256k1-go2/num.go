@@ -29,7 +29,9 @@ func (num *Number) mod(a *Number) {
 
 // SetHex sets number from string
 func (num *Number) SetHex(s string) {
-	num.SetString(s, 16)
+	if _, ok := num.SetString(s, 16); !ok {
+		panic("Number.SetHex failed")
+	}
 }
 
 func (num *Number) maskBits(bits uint) {

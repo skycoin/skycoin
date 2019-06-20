@@ -220,6 +220,106 @@ func TestSigSign(t *testing.T) {
 	}
 }
 
+func TestSigSignRecover(t *testing.T) {
+	cases := []struct {
+		// inputs
+		seckey string
+		digest string
+		nonce  string
+
+		// outputs
+		sig    string
+		recid  int
+		pubkey string
+	}{
+		{
+			seckey: "597e27368656cab3c82bfcf2fb074cefd8b6101781a27709ba1b326b738d2c5a",
+			digest: "001aa9e416aff5f3a3c7f9ae0811757cf54f393d50df861f5c33747954341aa7",
+			nonce:  "01",
+			sig:    "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179804641a7472bb90647fa60b4d30aef8c7279e4b68226f7b2713dab712ef122f8b",
+			recid:  1,
+			pubkey: "02df09821cff4874198a1dbdc462d224bd99728eeed024185879225762376132c7",
+		},
+
+		{
+			seckey: "597e27368656cab3c82bfcf2fb074cefd8b6101781a27709ba1b326b738d2c5a",
+			digest: "001aa9e416aff5f3a3c7f9ae0811757cf54f393d50df861f5c33747954341aa7",
+			nonce:  "fe25",
+			sig:    "ee38f27be5f3c4b8db875c0ffbc0232e93f622d16ede888508a4920ab51c3c9906ea7426c5e251e4bea76f06f554fa7798a49b7968b400fa981c51531a5748d8",
+			recid:  1,
+			pubkey: "02df09821cff4874198a1dbdc462d224bd99728eeed024185879225762376132c7",
+		},
+
+		{
+			seckey: "597e27368656cab3c82bfcf2fb074cefd8b6101781a27709ba1b326b738d2c5a",
+			digest: "001aa9e416aff5f3a3c7f9ae0811757cf54f393d50df861f5c33747954341aa7",
+			nonce:  "fe250100",
+			sig:    "d4d869ad39cb3a64fa1980b47d1f19bd568430d3f929e01c00f1e5b7c6840ba85e08d5781986ee72d1e8ebd4dd050386a64eee0256005626d2acbe3aefee9e25",
+			recid:  0,
+			pubkey: "02df09821cff4874198a1dbdc462d224bd99728eeed024185879225762376132c7",
+		},
+
+		{
+			seckey: "67a331669081d22624f16512ea61e1d44cb3f26af3333973d17e0e8d03733b78",
+			digest: "001aa9e416aff5f3a3c7f9ae0811757cf54f393d50df861f5c33747954341aa7",
+			nonce:  "1e2501ac",
+			sig:    "eeee743d79b40aaa52d9eeb48791b0ae81a2f425bf99cdbc84180e8ed429300d457e8d669dbff1716b123552baf6f6f0ef67f16c1d9ccd44e6785d4240022126",
+			recid:  1,
+			pubkey: "0270b763664593c5f84dfb20d23ef79530fc317e5ee2ece0d9c50f432f62426ff9",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(fmt.Sprintf("%s-%s-%s", tc.seckey, tc.digest, tc.nonce), func(t *testing.T) {
+			var sec, msg, non Number
+			var sig Signature
+			sec.SetHex(tc.seckey)
+			msg.SetHex(tc.digest)
+			non.SetHex(tc.nonce)
+
+			recid := 0
+			res := sig.Sign(&sec, &msg, &non, &recid)
+			if res != 1 {
+				t.Error("sig.Sign failed")
+			}
+
+			if recid != tc.recid {
+				t.Error("recid doesn't match")
+			}
+
+			sigHex := hex.EncodeToString(sig.Bytes())
+			if tc.sig != sigHex {
+				t.Errorf("signature doesn't match %s != %s", tc.sig, sigHex)
+			}
+
+			skb, err := hex.DecodeString(tc.seckey)
+			if err != nil {
+				t.Error(err)
+			}
+
+			derivedPk := GeneratePublicKey(skb)
+			if derivedPk == nil {
+				t.Error("failed to derive pubkey from seckey")
+			}
+			derivedPkHex := hex.EncodeToString(derivedPk)
+			if tc.pubkey != derivedPkHex {
+				t.Errorf("derived pubkey doesn't match %s != %s", tc.pubkey, derivedPkHex)
+			}
+
+			var pk XY
+			ret := sig.Recover(&pk, &msg, recid)
+			if !ret {
+				t.Error("sig.Recover failed")
+			}
+
+			pkHex := hex.EncodeToString(pk.Bytes())
+			if tc.pubkey != pkHex {
+				t.Errorf("recovered pubkey doesn't match %s != %s", tc.pubkey, pkHex)
+			}
+		})
+	}
+}
+
 func BenchmarkVerify(b *testing.B) {
 	var msg Number
 	var sig Signature

@@ -122,7 +122,7 @@ func originRefererCheck(apiVersion, host string, hostWhitelist []string, handler
 		hostWhitelistMap[k] = struct{}{}
 	}
 
-	if addr, port, _ := iputil.SplitAddr(host); iputil.IsLocalhost(addr) { // nolint: errcheck
+	if addr, port, _ := iputil.SplitAddr(host); iputil.IsLocalhost(addr) { //nolint:errcheck
 		hostWhitelistMap[fmt.Sprintf("127.0.0.1:%d", port)] = struct{}{}
 		hostWhitelistMap[fmt.Sprintf("localhost:%d", port)] = struct{}{}
 	} else {

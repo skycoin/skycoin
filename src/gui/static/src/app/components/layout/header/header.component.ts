@@ -88,7 +88,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     }));
 
     this.subscription.add(this.walletService.pendingTransactions().subscribe(txs => {
-      this.hasPendingTxs = txs.length > 0;
+      this.hasPendingTxs = txs.user.length > 0;
     }));
   }
 

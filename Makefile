@@ -78,43 +78,43 @@ integration-tests-stable: integration-test-stable \
 	integration-test-stable-db-no-unconfirmed ## Run all stable integration tests
 
 integration-test-stable: ## Run stable integration tests
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -c -x -n enable-csrf-header-check
+	COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -c -x -n enable-csrf-header-check
 
 integration-test-stable-disable-header-check: ## Run stable integration tests with header check disabled
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -n disable-header-check
+	COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -n disable-header-check
 
 integration-test-stable-disable-csrf: ## Run stable integration tests with CSRF disabled
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -n disable-csrf
+	COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -n disable-csrf
 
 integration-test-stable-disable-wallet-api: ## Run disable wallet api integration tests
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-disable-wallet-api.sh
+	COIN=$(COIN) ./ci-scripts/integration-test-disable-wallet-api.sh
 
 integration-test-stable-enable-seed-api: ## Run enable seed api integration test
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-enable-seed-api.sh
+	COIN=$(COIN) ./ci-scripts/integration-test-enable-seed-api.sh
 
 integration-test-stable-disable-gui: ## Run tests with the GUI disabled
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-disable-gui.sh
+	COIN=$(COIN) ./ci-scripts/integration-test-disable-gui.sh
 
 integration-test-stable-db-no-unconfirmed: ## Run stable tests against the stable database that has no unconfirmed transactions
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -d -n no-unconfirmed
+	COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -d -n no-unconfirmed
 
 integration-test-stable-auth: ## Run stable tests with HTTP Basic auth enabled
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-auth.sh
+	COIN=$(COIN) ./ci-scripts/integration-test-auth.sh
 
 integration-test-live: ## Run live integration tests
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c
+	COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c
 
 integration-test-live-wallet: ## Run live integration tests with wallet
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-live.sh -w
+	COIN=$(COIN) ./ci-scripts/integration-test-live.sh -w
 
 integration-test-live-enable-header-check: ## Run live integration tests against a node with header check enabled
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-live.sh
+	COIN=$(COIN) ./ci-scripts/integration-test-live.sh
 
 integration-test-live-disable-csrf: ## Run live integration tests against a node with CSRF disabled
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-live.sh
+	COIN=$(COIN) ./ci-scripts/integration-test-live.sh
 
 integration-test-live-disable-networking: ## Run live integration tests against a node with networking disabled (requires wallet)
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c -k
+	COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c -k
 
 install-linters: ## Install linters
 	go get -u github.com/FiloSottile/vendorcheck

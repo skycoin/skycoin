@@ -5,7 +5,6 @@ package secp256k1go
 
 const winA = 5
 const winG = 14
-const forceLowS = true // At the output of the Sign() function
 
 // TheCurve is the secp256k1 curve
 var TheCurve struct {

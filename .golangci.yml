@@ -178,6 +178,11 @@ issues:
     # unparam warns that return value is always nil for functions that have an obligatory error return value but cannot produce an error
     - .*result 0 \(error\) is always nil
 
+  exclude-rules:
+    - path: src/cipher/bip39/wordlists/
+      linters:
+        - misspell
+
   # Independently from option `exclude` we use default exclude patterns,
   # it can be disabled by this option. To list all
   # excluded by default patterns execute `golangci-lint run --help`.

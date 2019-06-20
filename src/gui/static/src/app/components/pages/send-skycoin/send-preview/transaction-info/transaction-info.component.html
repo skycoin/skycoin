@@ -23,9 +23,9 @@
         <div class="-data">
           <span>{{ 'tx.hours' | translate }}:</span>
           <span>
-            {{ transaction.hoursSent.decimalPlaces(0).toString() | number:'1.0-0' }} {{ hoursText | translate }}
+            {{ transaction.hoursSent.toString() | amount:false:'first' }} {{ hoursText | translate }}
             |
-            {{ transaction.hoursBurned.decimalPlaces(0).toString() | number:'1.0-0' }} {{ 'tx.hours-burned' | translate }}
+            {{ transaction.hoursBurned.toString() | amount:false:'first' }} {{ 'tx.hours-burned' | translate }}
           </span>
         </div>
         <div class="-data" *ngIf="!isPreview">
@@ -43,7 +43,7 @@
         <div class="-icon" [ngClass]="{ '-incoming': !isPreview && transaction.balance.isGreaterThan(0) && !transaction.coinsMovedInternally }">
           <img src="/assets/img/send-blue.png">
         </div>
-        <h4>{{ transaction.balance.decimalPlaces(6).toString() | number:'1.0-6' }} {{ 'common.coin-id' | translate }}</h4>
+        <h4>{{ transaction.balance.toString() | amount }}</h4>
         <p *ngIf="price" [matTooltip]="!isPreview ? ('tx.current-rate' | translate) : ''">
           {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}<span *ngIf="!isPreview">*</span>
         </p>
@@ -64,10 +64,10 @@
         <div class="-info">
           <div class="-address">{{ isPreview ? input.address : input.owner }}</div>
           <div class="-data">
-            <span>{{ 'tx.coins' | translate }}:</span> {{ input.coins | number:'1.0-6' }}
+            <span>{{ 'tx.coins' | translate }}:</span> {{ input.coins | amount:true:'first' }}
           </div>
           <div class="-data">
-            <span>{{ 'tx.hours' | translate }}:</span> {{ input.calculated_hours | number:'1.0-6' }}
+            <span>{{ 'tx.hours' | translate }}:</span> {{ input.calculated_hours | amount:false:'first' }}
           </div>
         </div>
       </div>
@@ -80,10 +80,10 @@
         <div class="-info">
           <div class="-address">{{ isPreview ? output.address : output.dst }}</div>
           <div class="-data">
-            <span>{{ 'tx.coins' | translate }}:</span> {{ output.coins | number:'1.0-6' }}
+            <span>{{ 'tx.coins' | translate }}:</span> {{ output.coins | amount:true:'first' }}
           </div>
           <div class="-data">
-            <span>{{ 'tx.hours' | translate }}:</span> {{ output.hours | number:'1.0-6' }}
+            <span>{{ 'tx.hours' | translate }}:</span> {{ output.hours | amount:false:'first' }}
           </div>
         </div>
       </div>

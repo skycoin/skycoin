@@ -22,7 +22,10 @@
     </span>
   </div>
   <div class="-button" (click)="editWallet()">
-    <span class="-img -edit-wallet">{{ 'wallet.edit' | translate }}</span>
+    <span [ngClass]="{ '-img -edit-wallet': !preparingToEdit, '-disabled-span': preparingToEdit, '-enabled-span': !preparingToEdit }">
+      <mat-spinner *ngIf="preparingToEdit" class="in-button small"></mat-spinner>
+      {{ 'wallet.edit' | translate }}
+    </span>
   </div>
 </div>
 
@@ -49,8 +52,8 @@
           </p>
         </ng-container>
       </div>
-      <div class="coins-column">{{ (address.coins ? address.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }}</div>
-      <div class="hours-column">{{ (address.hours ? address.hours.decimalPlaces(0).toString() : 0) | number:'1.0-0' }}</div>
+      <div class="coins-column">{{ (address.coins ? address.coins.toString() : 0) | amount:true:'first' }}</div>
+      <div class="hours-column">{{ (address.hours ? address.hours.toString() : 0) | amount:false:'first' }}</div>
       <div class="options-column">
         <mat-icon [matMenuTriggerFor]="optionsMenu">more_vert</mat-icon>
         <mat-menu #optionsMenu="matMenu" [overlapTrigger]="false" class="compact">

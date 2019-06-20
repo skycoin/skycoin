@@ -4,7 +4,7 @@
     <div class="balance-container">
       <div class="balance">
         <p *ngIf="highest && loading" class="coins"><span>{{ percentage | percent:'1.2-2' }}</span></p>
-        <p *ngIf="!loading" class="coins"><span>{{ coins | number:'1.0-6' }}</span> {{ 'common.coin-id' | translate }}</p>
+        <p *ngIf="!loading" class="coins"><span>{{ coins | amount:true:'first' }}</span> {{ coins | amount:true:'last' }}</p>
         <p *ngIf="!highest && loading" class="coins"><span>&nbsp;</span></p>
         <p class="dollars">
           <span *ngIf="price">
@@ -19,9 +19,9 @@
     <div class="hour-balance">
       <p *ngIf="loading">
         {{ 'header.syncing-blocks' | translate }}
-        {{ current && highest ?  '(' + current + '/'  + highest + ')' : '..' }}
+        {{ current && highest ?  '(' + current + '/'  + highest + ')' : '...' }}
       </p>
-      <p *ngIf="!loading">{{ hours | number:'1.0-0' }} {{ 'common.coin-hours' | translate }}</p>
+      <p *ngIf="!loading">{{ hours | amount:false }}</p>
     </div>
   </div>
   <app-nav-bar></app-nav-bar>

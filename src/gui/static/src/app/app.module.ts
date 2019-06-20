@@ -102,6 +102,9 @@ import { LanguageService } from './services/language.service';
 import { SelectLanguageComponent } from './components/layout/select-language/select-language.component';
 import { ExchangeHistoryComponent } from './components/pages/exchange/exchange-history/exchange-history.component';
 import { StorageService } from './services/storage.service';
+import { CommonTextPipe } from './pipes/common-text.pipe';
+import { AmountPipe } from './pipes/amount.pipe';
+import { DecimalPipe } from '@angular/common';
 import { HwRemovePinDialogComponent } from './components/layout/hardware-wallet/hw-remove-pin-dialog/hw-remove-pin-dialog.component';
 import { HwUpdateFirmwareDialogComponent } from './components/layout/hardware-wallet/hw-update-firmware-dialog/hw-update-firmware-dialog.component';
 import { HwUpdateAlertDialogComponent } from './components/layout/hardware-wallet/hw-update-alert-dialog/hw-update-alert-dialog.component';
@@ -240,6 +243,8 @@ const ROUTES = [
     HwConfirmAddressDialogComponent,
     SelectLanguageComponent,
     ExchangeHistoryComponent,
+    CommonTextPipe,
+    AmountPipe,
     HwRemovePinDialogComponent,
     HwUpdateFirmwareDialogComponent,
     HwUpdateAlertDialogComponent,
@@ -329,6 +334,7 @@ const ROUTES = [
     LanguageService,
     StorageService,
     MsgBarService,
+    DecimalPipe,
   ],
   bootstrap: [AppComponent],
 })

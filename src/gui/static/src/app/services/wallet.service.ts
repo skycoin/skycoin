@@ -22,8 +22,7 @@ import { AppConfig } from '../app.config';
 import { Http } from '@angular/http';
 import { StorageService, StorageType } from './storage.service';
 import { shouldUpgradeVersion } from '../utils/semver';
-
-declare var Cipher: any;
+import { TxEncoder } from '../utils/tx-encoder';
 
 export enum HwSecurityWarnings {
   NeedsBackup,
@@ -37,12 +36,17 @@ export interface HwFeaturesResponse {
   securityWarnings: HwSecurityWarnings[];
 }
 
+export interface PendingTransactions {
+  user: any[];
+  all: any[];
+}
+
 @Injectable()
 export class WalletService {
 
   addresses: Address[];
-  wallets: Subject<Wallet[]> = new ReplaySubject<Wallet[]>();
-  pendingTxs: Subject<any[]> = new ReplaySubject<any[]>();
+  wallets: Subject<Wallet[]> = new ReplaySubject<Wallet[]>(1);
+  pendingTxs: Subject<PendingTransactions> = new ReplaySubject<PendingTransactions>(1);
   dataRefreshSubscription: Subscription;
 
   initialLoadFailed: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
@@ -305,11 +309,7 @@ export class WalletService {
     });
   }
 
-  allPendingTransactions(): Observable<any> {
-    return Observable.timer(0, 10000).flatMap(() => this.apiService.get('pendingTxs', {verbose: 1}));
-  }
-
-  pendingTransactions(): Observable<any> {
+  pendingTransactions(): Observable<PendingTransactions> {
     return this.pendingTxs.asObservable();
   }
 
@@ -409,10 +409,10 @@ export class WalletService {
       const data = useV2Endpoint ? transaction.data : transaction;
 
       if (wallet.isHardware) {
-        if (data.transaction.inputs.length > 7) {
+        if (data.transaction.inputs.length > 8) {
           throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs-outputs'));
         }
-        if (data.transaction.outputs.length > 7) {
+        if (data.transaction.outputs.length > 8) {
           throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs-outputs'));
         }
       }
@@ -421,6 +421,7 @@ export class WalletService {
         ...data.transaction,
         hoursBurned: new BigNumber(data.transaction.fee),
         encoded: data.encoded_transaction,
+        innerHash: data.transaction.inner_hash,
       };
     });
 
@@ -516,10 +517,11 @@ export class WalletService {
       });
 
       return this.hwWalletService.signTransaction(hwInputs, hwOutputs).flatMap(signatures => {
-        const rawTransaction = Cipher.PrepareTransactionWithSignatures(
-          JSON.stringify(txInputs),
-          JSON.stringify(txOutputs),
-          JSON.stringify(signatures.rawResponse),
+        const rawTransaction = TxEncoder.encode(
+          hwInputs,
+          hwOutputs,
+          signatures.rawResponse,
+          transaction.innerHash,
         );
 
         return Observable.of( {
@@ -533,6 +535,8 @@ export class WalletService {
   injectTransaction(encodedTx: string, note: string): Observable<boolean> {
     return this.apiService.post('injectTransaction', { rawtx: encodedTx }, { json: true })
       .flatMap(txId => {
+        setTimeout(() => this.startDataRefreshSubscription(), 32);
+
         if (!note) {
           return Observable.of(false);
         } else {
@@ -797,7 +801,10 @@ export class WalletService {
     this.apiService.get('pendingTxs', { verbose: true })
       .flatMap((transactions: any) => {
         if (transactions.length === 0) {
-          return Observable.of([]);
+          return Observable.of({
+            user: [],
+            all: [],
+          });
         }
 
         return this.wallets.first().map((wallets: Wallet[]) => {
@@ -806,10 +813,15 @@ export class WalletService {
             wallet.addresses.forEach(address => walletAddresses.add(address.address));
           });
 
-          return transactions.filter(tran => {
+          const userTransactions = transactions.filter(tran => {
             return tran.transaction.inputs.some(input => walletAddresses.has(input.owner)) ||
             tran.transaction.outputs.some(output => walletAddresses.has(output.dst));
           });
+
+          return {
+            user: userTransactions,
+            all: transactions,
+          };
         });
       })
       .subscribe(transactions => this.pendingTxs.next(transactions));

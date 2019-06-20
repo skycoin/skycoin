@@ -52,6 +52,8 @@ var (
 	ErrInvalidPubKey = errors.New("Invalid public key")
 	// ErrInvalidSecKey       Invalid public key
 	ErrInvalidSecKey = errors.New("Invalid secret key")
+	// ErrNullSignHash        Attempted to sign null hash digest
+	ErrNullSignHash = errors.New("Cannot sign null hash digest")
 	// ErrInvalidSig          Invalid signature
 	ErrInvalidSig = errors.New("Invalid signature")
 	// ErrInvalidSigPubKeyRecovery could not recover pubkey from sig
@@ -360,8 +362,13 @@ func (s Sig) Hex() string {
 // SignHash sign hash
 func SignHash(hash SHA256, sec SecKey) (Sig, error) {
 	if secp256k1.VerifySeckey(sec[:]) != 1 {
-		// can't use sec.Verify() because that calls SignHash again, with DebugLevel2 set
+		// Can't use sec.Verify() because that calls SignHash again, with DebugLevel2 set
 		return Sig{}, ErrInvalidSecKey
+	}
+
+	// Null hashes can't be signed
+	if hash.Null() {
+		return Sig{}, ErrNullSignHash
 	}
 
 	s := secp256k1.Sign(hash[:], sec[:])

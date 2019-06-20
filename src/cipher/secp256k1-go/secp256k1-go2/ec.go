@@ -24,8 +24,8 @@ func DecompressPoint(X []byte, off bool, Y []byte) {
 
 // RecoverPublicKey recovers a public key from a signature and the message it signed.
 // Returns nil on error with an int error code. Returns 1 on success.
-func RecoverPublicKey(sigByte, h []byte, recid int) ([]byte, int) {
-	if len(sigByte) != 64 {
+func RecoverPublicKey(sigBytes, msgBytes []byte, recid int) ([]byte, int) {
+	if len(sigBytes) != 64 {
 		log.Panic("must pass in 64 byte pubkey")
 	}
 
@@ -33,7 +33,7 @@ func RecoverPublicKey(sigByte, h []byte, recid int) ([]byte, int) {
 	var sig Signature
 	var msg Number
 
-	sig.ParseBytes(sigByte[0:64])
+	sig.ParseBytes(sigBytes[0:64])
 
 	if sig.R.Sign() <= 0 || sig.R.Cmp(&TheCurve.Order.Int) >= 0 {
 		if sig.R.Sign() == 0 {
@@ -51,15 +51,21 @@ func RecoverPublicKey(sigByte, h []byte, recid int) ([]byte, int) {
 		return nil, -5
 	}
 
-	msg.SetBytes(h)
+	msg.SetBytes(msgBytes)
 	if !sig.Recover(&pubkey, &msg, recid) {
 		return nil, -6
 	}
 
-	return pubkey.Bytes(), 1
+	pkb := pubkey.Bytes()
+
+	if PubkeyIsValid(pkb) != 1 {
+		return nil, -7
+	}
+
+	return pkb, 1
 }
 
-// Multiply standard EC multiplacation k(xy)
+// Multiply standard EC multiplication k(xy)
 // xy is the compressed public key format (33 bytes long)
 func Multiply(xy, k []byte) []byte {
 	var pk XY
@@ -74,12 +80,12 @@ func Multiply(xy, k []byte) []byte {
 	pk.SetXYZ(&xyz)
 
 	if !pk.IsValid() {
-		log.Panic()
+		log.Panic("Multiply pk is invalid")
 	}
 	return pk.Bytes()
 }
 
-//test assumptions
+// pubkeyTest panics if assumptions about pubkey are violated
 func pubkeyTest(pk XY) {
 	if !pk.IsValid() {
 		log.Panic("IMPOSSIBLE3: pubkey invalid")
@@ -98,14 +104,13 @@ func pubkeyTest(pk XY) {
 
 // BaseMultiply base multiply
 func BaseMultiply(k []byte) []byte {
-	var r XYZ
 	var n Number
 	var pk XY
 	n.SetBytes(k)
-	ECmultGen(&r, &n)
+	r := ECmultGen(n)
 	pk.SetXYZ(&r)
 	if !pk.IsValid() {
-		log.Panic() // should not occur
+		log.Panic("BaseMultiply pk is invalid")
 	}
 
 	pubkeyTest(pk)
@@ -116,14 +121,13 @@ func BaseMultiply(k []byte) []byte {
 // BaseMultiplyAdd computes G*k + xy
 // Returns 33 bytes out (compressed pubkey).
 func BaseMultiplyAdd(xy, k []byte) []byte {
-	var r XYZ
 	var n Number
 	var pk XY
 	if err := pk.ParsePubkey(xy); err != nil {
 		return nil
 	}
 	n.SetBytes(k)
-	ECmultGen(&r, &n)
+	r := ECmultGen(n)
 	r.AddXY(&r, &pk)
 	pk.SetXYZ(&r)
 
@@ -137,7 +141,6 @@ func GeneratePublicKey(k []byte) []byte {
 	if len(k) != 32 {
 		log.Panic("secret key length must be 32 bytes")
 	}
-	var r XYZ
 	var n Number
 	var pk XY
 
@@ -149,22 +152,24 @@ func GeneratePublicKey(k []byte) []byte {
 		log.Panic("only call for valid seckey, check that seckey is valid first")
 		return nil
 	}
-	ECmultGen(&r, &n)
+	r := ECmultGen(n)
 	pk.SetXYZ(&r)
 	if !pk.IsValid() {
-		log.Panic("public key derived from secret key is unexpectedly valid") // should not occur
+		log.Panic("public key derived from secret key is unexpectedly valid")
 	}
 	pubkeyTest(pk)
 	return pk.Bytes()
 }
 
 // SeckeyIsValid 1 on success
-// must not be zero
-// must not be negative
-// must be less than order of curve
+// Must be 32 bytes
+// Must not be zero
+// Must not be negative
+// Must be less than order of curve
+// The probability of any 32 bytes being an invalid secret key is ~2^-128
 func SeckeyIsValid(seckey []byte) int {
 	if len(seckey) != 32 {
-		log.Panic()
+		log.Panic("SeckeyIsValid seckey must be 32 bytes")
 	}
 	var n Number
 	n.SetBytes(seckey)

@@ -748,7 +748,7 @@ func (c *NodeConfig) applyConfigMode(configMode string) {
 	}
 }
 
-func panicIfError(err error, msg string, args ...interface{}) { // nolint: unparam
+func panicIfError(err error, msg string, args ...interface{}) { //nolint:unparam
 	if err != nil {
 		log.Panicf(msg+": %v", append(args, err)...)
 	}

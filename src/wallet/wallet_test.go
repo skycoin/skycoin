@@ -465,7 +465,7 @@ func TestLockAndUnLock(t *testing.T) {
 	}
 }
 
-func makeWallet(t *testing.T, opts Options, addrNum uint64) *Wallet { // nolint: unparam
+func makeWallet(t *testing.T, opts Options, addrNum uint64) *Wallet { //nolint:unparam
 	// Create an unlocked wallet, then generate addresses, lock if the options.Encrypt is true.
 	preOpts := opts
 	opts.Encrypt = false
@@ -741,7 +741,7 @@ func TestWalletGetEntry(t *testing.T) {
 			false,
 		},
 		{
-			"scrypt-chacha20poly1305 encrytped wallet",
+			"scrypt-chacha20poly1305 encrypted wallet",
 			"./testdata/scrypt-chacha20poly1305-encrypted.wlt",
 			"LxcitUpWQZbPjgEPs6R1i3G4Xa31nPMoSG",
 			true,

@@ -2258,7 +2258,7 @@ API sets: `READ`
 URI: /api/v1/transactions
 Method: GET, POST
 Args:
-    addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
+    addrs: Comma separated addresses [optional, returns all transactions if no address is provided]
     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
     verbose: [bool] include verbose transaction input data
 ```

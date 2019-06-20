@@ -26,9 +26,9 @@ export class WalletDetailComponent implements OnDestroy {
   @Input() wallet: Wallet;
 
   creatingAddress = false;
+  preparingToEdit = false;
 
   private howManyAddresses: number;
-  private preparingToEdit = false;
   private editSubscription: ISubscription;
   private confirmSubscription: ISubscription;
 

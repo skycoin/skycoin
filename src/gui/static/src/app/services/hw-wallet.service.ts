@@ -46,6 +46,18 @@ export class OperationResult {
   rawResponse: any;
 }
 
+export interface Input {
+  hashIn: string;
+  index: number;
+}
+
+export interface Output {
+  address: string;
+  coin: number;
+  hour: number;
+  address_index?: number;
+}
+
 interface EventData {
   event: string;
   successTexts?: string[];
@@ -236,6 +248,24 @@ export class HwWalletService {
           ),
         );
       }
+    }).flatMap(response => {
+      return this.verifyAddresses(response.rawResponse, 0)
+        .catch(() => Observable.throw({ _body: this.translate.instant('hardware-wallet.errors.invalid-address-generated') }))
+        .map(() => response);
+    });
+  }
+
+  private verifyAddresses(addresses: string[], currentIndex: number): Observable<any> {
+    const params = {
+      address: addresses[currentIndex],
+    };
+
+    return this.apiService.post('address/verify', params, {}, true).flatMap(() => {
+      if (currentIndex !== addresses.length - 1) {
+        return this.verifyAddresses(addresses, currentIndex + 1);
+      } else {
+        return Observable.of(0);
+      }
     });
   }
 
@@ -373,7 +403,6 @@ export class HwWalletService {
           this.hwWalletDaemonService.post(
             '/configure_pin_code',
             params,
-            true,
           ),
           ['PIN removed'],
         );
@@ -488,8 +517,7 @@ export class HwWalletService {
     });
   }
 
-  signTransaction(inputs: any, outputs: any): Observable<OperationResult> {
-
+  signTransaction(inputs: Input[], outputs: Output[]): Observable<OperationResult> {
     const previewData: TxData[] = [];
     outputs.forEach(output => {
       if (output.address_index === undefined || output.address_index === null) {
@@ -599,7 +627,7 @@ export class HwWalletService {
             return Observable.throw(response);
           }
       } else {
-        return Observable.throw(this.dispatchEvent(0, 'cancelled by user', false, true));
+        return Observable.throw(this.dispatchEvent(0, 'canceled by user', false, true));
       }
     });
   }
@@ -645,7 +673,7 @@ export class HwWalletService {
           result = OperationResults.FailedOrRefused;
         } else if (responseContent.includes('PIN invalid')) {
           result = OperationResults.WrongPin;
-        } else if (responseContent.includes('cancelled by user')) {
+        } else if (responseContent.includes('canceled by user')) {
           result = OperationResults.FailedOrRefused;
         } else if (responseContent.includes('Expected WordAck after Button')) {
           result = OperationResults.FailedOrRefused;

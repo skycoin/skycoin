@@ -65,7 +65,7 @@ func HashRipemd160(data []byte) Ripemd160 {
 	ripemd160Hash := <-ripemd160HashPool
 	ripemd160Hash.Reset()
 	// ripemd160.Write never returns an error
-	ripemd160Hash.Write(data) // nolint: errcheck
+	ripemd160Hash.Write(data) //nolint:errcheck
 	sum := ripemd160Hash.Sum(nil)
 	ripemd160HashPool <- ripemd160Hash
 
@@ -159,7 +159,7 @@ func SumSHA256(b []byte) SHA256 {
 	sha256Hash := <-sha256HashPool
 	sha256Hash.Reset()
 	// sha256.Write never returns an error
-	sha256Hash.Write(b) // nolint: errcheck
+	sha256Hash.Write(b) //nolint:errcheck
 	sum := sha256Hash.Sum(nil)
 	sha256HashPool <- sha256Hash
 

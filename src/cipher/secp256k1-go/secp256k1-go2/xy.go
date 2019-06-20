@@ -70,11 +70,10 @@ func (xy *XY) ParsePubkey(pub []byte) error {
 	return nil
 }
 
-// Bytes Returns serialized key in in compressed format: "<02> <X>",
-// eventually "<03> <X>"
-//33 bytes
+// Bytes returns the compressed public key (33 bytes) in the format
+// "<0x03> <X>" or <0x02> <X>". The leading byte is 0x03 if the Y point is odd.
 func (xy XY) Bytes() []byte {
-	xy.X.Normalize() // See GitHub issue #15
+	xy.X.Normalize() // See https://github.com/piotrnar/gocoin/issues/15
 
 	raw := make([]byte, 33)
 	if xy.Y.IsOdd() {
@@ -89,8 +88,8 @@ func (xy XY) Bytes() []byte {
 // BytesUncompressed returns serialized key in uncompressed format "<04> <X> <Y>"
 //65 bytes
 func (xy *XY) BytesUncompressed() (raw []byte) {
-	xy.X.Normalize() // See GitHub issue #15
-	xy.Y.Normalize() // See GitHub issue #15
+	xy.X.Normalize() // See https://github.com/piotrnar/gocoin/issues/15
+	xy.Y.Normalize() // See https://github.com/piotrnar/gocoin/issues/15
 
 	raw = make([]byte, 65)
 	raw[0] = 0x04
@@ -178,7 +177,7 @@ func (xy *XY) SetXYZ(a *XYZ) {
 	xy.Y = a.Y
 }
 
-func (xy *XY) precomp(w int) []XY { // nolint: unused,megacheck
+func (xy *XY) precomp(w int) []XY { //nolint:unused,megacheck
 	pre := make([]XY, (1 << (uint(w) - 2)))
 	pre[0] = *xy
 	var X, d, tmp XYZ
@@ -232,7 +231,7 @@ func (xy *XY) SetXO(X *Field, odd bool) {
 		xy.Y.Negate(&xy.Y, 1)
 	}
 
-	//r.X.Normalize() // See GitHub issue #15
+	//r.X.Normalize() // See https://github.com/piotrnar/gocoin/issues/15
 	xy.Y.Normalize()
 }
 

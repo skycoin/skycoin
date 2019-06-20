@@ -77,10 +77,11 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
   ngOnDestroy() {
     super.ngOnDestroy();
     this.removeDialogSubscription();
+    this.removeOperationSubscription();
   }
 
   hwConnectionChanged(connected: boolean) {
-    this.checkWallet();
+    this.checkWallet(true);
   }
 
   update() {
@@ -207,70 +208,19 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
     this.wallet = null;
     this.currentState = States.Processing;
 
-    this.hwWalletService.getDeviceConnected().subscribe(connected => {
+    this.removeOperationSubscription();
+
+    this.operationSubscription = this.hwWalletService.getDeviceConnected().subscribe(connected => {
       if (!connected) {
         this.currentState = States.Disconnected;
       } else {
-        if (this.operationSubscription) {
-          this.operationSubscription.unsubscribe();
-        }
-
-        this.operationSubscription = this.hwWalletService.getAddresses(1, 0).subscribe(
-          response => {
-            this.walletService.wallets.first().subscribe(wallets => {
-              const alreadySaved = wallets.some(wallet => {
-                const found = wallet.addresses[0].address === response.rawResponse[0] && wallet.isHardware;
-                if (found) {
-                  this.wallet = wallet;
-                  this.walletName = wallet.label;
-                }
-
-                return found;
-              });
-              if (alreadySaved) {
-                this.operationSubscription = this.updateSecurityWarningsAndData().subscribe(result => {
-                  if (suggestToUpdate && result.securityWarnings.find(warning => warning === HwSecurityWarnings.OutdatedFirmware)) {
-                    this.openUpdateWarning();
-                  }
-
-                  if (!this.onboarding) {
-                    this.currentState = States.ConfiguredConnected;
-                  } else {
-                    this.hwWalletService.showOptionsWhenPossible = true;
-                    this.dialogRef.close(true);
-                  }
-                });
-              } else {
-                this.openDialog(HwAddedDialogComponent);
-              }
-            });
-          },
-          err => {
-            if (err.result && err.result === OperationResults.Timeout) {
-              this.operationSubscription = this.hwWalletService.getFeatures(false).subscribe(result => {
-                if (result.rawResponse.bootloader_mode) {
-                  this.openUpdateDialog();
-                } else {
-                  this.currentState = States.Error;
-                }
-              }, () => this.currentState = States.Error);
-            } else if (err.result && err.result === OperationResults.WithoutSeed) {
-              this.currentState = States.NewConnected;
-
-              this.operationSubscription = this.updateSecurityWarningsAndData(true).subscribe(result => {
-                if (suggestToUpdate && result.securityWarnings.find(warning => warning === HwSecurityWarnings.OutdatedFirmware)) {
-                  this.openUpdateWarning();
-                }
-              });
-            } else if (err.result && err.result === OperationResults.FailedOrRefused) {
-              this.currentState = States.ReturnedRefused;
-            } else if (err.result && err.result === OperationResults.WrongPin) {
-              this.currentState = States.WrongPin;
-            } else {
-              this.currentState = States.Error;
-            }
-          },
-        );
+        this.operationSubscription = this.hwWalletService.getFeatures(false).subscribe(result => {
+          if (result.rawResponse.bootloader_mode) {
+            this.openUpdateDialog();
+          } else {
+            this.continueCheckingWallet(suggestToUpdate);
+          }
+        }, () => this.continueCheckingWallet(suggestToUpdate));
       }
     }, err => {
       if (err['_body'] && err['_body'] === HwWalletDaemonService.errorConnectingWithTheDaemon) {
@@ -279,6 +229,71 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
         this.currentState = States.Error;
       }
     });
+  }
+
+  private continueCheckingWallet(suggestToUpdate) {
+    this.operationSubscription = this.hwWalletService.getAddresses(1, 0).subscribe(
+      response => {
+        this.operationSubscription = this.walletService.wallets.first().subscribe(wallets => {
+          const alreadySaved = wallets.some(wallet => {
+            const found = wallet.addresses[0].address === response.rawResponse[0] && wallet.isHardware;
+            if (found) {
+              this.wallet = wallet;
+              this.walletName = wallet.label;
+            }
+
+            return found;
+          });
+          if (alreadySaved) {
+            this.operationSubscription = this.updateSecurityWarningsAndData().subscribe(result => {
+              if (suggestToUpdate && result.securityWarnings.find(warning => warning === HwSecurityWarnings.OutdatedFirmware)) {
+                this.openUpdateWarning();
+              }
+
+              if (!this.onboarding) {
+                this.currentState = States.ConfiguredConnected;
+              } else {
+                this.hwWalletService.showOptionsWhenPossible = true;
+                this.dialogRef.close(true);
+              }
+            });
+          } else {
+            this.openDialog(HwAddedDialogComponent);
+          }
+        });
+      },
+      err => {
+        if (err.result && err.result === OperationResults.Timeout) {
+          this.operationSubscription = this.hwWalletService.getFeatures(false).subscribe(result => {
+            if (result.rawResponse.bootloader_mode) {
+              this.openUpdateDialog();
+            } else {
+              this.currentState = States.Error;
+            }
+          }, () => this.currentState = States.Error);
+        } else if (err.result && err.result === OperationResults.WithoutSeed) {
+          this.currentState = States.NewConnected;
+
+          this.operationSubscription = this.updateSecurityWarningsAndData(true).subscribe(result => {
+            if (suggestToUpdate && result.securityWarnings.find(warning => warning === HwSecurityWarnings.OutdatedFirmware)) {
+              this.openUpdateWarning();
+            }
+          });
+        } else if (err.result && err.result === OperationResults.FailedOrRefused) {
+          this.currentState = States.ReturnedRefused;
+        } else if (err.result && err.result === OperationResults.WrongPin) {
+          this.currentState = States.WrongPin;
+        } else {
+          this.currentState = States.Error;
+        }
+      },
+    );
+  }
+
+  private removeOperationSubscription() {
+    if (this.operationSubscription) {
+      this.operationSubscription.unsubscribe();
+    }
   }
 
   private openUpdateWarning() {

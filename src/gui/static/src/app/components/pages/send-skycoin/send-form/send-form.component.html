@@ -7,8 +7,8 @@
         <option *ngFor="let wallet of walletService.all() | async" [disabled]="!wallet.coins || wallet.coins.isLessThanOrEqualTo(0)" [ngValue]="wallet">
           {{ wallet.label }} -
           <span *ngIf="wallet.coins && wallet.hours">
-            {{ (wallet.coins ? wallet.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ 'common.coin-id' | translate }}
-            ({{ wallet.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ 'common.coin-hours' | translate }})
+            {{ (wallet.coins ? wallet.coins.toString() : 0) | amount }}
+            ({{ wallet.hours.toString() | amount:false }})
           </span>
         </option>
       </select>
@@ -20,23 +20,23 @@
   </div>
   <div class="form-field">
     <label for="amount" class="amount-label">{{ 'send.amount-label' | translate }}</label>
-    <div class="coin-selector-container" *ngIf="price" [ngClass]="{ disabled: busy }">
+    <div class="coin-selector-container" *ngIf="price" [ngClass]="{ 'element-disabled': busy }">
       <app-double-button
-        [leftButtonText]="'common.coin-id' | translate"
+        [leftButtonText]="'coin' | commonText"
         [rightButtonText]="'common.usd' | translate"
         className="light small"
         [activeButton]="selectedCurrency"
         (onStateChange)="changeActiveCurrency($event)"
       ></app-double-button>
     </div>
-    <input formControlName="amount" id="amount" (keydown.enter)="preview()" [attr.disabled]="busy ? 'true' : null">
+    <input formControlName="amount" id="amount" [attr.disabled]="busy ? 'true' : null">
     <div class="coins-value-label" [ngClass]="{ red: value >= 0 && valueGreaterThanBalance }" *ngIf="price">
       <span *ngIf="value < 0">{{ 'send.invalid-amount' | translate }}</span>
       <span *ngIf="value >= 0 && selectedCurrency === doubleButtonActive.LeftButton">
         &#x007e; {{ value | number:'1.0-2' }} {{ 'common.usd' | translate }}
       </span>
       <span *ngIf="value >= 0 && selectedCurrency === doubleButtonActive.RightButton">
-        &#x007e; {{ value | number:('1.0-' + blockchainService.currentMaxDecimals) }} {{ 'common.coin-id' | translate }}
+        &#x007e; {{ value | amount }}
       </span>
     </div>
   </div>
@@ -45,7 +45,7 @@
       {{ 'send.personal-note-label' | translate }}
       <mat-icon [matTooltip]="'send.personal-note-help' | translate">help</mat-icon>
     </label>
-    <input formControlName="note" id="note" [maxlength]="maxNoteChars" [attr.disabled]="busy ? 'true' : null">
+    <input formControlName="note" id="note" (keydown.enter)="preview()" [maxlength]="maxNoteChars" [attr.disabled]="busy ? 'true' : null">
   </div>
   <div class="-buttons">
     <app-button #previewButton (action)="preview()" [disabled]="!form.valid">

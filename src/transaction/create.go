@@ -441,7 +441,7 @@ func VerifyCreatedInvariants(p Params, txn *coin.Transaction, inputs []UxBalance
 	}
 
 	if inputHours-outputHours < fee.RequiredFee(inputHours, params.UserVerifyTxn.BurnFactor) {
-		return errors.New("Transaction will not satisy required fee")
+		return errors.New("Transaction will not satisfy required fee")
 	}
 
 	return nil

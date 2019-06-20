@@ -40,6 +40,7 @@ export class PreviewTransaction extends Transaction {
   from: string;
   to: string[];
   encoded: string;
+  innerHash: string;
   wallet?: Wallet;
 }
 

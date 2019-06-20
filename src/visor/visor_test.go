@@ -684,7 +684,7 @@ func makeOverflowHoursSpendTxn(t *testing.T, uxs coin.UxArray, keys []cipher.Sec
 	return spendTxn
 }
 
-func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBlock, []UnconfirmedTransaction, uint64) { // nolint: unparam
+func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBlock, []UnconfirmedTransaction, uint64) { //nolint:unparam
 	var txns []historydb.Transaction
 	var blocks []coin.SignedBlock
 	var uncfmTxns []UnconfirmedTransaction

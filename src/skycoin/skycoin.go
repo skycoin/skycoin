@@ -318,7 +318,7 @@ func (c *Coin) Run() error {
 	select {
 	case <-quit:
 	case retErr = <-errC:
-		c.logger.WithError(err).Error("Received error from error failed")
+		c.logger.WithError(err).Error("Received error from errC (something prior has failed)")
 	}
 
 	c.logger.Info("Shutting down...")

@@ -85,7 +85,7 @@ func Multiply(xy, k []byte) []byte {
 	return pk.Bytes()
 }
 
-// test assumptions
+// pubkeyTest panics if assumptions about pubkey are violated
 func pubkeyTest(pk XY) {
 	if !pk.IsValid() {
 		log.Panic("IMPOSSIBLE3: pubkey invalid")
@@ -110,7 +110,7 @@ func BaseMultiply(k []byte) []byte {
 	r := ECmultGen(n)
 	pk.SetXYZ(&r)
 	if !pk.IsValid() {
-		log.Panic("BaseMultiply pk is invalid") // should not occur
+		log.Panic("BaseMultiply pk is invalid")
 	}
 
 	pubkeyTest(pk)
@@ -155,7 +155,7 @@ func GeneratePublicKey(k []byte) []byte {
 	r := ECmultGen(n)
 	pk.SetXYZ(&r)
 	if !pk.IsValid() {
-		log.Panic("public key derived from secret key is unexpectedly valid") // should not occur
+		log.Panic("public key derived from secret key is unexpectedly valid")
 	}
 	pubkeyTest(pk)
 	return pk.Bytes()

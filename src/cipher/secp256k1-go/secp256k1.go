@@ -26,9 +26,9 @@ func pubkeyFromSeckey(seckey []byte) []byte {
 		return nil
 	}
 
-	pubkey := secp.GeneratePublicKey(seckey) // always returns true
+	pubkey := secp.GeneratePublicKey(seckey)
 	if pubkey == nil {
-		log.Panic("ERROR: impossible, secp.BaseMultiply always returns true")
+		log.Panic("ERROR: impossible, secp.GeneratePublicKey should never fail")
 		return nil
 	}
 	if len(pubkey) != 33 {
@@ -41,8 +41,8 @@ func pubkeyFromSeckey(seckey []byte) []byte {
 	}
 
 	if ret := VerifyPubkey(pubkey); ret != 1 {
-		log.Printf("seckey= %s", hex.EncodeToString(seckey))
-		log.Printf("pubkey= %s", hex.EncodeToString(pubkey))
+		log.Printf("seckey=%s\n", hex.EncodeToString(seckey))
+		log.Printf("pubkey=%s\n", hex.EncodeToString(pubkey))
 		log.Panicf("ERROR: pubkey verification failed, for deterministic. ret=%d", ret)
 		return nil
 	}
@@ -195,10 +195,10 @@ new_seckey:
 func Secp256k1Hash(seed []byte) []byte { //nolint:golint
 	hash := SumSHA256(seed)
 	_, seckey := deterministicKeyPairIteratorStep(hash) // seckey1 is usually sha256 of hash
-	pubkeySeed := SumSHA256(hash)
-	pubkey, _ := deterministicKeyPairIteratorStep(pubkeySeed) // SumSHA256(hash) usually equals seckey
-	ecdh := ECDH(pubkey, seckey)                              // raise pubkey to power of seckey in curve
-	out := SumSHA256(append(hash, ecdh...))                   // append signature to sha256(seed) and hash
+	pubkeySeed := SumSHA256(hash)                       // SumSHA256(hash) usually equals seckey
+	pubkey, _ := deterministicKeyPairIteratorStep(pubkeySeed)
+	ecdh := ECDH(pubkey, seckey)            // raise pubkey to power of seckey in curve
+	out := SumSHA256(append(hash, ecdh...)) // append signature to sha256(seed) and hash
 	return out
 }
 

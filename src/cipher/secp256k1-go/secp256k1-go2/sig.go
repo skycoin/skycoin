@@ -2,7 +2,6 @@ package secp256k1go
 
 import (
 	"bytes"
-	"fmt"
 	"log"
 )
 
@@ -250,7 +249,7 @@ func (sig *Signature) Bytes() []byte {
 	}
 
 	if len(r) != 32 || len(s) != 32 {
-		log.Panic(fmt.Sprintf("signature size invalid: %d, %d", len(r), len(s)))
+		log.Panicf("signature size invalid: %d, %d", len(r), len(s))
 	}
 
 	res := new(bytes.Buffer)

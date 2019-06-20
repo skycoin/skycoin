@@ -6,7 +6,6 @@ package secp256k1
 import (
 	"bytes"
 	"encoding/hex"
-	"fmt"
 	"log"
 
 	secp "github.com/skycoin/skycoin/src/cipher/secp256k1-go/secp256k1-go2"
@@ -37,14 +36,14 @@ func pubkeyFromSeckey(seckey []byte) []byte {
 	}
 
 	if ret := secp.PubkeyIsValid(pubkey); ret != 1 {
-		log.Panic(fmt.Sprintf("ERROR: pubkey invald, ret=%d", ret))
+		log.Panicf("ERROR: pubkey invald, ret=%d", ret)
 		return nil
 	}
 
 	if ret := VerifyPubkey(pubkey); ret != 1 {
 		log.Printf("seckey= %s", hex.EncodeToString(seckey))
 		log.Printf("pubkey= %s", hex.EncodeToString(pubkey))
-		log.Panic(fmt.Sprintf("ERROR: pubkey verification failed, for deterministic. ret=%d", ret))
+		log.Panicf("ERROR: pubkey verification failed, for deterministic. ret=%d", ret)
 		return nil
 	}
 
@@ -69,7 +68,7 @@ new_seckey:
 		goto new_seckey
 	}
 	if ret := secp.PubkeyIsValid(pubkey); ret != 1 {
-		log.Panic(fmt.Sprintf("ERROR: Pubkey invalid, ret=%d", ret))
+		log.Panicf("ERROR: Pubkey invalid, ret=%d", ret)
 		goto new_seckey
 	}
 
@@ -92,7 +91,7 @@ func PubkeyFromSeckey(seckey []byte) []byte {
 		return nil
 	}
 	if ret := secp.PubkeyIsValid(pubkey); ret != 1 {
-		log.Panic(fmt.Sprintf("ERROR: Pubkey invalid, ret=%d", ret))
+		log.Panicf("ERROR: Pubkey invalid, ret=%d", ret)
 		return nil
 	}
 
@@ -108,7 +107,7 @@ func UncompressPubkey(pubkey []byte) []byte {
 
 	var pubXY secp.XY
 	if err := pubXY.ParsePubkey(pubkey); err != nil {
-		log.Panic(fmt.Sprintf("ERROR: impossible, pubkey parse fail: %v", err))
+		log.Panicf("ERROR: impossible, pubkey parse fail: %v", err)
 	}
 
 	var pubkey2 = pubXY.BytesUncompressed()
@@ -178,14 +177,14 @@ new_seckey:
 	}
 
 	if ret := secp.PubkeyIsValid(pubkey); ret != 1 {
-		log.Panic(fmt.Sprintf("ERROR: deterministicKeyPairIteratorStep: PubkeyIsValid failed, ret=%d", ret))
+		log.Panicf("ERROR: deterministicKeyPairIteratorStep: PubkeyIsValid failed, ret=%d", ret)
 	}
 
 	if ret := VerifyPubkey(pubkey); ret != 1 {
 		log.Printf("seckey= %s", hex.EncodeToString(seckey))
 		log.Printf("pubkey= %s", hex.EncodeToString(pubkey))
 
-		log.Panic(fmt.Sprintf("ERROR: deterministicKeyPairIteratorStep: VerifyPubkey failed, ret=%d", ret))
+		log.Panicf("ERROR: deterministicKeyPairIteratorStep: VerifyPubkey failed, ret=%d", ret)
 		goto new_seckey
 	}
 
@@ -214,14 +213,9 @@ func GenerateDeterministicKeyPair(seed []byte) ([]byte, []byte) {
 // Feeds SHA256 back into function to generate sequence of seckeys
 // If private key is disclosed, should not be able to compute future or past keys in sequence
 func DeterministicKeyPairIterator(seedIn []byte) ([]byte, []byte, []byte) {
-	fmt.Println("seedIn:", hex.EncodeToString(seedIn))
 	seed1 := Secp256k1Hash(seedIn) // make it difficult to derive future seckeys from previous seckeys
-	fmt.Println("seed1:", hex.EncodeToString(seed1))
 	seed2 := SumSHA256(append(seedIn, seed1...))
-	fmt.Println("seed2:", hex.EncodeToString(seed2))
 	pubkey, seckey := deterministicKeyPairIteratorStep(seed2) // this is our seckey
-	fmt.Println("pubkey:", hex.EncodeToString(pubkey))
-	fmt.Println("seckey:", hex.EncodeToString(seckey))
 	return seed1, pubkey, seckey
 }
 
@@ -284,7 +278,7 @@ func Sign(msg []byte, seckey []byte) []byte {
 		sig[i] = sigBytes[i]
 	}
 	if len(sigBytes) != 64 {
-		log.Panic(fmt.Sprintf("Invalid signature byte count: %d", len(sigBytes)))
+		log.Panicf("Invalid signature byte count: %d", len(sigBytes))
 	}
 	sig[64] = byte(recid)
 

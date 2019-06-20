@@ -2,7 +2,6 @@ package secp256k1go
 
 import (
 	"bytes"
-	"fmt"
 	"log"
 )
 
@@ -93,7 +92,7 @@ func pubkeyTest(pk XY) {
 	}
 	var pk2 XY
 	if err := pk2.ParsePubkey(pk.Bytes()); err != nil {
-		log.Panic(fmt.Sprintf("IMPOSSIBLE2: parse failed: %v", err))
+		log.Panicf("IMPOSSIBLE2: parse failed: %v", err)
 	}
 	if !pk2.IsValid() {
 		log.Panic("IMPOSSIBLE3: parse failed non valid key")

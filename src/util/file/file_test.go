@@ -33,7 +33,7 @@ func requireFileContentsBinary(t *testing.T, filename string, contents []byte) {
 	require.True(t, bytes.Equal(b[:n], contents))
 }
 
-func requireFileContents(t *testing.T, filename, contents string) { // nolint: unparam
+func requireFileContents(t *testing.T, filename, contents string) { //nolint:unparam
 	requireFileContentsBinary(t, filename, []byte(contents))
 }
 

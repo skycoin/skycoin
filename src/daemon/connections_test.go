@@ -457,14 +457,14 @@ func TestConnectionsModifyMirrorPanics(t *testing.T) {
 
 	// modifying mirror value causes panic
 	require.Panics(t, func() {
-		conns.modify(addr, 1, func(c *ConnectionDetails) { // nolint: errcheck
+		conns.modify(addr, 1, func(c *ConnectionDetails) { //nolint:errcheck
 			c.Mirror++
 		})
 	})
 
 	// modifying ListenPort causes panic
 	require.Panics(t, func() {
-		conns.modify(addr, 1, func(c *ConnectionDetails) { // nolint: errcheck
+		conns.modify(addr, 1, func(c *ConnectionDetails) { //nolint:errcheck
 			c.ListenPort = 999
 		})
 	})

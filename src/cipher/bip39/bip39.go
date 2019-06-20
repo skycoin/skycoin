@@ -382,7 +382,7 @@ func addChecksum(data []byte) []byte {
 
 func computeChecksum(data []byte) []byte {
 	hasher := sha256.New()
-	hasher.Write(data) // nolint: errcheck
+	hasher.Write(data) //nolint:errcheck
 	return hasher.Sum(nil)
 }
 

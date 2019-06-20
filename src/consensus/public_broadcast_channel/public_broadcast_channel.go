@@ -1,2 +1,2 @@
-// nolint
+//nolint
 package public_broadcast_channel

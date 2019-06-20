@@ -14,23 +14,28 @@ export class OutputsComponent implements OnDestroy {
   wallets: any[]|null;
 
   private outputsSubscription: ISubscription;
+  private lastRouteParams: any;
 
   constructor(
     public walletService: WalletService,
     private route: ActivatedRoute,
     private dialog: MatDialog,
   ) {
-    route.queryParams.subscribe(params => this.loadData(params));
+    route.queryParams.subscribe(params => {
+      this.wallets = null;
+      this.lastRouteParams = params;
+      this.walletService.startDataRefreshSubscription();
+    });
+    walletService.all().subscribe(() => this.loadData());
   }
 
   ngOnDestroy() {
     this.outputsSubscription.unsubscribe();
   }
 
-  loadData(params) {
-    const addr = params['addr'];
+  loadData() {
+    const addr = this.lastRouteParams['addr'];
 
-    this.wallets = null;
     this.outputsSubscription = this.walletService.outputsWithWallets().subscribe(wallets => {
       this.wallets = wallets
         .map(wallet => Object.assign({}, wallet))

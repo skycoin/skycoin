@@ -441,7 +441,7 @@ func TagOmitempty(tag string) bool {
 	return strings.Contains(tag, ",omitempty")
 }
 
-func tagName(tag string) string { // nolint: deadcode,megacheck
+func tagName(tag string) string { //nolint:deadcode,megacheck
 	commaIndex := strings.Index(tag, ",")
 	if commaIndex == -1 {
 		return tag

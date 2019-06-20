@@ -18,7 +18,7 @@ import (
 
 func hashSHA256(data []byte) []byte {
 	h := sha256.New()
-	h.Write(data) // nolint: errcheck
+	h.Write(data) //nolint:errcheck
 	return h.Sum(nil)
 }
 
@@ -30,7 +30,7 @@ func hashDoubleSHA256(data []byte) []byte {
 
 func hashRipemd160(data []byte) []byte {
 	h := ripemd160.New()
-	h.Write(data) // nolint: errcheck
+	h.Write(data) //nolint:errcheck
 	return h.Sum(nil)
 }
 

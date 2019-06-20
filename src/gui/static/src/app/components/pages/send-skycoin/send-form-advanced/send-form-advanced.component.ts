@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog, MatSnackBar, MatDialogConfig } from '@angular/material';
@@ -71,10 +71,11 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     private hwWalletService: HwWalletService,
     private translate: TranslateService,
     private priceService: PriceService,
+    private changeDetector: ChangeDetectorRef,
   ) { }
 
   ngOnInit() {
-    this.navbarService.showSwitch('send.simple', 'send.advanced');
+    this.navbarService.showSwitch('send.simple', 'send.advanced', DoubleButtonActive.RightButton);
 
     this.form = this.formBuilder.group({
       wallet: ['', Validators.required],
@@ -153,6 +154,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   preview() {
     this.previewTx = true;
     this.checkBeforeSending();
+    this.changeDetector.detectChanges();
   }
 
   send() {
@@ -457,6 +459,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       this.previewButton.setDisabled();
     }
     this.busy = true;
+    this.navbarService.disableSwitch();
   }
 
   private createTransaction(passwordDialog?: any) {
@@ -514,6 +517,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
             transaction,
           });
           this.busy = false;
+          this.navbarService.enableSwitch();
         }
       }, error => {
         if (passwordDialog) {
@@ -642,6 +646,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
   private showSuccess() {
     this.busy = false;
+    this.navbarService.enableSwitch();
     this.sendButton.setSuccess();
     this.resetForm();
 
@@ -652,6 +657,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
   private showError(error) {
     this.busy = false;
+    this.navbarService.enableSwitch();
     showSnackbarError(this.snackbar, error);
     this.previewButton.resetState().setEnabled();
     this.sendButton.resetState().setEnabled();

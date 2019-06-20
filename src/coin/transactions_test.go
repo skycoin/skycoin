@@ -60,7 +60,7 @@ func makeTransactionMultipleInputs(t *testing.T, n int) (Transaction, []cipher.S
 	return makeTransactionFromUxOuts(t, uxs, secs), secs
 }
 
-func makeTransactions(t *testing.T, n int) Transactions { // nolint: unparam
+func makeTransactions(t *testing.T, n int) Transactions { //nolint:unparam
 	txns := make(Transactions, n)
 	for i := range txns {
 		txns[i] = makeTransaction(t)
@@ -234,13 +234,13 @@ func TestTransactionVerifyInput(t *testing.T) {
 	// Invalid uxIn args
 	txn := makeTransaction(t)
 	_require.PanicsWithLogMessage(t, "txn.In != uxIn", func() {
-		_ = txn.VerifyInputSignatures(nil) // nolint: errcheck
+		_ = txn.VerifyInputSignatures(nil) //nolint:errcheck
 	})
 	_require.PanicsWithLogMessage(t, "txn.In != uxIn", func() {
-		_ = txn.VerifyInputSignatures(UxArray{}) // nolint: errcheck
+		_ = txn.VerifyInputSignatures(UxArray{}) //nolint:errcheck
 	})
 	_require.PanicsWithLogMessage(t, "txn.In != uxIn", func() {
-		_ = txn.VerifyInputSignatures(make(UxArray, 3)) // nolint: errcheck
+		_ = txn.VerifyInputSignatures(make(UxArray, 3)) //nolint:errcheck
 	})
 
 	// txn.In != txn.Sigs
@@ -248,14 +248,14 @@ func TestTransactionVerifyInput(t *testing.T) {
 	txn = makeTransactionFromUxOut(t, ux, s)
 	txn.Sigs = []cipher.Sig{}
 	_require.PanicsWithLogMessage(t, "txn.In != txn.Sigs", func() {
-		_ = txn.VerifyInputSignatures(UxArray{ux}) // nolint: errcheck
+		_ = txn.VerifyInputSignatures(UxArray{ux}) //nolint:errcheck
 	})
 
 	ux, s = makeUxOutWithSecret(t)
 	txn = makeTransactionFromUxOut(t, ux, s)
 	txn.Sigs = append(txn.Sigs, cipher.Sig{})
 	_require.PanicsWithLogMessage(t, "txn.In != txn.Sigs", func() {
-		_ = txn.VerifyInputSignatures(UxArray{ux}) // nolint: errcheck
+		_ = txn.VerifyInputSignatures(UxArray{ux}) //nolint:errcheck
 	})
 
 	// txn.InnerHash != txn.HashInner()
@@ -263,14 +263,14 @@ func TestTransactionVerifyInput(t *testing.T) {
 	txn = makeTransactionFromUxOut(t, ux, s)
 	txn.InnerHash = cipher.SHA256{}
 	_require.PanicsWithLogMessage(t, "Invalid Tx Inner Hash", func() {
-		_ = txn.VerifyInputSignatures(UxArray{ux}) // nolint: errcheck
+		_ = txn.VerifyInputSignatures(UxArray{ux}) //nolint:errcheck
 	})
 
 	// txn.In does not match uxIn hashes
 	ux, s = makeUxOutWithSecret(t)
 	txn = makeTransactionFromUxOut(t, ux, s)
 	_require.PanicsWithLogMessage(t, "Ux hash mismatch", func() {
-		_ = txn.VerifyInputSignatures(UxArray{UxOut{}}) // nolint: errcheck
+		_ = txn.VerifyInputSignatures(UxArray{UxOut{}}) //nolint:errcheck
 	})
 
 	// Unsigned txn

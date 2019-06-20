@@ -29,7 +29,9 @@ func (num *Number) mod(a *Number) {
 
 // SetHex sets number from string
 func (num *Number) SetHex(s string) {
-	num.SetString(s, 16)
+	if _, ok := num.SetString(s, 16); !ok {
+		panic("Number.SetHex failed")
+	}
 }
 
 func (num *Number) maskBits(bits uint) {
@@ -61,13 +63,13 @@ func (num *Number) splitExp(r1, r2 *Number) {
 	r2.Sub(&bnt1.Int, &bnt2.Int)
 }
 
-func (num *Number) split(rl, rh *Number, bits uint) { // nolint: unparam
+func (num *Number) split(rl, rh *Number, bits uint) { //nolint:unparam
 	rl.Int.Set(&num.Int)
 	rh.Int.Rsh(&rl.Int, bits)
 	rl.maskBits(bits)
 }
 
-func (num *Number) rsh(bits uint) { // nolint: unparam
+func (num *Number) rsh(bits uint) { //nolint:unparam
 	num.Rsh(&num.Int, bits)
 }
 
@@ -87,7 +89,7 @@ func (num *Number) IsOdd() bool {
 }
 
 // LeftPadBytes left-pads a byte slice with NUL bytes up to a length
-func LeftPadBytes(b []byte, length int) []byte { // nolint: unparam
+func LeftPadBytes(b []byte, length int) []byte { //nolint:unparam
 	if len(b) > length {
 		panic("buffer too small")
 	}

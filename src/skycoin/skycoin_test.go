@@ -37,7 +37,7 @@ var (
 
 func TestMain(m *testing.M) {
 	coin := getCoinName()
-	output, err := exec.Command("go", "list", fmt.Sprintf("../../cmd/%s", coin)).CombinedOutput() // nolint: gosec
+	output, err := exec.Command("go", "list", fmt.Sprintf("../../cmd/%s", coin)).CombinedOutput() //nolint:gosec
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "go list failed: %s", output)
 		os.Exit(1)
@@ -45,7 +45,7 @@ func TestMain(m *testing.M) {
 
 	ldflagsNameCmd = strings.TrimSpace(string(output))
 
-	output, err = exec.Command("go", "list", ".").CombinedOutput() // nolint: gosec
+	output, err = exec.Command("go", "list", ".").CombinedOutput() //nolint:gosec
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "go list failed: %s", output)
 		os.Exit(1)
@@ -256,9 +256,9 @@ func TestDBVerifyLogic(t *testing.T) {
 			// so that the tests that test that the database is not checked can complete
 			go time.AfterFunc(versionUpgradeWaitTimeout(t), func() {
 				if tc.shouldVerify {
-					cmd.Process.Kill() // nolint: errcheck
+					cmd.Process.Kill() //nolint:errcheck
 				} else {
-					cmd.Process.Signal(os.Interrupt) // nolint: errcheck
+					cmd.Process.Signal(os.Interrupt) //nolint:errcheck
 				}
 			})
 
@@ -276,7 +276,7 @@ func TestDBVerifyLogic(t *testing.T) {
 				verifyMsg := "Checking database"
 				if bytes.Contains(x, []byte(verifyMsg)) {
 					didVerify = true
-					cmd.Process.Signal(os.Interrupt) // nolint: errcheck
+					cmd.Process.Signal(os.Interrupt) //nolint:errcheck
 					break
 				}
 			}

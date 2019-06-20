@@ -655,7 +655,7 @@ func (px *Pex) isFull() bool {
 // Returns the raw response body as a string.
 // TODO -- move to util, add backoff options
 func downloadText(url string) (string, error) {
-	resp, err := http.Get(url)
+	resp, err := http.Get(url) //nolint:gosec
 	if err != nil {
 		return "", err
 	}

@@ -170,7 +170,7 @@ func makeTransactionForChain(t *testing.T, tx *dbutil.Tx, bc *Blockchain, ux coi
 	return txn
 }
 
-func makeLostCoinTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction { // nolint: unparam
+func makeLostCoinTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction { //nolint:unparam
 	txn := coin.Transaction{}
 	var totalCoins uint64
 	var totalHours uint64
@@ -196,7 +196,7 @@ func makeLostCoinTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAdd
 	return txn
 }
 
-func makeDuplicateUxOutTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction { // nolint: unparam
+func makeDuplicateUxOutTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction { //nolint:unparam
 	txn := coin.Transaction{}
 	var totalCoins uint64
 	var totalHours uint64
@@ -228,7 +228,7 @@ func makeDuplicateUxOutTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey,
 // The genesis block has only one unspent output, so only one transaction can be made from it.
 // This is useful for when multiple test transactions need to be made from the same block.
 // Coins and hours are distributed equally amongst all new outputs.
-func makeUnspentsTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, nUnspents int, maxDroplets uint8) coin.Transaction { // nolint: unparam
+func makeUnspentsTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, nUnspents int, maxDroplets uint8) coin.Transaction { //nolint:unparam
 	// Add inputs to the transaction
 	spendTxn := coin.Transaction{}
 	var totalHours uint64
@@ -311,7 +311,7 @@ func makeSpendTxWithFee(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, to
 }
 
 // makeSpendTxWithHoursBurned creates a txn specified with the total number of hours to burn
-func makeSpendTxWithHoursBurned(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins, hoursBurned uint64) coin.Transaction { // nolint: unparam
+func makeSpendTxWithHoursBurned(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins, hoursBurned uint64) coin.Transaction { //nolint:unparam
 	spendTxn := coin.Transaction{}
 	var totalHours uint64
 	var totalCoins uint64

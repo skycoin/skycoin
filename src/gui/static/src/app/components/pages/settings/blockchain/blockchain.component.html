@@ -27,21 +27,21 @@
             <div class="col-md-6">
               <div class="-item">
                 <div class="-key">{{ 'blockchain.current-supply' | translate }}</div>
-                <div class="-value">{{ coinSupply.current_supply | number }}</div>
+                <div class="-value">{{ coinSupply.current_supply | amount:true:'first' }}</div>
               </div>
               <div class="-item">
                 <div class="-key">{{ 'blockchain.total-supply' | translate }}</div>
-                <div class="-value">{{ coinSupply.total_supply | number }}</div>
+                <div class="-value">{{ coinSupply.total_supply | amount:true:'first' }}</div>
               </div>
             </div>
             <div class="col-md-6">
               <div class="-item">
                 <div class="-key">{{ 'blockchain.current-coinhour-supply' | translate }}</div>
-                <div class="-value">{{ coinSupply.current_coinhour_supply | number }}</div>
+                <div class="-value">{{ coinSupply.current_coinhour_supply | amount:false:'first' }}</div>
               </div>
               <div class="-item">
                 <div class="-key">{{ 'blockchain.total-coinhour-supply' | translate }}</div>
-                <div class="-value">{{ coinSupply.total_coinhour_supply | number }}</div>
+                <div class="-value">{{ coinSupply.total_coinhour_supply | amount:false:'first' }}</div>
               </div>
             </div>
           </div>

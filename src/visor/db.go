@@ -93,7 +93,7 @@ func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) erro
 }
 
 // backup the corrypted db first, then rebuild the history DB.
-func rebuildHistoryDB(db *dbutil.DB, history *historydb.HistoryDB, bc *Blockchain, quit chan struct{}) (*dbutil.DB, error) { // nolint: unused,megacheck
+func rebuildHistoryDB(db *dbutil.DB, history *historydb.HistoryDB, bc *Blockchain, quit chan struct{}) (*dbutil.DB, error) { //nolint:unused,megacheck
 	db, err := backupDB(db)
 	if err != nil {
 		return nil, err
@@ -140,7 +140,7 @@ func rebuildHistoryDB(db *dbutil.DB, history *historydb.HistoryDB, bc *Blockchai
 }
 
 // backupDB makes a backup copy of the DB
-func backupDB(db *dbutil.DB) (*dbutil.DB, error) { // nolint: unused,megacheck
+func backupDB(db *dbutil.DB) (*dbutil.DB, error) { //nolint:unused,megacheck
 	// backup the corrupted database
 	dbReadOnly := db.IsReadOnly()
 
@@ -179,7 +179,7 @@ func ResetCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*d
 	}
 }
 
-func rebuildCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*dbutil.DB, error) { //nolint: deadcode,unused,megacheck
+func rebuildCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*dbutil.DB, error) { //nolint:deadcode,unused,megacheck
 	history := historydb.New()
 	bc, err := NewBlockchain(db, BlockchainConfig{Pubkey: pubkey})
 	if err != nil {
@@ -237,7 +237,7 @@ func moveCorruptDB(dbPath string) (string, error) {
 }
 
 // copyCorruptDB copy a file to makeCorruptDBPath(dbPath)
-func copyCorruptDB(dbPath string) (string, error) { // nolint: unused,megacheck
+func copyCorruptDB(dbPath string) (string, error) { //nolint:unused,megacheck
 	newDBPath, err := makeCorruptDBPath(dbPath)
 	if err != nil {
 		return "", err

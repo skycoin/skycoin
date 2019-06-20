@@ -99,11 +99,11 @@ func (m *Manager) LoadStorage(storageType Type) error {
 
 	exists, err := file.Exists(fn)
 	if err != nil {
-		return err
+		return fmt.Errorf("Manager.LoadStorage file.Exists failed: %v", err)
 	}
 	if !exists {
 		if err := initEmptyStorage(fn); err != nil {
-			return err
+			return fmt.Errorf("Manager.LoadStorage initEmptyStorage failed: %v", err)
 		}
 	}
 

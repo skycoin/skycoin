@@ -2811,7 +2811,7 @@ $ skycoin-cli richlist 2 true
 </details>
 
 ### Address Count
-Returns the count of all addresses that currenty have unspent outputs (coins) associated with them.
+Returns the count of all addresses that currently have unspent outputs (coins) associated with them.
 
 ```bash
 $ skycoin-cli addresscount

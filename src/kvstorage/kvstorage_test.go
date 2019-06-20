@@ -25,24 +25,24 @@ func setupTmpDir(t *testing.T) (string, func()) {
 	}
 
 	return tmpDir, func() {
-		_ = os.RemoveAll(tmpDir) // nolint: errcheck
+		_ = os.RemoveAll(tmpDir) //nolint:errcheck
 	}
 }
 
-func setupTestFile(t *testing.T, fileName string) {
+func setupTestFile(t *testing.T, fn string) {
 	data := map[string]string{
 		"test1": "some value",
 		"test2": "{\"key\":\"val\",\"key2\":2}",
 	}
 
-	err := file.SaveJSON(fileName, data, 0600)
+	err := file.SaveJSON(fn, data, 0600)
 	require.NoError(t, err)
 }
 
-func setupEmptyTestFile(t *testing.T, fileName string) {
+func setupEmptyTestFile(t *testing.T, fn string) {
 	data := make(map[string]string)
 
-	err := file.SaveJSON(fileName, data, 0600)
+	err := file.SaveJSON(fn, data, 0600)
 	require.NoError(t, err)
 }
 
@@ -59,24 +59,24 @@ func TestNewKVStorage(t *testing.T) {
 	setupTestFile(t, dataFilename)
 
 	tt := []struct {
-		name     string
-		fileName string
-		expect   expect
+		name   string
+		fn     string
+		expect expect
 	}{
 		{
-			name:     "no such file",
-			fileName: "nofile.json",
+			name: "no such file",
+			fn:   "nofile.json",
 			expect: expect{
 				storage:     nil,
 				expectError: true,
 			},
 		},
 		{
-			name:     "file exists",
-			fileName: dataFilename,
+			name: "file exists",
+			fn:   dataFilename,
 			expect: expect{
 				storage: &kvStorage{
-					fileName: dataFilename,
+					fn: dataFilename,
 					data: map[string]string{
 						"test1": "some value",
 						"test2": "{\"key\":\"val\",\"key2\":2}",
@@ -88,7 +88,7 @@ func TestNewKVStorage(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			storage, err := newKVStorage(tc.fileName)
+			storage, err := newKVStorage(tc.fn)
 			if tc.expect.expectError {
 				require.Error(t, err)
 			} else {
@@ -280,7 +280,7 @@ func TestKVStorageAdd(t *testing.T) {
 			modifiedData := storage.getAll()
 
 			// resave the original data back to file
-			err = file.SaveJSON(storage.fileName, originalData, 0600)
+			err = file.SaveJSON(storage.fn, originalData, 0600)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expect.newData, modifiedData)
@@ -350,7 +350,7 @@ func TestKVStorageRemove(t *testing.T) {
 			newData := storage.getAll()
 
 			// resave the original data back to file
-			err = file.SaveJSON(storage.fileName, originalData, 0600)
+			err = file.SaveJSON(storage.fn, originalData, 0600)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expect.newData, newData)

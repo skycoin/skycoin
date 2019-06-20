@@ -192,7 +192,7 @@ func benchamarkChaCha20Poly1305Open(b *testing.B, buf []byte) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		out, _ = aead.Open(out[:0], nonce[:], ct[:], ad[:]) // nolint: errcheck
+		out, _ = aead.Open(out[:0], nonce[:], ct[:], ad[:]) //nolint:errcheck
 	}
 }
 

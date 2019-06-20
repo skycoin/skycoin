@@ -691,13 +691,9 @@ func TestEncodeJSONTransaction(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			var rawTxn struct {
-				RawTx string `json:"rawtx"`
-			}
-			err = json.NewDecoder(bytes.NewReader(output)).Decode(&rawTxn)
-			require.NoError(t, err)
+			output = bytes.Trim(output, "\n")
 
-			require.Equal(t, rawTxn.RawTx, tc.rawTx)
+			require.Equal(t, output, tc.rawTx)
 		})
 	}
 }

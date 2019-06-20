@@ -790,11 +790,16 @@ skycoin-cli decodeRawTransaction dc00000000247bd0f0a1cf39fa51ea3eca044e4d9cbb28f
 
 ### Encode a JSON transaction
 
+Encode JSON Skycoin transaction.
+
 ```bash
 $ skycoin-cli encodeJsonTransaction [file path or -]
 ```
 
-Encode JSON Skycoin transaction.
+```
+FLAGS:
+  -j, --json                    Returns the results in JSON format.
+```
 
 #### Example
 ##### Read JSON transaction from stdin
@@ -831,9 +836,7 @@ $ echo '  {
   <summary>View Output</summary>
 
 ```
-{
-    "rawtx": "dc00000000247bd0f0a1cf39fa51ea3eca044e4d9cbb28fff5376e90e2eb008c9fe0af384301000000cf5869cb1b21da4da98bdb5dca57b1fd5a6fcbefd37d4f1eb332b21233f92cd62e00d8e2f1c8545142eaeed8fada1158dd0e552d3be55f18dd60d7e85407ef4f000100000005e524872c838de517592c9a495d758b8ab2ec32d3e4d3fb131023a424386634020000000007445b5d6fbbb1a7d70bef941fb5da234a10fcae40420f00000000000100000000000000008001532c3a705e7e62bb0bb80630ecc21a87ec090024f400000000009805000000000000"
-}
+dc00000000247bd0f0a1cf39fa51ea3eca044e4d9cbb28fff5376e90e2eb008c9fe0af384301000000cf5869cb1b21da4da98bdb5dca57b1fd5a6fcbefd37d4f1eb332b21233f92cd62e00d8e2f1c8545142eaeed8fada1158dd0e552d3be55f18dd60d7e85407ef4f000100000005e524872c838de517592c9a495d758b8ab2ec32d3e4d3fb131023a424386634020000000007445b5d6fbbb1a7d70bef941fb5da234a10fcae40420f00000000000100000000000000008001532c3a705e7e62bb0bb80630ecc21a87ec090024f400000000009805000000000000
 ```
 
 </details>
@@ -865,9 +868,50 @@ $ echo '  {
                "hours": 1432
            }
        ]
-   }' > /tmp/txn.json
+   }' > $FILEPATH
 
-$ skycoin-cli encodeJsonTransaction /tmp/txn.json
+$ skycoin-cli encodeJsonTransaction $FILEPATH
+```
+
+<details>
+  <summary>View Output</summary>
+
+```
+dc00000000247bd0f0a1cf39fa51ea3eca044e4d9cbb28fff5376e90e2eb008c9fe0af384301000000cf5869cb1b21da4da98bdb5dca57b1fd5a6fcbefd37d4f1eb332b21233f92cd62e00d8e2f1c8545142eaeed8fada1158dd0e552d3be55f18dd60d7e85407ef4f000100000005e524872c838de517592c9a495d758b8ab2ec32d3e4d3fb131023a424386634020000000007445b5d6fbbb1a7d70bef941fb5da234a10fcae40420f00000000000100000000000000008001532c3a705e7e62bb0bb80630ecc21a87ec090024f400000000009805000000000000
+```
+
+</details>
+
+##### Generate a JSON output
+```bash
+$ echo '  {
+       "length": 220,
+       "type": 0,
+       "txid": "ee700309aba9b8b552f1c932a667c3701eff98e71c0e5b0e807485cea28170e5",
+       "inner_hash": "247bd0f0a1cf39fa51ea3eca044e4d9cbb28fff5376e90e2eb008c9fe0af3843",
+       "sigs": [
+           "cf5869cb1b21da4da98bdb5dca57b1fd5a6fcbefd37d4f1eb332b21233f92cd62e00d8e2f1c8545142eaeed8fada1158dd0e552d3be55f18dd60d7e85407ef4f00"
+       ],
+       "inputs": [
+           "05e524872c838de517592c9a495d758b8ab2ec32d3e4d3fb131023a424386634"
+       ],
+       "outputs": [
+           {
+               "uxid": "2f146924431e8c9b84a53d4d823acefb92515a264956d873ac86066c608af418",
+               "dst": "3vbfHxPzMuyFJvgHdAoqmFnyg6k8HiLyxd",
+               "coins": "1.000000",
+               "hours": 1
+           },
+           {
+               "uxid": "5d69d22aff5957a18194c443557d97ec18707e4db8ee7e9a4bb8a7eef642fdff",
+               "dst": "tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V",
+               "coins": "16.000000",
+               "hours": 1432
+           }
+       ]
+   }' > $FILEPATH
+
+$ skycoin-cli encodeJsonTransaction --json $FILEPATH
 ```
 
 <details>

@@ -84,10 +84,14 @@ func encodeJSONTxnCmd() *cobra.Command {
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		Args:                  cobra.ExactArgs(1),
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(c *cobra.Command, args []string) error {
+			jsonOutput, err := c.Flags().GetBool("json")
+			if err != nil {
+				return err
+			}
+
 			jsonFilePath := args[0]
 			var jsonFile *os.File
-			var err error
 			if jsonFilePath == "-" {
 				jsonFile = os.Stdin
 				err = nil
@@ -112,11 +116,15 @@ func encodeJSONTxnCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return printJSON(struct {
-				RawTx string `json:"rawtx"`
-			}{
-				RawTx: rawTxn,
-			})
+			if jsonOutput {
+				return printJSON(struct {
+					RawTx string `json:"rawtx"`
+				}{
+					RawTx: rawTxn,
+				})
+			}
+			fmt.Println(rawTxn)
+			return nil
 		},
 	}
 }

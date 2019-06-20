@@ -149,7 +149,7 @@ func Benchmark1KUnaligned(b *testing.B) { benchmark(b, 1024, true) }
 
 func unalignBytes(in []byte) []byte {
 	out := make([]byte, len(in)+1)
-	if uintptr(unsafe.Pointer(&out[0]))&(unsafe.Alignof(uint32(0))-1) == 0 { // nolint: gosec
+	if uintptr(unsafe.Pointer(&out[0]))&(unsafe.Alignof(uint32(0))-1) == 0 { //nolint:gosec
 		out = out[1:]
 	} else {
 		out = out[:len(in)]

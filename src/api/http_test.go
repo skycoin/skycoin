@@ -275,7 +275,7 @@ func TestEnableGUI(t *testing.T) {
 			}()
 
 			url := fmt.Sprintf("http://%s/%s", host, tc.endpoint)
-			rsp, err := http.Get(url)
+			rsp, err := http.Get(url) //nolint:gosec
 			require.NoError(t, err)
 
 			defer rsp.Body.Close()

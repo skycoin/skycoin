@@ -429,7 +429,7 @@ func TestVerifyAddressSignedHash(t *testing.T) {
 	// Different secret keys should not create same sig
 	p2, s2 := GenerateKeyPair()
 	a2 := AddressFromPubKey(p2)
-	h = SHA256{}
+	h = SumSHA256(randBytes(t, 256))
 	sig = MustSignHash(h, s)
 	sig2 = MustSignHash(h, s2)
 	require.NoError(t, VerifyAddressSignedHash(a, sig, h))
@@ -445,6 +445,11 @@ func TestVerifyAddressSignedHash(t *testing.T) {
 	// Bad address should be invalid
 	require.Error(t, VerifyAddressSignedHash(a, sig2, h))
 	require.Error(t, VerifyAddressSignedHash(a2, sig, h))
+
+	// Empty hash should panic
+	require.Panics(t, func() {
+		MustSignHash(SHA256{}, s)
+	})
 }
 
 func TestSignHash(t *testing.T) {
@@ -462,7 +467,10 @@ func TestSignHash(t *testing.T) {
 	require.Equal(t, p, p2)
 
 	_, err = SignHash(h, SecKey{})
-	require.Equal(t, errors.New("Invalid secret key"), err)
+	require.Equal(t, ErrInvalidSecKey, err)
+
+	_, err = SignHash(SHA256{}, s)
+	require.Equal(t, ErrNullSignHash, err)
 }
 
 func TestMustSignHash(t *testing.T) {

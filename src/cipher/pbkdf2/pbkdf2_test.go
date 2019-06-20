@@ -6,7 +6,7 @@ package pbkdf2
 
 import (
 	"bytes"
-	"crypto/sha1" // nolint: gosec
+	"crypto/sha1" //nolint:gosec
 	"crypto/sha256"
 	"hash"
 	"testing"

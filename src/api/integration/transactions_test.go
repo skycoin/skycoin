@@ -2096,7 +2096,7 @@ func getTransaction(t *testing.T, c *api.Client, txid string) *readable.Transact
 
 // getAddressBalance gets balance of given address.
 // Returns coins and coin hours.
-func getAddressBalance(t *testing.T, c *api.Client, addr string) (uint64, uint64) { // nolint: unparam
+func getAddressBalance(t *testing.T, c *api.Client, addr string) (uint64, uint64) { //nolint:unparam
 	bp, err := c.Balance([]string{addr})
 	if err != nil {
 		t.Fatalf("%v", err)

@@ -26,7 +26,7 @@ func BenchmarkEncode(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, _ = Decode(benchmarkAddr) // nolint: errcheck
+		_, _ = Decode(benchmarkAddr) //nolint:errcheck
 	}
 }
 
@@ -39,7 +39,7 @@ func BenchmarkEncodeOld(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, _ = oldBase582Hex(benchmarkAddr) // nolint: errcheck
+		_, _ = oldBase582Hex(benchmarkAddr) //nolint:errcheck
 	}
 }
 

@@ -354,7 +354,7 @@
     "errors": {
       "too-many-inputs-outputs": "The transaction has too many inputs or outputs for the hardware wallet. Please try again creating several smaller transactions, each one with a smaller number of recipients (if the current transaction has many) or coins.",
       "daemon-connection": "Problem connecting to the hardware wallet service.",
-      "timeout": "The operation was cancelled due to inactivity or because the device did not respond. Please try again.",
+      "timeout": "The operation was canceled due to inactivity or because the device did not respond. Please try again.",
       "invalid-address-generated": "There was a problem with the address generator and the operation had to be canceled for security.",
       "invalid-address": "Invalid address.",
       "not-in-firmware-mode": "To use this option the hardware wallet must be in firmware mode."
@@ -408,7 +408,7 @@
       "check": "I understand the risks and want to continue",
       "completed": "The firmware update has been sent to the hardware wallet. Please continue the process on the device.",
       "connection-error": "It was not possible download the firmware. This could be due to problems with your internet connection or because the service is in maintenance.",
-      "timeout": "The operation was cancelled due to inactivity. Please disconnect the device, reconnect it and try again."
+      "timeout": "The operation was canceled due to inactivity. Please disconnect the device, reconnect it and try again."
     },
     "generate-seed" : {
       "text": "Before proceeding, you can select the number of words you want the seed to have. The seed is a list of words that can be used to recover access to the coins in case of problems. Both values are safe, so if you do not have a special reason for selecting one or the other, you can leave the default value.",

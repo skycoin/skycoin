@@ -693,7 +693,7 @@ func TestEncodeJSONTransaction(t *testing.T) {
 
 			output = bytes.Trim(output, "\n")
 
-			require.Equal(t, output, tc.rawTx)
+			require.Equal(t, tc.rawTx, string(output))
 		})
 	}
 }

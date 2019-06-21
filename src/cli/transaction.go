@@ -78,7 +78,7 @@ func decodeRawTxnCmd() *cobra.Command {
 }
 
 func encodeJSONTxnCmd() *cobra.Command {
-	encodeJsonTxnCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Short:                 "Encode JSON transaction",
 		Use:                   "encodeJsonTransaction [file path or -]",
 		DisableFlagsInUseLine: true,
@@ -127,8 +127,8 @@ func encodeJSONTxnCmd() *cobra.Command {
 			return nil
 		},
 	}
-	encodeJsonTxnCmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format.")
-	return encodeJsonTxnCmd
+	cmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format.")
+	return cmd
 }
 
 func readableToCreatedTransaction(rTxn *readable.Transaction) *api.CreatedTransaction {

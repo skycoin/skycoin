@@ -182,7 +182,7 @@ func EntropyFromMnemonic(mnemonic string) ([]byte, error) {
 	entropy := b.Bytes()
 	entropy = padByteSlice(entropy, len(words)/3*4)
 
-	// Generate the checksum and compare with the one we got from the mneomnic.
+	// Generate the checksum and compare with the one we got from the mnemonic.
 	entropyChecksumBytes := computeChecksum(entropy)
 	entropyChecksum := big.NewInt(int64(entropyChecksumBytes[0]))
 	if l := len(words); l != 24 {

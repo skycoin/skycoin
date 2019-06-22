@@ -123,6 +123,9 @@ var (
 
 	// ErrInvalidPublicKey is returned if a deserialized xpub key's public key is invalid
 	ErrInvalidPublicKey = NewError(errors.New("Invalid public key"))
+
+	// ErrMaxDepthReached maximum allowed depth (255) reached for child key
+	ErrMaxDepthReached = NewError(errors.New("Maximum child depth reached"))
 )
 
 // key represents a bip32 extended key
@@ -305,6 +308,10 @@ func fingerprint(key []byte) []byte {
 // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#private-parent-key--private-child-key
 // This method can return an ImpossibleChild error.
 func (k *PrivateKey) NewPrivateChildKey(childIdx uint32) (*PrivateKey, error) {
+	if k.Depth == 0xFF {
+		return nil, ErrMaxDepthReached
+	}
+
 	intermediary := k.ckdPrivHMAC(childIdx)
 
 	iL := intermediary[:32]        // used for computing the next key
@@ -345,6 +352,10 @@ func (k *PrivateKey) NewPublicChildKey(childIdx uint32) (*PublicKey, error) {
 // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#public-parent-key--public-child-key
 // This method can return an ImpossibleChild error.
 func (k *PublicKey) NewPublicChildKey(childIdx uint32) (*PublicKey, error) {
+	if k.Depth == 0xFF {
+		return nil, ErrMaxDepthReached
+	}
+
 	// CKDPub step 1
 	intermediary, err := k.ckdPubHMAC(childIdx)
 	if err != nil {

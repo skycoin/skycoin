@@ -320,7 +320,7 @@ export class HwWalletService {
     });
   }
 
-  updateFirmware(): Observable<OperationResult> {
+  updateFirmware(downloadCompleteCallback: () => any): Observable<OperationResult> {
     if (!AppConfig.useHwWalletDaemon) {
       // Unimplemented.
       return null;
@@ -347,6 +347,7 @@ export class HwWalletService {
               .map(firmwareResponse => firmwareResponse.blob())
               .catch(() => Observable.throw({ _body: this.translate.instant('hardware-wallet.update-firmware.connection-error') }))
               .flatMap(firmware => {
+                downloadCompleteCallback();
                 const data = new FormData();
                 data.set('file', (firmware as Blob));
 
@@ -674,6 +675,8 @@ export class HwWalletService {
         } else if (responseContent.includes('PIN invalid')) {
           result = OperationResults.WrongPin;
         } else if (responseContent.includes('canceled by user')) {
+          result = OperationResults.FailedOrRefused;
+        } else if (responseContent.includes('cancelled by user')) {
           result = OperationResults.FailedOrRefused;
         } else if (responseContent.includes('Expected WordAck after Button')) {
           result = OperationResults.FailedOrRefused;

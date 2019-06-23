@@ -63,6 +63,15 @@ func (atx *addressTxns) add(tx *dbutil.Tx, addr cipher.Address, hash cipher.SHA2
 	return dbutil.PutBucketValue(tx, AddressTxnsBkt, addr.Bytes(), buf)
 }
 
+// contains returns true if an address is in the bucket and has transactions
+func (atx *addressTxns) contains(tx *dbutil.Tx, addr cipher.Address) (bool, error) {
+	v, err := dbutil.GetBucketValueNoCopy(tx, AddressTxnsBkt, addr.Bytes())
+	if err != nil {
+		return false, err
+	}
+	return len(v) > 0, nil
+}
+
 // isEmpty checks if address transactions bucket is empty
 func (atx *addressTxns) isEmpty(tx *dbutil.Tx) (bool, error) {
 	return dbutil.IsEmpty(tx, AddressTxnsBkt)

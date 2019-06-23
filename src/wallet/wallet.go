@@ -70,8 +70,8 @@ var (
 	ErrWalletNameConflict = NewError(errors.New("wallet name would conflict with existing wallet, renaming"))
 	// ErrWalletRecoverSeedWrong is returned if the seed does not match the specified wallet when recovering
 	ErrWalletRecoverSeedWrong = NewError(errors.New("wallet recovery seed is wrong"))
-	// ErrNilBalanceGetter is returned if Options.ScanN > 0 but a nil BalanceGetter was provided
-	ErrNilBalanceGetter = NewError(errors.New("scan ahead requested but balance getter is nil"))
+	// ErrNilTransactionsFinder is returned if Options.ScanN > 0 but a nil TransactionsFinder was provided
+	ErrNilTransactionsFinder = NewError(errors.New("scan ahead requested but balance getter is nil"))
 	// ErrWalletNotDeterministic is returned if a wallet's type is not deterministic but it is necessary for the requested operation
 	ErrWalletNotDeterministic = NewError(errors.New("wallet type is not deterministic"))
 	// ErrInvalidCoinType is returned for invalid coin types
@@ -156,13 +156,13 @@ type Wallet struct {
 }
 
 // newWallet creates a wallet instance with given name and options.
-func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) {
+func newWallet(wltName string, opts Options, tf TransactionsFinder) (*Wallet, error) {
 	if opts.Seed == "" {
 		return nil, ErrMissingSeed
 	}
 
-	if opts.ScanN > 0 && bg == nil {
-		return nil, ErrNilBalanceGetter
+	if opts.ScanN > 0 && tf == nil {
+		return nil, ErrNilTransactionsFinder
 	}
 
 	coin := opts.Coin
@@ -207,7 +207,7 @@ func newWallet(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) 
 
 	if opts.ScanN > generateN {
 		// Scan for addresses with balances
-		if _, err := w.ScanAddresses(opts.ScanN, bg); err != nil {
+		if _, err := w.ScanAddresses(opts.ScanN, tf); err != nil {
 			return nil, err
 		}
 	}
@@ -249,8 +249,8 @@ func NewWallet(wltName string, opts Options) (*Wallet, error) {
 }
 
 // NewWalletScanAhead creates wallet and scan ahead N addresses
-func NewWalletScanAhead(wltName string, opts Options, bg BalanceGetter) (*Wallet, error) {
-	return newWallet(wltName, opts, bg)
+func NewWalletScanAhead(wltName string, opts Options, tf TransactionsFinder) (*Wallet, error) {
+	return newWallet(wltName, opts, tf)
 }
 
 // Lock encrypts the wallet with the given password and specific crypto type
@@ -807,7 +807,7 @@ func (w *Wallet) GenerateSkycoinAddresses(num uint64) ([]cipher.Address, error) 
 // ScanAddresses scans ahead N addresses, truncating up to the highest address with a non-zero balance.
 // If any address has a nonzero balance, it rescans N more addresses from that point, until a entire
 // sequence of N addresses has no balance.
-func (w *Wallet) ScanAddresses(scanN uint64, bg BalanceGetter) (uint64, error) {
+func (w *Wallet) ScanAddresses(scanN uint64, tf TransactionsFinder) (uint64, error) {
 	if w.IsEncrypted() {
 		return 0, ErrWalletEncrypted
 	}
@@ -830,16 +830,16 @@ func (w *Wallet) ScanAddresses(scanN uint64, bg BalanceGetter) (uint64, error) {
 			return 0, err
 		}
 
-		// Get these addresses' balances
-		bals, err := bg.GetBalanceOfAddrs(addrs)
+		// Find if these addresses had any activity
+		active, err := tf.AddressesActivity(addrs)
 		if err != nil {
 			return 0, err
 		}
 
-		// Check balance from the last one until we find the address that has coins
+		// Check balance from the last one until we find the address that has activity
 		var keepNum uint64
-		for i := len(bals) - 1; i >= 0; i-- {
-			if bals[i].Confirmed.Coins > 0 || bals[i].Predicted.Coins > 0 {
+		for i := len(active) - 1; i >= 0; i-- {
+			if active[i] {
 				keepNum = uint64(i + 1)
 				break
 			}

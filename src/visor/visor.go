@@ -1118,8 +1118,8 @@ func (vs *Visor) getTransactionsForAddresses(tx *dbutil.Tx, addrs []cipher.Addre
 			if headBkSeq < txn.BlockSeq {
 				err := errors.New("Transaction block sequence is greater than the head block sequence")
 				logger.Critical().WithError(err).WithFields(logrus.Fields{
-					"headBkSeq":  headBkSeq,
-					"txBlockSeq": txn.BlockSeq,
+					"headBkSeq":   headBkSeq,
+					"txnBlockSeq": txn.BlockSeq,
 				}).Error()
 				return nil, err
 			}
@@ -1847,8 +1847,8 @@ func (vs *Visor) SetTransactionsAnnounced(hashes map[cipher.SHA256]int64) error 
 	})
 }
 
-// GetBalanceOfAddrs returns balance pairs of given addreses
-func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error) {
+// GetBalanceOfAddresses returns balance pairs of given addreses
+func (vs Visor) GetBalanceOfAddresses(addrs []cipher.Address) ([]wallet.BalancePair, error) {
 	if len(addrs) == 0 {
 		return nil, nil
 	}
@@ -1858,7 +1858,7 @@ func (vs Visor) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair,
 	var uxa coin.UxArray
 	var head *coin.SignedBlock
 
-	if err := vs.db.View("GetBalanceOfAddrs", func(tx *dbutil.Tx) error {
+	if err := vs.db.View("GetBalanceOfAddresses", func(tx *dbutil.Tx) error {
 		var err error
 		head, err = vs.blockchain.Head(tx)
 		if err != nil {
@@ -2353,4 +2353,41 @@ func (vs *Visor) WithUpdateTx(name string, f func(tx *dbutil.Tx) error) error {
 	return vs.db.Update(name, func(tx *dbutil.Tx) error {
 		return f(tx)
 	})
+}
+
+// AddressesActivity returns whether or not each address has any activity on blockchain
+// or in the unconfirmed pool
+func (vs *Visor) AddressesActivity(addrs []cipher.Address) ([]bool, error) {
+	active := make([]bool, len(addrs))
+	if err := vs.db.View("AddressActivity", func(tx *dbutil.Tx) error {
+		for i, a := range addrs {
+			// Check if the address appears in the blockchain
+			ok, err := vs.history.AddressSeen(tx, a)
+			if err != nil {
+				return err
+			}
+
+			if ok {
+				active[i] = true
+				continue
+			}
+
+			// Check if the address appears in the unconfirmed pool
+			return vs.unconfirmed.ForEach(tx, func(h cipher.SHA256, ut UnconfirmedTransaction) error {
+				for _, o := range ut.Transaction.Out {
+					if o.Address == a {
+						active[i] = true
+						return nil
+					}
+				}
+				return nil
+			})
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return active, nil
 }

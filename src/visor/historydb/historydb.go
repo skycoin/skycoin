@@ -188,8 +188,8 @@ func (hd HistoryDB) GetTransaction(tx *dbutil.Tx, hash cipher.SHA256) (*Transact
 }
 
 // GetOutputsForAddress get all uxout that the address affected.
-func (hd HistoryDB) GetOutputsForAddress(tx *dbutil.Tx, address cipher.Address) ([]UxOut, error) {
-	hashes, err := hd.addrUx.get(tx, address)
+func (hd HistoryDB) GetOutputsForAddress(tx *dbutil.Tx, addr cipher.Address) ([]UxOut, error) {
+	hashes, err := hd.addrUx.get(tx, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -198,13 +198,18 @@ func (hd HistoryDB) GetOutputsForAddress(tx *dbutil.Tx, address cipher.Address) 
 }
 
 // GetTransactionsForAddress returns all the address related transactions
-func (hd HistoryDB) GetTransactionsForAddress(tx *dbutil.Tx, address cipher.Address) ([]Transaction, error) {
-	hashes, err := hd.addrTxns.get(tx, address)
+func (hd HistoryDB) GetTransactionsForAddress(tx *dbutil.Tx, addr cipher.Address) ([]Transaction, error) {
+	hashes, err := hd.addrTxns.get(tx, addr)
 	if err != nil {
 		return nil, err
 	}
 
 	return hd.txns.getArray(tx, hashes)
+}
+
+// AddressSeen returns true if the address appears in the blockchain
+func (hd HistoryDB) AddressSeen(tx *dbutil.Tx, addr cipher.Address) (bool, error) {
+	return hd.addrTxns.contains(tx, addr)
 }
 
 // ForEachTxn traverses the transactions bucket
@@ -226,18 +231,18 @@ func NewIndexesMap() *IndexesMap {
 }
 
 // Load returns value of given key
-func (im *IndexesMap) Load(address cipher.Address) (AddressIndexes, bool) {
+func (im *IndexesMap) Load(addr cipher.Address) (AddressIndexes, bool) {
 	im.lock.RLock()
 	defer im.lock.RUnlock()
-	v, ok := im.value[address]
+	v, ok := im.value[addr]
 	return v, ok
 }
 
 // Store saves address with indexes
-func (im *IndexesMap) Store(address cipher.Address, indexes AddressIndexes) {
+func (im *IndexesMap) Store(addr cipher.Address, indexes AddressIndexes) {
 	im.lock.Lock()
 	defer im.lock.Unlock()
-	im.value[address] = indexes
+	im.value[addr] = indexes
 }
 
 // AddressIndexes represents the address indexes struct

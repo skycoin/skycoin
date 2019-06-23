@@ -187,7 +187,7 @@ func TestServiceLoadWallet(t *testing.T) {
 	tt := []struct {
 		name          string
 		opts          Options
-		bg            BalanceGetter
+		tf            TransactionsFinder
 		err           error
 		expectAddrNum int
 		expectAddrs   []cipher.Address
@@ -199,8 +199,8 @@ func TestServiceLoadWallet(t *testing.T) {
 				Label: "wallet",
 				ScanN: 5,
 			},
-			mockBalanceGetter{
-				addrs[0]: BalancePair{Confirmed: Balance{Coins: 1e6, Hours: 100}},
+			mockTxnsFinder{
+				addrs[0]: true,
 			},
 			nil,
 			1,
@@ -213,8 +213,8 @@ func TestServiceLoadWallet(t *testing.T) {
 				Label: "wallet",
 				ScanN: 5,
 			},
-			mockBalanceGetter{
-				addrs[1]: BalancePair{Confirmed: Balance{Coins: 1e6, Hours: 100}},
+			mockTxnsFinder{
+				addrs[1]: true,
 			},
 			nil,
 			2,
@@ -229,8 +229,8 @@ func TestServiceLoadWallet(t *testing.T) {
 				Password: []byte("pwd"),
 				ScanN:    5,
 			},
-			mockBalanceGetter{
-				addrs[0]: BalancePair{Confirmed: Balance{Coins: 1e6, Hours: 100}},
+			mockTxnsFinder{
+				addrs[0]: true,
 			},
 			nil,
 			1,
@@ -245,8 +245,8 @@ func TestServiceLoadWallet(t *testing.T) {
 				Password: []byte("pwd"),
 				ScanN:    5,
 			},
-			mockBalanceGetter{
-				addrs[1]: BalancePair{Confirmed: Balance{Coins: 1e6, Hours: 100}},
+			mockTxnsFinder{
+				addrs[1]: true,
 			},
 			nil,
 			2,
@@ -267,7 +267,7 @@ func TestServiceLoadWallet(t *testing.T) {
 				require.NoError(t, err)
 				wltName := NewWalletFilename()
 
-				w, err := s.loadWallet(wltName, tc.opts, tc.bg)
+				w, err := s.loadWallet(wltName, tc.opts, tc.tf)
 				require.Equal(t, tc.err, err)
 				if err != nil {
 					return
@@ -949,10 +949,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		lastSeed = s
 	}
 
-	bg := make(mockBalanceGetter, 20)
-	for _, a := range addrs {
-		bg[a] = BalancePair{}
-	}
+	tf := make(mockTxnsFinder, 20)
 
 	type exp struct {
 		err              error
@@ -966,7 +963,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 	tt := []struct {
 		name             string
 		opts             Options
-		balGetter        BalanceGetter
+		balGetter        TransactionsFinder
 		disableWalletAPI bool
 		expect           exp
 	}{
@@ -975,7 +972,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			opts: Options{
 				Seed: "seed1",
 			},
-			balGetter: bg,
+			balGetter: tf,
 			expect: exp{
 				err:              nil,
 				seed:             seed,
@@ -992,7 +989,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
-			balGetter: bg,
+			balGetter: tf,
 			expect: exp{
 				err:              nil,
 				seed:             seed,
@@ -1008,7 +1005,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				Seed:  seed,
 				ScanN: 1,
 			},
-			balGetter: bg,
+			balGetter: tf,
 			expect: exp{
 				err:              nil,
 				seed:             seed,
@@ -1026,7 +1023,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				Password: []byte("pwd"),
 				ScanN:    1,
 			},
-			balGetter: bg,
+			balGetter: tf,
 			expect: exp{
 				err:              nil,
 				seed:             seed,
@@ -1042,7 +1039,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				Seed:  seed,
 				ScanN: 10,
 			},
-			balGetter: bg,
+			balGetter: tf,
 			expect: exp{
 				err:              nil,
 				seed:             seed,
@@ -1058,8 +1055,8 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				Seed:  seed,
 				ScanN: 5,
 			},
-			balGetter: mockBalanceGetter{
-				addrs[5]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+			balGetter: mockTxnsFinder{
+				addrs[5]: true,
 			},
 			expect: exp{
 				err:              nil,
@@ -1076,9 +1073,9 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				Seed:  seed,
 				ScanN: 5,
 			},
-			balGetter: mockBalanceGetter{
-				addrs[5]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[8]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+			balGetter: mockTxnsFinder{
+				addrs[5]: true,
+				addrs[8]: true,
 			},
 			expect: exp{
 				err:              nil,
@@ -1095,9 +1092,9 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				Seed:  seed,
 				ScanN: 5,
 			},
-			balGetter: mockBalanceGetter{
-				addrs[4+1]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[10]:  BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+			balGetter: mockTxnsFinder{
+				addrs[4+1]: true,
+				addrs[10]:  true,
 			},
 			expect: exp{
 				err:              nil,
@@ -1117,8 +1114,8 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				Password: []byte("pwd"),
 				ScanN:    5,
 			},
-			balGetter: mockBalanceGetter{
-				addrs[5]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+			balGetter: mockTxnsFinder{
+				addrs[5]: true,
 			},
 			expect: exp{
 				err:              nil,
@@ -1135,9 +1132,9 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				Seed:  seed,
 				ScanN: 5,
 			},
-			balGetter: mockBalanceGetter{
-				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[4]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+			balGetter: mockTxnsFinder{
+				addrs[3]: true,
+				addrs[4]: true,
 			},
 			expect: exp{
 				err:              nil,
@@ -1156,9 +1153,9 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				Password: []byte("pwd"),
 				ScanN:    5,
 			},
-			balGetter: mockBalanceGetter{
-				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[4]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+			balGetter: mockTxnsFinder{
+				addrs[3]: true,
+				addrs[4]: true,
 			},
 			expect: exp{
 				err:              nil,
@@ -1175,10 +1172,10 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				Seed:  seed,
 				ScanN: 5,
 			},
-			balGetter: mockBalanceGetter{
-				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[4]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[6]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+			balGetter: mockTxnsFinder{
+				addrs[3]: true,
+				addrs[4]: true,
+				addrs[6]: true,
 			},
 			expect: exp{
 				err:              nil,
@@ -1195,9 +1192,9 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				Seed:  seed,
 				ScanN: 5,
 			},
-			balGetter: mockBalanceGetter{
-				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[7]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+			balGetter: mockTxnsFinder{
+				addrs[2]: true,
+				addrs[7]: true,
 			},
 			expect: exp{
 				err:              nil,
@@ -1214,10 +1211,10 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				Seed:  seed,
 				ScanN: 5,
 			},
-			balGetter: mockBalanceGetter{
-				addrs[2]:  BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[7]:  BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[12]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+			balGetter: mockTxnsFinder{
+				addrs[2]:  true,
+				addrs[7]:  true,
+				addrs[12]: true,
 			},
 			expect: exp{
 				err:              nil,
@@ -1234,10 +1231,10 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				Seed:  seed,
 				ScanN: 5,
 			},
-			balGetter: mockBalanceGetter{
-				addrs[2]:  BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[7]:  BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[13]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+			balGetter: mockTxnsFinder{
+				addrs[2]:  true,
+				addrs[7]:  true,
+				addrs[13]: true,
 			},
 			expect: exp{
 				err:              nil,
@@ -1254,9 +1251,9 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				Seed:  seed,
 				ScanN: 5,
 			},
-			balGetter: mockBalanceGetter{
-				addrs[2]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[8]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
+			balGetter: mockTxnsFinder{
+				addrs[2]: true,
+				addrs[8]: true,
 			},
 			expect: exp{
 				err:              nil,
@@ -1273,9 +1270,9 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				Seed:  seed,
 				ScanN: 5,
 			},
-			balGetter: mockBalanceGetter{
-				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[4]: BalancePair{Predicted: Balance{Coins: 10, Hours: 100}},
+			balGetter: mockTxnsFinder{
+				addrs[3]: true,
+				addrs[4]: true,
 			},
 			expect: exp{
 				err:              nil,
@@ -1294,9 +1291,9 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				Password: []byte("pwd"),
 				ScanN:    5,
 			},
-			balGetter: mockBalanceGetter{
-				addrs[3]: BalancePair{Confirmed: Balance{Coins: 10, Hours: 100}},
-				addrs[4]: BalancePair{Predicted: Balance{Coins: 10, Hours: 100}},
+			balGetter: mockTxnsFinder{
+				addrs[3]: true,
+				addrs[4]: true,
 			},
 			expect: exp{
 				err:              nil,
@@ -1315,7 +1312,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				Password: []byte("pwd"),
 				ScanN:    5,
 			},
-			balGetter:        mockBalanceGetter{},
+			balGetter:        mockTxnsFinder{},
 			disableWalletAPI: true,
 			expect: exp{
 				err: ErrWalletAPIDisabled,

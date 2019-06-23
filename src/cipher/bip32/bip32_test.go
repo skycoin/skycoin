@@ -1162,6 +1162,25 @@ func TestParsePath(t *testing.T) {
 	}
 }
 
+func TestMaxChildDepthError(t *testing.T) {
+	key, err := NewMasterKey(make([]byte, 32))
+	require.NoError(t, err)
+
+	reached := false
+	for i := 0; i < 256; i++ {
+		key, err = key.NewPrivateChildKey(0)
+		switch i {
+		case 255:
+			require.Equal(t, err, ErrMaxDepthReached)
+			reached = true
+		default:
+			require.NoError(t, err)
+		}
+	}
+
+	require.True(t, reached)
+}
+
 func TestImpossibleChildError(t *testing.T) {
 	baseErr := errors.New("foo")
 	childNumber := uint32(4)

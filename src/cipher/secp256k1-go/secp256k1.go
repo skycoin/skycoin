@@ -408,8 +408,8 @@ func RecoverPubkey(msg []byte, sig []byte) []byte {
 	if pubkey == nil {
 		log.Panic("ERROR: impossible, pubkey nil and ret == 1")
 	}
-	if len(pubkey) != 33 {
-		log.Panic("pubkey length wrong")
+	if secp.PubkeyIsValid(pubkey) != 1 {
+		log.Panicf("secp.RecoverPublicKey returned invalid pubkey %s", hex.EncodeToString(pubkey))
 	}
 
 	return pubkey

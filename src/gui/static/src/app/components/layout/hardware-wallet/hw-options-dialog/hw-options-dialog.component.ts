@@ -163,24 +163,35 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
   }
 
   private updateSecurityWarningsAndData(dontUpdateWallet = false): Observable<HwFeaturesResponse> {
-    return this.walletService.getHwFeaturesAndUpdateData(!dontUpdateWallet ? this.wallet : null).map(response => {
-      this.securityWarnings = [];
+    this.securityWarnings = [];
 
+    return this.walletService.getHwFeaturesAndUpdateData(!dontUpdateWallet ? this.wallet : null).map(response => {
       if (response.securityWarnings.includes(HwSecurityWarnings.FirmwareVersionNotVerified)) {
         this.firmwareVersionNotVerified = true;
         this.securityWarnings.push('hardware-wallet.options.unchecked-version-warning');
+      } else {
+        this.firmwareVersionNotVerified = false;
       }
+
       if (response.securityWarnings.includes(HwSecurityWarnings.OutdatedFirmware)) {
         this.outdatedFirmware = true;
         this.securityWarnings.push('hardware-wallet.options.outdated-version-warning');
+      } else {
+        this.outdatedFirmware = false;
       }
+
       if (!dontUpdateWallet && response.securityWarnings.includes(HwSecurityWarnings.NeedsBackup)) {
         this.needsBackup = true;
         this.securityWarnings.push('hardware-wallet.options.backup-warning');
+      } else {
+        this.needsBackup = false;
       }
+
       if (!dontUpdateWallet && response.securityWarnings.includes(HwSecurityWarnings.NeedsPin)) {
         this.needsPin = true;
         this.securityWarnings.push('hardware-wallet.options.pin-warning');
+      } else {
+        this.needsPin = false;
       }
 
       if (!dontUpdateWallet) {

@@ -357,7 +357,7 @@
       "timeout": "The operation was canceled due to inactivity or because the device did not respond. Please try again.",
       "invalid-address-generated": "There was a problem with the address generator and the operation had to be canceled for security.",
       "invalid-address": "Invalid address.",
-      "not-in-firmware-mode": "To use this option the hardware wallet must be in firmware mode."
+      "not-in-bootloader-mode": "To use this option the hardware wallet must be in bootloader mode."
     },
     "security-warning" : {
       "title": "Security warning",
@@ -390,7 +390,7 @@
       "delete-pin": "Delete PIN code",
       "forgotten-pin1": "If you can not access the wallet because you have forgotten the PIN, you can wipe the hardware wallet and then restore it with the seed by clicking",
       "forgotten-pin2": "here.",
-      "firmware-version": "Device firmware version: "
+      "firmware-version": "Device firmware version:"
     },
     "update-firmware-warning" : {
       "title": "Outdated Firmware",

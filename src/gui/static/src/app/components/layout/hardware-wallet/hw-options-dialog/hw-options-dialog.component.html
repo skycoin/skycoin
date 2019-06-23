@@ -36,14 +36,14 @@
   <div *ngIf="currentState === states.NewConnected || currentState === states.ConfiguredConnected">
     <app-hw-message *ngIf="currentState === states.NewConnected"
       [upperBigText]="'hardware-wallet.options.unconfigured-detected-title' | translate"
-      [lowerLightText]="('hardware-wallet.options.firmware-version' | translate) + firmwareVersion"
+      [lowerLightText]="('hardware-wallet.options.firmware-version' | translate) + ' ' + firmwareVersion"
       [text]="'hardware-wallet.options.unconfigured-detected' | translate"
       [icon]="msgIcons.HardwareWallet"
     ></app-hw-message>
 
     <app-hw-message *ngIf="currentState === states.ConfiguredConnected"
       [text]="'hardware-wallet.options.configured-detected' | translate"
-      [lowerLightText]="('hardware-wallet.options.firmware-version' | translate) + firmwareVersion"
+      [lowerLightText]="('hardware-wallet.options.firmware-version' | translate) + ' ' + firmwareVersion"
       [lowerBigText]="walletName"
       [icon]="msgIcons.HardwareWallet"
     ></app-hw-message>

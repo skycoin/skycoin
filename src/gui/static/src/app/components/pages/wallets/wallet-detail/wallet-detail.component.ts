@@ -15,6 +15,7 @@ import { AppConfig } from '../../../../app.config';
 import { Router } from '@angular/router';
 import { HwConfirmAddressDialogComponent, AddressConfirmationParams } from '../../../layout/hardware-wallet/hw-confirm-address-dialog/hw-confirm-address-dialog.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { ISubscription } from 'rxjs/Subscription';
 
 @Component({
   selector: 'app-wallet-detail',
@@ -28,6 +29,8 @@ export class WalletDetailComponent implements OnDestroy {
   preparingToEdit = false;
 
   private howManyAddresses: number;
+  private editSubscription: ISubscription;
+  private confirmSubscription: ISubscription;
 
   constructor(
     private dialog: MatDialog,
@@ -40,6 +43,12 @@ export class WalletDetailComponent implements OnDestroy {
 
   ngOnDestroy() {
     this.msgBarService.hide();
+    if (this.editSubscription) {
+      this.editSubscription.unsubscribe();
+    }
+    if (this.confirmSubscription) {
+      this.confirmSubscription.unsubscribe();
+    }
   }
 
   editWallet() {
@@ -51,7 +60,7 @@ export class WalletDetailComponent implements OnDestroy {
       }
 
       this.preparingToEdit = true;
-      this.hwWalletService.checkIfCorrectHwConnected(this.wallet.addresses[0].address)
+      this.editSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.wallet.addresses[0].address)
         .flatMap(() => this.walletService.getHwFeaturesAndUpdateData(this.wallet))
         .subscribe(
           () => {
@@ -181,7 +190,11 @@ export class WalletDetailComponent implements OnDestroy {
   confirmAddress(address, addressIndex, showCompleteConfirmation) {
     this.msgBarService.hide();
 
-    this.hwWalletService.checkIfCorrectHwConnected(this.wallet.addresses[0].address).subscribe(response => {
+    if (this.confirmSubscription) {
+      this.confirmSubscription.unsubscribe();
+    }
+
+    this.confirmSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.wallet.addresses[0].address).subscribe(response => {
       const data = new AddressConfirmationParams();
       data.address = address;
       data.addressIndex = addressIndex;

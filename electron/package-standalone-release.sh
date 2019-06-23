@@ -53,14 +53,14 @@ function copy_if_exists {
 
 function codesign_if_exists {
      if [ -z "$1" ]; then
-        echo "copy_if_exists requires binary path"
+        echo "codesign_if_exists requires binary path"
         exit 1
     fi
 
     BIN="${GOX_GUI_OUTPUT_DIR}/${1}"
 
     if [ -f "$BIN" ]; then
-        echo "signing osx binary"
+        echo "signing standalone binary"
         codesign --force --sign "Developer ID Application: yunfei mao" "${BIN}"
     else
         echo "$BIN does not exsit"

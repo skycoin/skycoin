@@ -50,7 +50,7 @@ var (
 	ErrInvalidLengthSig = errors.New("Invalid signature length")
 	// ErrInvalidPubKey       Invalid public key
 	ErrInvalidPubKey = errors.New("Invalid public key")
-	// ErrInvalidSecKey       Invalid public key
+	// ErrInvalidSecKey       Invalid secret key
 	ErrInvalidSecKey = errors.New("Invalid secret key")
 	// ErrNullSignHash        Attempted to sign null hash digest
 	ErrNullSignHash = errors.New("Cannot sign null hash digest")
@@ -136,7 +136,7 @@ func MustPubKeyFromHex(s string) PubKey {
 
 // PubKeyFromSecKey recovers the public key for a secret key
 func PubKeyFromSecKey(seckey SecKey) (PubKey, error) {
-	if seckey == (SecKey{}) {
+	if seckey.Null() {
 		return PubKey{}, ErrPubKeyFromNullSecKey
 	}
 

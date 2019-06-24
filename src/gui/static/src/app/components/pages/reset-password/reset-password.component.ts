@@ -6,8 +6,7 @@ import { Params, ActivatedRoute, Router } from '@angular/router';
 import { Observable } from 'rxjs/Observable';
 import { WalletService } from '../../../services/wallet.service';
 import { Wallet } from '../../../app.datatypes';
-import { MatSnackBar } from '@angular/material';
-import { showSnackbarError } from '../../../utils/errors';
+import { MsgBarService } from '../../../services/msg-bar.service';
 
 @Component({
   selector: 'app-reset-password',
@@ -28,7 +27,7 @@ export class ResetPasswordComponent implements OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private walletService: WalletService,
-    private snackbar: MatSnackBar,
+    private msgBarService: MsgBarService,
   ) {
     this.initForm('');
     this.subscription = Observable.zip(this.route.params, this.walletService.all(), (params: Params, wallets: Wallet[]) => {
@@ -46,7 +45,7 @@ export class ResetPasswordComponent implements OnDestroy {
 
   ngOnDestroy() {
     this.subscription.unsubscribe();
-    this.snackbar.dismiss();
+    this.msgBarService.hide();
   }
 
   initForm(walletName: string) {
@@ -65,7 +64,7 @@ export class ResetPasswordComponent implements OnDestroy {
       return;
     }
 
-    this.snackbar.dismiss();
+    this.msgBarService.hide();
     this.resetButton.setLoading();
 
     this.walletService.resetPassword(this.wallet, this.form.value.seed, this.form.value.password !== '' ? this.form.value.password : null)
@@ -79,7 +78,7 @@ export class ResetPasswordComponent implements OnDestroy {
         }, 2000);
       }, error => {
         this.resetButton.setError(error);
-        showSnackbarError(this.snackbar, error);
+        this.msgBarService.showError(error);
       });
   }
 

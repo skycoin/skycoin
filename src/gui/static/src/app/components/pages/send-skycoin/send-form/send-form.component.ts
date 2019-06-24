@@ -5,8 +5,8 @@ import 'rxjs/add/operator/delay';
 import 'rxjs/add/operator/filter';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
-import { MatDialog, MatSnackBar, MatDialogConfig } from '@angular/material';
-import { showSnackbarError, getHardwareWalletErrorMsg } from '../../../../utils/errors';
+import { MatDialog, MatDialogConfig } from '@angular/material';
+import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { ISubscription, Subscription } from 'rxjs/Subscription';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { BigNumber } from 'bignumber.js';
@@ -18,6 +18,7 @@ import { showConfirmationModal } from '../../../../utils';
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
 import { PriceService } from '../../../../services/price.service';
 import { ChangeNoteComponent } from '../send-preview/transaction-info/change-note/change-note.component';
+import { MsgBarService } from '../../../../services/msg-bar.service';
 
 @Component({
   selector: 'app-send-form',
@@ -53,7 +54,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
     public blockchainService: BlockchainService,
     public walletService: WalletService,
     private dialog: MatDialog,
-    private snackbar: MatSnackBar,
+    private msgBarService: MsgBarService,
     private navbarService: NavBarService,
     private hwWalletService: HwWalletService,
     private translate: TranslateService,
@@ -78,7 +79,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
     this.subscriptions.unsubscribe();
     this.closeSyncCheckSubscription();
     this.navbarService.hideSwitch();
-    this.snackbar.dismiss();
+    this.msgBarService.hide();
   }
 
   preview() {
@@ -157,7 +158,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
   }
 
   private prepareTransaction() {
-    this.snackbar.dismiss();
+    this.msgBarService.hide();
     this.previewButton.resetState();
     this.sendButton.resetState();
 
@@ -225,7 +226,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
           this.processingSubscription = this.walletService.injectTransaction(transaction.encoded, note)
             .subscribe(noteSaved => {
               if (note && !noteSaved) {
-                showSnackbarError(this.snackbar, this.translate.instant('send.error-saving-note'));
+                this.msgBarService.showError(this.translate.instant('send.error-saving-note'));
               }
 
               this.showSuccess();
@@ -274,8 +275,8 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
   private showError(error) {
     this.busy = false;
+    this.msgBarService.showError(error);
     this.navbarService.enableSwitch();
-    showSnackbarError(this.snackbar, error);
     this.previewButton.resetState().setEnabled();
     this.sendButton.resetState().setEnabled();
   }

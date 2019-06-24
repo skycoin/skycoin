@@ -6,9 +6,8 @@ import { ChildHwDialogParams } from '../hw-options-dialog/hw-options-dialog.comp
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { Wallet } from '../../../../app.datatypes';
-import { MatSnackBar } from '@angular/material';
 import { ChangeNameComponent, ChangeNameData } from '../../../pages/wallets/change-name/change-name.component';
-import { showSnackbarError } from '../../../../utils/errors';
+import { MsgBarService } from '../../../../services/msg-bar.service';
 
 enum States {
   Initial,
@@ -40,7 +39,7 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
     hwWalletService: HwWalletService,
     private formBuilder: FormBuilder,
     private dialog: MatDialog,
-    private snackbar: MatSnackBar,
+    private msgBarService: MsgBarService,
   ) {
     super(hwWalletService, dialogRef);
     this.operationSubscription = this.walletService.createHardwareWallet().subscribe(wallet => {
@@ -65,14 +64,14 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
   }
 
   ngOnDestroy() {
-    this.snackbar.dismiss();
+    this.msgBarService.hide();
   }
 
   saveNameAndCloseModal() {
     if (this.form.value.label === this.initialLabel) {
       this.closeModal();
     } else {
-      this.snackbar.dismiss();
+      this.msgBarService.hide();
 
       const config = new MatDialogConfig();
       config.width = '400px';
@@ -83,7 +82,7 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
         if (result && !result.errorMsg) {
           this.closeModal();
         } else if (result.errorMsg) {
-          showSnackbarError(this.snackbar, result.errorMsg);
+          this.msgBarService.showError(result.errorMsg);
         }
       });
     }

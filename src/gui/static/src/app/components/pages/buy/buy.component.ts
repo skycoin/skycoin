@@ -3,9 +3,9 @@ import { PurchaseService } from '../../../services/purchase.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { WalletService } from '../../../services/wallet.service';
 import { Address, PurchaseOrder, Wallet } from '../../../app.datatypes';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { ButtonComponent } from '../../layout/button/button.component';
 import { Subscription } from 'rxjs/Subscription';
+import { MsgBarService } from '../../../services/msg-bar.service';
 
 @Component({
   selector: 'app-buy',
@@ -26,7 +26,7 @@ export class BuyComponent implements OnInit, OnDestroy {
   constructor(
     private formBuilder: FormBuilder,
     private purchaseService: PurchaseService,
-    private snackBar: MatSnackBar,
+    private msgBarService: MsgBarService,
     private walletService: WalletService,
   ) {}
 
@@ -65,7 +65,7 @@ export class BuyComponent implements OnInit, OnDestroy {
       console.log('changing wallet value', filename);
       this.purchaseService.generate(wallet).subscribe(
         order => this.saveData(order),
-        error => this.snackBar.open(error.toString()),
+        error => this.msgBarService.showError(error.toString()),
       );
     });
   }

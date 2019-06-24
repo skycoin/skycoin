@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import 'rxjs/add/operator/takeWhile';
 import { MatDialog } from '@angular/material';
 
@@ -13,6 +13,8 @@ import { HwWalletPinService } from './services/hw-wallet-pin.service';
 import { HwWalletSeedWordService } from './services/hw-wallet-seed-word.service';
 import { LanguageService } from './services/language.service';
 import { openChangeLanguageModal } from './utils';
+import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
+import { MsgBarService } from './services/msg-bar.service';
 
 @Component({
   selector: 'app-root',
@@ -20,6 +22,8 @@ import { openChangeLanguageModal } from './utils';
   styleUrls: ['./app.component.scss'],
 })
 export class AppComponent implements OnInit {
+  @ViewChild('msgBar') msgBar: MsgBarComponent;
+
   constructor(
     private appService: AppService,
     private languageService: LanguageService,
@@ -29,6 +33,7 @@ export class AppComponent implements OnInit {
     hwWalletSeedWordService: HwWalletSeedWordService,
     private bip38WordList: Bip39WordListService,
     private dialog: MatDialog,
+    private msgBarService: MsgBarService,
   ) {
     hwWalletPinService.requestPinComponent = HwPinDialogComponent;
     hwWalletSeedWordService.requestWordComponent = HwSeedWordDialogComponent;
@@ -56,6 +61,8 @@ export class AppComponent implements OnInit {
       }
 
       subscription.unsubscribe();
+
+      this.msgBarService.msgBarComponent = this.msgBar;
     });
   }
 }

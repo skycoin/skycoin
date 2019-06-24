@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Use transaction history when scanning wallet addresses, instead of the current address balance
 - Document the daemon's CLI options
 - Add the ability to save transaction notes
 - Add CLI `encodeJsonTransaction` command to retrieve raw transaction given its JSON representation

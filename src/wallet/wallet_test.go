@@ -89,15 +89,17 @@ func init() {
 	}
 }
 
-type mockBalanceGetter map[cipher.Address]BalancePair
+type mockTxnsFinder map[cipher.Address]bool
 
-func (mb mockBalanceGetter) GetBalanceOfAddrs(addrs []cipher.Address) ([]BalancePair, error) {
-	var bals []BalancePair
-	for _, addr := range addrs {
-		bal := mb[addr]
-		bals = append(bals, bal)
+func (mb mockTxnsFinder) AddressesActivity(addrs []cipher.Address) ([]bool, error) {
+	if len(addrs) == 0 {
+		return nil, nil
 	}
-	return bals, nil
+	active := make([]bool, len(addrs))
+	for i, addr := range addrs {
+		active[i] = mb[addr]
+	}
+	return active, nil
 }
 
 func TestNewWallet(t *testing.T) {

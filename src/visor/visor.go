@@ -2373,15 +2373,22 @@ func (vs *Visor) AddressesActivity(addrs []cipher.Address) ([]bool, error) {
 			}
 
 			// Check if the address appears in the unconfirmed pool
-			return vs.unconfirmed.ForEach(tx, func(h cipher.SHA256, ut UnconfirmedTransaction) error {
+			err = vs.unconfirmed.ForEach(tx, func(h cipher.SHA256, ut UnconfirmedTransaction) error {
 				for _, o := range ut.Transaction.Out {
 					if o.Address == a {
 						active[i] = true
-						return nil
+						return dbutil.StopForEach
 					}
 				}
 				return nil
 			})
+
+			switch err {
+			case nil, dbutil.StopForEach:
+				return nil
+			default:
+				return err
+			}
 		}
 
 		return nil

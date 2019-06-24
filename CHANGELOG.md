@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add the ability to save transaction notes
 - Add CLI `encodeJsonTransaction` command to retrieve raw transaction given its JSON representation
 - Add `package bip44`, implementing the bip44 spec https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki
+- Codesign daemon and standalone binaries
 
 ### Fixed
 

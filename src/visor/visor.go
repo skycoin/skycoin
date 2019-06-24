@@ -2359,9 +2359,18 @@ func (vs *Visor) WithUpdateTx(name string, f func(tx *dbutil.Tx) error) error {
 // or in the unconfirmed pool
 func (vs *Visor) AddressesActivity(addrs []cipher.Address) ([]bool, error) {
 	active := make([]bool, len(addrs))
+	addrsMap := make(map[cipher.Address]int, len(addrs))
+	for i, a := range addrs {
+		addrsMap[a] = i
+	}
+
+	if len(addrsMap) != len(addrs) {
+		return nil, errors.New("duplicates addresses not allowed")
+	}
+
 	if err := vs.db.View("AddressActivity", func(tx *dbutil.Tx) error {
+		// Check if the addresses appear in the blockchain
 		for i, a := range addrs {
-			// Check if the address appears in the blockchain
 			ok, err := vs.history.AddressSeen(tx, a)
 			if err != nil {
 				return err
@@ -2369,29 +2378,21 @@ func (vs *Visor) AddressesActivity(addrs []cipher.Address) ([]bool, error) {
 
 			if ok {
 				active[i] = true
-				continue
-			}
-
-			// Check if the address appears in the unconfirmed pool
-			err = vs.unconfirmed.ForEach(tx, func(h cipher.SHA256, ut UnconfirmedTransaction) error {
-				for _, o := range ut.Transaction.Out {
-					if o.Address == a {
-						active[i] = true
-						return dbutil.StopForEach
-					}
-				}
-				return nil
-			})
-
-			switch err {
-			case nil, dbutil.StopForEach:
-				return nil
-			default:
-				return err
 			}
 		}
 
-		return nil
+		// Check if the addresses appears in the unconfirmed pool
+		// NOTE: if this needs to be optimized, add an index to the unconfirmed pool
+		return vs.unconfirmed.ForEach(tx, func(h cipher.SHA256, ut UnconfirmedTransaction) error {
+			// Only transaction outputs need to be checked; if the address is associated
+			// with an input, it must have appeared in a transaction in the blockchain history
+			for _, o := range ut.Transaction.Out {
+				if i, ok := addrsMap[o.Address]; ok {
+					active[i] = true
+				}
+			}
+			return nil
+		})
 	}); err != nil {
 		return nil, err
 	}

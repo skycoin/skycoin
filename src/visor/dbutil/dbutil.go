@@ -26,11 +26,6 @@ var (
 	txUpdateTrace                = false
 	txDurationLog                = true
 	txDurationReportingThreshold = time.Millisecond * 100
-
-	// StopForEach can be returned by a ForEach caller to interrupt ForEach,
-	// this is provided for the convenience of the caller, it has no special purpose
-	// other than being a sentinel value
-	StopForEach = errors.New("Stopped ForEach loop")
 )
 
 // Tx wraps a Tx

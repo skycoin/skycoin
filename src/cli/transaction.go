@@ -1,8 +1,11 @@
 package cli
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"strconv"
 
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
@@ -72,6 +75,89 @@ func decodeRawTxnCmd() *cobra.Command {
 			return printJSON(rTxn)
 		},
 	}
+}
+
+func encodeJSONTxnCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Short:                 "Encode JSON transaction",
+		Use:                   "encodeJsonTransaction [file path or -]",
+		DisableFlagsInUseLine: true,
+		SilenceUsage:          true,
+		Args:                  cobra.ExactArgs(1),
+		RunE: func(c *cobra.Command, args []string) error {
+			jsonOutput, err := c.Flags().GetBool("json")
+			if err != nil {
+				return err
+			}
+
+			jsonFilePath := args[0]
+			var jsonFile *os.File
+			if jsonFilePath == "-" {
+				jsonFile = os.Stdin
+				err = nil
+				jsonFilePath = "<stdin>"
+			} else {
+				jsonFile, err = os.Open(jsonFilePath)
+			}
+			if err != nil {
+				return fmt.Errorf("open file failed %s: %v", jsonFilePath, err)
+			}
+			var rTxn readable.Transaction
+			err = json.NewDecoder(jsonFile).Decode(&rTxn)
+			if err != nil {
+				return fmt.Errorf("invalid JSON transaction: %v", err)
+			}
+
+			txn, err := readableToCreatedTransaction(&rTxn).ToTransaction()
+			if err != nil {
+				return err
+			}
+			rawTxn, err := txn.SerializeHex()
+			if err != nil {
+				return err
+			}
+			if jsonOutput {
+				return printJSON(struct {
+					RawTx string `json:"rawtx"`
+				}{
+					RawTx: rawTxn,
+				})
+			}
+			fmt.Println(rawTxn)
+			return nil
+		},
+	}
+	cmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format.")
+	return cmd
+}
+
+func readableToCreatedTransaction(rTxn *readable.Transaction) *api.CreatedTransaction {
+	inputs := make([]api.CreatedTransactionInput, len(rTxn.In))
+	outputs := make([]api.CreatedTransactionOutput, len(rTxn.Out))
+	for i, rIn := range rTxn.In {
+		inputs[i] = api.CreatedTransactionInput{
+			UxID: rIn,
+		}
+	}
+	for i, rOut := range rTxn.Out {
+		outputs[i] = api.CreatedTransactionOutput{
+			UxID:    rOut.Hash,
+			Address: rOut.Address,
+			Coins:   rOut.Coins,
+			Hours:   strconv.FormatUint(rOut.Hours, 10),
+		}
+	}
+	cTxn := api.CreatedTransaction{
+		Length:    rTxn.Length,
+		Type:      rTxn.Type,
+		TxID:      rTxn.Hash,
+		InnerHash: rTxn.InnerHash,
+		Fee:       "",
+		Sigs:      rTxn.Sigs[:],
+		In:        inputs,
+		Out:       outputs,
+	}
+	return &cTxn
 }
 
 func addressTransactionsCmd() *cobra.Command {

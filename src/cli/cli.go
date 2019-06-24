@@ -233,6 +233,7 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 		checkDBEncodingCmd(),
 		createRawTxnCmd(),
 		decodeRawTxnCmd(),
+		encodeJSONTxnCmd(),
 		decryptWalletCmd(),
 		encryptWalletCmd(),
 		lastBlocksCmd(),

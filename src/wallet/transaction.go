@@ -208,6 +208,8 @@ func (w *Wallet) CreateTransactionSigned(p transaction.Params, auxs coin.Address
 		return nil, nil, err
 	}
 
+	logger.Infof("CreateTransactionSigned: signing %d inputs", len(uxb))
+
 	// Sign the transaction
 	entriesMap := make(map[cipher.Address]Entry)
 	for i, s := range uxb {

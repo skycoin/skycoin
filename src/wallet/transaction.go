@@ -224,7 +224,7 @@ func (w *Wallet) CreateTransactionSigned(p transaction.Params, auxs coin.Address
 		}
 
 		if err := txn.SignInput(entry.Secret, i); err != nil {
-			logger.Critical().WithError(err).Error("CreateTransaction SignInput failed")
+			logger.Critical().WithError(err).Errorf("CreateTransaction SignInput(%d) failed", i)
 			return nil, nil, err
 		}
 	}

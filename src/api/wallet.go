@@ -140,9 +140,9 @@ func balanceHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		bals, err := gateway.GetBalanceOfAddrs(addrs)
+		bals, err := gateway.GetBalanceOfAddresses(addrs)
 		if err != nil {
-			err = fmt.Errorf("gateway.GetBalanceOfAddrs failed: %v", err)
+			err = fmt.Errorf("gateway.GetBalanceOfAddresses failed: %v", err)
 			wh.Error500(w, err.Error())
 			return
 		}

@@ -3,11 +3,11 @@ import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { MatDialogRef } from '@angular/material/dialog';
 import { Observable } from 'rxjs/Observable';
 import { Bip39WordListService } from '../../../../services/bip39-word-list.service';
-import { MatSnackBar, MatSnackBarConfig } from '@angular/material';
 import { TranslateService } from '@ngx-translate/core';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 import { ISubscription } from 'rxjs/Subscription';
+import { MsgBarService } from '../../../../services/msg-bar.service';
 
 @Component({
   selector: 'app-hw-seed-word-dialog',
@@ -25,7 +25,7 @@ export class HwSeedWordDialogComponent extends HwDialogBaseComponent<HwSeedWordD
     public dialogRef: MatDialogRef<HwSeedWordDialogComponent>,
     private formBuilder: FormBuilder,
     private bip38WordList: Bip39WordListService,
-    private snackbar: MatSnackBar,
+    private msgBarService: MsgBarService,
     private translateService: TranslateService,
     hwWalletService: HwWalletService,
   ) {
@@ -46,14 +46,14 @@ export class HwSeedWordDialogComponent extends HwDialogBaseComponent<HwSeedWordD
 
   ngOnDestroy() {
     super.ngOnDestroy();
-    this.snackbar.dismiss();
+    this.msgBarService.hide();
     this.valueChangeSubscription.unsubscribe();
   }
 
   sendWord() {
     if (!this.sendingWord) {
       this.sendingWord = true;
-      this.snackbar.dismiss();
+      this.msgBarService.hide();
 
       setTimeout(() => {
         if (this.form.valid) {
@@ -61,12 +61,10 @@ export class HwSeedWordDialogComponent extends HwDialogBaseComponent<HwSeedWordD
           if (validation) {
             this.dialogRef.close((this.form.value.word as string).trim().toLowerCase());
           } else {
-            const config = new MatSnackBarConfig();
-            config.duration = 5000;
             if (validation === null) {
-              this.snackbar.open(this.translateService.instant('hardware-wallet.seed-word.error-loading-words'), null, config);
+              this.msgBarService.showError(this.translateService.instant('hardware-wallet.seed-word.error-loading-words'));
             } else {
-              this.snackbar.open(this.translateService.instant('hardware-wallet.seed-word.error-invalid-word'), null, config);
+              this.msgBarService.showError(this.translateService.instant('hardware-wallet.seed-word.error-invalid-word'));
             }
           }
         }

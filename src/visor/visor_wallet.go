@@ -62,7 +62,7 @@ func (vs *Visor) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.Addr
 			return err
 		}
 
-		addrsBalanceList, err = vs.GetBalanceOfAddrs(addrs)
+		addrsBalanceList, err = vs.GetBalanceOfAddresses(addrs)
 		return err
 	}); err != nil {
 		return walletBalance, addressBalances, err

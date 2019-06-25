@@ -208,6 +208,8 @@ func (w *Wallet) CreateTransactionSigned(p transaction.Params, auxs coin.Address
 		return nil, nil, err
 	}
 
+	logger.Infof("CreateTransactionSigned: signing %d inputs", len(uxb))
+
 	// Sign the transaction
 	entriesMap := make(map[cipher.Address]Entry)
 	for i, s := range uxb {
@@ -224,7 +226,7 @@ func (w *Wallet) CreateTransactionSigned(p transaction.Params, auxs coin.Address
 		}
 
 		if err := txn.SignInput(entry.Secret, i); err != nil {
-			logger.Critical().WithError(err).Error("CreateTransaction SignInput failed")
+			logger.Critical().WithError(err).Errorf("CreateTransaction SignInput(%d) failed", i)
 			return nil, nil, err
 		}
 	}

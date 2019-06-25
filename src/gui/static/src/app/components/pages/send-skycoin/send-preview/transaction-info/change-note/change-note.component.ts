@@ -1,12 +1,11 @@
 import { Component, OnInit, Inject, ViewChild, OnDestroy } from '@angular/core';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material';
 import { ISubscription } from 'rxjs/Subscription';
 import { ButtonComponent } from '../../../../../layout/button/button.component';
 import { Transaction } from '../../../../../../app.datatypes';
 import { StorageService, StorageType } from '../../../../../../services/storage.service';
-import { showSnackbarError } from '../../../../../../utils/errors';
+import { MsgBarService } from '../../../../../../services/msg-bar.service';
 
 @Component({
   selector: 'app-change-note',
@@ -28,7 +27,7 @@ export class ChangeNoteComponent implements OnInit, OnDestroy {
     public dialogRef: MatDialogRef<ChangeNoteComponent>,
     @Inject(MAT_DIALOG_DATA) private data: Transaction,
     private formBuilder: FormBuilder,
-    private snackbar: MatSnackBar,
+    private msgBarService: MsgBarService,
     private storageService: StorageService,
   ) {}
 
@@ -41,7 +40,7 @@ export class ChangeNoteComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.snackbar.dismiss();
+    this.msgBarService.hide();
     if (this.OperationSubscription) {
       this.OperationSubscription.unsubscribe();
     }
@@ -64,13 +63,13 @@ export class ChangeNoteComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.snackbar.dismiss();
+    this.msgBarService.hide();
     this.button.setLoading();
 
     this.OperationSubscription = this.storageService.store(StorageType.NOTES, this.data.txid, newNote).subscribe(() => {
       this.dialogRef.close(newNote);
     }, error => {
-      showSnackbarError(this.snackbar, error);
+      this.msgBarService.showError(error);
       this.button.resetState().setEnabled();
     });
   }

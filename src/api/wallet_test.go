@@ -69,7 +69,7 @@ func TestGetBalanceHandler(t *testing.T) {
 			name:   "500 - GetBalanceOfAddrsError",
 			method: http.MethodGet,
 			status: http.StatusInternalServerError,
-			err:    "500 Internal Server Error - gateway.GetBalanceOfAddrs failed: GetBalanceOfAddrsError",
+			err:    "500 Internal Server Error - gateway.GetBalanceOfAddresses failed: GetBalanceOfAddrsError",
 			httpBody: &httpBody{
 				addrs: validAddr,
 			},
@@ -164,7 +164,7 @@ func TestGetBalanceHandler(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
 			endpoint := "/api/v1/balance"
-			gateway.On("GetBalanceOfAddrs", tc.getBalanceOfAddrsArg).Return(tc.getBalanceOfAddrsResponse, tc.getBalanceOfAddrsError)
+			gateway.On("GetBalanceOfAddresses", tc.getBalanceOfAddrsArg).Return(tc.getBalanceOfAddrsResponse, tc.getBalanceOfAddrsError)
 
 			v := url.Values{}
 			if tc.httpBody != nil {

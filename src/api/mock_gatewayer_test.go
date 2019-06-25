@@ -53,6 +53,29 @@ func (_m *MockGatewayer) AddressCount() (uint64, error) {
 	return r0, r1
 }
 
+// AddressesActivity provides a mock function with given fields: addrs
+func (_m *MockGatewayer) AddressesActivity(addrs []cipher.Address) ([]bool, error) {
+	ret := _m.Called(addrs)
+
+	var r0 []bool
+	if rf, ok := ret.Get(0).(func([]cipher.Address) []bool); ok {
+		r0 = rf(addrs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]bool)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]cipher.Address) error); ok {
+		r1 = rf(addrs)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // CreateTransaction provides a mock function with given fields: p, wp
 func (_m *MockGatewayer) CreateTransaction(p transaction.Params, wp visor.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error) {
 	ret := _m.Called(p, wp)
@@ -86,11 +109,11 @@ func (_m *MockGatewayer) CreateTransaction(p transaction.Params, wp visor.Create
 }
 
 // CreateWallet provides a mock function with given fields: wltName, options, bg
-func (_m *MockGatewayer) CreateWallet(wltName string, options wallet.Options, bg wallet.BalanceGetter) (*wallet.Wallet, error) {
+func (_m *MockGatewayer) CreateWallet(wltName string, options wallet.Options, bg wallet.TransactionsFinder) (*wallet.Wallet, error) {
 	ret := _m.Called(wltName, options, bg)
 
 	var r0 *wallet.Wallet
-	if rf, ok := ret.Get(0).(func(string, wallet.Options, wallet.BalanceGetter) *wallet.Wallet); ok {
+	if rf, ok := ret.Get(0).(func(string, wallet.Options, wallet.TransactionsFinder) *wallet.Wallet); ok {
 		r0 = rf(wltName, options, bg)
 	} else {
 		if ret.Get(0) != nil {
@@ -99,7 +122,7 @@ func (_m *MockGatewayer) CreateWallet(wltName string, options wallet.Options, bg
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, wallet.Options, wallet.BalanceGetter) error); ok {
+	if rf, ok := ret.Get(1).(func(string, wallet.Options, wallet.TransactionsFinder) error); ok {
 		r1 = rf(wltName, options, bg)
 	} else {
 		r1 = ret.Error(1)
@@ -260,8 +283,8 @@ func (_m *MockGatewayer) GetAllUnconfirmedTransactionsVerbose() ([]visor.Unconfi
 	return r0, r1, r2
 }
 
-// GetBalanceOfAddrs provides a mock function with given fields: addrs
-func (_m *MockGatewayer) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error) {
+// GetBalanceOfAddresses provides a mock function with given fields: addrs
+func (_m *MockGatewayer) GetBalanceOfAddresses(addrs []cipher.Address) ([]wallet.BalancePair, error) {
 	ret := _m.Called(addrs)
 
 	var r0 []wallet.BalancePair

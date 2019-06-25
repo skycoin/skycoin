@@ -1,13 +1,14 @@
 import { Component, EventEmitter, Input, OnDestroy, Output, ViewChild } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { ButtonComponent } from '../../../layout/button/button.component';
-import { MatSnackBar, MatDialogConfig, MatDialog } from '@angular/material';
-import { showSnackbarError, getHardwareWalletErrorMsg } from '../../../../utils/errors';
+import { MatDialogConfig, MatDialog } from '@angular/material';
+import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { PreviewTransaction, Wallet } from '../../../../app.datatypes';
 import { ISubscription } from 'rxjs/Subscription';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
+import { MsgBarService } from '../../../../services/msg-bar.service';
 
 @Component({
   selector: 'app-send-preview',
@@ -24,14 +25,14 @@ export class SendVerifyComponent implements OnDestroy {
 
   constructor(
     private walletService: WalletService,
-    private snackbar: MatSnackBar,
+    private msgBarService: MsgBarService,
     private dialog: MatDialog,
     private hwWalletService: HwWalletService,
     private translate: TranslateService,
   ) {}
 
   ngOnDestroy() {
-    this.snackbar.dismiss();
+    this.msgBarService.hide();
 
     if (this.sendSubscription) {
       this.sendSubscription.unsubscribe();
@@ -47,7 +48,7 @@ export class SendVerifyComponent implements OnDestroy {
       return;
     }
 
-    this.snackbar.dismiss();
+    this.msgBarService.hide();
     this.sendButton.resetState();
 
     if (this.transaction.wallet.encrypted && !this.transaction.wallet.isHardware) {
@@ -95,7 +96,7 @@ export class SendVerifyComponent implements OnDestroy {
       return this.walletService.injectTransaction(result.encoded, note);
     }).subscribe(noteSaved => {
       if (note && !noteSaved) {
-        showSnackbarError(this.snackbar, this.translate.instant('send.error-saving-note'));
+        this.msgBarService.showError(this.translate.instant('send.error-saving-note'));
       }
 
       this.sendButton.setSuccess();
@@ -120,7 +121,7 @@ export class SendVerifyComponent implements OnDestroy {
   }
 
   private showError(error) {
-    showSnackbarError(this.snackbar, error);
+    this.msgBarService.showError(error);
     this.sendButton.resetState().setError(error);
     this.backButton.resetState().setEnabled();
   }

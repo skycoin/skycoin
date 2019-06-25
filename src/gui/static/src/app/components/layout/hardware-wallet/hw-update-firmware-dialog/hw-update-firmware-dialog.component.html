@@ -29,7 +29,12 @@
       [icon]="msgIcons.Spinner"
     ></app-hw-message>
 
-     <app-hw-message *ngIf="currentState === states.Processing"
+    <app-hw-message *ngIf="currentState === states.Downloading"
+      [text]="'hardware-wallet.update-firmware.text-downloading' | translate"
+      [icon]="msgIcons.Spinner"
+    ></app-hw-message>
+
+    <app-hw-message *ngIf="currentState === states.Processing"
       [text]="'hardware-wallet.general.follow' | translate"
       [icon]="msgIcons.Confirm"
     ></app-hw-message>

@@ -402,6 +402,7 @@
       "title-connecting": "Connecting...",
       "title-update": "Update Firmware",
       "title-install": "Install Firmware",
+      "text-downloading": "Checking device and downloading files...",
       "text-bootloader": "WARNING: if you have already configured this device, before continuing you must have a backup of your seed or you could permanently lose access to the funds.",
       "text-not-bootloader": "To update the firmware of your hardware wallet you must connect it in bootloader mode (connect it to the computer while pressing the two physical buttons of the device). WARNING: if you have already configured this device, before continuing you must have a backup of your seed or you could permanently lose access to the funds.",
       "text-no-firmware": "Welcome. The currently connected wallet hardware does not have a firmware (internal software), we will install one so you can start using it. NOTE: if you have already configured this device and want to recover the funds, you will need your seed.",

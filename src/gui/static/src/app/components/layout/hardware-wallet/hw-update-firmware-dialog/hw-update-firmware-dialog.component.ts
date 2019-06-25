@@ -12,6 +12,7 @@ import { Observable } from 'rxjs/Observable';
 enum States {
   Connecting,
   Initial,
+  Downloading,
   Processing,
   ReturnedSuccess,
   ReturnedTimeout,
@@ -81,11 +82,11 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
 
   startUpdating() {
     this.msgBarService.hide();
-    this.currentState = States.Processing;
+    this.currentState = States.Downloading;
 
     this.closeCheckDeviceSubscription();
 
-    this.operationSubscription = this.hwWalletService.updateFirmware().subscribe(
+    this.operationSubscription = this.hwWalletService.updateFirmware(() => this.currentState = States.Processing).subscribe(
       () => {
         this.currentState = States.ReturnedSuccess;
       },

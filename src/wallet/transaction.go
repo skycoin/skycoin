@@ -65,7 +65,7 @@ func copyTransaction(txn *coin.Transaction) *coin.Transaction {
 // The transaction should already have a valid header. The transaction may be partially signed,
 // but a valid existing signature cannot be overwritten.
 // Clients should avoid signing the same transaction multiple times.
-func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOuts []coin.UxOut) (*coin.Transaction, error) {
+func SignTransaction(w Walleter, txn *coin.Transaction, signIndexes []int, uxOuts []coin.UxOut) (*coin.Transaction, error) {
 	signedTxn := copyTransaction(txn)
 	txnInnerHash := signedTxn.HashInner()
 
@@ -121,7 +121,7 @@ func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOut
 
 	// Check that the wallet has all addresses needed for signing
 	toSign := make(map[int][]int)
-	for i, e := range w.Entries {
+	for i, e := range w.GetEntries() {
 		if len(toSign) == len(addrs) {
 			break
 		}
@@ -141,7 +141,8 @@ func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOut
 			if !signedTxn.Sigs[x].Null() {
 				return nil, NewError(fmt.Errorf("Transaction is already signed at index %d", x))
 			}
-			if err := signedTxn.SignInput(w.Entries[k].Secret, x); err != nil {
+
+			if err := signedTxn.SignInput(w.GetEntryAt(k).Secret, x); err != nil {
 				return nil, err
 			}
 		}
@@ -184,7 +185,7 @@ func (w *Wallet) SignTransaction(txn *coin.Transaction, signIndexes []int, uxOut
 //     if the coinhour cost of adding that output is less than the coinhours that would be lost as change
 // If receiving hours are not explicitly specified, hours are allocated amongst the receiving outputs proportional to the number of coins being sent to them.
 // If the change address is not specified, the address whose bytes are lexically sorted first is chosen from the owners of the outputs being spent.
-func (w *Wallet) CreateTransaction(p transaction.Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []transaction.UxBalance, error) {
+func CreateTransaction(w Walleter, p transaction.Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []transaction.UxBalance, error) {
 	if err := p.Validate(); err != nil {
 		return nil, nil, err
 	}
@@ -202,8 +203,8 @@ func (w *Wallet) CreateTransaction(p transaction.Params, auxs coin.AddressUxOuts
 // CreateTransactionSigned creates and signs a transaction based upon transaction.Params.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided.
 // Refer to CreateTransaction for information about transaction creation.
-func (w *Wallet) CreateTransactionSigned(p transaction.Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []transaction.UxBalance, error) {
-	txn, uxb, err := w.CreateTransaction(p, auxs, headTime)
+func CreateTransactionSigned(w Walleter, p transaction.Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []transaction.UxBalance, error) {
+	txn, uxb, err := CreateTransaction(w, p, auxs, headTime)
 	if err != nil {
 		return nil, nil, err
 	}

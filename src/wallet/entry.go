@@ -45,3 +45,56 @@ func (we *Entry) VerifyPublic() error {
 	}
 	return we.Address.Verify(we.Public)
 }
+
+// Entries are an array of wallet entries
+type Entries []Entry
+
+func (entries Entries) clone() Entries {
+	return append(Entries{}, entries...)
+}
+
+func (entries Entries) has(a cipher.Address) bool {
+	// This doesn't use getEntry() to avoid copying an Entry in the return value,
+	// which may contain a secret key
+	for _, e := range entries {
+		if e.SkycoinAddress() == a {
+			return true
+		}
+	}
+	return false
+}
+
+func (entries Entries) get(a cipher.Address) (Entry, bool) {
+	for _, e := range entries {
+		if e.SkycoinAddress() == a {
+			return e, true
+		}
+	}
+	return Entry{}, false
+}
+
+func (entries Entries) getSkycoinAddresses() []cipher.Address {
+	addrs := make([]cipher.Address, len(entries))
+	for i, e := range entries {
+		addrs[i] = e.SkycoinAddress()
+	}
+	return addrs
+}
+
+func (entries Entries) getAddresses() []cipher.Addresser {
+	addrs := make([]cipher.Addresser, len(entries))
+	for i, e := range entries {
+		addrs[i] = e.Address
+	}
+	return addrs
+}
+
+// eraseEntries wipes private keys in entries
+func (entries Entries) erase() {
+	for i := range entries {
+		for j := range entries[i].Secret {
+			entries[i].Secret[j] = 0
+		}
+		entries[i].Secret = cipher.SecKey{}
+	}
+}

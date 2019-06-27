@@ -143,7 +143,7 @@ func TestServiceCreateWallet(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, w.IsEncrypted(), tc.encrypt)
 				if tc.encrypt {
-					require.NotEmpty(t, w.secrets())
+					require.NotEmpty(t, w.Secrets())
 					checkNoSensitiveData(t, w)
 
 					// Checks the wallet file doesn't contain sensitive data
@@ -273,9 +273,9 @@ func TestServiceLoadWallet(t *testing.T) {
 					return
 				}
 
-				require.Len(t, w.Entries, tc.expectAddrNum)
+				require.Equal(t, w.EntriesLen(), tc.expectAddrNum)
 				for i, a := range tc.expectAddrs {
-					require.Equal(t, a, w.Entries[i].Address)
+					require.Equal(t, a, w.GetEntryAt(i).Address)
 				}
 
 				require.Equal(t, w.IsEncrypted(), tc.opts.Encrypt)
@@ -294,10 +294,10 @@ func TestServiceLoadWallet(t *testing.T) {
 }
 
 func TestServiceNewAddress(t *testing.T) {
-	seed := []byte("seed")
+	seed := "seed"
 	// Generate adddresses from the seed
 	var addrs []cipher.Address
-	_, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed(seed, 10)
+	_, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 10)
 	for _, s := range seckeys {
 		addrs = append(addrs, cipher.MustAddressFromSecKey(s))
 	}
@@ -316,7 +316,7 @@ func TestServiceNewAddress(t *testing.T) {
 			name: "encrypted=false addresses=0",
 			opts: Options{
 				Label: "label",
-				Seed:  string(seed),
+				Seed:  seed,
 			},
 			n:             0,
 			expectAddrNum: 0,
@@ -325,7 +325,7 @@ func TestServiceNewAddress(t *testing.T) {
 			name: "encrypted=false addresses=1",
 			opts: Options{
 				Label: "label",
-				Seed:  string(seed),
+				Seed:  seed,
 			},
 			n:             2,
 			expectAddrNum: 2,
@@ -335,7 +335,7 @@ func TestServiceNewAddress(t *testing.T) {
 			name: "encrypted=false addresses=2",
 			opts: Options{
 				Label: "label",
-				Seed:  string(seed),
+				Seed:  seed,
 			},
 			n:             2,
 			expectAddrNum: 2,
@@ -345,7 +345,7 @@ func TestServiceNewAddress(t *testing.T) {
 			name: "encrypted=true addresses=1",
 			opts: Options{
 				Label:    "label",
-				Seed:     string(seed),
+				Seed:     seed,
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
@@ -358,7 +358,7 @@ func TestServiceNewAddress(t *testing.T) {
 			name: "encrypted=true addresses=2",
 			opts: Options{
 				Label:    "label",
-				Seed:     string(seed),
+				Seed:     seed,
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
@@ -371,7 +371,7 @@ func TestServiceNewAddress(t *testing.T) {
 			name: "encrypted=true wrong password",
 			opts: Options{
 				Label:    "label",
-				Seed:     string(seed),
+				Seed:     seed,
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
@@ -393,7 +393,7 @@ func TestServiceNewAddress(t *testing.T) {
 			name: "encrypted=false password provided",
 			opts: Options{
 				Label: "label",
-				Seed:  string(seed),
+				Seed:  seed,
 			},
 			n:         1,
 			pwd:       []byte("foo"),
@@ -439,11 +439,11 @@ func TestServiceNewAddress(t *testing.T) {
 				// Check the wallet again
 				w, ok := s.wallets[wltName]
 				require.True(t, ok)
-				require.Len(t, w.Entries, int(tc.n+1))
+				require.Equal(t, w.EntriesLen(), int(tc.n+1))
 
 				// Wallet has a default address, so need to start from the second address
 				for i, a := range tc.expectAddrs {
-					require.Equal(t, a, w.Entries[i+1].Address)
+					require.Equal(t, a, w.GetEntryAt(i+1).Address)
 				}
 
 				// Load wallet from file and check
@@ -520,8 +520,7 @@ func TestServiceGetWallet(t *testing.T) {
 					require.Empty(t, s.wallets)
 					w, err := s.GetWallet("")
 					require.Equal(t, ErrWalletAPIDisabled, err)
-					var emptyW *Wallet
-					require.Equal(t, w, emptyW)
+					require.Nil(t, w)
 					return
 				}
 
@@ -536,7 +535,7 @@ func TestServiceGetWallet(t *testing.T) {
 				require.NoError(t, err)
 
 				// Check if change original wallet would change the returned wallet
-				w.setLabel("new_label")
+				w.SetLabel("new_label")
 
 				require.NotEqual(t, "new_label", w1.Label())
 
@@ -579,7 +578,7 @@ func TestServiceGetWallets(t *testing.T) {
 				}, nil)
 				require.NoError(t, err)
 
-				var wallets []*Wallet
+				var wallets []Walleter
 				// Get the default wallet
 				wallets = append(wallets, w)
 
@@ -777,21 +776,21 @@ func TestServiceEncryptWallet(t *testing.T) {
 
 				// Check the encrypted wallet
 				require.True(t, encWlt.IsEncrypted())
-				require.Equal(t, cipher.SecKey{}, encWlt.Entries[0].Secret)
-				require.Empty(t, encWlt.seed())
-				require.Empty(t, encWlt.lastSeed())
+				require.Equal(t, cipher.SecKey{}, encWlt.GetEntryAt(0).Secret)
+				require.Empty(t, encWlt.Seed())
+				require.Empty(t, encWlt.LastSeed())
 
 				// Check the decrypted seeds
-				decWlt, err := encWlt.Unlock(tc.pwd)
+				decWlt, err := Unlock(encWlt, tc.pwd)
 				require.NoError(t, err)
-				require.Equal(t, w.seed(), decWlt.seed())
-				require.Equal(t, w.lastSeed(), decWlt.lastSeed())
+				require.Equal(t, w.Seed(), decWlt.Seed())
+				require.Equal(t, w.LastSeed(), decWlt.LastSeed())
 
 				// Check if the wallet file does exist
 				path := filepath.Join(dir, w.Filename())
 				testutil.RequireFileExists(t, path)
 
-				// Check if the backup wallet file, which should not exist
+				// Check that the temporary backup wallet file does not exist
 				bakPath := path + ".bak"
 				testutil.RequireFileNotExists(t, bakPath)
 			})
@@ -896,26 +895,26 @@ func TestServiceDecryptWallet(t *testing.T) {
 					return
 				}
 
-				verifyDecryptedWlt := func(wlt *Wallet) {
+				verifyDecryptedWlt := func(wlt Walleter) {
 					// Checks the "encrypted" meta info
 					require.False(t, wlt.IsEncrypted())
 					// Checks the seed
-					require.Equal(t, tc.opts.Seed, wlt.seed())
+					require.Equal(t, tc.opts.Seed, wlt.Seed())
 					// Checks the last seed
-					entryNum := len(wlt.Entries)
-					lsd, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(wlt.seed()), entryNum)
+					entryNum := wlt.EntriesLen()
+					lsd, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(wlt.Seed()), entryNum)
 					require.NoError(t, err)
-					require.Equal(t, hex.EncodeToString(lsd), wlt.lastSeed())
+					require.Equal(t, hex.EncodeToString(lsd), wlt.LastSeed())
 
 					// Checks the entries
 					for i := range seckeys {
 						a := cipher.MustAddressFromSecKey(seckeys[i])
-						require.Equal(t, a, wlt.Entries[i].Address)
-						require.Equal(t, seckeys[i], wlt.Entries[i].Secret)
+						require.Equal(t, a, wlt.GetEntryAt(i).Address)
+						require.Equal(t, seckeys[i], wlt.GetEntryAt(i).Secret)
 					}
 
-					require.Empty(t, wlt.secrets())
-					require.Empty(t, wlt.cryptoType())
+					require.Empty(t, wlt.Secrets())
+					require.Empty(t, wlt.CryptoType())
 				}
 
 				// Checks the decrypted wallet in service
@@ -1340,9 +1339,9 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				}
 
 				require.NoError(t, w.Validate())
-				require.Equal(t, tc.expect.entryNum, len(w.Entries))
-				for i := range w.Entries {
-					require.Equal(t, addrs[i].String(), w.Entries[i].Address.String())
+				require.Equal(t, tc.expect.entryNum, w.EntriesLen())
+				for i, e := range w.GetEntries() {
+					require.Equal(t, addrs[i].String(), e.Address.String())
 				}
 			})
 		}
@@ -1466,7 +1465,7 @@ func TestServiceView(t *testing.T) {
 		wltName          string
 		opts             Options
 		viewWltName      string
-		action           func(*testing.T) func(*Wallet) error
+		action           func(*testing.T) func(Walleter) error
 		disableWalletAPI bool
 		err              error
 	}{
@@ -1480,13 +1479,13 @@ func TestServiceView(t *testing.T) {
 				Password: []byte("pwd"),
 				Label:    "foowlt",
 			},
-			action: func(t *testing.T) func(*Wallet) error {
-				return func(w *Wallet) error {
+			action: func(t *testing.T) func(Walleter) error {
+				return func(w Walleter) error {
 					require.Equal(t, "foowlt", w.Label())
 					checkNoSensitiveData(t, w)
 
 					// Modify the wallet pointer in order to check that this references a clone and not the original
-					w.setLabel(w.Label() + "foo")
+					w.SetLabel(w.Label() + "foo")
 
 					return nil
 				}
@@ -1501,15 +1500,15 @@ func TestServiceView(t *testing.T) {
 				Seed:  "fooseed",
 				Label: "foowlt",
 			},
-			action: func(t *testing.T) func(*Wallet) error {
-				return func(w *Wallet) error {
+			action: func(t *testing.T) func(Walleter) error {
+				return func(w Walleter) error {
 					require.Equal(t, "foowlt", w.Label())
 					// Seed is visible because its not encrypted
-					require.Equal(t, "fooseed", w.seed())
-					require.NotEmpty(t, w.lastSeed())
+					require.Equal(t, "fooseed", w.Seed())
+					require.NotEmpty(t, w.LastSeed())
 
 					// Modify the wallet pointer in order to check that this references a clone and not the original
-					w.setLabel(w.Label() + "foo")
+					w.SetLabel(w.Label() + "foo")
 
 					return nil
 				}
@@ -1555,7 +1554,7 @@ func TestServiceView(t *testing.T) {
 
 			s.config.EnableWalletAPI = !tc.disableWalletAPI
 
-			var action func(*Wallet) error
+			var action func(Walleter) error
 			if tc.action != nil {
 				action = tc.action(t)
 			}
@@ -1582,7 +1581,7 @@ func TestServiceViewSecrets(t *testing.T) {
 		wltName          string
 		opts             Options
 		viewWltName      string
-		action           func(*testing.T) func(*Wallet) error
+		action           func(*testing.T) func(Walleter) error
 		password         []byte
 		disableWalletAPI bool
 		err              error
@@ -1598,16 +1597,16 @@ func TestServiceViewSecrets(t *testing.T) {
 				Label:    "foowlt",
 			},
 			password: []byte("pwd"),
-			action: func(t *testing.T) func(*Wallet) error {
-				return func(w *Wallet) error {
+			action: func(t *testing.T) func(Walleter) error {
+				return func(w Walleter) error {
 					require.Equal(t, "foowlt", w.Label())
 
 					// Should be able to see sensitive data
-					require.Equal(t, "fooseed", w.seed())
-					require.NotEmpty(t, w.lastSeed())
+					require.Equal(t, "fooseed", w.Seed())
+					require.NotEmpty(t, w.LastSeed())
 
 					// Modify the wallet pointer in order to check that this references a clone and not the original
-					w.setLabel(w.Label() + "foo")
+					w.SetLabel(w.Label() + "foo")
 
 					return nil
 				}
@@ -1622,16 +1621,16 @@ func TestServiceViewSecrets(t *testing.T) {
 				Seed:  "fooseed",
 				Label: "foowlt",
 			},
-			action: func(t *testing.T) func(*Wallet) error {
-				return func(w *Wallet) error {
+			action: func(t *testing.T) func(Walleter) error {
+				return func(w Walleter) error {
 					require.Equal(t, "foowlt", w.Label())
 
 					// Seed is visible because its not encrypted
-					require.Equal(t, "fooseed", w.seed())
-					require.NotEmpty(t, w.lastSeed())
+					require.Equal(t, "fooseed", w.Seed())
+					require.NotEmpty(t, w.LastSeed())
 
 					// Modify the wallet pointer in order to check that this references a clone and not the original
-					w.setLabel(w.Label() + "foo")
+					w.SetLabel(w.Label() + "foo")
 
 					return nil
 				}
@@ -1716,7 +1715,7 @@ func TestServiceViewSecrets(t *testing.T) {
 
 			s.config.EnableWalletAPI = !tc.disableWalletAPI
 
-			var action func(*Wallet) error
+			var action func(Walleter) error
 			if tc.action != nil {
 				action = tc.action(t)
 			}
@@ -1743,8 +1742,8 @@ func TestServiceUpdate(t *testing.T) {
 		wltName          string
 		opts             Options
 		viewWltName      string
-		action           func(*testing.T) func(*Wallet) error
-		checkWallet      func(*testing.T, *Wallet)
+		action           func(*testing.T) func(Walleter) error
+		checkWallet      func(*testing.T, Walleter)
 		disableWalletAPI bool
 		err              error
 	}{
@@ -1758,15 +1757,15 @@ func TestServiceUpdate(t *testing.T) {
 				Password: []byte("pwd"),
 				Label:    "foowlt",
 			},
-			action: func(t *testing.T) func(*Wallet) error {
-				return func(w *Wallet) error {
+			action: func(t *testing.T) func(Walleter) error {
+				return func(w Walleter) error {
 					require.Equal(t, "foowlt", w.Label())
 
 					// Should not be able to see sensitive data
 					checkNoSensitiveData(t, w)
 
 					// Modify the wallet pointer in order to check that the wallet gets saved
-					w.setLabel(w.Label() + "foo")
+					w.SetLabel(w.Label() + "foo")
 
 					// The wallet is encrypted so it cannot generate more addresses
 					_, err := w.GenerateAddresses(1)
@@ -1775,9 +1774,9 @@ func TestServiceUpdate(t *testing.T) {
 					return nil
 				}
 			},
-			checkWallet: func(t *testing.T, w *Wallet) {
+			checkWallet: func(t *testing.T, w Walleter) {
 				require.Equal(t, "foowltfoo", w.Label())
-				require.Len(t, w.Entries, 1)
+				require.Equal(t, 1, w.EntriesLen())
 				checkNoSensitiveData(t, w)
 			},
 		},
@@ -1790,24 +1789,24 @@ func TestServiceUpdate(t *testing.T) {
 				Seed:  "fooseed",
 				Label: "foowlt",
 			},
-			action: func(t *testing.T) func(*Wallet) error {
-				return func(w *Wallet) error {
+			action: func(t *testing.T) func(Walleter) error {
+				return func(w Walleter) error {
 					require.Equal(t, "foowlt", w.Label())
 
 					// Seed is visible because its not encrypted
-					require.Equal(t, "fooseed", w.seed())
-					require.NotEmpty(t, w.lastSeed())
+					require.Equal(t, "fooseed", w.Seed())
+					require.NotEmpty(t, w.LastSeed())
 
 					// Modify the wallet pointer in order to check that the wallet gets saved
-					w.setLabel(w.Label() + "foo")
+					w.SetLabel(w.Label() + "foo")
 
 					return nil
 				}
 			},
-			checkWallet: func(t *testing.T, w *Wallet) {
+			checkWallet: func(t *testing.T, w Walleter) {
 				require.Equal(t, "foowltfoo", w.Label())
-				require.Len(t, w.Entries, 1)
-				require.NotEmpty(t, w.Entries[0].Secret)
+				require.Len(t, 1, w.EntriesLen())
+				require.NotEmpty(t, w.GetEntryAt(0).Secret)
 			},
 		},
 
@@ -1850,7 +1849,7 @@ func TestServiceUpdate(t *testing.T) {
 
 			s.config.EnableWalletAPI = !tc.disableWalletAPI
 
-			var action func(*Wallet) error
+			var action func(Walleter) error
 			if tc.action != nil {
 				action = tc.action(t)
 			}
@@ -1883,8 +1882,8 @@ func TestServiceUpdateSecrets(t *testing.T) {
 		wltName          string
 		opts             Options
 		viewWltName      string
-		action           func(*testing.T) func(*Wallet) error
-		checkWallet      func(*testing.T, *Wallet)
+		action           func(*testing.T) func(Walleter) error
+		checkWallet      func(*testing.T, Walleter)
 		password         []byte
 		disableWalletAPI bool
 		err              error
@@ -1900,25 +1899,25 @@ func TestServiceUpdateSecrets(t *testing.T) {
 				Label:    "foowlt",
 			},
 			password: []byte("pwd"),
-			action: func(t *testing.T) func(*Wallet) error {
-				return func(w *Wallet) error {
+			action: func(t *testing.T) func(Walleter) error {
+				return func(w Walleter) error {
 					require.Equal(t, "foowlt", w.Label())
 
 					// Should be able to see sensitive data
-					require.Equal(t, "fooseed", w.seed())
-					require.NotEmpty(t, w.lastSeed())
+					require.Equal(t, "fooseed", w.Seed())
+					require.NotEmpty(t, w.LastSeed())
 
 					// Modify the wallet pointer in order to check that the wallet gets saved
-					w.setLabel(w.Label() + "foo")
+					w.SetLabel(w.Label() + "foo")
 					_, err := w.GenerateAddresses(1)
 					require.NoError(t, err)
 
 					return nil
 				}
 			},
-			checkWallet: func(t *testing.T, w *Wallet) {
+			checkWallet: func(t *testing.T, w Walleter) {
 				require.Equal(t, "foowltfoo", w.Label())
-				require.Len(t, w.Entries, 2)
+				require.Equal(t, 2, w.EntriesLen())
 				checkNoSensitiveData(t, w)
 			},
 		},
@@ -1931,26 +1930,26 @@ func TestServiceUpdateSecrets(t *testing.T) {
 				Seed:  "fooseed",
 				Label: "foowlt",
 			},
-			action: func(t *testing.T) func(*Wallet) error {
-				return func(w *Wallet) error {
+			action: func(t *testing.T) func(Walleter) error {
+				return func(w Walleter) error {
 					require.Equal(t, "foowlt", w.Label())
 
 					// Seed is visible because its not encrypted
-					require.Equal(t, "fooseed", w.seed())
-					require.NotEmpty(t, w.lastSeed())
+					require.Equal(t, "fooseed", w.Seed())
+					require.NotEmpty(t, w.LastSeed())
 
 					// Modify the wallet pointer in order to check that the wallet gets saved
-					w.setLabel(w.Label() + "foo")
+					w.SetLabel(w.Label() + "foo")
 					_, err := w.GenerateAddresses(1)
 					require.NoError(t, err)
 
 					return nil
 				}
 			},
-			checkWallet: func(t *testing.T, w *Wallet) {
+			checkWallet: func(t *testing.T, w Walleter) {
 				require.Equal(t, "foowltfoo", w.Label())
-				require.Len(t, w.Entries, 2)
-				require.NotEmpty(t, w.Entries[1].Secret)
+				require.Equal(t, 2, w.EntriesLen())
+				require.NotEmpty(t, w.GetEntryAt(1).Secret)
 			},
 		},
 
@@ -2032,7 +2031,7 @@ func TestServiceUpdateSecrets(t *testing.T) {
 
 			s.config.EnableWalletAPI = !tc.disableWalletAPI
 
-			var action func(*Wallet) error
+			var action func(Walleter) error
 			if tc.action != nil {
 				action = tc.action(t)
 			}
@@ -2059,11 +2058,10 @@ func TestServiceUpdateSecrets(t *testing.T) {
 	}
 }
 
-func checkNoSensitiveData(t *testing.T, w *Wallet) {
-	require.Empty(t, w.seed())
-	require.Empty(t, w.lastSeed())
-	var empty cipher.SecKey
-	for _, e := range w.Entries {
-		require.Equal(t, empty, e.Secret)
+func checkNoSensitiveData(t *testing.T, w Walleter) {
+	require.Empty(t, w.Seed())
+	require.Empty(t, w.LastSeed())
+	for _, e := range w.GetEntries() {
+		require.True(t, e.Secret.Null())
 	}
 }

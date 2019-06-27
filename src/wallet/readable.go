@@ -1,8 +1,7 @@
 package wallet
 
 import (
-	"fmt"
-	"strconv"
+	"path/filepath"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util/file"
@@ -42,6 +41,14 @@ func NewReadableEntry(coinType CoinType, w Entry) ReadableEntry {
 
 // ReadableEntries array of ReadableEntry
 type ReadableEntries []ReadableEntry
+
+func newReadableEntries(entries Entries, coinType CoinType) ReadableEntries {
+	re := make(ReadableEntries, len(entries))
+	for i, e := range entries {
+		re[i] = NewReadableEntry(coinType, e)
+	}
+	return re
+}
 
 // ToWalletEntries convert readable entries to entries
 // converts base on the wallet version.
@@ -111,86 +118,22 @@ func newEntryFromReadable(coinType CoinType, w *ReadableEntry) (*Entry, error) {
 	}, nil
 }
 
-// ReadableWallet used for [de]serialization of a Wallet
-type ReadableWallet struct {
-	Meta    map[string]string `json:"meta"`
-	Entries ReadableEntries   `json:"entries"`
+// Readable	defines the readable wallet API.
+// A readable wallet is the on-disk representation of a wallet.
+type Readable interface {
+	ToWallet() (Walleter, error)
+	Timestamp() int64
+	SetFilename(string)
+	Filename() string
 }
 
-// NewReadableWallet creates readable wallet
-func NewReadableWallet(w *Wallet) *ReadableWallet {
-	readable := make(ReadableEntries, len(w.Entries))
-	for i, e := range w.Entries {
-		readable[i] = NewReadableEntry(w.coin(), e)
-	}
-
-	meta := make(map[string]string, len(w.Meta))
-	for k, v := range w.Meta {
-		meta[k] = v
-	}
-
-	return &ReadableWallet{
-		Meta:    meta,
-		Entries: readable,
-	}
+// SaveReadable saves to the filename specified in the wallet's metadata
+func SaveReadable(rw Readable, dir string) error {
+	return file.SaveJSON(filepath.Join(dir, rw.Filename()), rw, 0600)
 }
 
-// LoadReadableWallet loads a ReadableWallet from disk
-func LoadReadableWallet(filename string) (*ReadableWallet, error) {
-	w := &ReadableWallet{}
-	if err := w.Load(filename); err != nil {
-		return nil, fmt.Errorf("load wallet %s failed: %v", filename, err)
-	}
-	return w, nil
-}
-
-// ToWallet convert readable wallet to Wallet
-func (rw *ReadableWallet) ToWallet() (*Wallet, error) {
-	w := &Wallet{
-		Meta: rw.Meta,
-	}
-
-	if err := w.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid wallet %s: %v", w.Filename(), err)
-	}
-
-	ets, err := rw.Entries.toWalletEntries(w.coin(), w.IsEncrypted())
-	if err != nil {
-		return nil, err
-	}
-
-	w.Entries = ets
-
-	return w, nil
-}
-
-// Save saves to filename
-func (rw *ReadableWallet) Save(filename string) error {
-	return file.SaveJSON(filename, rw, 0600)
-}
-
-// Load loads from filename
-func (rw *ReadableWallet) Load(filename string) error {
-	return file.LoadJSON(filename, rw)
-}
-
-func (rw *ReadableWallet) timestamp() int64 {
-	// Intentionally ignore the error when parsing the timestamp,
-	// if it isn't valid or is missing it will be set to 0
-	x, _ := strconv.ParseInt(rw.Meta[metaTimestamp], 10, 64) //nolint:errcheck
-	return x
-}
-
-func (rw *ReadableWallet) filename() string {
-	return rw.Meta[metaFilename]
-}
-
-// Erase remove sensitive data
-func (rw *ReadableWallet) Erase() {
-	delete(rw.Meta, metaSeed)
-	delete(rw.Meta, metaLastSeed)
-	delete(rw.Meta, metaSecrets)
-	for i := range rw.Entries {
-		rw.Entries[i].Secret = ""
-	}
+// SaveReadableAs saves as filename and updates the wallet's metadata filename
+func SaveReadableAs(rw Readable, dir, filename string) error {
+	rw.SetFilename(filename)
+	return SaveReadable(rw, dir)
 }

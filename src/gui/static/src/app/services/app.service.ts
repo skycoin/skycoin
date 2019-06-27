@@ -46,6 +46,10 @@ export class AppService {
         this.hoursName = response.fiber.coin_hours_display_name;
         this.explorerUrl = response.fiber.explorer_url;
 
+        if (this.explorerUrl.endsWith('/')) {
+          this.explorerUrl = this.explorerUrl.substr(0, this.explorerUrl.length - 1);
+        }
+
         if (!response.csrf_enabled) {
           this.error = 3;
         }

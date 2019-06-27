@@ -140,7 +140,11 @@
       "encrypt-warning": "We suggest that you encrypt each one of your wallets with a password. If you forget your password, you can reset it with your seed. Make sure you have your seed saved somewhere safe before encrypting your wallet.",
       "unconventional-seed-title": "Possible error",
       "unconventional-seed-text": "You introduced an unconventional seed. If you did it for any special reason, you can continue (only recommended for advanced users). However, if your intention is to use a normal system seed, you must delete all the additional text and special characters.",
-      "unconventional-seed-check": "Continue with the unconventional seed."
+      "unconventional-seed-check": "Continue with the unconventional seed.",
+      "synchronizing-warning-title": "Warning",
+      "synchronizing-warning-text": "The wallet is still synchronizing and some addresses may not be restored. If some addresses are not restored, please wait for the wallet to be fully synchronized and add them again manually.",
+      "synchronizing-warning-continue": "Continue",
+      "synchronizing-warning-cancel": "Cancel"
     },
 
     "rename": {

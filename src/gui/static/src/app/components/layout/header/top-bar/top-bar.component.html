@@ -13,7 +13,7 @@
 
   <mat-menu #menuMenu="matMenu" [overlapTrigger]="false">
     <button mat-menu-item [routerLink]="['/settings/backup']">{{ 'title.backup' | translate }}</button>
-    <a mat-menu-item [href]="appService.explorerUrl" class="color-primary">{{ 'title.explorer' | translate }}</a>
+    <a mat-menu-item [href]="appService.explorerUrl" class="color-primary" target="_blank" rel="noreferrer nofollow">{{ 'title.explorer' | translate }}</a>
     <div class="separator"></div>
     <div mat-menu-item *ngIf="language" (click)="changelanguage()">
       <img [src]="'assets/img/lang/' + language.iconName" class="flag">

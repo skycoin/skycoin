@@ -8,6 +8,7 @@ import { Observable } from 'rxjs/Observable';
 import { showConfirmationModal } from '../../../../utils';
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { environment } from '../../../../../environments/environment';
+import { AppService } from '../../../../services/app.service';
 
 @Component({
   selector: 'app-exchange-status',
@@ -97,6 +98,7 @@ export class ExchangeStatusComponent implements OnDestroy {
     private exchangeService: ExchangeService,
     private dialog: MatDialog,
     public blockchainService: BlockchainService,
+    public appService: AppService,
   ) { }
 
   ngOnDestroy() {

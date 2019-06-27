@@ -63,7 +63,7 @@
         <div class="-key">{{ 'exchange.details.tx-id' | translate }}</div>
         <div class="-value">
           {{ order.toTx }}
-          <a [href]="'https://explorer.skycoin.net/app/transaction/' + order.toTx" class="-external" target="_blank" rel="noreferrer nofollow">
+          <a [href]="appService.explorerUrl + '/transaction/' + order.toTx" class="-external" target="_blank" rel="noreferrer nofollow">
             <mat-icon>launch</mat-icon>
           </a>
         </div>

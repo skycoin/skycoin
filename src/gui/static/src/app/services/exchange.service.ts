@@ -91,7 +91,7 @@ export class ExchangeService {
   }
 
   isOrderFinished(order: ExchangeOrder) {
-    return ['complete', 'error'].indexOf(order.status) > -1;
+    return ['complete', 'error', 'user_deposit_timeout'].indexOf(order.status) > -1;
   }
 
   private post(url: string, body?: any, headers?: any): Observable<any> {

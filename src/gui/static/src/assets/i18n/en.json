@@ -532,7 +532,9 @@
       "complete": "Exchange completed!",
       "complete-info": "The funds have been successfully sent to your address.",
       "error": "Error occurred",
-      "error-info": "There was an error in the operation, you can find more information below. If you need help, please save all the operation data shown below and contact technical support using the link in the lower right part of this page."
+      "error-info": "There was an error in the operation, you can find more information below. If you need help, please save all the operation data shown below and contact technical support using the link in the lower right part of this page.",
+      "user-deposit-timeout": "Order canceled due to inactivity",
+      "user-deposit-timeout-info": "The system has canceled the order because no deposit was detected, please open a new order. If you need help, please save all the operation data shown below and contact technical support using the link in the lower right part of this page."
     },
     "history-window": {
       "address": "Address",

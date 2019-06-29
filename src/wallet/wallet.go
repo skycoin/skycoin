@@ -4,6 +4,7 @@ Package wallet implements wallets and the wallet database service
 package wallet
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -13,12 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"encoding/hex"
-
 	"github.com/sirupsen/logrus"
 
 	"github.com/skycoin/skycoin/src/cipher"
-
 	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/util/logging"
 )
@@ -164,39 +162,8 @@ type Options struct {
 	GenerateN  uint64     // number of addresses to generate, regardless of balance
 }
 
-// type walletScanner interface {
-// 	ScanAddresses(num uint64, tf TransactionsFinder) error
-// }
-
-// type walletGenerator interface {
-// 	GenerateAddresses(num uint64) ([]cipher.Addresser, error)
-// 	GenerateSkycoinAddresses(num uint64) ([]cipher.Address, error)
-// }
-
-// type walletReader interface {
-// 	GetAddresses() []cipher.Addresser
-// 	GetSkycoinAddresses() []cipher.Address
-// 	GetEntry(a cipher.Address) (Entry, bool)
-// 	HasEntry(a cipher.Address) bool
-// }
-
-// type walletOperator interface {
-// 	walletScanner
-// 	walletGenerator
-// 	walletReader
-// }
-
-// // Wallet is a collection of keypairs/addresses with associated metadata
-// // and behavioral definitions.
-// type Wallet struct {
-// 	Meta    map[string]string
-// 	Entries []Entry
-
-// 	operator walletOperator
-// }
-
 // newWallet creates a wallet instance with given name and options.
-func newWallet(wltName string, opts Options, tf TransactionsFinder) (Walleter, error) {
+func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, error) {
 	if opts.Seed == "" {
 		return nil, ErrMissingSeed
 	}
@@ -237,13 +204,12 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Walleter, e
 	}
 
 	// Create the wallet
-	var w Walleter
+	var w Wallet
 	switch wltType {
 	case WalletTypeDeterministic:
-		fmt.Println("create deterministic wallet with seed:", opts.Seed)
-		w = NewDeterministicWallet(meta)
+		w = newDeterministicWallet(meta)
 	case WalletTypeCollection:
-		w = NewCollectionWallet(meta)
+		w = newCollectionWallet(meta)
 	default:
 		logger.Panic("unhandled wltType")
 	}
@@ -255,6 +221,9 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Walleter, e
 		if generateN == 0 {
 			generateN = 1
 		}
+
+		logger.WithField("generateN", generateN).Info("Generating addresses for deterministic wallet")
+
 		if _, err := w.GenerateAddresses(generateN); err != nil {
 			return nil, err
 		}
@@ -265,6 +234,7 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Walleter, e
 
 		if opts.ScanN > generateN {
 			// Scan for addresses with balances
+			logger.WithField("scanN", opts.ScanN).Info("Scanning addresses for deterministic wallet")
 			if err := w.ScanAddresses(opts.ScanN, tf); err != nil {
 				return nil, err
 			}
@@ -311,17 +281,17 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Walleter, e
 }
 
 // NewWallet creates wallet without scanning addresses
-func NewWallet(wltName string, opts Options) (Walleter, error) {
+func NewWallet(wltName string, opts Options) (Wallet, error) {
 	return newWallet(wltName, opts, nil)
 }
 
 // NewWalletScanAhead creates wallet and scan ahead N addresses
-func NewWalletScanAhead(wltName string, opts Options, tf TransactionsFinder) (Walleter, error) {
+func NewWalletScanAhead(wltName string, opts Options, tf TransactionsFinder) (Wallet, error) {
 	return newWallet(wltName, opts, tf)
 }
 
 // Lock encrypts the wallet with the given password and specific crypto type
-func Lock(w Walleter, password []byte, cryptoType CryptoType) error {
+func Lock(w Wallet, password []byte, cryptoType CryptoType) error {
 	if len(password) == 0 {
 		return ErrMissingPassword
 	}
@@ -378,7 +348,7 @@ func Lock(w Walleter, password []byte, cryptoType CryptoType) error {
 // Unlock decrypts the wallet into a temporary decrypted copy of the wallet
 // Returns error if the decryption fails
 // The temporary decrypted wallet should be erased from memory when done.
-func Unlock(w Walleter, password []byte) (Walleter, error) {
+func Unlock(w Wallet, password []byte) (Wallet, error) {
 	if !w.IsEncrypted() {
 		return nil, ErrWalletNotEncrypted
 	}
@@ -426,7 +396,7 @@ func Unlock(w Walleter, password []byte) (Walleter, error) {
 		return nil, err
 	}
 
-	if err := w.UnpackSecrets(ss); err != nil {
+	if err := wlt.UnpackSecrets(ss); err != nil {
 		return nil, err
 	}
 
@@ -435,8 +405,8 @@ func Unlock(w Walleter, password []byte) (Walleter, error) {
 	return wlt, nil
 }
 
-// Walleter defines the wallet API
-type Walleter interface {
+// Wallet defines the wallet API
+type Wallet interface {
 	Find(string) string
 	Seed() string
 	LastSeed() string
@@ -460,13 +430,15 @@ type Walleter interface {
 	PackSecrets(ss Secrets)
 
 	Erase()
-	Clone() Walleter
-	CopyFrom(src Walleter)
-	CopyFromRef(src Walleter)
+	Clone() Wallet
+	CopyFrom(src Wallet)
+	CopyFromRef(src Wallet)
 
-	Save(dir string) error
+	ToReadable() Readable
+
 	Validate() error
 
+	Fingerprint() string
 	GetAddresses() []cipher.Addresser
 	GetSkycoinAddresses() ([]cipher.Address, error)
 	GetEntryAt(i int) Entry
@@ -482,7 +454,7 @@ type Walleter interface {
 
 // GuardUpdate executes a function within the context of a read-write managed decrypted wallet.
 // Returns ErrWalletNotEncrypted if wallet is not encrypted.
-func GuardUpdate(w Walleter, password []byte, fn func(w Walleter) error) error {
+func GuardUpdate(w Wallet, password []byte, fn func(w Wallet) error) error {
 	if !w.IsEncrypted() {
 		return ErrWalletNotEncrypted
 	}
@@ -516,7 +488,7 @@ func GuardUpdate(w Walleter, password []byte, fn func(w Walleter) error) error {
 
 // GuardView executes a function within the context of a read-only managed decrypted wallet.
 // Returns ErrWalletNotEncrypted if wallet is not encrypted.
-func GuardView(w Walleter, password []byte, f func(w Walleter) error) error {
+func GuardView(w Wallet, password []byte, f func(w Wallet) error) error {
 	if !w.IsEncrypted() {
 		return ErrWalletNotEncrypted
 	}
@@ -545,13 +517,13 @@ type walletLoader interface {
 	SetFilename(string)
 	SetCoin(CoinType)
 	Coin() CoinType
-	ToWallet() (Walleter, error)
+	ToWallet() (Wallet, error)
 }
 
 // Load loads wallet from a given file
-func Load(filename string) (Walleter, error) {
+func Load(filename string) (Wallet, error) {
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		return nil, fmt.Errorf("wallet %s doesn't exist", filename)
+		return nil, fmt.Errorf("wallet %q doesn't exist", filename)
 	}
 
 	// Load the wallet meta type field from JSON
@@ -566,7 +538,7 @@ func Load(filename string) (Walleter, error) {
 			"filename":   filename,
 			"walletType": m.Meta.Type,
 		}).Error("wallet meta loaded from disk has invalid wallet type")
-		return nil, ErrInvalidWalletType
+		return nil, fmt.Errorf("invalid wallet %q: %v", filename, ErrInvalidWalletType)
 	}
 
 	// Depending on the wallet type in the wallet metadata header, load the full wallet data
@@ -574,8 +546,10 @@ func Load(filename string) (Walleter, error) {
 	var err error
 	switch m.Meta.Type {
 	case WalletTypeDeterministic:
+		logger.WithField("filename", filename).Info("LoadReadableDeterministicWallet")
 		rw, err = LoadReadableDeterministicWallet(filename)
 	case WalletTypeCollection:
+		logger.WithField("filename", filename).Info("LoadReadableCollectionWallet")
 		rw, err = LoadReadableCollectionWallet(filename)
 	default:
 		logger.WithField("walletType", m.Meta.Type).Error("Load: unhandled wallet type")
@@ -583,6 +557,10 @@ func Load(filename string) (Walleter, error) {
 	}
 
 	if err != nil {
+		logger.WithError(err).WithFields(logrus.Fields{
+			"filename":   filename,
+			"walletType": m.Meta.Type,
+		}).Error("Load readable wallet failed")
 		return nil, err
 	}
 
@@ -590,13 +568,19 @@ func Load(filename string) (Walleter, error) {
 	ct, err := ResolveCoinType(string(rw.Coin()))
 	if err != nil {
 		logger.WithError(err).WithField("coinType", rw.Coin()).Error("Load: invalid coin type")
-		return nil, err
+		return nil, fmt.Errorf("invalid wallet %q: %v", filename, err)
 	}
 	rw.SetCoin(ct)
 
 	rw.SetFilename(filepath.Base(filename))
 
 	return rw.ToWallet()
+}
+
+// Save saves the wallet to a directory. The wallet's filename is read from its metadata.
+func Save(w Wallet, dir string) error {
+	rw := w.ToReadable()
+	return file.SaveJSON(filepath.Join(dir, rw.Filename()), rw, 0600)
 }
 
 // removeBackupFiles removes any *.wlt.bak files whom have version 0.1 and *.wlt matched in the given directory

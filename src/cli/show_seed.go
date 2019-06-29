@@ -90,7 +90,7 @@ func getSeed(walletFile string, pr PasswordReader) (string, error) {
 	}
 
 	if !wlt.IsEncrypted() {
-		return wlt.Meta["seed"], nil
+		return wlt.Seed(), nil
 	}
 
 	password, err := pr.Password()
@@ -99,8 +99,8 @@ func getSeed(walletFile string, pr PasswordReader) (string, error) {
 	}
 
 	var seed string
-	if err := wlt.GuardView(password, func(w *wallet.Wallet) error {
-		seed = w.Meta["seed"]
+	if err := wallet.GuardView(wlt, password, func(w wallet.Wallet) error {
+		seed = w.Seed()
 		return nil
 	}); err != nil {
 		return "", err

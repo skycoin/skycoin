@@ -70,8 +70,8 @@ func addPrivateKeyCmd() *cobra.Command {
 	return addPrivateKeyCmd
 }
 
-// AddPrivateKey adds a private key to a *wallet.Wallet. Caller should save the wallet afterwards
-func AddPrivateKey(wlt *wallet.Wallet, key string) error {
+// AddPrivateKey adds a private key to a wallet.Wallet. Caller should save the wallet afterwards
+func AddPrivateKey(wlt *wallet.CollectionWallet, key string) error {
 	sk, err := cipher.SecKeyFromHex(key)
 	if err != nil {
 		return fmt.Errorf("invalid private key: %s, must be a hex string of length 64", key)
@@ -100,6 +100,10 @@ func AddPrivateKeyToFile(walletFile, key string, pr PasswordReader) error {
 		return WalletLoadError{err}
 	}
 
+	if wlt.Type() != wallet.WalletTypeCollection {
+		return fmt.Errorf("only %q type wallets can have keypairs added manually", wallet.WalletTypeCollection)
+	}
+
 	switch pr.(type) {
 	case nil:
 		if wlt.IsEncrypted() {
@@ -116,24 +120,24 @@ func AddPrivateKeyToFile(walletFile, key string, pr PasswordReader) error {
 		}
 	}
 
-	addKey := func(w *wallet.Wallet, key string) error {
+	addKey := func(w *wallet.CollectionWallet, key string) error {
 		return AddPrivateKey(w, key)
 	}
 
 	if wlt.IsEncrypted() {
-		addKey = func(w *wallet.Wallet, key string) error {
+		addKey = func(w *wallet.CollectionWallet, key string) error {
 			password, err := pr.Password()
 			if err != nil {
 				return err
 			}
 
-			return w.GuardUpdate(password, func(wlt *wallet.Wallet) error {
-				return AddPrivateKey(wlt, key)
+			return wallet.GuardUpdate(w, password, func(wlt wallet.Wallet) error {
+				return AddPrivateKey(wlt.(*wallet.CollectionWallet), key)
 			})
 		}
 	}
 
-	if err := addKey(wlt, key); err != nil {
+	if err := addKey(wlt.(*wallet.CollectionWallet), key); err != nil {
 		return err
 	}
 
@@ -142,7 +146,7 @@ func AddPrivateKeyToFile(walletFile, key string, pr PasswordReader) error {
 		return err
 	}
 
-	if err := wlt.Save(dir); err != nil {
+	if err := wallet.Save(wlt, dir); err != nil {
 		return WalletSaveError{err}
 	}
 

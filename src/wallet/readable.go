@@ -1,10 +1,7 @@
 package wallet
 
 import (
-	"path/filepath"
-
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/util/file"
 )
 
 // ReadableEntry wallet entry with json tags
@@ -50,7 +47,12 @@ func newReadableEntries(entries Entries, coinType CoinType) ReadableEntries {
 	return re
 }
 
-// ToWalletEntries convert readable entries to entries
+// GetEntries returns this array
+func (res ReadableEntries) GetEntries() ReadableEntries {
+	return res
+}
+
+// toWalletEntries convert readable entries to entries
 // converts base on the wallet version.
 func (res ReadableEntries) toWalletEntries(coinType CoinType, isEncrypted bool) ([]Entry, error) {
 	entries := make([]Entry, len(res))
@@ -118,22 +120,12 @@ func newEntryFromReadable(coinType CoinType, w *ReadableEntry) (*Entry, error) {
 	}, nil
 }
 
-// Readable	defines the readable wallet API.
+// Readable defines the readable wallet API.
 // A readable wallet is the on-disk representation of a wallet.
 type Readable interface {
-	ToWallet() (Walleter, error)
+	ToWallet() (Wallet, error)
 	Timestamp() int64
 	SetFilename(string)
 	Filename() string
-}
-
-// SaveReadable saves to the filename specified in the wallet's metadata
-func SaveReadable(rw Readable, dir string) error {
-	return file.SaveJSON(filepath.Join(dir, rw.Filename()), rw, 0600)
-}
-
-// SaveReadableAs saves as filename and updates the wallet's metadata filename
-func SaveReadableAs(rw Readable, dir, filename string) error {
-	rw.SetFilename(filename)
-	return SaveReadable(rw, dir)
+	GetEntries() ReadableEntries
 }

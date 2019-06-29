@@ -52,7 +52,7 @@ func listWallets(_ *gcli.Command, _ []string) error {
 			wlts.Wallets = append(wlts.Wallets, WalletEntry{
 				Name:       name,
 				Label:      w.Label(),
-				AddressNum: len(w.Entries),
+				AddressNum: w.EntriesLen(),
 			})
 		}
 	}

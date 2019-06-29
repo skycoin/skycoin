@@ -157,11 +157,11 @@ func generateWalletHandler(c *gcli.Command, _ []string) error {
 		return err
 	}
 
-	if err := wlt.Save(cliConfig.WalletDir); err != nil {
+	if err := wallet.Save(wlt, cliConfig.WalletDir); err != nil {
 		return err
 	}
 
-	return printJSON(wallet.NewReadableWallet(wlt))
+	return printJSON(wlt.ToReadable())
 }
 
 func makeSeed(s string, r, m bool) (string, error) {
@@ -192,7 +192,7 @@ func makeSeed(s string, r, m bool) (string, error) {
 
 // GenerateWallet generates a new wallet with filename walletFile, label, seed and number of addresses.
 // Caller should save the wallet file to its chosen directory
-func GenerateWallet(walletFile string, opts wallet.Options, numAddrs uint64) (*wallet.Wallet, error) {
+func GenerateWallet(walletFile string, opts wallet.Options, numAddrs uint64) (wallet.Wallet, error) {
 	walletFile = filepath.Base(walletFile)
 
 	wlt, err := wallet.NewWallet(walletFile, wallet.Options{
@@ -217,7 +217,7 @@ func GenerateWallet(walletFile string, opts wallet.Options, numAddrs uint64) (*w
 		return wlt, nil
 	}
 
-	if err := wlt.Lock(opts.Password, opts.CryptoType); err != nil {
+	if err := wallet.Lock(wlt, opts.Password, opts.CryptoType); err != nil {
 		return nil, err
 	}
 

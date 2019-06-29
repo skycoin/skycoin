@@ -90,6 +90,7 @@ func addressGenCmd() *cobra.Command {
 				Password:   password,
 				CryptoType: wallet.CryptoTypeScryptChacha20poly1305,
 				GenerateN:  uint64(numAddresses),
+				Type:       wallet.WalletTypeDeterministic,
 			})
 			if err != nil {
 				return err
@@ -99,7 +100,7 @@ func addressGenCmd() *cobra.Command {
 				w.Erase()
 			}
 
-			rw := wallet.NewReadableWallet(w)
+			rw := w.ToReadable()
 
 			switch strings.ToLower(mode) {
 			case "json", "wallet":
@@ -110,14 +111,14 @@ func addressGenCmd() *cobra.Command {
 
 				fmt.Println(string(output))
 			case "addrs", "addresses":
-				for _, e := range rw.Entries {
+				for _, e := range rw.GetEntries() {
 					fmt.Println(e.Address)
 				}
 			case "secrets":
 				if hideSecrets {
 					return errors.New("secrets mode selected but hideSecrets enabled")
 				}
-				for _, e := range rw.Entries {
+				for _, e := range rw.GetEntries() {
 					fmt.Println(e.Secret)
 				}
 			default:

@@ -66,7 +66,7 @@ func init() {
 			log.Panic(err)
 		}
 
-		if err := w.Save("./testdata"); err != nil {
+		if err := Save(w, "./testdata"); err != nil {
 			log.Panic(err)
 		}
 
@@ -83,7 +83,7 @@ func init() {
 			log.Panic(err)
 		}
 
-		if err := w1.Save("./testdata"); err != nil {
+		if err := Save(w1, "./testdata"); err != nil {
 			log.Panic(err)
 		}
 	}
@@ -467,7 +467,7 @@ func TestLockAndUnLock(t *testing.T) {
 	}
 }
 
-func makeWallet(t *testing.T, opts Options, addrNum uint64) Walleter { //nolint:unparam
+func makeWallet(t *testing.T, opts Options, addrNum uint64) Wallet { //nolint:unparam
 	// Create an unlocked wallet, then generate addresses, lock if the options.Encrypt is true.
 	preOpts := opts
 	opts.Encrypt = false
@@ -519,7 +519,7 @@ func TestLoadWallet(t *testing.T) {
 			"not_exist_file.wlt",
 			expect{
 				meta: map[string]string{},
-				err:  fmt.Errorf("wallet not_exist_file.wlt doesn't exist"),
+				err:  fmt.Errorf("wallet \"not_exist_file.wlt\" doesn't exist"),
 			},
 		},
 		{
@@ -527,7 +527,7 @@ func TestLoadWallet(t *testing.T) {
 			"./testdata/invalid_wallets/no_type.wlt",
 			expect{
 				meta: map[string]string{},
-				err:  fmt.Errorf("invalid wallet no_type.wlt: type field not set"),
+				err:  fmt.Errorf("invalid wallet \"./testdata/invalid_wallets/no_type.wlt\": invalid wallet type"),
 			},
 		},
 		{
@@ -535,7 +535,7 @@ func TestLoadWallet(t *testing.T) {
 			"./testdata/invalid_wallets/err_type.wlt",
 			expect{
 				meta: map[string]string{},
-				err:  fmt.Errorf("invalid wallet err_type.wlt: wallet type invalid"),
+				err:  fmt.Errorf("invalid wallet \"./testdata/invalid_wallets/err_type.wlt\": invalid wallet type"),
 			},
 		},
 		{
@@ -543,7 +543,7 @@ func TestLoadWallet(t *testing.T) {
 			"./testdata/invalid_wallets/no_coin.wlt",
 			expect{
 				meta: map[string]string{},
-				err:  fmt.Errorf("invalid wallet no_coin.wlt: coin field not set"),
+				err:  fmt.Errorf("invalid wallet \"./testdata/invalid_wallets/no_coin.wlt\": invalid coin type"),
 			},
 		},
 		{
@@ -551,7 +551,7 @@ func TestLoadWallet(t *testing.T) {
 			"./testdata/invalid_wallets/no_seed.wlt",
 			expect{
 				meta: map[string]string{},
-				err:  fmt.Errorf("invalid wallet no_seed.wlt: seed missing in unencrypted wallet"),
+				err:  fmt.Errorf("invalid wallet \"no_seed.wlt\": seed missing in unencrypted deterministic wallet"),
 			},
 		},
 		{
@@ -614,7 +614,9 @@ func TestLoadWallet(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			w, err := Load(tc.file)
-			require.Equal(t, tc.expect.err, err)
+			if err != nil {
+				require.Equal(t, tc.expect.err.Error(), err.Error())
+			}
 			if err != nil {
 				return
 			}
@@ -765,17 +767,13 @@ func TestWalletGetEntry(t *testing.T) {
 	}
 }
 
-func TestWalletAddEntry(t *testing.T) {
+func TestWalletCollectionAddEntry(t *testing.T) {
 	test1SecKey, err := cipher.SecKeyFromHex("1fc5396e91e60b9fc613d004ea5bd2ccea17053a12127301b3857ead76fdb93e")
 	require.NoError(t, err)
 
 	_, s := cipher.GenerateKeyPair()
-	seckeys := []cipher.SecKey{
-		test1SecKey,
-		s,
-	}
 
-	tt := []struct {
+	cases := []struct {
 		name    string
 		wltFile string
 		secKey  cipher.SecKey
@@ -783,28 +781,29 @@ func TestWalletAddEntry(t *testing.T) {
 	}{
 		{
 			"ok",
-			"./testdata/test1.wlt",
-			seckeys[1],
+			"./testdata/test4-collection.wlt",
+			s,
 			nil,
 		},
 		{
 			"dup entry",
-			"./testdata/test1.wlt",
-			seckeys[0],
-			errors.New("duplicate address entry"),
+			"./testdata/test4-collection.wlt",
+			test1SecKey,
+			errors.New("wallet already contains entry with this address"),
 		},
 	}
 
-	for _, tc := range tt {
+	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			w, err := Load(tc.wltFile)
 			require.NoError(t, err)
+
 			a := cipher.MustAddressFromSecKey(tc.secKey)
 			p := cipher.MustPubKeyFromSecKey(tc.secKey)
 			require.Equal(t, tc.err, w.(*CollectionWallet).AddEntry(Entry{
 				Address: a,
 				Public:  p,
-				Secret:  s,
+				Secret:  tc.secKey,
 			}))
 		})
 	}
@@ -813,7 +812,7 @@ func TestWalletAddEntry(t *testing.T) {
 func TestWalletGuard(t *testing.T) {
 	for ct := range cryptoTable {
 		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
-			validate := func(w Walleter) {
+			validate := func(w Wallet) {
 				require.Equal(t, "", w.Seed())
 				require.Equal(t, "", w.LastSeed())
 				for _, e := range w.GetEntries() {
@@ -829,7 +828,7 @@ func TestWalletGuard(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			err = GuardUpdate(w, []byte("pwd"), func(w Walleter) error {
+			err = GuardUpdate(w, []byte("pwd"), func(w Wallet) error {
 				require.Equal(t, "seed", w.Seed())
 				w.SetLabel("label")
 				return nil
@@ -838,7 +837,7 @@ func TestWalletGuard(t *testing.T) {
 			require.Equal(t, "label", w.Label())
 			validate(w)
 
-			err = GuardView(w, []byte("pwd"), func(w Walleter) error {
+			err = GuardView(w, []byte("pwd"), func(w Wallet) error {
 				require.Equal(t, "label", w.Label())
 				w.SetLabel("new label")
 				return nil
@@ -1134,7 +1133,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 				require.NoError(t, err)
 				w.SetVersion(f.version)
 
-				require.NoError(t, w.Save(dir))
+				require.NoError(t, Save(w, dir))
 			}
 
 			require.NoError(t, removeBackupFiles(dir))
@@ -1208,9 +1207,9 @@ func TestWalletValidate(t *testing.T) {
 			err:  errors.New("type field not set"),
 		},
 		{
-			name: "wallet type invalid",
+			name: "invalid wallet type",
 			meta: setField(goodMetaUnencrypted, metaType, "footype"),
-			err:  errors.New("wallet type invalid"),
+			err:  ErrInvalidWalletType,
 		},
 		{
 			name: "coin field missing",
@@ -1225,12 +1224,12 @@ func TestWalletValidate(t *testing.T) {
 		{
 			name: "unencrypted missing seed",
 			meta: delField(goodMetaUnencrypted, metaSeed),
-			err:  errors.New("seed missing in unencrypted wallet"),
+			err:  errors.New("seed missing in unencrypted deterministic wallet"),
 		},
 		{
 			name: "unencrypted missing last seed",
 			meta: delField(goodMetaUnencrypted, metaLastSeed),
-			err:  errors.New("lastSeed missing in unencrypted wallet"),
+			err:  errors.New("lastSeed missing in unencrypted deterministic wallet"),
 		},
 		{
 			name: "crypto type missing",
@@ -1268,7 +1267,12 @@ func TestWalletValidate(t *testing.T) {
 				Meta: tc.meta,
 			}
 			err := w.Validate()
-			require.Equal(t, tc.err, err)
+
+			if tc.err == nil {
+				require.NoError(t, err)
+			} else {
+				require.Equal(t, tc.err, err, "%s != %s", tc.err, err)
+			}
 		})
 	}
 }

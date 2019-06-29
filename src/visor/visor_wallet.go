@@ -55,7 +55,7 @@ func (vs *Visor) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.Addr
 	var addrsBalanceList []wallet.BalancePair
 	var addrs []cipher.Address
 
-	if err := vs.wallets.View(wltID, func(w *wallet.Wallet) error {
+	if err := vs.wallets.View(wltID, func(w wallet.Wallet) error {
 		var err error
 		addrs, err = w.GetSkycoinAddresses()
 		if err != nil {
@@ -105,7 +105,7 @@ func (vs *Visor) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.Addr
 func (vs *Visor) GetWalletUnconfirmedTransactions(wltID string) ([]UnconfirmedTransaction, error) {
 	var txns []UnconfirmedTransaction
 
-	if err := vs.wallets.View(wltID, func(w *wallet.Wallet) error {
+	if err := vs.wallets.View(wltID, func(w wallet.Wallet) error {
 		addrs, err := w.GetSkycoinAddresses()
 		if err != nil {
 			return err
@@ -125,7 +125,7 @@ func (vs *Visor) GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]Unconf
 	var txns []UnconfirmedTransaction
 	var inputs [][]TransactionInput
 
-	if err := vs.wallets.View(wltID, func(w *wallet.Wallet) error {
+	if err := vs.wallets.View(wltID, func(w wallet.Wallet) error {
 		addrs, err := w.GetSkycoinAddresses()
 		if err != nil {
 			return err
@@ -150,7 +150,7 @@ func (vs *Visor) WalletSignTransaction(wltID string, password []byte, txn *coin.
 		return nil, nil, ErrTransactionAlreadySigned
 	}
 
-	if err := vs.wallets.ViewSecrets(wltID, password, func(w *wallet.Wallet) error {
+	if err := vs.wallets.ViewSecrets(wltID, password, func(w wallet.Wallet) error {
 		return vs.db.View("WalletSignTransaction", func(tx *dbutil.Tx) error {
 			// Verify the transaction before signing
 			if err := VerifySingleTxnUserConstraints(*txn); err != nil {
@@ -176,7 +176,7 @@ func (vs *Visor) WalletSignTransaction(wltID string, password []byte, txn *coin.
 				uxOuts[i] = in.UxOut
 			}
 
-			signedTxn, err = w.SignTransaction(txn, signIndexes, uxOuts)
+			signedTxn, err = wallet.SignTransaction(w, txn, signIndexes, uxOuts)
 			if err != nil {
 				logger.WithError(err).Error("wallet.SignTransaction failed")
 				return err
@@ -262,7 +262,7 @@ func (vs *Visor) WalletCreateTransactionSigned(wltID string, password []byte, p 
 	var txn *coin.Transaction
 	var inputs []TransactionInput
 
-	if err := vs.wallets.ViewSecrets(wltID, password, func(w *wallet.Wallet) error {
+	if err := vs.wallets.ViewSecrets(wltID, password, func(w wallet.Wallet) error {
 		var err error
 		txn, inputs, err = vs.walletCreateTransaction("WalletCreateTransactionSigned", w, p, wp, TxnSigned)
 		return err
@@ -286,7 +286,7 @@ func (vs *Visor) WalletCreateTransaction(wltID string, p transaction.Params, wp 
 	var txn *coin.Transaction
 	var inputs []TransactionInput
 
-	if err := vs.wallets.View(wltID, func(w *wallet.Wallet) error {
+	if err := vs.wallets.View(wltID, func(w wallet.Wallet) error {
 		var err error
 		txn, inputs, err = vs.walletCreateTransaction("WalletCreateTransaction", w, p, wp, TxnUnsigned)
 		return err
@@ -297,7 +297,7 @@ func (vs *Visor) WalletCreateTransaction(wltID string, p transaction.Params, wp 
 	return txn, inputs, nil
 }
 
-func (vs *Visor) walletCreateTransaction(methodName string, w *wallet.Wallet, p transaction.Params, wp CreateTransactionParams, signed TxnSignedFlag) (*coin.Transaction, []TransactionInput, error) {
+func (vs *Visor) walletCreateTransaction(methodName string, w wallet.Wallet, p transaction.Params, wp CreateTransactionParams, signed TxnSignedFlag) (*coin.Transaction, []TransactionInput, error) {
 	if err := p.Validate(); err != nil {
 		return nil, nil, err
 	}
@@ -346,7 +346,7 @@ func (vs *Visor) walletCreateTransaction(methodName string, w *wallet.Wallet, p 
 }
 
 func (vs *Visor) walletCreateTransactionTx(tx *dbutil.Tx, methodName string,
-	w *wallet.Wallet, p transaction.Params, wp CreateTransactionParams, signed TxnSignedFlag,
+	w wallet.Wallet, p transaction.Params, wp CreateTransactionParams, signed TxnSignedFlag,
 	addrs []cipher.Address, walletAddressesMap map[cipher.Address]struct{}) (*coin.Transaction, []transaction.UxBalance, error) {
 	// Note: assumes inputs have already been validated by walletCreateTransaction
 
@@ -385,9 +385,9 @@ func (vs *Visor) walletCreateTransactionTx(tx *dbutil.Tx, methodName string,
 
 	switch signed {
 	case TxnSigned:
-		txn, uxb, err = w.CreateTransactionSigned(p, auxs, head.Time())
+		txn, uxb, err = wallet.CreateTransactionSigned(w, p, auxs, head.Time())
 	case TxnUnsigned:
-		txn, uxb, err = w.CreateTransaction(p, auxs, head.Time())
+		txn, uxb, err = wallet.CreateTransaction(w, p, auxs, head.Time())
 	default:
 		logger.Panic("Invalid TxnSignedFlag")
 	}

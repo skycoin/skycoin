@@ -101,12 +101,12 @@ func TestCreateWallet(t *testing.T) {
 	lw, err := wallet.Load(walletPath)
 	require.NoError(t, err)
 	require.False(t, lw.IsEncrypted())
-	require.Equal(t, seed, lw.Meta["seed"])
-	require.Equal(t, len(w.Entries), len(lw.Entries))
+	require.Equal(t, seed, lw.Seed())
+	require.Equal(t, len(w.Entries), lw.EntriesLen())
 
 	for i := range w.Entries {
-		require.Equal(t, w.Entries[i].Address, lw.Entries[i].Address.String())
-		require.Equal(t, w.Entries[i].Public, lw.Entries[i].Public.Hex())
+		require.Equal(t, w.Entries[i].Address, lw.GetEntryAt(i).Address.String())
+		require.Equal(t, w.Entries[i].Public, lw.GetEntryAt(i).Public.Hex())
 	}
 
 	// Creates wallet with encryption
@@ -120,11 +120,11 @@ func TestCreateWallet(t *testing.T) {
 
 	// Confirms the loaded wallet is encrypted and has the same address entries
 	require.True(t, encLW.IsEncrypted())
-	require.Equal(t, len(encW.Entries), len(encLW.Entries))
+	require.Equal(t, len(encW.Entries), encLW.EntriesLen())
 
 	for i := range encW.Entries {
-		require.Equal(t, encW.Entries[i].Address, encLW.Entries[i].Address.String())
-		require.Equal(t, encW.Entries[i].Public, encLW.Entries[i].Public.Hex())
+		require.Equal(t, encW.Entries[i].Address, encLW.GetEntryAt(i).Address.String())
+		require.Equal(t, encW.Entries[i].Public, encLW.GetEntryAt(i).Public.Hex())
 	}
 }
 
@@ -417,9 +417,9 @@ func TestEncryptWallet(t *testing.T) {
 	wltPath := filepath.Join(wf.Address, w.Meta.Filename)
 	lw, err := wallet.Load(wltPath)
 	require.NoError(t, err)
-	require.Empty(t, lw.Meta["seed"])
-	require.Empty(t, lw.Meta["lastSeed"])
-	require.NotEmpty(t, lw.Meta["secrets"])
+	require.Empty(t, lw.Seed())
+	require.Empty(t, lw.LastSeed())
+	require.NotEmpty(t, lw.Secrets())
 
 	// Decrypts the wallet, and confirms that the
 	// seed and address entries are the same as it was before being encrypted.
@@ -464,17 +464,17 @@ func TestDecryptWallet(t *testing.T) {
 	lw, err := wallet.Load(wltPath)
 	require.NoError(t, err)
 
-	require.Equal(t, lw.Meta["seed"], seed)
-	require.Len(t, lw.Entries, 1)
+	require.Equal(t, lw.Seed(), seed)
+	require.Equal(t, 1, lw.EntriesLen())
 
 	// Confirms the last seed is matched
 	lseed, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 1)
-	require.Equal(t, hex.EncodeToString(lseed), lw.Meta["lastSeed"])
+	require.Equal(t, hex.EncodeToString(lseed), lw.LastSeed())
 
 	// Confirms that the first address is derivied from the private key
 	pubkey := cipher.MustPubKeyFromSecKey(seckeys[0])
 	require.Equal(t, w.Entries[0].Address, cipher.AddressFromPubKey(pubkey).String())
-	require.Equal(t, lw.Entries[0].Address.String(), w.Entries[0].Address)
+	require.Equal(t, lw.GetEntryAt(0).Address.String(), w.Entries[0].Address)
 }
 
 func TestRecoverWallet(t *testing.T) {
@@ -631,7 +631,7 @@ func TestGetWalletSeedEnabledAPI(t *testing.T) {
 // 1. The minimal coins and coin hours requirements are met.
 // 2. The wallet has at least two address entry.
 // Returns the loaded wallet, total coins, total coin hours and password of the wallet.
-func prepareAndCheckWallet(t *testing.T, c *api.Client, miniCoins, miniCoinHours uint64) (*wallet.Wallet, uint64, uint64, string) {
+func prepareAndCheckWallet(t *testing.T, c *api.Client, miniCoins, miniCoinHours uint64) (wallet.Wallet, uint64, uint64, string) {
 	walletDir, walletName, password := getWalletFromEnv(t, c)
 	walletPath := filepath.Join(walletDir, walletName)
 
@@ -650,8 +650,8 @@ func prepareAndCheckWallet(t *testing.T, c *api.Client, miniCoins, miniCoinHours
 	}
 
 	// Generate more addresses if address entries less than 2.
-	if len(w.Entries) < 2 {
-		_, err := c.NewWalletAddress(w.Filename(), 2-len(w.Entries), password)
+	if w.EntriesLen() < 2 {
+		_, err := c.NewWalletAddress(w.Filename(), 2-w.EntriesLen(), password)
 		if err != nil {
 			t.Fatalf("New wallet address failed: %v", err)
 		}
@@ -671,7 +671,7 @@ func prepareAndCheckWallet(t *testing.T, c *api.Client, miniCoins, miniCoinHours
 		t.Fatalf("Wallet must have at least %d coin hours", miniCoinHours)
 	}
 
-	if err := w.Save(walletDir); err != nil {
+	if err := wallet.Save(w, walletDir); err != nil {
 		t.Fatalf("%v", err)
 	}
 

@@ -18,8 +18,8 @@ type DeterministicWallet struct {
 	Entries Entries
 }
 
-// NewDeterministicWallet creates a DeterministicWallet
-func NewDeterministicWallet(meta Meta) *DeterministicWallet {
+// newDeterministicWallet creates a DeterministicWallet
+func newDeterministicWallet(meta Meta) *DeterministicWallet {
 	return &DeterministicWallet{
 		Meta: meta,
 	}
@@ -68,7 +68,7 @@ func (w *DeterministicWallet) UnpackSecrets(ss Secrets) error {
 }
 
 // Clone clones the wallet a new wallet object
-func (w *DeterministicWallet) Clone() Walleter {
+func (w *DeterministicWallet) Clone() Wallet {
 	return &DeterministicWallet{
 		Meta:    w.Meta.clone(),
 		Entries: w.Entries.clone(),
@@ -76,13 +76,13 @@ func (w *DeterministicWallet) Clone() Walleter {
 }
 
 // CopyFrom copies the src wallet to w
-func (w *DeterministicWallet) CopyFrom(src Walleter) {
+func (w *DeterministicWallet) CopyFrom(src Wallet) {
 	w.Meta = src.(*DeterministicWallet).Meta.clone()
 	w.Entries = src.(*DeterministicWallet).Entries.clone()
 }
 
 // CopyFromRef copies the src wallet with a pointer dereference
-func (w *DeterministicWallet) CopyFromRef(src Walleter) {
+func (w *DeterministicWallet) CopyFromRef(src Wallet) {
 	*w = *(src.(*DeterministicWallet))
 }
 
@@ -92,10 +92,9 @@ func (w *DeterministicWallet) Erase() {
 	w.Entries.erase()
 }
 
-// Save saves the wallet to given dir
-func (w *DeterministicWallet) Save(dir string) error {
-	rw := NewReadableDeterministicWallet(w)
-	return SaveReadable(rw, dir)
+// ToReadable converts the wallet to its readable (serializable) format
+func (w *DeterministicWallet) ToReadable() Readable {
+	return NewReadableDeterministicWallet(w)
 }
 
 // Validate validates the wallet
@@ -117,9 +116,9 @@ func (w *DeterministicWallet) GetSkycoinAddresses() ([]cipher.Address, error) {
 	return w.Entries.getSkycoinAddresses(), nil
 }
 
-// GetEntries returns all entries held by the wallet
+// GetEntries returns a copy of all entries held by the wallet
 func (w *DeterministicWallet) GetEntries() Entries {
-	return w.Entries
+	return w.Entries.clone()
 }
 
 // EntriesLen returns the number of entries in the wallet
@@ -273,10 +272,25 @@ func (w *DeterministicWallet) ScanAddresses(scanN uint64, tf TransactionsFinder)
 	return nil
 }
 
+// Fingerprint returns a unique ID fingerprint this wallet, composed of its initial address
+// and wallet type
+func (w *DeterministicWallet) Fingerprint() string {
+	addr := ""
+	if len(w.Entries) == 0 {
+		if !w.IsEncrypted() {
+			_, pk, _ := cipher.MustDeterministicKeyPairIterator([]byte(w.Meta.Seed()))
+			addr = w.Meta.AddressConstructor()(pk).String()
+		}
+	} else {
+		addr = w.Entries[0].Address.String()
+	}
+	return fmt.Sprintf("%s-%s", w.Type(), addr)
+}
+
 // ReadableDeterministicWallet used for [de]serialization of a deterministic wallet
 type ReadableDeterministicWallet struct {
-	Meta    `json:"meta"`
-	Entries ReadableEntries `json:"entries"`
+	Meta            `json:"meta"`
+	ReadableEntries `json:"entries"`
 }
 
 // LoadReadableDeterministicWallet loads a deterministic wallet from disk
@@ -285,19 +299,22 @@ func LoadReadableDeterministicWallet(wltFile string) (*ReadableDeterministicWall
 	if err := file.LoadJSON(wltFile, &rw); err != nil {
 		return nil, err
 	}
+	if rw.Type() != WalletTypeDeterministic {
+		return nil, ErrInvalidWalletType
+	}
 	return &rw, nil
 }
 
 // NewReadableDeterministicWallet creates readable wallet
 func NewReadableDeterministicWallet(w *DeterministicWallet) *ReadableDeterministicWallet {
 	return &ReadableDeterministicWallet{
-		Meta:    w.Meta.clone(),
-		Entries: newReadableEntries(w.Entries, w.Meta.Coin()),
+		Meta:            w.Meta.clone(),
+		ReadableEntries: newReadableEntries(w.Entries, w.Meta.Coin()),
 	}
 }
 
 // ToWallet convert readable wallet to Wallet
-func (rw *ReadableDeterministicWallet) ToWallet() (Walleter, error) {
+func (rw *ReadableDeterministicWallet) ToWallet() (Wallet, error) {
 	w := &DeterministicWallet{
 		Meta: rw.Meta.clone(),
 	}
@@ -308,7 +325,7 @@ func (rw *ReadableDeterministicWallet) ToWallet() (Walleter, error) {
 		return nil, err
 	}
 
-	ets, err := rw.Entries.toWalletEntries(w.Meta.Coin(), w.Meta.IsEncrypted())
+	ets, err := rw.ReadableEntries.toWalletEntries(w.Meta.Coin(), w.Meta.IsEncrypted())
 	if err != nil {
 		logger.WithError(err).Error("ReadableDeterministicWallet.ToWallet toWalletEntries failed")
 		return nil, err

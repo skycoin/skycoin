@@ -41,8 +41,8 @@ func (m Meta) validate() error {
 	if !ok {
 		return errors.New("type field not set")
 	}
-	if walletType != WalletTypeDeterministic {
-		return errors.New("wallet type invalid")
+	if !IsValidWalletType(walletType) {
+		return ErrInvalidWalletType
 	}
 
 	if coinType := m[metaCoin]; coinType == "" {
@@ -59,7 +59,6 @@ func (m Meta) validate() error {
 		}
 	}
 
-	// checks if the secrets field is empty
 	if isEncrypted {
 		cryptoType, ok := m[metaCryptoType]
 		if !ok {
@@ -73,14 +72,38 @@ func (m Meta) validate() error {
 		if s := m[metaSecrets]; s == "" {
 			return errors.New("wallet is encrypted, but secrets field not set")
 		}
-	} else {
-		if s := m[metaSeed]; s == "" {
-			return errors.New("seed missing in unencrypted wallet")
+
+		if s := m[metaSeed]; s != "" {
+			return errors.New("seed should not be visible in encrypted wallets")
 		}
 
-		if s := m[metaLastSeed]; s == "" {
-			return errors.New("lastSeed missing in unencrypted wallet")
+		if s := m[metaLastSeed]; s != "" {
+			return errors.New("lastSeed should not be visible in encrypted wallets")
 		}
+	}
+
+	switch walletType {
+	case WalletTypeCollection:
+		if s := m[metaSeed]; s != "" {
+			return errors.New("seed should not be in collection wallets")
+		}
+
+		if s := m[metaLastSeed]; s != "" {
+			return errors.New("lastSeed should not be in collection wallets")
+		}
+	case WalletTypeDeterministic:
+		// checks if the secrets field is empty
+		if !isEncrypted {
+			if s := m[metaSeed]; s == "" {
+				return errors.New("seed missing in unencrypted deterministic wallet")
+			}
+
+			if s := m[metaLastSeed]; s == "" {
+				return errors.New("lastSeed missing in unencrypted deterministic wallet")
+			}
+		}
+	default:
+		return ErrInvalidWalletType
 	}
 
 	return nil

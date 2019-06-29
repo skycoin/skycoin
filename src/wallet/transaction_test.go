@@ -96,7 +96,7 @@ func TestWalletSignTransaction(t *testing.T) {
 
 	cases := []struct {
 		name        string
-		w           Walleter
+		w           Wallet
 		txn         coin.Transaction
 		signIndexes []int
 		uxOuts      []coin.UxOut

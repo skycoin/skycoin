@@ -5,12 +5,10 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"strings"
-
-	"github.com/skycoin/skycoin/src/cipher"
 )
 
 // Wallets wallets map
-type Wallets map[string]Walleter
+type Wallets map[string]Wallet
 
 // loadWallets Loads all wallets contained in wallet dir.  If any regular file in wallet
 // dir fails to load, loading is aborted and error returned.  Only files with
@@ -61,7 +59,7 @@ func loadWallets(dir string) (Wallets, error) {
 }
 
 // add add walet to current wallet
-func (wlts Wallets) add(w Walleter) error {
+func (wlts Wallets) add(w Wallet) error {
 	if _, dup := wlts[w.Filename()]; dup {
 		return ErrWalletNameConflict
 	}
@@ -76,34 +74,35 @@ func (wlts Wallets) remove(id string) {
 }
 
 // get returns wallet by wallet id
-func (wlts Wallets) get(id string) Walleter {
+func (wlts Wallets) get(id string) Wallet {
 	return wlts[id]
 }
 
 // set sets a wallet into the map
-func (wlts Wallets) set(w Walleter) {
+func (wlts Wallets) set(w Wallet) {
 	wlts[w.Filename()] = w.Clone()
 }
 
-// containsDuplicate returns true if there is a duplicate wallet
-// (identified by the first address in the wallet) and return the ID of that wallet
-// and the first address if true
-func (wlts Wallets) containsDuplicate() (string, cipher.Address, bool) {
-	m := make(map[cipher.Address]struct{}, len(wlts))
+// containsDuplicate returns true if there is a duplicate wallet identified by
+// the wallet's fingerprint. This is to detect duplicate generative wallets;
+// wallets with no defined generation method do not have a concept of being
+// a duplicate of another wallet
+func (wlts Wallets) containsDuplicate() (string, string, bool) {
+	m := make(map[string]struct{}, len(wlts))
 	for wltID, wlt := range wlts {
-		if wlt.EntriesLen() == 0 {
+		fp := wlt.Fingerprint()
+		if fp == "" {
 			continue
 		}
-		e := wlt.GetEntryAt(0)
-		addr := e.SkycoinAddress()
-		if _, ok := m[addr]; ok {
-			return wltID, addr, true
+
+		if _, ok := m[fp]; ok {
+			return wltID, fp, true
 		}
 
-		m[addr] = struct{}{}
+		m[fp] = struct{}{}
 	}
 
-	return "", cipher.Address{}, false
+	return "", "", false
 }
 
 // containsEmpty returns true there is an empty wallet and the ID of that wallet if true

@@ -60,7 +60,7 @@ func TestNewService(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			require.Equal(t, 6, len(s.wallets))
+			require.Equal(t, 7, len(s.wallets))
 
 		})
 	}
@@ -73,7 +73,7 @@ func TestNewServiceDupWallets(t *testing.T) {
 	})
 	require.NotNil(t, err)
 	require.Error(t, err)
-	require.True(t, strings.HasPrefix(err.Error(), "duplicate wallet found with initial address 2M755W9o7933roLASK9PZTmqRsjQUsVen9y in file"), err.Error())
+	require.True(t, strings.HasPrefix(err.Error(), "duplicate wallet found with fingerprint deterministic-2M755W9o7933roLASK9PZTmqRsjQUsVen9y in file"), err.Error())
 }
 
 func TestNewServiceEmptyWallet(t *testing.T) {
@@ -578,7 +578,7 @@ func TestServiceGetWallets(t *testing.T) {
 				}, nil)
 				require.NoError(t, err)
 
-				var wallets []Walleter
+				var wallets []Wallet
 				// Get the default wallet
 				wallets = append(wallets, w)
 
@@ -895,7 +895,7 @@ func TestServiceDecryptWallet(t *testing.T) {
 					return
 				}
 
-				verifyDecryptedWlt := func(wlt Walleter) {
+				verifyDecryptedWlt := func(wlt Wallet) {
 					// Checks the "encrypted" meta info
 					require.False(t, wlt.IsEncrypted())
 					// Checks the seed
@@ -1465,7 +1465,7 @@ func TestServiceView(t *testing.T) {
 		wltName          string
 		opts             Options
 		viewWltName      string
-		action           func(*testing.T) func(Walleter) error
+		action           func(*testing.T) func(Wallet) error
 		disableWalletAPI bool
 		err              error
 	}{
@@ -1479,8 +1479,8 @@ func TestServiceView(t *testing.T) {
 				Password: []byte("pwd"),
 				Label:    "foowlt",
 			},
-			action: func(t *testing.T) func(Walleter) error {
-				return func(w Walleter) error {
+			action: func(t *testing.T) func(Wallet) error {
+				return func(w Wallet) error {
 					require.Equal(t, "foowlt", w.Label())
 					checkNoSensitiveData(t, w)
 
@@ -1500,8 +1500,8 @@ func TestServiceView(t *testing.T) {
 				Seed:  "fooseed",
 				Label: "foowlt",
 			},
-			action: func(t *testing.T) func(Walleter) error {
-				return func(w Walleter) error {
+			action: func(t *testing.T) func(Wallet) error {
+				return func(w Wallet) error {
 					require.Equal(t, "foowlt", w.Label())
 					// Seed is visible because its not encrypted
 					require.Equal(t, "fooseed", w.Seed())
@@ -1554,7 +1554,7 @@ func TestServiceView(t *testing.T) {
 
 			s.config.EnableWalletAPI = !tc.disableWalletAPI
 
-			var action func(Walleter) error
+			var action func(Wallet) error
 			if tc.action != nil {
 				action = tc.action(t)
 			}
@@ -1581,7 +1581,7 @@ func TestServiceViewSecrets(t *testing.T) {
 		wltName          string
 		opts             Options
 		viewWltName      string
-		action           func(*testing.T) func(Walleter) error
+		action           func(*testing.T) func(Wallet) error
 		password         []byte
 		disableWalletAPI bool
 		err              error
@@ -1597,8 +1597,8 @@ func TestServiceViewSecrets(t *testing.T) {
 				Label:    "foowlt",
 			},
 			password: []byte("pwd"),
-			action: func(t *testing.T) func(Walleter) error {
-				return func(w Walleter) error {
+			action: func(t *testing.T) func(Wallet) error {
+				return func(w Wallet) error {
 					require.Equal(t, "foowlt", w.Label())
 
 					// Should be able to see sensitive data
@@ -1621,8 +1621,8 @@ func TestServiceViewSecrets(t *testing.T) {
 				Seed:  "fooseed",
 				Label: "foowlt",
 			},
-			action: func(t *testing.T) func(Walleter) error {
-				return func(w Walleter) error {
+			action: func(t *testing.T) func(Wallet) error {
+				return func(w Wallet) error {
 					require.Equal(t, "foowlt", w.Label())
 
 					// Seed is visible because its not encrypted
@@ -1715,7 +1715,7 @@ func TestServiceViewSecrets(t *testing.T) {
 
 			s.config.EnableWalletAPI = !tc.disableWalletAPI
 
-			var action func(Walleter) error
+			var action func(Wallet) error
 			if tc.action != nil {
 				action = tc.action(t)
 			}
@@ -1742,8 +1742,8 @@ func TestServiceUpdate(t *testing.T) {
 		wltName          string
 		opts             Options
 		viewWltName      string
-		action           func(*testing.T) func(Walleter) error
-		checkWallet      func(*testing.T, Walleter)
+		action           func(*testing.T) func(Wallet) error
+		checkWallet      func(*testing.T, Wallet)
 		disableWalletAPI bool
 		err              error
 	}{
@@ -1757,8 +1757,8 @@ func TestServiceUpdate(t *testing.T) {
 				Password: []byte("pwd"),
 				Label:    "foowlt",
 			},
-			action: func(t *testing.T) func(Walleter) error {
-				return func(w Walleter) error {
+			action: func(t *testing.T) func(Wallet) error {
+				return func(w Wallet) error {
 					require.Equal(t, "foowlt", w.Label())
 
 					// Should not be able to see sensitive data
@@ -1774,7 +1774,7 @@ func TestServiceUpdate(t *testing.T) {
 					return nil
 				}
 			},
-			checkWallet: func(t *testing.T, w Walleter) {
+			checkWallet: func(t *testing.T, w Wallet) {
 				require.Equal(t, "foowltfoo", w.Label())
 				require.Equal(t, 1, w.EntriesLen())
 				checkNoSensitiveData(t, w)
@@ -1789,8 +1789,8 @@ func TestServiceUpdate(t *testing.T) {
 				Seed:  "fooseed",
 				Label: "foowlt",
 			},
-			action: func(t *testing.T) func(Walleter) error {
-				return func(w Walleter) error {
+			action: func(t *testing.T) func(Wallet) error {
+				return func(w Wallet) error {
 					require.Equal(t, "foowlt", w.Label())
 
 					// Seed is visible because its not encrypted
@@ -1803,9 +1803,9 @@ func TestServiceUpdate(t *testing.T) {
 					return nil
 				}
 			},
-			checkWallet: func(t *testing.T, w Walleter) {
+			checkWallet: func(t *testing.T, w Wallet) {
 				require.Equal(t, "foowltfoo", w.Label())
-				require.Len(t, 1, w.EntriesLen())
+				require.Equal(t, 1, w.EntriesLen())
 				require.NotEmpty(t, w.GetEntryAt(0).Secret)
 			},
 		},
@@ -1849,7 +1849,7 @@ func TestServiceUpdate(t *testing.T) {
 
 			s.config.EnableWalletAPI = !tc.disableWalletAPI
 
-			var action func(Walleter) error
+			var action func(Wallet) error
 			if tc.action != nil {
 				action = tc.action(t)
 			}
@@ -1882,8 +1882,8 @@ func TestServiceUpdateSecrets(t *testing.T) {
 		wltName          string
 		opts             Options
 		viewWltName      string
-		action           func(*testing.T) func(Walleter) error
-		checkWallet      func(*testing.T, Walleter)
+		action           func(*testing.T) func(Wallet) error
+		checkWallet      func(*testing.T, Wallet)
 		password         []byte
 		disableWalletAPI bool
 		err              error
@@ -1899,8 +1899,8 @@ func TestServiceUpdateSecrets(t *testing.T) {
 				Label:    "foowlt",
 			},
 			password: []byte("pwd"),
-			action: func(t *testing.T) func(Walleter) error {
-				return func(w Walleter) error {
+			action: func(t *testing.T) func(Wallet) error {
+				return func(w Wallet) error {
 					require.Equal(t, "foowlt", w.Label())
 
 					// Should be able to see sensitive data
@@ -1915,7 +1915,7 @@ func TestServiceUpdateSecrets(t *testing.T) {
 					return nil
 				}
 			},
-			checkWallet: func(t *testing.T, w Walleter) {
+			checkWallet: func(t *testing.T, w Wallet) {
 				require.Equal(t, "foowltfoo", w.Label())
 				require.Equal(t, 2, w.EntriesLen())
 				checkNoSensitiveData(t, w)
@@ -1930,8 +1930,8 @@ func TestServiceUpdateSecrets(t *testing.T) {
 				Seed:  "fooseed",
 				Label: "foowlt",
 			},
-			action: func(t *testing.T) func(Walleter) error {
-				return func(w Walleter) error {
+			action: func(t *testing.T) func(Wallet) error {
+				return func(w Wallet) error {
 					require.Equal(t, "foowlt", w.Label())
 
 					// Seed is visible because its not encrypted
@@ -1946,7 +1946,7 @@ func TestServiceUpdateSecrets(t *testing.T) {
 					return nil
 				}
 			},
-			checkWallet: func(t *testing.T, w Walleter) {
+			checkWallet: func(t *testing.T, w Wallet) {
 				require.Equal(t, "foowltfoo", w.Label())
 				require.Equal(t, 2, w.EntriesLen())
 				require.NotEmpty(t, w.GetEntryAt(1).Secret)
@@ -2031,7 +2031,7 @@ func TestServiceUpdateSecrets(t *testing.T) {
 
 			s.config.EnableWalletAPI = !tc.disableWalletAPI
 
-			var action func(Walleter) error
+			var action func(Wallet) error
 			if tc.action != nil {
 				action = tc.action(t)
 			}
@@ -2058,7 +2058,7 @@ func TestServiceUpdateSecrets(t *testing.T) {
 	}
 }
 
-func checkNoSensitiveData(t *testing.T, w Walleter) {
+func checkNoSensitiveData(t *testing.T, w Wallet) {
 	require.Empty(t, w.Seed())
 	require.Empty(t, w.LastSeed())
 	for _, e := range w.GetEntries() {

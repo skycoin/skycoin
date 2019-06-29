@@ -14,12 +14,12 @@ type Entry struct {
 }
 
 // SkycoinAddress returns the Skycoin address of an entry. Panics if Address is not a Skycoin address
-func (we *Entry) SkycoinAddress() cipher.Address {
+func (we Entry) SkycoinAddress() cipher.Address {
 	return we.Address.(cipher.Address)
 }
 
 // BitcoinAddress returns the Skycoin address of an entry. Panics if Address is not a Bitcoin address
-func (we *Entry) BitcoinAddress() cipher.BitcoinAddress {
+func (we Entry) BitcoinAddress() cipher.BitcoinAddress {
 	return we.Address.(cipher.BitcoinAddress)
 }
 

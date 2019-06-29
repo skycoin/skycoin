@@ -19,8 +19,8 @@ type CollectionWallet struct {
 	Entries Entries
 }
 
-// NewCollectionWallet creates a CollectionWallet
-func NewCollectionWallet(meta Meta) *CollectionWallet {
+// newCollectionWallet creates a CollectionWallet
+func newCollectionWallet(meta Meta) *CollectionWallet {
 	return &CollectionWallet{
 		Meta: meta,
 	}
@@ -56,7 +56,7 @@ func (w *CollectionWallet) UnpackSecrets(ss Secrets) error {
 }
 
 // Clone clones the wallet a new wallet object
-func (w *CollectionWallet) Clone() Walleter {
+func (w *CollectionWallet) Clone() Wallet {
 	return &CollectionWallet{
 		Meta:    w.Meta.clone(),
 		Entries: w.Entries.clone(),
@@ -64,13 +64,13 @@ func (w *CollectionWallet) Clone() Walleter {
 }
 
 // CopyFrom copies the src wallet by reallocating
-func (w *CollectionWallet) CopyFrom(src Walleter) {
+func (w *CollectionWallet) CopyFrom(src Wallet) {
 	w.Meta = src.(*CollectionWallet).Meta.clone()
 	w.Entries = src.(*CollectionWallet).Entries.clone()
 }
 
 // CopyFromRef copies the src wallet with a pointer dereference
-func (w *CollectionWallet) CopyFromRef(src Walleter) {
+func (w *CollectionWallet) CopyFromRef(src Wallet) {
 	*w = *(src.(*CollectionWallet))
 }
 
@@ -80,10 +80,9 @@ func (w *CollectionWallet) Erase() {
 	w.Entries.erase()
 }
 
-// Save saves the wallet to given dir
-func (w *CollectionWallet) Save(dir string) error {
-	rw := NewReadableCollectionWallet(w)
-	return SaveReadable(rw, dir)
+// ToReadable converts the wallet to its readable (serializable) format
+func (w *CollectionWallet) ToReadable() Readable {
+	return NewReadableCollectionWallet(w)
 }
 
 // Validate validates the wallet
@@ -91,9 +90,9 @@ func (w *CollectionWallet) Validate() error {
 	return w.Meta.validate()
 }
 
-// GetEntries returns all entries held by the wallet
+// GetEntries returns a copy of all entries held by the wallet
 func (w *CollectionWallet) GetEntries() Entries {
-	return w.Entries
+	return w.Entries.clone()
 }
 
 // EntriesLen returns the number of entries in the wallet
@@ -145,6 +144,12 @@ func (w *CollectionWallet) GetSkycoinAddresses() ([]cipher.Address, error) {
 	return w.Entries.getSkycoinAddresses(), nil
 }
 
+// Fingerprint returns an empty string; fingerprints are only defined for
+// wallet with a seed
+func (w *CollectionWallet) Fingerprint() string {
+	return ""
+}
+
 // AddEntry adds a new entry to the wallet.
 func (w *CollectionWallet) AddEntry(e Entry) error {
 	if err := e.Verify(); err != nil {
@@ -153,7 +158,7 @@ func (w *CollectionWallet) AddEntry(e Entry) error {
 
 	for _, entry := range w.Entries {
 		if e.SkycoinAddress() == entry.SkycoinAddress() {
-			return errors.New("wallet already contains entry with address")
+			return errors.New("wallet already contains entry with this address")
 		}
 	}
 
@@ -163,29 +168,33 @@ func (w *CollectionWallet) AddEntry(e Entry) error {
 
 // ReadableCollectionWallet used for [de]serialization of a collection wallet
 type ReadableCollectionWallet struct {
-	Meta    `json:"meta"`
-	Entries ReadableEntries `json:"entries"`
+	Meta            `json:"meta"`
+	ReadableEntries `json:"entries"`
 }
 
 // NewReadableCollectionWallet creates readable wallet
 func NewReadableCollectionWallet(w *CollectionWallet) *ReadableCollectionWallet {
 	return &ReadableCollectionWallet{
-		Meta:    w.Meta.clone(),
-		Entries: newReadableEntries(w.Entries, w.Meta.Coin()),
+		Meta:            w.Meta.clone(),
+		ReadableEntries: newReadableEntries(w.Entries, w.Meta.Coin()),
 	}
 }
 
 // LoadReadableCollectionWallet loads a collection wallet from disk
 func LoadReadableCollectionWallet(wltFile string) (*ReadableCollectionWallet, error) {
+	logger.WithField("filename", wltFile).Info("LoadReadableCollectionWallet")
 	var rw ReadableCollectionWallet
 	if err := file.LoadJSON(wltFile, &rw); err != nil {
 		return nil, err
+	}
+	if rw.Type() != WalletTypeCollection {
+		return nil, ErrInvalidWalletType
 	}
 	return &rw, nil
 }
 
 // ToWallet convert readable wallet to Wallet
-func (rw *ReadableCollectionWallet) ToWallet() (Walleter, error) {
+func (rw *ReadableCollectionWallet) ToWallet() (Wallet, error) {
 	w := &CollectionWallet{
 		Meta: rw.Meta.clone(),
 	}
@@ -196,7 +205,7 @@ func (rw *ReadableCollectionWallet) ToWallet() (Walleter, error) {
 		return nil, err
 	}
 
-	ets, err := rw.Entries.toWalletEntries(w.Meta.Coin(), w.Meta.IsEncrypted())
+	ets, err := rw.ReadableEntries.toWalletEntries(w.Meta.Coin(), w.Meta.IsEncrypted())
 	if err != nil {
 		logger.WithError(err).Error("ReadableCollectionWallet.ToWallet toWalletEntries failed")
 		return nil, err

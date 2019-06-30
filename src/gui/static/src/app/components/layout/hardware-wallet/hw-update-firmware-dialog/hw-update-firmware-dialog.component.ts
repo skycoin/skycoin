@@ -9,15 +9,6 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
 import { ISubscription } from 'rxjs/Subscription';
 import { Observable } from 'rxjs/Observable';
 
-enum States {
-  Connecting,
-  Initial,
-  Downloading,
-  Processing,
-  ReturnedSuccess,
-  ReturnedTimeout,
-}
-
 @Component({
   selector: 'app-hw-update-firmware-dialog',
   templateUrl: './hw-update-firmware-dialog.component.html',
@@ -29,8 +20,7 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
 
   @ViewChild('button') button: ButtonComponent;
 
-  currentState: States = States.Connecting;
-  states = States;
+  currentState = this.states.Connecting;
   confirmed = false;
 
   deviceInBootloaderMode = false;
@@ -39,7 +29,7 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
   private checkDeviceSubscription: ISubscription;
 
   get title(): string {
-    if (this.currentState === States.Connecting) {
+    if (this.currentState === this.states.Connecting) {
       return 'hardware-wallet.update-firmware.title-connecting';
     } else if (this.deviceHasFirmware) {
       return 'hardware-wallet.update-firmware.title-update';
@@ -82,22 +72,34 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
 
   startUpdating() {
     this.msgBarService.hide();
-    this.currentState = States.Downloading;
+    this.showResult({
+      text: 'hardware-wallet.update-firmware.text-downloading',
+      icon: this.msgIcons.Spinner,
+    });
 
     this.closeCheckDeviceSubscription();
 
-    this.operationSubscription = this.hwWalletService.updateFirmware(() => this.currentState = States.Processing).subscribe(
+    this.operationSubscription = this.hwWalletService.updateFirmware(() => this.currentState = this.states.Processing).subscribe(
       () => {
-        this.currentState = States.ReturnedSuccess;
+        this.showResult({
+          text: 'hardware-wallet.general.completed',
+          icon: this.msgIcons.Success,
+        });
       },
       err => {
         if (err.result !== null && err.result !== undefined && err.result === OperationResults.Success) {
-          this.currentState = States.ReturnedSuccess;
+          this.showResult({
+            text: 'hardware-wallet.general.completed',
+            icon: this.msgIcons.Success,
+          });
         } else if (err.result && err.result === OperationResults.Timeout) {
-          this.currentState = States.ReturnedTimeout;
+          this.showResult({
+            text: 'hardware-wallet.update-firmware.timeout',
+            icon: this.msgIcons.Error,
+          });
         } else {
           if (err.result) {
-            const errorMsg = getHardwareWalletErrorMsg(this.hwWalletService, this.translateService, err);
+            const errorMsg = getHardwareWalletErrorMsg(this.translateService, err);
             setTimeout(() => {
               this.button.setError(errorMsg);
               this.msgBarService.showError(errorMsg);
@@ -111,7 +113,7 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
 
           this.checkDevice(false);
 
-          this.currentState = States.Initial;
+          this.currentState = this.states.Initial;
         }
       },
     );
@@ -128,8 +130,8 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
         this.deviceHasFirmware = true;
       }
 
-      if (this.currentState === States.Connecting) {
-        this.currentState = States.Initial;
+      if (this.currentState === this.states.Connecting) {
+        this.currentState = this.states.Initial;
       }
 
       this.checkDevice();
@@ -137,8 +139,8 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
       this.deviceInBootloaderMode = false;
       this.deviceHasFirmware = true;
 
-      if (this.currentState === States.Connecting) {
-        this.currentState = States.Initial;
+      if (this.currentState === this.states.Connecting) {
+        this.currentState = this.states.Initial;
       }
 
       this.checkDevice();

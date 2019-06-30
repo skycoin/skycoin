@@ -1,47 +1,32 @@
 <app-modal class="modal" [headline]="'wallet.hardware-wallet' | translate" [dialog]="dialogRef">
-  <app-hw-message *ngIf="currentState === states.Processing"
-    [text]="'hardware-wallet.options.connecting' | translate"
-    [icon]="msgIcons.Spinner"
+  <app-hw-message *ngIf="currentState === states.ShowingResult"
+    [text]="result.text | translate"
+    [icon]="result.icon"
   ></app-hw-message>
 
-  <app-hw-message *ngIf="currentState === states.Error"
-    [text]="(customErrorMsg ? customErrorMsg : 'hardware-wallet.general.generic-error') | translate"
-    [icon]="msgIcons.Error"
-  ></app-hw-message>
-
-  <app-hw-message *ngIf="currentState === states.ReturnedRefused"
+  <app-hw-message *ngIf="currentState === states.Other && !otherStateBecauseWrongPin"
     [text]="('hardware-wallet.general.refused' | translate) + ' ' + ('hardware-wallet.options.forgotten-pin1' | translate)"
     [linkText]="'hardware-wallet.options.forgotten-pin2' | translate"
     [icon]="msgIcons.Error"
     (linkClicked)="wipe()"
   ></app-hw-message>
 
-  <app-hw-message *ngIf="currentState === states.WrongPin"
+  <app-hw-message *ngIf="currentState === states.Other && otherStateBecauseWrongPin"
     [text]="('hardware-wallet.general.error-incorrect-pin' | translate) + ' ' + ('hardware-wallet.options.forgotten-pin1' | translate)"
     [linkText]="'hardware-wallet.options.forgotten-pin2' | translate"
     [icon]="msgIcons.Error"
     (linkClicked)="wipe()"
   ></app-hw-message>
 
-  <app-hw-message *ngIf="currentState === states.Disconnected"
-    [text]="'hardware-wallet.options.disconnected' | translate"
-    [icon]="msgIcons.Usb"
-  ></app-hw-message>
-
-  <app-hw-message *ngIf="currentState === states.DaemonError"
-    [text]="'hardware-wallet.errors.daemon-connection' | translate"
-    [icon]="msgIcons.Error"
-  ></app-hw-message>
-
-  <div *ngIf="currentState === states.NewConnected || currentState === states.ConfiguredConnected">
-    <app-hw-message *ngIf="currentState === states.NewConnected"
+  <div *ngIf="currentState === states.Finished">
+    <app-hw-message *ngIf="newWalletConnected"
       [upperBigText]="'hardware-wallet.options.unconfigured-detected-title' | translate"
       [lowerLightText]="('hardware-wallet.options.firmware-version' | translate) + ' ' + firmwareVersion"
       [text]="'hardware-wallet.options.unconfigured-detected' | translate"
       [icon]="msgIcons.HardwareWallet"
     ></app-hw-message>
 
-    <app-hw-message *ngIf="currentState === states.ConfiguredConnected"
+    <app-hw-message *ngIf="!newWalletConnected"
       [text]="'hardware-wallet.options.configured-detected' | translate"
       [lowerLightText]="('hardware-wallet.options.firmware-version' | translate) + ' ' + firmwareVersion"
       [lowerBigText]="walletName"
@@ -64,7 +49,7 @@
       <button mat-button color="primary" (click)="update()" *ngIf="outdatedFirmware">
         <div class="label -blinking">{{ 'hardware-wallet.options.update-firmware' | translate }}</div>
       </button>
-      <div *ngIf="currentState === states.NewConnected">
+      <div *ngIf="newWalletConnected">
         <button mat-button color="primary" (click)="generateMnemonic()">
           <div class="label">{{ 'hardware-wallet.options.configure-automatically' | translate }}</div>
         </button>
@@ -72,7 +57,7 @@
           <div class="label">{{ 'hardware-wallet.options.restore-backup' | translate }}</div>
         </button>
       </div>
-      <div *ngIf="currentState === states.ConfiguredConnected">
+      <div *ngIf="!newWalletConnected">
         <button mat-button color="primary" (click)="backup()" *ngIf="needsBackup">
           <div class="label">{{ 'hardware-wallet.options.create-backup' | translate }}</div>
         </button>
@@ -92,8 +77,14 @@
     </div>
   </div>
 
-  <div class="-buttons">
+  <div class="-buttons" *ngIf="currentState === states.Finished">
     <app-button (action)="closeModal()" class="primary">
+      {{ 'hardware-wallet.general.close' | translate }}
+    </app-button>
+  </div>
+
+  <div class="-buttons" *ngIf="currentState !== states.Finished">
+    <app-button (action)="closeModal()" class="primary" #closeButton>
       {{ 'hardware-wallet.general.close' | translate }}
     </app-button>
   </div>

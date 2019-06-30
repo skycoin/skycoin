@@ -25,6 +25,7 @@ import { ISubscription } from 'rxjs/Subscription';
 export class WalletDetailComponent implements OnDestroy {
   @Input() wallet: Wallet;
 
+  confirmingIndex = null;
   creatingAddress = false;
   preparingToEdit = false;
 
@@ -68,7 +69,7 @@ export class WalletDetailComponent implements OnDestroy {
             this.preparingToEdit = false;
           },
           err => {
-            this.msgBarService.showError(getHardwareWalletErrorMsg(this.hwWalletService, this.translateService, err));
+            this.msgBarService.showError(getHardwareWalletErrorMsg(this.translateService, err));
             this.preparingToEdit = false;
           },
         );
@@ -188,6 +189,11 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   confirmAddress(address, addressIndex, showCompleteConfirmation) {
+    if (this.confirmingIndex !== null) {
+      return;
+    }
+
+    this.confirmingIndex = addressIndex;
     this.msgBarService.hide();
 
     if (this.confirmSubscription) {
@@ -205,8 +211,11 @@ export class WalletDetailComponent implements OnDestroy {
       config.autoFocus = false;
       config.data = data;
       this.dialog.open(HwConfirmAddressDialogComponent, config);
+
+      this.confirmingIndex = null;
     }, err => {
-      this.msgBarService.showError(getHardwareWalletErrorMsg(this.hwWalletService, this.translateService, err));
+      this.msgBarService.showError(getHardwareWalletErrorMsg(this.translateService, err));
+      this.confirmingIndex = null;
     });
   }
 
@@ -280,7 +289,7 @@ export class WalletDetailComponent implements OnDestroy {
           if (!this.wallet.isHardware ) {
             this.msgBarService.showError(err);
           } else {
-            this.msgBarService.showError(getHardwareWalletErrorMsg(this.hwWalletService, this.translateService, err));
+            this.msgBarService.showError(getHardwareWalletErrorMsg(this.translateService, err));
           }
           this.creatingAddress = false;
         },

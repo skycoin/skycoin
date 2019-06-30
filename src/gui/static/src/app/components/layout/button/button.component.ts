@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ViewChild, ElementRef } from '@angular/core';
 import { parseResponseMessage } from '../../../utils/errors';
 import { MatTooltip } from '@angular/material';
 
@@ -12,6 +12,7 @@ export class ButtonComponent {
   @Input() forceEmitEvents = false;
   @Output() action = new EventEmitter();
   @ViewChild('tooltip') tooltip: MatTooltip;
+  @ViewChild('button') button: HTMLButtonElement;
 
   error: string;
   state: number;
@@ -22,6 +23,10 @@ export class ButtonComponent {
       this.error = '';
       this.action.emit();
     }
+  }
+
+  focus() {
+    this.button.focus();
   }
 
   setLoading() {

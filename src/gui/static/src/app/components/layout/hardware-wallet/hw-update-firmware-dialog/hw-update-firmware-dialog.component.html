@@ -29,28 +29,18 @@
       [icon]="msgIcons.Spinner"
     ></app-hw-message>
 
-    <app-hw-message *ngIf="currentState === states.Downloading"
-      [text]="'hardware-wallet.update-firmware.text-downloading' | translate"
-      [icon]="msgIcons.Spinner"
-    ></app-hw-message>
-
     <app-hw-message *ngIf="currentState === states.Processing"
       [text]="'hardware-wallet.general.follow' | translate"
       [icon]="msgIcons.Confirm"
     ></app-hw-message>
 
-    <app-hw-message *ngIf="currentState === states.ReturnedSuccess"
-      [text]="'hardware-wallet.general.completed' | translate"
-      [icon]="msgIcons.Success"
-    ></app-hw-message>
-
-    <app-hw-message *ngIf="currentState === states.ReturnedTimeout"
-      [text]="'hardware-wallet.update-firmware.timeout' | translate"
-      [icon]="msgIcons.Error"
+    <app-hw-message *ngIf="currentState === states.ShowingResult"
+      [text]="result.text | translate"
+      [icon]="result.icon"
     ></app-hw-message>
 
     <div class="-buttons" *ngIf="currentState !== states.Processing">
-      <app-button (action)="closeModal()" class="primary">
+      <app-button (action)="closeModal()" class="primary" #closeButton>
         {{ 'hardware-wallet.general.close' | translate }}
       </app-button>
     </div>

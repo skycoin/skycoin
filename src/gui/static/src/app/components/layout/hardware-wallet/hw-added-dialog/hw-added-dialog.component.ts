@@ -1,4 +1,4 @@
-import { Component, Inject, OnDestroy } from '@angular/core';
+import { Component, Inject, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { WalletService } from '../../../../services/wallet.service';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
@@ -9,23 +9,15 @@ import { Wallet } from '../../../../app.datatypes';
 import { ChangeNameComponent, ChangeNameData } from '../../../pages/wallets/change-name/change-name.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 
-enum States {
-  Initial,
-  Finished,
-  Failed,
-}
-
 @Component({
   selector: 'app-hw-added-dialog',
   templateUrl: './hw-added-dialog.component.html',
   styleUrls: ['./hw-added-dialog.component.scss'],
 })
 export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogComponent> implements OnDestroy {
-
   closeIfHwDisconnected = false;
 
-  currentState: States = States.Initial;
-  states = States;
+  @ViewChild('input') input: ElementRef;
   errorMsg = 'hardware-wallet.general.generic-error-internet';
   wallet: Wallet;
   form: FormGroup;
@@ -43,7 +35,7 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
   ) {
     super(hwWalletService, dialogRef);
     this.operationSubscription = this.walletService.createHardwareWallet().subscribe(wallet => {
-      this.walletService.getHwFeaturesAndUpdateData(wallet).subscribe(() => {
+      this.operationSubscription = this.walletService.getHwFeaturesAndUpdateData(wallet).subscribe(() => {
         this.wallet = wallet;
         this.initialLabel = wallet.label;
 
@@ -51,19 +43,27 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
           label: [wallet.label, Validators.required],
         });
 
-        this.currentState = States.Finished;
+        this.currentState = this.states.Finished;
         this.data.requestOptionsComponentRefresh();
-      });
-    }, err => {
-      if (err['_body']) {
-        this.errorMsg = err['_body'];
-      }
-      this.currentState = States.Failed;
-      this.data.requestOptionsComponentRefresh(this.errorMsg);
+
+        setTimeout(() => this.input.nativeElement.focus());
+      }, err => this.processError(err));
+    }, err => this.processError(err));
+  }
+
+  private processError(err: any) {
+    if (err['_body']) {
+      this.errorMsg = err['_body'];
+    }
+    this.showResult({
+      text: this.errorMsg,
+      icon: this.msgIcons.Error,
     });
+    this.data.requestOptionsComponentRefresh(this.errorMsg);
   }
 
   ngOnDestroy() {
+    super.ngOnDestroy();
     this.msgBarService.hide();
   }
 

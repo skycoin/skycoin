@@ -703,6 +703,11 @@ export class HwWalletService {
           if (AppConfig.useHwWalletDaemon) {
             setTimeout(() => this.hwWalletDaemonService.checkHw(false));
           }
+        } else if (responseContent.toLocaleLowerCase().includes('device disconnected'.toLocaleLowerCase())) {
+          result = OperationResults.Disconnected;
+          if (AppConfig.useHwWalletDaemon) {
+            setTimeout(() => this.hwWalletDaemonService.checkHw(false));
+          }
         } else if (responseContent.includes(HwWalletDaemonService.errorConnectingWithTheDaemon)) {
           result = OperationResults.DaemonError;
         } else if (responseContent.includes(HwWalletDaemonService.errorTimeout)) {

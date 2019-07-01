@@ -31,11 +31,8 @@ export class HwGenerateSeedDialogComponent extends HwDialogBaseComponent<HwGener
 
     this.operationSubscription = this.hwWalletService.generateMnemonic(this.form.controls['words'].value).subscribe(
       () => {
-        this.showResult({
-          text: 'hardware-wallet.general.completed',
-          icon: this.msgIcons.Success,
-        });
         this.data.requestOptionsComponentRefresh();
+        this.closeModal();
       },
       err => this.processResult(err.result),
     );

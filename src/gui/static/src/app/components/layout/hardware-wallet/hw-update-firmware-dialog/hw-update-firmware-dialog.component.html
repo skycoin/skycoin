@@ -14,7 +14,7 @@
     </div>
 
     <div class="-buttons">
-      <app-button (action)="closeModal()" [disabled]="currentState === states.Processing">
+      <app-button (action)="closeModal()">
         {{ 'hardware-wallet.general.cancel' | translate }}
       </app-button>
       <app-button (action)="startUpdating()" class="primary" [disabled]="deviceHasFirmware && !confirmed" #button>
@@ -30,7 +30,7 @@
     ></app-hw-message>
 
     <app-hw-message *ngIf="currentState === states.Processing"
-      [text]="'hardware-wallet.general.follow' | translate"
+      [text]="'hardware-wallet.update-firmware.follow' | translate"
       [icon]="msgIcons.Confirm"
     ></app-hw-message>
 

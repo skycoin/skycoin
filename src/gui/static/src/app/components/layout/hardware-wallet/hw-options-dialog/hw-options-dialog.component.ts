@@ -135,7 +135,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
         if (this.completeRecheckRequested) {
           this.checkWallet();
         } else if (this.recheckSecurityOnlyRequested) {
-          this.updateSecurityWarningsAndData().subscribe();
+          this.updateSecurityWarningsAndData(false, true).subscribe();
         } else if (this.showErrorRequested) {
           this.showError();
         }
@@ -151,10 +151,16 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
     }
   }
 
-  private updateSecurityWarningsAndData(dontUpdateWallet = false): Observable<HwFeaturesResponse> {
-    this.securityWarnings = [];
+  private updateSecurityWarningsAndData(dontUpdateWallet = false, waitForResetingCurrentWarnings = false): Observable<HwFeaturesResponse> {
+    if (!waitForResetingCurrentWarnings) {
+      this.securityWarnings = [];
+    }
 
     return this.walletService.getHwFeaturesAndUpdateData(!dontUpdateWallet ? this.wallet : null).map(response => {
+      if (waitForResetingCurrentWarnings) {
+        this.securityWarnings = [];
+      }
+
       if (response.securityWarnings.includes(HwSecurityWarnings.FirmwareVersionNotVerified)) {
         this.firmwareVersionNotVerified = true;
         this.securityWarnings.push('hardware-wallet.options.unchecked-version-warning');
@@ -281,7 +287,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
           });
         } else if (err.result && err.result === OperationResults.FailedOrRefused) {
           this.currentState = this.states.Other;
-          this.otherStateBecauseWrongPin = true;
+          this.otherStateBecauseWrongPin = false;
         } else if (err.result && err.result === OperationResults.WrongPin) {
           this.currentState = this.states.Other;
           this.otherStateBecauseWrongPin = true;

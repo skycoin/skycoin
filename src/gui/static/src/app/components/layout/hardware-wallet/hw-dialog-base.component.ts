@@ -1,5 +1,5 @@
-import { Component, OnDestroy, Inject, ViewChild } from '@angular/core';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { Component, OnDestroy, ViewChild } from '@angular/core';
+import { MatDialogRef } from '@angular/material/dialog';
 import { ISubscription } from 'rxjs/Subscription';
 import { MessageIcons } from './hw-message/hw-message.component';
 import { HwWalletService, OperationResults } from '../../../services/hw-wallet.service';
@@ -68,7 +68,7 @@ export class HwDialogBaseComponent<T> implements OnDestroy {
       this.closeModal();
     } else if (result) {
       this.showResult({
-        text: getHardwareWalletErrorMsg(null, {result: result}),
+        text: getHardwareWalletErrorMsg(null, {result: result}, genericError),
         icon: MessageIcons.Error,
       });
     }

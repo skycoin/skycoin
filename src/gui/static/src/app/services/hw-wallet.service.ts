@@ -7,7 +7,6 @@ import { Subject } from 'rxjs/Subject';
 import { TranslateService } from '@ngx-translate/core';
 import { AppConfig } from '../app.config';
 import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material';
-import { environment } from '../../environments/environment';
 import { HwWalletDaemonService } from './hw-wallet-daemon.service';
 import { HwWalletPinService, ChangePinStates } from './hw-wallet-pin.service';
 import { HwWalletSeedWordService } from './hw-wallet-seed-word.service';
@@ -704,6 +703,11 @@ export class HwWalletService {
             setTimeout(() => this.hwWalletDaemonService.checkHw(false));
           }
         } else if (responseContent.toLocaleLowerCase().includes('device disconnected'.toLocaleLowerCase())) {
+          result = OperationResults.Disconnected;
+          if (AppConfig.useHwWalletDaemon) {
+            setTimeout(() => this.hwWalletDaemonService.checkHw(false));
+          }
+        } else if (responseContent.toLocaleLowerCase().includes('no device connected'.toLocaleLowerCase())) {
           result = OperationResults.Disconnected;
           if (AppConfig.useHwWalletDaemon) {
             setTimeout(() => this.hwWalletDaemonService.checkHw(false));

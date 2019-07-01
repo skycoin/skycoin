@@ -26,7 +26,7 @@ export function parseResponseMessage(body: string): string {
   return body;
 }
 
-export function getHardwareWalletErrorMsg(translateService: TranslateService, error: any): string {
+export function getHardwareWalletErrorMsg(translateService: TranslateService, error: any, genericError: string = null): string {
   if (!AppConfig.useHwWalletDaemon && !window['ipcRenderer'].sendSync('hwGetDeviceConnectedSync')) {
     if (translateService) {
     return translateService.instant('hardware-wallet.general.error-disconnected');
@@ -62,10 +62,10 @@ export function getHardwareWalletErrorMsg(translateService: TranslateService, er
     } else if (error.result === OperationResults.WrongSeed) {
       response = 'hardware-wallet.restore-seed.error-wrong-seed';
     } else {
-      response = 'hardware-wallet.general.generic-error';
+      response = genericError ? genericError : 'hardware-wallet.general.generic-error';
     }
   } else {
-    response = 'hardware-wallet.general.generic-error';
+    response = genericError ? genericError : 'hardware-wallet.general.generic-error';
   }
 
   if (translateService) {

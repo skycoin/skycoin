@@ -82,14 +82,14 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
     this.operationSubscription = this.hwWalletService.updateFirmware(() => this.currentState = this.states.Processing).subscribe(
       () => {
         this.showResult({
-          text: 'hardware-wallet.general.completed',
+          text: 'hardware-wallet.update-firmware.finished',
           icon: this.msgIcons.Success,
         });
       },
       err => {
         if (err.result !== null && err.result !== undefined && err.result === OperationResults.Success) {
           this.showResult({
-            text: 'hardware-wallet.general.completed',
+            text: 'hardware-wallet.update-firmware.finished',
             icon: this.msgIcons.Success,
           });
         } else if (err.result && err.result === OperationResults.Timeout) {

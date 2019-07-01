@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, ViewChild, ElementRef } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import { parseResponseMessage } from '../../../utils/errors';
 import { MatTooltip } from '@angular/material';
 

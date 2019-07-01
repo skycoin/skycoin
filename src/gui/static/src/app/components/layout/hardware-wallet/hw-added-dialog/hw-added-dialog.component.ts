@@ -1,7 +1,7 @@
 import { Component, Inject, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { WalletService } from '../../../../services/wallet.service';
-import { HwWalletService } from '../../../../services/hw-wallet.service';
+import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
 import { ChildHwDialogParams } from '../hw-options-dialog/hw-options-dialog.component';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
@@ -15,10 +15,7 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
   styleUrls: ['./hw-added-dialog.component.scss'],
 })
 export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogComponent> implements OnDestroy {
-  closeIfHwDisconnected = false;
-
   @ViewChild('input') input: ElementRef;
-  errorMsg = 'hardware-wallet.general.generic-error-internet';
   wallet: Wallet;
   form: FormGroup;
 
@@ -43,6 +40,7 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
           label: [wallet.label, Validators.required],
         });
 
+        this.closeIfHwDisconnected = false;
         this.currentState = this.states.Finished;
         this.data.requestOptionsComponentRefresh();
 
@@ -52,14 +50,22 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
   }
 
   private processError(err: any) {
+    if (err.result && err.result === OperationResults.Disconnected) {
+      this.closeModal();
+
+      return;
+    }
+
+    let errorMsg = 'hardware-wallet.general.generic-error-internet';
+
     if (err['_body']) {
-      this.errorMsg = err['_body'];
+      errorMsg = err['_body'];
     }
     this.showResult({
-      text: this.errorMsg,
+      text: errorMsg,
       icon: this.msgIcons.Error,
     });
-    this.data.requestOptionsComponentRefresh(this.errorMsg);
+    this.data.requestOptionsComponentRefresh(errorMsg);
   }
 
   ngOnDestroy() {

@@ -29,7 +29,7 @@
       class="primary"
       [disabled]="currentState === states.Finished && !form.valid"
       #closeButton>
-      {{ 'hardware-wallet.general.close' | translate }}
+      {{ (currentState === states.Finished ? 'hardware-wallet.added.ok' : 'hardware-wallet.general.close') | translate }}
     </app-button>
   </div>
 </app-modal>

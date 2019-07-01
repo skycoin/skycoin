@@ -36,11 +36,13 @@ export class HwRestoreSeedDialogComponent extends HwDialogBaseComponent<HwRestor
       () => {
         if (!this.justCheckingSeed) {
           this.data.requestOptionsComponentRefresh();
+          this.closeModal();
+        } else {
+          this.showResult({
+            text: 'hardware-wallet.restore-seed.correct-seed',
+            icon: this.msgIcons.Success,
+          });
         }
-        this.showResult({
-          text: 'hardware-wallet.general.completed',
-          icon: this.msgIcons.Success,
-        });
       },
       err => this.processResult(err.result, 'hardware-wallet.general.simple-error'),
     );

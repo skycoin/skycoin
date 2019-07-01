@@ -115,6 +115,23 @@ func TestNewWallet(t *testing.T) {
 		expect  expect
 	}{
 		{
+			"ok, empty collection wallet",
+			"test-collection.wlt",
+			Options{
+				Type: WalletTypeCollection,
+			},
+			expect{
+				meta: map[string]string{
+					"label":    "",
+					"filename": "test-collection.wlt",
+					"coin":     string(CoinTypeSkycoin),
+					"type":     WalletTypeDeterministic,
+					"version":  Version,
+				},
+				err: nil,
+			},
+		},
+		{
 			"ok with seed set",
 			"test.wlt",
 			Options{
@@ -253,8 +270,12 @@ func TestNewWallet(t *testing.T) {
 			}
 			t.Run(name, func(t *testing.T) {
 				w, err := NewWallet(tc.wltName, tc.ops)
-				require.Equal(t, tc.expect.err, err)
-				if err != nil {
+
+				if tc.expect.err == nil {
+					require.NoError(t, err)
+				} else {
+					require.Error(t, err)
+					require.Equal(t, tc.expect.err, err, "%s != %s", tc.expect.err.Error(), err.Error())
 					return
 				}
 

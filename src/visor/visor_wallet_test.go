@@ -654,7 +654,6 @@ func TestWalletCreateTransaction(t *testing.T) {
 
 			_, err = ws.CreateWallet(tc.walletID, wallet.Options{
 				Coin:       wallet.CoinTypeSkycoin,
-				Seed:       "foo",
 				Encrypt:    len(tc.password) != 0,
 				Password:   tc.password,
 				CryptoType: wallet.CryptoTypeScryptChacha20poly1305Insecure,

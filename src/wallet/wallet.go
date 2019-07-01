@@ -164,12 +164,31 @@ type Options struct {
 
 // newWallet creates a wallet instance with given name and options.
 func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, error) {
-	if opts.Seed == "" {
-		return nil, ErrMissingSeed
+	wltType := opts.Type
+	if wltType == "" {
+		wltType = WalletTypeDeterministic
+	}
+	if !IsValidWalletType(wltType) {
+		return nil, ErrInvalidWalletType
 	}
 
-	if opts.ScanN > 0 && tf == nil {
-		return nil, ErrNilTransactionsFinder
+	switch wltType {
+	case WalletTypeDeterministic:
+		if opts.Seed == "" {
+			return nil, ErrMissingSeed
+		}
+
+		if opts.ScanN > 0 && tf == nil {
+			return nil, ErrNilTransactionsFinder
+		}
+
+	case WalletTypeCollection:
+		if opts.Seed != "" {
+			return nil, NewError(errors.New("seed should not be provided for \"collection\" wallets"))
+		}
+
+	default:
+		return nil, ErrInvalidWalletType
 	}
 
 	coin := opts.Coin
@@ -179,14 +198,6 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 	coin, err := ResolveCoinType(string(coin))
 	if err != nil {
 		return nil, err
-	}
-
-	wltType := opts.Type
-	if wltType == "" {
-		wltType = WalletTypeDeterministic
-	}
-	if !IsValidWalletType(wltType) {
-		return nil, ErrInvalidWalletType
 	}
 
 	meta := Meta{
@@ -242,7 +253,7 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 
 	case WalletTypeCollection:
 		if opts.GenerateN != 0 || opts.ScanN != 0 {
-			return nil, errors.New("Wallet scanning is not defined for \"collection\" wallets")
+			return nil, NewError(errors.New("wallet scanning is not defined for \"collection\" wallets"))
 		}
 
 	default:

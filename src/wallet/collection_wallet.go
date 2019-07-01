@@ -117,17 +117,17 @@ func (w *CollectionWallet) HasEntry(a cipher.Address) bool {
 
 // GenerateAddresses is a no-op for "collection" wallets
 func (w *CollectionWallet) GenerateAddresses(num uint64) ([]cipher.Addresser, error) {
-	return nil, nil
+	return nil, NewError(errors.New("A collection wallet does not implement GenerateAddresses"))
 }
 
 // GenerateSkycoinAddresses is a no-op for "collection" wallets
 func (w *CollectionWallet) GenerateSkycoinAddresses(num uint64) ([]cipher.Address, error) {
-	return nil, nil
+	return nil, NewError(errors.New("A collection wallet does not implement GenerateSkycoinAddresses"))
 }
 
 // ScanAddresses is a no-op for "collection" wallets
 func (w *CollectionWallet) ScanAddresses(scanN uint64, tf TransactionsFinder) error {
-	return nil
+	return NewError(errors.New("A collection wallet does not implement ScanAddresses"))
 }
 
 // GetAddresses returns all addresses in wallet
@@ -145,13 +145,17 @@ func (w *CollectionWallet) GetSkycoinAddresses() ([]cipher.Address, error) {
 }
 
 // Fingerprint returns an empty string; fingerprints are only defined for
-// wallet with a seed
+// wallets with a seed
 func (w *CollectionWallet) Fingerprint() string {
 	return ""
 }
 
 // AddEntry adds a new entry to the wallet.
 func (w *CollectionWallet) AddEntry(e Entry) error {
+	if w.IsEncrypted() {
+		return ErrWalletEncrypted
+	}
+
 	if err := e.Verify(); err != nil {
 		return err
 	}

@@ -90,30 +90,49 @@ func TestServiceCreateWallet(t *testing.T) {
 		encrypt         bool
 		password        []byte
 		enableWalletAPI bool
+		walletType      string
+		filename        string
+		seed            string
 		err             error
 	}{
+		{
+			name:            "type=collection encrypt=true password=pwd",
+			encrypt:         true,
+			password:        []byte("pwd"),
+			enableWalletAPI: true,
+			walletType:      WalletTypeCollection,
+			filename:        "t1.wlt",
+		},
 		{
 			name:            "encrypt=true password=pwd",
 			encrypt:         true,
 			password:        []byte("pwd"),
 			enableWalletAPI: true,
+			filename:        "t1.wlt",
+			seed:            "seed1",
 		},
 		{
 			name:            "encrypt=true password=pwd",
 			encrypt:         true,
 			password:        []byte("pwd"),
 			enableWalletAPI: false,
+			filename:        "t1.wlt",
+			seed:            "seed1",
 			err:             ErrWalletAPIDisabled,
 		},
 		{
 			name:            "encrypt=false",
 			encrypt:         false,
 			enableWalletAPI: true,
+			filename:        "t1.wlt",
+			seed:            "seed1",
 		},
 		{
 			name:            "encrypt=false",
 			encrypt:         false,
 			enableWalletAPI: false,
+			filename:        "t1.wlt",
+			seed:            "seed1",
 			err:             ErrWalletAPIDisabled,
 		},
 	}
@@ -128,15 +147,18 @@ func TestServiceCreateWallet(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				wltName := "t1.wlt"
-				seed := "seed1"
-				w, err := s.CreateWallet(wltName, Options{
-					Seed:     seed,
+				w, err := s.CreateWallet(tc.filename, Options{
+					Seed:     tc.seed,
 					Encrypt:  tc.encrypt,
 					Password: tc.password,
+					Type:     tc.walletType,
 				}, nil)
-				require.Equal(t, tc.err, err)
-				if err != nil {
+
+				if tc.err == nil {
+					require.NoError(t, err)
+				} else {
+					require.Error(t, err)
+					require.Equal(t, tc.err, err, "%s != %s", tc.err.Error(), err.Error())
 					return
 				}
 
@@ -155,21 +177,25 @@ func TestServiceCreateWallet(t *testing.T) {
 				}
 
 				// create wallet with dup wallet name
-				_, err = s.CreateWallet(wltName, Options{Seed: "seed2"}, nil)
+				_, err = s.CreateWallet(tc.filename, Options{
+					Seed: tc.seed + "2",
+				}, nil)
 				require.Equal(t, err, ErrWalletNameConflict)
 
-				// create wallet with dup seed
-				dupWlt := "dup_wallet.wlt"
-				_, err = s.CreateWallet(dupWlt, Options{
-					Seed: seed,
-				}, nil)
-				require.Equal(t, err, ErrSeedUsed)
+				if tc.walletType != WalletTypeCollection {
+					// create wallet with dup seed
+					dupWlt := "dup_wallet.wlt"
+					_, err = s.CreateWallet(dupWlt, Options{
+						Seed: tc.seed,
+					}, nil)
+					require.Equal(t, err, ErrSeedUsed)
 
-				// check if the dup wallet is created
-				_, ok := s.wallets[dupWlt]
-				require.False(t, ok)
+					// check if the dup wallet is created
+					_, ok := s.wallets[dupWlt]
+					require.False(t, ok)
 
-				testutil.RequireFileNotExists(t, filepath.Join(dir, dupWlt))
+					testutil.RequireFileNotExists(t, filepath.Join(dir, dupWlt))
+				}
 			})
 		}
 	}
@@ -705,6 +731,15 @@ func TestServiceEncryptWallet(t *testing.T) {
 			pwd:        []byte("pwd"),
 		},
 		{
+			name:    "ok collection wallet",
+			wltName: "t.wlt",
+			opts: Options{
+				Type: WalletTypeCollection,
+			},
+			encWltName: "t.wlt",
+			pwd:        []byte("pwd"),
+		},
+		{
 			name:    "wallet doesn't exist",
 			wltName: "t.wlt",
 			opts: Options{
@@ -763,6 +798,19 @@ func TestServiceEncryptWallet(t *testing.T) {
 				w, err := s.CreateWallet(tc.wltName, tc.opts, nil)
 				require.NoError(t, err)
 
+				// Add an entry to a collection wallet, to verify that secrets are hidden
+				if w.Type() == WalletTypeCollection {
+					err := s.Update(w.Filename(), func(w Wallet) error {
+						p, s := cipher.GenerateKeyPair()
+						return w.(*CollectionWallet).AddEntry(Entry{
+							Public:  p,
+							Secret:  s,
+							Address: cipher.AddressFromPubKey(p),
+						})
+					})
+					require.NoError(t, err)
+				}
+
 				// Encrypt the wallet
 				encWlt, err := s.EncryptWallet(tc.encWltName, tc.pwd)
 				require.Equal(t, tc.err, err)
@@ -808,6 +856,17 @@ func TestServiceDecryptWallet(t *testing.T) {
 		disableWalletAPI bool
 		err              error
 	}{
+		{
+			name:    "ok collection",
+			wltName: "test.wlt",
+			opts: Options{
+				Type:     WalletTypeCollection,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			decryptWltName: "test.wlt",
+			password:       []byte("pwd"),
+		},
 		{
 			name:    "ok",
 			wltName: "test.wlt",
@@ -1470,6 +1529,55 @@ func TestServiceView(t *testing.T) {
 		err              error
 	}{
 		{
+			name:        "ok, encrypted collection wallet",
+			wltName:     "test-view-collection-encrypted.wlt",
+			viewWltName: "test-view-collection-encrypted.wlt",
+			opts: Options{
+				Type:     WalletTypeCollection,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				Label:    "foowlt",
+			},
+			action: func(t *testing.T) func(Wallet) error {
+				return func(w Wallet) error {
+					fmt.Println("checking label")
+					require.Equal(t, "foowlt", w.Label())
+					fmt.Println("checking sensitive")
+					checkNoSensitiveData(t, w)
+
+					// Modify the wallet pointer in order to check that this references a clone and not the original
+					fmt.Println("modifying label")
+					w.SetLabel(w.Label() + "foo")
+
+					return nil
+				}
+			},
+		},
+
+		{
+			name:        "ok, unencrypted collection wallet",
+			wltName:     "test-view-collection-unencrypted.wlt",
+			viewWltName: "test-view-collection-unencrypted.wlt",
+			opts: Options{
+				Label: "foowlt",
+				Type:  WalletTypeCollection,
+			},
+			action: func(t *testing.T) func(Wallet) error {
+				return func(w Wallet) error {
+					require.Equal(t, "foowlt", w.Label())
+					// Collection wallets don't have seeds
+					require.Empty(t, w.Seed())
+					require.Empty(t, w.LastSeed())
+
+					// Modify the wallet pointer in order to check that this references a clone and not the original
+					w.SetLabel(w.Label() + "foo")
+
+					return nil
+				}
+			},
+		},
+
+		{
 			name:        "ok, encrypted wallet",
 			wltName:     "test-view-encrypted.wlt",
 			viewWltName: "test-view-encrypted.wlt",
@@ -1552,6 +1660,21 @@ func TestServiceView(t *testing.T) {
 			w, err := s.CreateWallet(tc.wltName, tc.opts, nil)
 			require.NoError(t, err)
 
+			if w.Type() == WalletTypeCollection {
+				err := s.UpdateSecrets(w.Filename(), tc.opts.Password, func(w Wallet) error {
+					p, s := cipher.GenerateKeyPair()
+					return w.(*CollectionWallet).AddEntry(Entry{
+						Public:  p,
+						Secret:  s,
+						Address: cipher.AddressFromPubKey(p),
+					})
+				})
+				require.NoError(t, err)
+
+				w, err = s.GetWallet(tc.wltName)
+				require.NoError(t, err)
+			}
+
 			s.config.EnableWalletAPI = !tc.disableWalletAPI
 
 			var action func(Wallet) error
@@ -1560,6 +1683,7 @@ func TestServiceView(t *testing.T) {
 			}
 
 			err = s.View(tc.viewWltName, action)
+
 			require.Equal(t, tc.err, err)
 			if err != nil {
 				return
@@ -2059,8 +2183,11 @@ func TestServiceUpdateSecrets(t *testing.T) {
 }
 
 func checkNoSensitiveData(t *testing.T, w Wallet) {
+	fmt.Println("check seed empty")
 	require.Empty(t, w.Seed())
+	fmt.Println("check lastseed empty")
 	require.Empty(t, w.LastSeed())
+	fmt.Println("check secret entries empty")
 	for _, e := range w.GetEntries() {
 		require.True(t, e.Secret.Null())
 	}

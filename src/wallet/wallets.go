@@ -105,9 +105,13 @@ func (wlts Wallets) containsDuplicate() (string, string, bool) {
 	return "", "", false
 }
 
-// containsEmpty returns true there is an empty wallet and the ID of that wallet if true
+// containsEmpty returns true there is an empty wallet and the ID of that wallet if true.
+// Does not apply to collection wallets
 func (wlts Wallets) containsEmpty() (string, bool) {
 	for wltID, wlt := range wlts {
+		if wlt.Type() == WalletTypeCollection {
+			continue
+		}
 		if wlt.EntriesLen() == 0 {
 			return wltID, true
 		}

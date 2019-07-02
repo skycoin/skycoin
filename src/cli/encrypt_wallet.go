@@ -34,7 +34,7 @@ func encryptWalletCmd() *gcli.Command {
 
 			pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
 
-			wlt, err := encryptWallet(w, pr, cryptoType)
+			_, err = encryptWallet(w, pr, cryptoType)
 			switch err.(type) {
 			case nil:
 			case WalletLoadError:
@@ -44,7 +44,7 @@ func encryptWalletCmd() *gcli.Command {
 				return err
 			}
 
-			return ""
+			return nil
 		},
 	}
 

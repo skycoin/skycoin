@@ -2988,7 +2988,7 @@ func TestEncryptWallet(t *testing.T) {
 	tt := []struct {
 		name        string
 		args        []string
-		setup       func(t *testing.T) func()
+		setup       func(t *testing.T) (string, func())
 		errMsg      []byte
 		errWithHelp bool
 		checkWallet func(t *testing.T, w wallet.Wallet)
@@ -2996,9 +2996,8 @@ func TestEncryptWallet(t *testing.T) {
 		{
 			name: "wallet is not encrypted",
 			args: []string{"-p", "pwd"},
-			setup: func(t *testing.T) func() {
-				_, clean := createUnencryptedWallet(t)
-				return clean
+			setup: func(t *testing.T) (string, func()) {
+				return createUnencryptedWallet(t)
 			},
 			checkWallet: func(t *testing.T, w wallet.Wallet) {
 				require.True(t, w.IsEncrypted())
@@ -3014,19 +3013,18 @@ func TestEncryptWallet(t *testing.T) {
 		{
 			name: "wallet is encrypted",
 			args: []string{"-p", "pwd"},
-			setup: func(t *testing.T) func() {
-				_, clean := createEncryptedWallet(t)
-				return clean
+			setup: func(t *testing.T) (string, func()) {
+				return createEncryptedWallet(t)
 			},
 			errMsg: []byte("Error: wallet is encrypted\n"),
 		},
 		{
 			name: "wallet doesn't exist",
 			args: []string{"-p", "pwd"},
-			setup: func(t *testing.T) func() {
-				_, clean := createUnencryptedWallet(t)
+			setup: func(t *testing.T) (string, func()) {
+				fn, clean := createUnencryptedWallet(t)
 				os.Setenv("WALLET_NAME", "not-exist.wlt")
-				return clean
+				return fn, clean
 			},
 			errWithHelp: true,
 			errMsg:      []byte("not-exist.wlt\" doesn't exist"),
@@ -3037,7 +3035,7 @@ func TestEncryptWallet(t *testing.T) {
 		for _, ct := range cryptoTypes {
 			name := fmt.Sprintf("name=%v crypto type=%v", tc.name, ct)
 			t.Run(name, func(t *testing.T) {
-				clean := tc.setup(t)
+				walletPath, clean := tc.setup(t)
 				defer clean()
 				args := append([]string{"encryptWallet", "-x", string(ct)}, tc.args[:]...)
 				output, err := execCommandCombinedOutput(args...)
@@ -3051,10 +3049,7 @@ func TestEncryptWallet(t *testing.T) {
 					return
 				}
 
-				var rlt wallet.ReadableDeterministicWallet
-				err = json.NewDecoder(bytes.NewReader(output)).Decode(&rlt)
-				require.NoError(t, err)
-				w, err := rlt.ToWallet()
+				w, err := wallet.Load(walletPath)
 				require.NoError(t, err)
 				tc.checkWallet(t, w)
 			})
@@ -3070,7 +3065,7 @@ func TestDecryptWallet(t *testing.T) {
 	tt := []struct {
 		name        string
 		args        []string
-		setup       func(t *testing.T) func()
+		setup       func(t *testing.T) (string, func())
 		errMsg      []byte
 		errWithHelp bool
 		checkWallet func(t *testing.T, w wallet.Wallet)
@@ -3078,9 +3073,8 @@ func TestDecryptWallet(t *testing.T) {
 		{
 			name: "wallet is encrypted",
 			args: []string{"-p", "pwd"},
-			setup: func(t *testing.T) func() {
-				_, clean := createEncryptedWallet(t)
-				return clean
+			setup: func(t *testing.T) (string, func()) {
+				return createEncryptedWallet(t)
 			},
 			checkWallet: func(t *testing.T, w wallet.Wallet) {
 				require.False(t, w.IsEncrypted())
@@ -3097,28 +3091,26 @@ func TestDecryptWallet(t *testing.T) {
 		{
 			name: "wallet is not encrypted",
 			args: []string{"-p", "pwd"},
-			setup: func(t *testing.T) func() {
-				_, clean := createUnencryptedWallet(t)
-				return clean
+			setup: func(t *testing.T) (string, func()) {
+				return createUnencryptedWallet(t)
 			},
 			errMsg: []byte("Error: wallet is not encrypted\n"),
 		},
 		{
 			name: "invalid password",
 			args: []string{"-p", "wrong password"},
-			setup: func(t *testing.T) func() {
-				_, clean := createEncryptedWallet(t)
-				return clean
+			setup: func(t *testing.T) (string, func()) {
+				return createEncryptedWallet(t)
 			},
 			errMsg: []byte("Error: invalid password\n"),
 		},
 		{
 			name: "wallet doesn't exist",
 			args: []string{"-p", "pwd"},
-			setup: func(t *testing.T) func() {
-				_, clean := createEncryptedWallet(t)
+			setup: func(t *testing.T) (string, func()) {
+				fn, clean := createEncryptedWallet(t)
 				os.Setenv("WALLET_NAME", "not-exist.wlt")
-				return clean
+				return fn, clean
 			},
 			errWithHelp: true,
 			errMsg:      []byte("not-exist.wlt\" doesn't exist"),
@@ -3127,7 +3119,7 @@ func TestDecryptWallet(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			clean := tc.setup(t)
+			walletPath, clean := tc.setup(t)
 			defer clean()
 			args := append([]string{"decryptWallet"}, tc.args...)
 			output, err := execCommandCombinedOutput(args...)
@@ -3141,11 +3133,7 @@ func TestDecryptWallet(t *testing.T) {
 				return
 			}
 
-			var rlt wallet.ReadableDeterministicWallet
-			err = json.NewDecoder(bytes.NewReader(output)).Decode(&rlt)
-			require.NoError(t, err)
-
-			w, err := rlt.ToWallet()
+			w, err := wallet.Load(walletPath)
 			require.NoError(t, err)
 			tc.checkWallet(t, w)
 		})

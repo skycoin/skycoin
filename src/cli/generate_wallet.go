@@ -168,8 +168,6 @@ func generateWalletHandler(c *gcli.Command, _ []string) error {
 		}
 	}
 
-	fmt.Println("walletType", walletType)
-
 	opts := wallet.Options{
 		Label:      label,
 		Seed:       sd,

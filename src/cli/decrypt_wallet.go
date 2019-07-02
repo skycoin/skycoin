@@ -30,7 +30,7 @@ func decryptWalletCmd() *gcli.Command {
 
 			pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
 
-			wlt, err := decryptWallet(w, pr)
+			_, err = decryptWallet(w, pr)
 			switch err.(type) {
 			case nil:
 			case WalletLoadError:
@@ -40,7 +40,7 @@ func decryptWalletCmd() *gcli.Command {
 				return err
 			}
 
-			return ""
+			return nil
 		},
 	}
 

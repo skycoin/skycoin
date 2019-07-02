@@ -38,6 +38,7 @@
           <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address.address)" class="qr-code-button">
           <p class="click-to-copy" [ngClass]="{ copying: address.copying }" (click)="copyAddress($event, address)" (mouseleave)="address.copying = false">
             {{ address.address }}
+            <mat-spinner class="in-text small" *ngIf="confirmingIndex === i"></mat-spinner>
             <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">
               {{ 'wallet.address.copy' | translate }}
             </span>
@@ -48,6 +49,7 @@
             <span class="truncated-address">{{ address.address }}</span>
             <span class="copy-label unconfirmed-label">
               {{ 'wallet.address.show' | translate }}
+              <mat-spinner class="in-text small" *ngIf="confirmingIndex === i"></mat-spinner>
             </span>
           </p>
         </ng-container>

@@ -68,7 +68,7 @@ export class SendVerifyComponent implements OnDestroy {
         this.showBusy();
         this.sendSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.transaction.wallet.addresses[0].address).subscribe(
           () => this.finishSending(),
-          err => this.showError(getHardwareWalletErrorMsg(this.hwWalletService, this.translate, err)),
+          err => this.showError(getHardwareWalletErrorMsg(this.translate, err)),
         );
       }
     }
@@ -113,7 +113,7 @@ export class SendVerifyComponent implements OnDestroy {
       }
 
       if (error && error.result) {
-        this.showError(getHardwareWalletErrorMsg(this.hwWalletService, this.translate, error));
+        this.showError(getHardwareWalletErrorMsg(this.translate, error));
       } else {
         this.showError(error);
       }

@@ -7,7 +7,6 @@ import { Subject } from 'rxjs/Subject';
 import { TranslateService } from '@ngx-translate/core';
 import { AppConfig } from '../app.config';
 import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material';
-import { environment } from '../../environments/environment';
 import { HwWalletDaemonService } from './hw-wallet-daemon.service';
 import { HwWalletPinService, ChangePinStates } from './hw-wallet-pin.service';
 import { HwWalletSeedWordService } from './hw-wallet-seed-word.service';
@@ -341,7 +340,10 @@ export class HwWalletService {
           .catch(() => Observable.throw({ _body: this.translate.instant('hardware-wallet.update-firmware.connection-error') }))
           .map((res: any) => res.text())
           .flatMap((res: any) => {
-            const lastestFirmwareVersion = res.trim();
+            let lastestFirmwareVersion: string = res.trim();
+            if (lastestFirmwareVersion.toLowerCase().startsWith('v')) {
+              lastestFirmwareVersion = lastestFirmwareVersion.substr(1, lastestFirmwareVersion.length - 1);
+            }
 
             return this.http.get(AppConfig.hwWalletDownloadUrlAndPrefix + lastestFirmwareVersion + '.bin', { responseType: ResponseContentType.Blob })
               .map(firmwareResponse => firmwareResponse.blob())
@@ -699,6 +701,16 @@ export class HwWalletService {
         } else if (responseContent.toLocaleLowerCase().includes('LIBUSB'.toLocaleLowerCase())) {
           result = OperationResults.DaemonError;
         } else if (responseContent.toLocaleLowerCase().includes('hidapi'.toLocaleLowerCase())) {
+          result = OperationResults.Disconnected;
+          if (AppConfig.useHwWalletDaemon) {
+            setTimeout(() => this.hwWalletDaemonService.checkHw(false));
+          }
+        } else if (responseContent.toLocaleLowerCase().includes('device disconnected'.toLocaleLowerCase())) {
+          result = OperationResults.Disconnected;
+          if (AppConfig.useHwWalletDaemon) {
+            setTimeout(() => this.hwWalletDaemonService.checkHw(false));
+          }
+        } else if (responseContent.toLocaleLowerCase().includes('no device connected'.toLocaleLowerCase())) {
           result = OperationResults.Disconnected;
           if (AppConfig.useHwWalletDaemon) {
             setTimeout(() => this.hwWalletDaemonService.checkHw(false));

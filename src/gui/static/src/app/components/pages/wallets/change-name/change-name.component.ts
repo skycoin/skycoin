@@ -120,10 +120,10 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
           err => {
             if (this.data.newName) {
               const response = new ChangeNameErrorResponse();
-              response.errorMsg = getHardwareWalletErrorMsg(this.hwWalletService, this.translateService, err);
+              response.errorMsg = getHardwareWalletErrorMsg(this.translateService, err);
               this.dialogRef.close(response);
             } else {
-              this.msgBarService.showError(getHardwareWalletErrorMsg(this.hwWalletService, this.translateService, err));
+              this.msgBarService.showError(getHardwareWalletErrorMsg(this.translateService, err));
               this.currentState = States.Initial;
               if (this.button) {
                 this.button.resetState();

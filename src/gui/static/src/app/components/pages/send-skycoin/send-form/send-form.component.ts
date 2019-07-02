@@ -179,7 +179,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
         this.showBusy();
         this.processingSubscription = this.hwWalletService.checkIfCorrectHwConnected((this.form.value.wallet as Wallet).addresses[0].address).subscribe(
           () => this.createTransaction(),
-          err => this.showError(getHardwareWalletErrorMsg(this.hwWalletService, this.translate, err)),
+          err => this.showError(getHardwareWalletErrorMsg(this.translate, err)),
         );
       }
     }
@@ -254,7 +254,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
         }
 
         if (error && error.result) {
-          this.showError(getHardwareWalletErrorMsg(this.hwWalletService, this.translate, error));
+          this.showError(getHardwareWalletErrorMsg(this.translate, error));
         } else {
           this.showError(error);
         }

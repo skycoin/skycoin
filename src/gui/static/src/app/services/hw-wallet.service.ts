@@ -341,7 +341,10 @@ export class HwWalletService {
           .catch(() => Observable.throw({ _body: this.translate.instant('hardware-wallet.update-firmware.connection-error') }))
           .map((res: any) => res.text())
           .flatMap((res: any) => {
-            const lastestFirmwareVersion = res.trim();
+            let lastestFirmwareVersion: string = res.trim();
+            if (lastestFirmwareVersion.toLowerCase().startsWith('v')) {
+              lastestFirmwareVersion = lastestFirmwareVersion.substr(1, lastestFirmwareVersion.length - 1);
+            }
 
             return this.http.get(AppConfig.hwWalletDownloadUrlAndPrefix + lastestFirmwareVersion + '.bin', { responseType: ResponseContentType.Blob })
               .map(firmwareResponse => firmwareResponse.blob())

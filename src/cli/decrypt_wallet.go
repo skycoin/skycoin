@@ -40,7 +40,7 @@ func decryptWalletCmd() *gcli.Command {
 				return err
 			}
 
-			return printJSON(wlt.ToReadable())
+			return ""
 		},
 	}
 

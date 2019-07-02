@@ -88,7 +88,7 @@ func addressGenCmd() *cobra.Command {
 				Seed:       seed,
 				Encrypt:    encrypt,
 				Password:   password,
-				CryptoType: wallet.CryptoTypeScryptChacha20poly1305,
+				CryptoType: wallet.DefaultCryptoType,
 				GenerateN:  uint64(numAddresses),
 				Type:       wallet.WalletTypeDeterministic,
 			})

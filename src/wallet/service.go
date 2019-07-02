@@ -34,7 +34,7 @@ type Config struct {
 func NewConfig() Config {
 	return Config{
 		WalletDir:       "./",
-		CryptoType:      CryptoTypeScryptChacha20poly1305,
+		CryptoType:      DefaultCryptoType,
 		EnableWalletAPI: false,
 		EnableSeedAPI:   false,
 	}

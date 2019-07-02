@@ -44,7 +44,7 @@ func encryptWalletCmd() *gcli.Command {
 				return err
 			}
 
-			return printJSON(wlt.ToReadable())
+			return ""
 		},
 	}
 

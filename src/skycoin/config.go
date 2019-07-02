@@ -303,7 +303,7 @@ func NewNodeConfig(mode string, node fiber.NodeConfig) NodeConfig {
 
 		// Wallets
 		WalletDirectory:  "",
-		WalletCryptoType: string(wallet.CryptoTypeScryptChacha20poly1305),
+		WalletCryptoType: string(wallet.DefaultCryptoType),
 
 		// Key-value storage
 		KVStorageDirectory: "",

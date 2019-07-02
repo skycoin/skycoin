@@ -15,8 +15,10 @@ func addPrivateKeyCmd() *cobra.Command {
 		Short: "Add a private key to specific wallet",
 		Use:   "addPrivateKey [flags] [private key]",
 		Long: fmt.Sprintf(`Add a private key to specific wallet, the default
-    wallet (%s) will be
-    used if the wallet file or path is not specified
+    wallet (%s) will be used if the wallet file or path is not specified.
+
+    This method only works on "collection" type wallets.
+    Use "skycoin-cli walletCreate -t collection" to create a "collection" type wallet.
 
     Use caution when using the "-p" command. If you have command
     history enabled your wallet encryption password can be recovered from the
@@ -65,7 +67,7 @@ func addPrivateKeyCmd() *cobra.Command {
 	}
 
 	addPrivateKeyCmd.Flags().StringP("wallet-file", "f", "", "wallet file or path. If no path is specified your default wallet path will be used.")
-	addPrivateKeyCmd.Flags().StringP("password", "p", "", "Wallet password")
+	addPrivateKeyCmd.Flags().StringP("password", "p", "", "wallet password")
 
 	return addPrivateKeyCmd
 }
@@ -82,7 +84,7 @@ func AddPrivateKey(wlt *wallet.CollectionWallet, key string) error {
 		return err
 	}
 
-	addr := cipher.AddressFromPubKey(pk)
+	addr := wlt.AddressConstructor()(pk)
 
 	entry := wallet.Entry{
 		Address: addr,
@@ -93,7 +95,8 @@ func AddPrivateKey(wlt *wallet.CollectionWallet, key string) error {
 	return wlt.AddEntry(entry)
 }
 
-// AddPrivateKeyToFile adds a private key to a wallet based on filename.  Will save the wallet after modifying.
+// AddPrivateKeyToFile adds a private key to a wallet based on filename.
+// Will save the wallet after modifying.
 func AddPrivateKeyToFile(walletFile, key string, pr PasswordReader) error {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
@@ -104,20 +107,8 @@ func AddPrivateKeyToFile(walletFile, key string, pr PasswordReader) error {
 		return fmt.Errorf("only %q type wallets can have keypairs added manually", wallet.WalletTypeCollection)
 	}
 
-	switch pr.(type) {
-	case nil:
-		if wlt.IsEncrypted() {
-			return wallet.ErrMissingPassword
-		}
-	case PasswordFromBytes:
-		p, err := pr.Password()
-		if err != nil {
-			return err
-		}
-
-		if !wlt.IsEncrypted() && len(p) != 0 {
-			return wallet.ErrWalletNotEncrypted
-		}
+	if pr == nil && wlt.IsEncrypted() {
+		return wallet.ErrMissingPassword
 	}
 
 	addKey := func(w *wallet.CollectionWallet, key string) error {

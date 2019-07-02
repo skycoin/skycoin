@@ -274,6 +274,10 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 	}
 
 	// Check crypto type
+	if opts.CryptoType == "" {
+		opts.CryptoType = DefaultCryptoType
+	}
+
 	if _, err := getCrypto(opts.CryptoType); err != nil {
 		return nil, err
 	}

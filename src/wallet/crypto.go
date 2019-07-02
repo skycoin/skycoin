@@ -37,6 +37,9 @@ const (
 	CryptoTypeScryptChacha20poly1305 = CryptoType("scrypt-chacha20poly1305")
 	// CryptoTypeScryptChacha20poly1305Insecure uses chacha20poly1305 + scrypt key derivation with a weak work factor (unsafe)
 	CryptoTypeScryptChacha20poly1305Insecure = CryptoType("scrypt-chacha20poly1305-insecure")
+
+	// DefaultCryptoType is the default CryptoType used
+	DefaultCryptoType = CryptoTypeScryptChacha20poly1305
 )
 
 // cryptoTable records all supported wallet crypto methods

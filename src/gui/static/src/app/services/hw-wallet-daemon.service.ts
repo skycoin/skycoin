@@ -7,7 +7,6 @@ import { HwWalletSeedWordService } from './hw-wallet-seed-word.service';
 import { ISubscription } from 'rxjs/Subscription';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import 'rxjs/add/operator/timeout';
-import { AppConfig } from '../app.config';
 
 @Injectable()
 export class HwWalletDaemonService {
@@ -20,6 +19,9 @@ export class HwWalletDaemonService {
   private checkHwSubscription: ISubscription;
   private hwConnected = false;
   private connectionEventSubject = new BehaviorSubject<boolean>(false);
+  private disconnectedChecks = 0;
+
+  private readonly maxFastDisconnectedChecks = 32;
 
   get connectionEvent() {
     return this.connectionEventSubject.asObservable();
@@ -141,7 +143,7 @@ export class HwWalletDaemonService {
 
     this.ngZone.runOutsideAngular(() => {
       this.checkHwSubscription = Observable.of(1)
-        .delay(wait ? (this.hwConnected ? 2000 : 10000) : 0)
+        .delay(wait ? (this.hwConnected || this.disconnectedChecks < this.maxFastDisconnectedChecks ? 2000 : 10000) : 0)
         .flatMap(() => this.get('/available'))
         .subscribe(
           null,
@@ -151,6 +153,12 @@ export class HwWalletDaemonService {
   }
 
   private updateHwConnected(connected: boolean) {
+    if (connected) {
+      this.disconnectedChecks = 0;
+    } else {
+      this.disconnectedChecks += 1;
+    }
+
     if (connected && !this.hwConnected) {
       this.hwConnected = true;
       this.connectionEventSubject.next(this.hwConnected);

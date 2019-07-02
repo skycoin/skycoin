@@ -5,33 +5,13 @@
     [icon]="msgIcons.Confirm"
   ></app-hw-message>
 
-  <app-hw-message *ngIf="currentState === states.ReturnedSuccess"
-    [text]="(data.showCompleteConfirmation ? 'hardware-wallet.confirm-address.confirmation' : 'hardware-wallet.confirm-address.short-confirmation') | translate"
-    [icon]="msgIcons.Success"
-  ></app-hw-message>
-
-  <app-hw-message *ngIf="currentState === states.ReturnedRefused"
-    [text]="'hardware-wallet.general.refused' | translate"
-    [icon]="msgIcons.Error"
-  ></app-hw-message>
-
-  <app-hw-message *ngIf="currentState === states.Failed"
-    [text]="'hardware-wallet.general.generic-error' | translate"
-    [icon]="msgIcons.Error"
-  ></app-hw-message>
-
-  <app-hw-message *ngIf="currentState === states.DaemonError"
-    [text]="'hardware-wallet.errors.daemon-connection' | translate"
-    [icon]="msgIcons.Error"
-  ></app-hw-message>
-
-  <app-hw-message *ngIf="currentState === states.Timeout"
-    [text]="'hardware-wallet.errors.timeout' | translate"
-    [icon]="msgIcons.Error"
+  <app-hw-message *ngIf="currentState === states.ShowingResult"
+    [text]="result.text | translate"
+    [icon]="result.icon"
   ></app-hw-message>
 
   <div class="-buttons" *ngIf="currentState !== states.Initial">
-    <app-button (action)="closeModal()" class="primary">
+    <app-button (action)="closeModal()" class="primary" #closeButton>
       {{ 'hardware-wallet.general.close' | translate }}
     </app-button>
   </div>

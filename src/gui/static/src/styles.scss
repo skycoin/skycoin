@@ -133,6 +133,23 @@ mat-spinner.in-button {
   }
 }
 
+mat-spinner.in-text {
+  display: inline-block;
+  height: 12px !important;
+  width: 12px !important;
+  margin: 0 !important;
+  margin-left: 7px !important;
+
+  svg {
+    height: 12px !important;
+    width: 12px !important;
+
+    circle {
+      stroke: $gradient-blue-dark;
+    }
+  }
+}
+
 snack-bar-container {
   background-color: rgba(255, 0, 0, 0.8) !important;
 }

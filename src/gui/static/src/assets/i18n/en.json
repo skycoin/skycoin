@@ -411,9 +411,10 @@
       "text-not-bootloader": "To update the firmware of your hardware wallet you must connect it in bootloader mode (connect it to the computer while pressing the two physical buttons of the device). WARNING: if you have already configured this device, before continuing you must have a backup of your seed or you could permanently lose access to the funds.",
       "text-no-firmware": "Welcome. The currently connected wallet hardware does not have a firmware (internal software), we will install one so you can start using it. NOTE: if you have already configured this device and want to recover the funds, you will need your seed.",
       "check": "I understand the risks and want to continue",
-      "completed": "The firmware update has been sent to the hardware wallet. Please continue the process on the device.",
+      "follow": "The firmware update has been sent to the hardware wallet. Please continue the process on the device.",
       "connection-error": "It was not possible download the firmware. This could be due to problems with your internet connection or because the service is in maintenance.",
-      "timeout": "The operation was canceled due to inactivity. Please disconnect the device, reconnect it and try again."
+      "timeout": "The operation was canceled due to inactivity. Please disconnect the device, reconnect it and try again.",
+      "finished": "Your device has been configured correctly. Please unplug it before continuing."
     },
     "generate-seed" : {
       "text": "Before proceeding, you can select the number of words you want the seed to have. The seed is a list of words that can be used to recover access to the coins in case of problems. Both values are safe, so if you do not have a special reason for selecting one or the other, you can leave the default value.",
@@ -425,14 +426,16 @@
       "warning" : "WARNING: to avoid potential problems, use only seeds created with a hardware wallet from the same brand/model.",
       "error-wrong-word": "Error: The retyped word does not match the one requested by the hardware wallet.",
       "error-invalid-seed": "Error: The seed is not valid. Please be sure to enter the correct words in the correct order.",
-      "error-wrong-seed": "Error: The seed is valid but does not match the one in the device."
+      "error-wrong-seed": "Error: The seed is valid but does not match the one in the device.",
+      "correct-seed": "The seed is valid and matches the one in the device."
     },
     "added" : {
       "title": "New Hardware Wallet",
       "configuring": "New hardware wallet detected. Configuring...",
       "done": "Done",
       "added1": "The connected hardware wallet has been added to the wallets list with the following name:",
-      "added2": "Now you can check the balance and the addresses of the hardware wallet even when it is not connected. Additionally, you can change the name of the wallet or remove it from the wallets list, if you wish."
+      "added2": "Now you can check the balance and the addresses of the hardware wallet even when it is not connected. Additionally, you can change the name of the wallet or remove it from the wallets list, if you wish.",
+      "ok": "Ok"
     },
     "wipe" : {
       "warning": "WARNING: All the data in the hardware wallet will be deleted. If you do not have a backup, you will not be able to access your funds again.",

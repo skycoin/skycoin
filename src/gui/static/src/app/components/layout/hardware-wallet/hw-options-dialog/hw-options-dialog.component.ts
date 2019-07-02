@@ -17,17 +17,6 @@ import { HwRemovePinDialogComponent } from '../hw-remove-pin-dialog/hw-remove-pi
 import { HwUpdateFirmwareDialogComponent } from '../hw-update-firmware-dialog/hw-update-firmware-dialog.component';
 import { HwUpdateAlertDialogComponent } from '../hw-update-alert-dialog/hw-update-alert-dialog.component';
 
-enum States {
-  Disconnected,
-  Processing,
-  NewConnected,
-  ConfiguredConnected,
-  Error,
-  ReturnedRefused,
-  WrongPin,
-  DaemonError,
-}
-
 export interface ChildHwDialogParams {
   wallet: Wallet;
   walletHasPin: boolean;
@@ -43,8 +32,8 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
 
   closeIfHwDisconnected = false;
 
-  currentState: States;
-  states = States;
+  newWalletConnected = false;
+  otherStateBecauseWrongPin = false;
   walletName = '';
   customErrorMsg = '';
   firmwareVersion = '';
@@ -146,9 +135,9 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
         if (this.completeRecheckRequested) {
           this.checkWallet();
         } else if (this.recheckSecurityOnlyRequested) {
-          this.updateSecurityWarningsAndData().subscribe();
+          this.updateSecurityWarningsAndData(false, true).subscribe();
         } else if (this.showErrorRequested) {
-          this.currentState = States.Error;
+          this.showError();
         }
         this.completeRecheckRequested = false;
         this.recheckSecurityOnlyRequested = false;
@@ -162,10 +151,16 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
     }
   }
 
-  private updateSecurityWarningsAndData(dontUpdateWallet = false): Observable<HwFeaturesResponse> {
-    this.securityWarnings = [];
+  private updateSecurityWarningsAndData(dontUpdateWallet = false, waitForResetingCurrentWarnings = false): Observable<HwFeaturesResponse> {
+    if (!waitForResetingCurrentWarnings) {
+      this.securityWarnings = [];
+    }
 
     return this.walletService.getHwFeaturesAndUpdateData(!dontUpdateWallet ? this.wallet : null).map(response => {
+      if (waitForResetingCurrentWarnings) {
+        this.securityWarnings = [];
+      }
+
       if (response.securityWarnings.includes(HwSecurityWarnings.FirmwareVersionNotVerified)) {
         this.firmwareVersionNotVerified = true;
         this.securityWarnings.push('hardware-wallet.options.unchecked-version-warning');
@@ -206,13 +201,19 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
 
   private checkWallet(suggestToUpdate = false) {
     this.wallet = null;
-    this.currentState = States.Processing;
+    this.showResult({
+      text: 'hardware-wallet.options.connecting',
+      icon: this.msgIcons.Spinner,
+    }, false);
 
     this.removeOperationSubscription();
 
     this.operationSubscription = this.hwWalletService.getDeviceConnected().subscribe(connected => {
       if (!connected) {
-        this.currentState = States.Disconnected;
+        this.showResult({
+          text: 'hardware-wallet.options.disconnected',
+          icon: this.msgIcons.Usb,
+        });
       } else {
         this.operationSubscription = this.hwWalletService.getFeatures(false).subscribe(result => {
           if (result.rawResponse.bootloader_mode) {
@@ -224,9 +225,12 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
       }
     }, err => {
       if (err['_body'] && err['_body'] === HwWalletDaemonService.errorConnectingWithTheDaemon) {
-        this.currentState = States.DaemonError;
+        this.showResult({
+          text: 'hardware-wallet.errors.daemon-connection',
+          icon: this.msgIcons.Error,
+        });
       } else {
-        this.currentState = States.Error;
+        this.showError();
       }
     });
   }
@@ -251,7 +255,8 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
               }
 
               if (!this.onboarding) {
-                this.currentState = States.ConfiguredConnected;
+                this.currentState = this.states.Finished;
+                this.newWalletConnected = false;
               } else {
                 this.hwWalletService.showOptionsWhenPossible = true;
                 this.dialogRef.close(true);
@@ -268,11 +273,12 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
             if (result.rawResponse.bootloader_mode) {
               this.openUpdateDialog();
             } else {
-              this.currentState = States.Error;
+              this.showError();
             }
-          }, () => this.currentState = States.Error);
+          }, () => this.showError());
         } else if (err.result && err.result === OperationResults.WithoutSeed) {
-          this.currentState = States.NewConnected;
+          this.currentState = this.states.Finished;
+          this.newWalletConnected = true;
 
           this.operationSubscription = this.updateSecurityWarningsAndData(true).subscribe(result => {
             if (suggestToUpdate && result.securityWarnings.find(warning => warning === HwSecurityWarnings.OutdatedFirmware)) {
@@ -280,11 +286,13 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
             }
           });
         } else if (err.result && err.result === OperationResults.FailedOrRefused) {
-          this.currentState = States.ReturnedRefused;
+          this.currentState = this.states.Other;
+          this.otherStateBecauseWrongPin = false;
         } else if (err.result && err.result === OperationResults.WrongPin) {
-          this.currentState = States.WrongPin;
+          this.currentState = this.states.Other;
+          this.otherStateBecauseWrongPin = true;
         } else {
-          this.currentState = States.Error;
+          this.processResult(err.result);
         }
       },
     );
@@ -316,5 +324,13 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
     this.dialog.open(HwUpdateFirmwareDialogComponent, config);
 
     this.closeModal();
+  }
+
+  private showError() {
+    this.showResult({
+      text: this.customErrorMsg ? this.customErrorMsg : 'hardware-wallet.general.generic-error',
+      icon: this.msgIcons.Error,
+    });
+    this.customErrorMsg = '';
   }
 }

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ViewChild, OnDestroy } from '@angular/core';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
 import { OnboardingSafeguardComponent } from './onboarding-safeguard/onboarding-safeguard.component';
@@ -7,13 +7,17 @@ import { CreateWalletFormComponent } from '../../wallets/create-wallet/create-wa
 import { HwOptionsDialogComponent } from '../../../layout/hardware-wallet/hw-options-dialog/hw-options-dialog.component';
 import { Router } from '@angular/router';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
+import { ISubscription } from 'rxjs/Subscription';
+import { BlockchainService } from '../../../../services/blockchain.service';
+import { ConfirmationData } from '../../../../app.datatypes';
+import { showConfirmationModal } from '../../../../utils';
 
 @Component({
   selector: 'app-onboarding-create-wallet',
   templateUrl: './onboarding-create-wallet.component.html',
   styleUrls: ['./onboarding-create-wallet.component.scss'],
 })
-export class OnboardingCreateWalletComponent implements OnInit {
+export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
   @ViewChild('formControl') formControl: CreateWalletFormComponent;
   @Input() fill = null;
   @Output() onLabelAndSeedCreated = new EventEmitter<[string, string, boolean]>();
@@ -22,12 +26,17 @@ export class OnboardingCreateWalletComponent implements OnInit {
   doubleButtonActive = DoubleButtonActive.LeftButton;
   hwCompatibilityActivated = false;
 
+  private synchronized = true;
+  private synchronizedSubscription: ISubscription;
+
   constructor(
     private dialog: MatDialog,
     private router: Router,
     hwWalletService: HwWalletService,
+    blockchainService: BlockchainService,
   ) {
     this.hwCompatibilityActivated = hwWalletService.hwWalletCompatibilityActivated;
+    this.synchronizedSubscription = blockchainService.synchronized.subscribe(value => this.synchronized = value);
   }
 
   ngOnInit() {
@@ -36,6 +45,10 @@ export class OnboardingCreateWalletComponent implements OnInit {
       this.doubleButtonActive = this.fill['create'] ? DoubleButtonActive.LeftButton : DoubleButtonActive.RightButton;
       this.showNewForm = this.fill['create'];
     }
+  }
+
+  ngOnDestroy() {
+    this.synchronizedSubscription.unsubscribe();
   }
 
   changeForm(newState) {
@@ -55,7 +68,22 @@ export class OnboardingCreateWalletComponent implements OnInit {
   }
 
   loadWallet() {
-    this.emitCreatedData();
+    if (this.synchronized) {
+      this.emitCreatedData();
+    } else {
+      const confirmationData: ConfirmationData = {
+        headerText: 'wallet.new.synchronizing-warning-title',
+        text: 'wallet.new.synchronizing-warning-text',
+        confirmButtonText: 'wallet.new.synchronizing-warning-continue',
+        cancelButtonText: 'wallet.new.synchronizing-warning-cancel',
+      };
+
+      showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+        if (confirmationResult) {
+          this.emitCreatedData();
+        }
+      });
+    }
   }
 
   useHardwareWallet() {

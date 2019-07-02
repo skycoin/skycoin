@@ -26,6 +26,7 @@ export class ExchangeStatusComponent implements OnDestroy {
     'market_withdraw_waiting',
     'complete',
     'error',
+    'user_deposit_timeout',
   ];
 
   loading = true;
@@ -79,7 +80,7 @@ export class ExchangeStatusComponent implements OnDestroy {
       return 'done';
     }
 
-    if (this.order.status === this.statuses[6]) {
+    if (this.order.status === this.statuses[6] || this.order.status === this.statuses[7]) {
       return 'close';
     }
 

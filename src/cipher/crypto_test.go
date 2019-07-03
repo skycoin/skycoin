@@ -710,7 +710,7 @@ func TestSecKeyPubKeyNull(t *testing.T) {
 	require.False(t, pk.Null())
 }
 
-func TestVerifySignedHash(t *testing.T) {
+func TestVerifySignatureRecoverPubKey(t *testing.T) {
 	h := MustSHA256FromHex("127e9b0d6b71cecd0363b366413f0f19fcd924ae033513498e7486570ff2a1c8")
 	sig := MustSigFromHex("63c035b0c95d0c5744fc1c0bdf38af02cef2d2f65a8f923732ab44e436f8a491216d9ab5ff795e3144f4daee37077b8b9db54d2ba3a3df8d4992f06bb21f724401")
 

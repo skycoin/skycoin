@@ -15,7 +15,7 @@ import (
 func walletAddAddressesCmd() *gcli.Command {
 	walletAddAddressesCmd := &gcli.Command{
 		Use:   "walletAddAddresses",
-		Short: "Generate additional addresses for a wallet",
+		Short: "Generate additional addresses for a deterministic wallet",
 		Long: fmt.Sprintf(`The default wallet (%s) will be used if no wallet was specified.
 
     Use caution when using the "-p" command. If you have command

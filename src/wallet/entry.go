@@ -6,13 +6,16 @@ import (
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip32"
 )
 
 // Entry represents the wallet entry
 type Entry struct {
-	Address cipher.Addresser
-	Public  cipher.PubKey
-	Secret  cipher.SecKey
+	Address    cipher.Addresser
+	Public     cipher.PubKey
+	Secret     cipher.SecKey
+	XPrv       *bip32.PrivateKey // For bip32/bip44
+	ChildIndex uint32            // For bip32/bip44
 }
 
 // SkycoinAddress returns the Skycoin address of an entry. Panics if Address is not a Skycoin address

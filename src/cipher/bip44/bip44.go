@@ -30,6 +30,11 @@ const (
 	CoinTypeBitcoinTestnet CoinType = 0x80000001
 	// CoinTypeSkycoin is the coin_type for Skycoin
 	CoinTypeSkycoin CoinType = 0x88800000
+
+	// ExternalChainIndex is the index of the external chain
+	ExternalChainIndex uint32 = 0
+	// ChangeChainIndex is the index of the change chain
+	ChangeChainIndex uint32 = 1
 )
 
 // Coin is a bip32 node at the `coin_type` level of a bip44 path
@@ -79,10 +84,10 @@ type Account struct {
 
 // External returns the external chain node, to be used for receiving coins
 func (a *Account) External() (*bip32.PrivateKey, error) {
-	return a.NewPrivateChildKey(0)
+	return a.NewPrivateChildKey(ExternalChainIndex)
 }
 
 // Change returns the change chain node, to be used for change addresses
 func (a *Account) Change() (*bip32.PrivateKey, error) {
-	return a.NewPrivateChildKey(1)
+	return a.NewPrivateChildKey(ChangeChainIndex)
 }

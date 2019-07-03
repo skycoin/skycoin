@@ -1,12 +1,18 @@
 package wallet
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
+	"math"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip32"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
 	"github.com/skycoin/skycoin/src/util/file"
+	"github.com/skycoin/skycoin/src/util/mathutil"
 )
 
 // Bip44Wallet manages keys using the original Skycoin deterministic
@@ -88,7 +94,12 @@ func (w *Bip44Wallet) ToReadable() Readable {
 
 // Validate validates the wallet
 func (w *Bip44Wallet) Validate() error {
-	return w.Meta.validate()
+	if err := w.Meta.validate(); err != nil {
+		return err
+	}
+
+	// bip44 wallet seeds must be a valid bip39 mnemonic
+	return bip39.ValidateMnemonic(w.Meta.Seed())
 }
 
 // GetAddresses returns all addresses in wallet
@@ -137,67 +148,168 @@ func (w *Bip44Wallet) HasEntry(a cipher.Address) bool {
 	return w.ExternalEntries.has(a) || w.ChangeEntries.has(a)
 }
 
-// GenerateAddresses generates addresses
-func (w *Bip44Wallet) GenerateAddresses(num uint64) ([]cipher.Addresser, error) {
-	if num == 0 {
-		return nil, nil
+func (w *Bip44Wallet) nextChildIdx(e Entries) uint32 {
+	if len(e) == 0 {
+		return 0
 	}
+	return e[len(e)-1].ChildIndex
+}
 
+// generateEntries generates addresses
+func (w *Bip44Wallet) generateEntries(num uint64, changeIdx, initialChildIdx uint32) (Entries, error) {
 	if w.Meta.IsEncrypted() {
 		return nil, ErrWalletEncrypted
 	}
 
-	var seckeys []cipher.SecKey
-	var seed []byte
-	if w.EntriesLen() == 0 {
-		seed, seckeys = cipher.MustGenerateDeterministicKeyPairsSeed([]byte(w.Meta.Seed()), int(num))
-	} else {
-		sd, err := hex.DecodeString(w.Meta.LastSeed())
-		if err != nil {
-			return nil, fmt.Errorf("decode hex seed failed: %v", err)
+	if num == 0 {
+		return nil, nil
+	}
+
+	if num > math.MaxUint32 {
+		return nil, NewError(errors.New("generateAddressesBip44 num too large"))
+	}
+
+	// Check that num will not cause an overflow of childIdx starting from initialChildIdx
+	// Warning: this is not precise, because some childIdx may need to be skipped.
+	// Overflow must be checked again during generation.
+	if _, err := mathutil.AddUint32(uint32(num), initialChildIdx); err != nil {
+		return nil, NewError(errors.New("initialChildIdx+num exceeds maximum HD wallet chain length"))
+	}
+
+	// w.Meta.Seed() must return a valid bip39 mnemonic
+	// TODO -- support seed passphrases
+	seed, err := bip39.NewSeed(w.Meta.Seed(), "")
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO -- support other coin types. Note that this is different from
+	// the coinType field in the wallet. This is the bip44 coin type, which
+	// will be different for each fiber coin, whereas the wallet's coinType
+	// field is always "skycoin" for all fiber coins
+	// TODO -- ideas: add a new field to disambiguate "address type" (walletCoinType)
+	// from bip44 coin_type.
+	// Add API control to allow custom paths to be added
+	// Use fiber.toml to configure the default bip44 coin type
+	c, err := bip44.NewCoin(seed, bip44.CoinTypeSkycoin)
+	if err != nil {
+		logger.Critical().WithError(err).Error("Failed to derive the bip44 purpose node")
+		if bip32.IsImpossibleChildError(err) {
+			logger.Critical().Error("ImpossibleChild: this seed cannot be used for bip44")
 		}
-		seed, seckeys = cipher.MustGenerateDeterministicKeyPairsSeed(sd, int(num))
+		return nil, err
 	}
 
-	w.Meta.setLastSeed(hex.EncodeToString(seed))
+	// Generate the "account" HDNode. Multiple accounts are not supported; use 0.
+	account, err := c.Account(0)
+	if err != nil {
+		logger.Critical().WithError(err).Error("Failed to derive the bip44 account node")
+		if bip32.IsImpossibleChildError(err) {
+			logger.Critical().Error("ImpossibleChild: this seed cannot be used for bip44")
+		}
+		return nil, err
+	}
 
-	addrs := make([]cipher.Addresser, len(seckeys))
+	// Generate the external chain parent node
+	chain, err := account.NewPrivateChildKey(changeIdx)
+	if err != nil {
+		logger.Critical().WithError(err).Error("Failed to derive the final bip44 chain node")
+		if bip32.IsImpossibleChildError(err) {
+			logger.Critical().Error("ImpossibleChild: this seed cannot be used for bip44")
+		}
+		return nil, err
+	}
+
+	// Generate `num` secret keys from the external chain HDNode, skipping any children that
+	// are invalid (note that this has probability ~2^-128)
+	var seckeys []*bip32.PrivateKey
+	var addressIndices []uint32
+	j := initialChildIdx
+	for i := uint32(0); i < uint32(num); i++ {
+		k, err := chain.NewPrivateChildKey(j)
+
+		j, addErr := mathutil.AddUint32(j, 1)
+		if addErr != nil {
+			logger.Critical().WithError(addErr).WithFields(logrus.Fields{
+				"num":             num,
+				"initialChildIdx": initialChildIdx,
+				"accountIdx":      0,
+				"changeIdx":       changeIdx,
+				"childIdx":        j,
+				"i":               i,
+			}).Error("childIdx can't be incremented any further")
+			return nil, errors.New("childIdx can't be incremented any further")
+		}
+
+		if err != nil {
+			if bip32.IsImpossibleChildError(err) {
+				logger.Critical().WithError(err).WithFields(logrus.Fields{
+					"accountIdx": 0,
+					"changeIdx":  changeIdx,
+					"childIdx":   j,
+				}).Error("ImpossibleChild for chain node child element")
+				continue
+			} else {
+				logger.Critical().WithError(err).WithFields(logrus.Fields{
+					"accountIdx": 0,
+					"changeIdx":  changeIdx,
+					"childIdx":   j,
+				}).Error("NewPrivateChildKey failed unexpectedly")
+				return nil, err
+			}
+		}
+
+		seckeys = append(seckeys, k)
+		addressIndices = append(addressIndices, j)
+	}
+
+	entries := make(Entries, len(seckeys))
 	makeAddress := w.Meta.AddressConstructor()
-	for i, s := range seckeys {
-		p := cipher.MustPubKeyFromSecKey(s)
-		a := makeAddress(p)
-		addrs[i] = a
-		w.Entries = append(w.Entries, Entry{
-			Address: a,
-			Secret:  s,
-			Public:  p,
-		})
+	for i, xprv := range seckeys {
+		sk := cipher.MustNewSecKey(xprv.Key)
+		pk := cipher.MustPubKeyFromSecKey(sk)
+		entries[i] = Entry{
+			Address:    makeAddress(pk),
+			Secret:     sk,
+			Public:     pk,
+			XPrv:       xprv,
+			ChildIndex: addressIndices[i],
+		}
 	}
-	return addrs, nil
+
+	return entries, nil
 }
 
-// GenerateSkycoinAddresses generates Skycoin addresses. If the wallet's coin type is not Skycoin, returns an error
+// GenerateAddresses generates addresses for the external chain, and appends them to the wallet's entries array
+func (w *Bip44Wallet) GenerateAddresses(num uint64) ([]cipher.Addresser, error) {
+	entries, err := w.generateEntries(num, bip44.ExternalChainIndex, w.nextChildIdx(w.ExternalEntries))
+	if err != nil {
+		return nil, err
+	}
+
+	w.ExternalEntries = append(w.ExternalEntries, entries...)
+
+	return entries.getAddresses(), nil
+}
+
+// GenerateSkycoinAddresses generates Skycoin addresses for the external chain, and appends them to the wallet's entries array.
+// If the wallet's coin type is not Skycoin, returns an error
 func (w *Bip44Wallet) GenerateSkycoinAddresses(num uint64) ([]cipher.Address, error) {
 	if w.Meta.Coin() != CoinTypeSkycoin {
 		return nil, errors.New("GenerateSkycoinAddresses called for non-skycoin wallet")
 	}
 
-	addrs, err := w.GenerateAddresses(num)
+	entries, err := w.generateEntries(num, bip44.ExternalChainIndex, w.nextChildIdx(w.ExternalEntries))
 	if err != nil {
 		return nil, err
 	}
 
-	skyAddrs := make([]cipher.Address, len(addrs))
-	for i, a := range addrs {
-		skyAddrs[i] = a.(cipher.Address)
-	}
+	w.ExternalEntries = append(w.ExternalEntries, entries...)
 
-	return skyAddrs, nil
+	return entries.getSkycoinAddresses(), nil
 }
 
-// ScanAddresses scans ahead N addresses, truncating up to the highest address with a non-zero balance.
-// If any address has a nonzero balance, it rescans N more addresses from that point, until a entire
-// sequence of N addresses has no balance.
+// ScanAddresses scans ahead N addresses, truncating up to the highest address with any transaction history.
 func (w *Bip44Wallet) ScanAddresses(scanN uint64, tf TransactionsFinder) error {
 	if w.Meta.IsEncrypted() {
 		return ErrWalletEncrypted
@@ -209,25 +321,49 @@ func (w *Bip44Wallet) ScanAddresses(scanN uint64, tf TransactionsFinder) error {
 
 	w2 := w.Clone().(*Bip44Wallet)
 
-	nExistingAddrs := uint64(len(w2.Entries))
+	externalEntries, err := w2.scanAddresses(scanN, tf, w2.ExternalEntries, bip44.ExternalChainIndex)
+	if err != nil {
+		return err
+	}
+
+	changeEntries, err := w2.scanAddresses(scanN, tf, w2.ChangeEntries, bip44.ChangeChainIndex)
+	if err != nil {
+		return err
+	}
+
+	// Add scanned entries
+	w2.ExternalEntries = append(w2.ExternalEntries, externalEntries...)
+	w2.ChangeEntries = append(w2.ChangeEntries, changeEntries...)
+
+	*w = *w2
+
+	return nil
+}
+
+func (w *Bip44Wallet) scanAddresses(scanN uint64, tf TransactionsFinder, entries Entries, chainIdx uint32) (Entries, error) {
 	nAddAddrs := uint64(0)
 	n := scanN
 	extraScan := uint64(0)
 
+	var newEntries Entries
 	for {
 		// Generate the addresses to scan
-		addrs, err := w2.GenerateSkycoinAddresses(n)
+		entries, err := w.generateEntries(n, chainIdx, w.nextChildIdx(entries))
 		if err != nil {
-			return err
+			return nil, err
 		}
+
+		newEntries = append(newEntries, entries...)
+
+		addrs := entries.getSkycoinAddresses()
 
 		// Find if these addresses had any activity
 		active, err := tf.AddressesActivity(addrs)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		// Check balance from the last one until we find the address that has activity
+		// Check activity from the last one until we find the address that has activity
 		var keepNum uint64
 		for i := len(active) - 1; i >= 0; i-- {
 			if active[i] {
@@ -242,24 +378,15 @@ func (w *Bip44Wallet) ScanAddresses(scanN uint64, tf TransactionsFinder) error {
 
 		nAddAddrs += keepNum + extraScan
 
-		// extraScan is the number of addresses with a zero balance beyond the
-		// last address with a nonzero balance
+		// extraScan is the number of addresses with no activity beyond the
+		// last address with activity
 		extraScan = n - keepNum
 
 		// n is the number of addresses to scan the next iteration
 		n = scanN - extraScan
 	}
 
-	// Regenerate addresses up to nExistingAddrs + nAddAddrss.
-	// This is necessary to keep the lastSeed updated.
-	// w2.reset()
-	if _, err := w2.GenerateSkycoinAddresses(nExistingAddrs + nAddAddrs); err != nil {
-		return err
-	}
-
-	*w = *w2
-
-	return nil
+	return newEntries[:nAddAddrs], nil
 }
 
 // Fingerprint returns a unique ID fingerprint this wallet, composed of its initial address
@@ -268,8 +395,11 @@ func (w *Bip44Wallet) Fingerprint() string {
 	addr := ""
 	if len(w.ExternalEntries) == 0 {
 		if !w.IsEncrypted() {
-			_, pk, _ := cipher.MustDeterministicKeyPairIterator([]byte(w.Meta.Seed()))
-			addr = w.Meta.AddressConstructor()(pk).String()
+			entries, err := w.generateEntries(1, bip44.ExternalChainIndex, 0)
+			if err != nil {
+				logger.WithError(err).Panic("Fingerprint failed to generate initial entry for empty wallet")
+			}
+			addr = entries[0].Address.String()
 		}
 	} else {
 		addr = w.ExternalEntries[0].Address.String()
@@ -280,8 +410,8 @@ func (w *Bip44Wallet) Fingerprint() string {
 // ReadableBip44Wallet used for [de]serialization of a deterministic wallet
 type ReadableBip44Wallet struct {
 	Meta            `json:"meta"`
-	ExternalEntries `json:"external_entries"`
-	ChangeEntries   `json:"change_entries"`
+	ExternalEntries ReadableEntries `json:"external_entries"`
+	ChangeEntries   ReadableEntries `json:"change_entries"`
 }
 
 // LoadReadableBip44Wallet loads a deterministic wallet from disk
@@ -334,4 +464,9 @@ func (rw *ReadableBip44Wallet) ToWallet() (Wallet, error) {
 	w.ChangeEntries = ets
 
 	return w, nil
+}
+
+// GetEntries returns all bip44 wallet entries. External entries come before change entries.
+func (rw *ReadableBip44Wallet) GetEntries() ReadableEntries {
+	return append(rw.ExternalEntries, rw.ChangeEntries...)
 }

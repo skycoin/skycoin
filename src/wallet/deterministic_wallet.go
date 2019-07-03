@@ -129,12 +129,12 @@ func (w *DeterministicWallet) HasEntry(a cipher.Address) bool {
 
 // GenerateAddresses generates addresses
 func (w *DeterministicWallet) GenerateAddresses(num uint64) ([]cipher.Addresser, error) {
-	if num == 0 {
-		return nil, nil
-	}
-
 	if w.Meta.IsEncrypted() {
 		return nil, ErrWalletEncrypted
+	}
+
+	if num == 0 {
+		return nil, nil
 	}
 
 	var seckeys []cipher.SecKey
@@ -191,9 +191,7 @@ func (w *DeterministicWallet) reset() {
 	w.Meta.setLastSeed(w.Meta.Seed())
 }
 
-// ScanAddresses scans ahead N addresses, truncating up to the highest address with a non-zero balance.
-// If any address has a nonzero balance, it rescans N more addresses from that point, until a entire
-// sequence of N addresses has no balance.
+// ScanAddresses scans ahead N addresses, truncating up to the highest address with any transaction history.
 func (w *DeterministicWallet) ScanAddresses(scanN uint64, tf TransactionsFinder) error {
 	if w.Meta.IsEncrypted() {
 		return ErrWalletEncrypted
@@ -223,7 +221,7 @@ func (w *DeterministicWallet) ScanAddresses(scanN uint64, tf TransactionsFinder)
 			return err
 		}
 
-		// Check balance from the last one until we find the address that has activity
+		// Check activity from the last one until we find the address that has activity
 		var keepNum uint64
 		for i := len(active) - 1; i >= 0; i-- {
 			if active[i] {
@@ -238,15 +236,15 @@ func (w *DeterministicWallet) ScanAddresses(scanN uint64, tf TransactionsFinder)
 
 		nAddAddrs += keepNum + extraScan
 
-		// extraScan is the number of addresses with a zero balance beyond the
-		// last address with a nonzero balance
+		// extraScan is the number of addresses with no activity beyond the
+		// last address with activity
 		extraScan = n - keepNum
 
 		// n is the number of addresses to scan the next iteration
 		n = scanN - extraScan
 	}
 
-	// Regenerate addresses up to nExistingAddrs + nAddAddrss.
+	// Regenerate addresses up to nExistingAddrs + nAddAddrs.
 	// This is necessary to keep the lastSeed updated.
 	w2.reset()
 	if _, err := w2.GenerateSkycoinAddresses(nExistingAddrs + nAddAddrs); err != nil {

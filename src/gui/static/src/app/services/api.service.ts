@@ -55,21 +55,27 @@ export class ApiService {
       .map((response: GetWalletsResponseWallet[]) => {
         const wallets: Wallet[] = [];
         response.forEach(wallet => {
-          wallets.push(<Wallet> {
+          const processedWallet: Wallet = {
             label: wallet.meta.label,
             filename: wallet.meta.filename,
             coins: null,
             hours: null,
-            addresses: wallet.entries.map((entry: GetWalletsResponseEntry) => {
+            addresses: [],
+            encrypted: wallet.meta.encrypted,
+          };
+
+          if (wallet.entries) {
+            processedWallet.addresses = wallet.entries.map((entry: GetWalletsResponseEntry) => {
               return {
                 address: entry.address,
                 coins: null,
                 hours: null,
                 confirmed: true,
               };
-            }),
-            encrypted: wallet.meta.encrypted,
-          });
+            });
+          }
+
+          wallets.push(processedWallet);
         });
 
         return wallets;

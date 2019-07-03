@@ -548,7 +548,7 @@
       "date": "Date"
     },
     "details": {
-      "exchange-addr": "Exchange address",
+      "exchange-addr": "Exchange address (valid for this exchange operation only)",
       "exchange-addr-tag": "Payment ID or Destination Tag which must be used for the transaction",
       "tx-id": "Transaction ID",
       "order-id": "Order ID",

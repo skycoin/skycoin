@@ -280,7 +280,7 @@ func (vs *Visor) RemoveInvalidUnconfirmed() ([]cipher.SHA256, error) {
 	return hashes, nil
 }
 
-// CreateBlock creates a SignedBlock from pending transactions
+// createBlock creates a SignedBlock from pending transactions
 func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, error) {
 	if !vs.Config.IsBlockPublisher {
 		logger.Panic("Only a block publisher node can create blocks")
@@ -292,8 +292,18 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 		return coin.SignedBlock{}, err
 	}
 
+	b, err := vs.createBlockFromTxns(tx, txns, when)
+	if err != nil {
+		return coin.SignedBlock{}, nil
+	}
+
+	return vs.signBlock(b), nil
+}
+
+// createBlockFromTxns creates a Block from specified set of transactions according to set of determinstic rules.
+func (vs *Visor) createBlockFromTxns(tx *dbutil.Tx, txns coin.Transactions, when uint64) (coin.Block, error) {
 	if len(txns) == 0 {
-		return coin.SignedBlock{}, errors.New("No transactions")
+		return coin.Block{}, errors.New("No transactions")
 	}
 
 	logger.Infof("unconfirmed pool has %d transactions pending", len(txns))
@@ -306,7 +316,7 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 			case ErrTxnViolatesHardConstraint, ErrTxnViolatesSoftConstraint:
 				logger.Warningf("Transaction %s violates constraints: %v", txn.Hash().Hex(), err)
 			default:
-				return coin.SignedBlock{}, err
+				return coin.Block{}, err
 			}
 		} else {
 			filteredTxns = append(filteredTxns, txn)
@@ -322,26 +332,26 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 
 	if len(txns) == 0 {
 		logger.Info("No transactions after filtering for constraint violations")
-		return coin.SignedBlock{}, errors.New("No transactions after filtering for constraint violations")
+		return coin.Block{}, errors.New("No transactions after filtering for constraint violations")
 	}
 
 	head, err := vs.blockchain.Head(tx)
 	if err != nil {
-		return coin.SignedBlock{}, err
+		return coin.Block{}, err
 	}
 
 	// Sort them by highest fee per kilobyte
 	txns, err = coin.SortTransactions(txns, vs.blockchain.TransactionFee(tx, head.Time()))
 	if err != nil {
 		logger.Critical().WithError(err).Error("SortTransactions failed, no block can be made until the offending transaction is removed")
-		return coin.SignedBlock{}, err
+		return coin.Block{}, err
 	}
 
 	// Apply block size transaction limit
 	txns, err = txns.TruncateBytesTo(vs.Config.MaxBlockTransactionsSize)
 	if err != nil {
 		logger.Critical().WithError(err).Error("TruncateBytesTo failed, no block can be made until the offending transaction is removed")
-		return coin.SignedBlock{}, err
+		return coin.Block{}, err
 	}
 
 	if len(txns) > coin.MaxBlockTransactions {
@@ -357,10 +367,10 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 	b, err := vs.blockchain.NewBlock(tx, txns, when)
 	if err != nil {
 		logger.Warningf("blockchain.NewBlock failed: %v", err)
-		return coin.SignedBlock{}, err
+		return coin.Block{}, err
 	}
 
-	return vs.signBlock(*b), nil
+	return *b, nil
 }
 
 // CreateAndExecuteBlock creates a SignedBlock from pending transactions and executes it

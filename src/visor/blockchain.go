@@ -231,39 +231,40 @@ func (bc Blockchain) NewBlock(tx *dbutil.Tx, txns coin.Transactions, currentTime
 	return b, nil
 }
 
-func (bc *Blockchain) processBlock(tx *dbutil.Tx, b coin.SignedBlock) (coin.SignedBlock, error) {
+func (bc *Blockchain) processBlock(tx *dbutil.Tx, b coin.SignedBlock) (coin.Transactions, error) {
 	length, err := bc.Len(tx)
 	if err != nil {
-		return coin.SignedBlock{}, err
+		return nil, err
 	}
+
+	var blockTxns coin.Transactions
 
 	if length > 0 {
 		if isGenesis, err := bc.isGenesisBlock(tx, b.Block); err != nil {
-			return coin.SignedBlock{}, err
+			return nil, err
 		} else if isGenesis {
 			err := errors.New("Attempted to process genesis block after blockchain has genesis block")
 			logger.Warning(err.Error())
-			return coin.SignedBlock{}, err
+			return nil, err
 		} else {
 			if err := bc.verifyBlockHeader(tx, b.Block); err != nil {
-				return coin.SignedBlock{}, err
+				return nil, err
 			}
 
-			txns, err := bc.processTransactions(tx, b.Body.Transactions)
+			var err error
+			blockTxns, err = bc.processTransactions(tx, b.Body.Transactions)
 			if err != nil {
-				return coin.SignedBlock{}, err
+				return nil, err
 			}
 
-			b.Body.Transactions = txns
-
-			if err := bc.verifyUxHash(tx, b.Block); err != nil {
-				return coin.SignedBlock{}, err
+			if err = bc.verifyUxHash(tx, b.Block); err != nil {
+				return nil, err
 			}
 
 		}
 	}
 
-	return b, nil
+	return blockTxns, nil
 }
 
 // ExecuteBlock attempts to append block to blockchain with *dbutil.Tx
@@ -283,16 +284,24 @@ func (bc *Blockchain) ExecuteBlock(tx *dbutil.Tx, sb *coin.SignedBlock) error {
 		sb.Head.PrevHash = head.HashHeader()
 	}
 
-	nb, err := bc.processBlock(tx, *sb)
+	blockTxns, err := bc.processBlock(tx, *sb)
 	if err != nil {
 		return err
 	}
+	sb.Body.Transactions = blockTxns
 
-	if err := bc.store.AddBlock(tx, &nb); err != nil {
+	if err := bc.store.AddBlock(tx, sb); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// VerifyBlock verifies specified block against current state of blockchain.
+func (bc *Blockchain) VerifyBlock(tx *dbutil.Tx, sb *coin.SignedBlock) error {
+	_, err := bc.processBlock(tx, *sb)
+
+	return err
 }
 
 // isGenesisBlock checks if the block is genesis block

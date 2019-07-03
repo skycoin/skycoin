@@ -406,6 +406,14 @@ func (vs *Visor) CreateBlock(txns coin.Transactions, when uint64) (coin.Block, e
 	return sb, err
 }
 
+// VerifyBlock verifies specified block against local copy of blockchain.
+// Signature is not verified.
+func (vs *Visor) VerifyBlock(b coin.SignedBlock) error {
+	return vs.db.View("VeirfyBlock", func(tx *dbutil.Tx) error {
+		return vs.blockchain.VerifyBlock(tx, &b)
+	})
+}
+
 // ExecuteSignedBlock adds a block to the blockchain, or returns error.
 // Blocks must be executed in sequence, and be signed by a block publisher node.
 func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {

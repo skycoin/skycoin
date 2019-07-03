@@ -390,6 +390,22 @@ func (vs *Visor) CreateAndExecuteBlock() (coin.SignedBlock, error) {
 	return sb, err
 }
 
+// CreateBlock creates a Block from specified set of transactions according to set of determinstic rules.
+func (vs *Visor) CreateBlock(txns coin.Transactions, when uint64) (coin.Block, error) {
+	var sb coin.Block
+
+	err := vs.db.Update("CreateBlock", func(tx *dbutil.Tx) error {
+		var err error
+		if sb, err = vs.createBlockFromTxns(tx, txns, when); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return sb, err
+}
+
 // ExecuteSignedBlock adds a block to the blockchain, or returns error.
 // Blocks must be executed in sequence, and be signed by a block publisher node
 func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {

@@ -231,40 +231,38 @@ func (bc Blockchain) NewBlock(tx *dbutil.Tx, txns coin.Transactions, currentTime
 	return b, nil
 }
 
-func (bc *Blockchain) processBlock(tx *dbutil.Tx, b coin.SignedBlock) (coin.Transactions, error) {
+func (bc *Blockchain) processBlock(tx *dbutil.Tx, b coin.SignedBlock) (coin.SignedBlock, error) {
 	length, err := bc.Len(tx)
 	if err != nil {
-		return nil, err
+		return coin.SignedBlock{}, err
 	}
-
-	var blockTxns coin.Transactions
 
 	if length > 0 {
 		if isGenesis, err := bc.isGenesisBlock(tx, b.Block); err != nil {
-			return nil, err
+			return coin.SignedBlock{}, err
 		} else if isGenesis {
 			err := errors.New("Attempted to process genesis block after blockchain has genesis block")
 			logger.Warning(err.Error())
-			return nil, err
+			return coin.SignedBlock{}, err
 		} else {
 			if err := bc.verifyBlockHeader(tx, b.Block); err != nil {
-				return nil, err
+				return coin.SignedBlock{}, err
 			}
 
-			var err error
-			blockTxns, err = bc.processTransactions(tx, b.Body.Transactions)
+			txns, err := bc.processTransactions(tx, b.Body.Transactions)
 			if err != nil {
-				return nil, err
+				return coin.SignedBlock{}, err
 			}
+			b.Body.Transactions = txns
 
 			if err = bc.verifyUxHash(tx, b.Block); err != nil {
-				return nil, err
+				return coin.SignedBlock{}, err
 			}
 
 		}
 	}
 
-	return blockTxns, nil
+	return b, nil
 }
 
 // ExecuteBlock attempts to append block to blockchain with *dbutil.Tx
@@ -284,13 +282,12 @@ func (bc *Blockchain) ExecuteBlock(tx *dbutil.Tx, sb *coin.SignedBlock) error {
 		sb.Head.PrevHash = head.HashHeader()
 	}
 
-	blockTxns, err := bc.processBlock(tx, *sb)
+	nb, err := bc.processBlock(tx, *sb)
 	if err != nil {
 		return err
 	}
-	sb.Body.Transactions = blockTxns
 
-	if err := bc.store.AddBlock(tx, sb); err != nil {
+	if err := bc.store.AddBlock(tx, &nb); err != nil {
 		return err
 	}
 

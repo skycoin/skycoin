@@ -102,6 +102,8 @@ const (
 	// WalletTypeBip44 bip44 HD wallet type.
 	// Follow the bip44 spec.
 	WalletTypeBip44 = "bip44"
+	// DefaultWalletType is the default type used for new wallets
+	DefaultWalletType = WalletTypeDeterministic
 )
 
 // ResolveCoinType normalizes a coin type string to a CoinType constant
@@ -119,7 +121,7 @@ func ResolveCoinType(s string) (CoinType, error) {
 // IsValidWalletType returns true if a wallet type is recognized
 func IsValidWalletType(t string) bool {
 	switch t {
-	case WalletTypeDeterministic, WalletTypeCollection:
+	case WalletTypeDeterministic, WalletTypeCollection, WalletTypeBip44:
 		return true
 	default:
 		return false
@@ -169,14 +171,14 @@ type Options struct {
 func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, error) {
 	wltType := opts.Type
 	if wltType == "" {
-		wltType = WalletTypeDeterministic
+		wltType = DefaultWalletType
 	}
 	if !IsValidWalletType(wltType) {
 		return nil, ErrInvalidWalletType
 	}
 
 	switch wltType {
-	case WalletTypeDeterministic:
+	case WalletTypeDeterministic, WalletTypeBip44:
 		if opts.Seed == "" {
 			return nil, ErrMissingSeed
 		}
@@ -224,31 +226,39 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 		w = newDeterministicWallet(meta)
 	case WalletTypeCollection:
 		w = newCollectionWallet(meta)
+	case WalletTypeBip44:
+		w = newBip44Wallet(meta)
 	default:
 		logger.Panic("unhandled wltType")
 	}
 
 	// Generate wallet addresses
 	switch wltType {
-	case WalletTypeDeterministic:
+	case WalletTypeDeterministic, WalletTypeBip44:
 		generateN := opts.GenerateN
 		if generateN == 0 {
 			generateN = 1
 		}
 
-		logger.WithField("generateN", generateN).Info("Generating addresses for deterministic wallet")
+		logger.WithFields(logrus.Fields{
+			"generateN":  generateN,
+			"walletType": wltType,
+		}).Infof("Generating addresses for wallet")
 
 		if _, err := w.GenerateAddresses(generateN); err != nil {
 			return nil, err
 		}
 
 		if opts.ScanN != 0 && coin != CoinTypeSkycoin {
-			return nil, errors.New("Wallet scanning is not supported for Bitcoin wallets")
+			return nil, errors.New("Wallet scanning is only supported for Skycoin address wallets")
 		}
 
 		if opts.ScanN > generateN {
 			// Scan for addresses with balances
-			logger.WithField("scanN", opts.ScanN).Info("Scanning addresses for deterministic wallet")
+			logger.WithFields(logrus.Fields{
+				"scanN":      opts.ScanN,
+				"walletType": wltType,
+			}).Info("Scanning addresses for wallet")
 			if err := w.ScanAddresses(opts.ScanN, tf); err != nil {
 				return nil, err
 			}
@@ -256,7 +266,7 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 
 	case WalletTypeCollection:
 		if opts.GenerateN != 0 || opts.ScanN != 0 {
-			return nil, NewError(errors.New("wallet scanning is not defined for \"collection\" wallets"))
+			return nil, NewError(fmt.Errorf("wallet scanning is not defined for %q wallets", wltType))
 		}
 
 	default:

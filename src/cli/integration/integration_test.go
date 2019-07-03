@@ -2780,7 +2780,7 @@ func TestStableWalletCreate(t *testing.T) {
 				_, clean := createUnencryptedWallet(t)
 				return clean
 			},
-			errMsg: []byte("Error: integration-test.wlt already exist\n"),
+			errMsg: []byte("Error: integration-test.wlt already exists\n"),
 		},
 		{
 			name:  "encrypt=true",

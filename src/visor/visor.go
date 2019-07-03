@@ -1501,6 +1501,26 @@ func (vs *Visor) GetAllValidUnconfirmedTxHashes() ([]cipher.SHA256, error) {
 	return hashes, nil
 }
 
+// GetConfirmedTransaction returns transaction, which has been already included in some block.
+func (vs *Visor) GetConfirmedTransaction(txnHash cipher.SHA256) (*coin.Transaction, error) {
+	var histTxn *historydb.Transaction
+
+	if err := vs.db.View("GetConfirmedTransaction", func(tx *dbutil.Tx) error {
+		var err error
+		histTxn, err = vs.history.GetTransaction(tx, txnHash)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	// Transaction not found.
+	if histTxn == nil {
+		return nil, nil
+	}
+
+	return &histTxn.Txn, nil
+}
+
 // GetSignedBlockByHash get block of specific hash header, return nil on not found.
 func (vs *Visor) GetSignedBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, error) {
 	var sb *coin.SignedBlock

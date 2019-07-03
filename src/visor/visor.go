@@ -294,7 +294,7 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 
 	b, err := vs.createBlockFromTxns(tx, txns, when)
 	if err != nil {
-		return coin.SignedBlock{}, nil
+		return coin.SignedBlock{}, err
 	}
 
 	return vs.signBlock(b), nil

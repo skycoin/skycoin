@@ -1,7 +1,6 @@
 package wallet
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
 
@@ -39,20 +38,7 @@ func (w *CollectionWallet) PackSecrets(ss Secrets) {
 
 // UnpackSecrets copies data from decrypted secrets into the wallet
 func (w *CollectionWallet) UnpackSecrets(ss Secrets) error {
-	// Gets addresses related secrets
-	for i, e := range w.Entries {
-		sstr, ok := ss.get(e.Address.String())
-		if !ok {
-			return fmt.Errorf("secret of address %s doesn't exist in secrets", e.Address)
-		}
-		s, err := hex.DecodeString(sstr)
-		if err != nil {
-			return fmt.Errorf("decode secret hex string failed: %v", err)
-		}
-
-		copy(w.Entries[i].Secret[:], s[:])
-	}
-	return nil
+	return w.Entries.unpackSecretKeys(ss)
 }
 
 // Clone clones the wallet a new wallet object

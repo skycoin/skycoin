@@ -99,6 +99,9 @@ const (
 	// WalletTypeCollection collection wallet type.
 	// Does not use any key generator; keys must be added explicitly
 	WalletTypeCollection = "collection"
+	// WalletTypeBip44 bip44 HD wallet type.
+	// Follow the bip44 spec.
+	WalletTypeBip44 = "bip44"
 )
 
 // ResolveCoinType normalizes a coin type string to a CoinType constant

@@ -1,7 +1,9 @@
 package wallet
 
 import (
+	"encoding/hex"
 	"errors"
+	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
 )
@@ -97,4 +99,23 @@ func (entries Entries) erase() {
 		}
 		entries[i].Secret = cipher.SecKey{}
 	}
+}
+
+// unpackSecretKeys for each entry, look for the secret key in the Secrets dict, keyed by address
+func (entries Entries) unpackSecretKeys(ss Secrets) error {
+	for i, e := range entries {
+		sstr, ok := ss.get(e.Address.String())
+		if !ok {
+			return fmt.Errorf("secret of address %s doesn't exist in secrets", e.Address)
+		}
+
+		s, err := hex.DecodeString(sstr)
+		if err != nil {
+			return fmt.Errorf("decode secret hex string failed: %v", err)
+		}
+
+		copy(entries[i].Secret[:], s[:])
+	}
+
+	return nil
 }

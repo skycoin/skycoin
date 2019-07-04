@@ -41,7 +41,6 @@ func walletCreateCmd() *gcli.Command {
 	walletCreateCmd.Flags().BoolP("mnemonic", "m", false, "A mnemonic seed consisting of 12 dictionary words will be generated")
 	walletCreateCmd.Flags().Uint64P("wordcount", "w", 12, "Number of seed words to use for mnemonic. Must be 12, 15, 18, 21 or 24")
 	walletCreateCmd.Flags().StringP("seed", "s", "", "Your seed")
-	walletCreateCmd.Flags().Uint64P("scan", "", 100, "Number of addresses to scan ahead for transaction history.")
 	walletCreateCmd.Flags().Uint64P("num", "n", 1, `Number of addresses to generate.`)
 	walletCreateCmd.Flags().StringP("wallet-file", "f", cliConfig.WalletName, `Name of wallet. The final format will be "yourName.wlt".
 If no wallet name is specified a generic name will be selected.`)
@@ -86,7 +85,7 @@ func generateWalletHandler(c *gcli.Command, _ []string) error {
 		return err
 	}
 
-	// get number of address that are need to be generated, if m is 0, set to 1.
+	// get number of address that are need to be generated
 	num, err := c.Flags().GetUint64("num")
 	if err != nil {
 		return err
@@ -95,15 +94,8 @@ func generateWalletHandler(c *gcli.Command, _ []string) error {
 		return errors.New("-n must > 0")
 	}
 
-	scan, err := c.Flags().GetUint64("scan")
-	if err != nil {
-		return err
-	}
-
-	// get label
 	label := c.Flag("label").Value.String()
 
-	// get seed
 	s := c.Flag("seed").Value.String()
 	random, err := c.Flags().GetBool("random")
 	if err != nil {
@@ -160,11 +152,7 @@ func generateWalletHandler(c *gcli.Command, _ []string) error {
 		if c.Flags().Changed("num") {
 			return fmt.Errorf("%q type wallets do not support address generation", walletType)
 		}
-		if c.Flags().Changed("scan") {
-			return fmt.Errorf("%q type wallets do not support address scanning", walletType)
-		}
 		num = 0
-		scan = 0
 
 	default:
 		return fmt.Errorf("unhandled wallet type %q", walletType)
@@ -205,7 +193,6 @@ func generateWalletHandler(c *gcli.Command, _ []string) error {
 		Password:   password,
 		Type:       walletType,
 		GenerateN:  num,
-		ScanN:      scan,
 	}
 
 	wlt, err := wallet.NewWallet(filepath.Base(wltName), opts)
@@ -251,7 +238,6 @@ func newMnemomic(wc uint64) (string, error) {
 }
 
 func parseBip44WalletSeedOptions(s string, r, m bool, wc uint64) (string, error) {
-	fmt.Println("parseBip44WalletSeedOptions")
 	if s != "" && (r || m) {
 		return "", errors.New("-r and -m can't be used with -s")
 	}
@@ -261,15 +247,12 @@ func parseBip44WalletSeedOptions(s string, r, m bool, wc uint64) (string, error)
 	}
 
 	if m || s == "" {
-		fmt.Println("parseBip44WalletSeedOptions generate new mnemonic")
 		var err error
 		s, err = newMnemomic(wc)
 		if err != nil {
 			return "", err
 		}
 	}
-
-	fmt.Println("parseBip44WalletSeedOptions validate mnemonic:", s)
 
 	if err := bip39.ValidateMnemonic(s); err != nil {
 		return "", fmt.Errorf("seed must be a valid bip39 mnemonic: %v", err)

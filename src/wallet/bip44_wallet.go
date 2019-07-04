@@ -94,12 +94,7 @@ func (w *Bip44Wallet) ToReadable() Readable {
 
 // Validate validates the wallet
 func (w *Bip44Wallet) Validate() error {
-	if err := w.Meta.validate(); err != nil {
-		return err
-	}
-
-	// bip44 wallet seeds must be a valid bip39 mnemonic
-	return bip39.ValidateMnemonic(w.Meta.Seed())
+	return w.Meta.validate()
 }
 
 // GetAddresses returns all addresses in wallet
@@ -228,7 +223,8 @@ func (w *Bip44Wallet) generateEntries(num uint64, changeIdx, initialChildIdx uin
 	for i := uint32(0); i < uint32(num); i++ {
 		k, err := chain.NewPrivateChildKey(j)
 
-		j, addErr := mathutil.AddUint32(j, 1)
+		var addErr error
+		j, addErr = mathutil.AddUint32(j, 1)
 		if addErr != nil {
 			logger.Critical().WithError(addErr).WithFields(logrus.Fields{
 				"num":             num,

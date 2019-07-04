@@ -1540,13 +1540,10 @@ func TestServiceView(t *testing.T) {
 			},
 			action: func(t *testing.T) func(Wallet) error {
 				return func(w Wallet) error {
-					fmt.Println("checking label")
 					require.Equal(t, "foowlt", w.Label())
-					fmt.Println("checking sensitive")
 					checkNoSensitiveData(t, w)
 
 					// Modify the wallet pointer in order to check that this references a clone and not the original
-					fmt.Println("modifying label")
 					w.SetLabel(w.Label() + "foo")
 
 					return nil
@@ -2183,11 +2180,8 @@ func TestServiceUpdateSecrets(t *testing.T) {
 }
 
 func checkNoSensitiveData(t *testing.T, w Wallet) {
-	fmt.Println("check seed empty")
 	require.Empty(t, w.Seed())
-	fmt.Println("check lastseed empty")
 	require.Empty(t, w.LastSeed())
-	fmt.Println("check secret entries empty")
 	for _, e := range w.GetEntries() {
 		require.True(t, e.Secret.Null())
 	}

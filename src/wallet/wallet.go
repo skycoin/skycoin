@@ -177,6 +177,13 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 		return nil, ErrInvalidWalletType
 	}
 
+	var lastSeed string
+
+	switch wltType {
+	case WalletTypeDeterministic:
+		lastSeed = opts.Seed
+	}
+
 	switch wltType {
 	case WalletTypeDeterministic, WalletTypeBip44:
 		if opts.Seed == "" {
@@ -189,7 +196,7 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 
 	case WalletTypeCollection:
 		if opts.Seed != "" {
-			return nil, NewError(errors.New("seed should not be provided for \"collection\" wallets"))
+			return nil, NewError(fmt.Errorf("seed should not be provided for %q wallets", WalletTypeCollection))
 		}
 
 	default:
@@ -210,7 +217,7 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 		metaVersion:    Version,
 		metaLabel:      opts.Label,
 		metaSeed:       opts.Seed,
-		metaLastSeed:   opts.Seed,
+		metaLastSeed:   lastSeed,
 		metaTimestamp:  strconv.FormatInt(time.Now().Unix(), 10),
 		metaType:       wltType,
 		metaCoin:       string(coin),
@@ -273,6 +280,11 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 		logger.Panic("unhandled wltType")
 	}
 
+	// Validate the wallet, before encrypting
+	if err := w.Validate(); err != nil {
+		return nil, err
+	}
+
 	// Check if the wallet should be encrypted
 	if !opts.Encrypt {
 		if len(opts.Password) != 0 {
@@ -300,7 +312,7 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 		return nil, err
 	}
 
-	// Validate the wallet
+	// Validate the wallet again, after encrypting
 	if err := w.Validate(); err != nil {
 		return nil, err
 	}
@@ -579,6 +591,9 @@ func Load(filename string) (Wallet, error) {
 	case WalletTypeCollection:
 		logger.WithField("filename", filename).Info("LoadReadableCollectionWallet")
 		rw, err = LoadReadableCollectionWallet(filename)
+	case WalletTypeBip44:
+		logger.WithField("filename", filename).Info("LoadReadableBip44Wallet")
+		rw, err = LoadReadableBip44Wallet(filename)
 	default:
 		logger.WithField("walletType", m.Meta.Type).Error("Load: unhandled wallet type")
 		return nil, ErrInvalidWalletType

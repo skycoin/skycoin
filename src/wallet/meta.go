@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
 )
 
 // Meta holds wallet metadata
@@ -80,6 +81,10 @@ func (m Meta) validate() error {
 		if s := m[metaLastSeed]; s != "" {
 			return errors.New("lastSeed should not be visible in encrypted wallets")
 		}
+	} else {
+		if s := m[metaSecrets]; s != "" {
+			return errors.New("secrets should not be in unencrypted wallets")
+		}
 	}
 
 	switch walletType {
@@ -92,7 +97,6 @@ func (m Meta) validate() error {
 			return errors.New("lastSeed should not be in collection wallets")
 		}
 	case WalletTypeDeterministic:
-		// checks if the secrets field is empty
 		if !isEncrypted {
 			if s := m[metaSeed]; s == "" {
 				return errors.New("seed missing in unencrypted deterministic wallet")
@@ -102,8 +106,21 @@ func (m Meta) validate() error {
 				return errors.New("lastSeed missing in unencrypted deterministic wallet")
 			}
 		}
+	case WalletTypeBip44:
+		if !isEncrypted {
+			// bip44 wallet seeds must be a valid bip39 mnemonic
+			if s := m[metaSeed]; s == "" {
+				return errors.New("seed missing in unencrypted bip44 wallet")
+			} else if err := bip39.ValidateMnemonic(s); err != nil {
+				return err
+			}
+		}
+
+		if s := m[metaLastSeed]; s != "" {
+			return errors.New("lastSeed should not be in bip44 wallets")
+		}
 	default:
-		return ErrInvalidWalletType
+		return errors.New("unhandled wallet type")
 	}
 
 	return nil

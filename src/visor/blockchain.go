@@ -255,7 +255,7 @@ func (bc *Blockchain) processBlock(tx *dbutil.Tx, b coin.SignedBlock) (coin.Sign
 			}
 			b.Body.Transactions = txns
 
-			if err = bc.verifyUxHash(tx, b.Block); err != nil {
+			if err := bc.verifyUxHash(tx, b.Block); err != nil {
 				return coin.SignedBlock{}, err
 			}
 

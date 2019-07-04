@@ -293,7 +293,7 @@ func LoadReadableDeterministicWallet(wltFile string) (*ReadableDeterministicWall
 func NewReadableDeterministicWallet(w *DeterministicWallet) *ReadableDeterministicWallet {
 	return &ReadableDeterministicWallet{
 		Meta:            w.Meta.clone(),
-		ReadableEntries: newReadableEntries(w.Entries, w.Meta.Coin()),
+		ReadableEntries: newReadableEntries(w.Entries, w.Meta.Coin(), w.Meta.Type()),
 	}
 }
 
@@ -309,7 +309,7 @@ func (rw *ReadableDeterministicWallet) ToWallet() (Wallet, error) {
 		return nil, err
 	}
 
-	ets, err := rw.ReadableEntries.toWalletEntries(w.Meta.Coin(), w.Meta.IsEncrypted())
+	ets, err := rw.ReadableEntries.toWalletEntries(w.Meta.Coin(), w.Meta.Type(), w.Meta.IsEncrypted())
 	if err != nil {
 		logger.WithError(err).Error("ReadableDeterministicWallet.ToWallet toWalletEntries failed")
 		return nil, err

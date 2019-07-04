@@ -147,7 +147,7 @@ func (w *Bip44Wallet) nextChildIdx(e Entries) uint32 {
 	if len(e) == 0 {
 		return 0
 	}
-	return e[len(e)-1].ChildIndex
+	return e[len(e)-1].ChildNumber
 }
 
 // generateEntries generates addresses
@@ -256,7 +256,7 @@ func (w *Bip44Wallet) generateEntries(num uint64, changeIdx, initialChildIdx uin
 		}
 
 		seckeys = append(seckeys, k)
-		addressIndices = append(addressIndices, j)
+		addressIndices = append(addressIndices, j-1)
 	}
 
 	entries := make(Entries, len(seckeys))
@@ -265,11 +265,11 @@ func (w *Bip44Wallet) generateEntries(num uint64, changeIdx, initialChildIdx uin
 		sk := cipher.MustNewSecKey(xprv.Key)
 		pk := cipher.MustPubKeyFromSecKey(sk)
 		entries[i] = Entry{
-			Address:    makeAddress(pk),
-			Secret:     sk,
-			Public:     pk,
-			XPrv:       xprv,
-			ChildIndex: addressIndices[i],
+			Address:     makeAddress(pk),
+			Secret:      sk,
+			Public:      pk,
+			XPrv:        xprv,
+			ChildNumber: addressIndices[i],
 		}
 	}
 
@@ -426,8 +426,8 @@ func LoadReadableBip44Wallet(wltFile string) (*ReadableBip44Wallet, error) {
 func NewReadableBip44Wallet(w *Bip44Wallet) *ReadableBip44Wallet {
 	return &ReadableBip44Wallet{
 		Meta:            w.Meta.clone(),
-		ExternalEntries: newReadableEntries(w.ExternalEntries, w.Meta.Coin()),
-		ChangeEntries:   newReadableEntries(w.ChangeEntries, w.Meta.Coin()),
+		ExternalEntries: newReadableEntries(w.ExternalEntries, w.Meta.Coin(), w.Meta.Type()),
+		ChangeEntries:   newReadableEntries(w.ChangeEntries, w.Meta.Coin(), w.Meta.Type()),
 	}
 }
 
@@ -443,7 +443,7 @@ func (rw *ReadableBip44Wallet) ToWallet() (Wallet, error) {
 		return nil, err
 	}
 
-	ets, err := rw.ExternalEntries.toWalletEntries(w.Meta.Coin(), w.Meta.IsEncrypted())
+	ets, err := rw.ExternalEntries.toWalletEntries(w.Meta.Coin(), w.Meta.Type(), w.Meta.IsEncrypted())
 	if err != nil {
 		logger.WithError(err).Error("ReadableBip44Wallet.ToWallet ExternalEntries.toWalletEntries failed")
 		return nil, err
@@ -451,7 +451,7 @@ func (rw *ReadableBip44Wallet) ToWallet() (Wallet, error) {
 
 	w.ExternalEntries = ets
 
-	ets, err = rw.ChangeEntries.toWalletEntries(w.Meta.Coin(), w.Meta.IsEncrypted())
+	ets, err = rw.ChangeEntries.toWalletEntries(w.Meta.Coin(), w.Meta.Type(), w.Meta.IsEncrypted())
 	if err != nil {
 		logger.WithError(err).Error("ReadableBip44Wallet.ToWallet ExternalEntries.toWalletEntries failed")
 		return nil, err

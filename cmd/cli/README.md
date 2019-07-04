@@ -958,13 +958,14 @@ FLAGS:
   -h, --help                 help for walletCreate
   -l, --label string         Label used to idetify your wallet.
   -m, --mnemonic             A mnemonic seed consisting of 12 dictionary words will be generated
-  -n, --num uint             Number of addresses to generate. By default 1 address is generated. (default 1)
+  -n, --num uint             Number of addresses to generate. (default 1)
   -p, --password string      Wallet password
-  -r, --random               A random alpha numeric seed will be generated
+  -r, --random               A random alpha numeric seed will be generated.
   -s, --seed string          Your seed
-  -t, --type string          Wallet type. Types are "collection" or "deterministic" (default "deterministic")
+  -t, --type string          Wallet type. Types are "collection", "deterministic" or "bip44" (default "deterministic")
   -f, --wallet-file string   Name of wallet. The final format will be "yourName.wlt".
                              If no wallet name is specified a generic name will be selected. (default "skycoin_cli.wlt")
+  -w, --wordcount uint       Number of seed words to use for mnemonic. Must be 12, 15, 18, 21 or 24 (default 12)
 ```
 
 #### Examples

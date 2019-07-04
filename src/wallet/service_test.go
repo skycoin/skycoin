@@ -60,7 +60,7 @@ func TestNewService(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			require.Equal(t, 7, len(s.wallets))
+			require.Equal(t, 9, len(s.wallets))
 
 		})
 	}
@@ -77,11 +77,29 @@ func TestNewServiceDupWallets(t *testing.T) {
 }
 
 func TestNewServiceEmptyWallet(t *testing.T) {
-	_, err := NewService(Config{
-		WalletDir:       "./testdata/empty_wallet",
-		EnableWalletAPI: true,
-	})
-	testutil.RequireError(t, err, "empty wallet file found: \"empty.wlt\"")
+	cases := []struct {
+		dir string
+		fn  string
+	}{
+		{
+			dir: "./testdata/empty_wallet",
+			fn:  "empty.wlt",
+		},
+		{
+			dir: "./testdata/empty_bip44_wallet",
+			fn:  "empty.wlt",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(filepath.Join(tc.dir, tc.fn), func(t *testing.T) {
+			_, err := NewService(Config{
+				WalletDir:       tc.dir,
+				EnableWalletAPI: true,
+			})
+			testutil.RequireError(t, err, fmt.Sprintf("empty wallet file found: %q", tc.fn))
+		})
+	}
 }
 
 func TestServiceCreateWallet(t *testing.T) {

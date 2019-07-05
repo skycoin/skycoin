@@ -150,25 +150,23 @@ func (w *Bip44Wallet) nextChildIdx(e Entries) uint32 {
 	return e[len(e)-1].ChildNumber + 1
 }
 
-// generateEntries generates addresses for a change chain (should be 0 or 1) starting from an initial child number
+// generateEntries generates addresses for a change chain (should be 0 or 1) starting from an initial child number.
 func (w *Bip44Wallet) generateEntries(num uint64, changeIdx, initialChildIdx uint32) (Entries, error) {
 	if w.Meta.IsEncrypted() {
 		return nil, ErrWalletEncrypted
-	}
-
-	if num == 0 {
-		return nil, nil
 	}
 
 	if num > math.MaxUint32 {
 		return nil, NewError(errors.New("generateAddressesBip44 num too large"))
 	}
 
-	// Check that num will not cause an overflow of childIdx starting from initialChildIdx
-	// Warning: this is not precise, because some childIdx may need to be skipped.
-	// Overflow must be checked again during generation.
-	if _, err := mathutil.AddUint32(uint32(num), initialChildIdx); err != nil {
-		return nil, NewError(errors.New("initialChildIdx+num exceeds maximum HD wallet chain length"))
+	// Cap `num` in case it would exceed the maximum child index number
+	if math.MaxUint32-initialChildIdx < uint32(num) {
+		num = uint64(math.MaxUint32 - initialChildIdx)
+	}
+
+	if num == 0 {
+		return nil, nil
 	}
 
 	// w.Meta.Seed() must return a valid bip39 mnemonic
@@ -273,6 +271,18 @@ func (w *Bip44Wallet) generateEntries(num uint64, changeIdx, initialChildIdx uin
 	return entries, nil
 }
 
+// GenerateChangeAddress creates, appends and returns an entry for the change chain
+func (w *Bip44Wallet) GenerateChangeAddress() (cipher.Addresser, error) {
+	entries, err := w.generateEntries(1, bip44.ChangeChainIndex, w.nextChildIdx(w.ChangeEntries))
+	if err != nil {
+		return nil, err
+	}
+
+	w.ChangeEntries = append(w.ChangeEntries, entries...)
+
+	return entries[0].Address, nil
+}
+
 // GenerateAddresses generates addresses for the external chain, and appends them to the wallet's entries array
 func (w *Bip44Wallet) GenerateAddresses(num uint64) ([]cipher.Addresser, error) {
 	entries, err := w.generateEntries(num, bip44.ExternalChainIndex, w.nextChildIdx(w.ExternalEntries))
@@ -314,12 +324,12 @@ func (w *Bip44Wallet) ScanAddresses(scanN uint64, tf TransactionsFinder) error {
 
 	w2 := w.Clone().(*Bip44Wallet)
 
-	externalEntries, err := w2.scanAddresses(scanN, tf, w2.ExternalEntries, bip44.ExternalChainIndex)
+	externalEntries, err := w2.scanAddresses(scanN, tf, bip44.ExternalChainIndex, w.nextChildIdx(w.ExternalEntries))
 	if err != nil {
 		return err
 	}
 
-	changeEntries, err := w2.scanAddresses(scanN, tf, w2.ChangeEntries, bip44.ChangeChainIndex)
+	changeEntries, err := w2.scanAddresses(scanN, tf, bip44.ChangeChainIndex, w.nextChildIdx(w.ChangeEntries))
 	if err != nil {
 		return err
 	}
@@ -333,18 +343,25 @@ func (w *Bip44Wallet) ScanAddresses(scanN uint64, tf TransactionsFinder) error {
 	return nil
 }
 
-func (w *Bip44Wallet) scanAddresses(scanN uint64, tf TransactionsFinder, entries Entries, chainIdx uint32) (Entries, error) {
+func (w *Bip44Wallet) scanAddresses(scanN uint64, tf TransactionsFinder, chainIdx, initialChildIdx uint32) (Entries, error) {
+	if scanN == 0 {
+		return nil, nil
+	}
+
 	nAddAddrs := uint64(0)
 	n := scanN
 	extraScan := uint64(0)
-
+	childIdx := initialChildIdx
 	var newEntries Entries
+
 	for {
 		// Generate the addresses to scan
-		entries, err := w.generateEntries(n, chainIdx, w.nextChildIdx(entries))
+		entries, err := w.generateEntries(n, chainIdx, childIdx)
 		if err != nil {
 			return nil, err
 		}
+
+		childIdx = w.nextChildIdx(entries)
 
 		newEntries = append(newEntries, entries...)
 

@@ -17,6 +17,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
 	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/util/logging"
 )
@@ -37,7 +38,7 @@ func NewError(err error) error {
 
 var (
 	// Version represents the current wallet version
-	Version = "0.2"
+	Version = "0.3"
 
 	logger = logging.MustGetLogger("wallet")
 
@@ -128,21 +129,6 @@ func IsValidWalletType(t string) bool {
 	}
 }
 
-// wallet meta fields
-const (
-	metaVersion    = "version"    // wallet version
-	metaFilename   = "filename"   // wallet file name
-	metaLabel      = "label"      // wallet label
-	metaTimestamp  = "tm"         // the timestamp when creating the wallet
-	metaType       = "type"       // wallet type
-	metaCoin       = "coin"       // coin type
-	metaEncrypted  = "encrypted"  // whether the wallet is encrypted
-	metaCryptoType = "cryptoType" // encrytion/decryption type
-	metaSeed       = "seed"       // wallet seed
-	metaLastSeed   = "lastSeed"   // seed for generating next address
-	metaSecrets    = "secrets"    // secrets which records the encrypted seeds and secrets of address entries
-)
-
 // CoinType represents the wallet coin type, which refers to the pubkey2addr method used
 type CoinType string
 
@@ -156,15 +142,16 @@ func NewWalletFilename() string {
 
 // Options options that could be used when creating a wallet
 type Options struct {
-	Type       string     // wallet type: deterministic, collection. Refers to which key generation mechanism is used.
-	Coin       CoinType   // coin type: skycoin, bitcoin, etc. Refers to which pubkey2addr method is used.
-	Label      string     // wallet label.
-	Seed       string     // wallet seed.
-	Encrypt    bool       // whether the wallet need to be encrypted.
-	Password   []byte     // password that would be used for encryption, and would only be used when 'Encrypt' is true.
-	CryptoType CryptoType // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
-	ScanN      uint64     // number of addresses that're going to be scanned for a balance. The highest address with a balance will be used.
-	GenerateN  uint64     // number of addresses to generate, regardless of balance
+	Type       string         // wallet type: deterministic, collection. Refers to which key generation mechanism is used.
+	Coin       CoinType       // coin type: skycoin, bitcoin, etc. Refers to which pubkey2addr method is used.
+	Bip44Coin  bip44.CoinType // bip44 path coin type
+	Label      string         // wallet label.
+	Seed       string         // wallet seed.
+	Encrypt    bool           // whether the wallet need to be encrypted.
+	Password   []byte         // password that would be used for encryption, and would only be used when 'Encrypt' is true.
+	CryptoType CryptoType     // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
+	ScanN      uint64         // number of addresses that're going to be scanned for a balance. The highest address with a balance will be used.
+	GenerateN  uint64         // number of addresses to generate, regardless of balance
 }
 
 // newWallet creates a wallet instance with given name and options.
@@ -177,11 +164,22 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 		return nil, ErrInvalidWalletType
 	}
 
-	var lastSeed string
-
-	switch wltType {
-	case WalletTypeDeterministic:
+	lastSeed := ""
+	if wltType == WalletTypeDeterministic {
 		lastSeed = opts.Seed
+	}
+
+	if wltType == WalletTypeBip44 {
+		if opts.Bip44Coin == 0 {
+			switch opts.Coin {
+			case CoinTypeBitcoin:
+				opts.Bip44Coin = bip44.CoinTypeBitcoin
+			case CoinTypeSkycoin:
+				opts.Bip44Coin = bip44.CoinTypeSkycoin
+			default:
+				opts.Bip44Coin = bip44.CoinTypeSkycoin
+			}
+		}
 	}
 
 	switch wltType {
@@ -234,6 +232,7 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 	case WalletTypeCollection:
 		w = newCollectionWallet(meta)
 	case WalletTypeBip44:
+		meta.setBip44Coin(opts.Bip44Coin)
 		w = newBip44Wallet(meta)
 	default:
 		logger.Panic("unhandled wltType")

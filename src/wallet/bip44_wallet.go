@@ -147,10 +147,10 @@ func (w *Bip44Wallet) nextChildIdx(e Entries) uint32 {
 	if len(e) == 0 {
 		return 0
 	}
-	return e[len(e)-1].ChildNumber
+	return e[len(e)-1].ChildNumber + 1
 }
 
-// generateEntries generates addresses
+// generateEntries generates addresses for a change chain (should be 0 or 1) starting from an initial child number
 func (w *Bip44Wallet) generateEntries(num uint64, changeIdx, initialChildIdx uint32) (Entries, error) {
 	if w.Meta.IsEncrypted() {
 		return nil, ErrWalletEncrypted
@@ -182,11 +182,9 @@ func (w *Bip44Wallet) generateEntries(num uint64, changeIdx, initialChildIdx uin
 	// the coinType field in the wallet. This is the bip44 coin type, which
 	// will be different for each fiber coin, whereas the wallet's coinType
 	// field is always "skycoin" for all fiber coins
-	// TODO -- ideas: add a new field to disambiguate "address type" (walletCoinType)
-	// from bip44 coin_type.
-	// Add API control to allow custom paths to be added
-	// Use fiber.toml to configure the default bip44 coin type
-	c, err := bip44.NewCoin(seed, bip44.CoinTypeSkycoin)
+	// - Add API control to allow custom paths to be added
+	// - Use fiber.toml to configure the default bip44 coin type
+	c, err := bip44.NewCoin(seed, w.Meta.bip44Coin())
 	if err != nil {
 		logger.Critical().WithError(err).Error("Failed to derive the bip44 purpose node")
 		if bip32.IsImpossibleChildError(err) {
@@ -268,7 +266,6 @@ func (w *Bip44Wallet) generateEntries(num uint64, changeIdx, initialChildIdx uin
 			Address:     makeAddress(pk),
 			Secret:      sk,
 			Public:      pk,
-			XPrv:        xprv,
 			ChildNumber: addressIndices[i],
 		}
 	}

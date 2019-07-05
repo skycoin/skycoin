@@ -1,32 +1,36 @@
 {
     "meta": {
+        "bip44_coin": "8000",
         "coin": "skycoin",
         "cryptoType": "",
         "encrypted": "false",
-        "filename": "bip44-test10.wlt",
+        "filename": "bip44-test19.wlt",
         "label": "",
         "lastSeed": "",
         "secrets": "",
-        "seed": "genius lecture hard icon winner rich document buffalo pet creek region office",
-        "tm": "1562211473",
+        "seed": "into raccoon purity buzz shock arch artefact stadium bless witness used odor",
+        "tm": "1562241393",
         "type": "bip44",
-        "version": "0.2"
+        "version": "0.3"
     },
     "external_entries": [
         {
-            "address": "hWG4jqSN1rDhQ5Bw87dUtGEFhU8q4X1RVR",
-            "public_key": "021db5f4c796c7c7a046237ef1c49cc673fd7d96e0c6a7136aed162153c61a10c9",
-            "secret_key": "fad79aea0853e855405b4726c80ceb273aa9a686ffe11e9b402a61f44dfe1b6e"
+            "address": "c4gUJP2XytywBbvrjni7hPDK7ZgmK3dGuH",
+            "public_key": "02a52d5d9399ef1925dded42f44b7a0c6124e5a1e30ad4a04a198b64f336bd7378",
+            "secret_key": "ddd235eebb2ee5aac6d17591aa04e35a3376fb4b6b6cab9492251d5ca1540a80",
+            "child_number": "0"
         },
         {
-            "address": "minsBeyrDYGi17E3xqMLh9z3QUCTPbYiMW",
-            "public_key": "024e18d609319857e1799a342995c0fa7c64b2c6fa4a571edcbf5ba6b6d2f238e5",
-            "secret_key": "395430c1dc6af627082e128d919f26b3c575f4e8d7bb36e04ea8521c7deb5d97"
+            "address": "Qb5SE7ARrBvcbjYqHnAoenAKnd9NT6QUaR",
+            "public_key": "03958bade8945f30f8c226bf9238a03e7bc42821fc482a9c70153a3393b06a6c24",
+            "secret_key": "7af0bf10f7a3e6ed2bd916d05b8cd032e5e0343b153f84334dd7ec1b8e58e655",
+            "child_number": "1"
         },
         {
-            "address": "rT2JFfvCoaFWdHnKe7mJGwy8t44GcyUn3q",
-            "public_key": "028efe8a182319d7155ffc19ad73da45ae9e72d2ab39ac8eaf7e8efb75f416922a",
-            "secret_key": "6246f47705582abb6080d0c369229868480a8590d6e1969e8382d9ad15a8b285"
+            "address": "29uMZ7vhsv8tRqjocLPMjuUaJVLyu91iNwW",
+            "public_key": "02607723cc31fff50bc8ae7dfff86b2472f593350d0a45e034aa78082952466882",
+            "secret_key": "328da176b75dc6bad2a54c145aa25154779faa48520d868c37d391ac4611d133",
+            "child_number": "2"
         }
     ],
     "change_entries": []

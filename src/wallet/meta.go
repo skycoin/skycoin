@@ -2,10 +2,28 @@ package wallet
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
+)
+
+// wallet meta fields
+const (
+	metaVersion    = "version"    // wallet version
+	metaFilename   = "filename"   // wallet file name
+	metaLabel      = "label"      // wallet label
+	metaTimestamp  = "tm"         // the timestamp when creating the wallet
+	metaType       = "type"       // wallet type
+	metaCoin       = "coin"       // coin type
+	metaEncrypted  = "encrypted"  // whether the wallet is encrypted
+	metaCryptoType = "cryptoType" // encrytion/decryption type
+	metaSeed       = "seed"       // wallet seed
+	metaLastSeed   = "lastSeed"   // seed for generating next address
+	metaSecrets    = "secrets"    // secrets which records the encrypted seeds and secrets of address entries
+	metaBip44Coin  = "bip44_coin" // bip44 coin type
 )
 
 // Meta holds wallet metadata
@@ -116,6 +134,12 @@ func (m Meta) validate() error {
 			}
 		}
 
+		if s := m[metaBip44Coin]; s == "" {
+			return errors.New("bip44_coin missing")
+		} else if _, err := strconv.ParseUint(s, 10, 32); err != nil {
+			return fmt.Errorf("bip44_coin invalid: %v", err)
+		}
+
 		if s := m[metaLastSeed]; s != "" {
 			return errors.New("lastSeed should not be in bip44 wallets")
 		}
@@ -192,6 +216,19 @@ func (m Meta) Coin() CoinType {
 // SetCoin sets the wallet's coin type
 func (m Meta) SetCoin(ct CoinType) {
 	m[metaCoin] = string(ct)
+}
+
+// bip44Coin returns the bip44 coin type
+func (m Meta) bip44Coin() bip44.CoinType {
+	x, err := strconv.ParseUint(m[metaBip44Coin], 10, 32)
+	if err != nil {
+		logger.Panic(err)
+	}
+	return bip44.CoinType(x)
+}
+
+func (m Meta) setBip44Coin(ct bip44.CoinType) {
+	m[metaBip44Coin] = strconv.FormatUint(uint64(ct), 10)
 }
 
 func (m Meta) setIsEncrypted(encrypt bool) {

@@ -5,8 +5,6 @@ import (
 	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/base58"
-	"github.com/skycoin/skycoin/src/cipher/bip32"
 )
 
 // ReadableEntry wallet entry with json tags
@@ -14,7 +12,6 @@ type ReadableEntry struct {
 	Address     string `json:"address"`
 	Public      string `json:"public_key"`
 	Secret      string `json:"secret_key"`
-	XPrv        string `json:"xprv,omitempty"`         // For bip32/bip44
 	ChildNumber string `json:"child_number,omitempty"` // For bip32/bip44
 }
 
@@ -42,14 +39,8 @@ func NewReadableEntry(coinType CoinType, walletType string, e Entry) ReadableEnt
 
 	switch walletType {
 	case WalletTypeBip44:
-		if e.XPrv != nil {
-			re.XPrv = e.XPrv.String()
-		}
 		re.ChildNumber = strconv.FormatUint(uint64(e.ChildNumber), 10)
 	default:
-		if e.XPrv != nil {
-			logger.Panicf("wallet.Entry.XPrv not nil but wallet type is %q", walletType)
-		}
 		if e.ChildNumber != 0 {
 			logger.Panicf("wallet.Entry.ChildNumber is not 0 but wallet type is %q", walletType)
 		}
@@ -135,21 +126,9 @@ func newEntryFromReadable(coinType CoinType, walletType string, re *ReadableEntr
 		}
 	}
 
-	var xprv *bip32.PrivateKey
 	var childNumber uint32
 	switch walletType {
 	case WalletTypeBip44:
-		if re.XPrv != "" {
-			xprvBytes, err := base58.Decode(re.XPrv)
-			if err != nil {
-				return nil, err
-			}
-			xprv, err = bip32.DeserializePrivateKey(xprvBytes)
-			if err != nil {
-				return nil, err
-			}
-		}
-
 		if re.ChildNumber == "" {
 			return nil, fmt.Errorf("child_number required for %q wallet type", walletType)
 		}
@@ -161,9 +140,6 @@ func newEntryFromReadable(coinType CoinType, walletType string, re *ReadableEntr
 		childNumber = uint32(childIdx)
 
 	default:
-		if re.XPrv != "" {
-			return nil, fmt.Errorf("xprv should not be set for %q wallet type", walletType)
-		}
 		if re.ChildNumber != "" {
 			return nil, fmt.Errorf("child_number should not be set for %q wallet type", walletType)
 		}
@@ -173,7 +149,6 @@ func newEntryFromReadable(coinType CoinType, walletType string, re *ReadableEntr
 		Address:     a,
 		Public:      p,
 		Secret:      secret,
-		XPrv:        xprv,
 		ChildNumber: childNumber,
 	}, nil
 }

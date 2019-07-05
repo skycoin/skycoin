@@ -89,19 +89,6 @@ func init() {
 	}
 }
 
-type mockTxnsFinder map[cipher.Address]bool
-
-func (mb mockTxnsFinder) AddressesActivity(addrs []cipher.Address) ([]bool, error) {
-	if len(addrs) == 0 {
-		return nil, nil
-	}
-	active := make([]bool, len(addrs))
-	for i, addr := range addrs {
-		active[i] = mb[addr]
-	}
-	return active, nil
-}
-
 func TestNewWallet(t *testing.T) {
 	type expect struct {
 		meta map[string]string
@@ -111,16 +98,16 @@ func TestNewWallet(t *testing.T) {
 	tt := []struct {
 		name    string
 		wltName string
-		ops     Options
+		opts    Options
 		expect  expect
 	}{
 		{
-			"ok, empty collection wallet",
-			"test-collection.wlt",
-			Options{
+			name:    "ok, empty collection wallet",
+			wltName: "test-collection.wlt",
+			opts: Options{
 				Type: WalletTypeCollection,
 			},
-			expect{
+			expect: expect{
 				meta: map[string]string{
 					"label":    "",
 					"filename": "test-collection.wlt",
@@ -132,12 +119,12 @@ func TestNewWallet(t *testing.T) {
 			},
 		},
 		{
-			"ok with seed set",
-			"test.wlt",
-			Options{
+			name:    "ok all defaults",
+			wltName: "test.wlt",
+			opts: Options{
 				Seed: "testseed123",
 			},
-			expect{
+			expect: expect{
 				meta: map[string]string{
 					"label":    "",
 					"filename": "test.wlt",
@@ -150,13 +137,33 @@ func TestNewWallet(t *testing.T) {
 			},
 		},
 		{
-			"ok with label and seed set",
-			"test.wlt",
-			Options{
+			name:    "ok with seed set, deterministic",
+			wltName: "test.wlt",
+			opts: Options{
+				Seed: "testseed123",
+				Type: WalletTypeDeterministic,
+			},
+			expect: expect{
+				meta: map[string]string{
+					"label":    "",
+					"filename": "test.wlt",
+					"coin":     string(CoinTypeSkycoin),
+					"type":     WalletTypeDeterministic,
+					"seed":     "testseed123",
+					"version":  Version,
+				},
+				err: nil,
+			},
+		},
+		{
+			name:    "ok with label and seed set, deterministic",
+			wltName: "test.wlt",
+			opts: Options{
 				Label: "wallet1",
 				Seed:  "testseed123",
+				Type:  WalletTypeDeterministic,
 			},
-			expect{
+			expect: expect{
 				meta: map[string]string{
 					"label":    "wallet1",
 					"filename": "test.wlt",
@@ -169,14 +176,15 @@ func TestNewWallet(t *testing.T) {
 			},
 		},
 		{
-			"ok with label, seed and coin set",
-			"test.wlt",
-			Options{
+			name:    "ok with label, seed and coin set, deterministic",
+			wltName: "test.wlt",
+			opts: Options{
 				Label: "wallet1",
 				Coin:  CoinTypeBitcoin,
 				Seed:  "testseed123",
+				Type:  WalletTypeDeterministic,
 			},
-			expect{
+			expect: expect{
 				meta: map[string]string{
 					"label":    "wallet1",
 					"filename": "test.wlt",
@@ -188,16 +196,17 @@ func TestNewWallet(t *testing.T) {
 			},
 		},
 		{
-			"ok default crypto type",
-			"test.wlt",
-			Options{
+			name:    "ok default crypto type, deterministic",
+			wltName: "test.wlt",
+			opts: Options{
 				Label:    "wallet1",
 				Coin:     CoinTypeSkycoin,
 				Seed:     "testseed123",
 				Encrypt:  true,
 				Password: []byte("pwd"),
+				Type:     WalletTypeDeterministic,
 			},
-			expect{
+			expect: expect{
 				meta: map[string]string{
 					"label":     "wallet1",
 					"coin":      string(CoinTypeSkycoin),
@@ -208,15 +217,16 @@ func TestNewWallet(t *testing.T) {
 			},
 		},
 		{
-			"encrypt without password",
-			"test.wlt",
-			Options{
+			name:    "encrypt without password, deterministic",
+			wltName: "test.wlt",
+			opts: Options{
 				Label:   "wallet1",
 				Coin:    CoinTypeSkycoin,
 				Seed:    "testseed123",
 				Encrypt: true,
+				Type:    WalletTypeDeterministic,
 			},
-			expect{
+			expect: expect{
 				meta: map[string]string{
 					"label":     "wallet1",
 					"coin":      string(CoinTypeSkycoin),
@@ -227,15 +237,16 @@ func TestNewWallet(t *testing.T) {
 			},
 		},
 		{
-			"create with no seed",
-			"test.wlt",
-			Options{
+			name:    "create with no seed, deterministic",
+			wltName: "test.wlt",
+			opts: Options{
 				Label:    "wallet1",
 				Coin:     CoinTypeSkycoin,
 				Encrypt:  true,
 				Password: []byte("pwd"),
+				Type:     WalletTypeDeterministic,
 			},
-			expect{
+			expect: expect{
 				meta: map[string]string{
 					"label":     "wallet1",
 					"coin":      string(CoinTypeSkycoin),
@@ -246,17 +257,36 @@ func TestNewWallet(t *testing.T) {
 			},
 		},
 		{
-			"password=pwd encrypt=false",
-			"test.wlt",
-			Options{
+			name:    "password=pwd encrypt=false, deterministic",
+			wltName: "test.wlt",
+			opts: Options{
 				Label:    "wallet1",
 				Coin:     CoinTypeSkycoin,
 				Encrypt:  false,
 				Seed:     "seed",
 				Password: []byte("pwd"),
+				Type:     WalletTypeDeterministic,
 			},
-			expect{
+			expect: expect{
 				err: ErrMissingEncrypt,
+			},
+		},
+		{
+			name:    "ok bip44",
+			wltName: "bip44.wlt",
+			opts: Options{
+				Label: "bip44wallet1",
+				Type:  WalletTypeBip44,
+				Seed:  "voyage say extend find sheriff surge priority merit ignore maple cash argue",
+			},
+			expect: expect{
+				meta: map[string]string{
+					"label":      "bip44wallet1",
+					"coin":       string(CoinTypeSkycoin),
+					"type":       string(WalletTypeBip44),
+					"version":    Version,
+					"bip44_coin": "8000",
+				},
 			},
 		},
 	}
@@ -265,11 +295,11 @@ func TestNewWallet(t *testing.T) {
 		// test all supported crypto types
 		for ct := range cryptoTable {
 			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
-			if tc.ops.Encrypt {
-				tc.ops.CryptoType = ct
+			if tc.opts.Encrypt {
+				tc.opts.CryptoType = ct
 			}
 			t.Run(name, func(t *testing.T) {
-				w, err := NewWallet(tc.wltName, tc.ops)
+				w, err := NewWallet(tc.wltName, tc.opts)
 
 				if tc.expect.err == nil {
 					require.NoError(t, err)
@@ -279,7 +309,7 @@ func TestNewWallet(t *testing.T) {
 					return
 				}
 
-				require.Equal(t, tc.ops.Encrypt, w.IsEncrypted())
+				require.Equal(t, tc.opts.Encrypt, w.IsEncrypted())
 
 				if w.IsEncrypted() {
 					// Confirms the seeds and entry secrets are all empty

@@ -1,5 +1,6 @@
 {
     "meta": {
+        "bip44_coin": "8000",
         "coin": "skycoin",
         "filename": "empty.wlt",
         "label": "test3",

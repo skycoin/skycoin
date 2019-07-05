@@ -13,11 +13,11 @@ import (
 // Bip44's bip32 path: m / purpose' / coin_type' / account' / change / address_index
 
 var (
-	// ErrInvalidCoinType coin_type is less than 0x80000000
-	ErrInvalidCoinType = errors.New("Invalid coin type")
+	// ErrInvalidCoinType coin_type is >= 0x80000000
+	ErrInvalidCoinType = errors.New("invalid bip44 coin type")
 
 	// ErrInvalidAccount account is >= 0x80000000
-	ErrInvalidAccount = errors.New("account index must be < 0x80000000")
+	ErrInvalidAccount = errors.New("bip44 account index must be < 0x80000000")
 )
 
 // CoinType is the coin_type part of the bip44 path
@@ -25,11 +25,11 @@ type CoinType uint32
 
 const (
 	// CoinTypeBitcoin is the coin_type for Bitcoin
-	CoinTypeBitcoin CoinType = 0x80000000
+	CoinTypeBitcoin CoinType = 0
 	// CoinTypeBitcoinTestnet is the coin_type for Skycoin
-	CoinTypeBitcoinTestnet CoinType = 0x80000001
+	CoinTypeBitcoinTestnet CoinType = 1
 	// CoinTypeSkycoin is the coin_type for Skycoin
-	CoinTypeSkycoin CoinType = 0x88800000
+	CoinTypeSkycoin CoinType = 8000
 
 	// ExternalChainIndex is the index of the external chain
 	ExternalChainIndex uint32 = 0
@@ -44,11 +44,11 @@ type Coin struct {
 
 // NewCoin creates a bip32 node at the `coin_type` level of a bip44 path
 func NewCoin(seed []byte, coinType CoinType) (*Coin, error) {
-	if uint32(coinType) < bip32.FirstHardenedChild {
+	if uint32(coinType) >= bip32.FirstHardenedChild {
 		return nil, ErrInvalidCoinType
 	}
 
-	path := fmt.Sprintf("m/44'/%d'", uint32(coinType)-bip32.FirstHardenedChild)
+	path := fmt.Sprintf("m/44'/%d'", coinType)
 	pk, err := bip32.NewPrivateKeyFromPath(seed, path)
 	if err != nil {
 		return nil, err

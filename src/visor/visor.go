@@ -429,7 +429,7 @@ func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 // ExecuteSignedBlockUnsafe adds block to the blockchain, or returns error.
 // Blocks must be executed in sequence. Block signature is not verified.
 func (vs *Visor) ExecuteSignedBlockUnsafe(b coin.SignedBlock) error {
-	return vs.db.Update("ExecuteSignedBlock", func(tx *dbutil.Tx) error {
+	return vs.db.Update("ExecuteSignedBlockUnsafe", func(tx *dbutil.Tx) error {
 		return vs.executeSignedBlock(tx, b)
 	})
 }

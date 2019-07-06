@@ -431,7 +431,7 @@ func (vs *Visor) ExecuteSignedBlockUnsafe(b coin.SignedBlock) error {
 }
 
 // executeSignedBlock adds a block to the blockchain, or returns error.
-// Blocks must be executed in sequence. Block must have valid signature.
+// Blocks must be executed in sequence, and be signed by a block publisher node.
 func (vs *Visor) executeSignedBlock(tx *dbutil.Tx, b coin.SignedBlock) error {
 	if err := b.VerifySignature(vs.Config.BlockchainPubkey); err != nil {
 		return err
@@ -441,7 +441,7 @@ func (vs *Visor) executeSignedBlock(tx *dbutil.Tx, b coin.SignedBlock) error {
 }
 
 // executeSignedBlockUnsafe add a block to the blockchain, or returns error.
-// Blocks must be executed in sequence.
+// Blocks must be executed in sequence. Block signature is not verified.
 func (vs *Visor) executeSignedBlockUnsafe(tx *dbutil.Tx, b coin.SignedBlock) error {
 	if err := vs.blockchain.ExecuteBlock(tx, &b); err != nil {
 		return err

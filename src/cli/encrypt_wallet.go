@@ -34,7 +34,7 @@ func encryptWalletCmd() *gcli.Command {
 
 			pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
 
-			wlt, err := encryptWallet(w, pr, cryptoType)
+			_, err = encryptWallet(w, pr, cryptoType)
 			switch err.(type) {
 			case nil:
 			case WalletLoadError:
@@ -44,7 +44,7 @@ func encryptWalletCmd() *gcli.Command {
 				return err
 			}
 
-			return printJSON(wallet.NewReadableWallet(wlt))
+			return nil
 		},
 	}
 
@@ -53,7 +53,7 @@ func encryptWalletCmd() *gcli.Command {
 	return encryptWalletCmd
 }
 
-func encryptWallet(walletFile string, pr PasswordReader, cryptoType wallet.CryptoType) (*wallet.Wallet, error) {
+func encryptWallet(walletFile string, pr PasswordReader, cryptoType wallet.CryptoType) (wallet.Wallet, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return nil, WalletLoadError{err}
@@ -72,7 +72,7 @@ func encryptWallet(walletFile string, pr PasswordReader, cryptoType wallet.Crypt
 		return nil, err
 	}
 
-	if err := wlt.Lock(password, cryptoType); err != nil {
+	if err := wallet.Lock(wlt, password, cryptoType); err != nil {
 		return nil, err
 	}
 
@@ -82,7 +82,7 @@ func encryptWallet(walletFile string, pr PasswordReader, cryptoType wallet.Crypt
 	}
 
 	// save the wallet
-	if err := wlt.Save(dir); err != nil {
+	if err := wallet.Save(wlt, dir); err != nil {
 		return nil, WalletLoadError{err}
 	}
 

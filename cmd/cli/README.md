@@ -955,15 +955,16 @@ $ skycoin-cli walletCreate [flags]
 FLAGS:
   -x, --crypto-type string   The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor (default "scrypt-chacha20poly1305")
   -e, --encrypt              Create encrypted wallet.
+  -h, --help                 help for walletCreate
   -l, --label string         Label used to idetify your wallet.
   -m, --mnemonic             A mnemonic seed consisting of 12 dictionary words will be generated
-  -n, --num uint             [numberOfAddresses] Number of addresses to generate
-                                 By default 1 address is generated. (default 1)
+  -n, --num uint             Number of addresses to generate. By default 1 address is generated. (default 1)
   -p, --password string      Wallet password
   -r, --random               A random alpha numeric seed will be generated
   -s, --seed string          Your seed
+  -t, --type string          Wallet type. Types are "collection" or "deterministic" (default "deterministic")
   -f, --wallet-file string   Name of wallet. The final format will be "yourName.wlt".
-                                 If no wallet name is specified a generic name will be selected. (default "skycoin_cli.wlt")
+                             If no wallet name is specified a generic name will be selected. (default "skycoin_cli.wlt")
 ```
 
 #### Examples

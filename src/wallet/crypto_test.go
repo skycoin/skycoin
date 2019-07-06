@@ -7,7 +7,7 @@ import (
 )
 
 func TestSecrets(t *testing.T) {
-	s := make(secrets)
+	s := make(Secrets)
 	s.set("k1", "v1")
 
 	v, ok := s.get("k1")
@@ -22,7 +22,7 @@ func TestSecrets(t *testing.T) {
 	b, err := s.serialize()
 	require.NoError(t, err)
 
-	s1 := make(secrets)
+	s1 := make(Secrets)
 	err = s1.deserialize(b)
 	require.NoError(t, err)
 	require.Equal(t, s, s1)

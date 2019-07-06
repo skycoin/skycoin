@@ -37,36 +37,20 @@ type WalletResponse struct {
 	Entries []readable.WalletEntry `json:"entries"`
 }
 
-// NewWalletResponse creates WalletResponse struct from *wallet.Wallet
-func NewWalletResponse(w *wallet.Wallet) (*WalletResponse, error) {
+// NewWalletResponse creates WalletResponse struct from wallet.Wallet
+func NewWalletResponse(w wallet.Wallet) (*WalletResponse, error) {
 	var wr WalletResponse
 
-	wr.Meta.Coin = w.Meta["coin"]
-	wr.Meta.Filename = w.Meta["filename"]
-	wr.Meta.Label = w.Meta["label"]
-	wr.Meta.Type = w.Meta["type"]
-	wr.Meta.Version = w.Meta["version"]
-	wr.Meta.CryptoType = w.Meta["cryptoType"]
+	wr.Meta.Coin = w.Coin()
+	wr.Meta.Filename = w.Filename()
+	wr.Meta.Label = w.Label()
+	wr.Meta.Type = w.Type()
+	wr.Meta.Version = w.Version()
+	wr.Meta.CryptoType = w.CryptoType()
+	wr.Meta.Encrypted = w.IsEncrypted()
+	wr.Meta.Timestamp = w.Timestamp()
 
-	// Converts "encrypted" string to boolean if any
-	if encryptedStr, ok := w.Meta["encrypted"]; ok {
-		encrypted, err := strconv.ParseBool(encryptedStr)
-		if err != nil {
-			return nil, err
-		}
-		wr.Meta.Encrypted = encrypted
-	}
-
-	if tmStr, ok := w.Meta["tm"]; ok {
-		// Converts "tm" string to integer timestamp.
-		tm, err := strconv.ParseInt(tmStr, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-		wr.Meta.Timestamp = tm
-	}
-
-	for _, e := range w.Entries {
+	for _, e := range w.GetEntries() {
 		wr.Entries = append(wr.Entries, readable.WalletEntry{
 			Address: e.Address.String(),
 			Public:  e.Public.Hex(),

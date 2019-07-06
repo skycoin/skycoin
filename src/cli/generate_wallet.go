@@ -44,8 +44,9 @@ func walletCreateCmd() *gcli.Command {
 	walletCreateCmd.Flags().StringP("wallet-file", "f", cliConfig.WalletName, `Name of wallet. The final format will be "yourName.wlt".
 If no wallet name is specified a generic name will be selected.`)
 	walletCreateCmd.Flags().StringP("label", "l", "", "Label used to idetify your wallet.")
+	walletCreateCmd.Flags().StringP("type", "t", wallet.WalletTypeDeterministic, "Wallet type. Types are \"collection\" or \"deterministic\"")
 	walletCreateCmd.Flags().BoolP("encrypt", "e", false, "Create encrypted wallet.")
-	walletCreateCmd.Flags().StringP("crypto-type", "x", string(wallet.CryptoTypeScryptChacha20poly1305),
+	walletCreateCmd.Flags().StringP("crypto-type", "x", string(wallet.DefaultCryptoType),
 		"The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor")
 	walletCreateCmd.Flags().StringP("password", "p", "", "Wallet password")
 
@@ -112,9 +113,32 @@ func generateWalletHandler(c *gcli.Command, _ []string) error {
 		return err
 	}
 
-	sd, err := makeSeed(s, random, mnemonic)
+	walletType, err := c.Flags().GetString("type")
 	if err != nil {
 		return err
+	}
+	if !wallet.IsValidWalletType(walletType) {
+		return wallet.ErrInvalidWalletType
+	}
+
+	var sd string
+	switch walletType {
+	case wallet.WalletTypeDeterministic:
+		var err error
+		sd, err = makeSeed(s, random, mnemonic)
+		if err != nil {
+			return err
+		}
+	case wallet.WalletTypeCollection:
+		if s != "" || random || mnemonic {
+			return fmt.Errorf("%q type wallets do not use seeds", walletType)
+		}
+		if c.Flags().Changed("num") {
+			return fmt.Errorf("%q type wallets do not support address generation", walletType)
+		}
+		num = 0
+	default:
+		return fmt.Errorf("unhandled wallet type %q", walletType)
 	}
 
 	cryptoType, err := wallet.CryptoTypeFromString(c.Flag("crypto-type").Value.String())
@@ -150,18 +174,20 @@ func generateWalletHandler(c *gcli.Command, _ []string) error {
 		Encrypt:    encrypt,
 		CryptoType: cryptoType,
 		Password:   password,
+		Type:       walletType,
+		GenerateN:  num,
 	}
 
-	wlt, err := GenerateWallet(wltName, opts, num)
+	wlt, err := wallet.NewWallet(filepath.Base(wltName), opts)
 	if err != nil {
 		return err
 	}
 
-	if err := wlt.Save(cliConfig.WalletDir); err != nil {
+	if err := wallet.Save(wlt, cliConfig.WalletDir); err != nil {
 		return err
 	}
 
-	return printJSON(wallet.NewReadableWallet(wlt))
+	return printJSON(wlt.ToReadable())
 }
 
 func makeSeed(s string, r, m bool) (string, error) {
@@ -189,40 +215,6 @@ func makeSeed(s string, r, m bool) (string, error) {
 }
 
 // PUBLIC
-
-// GenerateWallet generates a new wallet with filename walletFile, label, seed and number of addresses.
-// Caller should save the wallet file to its chosen directory
-func GenerateWallet(walletFile string, opts wallet.Options, numAddrs uint64) (*wallet.Wallet, error) {
-	walletFile = filepath.Base(walletFile)
-
-	wlt, err := wallet.NewWallet(walletFile, wallet.Options{
-		Seed:  opts.Seed,
-		Label: opts.Label,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if numAddrs > 1 {
-		if _, err := wlt.GenerateAddresses(numAddrs - 1); err != nil {
-			return nil, err
-		}
-	}
-
-	if !opts.Encrypt {
-		if len(opts.Password) != 0 {
-			return nil, wallet.ErrWalletNotEncrypted
-		}
-
-		return wlt, nil
-	}
-
-	if err := wlt.Lock(opts.Password, opts.CryptoType); err != nil {
-		return nil, err
-	}
-
-	return wlt, nil
-}
 
 // MakeAlphanumericSeed creates a random seed with AlphaNumericSeedLength bytes and hex encodes it
 func MakeAlphanumericSeed() string {

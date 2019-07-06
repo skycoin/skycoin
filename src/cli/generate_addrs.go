@@ -15,7 +15,7 @@ import (
 func walletAddAddressesCmd() *gcli.Command {
 	walletAddAddressesCmd := &gcli.Command{
 		Use:   "walletAddAddresses",
-		Short: "Generate additional addresses for a wallet",
+		Short: "Generate additional addresses for a deterministic wallet",
 		Long: fmt.Sprintf(`The default wallet (%s) will be used if no wallet was specified.
 
     Use caution when using the "-p" command. If you have command
@@ -103,19 +103,19 @@ func GenerateAddressesInFile(walletFile string, num uint64, pr PasswordReader) (
 		}
 	}
 
-	genAddrsInWallet := func(w *wallet.Wallet, n uint64) ([]cipher.Addresser, error) {
+	genAddrsInWallet := func(w wallet.Wallet, n uint64) ([]cipher.Addresser, error) {
 		return w.GenerateAddresses(n)
 	}
 
 	if wlt.IsEncrypted() {
-		genAddrsInWallet = func(w *wallet.Wallet, n uint64) ([]cipher.Addresser, error) {
+		genAddrsInWallet = func(w wallet.Wallet, n uint64) ([]cipher.Addresser, error) {
 			password, err := pr.Password()
 			if err != nil {
 				return nil, err
 			}
 
 			var addrs []cipher.Addresser
-			if err := w.GuardUpdate(password, func(wlt *wallet.Wallet) error {
+			if err := wallet.GuardUpdate(w, password, func(wlt wallet.Wallet) error {
 				var err error
 				addrs, err = wlt.GenerateAddresses(n)
 				return err
@@ -137,7 +137,7 @@ func GenerateAddressesInFile(walletFile string, num uint64, pr PasswordReader) (
 		return nil, err
 	}
 
-	if err := wlt.Save(dir); err != nil {
+	if err := wallet.Save(wlt, dir); err != nil {
 		return nil, WalletSaveError{err}
 	}
 

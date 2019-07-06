@@ -7,10 +7,15 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/skycoin/skycoin/src/cli"
+	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 func main() {
+	logging.SetLevel(logrus.WarnLevel)
+
 	cfg, err := cli.LoadConfig()
 	if err != nil {
 		fmt.Println(err)

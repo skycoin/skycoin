@@ -140,7 +140,11 @@
       "encrypt-warning": "We suggest that you encrypt each one of your wallets with a password. If you forget your password, you can reset it with your seed. Make sure you have your seed saved somewhere safe before encrypting your wallet.",
       "unconventional-seed-title": "Possible error",
       "unconventional-seed-text": "You introduced an unconventional seed. If you did it for any special reason, you can continue (only recommended for advanced users). However, if your intention is to use a normal system seed, you must delete all the additional text and special characters.",
-      "unconventional-seed-check": "Continue with the unconventional seed."
+      "unconventional-seed-check": "Continue with the unconventional seed.",
+      "synchronizing-warning-title": "Warning",
+      "synchronizing-warning-text": "The wallet is still synchronizing and some addresses may not be restored. If some addresses are not restored, please wait for the wallet to be fully synchronized and add them again manually.",
+      "synchronizing-warning-continue": "Continue",
+      "synchronizing-warning-cancel": "Cancel"
     },
 
     "rename": {
@@ -196,7 +200,7 @@
     "hours-allocation-label": "Automatic coin hours allocation",
     "options-label": "Options",
     "value-label": "Coin hours share factor",
-    "value-help": "The higher the value, the more coin hours will be sent to outputs",
+    "value-help": "The higher the value, the more coin hours will be sent to the recipients and less will be retained",
     "preview-button": "Preview",
     "send-button": "Send",
     "back-button": "Back",
@@ -354,9 +358,10 @@
     "errors": {
       "too-many-inputs-outputs": "The transaction has too many inputs or outputs for the hardware wallet. Please try again creating several smaller transactions, each one with a smaller number of recipients (if the current transaction has many) or coins.",
       "daemon-connection": "Problem connecting to the hardware wallet service.",
-      "timeout": "The operation was cancelled due to inactivity.",
+      "timeout": "The operation was canceled due to inactivity or because the device did not respond. Please try again.",
+      "invalid-address-generated": "There was a problem with the address generator and the operation had to be canceled for security.",
       "invalid-address": "Invalid address.",
-      "not-in-firmware-mode": "To use this option the hardware wallet must be in firmware mode."
+      "not-in-bootloader-mode": "To use this option the hardware wallet must be in bootloader mode."
     },
     "security-warning" : {
       "title": "Security warning",
@@ -389,7 +394,7 @@
       "delete-pin": "Delete PIN code",
       "forgotten-pin1": "If you can not access the wallet because you have forgotten the PIN, you can wipe the hardware wallet and then restore it with the seed by clicking",
       "forgotten-pin2": "here.",
-      "firmware-version": "Device firmware version: "
+      "firmware-version": "Device firmware version:"
     },
     "update-firmware-warning" : {
       "title": "Outdated Firmware",
@@ -398,12 +403,18 @@
       "update": "Update"
     },
     "update-firmware" : {
-      "title": "Update Firmware",
-      "text": "To update the firmware of your hardware wallet you must connect it in firmware mode (connect it to the computer while pressing the two physical buttons of the device). WARNING: before continuing you must have a backup of your seed or you can permanently lose access to the funds.",
+      "title-connecting": "Connecting...",
+      "title-update": "Update Firmware",
+      "title-install": "Install Firmware",
+      "text-downloading": "Checking device and downloading files...",
+      "text-bootloader": "WARNING: if you have already configured this device, before continuing you must have a backup of your seed or you could permanently lose access to the funds.",
+      "text-not-bootloader": "To update the firmware of your hardware wallet you must connect it in bootloader mode (connect it to the computer while pressing the two physical buttons of the device). WARNING: if you have already configured this device, before continuing you must have a backup of your seed or you could permanently lose access to the funds.",
+      "text-no-firmware": "Welcome. The currently connected wallet hardware does not have a firmware (internal software), we will install one so you can start using it. NOTE: if you have already configured this device and want to recover the funds, you will need your seed.",
       "check": "I understand the risks and want to continue",
-      "completed": "The firmware update has been sent to the hardware wallet. Please continue the process on the device.",
+      "follow": "The firmware update has been sent to the hardware wallet. Please continue the process on the device.",
       "connection-error": "It was not possible download the firmware. This could be due to problems with your internet connection or because the service is in maintenance.",
-      "timeout": "The operation was cancelled due to inactivity. Please disconnect the device, reconnect it and try again."
+      "timeout": "The operation was canceled due to inactivity. Please disconnect the device, reconnect it and try again.",
+      "finished": "Your device has been configured correctly. Please unplug it before continuing."
     },
     "generate-seed" : {
       "text": "Before proceeding, you can select the number of words you want the seed to have. The seed is a list of words that can be used to recover access to the coins in case of problems. Both values are safe, so if you do not have a special reason for selecting one or the other, you can leave the default value.",
@@ -415,27 +426,29 @@
       "warning" : "WARNING: to avoid potential problems, use only seeds created with a hardware wallet from the same brand/model.",
       "error-wrong-word": "Error: The retyped word does not match the one requested by the hardware wallet.",
       "error-invalid-seed": "Error: The seed is not valid. Please be sure to enter the correct words in the correct order.",
-      "error-wrong-seed": "Error: The seed is valid but does not match the one in the device."
+      "error-wrong-seed": "Error: The seed is valid but does not match the one in the device.",
+      "correct-seed": "The seed is valid and matches the one in the device."
     },
     "added" : {
       "title": "New Hardware Wallet",
       "configuring": "New hardware wallet detected. Configuring...",
       "done": "Done",
       "added1": "The connected hardware wallet has been added to the wallets list with the following name:",
-      "added2": "Now you can check the balance and the addresses of the hardware wallet even when it is not connected. Additionally, you can change the name of the wallet or remove it from the wallets list, if you wish."
+      "added2": "Now you can check the balance and the addresses of the hardware wallet even when it is not connected. Additionally, you can change the name of the wallet or remove it from the wallets list, if you wish.",
+      "ok": "Ok"
     },
     "wipe" : {
       "warning": "WARNING: All the data in the hardware wallet will be deleted. If you do not have a backup, you will not be able to access your funds again.",
       "confirm-delete": "Also remove from the wallets list"
     },
     "create-backup" : {
-      "warning": "WARNING: You can only use this option to backup your hardware wallet seed once. If you decide to continue, you will have to write down a group of words (it is recommended to do it on paper and not on a computer) that will appear on the screen of the hardware wallet and store the list in a safe place. Anyone with access to the word list (the \"seed\") will be able access the wallet balance, so extreme caution is advised.",
+      "warning": "WARNING: You can only use this option to backup your hardware wallet seed once. If you decide to continue, you will have to write down a group of words (it is recommended to do it on paper and not on a computer) that will appear on the screen of the hardware wallet and store the list in a safe place. Anyone with access to the word list (the \"seed\") will be able access the wallet funds, so extreme caution is advised.",
       "instructions": "Write down the word list that appear on the screen of the hardware wallet. Make sure you respect the order and write each word correctly."
     },
     "seed-word" : {
       "title": "Enter word",
       "info1": "Enter the word indicated in the device",
-      "info2": "You will be asked to enter the words of your backup seed in random order, plus a few additional words.",
+      "info2": "You will be asked to enter the words of your backup seed in random order. Also, additional random words could be requested.",
       "word": "Requested word",
       "error-invalid-word": "The entered word is not valid.",
       "error-loading-words": "Loading the word list. Please wait."
@@ -459,12 +472,16 @@
     },
     "pin-help" : {
       "title": "Help",
-      "part1": "When it is necessary to enter the PIN to continue, the hardware wallet screen will display a matrix of 9 boxes with numbers in random order (the order changes each time) and you will be asked to enter the PIN in the software wallet using a matrix of 9 buttons that simply show the symbol #.",
+      "part1": "When it is necessary to enter the PIN to continue, the hardware wallet screen will display a matrix of 9 boxes with numbers in random order (the order changes each time) and you will be asked to enter the PIN in the software wallet using a matrix of 9 buttons that simply show the symbol •.",
       "part2": "To enter the PIN, look at the position of the PIN numbers in numbers matrix on the screen of the hardware wallet and press the corresponding buttons in the software wallet. For example, if the PIN is \"23\" and the number 2 is in the upper left, number 3 in the middle of the hardware wallet numbers matrix, press the upper left and middle button in that order in the software wallet.",
-      "part3": "If you wish, you can also use the numpad on your keyboard to enter the PIN. However, as in the previous example, if the PIN is \"23\", you can not simply type \"23\" with the numpad, but you will have to press the keys that are in the position where the numbers 2 and 3 are shown on the screen of the hardware wallet."
+      "part3": "If you wish, you can also use the numpad on your keyboard to enter the PIN. However, as in the previous example, if the PIN is \"23\", you can not simply type \"23\" with the numpad, but you will have to press the keys that are in the position where the numbers 2 and 3 are shown on the screen of the hardware wallet. Taking into account the previous example, you would have to press the \"7\" and \"5\" keys, because those are the keys that you are in the same position as the numbers shown by the hardware wallet."
     },
     "create-tx" : {
-      "title": "Create transaction"
+      "title": "Create transaction",
+      "upper-text": "Please confirm the operation in the hardware wallet after verifying if the following data matches EXACTLY with the transaction you wish to send and with those shown by the hardware wallet:",
+      "lower-text": "If any data does not correspond to what the hardware wallet shows or the transaction you wish to send, cancel the operation in your hardware wallet.",
+      "send-p1": "and",
+      "send-p2": "to"
     },
     "confirm-address" : {
       "title": "Confirm address",
@@ -522,7 +539,9 @@
       "complete": "Exchange completed!",
       "complete-info": "The funds have been successfully sent to your address.",
       "error": "Error occurred",
-      "error-info": "There was an error in the operation, you can find more information below. If you need help, please save all the operation data shown below and contact technical support using the link in the lower right part of this page."
+      "error-info": "There was an error in the operation, you can find more information below. If you need help, please save all the operation data shown below and contact technical support using the link in the lower right part of this page.",
+      "user-deposit-timeout": "Order canceled due to inactivity",
+      "user-deposit-timeout-info": "The system has canceled the order because no deposit was detected, please open a new order. If you need help, please save all the operation data shown below and contact technical support using the link in the lower right part of this page."
     },
     "history-window": {
       "address": "Address",

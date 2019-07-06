@@ -248,9 +248,12 @@ func getAddresses(f string) ([]string, error) {
 		return nil, err
 	}
 
-	addrs := make([]string, len(wlt.Entries))
-	for i, entry := range wlt.Entries {
-		addrs[i] = entry.Address.String()
+	addrs := wlt.GetAddresses()
+
+	strAddrs := make([]string, len(addrs))
+	for i, a := range addrs {
+		strAddrs[i] = a.String()
 	}
-	return addrs, nil
+
+	return strAddrs, nil
 }

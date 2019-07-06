@@ -390,11 +390,11 @@ func (vs *Visor) CreateAndExecuteBlock() (coin.SignedBlock, error) {
 	return sb, err
 }
 
-// CreateBlock creates a Block from specified set of transactions according to set of determinstic rules.
-func (vs *Visor) CreateBlock(txns coin.Transactions, when uint64) (coin.Block, error) {
+// CreateBlockFromTxns creates a Block from specified set of transactions according to set of determinstic rules.
+func (vs *Visor) CreateBlockFromTxns(txns coin.Transactions, when uint64) (coin.Block, error) {
 	var sb coin.Block
 
-	err := vs.db.Update("CreateBlock", func(tx *dbutil.Tx) error {
+	err := vs.db.Update("CreateBlockFromTxns", func(tx *dbutil.Tx) error {
 		var err error
 		if sb, err = vs.createBlockFromTxns(tx, txns, when); err != nil {
 			return err

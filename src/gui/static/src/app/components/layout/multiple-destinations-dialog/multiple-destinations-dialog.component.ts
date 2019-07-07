@@ -2,7 +2,6 @@ import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MsgBarService } from '../../../services/msg-bar.service';
-import { ChildHwDialogParams } from '../hardware-wallet/hw-options-dialog/hw-options-dialog.component';
 
 @Component({
   selector: 'app-multiple-destinations-dialog',
@@ -14,7 +13,7 @@ export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {
 
   constructor(
     public dialogRef: MatDialogRef<MultipleDestinationsDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) private data: ChildHwDialogParams,
+    @Inject(MAT_DIALOG_DATA) private data: string,
     private formBuilder: FormBuilder,
     private msgBarService: MsgBarService,
   ) { }

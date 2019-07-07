@@ -18,11 +18,11 @@ describe('Wallets', () => {
   });
 
   it('should validate create wallet, empty label', () => {
-    expect<any>(page.fillWalletForm('', 'seed', 'seed')).toEqual(false);
+    expect<any>(page.fillWalletForm('', 'seed', 'seed', false)).toEqual(false);
   });
 
   it('should create wallet', () => {
-    expect<any>(page.fillWalletForm('Test create wallet', 'test create wallet', 'test create wallet')).toEqual(true);
+    expect<any>(page.fillWalletForm('Test create wallet', 'test create wallet', 'test create wallet', false)).toEqual(true);
     page.waitForWalletToBeCreated();
   });
 
@@ -36,11 +36,11 @@ describe('Wallets', () => {
   });
 
   it('should validate load wallet, empty label', () => {
-    expect<any>(page.fillWalletForm('', 'seed', null)).toEqual(false);
+    expect<any>(page.fillWalletForm('', 'seed', null, false)).toEqual(false);
   });
 
   it('should load wallet', () => {
-    expect<any>(page.fillWalletForm('Test load wallet', 'test load wallet', null)).toEqual(true);
+    expect<any>(page.fillWalletForm('Test load wallet', 'test load wallet', null, false)).toEqual(true);
     page.waitForWalletToBeCreated();
   });
 

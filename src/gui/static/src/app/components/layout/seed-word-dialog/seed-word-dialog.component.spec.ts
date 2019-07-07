@@ -1,20 +1,20 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { HwSeedWordDialogComponent } from './hw-seed-word-dialog.component';
+import { SeedWordDialogComponent } from './seed-word-dialog.component';
 
-describe('HwSeedWordDialogComponent', () => {
-  let component: HwSeedWordDialogComponent;
-  let fixture: ComponentFixture<HwSeedWordDialogComponent>;
+describe('SeedWordDialogComponent', () => {
+  let component: SeedWordDialogComponent;
+  let fixture: ComponentFixture<SeedWordDialogComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ HwSeedWordDialogComponent ],
+      declarations: [ SeedWordDialogComponent ],
     })
     .compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(HwSeedWordDialogComponent);
+    fixture = TestBed.createComponent(SeedWordDialogComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

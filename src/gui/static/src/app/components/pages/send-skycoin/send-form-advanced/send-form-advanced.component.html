@@ -105,6 +105,9 @@
         (onStateChange)="changeActiveCurrency($event)"
       ></app-double-button>
     </div>
+    <span class="-options" (click)="openMultipleDestinationsPopup()" [ngClass]="{'element-disabled' : busy}">
+      {{ 'send.bulk-send.title' | translate }} <mat-icon>keyboard_arrow_down</mat-icon>
+    </span>
 
     <div formArrayName="destinations" *ngFor="let dest of destControls; let i = index;" class="-destination">
       <div [formGroupName]="i" class="row">

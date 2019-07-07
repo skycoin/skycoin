@@ -23,6 +23,7 @@ import { PriceService } from '../../../../services/price.service';
 import { SendFormComponent } from '../send-form/send-form.component';
 import { ChangeNoteComponent } from '../send-preview/transaction-info/change-note/change-note.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { MultipleDestinationsDialogComponent } from '../../../layout/multiple-destinations-dialog/multiple-destinations-dialog.component';
 
 @Component({
   selector: 'app-send-form-advanced',
@@ -294,6 +295,53 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.dialog.open(SelectAddressComponent, config).afterClosed().subscribe(response => {
       if (response) {
         this.form.get('changeAddress').setValue(response);
+      }
+    });
+  }
+
+  openMultipleDestinationsPopup() {
+
+    let currentString = '';
+    this.destControls.map((destControl, i) => {
+      if ((destControl.get('address').value as string).trim().length > 0 ||
+        (destControl.get('coins').value as string).trim().length > 0 ||
+        (!this.autoHours && (destControl.get('hours').value as string).trim().length > 0)) {
+
+          currentString += (destControl.get('address').value as string).replace(',', '');
+          currentString += ', ' + (destControl.get('coins').value as string).replace(',', '');
+          if (!this.autoHours) {
+            currentString += ', ' + (destControl.get('hours').value as string).replace(',', '');
+          }
+          currentString += '\r\n';
+      }
+    });
+    if (currentString.length > 0) {
+      currentString = currentString.substr(0, currentString.length - 1);
+    }
+
+    const config = new MatDialogConfig();
+    config.width = '566px';
+    config.data = currentString;
+    this.dialog.open(MultipleDestinationsDialogComponent, config).afterClosed().subscribe((response: string[][]) => {
+      if (response) {
+        while (this.destControls.length > 0) {
+          (this.form.get('destinations') as FormArray).removeAt(0);
+        }
+
+        if (response.length > 0) {
+          this.autoHours = response[0].length === 2;
+
+          response.forEach((entry, i) => {
+            this.addDestination();
+            this.destControls[i].get('address').setValue(entry[0]);
+            this.destControls[i].get('coins').setValue(entry[1]);
+            if (!this.autoHours) {
+              this.destControls[i].get('hours').setValue(entry[2]);
+            }
+          });
+        } else {
+          this.addDestination();
+        }
       }
     });
   }

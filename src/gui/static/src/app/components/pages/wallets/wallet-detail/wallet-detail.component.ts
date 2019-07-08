@@ -16,6 +16,7 @@ import { Router } from '@angular/router';
 import { HwConfirmAddressDialogComponent, AddressConfirmationParams } from '../../../layout/hardware-wallet/hw-confirm-address-dialog/hw-confirm-address-dialog.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { ISubscription } from 'rxjs/Subscription';
+import { ApiService } from '../../../../services/api.service';
 
 @Component({
   selector: 'app-wallet-detail',
@@ -32,6 +33,7 @@ export class WalletDetailComponent implements OnDestroy {
   private howManyAddresses: number;
   private editSubscription: ISubscription;
   private confirmSubscription: ISubscription;
+  private txHistorySubscription: ISubscription;
 
   constructor(
     private dialog: MatDialog,
@@ -40,6 +42,7 @@ export class WalletDetailComponent implements OnDestroy {
     private hwWalletService: HwWalletService,
     private translateService: TranslateService,
     private router: Router,
+    private apiService: ApiService,
   ) { }
 
   ngOnDestroy() {
@@ -49,6 +52,9 @@ export class WalletDetailComponent implements OnDestroy {
     }
     if (this.confirmSubscription) {
       this.confirmSubscription.unsubscribe();
+    }
+    if (this.txHistorySubscription) {
+      this.txHistorySubscription.unsubscribe();
     }
   }
 
@@ -97,21 +103,44 @@ export class WalletDetailComponent implements OnDestroy {
     this.msgBarService.hide();
 
     if (!this.wallet.isHardware) {
+      const maxAddressesGap = 20;
+
       const config = new MatDialogConfig();
       config.width = '566px';
-      this.dialog.open(NumberOfAddressesComponent, config).afterClosed()
-        .subscribe(response => {
-          if (response) {
-            this.howManyAddresses = response;
+      config.data = (howManyAddresses, callback) => {
+        this.howManyAddresses = howManyAddresses;
 
-            let lastWithBalance = 0;
+        let lastWithBalance = 0;
+        this.wallet.addresses.forEach((address, i) => {
+          if (address.coins.isGreaterThan(0)) {
+            lastWithBalance = i;
+          }
+        });
+
+        if ((this.wallet.addresses.length - (lastWithBalance + 1)) + howManyAddresses < maxAddressesGap) {
+          callback(true);
+          this.continueNewAddress();
+        } else {
+          this.txHistorySubscription = this.apiService.getTransactions(this.wallet.addresses).first().subscribe(transactions => {
+            const AddressesWithTxs = new Map<string, boolean>();
+
+            transactions.forEach(transaction => {
+              transaction.outputs.forEach(output => {
+                if (!AddressesWithTxs.has(output.dst)) {
+                  AddressesWithTxs.set(output.dst, true);
+                }
+              });
+            });
+
+            let lastWithTxs = 0;
             this.wallet.addresses.forEach((address, i) => {
-              if (address.coins.isGreaterThan(0)) {
-                lastWithBalance = i;
+              if (AddressesWithTxs.has(address.address)) {
+                lastWithTxs = i;
               }
             });
 
-            if ((this.wallet.addresses.length - (lastWithBalance + 1)) + response < 20) {
+            if ((this.wallet.addresses.length - (lastWithTxs + 1)) + howManyAddresses < maxAddressesGap) {
+              callback(true);
               this.continueNewAddress();
             } else {
               const confirmationData: ConfirmationData = {
@@ -123,12 +152,18 @@ export class WalletDetailComponent implements OnDestroy {
 
               showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
                 if (confirmationResult) {
+                  callback(true);
                   this.continueNewAddress();
+                } else {
+                  callback(false);
                 }
               });
             }
-          }
-        });
+          }, () => callback(false, true));
+        }
+      };
+
+      this.dialog.open(NumberOfAddressesComponent, config);
     } else {
       this.howManyAddresses = 1;
       this.continueNewAddress();

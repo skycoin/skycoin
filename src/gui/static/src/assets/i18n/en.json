@@ -350,14 +350,14 @@
     "general" : {
       "default-wallet-name": "New hardware wallet",
       "error-disconnected": "Unable to perform the operation. The hardware wallet is not connected.",
-      "simple-error": "Error, Unable to perform the operation.",
+      "simple-error": "Error. Unable to perform the operation.",
       "generic-error": "Unable to perform the operation. Make sure you have connected a valid hardware wallet and that it is not waiting for input.",
       "generic-error-internet": "Unable to perform the operation. Make sure you have connected a valid hardware wallet that is not waiting for input and that you have a connection to the internet/node.",
       "error-incorrect-wallet": "Unable to perform the operation. The connected hardware wallet is different from the expected one.",
-      "error-incorrect-pin": "Unable to perform the operation. The PIN you have entered is not correct.",
-      "confirm": "Please, confirm the operation in the hardware wallet.",
-      "confirm-and-more": "Please, confirm the operation in the hardware wallet and follow the instructions.",
-      "follow": "Please, follow the instructions indicated in the hardware wallet.",
+      "error-incorrect-pin": "Unable to perform the operation. The PIN you have entered is incorrect.",
+      "confirm": "Please confirm the operation on the hardware wallet.",
+      "confirm-and-more": "Please confirm the operation on the hardware wallet and follow the instructions displayed.",
+      "follow": "Please follow the instructions displayed on the hardware wallet.",
       "close": "Close",
       "cancel": "Cancel",
       "continue": "Continue",
@@ -368,13 +368,13 @@
       "too-many-inputs-outputs": "The transaction has too many inputs or outputs for the hardware wallet. Please try again creating several smaller transactions, each one with a smaller number of recipients (if the current transaction has many) or coins.",
       "daemon-connection": "Problem connecting to the hardware wallet service.",
       "timeout": "The operation was canceled due to inactivity or because the device did not respond. Please try again.",
-      "invalid-address-generated": "There was a problem with the address generator and the operation had to be canceled for security.",
+      "invalid-address-generated": "There was a problem with the address generator and the operation had to be canceled.",
       "invalid-address": "Invalid address.",
       "not-in-bootloader-mode": "To use this option the hardware wallet must be in bootloader mode."
     },
     "security-warning" : {
       "title": "Security warning",
-      "text": "The last time this hardware wallet was connected, one or more security warnings were found. We recommend you to open the hardware wallet options (by pressing the \"Hardware Wallet\" button below the wallets list) while the device is connected and solve the security problems before continuing.",
+      "text": "The last time this hardware wallet was connected, one or more security warnings were found. We recommend that you open the hardware wallet options (by pressing the \"Hardware Wallet\" button below the wallets list) while the device is connected and solve the security problems before continuing.",
       "check": "I understand the risks and want to continue",
       "continue": "Continue",
       "cancel": "Cancel"
@@ -383,14 +383,14 @@
       "connecting": "Connecting...",
       "disconnected": "No hardware wallet detected. Please connect a hardware wallet to use this option.",
       "unconfigured-detected-title": "Unconfigured hardware wallet",
-      "unconfigured-detected": "A seedless hardware wallet has been detected. Select \"Configure automatically\" if you want to configure it as a brand new wallet and start using it immediately, or select \"Restore backup\" if you want to configure it with a previously created seed backup and thus be able to access your funds again.",
+      "unconfigured-detected": "A seedless hardware wallet has been detected. Select \"Configure automatically\" if you want to configure it as a brand new wallet and start using it. Select \"Restore backup\" if you want to configure the hardware wallet with a previously created seed backup.",
       "configured-detected": "Hardware wallet detected. The device is identified in the wallets list as:",
       "security-warnings-title": "Security warnings",
       "security-warning-title": "Security warning",
-      "unchecked-version-warning": "It was not possible to verify if the firmware of your hardware wallet is up to date. This could be due to problems with your internet connection or because the service is in maintenance.",
-      "outdated-version-warning": "The firmware of your hardware wallet is outdated. To stay safe, we recommend you to update it as soon as possible. To do this, select the \"Update firmware\" option.",
+      "unchecked-version-warning": "It was not possible to verify if the firmware of your hardware wallet is up to date. This could be due to problems with your internet connection or because the service is under maintenance.",
+      "outdated-version-warning": "The firmware of your hardware wallet is outdated. We recommend you to update it as soon as possible to ensure safety. To do this, select the \"Update firmware\" option.",
       "backup-warning": "You should backup the hardware wallet seed or you could lose access to the funds in case of problems. To do this, select the \"Create a backup\" option.",
-      "pin-warning": "The connected hardware wallet does not have a PIN. The PIN code protects the hardware wallet in case of loss, theft and hacks. To create a PIN code, select the \"Create PIN code\" option.",
+      "pin-warning": "The connected hardware wallet does not have a PIN. The PIN code protects the hardware wallet from unauthorized parties accessing the device. To create a PIN code, select the \"Create PIN code\" option.",
       "options": "Options:",
       "update-firmware": "Update firmware",
       "configure-automatically": "Configure automatically",
@@ -401,7 +401,7 @@
       "create-pin": "Create PIN code",
       "change-pin": "Change PIN code",
       "delete-pin": "Delete PIN code",
-      "forgotten-pin1": "If you can not access the wallet because you have forgotten the PIN, you can wipe the hardware wallet and then restore it with the seed by clicking",
+      "forgotten-pin1": "If you cannot access the wallet because you have forgotten the PIN, you can wipe the hardware wallet and then restore it with the seed by clicking",
       "forgotten-pin2": "here.",
       "firmware-version": "Device firmware version:"
     },
@@ -418,10 +418,10 @@
       "text-downloading": "Checking device and downloading files...",
       "text-bootloader": "WARNING: if you have already configured this device, before continuing you must have a backup of your seed or you could permanently lose access to the funds.",
       "text-not-bootloader": "To update the firmware of your hardware wallet you must connect it in bootloader mode (connect it to the computer while pressing the two physical buttons of the device). WARNING: if you have already configured this device, before continuing you must have a backup of your seed or you could permanently lose access to the funds.",
-      "text-no-firmware": "Welcome. The currently connected wallet hardware does not have a firmware (internal software), we will install one so you can start using it. NOTE: if you have already configured this device and want to recover the funds, you will need your seed.",
+      "text-no-firmware": "Welcome. The currently connected wallet hardware does not have a firmware installed. A firmware will now be installed so you can start using the device. NOTE: if you have already configured this device and want to recover the funds, you will need your seed.",
       "check": "I understand the risks and want to continue",
       "follow": "The firmware update has been sent to the hardware wallet. Please continue the process on the device.",
-      "connection-error": "It was not possible download the firmware. This could be due to problems with your internet connection or because the service is in maintenance.",
+      "connection-error": "It was not possible to download the firmware. This could be due to problems with your internet connection or because the service is under maintenance.",
       "timeout": "The operation was canceled due to inactivity. Please disconnect the device, reconnect it and try again.",
       "finished": "Your device has been configured correctly. Please unplug it before continuing."
     },
@@ -447,7 +447,7 @@
       "ok": "Ok"
     },
     "wipe" : {
-      "warning": "WARNING: All the data in the hardware wallet will be deleted. If you do not have a backup, you will not be able to access your funds again.",
+      "warning": "WARNING: All the data on the hardware wallet will be deleted. If you do not have a backup, you will not be able to access your funds again.",
       "confirm-delete": "Also remove from the wallets list"
     },
     "create-backup" : {
@@ -456,17 +456,17 @@
     },
     "seed-word" : {
       "title": "Enter word",
-      "info1": "Enter the word indicated in the device",
+      "info1": "Enter the word shown on the device",
       "info2": "You will be asked to enter the words of your backup seed in random order. Also, additional random words could be requested.",
       "word": "Requested word",
       "error-invalid-word": "The entered word is not valid.",
       "error-loading-words": "Loading the word list. Please wait."
     },
     "change-pin" : {
-      "pin-mismatch": "Unable to perform the operation. Two PINs you have entered do not match."
+      "pin-mismatch": "Unable to perform the operation. The PINs you have entered do not match."
     },
     "remove-pin" : {
-      "warning": "WARNING: It is not recommended to remove the PIN code from your hardware wallet, as it will be vulnerable to being used by unauthorized persons.",
+      "warning": "WARNING: It is not recommended to remove the PIN code from your hardware wallet, as it will be vulnerable to being used by unauthorized parties in case of loss or theft.",
       "check": "I understand the risks and want to continue"
     },
     "enter-pin" : {
@@ -476,7 +476,7 @@
       "title-change-confirm": "Confirm the new PIN",
       "instructions": "The PIN layout is displayed on the hardware wallet screen.",
       "instructions-tx": "Enter the PIN to confirm and sign the transaction.",
-      "instructions-change": "Please enter a hard-to-guess PIN of between 4 and 8 numbers.",
+      "instructions-change": "Please enter a secure PIN consisting of 4 to 8 numbers.",
       "help": "Need help?"
     },
     "pin-help" : {
@@ -488,7 +488,7 @@
     "create-tx" : {
       "title": "Create transaction",
       "upper-text": "Please confirm the operation in the hardware wallet after verifying if the following data matches EXACTLY with the transaction you wish to send and with those shown by the hardware wallet:",
-      "lower-text": "If any data does not correspond to what the hardware wallet shows or the transaction you wish to send, cancel the operation in your hardware wallet.",
+      "lower-text": "If any data does not correspond to what the hardware wallet shows or the transaction you wish to send, cancel the operation on your hardware wallet.",
       "send-p1": "and",
       "send-p2": "to"
     },

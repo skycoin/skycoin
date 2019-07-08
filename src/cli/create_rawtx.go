@@ -155,8 +155,8 @@ func getChangeAddress(wltAddr walletAddress, chgAddr string) (string, error) {
 				return "", WalletLoadError{err}
 			}
 
-			if len(wlt.Entries) > 0 {
-				chgAddr = wlt.Entries[0].Address.String()
+			if wlt.EntriesLen() > 0 {
+				chgAddr = wlt.GetEntryAt(0).Address.String()
 			} else {
 				return "", errors.New("no change address was found")
 			}
@@ -511,8 +511,8 @@ type GetOutputser interface {
 	OutputsForAddresses([]string) (*readable.UnspentOutputsSummary, error)
 }
 
-// CreateRawTxn creates a transaction from a set of addresses contained in a loaded *wallet.Wallet
-func CreateRawTxn(c GetOutputser, wlt *wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount, password []byte, distParams params.Distribution) (*coin.Transaction, error) {
+// CreateRawTxn creates a transaction from a set of addresses contained in a loaded wallet.Wallet
+func CreateRawTxn(c GetOutputser, wlt wallet.Wallet, inAddrs []string, chgAddr string, toAddrs []SendAmount, password []byte, distParams params.Distribution) (*coin.Transaction, error) {
 	if err := validateSendAmounts(toAddrs); err != nil {
 		return nil, err
 	}
@@ -561,7 +561,7 @@ func CreateRawTxn(c GetOutputser, wlt *wallet.Wallet, inAddrs []string, chgAddr 
 	return txn, nil
 }
 
-func createRawTxn(uxouts *readable.UnspentOutputsSummary, wlt *wallet.Wallet, chgAddr string, toAddrs []SendAmount, password []byte) (*coin.Transaction, error) {
+func createRawTxn(uxouts *readable.UnspentOutputsSummary, wlt wallet.Wallet, chgAddr string, toAddrs []SendAmount, password []byte) (*coin.Transaction, error) {
 	// Calculate total required coins
 	var totalCoins uint64
 	for _, arg := range toAddrs {
@@ -582,7 +582,7 @@ func createRawTxn(uxouts *readable.UnspentOutputsSummary, wlt *wallet.Wallet, ch
 		return nil, err
 	}
 
-	f := func(w *wallet.Wallet) (*coin.Transaction, error) {
+	f := func(w wallet.Wallet) (*coin.Transaction, error) {
 		keys, err := getKeys(w, spendOutputs)
 		if err != nil {
 			return nil, err
@@ -598,7 +598,7 @@ func createRawTxn(uxouts *readable.UnspentOutputsSummary, wlt *wallet.Wallet, ch
 	if wlt.IsEncrypted() {
 		makeTxn = func() (*coin.Transaction, error) {
 			var tx *coin.Transaction
-			if err := wlt.GuardView(password, func(w *wallet.Wallet) error {
+			if err := wallet.GuardView(wlt, password, func(w wallet.Wallet) error {
 				var err error
 				tx, err = f(w)
 				return err
@@ -719,7 +719,7 @@ func mustMakeUtxoOutput(addr string, coins, hours uint64) coin.TransactionOutput
 	return uo
 }
 
-func getKeys(wlt *wallet.Wallet, outs []transaction.UxBalance) ([]cipher.SecKey, error) {
+func getKeys(wlt wallet.Wallet, outs []transaction.UxBalance) ([]cipher.SecKey, error) {
 	keys := make([]cipher.SecKey, len(outs))
 	for i, o := range outs {
 		entry, ok := wlt.GetEntry(o.Address)

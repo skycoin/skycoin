@@ -344,9 +344,9 @@ func prepareWltDir() string {
 	return dir
 }
 
-func TestWalletCreateTransaction(t *testing.T) {
-	addrs := make([]cipher.Address, 3)
-	entries := make([]wallet.Entry, 3)
+func makeEntries(n int) ([]wallet.Entry, []cipher.Address) {
+	addrs := make([]cipher.Address, n)
+	entries := make([]wallet.Entry, n)
 	for i := range addrs {
 		p, s := cipher.GenerateKeyPair()
 		a := cipher.AddressFromPubKey(p)
@@ -357,6 +357,11 @@ func TestWalletCreateTransaction(t *testing.T) {
 		}
 		addrs[i] = a
 	}
+	return entries, addrs
+}
+
+func TestWalletCreateTransaction(t *testing.T) {
+	entries, addrs := makeEntries(3)
 
 	uxOuts := make([]cipher.SHA256, 3)
 	for i := range uxOuts {
@@ -649,17 +654,18 @@ func TestWalletCreateTransaction(t *testing.T) {
 
 			_, err = ws.CreateWallet(tc.walletID, wallet.Options{
 				Coin:       wallet.CoinTypeSkycoin,
-				Seed:       "foo",
 				Encrypt:    len(tc.password) != 0,
 				Password:   tc.password,
 				CryptoType: wallet.CryptoTypeScryptChacha20poly1305Insecure,
-				GenerateN:  5,
+				Type:       wallet.WalletTypeCollection,
 			}, nil)
 			require.NoError(t, err)
 
-			err = ws.UpdateSecrets(tc.walletID, tc.password, func(w *wallet.Wallet) error {
-				for _, e := range entries {
-					err := w.AddEntry(e)
+			err = ws.UpdateSecrets(tc.walletID, tc.password, func(w wallet.Wallet) error {
+				// Preload the address with 5 unique entries
+				uniqueEntries, _ := makeEntries(5)
+				for _, e := range append(uniqueEntries, entries...) {
+					err := w.(*wallet.CollectionWallet).AddEntry(e)
 					require.NoError(t, err)
 				}
 				return nil

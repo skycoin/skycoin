@@ -218,15 +218,15 @@ func TestWalletGet(t *testing.T) {
 	}
 
 	tt := []struct {
-		name                   string
-		method                 string
-		body                   *httpBody
-		status                 int
-		err                    string
-		walletID               string
-		gatewayGetWalletResult wallet.Wallet
-		responseBody           WalletResponse
-		gatewayGetWalletErr    error
+		name                       string
+		method                     string
+		body                       *httpBody
+		status                     int
+		err                        string
+		walletID                   string
+		gatewayGetWalletResultFunc func(string) wallet.Wallet
+		responseBody               WalletResponse
+		gatewayGetWalletErr        error
 	}{
 		{
 			name:     "405",
@@ -248,9 +248,13 @@ func TestWalletGet(t *testing.T) {
 			body: &httpBody{
 				WalletID: "123",
 			},
-			status:              http.StatusBadRequest,
-			err:                 "400 Bad Request - wallet 123 doesn't exist",
-			walletID:            "123",
+			status:   http.StatusBadRequest,
+			err:      "400 Bad Request - wallet 123 doesn't exist",
+			walletID: "123",
+			gatewayGetWalletResultFunc: func(_ string) wallet.Wallet {
+				var p *wallet.DeterministicWallet
+				return p
+			},
 			gatewayGetWalletErr: errors.New("wallet 123 doesn't exist"),
 		},
 		{
@@ -262,9 +266,11 @@ func TestWalletGet(t *testing.T) {
 			status:   http.StatusForbidden,
 			err:      "403 Forbidden",
 			walletID: "1234",
-			gatewayGetWalletResult: wallet.Wallet{
-				Meta:    map[string]string{"seed": "seed", "lastSeed": "seed"},
-				Entries: []wallet.Entry{},
+			gatewayGetWalletResultFunc: func(_ string) wallet.Wallet {
+				return &wallet.DeterministicWallet{
+					Meta:    wallet.Meta{"seed": "seed", "lastSeed": "seed"},
+					Entries: []wallet.Entry{},
+				}
 			},
 			gatewayGetWalletErr: wallet.ErrWalletAPIDisabled,
 		},
@@ -276,9 +282,11 @@ func TestWalletGet(t *testing.T) {
 			},
 			status:   http.StatusOK,
 			walletID: "1234",
-			gatewayGetWalletResult: wallet.Wallet{
-				Meta:    map[string]string{"seed": "seed", "lastSeed": "seed"},
-				Entries: cloneEntries(entries),
+			gatewayGetWalletResultFunc: func(_ string) wallet.Wallet {
+				return &wallet.DeterministicWallet{
+					Meta:    wallet.Meta{"seed": "seed", "lastSeed": "seed"},
+					Entries: cloneEntries(entries),
+				}
 			},
 			responseBody: WalletResponse{Entries: resEntries[:]},
 		},
@@ -287,7 +295,7 @@ func TestWalletGet(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
-			gateway.On("GetWallet", tc.walletID).Return(&tc.gatewayGetWalletResult, tc.gatewayGetWalletErr)
+			gateway.On("GetWallet", tc.walletID).Return(tc.gatewayGetWalletResultFunc, tc.gatewayGetWalletErr)
 
 			v := url.Values{}
 
@@ -863,7 +871,7 @@ func TestWalletCreateHandler(t *testing.T) {
 		err                       string
 		wltName                   string
 		options                   wallet.Options
-		gatewayCreateWalletResult wallet.Wallet
+		gatewayCreateWalletResult func(string, wallet.Options, wallet.TransactionsFinder) wallet.Wallet
 		gatewayCreateWalletErr    error
 		responseBody              WalletResponse
 		csrfDisabled              bool
@@ -933,6 +941,10 @@ func TestWalletCreateHandler(t *testing.T) {
 				Password: []byte{},
 			},
 			gatewayCreateWalletErr: wallet.ErrSeedUsed,
+			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
+				var p *wallet.DeterministicWallet
+				return p
+			},
 		},
 		{
 			name:   "500 - gateway.CreateWallet error",
@@ -950,6 +962,10 @@ func TestWalletCreateHandler(t *testing.T) {
 				Password: []byte{},
 			},
 			gatewayCreateWalletErr: errors.New("gateway.CreateWallet error"),
+			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
+				var p *wallet.DeterministicWallet
+				return p
+			},
 		},
 		{
 			name:   "403 - Forbidden - wallet API disabled",
@@ -969,6 +985,10 @@ func TestWalletCreateHandler(t *testing.T) {
 				ScanN:    2,
 			},
 			gatewayCreateWalletErr: wallet.ErrWalletAPIDisabled,
+			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
+				var p *wallet.DeterministicWallet
+				return p
+			},
 		},
 		{
 			name:   "200 - OK",
@@ -987,11 +1007,13 @@ func TestWalletCreateHandler(t *testing.T) {
 				Password: []byte{},
 				ScanN:    2,
 			},
-			gatewayCreateWalletResult: wallet.Wallet{
-				Meta: map[string]string{
-					"filename": "filename",
-				},
-				Entries: cloneEntries(entries),
+			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
+				return &wallet.DeterministicWallet{
+					Meta: wallet.Meta{
+						"filename": "filename",
+					},
+					Entries: cloneEntries(entries),
+				}
 			},
 			responseBody: WalletResponse{
 				Meta: readable.WalletMeta{
@@ -1018,10 +1040,12 @@ func TestWalletCreateHandler(t *testing.T) {
 				Password: []byte{},
 				ScanN:    2,
 			},
-			gatewayCreateWalletResult: wallet.Wallet{
-				Meta: map[string]string{
-					"filename": "filename",
-				},
+			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
+				return &wallet.DeterministicWallet{
+					Meta: wallet.Meta{
+						"filename": "filename",
+					},
+				}
 			},
 			responseBody: WalletResponse{
 				Meta: readable.WalletMeta{
@@ -1050,13 +1074,15 @@ func TestWalletCreateHandler(t *testing.T) {
 				Password: []byte("pwd"),
 				ScanN:    2,
 			},
-			gatewayCreateWalletResult: wallet.Wallet{
-				Meta: map[string]string{
-					"filename":  "filename",
-					"label":     "bar",
-					"encrypted": "true",
-					"secrets":   "secrets",
-				},
+			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
+				return &wallet.DeterministicWallet{
+					Meta: wallet.Meta{
+						"filename":  "filename",
+						"label":     "bar",
+						"encrypted": "true",
+						"secrets":   "secrets",
+					},
+				}
 			},
 			responseBody: WalletResponse{
 				Meta: readable.WalletMeta{
@@ -1085,7 +1111,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			if tc.options.ScanN == 0 {
 				tc.options.ScanN = 1
 			}
-			gateway.On("CreateWallet", "", tc.options, gateway).Return(&tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
+			gateway.On("CreateWallet", "", tc.options, gateway).Return(tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
 
 			endpoint := "/api/v1/wallet/create"
 
@@ -1882,8 +1908,8 @@ func TestGetWallets(t *testing.T) {
 			method: http.MethodGet,
 			status: http.StatusOK,
 			getWalletsResponse: wallet.Wallets{
-				"foofilename": {
-					Meta: map[string]string{
+				"foofilename": &wallet.DeterministicWallet{
+					Meta: wallet.Meta{
 						"foo":        "bar",
 						"seed":       "fooseed",
 						"lastSeed":   "foolastseed",
@@ -1904,8 +1930,8 @@ func TestGetWallets(t *testing.T) {
 						},
 					},
 				},
-				"foofilename2": {
-					Meta: map[string]string{
+				"foofilename2": &wallet.DeterministicWallet{
+					Meta: wallet.Meta{
 						"foo":        "bar2",
 						"seed":       "fooseed2",
 						"lastSeed":   "foolastseed2",
@@ -1926,8 +1952,8 @@ func TestGetWallets(t *testing.T) {
 						},
 					},
 				},
-				"foofilename3": {
-					Meta: map[string]string{
+				"foofilename3": &wallet.DeterministicWallet{
+					Meta: wallet.Meta{
 						"foo":        "bar3",
 						"seed":       "fooseed3",
 						"lastSeed":   "foolastseed3",
@@ -2141,7 +2167,7 @@ func TestWalletUnloadHandler(t *testing.T) {
 func TestEncryptWallet(t *testing.T) {
 	entries, responseEntries := makeEntries([]byte("seed"), 5)
 	type gatewayReturnPair struct {
-		w   *wallet.Wallet
+		w   wallet.Wallet
 		err error
 	}
 	tt := []struct {
@@ -2160,8 +2186,8 @@ func TestEncryptWallet(t *testing.T) {
 			wltID:    "wallet.wlt",
 			password: "pwd",
 			gatewayReturn: gatewayReturnPair{
-				w: &wallet.Wallet{
-					Meta: map[string]string{
+				w: &wallet.DeterministicWallet{
+					Meta: wallet.Meta{
 						"filename":  "wallet.wlt",
 						"seed":      "seed",
 						"lastSeed":  "lastSeed",
@@ -2295,7 +2321,7 @@ func TestEncryptWallet(t *testing.T) {
 func TestDecryptWallet(t *testing.T) {
 	entries, responseEntries := makeEntries([]byte("seed"), 5)
 	type gatewayReturnPair struct {
-		w   *wallet.Wallet
+		w   wallet.Wallet
 		err error
 	}
 
@@ -2316,8 +2342,8 @@ func TestDecryptWallet(t *testing.T) {
 			wltID:    "wallet.wlt",
 			password: "pwd",
 			gatewayReturn: gatewayReturnPair{
-				w: &wallet.Wallet{
-					Meta: map[string]string{
+				w: &wallet.DeterministicWallet{
+					Meta: wallet.Meta{
 						"filename":  "wallet",
 						"seed":      "seed",
 						"lastSeed":  "lastSeed",
@@ -2342,8 +2368,8 @@ func TestDecryptWallet(t *testing.T) {
 			wltID:    "wallet.wlt",
 			password: "pwd",
 			gatewayReturn: gatewayReturnPair{
-				w: &wallet.Wallet{
-					Meta: map[string]string{
+				w: &wallet.DeterministicWallet{
+					Meta: wallet.Meta{
 						"filename":  "wallet",
 						"seed":      "seed",
 						"lastSeed":  "lastSeed",
@@ -2505,7 +2531,7 @@ func cloneEntries(es []wallet.Entry) []wallet.Entry {
 
 func TestWalletRecover(t *testing.T) {
 	type gatewayReturnPair struct {
-		w   *wallet.Wallet
+		w   wallet.Wallet
 		err error
 	}
 

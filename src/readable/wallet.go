@@ -50,12 +50,12 @@ type WalletEntry struct {
 
 // WalletMeta the wallet meta struct
 type WalletMeta struct {
-	Coin       string `json:"coin"`
-	Filename   string `json:"filename"`
-	Label      string `json:"label"`
-	Type       string `json:"type"`
-	Version    string `json:"version"`
-	CryptoType string `json:"crypto_type"`
-	Timestamp  int64  `json:"timestamp"`
-	Encrypted  bool   `json:"encrypted"`
+	Coin       wallet.CoinType   `json:"coin"`
+	Filename   string            `json:"filename"`
+	Label      string            `json:"label"`
+	Type       string            `json:"type"`
+	Version    string            `json:"version"`
+	CryptoType wallet.CryptoType `json:"crypto_type"`
+	Timestamp  int64             `json:"timestamp"`
+	Encrypted  bool              `json:"encrypted"`
 }

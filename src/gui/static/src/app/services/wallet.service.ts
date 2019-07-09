@@ -100,7 +100,7 @@ export class WalletService {
   create(label, seed, scan, password) {
     seed = seed.replace(/(\n|\r\n)$/, '');
 
-    return this.apiService.postWalletCreate(label ? label : 'undefined', seed, scan ? scan : 100, password)
+    return this.apiService.postWalletCreate(label ? label : 'undefined', seed, scan ? scan : 100, password, 'deterministic')
       .do(wallet => {
         console.log(wallet);
         this.wallets.first().subscribe(wallets => {

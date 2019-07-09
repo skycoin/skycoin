@@ -17,7 +17,7 @@
     <div class="upper-text">{{ 'hardware-wallet.added.added1' | translate }}</div>
     <div [formGroup]="form">
       <div class="form-field">
-        <input formControlName="label" id="label" (keydown.enter)="saveNameAndCloseModal()" #input>
+        <input formControlName="label" id="label" [maxlength]="maxHwWalletLabelLength" (keydown.enter)="saveNameAndCloseModal()" #input>
       </div>
     </div>
     <div>{{ 'hardware-wallet.added.added2' | translate }}</div>

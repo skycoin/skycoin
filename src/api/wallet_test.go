@@ -857,12 +857,13 @@ func TestWalletTransactionsHandler(t *testing.T) {
 func TestWalletCreateHandler(t *testing.T) {
 	entries, responseEntries := makeEntries([]byte("seed"), 5)
 	type httpBody struct {
-		Seed     string
-		Label    string
-		ScanN    string
-		Encrypt  bool
-		Password string
-		Type     string
+		Seed           string
+		Label          string
+		ScanN          string
+		Encrypt        bool
+		Password       string
+		Type           string
+		SeedPassphrase string
 	}
 	tt := []struct {
 		name                      string
@@ -885,9 +886,19 @@ func TestWalletCreateHandler(t *testing.T) {
 			wltName: "foo",
 		},
 		{
-			name:    "400 - missing seed",
+			name:    "400 - missing type",
 			method:  http.MethodPost,
 			body:    &httpBody{},
+			status:  http.StatusBadRequest,
+			err:     "400 Bad Request - missing type",
+			wltName: "foo",
+		},
+		{
+			name:   "400 - missing seed",
+			method: http.MethodPost,
+			body: &httpBody{
+				Type: wallet.WalletTypeDeterministic,
+			},
 			status:  http.StatusBadRequest,
 			err:     "400 Bad Request - missing seed",
 			wltName: "foo",
@@ -896,6 +907,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			name:   "400 - missing label",
 			method: http.MethodPost,
 			body: &httpBody{
+				Type: wallet.WalletTypeDeterministic,
 				Seed: "foo",
 			},
 			status:  http.StatusBadRequest,
@@ -906,6 +918,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			name:   "400 - invalid scan value",
 			method: http.MethodPost,
 			body: &httpBody{
+				Type:  wallet.WalletTypeDeterministic,
 				Seed:  "foo",
 				Label: "bar",
 				ScanN: "bad scanN",
@@ -918,6 +931,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			name:   "400 - scan must be > 0",
 			method: http.MethodPost,
 			body: &httpBody{
+				Type:  wallet.WalletTypeDeterministic,
 				Seed:  "foo",
 				Label: "bar",
 				ScanN: "0",
@@ -930,6 +944,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			name:   "400 - seed in use",
 			method: http.MethodPost,
 			body: &httpBody{
+				Type:  wallet.WalletTypeDeterministic,
 				Seed:  "foo",
 				Label: "bar",
 				ScanN: "1",
@@ -937,6 +952,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			status: http.StatusBadRequest,
 			err:    "400 Bad Request - a wallet already exists with this seed",
 			options: wallet.Options{
+				Type:     wallet.WalletTypeDeterministic,
 				Label:    "bar",
 				Seed:     "foo",
 				Password: []byte{},
@@ -951,6 +967,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			name:   "500 - gateway.CreateWallet error",
 			method: http.MethodPost,
 			body: &httpBody{
+				Type:  wallet.WalletTypeDeterministic,
 				Seed:  "foo",
 				Label: "bar",
 				ScanN: "1",
@@ -958,6 +975,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			status: http.StatusInternalServerError,
 			err:    "500 Internal Server Error - gateway.CreateWallet error",
 			options: wallet.Options{
+				Type:     wallet.WalletTypeDeterministic,
 				Label:    "bar",
 				Seed:     "foo",
 				Password: []byte{},
@@ -972,6 +990,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			name:   "403 - Forbidden - wallet API disabled",
 			method: http.MethodPost,
 			body: &httpBody{
+				Type:  wallet.WalletTypeDeterministic,
 				Seed:  "foo",
 				Label: "bar",
 				ScanN: "2",
@@ -980,6 +999,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			err:     "403 Forbidden",
 			wltName: "filename",
 			options: wallet.Options{
+				Type:     wallet.WalletTypeDeterministic,
 				Label:    "bar",
 				Seed:     "foo",
 				Password: []byte{},
@@ -995,10 +1015,10 @@ func TestWalletCreateHandler(t *testing.T) {
 			name:   "200 - OK",
 			method: http.MethodPost,
 			body: &httpBody{
+				Type:  wallet.WalletTypeDeterministic,
 				Seed:  "foo",
 				Label: "bar",
 				ScanN: "2",
-				Type:  wallet.WalletTypeDeterministic,
 			},
 			status:  http.StatusOK,
 			err:     "",
@@ -1025,15 +1045,51 @@ func TestWalletCreateHandler(t *testing.T) {
 				Entries: responseEntries[:],
 			},
 		},
+		{
+			name:   "200 - OK - with seed passphrase",
+			method: http.MethodPost,
+			body: &httpBody{
+				Type:           wallet.WalletTypeBip44,
+				Seed:           "foo",
+				Label:          "bar",
+				ScanN:          "2",
+				SeedPassphrase: "foobar",
+			},
+			status:  http.StatusOK,
+			err:     "",
+			wltName: "filename",
+			options: wallet.Options{
+				Type:           wallet.WalletTypeBip44,
+				Label:          "bar",
+				Seed:           "foo",
+				Password:       []byte{},
+				ScanN:          2,
+				SeedPassphrase: "foobar",
+			},
+			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
+				return &wallet.DeterministicWallet{
+					Meta: wallet.Meta{
+						"filename": "filename",
+					},
+					Entries: cloneEntries(entries),
+				}
+			},
+			responseBody: WalletResponse{
+				Meta: readable.WalletMeta{
+					Filename: "filename",
+				},
+				Entries: responseEntries[:],
+			},
+		},
 		// CSRF Tests
 		{
 			name:   "200 - OK - CSRF disabled",
 			method: http.MethodPost,
 			body: &httpBody{
+				Type:  wallet.WalletTypeDeterministic,
 				Seed:  "foo",
 				Label: "bar",
 				ScanN: "2",
-				Type:  wallet.WalletTypeDeterministic,
 			},
 			status:  http.StatusOK,
 			err:     "",
@@ -1064,12 +1120,12 @@ func TestWalletCreateHandler(t *testing.T) {
 			name:   "200 - OK - Encrypted",
 			method: http.MethodPost,
 			body: &httpBody{
+				Type:     wallet.WalletTypeDeterministic,
 				Seed:     "foo",
 				Label:    "bar",
 				Encrypt:  true,
 				Password: "pwd",
 				ScanN:    "2",
-				Type:     wallet.WalletTypeDeterministic,
 			},
 			status:  http.StatusOK,
 			err:     "",
@@ -1105,6 +1161,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			name:   "400 Bad request - encrypt without password",
 			method: http.MethodPost,
 			body: &httpBody{
+				Type:    wallet.WalletTypeDeterministic,
 				Seed:    "foo",
 				Label:   "bar",
 				Encrypt: true,
@@ -1146,6 +1203,10 @@ func TestWalletCreateHandler(t *testing.T) {
 
 				if tc.body.Type != "" {
 					v.Add("type", tc.body.Type)
+				}
+
+				if tc.body.SeedPassphrase != "" {
+					v.Add("seed-passphrase", tc.body.SeedPassphrase)
 				}
 			}
 
@@ -2659,9 +2720,9 @@ func TestWalletRecover(t *testing.T) {
 				Seed: "fooseed",
 			},
 			gatewayReturn: gatewayReturnPair{
-				err: wallet.ErrWalletRecoverSeedOrPassphraseWrong,
+				err: wallet.ErrWalletRecoverSeedWrong,
 			},
-			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, wallet.ErrWalletRecoverSeedOrPassphraseWrong.Error()),
+			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, wallet.ErrWalletRecoverSeedWrong.Error()),
 		},
 		{
 			name:        "wallet does not exist",

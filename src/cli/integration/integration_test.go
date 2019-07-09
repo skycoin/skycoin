@@ -33,6 +33,7 @@ import (
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/util/file"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -1063,7 +1064,7 @@ func TestFiberAddressGen(t *testing.T) {
 			require.False(t, ok)
 			seedsMap[seed] = struct{}{}
 
-			// seed is a valid mnemoic
+			// seed is a valid mnemonic
 			err = bip39.ValidateMnemonic(seed)
 			require.NoError(t, err)
 
@@ -2684,6 +2685,7 @@ func TestStableWalletCreate(t *testing.T) {
 
 	tt := []struct {
 		name        string
+		filename    string
 		args        []string
 		setup       func(t *testing.T) func()
 		errMsg      []byte
@@ -2691,7 +2693,7 @@ func TestStableWalletCreate(t *testing.T) {
 	}{
 		{
 			name:  "generate wallet with -r option",
-			args:  []string{"-r"},
+			args:  []string{"-r", "-t", wallet.WalletTypeDeterministic},
 			setup: createTempWalletDir,
 			checkWallet: func(t *testing.T, w wallet.Wallet) {
 				// Confirms the default wallet name is skycoin_cli.wlt
@@ -2706,6 +2708,12 @@ func TestStableWalletCreate(t *testing.T) {
 			},
 		},
 		{
+			name:   "generate wallet with -r option bip44",
+			args:   []string{"-r", "-t", wallet.WalletTypeBip44},
+			setup:  createTempWalletDir,
+			errMsg: []byte("Error: -r can't be used for bip44 wallets\n"),
+		},
+		{
 			name:  "generate wallet with -m option",
 			args:  []string{"-m"},
 			setup: createTempWalletDir,
@@ -2713,10 +2721,13 @@ func TestStableWalletCreate(t *testing.T) {
 				// Confirms the default wallet name is skycoin_cli.wlt
 				require.Equal(t, "skycoin_cli.wlt", w.Filename())
 
-				// Confirms the seed is consisited of 12 words
+				// Confirms the seed has 12 words
 				seed := w.Seed()
 				words := strings.Split(seed, " ")
 				require.Len(t, words, 12)
+
+				err := bip39.ValidateMnemonic(seed)
+				require.NoError(t, err)
 
 				// Confirms the label is empty
 				require.Empty(t, w.Label())
@@ -2724,7 +2735,7 @@ func TestStableWalletCreate(t *testing.T) {
 		},
 		{
 			name:  "generate wallet with -s option",
-			args:  []string{"-s", "great duck trophy inhale dad pluck include maze smart mechanic ring merge"},
+			args:  []string{"-t", wallet.WalletTypeDeterministic, "-s", "great duck trophy inhale dad pluck include maze smart mechanic ring merge"},
 			setup: createTempWalletDir,
 			checkWallet: func(t *testing.T, w wallet.Wallet) {
 				// Confirms the default wallet name is skycoin_cli.wlt
@@ -2739,12 +2750,52 @@ func TestStableWalletCreate(t *testing.T) {
 			},
 		},
 		{
-			name:  "generate wallet with -n option",
-			args:  []string{"-n", "5"},
+			name:  "generate wallet with -s option bip44",
+			args:  []string{"-t", wallet.WalletTypeBip44, "-s", "great duck trophy inhale dad pluck include maze smart mechanic ring merge"},
 			setup: createTempWalletDir,
 			checkWallet: func(t *testing.T, w wallet.Wallet) {
 				// Confirms the default wallet name is skycoin_cli.wlt
 				require.Equal(t, "skycoin_cli.wlt", w.Filename())
+				// Confirms the label is empty
+				require.Empty(t, w.Label())
+
+				require.Equal(t, "great duck trophy inhale dad pluck include maze smart mechanic ring merge", w.Seed())
+				require.Equal(t, "skPFvAokn63RTHh8MR8cZuHUpzZiutFeks", w.GetEntryAt(0).Address.String())
+				require.Equal(t, "0381a3a0ed879eae12a612d24c73c39ff1d9f3c238e10ecf29c318db11e84e1143", w.GetEntryAt(0).Public.Hex())
+				require.Equal(t, "7519c63c890d593a11eeebfe4b4552f3d8a01094c086262e7c68a3e7adc61677", w.GetEntryAt(0).Secret.Hex())
+			},
+		},
+		{
+			name:  "generate wallet with -s option and seed-passphrase bip44",
+			args:  []string{"-t", wallet.WalletTypeBip44, "--seed-passphrase", "foobar", "-s", "great duck trophy inhale dad pluck include maze smart mechanic ring merge"},
+			setup: createTempWalletDir,
+			checkWallet: func(t *testing.T, w wallet.Wallet) {
+				// Confirms the default wallet name is skycoin_cli.wlt
+				require.Equal(t, "skycoin_cli.wlt", w.Filename())
+				// Confirms the label is empty
+				require.Empty(t, w.Label())
+
+				require.Equal(t, "foobar", w.SeedPassphrase())
+				require.Equal(t, "great duck trophy inhale dad pluck include maze smart mechanic ring merge", w.Seed())
+				require.Equal(t, "29bFTouyAtgRhdhHqiC6kccom3avjBpfnxS", w.GetEntryAt(0).Address.String())
+				require.Equal(t, "02dbaefd35105e27ac7428505186844dcb9472021a5fdfb057c106722f3396bdf6", w.GetEntryAt(0).Public.Hex())
+				require.Equal(t, "c2edb45b4c5c7828d6b879a163cb2bf016746e9c03efe5df24e9ded878b0b772", w.GetEntryAt(0).Secret.Hex())
+			},
+		},
+		{
+			name:   "generate wallet with -s option and seed-passphrase deterministic",
+			args:   []string{"-t", wallet.WalletTypeDeterministic, "--seed-passphrase", "foobar", "-s", "great duck trophy inhale dad pluck include maze smart mechanic ring merge"},
+			setup:  createTempWalletDir,
+			errMsg: []byte("Error: seedPassphrase is only used for \"bip44\" wallets\n"),
+		},
+		{
+			name:  "generate wallet with -n option, deterministic",
+			args:  []string{"-n", "5", "-t", wallet.WalletTypeDeterministic},
+			setup: createTempWalletDir,
+			checkWallet: func(t *testing.T, w wallet.Wallet) {
+				// Confirms the default wallet name is skycoin_cli.wlt
+				require.Equal(t, "skycoin_cli.wlt", w.Filename())
+				require.Equal(t, wallet.WalletTypeDeterministic, w.Type())
 				// Confirms the label is empty
 				require.Empty(t, w.Label())
 				// Confirms wallet has 5 address entries
@@ -2752,11 +2803,26 @@ func TestStableWalletCreate(t *testing.T) {
 			},
 		},
 		{
-			name:  "generate wallet with -f option",
-			args:  []string{"-f", "integration-cli.wlt"},
+			name:  "generate wallet with -n option",
+			args:  []string{"-n", "5"},
 			setup: createTempWalletDir,
 			checkWallet: func(t *testing.T, w wallet.Wallet) {
 				// Confirms the default wallet name is skycoin_cli.wlt
+				require.Equal(t, "skycoin_cli.wlt", w.Filename())
+				require.Equal(t, wallet.WalletTypeBip44, w.Type())
+				// Confirms the label is empty
+				require.Empty(t, w.Label())
+				// Confirms wallet has 5 address entries
+				require.Len(t, w.(*wallet.Bip44Wallet).ExternalEntries, 5)
+				require.Len(t, w.GetEntries(), 5)
+			},
+		},
+		{
+			name:     "generate wallet with -f option",
+			filename: "integration-cli.wlt",
+			args:     []string{"-f", "integration-cli.wlt"},
+			setup:    createTempWalletDir,
+			checkWallet: func(t *testing.T, w wallet.Wallet) {
 				require.Equal(t, "integration-cli.wlt", w.Filename())
 				// Confirms the label is empty
 				require.Empty(t, w.Label())
@@ -2809,6 +2875,10 @@ func TestStableWalletCreate(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			if tc.filename == "" {
+				tc.filename = "skycoin_cli.wlt"
+			}
+
 			clean := tc.setup(t)
 			defer clean()
 
@@ -2821,17 +2891,17 @@ func TestStableWalletCreate(t *testing.T) {
 				return
 			}
 
+			// os.Stdout should match the wallet written on disk
+			walletDir := os.Getenv("WALLET_DIR")
+			if walletDir == "" {
+				walletDir = filepath.Join(file.UserHome(), ".skycoin/wallets/")
+			}
+			fn := filepath.Join(walletDir, tc.filename)
+			contents, err := ioutil.ReadFile(fn)
 			require.NoError(t, err)
-			var rw wallet.ReadableDeterministicWallet
-			err = json.NewDecoder(bytes.NewReader(output)).Decode(&rw)
-			require.NoError(t, err)
+			require.Equal(t, append(contents, '\n'), output)
 
-			// Converts to wallet.Wallet
-			w, err := rw.ToWallet()
-			require.NoError(t, err)
-
-			// Validate the wallet
-			err = w.Validate()
+			w, err := wallet.Load(fn)
 			require.NoError(t, err)
 
 			if !w.IsEncrypted() {
@@ -2848,8 +2918,22 @@ func TestStableWalletCreate(t *testing.T) {
 // checkWalletEntriesAndLastSeed confirms the wallet entries and lastSeed are derivied
 // from the seed.
 func checkWalletEntriesAndLastSeed(t *testing.T, w wallet.Wallet) {
+	switch w.Type() {
+	case wallet.WalletTypeDeterministic:
+		checkWalletEntriesAndLastSeedDeterministic(t, w)
+	case wallet.WalletTypeBip44:
+		checkWalletEntriesAndLastSeedBip44(t, w)
+	case wallet.WalletTypeCollection:
+		checkWalletEntriesAndLastSeedCollection(t, w)
+	default:
+		t.Fatalf("unknown wallet type %q", w.Type())
+	}
+}
+
+func checkWalletEntriesAndLastSeedDeterministic(t *testing.T, w wallet.Wallet) {
 	seed := w.Seed()
 	require.NotEmpty(t, seed)
+
 	newSeed, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), w.EntriesLen())
 	require.Len(t, seckeys, w.EntriesLen())
 	for i, sk := range seckeys {
@@ -2857,9 +2941,34 @@ func checkWalletEntriesAndLastSeed(t *testing.T, w wallet.Wallet) {
 		pk := cipher.MustPubKeyFromSecKey(sk)
 		require.Equal(t, w.GetEntryAt(i).Public, pk)
 	}
+
 	lastSeed := w.LastSeed()
 	require.NotEmpty(t, lastSeed)
 	require.Equal(t, lastSeed, hex.EncodeToString(newSeed))
+
+	require.Empty(t, w.SeedPassphrase())
+}
+
+func checkWalletEntriesAndLastSeedBip44(t *testing.T, w wallet.Wallet) {
+	seed := w.Seed()
+	require.NotEmpty(t, seed)
+	// bip44 wallet seed must be a valid bip39 mnemonic
+	err := bip39.ValidateMnemonic(seed)
+	require.NoError(t, err)
+
+	for _, e := range w.GetEntries() {
+		require.False(t, e.Secret.Null())
+		require.False(t, e.Public.Null())
+	}
+
+	// lastSeed is only for "deterministic" type wallet
+	require.Empty(t, w.LastSeed())
+}
+
+func checkWalletEntriesAndLastSeedCollection(t *testing.T, w wallet.Wallet) {
+	require.Empty(t, w.Seed())
+	require.Empty(t, w.SeedPassphrase())
+	require.Empty(t, w.LastSeed())
 }
 
 // TestLiveGUIInjectTransaction does almost the same procedure as TestCreateAndBroadcastRawTransaction.

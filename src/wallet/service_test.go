@@ -60,7 +60,7 @@ func TestNewService(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			require.Equal(t, 9, len(s.wallets))
+			require.Equal(t, 10, len(s.wallets))
 
 		})
 	}
@@ -273,6 +273,24 @@ func TestServiceLoadWallet(t *testing.T) {
 		bip44Addrs[i] = cipher.MustDecodeBase58Address(a)
 	}
 
+	bip44SeedPassphrase := "foobar"
+	bip44SeedPassphraseAddrStrs := []string{
+		"n5SteDkkYdR3VJtMnVYcQ45L16rDDrseG8",
+		"mGeG2PDoU4nc9qE1FSSreAjFeKG12zDvur",
+		"rhbE3thvA747E81KfaYCujur7GKXjdhvS4",
+		"BDEmcU8u4oTf9domk19Nzh65MXoWLLUvJN",
+		"cubnvXGENW3gTdcdJADp8XEJaBscpy7gpq",
+		"wv37cSiVhjgo6Qrrs994UJ52YU2zWNGJbu",
+		"7aEzdSrcm1s2pm5YhshsRmkFy4EuYEnJ49",
+		"nQJgxEE2eaggUeGaA73e4DaXq6KAvUiaS4",
+		"2G9bhZaJrTKo1LScgtdvVXpQD4P8tKvgkvL",
+		"4RqFK3qLz26XbPjgJsiJ3587P7p6DesDHd",
+	}
+	bip44SeedPassphraseAddrs := make([]cipher.Address, len(bip44SeedPassphraseAddrStrs))
+	for i, a := range bip44SeedPassphraseAddrStrs {
+		bip44SeedPassphraseAddrs[i] = cipher.MustDecodeBase58Address(a)
+	}
+
 	tt := []struct {
 		name          string
 		opts          Options
@@ -409,6 +427,75 @@ func TestServiceLoadWallet(t *testing.T) {
 			err:           nil,
 			expectAddrNum: 2,
 			expectAddrs:   bip44Addrs[:2],
+		},
+
+		{
+			name: "bip44 with seed passphrase raw wallet address=1",
+			opts: Options{
+				Type:           WalletTypeBip44,
+				Seed:           bip44Seed,
+				SeedPassphrase: bip44SeedPassphrase,
+				Label:          "wallet",
+				ScanN:          5,
+			},
+			tf: mockTxnsFinder{
+				bip44SeedPassphraseAddrs[0]: true,
+			},
+			err:           nil,
+			expectAddrNum: 1,
+			expectAddrs:   bip44SeedPassphraseAddrs[:1],
+		},
+		{
+			name: "bip44 with seed passphrase raw wallet address=2",
+			opts: Options{
+				Type:           WalletTypeBip44,
+				Seed:           bip44Seed,
+				SeedPassphrase: bip44SeedPassphrase,
+				Label:          "wallet",
+				ScanN:          5,
+			},
+			tf: mockTxnsFinder{
+				bip44SeedPassphraseAddrs[1]: true,
+			},
+			err:           nil,
+			expectAddrNum: 2,
+			expectAddrs:   bip44SeedPassphraseAddrs[:2],
+		},
+		{
+			name: "bip44 with seed passphrase encrypted wallet address=1",
+			opts: Options{
+				Type:           WalletTypeBip44,
+				Seed:           bip44Seed,
+				SeedPassphrase: bip44SeedPassphrase,
+				Label:          "wallet",
+				Encrypt:        true,
+				Password:       []byte("pwd"),
+				ScanN:          5,
+			},
+			tf: mockTxnsFinder{
+				bip44SeedPassphraseAddrs[0]: true,
+			},
+			err:           nil,
+			expectAddrNum: 1,
+			expectAddrs:   bip44SeedPassphraseAddrs[:1],
+		},
+		{
+			name: "bip44 with seed passphrase encrypted wallet address=2",
+			opts: Options{
+				Type:           WalletTypeBip44,
+				Seed:           bip44Seed,
+				SeedPassphrase: bip44SeedPassphrase,
+				Label:          "wallet",
+				Encrypt:        true,
+				Password:       []byte("pwd"),
+				ScanN:          5,
+			},
+			tf: mockTxnsFinder{
+				bip44SeedPassphraseAddrs[1]: true,
+			},
+			err:           nil,
+			expectAddrNum: 2,
+			expectAddrs:   bip44SeedPassphraseAddrs[:2],
 		},
 	}
 
@@ -1053,7 +1140,7 @@ func TestServiceEncryptWallet(t *testing.T) {
 				// Add entries to the a bip44 wallet's change chain, to verify that those secrets are hidden
 				case WalletTypeBip44:
 					err := s.Update(w.Filename(), func(w Wallet) error {
-						_, err := w.(*Bip44Wallet).GenerateChangeAddress()
+						_, err := w.(*Bip44Wallet).GenerateChangeEntry()
 						return err
 					})
 					require.NoError(t, err)
@@ -1217,7 +1304,7 @@ func TestServiceDecryptWallet(t *testing.T) {
 		require.Empty(t, wlt.CryptoType())
 	}
 
-	verifyDecryptedCollectionWlt := func(tc testCase, wlt Wallet) {
+	verifyDecryptedCollectionWlt := func(_ testCase, wlt Wallet) {
 		// Checks the "encrypted" meta info
 		require.False(t, wlt.IsEncrypted())
 		require.Empty(t, wlt.Seed())
@@ -2173,6 +2260,20 @@ func TestGetWalletSeed(t *testing.T) {
 			pwd:           []byte("pwd"),
 		},
 		{
+			name:    "ok seed passphrase",
+			wltName: "wallet.wlt",
+			opts: Options{
+				Seed:           "seed",
+				SeedPassphrase: "seed-passphrase",
+				Label:          "label",
+				Encrypt:        true,
+				Password:       []byte("pwd"),
+			},
+			enableSeedAPI: true,
+			id:            "wallet.wlt",
+			pwd:           []byte("pwd"),
+		},
+		{
 			name:    "wallet does not exist",
 			wltName: "wallet.wlt",
 			opts: Options{
@@ -2215,7 +2316,7 @@ func TestGetWalletSeed(t *testing.T) {
 				require.NoError(t, err)
 
 				if tc.disableWalletAPI {
-					_, err = s.GetWalletSeed("", tc.pwd)
+					_, _, err = s.GetWalletSeed("", tc.pwd)
 					require.Equal(t, tc.expectErr, err)
 					return
 				}
@@ -2224,13 +2325,14 @@ func TestGetWalletSeed(t *testing.T) {
 				_, err = s.CreateWallet(tc.wltName, tc.opts, nil)
 				require.NoError(t, err)
 
-				seed, err := s.GetWalletSeed(tc.id, tc.pwd)
+				seed, seedPassphrase, err := s.GetWalletSeed(tc.id, tc.pwd)
 				require.Equal(t, tc.expectErr, err)
 				if err != nil {
 					return
 				}
 
 				require.Equal(t, tc.opts.Seed, seed)
+				require.Equal(t, tc.opts.SeedPassphrase, seedPassphrase)
 			})
 		}
 	}
@@ -2321,14 +2423,16 @@ func TestServiceView(t *testing.T) {
 			wltName:     "test-view-bip44-unencrypted.wlt",
 			viewWltName: "test-view-bip44-unencrypted.wlt",
 			opts: Options{
-				Label: "foowlt",
-				Type:  WalletTypeBip44,
-				Seed:  "voyage say extend find sheriff surge priority merit ignore maple cash argue",
+				Label:          "foowlt",
+				Type:           WalletTypeBip44,
+				Seed:           "voyage say extend find sheriff surge priority merit ignore maple cash argue",
+				SeedPassphrase: "foo",
 			},
 			action: func(t *testing.T) func(Wallet) error {
 				return func(w Wallet) error {
 					require.Equal(t, "foowlt", w.Label())
 					require.Equal(t, "voyage say extend find sheriff surge priority merit ignore maple cash argue", w.Seed())
+					require.Equal(t, "foo", w.SeedPassphrase())
 					require.Empty(t, w.LastSeed())
 
 					// Modify the wallet pointer in order to check that this references a clone and not the original
@@ -3025,6 +3129,7 @@ func TestServiceUpdateSecrets(t *testing.T) {
 func checkNoSensitiveData(t *testing.T, w Wallet) {
 	require.Empty(t, w.Seed())
 	require.Empty(t, w.LastSeed())
+	require.Empty(t, w.SeedPassphrase())
 	for _, e := range w.GetEntries() {
 		require.True(t, e.Secret.Null())
 	}

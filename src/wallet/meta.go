@@ -12,18 +12,19 @@ import (
 
 // wallet meta fields
 const (
-	metaVersion    = "version"    // wallet version
-	metaFilename   = "filename"   // wallet file name
-	metaLabel      = "label"      // wallet label
-	metaTimestamp  = "tm"         // the timestamp when creating the wallet
-	metaType       = "type"       // wallet type
-	metaCoin       = "coin"       // coin type
-	metaEncrypted  = "encrypted"  // whether the wallet is encrypted
-	metaCryptoType = "cryptoType" // encrytion/decryption type
-	metaSeed       = "seed"       // wallet seed
-	metaLastSeed   = "lastSeed"   // seed for generating next address
-	metaSecrets    = "secrets"    // secrets which records the encrypted seeds and secrets of address entries
-	metaBip44Coin  = "bip44_coin" // bip44 coin type
+	metaVersion        = "version"        // wallet version
+	metaFilename       = "filename"       // wallet file name
+	metaLabel          = "label"          // wallet label
+	metaTimestamp      = "tm"             // the timestamp when creating the wallet
+	metaType           = "type"           // wallet type
+	metaCoin           = "coin"           // coin type
+	metaEncrypted      = "encrypted"      // whether the wallet is encrypted
+	metaCryptoType     = "cryptoType"     // encrytion/decryption type
+	metaSeed           = "seed"           // wallet seed
+	metaLastSeed       = "lastSeed"       // seed for generating next address [deterministic wallets]
+	metaSecrets        = "secrets"        // secrets which records the encrypted seeds and secrets of address entries
+	metaBip44Coin      = "bip44Coin"      // bip44 coin type
+	metaSeedPassphrase = "seedPassphrase" // seed passphrase [bip44 wallets]
 )
 
 // Meta holds wallet metadata
@@ -41,6 +42,7 @@ func (m Meta) clone() Meta {
 func (m Meta) eraseSeeds() {
 	m.setSeed("")
 	m.setLastSeed("")
+	m.setSeedPassphrase("")
 }
 
 // validate validates the wallet
@@ -135,9 +137,9 @@ func (m Meta) validate() error {
 		}
 
 		if s := m[metaBip44Coin]; s == "" {
-			return errors.New("bip44_coin missing")
+			return errors.New("bip44Coin missing")
 		} else if _, err := strconv.ParseUint(s, 10, 32); err != nil {
-			return fmt.Errorf("bip44_coin invalid: %v", err)
+			return fmt.Errorf("bip44Coin invalid: %v", err)
 		}
 
 		if s := m[metaLastSeed]; s != "" {
@@ -208,6 +210,15 @@ func (m Meta) setSeed(seed string) {
 	m[metaSeed] = seed
 }
 
+// SeedPassphrase returns the seed passphrase
+func (m Meta) SeedPassphrase() string {
+	return m[metaSeedPassphrase]
+}
+
+func (m Meta) setSeedPassphrase(p string) {
+	m[metaSeedPassphrase] = p
+}
+
 // Coin returns the wallet's coin type
 func (m Meta) Coin() CoinType {
 	return CoinType(m[metaCoin])
@@ -218,12 +229,19 @@ func (m Meta) SetCoin(ct CoinType) {
 	m[metaCoin] = string(ct)
 }
 
-// bip44Coin returns the bip44 coin type
-func (m Meta) bip44Coin() bip44.CoinType {
-	x, err := strconv.ParseUint(m[metaBip44Coin], 10, 32)
-	if err != nil {
-		logger.Panic(err)
+// Bip44Coin returns the bip44 coin type
+func (m Meta) Bip44Coin() bip44.CoinType {
+	c := m[metaBip44Coin]
+	if c == "" {
+		logger.Critical().Error("wallet.Meta.Bip44Coin() is empty")
+		return bip44.CoinType(0)
 	}
+
+	x, err := strconv.ParseUint(c, 10, 32)
+	if err != nil {
+		logger.WithError(err).Panic()
+	}
+
 	return bip44.CoinType(x)
 }
 

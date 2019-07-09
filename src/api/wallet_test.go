@@ -862,6 +862,7 @@ func TestWalletCreateHandler(t *testing.T) {
 		ScanN    string
 		Encrypt  bool
 		Password string
+		Type     string
 	}
 	tt := []struct {
 		name                      string
@@ -997,11 +998,13 @@ func TestWalletCreateHandler(t *testing.T) {
 				Seed:  "foo",
 				Label: "bar",
 				ScanN: "2",
+				Type:  wallet.WalletTypeDeterministic,
 			},
 			status:  http.StatusOK,
 			err:     "",
 			wltName: "filename",
 			options: wallet.Options{
+				Type:     wallet.WalletTypeDeterministic,
 				Label:    "bar",
 				Seed:     "foo",
 				Password: []byte{},
@@ -1030,11 +1033,13 @@ func TestWalletCreateHandler(t *testing.T) {
 				Seed:  "foo",
 				Label: "bar",
 				ScanN: "2",
+				Type:  wallet.WalletTypeDeterministic,
 			},
 			status:  http.StatusOK,
 			err:     "",
 			wltName: "filename",
 			options: wallet.Options{
+				Type:     wallet.WalletTypeDeterministic,
 				Label:    "bar",
 				Seed:     "foo",
 				Password: []byte{},
@@ -1051,6 +1056,7 @@ func TestWalletCreateHandler(t *testing.T) {
 				Meta: readable.WalletMeta{
 					Filename: "filename",
 				},
+				Entries: []readable.WalletEntry{},
 			},
 			csrfDisabled: true,
 		},
@@ -1063,11 +1069,13 @@ func TestWalletCreateHandler(t *testing.T) {
 				Encrypt:  true,
 				Password: "pwd",
 				ScanN:    "2",
+				Type:     wallet.WalletTypeDeterministic,
 			},
 			status:  http.StatusOK,
 			err:     "",
 			wltName: "filename",
 			options: wallet.Options{
+				Type:     wallet.WalletTypeDeterministic,
 				Label:    "bar",
 				Seed:     "foo",
 				Encrypt:  true,
@@ -1090,6 +1098,7 @@ func TestWalletCreateHandler(t *testing.T) {
 					Label:     "bar",
 					Encrypted: true,
 				},
+				Entries: []readable.WalletEntry{},
 			},
 		},
 		{
@@ -1133,6 +1142,10 @@ func TestWalletCreateHandler(t *testing.T) {
 
 				if tc.body.Password != "" {
 					v.Add("password", tc.body.Password)
+				}
+
+				if tc.body.Type != "" {
+					v.Add("type", tc.body.Type)
 				}
 			}
 
@@ -1419,17 +1432,17 @@ func TestVerifySeed(t *testing.T) {
 }
 
 func TestGetWalletSeed(t *testing.T) {
-
 	tt := []struct {
-		name              string
-		method            string
-		wltID             string
-		password          string
-		gatewayReturnArgs []interface{}
-		expectStatus      int
-		expectSeed        string
-		expectErr         string
-		csrfDisabled      bool
+		name                 string
+		method               string
+		wltID                string
+		password             string
+		gatewayReturnArgs    []interface{}
+		expectStatus         int
+		expectSeed           string
+		expectSeedPassphrase string
+		expectErr            string
+		csrfDisabled         bool
 	}{
 		{
 			name:     "200 - OK",
@@ -1438,10 +1451,12 @@ func TestGetWalletSeed(t *testing.T) {
 			password: "pwd",
 			gatewayReturnArgs: []interface{}{
 				"seed",
+				"seed-passphrase",
 				nil,
 			},
-			expectStatus: http.StatusOK,
-			expectSeed:   "seed",
+			expectStatus:         http.StatusOK,
+			expectSeed:           "seed",
+			expectSeedPassphrase: "seed-passphrase",
 		},
 		{
 			name:     "200 - OK - CSRF disabled",
@@ -1450,11 +1465,13 @@ func TestGetWalletSeed(t *testing.T) {
 			password: "pwd",
 			gatewayReturnArgs: []interface{}{
 				"seed",
+				"",
 				nil,
 			},
-			expectStatus: http.StatusOK,
-			expectSeed:   "seed",
-			csrfDisabled: true,
+			expectStatus:         http.StatusOK,
+			expectSeed:           "seed",
+			expectSeedPassphrase: "",
+			csrfDisabled:         true,
 		},
 		{
 			name:     "400 - missing wallet id ",
@@ -1463,6 +1480,7 @@ func TestGetWalletSeed(t *testing.T) {
 			password: "pwd",
 			gatewayReturnArgs: []interface{}{
 				"seed",
+				"",
 				nil,
 			},
 			expectStatus: http.StatusBadRequest,
@@ -1474,6 +1492,7 @@ func TestGetWalletSeed(t *testing.T) {
 			wltID:    "wallet.wlt",
 			password: "",
 			gatewayReturnArgs: []interface{}{
+				"",
 				"",
 				wallet.ErrMissingPassword,
 			},
@@ -1487,6 +1506,7 @@ func TestGetWalletSeed(t *testing.T) {
 			password: "pwd",
 			gatewayReturnArgs: []interface{}{
 				"",
+				"",
 				wallet.ErrInvalidPassword,
 			},
 			expectStatus: http.StatusBadRequest,
@@ -1499,6 +1519,7 @@ func TestGetWalletSeed(t *testing.T) {
 			password: "pwd",
 			gatewayReturnArgs: []interface{}{
 				"",
+				"",
 				wallet.ErrWalletNotEncrypted,
 			},
 			expectStatus: http.StatusBadRequest,
@@ -1510,6 +1531,7 @@ func TestGetWalletSeed(t *testing.T) {
 			wltID:    "wallet.wlt",
 			password: "pwd",
 			gatewayReturnArgs: []interface{}{
+				"",
 				"",
 				wallet.ErrWalletNotExist,
 			},
@@ -1557,12 +1579,11 @@ func TestGetWalletSeed(t *testing.T) {
 			if status != http.StatusOK {
 				require.Equal(t, tc.expectErr, strings.TrimSpace(rr.Body.String()))
 			} else {
-				var r struct {
-					Seed string `json:"seed"`
-				}
+				var r WalletSeedResponse
 				err := json.Unmarshal(rr.Body.Bytes(), &r)
 				require.NoError(t, err)
 				require.Equal(t, tc.expectSeed, r.Seed)
+				require.Equal(t, tc.expectSeedPassphrase, r.SeedPassphrase)
 			}
 		})
 	}
@@ -2536,6 +2557,7 @@ func TestWalletRecover(t *testing.T) {
 	}
 
 	okWalletUnencrypted, err := wallet.NewWallet("foo", wallet.Options{
+		Type:      wallet.WalletTypeDeterministic,
 		Coin:      wallet.CoinTypeSkycoin,
 		Label:     "foolabel",
 		Seed:      "fooseed",
@@ -2546,6 +2568,7 @@ func TestWalletRecover(t *testing.T) {
 	require.NoError(t, err)
 
 	okWalletEncrypted, err := wallet.NewWallet("foo", wallet.Options{
+		Type:       wallet.WalletTypeDeterministic,
 		Coin:       wallet.CoinTypeSkycoin,
 		Label:      "foolabel",
 		Seed:       "fooseed",
@@ -2699,6 +2722,23 @@ func TestWalletRecover(t *testing.T) {
 			},
 		},
 		{
+			name:        "ok, seed passphrase, no password",
+			method:      http.MethodPost,
+			status:      http.StatusOK,
+			contentType: ContentTypeJSON,
+			req: &WalletRecoverRequest{
+				ID:             "foo",
+				Seed:           "fooseed",
+				SeedPassphrase: "fooseedpassphrase",
+			},
+			gatewayReturn: gatewayReturnPair{
+				w: okWalletUnencrypted,
+			},
+			httpResponse: HTTPResponse{
+				Data: *okWalletUnencryptedResponse,
+			},
+		},
+		{
 			name:        "ok, password",
 			method:      http.MethodPost,
 			status:      http.StatusOK,
@@ -2725,7 +2765,7 @@ func TestWalletRecover(t *testing.T) {
 				if tc.req.Password != "" {
 					password = []byte(tc.req.Password)
 				}
-				gateway.On("RecoverWallet", tc.req.ID, tc.req.Seed, password).Return(tc.gatewayReturn.w, tc.gatewayReturn.err)
+				gateway.On("RecoverWallet", tc.req.ID, tc.req.Seed, tc.req.SeedPassphrase, password).Return(tc.gatewayReturn.w, tc.gatewayReturn.err)
 			}
 
 			if tc.httpBody == "" && tc.req != nil {

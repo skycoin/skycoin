@@ -109,11 +109,17 @@ func (wlts Wallets) containsDuplicate() (string, string, bool) {
 // Does not apply to collection wallets
 func (wlts Wallets) containsEmpty() (string, bool) {
 	for wltID, wlt := range wlts {
-		if wlt.Type() == WalletTypeCollection {
+		switch wlt.Type() {
+		case WalletTypeCollection:
 			continue
-		}
-		if wlt.EntriesLen() == 0 {
-			return wltID, true
+		case WalletTypeDeterministic:
+			if wlt.EntriesLen() == 0 {
+				return wltID, true
+			}
+		case WalletTypeBip44:
+			if len(wlt.(*Bip44Wallet).ExternalEntries) == 0 {
+				return wltID, true
+			}
 		}
 	}
 	return "", false

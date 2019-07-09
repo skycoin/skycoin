@@ -604,7 +604,7 @@ Args:
     id: Wallet ID [required]
 ```
 
-Example:
+Example ("deterministic" wallet):
 
 ```sh
 curl http://127.0.0.1:6420/api/v1/wallet?id=2017_11_25_e5fb.wlt
@@ -636,6 +636,51 @@ Result:
     ]
 }
 ```
+
+Example ("bip44" wallet):
+
+```sh
+curl http://127.0.0.1:6420/api/v1/wallet?id=2017_11_25_e5fb.wlt
+```
+
+Result:
+
+```json
+{
+    "meta": {
+        "coin": "skycoin",
+        "filename": "2017_11_25_e5fb.wlt",
+        "label": "test",
+        "type": "bip44",
+        "version": "0.3",
+        "crypto_type": "",
+        "timestamp": 1511640884,
+        "encrypted": false,
+    	"bip44_coin": 8000,
+    },
+    "entries": [
+        {
+            "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1",
+            "child_number": 0,
+            "change": 0
+        },
+        {
+            "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
+            "public_key": "02539528248a1a2c4f0b73233491103ca83b40249dac3ae9eee9a10b9f9debd9a3",
+            "child_number": 1,
+            "change": 0
+        },
+        {
+            "address": "8C5icxR9zdkYTZZTVV3cCX7QoK4EkLuK4p",
+            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1",
+            "child_number": 0,
+            "change": 1
+        }
+    ]
+}
+```
+
 
 ### Get unconfirmed transactions of a wallet
 
@@ -917,18 +962,21 @@ URI: /api/v1/wallet/create
 Method: POST
 Args:
     seed: wallet seed [required]
+    seed-passphrase: wallet seed passphrase [optional, bip44 type wallet only]
+    type: wallet type [optional, one of "deterministic" or "bip44", default "bip44"]
     label: wallet label [required]
     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
     encrypt: encrypt wallet [optional, bool value]
     password: wallet password [optional, must be provided if encrypt is true]
 ```
 
-Example:
+Example (deterministic):
 
 ```sh
 curl -X POST http://127.0.0.1:6420/api/v1/wallet/create \
  -H 'Content-Type: application/x-www-form-urlencoded' \
  -d 'seed=$seed' \
+ -d 'type=deterministic' \
  -d 'label=$label' \
  -d 'scan=5' \
  -d 'password=$password'
@@ -943,7 +991,7 @@ Result:
         "filename": "2017_05_09_d554.wlt",
         "label": "test",
         "type": "deterministic",
-        "version": "0.2",
+        "version": "0.3",
         "crypto_type": "",
         "timestamp": 1511640884,
         "encrypted": false
@@ -957,6 +1005,44 @@ Result:
 }
 ```
 
+Example (bip44):
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v1/wallet/create \
+ -H 'Content-Type: application/x-www-form-urlencoded' \
+ -d 'seed=$seed' \
+ -d 'seed-passphrase=$seed' \
+ -d 'type=bip44' \
+ -d 'label=$label' \
+ -d 'scan=5' \
+ -d 'password=$password'
+```
+
+Result:
+
+```json
+{
+    "meta": {
+        "coin": "skycoin",
+        "filename": "2017_05_09_d554.wlt",
+        "label": "test",
+        "type": "bip44",
+        "version": "0.3",
+        "crypto_type": "scrypt-chacha20poly1305",
+        "timestamp": 1511640884,
+        "encrypted": true,
+        "bip44_coin": 8000,
+    },
+    "entries": [
+        {
+            "address": "y2JeYS4RS8L9GYM7UKdjLRyZanKHXumFoH",
+            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1"
+        }
+    ]
+}
+```
+
+
 ### Generate new address in wallet
 
 API sets: `WALLET`
@@ -969,6 +1055,8 @@ Args:
     num: the number you want to generate
     password: wallet password
 ```
+
+For `bip44` type wallets, the new addresses will be generated on the `external` chain (`change=0`).
 
 Example:
 
@@ -1123,6 +1211,11 @@ The request body includes:
 * A list of destinations with address and coins specified, as well as optionally specifying hours
 * A configuration for how destination hours are distributed, either manual or automatic
 * Additional options
+
+`change_address` is optional. If not provided and the wallet is a `deterministic` type
+wallet, then the change address will default to an address from one of the
+unspent outputs being spent as a transaction input.  If the wallet is a `bip44` type
+wallet, then a new, unused change address will be created.
 
 Example request body with manual hours selection type, unencrypted wallet and all wallet addresses may spend:
 
@@ -1585,7 +1678,11 @@ Args:
     password: wallet password
 ```
 
-This endpoint only works for encrypted wallets. If the wallet is unencrypted, the seed will not be returned.
+This endpoint only works for encrypted wallets.
+If the wallet is unencrypted, the seed will not be returned.
+
+If the wallet is of type `bip44` and has a seed passphrase, it will be included
+in the response. Otherwise, the seed passphrase will be missing.
 
 Example:
 
@@ -1600,7 +1697,8 @@ Result:
 
 ```json
 {
-    "seed": "your wallet seed"
+    "seed": "your wallet seed",
+    "seed_passphrase": "your optional wallet seed-passphrase"
 }
 ```
 
@@ -1614,17 +1712,18 @@ Method: POST
 Args:
     id: wallet id
     seed: wallet seed
+    seed passphrase: wallet seed passphrase (bip44 wallets only)
     password: [optional] password to encrypt the recovered wallet with
 ```
 
-Recovers an encrypted wallet by providing the wallet seed.
+Recovers an encrypted wallet by providing the wallet seed and optional seed passphrase.
 
 Example:
 
 ```sh
 curl -X POST http://127.0.0.1/api/v2/wallet/recover
  -H 'Content-Type: application/json' \
- -d '{"id":"2017_11_25_e5fb.wlt","seed":"your wallet seed"}'
+ -d '{"id":"2017_11_25_e5fb.wlt","seed":"your wallet seed","seed_passphrase":"your seed passphrase"}'
 ```
 
 Result:
@@ -1915,8 +2014,9 @@ in the transaction.
 If `ignore_unconfirmed` is true, the transaction will not use any outputs which are being spent by an unconfirmed transaction.
 If `ignore_unconfirmed` is false, the endpoint returns an error if any unspent output is spent by an unconfirmed transaction.
 
-`change_address` is optional. If not provided, the change address will default
-to an address from one of the unspent outputs being spent as a transaction input.
+`change_address` is optional. If not provided then the change address will
+default to an address from one of the
+unspent outputs being spent as a transaction input.
 
 Refer to `POST /api/v1/wallet/transaction` for creating a transaction from a specific wallet.
 

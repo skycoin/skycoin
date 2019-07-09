@@ -640,9 +640,11 @@ func (c *Client) Wallets() ([]WalletResponse, error) {
 // CreateUnencryptedWallet makes a request to POST /api/v1/wallet/create and creates
 // a wallet without encryption.
 // If scanN is <= 0, the scan number defaults to 1
-func (c *Client) CreateUnencryptedWallet(seed, label string, scanN int) (*WalletResponse, error) {
+func (c *Client) CreateUnencryptedWallet(walletType, seed, seedPassphrase, label string, scanN int) (*WalletResponse, error) {
 	v := url.Values{}
+	v.Add("type", walletType)
 	v.Add("seed", seed)
+	v.Add("seed-passphrase", seedPassphrase)
 	v.Add("label", label)
 	v.Add("encrypt", "false")
 
@@ -660,9 +662,11 @@ func (c *Client) CreateUnencryptedWallet(seed, label string, scanN int) (*Wallet
 // CreateEncryptedWallet makes a request to POST /api/v1/wallet/create and try to create
 // a wallet with encryption.
 // If scanN is <= 0, the scan number defaults to 1
-func (c *Client) CreateEncryptedWallet(seed, label, password string, scanN int) (*WalletResponse, error) {
+func (c *Client) CreateEncryptedWallet(walletType, seed, seedPassphrase, label, password string, scanN int) (*WalletResponse, error) {
 	v := url.Values{}
+	v.Add("type", walletType)
 	v.Add("seed", seed)
+	v.Add("seed-passphrase", seedPassphrase)
 	v.Add("label", label)
 	v.Add("encrypt", "true")
 	v.Add("password", password)
@@ -849,19 +853,17 @@ func (c *Client) VerifySeed(seed string) (bool, error) {
 }
 
 // WalletSeed makes a request to POST /api/v1/wallet/seed
-func (c *Client) WalletSeed(id string, password string) (string, error) {
+func (c *Client) WalletSeed(id string, password string) (*WalletSeedResponse, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	v.Add("password", password)
 
-	var r struct {
-		Seed string `json:"seed"`
-	}
+	var r WalletSeedResponse
 	if err := c.PostForm("/api/v1/wallet/seed", strings.NewReader(v.Encode()), &r); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return r.Seed, nil
+	return &r, nil
 }
 
 // NetworkConnection makes a request to GET /api/v1/network/connection
@@ -1238,13 +1240,7 @@ func (c *Client) DecryptWallet(id, password string) (*WalletResponse, error) {
 // RecoverWallet makes a request to POST /api/v2/ wallet/recover to recover an encrypted wallet by seed.
 // The password argument is optional, if provided, the recovered wallet will be encrypted with this password,
 // otherwise the recovered wallet will be unencrypted.
-func (c *Client) RecoverWallet(id, seed, password string) (*WalletResponse, error) {
-	req := WalletRecoverRequest{
-		ID:       id,
-		Seed:     seed,
-		Password: password,
-	}
-
+func (c *Client) RecoverWallet(req WalletRecoverRequest) (*WalletResponse, error) {
 	var rsp WalletResponse
 	ok, err := c.PostJSONV2("/api/v2/wallet/recover", req, &rsp)
 	if ok {

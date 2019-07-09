@@ -70,16 +70,16 @@ var (
 	ErrSeedAPIDisabled = NewError(errors.New("wallet seed api is disabled"))
 	// ErrWalletNameConflict represents the wallet name conflict error
 	ErrWalletNameConflict = NewError(errors.New("wallet name would conflict with existing wallet, renaming"))
-	// ErrWalletRecoverSeedWrong is returned if the seed does not match the specified wallet when recovering
-	ErrWalletRecoverSeedWrong = NewError(errors.New("wallet recovery seed is wrong"))
+	// ErrWalletRecoverSeedWrong is returned if the seed or seed passphrase does not match the specified wallet when recovering
+	ErrWalletRecoverSeedWrong = NewError(errors.New("wallet recovery seed or seed passphrase is wrong"))
 	// ErrNilTransactionsFinder is returned if Options.ScanN > 0 but a nil TransactionsFinder was provided
 	ErrNilTransactionsFinder = NewError(errors.New("scan ahead requested but balance getter is nil"))
-	// ErrWalletNotDeterministic is returned if a wallet's type is not deterministic but it is necessary for the requested operation
-	ErrWalletNotDeterministic = NewError(errors.New("wallet type is not deterministic"))
 	// ErrInvalidCoinType is returned for invalid coin types
 	ErrInvalidCoinType = NewError(errors.New("invalid coin type"))
 	// ErrInvalidWalletType is returned for invalid wallet types
 	ErrInvalidWalletType = NewError(errors.New("invalid wallet type"))
+	// ErrWalletTypeNotRecoverable is returned by RecoverWallet is the wallet type does not support recovery
+	ErrWalletTypeNotRecoverable = NewError(errors.New("wallet type is not recoverable"))
 )
 
 const (
@@ -104,7 +104,7 @@ const (
 	// Follow the bip44 spec.
 	WalletTypeBip44 = "bip44"
 	// DefaultWalletType is the default type used for new wallets
-	DefaultWalletType = WalletTypeDeterministic
+	DefaultWalletType = WalletTypeBip44
 )
 
 // ResolveCoinType normalizes a coin type string to a CoinType constant
@@ -142,16 +142,17 @@ func NewWalletFilename() string {
 
 // Options options that could be used when creating a wallet
 type Options struct {
-	Type       string         // wallet type: deterministic, collection. Refers to which key generation mechanism is used.
-	Coin       CoinType       // coin type: skycoin, bitcoin, etc. Refers to which pubkey2addr method is used.
-	Bip44Coin  bip44.CoinType // bip44 path coin type
-	Label      string         // wallet label.
-	Seed       string         // wallet seed.
-	Encrypt    bool           // whether the wallet need to be encrypted.
-	Password   []byte         // password that would be used for encryption, and would only be used when 'Encrypt' is true.
-	CryptoType CryptoType     // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
-	ScanN      uint64         // number of addresses that're going to be scanned for a balance. The highest address with a balance will be used.
-	GenerateN  uint64         // number of addresses to generate, regardless of balance
+	Type           string         // wallet type: deterministic, collection. Refers to which key generation mechanism is used.
+	Coin           CoinType       // coin type: skycoin, bitcoin, etc. Refers to which pubkey2addr method is used.
+	Bip44Coin      bip44.CoinType // bip44 path coin type
+	Label          string         // wallet label
+	Seed           string         // wallet seed
+	SeedPassphrase string         // wallet seed passphrase (bip44 wallets only)
+	Encrypt        bool           // whether the wallet need to be encrypted.
+	Password       []byte         // password that would be used for encryption, and would only be used when 'Encrypt' is true.
+	CryptoType     CryptoType     // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
+	ScanN          uint64         // number of addresses that're going to be scanned for a balance. The highest address with a balance will be used.
+	GenerateN      uint64         // number of addresses to generate, regardless of balance
 }
 
 // newWallet creates a wallet instance with given name and options.
@@ -180,6 +181,10 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 				opts.Bip44Coin = bip44.CoinTypeSkycoin
 			}
 		}
+	}
+
+	if opts.SeedPassphrase != "" && wltType != WalletTypeBip44 {
+		return nil, NewError(fmt.Errorf("seedPassphrase is only used for %q wallets", WalletTypeBip44))
 	}
 
 	switch wltType {
@@ -211,17 +216,18 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 	}
 
 	meta := Meta{
-		metaFilename:   wltName,
-		metaVersion:    Version,
-		metaLabel:      opts.Label,
-		metaSeed:       opts.Seed,
-		metaLastSeed:   lastSeed,
-		metaTimestamp:  strconv.FormatInt(time.Now().Unix(), 10),
-		metaType:       wltType,
-		metaCoin:       string(coin),
-		metaEncrypted:  "false",
-		metaCryptoType: "",
-		metaSecrets:    "",
+		metaFilename:       wltName,
+		metaVersion:        Version,
+		metaLabel:          opts.Label,
+		metaSeed:           opts.Seed,
+		metaLastSeed:       lastSeed,
+		metaSeedPassphrase: opts.SeedPassphrase,
+		metaTimestamp:      strconv.FormatInt(time.Now().Unix(), 10),
+		metaType:           wltType,
+		metaCoin:           string(coin),
+		metaEncrypted:      "false",
+		metaCryptoType:     "",
+		metaSecrets:        "",
 	}
 
 	// Create the wallet
@@ -449,9 +455,11 @@ type Wallet interface {
 	Find(string) string
 	Seed() string
 	LastSeed() string
+	SeedPassphrase() string
 	Timestamp() int64
 	SetTimestamp(int64)
 	Coin() CoinType
+	Bip44Coin() bip44.CoinType
 	Type() string
 	Label() string
 	SetLabel(string)

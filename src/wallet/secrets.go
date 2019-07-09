@@ -3,8 +3,9 @@ package wallet
 import "encoding/json"
 
 const (
-	secretSeed     = "seed"
-	secretLastSeed = "lastSeed"
+	secretSeed           = "seed"
+	secretLastSeed       = "lastSeed"
+	secretSeedPassphrase = "seedPassphrase"
 )
 
 // Secrets hold secret data, to be encrypted

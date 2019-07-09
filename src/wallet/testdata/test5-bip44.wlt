@@ -1,6 +1,6 @@
 {
     "meta": {
-        "bip44_coin": "8000",
+        "bip44Coin": "8000",
         "coin": "skycoin",
         "cryptoType": "",
         "encrypted": "false",

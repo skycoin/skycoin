@@ -281,11 +281,11 @@ func TestNewWallet(t *testing.T) {
 			},
 			expect: expect{
 				meta: map[string]string{
-					"label":      "bip44wallet1",
-					"coin":       string(CoinTypeSkycoin),
-					"type":       string(WalletTypeBip44),
-					"version":    Version,
-					"bip44_coin": "8000",
+					"label":     "bip44wallet1",
+					"coin":      string(CoinTypeSkycoin),
+					"type":      string(WalletTypeBip44),
+					"version":   Version,
+					"bip44Coin": "8000",
 				},
 			},
 		},

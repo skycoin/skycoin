@@ -35,6 +35,7 @@ func newBip44Wallet(meta Meta) *Bip44Wallet {
 // PackSecrets copies data from decrypted wallets into the secrets container
 func (w *Bip44Wallet) PackSecrets(ss Secrets) {
 	ss.set(secretSeed, w.Meta.Seed())
+	ss.set(secretSeedPassphrase, w.Meta.SeedPassphrase())
 
 	// Saves entry secret keys in secrets
 	for _, e := range w.ExternalEntries {
@@ -52,6 +53,9 @@ func (w *Bip44Wallet) UnpackSecrets(ss Secrets) error {
 		return errors.New("seed doesn't exist in secrets")
 	}
 	w.Meta.setSeed(seed)
+
+	passphrase, _ := ss.get(secretSeedPassphrase)
+	w.Meta.setSeedPassphrase(passphrase)
 
 	if err := w.ExternalEntries.unpackSecretKeys(ss); err != nil {
 		return err
@@ -113,6 +117,9 @@ func (w *Bip44Wallet) GetSkycoinAddresses() ([]cipher.Address, error) {
 
 // GetEntries returns a copy of all entries held by the wallet
 func (w *Bip44Wallet) GetEntries() Entries {
+	if w.EntriesLen() == 0 {
+		return nil
+	}
 	return append(w.ExternalEntries.clone(), w.ChangeEntries.clone()...)
 }
 
@@ -170,8 +177,7 @@ func (w *Bip44Wallet) generateEntries(num uint64, changeIdx, initialChildIdx uin
 	}
 
 	// w.Meta.Seed() must return a valid bip39 mnemonic
-	// TODO -- support seed passphrases
-	seed, err := bip39.NewSeed(w.Meta.Seed(), "")
+	seed, err := bip39.NewSeed(w.Meta.Seed(), w.Meta.SeedPassphrase())
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +188,7 @@ func (w *Bip44Wallet) generateEntries(num uint64, changeIdx, initialChildIdx uin
 	// field is always "skycoin" for all fiber coins
 	// - Add API control to allow custom paths to be added
 	// - Use fiber.toml to configure the default bip44 coin type
-	c, err := bip44.NewCoin(seed, w.Meta.bip44Coin())
+	c, err := bip44.NewCoin(seed, w.Meta.Bip44Coin())
 	if err != nil {
 		logger.Critical().WithError(err).Error("Failed to derive the bip44 purpose node")
 		if bip32.IsImpossibleChildError(err) {
@@ -271,16 +277,31 @@ func (w *Bip44Wallet) generateEntries(num uint64, changeIdx, initialChildIdx uin
 	return entries, nil
 }
 
-// GenerateChangeAddress creates, appends and returns an entry for the change chain
-func (w *Bip44Wallet) GenerateChangeAddress() (cipher.Addresser, error) {
+// PeekChangeEntry creates and returns an entry for the change chain.
+// If used, the caller the append it with GenerateChangeEntry
+func (w *Bip44Wallet) PeekChangeEntry() (Entry, error) {
 	entries, err := w.generateEntries(1, bip44.ChangeChainIndex, w.nextChildIdx(w.ChangeEntries))
 	if err != nil {
-		return nil, err
+		return Entry{}, err
 	}
 
-	w.ChangeEntries = append(w.ChangeEntries, entries...)
+	if len(entries) == 0 {
+		return Entry{}, NewError(errors.New("PeekChangeEntry: no more change addresses"))
+	}
 
-	return entries[0].Address, nil
+	return entries[0], nil
+}
+
+// GenerateChangeEntry creates, appends and returns an entry for the change chain
+func (w *Bip44Wallet) GenerateChangeEntry() (Entry, error) {
+	e, err := w.PeekChangeEntry()
+	if err != nil {
+		return Entry{}, err
+	}
+
+	w.ChangeEntries = append(w.ChangeEntries, Entries{e}...)
+
+	return e, nil
 }
 
 // GenerateAddresses generates addresses for the external chain, and appends them to the wallet's entries array

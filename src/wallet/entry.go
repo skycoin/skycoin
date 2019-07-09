@@ -14,6 +14,7 @@ type Entry struct {
 	Public      cipher.PubKey
 	Secret      cipher.SecKey
 	ChildNumber uint32 // For bip32/bip44
+	Change      uint32 // For bip44
 }
 
 // SkycoinAddress returns the Skycoin address of an entry. Panics if Address is not a Skycoin address
@@ -53,6 +54,9 @@ func (we *Entry) VerifyPublic() error {
 type Entries []Entry
 
 func (entries Entries) clone() Entries {
+	if len(entries) == 0 {
+		return nil
+	}
 	return append(Entries{}, entries...)
 }
 

@@ -369,37 +369,38 @@ func (serv *Service) setWallets(wlts Wallets) {
 	}
 }
 
-// GetWalletSeed returns seed of encrypted wallet of given wallet id
+// GetWalletSeed returns seed and seed passphrase of encrypted wallet of given wallet id
 // Returns ErrWalletNotEncrypted if it's not encrypted
-func (serv *Service) GetWalletSeed(wltID string, password []byte) (string, error) {
+func (serv *Service) GetWalletSeed(wltID string, password []byte) (string, string, error) {
 	serv.RLock()
 	defer serv.RUnlock()
 	if !serv.config.EnableWalletAPI {
-		return "", ErrWalletAPIDisabled
+		return "", "", ErrWalletAPIDisabled
 	}
 
 	if !serv.config.EnableSeedAPI {
-		return "", ErrSeedAPIDisabled
+		return "", "", ErrSeedAPIDisabled
 	}
 
 	w, err := serv.getWallet(wltID)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if !w.IsEncrypted() {
-		return "", ErrWalletNotEncrypted
+		return "", "", ErrWalletNotEncrypted
 	}
 
-	var seed string
+	var seed, seedPassphrase string
 	if err := GuardView(w, password, func(wlt Wallet) error {
 		seed = wlt.Seed()
+		seedPassphrase = wlt.SeedPassphrase()
 		return nil
 	}); err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	return seed, nil
+	return seed, seedPassphrase, nil
 }
 
 // UpdateSecrets opens a wallet for modification of secret data and saves it safely
@@ -504,7 +505,7 @@ func (serv *Service) View(wltID string, f func(Wallet) error) error {
 
 // RecoverWallet recovers an encrypted wallet from seed.
 // The recovered wallet will be encrypted with the new password, if provided.
-func (serv *Service) RecoverWallet(wltName, seed string, password []byte) (Wallet, error) {
+func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string, password []byte) (Wallet, error) {
 	serv.Lock()
 	defer serv.Unlock()
 	if !serv.config.EnableWalletAPI {
@@ -520,46 +521,54 @@ func (serv *Service) RecoverWallet(wltName, seed string, password []byte) (Walle
 		return nil, ErrWalletNotEncrypted
 	}
 
-	if w.Type() != WalletTypeDeterministic {
-		return nil, ErrWalletNotDeterministic
+	switch w.Type() {
+	case WalletTypeDeterministic, WalletTypeBip44:
+	default:
+		return nil, ErrWalletTypeNotRecoverable
 	}
 
-	// Generate the first address from the seed
-	var pk cipher.PubKey
-	pk, _, err = cipher.GenerateDeterministicKeyPair([]byte(seed))
+	// Create a wallet from this seed and compare the fingerprint
+	w2, err := NewWallet(wltName, Options{
+		Type:           w.Type(),
+		Coin:           w.Coin(),
+		Seed:           seed,
+		SeedPassphrase: seedPassphrase,
+		GenerateN:      1,
+	})
 	if err != nil {
+		err = NewError(fmt.Errorf("RecoverWallet failed to create temporary wallet for fingerprint comparison: %v", err))
+		logger.Critical().WithError(err).Error()
 		return nil, err
 	}
-	addr := w.AddressConstructor()(pk)
-
-	// Compare to the wallet's first address
-	if addr != w.GetEntryAt(0).Address {
+	if w.Fingerprint() != w2.Fingerprint() {
 		return nil, ErrWalletRecoverSeedWrong
 	}
 
 	// Create a new wallet with the same number of addresses, encrypting if needed
-	w2, err := NewWallet(wltName, Options{
-		Coin:       w.Coin(),
-		Label:      w.Label(),
-		Seed:       seed,
-		Encrypt:    len(password) != 0,
-		Password:   password,
-		CryptoType: w.CryptoType(),
-		GenerateN:  uint64(w.EntriesLen()),
+	w3, err := NewWallet(wltName, Options{
+		Type:           w.Type(),
+		Coin:           w.Coin(),
+		Label:          w.Label(),
+		Seed:           seed,
+		SeedPassphrase: seedPassphrase,
+		Encrypt:        len(password) != 0,
+		Password:       password,
+		CryptoType:     w.CryptoType(),
+		GenerateN:      uint64(w.EntriesLen()),
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	// Preserve the timestamp of the old wallet
-	w2.SetTimestamp(w.Timestamp())
+	w3.SetTimestamp(w.Timestamp())
 
 	// Save to disk
-	if err := Save(w2, serv.config.WalletDir); err != nil {
+	if err := Save(w3, serv.config.WalletDir); err != nil {
 		return nil, err
 	}
 
-	serv.wallets.set(w2)
+	serv.wallets.set(w3)
 
-	return w2.Clone(), nil
+	return w3.Clone(), nil
 }

@@ -41,6 +41,7 @@ func walletCreateCmd() *gcli.Command {
 	walletCreateCmd.Flags().BoolP("mnemonic", "m", false, "A mnemonic seed consisting of 12 dictionary words will be generated")
 	walletCreateCmd.Flags().Uint64P("wordcount", "w", 12, "Number of seed words to use for mnemonic. Must be 12, 15, 18, 21 or 24")
 	walletCreateCmd.Flags().StringP("seed", "s", "", "Your seed")
+	walletCreateCmd.Flags().StringP("seed-passphrase", "", "", "Seed passphrase (bip44 wallets only)")
 	walletCreateCmd.Flags().Uint64P("num", "n", 1, `Number of addresses to generate.`)
 	walletCreateCmd.Flags().StringP("wallet-file", "f", cliConfig.WalletName, `Name of wallet. The final format will be "yourName.wlt".
 If no wallet name is specified a generic name will be selected.`)
@@ -158,6 +159,11 @@ func generateWalletHandler(c *gcli.Command, _ []string) error {
 		return fmt.Errorf("unhandled wallet type %q", walletType)
 	}
 
+	seedPassphrase, err := c.Flags().GetString("seed-passphrase")
+	if err != nil {
+		return err
+	}
+
 	cryptoType, err := wallet.CryptoTypeFromString(c.Flag("crypto-type").Value.String())
 	if err != nil {
 		return err
@@ -186,13 +192,14 @@ func generateWalletHandler(c *gcli.Command, _ []string) error {
 	}
 
 	opts := wallet.Options{
-		Label:      label,
-		Seed:       sd,
-		Encrypt:    encrypt,
-		CryptoType: cryptoType,
-		Password:   password,
-		Type:       walletType,
-		GenerateN:  num,
+		Label:          label,
+		Seed:           sd,
+		SeedPassphrase: seedPassphrase,
+		Encrypt:        encrypt,
+		CryptoType:     cryptoType,
+		Password:       password,
+		Type:           walletType,
+		GenerateN:      num,
 	}
 
 	wlt, err := wallet.NewWallet(filepath.Base(wltName), opts)

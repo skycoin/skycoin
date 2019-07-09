@@ -50,11 +50,30 @@ func NewWalletResponse(w wallet.Wallet) (*WalletResponse, error) {
 	wr.Meta.Encrypted = w.IsEncrypted()
 	wr.Meta.Timestamp = w.Timestamp()
 
-	for _, e := range w.GetEntries() {
-		wr.Entries = append(wr.Entries, readable.WalletEntry{
+	if w.Type() == wallet.WalletTypeBip44 {
+		bip44Coin := w.Bip44Coin()
+		wr.Meta.Bip44Coin = &bip44Coin
+	}
+
+	entries := w.GetEntries()
+	wr.Entries = make([]readable.WalletEntry, len(entries))
+
+	for i, e := range entries {
+		wr.Entries[i] = readable.WalletEntry{
 			Address: e.Address.String(),
 			Public:  e.Public.Hex(),
-		})
+		}
+
+		if w.Type() == wallet.WalletTypeBip44 {
+			// Copy the value to another ref to avoid having a pointer
+			// to an element of Entry which could affect GC of the Entry,
+			// which could cause retention/copying of secret data in the Entry.
+			// This is speculative. I don't know if this matters to the go runtime
+			childNumber := e.ChildNumber
+			change := e.Change
+			wr.Entries[i].ChildNumber = &childNumber
+			wr.Entries[i].Change = &change
+		}
 	}
 
 	return &wr, nil
@@ -166,6 +185,8 @@ func balanceHandler(gateway Gatewayer) http.HandlerFunc {
 // Method: POST
 // Args:
 //     seed: wallet seed [required]
+//     seed-passphrase: wallet seed passphrase [optional, bip44 type wallet only]
+//	   type: wallet type [optional, one of "deterministic" or "bip44", default "bip44"]
 //     label: wallet label [required]
 //     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
 //     encrypt: bool value, whether encrypt the wallet [optional]
@@ -232,11 +253,13 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		wlt, err := gateway.CreateWallet("", wallet.Options{
-			Seed:     seed,
-			Label:    label,
-			Encrypt:  encrypt,
-			Password: []byte(password),
-			ScanN:    scanN,
+			Seed:           seed,
+			Label:          label,
+			Encrypt:        encrypt,
+			Password:       []byte(password),
+			ScanN:          scanN,
+			Type:           r.FormValue("type"),
+			SeedPassphrase: r.FormValue("seed-passphrase"),
 		}, gateway)
 		if err != nil {
 			switch err.(type) {
@@ -285,7 +308,7 @@ func walletNewAddressesHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		// the number of address that need to create, default is 1
+		// Compute the number of addresses to create, default is 1
 		var n uint64 = 1
 		var err error
 		num := r.FormValue("num")
@@ -609,7 +632,13 @@ func newSeedHandler() http.HandlerFunc {
 	}
 }
 
-// Returns seed of wallet of given id
+// WalletSeedResponse is returned by /api/v1/wallet/seed
+type WalletSeedResponse struct {
+	Seed           string `json:"seed"`
+	SeedPassphrase string `json:"seed_passphrase,omitempty"`
+}
+
+// Returns seed and seed passphrase of wallet of given id
 // URI: /api/v1/wallet/seed
 // Method: POST
 // Args:
@@ -633,7 +662,7 @@ func walletSeedHandler(gateway Gatewayer) http.HandlerFunc {
 			password = ""
 		}()
 
-		seed, err := gateway.GetWalletSeed(id, []byte(password))
+		seed, seedPassphrase, err := gateway.GetWalletSeed(id, []byte(password))
 		if err != nil {
 			switch err {
 			case wallet.ErrMissingPassword,
@@ -650,10 +679,9 @@ func walletSeedHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		v := struct {
-			Seed string `json:"seed"`
-		}{
-			Seed: seed,
+		v := WalletSeedResponse{
+			Seed:           seed,
+			SeedPassphrase: seedPassphrase,
 		}
 
 		wh.SendJSONOr500(logger, w, v)
@@ -829,9 +857,10 @@ func walletDecryptHandler(gateway Gatewayer) http.HandlerFunc {
 
 // WalletRecoverRequest is the request data for POST /api/v2/wallet/recover
 type WalletRecoverRequest struct {
-	ID       string `json:"id"`
-	Seed     string `json:"seed"`
-	Password string `json:"password"`
+	ID             string `json:"id"`
+	Seed           string `json:"seed"`
+	SeedPassphrase string `json:"seed_passphrase"`
+	Password       string `json:"password"`
 }
 
 // URI: /api/v2/wallet/recover
@@ -879,20 +908,24 @@ func walletRecoverHandler(gateway Gatewayer) http.HandlerFunc {
 
 		defer func() {
 			req.Seed = ""
+			req.SeedPassphrase = ""
 			req.Password = ""
 			password = nil
 		}()
 
-		wlt, err := gateway.RecoverWallet(req.ID, req.Seed, password)
+		wlt, err := gateway.RecoverWallet(req.ID, req.Seed, req.SeedPassphrase, password)
 		if err != nil {
 			var resp HTTPResponse
-			switch err {
-			case wallet.ErrWalletNotEncrypted, wallet.ErrWalletRecoverSeedWrong:
-				resp = NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
-			case wallet.ErrWalletNotExist:
-				resp = NewHTTPErrorResponse(http.StatusNotFound, "")
-			case wallet.ErrWalletAPIDisabled:
-				resp = NewHTTPErrorResponse(http.StatusForbidden, "")
+			switch err.(type) {
+			case wallet.Error:
+				switch err {
+				case wallet.ErrWalletNotExist:
+					resp = NewHTTPErrorResponse(http.StatusNotFound, "")
+				case wallet.ErrWalletAPIDisabled:
+					resp = NewHTTPErrorResponse(http.StatusForbidden, "")
+				default:
+					resp = NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
+				}
 			default:
 				resp = NewHTTPErrorResponse(http.StatusInternalServerError, err.Error())
 			}

@@ -253,7 +253,6 @@ func (bc *Blockchain) processBlock(tx *dbutil.Tx, b coin.SignedBlock) (coin.Sign
 			if err != nil {
 				return coin.SignedBlock{}, err
 			}
-
 			b.Body.Transactions = txns
 
 			if err := bc.verifyUxHash(tx, b.Block); err != nil {
@@ -293,6 +292,13 @@ func (bc *Blockchain) ExecuteBlock(tx *dbutil.Tx, sb *coin.SignedBlock) error {
 	}
 
 	return nil
+}
+
+// VerifyBlock verifies specified block against current state of blockchain.
+func (bc *Blockchain) VerifyBlock(tx *dbutil.Tx, sb *coin.SignedBlock) error {
+	_, err := bc.processBlock(tx, *sb)
+
+	return err
 }
 
 // isGenesisBlock checks if the block is genesis block

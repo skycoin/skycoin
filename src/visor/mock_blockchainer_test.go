@@ -314,6 +314,20 @@ func (_m *MockBlockchainer) Unspent() blockdb.UnspentPooler {
 	return r0
 }
 
+// VerifyBlock provides a mock function with given fields: tx, sb
+func (_m *MockBlockchainer) VerifyBlock(tx *dbutil.Tx, sb *coin.SignedBlock) error {
+	ret := _m.Called(tx, sb)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(*dbutil.Tx, *coin.SignedBlock) error); ok {
+		r0 = rf(tx, sb)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // VerifyBlockTxnConstraints provides a mock function with given fields: tx, txn
 func (_m *MockBlockchainer) VerifyBlockTxnConstraints(tx *dbutil.Tx, txn coin.Transaction) error {
 	ret := _m.Called(tx, txn)

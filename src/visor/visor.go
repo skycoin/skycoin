@@ -280,7 +280,7 @@ func (vs *Visor) RemoveInvalidUnconfirmed() ([]cipher.SHA256, error) {
 	return hashes, nil
 }
 
-// CreateBlock creates a SignedBlock from pending transactions
+// createBlock creates a SignedBlock from pending transactions
 func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, error) {
 	if !vs.Config.IsBlockPublisher {
 		logger.Panic("Only a block publisher node can create blocks")
@@ -292,8 +292,18 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 		return coin.SignedBlock{}, err
 	}
 
+	b, err := vs.createBlockFromTxns(tx, txns, when)
+	if err != nil {
+		return coin.SignedBlock{}, err
+	}
+
+	return vs.signBlock(b), nil
+}
+
+// createBlockFromTxns creates a Block from specified set of transactions according to set of determinstic rules.
+func (vs *Visor) createBlockFromTxns(tx *dbutil.Tx, txns coin.Transactions, when uint64) (coin.Block, error) {
 	if len(txns) == 0 {
-		return coin.SignedBlock{}, errors.New("No transactions")
+		return coin.Block{}, errors.New("No transactions")
 	}
 
 	logger.Infof("unconfirmed pool has %d transactions pending", len(txns))
@@ -306,7 +316,7 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 			case ErrTxnViolatesHardConstraint, ErrTxnViolatesSoftConstraint:
 				logger.Warningf("Transaction %s violates constraints: %v", txn.Hash().Hex(), err)
 			default:
-				return coin.SignedBlock{}, err
+				return coin.Block{}, err
 			}
 		} else {
 			filteredTxns = append(filteredTxns, txn)
@@ -322,26 +332,26 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 
 	if len(txns) == 0 {
 		logger.Info("No transactions after filtering for constraint violations")
-		return coin.SignedBlock{}, errors.New("No transactions after filtering for constraint violations")
+		return coin.Block{}, errors.New("No transactions after filtering for constraint violations")
 	}
 
 	head, err := vs.blockchain.Head(tx)
 	if err != nil {
-		return coin.SignedBlock{}, err
+		return coin.Block{}, err
 	}
 
 	// Sort them by highest fee per kilobyte
 	txns, err = coin.SortTransactions(txns, vs.blockchain.TransactionFee(tx, head.Time()))
 	if err != nil {
 		logger.Critical().WithError(err).Error("SortTransactions failed, no block can be made until the offending transaction is removed")
-		return coin.SignedBlock{}, err
+		return coin.Block{}, err
 	}
 
 	// Apply block size transaction limit
 	txns, err = txns.TruncateBytesTo(vs.Config.MaxBlockTransactionsSize)
 	if err != nil {
 		logger.Critical().WithError(err).Error("TruncateBytesTo failed, no block can be made until the offending transaction is removed")
-		return coin.SignedBlock{}, err
+		return coin.Block{}, err
 	}
 
 	if len(txns) > coin.MaxBlockTransactions {
@@ -357,10 +367,10 @@ func (vs *Visor) createBlock(tx *dbutil.Tx, when uint64) (coin.SignedBlock, erro
 	b, err := vs.blockchain.NewBlock(tx, txns, when)
 	if err != nil {
 		logger.Warningf("blockchain.NewBlock failed: %v", err)
-		return coin.SignedBlock{}, err
+		return coin.Block{}, err
 	}
 
-	return vs.signBlock(*b), nil
+	return *b, nil
 }
 
 // CreateAndExecuteBlock creates a SignedBlock from pending transactions and executes it
@@ -380,21 +390,59 @@ func (vs *Visor) CreateAndExecuteBlock() (coin.SignedBlock, error) {
 	return sb, err
 }
 
+// CreateBlockFromTxns creates a Block from specified set of transactions according to set of determinstic rules.
+func (vs *Visor) CreateBlockFromTxns(txns coin.Transactions, when uint64) (coin.Block, error) {
+	var sb coin.Block
+
+	err := vs.db.Update("CreateBlockFromTxns", func(tx *dbutil.Tx) error {
+		var err error
+		if sb, err = vs.createBlockFromTxns(tx, txns, when); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return sb, err
+}
+
+// VerifyBlock verifies specified block against local copy of blockchain.
+// Signature is not verified.
+func (vs *Visor) VerifyBlock(b coin.SignedBlock) error {
+	return vs.db.View("VerifyBlock", func(tx *dbutil.Tx) error {
+		return vs.blockchain.VerifyBlock(tx, &b)
+	})
+}
+
 // ExecuteSignedBlock adds a block to the blockchain, or returns error.
-// Blocks must be executed in sequence, and be signed by a block publisher node
+// Blocks must be executed in sequence, and be signed by a block publisher node.
 func (vs *Visor) ExecuteSignedBlock(b coin.SignedBlock) error {
 	return vs.db.Update("ExecuteSignedBlock", func(tx *dbutil.Tx) error {
 		return vs.executeSignedBlock(tx, b)
 	})
 }
 
+// ExecuteSignedBlockUnsafe adds block to the blockchain, or returns error.
+// Blocks must be executed in sequence. Block signature is not verified.
+func (vs *Visor) ExecuteSignedBlockUnsafe(b coin.SignedBlock) error {
+	return vs.db.Update("ExecuteSignedBlockUnsafe", func(tx *dbutil.Tx) error {
+		return vs.executeSignedBlockUnsafe(tx, b)
+	})
+}
+
 // executeSignedBlock adds a block to the blockchain, or returns error.
-// Blocks must be executed in sequence, and be signed by a block publisher node
+// Blocks must be executed in sequence, and be signed by a block publisher node.
 func (vs *Visor) executeSignedBlock(tx *dbutil.Tx, b coin.SignedBlock) error {
 	if err := b.VerifySignature(vs.Config.BlockchainPubkey); err != nil {
 		return err
 	}
 
+	return vs.executeSignedBlockUnsafe(tx, b)
+}
+
+// executeSignedBlockUnsafe add a block to the blockchain, or returns error.
+// Blocks must be executed in sequence. Block signature is not verified.
+func (vs *Visor) executeSignedBlockUnsafe(tx *dbutil.Tx, b coin.SignedBlock) error {
 	if err := vs.blockchain.ExecuteBlock(tx, &b); err != nil {
 		return err
 	}
@@ -1473,6 +1521,26 @@ func (vs *Visor) GetAllValidUnconfirmedTxHashes() ([]cipher.SHA256, error) {
 	}
 
 	return hashes, nil
+}
+
+// GetConfirmedTransaction returns transaction, which has been already included in some block.
+func (vs *Visor) GetConfirmedTransaction(txnHash cipher.SHA256) (*coin.Transaction, error) {
+	var histTxn *historydb.Transaction
+
+	if err := vs.db.View("GetConfirmedTransaction", func(tx *dbutil.Tx) error {
+		var err error
+		histTxn, err = vs.history.GetTransaction(tx, txnHash)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+
+	// Transaction not found.
+	if histTxn == nil {
+		return nil, nil
+	}
+
+	return &histTxn.Txn, nil
 }
 
 // GetSignedBlockByHash get block of specific hash header, return nil on not found.

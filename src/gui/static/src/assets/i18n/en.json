@@ -207,7 +207,16 @@
     "simple": "Simple",
     "advanced": "Advanced",
     "select-wallet": "Select Wallet",
-    "error-saving-note": "The transaction was successfully sent, but it was not possible to save the note."
+    "error-saving-note": "The transaction was successfully sent, but it was not possible to save the note.",
+
+    "bulk-send": {
+      "title": "Bulk Send",
+      "indications": "To send to multiple destinations in a quick way, type each address, coin amount and hour amount (optional) on a line, separated by a comma. Example: if you want to send 10 coins and 5 hours to the \"xyz\" address, type \"xyz,10,5\"; if you want the hours to be calculated automatically, type \"xyz,10\". Decimal values must be separated with a dot.",
+      "process": "Process",
+      "error-no-data": "There is no text to process.",
+      "error-inconsistent-data": "If you set how many hours you want to send to a destinations, you must do so for all destinations.",
+      "error-invalid-data": "The entered text has an invalid format."
+    }
   },
 
   "reset": {
@@ -548,7 +557,7 @@
       "date": "Date"
     },
     "details": {
-      "exchange-addr": "Exchange address",
+      "exchange-addr": "Exchange address (valid for this exchange operation only)",
       "exchange-addr-tag": "Payment ID or Destination Tag which must be used for the transaction",
       "tx-id": "Transaction ID",
       "order-id": "Order ID",

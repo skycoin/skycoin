@@ -111,6 +111,7 @@ import { HwUpdateAlertDialogComponent } from './components/layout/hardware-walle
 import { ChangeNoteComponent } from './components/pages/send-skycoin/send-preview/transaction-info/change-note/change-note.component';
 import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
 import { MsgBarService } from './services/msg-bar.service';
+import { MultipleDestinationsDialogComponent } from './components/layout/multiple-destinations-dialog/multiple-destinations-dialog.component';
 
 
 const ROUTES = [
@@ -250,6 +251,7 @@ const ROUTES = [
     HwUpdateAlertDialogComponent,
     ChangeNoteComponent,
     MsgBarComponent,
+    MultipleDestinationsDialogComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -282,6 +284,7 @@ const ROUTES = [
     HwUpdateFirmwareDialogComponent,
     HwUpdateAlertDialogComponent,
     ChangeNoteComponent,
+    MultipleDestinationsDialogComponent,
   ],
   imports: [
     BrowserModule,

@@ -103,8 +103,6 @@ const (
 	// WalletTypeBip44 bip44 HD wallet type.
 	// Follow the bip44 spec.
 	WalletTypeBip44 = "bip44"
-	// DefaultWalletType is the default type used for new wallets
-	DefaultWalletType = WalletTypeBip44
 )
 
 // ResolveCoinType normalizes a coin type string to a CoinType constant
@@ -159,7 +157,7 @@ type Options struct {
 func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, error) {
 	wltType := opts.Type
 	if wltType == "" {
-		wltType = DefaultWalletType
+		return nil, NewError(errors.New("wallet type is required"))
 	}
 	if !IsValidWalletType(wltType) {
 		return nil, ErrInvalidWalletType

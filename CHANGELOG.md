@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   `bip44` wallets avoid address reuse, generating a new change address for each transaction.
   Affects APIs are `POST /api/v1/wallet`, `GET /api/v1/wallets`, `GET /api/v1/wallet`, `POST /api/v1/wallet/seed` and `POST /api/v1/wallet/recover`.
   Refer to the [API documentation](./src/api/README.md) for API changes.
+  `bip44` wallets support bip39 "seed passphrases".
+  More details are explained in https://github.com/skycoin/skycoin/wiki/Wallet-File-Formats-and-Types
+- `cli walletCreate` support for `bip44` wallets added
 
 ### Fixed
 
@@ -29,6 +32,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- `type` is now a required parameter for `POST /api/v1/wallet`
 - Add `display_name`, `ticker`, `coin_hours_display_name`, `coin_hours_ticker`, `explorer_url` to the `/health` endpoint response
 - `cli addPrivateKey` will only work on a `collection` type wallet. Create one with `cli walletCreate -t collection`
 - Don't print the wallet in the terminal after `cli encryptWallet` or `cli decryptWallet`

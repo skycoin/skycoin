@@ -939,6 +939,7 @@ func TestServiceGetWallets(t *testing.T) {
 				w, err := s.CreateWallet("t.wlt", Options{
 					Label: "label",
 					Seed:  bip39.MustNewDefaultMnemonic(),
+					Type:  WalletTypeBip44,
 				}, nil)
 				require.NoError(t, err)
 
@@ -951,6 +952,7 @@ func TestServiceGetWallets(t *testing.T) {
 				w1, err := s.CreateWallet(wltName, Options{
 					Label: "label1",
 					Seed:  bip39.MustNewDefaultMnemonic(),
+					Type:  WalletTypeDeterministic,
 				}, nil)
 				require.NoError(t, err)
 				wallets = append(wallets, w1)
@@ -983,6 +985,7 @@ func TestServiceUpdateWalletLabel(t *testing.T) {
 			opts: Options{
 				Seed:  bip39.MustNewDefaultMnemonic(),
 				Label: "label",
+				Type:  WalletTypeBip44,
 			},
 			updateWltName: "t.wlt",
 			label:         "new-label",
@@ -993,6 +996,7 @@ func TestServiceUpdateWalletLabel(t *testing.T) {
 			opts: Options{
 				Seed:  bip39.MustNewDefaultMnemonic(),
 				Label: "label",
+				Type:  WalletTypeBip44,
 			},
 			updateWltName: "t1.wlt",
 			label:         "new-label",
@@ -1004,6 +1008,7 @@ func TestServiceUpdateWalletLabel(t *testing.T) {
 			opts: Options{
 				Seed:  bip39.MustNewDefaultMnemonic(),
 				Label: "label",
+				Type:  WalletTypeBip44,
 			},
 			disableWalletAPI: true,
 			err:              ErrWalletAPIDisabled,
@@ -1402,7 +1407,7 @@ func TestServiceDecryptWallet(t *testing.T) {
 
 				wltType := tc.opts.Type
 				if wltType == "" {
-					wltType = DefaultWalletType
+					wltType = WalletTypeBip44
 				}
 
 				verify := verifyDecryptedCollectionWlt

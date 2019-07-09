@@ -126,6 +126,7 @@ func TestNewWallet(t *testing.T) {
 			wltName: "test.wlt",
 			opts: Options{
 				Seed: bip39.MustNewDefaultMnemonic(),
+				Type: WalletTypeBip44,
 			},
 			expect: expect{
 				meta: map[string]string{

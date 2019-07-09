@@ -186,7 +186,7 @@ func balanceHandler(gateway Gatewayer) http.HandlerFunc {
 // Args:
 //     seed: wallet seed [required]
 //     seed-passphrase: wallet seed passphrase [optional, bip44 type wallet only]
-//	   type: wallet type [optional, one of "deterministic" or "bip44", default "bip44"]
+//	   type: wallet type [required, one of "deterministic" or "bip44"]
 //     label: wallet label [required]
 //     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
 //     encrypt: bool value, whether encrypt the wallet [optional]
@@ -195,6 +195,12 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			wh.Error405(w)
+			return
+		}
+
+		walletType := r.FormValue("type")
+		if walletType == "" {
+			wh.Error400(w, "missing type")
 			return
 		}
 
@@ -258,7 +264,7 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 			Encrypt:        encrypt,
 			Password:       []byte(password),
 			ScanN:          scanN,
-			Type:           r.FormValue("type"),
+			Type:           walletType,
 			SeedPassphrase: r.FormValue("seed-passphrase"),
 		}, gateway)
 		if err != nil {

@@ -14,66 +14,66 @@ The API has two versions, `/api/v1` and `/api/v2`.
 - [API Sets](#api-sets)
 - [Authentication](#authentication)
 - [CSRF](#csrf)
-	- [Get current csrf token](#get-current-csrf-token)
+    - [Get current csrf token](#get-current-csrf-token)
 - [General system checks](#general-system-checks)
-	- [Health check](#health-check)
-	- [Version info](#version-info)
-	- [Prometheus metrics](#prometheus-metrics)
+    - [Health check](#health-check)
+    - [Version info](#version-info)
+    - [Prometheus metrics](#prometheus-metrics)
 - [Simple query APIs](#simple-query-apis)
-	- [Get balance of addresses](#get-balance-of-addresses)
-	- [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
-	- [Verify an address](#verify-an-address)
+    - [Get balance of addresses](#get-balance-of-addresses)
+    - [Get unspent output set of address or hash](#get-unspent-output-set-of-address-or-hash)
+    - [Verify an address](#verify-an-address)
 - [Wallet APIs](#wallet-apis)
-	- [Get wallet](#get-wallet)
-	- [Get unconfirmed transactions of a wallet](#get-unconfirmed-transactions-of-a-wallet)
-	- [Get wallets](#get-wallets)
-	- [Get wallet folder name](#get-wallet-folder-name)
-	- [Generate wallet seed](#generate-wallet-seed)
-	- [Verify wallet Seed](#verify-wallet-seed)
-	- [Create a wallet from seed](#create-a-wallet-from-seed)
-	- [Generate new address in wallet](#generate-new-address-in-wallet)
-	- [Updates wallet label](#updates-wallet-label)
-	- [Get wallet balance](#get-wallet-balance)
-	- [Create transaction](#create-transaction)
-	- [Sign transaction](#sign-transaction)
-	- [Unload wallet](#unload-wallet)
-	- [Encrypt wallet](#encrypt-wallet)
-	- [Decrypt wallet](#decrypt-wallet)
-	- [Get wallet seed](#get-wallet-seed)
-	- [Recover encrypted wallet by seed](#recover-encrypted-wallet-by-seed)
+    - [Get wallet](#get-wallet)
+    - [Get unconfirmed transactions of a wallet](#get-unconfirmed-transactions-of-a-wallet)
+    - [Get wallets](#get-wallets)
+    - [Get wallet folder name](#get-wallet-folder-name)
+    - [Generate wallet seed](#generate-wallet-seed)
+    - [Verify wallet Seed](#verify-wallet-seed)
+    - [Create a wallet from seed](#create-a-wallet-from-seed)
+    - [Generate new address in wallet](#generate-new-address-in-wallet)
+    - [Updates wallet label](#updates-wallet-label)
+    - [Get wallet balance](#get-wallet-balance)
+    - [Create transaction](#create-transaction)
+    - [Sign transaction](#sign-transaction)
+    - [Unload wallet](#unload-wallet)
+    - [Encrypt wallet](#encrypt-wallet)
+    - [Decrypt wallet](#decrypt-wallet)
+    - [Get wallet seed](#get-wallet-seed)
+    - [Recover encrypted wallet by seed](#recover-encrypted-wallet-by-seed)
 - [Key-value storage APIs](#key-value-storage-apis)
-	- [Get all storage values](#get-all-storage-values)
-	- [Add value to storage](#add-value-to-storage)
-	- [Remove value from storage](#remove-value-from-storage)
+    - [Get all storage values](#get-all-storage-values)
+    - [Add value to storage](#add-value-to-storage)
+    - [Remove value from storage](#remove-value-from-storage)
 - [Transaction APIs](#transaction-apis)
-	- [Get unconfirmed transactions](#get-unconfirmed-transactions)
-	- [Create transaction from unspent outputs or addresses](#create-transaction-from-unspent-outputs-or-addresses)
-	- [Get transaction info by id](#get-transaction-info-by-id)
-	- [Get raw transaction by id](#get-raw-transaction-by-id)
-	- [Inject raw transaction](#inject-raw-transaction)
-	- [Get transactions for addresses](#get-transactions-for-addresses)
-	- [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
-	- [Verify encoded transaction](#verify-encoded-transaction)
+    - [Get unconfirmed transactions](#get-unconfirmed-transactions)
+    - [Create transaction from unspent outputs or addresses](#create-transaction-from-unspent-outputs-or-addresses)
+    - [Get transaction info by id](#get-transaction-info-by-id)
+    - [Get raw transaction by id](#get-raw-transaction-by-id)
+    - [Inject raw transaction](#inject-raw-transaction)
+    - [Get transactions for addresses](#get-transactions-for-addresses)
+    - [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
+    - [Verify encoded transaction](#verify-encoded-transaction)
 - [Block APIs](#block-apis)
-	- [Get blockchain metadata](#get-blockchain-metadata)
-	- [Get blockchain progress](#get-blockchain-progress)
-	- [Get block by hash or seq](#get-block-by-hash-or-seq)
-	- [Get blocks in specific range](#get-blocks-in-specific-range)
-	- [Get last N blocks](#get-last-n-blocks)
+    - [Get blockchain metadata](#get-blockchain-metadata)
+    - [Get blockchain progress](#get-blockchain-progress)
+    - [Get block by hash or seq](#get-block-by-hash-or-seq)
+    - [Get blocks in specific range](#get-blocks-in-specific-range)
+    - [Get last N blocks](#get-last-n-blocks)
 - [Uxout APIs](#uxout-apis)
-	- [Get uxout](#get-uxout)
-	- [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
+    - [Get uxout](#get-uxout)
+    - [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
 - [Coin supply related information](#coin-supply-related-information)
-	- [Coin supply](#coin-supply)
-	- [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
-	- [Count unique addresses](#count-unique-addresses)
+    - [Coin supply](#coin-supply)
+    - [Richlist show top N addresses by uxouts](#richlist-show-top-n-addresses-by-uxouts)
+    - [Count unique addresses](#count-unique-addresses)
 - [Network status](#network-status)
-	- [Get information for a specific connection](#get-information-for-a-specific-connection)
-	- [Get a list of all connections](#get-a-list-of-all-connections)
-	- [Get a list of all default connections](#get-a-list-of-all-default-connections)
-	- [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
-	- [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
-	- [Disconnect a peer](#disconnect-a-peer)
+    - [Get information for a specific connection](#get-information-for-a-specific-connection)
+    - [Get a list of all connections](#get-a-list-of-all-connections)
+    - [Get a list of all default connections](#get-a-list-of-all-default-connections)
+    - [Get a list of all trusted connections](#get-a-list-of-all-trusted-connections)
+    - [Get a list of all connections discovered through peer exchange](#get-a-list-of-all-connections-discovered-through-peer-exchange)
+    - [Disconnect a peer](#disconnect-a-peer)
 - [Migrating from the unversioned API](#migrating-from-the-unversioned-api)
 - [Migrating from the JSONRPC API](#migrating-from-the-jsonrpc-api)
 - [Migrating from /api/v1/spend](#migrating-from-apiv1spend)
@@ -656,7 +656,7 @@ Result:
         "crypto_type": "",
         "timestamp": 1511640884,
         "encrypted": false,
-    	"bip44_coin": 8000,
+        "bip44_coin": 8000,
     },
     "entries": [
         {
@@ -963,7 +963,7 @@ Method: POST
 Args:
     seed: wallet seed [required]
     seed-passphrase: wallet seed passphrase [optional, bip44 type wallet only]
-    type: wallet type [optional, one of "deterministic" or "bip44", default "bip44"]
+    type: wallet type [required, one of "deterministic" or "bip44"]
     label: wallet label [required]
     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
     encrypt: encrypt wallet [optional, bool value]
@@ -1036,7 +1036,9 @@ Result:
     "entries": [
         {
             "address": "y2JeYS4RS8L9GYM7UKdjLRyZanKHXumFoH",
-            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1"
+            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1",
+            "child_number": 0,
+            "change": 0
         }
     ]
 }
@@ -2094,51 +2096,51 @@ Result:
 
 ```json
 {
-	"data": {
-	    "transaction": {
-	        "length": 257,
-	        "type": 0,
-	        "txid": "5f060918d2da468a784ff440fbba80674c829caca355a27ae067f465d0a5e43e",
-	        "inner_hash": "97dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d",
-	        "fee": "437691",
-	        "sigs": [
-	            "6120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100"
-	        ],
-	        "inputs": [
-	            {
-	                "uxid": "7068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b",
-	                "address": "g4XmbmVyDnkswsQTSqYRsyoh1YqydDX1wp",
-	                "coins": "10.000000",
-	                "hours": "853667",
-	                "calculated_hours": "862290",
-	                "timestamp": 1524242826,
-	                "block": 23575,
-	                "txid": "ccfbb51e94cb58a619a82502bc986fb028f632df299ce189c2ff2932574a03e7"
-	            }
-	        ],
-	        "outputs": [
-	            {
-	                "uxid": "519c069a0593e179f226e87b528f60aea72826ec7f99d51279dd8854889ed7e2",
-	                "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
-	                "coins": "1.000000",
-	                "hours": "22253"
-	            },
-	            {
-	                "uxid": "4e4e41996297511a40e2ef0046bd6b7118a8362c1f4f09a288c5c3ea2f4dfb85",
-	                "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
-	                "coins": "8.990000",
-	                "hours": "200046"
-	            },
-	            {
-	                "uxid": "fdeb3f77408f39e50a8e3b6803ce2347aac2eba8118c494424f9fa4959bab507",
-	                "address": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
-	                "coins": "0.010000",
-	                "hours": "222300"
-	            }
-	        ]
-	    },
-	    "encoded_transaction": "010100000097dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d010000006120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100010000007068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b0300000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b140420f0000000000ed5600000000000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b1302d8900000000006e0d0300000000000083874350e65e84aa6e06192408951d7aaac7809e10270000000000005c64030000000000"
-	}
+    "data": {
+        "transaction": {
+            "length": 257,
+            "type": 0,
+            "txid": "5f060918d2da468a784ff440fbba80674c829caca355a27ae067f465d0a5e43e",
+            "inner_hash": "97dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d",
+            "fee": "437691",
+            "sigs": [
+                "6120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100"
+            ],
+            "inputs": [
+                {
+                    "uxid": "7068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b",
+                    "address": "g4XmbmVyDnkswsQTSqYRsyoh1YqydDX1wp",
+                    "coins": "10.000000",
+                    "hours": "853667",
+                    "calculated_hours": "862290",
+                    "timestamp": 1524242826,
+                    "block": 23575,
+                    "txid": "ccfbb51e94cb58a619a82502bc986fb028f632df299ce189c2ff2932574a03e7"
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "519c069a0593e179f226e87b528f60aea72826ec7f99d51279dd8854889ed7e2",
+                    "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+                    "coins": "1.000000",
+                    "hours": "22253"
+                },
+                {
+                    "uxid": "4e4e41996297511a40e2ef0046bd6b7118a8362c1f4f09a288c5c3ea2f4dfb85",
+                    "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+                    "coins": "8.990000",
+                    "hours": "200046"
+                },
+                {
+                    "uxid": "fdeb3f77408f39e50a8e3b6803ce2347aac2eba8118c494424f9fa4959bab507",
+                    "address": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
+                    "coins": "0.010000",
+                    "hours": "222300"
+                }
+            ]
+        },
+        "encoded_transaction": "010100000097dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d010000006120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100010000007068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b0300000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b140420f0000000000ed5600000000000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b1302d8900000000006e0d0300000000000083874350e65e84aa6e06192408951d7aaac7809e10270000000000005c64030000000000"
+    }
 }
 ```
 

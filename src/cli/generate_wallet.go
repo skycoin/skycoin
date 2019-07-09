@@ -46,7 +46,7 @@ func walletCreateCmd() *gcli.Command {
 	walletCreateCmd.Flags().StringP("wallet-file", "f", cliConfig.WalletName, `Name of wallet. The final format will be "yourName.wlt".
 If no wallet name is specified a generic name will be selected.`)
 	walletCreateCmd.Flags().StringP("label", "l", "", "Label used to idetify your wallet.")
-	walletCreateCmd.Flags().StringP("type", "t", wallet.DefaultWalletType, "Wallet type. Types are \"collection\", \"deterministic\" or \"bip44\"")
+	walletCreateCmd.Flags().StringP("type", "t", wallet.WalletTypeDeterministic, "Wallet type. Types are \"collection\", \"deterministic\" or \"bip44\"")
 	walletCreateCmd.Flags().BoolP("encrypt", "e", false, "Create encrypted wallet.")
 	walletCreateCmd.Flags().StringP("crypto-type", "x", string(wallet.DefaultCryptoType),
 		"The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor")

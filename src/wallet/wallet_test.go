@@ -488,7 +488,6 @@ func TestWalletUnlock(t *testing.T) {
 				// Checks the generated addresses
 				require.Equal(t, 1, wlt.EntriesLen())
 
-				// Checks the last seed
 				switch tc.opts.Type {
 				case WalletTypeBip44:
 					require.Empty(t, wlt.LastSeed())
@@ -545,6 +544,15 @@ func TestLockAndUnLock(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, 10, w.EntriesLen())
 
+				if walletType == WalletTypeBip44 {
+					for i := 0; i < 5; i++ {
+						_, err := w.(*Bip44Wallet).GenerateChangeEntry()
+						require.NoError(t, err)
+					}
+
+					require.Equal(t, 15, w.EntriesLen())
+				}
+
 				// clone the wallet
 				cw := w.Clone()
 				require.Equal(t, w, cw)
@@ -552,6 +560,8 @@ func TestLockAndUnLock(t *testing.T) {
 				// lock the cloned wallet
 				err = Lock(cw, []byte("pwd"), ct)
 				require.NoError(t, err)
+
+				checkNoSensitiveData(t, cw)
 
 				// unlock the cloned wallet
 				ucw, err := Unlock(cw, []byte("pwd"))
@@ -589,14 +599,14 @@ func TestLoadWallet(t *testing.T) {
 	}
 
 	tt := []struct {
-		name   string
-		file   string
-		expect expect
+		name     string
+		filename string
+		expect   expect
 	}{
 		{
-			"ok",
-			"./testdata/test1.wlt",
-			expect{
+			name:     "ok",
+			filename: "./testdata/test1.wlt",
+			expect: expect{
 				meta: map[string]string{
 					"coin":     string(CoinTypeSkycoin),
 					"filename": "test1.wlt",
@@ -611,49 +621,49 @@ func TestLoadWallet(t *testing.T) {
 			},
 		},
 		{
-			"wallet file doesn't exist",
-			"not_exist_file.wlt",
-			expect{
+			name:     "wallet file doesn't exist",
+			filename: "not_exist_file.wlt",
+			expect: expect{
 				meta: map[string]string{},
 				err:  fmt.Errorf("wallet \"not_exist_file.wlt\" doesn't exist"),
 			},
 		},
 		{
-			"invalid wallet: no type",
-			"./testdata/invalid_wallets/no_type.wlt",
-			expect{
+			name:     "invalid wallet: no type",
+			filename: "./testdata/invalid_wallets/no_type.wlt",
+			expect: expect{
 				meta: map[string]string{},
 				err:  fmt.Errorf("invalid wallet \"./testdata/invalid_wallets/no_type.wlt\": invalid wallet type"),
 			},
 		},
 		{
-			"invalid wallet: invalid type",
-			"./testdata/invalid_wallets/err_type.wlt",
-			expect{
+			name:     "invalid wallet: invalid type",
+			filename: "./testdata/invalid_wallets/err_type.wlt",
+			expect: expect{
 				meta: map[string]string{},
 				err:  fmt.Errorf("invalid wallet \"./testdata/invalid_wallets/err_type.wlt\": invalid wallet type"),
 			},
 		},
 		{
-			"invalid wallet: no coin",
-			"./testdata/invalid_wallets/no_coin.wlt",
-			expect{
+			name:     "invalid wallet: no coin",
+			filename: "./testdata/invalid_wallets/no_coin.wlt",
+			expect: expect{
 				meta: map[string]string{},
 				err:  fmt.Errorf("invalid wallet \"./testdata/invalid_wallets/no_coin.wlt\": invalid coin type"),
 			},
 		},
 		{
-			"invalid wallet: no seed",
-			"./testdata/invalid_wallets/no_seed.wlt",
-			expect{
+			name:     "invalid wallet: no seed",
+			filename: "./testdata/invalid_wallets/no_seed.wlt",
+			expect: expect{
 				meta: map[string]string{},
 				err:  fmt.Errorf("invalid wallet \"no_seed.wlt\": seed missing in unencrypted deterministic wallet"),
 			},
 		},
 		{
-			"version=0.2 encrypted=true crypto=scrypt-chacha20poly1305",
-			"./testdata/scrypt-chacha20poly1305-encrypted.wlt",
-			expect{
+			name:     "version=0.2 encrypted=true crypto=scrypt-chacha20poly1305",
+			filename: "./testdata/scrypt-chacha20poly1305-encrypted.wlt",
+			expect: expect{
 				meta: map[string]string{
 					"coin":       string(CoinTypeSkycoin),
 					"cryptoType": "scrypt-chacha20poly1305",
@@ -669,9 +679,9 @@ func TestLoadWallet(t *testing.T) {
 			},
 		},
 		{
-			"version=0.2 encrypted=true crypto=sha256xor",
-			"./testdata/sha256xor-encrypted.wlt",
-			expect{
+			name:     "version=0.2 encrypted=true crypto=sha256xor",
+			filename: "./testdata/sha256xor-encrypted.wlt",
+			expect: expect{
 				meta: map[string]string{
 					"coin":       string(CoinTypeSkycoin),
 					"cryptoType": "sha256-xor",
@@ -687,9 +697,9 @@ func TestLoadWallet(t *testing.T) {
 			},
 		},
 		{
-			"version=0.2 encrypted=false",
-			"./testdata/v2_no_encrypt.wlt",
-			expect{
+			name:     "version=0.2 encrypted=false",
+			filename: "./testdata/v2_no_encrypt.wlt",
+			expect: expect{
 				meta: map[string]string{
 					"coin":       string(CoinTypeSkycoin),
 					"cryptoType": "scrypt-chacha20poly1305",
@@ -705,11 +715,53 @@ func TestLoadWallet(t *testing.T) {
 				err: nil,
 			},
 		},
+		{
+			name:     "version=0.3 encrypted=false type=bip44",
+			filename: "./testdata/test5-bip44.wlt",
+			expect: expect{
+				meta: map[string]string{
+					"bip44Coin":      fmt.Sprint(bip44.CoinTypeSkycoin),
+					"coin":           string(CoinTypeSkycoin),
+					"cryptoType":     "",
+					"encrypted":      "false",
+					"filename":       "test5-bip44.wlt",
+					"label":          "test5-bip44",
+					"lastSeed":       "",
+					"secrets":        "",
+					"seed":           "voyage say extend find sheriff surge priority merit ignore maple cash argue",
+					"seedPassphrase": "",
+					"type":           WalletTypeBip44,
+					"version":        "0.3",
+				},
+				err: nil,
+			},
+		},
+		{
+			name:     "version=0.3 encrypted=false type=bip44 seed-passphrase=true",
+			filename: "./testdata/test6-passphrase-bip44.wlt",
+			expect: expect{
+				meta: map[string]string{
+					"bip44Coin":      fmt.Sprint(bip44.CoinTypeSkycoin),
+					"coin":           string(CoinTypeSkycoin),
+					"cryptoType":     "",
+					"encrypted":      "false",
+					"filename":       "test6-passphrase-bip44.wlt",
+					"label":          "test6-passphrase-bip44",
+					"lastSeed":       "",
+					"secrets":        "",
+					"seed":           "voyage say extend find sheriff surge priority merit ignore maple cash argue",
+					"seedPassphrase": "foobar",
+					"type":           WalletTypeBip44,
+					"version":        "0.3",
+				},
+				err: nil,
+			},
+		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			w, err := Load(tc.file)
+			w, err := Load(tc.filename)
 			if err != nil {
 				require.Equal(t, tc.expect.err.Error(), err.Error())
 			}

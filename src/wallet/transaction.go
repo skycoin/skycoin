@@ -199,26 +199,26 @@ func CreateTransaction(w Wallet, p transaction.Params, auxs coin.AddressUxOuts, 
 	}
 
 	// Generate a new change address for bip44 wallets
-	var changeEntry Entry
+	var changeEntry *Entry
 	if p.ChangeAddress == nil && w.Type() == WalletTypeBip44 {
-		var err error
-		changeEntry, err = w.(*Bip44Wallet).PeekChangeEntry()
+		e, err := w.(*Bip44Wallet).PeekChangeEntry()
 		if err != nil {
 			logger.Critical().WithError(err).Error("PeekChangeEntry failed")
 			return nil, nil, fmt.Errorf("PeekChangeEntry failed: %v", err)
 		}
-		changeAddr := changeEntry.Address.(cipher.Address)
+		changeAddr := e.Address.(cipher.Address)
 		p.ChangeAddress = &changeAddr
+		changeEntry = &e
 	}
 
 	txn, uxb, err := transaction.Create(p, auxs, headTime)
 
-	if err == nil && w.Type() == WalletTypeBip44 {
+	if err == nil && changeEntry != nil && w.Type() == WalletTypeBip44 {
 		// Commit the change address to the bip44 wallet, assuming it will be used
 		if e, err := w.(*Bip44Wallet).GenerateChangeEntry(); err != nil {
 			logger.WithError(err).Panic("GenerateChangeEntry failed after a PeekChangeEntry")
-		} else if e != changeEntry {
-			logger.Panic("GenerateChangeEntry produced a different change entry than PeekChangeEntry")
+		} else if e != *changeEntry {
+			logger.Panicf("GenerateChangeEntry produced a different change entry than PeekChangeEntry: %s != %s", e.Address, changeEntry.Address)
 		}
 	}
 

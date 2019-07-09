@@ -272,6 +272,7 @@ func (w *Bip44Wallet) generateEntries(num uint64, changeIdx, initialChildIdx uin
 			Secret:      sk,
 			Public:      pk,
 			ChildNumber: addressIndices[i],
+			Change:      changeIdx,
 		}
 	}
 
@@ -302,7 +303,7 @@ func (w *Bip44Wallet) GenerateChangeEntry() (Entry, error) {
 
 	w.ChangeEntries = append(w.ChangeEntries, Entries{e}...)
 
-	return e, nil
+	return w.ChangeEntries[len(w.ChangeEntries)-1], nil
 }
 
 // GenerateAddresses generates addresses for the external chain, and appends them to the wallet's entries array

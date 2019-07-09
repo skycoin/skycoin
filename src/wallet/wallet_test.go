@@ -545,12 +545,29 @@ func TestLockAndUnLock(t *testing.T) {
 				require.Equal(t, 10, w.EntriesLen())
 
 				if walletType == WalletTypeBip44 {
+					// Generate change entries, to verify that their secret keys
+					// are protected and revealed when locked and unlocked
 					for i := 0; i < 5; i++ {
-						_, err := w.(*Bip44Wallet).GenerateChangeEntry()
+						e, err := w.(*Bip44Wallet).GenerateChangeEntry()
 						require.NoError(t, err)
+						require.Equal(t, bip44.ChangeChainIndex, e.Change)
 					}
 
 					require.Equal(t, 15, w.EntriesLen())
+					nExternal := 0
+					nChange := 0
+					for _, e := range w.GetEntries() {
+						switch e.Change {
+						case bip44.ExternalChainIndex:
+							nExternal++
+						case bip44.ChangeChainIndex:
+							nChange++
+						default:
+							t.Fatalf("invalid change chain index: %d", e.Change)
+						}
+					}
+					require.Equal(t, 10, nExternal)
+					require.Equal(t, 5, nChange)
 				}
 
 				// clone the wallet

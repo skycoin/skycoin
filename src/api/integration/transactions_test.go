@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"testing"
 	"time"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
@@ -1355,13 +1357,8 @@ func TestLiveCreateTransaction(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			if tc.err != "" {
-				assertResponseError(t, err, tc.code, tc.err)
-				return
-			}
 
-			require.NoError(t, err)
-			assertCreateTransactionResult(t, tc, result, true)
+			assertCreateTransactionResult(t, c, tc, result, true, nil)
 		})
 	}
 }
@@ -1598,6 +1595,11 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 		t.Run(name, func(t *testing.T) {
 			require.False(t, len(tc.outputs) != 0 && len(tc.outputsSubset) != 0, "outputs and outputsSubset can't both be set")
 
+			// Fetch a copy of the wallet to look for modifications to the wallet
+			// after the transaction is created
+			w, err := c.Wallet(tc.walletID)
+			require.NoError(t, err)
+
 			req := api.WalletCreateTransactionRequest{
 				CreateTransactionRequest: tc.req,
 				WalletID:                 tc.walletID,
@@ -1616,40 +1618,48 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 			}
 
 			require.NoError(t, err)
-			assertCreateTransactionResult(t, tc.liveCreateTxnTestCase, result, unsigned)
+
+			assertCreateTransactionResult(t, c, tc.liveCreateTxnTestCase, result, unsigned, w)
 		})
 	}
 }
 
-func assertCreateTransactionResult(t *testing.T, tc liveCreateTxnTestCase, result *api.CreateTransactionResponse, unsigned bool) {
+func getLastChangeEntry(t *testing.T, w *api.WalletResponse) *readable.WalletEntry {
+	require.Equal(t, wallet.WalletTypeBip44, w.Meta.Type)
+
+	// Find the last "change" entry
+	require.NotEmpty(t, w.Entries)
+	sort.Slice(w.Entries, func(i, j int) bool {
+		if *w.Entries[i].Change == *w.Entries[j].Change {
+			return *w.Entries[i].ChildNumber > *w.Entries[j].ChildNumber
+		}
+		return *w.Entries[i].Change > *w.Entries[j].Change
+	})
+
+	lastChangeEntry := w.Entries[0]
+	if *lastChangeEntry.Change != bip44.ChangeChainIndex {
+		// no change entry
+		return nil
+	}
+
+	return &lastChangeEntry
+}
+
+func isNullAddress(a string) bool {
+	if a == "" {
+		return true
+	}
+
+	addr := cipher.MustDecodeBase58Address(a)
+	return addr.Null()
+}
+
+func assertCreateTransactionResult(t *testing.T, c *api.Client, tc liveCreateTxnTestCase, result *api.CreateTransactionResponse, unsigned bool, w *api.WalletResponse) {
 	if len(tc.outputsSubset) == 0 {
 		require.Equal(t, len(tc.outputs), len(result.Transaction.Out))
 	}
 
 	for i, o := range tc.outputs {
-		// The final change output may not have the address specified,
-		// if the ChangeAddress was not specified in the wallet params.
-		// Calculate it automatically based upon the transaction inputs
-		if o.Address.Null() {
-			require.Equal(t, i, len(tc.outputs)-1)
-			require.Nil(t, tc.req.ChangeAddress)
-
-			changeAddr := result.Transaction.Out[i].Address
-			// The changeAddr must be associated with one of the transaction inputs
-			changeAddrFound := false
-			for _, x := range result.Transaction.In {
-				require.NotNil(t, x.Address)
-				if changeAddr == x.Address {
-					changeAddrFound = true
-					break
-				}
-			}
-
-			require.True(t, changeAddrFound)
-		} else {
-			require.Equal(t, o.Address.String(), result.Transaction.Out[i].Address)
-		}
-
 		coins, err := droplet.FromString(result.Transaction.Out[i].Coins)
 		require.NoError(t, err)
 		require.Equal(t, o.Coins, coins, "[%d] %d != %d", i, o.Coins, coins)
@@ -1659,6 +1669,64 @@ func assertCreateTransactionResult(t *testing.T, tc liveCreateTxnTestCase, resul
 			require.NoError(t, err)
 			require.Equal(t, o.Hours, hours, "[%d] %d != %d", i, o.Hours, hours)
 		}
+
+		if o.Address.Null() {
+			// The final change output may not have the address specified,
+			// if the ChangeAddress was not specified in the wallet params.
+			require.Equal(t, i, len(tc.outputs)-1)
+			require.Nil(t, tc.req.ChangeAddress)
+			changeAddr := result.Transaction.Out[i].Address
+			require.False(t, isNullAddress(changeAddr))
+
+			if w != nil && w.Meta.Type == wallet.WalletTypeBip44 {
+				// Check that the change address was a new address generated
+				// from the wallet's change path
+
+				// Get the update wallet from the API.
+				// Look for the last change address.
+				// It should match the change address that was used.
+				// Compare it to the previous wallet
+				w2, err := c.Wallet(w.Meta.Filename)
+				require.NoError(t, err)
+				lastChangeEntry := getLastChangeEntry(t, w2)
+
+				// Compare it to the initial wallet state.
+				// It should be a new address with an incremented child number
+				prevLastChangeEntry := getLastChangeEntry(t, w)
+				require.NotEqual(t, prevLastChangeEntry, lastChangeEntry)
+				if prevLastChangeEntry == nil {
+					require.Equal(t, uint32(0), *lastChangeEntry.ChildNumber)
+				} else {
+					require.Equal(t, *prevLastChangeEntry.ChildNumber+1, *lastChangeEntry.ChildNumber)
+				}
+
+				// Make sure that the last change address in the wallet was used
+				require.False(t, isNullAddress(lastChangeEntry.Address))
+				require.Equal(t, changeAddr, lastChangeEntry.Address)
+			} else {
+				// Check that the automatically-selected change address was one
+				// of the addresses for the UTXOs spent by the transaction
+				changeAddrFound := false
+				for _, x := range result.Transaction.In {
+					require.False(t, isNullAddress(x.Address))
+					if changeAddr == x.Address {
+						changeAddrFound = true
+						break
+					}
+				}
+
+				require.True(t, changeAddrFound)
+			}
+		} else {
+			require.Equal(t, o.Address.String(), result.Transaction.Out[i].Address)
+		}
+	}
+
+	// The wallet should be unmodified if the wallet type is not bip44
+	if w != nil && w.Meta.Type != wallet.WalletTypeBip44 {
+		w2, err := c.Wallet(w.Meta.Filename)
+		require.NoError(t, err)
+		require.Equal(t, w, w2)
 	}
 
 	assertEncodeTxnMatchesTxn(t, result)
@@ -1674,7 +1742,6 @@ func assertCreateTransactionResult(t *testing.T, tc liveCreateTxnTestCase, resul
 	}
 
 	assertVerifyTransaction(t, result.EncodedTransaction, unsigned)
-
 }
 
 func TestLiveWalletCreateTransactionRandomUnsigned(t *testing.T) {

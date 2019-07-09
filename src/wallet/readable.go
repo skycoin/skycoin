@@ -1,18 +1,19 @@
 package wallet
 
 import (
+	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher"
 )
 
 // ReadableEntry wallet entry with json tags
 type ReadableEntry struct {
-	Address     string `json:"address"`
-	Public      string `json:"public_key"`
-	Secret      string `json:"secret_key"`
-	ChildNumber string `json:"child_number,omitempty"` // For bip32/bip44
+	Address     string  `json:"address"`
+	Public      string  `json:"public_key"`
+	Secret      string  `json:"secret_key"`
+	ChildNumber *uint32 `json:"child_number,omitempty"` // For bip32/bip44
+	Change      *uint32 `json:"change,omitempty"`       // For bip44
 }
 
 // NewReadableEntry creates readable wallet entry
@@ -39,10 +40,16 @@ func NewReadableEntry(coinType CoinType, walletType string, e Entry) ReadableEnt
 
 	switch walletType {
 	case WalletTypeBip44:
-		re.ChildNumber = strconv.FormatUint(uint64(e.ChildNumber), 10)
+		cn := e.ChildNumber
+		change := e.Change
+		re.ChildNumber = &cn
+		re.Change = &change
 	default:
 		if e.ChildNumber != 0 {
 			logger.Panicf("wallet.Entry.ChildNumber is not 0 but wallet type is %q", walletType)
+		}
+		if e.Change != 0 {
+			logger.Panicf("wallet.Entry.Change is not 0 but wallet type is %q", walletType)
 		}
 	}
 
@@ -127,21 +134,31 @@ func newEntryFromReadable(coinType CoinType, walletType string, re *ReadableEntr
 	}
 
 	var childNumber uint32
+	var change uint32
 	switch walletType {
 	case WalletTypeBip44:
-		if re.ChildNumber == "" {
+		if re.ChildNumber == nil {
 			return nil, fmt.Errorf("child_number required for %q wallet type", walletType)
 		}
-
-		childIdx, err := strconv.ParseUint(re.ChildNumber, 10, 32)
-		if err != nil {
-			return nil, err
+		if re.Change == nil {
+			return nil, fmt.Errorf("change required for %q wallet type", walletType)
 		}
-		childNumber = uint32(childIdx)
+
+		childNumber = *re.ChildNumber
+		change = *re.Change
+
+		switch change {
+		case 0, 1:
+		default:
+			return nil, errors.New("change must be either 0 or 1")
+		}
 
 	default:
-		if re.ChildNumber != "" {
+		if re.ChildNumber != nil {
 			return nil, fmt.Errorf("child_number should not be set for %q wallet type", walletType)
+		}
+		if re.Change != nil {
+			return nil, fmt.Errorf("change should not be set for %q wallet type", walletType)
 		}
 	}
 
@@ -150,6 +167,7 @@ func newEntryFromReadable(coinType CoinType, walletType string, re *ReadableEntr
 		Public:      p,
 		Secret:      secret,
 		ChildNumber: childNumber,
+		Change:      change,
 	}, nil
 }
 

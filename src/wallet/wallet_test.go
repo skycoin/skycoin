@@ -13,6 +13,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip32"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
 	"github.com/skycoin/skycoin/src/cipher/encrypt"
 	"github.com/skycoin/skycoin/src/util/logging"
 )
@@ -122,7 +125,7 @@ func TestNewWallet(t *testing.T) {
 			name:    "ok all defaults",
 			wltName: "test.wlt",
 			opts: Options{
-				Seed: "testseed123",
+				Seed: bip39.MustNewDefaultMnemonic(),
 			},
 			expect: expect{
 				meta: map[string]string{
@@ -336,30 +339,40 @@ func TestWalletLock(t *testing.T) {
 		err     error
 	}{
 		{
-			"ok",
-			Options{
+			name: "ok deterministic",
+			opts: Options{
 				Seed: "seed",
+				Type: WalletTypeDeterministic,
 			},
-			[]byte("pwd"),
-			nil,
+			lockPwd: []byte("pwd"),
 		},
 		{
-			"password is nil",
-			Options{
-				Seed: "seed",
+			name: "ok bip44",
+			opts: Options{
+				Seed: bip39.MustNewDefaultMnemonic(),
+				Type: WalletTypeBip44,
 			},
-			nil,
-			ErrMissingPassword,
+			lockPwd: []byte("pwd"),
 		},
 		{
-			"wallet already encrypted",
-			Options{
+			name: "password is nil",
+			opts: Options{
+				Seed: "seed",
+				Type: WalletTypeDeterministic,
+			},
+			lockPwd: nil,
+			err:     ErrMissingPassword,
+		},
+		{
+			name: "wallet already encrypted",
+			opts: Options{
 				Seed:     "seed",
 				Encrypt:  true,
 				Password: []byte("pwd"),
+				Type:     WalletTypeDeterministic,
 			},
-			[]byte("pwd"),
-			ErrWalletEncrypted,
+			lockPwd: []byte("pwd"),
+			err:     ErrWalletEncrypted,
 		},
 	}
 
@@ -400,7 +413,6 @@ func TestWalletLock(t *testing.T) {
 
 		}
 	}
-
 }
 
 func TestWalletUnlock(t *testing.T) {
@@ -411,33 +423,45 @@ func TestWalletUnlock(t *testing.T) {
 		err       error
 	}{
 		{
-			"ok",
-			Options{
+			name: "ok deterministic",
+			opts: Options{
 				Seed:     "seed",
 				Encrypt:  true,
 				Password: []byte("pwd"),
+				Type:     WalletTypeDeterministic,
 			},
-			[]byte("pwd"),
-			nil,
+			unlockPwd: []byte("pwd"),
 		},
 		{
-			"unlock with nil password",
-			Options{
+			name: "ok bip44",
+			opts: Options{
+				Seed:     bip39.MustNewDefaultMnemonic(),
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				Type:     WalletTypeBip44,
+			},
+			unlockPwd: []byte("pwd"),
+		},
+		{
+			name: "unlock with nil password",
+			opts: Options{
 				Seed:     "seed",
 				Encrypt:  true,
 				Password: []byte("pwd"),
+				Type:     WalletTypeDeterministic,
 			},
-			nil,
-			ErrMissingPassword,
+			unlockPwd: nil,
+			err:       ErrMissingPassword,
 		},
 		{
-			"unlock undecrypted wallet",
-			Options{
+			name: "unlock undecrypted wallet",
+			opts: Options{
 				Seed:    "seed",
 				Encrypt: false,
+				Type:    WalletTypeDeterministic,
 			},
-			[]byte("pwd"),
-			ErrWalletNotEncrypted,
+			unlockPwd: []byte("pwd"),
+			err:       ErrWalletNotEncrypted,
 		},
 	}
 
@@ -462,15 +486,29 @@ func TestWalletUnlock(t *testing.T) {
 				require.Equal(t, tc.opts.Seed, wlt.Seed())
 
 				// Checks the generated addresses
-				sd, sks := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(wlt.Seed()), 1)
 				require.Equal(t, 1, wlt.EntriesLen())
 
 				// Checks the last seed
-				require.Equal(t, hex.EncodeToString(sd), wlt.LastSeed())
+				switch tc.opts.Type {
+				case WalletTypeBip44:
+					require.Empty(t, wlt.LastSeed())
+					keys := generateBip44Chain(t, wlt.Seed(), wlt.SeedPassphrase(), bip44.ExternalChainIndex, 1)
+					for i, e := range wlt.GetEntries() {
+						sk := cipher.MustNewSecKey(keys[i].Key)
+						addr := cipher.MustAddressFromSecKey(sk)
+						require.Equal(t, addr, e.Address)
+					}
 
-				for i, e := range wlt.GetEntries() {
-					addr := cipher.MustAddressFromSecKey(sks[i])
-					require.Equal(t, addr, e.Address)
+				case WalletTypeDeterministic:
+					sd, sks := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(wlt.Seed()), 1)
+					require.Equal(t, hex.EncodeToString(sd), wlt.LastSeed())
+
+					for i, e := range wlt.GetEntries() {
+						addr := cipher.MustAddressFromSecKey(sks[i])
+						require.Equal(t, addr, e.Address)
+					}
+				default:
+					t.Fatalf("unhandled wallet type %q", tc.opts.Type)
 				}
 
 				// Checks the original seeds
@@ -481,40 +519,47 @@ func TestWalletUnlock(t *testing.T) {
 					require.True(t, e.Secret.Null())
 				}
 
-				// Checks if the seed and lastSeed in original wallet are sitll empty
+				// Checks if the seed and lastSeed in original wallet are still empty
 				require.Empty(t, w.Seed())
 				require.Empty(t, w.LastSeed())
+				require.Empty(t, w.SeedPassphrase())
 			})
 		}
 	}
 }
 
 func TestLockAndUnLock(t *testing.T) {
-	for ct := range cryptoTable {
-		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
-			w, err := NewWallet("wallet", Options{
-				Label: "wallet",
-				Seed:  "seed",
+	for _, walletType := range []string{
+		WalletTypeBip44,
+		WalletTypeDeterministic,
+	} {
+		for ct := range cryptoTable {
+			t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
+				w, err := NewWallet("wallet", Options{
+					Label: "wallet",
+					Seed:  bip39.MustNewDefaultMnemonic(),
+					Type:  walletType,
+				})
+				require.NoError(t, err)
+				_, err = w.GenerateAddresses(9)
+				require.NoError(t, err)
+				require.Equal(t, 10, w.EntriesLen())
+
+				// clone the wallet
+				cw := w.Clone()
+				require.Equal(t, w, cw)
+
+				// lock the cloned wallet
+				err = Lock(cw, []byte("pwd"), ct)
+				require.NoError(t, err)
+
+				// unlock the cloned wallet
+				ucw, err := Unlock(cw, []byte("pwd"))
+				require.NoError(t, err)
+
+				require.Equal(t, w, ucw)
 			})
-			require.NoError(t, err)
-			_, err = w.GenerateAddresses(9)
-			require.NoError(t, err)
-			require.Equal(t, 10, w.EntriesLen())
-
-			// clone the wallet
-			cw := w.Clone()
-			require.Equal(t, w, cw)
-
-			// lock the cloned wallet
-			err = Lock(cw, []byte("pwd"), ct)
-			require.NoError(t, err)
-
-			// unlock the cloned wallet
-			ucw, err := Unlock(cw, []byte("pwd"))
-			require.NoError(t, err)
-
-			require.Equal(t, w, ucw)
-		})
+		}
 	}
 }
 
@@ -693,42 +738,79 @@ func TestWalletGenerateAddress(t *testing.T) {
 		err                error
 	}{
 		{
-			"ok with one address",
-			Options{
-				Seed: "seed",
+			name: "ok with one address deterministic",
+			opts: Options{
+				Seed: bip39.MustNewDefaultMnemonic(),
+				Type: WalletTypeDeterministic,
 			},
-			1,
-			false,
-			nil,
+			num: 1,
 		},
 		{
-			"ok with two address",
-			Options{
-				Seed: "seed",
+			name: "ok with two address deterministic",
+			opts: Options{
+				Seed: bip39.MustNewDefaultMnemonic(),
+				Type: WalletTypeDeterministic,
 			},
-			2,
-			false,
-			nil,
+			num: 2,
 		},
 		{
-			"ok with three address and generate one address each time",
-			Options{
-				Seed: "seed",
+			name: "ok with three address and generate one address each time deterministic",
+			opts: Options{
+				Seed: bip39.MustNewDefaultMnemonic(),
+				Type: WalletTypeDeterministic,
 			},
-			2,
-			true,
-			nil,
+			num:                2,
+			oneAddressEachTime: true,
 		},
 		{
-			"wallet is encrypted",
-			Options{
-				Seed:     "seed",
+			name: "wallet is encrypted deterministic",
+			opts: Options{
+				Seed:     bip39.MustNewDefaultMnemonic(),
+				Type:     WalletTypeDeterministic,
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
-			2,
-			true,
-			ErrWalletEncrypted,
+			num:                2,
+			oneAddressEachTime: true,
+			err:                ErrWalletEncrypted,
+		},
+
+		{
+			name: "ok with one address bip44",
+			opts: Options{
+				Seed: bip39.MustNewDefaultMnemonic(),
+				Type: WalletTypeBip44,
+			},
+			num: 1,
+		},
+		{
+			name: "ok with two address bip44",
+			opts: Options{
+				Seed: bip39.MustNewDefaultMnemonic(),
+				Type: WalletTypeBip44,
+			},
+			num: 2,
+		},
+		{
+			name: "ok with three address and generate one address each time bip44",
+			opts: Options{
+				Seed: bip39.MustNewDefaultMnemonic(),
+				Type: WalletTypeBip44,
+			},
+			num:                2,
+			oneAddressEachTime: true,
+		},
+		{
+			name: "wallet is encrypted bip44",
+			opts: Options{
+				Seed:     bip39.MustNewDefaultMnemonic(),
+				Type:     WalletTypeBip44,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			num:                2,
+			oneAddressEachTime: true,
+			err:                ErrWalletEncrypted,
 		},
 	}
 
@@ -766,14 +848,50 @@ func TestWalletGenerateAddress(t *testing.T) {
 
 				addrs := w.GetAddresses()
 
-				_, keys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(tc.opts.Seed), int(tc.num))
-				for i, k := range keys {
-					a := cipher.MustAddressFromSecKey(k)
-					require.Equal(t, a.String(), addrs[i].String())
+				switch tc.opts.Type {
+				case WalletTypeDeterministic:
+					_, keys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(tc.opts.Seed), int(tc.num))
+					for i, k := range keys {
+						a := cipher.MustAddressFromSecKey(k)
+						require.Equal(t, a.String(), addrs[i].String())
+					}
+				case WalletTypeBip44:
+					keys := generateBip44Chain(t, tc.opts.Seed, tc.opts.SeedPassphrase, bip44.ExternalChainIndex, int(tc.num))
+					for i, k := range keys {
+						sk := cipher.MustNewSecKey(k.Key)
+						a := cipher.MustAddressFromSecKey(sk)
+						require.Equal(t, a.String(), addrs[i].String())
+					}
+				default:
+					t.Fatalf("unhandled wallet type %q", tc.opts.Type)
 				}
 			})
 		}
 	}
+}
+
+// generateBip44Chain generates N keys for the leaf change chain
+func generateBip44Chain(t *testing.T, seed, seedPassphrase string, change uint32, num int) []*bip32.PrivateKey {
+	ss, err := bip39.NewSeed(seed, seedPassphrase)
+	require.NoError(t, err)
+
+	cc, err := bip44.NewCoin(ss, bip44.CoinTypeSkycoin)
+	require.NoError(t, err)
+
+	acct, err := cc.Account(0)
+	require.NoError(t, err)
+
+	chain, err := acct.NewPrivateChildKey(change)
+	require.NoError(t, err)
+
+	keys := make([]*bip32.PrivateKey, num)
+	for i := 0; i < num; i++ {
+		k, err := chain.NewPrivateChildKey(uint32(i))
+		require.NoError(t, err)
+		keys[i] = k
+	}
+
+	return keys
 }
 
 func TestWalletGetEntry(t *testing.T) {
@@ -861,44 +979,62 @@ func TestWalletCollectionAddEntry(t *testing.T) {
 }
 
 func TestWalletGuard(t *testing.T) {
+	cases := []struct {
+		name       string
+		walletType string
+	}{
+		{
+			name:       "deterministic",
+			walletType: WalletTypeDeterministic,
+		},
+		{
+			name:       "bip44",
+			walletType: WalletTypeBip44,
+		},
+	}
+
 	for ct := range cryptoTable {
-		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
-			validate := func(w Wallet) {
-				require.Equal(t, "", w.Seed())
-				require.Equal(t, "", w.LastSeed())
-				for _, e := range w.GetEntries() {
-					require.Equal(t, cipher.SecKey{}, e.Secret)
+		for _, tc := range cases {
+			t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
+				validate := func(w Wallet) {
+					require.Equal(t, "", w.Seed())
+					require.Equal(t, "", w.LastSeed())
+					require.Equal(t, "", w.SeedPassphrase())
+					for _, e := range w.GetEntries() {
+						require.True(t, e.Secret.Null())
+					}
 				}
-			}
 
-			w, err := NewWallet("t.wlt", Options{
-				Seed:       "seed",
-				Encrypt:    true,
-				Password:   []byte("pwd"),
-				CryptoType: ct,
-			})
-			require.NoError(t, err)
+				seed := bip39.MustNewDefaultMnemonic()
+				w, err := NewWallet("t.wlt", Options{
+					Seed:       seed,
+					Encrypt:    true,
+					Password:   []byte("pwd"),
+					CryptoType: ct,
+					Type:       tc.walletType,
+				})
+				require.NoError(t, err)
 
-			err = GuardUpdate(w, []byte("pwd"), func(w Wallet) error {
-				require.Equal(t, "seed", w.Seed())
-				w.SetLabel("label")
-				return nil
-			})
-			require.NoError(t, err)
-			require.Equal(t, "label", w.Label())
-			validate(w)
-
-			err = GuardView(w, []byte("pwd"), func(w Wallet) error {
+				err = GuardUpdate(w, []byte("pwd"), func(w Wallet) error {
+					require.Equal(t, seed, w.Seed())
+					w.SetLabel("label")
+					return nil
+				})
+				require.NoError(t, err)
 				require.Equal(t, "label", w.Label())
-				w.SetLabel("new label")
-				return nil
+				validate(w)
+
+				err = GuardView(w, []byte("pwd"), func(w Wallet) error {
+					require.Equal(t, "label", w.Label())
+					w.SetLabel("new label")
+					return nil
+				})
+				require.NoError(t, err)
+
+				require.Equal(t, "label", w.Label())
+				validate(w)
 			})
-			require.NoError(t, err)
-
-			require.Equal(t, "label", w.Label())
-			validate(w)
-
-		})
+		}
 	}
 }
 
@@ -914,13 +1050,13 @@ func TestRemoveBackupFiles(t *testing.T) {
 		expectedRemainingFiles map[string]struct{}
 	}{
 		{
-			"no file",
-			[]wltInfo{},
-			map[string]struct{}{},
+			name:                   "no file",
+			initFiles:              []wltInfo{},
+			expectedRemainingFiles: map[string]struct{}{},
 		},
 		{
-			"wlt v0.1=1 bak v0.1=1 delete 1 bak",
-			[]wltInfo{
+			name: "wlt v0.1=1 bak v0.1=1 delete 1 bak",
+			initFiles: []wltInfo{
 				{
 					"t1.wlt",
 					"0.1",
@@ -930,13 +1066,13 @@ func TestRemoveBackupFiles(t *testing.T) {
 					"0.1",
 				},
 			},
-			map[string]struct{}{
+			expectedRemainingFiles: map[string]struct{}{
 				"t1.wlt": struct{}{},
 			},
 		},
 		{
-			"wlt v0.1=2 bak v0.1=1 delete 1 bak",
-			[]wltInfo{
+			name: "wlt v0.1=2 bak v0.1=1 delete 1 bak",
+			initFiles: []wltInfo{
 				{
 					"t1.wlt",
 					"0.1",
@@ -950,14 +1086,14 @@ func TestRemoveBackupFiles(t *testing.T) {
 					"0.1",
 				},
 			},
-			map[string]struct{}{
+			expectedRemainingFiles: map[string]struct{}{
 				"t1.wlt": struct{}{},
 				"t2.wlt": struct{}{},
 			},
 		},
 		{
-			"wlt v0.1=3 bak v0.1=1 delete 1 bak",
-			[]wltInfo{
+			name: "wlt v0.1=3 bak v0.1=1 delete 1 bak",
+			initFiles: []wltInfo{
 				{
 					"t1.wlt",
 					"0.1",
@@ -975,15 +1111,15 @@ func TestRemoveBackupFiles(t *testing.T) {
 					"0.1",
 				},
 			},
-			map[string]struct{}{
+			expectedRemainingFiles: map[string]struct{}{
 				"t1.wlt": struct{}{},
 				"t2.wlt": struct{}{},
 				"t3.wlt": struct{}{},
 			},
 		},
 		{
-			"wlt v0.1=3 bak v0.1=2 delete 2 bak",
-			[]wltInfo{
+			name: "wlt v0.1=3 bak v0.1=2 delete 2 bak",
+			initFiles: []wltInfo{
 				{
 					"t1.wlt",
 					"0.1",
@@ -1005,15 +1141,15 @@ func TestRemoveBackupFiles(t *testing.T) {
 					"0.1",
 				},
 			},
-			map[string]struct{}{
+			expectedRemainingFiles: map[string]struct{}{
 				"t1.wlt": struct{}{},
 				"t2.wlt": struct{}{},
 				"t3.wlt": struct{}{},
 			},
 		},
 		{
-			"wlt v0.1=3 bak v0.1=3 delete 3 bak",
-			[]wltInfo{
+			name: "wlt v0.1=3 bak v0.1=3 delete 3 bak",
+			initFiles: []wltInfo{
 				{
 					"t1.wlt",
 					"0.1",
@@ -1039,15 +1175,15 @@ func TestRemoveBackupFiles(t *testing.T) {
 					"0.1",
 				},
 			},
-			map[string]struct{}{
+			expectedRemainingFiles: map[string]struct{}{
 				"t1.wlt": struct{}{},
 				"t2.wlt": struct{}{},
 				"t3.wlt": struct{}{},
 			},
 		},
 		{
-			"wlt v0.1=3 bak v0.1=1 no delete",
-			[]wltInfo{
+			name: "wlt v0.1=3 bak v0.1=1 no delete",
+			initFiles: []wltInfo{
 				{
 					"t1.wlt",
 					"0.1",
@@ -1065,7 +1201,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 					"0.1",
 				},
 			},
-			map[string]struct{}{
+			expectedRemainingFiles: map[string]struct{}{
 				"t1.wlt":     struct{}{},
 				"t2.wlt":     struct{}{},
 				"t3.wlt":     struct{}{},
@@ -1073,8 +1209,8 @@ func TestRemoveBackupFiles(t *testing.T) {
 			},
 		},
 		{
-			"wlt v0.2=3 bak v0.2=1 no delete",
-			[]wltInfo{
+			name: "wlt v0.2=3 bak v0.2=1 no delete",
+			initFiles: []wltInfo{
 				{
 					"t1.wlt",
 					"0.2",
@@ -1092,7 +1228,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 					"0.2",
 				},
 			},
-			map[string]struct{}{
+			expectedRemainingFiles: map[string]struct{}{
 				"t1.wlt":     struct{}{},
 				"t2.wlt":     struct{}{},
 				"t3.wlt":     struct{}{},
@@ -1100,8 +1236,8 @@ func TestRemoveBackupFiles(t *testing.T) {
 			},
 		},
 		{
-			"wlt v0.1=1 bak v0.1=1 wlt v0.2=2 bak v0.2=2 delete 1 bak",
-			[]wltInfo{
+			name: "wlt v0.1=1 bak v0.1=1 wlt v0.2=2 bak v0.2=2 delete 1 bak",
+			initFiles: []wltInfo{
 				{
 					"t1.wlt",
 					"0.1",
@@ -1127,7 +1263,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 					"0.2",
 				},
 			},
-			map[string]struct{}{
+			expectedRemainingFiles: map[string]struct{}{
 				"t1.wlt":     struct{}{},
 				"t2.wlt":     struct{}{},
 				"t2.wlt.bak": struct{}{},
@@ -1136,8 +1272,8 @@ func TestRemoveBackupFiles(t *testing.T) {
 			},
 		},
 		{
-			"wlt v0.1=1 bak v0.1=2 wlt v0.2=2 bak v0.2=1 delete 1 bak",
-			[]wltInfo{
+			name: "wlt v0.1=1 bak v0.1=2 wlt v0.2=2 bak v0.2=1 delete 1 bak",
+			initFiles: []wltInfo{
 				{
 					"t1.wlt",
 					"0.1",
@@ -1163,7 +1299,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 					"0.2",
 				},
 			},
-			map[string]struct{}{
+			expectedRemainingFiles: map[string]struct{}{
 				"t1.wlt":     struct{}{},
 				"t2.wlt":     struct{}{},
 				"t2.wlt.bak": struct{}{},
@@ -1180,6 +1316,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 			for _, f := range tc.initFiles {
 				w, err := NewWallet(f.wltName, Options{
 					Seed: "s1",
+					Type: WalletTypeDeterministic,
 				})
 				require.NoError(t, err)
 				w.SetVersion(f.version)

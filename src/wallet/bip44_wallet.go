@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"sort"
 
 	"github.com/sirupsen/logrus"
 
@@ -441,8 +442,7 @@ func (w *Bip44Wallet) Fingerprint() string {
 // ReadableBip44Wallet used for [de]serialization of a deterministic wallet
 type ReadableBip44Wallet struct {
 	Meta            `json:"meta"`
-	ExternalEntries ReadableEntries `json:"external_entries"`
-	ChangeEntries   ReadableEntries `json:"change_entries"`
+	ReadableEntries `json:"entries"`
 }
 
 // LoadReadableBip44Wallet loads a deterministic wallet from disk
@@ -461,8 +461,7 @@ func LoadReadableBip44Wallet(wltFile string) (*ReadableBip44Wallet, error) {
 func NewReadableBip44Wallet(w *Bip44Wallet) *ReadableBip44Wallet {
 	return &ReadableBip44Wallet{
 		Meta:            w.Meta.clone(),
-		ExternalEntries: newReadableEntries(w.ExternalEntries, w.Meta.Coin(), w.Meta.Type()),
-		ChangeEntries:   newReadableEntries(w.ChangeEntries, w.Meta.Coin(), w.Meta.Type()),
+		ReadableEntries: newReadableEntries(w.GetEntries(), w.Meta.Coin(), w.Meta.Type()),
 	}
 }
 
@@ -478,26 +477,32 @@ func (rw *ReadableBip44Wallet) ToWallet() (Wallet, error) {
 		return nil, err
 	}
 
-	ets, err := rw.ExternalEntries.toWalletEntries(w.Meta.Coin(), w.Meta.Type(), w.Meta.IsEncrypted())
+	ets, err := rw.ReadableEntries.toWalletEntries(w.Meta.Coin(), w.Meta.Type(), w.Meta.IsEncrypted())
 	if err != nil {
-		logger.WithError(err).Error("ReadableBip44Wallet.ToWallet ExternalEntries.toWalletEntries failed")
+		logger.WithError(err).Error("ReadableBip44Wallet.ToWallet ReadableEntries.toWalletEntries failed")
 		return nil, err
 	}
 
-	w.ExternalEntries = ets
-
-	ets, err = rw.ChangeEntries.toWalletEntries(w.Meta.Coin(), w.Meta.Type(), w.Meta.IsEncrypted())
-	if err != nil {
-		logger.WithError(err).Error("ReadableBip44Wallet.ToWallet ExternalEntries.toWalletEntries failed")
-		return nil, err
+	// Split the single array of entries into separate external and change chains,
+	// for easier internal management
+	for _, e := range ets {
+		switch e.Change {
+		case 0:
+			w.ExternalEntries = append(w.ExternalEntries, e)
+		case 1:
+			w.ChangeEntries = append(w.ChangeEntries, e)
+		default:
+			logger.Panicf("invalid change value %d", e.Change)
+		}
 	}
 
-	w.ChangeEntries = ets
+	// Sort childNumber low to high
+	sort.Slice(w.ExternalEntries, func(i, j int) bool {
+		return w.ExternalEntries[i].ChildNumber < w.ExternalEntries[j].ChildNumber
+	})
+	sort.Slice(w.ChangeEntries, func(i, j int) bool {
+		return w.ChangeEntries[i].ChildNumber < w.ChangeEntries[j].ChildNumber
+	})
 
-	return w, nil
-}
-
-// GetEntries returns all bip44 wallet entries. External entries come before change entries.
-func (rw *ReadableBip44Wallet) GetEntries() ReadableEntries {
-	return append(rw.ExternalEntries, rw.ChangeEntries...)
+	return w, err
 }

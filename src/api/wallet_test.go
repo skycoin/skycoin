@@ -2659,9 +2659,9 @@ func TestWalletRecover(t *testing.T) {
 				Seed: "fooseed",
 			},
 			gatewayReturn: gatewayReturnPair{
-				err: wallet.ErrWalletRecoverSeedWrong,
+				err: wallet.ErrWalletRecoverSeedOrPassphraseWrong,
 			},
-			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, wallet.ErrWalletRecoverSeedWrong.Error()),
+			httpResponse: NewHTTPErrorResponse(http.StatusBadRequest, wallet.ErrWalletRecoverSeedOrPassphraseWrong.Error()),
 		},
 		{
 			name:        "wallet does not exist",

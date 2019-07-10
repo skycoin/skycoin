@@ -2789,16 +2789,17 @@ func TestStableWalletCreate(t *testing.T) {
 			errMsg: []byte("Error: seedPassphrase is only used for \"bip44\" wallets\n"),
 		},
 		{
-			name:  "generate wallet with -n option, deterministic",
-			args:  []string{"-n", "5", "-t", wallet.WalletTypeDeterministic},
+			name:  "generate wallet with -n option, bip44",
+			args:  []string{"-n", "5", "-t", wallet.WalletTypeBip44},
 			setup: createTempWalletDir,
 			checkWallet: func(t *testing.T, w wallet.Wallet) {
 				// Confirms the default wallet name is skycoin_cli.wlt
 				require.Equal(t, "skycoin_cli.wlt", w.Filename())
-				require.Equal(t, wallet.WalletTypeDeterministic, w.Type())
+				require.Equal(t, wallet.WalletTypeBip44, w.Type())
 				// Confirms the label is empty
 				require.Empty(t, w.Label())
 				// Confirms wallet has 5 address entries
+				require.Len(t, w.(*wallet.Bip44Wallet).ExternalEntries, 5)
 				require.Len(t, w.GetEntries(), 5)
 			},
 		},
@@ -2809,11 +2810,10 @@ func TestStableWalletCreate(t *testing.T) {
 			checkWallet: func(t *testing.T, w wallet.Wallet) {
 				// Confirms the default wallet name is skycoin_cli.wlt
 				require.Equal(t, "skycoin_cli.wlt", w.Filename())
-				require.Equal(t, wallet.WalletTypeBip44, w.Type())
+				require.Equal(t, wallet.WalletTypeDeterministic, w.Type())
 				// Confirms the label is empty
 				require.Empty(t, w.Label())
 				// Confirms wallet has 5 address entries
-				require.Len(t, w.(*wallet.Bip44Wallet).ExternalEntries, 5)
 				require.Len(t, w.GetEntries(), 5)
 			},
 		},

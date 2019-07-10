@@ -191,7 +191,7 @@ func TestNewPex(t *testing.T) {
 		require.True(t, v.Trusted)
 	}
 
-	// Recreate pex with the extra peer removed form DefaultConnections
+	// Recreate pex with the extra peer removed from DefaultConnections
 	config.DefaultConnections = config.DefaultConnections[:len(config.DefaultConnections)-1]
 	_, err = New(config)
 	require.NoError(t, err)

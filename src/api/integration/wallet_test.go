@@ -841,19 +841,49 @@ func TestGetWalletSeedEnabledAPI(t *testing.T) {
 
 	c := newClient()
 
-	for _, walletType := range createWalletTypes {
-		t.Run(walletType, func(t *testing.T) {
+	cases := []struct {
+		name           string
+		walletType     string
+		seed1          string
+		seed2          string
+		seedPassphrase string
+	}{
+		{
+			name:       "deterministic",
+			walletType: wallet.WalletTypeDeterministic,
+			seed1:      bip39.MustNewDefaultMnemonic(),
+			seed2:      bip39.MustNewDefaultMnemonic(),
+		},
+		{
+			name:       "bip44 without seed passphrase",
+			walletType: wallet.WalletTypeBip44,
+			seed1:      bip39.MustNewDefaultMnemonic(),
+			seed2:      bip39.MustNewDefaultMnemonic(),
+		},
+		{
+			name:           "bip44 with seed passphrase",
+			walletType:     wallet.WalletTypeBip44,
+			seed1:          bip39.MustNewDefaultMnemonic(),
+			seed2:          bip39.MustNewDefaultMnemonic(),
+			seedPassphrase: "foobar",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NotEmpty(t, tc.seed1)
+			require.NotEmpty(t, tc.seed2)
+
 			// Create an encrypted wallet
-			w, seed, clean := createWallet(t, c, true, "pwd", "", "", walletType)
+			w, _, clean := createWallet(t, c, true, "pwd", tc.seed1, tc.seedPassphrase, tc.walletType)
 			defer clean()
 
-			require.NotEmpty(t, seed)
-
-			sd, err := c.WalletSeed(w.Meta.Filename, "pwd")
+			resp, err := c.WalletSeed(w.Meta.Filename, "pwd")
 			require.NoError(t, err)
 
 			// Confirms the seed are matched
-			require.Equal(t, seed, sd)
+			require.Equal(t, tc.seed1, resp.Seed)
+			require.Equal(t, tc.seedPassphrase, resp.SeedPassphrase)
 
 			// Get seed of wrong wallet id
 			_, err = c.WalletSeed("w.wlt", "pwd")
@@ -868,7 +898,7 @@ func TestGetWalletSeedEnabledAPI(t *testing.T) {
 			assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - missing password")
 
 			// Create unencrypted wallet to check against
-			nw, _, nclean := createWallet(t, c, false, "", "", "", walletType)
+			nw, _, nclean := createWallet(t, c, false, "", tc.seed2, tc.seedPassphrase, tc.walletType)
 			defer nclean()
 			_, err = c.WalletSeed(nw.Meta.Filename, "pwd")
 			assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - wallet is not encrypted")
@@ -880,7 +910,7 @@ func TestGetWalletSeedEnabledAPI(t *testing.T) {
 // 1. The minimal coins and coin hours requirements are met.
 // 2. The wallet has at least two address entry.
 // Returns the loaded wallet, total coins, total coin hours and password of the wallet.
-func prepareAndCheckWallet(t *testing.T, c *api.Client, miniCoins, miniCoinHours uint64) (wallet.Wallet, uint64, uint64, string) {
+func prepareAndCheckWallet(t *testing.T, c *api.Client, minCoins, minCoinHours uint64) (wallet.Wallet, uint64, uint64, string) {
 	walletDir, walletName, password := getWalletFromEnv(t, c)
 	walletPath := filepath.Join(walletDir, walletName)
 
@@ -912,12 +942,12 @@ func prepareAndCheckWallet(t *testing.T, c *api.Client, miniCoins, miniCoinHours
 	}
 
 	coins, hours := getWalletBalance(t, c, walletName)
-	if coins < miniCoins {
-		t.Fatalf("Wallet must have at least %d coins", miniCoins)
+	if coins < minCoins {
+		t.Fatalf("Wallet must have at least %d coins", minCoins)
 	}
 
-	if hours < miniCoinHours {
-		t.Fatalf("Wallet must have at least %d coin hours", miniCoinHours)
+	if hours < minCoinHours {
+		t.Fatalf("Wallet must have at least %d coin hours", minCoinHours)
 	}
 
 	if err := wallet.Save(w, walletDir); err != nil {

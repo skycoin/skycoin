@@ -4,8 +4,6 @@
 .PHONY: integration-test-stable
 .PHONY: integration-test-stable-disable-csrf
 .PHONY: integration-test-stable-disable-wallet-api
-.PHONY: integration-test-stable-disable-seed-api
-.PHONY: integration-test-stable-enable-seed-api
 .PHONY: integration-test-stable-enable-seed-api
 .PHONY: integration-test-stable-disable-gui
 .PHONY: integration-test-stable-db-no-unconfirmed
@@ -71,7 +69,6 @@ check: lint clean-coverage test test-386 integration-tests-stable check-newcoin 
 integration-tests-stable: integration-test-stable \
 	integration-test-stable-disable-csrf \
 	integration-test-stable-disable-wallet-api \
-	integration-test-stable-disable-seed-api \
 	integration-test-stable-enable-seed-api \
 	integration-test-stable-disable-gui \
 	integration-test-stable-auth \

@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - #2287 A `Content-Type` with a `charset` specified, for example `application/json; charset=utf-8`, will not return an HTTP 415 error anymore
 - Fix `fiber.toml` transaction verification parameters ignored by newcoin
 - #2373 Fix and clean-up further panics with various `skycoin-cli` commands (lastBlocks, checkdb) which were not correctly handling arguments.
+- #2442 Reset the "trusted" flag to false for all peers on load, before registering default hardcoded peers in the peerlist
 
 ### Changed
 

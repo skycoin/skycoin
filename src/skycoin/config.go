@@ -346,10 +346,6 @@ func NewNodeConfig(mode string, node fiber.NodeConfig) NodeConfig {
 func (c *Config) postProcess() error {
 	if help {
 		flag.Usage()
-		fmt.Println("Additional environment variables:")
-		fmt.Printf("* USER_BURN_FACTOR - Set the coin hour burn factor required for user-created transactions. Must be >= %d.\n", params.MinBurnFactor)
-		fmt.Printf("* USER_MAX_TXN_SIZE - Set the maximum transaction size (in bytes) allowed for user-created transactions. Must be >= %d.\n", params.MinTransactionSize)
-		fmt.Printf("* USER_MAX_DECIMALS - Set the maximum decimals allowed for user-created transactions. Must be <= %d.\n", droplet.Exponent)
 		os.Exit(0)
 	}
 

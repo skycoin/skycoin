@@ -238,15 +238,19 @@ func New(cfg Config) (*Pex, error) {
 		return nil, err
 	}
 
-	// Load default hardcoded peers
+	// Unset trusted status from any existing peers, regenerate
+	// them from the DefaultConnections
+	pex.setAllUntrusted()
+
+	// Load default hardcoded peers, mark them as trusted
 	for _, addr := range cfg.DefaultConnections {
 		// Default peers will mark as trusted peers.
 		if err := pex.AddPeer(addr); err != nil {
 			logger.Critical().WithError(err).Error("Add default peer failed")
 			return nil, err
 		}
-		if err := pex.SetTrusted(addr); err != nil {
-			logger.Critical().WithError(err).Error("pex.SetTrusted for default peer failed")
+		if err := pex.setTrusted(addr); err != nil {
+			logger.Critical().WithError(err).Error("pex.setTrusted for default peer failed")
 			return nil, err
 		}
 	}
@@ -512,8 +516,8 @@ func (px *Pex) SetPrivate(addr string, private bool) error {
 	return px.peerlist.setPrivate(cleanAddr, private)
 }
 
-// SetTrusted updates peer's trusted value
-func (px *Pex) SetTrusted(addr string) error {
+// setTrusted marks a peer as a default peer by setting its trusted flag to true
+func (px *Pex) setTrusted(addr string) error {
 	px.Lock()
 	defer px.Unlock()
 

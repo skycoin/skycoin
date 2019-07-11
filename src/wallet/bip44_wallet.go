@@ -488,9 +488,9 @@ func (rw *ReadableBip44Wallet) ToWallet() (Wallet, error) {
 	// for easier internal management
 	for _, e := range ets {
 		switch e.Change {
-		case 0:
+		case bip44.ExternalChainIndex:
 			w.ExternalEntries = append(w.ExternalEntries, e)
-		case 1:
+		case bip44.ChangeChainIndex:
 			w.ChangeEntries = append(w.ChangeEntries, e)
 		default:
 			logger.Panicf("invalid change value %d", e.Change)

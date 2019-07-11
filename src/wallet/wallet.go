@@ -140,17 +140,17 @@ func NewWalletFilename() string {
 
 // Options options that could be used when creating a wallet
 type Options struct {
-	Type           string         // wallet type: deterministic, collection. Refers to which key generation mechanism is used.
-	Coin           CoinType       // coin type: skycoin, bitcoin, etc. Refers to which pubkey2addr method is used.
-	Bip44Coin      bip44.CoinType // bip44 path coin type
-	Label          string         // wallet label
-	Seed           string         // wallet seed
-	SeedPassphrase string         // wallet seed passphrase (bip44 wallets only)
-	Encrypt        bool           // whether the wallet need to be encrypted.
-	Password       []byte         // password that would be used for encryption, and would only be used when 'Encrypt' is true.
-	CryptoType     CryptoType     // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
-	ScanN          uint64         // number of addresses that're going to be scanned for a balance. The highest address with a balance will be used.
-	GenerateN      uint64         // number of addresses to generate, regardless of balance
+	Type           string          // wallet type: deterministic, collection. Refers to which key generation mechanism is used.
+	Coin           CoinType        // coin type: skycoin, bitcoin, etc. Refers to which pubkey2addr method is used.
+	Bip44Coin      *bip44.CoinType // bip44 path coin type
+	Label          string          // wallet label
+	Seed           string          // wallet seed
+	SeedPassphrase string          // wallet seed passphrase (bip44 wallets only)
+	Encrypt        bool            // whether the wallet need to be encrypted.
+	Password       []byte          // password that would be used for encryption, and would only be used when 'Encrypt' is true.
+	CryptoType     CryptoType      // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
+	ScanN          uint64          // number of addresses that're going to be scanned for a balance. The highest address with a balance will be used.
+	GenerateN      uint64          // number of addresses to generate, regardless of balance
 }
 
 // newWallet creates a wallet instance with given name and options.
@@ -168,16 +168,19 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 		lastSeed = opts.Seed
 	}
 
+	var bip44Coin bip44.CoinType
 	if wltType == WalletTypeBip44 {
-		if opts.Bip44Coin == 0 {
+		if opts.Bip44Coin == nil {
 			switch opts.Coin {
 			case CoinTypeBitcoin:
-				opts.Bip44Coin = bip44.CoinTypeBitcoin
+				bip44Coin = bip44.CoinTypeBitcoin
 			case CoinTypeSkycoin:
-				opts.Bip44Coin = bip44.CoinTypeSkycoin
+				bip44Coin = bip44.CoinTypeSkycoin
 			default:
-				opts.Bip44Coin = bip44.CoinTypeSkycoin
+				bip44Coin = bip44.CoinTypeSkycoin
 			}
+		} else {
+			bip44Coin = *opts.Bip44Coin
 		}
 	}
 
@@ -236,7 +239,7 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 	case WalletTypeCollection:
 		w = newCollectionWallet(meta)
 	case WalletTypeBip44:
-		meta.setBip44Coin(opts.Bip44Coin)
+		meta.setBip44Coin(bip44Coin)
 		w = newBip44Wallet(meta)
 	default:
 		logger.Panic("unhandled wltType")

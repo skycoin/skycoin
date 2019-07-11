@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/skycoin/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
 	"github.com/skycoin/skycoin/src/readable"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -186,7 +187,8 @@ func balanceHandler(gateway Gatewayer) http.HandlerFunc {
 // Args:
 //     seed: wallet seed [required]
 //     seed-passphrase: wallet seed passphrase [optional, bip44 type wallet only]
-//	   type: wallet type [required, one of "deterministic" or "bip44"]
+//     type: wallet type [required, one of "deterministic" or "bip44"]
+//     bip44-coin: BIP44 coin type [optional, defaults to 8000 (skycoin's coin type), only valid if type is "bip44"]
 //     label: wallet label [required]
 //     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
 //     encrypt: bool value, whether encrypt the wallet [optional]
@@ -258,6 +260,24 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
+		var bip44Coin *bip44.CoinType
+		bip44CoinStr := r.FormValue("bip44-coin")
+		if bip44CoinStr != "" {
+			if walletType != wallet.WalletTypeBip44 {
+				wh.Error400(w, "bip44-coin is only value for bip44 type wallets")
+				return
+			}
+
+			bip44CoinInt, err := strconv.ParseUint(bip44CoinStr, 10, 32)
+			if err != nil {
+				wh.Error400(w, "invalid bip44-coin value")
+				return
+			}
+
+			c := bip44.CoinType(bip44CoinInt)
+			bip44Coin = &c
+		}
+
 		wlt, err := gateway.CreateWallet("", wallet.Options{
 			Seed:           seed,
 			Label:          label,
@@ -266,6 +286,7 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 			ScanN:          scanN,
 			Type:           walletType,
 			SeedPassphrase: r.FormValue("seed-passphrase"),
+			Bip44Coin:      bip44Coin,
 		}, gateway)
 		if err != nil {
 			switch err.(type) {
@@ -439,8 +460,8 @@ func walletHandler(gateway Gatewayer) http.HandlerFunc {
 // URI: /api/v1/wallet/transactions
 // Method: GET
 // Args:
-//	id: wallet id [required]
-//	verbose: [bool] include verbose transaction input data
+//  id: wallet id [required]
+//  verbose: [bool] include verbose transaction input data
 func walletTransactionsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -872,7 +893,7 @@ type WalletRecoverRequest struct {
 // URI: /api/v2/wallet/recover
 // Method: POST
 // Args:
-//	id: wallet id
+//  id: wallet id
 //  seed: wallet seed
 //  password: [optional] new password
 // Recovers an encrypted wallet by providing the seed.

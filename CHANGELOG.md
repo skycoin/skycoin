@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   `bip44` wallets support bip39 "seed passphrases".
   More details are explained in https://github.com/skycoin/skycoin/wiki/Wallet-File-Formats-and-Types
 - `cli walletCreate` support for `bip44` wallets added
+- Add `bip44_coin` field to `GET /api/v1/health` `fiber` params
 - Add the "bulk send" option to the GUI advanced form
 
 ### Fixed

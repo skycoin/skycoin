@@ -5,7 +5,10 @@ import (
 	"os"
 	"sync"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
 )
 
 // TransactionsFinder interface for finding address related transaction hashes
@@ -28,15 +31,18 @@ type Config struct {
 	CryptoType      CryptoType
 	EnableWalletAPI bool
 	EnableSeedAPI   bool
+	Bip44Coin       *bip44.CoinType
 }
 
 // NewConfig creates a default Config
 func NewConfig() Config {
+	bc := bip44.CoinTypeSkycoin
 	return Config{
 		WalletDir:       "./",
 		CryptoType:      DefaultCryptoType,
 		EnableWalletAPI: false,
 		EnableSeedAPI:   false,
+		Bip44Coin:       &bc,
 	}
 }
 
@@ -78,6 +84,14 @@ func NewService(c Config) (*Service, error) {
 
 	serv.setWallets(w)
 
+	fields := logrus.Fields{
+		"walletDir": serv.config.WalletDir,
+	}
+	if serv.config.Bip44Coin != nil {
+		fields["bip44Coin"] = *serv.config.Bip44Coin
+	}
+	logger.WithFields(fields).Debug("wallet.NewService complete")
+
 	return serv, nil
 }
 
@@ -89,6 +103,18 @@ func (serv *Service) WalletDir() (string, error) {
 		return "", ErrWalletAPIDisabled
 	}
 	return serv.config.WalletDir, nil
+}
+
+func (serv *Service) updateOptions(opts Options) Options {
+	// Apply service-configured default settings for wallet options
+	if opts.Encrypt && opts.CryptoType == "" {
+		opts.CryptoType = serv.config.CryptoType
+	}
+	if opts.Type == WalletTypeBip44 && opts.Bip44Coin == nil && serv.config.Bip44Coin != nil {
+		c := *serv.config.Bip44Coin
+		opts.Bip44Coin = &c
+	}
+	return opts
 }
 
 // CreateWallet creates a wallet with the given wallet file name and options.
@@ -103,16 +129,13 @@ func (serv *Service) CreateWallet(wltName string, options Options, tf Transactio
 		wltName = serv.generateUniqueWalletFilename()
 	}
 
+	options = serv.updateOptions(options)
 	return serv.loadWallet(wltName, options, tf)
 }
 
 // loadWallet loads wallet from seed and scan the first N addresses
 func (serv *Service) loadWallet(wltName string, options Options, tf TransactionsFinder) (Wallet, error) {
-	// service decides what crypto type the wallet should use.
-	if options.Encrypt {
-		options.CryptoType = serv.config.CryptoType
-	}
-
+	options = serv.updateOptions(options)
 	w, err := NewWalletScanAhead(wltName, options, tf)
 	if err != nil {
 		return nil, err

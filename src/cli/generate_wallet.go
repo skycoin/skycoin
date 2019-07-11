@@ -12,6 +12,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
 	secp256k1 "github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -42,6 +43,8 @@ func walletCreateCmd() *gcli.Command {
 	walletCreateCmd.Flags().Uint64P("wordcount", "w", 12, "Number of seed words to use for mnemonic. Must be 12, 15, 18, 21 or 24")
 	walletCreateCmd.Flags().StringP("seed", "s", "", "Your seed")
 	walletCreateCmd.Flags().StringP("seed-passphrase", "", "", "Seed passphrase (bip44 wallets only)")
+	walletCreateCmd.Flags().Uint32P("bip44-coin", "", uint32(bip44.CoinTypeSkycoin), "BIP44 coin type")
+	walletCreateCmd.Flags().StringP("coin", "c", string(wallet.CoinTypeSkycoin), "Wallet address coin type (options: skycoin, bitcoin)")
 	walletCreateCmd.Flags().Uint64P("num", "n", 1, `Number of addresses to generate.`)
 	walletCreateCmd.Flags().StringP("wallet-file", "f", cliConfig.WalletName, `Name of wallet. The final format will be "yourName.wlt".
 If no wallet name is specified a generic name will be selected.`)
@@ -130,6 +133,26 @@ func generateWalletHandler(c *gcli.Command, _ []string) error {
 		return wallet.ErrInvalidWalletType
 	}
 
+	coinStr, err := c.Flags().GetString("coin")
+	if err != nil {
+		return err
+	}
+	coin, err := wallet.ResolveCoinType(coinStr)
+	if err != nil {
+		return err
+	}
+
+	var bip44Coin *bip44.CoinType
+	if c.Flags().Changed("bip44-coin") {
+		bip44CoinInt, err := c.Flags().GetUint32("bip44-coin")
+		if err != nil {
+			return err
+		}
+
+		c := bip44.CoinType(bip44CoinInt)
+		bip44Coin = &c
+	}
+
 	var sd string
 	switch walletType {
 	case wallet.WalletTypeBip44:
@@ -200,6 +223,8 @@ func generateWalletHandler(c *gcli.Command, _ []string) error {
 		Password:       password,
 		Type:           walletType,
 		GenerateN:      num,
+		Coin:           coin,
+		Bip44Coin:      bip44Coin,
 	}
 
 	wlt, err := wallet.NewWallet(filepath.Base(wltName), opts)

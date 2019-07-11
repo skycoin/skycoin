@@ -864,6 +864,7 @@ func TestWalletCreateHandler(t *testing.T) {
 		Password       string
 		Type           string
 		SeedPassphrase string
+		Bip44Coin      string
 	}
 	tt := []struct {
 		name                      string
@@ -938,6 +939,48 @@ func TestWalletCreateHandler(t *testing.T) {
 			},
 			status:  http.StatusBadRequest,
 			err:     "400 Bad Request - scan must be > 0",
+			wltName: "foo",
+		},
+		{
+			name:   "400 - invalid bip44 coin",
+			method: http.MethodPost,
+			body: &httpBody{
+				Type:      wallet.WalletTypeBip44,
+				Seed:      bip39.MustNewDefaultMnemonic(),
+				Label:     "bar",
+				ScanN:     "1",
+				Bip44Coin: "foo",
+			},
+			status:  http.StatusBadRequest,
+			err:     "400 Bad Request - invalid bip44-coin value",
+			wltName: "foo",
+		},
+		{
+			name:   "400 - invalid bip44 coin 2",
+			method: http.MethodPost,
+			body: &httpBody{
+				Type:      wallet.WalletTypeBip44,
+				Seed:      bip39.MustNewDefaultMnemonic(),
+				Label:     "bar",
+				ScanN:     "1",
+				Bip44Coin: "4294967296", // MaxUint32+1: Bip44Coin must be uint32
+			},
+			status:  http.StatusBadRequest,
+			err:     "400 Bad Request - invalid bip44-coin value",
+			wltName: "foo",
+		},
+		{
+			name:   "400 - bip44 coin does not match type",
+			method: http.MethodPost,
+			body: &httpBody{
+				Type:      wallet.WalletTypeDeterministic,
+				Seed:      bip39.MustNewDefaultMnemonic(),
+				Label:     "bar",
+				ScanN:     "1",
+				Bip44Coin: "8000",
+			},
+			status:  http.StatusBadRequest,
+			err:     "400 Bad Request - bip44-coin is only value for bip44 type wallets",
 			wltName: "foo",
 		},
 		{
@@ -1207,6 +1250,10 @@ func TestWalletCreateHandler(t *testing.T) {
 
 				if tc.body.SeedPassphrase != "" {
 					v.Add("seed-passphrase", tc.body.SeedPassphrase)
+				}
+
+				if tc.body.Bip44Coin != "" {
+					v.Add("bip44-coin", tc.body.Bip44Coin)
 				}
 			}
 

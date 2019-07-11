@@ -335,6 +335,7 @@ func NewNodeConfig(mode string, node fiber.NodeConfig) NodeConfig {
 			CoinHoursName:   node.CoinHoursName,
 			CoinHoursTicker: node.CoinHoursTicker,
 			ExplorerURL:     node.ExplorerURL,
+			Bip44Coin:       node.Bip44Coin,
 		},
 	}
 

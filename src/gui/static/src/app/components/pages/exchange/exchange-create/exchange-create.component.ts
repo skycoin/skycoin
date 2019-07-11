@@ -11,7 +11,7 @@ import { ButtonComponent } from '../../../layout/button/button.component';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ExchangeService } from '../../../../services/exchange.service';
 import { ExchangeOrder, TradingPair, StoredExchangeOrder } from '../../../../app.datatypes';
-import { ISubscription, Subscription } from 'rxjs/Subscription';
+import { ISubscription } from 'rxjs/Subscription';
 import 'rxjs/add/observable/merge';
 import { MatDialog, MatDialogConfig } from '@angular/material';
 import { SelectAddressComponent } from '../../send-skycoin/send-form-advanced/select-address/select-address';
@@ -40,7 +40,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   problemGettingPairs = false;
 
   private agreement = false;
-  private subscriptions: Subscription;
+  private subscriptionsGroup: ISubscription[] = [];
   private exchangeSubscription: ISubscription;
   private priceUpdateSubscription: ISubscription;
 
@@ -79,7 +79,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.subscriptions.unsubscribe();
+    this.subscriptionsGroup.forEach(sub => sub.unsubscribe());
     this.removeExchangeSubscription();
     this.msgBarService.hide();
 
@@ -168,13 +168,13 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
       validator: this.validate.bind(this),
     });
 
-    this.subscriptions = this.form.get('fromCoin').valueChanges.subscribe(() => {
+    this.subscriptionsGroup.push(this.form.get('fromCoin').valueChanges.subscribe(() => {
       this.updateActiveTradingPair();
-    });
+    }));
   }
 
   private loadData() {
-    this.subscriptions.add(this.exchangeService.tradingPairs()
+    this.subscriptionsGroup.push(this.exchangeService.tradingPairs()
       .retryWhen(errors => errors.delay(2000).take(10).concat(Observable.throw('')))
       .subscribe(pairs => {
         this.tradingPairs = [];

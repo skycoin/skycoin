@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import 'rxjs/add/operator/switchMap';
 import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
-import { Subscription } from 'rxjs/Subscription';
+import { ISubscription } from 'rxjs/Subscription';
 import { BlockchainService } from '../../../../services/blockchain.service';
 
 @Component({
@@ -13,19 +13,19 @@ export class BlockchainComponent implements OnInit, OnDestroy {
   block: any;
   coinSupply: any;
 
-  private subscriptions: Subscription;
+  private subscriptionsGroup: ISubscription[] = [];
 
   constructor(
     private blockchainService: BlockchainService,
   ) { }
 
   ngOnInit() {
-    this.subscriptions = IntervalObservable
+    this.subscriptionsGroup.push(IntervalObservable
       .create(5000)
       .switchMap(() => this.blockchainService.lastBlock())
-      .subscribe(block => this.block = block);
+      .subscribe(block => this.block = block));
 
-    this.subscriptions.add(IntervalObservable
+    this.subscriptionsGroup.push(IntervalObservable
       .create(5000)
       .switchMap(() => this.blockchainService.coinSupply())
       .subscribe(coinSupply => this.coinSupply = coinSupply),
@@ -33,6 +33,6 @@ export class BlockchainComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.subscriptions.unsubscribe();
+    this.subscriptionsGroup.forEach(sub => sub.unsubscribe());
   }
 }

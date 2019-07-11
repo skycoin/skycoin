@@ -1,6 +1,6 @@
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { PriceService } from '../../../services/price.service';
-import { Subscription, ISubscription } from 'rxjs/Subscription';
+import { ISubscription } from 'rxjs/Subscription';
 import { WalletService } from '../../../services/wallet.service';
 import { BlockchainService } from '../../../services/blockchain.service';
 import { AppService } from '../../../services/app.service';
@@ -28,7 +28,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   synchronized = true;
   walletDownloadUrl = AppConfig.walletDownloadUrl;
 
-  private subscription: Subscription;
+  private subscriptionsGroup: ISubscription[] = [];
   private synchronizedSubscription: ISubscription;
   // This should be deleted. View the comment in the constructor.
   // private fetchVersionError: string;
@@ -60,7 +60,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    this.subscription = this.blockchainService.progress
+    this.subscriptionsGroup.push(this.blockchainService.progress
       .filter(response => !!response)
       .subscribe(response => {
         this.querying = false;
@@ -73,11 +73,11 @@ export class HeaderComponent implements OnInit, OnDestroy {
         if (!this.synchronizedSubscription) {
           this.synchronizedSubscription = this.blockchainService.synchronized.subscribe(value => this.synchronized = value);
         }
-      });
+      }));
 
-    this.subscription.add(this.priceService.price.subscribe(price => this.price = price));
+    this.subscriptionsGroup.push(this.priceService.price.subscribe(price => this.price = price));
 
-    this.subscription.add(this.walletService.allAddresses().subscribe(addresses => {
+    this.subscriptionsGroup.push(this.walletService.allAddresses().subscribe(addresses => {
       this.addresses = addresses.reduce((array, item) => {
         if (!array.find(addr => addr.address === item.address)) {
           array.push(item);
@@ -87,13 +87,13 @@ export class HeaderComponent implements OnInit, OnDestroy {
       }, []);
     }));
 
-    this.subscription.add(this.walletService.pendingTransactions().subscribe(txs => {
+    this.subscriptionsGroup.push(this.walletService.pendingTransactions().subscribe(txs => {
       this.hasPendingTxs = txs.user.length > 0;
     }));
   }
 
   ngOnDestroy() {
-    this.subscription.unsubscribe();
+    this.subscriptionsGroup.forEach(sub => sub.unsubscribe());
     if (this.synchronizedSubscription) {
       this.synchronizedSubscription.unsubscribe();
     }

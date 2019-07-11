@@ -7,7 +7,7 @@ import { ButtonComponent } from '../../../layout/button/button.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { MatDialog, MatDialogConfig } from '@angular/material';
 import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
-import { ISubscription, Subscription } from 'rxjs/Subscription';
+import { ISubscription } from 'rxjs/Subscription';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { BigNumber } from 'bignumber.js';
 import { Wallet, ConfirmationData } from '../../../../app.datatypes';
@@ -45,7 +45,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
   valueGreaterThanBalance = false;
   price: number;
 
-  private subscriptions: Subscription;
+  private subscriptionsGroup: ISubscription[] = [];
   private processingSubscription: ISubscription;
   private syncCheckSubscription: ISubscription;
 
@@ -61,10 +61,10 @@ export class SendFormComponent implements OnInit, OnDestroy {
     private changeDetector: ChangeDetectorRef,
     priceService: PriceService,
   ) {
-    this.subscriptions = priceService.price.subscribe(price => {
+    this.subscriptionsGroup.push(priceService.price.subscribe(price => {
       this.price = price;
       this.updateValue();
-    });
+    }));
   }
 
   ngOnInit() {
@@ -76,7 +76,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
     if (this.processingSubscription && !this.processingSubscription.closed) {
       this.processingSubscription.unsubscribe();
     }
-    this.subscriptions.unsubscribe();
+    this.subscriptionsGroup.forEach(sub => sub.unsubscribe());
     this.closeSyncCheckSubscription();
     this.navbarService.hideSwitch();
     this.msgBarService.hide();
@@ -289,7 +289,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
       note: [''],
     });
 
-    this.subscriptions.add(this.form.get('wallet').valueChanges.subscribe(value => {
+    this.subscriptionsGroup.push(this.form.get('wallet').valueChanges.subscribe(value => {
       this.form.get('amount').setValidators([
         Validators.required,
         this.validateAmountWithValue.bind(this),
@@ -298,7 +298,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
       this.form.get('amount').updateValueAndValidity();
     }));
 
-    this.subscriptions.add(this.form.get('amount').valueChanges.subscribe(value => {
+    this.subscriptionsGroup.push(this.form.get('amount').valueChanges.subscribe(value => {
       this.updateValue();
     }));
 

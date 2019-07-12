@@ -126,18 +126,14 @@ func NewCreatedTransaction(txn *coin.Transaction, inputs []visor.TransactionInpu
 	}, nil
 }
 
-// ToTransaction converts a CreatedTransaction back to a coin.Transaction
-func (r *CreatedTransaction) ToTransaction() (*coin.Transaction, error) {
+// ConvertToTransaction converts a CreatedTransaction back to a coin.Transaction, by optionally recomputing inner and outer hashes
+func (r *CreatedTransaction) ConvertToTransaction(fix bool) (*coin.Transaction, error) {
 	t := coin.Transaction{}
 
 	t.Length = r.Length
 	t.Type = r.Type
 
 	var err error
-	t.InnerHash, err = cipher.SHA256FromHex(r.InnerHash)
-	if err != nil {
-		return nil, err
-	}
 
 	sigs := make([]cipher.Sig, len(r.Sigs))
 	for i, s := range r.Sigs {
@@ -185,16 +181,41 @@ func (r *CreatedTransaction) ToTransaction() (*coin.Transaction, error) {
 
 	t.Out = out
 
+	// Attempt fixing inner hash first
+	// use case https://github.com/skycoin/hardware-wallet-go/issues/144
+	// see https://github.com/skycoin/skycoin/issues/2395
+	if fix {
+		r.InnerHash = t.HashInner().Hex()
+	}
+
+	t.InnerHash, err = cipher.SHA256FromHex(r.InnerHash)
+	if err != nil {
+		return nil, err
+	}
+
+	// Attempt fixing outer hash first
+	// use case https://github.com/skycoin/hardware-wallet-go/issues/144
+	// see https://github.com/skycoin/skycoin/issues/2395
+	if fix {
+		r.TxID = t.Hash().Hex()
+	}
+
 	hash, err := cipher.SHA256FromHex(r.TxID)
 	if err != nil {
 		return nil, err
 	}
 
 	if t.Hash() != hash {
+		fmt.Printf("Hash() %s\nhash %s", t.Hash().Hex(), hash.Hex())
 		return nil, errors.New("readable.Transaction.Hash does not match parsed transaction hash")
 	}
 
 	return &t, nil
+}
+
+// ToTransaction converts a CreatedTransaction back to a coin.Transaction
+func (r *CreatedTransaction) ToTransaction() (*coin.Transaction, error) {
+	return r.ConvertToTransaction(false)
 }
 
 // CreatedTransactionOutput is a transaction output

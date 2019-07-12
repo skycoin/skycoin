@@ -90,6 +90,11 @@ func encodeJSONTxnCmd() *cobra.Command {
 				return err
 			}
 
+			fixHashes, _err := c.Flags().GetBool("fix")
+			if _err != nil {
+				return _err
+			}
+
 			jsonFilePath := args[0]
 			var jsonFile *os.File
 			if jsonFilePath == "-" {
@@ -108,7 +113,7 @@ func encodeJSONTxnCmd() *cobra.Command {
 				return fmt.Errorf("invalid JSON transaction: %v", err)
 			}
 
-			txn, err := readableToCreatedTransaction(&rTxn).ToTransaction()
+			txn, err := readableToCreatedTransaction(&rTxn).ConvertToTransaction(fixHashes)
 			if err != nil {
 				return err
 			}
@@ -128,6 +133,7 @@ func encodeJSONTxnCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format.")
+	cmd.Flags().BoolP("fix", "F", false, "Recompute transaction inner and outer hashes")
 	return cmd
 }
 

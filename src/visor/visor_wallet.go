@@ -262,7 +262,7 @@ func (vs *Visor) WalletCreateTransactionSigned(wltID string, password []byte, p 
 	var txn *coin.Transaction
 	var inputs []TransactionInput
 
-	if err := vs.wallets.ViewSecrets(wltID, password, func(w wallet.Wallet) error {
+	if err := vs.wallets.UpdateSecrets(wltID, password, func(w wallet.Wallet) error {
 		var err error
 		txn, inputs, err = vs.walletCreateTransaction("WalletCreateTransactionSigned", w, p, wp, TxnSigned)
 		return err
@@ -286,7 +286,7 @@ func (vs *Visor) WalletCreateTransaction(wltID string, p transaction.Params, wp 
 	var txn *coin.Transaction
 	var inputs []TransactionInput
 
-	if err := vs.wallets.View(wltID, func(w wallet.Wallet) error {
+	if err := vs.wallets.Update(wltID, func(w wallet.Wallet) error {
 		var err error
 		txn, inputs, err = vs.walletCreateTransaction("WalletCreateTransaction", w, p, wp, TxnUnsigned)
 		return err

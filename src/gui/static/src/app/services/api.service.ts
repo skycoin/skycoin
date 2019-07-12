@@ -87,8 +87,8 @@ export class ApiService {
       .map(response => response.seed);
   }
 
-  postWalletCreate(label: string, seed: string, scan: number, password: string): Observable<Wallet> {
-    const params = { label, seed, scan };
+  postWalletCreate(label: string, seed: string, scan: number, password: string, type: string): Observable<Wallet> {
+    const params = { label, seed, scan, type };
 
     if (password) {
       params['password'] = password;

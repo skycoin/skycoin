@@ -25,7 +25,9 @@ func TestNewCoin(t *testing.T) {
 	require.Equal(t, err, bip32.ErrInvalidSeedLength)
 
 	// bad coin_type
-	_, err = NewCoin(mustDefaultSeed(t), CoinType(1))
+	_, err = NewCoin(mustDefaultSeed(t), CoinType(bip32.FirstHardenedChild))
+	require.Equal(t, err, ErrInvalidCoinType)
+	_, err = NewCoin(mustDefaultSeed(t), CoinType(1+bip32.FirstHardenedChild))
 	require.Equal(t, err, ErrInvalidCoinType)
 
 	c, err := NewCoin(mustDefaultSeed(t), CoinTypeBitcoin)

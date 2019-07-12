@@ -185,6 +185,7 @@ func SignTransaction(w Wallet, txn *coin.Transaction, signIndexes []int, uxOuts 
 //     if the coinhour cost of adding that output is less than the coinhours that would be lost as change
 // If receiving hours are not explicitly specified, hours are allocated amongst the receiving outputs proportional to the number of coins being sent to them.
 // If the change address is not specified, the address whose bytes are lexically sorted first is chosen from the owners of the outputs being spent.
+// WARNING: This method is not concurrent-safe if operating on the same wallet. Use Service.View or Service.ViewSecrets to lock the wallet, or use your own lock.
 func CreateTransaction(w Wallet, p transaction.Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []transaction.UxBalance, error) {
 	if err := p.Validate(); err != nil {
 		return nil, nil, err
@@ -197,7 +198,31 @@ func CreateTransaction(w Wallet, p transaction.Params, auxs coin.AddressUxOuts, 
 		}
 	}
 
-	return transaction.Create(p, auxs, headTime)
+	// Generate a new change address for bip44 wallets
+	var changeEntry *Entry
+	if p.ChangeAddress == nil && w.Type() == WalletTypeBip44 {
+		e, err := w.(*Bip44Wallet).PeekChangeEntry()
+		if err != nil {
+			logger.Critical().WithError(err).Error("PeekChangeEntry failed")
+			return nil, nil, fmt.Errorf("PeekChangeEntry failed: %v", err)
+		}
+		changeAddr := e.Address.(cipher.Address)
+		p.ChangeAddress = &changeAddr
+		changeEntry = &e
+	}
+
+	txn, uxb, err := transaction.Create(p, auxs, headTime)
+
+	if err == nil && changeEntry != nil && w.Type() == WalletTypeBip44 {
+		// Commit the change address to the bip44 wallet, assuming it will be used
+		if e, err := w.(*Bip44Wallet).GenerateChangeEntry(); err != nil {
+			logger.WithError(err).Panic("GenerateChangeEntry failed after a PeekChangeEntry")
+		} else if e != *changeEntry {
+			logger.Panicf("GenerateChangeEntry produced a different change entry than PeekChangeEntry: %s != %s", e.Address, changeEntry.Address)
+		}
+	}
+
+	return txn, uxb, err
 }
 
 // CreateTransactionSigned creates and signs a transaction based upon transaction.Params.

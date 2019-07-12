@@ -34,7 +34,7 @@ func (bt *blockTree) AddBlock(tx *dbutil.Tx, b *coin.Block) error {
 		return errNoParent
 	}
 
-	// check if the block already exist.
+	// check if the block already exists.
 	hash := b.HashHeader()
 	if ok, err := dbutil.BucketHasKey(tx, BlocksBkt, hash[:]); err != nil {
 		return err

@@ -2,7 +2,7 @@
 
 # Skycoin
 
-[![Build Status](https://travis-ci.org/skycoin/skycoin.svg)](https://travis-ci.org/skycoin/skycoin)
+[![Build Status](https://travis-ci.com/skycoin/skycoin.svg)](https://travis-ci.com/skycoin/skycoin)
 [![GoDoc](https://godoc.org/github.com/skycoin/skycoin?status.svg)](https://godoc.org/github.com/skycoin/skycoin)
 [![Go Report Card](https://goreportcard.com/badge/github.com/skycoin/skycoin)](https://goreportcard.com/report/github.com/skycoin/skycoin)
 
@@ -652,7 +652,7 @@ Performs these actions before releasing:
 * `make integration-test-live`
 * `make integration-test-live-disable-networking` (requires node run with `-disable-networking`)
 * `make integration-test-live-disable-csrf` (requires node run with `-disable-csrf`)
-* `make intergration-test-live-wallet` (see [live integration tests](#live-integration-tests)) both with an unencrypted and encrypted wallet
+* `make intergration-test-live-wallet` (see [live integration tests](#live-integration-tests)) 6 times: with an unencrypted and encrypted wallet for each wallet type: `deterministic`, `bip44` and `collection`
 * `go run cmd/cli/cli.go checkdb` against a fully synced database
 * `go run cmd/cli/cli.go checkDBDecoding` against a fully synced database
 * On all OSes, make sure that the client runs properly from the command line (`./run-client.sh` and `./run-daemon.sh`)

@@ -1237,7 +1237,7 @@ func (c *Client) DecryptWallet(id, password string) (*WalletResponse, error) {
 	return &wlt, nil
 }
 
-// RecoverWallet makes a request to POST /api/v2/ wallet/recover to recover an encrypted wallet by seed.
+// RecoverWallet makes a request to POST /api/v2/wallet/recover to recover an encrypted wallet by seed.
 // The password argument is optional, if provided, the recovered wallet will be encrypted with this password,
 // otherwise the recovered wallet will be unencrypted.
 func (c *Client) RecoverWallet(req WalletRecoverRequest) (*WalletResponse, error) {

@@ -36,6 +36,7 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
   currentState: States = States.Initial;
   states = States;
   msgIcons = MessageIcons;
+  maxHwWalletLabelLength = HwWalletService.maxLabelLength;
 
   private newLabel: string;
   private hwConnectionSubscription: ISubscription;

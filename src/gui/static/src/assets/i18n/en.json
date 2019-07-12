@@ -158,7 +158,8 @@
       "title": "Select quantity",
       "name-quantity": "How many addresses to create",
       "cancel-button": "Cancel",
-      "create-button": "Create"
+      "create-button": "Create",
+      "error": "There was an unexpected error. Please try again."
     },
 
     "address": {

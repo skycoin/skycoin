@@ -27,6 +27,7 @@ max_block_transactions_size = 1111
 display_name = "Testcoin"
 ticker = "TST"
 coin_hours_display_name = "Testcoin Hours"
+coin_hours_display_name_singular = "Testcoin Hour"
 coin_hours_ticker = "TCH"
 explorer_url = "https://explorer.testcoin.com"
 

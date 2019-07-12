@@ -64,6 +64,8 @@ type NodeConfig struct {
 	Ticker string `mapstructure:"ticker"`
 	// CoinHoursName is the name of the coinhour asset type, e.g. Coin Hours
 	CoinHoursName string `mapstructure:"coin_hours_display_name"`
+	// CoinHoursNameSingular is the singular form of the name of the coinhour asset type, e.g. Coin Hour
+	CoinHoursNameSingular string `mapstructure:"coin_hours_display_name_singular"`
 	// CoinHoursTicker is the name of the coinhour asset type's price ticker, e.g. SCH (Skycoin Coin Hours)
 	CoinHoursTicker string `mapstructure:"coin_hours_ticker"`
 	// ExplorerURL is the URL of the public explorer
@@ -152,6 +154,7 @@ func setDefaults() {
 	viper.SetDefault("node.display_name", "Skycoin")
 	viper.SetDefault("node.ticker", "SKY")
 	viper.SetDefault("node.coin_hours_display_name", "Coin Hours")
+	viper.SetDefault("node.coin_hours_display_name_singular", "Coin Hour")
 	viper.SetDefault("node.coin_hours_ticker", "SCH")
 	viper.SetDefault("node.explorer_url", "https://explorer.skycoin.net")
 	viper.SetDefault("node.bip44_coin", bip44.CoinTypeSkycoin)

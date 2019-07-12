@@ -799,6 +799,7 @@ $ skycoin-cli encodeJsonTransaction [file path or -]
 ```
 FLAGS:
   -j, --json                    Returns the results in JSON format.
+  -F, --fix                     Recompute transaction inner and outer hashes
 ```
 
 #### Example

@@ -2,7 +2,7 @@
 
 # Skycoin
 
-[![Build Status](https://travis-ci.org/skycoin/skycoin.svg)](https://travis-ci.org/skycoin/skycoin)
+[![Build Status](https://travis-ci.com/skycoin/skycoin.svg)](https://travis-ci.com/skycoin/skycoin)
 [![GoDoc](https://godoc.org/github.com/skycoin/skycoin?status.svg)](https://godoc.org/github.com/skycoin/skycoin)
 [![Go Report Card](https://goreportcard.com/badge/github.com/skycoin/skycoin)](https://goreportcard.com/report/github.com/skycoin/skycoin)
 

@@ -35,13 +35,13 @@ func InitDataDir(dir string) (string, error) {
 		return "", err
 	}
 
-	// check if dir already exist
+	// check if dir already exists
 	st, err := os.Stat(dir)
 	if !os.IsNotExist(err) {
 		if !st.IsDir() {
 			return "", fmt.Errorf("%s is not a directory", dir)
 		}
-		// dir already exist
+		// dir already exists
 		return dir, nil
 	}
 

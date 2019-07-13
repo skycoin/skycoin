@@ -12,6 +12,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
 	secp256k1 "github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -37,14 +38,18 @@ func walletCreateCmd() *gcli.Command {
 		RunE:         generateWalletHandler,
 	}
 
-	walletCreateCmd.Flags().BoolP("random", "r", false, "A random alpha numeric seed will be generated")
+	walletCreateCmd.Flags().BoolP("random", "r", false, "A random alpha numeric seed will be generated.")
 	walletCreateCmd.Flags().BoolP("mnemonic", "m", false, "A mnemonic seed consisting of 12 dictionary words will be generated")
+	walletCreateCmd.Flags().Uint64P("wordcount", "w", 12, "Number of seed words to use for mnemonic. Must be 12, 15, 18, 21 or 24")
 	walletCreateCmd.Flags().StringP("seed", "s", "", "Your seed")
-	walletCreateCmd.Flags().Uint64P("num", "n", 1, `Number of addresses to generate. By default 1 address is generated.`)
+	walletCreateCmd.Flags().StringP("seed-passphrase", "", "", "Seed passphrase (bip44 wallets only)")
+	walletCreateCmd.Flags().Uint32P("bip44-coin", "", uint32(bip44.CoinTypeSkycoin), "BIP44 coin type")
+	walletCreateCmd.Flags().StringP("coin", "c", string(wallet.CoinTypeSkycoin), "Wallet address coin type (options: skycoin, bitcoin)")
+	walletCreateCmd.Flags().Uint64P("num", "n", 1, `Number of addresses to generate.`)
 	walletCreateCmd.Flags().StringP("wallet-file", "f", cliConfig.WalletName, `Name of wallet. The final format will be "yourName.wlt".
 If no wallet name is specified a generic name will be selected.`)
 	walletCreateCmd.Flags().StringP("label", "l", "", "Label used to idetify your wallet.")
-	walletCreateCmd.Flags().StringP("type", "t", wallet.WalletTypeDeterministic, "Wallet type. Types are \"collection\" or \"deterministic\"")
+	walletCreateCmd.Flags().StringP("type", "t", wallet.WalletTypeDeterministic, "Wallet type. Types are \"collection\", \"deterministic\" or \"bip44\"")
 	walletCreateCmd.Flags().BoolP("encrypt", "e", false, "Create encrypted wallet.")
 	walletCreateCmd.Flags().StringP("crypto-type", "x", string(wallet.DefaultCryptoType),
 		"The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor")
@@ -76,7 +81,7 @@ func generateWalletHandler(c *gcli.Command, _ []string) error {
 
 	// check if the wallet file does exist
 	if _, err := os.Stat(filepath.Join(cliConfig.WalletDir, wltName)); err == nil {
-		return fmt.Errorf("%v already exist", wltName)
+		return fmt.Errorf("%v already exists", wltName)
 	}
 
 	// check if the wallet dir does exist.
@@ -84,7 +89,7 @@ func generateWalletHandler(c *gcli.Command, _ []string) error {
 		return err
 	}
 
-	// get number of address that are need to be generated, if m is 0, set to 1.
+	// get number of address that are need to be generated
 	num, err := c.Flags().GetUint64("num")
 	if err != nil {
 		return err
@@ -93,10 +98,8 @@ func generateWalletHandler(c *gcli.Command, _ []string) error {
 		return errors.New("-n must > 0")
 	}
 
-	// get label
 	label := c.Flag("label").Value.String()
 
-	// get seed
 	s := c.Flag("seed").Value.String()
 	random, err := c.Flags().GetBool("random")
 	if err != nil {
@@ -106,6 +109,15 @@ func generateWalletHandler(c *gcli.Command, _ []string) error {
 	mnemonic, err := c.Flags().GetBool("mnemonic")
 	if err != nil {
 		return err
+	}
+
+	wordCount, err := c.Flags().GetUint64("wordcount")
+	if err != nil {
+		return err
+	}
+
+	if !mnemonic && c.Flags().Changed("wordcount") {
+		return errors.New("-m must also be set when using -wordcount")
 	}
 
 	encrypt, err := c.Flags().GetBool("encrypt")
@@ -121,14 +133,42 @@ func generateWalletHandler(c *gcli.Command, _ []string) error {
 		return wallet.ErrInvalidWalletType
 	}
 
-	var sd string
-	switch walletType {
-	case wallet.WalletTypeDeterministic:
-		var err error
-		sd, err = makeSeed(s, random, mnemonic)
+	coinStr, err := c.Flags().GetString("coin")
+	if err != nil {
+		return err
+	}
+	coin, err := wallet.ResolveCoinType(coinStr)
+	if err != nil {
+		return err
+	}
+
+	var bip44Coin *bip44.CoinType
+	if c.Flags().Changed("bip44-coin") {
+		bip44CoinInt, err := c.Flags().GetUint32("bip44-coin")
 		if err != nil {
 			return err
 		}
+
+		c := bip44.CoinType(bip44CoinInt)
+		bip44Coin = &c
+	}
+
+	var sd string
+	switch walletType {
+	case wallet.WalletTypeBip44:
+		var err error
+		sd, err = parseBip44WalletSeedOptions(s, random, mnemonic, wordCount)
+		if err != nil {
+			return err
+		}
+
+	case wallet.WalletTypeDeterministic:
+		var err error
+		sd, err = parseDeterministicWalletSeedOptions(s, random, mnemonic, wordCount)
+		if err != nil {
+			return err
+		}
+
 	case wallet.WalletTypeCollection:
 		if s != "" || random || mnemonic {
 			return fmt.Errorf("%q type wallets do not use seeds", walletType)
@@ -137,8 +177,14 @@ func generateWalletHandler(c *gcli.Command, _ []string) error {
 			return fmt.Errorf("%q type wallets do not support address generation", walletType)
 		}
 		num = 0
+
 	default:
 		return fmt.Errorf("unhandled wallet type %q", walletType)
+	}
+
+	seedPassphrase, err := c.Flags().GetString("seed-passphrase")
+	if err != nil {
+		return err
 	}
 
 	cryptoType, err := wallet.CryptoTypeFromString(c.Flag("crypto-type").Value.String())
@@ -169,13 +215,16 @@ func generateWalletHandler(c *gcli.Command, _ []string) error {
 	}
 
 	opts := wallet.Options{
-		Label:      label,
-		Seed:       sd,
-		Encrypt:    encrypt,
-		CryptoType: cryptoType,
-		Password:   password,
-		Type:       walletType,
-		GenerateN:  num,
+		Label:          label,
+		Seed:           sd,
+		SeedPassphrase: seedPassphrase,
+		Encrypt:        encrypt,
+		CryptoType:     cryptoType,
+		Password:       password,
+		Type:           walletType,
+		GenerateN:      num,
+		Coin:           coin,
+		Bip44Coin:      bip44Coin,
 	}
 
 	wlt, err := wallet.NewWallet(filepath.Base(wltName), opts)
@@ -190,7 +239,61 @@ func generateWalletHandler(c *gcli.Command, _ []string) error {
 	return printJSON(wlt.ToReadable())
 }
 
-func makeSeed(s string, r, m bool) (string, error) {
+// wordCountToEntropy maps a mnemonic word count to its entropy size in bits
+func wordCountToEntropy(wc uint64) (int, error) {
+	switch wc {
+	case 12:
+		return 128, nil
+	case 15:
+		return 160, nil
+	case 18:
+		return 192, nil
+	case 21:
+		return 224, nil
+	case 24:
+		return 256, nil
+	default:
+		return 0, errors.New("word count must be 12, 15, 18, 21 or 24")
+	}
+}
+
+func newMnemomic(wc uint64) (string, error) {
+	entropySize, err := wordCountToEntropy(wc)
+	if err != nil {
+		return "", err
+	}
+	e, err := bip39.NewEntropy(entropySize)
+	if err != nil {
+		return "", err
+	}
+	return bip39.NewMnemonic(e)
+}
+
+func parseBip44WalletSeedOptions(s string, r, m bool, wc uint64) (string, error) {
+	if s != "" && (r || m) {
+		return "", errors.New("-r and -m can't be used with -s")
+	}
+
+	if r {
+		return "", errors.New("-r can't be used for bip44 wallets")
+	}
+
+	if m || s == "" {
+		var err error
+		s, err = newMnemomic(wc)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	if err := bip39.ValidateMnemonic(s); err != nil {
+		return "", fmt.Errorf("seed must be a valid bip39 mnemonic: %v", err)
+	}
+
+	return s, nil
+}
+
+func parseDeterministicWalletSeedOptions(s string, r, m bool, wc uint64) (string, error) {
 	if s != "" {
 		// 111, 101, 110
 		if r || m {
@@ -211,7 +314,7 @@ func makeSeed(s string, r, m bool) (string, error) {
 	}
 
 	// 001, 000
-	return bip39.NewDefaultMnemonic()
+	return newMnemomic(wc)
 }
 
 // PUBLIC

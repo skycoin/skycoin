@@ -18,6 +18,7 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
   @ViewChild('input') input: ElementRef;
   wallet: Wallet;
   form: FormGroup;
+  maxHwWalletLabelLength = HwWalletService.maxLabelLength;
 
   private initialLabel: string;
 

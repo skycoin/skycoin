@@ -3,7 +3,7 @@ import { Subject } from 'rxjs/Subject';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Observable } from 'rxjs/Observable';
 import { HttpClient } from '@angular/common/http';
-import { ISubscription, Subscription } from 'rxjs/Subscription';
+import { ISubscription } from 'rxjs/Subscription';
 
 @Injectable()
 export class PriceService {
@@ -13,7 +13,7 @@ export class PriceService {
 
   private readonly updatePeriod = 10 * 60 * 1000;
   private lastPriceSubscription: ISubscription;
-  private timerSubscription: Subscription;
+  private timerSubscriptions: ISubscription[];
 
   constructor(
     private http: HttpClient,
@@ -23,17 +23,20 @@ export class PriceService {
   }
 
   private startTimer(firstConnectionDelay = 0) {
-    if (this.timerSubscription) {
-      this.timerSubscription.unsubscribe();
+    if (this.timerSubscriptions) {
+      this.timerSubscriptions.forEach(sub => sub.unsubscribe());
     }
+
+    this.timerSubscriptions = [];
+
     this.ngZone.runOutsideAngular(() => {
-      this.timerSubscription = Observable.timer(this.updatePeriod, this.updatePeriod)
+      this.timerSubscriptions.push(Observable.timer(this.updatePeriod, this.updatePeriod)
         .subscribe(() => {
           this.ngZone.run(() => !this.lastPriceSubscription ? this.loadPrice() : null );
-        });
+        }));
     });
 
-    this.timerSubscription.add(
+    this.timerSubscriptions.push(
       Observable.of(1).delay(firstConnectionDelay).subscribe(() => {
         this.ngZone.run(() => this.loadPrice());
       }));

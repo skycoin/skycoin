@@ -78,7 +78,7 @@
 	- [web-interface-plaintext-auth](#web-interface-plaintext-auth)
 	- [web-interface-port](#web-interface-port)
 	- [web-interface-username](#web-interface-username)
-- [Environment Variables](#environment-variables)
+- [Development Environment Variables](#development-environment-variables)
 	- [USER_BURN_FACTOR](#userburnfactor)
 	- [USER_MAX_TXN_SIZE](#usermax_txnsize)
 	- [USER_MAX_DECIMALS](#usermaxdecimals)
@@ -232,10 +232,6 @@ Usage:
     	port to serve web interface on (default 6420)
   -web-interface-username string
     	username for the web interface
-Additional environment variables:
-* USER_BURN_FACTOR - Set the coin hour burn factor required for user-created transactions. Must be >= 2.
-* USER_MAX_TXN_SIZE - Set the maximum transaction size (in bytes) allowed for user-created transactions. Must be >= 1024.
-* USER_MAX_DECIMALS - Set the maximum decimals allowed for user-created transactions. Must be <= 6.
 ```
 
 ## Scenarios
@@ -677,7 +673,11 @@ Port number for the REST API interface. Default `6420`.
 
 Optional username for the REST API. Used in `Basic` authentication.
 
-## Environment Variables
+## Development Environment Variables
+
+These environment variables are for *development purposes only*. They are not intended
+as part of the normal configuration API. That is why they are not included in the normal
+configuration API (i.e. through cli `--options` or a configuration file).
 
 ### USER_BURN_FACTOR
 

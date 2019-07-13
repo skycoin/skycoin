@@ -65,6 +65,8 @@ interface EventData {
 @Injectable()
 export class HwWalletService {
 
+  public static readonly maxLabelLength = 32;
+
   private readonly storageKey = 'hw-wallets';
 
   showOptionsWhenPossible = false;

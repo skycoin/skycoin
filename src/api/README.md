@@ -30,7 +30,7 @@ The API has two versions, `/api/v1` and `/api/v2`.
 	- [Get wallet folder name](#get-wallet-folder-name)
 	- [Generate wallet seed](#generate-wallet-seed)
 	- [Verify wallet Seed](#verify-wallet-seed)
-	- [Create a wallet from seed](#create-a-wallet-from-seed)
+	- [Create wallet](#create-wallet)
 	- [Generate new address in wallet](#generate-new-address-in-wallet)
 	- [Updates wallet label](#updates-wallet-label)
 	- [Get wallet balance](#get-wallet-balance)
@@ -252,7 +252,8 @@ Response:
         "ticker": "SKY",
         "coin_hours_display_name": "Coin Hours",
         "coin_hours_ticker": "SCH",
-        "explorer_url": "https://explorer.skycoin.net"
+        "explorer_url": "https://explorer.skycoin.net",
+        "bip44_coin": 8000
     }
 }
 ```
@@ -604,7 +605,7 @@ Args:
     id: Wallet ID [required]
 ```
 
-Example:
+Example ("deterministic" wallet):
 
 ```sh
 curl http://127.0.0.1:6420/api/v1/wallet?id=2017_11_25_e5fb.wlt
@@ -636,6 +637,51 @@ Result:
     ]
 }
 ```
+
+Example ("bip44" wallet):
+
+```sh
+curl http://127.0.0.1:6420/api/v1/wallet?id=2017_11_25_e5fb.wlt
+```
+
+Result:
+
+```json
+{
+    "meta": {
+        "coin": "skycoin",
+        "filename": "2017_11_25_e5fb.wlt",
+        "label": "test",
+        "type": "bip44",
+        "version": "0.3",
+        "crypto_type": "",
+        "timestamp": 1511640884,
+        "encrypted": false,
+        "bip44_coin": 8000,
+    },
+    "entries": [
+        {
+            "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1",
+            "child_number": 0,
+            "change": 0
+        },
+        {
+            "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
+            "public_key": "02539528248a1a2c4f0b73233491103ca83b40249dac3ae9eee9a10b9f9debd9a3",
+            "child_number": 1,
+            "change": 0
+        },
+        {
+            "address": "8C5icxR9zdkYTZZTVV3cCX7QoK4EkLuK4p",
+            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1",
+            "child_number": 0,
+            "change": 1
+        }
+    ]
+}
+```
+
 
 ### Get unconfirmed transactions of a wallet
 
@@ -908,7 +954,7 @@ Result:
 }
 ```
 
-### Create a wallet from seed
+### Create wallet
 
 API sets: `WALLET`
 
@@ -917,18 +963,22 @@ URI: /api/v1/wallet/create
 Method: POST
 Args:
     seed: wallet seed [required]
+    seed-passphrase: wallet seed passphrase [optional, bip44 type wallet only]
+    type: wallet type [required, one of "deterministic" or "bip44"]
+    bip44-coin: BIP44 coin type [optional, defaults to 8000 (skycoin's coin type), only valid if type is "bip44"]
     label: wallet label [required]
     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
     encrypt: encrypt wallet [optional, bool value]
     password: wallet password [optional, must be provided if encrypt is true]
 ```
 
-Example:
+Example (deterministic):
 
 ```sh
 curl -X POST http://127.0.0.1:6420/api/v1/wallet/create \
  -H 'Content-Type: application/x-www-form-urlencoded' \
  -d 'seed=$seed' \
+ -d 'type=deterministic' \
  -d 'label=$label' \
  -d 'scan=5' \
  -d 'password=$password'
@@ -943,7 +993,7 @@ Result:
         "filename": "2017_05_09_d554.wlt",
         "label": "test",
         "type": "deterministic",
-        "version": "0.2",
+        "version": "0.3",
         "crypto_type": "",
         "timestamp": 1511640884,
         "encrypted": false
@@ -957,6 +1007,46 @@ Result:
 }
 ```
 
+Example (bip44):
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v1/wallet/create \
+ -H 'Content-Type: application/x-www-form-urlencoded' \
+ -d 'seed=$seed' \
+ -d 'seed-passphrase=$seed' \
+ -d 'type=bip44' \
+ -d 'label=$label' \
+ -d 'scan=5' \
+ -d 'password=$password'
+```
+
+Result:
+
+```json
+{
+    "meta": {
+        "coin": "skycoin",
+        "filename": "2017_05_09_d554.wlt",
+        "label": "test",
+        "type": "bip44",
+        "version": "0.3",
+        "crypto_type": "scrypt-chacha20poly1305",
+        "timestamp": 1511640884,
+        "encrypted": true,
+        "bip44_coin": 8000,
+    },
+    "entries": [
+        {
+            "address": "y2JeYS4RS8L9GYM7UKdjLRyZanKHXumFoH",
+            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1",
+            "child_number": 0,
+            "change": 0
+        }
+    ]
+}
+```
+
+
 ### Generate new address in wallet
 
 API sets: `WALLET`
@@ -969,6 +1059,8 @@ Args:
     num: the number you want to generate
     password: wallet password
 ```
+
+For `bip44` type wallets, the new addresses will be generated on the `external` chain (`change=0`).
 
 Example:
 
@@ -1123,6 +1215,11 @@ The request body includes:
 * A list of destinations with address and coins specified, as well as optionally specifying hours
 * A configuration for how destination hours are distributed, either manual or automatic
 * Additional options
+
+`change_address` is optional. If not provided and the wallet is a `deterministic` type
+wallet, then the change address will default to an address from one of the
+unspent outputs being spent as a transaction input.  If the wallet is a `bip44` type
+wallet, then a new, unused change address will be created.
 
 Example request body with manual hours selection type, unencrypted wallet and all wallet addresses may spend:
 
@@ -1585,7 +1682,11 @@ Args:
     password: wallet password
 ```
 
-This endpoint only works for encrypted wallets. If the wallet is unencrypted, the seed will not be returned.
+This endpoint only works for encrypted wallets.
+If the wallet is unencrypted, the seed will not be returned.
+
+If the wallet is of type `bip44` and has a seed passphrase, it will be included
+in the response. Otherwise, the seed passphrase will be missing.
 
 Example:
 
@@ -1600,7 +1701,8 @@ Result:
 
 ```json
 {
-    "seed": "your wallet seed"
+    "seed": "your wallet seed",
+    "seed_passphrase": "your optional wallet seed-passphrase"
 }
 ```
 
@@ -1614,17 +1716,18 @@ Method: POST
 Args:
     id: wallet id
     seed: wallet seed
+    seed passphrase: wallet seed passphrase (bip44 wallets only)
     password: [optional] password to encrypt the recovered wallet with
 ```
 
-Recovers an encrypted wallet by providing the wallet seed.
+Recovers an encrypted wallet by providing the wallet seed and optional seed passphrase.
 
 Example:
 
 ```sh
 curl -X POST http://127.0.0.1/api/v2/wallet/recover
  -H 'Content-Type: application/json' \
- -d '{"id":"2017_11_25_e5fb.wlt","seed":"your wallet seed"}'
+ -d '{"id":"2017_11_25_e5fb.wlt","seed":"your wallet seed","seed_passphrase":"your seed passphrase"}'
 ```
 
 Result:
@@ -1915,8 +2018,9 @@ in the transaction.
 If `ignore_unconfirmed` is true, the transaction will not use any outputs which are being spent by an unconfirmed transaction.
 If `ignore_unconfirmed` is false, the endpoint returns an error if any unspent output is spent by an unconfirmed transaction.
 
-`change_address` is optional. If not provided, the change address will default
-to an address from one of the unspent outputs being spent as a transaction input.
+`change_address` is optional. If not provided then the change address will
+default to an address from one of the
+unspent outputs being spent as a transaction input.
 
 Refer to `POST /api/v1/wallet/transaction` for creating a transaction from a specific wallet.
 
@@ -1994,51 +2098,51 @@ Result:
 
 ```json
 {
-	"data": {
-	    "transaction": {
-	        "length": 257,
-	        "type": 0,
-	        "txid": "5f060918d2da468a784ff440fbba80674c829caca355a27ae067f465d0a5e43e",
-	        "inner_hash": "97dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d",
-	        "fee": "437691",
-	        "sigs": [
-	            "6120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100"
-	        ],
-	        "inputs": [
-	            {
-	                "uxid": "7068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b",
-	                "address": "g4XmbmVyDnkswsQTSqYRsyoh1YqydDX1wp",
-	                "coins": "10.000000",
-	                "hours": "853667",
-	                "calculated_hours": "862290",
-	                "timestamp": 1524242826,
-	                "block": 23575,
-	                "txid": "ccfbb51e94cb58a619a82502bc986fb028f632df299ce189c2ff2932574a03e7"
-	            }
-	        ],
-	        "outputs": [
-	            {
-	                "uxid": "519c069a0593e179f226e87b528f60aea72826ec7f99d51279dd8854889ed7e2",
-	                "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
-	                "coins": "1.000000",
-	                "hours": "22253"
-	            },
-	            {
-	                "uxid": "4e4e41996297511a40e2ef0046bd6b7118a8362c1f4f09a288c5c3ea2f4dfb85",
-	                "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
-	                "coins": "8.990000",
-	                "hours": "200046"
-	            },
-	            {
-	                "uxid": "fdeb3f77408f39e50a8e3b6803ce2347aac2eba8118c494424f9fa4959bab507",
-	                "address": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
-	                "coins": "0.010000",
-	                "hours": "222300"
-	            }
-	        ]
-	    },
-	    "encoded_transaction": "010100000097dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d010000006120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100010000007068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b0300000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b140420f0000000000ed5600000000000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b1302d8900000000006e0d0300000000000083874350e65e84aa6e06192408951d7aaac7809e10270000000000005c64030000000000"
-	}
+    "data": {
+        "transaction": {
+            "length": 257,
+            "type": 0,
+            "txid": "5f060918d2da468a784ff440fbba80674c829caca355a27ae067f465d0a5e43e",
+            "inner_hash": "97dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d",
+            "fee": "437691",
+            "sigs": [
+                "6120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100"
+            ],
+            "inputs": [
+                {
+                    "uxid": "7068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b",
+                    "address": "g4XmbmVyDnkswsQTSqYRsyoh1YqydDX1wp",
+                    "coins": "10.000000",
+                    "hours": "853667",
+                    "calculated_hours": "862290",
+                    "timestamp": 1524242826,
+                    "block": 23575,
+                    "txid": "ccfbb51e94cb58a619a82502bc986fb028f632df299ce189c2ff2932574a03e7"
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "519c069a0593e179f226e87b528f60aea72826ec7f99d51279dd8854889ed7e2",
+                    "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+                    "coins": "1.000000",
+                    "hours": "22253"
+                },
+                {
+                    "uxid": "4e4e41996297511a40e2ef0046bd6b7118a8362c1f4f09a288c5c3ea2f4dfb85",
+                    "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+                    "coins": "8.990000",
+                    "hours": "200046"
+                },
+                {
+                    "uxid": "fdeb3f77408f39e50a8e3b6803ce2347aac2eba8118c494424f9fa4959bab507",
+                    "address": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
+                    "coins": "0.010000",
+                    "hours": "222300"
+                }
+            ]
+        },
+        "encoded_transaction": "010100000097dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d010000006120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100010000007068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b0300000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b140420f0000000000ed5600000000000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b1302d8900000000006e0d0300000000000083874350e65e84aa6e06192408951d7aaac7809e10270000000000005c64030000000000"
+    }
 }
 ```
 

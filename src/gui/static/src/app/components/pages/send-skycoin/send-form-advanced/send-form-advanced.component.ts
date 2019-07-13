@@ -5,7 +5,7 @@ import { MatDialog, MatDialogConfig } from '@angular/material';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
-import { Subscription, ISubscription } from 'rxjs/Subscription';
+import { ISubscription } from 'rxjs/Subscription';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { SelectAddressComponent } from './select-address/select-address';
 import { BigNumber } from 'bignumber.js';
@@ -56,7 +56,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   values: number[];
   price: number;
 
-  private subscriptions: Subscription;
+  private subscriptionsGroup: ISubscription[] = [];
   private getOutputsSubscriptions: ISubscription;
   private destinationSubscriptions: ISubscription[] = [];
   private syncCheckSubscription: ISubscription;
@@ -91,7 +91,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       note: [''],
     });
 
-    this.subscriptions = this.form.get('wallet').valueChanges.subscribe(wallet => {
+    this.subscriptionsGroup.push(this.form.get('wallet').valueChanges.subscribe(wallet => {
       this.wallet = wallet;
 
       this.closeGetOutputsSubscriptions();
@@ -116,9 +116,9 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
       this.updateAvailableBalance();
       this.form.get('destinations').updateValueAndValidity();
-    });
+    }));
 
-    this.subscriptions.add(this.form.get('addresses').valueChanges.subscribe(() => {
+    this.subscriptionsGroup.push(this.form.get('addresses').valueChanges.subscribe(() => {
       this.form.get('outputs').setValue(null);
       this.unspentOutputs = this.filterUnspentOutputs();
 
@@ -126,15 +126,15 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       this.form.get('destinations').updateValueAndValidity();
     }));
 
-    this.subscriptions.add(this.form.get('outputs').valueChanges.subscribe(() => {
+    this.subscriptionsGroup.push(this.form.get('outputs').valueChanges.subscribe(() => {
       this.updateAvailableBalance();
       this.form.get('destinations').updateValueAndValidity();
     }));
 
-    this.subscriptions = this.priceService.price.subscribe(price => {
+    this.subscriptionsGroup.push(this.priceService.price.subscribe(price => {
       this.price = price;
       this.updateValues();
-    });
+    }));
 
     if (this.formData) {
       this.fillForm();
@@ -147,7 +147,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     }
     this.closeGetOutputsSubscriptions();
     this.closeSyncCheckSubscription();
-    this.subscriptions.unsubscribe();
+    this.subscriptionsGroup.forEach(sub => sub.unsubscribe());
     this.navbarService.hideSwitch();
     this.msgBarService.hide();
     this.destinationSubscriptions.forEach(s => s.unsubscribe());

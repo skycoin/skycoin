@@ -95,6 +95,7 @@ var (
 		CoinHoursName:   "Coin Hours",
 		CoinHoursTicker: "SCH",
 		ExplorerURL:     "https://explorer.skycoin.net",
+		Bip44Coin:       8000,
 	})
 
 	parseFlags = true

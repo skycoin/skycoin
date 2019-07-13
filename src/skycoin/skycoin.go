@@ -424,6 +424,9 @@ func (c *Coin) ConfigureWallet() wallet.Config {
 
 	wc.CryptoType = cryptoType
 
+	bc := c.config.Node.Fiber.Bip44Coin
+	wc.Bip44Coin = &bc
+
 	return wc
 }
 

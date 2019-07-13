@@ -100,7 +100,7 @@ set +e
 if [[ -z $TEST || $TEST = "api" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST WALLET_DIR=$WALLET_DIR \
-    go test -count=1 ./src/api/integration/... -timeout=30s $VERBOSE $RUN_TESTS
+    go test -count=1 ./src/api/integration/... -timeout=300s $VERBOSE $RUN_TESTS
 
 API_FAIL=$?
 
@@ -109,7 +109,7 @@ fi
 if [[ -z $TEST  || $TEST = "cli" ]]; then
 
 # SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR \
-#     go test -count=1 ./src/cli/integration/... -timeout=30s $VERBOSE $RUN_TESTS
+#     go test -count=1 ./src/cli/integration/... -timeout=300s $VERBOSE $RUN_TESTS
 
 CLI_FAIL=$?
 

@@ -15,6 +15,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `package bip44`, implementing the bip44 spec https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki
 - Codesign daemon and standalone binaries
 - Add a guided method for entering the seeds in the GUI
+- Add new wallet type `collection` for wallets that are an arbitrary collection of private keys, rather than generated from a seed
+- Add new wallet type `bip44` for hierarchical deterministic (HD) wallets obeying the bip44 protocol.
+  The Skycoin bip44 `coin` number is `8000`.
+  `bip44` wallets avoid address reuse, generating a new change address for each transaction.
+  Affects APIs are `POST /api/v1/wallet`, `GET /api/v1/wallets`, `GET /api/v1/wallet`, `POST /api/v1/wallet/seed` and `POST /api/v1/wallet/recover`.
+  Refer to the [API documentation](./src/api/README.md) for API changes.
+  `bip44` wallets support bip39 "seed passphrases".
+  More details are explained in https://github.com/skycoin/skycoin/wiki/Wallet-File-Formats-and-Types
+- `cli walletCreate` support for `bip44` wallets added
+- Add `bip44_coin` field to `GET /api/v1/health` `fiber` params
 - Add the "bulk send" option to the GUI advanced form
 
 ### Fixed
@@ -22,11 +32,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - #2287 A `Content-Type` with a `charset` specified, for example `application/json; charset=utf-8`, will not return an HTTP 415 error anymore
 - Fix `fiber.toml` transaction verification parameters ignored by newcoin
 - #2373 Fix and clean-up further panics with various `skycoin-cli` commands (lastBlocks, checkdb) which were not correctly handling arguments.
+- #2442 Reset the "trusted" flag to false for all peers on load, before registering default hardcoded peers in the peerlist
 
 ### Changed
 
+- `type` is now a required parameter for `POST /api/v1/wallet`
 - Add `display_name`, `ticker`, `coin_hours_display_name`, `coin_hours_ticker`, `explorer_url` to the `/health` endpoint response
-- Add new wallet type `collection` for wallets that are an arbitrary collection of private keys, rather than generated from a seed
 - `cli addPrivateKey` will only work on a `collection` type wallet. Create one with `cli walletCreate -t collection`
 - Don't print the wallet in the terminal after `cli encryptWallet` or `cli decryptWallet`
 

@@ -276,7 +276,7 @@ func checkGoldenFile(t *testing.T, goldenFile string, td TestData) {
 func assertResponseError(t *testing.T, err error, errCode int, errMsg string) {
 	require.Error(t, err)
 	require.IsType(t, api.ClientError{}, err)
-	require.Equal(t, errCode, err.(api.ClientError).StatusCode)
+	require.Equal(t, errCode, err.(api.ClientError).StatusCode, err.(api.ClientError).Message)
 	require.Equal(t, errMsg, err.(api.ClientError).Message)
 }
 

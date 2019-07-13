@@ -168,6 +168,14 @@ func TestNewPex(t *testing.T) {
 	config.DataDirectory = dir
 	config.DefaultConnections = testPeers[:]
 
+	// Add a peer and register it as a default peer.
+	// It will be marked as "trusted"
+	// in the peers cache file, but the next time it is loaded,
+	// it will be reset to untrusted because it is not in the
+	// cfg.DefaultConnections
+	addr := "11.22.33.44:5566"
+	config.DefaultConnections = append(config.DefaultConnections, addr)
+
 	_, err = New(config)
 	require.NoError(t, err)
 
@@ -175,11 +183,33 @@ func TestNewPex(t *testing.T) {
 	peers, err := loadCachedPeersFile(filepath.Join(dir, PeerCacheFilename))
 	require.NoError(t, err)
 
+	require.Equal(t, len(testPeers)+1, len(peers))
+
+	for _, p := range append(testPeers, addr) {
+		v, ok := peers[p]
+		require.True(t, ok)
+		require.True(t, v.Trusted)
+	}
+
+	// Recreate pex with the extra peer removed from DefaultConnections
+	config.DefaultConnections = config.DefaultConnections[:len(config.DefaultConnections)-1]
+	_, err = New(config)
+	require.NoError(t, err)
+
+	peers, err = loadCachedPeersFile(filepath.Join(dir, PeerCacheFilename))
+	require.NoError(t, err)
+
+	require.Equal(t, len(testPeers)+1, len(peers))
+
 	for _, p := range testPeers {
 		v, ok := peers[p]
 		require.True(t, ok)
 		require.True(t, v.Trusted)
 	}
+
+	v, ok := peers[addr]
+	require.True(t, ok)
+	require.False(t, v.Trusted)
 }
 
 func TestNewPexDisableTrustedPeers(t *testing.T) {
@@ -1343,7 +1373,7 @@ func TestPexSetTrusted(t *testing.T) {
 			// init peer
 			pex.peerlist.setPeers(tc.initPeers)
 
-			err := pex.SetTrusted(tc.peer)
+			err := pex.setTrusted(tc.peer)
 			require.Equal(t, tc.err, err)
 			if err != nil {
 				return

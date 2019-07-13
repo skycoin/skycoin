@@ -1,35 +1,50 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
-import { MatDialogRef } from '@angular/material/dialog';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { Observable } from 'rxjs/Observable';
-import { Bip39WordListService } from '../../../../services/bip39-word-list.service';
 import { TranslateService } from '@ngx-translate/core';
-import { HwWalletService } from '../../../../services/hw-wallet.service';
-import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 import { ISubscription } from 'rxjs/Subscription';
-import { MsgBarService } from '../../../../services/msg-bar.service';
+import { Bip39WordListService } from '../../../services/bip39-word-list.service';
+import { MsgBarService } from '../../../services/msg-bar.service';
+import { HwWalletService } from '../../../services/hw-wallet.service';
+import { MessageIcons } from '../hardware-wallet/hw-message/hw-message.component';
+
+export class SeedWordDialogParams {
+  isForHwWallet: boolean;
+  wordNumber: number;
+  restoringSoftwareWallet: false;
+}
 
 @Component({
-  selector: 'app-hw-seed-word-dialog',
-  templateUrl: './hw-seed-word-dialog.component.html',
-  styleUrls: ['./hw-seed-word-dialog.component.scss'],
+  selector: 'app-seed-word-dialog',
+  templateUrl: './seed-word-dialog.component.html',
+  styleUrls: ['./seed-word-dialog.component.scss'],
 })
-export class HwSeedWordDialogComponent extends HwDialogBaseComponent<HwSeedWordDialogComponent> implements OnInit, OnDestroy {
+export class SeedWordDialogComponent implements OnInit, OnDestroy {
   form: FormGroup;
   filteredOptions: Observable<string[]>;
+  msgIcons = MessageIcons;
 
   private sendingWord = false;
-  protected valueChangeSubscription: ISubscription;
+  private valueChangeSubscription: ISubscription;
+  private hwConnectionSubscription: ISubscription;
 
   constructor(
-    public dialogRef: MatDialogRef<HwSeedWordDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: SeedWordDialogParams,
+    public dialogRef: MatDialogRef<SeedWordDialogComponent>,
     private formBuilder: FormBuilder,
     private bip38WordList: Bip39WordListService,
     private msgBarService: MsgBarService,
     private translateService: TranslateService,
     hwWalletService: HwWalletService,
   ) {
-    super(hwWalletService, dialogRef);
+    if (data.isForHwWallet) {
+      this.hwConnectionSubscription = hwWalletService.walletConnectedAsyncEvent.subscribe(connected => {
+        if (!connected) {
+          this.dialogRef.close();
+        }
+      });
+    }
   }
 
   ngOnInit() {
@@ -45,9 +60,11 @@ export class HwSeedWordDialogComponent extends HwDialogBaseComponent<HwSeedWordD
   }
 
   ngOnDestroy() {
-    super.ngOnDestroy();
     this.msgBarService.hide();
     this.valueChangeSubscription.unsubscribe();
+    if (this.hwConnectionSubscription) {
+      this.hwConnectionSubscription.unsubscribe();
+    }
   }
 
   sendWord() {

@@ -41,9 +41,15 @@ func NewReadableEntry(coinType CoinType, walletType string, e Entry) ReadableEnt
 	switch walletType {
 	case WalletTypeBip44:
 		cn := e.ChildNumber
-		change := e.Change
 		re.ChildNumber = &cn
+		change := e.Change
 		re.Change = &change
+	case WalletTypeXPub:
+		cn := e.ChildNumber
+		re.ChildNumber = &cn
+		if e.Change != 0 {
+			logger.Panicf("wallet.Entry.Change is not 0 but wallet type is %q", walletType)
+		}
 	default:
 		if e.ChildNumber != 0 {
 			logger.Panicf("wallet.Entry.ChildNumber is not 0 but wallet type is %q", walletType)

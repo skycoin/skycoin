@@ -144,7 +144,18 @@ func (serv *Service) loadWallet(wltName string, options Options, tf Transactions
 	fingerprint := w.Fingerprint()
 	if fingerprint != "" {
 		if _, ok := serv.fingerprints[fingerprint]; ok {
-			return nil, ErrSeedUsed
+			// Note: collection wallets do not have fingerprints
+			switch w.Type() {
+			case WalletTypeDeterministic, WalletTypeBip44:
+				return nil, ErrSeedUsed
+			case WalletTypeXPub:
+				return nil, ErrXPubKeyUsed
+			default:
+				logger.WithFields(logrus.Fields{
+					"walletType":  w.Type(),
+					"fingerprint": fingerprint,
+				}).Panic("Unhandled wallet type after fingerprint conflict")
+			}
 		}
 	}
 

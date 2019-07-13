@@ -19,10 +19,10 @@ type DeterministicWallet struct {
 }
 
 // newDeterministicWallet creates a DeterministicWallet
-func newDeterministicWallet(meta Meta) *DeterministicWallet {
+func newDeterministicWallet(meta Meta) (*DeterministicWallet, error) {
 	return &DeterministicWallet{
 		Meta: meta,
-	}
+	}, nil
 }
 
 // PackSecrets copies data from decrypted wallets into the secrets container
@@ -256,7 +256,7 @@ func (w *DeterministicWallet) ScanAddresses(scanN uint64, tf TransactionsFinder)
 	return nil
 }
 
-// Fingerprint returns a unique ID fingerprint this wallet, composed of its initial address
+// Fingerprint returns a unique ID fingerprint for this wallet, composed of its initial address
 // and wallet type
 func (w *DeterministicWallet) Fingerprint() string {
 	addr := ""

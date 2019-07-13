@@ -27,10 +27,10 @@ type Bip44Wallet struct {
 }
 
 // newBip44Wallet creates a Bip44Wallet
-func newBip44Wallet(meta Meta) *Bip44Wallet {
+func newBip44Wallet(meta Meta) (*Bip44Wallet, error) {
 	return &Bip44Wallet{
 		Meta: meta,
-	}
+	}, nil
 }
 
 // PackSecrets copies data from decrypted wallets into the secrets container
@@ -151,7 +151,9 @@ func (w *Bip44Wallet) HasEntry(a cipher.Address) bool {
 	return w.ExternalEntries.has(a) || w.ChangeEntries.has(a)
 }
 
-func (w *Bip44Wallet) nextChildIdx(e Entries) uint32 {
+// nextChildIdx returns the next child index from a sequence of entries.
+// This assumes that entries are sorted by child number ascending.
+func nextChildIdx(e Entries) uint32 {
 	if len(e) == 0 {
 		return 0
 	}
@@ -165,7 +167,7 @@ func (w *Bip44Wallet) generateEntries(num uint64, changeIdx, initialChildIdx uin
 	}
 
 	if num > math.MaxUint32 {
-		return nil, NewError(errors.New("generateAddressesBip44 num too large"))
+		return nil, NewError(errors.New("Bip44Wallet.generateEntries num too large"))
 	}
 
 	// Cap `num` in case it would exceed the maximum child index number
@@ -183,12 +185,6 @@ func (w *Bip44Wallet) generateEntries(num uint64, changeIdx, initialChildIdx uin
 		return nil, err
 	}
 
-	// TODO -- support other coin types. Note that this is different from
-	// the coinType field in the wallet. This is the bip44 coin type, which
-	// will be different for each fiber coin, whereas the wallet's coinType
-	// field is always "skycoin" for all fiber coins
-	// - Add API control to allow custom paths to be added
-	// - Use fiber.toml to configure the default bip44 coin type
 	c, err := bip44.NewCoin(seed, w.Meta.Bip44Coin())
 	if err != nil {
 		logger.Critical().WithError(err).Error("Failed to derive the bip44 purpose node")
@@ -282,7 +278,7 @@ func (w *Bip44Wallet) generateEntries(num uint64, changeIdx, initialChildIdx uin
 // PeekChangeEntry creates and returns an entry for the change chain.
 // If used, the caller the append it with GenerateChangeEntry
 func (w *Bip44Wallet) PeekChangeEntry() (Entry, error) {
-	entries, err := w.generateEntries(1, bip44.ChangeChainIndex, w.nextChildIdx(w.ChangeEntries))
+	entries, err := w.generateEntries(1, bip44.ChangeChainIndex, nextChildIdx(w.ChangeEntries))
 	if err != nil {
 		return Entry{}, err
 	}
@@ -308,7 +304,7 @@ func (w *Bip44Wallet) GenerateChangeEntry() (Entry, error) {
 
 // GenerateAddresses generates addresses for the external chain, and appends them to the wallet's entries array
 func (w *Bip44Wallet) GenerateAddresses(num uint64) ([]cipher.Addresser, error) {
-	entries, err := w.generateEntries(num, bip44.ExternalChainIndex, w.nextChildIdx(w.ExternalEntries))
+	entries, err := w.generateEntries(num, bip44.ExternalChainIndex, nextChildIdx(w.ExternalEntries))
 	if err != nil {
 		return nil, err
 	}
@@ -325,7 +321,7 @@ func (w *Bip44Wallet) GenerateSkycoinAddresses(num uint64) ([]cipher.Address, er
 		return nil, errors.New("GenerateSkycoinAddresses called for non-skycoin wallet")
 	}
 
-	entries, err := w.generateEntries(num, bip44.ExternalChainIndex, w.nextChildIdx(w.ExternalEntries))
+	entries, err := w.generateEntries(num, bip44.ExternalChainIndex, nextChildIdx(w.ExternalEntries))
 	if err != nil {
 		return nil, err
 	}
@@ -347,12 +343,16 @@ func (w *Bip44Wallet) ScanAddresses(scanN uint64, tf TransactionsFinder) error {
 
 	w2 := w.Clone().(*Bip44Wallet)
 
-	externalEntries, err := w2.scanAddresses(scanN, tf, bip44.ExternalChainIndex, w.nextChildIdx(w.ExternalEntries))
+	externalEntries, err := scanAddressesBip32(func(num uint64, childIdx uint32) (Entries, error) {
+		return w.generateEntries(num, bip44.ExternalChainIndex, childIdx)
+	}, scanN, tf, nextChildIdx(w2.ExternalEntries))
 	if err != nil {
 		return err
 	}
 
-	changeEntries, err := w2.scanAddresses(scanN, tf, bip44.ChangeChainIndex, w.nextChildIdx(w.ChangeEntries))
+	changeEntries, err := scanAddressesBip32(func(num uint64, childIdx uint32) (Entries, error) {
+		return w.generateEntries(num, bip44.ChangeChainIndex, childIdx)
+	}, scanN, tf, nextChildIdx(w2.ChangeEntries))
 	if err != nil {
 		return err
 	}
@@ -366,7 +366,9 @@ func (w *Bip44Wallet) ScanAddresses(scanN uint64, tf TransactionsFinder) error {
 	return nil
 }
 
-func (w *Bip44Wallet) scanAddresses(scanN uint64, tf TransactionsFinder, chainIdx, initialChildIdx uint32) (Entries, error) {
+// scanAddressesBip32 implements the address scanning algorithm for bip32
+// based (e.g. bip44, xpub) wallets
+func scanAddressesBip32(generateEntries func(num uint64, childIdx uint32) (Entries, error), scanN uint64, tf TransactionsFinder, initialChildIdx uint32) (Entries, error) {
 	if scanN == 0 {
 		return nil, nil
 	}
@@ -379,12 +381,22 @@ func (w *Bip44Wallet) scanAddresses(scanN uint64, tf TransactionsFinder, chainId
 
 	for {
 		// Generate the addresses to scan
-		entries, err := w.generateEntries(n, chainIdx, childIdx)
+		entries, err := generateEntries(n, childIdx)
 		if err != nil {
 			return nil, err
 		}
 
-		childIdx = w.nextChildIdx(entries)
+		if len(entries) == 0 {
+			break
+		}
+
+		// The bip32 child key sequence is finite and may be truncated at its limit
+		n = uint64(len(entries))
+		if n == 0 {
+			break
+		}
+
+		childIdx = nextChildIdx(entries)
 
 		newEntries = append(newEntries, entries...)
 
@@ -411,6 +423,10 @@ func (w *Bip44Wallet) scanAddresses(scanN uint64, tf TransactionsFinder, chainId
 
 		nAddAddrs += keepNum + extraScan
 
+		if n < keepNum {
+			logger.Panic("n should never be less than keepNum")
+		}
+
 		// extraScan is the number of addresses with no activity beyond the
 		// last address with activity
 		extraScan = n - keepNum
@@ -422,7 +438,7 @@ func (w *Bip44Wallet) scanAddresses(scanN uint64, tf TransactionsFinder, chainId
 	return newEntries[:nAddAddrs], nil
 }
 
-// Fingerprint returns a unique ID fingerprint this wallet, composed of its initial address
+// Fingerprint returns a unique ID fingerprint for this wallet, composed of its initial address
 // and wallet type
 func (w *Bip44Wallet) Fingerprint() string {
 	addr := ""

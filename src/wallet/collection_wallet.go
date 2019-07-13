@@ -19,10 +19,10 @@ type CollectionWallet struct {
 }
 
 // newCollectionWallet creates a CollectionWallet
-func newCollectionWallet(meta Meta) *CollectionWallet {
+func newCollectionWallet(meta Meta) (*CollectionWallet, error) {
 	return &CollectionWallet{
 		Meta: meta,
-	}
+	}, nil
 }
 
 // PackSecrets copies data from decrypted wallets into the secrets container

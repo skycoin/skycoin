@@ -2007,6 +2007,7 @@ $ skycoin-cli status
             "display_name": "Skycoin",
             "ticker": "SKY",
             "coin_hours_display_name": "Coin Hours",
+            "coin_hours_display_name_singular": "Coin Hour",
             "coin_hours_ticker": "SCH",
             "explorer_url": "https://explorer.skycoin.net"
         }

@@ -90,12 +90,13 @@ var (
 		CreateBlockMaxDropletPrecision: 3,
 		MaxBlockTransactionsSize:       32768,
 
-		DisplayName:     "Skycoin",
-		Ticker:          "SKY",
-		CoinHoursName:   "Coin Hours",
-		CoinHoursTicker: "SCH",
-		ExplorerURL:     "https://explorer.skycoin.net",
-		Bip44Coin:       8000,
+		DisplayName:           "Skycoin",
+		Ticker:                "SKY",
+		CoinHoursName:         "Coin Hours",
+		CoinHoursNameSingular: "Coin Hour",
+		CoinHoursTicker:       "SCH",
+		ExplorerURL:           "https://explorer.skycoin.net",
+		Bip44Coin:             8000,
 	})
 
 	parseFlags = true

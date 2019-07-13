@@ -329,13 +329,14 @@ func NewNodeConfig(mode string, node fiber.NodeConfig) NodeConfig {
 		HTTPProfHost: "localhost:6060",
 
 		Fiber: readable.FiberConfig{
-			Name:            node.CoinName,
-			DisplayName:     node.DisplayName,
-			Ticker:          node.Ticker,
-			CoinHoursName:   node.CoinHoursName,
-			CoinHoursTicker: node.CoinHoursTicker,
-			ExplorerURL:     node.ExplorerURL,
-			Bip44Coin:       node.Bip44Coin,
+			Name:                  node.CoinName,
+			DisplayName:           node.DisplayName,
+			Ticker:                node.Ticker,
+			CoinHoursName:         node.CoinHoursName,
+			CoinHoursNameSingular: node.CoinHoursNameSingular,
+			CoinHoursTicker:       node.CoinHoursTicker,
+			ExplorerURL:           node.ExplorerURL,
+			Bip44Coin:             node.Bip44Coin,
 		},
 	}
 

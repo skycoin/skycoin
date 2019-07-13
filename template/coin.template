@@ -79,12 +79,13 @@ var (
 		CreateBlockMaxDropletPrecision: {{.CreateBlockMaxDropletPrecision}},
 		MaxBlockTransactionsSize:       {{.MaxBlockTransactionsSize}},
 
-		DisplayName:     "{{.DisplayName}}",
-		Ticker:          "{{.Ticker}}",
-		CoinHoursName:   "{{.CoinHoursName}}",
-		CoinHoursTicker: "{{.CoinHoursTicker}}",
-		ExplorerURL:     "{{.ExplorerURL}}",
-		Bip44Coin:       {{.Bip44Coin}},
+		DisplayName:           "{{.DisplayName}}",
+		Ticker:                "{{.Ticker}}",
+		CoinHoursName:         "{{.CoinHoursName}}",
+		CoinHoursNameSingular: "{{.CoinHoursNameSingular}}",
+		CoinHoursTicker:       "{{.CoinHoursTicker}}",
+		ExplorerURL:           "{{.ExplorerURL}}",
+		Bip44Coin:             {{.Bip44Coin}},
 	})
 
 	parseFlags = true

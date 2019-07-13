@@ -13,6 +13,7 @@ export class AppService {
   fullCoinName = ' ';
   coinName = ' ';
   hoursName = ' ';
+  hoursNameSingular = ' ';
   explorerUrl = ' ';
 
   get burnRate() {
@@ -44,6 +45,7 @@ export class AppService {
         this.fullCoinName = response.fiber.display_name;
         this.coinName = response.fiber.ticker;
         this.hoursName = response.fiber.coin_hours_display_name;
+        this.hoursNameSingular = response.fiber.coin_hours_display_name_singular;
         this.explorerUrl = response.fiber.explorer_url;
 
         if (this.explorerUrl.endsWith('/')) {

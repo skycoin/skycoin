@@ -139,7 +139,6 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
         }, err => {
           this.exchangeButton.resetState();
           this.exchangeButton.setEnabled();
-          this.exchangeButton.setError(err);
           this.msgBarService.showError(err);
         });
       } else {
@@ -155,7 +154,6 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
     this.exchangeButton.setEnabled();
 
     const errMsg = this.translateService.instant('exchange.invalid-address');
-    this.exchangeButton.setError(errMsg);
     this.msgBarService.showError(errMsg);
   }
 

@@ -219,6 +219,7 @@ export class WalletDetailComponent implements OnDestroy {
       .subscribe(passwordDialog => {
         this.walletService.toggleEncryption(this.wallet, passwordDialog.password).subscribe(() => {
           passwordDialog.close();
+          setTimeout(() => this.msgBarService.showDone('common.changes-made'));
         }, e => passwordDialog.error(e));
       });
   }

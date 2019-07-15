@@ -159,12 +159,6 @@ func (w *Bip44Wallet) CoinHDNode() (*bip44.Coin, error) {
 		return nil, err
 	}
 
-	// TODO -- support other coin types. Note that this is different from
-	// the coinType field in the wallet. This is the bip44 coin type, which
-	// will be different for each fiber coin, whereas the wallet's coinType
-	// field is always "skycoin" for all fiber coins
-	// - Add API control to allow custom paths to be added
-	// - Use fiber.toml to configure the default bip44 coin type
 	c, err := bip44.NewCoin(seed, w.Meta.Bip44Coin())
 	if err != nil {
 		logger.Critical().WithError(err).Error("Failed to derive the bip44 purpose node")

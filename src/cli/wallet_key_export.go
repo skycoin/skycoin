@@ -53,8 +53,7 @@ func walletKeyExportHandler(c *gcli.Command, args []string) error {
 		return err
 	}
 
-	wltFile := args[0]
-	w, err := wallet.Load(wltFile)
+	w, err := wallet.Load(args[0])
 	if err != nil {
 		return err
 	}
@@ -94,7 +93,7 @@ func walletKeyExportHandler(c *gcli.Command, args []string) error {
 		return printKey(keyType, acct.PrivateKey)
 	}
 
-	change, err := coin.NewPrivateChildKey(nodes[1])
+	change, err := acct.NewPrivateChildKey(nodes[1])
 	if err != nil {
 		return err
 	}

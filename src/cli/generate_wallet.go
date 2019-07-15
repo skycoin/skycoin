@@ -49,11 +49,12 @@ func walletCreateCmd() *gcli.Command {
 	walletCreateCmd.Flags().StringP("wallet-file", "f", cliConfig.WalletName, `Name of wallet. The final format will be "yourName.wlt".
 If no wallet name is specified a generic name will be selected.`)
 	walletCreateCmd.Flags().StringP("label", "l", "", "Label used to idetify your wallet.")
-	walletCreateCmd.Flags().StringP("type", "t", wallet.WalletTypeDeterministic, "Wallet type. Types are \"collection\", \"deterministic\" or \"bip44\"")
+	walletCreateCmd.Flags().StringP("type", "t", wallet.WalletTypeDeterministic, "Wallet type. Types are \"collection\", \"deterministic\", \"bip44\" or \"xpub\"")
 	walletCreateCmd.Flags().BoolP("encrypt", "e", false, "Create encrypted wallet.")
 	walletCreateCmd.Flags().StringP("crypto-type", "x", string(wallet.DefaultCryptoType),
 		"The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor")
 	walletCreateCmd.Flags().StringP("password", "p", "", "Wallet password")
+	walletCreateCmd.Flags().StringP("xpub", "", "", "xpub key for \"xpub\" type wallets")
 
 	return walletCreateCmd
 }
@@ -153,6 +154,11 @@ func generateWalletHandler(c *gcli.Command, _ []string) error {
 		bip44Coin = &c
 	}
 
+	xpub, err := c.Flags().GetString("xpub")
+	if err != nil {
+		return err
+	}
+
 	var sd string
 	switch walletType {
 	case wallet.WalletTypeBip44:
@@ -177,6 +183,11 @@ func generateWalletHandler(c *gcli.Command, _ []string) error {
 			return fmt.Errorf("%q type wallets do not support address generation", walletType)
 		}
 		num = 0
+
+	case wallet.WalletTypeXPub:
+		if s != "" || random || mnemonic {
+			return fmt.Errorf("%q type wallets do not use seeds", walletType)
+		}
 
 	default:
 		return fmt.Errorf("unhandled wallet type %q", walletType)
@@ -225,6 +236,7 @@ func generateWalletHandler(c *gcli.Command, _ []string) error {
 		GenerateN:      num,
 		Coin:           coin,
 		Bip44Coin:      bip44Coin,
+		XPub:           xpub,
 	}
 
 	wlt, err := wallet.NewWallet(filepath.Base(wltName), opts)

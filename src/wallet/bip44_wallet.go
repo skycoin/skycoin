@@ -151,6 +151,32 @@ func (w *Bip44Wallet) HasEntry(a cipher.Address) bool {
 	return w.ExternalEntries.has(a) || w.ChangeEntries.has(a)
 }
 
+// CoinHDNode return the "coin" level bip44 HDNode
+func (w *Bip44Wallet) CoinHDNode() (*bip44.Coin, error) {
+	// w.Meta.Seed() must return a valid bip39 mnemonic
+	seed, err := bip39.NewSeed(w.Meta.Seed(), w.Meta.SeedPassphrase())
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO -- support other coin types. Note that this is different from
+	// the coinType field in the wallet. This is the bip44 coin type, which
+	// will be different for each fiber coin, whereas the wallet's coinType
+	// field is always "skycoin" for all fiber coins
+	// - Add API control to allow custom paths to be added
+	// - Use fiber.toml to configure the default bip44 coin type
+	c, err := bip44.NewCoin(seed, w.Meta.Bip44Coin())
+	if err != nil {
+		logger.Critical().WithError(err).Error("Failed to derive the bip44 purpose node")
+		if bip32.IsImpossibleChildError(err) {
+			logger.Critical().Error("ImpossibleChild: this seed cannot be used for bip44")
+		}
+		return nil, err
+	}
+
+	return c, nil
+}
+
 // nextChildIdx returns the next child index from a sequence of entries.
 // This assumes that entries are sorted by child number ascending.
 func nextChildIdx(e Entries) uint32 {
@@ -179,18 +205,8 @@ func (w *Bip44Wallet) generateEntries(num uint64, changeIdx, initialChildIdx uin
 		return nil, nil
 	}
 
-	// w.Meta.Seed() must return a valid bip39 mnemonic
-	seed, err := bip39.NewSeed(w.Meta.Seed(), w.Meta.SeedPassphrase())
+	c, err := w.CoinHDNode()
 	if err != nil {
-		return nil, err
-	}
-
-	c, err := bip44.NewCoin(seed, w.Meta.Bip44Coin())
-	if err != nil {
-		logger.Critical().WithError(err).Error("Failed to derive the bip44 purpose node")
-		if bip32.IsImpossibleChildError(err) {
-			logger.Critical().Error("ImpossibleChild: this seed cannot be used for bip44")
-		}
 		return nil, err
 	}
 

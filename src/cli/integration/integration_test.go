@@ -2678,6 +2678,66 @@ func TestVersion(t *testing.T) {
 	require.Len(t, vers, 4)
 }
 
+func getWalletDir() string {
+	walletDir := os.Getenv("WALLET_DIR")
+	if walletDir != "" {
+		return walletDir
+	}
+	return filepath.Join(file.UserHome(), ".skycoin/wallets/")
+}
+
+func TestStableWalletCreateXPubFlow(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	// The flow to create an xpub wallet is:
+	// - Create a bip44 wallet
+	// - Export an xpub key from the bip44 wallet
+	// - Create an xpub wallet from the xpub key
+
+	clean := createTempWalletDir(t)
+	defer clean()
+
+	// Create a bip44 wallet
+	args := []string{"walletCreate", "-t", "bip44", "-n", "10", "-f", "bip44.wlt"}
+	_, err := execCommandCombinedOutput(args...)
+	require.NoError(t, err)
+
+	walletDir := getWalletDir()
+	bip44Filename := filepath.Join(walletDir, "bip44.wlt")
+
+	// Export the xpub key from the bip44 wallet subpath 0'/0
+	args = []string{"walletKeyExport", "-k", "xpub", "--path", "0/0", bip44Filename}
+	output, err := execCommandCombinedOutput(args...)
+	require.NoError(t, err)
+
+	xpub := strings.TrimSpace(string(output))
+
+	// Create an xpub wallet
+	args = []string{"walletCreate", "-t", "xpub", "--xpub", xpub, "-n", "10", "-f", "xpub.wlt"}
+	_, err = execCommandCombinedOutput(args...)
+	require.NoError(t, err)
+
+	// Compare the entries of both wallets: they should match
+	w, err := wallet.Load(bip44Filename)
+	require.NoError(t, err)
+
+	w2, err := wallet.Load(filepath.Join(walletDir, "xpub.wlt"))
+	require.NoError(t, err)
+
+	for i, e := range w.GetEntries() {
+		e2 := w2.GetEntryAt(i)
+		require.Equal(t, e.Public, e2.Public)
+		require.Equal(t, e.Address, e2.Address)
+		require.False(t, e.Secret.Null())
+		require.True(t, e2.Secret.Null())
+		require.Equal(t, e.ChildNumber, uint32(i))
+		require.Equal(t, e.ChildNumber, e2.ChildNumber)
+		require.Equal(t, e.Change, e2.Change)
+	}
+}
+
 func TestStableWalletCreate(t *testing.T) {
 	if !doStable(t) {
 		return
@@ -2892,10 +2952,7 @@ func TestStableWalletCreate(t *testing.T) {
 			}
 
 			// os.Stdout should match the wallet written on disk
-			walletDir := os.Getenv("WALLET_DIR")
-			if walletDir == "" {
-				walletDir = filepath.Join(file.UserHome(), ".skycoin/wallets/")
-			}
+			walletDir := getWalletDir()
 			fn := filepath.Join(walletDir, tc.filename)
 			contents, err := ioutil.ReadFile(fn)
 			require.NoError(t, err)

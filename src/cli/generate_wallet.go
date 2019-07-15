@@ -46,8 +46,7 @@ func walletCreateCmd() *gcli.Command {
 	walletCreateCmd.Flags().Uint32P("bip44-coin", "", uint32(bip44.CoinTypeSkycoin), "BIP44 coin type")
 	walletCreateCmd.Flags().StringP("coin", "c", string(wallet.CoinTypeSkycoin), "Wallet address coin type (options: skycoin, bitcoin)")
 	walletCreateCmd.Flags().Uint64P("num", "n", 1, `Number of addresses to generate.`)
-	walletCreateCmd.Flags().StringP("wallet-file", "f", cliConfig.WalletName, `Name of wallet. The final format will be "yourName.wlt".
-If no wallet name is specified a generic name will be selected.`)
+	walletCreateCmd.Flags().StringP("wallet-file", "f", cliConfig.WalletName, `Wallet filename, excluding path. If not specified, a generic name will be chosen.`)
 	walletCreateCmd.Flags().StringP("label", "l", "", "Label used to idetify your wallet.")
 	walletCreateCmd.Flags().StringP("type", "t", wallet.WalletTypeDeterministic, "Wallet type. Types are \"collection\", \"deterministic\", \"bip44\" or \"xpub\"")
 	walletCreateCmd.Flags().BoolP("encrypt", "e", false, "Create encrypted wallet.")

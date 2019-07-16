@@ -268,7 +268,6 @@ func TestGetWallets(t *testing.T) {
 				Type: walletType,
 			})
 			defer clean()
-			// cleaners = append(cleaners, clean)
 			ws = append(ws, *w)
 		}
 	}
@@ -412,15 +411,24 @@ func TestStableWalletBalance(t *testing.T) {
 		return
 	}
 
+	seed := "casino away claim road artist where blossom warrior demise royal still palm"
+	xpub := "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v"
 	c := newClient()
 
 	for _, walletType := range createWalletTypes {
 		t.Run(walletType, func(t *testing.T) {
-			seed := "casino away claim road artist where blossom warrior demise royal still palm"
-			w, _, clean := createWallet(t, c, api.CreateWalletOptions{
+			opts := api.CreateWalletOptions{
 				Type: walletType,
-				Seed: seed,
-			})
+			}
+
+			switch walletType {
+			case wallet.WalletTypeBip44, wallet.WalletTypeDeterministic:
+				opts.Seed = seed
+			case wallet.WalletTypeXPub:
+				opts.XPub = xpub
+			}
+
+			w, _, clean := createWallet(t, c, opts)
 			defer clean()
 
 			bp, err := c.WalletBalance(w.Meta.Filename)
@@ -688,8 +696,17 @@ func TestDecryptWallet(t *testing.T) {
 				pubkey := cipher.MustPubKeyFromSecKey(seckeys[0])
 				require.Equal(t, w.Entries[0].Address, cipher.AddressFromPubKey(pubkey).String())
 				require.Equal(t, lw.GetEntryAt(0).Address.String(), w.Entries[0].Address)
+				require.Empty(t, lw.XPub())
+
 			case wallet.WalletTypeBip44:
 				require.Empty(t, lw.LastSeed())
+				require.Empty(t, lw.XPub())
+
+			case wallet.WalletTypeXPub:
+				require.Empty(t, lw.Seed())
+				require.Empty(t, lw.LastSeed())
+				require.NotEmpty(t, lw.XPub())
+
 			default:
 				t.Fatalf("unhandled wallet type %q", walletType)
 			}
@@ -870,7 +887,10 @@ func TestGetWalletSeedDisabledAPI(t *testing.T) {
 
 	c := newClient()
 
-	for _, walletType := range createWalletTypes {
+	for _, walletType := range []string{
+		wallet.WalletTypeBip44,
+		wallet.WalletTypeDeterministic,
+	} {
 		t.Run(walletType, func(t *testing.T) {
 			// Create an encrypted wallet
 			w, _, clean := createWallet(t, c, api.CreateWalletOptions{
@@ -1075,6 +1095,10 @@ func createWallet(t *testing.T, c *api.Client, o api.CreateWalletOptions) (*api.
 	case wallet.WalletTypeDeterministic, wallet.WalletTypeBip44:
 		if o.Seed == "" {
 			o.Seed = bip39.MustNewDefaultMnemonic()
+		}
+	case wallet.WalletTypeXPub:
+		if o.XPub == "" {
+			o.XPub = testutil.RandXPub(t).String()
 		}
 	}
 

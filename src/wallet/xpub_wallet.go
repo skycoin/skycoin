@@ -26,16 +26,25 @@ type XPubWallet struct {
 
 // newXPubWallet creates a XPubWallet
 func newXPubWallet(meta Meta) (*XPubWallet, error) {
-	xpub, err := bip32.DeserializeEncodedPublicKey(meta.XPub())
+	xpub, err := parseXPub(meta.XPub())
 	if err != nil {
-		logger.Critical().WithError(err).Error("newXPubWallet bip32.DeserializeEncodedPublicKey failed")
-		return nil, NewError(fmt.Errorf("invalid xpub key: %v", err))
+		return nil, err
 	}
 
 	return &XPubWallet{
 		Meta: meta,
 		xpub: xpub,
 	}, nil
+}
+
+func parseXPub(xp string) (*bip32.PublicKey, error) {
+	xpub, err := bip32.DeserializeEncodedPublicKey(xp)
+	if err != nil {
+		logger.WithError(err).Error("bip32.DeserializeEncodedPublicKey failed")
+		return nil, NewError(fmt.Errorf("invalid xpub key: %v", err))
+	}
+
+	return xpub, nil
 }
 
 // PackSecrets does nothing because XPubWallet has no secrets
@@ -49,10 +58,11 @@ func (w *XPubWallet) UnpackSecrets(ss Secrets) error {
 
 // Clone clones the wallet a new wallet object
 func (w *XPubWallet) Clone() Wallet {
-	xpub, err := bip32.DeserializePublicKey(w.xpub.Serialize())
+	xpub, err := parseXPub(w.Meta.XPub())
 	if err != nil {
-		logger.WithError(err).Panic("bip32.DeserializePublicKey(w.pub.Serialize()) failed")
+		logger.WithError(err).Panic("Clone parseXPub failed")
 	}
+
 	return &XPubWallet{
 		Meta:    w.Meta.clone(),
 		Entries: w.Entries.clone(),
@@ -62,13 +72,24 @@ func (w *XPubWallet) Clone() Wallet {
 
 // CopyFrom copies the src wallet to w
 func (w *XPubWallet) CopyFrom(src Wallet) {
+	xpub, err := parseXPub(src.XPub())
+	if err != nil {
+		logger.WithError(err).Panic("CopyFrom parseXPub failed")
+	}
+	w.xpub = xpub
 	w.Meta = src.(*XPubWallet).Meta.clone()
 	w.Entries = src.(*XPubWallet).Entries.clone()
 }
 
 // CopyFromRef copies the src wallet with a pointer dereference
 func (w *XPubWallet) CopyFromRef(src Wallet) {
+	xpub, err := parseXPub(src.XPub())
+	if err != nil {
+		logger.WithError(err).Panic("CopyFromRef parseXPub failed")
+	}
+
 	*w = *(src.(*XPubWallet))
+	w.xpub = xpub
 }
 
 // Erase wipes secret fields in wallet

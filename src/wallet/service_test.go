@@ -61,7 +61,7 @@ func TestNewService(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			require.Equal(t, 10, len(s.wallets))
+			require.Equal(t, 11, len(s.wallets))
 
 		})
 	}

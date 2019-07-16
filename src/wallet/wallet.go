@@ -198,7 +198,7 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 	}
 
 	if opts.XPub != "" && wltType != WalletTypeXPub {
-		return nil, NewError(fmt.Errorf("XPub is only used for %q wallets", WalletTypeXPub))
+		return nil, NewError(fmt.Errorf("xpub is only used for %q wallets", WalletTypeXPub))
 	}
 
 	switch wltType {

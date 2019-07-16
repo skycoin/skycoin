@@ -980,7 +980,22 @@ func TestWalletCreateHandler(t *testing.T) {
 				Bip44Coin: "8000",
 			},
 			status:  http.StatusBadRequest,
-			err:     "400 Bad Request - bip44-coin is only value for bip44 type wallets",
+			err:     "400 Bad Request - bip44-coin is only valid for bip44 type wallets",
+			wltName: "foo",
+		},
+		{
+			name:   "400 - xpub provided but type is not xpub",
+			method: http.MethodPost,
+			body: &httpBody{
+				Type:      wallet.WalletTypeDeterministic,
+				Seed:      bip39.MustNewDefaultMnemonic(),
+				Label:     "bar",
+				ScanN:     "1",
+				Bip44Coin: "8000",
+				XPub:      "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8",
+			},
+			status:  http.StatusBadRequest,
+			err:     "400 Bad Request - foo",
 			wltName: "foo",
 		},
 		{

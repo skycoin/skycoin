@@ -323,6 +323,18 @@ func TestNewWallet(t *testing.T) {
 				err: NewError(errors.New("invalid xpub key: Serialized keys should be exactly 82 bytes")),
 			},
 		},
+		{
+			name:    "seed provided with xpub wallet",
+			wltName: "test-xpub.wlt",
+			opts: Options{
+				Type: WalletTypeXPub,
+				Seed: "foobar",
+				XPub: "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
+			},
+			expect: expect{
+				err: NewError(errors.New("foo")),
+			},
+		},
 	}
 
 	for _, tc := range tt {

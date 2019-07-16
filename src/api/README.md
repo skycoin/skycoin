@@ -32,7 +32,7 @@ The API has two versions, `/api/v1` and `/api/v2`.
 	- [Verify wallet Seed](#verify-wallet-seed)
 	- [Create wallet](#create-wallet)
 	- [Generate new address in wallet](#generate-new-address-in-wallet)
-	- [Updates wallet label](#updates-wallet-label)
+	- [Change wallet label](#change-wallet-label)
 	- [Get wallet balance](#get-wallet-balance)
 	- [Create transaction](#create-transaction)
 	- [Sign transaction](#sign-transaction)
@@ -965,8 +965,9 @@ Method: POST
 Args:
     seed: wallet seed [required]
     seed-passphrase: wallet seed passphrase [optional, bip44 type wallet only]
-    type: wallet type [required, one of "deterministic" or "bip44"]
+    type: wallet type [required, one of "deterministic", "bip44" or "xpub"]
     bip44-coin: BIP44 coin type [optional, defaults to 8000 (skycoin's coin type), only valid if type is "bip44"]
+    xpub: xpub key [required for xpub wallets]
     label: wallet label [required]
     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
     encrypt: encrypt wallet [optional, bool value]
@@ -1047,6 +1048,41 @@ Result:
 }
 ```
 
+Example (xpub):
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v1/wallet/create \
+ -H 'Content-Type: application/x-www-form-urlencoded' \
+ -d 'type=xpub' \
+ -d 'xpub=xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8' \
+ -d 'label=$label' \
+ -d 'scan=5'
+```
+
+Result:
+
+```json
+{
+    "meta": {
+        "coin": "skycoin",
+        "filename": "2017_05_09_d554.wlt",
+        "label": "test",
+        "type": "bip44",
+        "version": "0.4",
+        "crypto_type": "",
+        "timestamp": 1511640884,
+        "encrypted": false,
+        "xpub": "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8"
+    },
+    "entries": [
+        {
+            "address": "y2JeYS4RS8L9GYM7UKdjLRyZanKHXumFoH",
+            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1",
+            "child_number": 0
+        }
+    ]
+}
+```
 
 ### Generate new address in wallet
 
@@ -1083,7 +1119,7 @@ Result:
 }
 ```
 
-### Updates wallet label
+### Change wallet label
 
 API sets: `WALLET`
 

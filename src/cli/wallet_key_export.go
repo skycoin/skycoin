@@ -17,8 +17,8 @@ func walletKeyExportCmd() *gcli.Command {
 	walletKeyExportCmd := &gcli.Command{
 		Args:  gcli.ExactArgs(1),
 		RunE:  walletKeyExportHandler,
-		Use:   "walletKeyExport",
-		Short: "Export key(s) from a wallet",
+		Use:   "walletKeyExport <wallet-file>",
+		Short: "Export a specific key from an HD wallet",
 		Long: fmt.Sprintf(`This command prints the xpub or xprv key for a given
     HDNode in a bip44 wallet. The HDNode path is specified with --path.
     This path is the <account/change> portion of the bip44 path.
@@ -37,7 +37,6 @@ func walletKeyExportCmd() *gcli.Command {
     be prompted to enter your password after you enter your command.`, cliConfig.FullWalletPath()),
 	}
 
-	walletKeyExportCmd.Flags().StringP("file", "f", "", "wallet file")
 	walletKeyExportCmd.Flags().StringP("key", "k", "xpub", "key type (\"xpub\", \"xprv\", \"pub\", \"prv\")")
 	walletKeyExportCmd.Flags().StringP("path", "p", "0/0", "bip44 account'/change subpath")
 

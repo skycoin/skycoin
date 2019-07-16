@@ -16,7 +16,7 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 - [Usage](#usage)
 	- [Add Private Key](#add-private-key)
 	- [Check address balance](#check-address-balance)
-	- [Generate new addresses](#generate-new-addresses)
+	- [Generate addresses](#generate-addresses)
 	- [Generate distribution addresses for a new fiber coin](#generate-distribution-addresses-for-a-new-fiber-coin)
 	- [Check address outputs](#check-address-outputs)
 	- [Check block data](#check-block-data)
@@ -27,6 +27,7 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 	- [Broadcast a raw transaction](#broadcast-a-raw-transaction)
 	- [Create a wallet](#create-a-wallet)
 	- [Add addresses to a wallet](#add-addresses-to-a-wallet)
+	- [Export a specific key from an HD wallet](#export-a-specific-key-from-an-hd-wallet)
 	- [Encrypt Wallet](#encrypt-wallet)
 	- [Examples](#examples)
 	- [Decrypt Wallet](#decrypt-wallet)
@@ -155,6 +156,7 @@ COMMANDS:
   walletCreate         Generate a new wallet
   walletDir            Displays wallet folder address
   walletHistory        Display the transaction history of specific wallet. Requires skycoin node rpc.
+  walletKeyExport      Export a specific key from an HD wallet
   walletOutputs        Display outputs of specific wallet
 
 FLAGS:
@@ -174,7 +176,7 @@ ENVIRONMENT VARIABLES:
 ```
 
 ### Add Private Key
-Add a private key to a skycoin wallet.
+Add a private key to a skycoin wallet.  Wallet type must be "collection".
 
 ```bash
 $ skycoin-cli addPrivateKey [flags] [private key]
@@ -260,8 +262,8 @@ $ skycoin-cli addressBalance 2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc 2GgFvqoyk9RjwVz
 ```
 </details>
 
-### Generate new addresses
-Generate new skycoin or bitcoin addresses.
+### Generate addresses
+Generate skycoin or bitcoin addresses.
 
 ```bash
 $ skycoin-cli addressGen [flags]
@@ -953,25 +955,32 @@ $ skycoin-cli walletCreate [flags]
 
 ```
 FLAGS:
-  -x, --crypto-type string   The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor (default "scrypt-chacha20poly1305")
-  -e, --encrypt              Create encrypted wallet.
-  -h, --help                 help for walletCreate
-  -l, --label string         Label used to idetify your wallet.
-  -m, --mnemonic             A mnemonic seed consisting of 12 dictionary words will be generated
-  -n, --num uint             Number of addresses to generate. (default 1)
-  -p, --password string      Wallet password
-  -r, --random               A random alpha numeric seed will be generated.
-  -s, --seed string          Your seed
-  -t, --type string          Wallet type. Types are "collection", "deterministic" or "bip44" (default "deterministic")
-  -f, --wallet-file string   Name of wallet. The final format will be "yourName.wlt".
-                             If no wallet name is specified a generic name will be selected. (default "skycoin_cli.wlt")
-  -w, --wordcount uint       Number of seed words to use for mnemonic. Must be 12, 15, 18, 21 or 24 (default 12)
+      --bip44-coin uint32        BIP44 coin type (default 8000)
+  -c, --coin string              Wallet address coin type (options: skycoin, bitcoin) (default "skycoin")
+  -x, --crypto-type string       The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor (default "scrypt-chacha20poly1305")
+  -e, --encrypt                  Create encrypted wallet.
+  -h, --help                     help for walletCreate
+  -l, --label string             Label used to idetify your wallet.
+  -m, --mnemonic                 A mnemonic seed consisting of 12 dictionary words will be generated
+  -n, --num uint                 Number of addresses to generate. (default 1)
+  -p, --password string          Wallet password
+  -r, --random                   A random alpha numeric seed will be generated.
+  -s, --seed string              Your seed
+      --seed-passphrase string   Seed passphrase (bip44 wallets only)
+  -t, --type string              Wallet type. Types are "collection", "deterministic", "bip44" or "xpub" (default "deterministic")
+  -f, --wallet-file string       Wallet filename, excluding path. If not specified, a generic name will be chosen. (default "skycoin_cli.wlt")
+  -w, --wordcount uint           Number of seed words to use for mnemonic. Must be 12, 15, 18, 21 or 24 (default 12)
+      --xpub string              xpub key for "xpub" type wallets
 ```
 
 #### Examples
-##### Create the default wallet
+##### Create a deterministic wallet
+
+Creates a deterministic wallet using the [Skycoin deterministic address generator](https://github.com/skycoin/skycoin/wiki/Deterministic-Keypair-Generation-Method).
+Alternatively, you can create a `bip44` type wallet.
+
 ```bash
-$ skycoin-cli walletCreate
+$ skycoin-cli walletCreate -t deterministic
 ```
 
 <details>
@@ -1218,6 +1227,124 @@ $ skycoin-cli walletCreate -l "cli wallet"
 ```
 </details>
 
+##### Create a collection wallet
+
+Create an empty collection wallet. Use `addPrivateKey` to add keys to it after creation.
+
+```bash
+$ skycoin-cli walletCreate -t collection
+```
+
+<details>
+ <summary>View Output</summary>
+
+```json
+{
+    "meta": {
+        "coin": "skycoin",
+        "cryptoType": "",
+        "encrypted": "false",
+        "filename": "collection-test2.wlt",
+        "label": "",
+        "lastSeed": "",
+        "secrets": "",
+        "seed": "",
+        "seedPassphrase": "",
+        "tm": "1563205581",
+        "type": "collection",
+        "version": "0.4",
+        "xpub": ""
+    },
+    "entries": []
+}
+```
+</details>
+
+##### Create a BIP44 wallet
+
+Create a bip44 wallet. BIP44 wallets use the same mnemonic seeds as `deterministic`
+wallets, but are supported on 3rd party wallets such as Trezor.
+
+```bash
+$ skycoin-cli walletCreate -t bip44
+```
+
+<details>
+ <summary>View Output</summary>
+
+```json
+{
+    "meta": {
+        "bip44Coin": "8000",
+        "coin": "skycoin",
+        "cryptoType": "",
+        "encrypted": "false",
+        "filename": "bip44-cli-test.wlt",
+        "label": "",
+        "lastSeed": "",
+        "secrets": "",
+        "seed": "bacon crush gate artist outer true aware topple pupil include neutral stamp",
+        "seedPassphrase": "",
+        "tm": "1563205737",
+        "type": "bip44",
+        "version": "0.4",
+        "xpub": ""
+    },
+    "entries": [
+        {
+            "address": "zbqJ8tGRKNEpR3X2RxHTyodCFtVDB7wFKf",
+            "public_key": "0255a1148a188d5b5f08c3296ad5de6577e08f8cd035b2e53d974aad56f748abb9",
+            "secret_key": "8f49323cc06089df5e74fbab8bc211ccc8fc21b44cf495e67fc5c4613bde11af",
+            "child_number": 0,
+            "change": 0
+        }
+    ]
+}
+```
+</details>
+
+##### Create an xpub wallet
+
+Create an xpub wallet. Obtain an xpub key from a BIP44 wallet with `walletKeyExport`.
+
+```bash
+$ skycoin-cli walletCreate -t xpub --xpub xpub6FHa3pjLCk84BayeJxFW2SP4XRrFd1JYnxeLeU8EqN3vDfZmbqBqaGJAyiLjTAwm6ZLRQUMv1ZACTj37sR62cfN7fe5JnJ7dh8zL4fiyLHV
+```
+
+<details>
+ <summary>View Output</summary>
+
+```json
+
+{
+    "meta": {
+        "coin": "skycoin",
+        "cryptoType": "",
+        "encrypted": "false",
+        "filename": "xpub-test-cli.wlt",
+        "label": "",
+        "lastSeed": "",
+        "secrets": "",
+        "seed": "",
+        "seedPassphrase": "",
+        "tm": "1563205611",
+        "type": "xpub",
+        "version": "0.4",
+        "xpub": "xpub6FHa3pjLCk84BayeJxFW2SP4XRrFd1JYnxeLeU8EqN3vDfZmbqBqaGJAyiLjTAwm6ZLRQUMv1ZACTj37sR62cfN7fe5JnJ7dh8zL4fiyLHV"
+    },
+    "entries": [
+        {
+            "address": "2as3T8JqSVm41k47phe4vbnrzbTqBEaAwG7",
+            "public_key": "02df12b7035bdac8e3bab862a3a83d06ea6b17b6753d52edecba9be46f5d09e076",
+            "secret_key": "",
+            "child_number": 0
+        }
+    ]
+}
+```
+</details>
+
+
 ### Add addresses to a wallet
 Add new addresses to a skycoin wallet.
 
@@ -1288,6 +1415,95 @@ $ skycoin-cli walletAddAddresses --json
 }
 ```
 </details>
+
+### Export a specific key from an HD wallet
+Export a specific key from an HD wallet (bip44 wallet).
+
+```bash
+$ skycoin-cli walletKeyExport <wallet-file> [flags]
+```
+
+Note: unlike other CLI commands, `wallet-file` must be include the file's path.
+`WALLET_DIR` and `WALLET_NAME` are ignored by this command.
+
+```
+FLAGS:
+  -h, --help          help for walletKeyExport
+  -k, --key string    key type ("xpub", "xprv", "pub", "prv") (default "xpub")
+  -p, --path string   bip44 account'/change subpath (default "0/0")
+```
+
+The `path` arg is the `account'/change` portion of the bip44 path.
+It can have 1 to 3 nodes (i.e. `0`, `0/0` and `0/0/0`).
+The apostrophe for the `account` node is omitted.
+
+##### Export the xpub key for the external chain
+```bash
+$ skycoin-cli walletKeyExport mywallet.wlt -k xpub -p "0/0"
+```
+
+<details>
+ <summary>View Output</summary>
+
+```
+xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8
+```
+</details>
+
+##### Export the xprv key for the change chain
+```bash
+$ skycoin-cli walletKeyExport mywallet.wlt -k xprv -p "0/1"
+```
+
+<details>
+ <summary>View Output</summary>
+
+```
+xprv9uHRZZhk6KAJC1avXpDAp4MDc3sQKNxDiPvvkX8Br5ngLNv1TxvUxt4cV1rGL5hj6KCesnDYUhd7oWgT11eZG7XnxHrnYeSvkzY7d2bhkJ7
+```
+</details>
+
+##### Export the pub key for the 5th child in the external chain
+```bash
+$ skycoin-cli walletKeyExport mywallet.wlt -k pub -p "0/0/5"
+```
+
+<details>
+ <summary>View Output</summary>
+
+```
+035a784662a4a20a65bf6aab9ae98a6c068a81c52e4b032c0fb5400c706cfccc56
+```
+</details>
+
+
+##### Export the prv key for the 5th child in the change chain
+```bash
+$ skycoin-cli walletKeyExport mywallet.wlt -k prv -p "0/1/5"
+```
+
+<details>
+ <summary>View Output</summary>
+
+```
+d647077f0f6824a25af7cd934ff196e611f5122bff4310f8eb0f2e643c5213cd
+```
+</details>
+
+
+##### Export the xpub key for account number 2
+```bash
+$ skycoin-cli walletKeyExport mywallet.wlt -k xpub -p "2"
+```
+
+<details>
+ <summary>View Output</summary>
+
+```
+xpub6FHa3pjLCk84BayeJxFW2SP4XRrFd1JYnxeLeU8EqN3vDfZmbqBqaGJAyiLjTAwm6ZLRQUMv1ZACTj37sR62cfN7fe5JnJ7dh8zL4fiyLHV
+```
+</details>
+
 
 ### Encrypt Wallet
 Encrypt a wallet seed

@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `bip44_coin` field to `GET /api/v1/health` `fiber` params
 - Add the "bulk send" option to the GUI advanced form
 - Add `cli walletKeyExport` command to export `xpub`, `xprv`, `pub` and `prv` key from a `bip44` wallet
+- Add `xpub` type
 
 ### Fixed
 
@@ -36,7 +37,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- `type` is now a required parameter for `POST /api/v1/wallet`
+- `type` is now a required parameter for `POST /api/v1/wallet`. `type` can be `deterministic`, `bip44` or `xpub`.
 - Add `display_name`, `ticker`, `coin_hours_display_name`, `coin_hours_display_name_singular`, `coin_hours_ticker`, `explorer_url` to the `/health` endpoint response
 - `cli addPrivateKey` will only work on a `collection` type wallet. Create one with `cli walletCreate -t collection`
 - Don't print the wallet in the terminal after `cli encryptWallet` or `cli decryptWallet`

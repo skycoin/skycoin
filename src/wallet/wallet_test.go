@@ -332,7 +332,7 @@ func TestNewWallet(t *testing.T) {
 				XPub: "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
 			},
 			expect: expect{
-				err: NewError(errors.New("foo")),
+				err: NewError(errors.New("seed should not be provided for \"xpub\" wallets")),
 			},
 		},
 	}

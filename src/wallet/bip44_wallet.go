@@ -27,7 +27,7 @@ type Bip44Wallet struct {
 }
 
 // newBip44Wallet creates a Bip44Wallet
-func newBip44Wallet(meta Meta) (*Bip44Wallet, error) {
+func newBip44Wallet(meta Meta) (*Bip44Wallet, error) { //nolint:unparam
 	return &Bip44Wallet{
 		Meta: meta,
 	}, nil

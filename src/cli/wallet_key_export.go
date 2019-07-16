@@ -19,7 +19,7 @@ func walletKeyExportCmd() *gcli.Command {
 		RunE:  walletKeyExportHandler,
 		Use:   "walletKeyExport <wallet-file>",
 		Short: "Export a specific key from an HD wallet",
-		Long: fmt.Sprintf(`This command prints the xpub or xprv key for a given
+		Long: `This command prints the xpub or xprv key for a given
     HDNode in a bip44 wallet. The HDNode path is specified with --path.
     This path is the <account/change> portion of the bip44 path.
 
@@ -34,7 +34,7 @@ func walletKeyExportCmd() *gcli.Command {
     Use caution when using the "-p" command. If you have command
     history enabled your wallet encryption password can be recovered
     from the history log. If you do not include the "-p" option you will
-    be prompted to enter your password after you enter your command.`, cliConfig.FullWalletPath()),
+    be prompted to enter your password after you enter your command.`,
 	}
 
 	walletKeyExportCmd.Flags().StringP("key", "k", "xpub", "key type (\"xpub\", \"xprv\", \"pub\", \"prv\")")
@@ -102,6 +102,9 @@ func walletKeyExportHandler(c *gcli.Command, args []string) error {
 	}
 
 	child, err := change.NewPrivateChildKey(nodes[2])
+	if err != nil {
+		return err
+	}
 
 	if len(nodes) == 3 {
 		return printKey(keyType, child)

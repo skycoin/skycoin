@@ -19,7 +19,7 @@ type DeterministicWallet struct {
 }
 
 // newDeterministicWallet creates a DeterministicWallet
-func newDeterministicWallet(meta Meta) (*DeterministicWallet, error) {
+func newDeterministicWallet(meta Meta) (*DeterministicWallet, error) { //nolint:unparam
 	return &DeterministicWallet{
 		Meta: meta,
 	}, nil

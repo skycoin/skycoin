@@ -19,7 +19,7 @@ type CollectionWallet struct {
 }
 
 // newCollectionWallet creates a CollectionWallet
-func newCollectionWallet(meta Meta) (*CollectionWallet, error) {
+func newCollectionWallet(meta Meta) (*CollectionWallet, error) { //nolint:unparam
 	return &CollectionWallet{
 		Meta: meta,
 	}, nil

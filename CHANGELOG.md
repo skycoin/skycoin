@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `bip44_coin` field to `GET /api/v1/health` `fiber` params
 - Add the "bulk send" option to the GUI advanced form
 - Add `cli walletKeyExport` command to export `xpub`, `xprv`, `pub` and `prv` key from a `bip44` wallet
-- Add `xpub` type
+- Add `xpub` type wallet, which can generate addresses without exposing private keys
 
 ### Fixed
 

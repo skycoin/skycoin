@@ -3,7 +3,7 @@ import { WalletService } from '../../../../services/wallet.service';
 import { ActivatedRoute } from '@angular/router';
 import { ISubscription } from 'rxjs/Subscription';
 import { MatDialog, MatDialogConfig } from '@angular/material';
-import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
+import { QrCodeComponent, QrDialogConfig } from '../../../layout/qr-code/qr-code.component';
 
 @Component({
   selector: 'app-outputs',
@@ -55,8 +55,7 @@ export class OutputsComponent implements OnDestroy {
   showQrCode(event: any, address: string) {
     event.stopPropagation();
 
-    const config = new MatDialogConfig();
-    config.data = { address };
-    this.dialog.open(QrCodeComponent, config);
+    const config: QrDialogConfig = { address };
+    QrCodeComponent.openDialog(this.dialog, config);
   }
 }

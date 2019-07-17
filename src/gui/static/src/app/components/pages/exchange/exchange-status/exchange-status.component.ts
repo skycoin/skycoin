@@ -1,7 +1,7 @@
 import { Component, Input, OnDestroy, Output, EventEmitter } from '@angular/core';
 import { ExchangeOrder, StoredExchangeOrder, ConfirmationData } from '../../../../app.datatypes';
 import { ExchangeService } from '../../../../services/exchange.service';
-import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
+import { QrCodeComponent, QrDialogConfig } from '../../../layout/qr-code/qr-code.component';
 import { MatDialog, MatDialogConfig } from '@angular/material';
 import { ISubscription } from 'rxjs/Subscription';
 import { Observable } from 'rxjs/Observable';
@@ -107,9 +107,12 @@ export class ExchangeStatusComponent implements OnDestroy {
   }
 
   showQrCode(address) {
-    const config = new MatDialogConfig();
-    config.data = { address };
-    this.dialog.open(QrCodeComponent, config);
+    const config: QrDialogConfig = {
+      address: address,
+      hideCoinRequestForm: true,
+      ignoreCoinPrefix: true,
+    };
+    QrCodeComponent.openDialog(this.dialog, config);
   }
 
   toggleDetails() {

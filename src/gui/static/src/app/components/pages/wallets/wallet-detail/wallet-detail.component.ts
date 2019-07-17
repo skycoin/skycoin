@@ -3,14 +3,14 @@ import { Wallet, ConfirmationData } from '../../../../app.datatypes';
 import { WalletService } from '../../../../services/wallet.service';
 import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
 import { ChangeNameComponent, ChangeNameData } from '../change-name/change-name.component';
-import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
+import { QrCodeComponent, QrDialogConfig } from '../../../layout/qr-code/qr-code.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { NumberOfAddressesComponent } from '../number-of-addresses/number-of-addresses';
 import { TranslateService } from '@ngx-translate/core';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { Observable } from 'rxjs/Observable';
-import { showConfirmationModal } from '../../../../utils';
+import { showConfirmationModal, copyTextToClipboard } from '../../../../utils';
 import { AppConfig } from '../../../../app.config';
 import { Router } from '@angular/router';
 import { HwConfirmAddressDialogComponent, AddressConfirmationParams } from '../../../layout/hardware-wallet/hw-confirm-address-dialog/hw-confirm-address-dialog.component';
@@ -261,21 +261,7 @@ export class WalletDetailComponent implements OnDestroy {
       return;
     }
 
-    const selBox = document.createElement('textarea');
-
-    selBox.style.position = 'fixed';
-    selBox.style.left = '0';
-    selBox.style.top = '0';
-    selBox.style.opacity = '0';
-    selBox.value = address.address;
-
-    document.body.appendChild(selBox);
-    selBox.focus();
-    selBox.select();
-
-    document.execCommand('copy');
-    document.body.removeChild(selBox);
-
+    copyTextToClipboard(address.address);
     address.copying = true;
 
     setTimeout(function() {
@@ -286,9 +272,8 @@ export class WalletDetailComponent implements OnDestroy {
   showQrCode(event, address: string) {
     event.stopPropagation();
 
-    const config = new MatDialogConfig();
-    config.data = { address };
-    this.dialog.open(QrCodeComponent, config);
+    const config: QrDialogConfig = { address };
+    QrCodeComponent.openDialog(this.dialog, config);
   }
 
   private continueNewAddress() {

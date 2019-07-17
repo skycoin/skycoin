@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `display_name`, `ticker`, `coin_hours_display_name`, `coin_hours_display_name_singular`, `coin_hours_ticker`, `explorer_url` to the `/health` endpoint response
 - `cli addPrivateKey` will only work on a `collection` type wallet. Create one with `cli walletCreate -t collection`
 - Don't print the wallet in the terminal after `cli encryptWallet` or `cli decryptWallet`
+- Now the modal window for showing QR codes in the GUI allows to request specific amounts of coins, as in mobile wallets. This changes did no include the ability to read QR codes or URLs.
 
 ### Removed
 

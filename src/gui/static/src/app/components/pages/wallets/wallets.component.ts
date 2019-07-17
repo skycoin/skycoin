@@ -85,6 +85,8 @@ export class WalletsComponent implements OnInit, OnDestroy {
         checkboxText: 'hardware-wallet.security-warning.check',
         confirmButtonText: 'hardware-wallet.security-warning.continue',
         cancelButtonText: 'hardware-wallet.security-warning.cancel',
+        linkText: 'hardware-wallet.security-warning.link',
+        linkFunction: this.adminHwWallet.bind(this),
       };
 
       showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {

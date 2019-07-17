@@ -70,9 +70,13 @@ export class WalletDetailComponent implements OnDestroy {
       this.editSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.wallet.addresses[0].address)
         .flatMap(() => this.walletService.getHwFeaturesAndUpdateData(this.wallet))
         .subscribe(
-          () => {
+          response => {
             this.continueEditWallet();
             this.preparingToEdit = false;
+
+            if (response.walletNameUpdated) {
+              this.msgBarService.showWarning('hardware-wallet.general.name-updated');
+            }
           },
           err => {
             this.msgBarService.showError(getHardwareWalletErrorMsg(this.translateService, err));

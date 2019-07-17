@@ -401,7 +401,8 @@
       "cancel": "Cancel",
       "continue": "Continue",
       "completed": "Operation completed successfully.",
-      "refused": "The operation failed or was canceled."
+      "refused": "The operation failed or was canceled.",
+      "name-updated": "The name used to identify this Skywallet in the wallet list has been updated to match the one shown on the device."
     },
     "errors": {
       "too-many-inputs-outputs": "The transaction has too many inputs or outputs for the Skywallet. Please try again creating several smaller transactions, each one with a smaller number of recipients (if the current transaction has many) or coins.",
@@ -413,7 +414,8 @@
     },
     "security-warning" : {
       "title": "Security warning",
-      "text": "The last time this Skywallet was connected, one or more security warnings were found. We recommend that you open the Skywallet options (by pressing the \"Skywallet\" button below the wallets list) while the device is connected and solve the security problems before continuing.",
+      "text": "The last time this Skywallet was connected, one or more security warnings were found. We recommend that you open the Skywallet options (by pressing the link below) while the device is connected and solve the security problems before continuing.",
+      "link": "Open the Skywallet options window.",
       "check": "I understand the risks and want to continue",
       "continue": "Continue",
       "cancel": "Cancel"

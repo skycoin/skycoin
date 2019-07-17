@@ -126,6 +126,8 @@ export interface ConfirmationData {
   cancelButtonText?: string;
   redTitle?: boolean;
   disableDismiss?: boolean;
+  linkText?: string;
+  linkFunction?(): void;
 }
 
 /**

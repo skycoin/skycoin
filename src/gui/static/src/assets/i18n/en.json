@@ -5,7 +5,10 @@
     "usd": "USD",
     "loading": "Loading...",
     "new": "New",
-    "load": "Load"
+    "load": "Load",
+    "success": "Success",
+    "warning": "Warning",
+    "changes-made": "The changes have been made."
   },
 
   "errors": {
@@ -146,6 +149,7 @@
       "synchronizing-warning-text": "The wallet is still synchronizing and some addresses may not be restored. If some addresses are not restored, please wait for the wallet to be fully synchronized and add them again manually.",
       "synchronizing-warning-continue": "Continue",
       "synchronizing-warning-cancel": "Cancel",
+      "wallet-created": "The wallet has been added to the list.",
 
       "seed": {
         "enter-seed": "Press here to enter your seed.",
@@ -230,6 +234,7 @@
     "advanced": "Advanced",
     "select-wallet": "Select Wallet",
     "error-saving-note": "The transaction was successfully sent, but it was not possible to save the note.",
+    "sent": "Transaction successfully sent.",
 
     "bulk-send": {
       "title": "Bulk Send",
@@ -246,7 +251,8 @@
     "seed-label": "Wallet seed",
     "password-label": "New password (leave empty if you want the wallet not to be encrypted)",
     "confirm-label": "Confirm new password",
-    "reset-button": "Reset"
+    "reset-button": "Reset",
+    "done": "Password successfully changed."
   },
 
   "tx": {

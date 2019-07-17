@@ -16,13 +16,21 @@
   min-width: 40%;
   max-width: 90%;
   display: flex;
-  padding: 15px;
+  padding: 10px;
   border-top-left-radius: 5px;
   border-top-right-radius: 5px;
 }
 
 .red-background {
-  background-color: rgba(255, 0, 0, 0.5);
+  background-color: rgba(255, 0, 0, 0.7);
+}
+
+.green-background {
+  background-color: rgba(31, 177, 31, 0.7);
+}
+
+.yellow-background {
+  background-color: rgba(255, 94, 0, 0.7);
 }
 
 .icon-container {
@@ -34,12 +42,12 @@
   margin-right: 10px;
 
   .title {
-    font-size: 18px;
+    font-size: 15px;
     margin-top: -1px;
   }
 
   .text {
-    font-size: 14px;
+    font-size: 13px;
     margin-top: 2px;
   }
 }

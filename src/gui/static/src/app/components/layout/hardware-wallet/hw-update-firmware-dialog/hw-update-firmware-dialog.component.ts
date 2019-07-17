@@ -101,12 +101,10 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
           if (err.result) {
             const errorMsg = getHardwareWalletErrorMsg(this.translateService, err);
             setTimeout(() => {
-              this.button.setError(errorMsg);
               this.msgBarService.showError(errorMsg);
             });
           } else {
             setTimeout(() => {
-              this.button.setError(err);
               this.msgBarService.showError(err);
             });
           }

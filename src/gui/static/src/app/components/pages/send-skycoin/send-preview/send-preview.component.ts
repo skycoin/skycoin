@@ -96,17 +96,14 @@ export class SendVerifyComponent implements OnDestroy {
       return this.walletService.injectTransaction(result.encoded, note);
     }).subscribe(noteSaved => {
       if (note && !noteSaved) {
-        this.msgBarService.showError(this.translate.instant('send.error-saving-note'));
+        setTimeout(() => this.msgBarService.showWarning(this.translate.instant('send.error-saving-note')));
+      } else {
+        setTimeout(() => this.msgBarService.showDone('send.sent'));
       }
-
-      this.sendButton.setSuccess();
-      this.sendButton.setDisabled();
 
       this.walletService.startDataRefreshSubscription();
 
-      setTimeout(() => {
-        this.onBack.emit(true);
-      }, 3000);
+      this.onBack.emit(true);
     }, error => {
       if (passwordDialog) {
         passwordDialog.error(error);
@@ -122,7 +119,7 @@ export class SendVerifyComponent implements OnDestroy {
 
   private showError(error) {
     this.msgBarService.showError(error);
-    this.sendButton.resetState().setError(error);
+    this.sendButton.resetState();
     this.backButton.resetState().setEnabled();
   }
 }

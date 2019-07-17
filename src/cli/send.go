@@ -8,9 +8,14 @@ import (
 
 func sendCmd() *gcli.Command {
 	sendCmd := &gcli.Command{
+		Args:  gcli.MinimumNArgs(1),
 		Short: "Send skycoin from a wallet or an address to a recipient address",
-		Use:   "send [flags] [to address] [amount]",
-		Long: `Note: the [amount] argument is the coins you will spend, 1 coins = 1e6 droplets.
+		Use:   "send [wallet] [to address] [amount]",
+		Long: `Send skycoin from a wallet or an address to a recipient address.
+
+    Note: the [amount] argument is the coins you will spend, 1 coins = 1e6 droplets.
+
+    The [to address] and [amount] arguments can be replaced with the --many/-m option.
 
     If you are sending from a wallet without specifying an address,
     the transaction will use one or more of the addresses within the wallet.
@@ -49,7 +54,6 @@ func sendCmd() *gcli.Command {
 		},
 	}
 
-	sendCmd.Flags().StringP("wallet-file", "f", "", "wallet file or path. If no path is specified your default wallet path will be used.")
 	sendCmd.Flags().StringP("address", "a", "", "From address")
 	sendCmd.Flags().StringP("change-address", "c", "", `Specify different change address.
 By default the from address or a wallets coinbase address will be used.`)

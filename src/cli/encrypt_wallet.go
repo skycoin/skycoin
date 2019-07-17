@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"path/filepath"
 
 	gcli "github.com/spf13/cobra"
@@ -11,21 +10,19 @@ import (
 
 func encryptWalletCmd() *gcli.Command {
 	encryptWalletCmd := &gcli.Command{
+		Args:  gcli.ExactArgs(1),
 		Short: "Encrypt wallet",
-		Use:   "encryptWallet",
-		Long: fmt.Sprintf(`The default wallet (%s) will be used if no wallet was specified.
+		Use:   "encryptWallet [wallet]",
+		Long: `Encrypt a decrypted wallet. The encrypted wallet file
+    will be written on the filesystem in place of the decrypted wallet.
 
     Use caution when using the "-p" command. If you have command history enabled
     your wallet encryption password can be recovered from the history log. If you
     do not include the "-p" option you will be prompted to enter your password
-    after you enter your command.`, cliConfig.FullWalletPath()),
+    after you enter your command.`,
 		SilenceUsage: true,
-		RunE: func(c *gcli.Command, _ []string) error {
-			w, err := resolveWalletPath(cliConfig, "")
-			if err != nil {
-				return err
-			}
-
+		RunE: func(c *gcli.Command, args []string) error {
+			w := args[0]
 			cryptoType, err := wallet.CryptoTypeFromString(c.Flag("crypto-type").Value.String())
 			if err != nil {
 				printHelp(c)

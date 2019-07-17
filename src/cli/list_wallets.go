@@ -19,20 +19,40 @@ type WalletEntry struct {
 
 func listWalletsCmd() *gcli.Command {
 	return &gcli.Command{
-		Short:                 "Lists all wallets stored in the wallet directory",
-		Use:                   "listWallets",
+		Short: "Lists all wallets stored in the wallet directory",
+		Use:   "listWallets [wallet dir]",
+		Long: `Lists all wallets stored in the wallet directory
+
+    The [wallet dir] argument is optional. If not provided, defaults to $DATA_DIR/wallets`,
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
+		Args:                  gcli.MaximumNArgs(1),
 		RunE:                  listWallets,
 	}
 }
 
-func listWallets(_ *gcli.Command, _ []string) error {
+func listWallets(_ *gcli.Command, args []string) error {
 	var wlts struct {
-		Wallets []WalletEntry `json:"wallets"`
+		Directory string        `json:"directory"`
+		Wallets   []WalletEntry `json:"wallets"`
 	}
 
-	entries, err := ioutil.ReadDir(cliConfig.WalletDir)
+	wlts.Wallets = []WalletEntry{}
+
+	dir := filepath.Join(cliConfig.DataDir, "wallets")
+	if len(args) > 0 {
+		dir = args[0]
+	}
+
+	var err error
+	dir, err = filepath.Abs(dir)
+	if err != nil {
+		return err
+	}
+
+	wlts.Directory = dir
+
+	entries, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return err
 	}
@@ -44,7 +64,7 @@ func listWallets(_ *gcli.Command, _ []string) error {
 				continue
 			}
 
-			path := filepath.Join(cliConfig.WalletDir, name)
+			path := filepath.Join(dir, name)
 			w, err := wallet.Load(path)
 			if err != nil {
 				return WalletLoadError{err}

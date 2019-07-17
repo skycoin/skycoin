@@ -36,14 +36,9 @@ type BalanceResult struct {
 
 func walletBalanceCmd() *gcli.Command {
 	return &gcli.Command{
-		Short: "Check the balance of a wallet",
-		Use:   "walletBalance [wallet]",
-		Long: fmt.Sprintf(`Check balance of specific wallet, the default
-    wallet (%s) will be
-	used if no wallet was specified, use ENV 'WALLET_NAME'
-	to update default wallet file name, and 'WALLET_DIR' to update
-	the default wallet directory`, cliConfig.FullWalletPath()),
-		Args:                  gcli.MaximumNArgs(1),
+		Short:                 "Check the balance of a wallet",
+		Use:                   "walletBalance [wallet]",
+		Args:                  gcli.ExactArgs(1),
 		DisableFlagsInUseLine: true,
 		RunE:                  checkWltBalance,
 	}
@@ -63,17 +58,7 @@ func addressBalanceCmd() *gcli.Command {
 }
 
 func checkWltBalance(c *gcli.Command, args []string) error {
-	var w string
-	if len(args) > 0 {
-		w = args[0]
-	}
-
-	var err error
-	w, err = resolveWalletPath(cliConfig, w)
-	if err != nil {
-		return err
-	}
-
+	w := args[0]
 	balRlt, err := CheckWalletBalance(apiClient, w)
 	switch err.(type) {
 	case nil:

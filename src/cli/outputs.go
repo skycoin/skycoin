@@ -12,14 +12,11 @@ import (
 
 func walletOutputsCmd() *gcli.Command {
 	return &gcli.Command{
-		Short: "Display outputs of specific wallet",
-		Use:   "walletOutputs [wallet file]",
-		Long: fmt.Sprintf(`Display outputs of specific wallet, the default wallet (%s) will be
-    used if no wallet was specified, use ENV 'WALLET_NAME'
-    to update default wallet file name, and 'WALLET_DIR' to update
-    the default wallet directory`, cliConfig.FullWalletPath()),
+		Short:                 "Display outputs of specific wallet",
+		Use:                   "walletOutputs [wallet]",
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
+		Args:                  gcli.ExactArgs(1),
 		RunE:                  getWalletOutputsCmd,
 	}
 }
@@ -43,17 +40,7 @@ type OutputsResult struct {
 }
 
 func getWalletOutputsCmd(_ *gcli.Command, args []string) error {
-	var wltPath string
-	if len(args) == 1 {
-		wltPath = args[0]
-	}
-	var err error
-	w, err := resolveWalletPath(cliConfig, wltPath)
-	if err != nil {
-		return err
-	}
-
-	outputs, err := GetWalletOutputsFromFile(apiClient, w)
+	outputs, err := GetWalletOutputsFromFile(apiClient, args[0])
 	if err != nil {
 		return err
 	}

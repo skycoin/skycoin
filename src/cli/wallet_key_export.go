@@ -17,7 +17,7 @@ func walletKeyExportCmd() *gcli.Command {
 	walletKeyExportCmd := &gcli.Command{
 		Args:  gcli.ExactArgs(1),
 		RunE:  walletKeyExportHandler,
-		Use:   "walletKeyExport <wallet-file>",
+		Use:   "walletKeyExport [wallet]",
 		Short: "Export a specific key from an HD wallet",
 		Long: `This command prints the xpub or xprv key for a given
     HDNode in a bip44 wallet. The HDNode path is specified with --path.

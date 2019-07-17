@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	gcli "github.com/spf13/cobra"
 
@@ -24,16 +23,17 @@ const (
 
 func walletCreateCmd() *gcli.Command {
 	walletCreateCmd := &gcli.Command{
-		Use:   "walletCreate",
-		Short: "Generate a new wallet",
-		Long: fmt.Sprintf(`The default wallet (%s) will be created if no wallet and address was specified.
+		Args:  gcli.ExactArgs(1),
+		Use:   "walletCreate [wallet]",
+		Short: "Create a new wallet",
+		Long: `Create a new wallet.
 
     Use caution when using the "-p" command. If you have command
     history enabled your wallet encryption password can be recovered
     from the history log. If you do not include the "-p" option you will
     be prompted to enter your password after you enter your command.
 
-    All results are returned in JSON format.`, cliConfig.FullWalletPath()),
+    All results are returned in JSON format in addition to being written to the specified filename.`,
 		SilenceUsage: true,
 		RunE:         generateWalletHandler,
 	}
@@ -46,7 +46,6 @@ func walletCreateCmd() *gcli.Command {
 	walletCreateCmd.Flags().Uint32P("bip44-coin", "", uint32(bip44.CoinTypeSkycoin), "BIP44 coin type")
 	walletCreateCmd.Flags().StringP("coin", "c", string(wallet.CoinTypeSkycoin), "Wallet address coin type (options: skycoin, bitcoin)")
 	walletCreateCmd.Flags().Uint64P("num", "n", 1, `Number of addresses to generate.`)
-	walletCreateCmd.Flags().StringP("wallet-file", "f", cliConfig.WalletName, `Wallet filename, excluding path. If not specified, a generic name will be chosen.`)
 	walletCreateCmd.Flags().StringP("label", "l", "", "Label used to idetify your wallet.")
 	walletCreateCmd.Flags().StringP("type", "t", wallet.WalletTypeDeterministic, "Wallet type. Types are \"collection\", \"deterministic\", \"bip44\" or \"xpub\"")
 	walletCreateCmd.Flags().BoolP("encrypt", "e", false, "Create encrypted wallet.")
@@ -58,35 +57,16 @@ func walletCreateCmd() *gcli.Command {
 	return walletCreateCmd
 }
 
-func generateWalletHandler(c *gcli.Command, _ []string) error {
-	// create wallet dir if not exist
-	if _, err := os.Stat(cliConfig.WalletDir); os.IsNotExist(err) {
-		if err := os.MkdirAll(cliConfig.WalletDir, 0750); err != nil {
-			return errors.New("create dir failed")
-		}
-	}
-
-	// get wallet name
-	wltName := c.Flag("wallet-file").Value.String()
-
-	// check if the wallet name has wlt extension.
-	if !strings.HasSuffix(wltName, walletExt) {
+func generateWalletHandler(c *gcli.Command, args []string) error {
+	wltName := args[0]
+	// wallet filename must have the correct extension
+	if filepath.Ext(wltName) != walletExt {
 		return ErrWalletName
 	}
 
-	// wallet file should not be a path.
-	if filepath.Base(wltName) != wltName {
-		return fmt.Errorf("wallet file name must not contain path")
-	}
-
 	// check if the wallet file does exist
-	if _, err := os.Stat(filepath.Join(cliConfig.WalletDir, wltName)); err == nil {
+	if _, err := os.Stat(wltName); err == nil {
 		return fmt.Errorf("%v already exists", wltName)
-	}
-
-	// check if the wallet dir does exist.
-	if _, err := os.Stat(cliConfig.WalletDir); os.IsNotExist(err) {
-		return err
 	}
 
 	// get number of address that are need to be generated
@@ -243,7 +223,7 @@ func generateWalletHandler(c *gcli.Command, _ []string) error {
 		return err
 	}
 
-	if err := wallet.Save(wlt, cliConfig.WalletDir); err != nil {
+	if err := wallet.Save(wlt, "."); err != nil {
 		return err
 	}
 

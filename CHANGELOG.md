@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add CLI `encodeJsonTransaction` command to retrieve raw transaction given its JSON representation
 - Add `package bip44`, implementing the bip44 spec https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki
 - Codesign daemon and standalone binaries
+- Add a guided method for entering the seeds in the GUI
 - Add new wallet type `collection` for wallets that are an arbitrary collection of private keys, rather than generated from a seed
 - Add new wallet type `bip44` for hierarchical deterministic (HD) wallets obeying the bip44 protocol.
   The Skycoin bip44 `coin` number is `8000`.

@@ -1,12 +1,19 @@
-<app-modal class="modal" [headline]="'hardware-wallet.seed-word.title' | translate" [dialog]="dialogRef">
+<app-modal class="modal" [headline]="(data.isForHwWallet ? 'hardware-wallet.seed-word.title' : 'wallet.new.seed-label') | translate" [dialog]="dialogRef">
   <app-hw-message
     [upperBigText]="'hardware-wallet.seed-word.info1' | translate"
     [text]="'hardware-wallet.seed-word.info2' | translate"
     [icon]="msgIcons.None"
+    *ngIf="data.isForHwWallet"
+  ></app-hw-message>
+  <app-hw-message
+    [upperBigText]="'wallet.new.seed.enter-word' | translate:{number: data.wordNumber}"
+    [text]="(!data.restoringSoftwareWallet ? 'wallet.new.seed.new-seed-help' : 'wallet.new.seed.recover-seed-help') | translate"
+    [icon]="msgIcons.None"
+    *ngIf="!data.isForHwWallet"
   ></app-hw-message>
   <div [formGroup]="form" class="form-container">
     <div class="form-field">
-      <label for="word">{{ 'hardware-wallet.seed-word.word' | translate }}</label>
+      <label for="word" *ngIf="data.isForHwWallet">{{ 'hardware-wallet.seed-word.word' | translate }}</label>
       <input matInput [matAutocomplete]="auto" formControlName="word" id="word" (keydown.enter)="sendWord()">
       <mat-autocomplete #auto="matAutocomplete">
         <mat-option class="option" *ngFor="let option of filteredOptions | async" [value]="option" (click)="sendWord()">{{option}}</mat-option>

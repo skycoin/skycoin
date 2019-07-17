@@ -90,7 +90,6 @@ import { HwPinDialogComponent } from './components/layout/hardware-wallet/hw-pin
 import { HwChangePinDialogComponent } from './components/layout/hardware-wallet/hw-change-pin-dialog/hw-change-pin-dialog.component';
 import { HwPinHelpDialogComponent } from './components/layout/hardware-wallet/hw-pin-help-dialog/hw-pin-help-dialog.component';
 import { HwRestoreSeedDialogComponent } from './components/layout/hardware-wallet/hw-restore-seed-dialog/hw-restore-seed-dialog.component';
-import { HwSeedWordDialogComponent } from './components/layout/hardware-wallet/hw-seed-word-dialog/hw-seed-word-dialog.component';
 import { Bip39WordListService } from './services/bip39-word-list.service';
 import { HwDialogBaseComponent } from './components/layout/hardware-wallet/hw-dialog-base.component';
 import { HwConfirmTxDialogComponent } from './components/layout/hardware-wallet/hw-confirm-tx-dialog/hw-confirm-tx-dialog.component';
@@ -111,6 +110,7 @@ import { HwUpdateAlertDialogComponent } from './components/layout/hardware-walle
 import { ChangeNoteComponent } from './components/pages/send-skycoin/send-preview/transaction-info/change-note/change-note.component';
 import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
 import { MsgBarService } from './services/msg-bar.service';
+import { SeedWordDialogComponent } from './components/layout/seed-word-dialog/seed-word-dialog.component';
 import { MultipleDestinationsDialogComponent } from './components/layout/multiple-destinations-dialog/multiple-destinations-dialog.component';
 
 
@@ -238,7 +238,6 @@ const ROUTES = [
     HwChangePinDialogComponent,
     HwPinHelpDialogComponent,
     HwRestoreSeedDialogComponent,
-    HwSeedWordDialogComponent,
     HwDialogBaseComponent,
     HwConfirmTxDialogComponent,
     HwConfirmAddressDialogComponent,
@@ -251,6 +250,7 @@ const ROUTES = [
     HwUpdateAlertDialogComponent,
     ChangeNoteComponent,
     MsgBarComponent,
+    SeedWordDialogComponent,
     MultipleDestinationsDialogComponent,
   ],
   entryComponents: [
@@ -275,7 +275,6 @@ const ROUTES = [
     HwChangePinDialogComponent,
     HwPinHelpDialogComponent,
     HwRestoreSeedDialogComponent,
-    HwSeedWordDialogComponent,
     HwConfirmTxDialogComponent,
     HwConfirmAddressDialogComponent,
     SelectLanguageComponent,
@@ -284,6 +283,7 @@ const ROUTES = [
     HwUpdateFirmwareDialogComponent,
     HwUpdateAlertDialogComponent,
     ChangeNoteComponent,
+    SeedWordDialogComponent,
     MultipleDestinationsDialogComponent,
   ],
   imports: [

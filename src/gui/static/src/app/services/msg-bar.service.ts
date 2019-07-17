@@ -11,12 +11,16 @@ export class MsgBarService {
   }
 
   show(config: MsgBarConfig) {
-    this.msgBarComponentInternal.config = config;
-    this.msgBarComponentInternal.show();
+    if (this.msgBarComponentInternal) {
+      this.msgBarComponentInternal.config = config;
+      this.msgBarComponentInternal.show();
+    }
   }
 
   hide() {
-    this.msgBarComponentInternal.hide();
+    if (this.msgBarComponentInternal) {
+      this.msgBarComponentInternal.hide();
+    }
   }
 
   showError(body: string) {

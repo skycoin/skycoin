@@ -3,7 +3,7 @@ import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
 import { OnboardingSafeguardComponent } from './onboarding-safeguard/onboarding-safeguard.component';
 import { MatDialogRef } from '@angular/material';
-import { CreateWalletFormComponent } from '../../wallets/create-wallet/create-wallet-form/create-wallet-form.component';
+import { CreateWalletFormComponent, WalletFormData } from '../../wallets/create-wallet/create-wallet-form/create-wallet-form.component';
 import { HwOptionsDialogComponent } from '../../../layout/hardware-wallet/hw-options-dialog/hw-options-dialog.component';
 import { Router } from '@angular/router';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
@@ -19,8 +19,8 @@ import { showConfirmationModal } from '../../../../utils';
 })
 export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
   @ViewChild('formControl') formControl: CreateWalletFormComponent;
-  @Input() fill = null;
-  @Output() onLabelAndSeedCreated = new EventEmitter<[string, string, boolean]>();
+  @Input() fill: WalletFormData = null;
+  @Output() onLabelAndSeedCreated = new EventEmitter<WalletFormData>();
 
   showNewForm = true;
   doubleButtonActive = DoubleButtonActive.LeftButton;
@@ -42,8 +42,8 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
   ngOnInit() {
     setTimeout(() => { this.formControl.initForm(null, this.fill); });
     if (this.fill) {
-      this.doubleButtonActive = this.fill['create'] ? DoubleButtonActive.LeftButton : DoubleButtonActive.RightButton;
-      this.showNewForm = this.fill['create'];
+      this.doubleButtonActive = this.fill.creatingNewWallet ? DoubleButtonActive.LeftButton : DoubleButtonActive.RightButton;
+      this.showNewForm = this.fill.creatingNewWallet;
     }
   }
 
@@ -99,14 +99,7 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
   }
 
   private emitCreatedData() {
-
-    const data = this.formControl.getData();
-
-    this.onLabelAndSeedCreated.emit([
-      data.label,
-      data.seed,
-      this.doubleButtonActive === DoubleButtonActive.LeftButton,
-    ]);
+    this.onLabelAndSeedCreated.emit(this.formControl.getData());
   }
 
   private showSafe(): MatDialogRef<OnboardingSafeguardComponent> {

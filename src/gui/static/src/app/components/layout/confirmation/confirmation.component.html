@@ -5,7 +5,7 @@
 
   <div class="-check-container" *ngIf="data.checkboxText">
     <mat-checkbox type="checkbox"
-                  class="-check"
+                  class="-check e2e-confirm-checkbox"
                   id="terms"
                   [checked]="accepted"
                   (change)="setAccept($event)">{{ data.checkboxText | translate }}

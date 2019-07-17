@@ -1,0 +1,68 @@
+@import '../../../../theme/variables';
+
+.qr-container {
+  text-align: center;
+  margin-bottom: 24px;
+
+  .qr {
+    height: 180px;
+    width: 180px;
+    display: inline-block;
+  }
+}
+
+.separator {
+  background-color: $grey-light;
+  height: 1px;
+  width: 100%;
+}
+
+.data-container {
+  margin: 14px 0;
+
+  .title {
+    color: $black;
+  }
+
+  .data {
+    color: $grey-semi-dark;
+    cursor: pointer;
+
+    .text {
+      margin-right: 5px;
+    }
+
+    .copy {
+      color: $grey-semi-dark;
+      opacity: 0.25;
+    }
+  }
+
+  .data:hover {
+    .copy {
+      opacity: 0.75;
+    }
+  }
+
+  .data:active {
+    .copy {
+      opacity: 1;
+    }
+  }
+}
+
+.link {
+  color: $gradient-blue-dark;
+  cursor: pointer;
+
+  mat-icon {
+    padding: 0;
+    display: inline;
+    vertical-align: middle;
+    font-size: 13px;
+  }
+}
+
+.invalid {
+  color: $red;
+}

@@ -5,7 +5,7 @@ import { ISubscription } from 'rxjs/Subscription';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { TransactionDetailComponent } from './transaction-detail/transaction-detail.component';
 import { NormalTransaction } from '../../../app.datatypes';
-import { QrCodeComponent } from '../../layout/qr-code/qr-code.component';
+import { QrCodeComponent, QrDialogConfig } from '../../layout/qr-code/qr-code.component';
 import { FormGroup, FormBuilder } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Observable } from 'rxjs/Observable';
@@ -143,9 +143,8 @@ export class TransactionListComponent implements OnInit, OnDestroy {
   showQrCode(event: any, address: string) {
     event.stopPropagation();
 
-    const config = new MatDialogConfig();
-    config.data = { address };
-    this.dialog.open(QrCodeComponent, config);
+    const config: QrDialogConfig = { address };
+    QrCodeComponent.openDialog(this.dialog, config);
   }
 
   removeFilters() {

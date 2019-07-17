@@ -36,7 +36,6 @@
     "backup": "Backup Wallet",
     "explorer": "Skycoin Explorer",
     "seed": "Wallet Seed",
-    "qrcode": "QR Code",
     "reset": "Reset Password",
     "exchange": "Exchange",
     "select-address": "Select Address",
@@ -196,6 +195,18 @@
       "outputs": "Unspent outputs",
       "history": "History"
     }
+  },
+
+  "qr": {
+    "title": "QR Code",
+    "title-read-only": "QR Code",
+    "data": "QR Data:",
+    "address": "Address:",
+    "request-link": "Request specific amount",
+    "amount": "Request amount:",
+    "hours": "Request hours:",
+    "message": "Message:",
+    "invalid": "(invalid value)"
   },
 
   "send": {

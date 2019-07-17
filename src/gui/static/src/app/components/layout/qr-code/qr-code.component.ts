@@ -6,6 +6,7 @@ import { ISubscription } from 'rxjs/Subscription';
 import { Subject } from 'rxjs/Subject';
 import { copyTextToClipboard } from '../../../utils';
 import { AppConfig } from '../../../app.config';
+import { MsgBarService } from '../../../services/msg-bar.service';
 
 declare const QRCode: any;
 
@@ -52,6 +53,7 @@ export class QrCodeComponent implements OnInit, OnDestroy {
     @Inject(MAT_DIALOG_DATA) public data: QrDialogConfig,
     public dialogRef: MatDialogRef<QrCodeComponent>,
     public formBuilder: FormBuilder,
+    private msgBarService: MsgBarService,
   ) { }
 
   ngOnInit() {
@@ -61,14 +63,16 @@ export class QrCodeComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.subscriptionsGroup.forEach(sub => sub.unsubscribe());
+    this.msgBarService.hide();
   }
 
-  startSowingForm() {
+  startShowingForm() {
     this.showForm = true;
   }
 
   copyText(text) {
     copyTextToClipboard(text);
+    this.msgBarService.showDone('qr.copied', 4000);
   }
 
   private initForm() {

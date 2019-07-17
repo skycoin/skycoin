@@ -206,7 +206,8 @@
     "amount": "Request amount:",
     "hours": "Request hours:",
     "message": "Message:",
-    "invalid": "(invalid value)"
+    "invalid": "(invalid value)",
+    "copied": "The text has been copied to the clipboard."
   },
 
   "send": {

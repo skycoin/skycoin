@@ -13,6 +13,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip32"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
@@ -100,4 +103,18 @@ func RequireFileExists(t *testing.T, fn string) os.FileInfo {
 func RequireFileNotExists(t *testing.T, fn string) {
 	_, err := os.Stat(fn)
 	require.True(t, os.IsNotExist(err))
+}
+
+// RandXPub creates a random xpub key
+func RandXPub(t *testing.T) *bip32.PublicKey {
+	m := bip39.MustNewDefaultMnemonic()
+	s, err := bip39.NewSeed(m, "")
+	require.NoError(t, err)
+	c, err := bip44.NewCoin(s, bip44.CoinTypeSkycoin)
+	require.NoError(t, err)
+	x, err := c.Account(0)
+	require.NoError(t, err)
+	e, err := x.External()
+	require.NoError(t, err)
+	return e.PublicKey()
 }

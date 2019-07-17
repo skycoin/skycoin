@@ -64,4 +64,5 @@ type WalletMeta struct {
 	Timestamp  int64             `json:"timestamp"`
 	Encrypted  bool              `json:"encrypted"`
 	Bip44Coin  *bip44.CoinType   `json:"bip44_coin,omitempty"` // For bip44
+	XPub       string            `json:"xpub,omitempty"`       // For xpub
 }

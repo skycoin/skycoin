@@ -51,9 +51,12 @@ func NewWalletResponse(w wallet.Wallet) (*WalletResponse, error) {
 	wr.Meta.Encrypted = w.IsEncrypted()
 	wr.Meta.Timestamp = w.Timestamp()
 
-	if w.Type() == wallet.WalletTypeBip44 {
+	switch w.Type() {
+	case wallet.WalletTypeBip44:
 		bip44Coin := w.Bip44Coin()
 		wr.Meta.Bip44Coin = &bip44Coin
+	case wallet.WalletTypeXPub:
+		wr.Meta.XPub = w.XPub()
 	}
 
 	entries := w.GetEntries()
@@ -65,15 +68,19 @@ func NewWalletResponse(w wallet.Wallet) (*WalletResponse, error) {
 			Public:  e.Public.Hex(),
 		}
 
-		if w.Type() == wallet.WalletTypeBip44 {
-			// Copy the value to another ref to avoid having a pointer
-			// to an element of Entry which could affect GC of the Entry,
-			// which could cause retention/copying of secret data in the Entry.
-			// This is speculative. I don't know if this matters to the go runtime
+		switch w.Type() {
+		// Copy these values to another ref to avoid having a pointer
+		// to an element of Entry which could affect GC of the Entry,
+		// which could cause retention/copying of secret data in the Entry.
+		// This is speculative. I don't know if this matters to the go runtime
+		case wallet.WalletTypeBip44:
 			childNumber := e.ChildNumber
-			change := e.Change
 			wr.Entries[i].ChildNumber = &childNumber
+			change := e.Change
 			wr.Entries[i].Change = &change
+		case wallet.WalletTypeXPub:
+			childNumber := e.ChildNumber
+			wr.Entries[i].ChildNumber = &childNumber
 		}
 	}
 
@@ -187,8 +194,9 @@ func balanceHandler(gateway Gatewayer) http.HandlerFunc {
 // Args:
 //     seed: wallet seed [required]
 //     seed-passphrase: wallet seed passphrase [optional, bip44 type wallet only]
-//     type: wallet type [required, one of "deterministic" or "bip44"]
+//     type: wallet type [required, one of "deterministic", "bip44" or "xpub"]
 //     bip44-coin: BIP44 coin type [optional, defaults to 8000 (skycoin's coin type), only valid if type is "bip44"]
+//     xpub: xpub key [required for xpub wallets]
 //     label: wallet label [required]
 //     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
 //     encrypt: bool value, whether encrypt the wallet [optional]
@@ -207,9 +215,12 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		seed := r.FormValue("seed")
-		if seed == "" {
-			wh.Error400(w, "missing seed")
-			return
+		switch walletType {
+		case wallet.WalletTypeDeterministic, wallet.WalletTypeBip44:
+			if seed == "" {
+				wh.Error400(w, "missing seed")
+				return
+			}
 		}
 
 		label := r.FormValue("label")
@@ -264,7 +275,7 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 		bip44CoinStr := r.FormValue("bip44-coin")
 		if bip44CoinStr != "" {
 			if walletType != wallet.WalletTypeBip44 {
-				wh.Error400(w, "bip44-coin is only value for bip44 type wallets")
+				wh.Error400(w, "bip44-coin is only valid for bip44 type wallets")
 				return
 			}
 
@@ -287,6 +298,7 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 			Type:           walletType,
 			SeedPassphrase: r.FormValue("seed-passphrase"),
 			Bip44Coin:      bip44Coin,
+			XPub:           r.FormValue("xpub"),
 		}, gateway)
 		if err != nil {
 			switch err.(type) {

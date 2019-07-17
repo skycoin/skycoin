@@ -309,6 +309,12 @@ func testVectorKeyPairs(t *testing.T, vector testMasterKey) {
 	require.NoError(t, err)
 	require.Equal(t, privKey, privKey2)
 
+	// Test that DeserializeEncodedPrivateKey
+	// is equivalent to DeserializePrivateKey(base58.Decode(key))
+	privKey3, err := DeserializeEncodedPrivateKey(vector.privKey)
+	require.NoError(t, err)
+	require.Equal(t, privKey2, privKey3)
+
 	// Iterate over the entire child chain and test the given keys
 	for _, testChildKey := range vector.children {
 		t.Run(testChildKey.path, func(t *testing.T) {
@@ -695,8 +701,11 @@ func assertPrivateKeySerialization(t *testing.T, key *PrivateKey, expected strin
 
 	key2, err := DeserializePrivateKey(serialized)
 	require.NoError(t, err)
-
 	require.Equal(t, key, key2)
+
+	key3, err := DeserializeEncodedPrivateKey(expected)
+	require.NoError(t, err)
+	require.Equal(t, key2, key3)
 }
 
 func assertPublicKeySerialization(t *testing.T, key *PublicKey, expected string) {
@@ -709,8 +718,11 @@ func assertPublicKeySerialization(t *testing.T, key *PublicKey, expected string)
 
 	key2, err := DeserializePublicKey(serialized)
 	require.NoError(t, err)
-
 	require.Equal(t, key, key2)
+
+	key3, err := DeserializeEncodedPublicKey(expected)
+	require.NoError(t, err)
+	require.Equal(t, key2, key3)
 }
 
 func TestValidatePrivateKey(t *testing.T) {

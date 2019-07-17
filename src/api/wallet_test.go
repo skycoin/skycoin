@@ -865,6 +865,7 @@ func TestWalletCreateHandler(t *testing.T) {
 		Type           string
 		SeedPassphrase string
 		Bip44Coin      string
+		XPub           string
 	}
 	tt := []struct {
 		name                      string
@@ -980,7 +981,7 @@ func TestWalletCreateHandler(t *testing.T) {
 				Bip44Coin: "8000",
 			},
 			status:  http.StatusBadRequest,
-			err:     "400 Bad Request - bip44-coin is only value for bip44 type wallets",
+			err:     "400 Bad Request - bip44-coin is only valid for bip44 type wallets",
 			wltName: "foo",
 		},
 		{
@@ -1108,6 +1109,40 @@ func TestWalletCreateHandler(t *testing.T) {
 				Password:       []byte{},
 				ScanN:          2,
 				SeedPassphrase: "foobar",
+			},
+			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
+				return &wallet.DeterministicWallet{
+					Meta: wallet.Meta{
+						"filename": "filename",
+					},
+					Entries: cloneEntries(entries),
+				}
+			},
+			responseBody: WalletResponse{
+				Meta: readable.WalletMeta{
+					Filename: "filename",
+				},
+				Entries: responseEntries[:],
+			},
+		},
+		{
+			name:   "200 - OK - xpub",
+			method: http.MethodPost,
+			body: &httpBody{
+				Type:  wallet.WalletTypeXPub,
+				Label: "bar",
+				ScanN: "2",
+				XPub:  "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8",
+			},
+			status:  http.StatusOK,
+			err:     "",
+			wltName: "filename",
+			options: wallet.Options{
+				Type:     wallet.WalletTypeXPub,
+				Label:    "bar",
+				Password: []byte{},
+				ScanN:    2,
+				XPub:     "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8",
 			},
 			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
 				return &wallet.DeterministicWallet{
@@ -1254,6 +1289,10 @@ func TestWalletCreateHandler(t *testing.T) {
 
 				if tc.body.Bip44Coin != "" {
 					v.Add("bip44-coin", tc.body.Bip44Coin)
+				}
+
+				if tc.body.XPub != "" {
+					v.Add("xpub", tc.body.XPub)
 				}
 			}
 

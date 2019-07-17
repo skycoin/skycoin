@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
 )
 
 // ReadableEntry wallet entry with json tags
@@ -41,9 +42,15 @@ func NewReadableEntry(coinType CoinType, walletType string, e Entry) ReadableEnt
 	switch walletType {
 	case WalletTypeBip44:
 		cn := e.ChildNumber
-		change := e.Change
 		re.ChildNumber = &cn
+		change := e.Change
 		re.Change = &change
+	case WalletTypeXPub:
+		cn := e.ChildNumber
+		re.ChildNumber = &cn
+		if e.Change != 0 {
+			logger.Panicf("wallet.Entry.Change is not 0 but wallet type is %q", walletType)
+		}
 	default:
 		if e.ChildNumber != 0 {
 			logger.Panicf("wallet.Entry.ChildNumber is not 0 but wallet type is %q", walletType)
@@ -148,9 +155,20 @@ func newEntryFromReadable(coinType CoinType, walletType string, re *ReadableEntr
 		change = *re.Change
 
 		switch change {
-		case 0, 1:
+		case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
 		default:
 			return nil, errors.New("change must be either 0 or 1")
+		}
+
+	case WalletTypeXPub:
+		if re.ChildNumber == nil {
+			return nil, fmt.Errorf("child_number required for %q wallet type", walletType)
+		}
+
+		childNumber = *re.ChildNumber
+
+		if re.Change != nil {
+			return nil, fmt.Errorf("change should not be set for %q wallet type", walletType)
 		}
 
 	default:

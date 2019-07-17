@@ -122,6 +122,25 @@ func TestNewWallet(t *testing.T) {
 			},
 		},
 		{
+			name:    "ok, xpub wallet",
+			wltName: "test-xpub.wlt",
+			opts: Options{
+				Type: WalletTypeXPub,
+				XPub: "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
+			},
+			expect: expect{
+				meta: map[string]string{
+					"label":    "",
+					"filename": "test-collection.wlt",
+					"coin":     string(CoinTypeSkycoin),
+					"type":     WalletTypeDeterministic,
+					"version":  Version,
+					"xpub":     "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
+				},
+				err: nil,
+			},
+		},
+		{
 			name:    "ok all defaults",
 			wltName: "test.wlt",
 			opts: Options{
@@ -291,6 +310,29 @@ func TestNewWallet(t *testing.T) {
 					"version":   Version,
 					"bip44Coin": "8000",
 				},
+			},
+		},
+		{
+			name:    "invalid xpub wallet",
+			wltName: "test-xpub.wlt",
+			opts: Options{
+				Type: WalletTypeXPub,
+				XPub: "xpubbad",
+			},
+			expect: expect{
+				err: NewError(errors.New("invalid xpub key: Serialized keys should be exactly 82 bytes")),
+			},
+		},
+		{
+			name:    "seed provided with xpub wallet",
+			wltName: "test-xpub.wlt",
+			opts: Options{
+				Type: WalletTypeXPub,
+				Seed: "foobar",
+				XPub: "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
+			},
+			expect: expect{
+				err: NewError(errors.New("seed should not be provided for \"xpub\" wallets")),
 			},
 		},
 	}

@@ -637,42 +637,32 @@ func (c *Client) Wallets() ([]WalletResponse, error) {
 	return wrs, nil
 }
 
-// CreateUnencryptedWallet makes a request to POST /api/v1/wallet/create and creates
-// a wallet without encryption.
-// If scanN is <= 0, the scan number defaults to 1
-func (c *Client) CreateUnencryptedWallet(walletType, seed, seedPassphrase, label string, scanN int) (*WalletResponse, error) {
-	v := url.Values{}
-	v.Add("type", walletType)
-	v.Add("seed", seed)
-	v.Add("seed-passphrase", seedPassphrase)
-	v.Add("label", label)
-	v.Add("encrypt", "false")
-
-	if scanN > 0 {
-		v.Add("scan", fmt.Sprint(scanN))
-	}
-
-	var w WalletResponse
-	if err := c.PostForm("/api/v1/wallet/create", strings.NewReader(v.Encode()), &w); err != nil {
-		return nil, err
-	}
-	return &w, nil
+// CreateWalletOptions are the options for creating a wallet
+type CreateWalletOptions struct {
+	Type           string
+	Seed           string
+	SeedPassphrase string
+	Label          string
+	Password       string
+	ScanN          int
+	XPub           string
+	Encrypt        bool
 }
 
-// CreateEncryptedWallet makes a request to POST /api/v1/wallet/create and try to create
-// a wallet with encryption.
+// CreateWallet makes a request to POST /api/v1/wallet/create and creates a wallet.
 // If scanN is <= 0, the scan number defaults to 1
-func (c *Client) CreateEncryptedWallet(walletType, seed, seedPassphrase, label, password string, scanN int) (*WalletResponse, error) {
+func (c *Client) CreateWallet(o CreateWalletOptions) (*WalletResponse, error) {
 	v := url.Values{}
-	v.Add("type", walletType)
-	v.Add("seed", seed)
-	v.Add("seed-passphrase", seedPassphrase)
-	v.Add("label", label)
-	v.Add("encrypt", "true")
-	v.Add("password", password)
+	v.Add("type", o.Type)
+	v.Add("seed", o.Seed)
+	v.Add("seed-passphrase", o.SeedPassphrase)
+	v.Add("label", o.Label)
+	v.Add("password", o.Password)
+	v.Add("encrypt", fmt.Sprint(o.Encrypt))
+	v.Add("xpub", o.XPub)
 
-	if scanN > 0 {
-		v.Add("scan", fmt.Sprint(scanN))
+	if o.ScanN > 0 {
+		v.Add("scan", fmt.Sprint(o.ScanN))
 	}
 
 	var w WalletResponse

@@ -508,7 +508,16 @@ func (k *PublicKey) String() string {
 	return base58.Encode(k.Serialize())
 }
 
-// DeserializePrivateKey deserializes a byte slice into a PrivateKey
+// DeserializeEncodedPrivateKey deserializes a base58 xprv key to a PrivateKey
+func DeserializeEncodedPrivateKey(xprv string) (*PrivateKey, error) {
+	b, err := base58.Decode(xprv)
+	if err != nil {
+		return nil, err
+	}
+	return DeserializePrivateKey(b)
+}
+
+// DeserializePrivateKey deserializes the []byte serialization of a PrivateKey
 func DeserializePrivateKey(data []byte) (*PrivateKey, error) {
 	k, err := deserialize(data, true)
 	if err != nil {
@@ -527,7 +536,16 @@ func DeserializePrivateKey(data []byte) (*PrivateKey, error) {
 	}, nil
 }
 
-// DeserializePublicKey deserializes a byte slice into a PublicKey
+// DeserializeEncodedPublicKey deserializes a base58 xpub key to a PublicKey
+func DeserializeEncodedPublicKey(xpub string) (*PublicKey, error) {
+	b, err := base58.Decode(xpub)
+	if err != nil {
+		return nil, err
+	}
+	return DeserializePublicKey(b)
+}
+
+// DeserializePublicKey deserializes the []byte serialization of a PublicKey
 func DeserializePublicKey(data []byte) (*PublicKey, error) {
 	k, err := deserialize(data, false)
 	if err != nil {

@@ -25,6 +25,7 @@ const (
 	metaSecrets        = "secrets"        // secrets which records the encrypted seeds and secrets of address entries
 	metaBip44Coin      = "bip44Coin"      // bip44 coin type
 	metaSeedPassphrase = "seedPassphrase" // seed passphrase [bip44 wallets]
+	metaXPub           = "xpub"           // xpub key [xpub wallets]
 )
 
 // Meta holds wallet metadata
@@ -145,8 +146,20 @@ func (m Meta) validate() error {
 		if s := m[metaLastSeed]; s != "" {
 			return errors.New("lastSeed should not be in bip44 wallets")
 		}
+	case WalletTypeXPub:
+		if s := m[metaSeed]; s != "" {
+			return errors.New("seed should not be in xpub wallets")
+		}
+
+		if s := m[metaLastSeed]; s != "" {
+			return errors.New("lastSeed should not be in xpub wallets")
+		}
 	default:
 		return errors.New("unhandled wallet type")
+	}
+
+	if m[metaXPub] != "" && walletType != WalletTypeXPub {
+		return errors.New("xpub is only used for xpub wallets")
 	}
 
 	return nil
@@ -332,4 +345,13 @@ func (m Meta) AddressConstructor() func(cipher.PubKey) cipher.Addresser {
 		logger.Panicf("Invalid wallet coin type %q", m.Coin())
 		return nil
 	}
+}
+
+func (m Meta) setXPub(xpub string) {
+	m[metaXPub] = xpub
+}
+
+// XPub returns the wallet's configured XPub key
+func (m Meta) XPub() string {
+	return m[metaXPub]
 }

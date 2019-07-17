@@ -38,7 +38,7 @@ func NewError(err error) error {
 
 var (
 	// Version represents the current wallet version
-	Version = "0.3"
+	Version = "0.4"
 
 	logger = logging.MustGetLogger("wallet")
 
@@ -64,6 +64,8 @@ var (
 	ErrWalletNotExist = NewError(errors.New("wallet doesn't exist"))
 	// ErrSeedUsed is returned if a wallet already exists with the same seed
 	ErrSeedUsed = NewError(errors.New("a wallet already exists with this seed"))
+	// ErrXPubKeyUsed is returned if a wallet already exists with the same xpub key
+	ErrXPubKeyUsed = NewError(errors.New("a wallet already exists with this xpub key"))
 	// ErrWalletAPIDisabled is returned when trying to do wallet actions while the EnableWalletAPI option is false
 	ErrWalletAPIDisabled = NewError(errors.New("wallet api is disabled"))
 	// ErrSeedAPIDisabled is returned when trying to get seed of wallet while the EnableWalletAPI or EnableSeedAPI is false
@@ -103,6 +105,9 @@ const (
 	// WalletTypeBip44 bip44 HD wallet type.
 	// Follow the bip44 spec.
 	WalletTypeBip44 = "bip44"
+	// WalletTypeXPub xpub HD wallet type.
+	// Allows generating addresses without a secret key
+	WalletTypeXPub = "xpub"
 )
 
 // ResolveCoinType normalizes a coin type string to a CoinType constant
@@ -120,7 +125,10 @@ func ResolveCoinType(s string) (CoinType, error) {
 // IsValidWalletType returns true if a wallet type is recognized
 func IsValidWalletType(t string) bool {
 	switch t {
-	case WalletTypeDeterministic, WalletTypeCollection, WalletTypeBip44:
+	case WalletTypeDeterministic,
+		WalletTypeCollection,
+		WalletTypeBip44,
+		WalletTypeXPub:
 		return true
 	default:
 		return false
@@ -151,6 +159,7 @@ type Options struct {
 	CryptoType     CryptoType      // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
 	ScanN          uint64          // number of addresses that're going to be scanned for a balance. The highest address with a balance will be used.
 	GenerateN      uint64          // number of addresses to generate, regardless of balance
+	XPub           string          // xpub key (xpub wallets only)
 }
 
 // newWallet creates a wallet instance with given name and options.
@@ -188,6 +197,10 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 		return nil, NewError(fmt.Errorf("seedPassphrase is only used for %q wallets", WalletTypeBip44))
 	}
 
+	if opts.XPub != "" && wltType != WalletTypeXPub {
+		return nil, NewError(fmt.Errorf("xpub is only used for %q wallets", WalletTypeXPub))
+	}
+
 	switch wltType {
 	case WalletTypeDeterministic, WalletTypeBip44:
 		if opts.Seed == "" {
@@ -198,9 +211,18 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 			return nil, ErrNilTransactionsFinder
 		}
 
+	case WalletTypeXPub:
+		if opts.Seed != "" {
+			return nil, NewError(fmt.Errorf("seed should not be provided for %q wallets", wltType))
+		}
+
+		if opts.ScanN > 0 && tf == nil {
+			return nil, ErrNilTransactionsFinder
+		}
+
 	case WalletTypeCollection:
 		if opts.Seed != "" {
-			return nil, NewError(fmt.Errorf("seed should not be provided for %q wallets", WalletTypeCollection))
+			return nil, NewError(fmt.Errorf("seed should not be provided for %q wallets", wltType))
 		}
 
 	default:
@@ -229,25 +251,34 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 		metaEncrypted:      "false",
 		metaCryptoType:     "",
 		metaSecrets:        "",
+		metaXPub:           opts.XPub,
 	}
 
 	// Create the wallet
 	var w Wallet
 	switch wltType {
 	case WalletTypeDeterministic:
-		w = newDeterministicWallet(meta)
+		w, err = newDeterministicWallet(meta)
 	case WalletTypeCollection:
-		w = newCollectionWallet(meta)
+		w, err = newCollectionWallet(meta)
 	case WalletTypeBip44:
 		meta.setBip44Coin(bip44Coin)
-		w = newBip44Wallet(meta)
+		w, err = newBip44Wallet(meta)
+	case WalletTypeXPub:
+		meta.setXPub(opts.XPub)
+		w, err = newXPubWallet(meta)
 	default:
 		logger.Panic("unhandled wltType")
 	}
 
+	if err != nil {
+		logger.WithError(err).WithField("walletType", wltType).Error("newWallet failed")
+		return nil, err
+	}
+
 	// Generate wallet addresses
 	switch wltType {
-	case WalletTypeDeterministic, WalletTypeBip44:
+	case WalletTypeDeterministic, WalletTypeBip44, WalletTypeXPub:
 		generateN := opts.GenerateN
 		if generateN == 0 {
 			generateN = 1
@@ -473,6 +504,7 @@ type Wallet interface {
 	SetVersion(string)
 	AddressConstructor() func(cipher.PubKey) cipher.Addresser
 	Secrets() string
+	XPub() string
 
 	UnpackSecrets(ss Secrets) error
 	PackSecrets(ss Secrets)
@@ -602,9 +634,13 @@ func Load(filename string) (Wallet, error) {
 	case WalletTypeBip44:
 		logger.WithField("filename", filename).Info("LoadReadableBip44Wallet")
 		rw, err = LoadReadableBip44Wallet(filename)
+	case WalletTypeXPub:
+		logger.WithField("filename", filename).Info("LoadReadableXPubWallet")
+		rw, err = LoadReadableXPubWallet(filename)
 	default:
-		logger.WithField("walletType", m.Meta.Type).Error("Load: unhandled wallet type")
-		return nil, ErrInvalidWalletType
+		err := errors.New("unhandled wallet type")
+		logger.WithField("walletType", m.Meta.Type).WithError(err).Error("Load failed")
+		return nil, err
 	}
 
 	if err != nil {

@@ -14,6 +14,9 @@ var (
 	ErrUnknownAddress = NewError(errors.New("address not found in wallet"))
 	// ErrUnknownUxOut is returned if a uxout is not owned by any address in a wallet
 	ErrUnknownUxOut = NewError(errors.New("uxout is not owned by any address in the wallet"))
+	// ErrWalletCantSign is returned is attempting to sign a transaction with a wallet
+	// that does not have the capability to sign transactions (e.g. an xpub or watch wallet)
+	ErrWalletCantSign = NewError(errors.New("wallet does not have the signing capability"))
 )
 
 func validateSignIndexes(x []int, uxOuts []coin.UxOut) error {
@@ -66,6 +69,11 @@ func copyTransaction(txn *coin.Transaction) *coin.Transaction {
 // but a valid existing signature cannot be overwritten.
 // Clients should avoid signing the same transaction multiple times.
 func SignTransaction(w Wallet, txn *coin.Transaction, signIndexes []int, uxOuts []coin.UxOut) (*coin.Transaction, error) {
+	switch w.Type() {
+	case WalletTypeXPub:
+		return nil, ErrWalletCantSign
+	}
+
 	signedTxn := copyTransaction(txn)
 	txnInnerHash := signedTxn.HashInner()
 

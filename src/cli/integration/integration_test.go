@@ -229,33 +229,13 @@ func createTempWallet(t *testing.T, encrypt bool) (string, func()) {
 	_, err = io.Copy(f, rf)
 	require.NoError(t, err)
 
-	originalWalletDirEnv := os.Getenv("WALLET_DIR")
-	originalWalletNameEnv := os.Getenv("WALLET_NAME")
-
-	err = os.Setenv("WALLET_DIR", dir)
-	require.NoError(t, err)
-	err = os.Setenv("WALLET_NAME", wltName)
-	require.NoError(t, err)
-
-	fun := func() {
-		err := os.Setenv("WALLET_DIR", originalWalletDirEnv)
-		if err != nil {
-			t.Logf("Failed to reset WALLET_DIR env var: %v", err)
-		}
-
-		err = os.Setenv("WALLET_NAME", originalWalletNameEnv)
-		if err != nil {
-			t.Logf("Failed to reset WALLET_NAME env var: %v", err)
-		}
-
+	return walletPath, func() {
 		// Delete the temporary dir
 		err = os.RemoveAll(dir)
 		if err != nil {
 			t.Logf("Failed to cleanup temp wallet dir %s: %v", dir, err)
 		}
 	}
-
-	return walletPath, fun
 }
 
 // createTempWalletDir creates a temporary wallet dir,
@@ -1516,15 +1496,11 @@ func TestStableShowConfig(t *testing.T) {
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&ret)
 	require.NoError(t, err)
 
-	// WalletDir and DataDir can't be checked perfectly without essentially
+	// DataDir can't be checked perfectly without essentially
 	// reimplementing cli.LoadConfig to compare values
-	require.NotEmpty(t, ret.WalletDir)
 	require.NotEmpty(t, ret.DataDir)
-	require.True(t, strings.HasSuffix(ret.WalletDir, ".skycoin/wallets"))
 	require.True(t, strings.HasSuffix(ret.DataDir, ".skycoin"))
-	require.True(t, strings.HasPrefix(ret.WalletDir, ret.DataDir))
 
-	ret.WalletDir = "IGNORED/.skycoin/wallets"
 	ret.DataDir = "IGNORED/.skycoin"
 
 	goldenFile := "show-config.golden"
@@ -1557,20 +1533,10 @@ func TestLiveShowConfig(t *testing.T) {
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&ret)
 	require.NoError(t, err)
 
-	// WalletDir and DataDir can't be checked perfectly without essentially
+	// DataDir can't be checked perfectly without essentially
 	// reimplementing cli.LoadConfig to compare values
-	require.NotEmpty(t, ret.WalletDir)
 	require.NotEmpty(t, ret.DataDir)
-	require.True(t, strings.HasSuffix(ret.WalletDir, ".skycoin/wallets"))
 	require.True(t, strings.HasSuffix(ret.DataDir, ".skycoin"))
-	require.True(t, strings.HasPrefix(ret.WalletDir, ret.DataDir))
-
-	walletName := os.Getenv("WALLET_NAME")
-	if walletName == "" {
-		walletName = "skycoin_cli.wlt"
-	}
-	require.Equal(t, walletName, ret.WalletName)
-	require.NotEmpty(t, ret.WalletName)
 
 	coin := os.Getenv("COIN")
 	if coin == "" {
@@ -2026,35 +1992,6 @@ func TestLiveLastBlocks(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
-}
-
-func TestStableWalletDir(t *testing.T) {
-	if !doStable(t) {
-		return
-	}
-
-	walletPath, clean := createUnencryptedWallet(t)
-	defer clean()
-
-	dir := filepath.Dir(walletPath)
-	output, err := execCommandCombinedOutput("walletDir")
-	require.NoError(t, err)
-	require.Equal(t, dir, strings.TrimRight(string(output), "\n"))
-}
-
-func TestLiveWalletDir(t *testing.T) {
-	if !doLive(t) {
-		return
-	}
-
-	requireWalletEnv(t)
-	requireWalletDir(t)
-
-	walletDir := os.Getenv("WALLET_DIR")
-	output, err := execCommandCombinedOutput("walletDir")
-	require.NoError(t, err)
-
-	require.Equal(t, walletDir, strings.Trim(string(output), "\n"))
 }
 
 // TestLiveSend sends coin from specific wallet file, user should manually specify the

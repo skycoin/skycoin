@@ -139,7 +139,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
     error = error ? error : this.errors['errors.error-decrypting'];
 
     this.msgBarService.showError(error);
-    this.button.setError(error);
+    this.button.resetState();
     this.working = false;
   }
 }

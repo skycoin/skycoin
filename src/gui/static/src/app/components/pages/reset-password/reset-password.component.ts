@@ -21,6 +21,7 @@ export class ResetPasswordComponent implements OnDestroy {
   private subscription: ISubscription;
   private wallet: Wallet;
   private done = false;
+  private hideBarWhenClosing = true;
 
   constructor(
     public formBuilder: FormBuilder,
@@ -45,7 +46,9 @@ export class ResetPasswordComponent implements OnDestroy {
 
   ngOnDestroy() {
     this.subscription.unsubscribe();
-    this.msgBarService.hide();
+    if (this.hideBarWhenClosing) {
+      this.msgBarService.hide();
+    }
   }
 
   initForm(walletName: string) {
@@ -73,11 +76,14 @@ export class ResetPasswordComponent implements OnDestroy {
         this.resetButton.setDisabled();
         this.done = true;
 
+        this.hideBarWhenClosing = false;
+        this.msgBarService.showDone('reset.done');
+
         setTimeout(() => {
           this.router.navigate(['']);
         }, 2000);
       }, error => {
-        this.resetButton.setError(error);
+        this.resetButton.resetState();
         this.msgBarService.showError(error);
       });
   }

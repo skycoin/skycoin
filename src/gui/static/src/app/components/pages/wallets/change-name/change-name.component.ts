@@ -100,7 +100,15 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
 
     if (!this.data.wallet.isHardware) {
       this.operationSubscription = this.walletService.renameWallet(this.data.wallet, this.newLabel)
-        .subscribe(() => this.dialogRef.close(this.newLabel));
+        .subscribe(() => {
+          this.dialogRef.close(this.newLabel);
+          setTimeout(() => this.msgBarService.showDone('common.changes-made'));
+        }, e => {
+          this.msgBarService.showError(e);
+          if (this.button) {
+            this.button.resetState();
+          }
+        });
     } else {
       if (this.data.newName) {
         this.currentState = States.WaitingForConfirmation;
@@ -117,6 +125,10 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
             this.data.wallet.label = this.newLabel;
             this.walletService.saveHardwareWallets();
             this.dialogRef.close(this.newLabel);
+
+            if (!this.data.newName) {
+              setTimeout(() => this.msgBarService.showDone('common.changes-made'));
+            }
           },
           err => {
             if (this.data.newName) {

@@ -538,11 +538,13 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
         if (!this.previewTx) {
           this.processingSubscription = this.walletService.injectTransaction(transaction.encoded, note)
             .subscribe(noteSaved => {
+              let showDone = true;
               if (note && !noteSaved) {
-                this.msgBarService.showError(this.translate.instant('send.error-saving-note'));
+                this.msgBarService.showWarning(this.translate.instant('send.error-saving-note'));
+                showDone = false;
               }
 
-              this.showSuccess();
+              this.showSuccess(showDone);
             }, error => this.showError(error));
         } else {
           let amount = new BigNumber('0');
@@ -693,15 +695,20 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     }
   }
 
-  private showSuccess() {
+  private showSuccess(showDone: boolean) {
     this.busy = false;
     this.navbarService.enableSwitch();
-    this.sendButton.setSuccess();
     this.resetForm();
 
-    setTimeout(() => {
+    if (showDone) {
+      this.msgBarService.showDone('send.sent');
       this.sendButton.resetState();
-    }, 3000);
+    } else {
+      this.sendButton.setSuccess();
+      setTimeout(() => {
+        this.sendButton.resetState();
+      }, 3000);
+    }
   }
 
   private showError(error) {

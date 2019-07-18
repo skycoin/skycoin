@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `cli addPrivateKey` will only work on a `collection` type wallet. Create one with `cli walletCreate -t collection`
 - Don't print the wallet in the terminal after `cli encryptWallet` or `cli decryptWallet`
 - Remove `WALLET_DIR` and `WALLET_NAME` envvars from the `cli` tool. Commands which need to operate on a wallet file accept the wallet file on the command line instead.
+- Now the modal window for showing QR codes in the GUI allows to request specific amounts of coins, as in mobile wallets. This changes did no include the ability to read QR codes or URLs.
 
 ### Removed
 

@@ -1,11 +1,15 @@
 import { Component } from '@angular/core';
 
 export enum MsgBarIcons {
-  error = 'error',
+  Error = 'error',
+  Done = 'done',
+  Warning = 'warning',
 }
 
 export enum MsgBarColors {
-  red = 'red-background',
+  Red = 'red-background',
+  Green = 'green-background',
+  Yellow = 'yellow-background',
 }
 
 export class MsgBarConfig {

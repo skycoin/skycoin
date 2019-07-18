@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { WalletService } from '../../../services/wallet.service';
 import { LanguageData, LanguageService } from '../../../services/language.service';
@@ -6,6 +6,8 @@ import { ISubscription } from 'rxjs/Subscription';
 import { openChangeLanguageModal } from '../../../utils';
 import { MatDialog } from '@angular/material';
 import { WalletFormData } from '../wallets/create-wallet/create-wallet-form/create-wallet-form.component';
+import { MsgBarService } from '../../../services/msg-bar.service';
+import { OnboardingEncryptWalletComponent } from './onboarding-encrypt-wallet/onboarding-encrypt-wallet.component';
 
 @Component({
   selector: 'app-onboarding',
@@ -13,6 +15,8 @@ import { WalletFormData } from '../wallets/create-wallet/create-wallet-form/crea
   styleUrls: ['./onboarding.component.scss'],
 })
 export class OnboardingComponent implements OnInit, OnDestroy {
+  @ViewChild('encryptForm') encryptForm: OnboardingEncryptWalletComponent;
+
   step = 1;
   formData: WalletFormData;
   password: string|null;
@@ -25,6 +29,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     private walletService: WalletService,
     private languageService: LanguageService,
     private dialog: MatDialog,
+    private msgBarService: MsgBarService,
   ) { }
 
   ngOnInit() {
@@ -67,6 +72,9 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   private createWallet() {
     this.walletService.create(this.formData.label, this.formData.seed, 100, this.password).subscribe(() => {
       this.router.navigate(['/wallets']);
+    }, e => {
+      this.msgBarService.showError(e);
+      this.encryptForm.resetButton();
     });
   }
 }

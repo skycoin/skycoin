@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, ViewChild, OnDestroy } from '@angular/core';
+import { Component, Inject, ViewChild, OnDestroy } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { MatDialogRef, MatDialog } from '@angular/material/dialog';
 import { ButtonComponent } from '../../../layout/button/button.component';
@@ -8,6 +8,7 @@ import { ISubscription } from 'rxjs/Subscription';
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { ConfirmationData } from '../../../../app.datatypes';
 import { showConfirmationModal } from '../../../../utils';
+import { MsgBarService } from '../../../../services/msg-bar.service';
 
 @Component({
   selector: 'app-create-wallet',
@@ -30,6 +31,7 @@ export class CreateWalletComponent implements OnDestroy {
     public dialogRef: MatDialogRef<CreateWalletComponent>,
     private walletService: WalletService,
     private dialog: MatDialog,
+    private msgBarService: MsgBarService,
     blockchainService: BlockchainService,
   ) {
     this.synchronizedSubscription = blockchainService.synchronized.subscribe(value => this.synchronized = value);
@@ -37,6 +39,7 @@ export class CreateWalletComponent implements OnDestroy {
 
   ngOnDestroy() {
     this.synchronizedSubscription.unsubscribe();
+    this.msgBarService.hide();
   }
 
   closePopup() {
@@ -47,6 +50,8 @@ export class CreateWalletComponent implements OnDestroy {
     if (!this.formControl.isValid || this.createButton.isLoading()) {
       return;
     }
+
+    this.msgBarService.hide();
 
     if (this.synchronized || this.data.create) {
       this.continueCreating();
@@ -75,8 +80,12 @@ export class CreateWalletComponent implements OnDestroy {
     this.disableDismiss = true;
 
     this.walletService.create(data.label, data.seed, this.scan, data.password)
-      .subscribe(() => this.dialogRef.close(), e => {
-        this.createButton.setError(e);
+      .subscribe(() => {
+        setTimeout(() => this.msgBarService.showDone('wallet.new.wallet-created'));
+        this.dialogRef.close();
+      }, e => {
+        this.msgBarService.showError(e);
+        this.createButton.resetState();
         this.cancelButton.disabled = false;
         this.disableDismiss = false;
       });

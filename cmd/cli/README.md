@@ -652,7 +652,7 @@ FLAGS:
   -c, --change-address string   Specify the change address.
                                 Defaults to one of the spending addresses (deterministic wallets) or to a new change address (bip44 wallets).
       --csv string              CSV file containing addresses and amounts to send
-      --from string             From address in wallet
+  -a, --from-address string     From address in wallet
   -j, --json                    Returns the results in JSON format.
   -m, --many string             use JSON string to set multiple receive addresses and coins,
                                 example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'
@@ -938,8 +938,7 @@ FLAGS:
   -c, --coin string              Wallet address coin type (options: skycoin, bitcoin) (default "skycoin")
   -x, --crypto-type string       The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor (default "scrypt-chacha20poly1305")
   -e, --encrypt                  Create encrypted wallet.
-  -h, --help                     help for walletCreate
-  -l, --label string             Label used to idetify your wallet.
+  -l, --label string             Label used to identify your wallet.
   -m, --mnemonic                 A mnemonic seed consisting of 12 dictionary words will be generated
   -n, --num uint                 Number of addresses to generate. (default 1)
   -p, --password string          Wallet password
@@ -1357,7 +1356,6 @@ $ skycoin-cli walletKeyExport [wallet] [flags]
 
 ```
 FLAGS:
-  -h, --help          help for walletKeyExport
   -k, --key string    key type ("xpub", "xprv", "pub", "prv") (default "xpub")
   -p, --path string   bip44 account'/change subpath (default "0/0")
 ```
@@ -1444,7 +1442,6 @@ $ skycoin-cli encryptWallet [flags]
 ```
 FLAGS:
   -x, --crypto-type string   The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor
-  -h, --help                 help for encryptWallet
   -p, --password string      wallet password
 ```
 
@@ -1529,7 +1526,6 @@ $ skycoin-cli decryptWallet [flags]
 
 ```
 FLAGS:
-  -h, --help              help for decryptWallet
   -p, --password string   wallet password
 ```
 
@@ -1970,10 +1966,10 @@ $ skycoin-cli send [wallet] [to address] [amount] [flags]
 
 ```
 FLAGS:
-  -a, --address string          From address
-  -c, --change-address string   Specify different change address.
-                                By default the from address or a wallets coinbase address will be used.
-      --csv  string         CSV file containing addresses and amounts to send
+  -c, --change-address string   Specify the change address.
+                                Defaults to one of the spending addresses (deterministic wallets) or to a new change address (bip44 wallets).
+      --csv string              CSV file containing addresses and amounts to send
+  -a, --from-address string     From address in wallet
   -j, --json                    Returns the results in JSON format.
   -m, --many string             use JSON string to set multiple receive addresses and coins,
                                 example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'
@@ -2873,11 +2869,6 @@ Returns top N address (default 20) balances (based on unspent outputs). Optional
 $ skycoin-cli richlist [top N addresses (20 default)] [include distribution addresses (false default)]
 ```
 
-```
-FLAGS:
-  -h, --help   help for richlist
-```
-
 #### Example
 ##### Without distribution addresses
 ```bash
@@ -2935,11 +2926,6 @@ Returns the count of all addresses that currently have unspent outputs (coins) a
 
 ```bash
 $ skycoin-cli addresscount
-```
-
-```
-FLAGS:
-  -h, --help   help for richlist
 ```
 
 #### Example

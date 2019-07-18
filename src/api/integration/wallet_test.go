@@ -1044,9 +1044,9 @@ func prepareAndCheckWallet(t *testing.T, c *api.Client, minCoins, minCoinHours u
 func getWalletFromEnv(t *testing.T, c *api.Client) (string, string, string) {
 	walletDir := getWalletDir(t, c)
 
-	walletName := os.Getenv("WALLET_NAME")
+	walletName := os.Getenv("API_WALLET_ID")
 	if walletName == "" {
-		t.Fatal("Missing WALLET_NAME environment value")
+		t.Fatal("Missing API_WALLET_ID environment value")
 	}
 
 	walletPassword := os.Getenv("WALLET_PASSWORD")
@@ -1058,9 +1058,9 @@ func requireWalletEnv(t *testing.T) {
 		return
 	}
 
-	walletName := os.Getenv("WALLET_NAME")
+	walletName := os.Getenv("API_WALLET_ID")
 	if walletName == "" {
-		t.Fatal("missing WALLET_NAME environment value")
+		t.Fatal("missing API_WALLET_ID environment value")
 	}
 }
 

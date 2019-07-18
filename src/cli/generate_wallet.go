@@ -46,11 +46,10 @@ func walletCreateCmd() *gcli.Command {
 	walletCreateCmd.Flags().Uint32P("bip44-coin", "", uint32(bip44.CoinTypeSkycoin), "BIP44 coin type")
 	walletCreateCmd.Flags().StringP("coin", "c", string(wallet.CoinTypeSkycoin), "Wallet address coin type (options: skycoin, bitcoin)")
 	walletCreateCmd.Flags().Uint64P("num", "n", 1, `Number of addresses to generate.`)
-	walletCreateCmd.Flags().StringP("label", "l", "", "Label used to idetify your wallet.")
+	walletCreateCmd.Flags().StringP("label", "l", "", "Label used to identify your wallet.")
 	walletCreateCmd.Flags().StringP("type", "t", wallet.WalletTypeDeterministic, "Wallet type. Types are \"collection\", \"deterministic\", \"bip44\" or \"xpub\"")
 	walletCreateCmd.Flags().BoolP("encrypt", "e", false, "Create encrypted wallet.")
-	walletCreateCmd.Flags().StringP("crypto-type", "x", string(wallet.DefaultCryptoType),
-		"The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor")
+	walletCreateCmd.Flags().StringP("crypto-type", "x", string(wallet.DefaultCryptoType), "The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor")
 	walletCreateCmd.Flags().StringP("password", "p", "", "Wallet password")
 	walletCreateCmd.Flags().StringP("xpub", "", "", "xpub key for \"xpub\" type wallets")
 
@@ -223,7 +222,7 @@ func generateWalletHandler(c *gcli.Command, args []string) error {
 		return err
 	}
 
-	if err := wallet.Save(wlt, "."); err != nil {
+	if err := wallet.Save(wlt, filepath.Dir(wltName)); err != nil {
 		return err
 	}
 

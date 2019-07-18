@@ -338,19 +338,22 @@ The above command will run all tests except the wallet-related tests. To run wal
 need to manually specify a wallet file, and it must have at least `2 coins` and `256 coinhours`,
 it also must have been loaded by the node.
 
-We can specify the wallet by setting two environment variables: `WALLET_DIR` and `WALLET_NAME`. The `WALLET_DIR`
-represents the absolute path of the wallet directory, and `WALLET_NAME` represents the wallet file name.
+We can specify the wallet by setting two environment variables:
 
-Note: `WALLET_DIR` is only used by the CLI integration tests. The GUI integration tests use the node's
-configured wallet directory, which can be controlled with `-wallet-dir` when running the node.
+* `API_WALLET_ID`, which is the filename (without path), that is loaded by the daemon to test against.
+  This is the `"id"` field in API requests. It is used by the API integration tests.
+  The wallet directory that the daemon uses can be controlled with the `-wallet-dir` option.
+* `CLI_WALLET_FILE`, which is the filename (with path), to be used by the CLI integration tests
 
 If the wallet is encrypted, also set `WALLET_PASSWORD`.
 
+Example of running the daemon with settings for integration tests:
+
 ```sh
-$ export WALLET_DIR="$HOME/.skycoin/wallets"
-$ export WALLET_NAME="$valid_wallet_filename"
+$ export API_WALLET_ID="$valid_wallet_filename"
+$ export CLI_WALLET_FILE="$HOME/.skycoin/wallets/$valid_wallet_filename"
 $ export WALLET_PASSWORD="$wallet_password"
-$ ./run-client.sh -launch-browser=false -enable-all-api-sets
+$ make run-integration-test-live
 ```
 
 Then run the tests with the following command:
@@ -364,24 +367,29 @@ There are two other live integration test modes for CSRF disabled and networking
 To run the CSRF disabled tests:
 
 ```sh
-$ ./run-daemon.sh -disable-csrf
+$ export API_WALLET_ID="$valid_wallet_filename"
+$ export CLI_WALLET_FILE="$HOME/.skycoin/wallets/$valid_wallet_filename"
+$ export WALLET_PASSWORD="$wallet_password"
+$ make run-integration-test-live-disable-csrf
 ```
 
 ```sh
 $ make integration-test-live-disable-csrf
 ```
 
-To run the networking disabled tests, which requires a live wallet:
+To run the networking disabled tests, which require a live wallet:
 
 ```sh
-$ ./run-client.sh -disable-networking -launch-browser=false
+$ export API_WALLET_ID="$valid_wallet_filename"
+$ export CLI_WALLET_FILE="$HOME/.skycoin/wallets/$valid_wallet_filename"
+$ export WALLET_PASSWORD="$wallet_password"
+$ make run-integration-test-live-disable-networking
 ```
 
+Then run the tests with the following command:
+
 ```sh
-$ export WALLET_DIR="$HOME/.skycoin/wallets"
-$ export WALLET_NAME="$valid_wallet_filename"
-$ export WALLET_PASSWORD="$wallet_password"
-$ make integration-test-live-disable-networking
+$ make integration-test-live-wallet
 ```
 
 #### Debugging Integration Tests

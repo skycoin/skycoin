@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 
 	"github.com/spf13/cobra"
+	gcli "github.com/spf13/cobra"
 )
 
 var (
@@ -55,7 +56,7 @@ func createRawTxnCmd() *cobra.Command {
     do not include the "-p" option you will be prompted to enter your password
     after you enter your command.`,
 		SilenceUsage: true,
-		Args:         cobra.ExactArgs(3),
+		Args:         gcli.MinimumNArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
 			jsonOutput, err := c.Flags().GetBool("json")
 			if err != nil {
@@ -91,7 +92,7 @@ func createRawTxnCmd() *cobra.Command {
 		},
 	}
 
-	createRawTxnCmd.Flags().StringP("from", "", "", "From address in wallet")
+	createRawTxnCmd.Flags().StringP("from-address", "a", "", "From address in wallet")
 	createRawTxnCmd.Flags().StringP("change-address", "c", "", `Specify the change address.
 Defaults to one of the spending addresses (deterministic wallets) or to a new change address (bip44 wallets).`)
 	createRawTxnCmd.Flags().StringP("many", "m", "", `use JSON string to set multiple receive addresses and coins,
@@ -109,9 +110,9 @@ type walletAddress struct {
 }
 
 func fromWalletOrAddress(c *cobra.Command, walletFile string) (walletAddress, error) {
-	address, err := c.Flags().GetString("address")
+	address, err := c.Flags().GetString("from-address")
 	if err != nil {
-		return walletAddress{}, nil
+		return walletAddress{}, err
 	}
 
 	wltAddr := walletAddress{
@@ -149,7 +150,7 @@ func getChangeAddress(wltAddr walletAddress, chgAddr string) (string, error) {
 				return "", errors.New("no change address was found")
 			}
 		default:
-			return "", errors.New("both wallet file, from address and change address are empty")
+			return "", errors.New("wallet file, from address and change address are empty")
 		}
 	}
 

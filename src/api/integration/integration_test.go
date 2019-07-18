@@ -3651,10 +3651,10 @@ func TestDisableWalletAPI(t *testing.T) {
 	}
 
 	// Confirms that no new wallet is created
-	// WALLET_DIR environment variable is set in ci-script/integration-test-disable-wallet-api.sh
-	walletDir := os.Getenv("WALLET_DIR")
+	// API_WALLET_DIR environment variable is set in ci-script/integration-test-disable-wallet-api.sh
+	walletDir := os.Getenv("API_WALLET_DIR")
 	if walletDir == "" {
-		t.Fatal("WALLET_DIR is not set")
+		t.Fatal("API_WALLET_DIR is not set")
 	}
 
 	// Confirms that the wallet directory does not exist

@@ -16,6 +16,7 @@ import { HwWalletDaemonService } from '../../../../services/hw-wallet-daemon.ser
 import { HwRemovePinDialogComponent } from '../hw-remove-pin-dialog/hw-remove-pin-dialog.component';
 import { HwUpdateFirmwareDialogComponent } from '../hw-update-firmware-dialog/hw-update-firmware-dialog.component';
 import { HwUpdateAlertDialogComponent } from '../hw-update-alert-dialog/hw-update-alert-dialog.component';
+import { MsgBarService } from '../../../../services/msg-bar.service';
 
 export interface ChildHwDialogParams {
   wallet: Wallet;
@@ -57,6 +58,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
     private hwWalletService: HwWalletService,
     private dialog: MatDialog,
     private walletService: WalletService,
+    private msgBarService: MsgBarService,
   ) {
     super(hwWalletService, dialogRef);
 
@@ -67,6 +69,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
     super.ngOnDestroy();
     this.removeDialogSubscription();
     this.removeOperationSubscription();
+    this.msgBarService.hide();
   }
 
   hwConnectionChanged(connected: boolean) {
@@ -191,6 +194,10 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
 
       if (!dontUpdateWallet) {
         this.walletName = this.wallet.label;
+      }
+
+      if (response.walletNameUpdated) {
+        this.msgBarService.showWarning('hardware-wallet.general.name-updated');
       }
 
       this.firmwareVersion = response.features.fw_major + '.' + response.features.fw_minor + '.' + response.features.fw_patch;

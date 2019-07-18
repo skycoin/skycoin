@@ -34,6 +34,7 @@ export enum HwSecurityWarnings {
 export interface HwFeaturesResponse {
   features: any;
   securityWarnings: HwSecurityWarnings[];
+  walletNameUpdated: boolean;
 }
 
 export interface PendingTransactions {
@@ -246,8 +247,14 @@ export class WalletService {
           }
         }
 
+        let walletNameUpdated = false;
+
         if (wallet) {
-          wallet.label = result.rawResponse.label ? result.rawResponse.label : (result.rawResponse.deviceId ? result.rawResponse.deviceId : result.rawResponse.device_id);
+          const deviceLabel = result.rawResponse.label ? result.rawResponse.label : (result.rawResponse.deviceId ? result.rawResponse.deviceId : result.rawResponse.device_id);
+          if (wallet.label !== deviceLabel) {
+            wallet.label = deviceLabel;
+            walletNameUpdated = true;
+          }
           wallet.hasHwSecurityWarnings = hasHwSecurityWarnings;
           this.saveHardwareWallets();
         }
@@ -255,6 +262,7 @@ export class WalletService {
         const response = {
           features: result.rawResponse,
           securityWarnings: warnings,
+          walletNameUpdated: walletNameUpdated,
         };
 
         return response;

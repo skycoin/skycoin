@@ -126,10 +126,10 @@ func LoadConfig() (Config, error) {
 	}
 
 	if os.Getenv("WALLET_DIR") != "" {
-		return Config{}, errors.New("WALLET_DIR has been removed from the CLI tool. Please review the update CLI docs to learn how to specify the wallet file for your desired action.")
+		return Config{}, errors.New("the envvar WALLET_DIR is no longer recognized by the CLI tool. Please review the updated CLI docs to learn how to specify the wallet file for your desired action")
 	}
 	if os.Getenv("WALLET_NAME") != "" {
-		return Config{}, errors.New("WALLET_NAME has been removed from the CLI tool. Please review the update CLI docs to learn how to specify the wallet file for your desired action.")
+		return Config{}, errors.New("the envvar WALLET_NAME is no longer recognized by the CLI tool. Please review the updated CLI docs to learn how to specify the wallet file for your desired action")
 	}
 
 	return Config{

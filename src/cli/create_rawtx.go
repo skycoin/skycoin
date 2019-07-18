@@ -1,27 +1,25 @@
 package cli
 
 import (
+	"encoding/csv"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/spf13/cobra"
+
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/mathutil"
-
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
-
-	"encoding/csv"
-	"encoding/json"
-
-	"github.com/spf13/cobra"
 )
 
 var (
@@ -42,21 +40,20 @@ type sendAmountJSON struct {
 
 func createRawTxnCmd() *cobra.Command {
 	createRawTxnCmd := &cobra.Command{
-		Short: "Create a raw transaction to be broadcast to the network later",
-		Use:   "createRawTransaction [flags] [to address] [amount]",
-		Long: fmt.Sprintf(`Note: The [amount] argument is the coins you will spend, 1 coins = 1e6 droplets.
-    The default wallet (%s) will be used if no wallet and address was specified.
+		Short: "Create a raw transaction that can be broadcast to the network later",
+		Use:   "createRawTransaction [wallet] [to address] [amount]",
+		Long: `Create a raw transaction that can be broadcast to the network later.
 
-    If you are sending from a wallet the coins will be taken iteratively
-    from all addresses within the wallet starting with the first address until
-    the amount of the transaction is met.
+    Note: The [amount] argument is the coins you will spend, with decimal formatting, e.g. 1, 1.001 or 1.000000.
+
+    The [to address] and [amount] arguments can be replaced with the --many/-m or the --csv option.
 
     Use caution when using the "-p" command. If you have command history enabled
     your wallet encryption password can be recovered from the history log. If you
     do not include the "-p" option you will be prompted to enter your password
-    after you enter your command.`, cliConfig.FullWalletPath()),
+    after you enter your command.`,
 		SilenceUsage: true,
-		Args:         cobra.MinimumNArgs(0),
+		Args:         cobra.MinimumNArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
 			jsonOutput, err := c.Flags().GetBool("json")
 			if err != nil {
@@ -92,10 +89,9 @@ func createRawTxnCmd() *cobra.Command {
 		},
 	}
 
-	createRawTxnCmd.Flags().StringP("wallet-file", "f", "", "wallet file or path. If no path is specified your default wallet path will be used.")
-	createRawTxnCmd.Flags().StringP("address", "a", "", "From address")
-	createRawTxnCmd.Flags().StringP("change-address", "c", "", `Specify different change address.
-By default the from address or a wallets coinbase address will be used.`)
+	createRawTxnCmd.Flags().StringP("from-address", "a", "", "From address in wallet")
+	createRawTxnCmd.Flags().StringP("change-address", "c", "", `Specify the change address.
+Defaults to one of the spending addresses (deterministic wallets) or to a new change address (bip44 wallets).`)
 	createRawTxnCmd.Flags().StringP("many", "m", "", `use JSON string to set multiple receive addresses and coins,
 example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20"}]'`)
 	createRawTxnCmd.Flags().StringP("password", "p", "", "Wallet password")
@@ -110,24 +106,14 @@ type walletAddress struct {
 	Address string
 }
 
-func fromWalletOrAddress(c *cobra.Command) (walletAddress, error) {
-	walletFile, err := c.Flags().GetString("wallet-file")
-	if err != nil {
-		return walletAddress{}, nil
-	}
-
-	address, err := c.Flags().GetString("address")
-	if err != nil {
-		return walletAddress{}, nil
-	}
-
-	wlt, err := resolveWalletPath(cliConfig, walletFile)
+func fromWalletOrAddress(c *cobra.Command, walletFile string) (walletAddress, error) {
+	address, err := c.Flags().GetString("from-address")
 	if err != nil {
 		return walletAddress{}, err
 	}
 
 	wltAddr := walletAddress{
-		Wallet: wlt,
+		Wallet: walletFile,
 	}
 
 	wltAddr.Address = address
@@ -161,7 +147,7 @@ func getChangeAddress(wltAddr walletAddress, chgAddr string) (string, error) {
 				return "", errors.New("no change address was found")
 			}
 		default:
-			return "", errors.New("both wallet file, from address and change address are empty")
+			return "", errors.New("wallet file, from address and change address are empty")
 		}
 	}
 
@@ -315,7 +301,7 @@ type createRawTxnArgs struct {
 }
 
 func parseCreateRawTxnArgs(c *cobra.Command, args []string) (*createRawTxnArgs, error) {
-	wltAddr, err := fromWalletOrAddress(c)
+	wltAddr, err := fromWalletOrAddress(c, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -329,7 +315,7 @@ func parseCreateRawTxnArgs(c *cobra.Command, args []string) (*createRawTxnArgs, 
 		return nil, err
 	}
 
-	toAddrs, err := getToAddresses(c, args)
+	toAddrs, err := getToAddresses(c, args[1:])
 	if err != nil {
 		return nil, err
 	}

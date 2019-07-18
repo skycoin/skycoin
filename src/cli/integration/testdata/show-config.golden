@@ -1,6 +1,4 @@
 {
-	"wallet_directory": "IGNORED/.skycoin/wallets",
-	"wallet_name": "skycoin_cli.wlt",
 	"data_directory": "IGNORED/.skycoin",
 	"coin": "skycoin",
 	"rpc_address": "http://127.0.0.1:1024"

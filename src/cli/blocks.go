@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"strconv"
 
-	gcli "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 )
 
-func blocksCmd() *gcli.Command {
-	blocksCmd := &gcli.Command{
+func blocksCmd() *cobra.Command {
+	blocksCmd := &cobra.Command{
 		Short:                 "Lists the content of a single block or a range of blocks",
 		Use:                   "blocks [starting block or single block seq] [ending block seq]",
-		Args:                  gcli.RangeArgs(1, 2),
+		Args:                  cobra.RangeArgs(1, 2),
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		RunE:                  getBlocks,
@@ -20,7 +20,7 @@ func blocksCmd() *gcli.Command {
 	return blocksCmd
 }
 
-func getBlocks(_ *gcli.Command, args []string) error {
+func getBlocks(_ *cobra.Command, args []string) error {
 	var start, end string
 	start = args[0]
 

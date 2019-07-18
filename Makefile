@@ -1,5 +1,13 @@
 .DEFAULT_GOAL := help
-.PHONY: run run-help test test-386 test-amd64 check check-newcoin
+.PHONY: run-client run-daemon run-help
+.PHONY: test test-386 test-amd64
+.PHONY: check check-newcoin
+.PHONY: run-integration-test-live
+.PHONY: run-integration-test-live-disable-csrf
+.PHONY: run-integration-test-live-disable-networking
+.PHONY: run-integration-test-live-cover
+.PHONY: run-integration-test-live-cover-disable-csrf
+.PHONY: run-integration-test-live-cover-disable-networking
 .PHONY: integration-tests-stable
 .PHONY: integration-test-stable
 .PHONY: integration-test-stable-disable-csrf
@@ -37,8 +45,20 @@ run-help: ## Show skycoin node help
 run-integration-test-live: ## Run the skycoin node configured for live integration tests
 	./ci-scripts/run-live-integration-test-node.sh
 
+run-integration-test-live-disable-csrf: ## Run the skycoin node configured for live integration tests with CSRF disabled
+	./ci-scripts/run-live-integration-test-node.sh -disable-csrf
+
+run-integration-test-live-disable-networking: ## Run the skycoin node configured for live integration tests with networking disabled
+	./ci-scripts/run-live-integration-test-node.sh -disable-networking
+
 run-integration-test-live-cover: ## Run the skycoin node configured for live integration tests with coverage
 	./ci-scripts/run-live-integration-test-node-cover.sh
+
+run-integration-test-live-cover-disable-csrf: ## Run the skycoin node configured for live integration tests with CSRF disabled and with coverage
+	./ci-scripts/run-live-integration-test-node-cover.sh -disable-csrf
+
+run-integration-test-live-cover-disable-networking: ## Run the skycoin node configured for live integration tests with networking disabled and with coverage
+	./ci-scripts/run-live-integration-test-node-cover.sh -disable-networking
 
 test: ## Run tests for Skycoin
 	@mkdir -p coverage/

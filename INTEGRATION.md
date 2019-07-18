@@ -170,7 +170,7 @@ See [CLI command API](cmd/cli/README.md) for documentation of the CLI interface.
 
 To perform a send, the preferred method follows these steps in a loop:
 
-* `skycoin-cli createRawTransaction -m '[{"addr:"$addr1,"coins:"$coins1"}, ...]` - `-m` flag is send-to-many
+* `skycoin-cli createRawTransaction $WALLET_FILE -m '[{"addr:"$addr1,"coins:"$coins1"}, ...]` - `-m` flag is send-to-many
 * `skycoin-cli broadcastTransaction` - returns `txid`
 * `skycoin-cli transaction $txid` - repeat this command until `"status"` is `"confirmed"`
 
@@ -317,7 +317,7 @@ If you already have an xpub key, you can skip to step 3.
 #### Using the CLI
 
 ```sh
-WALLET_NAME=mywallet.wlt skycoin-cli -t bip44
+skycoin-cli bip44-wallet.wlt -t bip44
 ```
 
 #### Using the REST API
@@ -329,7 +329,7 @@ WALLET_NAME=mywallet.wlt skycoin-cli -t bip44
 #### Using the CLI
 
 ```sh
-skycoin-cli walletKeyExport -k xpub --path "0/0" ~/.skycoin/wallets/mywallet.wlt
+skycoin-cli walletKeyExport bip44-wallet.wlt -k xpub --path "0/0"
 ```
 
 #### Using the REST API
@@ -341,7 +341,7 @@ Not possible
 #### Using the CLI
 
 ```sh
-skycoin-cli walletCreate -t xpub --xpub $MY_XPUB_KEY
+skycoin-cli walletCreate xpub-wallet.wlt -t xpub --xpub $MY_XPUB_KEY
 ```
 
 #### Using the REST API

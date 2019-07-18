@@ -45,27 +45,17 @@ func (obt byTime) Len() int {
 func walletHisCmd() *cobra.Command {
 	walletHisCmd := &cobra.Command{
 		Short:        "Display the transaction history of specific wallet. Requires skycoin node rpc.",
-		Use:          "walletHistory",
+		Use:          "walletHistory [wallet]",
 		SilenceUsage: true,
-		Args:         cobra.NoArgs,
+		Args:         cobra.ExactArgs(1),
 		RunE:         walletHistoryAction,
 	}
-
-	walletHisCmd.Flags().StringP("wallet-file", "f", "", "wallet file or path. If no path is specified your default wallet path will be used.")
 
 	return walletHisCmd
 }
 
-func walletHistoryAction(c *cobra.Command, _ []string) error {
-	walletFile, err := c.Flags().GetString("wallet-file")
-	if err != nil {
-		return err
-	}
-
-	w, err := resolveWalletPath(cliConfig, walletFile)
-	if err != nil {
-		return err
-	}
+func walletHistoryAction(c *cobra.Command, args []string) error {
+	w := args[0]
 
 	// Get all addresses in the wallet
 	addrs, err := getAddresses(w)

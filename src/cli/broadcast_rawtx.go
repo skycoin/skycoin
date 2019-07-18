@@ -3,17 +3,17 @@ package cli
 import (
 	"fmt"
 
-	gcli "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 )
 
-func broadcastTxCmd() *gcli.Command {
-	return &gcli.Command{
+func broadcastTxCmd() *cobra.Command {
+	return &cobra.Command{
 		Short:                 "Broadcast a raw transaction to the network",
 		Use:                   "broadcastTransaction [raw transaction]",
-		Args:                  gcli.ExactArgs(1),
+		Args:                  cobra.ExactArgs(1),
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
-		RunE: func(_ *gcli.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			rawtx := args[0]
 
 			txid, err := apiClient.InjectEncodedTransaction(rawtx)

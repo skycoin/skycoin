@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	gcli "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/readable"
@@ -34,30 +34,30 @@ type BalanceResult struct {
 	Addresses []AddressBalances `json:"addresses"`
 }
 
-func walletBalanceCmd() *gcli.Command {
-	return &gcli.Command{
+func walletBalanceCmd() *cobra.Command {
+	return &cobra.Command{
 		Short:                 "Check the balance of a wallet",
 		Use:                   "walletBalance [wallet]",
-		Args:                  gcli.ExactArgs(1),
+		Args:                  cobra.ExactArgs(1),
 		DisableFlagsInUseLine: true,
 		RunE:                  checkWltBalance,
 	}
 }
 
-func addressBalanceCmd() *gcli.Command {
-	return &gcli.Command{
+func addressBalanceCmd() *cobra.Command {
+	return &cobra.Command{
 		Short: "Check the balance of specific addresses",
 		Use:   "addressBalance [addresses]",
 		Long: `Check balance of specific addresses, join multiple addresses with space.
     example: addressBalance "$addr1 $addr2 $addr3"`,
-		Args:                  gcli.MinimumNArgs(1),
+		Args:                  cobra.MinimumNArgs(1),
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		RunE:                  addrBalance,
 	}
 }
 
-func checkWltBalance(c *gcli.Command, args []string) error {
+func checkWltBalance(c *cobra.Command, args []string) error {
 	w := args[0]
 	balRlt, err := CheckWalletBalance(apiClient, w)
 	switch err.(type) {
@@ -72,7 +72,7 @@ func checkWltBalance(c *gcli.Command, args []string) error {
 	return printJSON(balRlt)
 }
 
-func addrBalance(_ *gcli.Command, args []string) error {
+func addrBalance(_ *cobra.Command, args []string) error {
 	numArgs := len(args)
 
 	addrs := make([]string, numArgs)

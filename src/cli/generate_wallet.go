@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	gcli "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/bip39"
@@ -21,9 +21,9 @@ const (
 	AlphaNumericSeedLength = 64
 )
 
-func walletCreateCmd() *gcli.Command {
-	walletCreateCmd := &gcli.Command{
-		Args:  gcli.ExactArgs(1),
+func walletCreateCmd() *cobra.Command {
+	walletCreateCmd := &cobra.Command{
+		Args:  cobra.ExactArgs(1),
 		Use:   "walletCreate [wallet]",
 		Short: "Create a new wallet",
 		Long: `Create a new wallet.
@@ -56,7 +56,7 @@ func walletCreateCmd() *gcli.Command {
 	return walletCreateCmd
 }
 
-func generateWalletHandler(c *gcli.Command, args []string) error {
+func generateWalletHandler(c *cobra.Command, args []string) error {
 	wltName := args[0]
 	// wallet filename must have the correct extension
 	if filepath.Ext(wltName) != walletExt {

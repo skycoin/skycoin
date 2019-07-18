@@ -3,14 +3,14 @@ package cli
 import (
 	"path/filepath"
 
-	gcli "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-func decryptWalletCmd() *gcli.Command {
-	decryptWalletCmd := &gcli.Command{
-		Args:  gcli.ExactArgs(1),
+func decryptWalletCmd() *cobra.Command {
+	decryptWalletCmd := &cobra.Command{
+		Args:  cobra.ExactArgs(1),
 		Use:   "decryptWallet [wallet]",
 		Short: "Decrypt a wallet",
 		Long: `Decrypt an encrypted wallet. The decrypted wallet will be written
@@ -21,7 +21,7 @@ func decryptWalletCmd() *gcli.Command {
     do not include the "-p" option you will be prompted to enter your password
     after you enter your command.`,
 		SilenceUsage: true,
-		RunE: func(c *gcli.Command, args []string) error {
+		RunE: func(c *cobra.Command, args []string) error {
 			w := args[0]
 			pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
 

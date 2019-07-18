@@ -4,16 +4,15 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	gcli "github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
 func showSeedCmd() *cobra.Command {
 	showSeedCmd := &cobra.Command{
-		Args:  gcli.ExactArgs(1),
+		Args:  cobra.ExactArgs(1),
 		Use:   "showSeed [wallet]",
-		Short: "Show wallet seed",
+		Short: "Show wallet seed and seed passphrase",
 		Long: `Print the seed and seed passphrase from a wallet.
 
     Use caution when using the "-p" command. If you have command history enabled

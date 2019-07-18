@@ -6,16 +6,16 @@ import (
 	"strconv"
 	"strings"
 
-	gcli "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/bip32"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-func walletKeyExportCmd() *gcli.Command {
-	walletKeyExportCmd := &gcli.Command{
-		Args:  gcli.ExactArgs(1),
+func walletKeyExportCmd() *cobra.Command {
+	walletKeyExportCmd := &cobra.Command{
+		Args:  cobra.ExactArgs(1),
 		RunE:  walletKeyExportHandler,
 		Use:   "walletKeyExport [wallet]",
 		Short: "Export a specific key from an HD wallet",
@@ -43,7 +43,7 @@ func walletKeyExportCmd() *gcli.Command {
 	return walletKeyExportCmd
 }
 
-func walletKeyExportHandler(c *gcli.Command, args []string) error {
+func walletKeyExportHandler(c *cobra.Command, args []string) error {
 	keyType, err := c.Flags().GetString("key")
 	if err != nil {
 		return err

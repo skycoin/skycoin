@@ -140,17 +140,7 @@ func execCommand(args ...string) *exec.Cmd {
 		panic(err)
 	}
 	args = append(args, []string{fmt.Sprintf("--test.coverprofile=../../../coverage/%s", coverprofile)}...)
-	cmd := exec.Command(binaryPath, args...)
-
-	// // Unset WALLET_NAME and WALLET_DIR from the envvars, which are used
-	// // by this integration test but are not used by the CLI tool and will
-	// // cause the CLI tool to fail if set.
-	// // These envvars were used by the CLI tool in the past, but they were removed,
-	// // and using them is now an error.
-	// cmd.Env = append(cmd.Env, "WALLET_DIR=")
-	// cmd.Env = append(cmd.Env, "WALLET_NAME=")
-
-	return cmd
+	return exec.Command(binaryPath, args...)
 }
 
 func execCommandCombinedOutput(args ...string) ([]byte, error) {
@@ -1258,11 +1248,39 @@ func TestLiveListWallets(t *testing.T) {
 	require.NoError(t, err)
 
 	var wlts struct {
-		Wallets []cli.WalletEntry `json:"wallets"`
+		Directory string            `json:"directory"`
+		Wallets   []cli.WalletEntry `json:"wallets"`
 	}
 	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wlts)
 	require.NoError(t, err)
 	require.NotEmpty(t, wlts.Wallets)
+	require.Equal(t, filepath.Dir(fn), wlts.Directory)
+
+	// Defaults to $DATA_DIR/wallets when no arguments are specified
+	output, err = execCommandCombinedOutput("listWallets")
+	require.NoError(t, err)
+
+	cfg := showConfig(t)
+	defaultDir := filepath.Join(cfg.DataDir, "wallets")
+	var wlts2 struct {
+		Directory string            `json:"directory"`
+		Wallets   []cli.WalletEntry `json:"wallets"`
+	}
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&wlts2)
+	require.NoError(t, err)
+	require.NotEmpty(t, wlts2.Wallets)
+	require.Equal(t, defaultDir, wlts2.Directory)
+}
+
+func showConfig(t *testing.T) cli.Config {
+	output, err := execCommandCombinedOutput("showConfig")
+	require.NoError(t, err)
+
+	var ret cli.Config
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&ret)
+	require.NoError(t, err)
+
+	return ret
 }
 
 func TestStableListAddress(t *testing.T) {

@@ -6,15 +6,15 @@ import (
 	"path/filepath"
 	"strings"
 
-	gcli "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-func walletAddAddressesCmd() *gcli.Command {
-	walletAddAddressesCmd := &gcli.Command{
-		Args:  gcli.ExactArgs(1),
+func walletAddAddressesCmd() *cobra.Command {
+	walletAddAddressesCmd := &cobra.Command{
+		Args:  cobra.ExactArgs(1),
 		Use:   "walletAddAddresses [wallet]",
 		Short: "Generate additional addresses for a deterministic, bip44 or xpub wallet",
 		Long: `Generate additional addresses for a deterministic, bip44 or xpub wallet.
@@ -42,7 +42,7 @@ func walletAddAddressesCmd() *gcli.Command {
 	return walletAddAddressesCmd
 }
 
-func generateAddrs(c *gcli.Command, args []string) error {
+func generateAddrs(c *cobra.Command, args []string) error {
 	// get number of address that are need to be generated.
 	num, err := c.Flags().GetUint64("num")
 	if err != nil {

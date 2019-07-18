@@ -3,12 +3,12 @@ package cli
 import (
 	"fmt"
 
-	gcli "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 )
 
-func sendCmd() *gcli.Command {
-	sendCmd := &gcli.Command{
-		Args:  gcli.MinimumNArgs(1),
+func sendCmd() *cobra.Command {
+	sendCmd := &cobra.Command{
+		Args:  cobra.MinimumNArgs(1),
 		Short: "Send skycoin from a wallet or an address to a recipient address",
 		Use:   "send [wallet] [to address] [amount]",
 		Long: `Send skycoin from a wallet or an address to a recipient address.
@@ -25,7 +25,7 @@ func sendCmd() *gcli.Command {
     If you do not include the “-p” option you will be prompted to enter your password
     after you enter your command.`,
 		SilenceUsage: true,
-		RunE: func(c *gcli.Command, args []string) error {
+		RunE: func(c *cobra.Command, args []string) error {
 			rawTxn, err := createRawTxnCmdHandler(c, args)
 			if err != nil {
 				printHelp(c)

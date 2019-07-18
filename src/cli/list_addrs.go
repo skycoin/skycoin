@@ -3,23 +3,23 @@ package cli
 import (
 	"fmt"
 
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/spf13/cobra"
 
-	gcli "github.com/spf13/cobra"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
-func listAddressesCmd() *gcli.Command {
-	return &gcli.Command{
+func listAddressesCmd() *cobra.Command {
+	return &cobra.Command{
 		Short:                 "Lists all addresses in a given wallet",
-		Use:                   "listAddresses [walletName]",
-		Args:                  gcli.ExactArgs(1),
+		Use:                   "listAddresses [wallet]",
+		Args:                  cobra.ExactArgs(1),
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		RunE:                  listAddresses,
 	}
 }
 
-func listAddresses(_ *gcli.Command, args []string) error {
+func listAddresses(_ *cobra.Command, args []string) error {
 	wlt, err := wallet.Load(args[0])
 	if err != nil {
 		return WalletLoadError{err}

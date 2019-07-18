@@ -8,45 +8,45 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 
 - [Install](#install)
 - [Environment Settings](#environment-settings)
-	- [RPC_ADDR](#rpc_addr)
-	- [RPC_USER](#rpc_user)
-	- [RPC_PASS](#rpc_pass)
+    - [RPC_ADDR](#rpc_addr)
+    - [RPC_USER](#rpc_user)
+    - [RPC_PASS](#rpc_pass)
 - [Usage](#usage)
-	- [Add Private Key](#add-private-key)
-	- [Check address balance](#check-address-balance)
-	- [Generate addresses](#generate-addresses)
-	- [Generate distribution addresses for a new fiber coin](#generate-distribution-addresses-for-a-new-fiber-coin)
-	- [Check address outputs](#check-address-outputs)
-	- [Check block data](#check-block-data)
-	- [Check database integrity](#check-database-integrity)
-	- [Create a raw transaction](#create-a-raw-transaction)
-	- [Decode a raw transaction](#decode-a-raw-transaction)
-	- [Encode a JSON transaction](#encode-a-json-transaction)
-	- [Broadcast a raw transaction](#broadcast-a-raw-transaction)
-	- [Create a wallet](#create-a-wallet)
-	- [Add addresses to a wallet](#add-addresses-to-a-wallet)
-	- [Export a specific key from an HD wallet](#export-a-specific-key-from-an-hd-wallet)
-	- [Encrypt Wallet](#encrypt-wallet)
-	- [Examples](#examples)
-	- [Decrypt Wallet](#decrypt-wallet)
-	- [Example](#example)
-	- [Last blocks](#last-blocks)
-	- [List wallet addresses](#list-wallet-addresses)
-	- [List wallets](#list-wallets)
-	- [Rich list](#rich-list)
-	- [Send](#send)
-	- [Show Seed](#show-seed)
-	- [Show Config](#show-config)
-	- [Status](#status)
-	- [Get transaction](#get-transaction)
-	- [Get address transactions](#get-address-transactions)
-	- [Verify address](#verify-address)
-	- [Check wallet balance](#check-wallet-balance)
-	- [List wallet transaction history](#list-wallet-transaction-history)
-	- [List wallet outputs](#list-wallet-outputs)
-	- [Richlist](#richlist)
-	- [Address Count](#address-count)
-	- [CLI version](#cli-version)
+    - [Add Private Key](#add-private-key)
+    - [Check address balance](#check-address-balance)
+    - [Generate addresses](#generate-addresses)
+    - [Generate distribution addresses for a new fiber coin](#generate-distribution-addresses-for-a-new-fiber-coin)
+    - [Check address outputs](#check-address-outputs)
+    - [Check block data](#check-block-data)
+    - [Check database integrity](#check-database-integrity)
+    - [Create a raw transaction](#create-a-raw-transaction)
+    - [Decode a raw transaction](#decode-a-raw-transaction)
+    - [Encode a JSON transaction](#encode-a-json-transaction)
+    - [Broadcast a raw transaction](#broadcast-a-raw-transaction)
+    - [Create a wallet](#create-a-wallet)
+    - [Add addresses to a wallet](#add-addresses-to-a-wallet)
+    - [Export a specific key from an HD wallet](#export-a-specific-key-from-an-hd-wallet)
+    - [Encrypt Wallet](#encrypt-wallet)
+    - [Examples](#examples)
+    - [Decrypt Wallet](#decrypt-wallet)
+    - [Example](#example)
+    - [Last blocks](#last-blocks)
+    - [List wallet addresses](#list-wallet-addresses)
+    - [List wallets](#list-wallets)
+    - [Rich list](#rich-list)
+    - [Send](#send)
+    - [Show Seed](#show-seed)
+    - [Show Config](#show-config)
+    - [Status](#status)
+    - [Get transaction](#get-transaction)
+    - [Get address transactions](#get-address-transactions)
+    - [Verify address](#verify-address)
+    - [Check wallet balance](#check-wallet-balance)
+    - [List wallet transaction history](#list-wallet-transaction-history)
+    - [List wallet outputs](#list-wallet-outputs)
+    - [Richlist](#richlist)
+    - [Address Count](#address-count)
+    - [CLI version](#cli-version)
 
 <!-- /MarkdownTOC -->
 
@@ -128,7 +128,7 @@ COMMANDS:
   richlist              Get skycoin richlist
   send                  Send skycoin from a wallet or an address to a recipient address
   showConfig            Show cli configuration
-  showSeed              Show wallet seed
+  showSeed              Show wallet seed and seed passphrase
   status                Check the status of current skycoin node
   transaction           Show detail info of specific transaction
   verifyAddress         Verify a skycoin address
@@ -1436,7 +1436,7 @@ xpub6FHa3pjLCk84BayeJxFW2SP4XRrFd1JYnxeLeU8EqN3vDfZmbqBqaGJAyiLjTAwm6ZLRQUMv1ZAC
 Encrypt a wallet seed
 
 ```bash
-$ skycoin-cli encryptWallet [flags]
+$ skycoin-cli encryptWallet [wallet] [flags]
 ```
 
 ```
@@ -1448,7 +1448,7 @@ FLAGS:
 ### Examples
 #### Encrypt wallet
 ```bash
-$ skycoin-cli encryptWallet -p test
+$ skycoin-cli encryptWallet $WALLET_FILE -p test
 ```
 
 <details>
@@ -1483,7 +1483,7 @@ $ skycoin-cli encryptWallet -p test
 
 #### Encrypt wallet with different crypto type
 ```bash
-$ skycoin-cli encryptWallet -x sha256-xor -p test
+$ skycoin-cli encryptWallet $WALLET_FILE -x sha256-xor -p test
 ```
 
 <details>
@@ -1521,7 +1521,7 @@ $ skycoin-cli encryptWallet -x sha256-xor -p test
 Decrypt a wallet seed
 
 ```bash
-$ skycoin-cli decryptWallet [flags]
+$ skycoin-cli decryptWallet [wallet] [flags]
 ```
 
 ```
@@ -1531,7 +1531,7 @@ FLAGS:
 
 ### Example
 ```bash
-$ skycoin-cli decryptWallet -p test
+$ skycoin-cli decryptWallet $WALLET_FILE -p test
 ```
 
 <details>
@@ -1811,18 +1811,13 @@ $ skycoin-cli lastBlocks 3
 List addresses in a skycoin wallet.
 
 ```bash
-$ skycoin-cli listAddresses [walletName]
+$ skycoin-cli listAddresses [wallet]
 ```
 
-If no `walletName` is given then default wallet ($HOME/.skycoin/wallets/skycoin_cli.wlt) is used.
+#### Example
 
-> NOTE: The wallet name `skycoin_cli.wlt` or full path `$HOME/.skycoin/wallets/skycoin_cli.wlt` can be used.
-        When only the wallet name is given then the default wallet dir, $HOME/.$COIN/wallets is used.
-
-#### Examples
-##### List addresses of default wallet
 ```bash
-$ skycoin-cli listAddresses
+$ skycoin-cli listAddresses $WALLET_FILE
 ```
 
 <details>
@@ -1842,33 +1837,17 @@ $ skycoin-cli listAddresses
 ```
 </details>
 
-##### List addresses of a specific wallet
-```bash
-$ skycoin-cli listAddresses $WALLET_NAME or $WALLET_PATH
-```
-
-<details>
- <summary>View Output</summary>
-
-```json
-{
- "addresses": [
-     "tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V",
-     "3vbfHxPzMuyFJvgHdAoqmFnyg6k8HiLyxd",
-     "bjN9ckj5HRvgDfcvKNboM8cvohJzy9oXJV"
- ]
-}
-```
-</details>
-
 ### List wallets
-List wallets in the skycoin wallet directory.
+List wallets in the Skycoin wallet directory (`$DATA_DIR/wallets`) or in a specific directory.
 
 ```bash
-$ skycoin-cli listWallets
+$ skycoin-cli listWallets [directory]
 ```
 
-#### Example
+#### Examples
+
+##### List wallets in default wallets directory
+
 ```bash
 $ skycoin-cli listWallets
 ```
@@ -1878,36 +1857,66 @@ $ skycoin-cli listWallets
 
 ```json
 {
- "wallets": [
-     {
-         "name": "2018_02_04_45bc.wlt",
-         "label": "Your Wallet",
-         "address_num": 60
-     },
-     {
-         "name": "2018_03_22_6e61.wlt",
-         "label": "craptopia",
-         "address_num": 3
-     },
-     {
-         "name": "2018_04_01_198c.wlt",
-         "label": "wings",
-         "address_num": 2
-     },
-     {
-         "name": "secret_wallet.wlt",
-         "label": "",
-         "address_num": 1
-     },
-     {
-         "name": "skycoin_cli.wlt",
-         "label": "cli wallet",
-         "address_num": 6
-     }
- ]
+    "directory": "/home/foo/.skycoin/wallets",
+    "wallets": [
+        {
+            "name": "2018_02_04_45bc.wlt",
+            "label": "Your Wallet",
+            "address_num": 60
+        },
+        {
+            "name": "2018_03_22_6e61.wlt",
+            "label": "craptopia",
+            "address_num": 3
+        },
+        {
+            "name": "2018_04_01_198c.wlt",
+            "label": "wings",
+            "address_num": 2
+        },
+        {
+            "name": "secret_wallet.wlt",
+            "label": "",
+            "address_num": 1
+        },
+        {
+            "name": "skycoin_cli.wlt",
+            "label": "cli wallet",
+            "address_num": 6
+        }
+    ]
 }
 ```
 </details>
+
+##### List wallets in specific wallet directory
+
+```bash
+$ skycoin-cli listWallets .
+```
+
+<details>
+ <summary>View Output</summary>
+
+```json
+{
+    "directory": "/home/foo/github.com/skycoin",
+    "wallets": [
+        {
+            "name": "2018_02_04_45bc.wlt",
+            "label": "Your Wallet",
+            "address_num": 60
+        },
+        {
+            "name": "skycoin_cli.wlt",
+            "label": "cli wallet",
+            "address_num": 6
+        }
+    ]
+}
+```
+</details>
+
 
 ### Rich list
 Returns the top N address (default 20) balances (based on unspent outputs). Optionally include distribution addresses (exluded by default).
@@ -2035,9 +2044,7 @@ $ skycoin-cli send $WALLET_FILE -a $FROM_ADDRESS --json $RECIPIENT_ADDRESS $AMOU
 </details>
 
 ### Show Seed
-Show seed of a specified wallet.
-The default wallet `($HOME/wallets/skycoin_cli.wlt)` will be used if no wallet was specified.
-The wallet file is configured through `WALLET_NAME` env var.
+Show seed and seed passphrase of a wallet.
 
 
 ```bash
@@ -2050,16 +2057,52 @@ FLAGS:
   -p, --password string      Wallet password
 ```
 
-#### Example
+#### Examples
+
+##### Wallet with a seed
+
 ```bash
 $ skycoin-cli showSeed $WALLET_FILE
 ```
+
 <details>
  <summary>View Output</summary>
  ```
  eternal turtle seek nominee narrow much melody kite worth giggle shrimp horse
  ```
 </details>
+
+##### Wallet with a seed and a seed passphrase
+
+```bash
+$ skycoin-cli showSeed $WALLET_FILE
+```
+
+<details>
+ <summary>View Output</summary>
+```
+eternal turtle seek nominee narrow much melody kite worth giggle shrimp horse
+mypassphrase
+```
+</details>
+
+##### Wallet with a seed and a seed passphrase in JSON format
+
+```bash
+$ skycoin-cli showSeed $WALLET_FILE -j
+```
+
+<details>
+ <summary>View Output</summary>
+```json
+{
+    "seed": "eternal turtle seek nominee narrow much melody kite worth giggle shrimp horse",
+    "seed_passphrase": "mypassphrase"
+}
+```
+</details>
+
+
 
 ### Show Config
 Show the CLI tool's local configuration.
@@ -2113,8 +2156,8 @@ $ skycoin-cli status
             "commit": "620405485d3276c16c0379bc3b88b588e34c45e1",
             "branch": "develop"
         },
-	    "coin": "skycoin",
-	    "user_agent": "skycoin:0.25.0",
+        "coin": "skycoin",
+        "user_agent": "skycoin:0.25.0",
         "open_connections": 8,
         "outgoing_connections": 5,
         "incoming_connections": 3,
@@ -2653,9 +2696,6 @@ Check the wallet a skycoin wallet.
 $ skycoin-cli walletBalance [wallet]
 ```
 
-> NOTE: Both the full wallet path or only the wallet name can be used.
-        If no wallet is specified then the default wallet: `$HOME/.$COIN/wallets/skycoin_cli.wlt` is used.
-
 #### Example
 ##### Balance of default wallet
 ```bash
@@ -2788,7 +2828,7 @@ $ skycoin-cli walletHistory [wallet]
 #### Example
 
 ```bash
-$ skycoin-cli walletHistory $WALLET_NAME
+$ skycoin-cli walletHistory $WALLET_FILE
 ```
 
 <details>
@@ -2824,7 +2864,7 @@ $ skycoin-cli walletOutputs [wallet]
 #### Example
 
 ```bash
-$ skycoin-cli walletHistory $WALLET_NAME
+$ skycoin-cli walletHistory $WALLET_FILE
 ```
 
 <details>

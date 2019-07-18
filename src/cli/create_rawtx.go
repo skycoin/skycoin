@@ -1,28 +1,25 @@
 package cli
 
 import (
+	"encoding/csv"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/spf13/cobra"
+
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/mathutil"
-
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
-
-	"encoding/csv"
-	"encoding/json"
-
-	"github.com/spf13/cobra"
-	gcli "github.com/spf13/cobra"
 )
 
 var (
@@ -47,7 +44,7 @@ func createRawTxnCmd() *cobra.Command {
 		Use:   "createRawTransaction [wallet] [to address] [amount]",
 		Long: `Create a raw transaction that can be broadcast to the network later.
 
-    Note: The [amount] argument is the coins you will spend, with decimal format, e.g. 1, 1.001 or 1.000000.
+    Note: The [amount] argument is the coins you will spend, with decimal formatting, e.g. 1, 1.001 or 1.000000.
 
     The [to address] and [amount] arguments can be replaced with the --many/-m or the --csv option.
 
@@ -56,7 +53,7 @@ func createRawTxnCmd() *cobra.Command {
     do not include the "-p" option you will be prompted to enter your password
     after you enter your command.`,
 		SilenceUsage: true,
-		Args:         gcli.MinimumNArgs(1),
+		Args:         cobra.MinimumNArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
 			jsonOutput, err := c.Flags().GetBool("json")
 			if err != nil {

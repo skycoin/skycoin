@@ -3,31 +3,31 @@ package cli
 import (
 	"fmt"
 
-	gcli "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-func walletOutputsCmd() *gcli.Command {
-	return &gcli.Command{
+func walletOutputsCmd() *cobra.Command {
+	return &cobra.Command{
 		Short:                 "Display outputs of specific wallet",
 		Use:                   "walletOutputs [wallet]",
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
-		Args:                  gcli.ExactArgs(1),
+		Args:                  cobra.ExactArgs(1),
 		RunE:                  getWalletOutputsCmd,
 	}
 }
 
-func addressOutputsCmd() *gcli.Command {
-	return &gcli.Command{
+func addressOutputsCmd() *cobra.Command {
+	return &cobra.Command{
 		Short: "Display outputs of specific addresses",
 		Use:   "addressOutputs [address list]",
 		Long: `Display outputs of specific addresses, join multiple addresses with space,
     example: addressOutputs $addr1 $addr2 $addr3`,
-		Args:                  gcli.MinimumNArgs(1),
+		Args:                  cobra.MinimumNArgs(1),
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		RunE:                  getAddressOutputsCmd,
@@ -39,7 +39,7 @@ type OutputsResult struct {
 	Outputs readable.UnspentOutputsSummary `json:"outputs"`
 }
 
-func getWalletOutputsCmd(_ *gcli.Command, args []string) error {
+func getWalletOutputsCmd(_ *cobra.Command, args []string) error {
 	outputs, err := GetWalletOutputsFromFile(apiClient, args[0])
 	if err != nil {
 		return err
@@ -50,7 +50,7 @@ func getWalletOutputsCmd(_ *gcli.Command, args []string) error {
 	})
 }
 
-func getAddressOutputsCmd(_ *gcli.Command, args []string) error {
+func getAddressOutputsCmd(_ *cobra.Command, args []string) error {
 	addrs := make([]string, len(args))
 
 	var err error

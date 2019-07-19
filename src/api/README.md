@@ -2377,6 +2377,11 @@ the transaction was saved to the database, when you restart the client, it will 
 
 It is safe to retry the injection after a `503` failure.
 
+To disable the network broadcast, add `"no_broadcast": true` to the JSON request body.
+The transaction will be added to the local transaction pool but not be broadcast at the same time.
+Note that transactions from the pool are periodically announced, so this transaction will still
+be announced eventually if the daemon continues running with connectivity for enough time.
+
 Example:
 
 ```sh
@@ -2390,6 +2395,22 @@ Result:
 ```json
 "3615fc23cc12a5cb9190878a2151d1cf54129ff0cd90e5fc4f4e7debebad6868"
 ```
+
+Example, without broadcasting the transaction:
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v1/injectTransaction -H 'content-type: application/json' -d '{
+    "rawtx":"dc0000000008b507528697b11340f5a3fcccbff031c487bad59d26c2bdaea0cd8a0199a1720100000017f36c9d8bce784df96a2d6848f1b7a8f5c890986846b7c53489eb310090b91143c98fd233830055b5959f60030b3ca08d95f22f6b96ba8c20e548d62b342b5e0001000000ec9cf2f6052bab24ec57847c72cfb377c06958a9e04a077d07b6dd5bf23ec106020000000072116096fe2207d857d18565e848b403807cd825c044840300000000330100000000000000575e472f8c5295e8fa644e9bc5e06ec10351c65f40420f000000000066020000000000000",
+    "no_broadcast": true
+}'
+```
+
+Result:
+
+```json
+"3615fc23cc12a5cb9190878a2151d1cf54129ff0cd90e5fc4f4e7debebad6868"
+```
+
 
 ### Get transactions for addresses
 

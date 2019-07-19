@@ -507,6 +507,7 @@ func (c *Coin) createGUI(gw *api.Gateway, host string) (*api.Server, error) {
 			},
 			Fiber:           c.config.Node.Fiber,
 			DaemonUserAgent: c.config.Node.userAgent,
+			BlockPublisher:  c.config.Node.RunBlockPublisher,
 		},
 		Username: c.config.Node.WebInterfaceUsername,
 		Password: c.config.Node.WebInterfacePassword,

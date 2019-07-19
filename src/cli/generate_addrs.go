@@ -31,8 +31,7 @@ func walletAddAddressesCmd() *cobra.Command {
     history enabled your wallet encryption password can be recovered from the
     history log. If you do not include the "-p" option you will be prompted to
     enter your password after you enter your command.`,
-		SilenceUsage: true,
-		RunE:         generateAddrs,
+		RunE: generateAddrs,
 	}
 
 	walletAddAddressesCmd.Flags().Uint64P("num", "n", 1, "Number of addresses to generate")

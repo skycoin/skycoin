@@ -89,6 +89,7 @@ type HealthConfig struct {
 	BuildInfo       readable.BuildInfo
 	Fiber           readable.FiberConfig
 	DaemonUserAgent useragent.Data
+	BlockPublisher  bool
 }
 
 type muxConfig struct {

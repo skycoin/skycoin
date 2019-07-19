@@ -8,45 +8,46 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 
 - [Install](#install)
 - [Environment Settings](#environment-settings)
-    - [RPC_ADDR](#rpc_addr)
-    - [RPC_USER](#rpc_user)
-    - [RPC_PASS](#rpc_pass)
+	- [RPC_ADDR](#rpc_addr)
+	- [RPC_USER](#rpc_user)
+	- [RPC_PASS](#rpc_pass)
 - [Usage](#usage)
-    - [Add Private Key](#add-private-key)
-    - [Check address balance](#check-address-balance)
-    - [Generate addresses](#generate-addresses)
-    - [Generate distribution addresses for a new fiber coin](#generate-distribution-addresses-for-a-new-fiber-coin)
-    - [Check address outputs](#check-address-outputs)
-    - [Check block data](#check-block-data)
-    - [Check database integrity](#check-database-integrity)
-    - [Create a raw transaction](#create-a-raw-transaction)
-    - [Decode a raw transaction](#decode-a-raw-transaction)
-    - [Encode a JSON transaction](#encode-a-json-transaction)
-    - [Broadcast a raw transaction](#broadcast-a-raw-transaction)
-    - [Create a wallet](#create-a-wallet)
-    - [Add addresses to a wallet](#add-addresses-to-a-wallet)
-    - [Export a specific key from an HD wallet](#export-a-specific-key-from-an-hd-wallet)
-    - [Encrypt Wallet](#encrypt-wallet)
-    - [Examples](#examples)
-    - [Decrypt Wallet](#decrypt-wallet)
-    - [Example](#example)
-    - [Last blocks](#last-blocks)
-    - [List wallet addresses](#list-wallet-addresses)
-    - [List wallets](#list-wallets)
-    - [Rich list](#rich-list)
-    - [Send](#send)
-    - [Show Seed](#show-seed)
-    - [Show Config](#show-config)
-    - [Status](#status)
-    - [Get transaction](#get-transaction)
-    - [Get address transactions](#get-address-transactions)
-    - [Verify address](#verify-address)
-    - [Check wallet balance](#check-wallet-balance)
-    - [List wallet transaction history](#list-wallet-transaction-history)
-    - [List wallet outputs](#list-wallet-outputs)
-    - [Richlist](#richlist)
-    - [Address Count](#address-count)
-    - [CLI version](#cli-version)
+	- [Add Private Key](#add-private-key)
+	- [Check address balance](#check-address-balance)
+	- [Generate addresses](#generate-addresses)
+	- [Generate distribution addresses for a new fiber coin](#generate-distribution-addresses-for-a-new-fiber-coin)
+	- [Check address outputs](#check-address-outputs)
+	- [Check block data](#check-block-data)
+	- [Check database integrity](#check-database-integrity)
+	- [Create a raw transaction](#create-a-raw-transaction)
+	- [Decode a raw transaction](#decode-a-raw-transaction)
+	- [Encode a JSON transaction](#encode-a-json-transaction)
+	- [Broadcast a raw transaction](#broadcast-a-raw-transaction)
+	- [Create a wallet](#create-a-wallet)
+	- [Add addresses to a wallet](#add-addresses-to-a-wallet)
+	- [Export a specific key from an HD wallet](#export-a-specific-key-from-an-hd-wallet)
+	- [Encrypt Wallet](#encrypt-wallet)
+	- [Examples](#examples)
+	- [Decrypt Wallet](#decrypt-wallet)
+	- [Example](#example)
+	- [Last blocks](#last-blocks)
+	- [List wallet addresses](#list-wallet-addresses)
+	- [List wallets](#list-wallets)
+	- [Rich list](#rich-list)
+	- [Send](#send)
+	- [Show Seed](#show-seed)
+	- [Show Config](#show-config)
+	- [Status](#status)
+	- [Get transaction](#get-transaction)
+	- [Get address transactions](#get-address-transactions)
+	- [Verify address](#verify-address)
+	- [Check wallet balance](#check-wallet-balance)
+	- [List wallet transaction history](#list-wallet-transaction-history)
+	- [List wallet outputs](#list-wallet-outputs)
+	- [Richlist](#richlist)
+	- [Address Count](#address-count)
+	- [CLI version](#cli-version)
+	- [Distribute coins from genesis block](#distribute-coins-from-genesis-block)
 
 <!-- /MarkdownTOC -->
 
@@ -109,7 +110,7 @@ COMMANDS:
   addressGen            Generate skycoin or bitcoin addresses
   addressOutputs        Display outputs of specific addresses
   addressTransactions   Show detail for transaction associated with one or more specified addresses
-  addresscount          Get the count of addresses with unspent outputs (coins).
+  addresscount          Get the count of addresses with unspent outputs (coins)
   blocks                Lists the content of a single block or a range of blocks
   broadcastTransaction  Broadcast a raw transaction to the network
   checkDBDecoding       Verify the database data encoding
@@ -117,6 +118,7 @@ COMMANDS:
   createRawTransaction  Create a raw transaction that can be broadcast to the network later
   decodeRawTransaction  Decode raw transaction
   decryptWallet         Decrypt a wallet
+  distributeGenesis     Distributes the genesis block coins into the configured distribution addresses
   encodeJsonTransaction Encode JSON transaction
   encryptWallet         Encrypt wallet
   fiberAddressGen       Generate addresses and seeds for a new fiber coin
@@ -129,7 +131,7 @@ COMMANDS:
   send                  Send skycoin from a wallet or an address to a recipient address
   showConfig            Show cli configuration
   showSeed              Show wallet seed and seed passphrase
-  status                Check the status of current skycoin node
+  status                Check the status of current Skycoin node
   transaction           Show detail info of specific transaction
   verifyAddress         Verify a skycoin address
   verifyTransaction     Verify if the specific transaction is spendable
@@ -3025,5 +3027,34 @@ $ skycoin-cli version --json
     "rpc": "0.23.0",
     "wallet": "0.23.0"
 }
+```
+</details>
+
+### Distribute coins from genesis block
+
+Distribute the genesis block coins into the configured distribution addresses.
+This is part of the fiber coin initialization procedure. After creating genesis
+key configuration and running the initial node, use this command to divide the
+genesis block into distribution addresses.
+
+```bash
+$ skycoin-cli distributeGenesis [genesis address secret key]
+```
+
+The secret key is the secret key of the genesis address, which you would have
+created when setting up the genesis block parameters.
+
+#### Example
+
+```bash
+$ skycoin-cli distributeGenesis 87b2ae65a7475481f73288b617242261e2a451815e1c6a5478862dbb95e23e3e
+```
+
+<details>
+ <summary>View Output</summary>
+
+There is no output in the terminal if the command succeeds.
+
+```
 ```
 </details>

@@ -20,7 +20,7 @@ type ConfigStatus struct {
 func statusCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:                   "status",
-		Short:                 "Check the status of current skycoin node",
+		Short:                 "Check the status of current Skycoin node",
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		Args:                  cobra.NoArgs,

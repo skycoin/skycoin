@@ -6,7 +6,7 @@ import (
 
 func addresscountCmd() *cobra.Command {
 	return &cobra.Command{
-		Short:                 "Get the count of addresses with unspent outputs (coins).",
+		Short:                 "Get the count of addresses with unspent outputs (coins)",
 		Long:                  "Returns the count of all addresses that currently have unspent outputs (coins) associated with them.",
 		Use:                   "addresscount",
 		Args:                  cobra.NoArgs,

@@ -1221,7 +1221,6 @@ func (dm *Daemon) BroadcastUserTransaction(txn coin.Transaction, head *coin.Sign
 	}
 
 	accepts, err := checkBroadcastTxnRecipients(dm.connections, ids, txn, head, inputs)
-
 	if err != nil {
 		logger.WithError(err).Error("BroadcastUserTransaction")
 		return err
@@ -1764,7 +1763,10 @@ func (dm *Daemon) GetBlockchainProgress(headSeq uint64) *BlockchainProgress {
 }
 
 // InjectBroadcastTransaction injects transaction to the unconfirmed pool and broadcasts it.
-// If the transaction violates either hard or soft constraints, it is not broadcast.
+// If the transaction violates either hard or soft constraints, it is neither injected nor broadcast.
+// If the broadcast fails (due to no connections), the transaction is not injected.
+// However, the broadcast may fail in practice, without returning an error,
+// so this is not foolproof.
 // This method is to be used by user-initiated transaction injections.
 // For transactions received over the network, use daemon.injectTransaction and check the result to
 // decide on repropagation.
@@ -1783,4 +1785,14 @@ func (dm *Daemon) InjectBroadcastTransaction(txn coin.Transaction) error {
 
 		return nil
 	})
+}
+
+// InjectTransaction injects transaction to the unconfirmed pool but does not broadcast it.
+// If the transaction violates either hard or soft constraints, it is not injected.
+// This method is to be used by user-initiated transaction injections.
+// For transactions received over the network, use daemon.injectTransaction and check the result to
+// decide on repropagation.
+func (dm *Daemon) InjectTransaction(txn coin.Transaction) error {
+	_, _, _, err := dm.visor.InjectUserTransaction(txn)
+	return err
 }

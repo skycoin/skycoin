@@ -1170,6 +1170,20 @@ func (_m *MockGatewayer) InjectBroadcastTransaction(txn coin.Transaction) error 
 	return r0
 }
 
+// InjectTransaction provides a mock function with given fields: txn
+func (_m *MockGatewayer) InjectTransaction(txn coin.Transaction) error {
+	ret := _m.Called(txn)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(coin.Transaction) error); ok {
+		r0 = rf(txn)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // NewAddresses provides a mock function with given fields: wltID, password, n
 func (_m *MockGatewayer) NewAddresses(wltID string, password []byte, n uint64) ([]cipher.Address, error) {
 	ret := _m.Called(wltID, password, n)

@@ -52,6 +52,7 @@ type Daemoner interface {
 	GetExchgConnection() []string
 	GetBlockchainProgress(headSeq uint64) *daemon.BlockchainProgress
 	InjectBroadcastTransaction(txn coin.Transaction) error
+	InjectTransaction(txn coin.Transaction) error
 }
 
 // Visorer interface for visor.Visor methods used by the API

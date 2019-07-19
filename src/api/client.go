@@ -1081,13 +1081,33 @@ func (c *Client) InjectTransaction(txn *coin.Transaction) (string, error) {
 	return c.InjectEncodedTransaction(rawTxn)
 }
 
+// InjectTransactionNoBroadcast makes a request to POST /api/v1/injectTransaction
+// but does not broadcast the transaction.
+func (c *Client) InjectTransactionNoBroadcast(txn *coin.Transaction) (string, error) {
+	rawTxn, err := txn.SerializeHex()
+	if err != nil {
+		return "", err
+	}
+	return c.InjectEncodedTransactionNoBroadcast(rawTxn)
+}
+
 // InjectEncodedTransaction makes a request to POST /api/v1/injectTransaction.
 // rawTxn is a hex-encoded, serialized transaction
 func (c *Client) InjectEncodedTransaction(rawTxn string) (string, error) {
-	v := struct {
-		Rawtxn string `json:"rawtx"`
-	}{
-		Rawtxn: rawTxn,
+	return c.injectEncodedTransaction(rawTxn, false)
+}
+
+// InjectEncodedTransactionNoBroadcast makes a request to POST /api/v1/injectTransaction
+// but does not broadcast the transaction.
+// rawTxn is a hex-encoded, serialized transaction
+func (c *Client) InjectEncodedTransactionNoBroadcast(rawTxn string) (string, error) {
+	return c.injectEncodedTransaction(rawTxn, true)
+}
+
+func (c *Client) injectEncodedTransaction(rawTxn string, noBroadcast bool) (string, error) {
+	v := InjectTransactionRequest{
+		RawTxn:      rawTxn,
+		NoBroadcast: noBroadcast,
 	}
 
 	var txid string

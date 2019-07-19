@@ -28,6 +28,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add the "bulk send" option to the GUI advanced form
 - Add `cli walletKeyExport` command to export `xpub`, `xprv`, `pub` and `prv` key from a `bip44` wallet
 - Add `xpub` type wallet, which can generate addresses without exposing private keys
+- Add `block_publisher` flag to `/api/v1/health`
+- Add `no_broadcast` option to `POST /api/v1/injectTransaction` to disable broadcast of the transaction. The transaction will only be added to the local pool.
+- Add `cli distributeGenesis` command to split the genesis block into distribution addresses when setting up a new fiber coin
 
 ### Fixed
 

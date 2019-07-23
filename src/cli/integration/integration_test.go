@@ -627,26 +627,31 @@ func TestEncodeJSONTransaction(t *testing.T) {
 		return
 	}
 
-	tt := []struct {
-		name       string
-		rawTx      string
-		goldenFile string
-		errMsg     []byte
-	}{
-		{
-			name:       "encode success",
-			rawTx:      "2601000000a1d3345ac47f897f24084b1c6b9bd6e03fc92887050d0748bdab5e639c1fdcd401000000a2a10f07e0e06cf6ba3e793b3186388a126591ee230b3f387617f1ccb6376a3f18e094bd3f7719aa8191c00764f323872f5192da393852bd85dab70b13409d2b01010000004d78de698a33abcfff22391c043b57a56bb0efbdc4a5b975bf8e7889668896bc0400000000bae12bbf671abeb1181fc85f1c01cdfee55deb97980c9c0a00000000543600000000000000373bb3675cbf3880bba3f3de7eb078925b8a72ad0095ba0a000000001c12000000000000008829025fe45b48f29795893a642bdaa89b2bb40e40d2df03000000001c12000000000000008001532c3a705e7e62bb0bb80630ecc21a87ec09c0fc9b01000000001b12000000000000",
-			goldenFile: "decode-raw-transaction.golden",
-		},
-	}
-
 	pathToGoldenFile := func(filename string) string {
 		return filepath.Join(testFixturesDir, filename)
 	}
 
+	tt := []struct {
+		name   string
+		rawTx  string
+		errMsg []byte
+		args   []string
+	}{
+		{
+			name:  "encode success",
+			rawTx: "2601000000a1d3345ac47f897f24084b1c6b9bd6e03fc92887050d0748bdab5e639c1fdcd401000000a2a10f07e0e06cf6ba3e793b3186388a126591ee230b3f387617f1ccb6376a3f18e094bd3f7719aa8191c00764f323872f5192da393852bd85dab70b13409d2b01010000004d78de698a33abcfff22391c043b57a56bb0efbdc4a5b975bf8e7889668896bc0400000000bae12bbf671abeb1181fc85f1c01cdfee55deb97980c9c0a00000000543600000000000000373bb3675cbf3880bba3f3de7eb078925b8a72ad0095ba0a000000001c12000000000000008829025fe45b48f29795893a642bdaa89b2bb40e40d2df03000000001c12000000000000008001532c3a705e7e62bb0bb80630ecc21a87ec09c0fc9b01000000001b12000000000000",
+			args:  []string{"encodeJsonTransaction", pathToGoldenFile("decode-raw-transaction.golden")},
+		},
+		{
+			name:  "encode recompute success",
+			rawTx: "b7000000006b1a69b76b2412314b2b928ad5e97c31c034be5734f9fa77f31f11b6b933b97601000000ddf4bd79f66ea9c7849c5240a27d9a4745ad4661bdac2179184447088512bb3e62c89efa4fd2cee05980c59b38ef23ddbd09bb77e54e94a0f9123d968a090d420101000000f7c183c1823266aff172928f8d06aa65531643456f97ccca6bd34d15e92fac7d01000000000421aa1694a5b04955781d91880d16c0e9c4227ae8030000000000001600000000000000",
+			args:  []string{"encodeJsonTransaction", "--fix", pathToGoldenFile("recompute-transaction-hash.golden")},
+		},
+	}
+
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			output, err := execCommandCombinedOutput("encodeJsonTransaction", pathToGoldenFile(tc.goldenFile))
+			output, err := execCommandCombinedOutput(tc.args...)
 			if err != nil {
 				require.Error(t, err, "exit status 1")
 				require.Equal(t, tc.errMsg, output)

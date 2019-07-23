@@ -7,6 +7,8 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/skycoin/skycoin/src/util/droplet"
+
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -108,6 +110,20 @@ func encodeJSONTxnCmd() *cobra.Command {
 				return fmt.Errorf("invalid JSON transaction: %v", err)
 			}
 
+			// fixHashes recomputes the txn hashes
+			// the recomputation of hash is needed when txn info for e.g. the sig is changed
+			fixHashes, err := c.Flags().GetBool("fix")
+			if err != nil {
+				return err
+			}
+
+			if fixHashes {
+				err = recomputeHashes(&rTxn)
+				if err != nil {
+					return err
+				}
+			}
+
 			txn, err := readableToCreatedTransaction(&rTxn).ToTransaction()
 			if err != nil {
 				return err
@@ -128,6 +144,7 @@ func encodeJSONTxnCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format.")
+	cmd.Flags().BoolP("fix", "f", false, "Recompute transaction inner and outer hashes")
 	return cmd
 }
 
@@ -158,6 +175,68 @@ func readableToCreatedTransaction(rTxn *readable.Transaction) *api.CreatedTransa
 		Out:       outputs,
 	}
 	return &cTxn
+}
+
+func recomputeHashes(rTxn *readable.Transaction) error {
+	t := coin.Transaction{}
+
+	t.Length = rTxn.Length
+	t.Type = rTxn.Type
+
+	var err error
+
+	sigs := make([]cipher.Sig, len(rTxn.Sigs))
+	for i, s := range rTxn.Sigs {
+		sigs[i], err = cipher.SigFromHex(s)
+		if err != nil {
+			return err
+		}
+	}
+
+	t.Sigs = sigs
+
+	in := make([]cipher.SHA256, len(rTxn.In))
+	for i, UxID := range rTxn.In {
+		in[i], err = cipher.SHA256FromHex(UxID)
+		if err != nil {
+			return err
+		}
+	}
+
+	t.In = in
+
+	out := make([]coin.TransactionOutput, len(rTxn.Out))
+	for i, o := range rTxn.Out {
+		addr, err := cipher.DecodeBase58Address(o.Address)
+		if err != nil {
+			return err
+		}
+
+		coins, err := droplet.FromString(o.Coins)
+		if err != nil {
+			return err
+		}
+
+		out[i] = coin.TransactionOutput{
+			Address: addr,
+			Coins:   coins,
+			Hours:   o.Hours,
+		}
+	}
+
+	t.Out = out
+
+	// recompute inner hash
+	rTxn.InnerHash = t.HashInner().Hex()
+	t.InnerHash, err = cipher.SHA256FromHex(rTxn.InnerHash)
+	if err != nil {
+		return err
+	}
+
+	// recompute txid
+	rTxn.Hash = t.Hash().Hex()
+
+	return nil
 }
 
 func addressTransactionsCmd() *cobra.Command {

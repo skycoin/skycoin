@@ -191,7 +191,82 @@ func (r *CreatedTransaction) ToTransaction() (*coin.Transaction, error) {
 	}
 
 	if t.Hash() != hash {
-		return nil, errors.New("readable.Transaction.Hash does not match parsed transaction hash")
+		return nil, fmt.Errorf("readable.Transaction.Hash %s does not match parsed transaction hash %s", t.Hash().Hex(), hash.Hex())
+	}
+
+	return &t, nil
+}
+
+// ToRecomputedTransaction recomputes the transaction hashes
+func (r *CreatedTransaction) ToRecomputedTransaction() (*coin.Transaction, error) {
+	t := coin.Transaction{}
+
+	t.Length = r.Length
+	t.Type = r.Type
+
+	var err error
+	sigs := make([]cipher.Sig, len(r.Sigs))
+	for i, s := range r.Sigs {
+		sigs[i], err = cipher.SigFromHex(s)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	t.Sigs = sigs
+
+	in := make([]cipher.SHA256, len(r.In))
+	for i, n := range r.In {
+		in[i], err = cipher.SHA256FromHex(n.UxID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	t.In = in
+
+	out := make([]coin.TransactionOutput, len(r.Out))
+	for i, o := range r.Out {
+		addr, err := cipher.DecodeBase58Address(o.Address)
+		if err != nil {
+			return nil, err
+		}
+
+		coins, err := droplet.FromString(o.Coins)
+		if err != nil {
+			return nil, err
+		}
+
+		hours, err := strconv.ParseUint(o.Hours, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		out[i] = coin.TransactionOutput{
+			Address: addr,
+			Coins:   coins,
+			Hours:   hours,
+		}
+	}
+
+	t.Out = out
+
+	// recompute hashes
+	r.InnerHash = t.HashInner().Hex()
+	r.TxID = t.Hash().Hex()
+
+	t.InnerHash, err = cipher.SHA256FromHex(r.InnerHash)
+	if err != nil {
+		return nil, err
+	}
+
+	hash, err := cipher.SHA256FromHex(r.TxID)
+	if err != nil {
+		return nil, err
+	}
+
+	if t.Hash() != hash {
+		return nil, fmt.Errorf("readable.Transaction.Hash %s does not match parsed transaction hash %s", t.Hash().Hex(), hash.Hex())
 	}
 
 	return &t, nil

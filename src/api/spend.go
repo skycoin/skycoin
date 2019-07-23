@@ -205,6 +205,7 @@ func (r *CreatedTransaction) ToRecomputedTransaction() (*coin.Transaction, error
 	t.Type = r.Type
 
 	var err error
+
 	sigs := make([]cipher.Sig, len(r.Sigs))
 	for i, s := range r.Sigs {
 		sigs[i], err = cipher.SigFromHex(s)
@@ -251,14 +252,16 @@ func (r *CreatedTransaction) ToRecomputedTransaction() (*coin.Transaction, error
 
 	t.Out = out
 
-	// recompute hashes
+	// recompute inner hash
 	r.InnerHash = t.HashInner().Hex()
-	r.TxID = t.Hash().Hex()
 
 	t.InnerHash, err = cipher.SHA256FromHex(r.InnerHash)
 	if err != nil {
 		return nil, err
 	}
+
+	// recompute txid
+	r.TxID = t.Hash().Hex()
 
 	hash, err := cipher.SHA256FromHex(r.TxID)
 	if err != nil {

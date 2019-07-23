@@ -780,6 +780,7 @@ $ skycoin-cli encodeJsonTransaction [file path or -]
 ```
 FLAGS:
   -j, --json                    Returns the results in JSON format.
+  -f, --fix                     Recompute transaction inner and outer hashes
 ```
 
 #### Example
@@ -862,6 +863,32 @@ dc00000000247bd0f0a1cf39fa51ea3eca044e4d9cbb28fff5376e90e2eb008c9fe0af3843010000
 ```
 
 </details>
+
+##### Recompute Hashes
+```bash
+$ echo '  {
+        "length": 183,
+        "type": 0,
+        "txid": "9b102b8a9882cd5dc2df8955fc1b8a1a75e11b9de61d272313c4da822920872b",
+        "inner_hash": "6b1a69b76b2412314b2b928ad5e97c31c034be5734f9fa77f31f11b6b933b976",
+        "sigs": [
+            "ddf4bd79f66ea9c7849c5240a27d9a4745ad4661bdac2179184447088512bb3e62c89efa4fd2cee05980c59b38ef23ddbd09bb77e54e94a0f9123d968a090d4201"
+        ],
+        "inputs": [
+            f7c183c1823266aff172928f8d06aa65531643456f97ccca6bd34d15e92fac7d"
+        ],
+        "outputs": [
+            {
+                "uxid": "d1e30a79ebaac4948c69ce8f61714320f996193544a815b58b6837bade5d86c3",
+                "dst": "2fRQzhdNP2QMG75GkZnm44H649QBcj2mZY",
+                "coins": "0.001000",
+                "hours": 22
+            }
+        ]
+    }' > $FILEPATH
+
+$ skycoin-cli encodeJsonTransaction -f $FILEPATH
+```
 
 ##### Generate a JSON output
 ```bash

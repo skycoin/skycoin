@@ -108,7 +108,8 @@ func encodeJSONTxnCmd() *cobra.Command {
 				return fmt.Errorf("invalid JSON transaction: %v", err)
 			}
 
-			// fixHashes recomputes the txn hashes if the txn info has been modified
+			// fixHashes recomputes the txn hashes
+			// the recomputation of hash is needed when txn info for e.g. the sig is changed
 			fixHashes, err := c.Flags().GetBool("fix")
 			if err != nil {
 				return err

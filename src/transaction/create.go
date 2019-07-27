@@ -453,12 +453,18 @@ func VerifyCreatedInvariants(p Params, txn *coin.Transaction, inputs []UxBalance
 			return errors.New("Calculated input hours are unexpectedly less than the initial hours")
 		}
 
-		if i.SrcTransaction.Null() {
-			return errors.New("Input's source transaction is a null hash")
+		if i.BkSeq == 0 {
+			if !i.SrcTransaction.Null() {
+				return errors.New("Input is the genesis UTXO but its source transaction hash is not null")
+			}
+		} else {
+			if i.SrcTransaction.Null() {
+				return errors.New("Input's source transaction hash is null")
+			}
 		}
 
 		if i.Hash.Null() {
-			return errors.New("Input's hash is a null hash")
+			return errors.New("Input's hash is null")
 		}
 
 		if _, ok := inputsMap[i.Hash]; ok {

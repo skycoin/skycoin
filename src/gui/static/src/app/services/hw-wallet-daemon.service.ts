@@ -67,9 +67,17 @@ export class HwWalletDaemonService {
 
   private checkResponse(response: Observable<any>, checkingConnected = false, smallTimeout = false) {
     return response
-      .timeout(smallTimeout ? 30000 : 50000)
+      .timeout(smallTimeout ? 30000 : 55000)
       .flatMap((res: any) => {
         const finalResponse = res.json();
+
+        if (finalResponse.data && finalResponse.data.length) {
+          if (finalResponse.data.length === 1) {
+            finalResponse.data = finalResponse.data[0];
+          } else {
+            finalResponse.data = finalResponse.data;
+          }
+        }
 
         if (checkingConnected) {
           this.ngZone.run(() => this.updateHwConnected(!!finalResponse.data));
@@ -97,6 +105,10 @@ export class HwWalletDaemonService {
           });
         }
 
+        if (typeof finalResponse.data === 'string' && (finalResponse.data as string).indexOf('ButtonRequest') !== -1) {
+          return this.post('/intermediate/button');
+        }
+
         return Observable.of(finalResponse);
       })
       .catch((error: any) => {
@@ -109,7 +121,9 @@ export class HwWalletDaemonService {
         if (error && error._body)  {
           let errorContent: string;
 
-          if (error._body.error)  {
+          if (typeof error._body === 'string')  {
+            errorContent = error._body;
+          } else if (error._body.error)  {
             errorContent = error._body.error;
           } else {
             try {
@@ -118,7 +132,7 @@ export class HwWalletDaemonService {
           }
 
           if (errorContent) {
-            return this.apiService.processConnectionError(error, true);
+            return this.apiService.processConnectionError({_body: errorContent}, true);
           }
         }
 

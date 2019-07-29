@@ -246,7 +246,7 @@ export class HwWalletService {
           this.hwWalletDaemonService.post(
             '/generate_addresses',
             params,
-          ),
+          ), null, true,
         );
       }
     }).flatMap(response => {
@@ -290,7 +290,7 @@ export class HwWalletService {
           this.hwWalletDaemonService.post(
             '/generate_addresses',
             params,
-          ),
+          ), null, true,
         );
       }
     });
@@ -616,11 +616,15 @@ export class HwWalletService {
     }
   }
 
-  private processDaemonResponse(daemonResponse: Observable<any>, successTexts: string[] = null) {
+  private processDaemonResponse(daemonResponse: Observable<any>, successTexts: string[] = null, processingAddresses = false) {
     return daemonResponse.catch((error: any) => {
       return Observable.throw(this.dispatchEvent(0, error['_body'], false, true));
     }).flatMap(result => {
       if (result !== HwWalletDaemonService.errorCancelled) {
+        if (processingAddresses && result.data && typeof result.data === 'string') {
+          result.data = [result.data];
+        }
+
         const response = this.dispatchEvent(0,
           result.data ? result.data : null,
           !successTexts ? true : typeof result.data === 'string' && successTexts.some(text => (result.data as string).includes(text)),

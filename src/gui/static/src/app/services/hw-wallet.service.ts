@@ -571,7 +571,7 @@ export class HwWalletService {
           this.hwWalletDaemonService.post(
             '/transaction_sign',
             params,
-          ),
+          ), null, true,
         ).map(response => {
           this.closeTransactionDialog();
 
@@ -616,12 +616,12 @@ export class HwWalletService {
     }
   }
 
-  private processDaemonResponse(daemonResponse: Observable<any>, successTexts: string[] = null, processingAddresses = false) {
+  private processDaemonResponse(daemonResponse: Observable<any>, successTexts: string[] = null, responseShouldBeArray = false) {
     return daemonResponse.catch((error: any) => {
       return Observable.throw(this.dispatchEvent(0, error['_body'], false, true));
     }).flatMap(result => {
       if (result !== HwWalletDaemonService.errorCancelled) {
-        if (processingAddresses && result.data && typeof result.data === 'string') {
+        if (responseShouldBeArray && result.data && typeof result.data === 'string') {
           result.data = [result.data];
         }
 

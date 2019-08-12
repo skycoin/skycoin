@@ -486,6 +486,7 @@
       "done": "Done",
       "added1": "The connected Skywallet has been added to the wallets list with the following name:",
       "added2": "Now you can check the balance and the addresses of the Skywallet even when it is not connected. Additionally, you can change the name of the wallet or remove it from the wallets list, if you wish.",
+      "characters-warning": "If you use non-standard English characters, the name may not be displayed correctly on the device.",
       "ok": "Ok"
     },
     "wipe" : {

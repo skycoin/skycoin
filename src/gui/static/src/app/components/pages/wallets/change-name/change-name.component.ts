@@ -28,7 +28,7 @@ export class ChangeNameErrorResponse {
 @Component({
   selector: 'app-change-name',
   templateUrl: './change-name.component.html',
-  styleUrls: ['./change-name.component.css'],
+  styleUrls: ['./change-name.component.scss'],
 })
 export class ChangeNameComponent implements OnInit, OnDestroy {
   @ViewChild('button') button: ButtonComponent;
@@ -37,6 +37,7 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
   states = States;
   msgIcons = MessageIcons;
   maxHwWalletLabelLength = HwWalletService.maxLabelLength;
+  showCharactersWarning = false;
 
   private newLabel: string;
   private hwConnectionSubscription: ISubscription;
@@ -62,6 +63,8 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
     }
 
     if (this.data.wallet.isHardware) {
+      this.showCharactersWarning = true;
+
       this.hwConnectionSubscription = this.hwWalletService.walletConnectedAsyncEvent.subscribe(connected => {
         if (!connected) {
           this.closePopup();

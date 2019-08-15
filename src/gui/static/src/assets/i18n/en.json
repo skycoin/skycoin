@@ -223,7 +223,7 @@
     "convert-confirmation": "Do you also want the already introduced amount to be converted from {{from}} to {{to}}?",
     "convert-confirmation-plural": "Do you also want the already introduced amounts to be converted from {{from}} to {{to}}?",
     "send-all-available-coins": "send all",
-    "no-wallet-selected": "No wallet has been selected.",
+    "no-wallet-selected": "You must select a wallet first.",
     "precision-error-warning": "A precision error was detected during conversion. Please check the amount that will be sent.",
     "invaid-amount-warning": "An invalid value was detected during conversion. Please check the amount that will be sent.",
     "precision-errors-warning": "Precision errors were detected during conversion. Please check the amount that will be sent.",

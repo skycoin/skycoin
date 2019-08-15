@@ -235,14 +235,14 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
         if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
           const newValue = currentValue.dividedBy(this.price).decimalPlaces(this.blockchainService.currentMaxDecimals);
-          const recoveredValue = newValue.multipliedBy(this.price).decimalPlaces(SendFormComponent.MaxUsdDecimal, BigNumber.ROUND_FLOOR);
+          const recoveredValue = newValue.multipliedBy(this.price).decimalPlaces(SendFormComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
           if (!recoveredValue.isEqualTo(currentValue)) {
             valuesWithPrecisionErrors += 1;
           }
 
           dest.get('coins').setValue(newValue.toString());
         } else {
-          const newValue = currentValue.multipliedBy(this.price).decimalPlaces(SendFormComponent.MaxUsdDecimal, BigNumber.ROUND_FLOOR);
+          const newValue = currentValue.multipliedBy(this.price).decimalPlaces(SendFormComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
           const recoveredValue = newValue.dividedBy(this.price).decimalPlaces(this.blockchainService.currentMaxDecimals);
           if (!recoveredValue.isEqualTo(currentValue)) {
             valuesWithPrecisionErrors += 1;
@@ -266,7 +266,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     }
   }
 
-  sendAll(index: number) {
+  assignAll(index: number) {
     this.msgBarService.hide();
 
     let availableCoins: BigNumber = this.form.get('wallet').value && this.form.get('wallet').value.coins ? this.form.get('wallet').value.coins : new BigNumber(-1);
@@ -277,7 +277,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     }
 
     if (this.selectedCurrency === DoubleButtonActive.RightButton) {
-      availableCoins = availableCoins.multipliedBy(this.price).decimalPlaces(SendFormComponent.MaxUsdDecimal, BigNumber.ROUND_FLOOR);
+      availableCoins = availableCoins.multipliedBy(this.price).decimalPlaces(SendFormComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
     }
 
     this.destControls.forEach((dest, i) => {
@@ -294,7 +294,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
       availableCoins = availableCoins.decimalPlaces(this.blockchainService.currentMaxDecimals, BigNumber.ROUND_FLOOR);
     } else {
-      availableCoins = availableCoins.decimalPlaces(SendFormComponent.MaxUsdDecimal, BigNumber.ROUND_FLOOR);
+      availableCoins = availableCoins.decimalPlaces(SendFormComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
     }
 
     if (availableCoins.isLessThan(0)) {
@@ -332,7 +332,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
           return;
         }
       } else {
-        if (parts.length === 2 && parts[1].length > SendFormComponent.MaxUsdDecimal) {
+        if (parts.length === 2 && parts[1].length > SendFormComponent.MaxUsdDecimals) {
           this.values[i] = -1;
 
           return;
@@ -582,7 +582,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
               return true;
             }
           } else {
-            if (parts.length === 2 && parts[1].length > SendFormComponent.MaxUsdDecimal) {
+            if (parts.length === 2 && parts[1].length > SendFormComponent.MaxUsdDecimals) {
               return true;
             }
           }

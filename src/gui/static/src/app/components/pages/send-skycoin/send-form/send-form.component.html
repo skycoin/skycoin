@@ -41,7 +41,7 @@
       <span *ngIf="price && value >= 0 && selectedCurrency === doubleButtonActive.RightButton">
         &#x007e; {{ value | amount }}
       </span>
-      <div class="link" [ngClass]="{ 'centerd-link': !price }" (click)="sendAll()">({{ 'send.send-all-available-coins' | translate }})</div>
+      <div class="link" [ngClass]="{ 'centerd-link': !price }" (click)="assignAll()">({{ 'send.send-all-available-coins' | translate }})</div>
     </div>
   </div>
   <div class="form-field">

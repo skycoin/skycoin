@@ -119,14 +119,15 @@
             <input formControlName="coins" [attr.disabled]="busy ? 'true' : null">
             <span>{{ selectedCurrency === doubleButtonActive.LeftButton ? ('coin' | commonText) : ('common.usd' | translate) }}</span>
           </div>
-          <div class="coins-value-label" *ngIf="price">
-            <span *ngIf="values[i] < 0">{{ 'send.invalid-amount' | translate }}</span>
-            <span *ngIf="values[i] >= 0 && selectedCurrency === doubleButtonActive.LeftButton">
+          <div class="coins-value-label">
+            <span *ngIf="price && values[i] < 0">{{ 'send.invalid-amount' | translate }}</span>
+            <span *ngIf="price && values[i] >= 0 && selectedCurrency === doubleButtonActive.LeftButton">
               &#x007e; {{ values[i] | number:'1.0-2' }} {{ 'common.usd' | translate }}
             </span>
-            <span *ngIf="values[i] >= 0 && selectedCurrency === doubleButtonActive.RightButton">
+            <span *ngIf="price && values[i] >= 0 && selectedCurrency === doubleButtonActive.RightButton">
               &#x007e; {{ values[i] | amount }}
             </span>
+            <div class="link" [ngClass]="{ 'centerd-link': !price }" (click)="sendAll(i)">({{ 'send.send-all-available-coins' | translate }})</div>
           </div>
         </div>
         <div class="col-lg-3 col-md-4">

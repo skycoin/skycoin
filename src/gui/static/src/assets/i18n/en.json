@@ -257,6 +257,7 @@
     "select-wallet": "Select Wallet",
     "error-saving-note": "The transaction was successfully sent, but it was not possible to save the note.",
     "sent": "Transaction successfully sent.",
+    "total": "Total:",
 
     "bulk-send": {
       "title": "Bulk Send",

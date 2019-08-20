@@ -1,4 +1,4 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { NavBarService } from '../../../services/nav-bar.service';
 import { ISubscription } from 'rxjs/Subscription';
 import { DoubleButtonActive } from '../../layout/double-button/double-button.component';
@@ -18,6 +18,7 @@ export class SendSkycoinComponent implements OnDestroy {
 
   constructor(
     navbarService: NavBarService,
+    private changeDetector: ChangeDetectorRef,
   ) {
     navbarService.setActiveComponent(DoubleButtonActive.LeftButton);
     this.subscription = navbarService.activeComponent.subscribe(value => {
@@ -41,6 +42,7 @@ export class SendSkycoinComponent implements OnDestroy {
     }
 
     this.showForm = true;
+    this.changeDetector.detectChanges();
   }
 
   get transaction() {

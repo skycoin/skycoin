@@ -45,6 +45,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
   value: number;
   valueGreaterThanBalance = false;
   price: number;
+  wallets: Wallet[];
 
   private subscriptionsGroup: ISubscription[] = [];
   private processingSubscription: ISubscription;
@@ -53,7 +54,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
   constructor(
     public formBuilder: FormBuilder,
     public blockchainService: BlockchainService,
-    public walletService: WalletService,
+    private walletService: WalletService,
     private dialog: MatDialog,
     private msgBarService: MsgBarService,
     private navbarService: NavBarService,
@@ -72,6 +73,13 @@ export class SendFormComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.navbarService.showSwitch('send.simple', 'send.advanced');
     this.initForm();
+    this.subscriptionsGroup.push(this.walletService.all().first().subscribe(wallets => {
+      this.wallets = wallets;
+
+      if (wallets.length === 1) {
+        this.form.get('wallet').setValue(wallets[0]);
+      }
+    }));
   }
 
   ngOnDestroy() {
@@ -197,7 +205,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
       return;
     }
-    if (!this.form || this.validateAmount(this.form.get('amount') as FormControl) !== null || this.form.get('amount').value * 1 === 0) {
+    if (!this.form || this.validateAmount(this.form.get('amount') as FormControl) !== null) {
       this.value = -1;
 
       return;

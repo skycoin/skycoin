@@ -55,10 +55,15 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   selectedCurrency = DoubleButtonActive.LeftButton;
   values: number[];
   price: number;
+  wallets: Wallet[];
+  totalCoins = new BigNumber(0);
+  totalConvertedCoins = new BigNumber(0);
+  totalHours = new BigNumber(0);
 
   private subscriptionsGroup: ISubscription[] = [];
   private getOutputsSubscriptions: ISubscription;
   private destinationSubscriptions: ISubscription[] = [];
+  private destinationHoursSubscriptions: ISubscription[] = [];
   private syncCheckSubscription: ISubscription;
   private processingSubscription: ISubscription;
 
@@ -139,6 +144,13 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     if (this.formData) {
       this.fillForm();
     }
+
+    this.subscriptionsGroup.push(this.walletService.all().first().subscribe(wallets => {
+      this.wallets = wallets;
+      if (wallets.length === 1) {
+        this.form.get('wallet').setValue(wallets[0]);
+      }
+    }));
   }
 
   ngOnDestroy() {
@@ -151,6 +163,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.navbarService.hideSwitch();
     this.msgBarService.hide();
     this.destinationSubscriptions.forEach(s => s.unsubscribe());
+    this.destinationHoursSubscriptions.forEach(s => s.unsubscribe());
   }
 
   preview() {
@@ -312,39 +325,47 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     }
 
     this.values = [];
+    this.totalCoins = new BigNumber(0);
+    this.totalConvertedCoins = new BigNumber(0);
+    this.totalHours = new BigNumber(0);
 
     this.destControls.forEach((dest, i) => {
-      let stringValue: string = dest.get('coins').value;
-      stringValue = stringValue ? stringValue.trim() : stringValue;
-      const value = new BigNumber(stringValue);
-
-      if (!stringValue || value.isNaN() || value.isLessThanOrEqualTo(0)) {
+      const stringValue: string = dest.get('coins').value;
+      const value = this.getAmount(stringValue, true);
+      if (!value) {
         this.values[i] = -1;
 
         return;
       }
 
-      const parts = stringValue.split('.');
       if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
-        if (parts.length === 2 && parts[1].length > this.blockchainService.currentMaxDecimals) {
-          this.values[i] = -1;
+        const convertedValue = value.multipliedBy(this.price).decimalPlaces(2);
 
-          return;
-        }
+        this.totalCoins = this.totalCoins.plus(value);
+        this.totalConvertedCoins = this.totalConvertedCoins.plus(convertedValue);
+
+        this.values[i] = convertedValue.toNumber();
       } else {
-        if (parts.length === 2 && parts[1].length > SendFormComponent.MaxUsdDecimals) {
-          this.values[i] = -1;
+        const convertedValue = value.dividedBy(this.price).decimalPlaces(this.blockchainService.currentMaxDecimals);
 
-          return;
-        }
-      }
+        this.totalCoins = this.totalCoins.plus(convertedValue);
+        this.totalConvertedCoins = this.totalConvertedCoins.plus(value);
 
-      if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
-        this.values[i] = new BigNumber(value).multipliedBy(this.price).decimalPlaces(2).toNumber();
-      } else {
-        this.values[i] = new BigNumber(value).dividedBy(this.price).decimalPlaces(this.blockchainService.currentMaxDecimals).toNumber();
+        this.values[i] = convertedValue.toNumber();
       }
     });
+
+    if (!this.autoHours) {
+      this.destControls.forEach((dest, i) => {
+        const stringValue: string = dest.get('hours').value;
+        const value = this.getAmount(stringValue, false);
+        if (!value) {
+          return;
+        }
+
+        this.totalHours = this.totalHours.plus(value);
+      });
+    }
   }
 
   private checkBeforeSending() {
@@ -417,6 +438,8 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
     this.destinationSubscriptions[index].unsubscribe();
     this.destinationSubscriptions.splice(index, 1);
+    this.destinationHoursSubscriptions[index].unsubscribe();
+    this.destinationHoursSubscriptions.splice(index, 1);
     this.updateValues();
   }
 
@@ -480,6 +503,8 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
         }
       }
     });
+
+    this.updateValues();
   }
 
   toggleOptions(event) {
@@ -492,6 +517,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   setAutoHours(event) {
     this.autoHours = event.checked;
     this.form.get('destinations').updateValueAndValidity();
+    this.updateValues();
 
     if (!this.autoHours) {
       this.autoOptions = false;
@@ -535,6 +561,8 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     }
 
     this.selectedCurrency = this.formData.form.currency;
+
+    this.updateValues();
   }
 
   addressCompare(a, b) {
@@ -566,33 +594,9 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       }
 
       return checkControls.map(name => {
-        let stringValue: string = control.get(name).value;
-        stringValue = stringValue ? stringValue.trim() : stringValue;
-        const value = new BigNumber(stringValue);
+        const stringValue: string = control.get(name).value;
 
-        if (!stringValue || value.isNaN() || value.isLessThanOrEqualTo(0)) {
-          return true;
-        }
-
-        if (name === 'coins') {
-          const parts = stringValue.split('.');
-
-          if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
-            if (parts.length === 2 && parts[1].length > this.blockchainService.currentMaxDecimals) {
-              return true;
-            }
-          } else {
-            if (parts.length === 2 && parts[1].length > SendFormComponent.MaxUsdDecimals) {
-              return true;
-            }
-          }
-        } else if (name === 'hours') {
-          if (!value.isEqualTo(value.decimalPlaces(0))) {
-            return true;
-          }
-        }
-
-        return false;
+        return this.getAmount(stringValue, name === 'coins') === null;
       }).find(e => e === true);
     });
 
@@ -621,6 +625,35 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     return null;
   }
 
+  private getAmount(stringValue: string, checkingCoins: boolean): BigNumber {
+    stringValue = stringValue ? stringValue.trim() : stringValue;
+    const value = new BigNumber(stringValue);
+
+    if (!stringValue || value.isNaN() || value.isLessThanOrEqualTo(0)) {
+      return null;
+    }
+
+    if (checkingCoins) {
+      const parts = stringValue.split('.');
+
+      if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
+        if (parts.length === 2 && parts[1].length > this.blockchainService.currentMaxDecimals) {
+          return null;
+        }
+      } else {
+        if (parts.length === 2 && parts[1].length > SendFormComponent.MaxUsdDecimals) {
+          return null;
+        }
+      }
+    } else if (name === 'hours') {
+      if (!value.isEqualTo(value.decimalPlaces(0))) {
+        return null;
+      }
+    }
+
+    return value;
+  }
+
   private createDestinationFormGroup() {
     const group = this.formBuilder.group({
       address: '',
@@ -629,6 +662,10 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     });
 
     this.destinationSubscriptions.push(group.get('coins').valueChanges.subscribe(value => {
+      this.updateValues();
+    }));
+
+    this.destinationHoursSubscriptions.push(group.get('hours').valueChanges.subscribe(value => {
       this.updateValues();
     }));
 
@@ -737,6 +774,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.autoHours = true;
     this.autoOptions = false;
     this.autoShareValue = '0.5';
+    this.updateValues();
   }
 
   private get destinations() {

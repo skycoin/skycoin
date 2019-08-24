@@ -419,7 +419,7 @@
     "errors": {
       "too-many-inputs-outputs": "The transaction has too many inputs or outputs for the Skywallet. Please try again creating several smaller transactions, each one with a smaller number of recipients (if the current transaction has many) or coins.",
       "daemon-connection": "Problem connecting to the Skywallet service.",
-      "timeout": "The operation was canceled due to inactivity or because the device did not respond. Please try again.",
+      "timeout": "The operation was canceled due to inactivity. Please try again.",
       "invalid-address-generated": "There was a problem with the address generator and the operation had to be canceled.",
       "invalid-address": "Invalid address.",
       "not-in-bootloader-mode": "To use this option the Skywallet must be in bootloader mode."
@@ -497,6 +497,7 @@
       "done": "Done",
       "added1": "The connected Skywallet has been added to the wallets list with the following name:",
       "added2": "Now you can check the balance and the addresses of the Skywallet even when it is not connected. Additionally, you can change the name of the wallet or remove it from the wallets list, if you wish.",
+      "characters-warning": "If you use non-standard English characters, the name may not be displayed correctly on the device.",
       "ok": "Ok"
     },
     "wipe" : {
@@ -504,7 +505,7 @@
       "confirm-delete": "Also remove from the wallets list"
     },
     "create-backup" : {
-      "warning": "WARNING: You can only use this option to backup your Skywallet seed once. If you decide to continue, you will have to write down a group of words (it is recommended to do it on paper and not on a computer) that will appear on the screen of the Skywallet and store the list in a safe place. Anyone with access to the word list (the \"seed\") will be able access the wallet funds, so extreme caution is advised.",
+      "warning": "WARNING: You can only create a backup of your Skywallet seed once. If you decide to continue, you will have to write down a group of words (it is recommended to do it on paper and not on a computer) that will appear on the screen of the Skywallet and store the list in a safe place. Anyone with access to the word list (the \"seed\") will be able access the wallet funds, so extreme caution is advised.",
       "instructions": "Write down the word list that appear on the screen of the Skywallet. Make sure you respect the order and write each word correctly."
     },
     "seed-word" : {

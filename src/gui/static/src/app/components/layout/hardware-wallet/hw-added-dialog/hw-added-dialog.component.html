@@ -20,6 +20,8 @@
         <input formControlName="label" id="label" [maxlength]="maxHwWalletLabelLength" (keydown.enter)="saveNameAndCloseModal()" #input>
       </div>
     </div>
+    <div class="warning">{{ 'hardware-wallet.added.characters-warning' | translate }}</div>
+    
     <div>{{ 'hardware-wallet.added.added2' | translate }}</div>
   </div>
 

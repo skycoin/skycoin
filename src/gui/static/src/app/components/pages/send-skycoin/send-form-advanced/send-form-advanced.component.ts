@@ -55,10 +55,15 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   selectedCurrency = DoubleButtonActive.LeftButton;
   values: number[];
   price: number;
+  wallets: Wallet[];
+  totalCoins = new BigNumber(0);
+  totalConvertedCoins = new BigNumber(0);
+  totalHours = new BigNumber(0);
 
   private subscriptionsGroup: ISubscription[] = [];
   private getOutputsSubscriptions: ISubscription;
   private destinationSubscriptions: ISubscription[] = [];
+  private destinationHoursSubscriptions: ISubscription[] = [];
   private syncCheckSubscription: ISubscription;
   private processingSubscription: ISubscription;
 
@@ -139,6 +144,13 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     if (this.formData) {
       this.fillForm();
     }
+
+    this.subscriptionsGroup.push(this.walletService.all().first().subscribe(wallets => {
+      this.wallets = wallets;
+      if (wallets.length === 1) {
+        this.form.get('wallet').setValue(wallets[0]);
+      }
+    }));
   }
 
   ngOnDestroy() {
@@ -151,6 +163,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.navbarService.hideSwitch();
     this.msgBarService.hide();
     this.destinationSubscriptions.forEach(s => s.unsubscribe());
+    this.destinationHoursSubscriptions.forEach(s => s.unsubscribe());
   }
 
   preview() {
@@ -165,9 +178,143 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   }
 
   changeActiveCurrency(value) {
-    this.selectedCurrency = value;
-    this.updateValues();
-    (this.form.get('destinations') as FormArray).updateValueAndValidity();
+    if (value !== this.selectedCurrency) {
+      this.selectedCurrency = value;
+      this.askIfConvertAmount();
+      this.updateValues();
+      (this.form.get('destinations') as FormArray).updateValueAndValidity();
+    }
+  }
+
+  private askIfConvertAmount() {
+    let validAmounts = 0;
+    this.destControls.forEach((dest, i) => {
+      let value: string = dest.get('coins').value;
+      value = value ? value.trim() : value;
+      const currentValue = new BigNumber(value);
+
+      if (!value || currentValue.isNaN()) {
+        return;
+      }
+
+      validAmounts += 1;
+    });
+    if (validAmounts === 0) {
+      return;
+    }
+
+    const usd = this.translate.instant('common.usd');
+    const currentCoin = this.appService.coinName;
+    let fromText: string;
+    let toText: string;
+    if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
+      fromText = usd;
+      toText = currentCoin;
+    } else {
+      fromText = currentCoin;
+      toText = usd;
+    }
+
+    const confirmationData: ConfirmationData = {
+      text: this.translate.instant(validAmounts === 1 ? 'send.convert-confirmation' : 'send.convert-confirmation-plural', {from: fromText, to: toText}),
+      headerText: 'confirmation.header-text',
+      confirmButtonText: 'confirmation.confirm-button',
+      cancelButtonText: 'confirmation.cancel-button',
+    };
+
+    showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+      if (confirmationResult) {
+        this.convertAmounts();
+      }
+    });
+  }
+
+  private convertAmounts() {
+    this.msgBarService.hide();
+
+    let invalidValues = 0;
+    let valuesWithPrecisionErrors = 0;
+    this.destControls.forEach((dest, i) => {
+      let value: string = dest.get('coins').value;
+      value = value ? value.trim() : value;
+      const currentValue = new BigNumber(value);
+
+      if (value) {
+        if (!value || currentValue.isNaN()) {
+          invalidValues += 1;
+
+          return;
+        }
+
+        if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
+          const newValue = currentValue.dividedBy(this.price).decimalPlaces(this.blockchainService.currentMaxDecimals);
+          const recoveredValue = newValue.multipliedBy(this.price).decimalPlaces(SendFormComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
+          if (!recoveredValue.isEqualTo(currentValue)) {
+            valuesWithPrecisionErrors += 1;
+          }
+
+          dest.get('coins').setValue(newValue.toString());
+        } else {
+          const newValue = currentValue.multipliedBy(this.price).decimalPlaces(SendFormComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
+          const recoveredValue = newValue.dividedBy(this.price).decimalPlaces(this.blockchainService.currentMaxDecimals);
+          if (!recoveredValue.isEqualTo(currentValue)) {
+            valuesWithPrecisionErrors += 1;
+          }
+
+          dest.get('coins').setValue(newValue.toString());
+        }
+      }
+    });
+
+    if (invalidValues > 0 && valuesWithPrecisionErrors > 0) {
+      this.msgBarService.showWarning(this.translate.instant('send.multiple-problems-warning'));
+    } else if (invalidValues === 1) {
+      this.msgBarService.showWarning(this.translate.instant('send.invaid-amount-warning'));
+    } else if (invalidValues > 1) {
+      this.msgBarService.showWarning(this.translate.instant('send.invaid-amounts-warning'));
+    } else if (valuesWithPrecisionErrors === 1) {
+      this.msgBarService.showWarning(this.translate.instant('send.precision-error-warning'));
+    } else if (valuesWithPrecisionErrors > 1) {
+      this.msgBarService.showWarning(this.translate.instant('send.precision-errors-warning'));
+    }
+  }
+
+  assignAll(index: number) {
+    this.msgBarService.hide();
+
+    let availableCoins: BigNumber = this.form.get('wallet').value && this.form.get('wallet').value.coins ? this.form.get('wallet').value.coins : new BigNumber(-1);
+    if ((availableCoins as BigNumber).isEqualTo(-1)) {
+      this.msgBarService.showError(this.translate.instant('send.no-wallet-selected'));
+
+      return;
+    }
+
+    if (this.selectedCurrency === DoubleButtonActive.RightButton) {
+      availableCoins = availableCoins.multipliedBy(this.price).decimalPlaces(SendFormComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
+    }
+
+    this.destControls.forEach((dest, i) => {
+      if (i !== index) {
+        const value = Number.parseFloat((dest.get('coins').value as string).trim());
+        if (!value || isNaN(value)) {
+          return;
+        } else {
+          availableCoins = availableCoins.minus(value);
+        }
+      }
+    });
+
+    if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
+      availableCoins = availableCoins.decimalPlaces(this.blockchainService.currentMaxDecimals, BigNumber.ROUND_FLOOR);
+    } else {
+      availableCoins = availableCoins.decimalPlaces(SendFormComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
+    }
+
+    if (availableCoins.isLessThan(0)) {
+      this.msgBarService.showError(this.translate.instant('send.no-coins-left'));
+    } else {
+      this.destControls[index].get('coins').setValue(availableCoins.toString());
+    }
   }
 
   private updateValues() {
@@ -178,37 +325,47 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     }
 
     this.values = [];
+    this.totalCoins = new BigNumber(0);
+    this.totalConvertedCoins = new BigNumber(0);
+    this.totalHours = new BigNumber(0);
 
     this.destControls.forEach((dest, i) => {
-      const value = dest.get('coins').value !== undefined ? dest.get('coins').value.replace(' ', '=') : '';
-
-      if (isNaN(value) || value.trim() === '' || parseFloat(value) <= 0 || value * 1 === 0) {
+      const stringValue: string = dest.get('coins').value;
+      const value = this.getAmount(stringValue, true);
+      if (!value) {
         this.values[i] = -1;
 
         return;
       }
 
-      const parts = value.split('.');
       if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
-        if (parts.length === 2 && parts[1].length > this.blockchainService.currentMaxDecimals) {
-          this.values[i] = -1;
+        const convertedValue = value.multipliedBy(this.price).decimalPlaces(2);
 
-          return;
-        }
+        this.totalCoins = this.totalCoins.plus(value);
+        this.totalConvertedCoins = this.totalConvertedCoins.plus(convertedValue);
+
+        this.values[i] = convertedValue.toNumber();
       } else {
-        if (parts.length === 2 && parts[1].length > SendFormComponent.MaxUsdDecimal) {
-          this.values[i] = -1;
+        const convertedValue = value.dividedBy(this.price).decimalPlaces(this.blockchainService.currentMaxDecimals);
 
-          return;
-        }
-      }
+        this.totalCoins = this.totalCoins.plus(convertedValue);
+        this.totalConvertedCoins = this.totalConvertedCoins.plus(value);
 
-      if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
-        this.values[i] = new BigNumber(value).multipliedBy(this.price).decimalPlaces(2).toNumber();
-      } else {
-        this.values[i] = new BigNumber(value).dividedBy(this.price).decimalPlaces(this.blockchainService.currentMaxDecimals).toNumber();
+        this.values[i] = convertedValue.toNumber();
       }
     });
+
+    if (!this.autoHours) {
+      this.destControls.forEach((dest, i) => {
+        const stringValue: string = dest.get('hours').value;
+        const value = this.getAmount(stringValue, false);
+        if (!value) {
+          return;
+        }
+
+        this.totalHours = this.totalHours.plus(value);
+      });
+    }
   }
 
   private checkBeforeSending() {
@@ -281,6 +438,8 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
     this.destinationSubscriptions[index].unsubscribe();
     this.destinationSubscriptions.splice(index, 1);
+    this.destinationHoursSubscriptions[index].unsubscribe();
+    this.destinationHoursSubscriptions.splice(index, 1);
     this.updateValues();
   }
 
@@ -344,6 +503,8 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
         }
       }
     });
+
+    this.updateValues();
   }
 
   toggleOptions(event) {
@@ -356,6 +517,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   setAutoHours(event) {
     this.autoHours = event.checked;
     this.form.get('destinations').updateValueAndValidity();
+    this.updateValues();
 
     if (!this.autoHours) {
       this.autoOptions = false;
@@ -399,6 +561,8 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     }
 
     this.selectedCurrency = this.formData.form.currency;
+
+    this.updateValues();
   }
 
   addressCompare(a, b) {
@@ -419,6 +583,10 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     }
 
     const invalidInput = this.destControls.find(control => {
+      if (!control.get('address').value || (control.get('address').value as string).trim().length === 0) {
+        return true;
+      }
+
       const checkControls = ['coins'];
 
       if (!this.autoHours) {
@@ -426,37 +594,9 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       }
 
       return checkControls.map(name => {
-        const value = control.get(name).value !== undefined
-          ? control.get(name).value.replace(' ', '=')
-          : '';
+        const stringValue: string = control.get(name).value;
 
-        if (isNaN(value) || value.trim() === '') {
-          return true;
-        }
-
-        if (parseFloat(value) <= 0) {
-          return true;
-        }
-
-        if (name === 'coins') {
-          const parts = value.split('.');
-
-          if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
-            if (parts.length === 2 && parts[1].length > this.blockchainService.currentMaxDecimals) {
-              return true;
-            }
-          } else {
-            if (parts.length === 2 && parts[1].length > SendFormComponent.MaxUsdDecimal) {
-              return true;
-            }
-          }
-        } else if (name === 'hours') {
-          if (value < 1 || parseInt(value, 10) !== parseFloat(value)) {
-            return true;
-          }
-        }
-
-        return false;
+        return this.getAmount(stringValue, name === 'coins') === null;
       }).find(e => e === true);
     });
 
@@ -485,6 +625,35 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     return null;
   }
 
+  private getAmount(stringValue: string, checkingCoins: boolean): BigNumber {
+    stringValue = stringValue ? stringValue.trim() : stringValue;
+    const value = new BigNumber(stringValue);
+
+    if (!stringValue || value.isNaN() || value.isLessThanOrEqualTo(0)) {
+      return null;
+    }
+
+    if (checkingCoins) {
+      const parts = stringValue.split('.');
+
+      if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
+        if (parts.length === 2 && parts[1].length > this.blockchainService.currentMaxDecimals) {
+          return null;
+        }
+      } else {
+        if (parts.length === 2 && parts[1].length > SendFormComponent.MaxUsdDecimals) {
+          return null;
+        }
+      }
+    } else if (name === 'hours') {
+      if (!value.isEqualTo(value.decimalPlaces(0))) {
+        return null;
+      }
+    }
+
+    return value;
+  }
+
   private createDestinationFormGroup() {
     const group = this.formBuilder.group({
       address: '',
@@ -493,6 +662,10 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     });
 
     this.destinationSubscriptions.push(group.get('coins').valueChanges.subscribe(value => {
+      this.updateValues();
+    }));
+
+    this.destinationHoursSubscriptions.push(group.get('hours').valueChanges.subscribe(value => {
       this.updateValues();
     }));
 
@@ -601,13 +774,14 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.autoHours = true;
     this.autoOptions = false;
     this.autoShareValue = '0.5';
+    this.updateValues();
   }
 
   private get destinations() {
     return this.destControls.map((destControl, i) => {
       const destination = {
-        address: destControl.get('address').value,
-        coins: this.selectedCurrency === DoubleButtonActive.LeftButton ? destControl.get('coins').value : this.values[i].toString(),
+        address: ((destControl.get('address').value) as string).trim(),
+        coins: ((this.selectedCurrency === DoubleButtonActive.LeftButton ? destControl.get('coins').value : this.values[i].toString()) as string).trim(),
         originalAmount: destControl.get('coins').value,
       };
 

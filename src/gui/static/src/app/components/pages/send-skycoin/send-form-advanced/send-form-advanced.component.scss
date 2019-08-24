@@ -18,26 +18,6 @@
   }
 }
 
-.-input-addon {
-  display: flex;
-
-  input {
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
-  }
-
-  span {
-    border: 2px;
-    border-radius: 0 6px 6px 0;
-    background: #f1f1f1;
-    padding: 0 10px;
-    line-height: 44px;
-    color: $grey;
-    font-size: 14px;
-    flex-shrink: 0;
-  }
-}
-
 .-destination {
   &:not(:last-child) {
     margin-bottom: 5px;

@@ -4,11 +4,13 @@
     <div class="-select">
       <select formControlName="wallet" id="wallets" [attr.disabled]="busy ? 'true' : null" [ngClass]="{'element-disabled' : busy}">
         <option disabled hidden [ngValue]="''">{{ 'send.select-wallet' | translate }}</option>
-        <ng-container *ngFor="let wallet of walletService.all() | async">
-          <option [disabled]="!wallet.coins || wallet.coins.isLessThanOrEqualTo(0)" [ngValue]="wallet">
-            {{ wallet.label }} - {{ (wallet.coins ? wallet.coins.toString() : 0) | amount }}
-            ({{ wallet.hours.toString() | amount:false }})
-          </option>
+        <ng-container *ngIf="wallets">
+          <ng-container *ngFor="let wallet of wallets">
+            <option [disabled]="!wallet.coins || wallet.coins.isLessThanOrEqualTo(0)" [ngValue]="wallet">
+              {{ wallet.label }} - {{ (wallet.coins ? wallet.coins.toString() : 0) | amount }}
+              ({{ wallet.hours.toString() | amount:false }})
+            </option>
+          </ng-container>
         </ng-container>
       </select>
     </div>
@@ -119,14 +121,15 @@
             <input formControlName="coins" [attr.disabled]="busy ? 'true' : null">
             <span>{{ selectedCurrency === doubleButtonActive.LeftButton ? ('coin' | commonText) : ('common.usd' | translate) }}</span>
           </div>
-          <div class="coins-value-label" *ngIf="price">
-            <span *ngIf="values[i] < 0">{{ 'send.invalid-amount' | translate }}</span>
-            <span *ngIf="values[i] >= 0 && selectedCurrency === doubleButtonActive.LeftButton">
+          <div class="coins-value-label">
+            <span *ngIf="price && values[i] < 0">{{ 'send.invalid-amount' | translate }}</span>
+            <span *ngIf="price && values[i] >= 0 && selectedCurrency === doubleButtonActive.LeftButton">
               &#x007e; {{ values[i] | number:'1.0-2' }} {{ 'common.usd' | translate }}
             </span>
-            <span *ngIf="values[i] >= 0 && selectedCurrency === doubleButtonActive.RightButton">
+            <span *ngIf="price && values[i] >= 0 && selectedCurrency === doubleButtonActive.RightButton">
               &#x007e; {{ values[i] | amount }}
             </span>
+            <div class="link" [ngClass]="{ 'centerd-link': !price }" (click)="assignAll(i)">({{ 'send.send-all-available-coins' | translate }})</div>
           </div>
         </div>
         <div class="col-lg-3 col-md-4">
@@ -138,6 +141,19 @@
         <div class="col-md-1 -icons" [ngClass]="{'element-disabled' : busy}">
           <img *ngIf="i === 0" (click)="addDestination()" src="../../../../../assets/img/plus-green.png" alt="plus">
           <img *ngIf="i !== 0" (click)="removeDestination(i)" src="../../../../../assets/img/minus-grey.png" alt="minus">
+        </div>
+      </div>
+    </div>
+    <div class="row" *ngIf="destControls.length > 1">
+      <div class="col-lg-5 col-md-4"></div>
+      <div class="col-md-3">
+        <div class="coins-value-label">
+          <span>{{ 'send.total' | translate }}</span> {{ totalCoins.toString() | amount }} / {{ totalConvertedCoins.toString() | number:'1.0-2' }} {{ 'common.usd' | translate }}
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-4" *ngIf="!autoHours">
+        <div class="coins-value-label">
+          <span>{{ 'send.total' | translate }}</span> {{ totalHours.toString() | amount:false }}
         </div>
       </div>
     </div>

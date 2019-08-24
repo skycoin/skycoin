@@ -4,13 +4,15 @@
     <div class="-select">
       <select formControlName="wallet" id="wallet" [attr.disabled]="busy ? 'true' : null" [ngClass]="{'element-disabled' : busy}">
         <option disabled hidden [ngValue]="''">{{ 'send.select-wallet' | translate }}</option>
-        <option *ngFor="let wallet of walletService.all() | async" [disabled]="!wallet.coins || wallet.coins.isLessThanOrEqualTo(0)" [ngValue]="wallet">
-          {{ wallet.label }} -
-          <span *ngIf="wallet.coins && wallet.hours">
-            {{ (wallet.coins ? wallet.coins.toString() : 0) | amount }}
-            ({{ wallet.hours.toString() | amount:false }})
-          </span>
-        </option>
+        <ng-container *ngIf="wallets">
+          <option *ngFor="let wallet of wallets" [disabled]="!wallet.coins || wallet.coins.isLessThanOrEqualTo(0)" [ngValue]="wallet">
+            {{ wallet.label }} -
+            <span *ngIf="wallet.coins && wallet.hours">
+              {{ (wallet.coins ? wallet.coins.toString() : 0) | amount }}
+              ({{ wallet.hours.toString() | amount:false }})
+            </span>
+          </option>
+        </ng-container>
       </select>
     </div>
   </div>
@@ -29,15 +31,19 @@
         (onStateChange)="changeActiveCurrency($event)"
       ></app-double-button>
     </div>
-    <input formControlName="amount" id="amount" [attr.disabled]="busy ? 'true' : null">
-    <div class="coins-value-label" [ngClass]="{ red: value >= 0 && valueGreaterThanBalance }" *ngIf="price">
-      <span *ngIf="value < 0">{{ 'send.invalid-amount' | translate }}</span>
-      <span *ngIf="value >= 0 && selectedCurrency === doubleButtonActive.LeftButton">
+    <div class="-input-addon">
+      <input formControlName="amount" id="amount" [attr.disabled]="busy ? 'true' : null">
+      <span>{{ selectedCurrency === doubleButtonActive.LeftButton ? ('coin' | commonText) : ('common.usd' | translate) }}</span>
+    </div>
+    <div class="coins-value-label" [ngClass]="{ red: value >= 0 && valueGreaterThanBalance }">
+      <span *ngIf="price && value < 0">{{ 'send.invalid-amount' | translate }}</span>
+      <span *ngIf="price && value >= 0 && selectedCurrency === doubleButtonActive.LeftButton">
         &#x007e; {{ value | number:'1.0-2' }} {{ 'common.usd' | translate }}
       </span>
-      <span *ngIf="value >= 0 && selectedCurrency === doubleButtonActive.RightButton">
+      <span *ngIf="price && value >= 0 && selectedCurrency === doubleButtonActive.RightButton">
         &#x007e; {{ value | amount }}
       </span>
+      <div class="link" [ngClass]="{ 'centerd-link': !price }" (click)="assignAll()">({{ 'send.send-all-available-coins' | translate }})</div>
     </div>
   </div>
   <div class="form-field">

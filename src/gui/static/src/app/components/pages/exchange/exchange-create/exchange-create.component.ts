@@ -110,6 +110,8 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.msgBarService.hide();
+
     this.exchangeButton.resetState();
     this.exchangeButton.setLoading();
     this.exchangeButton.setDisabled();

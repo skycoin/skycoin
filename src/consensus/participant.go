@@ -7,13 +7,13 @@ package consensus
 import (
 	"fmt"
 
-	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/cipher"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 //
 // Struct ConsensusParticipant is inteneded to extend (or be contained in)
-// github.com/skycoin/skycoin/src/mesh*/node struct Node, so that
+// github.com/SkycoinProject/skycoin/src/mesh*/node struct Node, so that
 // Node can participate in consensus.
 //
 ////////////////////////////////////////////////////////////////////////////////

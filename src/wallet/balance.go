@@ -1,8 +1,8 @@
 package wallet
 
 import (
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/util/mathutil"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/util/mathutil"
 )
 
 /*

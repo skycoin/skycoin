@@ -2,7 +2,7 @@
 
 ## Simple Tags
 
--	[`latest` (*docker/images/dev-cli/Dockerfile*)](https://github.com/skycoin/skycoin/tree/develop/docker/images/dev-cli/Dockerfile)
+-	[`latest` (*docker/images/dev-cli/Dockerfile*)](https://github.com/SkycoinProject/skycoin/tree/develop/docker/images/dev-cli/Dockerfile)
 
 # Skycoin development image
 
@@ -10,7 +10,7 @@ This image has the necessary tools to build, test, edit, lint and version the Sk
 source code.  It comes with the Vim editor installed, along with some plugins
 to ease go development and version control with git.
 
-_Plase note that there is also a sister image with ["docker in docker"](https://github.com/skycoin/skycoin/tree/develop/docker/images/dev-docker/) feature on it._
+_Plase note that there is also a sister image with ["docker in docker"](https://github.com/SkycoinProject/skycoin/tree/develop/docker/images/dev-docker/) feature on it._
 
 # How to use this image
 
@@ -19,12 +19,12 @@ _Plase note that there is also a sister image with ["docker in docker"](https://
 ```sh
 $ mkdir src
 $ docker run --rm \
-    -v src:/go/src skycoin/skycoindev-cli \
-    go get github.com/skycoin/skycoin
+    -v src:/go/src SkycoinProject/skycoindev-cli \
+    go get github.com/SkycoinProject/skycoin
 $ sudo chown -R `whoami` src
 ```
 
-This downloads the skycoin source to src/skycoin/skycoin and changes the owner
+This downloads the skycoin source to src/SkycoinProject/skycoin and changes the owner
 to your user. This is necessary, because all processes inside the container run
 as root and the files created by it are therefore owned by root.
 
@@ -41,7 +41,7 @@ in a container and deleted when finished.
 
 ```sh
 $ docker run --rm \
-    -v src:/go/src skycoin/skycoindev-cli \
+    -v src:/go/src SkycoinProject/skycoindev-cli \
     sh -c "cd skycoin; make test"
 ```
 
@@ -49,7 +49,7 @@ $ docker run --rm \
 
 ```sh
 $ docker run --rm \
-    -v src:/go/src skycoin/skycoindev-cli \
+    -v src:/go/src SkycoinProject/skycoindev-cli \
     sh -c "cd skycoin; make lint"
 ```
 
@@ -57,7 +57,7 @@ $ docker run --rm \
 
 ```sh
 $ docker run --rm \
-    -v src:/go/src skycoin/skycoindev-cli \
+    -v src:/go/src SkycoinProject/skycoindev-cli \
     vim
 ```
 

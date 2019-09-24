@@ -4,7 +4,7 @@ import (
 	assert "github.com/stretchr/testify/assert"
 	require "github.com/stretchr/testify/require"
 
-	_assert "github.com/skycoin/skycoin/src/testutil/assert"
+	_assert "github.com/SkycoinProject/skycoin/src/testutil/assert"
 )
 
 // PanicsWithCondition asserts that the code inside the specified PanicTestFunc panics, and that

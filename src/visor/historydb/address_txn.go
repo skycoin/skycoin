@@ -1,8 +1,8 @@
 package historydb
 
 import (
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 )
 
 //go:generate skyencoder -unexported -struct hashesWrapper

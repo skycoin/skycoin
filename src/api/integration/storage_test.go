@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/kvstorage"
+	"github.com/SkycoinProject/skycoin/src/kvstorage"
 )
 
 func TestStableStorageGetAllValues(t *testing.T) {

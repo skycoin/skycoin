@@ -9,8 +9,8 @@ import (
 	"math"
 	"sort"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/util/mathutil"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/util/mathutil"
 )
 
 var (

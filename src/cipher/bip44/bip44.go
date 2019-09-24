@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/skycoin/skycoin/src/cipher/bip32"
+	"github.com/SkycoinProject/skycoin/src/cipher/bip32"
 )
 
 // Bip44's bip32 path: m / purpose' / coin_type' / account' / change / address_index

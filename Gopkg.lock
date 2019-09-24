@@ -11,6 +11,14 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:8a50c4460a24ce3cff0f50d094fa086db29119b4a0b58e70b87e922274526804"
+  name = "github.com/SkycoinProject/encodertest"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "14c2e31898b98265cc642f54d53f7280998e7208"
+
+[[projects]]
+  branch = "master"
   digest = "1:86d119ee8a0fb122f2d0e0fbbbd5d2f65953029248743462ee3908a21ae04247"
   name = "github.com/andreyvit/diff"
   packages = ["."]
@@ -263,14 +271,6 @@
   version = "v1.1.1"
 
 [[projects]]
-  branch = "master"
-  digest = "1:01a8c1c077057f1151b967c99847c0bc6c4e9e952be85be0ee58cd1c38c41912"
-  name = "github.com/skycoin/encodertest"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "bc96f42259d0926981711625afcdde4ab10b9147"
-
-[[projects]]
   digest = "1:6a4a11ba764a56d2758899ec6f3848d24698d48442ebce85ee7a3f63284526cd"
   name = "github.com/spf13/afero"
   packages = [
@@ -411,6 +411,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/NYTimes/gziphandler",
+    "github.com/SkycoinProject/encodertest",
     "github.com/andreyvit/diff",
     "github.com/blang/semver",
     "github.com/boltdb/bolt",
@@ -418,12 +419,13 @@
     "github.com/google/go-cmp/cmp",
     "github.com/google/go-cmp/cmp/cmpopts",
     "github.com/mgutz/ansi",
+    "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/client_golang/prometheus/promhttp",
     "github.com/rs/cors",
     "github.com/shopspring/decimal",
     "github.com/sirupsen/logrus",
-    "github.com/skycoin/encodertest",
     "github.com/spf13/cobra",
+    "github.com/spf13/pflag",
     "github.com/spf13/viper",
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/mock",

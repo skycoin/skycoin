@@ -43,8 +43,8 @@ install:
   - go get github.com/gz-c/gox
   # Install dependences for building wallet
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PULL_REQUEST" == false ]]; then sudo apt-get install --no-install-recommends -y icnsutils graphicsmagick xz-utils libudev-dev libusb-1.0-0-dev && nvm install 8; fi
-  - if [[ ! -d $GOPATH/src/github.com/skycoin/skycoin ]]; then mkdir -p $GOPATH/src/github.com/skycoin; ln -s $TRAVIS_BUILD_DIR $GOPATH/src/github.com/skycoin/skycoin; fi
-  - cd $GOPATH/src/github.com/skycoin/skycoin
+  - if [[ ! -d $GOPATH/src/github.com/SkycoinProject/skycoin ]]; then mkdir -p $GOPATH/src/github.com/skycoin; ln -s $TRAVIS_BUILD_DIR $GOPATH/src/github.com/SkycoinProject/skycoin; fi
+  - cd $GOPATH/src/github.com/SkycoinProject/skycoin
   - go get -t ./...
   - make install-linters
   # Install pinned golangci-lint, overriding the latest version install by make install-linters
@@ -89,5 +89,5 @@ deploy:
   acl: public_read
   region: $AWS_REGION
   on:
-    repo: skycoin/skycoin
+    repo: SkycoinProject/skycoin
     tags: true

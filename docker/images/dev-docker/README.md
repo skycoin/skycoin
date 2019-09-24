@@ -2,7 +2,7 @@
 
 ## Simple Tags
 
--	[`dind` (*docker/images/dev-docker/Dockerfile*)](https://github.com/skycoin/skycoin/tree/develop/docker/images/dev-docker/Dockerfile)
+-	[`dind` (*docker/images/dev-docker/Dockerfile*)](https://github.com/SkycoinProject/skycoin/tree/develop/docker/images/dev-docker/Dockerfile)
 
 # Skycoin development image including [docker in docker](https://hub.docker.com/_/docker/)
 
@@ -17,12 +17,12 @@ to ease go development and version control with git, besides it comes with docke
 ```sh
 $ mkdir src
 $ docker run --privileged --rm \
-    -v src:/go/src skycoin/skycoindev-cli:dind \
-    go get github.com/skycoin/skycoin
+    -v src:/go/src SkycoinProject/skycoindev-cli:dind \
+    go get github.com/SkycoinProject/skycoin
 $ sudo chown -R `whoami` src
 ```
 
-This downloads the skycoin source to src/skycoin/skycoin and changes the owner
+This downloads the skycoin source to src/SkycoinProject/skycoin and changes the owner
 to your user. This is necessary, because all processes inside the container run
 as root and the files created by it are therefore owned by root.
 
@@ -39,7 +39,7 @@ in a container and deleted when finished.
 
 ```sh
 $ docker run --rm \
-    -v src:/go/src skycoin/skycoindev-cli:dind \
+    -v src:/go/src SkycoinProject/skycoindev-cli:dind \
     sh -c "cd skycoin; make test"
 ```
 
@@ -47,7 +47,7 @@ $ docker run --rm \
 
 ```sh
 $ docker run --rm \
-    -v src:/go/src skycoin/skycoindev-cli:dind \
+    -v src:/go/src SkycoinProject/skycoindev-cli:dind \
     sh -c "cd skycoin; make lint"
 ```
 
@@ -55,7 +55,7 @@ $ docker run --rm \
 
 ```sh
 $ docker run --rm \
-    -v src:/go/src skycoin/skycoindev-cli:dind \
+    -v src:/go/src SkycoinProject/skycoindev-cli:dind \
     vim
 ```
 
@@ -64,7 +64,7 @@ $ docker run --rm \
 ### Start a daemon instance
 
 ```sh
-$ docker run --privileged --name some-name -d skycoin/skycoindev-cli:dind
+$ docker run --privileged --name some-name -d SkycoinProject/skycoindev-cli:dind
 ```
 
 ### Where to store data
@@ -78,7 +78,7 @@ The downside is that you need to make sure that the directory exists, and that e
 
 ```sh
 $ docker run --privileged --name some-name -v /my/own/var-lib-docker:/var/lib/docker \ 
--d skycoin/skycoindev-cli:dind
+-d SkycoinProject/skycoindev-cli:dind
 ```
 
 

@@ -24,7 +24,7 @@ default_connections = [
 	"172.105.217.244:6000",
 	"139.162.98.190:6000",
 ]
-peer_list_url = "https://downloads.skycoin.net/blockchain/peers.txt"
+peer_list_url = "https://downloads.skycoin.com/blockchain/peers.txt"
 # port = 6000
 # web_interface_port = 6420
 # unconfirmed_burn_factor = 10
@@ -39,7 +39,7 @@ peer_list_url = "https://downloads.skycoin.net/blockchain/peers.txt"
 # coin_hours_display_name = "Coin Hours"
 # coin_hours_display_name_singular = "Coin Hour"
 # coin_hours_ticker = "SCH"
-# explorer_url = "https://explorer.skycoin.net"
+# explorer_url = "https://explorer.skycoin.com"
 # bip44_coin = 8000
 
 [params]

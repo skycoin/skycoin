@@ -33,10 +33,10 @@ scratch, to remedy the rough edges in the Bitcoin design.
 
 ## Links
 
-* [skycoin.net](https://www.skycoin.net)
-* [Skycoin Blog](https://www.skycoin.net/blog)
-* [Skycoin Docs](https://www.skycoin.net/docs)
-* [Skycoin Blockchain Explorer](https://explorer.skycoin.net)
+* [skycoin.com](https://www.skycoin.com)
+* [Skycoin Blog](https://www.skycoin.com/blog)
+* [Skycoin Docs](https://www.skycoin.com/docs)
+* [Skycoin Blockchain Explorer](https://explorer.skycoin.com)
 * [Skycoin Development Telegram Channel](https://t.me/skycoindev)
 * [Skycoin Github Wiki](https://github.com/SkycoinProject/skycoin/wiki)
 
@@ -211,7 +211,7 @@ and useful tools included in `SkycoinProject/skycoindev-cli`.
 ## Contributing a node to the network
 
 Add your node's `ip:port` to the [peers.txt](peers.txt) file.
-This file will be periodically uploaded to https://downloads.skycoin.net/blockchain/peers.txt
+This file will be periodically uploaded to https://downloads.skycoin.com/blockchain/peers.txt
 and used to seed client with peers.
 
 *Note*: Do not add Skywire nodes to `peers.txt`.
@@ -669,7 +669,7 @@ Performs these actions before releasing:
     * Load a test wallet with nonzero balance from seed to confirm wallet loading works
     * Send coins to another wallet to confirm spending works
     * Restart the client, confirm that it reloads properly
-* For both the Android and iOS mobile wallets, configure the node url to be https://staging.node.skycoin.net
+* For both the Android and iOS mobile wallets, configure the node url to be https://staging.node.skycoin.com
   and test all operations to ensure it will work with the new node version.
 
 #### Creating release builds
@@ -704,7 +704,7 @@ https://gist.github.com/gz-c/de3f9c43343b2f1a27c640fe529b067c
 
 ## Responsible Disclosure
 
-Security flaws in skycoin source or infrastructure can be sent to security@skycoin.net.
+Security flaws in skycoin source or infrastructure can be sent to security@skycoin.com.
 Bounties are available for accepted critical bug reports.
 
 PGP Key for signing:

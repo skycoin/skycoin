@@ -74,7 +74,7 @@ script:
 
 notifications:
   email:
-    - travis@skycoin.net
+    - travis@skycoin.com
   # https://github.com/kvld/travisci-telegram TravisCI Telegram Bot integration
   webhooks: https://fathomless-fjord-24024.herokuapp.com/notify
 

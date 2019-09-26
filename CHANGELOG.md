@@ -428,7 +428,7 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - Require transactions to have an input with non-zero coinhours
 - Add `-peerlist-size` and `-max-outgoing-connections` CLI options
 - Add `-download-peerlist` and `-peerlist-url` CLI options, to get peers from a URL
-- For electron clients, download a list of peers from https://downloads.skycoin.net/blockchain/peers.txt by default
+- For electron clients, download a list of peers from https://downloads.skycoin.com/blockchain/peers.txt by default
 
 ### Fixed
 

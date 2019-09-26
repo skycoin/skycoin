@@ -156,7 +156,7 @@ func setDefaults() {
 	viper.SetDefault("node.coin_hours_display_name", "Coin Hours")
 	viper.SetDefault("node.coin_hours_display_name_singular", "Coin Hour")
 	viper.SetDefault("node.coin_hours_ticker", "SCH")
-	viper.SetDefault("node.explorer_url", "https://explorer.skycoin.net")
+	viper.SetDefault("node.explorer_url", "https://explorer.skycoin.com")
 	viper.SetDefault("node.bip44_coin", bip44.CoinTypeSkycoin)
 
 	// build defaults

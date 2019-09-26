@@ -77,7 +77,7 @@ var (
 		BlockchainPubkeyStr: BlockchainPubkeyStr,
 		BlockchainSeckeyStr: BlockchainSeckeyStr,
 		DefaultConnections:  DefaultConnections,
-		PeerListURL:         "https://downloads.skycoin.net/blockchain/peers.txt",
+		PeerListURL:         "https://downloads.skycoin.com/blockchain/peers.txt",
 		Port:                6000,
 		WebInterfacePort:    6420,
 		DataDirectory:       "$HOME/.skycoin",
@@ -95,7 +95,7 @@ var (
 		CoinHoursName:         "Coin Hours",
 		CoinHoursNameSingular: "Coin Hour",
 		CoinHoursTicker:       "SCH",
-		ExplorerURL:           "https://explorer.skycoin.net",
+		ExplorerURL:           "https://explorer.skycoin.com",
 		Bip44Coin:             8000,
 	})
 

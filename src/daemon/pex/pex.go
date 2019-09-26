@@ -33,7 +33,7 @@ import (
 
 const (
 	// DefaultPeerListURL is the default URL to download remote peers list from, if enabled
-	DefaultPeerListURL = "https://downloads.skycoin.net/blockchain/peers.txt"
+	DefaultPeerListURL = "https://downloads.skycoin.com/blockchain/peers.txt"
 	// PeerCacheFilename filename for disk-cached peers
 	PeerCacheFilename = "peers.json"
 	// oldPeerCacheFilename previous filename for disk-cached peers. The cache loader will fall back onto this filename if it can't load peers.json

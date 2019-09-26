@@ -193,7 +193,7 @@ Usage:
   -peerlist-size int
     	Max number of peers to track in peerlist (default 65535)
   -peerlist-url string
-    	with -download-peerlist=true, download a peers.txt file from this url (default "https://downloads.skycoin.net/blockchain/peers.txt")
+    	with -download-peerlist=true, download a peers.txt file from this url (default "https://downloads.skycoin.com/blockchain/peers.txt")
   -port int
     	Port to run application on (default 6000)
   -profile-cpu
@@ -578,7 +578,7 @@ Maximum number of peers to track in the local peer database.
 
 ### peerlist-url
 
-The URL of the remote peer list bootstrap file. Defaults to https://downloads.skycoin.net/blockchain/peers.txt.
+The URL of the remote peer list bootstrap file. Defaults to https://downloads.skycoin.com/blockchain/peers.txt.
 
 ### port
 

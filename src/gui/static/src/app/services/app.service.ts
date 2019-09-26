@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { ApiService } from './api.service';
 import { Version } from '../app.datatypes';
 import BigNumber from 'bignumber.js';
@@ -34,6 +34,7 @@ export class AppService {
   constructor(
     private apiService: ApiService,
     private http: Http,
+    private ngZone: NgZone,
   ) {}
 
   testBackend() {
@@ -62,15 +63,19 @@ export class AppService {
 
   private detectUpdateAvailable() {
     if (AppConfig.urlForVersionChecking) {
-      this.http.get(AppConfig.urlForVersionChecking)
-        .retryWhen(errors => errors.delay(30000))
-        .subscribe((response: Response) => {
-          this.lastestVersionInternal = response.text().trim();
-          if (this.lastestVersionInternal.startsWith('v')) {
-            this.lastestVersionInternal = this.lastestVersionInternal.substr(1);
-          }
-          this.updateAvailableInternal = shouldUpgradeVersion(this.version.version, this.lastestVersionInternal);
-        });
+      this.ngZone.runOutsideAngular(() => {
+        this.http.get(AppConfig.urlForVersionChecking)
+          .retryWhen(errors => errors.delay(30000))
+          .subscribe((response: Response) => {
+            this.ngZone.run(() => {
+              this.lastestVersionInternal = response.text().trim();
+              if (this.lastestVersionInternal.startsWith('v')) {
+                this.lastestVersionInternal = this.lastestVersionInternal.substr(1);
+              }
+              this.updateAvailableInternal = shouldUpgradeVersion(this.version.version, this.lastestVersionInternal);
+            });
+          });
+      });
     }
   }
 }

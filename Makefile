@@ -137,7 +137,9 @@ install-linters: ## Install linters
 	go get -u github.com/FiloSottile/vendorcheck
 	# For some reason this install method is not recommended, see https://github.com/golangci/golangci-lint#install
 	# However, they suggest `curl ... | bash` which we should not do
-	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+	# go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+	# Change to use go get -u with version when go is v1.12+
+	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(shell go env GOPATH)/bin v1.18.0
 
 format: ## Formats the code. Must have goimports installed (use make install-linters).
 	goimports -w -local github.com/SkycoinProject/skycoin ./cmd

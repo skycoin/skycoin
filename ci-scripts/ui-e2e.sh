@@ -59,7 +59,7 @@ EOL
 # Compile the skycoin node
 # We can't use "go run" because that creates two processes which doesn't allow us to kill it at the end
 echo "compiling skycoin"
-go build -o "$BINARY" -ldflags "${GOLDFLAGS}" cmd/SkycoinProject/skycoin.go
+go build -o "$BINARY" -ldflags "${GOLDFLAGS}" cmd/skycoin/skycoin.go
 
 # Run skycoin node with pinned blockchain database
 echo "starting skycoin node in background with http listener on $HOST"

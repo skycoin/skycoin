@@ -19,7 +19,7 @@ type Config struct {
 }
 
 // NodeConfig configures the default CLI options for the skycoin node.
-// These parameters are loaded via cmd/SkycoinProject/skycoin.go into src/SkycoinProject/skycoin.go.
+// These parameters are loaded via cmd/skycoin/skycoin.go into src/SkycoinProject/skycoin.go.
 type NodeConfig struct {
 	// Port is the default port that the wire protocol communicates over
 	Port int `mapstructure:"port"`

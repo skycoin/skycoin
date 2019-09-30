@@ -3,7 +3,7 @@
 API default service port is `6420`. However, if running the desktop or standalone releases from the website, the port is randomized by default.
 
 A REST API implemented in Go is available,
-see [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/api#Client).
+see [Skycoin REST API Client Godoc](https://godoc.org/github.com/SkycoinProject/skycoin/src/api#Client).
 
 The API has two versions, `/api/v1` and `/api/v2`.
 
@@ -253,7 +253,7 @@ Response:
         "coin_hours_display_name": "Coin Hours",
         "coin_hours_display_name_singular": "Coin Hour",
         "coin_hours_ticker": "SCH",
-        "explorer_url": "https://explorer.skycoin.net",
+        "explorer_url": "https://explorer.skycoin.com",
         "bip44_coin": 8000
     }
 }
@@ -2355,7 +2355,7 @@ Errors:
 
 Broadcasts a hex-encoded, serialized transaction to the network.
 Transactions are serialized with the `encoder` package.
-See [`coin.Transaction.Serialize`](https://godoc.org/github.com/skycoin/skycoin/src/coin#Transaction.Serialize).
+See [`coin.Transaction.Serialize`](https://godoc.org/github.com/SkycoinProject/skycoin/src/coin#Transaction.Serialize).
 
 If there are no available connections, the API responds with a `503 Service Unavailable` error.
 

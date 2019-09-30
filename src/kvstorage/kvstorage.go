@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/skycoin/skycoin/src/util/file"
+	"github.com/SkycoinProject/skycoin/src/util/file"
 )
 
 var (

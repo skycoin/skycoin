@@ -193,7 +193,7 @@ Usage:
   -peerlist-size int
     	Max number of peers to track in peerlist (default 65535)
   -peerlist-url string
-    	with -download-peerlist=true, download a peers.txt file from this url (default "https://downloads.skycoin.net/blockchain/peers.txt")
+    	with -download-peerlist=true, download a peers.txt file from this url (default "https://downloads.skycoin.com/blockchain/peers.txt")
   -port int
     	Port to run application on (default 6000)
   -profile-cpu
@@ -252,7 +252,7 @@ To whitelist specific API sets, use `--enable-api-sets`.
 
 Note that certain API sets must be explicitly enabled. These API sets are either deprecated or have security implications.
 
-Read more about API sets here: https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#api-sets
+Read more about API sets here: https://github.com/SkycoinProject/skycoin/blob/develop/src/api/README.md#api-sets
 
 ### Run a public API node
 
@@ -395,7 +395,7 @@ Disable one or more API sets. Possible API sets are:
 `READ`, `STATUS`, `WALLET`, `TXN`, `PROMETHEUS`, `NET_CTRL`, `INSECURE_WALLET_SEED`, `STORAGE`.
 Multiple values should be separated by comma. Combine with `enable-all-api-sets` to blacklist specific API sets.
 
-Read more about API sets here: https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#api-sets
+Read more about API sets here: https://github.com/SkycoinProject/skycoin/blob/develop/src/api/README.md#api-sets
 
 ### disable-csp
 
@@ -442,7 +442,7 @@ Enable all API sets except for those marked `INSECURE` or `DEPRECATED`.
 Combine with `disable-api-sets` to blacklist specific API sets.
 Use `enable-api-sets` in addition to `enable-all-api-sets` in order to enable specific `INSECURE` or `DEPRECATED` API sets.
 
-Read more about API sets here: https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#api-sets
+Read more about API sets here: https://github.com/SkycoinProject/skycoin/blob/develop/src/api/README.md#api-sets
 
 ### enable-api-sets
 
@@ -450,7 +450,7 @@ Enable one or more API sets. Possible API sets are:
 `READ`, `STATUS`, `WALLET`, `TXN`, `PROMETHEUS`, `NET_CTRL`, `INSECURE_WALLET_SEED`, `STORAGE`.
 Multiple values should be separated by comma.
 
-Read more about API sets here: https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#api-sets
+Read more about API sets here: https://github.com/SkycoinProject/skycoin/blob/develop/src/api/README.md#api-sets
 
 ### enable-gui
 
@@ -482,7 +482,7 @@ Or, these header checks can be disabled entirely with `disable-header-check`.
 
 Enables go's http profiler interface, `pprof`.
 
-Read more about `pprof`: https://github.com/skycoin/skycoin/wiki/Profiling-with-pprof
+Read more about `pprof`: https://github.com/SkycoinProject/skycoin/wiki/Profiling-with-pprof
 
 ### http-prof-host
 
@@ -507,7 +507,7 @@ Write the log output to a file in `data-dir`. The logs will still be written to 
 ### max-block-size
 
 Maximum total size of transactions allowed when creating a new block. This value does not affect existing blocks.
-The size of a transaction is the length of its byte representation in the [Skycoin binary encoding format](https://github.com/skycoin/skycoin/wiki/Skycoin-Binary-Encoding-Format).
+The size of a transaction is the length of its byte representation in the [Skycoin binary encoding format](https://github.com/SkycoinProject/skycoin/wiki/Skycoin-Binary-Encoding-Format).
 Note that `max-block-size` is only the size limit of the transactions portion of a block; this limit does not include block metadata.
 Only applies when running in `block-publisher` mode.
 
@@ -556,14 +556,14 @@ The maximum total number of outgoing connections to make over the wire protocol.
 ### max-txn-size-create-block
 
 The maximum transaction size applied to transactions when creating blocks.
-The size of a transaction is the length of its byte representation in the [Skycoin binary encoding format](https://github.com/skycoin/skycoin/wiki/Skycoin-Binary-Encoding-Format).
+The size of a transaction is the length of its byte representation in the [Skycoin binary encoding format](https://github.com/SkycoinProject/skycoin/wiki/Skycoin-Binary-Encoding-Format).
 Transactions that exceed this size will not be included in blocks.
 Only applies when running in `block-publisher` mode.
 
 ### max-txn-size-unconfirmed
 
 The maximum transaction size applied to unconfirmed transactions received over the network.
-The size of a transaction is the length of its byte representation in the [Skycoin binary encoding format](https://github.com/skycoin/skycoin/wiki/Skycoin-Binary-Encoding-Format).
+The size of a transaction is the length of its byte representation in the [Skycoin binary encoding format](https://github.com/SkycoinProject/skycoin/wiki/Skycoin-Binary-Encoding-Format).
 Transactions that exceed this size will not be propagated to peers.
 
 ### no-ping-log
@@ -578,7 +578,7 @@ Maximum number of peers to track in the local peer database.
 
 ### peerlist-url
 
-The URL of the remote peer list bootstrap file. Defaults to https://downloads.skycoin.net/blockchain/peers.txt.
+The URL of the remote peer list bootstrap file. Defaults to https://downloads.skycoin.com/blockchain/peers.txt.
 
 ### port
 
@@ -588,7 +588,7 @@ Port to bind for the wire protocol interface.
 
 Enable the CPU profiler with `pprof`.
 
-Read more about `pprof`: https://github.com/skycoin/skycoin/wiki/Profiling-with-pprof
+Read more about `pprof`: https://github.com/SkycoinProject/skycoin/wiki/Profiling-with-pprof
 
 ### profile-cpu-file
 

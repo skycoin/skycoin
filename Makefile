@@ -137,11 +137,13 @@ install-linters: ## Install linters
 	go get -u github.com/FiloSottile/vendorcheck
 	# For some reason this install method is not recommended, see https://github.com/golangci/golangci-lint#install
 	# However, they suggest `curl ... | bash` which we should not do
-	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+	# go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+	# Change to use go get -u with version when go is v1.12+
+	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(shell go env GOPATH)/bin v1.18.0
 
 format: ## Formats the code. Must have goimports installed (use make install-linters).
-	goimports -w -local github.com/skycoin/skycoin ./cmd
-	goimports -w -local github.com/skycoin/skycoin ./src
+	goimports -w -local github.com/SkycoinProject/skycoin ./cmd
+	goimports -w -local github.com/SkycoinProject/skycoin ./src
 
 install-deps-ui:  ## Install the UI dependencies
 	cd $(GUI_STATIC_DIR) && npm install
@@ -201,11 +203,11 @@ generate: ## Generate test interface mocks and struct encoders
 	mv ./src/visor/blockdb/mock_unspent_pooler_test.go ./src/visor/mock_unspent_pooler_test.go
 	sed -i "" -e 's/package blockdb/package visor/g' ./src/visor/mock_unspent_pooler_test.go
 	sed -i "" -e 's/AddressHashes/blockdb.AddressHashes/g' ./src/visor/mock_unspent_pooler_test.go
-	goimports -w -local github.com/skycoin/skycoin ./src/visor/mock_unspent_pooler_test.go
+	goimports -w -local github.com/SkycoinProject/skycoin ./src/visor/mock_unspent_pooler_test.go
 
 install-generators: ## Install tools used by go generate
 	go get github.com/vektra/mockery/.../
-	go get github.com/skycoin/skyencoder/cmd/skyencoder
+	go get github.com/SkycoinProject/skyencoder/cmd/skyencoder
 
 update-golden-files: ## Run integration tests in update mode
 	./ci-scripts/integration-test-stable.sh -u >/dev/null 2>&1 || true
@@ -222,11 +224,11 @@ merge-coverage: ## Merge coverage files and create HTML coverage output. gocovme
 	@echo "Open coverage/all-coverage.html in your browser to view"
 
 fuzz-base58: ## Fuzz the base58 package. Requires https://github.com/dvyukov/go-fuzz
-	go-fuzz-build github.com/skycoin/skycoin/src/cipher/base58/internal
+	go-fuzz-build github.com/SkycoinProject/skycoin/src/cipher/base58/internal
 	go-fuzz -bin=base58fuzz-fuzz.zip -workdir=src/cipher/base58/internal
 
 fuzz-encoder: ## Fuzz the encoder package. Requires https://github.com/dvyukov/go-fuzz
-	go-fuzz-build github.com/skycoin/skycoin/src/cipher/encoder/internal
+	go-fuzz-build github.com/SkycoinProject/skycoin/src/cipher/encoder/internal
 	go-fuzz -bin=encoderfuzz-fuzz.zip -workdir=src/cipher/encoder/internal
 
 help:

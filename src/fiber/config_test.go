@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/cipher/bip44"
+	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 )
 
 // TODO(therealssj): write better tests
@@ -29,7 +29,7 @@ func TestNewConfig(t *testing.T) {
 				"139.162.7.132:6000",
 			},
 			Port:                           6000,
-			PeerListURL:                    "https://downloads.skycoin.net/blockchain/peers.txt",
+			PeerListURL:                    "https://downloads.skycoin.com/blockchain/peers.txt",
 			WebInterfacePort:               6420,
 			UnconfirmedBurnFactor:          10,
 			UnconfirmedMaxTransactionSize:  777,

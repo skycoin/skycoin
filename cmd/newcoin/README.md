@@ -8,7 +8,7 @@ This tool can be used to create a new fiber coin easily from a config file.
 ## Install
 
 ```bash
-$ cd $GOPATH/src/github.com/skycoin/skycoin/cmd/newcoin
+$ cd $GOPATH/src/github.com/SkycoinProject/skycoin/cmd/newcoin
 $ go install ./...
 ```
 
@@ -38,10 +38,10 @@ GLOBAL OPTIONS:
 ```
 
 ### Create New Coin
-When using the `newcoin` command, you should run it from the `$GOPATH/src/github.com/skycoin/skycoin` folder to utilise the built in default templates.
+When using the `newcoin` command, you should run it from the `$GOPATH/src/github.com/SkycoinProject/skycoin` folder to utilise the built in default templates.
 
 ```bash
-$ cd $GOPATH/src/github.com/skycoin/skycoin
+$ cd $GOPATH/src/github.com/SkycoinProject/skycoin
 $ newcoin createcoin [command options]
 ```
 
@@ -59,11 +59,11 @@ OPTIONS:
 Create a test coin using application defaults.
 
 ```bash
-$ cd $GOPATH/src/github.com/skycoin/skycoin
+$ cd $GOPATH/src/github.com/SkycoinProject/skycoin
 $ newcoin createcoin --coin testcoin
 ```
 
 This will create a new directory, `testcoin`, in `cmd` folder and a `testcoin.go` file inside that folder.
-It will also use the built-in defaul options (specified above) and draw template configuration from `$GOPATH/src/github.com/skycoin/skycoin/template`
+It will also use the built-in defaul options (specified above) and draw template configuration from `$GOPATH/src/github.com/SkycoinProject/skycoin/template`
 
 This file can be used to run a "testcoin" node.

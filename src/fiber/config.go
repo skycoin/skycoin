@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/skycoin/skycoin/src/cipher/bip44"
+	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 )
 
 // Config records fiber coin parameters
@@ -19,7 +19,7 @@ type Config struct {
 }
 
 // NodeConfig configures the default CLI options for the skycoin node.
-// These parameters are loaded via cmd/skycoin/skycoin.go into src/skycoin/skycoin.go.
+// These parameters are loaded via cmd/skycoin/skycoin.go into src/SkycoinProject/skycoin.go.
 type NodeConfig struct {
 	// Port is the default port that the wire protocol communicates over
 	Port int `mapstructure:"port"`
@@ -156,7 +156,7 @@ func setDefaults() {
 	viper.SetDefault("node.coin_hours_display_name", "Coin Hours")
 	viper.SetDefault("node.coin_hours_display_name_singular", "Coin Hour")
 	viper.SetDefault("node.coin_hours_ticker", "SCH")
-	viper.SetDefault("node.explorer_url", "https://explorer.skycoin.net")
+	viper.SetDefault("node.explorer_url", "https://explorer.skycoin.com")
 	viper.SetDefault("node.bip44_coin", bip44.CoinTypeSkycoin)
 
 	// build defaults

@@ -3,13 +3,13 @@ package base58fuzz
 import (
 	"bytes"
 
-	"github.com/skycoin/skycoin/src/cipher/base58"
+	"github.com/SkycoinProject/skycoin/src/cipher/base58"
 )
 
 // To use the fuzzer:
 // Follow the install instructions from https://github.com/dvyukov/go-fuzz
 // Then, from the repo root,
-// $ go-fuzz-build github.com/skycoin/skycoin/src/cipher/base58/internal
+// $ go-fuzz-build github.com/SkycoinProject/skycoin/src/cipher/base58/internal
 // This creates a file base58fuzz-fuzz.zip
 // Then,
 // $ go-fuzz -bin=base58fuzz-fuzz.zip -workdir=src/cipher/base58/internal

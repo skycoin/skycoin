@@ -5,7 +5,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/SkycoinProject/skycoin/src/util/droplet"
 )
 
 func init() {

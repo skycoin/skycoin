@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Migrate `skycoin.net` to `skycoin.com`
+- Migrate project path to `SkycoinProject/skycoin`
 - Use transaction history when scanning wallet addresses, instead of the current address balance
 - Document the daemon's CLI options
 - Add the ability to save transaction notes
@@ -428,7 +430,7 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - Require transactions to have an input with non-zero coinhours
 - Add `-peerlist-size` and `-max-outgoing-connections` CLI options
 - Add `-download-peerlist` and `-peerlist-url` CLI options, to get peers from a URL
-- For electron clients, download a list of peers from https://downloads.skycoin.net/blockchain/peers.txt by default
+- For electron clients, download a list of peers from https://downloads.skycoin.com/blockchain/peers.txt by default
 
 ### Fixed
 

@@ -3,8 +3,8 @@ package visor
 import (
 	"time"
 
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/transaction"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/transaction"
 )
 
 // Transaction wraps around coin.Transaction, tagged with its status.  This allows us

@@ -1,6 +1,6 @@
 # Fast Implementation of Base58 encoding
 
-[![GoDoc](https://godoc.org/github.com/skycoin/skycoin/src/cipher/base58?status.svg)](https://godoc.org/github.com/skycoin/skycoin/src/cipher/base58)
+[![GoDoc](https://godoc.org/github.com/SkycoinProject/skycoin/src/cipher/base58?status.svg)](https://godoc.org/github.com/SkycoinProject/skycoin/src/cipher/base58)
 
 Fast implementation of base58 encoding in Go.
 
@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/skycoin/skycoin/src/cipher/base58"
+	"github.com/SkycoinProject/skycoin/src/cipher/base58"
 )
 
 func main() {

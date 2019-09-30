@@ -1,8 +1,8 @@
 package readable
 
 import (
-	"github.com/skycoin/skycoin/src/cipher/bip44"
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
+	"github.com/SkycoinProject/skycoin/src/wallet"
 )
 
 // Balance has coins and hours

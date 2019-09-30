@@ -12,7 +12,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/SkycoinProject/skycoin/src/testutil"
 )
 
 func requireFileMode(t *testing.T, filename string, mode os.FileMode) {

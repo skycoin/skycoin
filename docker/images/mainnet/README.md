@@ -28,7 +28,7 @@ to the branch, a tag or a commit you specify on that variable.
 Example
 
 ```sh
-$ git clone https://github.com/skycoin/skycoin
+$ git clone https://github.com/SkycoinProject/skycoin
 $ cd skycoin
 $ SKYCOIN_VERSION=v0.24.0
 $ docker build -f docker/images/mainnet/Dockerfile \
@@ -52,7 +52,7 @@ architecture.
 Example for ARMv5.
 
 ```sh
-$ git clone https://github.com/skycoin/skycoin
+$ git clone https://github.com/SkycoinProject/skycoin
 $ cd skycoin
 $ docker build -f docker/images/mainnet/Dockerfile \
   --build-arg=ARCH=arm \
@@ -73,7 +73,7 @@ $ docker volume create skycoin-wallet
 $ docker run -d -v skycoin-data:/data/.skycoin \
   -v skycoin-wallet:/wallet \
   -p 6000:6000 -p 6420:6420 \
-  --name skycoin-node-stable skycoin/skycoin
+  --name skycoin-node-stable SkycoinProject/skycoin
 ```
 
 When invoking the container this way the options of the skycoin command are set to their respective default values , except the following
@@ -103,7 +103,7 @@ The container accepts parameters in order to customize the execution of the skyc
  $ docker run --rm -d -v skycoin-data:/data/.skycoin \
   -v skycoin-wallet:/wallet \
   -p 6000:6000 -p 6421:6421 \
-  --name skycoin-node-develop skycoin/skycoin:develop -web-interface-port 6421
+  --name skycoin-node-develop SkycoinProject/skycoin:develop -web-interface-port 6421
 ```
 
 Notice that the value of node parameter (e.g. `-web-interface-port`) affects the execution context inside the container. Therefore, in this particular case, the port mapping should be updated accordingly.
@@ -111,7 +111,7 @@ Notice that the value of node parameter (e.g. `-web-interface-port`) affects the
 To get a full list of skycoin's parameters, just run
 
 ```sh
- $ docker run --rm skycoin/skycoin:develop -help
+ $ docker run --rm SkycoinProject/skycoin:develop -help
 ```
 
 To run multiple nodes concurrently in the same host, it is highly recommended to create separate volumes for each node. For example, in order to run a block publisher node along with the one launched above, it is necessary to execute
@@ -122,7 +122,7 @@ $ docker volume create skycoin-block-publisher-wallet
 $ docker run -d -v skycoin-block-publisher-data:/data/.skycoin \
   -v skycoin-block-publisher-wallet:/wallet \
   -p 6001:6000 -p 6421:6420 \
-  --name skycoin-block-publisher-stable skycoin/skycoin -block-publisher
+  --name skycoin-block-publisher-stable SkycoinProject/skycoin -block-publisher
 ```
 
 Notice that the host's port must be changed since collisions of two services listening at the same port are not allowed by the low-level operating system socket libraries.

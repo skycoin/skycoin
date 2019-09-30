@@ -58,7 +58,7 @@ all the faked operations will end in an error, instead of success.
 
 Please note that at the moment the Purchase API (teller) is both offline and not supporting CORS headers.
 
-While event.skycoin.net is not working, we will have to run the purchase API locally.
+While event.skycoin.com is not working, we will have to run the purchase API locally.
 
 Similar as the solution for the above CORS issue, you can circumvent CORS issues by changing the url property to '/teller/'
 

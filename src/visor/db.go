@@ -161,12 +161,25 @@ func backupDB(db *dbutil.DB) (*dbutil.DB, error) { //nolint:unused,megacheck
 	return OpenDB(dbPath, dbReadOnly)
 }
 
-// ResetCorruptDB checks the database for corruption and if corrupted and
-// is ErrMissingSignature, then then it erases the db and starts over.
-// If it's ErrHistoryDBCorrupted, then rebuild historydb from scratch.
+// ResetCorruptDB checks the database for corruption and if one of the following
+// error types is found, then the database is deemed to be corrupted:
+// - blockdb.ErrMissingSignature,
+// - historydb.ErrHistoryDBCorrupted
+// - encoder.ErrBufferUnderflow
+// - encoder.ErrMaxLenExceeded
+// If the database is deemed to be corrupted then it is erased and the db starts over.
 // A copy of the corrupted database is saved.
 func ResetCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*dbutil.DB, error) {
 	err := CheckDatabase(db, pubkey, quit)
+
+	// Check if an encoder error has been reported.
+	// These are not types like the errors below so cannot be included in the
+	// .(type) switch evaluation.
+	if err == encoder.ErrBufferUnderflow || err == encoder.ErrMaxLenExceeded {
+		logger.Critical().Errorf("Database is corrupted (encoder error), recreating db: %v", err)
+		return resetCorruptDB(db)
+	}
+
 	switch err.(type) {
 	case nil:
 		return db, nil

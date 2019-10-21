@@ -4049,7 +4049,7 @@ Result:
 }
 ```
 
-### Count unique addresses
+### Count the addresses that currently have unspent outputs (coins)
 
 API sets: `READ`
 

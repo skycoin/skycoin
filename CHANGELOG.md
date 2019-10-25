@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fix `fiber.toml` transaction verification parameters ignored by newcoin
 - #2373 Fix and clean-up further panics with various `skycoin-cli` commands (lastBlocks, checkdb) which were not correctly handling arguments.
 - #2442 Reset the "trusted" flag to false for all peers on load, before registering default hardcoded peers in the peerlist
+- #26 Add additional database corruption checks in ResetCorruptDB to detect encoder ErrBufferUnderflow and ErrMaxLenExceeded
 
 ### Changed
 

@@ -37,7 +37,7 @@ cache:
   - $HOME/.cache/electron
   - $HOME/.cache/electron-builder
   - $HOME/.npm/_prebuilds
-  - src/gui/static/node_modules
+#   - src/gui/static/node_modules
 
 addons:
   chrome: stable

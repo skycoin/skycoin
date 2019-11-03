@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Fix issue #87, can not run web gui from skycoin docker image.
 - Do windows electron builds by travis and abandon the appveyor
 - Migrate `skycoin.net` to `skycoin.com`
 - Migrate project path to `SkycoinProject/skycoin`

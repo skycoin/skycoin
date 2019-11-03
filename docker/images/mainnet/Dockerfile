@@ -9,7 +9,11 @@ ARG SCOMMIT
 ARG SBRANCH
 ARG STAG
 
-COPY . $GOPATH/src/github.com/SkycoinProject/skycoin
+ADD cmd $GOPATH/src/github.com/SkycoinProject/skycoin/cmd
+ADD src $GOPATH/src/github.com/SkycoinProject/skycoin/src
+ADD vendor $GOPATH/src/github.com/SkycoinProject/skycoin/vendor
+ADD template $GOPATH/src/github.com/SkycoinProject/skycoin/template
+ADD fiber.toml $GOPATH/src/github.com/SkycoinProject/skycoin/fiber.toml
 
 # This code checks if SKYCOIN_VERSION is set and checkouts to that version if
 # so. The git stash line prevents the build to fail if there are any uncommited
@@ -40,7 +44,7 @@ RUN apt-get update && \
 
 RUN /bin/bash -c 'mkdir -p /tmp/files/{usr/bin,/usr/local/skycoin/src/gui/static,/usr/local/bin/,/etc/ssl}'
 RUN cp -r /go/bin/* /tmp/files/usr/bin/
-RUN cp -r  /go/src/github.com/SkycoinProject/skycoin/src/gui/static /tmp/files/usr/local/skycoin/src/gui/static
+RUN cp -r  /go/src/github.com/SkycoinProject/skycoin/src/gui/static /tmp/files/usr/local/skycoin/src/gui/
 RUN cp -r  /etc/ssl/certs /tmp/files/etc/ssl/certs
 COPY docker_launcher.sh /tmp/files/usr/local/bin/docker_launcher.sh
 

@@ -55,8 +55,8 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 ## Install
 
 ```bash
-$ cd $GOPATH/src/github.com/SkycoinProject/skycoin/cmd/cli
-$ ./install.sh
+$ cd $GOPATH/src/github.com/SkycoinProject/skycoin/cmd/skycoin-cli
+$ go install ./...
 ```
 
 ## Environment Settings

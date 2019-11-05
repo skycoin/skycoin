@@ -171,9 +171,9 @@ func TestMain(m *testing.M) {
 
 	// Build cli binary file.
 	// Args to build the cli binary without coverage:
-	// args := []string{"build", "-o", binaryPath, "../../../cmd/cli/cli.go"}
+	// args := []string{"build", "-o", binaryPath, "../../../cmd/skycoin-cli/skycoin-cli.go"}
 	// Compile the binary with test flags enabled to get a coverage report from the binary
-	args := []string{"test", "-c", "-tags", "testrunmain", "-o", binaryPath, "-coverpkg=github.com/SkycoinProject/skycoin/...", "../../../cmd/cli/"}
+	args := []string{"test", "-c", "-tags", "testrunmain", "-o", binaryPath, "-coverpkg=github.com/SkycoinProject/skycoin/...", "../../../cmd/skycoin-cli/"}
 	if err := exec.Command("go", args...).Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Make %v binary failed: %v\n", binaryName, err)
 		os.Exit(1)

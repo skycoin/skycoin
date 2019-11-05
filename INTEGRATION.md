@@ -2,7 +2,7 @@
 
 A Skycoin node offers a REST API on port 6420 (when running from source; if you are using the releases downloaded from the website, the port is randomized)
 
-A CLI tool is provided in `cmd/cli/cli.go`. This tool communicates over the REST API.
+A CLI tool is provided in `cmd/skycoin-cli/skycoin-cli.go`. This tool communicates over the REST API.
 
 The API interfaces do not support authentication or encryption so they should only be used over localhost.
 
@@ -85,7 +85,7 @@ For integrations, the skycoin node should be run from source with `./run-daemon.
 
 ### Skycoin command line interface
 
-[CLI command API](cmd/cli/README.md).
+[CLI command API](cmd/skycoin-cli/README.md).
 
 ### Skycoin REST API Client Documentation
 
@@ -166,7 +166,7 @@ coinhours quickly.
 When sending coins from the CLI tool, a wallet file local to the caller is used.
 The CLI tool allows you to specify the wallet file on disk to use for operations.
 
-See [CLI command API](cmd/cli/README.md) for documentation of the CLI interface.
+See [CLI command API](cmd/skycoin-cli/README.md) for documentation of the CLI interface.
 
 To perform a send, the preferred method follows these steps in a loop:
 

@@ -131,8 +131,6 @@ coverage/
 src/api/integration/wallets/
 src/api/integration/wallets/
 
-skycoin-cli
-
 # FIXME: see #1027 - Temporary solution to deal with generated file
 include/libskycoin.h
 

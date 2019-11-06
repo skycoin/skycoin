@@ -12,7 +12,7 @@ SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 pushd "$SCRIPTDIR" >/dev/null
 
 if [ $SKIP_COMPILATION -ne 1 ]; then
-    CMD="cli" CONFIG_MODE= ./gox.sh "$GOX_OSARCH" "$GOX_CLI_OUTPUT_DIR" "$GOX_CLI_OUTPUT_NAME"
+    CMD="skycoin-cli" CONFIG_MODE= ./gox.sh "$GOX_OSARCH" "$GOX_CLI_OUTPUT_DIR" "$GOX_CLI_OUTPUT_NAME"
 fi
 
 echo

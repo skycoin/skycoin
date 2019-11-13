@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Fix issue #7 #162, corrupted file in ~/.skycoin/data/ dir makes the desktop wallet show ERROR #1.
 - Fix issue #87, can not run web gui from skycoin docker image.
 - Do windows electron builds by travis and abandon the appveyor
 - Migrate `skycoin.net` to `skycoin.com`

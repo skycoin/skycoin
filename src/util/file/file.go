@@ -307,3 +307,9 @@ func Exists(fn string) (bool, error) {
 	}
 	return true, nil
 }
+
+// IsWritable checks if the file is writable
+func IsWritable(fn string) bool {
+	st, _ := os.Stat(fn)
+	return (st.Mode().Perm()&(1<<uint(7)) == 0)
+}

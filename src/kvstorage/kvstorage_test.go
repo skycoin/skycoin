@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	testDataFilename  = "data" + storageFileExtension
-	testEmptyFilename = "empty" + storageFileExtension
+	testDataFilename    = "data" + storageFileExtension
+	testEmptyFilename   = "empty" + storageFileExtension
+	testCorruptFilename = "corrupt" + storageFileExtension
 )
 
 func setupTmpDir(t *testing.T) (string, func()) {
@@ -46,17 +47,30 @@ func setupEmptyTestFile(t *testing.T, fn string) {
 	require.NoError(t, err)
 }
 
+func setupCorruptedTestFile(t *testing.T, fn string) {
+	f, err := os.Create(fn)
+	require.NoError(t, err)
+	defer f.Close()
+	_, err = f.Write([]byte("corrupt json file"))
+	require.NoError(t, err)
+}
+
 func TestNewKVStorage(t *testing.T) {
 	type expect struct {
-		storage     *kvStorage
-		expectError bool
+		storage           *kvStorage
+		expectError       bool
+		expectCorruptFile string
 	}
 
 	tmpDir, cleanup := setupTmpDir(t)
 	defer cleanup()
 
+	// Setup test data
 	dataFilename := filepath.Join(tmpDir, testDataFilename)
 	setupTestFile(t, dataFilename)
+	// Setup corrupt data file
+	corruptDataFilename := filepath.Join(tmpDir, testCorruptFilename)
+	setupCorruptedTestFile(t, corruptDataFilename)
 
 	tt := []struct {
 		name   string
@@ -84,6 +98,17 @@ func TestNewKVStorage(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "corrupted file",
+			fn:   corruptDataFilename,
+			expect: expect{
+				storage: &kvStorage{
+					fn:   corruptDataFilename,
+					data: map[string]string{}, // an empty file will be when a corrupted file is detected
+				},
+				expectCorruptFile: corruptDataFilename + ".corrupt.9NGyOAcMBB4",
+			},
+		},
 	}
 
 	for _, tc := range tt {
@@ -99,6 +124,12 @@ func TestNewKVStorage(t *testing.T) {
 			}
 
 			require.Equal(t, tc.expect.storage, storage)
+
+			if tc.expect.expectCorruptFile != "" {
+				// Check if the file does exist
+				_, err := os.Stat(tc.expect.expectCorruptFile)
+				require.False(t, os.IsNotExist(err))
+			}
 		})
 	}
 }

@@ -151,6 +151,11 @@ func SaveJSONSafe(filename string, thing interface{}, mode os.FileMode) error {
 
 // SaveBinary persists data into given file in binary,
 // backup the previous file, if there was one
+// Make a copy of the wallet data to a `tmp` file first, then
+// update the wallet, finally, remove the tmp file.
+// We used os.Rename() to move the tmp file to wallet file directly previously
+// but this would have the potential to break the wallet if has a power down
+// when running the os.Rename().
 func SaveBinary(filename string, data []byte, mode os.FileMode) error {
 	// Write the new file to a temporary
 	tmpname := filename + ".tmp"
@@ -158,13 +163,11 @@ func SaveBinary(filename string, data []byte, mode os.FileMode) error {
 		return err
 	}
 
-	// Write the new file to the target wallet file
-	if err := ioutil.WriteFile(filename, data, mode); err != nil {
-		return err
-	}
+	// Make sure the tmp file will be removed
+	defer os.Remove(tmpname)
 
-	// Remove the tmp file
-	return os.Remove(tmpname)
+	// Write the new file to the target wallet file
+	return ioutil.WriteFile(filename, data, mode)
 }
 
 //TODO: require file named after application and then hashcode, in static directory
@@ -306,10 +309,4 @@ func Exists(fn string) (bool, error) {
 		return false, err
 	}
 	return true, nil
-}
-
-// IsWritable checks if the file is writable
-func IsWritable(fn string) bool {
-	st, _ := os.Stat(fn)
-	return (st.Mode().Perm()&(1<<uint(7)) == 0)
 }

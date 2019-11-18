@@ -304,26 +304,43 @@ func TestWalletNewAddress(t *testing.T) {
 	seed := bip39.MustNewDefaultMnemonic()
 
 	cases := []struct {
-		name           string
-		seed           string
-		seedPassphrase string
-		walletType     string
+		name             string
+		seed             string
+		seedPassphrase   string
+		walletType       string
+		expectErr        error
+		postWalletHandle func(t *testing.T, c *api.Client, wltName string)
 	}{
 		{
 			name:       "deterministic",
 			seed:       seed,
 			walletType: wallet.WalletTypeDeterministic,
+			expectErr:  nil,
+		},
+		{
+			name:       "deterministic writable=false",
+			seed:       seed,
+			walletType: wallet.WalletTypeDeterministic,
+			postWalletHandle: func(t *testing.T, c *api.Client, wltName string) {
+				dir := getWalletDir(t, c)
+				wltPath := filepath.Join(dir, wltName)
+				err := os.Chmod(wltPath, 0555) // Remove write permission
+				require.NoError(t, err)
+			},
+			expectErr: api.NewClientError("400 Bad Request", http.StatusBadRequest, "400 Bad Request - saving wallet permission denied"),
 		},
 		{
 			name:       "bip44 without seed passphrase",
 			seed:       seed,
 			walletType: wallet.WalletTypeBip44,
+			expectErr:  nil,
 		},
 		{
 			name:           "bip44 with seed passphrase",
 			seed:           seed,
 			seedPassphrase: "foobar",
 			walletType:     wallet.WalletTypeBip44,
+			expectErr:      nil,
 		},
 	}
 
@@ -351,13 +368,22 @@ func TestWalletNewAddress(t *testing.T) {
 					Encrypt:        encrypt,
 				})
 				defer clean()
+				if tc.postWalletHandle != nil {
+					tc.postWalletHandle(t, c, w.Meta.Filename)
+				}
 
 				addrs, err := c.NewWalletAddress(w.Meta.Filename, i, password)
+				require.Equal(t, tc.expectErr, err)
+
+				// Confirms no intermediate tmp file exists
+				walletDir := getWalletDir(t, c)
+				wltPath := filepath.Join(walletDir, w.Meta.Filename) + ".tmp"
+				_, existErr := os.Stat(wltPath)
+				require.True(t, os.IsNotExist(existErr))
+
 				if err != nil {
-					t.Fatalf("%v", err)
 					return
 				}
-				require.NoError(t, err)
 
 				switch tc.walletType {
 				case wallet.WalletTypeDeterministic:

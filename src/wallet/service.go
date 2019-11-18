@@ -292,6 +292,9 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 
 	// Save the wallet first
 	if err := Save(w, serv.config.WalletDir); err != nil {
+		if os.IsPermission(err) {
+			return nil, ErrWalletPermission
+		}
 		return nil, err
 	}
 

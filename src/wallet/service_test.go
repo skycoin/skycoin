@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -609,7 +608,7 @@ func TestServiceNewAddresses(t *testing.T) {
 		postWalletHandle  func(w string)
 		expectAddrNum     int
 		expectAddrs       []cipher.Address
-		expectErr         func(wltPath string) error
+		expectErr         error
 	}{
 		{
 			name: "encrypted=false addresses=0",
@@ -753,7 +752,7 @@ func TestServiceNewAddresses(t *testing.T) {
 			n:             1,
 			pwd:           []byte("wrong password"),
 			expectAddrNum: 1,
-			expectErr:     func(_ string) error { return ErrInvalidPassword },
+			expectErr:     ErrInvalidPassword,
 		},
 		{
 			name: "wallet api disabled",
@@ -763,7 +762,7 @@ func TestServiceNewAddresses(t *testing.T) {
 				Type:  WalletTypeDeterministic,
 			},
 			walletAPIDisabled: true,
-			expectErr:         func(_ string) error { return ErrWalletAPIDisabled },
+			expectErr:         ErrWalletAPIDisabled,
 		},
 		{
 			name: "encrypted=false password provided",
@@ -774,7 +773,7 @@ func TestServiceNewAddresses(t *testing.T) {
 			},
 			n:         1,
 			pwd:       []byte("foo"),
-			expectErr: func(_ string) error { return ErrWalletNotEncrypted },
+			expectErr: ErrWalletNotEncrypted,
 		},
 		{
 			name: "encrypted=false writable=false",
@@ -789,13 +788,7 @@ func TestServiceNewAddresses(t *testing.T) {
 				require.NoError(t, err)
 			},
 			expectAddrNum: 1,
-			expectErr: func(wltPath string) error {
-				return &os.PathError{
-					Op:   "open",
-					Path: wltPath,
-					Err:  syscall.Errno(0xd),
-				}
-			},
+			expectErr:     ErrWalletPermission,
 		},
 	}
 
@@ -829,15 +822,16 @@ func TestServiceNewAddresses(t *testing.T) {
 				}
 
 				naddrs, err := s.NewAddresses(w.Filename(), tc.pwd, tc.n)
-				require.Equal(t, tc.expectErr(wltPath), err)
-				if err != nil {
-					return
-				}
+				require.Equal(t, tc.expectErr, err)
 
 				// Confirms that no intermediate tmp file exists
 				tmpWltPath := filepath.Join(dir, w.Filename()) + ".tmp"
-				_, err = os.Stat(tmpWltPath)
-				require.True(t, os.IsNotExist(err))
+				_, existErr := os.Stat(tmpWltPath)
+				require.True(t, os.IsNotExist(existErr))
+
+				if err != nil {
+					return
+				}
 
 				// Confirms that the wallet addresse number is correct
 				require.Len(t, naddrs, tc.expectAddrNum)

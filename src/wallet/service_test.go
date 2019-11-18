@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -605,9 +606,10 @@ func TestServiceNewAddresses(t *testing.T) {
 		n                 uint64
 		pwd               []byte
 		walletAPIDisabled bool
+		postWalletHandle  func(w string)
 		expectAddrNum     int
 		expectAddrs       []cipher.Address
-		expectErr         error
+		expectErr         func(wltPath string) error
 	}{
 		{
 			name: "encrypted=false addresses=0",
@@ -751,7 +753,7 @@ func TestServiceNewAddresses(t *testing.T) {
 			n:             1,
 			pwd:           []byte("wrong password"),
 			expectAddrNum: 1,
-			expectErr:     ErrInvalidPassword,
+			expectErr:     func(_ string) error { return ErrInvalidPassword },
 		},
 		{
 			name: "wallet api disabled",
@@ -761,7 +763,7 @@ func TestServiceNewAddresses(t *testing.T) {
 				Type:  WalletTypeDeterministic,
 			},
 			walletAPIDisabled: true,
-			expectErr:         ErrWalletAPIDisabled,
+			expectErr:         func(_ string) error { return ErrWalletAPIDisabled },
 		},
 		{
 			name: "encrypted=false password provided",
@@ -772,7 +774,28 @@ func TestServiceNewAddresses(t *testing.T) {
 			},
 			n:         1,
 			pwd:       []byte("foo"),
-			expectErr: ErrWalletNotEncrypted,
+			expectErr: func(_ string) error { return ErrWalletNotEncrypted },
+		},
+		{
+			name: "encrypted=false writable=false",
+			opts: Options{
+				Label: "label",
+				Seed:  seed,
+				Type:  WalletTypeDeterministic,
+			},
+			n: 1,
+			postWalletHandle: func(fn string) {
+				err := os.Chmod(fn, 0555) // no write permission to the wallet file
+				require.NoError(t, err)
+			},
+			expectAddrNum: 1,
+			expectErr: func(wltPath string) error {
+				return &os.PathError{
+					Op:   "open",
+					Path: wltPath,
+					Err:  syscall.Errno(0xd),
+				}
+			},
 		},
 	}
 
@@ -796,16 +819,27 @@ func TestServiceNewAddresses(t *testing.T) {
 					return
 				}
 
+				wltPath := filepath.Join(dir, w.Filename())
+				if tc.postWalletHandle != nil {
+					tc.postWalletHandle(wltPath)
+				}
+
 				if w.IsEncrypted() {
 					checkNoSensitiveData(t, w)
 				}
 
 				naddrs, err := s.NewAddresses(w.Filename(), tc.pwd, tc.n)
-				require.Equal(t, tc.expectErr, err)
+				require.Equal(t, tc.expectErr(wltPath), err)
 				if err != nil {
 					return
 				}
 
+				// Confirms that no intermediate tmp file exists
+				tmpWltPath := filepath.Join(dir, w.Filename()) + ".tmp"
+				_, err = os.Stat(tmpWltPath)
+				require.True(t, os.IsNotExist(err))
+
+				// Confirms that the wallet addresse number is correct
 				require.Len(t, naddrs, tc.expectAddrNum)
 				for i, a := range tc.expectAddrs {
 					require.Equal(t, a, naddrs[i])

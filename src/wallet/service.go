@@ -3,12 +3,14 @@ package wallet
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
+	"github.com/SkycoinProject/skycoin/src/util/file"
 )
 
 // TransactionsFinder interface for finding address related transaction hashes
@@ -288,6 +290,12 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 		if err := f(w); err != nil {
 			return nil, err
 		}
+	}
+
+	// Checks if the wallet file is writable
+	wf := filepath.Join(serv.config.WalletDir, w.Filename())
+	if !file.IsWritable(wf) {
+		return nil, ErrWalletPermission
 	}
 
 	// Save the wallet first

@@ -1847,6 +1847,19 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 			gatewayNewAddressesErr: wallet.ErrInvalidPassword,
 		},
 		{
+			name:   "400 Bad Request - permission denied",
+			method: http.MethodPost,
+			body: &httpBody{
+				ID:  "foo",
+				Num: "1",
+			},
+			status:                 http.StatusBadRequest,
+			err:                    "400 Bad Request - saving wallet permission denied",
+			walletID:               "foo",
+			n:                      1,
+			gatewayNewAddressesErr: wallet.ErrWalletPermission,
+		},
+		{
 			name:   "200 - OK",
 			method: http.MethodPost,
 			body: &httpBody{

@@ -82,6 +82,8 @@ var (
 	ErrInvalidWalletType = NewError(errors.New("invalid wallet type"))
 	// ErrWalletTypeNotRecoverable is returned by RecoverWallet is the wallet type does not support recovery
 	ErrWalletTypeNotRecoverable = NewError(errors.New("wallet type is not recoverable"))
+	// ErrWalletPermission is returned when updating a wallet without writting permission
+	ErrWalletPermission = NewError(errors.New("saving wallet permission denied"))
 )
 
 const (

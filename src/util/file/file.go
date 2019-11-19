@@ -12,6 +12,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/util/logging"
 )
 
@@ -150,24 +151,22 @@ func SaveJSONSafe(filename string, thing interface{}, mode os.FileMode) error {
 }
 
 // SaveBinary persists data into given file in binary,
-// backup the previous file, if there was one
-// Make a copy of the wallet data to a `tmp` file first, then
-// update the wallet, finally, remove the tmp file.
-// We used os.Rename() to move the tmp file to wallet file directly previously
-// but this would have the potential to break the wallet if has a power down
-// when running the os.Rename().
+// backup the data to `tmp` wallet file and then write data
+// to target wallet file. Remove the tmp file in the end of
+// this function. In this way, the wallet data would not be lost
 func SaveBinary(filename string, data []byte, mode os.FileMode) error {
 	// Write the new file to a temporary
-	tmpname := filename + ".tmp"
+	dataHash := cipher.SumSHA256(data)
+	tmpname := filename + ".tmp." + dataHash.Hex()[:8]
 	if err := ioutil.WriteFile(tmpname, data, mode); err != nil {
 		return err
 	}
 
-	// Make sure the tmp file will be removed
-	defer os.Remove(tmpname)
+	if err := ioutil.WriteFile(filename, data, mode); err != nil {
+		return err
+	}
 
-	// Write the new file to the target wallet file
-	return ioutil.WriteFile(filename, data, mode)
+	return os.Remove(tmpname)
 }
 
 //TODO: require file named after application and then hashcode, in static directory
@@ -309,4 +308,14 @@ func Exists(fn string) (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+// IsWritable checks if the file is writable
+func IsWritable(name string) bool {
+	f, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil && os.IsPermission(err) {
+		return false
+	}
+	f.Close()
+	return true
 }

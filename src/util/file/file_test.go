@@ -3,6 +3,7 @@ package file
 import (
 	"bytes"
 	"crypto/rand"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/testutil"
 )
 
@@ -43,9 +45,38 @@ func requireIsRegularFile(t *testing.T, filename string) {
 }
 
 func cleanup(fn string) {
-	os.Remove(fn)
-	os.Remove(fn + ".tmp")
-	os.Remove(fn + ".bak")
+	paths := []string{fn}
+	filepath.Walk("./", func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			panic(err)
+		}
+		if strings.Contains(info.Name(), fn+".tmp") {
+			paths = append(paths, info.Name())
+			return nil
+		}
+
+		if strings.Contains(info.Name(), fn+".bak") {
+			paths = append(paths, info.Name())
+			return nil
+		}
+
+		return nil
+	})
+
+	for _, f := range paths {
+		os.Remove(f)
+	}
+}
+
+func TestCleanup(t *testing.T) {
+	fn := "test.bin"
+	defer cleanup(fn)
+	b := make([]byte, 128)
+	_, err := rand.Read(b)
+	require.NoError(t, err)
+	ioutil.WriteFile(fn, b, 0644)
+	ioutil.WriteFile(fn+".tmp.abc", b, 0644)
+	ioutil.WriteFile(fn+".bak.abc", b, 0644)
 }
 
 func TestBuildDataDirDotOk(t *testing.T) {
@@ -140,8 +171,10 @@ func TestSaveJSON(t *testing.T) {
 	err = SaveJSON(fn, obj, 0644)
 	require.NoError(t, err)
 
+	objHash := cipher.SumSHA256(b).Hex()[:8]
+
 	requireIsRegularFile(t, fn)
-	testutil.RequireFileNotExists(t, fn+".bak")
+	testutil.RequireFileNotExists(t, fn+".bak."+objHash)
 	requireFileMode(t, fn, 0644)
 	requireFileContents(t, fn, string(b))
 
@@ -155,7 +188,8 @@ func TestSaveJSON(t *testing.T) {
 	requireFileMode(t, fn, 0644)
 	requireIsRegularFile(t, fn)
 	requireFileContents(t, fn, string(b2))
-	testutil.RequireFileNotExists(t, fn+".tmp")
+	objHash = cipher.SumSHA256(b2).Hex()[:8]
+	testutil.RequireFileNotExists(t, fn+".tmp."+objHash)
 }
 
 func TestSaveJSONSafe(t *testing.T) {
@@ -180,8 +214,9 @@ func TestSaveJSONSafe(t *testing.T) {
 
 	requireIsRegularFile(t, fn)
 	requireFileContents(t, fn, string(b))
-	testutil.RequireFileNotExists(t, fn+".bak")
-	testutil.RequireFileNotExists(t, fn+".tmp")
+	objHash := cipher.SumSHA256(b).Hex()[:8]
+	testutil.RequireFileNotExists(t, fn+".bak."+objHash)
+	testutil.RequireFileNotExists(t, fn+".tmp."+objHash)
 }
 
 func TestSaveBinary(t *testing.T) {
@@ -192,8 +227,9 @@ func TestSaveBinary(t *testing.T) {
 	require.NoError(t, err)
 	err = SaveBinary(fn, b, 0644)
 	require.NoError(t, err)
-	testutil.RequireFileNotExists(t, fn+".tmp")
-	testutil.RequireFileNotExists(t, fn+".bak")
+	objHash := cipher.SumSHA256(b).Hex()[:8]
+	testutil.RequireFileNotExists(t, fn+".tmp."+objHash)
+	testutil.RequireFileNotExists(t, fn+".bak."+objHash)
 	requireIsRegularFile(t, fn)
 	requireFileContentsBinary(t, fn, b)
 	requireFileMode(t, fn, 0644)
@@ -206,9 +242,25 @@ func TestSaveBinary(t *testing.T) {
 	err = SaveBinary(fn, b2, 0644)
 	require.NoError(t, err)
 	requireIsRegularFile(t, fn)
-	testutil.RequireFileNotExists(t, fn+".tmp")
+	objHash = cipher.SumSHA256(b2).Hex()[:8]
+	testutil.RequireFileNotExists(t, fn+".tmp."+objHash)
 	requireFileContentsBinary(t, fn, b2)
 	// requireFileContentsBinary(t, fn+".bak", b)
 	requireFileMode(t, fn, 0644)
 	// requireFileMode(t, fn+".bak", 0644)
+}
+
+func TestIsWritable(t *testing.T) {
+	fn := "test.bin"
+	defer cleanup(fn)
+	b := make([]byte, 32)
+	_, err := rand.Read(b)
+	require.NoError(t, err)
+	err = SaveBinary(fn, b, 0444)
+	require.NoError(t, err)
+	require.False(t, IsWritable(fn))
+
+	err = os.Chmod(fn, 0644)
+	require.NoError(t, err)
+	require.True(t, IsWritable(fn))
 }

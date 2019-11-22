@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/SkycoinProject/skycoin/src/api"
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/coin"
 	"github.com/SkycoinProject/skycoin/src/params"
@@ -99,6 +100,143 @@ example: -m '[{"addr":"$addr1", "coins": "10.2"}, {"addr":"$addr2", "coins": "20
 	createRawTxnCmd.Flags().String("csv", "", "CSV file containing addresses and amounts to send")
 
 	return createRawTxnCmd
+}
+
+func createRawTxnV2Cmd() *cobra.Command {
+	createRawTxnCmd := &cobra.Command{
+		Short: "Create a raw transaction that can be broadcast to the network later",
+		Use:   "createRawTransactionV2 [wallet] [to address] [amount]",
+		Long: `Create a raw transaction that can be broadcast to the network later.
+
+    Note: The [amount] argument is the coins you will spend, with decimal formatting, e.g. 1, 1.001 or 1.000000.
+
+    The [to address] and [amount] arguments can be replaced with the --many/-m or the --csv option.
+
+    Use caution when using the "-p" command. If you have command history enabled
+    your wallet encryption password can be recovered from the history log. If you
+    do not include the "-p" option you will be prompted to enter your password
+    after you enter your command.`,
+		SilenceUsage: true,
+		Args:         cobra.MinimumNArgs(3),
+		RunE: func(c *cobra.Command, args []string) error {
+			jsonOutput, err := c.Flags().GetBool("json")
+			if err != nil {
+				return err
+			}
+
+			req, err := makeWalletCreateTransactionRequest(c, args)
+			if err != nil {
+				return err
+			}
+
+			rsp, err := apiClient.WalletCreateTransaction(*req)
+			if err != nil {
+				return err
+			}
+
+			if jsonOutput {
+				return printJSON(rsp)
+			}
+
+			fmt.Println(rsp.EncodedTransaction)
+
+			return nil
+		},
+	}
+
+	// createRawTxnCmd.Flags().StringP("from-address", "a", "", "From address in wallet")
+	createRawTxnCmd.Flags().BoolP("ignore-unconfirmed", "", true, "Ignore unconfirmed transaction")
+	createRawTxnCmd.Flags().StringP("hours-selection-type", "", transaction.HoursSelectionTypeAuto, "Hours selection type")
+	createRawTxnCmd.Flags().StringP("hours-selection-mode", "", transaction.HoursSelectionModeShare, "Hours selection mode")
+	createRawTxnCmd.Flags().StringP("hours-selection-share-factor", "", "0.5", "Hour selection share factor")
+
+	// createRawTxnCmd.Flags().StringP("change-address", "c", "", `Specify the change address.
+	// Defaults to one of the spending addresses (deterministic wallets) or to a new change address (bip44 wallets).`)
+	createRawTxnCmd.Flags().StringP("password", "p", "", "Wallet password")
+	createRawTxnCmd.Flags().BoolP("unsign", "", false, "Do not sign the transaction")
+	createRawTxnCmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format.")
+	// createRawTxnCmd.Flags().String("csv", "", "CSV file containing addresses and amounts to send")
+
+	return createRawTxnCmd
+}
+
+func makeWalletCreateTransactionRequest(c *cobra.Command, args []string) (*api.WalletCreateTransactionRequest, error) {
+	unsign, err := c.Flags().GetBool("unsign")
+	if err != nil {
+		return nil, err
+	}
+
+	iu, err := c.Flags().GetBool("ignore-unconfirmed")
+	if err != nil {
+		return nil, err
+	}
+
+	hst, err := c.Flags().GetString("hours-selection-type")
+	if err != nil {
+		return nil, err
+	}
+
+	hsm, err := c.Flags().GetString("hours-selection-mode")
+	if err != nil {
+		return nil, err
+	}
+
+	sf, err := c.Flags().GetString("hours-selection-share-factor")
+	if err != nil {
+		return nil, err
+	}
+
+	id := args[0]
+	w, err := wallet.Load(id)
+	if err != nil {
+		return nil, err
+	}
+
+	var addrs []string
+	for _, addr := range w.GetAddresses() {
+		addrs = append(addrs, addr.String())
+	}
+
+	toAddr := args[1]
+	amount := args[2]
+	req := api.WalletCreateTransactionRequest{
+		Unsigned: unsign,
+		WalletID: id,
+		CreateTransactionRequest: api.CreateTransactionRequest{
+			IgnoreUnconfirmed: iu,
+			HoursSelection: api.HoursSelection{
+				Type:        hst,
+				Mode:        hsm,
+				ShareFactor: sf,
+			},
+			To: []api.Receiver{
+				{
+					Address: toAddr,
+					Coins:   amount,
+				},
+			},
+			Addresses: addrs,
+		},
+	}
+
+	if w.IsEncrypted() && !unsign {
+		p, err := c.Flags().GetString("password")
+		if err != nil {
+			return nil, err
+		}
+
+		pr := NewPasswordReader([]byte(p))
+		password, err := pr.Password()
+		if err != nil {
+			return nil, err
+		}
+		defer func() {
+			password = nil
+		}()
+
+		req.Password = string(password)
+	}
+	return &req, nil
 }
 
 type walletAddress struct {

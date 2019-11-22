@@ -110,12 +110,7 @@ func createRawTxnV2Cmd() *cobra.Command {
 
     Note: The [amount] argument is the coins you will spend, with decimal formatting, e.g. 1, 1.001 or 1.000000.
 
-    The [to address] and [amount] arguments can be replaced with the --many/-m or the --csv option.
-
-    Use caution when using the "-p" command. If you have command history enabled
-    your wallet encryption password can be recovered from the history log. If you
-    do not include the "-p" option you will be prompted to enter your password
-    after you enter your command.`,
+    The [to address] and [amount] arguments can be replaced with the --csv option.`,
 		SilenceUsage: true,
 		Args:         cobra.MinimumNArgs(3),
 		RunE: func(c *cobra.Command, args []string) error {
@@ -152,7 +147,7 @@ func createRawTxnV2Cmd() *cobra.Command {
 
 	// createRawTxnCmd.Flags().StringP("change-address", "c", "", `Specify the change address.
 	// Defaults to one of the spending addresses (deterministic wallets) or to a new change address (bip44 wallets).`)
-	createRawTxnCmd.Flags().StringP("password", "p", "", "Wallet password")
+	// createRawTxnCmd.Flags().StringP("password", "p", "", "Wallet password")
 	createRawTxnCmd.Flags().BoolP("unsign", "", false, "Do not sign the transaction")
 	createRawTxnCmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format.")
 	// createRawTxnCmd.Flags().String("csv", "", "CSV file containing addresses and amounts to send")
@@ -220,13 +215,7 @@ func makeWalletCreateTransactionRequest(c *cobra.Command, args []string) (*api.W
 	}
 
 	if w.IsEncrypted() && !unsign {
-		p, err := c.Flags().GetString("password")
-		if err != nil {
-			return nil, err
-		}
-
-		pr := NewPasswordReader([]byte(p))
-		password, err := pr.Password()
+		password, err := readPasswordFromTerminal()
 		if err != nil {
 			return nil, err
 		}

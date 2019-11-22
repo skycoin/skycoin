@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/SkycoinProject/skycoin/src/util/droplet"
+	"github.com/SkycoinProject/skycoin/src/wallet"
 
 	"github.com/SkycoinProject/skycoin/src/api"
 	"github.com/SkycoinProject/skycoin/src/cipher"
@@ -340,4 +341,64 @@ func pendingTransactionsCmd() *cobra.Command {
 	coin hour value of the output if it were to be confirmed at that instant.`)
 
 	return pendingTxnsCmd
+}
+
+func signTxnCmd() *cobra.Command {
+	signTxnCmd := &cobra.Command{
+		Short:                 "Sign an unsigned transaction with specific wallet",
+		Use:                   "signTransaction [wallet] [raw transaction]",
+		DisableFlagsInUseLine: true,
+		SilenceUsage:          true,
+		Args:                  cobra.ExactArgs(2),
+		RunE: func(c *cobra.Command, args []string) error {
+			id := args[0]
+			rawTxn := args[1]
+
+			// Decode the raw transaction to see if the transaction already signed
+			txn, err := coin.DeserializeTransactionHex(rawTxn)
+			if err != nil {
+				return err
+			}
+
+			if len(txn.Sigs) != 0 {
+				return fmt.Errorf("Transaction already signed")
+			}
+
+			// Check if wallet is encrypted
+			req := api.WalletSignTransactionRequest{
+				WalletID:           id,
+				EncodedTransaction: rawTxn,
+			}
+
+			// Load wallet to check if the wallet is encrypted
+			w, err := wallet.Load(id)
+			if err != nil {
+				return err
+			}
+
+			// Read wallet password from terminal if it is encrypted
+			if w.IsEncrypted() {
+				v, err := readPasswordFromTerminal()
+				if err != nil {
+					return err
+				}
+				req.Password = string(v)
+				defer func() {
+					// Wipe out the password from memory
+					v = []byte{}
+					req.Password = ""
+				}()
+			}
+
+			// Send transaction signing request
+			signedTxn, err := apiClient.WalletSignTransaction(req)
+			if err != nil {
+				return err
+			}
+
+			return printJSON(signedTxn)
+		},
+	}
+
+	return signTxnCmd
 }

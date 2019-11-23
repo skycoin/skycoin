@@ -112,7 +112,7 @@ func createRawTxnV2Cmd() *cobra.Command {
 
     The [to address] and [amount] arguments can be replaced with the --csv option.`,
 		SilenceUsage: true,
-		Args:         cobra.MinimumNArgs(3),
+		Args:         cobra.MinimumNArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {
 			jsonOutput, err := c.Flags().GetBool("json")
 			if err != nil {
@@ -228,9 +228,6 @@ func makeCreateTransactionRequest(c *cobra.Command, args []string, fromAddrs []s
 		return nil, err
 	}
 
-	toAddr := args[1]
-	amount := args[2]
-
 	var changeAddr *string
 	ca, err := c.Flags().GetString("change-address")
 	if err != nil {
@@ -240,20 +237,53 @@ func makeCreateTransactionRequest(c *cobra.Command, args []string, fromAddrs []s
 		changeAddr = &ca
 	}
 
+	to, err := getToAddressesV2(c, args[1:])
+	if err != nil {
+		return nil, err
+	}
+
 	return &api.CreateTransactionRequest{
 		IgnoreUnconfirmed: iu,
 		HoursSelection:    *hoursSelection,
 		ChangeAddress:     changeAddr,
 		Addresses:         fromAddrs,
-		To: []api.Receiver{
-			{
-				Address: toAddr,
-				Coins:   amount,
-			},
-		},
+		To:                to,
 	}, nil
 }
 
+func getToAddressesV2(c *cobra.Command, args []string) ([]api.Receiver, error) {
+	csvFile, err := c.Flags().GetString("csv")
+	if err != nil {
+		return nil, err
+	}
+
+	if csvFile != "" {
+		fields, err := openCSV(csvFile)
+		if err != nil {
+			return nil, err
+		}
+		return parseReceiversFromCSV(fields)
+	}
+
+	if len(args) < 2 {
+		return nil, fmt.Errorf("requires at least 2 arg(s), only received %d", len(args))
+	}
+
+	toAddr := args[0]
+	if _, err := cipher.DecodeBase58Address(toAddr); err != nil {
+		return nil, err
+	}
+
+	coins := args[1]
+	if _, err := droplet.FromString(coins); err != nil {
+		return nil, err
+	}
+
+	return []api.Receiver{{
+		Address: toAddr,
+		Coins:   coins,
+	}}, nil
+}
 func getHoursSelection(c *cobra.Command) (*api.HoursSelection, error) {
 	hst, err := c.Flags().GetString("hours-selection-type")
 	if err != nil {
@@ -416,6 +446,47 @@ func parseSendAmountsFromCSV(fields [][]string) ([]SendAmount, error) {
 		sends = append(sends, SendAmount{
 			Addr:  addr,
 			Coins: coins,
+		})
+	}
+
+	if len(errs) > 0 {
+		errMsgs := make([]string, len(errs))
+		for i, err := range errs {
+			errMsgs[i] = err.Error()
+		}
+
+		errMsg := strings.Join(errMsgs, "\n")
+
+		return nil, errors.New(errMsg)
+	}
+
+	return sends, nil
+}
+
+func parseReceiversFromCSV(fields [][]string) ([]api.Receiver, error) {
+	var sends []api.Receiver
+	var errs []error
+	for i, f := range fields {
+		addr := f[0]
+
+		addr = strings.TrimSpace(addr)
+
+		if _, err := cipher.DecodeBase58Address(addr); err != nil {
+			err = fmt.Errorf("[row %d] Invalid address %s: %v", i, addr, err)
+			errs = append(errs, err)
+			continue
+		}
+
+		_, err := droplet.FromString(f[1])
+		if err != nil {
+			err = fmt.Errorf("[row %d] Invalid amount %s: %v", i, f[1], err)
+			errs = append(errs, err)
+			continue
+		}
+
+		sends = append(sends, api.Receiver{
+			Address: addr,
+			Coins:   f[1],
 		})
 	}
 

@@ -1722,6 +1722,28 @@ func TestLiveTransaction(t *testing.T) {
 	scanPendingTransactions(t)
 }
 
+func prepareCSVFile(t *testing.T, toAddrs [][]string) (csvFile string, teardown func(t *testing.T)) {
+	fn := "create_txn_test.csv"
+	tmpDir, err := ioutil.TempDir("", "create_raw_transaction")
+	require.NoError(t, err)
+	csvFile = filepath.Join(tmpDir, fn)
+
+	f, err := os.Create(csvFile)
+	require.NoError(t, err)
+	defer f.Close()
+	w := csv.NewWriter(f)
+
+	for _, to := range toAddrs {
+		w.Write(to)
+	}
+	w.Flush()
+	require.NoError(t, w.Error())
+
+	return csvFile, func(t *testing.T) {
+		require.NoError(t, os.Remove(csvFile))
+	}
+}
+
 func TestLiveCreateRawTransactionV2(t *testing.T) {
 	if !doLive(t) {
 		return
@@ -1732,6 +1754,14 @@ func TestLiveCreateRawTransactionV2(t *testing.T) {
 	require.NoError(t, err)
 	addrs := w.GetAddresses()
 	require.Truef(t, len(addrs) >= 2, "wallet must have at least 2 addresses")
+
+	// prepare csv file for testing
+	toAddrs := [][]string{
+		{addrs[0].String(), "0.001"},
+		{addrs[1].String(), "0.001"},
+	}
+	csvFile, teardown := prepareCSVFile(t, toAddrs)
+	defer teardown(t)
 
 	var testCases = []struct {
 		name   string
@@ -1857,6 +1887,39 @@ func TestLiveCreateRawTransactionV2(t *testing.T) {
 				for _, in := range txn.In {
 					_, ok := uxoutsMap[in.String()]
 					require.True(t, ok)
+				}
+			},
+		},
+		{
+			name: "unsigned=true json=false -csv",
+			args: func(t *testing.T) []string {
+				return []string{
+					walletFile,
+					"--unsign",
+					"--csv",
+					csvFile,
+				}
+			},
+			verify: func(t *testing.T, data []byte) {
+				s := strings.TrimSuffix(string(data), "\n")
+				txn, err := coin.DeserializeTransactionHex(string(s))
+				require.NoError(t, err)
+				require.Equal(t, 1, len(txn.Sigs))
+				require.Equal(t, cipher.Sig{}, txn.Sigs[0])
+				require.True(t, len(txn.Out) >= 2)
+
+				// Confirms that the txn.Out contains the receiver address
+				addrOutMap := make(map[string]coin.TransactionOutput)
+				for i, o := range txn.Out {
+					addrOutMap[o.Address.String()] = txn.Out[i]
+				}
+
+				for _, to := range toAddrs {
+					out, ok := addrOutMap[to[0]]
+					require.True(t, ok)
+					coins, err := droplet.FromString(to[1])
+					require.NoError(t, err)
+					require.True(t, out.Coins >= coins)
 				}
 			},
 		},

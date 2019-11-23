@@ -119,7 +119,7 @@ func createRawTxnV2Cmd() *cobra.Command {
 				return err
 			}
 
-			req, err := makeWalletCreateTransactionRequest(c, args)
+			req, err := makeWalletCreateTxnRequest(c, args)
 			if err != nil {
 				return err
 			}
@@ -139,24 +139,86 @@ func createRawTxnV2Cmd() *cobra.Command {
 		},
 	}
 
-	// createRawTxnCmd.Flags().StringP("from-address", "a", "", "From address in wallet")
-	createRawTxnCmd.Flags().BoolP("ignore-unconfirmed", "", true, "Ignore unconfirmed transaction")
+	createRawTxnCmd.Flags().StringP("from-address", "a", "", "From address in wallet")
+	createRawTxnCmd.Flags().StringP("change-address", "c", "", `Specify the change address.
+	Defaults to one of the spending addresses (deterministic wallets) or to a new change address (bip44 wallets).`)
+	createRawTxnCmd.Flags().String("csv", "", "CSV file containing addresses and amounts to send")
+	createRawTxnCmd.Flags().StringP("password", "p", "", "Wallet password")
+	createRawTxnCmd.Flags().BoolP("unsign", "", false, "Do not sign the transaction")
+	createRawTxnCmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format.")
+
+	createRawTxnCmd.Flags().BoolP("ignore-unconfirmed", "", false, "Ignore unconfirmed transactions")
 	createRawTxnCmd.Flags().StringP("hours-selection-type", "", transaction.HoursSelectionTypeAuto, "Hours selection type")
 	createRawTxnCmd.Flags().StringP("hours-selection-mode", "", transaction.HoursSelectionModeShare, "Hours selection mode")
 	createRawTxnCmd.Flags().StringP("hours-selection-share-factor", "", "0.5", "Hour selection share factor")
 
-	// createRawTxnCmd.Flags().StringP("change-address", "c", "", `Specify the change address.
-	// Defaults to one of the spending addresses (deterministic wallets) or to a new change address (bip44 wallets).`)
-	// createRawTxnCmd.Flags().StringP("password", "p", "", "Wallet password")
-	createRawTxnCmd.Flags().BoolP("unsign", "", false, "Do not sign the transaction")
-	createRawTxnCmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format.")
-	// createRawTxnCmd.Flags().String("csv", "", "CSV file containing addresses and amounts to send")
-
 	return createRawTxnCmd
 }
 
-func makeWalletCreateTransactionRequest(c *cobra.Command, args []string) (*api.WalletCreateTransactionRequest, error) {
+func makeWalletCreateTxnRequest(c *cobra.Command, args []string) (*api.WalletCreateTransactionRequest, error) {
 	unsign, err := c.Flags().GetBool("unsign")
+	if err != nil {
+		return nil, err
+	}
+
+	walletFile := args[0]
+	w, err := wallet.Load(walletFile)
+	if err != nil {
+		return nil, err
+	}
+
+	wltAddr, err := fromWalletOrAddress(c, walletFile)
+	if err != nil {
+		return nil, err
+	}
+
+	var addrs []string
+	if wltAddr.Address != "" {
+		addrs = append(addrs, wltAddr.Address)
+	} else {
+		for _, addr := range w.GetAddresses() {
+			addrs = append(addrs, addr.String())
+		}
+	}
+
+	ctr, err := makeCreateTransactionRequest(c, args, addrs)
+	if err != nil {
+		return nil, err
+	}
+
+	req := api.WalletCreateTransactionRequest{
+		Unsigned:                 unsign,
+		WalletID:                 w.Filename(),
+		CreateTransactionRequest: *ctr,
+	}
+
+	if w.IsEncrypted() && !unsign {
+		p, err := getPassword(c)
+		if err != nil {
+			return nil, err
+		}
+		defer func() {
+			p = nil
+		}()
+		req.Password = string(p)
+	}
+	return &req, nil
+}
+
+func getPassword(c *cobra.Command) ([]byte, error) {
+	p, err := c.Flags().GetString("password")
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		p = ""
+	}()
+
+	return NewPasswordReader([]byte(p)).Password()
+}
+
+func makeCreateTransactionRequest(c *cobra.Command, args []string, fromAddrs []string) (*api.CreateTransactionRequest, error) {
+	hoursSelection, err := getHoursSelection(c)
 	if err != nil {
 		return nil, err
 	}
@@ -166,6 +228,33 @@ func makeWalletCreateTransactionRequest(c *cobra.Command, args []string) (*api.W
 		return nil, err
 	}
 
+	toAddr := args[1]
+	amount := args[2]
+
+	var changeAddr *string
+	ca, err := c.Flags().GetString("change-address")
+	if err != nil {
+		return nil, err
+	}
+	if ca != "" {
+		changeAddr = &ca
+	}
+
+	return &api.CreateTransactionRequest{
+		IgnoreUnconfirmed: iu,
+		HoursSelection:    *hoursSelection,
+		ChangeAddress:     changeAddr,
+		Addresses:         fromAddrs,
+		To: []api.Receiver{
+			{
+				Address: toAddr,
+				Coins:   amount,
+			},
+		},
+	}, nil
+}
+
+func getHoursSelection(c *cobra.Command) (*api.HoursSelection, error) {
 	hst, err := c.Flags().GetString("hours-selection-type")
 	if err != nil {
 		return nil, err
@@ -181,51 +270,11 @@ func makeWalletCreateTransactionRequest(c *cobra.Command, args []string) (*api.W
 		return nil, err
 	}
 
-	id := args[0]
-	w, err := wallet.Load(id)
-	if err != nil {
-		return nil, err
-	}
-
-	var addrs []string
-	for _, addr := range w.GetAddresses() {
-		addrs = append(addrs, addr.String())
-	}
-
-	toAddr := args[1]
-	amount := args[2]
-	req := api.WalletCreateTransactionRequest{
-		Unsigned: unsign,
-		WalletID: id,
-		CreateTransactionRequest: api.CreateTransactionRequest{
-			IgnoreUnconfirmed: iu,
-			HoursSelection: api.HoursSelection{
-				Type:        hst,
-				Mode:        hsm,
-				ShareFactor: sf,
-			},
-			To: []api.Receiver{
-				{
-					Address: toAddr,
-					Coins:   amount,
-				},
-			},
-			Addresses: addrs,
-		},
-	}
-
-	if w.IsEncrypted() && !unsign {
-		password, err := readPasswordFromTerminal()
-		if err != nil {
-			return nil, err
-		}
-		defer func() {
-			password = nil
-		}()
-
-		req.Password = string(password)
-	}
-	return &req, nil
+	return &api.HoursSelection{
+		Type:        hst,
+		Mode:        hsm,
+		ShareFactor: sf,
+	}, nil
 }
 
 type walletAddress struct {

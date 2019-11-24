@@ -8,8 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Fix issue #7 #162, corrupted file in ~/.skycoin/data/ dir makes the desktop wallet show ERROR #1.
-- Fix issue #87, can not run web gui from skycoin docker image.
+- Add `createRawTransactionV2` CLI command, which calls the API of `/wallet/transaction` to create the transaction and can create then unsigned transaction. Once the API's performance issue has been fixed, we will replace the `createRawTransaction` with it.
+- Add `signTransaction` CLI command to sign transaction.
 - Do windows electron builds by travis and abandon the appveyor
 - Migrate `skycoin.net` to `skycoin.com`
 - Migrate project path to `SkycoinProject/skycoin`
@@ -39,6 +39,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- #7, #162, corrupted file in ~/.skycoin/data/ dir makes the desktop wallet show ERROR #1.
+- #87, can not run web gui from skycoin docker image.
 - #2287 A `Content-Type` with a `charset` specified, for example `application/json; charset=utf-8`, will not return an HTTP 415 error anymore
 - Fix `fiber.toml` transaction verification parameters ignored by newcoin
 - #2373 Fix and clean-up further panics with various `skycoin-cli` commands (lastBlocks, checkdb) which were not correctly handling arguments.

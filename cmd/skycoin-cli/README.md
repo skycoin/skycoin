@@ -20,6 +20,8 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 	- [Check block data](#check-block-data)
 	- [Check database integrity](#check-database-integrity)
 	- [Create a raw transaction](#create-a-raw-transaction)
+    - [Create an unsigned raw transaction](#create-an-unsigned-raw-transaction)
+    - [Sign an unsigned raw transaction](#sign-an-unsigned-raw-transaction)
 	- [Decode a raw transaction](#decode-a-raw-transaction)
 	- [Encode a JSON transaction](#encode-a-json-transaction)
 	- [Broadcast a raw transaction](#broadcast-a-raw-transaction)
@@ -722,6 +724,49 @@ $ skycoin-cli createRawTransaction $WALLET_FILE $RECIPIENT_ADDRESS $AMOUNT -a $F
 }
 ```
 </details>
+
+### Create an unsigned raw transaction
+
+```bash
+$ skycoin-cli createRawTransactionV2 [wallet] [to address] [amount] [flags]
+```
+
+### Example
+
+```bash
+$ skycoin-cli createRawTransactionV2 $WALLET_FILE $RECIPIENT_ADDRESS $AMOUNT --unsign
+```
+
+<details>
+ <summary>View Output</summary>
+
+```json
+b700000000e6b869f570e2bfebff1b4d7e7c9e86885dbc34d6de988da6ff998e7acd7e6e14010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000007531184ad0afeebbff2049b855e0921329cb1cb74d769ac57c057c9c8bd2b6810100000000ed5ea2ca4fe9b4560409b50c5bf7cb39b6c5ff6e50690f00000000000000000000000000
+```
+
+</details>
+
+### Sign an unsigned raw transaction
+
+```bash
+$ skycoin-cli signTransaction [wallet] [raw transaction]
+```
+
+### Example
+
+```bash
+$ skycoin-cli signTransaction $WALLET_FILE $RAW_TRANSACTION
+```
+
+<details>
+ <summary>View Output</summary>
+
+```json
+b700000000e6b869f570e2bfebff1b4d7e7c9e86885dbc34d6de988da6ff998e7acd7e6e14010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000007531184ad0afeebbff2049b855e0921329cb1cb74d769ac57c057c9c8bd2b6810100000000ed5ea2ca4fe9b4560409b50c5bf7cb39b6c5ff6e50690f00000000000000000000000000
+```
+
+</details>
+
 
 ### Decode a raw transaction
 ```bash

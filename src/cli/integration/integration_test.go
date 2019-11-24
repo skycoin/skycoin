@@ -30,6 +30,7 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
 	"github.com/SkycoinProject/skycoin/src/cli"
+	"github.com/SkycoinProject/skycoin/src/coin"
 	"github.com/SkycoinProject/skycoin/src/readable"
 	"github.com/SkycoinProject/skycoin/src/testutil"
 	"github.com/SkycoinProject/skycoin/src/util/droplet"
@@ -1719,6 +1720,231 @@ func TestLiveTransaction(t *testing.T) {
 
 	// scan pending transactions
 	scanPendingTransactions(t)
+}
+
+func prepareCSVFile(t *testing.T, toAddrs [][]string) (csvFile string, teardown func(t *testing.T)) {
+	fn := "create_txn_test.csv"
+	tmpDir, err := ioutil.TempDir("", "create_raw_transaction")
+	require.NoError(t, err)
+	csvFile = filepath.Join(tmpDir, fn)
+
+	f, err := os.Create(csvFile)
+	require.NoError(t, err)
+	defer f.Close()
+	w := csv.NewWriter(f)
+
+	for _, to := range toAddrs {
+		w.Write(to)
+	}
+	w.Flush()
+	require.NoError(t, w.Error())
+
+	return csvFile, func(t *testing.T) {
+		require.NoError(t, os.Remove(csvFile))
+	}
+}
+
+func TestLiveCreateRawTransactionV2(t *testing.T) {
+	if !doLive(t) {
+		return
+	}
+
+	walletFile := requireWalletEnv(t)
+	w, err := wallet.Load(walletFile)
+	require.NoError(t, err)
+	addrs := w.GetAddresses()
+	require.Truef(t, len(addrs) >= 2, "wallet must have at least 2 addresses")
+
+	// prepare csv file for testing
+	toAddrs := [][]string{
+		{addrs[0].String(), "0.001"},
+		{addrs[1].String(), "0.001"},
+	}
+	csvFile, teardown := prepareCSVFile(t, toAddrs)
+	defer teardown(t)
+
+	var testCases = []struct {
+		name   string
+		args   func(t *testing.T) []string
+		verify func(t *testing.T, data []byte)
+	}{
+		{
+			name: "unsigned=true json=false",
+			args: func(t *testing.T) []string {
+				return []string{
+					walletFile,
+					addrs[0].String(), // to address
+					"1.01",
+					"--unsign",
+				}
+			},
+			verify: func(t *testing.T, data []byte) {
+				s := strings.TrimSuffix(string(data), "\n")
+				txn, err := coin.DeserializeTransactionHex(string(s))
+				require.NoError(t, err)
+				require.Equal(t, 1, len(txn.Sigs))
+				require.Equal(t, cipher.Sig{}, txn.Sigs[0])
+			},
+		},
+		{
+			name: "unsigned=true json=true",
+			args: func(t *testing.T) []string {
+				return []string{
+					walletFile,
+					addrs[0].String(), // to address
+					"1.01",
+					"--unsign",
+					"--json",
+				}
+			},
+			verify: func(t *testing.T, data []byte) {
+				var rsp api.CreateTransactionResponse
+				err := json.NewDecoder(bytes.NewReader(data)).Decode(&rsp)
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "unsigned=false json=false",
+			args: func(t *testing.T) []string {
+				args := []string{
+					walletFile,
+					addrs[0].String(), // to address
+					"1.01",
+				}
+
+				// Require password if the wallet is encrypted
+				if w.IsEncrypted() {
+					password := os.Getenv("WALLET_PASSWORD")
+					if len(password) == 0 {
+						t.Fatal("missing WALLET_PASSWORD environment variable")
+						return nil
+					}
+					args = append(args, "-p", password)
+				}
+				return args
+			},
+			verify: func(t *testing.T, data []byte) {
+				s := strings.TrimSuffix(string(data), "\n")
+				txn, err := coin.DeserializeTransactionHex(string(s))
+				require.NoError(t, err)
+				require.Equal(t, 1, len(txn.Sigs))
+				require.NotEqual(t, cipher.Sig{}, txn.Sigs[0])
+			},
+		},
+		{
+			name: "unsigned=true json=false change-address",
+			args: func(t *testing.T) []string {
+				return []string{
+					walletFile,
+					addrs[0].String(), // to address
+					"0.001",
+					"--unsign",
+					"--change-address",
+					addrs[1].String(),
+				}
+			},
+			verify: func(t *testing.T, data []byte) {
+				s := strings.TrimSuffix(string(data), "\n")
+				txn, err := coin.DeserializeTransactionHex(string(s))
+				require.NoError(t, err)
+				require.Equal(t, 1, len(txn.Sigs))
+				require.Equal(t, cipher.Sig{}, txn.Sigs[0])
+				require.Equal(t, 2, len(txn.Out))
+				addrOutMap := make(map[string]struct{})
+				for _, o := range txn.Out {
+					addrOutMap[o.Address.String()] = struct{}{}
+				}
+
+				// Confirms that the toAddr exists in txn.Out
+				toAddr := addrs[1].String()
+				_, ok := addrOutMap[toAddr]
+				require.True(t, ok)
+				// Confirms that the change address exists in txn.Out
+				_, ok = addrOutMap[addrs[1].String()]
+				require.True(t, ok)
+			},
+		},
+		{
+			name: "unsigned=true json=false from-addrss",
+			args: func(t *testing.T) []string {
+				return []string{
+					walletFile,
+					addrs[1].String(), // to address
+					"0.001",
+					"--unsign",
+					"--from-address",
+					addrs[0].String(),
+				}
+			},
+			verify: func(t *testing.T, data []byte) {
+				s := strings.TrimSuffix(string(data), "\n")
+				txn, err := coin.DeserializeTransactionHex(string(s))
+				require.NoError(t, err)
+				require.Equal(t, 1, len(txn.Sigs))
+				require.Equal(t, cipher.Sig{}, txn.Sigs[0])
+				// Get the uxouts of from address
+				uxoutsMap := getAddressOutputs(t, addrs[0].String())
+				for _, in := range txn.In {
+					_, ok := uxoutsMap[in.String()]
+					require.True(t, ok)
+				}
+			},
+		},
+		{
+			name: "unsigned=true json=false -csv",
+			args: func(t *testing.T) []string {
+				return []string{
+					walletFile,
+					"--unsign",
+					"--csv",
+					csvFile,
+				}
+			},
+			verify: func(t *testing.T, data []byte) {
+				s := strings.TrimSuffix(string(data), "\n")
+				txn, err := coin.DeserializeTransactionHex(string(s))
+				require.NoError(t, err)
+				require.Equal(t, 1, len(txn.Sigs))
+				require.Equal(t, cipher.Sig{}, txn.Sigs[0])
+				require.True(t, len(txn.Out) >= 2)
+
+				// Confirms that the txn.Out contains the receiver address
+				addrOutMap := make(map[string]coin.TransactionOutput)
+				for i, o := range txn.Out {
+					addrOutMap[o.Address.String()] = txn.Out[i]
+				}
+
+				for _, to := range toAddrs {
+					out, ok := addrOutMap[to[0]]
+					require.True(t, ok)
+					coins, err := droplet.FromString(to[1])
+					require.NoError(t, err)
+					require.True(t, out.Coins >= coins)
+				}
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		args := append([]string{"createRawTransactionV2"}, tc.args(t)...)
+		o, err := execCommandCombinedOutput(args...)
+		require.NoError(t, err)
+		tc.verify(t, o)
+	}
+}
+
+func getAddressOutputs(t *testing.T, address string) map[string]struct{} {
+	output, err := execCommandCombinedOutput("addressOutputs", address)
+	require.NoError(t, err)
+
+	var addrOutputs cli.OutputsResult
+	err = json.NewDecoder(bytes.NewReader(output)).Decode(&addrOutputs)
+	require.NoError(t, err)
+	uxoutsMap := make(map[string]struct{})
+	for _, o := range addrOutputs.Outputs.HeadOutputs {
+		uxoutsMap[o.Hash] = struct{}{}
+	}
+	return uxoutsMap
 }
 
 // TODO cli doesn't have command to querying pending transactions yet.

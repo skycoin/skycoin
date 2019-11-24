@@ -110,7 +110,12 @@ func createRawTxnV2Cmd() *cobra.Command {
 
     Note: The [amount] argument is the coins you will spend, with decimal formatting, e.g. 1, 1.001 or 1.000000.
 
-    The [to address] and [amount] arguments can be replaced with the --csv option.`,
+    The [to address] and [amount] arguments can be replaced with the --csv option.,
+
+    Use caution when using the "-p" command. If you have command history enabled
+    your wallet encryption password can be recovered from the history log. If you
+    do not include the "-p" option you will be prompted to enter your password
+    after you enter your command.`,
 		SilenceUsage: true,
 		Args:         cobra.MinimumNArgs(1),
 		RunE: func(c *cobra.Command, args []string) error {

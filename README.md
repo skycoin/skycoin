@@ -63,6 +63,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
 - [Daemon CLI Options](#daemon-cli-options)
 - [URI Specification](#uri-specification)
 - [Wire protocol user agent](#wire-protocol-user-agent)
+- [Offline transaction signing](#offline-transaction-signing)
 - [Development](#development)
 	- [Modules](#modules)
 	- [Client libraries](#client-libraries)
@@ -245,6 +246,74 @@ However, do not use this URI in QR codes displayed to the user, because the addr
 ## Wire protocol user agent
 
 [Wire protocol user agent description](https://github.com/SkycoinProject/skycoin/wiki/Wire-protocol-user-agent)
+
+## Offline transaction signing
+
+Before doing the offline transaction signing, we need to have the unsigned transaction created. Using the `skycoin-cli` tool to create an unsigned transaction in hot wallet, and copy the hex encoded transaction to the computer where the cold wallet is installed. Then use the `skycoin-cli` tool to sign it offline.
+
+### Create an unsigned transaction
+
+The `skycoin-cli` tool replys on the APIs of the `skycoin node`, hence we have to start the node before running the tool.
+
+ Go to the project root and run:
+
+```bash
+$ ./run-client.sh -launch-browser=false
+```
+
+Once the node is started, we could use the following command to create an unsigned transaction.
+
+```bash
+$ skycoin-cli createRawTransactionV2 $WALLET_FILE $RECIPIENT_ADDRESS $AMOUNT --unsign
+```
+
+> Note: Don't forget the `--unsign` flag, otherwise it would try to sign the transaction.
+
+<details>
+ <summary>View Output</summary>
+
+```json
+b700000000e6b869f570e2bfebff1b4d7e7c9e86885dbc34d6de988da6ff998e7acd7e6e14010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000007531184ad0afeebbff2049b855e0921329cb1cb74d769ac57c057c9c8bd2b6810100000000ed5ea2ca4fe9b4560409b50c5bf7cb39b6c5ff6e50690f00000000000000000000000000
+```
+
+</details>
+
+Copy and save the generated transaction string. We will sign it with a cold wallet offline in the next section.
+
+### Sign the transaction
+
+The `skycoin node` needs to have the most recently `DB` so that the user would not lose much coin hours when signing the transaction. We could copy the full synchronized `data.db` from the hot wallet to the computer where the cold wallet is installed. And place it in `$HOME/.skycoin/data.db`. Then start the node with the network disabled.
+
+```bash
+$ ./run-client.sh -launch-browser=false -disable-networking
+```
+
+Run the following command to sign the transaction:
+
+```bash
+$ skycoin-cli signTransaction $RAW_TRANSACTION
+```
+
+The `$RAW_TRANSACTION` is the transaction string that we generated in the hot wallet.
+
+If the cold wallet is encrypted, you will be prompted to enter the password to sign the transaction.
+
+<details>
+ <summary>View Output</summary>
+
+```json
+b700000000e6b869f570e2bfebff1b4d7e7c9e86885dbc34d6de988da6ff998e7acd7e6e14010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000007531184ad0afeebbff2049b855e0921329cb1cb74d769ac57c057c9c8bd2b6810100000000ed5ea2ca4fe9b4560409b50c5bf7cb39b6c5ff6e50690f00000000000000000000000000
+```
+
+</details>
+
+Once the transaction is signed, we could copy and save the signed transaction string and broadcast it in the hot wallet.
+
+```bash
+$ skycoin-cli broadcastTransaction $SIGNED_RAW_TRANSACTION
+```
+
+A transaction id would be returned and you can check it in the [explorer](https://explorer.skycoin.com).
 
 ## Development
 

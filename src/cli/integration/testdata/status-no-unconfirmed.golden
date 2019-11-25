@@ -51,6 +51,7 @@
 			"coin_hours_display_name_singular": "Coin Hour",
 			"coin_hours_ticker": "SCH",
 			"explorer_url": "https://explorer.skycoin.com",
+			"version_url": "https://version.skycoin.com/skycoin/version.txt",
 			"bip44_coin": 8000
 		}
 	},

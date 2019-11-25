@@ -70,6 +70,8 @@ type NodeConfig struct {
 	CoinHoursTicker string `mapstructure:"coin_hours_ticker"`
 	// ExplorerURL is the URL of the public explorer
 	ExplorerURL string `mapstructure:"explorer_url"`
+	// VersionURL is the URL for wallet to check the latest version number
+	VersionURL string `mapstructure:"version_url"`
 	// Bip44Coin is the default "coin" value of the bip44 path
 	Bip44Coin bip44.CoinType `mapstructure:"bip44_coin"`
 
@@ -157,6 +159,7 @@ func setDefaults() {
 	viper.SetDefault("node.coin_hours_display_name_singular", "Coin Hour")
 	viper.SetDefault("node.coin_hours_ticker", "SCH")
 	viper.SetDefault("node.explorer_url", "https://explorer.skycoin.com")
+	viper.SetDefault("node.version_url", "https://version.skycoin.com/skycoin/version.txt")
 	viper.SetDefault("node.bip44_coin", bip44.CoinTypeSkycoin)
 
 	// build defaults

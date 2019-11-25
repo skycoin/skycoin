@@ -335,7 +335,7 @@ $ mkdir $HOME/skycoin && cd $HOME/skycoin
 $ wget https://downloads.skycoin.com/wallet/skycoin-0.26.0-gui-standalone-linux-x64.tar.gz
 $ tar -zxvf skycoin-0.26.0-gui-standalone-linux-x64.tar.gz
 $ cd skycoin-0.26.0-gui-standalone-linux-x64
-$ ./skycoin -web-interface-port=6420 -host-whitelist=$DOMAIN_NAME
+$ ./skycoin -web-interface-port=6420 -host-whitelist=$DOMAIN_NAME -enable-api-sets="READ,TXN"
 ```
 
 > Note: we should running the `skycoin` node with `-host-whitelist` flag, otherwise it would

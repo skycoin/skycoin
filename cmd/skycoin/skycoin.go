@@ -91,6 +91,7 @@ var (
 		CoinHoursNameSingular: "Coin Hour",
 		CoinHoursTicker:       "SCH",
 		ExplorerURL:           "https://explorer.skycoin.com",
+		VersionURL:            "https://version.skycoin.com/skycoin/version.txt",
 		Bip44Coin:             8000,
 	})
 

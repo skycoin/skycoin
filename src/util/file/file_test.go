@@ -44,9 +44,9 @@ func requireIsRegularFile(t *testing.T, filename string) {
 	require.True(t, stat.Mode().IsRegular())
 }
 
-func cleanup(fn string) {
+func cleanup(t *testing.T, fn string) {
 	paths := []string{fn}
-	filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			panic(err)
 		}
@@ -62,6 +62,7 @@ func cleanup(fn string) {
 
 		return nil
 	})
+	require.NoError(t, err)
 
 	for _, f := range paths {
 		os.Remove(f)
@@ -70,13 +71,13 @@ func cleanup(fn string) {
 
 func TestCleanup(t *testing.T) {
 	fn := "test.bin"
-	defer cleanup(fn)
+	defer cleanup(t, fn)
 	b := make([]byte, 128)
 	_, err := rand.Read(b)
 	require.NoError(t, err)
-	ioutil.WriteFile(fn, b, 0644)
-	ioutil.WriteFile(fn+".tmp.abc", b, 0644)
-	ioutil.WriteFile(fn+".bak.abc", b, 0644)
+	require.NoError(t, ioutil.WriteFile(fn, b, 0600))
+	require.NoError(t, ioutil.WriteFile(fn+".tmp.abc", b, 0600))
+	require.NoError(t, ioutil.WriteFile(fn+".bak.abc", b, 0600))
 }
 
 func TestBuildDataDirDotOk(t *testing.T) {
@@ -139,7 +140,7 @@ func TestBuildDataDirAbsolute(t *testing.T) {
 func TestLoadJSON(t *testing.T) {
 	obj := struct{ Key string }{}
 	fn := "test.json"
-	defer cleanup(fn)
+	defer cleanup(t, fn)
 
 	// Loading nonexistant file
 	testutil.RequireFileNotExists(t, fn)
@@ -160,7 +161,7 @@ func TestLoadJSON(t *testing.T) {
 
 func TestSaveJSON(t *testing.T) {
 	fn := "test.json"
-	defer cleanup(fn)
+	defer cleanup(t, fn)
 	obj := struct {
 		Key string `json:"key"`
 	}{Key: "value"}
@@ -194,7 +195,7 @@ func TestSaveJSON(t *testing.T) {
 
 func TestSaveJSONSafe(t *testing.T) {
 	fn := "test.json"
-	defer cleanup(fn)
+	defer cleanup(t, fn)
 	obj := struct {
 		Key string `json:"key"`
 	}{Key: "value"}
@@ -221,7 +222,7 @@ func TestSaveJSONSafe(t *testing.T) {
 
 func TestSaveBinary(t *testing.T) {
 	fn := "test.bin"
-	defer cleanup(fn)
+	defer cleanup(t, fn)
 	b := make([]byte, 128)
 	_, err := rand.Read(b)
 	require.NoError(t, err)
@@ -252,15 +253,15 @@ func TestSaveBinary(t *testing.T) {
 
 func TestIsWritable(t *testing.T) {
 	fn := "test.bin"
-	defer cleanup(fn)
+	defer cleanup(t, fn)
 	b := make([]byte, 32)
 	_, err := rand.Read(b)
 	require.NoError(t, err)
-	err = SaveBinary(fn, b, 0444)
+	err = SaveBinary(fn, b, 0400)
 	require.NoError(t, err)
 	require.False(t, IsWritable(fn))
 
-	err = os.Chmod(fn, 0644)
+	err = os.Chmod(fn, 0600)
 	require.NoError(t, err)
 	require.True(t, IsWritable(fn))
 }

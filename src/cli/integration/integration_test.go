@@ -1734,7 +1734,8 @@ func prepareCSVFile(t *testing.T, toAddrs [][]string) (csvFile string, teardown 
 	w := csv.NewWriter(f)
 
 	for _, to := range toAddrs {
-		w.Write(to)
+		err := w.Write(to)
+		require.NoError(t, err)
 	}
 	w.Flush()
 	require.NoError(t, w.Error())

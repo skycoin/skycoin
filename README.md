@@ -64,6 +64,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
 - [URI Specification](#uri-specification)
 - [Wire protocol user agent](#wire-protocol-user-agent)
 - [Offline transaction signing](#offline-transaction-signing)
+- [Deploy a public Skycoin API node with HTTPS](#deploy-a-public-skycoin-api-node-with-https)
 - [Development](#development)
 	- [Modules](#modules)
 	- [Client libraries](#client-libraries)
@@ -314,6 +315,65 @@ $ skycoin-cli broadcastTransaction $SIGNED_RAW_TRANSACTION
 ```
 
 A transaction id would be returned and you can check it in the [explorer](https://explorer.skycoin.com).
+
+## Deploy a public Skycoin API node with HTTPS
+
+We recommend using [caddy server](https://caddyserver.com/) to deploy a public Skycoin API node on a
+Linux server. The public API node should have the `HTTPS` support, which could be handled automatically
+by the `caddy server`. But we need to have a domain and create a DNS record to bind the server ip address
+to it.
+
+Suppose we're going to deploy a Skycoin API node on `apitest.skycoin.com`, and we have already bound
+the server's IP to it. Follow the steps below to complete the deployment.
+
+### Install and run a skycoin api node
+
+```bash
+# Create a skycoin folder so that the files could be isolated
+$ mkdir $HOME/skycoin && cd $HOME/skycoin
+# Download the skycoin binary file
+$ wget https://downloads.skycoin.com/wallet/skycoin-0.26.0-gui-standalone-linux-x64.tar.gz
+$ tar -zxvf skycoin-0.26.0-gui-standalone-linux-x64.tar.gz
+$ cd skycoin-0.26.0-gui-standalone-linux-x64
+$ ./skycoin -web-interface-port=6420 -host-whitelist=$DOMAIN_NAME
+```
+
+> Note: we should running the `skycoin` node with `-host-whitelist` flag, otherwise it would
+> throw `403 Forbidden` error.
+
+### Install the caddy server
+
+```bash
+# Create a caddy folder
+$ mkdir $HOME/caddy && cd $HOME/caddy
+# Download the caddy server binary file
+$ wget https://github.com/caddyserver/caddy/releases/download/v1.0.4/caddy_v1.0.4_linux_amd64.tar.gz
+$ tar -zxvf caddy_v1.0.4_linux_amd64.tar.gz
+$ cd caddy_v1.0.4_linux_amd64
+```
+
+The `caddy` tool would be exist in the folder, let's create a `Caddyfile` to define the reverse proxy
+rules now.
+
+```bash
+cat <<EOF >Caddyfile
+apitest.skycoin.com {
+   proxy / localhost:6420 {
+      transparent
+   }
+}
+EOF
+```
+
+Then run the caddy server
+
+```bash
+$ ./caddy
+```
+
+You will be prompted to enter an email address to receive the notifications from let's Encrypt.
+That's all about the deployment, check the https://apitest.skycoin.com/api/v1/version to see if
+the Skycoin API node is working correctly.
 
 ## Development
 

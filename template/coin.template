@@ -85,7 +85,7 @@ var (
 		CoinHoursNameSingular: "{{.CoinHoursNameSingular}}",
 		CoinHoursTicker:       "{{.CoinHoursTicker}}",
 		ExplorerURL:           "{{.ExplorerURL}}",
-        VersionURL:            "{{.VersionURL}}",
+		VersionURL:            "{{.VersionURL}}",
 		Bip44Coin:             {{.Bip44Coin}},
 	})
 

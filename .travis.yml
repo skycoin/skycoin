@@ -57,7 +57,7 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then ./ci-scripts/install-nodejs-win.sh; fi
 
 before_script:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" && "$TRAVIS_BRANCH" =~ ^(master|develop)$ ]]; then ./ci-scripts/add-key.sh; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]] && [[ "$TRAVIS_BRANCH" =~ ^(master|develop)$ || -n "$TRAVIS_TAG" ]]; then ./ci-scripts/add-key.sh; fi
   # Source the ~/.bashrc to update the PATH for windows
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then source $HOME/.bashrc; fi
 

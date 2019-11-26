@@ -63,7 +63,7 @@ before_script:
 
 script:
   - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then ./ci-scripts/lint-and-test.sh; fi
-  - if [[ "$TRAVIS_PULL_REQUEST" == false && "$TRAVIS_BRANCH" =~ ^(master|develop)$ ]]; then ./ci-scripts/build-wallet.sh; fi
+  - if [[ "$TRAVIS_PULL_REQUEST" == false ]] && [[ "$TRAVIS_BRANCH" =~ ^(master|develop)$ || -n  "$TRAVIS_TAG" ]]; then ./ci-scripts/build-wallet.sh; fi
 
 deploy:
   provider: s3
@@ -75,6 +75,7 @@ deploy:
   upload-dir: wallet
   acl: public_read
   region: $AWS_REGION
+  edge: true # opt in to dpl v2
   on:
     repo: SkycoinProject/skycoin
     tags: true

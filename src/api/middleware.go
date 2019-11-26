@@ -7,21 +7,54 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	wh "github.com/skycoin/skycoin/src/util/http"
-	"github.com/skycoin/skycoin/src/util/iputil"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	wh "github.com/SkycoinProject/skycoin/src/util/http"
+	"github.com/SkycoinProject/skycoin/src/util/iputil"
 )
 
 // ContentSecurityPolicy represents the value of content-security-policy
 // header in http response
-const ContentSecurityPolicy = "script-src 'self' 127.0.0.1"
+const ContentSecurityPolicy = "default-src 'self'" +
+	"; connect-src 'self' https://api.coinpaprika.com https://swaplab.cc https://version.skycoin.com https://downloads.skycoin.com http://127.0.0.1:9510" +
+	"; img-src 'self' 'unsafe-inline' data:" +
+	"; style-src 'self' 'unsafe-inline'" +
+	"; object-src	'none'" +
+	"; form-action 'none'" +
+	"; frame-ancestors 'none'" +
+	"; block-all-mixed-content" +
+	"; base-uri 'self'"
 
-// CSPHandler enables CSP
-func CSPHandler(handler http.Handler) http.Handler {
+// CSPHandler sets the Content-Security-Policy header
+func CSPHandler(handler http.Handler, policy string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Security-Policy", ContentSecurityPolicy)
+		w.Header().Set("Content-Security-Policy", policy)
 		handler.ServeHTTP(w, r)
 	})
+}
+
+// ContentTypeJSONRequired enforces Content-Type: application/json in a POST request.
+// Return 415 Unsupported Media Type if the Content-Type is not application/json,
+// in the V2 error format.
+func ContentTypeJSONRequired(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			contentType := r.Header.Get("Content-Type")
+			if !isContentTypeJSON(contentType) {
+				resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
+				writeHTTPResponse(w, resp)
+				return
+			}
+		}
+
+		handler.ServeHTTP(w, r)
+	})
+}
+
+// isContentTypeJSON returns true if the content type is application/json,
+// allowing the content-type string to include extra parameters like charset=utf-8,
+// for example `Content-Type: application/json; charset=utf-8` will return true.
+func isContentTypeJSON(contentType string) bool {
+	return contentType == ContentTypeJSON || strings.HasPrefix(contentType, ContentTypeJSON+";")
 }
 
 // HostCheck checks that the request's Host header is 127.0.0.1:$port or localhost:$port
@@ -84,12 +117,12 @@ func OriginRefererCheck(host string, hostWhitelist []string, handler http.Handle
 }
 
 func originRefererCheck(apiVersion, host string, hostWhitelist []string, handler http.Handler) http.Handler {
-	hostWhitelistMap := make(map[string]struct{}, len(hostWhitelist)+1)
+	hostWhitelistMap := make(map[string]struct{}, len(hostWhitelist)+2)
 	for _, k := range hostWhitelist {
 		hostWhitelistMap[k] = struct{}{}
 	}
 
-	if addr, port, _ := iputil.SplitAddr(host); iputil.IsLocalhost(addr) { // nolint: errcheck
+	if addr, port, _ := iputil.SplitAddr(host); iputil.IsLocalhost(addr) { //nolint:errcheck
 		hostWhitelistMap[fmt.Sprintf("127.0.0.1:%d", port)] = struct{}{}
 		hostWhitelistMap[fmt.Sprintf("localhost:%d", port)] = struct{}{}
 	} else {
@@ -100,20 +133,22 @@ func originRefererCheck(apiVersion, host string, hostWhitelist []string, handler
 		origin := r.Header.Get("Origin")
 		referer := r.Header.Get("Referer")
 		toCheck := origin
+		toCheckHeader := "Origin"
 		if toCheck == "" {
 			toCheck = referer
+			toCheckHeader = "Referer"
 		}
 
 		if toCheck != "" {
 			u, err := url.Parse(toCheck)
 			if err != nil {
-				logger.Critical().Errorf("Invalid URL in Origin or Referer header: %s %v", toCheck, err)
+				logger.Critical().Errorf("Invalid URL in %s header: %s %v", toCheckHeader, toCheck, err)
 				writeError(w, apiVersion, http.StatusForbidden, "Invalid URL in Origin or Referer header")
 				return
 			}
 
 			if _, isWhitelisted := hostWhitelistMap[u.Host]; !isWhitelisted {
-				logger.Critical().Errorf("Origin or Referer header value %s does not match host and is not whitelisted", toCheck)
+				logger.Critical().Errorf("%s header value %s does not match host and is not whitelisted", toCheckHeader, toCheck)
 				writeError(w, apiVersion, http.StatusForbidden, "Invalid Origin or Referer")
 				return
 			}

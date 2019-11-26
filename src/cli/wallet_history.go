@@ -8,12 +8,12 @@ import (
 
 	"sort"
 
-	gcli "github.com/urfave/cli"
+	cobra "github.com/spf13/cobra"
 
-	"github.com/skycoin/skycoin/src/api"
-	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/util/droplet"
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/api"
+	"github.com/SkycoinProject/skycoin/src/readable"
+	"github.com/SkycoinProject/skycoin/src/util/droplet"
+	"github.com/SkycoinProject/skycoin/src/wallet"
 )
 
 // AddrHistory represents a transactional event for an address
@@ -42,36 +42,20 @@ func (obt byTime) Len() int {
 	return len(obt)
 }
 
-func walletHisCmd() gcli.Command {
-	name := "walletHistory"
-	return gcli.Command{
-		Name:         name,
-		Usage:        "Display the transaction history of specific wallet. Requires skycoin node rpc.",
-		ArgsUsage:    " ",
-		OnUsageError: onCommandUsageError(name),
-		Flags: []gcli.Flag{
-			gcli.StringFlag{
-				Name:  "f",
-				Usage: "[wallet file or path] From wallet. If no path is specified your default wallet path will be used.",
-			},
-		},
-		Action: walletHistoryAction,
+func walletHisCmd() *cobra.Command {
+	walletHisCmd := &cobra.Command{
+		Short:        "Display the transaction history of specific wallet. Requires skycoin node rpc.",
+		Use:          "walletHistory [wallet]",
+		SilenceUsage: true,
+		Args:         cobra.ExactArgs(1),
+		RunE:         walletHistoryAction,
 	}
+
+	return walletHisCmd
 }
 
-func walletHistoryAction(c *gcli.Context) error {
-	cfg := ConfigFromContext(c)
-	client := APIClientFromContext(c)
-
-	if c.NArg() > 0 {
-		fmt.Printf("Error: invalid argument\n\n")
-		return gcli.ShowSubcommandHelp(c)
-	}
-
-	w, err := resolveWalletPath(cfg, c.String("f"))
-	if err != nil {
-		return err
-	}
+func walletHistoryAction(c *cobra.Command, args []string) error {
+	w := args[0]
 
 	// Get all addresses in the wallet
 	addrs, err := getAddresses(w)
@@ -86,12 +70,12 @@ func walletHistoryAction(c *gcli.Context) error {
 	// Get all the addresses' historical uxouts
 	totalAddrHis := []AddrHistory{}
 	for _, addr := range addrs {
-		uxouts, err := client.AddressUxOuts(addr)
+		uxouts, err := apiClient.AddressUxOuts(addr)
 		if err != nil {
 			return err
 		}
 
-		addrHis, err := makeAddrHisArray(client, addr, uxouts)
+		addrHis, err := makeAddrHisArray(apiClient, addr, uxouts)
 		if err != nil {
 			return err
 		}
@@ -254,9 +238,12 @@ func getAddresses(f string) ([]string, error) {
 		return nil, err
 	}
 
-	addrs := make([]string, len(wlt.Entries))
-	for i, entry := range wlt.Entries {
-		addrs[i] = entry.Address.String()
+	addrs := wlt.GetAddresses()
+
+	strAddrs := make([]string, len(addrs))
+	for i, a := range addrs {
+		strAddrs[i] = a.String()
 	}
-	return addrs, nil
+
+	return strAddrs, nil
 }

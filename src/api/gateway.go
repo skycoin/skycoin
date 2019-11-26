@@ -1,34 +1,67 @@
 package api
 
 import (
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/visor/historydb"
-	"github.com/skycoin/skycoin/src/wallet"
+	"time"
+
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/daemon"
+	"github.com/SkycoinProject/skycoin/src/kvstorage"
+	"github.com/SkycoinProject/skycoin/src/transaction"
+	"github.com/SkycoinProject/skycoin/src/visor"
+	"github.com/SkycoinProject/skycoin/src/visor/historydb"
+	"github.com/SkycoinProject/skycoin/src/wallet"
 )
 
-//go:generate go install
 //go:generate mockery -name Gatewayer -case underscore -inpkg -testonly
+
+// Gateway bundles daemon.Daemon, Visor, wallet.Service and kvstorage.Manager into a single object
+type Gateway struct {
+	*daemon.Daemon
+	*visor.Visor
+	*wallet.Service
+	*kvstorage.Manager
+}
+
+// NewGateway creates a Gateway
+func NewGateway(d *daemon.Daemon, v *visor.Visor, w *wallet.Service, m *kvstorage.Manager) *Gateway {
+	return &Gateway{
+		Daemon:  d,
+		Visor:   v,
+		Service: w,
+		Manager: m,
+	}
+}
 
 // Gatewayer interface for Gateway methods
 type Gatewayer interface {
-	Spend(wltID string, password []byte, coins uint64, dest cipher.Address) (*coin.Transaction, error)
-	CreateTransaction(w wallet.CreateTransactionParams) (*coin.Transaction, []wallet.UxBalance, error)
-	GetWalletBalance(wltID string) (wallet.BalancePair, wallet.AddressBalances, error)
-	GetWallet(wltID string) (*wallet.Wallet, error)
-	GetWallets() (wallet.Wallets, error)
-	UpdateWalletLabel(wltID, label string) error
-	GetWalletUnconfirmedTransactions(wltID string) ([]visor.UnconfirmedTransaction, error)
-	GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]visor.UnconfirmedTransaction, [][]visor.TransactionInput, error)
-	CreateWallet(wltName string, options wallet.Options) (*wallet.Wallet, error)
-	RecoverWallet(wltID, seed string, password []byte) (*wallet.Wallet, error)
-	NewAddresses(wltID string, password []byte, n uint64) ([]cipher.Address, error)
-	GetWalletDir() (string, error)
-	EncryptWallet(wltID string, password []byte) (*wallet.Wallet, error)
-	DecryptWallet(wltID string, password []byte) (*wallet.Wallet, error)
-	GetWalletSeed(wltID string, password []byte) (string, error)
+	Daemoner
+	Visorer
+	Walleter
+	Storer
+}
+
+// Daemoner interface for daemon.Daemon methods used by the API
+type Daemoner interface {
+	DaemonConfig() daemon.DaemonConfig
+	GetConnection(addr string) (*daemon.Connection, error)
+	GetConnections(f func(c daemon.Connection) bool) ([]daemon.Connection, error)
+	DisconnectByGnetID(gnetID uint64) error
+	GetDefaultConnections() []string
+	GetTrustConnections() []string
+	GetExchgConnection() []string
+	GetBlockchainProgress(headSeq uint64) *daemon.BlockchainProgress
+	InjectBroadcastTransaction(txn coin.Transaction) error
+	InjectTransaction(txn coin.Transaction) error
+}
+
+// Visorer interface for visor.Visor methods used by the API
+type Visorer interface {
+	VisorConfig() visor.Config
+	StartedAt() time.Time
+	HeadBkSeq() (uint64, bool, error)
+	GetBlockchainMetadata() (*visor.BlockchainMetadata, error)
+	ResendUnconfirmedTxns() ([]cipher.SHA256, error)
 	GetSignedBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, error)
 	GetSignedBlockByHashVerbose(hash cipher.SHA256) (*coin.SignedBlock, [][]visor.TransactionInput, error)
 	GetSignedBlockBySeq(seq uint64) (*coin.SignedBlock, error)
@@ -40,29 +73,48 @@ type Gatewayer interface {
 	GetLastBlocks(num uint64) ([]coin.SignedBlock, error)
 	GetLastBlocksVerbose(num uint64) ([]coin.SignedBlock, [][][]visor.TransactionInput, error)
 	GetUnspentOutputsSummary(filters []visor.OutputsFilter) (*visor.UnspentOutputsSummary, error)
-	GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error)
-	GetBlockchainMetadata() (*visor.BlockchainMetadata, error)
-	GetBlockchainProgress() (*daemon.BlockchainProgress, error)
-	GetConnection(addr string) (*daemon.Connection, error)
-	GetConnections(f func(c daemon.Connection) bool) ([]daemon.Connection, error)
-	Disconnect(id uint64) error
-	GetDefaultConnections() []string
-	GetTrustConnections() []string
-	GetExchgConnection() []string
-	GetAllUnconfirmedTransactions() ([]visor.UnconfirmedTransaction, error)
-	GetAllUnconfirmedTransactionsVerbose() ([]visor.UnconfirmedTransaction, [][]visor.TransactionInput, error)
-	GetTransaction(txid cipher.SHA256) (*visor.Transaction, error)
-	GetTransactionVerbose(txid cipher.SHA256) (*visor.Transaction, []visor.TransactionInput, error)
-	GetTransactions(flts []visor.TxFilter) ([]visor.Transaction, error)
-	GetTransactionsVerbose(flts []visor.TxFilter) ([]visor.Transaction, [][]visor.TransactionInput, error)
-	InjectBroadcastTransaction(txn coin.Transaction) error
-	ResendUnconfirmedTxns() ([]cipher.SHA256, error)
+	GetBalanceOfAddresses(addrs []cipher.Address) ([]wallet.BalancePair, error)
+	VerifyTxnVerbose(txn *coin.Transaction, signed visor.TxnSignedFlag) ([]visor.TransactionInput, bool, error)
+	AddressCount() (uint64, error)
 	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error)
 	GetSpentOutputsForAddresses(addr []cipher.Address) ([][]historydb.UxOut, error)
 	GetVerboseTransactionsForAddress(a cipher.Address) ([]visor.Transaction, [][]visor.TransactionInput, error)
 	GetRichlist(includeDistribution bool) (visor.Richlist, error)
-	GetAddressCount() (uint64, error)
-	GetHealth() (*daemon.Health, error)
-	UnloadWallet(id string) error
-	VerifyTxnVerbose(txn *coin.Transaction) ([]wallet.UxBalance, bool, error)
+	GetAllUnconfirmedTransactions() ([]visor.UnconfirmedTransaction, error)
+	GetAllUnconfirmedTransactionsVerbose() ([]visor.UnconfirmedTransaction, [][]visor.TransactionInput, error)
+	GetTransaction(txid cipher.SHA256) (*visor.Transaction, error)
+	GetTransactionWithInputs(txid cipher.SHA256) (*visor.Transaction, []visor.TransactionInput, error)
+	GetTransactions(flts []visor.TxFilter) ([]visor.Transaction, error)
+	GetTransactionsWithInputs(flts []visor.TxFilter) ([]visor.Transaction, [][]visor.TransactionInput, error)
+	AddressesActivity(addrs []cipher.Address) ([]bool, error)
+	GetWalletUnconfirmedTransactions(wltID string) ([]visor.UnconfirmedTransaction, error)
+	GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]visor.UnconfirmedTransaction, [][]visor.TransactionInput, error)
+	GetWalletBalance(wltID string) (wallet.BalancePair, wallet.AddressBalances, error)
+	CreateTransaction(p transaction.Params, wp visor.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error)
+	WalletCreateTransaction(wltID string, p transaction.Params, wp visor.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error)
+	WalletCreateTransactionSigned(wltID string, password []byte, p transaction.Params, wp visor.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error)
+	WalletSignTransaction(wltID string, password []byte, txn *coin.Transaction, signIndexes []int) (*coin.Transaction, []visor.TransactionInput, error)
+}
+
+// Walleter interface for wallet.Service methods used by the API
+type Walleter interface {
+	UnloadWallet(wltID string) error
+	EncryptWallet(wltID string, password []byte) (wallet.Wallet, error)
+	DecryptWallet(wltID string, password []byte) (wallet.Wallet, error)
+	GetWalletSeed(wltID string, password []byte) (string, string, error)
+	CreateWallet(wltName string, options wallet.Options, bg wallet.TransactionsFinder) (wallet.Wallet, error)
+	RecoverWallet(wltID, seed, seedPassphrase string, password []byte) (wallet.Wallet, error)
+	NewAddresses(wltID string, password []byte, n uint64) ([]cipher.Address, error)
+	GetWallet(wltID string) (wallet.Wallet, error)
+	GetWallets() (wallet.Wallets, error)
+	UpdateWalletLabel(wltID, label string) error
+	WalletDir() (string, error)
+}
+
+// Storer interface for kvstorage.Manager methods used by the API
+type Storer interface {
+	GetStorageValue(storageType kvstorage.Type, key string) (string, error)
+	GetAllStorageValues(storageType kvstorage.Type) (map[string]string, error)
+	AddStorageValue(storageType kvstorage.Type, key, val string) error
+	RemoveStorageValue(storageType kvstorage.Type, key string) error
 }

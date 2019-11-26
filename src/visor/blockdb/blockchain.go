@@ -7,10 +7,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/util/logging"
+	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 )
 
 var (
@@ -19,6 +19,27 @@ var (
 	// ErrNoHeadBlock is returned when calling Blockchain.Head() when no head block exists
 	ErrNoHeadBlock = fmt.Errorf("found no head block")
 )
+
+//go:generate skyencoder -unexported -struct Block -output-path . -package blockdb github.com/SkycoinProject/skycoin/src/coin
+//go:generate skyencoder -unexported -struct UxOut -output-path . -package blockdb github.com/SkycoinProject/skycoin/src/coin
+//go:generate skyencoder -unexported -struct hashPairsWrapper
+//go:generate skyencoder -unexported -struct hashesWrapper
+//go:generate skyencoder -unexported -struct sigWrapper
+
+// hashesWrapper wraps []cipher.SHA256 so it can be used by skyencoder
+type hashesWrapper struct {
+	Hashes []cipher.SHA256
+}
+
+// sigWrapper wraps cipher.Sig in struct so it can be used by skyencoder
+type sigWrapper struct {
+	Sig cipher.Sig
+}
+
+// hashPairsWrapper wraps []coin.HashPair so it can be used by skyencoder
+type hashPairsWrapper struct {
+	HashPairs []coin.HashPair
+}
 
 // ErrMissingSignature is returned if a block in the db does not have a corresponding signature in the db
 type ErrMissingSignature struct {
@@ -64,7 +85,6 @@ type BlockSigs interface {
 	ForEach(*dbutil.Tx, func(cipher.SHA256, cipher.Sig) error) error
 }
 
-//go:generate go install
 //go:generate mockery -name UnspentPooler -case underscore -testonly -inpkg
 
 // UnspentPooler unspent outputs pool
@@ -77,6 +97,7 @@ type UnspentPooler interface {
 	GetArray(*dbutil.Tx, []cipher.SHA256) (coin.UxArray, error)
 	GetUxHash(*dbutil.Tx) (cipher.SHA256, error)
 	GetUnspentsOfAddrs(*dbutil.Tx, []cipher.Address) (coin.AddressUxOuts, error)
+	GetUnspentHashesOfAddrs(*dbutil.Tx, []cipher.Address) (AddressHashes, error)
 	ProcessBlock(*dbutil.Tx, *coin.SignedBlock) error
 	AddressCount(*dbutil.Tx) (uint64, error)
 }

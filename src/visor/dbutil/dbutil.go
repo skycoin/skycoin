@@ -14,8 +14,8 @@ import (
 
 	"github.com/boltdb/bolt"
 
-	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/SkycoinProject/skycoin/src/cipher/encoder"
+	"github.com/SkycoinProject/skycoin/src/util/logging"
 )
 
 var (
@@ -184,15 +184,15 @@ func CreateBuckets(tx *Tx, buckets [][]byte) error {
 
 // GetBucketObjectDecoded returns an encoder-serialized value from a bucket, decoded to an object
 func GetBucketObjectDecoded(tx *Tx, bktName, key []byte, obj interface{}) (bool, error) {
-	v, err := getBucketValue(tx, bktName, key)
+	v, err := GetBucketValueNoCopy(tx, bktName, key)
 	if err != nil {
 		return false, err
 	} else if v == nil {
 		return false, nil
 	}
 
-	if err := encoder.DeserializeRaw(v, obj); err != nil {
-		return false, fmt.Errorf("encoder.DeserializeRaw failed: %v", err)
+	if err := encoder.DeserializeRawExact(v, obj); err != nil {
+		return false, fmt.Errorf("encoder.DeserializeRawExact failed: %v", err)
 	}
 
 	return true, nil
@@ -200,7 +200,7 @@ func GetBucketObjectDecoded(tx *Tx, bktName, key []byte, obj interface{}) (bool,
 
 // GetBucketObjectJSON returns a JSON value from a bucket, unmarshaled to an object
 func GetBucketObjectJSON(tx *Tx, bktName, key []byte, obj interface{}) (bool, error) {
-	v, err := getBucketValue(tx, bktName, key)
+	v, err := GetBucketValueNoCopy(tx, bktName, key)
 	if err != nil {
 		return false, err
 	} else if v == nil {
@@ -216,7 +216,7 @@ func GetBucketObjectJSON(tx *Tx, bktName, key []byte, obj interface{}) (bool, er
 
 // GetBucketString returns a string value from a bucket
 func GetBucketString(tx *Tx, bktName, key []byte) (string, bool, error) {
-	v, err := getBucketValue(tx, bktName, key)
+	v, err := GetBucketValueNoCopy(tx, bktName, key)
 	if err != nil {
 		return "", false, err
 	} else if v == nil {
@@ -226,9 +226,10 @@ func GetBucketString(tx *Tx, bktName, key []byte) (string, bool, error) {
 	return string(v), true, nil
 }
 
-// GetBucketValue returns a []byte value from a bucket
+// GetBucketValue returns a []byte value from a bucket. If the bucket does not exist,
+// it returns an error of type ErrBucketNotExist
 func GetBucketValue(tx *Tx, bktName, key []byte) ([]byte, error) {
-	v, err := getBucketValue(tx, bktName, key)
+	v, err := GetBucketValueNoCopy(tx, bktName, key)
 	if err != nil {
 		return nil, err
 	} else if v == nil {
@@ -243,9 +244,10 @@ func GetBucketValue(tx *Tx, bktName, key []byte) ([]byte, error) {
 	return w, nil
 }
 
-// getBucketValue returns a value from a bucket. If the value does not exist,
-// it returns an error of type ErrBucketNotExist
-func getBucketValue(tx *Tx, bktName, key []byte) ([]byte, error) {
+// GetBucketValueNoCopy returns a value from a bucket. If the bucket does not exist,
+// it returns an error of type ErrBucketNotExist. The byte value is not copied so is not valid
+// outside of the database transaction
+func GetBucketValueNoCopy(tx *Tx, bktName, key []byte) ([]byte, error) {
 	bkt := tx.Bucket(bktName)
 	if bkt == nil {
 		return nil, NewErrBucketNotExist(bktName)

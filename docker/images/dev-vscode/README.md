@@ -2,8 +2,8 @@
 
 ## Simple Tags
 
--	[`develop` (*docker/images/dev-vscode/Dockerfile*)](https://github.com/skycoin/skycoin/tree/develop/docker/images/dev-vscode/Dockerfile)
--	[`vscode` (*docker/images/dev-vscode/Dockerfile*)](https://github.com/skycoin/skycoin/tree/develop/docker/images/dev-vscode/Dockerfile)
+-	[`develop` (*docker/images/dev-vscode/Dockerfile*)](https://github.com/SkycoinProject/skycoin/tree/develop/docker/images/dev-vscode/Dockerfile)
+-	[`vscode` (*docker/images/dev-vscode/Dockerfile*)](https://github.com/SkycoinProject/skycoin/tree/develop/docker/images/dev-vscode/Dockerfile)
 
 # Skycoin Docker image for development with [VS Code](https://code.visualstudio.com/) IDE
 
@@ -25,19 +25,19 @@ ot speed up workspace setup for Skycoin developers.
   - *Mac OS* : XQuartz users should follow these steps
     * `open -a Xquartz`
     * With `xterm` active, open up `XQuartz` in menu bar => `Preferences` => `Security`. There make sure the `Allow connections from network clients` is checked `on`.
-2. `$ cd` to a path where you want to write some code (e.g. a working copy of [`skycoin/skycoin`](https://github.com/skycoin/skycoin) )
+2. `$ cd` to a path where you want to write some code (e.g. a working copy of [`SkycoinProject/skycoin`](https://github.com/SkycoinProject/skycoin) )
 3. Since Visual Studio Code inside docker container runs as user `skydev`, it's necessary apply permissions to files.
     ```sh
     $ sudo chown -R 777 .
     ```
-4. Run docker image, either `skycoin/skycoindev-vscode:develop` or `skycoin/skycoindev-vscode:dind`
+4. Run docker image, either `SkycoinProject/skycoindev-vscode:develop` or `SkycoinProject/skycoindev-vscode:dind`
   - *GNU/Linux*
     ```sh
     $ docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix \
-            -v $(pwd):$GOPATH/src/github.com/skycoin/skycoin \
-            -w $GOPATH/src/github.com/skycoin/skycoin \
+            -v $(pwd):$GOPATH/src/github.com/SkycoinProject/skycoin \
+            -w $GOPATH/src/github.com/SkycoinProject/skycoin \
             -e DISPLAY=$DISPLAY \
-            skycoin/skycoindev-vscode:develop
+            SkycoinProject/skycoindev-vscode:develop
     ```
   - *Mac OS* users running XQuartz should launch `socat` for Docker to be able to connect to the X server. Assuming `en0` is your primary network interface
     ```sh
@@ -45,10 +45,10 @@ ot speed up workspace setup for Skycoin developers.
     $ socat TCP-LISTEN:6000,reuseaddr,fork UNIX-CLIENT:\"$DISPLAY\"
     $ export IP=$(ifconfig en0 | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
     $ docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix \
-            -v $(pwd):$GOPATH/src/github.com/skycoin/skycoin \
-            -w $GOPATH/src/github.com/skycoin/skycoin \
+            -v $(pwd):$GOPATH/src/github.com/SkycoinProject/skycoin \
+            -w $GOPATH/src/github.com/SkycoinProject/skycoin \
             -e DISPLAY=$IP:0 \
-            skycoin/skycoindev-vscode:develop
+            SkycoinProject/skycoindev-vscode:develop
     ```
 5. You should see vscode pop up.
 6. Have fun. Write some code. Close VS Code IDE window when you're done, and press `Ctrl+C` to shut down the container. Your files will be in the host machine at the same path chosen in step `2` above.
@@ -62,14 +62,14 @@ If you want add more extensions, you must define `VS_EXTENSIONS` environment var
 
 ```sh
     $ docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix 
-            -v $PWD:/go/src/github.com/skycoin/skycoin \
-            -w $GOPATH/src/github.com/skycoin/skycoin \
+            -v $PWD:/go/src/github.com/SkycoinProject/skycoin \
+            -w $GOPATH/src/github.com/SkycoinProject/skycoin \
             -e DISPLAY=$DISPLAY \
             -e VS_EXTENSIONS="ms-python.python rebornix.Ruby" \
-            skycoin/skycoindev-vscode:dind
+            SkycoinProject/skycoindev-vscode:dind
 ```
 
-This downloads the skycoin source to src/skycoin/skycoin and changes the owner
+This downloads the skycoin source to src/SkycoinProject/skycoin and changes the owner
 to your user. This is necessary, because all processes inside the container run
 as root and the files created by it are therefore owned by root.
 
@@ -80,10 +80,10 @@ container.
 ```sh
     $ docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix 
             -v $GOPATH/src:$GOPATH/src \
-            -w $GOPATH/src/github.com/skycoin/skycoin \
+            -w $GOPATH/src/github.com/SkycoinProject/skycoin \
             -e DISPLAY=$DISPLAY \
             -e VS_EXTENSIONS="ms-python.python rebornix.Ruby" \
-            skycoin/skycoindev-vscode:dind
+            SkycoinProject/skycoindev-vscode:dind
 ```
 
 # Build your own images
@@ -97,10 +97,10 @@ The following arguments influence the Docker build process.
 For instance, the following commands can be executed in order to build this VS Code dev image using `skycoindev-cli:develop` as base image.
 
 ```sh
-$ git clone https://github.com/skycoin/skycoin
+$ git clone https://github.com/SkycoinProject/skycoin
 $ cd skycoin
 $ SOURCE_COMMIT=$(git rev-parse HEAD)
-$ IMAGE_NAME=skycoin/skycoindev-vscode:develop
+$ IMAGE_NAME=SkycoinProject/skycoindev-vscode:develop
 $ DOCKERFILE_PATH=docker/images/dev-vscode/Dockerfile
 $ docker build --build-arg BDATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
                --build-arg SCOMMIT=$SOURCE_COMMIT \
@@ -112,12 +112,12 @@ $ docker build --build-arg BDATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
 Or, if a decision has been made for including a Docker daemon then specify `skycoindev-cli:dind` instead and run:
 
 ```sh
-$ git clone https://github.com/skycoin/skycoin
+$ git clone https://github.com/SkycoinProject/skycoin
 $ cd skycoin
 $ SOURCE_COMMIT=$(git rev-parse HEAD)
-$ IMAGE_NAME=skycoin/skycoindev-vscode:dind
+$ IMAGE_NAME=SkycoinProject/skycoindev-vscode:dind
 $ DOCKERFILE_PATH=docker/images/dev-vscode/Dockerfile
-$ docker build --build-arg IMAGE_FROM="skycoin/skycoindev-cli:dind" \
+$ docker build --build-arg IMAGE_FROM="SkycoinProject/skycoindev-cli:dind" \
                --build-arg BDATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
                --build-arg SCOMMIT=$SOURCE_COMMIT \
                --build-arg VS_EXTENSIONS="ms-python.python rebornix.Ruby"
@@ -127,8 +127,8 @@ $ docker build --build-arg IMAGE_FROM="skycoin/skycoindev-cli:dind" \
 
 As a result of following theses steps two new images will be obtained:
 
-`skycoin/skycoindev-vscode:develop` based on [skycoin/skycoindev-cli:develop](skycoin/docker/images/dev-cli) 
-`skycoin/skycoindev-vscode:dind` based on [skycoin/skycoindev-cli:dind](skycoin/docker/images/dev-docker)
+`SkycoinProject/skycoindev-vscode:develop` based on [SkycoinProject/skycoindev-cli:develop](skycoin/docker/images/dev-cli) 
+`SkycoinProject/skycoindev-vscode:dind` based on [SkycoinProject/skycoindev-cli:dind](skycoin/docker/images/dev-docker)
 
 ## Running commands inside the container
 
@@ -139,7 +139,7 @@ in a container and deleted when finished.
 
 ```sh
 $ docker run --rm \
-    -v src:/go/src skycoin/skycoindev-cli \
+    -v src:/go/src SkycoinProject/skycoindev-cli \
     sh -c "cd skycoin; make test"
 ```
 
@@ -147,7 +147,7 @@ $ docker run --rm \
 
 ```sh
 $ docker run --rm \
-    -v src:/go/src skycoin/skycoindev-cli \
+    -v src:/go/src SkycoinProject/skycoindev-cli \
     sh -c "cd skycoin; make lint"
 ```
 
@@ -157,7 +157,7 @@ Comman line tools are still available . For instance it's possible to run `vim`
 
 ```sh
 $ docker run --rm \
-    -v src:/go/src skycoin/skycoindev-cli \
+    -v src:/go/src SkycoinProject/skycoindev-cli \
     vim
 ```
 
@@ -166,7 +166,7 @@ $ docker run --rm \
 ### Start a daemon instance
 
 ```sh
-$ docker run --privileged --name some-name -d skycoin/skycoindev-vscode:dind
+$ docker run --privileged --name some-name -d SkycoinProject/skycoindev-vscode:dind
 ```
 
 ### Where to store data
@@ -180,7 +180,7 @@ The downside is that you need to make sure that the directory exists, and that e
 
 ```sh
 $ docker run --privileged --name some-name -v /my/own/var-lib-docker:/var/lib/docker \ 
--d skycoin/skycoindev-vscode:dind
+-d SkycoinProject/skycoindev-vscode:dind
 ```
 
 ## Additional tools and packages installed

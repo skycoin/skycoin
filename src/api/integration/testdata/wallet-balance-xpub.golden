@@ -1,0 +1,22 @@
+{
+	"confirmed": {
+		"coins": 0,
+		"hours": 0
+	},
+	"predicted": {
+		"coins": 0,
+		"hours": 0
+	},
+	"addresses": {
+		"ZkExZ2bprtVVgXgYN5Rg8jHrse1LUtDQKF": {
+			"confirmed": {
+				"coins": 0,
+				"hours": 0
+			},
+			"predicted": {
+				"coins": 0,
+				"hours": 0
+			}
+		}
+	}
+}

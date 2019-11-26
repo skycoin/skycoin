@@ -1,5 +1,6 @@
 @import 'theme/variables';
 @import 'theme/tables';
+@import 'theme/_modals';
 @import '~bootstrap/scss/bootstrap-grid.scss';
 @import '~bootstrap/scss/utilities/_display.scss';
 
@@ -117,6 +118,38 @@ mat-spinner.in-button .mat-spinner path {
   opacity: 0.3;
 }
 
+mat-spinner.in-button {
+  display: inline-block;
+  margin-left: 10px;
+  
+  &.small {
+    height: 18px !important;
+    width: 18px !important;
+  
+    svg {
+      height: 18px !important;
+      width: 18px !important;
+    }
+  }
+}
+
+mat-spinner.in-text {
+  display: inline-block;
+  height: 12px !important;
+  width: 12px !important;
+  margin: 0 !important;
+  margin-left: 7px !important;
+
+  svg {
+    height: 12px !important;
+    width: 12px !important;
+
+    circle {
+      stroke: $gradient-blue-dark;
+    }
+  }
+}
+
 snack-bar-container {
   background-color: rgba(255, 0, 0, 0.8) !important;
 }
@@ -159,6 +192,26 @@ mat-panel-title {
     line-height: 20px;
     padding: 10px 10px;
     width: 100%;
+  }
+
+  .-input-addon {
+    display: flex;
+  
+    input {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+  
+    span {
+      border: 2px;
+      border-radius: 0 6px 6px 0;
+      background: #f1f1f1;
+      padding: 0 10px;
+      line-height: 44px;
+      color: $grey;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
   }
 
   select {
@@ -236,6 +289,42 @@ mat-spinner.in-button svg {
 .empty-row {
   padding: 0 1.2rem !important;
   line-height: 50px !important;
+}
+
+/**
+Alerts
+ */
+
+.alert-box {
+  color: $red;
+  font-size: 12px;
+  padding: 0 10px;
+  line-height: 1.5;
+  background-color: #ffdede;
+  padding: 15px;
+  display: flex;
+  margin-bottom: 20px;
+
+  .title {
+    font-size: 20px;
+  }
+
+  mat-icon {
+    margin-top: 5px;
+    margin-right: 10px;
+    animation: alert-blinking 1s linear infinite;
+  }
+
+  mat-checkbox {
+    margin-top: 10px;
+    display: inline-block;
+  }
+}
+
+@keyframes alert-blinking {
+  50% {
+    opacity: 0.2;
+  }
 }
 
 /**
@@ -364,4 +453,49 @@ On-boarding components
   .mat-dialog-content {
     max-height: 80vh !important;
   }
+}
+
+.mouse-disabled {
+  pointer-events: none;
+}
+
+.coin-selector-container {
+  display: inline-block;
+  margin-left: 5px;
+  margin-bottom: 5px;
+}
+
+.coins-value-label {
+  font-size: 10px;
+  margin-top: 1px;
+  padding: 3px 10px;
+  background-color: $grey-lightest;
+  border-radius: 4px;
+
+  span {
+    opacity: 0.5;
+  }
+
+  .link {
+    color: $gradient-blue-dark;
+    cursor: pointer;
+    display: inline-block;
+    font-size: 11px;
+    margin-bottom: 3px;
+    margin-top: -5px;
+  }
+
+  .centerd-link {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+.red {
+  color: $red;
+}
+
+.element-disabled {
+  pointer-events: none;
+  opacity: 0.5;
 }

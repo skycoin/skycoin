@@ -5,10 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 )
 
 var (
@@ -37,6 +36,27 @@ func NewErrUnspentNotExist(uxID string) error {
 
 func (e ErrUnspentNotExist) Error() string {
 	return fmt.Sprintf("unspent output of %s does not exist", e.UxID)
+}
+
+// AddressHashes maps addresses to a set of hashes
+type AddressHashes map[cipher.Address][]cipher.SHA256
+
+// Flatten flattens all hash sets from AddressHashes to one slice
+func (a AddressHashes) Flatten() []cipher.SHA256 {
+	total := 0
+	for _, h := range a {
+		total += len(h)
+	}
+
+	hashes := make([]cipher.SHA256, total)
+
+	i := 0
+	for _, h := range a {
+		copy(hashes[i:], h)
+		i += len(h)
+	}
+
+	return hashes
 }
 
 type unspentMeta struct{}
@@ -76,10 +96,15 @@ type pool struct{}
 func (pl pool) get(tx *dbutil.Tx, hash cipher.SHA256) (*coin.UxOut, error) {
 	var out coin.UxOut
 
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, UnspentPoolBkt, hash[:], &out); err != nil {
+	v, err := dbutil.GetBucketValueNoCopy(tx, UnspentPoolBkt, hash[:])
+	if err != nil {
 		return nil, err
-	} else if !ok {
+	} else if v == nil {
 		return nil, nil
+	}
+
+	if err := decodeUxOutExact(v, &out); err != nil {
+		return nil, err
 	}
 
 	return &out, nil
@@ -90,7 +115,7 @@ func (pl pool) getAll(tx *dbutil.Tx) (coin.UxArray, error) {
 
 	if err := dbutil.ForEach(tx, UnspentPoolBkt, func(_, v []byte) error {
 		var ux coin.UxOut
-		if err := encoder.DeserializeRaw(v, &ux); err != nil {
+		if err := decodeUxOutExact(v, &ux); err != nil {
 			return err
 		}
 
@@ -104,7 +129,12 @@ func (pl pool) getAll(tx *dbutil.Tx) (coin.UxArray, error) {
 }
 
 func (pl pool) put(tx *dbutil.Tx, hash cipher.SHA256, ux coin.UxOut) error {
-	return dbutil.PutBucketValue(tx, UnspentPoolBkt, hash[:], encoder.Serialize(ux))
+	buf, err := encodeUxOut(&ux)
+	if err != nil {
+		return err
+	}
+
+	return dbutil.PutBucketValue(tx, UnspentPoolBkt, hash[:], buf)
 }
 
 func (pl *pool) delete(tx *dbutil.Tx, hash cipher.SHA256) error {
@@ -114,15 +144,20 @@ func (pl *pool) delete(tx *dbutil.Tx, hash cipher.SHA256) error {
 type poolAddrIndex struct{}
 
 func (p poolAddrIndex) get(tx *dbutil.Tx, addr cipher.Address) ([]cipher.SHA256, error) {
-	var hashes []cipher.SHA256
+	var hashes hashesWrapper
 
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, UnspentPoolAddrIndexBkt, addr.Bytes(), &hashes); err != nil {
+	v, err := dbutil.GetBucketValueNoCopy(tx, UnspentPoolAddrIndexBkt, addr.Bytes())
+	if err != nil {
 		return nil, err
-	} else if !ok {
+	} else if v == nil {
 		return nil, nil
 	}
 
-	return hashes, nil
+	if err := decodeHashesWrapperExact(v, &hashes); err != nil {
+		return nil, err
+	}
+
+	return hashes.Hashes, nil
 }
 
 func (p poolAddrIndex) put(tx *dbutil.Tx, addr cipher.Address, hashes []cipher.SHA256) error {
@@ -139,8 +174,14 @@ func (p poolAddrIndex) put(tx *dbutil.Tx, addr cipher.Address, hashes []cipher.S
 		hashesMap[h] = struct{}{}
 	}
 
-	encodedHashes := encoder.Serialize(hashes)
-	return dbutil.PutBucketValue(tx, UnspentPoolAddrIndexBkt, addr.Bytes(), encodedHashes)
+	buf, err := encodeHashesWrapper(&hashesWrapper{
+		Hashes: hashes,
+	})
+	if err != nil {
+		return err
+	}
+
+	return dbutil.PutBucketValue(tx, UnspentPoolAddrIndexBkt, addr.Bytes(), buf)
 }
 
 // adjust adds and removes hashes from an address -> hashes index
@@ -261,7 +302,7 @@ func (up *Unspents) buildAddrIndex(tx *dbutil.Tx) error {
 	var maxBlockSeq uint64
 	if err := dbutil.ForEach(tx, UnspentPoolBkt, func(k, v []byte) error {
 		var ux coin.UxOut
-		if err := encoder.DeserializeRaw(v, &ux); err != nil {
+		if err := decodeUxOutExact(v, &ux); err != nil {
 			return err
 		}
 
@@ -444,6 +485,22 @@ func (up *Unspents) Len(tx *dbutil.Tx) (uint64, error) {
 // Contains check if the hash of uxout does exist in the pool
 func (up *Unspents) Contains(tx *dbutil.Tx, h cipher.SHA256) (bool, error) {
 	return dbutil.BucketHasKey(tx, UnspentPoolBkt, h[:])
+}
+
+// GetUnspentHashesOfAddrs returns a map of addresses to their unspent output hashes
+func (up *Unspents) GetUnspentHashesOfAddrs(tx *dbutil.Tx, addrs []cipher.Address) (AddressHashes, error) {
+	addrHashes := make(AddressHashes, len(addrs))
+
+	for _, addr := range addrs {
+		hashes, err := up.poolAddrIndex.get(tx, addr)
+		if err != nil {
+			return nil, err
+		}
+
+		addrHashes[addr] = hashes
+	}
+
+	return addrHashes, nil
 }
 
 // GetUnspentsOfAddrs returns a map of addresses to their unspent outputs

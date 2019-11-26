@@ -1,7 +1,6 @@
 package daemon
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -10,13 +9,14 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon/gnet"
-	"github.com/skycoin/skycoin/src/daemon/pex"
-	"github.com/skycoin/skycoin/src/params"
-	"github.com/skycoin/skycoin/src/util/useragent"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/cipher/encoder"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/daemon/gnet"
+	"github.com/SkycoinProject/skycoin/src/daemon/pex"
+	"github.com/SkycoinProject/skycoin/src/params"
+	"github.com/SkycoinProject/skycoin/src/testutil"
+	"github.com/SkycoinProject/skycoin/src/util/useragent"
 )
 
 func TestIntroductionMessage(t *testing.T) {
@@ -25,6 +25,14 @@ func TestIntroductionMessage(t *testing.T) {
 
 	pubkey, _ := cipher.GenerateKeyPair()
 	pubkey2, _ := cipher.GenerateKeyPair()
+	genesisHash := testutil.RandSHA256(t)
+
+	invalidGenesisHashExtra := newIntroductionMessageExtra(pubkey, "skycoin:0.26.0", params.VerifyTxn{
+		BurnFactor:          4,
+		MaxTransactionSize:  32768,
+		MaxDropletPrecision: 3,
+	}, genesisHash)
+	invalidGenesisHashExtra = invalidGenesisHashExtra[:len(invalidGenesisHashExtra)-2]
 
 	type daemonMockValue struct {
 		protocolVersion          uint32
@@ -54,15 +62,9 @@ func TestIntroductionMessage(t *testing.T) {
 			name: "INTR message without extra bytes",
 			addr: "121.121.121.121:6000",
 			mockValue: daemonMockValue{
-				mirror:          10000,
-				protocolVersion: 1,
-				connectionIntroduced: &connection{
-					Addr: "121.121.121.121:6000",
-					ConnectionDetails: ConnectionDetails{
-						ListenPort: 6000,
-						Outgoing:   true,
-					},
-				},
+				mirror:           10000,
+				protocolVersion:  1,
+				disconnectReason: ErrDisconnectBlockchainPubkeyNotProvided,
 			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,
@@ -115,7 +117,7 @@ func TestIntroductionMessage(t *testing.T) {
 						ListenPort: 6000,
 						UserAgent: useragent.Data{
 							Coin:    "skycoin",
-							Version: "0.24.1",
+							Version: "0.26.0",
 						},
 						UnconfirmedVerifyTxn: params.VerifyTxn{
 							BurnFactor:          4,
@@ -127,7 +129,7 @@ func TestIntroductionMessage(t *testing.T) {
 			},
 			userAgent: useragent.Data{
 				Coin:    "skycoin",
-				Version: "0.24.1",
+				Version: "0.26.0",
 			},
 			unconfirmedVerifyTxn: params.VerifyTxn{
 				BurnFactor:          4,
@@ -138,11 +140,11 @@ func TestIntroductionMessage(t *testing.T) {
 				Mirror:          10001,
 				ListenPort:      6000,
 				ProtocolVersion: 1,
-				Extra: newIntroductionMessageExtra(pubkey, "skycoin:0.24.1", params.VerifyTxn{
+				Extra: newIntroductionMessageExtra(pubkey, "skycoin:0.26.0", params.VerifyTxn{
 					BurnFactor:          4,
 					MaxTransactionSize:  32768,
 					MaxDropletPrecision: 3,
-				}),
+				}, genesisHash),
 			},
 		},
 		{
@@ -158,7 +160,7 @@ func TestIntroductionMessage(t *testing.T) {
 						ListenPort: 6000,
 						UserAgent: useragent.Data{
 							Coin:    "skycoin",
-							Version: "0.24.1",
+							Version: "0.26.0",
 						},
 						UnconfirmedVerifyTxn: params.VerifyTxn{
 							BurnFactor:          4,
@@ -170,7 +172,7 @@ func TestIntroductionMessage(t *testing.T) {
 			},
 			userAgent: useragent.Data{
 				Coin:    "skycoin",
-				Version: "0.24.1",
+				Version: "0.26.0",
 			},
 			unconfirmedVerifyTxn: params.VerifyTxn{
 				BurnFactor:          4,
@@ -181,11 +183,36 @@ func TestIntroductionMessage(t *testing.T) {
 				Mirror:          10001,
 				ListenPort:      6000,
 				ProtocolVersion: 1,
-				Extra: append(newIntroductionMessageExtra(pubkey, "skycoin:0.24.1", params.VerifyTxn{
+				Extra: append(newIntroductionMessageExtra(pubkey, "skycoin:0.26.0", params.VerifyTxn{
 					BurnFactor:          4,
 					MaxTransactionSize:  32768,
 					MaxDropletPrecision: 3,
-				}), []byte("additional data")...),
+				}, genesisHash), []byte("additional data")...),
+			},
+		},
+		{
+			name: "INTR message with extra fields but invalid genesis hash data",
+			addr: "121.121.121.121:6000",
+			mockValue: daemonMockValue{
+				mirror:           10000,
+				protocolVersion:  1,
+				pubkey:           pubkey,
+				disconnectReason: ErrDisconnectInvalidExtraData,
+			},
+			userAgent: useragent.Data{
+				Coin:    "skycoin",
+				Version: "0.26.0",
+			},
+			unconfirmedVerifyTxn: params.VerifyTxn{
+				BurnFactor:          4,
+				MaxTransactionSize:  32768,
+				MaxDropletPrecision: 3,
+			},
+			intro: &IntroductionMessage{
+				Mirror:          10001,
+				ListenPort:      6000,
+				ProtocolVersion: 1,
+				Extra:           invalidGenesisHashExtra,
 			},
 		},
 		{
@@ -201,11 +228,11 @@ func TestIntroductionMessage(t *testing.T) {
 				Mirror:          10001,
 				ListenPort:      6000,
 				ProtocolVersion: 1,
-				Extra: newIntroductionMessageExtra(pubkey2, "skycoin:0.24.1", params.VerifyTxn{
+				Extra: newIntroductionMessageExtra(pubkey2, "skycoin:0.26.0", params.VerifyTxn{
 					BurnFactor:          4,
 					MaxTransactionSize:  32768,
 					MaxDropletPrecision: 3,
-				}),
+				}, genesisHash),
 			},
 		},
 		{
@@ -365,7 +392,7 @@ func TestIntroductionMessage(t *testing.T) {
 					BurnFactor:          4,
 					MaxTransactionSize:  32768,
 					MaxDropletPrecision: 3,
-				}),
+				}, genesisHash),
 			},
 		},
 		{
@@ -378,12 +405,37 @@ func TestIntroductionMessage(t *testing.T) {
 				pubkey:                  pubkey,
 				disconnectReason:        ErrDisconnectConnectedTwice,
 				connectionIntroducedErr: ErrConnectionIPMirrorExists,
-				connectionIntroduced:    nil,
+				connectionIntroduced: &connection{
+					Addr: "121.121.121.121:12345",
+					ConnectionDetails: ConnectionDetails{
+						ListenPort: 6000,
+						UserAgent: useragent.Data{
+							Coin:    "skycoin",
+							Version: "0.26.0",
+							Remark:  "foo",
+						},
+					},
+				},
+			},
+			userAgent: useragent.Data{
+				Coin:    "skycoin",
+				Version: "0.26.0",
+				Remark:  "foo",
+			},
+			unconfirmedVerifyTxn: params.VerifyTxn{
+				BurnFactor:          4,
+				MaxTransactionSize:  32768,
+				MaxDropletPrecision: 3,
 			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,
 				ProtocolVersion: 1,
 				ListenPort:      6000,
+				Extra: newIntroductionMessageExtra(pubkey, "skycoin:0.26.0(foo)", params.VerifyTxn{
+					BurnFactor:          4,
+					MaxTransactionSize:  32768,
+					MaxDropletPrecision: 3,
+				}, genesisHash),
 			},
 		},
 		{
@@ -395,19 +447,43 @@ func TestIntroductionMessage(t *testing.T) {
 				pubkey:                  pubkey,
 				disconnectReason:        ErrDisconnectPeerlistFull,
 				connectionIntroducedErr: pex.ErrPeerlistFull,
-				connectionIntroduced:    nil,
+				connectionIntroduced: &connection{
+					Addr: "121.121.121.121:12345",
+					ConnectionDetails: ConnectionDetails{
+						ListenPort: 6000,
+						UserAgent: useragent.Data{
+							Coin:    "skycoin",
+							Version: "0.26.0",
+							Remark:  "foo",
+						},
+					},
+				},
+			},
+			userAgent: useragent.Data{
+				Coin:    "skycoin",
+				Version: "0.26.0",
+				Remark:  "foo",
+			},
+			unconfirmedVerifyTxn: params.VerifyTxn{
+				BurnFactor:          4,
+				MaxTransactionSize:  32768,
+				MaxDropletPrecision: 3,
 			},
 			intro: &IntroductionMessage{
 				Mirror:          10001,
 				ProtocolVersion: 1,
 				ListenPort:      6000,
+				Extra: newIntroductionMessageExtra(pubkey, "skycoin:0.26.0(foo)", params.VerifyTxn{
+					BurnFactor:          4,
+					MaxTransactionSize:  32768,
+					MaxDropletPrecision: 3,
+				}, genesisHash),
 			},
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			fmt.Printf("TEST NAME: %s\n", tc.name)
 			mc := &gnet.MessageContext{
 				Addr:   tc.addr,
 				ConnID: tc.gnetID,
@@ -415,7 +491,7 @@ func TestIntroductionMessage(t *testing.T) {
 			tc.intro.c = mc
 
 			d := &mockDaemoner{}
-			d.On("daemonConfig").Return(DaemonConfig{
+			d.On("DaemonConfig").Return(DaemonConfig{
 				ProtocolVersion:    int32(tc.mockValue.protocolVersion),
 				MinProtocolVersion: int32(tc.mockValue.minProtocolVersion),
 				UserAgent: useragent.Data{
@@ -428,15 +504,15 @@ func TestIntroductionMessage(t *testing.T) {
 			d.On("recordMessageEvent", tc.intro, mc).Return(tc.mockValue.recordMessageEventErr)
 			d.On("Disconnect", tc.addr, tc.mockValue.disconnectReason).Return(tc.mockValue.disconnectErr)
 			d.On("connectionIntroduced", tc.addr, tc.gnetID, mock.MatchedBy(func(m *IntroductionMessage) bool {
-				t.Logf("connectionIntroduced mock.MatchedBy unconfirmedBurnFactor=%d", m.unconfirmedVerifyTxn.BurnFactor)
+				t.Logf("connectionIntroduced mock.MatchedBy unconfirmedBurnFactor=%d", m.UnconfirmedVerifyTxn.BurnFactor)
 				if m == nil {
 					return false
 				}
 
-				if tc.userAgent != m.userAgent {
+				if tc.userAgent != m.UserAgent {
 					return false
 				}
-				if tc.unconfirmedVerifyTxn != m.unconfirmedVerifyTxn {
+				if tc.unconfirmedVerifyTxn != m.UnconfirmedVerifyTxn {
 					return false
 				}
 
@@ -455,6 +531,7 @@ func TestIntroductionMessage(t *testing.T) {
 				d.AssertCalled(t, "Disconnect", tc.addr, tc.mockValue.disconnectReason)
 			} else {
 				d.AssertNotCalled(t, "Disconnect", mock.Anything, mock.Anything)
+				require.Equal(t, genesisHash, tc.intro.GenesisHash)
 			}
 		})
 	}
@@ -464,6 +541,7 @@ func TestMessageEncodeDecode(t *testing.T) {
 	update := false
 
 	introPubKey := cipher.MustPubKeyFromHex("03cd7dfcd8c3452d1bb5d9d9e34dd95d6848cb9f66c2aad127b60578f4be7498f2")
+	introGenesisHash := cipher.MustSHA256FromHex("9afa0004c0ae04fae7c48e3bc0a324c51100de9508ae6048ebdb6652dc94f0e2")
 
 	cases := []struct {
 		goldenFile string
@@ -486,11 +564,11 @@ func TestMessageEncodeDecode(t *testing.T) {
 				Mirror:          99998888,
 				ListenPort:      8888,
 				ProtocolVersion: 12341234,
-				Extra: newIntroductionMessageExtra(introPubKey, "skycoin:0.25.0(foo)", params.VerifyTxn{
+				Extra: newIntroductionMessageExtra(introPubKey, "skycoin:0.26.0(foo)", params.VerifyTxn{
 					BurnFactor:          2,
 					MaxTransactionSize:  32768,
 					MaxDropletPrecision: 3,
-				}),
+				}, introGenesisHash),
 			},
 		},
 		{
@@ -790,7 +868,7 @@ func TestMessageEncodeDecode(t *testing.T) {
 			d, err := ioutil.ReadAll(f)
 			require.NoError(t, err)
 
-			err = encoder.DeserializeRaw(d, tc.obj)
+			err = encoder.DeserializeRawExact(d, tc.obj)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.msg, tc.obj)
@@ -799,4 +877,217 @@ func TestMessageEncodeDecode(t *testing.T) {
 			require.Equal(t, d, d2)
 		})
 	}
+}
+
+func TestTruncateGivePeersMessage(t *testing.T) {
+	maxLen := uint64(1024)
+	m := &GivePeersMessage{}
+
+	// Empty message, no truncation
+	prevLen := len(m.Peers)
+	truncateGivePeersMessage(m, maxLen)
+	require.Equal(t, prevLen, len(m.Peers))
+
+	n := encodeSizeGivePeersMessage(m)
+	require.True(t, n <= maxLen)
+
+	// One peer, no truncation
+	m.Peers = append(m.Peers, IPAddr{})
+	prevLen = len(m.Peers)
+	truncateGivePeersMessage(m, maxLen)
+	require.Equal(t, prevLen, len(m.Peers))
+
+	n = encodeSizeGivePeersMessage(m)
+	require.True(t, n <= maxLen)
+
+	// Too many peers, truncated
+	n = encodeSizeIPAddr(&IPAddr{})
+	m.Peers = make([]IPAddr, (maxLen/n)*2)
+	prevLen = len(m.Peers)
+	truncateGivePeersMessage(m, maxLen)
+	require.True(t, len(m.Peers) < prevLen)
+	require.NotEmpty(t, m.Peers)
+
+	n = encodeSizeGivePeersMessage(m)
+	require.True(t, n <= maxLen)
+}
+
+func TestTruncateGiveBlocksMessage(t *testing.T) {
+	maxLen := uint64(1024)
+	m := &GiveBlocksMessage{}
+
+	// Empty message, no truncation
+	prevLen := len(m.Blocks)
+	truncateGiveBlocksMessage(m, maxLen)
+	require.Equal(t, prevLen, len(m.Blocks))
+
+	n := encodeSizeGiveBlocksMessage(m)
+	require.True(t, n <= maxLen)
+
+	// One block, no truncation
+	m.Blocks = append(m.Blocks, coin.SignedBlock{})
+	prevLen = len(m.Blocks)
+	truncateGiveBlocksMessage(m, maxLen)
+	require.Equal(t, prevLen, len(m.Blocks))
+
+	n = encodeSizeGiveBlocksMessage(m)
+	require.True(t, n <= maxLen)
+
+	// Too many blocks, truncated
+	n = encodeSizeSignedBlock(&coin.SignedBlock{})
+	m.Blocks = make([]coin.SignedBlock, (maxLen/n)*2)
+	prevLen = len(m.Blocks)
+	truncateGiveBlocksMessage(m, maxLen)
+	require.True(t, len(m.Blocks) < prevLen)
+	require.NotEmpty(t, m.Blocks)
+
+	n = encodeSizeGiveBlocksMessage(m)
+	require.True(t, n <= maxLen)
+}
+
+func TestTruncateGiveTransactionsMessage(t *testing.T) {
+	maxLen := uint64(1024)
+	m := &GiveTxnsMessage{}
+
+	// Empty message, no truncation
+	prevLen := len(m.Transactions)
+	truncateGiveTxnsMessage(m, maxLen)
+	require.Equal(t, prevLen, len(m.Transactions))
+
+	n := encodeSizeGiveTxnsMessage(m)
+	require.True(t, n <= maxLen)
+
+	// One block, no truncation
+	m.Transactions = append(m.Transactions, coin.Transaction{})
+	prevLen = len(m.Transactions)
+	truncateGiveTxnsMessage(m, maxLen)
+	require.Equal(t, prevLen, len(m.Transactions))
+
+	n = encodeSizeGiveTxnsMessage(m)
+	require.True(t, n <= maxLen)
+
+	// Too many transactions, truncated
+	n = encodeSizeTransaction(&coin.Transaction{})
+	m.Transactions = make([]coin.Transaction, (maxLen/n)*2)
+	prevLen = len(m.Transactions)
+	truncateGiveTxnsMessage(m, maxLen)
+	require.True(t, len(m.Transactions) < prevLen)
+	require.NotEmpty(t, m.Transactions)
+
+	n = encodeSizeGiveTxnsMessage(m)
+	require.True(t, n <= maxLen)
+}
+
+func TestTruncateAnnounceTxnsHashes(t *testing.T) {
+	maxLen := uint64(1024)
+	m := &AnnounceTxnsMessage{}
+
+	// Empty message, no truncation
+	prevLen := len(m.Transactions)
+	hashes := truncateAnnounceTxnsHashes(m, maxLen)
+	require.Equal(t, prevLen, len(hashes))
+
+	m.Transactions = hashes
+	n := encodeSizeAnnounceTxnsMessage(m)
+	require.True(t, n <= maxLen, "n=%d maxLen=%d", n, maxLen)
+
+	// One block, no truncation
+	m.Transactions = append(m.Transactions, cipher.SHA256{})
+	prevLen = len(m.Transactions)
+	hashes = truncateAnnounceTxnsHashes(m, maxLen)
+	require.Equal(t, prevLen, len(hashes))
+
+	m.Transactions = hashes
+	n = encodeSizeAnnounceTxnsMessage(m)
+	require.True(t, n <= maxLen, "n=%d maxLen=%d", n, maxLen)
+
+	// Too many transactions, truncated
+	n = uint64(len(cipher.SHA256{}))
+	m.Transactions = make([]cipher.SHA256, (maxLen/n)*2)
+	prevLen = len(m.Transactions)
+	hashes = truncateAnnounceTxnsHashes(m, maxLen)
+	require.True(t, len(hashes) < prevLen)
+	require.NotEmpty(t, hashes)
+
+	m.Transactions = hashes
+	n = encodeSizeAnnounceTxnsMessage(m)
+	require.True(t, n <= maxLen, "n=%d maxLen=%d", n, maxLen)
+}
+
+func TestTruncateGetTxnsHashes(t *testing.T) {
+	maxLen := uint64(1024)
+	m := &GetTxnsMessage{}
+
+	// Empty message, no truncation
+	prevLen := len(m.Transactions)
+	hashes := truncateGetTxnsHashes(m, maxLen)
+	require.Equal(t, prevLen, len(hashes))
+
+	m.Transactions = hashes
+	n := encodeSizeGetTxnsMessage(m)
+	require.True(t, n <= maxLen, "n=%d maxLen=%d", n, maxLen)
+
+	// One block, no truncation
+	m.Transactions = append(m.Transactions, cipher.SHA256{})
+	prevLen = len(m.Transactions)
+	hashes = truncateGetTxnsHashes(m, maxLen)
+	require.Equal(t, prevLen, len(hashes))
+
+	m.Transactions = hashes
+	n = encodeSizeGetTxnsMessage(m)
+	require.True(t, n <= maxLen, "n=%d maxLen=%d", n, maxLen)
+
+	// Too many transactions, truncated
+	n = uint64(len(cipher.SHA256{}))
+	m.Transactions = make([]cipher.SHA256, (maxLen/n)*2)
+	prevLen = len(m.Transactions)
+	hashes = truncateGetTxnsHashes(m, maxLen)
+	require.True(t, len(hashes) < prevLen)
+	require.NotEmpty(t, hashes)
+
+	m.Transactions = hashes
+	n = encodeSizeGetTxnsMessage(m)
+	require.True(t, n <= maxLen, "n=%d maxLen=%d", n, maxLen)
+}
+
+func TestGetBlocksMessageProcess(t *testing.T) {
+	d := &mockDaemoner{}
+
+	m := &GetBlocksMessage{
+		LastBlock: 7,
+		// request more blocks than MaxGetBlocksResponseCount to verify capping
+		RequestedBlocks: 100,
+		c: &gnet.MessageContext{
+			ConnID: 10,
+			Addr:   "127.0.0.1:1234",
+		},
+	}
+
+	config := DaemonConfig{
+		DisableNetworking:         false,
+		MaxGetBlocksResponseCount: 20,
+		MaxOutgoingMessageLength:  1024,
+	}
+
+	// Have getSignedBlocksSince return a lot of blocks to verify truncation
+	blocks := make([]coin.SignedBlock, 256)
+
+	gbm := NewGiveBlocksMessage(blocks, config.MaxOutgoingMessageLength)
+	require.True(t, len(gbm.Blocks) < len(blocks), "blocks should be truncated")
+	require.NotEmpty(t, gbm.Blocks)
+
+	d.On("DaemonConfig").Return(config)
+	d.On("recordPeerHeight", "127.0.0.1:1234", uint64(10), uint64(7)).Return()
+	d.On("getSignedBlocksSince", uint64(7), uint64(20)).Return(blocks, nil)
+	d.On("sendMessage", "127.0.0.1:1234", gbm).Return(nil)
+
+	m.process(d)
+
+	d.AssertExpectations(t)
+}
+
+func setupMsgEncoding() {
+	gnet.EraseMessages()
+	var messagesConfig = NewMessagesConfig()
+	messagesConfig.Register()
 }

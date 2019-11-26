@@ -129,6 +129,22 @@ func TestParse(t *testing.T) {
 			userAgent: "skycoin:0.24.1(\n)",
 			err:       ErrIllegalChars,
 		},
+		{
+			name:      "valid",
+			userAgent: "skycoin:0.25.0",
+			data: Data{
+				Coin:    "skycoin",
+				Version: "0.25.0",
+			},
+		},
+		{
+			name:      "valid, version has suffix",
+			userAgent: "skycoin:0.25.1",
+			data: Data{
+				Coin:    "skycoin",
+				Version: "0.25.1",
+			},
+		},
 	}
 
 	for _, tc := range cases {
@@ -217,6 +233,10 @@ func TestSanitize(t *testing.T) {
 	// Should not have anything stripped
 	x := "Skycoin:0.25.0(foo; bar)"
 	require.Equal(t, x, Sanitize(x))
+
+	// Should not have anything stripped
+	x = "Skycoin:0.25.1(foo; bar)"
+	require.Equal(t, x, Sanitize(x))
 }
 
 func TestEmpty(t *testing.T) {
@@ -236,7 +256,7 @@ func TestMustParse(t *testing.T) {
 	}, d)
 
 	require.Panics(t, func() {
-		MustParse("foo") // nolint: errcheck
+		MustParse("foo") //nolint:errcheck
 	})
 }
 
@@ -245,6 +265,6 @@ func TestMustBuild(t *testing.T) {
 		Version: "0",
 	}
 	require.Panics(t, func() {
-		d.MustBuild() // nolint: errcheck
+		d.MustBuild() //nolint:errcheck
 	})
 }

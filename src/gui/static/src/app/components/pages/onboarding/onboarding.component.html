@@ -1,3 +1,7 @@
+<button mat-icon-button (click)="changelanguage()" *ngIf="language">
+  <img [src]="'assets/img/lang/' + language.iconName" class="flag">
+</button>
+
 <app-onboarding-create-wallet
   *ngIf="step === 1"
   (onLabelAndSeedCreated)="onLabelAndSeedCreated($event)"
@@ -8,4 +12,5 @@
   *ngIf="step === 2"
   (onPasswordCreated)="onPasswordCreated($event)"
   (onBack)="onBack()"
+  #encryptForm
 ></app-onboarding-encrypt-wallet>

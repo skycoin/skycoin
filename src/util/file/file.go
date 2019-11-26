@@ -12,7 +12,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/util/logging"
 )
 
 var (
@@ -35,13 +36,13 @@ func InitDataDir(dir string) (string, error) {
 		return "", err
 	}
 
-	// check if dir already exist
+	// check if dir already exists
 	st, err := os.Stat(dir)
 	if !os.IsNotExist(err) {
 		if !st.IsDir() {
 			return "", fmt.Errorf("%s is not a directory", dir)
 		}
-		// dir already exist
+		// dir already exists
 		return dir, nil
 	}
 
@@ -150,20 +151,21 @@ func SaveJSONSafe(filename string, thing interface{}, mode os.FileMode) error {
 }
 
 // SaveBinary persists data into given file in binary,
-// backup the previous file, if there was one
+// backup the data to `tmp` wallet file and then write data
+// to target wallet file. Remove the tmp file in the end of
+// this function. In this way, the wallet data would not be lost
 func SaveBinary(filename string, data []byte, mode os.FileMode) error {
 	// Write the new file to a temporary
-	tmpname := filename + ".tmp"
+	dataHash := cipher.SumSHA256(data)
+	tmpname := filename + ".tmp." + dataHash.Hex()[:8]
 	if err := ioutil.WriteFile(tmpname, data, mode); err != nil {
 		return err
 	}
 
-	// Write the new file to the target wallet file
 	if err := ioutil.WriteFile(filename, data, mode); err != nil {
 		return err
 	}
 
-	// Remove the tmp file
 	return os.Remove(tmpname)
 }
 
@@ -266,18 +268,25 @@ func DetermineResourcePath(staticDir string, resourceDir string, devDir string) 
 	return appLoc, nil
 }
 
-// CopyFile copy file
-func CopyFile(dst string, src io.Reader) (n int64, err error) {
-	// check the existence of dst file.
-	if _, err := os.Stat(dst); err == nil {
-		return 0, nil
+// Copy copies file. Will overwrite dst if dst exists.
+func Copy(dst, src string) (err error) {
+	f, err := os.Open(src)
+	if err != nil {
+		return err
 	}
-	err = nil
+
+	defer func() {
+		cerr := f.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
 
 	out, err := os.Create(dst)
 	if err != nil {
-		return 0, err
+		return err
 	}
+
 	defer func() {
 		cerr := out.Close()
 		if err == nil {
@@ -285,6 +294,28 @@ func CopyFile(dst string, src io.Reader) (n int64, err error) {
 		}
 	}()
 
-	n, err = io.Copy(out, src)
+	_, err = io.Copy(out, f)
 	return
+}
+
+// Exists checks whether the file exists in the file system
+func Exists(fn string) (bool, error) {
+	_, err := os.Stat(fn)
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// IsWritable checks if the file is writable
+func IsWritable(name string) bool {
+	f, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil && os.IsPermission(err) {
+		return false
+	}
+	f.Close()
+	return true
 }

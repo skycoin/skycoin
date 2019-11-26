@@ -1,0 +1,119 @@
+@import '../../../../../theme/variables';
+
+.-wrapper {
+  font-size: 13px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .-status {
+    display: flex;
+    align-items: center;
+
+    mat-icon {
+      margin-right: 15px;
+      width: 18px;
+      height: 18px;
+      font-size: 18px;
+
+      &.-spin {
+        animation: spin 1s infinite linear;
+      }
+    }
+
+    .-value {
+      padding-right: 30px;
+      word-break: normal;
+    }
+  }
+}
+
+mat-progress-bar {
+  margin: 30px -30px;
+  width: calc(100% + 60px);
+
+  ::ng-deep .mat-progress-bar-buffer {
+    background-color: $blue;
+    opacity: .3;
+  }
+}
+
+.-details {
+  .-box {
+    display: flex;
+    align-items: center;
+
+    &:not(:last-child) {
+      margin-bottom: 20px;
+    }
+
+    > .-img {
+      width: 17px;
+      margin-right: 15px;
+    }
+  }
+}
+
+.-item {
+  font-size: 13px;
+
+  &:not(:last-child) {
+    margin-bottom: 20px;
+  }
+
+  .-key {
+    color: $grey;
+    margin-bottom: 5px;
+  }
+
+  .-value {
+    word-break: break-all;
+
+    .info-icon {
+      display: inline;
+      font-size: 14px;
+      color: lighten($grey, 40%);
+      vertical-align: text-bottom;
+    }
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(359deg);
+  }
+}
+
+.-external mat-icon {
+  line-height: 13px;
+  height: 13px;
+  width: 13px;
+  font-size: 16px;
+  vertical-align: middle;
+  color: $blue;
+  margin-left: 10px;
+}
+
+.expand {
+  color: $blue;
+  cursor: pointer;
+  font-size: 13px;
+
+  mat-icon {
+    color: $blue;
+    padding: 0;
+    display: inline;
+    vertical-align: middle;
+    font-size: 13px;
+  }
+}
+
+.buttons {
+  width: 100%;
+  text-align: center;
+  margin-top: 10px;
+}

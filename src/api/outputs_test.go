@@ -13,9 +13,9 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/visor"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/readable"
+	"github.com/SkycoinProject/skycoin/src/visor"
 )
 
 func TestGetOutputsHandler(t *testing.T) {
@@ -57,7 +57,7 @@ func TestGetOutputsHandler(t *testing.T) {
 			name:   "400 - invalid address",
 			method: http.MethodGet,
 			status: http.StatusBadRequest,
-			err:    "400 Bad Request - addrs contains invalid address",
+			err:    "400 Bad Request - address \"invalidAddr\" is invalid: Invalid base58 character",
 			httpBody: &httpBody{
 				addrs: invalidAddr,
 			},
@@ -143,15 +143,14 @@ func TestGetOutputsHandler(t *testing.T) {
 			}
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
 			require.Equal(t, tc.status, status, "got `%v` want `%v`", status, tc.status)
 
 			if status != http.StatusOK {
-				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
-					strings.TrimSpace(rr.Body.String()), status, tc.err)
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()))
 			} else {
 				var msg *readable.UnspentOutputsSummary
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)

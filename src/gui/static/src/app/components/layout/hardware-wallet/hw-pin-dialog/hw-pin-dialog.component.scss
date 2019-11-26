@@ -1,0 +1,37 @@
+@import '../../../../../theme/variables';
+
+mat-input-container {
+  width: 100%;
+}
+
+.form-field {
+  input {
+    font-size: 25px;
+    letter-spacing: 15px;
+    text-align: center;
+  }
+
+  .info {
+    text-align: center;
+
+    .link {
+      color: $blue;
+      cursor: pointer;
+    }
+  }
+}
+
+.num-pad-row {
+  display: flex;
+
+  button {
+    flex-grow: 1;
+    height: 50px;
+    border: #eff0f0 solid 1px;
+    margin: 2px;
+
+    span {
+      color: $black;
+    }
+  }
+}

@@ -6,12 +6,14 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/util/droplet"
-	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/visor/historydb"
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/transaction"
+	"github.com/SkycoinProject/skycoin/src/util/droplet"
+	"github.com/SkycoinProject/skycoin/src/util/mathutil"
+	"github.com/SkycoinProject/skycoin/src/visor"
+	"github.com/SkycoinProject/skycoin/src/visor/historydb"
+	"github.com/SkycoinProject/skycoin/src/wallet"
 )
 
 // UnspentOutput represents a readable output
@@ -80,12 +82,12 @@ func (ros UnspentOutputs) Balance() (wallet.Balance, error) {
 			return wallet.Balance{}, err
 		}
 
-		bal.Coins, err = coin.AddUint64(bal.Coins, coins)
+		bal.Coins, err = mathutil.AddUint64(bal.Coins, coins)
 		if err != nil {
 			return wallet.Balance{}, err
 		}
 
-		bal.Hours, err = coin.AddUint64(bal.Hours, out.CalculatedHours)
+		bal.Hours, err = mathutil.AddUint64(bal.Hours, out.CalculatedHours)
 		if err != nil {
 			return wallet.Balance{}, err
 		}
@@ -130,9 +132,9 @@ func (ros UnspentOutputs) ToUxArray() (coin.UxArray, error) {
 	return uxs, nil
 }
 
-// OutputsToUxBalances converts UnspentOutputs to []wallet.UxBalance
-func OutputsToUxBalances(ros UnspentOutputs) ([]wallet.UxBalance, error) {
-	uxb := make([]wallet.UxBalance, len(ros))
+// OutputsToUxBalances converts UnspentOutputs to []transaction.UxBalance
+func OutputsToUxBalances(ros UnspentOutputs) ([]transaction.UxBalance, error) {
+	uxb := make([]transaction.UxBalance, len(ros))
 	for i, ro := range ros {
 		if ro.Hash == "" {
 			return nil, errors.New("UnspentOutput missing hash")
@@ -158,7 +160,7 @@ func OutputsToUxBalances(ros UnspentOutputs) ([]wallet.UxBalance, error) {
 			return nil, fmt.Errorf("UnspentOutput src_tx is invalid: %v", err)
 		}
 
-		b := wallet.UxBalance{
+		b := transaction.UxBalance{
 			Hash:           hash,
 			Time:           ro.Time,
 			BkSeq:          ro.BkSeq,

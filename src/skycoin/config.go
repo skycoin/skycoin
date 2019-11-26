@@ -11,16 +11,20 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/fiber"
+	"github.com/SkycoinProject/skycoin/src/kvstorage"
+
 	"log"
 
-	"github.com/skycoin/skycoin/src/api"
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/params"
-	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/util/droplet"
-	"github.com/skycoin/skycoin/src/util/file"
-	"github.com/skycoin/skycoin/src/util/useragent"
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/api"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/params"
+	"github.com/SkycoinProject/skycoin/src/readable"
+	"github.com/SkycoinProject/skycoin/src/util/droplet"
+	"github.com/SkycoinProject/skycoin/src/util/file"
+	"github.com/SkycoinProject/skycoin/src/util/useragent"
+	"github.com/SkycoinProject/skycoin/src/wallet"
 )
 
 var (
@@ -54,8 +58,8 @@ type NodeConfig struct {
 	EnableGUI bool
 	// Disable CSRF check in the wallet API
 	DisableCSRF bool
-	// Enable unversioned API endpoints (without the /api/v1 prefix)
-	EnableUnversionedAPI bool
+	// Disable Host, Origin and Referer header check in the wallet API
+	DisableHeaderCheck bool
 	// Disable CSP disable content-security-policy in http response
 	DisableCSP bool
 	// Comma separated list of API sets enabled on the remote web interface
@@ -85,10 +89,14 @@ type NodeConfig struct {
 	MaxDefaultPeerOutgoingConnections int
 	// How often to make outgoing connections
 	OutgoingConnectionsRate time.Duration
+	// MaxOutgoingMessageLength maximum size of outgoing messages
+	MaxOutgoingMessageLength int
+	// MaxIncomingMessageLength maximum size of incoming messages
+	MaxIncomingMessageLength int
 	// PeerlistSize represents the maximum number of peers that the pex would maintain
 	PeerlistSize int
 	// Wallet Address Version
-	//AddressVersion string
+	// AddressVersion string
 	// Remote web interface
 	WebInterface bool
 	// Remote web interface port
@@ -107,14 +115,8 @@ type NodeConfig struct {
 	// Allow web interface auth without HTTPS
 	WebInterfacePlaintextAuth bool
 
-	// Enable the deprecated JSON 2.0 RPC interface
-	RPCInterface bool
-
 	// Launch System Default Browser after client startup
 	LaunchBrowser bool
-
-	// If true, print the configured client web interface address and exit
-	PrintWebInterfaceAddress bool
 
 	// Data directory holds app data -- defaults to ~/.skycoin
 	DataDirectory string
@@ -146,8 +148,8 @@ type NodeConfig struct {
 	UnconfirmedVerifyTxn params.VerifyTxn
 	// Transaction verification parameters for transactions when creating blocks
 	CreateBlockVerifyTxn params.VerifyTxn
-	// Maximum block size
-	MaxBlockSize uint32
+	// Maximum total size of transactions in a block
+	MaxBlockTransactionsSize uint32
 
 	unconfirmedBurnFactor          uint64
 	maxUnconfirmedTransactionSize  uint64
@@ -162,6 +164,11 @@ type NodeConfig struct {
 	WalletDirectory string
 	// Wallet crypto type
 	WalletCryptoType string
+
+	// Key-value storage
+	// Default to ${DataDirectory}/data
+	KVStorageDirectory  string
+	EnabledStorageTypes []kvstorage.Type
 
 	// Disable the hardcoded default peers
 	DisableDefaultPeers bool
@@ -181,11 +188,10 @@ type NodeConfig struct {
 	// Expose HTTP profiling on this interface
 	HTTPProfHost string
 
-	DBPath      string
-	DBReadOnly  bool
-	Arbitrating bool
-	LogToFile   bool
-	Version     bool // show node version
+	DBPath     string
+	DBReadOnly bool
+	LogToFile  bool
+	Version    bool // show node version
 
 	GenesisSignatureStr string
 	GenesisAddressStr   string
@@ -197,13 +203,16 @@ type NodeConfig struct {
 
 	genesisSignature cipher.Sig
 	genesisAddress   cipher.Address
+	genesisHash      cipher.SHA256
 
 	blockchainPubkey cipher.PubKey
 	blockchainSeckey cipher.SecKey
+
+	Fiber readable.FiberConfig
 }
 
 // NewNodeConfig returns a new node config instance
-func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
+func NewNodeConfig(mode string, node fiber.NodeConfig) NodeConfig {
 	nodeConfig := NodeConfig{
 		CoinName:            node.CoinName,
 		GenesisSignatureStr: node.GenesisSignatureStr,
@@ -223,10 +232,10 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		DisableNetworking: false,
 		// Enable GUI
 		EnableGUI: false,
-		// Enable unversioned API
-		EnableUnversionedAPI: false,
 		// Disable CSRF check in the wallet API
 		DisableCSRF: false,
+		// Disable Host, Origin and Referer header check in the wallet API
+		DisableHeaderCheck: false,
 		// DisableCSP disable content-security-policy in http response
 		DisableCSP: false,
 		// Only run on localhost and only connect to others on localhost
@@ -234,7 +243,7 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		// Which address to serve on. Leave blank to automatically assign to a
 		// public interface
 		Address: "",
-		//gnet uses this for TCP incoming and outgoing
+		// gnet uses this for TCP incoming and outgoing
 		Port: node.Port,
 		// MaxConnections is the maximum number of total connections allowed
 		MaxConnections: 128,
@@ -245,10 +254,12 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		DownloadPeerList:                  true,
 		PeerListURL:                       node.PeerListURL,
 		// How often to make outgoing connections, in seconds
-		OutgoingConnectionsRate: time.Second * 5,
-		PeerlistSize:            65535,
+		OutgoingConnectionsRate:  time.Second * 5,
+		MaxOutgoingMessageLength: 256 * 1024,
+		MaxIncomingMessageLength: 1024 * 1024,
+		PeerlistSize:             65535,
 		// Wallet Address Version
-		//AddressVersion: "test",
+		// AddressVersion: "test",
 		// Remote web interface
 		WebInterface:      true,
 		WebInterfacePort:  node.WebInterfacePort,
@@ -256,11 +267,12 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		WebInterfaceCert:  "",
 		WebInterfaceKey:   "",
 		WebInterfaceHTTPS: false,
-		EnabledAPISets:    strings.Join([]string{api.EndpointsRead, api.EndpointsTransaction}, ","),
-		DisabledAPISets:   "",
-		EnableAllAPISets:  false,
-
-		RPCInterface: false,
+		EnabledAPISets: strings.Join([]string{
+			api.EndpointsRead,
+			api.EndpointsTransaction,
+		}, ","),
+		DisabledAPISets:  "",
+		EnableAllAPISets: false,
 
 		LaunchBrowser: false,
 		// Data directory holds app data
@@ -277,13 +289,28 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		ResetCorruptDB: false,
 
 		// Blockchain/transaction validation
-		UnconfirmedVerifyTxn: params.UserVerifyTxn,
-		CreateBlockVerifyTxn: params.UserVerifyTxn,
-		MaxBlockSize:         params.UserVerifyTxn.MaxTransactionSize,
+		UnconfirmedVerifyTxn: params.VerifyTxn{
+			BurnFactor:          node.UnconfirmedBurnFactor,
+			MaxTransactionSize:  node.UnconfirmedMaxTransactionSize,
+			MaxDropletPrecision: node.UnconfirmedMaxDropletPrecision,
+		},
+		CreateBlockVerifyTxn: params.VerifyTxn{
+			BurnFactor:          node.CreateBlockBurnFactor,
+			MaxTransactionSize:  node.CreateBlockMaxTransactionSize,
+			MaxDropletPrecision: node.CreateBlockMaxDropletPrecision,
+		},
+		MaxBlockTransactionsSize: node.MaxBlockTransactionsSize,
 
 		// Wallets
 		WalletDirectory:  "",
-		WalletCryptoType: string(wallet.CryptoTypeScryptChacha20poly1305),
+		WalletCryptoType: string(wallet.DefaultCryptoType),
+
+		// Key-value storage
+		KVStorageDirectory: "",
+		EnabledStorageTypes: []kvstorage.Type{
+			kvstorage.TypeTxIDNotes,
+			kvstorage.TypeGeneral,
+		},
 
 		// Timeout settings for http.Server
 		// https://blog.cloudflare.com/the-complete-guide-to-golang-net-http-timeouts/
@@ -300,6 +327,18 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		// HTTP profiling interface (see http://golang.org/pkg/net/http/pprof/)
 		HTTPProf:     false,
 		HTTPProfHost: "localhost:6060",
+
+		Fiber: readable.FiberConfig{
+			Name:                  node.CoinName,
+			DisplayName:           node.DisplayName,
+			Ticker:                node.Ticker,
+			CoinHoursName:         node.CoinHoursName,
+			CoinHoursNameSingular: node.CoinHoursNameSingular,
+			CoinHoursTicker:       node.CoinHoursTicker,
+			ExplorerURL:           node.ExplorerURL,
+			VersionURL:            node.VersionURL,
+			Bip44Coin:             node.Bip44Coin,
+		},
 	}
 
 	nodeConfig.applyConfigMode(mode)
@@ -310,10 +349,6 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 func (c *Config) postProcess() error {
 	if help {
 		flag.Usage()
-		fmt.Println("Additional environment variables:")
-		fmt.Printf("* USER_BURN_FACTOR - Set the coin hour burn factor required for user-created transactions. Must be >= %d.\n", params.MinBurnFactor)
-		fmt.Printf("* USER_MAX_TXN_SIZE - Set the maximum transaction size (in bytes) allowed for user-created transactions. Must be >= %d.\n", params.MinTransactionSize)
-		fmt.Printf("* USER_MAX_DECIMALS - Set the maximum decimals allowed for user-created transactions. Must be <= %d.\n", droplet.Exponent)
 		os.Exit(0)
 	}
 
@@ -327,6 +362,14 @@ func (c *Config) postProcess() error {
 		c.Node.genesisAddress, err = cipher.DecodeBase58Address(c.Node.GenesisAddressStr)
 		panicIfError(err, "Invalid Address")
 	}
+
+	// Compute genesis block hash
+	gb, err := coin.NewGenesisBlock(c.Node.genesisAddress, c.Node.GenesisCoinVolume, c.Node.GenesisTimestamp)
+	if err != nil {
+		panicIfError(err, "Create genesis hash failed")
+	}
+	c.Node.genesisHash = gb.HashHeader()
+
 	if c.Node.BlockchainPubkeyStr != "" {
 		c.Node.blockchainPubkey, err = cipher.PubKeyFromHex(c.Node.BlockchainPubkeyStr)
 		panicIfError(err, "Invalid Pubkey")
@@ -362,15 +405,22 @@ func (c *Config) postProcess() error {
 		c.Node.WalletDirectory = replaceHome(c.Node.WalletDirectory, home)
 	}
 
+	if c.Node.KVStorageDirectory == "" {
+		c.Node.KVStorageDirectory = filepath.Join(c.Node.DataDirectory, "data")
+	} else {
+		c.Node.KVStorageDirectory = replaceHome(c.Node.KVStorageDirectory, home)
+	}
+	if len(c.Node.EnabledStorageTypes) == 0 {
+		c.Node.EnabledStorageTypes = []kvstorage.Type{
+			kvstorage.TypeGeneral,
+			kvstorage.TypeTxIDNotes,
+		}
+	}
+
 	if c.Node.DBPath == "" {
 		c.Node.DBPath = filepath.Join(c.Node.DataDirectory, "data.db")
 	} else {
 		c.Node.DBPath = replaceHome(c.Node.DBPath, home)
-	}
-
-	if c.Node.RunBlockPublisher {
-		// Run in arbitrating mode if the node is block publisher
-		c.Node.Arbitrating = true
 	}
 
 	userAgentData := useragent.Data{
@@ -406,6 +456,9 @@ func (c *Config) postProcess() error {
 	}
 
 	if c.Node.HostWhitelist != "" {
+		if c.Node.DisableHeaderCheck {
+			return errors.New("host whitelist should be empty when header check is disabled")
+		}
 		c.Node.hostWhitelist = strings.Split(c.Node.HostWhitelist, ",")
 	}
 
@@ -448,7 +501,7 @@ func (c *Config) postProcess() error {
 	c.Node.CreateBlockVerifyTxn.BurnFactor = uint32(c.Node.createBlockBurnFactor)
 	c.Node.CreateBlockVerifyTxn.MaxTransactionSize = uint32(c.Node.createBlockMaxTransactionSize)
 	c.Node.CreateBlockVerifyTxn.MaxDropletPrecision = uint8(c.Node.createBlockMaxDropletPrecision)
-	c.Node.MaxBlockSize = uint32(c.Node.maxBlockSize)
+	c.Node.MaxBlockTransactionsSize = uint32(c.Node.maxBlockSize)
 
 	if c.Node.UnconfirmedVerifyTxn.MaxTransactionSize < params.MinTransactionSize {
 		return fmt.Errorf("-max-txn-size-unconfirmed must be >= params.MinTransactionSize (%d)", params.MinTransactionSize)
@@ -463,16 +516,16 @@ func (c *Config) postProcess() error {
 		return fmt.Errorf("-max-txn-size-create-block must be >= params.UserVerifyTxn.MaxTransactionSize (%d)", params.UserVerifyTxn.MaxTransactionSize)
 	}
 
-	if c.Node.MaxBlockSize < params.MinTransactionSize {
+	if c.Node.MaxBlockTransactionsSize < params.MinTransactionSize {
 		return fmt.Errorf("-max-block-size must be >= params.MinTransactionSize (%d)", params.MinTransactionSize)
 	}
-	if c.Node.MaxBlockSize < params.UserVerifyTxn.MaxTransactionSize {
+	if c.Node.MaxBlockTransactionsSize < params.UserVerifyTxn.MaxTransactionSize {
 		return fmt.Errorf("-max-block-size must be >= params.UserVerifyTxn.MaxTransactionSize (%d)", params.UserVerifyTxn.MaxTransactionSize)
 	}
-	if c.Node.MaxBlockSize < c.Node.UnconfirmedVerifyTxn.MaxTransactionSize {
+	if c.Node.MaxBlockTransactionsSize < c.Node.UnconfirmedVerifyTxn.MaxTransactionSize {
 		return errors.New("-max-block-size must be >= -max-txn-size-unconfirmed")
 	}
-	if c.Node.MaxBlockSize < c.Node.CreateBlockVerifyTxn.MaxTransactionSize {
+	if c.Node.MaxBlockTransactionsSize < c.Node.CreateBlockVerifyTxn.MaxTransactionSize {
 		return errors.New("-max-block-size must be >= -max-txn-size-create-block")
 	}
 
@@ -531,6 +584,7 @@ func buildAPISets(c NodeConfig) (map[string]struct{}, error) {
 		api.EndpointsTransaction,
 		api.EndpointsPrometheus,
 		api.EndpointsNetCtrl,
+		api.EndpointsStorage,
 		// Do not include insecure or deprecated API sets, they must always
 		// be explicitly enabled through -enable-api-sets
 	}
@@ -563,9 +617,9 @@ func validateAPISets(opt string, apiSets []string) error {
 			api.EndpointsTransaction,
 			api.EndpointsWallet,
 			api.EndpointsInsecureWalletSeed,
-			api.EndpointsDeprecatedWalletSpend,
 			api.EndpointsPrometheus,
-			api.EndpointsNetCtrl:
+			api.EndpointsNetCtrl,
+			api.EndpointsStorage:
 		case "":
 			continue
 		default:
@@ -585,8 +639,8 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't allow incoming connections")
 	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
 	flag.BoolVar(&c.EnableGUI, "enable-gui", c.EnableGUI, "Enable GUI")
-	flag.BoolVar(&c.EnableUnversionedAPI, "enable-unversioned-api", c.EnableUnversionedAPI, "Enable the deprecated unversioned API endpoints without /api/v1 prefix")
 	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable CSRF check")
+	flag.BoolVar(&c.DisableHeaderCheck, "disable-header-check", c.DisableHeaderCheck, "disables the host, origin and referer header checks.")
 	flag.BoolVar(&c.DisableCSP, "disable-csp", c.DisableCSP, "disable content-security-policy in http response")
 	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
@@ -594,8 +648,8 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.WebInterface, "web-interface", c.WebInterface, "enable the web interface")
 	flag.IntVar(&c.WebInterfacePort, "web-interface-port", c.WebInterfacePort, "port to serve web interface on")
 	flag.StringVar(&c.WebInterfaceAddr, "web-interface-addr", c.WebInterfaceAddr, "addr to serve web interface on")
-	flag.StringVar(&c.WebInterfaceCert, "web-interface-cert", c.WebInterfaceCert, "skycoind.cert file for web interface HTTPS. If not provided, will autogenerate or use skycoind.cert in -data-directory")
-	flag.StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "skycoind.key file for web interface HTTPS. If not provided, will autogenerate or use skycoind.key in -data-directory")
+	flag.StringVar(&c.WebInterfaceCert, "web-interface-cert", c.WebInterfaceCert, "skycoind.cert file for web interface HTTPS. If not provided, will autogenerate or use skycoind.cert in --data-dir")
+	flag.StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "skycoind.key file for web interface HTTPS. If not provided, will autogenerate or use skycoind.key in --data-dir")
 	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https", c.WebInterfaceHTTPS, "enable HTTPS for web interface")
 	flag.StringVar(&c.HostWhitelist, "host-whitelist", c.HostWhitelist, "Hostnames to whitelist in the Host header check. Only applies when the web interface is bound to localhost.")
 
@@ -607,7 +661,7 @@ func (c *NodeConfig) RegisterFlags() {
 		api.EndpointsPrometheus,
 		api.EndpointsNetCtrl,
 		api.EndpointsInsecureWalletSeed,
-		api.EndpointsDeprecatedWalletSpend,
+		api.EndpointsStorage,
 	}
 	flag.StringVar(&c.EnabledAPISets, "enable-api-sets", c.EnabledAPISets, fmt.Sprintf("enable API set. Options are %s. Multiple values should be separated by comma", strings.Join(allAPISets, ", ")))
 	flag.StringVar(&c.DisabledAPISets, "disable-api-sets", c.DisabledAPISets, fmt.Sprintf("disable API set. Options are %s. Multiple values should be separated by comma", strings.Join(allAPISets, ", ")))
@@ -617,10 +671,7 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.StringVar(&c.WebInterfacePassword, "web-interface-password", c.WebInterfacePassword, "password for the web interface")
 	flag.BoolVar(&c.WebInterfacePlaintextAuth, "web-interface-plaintext-auth", c.WebInterfacePlaintextAuth, "allow web interface auth without https")
 
-	flag.BoolVar(&c.RPCInterface, "rpc-interface", c.RPCInterface, "enable the deprecated JSON 2.0 RPC interface")
-
 	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser, "launch system default webbrowser at client startup")
-	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address", c.PrintWebInterfaceAddress, "print configured web interface address and exit")
 	flag.StringVar(&c.DataDirectory, "data-dir", c.DataDirectory, "directory to store app data (defaults to ~/.skycoin)")
 	flag.StringVar(&c.DBPath, "db-path", c.DBPath, "path of database file (defaults to ~/.skycoin/data.db)")
 	flag.BoolVar(&c.DBReadOnly, "db-read-only", c.DBReadOnly, "open bolt db read-only")
@@ -648,7 +699,7 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.Uint64Var(&c.createBlockBurnFactor, "burn-factor-create-block", uint64(c.CreateBlockVerifyTxn.BurnFactor), "coinhour burn factor applied when creating blocks")
 	flag.Uint64Var(&c.createBlockMaxTransactionSize, "max-txn-size-create-block", uint64(c.CreateBlockVerifyTxn.MaxTransactionSize), "maximum size of a transaction applied when creating blocks")
 	flag.Uint64Var(&c.createBlockMaxDropletPrecision, "max-decimals-create-block", uint64(c.CreateBlockVerifyTxn.MaxDropletPrecision), "max number of decimal places applied when creating blocks")
-	flag.Uint64Var(&c.maxBlockSize, "max-block-size", uint64(c.MaxBlockSize), "maximum size of a block")
+	flag.Uint64Var(&c.maxBlockSize, "max-block-size", uint64(c.MaxBlockTransactionsSize), "maximum total size of transactions in a block")
 
 	flag.BoolVar(&c.RunBlockPublisher, "block-publisher", c.RunBlockPublisher, "run the daemon as a block publisher")
 	flag.StringVar(&c.BlockchainPubkeyStr, "blockchain-public-key", c.BlockchainPubkeyStr, "public key of the blockchain")
@@ -659,13 +710,15 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.Uint64Var(&c.GenesisTimestamp, "genesis-timestamp", c.GenesisTimestamp, "genesis block timestamp")
 
 	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory, "location of the wallet files. Defaults to ~/.skycoin/wallet/")
+	flag.StringVar(&c.KVStorageDirectory, "storage-dir", c.KVStorageDirectory, "location of the storage data files. Defaults to ~/.skycoin/data/")
 	flag.IntVar(&c.MaxConnections, "max-connections", c.MaxConnections, "Maximum number of total connections allowed")
 	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", c.MaxOutgoingConnections, "Maximum number of outgoing connections allowed")
 	flag.IntVar(&c.MaxDefaultPeerOutgoingConnections, "max-default-peer-outgoing-connections", c.MaxDefaultPeerOutgoingConnections, "The maximum default peer outgoing connections allowed")
 	flag.IntVar(&c.PeerlistSize, "peerlist-size", c.PeerlistSize, "Max number of peers to track in peerlist")
 	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate", c.OutgoingConnectionsRate, "How often to make an outgoing connection")
+	flag.IntVar(&c.MaxOutgoingMessageLength, "max-out-msg-len", c.MaxOutgoingMessageLength, "Maximum length of outgoing wire messages")
+	flag.IntVar(&c.MaxIncomingMessageLength, "max-in-msg-len", c.MaxIncomingMessageLength, "Maximum length of incoming wire messages")
 	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly, "Run on localhost and only connect to localhost peers")
-	flag.BoolVar(&c.Arbitrating, "arbitrating", c.Arbitrating, "Run node in arbitrating mode")
 	flag.StringVar(&c.WalletCryptoType, "wallet-crypto-type", c.WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")
 	flag.BoolVar(&c.Version, "version", false, "show node version")
 }
@@ -682,9 +735,9 @@ func (c *NodeConfig) applyConfigMode(configMode string) {
 		c.EnableGUI = true
 		c.LaunchBrowser = true
 		c.DisableCSRF = false
+		c.DisableHeaderCheck = false
 		c.DisableCSP = false
 		c.DownloadPeerList = true
-		c.RPCInterface = false
 		c.WebInterface = true
 		c.LogToFile = false
 		c.ResetCorruptDB = true
@@ -694,7 +747,7 @@ func (c *NodeConfig) applyConfigMode(configMode string) {
 	}
 }
 
-func panicIfError(err error, msg string, args ...interface{}) { // nolint: unparam
+func panicIfError(err error, msg string, args ...interface{}) { //nolint:unparam
 	if err != nil {
 		log.Panicf(msg+": %v", append(args, err)...)
 	}

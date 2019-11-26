@@ -1,25 +1,24 @@
 package visor
 
 import (
+	"bytes"
 	"sort"
-	"strings"
 
-	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/SkycoinProject/skycoin/src/cipher"
 )
 
 // RichlistBalance holds info an address balance holder
 type RichlistBalance struct {
-	Address string
-	Coins   string
+	Address cipher.Address
+	Coins   uint64
 	Locked  bool
-	coins   uint64
 }
 
 // Richlist contains RichlistBalances
 type Richlist []RichlistBalance
 
 // NewRichlist create Richlist via unspent outputs map
-func NewRichlist(allAccounts map[string]uint64, lockedAddrs map[string]struct{}) (Richlist, error) {
+func NewRichlist(allAccounts map[cipher.Address]uint64, lockedAddrs map[cipher.Address]struct{}) (Richlist, error) {
 	richlist := make(Richlist, 0, len(allAccounts))
 
 	for addr, coins := range allAccounts {
@@ -28,15 +27,9 @@ func NewRichlist(allAccounts map[string]uint64, lockedAddrs map[string]struct{})
 			islocked = true
 		}
 
-		coinsStr, err := droplet.ToString(coins)
-		if err != nil {
-			return nil, err
-		}
-
 		richlist = append(richlist, RichlistBalance{
 			Address: addr,
-			Coins:   coinsStr,
-			coins:   coins,
+			Coins:   coins,
 			Locked:  islocked,
 		})
 	}
@@ -44,23 +37,23 @@ func NewRichlist(allAccounts map[string]uint64, lockedAddrs map[string]struct{})
 	// Sort order:
 	// Higher coins
 	// Locked > unlocked
-	// Address alphabetical
+	// Address bytes
 	sort.Slice(richlist, func(i, j int) bool {
-		if richlist[i].coins == richlist[j].coins {
+		if richlist[i].Coins == richlist[j].Coins {
 			if richlist[i].Locked == richlist[j].Locked {
-				return strings.Compare(richlist[i].Address, richlist[j].Address) < 0
+				return bytes.Compare(richlist[i].Address.Bytes(), richlist[j].Address.Bytes()) < 0
 			}
 			return richlist[i].Locked
 		}
 
-		return richlist[i].coins > richlist[j].coins
+		return richlist[i].Coins > richlist[j].Coins
 	})
 
 	return richlist, nil
 }
 
 // FilterAddresses returns the richlist without addresses from the map
-func (r Richlist) FilterAddresses(addrs map[string]struct{}) Richlist {
+func (r Richlist) FilterAddresses(addrs map[cipher.Address]struct{}) Richlist {
 	var s Richlist
 	for _, b := range r {
 		if _, ok := addrs[b.Address]; !ok {

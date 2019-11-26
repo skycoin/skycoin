@@ -6,12 +6,12 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
-	gcli "github.com/urfave/cli"
+	"github.com/spf13/cobra"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/util/apputil"
-	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/util/apputil"
+	"github.com/SkycoinProject/skycoin/src/visor"
+	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 )
 
 const (
@@ -29,33 +29,36 @@ func wrapDB(db *bolt.DB) *dbutil.DB {
 	return wdb
 }
 
-func checkdbCmd() gcli.Command {
-	name := "checkdb"
-	return gcli.Command{
-		Name:         name,
-		Usage:        "Verify the database",
-		ArgsUsage:    "[db path]",
-		Description:  "If no argument is specificed, the default data.db in $HOME/.$COIN/ will be checked.",
-		OnUsageError: onCommandUsageError(name),
-		Action:       checkdb,
+func checkDBCmd() *cobra.Command {
+	return &cobra.Command{
+		Short: "Verify the database",
+		Use:   "checkdb [db path]",
+		Long: `Checks if the given database file contains valid skycoin blockchain data.
+    If no argument is specificed, the default data.db in $HOME/.$COIN/ will be checked.`,
+		Args:                  cobra.MaximumNArgs(1),
+		DisableFlagsInUseLine: true,
+		SilenceUsage:          true,
+		RunE:                  checkDB,
 	}
 }
 
-func checkdb(c *gcli.Context) error {
-	cfg := ConfigFromContext(c)
-
+func checkDB(_ *cobra.Command, args []string) error {
 	// get db path
-	dbpath, err := resolveDBPath(cfg, c.Args().First())
+	dbPath := ""
+	if len(args) > 0 {
+		dbPath = args[0]
+	}
+	dbPath, err := resolveDBPath(cliConfig, dbPath)
 	if err != nil {
 		return err
 	}
 
-	// check if this file is exist
-	if _, err := os.Stat(dbpath); os.IsNotExist(err) {
-		return fmt.Errorf("db file: %v does not exist", dbpath)
+	// check if this file exists
+	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+		return fmt.Errorf("db file: %v does not exist", dbPath)
 	}
 
-	db, err := bolt.Open(dbpath, 0600, &bolt.Options{
+	db, err := bolt.Open(dbPath, 0600, &bolt.Options{
 		Timeout:  5 * time.Second,
 		ReadOnly: true,
 	})
@@ -68,12 +71,11 @@ func checkdb(c *gcli.Context) error {
 		return fmt.Errorf("decode blockchain pubkey failed: %v", err)
 	}
 
-	quit := QuitChanFromContext(c)
 	go func() {
-		apputil.CatchInterrupt(quit)
+		apputil.CatchInterrupt(quitChan)
 	}()
 
-	if err := visor.CheckDatabase(wrapDB(db), pubkey, quit); err != nil {
+	if err := visor.CheckDatabase(wrapDB(db), pubkey, quitChan); err != nil {
 		if err == visor.ErrVerifyStopped {
 			return nil
 		}
@@ -82,4 +84,58 @@ func checkdb(c *gcli.Context) error {
 
 	fmt.Println("check db success")
 	return nil
+}
+
+func checkDBEncodingCmd() *cobra.Command {
+	return &cobra.Command{
+		Short: "Verify the database data encoding",
+		Use:   "checkDBDecoding [db path]",
+		Long: `Verify the generated binary encoders match the dynamic encoders for database data.
+    If no argument is specificed, the default data.db in $HOME/.$COIN/ will be checked.`,
+		Args:                  cobra.MaximumNArgs(1),
+		DisableFlagsInUseLine: true,
+		SilenceUsage:          true,
+		RunE:                  checkDBDecoding,
+	}
+}
+
+func checkDBDecoding(_ *cobra.Command, args []string) error {
+	// get db path
+	dbPath := ""
+	if len(args) > 0 {
+		dbPath = args[0]
+	}
+	dbPath, err := resolveDBPath(cliConfig, dbPath)
+	if err != nil {
+		return err
+	}
+
+	// check if this file exists
+	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+		return fmt.Errorf("db file: %v does not exist", dbPath)
+	}
+
+	db, err := bolt.Open(dbPath, 0600, &bolt.Options{
+		Timeout:  5 * time.Second,
+		ReadOnly: true,
+	})
+
+	if err != nil {
+		return fmt.Errorf("open db failed: %v", err)
+	}
+
+	go func() {
+		apputil.CatchInterrupt(quitChan)
+	}()
+
+	if err := visor.VerifyDBSkyencoderSafe(wrapDB(db), quitChan); err != nil {
+		if err == visor.ErrVerifyStopped {
+			return nil
+		}
+		return fmt.Errorf("checkDBDecoding failed: %v", err)
+	}
+
+	fmt.Println("check db decoding success")
+	return nil
+
 }

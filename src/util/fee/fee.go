@@ -6,7 +6,8 @@ package fee
 import (
 	"errors"
 
-	"github.com/skycoin/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/util/mathutil"
 )
 
 var (
@@ -42,7 +43,7 @@ func VerifyTransactionFeeForHours(hours, fee uint64, burnFactor uint32) error {
 	}
 
 	// Calculate total number of coinhours
-	total, err := coin.AddUint64(hours, fee)
+	total, err := mathutil.AddUint64(hours, fee)
 	if err != nil {
 		return errors.New("Hours and fee overflow")
 	}

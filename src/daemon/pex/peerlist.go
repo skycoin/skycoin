@@ -10,8 +10,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/skycoin/skycoin/src/util/file"
-	"github.com/skycoin/skycoin/src/util/useragent"
+	"github.com/SkycoinProject/skycoin/src/util/file"
+	"github.com/SkycoinProject/skycoin/src/util/useragent"
 )
 
 // Peers peer list
@@ -199,7 +199,7 @@ func (pl *peerlist) setPrivate(addr string, private bool) error {
 	return fmt.Errorf("set peer.Private failed: %v does not exist in peer list", addr)
 }
 
-// SetTrusted sets peer as trusted peer
+// setTrusted sets peer as trusted peer
 func (pl *peerlist) setTrusted(addr string, trusted bool) error {
 	if p, ok := pl.peers[addr]; ok {
 		p.Trusted = trusted

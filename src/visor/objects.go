@@ -3,8 +3,8 @@ package visor
 import (
 	"time"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/transaction"
 )
 
 // Transaction wraps around coin.Transaction, tagged with its status.  This allows us
@@ -69,6 +69,57 @@ func NewTransactionInput(ux coin.UxOut, calculateHoursTime uint64) (TransactionI
 	}, nil
 }
 
+// NewTransactionInputs creates []TransactionInput from []coin.UxOut.
+// Assumes all coin.UxOuts have their coin hours calculated from the same reference time.
+func NewTransactionInputs(uxa []coin.UxOut, calculateHoursTime uint64) ([]TransactionInput, error) {
+	if len(uxa) == 0 {
+		return nil, nil
+	}
+
+	inputs := make([]TransactionInput, len(uxa))
+	for i, x := range uxa {
+		var err error
+		inputs[i], err = NewTransactionInput(x, calculateHoursTime)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return inputs, nil
+}
+
+// TransactionInputFromUxBalance converts transaction.UxBalance to TransactionInput
+func TransactionInputFromUxBalance(x transaction.UxBalance) TransactionInput {
+	var t TransactionInput
+	t.CalculatedHours = x.Hours
+	t.UxOut.Head.BkSeq = x.BkSeq
+	t.UxOut.Head.Time = x.Time
+	t.UxOut.Body.Address = x.Address
+	t.UxOut.Body.Coins = x.Coins
+	t.UxOut.Body.Hours = x.InitialHours
+	t.UxOut.Body.SrcTransaction = x.SrcTransaction
+
+	if t.UxOut.Hash() != x.Hash {
+		logger.Panic("Reconstructed coin.UxOut from transaction.UxBalance hash does not match")
+	}
+
+	return t
+}
+
+// NewTransactionInputsFromUxBalance converts []transaction.UxBalance to []TransactionInput
+func NewTransactionInputsFromUxBalance(uxb []transaction.UxBalance) []TransactionInput {
+	if len(uxb) == 0 {
+		return nil
+	}
+
+	inputs := make([]TransactionInput, len(uxb))
+	for i, x := range uxb {
+		inputs[i] = TransactionInputFromUxBalance(x)
+	}
+
+	return inputs
+}
+
 // BlockchainMetadata encapsulates useful information from the coin.Blockchain
 type BlockchainMetadata struct {
 	// Most recent block
@@ -99,11 +150,6 @@ type UnconfirmedTransaction struct {
 	Announced int64
 	// If this txn is valid
 	IsValid int8
-}
-
-// Hash returns the coin.Transaction's hash
-func (ut *UnconfirmedTransaction) Hash() cipher.SHA256 {
-	return ut.Transaction.Hash()
 }
 
 // NewUnconfirmedTransaction creates an UnconfirmedTransaction

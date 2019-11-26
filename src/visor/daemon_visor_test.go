@@ -18,24 +18,23 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/util/fee"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/testutil"
+	"github.com/SkycoinProject/skycoin/src/util/fee"
+	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 )
 
 func setupSimpleVisor(t *testing.T, db *dbutil.DB, bc *Blockchain) *Visor {
 	cfg := NewConfig()
-	cfg.DBPath = db.Path()
 
 	pool, err := NewUnconfirmedTransactionPool(db)
 	require.NoError(t, err)
 
 	return &Visor{
 		Config:      cfg,
-		Unconfirmed: pool,
-		Blockchain:  bc,
-		DB:          db,
+		unconfirmed: pool,
+		blockchain:  bc,
+		db:          db,
 	}
 }
 

@@ -9,8 +9,8 @@ import (
 	"io"
 	"math"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	secp256k1 "github.com/skycoin/skycoin/src/cipher/secp256k1-go"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	secp256k1 "github.com/SkycoinProject/skycoin/src/cipher/secp256k1-go"
 )
 
 const (
@@ -221,7 +221,8 @@ func (s Sha256Xor) Decrypt(data []byte, password []byte) ([]byte, error) {
 	}
 
 	l := binary.LittleEndian.Uint32(dataLenBytes)
-	if l > math.MaxUint32 {
+
+	if uint64(buf.Len()) > math.MaxUint32 {
 		return nil, ErrDataTooLarge
 	}
 

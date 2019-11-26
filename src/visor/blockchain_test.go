@@ -6,11 +6,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/visor/blockdb"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/testutil"
+	"github.com/SkycoinProject/skycoin/src/visor/blockdb"
+	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 )
 
 var (
@@ -46,12 +46,13 @@ func addGenesisBlockToBlockchain(t *testing.T, bc *Blockchain) *coin.SignedBlock
 	}
 }
 
-func makeSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction {
-	spendTx := coin.Transaction{}
+func makeSpendTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction {
+	spendTxn := coin.Transaction{}
 	var totalHours uint64
 	var totalCoins uint64
 	for _, ux := range uxs {
-		spendTx.PushInput(ux.Hash())
+		err := spendTxn.PushInput(ux.Hash())
+		require.NoError(t, err)
 		totalHours += ux.Body.Hours
 		totalCoins += ux.Body.Coins
 	}
@@ -60,14 +61,16 @@ func makeSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr ci
 
 	hours := totalHours / 4
 
-	spendTx.PushOutput(toAddr, coins, hours)
-	if totalCoins-coins != 0 {
-		spendTx.PushOutput(uxs[0].Body.Address, totalCoins-coins, totalHours/4)
-	}
-	spendTx.SignInputs(keys)
-	err := spendTx.UpdateHeader()
+	err := spendTxn.PushOutput(toAddr, coins, hours)
 	require.NoError(t, err)
-	return spendTx
+	if totalCoins-coins != 0 {
+		err := spendTxn.PushOutput(uxs[0].Body.Address, totalCoins-coins, totalHours/4)
+		require.NoError(t, err)
+	}
+	spendTxn.SignInputs(keys)
+	err = spendTxn.UpdateHeader()
+	require.NoError(t, err)
+	return spendTxn
 }
 
 /* Helpers */
@@ -669,9 +672,9 @@ func TestProcessTransactions(t *testing.T) {
 			tm := head.Time()
 			for i, spend := range tc.initChain {
 				uxs := coin.CreateUnspents(head.Head, head.Body.Transactions[spend.TxIndex])
-				tx := makeSpendTx(t, coin.UxArray{uxs[spend.UxIndex]}, spend.Keys, spend.ToAddr, spend.Coins)
+				txn := makeSpendTxn(t, coin.UxArray{uxs[spend.UxIndex]}, spend.Keys, spend.ToAddr, spend.Coins)
 
-				b := newBlock(t, bc, tx, tm+uint64(i*100))
+				b := newBlock(t, bc, txn, tm+uint64(i*100))
 
 				sb := &coin.SignedBlock{
 					Block: *b,
@@ -685,15 +688,15 @@ func TestProcessTransactions(t *testing.T) {
 			}
 
 			// create spending transactions
-			txs := make([]coin.Transaction, len(tc.spends))
+			txns := make([]coin.Transaction, len(tc.spends))
 			for i, spend := range tc.spends {
 				uxs := coin.CreateUnspents(head.Head, head.Body.Transactions[spend.TxIndex])
-				tx := makeSpendTx(t, coin.UxArray{uxs[spend.UxIndex]}, spend.Keys, spend.ToAddr, spend.Coins)
-				txs[i] = tx
+				txn := makeSpendTxn(t, coin.UxArray{uxs[spend.UxIndex]}, spend.Keys, spend.ToAddr, spend.Coins)
+				txns[i] = txn
 			}
 
 			err = db.View("", func(tx *dbutil.Tx) error {
-				_, err := bc.processTransactions(tx, txs)
+				_, err := bc.processTransactions(tx, txns)
 				require.EqualValues(t, tc.err, err)
 				return nil
 			})
@@ -795,7 +798,7 @@ func TestProcessBlock(t *testing.T) {
 	// Create new block
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 	toAddr := testutil.MakeAddress()
-	tx := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, 10e6)
+	tx := makeSpendTxn(t, uxs, []cipher.SecKey{genSecret}, toAddr, 10e6)
 	uxHash := getUxHash(t, db, bc)
 	b, err := coin.NewBlock(*gb, genTime+100, uxHash, coin.Transactions{tx}, feeCalc)
 	require.NoError(t, err)
@@ -845,7 +848,7 @@ func TestExecuteBlock(t *testing.T) {
 	// new block
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 	toAddr := testutil.MakeAddress()
-	tx := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, 10e6)
+	tx := makeSpendTxn(t, uxs, []cipher.SecKey{genSecret}, toAddr, 10e6)
 	uxHash := getUxHash(t, db, bc)
 	b, err := coin.NewBlock(*gb, genTime+100, uxHash, coin.Transactions{tx}, feeCalc)
 	require.NoError(t, err)

@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/cipher/ripemd160"
+	"github.com/SkycoinProject/skycoin/src/cipher/ripemd160"
 )
 
 func TestNewPubKey(t *testing.T) {
@@ -429,7 +429,7 @@ func TestVerifyAddressSignedHash(t *testing.T) {
 	// Different secret keys should not create same sig
 	p2, s2 := GenerateKeyPair()
 	a2 := AddressFromPubKey(p2)
-	h = SHA256{}
+	h = SumSHA256(randBytes(t, 256))
 	sig = MustSignHash(h, s)
 	sig2 = MustSignHash(h, s2)
 	require.NoError(t, VerifyAddressSignedHash(a, sig, h))
@@ -445,6 +445,11 @@ func TestVerifyAddressSignedHash(t *testing.T) {
 	// Bad address should be invalid
 	require.Error(t, VerifyAddressSignedHash(a, sig2, h))
 	require.Error(t, VerifyAddressSignedHash(a2, sig, h))
+
+	// Empty hash should panic
+	require.Panics(t, func() {
+		MustSignHash(SHA256{}, s)
+	})
 }
 
 func TestSignHash(t *testing.T) {
@@ -462,7 +467,10 @@ func TestSignHash(t *testing.T) {
 	require.Equal(t, p, p2)
 
 	_, err = SignHash(h, SecKey{})
-	require.Equal(t, errors.New("Invalid secret key"), err)
+	require.Equal(t, ErrInvalidSecKey, err)
+
+	_, err = SignHash(SHA256{}, s)
+	require.Equal(t, ErrNullSignHash, err)
 }
 
 func TestMustSignHash(t *testing.T) {
@@ -702,21 +710,44 @@ func TestSecKeyPubKeyNull(t *testing.T) {
 	require.False(t, pk.Null())
 }
 
-func TestVerifySignedHash(t *testing.T) {
+func TestVerifySignatureRecoverPubKey(t *testing.T) {
 	h := MustSHA256FromHex("127e9b0d6b71cecd0363b366413f0f19fcd924ae033513498e7486570ff2a1c8")
 	sig := MustSigFromHex("63c035b0c95d0c5744fc1c0bdf38af02cef2d2f65a8f923732ab44e436f8a491216d9ab5ff795e3144f4daee37077b8b9db54d2ba3a3df8d4992f06bb21f724401")
 
-	err := VerifySignedHash(sig, h)
+	err := VerifySignatureRecoverPubKey(sig, h)
 	require.NoError(t, err)
 
 	// Fails with ErrInvalidHashForSig
 	badSigHex := "71f2c01516fe696328e79bcf464eb0db374b63d494f7a307d1e77114f18581d7a81eed5275a9e04a336292dd2fd16977d9bef2a54ea3161d0876603d00c53bc9dd"
 	badSig := MustSigFromHex(badSigHex)
-	err = VerifySignedHash(badSig, h)
+	err = VerifySignatureRecoverPubKey(badSig, h)
 	require.Equal(t, ErrInvalidHashForSig, err)
 
 	// Fails with ErrInvalidSigPubKeyRecovery
 	badSig = MustSigFromHex("63c035b0c95d0c5744fc1c0bdf39af02cef2d2f65a8f923732ab44e436f8a491216d9ab5ff795e3144f4daee37077b8b9db54d2ba3a3df8d4992f06bb21f724401")
-	err = VerifySignedHash(badSig, h)
+	err = VerifySignatureRecoverPubKey(badSig, h)
 	require.Equal(t, ErrInvalidSigPubKeyRecovery, err)
+}
+
+func TestHighSPointSigInvalid(t *testing.T) {
+	// Verify that signatures that were generated with forceLowS=false
+	// are not accepted as valid, to avoid a signature malleability case.
+	// Refer to secp256k1go's TestSigForceLowS for the reference test inputs
+
+	h := MustSHA256FromHex("DD72CBF2203C1A55A411EEC4404AF2AFB2FE942C434B23EFE46E9F04DA8433CA")
+
+	// This signature has a high S point (the S point is above the half-order of the curve)
+	sigHexHighS := "8c20a668be1b5a910205de46095023fe4823a3757f4417114168925f28193bffadf317cc256cec28d90d5b2b7e1ce6a45cd5f3b10880ab5f99c389c66177d39a01"
+	s := MustSigFromHex(sigHexHighS)
+	err := VerifySignatureRecoverPubKey(s, h)
+
+	require.Error(t, err)
+	require.Equal(t, "Signature not valid for hash", err.Error())
+
+	// This signature has a low S point (the S point is below the half-order of the curve).
+	// It is equal to forceLowS(sigHighS).
+	sigHexLowS := "8c20a668be1b5a910205de46095023fe4823a3757f4417114168925f28193bff520ce833da9313d726f2a4d481e3195a5dd8e935a6c7f4dc260ed4c66ebe6da700"
+	s2 := MustSigFromHex(sigHexLowS)
+	err = VerifySignatureRecoverPubKey(s2, h)
+	require.NoError(t, err)
 }

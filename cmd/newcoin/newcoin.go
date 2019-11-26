@@ -13,9 +13,9 @@ import (
 
 	"github.com/urfave/cli"
 
-	"github.com/skycoin/skycoin/src/skycoin"
-	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/util/useragent"
+	"github.com/SkycoinProject/skycoin/src/fiber"
+	"github.com/SkycoinProject/skycoin/src/util/logging"
+	"github.com/SkycoinProject/skycoin/src/util/useragent"
 )
 
 const (
@@ -38,11 +38,11 @@ func init() {
 
 	app.Commands = commands
 	app.EnableBashCompletion = true
-	app.OnUsageError = func(context *cli.Context, err error, isSubcommand bool) error {
+	app.OnUsageError = func(context *cli.Context, err error, _ bool) error {
 		fmt.Fprintf(context.App.Writer, "error: %v\n\n", err)
 		return cli.ShowAppHelp(context)
 	}
-	app.CommandNotFound = func(context *cli.Context, command string) {
+	app.CommandNotFound = func(_ *cli.Context, command string) {
 		tmp := fmt.Sprintf("{{.HelpName}}: '%s' is not a {{.HelpName}} "+
 			"command. See '{{.HelpName}} --help'. \n", command)
 		cli.HelpPrinter(app.Writer, tmp, app)
@@ -130,7 +130,7 @@ func createCoinCommand() cli.Command {
 
 			// -- parse template and create new coin.go and config blockchain.go -- //
 
-			config, err := skycoin.NewParameters(configFile, configDir)
+			config, err := fiber.NewConfig(configFile, configDir)
 			if err != nil {
 				log.Errorf("failed to create new fiber coin config")
 				return err

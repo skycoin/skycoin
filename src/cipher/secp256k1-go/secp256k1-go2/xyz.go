@@ -1,25 +1,16 @@
 package secp256k1go
 
-import (
-	"fmt"
-	//	"encoding/hex"
-)
-
 // XYZ contains xyz fields
 type XYZ struct {
 	X, Y, Z  Field
 	Infinity bool
 }
 
-// Print prints xyz
-func (xyz XYZ) Print(lab string) {
+func (xyz XYZ) String() string {
 	if xyz.Infinity {
-		fmt.Println(lab + " - INFINITY")
-		return
+		return "INFINITY"
 	}
-	fmt.Println(lab+".X", xyz.X.String())
-	fmt.Println(lab+".Y", xyz.Y.String())
-	fmt.Println(lab+".Z", xyz.Z.String())
+	return xyz.X.String() + "," + xyz.Y.String() + "," + xyz.Z.String()
 }
 
 // SetXY sets xy
@@ -79,7 +70,7 @@ func (xyz *XYZ) Equals(b *XYZ) bool {
 	return xyz.X.Equals(&b.X) && xyz.Y.Equals(&b.Y) && xyz.Z.Equals(&b.Z)
 }
 
-func (xyz *XYZ) precomp(w int) (pre []XYZ) { // nolint: unparam
+func (xyz *XYZ) precomp(w int) (pre []XYZ) { //nolint:unparam
 	var d XYZ
 	pre = make([]XYZ, (1 << (uint(w) - 2)))
 	pre[0] = *xyz
@@ -374,14 +365,14 @@ func (xyz *XYZ) Add(r, b *XYZ) {
 }
 
 // ECmultGen r = a*G
-//TODO: Change to returning result
-//TODO: input should not be pointer
-func ECmultGen(r *XYZ, a *Number) {
+func ECmultGen(a Number) XYZ {
 	var n Number
+	var r XYZ
 	n.Set(&a.Int)
 	r.SetXY(&prec[0][n.rshX(4)])
 	for j := 1; j < 64; j++ {
-		r.AddXY(r, &prec[j][n.rshX(4)])
+		r.AddXY(&r, &prec[j][n.rshX(4)])
 	}
-	r.AddXY(r, &fin)
+	r.AddXY(&r, &fin)
+	return r
 }

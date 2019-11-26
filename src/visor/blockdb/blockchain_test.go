@@ -7,10 +7,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/testutil"
+	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 )
 
 func prepareDB(t *testing.T) (*dbutil.DB, func()) {
@@ -90,13 +90,13 @@ func (bt *fakeBlockTree) GetBlock(tx *dbutil.Tx, hash cipher.SHA256) (*coin.Bloc
 	return bt.blocks[hash.Hex()], nil
 }
 
-func (bt *fakeBlockTree) GetBlockInDepth(tx *dbutil.Tx, dep uint64, filter Walker) (*coin.Block, error) {
+func (bt *fakeBlockTree) GetBlockInDepth(tx *dbutil.Tx, depth uint64, filter Walker) (*coin.Block, error) {
 	if bt.failedWhenSaved != nil && *bt.failedWhenSaved {
 		return nil, nil
 	}
 
 	for _, b := range bt.blocks {
-		if b.Head.BkSeq == dep {
+		if b.Head.BkSeq == depth {
 			return b, nil
 		}
 	}
@@ -213,6 +213,21 @@ func (fup *fakeUnspentPool) GetUxHash(tx *dbutil.Tx) (cipher.SHA256, error) {
 	return fup.uxHash, nil
 }
 
+func (fup *fakeUnspentPool) GetUnspentHashesOfAddrs(tx *dbutil.Tx, addrs []cipher.Address) (AddressHashes, error) {
+	addrm := make(map[cipher.Address]struct{}, len(addrs))
+	for _, a := range addrs {
+		addrm[a] = struct{}{}
+	}
+
+	addrOutMap := make(AddressHashes)
+	for _, out := range fup.outs {
+		addr := out.Body.Address
+		addrOutMap[addr] = append(addrOutMap[addr], out.Hash())
+	}
+
+	return addrOutMap, nil
+}
+
 func (fup *fakeUnspentPool) GetUnspentsOfAddrs(tx *dbutil.Tx, addrs []cipher.Address) (coin.AddressUxOuts, error) {
 	addrm := make(map[cipher.Address]struct{}, len(addrs))
 	for _, a := range addrs {
@@ -290,7 +305,7 @@ func makeGenesisBlock(t *testing.T) coin.SignedBlock {
 	}
 }
 
-func TestBlockchainAddBlockWithTx(t *testing.T) {
+func TestBlockchainAddBlock(t *testing.T) {
 	type expect struct {
 		err        error
 		sigSaved   bool

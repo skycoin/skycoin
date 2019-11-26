@@ -6,16 +6,16 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/util/fee"
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/readable"
+	"github.com/SkycoinProject/skycoin/src/testutil"
+	"github.com/SkycoinProject/skycoin/src/transaction"
+	"github.com/SkycoinProject/skycoin/src/util/fee"
 )
 
 func TestMakeChangeOut(t *testing.T) {
 	// single destination test
-	uxOuts := []wallet.UxBalance{
+	uxOuts := []transaction.UxBalance{
 		{
 			Hash:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
 			Address: cipher.MustDecodeBase58Address("k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND"),
@@ -61,7 +61,7 @@ func TestMakeChangeOut(t *testing.T) {
 	require.Exactly(t, uint64(0), spendOut.Hours)
 
 	// multiple destination test
-	uxOuts = []wallet.UxBalance{
+	uxOuts = []transaction.UxBalance{
 		{
 			Hash:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
 			Address: cipher.MustDecodeBase58Address("k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND"),
@@ -108,13 +108,13 @@ func TestMakeChangeOut(t *testing.T) {
 		require.Exactly(t, spendAmt[i].Coins, txOuts[i].Coins)
 	}
 
-	require.Exactly(t, uint64(9), chgOut.Hours)
+	require.Exactly(t, uint64(18), chgOut.Hours)
 	require.Exactly(t, uint64(1), txOuts[0].Hours)
 	require.Exactly(t, uint64(2), txOuts[1].Hours)
 }
 
 func TestMakeChangeOutMinOneCoinHourSend(t *testing.T) {
-	uxOuts := []wallet.UxBalance{
+	uxOuts := []transaction.UxBalance{
 		{
 			Hash:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
 			Address: cipher.MustDecodeBase58Address("k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND"),
@@ -156,12 +156,12 @@ func TestMakeChangeOutMinOneCoinHourSend(t *testing.T) {
 	require.Equal(t, spendAmt[0].Addr, spendOut.Address.String())
 	require.Exactly(t, spendAmt[0].Coins, spendOut.Coins)
 
-	require.Exactly(t, uint64(149), chgOut.Hours)
+	require.Exactly(t, uint64(269), chgOut.Hours)
 	require.Exactly(t, uint64(1), spendOut.Hours)
 }
 
 func TestMakeChangeOutCoinHourCap(t *testing.T) {
-	uxOuts := []wallet.UxBalance{
+	uxOuts := []transaction.UxBalance{
 		{
 			Hash:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
 			Address: cipher.MustDecodeBase58Address("k3rmz3PGbTxd7KL8AL5CeHrWy35C1UcWND"),
@@ -203,14 +203,14 @@ func TestMakeChangeOutCoinHourCap(t *testing.T) {
 	require.Equal(t, spendAmt[0].Addr, spendOut.Address.String())
 	require.Exactly(t, spendAmt[0].Coins, spendOut.Coins)
 
-	require.Exactly(t, uint64(900), chgOut.Hours)
+	require.Exactly(t, uint64(2100), chgOut.Hours)
 	require.Exactly(t, uint64(600), spendOut.Hours)
 }
 
 func TestMakeChangeOutOneCoinHour(t *testing.T) {
 	// As long as there is at least one coin hour left, creating a transaction
 	// will still succeed
-	uxOuts := []wallet.UxBalance{
+	uxOuts := []transaction.UxBalance{
 		{
 			Hash:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
 			BkSeq:   10,
@@ -258,7 +258,7 @@ func TestMakeChangeOutOneCoinHour(t *testing.T) {
 func TestMakeChangeOutInsufficientCoinHours(t *testing.T) {
 	// If there are no coin hours in the inputs, creating the txn will fail
 	// because it will not be accepted by the network
-	uxOuts := []wallet.UxBalance{
+	uxOuts := []transaction.UxBalance{
 		{
 			Hash:    cipher.MustSHA256FromHex("f569461182b0efe9a5c666e9a35c6602b351021c1803cc740aca548cf6db4cb2"),
 			BkSeq:   10,
@@ -317,7 +317,7 @@ func TestChooseSpends(t *testing.T) {
 	}{
 		{
 			"Insufficient HeadOutputs",
-			wallet.ErrInsufficientBalance,
+			transaction.ErrInsufficientBalance,
 			0,
 			readable.UnspentOutputsSummary{
 				HeadOutputs: readable.UnspentOutputs{
@@ -343,7 +343,7 @@ func TestChooseSpends(t *testing.T) {
 
 		{
 			"Sufficient HeadOutputs, but insufficient after subtracting OutgoingOutputs",
-			wallet.ErrInsufficientBalance,
+			transaction.ErrInsufficientBalance,
 			0,
 			readable.UnspentOutputsSummary{
 				HeadOutputs: readable.UnspentOutputs{

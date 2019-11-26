@@ -12,48 +12,64 @@ import (
 
 func TestOriginRefererCheck(t *testing.T) {
 	cases := []struct {
-		name          string
-		origin        string
-		referer       string
-		status        int
-		errV1         string
-		errV2         string
-		hostWhitelist []string
+		name              string
+		origin            string
+		referer           string
+		enableHeaderCheck bool
+		status            int
+		errV1             string
+		errV2             string
+		hostWhitelist     []string
 	}{
 		{
-			name:   "unparseable origin header",
-			origin: ":?4foo",
-			status: http.StatusForbidden,
-			errV1:  "403 Forbidden - Invalid URL in Origin or Referer header\n",
-			errV2:  "{\n    \"error\": {\n        \"message\": \"Invalid URL in Origin or Referer header\",\n        \"code\": 403\n    }\n}",
+			name:              "unparseable origin header",
+			origin:            ":?4foo",
+			enableHeaderCheck: true,
+			status:            http.StatusForbidden,
+			errV1:             "403 Forbidden - Invalid URL in Origin or Referer header\n",
+			errV2:             "{\n    \"error\": {\n        \"message\": \"Invalid URL in Origin or Referer header\",\n        \"code\": 403\n    }\n}",
 		},
 		{
-			name:   "mismatched origin header",
-			origin: "http://example.com/",
-			status: http.StatusForbidden,
-			errV1:  "403 Forbidden - Invalid Origin or Referer\n",
-			errV2:  "{\n    \"error\": {\n        \"message\": \"Invalid Origin or Referer\",\n        \"code\": 403\n    }\n}",
+			name:              "mismatched origin header",
+			origin:            "http://example.com/",
+			enableHeaderCheck: true,
+			status:            http.StatusForbidden,
+			errV1:             "403 Forbidden - Invalid Origin or Referer\n",
+			errV2:             "{\n    \"error\": {\n        \"message\": \"Invalid Origin or Referer\",\n        \"code\": 403\n    }\n}",
 		},
 		{
-			name:    "mismatched referer header",
-			referer: "http://example.com/",
-			status:  http.StatusForbidden,
-			errV1:   "403 Forbidden - Invalid Origin or Referer\n",
-			errV2:   "{\n    \"error\": {\n        \"message\": \"Invalid Origin or Referer\",\n        \"code\": 403\n    }\n}",
+			name:              "mismatched referer header",
+			referer:           "http://example.com/",
+			enableHeaderCheck: true,
+			status:            http.StatusForbidden,
+			errV1:             "403 Forbidden - Invalid Origin or Referer\n",
+			errV2:             "{\n    \"error\": {\n        \"message\": \"Invalid Origin or Referer\",\n        \"code\": 403\n    }\n}",
 		},
 		{
-			name:          "whitelisted referer header",
-			referer:       "http://example.com/",
-			hostWhitelist: []string{"example.com"},
+			name:              "whitelisted referer header",
+			referer:           "http://example.com/",
+			enableHeaderCheck: true,
+			hostWhitelist:     []string{"example.com"},
 		},
 		{
-			name:          "whitelisted origin header",
-			referer:       "http://example.com/",
-			hostWhitelist: []string{"example.com"},
+			name:              "whitelisted origin header",
+			referer:           "http://example.com/",
+			enableHeaderCheck: true,
+			hostWhitelist:     []string{"example.com"},
+		},
+		{
+			name:              "mismatched referer header",
+			referer:           "http://example.com/",
+			enableHeaderCheck: false,
+		},
+		{
+			name:              "mismatched origin header",
+			origin:            "http://example.com/",
+			enableHeaderCheck: false,
 		},
 	}
 
-	for _, endpoint := range endpoints {
+	for _, endpoint := range allEndpoints() {
 		for _, tc := range cases {
 			name := fmt.Sprintf("%s %s", tc.name, endpoint)
 			t.Run(name, func(t *testing.T) {
@@ -63,6 +79,11 @@ func TestOriginRefererCheck(t *testing.T) {
 				require.NoError(t, err)
 
 				setCSRFParameters(t, tokenValid, req)
+
+				isAPIV2 := strings.HasPrefix(endpoint, "/api/v2")
+				if isAPIV2 {
+					req.Header.Set("Content-Type", ContentTypeJSON)
+				}
 
 				if tc.origin != "" {
 					req.Header.Set("Origin", tc.origin)
@@ -75,25 +96,31 @@ func TestOriginRefererCheck(t *testing.T) {
 
 				cfg := defaultMuxConfig()
 				cfg.disableCSRF = false
+				cfg.disableHeaderCheck = !tc.enableHeaderCheck
+				// disable all api sets to avoid mocking gateway methods
+				cfg.enabledAPISets = map[string]struct{}{}
 
-				handler := newServerMux(cfg, gateway, nil)
+				handler := newServerMux(cfg, gateway)
 				handler.ServeHTTP(rr, req)
 
 				switch tc.status {
 				case http.StatusForbidden:
 					require.Equal(t, tc.status, rr.Code)
 
-					if strings.HasPrefix(endpoint, "/api/v2") {
+					if isAPIV2 {
 						require.Equal(t, tc.errV2, rr.Body.String())
 					} else {
 						require.Equal(t, tc.errV1, rr.Body.String())
 					}
 				default:
-					// Arbitrary endpoints could return any status, since we don't customize the request per endpoint
-					// Make sure that the request only didn't return the origin check error
-					require.False(t, strings.Contains("Invalid URL in Origin or Referer header", rr.Body.String()))
-					require.False(t, strings.Contains("Invalid Origin or Referer", rr.Body.String()))
+					if tc.enableHeaderCheck || tc.hostWhitelist == nil {
+						// Arbitrary endpoints could return any status, since we don't customize the request per endpoint
+						// Make sure that the request only didn't return the origin check error
+						require.False(t, strings.Contains("Invalid URL in Origin or Referer header", rr.Body.String()))
+						require.False(t, strings.Contains("Invalid Origin or Referer", rr.Body.String()))
+					}
 				}
+
 			})
 		}
 	}
@@ -101,66 +128,83 @@ func TestOriginRefererCheck(t *testing.T) {
 
 func TestHostCheck(t *testing.T) {
 	cases := []struct {
-		name          string
-		host          string
-		status        int
-		errV1         string
-		errV2         string
-		hostWhitelist []string
+		name              string
+		host              string
+		status            int
+		enableHeaderCheck bool
+		errV1             string
+		errV2             string
+		hostWhitelist     []string
 	}{
 		{
-			name:   "invalid host",
-			host:   "example.com",
-			status: http.StatusForbidden,
-			errV1:  "403 Forbidden - Invalid Host\n",
-			errV2:  "{\n    \"error\": {\n        \"message\": \"Invalid Host\",\n        \"code\": 403\n    }\n}",
+			name:              "invalid host",
+			host:              "example.com",
+			status:            http.StatusForbidden,
+			enableHeaderCheck: true,
+			errV1:             "403 Forbidden - Invalid Host\n",
+			errV2:             "{\n    \"error\": {\n        \"message\": \"Invalid Host\",\n        \"code\": 403\n    }\n}",
 		},
 		{
-			name:          "invalid host is whitelisted",
-			host:          "example.com",
-			hostWhitelist: []string{"example.com"},
+			name:              "invalid host is whitelisted",
+			host:              "example.com",
+			hostWhitelist:     []string{"example.com"},
+			enableHeaderCheck: true,
+		},
+		{
+			name:              "invalid host - header check disabled",
+			host:              "example.com",
+			enableHeaderCheck: false,
 		},
 	}
 
-	for _, endpoint := range endpoints {
-		for _, tc := range cases {
-			name := fmt.Sprintf("%s %s", tc.name, endpoint)
-			t.Run(name, func(t *testing.T) {
-				gateway := &MockGatewayer{}
+	for endpoint, methods := range endpointsMethods {
+		for _, m := range methods {
+			for _, tc := range cases {
+				name := fmt.Sprintf("%s %s %s", tc.name, m, endpoint)
+				t.Run(name, func(t *testing.T) {
+					gateway := &MockGatewayer{}
 
-				req, err := http.NewRequest(http.MethodGet, endpoint, nil)
-				require.NoError(t, err)
+					req, err := http.NewRequest(m, endpoint, nil)
+					require.NoError(t, err)
 
-				setCSRFParameters(t, tokenValid, req)
+					setCSRFParameters(t, tokenValid, req)
 
-				req.Host = "example.com"
-
-				rr := httptest.NewRecorder()
-				handler := newServerMux(muxConfig{
-					host:            configuredHost,
-					appLoc:          ".",
-					enableJSON20RPC: true,
-					disableCSRF:     false,
-					disableCSP:      true,
-					hostWhitelist:   tc.hostWhitelist,
-				}, gateway, nil)
-
-				handler.ServeHTTP(rr, req)
-
-				switch tc.status {
-				case http.StatusForbidden:
-					require.Equal(t, http.StatusForbidden, rr.Code)
-					if strings.HasPrefix(endpoint, "/api/v2") {
-						require.Equal(t, tc.errV2, rr.Body.String())
-					} else {
-						require.Equal(t, tc.errV1, rr.Body.String())
+					isAPIV2 := strings.HasPrefix(endpoint, "/api/v2")
+					if isAPIV2 {
+						req.Header.Set("Content-Type", ContentTypeJSON)
 					}
-				default:
-					// Arbitrary endpoints could return any status, since we don't customize the request per endpoint
-					// Make sure that the request only didn't return the invalid host error
-					require.False(t, strings.Contains("Invalid Host", rr.Body.String()))
-				}
-			})
+
+					req.Host = "example.com"
+
+					rr := httptest.NewRecorder()
+					handler := newServerMux(muxConfig{
+						host:               configuredHost,
+						appLoc:             ".",
+						disableCSRF:        false,
+						disableHeaderCheck: !tc.enableHeaderCheck,
+						disableCSP:         true,
+						hostWhitelist:      tc.hostWhitelist,
+					}, gateway)
+
+					handler.ServeHTTP(rr, req)
+
+					switch tc.status {
+					case http.StatusForbidden:
+						require.Equal(t, http.StatusForbidden, rr.Code)
+						if isAPIV2 {
+							require.Equal(t, tc.errV2, rr.Body.String())
+						} else {
+							require.Equal(t, tc.errV1, rr.Body.String())
+						}
+					default:
+						if tc.enableHeaderCheck || tc.hostWhitelist == nil {
+							// Arbitrary endpoints could return any status, since we don't customize the request per endpoint
+							// Make sure that the request only didn't return the invalid host error
+							require.False(t, strings.Contains("Invalid Host", rr.Body.String()))
+						}
+					}
+				})
+			}
 		}
 	}
 }
@@ -175,12 +219,12 @@ func TestContentSecurityPolicy(t *testing.T) {
 		enableGUI       bool
 	}{
 		{
-			name:            "enable CSP GET /",
-			endpoint:        "/",
-			enableCSP:       true,
-			appLoc:          "../gui/static/dist",
-			expectCSPHeader: "script-src 'self' 127.0.0.1",
-			enableGUI:       true,
+			name:      "enable CSP GET /",
+			endpoint:  "/",
+			enableCSP: true,
+			appLoc:    "../gui/static/dist",
+			expectCSPHeader: "default-src 'self'; connect-src 'self' https://api.coinpaprika.com https://swaplab.cc https://version.skycoin.com https://downloads.skycoin.com http://127.0.0.1:9510; img-src 'self' 'unsafe-inline' data:; style-src 'self' 'unsafe-inline'; object-src	'none'; form-action 'none'; frame-ancestors 'none'; block-all-mixed-content; base-uri 'self'",
+			enableGUI: true,
 		},
 		{
 			name:            "disable CSP GET /",
@@ -222,11 +266,19 @@ func TestContentSecurityPolicy(t *testing.T) {
 				enableGUI:   tc.enableGUI,
 				disableCSP:  !tc.enableCSP,
 				disableCSRF: true,
-			}, &MockGatewayer{}, nil)
+			}, &MockGatewayer{})
 			handler.ServeHTTP(rr, req)
 
 			csp := rr.Header().Get("Content-Security-Policy")
 			require.Equal(t, tc.expectCSPHeader, csp)
 		})
 	}
+}
+
+func TestIsContentTypeJSON(t *testing.T) {
+	require.True(t, isContentTypeJSON(ContentTypeJSON))
+	require.True(t, isContentTypeJSON("application/json"))
+	require.True(t, isContentTypeJSON("application/json; charset=utf-8"))
+	require.False(t, isContentTypeJSON("application/x-www-form-urlencoded"))
+	require.False(t, isContentTypeJSON(ContentTypeForm))
 }

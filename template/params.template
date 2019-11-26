@@ -5,27 +5,19 @@ CODE GENERATED AUTOMATICALLY WITH FIBER COIN CREATOR
 AVOID EDITING THIS MANUALLY
 */
 
-const (
-	// Distribution locking parameteres
-
-	// MaxCoinSupply is the maximum supply of coins
-	MaxCoinSupply uint64 = {{.MaxCoinSupply}}
-	// DistributionAddressesTotal is the number of distribution addresses
-	DistributionAddressesTotal uint64 = {{.DistributionAddressesTotal}}
-	// DistributionAddressInitialBalance is the initial balance of each distribution address
-	DistributionAddressInitialBalance uint64 = MaxCoinSupply / DistributionAddressesTotal
-	// InitialUnlockedCount is the initial number of unlocked addresses
-	InitialUnlockedCount uint64 = {{.InitialUnlockedCount}}
-	// UnlockAddressRate is the number of addresses to unlock per unlock time interval
-	UnlockAddressRate uint64 = {{.UnlockAddressRate}}
-	// UnlockTimeInterval is the distribution address unlock time interval, measured in seconds
-	// Once the InitialUnlockedCount is exhausted,
-	// UnlockAddressRate addresses will be unlocked per UnlockTimeInterval
-	UnlockTimeInterval uint64 = {{.UnlockTimeInterval}} // in seconds
-)
-
 var (
-	// Transaction verification parameters
+	// MainNetDistribution Skycoin mainnet coin distribution parameters
+	MainNetDistribution = Distribution{
+		MaxCoinSupply:        {{.MaxCoinSupply}},
+		InitialUnlockedCount: {{.InitialUnlockedCount}},
+		UnlockAddressRate:    {{.UnlockAddressRate}},
+		UnlockTimeInterval:   {{.UnlockTimeInterval}},
+		Addresses: []string{
+		{{- range $index, $address := .DistributionAddresses}}
+			"{{$address -}}",
+		{{- end}}
+		},
+	}
 
 	// UserVerifyTxn transaction verification parameters for user-created transactions
 	UserVerifyTxn = VerifyTxn{
@@ -37,11 +29,3 @@ var (
 		MaxDropletPrecision: {{.UserMaxDropletPrecision}},
 	}
 )
-
-// distributionAddresses are addresses that received coins from the genesis address in the first block,
-// used to calculate current and max supply and do distribution timelocking
-var distributionAddresses = [DistributionAddressesTotal]string{
-{{- range $index, $address := .DistributionAddresses}}
-	"{{$address -}}",
-{{- end}}
-}

@@ -24,7 +24,6 @@ run:
   # from this option's value:
   #   	vendor$, third_party$, testdata$, examples$, Godeps$, builtin$
   skip-dirs:
-    - lib/cgo
 
   # which files to skip: they will be analyzed, but issues from them
   # won't be reported. Default value is empty list, but there is
@@ -136,6 +135,8 @@ linters-settings:
     simple: true
     range-loops: true # Report preallocation suggestions on range loops, true by default
     for-loops: false # Report preallocation suggestions on for loops, false by default
+  goimports:
+    local-prefixes: github.com/SkycoinProject/skycoin
 
 
 linters:
@@ -174,6 +175,13 @@ issues:
     - "G204: Subprocess launched with variable"
     - "G104: Errors unhandled"
     - Error return value of .((os\.)?std(out|err)\..*|.*Close|.*Flush|os\.Remove(All)?|.*printf?|os\.(Un)?Setenv). is not checked
+    # unparam warns that return value is always nil for functions that have an obligatory error return value but cannot produce an error
+    - .*result 0 \(error\) is always nil
+
+  exclude-rules:
+    - path: src/cipher/bip39/wordlists/
+      linters:
+        - misspell
 
   # Independently from option `exclude` we use default exclude patterns,
   # it can be disabled by this option. To list all

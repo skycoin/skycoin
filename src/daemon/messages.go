@@ -9,14 +9,14 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon/gnet"
-	"github.com/skycoin/skycoin/src/daemon/pex"
-	"github.com/skycoin/skycoin/src/params"
-	"github.com/skycoin/skycoin/src/util/iputil"
-	"github.com/skycoin/skycoin/src/util/useragent"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/cipher/encoder"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/daemon/gnet"
+	"github.com/SkycoinProject/skycoin/src/daemon/pex"
+	"github.com/SkycoinProject/skycoin/src/params"
+	"github.com/SkycoinProject/skycoin/src/util/iputil"
+	"github.com/SkycoinProject/skycoin/src/util/useragent"
 )
 
 // Message represent a packet to be serialized over the network by
@@ -43,6 +43,19 @@ func NewMessageConfig(prefix string, m interface{}) MessageConfig {
 		Prefix:  gnet.MessagePrefixFromString(prefix),
 	}
 }
+
+//go:generate skyencoder -unexported -struct IntroductionMessage
+//go:generate skyencoder -unexported -struct GivePeersMessage
+//go:generate skyencoder -unexported -struct GetBlocksMessage
+//go:generate skyencoder -unexported -struct GiveBlocksMessage
+//go:generate skyencoder -unexported -struct AnnounceBlocksMessage
+//go:generate skyencoder -unexported -struct GetTxnsMessage
+//go:generate skyencoder -unexported -struct GiveTxnsMessage
+//go:generate skyencoder -unexported -struct AnnounceTxnsMessage
+//go:generate skyencoder -unexported -struct DisconnectMessage
+//go:generate skyencoder -unexported -struct IPAddr
+//go:generate skyencoder -unexported -output-path . -package daemon -struct SignedBlock github.com/SkycoinProject/skycoin/src/coin
+//go:generate skyencoder -unexported -output-path . -package daemon -struct Transaction github.com/SkycoinProject/skycoin/src/coin
 
 // Creates and populates the message configs
 func getMessageConfigs() []MessageConfig {
@@ -146,6 +159,21 @@ func NewGetPeersMessage() *GetPeersMessage {
 	return &GetPeersMessage{}
 }
 
+// EncodeSize implements gnet.Serializer
+func (gpm *GetPeersMessage) EncodeSize() uint64 {
+	return 0
+}
+
+// Encode implements gnet.Serializer
+func (gpm *GetPeersMessage) Encode(buf []byte) error {
+	return nil
+}
+
+// Decode implements gnet.Serializer
+func (gpm *GetPeersMessage) Decode(buf []byte) (uint64, error) {
+	return 0, nil
+}
+
 // Handle handles message
 func (gpm *GetPeersMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	gpm.addr = mc.Addr
@@ -165,12 +193,17 @@ func (gpm *GetPeersMessage) process(d daemoner) {
 
 // GivePeersMessage sent in response to GetPeersMessage
 type GivePeersMessage struct {
-	Peers []IPAddr
+	Peers []IPAddr             `enc:",maxlen=512"`
 	c     *gnet.MessageContext `enc:"-"`
 }
 
 // NewGivePeersMessage []*pex.Peer is converted to []IPAddr for binary transmission
-func NewGivePeersMessage(peers []pex.Peer) *GivePeersMessage {
+// If the size of the message would exceed maxMsgLength, the IPAddr slice is truncated.
+func NewGivePeersMessage(peers []pex.Peer, maxMsgLength uint64) *GivePeersMessage {
+	if len(peers) > 512 {
+		peers = peers[:512]
+	}
+
 	ipaddrs := make([]IPAddr, 0, len(peers))
 	for _, ps := range peers {
 		ipaddr, err := NewIPAddr(ps.Addr)
@@ -180,7 +213,65 @@ func NewGivePeersMessage(peers []pex.Peer) *GivePeersMessage {
 		}
 		ipaddrs = append(ipaddrs, ipaddr)
 	}
-	return &GivePeersMessage{Peers: ipaddrs}
+
+	m := &GivePeersMessage{
+		Peers: ipaddrs,
+	}
+	truncateGivePeersMessage(m, maxMsgLength)
+	return m
+}
+
+// truncateGivePeersMessage truncates the blocks in GivePeersMessage to fit inside of MaxOutgoingMessageLength
+func truncateGivePeersMessage(m *GivePeersMessage, maxMsgLength uint64) {
+	// The message length will include a 4 byte message type prefix.
+	// Panic if the prefix can't fit, otherwise we can't adjust the uint64 safely
+	if maxMsgLength < 4 {
+		logger.Panic("maxMsgLength must be >= 4")
+	}
+
+	maxMsgLength -= 4
+
+	// Measure the current message size, if it fits, return
+	n := m.EncodeSize()
+	if n <= maxMsgLength {
+		return
+	}
+
+	// Measure the size of an empty message
+	var mm GivePeersMessage
+	size := mm.EncodeSize()
+
+	// Measure the size of the peers, advancing the slice index until it reaches capacity
+	index := -1
+	for i, ip := range m.Peers {
+		x := encodeSizeIPAddr(&ip)
+		if size+x > maxMsgLength {
+			break
+		}
+		size += x
+		index = i
+	}
+
+	m.Peers = m.Peers[:index+1]
+
+	if len(m.Peers) == 0 {
+		logger.Critical().Error("truncateGivePeersMessage truncated peers to an empty slice")
+	}
+}
+
+// EncodeSize implements gnet.Serializer
+func (gpm *GivePeersMessage) EncodeSize() uint64 {
+	return encodeSizeGivePeersMessage(gpm)
+}
+
+// Encode implements gnet.Serializer
+func (gpm *GivePeersMessage) Encode(buf []byte) error {
+	return encodeGivePeersMessageToBuffer(buf, gpm)
+}
+
+// Decode implements gnet.Serializer
+func (gpm *GivePeersMessage) Decode(buf []byte) (uint64, error) {
+	return decodeGivePeersMessage(buf, gpm)
 }
 
 // GetPeers is required by the pex.GivePeersMessage interface.
@@ -235,8 +326,9 @@ func (gpm *GivePeersMessage) process(d daemoner) {
 // IntroductionMessage is sent on first connect by both parties
 type IntroductionMessage struct {
 	c                    *gnet.MessageContext `enc:"-"`
-	userAgent            useragent.Data       `enc:"-"`
-	unconfirmedVerifyTxn params.VerifyTxn     `enc:"-"`
+	UserAgent            useragent.Data       `enc:"-"`
+	UnconfirmedVerifyTxn params.VerifyTxn     `enc:"-"`
+	GenesisHash          cipher.SHA256        `enc:"-"`
 
 	// Mirror is a random value generated on client startup that is used to identify self-connections
 	Mirror uint32
@@ -255,20 +347,21 @@ type IntroductionMessage struct {
 	// MaxTxnSize          uint32 // max txn size for announced txns
 	// MaxDropletPrecision uint8 // maximum number of decimal places for announced txns
 	// UserAgent           string `enc:",maxlen=256"`
+	// GenesisHash         cipher.SHA256 // genesis block hash
 	Extra []byte `enc:",omitempty"`
 }
 
 // NewIntroductionMessage creates introduction message
-func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey cipher.PubKey, userAgent string, verifyParams params.VerifyTxn) *IntroductionMessage {
+func NewIntroductionMessage(mirror uint32, version int32, port uint16, pubkey cipher.PubKey, userAgent string, verifyParams params.VerifyTxn, genesisHash cipher.SHA256) *IntroductionMessage {
 	return &IntroductionMessage{
 		Mirror:          mirror,
 		ProtocolVersion: version,
 		ListenPort:      port,
-		Extra:           newIntroductionMessageExtra(pubkey, userAgent, verifyParams),
+		Extra:           newIntroductionMessageExtra(pubkey, userAgent, verifyParams, genesisHash),
 	}
 }
 
-func newIntroductionMessageExtra(pubkey cipher.PubKey, userAgent string, verifyParams params.VerifyTxn) []byte {
+func newIntroductionMessageExtra(pubkey cipher.PubKey, userAgent string, verifyParams params.VerifyTxn, genesisHash cipher.SHA256) []byte {
 	if len(userAgent) > useragent.MaxLen {
 		logger.WithFields(logrus.Fields{
 			"userAgent": userAgent,
@@ -287,15 +380,32 @@ func newIntroductionMessageExtra(pubkey cipher.PubKey, userAgent string, verifyP
 	userAgentSerialized := encoder.SerializeString(userAgent)
 	verifyParamsSerialized := encoder.Serialize(verifyParams)
 
-	extra := make([]byte, len(pubkey)+len(userAgentSerialized)+len(verifyParamsSerialized))
+	extra := make([]byte, len(pubkey)+len(userAgentSerialized)+len(verifyParamsSerialized)+len(genesisHash))
 
 	copy(extra[:len(pubkey)], pubkey[:])
 	i := len(pubkey)
 	copy(extra[i:], verifyParamsSerialized)
 	i += len(verifyParamsSerialized)
 	copy(extra[i:], userAgentSerialized)
+	i += len(userAgentSerialized)
+	copy(extra[i:i+len(genesisHash)], genesisHash[:])
 
 	return extra
+}
+
+// EncodeSize implements gnet.Serializer
+func (intro *IntroductionMessage) EncodeSize() uint64 {
+	return encodeSizeIntroductionMessage(intro)
+}
+
+// Encode implements gnet.Serializer
+func (intro *IntroductionMessage) Encode(buf []byte) error {
+	return encodeIntroductionMessageToBuffer(buf, intro)
+}
+
+// Decode implements gnet.Serializer
+func (intro *IntroductionMessage) Decode(buf []byte) (uint64, error) {
+	return decodeIntroductionMessage(buf, intro)
 }
 
 // Handle records message event in daemon
@@ -316,7 +426,10 @@ func (intro *IntroductionMessage) process(d daemoner) {
 
 	logger.WithFields(fields).Debug("IntroductionMessage.process")
 
-	if err := intro.verify(d); err != nil {
+	if err := intro.Verify(d.DaemonConfig(), logrus.Fields{
+		"addr":   addr,
+		"gnetID": intro.c.ConnID,
+	}); err != nil {
 		if err := d.Disconnect(addr, err); err != nil {
 			logger.WithError(err).WithFields(fields).Warning("Disconnect")
 		}
@@ -370,95 +483,102 @@ func (intro *IntroductionMessage) process(d daemoner) {
 	}
 }
 
-func (intro *IntroductionMessage) verify(d daemoner) error {
-	addr := intro.c.Addr
-
-	fields := logrus.Fields{
-		"addr":   addr,
-		"gnetID": intro.c.ConnID,
-	}
-
-	dc := d.daemonConfig()
-
+// Verify checks if the introduction message is valid returning the appropriate error
+func (intro *IntroductionMessage) Verify(dc DaemonConfig, logFields logrus.Fields) error {
 	// Disconnect if this is a self connection (we have the same mirror value)
 	if intro.Mirror == dc.Mirror {
-		logger.WithFields(fields).WithField("mirror", intro.Mirror).Info("Remote mirror value matches ours")
+		logger.WithFields(logFields).WithField("mirror", intro.Mirror).Info("Remote mirror value matches ours")
 		return ErrDisconnectSelf
 	}
 
 	// Disconnect if peer version is not within the supported range
 	if intro.ProtocolVersion < dc.MinProtocolVersion {
-		logger.WithFields(fields).WithFields(logrus.Fields{
+		logger.WithFields(logFields).WithFields(logrus.Fields{
 			"protocolVersion":    intro.ProtocolVersion,
 			"minProtocolVersion": dc.MinProtocolVersion,
 		}).Info("protocol version below minimum supported protocol version")
 		return ErrDisconnectVersionNotSupported
 	}
 
-	logger.WithFields(fields).WithField("protocolVersion", intro.ProtocolVersion).Debug("Peer protocol version accepted")
+	logger.WithFields(logFields).WithField("protocolVersion", intro.ProtocolVersion).Debug("Peer protocol version accepted")
 
 	// v24 does not send blockchain pubkey or user agent
 	// v25 sends blockchain pubkey and user agent
 	// v24 and v25 check the blockchain pubkey and user agent, would accept message with no Pubkey and user agent
 	// v26 would check the blockchain pubkey and reject if not matched or not provided, and parses a user agent
-	if len(intro.Extra) > 0 {
-		var bcPubKey cipher.PubKey
-		if len(intro.Extra) < len(bcPubKey) {
-			logger.WithFields(fields).Warning("Extra data length does not meet the minimum requirement")
-			return ErrDisconnectInvalidExtraData
-		}
-		copy(bcPubKey[:], intro.Extra[:len(bcPubKey)])
+	// v26 adds genesis hash
+	// v27 would require and check the genesis hash
+	extraLen := len(intro.Extra)
+	if extraLen == 0 {
+		logger.WithFields(logFields).Warning("Blockchain pubkey is not provided")
+		return ErrDisconnectBlockchainPubkeyNotProvided
+	}
 
-		if dc.BlockchainPubkey != bcPubKey {
-			logger.WithFields(fields).WithFields(logrus.Fields{
-				"pubkey":       bcPubKey.Hex(),
-				"daemonPubkey": dc.BlockchainPubkey.Hex(),
-			}).Warning("Blockchain pubkey does not match")
-			return ErrDisconnectBlockchainPubkeyNotMatched
-		}
+	var bcPubKey cipher.PubKey
+	if extraLen < len(bcPubKey) {
+		logger.WithFields(logFields).Warning("Extra data length does not meet the minimum requirement")
+		return ErrDisconnectInvalidExtraData
+	}
+	copy(bcPubKey[:], intro.Extra[:len(bcPubKey)])
 
-		i := len(bcPubKey)
-		if len(intro.Extra) < i+9 {
-			logger.WithFields(fields).Warning("IntroductionMessage transaction verification parameters could not be deserialized: not enough data")
-			return ErrDisconnectInvalidExtraData
-		}
-		if err := encoder.DeserializeRaw(intro.Extra[i:i+9], &intro.unconfirmedVerifyTxn); err != nil {
-			// This should not occur due to the previous length check
-			logger.Critical().WithError(err).WithFields(fields).Warning("unconfirmedVerifyTxn params could not be deserialized")
-			return ErrDisconnectInvalidExtraData
-		}
+	if dc.BlockchainPubkey != bcPubKey {
+		logger.WithFields(logFields).WithFields(logrus.Fields{
+			"pubkey":       bcPubKey.Hex(),
+			"daemonPubkey": dc.BlockchainPubkey.Hex(),
+		}).Warning("Blockchain pubkey does not match")
+		return ErrDisconnectBlockchainPubkeyNotMatched
+	}
 
-		if err := intro.unconfirmedVerifyTxn.Validate(); err != nil {
-			logger.WithError(err).WithFields(fields).WithFields(logrus.Fields{
-				"burnFactor":          intro.unconfirmedVerifyTxn.BurnFactor,
-				"maxTransactionSize":  intro.unconfirmedVerifyTxn.MaxTransactionSize,
-				"maxDropletPrecision": intro.unconfirmedVerifyTxn.MaxDropletPrecision,
-			}).Warning("Invalid unconfirmedVerifyTxn params")
-			switch err {
-			case params.ErrInvalidBurnFactor:
-				return ErrDisconnectInvalidBurnFactor
-			case params.ErrInvalidMaxTransactionSize:
-				return ErrDisconnectInvalidMaxTransactionSize
-			case params.ErrInvalidMaxDropletPrecision:
-				return ErrDisconnectInvalidMaxDropletPrecision
-			default:
-				return ErrDisconnectUnexpectedError
-			}
-		}
+	i := len(bcPubKey)
+	if extraLen < i+9 {
+		logger.WithFields(logFields).Warning("IntroductionMessage transaction verification parameters could not be deserialized: not enough data")
+		return ErrDisconnectInvalidExtraData
+	}
+	if err := encoder.DeserializeRawExact(intro.Extra[i:i+9], &intro.UnconfirmedVerifyTxn); err != nil {
+		// This should not occur due to the previous length check
+		logger.Critical().WithError(err).WithFields(logFields).Warning("unconfirmedVerifyTxn params could not be deserialized")
+		return ErrDisconnectInvalidExtraData
+	}
+	i += 9
 
-		userAgentSerialized := intro.Extra[len(bcPubKey)+9:]
-		userAgent, _, err := encoder.DeserializeString(userAgentSerialized, useragent.MaxLen)
-		if err != nil {
-			logger.WithError(err).WithFields(fields).Warning("Extra data user agent string could not be deserialized")
-			return ErrDisconnectInvalidExtraData
-		}
-
-		intro.userAgent, err = useragent.Parse(useragent.Sanitize(userAgent))
-		if err != nil {
-			logger.WithError(err).WithFields(fields).WithField("userAgent", userAgent).Warning("User agent is invalid")
-			return ErrDisconnectInvalidUserAgent
+	if err := intro.UnconfirmedVerifyTxn.Validate(); err != nil {
+		logger.WithError(err).WithFields(logFields).WithFields(logrus.Fields{
+			"burnFactor":          intro.UnconfirmedVerifyTxn.BurnFactor,
+			"maxTransactionSize":  intro.UnconfirmedVerifyTxn.MaxTransactionSize,
+			"maxDropletPrecision": intro.UnconfirmedVerifyTxn.MaxDropletPrecision,
+		}).Warning("Invalid unconfirmedVerifyTxn params")
+		switch err {
+		case params.ErrInvalidBurnFactor:
+			return ErrDisconnectInvalidBurnFactor
+		case params.ErrInvalidMaxTransactionSize:
+			return ErrDisconnectInvalidMaxTransactionSize
+		case params.ErrInvalidMaxDropletPrecision:
+			return ErrDisconnectInvalidMaxDropletPrecision
+		default:
+			return ErrDisconnectUnexpectedError
 		}
 	}
+
+	userAgentSerialized := intro.Extra[i:]
+	userAgent, userAgentLen, err := encoder.DeserializeString(userAgentSerialized, useragent.MaxLen)
+	if err != nil {
+		logger.WithError(err).WithFields(logFields).Warning("Extra data user agent string could not be deserialized")
+		return ErrDisconnectInvalidExtraData
+	}
+
+	intro.UserAgent, err = useragent.Parse(useragent.Sanitize(userAgent))
+	if err != nil {
+		logger.WithError(err).WithFields(logFields).WithField("userAgent", userAgent).Warning("User agent is invalid")
+		return ErrDisconnectInvalidUserAgent
+	}
+	i += int(userAgentLen)
+
+	remainingLen := extraLen - i
+	if remainingLen > 0 && remainingLen < len(intro.GenesisHash) {
+		logger.WithFields(logFields).Warning("Extra data genesis hash could not be deserialized: not enough data")
+		return ErrDisconnectInvalidExtraData
+	}
+	copy(intro.GenesisHash[:], intro.Extra[i:])
 
 	return nil
 }
@@ -466,6 +586,21 @@ func (intro *IntroductionMessage) verify(d daemoner) error {
 // PingMessage Sent to keep a connection alive. A PongMessage is sent in reply.
 type PingMessage struct {
 	c *gnet.MessageContext `enc:"-"`
+}
+
+// EncodeSize implements gnet.Serializer
+func (ping *PingMessage) EncodeSize() uint64 {
+	return 0
+}
+
+// Encode implements gnet.Serializer
+func (ping *PingMessage) Encode(buf []byte) error {
+	return nil
+}
+
+// Decode implements gnet.Serializer
+func (ping *PingMessage) Decode(buf []byte) (uint64, error) {
+	return 0, nil
 }
 
 // Handle implements the Messager interface
@@ -481,7 +616,7 @@ func (ping *PingMessage) process(d daemoner) {
 		"gnetID": ping.c.ConnID,
 	}
 
-	if d.daemonConfig().LogPings {
+	if d.DaemonConfig().LogPings {
 		logger.WithFields(fields).Debug("Replying to ping")
 	}
 	if err := d.sendMessage(ping.c.Addr, &PongMessage{}); err != nil {
@@ -493,11 +628,26 @@ func (ping *PingMessage) process(d daemoner) {
 type PongMessage struct {
 }
 
+// EncodeSize implements gnet.Serializer
+func (pong *PongMessage) EncodeSize() uint64 {
+	return 0
+}
+
+// Encode implements gnet.Serializer
+func (pong *PongMessage) Encode(buf []byte) error {
+	return nil
+}
+
+// Decode implements gnet.Serializer
+func (pong *PongMessage) Decode(buf []byte) (uint64, error) {
+	return 0, nil
+}
+
 // Handle handles message
 func (pong *PongMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	// There is nothing to do; gnet updates Connection.LastMessage internally
 	// when this is received
-	if daemon.(*Daemon).Config.LogPings {
+	if daemon.(daemoner).DaemonConfig().LogPings {
 		logger.WithFields(logrus.Fields{
 			"addr":   mc.Addr,
 			"gnetID": mc.ConnID,
@@ -525,6 +675,21 @@ func NewDisconnectMessage(reason gnet.DisconnectReason) *DisconnectMessage {
 		ReasonCode: DisconnectReasonToCode(reason),
 		Reserved:   nil,
 	}
+}
+
+// EncodeSize implements gnet.Serializer
+func (dm *DisconnectMessage) EncodeSize() uint64 {
+	return encodeSizeDisconnectMessage(dm)
+}
+
+// Encode implements gnet.Serializer
+func (dm *DisconnectMessage) Encode(buf []byte) error {
+	return encodeDisconnectMessageToBuffer(buf, dm)
+}
+
+// Decode implements gnet.Serializer
+func (dm *DisconnectMessage) Decode(buf []byte) (uint64, error) {
+	return decodeDisconnectMessage(buf, dm)
 }
 
 // Handle an event queued by Handle()
@@ -555,11 +720,26 @@ type GetBlocksMessage struct {
 }
 
 // NewGetBlocksMessage creates GetBlocksMessage
-func NewGetBlocksMessage(lastBlock uint64, requestedBlocks uint64) *GetBlocksMessage {
+func NewGetBlocksMessage(lastBlock, requestedBlocks uint64) *GetBlocksMessage {
 	return &GetBlocksMessage{
 		LastBlock:       lastBlock,
-		RequestedBlocks: requestedBlocks, // count of blocks requested
+		RequestedBlocks: requestedBlocks,
 	}
+}
+
+// EncodeSize implements gnet.Serializer
+func (gbm *GetBlocksMessage) EncodeSize() uint64 {
+	return encodeSizeGetBlocksMessage(gbm)
+}
+
+// Encode implements gnet.Serializer
+func (gbm *GetBlocksMessage) Encode(buf []byte) error {
+	return encodeGetBlocksMessageToBuffer(buf, gbm)
+}
+
+// Decode implements gnet.Serializer
+func (gbm *GetBlocksMessage) Decode(buf []byte) (uint64, error) {
+	return decodeGetBlocksMessage(buf, gbm)
 }
 
 // Handle handles message
@@ -570,7 +750,8 @@ func (gbm *GetBlocksMessage) Handle(mc *gnet.MessageContext, daemon interface{})
 
 // process should send number to be requested, with request
 func (gbm *GetBlocksMessage) process(d daemoner) {
-	if d.daemonConfig().DisableNetworking {
+	dc := d.DaemonConfig()
+	if dc.DisableNetworking {
 		return
 	}
 
@@ -581,10 +762,21 @@ func (gbm *GetBlocksMessage) process(d daemoner) {
 
 	// Record this as this peer's highest block
 	d.recordPeerHeight(gbm.c.Addr, gbm.c.ConnID, gbm.LastBlock)
+
+	// Cap the number of requested blocks (TODO - necessary since we have size limits enforced later?)
+	requestedBlocks := gbm.RequestedBlocks
+	if requestedBlocks > dc.MaxGetBlocksResponseCount {
+		logger.WithFields(logrus.Fields{
+			"requestedBlocks":    requestedBlocks,
+			"maxRequestedBlocks": dc.MaxGetBlocksResponseCount,
+		}).WithFields(fields).Debug("GetBlocksMessage.RequestedBlocks value exceeds configured limit, reducing")
+		requestedBlocks = dc.MaxGetBlocksResponseCount
+	}
+
 	// Fetch and return signed blocks since LastBlock
-	blocks, err := d.getSignedBlocksSince(gbm.LastBlock, gbm.RequestedBlocks)
+	blocks, err := d.getSignedBlocksSince(gbm.LastBlock, requestedBlocks)
 	if err != nil {
-		logger.WithError(err).Error("Get signed blocks failed")
+		logger.WithFields(fields).WithError(err).Error("getSignedBlocksSince failed")
 		return
 	}
 
@@ -592,9 +784,13 @@ func (gbm *GetBlocksMessage) process(d daemoner) {
 		return
 	}
 
-	logger.WithFields(fields).Debugf("Got %d blocks since %d", len(blocks), gbm.LastBlock)
+	logger.WithFields(fields).Debugf("GetBlocksMessage: replying with %d blocks after block %d", len(blocks), gbm.LastBlock)
 
-	m := NewGiveBlocksMessage(blocks)
+	m := NewGiveBlocksMessage(blocks, dc.MaxOutgoingMessageLength)
+	if len(m.Blocks) != len(blocks) {
+		logger.WithField("startBlockSeq", blocks[0].Head.BkSeq).WithFields(fields).Warningf("NewGiveBlocksMessage truncated %d blocks to %d blocks", len(blocks), len(m.Blocks))
+	}
+
 	if err := d.sendMessage(gbm.c.Addr, m); err != nil {
 		logger.WithFields(fields).WithError(err).Error("Send GiveBlocksMessage failed")
 	}
@@ -606,11 +802,70 @@ type GiveBlocksMessage struct {
 	c      *gnet.MessageContext `enc:"-"`
 }
 
-// NewGiveBlocksMessage creates GiveBlocksMessage
-func NewGiveBlocksMessage(blocks []coin.SignedBlock) *GiveBlocksMessage {
-	return &GiveBlocksMessage{
+// NewGiveBlocksMessage creates GiveBlocksMessage.
+// If the size of message would exceed maxMsgLength, the block slice is truncated.
+func NewGiveBlocksMessage(blocks []coin.SignedBlock, maxMsgLength uint64) *GiveBlocksMessage {
+	if len(blocks) > 128 {
+		blocks = blocks[:128]
+	}
+	m := &GiveBlocksMessage{
 		Blocks: blocks,
 	}
+	truncateGiveBlocksMessage(m, maxMsgLength)
+	return m
+}
+
+// truncateGiveBlocksMessage truncates the blocks in GiveBlocksMessage to fit inside of MaxOutgoingMessageLength
+func truncateGiveBlocksMessage(m *GiveBlocksMessage, maxMsgLength uint64) {
+	// The message length will include a 4 byte message type prefix.
+	// Panic if the prefix can't fit, otherwise we can't adjust the uint64 safely
+	if maxMsgLength < 4 {
+		logger.Panic("maxMsgLength must be >= 4")
+	}
+
+	maxMsgLength -= 4
+
+	// Measure the current message size, if it fits, return
+	n := m.EncodeSize()
+	if n <= maxMsgLength {
+		return
+	}
+
+	// Measure the size of an empty message
+	var mm GiveBlocksMessage
+	size := mm.EncodeSize()
+
+	// Measure the size of the blocks, advancing the slice index until it reaches capacity
+	index := -1
+	for i, b := range m.Blocks {
+		x := encodeSizeSignedBlock(&b)
+		if size+x > maxMsgLength {
+			break
+		}
+		size += x
+		index = i
+	}
+
+	m.Blocks = m.Blocks[:index+1]
+
+	if len(m.Blocks) == 0 {
+		logger.Critical().Error("truncateGiveBlocksMessage truncated blocks to an empty slice")
+	}
+}
+
+// EncodeSize implements gnet.Serializer
+func (m *GiveBlocksMessage) EncodeSize() uint64 {
+	return encodeSizeGiveBlocksMessage(m)
+}
+
+// Encode implements gnet.Serializer
+func (m *GiveBlocksMessage) Encode(buf []byte) error {
+	return encodeGiveBlocksMessageToBuffer(buf, m)
+}
+
+// Decode implements gnet.Serializer
+func (m *GiveBlocksMessage) Decode(buf []byte) (uint64, error) {
+	return decodeGiveBlocksMessage(buf, m)
 }
 
 // Handle handle message
@@ -621,7 +876,7 @@ func (m *GiveBlocksMessage) Handle(mc *gnet.MessageContext, daemon interface{}) 
 
 // process process message
 func (m *GiveBlocksMessage) process(d daemoner) {
-	if d.daemonConfig().DisableNetworking {
+	if d.DaemonConfig().DisableNetworking {
 		logger.Critical().Info("Visor disabled, ignoring GiveBlocksMessage")
 		return
 	}
@@ -689,7 +944,7 @@ func (m *GiveBlocksMessage) process(d daemoner) {
 	}
 
 	// Request more blocks
-	gbm := NewGetBlocksMessage(headBkSeq, d.daemonConfig().BlocksResponseCount)
+	gbm := NewGetBlocksMessage(headBkSeq, d.DaemonConfig().GetBlocksRequestCount)
 	if _, err := d.broadcastMessage(gbm); err != nil {
 		logger.WithError(err).Warning("Broadcast GetBlocksMessage failed")
 	}
@@ -709,6 +964,21 @@ func NewAnnounceBlocksMessage(seq uint64) *AnnounceBlocksMessage {
 	}
 }
 
+// EncodeSize implements gnet.Serializer
+func (abm *AnnounceBlocksMessage) EncodeSize() uint64 {
+	return encodeSizeAnnounceBlocksMessage(abm)
+}
+
+// Encode implements gnet.Serializer
+func (abm *AnnounceBlocksMessage) Encode(buf []byte) error {
+	return encodeAnnounceBlocksMessageToBuffer(buf, abm)
+}
+
+// Decode implements gnet.Serializer
+func (abm *AnnounceBlocksMessage) Decode(buf []byte) (uint64, error) {
+	return decodeAnnounceBlocksMessage(buf, abm)
+}
+
 // Handle handles message
 func (abm *AnnounceBlocksMessage) Handle(mc *gnet.MessageContext, daemon interface{}) error {
 	abm.c = mc
@@ -717,7 +987,7 @@ func (abm *AnnounceBlocksMessage) Handle(mc *gnet.MessageContext, daemon interfa
 
 // process process message
 func (abm *AnnounceBlocksMessage) process(d daemoner) {
-	if d.daemonConfig().DisableNetworking {
+	if d.DaemonConfig().DisableNetworking {
 		return
 	}
 
@@ -742,7 +1012,7 @@ func (abm *AnnounceBlocksMessage) process(d daemoner) {
 
 	// TODO: Should this be block get request for current sequence?
 	// If client is not caught up, won't attempt to get block
-	m := NewGetBlocksMessage(headBkSeq, d.daemonConfig().BlocksResponseCount)
+	m := NewGetBlocksMessage(headBkSeq, d.DaemonConfig().GetBlocksRequestCount)
 	if err := d.sendMessage(abm.c.Addr, m); err != nil {
 		logger.WithError(err).WithFields(fields).Error("Send GetBlocksMessage")
 	}
@@ -759,11 +1029,84 @@ type AnnounceTxnsMessage struct {
 	c            *gnet.MessageContext `enc:"-"`
 }
 
-// NewAnnounceTxnsMessage creates announce txns message
-func NewAnnounceTxnsMessage(txns []cipher.SHA256) *AnnounceTxnsMessage {
-	return &AnnounceTxnsMessage{
+// NewAnnounceTxnsMessage creates announce txns message.
+// If the size of the message would exceed maxMsgLength, the hashes slice is truncated.
+func NewAnnounceTxnsMessage(txns []cipher.SHA256, maxMsgLength uint64) *AnnounceTxnsMessage {
+	if len(txns) > 256 {
+		txns = txns[:256]
+	}
+	m := &AnnounceTxnsMessage{
 		Transactions: txns,
 	}
+	hashes := truncateAnnounceTxnsHashes(m, maxMsgLength)
+	m.Transactions = hashes
+	return m
+}
+
+// truncateAnnounceTxnsHashes truncates the hashes in AnnounceTxnsMessage to fit inside of MaxOutgoingMessageLength
+func truncateAnnounceTxnsHashes(m *AnnounceTxnsMessage, maxMsgLength uint64) []cipher.SHA256 {
+	// The message length will include a 4 byte message type prefix.
+	// Panic if the prefix can't fit, otherwise we can't adjust the uint64 safely
+	if maxMsgLength < 4 {
+		logger.Panic("maxMsgLength must be >= 4")
+	}
+
+	maxMsgLength -= 4
+
+	// Measure the current message size, if it fits, return
+	n := m.EncodeSize()
+	if n <= maxMsgLength {
+		return m.Transactions
+	}
+
+	// Measure the size of an empty message
+	var mm AnnounceTxnsMessage
+	size := mm.EncodeSize()
+
+	if maxMsgLength < size {
+		logger.Panic("maxMsgLength must be <= 4 + sizeof(empty AnnounceTxnsMessage)")
+	}
+
+	maxMsgLength -= size
+
+	hashes := truncateSHA256Slice(m.Transactions, maxMsgLength)
+
+	if len(hashes) == 0 {
+		logger.Critical().Error("truncateAnnounceTxnsHashes truncated hashes to an empty slice")
+	}
+
+	return hashes
+}
+
+func truncateSHA256Slice(hashes []cipher.SHA256, maxLength uint64) []cipher.SHA256 {
+	if len(hashes) == 0 {
+		return hashes
+	}
+
+	size := len(hashes[0])
+
+	n := maxLength / uint64(size)
+
+	if n > uint64(len(hashes)) {
+		return hashes
+	}
+
+	return hashes[:n]
+}
+
+// EncodeSize implements gnet.Serializer
+func (atm *AnnounceTxnsMessage) EncodeSize() uint64 {
+	return encodeSizeAnnounceTxnsMessage(atm)
+}
+
+// Encode implements gnet.Serializer
+func (atm *AnnounceTxnsMessage) Encode(buf []byte) error {
+	return encodeAnnounceTxnsMessageToBuffer(buf, atm)
+}
+
+// Decode implements gnet.Serializer
+func (atm *AnnounceTxnsMessage) Decode(buf []byte) (uint64, error) {
+	return decodeAnnounceTxnsMessage(buf, atm)
 }
 
 // GetFiltered returns txns
@@ -779,7 +1122,8 @@ func (atm *AnnounceTxnsMessage) Handle(mc *gnet.MessageContext, daemon interface
 
 // process process message
 func (atm *AnnounceTxnsMessage) process(d daemoner) {
-	if d.daemonConfig().DisableNetworking {
+	dc := d.DaemonConfig()
+	if dc.DisableNetworking {
 		return
 	}
 
@@ -798,7 +1142,11 @@ func (atm *AnnounceTxnsMessage) process(d daemoner) {
 		return
 	}
 
-	m := NewGetTxnsMessage(unknown)
+	m := NewGetTxnsMessage(unknown, dc.MaxOutgoingMessageLength)
+	if len(m.Transactions) != len(unknown) {
+		logger.Warningf("NewGetTxnsMessage truncated %d hashes to %d hashes", len(unknown), len(m.Transactions))
+	}
+
 	if err := d.sendMessage(atm.c.Addr, m); err != nil {
 		logger.WithFields(fields).WithError(err).Error("Send GetTxnsMessage failed")
 	}
@@ -806,15 +1154,72 @@ func (atm *AnnounceTxnsMessage) process(d daemoner) {
 
 // GetTxnsMessage request transactions of given hash
 type GetTxnsMessage struct {
-	Transactions []cipher.SHA256
+	Transactions []cipher.SHA256      `enc:",maxlen=256"`
 	c            *gnet.MessageContext `enc:"-"`
 }
 
-// NewGetTxnsMessage creates GetTxnsMessage
-func NewGetTxnsMessage(txns []cipher.SHA256) *GetTxnsMessage {
-	return &GetTxnsMessage{
+// NewGetTxnsMessage creates GetTxnsMessage.
+// If the size of the message would exceed maxMsgLength, the hashes slice is truncated.
+func NewGetTxnsMessage(txns []cipher.SHA256, maxMsgLength uint64) *GetTxnsMessage {
+	if len(txns) > 256 {
+		txns = txns[:256]
+	}
+	m := &GetTxnsMessage{
 		Transactions: txns,
 	}
+	hashes := truncateGetTxnsHashes(m, maxMsgLength)
+	m.Transactions = hashes
+	return m
+}
+
+// truncateGetTxnsHashes truncates the hashes in GetTxnsMessage to fit inside of MaxOutgoingMessageLength
+func truncateGetTxnsHashes(m *GetTxnsMessage, maxMsgLength uint64) []cipher.SHA256 {
+	// The message length will include a 4 byte message type prefix.
+	// Panic if the prefix can't fit, otherwise we can't adjust the uint64 safely
+	if maxMsgLength < 4 {
+		logger.Panic("maxMsgLength must be >= 4")
+	}
+
+	maxMsgLength -= 4
+
+	// Measure the current message size, if it fits, return
+	n := m.EncodeSize()
+	if n <= maxMsgLength {
+		return m.Transactions
+	}
+
+	// Measure the size of an empty message
+	var mm GetTxnsMessage
+	size := mm.EncodeSize()
+
+	if maxMsgLength < size {
+		logger.Panic("maxMsgLength must be <= 4 + sizeof(empty GetTxnsMessage)")
+	}
+
+	maxMsgLength -= size
+
+	hashes := truncateSHA256Slice(m.Transactions, maxMsgLength)
+
+	if len(hashes) == 0 {
+		logger.Critical().Error("truncateGetTxnsHashes truncated hashes to an empty slice")
+	}
+
+	return hashes
+}
+
+// EncodeSize implements gnet.Serializer
+func (gtm *GetTxnsMessage) EncodeSize() uint64 {
+	return encodeSizeGetTxnsMessage(gtm)
+}
+
+// Encode implements gnet.Serializer
+func (gtm *GetTxnsMessage) Encode(buf []byte) error {
+	return encodeGetTxnsMessageToBuffer(buf, gtm)
+}
+
+// Decode implements gnet.Serializer
+func (gtm *GetTxnsMessage) Decode(buf []byte) (uint64, error) {
+	return decodeGetTxnsMessage(buf, gtm)
 }
 
 // Handle handle message
@@ -825,7 +1230,8 @@ func (gtm *GetTxnsMessage) Handle(mc *gnet.MessageContext, daemon interface{}) e
 
 // process process message
 func (gtm *GetTxnsMessage) process(d daemoner) {
-	if d.daemonConfig().DisableNetworking {
+	dc := d.DaemonConfig()
+	if dc.DisableNetworking {
 		return
 	}
 
@@ -845,7 +1251,11 @@ func (gtm *GetTxnsMessage) process(d daemoner) {
 	}
 
 	// Reply to sender with GiveTxnsMessage
-	m := NewGiveTxnsMessage(known)
+	m := NewGiveTxnsMessage(known, dc.MaxOutgoingMessageLength)
+	if len(m.Transactions) != len(known) {
+		logger.Warningf("NewGiveTxnsMessage truncated %d hashes to %d hashes", len(known), len(m.Transactions))
+	}
+
 	if err := d.sendMessage(gtm.c.Addr, m); err != nil {
 		logger.WithError(err).WithFields(fields).Error("Send GiveTxnsMessage")
 	}
@@ -857,11 +1267,70 @@ type GiveTxnsMessage struct {
 	c            *gnet.MessageContext `enc:"-"`
 }
 
-// NewGiveTxnsMessage creates GiveTxnsMessage
-func NewGiveTxnsMessage(txns []coin.Transaction) *GiveTxnsMessage {
-	return &GiveTxnsMessage{
+// NewGiveTxnsMessage creates GiveTxnsMessage.
+// If the size of the message would exceed maxMsgLength, the transactions slice is truncated.
+func NewGiveTxnsMessage(txns []coin.Transaction, maxMsgLength uint64) *GiveTxnsMessage {
+	if len(txns) > 256 {
+		txns = txns[:256]
+	}
+	m := &GiveTxnsMessage{
 		Transactions: txns,
 	}
+	truncateGiveTxnsMessage(m, maxMsgLength)
+	return m
+}
+
+// truncateGiveTxnsMessage truncates the transactions in GiveTxnsMessage to fit inside of MaxOutgoingMessageLength
+func truncateGiveTxnsMessage(m *GiveTxnsMessage, maxMsgLength uint64) {
+	// The message length will include a 4 byte message type prefix.
+	// Panic if the prefix can't fit, otherwise we can't adjust the uint64 safely
+	if maxMsgLength < 4 {
+		logger.Panic("maxMsgLength must be >= 4")
+	}
+
+	maxMsgLength -= 4
+
+	// Measure the current message size, if it fits, return
+	n := m.EncodeSize()
+	if n <= maxMsgLength {
+		return
+	}
+
+	// Measure the size of an empty message
+	var mm GiveTxnsMessage
+	size := mm.EncodeSize()
+
+	// Measure the size of the txns, advancing the slice index until it reaches capacity
+	index := -1
+	for i, txn := range m.Transactions {
+		x := encodeSizeTransaction(&txn)
+		if size+x > maxMsgLength {
+			break
+		}
+		size += x
+		index = i
+	}
+
+	m.Transactions = m.Transactions[:index+1]
+
+	if len(m.Transactions) == 0 {
+		logger.Critical().Error("truncateGiveTxnsMessage truncated txns to an empty slice")
+	}
+}
+
+// EncodeSize implements gnet.Serializer
+func (gtm *GiveTxnsMessage) EncodeSize() uint64 {
+	return encodeSizeGiveTxnsMessage(gtm)
+}
+
+// Encode implements gnet.Serializer
+func (gtm *GiveTxnsMessage) Encode(buf []byte) error {
+	return encodeGiveTxnsMessageToBuffer(buf, gtm)
+}
+
+// Decode implements gnet.Serializer
+func (gtm *GiveTxnsMessage) Decode(buf []byte) (uint64, error) {
+	return decodeGiveTxnsMessage(buf, gtm)
 }
 
 // GetFiltered returns transactions hashes
@@ -877,7 +1346,8 @@ func (gtm *GiveTxnsMessage) Handle(mc *gnet.MessageContext, daemon interface{}) 
 
 // process process message
 func (gtm *GiveTxnsMessage) process(d daemoner) {
-	if d.daemonConfig().DisableNetworking {
+	dc := d.DaemonConfig()
+	if dc.DisableNetworking {
 		return
 	}
 
@@ -892,7 +1362,7 @@ func (gtm *GiveTxnsMessage) process(d daemoner) {
 			logger.WithError(err).WithField("txid", txn.Hash().Hex()).Warning("Failed to record transaction")
 			continue
 		} else if softErr != nil {
-			logger.WithError(err).WithField("txid", txn.Hash().Hex()).Warning("Transaction soft violation")
+			logger.WithError(softErr).WithField("txid", txn.Hash().Hex()).Warning("Transaction soft violation")
 			// Allow soft txn violations to rebroadcast
 		} else if known {
 			logger.WithField("txid", txn.Hash().Hex()).Debug("Duplicate transaction")
@@ -907,7 +1377,11 @@ func (gtm *GiveTxnsMessage) process(d daemoner) {
 	}
 
 	// Announce these transactions to peers
-	m := NewAnnounceTxnsMessage(hashes)
+	m := NewAnnounceTxnsMessage(hashes, dc.MaxOutgoingMessageLength)
+	if len(m.Transactions) != len(hashes) {
+		logger.Warningf("NewAnnounceTxnsMessage truncated %d hashes to %d hashes", len(hashes), len(m.Transactions))
+	}
+
 	if ids, err := d.broadcastMessage(m); err != nil {
 		logger.WithError(err).Warning("Broadcast AnnounceTxnsMessage failed")
 	} else {

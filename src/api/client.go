@@ -2,7 +2,6 @@ package api
 
 import (
 	"bytes"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,9 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/readable"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/daemon"
+	"github.com/SkycoinProject/skycoin/src/kvstorage"
+	"github.com/SkycoinProject/skycoin/src/readable"
 )
 
 const (
@@ -99,6 +99,12 @@ func (c *Client) applyAuth(req *http.Request) {
 	req.SetBasicAuth(c.Username, c.Password)
 }
 
+// GetV2 makes a GET request to an endpoint and unmarshals the response to respObj.
+// If the response is not 200 OK, returns an error
+func (c *Client) GetV2(endpoint string, respObj interface{}) (bool, error) {
+	return c.requestV2(http.MethodGet, endpoint, nil, respObj)
+}
+
 // Get makes a GET request to an endpoint and unmarshals the response to obj.
 // If the response is not 200 OK, returns an error
 func (c *Client) Get(endpoint string, obj interface{}) error {
@@ -129,10 +135,15 @@ func (c *Client) Get(endpoint string, obj interface{}) error {
 
 // get makes a GET request to an endpoint. Caller must close response body.
 func (c *Client) get(endpoint string) (*http.Response, error) {
+	return c.makeRequestWithoutBody(endpoint, http.MethodGet)
+}
+
+// makeRequestWithoutBody makes a `method` request to an endpoint. Caller must close response body.
+func (c *Client) makeRequestWithoutBody(endpoint, method string) (*http.Response, error) {
 	endpoint = strings.TrimLeft(endpoint, "/")
 	endpoint = c.Addr + endpoint
 
-	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
+	req, err := http.NewRequest(method, endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -140,6 +151,12 @@ func (c *Client) get(endpoint string) (*http.Response, error) {
 	c.applyAuth(req)
 
 	return c.HTTPClient.Do(req)
+}
+
+// DeleteV2 makes a DELETE request to an endpoint with body of json data,
+// and parses the standard JSON response.
+func (c *Client) DeleteV2(endpoint string, respObj interface{}) (bool, error) {
+	return c.requestV2(http.MethodDelete, endpoint, nil, respObj)
 }
 
 // PostForm makes a POST request to an endpoint with body of ContentTypeForm formated data.
@@ -213,6 +230,10 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 		return false, err
 	}
 
+	return c.requestV2(http.MethodPost, endpoint, bytes.NewReader(body), respObj)
+}
+
+func (c *Client) requestV2(method, endpoint string, body io.Reader, respObj interface{}) (bool, error) {
 	csrf, err := c.CSRF()
 	if err != nil {
 		return false, err
@@ -221,7 +242,7 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 	endpoint = strings.TrimLeft(endpoint, "/")
 	endpoint = c.Addr + endpoint
 
-	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(body))
+	req, err := http.NewRequest(method, endpoint, body)
 	if err != nil {
 		return false, err
 	}
@@ -232,7 +253,11 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 		req.Header.Set(CSRFHeaderName, csrf)
 	}
 
-	req.Header.Set("Content-Type", ContentTypeJSON)
+	switch method {
+	case http.MethodPost:
+		req.Header.Set("Content-Type", ContentTypeJSON)
+	}
+
 	req.Header.Set("Accept", ContentTypeJSON)
 
 	resp, err := c.HTTPClient.Do(req)
@@ -257,10 +282,19 @@ func (c *Client) PostJSONV2(endpoint string, reqObj, respObj interface{}) (bool,
 		// occurs in the go HTTP stack, outside of the application's control.
 		// If this happens, treat the entire response body as the error message.
 		if resp.StatusCode != http.StatusOK {
-			return false, NewClientError(resp.Status, resp.StatusCode, string(body))
+			return false, NewClientError(resp.Status, resp.StatusCode, string(respBody))
 		}
 
 		return false, err
+	}
+
+	// The JSON decoder stops at the end of the first valid JSON object.
+	// Check that there is no trailing data after the end of the first valid JSON object.
+	// This could occur if an endpoint mistakenly wrote an object twice, for example.
+	// This line returns the decoder's underlying read buffer. Read(nil) will return io.EOF
+	// if the buffer was completely consumed.
+	if _, err := decoder.Buffered().Read(nil); err != io.EOF {
+		return false, NewClientError(resp.Status, resp.StatusCode, "Response has additional bytes after the first JSON object: "+string(respBody))
 	}
 
 	var rspErr error
@@ -603,38 +637,32 @@ func (c *Client) Wallets() ([]WalletResponse, error) {
 	return wrs, nil
 }
 
-// CreateUnencryptedWallet makes a request to POST /api/v1/wallet/create and creates
-// a wallet without encryption.
-// If scanN is <= 0, the scan number defaults to 1
-func (c *Client) CreateUnencryptedWallet(seed, label string, scanN int) (*WalletResponse, error) {
-	v := url.Values{}
-	v.Add("seed", seed)
-	v.Add("label", label)
-	v.Add("encrypt", "false")
-
-	if scanN > 0 {
-		v.Add("scan", fmt.Sprint(scanN))
-	}
-
-	var w WalletResponse
-	if err := c.PostForm("/api/v1/wallet/create", strings.NewReader(v.Encode()), &w); err != nil {
-		return nil, err
-	}
-	return &w, nil
+// CreateWalletOptions are the options for creating a wallet
+type CreateWalletOptions struct {
+	Type           string
+	Seed           string
+	SeedPassphrase string
+	Label          string
+	Password       string
+	ScanN          int
+	XPub           string
+	Encrypt        bool
 }
 
-// CreateEncryptedWallet makes a request to POST /api/v1/wallet/create and try to create
-// a wallet with encryption.
+// CreateWallet makes a request to POST /api/v1/wallet/create and creates a wallet.
 // If scanN is <= 0, the scan number defaults to 1
-func (c *Client) CreateEncryptedWallet(seed, label, password string, scanN int) (*WalletResponse, error) {
+func (c *Client) CreateWallet(o CreateWalletOptions) (*WalletResponse, error) {
 	v := url.Values{}
-	v.Add("seed", seed)
-	v.Add("label", label)
-	v.Add("encrypt", "true")
-	v.Add("password", password)
+	v.Add("type", o.Type)
+	v.Add("seed", o.Seed)
+	v.Add("seed-passphrase", o.SeedPassphrase)
+	v.Add("label", o.Label)
+	v.Add("password", o.Password)
+	v.Add("encrypt", fmt.Sprint(o.Encrypt))
+	v.Add("xpub", o.XPub)
 
-	if scanN > 0 {
-		v.Add("scan", fmt.Sprint(scanN))
+	if o.ScanN > 0 {
+		v.Add("scan", fmt.Sprint(o.ScanN))
 	}
 
 	var w WalletResponse
@@ -677,38 +705,14 @@ func (c *Client) WalletBalance(id string) (*BalanceResponse, error) {
 	return &b, nil
 }
 
-// Spend makes a request to POST /api/v1/wallet/spend
-func (c *Client) Spend(id, dst string, coins uint64, password string) (*SpendResult, error) {
-	v := url.Values{}
-	v.Add("id", id)
-	v.Add("dst", dst)
-	v.Add("coins", fmt.Sprint(coins))
-	v.Add("password", password)
-
-	var r SpendResult
-	endpoint := "/api/v1/wallet/spend"
-	if err := c.PostForm(endpoint, strings.NewReader(v.Encode()), &r); err != nil {
-		return nil, err
-	}
-
-	return &r, nil
-}
-
-// CreateTransactionRequest is sent to /api/v1/wallet/transaction
+// CreateTransactionRequest is sent to /api/v2/transaction
 type CreateTransactionRequest struct {
-	IgnoreUnconfirmed bool                           `json:"ignore_unconfirmed"`
-	HoursSelection    HoursSelection                 `json:"hours_selection"`
-	Wallet            CreateTransactionRequestWallet `json:"wallet"`
-	ChangeAddress     *string                        `json:"change_address,omitempty"`
-	To                []Receiver                     `json:"to"`
-}
-
-// CreateTransactionRequestWallet defines a wallet to spend from and optionally which addresses in the wallet
-type CreateTransactionRequestWallet struct {
-	ID        string   `json:"id"`
-	UxOuts    []string `json:"unspents,omitempty"`
-	Addresses []string `json:"addresses,omitempty"`
-	Password  string   `json:"password"`
+	IgnoreUnconfirmed bool           `json:"ignore_unconfirmed"`
+	HoursSelection    HoursSelection `json:"hours_selection"`
+	ChangeAddress     *string        `json:"change_address,omitempty"`
+	To                []Receiver     `json:"to"`
+	UxOuts            []string       `json:"unspents,omitempty"`
+	Addresses         []string       `json:"addresses,omitempty"`
 }
 
 // HoursSelection defines options for hours distribution
@@ -725,8 +729,16 @@ type Receiver struct {
 	Hours   string `json:"hours,omitempty"`
 }
 
-// CreateTransaction makes a request to POST /api/v1/wallet/transaction
-func (c *Client) CreateTransaction(req CreateTransactionRequest) (*CreateTransactionResponse, error) {
+// WalletCreateTransactionRequest is sent to /api/v1/wallet/transaction
+type WalletCreateTransactionRequest struct {
+	Unsigned bool   `json:"unsigned"`
+	WalletID string `json:"wallet_id"`
+	Password string `json:"password"`
+	CreateTransactionRequest
+}
+
+// WalletCreateTransaction makes a request to POST /api/v1/wallet/transaction
+func (c *Client) WalletCreateTransaction(req WalletCreateTransactionRequest) (*CreateTransactionResponse, error) {
 	var r CreateTransactionResponse
 	endpoint := "/api/v1/wallet/transaction"
 	if err := c.PostJSON(endpoint, req, &r); err != nil {
@@ -734,6 +746,28 @@ func (c *Client) CreateTransaction(req CreateTransactionRequest) (*CreateTransac
 	}
 
 	return &r, nil
+}
+
+// WalletSignTransaction makes a request to POST /api/v2/wallet/transaction/sign
+func (c *Client) WalletSignTransaction(req WalletSignTransactionRequest) (*CreateTransactionResponse, error) {
+	var r CreateTransactionResponse
+	endpoint := "/api/v2/wallet/transaction/sign"
+	ok, err := c.PostJSONV2(endpoint, req, &r)
+	if ok {
+		return &r, err
+	}
+	return nil, err
+}
+
+// CreateTransaction makes a request to POST /api/v2/transaction
+func (c *Client) CreateTransaction(req CreateTransactionRequest) (*CreateTransactionResponse, error) {
+	var r CreateTransactionResponse
+	endpoint := "/api/v2/transaction"
+	ok, err := c.PostJSONV2(endpoint, req, &r)
+	if ok {
+		return &r, err
+	}
+	return nil, err
 }
 
 // WalletUnconfirmedTransactions makes a request to GET /api/v1/wallet/transactions
@@ -797,20 +831,29 @@ func (c *Client) NewSeed(entropy int) (string, error) {
 	return r.Seed, nil
 }
 
+// VerifySeed verifies whether the given seed is a valid bip39 mnemonic or not
+func (c *Client) VerifySeed(seed string) (bool, error) {
+	ok, err := c.PostJSONV2("/api/v2/wallet/seed/verify", VerifySeedRequest{
+		Seed: seed,
+	}, &struct{}{})
+	if err != nil {
+		return false, err
+	}
+	return ok, nil
+}
+
 // WalletSeed makes a request to POST /api/v1/wallet/seed
-func (c *Client) WalletSeed(id string, password string) (string, error) {
+func (c *Client) WalletSeed(id string, password string) (*WalletSeedResponse, error) {
 	v := url.Values{}
 	v.Add("id", id)
 	v.Add("password", password)
 
-	var r struct {
-		Seed string `json:"seed"`
-	}
+	var r WalletSeedResponse
 	if err := c.PostForm("/api/v1/wallet/seed", strings.NewReader(v.Encode()), &r); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return r.Seed, nil
+	return &r, nil
 }
 
 // NetworkConnection makes a request to GET /api/v1/network/connection
@@ -1031,18 +1074,40 @@ func (c *Client) UnconfirmedTransactionsVerbose(addrs []string) ([]readable.Tran
 
 // InjectTransaction makes a request to POST /api/v1/injectTransaction.
 func (c *Client) InjectTransaction(txn *coin.Transaction) (string, error) {
-	d := txn.Serialize()
-	rawTx := hex.EncodeToString(d)
-	return c.InjectEncodedTransaction(rawTx)
+	rawTxn, err := txn.SerializeHex()
+	if err != nil {
+		return "", err
+	}
+	return c.InjectEncodedTransaction(rawTxn)
+}
+
+// InjectTransactionNoBroadcast makes a request to POST /api/v1/injectTransaction
+// but does not broadcast the transaction.
+func (c *Client) InjectTransactionNoBroadcast(txn *coin.Transaction) (string, error) {
+	rawTxn, err := txn.SerializeHex()
+	if err != nil {
+		return "", err
+	}
+	return c.InjectEncodedTransactionNoBroadcast(rawTxn)
 }
 
 // InjectEncodedTransaction makes a request to POST /api/v1/injectTransaction.
-// rawTx is a hex-encoded, serialized transaction
+// rawTxn is a hex-encoded, serialized transaction
 func (c *Client) InjectEncodedTransaction(rawTxn string) (string, error) {
-	v := struct {
-		Rawtxn string `json:"rawtx"`
-	}{
-		Rawtxn: rawTxn,
+	return c.injectEncodedTransaction(rawTxn, false)
+}
+
+// InjectEncodedTransactionNoBroadcast makes a request to POST /api/v1/injectTransaction
+// but does not broadcast the transaction.
+// rawTxn is a hex-encoded, serialized transaction
+func (c *Client) InjectEncodedTransactionNoBroadcast(rawTxn string) (string, error) {
+	return c.injectEncodedTransaction(rawTxn, true)
+}
+
+func (c *Client) injectEncodedTransaction(rawTxn string, noBroadcast bool) (string, error) {
+	v := InjectTransactionRequest{
+		RawTxn:      rawTxn,
+		NoBroadcast: noBroadcast,
 	}
 
 	var txid string
@@ -1068,20 +1133,16 @@ func (c *Client) RawTransaction(txid string) (string, error) {
 	v.Add("txid", txid)
 	endpoint := "/api/v1/rawtx?" + v.Encode()
 
-	var rawTx string
-	if err := c.Get(endpoint, &rawTx); err != nil {
+	var rawTxn string
+	if err := c.Get(endpoint, &rawTxn); err != nil {
 		return "", err
 	}
-	return rawTx, nil
+	return rawTxn, nil
 }
 
 // VerifyTransaction makes a request to POST /api/v2/transaction/verify.
-func (c *Client) VerifyTransaction(encodedTxn string) (*VerifyTxnResponse, error) {
-	req := VerifyTxnRequest{
-		EncodedTransaction: encodedTxn,
-	}
-
-	var rsp VerifyTxnResponse
+func (c *Client) VerifyTransaction(req VerifyTransactionRequest) (*VerifyTransactionResponse, error) {
+	var rsp VerifyTransactionResponse
 	ok, err := c.PostJSONV2("/api/v2/transaction/verify", req, &rsp)
 	if ok {
 		return &rsp, err
@@ -1105,19 +1166,6 @@ func (c *Client) VerifyAddress(addr string) (*VerifyAddressResponse, error) {
 	}
 
 	return nil, err
-}
-
-// AddressTransactions makes a request to GET /api/v1/explorer/address
-func (c *Client) AddressTransactions(addr string) ([]readable.TransactionVerbose, error) {
-	v := url.Values{}
-	v.Add("address", addr)
-	endpoint := "/api/v1/explorer/address?" + v.Encode()
-
-	var b []readable.TransactionVerbose
-	if err := c.Get(endpoint, &b); err != nil {
-		return nil, err
-	}
-	return b, nil
 }
 
 // RichlistParams are arguments to the /richlist endpoint
@@ -1202,13 +1250,7 @@ func (c *Client) DecryptWallet(id, password string) (*WalletResponse, error) {
 // RecoverWallet makes a request to POST /api/v2/wallet/recover to recover an encrypted wallet by seed.
 // The password argument is optional, if provided, the recovered wallet will be encrypted with this password,
 // otherwise the recovered wallet will be unencrypted.
-func (c *Client) RecoverWallet(id, seed, password string) (*WalletResponse, error) {
-	req := WalletRecoverRequest{
-		ID:       id,
-		Seed:     seed,
-		Password: password,
-	}
-
+func (c *Client) RecoverWallet(req WalletRecoverRequest) (*WalletResponse, error) {
 	var rsp WalletResponse
 	ok, err := c.PostJSONV2("/api/v2/wallet/recover", req, &rsp)
 	if ok {
@@ -1225,4 +1267,48 @@ func (c *Client) Disconnect(id uint64) error {
 
 	var obj struct{}
 	return c.PostForm("/api/v1/network/connection/disconnect", strings.NewReader(v.Encode()), &obj)
+}
+
+// GetAllStorageValues makes a GET request to /api/v2/data to get all the values from the storage of
+// `storageType` type
+func (c *Client) GetAllStorageValues(storageType kvstorage.Type) (map[string]string, error) {
+	var values map[string]string
+	ok, err := c.GetV2(fmt.Sprintf("/api/v2/data?type=%s", storageType), &values)
+	if !ok {
+		return nil, err
+	}
+
+	return values, err
+}
+
+// GetStorageValue makes a GET request to /api/v2/data to get the value associated with `key` from storage
+// of `storageType` type
+func (c *Client) GetStorageValue(storageType kvstorage.Type, key string) (string, error) {
+	var value string
+	ok, err := c.GetV2(fmt.Sprintf("/api/v2/data?type=%s&key=%s", storageType, key), &value)
+	if !ok {
+		return "", err
+	}
+
+	return value, err
+}
+
+// AddStorageValue make a POST request to /api/v2/data to add a value with the key to the storage
+// of `storageType` type
+func (c *Client) AddStorageValue(storageType kvstorage.Type, key, val string) error {
+	_, err := c.PostJSONV2("/api/v2/data", StorageRequest{
+		StorageType: storageType,
+		Key:         key,
+		Val:         val,
+	}, nil)
+
+	return err
+}
+
+// RemoveStorageValue makes a DELETE request to /api/v2/data to remove a value associated with the `key`
+// from the storage of `storageType` type
+func (c *Client) RemoveStorageValue(storageType kvstorage.Type, key string) error {
+	_, err := c.DeleteV2(fmt.Sprintf("/api/v2/data?type=%s&key=%s", storageType, key), nil)
+
+	return err
 }

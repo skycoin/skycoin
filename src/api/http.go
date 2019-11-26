@@ -16,16 +16,14 @@ import (
 	"unicode"
 
 	"github.com/NYTimes/gziphandler"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
 
-	"github.com/skycoin/skycoin/src/api/webrpc"
-	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/util/file"
-	wh "github.com/skycoin/skycoin/src/util/http"
-	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/util/useragent"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/readable"
+	"github.com/SkycoinProject/skycoin/src/util/file"
+	wh "github.com/SkycoinProject/skycoin/src/util/http"
+	"github.com/SkycoinProject/skycoin/src/util/logging"
+	"github.com/SkycoinProject/skycoin/src/util/useragent"
 )
 
 var (
@@ -54,12 +52,12 @@ const (
 	EndpointsWallet = "WALLET"
 	// EndpointsInsecureWalletSeed endpoints implement wallet interface
 	EndpointsInsecureWalletSeed = "INSECURE_WALLET_SEED"
-	// EndpointsDeprecatedWalletSpend endpoints implement the deprecated /api/v1/wallet/spend method
-	EndpointsDeprecatedWalletSpend = "DEPRECATED_WALLET_SPEND"
 	// EndpointsPrometheus endpoints for Go application metrics
 	EndpointsPrometheus = "PROMETHEUS"
 	// EndpointsNetCtrl endpoints for managing network connections
 	EndpointsNetCtrl = "NET_CTRL"
+	// EndpointsStorage endpoints implement interface for key-value storage for arbitrary data
+	EndpointsStorage = "STORAGE"
 )
 
 // Server exposes an HTTP API
@@ -71,42 +69,41 @@ type Server struct {
 
 // Config configures Server
 type Config struct {
-	StaticDir            string
-	DisableCSRF          bool
-	DisableCSP           bool
-	EnableJSON20RPC      bool
-	EnableGUI            bool
-	EnableUnversionedAPI bool
-	ReadTimeout          time.Duration
-	WriteTimeout         time.Duration
-	IdleTimeout          time.Duration
-	Health               HealthConfig
-	HostWhitelist        []string
-	EnabledAPISets       map[string]struct{}
-	Username             string
-	Password             string
+	StaticDir          string
+	DisableCSRF        bool
+	DisableHeaderCheck bool
+	DisableCSP         bool
+	EnableGUI          bool
+	ReadTimeout        time.Duration
+	WriteTimeout       time.Duration
+	IdleTimeout        time.Duration
+	Health             HealthConfig
+	HostWhitelist      []string
+	EnabledAPISets     map[string]struct{}
+	Username           string
+	Password           string
 }
 
 // HealthConfig configuration data exposed in /health
 type HealthConfig struct {
 	BuildInfo       readable.BuildInfo
-	CoinName        string
+	Fiber           readable.FiberConfig
 	DaemonUserAgent useragent.Data
+	BlockPublisher  bool
 }
 
 type muxConfig struct {
-	host                 string
-	appLoc               string
-	enableGUI            bool
-	enableJSON20RPC      bool
-	enableUnversionedAPI bool
-	disableCSRF          bool
-	disableCSP           bool
-	enabledAPISets       map[string]struct{}
-	hostWhitelist        []string
-	username             string
-	password             string
-	health               HealthConfig
+	host               string
+	appLoc             string
+	enableGUI          bool
+	disableCSRF        bool
+	disableHeaderCheck bool
+	disableCSP         bool
+	enabledAPISets     map[string]struct{}
+	hostWhitelist      []string
+	username           string
+	password           string
+	health             HealthConfig
 }
 
 // HTTPResponse represents the http response struct
@@ -175,15 +172,8 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		logger.Warning("CSRF check disabled")
 	}
 
-	var rpc *webrpc.WebRPC
-	if c.EnableJSON20RPC {
-		logger.Info("JSON 2.0 RPC enabled")
-		var err error
-		// TODO: change webprc to use http.Gatewayer
-		rpc, err = webrpc.New(gateway.(*daemon.Gateway))
-		if err != nil {
-			return nil, err
-		}
+	if c.DisableHeaderCheck {
+		logger.Warning("Header check disabled")
 	}
 
 	if c.ReadTimeout == 0 {
@@ -197,21 +187,20 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 	}
 
 	mc := muxConfig{
-		host:                 host,
-		appLoc:               appLoc,
-		enableGUI:            c.EnableGUI,
-		enableJSON20RPC:      c.EnableJSON20RPC,
-		enableUnversionedAPI: c.EnableUnversionedAPI,
-		disableCSRF:          c.DisableCSRF,
-		disableCSP:           c.DisableCSP,
-		health:               c.Health,
-		enabledAPISets:       c.EnabledAPISets,
-		hostWhitelist:        c.HostWhitelist,
-		username:             c.Username,
-		password:             c.Password,
+		host:               host,
+		appLoc:             appLoc,
+		enableGUI:          c.EnableGUI,
+		disableCSRF:        c.DisableCSRF,
+		disableHeaderCheck: c.DisableHeaderCheck,
+		disableCSP:         c.DisableCSP,
+		health:             c.Health,
+		enabledAPISets:     c.EnabledAPISets,
+		hostWhitelist:      c.HostWhitelist,
+		username:           c.Username,
+		password:           c.Password,
 	}
 
-	srvMux := newServerMux(mc, gateway, rpc)
+	srvMux := newServerMux(mc, gateway)
 	srv := &http.Server{
 		Handler:      srvMux,
 		ReadTimeout:  c.ReadTimeout,
@@ -323,7 +312,7 @@ func (s *Server) Shutdown() {
 }
 
 // newServerMux creates an http.ServeMux with handlers registered
-func newServerMux(c muxConfig, gateway Gatewayer, rpc *webrpc.WebRPC) *http.ServeMux {
+func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	allowedOrigins := []string{fmt.Sprintf("http://%s", c.host)}
@@ -346,61 +335,94 @@ func newServerMux(c muxConfig, gateway Gatewayer, rpc *webrpc.WebRPC) *http.Serv
 		return handler
 	}
 
-	forAPISet := func(f http.HandlerFunc, apiNames []string) http.HandlerFunc {
-		if len(apiNames) == 0 {
-			logger.Panic("apiNames should not be empty")
+	forMethodAPISets := func(apiVersion string, f http.Handler, methodsAPISets map[string][]string) http.Handler {
+		if len(methodsAPISets) == 0 {
+			logger.Panic("methodsAPISets should not be empty")
 		}
 
-		isEnabled := false
+		switch apiVersion {
+		case apiVersion1, apiVersion2:
+		default:
+			logger.Panicf("Invalid API version %q", apiVersion)
+		}
 
-		for _, k := range apiNames {
-			if _, ok := c.enabledAPISets[k]; ok {
-				isEnabled = true
-				break
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			apiSets := methodsAPISets[r.Method]
+
+			// If no API sets are specified for a given method, return 405 Method Not Allowed
+			if len(apiSets) == 0 {
+				switch apiVersion {
+				case apiVersion1:
+					wh.Error405(w)
+				case apiVersion2:
+					resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
+					writeHTTPResponse(w, resp)
+				}
+				return
 			}
-		}
 
-		return func(w http.ResponseWriter, r *http.Request) {
-			if isEnabled {
-				f(w, r)
-			} else {
+			for _, k := range apiSets {
+				if _, ok := c.enabledAPISets[k]; ok {
+					f.ServeHTTP(w, r)
+					return
+				}
+			}
+
+			switch apiVersion {
+			case apiVersion1:
 				wh.Error403(w, "Endpoint is disabled")
+			case apiVersion2:
+				resp := NewHTTPErrorResponse(http.StatusForbidden, "Endpoint is disabled")
+				writeHTTPResponse(w, resp)
 			}
-		}
+		})
 	}
 
-	webHandlerCSRFOptional := func(apiVersion, endpoint string, handler http.Handler, checkCSRF bool) {
-		handler = wh.ElapsedHandler(logger, handler)
+	webHandlerWithOptionals := func(apiVersion, endpoint string, handlerFunc http.Handler, checkCSRF, checkHeaders bool) {
+		handler := wh.ElapsedHandler(logger, handlerFunc)
+
 		handler = corsHandler.Handler(handler)
+
 		if checkCSRF {
 			handler = CSRFCheck(apiVersion, c.disableCSRF, handler)
 		}
-		handler = headerCheck(apiVersion, c.host, c.hostWhitelist, handler)
+
+		if checkHeaders {
+			handler = headerCheck(apiVersion, c.host, c.hostWhitelist, handler)
+		}
+
+		if apiVersion == apiVersion2 {
+			handler = ContentTypeJSONRequired(handler)
+		}
+
 		handler = basicAuth(apiVersion, c.username, c.password, "skycoin daemon", handler)
 		handler = gziphandler.GzipHandler(handler)
 		mux.Handle(endpoint, handler)
 	}
 
-	webHandler := func(apiVersion, endpoint string, handler http.Handler) {
-		webHandlerCSRFOptional(apiVersion, endpoint, handler, true)
-	}
-
-	webHandlerV1 := func(endpoint string, handler http.Handler) {
-		if c.enableUnversionedAPI {
-			webHandler(apiVersion1, endpoint, handler)
+	webHandler := func(apiVersion, endpoint string, handler http.Handler, methodAPISets map[string][]string) {
+		// methodAPISets can be nil to ignore the concept of API sets for an endpoint. It will always be enabled.
+		// Explicitly check nil, caller should not pass empty initialized map
+		if methodAPISets != nil {
+			handler = forMethodAPISets(apiVersion, handler, methodAPISets)
 		}
-		webHandler(apiVersion1, "/api/v1"+endpoint, handler)
+
+		webHandlerWithOptionals(apiVersion, endpoint, handler, true, !c.disableHeaderCheck)
 	}
 
-	webHandlerV2 := func(endpoint string, handler http.Handler) {
-		webHandler(apiVersion2, "/api/v2"+endpoint, handler)
+	webHandlerV1 := func(endpoint string, handler http.Handler, methodAPISets map[string][]string) {
+		webHandler(apiVersion1, "/api/v1"+endpoint, handler, methodAPISets)
+	}
+
+	webHandlerV2 := func(endpoint string, handler http.Handler, methodAPISets map[string][]string) {
+		webHandler(apiVersion2, "/api/v2"+endpoint, handler, methodAPISets)
 	}
 
 	indexHandler := newIndexHandler(c.appLoc, c.enableGUI)
 	if !c.disableCSP {
-		indexHandler = CSPHandler(indexHandler)
+		indexHandler = CSPHandler(indexHandler, ContentSecurityPolicy)
 	}
-	webHandler(apiVersion1, "/", indexHandler)
+	webHandler(apiVersion1, "/", indexHandler, nil)
 
 	if c.enableGUI {
 		fileInfos, err := ioutil.ReadDir(c.appLoc)
@@ -410,7 +432,7 @@ func newServerMux(c muxConfig, gateway Gatewayer, rpc *webrpc.WebRPC) *http.Serv
 
 		fs := http.FileServer(http.Dir(c.appLoc))
 		if !c.disableCSP {
-			fs = CSPHandler(fs)
+			fs = CSPHandler(fs, ContentSecurityPolicy)
 		}
 
 		for _, fileInfo := range fileInfos {
@@ -419,94 +441,192 @@ func newServerMux(c muxConfig, gateway Gatewayer, rpc *webrpc.WebRPC) *http.Serv
 				route = route + "/"
 			}
 
-			webHandler(apiVersion1, route, fs)
+			webHandler(apiVersion1, route, fs, nil)
 		}
-	}
-
-	if c.enableJSON20RPC {
-		webHandlerV1("/webrpc", http.HandlerFunc(rpc.Handler))
 	}
 
 	// get the current CSRF token
 	csrfHandlerV1 := func(endpoint string, handler http.Handler) {
-		if c.enableUnversionedAPI {
-			webHandlerCSRFOptional(apiVersion1, endpoint, handler, false)
-		}
-		webHandlerCSRFOptional(apiVersion1, "/api/v1"+endpoint, handler, false)
+		webHandlerWithOptionals(apiVersion1, "/api/v1"+endpoint, handler, false, !c.disableHeaderCheck)
 	}
 	csrfHandlerV1("/csrf", getCSRFToken(c.disableCSRF)) // csrf is always available, regardless of the API set
 
 	// Status endpoints
-	webHandlerV1("/version", versionHandler(c.health.BuildInfo)) // version is always available, regardless of the API set
-	webHandlerV1("/health", forAPISet(healthHandler(c, gateway), []string{EndpointsRead, EndpointsStatus}))
+	webHandlerV1("/version", versionHandler(c.health.BuildInfo), nil) // version is always available, regardless of the API set
+	webHandlerV1("/health", healthHandler(c, gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsRead, EndpointsStatus},
+	})
 
 	// Wallet endpoints
-	webHandlerV1("/wallet", forAPISet(walletHandler(gateway), []string{EndpointsWallet}))
-	webHandlerV1("/wallet/create", forAPISet(walletCreateHandler(gateway), []string{EndpointsWallet}))
-	webHandlerV1("/wallet/newAddress", forAPISet(walletNewAddressesHandler(gateway), []string{EndpointsWallet}))
-	webHandlerV1("/wallet/balance", forAPISet(walletBalanceHandler(gateway), []string{EndpointsWallet}))
-	webHandlerV1("/wallet/spend", forAPISet(walletSpendHandler(gateway), []string{EndpointsDeprecatedWalletSpend}))
-	webHandlerV1("/wallet/transaction", forAPISet(createTransactionHandler(gateway), []string{EndpointsWallet}))
-	webHandlerV1("/wallet/transactions", forAPISet(walletTransactionsHandler(gateway), []string{EndpointsWallet}))
-	webHandlerV1("/wallet/update", forAPISet(walletUpdateHandler(gateway), []string{EndpointsWallet}))
-	webHandlerV1("/wallets", forAPISet(walletsHandler(gateway), []string{EndpointsWallet}))
-	webHandlerV1("/wallets/folderName", forAPISet(walletFolderHandler(gateway), []string{EndpointsWallet}))
-	webHandlerV1("/wallet/newSeed", forAPISet(newSeedHandler(), []string{EndpointsWallet}))
-	webHandlerV1("/wallet/seed", forAPISet(walletSeedHandler(gateway), []string{EndpointsInsecureWalletSeed}))
+	webHandlerV1("/wallet", walletHandler(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsWallet},
+	})
+	webHandlerV1("/wallet/create", walletCreateHandler(gateway), map[string][]string{
+		http.MethodPost: []string{EndpointsWallet},
+	})
+	webHandlerV1("/wallet/newAddress", walletNewAddressesHandler(gateway), map[string][]string{
+		http.MethodPost: []string{EndpointsWallet},
+	})
+	webHandlerV1("/wallet/balance", walletBalanceHandler(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsWallet},
+	})
+	webHandlerV1("/wallet/transaction", walletCreateTransactionHandler(gateway), map[string][]string{
+		http.MethodPost: []string{EndpointsWallet},
+	})
+	webHandlerV2("/wallet/transaction/sign", walletSignTransactionHandler(gateway), map[string][]string{
+		http.MethodPost: []string{EndpointsWallet},
+	})
+	webHandlerV1("/wallet/transactions", walletTransactionsHandler(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsWallet},
+	})
+	webHandlerV1("/wallet/update", walletUpdateHandler(gateway), map[string][]string{
+		http.MethodPost: []string{EndpointsWallet},
+	})
+	webHandlerV1("/wallets", walletsHandler(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsWallet},
+	})
+	webHandlerV1("/wallets/folderName", walletFolderHandler(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsWallet},
+	})
+	webHandlerV1("/wallet/newSeed", newSeedHandler(), map[string][]string{
+		http.MethodGet: []string{EndpointsWallet},
+	})
+	webHandlerV1("/wallet/seed", walletSeedHandler(gateway), map[string][]string{
+		http.MethodPost: []string{EndpointsInsecureWalletSeed},
+	})
+	webHandlerV2("/wallet/seed/verify", http.HandlerFunc(walletVerifySeedHandler), map[string][]string{
+		http.MethodPost: []string{EndpointsWallet},
+	})
 
-	webHandlerV1("/wallet/unload", forAPISet(walletUnloadHandler(gateway), []string{EndpointsWallet}))
-	webHandlerV1("/wallet/encrypt", forAPISet(walletEncryptHandler(gateway), []string{EndpointsWallet}))
-	webHandlerV1("/wallet/decrypt", forAPISet(walletDecryptHandler(gateway), []string{EndpointsWallet}))
-	webHandlerV2("/wallet/recover", forAPISet(walletRecoverHandler(gateway), []string{EndpointsWallet}))
+	webHandlerV1("/wallet/unload", walletUnloadHandler(gateway), map[string][]string{
+		http.MethodPost: []string{EndpointsWallet},
+	})
+	webHandlerV1("/wallet/encrypt", walletEncryptHandler(gateway), map[string][]string{
+		http.MethodPost: []string{EndpointsWallet},
+	})
+	webHandlerV1("/wallet/decrypt", walletDecryptHandler(gateway), map[string][]string{
+		http.MethodPost: []string{EndpointsWallet},
+	})
+	webHandlerV2("/wallet/recover", walletRecoverHandler(gateway), map[string][]string{
+		http.MethodPost: []string{EndpointsWallet},
+	})
 
 	// Blockchain interface
-	webHandlerV1("/blockchain/metadata", forAPISet(blockchainMetadataHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
-	webHandlerV1("/blockchain/progress", forAPISet(blockchainProgressHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
-	webHandlerV1("/block", forAPISet(blockHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/blocks", forAPISet(blocksHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/last_blocks", forAPISet(lastBlocksHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/blockchain/metadata", blockchainMetadataHandler(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsRead, EndpointsStatus},
+	})
+	webHandlerV1("/blockchain/progress", blockchainProgressHandler(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsRead, EndpointsStatus},
+	})
+	webHandlerV1("/block", blockHandler(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsRead},
+	})
+	webHandlerV1("/blocks", blocksHandler(gateway), map[string][]string{
+		http.MethodGet:  []string{EndpointsRead},
+		http.MethodPost: []string{EndpointsRead},
+	})
+	webHandlerV1("/last_blocks", lastBlocksHandler(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsRead},
+	})
 
 	// Network stats endpoints
-	webHandlerV1("/network/connection", forAPISet(connectionHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
-	webHandlerV1("/network/connections", forAPISet(connectionsHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
-	webHandlerV1("/network/defaultConnections", forAPISet(defaultConnectionsHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
-	webHandlerV1("/network/connections/trust", forAPISet(trustConnectionsHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
-	webHandlerV1("/network/connections/exchange", forAPISet(exchgConnectionsHandler(gateway), []string{EndpointsRead, EndpointsStatus}))
+	webHandlerV1("/network/connection", connectionHandler(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsRead, EndpointsStatus},
+	})
+	webHandlerV1("/network/connections", connectionsHandler(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsRead, EndpointsStatus},
+	})
+	webHandlerV1("/network/defaultConnections", defaultConnectionsHandler(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsRead, EndpointsStatus},
+	})
+	webHandlerV1("/network/connections/trust", trustConnectionsHandler(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsRead, EndpointsStatus},
+	})
+	webHandlerV1("/network/connections/exchange", exchgConnectionsHandler(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsRead, EndpointsStatus},
+	})
 
 	// Network admin endpoints
-	webHandlerV1("/network/connection/disconnect", forAPISet(disconnectHandler(gateway), []string{EndpointsNetCtrl}))
+	webHandlerV1("/network/connection/disconnect", disconnectHandler(gateway), map[string][]string{
+		http.MethodPost: []string{EndpointsNetCtrl},
+	})
 
 	// Transaction related endpoints
-	webHandlerV1("/pendingTxs", forAPISet(pendingTxnsHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/transaction", forAPISet(transactionHandler(gateway), []string{EndpointsRead}))
-	webHandlerV2("/transaction/verify", forAPISet(verifyTxnHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/transactions", forAPISet(transactionsHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/injectTransaction", forAPISet(injectTransactionHandler(gateway), []string{EndpointsTransaction, EndpointsWallet}))
-	webHandlerV1("/resendUnconfirmedTxns", forAPISet(resendUnconfirmedTxnsHandler(gateway), []string{EndpointsTransaction}))
-	webHandlerV1("/rawtx", forAPISet(rawTxnHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/pendingTxs", pendingTxnsHandler(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsRead},
+	})
+	webHandlerV1("/transaction", transactionHandler(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsRead},
+	})
+	webHandlerV2("/transaction", transactionHandlerV2(gateway), map[string][]string{
+		// http.MethodGet:  []string{EndpointsRead},
+		http.MethodPost: []string{EndpointsTransaction},
+	})
+	webHandlerV2("/transaction/verify", verifyTxnHandler(gateway), map[string][]string{
+		http.MethodPost: []string{EndpointsRead},
+	})
+	webHandlerV1("/transactions", transactionsHandler(gateway), map[string][]string{
+		http.MethodGet:  []string{EndpointsRead},
+		http.MethodPost: []string{EndpointsRead},
+	})
+	webHandlerV1("/injectTransaction", injectTransactionHandler(gateway), map[string][]string{
+		http.MethodPost: []string{EndpointsTransaction, EndpointsWallet},
+	})
+	webHandlerV1("/resendUnconfirmedTxns", resendUnconfirmedTxnsHandler(gateway), map[string][]string{
+		http.MethodPost: []string{EndpointsTransaction, EndpointsWallet},
+	})
+	webHandlerV1("/rawtx", rawTxnHandler(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsRead},
+	})
 
 	// Unspent output related endpoints
-	webHandlerV1("/outputs", forAPISet(outputsHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/balance", forAPISet(balanceHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/uxout", forAPISet(uxOutHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/address_uxouts", forAPISet(addrUxOutsHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/outputs", outputsHandler(gateway), map[string][]string{
+		http.MethodGet:  []string{EndpointsRead},
+		http.MethodPost: []string{EndpointsRead},
+	})
+	webHandlerV1("/balance", balanceHandler(gateway), map[string][]string{
+		http.MethodGet:  []string{EndpointsRead},
+		http.MethodPost: []string{EndpointsRead},
+	})
+	webHandlerV1("/uxout", uxOutHandler(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsRead},
+	})
+	webHandlerV1("/address_uxouts", addrUxOutsHandler(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsRead},
+	})
 
 	// golang process internal metrics for Prometheus
-	webHandlerV2("/metrics", forAPISet(promhttp.Handler().(http.HandlerFunc), []string{EndpointsPrometheus}))
+	webHandlerV2("/metrics", metricsHandler(c, gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsPrometheus},
+	})
 
 	// Address related endpoints
-	webHandlerV2("/address/verify", forAPISet(addressVerifyHandler, []string{EndpointsRead}))
+	webHandlerV2("/address/verify", http.HandlerFunc(addressVerifyHandler), map[string][]string{
+		http.MethodPost: []string{EndpointsRead},
+	})
 
 	// Explorer endpoints
-	webHandlerV1("/explorer/address", forAPISet(transactionsForAddressHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/coinSupply", forAPISet(coinSupplyHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/richlist", forAPISet(richlistHandler(gateway), []string{EndpointsRead}))
-	webHandlerV1("/addresscount", forAPISet(addressCountHandler(gateway), []string{EndpointsRead}))
+	webHandlerV1("/coinSupply", coinSupplyHandler(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsRead},
+	})
+	webHandlerV1("/richlist", richlistHandler(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsRead},
+	})
+	webHandlerV1("/addresscount", addressCountHandler(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsRead},
+	})
+
+	// Storage endpoint
+	webHandlerV2("/data", storageHandler(gateway), map[string][]string{
+		http.MethodGet:    []string{EndpointsStorage},
+		http.MethodPost:   []string{EndpointsStorage},
+		http.MethodDelete: []string{EndpointsStorage},
+	})
 
 	return mux
 }
 
-// newIndexHandler returns a http.HandlerFunc for index.html, where index.html is in appLoc
+// newIndexHandler returns a http.Handler for index.html, where index.html is in appLoc
 func newIndexHandler(appLoc string, enableGUI bool) http.Handler {
 	// Serves the main page
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -546,4 +666,38 @@ func splitCommaString(s string) []string {
 	}
 
 	return dedupWords
+}
+
+// parseAddressesFromStr parses comma-separated addresses string into []cipher.Address
+func parseAddressesFromStr(s string) ([]cipher.Address, error) {
+	addrsStr := splitCommaString(s)
+
+	addrs := make([]cipher.Address, len(addrsStr))
+	for i, s := range addrsStr {
+		a, err := cipher.DecodeBase58Address(s)
+		if err != nil {
+			return nil, fmt.Errorf("address %q is invalid: %v", s, err)
+		}
+
+		addrs[i] = a
+	}
+
+	return addrs, nil
+}
+
+// parseAddressesFromStr parses comma-separated hashes string into []cipher.SHA256
+func parseHashesFromStr(s string) ([]cipher.SHA256, error) {
+	hashesStr := splitCommaString(s)
+
+	hashes := make([]cipher.SHA256, len(hashesStr))
+	for i, s := range hashesStr {
+		h, err := cipher.SHA256FromHex(s)
+		if err != nil {
+			return nil, fmt.Errorf("SHA256 hash %q is invalid: %v", s, err)
+		}
+
+		hashes[i] = h
+	}
+
+	return hashes, nil
 }

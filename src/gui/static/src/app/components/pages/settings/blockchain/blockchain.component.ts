@@ -1,4 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import 'rxjs/add/operator/switchMap';
+import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
+import { ISubscription } from 'rxjs/Subscription';
 import { BlockchainService } from '../../../../services/blockchain.service';
 
 @Component({
@@ -6,16 +9,30 @@ import { BlockchainService } from '../../../../services/blockchain.service';
   templateUrl: './blockchain.component.html',
   styleUrls: ['./blockchain.component.scss'],
 })
-export class BlockchainComponent implements OnInit {
+export class BlockchainComponent implements OnInit, OnDestroy {
   block: any;
   coinSupply: any;
+
+  private subscriptionsGroup: ISubscription[] = [];
 
   constructor(
     private blockchainService: BlockchainService,
   ) { }
 
   ngOnInit() {
-    this.blockchainService.lastBlock().subscribe(block => this.block = block);
-    this.blockchainService.coinSupply().subscribe(coinSupply => this.coinSupply = coinSupply);
+    this.subscriptionsGroup.push(IntervalObservable
+      .create(5000)
+      .switchMap(() => this.blockchainService.lastBlock())
+      .subscribe(block => this.block = block));
+
+    this.subscriptionsGroup.push(IntervalObservable
+      .create(5000)
+      .switchMap(() => this.blockchainService.coinSupply())
+      .subscribe(coinSupply => this.coinSupply = coinSupply),
+    );
+  }
+
+  ngOnDestroy() {
+    this.subscriptionsGroup.forEach(sub => sub.unsubscribe());
   }
 }

@@ -3,7 +3,7 @@ package daemon
 import (
 	"time"
 
-	"github.com/skycoin/skycoin/src/daemon/gnet"
+	"github.com/SkycoinProject/skycoin/src/daemon/gnet"
 )
 
 // PoolConfig pool config
@@ -30,6 +30,10 @@ type PoolConfig struct {
 	MaxDefaultPeerOutgoingConnections int
 	// Default "trusted" peers
 	DefaultConnections []string
+	// Maximum length of incoming messages in bytes
+	MaxIncomingMessageLength int
+	// Maximum length of outgoing messages in bytes
+	MaxOutgoingMessageLength int
 	// These should be assigned by the controlling daemon
 	address string
 	port    int
@@ -50,6 +54,8 @@ func NewPoolConfig() PoolConfig {
 		MaxConnections:                    128,
 		MaxOutgoingConnections:            8,
 		MaxDefaultPeerOutgoingConnections: 1,
+		MaxOutgoingMessageLength:          256 * 1024,
+		MaxIncomingMessageLength:          1024 * 1024,
 	}
 }
 
@@ -72,6 +78,8 @@ func NewPool(cfg PoolConfig, d *Daemon) (*Pool, error) {
 	gnetCfg.MaxOutgoingConnections = cfg.MaxOutgoingConnections
 	gnetCfg.MaxDefaultPeerOutgoingConnections = cfg.MaxDefaultPeerOutgoingConnections
 	gnetCfg.DefaultConnections = cfg.DefaultConnections
+	gnetCfg.MaxIncomingMessageLength = cfg.MaxIncomingMessageLength
+	gnetCfg.MaxOutgoingMessageLength = cfg.MaxOutgoingMessageLength
 
 	pool, err := gnet.NewConnectionPool(gnetCfg, d)
 	if err != nil {

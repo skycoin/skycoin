@@ -1,0 +1,506 @@
+{
+  "common": {
+    "coin-id": "SKY",
+    "coin-hours": "币时",
+    "usd": "美元",
+    "loading": "加载中...",
+    "new": "新",
+    "load": "加载"
+  },
+
+  "errors": {
+    "error": "错误",
+    "fetch-version": "无法从Github获取最新版本",
+    "incorrect-password": "密码错误",
+    "error-decrypting": "解密钱包时出错",
+    "api-disabled": "API禁用",
+    "no-wallet": "无可支付钱包",
+    "no-outputs": "无未交易输出",
+    "window-size": "窗口太窄，内容放不下"
+  },
+
+  "title": {
+    "language": "选择语言",
+    "wallets": "钱包",
+    "send": "发送",
+    "history": "历史",
+    "buy-coin": "买 Skycoin",
+    "network": "网络",
+    "blockchain": "区块链",
+    "outputs": "未交易输出",
+    "transactions": "交易",
+    "pending-txs": "待处理交易",
+    "backup": "备份钱包",
+    "explorer": "Skycoin Explorer",
+    "seed": "钱包种子",
+    "qrcode": "QR代码",
+    "reset": "重置密码",
+    "exchange": "交易",
+    "select-address": "选择地址",
+    "order-history": "订单历史"
+  },
+
+  "header": {
+    "syncing-blocks": "区块同步中",
+    "update1": "钱包更新",
+    "update2": "可获取",
+    "synchronizing": "钱包正在同步。你看到的数据可能不是最新的。",
+    "pending-txs1": "这里有一些",
+    "pending-txs2": "待处理交易.",
+    "pending-txs3": "你看到的数据可能不是最新的。",
+
+    "errors": {
+      "no-connections": "没有连接，你的客户端没有连接到任何其他节点",
+      "no-backend1": "不能到达后端。请重新启动应用程序或寻求我们的帮助",
+      "no-backend2": "Telegram",
+      "no-backend3": "",
+      "csrf": "安全漏洞: CSRF未工作，请立即退出。"
+    }
+  },
+
+  "password": {
+    "title": "输入密码",
+    "label": "密码",
+    "confirm-label": "确认密码",
+    "button": "继续",
+    "reset-link": "我忘记了密码"
+  },
+
+  "buy": {
+    "deposit-address": "选择一个地址来生成BTC充值链接，用于:",
+    "select-address": "选择地址",
+    "generate": "生成",
+    "deposit-location": "充值位置",
+    "deposit-location-desc": "选择一个钱包，以在我们收到你的比特币后充值Skycoin到该钱包",
+    "make-choice": "做选择",
+    "wallets-desc": "每当选择一个新的钱包和地址，一个新的BTC地址将会生成。一个独立的Skycoin地址最多可绑定5个BTC地址。",
+    "send": "发送Bitcoin",
+    "send-desc": "发送Bitcoin至如下地址。一旦收到，我们将会按当前汇率: {{ rate }} SKY/BTC充值Skycoin到选中钱包的一个新地址。",
+    "fraction-warning": "请按SKY/BTC汇率的倍数发送BTC! Skycoin是以整数发送; SKY的小数位将不会发送",
+    "receive": "接收Sky",
+    "receive-desc": "收到你的比特币后，我们将发送Skycoin给你。你可能需要20分钟到一个小时才能收到这些SKY。",
+    "status-button": "状态:",
+    "check-status-button": "查看状态",
+    "new-order-button": "新订单"
+  },
+
+  "wizard": {
+    "wallet-desc": "如果你没有Skycoin钱包，请使用生成的种子来创建一个新钱包。如果你已经有一个钱包，切换到\"加载钱包\"并输入你的种子。",
+    "encrypt-desc": "通过加密来增加钱包的安全性。输入密码后，你的钱包会被加密。只有输入密码才可以访问的钱包或移动资金。",
+    "hardware-wallet-link": "使用硬件钱包？",
+    "finish-button": "完成",
+    "back-button": "后退",
+
+    "confirm": {
+      "title": "保护你的种子!",
+      "desc": "请确保你已经写下你的种子并将它储存在了一个安全的地方。如果你忘记了种子，你将无法恢复你的Skycoin钱包",
+      "checkbox": "它很安全，我发誓。",
+      "button": "继续"
+    }
+  },
+
+  "wallet": {
+    "new-address": "新地址",
+    "new-addresses": "新地址",
+    "show-empty": "展示空地址",
+    "hide-empty": "隐藏空地址",
+    "encrypt": "加密钱包",
+    "decrypt": "解密钱包",
+    "decrypt-warning": "警告: 出于安全考虑，建议将钱包加密。建议谨慎一点。",
+    "delete": "删除钱包",
+    "edit": "编辑钱包",
+    "add": "添加钱包",
+    "load": "加载钱包",
+    "encryption-enabled": "加密已启用",
+    "encryption-disabled": "加密已禁用",
+    "hw-security-warning": "可能的安全风险。当硬件设备已连接时(点击钱包列表下的\"硬件钱包\"按钮)访问硬件钱包选项以获取更多信息",
+    "wallet": "钱包",
+    "hardware-wallet": "硬件钱包",
+    "delete-confirmation": "警告: 钱包\"{{ name }}\"将从列表中删除。若想重新添加，需重新连接设备并打开硬件钱包的选项列表(点击钱包列表下的\"硬件钱包\"按钮)。你想继续吗？",
+    "delete-confirmation-check": "是的，我想要删除钱包。",
+    "max-hardware-wallets-error": "你的硬件钱包里的地址已经达到允许的最大值。",
+    "add-many-confirmation": "警告: 如果你在不使用前一个地址的情况下添加太多地址，或者如果你使用的是最后一个地址而不是第一个地址，那么如果你尝试使用种子恢复钱包，有些地址将可能无法自动恢复（你必须手动添加它们）。 你想继续吗？",
+
+    "new": {
+      "create-title": "创建钱包",
+      "load-title": "加载钱包",
+      "encrypt-title": "加密钱包",
+      "name-label": "名称",
+      "seed-label": "种子",
+      "confirm-seed-label": "确认种子",
+      "seed-warning": "记住种子! 把它保存在安全的地方。 如果你忘记了你的种子，你将无法找回你的钱包!",
+      "create-button": "创建",
+      "load-button": "加载",
+      "cancel-button": "删除",
+      "12-words": "12字",
+      "24-words": "24字",
+      "generate-12-seed": "生成12字种子",
+      "generate-24-seed": "生成24字种子",
+      "encrypt": "加密钱包",
+      "encrypt-warning": "我们建议你为每个钱包设置一个独立的密码。如果你忘记密码，你可以通过种子重置钱包。在加密你的钱包之前，确保你的种子保存在安全的地方。",
+      "unconventional-seed-title": "可能错误",
+      "unconventional-seed-text": "你引进了一种非传统的种子。如果你出于任何特殊原因这样做，你可以继续(只推荐高级用户)。但是，如果你打算使用普通的系统种子，则必须删除所有附加文本和特殊字符。",
+      "unconventional-seed-check": "继续使用非传统种子。"
+    },
+
+    "rename": {
+      "title": "重命名钱包",
+      "name-label": "命名",
+      "cancel-button": "取消",
+      "rename-button": "重命名"
+    },
+
+    "add-addresses": {
+      "title": "选择数量",
+      "name-quantity": "创建多少地址",
+      "cancel-button": "取消",
+      "create-button": "创建"
+    },
+
+    "address": {
+      "show": "点击显示",
+      "copy": "复制",
+      "copy-address": "复制地址",
+      "copied": "已复制!",
+      "confirm": "确认地址",
+      "outputs": "未交易输出",
+      "history": "历史"
+    }
+  },
+
+  "send": {
+    "synchronizing-warning":"钱包仍在同步数据，所以显示的余额可能不正确。你确定要继续吗？",
+    "from-label": "发送自",
+    "to-label": "发送至",
+    "amount-label": "总额",
+    "notes-label": "标注",
+    "wallet-label": "钱包",
+    "addresses-label": "地址",
+    "invalid-amount": "请输入一个有效数值",
+    "addresses-help": "限定源发送地址",
+    "all-addresses": "所有地址(所选钱包的)",
+    "outputs-label": "未交易输出",
+    "outputs-help": "限定未交易输出",
+    "all-outputs": "所有未交易输出(所选地址的)",
+    "available-msg-part1": "根据你当前的选择，你最多可以发送",
+    "available-msg-part2": "和",
+    "available-msg-part3": "(至少",
+    "available-msg-part4": "将作为必须的交易手续费)。",
+    "change-address-label": "自定义找零地址",
+    "change-address-select": "选择",
+    "change-address-help": "自定义找零地址。如果不提供，钱包将会自动选择。点击\"选择\" 来选择一个地址",
+    "destinations-label": "目标地址",
+    "destinations-help1": "目标地址和即将发送的币",
+    "destinations-help2": "目标地址和即将发送的币以及币时",
+    "hours-allocation-label": "自动分配币时",
+    "options-label": "选项",
+    "value-label": "币时分发因子",
+    "value-help": "分发因子值越高，越多币时将被发送",
+    "preview-button": "预览",
+    "send-button": "发送",
+    "back-button": "后退",
+    "simple": "简易",
+    "advanced": "高级的",
+    "select-wallet": "选择钱包"
+  },
+
+  "reset": {
+    "wallet-label": "钱包",
+    "seed-label": "钱包种子",
+    "password-label": "新密码 (如果你不希望钱包加密，请将密码留空)",
+    "confirm-label": "确认新密码",
+    "reset-button": "重置"
+  },
+
+  "tx": {
+    "transaction": "交易",
+    "confirm-transaction": "确认交易",
+    "from": "来自",
+    "to": "到",
+    "date": "日期",
+    "status": "状态",
+    "coins": "币",
+    "hours": "币时",
+    "id": "交易ID",
+    "show-more": "展示更多",
+    "hours-moved": "已转移",
+    "hours-sent": "已发送",
+    "hours-received": "已接收",
+    "hours-burned": "已燃烧",
+    "inputs": "输入",
+    "outputs": "输出",
+    "confirmed": "已确认",
+    "pending": "待处理",
+    "current-rate": "按当前汇率计算"
+  },
+
+  "backup": {
+    "wallet-directory": "钱包目录:",
+    "seed-warning": "在纸上备份你的种子，并保存在一个安全的地方。只要有种子，你就可以找回你的币。",
+    "desc": "使用下表从加密的钱包中得到种子。<br>为了从未加密的钱包中获得种子，打开上面的文件夹,在文本编辑器中打开.wlt文件并恢复种子。",
+    "close-button": "Close",
+    "wallet": "钱包",
+    "filename": "文件名",
+    "seed": "种子",
+    "show-seed": "显示种子",
+    "no-wallets": "未加密钱包"
+  },
+
+  "blockchain": {
+    "blocks": "区块数量",
+    "time": "上一个区块的时间戳",
+    "hash": "上一个区块的哈希值",
+    "current-supply": "目前SKY供应量",
+    "total-supply": "SKY的总供应量",
+    "current-coinhour-supply": "目前币时供应量",
+    "total-coinhour-supply": "币时总供应量"
+  },
+
+  "network": {
+    "peer": "节点",
+    "source": "节点来源",
+    "block-height": "区块高度",
+    "block-height-short": "区块",
+    "last-seen": "上一次出现",
+    "last-received": "上一次接收",
+    "last-sent": "上一次发送",
+    "in": "进来的",
+    "out": "出去的",
+
+    "sources": {
+      "default": "默认节点",
+      "exchange": "交换节点"
+    }
+  },
+
+  "pending-txs": {
+    "timestamp": "时间戳",
+    "txid": "交易ID",
+    "none": "无待处理交易",
+    "my": "我的",
+    "all": "全部"
+  },
+
+  "history": {
+    "tx-detail": "交易明细",
+    "moving": "内部转账中",
+    "moved": "已内部转账",
+    "sending": "发送中",
+    "sent": "已发送",
+    "received": "已接收",
+    "receiving": "接收中",
+    "pending": "待处理",
+    "no-txs": "你没有历史交易",
+    "no-txs-filter": "没有与当前筛选条件匹配的交易",
+    "no-filter": "未经筛选 (点击选择钱包/地址)",
+    "filter": "已筛选: ",
+    "filters": "已筛选: ",
+    "all-addresses": "所有地址"
+  },
+
+  "teller": {
+    "done": "完成",
+    "waiting-confirm": "等待确认",
+    "waiting-deposit": "等待比特币充值",
+    "waiting-send": "等待发送Skycoin",
+    "unknown": "未知"
+  },
+
+  "confirmation" : {
+    "header-text": "确认",
+    "confirm-button": "是",
+    "cancel-button": "否",
+    "close": "关闭"
+  },
+
+  "service": {
+    "api" : {
+      "server-error": "服务器错误"
+    },
+    "wallet": {
+      "not-enough-hours": "没有足够的币时来执行交易"
+    }
+  },
+
+  "hardware-wallet": {
+    "general": {
+      "default-wallet-name": "新硬件钱包",
+      "error-disconnected": "无法执行该操作。硬件钱包未连接。",
+      "simple-error": "错误，无法执行操作。",
+      "generic-error": "无法执行该操作。确保你已经连接了一个有效的硬件钱包，并且它没有在等待输入。",
+      "generic-error-internet": "无法执行该操作。确保你已经连接了一个有效的硬件钱包，它不在等待输入，并且你已经连接到网络/节点",
+      "error-incorrect-wallet": "无法执行该操作。所连接的硬件钱包与预期不同。",
+      "error-incorrect-pin": "无法执行该操作。你输入的密码不正确。",
+      "confirm": "请在硬件钱包中确认操作。",
+      "confirm-and-more": "请在硬件钱包中确认操作并按遵循指示。",
+      "close": "关闭",
+      "cancel": "取消",
+      "continue": "继续",
+      "completed": "操作完成。",
+      "refused": "操作失败或被取消。"
+    },
+    "errors": {
+      "too-many-inputs": "此笔交易有太多的输入，无法处理。请联系技术支持。",
+      "too-many-outputs": "此笔交易有太多的输出，无法处理，请联系技术支持。"
+    },
+    "security-warning": {
+      "title": "安全警告",
+      "text": "上次连接此硬件钱包时，发现一个或多个安全警告。我们建议你打开硬件钱包选项(点击钱包列表下的\"硬件钱包\"按钮)并保持设备已连接，在继续之前，解决安全问题",
+      "check": "我明白其中的风险，并希望继续下去",
+      "continue": "继续",
+      "cancel": "取消"
+    },
+    "options": {
+      "connecting": "连接...",
+      "disconnected": "没有检测到硬件钱包。请连接硬件钱包后使用此选项。",
+      "unconfigured-detected-title": "未配置的硬件钱包",
+      "unconfigured-detected": "检测到无种子的硬件钱包。选择\"自动配置\"如果你想将其配置为全新的钱包并立即开始使用它，或选择\"恢复备份\"如果你想使用先前创建的备份种子对其进行配置，从而能够再次访问你的资产。",
+      "configured-detected": "检测到硬件钱包。该设备在钱包列表中被识别为:",
+      "security-warnings-title": "安全警告",
+      "security-warning-title": "安全警告",
+      "backup-warning": "你应该备份硬件钱包种子，否则万一出现问题，你可能将无法访问你的资金，要做到这一点。选择\"创建一个备份\"选项。",
+      "pin-warning": "当前连接的硬件钱包未设置密码。密码可保护硬件钱包，以防丢失、盗窃和黑客入侵。要创建一个密码，选择\"创建PIN码\"选项。",
+      "options": "选项:",
+      "configure-automatically": "自动配置",
+      "restore-backup": "恢复备份",
+      "create-backup": "创建备份",
+      "wipe": "删除设备",
+      "confirm-seed": "确认种子",
+      "create-pin": "创建密码",
+      "change-pin": "更改密码",
+      "forgotten-pin1": "如果你因为忘记密码而无法进入钱包，你可以删除硬件钱包，然后通过种子",
+      "forgotten-pin2": "恢复"
+    },
+    "generate-seed" : {
+      "text": "在继续之前，你可以选择生成种子的单词数。种子是一个单词列表，出现问题后可以用来恢复访问你的币。所有选项都是安全的，如果你没有特殊原因必须选择某一项，你可以使用默认值。",
+      "configuring": "配置..."
+    },
+    "restore-seed" : {
+      "text": "在继续前，请选择你想要恢复种子的单词数量。",
+      "check-text": "你可以使用此选项输入种子，并检查它是否与硬件钱包中的一致。在开始之前，选择你想要检查的种子的单词数。",
+      "warning" : "警告: 为了避免可能出现的问题，请仅使用同一品牌/型号的硬件钱包创建种子。",
+      "error-wrong-word": "错误: 重新键入的单词与硬件钱包所请求的不匹配。",
+      "error-invalid-seed": "错误: 种子无效。请务必按正确的顺序输入正确的单词。",
+      "error-wrong-seed": "错误: 种子是有效的，但与设备中的种子不匹配。"
+    },
+    "added": {
+      "title": "新硬件钱包",
+      "configuring": "检测到新的硬件钱包。配置...",
+      "done": "已完成",
+      "added1": "已连接的硬件的钱包已经用如下名字被添加到钱包列表:",
+      "added2": "现在你可以查看硬件钱包中的余额和地址了，即使硬件钱包并未连接。此外如果你愿意，你还可以更改钱包名称或从将其从钱包列表删除。"
+    },
+    "wipe": {
+      "warning": "警告: 硬件钱包中的所有数据将被删除。如果没有备份，你将无法再次访问你的资金。",
+      "confirm-delete": "还是将其从钱包列表中删除"
+    },
+    "create-backup": {
+      "warning": "警告: 你只能使用此选项备份你的硬件钱包种子一次。如果你决定继续，你将不得不写下一组单词(建议写在纸上，而不是电脑上)，这些单词将出现在硬件钱包的屏幕上，并将其存储在一个安全的地方。任何可以访问单词列表(\"种子\")的人都可以访问钱包余额，因此建议请格外谨慎。",
+      "instructions": "写下出现在硬件钱包屏幕上的单词列表。一定要按顺序并把每个单词都写对。"
+    },
+    "seed-word": {
+      "title": "输入字",
+      "info1": "输入设备中显示的字",
+      "info2": "你将被要求以随机的顺序输入你备份的种子，加上一些额外的字。",
+      "word": "要求的字",
+      "error-invalid-word": "输入字无效。",
+      "error-loading-words": "正在加载字列表。请稍等。"
+    },
+    "change-pin" : {
+      "pin-mismatch":"无法执行操作。你输入的两个密码不匹配"
+    },
+    "enter-pin" : {
+      "title": "输入密码",
+      "title-change-current": "输入当前密码",
+      "title-change-new": "输入新的密码",
+      "title-change-confirm": "确认新的密码",
+      "instructions": " 密码已显示在硬件钱包的屏幕上。",
+      "instructions-tx": "进入密码以确认并签署交易。",
+      "instructions-change": "请输入一个4到8个数字之间的难以被猜中的密码。",
+      "help": "需要帮助？"
+    },
+    "pin-help" : {
+      "title": "帮助",
+      "part1": "当需要输入密码才能继续时，硬件钱包屏幕会显示一个矩阵，矩阵由9个随机排列的块组成(每次顺序都会改变)，你将被要求在软件钱包中输入密码，使用一个矩阵，此矩阵包含9个按钮，只显示符号#。",
+      "part2": "要输入密码，请在硬件钱包屏幕上以数字矩阵查看密码的位置，然后点击软件钱包中的相应按钮。例如，如果密码为\"23\"且数字2位于硬件钱包数字矩阵的左上角，数字3位于硬件钱包数字矩阵的正中间，则按顺序点击软件钱包中的左上角和中间按钮。",
+      "part3": "如果你愿意，还可以使用键盘上的小键盘输入密码。但是，如之前示例所示，如果密码是\"23\"，你不能简单地用小键盘键入\"23\"，而是必须选择点击硬件钱包屏幕上2和3对应位置的值。"
+    },
+    "create-tx" : {
+      "title": "创建交易"
+    },
+    "confirm-address" : {
+      "title": "确认地址",
+      "instructions": "请在硬件钱包上确认，如果地址为:",
+      "short-confirmation": "地址已确认",
+      "confirmation": "地址已确认。为了安全, 选择 \"确认地址\" 选项可以在硬件钱包上再次显示地址，在菜单中可点击地址余额右侧的按钮显示。"
+    }
+  },
+
+  "time-from-now": {
+    "few-seconds": "几秒钟之前",
+    "minute": "一分钟之前",
+    "minutes": "{{time}} 分钟之前",
+    "hour": "一小时之前",
+    "hours": "{{time}} 小时之前",
+    "day": "一天之前",
+    "days": "{{time}} 天之前"
+  },
+
+  "exchange": {
+    "you-send": "你发送",
+    "you-get": "你收到 (大约)",
+    "to-address": "到 {{coin}} 地址",
+    "price": "交易汇率",
+    "time-15": "交易时间",
+    "exchange-button": "交易",
+    "min-amount": "最小数额:",
+    "max-amount": "最大数额:",
+    "agree-1": "我同意",
+    "agree-2": "使用条款",
+    "agree-3": "和",
+    "agree-4": "隐私政策",
+    "powered-by": "技术支持",
+    "need-help": "需要帮助?",
+    "support-portal": "帮助入口",
+    "history": "订单历史",
+    "order-not-found": "订单未找到",
+    "status": "状态",
+    "exchanging": "{{from}}交易{{to}}",
+    "select": "选择",
+    "offline": "交易暂时下线",
+    "problem-connecting": "未能连接到服务器。请检查你的网络连接并稍后再试。",
+    "invalid-address": "无效地址。",
+    "statuses": {
+      "user-waiting": "等待充值。请将{{amount}} {{from}}发送到下面显示的交易地址",
+      "user-waiting-info": "系统正在等待你充值到交易地址。交易将在系统检测到你的充值并在区块链中确认后开始。如果你已经充值，应该很快就会检测到。",
+      "market-waiting-confirmations": "等待链上交易确认",
+      "market-waiting-confirmations-info": "已经检测到充值，等待区块链中被确认。",
+      "market-confirmed": "链上交易已接受",
+      "market-confirmed-info": "链上交易已经在区块链上确认。准备马上执行兑换。",
+      "market-exchanged": "完成{{from}}到{{to}}的兑换",
+      "market-exchanged-info": "兑换已经完成。资金将很快发送到你的地址。",
+      "market-withdraw-waiting": "正在发送{{to}}到你的地址",
+      "market-withdraw-waiting-info": "发送{{to}}到你地址的进程已启动",
+      "complete": "交易已完成!",
+      "complete-info": "资金已经成功发送到你的地址。",
+      "error": "发生错误",
+      "error-info": "运转过程中出现错误，你可以在下面找到更多信息。如果你需要帮助，请保存下面显示的所有数据并使用页面右下角的帮助链接来联系技术支持。"
+    },
+    "history-window": {
+      "address": "地址",
+      "date": "日期"
+    },
+    "details": {
+      "exchange-addr": "交易地址",
+      "exchange-addr-tag": "支付ID或交易必须用到的目标标签",
+      "tx-id": "交易ID",
+      "order-id": "订单ID",
+      "initial-price": "初始汇率",
+      "error-msg": "错误信息 ",
+      "details": "详情",
+      "start-date": "开始日期",
+      "back": "返回",
+      "back-alert": "操作正在执行。你真的想要返回到表格吗？你可以通过点击\"订单历史\"再次看到执行过程"
+    }
+  }
+}

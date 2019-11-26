@@ -1,4 +1,4 @@
-// nolint
+//nolint
 // 20160901 - Initial version by user johnstuartmill,
 // public key 02fb4acf944c84d48341e3c1cb14d707034a68b7f931d6be6d732bec03597d6ff6
 // 20161025 - Code revision by user johnstuartmill.
@@ -7,13 +7,13 @@ package consensus
 import (
 	"fmt"
 
-	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/cipher"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
 //
 // Struct ConsensusParticipant is inteneded to extend (or be contained in)
-// github.com/skycoin/skycoin/src/mesh*/node struct Node, so that
+// github.com/SkycoinProject/skycoin/src/mesh*/node struct Node, so that
 // Node can participate in consensus.
 //
 ////////////////////////////////////////////////////////////////////////////////
@@ -91,7 +91,7 @@ func NewConsensusParticipantPtr(pMan ConnectionManagerInterface) *ConsensusParti
 ////////////////////////////////////////////////////////////////////////////////
 // Reasons for this function: 1st, we want to minimize exposure of
 // SecKey, even in same process space.  2nd, functions Sign and
-// SignHash already exist, so want keep search/browse/jump-to-tag
+// SignHash already exists, so want keep search/browse/jump-to-tag
 // unambiguous.
 func (self *ConsensusParticipant) SignatureOf(hash cipher.SHA256) cipher.Sig {
 

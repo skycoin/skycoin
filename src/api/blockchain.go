@@ -9,11 +9,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/readable"
-	wh "github.com/skycoin/skycoin/src/util/http"
-	"github.com/skycoin/skycoin/src/visor"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/readable"
+	wh "github.com/SkycoinProject/skycoin/src/util/http"
+	"github.com/SkycoinProject/skycoin/src/visor"
 )
 
 // blockchainMetadataHandler returns the blockchain metadata
@@ -56,12 +56,14 @@ func blockchainProgressHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		progress, err := gateway.GetBlockchainProgress()
+		headSeq, _, err := gateway.HeadBkSeq()
 		if err != nil {
-			err = fmt.Errorf("gateway.GetBlockchainProgress failed: %v", err)
+			err = fmt.Errorf("gateway.HeadBkSeq failed: %v", err)
 			wh.Error500(w, err.Error())
 			return
 		}
+
+		progress := gateway.GetBlockchainProgress(headSeq)
 
 		// This can happen if the node is shut down at the right moment, guard against a panic
 		if progress == nil {

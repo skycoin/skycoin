@@ -1,0 +1,51 @@
+<app-modal
+  class="modal"
+  [headline]="(justCheckingSeed ? 'hardware-wallet.options.confirm-seed' : 'hardware-wallet.options.restore-backup') | translate"
+  [dialog]="dialogRef"
+  [disableDismiss]="currentState === states.Processing">
+
+  <div *ngIf="currentState === states.Initial">
+    <app-hw-message
+      [text]="(justCheckingSeed ? 'hardware-wallet.restore-seed.check-text' : 'hardware-wallet.restore-seed.text') | translate"
+      [icon]="msgIcons.None"
+    ></app-hw-message>
+
+    <div [formGroup]="form">
+      <div class="form-field">
+        <div class="-select">
+          <select formControlName="words" id="words">
+            <option [ngValue]="12">{{ 'wallet.new.12-words' | translate }}</option>
+            <option [ngValue]="24">{{ 'wallet.new.24-words' | translate }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="warning" *ngIf="!justCheckingSeed">{{ 'hardware-wallet.restore-seed.warning' | translate }}</div>
+
+    <div class="-buttons">
+      <app-button (action)="closeModal()">
+        {{ 'hardware-wallet.general.cancel' | translate }}
+      </app-button>
+      <app-button (action)="startOperation()" class="primary">
+        {{ 'hardware-wallet.general.continue' | translate }}
+      </app-button>
+    </div>
+  </div>
+
+  <app-hw-message *ngIf="currentState === states.Processing"
+    [text]="(justCheckingSeed ? 'hardware-wallet.general.follow' : 'hardware-wallet.general.confirm-and-more') | translate"
+    [icon]="msgIcons.Confirm"
+  ></app-hw-message>
+
+  <app-hw-message *ngIf="currentState === states.ShowingResult"
+    [text]="result.text | translate"
+    [icon]="result.icon"
+  ></app-hw-message>
+
+  <div class="-buttons" *ngIf="currentState !== states.Initial && currentState !== states.Processing">
+    <app-button (action)="closeModal()" class="primary" #closeButton>
+      {{ 'hardware-wallet.general.close' | translate }}
+    </app-button>
+  </div>
+</app-modal>

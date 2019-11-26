@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/util/logging"
+	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 )
 
 var logger = logging.MustGetLogger("historydb")
@@ -131,6 +131,8 @@ func (hd *HistoryDB) ParseBlock(tx *dbutil.Tx, b coin.Block) error {
 			BlockSeq: b.Seq(),
 		}
 
+		spentTxnID := t.Hash()
+
 		if err := hd.txns.put(tx, &txn); err != nil {
 			return err
 		}
@@ -147,13 +149,13 @@ func (hd *HistoryDB) ParseBlock(tx *dbutil.Tx, b coin.Block) error {
 
 			// update the output's spent block seq and txid
 			o.SpentBlockSeq = b.Seq()
-			o.SpentTxnID = t.Hash()
+			o.SpentTxnID = spentTxnID
 			if err := hd.outputs.put(tx, *o); err != nil {
 				return err
 			}
 
 			// store the IN address with txid
-			if err := hd.addrTxns.add(tx, o.Out.Body.Address, t.Hash()); err != nil {
+			if err := hd.addrTxns.add(tx, o.Out.Body.Address, spentTxnID); err != nil {
 				return err
 			}
 		}
@@ -171,7 +173,7 @@ func (hd *HistoryDB) ParseBlock(tx *dbutil.Tx, b coin.Block) error {
 				return err
 			}
 
-			if err := hd.addrTxns.add(tx, ux.Body.Address, t.Hash()); err != nil {
+			if err := hd.addrTxns.add(tx, ux.Body.Address, spentTxnID); err != nil {
 				return err
 			}
 		}
@@ -186,8 +188,8 @@ func (hd HistoryDB) GetTransaction(tx *dbutil.Tx, hash cipher.SHA256) (*Transact
 }
 
 // GetOutputsForAddress get all uxout that the address affected.
-func (hd HistoryDB) GetOutputsForAddress(tx *dbutil.Tx, address cipher.Address) ([]UxOut, error) {
-	hashes, err := hd.addrUx.get(tx, address)
+func (hd HistoryDB) GetOutputsForAddress(tx *dbutil.Tx, addr cipher.Address) ([]UxOut, error) {
+	hashes, err := hd.addrUx.get(tx, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -196,13 +198,18 @@ func (hd HistoryDB) GetOutputsForAddress(tx *dbutil.Tx, address cipher.Address) 
 }
 
 // GetTransactionsForAddress returns all the address related transactions
-func (hd HistoryDB) GetTransactionsForAddress(tx *dbutil.Tx, address cipher.Address) ([]Transaction, error) {
-	hashes, err := hd.addrTxns.get(tx, address)
+func (hd HistoryDB) GetTransactionsForAddress(tx *dbutil.Tx, addr cipher.Address) ([]Transaction, error) {
+	hashes, err := hd.addrTxns.get(tx, addr)
 	if err != nil {
 		return nil, err
 	}
 
 	return hd.txns.getArray(tx, hashes)
+}
+
+// AddressSeen returns true if the address appears in the blockchain
+func (hd HistoryDB) AddressSeen(tx *dbutil.Tx, addr cipher.Address) (bool, error) {
+	return hd.addrTxns.contains(tx, addr)
 }
 
 // ForEachTxn traverses the transactions bucket
@@ -224,18 +231,18 @@ func NewIndexesMap() *IndexesMap {
 }
 
 // Load returns value of given key
-func (im *IndexesMap) Load(address cipher.Address) (AddressIndexes, bool) {
+func (im *IndexesMap) Load(addr cipher.Address) (AddressIndexes, bool) {
 	im.lock.RLock()
 	defer im.lock.RUnlock()
-	v, ok := im.value[address]
+	v, ok := im.value[addr]
 	return v, ok
 }
 
 // Store saves address with indexes
-func (im *IndexesMap) Store(address cipher.Address, indexes AddressIndexes) {
+func (im *IndexesMap) Store(addr cipher.Address, indexes AddressIndexes) {
 	im.lock.Lock()
 	defer im.lock.Unlock()
-	im.value[address] = indexes
+	im.value[addr] = indexes
 }
 
 // AddressIndexes represents the address indexes struct

@@ -8,17 +8,19 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync"
 	"time"
 
 	"github.com/boltdb/bolt"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/util/elapse"
-	"github.com/skycoin/skycoin/src/visor/blockdb"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
-	"github.com/skycoin/skycoin/src/visor/historydb"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/cipher/encoder"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/util/elapse"
+	"github.com/SkycoinProject/skycoin/src/visor/blockdb"
+	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
+	"github.com/SkycoinProject/skycoin/src/visor/historydb"
 )
 
 var (
@@ -91,7 +93,7 @@ func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) erro
 }
 
 // backup the corrypted db first, then rebuild the history DB.
-func rebuildHistoryDB(db *dbutil.DB, history *historydb.HistoryDB, bc *Blockchain, quit chan struct{}) (*dbutil.DB, error) { // nolint: unused,megacheck
+func rebuildHistoryDB(db *dbutil.DB, history *historydb.HistoryDB, bc *Blockchain, quit chan struct{}) (*dbutil.DB, error) { //nolint:unused,megacheck
 	db, err := backupDB(db)
 	if err != nil {
 		return nil, err
@@ -138,7 +140,7 @@ func rebuildHistoryDB(db *dbutil.DB, history *historydb.HistoryDB, bc *Blockchai
 }
 
 // backupDB makes a backup copy of the DB
-func backupDB(db *dbutil.DB) (*dbutil.DB, error) { // nolint: unused,megacheck
+func backupDB(db *dbutil.DB) (*dbutil.DB, error) { //nolint:unused,megacheck
 	// backup the corrupted database
 	dbReadOnly := db.IsReadOnly()
 
@@ -159,12 +161,25 @@ func backupDB(db *dbutil.DB) (*dbutil.DB, error) { // nolint: unused,megacheck
 	return OpenDB(dbPath, dbReadOnly)
 }
 
-// ResetCorruptDB checks the database for corruption and if corrupted and
-// is ErrMissingSignature, then then it erases the db and starts over.
-// If it's ErrHistoryDBCorrupted, then rebuild historydb from scratch.
+// ResetCorruptDB checks the database for corruption and if one of the following
+// error types is found, then the database is deemed to be corrupted:
+// - blockdb.ErrMissingSignature,
+// - historydb.ErrHistoryDBCorrupted
+// - encoder.ErrBufferUnderflow
+// - encoder.ErrMaxLenExceeded
+// If the database is deemed to be corrupted then it is erased and the db starts over.
 // A copy of the corrupted database is saved.
 func ResetCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*dbutil.DB, error) {
 	err := CheckDatabase(db, pubkey, quit)
+
+	// Check if an encoder error has been reported.
+	// These are not types like the errors below so cannot be included in the
+	// .(type) switch evaluation.
+	if err == encoder.ErrBufferUnderflow || err == encoder.ErrMaxLenExceeded {
+		logger.Critical().Errorf("Database is corrupted (encoder error), recreating db: %v", err)
+		return resetCorruptDB(db)
+	}
+
 	switch err.(type) {
 	case nil:
 		return db, nil
@@ -177,7 +192,7 @@ func ResetCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*d
 	}
 }
 
-func rebuildCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*dbutil.DB, error) { //nolint: deadcode,unused,megacheck
+func rebuildCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*dbutil.DB, error) { //nolint:deadcode,unused,megacheck
 	history := historydb.New()
 	bc, err := NewBlockchain(db, BlockchainConfig{Pubkey: pubkey})
 	if err != nil {
@@ -235,7 +250,7 @@ func moveCorruptDB(dbPath string) (string, error) {
 }
 
 // copyCorruptDB copy a file to makeCorruptDBPath(dbPath)
-func copyCorruptDB(dbPath string) (string, error) { // nolint: unused,megacheck
+func copyCorruptDB(dbPath string) (string, error) { //nolint:unused,megacheck
 	newDBPath, err := makeCorruptDBPath(dbPath)
 	if err != nil {
 		return "", err
@@ -298,4 +313,89 @@ func shaFileID(dbPath string) (string, error) {
 	sum := h.Sum(nil)
 	encodedSum := base64.RawURLEncoding.EncodeToString(sum[:8])
 	return encodedSum, nil
+}
+
+// VerifyDBSkyencoderSafe verifies that the skyencoder generated code has the same result as the encoder
+// for all data in the blockchain
+func VerifyDBSkyencoderSafe(db *dbutil.DB, quit <-chan struct{}) error {
+	return db.View("VerifyDBSkyencoderSafe", func(tx *dbutil.Tx) error {
+		return verifyDBSkyencoderSafe(tx, quit)
+	})
+}
+
+func verifyDBSkyencoderSafe(tx *dbutil.Tx, quit <-chan struct{}) error {
+	if quit == nil {
+		quit = make(chan struct{})
+	}
+
+	// blockdb
+	if err := blockdb.VerifyDBSkyencoderSafe(tx, quit); err != nil {
+		if err == blockdb.ErrVerifyStopped {
+			return ErrVerifyStopped
+		}
+		return err
+	}
+
+	// historydb
+	if err := historydb.VerifyDBSkyencoderSafe(tx, quit); err != nil {
+		if err == historydb.ErrVerifyStopped {
+			return ErrVerifyStopped
+		}
+		return err
+	}
+
+	// visor
+	if err := dbutil.ForEach(tx, UnconfirmedTxnsBkt, func(_, v []byte) error {
+		select {
+		case <-quit:
+			return ErrVerifyStopped
+		default:
+		}
+
+		var b1 UnconfirmedTransaction
+		if err := decodeUnconfirmedTransactionExact(v, &b1); err != nil {
+			return err
+		}
+
+		var b2 UnconfirmedTransaction
+		if err := encoder.DeserializeRawExact(v, &b2); err != nil {
+			return err
+		}
+
+		if !reflect.DeepEqual(b1, b2) {
+			return errors.New("UnconfirmedTxnsBkt unconfirmed transaction mismatch")
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	if err := dbutil.ForEach(tx, UnconfirmedUnspentsBkt, func(_, v []byte) error {
+		select {
+		case <-quit:
+			return ErrVerifyStopped
+		default:
+		}
+
+		var b1 UxArray
+		if err := decodeUxArrayExact(v, &b1); err != nil {
+			return err
+		}
+
+		var b2 coin.UxArray
+		if err := encoder.DeserializeRawExact(v, &b2); err != nil {
+			return err
+		}
+
+		if !reflect.DeepEqual(b1.UxArray, b2) {
+			return errors.New("UnconfirmedUnspentsBkt ux out slice mismatch")
+		}
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }

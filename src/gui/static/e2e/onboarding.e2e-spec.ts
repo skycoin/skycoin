@@ -8,6 +8,10 @@ describe('Onboarding', () => {
     expect<any>(page.getHeaderText()).toEqual('Create Wallet');
   });
 
+  it('should select language', () => {
+    expect<any>(page.selectLanguage()).toEqual(true);
+  });
+
   it('should load wallet', () => {
     expect<any>(page.loadWallet()).toEqual(true);
   });
@@ -26,7 +30,7 @@ describe('Onboarding', () => {
 
   it('should be able to go back from wallet encryption', () => {
     expect<any>(page.goBack()).toEqual('Create Wallet');
-    page.createWallet();
+    page.createWallet(false);
     page.acceptSafeguard();
   });
 

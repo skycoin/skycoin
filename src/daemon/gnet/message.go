@@ -24,11 +24,24 @@ func MessagePrefixFromString(prefix string) MessagePrefix {
 	return p
 }
 
-// Message message interface
-type Message interface {
+// Serializer serialization interface
+type Serializer interface {
+	EncodeSize() uint64
+	Encode([]byte) error
+	Decode([]byte) (uint64, error)
+}
+
+// Handler message handler interface
+type Handler interface {
 	// State is user-defined application state that is attached to the Dispatcher.
 	// If a non-nil error is returned, the connection will be disconnected.
 	Handle(context *MessageContext, state interface{}) error
+}
+
+// Message message interface
+type Message interface {
+	Handler
+	Serializer
 }
 
 // MessageContext message context
@@ -51,6 +64,8 @@ var MessageIDMap = make(map[reflect.Type]MessagePrefix)
 // MessageIDReverseMap maps message ids to their types
 var MessageIDReverseMap = make(map[MessagePrefix]reflect.Type)
 
+var registeredMsgsCount = 0
+
 // RegisterMessage registers a message struct for recognition by the message handlers.
 func RegisterMessage(prefix MessagePrefix, msg interface{}) {
 	t := reflect.TypeOf(msg)
@@ -66,10 +81,19 @@ func RegisterMessage(prefix MessagePrefix, msg interface{}) {
 	}
 	MessageIDMap[t] = id
 	MessageIDReverseMap[id] = t
+
+	registeredMsgsCount++
 }
 
 // VerifyMessages calls logger.Panic if message registration violates sanity checks
 func VerifyMessages() {
+	if registeredMsgsCount != len(MessageIDMap) {
+		logger.Panic("MessageIDMap was altered without using RegisterMessage")
+	}
+	if registeredMsgsCount != len(MessageIDReverseMap) {
+		logger.Panic("MessageIDReverseMap was altered without using RegisterMessage")
+	}
+
 	for t, k := range MessageIDMap {
 		// No empty prefixes allowed
 		if k[0] == 0x00 {
@@ -98,8 +122,7 @@ func VerifyMessages() {
 		// directly
 		mptr := reflect.PtrTo(t)
 		if !mptr.Implements(reflect.TypeOf((*Message)(nil)).Elem()) {
-			m := "Message must implement the gnet.Message interface"
-			logger.Panicf("Invalid message at id %d: %s", k, m)
+			logger.Panicf("Invalid message at ID %s: Message must implement the gnet.Message interface", string(k[:]))
 		}
 	}
 	if len(MessageIDMap) != len(MessageIDReverseMap) {
@@ -113,4 +136,5 @@ func VerifyMessages() {
 func EraseMessages() {
 	MessageIDMap = make(map[reflect.Type]MessagePrefix)
 	MessageIDReverseMap = make(map[MessagePrefix]reflect.Type)
+	registeredMsgsCount = 0
 }

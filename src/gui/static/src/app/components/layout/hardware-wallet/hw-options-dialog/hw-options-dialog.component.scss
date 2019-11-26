@@ -1,0 +1,41 @@
+@import '../../../../../theme/variables';
+
+.alert-box {
+  margin-top: 25px;
+}
+
+.options-label {
+  color: $black;
+  margin-top: 25px;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.option-buttons-container {
+  margin: 0 -10px;
+  
+  button {
+    width: 100%;
+    text-align: left;
+    padding: 10px 10px;
+    border-bottom: 1px solid #eff0f0;
+
+    &:first-child {
+      border-top: 1px solid #eff0f0;
+    }
+
+    .label {
+      font-size: 13px;
+      line-height: 22px;
+      color: $black;
+    }
+
+    .-red {
+      color: $red;
+    }
+  }
+}
+
+.-blinking {
+  animation: alert-blinking 1s linear infinite;
+}

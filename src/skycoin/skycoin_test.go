@@ -19,7 +19,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/visor"
+	"github.com/SkycoinProject/skycoin/src/visor"
 )
 
 const (
@@ -28,16 +28,16 @@ const (
 )
 
 var (
-	// import path for github.com/skycoin/skycoin/cmd/skycoin
+	// import path for github.com/SkycoinProject/skycoin/cmd/skycoin
 	ldflagsNameCmd string
 
-	// import path for github.com/skycoin/skycoin/src/skycoin
+	// import path for github.com/SkycoinProject/skycoin/src/skycoin
 	ldflagsNameSkyLib string
 )
 
 func TestMain(m *testing.M) {
 	coin := getCoinName()
-	output, err := exec.Command("go", "list", fmt.Sprintf("../../cmd/%s", coin)).CombinedOutput() // nolint: gosec
+	output, err := exec.Command("go", "list", fmt.Sprintf("../../cmd/%s", coin)).CombinedOutput() //nolint:gosec
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "go list failed: %s", output)
 		os.Exit(1)
@@ -45,7 +45,7 @@ func TestMain(m *testing.M) {
 
 	ldflagsNameCmd = strings.TrimSpace(string(output))
 
-	output, err = exec.Command("go", "list", ".").CombinedOutput() // nolint: gosec
+	output, err = exec.Command("go", "list", ".").CombinedOutput() //nolint:gosec
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "go list failed: %s", output)
 		os.Exit(1)
@@ -83,7 +83,7 @@ func buildBinary(t *testing.T, version string) (string, func()) {
 	binaryPath, err := filepath.Abs(binaryName)
 	require.NoError(t, err)
 
-	// coverpkgName will be like github.com/skycoin/skycoin
+	// coverpkgName will be like github.com/SkycoinProject/skycoin
 	coverpkgName := filepath.Dir(filepath.Dir(ldflagsNameCmd))
 
 	// Build binary file with specific app version and db checkpoint version
@@ -95,7 +95,6 @@ func buildBinary(t *testing.T, version string) (string, func()) {
 		fmt.Sprintf("-coverpkg=%s/...", coverpkgName),
 		fmt.Sprintf("../../cmd/%s/", coin),
 	}
-	fmt.Println(args)
 	cmd := exec.Command("go", args...)
 
 	stdout, err := cmd.StdoutPipe()
@@ -243,7 +242,6 @@ func TestDBVerifyLogic(t *testing.T) {
 				fmt.Sprintf("-test.coverprofile=%s", coverageFile),
 			}, tc.args...)
 
-			fmt.Println(args)
 			cmd := exec.Command(binaryPath, args...)
 
 			stdout, err := cmd.StdoutPipe()
@@ -258,9 +256,9 @@ func TestDBVerifyLogic(t *testing.T) {
 			// so that the tests that test that the database is not checked can complete
 			go time.AfterFunc(versionUpgradeWaitTimeout(t), func() {
 				if tc.shouldVerify {
-					cmd.Process.Kill() // nolint: errcheck
+					cmd.Process.Kill() //nolint:errcheck
 				} else {
-					cmd.Process.Signal(os.Interrupt) // nolint: errcheck
+					cmd.Process.Signal(os.Interrupt) //nolint:errcheck
 				}
 			})
 
@@ -269,7 +267,6 @@ func TestDBVerifyLogic(t *testing.T) {
 			foundErrMsg := false
 			for scanner.Scan() {
 				x := scanner.Bytes()
-				fmt.Println(string(x))
 
 				if tc.err != "" && bytes.Contains(x, []byte(tc.err)) {
 					foundErrMsg = true
@@ -279,7 +276,7 @@ func TestDBVerifyLogic(t *testing.T) {
 				verifyMsg := "Checking database"
 				if bytes.Contains(x, []byte(verifyMsg)) {
 					didVerify = true
-					cmd.Process.Signal(os.Interrupt) // nolint: errcheck
+					cmd.Process.Signal(os.Interrupt) //nolint:errcheck
 					break
 				}
 			}

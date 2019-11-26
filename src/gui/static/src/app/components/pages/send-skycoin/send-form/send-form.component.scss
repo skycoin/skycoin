@@ -1,3 +1,17 @@
+@import '../../../../../theme/variables';
+
 .-buttons {
   text-align: center;
+}
+
+.amount-label {
+  display: inline-block;
+}
+
+label mat-icon {
+  display: inline;
+  font-size: 14px;
+  color: lighten($grey, 40%);
+  vertical-align: text-bottom;
+  padding-left: 5px;
 }

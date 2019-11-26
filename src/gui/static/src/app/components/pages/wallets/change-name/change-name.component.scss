@@ -1,0 +1,16 @@
+@import '../../../../../theme/variables';
+
+mat-input-container {
+  width: 100%;
+}
+
+.-buttons {
+  text-align: center;
+}
+
+.info {
+  margin: 5px 0 25px;
+  color: $grey;
+  font-size: 12px;
+  line-height: 1.5;
+}

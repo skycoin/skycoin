@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/cipher/base58"
+	"github.com/SkycoinProject/skycoin/src/cipher/base58"
 )
 
 func TestBitcoinAddress(t *testing.T) {
@@ -63,9 +63,9 @@ func TestMustDecodeBase58BitcoinAddress(t *testing.T) {
 	require.Panics(t, func() { MustDecodeBase58BitcoinAddress("") })
 	require.Panics(t, func() { MustDecodeBase58BitcoinAddress("cascs") })
 	b := a.Bytes()
-	h := string(base58.Hex2Base58(b[:len(b)/2]))
+	h := string(base58.Encode(b[:len(b)/2]))
 	require.Panics(t, func() { MustDecodeBase58BitcoinAddress(h) })
-	h = string(base58.Hex2Base58(b))
+	h = string(base58.Encode(b))
 	require.NotPanics(t, func() { MustDecodeBase58BitcoinAddress(h) })
 	a2 := MustDecodeBase58BitcoinAddress(h)
 	require.Equal(t, a, a2)
@@ -89,6 +89,9 @@ func TestMustDecodeBase58BitcoinAddress(t *testing.T) {
 	// trailing zeroes are invalid
 	badAddr = a.String() + "000"
 	require.Panics(t, func() { MustDecodeBase58BitcoinAddress(badAddr) })
+
+	null := "1111111111111111111111111"
+	require.Panics(t, func() { MustDecodeBase58BitcoinAddress(null) })
 }
 
 func TestDecodeBase58BitcoinAddress(t *testing.T) {
@@ -103,11 +106,11 @@ func TestDecodeBase58BitcoinAddress(t *testing.T) {
 	require.Error(t, err)
 
 	b := a.Bytes()
-	h := string(base58.Hex2Base58(b[:len(b)/2]))
+	h := string(base58.Encode(b[:len(b)/2]))
 	_, err = DecodeBase58BitcoinAddress(h)
 	require.Error(t, err)
 
-	h = string(base58.Hex2Base58(b))
+	h = string(base58.Encode(b))
 	a2, err := DecodeBase58BitcoinAddress(h)
 	require.NoError(t, err)
 	require.Equal(t, a, a2)
@@ -136,6 +139,12 @@ func TestDecodeBase58BitcoinAddress(t *testing.T) {
 	as2 = as + "000"
 	_, err = DecodeBase58BitcoinAddress(as2)
 	require.Error(t, err)
+
+	// null address is invalid
+	null := "1111111111111111111111111"
+	_, err = DecodeBase58BitcoinAddress(null)
+	require.Error(t, err)
+	require.Equal(t, ErrAddressInvalidChecksum, err)
 }
 
 func TestBitcoinAddressFromBytes(t *testing.T) {
@@ -289,24 +298,24 @@ func TestBitcoinWIFFailures(t *testing.T) {
 	_, err := SecKeyFromBitcoinWalletImportFormat(a)
 	require.Equal(t, errors.New("Invalid base58 character"), err)
 
-	a = string(base58.Hex2Base58(randBytes(t, 37)))
+	a = string(base58.Encode(randBytes(t, 37)))
 	_, err = SecKeyFromBitcoinWalletImportFormat(a)
 	require.Equal(t, errors.New("Invalid length"), err)
 
-	a = string(base58.Hex2Base58(randBytes(t, 39)))
+	a = string(base58.Encode(randBytes(t, 39)))
 	_, err = SecKeyFromBitcoinWalletImportFormat(a)
 	require.Equal(t, errors.New("Invalid length"), err)
 
 	b := randBytes(t, 38)
 	b[0] = 0x70
-	a = string(base58.Hex2Base58(b))
+	a = string(base58.Encode(b))
 	_, err = SecKeyFromBitcoinWalletImportFormat(a)
 	require.Equal(t, errors.New("Bitcoin WIF: First byte invalid"), err)
 
 	b = randBytes(t, 38)
 	b[0] = 0x80
 	b[33] = 0x02
-	a = string(base58.Hex2Base58(b))
+	a = string(base58.Encode(b))
 	_, err = SecKeyFromBitcoinWalletImportFormat(a)
 	require.Equal(t, errors.New("Bitcoin WIF: Invalid 33rd byte"), err)
 
@@ -317,7 +326,7 @@ func TestBitcoinWIFFailures(t *testing.T) {
 	chksum := hashed[0:4]
 	chksum[0] = chksum[0] + 1
 	copy(b[34:38], chksum[:])
-	a = string(base58.Hex2Base58(b))
+	a = string(base58.Encode(b))
 	_, err = SecKeyFromBitcoinWalletImportFormat(a)
 	require.Equal(t, errors.New("Bitcoin WIF: Checksum fail"), err)
 }
@@ -328,19 +337,19 @@ func TestMustBitcoinWIFFailures(t *testing.T) {
 		MustSecKeyFromBitcoinWalletImportFormat(a)
 	})
 
-	a = string(base58.Hex2Base58(randBytes(t, 37)))
+	a = string(base58.Encode(randBytes(t, 37)))
 	require.Panics(t, func() {
 		MustSecKeyFromBitcoinWalletImportFormat(a)
 	})
 
-	a = string(base58.Hex2Base58(randBytes(t, 39)))
+	a = string(base58.Encode(randBytes(t, 39)))
 	require.Panics(t, func() {
 		MustSecKeyFromBitcoinWalletImportFormat(a)
 	})
 
 	b := randBytes(t, 38)
 	b[0] = 0x70
-	a = string(base58.Hex2Base58(b))
+	a = string(base58.Encode(b))
 	require.Panics(t, func() {
 		MustSecKeyFromBitcoinWalletImportFormat(a)
 	})
@@ -348,7 +357,7 @@ func TestMustBitcoinWIFFailures(t *testing.T) {
 	b = randBytes(t, 38)
 	b[0] = 0x80
 	b[33] = 0x02
-	a = string(base58.Hex2Base58(b))
+	a = string(base58.Encode(b))
 	require.Panics(t, func() {
 		MustSecKeyFromBitcoinWalletImportFormat(a)
 	})
@@ -360,7 +369,7 @@ func TestMustBitcoinWIFFailures(t *testing.T) {
 	chksum := hashed[0:4]
 	chksum[0] = chksum[0] + 1
 	copy(b[34:38], chksum[:])
-	a = string(base58.Hex2Base58(b))
+	a = string(base58.Encode(b))
 	require.Panics(t, func() {
 		MustSecKeyFromBitcoinWalletImportFormat(a)
 	})

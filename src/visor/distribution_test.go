@@ -5,9 +5,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/params"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/params"
 )
 
 func TestTransactionIsLocked(t *testing.T) {
@@ -21,15 +21,15 @@ func TestTransactionIsLocked(t *testing.T) {
 		}
 		uxArray := coin.UxArray{uxOut}
 
-		isLocked := TransactionIsLocked(uxArray)
+		isLocked := TransactionIsLocked(params.MainNetDistribution, uxArray)
 		require.Equal(t, expectedIsLocked, isLocked)
 	}
 
-	for _, a := range params.GetLockedDistributionAddresses() {
+	for _, a := range params.MainNetDistribution.LockedAddresses() {
 		test(a, true)
 	}
 
-	for _, a := range params.GetUnlockedDistributionAddresses() {
+	for _, a := range params.MainNetDistribution.UnlockedAddresses() {
 		test(a, false)
 	}
 

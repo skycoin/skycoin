@@ -2,14 +2,15 @@ package coin
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
 	"math"
 	"sort"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/util/mathutil"
 )
 
 var (
@@ -18,6 +19,18 @@ var (
 	// DebugLevel2 enable checks for impossible conditions
 	DebugLevel2 = true
 )
+
+//go:generate skyencoder -struct Transaction -unexported
+//go:generate skyencoder -struct transactionInputs
+//go:generate skyencoder -struct transactionOutputs
+
+type transactionInputs struct {
+	In []cipher.SHA256 `enc:",maxlen=65535"`
+}
+
+type transactionOutputs struct {
+	Out []TransactionOutput `enc:",maxlen=65535"`
+}
 
 /*
 Transaction with N inputs, M ouputs is
@@ -40,33 +53,42 @@ The outer hash is the hash of the whole transaction serialization
 
 // Transaction transaction struct
 type Transaction struct {
-	Length    uint32        //length prefix
-	Type      uint8         //transaction type
-	InnerHash cipher.SHA256 //inner hash SHA256 of In[],Out[]
+	Length    uint32        // length prefix
+	Type      uint8         // transaction type
+	InnerHash cipher.SHA256 // inner hash SHA256 of In[],Out[]
 
-	Sigs []cipher.Sig        //list of signatures, 64+1 bytes each
-	In   []cipher.SHA256     //ouputs being spent
-	Out  []TransactionOutput //ouputs being created
+	Sigs []cipher.Sig        `enc:",maxlen=65535"` // list of signatures, 64+1 bytes each
+	In   []cipher.SHA256     `enc:",maxlen=65535"` // ouputs being spent
+	Out  []TransactionOutput `enc:",maxlen=65535"` // ouputs being created
 }
 
 // TransactionOutput hash output/name is function of Hash
 type TransactionOutput struct {
-	Address cipher.Address //address to send to
-	Coins   uint64         //amount to be sent in coins
-	Hours   uint64         //amount to be sent in coin hours
+	Address cipher.Address // address to send to
+	Coins   uint64         // amount to be sent in coins
+	Hours   uint64         // amount to be sent in coin hours
 }
 
-// Verify attempts to determine if the transaction is well formed
+// Verify attempts to determine if the transaction is well formed.
 // Verify cannot check transaction signatures, it needs the address from unspents
 // Verify cannot check if outputs being spent exist
 // Verify cannot check if the transaction would create or destroy coins
 // or if the inputs have the required coin base
 func (txn *Transaction) Verify() error {
-	h := txn.HashInner()
-	if h != txn.InnerHash {
-		return errors.New("InnerHash does not match computed hash")
-	}
+	return txn.verify(true)
+}
 
+// VerifyUnsigned attempts to determine if the transaction is well formed,
+// but requires the transaction to have at least one null signature.
+// Verify cannot check transaction signatures, it needs the address from unspents
+// Verify cannot check if outputs being spent exist
+// Verify cannot check if the transaction would create or destroy coins
+// or if the inputs have the required coin base
+func (txn *Transaction) VerifyUnsigned() error {
+	return txn.verify(false)
+}
+
+func (txn *Transaction) verify(signed bool) error {
 	if len(txn.In) == 0 {
 		return errors.New("No inputs")
 	}
@@ -78,8 +100,12 @@ func (txn *Transaction) Verify() error {
 	if len(txn.Sigs) != len(txn.In) {
 		return errors.New("Invalid number of signatures")
 	}
-	if len(txn.Sigs) >= math.MaxUint16 {
+	if len(txn.Sigs) > math.MaxUint16 {
 		return errors.New("Too many signatures and inputs")
+	}
+
+	if len(txn.Out) > math.MaxUint16 {
+		return errors.New("Too many ouptuts")
 	}
 
 	// Check duplicate inputs
@@ -95,38 +121,6 @@ func (txn *Transaction) Verify() error {
 		return errors.New("transaction type invalid")
 	}
 
-	txnSize, err := txn.Size()
-	if err != nil {
-		return err
-	}
-
-	if txn.Length != txnSize {
-		return errors.New("transaction size prefix invalid")
-	}
-
-	// Check for duplicate potential outputs
-	outputs := make(map[cipher.SHA256]struct{}, len(txn.Out))
-	uxb := UxBody{
-		SrcTransaction: txn.Hash(),
-	}
-	for _, to := range txn.Out {
-		uxb.Coins = to.Coins
-		uxb.Hours = to.Hours
-		uxb.Address = to.Address
-		outputs[uxb.Hash()] = struct{}{}
-	}
-	if len(outputs) != len(txn.Out) {
-		return errors.New("Duplicate output in transaction")
-	}
-
-	// Validate signature
-	for i, sig := range txn.Sigs {
-		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i])
-		if err := cipher.VerifySignedHash(sig, hash); err != nil {
-			return err
-		}
-	}
-
 	// Prevent zero coin outputs
 	// Artificial restriction to prevent spam
 	for _, txo := range txn.Out {
@@ -139,34 +133,96 @@ func (txn *Transaction) Verify() error {
 	coins := uint64(0)
 	for _, to := range txn.Out {
 		var err error
-		coins, err = AddUint64(coins, to.Coins)
+		coins, err = mathutil.AddUint64(coins, to.Coins)
 		if err != nil {
 			return errors.New("Output coins overflow")
+		}
+	}
+
+	// Check that Size and Hash can be computed
+	txnSize, txnHash, err := txn.SizeHash()
+	if err != nil {
+		return err
+	}
+
+	// Check txn Size set correctly
+	if txn.Length != txnSize {
+		return errors.New("Incorrect transaction length")
+	}
+
+	// Check for duplicate potential outputs
+	outputs := make(map[cipher.SHA256]struct{}, len(txn.Out))
+	uxb := UxBody{
+		SrcTransaction: txnHash,
+	}
+	for _, to := range txn.Out {
+		uxb.Coins = to.Coins
+		uxb.Hours = to.Hours
+		uxb.Address = to.Address
+		outputs[uxb.Hash()] = struct{}{}
+	}
+	if len(outputs) != len(txn.Out) {
+		return errors.New("Duplicate output in transaction")
+	}
+
+	// Check inner hash
+	innerHash, err := txn.hashInner()
+	if err != nil {
+		return fmt.Errorf("HashInner failed: %v", err)
+	}
+
+	if innerHash != txn.InnerHash {
+		return errors.New("InnerHash does not match computed hash")
+	}
+
+	// Validate signatures
+	for i, sig := range txn.Sigs {
+		if sig.Null() {
+			// Check that signed transactions do not have any null signatures
+			if signed {
+				return errors.New("Unsigned input in transaction")
+			}
+			// Ignore null signatures if the transaction is unsigned
+			continue
+		}
+
+		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i])
+		if err := cipher.VerifySignatureRecoverPubKey(sig, hash); err != nil {
+			return err
+		}
+	}
+
+	// Check that unsigned transactions have at least one non-null signature
+	if !signed {
+		if !txn.hasNullSignature() {
+			return errors.New("Unsigned transaction must contain a null signature")
 		}
 	}
 
 	return nil
 }
 
-// VerifyInput verifies the input
-func (txn Transaction) VerifyInput(uxIn UxArray) error {
-	if err := func() error {
-		if len(txn.In) != len(uxIn) {
-			return errors.New("txn.In != uxIn")
+func (txn Transaction) verifyInputSignaturesPrelude(uxIn UxArray) error {
+	if len(txn.In) != len(uxIn) {
+		return errors.New("txn.In != uxIn")
+	}
+	if len(txn.In) != len(txn.Sigs) {
+		return errors.New("txn.In != txn.Sigs")
+	}
+	if txn.InnerHash != txn.HashInner() {
+		return errors.New("Invalid Tx Inner Hash")
+	}
+	for i := range txn.In {
+		if txn.In[i] != uxIn[i].Hash() {
+			return errors.New("Ux hash mismatch")
 		}
-		if len(txn.In) != len(txn.Sigs) {
-			return errors.New("txn.In != txn.Sigs")
-		}
-		if txn.InnerHash != txn.HashInner() {
-			return errors.New("Invalid Tx Inner Hash")
-		}
-		for i := range txn.In {
-			if txn.In[i] != uxIn[i].Hash() {
-				return errors.New("Ux hash mismatch")
-			}
-		}
-		return nil
-	}(); err != nil {
+	}
+	return nil
+}
+
+// VerifyInputSignatures verifies the inputs and signatures
+func (txn Transaction) VerifyInputSignatures(uxIn UxArray) error {
+	if err := txn.verifyInputSignaturesPrelude(uxIn); err != nil {
 		if DebugLevel2 {
 			log.Panic(err)
 		}
@@ -175,6 +231,10 @@ func (txn Transaction) VerifyInput(uxIn UxArray) error {
 
 	// Check signatures against unspent address
 	for i := range txn.In {
+		if txn.Sigs[i].Null() {
+			return errors.New("Unsigned input in transaction")
+		}
+
 		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i]) // use inner hash, not outer hash
 		err := cipher.VerifyAddressSignedHash(uxIn[i].Body.Address, txn.Sigs[i], hash)
 		if err != nil {
@@ -185,14 +245,37 @@ func (txn Transaction) VerifyInput(uxIn UxArray) error {
 	return nil
 }
 
-// PushInput adds a UxArray to the Transaction given the hash of a UxOut.
-// Returns the signature index for later signing
-func (txn *Transaction) PushInput(uxOut cipher.SHA256) uint16 {
+// VerifyPartialInputSignatures verifies the inputs and signatures for signatures that are not null
+func (txn Transaction) VerifyPartialInputSignatures(uxIn UxArray) error {
+	if err := txn.verifyInputSignaturesPrelude(uxIn); err != nil {
+		if DebugLevel2 {
+			log.Panic(err)
+		}
+		return err
+	}
+
+	// Check signatures against unspent address for signatures that are not null
+	for i := range txn.In {
+		if txn.Sigs[i].Null() {
+			continue
+		}
+		hash := cipher.AddSHA256(txn.InnerHash, txn.In[i]) // use inner hash, not outer hash
+		err := cipher.VerifyAddressSignedHash(uxIn[i].Body.Address, txn.Sigs[i], hash)
+		if err != nil {
+			return errors.New("Signature not valid for output being spent")
+		}
+	}
+
+	return nil
+}
+
+// PushInput adds a unspent output hash to the inputs of a Transaction.
+func (txn *Transaction) PushInput(uxOut cipher.SHA256) error {
 	if len(txn.In) >= math.MaxUint16 {
-		log.Panic("Max transaction inputs reached")
+		return errors.New("Max transaction inputs reached")
 	}
 	txn.In = append(txn.In, uxOut)
-	return uint16(len(txn.In) - 1)
+	return nil
 }
 
 // UxID compute transaction output id
@@ -206,22 +289,45 @@ func (txOut TransactionOutput) UxID(txID cipher.SHA256) cipher.SHA256 {
 }
 
 // PushOutput Adds a TransactionOutput, sending coins & hours to an Address
-func (txn *Transaction) PushOutput(dst cipher.Address, coins, hours uint64) {
-	to := TransactionOutput{
+func (txn *Transaction) PushOutput(dst cipher.Address, coins, hours uint64) error {
+	if len(txn.Out) >= math.MaxUint16 {
+		return errors.New("Max transaction outputs reached")
+	}
+	txn.Out = append(txn.Out, TransactionOutput{
 		Address: dst,
 		Coins:   coins,
 		Hours:   hours,
+	})
+	return nil
+}
+
+// SignInput signs a specific input in the transaction.
+// InnerHash should already be set to a valid value.
+// Returns an error if the input is already signed
+func (txn *Transaction) SignInput(key cipher.SecKey, index int) error {
+	if index < 0 || index >= len(txn.In) {
+		return errors.New("Signature index out of range")
 	}
-	txn.Out = append(txn.Out, to)
+
+	if len(txn.Sigs) == 0 {
+		txn.Sigs = make([]cipher.Sig, len(txn.In))
+	}
+	if len(txn.In) != len(txn.Sigs) {
+		return errors.New("Number of signatures does not match number of inputs")
+	}
+
+	if !txn.Sigs[index].Null() {
+		return errors.New("Input already signed")
+	}
+
+	h := cipher.AddSHA256(txn.InnerHash, txn.In[index])
+	txn.Sigs[index] = cipher.MustSignHash(h, key)
+
+	return nil
 }
 
 // SignInputs signs all inputs in the transaction
 func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
-	txn.InnerHash = txn.HashInner() // update hash
-
-	if len(txn.Sigs) != 0 {
-		log.Panic("Transaction has been signed")
-	}
 	if len(keys) != len(txn.In) {
 		log.Panic("Invalid number of keys")
 	}
@@ -231,11 +337,15 @@ func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
 	if len(keys) == 0 {
 		log.Panic("No keys")
 	}
+	if len(txn.Sigs) > 0 && txn.hasNonNullSignature() {
+		log.Panic("Transaction has been signed")
+	}
+
+	txn.InnerHash = txn.HashInner() // update hash
 
 	sigs := make([]cipher.Sig, len(txn.In))
-	innerHash := txn.HashInner()
 	for i, k := range keys {
-		h := cipher.AddSHA256(innerHash, txn.In[i]) // hash to sign
+		h := cipher.AddSHA256(txn.InnerHash, txn.In[i]) // hash to sign
 		sigs[i] = cipher.MustSignHash(h, k)
 	}
 	txn.Sigs = sigs
@@ -243,34 +353,84 @@ func (txn *Transaction) SignInputs(keys []cipher.SecKey) {
 
 // Size returns the encoded byte size of the transaction
 func (txn *Transaction) Size() (uint32, error) {
-	return IntToUint32(len(txn.Serialize()))
+	buf, err := txn.Serialize()
+	if err != nil {
+		return 0, err
+	}
+	return mathutil.IntToUint32(len(buf))
+}
+
+// IsFullyUnsigned returns true if the transaction is not signed for any input.
+// Unsigned transactions have a full signature array, but the signatures are null.
+// Returns true if the signatures array is empty.
+func (txn *Transaction) IsFullyUnsigned() bool {
+	for _, s := range txn.Sigs {
+		if !s.Null() {
+			return false
+		}
+	}
+
+	return true
+}
+
+// IsFullySigned returns true if the transaction is fully signed.
+// Returns true if the signatures array is empty.
+func (txn *Transaction) IsFullySigned() bool {
+	if len(txn.Sigs) == 0 {
+		return false
+	}
+
+	for _, s := range txn.Sigs {
+		if s.Null() {
+			return false
+		}
+	}
+
+	return true
+}
+
+// hasNonNullSignature returns true if the transaction has at least one non-null signature
+func (txn *Transaction) hasNonNullSignature() bool {
+	for _, s := range txn.Sigs {
+		if !s.Null() {
+			return true
+		}
+	}
+
+	return false
+}
+
+// hasNullSignature returns true if the transaction has at least one null signature
+func (txn *Transaction) hasNullSignature() bool {
+	for _, s := range txn.Sigs {
+		if s.Null() {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Hash an entire Transaction struct, including the TransactionHeader
 func (txn *Transaction) Hash() cipher.SHA256 {
-	b := txn.Serialize()
+	b, err := txn.Serialize()
+	if err != nil {
+		log.Panicf("Hash: txn.Serialize failed: %v", err)
+	}
 	return cipher.SumSHA256(b)
 }
 
 // SizeHash returns the encoded size and the hash of it (avoids duplicate encoding)
 func (txn *Transaction) SizeHash() (uint32, cipher.SHA256, error) {
-	b := txn.Serialize()
-	s, err := IntToUint32(len(b))
+	b, err := txn.Serialize()
+	if err != nil {
+		return 0, cipher.SHA256{}, err
+	}
+	s, err := mathutil.IntToUint32(len(b))
 	if err != nil {
 		return 0, cipher.SHA256{}, err
 	}
 	return s, cipher.SumSHA256(b), nil
-}
-
-// TxID returns transaction ID as byte string
-func (txn *Transaction) TxID() []byte {
-	hash := txn.Hash()
-	return hash[0:32]
-}
-
-// TxIDHex returns transaction ID as hex
-func (txn *Transaction) TxIDHex() string {
-	return txn.Hash().Hex()
 }
 
 // UpdateHeader saves the txn body hash to TransactionHeader.Hash
@@ -289,33 +449,101 @@ func (txn *Transaction) UpdateHeader() error {
 // This is what is signed
 // Client hashes the inner hash with hash of output being spent and signs it with private key
 func (txn *Transaction) HashInner() cipher.SHA256 {
-	b1 := encoder.Serialize(txn.In)
-	b2 := encoder.Serialize(txn.Out)
-	b3 := append(b1, b2...)
-	return cipher.SumSHA256(b3)
+	h, err := txn.hashInner()
+	if err != nil {
+		log.Panicf("hashInner failed: %v", err)
+	}
+	return h
 }
 
-// Serialize serialize the transaction
-func (txn *Transaction) Serialize() []byte {
-	return encoder.Serialize(*txn)
+func (txn *Transaction) hashInner() (cipher.SHA256, error) {
+	txnInputs := &transactionInputs{
+		In: txn.In,
+	}
+	txnOutputs := &transactionOutputs{
+		Out: txn.Out,
+	}
+	n1 := encodeSizeTransactionInputs(txnInputs)
+	n2 := encodeSizeTransactionOutputs(txnOutputs)
+	buf := make([]byte, n1+n2)
+
+	if err := encodeTransactionInputsToBuffer(buf[:n1], txnInputs); err != nil {
+		return cipher.SHA256{}, fmt.Errorf("encodeTransactionInputsToBuffer failed: %v", err)
+	}
+
+	if err := encodeTransactionOutputsToBuffer(buf[n1:], txnOutputs); err != nil {
+		return cipher.SHA256{}, fmt.Errorf("encodeTransactionOutputsToBuffer failed: %v", err)
+	}
+
+	return cipher.SumSHA256(buf), nil
 }
 
-// MustTransactionDeserialize deserialize transaction, panics on error
-func MustTransactionDeserialize(b []byte) Transaction {
-	t, err := TransactionDeserialize(b)
+// MustSerialize serializes the transaction to bytes, panics on error.
+// Serialization can fail if the transaction has too many elements in its arrays
+func (txn *Transaction) MustSerialize() []byte {
+	b, err := encodeTransaction(txn)
+	if err != nil {
+		log.Panicf("encodeTransaction failed: %v", err)
+	}
+	return b
+}
+
+// Serialize serializes the transaction to bytes.
+// Serialization can fail if the transaction has too many elements in its arrays
+func (txn *Transaction) Serialize() ([]byte, error) {
+	return encodeTransaction(txn)
+}
+
+// MustSerializeHex serializes the transaction to a hex string, panics on error.
+// Serialization can fail if the transaction has too many elements in its arrays
+func (txn *Transaction) MustSerializeHex() string {
+	return hex.EncodeToString(txn.MustSerialize())
+}
+
+// SerializeHex serializes the transaction to a hex string.
+// Serialization can fail if the transaction has too many elements in its arrays
+func (txn *Transaction) SerializeHex() (string, error) {
+	b, err := txn.Serialize()
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
+}
+
+// MustDeserializeTransaction deserializes a transaction, panics on error
+func MustDeserializeTransaction(b []byte) Transaction {
+	txn, err := DeserializeTransaction(b)
 	if err != nil {
 		log.Panicf("Failed to deserialize transaction: %v", err)
 	}
-	return t
+	return txn
 }
 
-// TransactionDeserialize deserialize transaction
-func TransactionDeserialize(b []byte) (Transaction, error) {
-	t := Transaction{}
-	if err := encoder.DeserializeRaw(b, &t); err != nil {
-		return t, fmt.Errorf("Invalid transaction: %v", err)
+// DeserializeTransaction deserializes a transaction
+func DeserializeTransaction(b []byte) (Transaction, error) {
+	txn := Transaction{}
+	if err := decodeTransactionExact(b, &txn); err != nil {
+		return Transaction{}, fmt.Errorf("Invalid transaction: %v", err)
 	}
-	return t, nil
+	return txn, nil
+}
+
+// MustDeserializeTransactionHex deserializes a transaction hex string, panics on error
+func MustDeserializeTransactionHex(s string) Transaction {
+	txn, err := DeserializeTransactionHex(s)
+	if err != nil {
+		log.Panicf("Failed to deserialize transaction: %v", err)
+	}
+	return txn
+}
+
+// DeserializeTransactionHex deserializes a transaction hex string
+func DeserializeTransactionHex(s string) (Transaction, error) {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		return Transaction{}, err
+	}
+	return DeserializeTransaction(b)
 }
 
 // OutputHours returns the coin hours sent as outputs. This does not include the fee.
@@ -323,7 +551,7 @@ func (txn *Transaction) OutputHours() (uint64, error) {
 	hours := uint64(0)
 	for i := range txn.Out {
 		var err error
-		hours, err = AddUint64(hours, txn.Out[i].Hours)
+		hours, err = mathutil.AddUint64(hours, txn.Out[i].Hours)
 		if err != nil {
 			return 0, errors.New("Transaction output hours overflow")
 		}
@@ -343,7 +571,7 @@ func (txns Transactions) Fees(calc FeeCalculator) (uint64, error) {
 			return 0, err
 		}
 
-		total, err = AddUint64(total, fee)
+		total, err = mathutil.AddUint64(total, fee)
 		if err != nil {
 			return 0, errors.New("Transactions fee totals overflow")
 		}
@@ -370,7 +598,7 @@ func (txns Transactions) Size() (uint32, error) {
 			return 0, err
 		}
 
-		size, err = AddUint32(size, s)
+		size, err = mathutil.AddUint32(size, s)
 		if err != nil {
 			return 0, err
 		}
@@ -388,7 +616,7 @@ func (txns Transactions) TruncateBytesTo(size uint32) (Transactions, error) {
 			return nil, err
 		}
 
-		pendingTotal, err := AddUint32(total, pending)
+		pendingTotal, err := mathutil.AddUint32(total, pending)
 		if err != nil {
 			return txns[:i], nil
 		}
@@ -443,7 +671,7 @@ func NewSortableTransactions(txns Transactions, feeCalc FeeCalculator) (*Sortabl
 		}
 
 		// Calculate fee priority based on fee per kb
-		feeKB, err := MultUint64(fee, 1024)
+		feeKB, err := mathutil.MultUint64(fee, 1024)
 
 		// If the fee * 1024 would exceed math.MaxUint64, set it to math.MaxUint64 so that
 		// this transaction can still be processed
@@ -496,7 +724,7 @@ func VerifyTransactionCoinsSpending(uxIn UxArray, uxOut UxArray) error {
 	coinsIn := uint64(0)
 	for i := range uxIn {
 		var err error
-		coinsIn, err = AddUint64(coinsIn, uxIn[i].Body.Coins)
+		coinsIn, err = mathutil.AddUint64(coinsIn, uxIn[i].Body.Coins)
 		if err != nil {
 			return errors.New("Transaction input coins overflow")
 		}
@@ -505,7 +733,7 @@ func VerifyTransactionCoinsSpending(uxIn UxArray, uxOut UxArray) error {
 	coinsOut := uint64(0)
 	for i := range uxOut {
 		var err error
-		coinsOut, err = AddUint64(coinsOut, uxOut[i].Body.Coins)
+		coinsOut, err = mathutil.AddUint64(coinsOut, uxOut[i].Body.Coins)
 		if err != nil {
 			return errors.New("Transaction output coins overflow")
 		}
@@ -538,7 +766,7 @@ func VerifyTransactionHoursSpending(headTime uint64, uxIn UxArray, uxOut UxArray
 			}
 		}
 
-		hoursIn, err = AddUint64(hoursIn, uxHours)
+		hoursIn, err = mathutil.AddUint64(hoursIn, uxHours)
 		if err != nil {
 			return errors.New("Transaction input hours overflow")
 		}

@@ -1,29 +1,48 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { WalletService } from '../../../services/wallet.service';
+import { LanguageData, LanguageService } from '../../../services/language.service';
+import { ISubscription } from 'rxjs/Subscription';
+import { openChangeLanguageModal } from '../../../utils';
+import { MatDialog } from '@angular/material';
+import { WalletFormData } from '../wallets/create-wallet/create-wallet-form/create-wallet-form.component';
+import { MsgBarService } from '../../../services/msg-bar.service';
+import { OnboardingEncryptWalletComponent } from './onboarding-encrypt-wallet/onboarding-encrypt-wallet.component';
 
 @Component({
   selector: 'app-onboarding',
   templateUrl: './onboarding.component.html',
   styleUrls: ['./onboarding.component.scss'],
 })
-export class OnboardingComponent {
+export class OnboardingComponent implements OnInit, OnDestroy {
+  @ViewChild('encryptForm') encryptForm: OnboardingEncryptWalletComponent;
+
   step = 1;
-  label: string;
-  seed: string;
-  create: boolean;
+  formData: WalletFormData;
   password: string|null;
+  language: LanguageData;
+
+  private subscription: ISubscription;
 
   constructor(
     private router: Router,
     private walletService: WalletService,
+    private languageService: LanguageService,
+    private dialog: MatDialog,
+    private msgBarService: MsgBarService,
   ) { }
 
-  onLabelAndSeedCreated(data: [string, string, boolean]) {
-    this.label = data[0];
-    this.seed = data[1];
-    this.create = data[2];
+  ngOnInit() {
+    this.subscription = this.languageService.currentLanguage
+      .subscribe(lang => this.language = lang);
+  }
 
+  ngOnDestroy() {
+    this.subscription.unsubscribe();
+  }
+
+  onLabelAndSeedCreated(data: WalletFormData) {
+    this.formData = data,
     this.step = 2;
   }
 
@@ -37,13 +56,25 @@ export class OnboardingComponent {
     this.step = 1;
   }
 
+  changelanguage() {
+    openChangeLanguageModal(this.dialog)
+      .subscribe(response => {
+        if (response) {
+          this.languageService.changeLanguage(response);
+        }
+      });
+  }
+
   get fill() {
-    return this.label ? { label: this.label, seed: this.seed, create: this.create } : null;
+    return this.formData;
   }
 
   private createWallet() {
-    this.walletService.create(this.label, this.seed, 100, this.password).subscribe(() => {
+    this.walletService.create(this.formData.label, this.formData.seed, 100, this.password).subscribe(() => {
       this.router.navigate(['/wallets']);
+    }, e => {
+      this.msgBarService.showError(e);
+      this.encryptForm.resetButton();
     });
   }
 }

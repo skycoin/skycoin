@@ -8,11 +8,12 @@ package historydb
 import (
 	"errors"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 )
+
+//go:generate skyencoder -unexported -struct Transaction
 
 // Transaction contains transaction info and the seq of block which executed this block.
 type Transaction struct {
@@ -31,20 +32,30 @@ var TransactionsBkt = []byte("transactions")
 // Transactions transaction bucket instance.
 type transactions struct{}
 
-// put transaction to the db
+// put transaction in the db
 func (txs *transactions) put(tx *dbutil.Tx, txn *Transaction) error {
 	hash := txn.Hash()
-	return dbutil.PutBucketValue(tx, TransactionsBkt, hash[:], encoder.Serialize(txn))
+	buf, err := encodeTransaction(txn)
+	if err != nil {
+		return err
+	}
+
+	return dbutil.PutBucketValue(tx, TransactionsBkt, hash[:], buf)
 }
 
 // get gets transaction by transaction hash, return nil on not found
 func (txs *transactions) get(tx *dbutil.Tx, hash cipher.SHA256) (*Transaction, error) {
 	var txn Transaction
 
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, TransactionsBkt, hash[:], &txn); err != nil {
+	v, err := dbutil.GetBucketValueNoCopy(tx, TransactionsBkt, hash[:])
+	if err != nil {
 		return nil, err
-	} else if !ok {
+	} else if v == nil {
 		return nil, nil
+	}
+
+	if err := decodeTransactionExact(v, &txn); err != nil {
+		return nil, err
 	}
 
 	return &txn, nil
@@ -54,15 +65,15 @@ func (txs *transactions) get(tx *dbutil.Tx, hash cipher.SHA256) (*Transaction, e
 func (txs *transactions) getArray(tx *dbutil.Tx, hashes []cipher.SHA256) ([]Transaction, error) {
 	txns := make([]Transaction, 0, len(hashes))
 	for _, h := range hashes {
-		var txn Transaction
-
-		if ok, err := dbutil.GetBucketObjectDecoded(tx, TransactionsBkt, h[:], &txn); err != nil {
+		txn, err := txs.get(tx, h)
+		if err != nil {
 			return nil, err
-		} else if !ok {
+		}
+		if txn == nil {
 			return nil, errors.New("Transaction not found")
 		}
 
-		txns = append(txns, txn)
+		txns = append(txns, *txn)
 	}
 
 	return txns, nil
@@ -87,7 +98,7 @@ func (txs *transactions) forEach(tx *dbutil.Tx, f func(cipher.SHA256, *Transacti
 		}
 
 		var txn Transaction
-		if err := encoder.DeserializeRaw(v, &txn); err != nil {
+		if err := decodeTransactionExact(v, &txn); err != nil {
 			return err
 		}
 

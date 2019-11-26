@@ -9,9 +9,14 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
+	"github.com/SkycoinProject/skycoin/src/cipher"
 )
+
+//go:generate skyencoder -struct BlockHeader -unexported
+//go:generate skyencoder -struct BlockBody -unexported
+
+// MaxBlockTransactions is the maximum number of transactions in a block (see the maxlen struct tag value applied to BlockBody.Transactions)
+const MaxBlockTransactions = 65535
 
 // Block represents the block struct
 type Block struct {
@@ -21,8 +26,8 @@ type Block struct {
 
 // HashPair including current block hash and previous block hash.
 type HashPair struct {
-	Hash    cipher.SHA256
-	PreHash cipher.SHA256
+	Hash     cipher.SHA256
+	PrevHash cipher.SHA256
 }
 
 // BlockHeader records the block header
@@ -41,7 +46,7 @@ type BlockHeader struct {
 
 // BlockBody represents the block body
 type BlockBody struct {
-	Transactions Transactions
+	Transactions Transactions `enc:",maxlen=65535"`
 }
 
 // SignedBlock signed block
@@ -68,8 +73,9 @@ func NewBlock(prev Block, currentTime uint64, uxHash cipher.SHA256, txns Transac
 	}
 
 	body := BlockBody{txns}
+	head := NewBlockHeader(prev.Head, uxHash, currentTime, fee, body)
 	return &Block{
-		Head: NewBlockHeader(prev.Head, uxHash, currentTime, fee, body),
+		Head: head,
 		Body: body,
 	}, nil
 }
@@ -77,12 +83,15 @@ func NewBlock(prev Block, currentTime uint64, uxHash cipher.SHA256, txns Transac
 // NewGenesisBlock creates genesis block
 func NewGenesisBlock(genesisAddr cipher.Address, genesisCoins, timestamp uint64) (*Block, error) {
 	txn := Transaction{}
-	txn.PushOutput(genesisAddr, genesisCoins, genesisCoins)
+	if err := txn.PushOutput(genesisAddr, genesisCoins, genesisCoins); err != nil {
+		return nil, err
+	}
 	body := BlockBody{Transactions: Transactions{txn}}
 	prevHash := cipher.SHA256{}
+	bodyHash := body.Hash()
 	head := BlockHeader{
 		Time:     timestamp,
-		BodyHash: body.Hash(),
+		BodyHash: bodyHash,
 		PrevHash: prevHash,
 		BkSeq:    0,
 		Version:  0,
@@ -102,11 +111,6 @@ func (b Block) HashHeader() cipher.SHA256 {
 	return b.Head.Hash()
 }
 
-// PreHashHeader return hash of prevous block.
-func (b Block) PreHashHeader() cipher.SHA256 {
-	return b.Head.PrevHash
-}
-
 // Time return the head time of the block.
 func (b Block) Time() uint64 {
 	return b.Head.Time
@@ -117,34 +121,9 @@ func (b Block) Seq() uint64 {
 	return b.Head.BkSeq
 }
 
-// HashBody return hash of block body.
-func (b Block) HashBody() cipher.SHA256 {
-	return b.Body.Hash()
-}
-
 // Size returns the size of the Block's Transactions, in bytes
 func (b Block) Size() (uint32, error) {
 	return b.Body.Size()
-}
-
-// String return readable string of block.
-func (b Block) String() string {
-	return b.Head.String()
-}
-
-// GetTransaction looks up a Transaction by its Head.Hash.
-// Returns the Transaction and whether it was found or not
-// TODO -- build a private index on the block, or a global blockchain one
-// mapping txns to their block + tx index
-// TODO: Deprecate? Utility Function
-func (b Block) GetTransaction(txHash cipher.SHA256) (Transaction, bool) {
-	txns := b.Body.Transactions
-	for i := range txns {
-		if txns[i].Hash() == txHash {
-			return txns[i], true
-		}
-	}
-	return Transaction{}, false
 }
 
 // NewBlockHeader creates block header
@@ -152,9 +131,10 @@ func NewBlockHeader(prev BlockHeader, uxHash cipher.SHA256, currentTime, fee uin
 	if currentTime <= prev.Time {
 		log.Panic("Time can only move forward")
 	}
+	bodyHash := body.Hash()
 	prevHash := prev.Hash()
 	return BlockHeader{
-		BodyHash: body.Hash(),
+		BodyHash: bodyHash,
 		Version:  prev.Version,
 		PrevHash: prevHash,
 		Time:     currentTime,
@@ -165,21 +145,17 @@ func NewBlockHeader(prev BlockHeader, uxHash cipher.SHA256, currentTime, fee uin
 }
 
 // Hash return hash of block header
-func (bh BlockHeader) Hash() cipher.SHA256 {
-	b1 := encoder.Serialize(bh)
-	return cipher.SumSHA256(b1)
+func (bh *BlockHeader) Hash() cipher.SHA256 {
+	return cipher.SumSHA256(bh.Bytes())
 }
 
 // Bytes serialize the blockheader and return the byte value.
-func (bh BlockHeader) Bytes() []byte {
-	return encoder.Serialize(bh)
-}
-
-// String return readable string of block header.
-func (bh BlockHeader) String() string {
-	return fmt.Sprintf("Version: %d\nTime: %d\nBkSeq: %d\nFee: %d\n"+
-		"PrevHash: %s\nBodyHash: %s", bh.Version, bh.Time, bh.BkSeq,
-		bh.Fee, bh.PrevHash.Hex(), bh.BodyHash.Hex())
+func (bh *BlockHeader) Bytes() []byte {
+	buf, err := encodeBlockHeader(bh)
+	if err != nil {
+		log.Panicf("encodeBlockHeader failed: %v", err)
+	}
+	return buf
 }
 
 // Hash returns the merkle hash of contained transactions
@@ -200,19 +176,23 @@ func (bb BlockBody) Size() (uint32, error) {
 }
 
 // Bytes serialize block body, and return the byte value.
-func (bb BlockBody) Bytes() []byte {
-	return encoder.Serialize(bb)
+func (bb *BlockBody) Bytes() []byte {
+	buf, err := encodeBlockBody(bb)
+	if err != nil {
+		log.Panicf("encodeBlockBody failed: %v", err)
+	}
+	return buf
 }
 
 // CreateUnspents creates the expected outputs for a transaction.
-func CreateUnspents(bh BlockHeader, tx Transaction) UxArray {
+func CreateUnspents(bh BlockHeader, txn Transaction) UxArray {
 	var h cipher.SHA256
+	// The genesis block uses the null hash as the SrcTransaction [FIXME hardfork]
 	if bh.BkSeq != 0 {
-		// not genesis block
-		h = tx.Hash()
+		h = txn.Hash()
 	}
-	uxo := make(UxArray, len(tx.Out))
-	for i := range tx.Out {
+	uxo := make(UxArray, len(txn.Out))
+	for i := range txn.Out {
 		uxo[i] = UxOut{
 			Head: UxHead{
 				Time:  bh.Time,
@@ -220,9 +200,9 @@ func CreateUnspents(bh BlockHeader, tx Transaction) UxArray {
 			},
 			Body: UxBody{
 				SrcTransaction: h,
-				Address:        tx.Out[i].Address,
-				Coins:          tx.Out[i].Coins,
-				Hours:          tx.Out[i].Hours,
+				Address:        txn.Out[i].Address,
+				Coins:          txn.Out[i].Coins,
+				Hours:          txn.Out[i].Hours,
 			},
 		}
 	}
@@ -230,14 +210,15 @@ func CreateUnspents(bh BlockHeader, tx Transaction) UxArray {
 }
 
 // CreateUnspent creates single unspent output
-func CreateUnspent(bh BlockHeader, tx Transaction, outIndex int) (UxOut, error) {
-	if len(tx.Out) <= outIndex {
-		return UxOut{}, fmt.Errorf("Transaction out index is overflow")
+func CreateUnspent(bh BlockHeader, txn Transaction, outIndex int) (UxOut, error) {
+	if outIndex < 0 || outIndex >= len(txn.Out) {
+		return UxOut{}, fmt.Errorf("Transaction out index overflows transaction outputs")
 	}
 
 	var h cipher.SHA256
+	// The genesis block uses the null hash as the SrcTransaction [FIXME hardfork]
 	if bh.BkSeq != 0 {
-		h = tx.Hash()
+		h = txn.Hash()
 	}
 
 	return UxOut{
@@ -247,9 +228,9 @@ func CreateUnspent(bh BlockHeader, tx Transaction, outIndex int) (UxOut, error) 
 		},
 		Body: UxBody{
 			SrcTransaction: h,
-			Address:        tx.Out[outIndex].Address,
-			Coins:          tx.Out[outIndex].Coins,
-			Hours:          tx.Out[outIndex].Hours,
+			Address:        txn.Out[outIndex].Address,
+			Coins:          txn.Out[outIndex].Coins,
+			Hours:          txn.Out[outIndex].Hours,
 		},
 	}, nil
 }

@@ -7,29 +7,31 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"encoding/json"
 	"net/http/httptest"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/params"
-	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/util/useragent"
-	"github.com/skycoin/skycoin/src/visor"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/daemon"
+	"github.com/SkycoinProject/skycoin/src/params"
+	"github.com/SkycoinProject/skycoin/src/readable"
+	"github.com/SkycoinProject/skycoin/src/util/useragent"
+	"github.com/SkycoinProject/skycoin/src/visor"
 )
 
 func TestHealthHandler(t *testing.T) {
 	cases := []struct {
-		name             string
-		method           string
-		code             int
-		err              string
-		getHealthErr     error
-		cfg              muxConfig
-		walletAPIEnabled bool
+		name                     string
+		method                   string
+		code                     int
+		err                      string
+		getBlockchainMetadataErr error
+		getConnectionsErr        error
+		cfg                      muxConfig
+		walletAPIEnabled         bool
 	}{
 		{
 			name:   "405 method not allowed",
@@ -40,12 +42,21 @@ func TestHealthHandler(t *testing.T) {
 		},
 
 		{
-			name:         "gateway.GetHealth error",
-			method:       http.MethodGet,
-			code:         http.StatusInternalServerError,
-			err:          "500 Internal Server Error - gateway.GetHealth failed: GetHealth failed",
-			getHealthErr: errors.New("GetHealth failed"),
-			cfg:          defaultMuxConfig(),
+			name:                     "gateway.GetBlockchainMetadata error",
+			method:                   http.MethodGet,
+			code:                     http.StatusInternalServerError,
+			err:                      "500 Internal Server Error - gateway.GetBlockchainMetadata failed: GetBlockchainMetadata failed",
+			getBlockchainMetadataErr: errors.New("GetBlockchainMetadata failed"),
+			cfg:                      defaultMuxConfig(),
+		},
+
+		{
+			name:              "gateway.GetConnections error",
+			method:            http.MethodGet,
+			code:              http.StatusInternalServerError,
+			err:               "500 Internal Server Error - gateway.GetConnections failed: GetConnections failed",
+			getConnectionsErr: errors.New("GetConnections failed"),
+			cfg:               defaultMuxConfig(),
 		},
 
 		{
@@ -61,13 +72,14 @@ func TestHealthHandler(t *testing.T) {
 			method: http.MethodGet,
 			code:   http.StatusOK,
 			cfg: muxConfig{
-				host:                 configuredHost,
-				appLoc:               ".",
-				disableCSRF:          false,
-				disableCSP:           false,
-				enableGUI:            true,
-				enableUnversionedAPI: true,
-				enableJSON20RPC:      true,
+				health: HealthConfig{
+					BlockPublisher: true,
+				},
+				host:        configuredHost,
+				appLoc:      ".",
+				disableCSRF: false,
+				disableCSP:  false,
+				enableGUI:   true,
 				enabledAPISets: map[string]struct{}{
 					EndpointsStatus: struct{}{},
 					EndpointsRead:   struct{}{},
@@ -116,40 +128,80 @@ func TestHealthHandler(t *testing.T) {
 			}
 			tc.cfg.health.BuildInfo = buildInfo
 
-			tc.cfg.health.CoinName = "skycoin"
+			tc.cfg.health.Fiber.Name = "skycoin"
 			tc.cfg.health.DaemonUserAgent = useragent.Data{
 				Coin:    "skycoin",
 				Version: "0.25.0",
 				Remark:  "test",
 			}
 
-			health := &daemon.Health{
-				BlockchainMetadata:  metadata,
-				OutgoingConnections: 3,
-				IncomingConnections: 2,
-				Uptime:              time.Second * 4,
+			conns := []daemon.Connection{
+				{
+					ConnectionDetails: daemon.ConnectionDetails{
+						Outgoing: true,
+						State:    daemon.ConnectionStateConnected,
+					},
+				},
+				{
+					ConnectionDetails: daemon.ConnectionDetails{
+						Outgoing: false,
+						State:    daemon.ConnectionStateIntroduced,
+					},
+				},
+				{
+					ConnectionDetails: daemon.ConnectionDetails{
+						Outgoing: true,
+						State:    daemon.ConnectionStateIntroduced,
+					},
+				},
+				{
+					ConnectionDetails: daemon.ConnectionDetails{
+						Outgoing: false,
+						State:    daemon.ConnectionStateConnected,
+					},
+				},
+				{
+					ConnectionDetails: daemon.ConnectionDetails{
+						Outgoing: true,
+						State:    daemon.ConnectionStateConnected,
+					},
+				},
+			}
+
+			gateway := &MockGatewayer{}
+
+			if tc.getBlockchainMetadataErr != nil {
+				gateway.On("GetBlockchainMetadata").Return(nil, tc.getBlockchainMetadataErr)
+			} else {
+				gateway.On("GetBlockchainMetadata").Return(&metadata, nil)
+			}
+
+			if tc.getConnectionsErr != nil {
+				gateway.On("GetConnections", mock.Anything).Return(nil, tc.getConnectionsErr)
+			} else {
+				gateway.On("GetConnections", mock.Anything).Return(conns, nil)
+			}
+
+			startedAt := time.Now().Add(time.Second * -4)
+
+			gateway.On("StartedAt").Return(startedAt)
+
+			dc := daemon.DaemonConfig{
 				UnconfirmedVerifyTxn: params.VerifyTxn{
 					BurnFactor:          params.UserVerifyTxn.BurnFactor * 2,
 					MaxTransactionSize:  params.UserVerifyTxn.MaxTransactionSize * 2,
 					MaxDropletPrecision: params.UserVerifyTxn.MaxDropletPrecision - 1,
 				},
-				StartedAt: time.Now().Add(time.Second * -4),
 			}
 
-			gateway := &MockGatewayer{}
-
-			if tc.getHealthErr != nil {
-				gateway.On("GetHealth").Return(nil, tc.getHealthErr)
-			} else {
-				gateway.On("GetHealth").Return(health, nil)
-			}
+			gateway.On("DaemonConfig").Return(dc)
 
 			endpoint := "/api/v1/health"
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(tc.cfg, gateway, nil)
+			handler := newServerMux(tc.cfg, gateway)
 			handler.ServeHTTP(rr, req)
 			if tc.code != http.StatusOK {
 				require.Equal(t, tc.code, rr.Code)
@@ -166,13 +218,16 @@ func TestHealthHandler(t *testing.T) {
 			require.Equal(t, buildInfo.Version, r.Version.Version)
 			require.Equal(t, buildInfo.Commit, r.Version.Commit)
 			require.Equal(t, buildInfo.Branch, r.Version.Branch)
-			require.Equal(t, health.Uptime, r.Uptime.Duration)
+			// Put uptime in a range in case the test scheduler is slow and there is a pause.
+			// Should be at least 4 seconds since startedAt was computed to be 4 seconds ago.
+			require.True(t, time.Second*4 <= r.Uptime.Duration && time.Second*8 >= r.Uptime.Duration, "uptime should be a little over 4 seconds")
 
-			require.Equal(t, health.OutgoingConnections, r.OutgoingConnections)
-			require.Equal(t, health.IncomingConnections, r.IncomingConnections)
-			require.Equal(t, health.OutgoingConnections+health.IncomingConnections, r.OpenConnections)
+			require.Equal(t, 3, r.OutgoingConnections)
+			require.Equal(t, 2, r.IncomingConnections)
+			require.Equal(t, len(conns), r.OpenConnections)
 			require.Equal(t, "skycoin", r.CoinName)
 			require.Equal(t, "skycoin:0.25.0(test)", r.DaemonUserAgent)
+			require.Equal(t, tc.cfg.health.BlockPublisher, r.BlockPublisher)
 
 			require.Equal(t, unconfirmed, r.BlockchainMetadata.Unconfirmed)
 			require.Equal(t, unspents, r.BlockchainMetadata.Unspents)
@@ -188,18 +243,16 @@ func TestHealthHandler(t *testing.T) {
 
 			require.Equal(t, !tc.cfg.disableCSRF, r.CSRFEnabled)
 			require.Equal(t, !tc.cfg.disableCSP, r.CSPEnabled)
-			require.Equal(t, tc.cfg.enableUnversionedAPI, r.UnversionedAPIEnabled)
 			require.Equal(t, tc.cfg.enableGUI, r.GUIEnabled)
-			require.Equal(t, tc.cfg.enableJSON20RPC, r.JSON20RPCEnabled)
 			require.Equal(t, tc.walletAPIEnabled, r.WalletAPIEnabled)
 
-			require.Equal(t, uint32(2), r.UserVerifyTxn.BurnFactor)
+			require.Equal(t, uint32(10), r.UserVerifyTxn.BurnFactor)
 			require.Equal(t, uint32(32*1024), r.UserVerifyTxn.MaxTransactionSize)
 			require.Equal(t, uint8(3), r.UserVerifyTxn.MaxDropletPrecision)
 
-			require.Equal(t, health.UnconfirmedVerifyTxn.BurnFactor, r.UnconfirmedVerifyTxn.BurnFactor)
-			require.Equal(t, health.UnconfirmedVerifyTxn.MaxTransactionSize, r.UnconfirmedVerifyTxn.MaxTransactionSize)
-			require.Equal(t, health.UnconfirmedVerifyTxn.MaxDropletPrecision, r.UnconfirmedVerifyTxn.MaxDropletPrecision)
+			require.Equal(t, dc.UnconfirmedVerifyTxn.BurnFactor, r.UnconfirmedVerifyTxn.BurnFactor)
+			require.Equal(t, dc.UnconfirmedVerifyTxn.MaxTransactionSize, r.UnconfirmedVerifyTxn.MaxTransactionSize)
+			require.Equal(t, dc.UnconfirmedVerifyTxn.MaxDropletPrecision, r.UnconfirmedVerifyTxn.MaxDropletPrecision)
 			require.True(t, time.Now().Unix() > r.StartedAt)
 
 		})

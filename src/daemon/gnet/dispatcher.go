@@ -3,13 +3,20 @@ package gnet
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net"
 	"reflect"
 	"time"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/skycoin/skycoin/src/cipher/encoder"
+	"github.com/SkycoinProject/skycoin/src/cipher/encoder"
+	"github.com/SkycoinProject/skycoin/src/util/mathutil"
+)
+
+var (
+	// ErrMsgExceedsMaxLen is returned if trying to send a message that exceeds the configured max length
+	ErrMsgExceedsMaxLen = errors.New("Message exceeds max message length")
 )
 
 // SendResult result of a single message send
@@ -28,8 +35,14 @@ func newSendResult(addr string, m Message, err error) SendResult {
 }
 
 // Serializes a Message over a net.Conn
-func sendMessage(conn net.Conn, msg Message, timeout time.Duration) error {
-	m := EncodeMessage(msg)
+func sendMessage(conn net.Conn, msg Message, timeout time.Duration, maxMsgLength int) error {
+	m, err := EncodeMessage(msg)
+	if err != nil {
+		return err
+	}
+	if len(m) > maxMsgLength {
+		return ErrMsgExceedsMaxLen
+	}
 	return sendByteMessage(conn, m, timeout)
 }
 
@@ -71,6 +84,15 @@ func convertToMessage(id uint64, msg []byte, debugPrint bool) (Message, error) {
 	}
 
 	v := reflect.New(t)
+	m, ok := (v.Interface()).(Message)
+	if !ok {
+		// This occurs only when the user registers an interface that does not
+		// match the Message interface.  They should have known about this
+		// earlier via a call to VerifyMessages
+		logger.Panic("Message obtained from map does not match Message interface")
+		return nil, errors.New("MessageIdMaps contain non-Message")
+	}
+
 	used, err := deserializeMessage(msg, v)
 	if err != nil {
 		logger.Critical().WithError(err).WithFields(logrus.Fields{
@@ -80,7 +102,7 @@ func convertToMessage(id uint64, msg []byte, debugPrint bool) (Message, error) {
 		return nil, ErrDisconnectMalformedMessage
 	}
 
-	if used != len(msg) {
+	if used != uint64(len(msg)) {
 		logger.WithError(ErrDisconnectMessageDecodeUnderflow).WithFields(logrus.Fields{
 			"connID":      id,
 			"messageType": fmt.Sprintf("%v", t),
@@ -88,52 +110,85 @@ func convertToMessage(id uint64, msg []byte, debugPrint bool) (Message, error) {
 		return nil, ErrDisconnectMessageDecodeUnderflow
 	}
 
-	m, ok := (v.Interface()).(Message)
-	if !ok {
-		// This occurs only when the user registers an interface that does not
-		// match the Message interface.  They should have known about this
-		// earlier via a call to VerifyMessages
-		logger.Panic("Message obtained from map does not match Message interface")
-		return nil, errors.New("MessageIdMaps contain non-Message")
-	}
 	return m, nil
 }
 
-// Wraps encoder.DeserializeRawToValue and traps panics as an error
-func deserializeMessage(msg []byte, v reflect.Value) (n int, e error) {
+// Wraps Serializer.Decode and traps panics as an error
+func deserializeMessage(msg []byte, v reflect.Value) (n uint64, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			logger.Debugf("Recovering from deserializer panic: %v", r)
+			logger.Critical().Warningf("Recovering from deserializer panic: %v", r)
 			switch x := r.(type) {
 			case string:
-				e = errors.New(x)
+				err = errors.New(x)
 			case error:
-				e = x
+				err = x
 			default:
-				e = errors.New("Message deserialization failed")
+				err = errors.New("Message deserialization failed")
 			}
 		}
 	}()
-	n, e = encoder.DeserializeRawToValue(msg, v)
-	return
+
+	iface := v.Interface()
+	x, ok := iface.(Serializer)
+	if !ok {
+		return 0, errors.New("deserializeMessage object does not have Serializer interface")
+	}
+
+	return x.Decode(msg)
 }
 
 // EncodeMessage packs a Message into []byte containing length, id and data
-func EncodeMessage(msg Message) []byte {
+func EncodeMessage(msg Serializer) ([]byte, error) {
 	t := reflect.ValueOf(msg).Elem().Type()
+
+	// Lookup message ID
 	msgID, succ := MessageIDMap[t]
 	if !succ {
-		logger.Panicf("Attempted to serialize message struct not in MessageIdMap: %v", msg)
+		logger.Panicf("Attempted to serialize message struct not in MessageIDMap: %v", msg)
 	}
-	bMsg := encoder.Serialize(msg)
+	if uint64(len(msgID)) > math.MaxUint32 {
+		return nil, errors.New("Message ID length exceeds math.MaxUint32")
+	}
 
-	// message length
-	bLen := encoder.SerializeAtomic(uint32(len(bMsg) + len(msgID)))
-	m := make([]byte, 0)
-	m = append(m, bLen...)     // length prefix
-	m = append(m, msgID[:]...) // message id
-	m = append(m, bMsg...)     // message bytes
-	return m
+	// Compute size of encoded Message object
+	bMsgLen := msg.EncodeSize()
+	if bMsgLen > math.MaxUint32 {
+		return nil, errors.New("Message length exceeds math.MaxUint32")
+	}
+
+	// Compute message + message ID length
+	bLen, err := mathutil.AddUint32(uint32(bMsgLen), uint32(len(msgID)))
+	if err != nil {
+		return nil, err
+	}
+
+	// Serialize total message length
+	bLenPrefix := encoder.SerializeUint32(bLen)
+	if uint64(len(bLenPrefix)) > math.MaxUint32 {
+		return nil, errors.New("Message length prefix length exceeds math.MaxUint32")
+	}
+
+	mLen, err := mathutil.AddUint32(bLen, uint32(len(bLenPrefix)))
+	if err != nil {
+		return nil, err
+	}
+
+	// Allocate message bytes
+	m := make([]byte, mLen)
+
+	// Write the total message length to the buffer
+	copy(m[:], bLenPrefix[:])
+
+	// Write the message ID to the buffer
+	copy(m[len(bLenPrefix):], msgID[:])
+
+	// Encode the message into the message buffer
+	if err := msg.Encode(m[len(bLenPrefix)+len(msgID):]); err != nil {
+		return nil, err
+	}
+
+	return m, nil
 }
 
 // Sends []byte over a net.Conn

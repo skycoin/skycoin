@@ -5,7 +5,7 @@ import (
 	"errors"
 	"log"
 
-	"github.com/skycoin/skycoin/src/cipher/base58"
+	"github.com/SkycoinProject/skycoin/src/cipher/base58"
 )
 
 var (
@@ -55,7 +55,7 @@ func MustBitcoinAddressFromSecKey(secKey SecKey) BitcoinAddress {
 
 // DecodeBase58BitcoinAddress creates a BitcoinAddress from its base58 encoding
 func DecodeBase58BitcoinAddress(addr string) (BitcoinAddress, error) {
-	b, err := base58.Base582Hex(addr)
+	b, err := base58.Decode(addr)
 	if err != nil {
 		return BitcoinAddress{}, err
 	}
@@ -134,7 +134,7 @@ func (addr BitcoinAddress) Verify(key PubKey) error {
 
 // String convert bitcoin address to hex string
 func (addr BitcoinAddress) String() string {
-	return string(base58.Hex2Base58(addr.Bytes()))
+	return string(base58.Encode(addr.Bytes()))
 }
 
 // Checksum returns a bitcoin address Checksum which is the first 4 bytes of sha256(sha256(version+key))
@@ -153,12 +153,12 @@ func BitcoinWalletImportFormatFromSeckey(seckey SecKey) string {
 	b2 := append(b1[:], []byte{0x01}...)
 	b3 := DoubleSHA256(b2) //checksum
 	b4 := append(b2, b3[0:4]...)
-	return string(base58.Hex2Base58(b4))
+	return string(base58.Encode(b4))
 }
 
 // SecKeyFromBitcoinWalletImportFormat extracts a seckey from the bitcoin wallet import format
 func SecKeyFromBitcoinWalletImportFormat(input string) (SecKey, error) {
-	b, err := base58.Base582Hex(input)
+	b, err := base58.Decode(input)
 	if err != nil {
 		return SecKey{}, err
 	}

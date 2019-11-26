@@ -46,12 +46,26 @@ func (rd *Ripemd160) Set(b []byte) error {
 	return nil
 }
 
+// Ripemd160FromBytes converts []byte to Ripemd160
+func Ripemd160FromBytes(b []byte) (Ripemd160, error) {
+	h := Ripemd160{}
+	err := h.Set(b)
+	return h, err
+}
+
+// MustRipemd160FromBytes converts []byte to Ripemd160, panics on error
+func MustRipemd160FromBytes(b []byte) Ripemd160 {
+	h := Ripemd160{}
+	h.MustSet(b)
+	return h
+}
+
 // HashRipemd160 hash data to Ripemd160
 func HashRipemd160(data []byte) Ripemd160 {
 	ripemd160Hash := <-ripemd160HashPool
 	ripemd160Hash.Reset()
 	// ripemd160.Write never returns an error
-	ripemd160Hash.Write(data) // nolint: errcheck
+	ripemd160Hash.Write(data) //nolint:errcheck
 	sum := ripemd160Hash.Sum(nil)
 	ripemd160HashPool <- ripemd160Hash
 
@@ -80,7 +94,11 @@ func (g *SHA256) Set(b []byte) error {
 	return nil
 }
 
-// Hex encode sha256 to hex string
+func (g SHA256) String() string {
+	return g.Hex()
+}
+
+// Hex encode SHA256 to hex string
 func (g SHA256) Hex() string {
 	return hex.EncodeToString(g[:])
 }
@@ -141,7 +159,7 @@ func SumSHA256(b []byte) SHA256 {
 	sha256Hash := <-sha256HashPool
 	sha256Hash.Reset()
 	// sha256.Write never returns an error
-	sha256Hash.Write(b) // nolint: errcheck
+	sha256Hash.Write(b) //nolint:errcheck
 	sum := sha256Hash.Sum(nil)
 	sha256HashPool <- sha256Hash
 

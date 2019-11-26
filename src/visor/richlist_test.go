@@ -3,96 +3,122 @@ package visor
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/SkycoinProject/skycoin/src/cipher"
 )
 
-func getLockedMap() map[string]struct{} {
-	distributionAddresses := []string{"a1", "b1", "c1", "d1"}
-	dmap := map[string]struct{}{}
+func getLockedMap(distributionAddresses [4]cipher.Address) map[cipher.Address]struct{} {
+	// distributionAddresses := []cipher.Address{"a1", "b1", "c1", "d1"}
+	dmap := map[cipher.Address]struct{}{}
 	for _, addr := range distributionAddresses {
 		dmap[addr] = struct{}{}
 	}
 	return dmap
 }
 
-func getAllAccounts() map[string]uint64 {
-	accMap := map[string]uint64{}
-	accMap["a1"] = 1000000
-	accMap["b1"] = 1000000
-	accMap["c1"] = 2123456
-	accMap["d1"] = 1000000
-	accMap["a2"] = 3010000
-	accMap["b2"] = 2010000
-	accMap["c2"] = 4010000
-	accMap["d2"] = 1000000
+func getAllAccounts(distributionAddresses, otherAddresses [4]cipher.Address) map[cipher.Address]uint64 {
+	accMap := map[cipher.Address]uint64{}
+	accMap[distributionAddresses[0]] = 1000000
+	accMap[distributionAddresses[1]] = 1000000
+	accMap[distributionAddresses[2]] = 2123456
+	accMap[distributionAddresses[3]] = 1000000
+	accMap[otherAddresses[0]] = 3010000
+	accMap[otherAddresses[1]] = 2010000
+	accMap[otherAddresses[2]] = 4010000
+	accMap[otherAddresses[3]] = 1000000
 
 	return accMap
 }
 
 func TestRichlist(t *testing.T) {
-	expectedRichlist := Richlist{
-		RichlistBalance{Address: "c2", Coins: "4.010000", Locked: false, coins: 4010000},
-		RichlistBalance{Address: "a2", Coins: "3.010000", Locked: false, coins: 3010000},
-		RichlistBalance{Address: "c1", Coins: "2.123456", Locked: true, coins: 2123456},
-		RichlistBalance{Address: "b2", Coins: "2.010000", Locked: false, coins: 2010000},
-		RichlistBalance{Address: "a1", Coins: "1.000000", Locked: true, coins: 1000000},
-		RichlistBalance{Address: "b1", Coins: "1.000000", Locked: true, coins: 1000000},
-		RichlistBalance{Address: "d1", Coins: "1.000000", Locked: true, coins: 1000000},
-		RichlistBalance{Address: "d2", Coins: "1.000000", Locked: false, coins: 1000000},
+	otherAddresses := [4]cipher.Address{
+		cipher.MustDecodeBase58Address("2cmpPv9PJfKFStekrKZXBnAfLKE6cB7qMrS"),
+		cipher.MustDecodeBase58Address("jhLw4EXNn2E7zVjrmi8fGsATZfRnAXfqRj"),
+		cipher.MustDecodeBase58Address("R7zjFhmW3KqGz6r92VFpJTpRWCzaXSokYb"),
+		cipher.MustDecodeBase58Address("JFQRvKXBoTt6D8aiFVrGquemzbrQDGKTAR"),
 	}
 
-	accMap := getAllAccounts()
-	distributionMap := getLockedMap()
+	distributionAddresses := [4]cipher.Address{
+		cipher.MustDecodeBase58Address("DniB7KqDRNx8CjM6vruaKwbQPgWj1GSj5t"),
+		cipher.MustDecodeBase58Address("FbJuRez3RKpYsTSYTVyAQt146vzcFNkqpU"),
+		cipher.MustDecodeBase58Address("2mxNdCnUd7vF1uSpRhSDMEhZHKAyL9r1Uys"),
+		cipher.MustDecodeBase58Address("uBcaMg2vGpy45K7NVsRGmuNXQdaB8kgHfM"),
+	}
 
-	richlist, err := NewRichlist(map[string]uint64{}, map[string]struct{}{})
-	assert.NoError(t, err)
-	assert.Equal(t, Richlist{}, richlist)
+	expectedRichlist := Richlist{
+		RichlistBalance{Address: otherAddresses[2], Coins: 4010000, Locked: false},
+		RichlistBalance{Address: otherAddresses[0], Coins: 3010000, Locked: false},
+		RichlistBalance{Address: distributionAddresses[2], Coins: 2123456, Locked: true},
+		RichlistBalance{Address: otherAddresses[1], Coins: 2010000, Locked: false},
+		RichlistBalance{Address: distributionAddresses[0], Coins: 1000000, Locked: true},
+		RichlistBalance{Address: distributionAddresses[1], Coins: 1000000, Locked: true},
+		RichlistBalance{Address: distributionAddresses[3], Coins: 1000000, Locked: true},
+		RichlistBalance{Address: otherAddresses[3], Coins: 1000000, Locked: false},
+	}
+
+	accMap := getAllAccounts(distributionAddresses, otherAddresses)
+	distributionMap := getLockedMap(distributionAddresses)
+
+	richlist, err := NewRichlist(map[cipher.Address]uint64{}, map[cipher.Address]struct{}{})
+	require.NoError(t, err)
+	require.Equal(t, Richlist{}, richlist)
 
 	richlist, err = NewRichlist(accMap, distributionMap)
-	assert.NoError(t, err)
-	assert.Equal(t, expectedRichlist, richlist)
+	require.NoError(t, err)
+	require.Equal(t, expectedRichlist, richlist)
+
 	cases := []struct {
 		name        string
-		filterMap   map[string]struct{}
-		richerCount int
+		filterMap   map[cipher.Address]struct{}
+		richlistLen int
 		result      Richlist
 	}{
 		{
-			name:        "filterRichlist",
-			filterMap:   map[string]struct{}{"a2": struct{}{}, "b2": struct{}{}, "d2": struct{}{}},
-			richerCount: 5,
+			name: "filterRichlist",
+			filterMap: map[cipher.Address]struct{}{
+				otherAddresses[0]: struct{}{},
+				otherAddresses[1]: struct{}{},
+				otherAddresses[3]: struct{}{},
+			},
+			richlistLen: 5,
 			result: Richlist{
-				RichlistBalance{Address: "c2", Coins: "4.010000", Locked: false, coins: 4010000},
-				RichlistBalance{Address: "c1", Coins: "2.123456", Locked: true, coins: 2123456},
-				RichlistBalance{Address: "a1", Coins: "1.000000", Locked: true, coins: 1000000},
-				RichlistBalance{Address: "b1", Coins: "1.000000", Locked: true, coins: 1000000},
-				RichlistBalance{Address: "d1", Coins: "1.000000", Locked: true, coins: 1000000},
+				RichlistBalance{Address: otherAddresses[2], Locked: false, Coins: 4010000},
+				RichlistBalance{Address: distributionAddresses[2], Locked: true, Coins: 2123456},
+				RichlistBalance{Address: distributionAddresses[0], Locked: true, Coins: 1000000},
+				RichlistBalance{Address: distributionAddresses[1], Locked: true, Coins: 1000000},
+				RichlistBalance{Address: distributionAddresses[3], Locked: true, Coins: 1000000},
 			},
 		},
 
 		{
 			name:        "allRichlist",
-			filterMap:   map[string]struct{}{},
-			richerCount: 8,
+			filterMap:   map[cipher.Address]struct{}{},
+			richlistLen: 8,
 			result:      expectedRichlist,
 		},
 		{
-			name:        "lockedRichlist",
-			filterMap:   map[string]struct{}{"c2": struct{}{}, "a2": struct{}{}, "b2": struct{}{}, "d2": struct{}{}},
-			richerCount: 4,
+			name: "lockedRichlist",
+			filterMap: map[cipher.Address]struct{}{
+				otherAddresses[0]: struct{}{},
+				otherAddresses[1]: struct{}{},
+				otherAddresses[2]: struct{}{},
+				otherAddresses[3]: struct{}{},
+			},
 			result: Richlist{
-				RichlistBalance{Address: "c1", Coins: "2.123456", Locked: true, coins: 2123456},
-				RichlistBalance{Address: "a1", Coins: "1.000000", Locked: true, coins: 1000000},
-				RichlistBalance{Address: "b1", Coins: "1.000000", Locked: true, coins: 1000000},
-				RichlistBalance{Address: "d1", Coins: "1.000000", Locked: true, coins: 1000000},
+				RichlistBalance{Address: distributionAddresses[2], Locked: true, Coins: 2123456},
+				RichlistBalance{Address: distributionAddresses[0], Locked: true, Coins: 1000000},
+				RichlistBalance{Address: distributionAddresses[1], Locked: true, Coins: 1000000},
+				RichlistBalance{Address: distributionAddresses[3], Locked: true, Coins: 1000000},
 			},
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			result := richlist.FilterAddresses(tc.filterMap)
-			assert.Equal(t, tc.richerCount, len(result), "%d != %d", tc.richerCount, len(result))
-			assert.Equal(t, tc.result, result)
+			require.Equal(t, len(tc.result), len(result), "%d != %d", len(tc.result), len(result))
+
+			require.Equal(t, tc.result, result)
 		})
 	}
 }

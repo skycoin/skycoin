@@ -8,24 +8,25 @@ import (
 	"fmt"
 	"math/rand"
 	"reflect"
+	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon/gnet"
-	"github.com/skycoin/skycoin/src/daemon/pex"
-	"github.com/skycoin/skycoin/src/params"
-	"github.com/skycoin/skycoin/src/util/elapse"
-	"github.com/skycoin/skycoin/src/util/fee"
-	"github.com/skycoin/skycoin/src/util/iputil"
-	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/util/useragent"
-	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/daemon/gnet"
+	"github.com/SkycoinProject/skycoin/src/daemon/pex"
+	"github.com/SkycoinProject/skycoin/src/params"
+	"github.com/SkycoinProject/skycoin/src/util/elapse"
+	"github.com/SkycoinProject/skycoin/src/util/fee"
+	"github.com/SkycoinProject/skycoin/src/util/iputil"
+	"github.com/SkycoinProject/skycoin/src/util/logging"
+	"github.com/SkycoinProject/skycoin/src/util/useragent"
+	"github.com/SkycoinProject/skycoin/src/visor"
+	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 )
 
 var (
@@ -61,8 +62,6 @@ type Config struct {
 	Messages MessagesConfig
 	Pool     PoolConfig
 	Pex      pex.Config
-	Gateway  GatewayConfig
-	Visor    visor.Config
 }
 
 // NewConfig returns a Config with defaults set
@@ -71,9 +70,7 @@ func NewConfig() Config {
 		Daemon:   NewDaemonConfig(),
 		Pool:     NewPoolConfig(),
 		Pex:      pex.NewConfig(),
-		Gateway:  NewGatewayConfig(),
 		Messages: NewMessagesConfig(),
-		Visor:    visor.NewConfig(),
 	}
 }
 
@@ -121,6 +118,16 @@ func (cfg *Config) preprocess() (Config, error) {
 
 	config.Pool.MaxConnections = config.Daemon.MaxConnections
 	config.Pool.MaxOutgoingConnections = config.Daemon.MaxOutgoingConnections
+	config.Pool.MaxIncomingMessageLength = int(config.Daemon.MaxIncomingMessageLength)
+	config.Pool.MaxOutgoingMessageLength = int(config.Daemon.MaxOutgoingMessageLength)
+
+	// MaxOutgoingMessageLength must be able to fit a GiveBlocksMessage with at least one maximum-sized block,
+	// otherwise it cannot send certain blocks.
+	// Blocks are the largest object sent over the network, so MaxBlockTransactionsSize is used as an upper limit
+	maxSizeGBM := maxSizeGiveBlocksMessage(config.Daemon.MaxBlockTransactionsSize)
+	if config.Daemon.MaxOutgoingMessageLength < maxSizeGBM {
+		return Config{}, fmt.Errorf("MaxOutgoingMessageLength must be >= %d", maxSizeGBM)
+	}
 
 	userAgent, err := config.Daemon.UserAgent.Build()
 	if err != nil {
@@ -134,8 +141,18 @@ func (cfg *Config) preprocess() (Config, error) {
 	return config, nil
 }
 
+// maxSizeGiveBlocksMessage return the encoded size of a GiveBlocksMessage
+// with a single signed block of the largest possible size
+func maxSizeGiveBlocksMessage(maxBlockSize uint32) uint64 {
+	size := uint64(4)                                         // message type prefix
+	size += encodeSizeGiveBlocksMessage(&GiveBlocksMessage{}) // size of an empty GiveBlocksMessage
+	size += encodeSizeSignedBlock(&coin.SignedBlock{})        // size of an empty SignedBlock
+	size += uint64(maxBlockSize)                              // maximum size of all transactions in a block
+	return size
+}
+
 // DaemonConfig configuration for the Daemon
-type DaemonConfig struct { // nolint: golint
+type DaemonConfig struct { //nolint:golint
 	// Protocol version. TODO -- manage version better
 	ProtocolVersion int32
 	// Minimum accepted protocol version
@@ -144,6 +161,8 @@ type DaemonConfig struct { // nolint: golint
 	Address string
 	// BlockchainPubkey blockchain pubkey string
 	BlockchainPubkey cipher.PubKey
+	// GenesisHash genesis block hash
+	GenesisHash cipher.SHA256
 	// TCP/UDP port for connections
 	Port int
 	// Directory where application data is stored
@@ -182,8 +201,10 @@ type DaemonConfig struct { // nolint: golint
 	BlocksRequestRate time.Duration
 	// How often to announce our blocks to peers
 	BlocksAnnounceRate time.Duration
-	// How many blocks to respond with to a GetBlocksMessage
-	BlocksResponseCount uint64
+	// How many blocks to request in a GetBlocksMessage
+	GetBlocksRequestCount uint64
+	// Maximum number of blocks to respond with to a GetBlocksMessage
+	MaxGetBlocksResponseCount uint64
 	// Max announce txns hash number
 	MaxTxnAnnounceNum int
 	// How often new blocks are created by the signing node, in seconds
@@ -201,6 +222,12 @@ type DaemonConfig struct { // nolint: golint
 	UnconfirmedVerifyTxn params.VerifyTxn
 	// Random nonce value for detecting self-connection in introduction messages
 	Mirror uint32
+	// Maximum size of incoming messages
+	MaxIncomingMessageLength uint64
+	// Maximum size of incoming messages
+	MaxOutgoingMessageLength uint64
+	// Maximum total size of transactions in a block
+	MaxBlockTransactionsSize uint32
 }
 
 // NewDaemonConfig creates daemon config
@@ -227,22 +254,26 @@ func NewDaemonConfig() DaemonConfig {
 		LogPings:                     true,
 		BlocksRequestRate:            time.Second * 60,
 		BlocksAnnounceRate:           time.Second * 60,
-		BlocksResponseCount:          20,
+		GetBlocksRequestCount:        20,
+		MaxGetBlocksResponseCount:    20,
 		MaxTxnAnnounceNum:            16,
 		BlockCreationInterval:        10,
 		UnconfirmedRefreshRate:       time.Minute,
 		UnconfirmedRemoveInvalidRate: time.Minute,
 		Mirror:                       rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32(),
 		UnconfirmedVerifyTxn:         params.UserVerifyTxn,
+		MaxOutgoingMessageLength:     256 * 1024,
+		MaxIncomingMessageLength:     1024 * 1024,
+		MaxBlockTransactionsSize:     32768,
 	}
 }
 
-//go:generate go install
 //go:generate mockery -name daemoner -case underscore -inpkg -testonly
 
 // daemoner Daemon interface
 type daemoner interface {
 	Disconnect(addr string, r gnet.DisconnectReason) error
+	DaemonConfig() DaemonConfig
 	sendMessage(addr string, msg gnet.Message) error
 	broadcastMessage(msg gnet.Message) ([]uint64, error)
 	disconnectNow(addr string, r gnet.DisconnectReason) error
@@ -255,7 +286,6 @@ type daemoner interface {
 	getKnownUnconfirmed(txns []cipher.SHA256) (coin.Transactions, error)
 	requestBlocksFromAddr(addr string) error
 	announceAllValidTxns() error
-	daemonConfig() DaemonConfig
 	pexConfig() pex.Config
 	injectTransaction(txn coin.Transaction) (bool, *visor.ErrTxnViolatesSoftConstraint, error)
 	recordMessageEvent(m asyncMessage, c *gnet.MessageContext) error
@@ -266,13 +296,12 @@ type daemoner interface {
 // Daemon stateful properties of the daemon
 type Daemon struct {
 	// Daemon configuration
-	Config DaemonConfig
+	config DaemonConfig
 
 	// Components
 	Messages *Messages
 	pool     *Pool
 	pex      *pex.Pex
-	Gateway  *Gateway
 	visor    *visor.Visor
 
 	// Cache of announced transactions that are flushed to the database periodically
@@ -287,14 +316,9 @@ type Daemon struct {
 	done chan struct{}
 }
 
-// NewDaemon returns a Daemon with primitives allocated
-func NewDaemon(config Config, db *dbutil.DB) (*Daemon, error) {
+// New returns a Daemon with primitives allocated
+func New(config Config, v *visor.Visor) (*Daemon, error) {
 	config, err := config.preprocess()
-	if err != nil {
-		return nil, err
-	}
-
-	vs, err := visor.NewVisor(config.Visor, db)
 	if err != nil {
 		return nil, err
 	}
@@ -305,10 +329,10 @@ func NewDaemon(config Config, db *dbutil.DB) (*Daemon, error) {
 	}
 
 	d := &Daemon{
-		Config:   config.Daemon,
+		config:   config.Daemon,
 		Messages: NewMessages(config.Messages),
 		pex:      pex,
-		visor:    vs,
+		visor:    v,
 
 		announcedTxns: newAnnouncedTxnsCache(),
 		connections:   NewConnections(),
@@ -322,7 +346,6 @@ func NewDaemon(config Config, db *dbutil.DB) (*Daemon, error) {
 		return nil, err
 	}
 
-	d.Gateway = NewGateway(config.Gateway, d)
 	d.Messages.Config.Register()
 
 	return d, nil
@@ -355,9 +378,7 @@ type messageEvent struct {
 	Context *gnet.MessageContext
 }
 
-// Shutdown Terminates all subsystems safely.  To stop the Daemon run loop, send a value
-// over the quit channel provided to Init.  The Daemon run loop must be stopped
-// before calling this function.
+// Shutdown terminates all subsystems safely
 func (dm *Daemon) Shutdown() {
 	defer logger.Info("Daemon shutdown complete")
 
@@ -369,23 +390,10 @@ func (dm *Daemon) Shutdown() {
 	logger.Info("Shutting down Pool")
 	dm.pool.Shutdown()
 
-	logger.Info("Shutting down Gateway")
-	dm.Gateway.Shutdown()
-
 	logger.Info("Shutting down Pex")
 	dm.pex.Shutdown()
 
 	<-dm.done
-}
-
-// Init prepares daemon before Run()
-func (dm *Daemon) Init() error {
-	if err := dm.visor.Init(); err != nil {
-		logger.WithError(err).Error("visor.Visor.Init failed")
-		return err
-	}
-
-	return nil
 }
 
 // Run main loop for peer/connection management
@@ -393,10 +401,10 @@ func (dm *Daemon) Run() error {
 	defer logger.Info("Daemon closed")
 	defer close(dm.done)
 
-	logger.Infof("Daemon UserAgent is %s", dm.Config.userAgent)
-	logger.Info("Daemon unconfirmed BurnFactor is %d", dm.Config.UnconfirmedVerifyTxn.BurnFactor)
-	logger.Info("Daemon unconfirmed MaxTransactionSize is %d", dm.Config.UnconfirmedVerifyTxn.MaxTransactionSize)
-	logger.Info("Daemon unconfirmed MaxDropletPrecision is %d", dm.Config.UnconfirmedVerifyTxn.MaxDropletPrecision)
+	logger.Infof("Daemon UserAgent is %s", dm.config.userAgent)
+	logger.Infof("Daemon unconfirmed BurnFactor is %d", dm.config.UnconfirmedVerifyTxn.BurnFactor)
+	logger.Infof("Daemon unconfirmed MaxTransactionSize is %d", dm.config.UnconfirmedVerifyTxn.MaxTransactionSize)
+	logger.Infof("Daemon unconfirmed MaxDropletPrecision is %d", dm.config.UnconfirmedVerifyTxn.MaxDropletPrecision)
 
 	errC := make(chan error, 5)
 	var wg sync.WaitGroup
@@ -413,7 +421,7 @@ func (dm *Daemon) Run() error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if dm.Config.DisableIncomingConnections {
+		if dm.config.DisableIncomingConnections {
 			if err := dm.pool.RunOffline(); err != nil {
 				logger.WithError(err).Error("daemon.Pool.RunOffline failed")
 				errC <- err
@@ -426,19 +434,19 @@ func (dm *Daemon) Run() error {
 		}
 	}()
 
-	blockInterval := time.Duration(dm.Config.BlockCreationInterval)
+	blockInterval := time.Duration(dm.config.BlockCreationInterval)
 	blockCreationTicker := time.NewTicker(time.Second * blockInterval)
 	if !dm.visor.Config.IsBlockPublisher {
 		blockCreationTicker.Stop()
 	}
 
-	unconfirmedRefreshTicker := time.NewTicker(dm.Config.UnconfirmedRefreshRate)
+	unconfirmedRefreshTicker := time.NewTicker(dm.config.UnconfirmedRefreshRate)
 	defer unconfirmedRefreshTicker.Stop()
-	unconfirmedRemoveInvalidTicker := time.NewTicker(dm.Config.UnconfirmedRemoveInvalidRate)
+	unconfirmedRemoveInvalidTicker := time.NewTicker(dm.config.UnconfirmedRemoveInvalidRate)
 	defer unconfirmedRemoveInvalidTicker.Stop()
-	blocksRequestTicker := time.NewTicker(dm.Config.BlocksRequestRate)
+	blocksRequestTicker := time.NewTicker(dm.config.BlocksRequestRate)
 	defer blocksRequestTicker.Stop()
-	blocksAnnounceTicker := time.NewTicker(dm.Config.BlocksAnnounceRate)
+	blocksAnnounceTicker := time.NewTicker(dm.config.BlocksAnnounceRate)
 	defer blocksAnnounceTicker.Stop()
 
 	// outgoingTrustedConnectionsTicker is used to maintain at least one connection to a trusted peer.
@@ -448,17 +456,17 @@ func (dm *Daemon) Run() error {
 	// skip ticks of the outgoingTrustedConnectionsTicker in the event of total failure.
 	// outgoingTrustedConnectionsTickerSkipDuration is the minimum time to wait between
 	// ticks in the event of total failure.
-	outgoingTrustedConnectionsTicker := time.NewTicker(dm.Config.OutgoingTrustedRate)
+	outgoingTrustedConnectionsTicker := time.NewTicker(dm.config.OutgoingTrustedRate)
 	defer outgoingTrustedConnectionsTicker.Stop()
 	outgoingTrustedConnectionsTickerSkipDuration := time.Second * 5
 	outgoingTrustedConnectionsTickerSkip := false
 	var outgoingTrustedConnectionsTickerSkipStart time.Time
 
-	privateConnectionsTicker := time.NewTicker(dm.Config.PrivateRate)
+	privateConnectionsTicker := time.NewTicker(dm.config.PrivateRate)
 	defer privateConnectionsTicker.Stop()
-	cullInvalidTicker := time.NewTicker(dm.Config.CullInvalidRate)
+	cullInvalidTicker := time.NewTicker(dm.config.CullInvalidRate)
 	defer cullInvalidTicker.Stop()
-	outgoingConnectionsTicker := time.NewTicker(dm.Config.OutgoingRate)
+	outgoingConnectionsTicker := time.NewTicker(dm.config.OutgoingRate)
 	defer outgoingConnectionsTicker.Stop()
 	requestPeersTicker := time.NewTicker(dm.pex.Config.RequestRate)
 	defer requestPeersTicker.Stop()
@@ -467,13 +475,13 @@ func (dm *Daemon) Run() error {
 	idleCheckTicker := time.NewTicker(dm.pool.Config.IdleCheckRate)
 	defer idleCheckTicker.Stop()
 
-	flushAnnouncedTxnsTicker := time.NewTicker(dm.Config.FlushAnnouncedTxnsRate)
+	flushAnnouncedTxnsTicker := time.NewTicker(dm.config.FlushAnnouncedTxnsRate)
 	defer flushAnnouncedTxnsTicker.Stop()
 
 	// Connect to all trusted peers on startup to try to ensure a connection establishes quickly.
 	// The number of connections to default peers is restricted;
 	// if multiple connections succeed, extra connections beyond the limit will be disconnected.
-	if !dm.Config.DisableOutgoingConnections {
+	if !dm.config.DisableOutgoingConnections {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -502,7 +510,7 @@ func (dm *Daemon) Run() error {
 			case r := <-dm.pool.Pool.SendResults:
 				// Process message sending results
 				elapser.Register("dm.Pool.Pool.SendResults")
-				if dm.Config.DisableNetworking {
+				if dm.config.DisableNetworking {
 					logger.Error("There should be nothing in SendResults")
 					return
 				}
@@ -521,7 +529,7 @@ loop:
 		case <-cullInvalidTicker.C:
 			// Remove connections that failed to complete the handshake
 			elapser.Register("cullInvalidTicker")
-			if !dm.Config.DisableNetworking {
+			if !dm.config.DisableNetworking {
 				dm.cullInvalidConnections()
 			}
 
@@ -545,7 +553,7 @@ loop:
 		case <-clearStaleConnectionsTicker.C:
 			// Remove connections that haven't said anything in a while
 			elapser.Register("clearStaleConnectionsTicker")
-			if !dm.Config.DisableNetworking {
+			if !dm.config.DisableNetworking {
 				conns, err := dm.pool.getStaleConnections()
 				if err != nil {
 					logger.WithError(err).Error("getStaleConnections failed")
@@ -562,7 +570,7 @@ loop:
 		case <-idleCheckTicker.C:
 			// Sends pings as needed
 			elapser.Register("idleCheckTicker")
-			if !dm.Config.DisableNetworking {
+			if !dm.config.DisableNetworking {
 				dm.pool.sendPings()
 			}
 
@@ -593,13 +601,13 @@ loop:
 			// Always try to stay connected to our private peers
 			// TODO (also, connect to all of them on start)
 			elapser.Register("privateConnectionsTicker")
-			if !dm.Config.DisableOutgoingConnections {
+			if !dm.config.DisableOutgoingConnections {
 				dm.makePrivateConnections()
 			}
 
 		case r := <-dm.events:
 			elapser.Register("dm.event")
-			if dm.Config.DisableNetworking {
+			if dm.config.DisableNetworking {
 				logger.Critical().Error("Networking is disabled, there should be no events")
 			} else {
 				dm.handleEvent(r)
@@ -611,13 +619,6 @@ loop:
 
 			if err := dm.visor.SetTransactionsAnnounced(txns); err != nil {
 				logger.WithError(err).Error("Failed to set unconfirmed txn announce time")
-			}
-
-		case req := <-dm.Gateway.requests:
-			// Process any pending RPC requests
-			elapser.Register("dm.Gateway.requests")
-			if err := req.Func(); err != nil {
-				logger.WithError(err).Error()
 			}
 
 		case <-blockCreationTicker.C:
@@ -648,8 +649,8 @@ loop:
 				continue
 			}
 			// Announce these transactions
-			if err := dm.announceTxns(validTxns); err != nil {
-				logger.WithError(err).Warning("announceTxns failed")
+			if err := dm.announceTxnHashes(validTxns); err != nil {
+				logger.WithError(err).Warning("announceTxnHashes failed")
 			}
 
 		case <-unconfirmedRemoveInvalidTicker.C:
@@ -695,7 +696,7 @@ loop:
 // made. If the connection attempt itself fails, the error is sent to
 // the connectionErrors channel.
 func (dm *Daemon) connectToPeer(p pex.Peer) error {
-	if dm.Config.DisableOutgoingConnections {
+	if dm.config.DisableOutgoingConnections {
 		return errors.New("Outgoing connections disabled")
 	}
 
@@ -705,7 +706,7 @@ func (dm *Daemon) connectToPeer(p pex.Peer) error {
 		return errors.New("Invalid peer")
 	}
 
-	if dm.Config.LocalhostOnly && !iputil.IsLocalhost(a) {
+	if dm.config.LocalhostOnly && !iputil.IsLocalhost(a) {
 		return errors.New("Not localhost")
 	}
 
@@ -714,7 +715,7 @@ func (dm *Daemon) connectToPeer(p pex.Peer) error {
 	}
 
 	cnt := dm.connections.IPCount(a)
-	if !dm.Config.LocalhostOnly && cnt != 0 {
+	if !dm.config.LocalhostOnly && cnt != 0 {
 		return errors.New("Already connected to a peer with this base IP")
 	}
 
@@ -739,7 +740,7 @@ func (dm *Daemon) connectToPeer(p pex.Peer) error {
 
 // Connects to all private peers
 func (dm *Daemon) makePrivateConnections() {
-	if dm.Config.DisableOutgoingConnections {
+	if dm.config.DisableOutgoingConnections {
 		return
 	}
 
@@ -754,7 +755,7 @@ func (dm *Daemon) makePrivateConnections() {
 
 // connectToTrustedPeers tries to connect to all trusted peers
 func (dm *Daemon) connectToTrustedPeers() {
-	if dm.Config.DisableOutgoingConnections {
+	if dm.config.DisableOutgoingConnections {
 		return
 	}
 
@@ -772,7 +773,7 @@ func (dm *Daemon) connectToTrustedPeers() {
 
 // maybeConnectToTrustedPeer tries to connect to one trusted peer if there are no trusted connections
 func (dm *Daemon) maybeConnectToTrustedPeer() error {
-	if dm.Config.DisableOutgoingConnections {
+	if dm.config.DisableOutgoingConnections {
 		return ErrNetworkingDisabled
 	}
 
@@ -803,21 +804,21 @@ func (dm *Daemon) maybeConnectToTrustedPeer() error {
 
 // connectToRandomPeer attempts to connect to a random peer. If it fails, the peer is removed.
 func (dm *Daemon) connectToRandomPeer() {
-	if dm.Config.DisableOutgoingConnections {
+	if dm.config.DisableOutgoingConnections {
 		return
 	}
-	if dm.connections.OutgoingLen() >= dm.Config.MaxOutgoingConnections {
+	if dm.connections.OutgoingLen() >= dm.config.MaxOutgoingConnections {
 		return
 	}
-	if dm.connections.PendingLen() >= dm.Config.MaxPendingConnections {
+	if dm.connections.PendingLen() >= dm.config.MaxPendingConnections {
 		return
 	}
-	if dm.connections.Len() >= dm.Config.MaxConnections {
+	if dm.connections.Len() >= dm.config.MaxConnections {
 		return
 	}
 
 	// Make a connection to a random (public) peer
-	peers := dm.pex.RandomPublic(dm.Config.MaxOutgoingConnections - dm.connections.OutgoingLen())
+	peers := dm.pex.RandomPublic(dm.config.MaxOutgoingConnections - dm.connections.OutgoingLen())
 	for _, p := range peers {
 		if err := dm.connectToPeer(p); err != nil {
 			logger.WithError(err).WithField("addr", p.Addr).Warning("connectToPeer failed")
@@ -838,7 +839,7 @@ func (dm *Daemon) cullInvalidConnections() {
 			continue
 		}
 
-		if c.ConnectedAt.Add(dm.Config.IntroductionWait).Before(now) {
+		if c.ConnectedAt.Add(dm.config.IntroductionWait).Before(now) {
 			logger.WithField("addr", c.Addr).Info("Disconnecting peer for not sending a version")
 			if err := dm.Disconnect(c.Addr, ErrDisconnectIntroductionTimeout); err != nil {
 				logger.WithError(err).WithField("addr", c.Addr).Error("Disconnect")
@@ -961,12 +962,13 @@ func (dm *Daemon) onConnectEvent(e ConnectEvent) {
 	logger.WithFields(fields).Debug("Sending introduction message")
 
 	if err := dm.sendMessage(e.Addr, NewIntroductionMessage(
-		dm.Config.Mirror,
-		dm.Config.ProtocolVersion,
+		dm.config.Mirror,
+		dm.config.ProtocolVersion,
 		dm.pool.Pool.Config.Port,
-		dm.Config.BlockchainPubkey,
-		dm.Config.userAgent,
-		dm.Config.UnconfirmedVerifyTxn,
+		dm.config.BlockchainPubkey,
+		dm.config.userAgent,
+		dm.config.UnconfirmedVerifyTxn,
+		dm.config.GenesisHash,
 	)); err != nil {
 		logger.WithFields(fields).WithError(err).Error("Send IntroductionMessage failed")
 		return
@@ -1061,7 +1063,7 @@ func (dm *Daemon) ipCountMaxed(addr string) bool {
 		return true
 	}
 
-	return !dm.Config.LocalhostOnly && dm.connections.IPCount(ip) >= dm.Config.IPCountsMax
+	return !dm.config.LocalhostOnly && dm.connections.IPCount(ip) >= dm.config.IPCountsMax
 }
 
 // When an async message send finishes, its result is handled by this.
@@ -1069,7 +1071,14 @@ func (dm *Daemon) ipCountMaxed(addr string) bool {
 // outside of the daemon run loop
 func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 	if r.Error != nil {
-		logger.WithError(r.Error).WithFields(logrus.Fields{
+		var lg logrus.FieldLogger
+		if r.Error == gnet.ErrMsgExceedsMaxLen {
+			lg = logger.Critical()
+		} else {
+			lg = logger
+		}
+
+		lg.WithError(r.Error).WithFields(logrus.Fields{
 			"addr":    r.Addr,
 			"msgType": reflect.TypeOf(r.Message),
 		}).Warning("Failed to send message")
@@ -1089,7 +1098,7 @@ func (dm *Daemon) handleMessageSendResult(r gnet.SendResult) {
 
 // requestBlocks sends a GetBlocksMessage to all connections
 func (dm *Daemon) requestBlocks() error {
-	if dm.Config.DisableNetworking {
+	if dm.config.DisableNetworking {
 		return ErrNetworkingDisabled
 	}
 
@@ -1101,7 +1110,7 @@ func (dm *Daemon) requestBlocks() error {
 		return errors.New("Cannot request blocks, there is no head block")
 	}
 
-	m := NewGetBlocksMessage(headSeq, dm.Config.BlocksResponseCount)
+	m := NewGetBlocksMessage(headSeq, dm.config.GetBlocksRequestCount)
 
 	if _, err := dm.broadcastMessage(m); err != nil {
 		logger.WithError(err).Debug("Broadcast GetBlocksMessage failed")
@@ -1113,7 +1122,7 @@ func (dm *Daemon) requestBlocks() error {
 
 // announceBlocks sends an AnnounceBlocksMessage to all connections
 func (dm *Daemon) announceBlocks() error {
-	if dm.Config.DisableNetworking {
+	if dm.config.DisableNetworking {
 		return ErrNetworkingDisabled
 	}
 
@@ -1135,26 +1144,6 @@ func (dm *Daemon) announceBlocks() error {
 	return nil
 }
 
-// announceTxns announces given transaction hashes
-func (dm *Daemon) announceTxns(txns []cipher.SHA256) error {
-	if dm.Config.DisableNetworking {
-		return ErrNetworkingDisabled
-	}
-
-	if len(txns) == 0 {
-		return nil
-	}
-
-	m := NewAnnounceTxnsMessage(txns)
-
-	if _, err := dm.broadcastMessage(m); err != nil {
-		logger.WithError(err).Debug("Broadcast AnnounceTxnsMessage failed")
-		return err
-	}
-
-	return nil
-}
-
 // createAndPublishBlock creates a block from unconfirmed transactions and sends it to the network.
 // Will panic if not running as a block publisher.
 // Will not create a block if outgoing connections are disabled.
@@ -1163,7 +1152,7 @@ func (dm *Daemon) announceTxns(txns []cipher.SHA256) error {
 // TODO -- refactor this method -- it should either always create a block and maybe broadcast it,
 // or use a database transaction to rollback block publishing if broadcast failed (however, this will cause a slow DB write)
 func (dm *Daemon) createAndPublishBlock() (*coin.SignedBlock, error) {
-	if dm.Config.DisableNetworking {
+	if dm.config.DisableNetworking {
 		return nil, ErrNetworkingDisabled
 	}
 
@@ -1180,7 +1169,7 @@ func (dm *Daemon) createAndPublishBlock() (*coin.SignedBlock, error) {
 // ResendUnconfirmedTxns resends all unconfirmed transactions and returns the hashes that were successfully rebroadcast.
 // It does not return an error if broadcasting fails.
 func (dm *Daemon) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
-	if dm.Config.DisableNetworking {
+	if dm.config.DisableNetworking {
 		return nil, ErrNetworkingDisabled
 	}
 
@@ -1191,9 +1180,10 @@ func (dm *Daemon) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 
 	var txids []cipher.SHA256
 	for i := range txns {
-		logger.WithField("txid", txns[i].Hash().Hex()).Debug("Rebroadcast transaction")
+		txnHash := txns[i].Transaction.Hash()
+		logger.WithField("txid", txnHash.Hex()).Debug("Rebroadcast transaction")
 		if _, err := dm.BroadcastTransaction(txns[i].Transaction); err == nil {
-			txids = append(txids, txns[i].Transaction.Hash())
+			txids = append(txids, txnHash)
 		}
 	}
 
@@ -1202,11 +1192,15 @@ func (dm *Daemon) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 
 // BroadcastTransaction broadcasts a single transaction to all peers.
 func (dm *Daemon) BroadcastTransaction(txn coin.Transaction) ([]uint64, error) {
-	if dm.Config.DisableNetworking {
+	if dm.config.DisableNetworking {
 		return nil, ErrNetworkingDisabled
 	}
 
-	m := NewGiveTxnsMessage(coin.Transactions{txn})
+	m := NewGiveTxnsMessage(coin.Transactions{txn}, dm.config.MaxOutgoingMessageLength)
+	if len(m.Transactions) != 1 {
+		logger.Critical().Error("NewGiveTxnsMessage truncated its only transaction")
+	}
+
 	ids, err := dm.broadcastMessage(m)
 	if err != nil {
 		logger.WithError(err).Error("Broadcast GiveTxnsMessage failed")
@@ -1227,7 +1221,6 @@ func (dm *Daemon) BroadcastUserTransaction(txn coin.Transaction, head *coin.Sign
 	}
 
 	accepts, err := checkBroadcastTxnRecipients(dm.connections, ids, txn, head, inputs)
-
 	if err != nil {
 		logger.WithError(err).Error("BroadcastUserTransaction")
 		return err
@@ -1338,7 +1331,7 @@ func (dm *Daemon) Disconnect(addr string, r gnet.DisconnectReason) error {
 
 // requestBlocksFromAddr sends a GetBlocksMessage to one connected address
 func (dm *Daemon) requestBlocksFromAddr(addr string) error {
-	if dm.Config.DisableNetworking {
+	if dm.config.DisableNetworking {
 		return ErrNetworkingDisabled
 	}
 
@@ -1350,24 +1343,28 @@ func (dm *Daemon) requestBlocksFromAddr(addr string) error {
 		return errors.New("Cannot request blocks from addr, there is no head block")
 	}
 
-	m := NewGetBlocksMessage(headSeq, dm.Config.BlocksResponseCount)
+	m := NewGetBlocksMessage(headSeq, dm.config.GetBlocksRequestCount)
 	return dm.sendMessage(addr, m)
 }
 
 // broadcastBlock sends a signed block to all connections
 func (dm *Daemon) broadcastBlock(sb coin.SignedBlock) error {
-	if dm.Config.DisableNetworking {
+	if dm.config.DisableNetworking {
 		return ErrNetworkingDisabled
 	}
 
-	m := NewGiveBlocksMessage([]coin.SignedBlock{sb})
+	m := NewGiveBlocksMessage([]coin.SignedBlock{sb}, dm.config.MaxOutgoingMessageLength)
+	if len(m.Blocks) != 1 {
+		logger.Critical().Error("NewGiveBlocksMessage truncated its only block")
+	}
+
 	_, err := dm.broadcastMessage(m)
 	return err
 }
 
-// daemonConfig returns the daemon config
-func (dm *Daemon) daemonConfig() DaemonConfig {
-	return dm.Config
+// DaemonConfig returns the daemon config
+func (dm *Daemon) DaemonConfig() DaemonConfig {
+	return dm.config
 }
 
 // connectionIntroduced transfers a connection to the "introduced" state in the connections state machine
@@ -1421,13 +1418,14 @@ func (dm *Daemon) sendRandomPeers(addr string) error {
 		return errors.New("No peers available")
 	}
 
-	m := NewGivePeersMessage(peers)
+	m := NewGivePeersMessage(peers, dm.config.MaxOutgoingMessageLength)
+
 	return dm.sendMessage(addr, m)
 }
 
 // announceAllValidTxns broadcasts valid unconfirmed transactions
 func (dm *Daemon) announceAllValidTxns() error {
-	if dm.Config.DisableNetworking {
+	if dm.config.DisableNetworking {
 		return ErrNetworkingDisabled
 	}
 
@@ -1437,11 +1435,23 @@ func (dm *Daemon) announceAllValidTxns() error {
 		return err
 	}
 
+	return dm.announceTxnHashes(hashes)
+}
+
+// announceTxnHashes announces transaction hashes, splitting them into chunks if they exceed MaxTxnAnnounceNum
+func (dm *Daemon) announceTxnHashes(hashes []cipher.SHA256) error {
+	if dm.config.DisableNetworking {
+		return ErrNetworkingDisabled
+	}
+
 	// Divide hashes into multiple sets of max size
-	hashesSet := divideHashes(hashes, dm.Config.MaxTxnAnnounceNum)
+	hashesSet := divideHashes(hashes, dm.config.MaxTxnAnnounceNum)
 
 	for _, hs := range hashesSet {
-		m := NewAnnounceTxnsMessage(hs)
+		m := NewAnnounceTxnsMessage(hs, dm.config.MaxOutgoingMessageLength)
+		if len(m.Transactions) != len(hs) {
+			logger.Critical().Error("NewAnnounceTxnsMessage truncated hashes that were already split up")
+		}
 		if _, err := dm.broadcastMessage(m); err != nil {
 			logger.WithError(err).Debug("Broadcast AnnounceTxnsMessage failed")
 			return err
@@ -1486,7 +1496,7 @@ func (dm *Daemon) sendMessage(addr string, msg gnet.Message) error {
 // Note that a connection could still fail to receive the message under certain network conditions,
 // there is no guarantee that a message was broadcast.
 func (dm *Daemon) broadcastMessage(msg gnet.Message) ([]uint64, error) {
-	if dm.Config.DisableNetworking {
+	if dm.config.DisableNetworking {
 		return nil, ErrNetworkingDisabled
 	}
 
@@ -1556,4 +1566,233 @@ func (dm *Daemon) getKnownUnconfirmed(txns []cipher.SHA256) (coin.Transactions, 
 // If the transaction only violates soft constraints, it is still injected, and the soft constraint violation is returned.
 func (dm *Daemon) injectTransaction(txn coin.Transaction) (bool, *visor.ErrTxnViolatesSoftConstraint, error) {
 	return dm.visor.InjectForeignTransaction(txn)
+}
+
+/* Connection management API */
+
+// Connection a connection's state within the daemon
+type Connection struct {
+	Addr string
+	Pex  pex.Peer
+	Gnet GnetConnectionDetails
+	ConnectionDetails
+}
+
+// GnetConnectionDetails connection data from gnet
+type GnetConnectionDetails struct {
+	ID           uint64
+	LastSent     time.Time
+	LastReceived time.Time
+}
+
+func newConnection(dc *connection, gc *gnet.Connection, pp *pex.Peer) Connection {
+	c := Connection{}
+
+	if dc != nil {
+		c.Addr = dc.Addr
+		c.ConnectionDetails = dc.ConnectionDetails
+	}
+
+	if gc != nil {
+		c.Gnet = GnetConnectionDetails{
+			ID:           gc.ID,
+			LastSent:     gc.LastSent,
+			LastReceived: gc.LastReceived,
+		}
+	}
+
+	if pp != nil {
+		c.Pex = *pp
+	}
+
+	return c
+}
+
+// newConnection creates a Connection from daemon.connection, gnet.Connection and pex.Peer
+func (dm *Daemon) newConnection(c *connection) (*Connection, error) {
+	if c == nil {
+		return nil, nil
+	}
+
+	gc, err := dm.pool.Pool.GetConnection(c.Addr)
+	if err != nil {
+		return nil, err
+	}
+
+	var pp *pex.Peer
+	listenAddr := c.ListenAddr()
+	if listenAddr != "" {
+		p, ok := dm.pex.GetPeer(listenAddr)
+		if ok {
+			pp = &p
+		}
+	}
+
+	cc := newConnection(c, gc, pp)
+	return &cc, nil
+}
+
+// GetConnections returns solicited (outgoing) connections
+func (dm *Daemon) GetConnections(f func(c Connection) bool) ([]Connection, error) {
+	if dm.pool.Pool == nil {
+		return nil, nil
+	}
+
+	cs := dm.connections.all()
+
+	conns := make([]Connection, 0)
+
+	for _, c := range cs {
+		cc, err := dm.newConnection(&c)
+		if err != nil {
+			return nil, err
+		}
+
+		ccc := *cc
+
+		if !f(ccc) {
+			continue
+		}
+
+		conns = append(conns, ccc)
+	}
+
+	// Sort connnections by IP address
+	sort.Slice(conns, func(i, j int) bool {
+		return strings.Compare(conns[i].Addr, conns[j].Addr) < 0
+	})
+
+	return conns, nil
+}
+
+// GetDefaultConnections returns the default hardcoded connection addresses
+func (dm *Daemon) GetDefaultConnections() []string {
+	conns := make([]string, len(dm.config.DefaultConnections))
+	copy(conns[:], dm.config.DefaultConnections[:])
+	return conns
+}
+
+// GetConnection returns a *Connection of specific address
+func (dm *Daemon) GetConnection(addr string) (*Connection, error) {
+	c := dm.connections.get(addr)
+	if c == nil {
+		return nil, nil
+	}
+
+	return dm.newConnection(c)
+}
+
+// DisconnectByGnetID disconnects a connection by gnet ID
+func (dm *Daemon) DisconnectByGnetID(gnetID uint64) error {
+	c := dm.connections.getByGnetID(gnetID)
+	if c == nil {
+		return ErrConnectionNotExist
+	}
+
+	return dm.Disconnect(c.Addr, ErrDisconnectRequestedByOperator)
+}
+
+// GetTrustConnections returns all trusted connections
+func (dm *Daemon) GetTrustConnections() []string {
+	return dm.pex.Trusted().ToAddrs()
+}
+
+// GetExchgConnection returns all connections to peers found through peer exchange
+func (dm *Daemon) GetExchgConnection() []string {
+	return dm.pex.RandomExchangeable(0).ToAddrs()
+}
+
+/* Peer Blockchain Status API */
+
+// BlockchainProgress is the current blockchain syncing status
+type BlockchainProgress struct {
+	// Our current blockchain length
+	Current uint64
+	// Our best guess at true blockchain length
+	Highest uint64
+	// Individual blockchain length reports from peers
+	Peers []PeerBlockchainHeight
+}
+
+// newBlockchainProgress creates BlockchainProgress from the local head blockchain sequence number
+// and a list of remote peers
+func newBlockchainProgress(headSeq uint64, conns []connection) *BlockchainProgress {
+	peers := newPeerBlockchainHeights(conns)
+
+	return &BlockchainProgress{
+		Current: headSeq,
+		Highest: EstimateBlockchainHeight(headSeq, peers),
+		Peers:   peers,
+	}
+}
+
+// PeerBlockchainHeight records blockchain height for an address
+type PeerBlockchainHeight struct {
+	Address string
+	Height  uint64
+}
+
+func newPeerBlockchainHeights(conns []connection) []PeerBlockchainHeight {
+	peers := make([]PeerBlockchainHeight, 0, len(conns))
+	for _, c := range conns {
+		if c.State != ConnectionStatePending {
+			peers = append(peers, PeerBlockchainHeight{
+				Address: c.Addr,
+				Height:  c.Height,
+			})
+		}
+	}
+	return peers
+}
+
+// EstimateBlockchainHeight estimates the blockchain sync height.
+// The highest height reported amongst all peers, and including the node itself, is returned.
+func EstimateBlockchainHeight(headSeq uint64, peers []PeerBlockchainHeight) uint64 {
+	for _, c := range peers {
+		if c.Height > headSeq {
+			headSeq = c.Height
+		}
+	}
+	return headSeq
+}
+
+// GetBlockchainProgress returns a *BlockchainProgress
+func (dm *Daemon) GetBlockchainProgress(headSeq uint64) *BlockchainProgress {
+	conns := dm.connections.all()
+	return newBlockchainProgress(headSeq, conns)
+}
+
+// InjectBroadcastTransaction injects transaction to the unconfirmed pool and broadcasts it.
+// If the transaction violates either hard or soft constraints, it is neither injected nor broadcast.
+// If the broadcast fails (due to no connections), the transaction is not injected.
+// However, the broadcast may fail in practice, without returning an error,
+// so this is not foolproof.
+// This method is to be used by user-initiated transaction injections.
+// For transactions received over the network, use daemon.injectTransaction and check the result to
+// decide on repropagation.
+func (dm *Daemon) InjectBroadcastTransaction(txn coin.Transaction) error {
+	return dm.visor.WithUpdateTx("daemon.InjectBroadcastTransaction", func(tx *dbutil.Tx) error {
+		_, head, inputs, err := dm.visor.InjectUserTransactionTx(tx, txn)
+		if err != nil {
+			logger.WithError(err).Error("InjectUserTransactionTx failed")
+			return err
+		}
+
+		if err := dm.BroadcastUserTransaction(txn, head, inputs); err != nil {
+			logger.WithError(err).Error("BroadcastUserTransaction failed")
+			return err
+		}
+
+		return nil
+	})
+}
+
+// InjectTransaction injects transaction to the unconfirmed pool but does not broadcast it.
+// If the transaction violates either hard or soft constraints, it is not injected.
+// This method is to be used by user-initiated transaction injections.
+// For transactions received over the network, use daemon.injectTransaction and check the result to
+// decide on repropagation.
+func (dm *Daemon) InjectTransaction(txn coin.Transaction) error {
+	_, _, _, err := dm.visor.InjectUserTransaction(txn)
+	return err
 }

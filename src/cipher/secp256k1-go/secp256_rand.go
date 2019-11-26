@@ -1,8 +1,8 @@
 package secp256k1
 
 import (
-	crand "crypto/rand"
-	"crypto/sha256" //secure, system random number generator
+	crand "crypto/rand" // secure, system random number generator
+	"crypto/sha256"
 	"hash"
 	"io"
 	"log"
@@ -24,7 +24,7 @@ func SumSHA256(b []byte) []byte {
 	sha256Hash := <-sha256HashPool
 	sha256Hash.Reset()
 	// sha256.Write never returns an error
-	sha256Hash.Write(b) // nolint: errcheck
+	sha256Hash.Write(b) //nolint:errcheck
 	sum := sha256Hash.Sum(nil)
 	sha256HashPool <- sha256Hash
 	return sum[:]

@@ -1,27 +1,61 @@
 import { Injectable, NgZone } from '@angular/core';
-import { Http } from '@angular/http';
 import { Subject } from 'rxjs/Subject';
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { Observable } from 'rxjs/Observable';
+import { HttpClient } from '@angular/common/http';
+import { ISubscription } from 'rxjs/Subscription';
 
 @Injectable()
 export class PriceService {
-  readonly CMC_TICKER_ID = 1619;
+  readonly PRICE_API_ID = 'sky-skycoin';
 
   price: Subject<number> = new BehaviorSubject<number>(null);
 
+  private readonly updatePeriod = 10 * 60 * 1000;
+  private lastPriceSubscription: ISubscription;
+  private timerSubscriptions: ISubscription[];
+
   constructor(
-    private http: Http,
+    private http: HttpClient,
     private ngZone: NgZone,
   ) {
+    this.startTimer();
+  }
+
+  private startTimer(firstConnectionDelay = 0) {
+    if (this.timerSubscriptions) {
+      this.timerSubscriptions.forEach(sub => sub.unsubscribe());
+    }
+
+    this.timerSubscriptions = [];
+
     this.ngZone.runOutsideAngular(() => {
-      Observable.timer(0, 10 * 60 * 1000).subscribe(() => {
-        this.http.get(`https://api.coinmarketcap.com/v2/ticker/${this.CMC_TICKER_ID}/`)
-          .map(response => response.json())
-          .subscribe(response => this.ngZone.run(() => {
-            this.price.next(response.data.quotes.USD.price);
-          }));
-      });
+      this.timerSubscriptions.push(Observable.timer(this.updatePeriod, this.updatePeriod)
+        .subscribe(() => {
+          this.ngZone.run(() => !this.lastPriceSubscription ? this.loadPrice() : null );
+        }));
     });
+
+    this.timerSubscriptions.push(
+      Observable.of(1).delay(firstConnectionDelay).subscribe(() => {
+        this.ngZone.run(() => this.loadPrice());
+      }));
+  }
+
+  private loadPrice() {
+    if (!this.PRICE_API_ID) {
+      return;
+    }
+
+    if (this.lastPriceSubscription) {
+      this.lastPriceSubscription.unsubscribe();
+    }
+
+    this.lastPriceSubscription = this.http.get(`https://api.coinpaprika.com/v1/tickers/${this.PRICE_API_ID}?quotes=USD`)
+      .subscribe((response: any) => {
+        this.lastPriceSubscription = null;
+        this.price.next(response.quotes.USD.price);
+      },
+      () => this.startTimer(30000));
   }
 }

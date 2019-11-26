@@ -7,8 +7,8 @@ import (
 	"log"
 	"sort"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/util/mathutil"
 )
 
 /*
@@ -34,6 +34,9 @@ import (
 	- order created
 	- order spent (for rollbacks)
 */
+
+//go:generate skyencoder -struct UxHead -unexported
+//go:generate skyencoder -struct UxBody -unexported
 
 // UxOut represents uxout
 type UxOut struct {
@@ -64,15 +67,27 @@ func (uo *UxOut) Hash() cipher.SHA256 {
 
 // SnapshotHash returns hash of UxBody + UxHead
 func (uo *UxOut) SnapshotHash() cipher.SHA256 {
-	b1 := encoder.Serialize(uo.Body) //body
-	b2 := encoder.Serialize(uo.Head) //time, bkseq
-	b3 := append(b1, b2...)
-	return cipher.SumSHA256(b3)
+	n1 := encodeSizeUxBody(&uo.Body)
+	n2 := encodeSizeUxHead(&uo.Head)
+	buf := make([]byte, n1+n2)
+
+	if err := encodeUxBodyToBuffer(buf[:n1], &uo.Body); err != nil {
+		log.Panicf("encodeUxBodyToBuffer failed: %v", err)
+	}
+	if err := encodeUxHeadToBuffer(buf[n1:], &uo.Head); err != nil {
+		log.Panicf("encodeUxHeadToBuffer failed: %v", err)
+	}
+
+	return cipher.SumSHA256(buf)
 }
 
 // Hash returns hash of uxbody
 func (ub *UxBody) Hash() cipher.SHA256 {
-	return cipher.SumSHA256(encoder.Serialize(ub))
+	buf, err := encodeUxBody(ub)
+	if err != nil {
+		log.Panicf("encodeUxBody failed: %v", err)
+	}
+	return cipher.SumSHA256(buf)
 }
 
 /*
@@ -98,7 +113,7 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 
 	// Calculate whole coin seconds
 	wholeCoins := uo.Body.Coins / 1e6
-	wholeCoinSeconds, err := MultUint64(seconds, wholeCoins)
+	wholeCoinSeconds, err := mathutil.MultUint64(seconds, wholeCoins)
 	if err != nil {
 		err := fmt.Errorf("UxOut.CoinHours: Calculating whole coin seconds overflows uint64 seconds=%d coins=%d uxid=%s", seconds, wholeCoins, uo.Hash().Hex())
 		log.Printf("%v", err)
@@ -107,7 +122,7 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 
 	// Calculate remainder droplet seconds
 	remainderDroplets := uo.Body.Coins % 1e6
-	dropletSeconds, err := MultUint64(seconds, remainderDroplets)
+	dropletSeconds, err := mathutil.MultUint64(seconds, remainderDroplets)
 	if err != nil {
 		err := fmt.Errorf("UxOut.CoinHours: Calculating droplet seconds overflows uint64 seconds=%d droplets=%d uxid=%s", seconds, remainderDroplets, uo.Hash().Hex())
 		log.Printf("%v", err)
@@ -117,8 +132,8 @@ func (uo *UxOut) CoinHours(t uint64) (uint64, error) {
 	// Add coinSeconds and seconds earned by droplets, rounded off
 	coinSeconds := wholeCoinSeconds + dropletSeconds/1e6
 
-	coinHours := coinSeconds / 3600                        // coin hours
-	totalHours, err := AddUint64(uo.Body.Hours, coinHours) // starting+earned
+	coinHours := coinSeconds / 3600                                 // coin hours
+	totalHours, err := mathutil.AddUint64(uo.Body.Hours, coinHours) // starting+earned
 	if err != nil {
 		log.Printf("%v uxid=%s", ErrAddEarnedCoinHoursAdditionOverflow, uo.Hash().Hex())
 		return 0, ErrAddEarnedCoinHoursAdditionOverflow
@@ -192,7 +207,7 @@ func (ua UxArray) Coins() (uint64, error) {
 	var coins uint64
 	for _, ux := range ua {
 		var err error
-		coins, err = AddUint64(coins, ux.Body.Coins)
+		coins, err = mathutil.AddUint64(coins, ux.Body.Coins)
 		if err != nil {
 			return 0, errors.New("UxArray.Coins addition overflow")
 		}
@@ -210,7 +225,7 @@ func (ua UxArray) CoinHours(headTime uint64) (uint64, error) {
 			return 0, err
 		}
 
-		hours, err = AddUint64(hours, uxHours)
+		hours, err = mathutil.AddUint64(hours, uxHours)
 		if err != nil {
 			return 0, errors.New("UxArray.CoinHours addition overflow")
 		}

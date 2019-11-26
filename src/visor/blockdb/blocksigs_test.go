@@ -5,10 +5,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/cipher/encoder"
+	"github.com/SkycoinProject/skycoin/src/testutil"
+	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 )
 
 func TestBlockSigsGet(t *testing.T) {
@@ -97,7 +97,7 @@ func TestBlockSigsGet(t *testing.T) {
 	}
 }
 
-func TestBlockSigsAddWithTx(t *testing.T) {
+func TestBlockSigsAdd(t *testing.T) {
 	db, closeDB := prepareDB(t)
 	defer closeDB()
 
@@ -118,7 +118,7 @@ func TestBlockSigsAddWithTx(t *testing.T) {
 		v := bkt.Get(h[:])
 		require.NotNil(t, v)
 		var s cipher.Sig
-		err := encoder.DeserializeRaw(v, &s)
+		err := encoder.DeserializeRawExact(v, &s)
 		require.NoError(t, err)
 		require.Equal(t, sig, s)
 		return nil

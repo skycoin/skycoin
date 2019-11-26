@@ -3,11 +3,12 @@ package historydb
 import (
 	"fmt"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 )
+
+//go:generate skyencoder -unexported -struct UxOut
 
 // UxOutsBkt holds unspent outputs
 var UxOutsBkt = []byte("uxouts")
@@ -31,7 +32,9 @@ type ErrUxOutNotExist struct {
 
 // NewErrUxOutNotExist creates ErrUxOutNotExist from a UxID
 func NewErrUxOutNotExist(uxID string) error {
-	return ErrUxOutNotExist{UxID: uxID}
+	return ErrUxOutNotExist{
+		UxID: uxID,
+	}
 }
 
 func (e ErrUxOutNotExist) Error() string {
@@ -44,17 +47,28 @@ type uxOuts struct{}
 // put sets out value
 func (ux *uxOuts) put(tx *dbutil.Tx, out UxOut) error {
 	hash := out.Hash()
-	return dbutil.PutBucketValue(tx, UxOutsBkt, hash[:], encoder.Serialize(out))
+
+	buf, err := encodeUxOut(&out)
+	if err != nil {
+		return err
+	}
+
+	return dbutil.PutBucketValue(tx, UxOutsBkt, hash[:], buf)
 }
 
 // get gets UxOut of given id
 func (ux *uxOuts) get(tx *dbutil.Tx, uxID cipher.SHA256) (*UxOut, error) {
 	var out UxOut
 
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, UxOutsBkt, uxID[:], &out); err != nil {
+	v, err := dbutil.GetBucketValueNoCopy(tx, UxOutsBkt, uxID[:])
+	if err != nil {
 		return nil, err
-	} else if !ok {
+	} else if v == nil {
 		return nil, nil
+	}
+
+	if err := decodeUxOutExact(v, &out); err != nil {
+		return nil, err
 	}
 
 	return &out, nil

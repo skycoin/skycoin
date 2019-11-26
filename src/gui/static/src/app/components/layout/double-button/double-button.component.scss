@@ -38,7 +38,7 @@
 
 .light {
   &.-buttons-container {
-    background: #f7f7f7;
+    background: #f1f1f1;
   }
 
   .-toggle ::ng-deep button.enabled {
@@ -47,5 +47,29 @@
     span {
       color: $grey-dark;
     }
+  }
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  .-buttons-container.navbar.light {
+    border-radius: 20px;
+
+    app-button ::ng-deep .button-container {
+      display: block;
+    }
+  }
+}
+
+.small {
+  &.-buttons-container {
+    padding: 2px;
+    line-height: 0px;
+  }
+
+  .-small-button ::ng-deep button {
+    padding: 0 10px 0 10px;
+    min-width: 70px;
+    font-size: 9px;
+    min-height: 16px;
   }
 }

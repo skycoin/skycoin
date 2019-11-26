@@ -10,10 +10,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/testutil"
+	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 )
 
 func prepareDB(t *testing.T) (*dbutil.DB, func()) {
@@ -53,7 +53,7 @@ var _ = func() int64 {
 // Blockchainer interface for isolating the detail of blockchain.
 type Blockchainer interface {
 	Head() *coin.Block
-	GetBlockInDepth(dep uint64) *coin.Block
+	GetBlockInDepth(depth uint64) *coin.Block
 	ExecuteBlock(b *coin.Block) (coin.UxArray, error)
 	CreateGenesisBlock(genAddress cipher.Address, genCoins, timestamp uint64) coin.Block
 	VerifyTransaction(tx coin.Transaction) error
@@ -72,12 +72,12 @@ func newBlockchain() *fakeBlockchain {
 	}
 }
 
-func (fbc fakeBlockchain) GetBlockInDepth(dep uint64) *coin.Block {
-	if dep >= uint64(len(fbc.blocks)) {
-		panic(fmt.Sprintf("block depth: %d overflow", dep))
+func (fbc fakeBlockchain) GetBlockInDepth(depth uint64) *coin.Block {
+	if depth >= uint64(len(fbc.blocks)) {
+		panic(fmt.Sprintf("block depth: %d overflow", depth))
 	}
 
-	return &fbc.blocks[dep]
+	return &fbc.blocks[depth]
 }
 
 func (fbc fakeBlockchain) Head() *coin.Block {
@@ -105,21 +105,21 @@ func (fbc *fakeBlockchain) addUxOut(ux coin.UxOut) {
 func (fbc *fakeBlockchain) ExecuteBlock(b *coin.Block) (coin.UxArray, error) {
 	var uxs coin.UxArray
 	txns := b.Body.Transactions
-	for _, tx := range txns {
+	for _, txn := range txns {
 		// Remove spent outputs
-		for _, id := range tx.In {
+		for _, id := range txn.In {
 			ux := fbc.unspent[id.Hex()]
 			fbc.uxhash = fbc.uxhash.Xor(ux.SnapshotHash())
 			delete(fbc.unspent, id.Hex())
 
 		}
-		fbc.deleteUxOut(tx.In)
+		fbc.deleteUxOut(txn.In)
 		// Create new outputs
-		txUxs := coin.CreateUnspents(b.Head, tx)
-		for i := range txUxs {
-			fbc.addUxOut(txUxs[i])
+		txnUxs := coin.CreateUnspents(b.Head, txn)
+		for i := range txnUxs {
+			fbc.addUxOut(txnUxs[i])
 		}
-		uxs = append(uxs, txUxs...)
+		uxs = append(uxs, txnUxs...)
 	}
 
 	b.Head.PrevHash = fbc.Head().HashHeader()
@@ -130,12 +130,16 @@ func (fbc *fakeBlockchain) ExecuteBlock(b *coin.Block) (coin.UxArray, error) {
 
 func (fbc *fakeBlockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesisCoins, timestamp uint64) coin.Block {
 	txn := coin.Transaction{}
-	txn.PushOutput(genesisAddr, genesisCoins, genesisCoins)
+	err := txn.PushOutput(genesisAddr, genesisCoins, genesisCoins)
+	if err != nil {
+		panic(err)
+	}
 	body := coin.BlockBody{Transactions: coin.Transactions{txn}}
 	prevHash := cipher.SHA256{}
+	bodyHash := body.Hash()
 	head := coin.BlockHeader{
 		Time:     timestamp,
-		BodyHash: body.Hash(),
+		BodyHash: bodyHash,
 		PrevHash: prevHash,
 		BkSeq:    0,
 		Version:  0,
@@ -193,10 +197,10 @@ func TestProcessGenesisBlock(t *testing.T) {
 	require.NoError(t, err)
 
 	// check transactions bucket.
-	var tx Transaction
-	txHash := gb.Body.Transactions[0].Hash()
-	mustGetBucketValue(t, db, TransactionsBkt, txHash[:], &tx)
-	require.Equal(t, tx.Txn, gb.Body.Transactions[0])
+	var txn Transaction
+	txnHash := gb.Body.Transactions[0].Hash()
+	mustGetBucketValue(t, db, TransactionsBkt, txnHash[:], &txn)
+	require.Equal(t, txn.Txn, gb.Body.Transactions[0])
 
 	// check address in
 	outID := []cipher.SHA256{}
@@ -234,18 +238,30 @@ type txOut struct {
 	Hours  uint64
 }
 
+// findTxnInBlock looks up a coin.Transaction from a coin.Block.
+// Returns the Transaction and whether it was found or not
+func findTxnInBlock(b *coin.Block, txnHash cipher.SHA256) (coin.Transaction, bool) {
+	txns := b.Body.Transactions
+	for i := range txns {
+		if txns[i].Hash() == txnHash {
+			return txns[i], true
+		}
+	}
+	return coin.Transaction{}, false
+}
+
 func getUx(bc Blockchainer, seq uint64, txID cipher.SHA256, addr string) (*coin.UxOut, error) {
 	b := bc.GetBlockInDepth(seq)
 	if b == nil {
 		return nil, fmt.Errorf("no block in depth:%v", seq)
 	}
 
-	tx, ok := b.GetTransaction(txID)
+	txn, ok := findTxnInBlock(b, txID)
 	if !ok {
 		return nil, errors.New("found transaction failed")
 	}
 
-	uxs := coin.CreateUnspents(b.Head, tx)
+	uxs := coin.CreateUnspents(b.Head, txn)
 	for _, u := range uxs {
 		if u.Body.Address.String() == addr {
 			return &u, nil
@@ -276,6 +292,7 @@ func TestProcessBlock(t *testing.T) {
 	                   |-222uMeCeL1PbkJGZJDgAz5sib2uisv9hYUm ==>|
 	                                                            |-222uMeCeL1PbkJGZJDgAz5sib2uisv9hYUm
 	*/
+
 	testData := []testData{
 		{
 			PreBlockHash: gb.HashHeader(),
@@ -338,13 +355,13 @@ func TestProcessBlock(t *testing.T) {
 
 func testEngine(t *testing.T, tds []testData, bc *fakeBlockchain, hdb *HistoryDB, db *dbutil.DB) {
 	for i, td := range tds {
-		b, tx, err := addBlock(bc, td, incTime*(uint64(i)+1))
+		b, txn, err := addBlock(bc, td, incTime*(uint64(i)+1))
 		require.NoError(t, err)
 
 		// update the next block test data.
 		if i+1 < len(tds) {
 			// update UxOut of next test data.
-			tds[i+1].Vin.TxID = tx.Hash()
+			tds[i+1].Vin.TxID = txn.Hash()
 			tds[i+1].PreBlockHash = b.HashHeader()
 		}
 
@@ -355,15 +372,15 @@ func testEngine(t *testing.T, tds []testData, bc *fakeBlockchain, hdb *HistoryDB
 		})
 		require.NoError(t, err)
 
-		// check tx
-		txInBkt := Transaction{}
-		k := tx.Hash()
-		mustGetBucketValue(t, db, TransactionsBkt, k[:], &txInBkt)
-		require.Equal(t, &txInBkt.Txn, tx)
+		// check txn
+		txnInBkt := Transaction{}
+		k := txn.Hash()
+		mustGetBucketValue(t, db, TransactionsBkt, k[:], &txnInBkt)
+		require.Equal(t, &txnInBkt.Txn, txn)
 
 		// check outputs
 		for _, o := range td.Vouts {
-			ux, err := getUx(bc, uint64(i+1), tx.Hash(), o.ToAddr)
+			ux, err := getUx(bc, uint64(i+1), txn.Hash(), o.ToAddr)
 			require.NoError(t, err)
 
 			uxInDB := UxOut{}
@@ -393,13 +410,18 @@ func addBlock(bc *fakeBlockchain, td testData, tm uint64) (*coin.Block, *coin.Tr
 		return nil, nil, errors.New("no unspent output")
 	}
 
-	txn.PushInput(ux.Hash())
+	if err := txn.PushInput(ux.Hash()); err != nil {
+		return nil, nil, err
+	}
+
 	for _, o := range td.Vouts {
 		addr, err := cipher.DecodeBase58Address(o.ToAddr)
 		if err != nil {
 			return nil, nil, err
 		}
-		txn.PushOutput(addr, o.Coins, o.Hours)
+		if err := txn.PushOutput(addr, o.Coins, o.Hours); err != nil {
+			return nil, nil, err
+		}
 	}
 
 	sigKey := cipher.MustSecKeyFromHex(td.Vin.SigKey)
@@ -449,8 +471,9 @@ func newBlock(prev coin.Block, currentTime uint64, uxHash cipher.SHA256, txns co
 
 func newBlockHeader(prev coin.BlockHeader, uxHash cipher.SHA256, currentTime, fee uint64, body coin.BlockBody) coin.BlockHeader {
 	prevHash := prev.Hash()
+	bodyHash := body.Hash()
 	return coin.BlockHeader{
-		BodyHash: body.Hash(),
+		BodyHash: bodyHash,
 		Version:  prev.Version,
 		PrevHash: prevHash,
 		Time:     currentTime,

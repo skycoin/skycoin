@@ -2,13 +2,13 @@ package visor
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/params"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/params"
+	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 )
 
 var (
@@ -20,23 +20,47 @@ var (
 	errUpdateObjectDoesNotExist = errors.New("object does not exist in bucket")
 )
 
+//go:generate skyencoder -unexported -struct UnconfirmedTransaction
+//go:generate skyencoder -unexported -struct UxArray
+
+// UxArray wraps coin.UxArray
+type UxArray struct {
+	UxArray coin.UxArray
+}
+
 // unconfirmed transactions bucket
 type unconfirmedTxns struct{}
 
 func (utb *unconfirmedTxns) get(tx *dbutil.Tx, hash cipher.SHA256) (*UnconfirmedTransaction, error) {
 	var txn UnconfirmedTransaction
 
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, UnconfirmedTxnsBkt, []byte(hash.Hex()), &txn); err != nil {
+	v, err := dbutil.GetBucketValueNoCopy(tx, UnconfirmedTxnsBkt, []byte(hash.Hex()))
+	if err != nil {
 		return nil, err
-	} else if !ok {
+	} else if v == nil {
 		return nil, nil
+	}
+
+	if err := decodeUnconfirmedTransactionExact(v, &txn); err != nil {
+		return nil, err
+	}
+
+	txnHash := txn.Transaction.Hash()
+	if hash != txnHash {
+		return nil, fmt.Errorf("DB key %s does not match block hash header %s", hash, txnHash)
 	}
 
 	return &txn, nil
 }
 
 func (utb *unconfirmedTxns) put(tx *dbutil.Tx, v *UnconfirmedTransaction) error {
-	return dbutil.PutBucketValue(tx, UnconfirmedTxnsBkt, []byte(v.Hash().Hex()), encoder.Serialize(v))
+	h := v.Transaction.Hash()
+	buf, err := encodeUnconfirmedTransaction(v)
+	if err != nil {
+		return err
+	}
+
+	return dbutil.PutBucketValue(tx, UnconfirmedTxnsBkt, []byte(h.Hex()), buf)
 }
 
 func (utb *unconfirmedTxns) update(tx *dbutil.Tx, hash cipher.SHA256, f func(v *UnconfirmedTransaction) error) error {
@@ -65,7 +89,7 @@ func (utb *unconfirmedTxns) getAll(tx *dbutil.Tx) ([]UnconfirmedTransaction, err
 
 	if err := dbutil.ForEach(tx, UnconfirmedTxnsBkt, func(_, v []byte) error {
 		var txn UnconfirmedTransaction
-		if err := encoder.DeserializeRaw(v, &txn); err != nil {
+		if err := decodeUnconfirmedTransactionExact(v, &txn); err != nil {
 			return err
 		}
 
@@ -90,7 +114,7 @@ func (utb *unconfirmedTxns) forEach(tx *dbutil.Tx, f func(hash cipher.SHA256, tx
 		}
 
 		var txn UnconfirmedTransaction
-		if err := encoder.DeserializeRaw(v, &txn); err != nil {
+		if err := decodeUnconfirmedTransactionExact(v, &txn); err != nil {
 			return err
 		}
 
@@ -105,7 +129,14 @@ func (utb *unconfirmedTxns) len(tx *dbutil.Tx) (uint64, error) {
 type txnUnspents struct{}
 
 func (txus *txnUnspents) put(tx *dbutil.Tx, hash cipher.SHA256, uxs coin.UxArray) error {
-	return dbutil.PutBucketValue(tx, UnconfirmedUnspentsBkt, []byte(hash.Hex()), encoder.Serialize(uxs))
+	buf, err := encodeUxArray(&UxArray{
+		UxArray: uxs,
+	})
+	if err != nil {
+		return err
+	}
+
+	return dbutil.PutBucketValue(tx, UnconfirmedUnspentsBkt, []byte(hash.Hex()), buf)
 }
 
 func (txus *txnUnspents) delete(tx *dbutil.Tx, hash cipher.SHA256) error {
@@ -116,14 +147,14 @@ func (txus *txnUnspents) getByAddr(tx *dbutil.Tx, a cipher.Address) (coin.UxArra
 	var uxo coin.UxArray
 
 	if err := dbutil.ForEach(tx, UnconfirmedUnspentsBkt, func(_, v []byte) error {
-		var uxa coin.UxArray
-		if err := encoder.DeserializeRaw(v, &uxa); err != nil {
+		var uxa UxArray
+		if err := decodeUxArrayExact(v, &uxa); err != nil {
 			return err
 		}
 
-		for i := range uxa {
-			if uxa[i].Body.Address == a {
-				uxo = append(uxo, uxa[i])
+		for i := range uxa.UxArray {
+			if uxa.UxArray[i].Body.Address == a {
+				uxo = append(uxo, uxa.UxArray[i])
 			}
 		}
 
@@ -200,14 +231,13 @@ func (utp *UnconfirmedTransactionPool) SetTransactionsAnnounced(tx *dbutil.Tx, h
 // existed in the pool.
 // If the transaction violates hard constraints, it is rejected.
 // Soft constraints violations mark a txn as invalid, but the txn is inserted. The soft violation is returned.
-func (utp *UnconfirmedTransactionPool) InjectTransaction(tx *dbutil.Tx, bc Blockchainer, txn coin.Transaction, verifyParams params.VerifyTxn) (bool, *ErrTxnViolatesSoftConstraint, error) {
+func (utp *UnconfirmedTransactionPool) InjectTransaction(tx *dbutil.Tx, bc Blockchainer, txn coin.Transaction, distParams params.Distribution, verifyParams params.VerifyTxn) (bool, *ErrTxnViolatesSoftConstraint, error) {
 	var isValid int8 = 1
 	var softErr *ErrTxnViolatesSoftConstraint
-	if _, _, err := bc.VerifySingleTxnSoftHardConstraints(tx, txn, verifyParams); err != nil {
-		logger.Warningf("bc.VerifySingleTxnSoftHardConstraints failed for txn %s: %v", txn.TxIDHex(), err)
-		switch err.(type) {
+	if _, _, err := bc.VerifySingleTxnSoftHardConstraints(tx, txn, distParams, verifyParams, TxnSigned); err != nil {
+		logger.Warningf("bc.VerifySingleTxnSoftHardConstraints failed for txn %s: %v", txn.Hash().Hex(), err)
+		switch e := err.(type) {
 		case ErrTxnViolatesSoftConstraint:
-			e := err.(ErrTxnViolatesSoftConstraint)
 			softErr = &e
 			isValid = 0
 		case ErrTxnViolatesHardConstraint:
@@ -218,7 +248,6 @@ func (utp *UnconfirmedTransactionPool) InjectTransaction(tx *dbutil.Tx, bc Block
 	}
 
 	hash := txn.Hash()
-
 	known, err := utp.txns.hasKey(tx, hash)
 	if err != nil {
 		logger.Errorf("InjectTransaction check txn exists failed: %v", err)
@@ -257,7 +286,8 @@ func (utp *UnconfirmedTransactionPool) InjectTransaction(tx *dbutil.Tx, bc Block
 	}
 
 	// update unconfirmed unspent
-	if err := utp.unspent.put(tx, hash, coin.CreateUnspents(head.Head, txn)); err != nil {
+	createdUnspents := coin.CreateUnspents(head.Head, txn)
+	if err := utp.unspent.put(tx, hash, createdUnspents); err != nil {
 		logger.Errorf("InjectTransaction put new unspent outputs: %v", err)
 		return false, nil, err
 	}
@@ -302,7 +332,7 @@ func (utp *UnconfirmedTransactionPool) RemoveTransactions(tx *dbutil.Tx, txHashe
 // Refresh checks all unconfirmed txns against the blockchain.
 // If the transaction becomes invalid it is marked invalid.
 // If the transaction becomes valid it is marked valid and is returned to the caller.
-func (utp *UnconfirmedTransactionPool) Refresh(tx *dbutil.Tx, bc Blockchainer, verifyParams params.VerifyTxn) ([]cipher.SHA256, error) {
+func (utp *UnconfirmedTransactionPool) Refresh(tx *dbutil.Tx, bc Blockchainer, distParams params.Distribution, verifyParams params.VerifyTxn) ([]cipher.SHA256, error) {
 	utxns, err := utp.txns.getAll(tx)
 	if err != nil {
 		return nil, err
@@ -314,14 +344,14 @@ func (utp *UnconfirmedTransactionPool) Refresh(tx *dbutil.Tx, bc Blockchainer, v
 	for _, utxn := range utxns {
 		utxn.Checked = now.UnixNano()
 
-		_, _, err := bc.VerifySingleTxnSoftHardConstraints(tx, utxn.Transaction, verifyParams)
+		_, _, err := bc.VerifySingleTxnSoftHardConstraints(tx, utxn.Transaction, distParams, verifyParams, TxnSigned)
 
 		switch err.(type) {
 		case ErrTxnViolatesSoftConstraint, ErrTxnViolatesHardConstraint:
 			utxn.IsValid = 0
 		case nil:
 			if utxn.IsValid == 0 {
-				nowValid = append(nowValid, utxn.Hash())
+				nowValid = append(nowValid, utxn.Transaction.Hash())
 			}
 			utxn.IsValid = 1
 		default:
@@ -348,11 +378,11 @@ func (utp *UnconfirmedTransactionPool) RemoveInvalid(tx *dbutil.Tx, bc Blockchai
 	}
 
 	for _, utxn := range utxns {
-		err := bc.VerifySingleTxnHardConstraints(tx, utxn.Transaction)
+		err := bc.VerifySingleTxnHardConstraints(tx, utxn.Transaction, TxnSigned)
 		if err != nil {
 			switch err.(type) {
 			case ErrTxnViolatesHardConstraint:
-				removeUtxns = append(removeUtxns, utxn.Hash())
+				removeUtxns = append(removeUtxns, utxn.Transaction.Hash())
 			default:
 				return nil, err
 			}
@@ -457,8 +487,7 @@ func (utp *UnconfirmedTransactionPool) GetIncomingOutputs(tx *dbutil.Tx, bh coin
 	var outs coin.UxArray
 
 	if err := utp.txns.forEach(tx, func(_ cipher.SHA256, txn UnconfirmedTransaction) error {
-		uxOuts := coin.CreateUnspents(bh, txn.Transaction)
-		outs = append(outs, uxOuts...)
+		outs = append(outs, coin.CreateUnspents(bh, txn.Transaction)...)
 		return nil
 	}); err != nil {
 		return nil, err

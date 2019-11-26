@@ -1,7 +1,8 @@
 package wallet
 
 import (
-	"github.com/skycoin/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/util/mathutil"
 )
 
 /*
@@ -47,12 +48,12 @@ func NewBalanceFromUxOut(headTime uint64, ux *coin.UxOut) (Balance, error) {
 
 // Add adds two Balances
 func (bal Balance) Add(other Balance) (Balance, error) {
-	coins, err := coin.AddUint64(bal.Coins, other.Coins)
+	coins, err := mathutil.AddUint64(bal.Coins, other.Coins)
 	if err != nil {
 		return Balance{}, err
 	}
 
-	hours, err := coin.AddUint64(bal.Hours, other.Hours)
+	hours, err := mathutil.AddUint64(bal.Hours, other.Hours)
 	if err != nil {
 		return Balance{}, err
 	}

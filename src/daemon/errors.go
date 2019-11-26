@@ -3,7 +3,7 @@ package daemon
 import (
 	"errors"
 
-	"github.com/skycoin/skycoin/src/daemon/gnet"
+	"github.com/SkycoinProject/skycoin/src/daemon/gnet"
 )
 
 var (
@@ -29,6 +29,8 @@ var (
 	ErrDisconnectMaxOutgoingConnectionsReached gnet.DisconnectReason = errors.New("Maximum outgoing connections was reached")
 	// ErrDisconnectBlockchainPubkeyNotMatched is returned when the blockchain pubkey in introduction does not match
 	ErrDisconnectBlockchainPubkeyNotMatched gnet.DisconnectReason = errors.New("Blockchain pubkey does not match")
+	// ErrDisconnectBlockchainPubkeyNotProvided is returned when the blockchain pubkey in introduction is not provided
+	ErrDisconnectBlockchainPubkeyNotProvided gnet.DisconnectReason = errors.New("Blockchain pubkey is not provided")
 	// ErrDisconnectInvalidExtraData is returned when extra field can't be parsed
 	ErrDisconnectInvalidExtraData gnet.DisconnectReason = errors.New("Invalid extra data in message")
 	// ErrDisconnectReceivedDisconnect received a DisconnectMessage

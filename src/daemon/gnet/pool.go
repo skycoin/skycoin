@@ -17,10 +17,10 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/daemon/strand"
-	"github.com/skycoin/skycoin/src/util/elapse"
-	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/SkycoinProject/skycoin/src/cipher/encoder"
+	"github.com/SkycoinProject/skycoin/src/daemon/strand"
+	"github.com/SkycoinProject/skycoin/src/util/elapse"
+	"github.com/SkycoinProject/skycoin/src/util/logging"
 )
 
 // DisconnectReason is passed to ConnectionPool's DisconnectCallback
@@ -105,7 +105,9 @@ type Config struct {
 	// Maximum allowed default outgoing connection number
 	MaxDefaultPeerOutgoingConnections int
 	// Messages greater than length are rejected and the sender disconnected
-	MaxMessageLength int
+	MaxIncomingMessageLength int
+	// Messages greater than length are not sent and an error is reported in a SendResult
+	MaxOutgoingMessageLength int
 	// Timeout is the timeout for dialing new connections.  Use a
 	// timeout of 0 to ignore timeout.
 	DialTimeout time.Duration
@@ -140,7 +142,8 @@ func NewConfig() Config {
 		Address:                           "",
 		Port:                              0,
 		MaxConnections:                    128,
-		MaxMessageLength:                  256 * 1024,
+		MaxOutgoingMessageLength:          256 * 1024,
+		MaxIncomingMessageLength:          1024 * 1024,
 		MaxDefaultPeerOutgoingConnections: 1,
 		DialTimeout:                       time.Second * 30,
 		ReadTimeout:                       time.Second * 30,
@@ -156,7 +159,7 @@ func NewConfig() Config {
 
 const (
 	// Byte size of the length prefix in message, sizeof(int32)
-	messageLengthSize = 4
+	messageLengthPrefixSize = 4
 )
 
 // Connection is stored by the ConnectionPool
@@ -534,7 +537,7 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) erro
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := pool.sendLoop(c, pool.Config.WriteTimeout, qc); err != nil {
+		if err := pool.sendLoop(c, pool.Config.WriteTimeout, pool.Config.MaxOutgoingMessageLength, qc); err != nil {
 			errC <- methodErr{
 				method: "sendLoop",
 				err:    err,
@@ -624,7 +627,7 @@ func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte, qc c
 			return err
 		}
 		// decode data
-		datas, err := decodeData(conn.Buffer, pool.Config.MaxMessageLength)
+		datas, err := decodeData(conn.Buffer, pool.Config.MaxIncomingMessageLength)
 		if err != nil {
 			return err
 		}
@@ -645,7 +648,7 @@ func (pool *ConnectionPool) readLoop(conn *Connection, msgChan chan []byte, qc c
 	}
 }
 
-func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration, qc chan struct{}) error {
+func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration, maxMsgLength int, qc chan struct{}) error {
 	elapser := elapse.NewElapser(sendLoopDurationThreshold, logger)
 	defer elapser.CheckForDone()
 
@@ -662,7 +665,7 @@ func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration, qc
 				continue
 			}
 
-			err := sendMessage(conn.Conn, m, timeout)
+			err := sendMessage(conn.Conn, m, timeout, maxMsgLength)
 
 			// Update last sent before writing to SendResult,
 			// this allows a write to SendResult to be used as a sync marker,
@@ -707,31 +710,41 @@ func readData(reader io.Reader, buf []byte) ([]byte, error) {
 // decode data from buffer.
 func decodeData(buf *bytes.Buffer, maxMsgLength int) ([][]byte, error) {
 	dataArray := [][]byte{}
-	for buf.Len() > messageLengthSize {
-		prefix := buf.Bytes()[:messageLengthSize]
+	for buf.Len() > messageLengthPrefixSize {
+		prefix := buf.Bytes()[:messageLengthPrefixSize]
 		// decode message length
-		tmpLength := uint32(0)
-
-		_, err := encoder.DeserializeAtomic(prefix, &tmpLength)
+		tmpLength, _, err := encoder.DeserializeUint32(prefix)
 		if err != nil {
 			// encoder.DeserializeAtomic should only return an error if there wasn't
 			// enough data in buf to read the integer, but the prefix buf length
 			// is already ensured to be long enough
-			logger.Panic("encoder.DeserializeAtomic failed unexpectedly: %v", err)
+			logger.Panicf("encoder.DeserializeUint32 failed unexpectedly: %v", err)
 		}
 
 		length := int(tmpLength)
 
-		// Disconnect if we received an invalid length.
-		if length < messagePrefixLength || length > maxMsgLength {
+		// Disconnect if we received an invalid length
+		if length < messagePrefixLength {
+			logger.WithFields(logrus.Fields{
+				"length":              length,
+				"messagePrefixLength": messagePrefixLength,
+			}).Warningf("decodeData: length < messagePrefixLength")
 			return [][]byte{}, ErrDisconnectInvalidMessageLength
 		}
 
-		if buf.Len()-messageLengthSize < length {
+		if length > maxMsgLength {
+			logger.WithFields(logrus.Fields{
+				"length":       length,
+				"maxMsgLength": maxMsgLength,
+			}).Warning("decodeData: length > maxMsgLength")
+			return [][]byte{}, ErrDisconnectInvalidMessageLength
+		}
+
+		if buf.Len()-messageLengthPrefixSize < length {
 			return [][]byte{}, nil
 		}
 
-		buf.Next(messageLengthSize) // strip the length prefix
+		buf.Next(messageLengthPrefixSize) // strip the length prefix
 		data := make([]byte, length)
 		_, err = buf.Read(data)
 		if err != nil {

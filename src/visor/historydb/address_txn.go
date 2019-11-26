@@ -1,10 +1,16 @@
 package historydb
 
 import (
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 )
+
+//go:generate skyencoder -unexported -struct hashesWrapper
+
+// hashesWrapper wraps []cipher.SHA256
+type hashesWrapper struct {
+	Hashes []cipher.SHA256
+}
 
 // AddressTxnsBkt maps addresses to transaction hashes
 var AddressTxnsBkt = []byte("address_txns")
@@ -14,15 +20,21 @@ var AddressTxnsBkt = []byte("address_txns")
 type addressTxns struct{}
 
 // get returns the transaction hashes of given address
-func (atx *addressTxns) get(tx *dbutil.Tx, address cipher.Address) ([]cipher.SHA256, error) {
-	var txHashes []cipher.SHA256
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, AddressTxnsBkt, address.Bytes(), &txHashes); err != nil {
+func (atx *addressTxns) get(tx *dbutil.Tx, addr cipher.Address) ([]cipher.SHA256, error) {
+	var txnHashes hashesWrapper
+
+	v, err := dbutil.GetBucketValueNoCopy(tx, AddressTxnsBkt, addr.Bytes())
+	if err != nil {
 		return nil, err
-	} else if !ok {
+	} else if v == nil {
 		return nil, nil
 	}
 
-	return txHashes, nil
+	if err := decodeHashesWrapperExact(v, &txnHashes); err != nil {
+		return nil, err
+	}
+
+	return txnHashes.Hashes, nil
 }
 
 // add adds a hash to an address's hash list
@@ -40,7 +52,20 @@ func (atx *addressTxns) add(tx *dbutil.Tx, addr cipher.Address, hash cipher.SHA2
 	}
 
 	hashes = append(hashes, hash)
-	return dbutil.PutBucketValue(tx, AddressTxnsBkt, addr.Bytes(), encoder.Serialize(hashes))
+
+	buf, err := encodeHashesWrapper(&hashesWrapper{
+		Hashes: hashes,
+	})
+	if err != nil {
+		return err
+	}
+
+	return dbutil.PutBucketValue(tx, AddressTxnsBkt, addr.Bytes(), buf)
+}
+
+// contains returns true if an address has transactions
+func (atx *addressTxns) contains(tx *dbutil.Tx, addr cipher.Address) (bool, error) {
+	return dbutil.BucketHasKey(tx, AddressTxnsBkt, addr.Bytes())
 }
 
 // isEmpty checks if address transactions bucket is empty

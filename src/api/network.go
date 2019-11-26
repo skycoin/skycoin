@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/readable"
-	wh "github.com/skycoin/skycoin/src/util/http"
+	"github.com/SkycoinProject/skycoin/src/daemon"
+	"github.com/SkycoinProject/skycoin/src/readable"
+	wh "github.com/SkycoinProject/skycoin/src/util/http"
 )
 
 // connectionHandler returns a specific connection
@@ -213,7 +213,7 @@ func disconnectHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if err := gateway.Disconnect(uint64(id)); err != nil {
+		if err := gateway.DisconnectByGnetID(uint64(id)); err != nil {
 			switch err {
 			case daemon.ErrConnectionNotExist:
 				wh.Error404(w, "")

@@ -4,14 +4,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 )
 
 var (
-	emptyHash      cipher.SHA256
 	errBlockExist  = errors.New("block already exists")
 	errNoParent    = errors.New("block is not genesis and has no parent")
 	errWrongParent = errors.New("wrong parent")
@@ -32,11 +30,11 @@ type blockTree struct{}
 // AddBlock adds block with *dbutil.Tx
 func (bt *blockTree) AddBlock(tx *dbutil.Tx, b *coin.Block) error {
 	// can't store block if it's not genesis block and has no parent.
-	if b.Seq() > 0 && b.PreHashHeader() == emptyHash {
+	if b.Seq() > 0 && b.Head.PrevHash.Null() {
 		return errNoParent
 	}
 
-	// check if the block already exist.
+	// check if the block already exists.
 	hash := b.HashHeader()
 	if ok, err := dbutil.BucketHasKey(tx, BlocksBkt, hash[:]); err != nil {
 		return err
@@ -45,15 +43,19 @@ func (bt *blockTree) AddBlock(tx *dbutil.Tx, b *coin.Block) error {
 	}
 
 	// write block into blocks bucket.
-	if err := dbutil.PutBucketValue(tx, BlocksBkt, hash[:], encoder.Serialize(b)); err != nil {
+	buf, err := encodeBlock(b)
+	if err != nil {
+		return err
+	}
+
+	if err := dbutil.PutBucketValue(tx, BlocksBkt, hash[:], buf); err != nil {
 		return err
 	}
 
 	// the pre hash must be in depth - 1.
 	if b.Seq() > 0 {
-		preHash := b.PreHashHeader()
 		parentHashPair, err := getHashPairInDepth(tx, b.Seq()-1, func(hp coin.HashPair) bool {
-			return hp.Hash == preHash
+			return hp.Hash == b.Head.PrevHash
 		})
 		if err != nil {
 			return err
@@ -64,8 +66,8 @@ func (bt *blockTree) AddBlock(tx *dbutil.Tx, b *coin.Block) error {
 	}
 
 	hp := coin.HashPair{
-		Hash:    hash,
-		PreHash: b.Head.PrevHash,
+		Hash:     hash,
+		PrevHash: b.Head.PrevHash,
 	}
 
 	// get block pairs in the depth
@@ -113,8 +115,8 @@ func (bt *blockTree) RemoveBlock(tx *dbutil.Tx, b *coin.Block) error {
 
 	// remove block hash pair in tree.
 	ps := removePairs(hashPairs, coin.HashPair{
-		Hash:    hash,
-		PreHash: b.PreHashHeader(),
+		Hash:     hash,
+		PrevHash: b.Head.PrevHash,
 	})
 
 	if len(ps) == 0 {
@@ -129,10 +131,15 @@ func (bt *blockTree) RemoveBlock(tx *dbutil.Tx, b *coin.Block) error {
 func (bt *blockTree) GetBlock(tx *dbutil.Tx, hash cipher.SHA256) (*coin.Block, error) {
 	var b coin.Block
 
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, BlocksBkt, hash[:], &b); err != nil {
+	v, err := dbutil.GetBucketValueNoCopy(tx, BlocksBkt, hash[:])
+	if err != nil {
 		return nil, err
-	} else if !ok {
+	} else if v == nil {
 		return nil, nil
+	}
+
+	if err := decodeBlockExact(v, &b); err != nil {
+		return nil, err
 	}
 
 	if hash != b.HashHeader() {
@@ -159,7 +166,7 @@ func (bt *blockTree) GetBlockInDepth(tx *dbutil.Tx, depth uint64, filter Walker)
 func (bt *blockTree) ForEachBlock(tx *dbutil.Tx, f func(b *coin.Block) error) error {
 	return dbutil.ForEach(tx, BlocksBkt, func(_, v []byte) error {
 		var b coin.Block
-		if err := encoder.DeserializeRaw(v, &b); err != nil {
+		if err := decodeBlockExact(v, &b); err != nil {
 			return err
 		}
 
@@ -168,14 +175,20 @@ func (bt *blockTree) ForEachBlock(tx *dbutil.Tx, f func(b *coin.Block) error) er
 }
 
 func (bt *blockTree) getHashInDepth(tx *dbutil.Tx, depth uint64, filter Walker) (cipher.SHA256, bool, error) {
-	var pairs []coin.HashPair
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, TreeBkt, dbutil.Itob(depth), &pairs); err != nil {
+	var pairs hashPairsWrapper
+
+	v, err := dbutil.GetBucketValueNoCopy(tx, TreeBkt, dbutil.Itob(depth))
+	if err != nil {
 		return cipher.SHA256{}, false, err
-	} else if !ok {
+	} else if v == nil {
 		return cipher.SHA256{}, false, nil
 	}
 
-	hash, ok := filter(tx, pairs)
+	if err := decodeHashPairsWrapperExact(v, &pairs); err != nil {
+		return cipher.SHA256{}, false, err
+	}
+
+	hash, ok := filter(tx, pairs.HashPairs)
 	if !ok {
 		return cipher.SHA256{}, false, errors.New("No hash found in depth")
 	}
@@ -195,7 +208,7 @@ func containHash(hashPairs []coin.HashPair, pair coin.HashPair) bool {
 func removePairs(hps []coin.HashPair, pair coin.HashPair) []coin.HashPair {
 	pairs := []coin.HashPair{}
 	for _, p := range hps {
-		if p.Hash == pair.Hash && p.PreHash == pair.PreHash {
+		if p.Hash == pair.Hash && p.PrevHash == pair.PrevHash {
 			continue
 		}
 		pairs = append(pairs, p)
@@ -203,16 +216,22 @@ func removePairs(hps []coin.HashPair, pair coin.HashPair) []coin.HashPair {
 	return pairs
 }
 
-func getHashPairInDepth(tx *dbutil.Tx, dep uint64, fn func(hp coin.HashPair) bool) ([]coin.HashPair, error) {
-	var hps []coin.HashPair
-	if ok, err := dbutil.GetBucketObjectDecoded(tx, TreeBkt, dbutil.Itob(dep), &hps); err != nil {
+func getHashPairInDepth(tx *dbutil.Tx, depth uint64, fn func(hp coin.HashPair) bool) ([]coin.HashPair, error) {
+	var hps hashPairsWrapper
+
+	v, err := dbutil.GetBucketValueNoCopy(tx, TreeBkt, dbutil.Itob(depth))
+	if err != nil {
 		return nil, err
-	} else if !ok {
+	} else if v == nil {
 		return nil, nil
 	}
 
+	if err := decodeHashPairsWrapperExact(v, &hps); err != nil {
+		return nil, err
+	}
+
 	var pairs []coin.HashPair
-	for _, ps := range hps {
+	for _, ps := range hps.HashPairs {
 		if fn(ps) {
 			pairs = append(pairs, ps)
 		}
@@ -224,7 +243,7 @@ func getHashPairInDepth(tx *dbutil.Tx, dep uint64, fn func(hp coin.HashPair) boo
 func hasChild(tx *dbutil.Tx, b coin.Block) (bool, error) {
 	// get the child block hash pair, whose pre hash point to current block.
 	childHashPair, err := getHashPairInDepth(tx, b.Head.BkSeq+1, func(hp coin.HashPair) bool {
-		return hp.PreHash == b.HashHeader()
+		return hp.PrevHash == b.HashHeader()
 	})
 
 	if err != nil {
@@ -234,8 +253,15 @@ func hasChild(tx *dbutil.Tx, b coin.Block) (bool, error) {
 	return len(childHashPair) > 0, nil
 }
 
-func setHashPairInDepth(tx *dbutil.Tx, dep uint64, hps []coin.HashPair) error {
-	return dbutil.PutBucketValue(tx, TreeBkt, dbutil.Itob(dep), encoder.Serialize(hps))
+func setHashPairInDepth(tx *dbutil.Tx, depth uint64, hps []coin.HashPair) error {
+	buf, err := encodeHashPairsWrapper(&hashPairsWrapper{
+		HashPairs: hps,
+	})
+	if err != nil {
+		return err
+	}
+
+	return dbutil.PutBucketValue(tx, TreeBkt, dbutil.Itob(depth), buf)
 }
 
 func allPairs(hp coin.HashPair) bool {

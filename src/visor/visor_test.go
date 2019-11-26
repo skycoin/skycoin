@@ -17,17 +17,16 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/params"
-	"github.com/skycoin/skycoin/src/testutil"
-	_require "github.com/skycoin/skycoin/src/testutil/require"
-	"github.com/skycoin/skycoin/src/util/fee"
-	"github.com/skycoin/skycoin/src/util/timeutil"
-	"github.com/skycoin/skycoin/src/visor/blockdb"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
-	"github.com/skycoin/skycoin/src/visor/historydb"
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/params"
+	"github.com/SkycoinProject/skycoin/src/testutil"
+	_require "github.com/SkycoinProject/skycoin/src/testutil/require"
+	"github.com/SkycoinProject/skycoin/src/util/fee"
+	"github.com/SkycoinProject/skycoin/src/util/timeutil"
+	"github.com/SkycoinProject/skycoin/src/visor/blockdb"
+	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
+	"github.com/SkycoinProject/skycoin/src/visor/historydb"
 )
 
 const (
@@ -102,7 +101,7 @@ func addGenesisBlockToVisor(t *testing.T, vs *Visor) *coin.SignedBlock {
 	}
 
 	// add genesis block to blockchain
-	err = vs.DB.Update("", func(tx *dbutil.Tx) error {
+	err = vs.db.Update("", func(tx *dbutil.Tx) error {
 		return vs.executeSignedBlock(tx, sb)
 	})
 	require.NoError(t, err)
@@ -277,16 +276,15 @@ func TestVisorCreateBlock(t *testing.T) {
 	his := historydb.New()
 
 	cfg := NewConfig()
-	cfg.DBPath = db.Path()
 	cfg.IsBlockPublisher = false
 	cfg.BlockchainPubkey = genPublic
 	cfg.GenesisAddress = genAddress
 
 	v := &Visor{
 		Config:      cfg,
-		Unconfirmed: unconfirmed,
-		Blockchain:  bc,
-		DB:          db,
+		unconfirmed: unconfirmed,
+		blockchain:  bc,
+		db:          db,
 		history:     his,
 	}
 
@@ -306,7 +304,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	var gb *coin.SignedBlock
 	err = db.View("", func(tx *dbutil.Tx) error {
 		var err error
-		gb, err = v.Blockchain.GetGenesisBlock(tx)
+		gb, err = v.blockchain.GetGenesisBlock(tx)
 		return err
 	})
 	require.NoError(t, err)
@@ -324,20 +322,20 @@ func TestVisorCreateBlock(t *testing.T) {
 	uxs := coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
 
 	nUnspents := 100
-	txn := makeUnspentsTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, nUnspents, params.UserVerifyTxn.MaxDropletPrecision)
+	txn := makeUnspentsTxn(t, uxs, []cipher.SecKey{genSecret}, genAddress, nUnspents, params.UserVerifyTxn.MaxDropletPrecision)
 
 	var known bool
 	var softErr *ErrTxnViolatesSoftConstraint
 	err = db.Update("", func(tx *dbutil.Tx) error {
 		var err error
-		known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.UnconfirmedVerifyTxn)
+		known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, params.MainNetDistribution, v.Config.UnconfirmedVerifyTxn)
 		return err
 	})
 	require.NoError(t, err)
 	require.False(t, known)
 	require.Nil(t, softErr)
 
-	v.Config.MaxBlockSize, err = txn.Size()
+	v.Config.MaxBlockTransactionsSize, err = txn.Size()
 	require.NoError(t, err)
 	sb, err := v.CreateAndExecuteBlock()
 	require.NoError(t, err)
@@ -352,7 +350,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, uint64(0), length)
-	v.Config.MaxBlockSize = 1024 * 4
+	v.Config.MaxBlockTransactionsSize = 1024 * 4
 
 	// Create various transactions and add them to unconfirmed pool
 	uxs = coin.CreateUnspents(sb.Head, sb.Body.Transactions[0])
@@ -363,13 +361,13 @@ func TestVisorCreateBlock(t *testing.T) {
 	// Add more transactions than is allowed in a block, to verify truncation
 	var txns coin.Transactions
 	var i int
-	truncatedTxns, err := txns.TruncateBytesTo(v.Config.MaxBlockSize)
+	truncatedTxns, err := txns.TruncateBytesTo(v.Config.MaxBlockTransactionsSize)
 	require.NoError(t, err)
 	for len(txns) == len(truncatedTxns) {
 		tx := makeSpendTxWithFee(t, coin.UxArray{uxs[i]}, []cipher.SecKey{genSecret}, toAddr, coins, f)
 		txns = append(txns, tx)
 		i++
-		truncatedTxns, err = txns.TruncateBytesTo(v.Config.MaxBlockSize)
+		truncatedTxns, err = txns.TruncateBytesTo(v.Config.MaxBlockTransactionsSize)
 		require.NoError(t, err)
 	}
 	require.NotEqual(t, 0, len(txns))
@@ -419,7 +417,7 @@ func TestVisorCreateBlock(t *testing.T) {
 		var softErr *ErrTxnViolatesSoftConstraint
 		err = db.Update("", func(tx *dbutil.Tx) error {
 			var err error
-			known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, v.Config.UnconfirmedVerifyTxn)
+			known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, params.MainNetDistribution, v.Config.UnconfirmedVerifyTxn)
 			return err
 		})
 		require.False(t, known)
@@ -458,13 +456,13 @@ func TestVisorCreateBlock(t *testing.T) {
 
 	// Check fee ordering
 	err = db.View("", func(tx *dbutil.Tx) error {
-		inUxs, err := v.Blockchain.Unspent().GetArray(tx, blockTxns[0].In)
+		inUxs, err := v.blockchain.Unspent().GetArray(tx, blockTxns[0].In)
 		require.NoError(t, err)
 		prevFee, err := fee.TransactionFee(&blockTxns[0], sb.Head.Time, inUxs)
 		require.NoError(t, err)
 
 		for i := 1; i < len(blockTxns); i++ {
-			inUxs, err := v.Blockchain.Unspent().GetArray(tx, blockTxns[i].In)
+			inUxs, err := v.blockchain.Unspent().GetArray(tx, blockTxns[i].In)
 			require.NoError(t, err)
 			f, err := fee.TransactionFee(&blockTxns[i], sb.Head.Time, inUxs)
 			require.NoError(t, err)
@@ -503,16 +501,15 @@ func TestVisorInjectTransaction(t *testing.T) {
 	his := historydb.New()
 
 	cfg := NewConfig()
-	cfg.DBPath = db.Path()
 	cfg.IsBlockPublisher = false
 	cfg.BlockchainPubkey = genPublic
 	cfg.GenesisAddress = genAddress
 
 	v := &Visor{
 		Config:      cfg,
-		Unconfirmed: unconfirmed,
-		Blockchain:  bc,
-		DB:          db,
+		unconfirmed: unconfirmed,
+		blockchain:  bc,
+		db:          db,
 		history:     his,
 	}
 
@@ -533,7 +530,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	var gb *coin.SignedBlock
 	err = db.View("", func(tx *dbutil.Tx) error {
 		var err error
-		gb, err = v.Blockchain.GetGenesisBlock(tx)
+		gb, err = v.blockchain.GetGenesisBlock(tx)
 		return err
 	})
 	require.NoError(t, err)
@@ -552,7 +549,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	var coins uint64 = 10e6
 
 	// Create a transaction with valid decimal places
-	txn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
+	txn := makeSpendTxn(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
 	known, softErr, err := v.InjectForeignTransaction(txn)
 	require.False(t, known)
 	require.Nil(t, softErr)
@@ -580,7 +577,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	uxs = coin.CreateUnspents(sb.Head, sb.Body.Transactions[0])
 
 	// Check transactions with overflowing output coins fail
-	txn = makeOverflowCoinsSpendTx(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
+	txn = makeOverflowCoinsSpendTxn(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
 	_, softErr, err = v.InjectForeignTransaction(txn)
 	require.IsType(t, ErrTxnViolatesHardConstraint{}, err)
 	testutil.RequireError(t, err.(ErrTxnViolatesHardConstraint).Err, "Output coins overflow")
@@ -597,7 +594,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	// Check transactions with overflowing output hours fail
 	// It should not be injected; when injecting a txn, the overflowing output hours is treated
 	// as a hard constraint. It is only a soft constraint when the txn is included in a signed block.
-	txn = makeOverflowHoursSpendTx(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
+	txn = makeOverflowHoursSpendTxn(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
 	_, softErr, err = v.InjectForeignTransaction(txn)
 	require.Nil(t, softErr)
 	require.IsType(t, ErrTxnViolatesHardConstraint{}, err)
@@ -614,7 +611,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	// Create a transaction with invalid decimal places
 	// It's still injected, because this is considered a soft error
 	invalidCoins := coins + (params.UserVerifyTxn.MaxDropletDivisor() / 10)
-	txn = makeSpendTx(t, uxs, []cipher.SecKey{genSecret, genSecret}, toAddr, invalidCoins)
+	txn = makeSpendTxn(t, uxs, []cipher.SecKey{genSecret, genSecret}, toAddr, invalidCoins)
 	_, softErr, err = v.InjectForeignTransaction(txn)
 	require.NoError(t, err)
 	testutil.RequireError(t, softErr.Err, params.ErrInvalidDecimals.Error())
@@ -629,7 +626,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 
 	// Create a transaction with null address output
 	uxs = coin.CreateUnspents(gb.Head, gb.Body.Transactions[0])
-	txn = makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
+	txn = makeSpendTxn(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
 	txn.Out[0].Address = cipher.Address{}
 	known, _, _, err = v.InjectUserTransaction(txn)
 	require.False(t, known)
@@ -637,12 +634,13 @@ func TestVisorInjectTransaction(t *testing.T) {
 	testutil.RequireError(t, err, "Transaction violates user constraint: Transaction output is sent to the null address")
 }
 
-func makeOverflowCoinsSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
-	spendTx := coin.Transaction{}
+func makeOverflowCoinsSpendTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
+	spendTxn := coin.Transaction{}
 	var totalHours uint64
 	var totalCoins uint64
 	for _, ux := range uxs {
-		spendTx.PushInput(ux.Hash())
+		err := spendTxn.PushInput(ux.Hash())
+		require.NoError(t, err)
 		totalHours += ux.Body.Hours
 		totalCoins += ux.Body.Coins
 	}
@@ -650,21 +648,24 @@ func makeOverflowCoinsSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecK
 	hours := totalHours / 12
 
 	// These two outputs' coins added up will overflow
-	spendTx.PushOutput(toAddr, 18446744073709551000, hours)
-	spendTx.PushOutput(toAddr, totalCoins, hours)
-
-	spendTx.SignInputs(keys)
-	err := spendTx.UpdateHeader()
+	err := spendTxn.PushOutput(toAddr, 18446744073709551000, hours)
 	require.NoError(t, err)
-	return spendTx
+	err = spendTxn.PushOutput(toAddr, totalCoins, hours)
+	require.NoError(t, err)
+
+	spendTxn.SignInputs(keys)
+	err = spendTxn.UpdateHeader()
+	require.NoError(t, err)
+	return spendTxn
 }
 
-func makeOverflowHoursSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
-	spendTx := coin.Transaction{}
+func makeOverflowHoursSpendTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address) coin.Transaction {
+	spendTxn := coin.Transaction{}
 	var totalHours uint64
 	var totalCoins uint64
 	for _, ux := range uxs {
-		spendTx.PushInput(ux.Hash())
+		err := spendTxn.PushInput(ux.Hash())
+		require.NoError(t, err)
 		totalHours += ux.Body.Hours
 		totalCoins += ux.Body.Coins
 	}
@@ -672,16 +673,18 @@ func makeOverflowHoursSpendTx(t *testing.T, uxs coin.UxArray, keys []cipher.SecK
 	hours := totalHours / 12
 
 	// These two outputs' hours added up will overflow
-	spendTx.PushOutput(toAddr, totalCoins/2, 18446744073709551615)
-	spendTx.PushOutput(toAddr, totalCoins-totalCoins/2, hours)
-
-	spendTx.SignInputs(keys)
-	err := spendTx.UpdateHeader()
+	err := spendTxn.PushOutput(toAddr, totalCoins/2, 18446744073709551615)
 	require.NoError(t, err)
-	return spendTx
+	err = spendTxn.PushOutput(toAddr, totalCoins-totalCoins/2, hours)
+	require.NoError(t, err)
+
+	spendTxn.SignInputs(keys)
+	err = spendTxn.UpdateHeader()
+	require.NoError(t, err)
+	return spendTxn
 }
 
-func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBlock, []UnconfirmedTransaction, uint64) { // nolint: unparam
+func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBlock, []UnconfirmedTransaction, uint64) { //nolint:unparam
 	var txns []historydb.Transaction
 	var blocks []coin.SignedBlock
 	var uncfmTxns []UnconfirmedTransaction
@@ -722,7 +725,7 @@ func makeUncfmUxs(txns []UnconfirmedTransaction) coin.UxArray {
 				Time: uint64(txns[i].Received),
 			},
 			Body: coin.UxBody{
-				SrcTransaction: txns[i].Hash(),
+				SrcTransaction: txns[i].Transaction.Hash(),
 			},
 		})
 	}
@@ -1843,38 +1846,38 @@ func TestGetTransactions(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			matchTxn := mock.MatchedBy(func(tx *dbutil.Tx) bool {
+			matchDBTx := mock.MatchedBy(func(tx *dbutil.Tx) bool {
 				return true
 			})
 
 			his := newHistoryerMock2()
 			uncfmTxnPool := NewUnconfirmedTransactionPoolerMock2()
 			for addr, txns := range tc.addrTxns {
-				his.On("GetTransactionsForAddress", matchTxn, addr).Return(txns.Txns, nil)
+				his.On("GetTransactionsForAddress", matchDBTx, addr).Return(txns.Txns, nil)
 				his.txns = append(his.txns, txns.Txns...)
 
-				uncfmTxnPool.On("GetUnspentsOfAddr", matchTxn, addr).Return(makeUncfmUxs(txns.UncfmTxns), nil)
-				for i, uncfmTx := range txns.UncfmTxns {
-					uncfmTxnPool.On("Get", matchTxn, uncfmTx.Hash()).Return(&txns.UncfmTxns[i], nil)
+				uncfmTxnPool.On("GetUnspentsOfAddr", matchDBTx, addr).Return(makeUncfmUxs(txns.UncfmTxns), nil)
+				for i, uncfmTxn := range txns.UncfmTxns {
+					uncfmTxnPool.On("Get", matchDBTx, uncfmTxn.Transaction.Hash()).Return(&txns.UncfmTxns[i], nil)
 				}
 				uncfmTxnPool.txns = append(uncfmTxnPool.txns, txns.UncfmTxns...)
 			}
 
 			bc := &MockBlockchainer{}
 			for i, b := range tc.blocks {
-				bc.On("GetSignedBlockBySeq", matchTxn, b.Seq()).Return(&tc.blocks[i], nil)
+				bc.On("GetSignedBlockBySeq", matchDBTx, b.Seq()).Return(&tc.blocks[i], nil)
 			}
 
-			bc.On("HeadSeq", matchTxn).Return(tc.bcHeadSeq, true, nil)
+			bc.On("HeadSeq", matchDBTx).Return(tc.bcHeadSeq, true, nil)
 
 			db, shutdown := prepareDB(t)
 			defer shutdown()
 
 			v := &Visor{
-				DB:          db,
+				db:          db,
 				history:     his,
-				Unconfirmed: uncfmTxnPool,
-				Blockchain:  bc,
+				unconfirmed: uncfmTxnPool,
+				blockchain:  bc,
 			}
 
 			retTxns, err := v.GetTransactions(tc.filters)
@@ -1886,28 +1889,31 @@ func TestGetTransactions(t *testing.T) {
 			require.Len(t, retTxns, len(tc.expect.txns)+len(tc.expect.uncfmTxns))
 
 			// Splits confirmed and unconfirmed txns in returned transactions
-			uncfmTxMap := make(map[cipher.SHA256]Transaction)
-			txMap := make(map[cipher.SHA256]Transaction)
-			for i, tx := range retTxns {
+			uncfmTxnMap := make(map[cipher.SHA256]Transaction)
+			txnMap := make(map[cipher.SHA256]Transaction)
+			for i, txn := range retTxns {
+				h := txn.Transaction.Hash()
 				if retTxns[i].Status.Confirmed {
-					txMap[tx.Transaction.Hash()] = retTxns[i]
+					txnMap[h] = retTxns[i]
 				} else {
-					uncfmTxMap[tx.Transaction.Hash()] = retTxns[i]
+					uncfmTxnMap[h] = retTxns[i]
 				}
 			}
 
-			// Confirms that all expected confirmed transactions must be in the txMap
-			for _, tx := range tc.expect.txns {
-				retTx, ok := txMap[tx.Transaction.Hash()]
+			// Confirms that all expected confirmed transactions must be in the txnMap
+			for _, txn := range tc.expect.txns {
+				h := txn.Transaction.Hash()
+				retTxn, ok := txnMap[h]
 				require.True(t, ok)
-				require.Equal(t, tx, retTx)
+				require.Equal(t, txn, retTxn)
 			}
 
-			// Confirms that all expected unconfirmed transactions must be in the uncfmTxMap
-			for _, tx := range tc.expect.uncfmTxns {
-				retTx, ok := uncfmTxMap[tx.Transaction.Hash()]
+			// Confirms that all expected unconfirmed transactions must be in the uncfmTxnMap
+			for _, txn := range tc.expect.uncfmTxns {
+				h := txn.Transaction.Hash()
+				retTxn, ok := uncfmTxnMap[h]
 				require.True(t, ok)
-				require.Equal(t, tx, retTx)
+				require.Equal(t, txn, retTxn)
 			}
 		})
 	}
@@ -1928,7 +1934,6 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	his := historydb.New()
 
 	cfg := NewConfig()
-	cfg.DBPath = db.Path()
 	cfg.IsBlockPublisher = true
 	cfg.BlockchainSeckey = genSecret
 	cfg.BlockchainPubkey = genPublic
@@ -1936,9 +1941,9 @@ func TestRefreshUnconfirmed(t *testing.T) {
 
 	v := &Visor{
 		Config:      cfg,
-		Unconfirmed: unconfirmed,
-		Blockchain:  bc,
-		DB:          db,
+		unconfirmed: unconfirmed,
+		blockchain:  bc,
+		db:          db,
 		history:     his,
 	}
 
@@ -1946,7 +1951,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	var gb *coin.SignedBlock
 	err = db.View("", func(tx *dbutil.Tx) error {
 		var err error
-		gb, err = v.Blockchain.GetGenesisBlock(tx)
+		gb, err = v.blockchain.GetGenesisBlock(tx)
 		return err
 	})
 	require.NoError(t, err)
@@ -1958,7 +1963,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	var coins uint64 = 10e6
 
 	// Create a valid transaction that will remain valid
-	validTxn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
+	validTxn := makeSpendTxn(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
 	known, softErr, err := v.InjectForeignTransaction(validTxn)
 	require.False(t, known)
 	require.Nil(t, softErr)
@@ -1976,7 +1981,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	// It's still injected, because this is considered a soft error
 	// This transaction will stay invalid on refresh
 	invalidCoins := coins + (params.UserVerifyTxn.MaxDropletDivisor() / 10)
-	alwaysInvalidTxn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, invalidCoins)
+	alwaysInvalidTxn := makeSpendTxn(t, uxs, []cipher.SecKey{genSecret}, toAddr, invalidCoins)
 	_, softErr, err = v.InjectForeignTransaction(alwaysInvalidTxn)
 	require.NoError(t, err)
 	testutil.RequireError(t, softErr.Err, params.ErrInvalidDecimals.Error())
@@ -1994,7 +1999,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	// This transaction will become valid on refresh (by increasing UnconfirmedVerifyTxn.MaxTransactionSize)
 	originalMaxUnconfirmedTxnSize := v.Config.UnconfirmedVerifyTxn.MaxTransactionSize
 	v.Config.UnconfirmedVerifyTxn.MaxTransactionSize = 1
-	sometimesInvalidTxn := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins)
+	sometimesInvalidTxn := makeSpendTxn(t, uxs, []cipher.SecKey{genSecret}, toAddr, coins)
 	_, softErr, err = v.InjectForeignTransaction(sometimesInvalidTxn)
 	require.NoError(t, err)
 	require.NotNil(t, softErr)
@@ -2060,7 +2065,6 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 	his := historydb.New()
 
 	cfg := NewConfig()
-	cfg.DBPath = db.Path()
 	cfg.IsBlockPublisher = true
 	cfg.Arbitrating = true
 	cfg.BlockchainPubkey = genPublic
@@ -2069,9 +2073,9 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 
 	v := &Visor{
 		Config:      cfg,
-		Unconfirmed: unconfirmed,
-		Blockchain:  bc,
-		DB:          db,
+		unconfirmed: unconfirmed,
+		blockchain:  bc,
+		db:          db,
 		history:     his,
 	}
 
@@ -2079,7 +2083,7 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 	var gb *coin.SignedBlock
 	err = db.View("", func(tx *dbutil.Tx) error {
 		var err error
-		gb, err = v.Blockchain.GetGenesisBlock(tx)
+		gb, err = v.blockchain.GetGenesisBlock(tx)
 		return err
 	})
 	require.NoError(t, err)
@@ -2093,7 +2097,7 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 	// A call to RemoveInvalidUnconfirmed will remove the other txn, because it would now be a double spend.
 
 	var coins uint64 = 10e6
-	txn1 := makeSpendTx(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
+	txn1 := makeSpendTxn(t, uxs, []cipher.SecKey{genSecret}, genAddress, coins)
 	known, softErr, err := v.InjectForeignTransaction(txn1)
 	require.False(t, known)
 	require.Nil(t, softErr)
@@ -2127,7 +2131,7 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(sb.Body.Transactions))
 	require.Equal(t, 2, len(sb.Body.Transactions[0].Out))
-	require.Equal(t, txn2.TxIDHex(), sb.Body.Transactions[0].TxIDHex())
+	require.Equal(t, txn2.Hash().Hex(), sb.Body.Transactions[0].Hash().Hex())
 
 	err = db.View("", func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)
@@ -2155,580 +2159,7 @@ func TestRemoveInvalidUnconfirmedDoubleSpendArbitrating(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestGetCreateTransactionAuxs(t *testing.T) {
-	allAddrs := make([]cipher.Address, 10)
-	for i := range allAddrs {
-		allAddrs[i] = testutil.MakeAddress()
-	}
-
-	hashes := make([]cipher.SHA256, 20)
-	for i := range hashes {
-		hashes[i] = testutil.RandSHA256(t)
-	}
-
-	srcTxns := make([]cipher.SHA256, 20)
-	for i := range srcTxns {
-		srcTxns[i] = testutil.RandSHA256(t)
-	}
-
-	cases := []struct {
-		name         string
-		params       wallet.CreateTransactionParams
-		addrs        []cipher.Address
-		expectedAuxs coin.AddressUxOuts
-		err          error
-
-		rawTxnsRet            coin.Transactions
-		getArrayInputs        []cipher.SHA256
-		getArrayRet           coin.UxArray
-		getUnspentsOfAddrsRet coin.AddressUxOuts
-	}{
-		{
-			name:  "all addresses, ok",
-			addrs: allAddrs,
-			rawTxnsRet: coin.Transactions{
-				coin.Transaction{
-					In: hashes[0:2],
-				},
-				coin.Transaction{
-					In: hashes[2:4],
-				},
-			},
-			getArrayInputs: hashes[0:4],
-			getArrayRet: coin.UxArray{
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[4],
-						Address:        testutil.MakeAddress(),
-					},
-				},
-			},
-			getUnspentsOfAddrsRet: coin.AddressUxOuts{
-				allAddrs[1]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-				},
-				allAddrs[3]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[6],
-							Address:        allAddrs[3],
-						},
-					},
-				},
-			},
-			expectedAuxs: coin.AddressUxOuts{
-				allAddrs[1]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-				},
-				allAddrs[3]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[6],
-							Address:        allAddrs[3],
-						},
-					},
-				},
-			},
-		},
-
-		{
-			name:  "all addresses, unconfirmed spends",
-			addrs: allAddrs,
-			err:   wallet.ErrSpendingUnconfirmed,
-			rawTxnsRet: coin.Transactions{
-				coin.Transaction{
-					In: hashes[0:2],
-				},
-				coin.Transaction{
-					In: hashes[2:4],
-				},
-			},
-			getArrayInputs: hashes[0:4],
-			getArrayRet: coin.UxArray{
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[0],
-						Address:        allAddrs[1],
-					},
-				},
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[0],
-						Address:        allAddrs[1],
-					},
-				},
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[4],
-						Address:        allAddrs[3],
-					},
-				},
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[4],
-						Address:        testutil.MakeAddress(),
-					},
-				},
-			},
-		},
-
-		{
-			name: "some addresses, ok",
-			params: wallet.CreateTransactionParams{
-				Wallet: wallet.CreateTransactionWalletParams{
-					Addresses: allAddrs[0:4],
-				},
-			},
-			addrs: allAddrs[0:4],
-			rawTxnsRet: coin.Transactions{
-				coin.Transaction{
-					In: hashes[0:2],
-				},
-				coin.Transaction{
-					In: hashes[2:4],
-				},
-			},
-			getArrayInputs: hashes[0:4],
-			getArrayRet: coin.UxArray{
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[4],
-						Address:        testutil.MakeAddress(),
-					},
-				},
-			},
-			getUnspentsOfAddrsRet: coin.AddressUxOuts{
-				allAddrs[1]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-				},
-				allAddrs[3]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[6],
-							Address:        allAddrs[3],
-						},
-					},
-				},
-			},
-			expectedAuxs: coin.AddressUxOuts{
-				allAddrs[1]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-				},
-				allAddrs[3]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[6],
-							Address:        allAddrs[3],
-						},
-					},
-				},
-			},
-		},
-
-		{
-			name: "some addresses, unconfirmed spends",
-			params: wallet.CreateTransactionParams{
-				Wallet: wallet.CreateTransactionWalletParams{
-					Addresses: allAddrs[0:4],
-				},
-			},
-			addrs: allAddrs[0:4],
-			err:   wallet.ErrSpendingUnconfirmed,
-			rawTxnsRet: coin.Transactions{
-				coin.Transaction{
-					In: hashes[0:2],
-				},
-				coin.Transaction{
-					In: hashes[2:4],
-				},
-			},
-			getArrayInputs: hashes[0:4],
-			getArrayRet: coin.UxArray{
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[0],
-						Address:        allAddrs[1],
-					},
-				},
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[0],
-						Address:        allAddrs[1],
-					},
-				},
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[4],
-						Address:        allAddrs[3],
-					},
-				},
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[4],
-						Address:        testutil.MakeAddress(),
-					},
-				},
-			},
-		},
-
-		{
-			name: "some addresses, unconfirmed spends ignored",
-			params: wallet.CreateTransactionParams{
-				IgnoreUnconfirmed: true,
-				Wallet: wallet.CreateTransactionWalletParams{
-					Addresses: allAddrs[0:5],
-				},
-			},
-			addrs: allAddrs[0:5],
-			rawTxnsRet: coin.Transactions{
-				coin.Transaction{
-					In: hashes[0:2],
-				},
-			},
-			getArrayInputs: hashes[0:2],
-			getArrayRet: coin.UxArray{
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[4],
-						Address:        testutil.MakeAddress(),
-					},
-				},
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[7],
-						Address:        allAddrs[4],
-					},
-				},
-			},
-			getUnspentsOfAddrsRet: coin.AddressUxOuts{
-				allAddrs[1]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-				},
-				allAddrs[3]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[6],
-							Address:        allAddrs[3],
-						},
-					},
-				},
-				allAddrs[4]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[7],
-							Address:        allAddrs[4],
-						},
-					},
-				},
-			},
-			expectedAuxs: coin.AddressUxOuts{
-				allAddrs[1]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-				},
-				allAddrs[3]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[6],
-							Address:        allAddrs[3],
-						},
-					},
-				},
-			},
-		},
-
-		{
-			name: "some addresses, unknown address",
-			params: wallet.CreateTransactionParams{
-				Wallet: wallet.CreateTransactionWalletParams{
-					Addresses: []cipher.Address{testutil.MakeAddress()},
-				},
-			},
-			addrs: allAddrs,
-			err:   wallet.ErrUnknownAddress,
-		},
-
-		{
-			name: "uxouts specified, ok",
-			params: wallet.CreateTransactionParams{
-				Wallet: wallet.CreateTransactionWalletParams{
-					UxOuts: hashes[5:10],
-				},
-			},
-			rawTxnsRet: coin.Transactions{
-				coin.Transaction{
-					In: hashes[0:2],
-				},
-				coin.Transaction{
-					In: hashes[2:4],
-				},
-			},
-			getArrayInputs: hashes[5:10],
-			getArrayRet: coin.UxArray{
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[5],
-						Address:        allAddrs[1],
-					},
-				},
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[5],
-						Address:        allAddrs[1],
-					},
-				},
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[6],
-						Address:        allAddrs[3],
-					},
-				},
-			},
-			expectedAuxs: coin.AddressUxOuts{
-				allAddrs[1]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-				},
-				allAddrs[3]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[6],
-							Address:        allAddrs[3],
-						},
-					},
-				},
-			},
-		},
-
-		{
-			name: "uxouts specified, unconfirmed spend",
-			params: wallet.CreateTransactionParams{
-				Wallet: wallet.CreateTransactionWalletParams{
-					UxOuts: hashes[0:4],
-				},
-			},
-			err: wallet.ErrSpendingUnconfirmed,
-			rawTxnsRet: coin.Transactions{
-				coin.Transaction{
-					In: hashes[6:10],
-				},
-				coin.Transaction{
-					In: hashes[3:6],
-				},
-			},
-		},
-
-		{
-			name: "uxouts specified, unconfirmed spend ignored",
-			params: wallet.CreateTransactionParams{
-				IgnoreUnconfirmed: true,
-				Wallet: wallet.CreateTransactionWalletParams{
-					UxOuts: hashes[5:10],
-				},
-			},
-			rawTxnsRet: coin.Transactions{
-				coin.Transaction{
-					In: hashes[0:2],
-				},
-				coin.Transaction{
-					In: hashes[2:4],
-				},
-				coin.Transaction{
-					In: hashes[8:10],
-				},
-			},
-			getArrayInputs: hashes[5:8], // the 8th & 9th hash are filtered because it is an unconfirmed spend
-			getArrayRet: coin.UxArray{
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[5],
-						Address:        allAddrs[1],
-					},
-				},
-			},
-			expectedAuxs: coin.AddressUxOuts{
-				allAddrs[1]: []coin.UxOut{
-					coin.UxOut{
-						Body: coin.UxBody{
-							SrcTransaction: srcTxns[5],
-							Address:        allAddrs[1],
-						},
-					},
-				},
-			},
-		},
-
-		{
-			name: "uxouts specified, unknown uxout",
-			params: wallet.CreateTransactionParams{
-				Wallet: wallet.CreateTransactionWalletParams{
-					UxOuts: hashes[5:10],
-				},
-			},
-			err: wallet.ErrUnknownUxOut,
-			rawTxnsRet: coin.Transactions{
-				coin.Transaction{
-					In: hashes[0:2],
-				},
-				coin.Transaction{
-					In: hashes[2:4],
-				},
-			},
-			getArrayInputs: hashes[5:10],
-			getArrayRet: coin.UxArray{
-				coin.UxOut{
-					Body: coin.UxBody{
-						SrcTransaction: srcTxns[4],
-						Address:        testutil.MakeAddress(),
-					},
-				},
-			},
-		},
-	}
-
-	matchTxn := mock.MatchedBy(func(tx *dbutil.Tx) bool {
-		return true
-	})
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			db, shutdown := testutil.PrepareDB(t)
-			defer shutdown()
-
-			unconfirmed := &MockUnconfirmedTransactionPooler{}
-			bc := &MockBlockchainer{}
-			unspent := &MockUnspentPooler{}
-			require.Implements(t, (*blockdb.UnspentPooler)(nil), unspent)
-
-			v := &Visor{
-				Unconfirmed: unconfirmed,
-				Blockchain:  bc,
-				DB:          db,
-			}
-
-			unconfirmed.On("AllRawTransactions", matchTxn).Return(tc.rawTxnsRet, nil)
-			unspent.On("GetArray", matchTxn, mock.MatchedBy(func(args []cipher.SHA256) bool {
-				// Compares two []coin.UxOuts for equality, ignoring the order of elements in the slice
-				if len(args) != len(tc.getArrayInputs) {
-					return false
-				}
-
-				inputsMap := make(map[cipher.SHA256]struct{}, len(tc.getArrayInputs))
-				for _, h := range tc.getArrayInputs {
-					_, ok := inputsMap[h]
-					require.False(t, ok)
-					inputsMap[h] = struct{}{}
-				}
-
-				for _, h := range args {
-					_, ok := inputsMap[h]
-					if !ok {
-						return false
-					}
-				}
-
-				return true
-			})).Return(tc.getArrayRet, nil)
-			if tc.getUnspentsOfAddrsRet != nil {
-				unspent.On("GetUnspentsOfAddrs", matchTxn, tc.addrs).Return(tc.getUnspentsOfAddrsRet, nil)
-			}
-			bc.On("Unspent").Return(unspent)
-
-			var auxs coin.AddressUxOuts
-			err := v.DB.View("", func(tx *dbutil.Tx) error {
-				var err error
-				auxs, err = v.getCreateTransactionAuxs(tx, tc.params, allAddrs)
-				return err
-			})
-
-			if tc.err != nil {
-				require.Equal(t, tc.err, err)
-				return
-			}
-
-			require.NoError(t, err)
-
-			require.Equal(t, tc.expectedAuxs, auxs)
-		})
-	}
-}
-
-func makeTxn(t *testing.T, headTime uint64, in, out []coin.UxOut, keys []cipher.SecKey) (coin.Transaction, []wallet.UxBalance) {
+func makeTxn(t *testing.T, headTime uint64, in, out []coin.UxOut, keys []cipher.SecKey) (coin.Transaction, []TransactionInput) {
 	inputs := make([]cipher.SHA256, len(in))
 	for i, input := range in {
 		inputs[i] = input.Hash()
@@ -2752,9 +2183,9 @@ func makeTxn(t *testing.T, headTime uint64, in, out []coin.UxOut, keys []cipher.
 	err := txn.UpdateHeader()
 	require.NoError(t, err)
 
-	inbalances, err := wallet.NewUxBalances(headTime, in)
+	txnInputs, err := NewTransactionInputs(in, headTime)
 	require.NoError(t, err)
-	return txn, inbalances
+	return txn, txnInputs
 }
 
 func TestVerifyTxnVerbose(t *testing.T) {
@@ -2843,7 +2274,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 	})
 
 	// create a transaction
-	txn, spentUxBalances := makeTxn(t, head.Time(), inputs[:1], outputs[:1], keys[:1])
+	txn, spentInputs := makeTxn(t, head.Time(), inputs[:1], outputs[:1], keys[:1])
 
 	// create a transaction which sends coin to null address
 	toNullAddrTxn, toNullAddrSpentUxBalances := makeTxn(t, head.Time(), inputs[:1], outputs[:1], keys[:1])
@@ -2859,19 +2290,45 @@ func TestVerifyTxnVerbose(t *testing.T) {
 	coinHourOverflowTxn, _ := makeTxn(t, head.Time(), inputs[:1], outputs[4:], keys[:1])
 
 	// create a transaction with insufficient fee
-	insufficientFeeTxn, _ := makeTxn(t, head.Time(), inputs[:1], outputs[2:3], keys[:1])
+	insufficientFeeOuts := []coin.UxOut{
+		coin.UxOut{
+			Head: coin.UxHead{
+				Time: head.Time(),
+			},
+			Body: coin.UxBody{
+				Address: testutil.MakeAddress(),
+				Coins:   1e6,
+				Hours:   950,
+			},
+		},
+	}
+	insufficientFeeTxn, _ := makeTxn(t, head.Time(), inputs[:1], insufficientFeeOuts[:], keys[:1])
 
 	// create a transaction with insufficient coins
 	insufficientCoinsTxn, _ := makeTxn(t, head.Time(), inputs[:1], outputs[6:], keys[:1])
 
-	// create a transaction with invalid signature
-	badSigTxn, _ := makeTxn(t, head.Time(), inputs[:1], outputs[:1], keys[1:2])
+	// create a transaction with valid signature signed by key that doesn't own the input
+	badSigTxn, badSigTxnSpentInputs := makeTxn(t, head.Time(), inputs[:2], outputs[:2], keys[1:3])
 
-	cases := []struct {
+	// create a transaction with an empty signature
+	fullyUnsignedTxn, fullyUnsignedSpentInputs := makeTxn(t, head.Time(), inputs[:2], outputs[:2], keys[:2])
+	fullyUnsignedTxn.Sigs[0] = cipher.Sig{}
+	fullyUnsignedTxn.Sigs[1] = cipher.Sig{}
+	err := fullyUnsignedTxn.UpdateHeader()
+	require.NoError(t, err)
+
+	partiallyUnsignedTxn, partiallyUnsignedSpentInputs := makeTxn(t, head.Time(), inputs[:2], outputs[:2], keys[:2])
+	partiallyUnsignedTxn.Sigs[0] = cipher.Sig{}
+	err = partiallyUnsignedTxn.UpdateHeader()
+	require.NoError(t, err)
+
+	type testCase struct {
 		name        string
 		txn         coin.Transaction
 		isConfirmed bool
-		balances    []wallet.UxBalance
+		isUnsigned  bool
+		signed      TxnSignedFlag
+		inputs      []TransactionInput
 		err         error
 
 		maxUserTransactionSize uint32
@@ -2887,12 +2344,15 @@ func TestVerifyTxnVerbose(t *testing.T) {
 
 		getSignedBlocksBySeqRet *coin.SignedBlock
 		getSignedBlocksBySeqErr error
-	}{
+	}
+
+	baseCases := []testCase{
 		{
 			name:        "transaction has been spent",
 			txn:         txn,
 			isConfirmed: true,
-			balances:    spentUxBalances[:],
+			signed:      TxnSigned,
+			inputs:      spentInputs[:],
 
 			getArrayErr: blockdb.ErrUnspentNotExist{UxID: inputs[0].Hash().Hex()},
 			getHistoryTxnRet: &historydb.Transaction{
@@ -2912,7 +2372,8 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			name:        "transaction has been spent, get previous block error",
 			txn:         txn,
 			isConfirmed: true,
-			balances:    spentUxBalances[:],
+			signed:      TxnSigned,
+			inputs:      nil,
 			err:         errors.New("GetSignedBlockBySeq failed"),
 
 			getArrayErr: blockdb.ErrUnspentNotExist{UxID: inputs[0].Hash().Hex()},
@@ -2927,7 +2388,8 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			name:        "transaction has been spent, previous block not found",
 			txn:         txn,
 			isConfirmed: true,
-			balances:    spentUxBalances[:],
+			signed:      TxnSigned,
+			inputs:      nil,
 			err:         fmt.Errorf("VerifyTxnVerbose: previous block seq=%d not found", 9),
 
 			getArrayErr: blockdb.ErrUnspentNotExist{UxID: inputs[0].Hash().Hex()},
@@ -2943,6 +2405,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			name:        "transaction does not exist in either unspents or historydb",
 			txn:         txn,
 			isConfirmed: false,
+			signed:      TxnSigned,
 			err:         ErrTxnViolatesHardConstraint{fmt.Errorf("transaction input of %s does not exist in either unspent pool or historydb", inputs[0].Hash().Hex())},
 
 			getArrayErr: blockdb.ErrUnspentNotExist{UxID: inputs[0].Hash().Hex()},
@@ -2951,64 +2414,149 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			name:        "transaction violate user constratins, send to null address",
 			txn:         toNullAddrTxn,
 			isConfirmed: false,
+			signed:      TxnSigned,
 			err:         ErrTxnViolatesUserConstraint{errors.New("Transaction output is sent to the null address")},
-			balances:    toNullAddrSpentUxBalances[:],
+			inputs:      toNullAddrSpentUxBalances[:],
 
 			getArrayRet: inputs[:1],
 		},
 		{
 			name:                   "transaction violate soft constraints, transaction size bigger than max block size",
+			signed:                 TxnSigned,
 			maxUserTransactionSize: 1,
 			txn:                    txn,
+			inputs:                 spentInputs[:],
 			err:                    ErrTxnViolatesSoftConstraint{errors.New("Transaction size bigger than max block size")},
 
 			getArrayRet: inputs[:1],
 		},
 		{
 			name:        "transaction violate soft constraints, Insufficient coinhours for transaction outputs",
+			signed:      TxnSigned,
 			txn:         inSufficientCoinHoursTxn,
 			err:         ErrTxnViolatesSoftConstraint{fee.ErrTxnInsufficientCoinHours},
+			inputs:      spentInputs[:],
 			getArrayRet: inputs[:1],
 		},
 		{
 			name:        "transaction violate soft constraints, zero fee",
+			signed:      TxnSigned,
 			txn:         zeroFeeTxn,
 			err:         ErrTxnViolatesSoftConstraint{fee.ErrTxnNoFee},
+			inputs:      spentInputs[:],
 			getArrayRet: inputs[:1],
 		},
 		{
 			name:        "transaction violate soft constraints, coin hour overflow",
+			signed:      TxnSigned,
 			txn:         coinHourOverflowTxn,
 			err:         ErrTxnViolatesSoftConstraint{errors.New("Transaction output hours overflow")},
+			inputs:      spentInputs[:],
 			getArrayRet: inputs[:1],
 		},
 		{
 			name:        "transaction violate soft constraints, insufficient fee",
+			signed:      TxnSigned,
 			txn:         insufficientFeeTxn,
 			err:         ErrTxnViolatesSoftConstraint{fee.ErrTxnInsufficientFee},
+			inputs:      spentInputs[:],
 			getArrayRet: inputs[:1],
 		},
 		{
-			name:        "transaction violate hard constraints, insufficient coin",
+			name:        "transaction violate hard constraints, insufficient coins",
+			signed:      TxnSigned,
 			txn:         insufficientCoinsTxn,
 			err:         ErrTxnViolatesHardConstraint{errors.New("Insufficient coins")},
+			inputs:      spentInputs[:],
 			getArrayRet: inputs[:1],
 		},
 		{
 			name:        "transaction violate hard constraints, bad signature",
+			signed:      TxnSigned,
 			txn:         badSigTxn,
 			err:         ErrTxnViolatesHardConstraint{errors.New("Signature not valid for output being spent")},
-			getArrayRet: inputs[:1],
+			getArrayRet: inputs[:2],
+			inputs:      badSigTxnSpentInputs[:],
+		},
+	}
+
+	signedOnlyCases := []testCase{
+		{
+			name:        "TxnSignedFlag=TxnSigned transaction violate hard constraints, fully unsigned",
+			signed:      TxnSigned,
+			isUnsigned:  true,
+			txn:         fullyUnsignedTxn,
+			err:         ErrTxnViolatesHardConstraint{errors.New("Unsigned input in transaction")},
+			inputs:      fullyUnsignedSpentInputs[:],
+			getArrayRet: inputs[:2],
 		},
 		{
-			name:        "ok",
+			name:        "TxnSignedFlag=TxnSigned transaction violate hard constraints, partially unsigned",
+			signed:      TxnSigned,
+			isUnsigned:  true,
+			txn:         partiallyUnsignedTxn,
+			err:         ErrTxnViolatesHardConstraint{errors.New("Unsigned input in transaction")},
+			inputs:      partiallyUnsignedSpentInputs[:],
+			getArrayRet: inputs[:2],
+		},
+		{
+			name:        "TxnSignedFlag=TxnSigned ok fully signed",
+			signed:      TxnSigned,
 			txn:         txn,
-			balances:    spentUxBalances,
+			inputs:      spentInputs,
 			getArrayRet: inputs[:1],
 		},
 	}
 
-	matchTxn := mock.MatchedBy(func(tx *dbutil.Tx) bool {
+	unsignedOnlyCases := []testCase{
+		{
+			name:        "TxnSignedFlag=TxnUnsigned ok, fully unsigned",
+			signed:      TxnUnsigned,
+			isUnsigned:  true,
+			txn:         fullyUnsignedTxn,
+			inputs:      fullyUnsignedSpentInputs,
+			getArrayRet: inputs[:2],
+		},
+		{
+			name:        "TxnSignedFlag=TxnUnsigned ok, partially unsigned",
+			signed:      TxnUnsigned,
+			isUnsigned:  true,
+			txn:         partiallyUnsignedTxn,
+			inputs:      partiallyUnsignedSpentInputs,
+			getArrayRet: inputs[:2],
+		},
+		{
+			name:        "TxnSignedFlag=TxnUnsigned transaction violate hard constraints: signed",
+			signed:      TxnUnsigned,
+			txn:         txn,
+			err:         ErrTxnViolatesHardConstraint{errors.New("Unsigned transaction must contain a null signature")},
+			inputs:      spentInputs[:],
+			getArrayRet: inputs[:1],
+		},
+	}
+
+	cases := []testCase{}
+
+	for _, tc := range baseCases {
+		c := tc
+		c.name = fmt.Sprintf("TxnSignedFlag=TxnSigned %s", tc.name)
+		c.signed = TxnSigned
+		cases = append(cases, c)
+
+		c = tc
+		c.name = fmt.Sprintf("TxnSignedFlag=TxnUnsigned %s", tc.name)
+		c.signed = TxnUnsigned
+		c.txn.Sigs = make([]cipher.Sig, len(c.txn.Sigs))
+		copy(c.txn.Sigs, tc.txn.Sigs)
+		c.txn.Sigs[0] = cipher.Sig{}
+		c.isUnsigned = true
+		cases = append(cases, c)
+	}
+
+	cases = append(cases, signedOnlyCases...)
+	cases = append(cases, unsignedOnlyCases...)
+
+	matchDBTx := mock.MatchedBy(func(tx *dbutil.Tx) bool {
 		return true
 	})
 
@@ -3022,19 +2570,19 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			unspent := &MockUnspentPooler{}
 
 			bc.On("Unspent").Return(unspent)
-			bc.On("Head", matchTxn).Return(&head, nil)
+			bc.On("Head", matchDBTx).Return(&head, nil)
 			if tc.getHistoryTxnRet != nil {
-				bc.On("GetSignedBlockBySeq", matchTxn, tc.getHistoryTxnRet.BlockSeq-1).Return(tc.getSignedBlocksBySeqRet, tc.getSignedBlocksBySeqErr)
+				bc.On("GetSignedBlockBySeq", matchDBTx, tc.getHistoryTxnRet.BlockSeq-1).Return(tc.getSignedBlocksBySeqRet, tc.getSignedBlocksBySeqErr)
 			}
 
-			unspent.On("GetArray", matchTxn, tc.txn.In).Return(tc.getArrayRet, tc.getArrayErr)
+			unspent.On("GetArray", matchDBTx, tc.txn.In).Return(tc.getArrayRet, tc.getArrayErr)
 
-			history.On("GetTransaction", matchTxn, tc.txn.Hash()).Return(tc.getHistoryTxnRet, tc.getHistoryTxnErr)
-			history.On("GetUxOuts", matchTxn, tc.txn.In).Return(tc.getHistoryUxOutsRet, tc.getHistoryUxOutsErr)
+			history.On("GetTransaction", matchDBTx, tc.txn.Hash()).Return(tc.getHistoryTxnRet, tc.getHistoryTxnErr)
+			history.On("GetUxOuts", matchDBTx, tc.txn.In).Return(tc.getHistoryUxOutsRet, tc.getHistoryUxOutsErr)
 
 			v := &Visor{
-				Blockchain: bc,
-				DB:         db,
+				blockchain: bc,
+				db:         db,
 				history:    history,
 				Config:     Config{},
 			}
@@ -3049,21 +2597,25 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			}
 
 			var isConfirmed bool
-			var balances []wallet.UxBalance
-			err := v.DB.View("VerifyTxnVerbose", func(tx *dbutil.Tx) error {
+			var inputs []TransactionInput
+			err := v.db.View("VerifyTxnVerbose", func(tx *dbutil.Tx) error {
 				var err error
-				balances, isConfirmed, err = v.VerifyTxnVerbose(&tc.txn)
+				inputs, isConfirmed, err = v.VerifyTxnVerbose(&tc.txn, tc.signed)
 				return err
 			})
 
-			require.Equal(t, tc.err, err)
-			if tc.err != nil {
-				return
+			require.Equal(t, tc.isConfirmed, isConfirmed)
+			require.Equal(t, tc.inputs, inputs)
+
+			require.Equal(t, tc.err, err, "%v != %v", tc.err, err)
+
+			if tc.isUnsigned && tc.signed == TxnSigned {
+				require.Error(t, err)
 			}
 
-			require.NoError(t, err)
-			require.Equal(t, tc.isConfirmed, isConfirmed)
-			require.Equal(t, tc.balances, balances)
+			if !tc.isUnsigned && tc.signed == TxnUnsigned {
+				require.Error(t, err)
+			}
 		})
 	}
 }
@@ -3121,26 +2673,24 @@ func TestFbyAddresses(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		addrs   []string
+		addrs   []cipher.Address
 		outputs []coin.UxOut
 		want    []coin.UxOut
 	}{
-		// TODO: Add test cases.
 		{
 			"filter with one address",
-			[]string{addrs[0].String()},
+			[]cipher.Address{addrs[0]},
 			uxs[:2],
 			uxs[:1],
 		},
 		{
 			"filter with multiple addresses",
-			[]string{addrs[0].String(), addrs[1].String()},
+			[]cipher.Address{addrs[0], addrs[1]},
 			uxs[:3],
 			uxs[:2],
 		},
 	}
 	for _, tt := range tests {
-		// fmt.Printf("want:%+v\n", tt.want)
 		outs := FbyAddresses(tt.addrs)(tt.outputs)
 		require.Equal(t, outs, coin.UxArray(tt.want))
 	}
@@ -3160,20 +2710,19 @@ func TestFbyHashes(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		hashes  []string
+		hashes  []cipher.SHA256
 		outputs coin.UxArray
 		want    coin.UxArray
 	}{
-		// TODO: Add test cases.
 		{
 			"filter with one hash",
-			[]string{uxs[0].Hash().Hex()},
+			[]cipher.SHA256{uxs[0].Hash()},
 			uxs[:2],
 			uxs[:1],
 		},
 		{
 			"filter with multiple hash",
-			[]string{uxs[0].Hash().Hex(), uxs[1].Hash().Hex()},
+			[]cipher.SHA256{uxs[0].Hash(), uxs[1].Hash()},
 			uxs[:3],
 			uxs[:2],
 		},

@@ -1,41 +1,92 @@
 <app-header [headline]="'title.transactions' | translate"></app-header>
 <div class="container">
+  <div [formGroup]="form" class="form-field" *ngIf="allTransactions">
+    <mat-select
+      multiple
+      [ngClass]="{ 'bottom-line': !transactions || transactions.length === 0 }"
+      formControlName="filter"
+      [placeholder]="'history.no-filter' | translate"
+      id="filter"
+    >
+      <mat-optgroup *ngFor="let wallet of wallets" label="
+        {{ wallet.label }} - {{ wallet.coins | amount }}
+        ({{ wallet.hours | amount:false }})
+      ">
+        <mat-option *ngIf="wallet.addresses.length > 1" [value]="wallet">
+          {{ 'history.all-addresses' | translate }}
+        </mat-option>
+        <mat-option *ngFor="let address of wallet.addresses" [value]="address" [disabled]="wallet.allAddressesSelected">
+          {{ address.address }} - {{ address.coins | amount }}
+          ({{ address.hours | amount:false }})
+        </mat-option>
+      </mat-optgroup>
+      <mat-select-trigger>
+        <span *ngIf="form.get('filter').value.length === 1">{{ 'history.filter' | translate }}</span>
+        <span *ngIf="form.get('filter').value.length > 1">{{ 'history.filters' | translate }}</span>
+        <ng-container *ngFor="let filter of form.get('filter').value; let i = index">
+          <div class="filter" *ngIf="filter.label || !filter.showingWholeWallet">
+            <span *ngIf="filter.label">{{ filter.label }}</span>
+            <span *ngIf="!filter.label">{{ filter.address }}</span>
+            - {{ filter.coins | amount }}
+            ({{ filter.hours | amount:false }})
+          </div>
+        </ng-container>
+      </mat-select-trigger>
+    </mat-select>
+    <img class="x-button" src="assets/img/close-grey.png" (click)="removeFilters()" *ngIf="form.get('filter').value.length > 0">
+  </div>
+
   <app-loading-content
-    [isLoading]="!transactions"
-    noDataText="history.no-txs"
+    [isLoading]="!allTransactions"
+    [noDataText]="!allTransactions || allTransactions.length === 0 ? 'history.no-txs' : 'history.no-txs-filter'"
     *ngIf="!transactions || transactions.length === 0"
   ></app-loading-content>
 
   <div class="-paper" *ngIf="transactions && transactions.length > 0">
     <ng-container *ngFor="let transaction of transactions">
-      <div class="-transaction" *ngIf="transaction.balance !== 0" (click)="showTransaction(transaction)">
-        <div class="-icon" [ngClass]="{ '-incoming': transaction.balance > 0, '-pending': !transaction.confirmed }">
+      <div class="-transaction" (click)="showTransaction(transaction)">
+        <div class="-icon" [ngClass]="{ '-incoming': transaction.balance.isGreaterThan(0) && !transaction.coinsMovedInternally, '-pending': !transaction.confirmed }">
           <img src="/assets/img/send-blue.png">
         </div>
         <div class="-address">
-          <h4 *ngIf="transaction.balance < 0 && transaction.confirmed">
-            {{ 'history.sent' | translate }} {{ 'common.coin-id' | translate }}
-            <span class="-timestamp">{{ transaction.timestamp * 1000 | date:'short' }}</span>
-          </h4>
-          <h4 *ngIf="transaction.balance < 0 && !transaction.confirmed">
-            {{ 'history.sending' | translate }} {{ 'common.coin-id' | translate }}
-            <span class="-pending">{{ 'history.pending' | translate }}</span>
-          </h4>
-          <h4 *ngIf="transaction.balance > 0 && transaction.confirmed">
-            {{ 'history.received' | translate }} {{ 'common.coin-id' | translate }}
-            <span class="-timestamp">{{ transaction.timestamp * 1000 | date:'short' }}</span>
-          </h4>
-          <h4 *ngIf="transaction.balance > 0 && !transaction.confirmed">
-            {{ 'history.receiving' | translate }} {{ 'common.coin-id' | translate }}
-            <span class="-pending">{{ 'history.pending' | translate }}</span>
-          </h4>
+          <ng-container *ngIf="!transaction.coinsMovedInternally">
+            <h4 *ngIf="transaction.balance.isLessThan(0) && transaction.confirmed">
+              {{ 'history.sent' | translate }} {{ 'coin' | commonText }}
+              <span class="-timestamp">{{ transaction.timestamp | dateTime }}</span>
+            </h4>
+            <h4 *ngIf="transaction.balance.isLessThan(0) && !transaction.confirmed">
+              {{ 'history.sending' | translate }} {{ 'coin' | commonText }}
+              <span class="-pending">{{ 'history.pending' | translate }}</span>
+            </h4>
+            <h4 *ngIf="transaction.balance.isGreaterThan(0) && transaction.confirmed">
+              {{ 'history.received' | translate }} {{ 'coin' | commonText }}
+              <span class="-timestamp">{{ transaction.timestamp | dateTime }}</span>
+            </h4>
+            <h4 *ngIf="transaction.balance.isGreaterThan(0) && !transaction.confirmed">
+              {{ 'history.receiving' | translate }} {{ 'coin' | commonText }}
+              <span class="-pending">{{ 'history.pending' | translate }}</span>
+            </h4>
+          </ng-container>
+          <ng-container *ngIf="transaction.coinsMovedInternally">
+            <h4 *ngIf="transaction.confirmed">
+              {{ 'history.moved' | translate }} {{ 'coin' | commonText }}
+              <span class="-timestamp">{{ transaction.timestamp | dateTime }}</span>
+            </h4>
+            <h4 *ngIf="!transaction.confirmed">
+              {{ 'history.moving' | translate }} {{ 'coin' | commonText }}
+              <span class="-pending">{{ 'history.pending' | translate }}</span>
+            </h4>
+          </ng-container>
           <div class="-item" *ngFor="let address of transaction.addresses">
             <img src="../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address)" class="qr-code-button">
             <span>{{ address }}</span>
           </div>
+          <div class="-item" *ngIf="transaction.note">
+            <span>{{ 'history.note' | translate }}: <span class="note">{{ transaction.note }}</span></span>
+          </div>
         </div>
         <div class="-balance">
-          <h4>{{ transaction.balance.decimalPlaces(6).toString() | number:'1.0-6' }} {{ 'common.coin-id' | translate }}</h4>
+          <h4>{{ transaction.balance.toString() | amount }}</h4>
           <p *ngIf="price" [matTooltip]="'tx.current-rate' | translate">
             {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}<span>*</span>
           </p>

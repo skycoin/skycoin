@@ -15,14 +15,14 @@ import (
 const configuredHost = "127.0.0.1:6420"
 
 var allAPISetsEnabled = map[string]struct{}{
-	EndpointsRead:                  struct{}{},
-	EndpointsTransaction:           struct{}{},
-	EndpointsStatus:                struct{}{},
-	EndpointsWallet:                struct{}{},
-	EndpointsInsecureWalletSeed:    struct{}{},
-	EndpointsDeprecatedWalletSpend: struct{}{},
-	EndpointsPrometheus:            struct{}{},
-	EndpointsNetCtrl:               struct{}{},
+	EndpointsRead:               struct{}{},
+	EndpointsTransaction:        struct{}{},
+	EndpointsStatus:             struct{}{},
+	EndpointsWallet:             struct{}{},
+	EndpointsInsecureWalletSeed: struct{}{},
+	EndpointsPrometheus:         struct{}{},
+	EndpointsNetCtrl:            struct{}{},
+	EndpointsStorage:            struct{}{},
 }
 
 func defaultMuxConfig() muxConfig {
@@ -35,93 +35,160 @@ func defaultMuxConfig() muxConfig {
 	}
 }
 
-var endpoints = []string{
-	"/address_uxouts",
-	"/addresscount",
-	"/balance",
-	"/block",
-	"/blockchain/metadata",
-	"/blockchain/progress",
-	"/blocks",
-	"/coinSupply",
-	"/explorer/address",
-	"/health",
-	"/injectTransaction",
-	"/last_blocks",
-	"/version",
-	"/network/connection",
-	"/network/connection/disconnect",
-	"/network/connections",
-	"/network/connections/exchange",
-	"/network/connections/trust",
-	"/network/defaultConnections",
-	"/outputs",
-	"/pendingTxs",
-	"/rawtx",
-	"/richlist",
-	"/resendUnconfirmedTxns",
-	"/transaction",
-	"/transactions",
-	"/uxout",
-	"/wallet",
-	"/wallet/balance",
-	"/wallet/create",
-	"/wallet/newAddress",
-	"/wallet/newSeed",
-	"/wallet/seed",
-	"/wallet/spend",
-	"/wallet/transaction",
-	"/wallet/transactions",
-	"/wallet/unload",
-	"/wallet/update",
-	"/wallets",
-	"/wallets/folderName",
-	"/webrpc",
+var endpointsMethods = map[string][]string{
+	"/api/v1/address_uxouts": []string{
+		http.MethodGet,
+	},
+	"/api/v1/addresscount": []string{
+		http.MethodGet,
+	},
+	"/api/v1/balance": []string{
+		http.MethodGet,
+		http.MethodPost,
+	},
+	"/api/v1/block": []string{
+		http.MethodGet,
+	},
+	"/api/v1/blockchain/metadata": []string{
+		http.MethodGet,
+	},
+	"/api/v1/blockchain/progress": []string{
+		http.MethodGet,
+	},
+	"/api/v1/blocks": []string{
+		http.MethodGet,
+		http.MethodPost,
+	},
+	"/api/v1/coinSupply": []string{
+		http.MethodGet,
+	},
+	"/api/v1/health": []string{
+		http.MethodGet,
+	},
+	"/api/v1/injectTransaction": []string{
+		http.MethodPost,
+	},
+	"/api/v1/last_blocks": []string{
+		http.MethodGet,
+	},
+	"/api/v1/version": []string{
+		http.MethodGet,
+	},
+	"/api/v1/network/connection": []string{
+		http.MethodGet,
+	},
+	"/api/v1/network/connections": []string{
+		http.MethodGet,
+	},
+	"/api/v1/network/connections/exchange": []string{
+		http.MethodGet,
+	},
+	"/api/v1/network/connections/trust": []string{
+		http.MethodGet,
+	},
+	"/api/v1/network/defaultConnections": []string{
+		http.MethodGet,
+	},
+	"/api/v1/network/connection/disconnect": []string{
+		http.MethodPost,
+	},
+	"/api/v1/outputs": []string{
+		http.MethodGet,
+		http.MethodPost,
+	},
+	"/api/v1/pendingTxs": []string{
+		http.MethodGet,
+	},
+	"/api/v1/rawtx": []string{
+		http.MethodGet,
+	},
+	"/api/v1/richlist": []string{
+		http.MethodGet,
+	},
+	"/api/v1/resendUnconfirmedTxns": []string{
+		http.MethodPost,
+	},
+	"/api/v1/transaction": []string{
+		http.MethodGet,
+	},
+	"/api/v1/transactions": []string{
+		http.MethodGet,
+		http.MethodPost,
+	},
+	"/api/v1/uxout": []string{
+		http.MethodGet,
+	},
+	"/api/v1/wallet": []string{
+		http.MethodGet,
+	},
+	"/api/v1/wallet/balance": []string{
+		http.MethodGet,
+	},
+	"/api/v1/wallet/create": []string{
+		http.MethodPost,
+	},
+	"/api/v1/wallet/newAddress": []string{
+		http.MethodPost,
+	},
+	"/api/v1/wallet/newSeed": []string{
+		http.MethodGet,
+	},
+	"/api/v1/wallet/seed": []string{
+		http.MethodPost,
+	},
+	"/api/v1/wallet/transaction": []string{
+		http.MethodPost,
+	},
+	"/api/v1/wallet/transactions": []string{
+		http.MethodGet,
+	},
+	"/api/v1/wallet/unload": []string{
+		http.MethodPost,
+	},
+	"/api/v1/wallet/update": []string{
+		http.MethodPost,
+	},
+	"/api/v1/wallets": []string{
+		http.MethodGet,
+	},
+	"/api/v1/wallets/folderName": []string{
+		http.MethodGet,
+	},
 
-	"/api/v1/address_uxouts",
-	"/api/v1/addresscount",
-	"/api/v1/balance",
-	"/api/v1/block",
-	"/api/v1/blockchain/metadata",
-	"/api/v1/blockchain/progress",
-	"/api/v1/blocks",
-	"/api/v1/coinSupply",
-	"/api/v1/explorer/address",
-	"/api/v1/health",
-	"/api/v1/injectTransaction",
-	"/api/v1/last_blocks",
-	"/api/v1/version",
-	"/api/v1/network/connection",
-	"/api/v1/network/connections",
-	"/api/v1/network/connections/exchange",
-	"/api/v1/network/connections/trust",
-	"/api/v1/network/defaultConnections",
-	"/api/v1/outputs",
-	"/api/v1/pendingTxs",
-	"/api/v1/rawtx",
-	"/api/v1/richlist",
-	"/api/v1/resendUnconfirmedTxns",
-	"/api/v1/transaction",
-	"/api/v1/transactions",
-	"/api/v1/uxout",
-	"/api/v1/wallet",
-	"/api/v1/wallet/balance",
-	"/api/v1/wallet/create",
-	"/api/v1/wallet/newAddress",
-	"/api/v1/wallet/newSeed",
-	"/api/v1/wallet/seed",
-	"/api/v1/wallet/spend",
-	"/api/v1/wallet/transaction",
-	"/api/v1/wallet/transactions",
-	"/api/v1/wallet/unload",
-	"/api/v1/wallet/update",
-	"/api/v1/wallets",
-	"/api/v1/wallets/folderName",
-	"/api/v1/webrpc",
+	"/api/v2/transaction/verify": []string{
+		http.MethodPost,
+	},
+	"/api/v2/address/verify": []string{
+		http.MethodPost,
+	},
+	"/api/v2/wallet/recover": []string{
+		http.MethodPost,
+	},
+	"/api/v2/wallet/seed/verify": []string{
+		http.MethodPost,
+	},
+	"/api/v2/wallet/transaction/sign": []string{
+		http.MethodPost,
+	},
+	"/api/v2/transaction": []string{
+		http.MethodPost,
+	},
 
-	"/api/v2/transaction/verify",
-	"/api/v2/address/verify",
-	"/api/v2/wallet/recover",
+	"/api/v2/data": []string{
+		http.MethodGet,
+		http.MethodPost,
+		http.MethodDelete,
+	},
+}
+
+func allEndpoints() []string {
+	endpoints := make([]string, len(endpointsMethods))
+	i := 0
+	for e := range endpointsMethods {
+		endpoints[i] = e
+		i++
+	}
+	return endpoints
 }
 
 // TestEnableGUI tests enable gui option, EnableGUI isn't part of Gateway API,
@@ -179,7 +246,7 @@ func TestEnableGUI(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 			cfg := defaultMuxConfig()
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			c := Config{
@@ -208,7 +275,7 @@ func TestEnableGUI(t *testing.T) {
 			}()
 
 			url := fmt.Sprintf("http://%s/%s", host, tc.endpoint)
-			rsp, err := http.Get(url)
+			rsp, err := http.Get(url) //nolint:gosec
 			require.NoError(t, err)
 
 			defer rsp.Body.Close()
@@ -225,36 +292,48 @@ func TestEnableGUI(t *testing.T) {
 }
 
 func TestAPISetDisabled(t *testing.T) {
-	for _, e := range append(endpoints, []string{"/csrf", "/api/v1/csrf"}...) {
-		switch e {
-		case "/webrpc", "/api/v1/webrpc":
-			continue
+	tf := func(t *testing.T, endpoint, method string, disableCSRF bool) {
+		req, err := http.NewRequest(method, endpoint, nil)
+		require.NoError(t, err)
+
+		isAPIV2 := strings.HasPrefix(endpoint, "/api/v2/")
+		if isAPIV2 {
+			req.Header.Set("Content-Type", ContentTypeJSON)
 		}
 
-		t.Run(e, func(t *testing.T) {
-			req, err := http.NewRequest(http.MethodGet, e, nil)
-			require.NoError(t, err)
+		cfg := defaultMuxConfig()
+		cfg.disableCSRF = disableCSRF
+		cfg.enabledAPISets = map[string]struct{}{} // disable all API sets
 
-			cfg := defaultMuxConfig()
-			cfg.disableCSRF = false
-			cfg.enableUnversionedAPI = true
-			cfg.enableJSON20RPC = false
-			cfg.enabledAPISets = map[string]struct{}{} // disable all API sets
+		handler := newServerMux(cfg, &MockGatewayer{})
 
-			handler := newServerMux(cfg, &MockGatewayer{}, nil)
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
 
-			rr := httptest.NewRecorder()
-			handler.ServeHTTP(rr, req)
-
-			switch e {
-			case "/csrf", "/api/v1/csrf", "/version", "/api/v1/version": // always enabled
-				require.Equal(t, http.StatusOK, rr.Code)
-			default:
-				require.Equal(t, http.StatusForbidden, rr.Code)
+		switch endpoint {
+		case "/api/v1/csrf", "/api/v1/version": // always enabled
+			require.Equal(t, http.StatusOK, rr.Code)
+		default:
+			require.Equal(t, http.StatusForbidden, rr.Code)
+			if isAPIV2 {
+				require.Equal(t, "{\n    \"error\": {\n        \"message\": \"Endpoint is disabled\",\n        \"code\": 403\n    }\n}", rr.Body.String())
+			} else {
 				require.Equal(t, "403 Forbidden - Endpoint is disabled", strings.TrimSpace(rr.Body.String()))
 			}
-		})
+		}
 	}
+
+	for e, methods := range endpointsMethods {
+		for _, m := range methods {
+			t.Run(fmt.Sprintf("%s %s", m, e), func(t *testing.T) {
+				tf(t, e, m, true)
+			})
+		}
+	}
+
+	t.Run("GET /api/v1/csrf", func(t *testing.T) {
+		tf(t, "/api/v1/csrf", http.MethodGet, false)
+	})
 }
 
 func TestCORS(t *testing.T) {
@@ -282,11 +361,7 @@ func TestCORS(t *testing.T) {
 		},
 	}
 
-	for _, e := range append(endpoints, "/api/v1/csrf") {
-		if !strings.HasPrefix(e, "/api/v") {
-			continue
-		}
-
+	for _, e := range append(allEndpoints(), "/api/v1/csrf") {
 		for _, tc := range cases {
 			for _, m := range []string{http.MethodPost, http.MethodGet} {
 				name := fmt.Sprintf("%s %s %s", tc.name, m, e)
@@ -300,21 +375,23 @@ func TestCORS(t *testing.T) {
 
 					setCSRFParameters(t, tokenValid, req)
 
+					isAPIV2 := strings.HasPrefix(e, "/api/v2/")
+					if isAPIV2 {
+						req.Header.Set("Content-Type", ContentTypeJSON)
+					}
+
 					req.Header.Set("Origin", fmt.Sprintf("http://%s", tc.origin))
 					req.Header.Set("Access-Control-Request-Method", m)
 
 					requestHeaders := strings.ToLower(fmt.Sprintf("%s, Content-Type", CSRFHeaderName))
 					req.Header.Set("Access-Control-Request-Headers", requestHeaders)
 
-					handler := newServerMux(cfg, &MockGatewayer{}, nil)
+					handler := newServerMux(cfg, &MockGatewayer{})
 
 					rr := httptest.NewRecorder()
 					handler.ServeHTTP(rr, req)
 
 					resp := rr.Result()
-
-					fmt.Println(resp.Header)
-					fmt.Println(rr.Body.String())
 
 					allowOrigins := resp.Header.Get("Access-Control-Allow-Origin")
 					allowHeaders := resp.Header.Get("Access-Control-Allow-Headers")
@@ -416,7 +493,7 @@ func TestHTTPBasicAuthInvalid(t *testing.T) {
 		}
 	}
 
-	for _, e := range append(endpoints, []string{"/csrf", "/api/v1/csrf"}...) {
+	for _, e := range append(allEndpoints(), []string{"/api/v1/csrf"}...) {
 		for _, tc := range cases {
 			name := fmt.Sprintf("u=%s p=%s ru=%s rp=%s auth=%v e=%s", tc.username, tc.password, tc.reqUsername, tc.reqPassword, tc.authorized, e)
 			t.Run(name, func(t *testing.T) {
@@ -430,12 +507,10 @@ func TestHTTPBasicAuthInvalid(t *testing.T) {
 
 				cfg := defaultMuxConfig()
 				cfg.disableCSRF = false
-				cfg.enableUnversionedAPI = true
-				cfg.enableJSON20RPC = false
 				cfg.username = tc.username
 				cfg.password = tc.password
 
-				handler := newServerMux(cfg, &MockGatewayer{}, nil)
+				handler := newServerMux(cfg, &MockGatewayer{})
 
 				rr := httptest.NewRecorder()
 				handler.ServeHTTP(rr, req)

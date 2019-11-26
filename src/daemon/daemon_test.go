@@ -6,12 +6,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/params"
-	"github.com/skycoin/skycoin/src/util/fee"
-	"github.com/skycoin/skycoin/src/util/useragent"
-	"github.com/skycoin/skycoin/src/visor"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/params"
+	"github.com/SkycoinProject/skycoin/src/util/fee"
+	"github.com/SkycoinProject/skycoin/src/util/useragent"
+	"github.com/SkycoinProject/skycoin/src/visor"
 )
 
 func TestDivideHashes(t *testing.T) {
@@ -240,8 +240,8 @@ func TestCheckBroadcastTxnRecipients(t *testing.T) {
 		Mirror:          7777,
 		ListenPort:      9999,
 		ProtocolVersion: 2,
-		userAgent:       useragent.MustParse("skycoin:0.25.1"),
-		unconfirmedVerifyTxn: params.VerifyTxn{
+		UserAgent:       useragent.MustParse("skycoin:0.25.1"),
+		UnconfirmedVerifyTxn: params.VerifyTxn{
 			MaxDropletPrecision: 4, // the default precision for unspecified peers is 3
 			MaxTransactionSize:  32768,
 			BurnFactor:          2,

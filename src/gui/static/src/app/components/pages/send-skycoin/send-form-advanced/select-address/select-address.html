@@ -1,12 +1,12 @@
-<app-modal [headline]="'send.change-address-label' | translate" [dialog]="dialogRef">
+<app-modal [headline]="'title.select-address' | translate" [dialog]="dialogRef">
   <div class="wallet-container select-address-theme" *ngFor="let wallet of wallets">
     <div class="title" title="{{ wallet.label }}">{{ wallet.label }}</div>
     <button mat-button color="primary" *ngFor="let address of wallet.addresses" (click)="select(address.address)">
       <div class="address">{{ address.address }}</div>
-      <div class="balance">{{ address.coins.decimalPlaces(6).toString() | number:'1.0-6' }}
-        <span class="grey">{{ 'common.coin-id' | translate }} | </span>
-        {{ address.hours.decimalPlaces(0).toString() | number:'1.0-0' }}
-        <span class="grey">{{ 'common.coin-hours' | translate }}</span>
+      <div class="balance">{{ address.coins.toString() | amount:true:'first' }}
+        <span class="grey">{{ address.coins.toString() | amount:true:'last' }} | </span>
+        {{ address.hours.toString() | amount:false:'first' }}
+        <span class="grey">{{ address.hours.toString() | amount:false:'last' }}</span>
       </div>
     </button>
   </div>

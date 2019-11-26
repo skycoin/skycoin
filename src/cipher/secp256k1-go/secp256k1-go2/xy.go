@@ -1,24 +1,21 @@
 package secp256k1go
 
 import (
-	"fmt"
+	"errors"
 	"log"
 )
 
-// XY TODO...
+// XY is a point on the secp256k1 curve
 type XY struct {
 	X, Y     Field
 	Infinity bool
 }
 
-// Print prints the xy
-func (xy *XY) Print(lab string) {
+func (xy *XY) String() string {
 	if xy.Infinity {
-		fmt.Println(lab + " - Infinity")
-		return
+		return "Infinity"
 	}
-	fmt.Println(lab+".X:", xy.X.String())
-	fmt.Println(lab+".Y:", xy.Y.String())
+	return xy.X.String() + "," + xy.Y.String()
 }
 
 //edited
@@ -41,18 +38,19 @@ func (xy *XY) Print(lab string) {
 //All compact keys appear to be valid by construction, but may fail
 //is valid check
 
-// ParsePubkey WARNING: for compact signatures, will succeed unconditionally
-//however, elem.IsValid will fail
-func (xy *XY) ParsePubkey(pub []byte) bool {
+// ParsePubkey parses a compressed pubkey to a point on the curve
+func (xy *XY) ParsePubkey(pub []byte) error {
+	// ParsePubkey WARNING: for compact signatures, will succeed unconditionally
+	//however, elem.IsValid will fail
 	if len(pub) != 33 {
-		log.Panic("pubkey len must be 33, len is ", len(pub)) // do not permit invalid length inputs
-		return false
+		log.Panic("pubkey len must be 33 bytes") // do not permit invalid length inputs
+		return errors.New("pubkey len must be 33 bytes")
 	}
 	if len(pub) == 33 && (pub[0] == 0x02 || pub[0] == 0x03) {
 		xy.X.SetB32(pub[1:33])
 		xy.SetXO(&xy.X, pub[0] == 0x03)
 	} else {
-		return false
+		return errors.New("pubkey y-coordinate parity byte is invalid") // the leading bytes indicates if Y is odd or not
 	}
 	//THIS FAILS
 	//reenable later
@@ -69,14 +67,13 @@ func (xy *XY) ParsePubkey(pub []byte) bool {
 			}
 		}
 	*/
-	return true
+	return nil
 }
 
-// Bytes Returns serialized key in in compressed format: "<02> <X>",
-// eventually "<03> <X>"
-//33 bytes
+// Bytes returns the compressed public key (33 bytes) in the format
+// "<0x03> <X>" or <0x02> <X>". The leading byte is 0x03 if the Y point is odd.
 func (xy XY) Bytes() []byte {
-	xy.X.Normalize() // See GitHub issue #15
+	xy.X.Normalize() // See https://github.com/piotrnar/gocoin/issues/15
 
 	raw := make([]byte, 33)
 	if xy.Y.IsOdd() {
@@ -91,8 +88,8 @@ func (xy XY) Bytes() []byte {
 // BytesUncompressed returns serialized key in uncompressed format "<04> <X> <Y>"
 //65 bytes
 func (xy *XY) BytesUncompressed() (raw []byte) {
-	xy.X.Normalize() // See GitHub issue #15
-	xy.Y.Normalize() // See GitHub issue #15
+	xy.X.Normalize() // See https://github.com/piotrnar/gocoin/issues/15
+	xy.Y.Normalize() // See https://github.com/piotrnar/gocoin/issues/15
 
 	raw = make([]byte, 65)
 	raw[0] = 0x04
@@ -133,8 +130,25 @@ int static secp256k1_ecdsa_pubkey_parse(secp256k1_ge_t *elem, const unsigned cha
 //        secp256k1_fe_set_b32(&x, pub+1);
 //        return secp256k1_ge_set_xo(elem, &x, pub[0] == 0x03);
 
-// IsValid checks if valid
+// IsValid checks that the point is not infinity and is on the secp256k1 curve
 func (xy *XY) IsValid() bool {
+	// Adopted from libsecp256k1:
+	// https://github.com/bitcoin-core/secp256k1/blob/2ebdad772af770b4587af0856de27c63de1b03be/src/group_impl.h#L292-L304
+	/*
+		static int secp256k1_ge_is_valid_var(const secp256k1_ge *a) {
+		    secp256k1_fe y2, x3, c;
+		    if (a->infinity) {
+		        return 0;
+		    }
+		    // y^2 = x^3 + 7 //
+		    secp256k1_fe_sqr(&y2, &a->y);
+		    secp256k1_fe_sqr(&x3, &a->x); secp256k1_fe_mul(&x3, &x3, &a->x);
+		    secp256k1_fe_set_int(&c, CURVE_B);
+		    secp256k1_fe_add(&x3, &c);
+		    secp256k1_fe_normalize_weak(&x3);
+		    return secp256k1_fe_equal_var(&y2, &x3);
+		}
+	*/
 	if xy.Infinity {
 		return false
 	}
@@ -163,8 +177,8 @@ func (xy *XY) SetXYZ(a *XYZ) {
 	xy.Y = a.Y
 }
 
-func (xy *XY) precomp(w int) (pre []XY) { // nolint: unused,megacheck
-	pre = make([]XY, (1 << (uint(w) - 2)))
+func (xy *XY) precomp(w int) []XY { //nolint:unused,megacheck
+	pre := make([]XY, (1 << (uint(w) - 2)))
 	pre[0] = *xy
 	var X, d, tmp XYZ
 	X.SetXY(xy)
@@ -173,7 +187,7 @@ func (xy *XY) precomp(w int) (pre []XY) { // nolint: unused,megacheck
 		d.AddXY(&tmp, &pre[i-1])
 		pre[i].SetXYZ(&tmp)
 	}
-	return
+	return pre
 }
 
 // Neg caculates negate
@@ -202,7 +216,8 @@ int static secp256k1_ge_set_xo(secp256k1_ge_t *r, const secp256k1_fe_t *x, int o
 }
 */
 
-// SetXO sets
+// SetXO sets the X and Y field from an X value and flag indicating whether or
+// not Y is odd.
 func (xy *XY) SetXO(X *Field, odd bool) {
 	var c, x2, x3 Field
 	xy.X = *X
@@ -216,7 +231,7 @@ func (xy *XY) SetXO(X *Field, odd bool) {
 		xy.Y.Negate(&xy.Y, 1)
 	}
 
-	//r.X.Normalize() // See GitHub issue #15
+	//r.X.Normalize() // See https://github.com/piotrnar/gocoin/issues/15
 	xy.Y.Normalize()
 }
 
@@ -226,40 +241,4 @@ func (xy *XY) AddXY(a *XY) {
 	xyz.SetXY(xy)
 	xyz.AddXY(&xyz, a)
 	xy.SetXYZ(&xyz)
-}
-
-/*
-func (pk *XY) GetPublicKey() []byte {
-	var out []byte = make([]byte, 65, 65)
-	pk.X.GetB32(out[1:33])
-	if len(out) == 65 {
-		out[0] = 0x04
-		pk.Y.GetB32(out[33:65])
-	} else {
-		if pk.Y.IsOdd() {
-			out[0] = 0x03
-		} else {
-			out[0] = 0x02
-		}
-	}
-	return out
-}
-*/
-
-// GetPublicKey use compact format
-//returns only 33 bytes
-//same as bytes()
-//TODO: deprecate, replace with .Bytes()
-func (xy *XY) GetPublicKey() []byte {
-	return xy.Bytes()
-	/*
-		var out []byte = make([]byte, 33, 33)
-		pk.X.GetB32(out[1:33])
-		if pk.Y.IsOdd() {
-			out[0] = 0x03
-		} else {
-			out[0] = 0x02
-		}
-		return out
-	*/
 }

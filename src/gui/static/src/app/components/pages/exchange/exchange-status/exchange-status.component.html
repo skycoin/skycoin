@@ -1,0 +1,132 @@
+<app-loading-content
+  [isLoading]="!showError"
+  noDataText="exchange.order-not-found"
+  *ngIf="loading"
+></app-loading-content>
+
+<ng-container *ngIf="!loading">
+  <div class="-wrapper">
+    <div class="-status">
+      <mat-icon [ngClass]="{'-spin': statusIcon === 'refresh'}">{{ statusIcon }}</mat-icon>
+      <div class="-item">
+        <div class="-key">{{ 'exchange.status' | translate }}</div>
+        <div class="-value">{{ translatedStatus.text | translate:translatedStatus.params }} <mat-icon class="info-icon" [matTooltip]="translatedStatus.info | translate">help</mat-icon></div>
+      </div>
+    </div>
+    <span>{{ 'exchange.exchanging' | translate:{from: fromCoin, to: toCoin} }}</span>
+  </div>
+
+  <mat-progress-bar [value]="progress"></mat-progress-bar>
+
+  <div class="-details">
+    <div class="-box">
+      <div class="-img"></div>
+      <div class="-item">
+        <div class="-key">{{ 'exchange.details.order-id' | translate }}</div>
+        <div class="-value">{{ order.id }}</div>
+      </div>
+    </div>
+
+    <ng-template #fromInfo>
+      <div class="-box">
+        <div class="-img"></div>
+        <div class="-item">
+          <div class="-key">{{ 'exchange.you-send' | translate }}</div>
+          <div class="-value">{{ order.fromAmount }} {{ fromCoin }}</div>
+        </div>
+      </div>
+
+      <div class="-box">
+        <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode(order.exchangeAddress)" class="qr-code-button -img">
+        <div class="-item">
+          <div class="-key">{{ 'exchange.details.exchange-addr' | translate }}</div>
+          <div class="-value">{{ order.exchangeAddress }}</div>
+        </div>
+      </div>
+
+      <div class="-box" *ngIf="order.exchangeTag">
+        <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode(order.exchangeTag)" class="qr-code-button -img">
+        <div class="-item">
+          <div class="-key">{{ 'exchange.details.exchange-addr-tag' | translate }}</div>
+          <div class="-value">{{ order.exchangeTag }}</div>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-container *ngIf="order.status === statuses[0]">
+      <ng-container *ngTemplateOutlet="fromInfo"></ng-container>
+    </ng-container>
+
+    <div class="-box" *ngIf="order.status === statuses[5]">
+      <div class="-img"></div>
+      <div class="-item">
+        <div class="-key">{{ 'exchange.details.tx-id' | translate }}</div>
+        <div class="-value">
+          {{ order.toTx }}
+          <a [href]="appService.explorerUrl + '/transaction/' + order.toTx" class="-external" target="_blank" rel="noreferrer nofollow">
+            <mat-icon>launch</mat-icon>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="-box" *ngIf="order.status === statuses[6]">
+      <div class="-img"></div>
+      <div class="-item">
+        <div class="-key">{{ 'exchange.details.error-msg' | translate }}</div>
+        <div class="-value">{{ order.message }}</div>
+      </div>
+    </div>
+
+    <div class="-box">
+      <div class="-img"></div>
+      <span class="expand" (click)="toggleDetails()">
+        {{ 'exchange.details.details' | translate }} <mat-icon>{{ expanded ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
+      </span>
+    </div>
+
+    <ng-container *ngIf="expanded">
+      <div class="-box">
+        <div class="-img"></div>
+        <div class="-item">
+          <div class="-key">{{ 'exchange.details.start-date' | translate }}</div>
+          <div class="-value">{{ _orderDetails.timestamp | dateTime }}</div>
+        </div>
+      </div>
+
+      <ng-container *ngIf="order.status !== statuses[0]">
+        <ng-container *ngTemplateOutlet="fromInfo"></ng-container>
+      </ng-container>
+
+      <div class="-box">
+        <div class="-img"></div>
+        <div class="-item">
+          <div class="-key">{{ 'exchange.you-get' | translate }}</div>
+          <div class="-value">{{ order.toAmount | amount:true:'first' }} {{ toCoin }}</div>
+        </div>
+      </div>
+
+      <div class="-box">
+        <div class="-img"></div>
+        <div class="-item">
+          <div class="-key">{{ 'exchange.to-address' | translate:{coin: toCoin} }}</div>
+          <div class="-value">{{ order.toAddress }}</div>
+        </div>
+      </div>
+
+      <div class="-box">
+        <div class="-img"></div>
+        <div class="-item">
+          <div class="-key">{{ 'exchange.details.initial-price' | translate }}</div>
+          <div class="-value">1 {{ fromCoin }} &asymp; {{ _orderDetails.price }} {{ toCoin }}</div>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+</ng-container>
+
+<div class="buttons">
+  <app-button class="primary" (action)="close()">
+    {{ 'exchange.details.back' | translate }}
+  </app-button>
+</div>

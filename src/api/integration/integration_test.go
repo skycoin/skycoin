@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -24,18 +22,17 @@ import (
 	"github.com/andreyvit/diff"
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/api"
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/params"
-	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/util/droplet"
-	"github.com/skycoin/skycoin/src/util/fee"
-	"github.com/skycoin/skycoin/src/util/useragent"
-	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/api"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/daemon"
+	"github.com/SkycoinProject/skycoin/src/readable"
+	"github.com/SkycoinProject/skycoin/src/testutil"
+	"github.com/SkycoinProject/skycoin/src/transaction"
+	"github.com/SkycoinProject/skycoin/src/util/droplet"
+	"github.com/SkycoinProject/skycoin/src/util/mathutil"
+	"github.com/SkycoinProject/skycoin/src/util/useragent"
+	"github.com/SkycoinProject/skycoin/src/visor"
 )
 
 /* Runs HTTP API tests against a running skycoin node
@@ -126,6 +123,17 @@ func useCSRF(t *testing.T) bool {
 	useCSRF, err := strconv.ParseBool(x)
 	require.NoError(t, err)
 	return useCSRF
+}
+
+func doHeaderCheck(t *testing.T) bool {
+	x := os.Getenv("HEADER_CHECK")
+	if x == "" {
+		return false
+	}
+
+	doHeaderCheck, err := strconv.ParseBool(x)
+	require.NoError(t, err)
+	return doHeaderCheck
 }
 
 func doStable(t *testing.T) bool {
@@ -268,7 +276,7 @@ func checkGoldenFile(t *testing.T, goldenFile string, td TestData) {
 func assertResponseError(t *testing.T, err error, errCode int, errMsg string) {
 	require.Error(t, err)
 	require.IsType(t, api.ClientError{}, err)
-	require.Equal(t, errCode, err.(api.ClientError).StatusCode)
+	require.Equal(t, errCode, err.(api.ClientError).StatusCode, err.(api.ClientError).Message)
 	require.Equal(t, errMsg, err.(api.ClientError).Message)
 }
 
@@ -413,14 +421,15 @@ func TestStableVerifyTransaction(t *testing.T) {
 	require.NoError(t, err)
 
 	cases := []struct {
-		name    string
-		golden  string
-		txn     coin.Transaction
-		errCode int
-		errMsg  string
+		name     string
+		golden   string
+		txn      coin.Transaction
+		unsigned bool
+		errCode  int
+		errMsg   string
 	}{
 		{
-			name:    "invalid transaction empty",
+			name:    "unsigned=false invalid transaction empty",
 			txn:     coin.Transaction{},
 			golden:  "verify-transaction-invalid-empty.golden",
 			errCode: http.StatusUnprocessableEntity,
@@ -428,19 +437,38 @@ func TestStableVerifyTransaction(t *testing.T) {
 		},
 
 		{
-			name:    "invalid transaction bad signature",
+			name:    "unsigned=false invalid transaction bad signature",
 			txn:     badSignatureTxn,
 			golden:  "verify-transaction-invalid-bad-sig.golden",
 			errCode: http.StatusUnprocessableEntity,
 			errMsg:  "Transaction violates hard constraint: Signature not valid for hash",
 		},
+
+		{
+			name:     "unsigned=true invalid transaction empty",
+			txn:      coin.Transaction{},
+			unsigned: true,
+			golden:   "verify-transaction-invalid-empty.golden",
+			errCode:  http.StatusUnprocessableEntity,
+			errMsg:   "Transaction violates soft constraint: Transaction has zero coinhour fee",
+		},
+
+		{
+			name:     "unsigned=true invalid transaction bad signature",
+			txn:      badSignatureTxn,
+			unsigned: true,
+			golden:   "verify-transaction-invalid-bad-sig.golden",
+			errCode:  http.StatusUnprocessableEntity,
+			errMsg:   "Transaction violates hard constraint: Signature not valid for hash",
+		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			encodedTxn := hex.EncodeToString(tc.txn.Serialize())
-
-			resp, err := c.VerifyTransaction(encodedTxn)
+			resp, err := c.VerifyTransaction(api.VerifyTransactionRequest{
+				EncodedTransaction: tc.txn.MustSerializeHex(),
+				Unsigned:           tc.unsigned,
+			})
 
 			if tc.errCode != 0 && tc.errCode != http.StatusOK {
 				assertResponseError(t, err, tc.errCode, tc.errMsg)
@@ -453,7 +481,7 @@ func TestStableVerifyTransaction(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			var expected api.VerifyTxnResponse
+			var expected api.VerifyTransactionResponse
 			checkGoldenFile(t, tc.golden, TestData{*resp, &expected})
 		})
 	}
@@ -923,7 +951,7 @@ func assertVerboseBlockFee(t *testing.T, b *readable.BlockVerbose) {
 	fee := uint64(0)
 	for _, txn := range b.Body.Transactions {
 		var err error
-		fee, err = coin.AddUint64(fee, txn.Fee)
+		fee, err = mathutil.AddUint64(fee, txn.Fee)
 		require.NoError(t, err)
 	}
 
@@ -2331,9 +2359,7 @@ func testTransactionEncoded(t *testing.T, c *api.Client, tc transactionTestCase,
 		encodedTxn.Status.Height = 0
 	}
 
-	encodedTxnBytes, err := hex.DecodeString(encodedTxn.EncodedTransaction)
-	require.NoError(t, err)
-	decodedTxn, err := coin.TransactionDeserialize(encodedTxnBytes)
+	decodedTxn, err := coin.DeserializeTransactionHex(encodedTxn.EncodedTransaction)
 	require.NoError(t, err)
 
 	txnResult, err := readable.NewTransactionWithStatus(&visor.Transaction{
@@ -2406,7 +2432,7 @@ func TestStableTransactions(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid address length",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"abcd\" is invalid: Invalid address length",
 			},
 		},
 		{
@@ -2415,7 +2441,7 @@ func TestStableTransactions(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid base58 character",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947\" is invalid: Invalid base58 character",
 			},
 		},
 		{
@@ -2424,7 +2450,7 @@ func TestStableTransactions(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid checksum",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk\" is invalid: Invalid checksum",
 			},
 		},
 		{
@@ -2510,7 +2536,7 @@ func TestStableConfirmedTransactions(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid address length",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"abcd\" is invalid: Invalid address length",
 			},
 		},
 		{
@@ -2519,7 +2545,7 @@ func TestStableConfirmedTransactions(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid base58 character",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947\" is invalid: Invalid base58 character",
 			},
 		},
 		{
@@ -2528,7 +2554,7 @@ func TestStableConfirmedTransactions(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid checksum",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk\" is invalid: Invalid checksum",
 			},
 		},
 		{
@@ -2587,7 +2613,7 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid address length",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"abcd\" is invalid: Invalid address length",
 			},
 		},
 		{
@@ -2596,7 +2622,7 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid base58 character",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947\" is invalid: Invalid base58 character",
 			},
 		},
 		{
@@ -2605,7 +2631,7 @@ func TestStableUnconfirmedTransactions(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid checksum",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk\" is invalid: Invalid checksum",
 			},
 		},
 	}
@@ -2697,7 +2723,7 @@ func TestStableTransactionsVerbose(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid address length",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"abcd\" is invalid: Invalid address length",
 			},
 		},
 		{
@@ -2706,7 +2732,7 @@ func TestStableTransactionsVerbose(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid base58 character",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947\" is invalid: Invalid base58 character",
 			},
 		},
 		{
@@ -2715,7 +2741,7 @@ func TestStableTransactionsVerbose(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid checksum",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk\" is invalid: Invalid checksum",
 			},
 		},
 		{
@@ -2796,7 +2822,7 @@ func TestStableConfirmedTransactionsVerbose(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid address length",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"abcd\" is invalid: Invalid address length",
 			},
 		},
 		{
@@ -2805,7 +2831,7 @@ func TestStableConfirmedTransactionsVerbose(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid base58 character",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947\" is invalid: Invalid base58 character",
 			},
 		},
 		{
@@ -2814,7 +2840,7 @@ func TestStableConfirmedTransactionsVerbose(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid checksum",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk\" is invalid: Invalid checksum",
 			},
 		},
 		{
@@ -2873,7 +2899,7 @@ func TestStableUnconfirmedTransactionsVerbose(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid address length",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"abcd\" is invalid: Invalid address length",
 			},
 		},
 		{
@@ -2882,7 +2908,7 @@ func TestStableUnconfirmedTransactionsVerbose(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid base58 character",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"701d23fd513bad325938ba56869f9faba19384a8ec3dd41833aff147eac53947\" is invalid: Invalid base58 character",
 			},
 		},
 		{
@@ -2891,7 +2917,7 @@ func TestStableUnconfirmedTransactionsVerbose(t *testing.T) {
 			err: api.ClientError{
 				Status:     "400 Bad Request",
 				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - parse parameter: 'addrs' failed: Invalid checksum",
+				Message:    "400 Bad Request - parse parameter: 'addrs' failed: address \"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKk\" is invalid: Invalid checksum",
 			},
 		},
 	}
@@ -3102,64 +3128,6 @@ func TestLiveRawTransaction(t *testing.T) {
 	}
 }
 
-func TestWalletNewSeed(t *testing.T) {
-	if !doLiveOrStable(t) {
-		return
-	}
-
-	if doLive(t) && !doLiveWallet(t) {
-		return
-	}
-
-	cases := []struct {
-		name     string
-		entropy  int
-		numWords int
-		errCode  int
-		errMsg   string
-	}{
-		{
-			name:     "entropy 128",
-			entropy:  128,
-			numWords: 12,
-		},
-		{
-			name:     "entropy 256",
-			entropy:  256,
-			numWords: 24,
-		},
-		{
-			name:    "entropy 100",
-			entropy: 100,
-			errCode: http.StatusBadRequest,
-			errMsg:  "400 Bad Request - entropy length must be 128 or 256",
-		},
-	}
-
-	c := newClient()
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			seed, err := c.NewSeed(tc.entropy)
-			if tc.errMsg != "" {
-				assertResponseError(t, err, tc.errCode, tc.errMsg)
-				return
-			}
-
-			require.NoError(t, err)
-			words := strings.Split(seed, " ")
-			require.Len(t, words, tc.numWords)
-
-			// no extra whitespace on the seed
-			require.Equal(t, seed, strings.TrimSpace(seed))
-
-			// should generate a different seed each time
-			seed2, err := c.NewSeed(tc.entropy)
-			require.NoError(t, err)
-			require.NotEqual(t, seed, seed2)
-		})
-	}
-}
-
 type addressTransactionsTestCase struct {
 	name    string
 	address string
@@ -3169,6 +3137,7 @@ type addressTransactionsTestCase struct {
 }
 
 func TestStableAddressTransactions(t *testing.T) {
+	// Formerly tested /api/v1/explorer/address, now tests /api/v1/transactions?verbose=1
 	if !doStable(t) {
 		return
 	}
@@ -3193,7 +3162,7 @@ func TestStableAddressTransactions(t *testing.T) {
 			name:    "invalid address",
 			address: "prRXwTcDK24hs6AFxj",
 			errCode: http.StatusBadRequest,
-			errMsg:  "400 Bad Request - invalid address",
+			errMsg:  "400 Bad Request - parse parameter: 'addrs' failed: address \"prRXwTcDK24hs6AFxj\" is invalid: Invalid address length",
 		},
 	}
 
@@ -3215,7 +3184,7 @@ func TestStableAddressTransactions(t *testing.T) {
 	c := newClient()
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txns, err := c.AddressTransactions(tc.address)
+			txns, err := c.TransactionsVerbose([]string{tc.address})
 			if tc.errMsg != "" {
 				assertResponseError(t, err, tc.errCode, tc.errMsg)
 				return
@@ -3223,13 +3192,14 @@ func TestStableAddressTransactions(t *testing.T) {
 
 			require.NoError(t, err)
 
-			var expected []readable.TransactionVerbose
+			var expected []readable.TransactionWithStatusVerbose
 			checkGoldenFile(t, tc.golden, TestData{txns, &expected})
 		})
 	}
 }
 
 func TestLiveAddressTransactions(t *testing.T) {
+	// Formerly tested /api/v1/explorer/address, now tests /api/v1/transactions?verbose=1
 	if !doLive(t) {
 		return
 	}
@@ -3238,7 +3208,7 @@ func TestLiveAddressTransactions(t *testing.T) {
 		{
 			name: "address with transactions",
 			// This is the first distribution address which has spent all of its coins
-			// It's transactions list should not change, unless someone sends coins to it
+			// Its transactions list should not change, unless someone sends coins to it
 			address: "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
 			golden:  "address-transactions-R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ.golden",
 		},
@@ -3254,15 +3224,14 @@ func TestLiveAddressTransactions(t *testing.T) {
 			name:    "invalid address",
 			address: "prRXwTcDK24hs6AFxj",
 			errCode: http.StatusBadRequest,
-			errMsg:  "400 Bad Request - invalid address",
+			errMsg:  "400 Bad Request - parse parameter: 'addrs' failed: address \"prRXwTcDK24hs6AFxj\" is invalid: Invalid address length",
 		},
 	}
 
 	c := newClient()
-
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			txns, err := c.AddressTransactions(tc.address)
+			txns, err := c.TransactionsVerbose([]string{tc.address})
 			if tc.errMsg != "" {
 				assertResponseError(t, err, tc.errCode, tc.errMsg)
 				return
@@ -3275,7 +3244,7 @@ func TestLiveAddressTransactions(t *testing.T) {
 				txns[i].Status.Height = 0
 			}
 
-			var expected []readable.TransactionVerbose
+			var expected []readable.TransactionWithStatusVerbose
 			checkGoldenFile(t, tc.golden, TestData{txns, &expected})
 		})
 	}
@@ -3472,2189 +3441,6 @@ func TestLivePendingTransactionsVerbose(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestLiveWalletSpend(t *testing.T) {
-	if !doLive(t) {
-		return
-	}
-
-	if liveDisableNetworking(t) {
-		t.Skip("Spend tests require networking")
-		return
-	}
-
-	requireWalletEnv(t)
-
-	c := newClient()
-	w, totalCoins, _, password := prepareAndCheckWallet(t, c, 2e6, 2)
-
-	tt := []struct {
-		name     string
-		to       string
-		coins    uint64
-		checkTxn func(t *testing.T, tx *readable.TransactionWithStatus)
-	}{
-		{
-			name:  "send all coins to the first address",
-			to:    w.Entries[0].Address.String(),
-			coins: totalCoins,
-			checkTxn: func(t *testing.T, tx *readable.TransactionWithStatus) {
-				// Confirms the total output coins are equal to the totalCoins
-				var coins uint64
-				for _, o := range tx.Transaction.Out {
-					c, err := droplet.FromString(o.Coins)
-					require.NoError(t, err)
-					coins, err = coin.AddUint64(coins, c)
-					require.NoError(t, err)
-				}
-
-				// Confirms the address balance are equal to the totalCoins
-				coins, _ = getAddressBalance(t, c, w.Entries[0].Address.String())
-				require.Equal(t, totalCoins, coins)
-			},
-		},
-		{
-			// send 0.003 coin to the second address,
-			// this amount is chosen to not interfere with TestLiveWalletCreateTransaction
-			name:  "send 0.003 coin to second address",
-			to:    w.Entries[1].Address.String(),
-			coins: 3e3,
-			checkTxn: func(t *testing.T, tx *readable.TransactionWithStatus) {
-				// Confirms there're two outputs, one to the second address, one as change output to the first address.
-				require.Len(t, tx.Transaction.Out, 2)
-
-				// Gets the output of the second address in the transaction
-				getAddrOutputInTxn := func(t *testing.T, tx *readable.TransactionWithStatus, addr string) *readable.TransactionOutput {
-					for _, output := range tx.Transaction.Out {
-						if output.Address == addr {
-							return &output
-						}
-					}
-					t.Fatalf("transaction doesn't have output to address: %v", addr)
-					return nil
-				}
-
-				out := getAddrOutputInTxn(t, tx, w.Entries[1].Address.String())
-
-				// Confirms the second address has 0.003 coin
-				require.Equal(t, out.Coins, "0.003000")
-				require.Equal(t, out.Address, w.Entries[1].Address.String())
-
-				coin, err := droplet.FromString(out.Coins)
-				require.NoError(t, err)
-
-				// Gets the expected change coins
-				expectChangeCoins := totalCoins - coin
-
-				// Gets the real change coins
-				changeOut := getAddrOutputInTxn(t, tx, w.Entries[0].Address.String())
-				changeCoins, err := droplet.FromString(changeOut.Coins)
-				require.NoError(t, err)
-				// Confirms the change coins are matched.
-				require.Equal(t, expectChangeCoins, changeCoins)
-			},
-		},
-	}
-
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			result, err := c.Spend(w.Filename(), tc.to, tc.coins, password)
-			if err != nil {
-				t.Fatalf("spend failed: %v", err)
-			}
-
-			tk := time.NewTicker(time.Second)
-			var txn *readable.TransactionWithStatus
-		loop:
-			for {
-				select {
-				case <-time.After(30 * time.Second):
-					t.Fatal("Waiting for transaction to be confirmed timeout")
-				case <-tk.C:
-					txn = getTransaction(t, c, result.Transaction.Hash)
-					if txn.Status.Confirmed {
-						break loop
-					}
-				}
-			}
-			tc.checkTxn(t, txn)
-		})
-	}
-
-	// Return if wallet is encrypted, cause the rest of the tests will spend a lot of time.
-	if w.IsEncrypted() {
-		return
-	}
-
-	// Confirms sending coins less than 0.001 is not allowed
-	errMsg := "500 Internal Server Error - Transaction violates soft constraint: invalid amount, too many decimal places"
-	for i := uint64(1); i < uint64(1000); i++ {
-		cs, err := droplet.ToString(i)
-		require.NoError(t, err)
-		name := fmt.Sprintf("send invalid coin %v", cs)
-		t.Run(name, func(t *testing.T) {
-			result, err := c.Spend(w.Filename(), w.Entries[0].Address.String(), i, password)
-			if w.IsEncrypted() && len(password) == 0 {
-				assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - missing password")
-				return
-			}
-			assertResponseError(t, err, http.StatusInternalServerError, errMsg)
-			require.Nil(t, result)
-		})
-	}
-}
-
-func TestStableInjectTransaction(t *testing.T) {
-	if !doStable(t) {
-		return
-	}
-
-	c := newClient()
-
-	cases := []struct {
-		name string
-		txn  coin.Transaction
-		code int
-		err  string
-	}{
-		{
-			name: "database is read only",
-			txn:  coin.Transaction{},
-			code: http.StatusInternalServerError,
-			err:  "500 Internal Server Error - database is in read-only mode",
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			result, err := c.InjectTransaction(&tc.txn)
-			if tc.err != "" {
-				assertResponseError(t, err, tc.code, tc.err)
-				return
-			}
-
-			require.NoError(t, err)
-
-			// Result should be a valid txid
-			require.NotEmpty(t, result)
-			h, err := cipher.SHA256FromHex(result)
-			require.NoError(t, err)
-			require.NotEqual(t, cipher.SHA256{}, h)
-		})
-	}
-}
-
-func TestLiveInjectTransactionDisableNetworking(t *testing.T) {
-	if !doLive(t) {
-		return
-	}
-
-	if !liveDisableNetworking(t) {
-		t.Skip("Networking must be disabled for this test")
-		return
-	}
-
-	requireWalletEnv(t)
-
-	c := newClient()
-
-	w, totalCoins, totalHours, password := prepareAndCheckWallet(t, c, 2e6, 20)
-
-	defaultChangeAddress := w.Entries[0].Address.String()
-
-	type testCase struct {
-		name         string
-		createTxnReq api.CreateTransactionRequest
-		err          string
-		code         int
-	}
-
-	cases := []testCase{
-		{
-			name: "valid request, networking disabled",
-			err:  "503 Service Unavailable - Outgoing connections are disabled",
-			code: http.StatusServiceUnavailable,
-			createTxnReq: api.CreateTransactionRequest{
-				HoursSelection: api.HoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
-				},
-				Wallet: api.CreateTransactionRequestWallet{
-					ID:       w.Filename(),
-					Password: password,
-				},
-				ChangeAddress: &defaultChangeAddress,
-				To: []api.Receiver{
-					{
-						Address: w.Entries[1].Address.String(),
-						Coins:   toDropletString(t, totalCoins),
-						Hours:   fmt.Sprint(totalHours / 2),
-					},
-				},
-			},
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			txnResp, err := c.CreateTransaction(tc.createTxnReq)
-			require.NoError(t, err)
-
-			txid, err := c.InjectEncodedTransaction(txnResp.EncodedTransaction)
-			if tc.err != "" {
-				assertResponseError(t, err, tc.code, tc.err)
-
-				// A second injection will fail with the same error,
-				// since the transaction should not be saved to the DB
-				_, err = c.InjectEncodedTransaction(txnResp.EncodedTransaction)
-				assertResponseError(t, err, tc.code, tc.err)
-				return
-			}
-
-			require.NotEmpty(t, txid)
-			require.Equal(t, txnResp.Transaction.TxID, txid)
-
-			h, err := cipher.SHA256FromHex(txid)
-			require.NoError(t, err)
-			require.NotEqual(t, cipher.SHA256{}, h)
-		})
-	}
-}
-
-func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
-	if !doLive(t) {
-		return
-	}
-
-	if liveDisableNetworking(t) {
-		t.Skip("This tests requires networking enabled")
-		return
-	}
-
-	requireWalletEnv(t)
-
-	c := newClient()
-	w, totalCoins, _, password := prepareAndCheckWallet(t, c, 2e6, 2)
-
-	defaultChangeAddress := w.Entries[0].Address.String()
-
-	tt := []struct {
-		name         string
-		createTxnReq api.CreateTransactionRequest
-		checkTxn     func(t *testing.T, tx *readable.TransactionWithStatus)
-	}{
-		{
-			name: "send all coins to the first address",
-			createTxnReq: api.CreateTransactionRequest{
-				HoursSelection: api.HoursSelection{
-					Type:        wallet.HoursSelectionTypeAuto,
-					Mode:        wallet.HoursSelectionModeShare,
-					ShareFactor: "1",
-				},
-				Wallet: api.CreateTransactionRequestWallet{
-					ID:       w.Filename(),
-					Password: password,
-				},
-				ChangeAddress: &defaultChangeAddress,
-				To: []api.Receiver{
-					{
-						Address: w.Entries[0].Address.String(),
-						Coins:   toDropletString(t, totalCoins),
-					},
-				},
-			},
-			checkTxn: func(t *testing.T, tx *readable.TransactionWithStatus) {
-				// Confirms the total output coins are equal to the totalCoins
-				var coins uint64
-				for _, o := range tx.Transaction.Out {
-					c, err := droplet.FromString(o.Coins)
-					require.NoError(t, err)
-					coins, err = coin.AddUint64(coins, c)
-					require.NoError(t, err)
-				}
-
-				// Confirms the address balance are equal to the totalCoins
-				coins, _ = getAddressBalance(t, c, w.Entries[0].Address.String())
-				require.Equal(t, totalCoins, coins)
-			},
-		},
-		{
-			// send 0.003 coin to the second address,
-			// this amount is chosen to not interfere with TestLiveWalletCreateTransaction
-			name: "send 0.003 coin to second address",
-			createTxnReq: api.CreateTransactionRequest{
-				HoursSelection: api.HoursSelection{
-					Type:        wallet.HoursSelectionTypeAuto,
-					Mode:        wallet.HoursSelectionModeShare,
-					ShareFactor: "0.5",
-				},
-				Wallet: api.CreateTransactionRequestWallet{
-					ID:       w.Filename(),
-					Password: password,
-				},
-				ChangeAddress: &defaultChangeAddress,
-				To: []api.Receiver{
-					{
-						Address: w.Entries[1].Address.String(),
-						Coins:   toDropletString(t, 3e3),
-					},
-				},
-			},
-			checkTxn: func(t *testing.T, tx *readable.TransactionWithStatus) {
-				// Confirms there're two outputs, one to the second address, one as change output to the first address.
-				require.Len(t, tx.Transaction.Out, 2)
-
-				// Gets the output of the second address in the transaction
-				getAddrOutputInTxn := func(t *testing.T, tx *readable.TransactionWithStatus, addr string) *readable.TransactionOutput {
-					for _, output := range tx.Transaction.Out {
-						if output.Address == addr {
-							return &output
-						}
-					}
-					t.Fatalf("transaction doesn't have output to address: %v", addr)
-					return nil
-				}
-
-				out := getAddrOutputInTxn(t, tx, w.Entries[1].Address.String())
-
-				// Confirms the second address has 0.003 coin
-				require.Equal(t, out.Coins, "0.003000")
-				require.Equal(t, out.Address, w.Entries[1].Address.String())
-
-				coin, err := droplet.FromString(out.Coins)
-				require.NoError(t, err)
-
-				// Gets the expected change coins
-				expectChangeCoins := totalCoins - coin
-
-				// Gets the real change coins
-				changeOut := getAddrOutputInTxn(t, tx, w.Entries[0].Address.String())
-				changeCoins, err := droplet.FromString(changeOut.Coins)
-				require.NoError(t, err)
-				// Confirms the change coins are matched.
-				require.Equal(t, expectChangeCoins, changeCoins)
-			},
-		},
-	}
-
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			txnResp, err := c.CreateTransaction(tc.createTxnReq)
-			require.NoError(t, err)
-
-			txid, err := c.InjectEncodedTransaction(txnResp.EncodedTransaction)
-			require.NoError(t, err)
-			require.Equal(t, txnResp.Transaction.TxID, txid)
-
-			tk := time.NewTicker(time.Second)
-			var txn *readable.TransactionWithStatus
-		loop:
-			for {
-				select {
-				case <-time.After(30 * time.Second):
-					t.Fatal("Waiting for transaction to be confirmed timeout")
-				case <-tk.C:
-					txn = getTransaction(t, c, txnResp.Transaction.TxID)
-					if txn.Status.Confirmed {
-						break loop
-					}
-				}
-			}
-			tc.checkTxn(t, txn)
-		})
-	}
-}
-
-func toDropletString(t *testing.T, i uint64) string {
-	x, err := droplet.ToString(i)
-	require.NoError(t, err)
-	return x
-}
-
-func TestLiveWalletCreateTransactionSpecific(t *testing.T) {
-	if !doLive(t) {
-		return
-	}
-
-	requireWalletEnv(t)
-
-	c := newClient()
-
-	w, totalCoins, totalHours, password := prepareAndCheckWallet(t, c, 2e6, 20)
-
-	remainingHours := fee.RemainingHours(totalHours, params.UserVerifyTxn.BurnFactor)
-	require.True(t, remainingHours > 1)
-
-	addresses := make([]string, len(w.Entries))
-	addressMap := make(map[string]struct{}, len(w.Entries))
-	for i, e := range w.Entries {
-		addresses[i] = e.Address.String()
-		addressMap[e.Address.String()] = struct{}{}
-	}
-
-	// Get all outputs
-	outputs, err := c.Outputs()
-	require.NoError(t, err)
-
-	// Split outputs into those held by the wallet and those not
-	var walletOutputHashes []string
-	var walletOutputs readable.UnspentOutputs
-	walletAuxs := make(map[string][]string)
-	var nonWalletOutputs readable.UnspentOutputs
-	for _, o := range outputs.HeadOutputs {
-		if _, ok := addressMap[o.Address]; ok {
-			walletOutputs = append(walletOutputs, o)
-			walletOutputHashes = append(walletOutputHashes, o.Hash)
-			walletAuxs[o.Address] = append(walletAuxs[o.Address], o.Hash)
-		} else {
-			nonWalletOutputs = append(nonWalletOutputs, o)
-		}
-	}
-
-	require.NotEmpty(t, walletOutputs)
-	require.NotEmpty(t, nonWalletOutputs)
-
-	unknownOutput := testutil.RandSHA256(t)
-	defaultChangeAddress := w.Entries[0].Address.String()
-
-	type testCase struct {
-		name                 string
-		req                  api.CreateTransactionRequest
-		outputs              []coin.TransactionOutput
-		outputsSubset        []coin.TransactionOutput
-		err                  string
-		code                 int
-		ignoreHours          bool
-		additionalRespVerify func(t *testing.T, r *api.CreateTransactionResponse)
-	}
-
-	cases := []testCase{
-		{
-			name: "invalid decimals",
-			req: api.CreateTransactionRequest{
-				HoursSelection: api.HoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
-				},
-				Wallet: api.CreateTransactionRequestWallet{
-					ID:       w.Filename(),
-					Password: password,
-				},
-				ChangeAddress: &defaultChangeAddress,
-				To: []api.Receiver{
-					{
-						Address: w.Entries[0].Address.String(),
-						Coins:   "0.0001",
-						Hours:   "1",
-					},
-				},
-			},
-			err:  "400 Bad Request - to[0].coins has too many decimal places",
-			code: http.StatusBadRequest,
-		},
-
-		{
-			name: "overflowing hours",
-			req: api.CreateTransactionRequest{
-				HoursSelection: api.HoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
-				},
-				Wallet: api.CreateTransactionRequestWallet{
-					ID:       w.Filename(),
-					Password: password,
-				},
-				ChangeAddress: &defaultChangeAddress,
-				To: []api.Receiver{
-					{
-						Address: w.Entries[0].Address.String(),
-						Coins:   "0.001",
-						Hours:   "1",
-					},
-					{
-						Address: w.Entries[0].Address.String(),
-						Coins:   "0.001",
-						Hours:   fmt.Sprint(uint64(math.MaxUint64)),
-					},
-					{
-						Address: w.Entries[0].Address.String(),
-						Coins:   "0.001",
-						Hours:   fmt.Sprint(uint64(math.MaxUint64) - 1),
-					},
-				},
-			},
-			err:  "400 Bad Request - total output hours error: uint64 addition overflow",
-			code: http.StatusBadRequest,
-		},
-
-		{
-			name: "insufficient coins",
-			req: api.CreateTransactionRequest{
-				HoursSelection: api.HoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
-				},
-				Wallet: api.CreateTransactionRequestWallet{
-					ID:       w.Filename(),
-					Password: password,
-				},
-				ChangeAddress: &defaultChangeAddress,
-				To: []api.Receiver{
-					{
-						Address: w.Entries[0].Address.String(),
-						Coins:   fmt.Sprint(totalCoins + 1),
-						Hours:   "1",
-					},
-				},
-			},
-			err:  "400 Bad Request - balance is not sufficient",
-			code: http.StatusBadRequest,
-		},
-
-		{
-			name: "insufficient hours",
-			req: api.CreateTransactionRequest{
-				HoursSelection: api.HoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
-				},
-				Wallet: api.CreateTransactionRequestWallet{
-					ID:       w.Filename(),
-					Password: password,
-				},
-				ChangeAddress: &defaultChangeAddress,
-				To: []api.Receiver{
-					{
-						Address: w.Entries[0].Address.String(),
-						Coins:   toDropletString(t, totalCoins),
-						Hours:   fmt.Sprint(totalHours + 1),
-					},
-				},
-			},
-			err:  "400 Bad Request - hours are not sufficient",
-			code: http.StatusBadRequest,
-		},
-
-		{
-			// NOTE: this test will fail if "totalCoins - 1e3" does not require
-			// all of the outputs to be spent, e.g. if there is an output with
-			// "totalCoins - 1e3" coins in it.
-			// TODO -- Check that the wallet does not have an output of 0.001,
-			// because then this test cannot be performed, since there is no
-			// way to use all outputs and produce change in that case.
-			name: "valid request, manual one output with change, spend all",
-			req: api.CreateTransactionRequest{
-				HoursSelection: api.HoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
-				},
-				Wallet: api.CreateTransactionRequestWallet{
-					ID:       w.Filename(),
-					Password: password,
-				},
-				ChangeAddress: &defaultChangeAddress,
-				To: []api.Receiver{
-					{
-						Address: w.Entries[1].Address.String(),
-						Coins:   toDropletString(t, totalCoins-1e3),
-						Hours:   "1",
-					},
-				},
-			},
-			outputs: []coin.TransactionOutput{
-				{
-					Address: w.Entries[1].SkycoinAddress(),
-					Coins:   totalCoins - 1e3,
-					Hours:   1,
-				},
-				{
-					Address: w.Entries[0].SkycoinAddress(),
-					Coins:   1e3,
-					Hours:   remainingHours - 1,
-				},
-			},
-		},
-
-		{
-			// NOTE: this test will fail if "totalCoins - 1e3" does not require
-			// all of the outputs to be spent, e.g. if there is an output with
-			// "totalCoins - 1e3" coins in it.
-			// TODO -- Check that the wallet does not have an output of 0.001,
-			// because then this test cannot be performed, since there is no
-			// way to use all outputs and produce change in that case.
-			name: "valid request, manual one output with change, spend all, unspecified change address",
-			req: api.CreateTransactionRequest{
-				HoursSelection: api.HoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
-				},
-				Wallet: api.CreateTransactionRequestWallet{
-					ID:       w.Filename(),
-					Password: password,
-				},
-				To: []api.Receiver{
-					{
-						Address: w.Entries[1].Address.String(),
-						Coins:   toDropletString(t, totalCoins-1e3),
-						Hours:   "1",
-					},
-				},
-			},
-			outputs: []coin.TransactionOutput{
-				{
-					Address: w.Entries[1].SkycoinAddress(),
-					Coins:   totalCoins - 1e3,
-					Hours:   1,
-				},
-				{
-					// Address omitted -- will be check later in the test body
-					Coins: 1e3,
-					Hours: remainingHours - 1,
-				},
-			},
-		},
-
-		{
-			name: "valid request, manual one output with change, don't spend all",
-			req: api.CreateTransactionRequest{
-				HoursSelection: api.HoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
-				},
-				Wallet: api.CreateTransactionRequestWallet{
-					ID:       w.Filename(),
-					Password: password,
-				},
-				ChangeAddress: &defaultChangeAddress,
-				To: []api.Receiver{
-					{
-						Address: w.Entries[1].Address.String(),
-						Coins:   toDropletString(t, 1e3),
-						Hours:   "1",
-					},
-				},
-			},
-			outputsSubset: []coin.TransactionOutput{
-				{
-					Address: w.Entries[1].SkycoinAddress(),
-					Coins:   1e3,
-					Hours:   1,
-				},
-				// NOTE: change omitted,
-				// change is too difficult to predict in this case, we are
-				// just checking that not all uxouts get spent in the transaction
-			},
-		},
-
-		{
-			name: "valid request, manual one output no change",
-			req: api.CreateTransactionRequest{
-				HoursSelection: api.HoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
-				},
-				Wallet: api.CreateTransactionRequestWallet{
-					ID:       w.Filename(),
-					Password: password,
-				},
-				ChangeAddress: &defaultChangeAddress,
-				To: []api.Receiver{
-					{
-						Address: w.Entries[1].Address.String(),
-						Coins:   toDropletString(t, totalCoins),
-						Hours:   "1",
-					},
-				},
-			},
-			outputs: []coin.TransactionOutput{
-				{
-					Address: w.Entries[1].SkycoinAddress(),
-					Coins:   totalCoins,
-					Hours:   1,
-				},
-			},
-		},
-
-		{
-			// NOTE: no reliable way to test the ignore unconfirmed behavior,
-			// this test only checks that if IgnoreUnconfirmed is specified,
-			// the API doesn't throw up some parsing error
-			name: "valid request, manual one output no change, ignore unconfirmed",
-			req: api.CreateTransactionRequest{
-				IgnoreUnconfirmed: true,
-				HoursSelection: api.HoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
-				},
-				Wallet: api.CreateTransactionRequestWallet{
-					ID:       w.Filename(),
-					Password: password,
-				},
-				ChangeAddress: &defaultChangeAddress,
-				To: []api.Receiver{
-					{
-						Address: w.Entries[1].Address.String(),
-						Coins:   toDropletString(t, totalCoins),
-						Hours:   "1",
-					},
-				},
-			},
-			outputs: []coin.TransactionOutput{
-				{
-					Address: w.Entries[1].SkycoinAddress(),
-					Coins:   totalCoins,
-					Hours:   1,
-				},
-			},
-		},
-
-		{
-			name: "valid request, auto one output no change, share factor recalculates to 1.0",
-			req: api.CreateTransactionRequest{
-				HoursSelection: api.HoursSelection{
-					Type:        wallet.HoursSelectionTypeAuto,
-					Mode:        wallet.HoursSelectionModeShare,
-					ShareFactor: "0.5",
-				},
-				Wallet: api.CreateTransactionRequestWallet{
-					ID:       w.Filename(),
-					Password: password,
-				},
-				ChangeAddress: &defaultChangeAddress,
-				To: []api.Receiver{
-					{
-						Address: w.Entries[1].Address.String(),
-						Coins:   toDropletString(t, totalCoins),
-					},
-				},
-			},
-			outputs: []coin.TransactionOutput{
-				{
-					Address: w.Entries[1].SkycoinAddress(),
-					Coins:   totalCoins,
-					Hours:   remainingHours,
-				},
-			},
-		},
-
-		{
-			name: "valid request, auto two outputs with change",
-			req: api.CreateTransactionRequest{
-				HoursSelection: api.HoursSelection{
-					Type:        wallet.HoursSelectionTypeAuto,
-					Mode:        wallet.HoursSelectionModeShare,
-					ShareFactor: "0.5",
-				},
-				Wallet: api.CreateTransactionRequestWallet{
-					ID:       w.Filename(),
-					Password: password,
-				},
-				ChangeAddress: &defaultChangeAddress,
-				To: []api.Receiver{
-					{
-						Address: w.Entries[1].Address.String(),
-						Coins:   toDropletString(t, 1e3),
-					},
-					{
-						Address: w.Entries[1].Address.String(),
-						Coins:   toDropletString(t, totalCoins-2e3),
-					},
-				},
-			},
-			outputs: []coin.TransactionOutput{
-				{
-					Address: w.Entries[1].SkycoinAddress(),
-					Coins:   1e3,
-				},
-				{
-					Address: w.Entries[1].SkycoinAddress(),
-					Coins:   totalCoins - 2e3,
-				},
-				{
-					Address: w.Entries[0].SkycoinAddress(),
-					Coins:   1e3,
-				},
-			},
-			ignoreHours: true, // the hours are too unpredictable
-		},
-
-		{
-			name: "uxout does not exist",
-			req: api.CreateTransactionRequest{
-				HoursSelection: api.HoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
-				},
-				Wallet: api.CreateTransactionRequestWallet{
-					ID:       w.Filename(),
-					Password: password,
-					UxOuts:   []string{unknownOutput.Hex()},
-				},
-				ChangeAddress: &defaultChangeAddress,
-				To: []api.Receiver{
-					{
-						Address: w.Entries[1].Address.String(),
-						Coins:   toDropletString(t, totalCoins),
-						Hours:   "1",
-					},
-				},
-			},
-			err:  fmt.Sprintf("400 Bad Request - unspent output of %s does not exist", unknownOutput.Hex()),
-			code: http.StatusBadRequest,
-		},
-
-		{
-			name: "uxout not held by the wallet",
-			req: api.CreateTransactionRequest{
-				HoursSelection: api.HoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
-				},
-				Wallet: api.CreateTransactionRequestWallet{
-					ID:       w.Filename(),
-					Password: password,
-					UxOuts:   []string{nonWalletOutputs[0].Hash},
-				},
-				ChangeAddress: &defaultChangeAddress,
-				To: []api.Receiver{
-					{
-						Address: w.Entries[1].Address.String(),
-						Coins:   toDropletString(t, totalCoins),
-						Hours:   "1",
-					},
-				},
-			},
-			err:  "400 Bad Request - uxout is not owned by any address in the wallet",
-			code: http.StatusBadRequest,
-		},
-
-		{
-			name: "insufficient balance with uxouts",
-			req: api.CreateTransactionRequest{
-				HoursSelection: api.HoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
-				},
-				Wallet: api.CreateTransactionRequestWallet{
-					ID:       w.Filename(),
-					Password: password,
-					UxOuts:   []string{walletOutputs[0].Hash},
-				},
-				ChangeAddress: &defaultChangeAddress,
-				To: []api.Receiver{
-					{
-						Address: w.Entries[1].Address.String(),
-						Coins:   toDropletString(t, totalCoins+1e3),
-						Hours:   "1",
-					},
-				},
-			},
-			err:  "400 Bad Request - balance is not sufficient",
-			code: http.StatusBadRequest,
-		},
-
-		{
-			// NOTE: expects wallet to have multiple outputs with non-zero coins
-			name: "insufficient hours with uxouts",
-			req: api.CreateTransactionRequest{
-				HoursSelection: api.HoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
-				},
-				Wallet: api.CreateTransactionRequestWallet{
-					ID:       w.Filename(),
-					Password: password,
-					UxOuts:   []string{walletOutputs[0].Hash},
-				},
-				ChangeAddress: &defaultChangeAddress,
-				To: []api.Receiver{
-					{
-						Address: w.Entries[1].Address.String(),
-						Coins:   toDropletString(t, 1e3),
-						Hours:   fmt.Sprint(totalHours + 1),
-					},
-				},
-			},
-			err:  "400 Bad Request - hours are not sufficient",
-			code: http.StatusBadRequest,
-		},
-
-		{
-			name: "valid request, uxouts specified",
-			req: api.CreateTransactionRequest{
-				HoursSelection: api.HoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
-				},
-				Wallet: api.CreateTransactionRequestWallet{
-					ID:       w.Filename(),
-					Password: password,
-					// NOTE: all uxouts are provided, which has the same behavior as
-					// not providing any uxouts or addresses.
-					// Using a subset of uxouts makes the wallet setup very
-					// difficult, especially to make deterministic, in the live test
-					// More complex cases should be covered by unit tests
-					UxOuts: walletOutputHashes,
-				},
-				ChangeAddress: &defaultChangeAddress,
-				To: []api.Receiver{
-					{
-						Address: w.Entries[1].Address.String(),
-						Coins:   toDropletString(t, totalCoins-1e3),
-						Hours:   "1",
-					},
-				},
-			},
-			outputs: []coin.TransactionOutput{
-				{
-					Address: w.Entries[1].SkycoinAddress(),
-					Coins:   totalCoins - 1e3,
-					Hours:   1,
-				},
-				{
-					Address: w.Entries[0].SkycoinAddress(),
-					Coins:   1e3,
-					Hours:   remainingHours - 1,
-				},
-			},
-			additionalRespVerify: func(t *testing.T, r *api.CreateTransactionResponse) {
-				require.Equal(t, len(walletOutputHashes), len(r.Transaction.In))
-			},
-		},
-
-		{
-			name: "specified addresses not in wallet",
-			req: api.CreateTransactionRequest{
-				HoursSelection: api.HoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
-				},
-				Wallet: api.CreateTransactionRequestWallet{
-					ID:        w.Filename(),
-					Password:  password,
-					Addresses: []string{testutil.MakeAddress().String()},
-				},
-				ChangeAddress: &defaultChangeAddress,
-				To: []api.Receiver{
-					{
-						Address: w.Entries[1].Address.String(),
-						Coins:   toDropletString(t, totalCoins),
-						Hours:   "1",
-					},
-				},
-			},
-			err:  "400 Bad Request - address not found in wallet",
-			code: http.StatusBadRequest,
-		},
-
-		{
-			name: "valid request, addresses specified",
-			req: api.CreateTransactionRequest{
-				HoursSelection: api.HoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
-				},
-				Wallet: api.CreateTransactionRequestWallet{
-					ID:       w.Filename(),
-					Password: password,
-					// NOTE: all addresses are provided, which has the same behavior as
-					// not providing any addresses.
-					// Using a subset of addresses makes the wallet setup very
-					// difficult, especially to make deterministic, in the live test
-					// More complex cases should be covered by unit tests
-					Addresses: addresses,
-				},
-				ChangeAddress: &defaultChangeAddress,
-				To: []api.Receiver{
-					{
-						Address: w.Entries[1].Address.String(),
-						Coins:   toDropletString(t, totalCoins-1e3),
-						Hours:   "1",
-					},
-				},
-			},
-			outputs: []coin.TransactionOutput{
-				{
-					Address: w.Entries[1].SkycoinAddress(),
-					Coins:   totalCoins - 1e3,
-					Hours:   1,
-				},
-				{
-					Address: w.Entries[0].SkycoinAddress(),
-					Coins:   1e3,
-					Hours:   remainingHours - 1,
-				},
-			},
-		},
-	}
-
-	if w.IsEncrypted() {
-		cases = append(cases, testCase{
-			name: "invalid password",
-			req: api.CreateTransactionRequest{
-				HoursSelection: api.HoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
-				},
-				Wallet: api.CreateTransactionRequestWallet{
-					ID:       w.Filename(),
-					Password: password + "foo",
-				},
-				ChangeAddress: &defaultChangeAddress,
-				To: []api.Receiver{
-					{
-						Address: w.Entries[0].Address.String(),
-						Coins:   "1000",
-						Hours:   "1",
-					},
-				},
-			},
-			err:  "400 Bad Request - invalid password",
-			code: http.StatusBadRequest,
-		})
-
-		cases = append(cases, testCase{
-			name: "password not provided",
-			req: api.CreateTransactionRequest{
-				HoursSelection: api.HoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
-				},
-				Wallet: api.CreateTransactionRequestWallet{
-					ID:       w.Filename(),
-					Password: "",
-				},
-				ChangeAddress: &defaultChangeAddress,
-				To: []api.Receiver{
-					{
-						Address: w.Entries[0].Address.String(),
-						Coins:   "1000",
-						Hours:   "1",
-					},
-				},
-			},
-			err:  "400 Bad Request - missing password",
-			code: http.StatusBadRequest,
-		})
-
-	} else {
-		cases = append(cases, testCase{
-			name: "password provided for unencrypted wallet",
-			req: api.CreateTransactionRequest{
-				HoursSelection: api.HoursSelection{
-					Type: wallet.HoursSelectionTypeManual,
-				},
-				Wallet: api.CreateTransactionRequestWallet{
-					ID:       w.Filename(),
-					Password: password + "foo",
-				},
-				ChangeAddress: &defaultChangeAddress,
-				To: []api.Receiver{
-					{
-						Address: w.Entries[0].Address.String(),
-						Coins:   "1000",
-						Hours:   "1",
-					},
-				},
-			},
-			err:  "400 Bad Request - wallet is not encrypted",
-			code: http.StatusBadRequest,
-		})
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			require.False(t, len(tc.outputs) != 0 && len(tc.outputsSubset) != 0, "outputs and outputsSubset can't both be set")
-
-			result, err := c.CreateTransaction(tc.req)
-			if tc.err != "" {
-				assertResponseError(t, err, tc.code, tc.err)
-				return
-			}
-
-			require.NoError(t, err)
-
-			if len(tc.outputsSubset) == 0 {
-				require.Equal(t, len(tc.outputs), len(result.Transaction.Out))
-			}
-
-			for i, o := range tc.outputs {
-				// The final change output may not have the address specified,
-				// if the ChangeAddress was not specified in the wallet params.
-				// Calculate it automatically based upon the transaction inputs
-				if o.Address.Null() {
-					require.Equal(t, i, len(tc.outputs)-1)
-					require.Nil(t, tc.req.ChangeAddress)
-
-					changeAddr := result.Transaction.Out[i].Address
-					// The changeAddr must be associated with one of the transaction inputs
-					changeAddrFound := false
-					for _, x := range result.Transaction.In {
-						require.NotNil(t, x.Address)
-						if changeAddr == x.Address {
-							changeAddrFound = true
-							break
-						}
-					}
-
-					require.True(t, changeAddrFound)
-				} else {
-					require.Equal(t, o.Address.String(), result.Transaction.Out[i].Address)
-				}
-
-				coins, err := droplet.FromString(result.Transaction.Out[i].Coins)
-				require.NoError(t, err)
-				require.Equal(t, o.Coins, coins, "[%d] %d != %d", i, o.Coins, coins)
-
-				if !tc.ignoreHours {
-					hours, err := strconv.ParseUint(result.Transaction.Out[i].Hours, 10, 64)
-					require.NoError(t, err)
-					require.Equal(t, o.Hours, hours, "[%d] %d != %d", i, o.Hours, hours)
-				}
-			}
-
-			assertEncodeTxnMatchesTxn(t, result)
-			assertRequestedCoins(t, tc.req.To, result.Transaction.Out)
-			assertCreatedTransactionValid(t, result.Transaction)
-
-			if tc.req.HoursSelection.Type == wallet.HoursSelectionTypeManual {
-				assertRequestedHours(t, tc.req.To, result.Transaction.Out)
-			}
-
-			if tc.additionalRespVerify != nil {
-				tc.additionalRespVerify(t, result)
-			}
-		})
-	}
-}
-
-func TestLiveWalletCreateTransactionRandom(t *testing.T) {
-	if !doLive(t) {
-		return
-	}
-
-	debug := false
-	tLog := func(t *testing.T, args ...interface{}) {
-		if debug {
-			t.Log(args...)
-		}
-	}
-	tLogf := func(t *testing.T, msg string, args ...interface{}) {
-		if debug {
-			t.Logf(msg, args...)
-		}
-	}
-
-	requireWalletEnv(t)
-
-	c := newClient()
-
-	w, totalCoins, totalHours, password := prepareAndCheckWallet(t, c, 2e6, 20)
-
-	if w.IsEncrypted() {
-		t.Skip("Skipping TestLiveWalletCreateTransactionRandom tests with encrypted wallet")
-		return
-	}
-
-	remainingHours := fee.RemainingHours(totalHours, params.UserVerifyTxn.BurnFactor)
-	require.True(t, remainingHours > 1)
-
-	assertTxnOutputCount := func(t *testing.T, changeAddress string, nOutputs int, result *api.CreateTransactionResponse) {
-		nResultOutputs := len(result.Transaction.Out)
-		require.True(t, nResultOutputs == nOutputs || nResultOutputs == nOutputs+1)
-		hasChange := nResultOutputs == nOutputs+1
-		changeOutput := result.Transaction.Out[nResultOutputs-1]
-		if hasChange {
-			require.Equal(t, changeOutput.Address, changeAddress)
-		}
-
-		tLog(t, "hasChange", hasChange)
-		if hasChange {
-			tLog(t, "changeCoins", changeOutput.Coins)
-			tLog(t, "changeHours", changeOutput.Hours)
-		}
-	}
-
-	iterations := 250
-	maxOutputs := 10
-	destAddrs := make([]cipher.Address, maxOutputs)
-	for i := range destAddrs {
-		destAddrs[i] = testutil.MakeAddress()
-	}
-
-	for i := 0; i < iterations; i++ {
-		tLog(t, "iteration", i)
-		tLog(t, "totalCoins", totalCoins)
-		tLog(t, "totalHours", totalHours)
-
-		spendableHours := fee.RemainingHours(totalHours, params.UserVerifyTxn.BurnFactor)
-		tLog(t, "spendableHours", spendableHours)
-
-		coins := rand.Intn(int(totalCoins)) + 1
-		coins -= coins % int(params.UserVerifyTxn.MaxDropletDivisor())
-		if coins == 0 {
-			coins = int(params.UserVerifyTxn.MaxDropletDivisor())
-		}
-		hours := rand.Intn(int(spendableHours + 1))
-		nOutputs := rand.Intn(maxOutputs) + 1
-
-		tLog(t, "sendCoins", coins)
-		tLog(t, "sendHours", hours)
-
-		changeAddress := w.Entries[0].Address.String()
-
-		shareFactor := strconv.FormatFloat(rand.Float64(), 'f', 8, 64)
-
-		tLog(t, "shareFactor", shareFactor)
-
-		to := make([]api.Receiver, 0, nOutputs)
-		remainingHours := hours
-		remainingCoins := coins
-		for i := 0; i < nOutputs; i++ {
-			if remainingCoins == 0 {
-				break
-			}
-
-			receiver := api.Receiver{}
-			receiver.Address = destAddrs[rand.Intn(len(destAddrs))].String()
-
-			if i == nOutputs-1 {
-				var err error
-				receiver.Coins, err = droplet.ToString(uint64(remainingCoins))
-				require.NoError(t, err)
-				receiver.Hours = fmt.Sprint(remainingHours)
-
-				remainingCoins = 0
-				remainingHours = 0
-			} else {
-				receiverCoins := rand.Intn(remainingCoins) + 1
-				receiverCoins -= receiverCoins % int(params.UserVerifyTxn.MaxDropletDivisor())
-				if receiverCoins == 0 {
-					receiverCoins = int(params.UserVerifyTxn.MaxDropletDivisor())
-				}
-
-				var err error
-				receiver.Coins, err = droplet.ToString(uint64(receiverCoins))
-				require.NoError(t, err)
-				remainingCoins -= receiverCoins
-
-				receiverHours := rand.Intn(remainingHours + 1)
-				receiver.Hours = fmt.Sprint(receiverHours)
-				remainingHours -= receiverHours
-			}
-
-			to = append(to, receiver)
-		}
-
-		// Remove duplicate outputs
-		dup := make(map[api.Receiver]struct{}, len(to))
-		newTo := make([]api.Receiver, 0, len(dup))
-		for _, o := range to {
-			if _, ok := dup[o]; !ok {
-				dup[o] = struct{}{}
-				newTo = append(newTo, o)
-			}
-		}
-		to = newTo
-
-		nOutputs = len(to)
-		tLog(t, "nOutputs", nOutputs)
-
-		rand.Shuffle(len(to), func(i, j int) {
-			to[i], to[j] = to[j], to[i]
-		})
-
-		for i, o := range to {
-			tLogf(t, "to[%d].Hours %s\n", i, o.Hours)
-		}
-
-		autoTo := make([]api.Receiver, len(to))
-		for i, o := range to {
-			autoTo[i] = api.Receiver{
-				Address: o.Address,
-				Coins:   o.Coins,
-				Hours:   "",
-			}
-		}
-
-		// Remove duplicate outputs
-		dup = make(map[api.Receiver]struct{}, len(autoTo))
-		newAutoTo := make([]api.Receiver, 0, len(dup))
-		for _, o := range autoTo {
-			if _, ok := dup[o]; !ok {
-				dup[o] = struct{}{}
-				newAutoTo = append(newAutoTo, o)
-			}
-		}
-		autoTo = newAutoTo
-
-		nAutoOutputs := len(autoTo)
-		tLog(t, "nAutoOutputs", nAutoOutputs)
-
-		for i, o := range autoTo {
-			tLogf(t, "autoTo[%d].Coins %s\n", i, o.Coins)
-		}
-
-		// Auto, random share factor
-
-		result, err := c.CreateTransaction(api.CreateTransactionRequest{
-			HoursSelection: api.HoursSelection{
-				Type:        wallet.HoursSelectionTypeAuto,
-				Mode:        wallet.HoursSelectionModeShare,
-				ShareFactor: shareFactor,
-			},
-			ChangeAddress: &changeAddress,
-			Wallet: api.CreateTransactionRequestWallet{
-				ID:       w.Filename(),
-				Password: password,
-			},
-			To: autoTo,
-		})
-		require.NoError(t, err)
-
-		assertEncodeTxnMatchesTxn(t, result)
-		assertTxnOutputCount(t, changeAddress, nAutoOutputs, result)
-		assertRequestedCoins(t, autoTo, result.Transaction.Out)
-		assertCreatedTransactionValid(t, result.Transaction)
-
-		// Auto, share factor 0
-
-		result, err = c.CreateTransaction(api.CreateTransactionRequest{
-			HoursSelection: api.HoursSelection{
-				Type:        wallet.HoursSelectionTypeAuto,
-				Mode:        wallet.HoursSelectionModeShare,
-				ShareFactor: "0",
-			},
-			ChangeAddress: &changeAddress,
-			Wallet: api.CreateTransactionRequestWallet{
-				ID:       w.Filename(),
-				Password: password,
-			},
-			To: autoTo,
-		})
-		require.NoError(t, err)
-
-		assertEncodeTxnMatchesTxn(t, result)
-		assertTxnOutputCount(t, changeAddress, nAutoOutputs, result)
-		assertRequestedCoins(t, autoTo, result.Transaction.Out)
-		assertCreatedTransactionValid(t, result.Transaction)
-
-		// Check that the non-change outputs have 0 hours
-		for _, o := range result.Transaction.Out[:nAutoOutputs] {
-			require.Equal(t, "0", o.Hours)
-		}
-
-		// Auto, share factor 1
-
-		result, err = c.CreateTransaction(api.CreateTransactionRequest{
-			HoursSelection: api.HoursSelection{
-				Type:        wallet.HoursSelectionTypeAuto,
-				Mode:        wallet.HoursSelectionModeShare,
-				ShareFactor: "1",
-			},
-			ChangeAddress: &changeAddress,
-			Wallet: api.CreateTransactionRequestWallet{
-				ID:       w.Filename(),
-				Password: password,
-			},
-			To: autoTo,
-		})
-		require.NoError(t, err)
-
-		assertEncodeTxnMatchesTxn(t, result)
-		assertTxnOutputCount(t, changeAddress, nAutoOutputs, result)
-		assertRequestedCoins(t, autoTo, result.Transaction.Out)
-		assertCreatedTransactionValid(t, result.Transaction)
-
-		// Check that the change output has 0 hours
-		if len(result.Transaction.Out) > nAutoOutputs {
-			require.Equal(t, "0", result.Transaction.Out[nAutoOutputs].Hours)
-		}
-
-		// Manual
-
-		result, err = c.CreateTransaction(api.CreateTransactionRequest{
-			HoursSelection: api.HoursSelection{
-				Type: wallet.HoursSelectionTypeManual,
-			},
-			ChangeAddress: &changeAddress,
-			Wallet: api.CreateTransactionRequestWallet{
-				ID:       w.Filename(),
-				Password: password,
-			},
-			To: to,
-		})
-		require.NoError(t, err)
-
-		assertEncodeTxnMatchesTxn(t, result)
-		assertTxnOutputCount(t, changeAddress, nOutputs, result)
-		assertRequestedCoins(t, to, result.Transaction.Out)
-		assertRequestedHours(t, to, result.Transaction.Out)
-		assertCreatedTransactionValid(t, result.Transaction)
-	}
-}
-
-func assertEncodeTxnMatchesTxn(t *testing.T, result *api.CreateTransactionResponse) {
-	require.NotEmpty(t, result.EncodedTransaction)
-	emptyTxn := &coin.Transaction{}
-	require.NotEqual(t, hex.EncodeToString(emptyTxn.Serialize()), result.EncodedTransaction)
-	txn, err := result.Transaction.ToTransaction()
-	require.NoError(t, err)
-
-	serializedTxn := txn.Serialize()
-	require.Equal(t, hex.EncodeToString(serializedTxn), result.EncodedTransaction)
-
-	require.Equal(t, int(txn.Length), len(serializedTxn))
-}
-
-func assertRequestedCoins(t *testing.T, to []api.Receiver, out []api.CreatedTransactionOutput) {
-	var requestedCoins uint64
-	for _, o := range to {
-		c, err := droplet.FromString(o.Coins)
-		require.NoError(t, err)
-		requestedCoins += c
-	}
-
-	var sentCoins uint64
-	for _, o := range out[:len(to)] { // exclude change output
-		c, err := droplet.FromString(o.Coins)
-		require.NoError(t, err)
-		sentCoins += c
-	}
-
-	require.Equal(t, requestedCoins, sentCoins)
-}
-
-func assertRequestedHours(t *testing.T, to []api.Receiver, out []api.CreatedTransactionOutput) {
-	for i, o := range out[:len(to)] { // exclude change output
-		toHours, err := strconv.ParseUint(to[i].Hours, 10, 64)
-		require.NoError(t, err)
-
-		outHours, err := strconv.ParseUint(o.Hours, 10, 64)
-		require.NoError(t, err)
-		require.Equal(t, toHours, outHours)
-	}
-}
-
-func assertCreatedTransactionValid(t *testing.T, r api.CreatedTransaction) {
-	require.NotEmpty(t, r.In)
-	require.NotEmpty(t, r.Out)
-
-	fee, err := strconv.ParseUint(r.Fee, 10, 64)
-	require.NoError(t, err)
-
-	require.NotEqual(t, uint64(0), fee)
-
-	var inputHours uint64
-	var inputCoins uint64
-	for _, in := range r.In {
-		require.NotNil(t, in.CalculatedHours)
-		calculatedHours, err := strconv.ParseUint(in.CalculatedHours, 10, 64)
-		require.NoError(t, err)
-		inputHours, err = coin.AddUint64(inputHours, calculatedHours)
-		require.NoError(t, err)
-
-		require.NotNil(t, in.Hours)
-		hours, err := strconv.ParseUint(in.Hours, 10, 64)
-		require.NoError(t, err)
-
-		require.True(t, hours <= calculatedHours)
-
-		require.NotNil(t, in.Coins)
-		coins, err := droplet.FromString(in.Coins)
-		require.NoError(t, err)
-		inputCoins, err = coin.AddUint64(inputCoins, coins)
-		require.NoError(t, err)
-	}
-
-	var outputHours uint64
-	var outputCoins uint64
-	for _, out := range r.Out {
-		hours, err := strconv.ParseUint(out.Hours, 10, 64)
-		require.NoError(t, err)
-		outputHours, err = coin.AddUint64(outputHours, hours)
-		require.NoError(t, err)
-
-		coins, err := droplet.FromString(out.Coins)
-		require.NoError(t, err)
-		outputCoins, err = coin.AddUint64(outputCoins, coins)
-		require.NoError(t, err)
-	}
-
-	require.True(t, inputHours > outputHours)
-	require.Equal(t, inputHours-outputHours, fee)
-
-	require.Equal(t, inputCoins, outputCoins)
-
-	require.Equal(t, uint8(0), r.Type)
-	require.NotEmpty(t, r.Length)
-}
-
-func TestCreateWallet(t *testing.T) {
-	if !doLiveOrStable(t) {
-		return
-	}
-
-	if doLive(t) && !doLiveWallet(t) {
-		return
-	}
-
-	c := newClient()
-
-	w, seed, clean := createWallet(t, c, false, "", "")
-	defer clean()
-	require.False(t, w.Meta.Encrypted)
-
-	walletDir := getWalletDir(t, c)
-
-	// Confirms the wallet does exist
-	walletPath := filepath.Join(walletDir, w.Meta.Filename)
-	_, err := os.Stat(walletPath)
-	require.NoError(t, err)
-
-	// Loads the wallet and confirms that the wallet has the same seed
-	lw, err := wallet.Load(walletPath)
-	require.NoError(t, err)
-	require.False(t, lw.IsEncrypted())
-	require.Equal(t, seed, lw.Meta["seed"])
-	require.Equal(t, len(w.Entries), len(lw.Entries))
-
-	for i := range w.Entries {
-		require.Equal(t, w.Entries[i].Address, lw.Entries[i].Address.String())
-		require.Equal(t, w.Entries[i].Public, lw.Entries[i].Public.Hex())
-	}
-
-	// Creates wallet with encryption
-	encW, _, encWClean := createWallet(t, c, true, "pwd", "")
-	defer encWClean()
-	require.True(t, encW.Meta.Encrypted)
-
-	walletPath = filepath.Join(walletDir, encW.Meta.Filename)
-	encLW, err := wallet.Load(walletPath)
-	require.NoError(t, err)
-
-	// Confirms the loaded wallet is encrypted and has the same address entries
-	require.True(t, encLW.IsEncrypted())
-	require.Equal(t, len(encW.Entries), len(encLW.Entries))
-
-	for i := range encW.Entries {
-		require.Equal(t, encW.Entries[i].Address, encLW.Entries[i].Address.String())
-		require.Equal(t, encW.Entries[i].Public, encLW.Entries[i].Public.Hex())
-	}
-}
-
-func TestGetWallet(t *testing.T) {
-	if !doLiveOrStable(t) {
-		return
-	}
-
-	if doLive(t) && !doLiveWallet(t) {
-		return
-	}
-
-	c := newClient()
-
-	// Create a wallet
-	w, _, clean := createWallet(t, c, false, "", "")
-	defer clean()
-
-	// Confirms the wallet can be acquired
-	w1, err := c.Wallet(w.Meta.Filename)
-	require.NoError(t, err)
-	require.Equal(t, *w, *w1)
-}
-
-func TestGetWallets(t *testing.T) {
-	if !doLiveOrStable(t) {
-		return
-	}
-
-	if doLive(t) && !doLiveWallet(t) {
-		return
-	}
-
-	c := newClient()
-
-	// Creates 2 new wallets
-	var ws []api.WalletResponse
-	for i := 0; i < 2; i++ {
-		w, _, clean := createWallet(t, c, false, "", "")
-		defer clean()
-		// cleaners = append(cleaners, clean)
-		ws = append(ws, *w)
-	}
-
-	// Gets wallet from node
-	wlts, err := c.Wallets()
-	require.NoError(t, err)
-
-	// Create the wallet map
-	walletMap := make(map[string]api.WalletResponse)
-	for _, w := range wlts {
-		walletMap[w.Meta.Filename] = w
-	}
-
-	// Confirms the returned wallets contains the wallet we created.
-	for _, w := range ws {
-		retW, ok := walletMap[w.Meta.Filename]
-		require.True(t, ok)
-		require.Equal(t, w, retW)
-	}
-}
-
-// TestWalletNewAddress will generate 30 wallets for testing, and they will
-// be removed automatically after testing.
-func TestWalletNewAddress(t *testing.T) {
-	if !doLiveOrStable(t) {
-		return
-	}
-
-	if doLive(t) && !doLiveWallet(t) {
-		return
-	}
-
-	// We only test 30 cases, cause the more addresses we generate, the longer
-	// it takes, we don't want to spend much time here.
-	for i := 1; i <= 30; i++ {
-		name := fmt.Sprintf("generate %v addresses", i)
-		t.Run(name, func(t *testing.T) {
-			c := newClient()
-			var encrypt bool
-			var password string
-			// Test wallet with encryption only when i == 2, so that
-			// the tests won't time out.
-			if i == 2 {
-				encrypt = true
-				password = "pwd"
-			}
-
-			w, seed, clean := createWallet(t, c, encrypt, password, "")
-			defer clean()
-
-			addrs, err := c.NewWalletAddress(w.Meta.Filename, i, password)
-			if err != nil {
-				t.Fatalf("%v", err)
-				return
-			}
-			require.NoError(t, err)
-
-			seckeys := cipher.MustGenerateDeterministicKeyPairs([]byte(seed), i+1)
-			var as []string
-			for _, k := range seckeys {
-				as = append(as, cipher.MustAddressFromSecKey(k).String())
-			}
-
-			// Confirms thoses new generated addresses are the same.
-			require.Equal(t, len(addrs), len(as)-1)
-			for i := range addrs {
-				require.Equal(t, as[i+1], addrs[i])
-			}
-		})
-	}
-}
-
-func TestStableWalletBalance(t *testing.T) {
-	if !doStable(t) {
-		return
-	}
-
-	c := newClient()
-	w, _, clean := createWallet(t, c, false, "", "casino away claim road artist where blossom warrior demise royal still palm")
-	defer clean()
-
-	bp, err := c.WalletBalance(w.Meta.Filename)
-	require.NoError(t, err)
-
-	var expect api.BalanceResponse
-	checkGoldenFile(t, "wallet-balance.golden", TestData{*bp, &expect})
-}
-
-func TestLiveWalletBalance(t *testing.T) {
-	if !doLive(t) {
-		return
-	}
-
-	requireWalletEnv(t)
-
-	c := newClient()
-	_, walletName, _ := getWalletFromEnv(t, c)
-	bp, err := c.WalletBalance(walletName)
-	require.NoError(t, err)
-	require.NotNil(t, bp)
-	require.NotNil(t, bp.Addresses)
-}
-
-func TestWalletUpdate(t *testing.T) {
-	if !doLiveOrStable(t) {
-		return
-	}
-
-	if doLive(t) && !doLiveWallet(t) {
-		return
-	}
-
-	c := newClient()
-	w, _, clean := createWallet(t, c, false, "", "")
-	defer clean()
-
-	err := c.UpdateWallet(w.Meta.Filename, "new wallet")
-	require.NoError(t, err)
-
-	// Confirms the wallet has label of "new wallet"
-	w1, err := c.Wallet(w.Meta.Filename)
-	require.NoError(t, err)
-	require.Equal(t, w1.Meta.Label, "new wallet")
-}
-
-func TestStableWalletUnconfirmedTransactions(t *testing.T) {
-	if !doStable(t) {
-		return
-	}
-
-	c := newClient()
-	w, _, clean := createWallet(t, c, false, "", "")
-	defer clean()
-
-	txns, err := c.WalletUnconfirmedTransactions(w.Meta.Filename)
-	require.NoError(t, err)
-
-	var expect api.UnconfirmedTxnsResponse
-	checkGoldenFile(t, "wallet-transactions.golden", TestData{*txns, &expect})
-}
-
-func TestLiveWalletUnconfirmedTransactions(t *testing.T) {
-	if !doLive(t) {
-		return
-	}
-
-	requireWalletEnv(t)
-
-	c := newClient()
-	w, _, _, _ := prepareAndCheckWallet(t, c, 1e6, 1)
-	txns, err := c.WalletUnconfirmedTransactions(w.Filename())
-	require.NoError(t, err)
-
-	bp, err := c.WalletBalance(w.Filename())
-	require.NoError(t, err)
-	// There's pending transactions if predicted coins are not the same as confirmed coins
-	if bp.Predicted.Coins != bp.Confirmed.Coins {
-		require.NotEmpty(t, txns.Transactions)
-		return
-	}
-
-	require.Empty(t, txns.Transactions)
-}
-
-func TestStableWalletUnconfirmedTransactionsVerbose(t *testing.T) {
-	if !doStable(t) {
-		return
-	}
-
-	c := newClient()
-	w, _, clean := createWallet(t, c, false, "", "")
-	defer clean()
-
-	txns, err := c.WalletUnconfirmedTransactionsVerbose(w.Meta.Filename)
-	require.NoError(t, err)
-
-	var expect api.UnconfirmedTxnsVerboseResponse
-	checkGoldenFile(t, "wallet-transactions-verbose.golden", TestData{*txns, &expect})
-}
-
-func TestLiveWalletUnconfirmedTransactionsVerbose(t *testing.T) {
-	if !doLive(t) {
-		return
-	}
-
-	requireWalletEnv(t)
-
-	c := newClient()
-	w, _, _, _ := prepareAndCheckWallet(t, c, 1e6, 1)
-	txns, err := c.WalletUnconfirmedTransactionsVerbose(w.Filename())
-	require.NoError(t, err)
-
-	bp, err := c.WalletBalance(w.Filename())
-	require.NoError(t, err)
-	// There's pending transactions if predicted coins are not the same as confirmed coins
-	if bp.Predicted.Coins != bp.Confirmed.Coins {
-		require.NotEmpty(t, txns.Transactions)
-		return
-	}
-
-	require.Empty(t, txns.Transactions)
-}
-
-func TestWalletFolderName(t *testing.T) {
-	if !doLiveOrStable(t) {
-		return
-	}
-
-	if doLive(t) && !doLiveWallet(t) {
-		return
-	}
-
-	c := newClient()
-	folderName, err := c.WalletFolderName()
-	require.NoError(t, err)
-
-	require.NotNil(t, folderName)
-	require.NotEmpty(t, folderName.Address)
-}
-
-func TestEncryptWallet(t *testing.T) {
-	if !doLiveOrStable(t) {
-		return
-	}
-
-	if doLive(t) && !doLiveWallet(t) {
-		return
-	}
-
-	c := newClient()
-
-	// Create a unencrypted wallet
-	w, _, clean := createWallet(t, c, false, "", "")
-	defer clean()
-
-	// Encrypts the wallet
-	rlt, err := c.EncryptWallet(w.Meta.Filename, "pwd")
-	require.NoError(t, err)
-	require.NotEmpty(t, rlt.Meta.CryptoType)
-	require.True(t, rlt.Meta.Encrypted)
-
-	//  Encrypt the wallet again, should returns error
-	_, err = c.EncryptWallet(w.Meta.Filename, "pwd")
-	assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - wallet is encrypted")
-
-	// Confirms that no sensitive data do exist in wallet file
-	wf, err := c.WalletFolderName()
-	require.NoError(t, err)
-	wltPath := filepath.Join(wf.Address, w.Meta.Filename)
-	lw, err := wallet.Load(wltPath)
-	require.NoError(t, err)
-	require.Empty(t, lw.Meta["seed"])
-	require.Empty(t, lw.Meta["lastSeed"])
-	require.NotEmpty(t, lw.Meta["secrets"])
-
-	// Decrypts the wallet, and confirms that the
-	// seed and address entries are the same as it was before being encrypted.
-	dw, err := c.DecryptWallet(w.Meta.Filename, "pwd")
-	require.NoError(t, err)
-	require.Equal(t, w, dw)
-}
-
-func TestDecryptWallet(t *testing.T) {
-	if !doLiveOrStable(t) {
-		return
-	}
-
-	if doLive(t) && !doLiveWallet(t) {
-		return
-	}
-
-	c := newClient()
-	w, seed, clean := createWallet(t, c, true, "pwd", "")
-	defer clean()
-
-	// Decrypt wallet with different password, must fail
-	_, err := c.DecryptWallet(w.Meta.Filename, "pwd1")
-	assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - invalid password")
-
-	// Decrypt wallet with no password, must fail
-	_, err = c.DecryptWallet(w.Meta.Filename, "")
-	assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - missing password")
-
-	// Decrypts wallet with correct password
-	dw, err := c.DecryptWallet(w.Meta.Filename, "pwd")
-	require.NoError(t, err)
-
-	// Confirms that no sensitive data are returned
-	require.Empty(t, dw.Meta.CryptoType)
-	require.False(t, dw.Meta.Encrypted)
-
-	// Loads wallet from file
-	wf, err := c.WalletFolderName()
-	require.NoError(t, err)
-	wltPath := filepath.Join(wf.Address, w.Meta.Filename)
-	lw, err := wallet.Load(wltPath)
-	require.NoError(t, err)
-
-	require.Equal(t, lw.Meta["seed"], seed)
-	require.Len(t, lw.Entries, 1)
-
-	// Confirms the last seed is matched
-	lseed, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 1)
-	require.Equal(t, hex.EncodeToString(lseed), lw.Meta["lastSeed"])
-
-	// Confirms that the first address is derivied from the private key
-	pubkey := cipher.MustPubKeyFromSecKey(seckeys[0])
-	require.Equal(t, w.Entries[0].Address, cipher.AddressFromPubKey(pubkey).String())
-	require.Equal(t, lw.Entries[0].Address.String(), w.Entries[0].Address)
-}
-
-func TestRecoverWallet(t *testing.T) {
-	if !doLiveOrStable(t) {
-		return
-	}
-
-	if doLive(t) && !doLiveWallet(t) {
-		return
-	}
-
-	// Create an encrypted wallet with some addresses pregenerated,
-	// to make sure recover recovers the same number of addresses
-	c := newClient()
-	wf, err := c.WalletFolderName()
-	require.NoError(t, err)
-
-	// Load the wallet from disk to check that it was saved
-	checkWalletOnDisk := func(w *api.WalletResponse) {
-		wltPath := filepath.Join(wf.Address, w.Meta.Filename)
-		lw, err := wallet.Load(wltPath)
-		require.NoError(t, err)
-		lwr, err := api.NewWalletResponse(lw)
-		require.NoError(t, err)
-		require.Equal(t, w, lwr)
-	}
-
-	w, seed, clean := createWallet(t, c, false, "", "fooseed")
-	require.Equal(t, "fooseed", seed)
-	defer clean()
-
-	_, err = c.NewWalletAddress(w.Meta.Filename, 10, "")
-	require.NoError(t, err)
-
-	w, err = c.Wallet(w.Meta.Filename)
-	require.NoError(t, err)
-
-	// Recover fails if the wallet is not encrypted
-	_, err = c.RecoverWallet(w.Meta.Filename, "fooseed", "")
-	assertResponseError(t, err, http.StatusBadRequest, "wallet is not encrypted")
-
-	_, err = c.EncryptWallet(w.Meta.Filename, "pwd")
-	require.NoError(t, err)
-
-	// Recovery fails if the seed doesn't match
-	_, err = c.RecoverWallet(w.Meta.Filename, "wrongseed", "")
-	assertResponseError(t, err, http.StatusBadRequest, "wallet recovery seed is wrong")
-
-	// Successful recovery with no new password
-	w2, err := c.RecoverWallet(w.Meta.Filename, "fooseed", "")
-	require.NoError(t, err)
-	require.False(t, w2.Meta.Encrypted)
-	checkWalletOnDisk(w2)
-	require.Equal(t, w, w2)
-
-	_, err = c.EncryptWallet(w.Meta.Filename, "pwd2")
-	require.NoError(t, err)
-
-	// Successful recovery with a new password
-	w3, err := c.RecoverWallet(w.Meta.Filename, "fooseed", "pwd3")
-	require.NoError(t, err)
-	require.True(t, w3.Meta.Encrypted)
-	require.Equal(t, w3.Meta.CryptoType, "scrypt-chacha20poly1305")
-	checkWalletOnDisk(w3)
-	w3.Meta.Encrypted = w.Meta.Encrypted
-	w3.Meta.CryptoType = w.Meta.CryptoType
-	require.Equal(t, w, w3)
-
-	w4, err := c.DecryptWallet(w.Meta.Filename, "pwd3")
-	require.NoError(t, err)
-	require.False(t, w.Meta.Encrypted)
-	require.Equal(t, w, w4)
-}
-
-func TestGetWalletSeedDisabledAPI(t *testing.T) {
-	if !doLiveOrStable(t) {
-		return
-	}
-
-	if doLive(t) && !doLiveWallet(t) {
-		return
-	}
-
-	c := newClient()
-
-	// Create an encrypted wallet
-	w, _, clean := createWallet(t, c, true, "pwd", "")
-	defer clean()
-
-	_, err := c.WalletSeed(w.Meta.Filename, "pwd")
-	assertResponseError(t, err, http.StatusForbidden, "403 Forbidden - Endpoint is disabled")
-}
-
-func TestGetWalletSeedEnabledAPI(t *testing.T) {
-	if !doEnableSeedAPI(t) {
-		return
-	}
-
-	c := newClient()
-
-	// Create an encrypted wallet
-	w, seed, clean := createWallet(t, c, true, "pwd", "")
-	defer clean()
-
-	require.NotEmpty(t, seed)
-
-	sd, err := c.WalletSeed(w.Meta.Filename, "pwd")
-	require.NoError(t, err)
-
-	// Confirms the seed are matched
-	require.Equal(t, seed, sd)
-
-	// Get seed of wrong wallet id
-	_, err = c.WalletSeed("w.wlt", "pwd")
-	assertResponseError(t, err, http.StatusNotFound, "404 Not Found")
-
-	// Check with invalid password
-	_, err = c.WalletSeed(w.Meta.Filename, "wrong password")
-	assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - invalid password")
-
-	// Check with missing password
-	_, err = c.WalletSeed(w.Meta.Filename, "")
-	assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - missing password")
-
-	// Create unencrypted wallet to check against
-	nw, _, nclean := createWallet(t, c, false, "", "")
-	defer nclean()
-	_, err = c.WalletSeed(nw.Meta.Filename, "pwd")
-	assertResponseError(t, err, http.StatusBadRequest, "400 Bad Request - wallet is not encrypted")
-}
-
-// prepareAndCheckWallet gets wallet from environment, and confirms:
-// 1. The minimal coins and coin hours requirements are met.
-// 2. The wallet has at least two address entry.
-// Returns the loaded wallet, total coins, total coin hours and password of the wallet.
-func prepareAndCheckWallet(t *testing.T, c *api.Client, miniCoins, miniCoinHours uint64) (*wallet.Wallet, uint64, uint64, string) {
-	walletDir, walletName, password := getWalletFromEnv(t, c)
-	walletPath := filepath.Join(walletDir, walletName)
-
-	// Checks if the wallet does exist
-	if _, err := os.Stat(walletPath); os.IsNotExist(err) {
-		t.Fatalf("Wallet %v doesn't exist", walletPath)
-	}
-
-	w, err := wallet.Load(walletPath)
-	if err != nil {
-		t.Fatalf("Load wallet %v failed: %v", walletPath, err)
-	}
-
-	if w.IsEncrypted() && password == "" {
-		t.Fatalf("Wallet is encrypted, must set WALLET_PASSWORD env var")
-	}
-
-	// Generate more addresses if address entries less than 2.
-	if len(w.Entries) < 2 {
-		_, err := c.NewWalletAddress(w.Filename(), 2-len(w.Entries), password)
-		if err != nil {
-			t.Fatalf("New wallet address failed: %v", err)
-		}
-
-		w, err = wallet.Load(walletPath)
-		if err != nil {
-			t.Fatalf("Reload wallet %v failed: %v", walletPath, err)
-		}
-	}
-
-	coins, hours := getWalletBalance(t, c, walletName)
-	if coins < miniCoins {
-		t.Fatalf("Wallet must have at least %d coins", miniCoins)
-	}
-
-	if hours < miniCoinHours {
-		t.Fatalf("Wallet must have at least %d coin hours", miniCoinHours)
-	}
-
-	if err := w.Save(walletDir); err != nil {
-		t.Fatalf("%v", err)
-	}
-
-	return w, coins, hours, password
-}
-
-// getWalletFromEnv loads wallet from environment variables.
-// Returns wallet dir, wallet name and wallet password is any.
-func getWalletFromEnv(t *testing.T, c *api.Client) (string, string, string) {
-	walletDir := getWalletDir(t, c)
-
-	walletName := os.Getenv("WALLET_NAME")
-	if walletName == "" {
-		t.Fatal("Missing WALLET_NAME environment value")
-	}
-
-	walletPassword := os.Getenv("WALLET_PASSWORD")
-	return walletDir, walletName, walletPassword
-}
-
-func requireWalletEnv(t *testing.T) {
-	if !doLiveWallet(t) {
-		return
-	}
-
-	walletName := os.Getenv("WALLET_NAME")
-	if walletName == "" {
-		t.Fatal("missing WALLET_NAME environment value")
-	}
-}
-
-// getWalletBalance gets wallet balance.
-// Returns coins and hours
-func getWalletBalance(t *testing.T, c *api.Client, walletName string) (uint64, uint64) {
-	wp, err := c.WalletBalance(walletName)
-	if err != nil {
-		t.Fatalf("Get wallet balance of %v failed: %v", walletName, err)
-	}
-
-	return wp.Confirmed.Coins, wp.Confirmed.Hours
-}
-
-func getTransaction(t *testing.T, c *api.Client, txid string) *readable.TransactionWithStatus {
-	tx, err := c.Transaction(txid)
-	if err != nil {
-		t.Fatalf("%v", err)
-	}
-
-	return tx
-}
-
-// getAddressBalance gets balance of given address.
-// Returns coins and coin hours.
-func getAddressBalance(t *testing.T, c *api.Client, addr string) (uint64, uint64) { // nolint: unparam
-	bp, err := c.Balance([]string{addr})
-	if err != nil {
-		t.Fatalf("%v", err)
-	}
-	return bp.Confirmed.Coins, bp.Confirmed.Hours
-}
-
-// createWallet creates a wallet with rand seed.
-// Returns the generated wallet, seed and clean up function.
-func createWallet(t *testing.T, c *api.Client, encrypt bool, password string, seed string) (*api.WalletResponse, string, func()) {
-	if seed == "" {
-		seed = hex.EncodeToString(cipher.RandByte(32))
-	}
-	// Use the first 6 letter of the seed as label.
-	var w *api.WalletResponse
-	var err error
-	if encrypt {
-		w, err = c.CreateEncryptedWallet(seed, seed[:6], password, 0)
-	} else {
-		w, err = c.CreateUnencryptedWallet(seed, seed[:6], 0)
-	}
-
-	require.NoError(t, err)
-
-	walletDir := getWalletDir(t, c)
-
-	return w, seed, func() {
-		// Cleaner function to delete the wallet and bak wallet
-		walletPath := filepath.Join(walletDir, w.Meta.Filename)
-		err = os.Remove(walletPath)
-		require.NoError(t, err)
-
-		bakWalletPath := walletPath + ".bak"
-		if _, err := os.Stat(bakWalletPath); !os.IsNotExist(err) {
-			// Return directly if no .bak file does exist
-			err = os.Remove(bakWalletPath)
-			require.NoError(t, err)
-		}
-
-		require.NoError(t, err)
-
-		// Removes the wallet from memory
-		err = c.UnloadWallet(w.Meta.Filename)
-		require.NoError(t, err)
-	}
-}
-
-func getWalletDir(t *testing.T, c *api.Client) string {
-	wf, err := c.WalletFolderName()
-	if err != nil {
-		t.Fatalf("%v", err)
-	}
-	return wf.Address
-}
-
 func TestDisableWalletAPI(t *testing.T) {
 	if !doDisableWalletAPI(t) {
 		return
@@ -5711,20 +3497,6 @@ func TestDisableWalletAPI(t *testing.T) {
 			name:      "get wallet balance",
 			method:    http.MethodGet,
 			endpoint:  "/api/v1/wallet/balance?id=test.wlt",
-			expectErr: "403 Forbidden - Endpoint is disabled",
-			code:      http.StatusForbidden,
-		},
-		{
-			name:     "wallet spending",
-			method:   http.MethodPost,
-			endpoint: "/api/v1/wallet/spend",
-			body: func() io.Reader {
-				v := url.Values{}
-				v.Add("id", "test.wlt")
-				v.Add("coins", "100000") // 1e5
-				v.Add("dst", "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6")
-				return strings.NewReader(v.Encode())
-			},
 			expectErr: "403 Forbidden - Endpoint is disabled",
 			code:      http.StatusForbidden,
 		},
@@ -5833,19 +3605,19 @@ func TestDisableWalletAPI(t *testing.T) {
 			endpoint:    "/api/v1/wallet/transaction",
 			contentType: api.ContentTypeJSON,
 			json: func() interface{} {
-				return api.CreateTransactionRequest{
-					HoursSelection: api.HoursSelection{
-						Type: wallet.HoursSelectionTypeManual,
-					},
-					Wallet: api.CreateTransactionRequestWallet{
-						ID: "test.wlt",
-					},
-					ChangeAddress: &changeAddress,
-					To: []api.Receiver{
-						{
-							Address: changeAddress,
-							Coins:   "0.001",
-							Hours:   "1",
+				return api.WalletCreateTransactionRequest{
+					WalletID: "test.wlt",
+					CreateTransactionRequest: api.CreateTransactionRequest{
+						HoursSelection: api.HoursSelection{
+							Type: transaction.HoursSelectionTypeManual,
+						},
+						ChangeAddress: &changeAddress,
+						To: []api.Receiver{
+							{
+								Address: changeAddress,
+								Coins:   "0.001",
+								Hours:   "1",
+							},
 						},
 					},
 				}
@@ -5876,18 +3648,13 @@ func TestDisableWalletAPI(t *testing.T) {
 		}
 
 		t.Run(tc.name, f(tc))
-
-		if strings.HasPrefix(tc.endpoint, "/api/v1") {
-			tc.endpoint = strings.TrimPrefix(tc.endpoint, "/api/v1")
-			t.Run(tc.name, f(tc))
-		}
 	}
 
 	// Confirms that no new wallet is created
-	// WALLET_DIR environment variable is set in ci-script/integration-test-disable-wallet-api.sh
-	walletDir := os.Getenv("WALLET_DIR")
+	// API_WALLET_DIR environment variable is set in ci-script/integration-test-disable-wallet-api.sh
+	walletDir := os.Getenv("API_WALLET_DIR")
 	if walletDir == "" {
-		t.Fatal("WALLET_DIR is not set")
+		t.Fatal("API_WALLET_DIR is not set")
 	}
 
 	// Confirms that the wallet directory does not exist
@@ -5937,11 +3704,10 @@ func TestStableHealth(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, useCSRF(t), r.CSRFEnabled)
+	require.Equal(t, doHeaderCheck(t), r.HeaderCheckEnabled)
 	require.True(t, r.CSPEnabled)
 	require.True(t, r.WalletAPIEnabled)
-	require.False(t, r.UnversionedAPIEnabled)
 	require.False(t, r.GUIEnabled)
-	require.False(t, r.JSON20RPCEnabled)
 }
 
 func TestLiveHealth(t *testing.T) {

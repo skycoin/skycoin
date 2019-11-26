@@ -1,12 +1,13 @@
 import { Component, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { MatDialogRef, MatSnackBar } from '@angular/material';
+import { MatDialogRef } from '@angular/material';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ButtonComponent } from '../button/button.component';
-import { parseResponseMessage, showSnackbarError } from '../../../utils/errors';
+import { parseResponseMessage } from '../../../utils/errors';
 import { Subject } from 'rxjs/Subject';
 import { ISubscription } from 'rxjs/Subscription';
 import { TranslateService } from '@ngx-translate/core';
+import { MsgBarService } from '../../../services/msg-bar.service';
 
 @Component({
   selector: 'app-password-dialog',
@@ -17,7 +18,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
   @ViewChild('button') button: ButtonComponent;
   form: FormGroup;
   passwordSubmit = new Subject<any>();
-  disableDismiss = false;
+  working = false;
 
   private subscriptions: ISubscription[] = [];
   private errors: any;
@@ -25,7 +26,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: any,
     public dialogRef: MatDialogRef<PasswordDialogComponent>,
-    private snackbar: MatSnackBar,
+    private msgBarService: MsgBarService,
     private translateService: TranslateService,
   ) {
     this.data = Object.assign({
@@ -66,6 +67,8 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.msgBarService.hide();
+
     this.form.get('password').setValue('');
     this.form.get('confirm_password').setValue('');
 
@@ -79,8 +82,10 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.msgBarService.hide();
+
     this.button.setLoading();
-    this.disableDismiss = true;
+    this.working = true;
 
     this.passwordSubmit.next({
       password: this.form.get('password').value,
@@ -109,6 +114,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
 
   private error(error: any) {
     if (typeof error === 'object') {
+      if (error.status) {
       switch (error.status) {
         case 400:
           error = parseResponseMessage(error['_body']);
@@ -123,11 +129,17 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
           error = this.errors['errors.no-wallet'];
           break;
         default:
-          showSnackbarError(this.snackbar, error, 5000);
+            error = this.errors['errors.error-decrypting'];
+        }
+      } else {
+        error = this.errors['errors.error-decrypting'];
       }
     }
 
-    this.button.setError(error ? error : this.errors['errors.incorrect-password']);
-    this.disableDismiss = false;
+    error = error ? error : this.errors['errors.error-decrypting'];
+
+    this.msgBarService.showError(error);
+    this.button.resetState();
+    this.working = false;
   }
 }

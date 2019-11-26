@@ -1,0 +1,70 @@
+@import '../../../../../theme/variables';
+
+.content {
+  display: flex;
+
+  .icon-container {
+    margin-right: 20px;
+
+    mat-spinner {
+      display: inline-block;
+
+      height: 36px !important;
+      width: 36px !important;
+
+      ::ng-deep svg {
+        height: 36px !important;
+        width: 36px !important;
+      }
+  
+      ::ng-deep circle {
+        stroke: $grey-light;
+      }
+    }
+
+    i {
+      font-size: 40px;
+    }
+  }
+
+  .text-container {
+    flex-grow: 1;
+    align-self: center;
+
+    .link {
+      color: $blue;
+      cursor: pointer;
+    }
+
+    .list {
+      padding: 10px 0;
+
+      .list-element {
+        margin: 10px 0;
+        font-size: 12px;
+        color: #000000;
+        font-weight: bold;
+      }
+    }
+  }
+
+  .-red {
+    color: $red;
+  }
+
+  .-yellow {
+    color: $yellow;
+  }
+
+  .-grey {
+    color: $grey-light;
+  }
+
+  .-green {
+    color: $green;
+  }
+
+  .-blinking {
+    animation: alert-blinking 1s linear infinite;
+  }
+}

@@ -1,5 +1,75 @@
 @import '../../../../../../theme/_variables.scss';
 
+.dashed-border {
+  border: rgba(0, 0, 0, 0.25) dashed 1px;
+}
+
+.show-pointer {
+  cursor: pointer;
+}
+
+.non-editable-field {
+  font-size: 12px;
+  text-align: center;
+  padding: 15px;
+  border-radius: 6px;
+  color: $black;
+
+  .text-with-icon-container {
+    display: inline-flex;
+    align-items: center;
+
+    mat-icon {
+      margin-right: 5px;
+      opacity: 1;
+    }
+
+    .green {
+      color: $green;
+    }
+
+    .yellow {
+      color: $yellow;
+    }
+  }
+}
+
+.normal-seed-field {
+  font-size: 14px;
+}
+
+.seed-type-button {
+  width: 100%;
+  height: 10px;
+  text-align: right;
+
+  > div {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    position: relative;
+    left: 16px;
+    top: -10px;
+    background-color: white;
+    border-radius: 100px;
+    cursor: pointer;
+
+    > img {
+      width: 32px;
+      height: 32px;
+    }
+  }
+}
+
+.onboarding-version {
+  border: rgba(255, 255, 255, 0.5) dashed 1px;
+  color: #fff;
+}
+
+.transparent-text {
+  opacity: 0.75;
+}
+
 .red-disclaimer-box {
   color: $red;
   font-size: 12px;
@@ -12,7 +82,6 @@
   font-size: 12px;
   padding: 0 10px;
   line-height: 1.5;
-  opacity: 0.75;
 }
 
 label[for=seed] {
@@ -98,33 +167,5 @@ label[for=seed] {
       height: 38px;
       vertical-align: middle;
     }
-  }
-}
-
-.-alert-box {
-  background-color: #ffdede;
-  padding: 15px;
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-
-  .title {
-    font-size: 20px;
-  }
-
-  mat-icon {
-    margin-right: 10px;
-    animation: blink 1s linear infinite;
-  }
-
-  @keyframes blink {
-    50% {
-      opacity: 0.2;
-    }
-  }
-
-  mat-checkbox {
-    margin-top: 10px;
-    display: inline-block;
   }
 }

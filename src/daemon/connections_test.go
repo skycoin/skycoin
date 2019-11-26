@@ -6,9 +6,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/params"
-	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/util/useragent"
+	"github.com/SkycoinProject/skycoin/src/params"
+	"github.com/SkycoinProject/skycoin/src/testutil"
+	"github.com/SkycoinProject/skycoin/src/util/useragent"
 )
 
 var userAgent = useragent.MustParse("skycoin:0.24.1(foo)")
@@ -76,7 +76,7 @@ func TestConnectionsOutgoingFlow(t *testing.T) {
 	require.Equal(t, []connection{*c}, all)
 
 	_, err = conns.introduced(addr, 1, &IntroductionMessage{
-		userAgent: userAgent,
+		UserAgent: userAgent,
 	})
 	require.Equal(t, ErrConnectionStateNotConnected, err)
 	require.Equal(t, 1, conns.PendingLen())
@@ -105,7 +105,7 @@ func TestConnectionsOutgoingFlow(t *testing.T) {
 		ListenPort:      port + 1,
 		Mirror:          1111,
 		ProtocolVersion: 2,
-		userAgent:       userAgent,
+		UserAgent:       userAgent,
 	}
 
 	c, err = conns.introduced(addr, 1, m)
@@ -194,8 +194,8 @@ func TestConnectionsIncomingFlow(t *testing.T) {
 		ListenPort:      port + 1,
 		Mirror:          1111,
 		ProtocolVersion: 2,
-		userAgent:       userAgent,
-		unconfirmedVerifyTxn: params.VerifyTxn{
+		UserAgent:       userAgent,
+		UnconfirmedVerifyTxn: params.VerifyTxn{
 			BurnFactor:          4,
 			MaxTransactionSize:  1111,
 			MaxDropletPrecision: 2,
@@ -272,7 +272,7 @@ func TestConnectionsMultiple(t *testing.T) {
 		Mirror:          6,
 		ListenPort:      6060,
 		ProtocolVersion: 2,
-		userAgent:       userAgent,
+		UserAgent:       userAgent,
 	})
 	require.NoError(t, err)
 	require.Equal(t, 0, conns.PendingLen())
@@ -283,7 +283,7 @@ func TestConnectionsMultiple(t *testing.T) {
 		Mirror:          6,
 		ListenPort:      6061,
 		ProtocolVersion: 2,
-		userAgent:       userAgent,
+		UserAgent:       userAgent,
 	})
 	require.Equal(t, ErrConnectionIPMirrorExists, err)
 	require.Equal(t, 0, conns.PendingLen())
@@ -297,7 +297,7 @@ func TestConnectionsMultiple(t *testing.T) {
 		Mirror:          7,
 		ListenPort:      6061,
 		ProtocolVersion: 2,
-		userAgent:       userAgent,
+		UserAgent:       userAgent,
 	})
 	require.NoError(t, err)
 	require.Equal(t, 2, len(conns.mirrors))
@@ -319,7 +319,7 @@ func TestConnectionsMultiple(t *testing.T) {
 		Mirror:          6,
 		ListenPort:      6060,
 		ProtocolVersion: 2,
-		userAgent:       userAgent,
+		UserAgent:       userAgent,
 	})
 	require.NoError(t, err)
 
@@ -370,7 +370,7 @@ func TestConnectionsMultipleSameListenPort(t *testing.T) {
 		Mirror:          6,
 		ListenPort:      6060,
 		ProtocolVersion: 2,
-		userAgent:       userAgent,
+		UserAgent:       userAgent,
 	})
 	require.NoError(t, err)
 
@@ -457,14 +457,14 @@ func TestConnectionsModifyMirrorPanics(t *testing.T) {
 
 	// modifying mirror value causes panic
 	require.Panics(t, func() {
-		conns.modify(addr, 1, func(c *ConnectionDetails) { // nolint: errcheck
+		conns.modify(addr, 1, func(c *ConnectionDetails) { //nolint:errcheck
 			c.Mirror++
 		})
 	})
 
 	// modifying ListenPort causes panic
 	require.Panics(t, func() {
-		conns.modify(addr, 1, func(c *ConnectionDetails) { // nolint: errcheck
+		conns.modify(addr, 1, func(c *ConnectionDetails) { //nolint:errcheck
 			c.ListenPort = 999
 		})
 	})

@@ -25,6 +25,7 @@ RUN_TESTS=""
 TEST_LIVE_WALLET=""
 FAILFAST=""
 USE_CSRF=""
+HEADER_CHECK="1"
 DISABLE_NETWORKING=""
 
 usage () {
@@ -37,6 +38,7 @@ usage () {
   echo "-w <boolean> -- Run wallet tests"
   echo "-f <boolean> -- Run test with -failfast flag"
   echo "-c <boolean> -- Pass this argument if the node has CSRF enabled"
+  echo "-x <boolean> -- Pass this argument if the node has header check disabled"
   echo "-k <boolean> -- Run the tests that require networking disabled (live node must be run with -disable-networking)"
   exit 1
 }
@@ -53,6 +55,7 @@ case $args in
     w ) TEST_LIVE_WALLET="--test-live-wallet";;
     f ) FAILFAST="-failfast";;
     c ) USE_CSRF="1";;
+    x ) HEADER_CHECK="";;
 	k ) DISABLE_NETWORKING="true"
   esac
 done
@@ -70,18 +73,22 @@ if [ ! $? -eq 0 ]; then
     exit 1
 fi
 
+echo "checking if integration tests compile"
+go test ./src/api/integration/...
+go test ./src/cli/integration/...
+
 if [[ -z $TEST || $TEST = "api" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST \
 	LIVE_DISABLE_NETWORKING=$DISABLE_NETWORKING \
-    go test ./src/api/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET
+    go test -count=1 ./src/api/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET
 
 fi
 
 if [[ -z $TEST || $TEST = "cli" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR \
-	SKYCOIN_NODE_HOST=$HOST USE_CSRF=$USE_CSRF LIVE_DISABLE_NETWORKING=$DISABLE_NETWORKING \
-    go test ./src/cli/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET
+	SKYCOIN_NODE_HOST=$HOST USE_CSRF=$USE_CSRF HEADER_CHECK=$HEADER_CHECK LIVE_DISABLE_NETWORKING=$DISABLE_NETWORKING \
+    go test -count=1 ./src/cli/integration/... $FAILFAST $UPDATE -timeout=$TIMEOUT $VERBOSE $RUN_TESTS $TEST_LIVE_WALLET
 
 fi

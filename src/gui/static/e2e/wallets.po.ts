@@ -29,7 +29,16 @@ export class WalletsPage {
     return element(by.css('app-create-wallet .-header')).getText();
   }
 
-  fillWalletForm(label: string, seed: string, confirm: string|null) {
+  fillWalletForm(label: string, seed: string, confirm: string|null, goToManualSeedMode = true) {
+
+    if (goToManualSeedMode) {
+      element(by.css('.seed-type-button >div')).click();
+      if (confirm !== null) {
+        element(by.css('.e2e-confirm-checkbox')).click();
+      }
+      element(by.buttonText('Continue')).click();
+    }
+
     const labelEl = element(by.css('[formcontrolname="label"]'));
     const seedEl = element(by.css('[formcontrolname="seed"]'));
     const btn = element(by.buttonText(confirm ? 'Create' : 'Load'));
@@ -48,7 +57,8 @@ export class WalletsPage {
     }
 
     if (label !== '' && (seed === confirm || (!confirm && seed !== ''))) {
-      const seedValidationCheckBox = element(by.css('.red-disclaimer-box .mat-checkbox-inner-container'));
+      browser.sleep(1000);
+      const seedValidationCheckBox = element(by.css('.alert-box .mat-checkbox-inner-container'));
       seedValidationCheckBox.click();
     }
 

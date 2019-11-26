@@ -3,9 +3,9 @@ package daemon
 import (
 	"testing"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/cipher/encoder"
+	"github.com/SkycoinProject/skycoin/src/coin"
 )
 
 var getPeersMessageObj = GetPeersMessage{}
@@ -16,7 +16,7 @@ func BenchmarkDeserializeRawGetPeersMessage(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		encoder.DeserializeRaw(byt, result) // nolint: errcheck
+		encoder.DeserializeRaw(byt, result) //nolint:errcheck
 	}
 }
 
@@ -50,7 +50,7 @@ func BenchmarkDeserializeRawGivePeersMessage(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		encoder.DeserializeRaw(byt, result) // nolint: errcheck
+		encoder.DeserializeRaw(byt, result) //nolint:errcheck
 	}
 }
 
@@ -76,7 +76,7 @@ func BenchmarkDeserializeRawIntroductionMessage(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		encoder.DeserializeRaw(byt, result) // nolint: errcheck
+		encoder.DeserializeRaw(byt, result) //nolint:errcheck
 	}
 }
 
@@ -167,7 +167,7 @@ func BenchmarkDeserializeRawGiveBlocksMessage(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		encoder.DeserializeRaw(byt, result) // nolint: errcheck
+		encoder.DeserializeRaw(byt, result) //nolint:errcheck
 	}
 }
 
@@ -188,7 +188,7 @@ func BenchmarkDeserializeRawAnnounceTxnsMessage(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		encoder.DeserializeRaw(byt, result) // nolint: errcheck
+		encoder.DeserializeRaw(byt, result) //nolint:errcheck
 	}
 }
 
@@ -225,7 +225,7 @@ func BenchmarkDeserializeRawGiveTxnsMessage(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		encoder.DeserializeRaw(byt, result) // nolint: errcheck
+		encoder.DeserializeRaw(byt, result) //nolint:errcheck
 	}
 }
 

@@ -1,45 +1,31 @@
 package cli
 
 import (
-	"fmt"
 	"path/filepath"
 
-	gcli "github.com/urfave/cli"
+	"github.com/spf13/cobra"
 
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet"
 )
 
-func decryptWalletCmd(cfg Config) gcli.Command {
-	name := "decryptWallet"
-	return gcli.Command{
-		Name:  name,
-		Usage: "Decrypt wallet",
-		Description: fmt.Sprintf(`
-		The default wallet (%s) will be
-		used if no wallet was specified.
+func decryptWalletCmd() *cobra.Command {
+	decryptWalletCmd := &cobra.Command{
+		Args:  cobra.ExactArgs(1),
+		Use:   "decryptWallet [wallet]",
+		Short: "Decrypt a wallet",
+		Long: `Decrypt an encrypted wallet. The decrypted wallet will be written
+    on the filesystem in place of the encrypted wallet.
 
-		Use caution when using the "-p" command. If you have command history enabled
-		your wallet encryption password can be recovered from the history log. If you
-		do not include the "-p" option you will be prompted to enter your password
-		after you enter your command.`, cfg.FullWalletPath()),
-		Flags: []gcli.Flag{
-			gcli.StringFlag{
-				Name:  "p",
-				Usage: "[password] Wallet password",
-			},
-		},
-		OnUsageError: onCommandUsageError(name),
-		Action: func(c *gcli.Context) error {
-			cfg := ConfigFromContext(c)
+    Use caution when using the "-p" command. If you have command history enabled
+    your wallet encryption password can be recovered from the history log. If you
+    do not include the "-p" option you will be prompted to enter your password
+    after you enter your command.`,
+		SilenceUsage: true,
+		RunE: func(c *cobra.Command, args []string) error {
+			w := args[0]
+			pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
 
-			w, err := resolveWalletPath(cfg, "")
-			if err != nil {
-				return err
-			}
-
-			pr := NewPasswordReader([]byte(c.String("p")))
-
-			wlt, err := decryptWallet(w, pr)
+			_, err := decryptWallet(w, pr)
 			switch err.(type) {
 			case nil:
 			case WalletLoadError:
@@ -49,12 +35,16 @@ func decryptWalletCmd(cfg Config) gcli.Command {
 				return err
 			}
 
-			return printJSON(wallet.NewReadableWallet(wlt))
+			return nil
 		},
 	}
+
+	decryptWalletCmd.Flags().StringP("password", "p", "", "wallet password")
+
+	return decryptWalletCmd
 }
 
-func decryptWallet(walletFile string, pr PasswordReader) (*wallet.Wallet, error) {
+func decryptWallet(walletFile string, pr PasswordReader) (wallet.Wallet, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return nil, WalletLoadError{err}
@@ -68,12 +58,12 @@ func decryptWallet(walletFile string, pr PasswordReader) (*wallet.Wallet, error)
 		return nil, wallet.ErrMissingPassword
 	}
 
-	password, err := pr.Password()
+	wltPassword, err := pr.Password()
 	if err != nil {
 		return nil, err
 	}
 
-	unlockedWlt, err := wlt.Unlock(password)
+	unlockedWlt, err := wallet.Unlock(wlt, wltPassword)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +74,7 @@ func decryptWallet(walletFile string, pr PasswordReader) (*wallet.Wallet, error)
 	}
 
 	// save the wallet
-	if err := unlockedWlt.Save(dir); err != nil {
+	if err := wallet.Save(unlockedWlt, dir); err != nil {
 		return nil, WalletLoadError{err}
 	}
 

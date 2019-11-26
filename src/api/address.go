@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/cipher"
 )
 
 // VerifyAddressRequest is the request data for POST /api/v2/address/verify
@@ -23,12 +23,6 @@ type VerifyAddressResponse struct {
 func addressVerifyHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
-		writeHTTPResponse(w, resp)
-		return
-	}
-
-	if r.Header.Get("Content-Type") != ContentTypeJSON {
-		resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
 		writeHTTPResponse(w, resp)
 		return
 	}

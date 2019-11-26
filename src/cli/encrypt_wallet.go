@@ -1,57 +1,37 @@
 package cli
 
 import (
-	"fmt"
 	"path/filepath"
 
-	gcli "github.com/urfave/cli"
+	"github.com/spf13/cobra"
 
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet"
 )
 
-func encryptWalletCmd(cfg Config) gcli.Command {
-	name := "encryptWallet"
-	return gcli.Command{
-		Name:      name,
-		Usage:     "Encrypt wallet",
-		ArgsUsage: " ",
-		Description: fmt.Sprintf(`
-		The default wallet (%s) will be
-		used if no wallet was specified.
+func encryptWalletCmd() *cobra.Command {
+	encryptWalletCmd := &cobra.Command{
+		Args:  cobra.ExactArgs(1),
+		Short: "Encrypt wallet",
+		Use:   "encryptWallet [wallet]",
+		Long: `Encrypt a decrypted wallet. The encrypted wallet file
+    will be written on the filesystem in place of the decrypted wallet.
 
-		Use caution when using the "-p" command. If you have command history enabled
-		your wallet encryption password can be recovered from the history log. If you
-		do not include the "-p" option you will be prompted to enter your password
-		after you enter your command.`, cfg.FullWalletPath()),
-		Flags: []gcli.Flag{
-			gcli.StringFlag{
-				Name:  "p",
-				Usage: "[password] Wallet password",
-			},
-			gcli.StringFlag{
-				Name:  "x,crypto-type",
-				Value: string(wallet.CryptoTypeScryptChacha20poly1305),
-				Usage: "[crypto type] The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor",
-			},
-		},
-		OnUsageError: onCommandUsageError(name),
-		Action: func(c *gcli.Context) error {
-			cfg := ConfigFromContext(c)
-
-			w, err := resolveWalletPath(cfg, "")
-			if err != nil {
-				return err
-			}
-
-			cryptoType, err := wallet.CryptoTypeFromString(c.String("x"))
+    Use caution when using the "-p" command. If you have command history enabled
+    your wallet encryption password can be recovered from the history log. If you
+    do not include the "-p" option you will be prompted to enter your password
+    after you enter your command.`,
+		SilenceUsage: true,
+		RunE: func(c *cobra.Command, args []string) error {
+			w := args[0]
+			cryptoType, err := wallet.CryptoTypeFromString(c.Flag("crypto-type").Value.String())
 			if err != nil {
 				printHelp(c)
 				return err
 			}
 
-			pr := NewPasswordReader([]byte(c.String("p")))
+			pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
 
-			wlt, err := encryptWallet(w, pr, cryptoType)
+			_, err = encryptWallet(w, pr, cryptoType)
 			switch err.(type) {
 			case nil:
 			case WalletLoadError:
@@ -61,12 +41,16 @@ func encryptWalletCmd(cfg Config) gcli.Command {
 				return err
 			}
 
-			return printJSON(wallet.NewReadableWallet(wlt))
+			return nil
 		},
 	}
+
+	encryptWalletCmd.Flags().StringP("password", "p", "", "wallet password")
+	encryptWalletCmd.Flags().StringP("crypto-type", "x", "scrypt-chacha20poly1305", "The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor")
+	return encryptWalletCmd
 }
 
-func encryptWallet(walletFile string, pr PasswordReader, cryptoType wallet.CryptoType) (*wallet.Wallet, error) {
+func encryptWallet(walletFile string, pr PasswordReader, cryptoType wallet.CryptoType) (wallet.Wallet, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return nil, WalletLoadError{err}
@@ -85,7 +69,7 @@ func encryptWallet(walletFile string, pr PasswordReader, cryptoType wallet.Crypt
 		return nil, err
 	}
 
-	if err := wlt.Lock(password, cryptoType); err != nil {
+	if err := wallet.Lock(wlt, password, cryptoType); err != nil {
 		return nil, err
 	}
 
@@ -95,7 +79,7 @@ func encryptWallet(walletFile string, pr PasswordReader, cryptoType wallet.Crypt
 	}
 
 	// save the wallet
-	if err := wlt.Save(dir); err != nil {
+	if err := wallet.Save(wlt, dir); err != nil {
 		return nil, WalletLoadError{err}
 	}
 

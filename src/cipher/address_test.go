@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/cipher/base58"
+	"github.com/SkycoinProject/skycoin/src/cipher/base58"
 )
 
 func TestMustDecodeBase58Address(t *testing.T) {
@@ -17,9 +17,9 @@ func TestMustDecodeBase58Address(t *testing.T) {
 	require.Panics(t, func() { MustDecodeBase58Address("") })
 	require.Panics(t, func() { MustDecodeBase58Address("cascs") })
 	b := a.Bytes()
-	h := string(base58.Hex2Base58(b[:len(b)/2]))
+	h := string(base58.Encode(b[:len(b)/2]))
 	require.Panics(t, func() { MustDecodeBase58Address(h) })
-	h = string(base58.Hex2Base58(b))
+	h = string(base58.Encode(b))
 	require.NotPanics(t, func() { MustDecodeBase58Address(h) })
 	a2 := MustDecodeBase58Address(h)
 	require.Equal(t, a, a2)
@@ -43,6 +43,9 @@ func TestMustDecodeBase58Address(t *testing.T) {
 	// trailing zeroes are invalid
 	badAddr = a.String() + "000"
 	require.Panics(t, func() { MustDecodeBase58Address(badAddr) })
+
+	null := "1111111111111111111111111"
+	require.Panics(t, func() { MustDecodeBase58Address(null) })
 }
 
 func TestDecodeBase58Address(t *testing.T) {
@@ -57,11 +60,11 @@ func TestDecodeBase58Address(t *testing.T) {
 	require.Error(t, err)
 
 	b := a.Bytes()
-	h := string(base58.Hex2Base58(b[:len(b)/2]))
+	h := string(base58.Encode(b[:len(b)/2]))
 	_, err = DecodeBase58Address(h)
 	require.Error(t, err)
 
-	h = string(base58.Hex2Base58(b))
+	h = string(base58.Encode(b))
 	a2, err := DecodeBase58Address(h)
 	require.NoError(t, err)
 	require.Equal(t, a, a2)
@@ -90,6 +93,12 @@ func TestDecodeBase58Address(t *testing.T) {
 	as2 = as + "000"
 	_, err = DecodeBase58Address(as2)
 	require.Error(t, err)
+
+	// null address is invalid
+	null := "1111111111111111111111111"
+	_, err = DecodeBase58Address(null)
+	require.Error(t, err)
+	require.Equal(t, ErrAddressInvalidChecksum, err)
 }
 
 func TestAddressFromBytes(t *testing.T) {

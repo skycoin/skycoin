@@ -4,7 +4,7 @@ import (
 	"errors"
 	"log"
 
-	"github.com/skycoin/skycoin/src/cipher/base58"
+	"github.com/SkycoinProject/skycoin/src/cipher/base58"
 )
 
 var (
@@ -90,7 +90,7 @@ func MustAddressFromSecKey(secKey SecKey) Address {
 
 // DecodeBase58Address creates an Address from its base58 encoding
 func DecodeBase58Address(addr string) (Address, error) {
-	b, err := base58.Base582Hex(addr)
+	b, err := base58.Decode(addr)
 	if err != nil {
 		return Address{}, err
 	}
@@ -169,11 +169,8 @@ func (addr Address) Verify(pubKey PubKey) error {
 }
 
 // String address as Base58 encoded string
-// Returns address as printable
-// version is first byte in binary format
-// in printed address its key, version, checksum
 func (addr Address) String() string {
-	return string(base58.Hex2Base58(addr.Bytes()))
+	return string(base58.Encode(addr.Bytes()))
 }
 
 // Checksum returns Address Checksum which is the first 4 bytes of sha256(key+version)

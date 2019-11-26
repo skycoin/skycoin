@@ -1,5 +1,3 @@
-// build ignore
-
 package gnet
 
 import (
@@ -14,7 +12,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/SkycoinProject/skycoin/src/util/logging"
 )
 
 const (
@@ -620,7 +618,7 @@ func TestConnectionReadLoopSetReadDeadlineFailed(t *testing.T) {
 
 func TestConnectionReadLoopInvalidMessageLength(t *testing.T) {
 	cfg := newTestConfig()
-	cfg.MaxMessageLength = 1
+	cfg.MaxIncomingMessageLength = 1
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
@@ -713,6 +711,9 @@ func TestConnectionReadLoopTerminates(t *testing.T) {
 }
 
 func TestProcessConnectionBuffers(t *testing.T) {
+	assertIsMessage(t, &DummyMessage{})
+	assertIsMessage(t, &ErrorMessage{})
+
 	resetHandler()
 	EraseMessages()
 	RegisterMessage(DummyPrefix, DummyMessage{})
@@ -816,7 +817,7 @@ func TestProcessConnectionBuffers(t *testing.T) {
 		t.Fatal("disconnect did not happen, would block")
 	}
 
-	// Sending a length > MaxMessageLength should cause a disconnect
+	// Sending a length > MaxIncomingMessageLength should cause a disconnect
 	conn, err = net.Dial("tcp", addr)
 	require.NoError(t, err)
 
@@ -824,7 +825,8 @@ func TestProcessConnectionBuffers(t *testing.T) {
 	require.NotNil(t, c)
 
 	t.Logf("Pushing message with too large length")
-	p.Config.MaxMessageLength = 4
+	p.Config.MaxIncomingMessageLength = 4
+	p.Config.MaxOutgoingMessageLength = 4
 	disconnectCalled = make(chan struct{})
 	p.Config.DisconnectCallback = func(addr string, id uint64, r DisconnectReason) {
 		defer close(disconnectCalled)

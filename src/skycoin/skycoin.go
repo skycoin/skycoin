@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"runtime/pprof"
 	"sync"
 	"time"
@@ -18,18 +19,20 @@ import (
 	"github.com/blang/semver"
 	"github.com/toqueteos/webbrowser"
 
-	"github.com/skycoin/skycoin/src/api"
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/params"
-	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/util/apputil"
-	"github.com/skycoin/skycoin/src/util/certutil"
-	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/visor"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
-	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/api"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/daemon"
+	"github.com/SkycoinProject/skycoin/src/kvstorage"
+	"github.com/SkycoinProject/skycoin/src/params"
+	"github.com/SkycoinProject/skycoin/src/readable"
+	"github.com/SkycoinProject/skycoin/src/util/apputil"
+	"github.com/SkycoinProject/skycoin/src/util/certutil"
+	"github.com/SkycoinProject/skycoin/src/util/droplet"
+	"github.com/SkycoinProject/skycoin/src/util/logging"
+	"github.com/SkycoinProject/skycoin/src/visor"
+	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
+	"github.com/SkycoinProject/skycoin/src/wallet"
 )
 
 var (
@@ -49,7 +52,11 @@ type Coin struct {
 // Run starts the node
 func (c *Coin) Run() error {
 	var db *dbutil.DB
+	var w *wallet.Service
+	var v *visor.Visor
 	var d *daemon.Daemon
+	var s *kvstorage.Manager
+	var gw *api.Gateway
 	var webInterface *api.Server
 	var retErr error
 	errC := make(chan error, 10)
@@ -131,11 +138,17 @@ func (c *Coin) Run() error {
 	}
 
 	c.logger.Infof("App version: %s", appVersion)
+	c.logger.Infof("OS: %s", runtime.GOOS)
+	c.logger.Infof("Arch: %s", runtime.GOARCH)
+
+	wconf := c.ConfigureWallet()
+	dconf := c.ConfigureDaemon()
+	vconf := c.ConfigureVisor()
+	sconf := c.ConfigureStorage()
 
 	// Open the database
-	dconf := c.ConfigureDaemon()
-	c.logger.Infof("Opening database %s", dconf.Visor.DBPath)
-	db, err = visor.OpenDB(dconf.Visor.DBPath, c.config.Node.DBReadOnly)
+	c.logger.Infof("Opening database %s", c.config.Node.DBPath)
+	db, err = visor.OpenDB(c.config.Node.DBPath, c.config.Node.DBReadOnly)
 	if err != nil {
 		c.logger.Errorf("Database failed to open: %v. Is another skycoin instance running?", err)
 		return err
@@ -173,7 +186,7 @@ func (c *Coin) Run() error {
 			c.logger.Info("Checking database and resetting if corrupted")
 			if newDB, err := visor.ResetCorruptDB(db, c.config.Node.blockchainPubkey, quit); err != nil {
 				if err != visor.ErrVerifyStopped {
-					c.logger.Errorf("visor.ResetCorruptDB failed: %v", err)
+					c.logger.WithError(err).Error("visor.ResetCorruptDB failed")
 					retErr = err
 				}
 				goto earlyShutdown
@@ -184,7 +197,7 @@ func (c *Coin) Run() error {
 			c.logger.Info("Checking database")
 			if err := visor.CheckDatabase(db, c.config.Node.blockchainPubkey, quit); err != nil {
 				if err != visor.ErrVerifyStopped {
-					c.logger.Errorf("visor.CheckDatabase failed: %v", err)
+					c.logger.WithError(err).Error("visor.CheckDatabase failed")
 					retErr = err
 				}
 				goto earlyShutdown
@@ -205,30 +218,56 @@ func (c *Coin) Run() error {
 	c.logger.Infof("Max transaction size for user transactions is %d", params.UserVerifyTxn.MaxTransactionSize)
 	c.logger.Infof("Max decimals for user transactions is %d", params.UserVerifyTxn.MaxDropletPrecision)
 
-	d, err = daemon.NewDaemon(dconf, db)
+	c.logger.Info("wallet.NewService")
+	w, err = wallet.NewService(wconf)
 	if err != nil {
-		c.logger.Error(err)
+		c.logger.WithError(err).Error("wallet.NewService failed")
 		retErr = err
 		goto earlyShutdown
 	}
 
+	c.logger.Info("visor.New")
+	v, err = visor.New(vconf, db, w)
+	if err != nil {
+		c.logger.WithError(err).Error("visor.New failed")
+		retErr = err
+		goto earlyShutdown
+	}
+
+	c.logger.Info("daemon.New")
+	d, err = daemon.New(dconf, v)
+	if err != nil {
+		c.logger.WithError(err).Error("daemon.New failed")
+		retErr = err
+		goto earlyShutdown
+	}
+
+	c.logger.Info("kvstorage.NewManager")
+	s, err = kvstorage.NewManager(sconf)
+	if err != nil {
+		c.logger.WithError(err).Error("kvstorage.NewManager failed")
+		retErr = err
+		goto earlyShutdown
+	}
+
+	c.logger.Info("api.NewGateway")
+	gw = api.NewGateway(d, v, w, s)
+
 	if c.config.Node.WebInterface {
-		webInterface, err = c.createGUI(d, host)
+		webInterface, err = c.createGUI(gw, host)
 		if err != nil {
-			c.logger.Error(err)
+			c.logger.WithError(err).Error("c.createGUI failed")
 			retErr = err
 			goto earlyShutdown
 		}
 
 		fullAddress = fmt.Sprintf("%s://%s", scheme, webInterface.Addr())
 		c.logger.Critical().Infof("Full address: %s", fullAddress)
-		if c.config.Node.PrintWebInterfaceAddress {
-			fmt.Println(fullAddress)
-		}
 	}
 
-	if err := d.Init(); err != nil {
-		c.logger.Error(err)
+	c.logger.Info("visor.Init")
+	if err := v.Init(); err != nil {
+		c.logger.WithError(err).Error("visor.Init failed")
 		retErr = err
 		goto earlyShutdown
 	}
@@ -237,8 +276,9 @@ func (c *Coin) Run() error {
 	go func() {
 		defer wg.Done()
 
+		c.logger.Info("daemon.Run")
 		if err := d.Run(); err != nil {
-			c.logger.Error(err)
+			c.logger.WithError(err).Error("daemon.Run failed")
 			errC <- err
 		}
 	}()
@@ -250,9 +290,10 @@ func (c *Coin) Run() error {
 		go func() {
 			defer wg.Done()
 
+			c.logger.Info("webInterface.Serve")
 			if err := webInterface.Serve(); err != nil {
 				close(cancelLaunchBrowser)
-				c.logger.Error(err)
+				c.logger.WithError(err).Error("webInterface.Serve failed")
 				errC <- err
 			}
 		}()
@@ -261,13 +302,13 @@ func (c *Coin) Run() error {
 			go func() {
 				select {
 				case <-cancelLaunchBrowser:
-					c.logger.Warning("Browser launching cancelled")
+					c.logger.Warning("Browser launching canceled")
 
 					// Wait a moment just to make sure the http interface is up
 				case <-time.After(time.Millisecond * 100):
 					c.logger.Infof("Launching System Browser with %s", fullAddress)
 					if err := webbrowser.Open(fullAddress); err != nil {
-						c.logger.Error(err)
+						c.logger.WithError(err).Error("webbrowser.Open failed")
 					}
 				}
 			}()
@@ -277,7 +318,7 @@ func (c *Coin) Run() error {
 	select {
 	case <-quit:
 	case retErr = <-errC:
-		c.logger.Error(retErr)
+		c.logger.WithError(err).Error("Received error from errC (something prior has failed)")
 	}
 
 	c.logger.Info("Shutting down...")
@@ -323,7 +364,7 @@ func NewCoin(config Config, logger *logging.Logger) *Coin {
 func (c *Coin) initLogFile() (*os.File, error) {
 	logDir := filepath.Join(c.config.Node.DataDirectory, "logs")
 	if err := createDirIfNotExist(logDir); err != nil {
-		c.logger.Errorf("createDirIfNotExist(%s) failed: %v", logDir, err)
+		c.logger.WithError(err).Errorf("createDirIfNotExist(%s) failed", logDir)
 		return nil, fmt.Errorf("createDirIfNotExist(%s) failed: %v", logDir, err)
 	}
 
@@ -333,7 +374,7 @@ func (c *Coin) initLogFile() (*os.File, error) {
 
 	f, err := os.OpenFile(logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
-		c.logger.Errorf("os.OpenFile(%s) failed: %v", logfile, err)
+		c.logger.WithError(err).Errorf("os.OpenFile(%s) failed", logfile)
 		return nil, err
 	}
 
@@ -343,15 +384,75 @@ func (c *Coin) initLogFile() (*os.File, error) {
 	return f, nil
 }
 
+// ConfigureVisor sets the visor config values
+func (c *Coin) ConfigureVisor() visor.Config {
+	vc := visor.NewConfig()
+
+	vc.Distribution = params.MainNetDistribution
+
+	vc.IsBlockPublisher = c.config.Node.RunBlockPublisher
+	vc.Arbitrating = c.config.Node.RunBlockPublisher
+
+	vc.BlockchainPubkey = c.config.Node.blockchainPubkey
+	vc.BlockchainSeckey = c.config.Node.blockchainSeckey
+
+	vc.UnconfirmedVerifyTxn = c.config.Node.UnconfirmedVerifyTxn
+	vc.CreateBlockVerifyTxn = c.config.Node.CreateBlockVerifyTxn
+	vc.MaxBlockTransactionsSize = c.config.Node.MaxBlockTransactionsSize
+
+	vc.GenesisAddress = c.config.Node.genesisAddress
+	vc.GenesisSignature = c.config.Node.genesisSignature
+	vc.GenesisTimestamp = c.config.Node.GenesisTimestamp
+	vc.GenesisCoinVolume = c.config.Node.GenesisCoinVolume
+
+	return vc
+}
+
+// ConfigureWallet sets the wallet config values
+func (c *Coin) ConfigureWallet() wallet.Config {
+	wc := wallet.NewConfig()
+
+	wc.WalletDir = c.config.Node.WalletDirectory
+	_, wc.EnableWalletAPI = c.config.Node.enabledAPISets[api.EndpointsWallet]
+	_, wc.EnableSeedAPI = c.config.Node.enabledAPISets[api.EndpointsInsecureWalletSeed]
+
+	// Initialize wallet default crypto type
+	cryptoType, err := wallet.CryptoTypeFromString(c.config.Node.WalletCryptoType)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	wc.CryptoType = cryptoType
+
+	bc := c.config.Node.Fiber.Bip44Coin
+	wc.Bip44Coin = &bc
+
+	return wc
+}
+
+// ConfigureStorage sets the key-value storage config values
+func (c *Coin) ConfigureStorage() kvstorage.Config {
+	sc := kvstorage.NewConfig()
+
+	sc.StorageDir = c.config.Node.KVStorageDirectory
+	_, sc.EnableStorageAPI = c.config.Node.enabledAPISets[api.EndpointsStorage]
+	sc.EnabledStorages = c.config.Node.EnabledStorageTypes
+
+	return sc
+}
+
 // ConfigureDaemon sets the daemon config values
 func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc := daemon.NewConfig()
 
 	dc.Pool.DefaultConnections = c.config.Node.DefaultConnections
 	dc.Pool.MaxDefaultPeerOutgoingConnections = c.config.Node.MaxDefaultPeerOutgoingConnections
+	dc.Pool.MaxIncomingMessageLength = c.config.Node.MaxIncomingMessageLength
+	dc.Pool.MaxOutgoingMessageLength = c.config.Node.MaxOutgoingMessageLength
 
 	dc.Pex.DataDirectory = c.config.Node.DataDirectory
 	dc.Pex.Disabled = c.config.Node.DisablePEX
+	dc.Pex.NetworkDisabled = c.config.Node.DisableNetworking
 	dc.Pex.Max = c.config.Node.PeerlistSize
 	dc.Pex.DownloadPeerList = c.config.Node.DownloadPeerList
 	dc.Pex.PeerListURL = c.config.Node.PeerListURL
@@ -359,6 +460,9 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Pex.CustomPeersFile = c.config.Node.CustomPeersFile
 	dc.Pex.DefaultConnections = c.config.Node.DefaultConnections
 
+	dc.Daemon.MaxOutgoingMessageLength = uint64(c.config.Node.MaxOutgoingMessageLength)
+	dc.Daemon.MaxIncomingMessageLength = uint64(c.config.Node.MaxIncomingMessageLength)
+	dc.Daemon.MaxBlockTransactionsSize = c.config.Node.MaxBlockTransactionsSize
 	dc.Daemon.DefaultConnections = c.config.Node.DefaultConnections
 	dc.Daemon.DisableOutgoingConnections = c.config.Node.DisableOutgoingConnections
 	dc.Daemon.DisableIncomingConnections = c.config.Node.DisableIncomingConnections
@@ -371,6 +475,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Daemon.DataDirectory = c.config.Node.DataDirectory
 	dc.Daemon.LogPings = !c.config.Node.DisablePingPong
 	dc.Daemon.BlockchainPubkey = c.config.Node.blockchainPubkey
+	dc.Daemon.GenesisHash = c.config.Node.genesisHash
 	dc.Daemon.UserAgent = c.config.Node.userAgent
 	dc.Daemon.UnconfirmedVerifyTxn = c.config.Node.UnconfirmedVerifyTxn
 
@@ -378,60 +483,31 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 		c.config.Node.OutgoingConnectionsRate = time.Millisecond
 	}
 	dc.Daemon.OutgoingRate = c.config.Node.OutgoingConnectionsRate
-	dc.Visor.IsBlockPublisher = c.config.Node.RunBlockPublisher
-
-	dc.Visor.BlockchainPubkey = c.config.Node.blockchainPubkey
-	dc.Visor.BlockchainSeckey = c.config.Node.blockchainSeckey
-
-	dc.Visor.UnconfirmedVerifyTxn = c.config.Node.UnconfirmedVerifyTxn
-	dc.Visor.CreateBlockVerifyTxn = c.config.Node.CreateBlockVerifyTxn
-	dc.Visor.MaxBlockSize = c.config.Node.MaxBlockSize
-
-	dc.Visor.GenesisAddress = c.config.Node.genesisAddress
-	dc.Visor.GenesisSignature = c.config.Node.genesisSignature
-	dc.Visor.GenesisTimestamp = c.config.Node.GenesisTimestamp
-	dc.Visor.GenesisCoinVolume = c.config.Node.GenesisCoinVolume
-	dc.Visor.DBPath = c.config.Node.DBPath
-	dc.Visor.Arbitrating = c.config.Node.Arbitrating
-	dc.Visor.WalletDirectory = c.config.Node.WalletDirectory
-	_, dc.Visor.EnableWalletAPI = c.config.Node.enabledAPISets[api.EndpointsWallet]
-	_, dc.Visor.EnableSeedAPI = c.config.Node.enabledAPISets[api.EndpointsInsecureWalletSeed]
-
-	_, dc.Gateway.EnableWalletAPI = c.config.Node.enabledAPISets[api.EndpointsWallet]
-	_, dc.Gateway.EnableSpendMethod = c.config.Node.enabledAPISets[api.EndpointsDeprecatedWalletSpend]
-
-	// Initialize wallet default crypto type
-	cryptoType, err := wallet.CryptoTypeFromString(c.config.Node.WalletCryptoType)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	dc.Visor.WalletCryptoType = cryptoType
 
 	return dc
 }
 
-func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
+func (c *Coin) createGUI(gw *api.Gateway, host string) (*api.Server, error) {
 	config := api.Config{
-		StaticDir:            c.config.Node.GUIDirectory,
-		DisableCSRF:          c.config.Node.DisableCSRF,
-		DisableCSP:           c.config.Node.DisableCSP,
-		EnableJSON20RPC:      c.config.Node.RPCInterface,
-		EnableGUI:            c.config.Node.EnableGUI,
-		EnableUnversionedAPI: c.config.Node.EnableUnversionedAPI,
-		ReadTimeout:          c.config.Node.HTTPReadTimeout,
-		WriteTimeout:         c.config.Node.HTTPWriteTimeout,
-		IdleTimeout:          c.config.Node.HTTPIdleTimeout,
-		EnabledAPISets:       c.config.Node.enabledAPISets,
-		HostWhitelist:        c.config.Node.hostWhitelist,
+		StaticDir:          c.config.Node.GUIDirectory,
+		DisableCSRF:        c.config.Node.DisableCSRF,
+		DisableHeaderCheck: c.config.Node.DisableHeaderCheck,
+		DisableCSP:         c.config.Node.DisableCSP,
+		EnableGUI:          c.config.Node.EnableGUI,
+		ReadTimeout:        c.config.Node.HTTPReadTimeout,
+		WriteTimeout:       c.config.Node.HTTPWriteTimeout,
+		IdleTimeout:        c.config.Node.HTTPIdleTimeout,
+		EnabledAPISets:     c.config.Node.enabledAPISets,
+		HostWhitelist:      c.config.Node.hostWhitelist,
 		Health: api.HealthConfig{
 			BuildInfo: readable.BuildInfo{
 				Version: c.config.Build.Version,
 				Commit:  c.config.Build.Commit,
 				Branch:  c.config.Build.Branch,
 			},
-			CoinName:        c.config.Node.CoinName,
+			Fiber:           c.config.Node.Fiber,
 			DaemonUserAgent: c.config.Node.userAgent,
+			BlockPublisher:  c.config.Node.RunBlockPublisher,
 		},
 		Username: c.config.Node.WebInterfaceUsername,
 		Password: c.config.Node.WebInterfacePassword,
@@ -442,14 +518,14 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 		// Verify cert/key parameters, and if neither exist, create them
 		exists, err := checkCertFiles(c.config.Node.WebInterfaceCert, c.config.Node.WebInterfaceKey)
 		if err != nil {
-			c.logger.Errorf("checkCertFiles failed: %v", err)
+			c.logger.WithError(err).Error("checkCertFiles failed")
 			return nil, err
 		}
 
 		if !exists {
 			c.logger.Infof("Autogenerating HTTP certificate and key files %s, %s", c.config.Node.WebInterfaceCert, c.config.Node.WebInterfaceKey)
 			if err := createCertFiles(c.config.Node.WebInterfaceCert, c.config.Node.WebInterfaceKey); err != nil {
-				c.logger.Errorf("createCertFiles failed: %v", err)
+				c.logger.WithError(err).Error("createCertFiles failed")
 				return nil, err
 			}
 
@@ -457,16 +533,16 @@ func (c *Coin) createGUI(d *daemon.Daemon, host string) (*api.Server, error) {
 			c.logger.Infof("Created key file %s", c.config.Node.WebInterfaceKey)
 		}
 
-		s, err = api.CreateHTTPS(host, config, d.Gateway, c.config.Node.WebInterfaceCert, c.config.Node.WebInterfaceKey)
+		s, err = api.CreateHTTPS(host, config, gw, c.config.Node.WebInterfaceCert, c.config.Node.WebInterfaceKey)
 		if err != nil {
-			c.logger.Errorf("Failed to start web GUI: %v", err)
+			c.logger.WithError(err).Error("Failed to start web failed")
 			return nil, err
 		}
 	} else {
 		var err error
-		s, err = api.Create(host, config, d.Gateway)
+		s, err = api.Create(host, config, gw)
 		if err != nil {
-			c.logger.Errorf("Failed to start web GUI: %v", err)
+			c.logger.WithError(err).Error("Failed to start web failed")
 			return nil, err
 		}
 	}
@@ -536,44 +612,38 @@ func (c *Coin) ParseConfig() error {
 	return c.config.postProcess()
 }
 
-// InitTransaction creates the initialize transaction
-func InitTransaction(UxID string, genesisSecKey cipher.SecKey) coin.Transaction {
-	var tx coin.Transaction
+// InitTransaction creates the genesis transaction
+func InitTransaction(uxID string, genesisSecKey cipher.SecKey, dist params.Distribution) coin.Transaction {
+	dist.MustValidate()
 
-	output := cipher.MustSHA256FromHex(UxID)
-	tx.PushInput(output)
+	var txn coin.Transaction
 
-	addrs := params.GetDistributionAddresses()
-
-	if len(addrs) != 100 {
-		log.Panic("Should have 100 distribution addresses")
+	output := cipher.MustSHA256FromHex(uxID)
+	if err := txn.PushInput(output); err != nil {
+		log.Panic(err)
 	}
 
-	// 1 million per address, measured in droplets
-	if params.DistributionAddressInitialBalance != 1e6 {
-		log.Panic("params.DistributionAddressInitialBalance expected to be 1e6*1e6")
-	}
-
-	for i := range addrs {
-		addr := cipher.MustDecodeBase58Address(addrs[i])
-		tx.PushOutput(addr, params.DistributionAddressInitialBalance*1e6, 1)
+	for _, addr := range dist.AddressesDecoded() {
+		if err := txn.PushOutput(addr, dist.AddressInitialBalance()*droplet.Multiplier, 1); err != nil {
+			log.Panic(err)
+		}
 	}
 
 	seckeys := make([]cipher.SecKey, 1)
 	seckey := genesisSecKey.Hex()
 	seckeys[0] = cipher.MustSecKeyFromHex(seckey)
-	tx.SignInputs(seckeys)
+	txn.SignInputs(seckeys)
 
-	if err := tx.UpdateHeader(); err != nil {
+	if err := txn.UpdateHeader(); err != nil {
 		log.Panic(err)
 	}
 
-	if err := tx.Verify(); err != nil {
+	if err := txn.Verify(); err != nil {
 		log.Panic(err)
 	}
 
-	log.Printf("signature= %s", tx.Sigs[0].Hex())
-	return tx
+	log.Printf("signature= %s", txn.Sigs[0].Hex())
+	return txn
 }
 
 func createDirIfNotExist(dir string) error {

@@ -13,14 +13,15 @@ import (
 	_ "net/http/pprof"
 	"os"
 
-	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/skycoin"
-	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/SkycoinProject/skycoin/src/fiber"
+	"github.com/SkycoinProject/skycoin/src/readable"
+	"github.com/SkycoinProject/skycoin/src/skycoin"
+	"github.com/SkycoinProject/skycoin/src/util/logging"
 )
 
 var (
 	// Version of the node. Can be set by -ldflags
-	Version = "0.25.0"
+	Version = "0.27.0"
 	// Commit ID. Can be set by -ldflags
 	Commit = ""
 	// Branch name. Can be set by -ldflags
@@ -56,26 +57,36 @@ var (
 	{{- end}}
 	}
 
-	nodeConfig = skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
-		CoinName:                       CoinName,
-		GenesisSignatureStr:            GenesisSignatureStr,
-		GenesisAddressStr:              GenesisAddressStr,
-		GenesisCoinVolume:              GenesisCoinVolume,
-		GenesisTimestamp:               GenesisTimestamp,
-		BlockchainPubkeyStr:            BlockchainPubkeyStr,
-		BlockchainSeckeyStr:            BlockchainSeckeyStr,
-		DefaultConnections:             DefaultConnections,
-		PeerListURL:                    "{{.PeerListURL}}",
-		Port:                           {{.Port}},
-		WebInterfacePort:               {{.WebInterfacePort}},
-		DataDirectory:                  "{{.DataDirectory}}",
+	nodeConfig = skycoin.NewNodeConfig(ConfigMode, fiber.NodeConfig{
+		CoinName:            CoinName,
+		GenesisSignatureStr: GenesisSignatureStr,
+		GenesisAddressStr:   GenesisAddressStr,
+		GenesisCoinVolume:   GenesisCoinVolume,
+		GenesisTimestamp:    GenesisTimestamp,
+		BlockchainPubkeyStr: BlockchainPubkeyStr,
+		BlockchainSeckeyStr: BlockchainSeckeyStr,
+		DefaultConnections:  DefaultConnections,
+		PeerListURL:         "{{.PeerListURL}}",
+		Port:                {{.Port}},
+		WebInterfacePort:    {{.WebInterfacePort}},
+		DataDirectory:       "{{.DataDirectory}}",
+
 		UnconfirmedBurnFactor:          {{.UnconfirmedBurnFactor}},
 		UnconfirmedMaxTransactionSize:  {{.UnconfirmedMaxTransactionSize}},
 		UnconfirmedMaxDropletPrecision: {{.UnconfirmedMaxDropletPrecision}},
 		CreateBlockBurnFactor:          {{.CreateBlockBurnFactor}},
 		CreateBlockMaxTransactionSize:  {{.CreateBlockMaxTransactionSize}},
 		CreateBlockMaxDropletPrecision: {{.CreateBlockMaxDropletPrecision}},
-		MaxBlockSize:                   {{.MaxBlockSize}},
+		MaxBlockTransactionsSize:       {{.MaxBlockTransactionsSize}},
+
+		DisplayName:           "{{.DisplayName}}",
+		Ticker:                "{{.Ticker}}",
+		CoinHoursName:         "{{.CoinHoursName}}",
+		CoinHoursNameSingular: "{{.CoinHoursNameSingular}}",
+		CoinHoursTicker:       "{{.CoinHoursTicker}}",
+		ExplorerURL:           "{{.ExplorerURL}}",
+		VersionURL:            "{{.VersionURL}}",
+		Bip44Coin:             {{.Bip44Coin}},
 	})
 
 	parseFlags = true

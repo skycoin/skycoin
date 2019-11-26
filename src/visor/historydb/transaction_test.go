@@ -8,10 +8,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/testutil"
+	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 )
 
 // set rand seed.
@@ -27,25 +27,30 @@ func TestTransactionGet(t *testing.T) {
 		txns = append(txns, makeTransaction(t))
 	}
 
+	txnHashes := make([]cipher.SHA256, len(txns))
+	for i, x := range txns {
+		txnHashes[i] = x.Hash()
+	}
+
 	testCases := []struct {
 		name   string
 		hash   cipher.SHA256
 		expect *Transaction
 	}{
 		{
-			"get first",
-			txns[0].Hash(),
-			&txns[0],
+			name:   "get first",
+			hash:   txnHashes[0],
+			expect: &txns[0],
 		},
 		{
-			"get second",
-			txns[1].Hash(),
-			&txns[1],
+			name:   "get second",
+			hash:   txnHashes[1],
+			expect: &txns[1],
 		},
 		{
-			"not exist",
-			txns[2].Hash(),
-			nil,
+			name:   "not exist",
+			hash:   txnHashes[2],
+			expect: nil,
 		},
 	}
 
@@ -84,6 +89,11 @@ func TestTransactionGetArray(t *testing.T) {
 		txns = append(txns, makeTransaction(t))
 	}
 
+	txnHashes := make([]cipher.SHA256, len(txns))
+	for i, x := range txns {
+		txnHashes[i] = x.Hash()
+	}
+
 	testCases := []struct {
 		name   string
 		hashes []cipher.SHA256
@@ -93,7 +103,7 @@ func TestTransactionGetArray(t *testing.T) {
 		{
 			name: "get one",
 			hashes: []cipher.SHA256{
-				txns[0].Hash(),
+				txnHashes[0],
 			},
 			expect: txns[:1],
 		},
@@ -101,8 +111,8 @@ func TestTransactionGetArray(t *testing.T) {
 		{
 			name: "get two",
 			hashes: []cipher.SHA256{
-				txns[0].Hash(),
-				txns[1].Hash(),
+				txnHashes[0],
+				txnHashes[1],
 			},
 			expect: txns[:2],
 		},
@@ -110,9 +120,9 @@ func TestTransactionGetArray(t *testing.T) {
 		{
 			name: "get all",
 			hashes: []cipher.SHA256{
-				txns[0].Hash(),
-				txns[1].Hash(),
-				txns[2].Hash(),
+				txnHashes[0],
+				txnHashes[1],
+				txnHashes[2],
 			},
 			expect: txns[:3],
 		},
@@ -120,7 +130,7 @@ func TestTransactionGetArray(t *testing.T) {
 		{
 			name: "not exist",
 			hashes: []cipher.SHA256{
-				txns[3].Hash(),
+				txnHashes[3],
 			},
 			err: errors.New("Transaction not found"),
 		},
@@ -161,11 +171,15 @@ func TestTransactionGetArray(t *testing.T) {
 func makeTransaction(t *testing.T) Transaction {
 	txn := Transaction{}
 	ux, s := makeUxOutWithSecret(t)
-	txn.Txn.PushInput(ux.Hash())
+
+	err := txn.Txn.PushInput(ux.Hash())
+	require.NoError(t, err)
+	err = txn.Txn.PushOutput(makeAddress(), 1e6, 50)
+	require.NoError(t, err)
+	err = txn.Txn.PushOutput(makeAddress(), 5e6, 50)
+	require.NoError(t, err)
 	txn.Txn.SignInputs([]cipher.SecKey{s})
-	txn.Txn.PushOutput(makeAddress(), 1e6, 50)
-	txn.Txn.PushOutput(makeAddress(), 5e6, 50)
-	err := txn.Txn.UpdateHeader()
+	err = txn.Txn.UpdateHeader()
 	require.NoError(t, err)
 	return txn
 }

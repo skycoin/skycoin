@@ -2,14 +2,10 @@
 
 API default service port is `6420`. However, if running the desktop or standalone releases from the website, the port is randomized by default.
 
-A REST API implemented in Go is available, see [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/api#Client).
+A REST API implemented in Go is available,
+see [Skycoin REST API Client Godoc](https://godoc.org/github.com/SkycoinProject/skycoin/src/api#Client).
 
 The API has two versions, `/api/v1` and `/api/v2`.
-Previously, there was no `/api/vx` prefix.
-Starting in application version v0.24.0, the existing endpoints from v0.23.0
-are now prefixed with `/api/v1`. To retain the old endpoints, run the application
-with `-enable-unversioned-api`.  This option will be removed in v0.26.0
-and the `/api/v1` prefix will be required for previously unversioned endpoints.
 
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3,4,5" -->
 
@@ -33,19 +29,25 @@ and the `/api/v1` prefix will be required for previously unversioned endpoints.
 	- [Get wallets](#get-wallets)
 	- [Get wallet folder name](#get-wallet-folder-name)
 	- [Generate wallet seed](#generate-wallet-seed)
-	- [Create a wallet from seed](#create-a-wallet-from-seed)
+	- [Verify wallet Seed](#verify-wallet-seed)
+	- [Create wallet](#create-wallet)
 	- [Generate new address in wallet](#generate-new-address-in-wallet)
-	- [Updates wallet label](#updates-wallet-label)
+	- [Change wallet label](#change-wallet-label)
 	- [Get wallet balance](#get-wallet-balance)
-	- [Spend coins from wallet](#spend-coins-from-wallet)
 	- [Create transaction](#create-transaction)
+	- [Sign transaction](#sign-transaction)
 	- [Unload wallet](#unload-wallet)
 	- [Encrypt wallet](#encrypt-wallet)
 	- [Decrypt wallet](#decrypt-wallet)
 	- [Get wallet seed](#get-wallet-seed)
 	- [Recover encrypted wallet by seed](#recover-encrypted-wallet-by-seed)
+- [Key-value storage APIs](#key-value-storage-apis)
+	- [Get all storage values](#get-all-storage-values)
+	- [Add value to storage](#add-value-to-storage)
+	- [Remove value from storage](#remove-value-from-storage)
 - [Transaction APIs](#transaction-apis)
 	- [Get unconfirmed transactions](#get-unconfirmed-transactions)
+	- [Create transaction from unspent outputs or addresses](#create-transaction-from-unspent-outputs-or-addresses)
 	- [Get transaction info by id](#get-transaction-info-by-id)
 	- [Get raw transaction by id](#get-raw-transaction-by-id)
 	- [Inject raw transaction](#inject-raw-transaction)
@@ -58,8 +60,6 @@ and the `/api/v1` prefix will be required for previously unversioned endpoints.
 	- [Get block by hash or seq](#get-block-by-hash-or-seq)
 	- [Get blocks in specific range](#get-blocks-in-specific-range)
 	- [Get last N blocks](#get-last-n-blocks)
-- [Explorer APIs](#explorer-apis)
-	- [Get address affected transactions](#get-address-affected-transactions)
 - [Uxout APIs](#uxout-apis)
 	- [Get uxout](#get-uxout)
 	- [Get historical unspent outputs for an address](#get-historical-unspent-outputs-for-an-address)
@@ -142,7 +142,7 @@ These API sets are:
 * `PROMETHEUS` - This is the `/api/v2/metrics` method exposing in Prometheus text format the default metrics for Skycoin node application
 * `NET_CTRL` - The `/api/v1/network/connection/disconnect` method, intended for network administration endpoints
 * `INSECURE_WALLET_SEED` - This is the `/api/v1/wallet/seed` endpoint, used to decrypt and return the seed from an encrypted wallet. It is only intended for use by the desktop client.
-* `DEPRECATED_WALLET_SPEND` - This is the `/api/v1/wallet/spend` method which is deprecated and will be removed in v0.26.0
+* `STORAGE` - This is the `/api/v2/data` endpoint, used to interact with the key-value storage.
 
 ## Authentication
 
@@ -235,19 +235,27 @@ Response:
     "csp_enabled": true,
     "wallet_api_enabled": true,
     "gui_enabled": true,
-    "unversioned_api_enabled": false,
-    "json_rpc_enabled": false,
     "user_verify_transaction": {
-        "burn_factor": 2,
+        "burn_factor": 10,
         "max_transaction_size": 32768,
         "max_decimals": 3
     },
     "unconfirmed_verify_transaction": {
-        "burn_factor": 2,
+        "burn_factor": 10,
         "max_transaction_size": 32768,
         "max_decimals": 3
     },
-    "started_at": 1542443907
+    "started_at": 1542443907,
+    "fiber": {
+        "name": "skycoin",
+        "display_name": "Skycoin",
+        "ticker": "SKY",
+        "coin_hours_display_name": "Coin Hours",
+        "coin_hours_display_name_singular": "Coin Hour",
+        "coin_hours_ticker": "SCH",
+        "explorer_url": "https://explorer.skycoin.com",
+        "bip44_coin": 8000
+    }
 }
 ```
 
@@ -415,7 +423,7 @@ The `POST` method can be used if many addresses need to be queried.
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/api/v1/balance\?addrs\=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq,2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6
+curl http://127.0.0.1:6420/api/v1/balance?addrs=7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD,nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq,2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6
 ```
 
 Result:
@@ -598,7 +606,7 @@ Args:
     id: Wallet ID [required]
 ```
 
-Example:
+Example ("deterministic" wallet):
 
 ```sh
 curl http://127.0.0.1:6420/api/v1/wallet?id=2017_11_25_e5fb.wlt
@@ -630,6 +638,51 @@ Result:
     ]
 }
 ```
+
+Example ("bip44" wallet):
+
+```sh
+curl http://127.0.0.1:6420/api/v1/wallet?id=2017_11_25_e5fb.wlt
+```
+
+Result:
+
+```json
+{
+    "meta": {
+        "coin": "skycoin",
+        "filename": "2017_11_25_e5fb.wlt",
+        "label": "test",
+        "type": "bip44",
+        "version": "0.3",
+        "crypto_type": "",
+        "timestamp": 1511640884,
+        "encrypted": false,
+        "bip44_coin": 8000,
+    },
+    "entries": [
+        {
+            "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1",
+            "child_number": 0,
+            "change": 0
+        },
+        {
+            "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
+            "public_key": "02539528248a1a2c4f0b73233491103ca83b40249dac3ae9eee9a10b9f9debd9a3",
+            "child_number": 1,
+            "change": 0
+        },
+        {
+            "address": "8C5icxR9zdkYTZZTVV3cCX7QoK4EkLuK4p",
+            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1",
+            "child_number": 0,
+            "change": 1
+        }
+    ]
+}
+```
+
 
 ### Get unconfirmed transactions of a wallet
 
@@ -856,7 +909,53 @@ Result:
 }
 ```
 
-### Create a wallet from seed
+### Verify wallet Seed
+
+API sets: `WALLET`
+
+```
+URI: /api/v2/wallet/seed/verify
+Method: POST
+Args:
+    seed: seed to be verified
+```
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v2/wallet/seed/verify \
+ -H 'Content-type: application/json' \
+ -d '{ "seed": "nut wife logic sample addict shop before tobacco crisp bleak lawsuit affair" }'
+```
+
+Result:
+
+```json
+{
+    "data": {}
+}
+```
+
+Example (wrong bip39 seed):
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v2/wallet/seed/verify \
+ -H 'Content-type: application/json' \
+ -d '{ "seed": "wrong seed" }'
+```
+
+Result:
+
+```json
+{
+    "error": {
+        "message": "Mnemonic must have 12, 15, 18, 21 or 24 words",
+        "code": 422
+    }
+}
+```
+
+### Create wallet
 
 API sets: `WALLET`
 
@@ -865,18 +964,23 @@ URI: /api/v1/wallet/create
 Method: POST
 Args:
     seed: wallet seed [required]
+    seed-passphrase: wallet seed passphrase [optional, bip44 type wallet only]
+    type: wallet type [required, one of "deterministic", "bip44" or "xpub"]
+    bip44-coin: BIP44 coin type [optional, defaults to 8000 (skycoin's coin type), only valid if type is "bip44"]
+    xpub: xpub key [required for xpub wallets]
     label: wallet label [required]
     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
     encrypt: encrypt wallet [optional, bool value]
     password: wallet password [optional, must be provided if encrypt is true]
 ```
 
-Example:
+Example (deterministic):
 
 ```sh
 curl -X POST http://127.0.0.1:6420/api/v1/wallet/create \
  -H 'Content-Type: application/x-www-form-urlencoded' \
  -d 'seed=$seed' \
+ -d 'type=deterministic' \
  -d 'label=$label' \
  -d 'scan=5' \
  -d 'password=$password'
@@ -891,7 +995,7 @@ Result:
         "filename": "2017_05_09_d554.wlt",
         "label": "test",
         "type": "deterministic",
-        "version": "0.2",
+        "version": "0.3",
         "crypto_type": "",
         "timestamp": 1511640884,
         "encrypted": false
@@ -900,6 +1004,81 @@ Result:
         {
             "address": "y2JeYS4RS8L9GYM7UKdjLRyZanKHXumFoH",
             "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1"
+        }
+    ]
+}
+```
+
+Example (bip44):
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v1/wallet/create \
+ -H 'Content-Type: application/x-www-form-urlencoded' \
+ -d 'seed=$seed' \
+ -d 'seed-passphrase=$seed' \
+ -d 'type=bip44' \
+ -d 'label=$label' \
+ -d 'scan=5' \
+ -d 'password=$password'
+```
+
+Result:
+
+```json
+{
+    "meta": {
+        "coin": "skycoin",
+        "filename": "2017_05_09_d554.wlt",
+        "label": "test",
+        "type": "bip44",
+        "version": "0.3",
+        "crypto_type": "scrypt-chacha20poly1305",
+        "timestamp": 1511640884,
+        "encrypted": true,
+        "bip44_coin": 8000,
+    },
+    "entries": [
+        {
+            "address": "y2JeYS4RS8L9GYM7UKdjLRyZanKHXumFoH",
+            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1",
+            "child_number": 0,
+            "change": 0
+        }
+    ]
+}
+```
+
+Example (xpub):
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v1/wallet/create \
+ -H 'Content-Type: application/x-www-form-urlencoded' \
+ -d 'type=xpub' \
+ -d 'xpub=xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8' \
+ -d 'label=$label' \
+ -d 'scan=5'
+```
+
+Result:
+
+```json
+{
+    "meta": {
+        "coin": "skycoin",
+        "filename": "2017_05_09_d554.wlt",
+        "label": "test",
+        "type": "bip44",
+        "version": "0.4",
+        "crypto_type": "",
+        "timestamp": 1511640884,
+        "encrypted": false,
+        "xpub": "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8"
+    },
+    "entries": [
+        {
+            "address": "y2JeYS4RS8L9GYM7UKdjLRyZanKHXumFoH",
+            "public_key": "0316ff74a8004adf9c71fa99808ee34c3505ee73c5cf82aa301d17817da3ca33b1",
+            "child_number": 0
         }
     ]
 }
@@ -917,6 +1096,8 @@ Args:
     num: the number you want to generate
     password: wallet password
 ```
+
+For `bip44` type wallets, the new addresses will be generated on the `external` chain (`change=0`).
 
 Example:
 
@@ -938,7 +1119,7 @@ Result:
 }
 ```
 
-### Updates wallet label
+### Change wallet label
 
 API sets: `WALLET`
 
@@ -1049,92 +1230,6 @@ Result:
 }
 ```
 
-### Spend coins from wallet
-
-API sets: `DEPRECATED_WALLET_SPEND`
-
-```
-URI: /api/v1/wallet/spend
-Method: POST
-Args:
-    id: wallet id
-    dst: recipient address
-    coins: number of coins to send, in droplets. 1 coin equals 1e6 droplets.
-    password: wallet password.
-Response:
-    balance: new balance of the wallet
-    txn: spent transaction
-    error: an error that may have occured after broadcast the transaction to the network
-           if this field is not empty, the spend succeeded, but the response data could not be prepared
-Statuses:
-    200: successful spend. NOTE: the response may include an "error" field. if this occurs, the spend succeeded
-         but the response data could not be prepared. The client should NOT spend again.
-    400: Invalid query params, wallet lacks enough coin hours, insufficient balance
-    403: Wallet api disabled
-    404: wallet does not exist
-    500: other errors
-```
-
-
-**This endpoint is deprecated, use [POST /wallet/transaction](#create-transaction)**
-
-Example, send 1 coin to `2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc` from wallet `2017_05_09_ea42.wlt`:
-
-```sh
-curl -X POST  http://127.0.0.1:6420/api/v1/wallet/spend \
-  -H 'Content-Type: application/x-www-form-urlencoded' \
-  -d 'id=2017_05_09_ea42.wlt' \
-  -d 'dst=2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc' \
-  -d 'coins=1000000'
-  -d 'password=$password'
-```
-
-Result:
-
-```json
-{
-    "balance": {
-        "confirmed": {
-            "coins": 61000000,
-            "hours": 19667
-        },
-        "predicted": {
-            "coins": 61000000,
-            "hours": 19667
-        }
-    },
-    "txn": {
-        "length": 317,
-        "type": 0,
-        "txid": "89578005d8730fe1789288ee7dea036160a9bd43234fb673baa6abd91289a48b",
-        "inner_hash": "cac977eee019832245724aa643ceff451b9d8b24612b2f6a58177c79e8a4c26f",
-        "sigs": [
-            "3f084a0c750731dd985d3137200f9b5fc3de06069e62edea0cdd3a91d88e56b95aff5104a3e797ab4d6d417861af0c343efb0fff2e5ba9e7cf88ab714e10f38101",
-            "e9a8aa8860d189daf0b1dbfd2a4cc309fc0c7250fa81113aa7258f9603d19727793c1b7533131605db64752aeb9c1f4465198bb1d8dd597213d6406a0a81ed3701"
-        ],
-        "inputs": [
-            "bb89d4ed40d0e6e3a82c12e70b01a4bc240d2cd4f252cfac88235abe61bd3ad0",
-            "170d6fd7be1d722a1969cb3f7d45cdf4d978129c3433915dbaf098d4f075bbfc"
-        ],
-        "outputs": [
-            {
-                "uxid": "ec9cf2f6052bab24ec57847c72cfb377c06958a9e04a077d07b6dd5bf23ec106",
-                "dst": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
-                "coins": "60.000000",
-                "hours": 2458
-            },
-            {
-                "uxid": "be40210601829ba8653bac1d6ecc4049955d97fb490a48c310fd912280422bd9",
-                "dst": "2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc",
-                "coins": "1.000000",
-                "hours": 2458
-            }
-        ]
-    },
-    "error": ""
-}
-```
-
 ### Create transaction
 
 API sets: `WALLET`
@@ -1147,7 +1242,8 @@ Args: JSON body, see examples
 ```
 
 Creates a transaction, returning the transaction preview and the encoded, serialized transaction.
-The `encoded_transaction` can be provided to `POST /api/v1/injectTransaction` to broadcast it to the network.
+The `encoded_transaction` can be provided to `POST /api/v1/injectTransaction` to broadcast it to the network
+if the transaction is fully signed.
 
 The request body includes:
 
@@ -1157,27 +1253,31 @@ The request body includes:
 * A configuration for how destination hours are distributed, either manual or automatic
 * Additional options
 
+`change_address` is optional. If not provided and the wallet is a `deterministic` type
+wallet, then the change address will default to an address from one of the
+unspent outputs being spent as a transaction input.  If the wallet is a `bip44` type
+wallet, then a new, unused change address will be created.
+
 Example request body with manual hours selection type, unencrypted wallet and all wallet addresses may spend:
 
 ```json
 {
-    "ignore_unconfirmed": false,
     "hours_selection": {
         "type": "manual"
     },
-    "wallet": {
-        "id": "foo.wlt"
-    },
+    "wallet_id": "foo.wlt",
     "change_address": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
     "to": [{
         "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
         "coins": "1.032",
-        "hours": 7
+        "hours": "7"
     }, {
         "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
         "coins": "99.2",
-        "hours": 0
-    }]
+        "hours": "0"
+    }],
+    "unsigned": false,
+    "ignore_unconfirmed": false
 }
 ```
 
@@ -1190,11 +1290,9 @@ Example request body with auto hours selection type, encrypted wallet, specified
         "mode": "share",
         "share_factor": "0.5"
     },
-    "wallet": {
-        "id": "foo.wlt",
-        "addresses": ["2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc"],
-        "password": "foobar",
-    },
+    "wallet_id": "foo.wlt",
+    "password": "foobar",
+    "addresses": ["2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc"],
     "change_address": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
     "to": [{
         "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
@@ -1202,7 +1300,9 @@ Example request body with auto hours selection type, encrypted wallet, specified
     }, {
         "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
         "coins": "99.2"
-    }]
+    }],
+    "unsigned": false,
+    "ignore_unconfirmed": false
 }
 ```
 
@@ -1213,20 +1313,20 @@ Example request body with manual hours selection type, unencrypted wallet and sp
     "hours_selection": {
         "type": "manual"
     },
-    "wallet": {
-        "id": "foo.wlt",
-        "unspents": ["519c069a0593e179f226e87b528f60aea72826ec7f99d51279dd8854889ed7e2", "4e4e41996297511a40e2ef0046bd6b7118a8362c1f4f09a288c5c3ea2f4dfb85"]
-    },
+    "wallet_id": "foo.wlt",
+    "unspents": ["519c069a0593e179f226e87b528f60aea72826ec7f99d51279dd8854889ed7e2", "4e4e41996297511a40e2ef0046bd6b7118a8362c1f4f09a288c5c3ea2f4dfb85"],
     "change_address": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
     "to": [{
         "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
         "coins": "1.032",
-        "hours": 7
+        "hours": "7"
     }, {
         "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
         "coins": "99.2",
-        "hours": 0
-    }]
+        "hours": "0"
+    }],
+    "unsigned": false,
+    "ignore_unconfirmed": false
 }
 ```
 
@@ -1301,17 +1401,17 @@ But this is an invalid value for `to`, if `hours_selection.type` is `"auto"`:
 }]
 ```
 
-To control which addresses to spend from, specify `wallet.addresses`.
+To control which addresses to spend from, specify `addresses`.
 A subset of the unspent outputs associated with these addresses will be chosen for spending,
 based upon an internal selection algorithm.
 
-To control which unspent outputs to spend from, specify `wallet.unspents`.
+To control which unspent outputs to spend from, specify `unspents`.
 A subset of these unspent outputs will be chosen for spending,
 based upon an internal selection algorithm.
 
-`wallet.addresses` and `wallets.uxouts` cannot be combined.
+`addresses` and `unspents` cannot be combined.
 
-If neither `wallet.addresses` nor `wallet.unspents` are specified,
+If neither `addresses` nor `unspents` are specified,
 then all outputs associated with all addresses in the wallet may be chosen from to spend with.
 
 `change_address` is optional.
@@ -1326,6 +1426,13 @@ When `true`, the API will ignore unspent outputs that appear as spent in
 a transaction in the unconfirmed transaction pool when building the transaction,
 but not return an error.
 
+`unsigned` is optional and defaults to `false`.
+When `true`, the transaction will not be signed by the wallet.
+An unsigned transaction will be returned.
+The `"txid"` value of the `"transaction"` object will need to be updated
+after signing the transaction.
+The unsigned `encoded_transaction` can be sent to `POST /api/v2/wallet/transaction/sign` for signing.
+
 Example:
 
 ```sh
@@ -1335,16 +1442,14 @@ curl -X POST http://127.0.0.1:6420/api/v1/wallet/transaction -H 'content-type: a
         "mode": "share",
         "share_factor": "0.5"
     },
-    "wallet": {
-        "id": "foo.wlt"
-    },
+    "wallet_id": "foo.wlt",
     "change_address": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
     "to": [{
         "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
-        "coins": "1",
+        "coins": "1"
     }, {
         "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
-        "coins": "8.99",
+        "coins": "8.99"
     }]
 }'
 ```
@@ -1398,6 +1503,102 @@ Result:
     "encoded_transaction": "010100000097dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d010000006120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100010000007068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b0300000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b140420f0000000000ed5600000000000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b1302d8900000000006e0d0300000000000083874350e65e84aa6e06192408951d7aaac7809e10270000000000005c64030000000000"
 }
 ```
+
+
+### Sign transaction
+
+API sets: `WALLET`
+
+```
+URI: /api/v2/wallet/transaction/sign
+Method: POST
+Content-Type: application/json
+Args: JSON body, see examples
+```
+
+Signs an unsigned transaction, returning the transaction with updated signatures and the encoded, serialized transaction.
+The transaction must spendable to be signed. If the inputs of the transaction are not in the unspent pool, signing fails.
+
+Specific transaction inputs may be signed by specifying `sign_indexes`, otherwise all transaction inputs will be signed.
+`sign_indexes` is an array of positional indexes for the transaction's signature array. Indexes start at 0.
+
+Signing an input that is already signed in the transaction is an error.
+
+The `encoded_transaction` can be provided to `POST /api/v1/injectTransaction` to broadcast it to the network, if the transaction is fully signed.
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v2/wallet/transaction/sign -H 'content-type: application/json' -d '{
+    "wallet_id": "foo.wlt",
+    "password": "password",
+    "encoded_transaction": "010100000097dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d010000006120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100010000007068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b0300000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b140420f0000000000ed5600000000000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b1302d8900000000006e0d0300000000000083874350e65e84aa6e06192408951d7aaac7809e10270000000000005c64030000000000"
+}'
+```
+
+Example with `sign_indexes`:
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v2/wallet/transaction/sign -H 'content-type: application/json' -d '{
+    "wallet_id": "foo.wlt",
+    "password": "password",
+    "sign_indexes": [1, 2],
+    "encoded_transaction": "010100000097dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d010000006120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100010000007068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b0300000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b140420f0000000000ed5600000000000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b1302d8900000000006e0d0300000000000083874350e65e84aa6e06192408951d7aaac7809e10270000000000005c64030000000000"
+}'
+```
+
+Result:
+
+```json
+{
+    "data": {
+        "transaction": {
+            "length": 257,
+            "type": 0,
+            "txid": "5f060918d2da468a784ff440fbba80674c829caca355a27ae067f465d0a5e43e",
+            "inner_hash": "97dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d",
+            "fee": "437691",
+            "sigs": [
+                "6120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100"
+            ],
+            "inputs": [
+                {
+                    "uxid": "7068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b",
+                    "address": "g4XmbmVyDnkswsQTSqYRsyoh1YqydDX1wp",
+                    "coins": "10.000000",
+                    "hours": "853667",
+                    "calculated_hours": "862290",
+                    "timestamp": 1524242826,
+                    "block": 23575,
+                    "txid": "ccfbb51e94cb58a619a82502bc986fb028f632df299ce189c2ff2932574a03e7"
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "519c069a0593e179f226e87b528f60aea72826ec7f99d51279dd8854889ed7e2",
+                    "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+                    "coins": "1.000000",
+                    "hours": "22253"
+                },
+                {
+                    "uxid": "4e4e41996297511a40e2ef0046bd6b7118a8362c1f4f09a288c5c3ea2f4dfb85",
+                    "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+                    "coins": "8.990000",
+                    "hours": "200046"
+                },
+                {
+                    "uxid": "fdeb3f77408f39e50a8e3b6803ce2347aac2eba8118c494424f9fa4959bab507",
+                    "address": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
+                    "coins": "0.010000",
+                    "hours": "222300"
+                }
+            ]
+        },
+        "encoded_transaction": "010100000097dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d010000006120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100010000007068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b0300000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b140420f0000000000ed5600000000000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b1302d8900000000006e0d0300000000000083874350e65e84aa6e06192408951d7aaac7809e10270000000000005c64030000000000"
+    }
+}
+```
+
 
 ### Unload wallet
 
@@ -1518,7 +1719,11 @@ Args:
     password: wallet password
 ```
 
-This endpoint only works for encrypted wallets. If the wallet is unencrypted, the seed will not be returned.
+This endpoint only works for encrypted wallets.
+If the wallet is unencrypted, the seed will not be returned.
+
+If the wallet is of type `bip44` and has a seed passphrase, it will be included
+in the response. Otherwise, the seed passphrase will be missing.
 
 Example:
 
@@ -1533,7 +1738,8 @@ Result:
 
 ```json
 {
-    "seed": "your wallet seed"
+    "seed": "your wallet seed",
+    "seed_passphrase": "your optional wallet seed-passphrase"
 }
 ```
 
@@ -1547,17 +1753,18 @@ Method: POST
 Args:
     id: wallet id
     seed: wallet seed
+    seed passphrase: wallet seed passphrase (bip44 wallets only)
     password: [optional] password to encrypt the recovered wallet with
 ```
 
-Recovers an encrypted wallet by providing the wallet seed.
+Recovers an encrypted wallet by providing the wallet seed and optional seed passphrase.
 
 Example:
 
 ```sh
 curl -X POST http://127.0.0.1/api/v2/wallet/recover
  -H 'Content-Type: application/json' \
- -d '{"id":"2017_11_25_e5fb.wlt","seed":"your wallet seed"}'
+ -d '{"id":"2017_11_25_e5fb.wlt","seed":"your wallet seed","seed_passphrase":"your seed passphrase"}'
 ```
 
 Result:
@@ -1587,6 +1794,128 @@ Result:
         ]
     }
 }
+```
+
+## Key-value storage APIs
+
+Endpoints interact with the key-value storage. Each request require the `type` argument to
+be passed.
+
+Currently allowed types:
+
+* `txid`: used for transaction notes
+* `client`: used for generic client data, instead of using e.g. LocalStorage in the browser
+
+### Get all storage values
+
+API sets: `STORAGE`
+
+```
+Method: GET
+URI: /api/v2/data
+Args:
+    type: storage type
+    key [string]: key of the specific value to get
+```
+
+If key is passed, only the specific value will be returned from the storage.
+Otherwise the whole dataset will be returned.
+
+If the key does not exist, a 404 error is returned.
+
+Example:
+
+```sh
+curl http://127.0.0.1:6420/api/v2/data?type=txid
+```
+
+Result:
+
+```json
+{
+    "data": {
+        "key1": "value",
+        "key2": "{\"key\":\"value\"}",
+    }
+}
+```
+
+Example (key):
+
+```sh
+curl http://127.0.0.1:6420/api/v2/data?type=txid&key=key1
+```
+
+Result:
+
+```json
+{
+    "data": "value"
+}
+```
+
+### Add value to storage
+
+API sets: `STORAGE`
+
+```
+Method: POST
+URI: /api/v2/data
+Args: JSON Body, see examples
+```
+
+Sets one or more values by key. Existing values will be overwritten.
+
+Example request body:
+
+```json
+{
+    "type": "txid",
+    "key": "key1",
+    "val": "val1"
+}
+```
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v2/data -H 'Content-Type: application/json' -d '{
+    "type": "txid",
+    "key": "key1",
+    "val": "val1"
+}'
+```
+
+Result:
+
+```json
+{}
+```
+
+### Remove value from storage
+
+API sets: `STORAGE`
+
+```
+Method: DELETE
+URI: /api/v2/data
+Args:
+    type: storage type
+    key: key of the specific value to get
+```
+
+Deletes a value by key. Returns a 404 error if the key does not exist.
+
+Example:
+
+```sh
+curl http://127.0.0.1:6420/api/v2/data?type=txid&key=key1
+```
+
+Result:
+
+```json
+{}
 ```
 
 ## Transaction APIs
@@ -1704,6 +2033,154 @@ Result:
         "is_valid": true
     }
 ]
+```
+
+### Create transaction from unspent outputs or addresses
+
+API sets: `TXN`
+
+```
+URI: /api/v2/transaction
+Method: POST
+Args: JSON Body, see examples
+```
+
+Creates an unsigned transaction from a pool of unspent outputs or addresses.
+`addresses` and `unspents` cannot be combined, and at least one must have elements in their array.
+
+The transaction will choose unspent outputs from the provided pool to construct a transaction
+that satisfies the requested outputs in the `to` field. Not all unspent outputs will necessarily be used
+in the transaction.
+
+If `ignore_unconfirmed` is true, the transaction will not use any outputs which are being spent by an unconfirmed transaction.
+If `ignore_unconfirmed` is false, the endpoint returns an error if any unspent output is spent by an unconfirmed transaction.
+
+`change_address` is optional. If not provided then the change address will
+default to an address from one of the
+unspent outputs being spent as a transaction input.
+
+Refer to `POST /api/v1/wallet/transaction` for creating a transaction from a specific wallet.
+
+`POST /api/v2/wallet/transaction/sign` can be used to sign the transaction with a wallet,
+but `POST /api/v1/wallet/transaction` can create and sign a transaction with a wallet in one operation instead.
+Otherwise, sign the transaction separately from the API.
+
+The transaction must be fully valid and spendable (except for the lack of signatures) or else an error is returned.
+
+Example request body with manual hours selection type, spending from specific addresses, ignoring unconfirmed unspent outputs:
+
+```json
+{
+    "hours_selection": {
+        "type": "manual"
+    },
+    "addresses": ["g4XmbmVyDnkswsQTSqYRsyoh1YqydDX1wp", "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS"],
+    "change_address": "nu7eSpT6hr5P21uzw7bnbxm83B6ywSjHdq",
+    "to": [{
+        "address": "fznGedkc87a8SsW94dBowEv6J7zLGAjT17",
+        "coins": "1.032",
+        "hours": "7"
+    }, {
+        "address": "7cpQ7t3PZZXvjTst8G7Uvs7XH4LeM8fBPD",
+        "coins": "99.2",
+        "hours": "0"
+    }],
+    "ignore_unconfirmed": false
+}
+```
+
+Example request body with auto hours selection type, spending specific uxouts:
+
+```json
+{
+    "hours_selection": {
+        "type": "auto",
+        "mode": "share",
+        "share_factor": "0.5"
+    },
+    "unspents": ["519c069a0593e179f226e87b528f60aea72826ec7f99d51279dd8854889ed7e2", "4e4e41996297511a40e2ef0046bd6b7118a8362c1f4f09a288c5c3ea2f4dfb85"],
+    "change_address": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
+    "to": [{
+        "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+        "coins": "1"
+    }, {
+        "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+        "coins": "8.99"
+    }]
+}
+```
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v2/transaction -H 'Content-Type: application/json' -d '{
+    "hours_selection": {
+        "type": "auto",
+        "mode": "share",
+        "share_factor": "0.5"
+    },
+    "addresses": ["g4XmbmVyDnkswsQTSqYRsyoh1YqydDX1wp"],
+    "change_address": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
+    "to": [{
+        "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+        "coins": "1"
+    }, {
+        "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+        "coins": "8.99"
+    }]
+}'
+```
+
+Result:
+
+```json
+{
+    "data": {
+        "transaction": {
+            "length": 257,
+            "type": 0,
+            "txid": "5f060918d2da468a784ff440fbba80674c829caca355a27ae067f465d0a5e43e",
+            "inner_hash": "97dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d",
+            "fee": "437691",
+            "sigs": [
+                "6120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100"
+            ],
+            "inputs": [
+                {
+                    "uxid": "7068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b",
+                    "address": "g4XmbmVyDnkswsQTSqYRsyoh1YqydDX1wp",
+                    "coins": "10.000000",
+                    "hours": "853667",
+                    "calculated_hours": "862290",
+                    "timestamp": 1524242826,
+                    "block": 23575,
+                    "txid": "ccfbb51e94cb58a619a82502bc986fb028f632df299ce189c2ff2932574a03e7"
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "519c069a0593e179f226e87b528f60aea72826ec7f99d51279dd8854889ed7e2",
+                    "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+                    "coins": "1.000000",
+                    "hours": "22253"
+                },
+                {
+                    "uxid": "4e4e41996297511a40e2ef0046bd6b7118a8362c1f4f09a288c5c3ea2f4dfb85",
+                    "address": "2Huip6Eizrq1uWYqfQEh4ymibLysJmXnWXS",
+                    "coins": "8.990000",
+                    "hours": "200046"
+                },
+                {
+                    "uxid": "fdeb3f77408f39e50a8e3b6803ce2347aac2eba8118c494424f9fa4959bab507",
+                    "address": "uvcDrKc8rHTjxLrU4mPN56Hyh2tR6RvCvw",
+                    "coins": "0.010000",
+                    "hours": "222300"
+                }
+            ]
+        },
+        "encoded_transaction": "010100000097dd062820314c46da0fc18c8c6c10bfab1d5da80c30adc79bbe72e90bfab11d010000006120acebfa61ba4d3970dec5665c3c952374f5d9bbf327674a0b240de62b202b319f61182e2a262b2ca5ef5a592084299504689db5448cd64c04b1f26eb01d9100010000007068bfd0f0f914ea3682d0e5cb3231b75cb9f0776bf9013d79b998d96c93ce2b0300000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b140420f0000000000ed5600000000000000ba2a4ac4a5ce4e03a82d2240ae3661419f7081b1302d8900000000006e0d0300000000000083874350e65e84aa6e06192408951d7aaac7809e10270000000000005c64030000000000"
+    }
+}
 ```
 
 ### Get transaction info by id
@@ -1878,25 +2355,32 @@ Errors:
 
 Broadcasts a hex-encoded, serialized transaction to the network.
 Transactions are serialized with the `encoder` package.
-See [`coin.Transaction.Serialize`](https://godoc.org/github.com/skycoin/skycoin/src/coin#Transaction.Serialize).
+See [`coin.Transaction.Serialize`](https://godoc.org/github.com/SkycoinProject/skycoin/src/coin#Transaction.Serialize).
 
 If there are no available connections, the API responds with a `503 Service Unavailable` error.
 
 Note that in some circumstances the transaction can fail to broadcast but this endpoint will still return successfully.
 This can happen if the node's network has recently become unavailable but its connections have not timed out yet.
 
-Also, in rare cases the transaction may be broadcast but might not be saved to the database. In this case the client
-would have a window of opportunity to attempt a double spend, resulting in unexpected behavior.
-However, if the database save failed, it is likely that a subsequent call to inject transaction will also fail.
-
 The recommended way to handle transaction injections from your system is to inject the transaction then wait
-for the transaction to be confirmed.  Transactions typically confirm quickly, so if it is not confirmed after some
+for the transaction to be confirmed. Transactions typically confirm quickly, so if it is not confirmed after some
 timeout such as 1 minute, the application can continue to retry the broadcast with `/api/v1/resendUnconfirmedTxns`.
 Broadcast only fails without an error if the node's peers disconnect or timeout after the broadcast was initiated,
 which is a network problem that may recover, so rebroadcasting with `/api/v1/resendUnconfirmedTxns` will resolve it,
-or else the network is unavailable.  Any transactions saved to the database will be resent on startup.
+or else the network is unavailable.
+
+`POST /api/v1/transaction` accepts an `ignore_unconfirmed` option to allow transactions to be created without waiting
+for unconfirmed transactions to confirm.
+
+Any unconfirmed transactions found in the database at startup are resent. So, if the network broadcast failed but
+the transaction was saved to the database, when you restart the client, it will resend.
 
 It is safe to retry the injection after a `503` failure.
+
+To disable the network broadcast, add `"no_broadcast": true` to the JSON request body.
+The transaction will be added to the local transaction pool but not be broadcast at the same time.
+Note that transactions from the pool are periodically announced, so this transaction will still
+be announced eventually if the daemon continues running with connectivity for enough time.
 
 Example:
 
@@ -1912,6 +2396,22 @@ Result:
 "3615fc23cc12a5cb9190878a2151d1cf54129ff0cd90e5fc4f4e7debebad6868"
 ```
 
+Example, without broadcasting the transaction:
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v1/injectTransaction -H 'content-type: application/json' -d '{
+    "rawtx":"dc0000000008b507528697b11340f5a3fcccbff031c487bad59d26c2bdaea0cd8a0199a1720100000017f36c9d8bce784df96a2d6848f1b7a8f5c890986846b7c53489eb310090b91143c98fd233830055b5959f60030b3ca08d95f22f6b96ba8c20e548d62b342b5e0001000000ec9cf2f6052bab24ec57847c72cfb377c06958a9e04a077d07b6dd5bf23ec106020000000072116096fe2207d857d18565e848b403807cd825c044840300000000330100000000000000575e472f8c5295e8fa644e9bc5e06ec10351c65f40420f000000000066020000000000000",
+    "no_broadcast": true
+}'
+```
+
+Result:
+
+```json
+"3615fc23cc12a5cb9190878a2151d1cf54129ff0cd90e5fc4f4e7debebad6868"
+```
+
+
 ### Get transactions for addresses
 
 API sets: `READ`
@@ -1920,7 +2420,7 @@ API sets: `READ`
 URI: /api/v1/transactions
 Method: GET, POST
 Args:
-    addrs: Comma seperated addresses [optional, returns all transactions if no address is provided]
+    addrs: Comma separated addresses [optional, returns all transactions if no address is provided]
     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
     verbose: [bool] include verbose transaction input data
 ```
@@ -2254,7 +2754,7 @@ Result:
 
 ### Resend unconfirmed transactions
 
-API sets: `TXN`
+API sets: `TXN`, `WALLET`
 
 ```
 URI: /api/v1/resendUnconfirmedTxns
@@ -2286,7 +2786,7 @@ API sets: `READ`
 URI: /api/v2/transaction/verify
 Method: POST
 Content-Type: application/json
-Args: {"encoded_transaction": "<hex encoded serialized transaction>"}
+Args: {"unsigned": false, "encoded_transaction": "<hex encoded serialized transaction>"}
 ```
 
 If the transaction can be parsed, passes validation and has not been spent, returns `200 OK` with the decoded transaction data,
@@ -2294,6 +2794,11 @@ and the `"confirmed"` field will be `false`.
 
 If the transaction is structurally valid, passes validation but has been spent, returns `422 Unprocessable Entity` with the decoded transaction data,
 and the `"confirmed"` field will be `true`. The `"error"` `"message"` will be `"transaction has been spent"`.
+
+`"unsigned"` may be specified in the request. If `true`, the transaction will report an error if it is fully signed.
+It will not report an error if the transaction is missing at least one signature, and the remainder of the transaction is valid.
+In the response, if the transaction has any unsigned inputs, the `"unsigned"` field will be `true`.
+If the request did not specify `"unsigned"` or specified it as `false`, the response will return an error for an unsigned transaction.
 
 If the transaction can be parsed but does not pass validation, returns `422 Unprocessable Entity` with the decoded transaction data.
 The `"error"` object will be included in the response with the reason why.
@@ -2314,6 +2819,7 @@ Result:
 ```json
 {
     "data": {
+        "unsigned": false,
         "confirmed": false,
         "transaction": {
             "length": 220,
@@ -2371,6 +2877,7 @@ Result:
         "code": 422
     },
     "data": {
+        "unsigned": false,
         "confirmed": true,
         "transaction": {
             "length": 220,
@@ -2380,6 +2887,60 @@ Result:
             "fee": "1042",
             "sigs": [
                 "7635ce932158ec06d94138adc9c9b19113fa4c2279002e6b13dcd0b65e0359f247e8666aa64d7a55378b9cc9983e252f5877a7cb2671c3568ec36579f8df158100"
+            ],
+            "inputs": [
+                {
+                    "uxid": "19ad5059a7fffc0369fc24b31db7e92e12a4ee2c134fb00d336d7495dec7354d",
+                    "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+                    "coins": "2.980000",
+                    "hours": "985",
+                    "calculated_hours": "1554",
+                    "timestamp": 1527080354,
+                    "block": 30074,
+                    "txid": "94204347ef52d90b3c5d6c31a3fced56ae3f74fd8f1f5576931aeb60847f0e59"
+                }
+            ],
+            "outputs": [
+                {
+                    "uxid": "b0911a5fc4dfe4524cdb82f6db9c705f4849af42fcd487a3c4abb2d17573d234",
+                    "address": "SMnCGfpt7zVXm8BkRSFMLeMRA6LUu3Ewne",
+                    "coins": "0.100000",
+                    "hours": "1"
+                },
+                {
+                    "uxid": "a492e6b85a434866be40da7e287bfcf14efce9803ff2fcd9d865c4046e81712a",
+                    "address": "2HTnQe3ZupkG6k8S81brNC3JycGV2Em71F2",
+                    "coins": "2.880000",
+                    "hours": "511"
+                }
+            ]
+        }
+    }
+}
+```
+
+Example of valid, unsigned transaction that has not been spent, with the unsigned parameter set to true in the request:
+
+```sh
+curl -X POST -H 'Content-Type: application/json' http://127.0.0.1:6420/api/v2/transaction/verify \
+-d '{"unsigned": true, "encoded_transaction": "dc000000004fd024d60939fede67065b36adcaaeaf70fc009e3a5bbb8358940ccc8bbb2074010000007635ce932158ec06d94138adc9c9b19113fa4c2279002e6b13dcd0b65e0359f247e8666aa64d7a55378b9cc9983e252f5877a7cb2671c3568ec36579f8df1581000100000019ad5059a7fffc0369fc24b31db7e92e12a4ee2c134fb00d336d7495dec7354d02000000003f0555073e17ea6e45283f0f1115b520d0698d03a086010000000000010000000000000000b90dc595d102c48d3281b47428670210415f585200f22b0000000000ff01000000000000"}'
+```
+
+Result:
+
+```json
+{
+    "data": {
+        "unsigned": true,
+        "confirmed": false,
+        "transaction": {
+            "length": 220,
+            "type": 0,
+            "txid": "82b5fcb182e3d70c285e59332af6b02bf11d8acc0b1407d7d82b82e9eeed94c0",
+            "inner_hash": "4fd024d60939fede67065b36adcaaeaf70fc009e3a5bbb8358940ccc8bbb2074",
+            "fee": "1042",
+            "sigs": [
+                "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
             ],
             "inputs": [
                 {
@@ -2634,7 +3195,7 @@ API sets: `READ`
 
 ```
 URI: /api/v1/blocks
-Method: GET
+Method: GET, POST
 Args:
     start: start seq
     end: end seq
@@ -3236,68 +3797,6 @@ Result:
 }
 ```
 
-## Explorer APIs
-
-### Get address affected transactions
-
-API sets: `READ`
-
-```
-URI: /api/v1/explorer/address
-Method: GET
-Args:
-    address
-```
-
-**Deprecated** Use `/api/v1/transactions?verbose=1&addrs=` instead.
-
-Example:
-
-```sh
-curl http://127.0.0.1:6420/api/v1/explorer/address?address=2NfNKsaGJEndpSajJ6TsKJfsdDjW2gFsjXg
-```
-
-Result:
-
-```json
-[
-    {
-        "status": {
-            "confirmed": true,
-            "unconfirmed": false,
-            "height": 38076,
-            "block_seq": 15493
-        },
-        "timestamp": 1518878675,
-        "length": 183,
-        "type": 0,
-        "txid": "6d8e2f8b436a2f38d604b3aa1196ef2176779c5e11e33fbdd09f993fe659c39f",
-        "inner_hash": "8da7c64dcedeeb6aa1e0d21fb84a0028dcd68e6801f1a3cc0224fdd50682046f",
-        "fee": 126249,
-        "sigs": [
-            "c60e43980497daad59b4c72a2eac053b1584f960c57a5e6ac8337118dccfcee4045da3f60d9be674867862a13fdd87af90f4b85cbf39913bde13674e0a039b7800"
-        ],
-        "inputs": [
-            {
-                "uxid": "349b06e5707f633fd2d8f048b687b40462d875d968b246831434fb5ab5dcac38",
-                "owner": "WzPDgdfL1NzSbX96tscUNXUqtCRLjaBugC",
-                "coins": "125.000000",
-                "hours": 34596,
-                "calculated_hours": 178174
-            }
-        ],
-        "outputs": [
-            {
-                "uxid": "5b4a79c7de2e9099e083bbc8096619ae76ba6fbe34875c61bbe2d3bfa6b18b99",
-                "dst": "2NfNKsaGJEndpSajJ6TsKJfsdDjW2gFsjXg",
-                "coins": "125.000000",
-                "hours": 51925
-            }
-        ]
-    }
-]
-```
-
 ## Uxout APIs
 
 ### Get uxout
@@ -3550,7 +4049,7 @@ Result:
 }
 ```
 
-### Count unique addresses
+### Count the addresses that currently have unspent outputs (coins)
 
 API sets: `READ`
 
@@ -3615,7 +4114,7 @@ Result:
     "user_agent": "skycoin:0.25.0",
     "is_trusted_peer": true,
     "unconfirmed_verify_transaction": {
-        "burn_factor": 2,
+        "burn_factor": 10,
         "max_transaction_size": 32768,
         "max_decimals": 3
     }
@@ -3630,8 +4129,8 @@ API sets: `STATUS`, `READ`
 URI: /api/v1/network/connections
 Method: GET
 Args:
-	states: [optional] comma-separated list of connection states ("pending", "connected" or "introduced"). Defaults to "connected,introduced"
-	direction: [optional] "outgoing" or "incoming". If not provided, both are included.
+    states: [optional] comma-separated list of connection states ("pending", "connected" or "introduced"). Defaults to "connected,introduced"
+    direction: [optional] "outgoing" or "incoming". If not provided, both are included.
 ```
 
 Connection `"state"` value can be `"pending"`, `"connected"` or `"introduced"`.
@@ -3665,12 +4164,12 @@ Result:
             "listen_port": 20002,
             "height": 180,
             "user_agent": "skycoin:0.25.0",
-		    "is_trusted_peer": true,
-		    "unconfirmed_verify_transaction": {
-		        "burn_factor": 2,
-		        "max_transaction_size": 32768,
-		        "max_decimals": 3
-		    }
+            "is_trusted_peer": true,
+            "unconfirmed_verify_transaction": {
+                "burn_factor": 10,
+                "max_transaction_size": 32768,
+                "max_decimals": 3
+            }
         },
         {
             "id": 109548,
@@ -3684,12 +4183,12 @@ Result:
             "listen_port": 6000,
             "height": 0,
             "user_agent": "",
-		    "is_trusted_peer": true,
-		    "unconfirmed_verify_transaction": {
-		        "burn_factor": 0,
-		        "max_transaction_size": 0,
-		        "max_decimals": 0
-		    }
+            "is_trusted_peer": true,
+            "unconfirmed_verify_transaction": {
+                "burn_factor": 0,
+                "max_transaction_size": 0,
+                "max_decimals": 0
+            }
         },
         {
             "id": 99115,
@@ -3703,12 +4202,12 @@ Result:
             "listen_port": 6000,
             "height": 180,
             "user_agent": "",
-		    "is_trusted_peer": true,
-		    "unconfirmed_verify_transaction": {
-		        "burn_factor": 0,
-		        "max_transaction_size": 0,
-		        "max_decimals": 0
-		    }
+            "is_trusted_peer": true,
+            "unconfirmed_verify_transaction": {
+                "burn_factor": 0,
+                "max_transaction_size": 0,
+                "max_decimals": 0
+            }
         }
     ]
 }
@@ -3738,7 +4237,6 @@ Result:
 [
     "104.237.142.206:6000",
     "118.178.135.93:6000",
-    "121.41.103.148:6000",
     "139.162.7.132:6000",
     "172.104.85.6:6000",
     "176.58.126.224:6000",
@@ -3770,7 +4268,6 @@ Result:
 [
     "104.237.142.206:6000",
     "118.178.135.93:6000",
-    "121.41.103.148:6000",
     "139.162.7.132:6000",
     "172.104.85.6:6000",
     "176.58.126.224:6000",
@@ -3802,8 +4299,6 @@ Result:
     "104.237.142.206:6000",
     "116.62.220.158:7200",
     "118.237.210.163:6000",
-    "121.41.103.148:6000",
-    "121.41.103.148:7200",
     "139.162.161.41:20000",
     "139.162.161.41:20001",
     "139.162.161.41:20002",
@@ -3833,7 +4328,7 @@ API sets: `NET_CTRL`
 URI: /api/v1/network/connection/disconnect
 Method: POST
 Args:
-	id: ID of the connection
+    id: ID of the connection
 
 Returns 404 if the connection is not found.
 ```
@@ -3858,7 +4353,7 @@ The unversioned API are the API endpoints without an `/api` prefix.
 These endpoints are all prefixed with `/api/v1` now.
 
 `-enable-unversioned-api` was added as an option to assist migration to `/api/v1`
-but this option will be removed in v0.26.0.
+but this option was removed in v0.26.0.
 
 To migrate from the unversioned API, add `/api/v1` to all endpoints that you call
 that do not have an `/api` prefix already.
@@ -3867,7 +4362,8 @@ For example, `/block` would become `/api/v1/block`.
 
 ## Migrating from the JSONRPC API
 
-The JSONRPC-2.0 RPC API will be removed in v0.26.0.
+The JSONRPC-2.0 RPC API was deprecated in v0.25.0 and removed in v0.26.0.
+
 Anyone still using this can follow this guide to migrate to the REST API:
 
 * `get_status` is replaced by `/api/v1/blockchain/metadata` and `/api/v1/health`
@@ -3917,7 +4413,7 @@ Some examples:
 
 Extra zeros on the `"coins"` string are ok, for example `"1"` is the same as `"1.0"` or `"1.000000"`.
 
-Only provide `"password"` if the wallet is encrypted.  Note that decryption can take a few seconds, and this can impact
+Only provide `"password"` if the wallet is encrypted. Note that decryption can take a few seconds, and this can impact
 throughput.
 
 The request header `Content-Type` must be `application/json`.
@@ -3928,7 +4424,7 @@ Use the value of `"encoded_transaction"` as the `"rawtx"` value in the request t
 
 ## Migration from /api/v1/explorer/address
 
-The `GET /api/v1/explorer/address` endpoint is deprecated and will be removed in v0.26.0.
+The `GET /api/v1/explorer/address` was deprecated in v0.25.0 and removed in v0.26.0.
 
 To migrate from it, use [`GET /api/v1/transactions?verbose=1`](#get-transactions-for-addresses).
 
@@ -4028,5 +4524,5 @@ The response data is the same but the structure is slightly different. Compare t
 ]
 ```
 
-The transaction data is wrapped in a `"txn"` field.  A `"time"` field is present at the top level. This `"time"` field
+The transaction data is wrapped in a `"txn"` field. A `"time"` field is present at the top level. This `"time"` field
 is either the confirmation timestamp of a confirmed transaction or the last received time of an unconfirmed transaction.

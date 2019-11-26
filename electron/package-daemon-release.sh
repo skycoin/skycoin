@@ -46,12 +46,29 @@ function copy_if_exists {
     fi
 }
 
+function codesign_if_exists {
+     if [ -z "$1" ]; then
+        echo "codesign_if_exists requires binary path"
+        exit 1
+    fi
+
+    BIN="${GOX_GUI_OUTPUT_DIR}/${1}"
+
+    if [ -f "$BIN" ]; then
+        echo "signing daemon binary"
+        codesign --force --sign "Developer ID Application: yunfei mao" "${BIN}"
+    else
+        echo "$BIN does not exsit"
+    fi
+}
+
 echo "Copying ${PKG_NAME} binaries"
 
 # OS X
 if [ ! -z "$OSX64_DMN" ]; then
     OSX64="${DMN_OUTPUT_DIR}/${OSX64_DMN}"
     OSX64_SRC="${OSX64}/src"
+    codesign_if_exists "${OSX64_OUT}/${PKG_NAME}"
     copy_if_exists "${OSX64_OUT}/${PKG_NAME}" "$OSX64" "$OSX64_SRC"
 fi
 

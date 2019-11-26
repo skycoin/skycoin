@@ -12,10 +12,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/visor/historydb"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/readable"
+	"github.com/SkycoinProject/skycoin/src/testutil"
+	"github.com/SkycoinProject/skycoin/src/visor/historydb"
 )
 
 func TestGetUxOutByID(t *testing.T) {
@@ -144,7 +144,7 @@ func TestGetUxOutByID(t *testing.T) {
 			cfg := defaultMuxConfig()
 			cfg.disableCSRF = tc.csrfDisabled
 
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -260,7 +260,7 @@ func TestGetAddrUxOuts(t *testing.T) {
 			cfg := defaultMuxConfig()
 			cfg.disableCSRF = tc.csrfDisabled
 
-			handler := newServerMux(cfg, gateway, nil)
+			handler := newServerMux(cfg, gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code

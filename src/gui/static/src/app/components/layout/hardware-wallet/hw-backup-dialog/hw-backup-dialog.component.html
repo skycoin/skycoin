@@ -1,0 +1,35 @@
+<app-modal class="modal" [headline]="'hardware-wallet.options.create-backup' | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Processing">
+  <div *ngIf="currentState === states.Initial">
+    <app-hw-message
+      [text]="'hardware-wallet.create-backup.warning' | translate"
+      [icon]="msgIcons.Warning"
+    ></app-hw-message>
+
+    <div class="-buttons">
+      <app-button (action)="closeModal()">
+        {{ 'hardware-wallet.general.cancel' | translate }}
+      </app-button>
+      <app-button (action)="requestBackup()" class="primary">
+        {{ 'hardware-wallet.general.continue' | translate }}
+      </app-button>
+    </div>
+  </div>
+
+  <div *ngIf="currentState !== states.Initial">
+    <app-hw-message *ngIf="currentState === states.Processing"
+      [text]="'hardware-wallet.create-backup.instructions' | translate"
+      [icon]="msgIcons.Confirm"
+    ></app-hw-message>
+
+    <app-hw-message *ngIf="currentState === states.ShowingResult"
+      [text]="result.text | translate"
+      [icon]="result.icon"
+    ></app-hw-message>
+
+    <div class="-buttons" *ngIf="currentState !== states.Processing">
+      <app-button (action)="closeModal()" class="primary" #closeButton>
+        {{ 'hardware-wallet.general.close' | translate }}
+      </app-button>
+    </div>
+  </div>
+</app-modal>

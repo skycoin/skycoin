@@ -3,7 +3,7 @@
     "productName": "Skycoin",
     "author": "skycoin",
     "main": "src/electron-main.js",
-    "version": "0.25.0",
+    "version": "0.27.0",
     "description": "skycoin wallet",
     "license": "MIT",
     "build": {
@@ -75,7 +75,7 @@
         "postinstall": "electron-builder install-app-deps"
     },
     "devDependencies": {
-        "electron": "^2.0.9",
+        "electron": "^2.0.18",
         "electron-builder": "20.13.3"
     },
     "dependencies": {}

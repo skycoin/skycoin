@@ -20,8 +20,8 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/sirupsen/logrus"
 
-	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/util/useragent"
+	"github.com/SkycoinProject/skycoin/src/util/logging"
+	"github.com/SkycoinProject/skycoin/src/util/useragent"
 )
 
 //TODO:
@@ -33,7 +33,7 @@ import (
 
 const (
 	// DefaultPeerListURL is the default URL to download remote peers list from, if enabled
-	DefaultPeerListURL = "https://downloads.skycoin.net/blockchain/peers.txt"
+	DefaultPeerListURL = "https://downloads.skycoin.com/blockchain/peers.txt"
 	// PeerCacheFilename filename for disk-cached peers
 	PeerCacheFilename = "peers.json"
 	// oldPeerCacheFilename previous filename for disk-cached peers. The cache loader will fall back onto this filename if it can't load peers.json
@@ -238,15 +238,19 @@ func New(cfg Config) (*Pex, error) {
 		return nil, err
 	}
 
-	// Load default hardcoded peers
+	// Unset trusted status from any existing peers, regenerate
+	// them from the DefaultConnections
+	pex.setAllUntrusted()
+
+	// Load default hardcoded peers, mark them as trusted
 	for _, addr := range cfg.DefaultConnections {
 		// Default peers will mark as trusted peers.
 		if err := pex.AddPeer(addr); err != nil {
 			logger.Critical().WithError(err).Error("Add default peer failed")
 			return nil, err
 		}
-		if err := pex.SetTrusted(addr); err != nil {
-			logger.Critical().WithError(err).Error("pex.SetTrusted for default peer failed")
+		if err := pex.setTrusted(addr); err != nil {
+			logger.Critical().WithError(err).Error("pex.setTrusted for default peer failed")
 			return nil, err
 		}
 	}
@@ -269,8 +273,8 @@ func New(cfg Config) (*Pex, error) {
 		return nil, err
 	}
 
-	// Download peers from remote peers list
-	if pex.Config.DownloadPeerList {
+	// Download peers from remote peers list if networking is enabled
+	if pex.Config.DownloadPeerList && !pex.Config.NetworkDisabled {
 		go func() {
 			if err := pex.downloadPeers(); err != nil {
 				logger.WithError(err).Error("Failed to download peers list")
@@ -512,8 +516,8 @@ func (px *Pex) SetPrivate(addr string, private bool) error {
 	return px.peerlist.setPrivate(cleanAddr, private)
 }
 
-// SetTrusted updates peer's trusted value
-func (px *Pex) SetTrusted(addr string) error {
+// setTrusted marks a peer as a default peer by setting its trusted flag to true
+func (px *Pex) setTrusted(addr string) error {
 	px.Lock()
 	defer px.Unlock()
 
@@ -655,7 +659,7 @@ func (px *Pex) isFull() bool {
 // Returns the raw response body as a string.
 // TODO -- move to util, add backoff options
 func downloadText(url string) (string, error) {
-	resp, err := http.Get(url)
+	resp, err := http.Get(url) //nolint:gosec
 	if err != nil {
 		return "", err
 	}

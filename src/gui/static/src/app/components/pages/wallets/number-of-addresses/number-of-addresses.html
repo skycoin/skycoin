@@ -1,4 +1,4 @@
-<app-modal [headline]="'wallet.add-addresses.title' | translate" [dialog]="dialogRef">
+<app-modal [headline]="'wallet.add-addresses.title' | translate" [dialog]="dialogRef" [disableDismiss]="button.isLoading()">
   <div [formGroup]="form">
     <div class="form-field">
       <label for="quantity">{{ 'wallet.add-addresses.name-quantity' | translate }}</label>
@@ -6,7 +6,7 @@
     </div>
   </div>
   <div class="-buttons">
-    <app-button (action)="closePopup()">
+    <app-button (action)="closePopup()" [disabled]="button && button.isLoading()">
       {{ 'wallet.add-addresses.cancel-button' | translate }}
     </app-button>
     <app-button (action)="continue()" class="primary" [disabled]="!form.valid" #button>

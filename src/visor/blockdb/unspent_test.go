@@ -14,11 +14,11 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
-	"github.com/skycoin/skycoin/src/coin"
-	"github.com/skycoin/skycoin/src/testutil"
-	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/cipher/encoder"
+	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/SkycoinProject/skycoin/src/testutil"
+	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 )
 
 func makeUxBody(t *testing.T) coin.UxBody {
@@ -508,11 +508,13 @@ func TestUnspentProcessBlock(t *testing.T) {
 
 			txn := coin.Transaction{}
 			for _, in := range tc.inputs {
-				txn.PushInput(in.Hash())
+				err := txn.PushInput(in.Hash())
+				require.NoError(t, err)
 			}
 
 			for _, o := range tc.outputs {
-				txn.PushOutput(o.addr, o.coins, o.hours)
+				err := txn.PushOutput(o.addr, o.coins, o.hours)
+				require.NoError(t, err)
 			}
 
 			var block *coin.Block
@@ -618,7 +620,7 @@ func TestUnspentProcessBlock(t *testing.T) {
 					require.NoError(t, err)
 
 					var uxHashes []cipher.SHA256
-					err = encoder.DeserializeRaw(v, &uxHashes)
+					err = encoder.DeserializeRawExact(v, &uxHashes)
 					require.NoError(t, err)
 					require.NotEmpty(t, uxHashes)
 
@@ -879,7 +881,7 @@ func TestUnspentPoolAddrIndex(t *testing.T) {
 					require.NoError(t, err)
 
 					var hashes []cipher.SHA256
-					err = encoder.DeserializeRaw(v, &hashes)
+					err = encoder.DeserializeRawExact(v, &hashes)
 					require.NoError(t, err)
 
 					sort.Slice(hashes, func(i, j int) bool {
@@ -931,9 +933,9 @@ func TestUnspentMaybeBuildIndexesPartialIndex(t *testing.T) {
 
 			addrHashes := make(map[cipher.Address][]cipher.SHA256)
 
-			if err := dbutil.ForEach(tx, UnspentPoolBkt, func(k, v []byte) error {
+			if err := dbutil.ForEach(tx, UnspentPoolBkt, func(_, v []byte) error {
 				var ux coin.UxOut
-				if err := encoder.DeserializeRaw(v, &ux); err != nil {
+				if err := encoder.DeserializeRawExact(v, &ux); err != nil {
 					return err
 				}
 
@@ -990,7 +992,7 @@ func testUnspentMaybeBuildIndexes(t *testing.T, headIndex uint64, setupDB func(*
 			require.NoError(t, err)
 
 			var ux coin.UxOut
-			err = encoder.DeserializeRaw(v, &ux)
+			err = encoder.DeserializeRawExact(v, &ux)
 			require.NoError(t, err)
 
 			require.Equal(t, hash, ux.Hash())
@@ -1016,7 +1018,7 @@ func testUnspentMaybeBuildIndexes(t *testing.T, headIndex uint64, setupDB func(*
 			require.NoError(t, err)
 
 			var hashes []cipher.SHA256
-			err = encoder.DeserializeRaw(v, &hashes)
+			err = encoder.DeserializeRawExact(v, &hashes)
 			require.NoError(t, err)
 
 			expectedHashes, ok := addrHashes[addr]
@@ -1114,4 +1116,40 @@ func setupNoUnspentAddrIndexDB(t *testing.T) (*dbutil.DB, func()) {
 		tmpFile.Close()
 		os.Remove(tmpFile.Name())
 	}
+}
+
+func TestAddressHashesFlatten(t *testing.T) {
+	addrHashes := make(AddressHashes)
+
+	require.Empty(t, addrHashes.Flatten())
+
+	hashes := make([]cipher.SHA256, 10)
+	for i := range hashes {
+		hashes[i] = testutil.RandSHA256(t)
+	}
+
+	addrHashes = AddressHashes{
+		testutil.MakeAddress(): hashes[0:2],
+	}
+	require.Equal(t, hashes[0:2], addrHashes.Flatten())
+
+	addr1 := testutil.MakeAddress()
+	addr2 := testutil.MakeAddress()
+	addrHashes = AddressHashes{
+		addr1: hashes[0:2],
+		addr2: hashes[4:6],
+	}
+
+	expectedHashes := append(addrHashes[addr1], addrHashes[addr2]...)
+	flattenedHashes := addrHashes.Flatten()
+
+	sort.Slice(expectedHashes, func(a, b int) bool {
+		return bytes.Compare(expectedHashes[a][:], expectedHashes[b][:]) < 0
+	})
+	sort.Slice(flattenedHashes, func(a, b int) bool {
+		return bytes.Compare(flattenedHashes[a][:], flattenedHashes[b][:]) < 0
+	})
+
+	require.Equal(t, len(expectedHashes), len(flattenedHashes))
+	require.Equal(t, expectedHashes, flattenedHashes)
 }

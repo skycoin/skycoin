@@ -1,39 +1,62 @@
 package wallet
 
 import (
+	"errors"
 	"fmt"
-	"strconv"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/util/file"
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 )
 
 // ReadableEntry wallet entry with json tags
 type ReadableEntry struct {
-	Address string `json:"address"`
-	Public  string `json:"public_key"`
-	Secret  string `json:"secret_key"`
+	Address     string  `json:"address"`
+	Public      string  `json:"public_key"`
+	Secret      string  `json:"secret_key"`
+	ChildNumber *uint32 `json:"child_number,omitempty"` // For bip32/bip44
+	Change      *uint32 `json:"change,omitempty"`       // For bip44
 }
 
 // NewReadableEntry creates readable wallet entry
-func NewReadableEntry(coinType CoinType, w Entry) ReadableEntry {
+func NewReadableEntry(coinType CoinType, walletType string, e Entry) ReadableEntry {
 	re := ReadableEntry{}
-	if !w.Address.Null() {
-		re.Address = w.Address.String()
+	if !e.Address.Null() {
+		re.Address = e.Address.String()
 	}
 
-	if !w.Public.Null() {
-		re.Public = w.Public.Hex()
+	if !e.Public.Null() {
+		re.Public = e.Public.Hex()
 	}
 
-	if !w.Secret.Null() {
+	if !e.Secret.Null() {
 		switch coinType {
 		case CoinTypeSkycoin:
-			re.Secret = w.Secret.Hex()
+			re.Secret = e.Secret.Hex()
 		case CoinTypeBitcoin:
-			re.Secret = cipher.BitcoinWalletImportFormatFromSeckey(w.Secret)
+			re.Secret = cipher.BitcoinWalletImportFormatFromSeckey(e.Secret)
 		default:
 			logger.Panicf("Invalid coin type %q", coinType)
+		}
+	}
+
+	switch walletType {
+	case WalletTypeBip44:
+		cn := e.ChildNumber
+		re.ChildNumber = &cn
+		change := e.Change
+		re.Change = &change
+	case WalletTypeXPub:
+		cn := e.ChildNumber
+		re.ChildNumber = &cn
+		if e.Change != 0 {
+			logger.Panicf("wallet.Entry.Change is not 0 but wallet type is %q", walletType)
+		}
+	default:
+		if e.ChildNumber != 0 {
+			logger.Panicf("wallet.Entry.ChildNumber is not 0 but wallet type is %q", walletType)
+		}
+		if e.Change != 0 {
+			logger.Panicf("wallet.Entry.Change is not 0 but wallet type is %q", walletType)
 		}
 	}
 
@@ -43,12 +66,25 @@ func NewReadableEntry(coinType CoinType, w Entry) ReadableEntry {
 // ReadableEntries array of ReadableEntry
 type ReadableEntries []ReadableEntry
 
-// ToWalletEntries convert readable entries to entries
+func newReadableEntries(entries Entries, coinType CoinType, walletType string) ReadableEntries {
+	re := make(ReadableEntries, len(entries))
+	for i, e := range entries {
+		re[i] = NewReadableEntry(coinType, walletType, e)
+	}
+	return re
+}
+
+// GetEntries returns this array
+func (res ReadableEntries) GetEntries() ReadableEntries {
+	return res
+}
+
+// toWalletEntries convert readable entries to entries
 // converts base on the wallet version.
-func (res ReadableEntries) toWalletEntries(coinType CoinType, isEncrypted bool) ([]Entry, error) {
+func (res ReadableEntries) toWalletEntries(coinType CoinType, walletType string, isEncrypted bool) ([]Entry, error) {
 	entries := make([]Entry, len(res))
 	for i, re := range res {
-		e, err := newEntryFromReadable(coinType, &re)
+		e, err := newEntryFromReadable(coinType, walletType, &re)
 		if err != nil {
 			return []Entry{}, err
 		}
@@ -66,15 +102,15 @@ func (res ReadableEntries) toWalletEntries(coinType CoinType, isEncrypted bool) 
 }
 
 // newEntryFromReadable creates WalletEntry base one ReadableWalletEntry
-func newEntryFromReadable(coinType CoinType, w *ReadableEntry) (*Entry, error) {
+func newEntryFromReadable(coinType CoinType, walletType string, re *ReadableEntry) (*Entry, error) {
 	var a cipher.Addresser
 	var err error
 
 	switch coinType {
 	case CoinTypeSkycoin:
-		a, err = cipher.DecodeBase58Address(w.Address)
+		a, err = cipher.DecodeBase58Address(re.Address)
 	case CoinTypeBitcoin:
-		a, err = cipher.DecodeBase58BitcoinAddress(w.Address)
+		a, err = cipher.DecodeBase58BitcoinAddress(re.Address)
 	default:
 		logger.Panicf("Invalid coin type %q", coinType)
 	}
@@ -83,19 +119,19 @@ func newEntryFromReadable(coinType CoinType, w *ReadableEntry) (*Entry, error) {
 		return nil, err
 	}
 
-	p, err := cipher.PubKeyFromHex(w.Public)
+	p, err := cipher.PubKeyFromHex(re.Public)
 	if err != nil {
 		return nil, err
 	}
 
 	// Decodes the secret hex string if any
 	var secret cipher.SecKey
-	if w.Secret != "" {
+	if re.Secret != "" {
 		switch coinType {
 		case CoinTypeSkycoin:
-			secret, err = cipher.SecKeyFromHex(w.Secret)
+			secret, err = cipher.SecKeyFromHex(re.Secret)
 		case CoinTypeBitcoin:
-			secret, err = cipher.SecKeyFromBitcoinWalletImportFormat(w.Secret)
+			secret, err = cipher.SecKeyFromBitcoinWalletImportFormat(re.Secret)
 		default:
 			logger.Panicf("Invalid coin type %q", coinType)
 		}
@@ -104,93 +140,61 @@ func newEntryFromReadable(coinType CoinType, w *ReadableEntry) (*Entry, error) {
 		}
 	}
 
+	var childNumber uint32
+	var change uint32
+	switch walletType {
+	case WalletTypeBip44:
+		if re.ChildNumber == nil {
+			return nil, fmt.Errorf("child_number required for %q wallet type", walletType)
+		}
+		if re.Change == nil {
+			return nil, fmt.Errorf("change required for %q wallet type", walletType)
+		}
+
+		childNumber = *re.ChildNumber
+		change = *re.Change
+
+		switch change {
+		case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
+		default:
+			return nil, errors.New("change must be either 0 or 1")
+		}
+
+	case WalletTypeXPub:
+		if re.ChildNumber == nil {
+			return nil, fmt.Errorf("child_number required for %q wallet type", walletType)
+		}
+
+		childNumber = *re.ChildNumber
+
+		if re.Change != nil {
+			return nil, fmt.Errorf("change should not be set for %q wallet type", walletType)
+		}
+
+	default:
+		if re.ChildNumber != nil {
+			return nil, fmt.Errorf("child_number should not be set for %q wallet type", walletType)
+		}
+		if re.Change != nil {
+			return nil, fmt.Errorf("change should not be set for %q wallet type", walletType)
+		}
+	}
+
 	return &Entry{
-		Address: a,
-		Public:  p,
-		Secret:  secret,
+		Address:     a,
+		Public:      p,
+		Secret:      secret,
+		ChildNumber: childNumber,
+		Change:      change,
 	}, nil
 }
 
-// ReadableWallet used for [de]serialization of a Wallet
-type ReadableWallet struct {
-	Meta    map[string]string `json:"meta"`
-	Entries ReadableEntries   `json:"entries"`
-}
-
-// NewReadableWallet creates readable wallet
-func NewReadableWallet(w *Wallet) *ReadableWallet {
-	readable := make(ReadableEntries, len(w.Entries))
-	for i, e := range w.Entries {
-		readable[i] = NewReadableEntry(w.coin(), e)
-	}
-
-	meta := make(map[string]string, len(w.Meta))
-	for k, v := range w.Meta {
-		meta[k] = v
-	}
-
-	return &ReadableWallet{
-		Meta:    meta,
-		Entries: readable,
-	}
-}
-
-// LoadReadableWallet loads a ReadableWallet from disk
-func LoadReadableWallet(filename string) (*ReadableWallet, error) {
-	w := &ReadableWallet{}
-	if err := w.Load(filename); err != nil {
-		return nil, fmt.Errorf("load wallet %s failed: %v", filename, err)
-	}
-	return w, nil
-}
-
-// ToWallet convert readable wallet to Wallet
-func (rw *ReadableWallet) ToWallet() (*Wallet, error) {
-	w := &Wallet{
-		Meta: rw.Meta,
-	}
-
-	if err := w.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid wallet %s: %v", w.Filename(), err)
-	}
-
-	ets, err := rw.Entries.toWalletEntries(w.coin(), w.IsEncrypted())
-	if err != nil {
-		return nil, err
-	}
-
-	w.Entries = ets
-
-	return w, nil
-}
-
-// Save saves to filename
-func (rw *ReadableWallet) Save(filename string) error {
-	return file.SaveJSON(filename, rw, 0600)
-}
-
-// Load loads from filename
-func (rw *ReadableWallet) Load(filename string) error {
-	return file.LoadJSON(filename, rw)
-}
-
-func (rw *ReadableWallet) timestamp() int64 {
-	// Intentionally ignore the error when parsing the timestamp,
-	// if it isn't valid or is missing it will be set to 0
-	x, _ := strconv.ParseInt(rw.Meta[metaTimestamp], 10, 64) // nolint: errcheck
-	return x
-}
-
-func (rw *ReadableWallet) filename() string {
-	return rw.Meta[metaFilename]
-}
-
-// Erase remove sensitive data
-func (rw *ReadableWallet) Erase() {
-	delete(rw.Meta, metaSeed)
-	delete(rw.Meta, metaLastSeed)
-	delete(rw.Meta, metaSecrets)
-	for i := range rw.Entries {
-		rw.Entries[i].Secret = ""
-	}
+// Readable defines the readable wallet API.
+// A readable wallet is the on-disk representation of a wallet.
+type Readable interface {
+	ToWallet() (Wallet, error)
+	Timestamp() int64
+	SetFilename(string)
+	Filename() string
+	GetEntries() ReadableEntries
 }

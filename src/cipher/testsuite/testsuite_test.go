@@ -8,14 +8,15 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/util/file"
+	"github.com/SkycoinProject/skycoin/src/util/file"
 )
 
 const (
 	testdataDir           = "./testdata/"
 	manyAddressesFilename = "many-addresses.golden"
 	inputHashesFilename   = "input-hashes.golden"
-	seedFileRegex         = `seed-\d+.golden`
+	seedFileRegex         = `^seed-\d+.golden$`
+	bip32SeedFileRegex    = `^seed-bip32-\d+.golden$`
 )
 
 func TestManyAddresses(t *testing.T) {
@@ -62,9 +63,39 @@ func TestSeedSignatures(t *testing.T) {
 	}
 }
 
-func traverseFiles(dir string, filenameTemplate string) ([]string, error) { // nolint: unparam
+func TestBip32SeedSignatures(t *testing.T) {
+	fn := filepath.Join(testdataDir, inputHashesFilename)
+
+	var inputDataJSON InputTestDataJSON
+	err := file.LoadJSON(fn, &inputDataJSON)
+	require.NoError(t, err)
+
+	inputData, err := InputTestDataFromJSON(&inputDataJSON)
+	require.NoError(t, err)
+
+	seedFiles, err := traverseFiles(testdataDir, bip32SeedFileRegex)
+	require.NoError(t, err)
+
+	for _, fn := range seedFiles {
+		t.Run(fn, func(t *testing.T) {
+			fn = filepath.Join(testdataDir, fn)
+
+			var seedDataJSON Bip32SeedTestDataJSON
+			err := file.LoadJSON(fn, &seedDataJSON)
+			require.NoError(t, err)
+
+			seedData, err := Bip32SeedTestDataFromJSON(&seedDataJSON)
+			require.NoError(t, err)
+
+			err = ValidateBip32SeedData(seedData, inputData)
+			require.NoError(t, err)
+		})
+	}
+}
+
+func traverseFiles(dir string, filenameTemplate string) ([]string, error) { //nolint:unparam
 	files := make([]string, 0)
-	if err := filepath.Walk(dir, func(path string, f os.FileInfo, _ error) error {
+	if err := filepath.Walk(dir, func(_ string, f os.FileInfo, _ error) error {
 		if !f.IsDir() {
 			r, err := regexp.MatchString(filenameTemplate, f.Name())
 			if err == nil && r {

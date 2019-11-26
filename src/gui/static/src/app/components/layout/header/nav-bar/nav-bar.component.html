@@ -13,17 +13,22 @@
       <span>{{ 'title.history' | translate }}</span>
     </div>
     <div class="flex-fill"></div>
+    <div class="-button -low-opacity" routerLink="/exchange" routerLinkActive="no-opacity" *ngIf="exchangeEnabled">
+      <img src="../../../../../assets/img/money-gold.png">
+      <span>{{ 'title.buy-coin' | translate }}</span>
+    </div>
     <div class="-button" *ngIf="otcEnabled">
       <img src="../../../../../assets/img/money-gold.png">
       <span class="secondary-color">{{ 'title.buy-coin' | translate }}</span>
     </div>
     <app-double-button
       *ngIf="navbarService.switchVisible"
+      [ngClass]="{'-switch': true, 'element-disabled': navbarService.switchDiabled}"
       class="-switch"
       [leftButtonText]="navbarService.leftText | translate"
       [rightButtonText]="navbarService.rightText | translate"
       [activeButton]="navbarService.activeComponent | async"
-      className="light"
+      className="light navbar"
       (onStateChange)="changeActiveComponent($event)"
     ></app-double-button>
   </div>

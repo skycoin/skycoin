@@ -14,9 +14,15 @@
 
 cd ../../../
 
+if ["${CACHE_TAG#release-v}" != "$CACHE_TAG"] ; then
+  export SOURCE_TAG="${CACHE_TAG#release-v}"
+fi
+
 # Build skycoin/skycoin:latest
 docker build --build-arg BDATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
              --build-arg SCOMMIT=$SOURCE_COMMIT \
+             --build-arg SBRANCH=$SOURCE_BRANCH \
+             --build-arg STAG=$SOURCE_TAG \
              -f $DOCKERFILE_PATH \
              -t $IMAGE_NAME .
 
@@ -26,6 +32,8 @@ docker build --build-arg=ARCH=arm \
              --build-arg=IMAGE_FROM="arm32v5/busybox" \
              --build-arg BDATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
              --build-arg SCOMMIT=$SOURCE_COMMIT \
+             --build-arg SBRANCH=$SOURCE_BRANCH \
+             --build-arg STAG=$SOURCE_TAG \
              -f $DOCKERFILE_PATH \
              -t $IMAGE_NAME-arm32v5 .
 
@@ -35,6 +43,8 @@ docker build --build-arg=ARCH=arm \
              --build-arg=IMAGE_FROM="arm32v6/busybox" \
              --build-arg BDATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
              --build-arg SCOMMIT=$SOURCE_COMMIT \
+             --build-arg SBRANCH=$SOURCE_BRANCH \
+             --build-arg STAG=$SOURCE_TAG \
              -f $DOCKERFILE_PATH \
              -t $IMAGE_NAME-arm32v6 .
 
@@ -44,6 +54,8 @@ docker build --build-arg=ARCH=arm \
              --build-arg=IMAGE_FROM="arm32v7/busybox" \
              --build-arg BDATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
              --build-arg SCOMMIT=$SOURCE_COMMIT \
+             --build-arg SBRANCH=$SOURCE_BRANCH \
+             --build-arg STAG=$SOURCE_TAG \
              -f $DOCKERFILE_PATH \
              -t $IMAGE_NAME-arm32v7 .
 
@@ -52,5 +64,7 @@ docker build --build-arg=ARCH=arm64 \
              --build-arg=IMAGE_FROM="arm64v8/busybox" \
              --build-arg BDATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
              --build-arg SCOMMIT=$SOURCE_COMMIT \
+             --build-arg SBRANCH=$SOURCE_BRANCH \
+             --build-arg STAG=$SOURCE_TAG \
              -f $DOCKERFILE_PATH \
              -t $IMAGE_NAME-arm64v8 .

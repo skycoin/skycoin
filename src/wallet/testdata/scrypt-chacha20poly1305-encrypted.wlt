@@ -6,16 +6,21 @@
         "filename": "scrypt-chacha20poly1305-encrypted.wlt",
         "label": "scrypt-chacha20poly1305",
         "lastSeed": "",
-        "secrets": "dAB7Im4iOjMyNzY4LCJyIjo4LCJwIjoxLCJrZXlMZW4iOjMyLCJzYWx0IjoiYnhTWThENGVaOXJOUHo4N1d2dnQ3OVpNREUxRXZtNlJHek5TcStpbEt2QT0iLCJub25jZSI6IlJhWXNkVDB5eUV4WXdsS08ifXrCLvWsRX4upugXCpH7SN9CGDIFxuDUbYfE9X7uXeMhChRSq5c+9Mk8cebBN6Nx8qkfIz5munHGd6lUrXpzPDl+dGH7BVrSy0RCKr2/QvWAJtTiNeGb9PRTjYONiwPpXo9EgcrAwqWKakKtYKqNrt2hXEXnP2L3M4jNOe8jnymb8KATxP4Ih8LnsE1/3qDrt0ZtyeE51zKzOELU2pijEXhl/fjMGMyWCR4+V3xKBL5Q4dhPRgMe8+lALcLC9Xici1qoQNLFqe85mLXG0jS2aYiuVR23zKo=",
+        "secrets": "dAB7Im4iOjMyNzY4LCJyIjo4LCJwIjoxLCJrZXlMZW4iOjMyLCJzYWx0IjoiT2kxTVd2cE1CVmRCYXVCZldhOGs0MVFhWFRrWnBVeTRkd1N3dTVsZjV5Zz0iLCJub25jZSI6Ik1aeFdvRGVza1N4OGdsd1gifXuy+kX89cwbM2pxsPYRcRg+lObHyQjlPDB/aO8nh/rRhs1KZp8/BZUZmluxgGlSVMT80A567kgc4Y+q4E5OA4GgdVlE3ca63oKHO/ujCzYSBdY28HkbxzYIRVlvJZYMEExA8Zd5LQFBnAjXcQpiSRTggT3mf3byewfCUHj3IgtDoN1gpOlTZx+1ecH8aUFtJTlxnO9l2xFRfUCPxoG6natG3yiVfK63J21FlRAJO/763u+YmRr9dpn89bA3Ol6Rpq9X+ghJjawK31kWWbxsmdEBIQfxf8fOwMJpn6q7ickU0wioHZ/dxxybvFO34enTTrXYSXxeJAAx00YCAmpWvXAwYQdqZt8RKVrp4m+U8lTR0AWlMeKiq9Vre+PdeaSPhHgMQCBslph8oB6eWGIbofKX3L5ypNbFWFCFA3FF2yf4c1r1NNTgeBvmceIpShlkgJnTXa++AQ==",
         "seed": "",
-        "tm": "1517478842",
+        "tm": "1549801137",
         "type": "deterministic",
         "version": "0.2"
     },
     "entries": [
         {
-            "address": "2EVNa4CK9SKosT4j1GEn8SuuUUEAXaHAMbM",
-            "public_key": "02e5be89fa161bf6b0bc64ec9ec7fe27311fbb78949c3ef9739d4c73a84920d6e1",
+            "address": "LxcitUpWQZbPjgEPs6R1i3G4Xa31nPMoSG",
+            "public_key": "0300f6b15377b0917062199bb90bb5eb6bd4ec6408cf99b0f25ad39280628f276b",
+            "secret_key": ""
+        },
+        {
+            "address": "2EJMjg7nV4DMrkshnvwg7tLdibeuu7DKvZh",
+            "public_key": "02f101936835d944aef21930bb078de22da7154fb9a0c66d9f2a07a380bbe8fafe",
             "secret_key": ""
         }
     ]

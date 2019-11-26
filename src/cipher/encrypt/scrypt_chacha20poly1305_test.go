@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -24,7 +23,6 @@ func TestScryptChacha20poly1305Encrypt(t *testing.T) {
 			require.NoError(t, err)
 			// Checks the prefix
 			ml := binary.LittleEndian.Uint16(data[:scryptChacha20MetaLengthSize])
-			require.True(t, ml <= math.MaxUint16)
 			require.True(t, int(scryptChacha20MetaLengthSize+ml) <= len(data))
 			var m meta
 			require.NoError(t, json.Unmarshal(data[scryptChacha20MetaLengthSize:scryptChacha20MetaLengthSize+ml], &m))

@@ -1,20 +1,31 @@
 <div class="-row -actions">
-  <div class="-button" (click)="newAddress()">
-    <span class="-img -new-address">{{ 'wallet.new-address' | translate }}</span>
-  </div>
-  <div class="-button" (click)="toggleEmpty()">
-    <span [ngClass]="{ '-img': true, '-show-empty': wallet.hideEmpty, '-hide-empty': !wallet.hideEmpty }">
-      {{ 'wallet.' + (wallet.hideEmpty ? 'show' : 'hide') + '-empty' | translate }}
-    </span>
+  <ng-container *ngIf="!wallet.isHardware">
+    <div class="-button" (click)="newAddress()" [ngClass]="{ 'mouse-disabled': creatingAddress }">
+      <span [ngClass]="{ '-img -new-address': !creatingAddress, '-disabled-span': creatingAddress, '-enabled-span': !creatingAddress }">
+        <mat-spinner *ngIf="creatingAddress" class="in-button small"></mat-spinner>
+        {{ (wallet.isHardware ? 'wallet.new-address' : 'wallet.new-addresses') | translate }}
+      </span>
+    </div>
+    <div class="-button" (click)="toggleEmpty()">
+      <span [ngClass]="{ '-img': true, '-show-empty': wallet.hideEmpty, '-hide-empty': !wallet.hideEmpty }">
+        {{ 'wallet.' + (wallet.hideEmpty ? 'show' : 'hide') + '-empty' | translate }}
+      </span>
+    </div>
+  </ng-container>
+  <div *ngIf="wallet.isHardware" class="-button btn-delete-wallet" (click)="deleteWallet()">
+    <span class="-img -btn-delete -enabled-span">{{ 'wallet.delete' | translate }}</span>
   </div>
   <div class="flex-fill"></div>
-  <div class="-button" (click)="toggleEncryption()">
+  <div *ngIf="!wallet.isHardware" class="-button" (click)="toggleEncryption()">
     <span [ngClass]="{ '-img': true, '-enable-encryption': !wallet.encrypted, '-disable-encryption': wallet.encrypted }">
       {{ 'wallet.' + (wallet.encrypted ? 'decrypt' : 'encrypt') | translate }}
     </span>
   </div>
   <div class="-button" (click)="editWallet()">
-    <span class="-img -edit-wallet">{{ 'wallet.edit' | translate }}</span>
+    <span [ngClass]="{ '-img -edit-wallet': !preparingToEdit, '-disabled-span': preparingToEdit, '-enabled-span': !preparingToEdit }">
+      <mat-spinner *ngIf="preparingToEdit" class="in-button small"></mat-spinner>
+      {{ 'wallet.edit' | translate }}
+    </span>
   </div>
 </div>
 
@@ -23,24 +34,42 @@
     <div class="-record" *ngIf="!wallet.hideEmpty || address.coins.isGreaterThan(0)">
       <div class="id-column">{{ i + 1 }}</div>
       <div class="address-column">
-        <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address.address)" class="qr-code-button">
-        <p class="click-to-copy" [ngClass]="{ copying: address.copying }" (click)="copyAddress($event, address)" (mouseleave)="address.copying = false">
-          {{ address.address }}
-          <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">
-            {{ 'wallet.address.copy' | translate }}
-          </span>
-        </p>
+        <ng-container *ngIf="!wallet.isHardware || address.confirmed">
+          <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address.address)" class="qr-code-button">
+          <p class="click-to-copy" [ngClass]="{ copying: address.copying }" (click)="copyAddress($event, address)" (mouseleave)="address.copying = false">
+            {{ address.address }}
+            <mat-spinner class="in-text small" *ngIf="confirmingIndex === i"></mat-spinner>
+            <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">
+              {{ 'wallet.address.copy' | translate }}
+            </span>
+          </p>
+        </ng-container>
+        <ng-container *ngIf="wallet.isHardware && !address.confirmed">
+          <p class="click-to-copy" (click)="confirmAddress(address, i, true)">
+            <span class="truncated-address">{{ address.address }}</span>
+            <span class="copy-label unconfirmed-label">
+              {{ 'wallet.address.show' | translate }}
+              <mat-spinner class="in-text small" *ngIf="confirmingIndex === i"></mat-spinner>
+            </span>
+          </p>
+        </ng-container>
       </div>
-      <div class="coins-column">{{ (address.coins ? address.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }}</div>
-      <div class="hours-column">{{ (address.hours ? address.hours.decimalPlaces(0).toString() : 0) | number:'1.0-0' }}</div>
+      <div class="coins-column">{{ (address.coins ? address.coins.toString() : 0) | amount:true:'first' }}</div>
+      <div class="hours-column">{{ (address.hours ? address.hours.toString() : 0) | amount:false:'first' }}</div>
       <div class="options-column">
         <mat-icon [matMenuTriggerFor]="optionsMenu">more_vert</mat-icon>
         <mat-menu #optionsMenu="matMenu" [overlapTrigger]="false" class="compact">
-          <button mat-menu-item (click)="copyAddress($event, address, 1000)">
+          <button mat-menu-item (click)="copyAddress($event, address, 1000)" *ngIf="!wallet.isHardware || address.confirmed">
             {{ 'wallet.address.' + (address.copying ? 'copied': 'copy-address') | translate }}
+          </button>
+          <button mat-menu-item (click)="confirmAddress(address, i, !address.confirmed)" *ngIf="wallet.isHardware">
+            {{ 'wallet.address.confirm' | translate }}
           </button>
           <button mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address }">
             {{ 'wallet.address.outputs' | translate }}
+          </button>
+          <button mat-menu-item routerLink="/transactions" [queryParams]="{ addr: address.address }">
+            {{ 'wallet.address.history' | translate }}
           </button>
         </mat-menu>
       </div>

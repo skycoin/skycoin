@@ -4,33 +4,30 @@ import (
 	"fmt"
 	"strconv"
 
-	gcli "github.com/urfave/cli"
+	"github.com/spf13/cobra"
 )
 
-func blocksCmd() gcli.Command {
-	name := "blocks"
-	return gcli.Command{
-		Name:         name,
-		Usage:        "Lists the content of a single block or a range of blocks",
-		ArgsUsage:    "[starting block or single block seq] [ending block seq]",
-		Action:       getBlocks,
-		OnUsageError: onCommandUsageError(name),
+func blocksCmd() *cobra.Command {
+	blocksCmd := &cobra.Command{
+		Short:                 "Lists the content of a single block or a range of blocks",
+		Use:                   "blocks [starting block or single block seq] [ending block seq]",
+		Args:                  cobra.RangeArgs(1, 2),
+		DisableFlagsInUseLine: true,
+		SilenceUsage:          true,
+		RunE:                  getBlocks,
 	}
-	// Commands = append(Commands, cmd)
+
+	return blocksCmd
 }
 
-func getBlocks(c *gcli.Context) error {
-	client := APIClientFromContext(c)
+func getBlocks(_ *cobra.Command, args []string) error {
+	var start, end string
+	start = args[0]
 
-	// get start
-	start := c.Args().Get(0)
-	end := c.Args().Get(1)
-	if end == "" {
+	if len(args) == 1 {
 		end = start
-	}
-
-	if start == "" {
-		return gcli.ShowSubcommandHelp(c)
+	} else {
+		end = args[1]
 	}
 
 	s, err := strconv.ParseUint(start, 10, 64)
@@ -43,7 +40,7 @@ func getBlocks(c *gcli.Context) error {
 		return fmt.Errorf("invalid block seq: %v, must be unsigned integer", end)
 	}
 
-	rlt, err := client.BlocksInRange(s, e)
+	rlt, err := apiClient.BlocksInRange(s, e)
 	if err != nil {
 		return err
 	}

@@ -13,14 +13,15 @@ import (
 	_ "net/http/pprof"
 	"os"
 
-	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/skycoin"
-	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/SkycoinProject/skycoin/src/fiber"
+	"github.com/SkycoinProject/skycoin/src/readable"
+	"github.com/SkycoinProject/skycoin/src/skycoin"
+	"github.com/SkycoinProject/skycoin/src/util/logging"
 )
 
 var (
 	// Version of the node. Can be set by -ldflags
-	Version = "0.25.0"
+	Version = "0.27.0"
 	// Commit ID. Can be set by -ldflags
 	Commit = ""
 	// Branch name. Can be set by -ldflags
@@ -51,39 +52,47 @@ var (
 
 	// DefaultConnections the default trust node addresses
 	DefaultConnections = []string{
-		"118.178.135.93:6000",
-		"47.88.33.156:6000",
-		"121.41.103.148:6000",
-		"104.237.142.206:6000",
-		"176.58.126.224:6000",
-		"172.104.85.6:6000",
-		"139.162.7.132:6000",
+		"139.162.121.185:6000",
+		"172.104.164.147:6000",
+		"139.162.248.183:6000",
+		"45.56.109.228:6000",
+		"173.230.130.174:6000",
 		"139.162.39.186:6000",
 		"45.33.111.142:6000",
 		"109.237.27.172:6000",
 		"172.104.41.14:6000",
 	}
 
-	nodeConfig = skycoin.NewNodeConfig(ConfigMode, skycoin.NodeParameters{
-		CoinName:                       CoinName,
-		GenesisSignatureStr:            GenesisSignatureStr,
-		GenesisAddressStr:              GenesisAddressStr,
-		GenesisCoinVolume:              GenesisCoinVolume,
-		GenesisTimestamp:               GenesisTimestamp,
-		BlockchainPubkeyStr:            BlockchainPubkeyStr,
-		BlockchainSeckeyStr:            BlockchainSeckeyStr,
-		DefaultConnections:             DefaultConnections,
-		PeerListURL:                    "https://downloads.skycoin.net/blockchain/peers.txt",
-		Port:                           6000,
-		WebInterfacePort:               6420,
-		DataDirectory:                  "$HOME/.skycoin",
-		UnconfirmedBurnFactor:          2,
+	nodeConfig = skycoin.NewNodeConfig(ConfigMode, fiber.NodeConfig{
+		CoinName:            CoinName,
+		GenesisSignatureStr: GenesisSignatureStr,
+		GenesisAddressStr:   GenesisAddressStr,
+		GenesisCoinVolume:   GenesisCoinVolume,
+		GenesisTimestamp:    GenesisTimestamp,
+		BlockchainPubkeyStr: BlockchainPubkeyStr,
+		BlockchainSeckeyStr: BlockchainSeckeyStr,
+		DefaultConnections:  DefaultConnections,
+		PeerListURL:         "https://downloads.skycoin.com/blockchain/peers.txt",
+		Port:                6000,
+		WebInterfacePort:    6420,
+		DataDirectory:       "$HOME/.skycoin",
+
+		UnconfirmedBurnFactor:          10,
 		UnconfirmedMaxTransactionSize:  32768,
 		UnconfirmedMaxDropletPrecision: 3,
-		CreateBlockBurnFactor:          2,
+		CreateBlockBurnFactor:          10,
 		CreateBlockMaxTransactionSize:  32768,
 		CreateBlockMaxDropletPrecision: 3,
-		MaxBlockSize:                   32768,
+		MaxBlockTransactionsSize:       32768,
+
+		DisplayName:           "Skycoin",
+		Ticker:                "SKY",
+		CoinHoursName:         "Coin Hours",
+		CoinHoursNameSingular: "Coin Hour",
+		CoinHoursTicker:       "SCH",
+		ExplorerURL:           "https://explorer.skycoin.com",
+		VersionURL:            "https://version.skycoin.com/skycoin/version.txt",
+		Bip44Coin:             8000,
 	})
 
 	parseFlags = true

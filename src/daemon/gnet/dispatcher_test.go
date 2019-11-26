@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/SkycoinProject/skycoin/src/testutil"
 )
 
 var (
@@ -36,7 +38,13 @@ func TestMsgIDStringSafe(t *testing.T) {
 	require.Equal(t, "'\\\\ \\\"", msgIDStringSafe(id))
 }
 
+func assertIsMessage(t *testing.T, x interface{}) {
+	_, ok := x.(Message)
+	require.True(t, ok)
+}
+
 func TestConvertToMessage(t *testing.T) {
+	assertIsMessage(t, &ByteMessage{})
 	EraseMessages()
 	resetHandler()
 	RegisterMessage(BytePrefix, ByteMessage{})
@@ -105,7 +113,7 @@ func TestConvertToMessageNotMessage(t *testing.T) {
 	// don't verify messages
 	c := &Connection{}
 	require.Panics(t, func() {
-		_, _ = convertToMessage(c.ID, NothingPrefix[:], testing.Verbose()) // nolint: errcheck
+		_, _ = convertToMessage(c.ID, NothingPrefix[:], testing.Verbose()) //nolint:errcheck
 	})
 }
 
@@ -113,11 +121,11 @@ func TestDeserializeMessageTrapsPanic(t *testing.T) {
 	resetHandler()
 	EraseMessages()
 	p := 7
-	m := PointerMessage{Ptr: &p}
+	m := &PointerMessage{Ptr: &p}
 	b := []byte{4, 4, 4, 4, 4, 4, 4, 4}
 	_, err := deserializeMessage(b, reflect.ValueOf(m))
 	require.Error(t, err)
-	require.Equal(t, err.Error(), "DeserializeRawToValue value must be a ptr, is struct")
+	require.Equal(t, "Decode error: kind ptr not handled", err.Error())
 }
 
 func TestEncodeMessage(t *testing.T) {
@@ -126,14 +134,17 @@ func TestEncodeMessage(t *testing.T) {
 	RegisterMessage(BytePrefix, ByteMessage{})
 	VerifyMessages()
 	m := NewByteMessage(7)
-	b := EncodeMessage(m)
+	b, err := EncodeMessage(m)
+	require.NoError(t, err)
 	require.True(t, bytes.Equal(b, []byte{5, 0, 0, 0, 'B', 'Y', 'T', 'E', 7}))
 }
 
 func TestEncodeMessageUnknownMessage(t *testing.T) {
 	resetHandler()
 	EraseMessages()
-	require.Panics(t, func() { EncodeMessage(&DummyMessage{}) })
+	require.Panics(t, func() {
+		_, _ = EncodeMessage(&DummyMessage{}) //nolint:errcheck
+	})
 }
 
 func TestSendByteMessage(t *testing.T) {
@@ -181,8 +192,11 @@ func TestSendMessage(t *testing.T) {
 		require.True(t, bytes.Equal(msg, expect))
 		return nil
 	}
-	err := sendMessage(nil, m, 0)
+	err := sendMessage(nil, m, 0, 1024)
 	require.NoError(t, err)
+
+	err = sendMessage(nil, m, 0, 1)
+	testutil.RequireError(t, err, "Message exceeds max message length")
 }
 
 /* Helpers */

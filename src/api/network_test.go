@@ -13,10 +13,10 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/skycoin/skycoin/src/daemon"
-	"github.com/skycoin/skycoin/src/daemon/pex"
-	"github.com/skycoin/skycoin/src/readable"
-	"github.com/skycoin/skycoin/src/util/useragent"
+	"github.com/SkycoinProject/skycoin/src/daemon"
+	"github.com/SkycoinProject/skycoin/src/daemon/pex"
+	"github.com/SkycoinProject/skycoin/src/readable"
+	"github.com/SkycoinProject/skycoin/src/util/useragent"
 )
 
 func TestConnection(t *testing.T) {
@@ -121,7 +121,7 @@ func TestConnection(t *testing.T) {
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -348,7 +348,7 @@ func TestConnections(t *testing.T) {
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -401,7 +401,7 @@ func TestDefaultConnections(t *testing.T) {
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -454,7 +454,7 @@ func TestGetTrustConnections(t *testing.T) {
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -507,7 +507,7 @@ func TestGetExchgConnection(t *testing.T) {
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -598,7 +598,7 @@ func TestDisconnect(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
-			gateway.On("Disconnect", tc.gnetID).Return(tc.disconnectErr)
+			gateway.On("DisconnectByGnetID", tc.gnetID).Return(tc.disconnectErr)
 
 			endpoint := "/api/v1/network/connection/disconnect"
 			v := url.Values{}
@@ -611,7 +611,7 @@ func TestDisconnect(t *testing.T) {
 			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 			rr := httptest.NewRecorder()
-			handler := newServerMux(defaultMuxConfig(), gateway, nil)
+			handler := newServerMux(defaultMuxConfig(), gateway)
 			handler.ServeHTTP(rr, req)
 
 			status := rr.Code
@@ -627,5 +627,4 @@ func TestDisconnect(t *testing.T) {
 			}
 		})
 	}
-
 }

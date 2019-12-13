@@ -1,7 +1,6 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { AppComponent } from './app.component';
-import { HttpModule } from '@angular/http';
 import { ApiService } from './services/api.service';
 import { WalletService } from './services/wallet.service';
 import { WalletsComponent } from './components/pages/wallets/wallets.component';
@@ -288,7 +287,6 @@ const ROUTES = [
   ],
   imports: [
     BrowserModule,
-    HttpModule,
     HttpClientModule,
     MatButtonModule,
     MatCardModule,

@@ -19,9 +19,8 @@ import { HwWalletService } from './hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
 import { catchError, map } from 'rxjs/operators';
 import { AppConfig } from '../app.config';
-import { Http } from '@angular/http';
+import { HttpClient } from '@angular/common/http';
 import { StorageService, StorageType } from './storage.service';
-import { shouldUpgradeVersion } from '../utils/semver';
 import { TxEncoder } from '../utils/tx-encoder';
 
 export enum HwSecurityWarnings {
@@ -57,7 +56,7 @@ export class WalletService {
     private hwWalletService: HwWalletService,
     private translate: TranslateService,
     private ngZone: NgZone,
-    private http: Http,
+    private http: HttpClient,
     private storageService: StorageService,
   ) {
     this.loadData();
@@ -171,11 +170,11 @@ export class WalletService {
 
       let lastestFirmwareVersion: string;
 
-      return this.http.get(AppConfig.urlForHwWalletVersionChecking)
+      return this.http.get(AppConfig.urlForHwWalletVersionChecking, { responseType: 'text' })
       .catch(() => Observable.of(null))
       .flatMap((res: any) => {
         if (res) {
-          lastestFirmwareVersion = res.text();
+          lastestFirmwareVersion = res;
         } else {
           lastestFirmwareVersion = null;
         }

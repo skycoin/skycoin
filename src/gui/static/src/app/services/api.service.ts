@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Http, RequestOptions, Headers } from '@angular/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs/Observable';
 import { environment } from '../../environments/environment';
 import 'rxjs/add/observable/throw';
@@ -18,7 +18,7 @@ export class ApiService {
   private url = environment.nodeUrl;
 
   constructor(
-    private http: Http,
+    private http: HttpClient,
     private translate: TranslateService,
   ) { }
 
@@ -131,7 +131,7 @@ export class ApiService {
 
   get(url, params = null, options: any = {}, useV2 = false) {
     return this.http.get(this.getUrl(url, params, useV2), this.returnRequestOptions(options))
-      .map((res: any) => res.json())
+      .map((res: any) => res as any)
       .catch((error: any) => this.processConnectionError(error));
   }
 
@@ -152,28 +152,22 @@ export class ApiService {
         options.json || useV2 ? JSON.stringify(params) : this.getQueryString(params),
         this.returnRequestOptions(options),
       )
-        .map((res: any) => res.json())
+        .map((res: any) => res as any)
         .catch((error: any) => this.processConnectionError(error));
     });
   }
 
-  returnRequestOptions(additionalOptions) {
-    const options = new RequestOptions();
+  private returnRequestOptions(options) {
+    const requestOptions: any = {};
 
-    options.headers = this.getHeaders(additionalOptions);
+    requestOptions.headers = new HttpHeaders();
+    requestOptions.headers = requestOptions.headers.append('Content-Type', options.json ? 'application/json' : 'application/x-www-form-urlencoded');
 
-    if (additionalOptions.csrf) {
-      options.headers.append('X-CSRF-Token', additionalOptions.csrf);
+    if (options.csrf) {
+      requestOptions.headers = requestOptions.headers.append('X-CSRF-Token', options.csrf);
     }
 
-    return options;
-  }
-
-  private getHeaders(options) {
-    const headers = new Headers();
-    headers.append('Content-Type', options.json ? 'application/json' : 'application/x-www-form-urlencoded');
-
-    return headers;
+    return requestOptions;
   }
 
   private getQueryString(parameters = null) {
@@ -205,6 +199,10 @@ export class ApiService {
 
       if (error.error && typeof error.error === 'string') {
         error['_body'] = error.error;
+
+        return Observable.throw(error);
+      } else if (error.error && error.error.error && error.error.error.message)  {
+        error['_body'] = error.error.error.message;
 
         return Observable.throw(error);
       } else if (error.message) {

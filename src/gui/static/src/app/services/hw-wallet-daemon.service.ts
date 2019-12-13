@@ -1,6 +1,6 @@
 import { Injectable, NgZone } from '@angular/core';
 import { ApiService } from './api.service';
-import { Http, RequestOptions, Headers } from '@angular/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs/Observable';
 import { HwWalletPinService } from './hw-wallet-pin.service';
 import { HwWalletSeedWordService } from './hw-wallet-seed-word.service';
@@ -28,7 +28,7 @@ export class HwWalletDaemonService {
   }
 
   constructor(
-    private http: Http,
+    private http: HttpClient,
     private apiService: ApiService,
     private hwWalletPinService: HwWalletPinService,
     private hwWalletSeedWordService: HwWalletSeedWordService,
@@ -68,9 +68,7 @@ export class HwWalletDaemonService {
   private checkResponse(response: Observable<any>, checkingConnected = false, smallTimeout = false) {
     return response
       .timeout(smallTimeout ? 30000 : 55000)
-      .flatMap((res: any) => {
-        const finalResponse = res.json();
-
+      .flatMap((finalResponse: any) => {
         if (finalResponse.data && finalResponse.data.length) {
           if (finalResponse.data.length === 1) {
             finalResponse.data = finalResponse.data[0];
@@ -118,13 +116,15 @@ export class HwWalletDaemonService {
           return Observable.throw({_body: HwWalletDaemonService.errorTimeout });
         }
 
-        if (error && error._body)  {
+        if (error)  {
           let errorContent: string;
 
-          if (typeof error._body === 'string')  {
+          if (error._body && typeof error._body === 'string')  {
             errorContent = error._body;
-          } else if (error._body.error)  {
+          } else if (error._body && error._body.error)  {
             errorContent = error._body.error;
+          } else if (error.error && error.error.error && error.error.error.message)  {
+            errorContent = error.error.error.message;
           } else {
             try {
               errorContent = JSON.parse(error._body).error;
@@ -141,10 +141,10 @@ export class HwWalletDaemonService {
   }
 
   private returnRequestOptions(sendMultipartFormData = false) {
-    const options = new RequestOptions();
-    options.headers = new Headers();
+    const options: any = {};
+    options.headers = new HttpHeaders();
     if (!sendMultipartFormData) {
-      options.headers.append('Content-Type', 'application/json');
+      options.headers = options.headers.append('Content-Type', 'application/json');
     }
 
     return options;

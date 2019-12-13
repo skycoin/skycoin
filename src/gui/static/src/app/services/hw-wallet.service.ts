@@ -13,7 +13,7 @@ import { HwWalletSeedWordService } from './hw-wallet-seed-word.service';
 import BigNumber from 'bignumber.js';
 import { StorageService, StorageType } from './storage.service';
 import { ISubscription } from 'rxjs/Subscription';
-import { Http, ResponseContentType } from '@angular/http';
+import { HttpClient } from '@angular/common/http';
 import { ApiService } from './api.service';
 
 export enum OperationResults {
@@ -94,7 +94,7 @@ export class HwWalletService {
     private hwWalletSeedWordService: HwWalletSeedWordService,
     private storageService: StorageService,
     private apiService: ApiService,
-    private http: Http) {
+    private http: HttpClient) {
 
     if (this.hwWalletCompatibilityActivated) {
       if (!AppConfig.useHwWalletDaemon) {
@@ -338,22 +338,20 @@ export class HwWalletService {
           return Observable.throw(response);
         }
 
-        return this.http.get(AppConfig.urlForHwWalletVersionChecking)
+        return this.http.get(AppConfig.urlForHwWalletVersionChecking, { responseType: 'text' })
           .catch(() => Observable.throw({ _body: this.translate.instant('hardware-wallet.update-firmware.connection-error') }))
-          .map((res: any) => res.text())
           .flatMap((res: any) => {
             let lastestFirmwareVersion: string = res.trim();
             if (lastestFirmwareVersion.toLowerCase().startsWith('v')) {
               lastestFirmwareVersion = lastestFirmwareVersion.substr(1, lastestFirmwareVersion.length - 1);
             }
 
-            return this.http.get(AppConfig.hwWalletDownloadUrlAndPrefix + lastestFirmwareVersion + '.bin', { responseType: ResponseContentType.Blob })
-              .map(firmwareResponse => firmwareResponse.blob())
+            return this.http.get(AppConfig.hwWalletDownloadUrlAndPrefix + lastestFirmwareVersion + '.bin', { responseType: 'arraybuffer' })
               .catch(() => Observable.throw({ _body: this.translate.instant('hardware-wallet.update-firmware.connection-error') }))
               .flatMap(firmware => {
                 downloadCompleteCallback();
                 const data = new FormData();
-                data.set('file', (firmware as Blob));
+                data.set('file', new Blob([firmware], { type: 'application/octet-stream'}));
 
                 return this.processDaemonResponse(
                   this.hwWalletDaemonService.put('/firmware_update', data, true),

@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
 import { Version } from '../app.datatypes';
 import BigNumber from 'bignumber.js';
-import { Http, Response } from '@angular/http';
+import { HttpClient } from '@angular/common/http';
 import { shouldUpgradeVersion } from '../utils/semver';
 import { AppConfig } from '../app.config';
 
@@ -33,7 +33,7 @@ export class AppService {
 
   constructor(
     private apiService: ApiService,
-    private http: Http,
+    private http: HttpClient,
   ) {}
 
   testBackend() {
@@ -62,10 +62,10 @@ export class AppService {
 
   private detectUpdateAvailable() {
     if (AppConfig.urlForVersionChecking) {
-      this.http.get(AppConfig.urlForVersionChecking)
+      this.http.get(AppConfig.urlForVersionChecking, { responseType: 'text' })
         .retryWhen(errors => errors.delay(30000))
-        .subscribe((response: Response) => {
-          this.lastestVersionInternal = response.text().trim();
+        .subscribe((response: string) => {
+          this.lastestVersionInternal = response.trim();
           if (this.lastestVersionInternal.startsWith('v')) {
             this.lastestVersionInternal = this.lastestVersionInternal.substr(1);
           }

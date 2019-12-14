@@ -3,7 +3,7 @@ import { Subscription } from 'rxjs/Subscription';
 import { AppService } from '../../../../services/app.service';
 import { LanguageData, LanguageService } from '../../../../services/language.service';
 import { openChangeLanguageModal } from '../../../../utils';
-import { MatDialog } from '@angular/material';
+import { MatDialog } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-top-bar',

@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, OnInit, Output, ViewChild, OnDestroy } 
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
 import { OnboardingSafeguardComponent } from './onboarding-safeguard/onboarding-safeguard.component';
-import { MatDialogRef } from '@angular/material';
+import { MatDialogRef } from '@angular/material/dialog';
 import { CreateWalletFormComponent, WalletFormData } from '../../wallets/create-wallet/create-wallet-form/create-wallet-form.component';
 import { HwOptionsDialogComponent } from '../../../layout/hardware-wallet/hw-options-dialog/hw-options-dialog.component';
 import { Router } from '@angular/router';
@@ -18,7 +18,7 @@ import { showConfirmationModal } from '../../../../utils';
   styleUrls: ['./onboarding-create-wallet.component.scss'],
 })
 export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
-  @ViewChild('formControl') formControl: CreateWalletFormComponent;
+  @ViewChild('formControl', { static: false }) formControl: CreateWalletFormComponent;
   @Input() fill: WalletFormData = null;
   @Output() onLabelAndSeedCreated = new EventEmitter<WalletFormData>();
 

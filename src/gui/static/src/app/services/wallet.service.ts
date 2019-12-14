@@ -192,7 +192,7 @@ export class WalletService {
           if (versionParts.length === 3) {
             lastestFirmwareVersionReaded = true;
 
-            const numVersionParts = versionParts.map(value => Number.parseInt(value.replace(/\D/g, '')));
+            const numVersionParts = versionParts.map(value => Number.parseInt(value.replace(/\D/g, ''), 10));
 
             const devMajorVersion = !AppConfig.useHwWalletDaemon ? result.rawResponse.majorVersion : result.rawResponse.fw_major;
             const devMinorVersion = !AppConfig.useHwWalletDaemon ? result.rawResponse.minorVersion : result.rawResponse.fw_minor;

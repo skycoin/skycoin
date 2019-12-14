@@ -2,7 +2,7 @@ import { Component, Inject, ViewChild, OnDestroy } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { MatDialogRef, MatDialog } from '@angular/material/dialog';
 import { ButtonComponent } from '../../../layout/button/button.component';
-import { MAT_DIALOG_DATA } from '@angular/material';
+import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { CreateWalletFormComponent } from './create-wallet-form/create-wallet-form.component';
 import { ISubscription } from 'rxjs/Subscription';
 import { BlockchainService } from '../../../../services/blockchain.service';
@@ -16,9 +16,9 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
   styleUrls: ['./create-wallet.component.scss'],
 })
 export class CreateWalletComponent implements OnDestroy {
-  @ViewChild('formControl') formControl: CreateWalletFormComponent;
-  @ViewChild('createButton') createButton: ButtonComponent;
-  @ViewChild('cancelButton') cancelButton: ButtonComponent;
+  @ViewChild('formControl', { static: false }) formControl: CreateWalletFormComponent;
+  @ViewChild('createButton', { static: false }) createButton: ButtonComponent;
+  @ViewChild('cancelButton', { static: false }) cancelButton: ButtonComponent;
 
   scan: Number;
   disableDismiss = false;

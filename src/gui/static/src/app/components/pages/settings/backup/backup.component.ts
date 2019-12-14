@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { Wallet } from '../../../../app.datatypes';
-import { MatDialog, MatDialogConfig } from '@angular/material';
+import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { SeedModalComponent } from './seed-modal/seed-modal.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 

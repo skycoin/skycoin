@@ -6,7 +6,7 @@ import { Subscriber } from 'rxjs/Subscriber';
 import { Subject } from 'rxjs/Subject';
 import { TranslateService } from '@ngx-translate/core';
 import { AppConfig } from '../app.config';
-import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material';
+import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
 import { HwWalletDaemonService } from './hw-wallet-daemon.service';
 import { HwWalletPinService, ChangePinStates } from './hw-wallet-pin.service';
 import { HwWalletSeedWordService } from './hw-wallet-seed-word.service';

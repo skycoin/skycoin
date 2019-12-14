@@ -24,7 +24,7 @@ export enum States {
   template: '',
 })
 export class HwDialogBaseComponent<T> implements OnDestroy {
-  @ViewChild('closeButton') closeButton: ButtonComponent;
+  @ViewChild('closeButton', { static: false }) closeButton: ButtonComponent;
 
   closeIfHwDisconnected = true;
 

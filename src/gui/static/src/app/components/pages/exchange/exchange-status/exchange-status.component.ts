@@ -2,7 +2,7 @@ import { Component, Input, OnDestroy, Output, EventEmitter } from '@angular/core
 import { ExchangeOrder, StoredExchangeOrder, ConfirmationData } from '../../../../app.datatypes';
 import { ExchangeService } from '../../../../services/exchange.service';
 import { QrCodeComponent, QrDialogConfig } from '../../../layout/qr-code/qr-code.component';
-import { MatDialog, MatDialogConfig } from '@angular/material';
+import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ISubscription } from 'rxjs/Subscription';
 import { Observable } from 'rxjs/Observable';
 import { showConfirmationModal } from '../../../../utils';

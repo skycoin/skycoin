@@ -4,7 +4,7 @@ import { WalletService } from '../../../services/wallet.service';
 import { LanguageData, LanguageService } from '../../../services/language.service';
 import { ISubscription } from 'rxjs/Subscription';
 import { openChangeLanguageModal } from '../../../utils';
-import { MatDialog } from '@angular/material';
+import { MatDialog } from '@angular/material/dialog';
 import { WalletFormData } from '../wallets/create-wallet/create-wallet-form/create-wallet-form.component';
 import { MsgBarService } from '../../../services/msg-bar.service';
 import { OnboardingEncryptWalletComponent } from './onboarding-encrypt-wallet/onboarding-encrypt-wallet.component';
@@ -15,7 +15,7 @@ import { OnboardingEncryptWalletComponent } from './onboarding-encrypt-wallet/on
   styleUrls: ['./onboarding.component.scss'],
 })
 export class OnboardingComponent implements OnInit, OnDestroy {
-  @ViewChild('encryptForm') encryptForm: OnboardingEncryptWalletComponent;
+  @ViewChild('encryptForm', { static: false }) encryptForm: OnboardingEncryptWalletComponent;
 
   step = 1;
   formData: WalletFormData;

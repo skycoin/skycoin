@@ -1,6 +1,6 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import 'rxjs/add/operator/takeWhile';
-import { MatDialog } from '@angular/material';
+import { MatDialog } from '@angular/material/dialog';
 
 import { AppService } from './services/app.service';
 import { WalletService } from './services/wallet.service';
@@ -21,8 +21,8 @@ import { SeedWordDialogComponent } from './components/layout/seed-word-dialog/se
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
 })
-export class AppComponent implements OnInit {
-  @ViewChild('msgBar') msgBar: MsgBarComponent;
+export class AppComponent implements OnInit, AfterViewInit {
+  @ViewChild('msgBar', { static: false }) msgBar: MsgBarComponent;
 
   constructor(
     private appService: AppService,
@@ -61,8 +61,10 @@ export class AppComponent implements OnInit {
       }
 
       subscription.unsubscribe();
-
-      this.msgBarService.msgBarComponent = this.msgBar;
     });
+  }
+
+  ngAfterViewInit() {
+    this.msgBarService.msgBarComponent = this.msgBar;
   }
 }

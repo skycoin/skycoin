@@ -13,7 +13,7 @@ import { ExchangeService } from '../../../../services/exchange.service';
 import { ExchangeOrder, TradingPair, StoredExchangeOrder } from '../../../../app.datatypes';
 import { ISubscription } from 'rxjs/Subscription';
 import 'rxjs/add/observable/merge';
-import { MatDialog, MatDialogConfig } from '@angular/material';
+import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { SelectAddressComponent } from '../../send-skycoin/send-form-advanced/select-address/select-address';
 import { WalletService } from '../../../../services/wallet.service';
 import { Observable } from 'rxjs/Observable';
@@ -32,7 +32,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   readonly defaultFromAmount = '0.1';
   readonly toCoin = 'SKY';
 
-  @ViewChild('exchangeButton') exchangeButton: ButtonComponent;
+  @ViewChild('exchangeButton', { static: false }) exchangeButton: ButtonComponent;
   @Output() submitted = new EventEmitter<StoredExchangeOrder>();
   form: FormGroup;
   tradingPairs: TradingPair[];

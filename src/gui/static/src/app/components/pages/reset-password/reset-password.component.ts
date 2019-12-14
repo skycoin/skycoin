@@ -14,7 +14,7 @@ import { MsgBarService } from '../../../services/msg-bar.service';
   styleUrls: ['./reset-password.component.scss'],
 })
 export class ResetPasswordComponent implements OnDestroy {
-  @ViewChild('resetButton') resetButton: ButtonComponent;
+  @ViewChild('resetButton', { static: false }) resetButton: ButtonComponent;
 
   form: FormGroup;
 

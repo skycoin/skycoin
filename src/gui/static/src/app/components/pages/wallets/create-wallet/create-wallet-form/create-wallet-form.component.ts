@@ -5,7 +5,7 @@ import { ApiService } from '../../../../../services/api.service';
 import { Subject } from 'rxjs/Subject';
 import 'rxjs/add/operator/switchMap';
 import { Observable } from 'rxjs/Observable';
-import { MatDialog, MatDialogConfig } from '@angular/material';
+import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { SeedWordDialogComponent } from '../../../../layout/seed-word-dialog/seed-word-dialog.component';
 import { ConfirmationData } from '../../../../../app.datatypes';
 import { showConfirmationModal } from '../../../../../utils';

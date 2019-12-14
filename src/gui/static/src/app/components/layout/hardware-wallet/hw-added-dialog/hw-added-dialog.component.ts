@@ -15,7 +15,7 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
   styleUrls: ['./hw-added-dialog.component.scss'],
 })
 export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogComponent> implements OnDestroy {
-  @ViewChild('input') input: ElementRef;
+  @ViewChild('input', { static: false }) input: ElementRef;
   wallet: Wallet;
   form: FormGroup;
   maxHwWalletLabelLength = HwWalletService.maxLabelLength;

@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { StoredExchangeOrder, Wallet } from '../../../../app.datatypes';
-import { MatDialogRef } from '@angular/material';
+import { MatDialogRef } from '@angular/material/dialog';
 import { ExchangeService } from '../../../../services/exchange.service';
 import { BlockchainService } from '../../../../services/blockchain.service';
 

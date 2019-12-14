@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, OnDestroy, Output, ViewChild } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { ButtonComponent } from '../../../layout/button/button.component';
-import { MatDialogConfig, MatDialog } from '@angular/material';
+import { MatDialogConfig, MatDialog } from '@angular/material/dialog';
 import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { PreviewTransaction, Wallet } from '../../../../app.datatypes';
 import { ISubscription } from 'rxjs/Subscription';
@@ -16,8 +16,8 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
   styleUrls: ['./send-preview.component.scss'],
 })
 export class SendVerifyComponent implements OnDestroy {
-  @ViewChild('sendButton') sendButton: ButtonComponent;
-  @ViewChild('backButton') backButton: ButtonComponent;
+  @ViewChild('sendButton', { static: false }) sendButton: ButtonComponent;
+  @ViewChild('backButton', { static: false }) backButton: ButtonComponent;
   @Input() transaction: PreviewTransaction;
   @Output() onBack = new EventEmitter<boolean>();
 

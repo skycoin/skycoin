@@ -10,7 +10,7 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
   styleUrls: ['./number-of-addresses.css'],
 })
 export class NumberOfAddressesComponent implements OnInit, OnDestroy {
-  @ViewChild('button') button: ButtonComponent;
+  @ViewChild('button', { static: false }) button: ButtonComponent;
   form: FormGroup;
 
   constructor(

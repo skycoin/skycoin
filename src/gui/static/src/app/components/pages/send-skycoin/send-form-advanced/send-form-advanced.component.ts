@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { MatDialog, MatDialogConfig } from '@angular/material';
+import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
@@ -31,8 +31,8 @@ import { MultipleDestinationsDialogComponent } from '../../../layout/multiple-de
   styleUrls: ['./send-form-advanced.component.scss'],
 })
 export class SendFormAdvancedComponent implements OnInit, OnDestroy {
-  @ViewChild('previewButton') previewButton: ButtonComponent;
-  @ViewChild('sendButton') sendButton: ButtonComponent;
+  @ViewChild('previewButton', { static: false }) previewButton: ButtonComponent;
+  @ViewChild('sendButton', { static: false }) sendButton: ButtonComponent;
   @Input() formData: any;
   @Output() onFormSubmitted = new EventEmitter<any>();
 

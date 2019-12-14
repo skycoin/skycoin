@@ -1,4 +1,4 @@
-import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material';
+import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
 import { Observable } from 'rxjs/Observable';
 
 import { ConfirmationData } from '../app.datatypes';

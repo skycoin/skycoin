@@ -16,7 +16,7 @@ export class ChangeNoteComponent implements OnInit, OnDestroy {
 
   public static readonly MAX_NOTE_CHARS = 64;
 
-  @ViewChild('button') button: ButtonComponent;
+  @ViewChild('button', { static: false }) button: ButtonComponent;
   form: FormGroup;
   maxNoteChars = ChangeNoteComponent.MAX_NOTE_CHARS;
 

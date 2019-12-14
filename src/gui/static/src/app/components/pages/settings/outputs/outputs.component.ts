@@ -2,7 +2,7 @@ import { Component, OnDestroy } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { ActivatedRoute } from '@angular/router';
 import { ISubscription } from 'rxjs/Subscription';
-import { MatDialog, MatDialogConfig } from '@angular/material';
+import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { QrCodeComponent, QrDialogConfig } from '../../../layout/qr-code/qr-code.component';
 
 @Component({

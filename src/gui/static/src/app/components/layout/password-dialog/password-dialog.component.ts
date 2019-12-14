@@ -1,6 +1,6 @@
 import { Component, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { MatDialogRef } from '@angular/material';
+import { MatDialogRef } from '@angular/material/dialog';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ButtonComponent } from '../button/button.component';
 import { parseResponseMessage } from '../../../utils/errors';
@@ -15,7 +15,7 @@ import { MsgBarService } from '../../../services/msg-bar.service';
   styleUrls: ['./password-dialog.component.scss'],
 })
 export class PasswordDialogComponent implements OnInit, OnDestroy {
-  @ViewChild('button') button: ButtonComponent;
+  @ViewChild('button', { static: false }) button: ButtonComponent;
   form: FormGroup;
   passwordSubmit = new Subject<any>();
   working = false;

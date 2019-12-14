@@ -18,7 +18,7 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
 
   closeIfHwDisconnected = false;
 
-  @ViewChild('button') button: ButtonComponent;
+  @ViewChild('button', { static: false }) button: ButtonComponent;
 
   currentState = this.states.Connecting;
   confirmed = false;

@@ -3,7 +3,7 @@ import { PreviewTransaction, Transaction } from '../../../../../app.datatypes';
 import { PriceService } from '../../../../../services/price.service';
 import { ISubscription } from 'rxjs/Subscription';
 import { BigNumber } from 'bignumber.js';
-import { MatDialogConfig, MatDialog } from '@angular/material';
+import { MatDialogConfig, MatDialog } from '@angular/material/dialog';
 import { ChangeNoteComponent } from './change-note/change-note.component';
 
 @Component({

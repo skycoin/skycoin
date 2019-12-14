@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { StoredExchangeOrder } from '../../../app.datatypes';
 import { ExchangeService } from '../../../services/exchange.service';
-import { MatDialog, MatDialogConfig } from '@angular/material';
+import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ExchangeHistoryComponent } from './exchange-history/exchange-history.component';
 import { ISubscription } from 'rxjs/Subscription';
 

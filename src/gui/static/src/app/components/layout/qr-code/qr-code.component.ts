@@ -1,6 +1,6 @@
-import { Component, Inject, OnInit, ViewChild, OnDestroy, ElementRef } from '@angular/core';
+import { Component, Inject, ViewChild, OnDestroy, ElementRef, AfterViewInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { MatDialogRef } from '@angular/material';
+import { MatDialogRef } from '@angular/material/dialog';
 import { FormGroup, FormBuilder } from '@angular/forms';
 import { ISubscription } from 'rxjs/Subscription';
 import { Subject } from 'rxjs/Subject';
@@ -29,8 +29,8 @@ export interface QrDialogConfig {
   templateUrl: './qr-code.component.html',
   styleUrls: ['./qr-code.component.scss'],
 })
-export class QrCodeComponent implements OnInit, OnDestroy {
-  @ViewChild('qr') qr: ElementRef;
+export class QrCodeComponent implements AfterViewInit, OnDestroy {
+  @ViewChild('qr', { static: false }) qr: ElementRef;
 
   form: FormGroup;
   currentQrContent: string;
@@ -56,9 +56,11 @@ export class QrCodeComponent implements OnInit, OnDestroy {
     private msgBarService: MsgBarService,
   ) { }
 
-  ngOnInit() {
-    this.initForm();
-    this.updateQrContent();
+  ngAfterViewInit() {
+    setTimeout(() => {
+      this.initForm();
+      this.updateQrContent();
+    });
   }
 
   ngOnDestroy() {
@@ -115,7 +117,7 @@ export class QrCodeComponent implements OnInit, OnDestroy {
 
     const hours = this.form.get('hours').value;
     if (hours) {
-      if (Number.parseInt(hours).toString() === hours && Number.parseInt(hours) > 0) {
+      if (Number.parseInt(hours, 10).toString() === hours && Number.parseInt(hours, 10) > 0) {
         this.currentQrContent += nextSeparator + 'hours=' + this.form.get('hours').value;
         nextSeparator = '&';
       } else {

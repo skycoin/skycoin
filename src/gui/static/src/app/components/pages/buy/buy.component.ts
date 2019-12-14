@@ -13,7 +13,7 @@ import { MsgBarService } from '../../../services/msg-bar.service';
   styleUrls: ['./buy.component.scss'],
 })
 export class BuyComponent implements OnInit, OnDestroy {
-  @ViewChild('button') button: ButtonComponent;
+  @ViewChild('button', { static: false }) button: ButtonComponent;
 
   address: Address;
   config: any;

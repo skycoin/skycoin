@@ -5,7 +5,7 @@ import 'rxjs/add/operator/delay';
 import 'rxjs/add/operator/filter';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
-import { MatDialog, MatDialogConfig } from '@angular/material';
+import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { ISubscription } from 'rxjs/Subscription';
 import { NavBarService } from '../../../../services/nav-bar.service';
@@ -30,8 +30,8 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
   public static readonly MaxUsdDecimals = 6;
 
-  @ViewChild('previewButton') previewButton: ButtonComponent;
-  @ViewChild('sendButton') sendButton: ButtonComponent;
+  @ViewChild('previewButton', { static: false }) previewButton: ButtonComponent;
+  @ViewChild('sendButton', { static: false }) sendButton: ButtonComponent;
   @Input() formData: any;
   @Output() onFormSubmitted = new EventEmitter<any>();
 

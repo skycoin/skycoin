@@ -1,5 +1,5 @@
 import { debounceTime, map } from 'rxjs/operators';
-import { Subject, Observable } from 'rxjs';
+import { Subject, Observable, from } from 'rxjs';
 
 
 export class Bip39WordListService {
@@ -20,7 +20,8 @@ export class Bip39WordListService {
   private wordMap: Map<string, boolean> = new Map<string, boolean>();
 
   constructor() {
-    System.import(`../../assets/bip39-word-list.json`).then (result => {
+    const name = 'bip39-word-list';
+    from(import(`../../assets/${name}.json`)).subscribe(result => {
       this.wordList = result.list;
       this.wordList.forEach(word => {
         this.wordMap.set(word, true);

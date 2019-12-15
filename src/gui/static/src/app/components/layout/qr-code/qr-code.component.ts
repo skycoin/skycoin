@@ -1,4 +1,4 @@
-import { Component, Inject, ViewChild, OnDestroy, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, Inject, ViewChild, OnDestroy, ElementRef, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { MatDialogRef } from '@angular/material/dialog';
 import { FormGroup, FormBuilder } from '@angular/forms';
@@ -29,7 +29,7 @@ export interface QrDialogConfig {
   templateUrl: './qr-code.component.html',
   styleUrls: ['./qr-code.component.scss'],
 })
-export class QrCodeComponent implements AfterViewInit, OnDestroy {
+export class QrCodeComponent implements OnInit, OnDestroy {
   @ViewChild('qr', { static: false }) qr: ElementRef;
 
   form: FormGroup;
@@ -56,7 +56,7 @@ export class QrCodeComponent implements AfterViewInit, OnDestroy {
     private msgBarService: MsgBarService,
   ) { }
 
-  ngAfterViewInit() {
+  ngOnInit() {
     setTimeout(() => {
       this.initForm();
       this.updateQrContent();

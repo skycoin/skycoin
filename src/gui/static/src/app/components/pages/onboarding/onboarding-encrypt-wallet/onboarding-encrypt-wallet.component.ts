@@ -59,7 +59,7 @@ export class OnboardingEncryptWalletComponent implements OnInit {
   }
 
   get isWorking() {
-    return this.button.isLoading();
+    return this.button ? this.button.isLoading() : false;
   }
 
   private passwordMatchValidator(g: FormGroup) {

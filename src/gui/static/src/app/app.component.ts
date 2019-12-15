@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { AppService } from './services/app.service';
 import { WalletService } from './services/wallet.service';
@@ -19,7 +19,7 @@ import { SeedWordDialogComponent } from './components/layout/seed-word-dialog/se
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
 })
-export class AppComponent implements OnInit, AfterViewInit {
+export class AppComponent implements OnInit {
   @ViewChild('msgBar', { static: false }) msgBar: MsgBarComponent;
 
   constructor(
@@ -60,9 +60,9 @@ export class AppComponent implements OnInit, AfterViewInit {
 
       subscription.unsubscribe();
     });
-  }
 
-  ngAfterViewInit() {
-    this.msgBarService.msgBarComponent = this.msgBar;
+    setTimeout(() => {
+      this.msgBarService.msgBarComponent = this.msgBar;
+    });
   }
 }

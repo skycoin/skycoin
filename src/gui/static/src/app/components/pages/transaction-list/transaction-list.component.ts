@@ -1,14 +1,14 @@
+import { delay, mergeMap, first } from 'rxjs/operators';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { WalletService } from '../../../services/wallet.service';
 import { PriceService } from '../../../services/price.service';
-import { ISubscription } from 'rxjs/Subscription';
+import { SubscriptionLike, of } from 'rxjs';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { TransactionDetailComponent } from './transaction-detail/transaction-detail.component';
 import { NormalTransaction } from '../../../app.datatypes';
 import { QrCodeComponent, QrDialogConfig } from '../../layout/qr-code/qr-code.component';
 import { FormGroup, FormBuilder } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { Observable } from 'rxjs/Observable';
 
 export class Wallet {
   label: string;
@@ -39,10 +39,10 @@ export class TransactionListComponent implements OnInit, OnDestroy {
   private price: number;
   private requestedAddress: string;
   private transactionsLoaded = false;
-  private priceSubscription: ISubscription;
-  private filterSubscription: ISubscription;
-  private walletsSubscription: ISubscription;
-  private routeSubscription: ISubscription;
+  private priceSubscription: SubscriptionLike;
+  private filterSubscription: SubscriptionLike;
+  private walletsSubscription: SubscriptionLike;
+  private routeSubscription: SubscriptionLike;
 
   constructor(
     private dialog: MatDialog,
@@ -61,7 +61,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
       this.showRequestedAddress();
     });
 
-    this.walletsSubscription = walletService.all().delay(1).flatMap(wallets => {
+    this.walletsSubscription = walletService.all().pipe(delay(1), mergeMap(wallets => {
       if (!this.wallets) {
         this.wallets = [];
         let incompleteData = false;
@@ -102,14 +102,14 @@ export class TransactionListComponent implements OnInit, OnDestroy {
         if (incompleteData) {
           this.wallets = null;
 
-          return Observable.of(null);
+          return of(null);
         } else {
-          return this.walletService.transactions().first();
+          return this.walletService.transactions().pipe(first());
         }
       } else {
-        return this.walletService.transactions().first();
+        return this.walletService.transactions().pipe(first());
       }
-    }).subscribe(transactions => {
+    })).subscribe(transactions => {
       if (transactions) {
         this.allTransactions = transactions;
 

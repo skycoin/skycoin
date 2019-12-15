@@ -1,9 +1,8 @@
 import { Component, OnDestroy, ViewChild } from '@angular/core';
-import { ISubscription } from 'rxjs/Subscription';
+import { SubscriptionLike, zip } from 'rxjs';
 import { ButtonComponent } from '../../layout/button/button.component';
 import { FormGroup, FormBuilder, FormControl, Validators } from '@angular/forms';
 import { Params, ActivatedRoute, Router } from '@angular/router';
-import { Observable } from 'rxjs/Observable';
 import { WalletService } from '../../../services/wallet.service';
 import { Wallet } from '../../../app.datatypes';
 import { MsgBarService } from '../../../services/msg-bar.service';
@@ -18,7 +17,7 @@ export class ResetPasswordComponent implements OnDestroy {
 
   form: FormGroup;
 
-  private subscription: ISubscription;
+  private subscription: SubscriptionLike;
   private wallet: Wallet;
   private done = false;
   private hideBarWhenClosing = true;
@@ -31,7 +30,7 @@ export class ResetPasswordComponent implements OnDestroy {
     private msgBarService: MsgBarService,
   ) {
     this.initForm('');
-    this.subscription = Observable.zip(this.route.params, this.walletService.all(), (params: Params, wallets: Wallet[]) => {
+    this.subscription = zip(this.route.params, this.walletService.all(), (params: Params, wallets: Wallet[]) => {
       const wallet = wallets.find(w => w.filename === params['id']);
       if (!wallet) {
         setTimeout(() => this.router.navigate([''], {skipLocationChange: true}));

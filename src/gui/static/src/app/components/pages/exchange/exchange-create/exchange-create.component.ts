@@ -1,3 +1,4 @@
+import { throwError as observableThrowError, SubscriptionLike, Observable, of } from 'rxjs';
 import {
   Component,
   EventEmitter,
@@ -11,16 +12,13 @@ import { ButtonComponent } from '../../../layout/button/button.component';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ExchangeService } from '../../../../services/exchange.service';
 import { ExchangeOrder, TradingPair, StoredExchangeOrder } from '../../../../app.datatypes';
-import { ISubscription } from 'rxjs/Subscription';
-import 'rxjs/add/observable/merge';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { SelectAddressComponent } from '../../send-skycoin/send-form-advanced/select-address/select-address';
 import { WalletService } from '../../../../services/wallet.service';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/operator/switchMap';
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { TranslateService } from '@ngx-translate/core';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { retryWhen, delay, take, concat, mergeMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-exchange-create',
@@ -40,9 +38,9 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   problemGettingPairs = false;
 
   private agreement = false;
-  private subscriptionsGroup: ISubscription[] = [];
-  private exchangeSubscription: ISubscription;
-  private priceUpdateSubscription: ISubscription;
+  private subscriptionsGroup: SubscriptionLike[] = [];
+  private exchangeSubscription: SubscriptionLike;
+  private priceUpdateSubscription: SubscriptionLike;
 
   get toAmount() {
     if (!this.activeTradingPair) {
@@ -175,7 +173,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
 
   private loadData() {
     this.subscriptionsGroup.push(this.exchangeService.tradingPairs()
-      .retryWhen(errors => errors.delay(2000).take(10).concat(Observable.throw('')))
+      .pipe(retryWhen(errors => errors.pipe(delay(2000), take(10), concat(observableThrowError('')))))
       .subscribe(pairs => {
         this.tradingPairs = [];
 
@@ -194,8 +192,8 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   }
 
   private updatePrices() {
-    this.priceUpdateSubscription = Observable.of(1).delay(60000).flatMap(() => this.exchangeService.tradingPairs())
-      .retryWhen(errors => errors.delay(60000))
+    this.priceUpdateSubscription = of(1).pipe(delay(60000), mergeMap(() => this.exchangeService.tradingPairs()),
+      retryWhen(errors => errors.pipe(delay(60000))))
       .subscribe(pairs => {
         pairs.forEach(pair => {
           if (pair.to === this.toCoin) {

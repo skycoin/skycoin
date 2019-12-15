@@ -1,6 +1,6 @@
 import { Component, OnDestroy, ViewChild } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
-import { ISubscription } from 'rxjs/Subscription';
+import { SubscriptionLike } from 'rxjs';
 import { MessageIcons } from './hw-message/hw-message.component';
 import { HwWalletService, OperationResults } from '../../../services/hw-wallet.service';
 import { ButtonComponent } from '../button/button.component';
@@ -33,8 +33,8 @@ export class HwDialogBaseComponent<T> implements OnDestroy {
   states = States;
   result: ResultProcessingResponse;
 
-  protected operationSubscription: ISubscription;
-  private hwConnectionSubscription: ISubscription;
+  protected operationSubscription: SubscriptionLike;
+  private hwConnectionSubscription: SubscriptionLike;
 
   constructor(
     private _hwWalletService: HwWalletService,

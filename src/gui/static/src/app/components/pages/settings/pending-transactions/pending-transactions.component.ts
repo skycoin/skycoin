@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import * as moment from 'moment';
-import { ISubscription } from 'rxjs/Subscription';
+import { SubscriptionLike } from 'rxjs';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
 import { BigNumber } from 'bignumber.js';
@@ -14,8 +14,8 @@ import { BigNumber } from 'bignumber.js';
 export class PendingTransactionsComponent implements OnInit, OnDestroy {
   transactions = null;
 
-  private transactionsSubscription: ISubscription;
-  private navbarSubscription: ISubscription;
+  private transactionsSubscription: SubscriptionLike;
+  private navbarSubscription: SubscriptionLike;
 
   constructor(
     public walletService: WalletService,

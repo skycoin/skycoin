@@ -1,10 +1,8 @@
+import { throwError as observableThrowError, Observable } from 'rxjs';
+import { first, map, mergeMap, catchError } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs/Observable';
 import { environment } from '../../environments/environment';
-import 'rxjs/add/observable/throw';
-import 'rxjs/add/operator/catch';
-import 'rxjs/add/operator/map';
 import { TranslateService } from '@ngx-translate/core';
 import { BigNumber } from 'bignumber.js';
 
@@ -25,8 +23,8 @@ export class ApiService {
   getTransactions(addresses: Address[]): Observable<NormalTransaction[]> {
     const formattedAddresses = addresses.map(a => a.address).join(',');
 
-    return this.post('transactions', {addrs: formattedAddresses, verbose: true})
-      .map(transactions => transactions.map(transaction => ({
+    return this.post('transactions', {addrs: formattedAddresses, verbose: true}).pipe(
+      map(transactions => transactions.map(transaction => ({
         addresses: [],
         balance: new BigNumber(0),
         block: transaction.status.block_seq,
@@ -35,7 +33,7 @@ export class ApiService {
         txid: transaction.txn.txid,
         inputs: transaction.txn.inputs,
         outputs: transaction.txn.outputs,
-      })));
+      }))));
   }
 
   getVersion(): Observable<Version> {
@@ -43,7 +41,7 @@ export class ApiService {
   }
 
   generateSeed(entropy: number = 128): Observable<string> {
-    return this.get('wallet/newSeed', { entropy }).map(response => response.seed);
+    return this.get('wallet/newSeed', { entropy }).pipe(map(response => response.seed));
   }
 
   getHealth() {
@@ -51,8 +49,8 @@ export class ApiService {
   }
 
   getWallets(): Observable<Wallet[]> {
-    return this.get('wallets')
-      .map((response: GetWalletsResponseWallet[]) => {
+    return this.get('wallets').pipe(
+      map((response: GetWalletsResponseWallet[]) => {
         const wallets: Wallet[] = [];
         response.forEach(wallet => {
           const processedWallet: Wallet = {
@@ -79,12 +77,12 @@ export class ApiService {
         });
 
         return wallets;
-      });
+      }));
   }
 
   getWalletSeed(wallet: Wallet, password: string): Observable<string> {
-    return this.post('wallet/seed', { id: wallet.filename, password })
-      .map(response => response.seed);
+    return this.post('wallet/seed', { id: wallet.filename, password }).pipe(
+      map(response => response.seed));
   }
 
   postWalletCreate(label: string, seed: string, scan: number, password: string, type: string): Observable<Wallet> {
@@ -95,15 +93,15 @@ export class ApiService {
       params['encrypt'] = true;
     }
 
-    return this.post('wallet/create', params)
-      .map(response => ({
+    return this.post('wallet/create', params).pipe(
+      map(response => ({
           label: response.meta.label,
           filename: response.meta.filename,
           coins: null,
           hours: null,
           addresses: response.entries.map(entry => ({ address: entry.address, coins: null, hours: null, confirmed: true })),
           encrypted: response.meta.encrypted,
-        }));
+        })));
   }
 
   postWalletNewAddress(wallet: Wallet, num: number, password?: string): Observable<Address[]> {
@@ -114,15 +112,15 @@ export class ApiService {
       params['password'] = password;
     }
 
-    return this.post('wallet/newAddress', params)
-      .map((response: PostWalletNewAddressResponse) => {
+    return this.post('wallet/newAddress', params).pipe(
+      map((response: PostWalletNewAddressResponse) => {
         const result: Address[] = [];
         response.addresses.forEach(value => {
           result.push({ address: value, coins: null, hours: null });
         });
 
         return result;
-      });
+      }));
   }
 
   postWalletToggleEncryption(wallet: Wallet, password: string) {
@@ -130,17 +128,17 @@ export class ApiService {
   }
 
   get(url, params = null, options: any = {}, useV2 = false) {
-    return this.http.get(this.getUrl(url, params, useV2), this.returnRequestOptions(options))
-      .map((res: any) => res as any)
-      .catch((error: any) => this.processConnectionError(error));
+    return this.http.get(this.getUrl(url, params, useV2), this.returnRequestOptions(options)).pipe(
+      map((res: any) => res as any),
+      catchError((error: any) => this.processConnectionError(error)));
   }
 
   getCsrf() {
-    return this.get('csrf').map(response => response.csrf_token);
+    return this.get('csrf').pipe(map(response => response.csrf_token));
   }
 
   post(url, params = {}, options: any = {}, useV2 = false) {
-    return this.getCsrf().first().flatMap(csrf => {
+    return this.getCsrf().pipe(first(), mergeMap(csrf => {
       options.csrf = csrf;
 
       if (useV2) {
@@ -151,10 +149,10 @@ export class ApiService {
         this.getUrl(url, null, useV2),
         options.json || useV2 ? JSON.stringify(params) : this.getQueryString(params),
         this.returnRequestOptions(options),
-      )
-        .map((res: any) => res as any)
-        .catch((error: any) => this.processConnectionError(error));
-    });
+      ).pipe(
+        map((res: any) => res as any),
+        catchError((error: any) => this.processConnectionError(error)));
+    }));
   }
 
   private returnRequestOptions(options) {
@@ -194,26 +192,26 @@ export class ApiService {
     if (error) {
       if (typeof error['_body'] === 'string') {
 
-        return Observable.throw(error);
+        return observableThrowError(error);
       }
 
       if (error.error && typeof error.error === 'string') {
         error['_body'] = error.error;
 
-        return Observable.throw(error);
+        return observableThrowError(error);
       } else if (error.error && error.error.error && error.error.error.message)  {
         error['_body'] = error.error.error.message;
 
-        return Observable.throw(error);
+        return observableThrowError(error);
       } else if (error.message) {
         error['_body'] = error.message;
 
-        return Observable.throw(error);
+        return observableThrowError(error);
       }
     }
     const err = Error(this.translate.instant(connectingToHwWalletDaemon ? 'hardware-wallet.errors.daemon-connection' : 'service.api.server-error'));
     err['_body'] = err.message;
 
-    return Observable.throw(err);
+    return observableThrowError(err);
   }
 }

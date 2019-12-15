@@ -1,10 +1,11 @@
+import { filter, first } from 'rxjs/operators';
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { PurchaseService } from '../../../services/purchase.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { WalletService } from '../../../services/wallet.service';
 import { Address, PurchaseOrder, Wallet } from '../../../app.datatypes';
 import { ButtonComponent } from '../../layout/button/button.component';
-import { ISubscription } from 'rxjs/Subscription';
+import { SubscriptionLike } from 'rxjs';
 import { MsgBarService } from '../../../services/msg-bar.service';
 
 @Component({
@@ -21,7 +22,7 @@ export class BuyComponent implements OnInit, OnDestroy {
   order: PurchaseOrder;
   wallets: Wallet[];
 
-  private subscriptionsGroup: ISubscription[] = [];
+  private subscriptionsGroup: SubscriptionLike[] = [];
 
   constructor(
     private formBuilder: FormBuilder,
@@ -71,9 +72,8 @@ export class BuyComponent implements OnInit, OnDestroy {
   }
 
   private loadConfig() {
-    this.purchaseService.config()
-      .filter(config => !!config && !!config.sky_btc_exchange_rate)
-      .first()
+    this.purchaseService.config().pipe(
+      filter(config => !!config && !!config.sky_btc_exchange_rate), first())
       .subscribe(config => this.config = config);
   }
 
@@ -104,7 +104,7 @@ export class BuyComponent implements OnInit, OnDestroy {
   }
 
   private updateOrder() {
-    this.purchaseService.scan(this.order.recipient_address).first().subscribe(
+    this.purchaseService.scan(this.order.recipient_address).pipe(first()).subscribe(
       response => this.order.status = response.status,
       error => console.log(error),
     );

@@ -4,8 +4,7 @@ import { MatDialogRef } from '@angular/material/dialog';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ButtonComponent } from '../button/button.component';
 import { parseResponseMessage } from '../../../utils/errors';
-import { Subject } from 'rxjs/Subject';
-import { ISubscription } from 'rxjs/Subscription';
+import { Subject, SubscriptionLike } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { MsgBarService } from '../../../services/msg-bar.service';
 
@@ -20,7 +19,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
   passwordSubmit = new Subject<any>();
   working = false;
 
-  private subscriptions: ISubscription[] = [];
+  private subscriptions: SubscriptionLike[] = [];
   private errors: any;
 
   constructor(

@@ -9,14 +9,14 @@ import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { NumberOfAddressesComponent } from '../number-of-addresses/number-of-addresses';
 import { TranslateService } from '@ngx-translate/core';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
-import { Observable } from 'rxjs/Observable';
+import { Observable, SubscriptionLike } from 'rxjs';
 import { showConfirmationModal, copyTextToClipboard } from '../../../../utils';
 import { AppConfig } from '../../../../app.config';
 import { Router } from '@angular/router';
 import { HwConfirmAddressDialogComponent, AddressConfirmationParams } from '../../../layout/hardware-wallet/hw-confirm-address-dialog/hw-confirm-address-dialog.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
-import { ISubscription } from 'rxjs/Subscription';
 import { ApiService } from '../../../../services/api.service';
+import { mergeMap, first } from 'rxjs/operators';
 
 @Component({
   selector: 'app-wallet-detail',
@@ -31,9 +31,9 @@ export class WalletDetailComponent implements OnDestroy {
   preparingToEdit = false;
 
   private howManyAddresses: number;
-  private editSubscription: ISubscription;
-  private confirmSubscription: ISubscription;
-  private txHistorySubscription: ISubscription;
+  private editSubscription: SubscriptionLike;
+  private confirmSubscription: SubscriptionLike;
+  private txHistorySubscription: SubscriptionLike;
 
   constructor(
     private dialog: MatDialog,
@@ -68,7 +68,7 @@ export class WalletDetailComponent implements OnDestroy {
 
       this.preparingToEdit = true;
       this.editSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.wallet.addresses[0].address)
-        .flatMap(() => this.walletService.getHwFeaturesAndUpdateData(this.wallet))
+        .pipe(mergeMap(() => this.walletService.getHwFeaturesAndUpdateData(this.wallet)))
         .subscribe(
           response => {
             this.continueEditWallet();
@@ -125,7 +125,7 @@ export class WalletDetailComponent implements OnDestroy {
           callback(true);
           this.continueNewAddress();
         } else {
-          this.txHistorySubscription = this.apiService.getTransactions(this.wallet.addresses).first().subscribe(transactions => {
+          this.txHistorySubscription = this.apiService.getTransactions(this.wallet.addresses).pipe(first()).subscribe(transactions => {
             const AddressesWithTxs = new Map<string, boolean>();
 
             transactions.forEach(transaction => {
@@ -193,7 +193,7 @@ export class WalletDetailComponent implements OnDestroy {
       if (confirmationResult) {
         this.walletService.deleteHardwareWallet(this.wallet).subscribe(result => {
           if (result) {
-            this.walletService.all().first().subscribe(wallets => {
+            this.walletService.all().pipe(first()).subscribe(wallets => {
               if (wallets.length === 0) {
                 setTimeout(() => this.router.navigate(['/wizard']), 500);
               }
@@ -302,9 +302,9 @@ export class WalletDetailComponent implements OnDestroy {
       let procedure: Observable<any>;
 
       if (this.wallet.isHardware ) {
-        procedure = this.hwWalletService.checkIfCorrectHwConnected(this.wallet.addresses[0].address).flatMap(
+        procedure = this.hwWalletService.checkIfCorrectHwConnected(this.wallet.addresses[0].address).pipe(mergeMap(
           () => this.walletService.addAddress(this.wallet, this.howManyAddresses),
-        );
+        ));
       } else {
         procedure = this.walletService.addAddress(this.wallet, this.howManyAddresses);
       }

@@ -1,13 +1,11 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import 'rxjs/add/operator/delay';
-import 'rxjs/add/operator/filter';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
-import { ISubscription } from 'rxjs/Subscription';
+import { SubscriptionLike } from 'rxjs';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { BigNumber } from 'bignumber.js';
 import { Wallet, ConfirmationData } from '../../../../app.datatypes';
@@ -20,6 +18,7 @@ import { PriceService } from '../../../../services/price.service';
 import { ChangeNoteComponent } from '../send-preview/transaction-info/change-note/change-note.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { AppService } from '../../../../services/app.service';
+import { first } from 'rxjs/operators';
 
 @Component({
   selector: 'app-send-form',
@@ -47,9 +46,9 @@ export class SendFormComponent implements OnInit, OnDestroy {
   price: number;
   wallets: Wallet[];
 
-  private subscriptionsGroup: ISubscription[] = [];
-  private processingSubscription: ISubscription;
-  private syncCheckSubscription: ISubscription;
+  private subscriptionsGroup: SubscriptionLike[] = [];
+  private processingSubscription: SubscriptionLike;
+  private syncCheckSubscription: SubscriptionLike;
 
   constructor(
     public formBuilder: FormBuilder,
@@ -73,7 +72,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.navbarService.showSwitch('send.simple', 'send.advanced');
     this.initForm();
-    this.subscriptionsGroup.push(this.walletService.all().first().subscribe(wallets => {
+    this.subscriptionsGroup.push(this.walletService.all().pipe(first()).subscribe(wallets => {
       this.wallets = wallets;
 
       if (wallets.length === 1) {
@@ -233,7 +232,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
     }
 
     this.closeSyncCheckSubscription();
-    this.syncCheckSubscription = this.blockchainService.synchronized.first().subscribe(synchronized => {
+    this.syncCheckSubscription = this.blockchainService.synchronized.pipe(first()).subscribe(synchronized => {
       if (synchronized) {
         this.prepareTransaction();
       } else {

@@ -1,3 +1,4 @@
+import { mergeMap } from 'rxjs/operators';
 import { Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
@@ -22,13 +23,13 @@ export class HwChangePinDialogComponent extends HwDialogBaseComponent<HwChangePi
 
     this.changingExistingPin = data.walletHasPin;
 
-    this.operationSubscription = this.hwWalletService.getFeatures().flatMap(features => {
+    this.operationSubscription = this.hwWalletService.getFeatures().pipe(mergeMap(features => {
       if (!AppConfig.useHwWalletDaemon) {
         return this.hwWalletService.changePin(features.rawResponse.pinProtection);
       } else {
         return this.hwWalletService.changePin(features.rawResponse.pin_protection);
       }
-    }).subscribe(
+    })).subscribe(
       () => {
         this.showResult({
           text: 'hardware-wallet.general.completed',

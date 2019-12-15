@@ -3,12 +3,12 @@ import { ExchangeOrder, StoredExchangeOrder, ConfirmationData } from '../../../.
 import { ExchangeService } from '../../../../services/exchange.service';
 import { QrCodeComponent, QrDialogConfig } from '../../../layout/qr-code/qr-code.component';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { ISubscription } from 'rxjs/Subscription';
-import { Observable } from 'rxjs/Observable';
+import { SubscriptionLike, Observable, of } from 'rxjs';
 import { showConfirmationModal } from '../../../../utils';
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { environment } from '../../../../../environments/environment';
 import { AppService } from '../../../../services/app.service';
+import { delay, mergeMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-exchange-status',
@@ -33,7 +33,7 @@ export class ExchangeStatusComponent implements OnDestroy {
   showError = false;
   expanded = false;
 
-  private subscription: ISubscription;
+  private subscription: SubscriptionLike;
   private testStatusIndex = 0;
   private order: ExchangeOrder;
 
@@ -138,7 +138,7 @@ export class ExchangeStatusComponent implements OnDestroy {
     }
   }
 
-  private getStatus(delay = 0) {
+  private getStatus(delayTime = 0) {
     if (this.subscription) {
       this.subscription.unsubscribe();
     }
@@ -149,12 +149,12 @@ export class ExchangeStatusComponent implements OnDestroy {
       this.testStatusIndex = this.statuses.length - 1;
     }
 
-    this.subscription = Observable.of(0).delay(delay).flatMap(() => {
+    this.subscription = of(0).pipe(delay(delayTime), mergeMap(() => {
       return this.exchangeService.status(
         !this.TEST_MODE ? this._orderDetails.id : '4729821d-390d-4ef8-a31e-2465d82a142f',
         !this.TEST_MODE ? null : this.statuses[this.testStatusIndex++],
       );
-    }).subscribe(order => {
+    })).subscribe(order => {
       this.order = { ...order, fromAmount };
       this._orderDetails.id = order.id;
       this.exchangeService.lastViewedOrder = this._orderDetails;

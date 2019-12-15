@@ -1,3 +1,5 @@
+import { throwError as observableThrowError, SubscriptionLike } from 'rxjs';
+import { retryWhen, delay, take, concat, first } from 'rxjs/operators';
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -5,14 +7,10 @@ import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
-import { ISubscription } from 'rxjs/Subscription';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { SelectAddressComponent } from './select-address/select-address';
 import { BigNumber } from 'bignumber.js';
 import { Output as UnspentOutput, Wallet, Address, ConfirmationData } from '../../../../app.datatypes';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/operator/retryWhen';
-import 'rxjs/add/operator/concat';
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { showConfirmationModal } from '../../../../utils';
 import { AppService } from '../../../../services/app.service';
@@ -60,12 +58,12 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   totalConvertedCoins = new BigNumber(0);
   totalHours = new BigNumber(0);
 
-  private subscriptionsGroup: ISubscription[] = [];
-  private getOutputsSubscriptions: ISubscription;
-  private destinationSubscriptions: ISubscription[] = [];
-  private destinationHoursSubscriptions: ISubscription[] = [];
-  private syncCheckSubscription: ISubscription;
-  private processingSubscription: ISubscription;
+  private subscriptionsGroup: SubscriptionLike[] = [];
+  private getOutputsSubscriptions: SubscriptionLike;
+  private destinationSubscriptions: SubscriptionLike[] = [];
+  private destinationHoursSubscriptions: SubscriptionLike[] = [];
+  private syncCheckSubscription: SubscriptionLike;
+  private processingSubscription: SubscriptionLike;
 
   constructor(
     public blockchainService: BlockchainService,
@@ -104,8 +102,8 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       this.unspentOutputs = [];
       this.loadingUnspentOutputs = true;
 
-      this.getOutputsSubscriptions = this.walletService.getWalletUnspentOutputs(wallet)
-        .retryWhen(errors => errors.delay(1000).take(10).concat(Observable.throw('')))
+      this.getOutputsSubscriptions = this.walletService.getWalletUnspentOutputs(wallet).pipe(
+        retryWhen(errors => errors.pipe(delay(1000), take(10), concat(observableThrowError('')))))
         .subscribe(
           result => {
             this.loadingUnspentOutputs = false;
@@ -145,7 +143,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       this.fillForm();
     }
 
-    this.subscriptionsGroup.push(this.walletService.all().first().subscribe(wallets => {
+    this.subscriptionsGroup.push(this.walletService.all().pipe(first()).subscribe(wallets => {
       this.wallets = wallets;
       if (wallets.length === 1) {
         this.form.get('wallet').setValue(wallets[0]);
@@ -374,7 +372,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     }
 
     this.closeSyncCheckSubscription();
-    this.syncCheckSubscription = this.blockchainService.synchronized.first().subscribe(synchronized => {
+    this.syncCheckSubscription = this.blockchainService.synchronized.pipe(first()).subscribe(synchronized => {
       if (synchronized) {
         this.prepareTransaction();
       } else {

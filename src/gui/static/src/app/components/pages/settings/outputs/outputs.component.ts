@@ -1,7 +1,7 @@
 import { Component, OnDestroy } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { ActivatedRoute } from '@angular/router';
-import { ISubscription } from 'rxjs/Subscription';
+import { SubscriptionLike } from 'rxjs';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { QrCodeComponent, QrDialogConfig } from '../../../layout/qr-code/qr-code.component';
 
@@ -13,7 +13,7 @@ import { QrCodeComponent, QrDialogConfig } from '../../../layout/qr-code/qr-code
 export class OutputsComponent implements OnDestroy {
   wallets: any[]|null;
 
-  private outputsSubscription: ISubscription;
+  private outputsSubscription: SubscriptionLike;
   private lastRouteParams: any;
 
   constructor(

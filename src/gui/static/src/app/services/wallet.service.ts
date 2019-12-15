@@ -1,23 +1,11 @@
+import { forkJoin as observableForkJoin, throwError as observableThrowError, zip, of, timer, Subject, Observable, ReplaySubject, Subscription, BehaviorSubject } from 'rxjs';
+import { concat, delay, filter, retryWhen, first, take, tap, mergeMap, catchError, map } from 'rxjs/operators';
 import { Injectable, NgZone } from '@angular/core';
 import { ApiService } from './api.service';
-import { Subject } from 'rxjs/Subject';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/observable/forkJoin';
-import 'rxjs/add/observable/of';
-import 'rxjs/add/operator/do';
-import 'rxjs/add/operator/filter';
-import 'rxjs/add/operator/first';
-import 'rxjs/add/operator/mergeMap';
-import 'rxjs/add/observable/timer';
-import 'rxjs/add/observable/zip';
 import { Address, NormalTransaction, PreviewTransaction, Wallet, Output } from '../app.datatypes';
-import { ReplaySubject } from 'rxjs/ReplaySubject';
-import { Subscription } from 'rxjs/Subscription';
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { BigNumber } from 'bignumber.js';
 import { HwWalletService } from './hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
-import { catchError, map } from 'rxjs/operators';
 import { AppConfig } from '../app.config';
 import { HttpClient } from '@angular/common/http';
 import { StorageService, StorageType } from './storage.service';
@@ -64,18 +52,18 @@ export class WalletService {
   }
 
   addressesAsString(): Observable<string> {
-    return this.allAddresses().map(addrs => addrs.map(addr => addr.address)).map(addrs => addrs.join(','));
+    return this.allAddresses().pipe(map(addrs => addrs.map(addr => addr.address)), map(addrs => addrs.join(',')));
   }
 
   addAddress(wallet: Wallet, num: number, password?: string) {
     if (!wallet.isHardware) {
-      return this.apiService.postWalletNewAddress(wallet, num, password)
-        .do(addresses => {
+      return this.apiService.postWalletNewAddress(wallet, num, password).pipe(
+        tap(addresses => {
           addresses.forEach(value => wallet.addresses.push(value));
           this.refreshBalances();
-        });
+        }));
     } else {
-      return this.hwWalletService.getAddresses(num, wallet.addresses.length).flatMap(response => {
+      return this.hwWalletService.getAddresses(num, wallet.addresses.length).pipe(mergeMap(response => {
         (response.rawResponse as any[]).forEach(value => wallet.addresses.push({
           address: value,
           coins: null,
@@ -84,8 +72,8 @@ export class WalletService {
         this.saveHardwareWallets();
         this.refreshBalances();
 
-        return Observable.of(response.rawResponse);
-      });
+        return of(response.rawResponse);
+      }));
     }
   }
 
@@ -94,21 +82,21 @@ export class WalletService {
   }
 
   allAddresses(): Observable<any[]> {
-    return this.all().map(wallets => wallets.reduce((array, wallet) => array.concat(wallet.addresses), []));
+    return this.all().pipe(map(wallets => wallets.reduce((array, wallet) => array.concat(wallet.addresses), [])));
   }
 
   create(label, seed, scan, password) {
     seed = seed.replace(/(\n|\r\n)$/, '');
 
-    return this.apiService.postWalletCreate(label ? label : 'undefined', seed, scan ? scan : 100, password, 'deterministic')
-      .do(wallet => {
+    return this.apiService.postWalletCreate(label ? label : 'undefined', seed, scan ? scan : 100, password, 'deterministic').pipe(
+      tap(wallet => {
         console.log(wallet);
-        this.wallets.first().subscribe(wallets => {
+        this.wallets.pipe(first()).subscribe(wallets => {
           wallets.push(wallet);
           this.wallets.next(wallets);
           this.refreshBalances();
         });
-      });
+      }));
   }
 
   createHardwareWallet(): Observable<Wallet> {
@@ -117,7 +105,7 @@ export class WalletService {
     const addressesMap: Map<string, boolean> = new Map<string, boolean>();
     const addressesWithTxMap: Map<string, boolean> = new Map<string, boolean>();
 
-    return this.hwWalletService.getAddresses(AppConfig.maxHardwareWalletAddresses, 0).flatMap(response => {
+    return this.hwWalletService.getAddresses(AppConfig.maxHardwareWalletAddresses, 0).pipe(mergeMap(response => {
       addresses = response.rawResponse;
       addresses.forEach(address => {
         addressesMap.set(address, true);
@@ -126,7 +114,7 @@ export class WalletService {
       const addressesString = addresses.join(',');
 
       return this.apiService.post('transactions', { addrs: addressesString });
-    }).flatMap(response => {
+    }), mergeMap(response => {
       response.forEach(tx => {
         tx.txn.outputs.forEach(output => {
           if (addressesMap.has(output.dst)) {
@@ -141,7 +129,7 @@ export class WalletService {
         }
       });
 
-      return this.wallets.first().map(wallets => {
+      return this.wallets.pipe(first(), map(wallets => {
         const newWallet = this.createHardwareWalletData(
           this.translate.instant('hardware-wallet.general.default-wallet-name'),
           addresses.slice(0, lastAddressWithTx + 1).map(add => {
@@ -161,8 +149,8 @@ export class WalletService {
         this.refreshBalances();
 
         return newWallet;
-      });
-    });
+      }));
+    }));
   }
 
   getHwFeaturesAndUpdateData(wallet: Wallet): Observable<HwFeaturesResponse> {
@@ -170,9 +158,9 @@ export class WalletService {
 
       let lastestFirmwareVersion: string;
 
-      return this.http.get(AppConfig.urlForHwWalletVersionChecking, { responseType: 'text' })
-      .catch(() => Observable.of(null))
-      .flatMap((res: any) => {
+      return this.http.get(AppConfig.urlForHwWalletVersionChecking, { responseType: 'text' }).pipe(
+      catchError(() => of(null)),
+      mergeMap((res: any) => {
         if (res) {
           lastestFirmwareVersion = res;
         } else {
@@ -180,8 +168,8 @@ export class WalletService {
         }
 
         return this.hwWalletService.getFeatures();
-      })
-      .map(result => {
+      }),
+      map(result => {
         let lastestFirmwareVersionReaded = false;
         let firmwareUpdated = false;
 
@@ -265,7 +253,7 @@ export class WalletService {
         };
 
         return response;
-      });
+      }));
     } else {
       return null;
     }
@@ -273,7 +261,7 @@ export class WalletService {
 
   deleteHardwareWallet(wallet: Wallet): Observable<boolean> {
     if (wallet.isHardware) {
-      return this.wallets.first().map(wallets => {
+      return this.wallets.pipe(first(), map(wallets => {
         const index = wallets.indexOf(wallet);
         if (index !== -1) {
           wallets.splice(index, 1);
@@ -285,25 +273,25 @@ export class WalletService {
         }
 
         return false;
-      });
+      }));
     }
 
     return null;
   }
 
   folder(): Observable<string> {
-    return this.apiService.get('wallets/folderName').map(response => response.address);
+    return this.apiService.get('wallets/folderName').pipe(map(response => response.address));
   }
 
   outputs(): Observable<any> {
-    return this.addressesAsString()
-      .first()
-      .filter(addresses => !!addresses)
-      .flatMap(addresses => this.apiService.post('outputs', {addrs: addresses}));
+    return this.addressesAsString().pipe(
+      first(),
+      filter(addresses => !!addresses),
+      mergeMap(addresses => this.apiService.post('outputs', {addrs: addresses})));
   }
 
   outputsWithWallets(): Observable<any> {
-    return Observable.zip(this.all(), this.outputs(), (wallets, outputs) => {
+    return zip(this.all(), this.outputs(), (wallets, outputs) => {
       return wallets.map(wallet => {
         wallet.addresses = wallet.addresses.map(address => {
           address.outputs = outputs.head_outputs.filter(output => output.address === address.address);
@@ -321,8 +309,8 @@ export class WalletService {
   }
 
   refreshBalances() {
-    this.wallets.first().subscribe(wallets => {
-      Observable.forkJoin(wallets.map(wallet => this.retrieveWalletBalance(wallet).map(response => {
+    this.wallets.pipe(first()).subscribe(wallets => {
+      observableForkJoin(wallets.map(wallet => this.retrieveWalletBalance(wallet).pipe(map(response => {
         wallet.coins = response.coins;
         wallet.hours = response.hours;
         wallet.addresses.map(address => {
@@ -332,25 +320,25 @@ export class WalletService {
         });
 
         return wallet;
-      })))
-        .subscribe(newWallets => this.wallets.next(newWallets));
+      }))))
+      .subscribe(newWallets => this.wallets.next(newWallets));
     });
   }
 
   renameWallet(wallet: Wallet, label: string): Observable<Wallet> {
-    return this.apiService.post('wallet/update', { id: wallet.filename, label: label })
-      .do(() => {
+    return this.apiService.post('wallet/update', { id: wallet.filename, label: label }).pipe(
+      tap(() => {
         wallet.label = label;
         this.updateWallet(wallet);
-      });
+      }));
   }
 
   toggleEncryption(wallet: Wallet, password: string): Observable<Wallet> {
-    return this.apiService.postWalletToggleEncryption(wallet, password)
-      .do(w => {
+    return this.apiService.postWalletToggleEncryption(wallet, password).pipe(
+      tap(w => {
         wallet.encrypted = w.meta.encrypted;
         this.updateWallet(w);
-      });
+      }));
   }
 
   resetPassword(wallet: Wallet, seed: string, password: string): Observable<Wallet> {
@@ -361,10 +349,10 @@ export class WalletService {
       params['password'] = password;
     }
 
-    return this.apiService.post('wallet/recover', params, {}, true).do(w => {
+    return this.apiService.post('wallet/recover', params, {}, true).pipe(tap(w => {
       wallet.encrypted = w.data.meta.encrypted;
       this.updateWallet(w.data);
-    });
+    }));
   }
 
   getWalletSeed(wallet: Wallet, password: string): Observable<string> {
@@ -412,7 +400,7 @@ export class WalletService {
         json: true,
       },
       useV2Endpoint,
-    ).map(transaction => {
+    ).pipe(map(transaction => {
       const data = useV2Endpoint ? transaction.data : transaction;
 
       if (wallet.isHardware) {
@@ -430,20 +418,20 @@ export class WalletService {
         encoded: data.encoded_transaction,
         innerHash: data.transaction.inner_hash,
       };
-    });
+    }));
 
     if (wallet.isHardware && !unsigned) {
       let unsignedTx: PreviewTransaction;
 
-      response = response.flatMap(transaction => {
+      response = response.pipe(mergeMap(transaction => {
         unsignedTx = transaction;
 
         return this.signTransaction(wallet, null, transaction);
-      }).map(signedTx => {
+      })).pipe(map(signedTx => {
         unsignedTx.encoded = signedTx.encoded;
 
         return unsignedTx;
-      });
+      }));
     }
 
     return response;
@@ -466,13 +454,13 @@ export class WalletService {
           json: true,
         },
         true,
-      ).map(response => {
+      ).pipe(map(response => {
         return {
           ...response.data.transaction,
           hoursBurned: new BigNumber(response.data.transaction.fee),
           encoded: response.data.encoded_transaction,
         };
-      });
+      }));
 
     } else {
 
@@ -523,7 +511,7 @@ export class WalletService {
         });
       });
 
-      return this.hwWalletService.signTransaction(hwInputs, hwOutputs).flatMap(signatures => {
+      return this.hwWalletService.signTransaction(hwInputs, hwOutputs).pipe(mergeMap(signatures => {
         const rawTransaction = TxEncoder.encode(
           hwInputs,
           hwOutputs,
@@ -531,44 +519,44 @@ export class WalletService {
           transaction.innerHash,
         );
 
-        return Observable.of( {
+        return of({
           ...transaction,
           encoded: rawTransaction,
         });
-      });
+      }));
     }
   }
 
   injectTransaction(encodedTx: string, note: string): Observable<boolean> {
-    return this.apiService.post('injectTransaction', { rawtx: encodedTx }, { json: true })
-      .flatMap(txId => {
+    return this.apiService.post('injectTransaction', { rawtx: encodedTx }, { json: true }).pipe(
+      mergeMap(txId => {
         setTimeout(() => this.startDataRefreshSubscription(), 32);
 
         if (!note) {
-          return Observable.of(false);
+          return of(false);
         } else {
-          return this.storageService.store(StorageType.NOTES, txId, note)
-            .retryWhen(errors => errors.delay(1000).take(3).concat(Observable.throw(-1)))
-            .catch(err => err === -1 ? Observable.of(-1) : err)
-            .map(result => result === -1 ? false : true);
+          return this.storageService.store(StorageType.NOTES, txId, note).pipe(
+            retryWhen(errors => errors.pipe(delay(1000), take(3), concat(observableThrowError(-1)))),
+            catchError(err => err === -1 ? of(-1) : err),
+            map(result => result === -1 ? false : true));
         }
-      });
+      }));
   }
 
   transaction(txid: string): Observable<any> {
-    return this.apiService.get('transaction', {txid: txid}).flatMap(transaction => {
+    return this.apiService.get('transaction', {txid: txid}).pipe(mergeMap(transaction => {
       if (transaction.txn.inputs && !transaction.txn.inputs.length) {
-        return Observable.of(transaction);
+        return of(transaction);
       }
 
-      return Observable.forkJoin(transaction.txn.inputs.map(input => this.retrieveInputAddress(input).map(response => {
+      return observableForkJoin(transaction.txn.inputs.map(input => this.retrieveInputAddress(input).pipe(map(response => {
         return response.owner_address;
-      }))).map(inputs => {
+      })))).pipe(map(inputs => {
         transaction.txn.inputs = inputs;
 
         return transaction;
-      });
-    });
+      }));
+    }));
   }
 
   transactions(): Observable<NormalTransaction[]> {
@@ -577,20 +565,20 @@ export class WalletService {
     const addressesMap: Map<string, boolean> = new Map<string, boolean>();
 
 
-    return this.wallets.first().flatMap(w => {
+    return this.wallets.pipe(first(), mergeMap(w => {
       wallets = w;
 
-      return this.allAddresses().first();
-    }).flatMap(addresses => {
+      return this.allAddresses().pipe(first());
+    }), mergeMap(addresses => {
       this.addresses = addresses;
       addresses.map(add => addressesMap.set(add.address, true));
 
       return this.apiService.getTransactions(addresses);
-    }).flatMap(recoveredTransactions => {
+    }), mergeMap(recoveredTransactions => {
       transactions = recoveredTransactions;
 
       return this.storageService.get(StorageType.NOTES, null);
-    }).map(notes => {
+    }), map(notes => {
       const notesMap: Map<string, string> = new Map<string, string>();
       Object.keys(notes.data).forEach(key => {
         notesMap.set(key, notes.data[key]);
@@ -668,7 +656,7 @@ export class WalletService {
 
           return transaction;
         });
-    });
+    }));
   }
 
   startDataRefreshSubscription() {
@@ -677,7 +665,7 @@ export class WalletService {
     }
 
     this.ngZone.runOutsideAngular(() => {
-      this.dataRefreshSubscription = Observable.timer(0, 10000)
+      this.dataRefreshSubscription = timer(0, 10000)
         .subscribe(() => this.ngZone.run(() => {
           this.refreshBalances();
           this.refreshPendingTransactions();
@@ -686,7 +674,7 @@ export class WalletService {
   }
 
   saveHardwareWallets() {
-    this.wallets.first().subscribe(wallets => {
+    this.wallets.pipe(first()).subscribe(wallets => {
       const hardwareWallets: Wallet[] = [];
 
       wallets.map(wallet => {
@@ -710,7 +698,7 @@ export class WalletService {
 
   verifyAddress(address: string) {
     return this.apiService.post('address/verify', { address }, {}, true)
-      .pipe(map(() => true), catchError(() => Observable.of(false)));
+      .pipe(map(() => true), catchError(() => of(false)));
   }
 
   getWalletUnspentOutputs(wallet: Wallet): Observable<Output[]> {
@@ -744,30 +732,30 @@ export class WalletService {
     let wallets: Wallet[] = [];
     let softwareWallets: Wallet[] = [];
 
-    this.apiService.getWallets().first().flatMap(recoveredWallets => {
+    this.apiService.getWallets().pipe(first(), mergeMap(recoveredWallets => {
       softwareWallets = recoveredWallets;
 
       if (this.hwWalletService.hwWalletCompatibilityActivated) {
         return this.loadHardwareWallets(wallets);
       }
 
-      return Observable.of(null);
+      return of(null);
 
-    }).subscribe(() => {
-        wallets = wallets.concat(softwareWallets);
-        this.wallets.next(wallets);
+    })).subscribe(() => {
+      wallets = wallets.concat(softwareWallets);
+      this.wallets.next(wallets);
     }, () => this.initialLoadFailed.next(true));
   }
 
   private loadHardwareWallets(wallets: Wallet[]): Observable<any> {
-    return this.hwWalletService.getSavedWalletsData().map(storedWallets => {
+    return this.hwWalletService.getSavedWalletsData().pipe(map(storedWallets => {
       if (storedWallets) {
         const loadedWallets: Wallet[] = JSON.parse(storedWallets);
         loadedWallets.map(wallet => wallets.push(wallet));
       }
 
       return null;
-    });
+    }));
   }
 
   private retrieveInputAddress(input: string) {
@@ -783,7 +771,7 @@ export class WalletService {
       query = this.apiService.post('balance', { addrs: formattedAddresses });
     }
 
-    return query.map(balance => {
+    return query.pipe(map(balance => {
       return {
         coins: new BigNumber(balance.confirmed.coins).dividedBy(1000000),
         hours: new BigNumber(balance.confirmed.hours),
@@ -793,11 +781,11 @@ export class WalletService {
           hours: new BigNumber(balance.addresses[address].confirmed.hours),
         })),
       };
-    });
+    }));
   }
 
   private updateWallet(wallet: Wallet) {
-    this.wallets.first().subscribe(wallets => {
+    this.wallets.pipe(first()).subscribe(wallets => {
       const index = wallets.findIndex(w => w.filename === wallet.filename);
       wallets[index] = wallet;
       this.wallets.next(wallets);
@@ -805,16 +793,16 @@ export class WalletService {
   }
 
   private refreshPendingTransactions() {
-    this.apiService.get('pendingTxs', { verbose: true })
-      .flatMap((transactions: any) => {
+    this.apiService.get('pendingTxs', { verbose: true }).pipe(
+      mergeMap((transactions: any) => {
         if (transactions.length === 0) {
-          return Observable.of({
+          return of({
             user: [],
             all: [],
           });
         }
 
-        return this.wallets.first().map((wallets: Wallet[]) => {
+        return this.wallets.pipe(first(), map((wallets: Wallet[]) => {
           const walletAddresses = new Set<string>();
           wallets.forEach(wallet => {
             wallet.addresses.forEach(address => walletAddresses.add(address.address));
@@ -829,16 +817,16 @@ export class WalletService {
             user: userTransactions,
             all: transactions,
           };
-        });
-      })
+        }));
+      }))
       .subscribe(transactions => this.pendingTxs.next(transactions));
   }
 
   private getOutputs(addresses): Observable<Output[]> {
     if (!addresses) {
-      return Observable.of([]);
+      return of([]);
     } else {
-      return this.apiService.post('outputs', { addrs: addresses }).map((response) => {
+      return this.apiService.post('outputs', { addrs: addresses }).pipe(map((response) => {
         const outputs = [];
         response.head_outputs.forEach(output => outputs.push({
           address: output.address,
@@ -848,7 +836,7 @@ export class WalletService {
         }));
 
         return outputs;
-      });
+      }));
     }
   }
 

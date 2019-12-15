@@ -7,7 +7,7 @@ import { CreateWalletFormComponent, WalletFormData } from '../../wallets/create-
 import { HwOptionsDialogComponent } from '../../../layout/hardware-wallet/hw-options-dialog/hw-options-dialog.component';
 import { Router } from '@angular/router';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
-import { ISubscription } from 'rxjs/Subscription';
+import { SubscriptionLike } from 'rxjs';
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { ConfirmationData } from '../../../../app.datatypes';
 import { showConfirmationModal } from '../../../../utils';
@@ -27,7 +27,7 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
   hwCompatibilityActivated = false;
 
   private synchronized = true;
-  private synchronizedSubscription: ISubscription;
+  private synchronizedSubscription: SubscriptionLike;
 
   constructor(
     private dialog: MatDialog,

@@ -1,13 +1,13 @@
 import { Injectable } from '@angular/core';
 import { MsgBarConfig, MsgBarComponent, MsgBarIcons, MsgBarColors } from '../components/layout/msg-bar/msg-bar.component';
 import { parseResponseMessage } from '../utils/errors';
-import { ISubscription } from 'rxjs/Subscription';
-import { Observable } from 'rxjs/Observable';
+import { SubscriptionLike, of } from 'rxjs';
+import { delay } from 'rxjs/operators';
 
 @Injectable()
 export class MsgBarService {
 
-  private timeSubscription: ISubscription;
+  private timeSubscription: SubscriptionLike;
 
   private msgBarComponentInternal: MsgBarComponent;
   set msgBarComponent(value: MsgBarComponent) {
@@ -65,6 +65,6 @@ export class MsgBarService {
       this.timeSubscription.unsubscribe();
     }
 
-    this.timeSubscription = Observable.of(1).delay(duration).subscribe(() => this.hide());
+    this.timeSubscription = of(1).pipe(delay(duration)).subscribe(() => this.hide());
   }
 }

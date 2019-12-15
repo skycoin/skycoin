@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { NetworkService } from '../../../../services/network.service';
-import { ISubscription } from 'rxjs/Subscription';
+import { SubscriptionLike } from 'rxjs';
 
 @Component({
   selector: 'app-network',
@@ -10,7 +10,7 @@ import { ISubscription } from 'rxjs/Subscription';
 export class NetworkComponent implements OnInit, OnDestroy {
   peers: any;
 
-  private subscription: ISubscription;
+  private subscription: SubscriptionLike;
 
   constructor(
     public networkService: NetworkService,

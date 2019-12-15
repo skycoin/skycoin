@@ -1,3 +1,4 @@
+import { mergeMap } from 'rxjs/operators';
 import { Component, OnInit, Inject, ViewChild, OnDestroy } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
@@ -8,7 +9,7 @@ import { MessageIcons } from '../../../layout/hardware-wallet/hw-message/hw-mess
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
 import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
-import { ISubscription } from 'rxjs/Subscription';
+import { SubscriptionLike } from 'rxjs';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 
 enum States {
@@ -40,8 +41,8 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
   showCharactersWarning = false;
 
   private newLabel: string;
-  private hwConnectionSubscription: ISubscription;
-  private operationSubscription: ISubscription;
+  private hwConnectionSubscription: SubscriptionLike;
+  private operationSubscription: SubscriptionLike;
 
   constructor(
     public dialogRef: MatDialogRef<ChangeNameComponent>,
@@ -117,12 +118,12 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
         this.currentState = States.WaitingForConfirmation;
       }
 
-      this.operationSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.data.wallet.addresses[0].address)
-        .flatMap(() => {
+      this.operationSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.data.wallet.addresses[0].address).pipe(
+        mergeMap(() => {
           this.currentState = States.WaitingForConfirmation;
 
           return this.hwWalletService.changeLabel(this.newLabel);
-        })
+        }))
         .subscribe(
           () => {
             this.data.wallet.label = this.newLabel;

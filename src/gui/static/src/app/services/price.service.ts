@@ -1,9 +1,7 @@
 import { Injectable, NgZone } from '@angular/core';
-import { Subject } from 'rxjs/Subject';
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
-import { Observable } from 'rxjs/Observable';
+import { Subject, BehaviorSubject, SubscriptionLike, timer, of } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
-import { ISubscription } from 'rxjs/Subscription';
+import { delay } from 'rxjs/operators';
 
 @Injectable()
 export class PriceService {
@@ -12,8 +10,8 @@ export class PriceService {
   price: Subject<number> = new BehaviorSubject<number>(null);
 
   private readonly updatePeriod = 10 * 60 * 1000;
-  private lastPriceSubscription: ISubscription;
-  private timerSubscriptions: ISubscription[];
+  private lastPriceSubscription: SubscriptionLike;
+  private timerSubscriptions: SubscriptionLike[];
 
   constructor(
     private http: HttpClient,
@@ -30,14 +28,14 @@ export class PriceService {
     this.timerSubscriptions = [];
 
     this.ngZone.runOutsideAngular(() => {
-      this.timerSubscriptions.push(Observable.timer(this.updatePeriod, this.updatePeriod)
+      this.timerSubscriptions.push(timer(this.updatePeriod, this.updatePeriod)
         .subscribe(() => {
           this.ngZone.run(() => !this.lastPriceSubscription ? this.loadPrice() : null );
         }));
     });
 
     this.timerSubscriptions.push(
-      Observable.of(1).delay(firstConnectionDelay).subscribe(() => {
+      of(1).pipe(delay(firstConnectionDelay)).subscribe(() => {
         this.ngZone.run(() => this.loadPrice());
       }));
   }

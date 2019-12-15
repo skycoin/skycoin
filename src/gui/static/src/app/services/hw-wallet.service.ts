@@ -1,9 +1,8 @@
 // NOTE: some  code for using the hw wallet js library was left here only for precaution and should be deleted soon.
 
+import { throwError as observableThrowError, of, Observable, Subscriber, Subject, SubscriptionLike } from 'rxjs';
+import { mergeMap, map, catchError } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs/Observable';
-import { Subscriber } from 'rxjs/Subscriber';
-import { Subject } from 'rxjs/Subject';
 import { TranslateService } from '@ngx-translate/core';
 import { AppConfig } from '../app.config';
 import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
@@ -12,7 +11,6 @@ import { HwWalletPinService, ChangePinStates } from './hw-wallet-pin.service';
 import { HwWalletSeedWordService } from './hw-wallet-seed-word.service';
 import BigNumber from 'bignumber.js';
 import { StorageService, StorageType } from './storage.service';
-import { ISubscription } from 'rxjs/Subscription';
 import { HttpClient } from '@angular/common/http';
 import { ApiService } from './api.service';
 
@@ -76,7 +74,7 @@ export class HwWalletService {
   private eventsObservers = new Map<number, Subscriber<OperationResult>>();
   private walletConnectedSubject: Subject<boolean> = new Subject<boolean>();
 
-  private savingDataSubscription: ISubscription;
+  private savingDataSubscription: SubscriptionLike;
 
   private signTransactionDialog: MatDialogRef<{}, any>;
 
@@ -178,29 +176,29 @@ export class HwWalletService {
 
   getDeviceConnected(): Observable<boolean> {
     if (!AppConfig.useHwWalletDaemon) {
-      return Observable.of(window['ipcRenderer'].sendSync('hwGetDeviceConnectedSync'));
+      return of(window['ipcRenderer'].sendSync('hwGetDeviceConnectedSync'));
     } else {
-      return this.hwWalletDaemonService.get('/available').map(response => {
+      return this.hwWalletDaemonService.get('/available').pipe(map((response: any) => {
         return response.data;
-      });
+      }));
     }
   }
 
   getSavedWalletsData(): Observable<string> {
-    return this.storageService.get(StorageType.CLIENT, this.storageKey)
-      .map(result => result.data)
-      .catch(err => {
+    return this.storageService.get(StorageType.CLIENT, this.storageKey).pipe(
+      map(result => result.data),
+      catchError(err => {
         try {
           if (err['_body']) {
             const errorBody = JSON.parse(err['_body']);
             if (errorBody && errorBody.error && errorBody.error.code === 404) {
-              return Observable.of(null);
+              return of(null);
             }
           }
         } catch (e) {}
 
-        return Observable.throw(err);
-      });
+        return observableThrowError(err);
+      }));
   }
 
   saveWalletsData(walletsData: string) {
@@ -227,7 +225,7 @@ export class HwWalletService {
   }
 
   getAddresses(addressN: number, startIndex: number): Observable<OperationResult> {
-    return this.cancelLastAction().flatMap(() => {
+    return this.cancelLastAction().pipe(mergeMap(() => {
       if (!AppConfig.useHwWalletDaemon) {
         const requestId = this.createRandomIdAndPrepare();
         window['ipcRenderer'].send('hwGetAddresses', requestId, addressN, startIndex, false);
@@ -249,11 +247,11 @@ export class HwWalletService {
           ), null, true,
         );
       }
-    }).flatMap(response => {
-      return this.verifyAddresses(response.rawResponse, 0)
-        .catch(() => Observable.throw({ _body: this.translate.instant('hardware-wallet.errors.invalid-address-generated') }))
-        .map(() => response);
-    });
+    }), mergeMap(response => {
+      return this.verifyAddresses(response.rawResponse, 0).pipe(
+        catchError(() => observableThrowError({ _body: this.translate.instant('hardware-wallet.errors.invalid-address-generated') })),
+        map(() => response));
+    }));
   }
 
   private verifyAddresses(addresses: string[], currentIndex: number): Observable<any> {
@@ -261,17 +259,17 @@ export class HwWalletService {
       address: addresses[currentIndex],
     };
 
-    return this.apiService.post('address/verify', params, {}, true).flatMap(() => {
+    return this.apiService.post('address/verify', params, {}, true).pipe(mergeMap(() => {
       if (currentIndex !== addresses.length - 1) {
         return this.verifyAddresses(addresses, currentIndex + 1);
       } else {
-        return Observable.of(0);
+        return of(0);
       }
-    });
+    }));
   }
 
   confirmAddress(index: number): Observable<OperationResult> {
-    return this.cancelLastAction().flatMap(() => {
+    return this.cancelLastAction().pipe(mergeMap(() => {
       if (!AppConfig.useHwWalletDaemon) {
         const requestId = this.createRandomIdAndPrepare();
         window['ipcRenderer'].send('hwGetAddresses', requestId, 1, index, true);
@@ -293,7 +291,7 @@ export class HwWalletService {
           ), null, true,
         );
       }
-    });
+    }));
   }
 
   getFeatures(cancelPreviousOperation = true): Observable<OperationResult> {
@@ -302,10 +300,10 @@ export class HwWalletService {
     if (cancelPreviousOperation) {
       cancel = this.cancelLastAction();
     } else {
-      cancel = Observable.of(0);
+      cancel = of(0);
     }
 
-    return cancel.flatMap(() => {
+    return cancel.pipe(mergeMap(() => {
       if (!AppConfig.useHwWalletDaemon) {
         const requestId = this.createRandomIdAndPrepare();
         window['ipcRenderer'].send('hwGetFeatures', requestId);
@@ -318,7 +316,7 @@ export class HwWalletService {
           this.hwWalletDaemonService.get('/features'),
         );
       }
-    });
+    }));
   }
 
   updateFirmware(downloadCompleteCallback: () => any): Observable<OperationResult> {
@@ -328,27 +326,27 @@ export class HwWalletService {
     } else {
       this.prepare();
 
-      return this.getFeatures(false).flatMap(result => {
+      return this.getFeatures(false).pipe(mergeMap(result => {
         if (!result.rawResponse.bootloader_mode) {
           const response: OperationResult = {
             result: OperationResults.NotInBootloaderMode,
             rawResponse: null,
           };
 
-          return Observable.throw(response);
+          return observableThrowError(response);
         }
 
-        return this.http.get(AppConfig.urlForHwWalletVersionChecking, { responseType: 'text' })
-          .catch(() => Observable.throw({ _body: this.translate.instant('hardware-wallet.update-firmware.connection-error') }))
-          .flatMap((res: any) => {
+        return this.http.get(AppConfig.urlForHwWalletVersionChecking, { responseType: 'text' }).pipe(
+          catchError(() => observableThrowError({ _body: this.translate.instant('hardware-wallet.update-firmware.connection-error') })),
+          mergeMap((res: any) => {
             let lastestFirmwareVersion: string = res.trim();
             if (lastestFirmwareVersion.toLowerCase().startsWith('v')) {
               lastestFirmwareVersion = lastestFirmwareVersion.substr(1, lastestFirmwareVersion.length - 1);
             }
 
-            return this.http.get(AppConfig.hwWalletDownloadUrlAndPrefix + lastestFirmwareVersion + '.bin', { responseType: 'arraybuffer' })
-              .catch(() => Observable.throw({ _body: this.translate.instant('hardware-wallet.update-firmware.connection-error') }))
-              .flatMap(firmware => {
+            return this.http.get(AppConfig.hwWalletDownloadUrlAndPrefix + lastestFirmwareVersion + '.bin', { responseType: 'arraybuffer' }).pipe(
+              catchError(() => observableThrowError({ _body: this.translate.instant('hardware-wallet.update-firmware.connection-error') })),
+              mergeMap(firmware => {
                 downloadCompleteCallback();
                 const data = new FormData();
                 data.set('file', new Blob([firmware], { type: 'application/octet-stream'}));
@@ -356,14 +354,14 @@ export class HwWalletService {
                 return this.processDaemonResponse(
                   this.hwWalletDaemonService.put('/firmware_update', data, true),
                 );
-              });
-          });
-      });
+              }));
+          }));
+      }));
     }
   }
 
   changePin(changingCurrentPin: boolean): Observable<OperationResult> {
-    return this.cancelLastAction().flatMap(() => {
+    return this.cancelLastAction().pipe(mergeMap(() => {
       let requestId = 0;
       if (!AppConfig.useHwWalletDaemon) {
         requestId = this.createRandomIdAndPrepare();
@@ -388,11 +386,11 @@ export class HwWalletService {
           ['PIN changed'],
         );
       }
-    });
+    }));
   }
 
   removePin(): Observable<OperationResult> {
-    return this.cancelLastAction().flatMap(() => {
+    return this.cancelLastAction().pipe(mergeMap(() => {
        if (!AppConfig.useHwWalletDaemon) {
         // Unimplemented.
         return null;
@@ -410,11 +408,11 @@ export class HwWalletService {
           ['PIN removed'],
         );
       }
-    });
+    }));
   }
 
   generateMnemonic(wordCount: number): Observable<OperationResult> {
-    return this.cancelLastAction().flatMap(() => {
+    return this.cancelLastAction().pipe(mergeMap(() => {
        if (!AppConfig.useHwWalletDaemon) {
         const requestId = this.createRandomIdAndPrepare();
         window['ipcRenderer'].send('hwGenerateMnemonic', requestId, wordCount);
@@ -435,11 +433,11 @@ export class HwWalletService {
           ['Mnemonic successfully configured'],
         );
       }
-    });
+    }));
   }
 
   recoverMnemonic(wordCount: number, dryRun: boolean): Observable<OperationResult> {
-    return this.cancelLastAction().flatMap(() => {
+    return this.cancelLastAction().pipe(mergeMap(() => {
       if (!AppConfig.useHwWalletDaemon) {
         const requestId = this.createRandomIdAndPrepare();
         window['ipcRenderer'].send('hwRecoverMnemonic', requestId, wordCount, dryRun);
@@ -461,11 +459,11 @@ export class HwWalletService {
           ['Device recovered', 'The seed is valid and matches the one in the device'],
         );
       }
-    });
+    }));
   }
 
   backup(): Observable<OperationResult> {
-    return this.cancelLastAction().flatMap(() => {
+    return this.cancelLastAction().pipe(mergeMap(() => {
       if (!AppConfig.useHwWalletDaemon) {
         const requestId = this.createRandomIdAndPrepare();
         window['ipcRenderer'].send('hwBackupDevice', requestId);
@@ -481,11 +479,11 @@ export class HwWalletService {
           ['Device backed up!'],
         );
       }
-    });
+    }));
   }
 
   wipe(): Observable<OperationResult> {
-    return this.cancelLastAction().flatMap(() => {
+    return this.cancelLastAction().pipe(mergeMap(() => {
       if (!AppConfig.useHwWalletDaemon) {
         const requestId = this.createRandomIdAndPrepare();
         window['ipcRenderer'].send('hwWipe', requestId);
@@ -499,11 +497,11 @@ export class HwWalletService {
           ['Device wiped'],
         );
       }
-    });
+    }));
   }
 
   changeLabel(label: string): Observable<OperationResult> {
-    return this.cancelLastAction().flatMap(() => {
+    return this.cancelLastAction().pipe(mergeMap(() => {
       if (!AppConfig.useHwWalletDaemon) {
         const requestId = this.createRandomIdAndPrepare();
         window['ipcRenderer'].send('hwChangeLabel', requestId, label);
@@ -517,7 +515,7 @@ export class HwWalletService {
           ['Settings applied'],
         );
       }
-    });
+    }));
   }
 
   signTransaction(inputs: Input[], outputs: Output[]): Observable<OperationResult> {
@@ -538,7 +536,7 @@ export class HwWalletService {
       data: previewData,
     });
 
-    return this.cancelLastAction().flatMap(() => {
+    return this.cancelLastAction().pipe(mergeMap(() => {
       if (!AppConfig.useHwWalletDaemon) {
         const requestId = this.createRandomIdAndPrepare();
         this.hwWalletPinService.signingTx = true;
@@ -570,41 +568,41 @@ export class HwWalletService {
             '/transaction_sign',
             params,
           ), null, true,
-        ).map(response => {
+        ).pipe(map(response => {
           this.closeTransactionDialog();
 
           return response;
-        }).catch(error => {
+        }), catchError(error => {
           this.closeTransactionDialog();
 
-          return Observable.throw(error);
-        });
+          return observableThrowError(error);
+        }));
       }
-    });
+    }));
   }
 
   checkIfCorrectHwConnected(firstAddress: string): Observable<boolean> {
-    return this.getAddresses(1, 0).flatMap(
+    return this.getAddresses(1, 0).pipe(mergeMap(
       response => {
         if (response.rawResponse[0] !== firstAddress) {
-          return Observable.throw({
+          return observableThrowError({
             result: OperationResults.IncorrectHardwareWallet,
             rawResponse: '',
           });
         }
 
-        return Observable.of(true);
+        return of(true);
       },
-    ).catch(error => {
+    ), catchError(error => {
       if (error.result && error.result === OperationResults.WithoutSeed) {
-        return Observable.throw({
+        return observableThrowError({
           result: OperationResults.IncorrectHardwareWallet,
           rawResponse: '',
         });
       }
 
-      return Observable.throw(error);
-    });
+      return observableThrowError(error);
+    }));
   }
 
   private closeTransactionDialog() {
@@ -615,9 +613,9 @@ export class HwWalletService {
   }
 
   private processDaemonResponse(daemonResponse: Observable<any>, successTexts: string[] = null, responseShouldBeArray = false) {
-    return daemonResponse.catch((error: any) => {
-      return Observable.throw(this.dispatchEvent(0, error['_body'], false, true));
-    }).flatMap(result => {
+    return daemonResponse.pipe(catchError((error: any) => {
+      return observableThrowError(this.dispatchEvent(0, error['_body'], false, true));
+    }), mergeMap(result => {
       if (result !== HwWalletDaemonService.errorCancelled) {
         if (responseShouldBeArray && result.data && typeof result.data === 'string') {
           result.data = [result.data];
@@ -629,14 +627,14 @@ export class HwWalletService {
           true);
 
           if (response.result === OperationResults.Success) {
-            return Observable.of(response);
+            return of(response);
           } else {
-            return Observable.throw(response);
+            return observableThrowError(response);
           }
       } else {
-        return Observable.throw(this.dispatchEvent(0, 'canceled by user', false, true));
+        return observableThrowError(this.dispatchEvent(0, 'canceled by user', false, true));
       }
-    });
+    }));
   }
 
   private createRequestResponse(requestId: number): Observable<OperationResult> {

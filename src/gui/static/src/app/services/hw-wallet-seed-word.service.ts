@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 @Injectable()
 export class HwWalletSeedWordService {
@@ -23,8 +24,8 @@ export class HwWalletSeedWordService {
         wordNumber: 0,
         restoringSoftwareWallet: false,
       },
-    }).afterClosed().map(word => {
+    }).afterClosed().pipe(map(word => {
       return word;
-    });
+    }));
   }
 }

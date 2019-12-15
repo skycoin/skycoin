@@ -1,7 +1,5 @@
 import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
-import 'rxjs/add/operator/takeWhile';
 import { MatDialog } from '@angular/material/dialog';
-
 import { AppService } from './services/app.service';
 import { WalletService } from './services/wallet.service';
 import { HwWalletService } from './services/hw-wallet.service';

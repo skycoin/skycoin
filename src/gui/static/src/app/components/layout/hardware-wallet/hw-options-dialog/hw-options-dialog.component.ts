@@ -2,7 +2,7 @@ import { Component, OnDestroy, Inject } from '@angular/core';
 import { MatDialogRef, MatDialogConfig, MatDialog, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
 import { HwWipeDialogComponent } from '../hw-wipe-dialog/hw-wipe-dialog.component';
-import { ISubscription } from 'rxjs/Subscription';
+import { SubscriptionLike,  Observable } from 'rxjs';
 import { WalletService, HwSecurityWarnings, HwFeaturesResponse } from '../../../../services/wallet.service';
 import { HwAddedDialogComponent } from '../hw-added-dialog/hw-added-dialog.component';
 import { HwGenerateSeedDialogComponent } from '../hw-generate-seed-dialog/hw-generate-seed-dialog.component';
@@ -10,13 +10,13 @@ import { HwBackupDialogComponent } from '../hw-backup-dialog/hw-backup-dialog.co
 import { Wallet } from '../../../../app.datatypes';
 import { HwChangePinDialogComponent } from '../hw-change-pin-dialog/hw-change-pin-dialog.component';
 import { HwRestoreSeedDialogComponent } from '../hw-restore-seed-dialog/hw-restore-seed-dialog.component';
-import { Observable } from 'rxjs/Observable';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 import { HwWalletDaemonService } from '../../../../services/hw-wallet-daemon.service';
 import { HwRemovePinDialogComponent } from '../hw-remove-pin-dialog/hw-remove-pin-dialog.component';
 import { HwUpdateFirmwareDialogComponent } from '../hw-update-firmware-dialog/hw-update-firmware-dialog.component';
 import { HwUpdateAlertDialogComponent } from '../hw-update-alert-dialog/hw-update-alert-dialog.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { map, first } from 'rxjs/operators';
 
 export interface ChildHwDialogParams {
   wallet: Wallet;
@@ -45,7 +45,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
   needsBackup: boolean;
   needsPin: boolean;
 
-  private dialogSubscription: ISubscription;
+  private dialogSubscription: SubscriptionLike;
 
   private completeRecheckRequested = false;
   private recheckSecurityOnlyRequested = false;
@@ -159,7 +159,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
       this.securityWarnings = [];
     }
 
-    return this.walletService.getHwFeaturesAndUpdateData(!dontUpdateWallet ? this.wallet : null).map(response => {
+    return this.walletService.getHwFeaturesAndUpdateData(!dontUpdateWallet ? this.wallet : null).pipe(map(response => {
       if (waitForResetingCurrentWarnings) {
         this.securityWarnings = [];
       }
@@ -203,7 +203,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
       this.firmwareVersion = response.features.fw_major + '.' + response.features.fw_minor + '.' + response.features.fw_patch;
 
       return response;
-    });
+    }));
   }
 
   private checkWallet(suggestToUpdate = false) {
@@ -245,7 +245,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
   private continueCheckingWallet(suggestToUpdate) {
     this.operationSubscription = this.hwWalletService.getAddresses(1, 0).subscribe(
       response => {
-        this.operationSubscription = this.walletService.wallets.first().subscribe(wallets => {
+        this.operationSubscription = this.walletService.wallets.pipe(first()).subscribe(wallets => {
           const alreadySaved = wallets.some(wallet => {
             const found = wallet.addresses[0].address === response.rawResponse[0] && wallet.isHardware;
             if (found) {

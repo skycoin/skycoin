@@ -1,7 +1,7 @@
 import { Component, OnInit, Inject, ViewChild, OnDestroy } from '@angular/core';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { ISubscription } from 'rxjs/Subscription';
+import { SubscriptionLike } from 'rxjs';
 import { ButtonComponent } from '../../../../../layout/button/button.component';
 import { Transaction } from '../../../../../../app.datatypes';
 import { StorageService, StorageType } from '../../../../../../services/storage.service';
@@ -20,7 +20,7 @@ export class ChangeNoteComponent implements OnInit, OnDestroy {
   form: FormGroup;
   maxNoteChars = ChangeNoteComponent.MAX_NOTE_CHARS;
 
-  private OperationSubscription: ISubscription;
+  private OperationSubscription: SubscriptionLike;
   private originalNote: string;
 
   constructor(

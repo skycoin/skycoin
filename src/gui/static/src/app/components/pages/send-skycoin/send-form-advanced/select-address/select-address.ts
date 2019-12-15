@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
 import { WalletService } from '../../../../../services/wallet.service';
 import { Wallet } from '../../../../../app.datatypes';
+import { first } from 'rxjs/operators';
 
 @Component({
   selector: 'app-select-address',
@@ -16,7 +17,7 @@ export class SelectAddressComponent {
     public dialogRef: MatDialogRef<SelectAddressComponent>,
     public walletService: WalletService,
   ) {
-    this.walletService.all().first().subscribe(wallets => this.wallets = wallets);
+    this.walletService.all().pipe(first()).subscribe(wallets => this.wallets = wallets);
   }
 
   closePopup() {

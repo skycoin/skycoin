@@ -4,7 +4,7 @@ import { MatDialogRef, MatDialog } from '@angular/material/dialog';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { CreateWalletFormComponent } from './create-wallet-form/create-wallet-form.component';
-import { ISubscription } from 'rxjs/Subscription';
+import { SubscriptionLike } from 'rxjs';
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { ConfirmationData } from '../../../../app.datatypes';
 import { showConfirmationModal } from '../../../../utils';
@@ -24,7 +24,7 @@ export class CreateWalletComponent implements OnDestroy {
   disableDismiss = false;
 
   private synchronized = true;
-  private synchronizedSubscription: ISubscription;
+  private synchronizedSubscription: SubscriptionLike;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data,

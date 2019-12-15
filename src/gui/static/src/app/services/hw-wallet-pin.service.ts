@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { HwPinDialogParams } from '../components/layout/hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 export enum ChangePinStates {
   RequestingCurrentPin,
@@ -41,7 +42,7 @@ export class HwWalletPinService {
         changePinState: this.changePinState,
         signingTx: this.signingTx,
       },
-    }).afterClosed().map(pin => {
+    }).afterClosed().pipe(map(pin => {
       if (this.changingPin) {
         if (this.changePinState === ChangePinStates.RequestingCurrentPin) {
           this.changePinState = ChangePinStates.RequestingNewPin;
@@ -51,6 +52,6 @@ export class HwWalletPinService {
       }
 
       return pin;
-    });
+    }));
   }
 }

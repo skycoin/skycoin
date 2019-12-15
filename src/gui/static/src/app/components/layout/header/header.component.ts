@@ -1,11 +1,10 @@
+import { filter } from 'rxjs/operators';
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { PriceService } from '../../../services/price.service';
-import { ISubscription } from 'rxjs/Subscription';
+import { SubscriptionLike } from 'rxjs';
 import { WalletService } from '../../../services/wallet.service';
 import { BlockchainService } from '../../../services/blockchain.service';
 import { AppService } from '../../../services/app.service';
-import 'rxjs/add/operator/skip';
-import 'rxjs/add/operator/take';
 import { BigNumber } from 'bignumber.js';
 import { NetworkService } from '../../../services/network.service';
 import { AppConfig } from '../../../app.config';
@@ -28,8 +27,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
   synchronized = true;
   walletDownloadUrl = AppConfig.walletDownloadUrl;
 
-  private subscriptionsGroup: ISubscription[] = [];
-  private synchronizedSubscription: ISubscription;
+  private subscriptionsGroup: SubscriptionLike[] = [];
+  private synchronizedSubscription: SubscriptionLike;
   // This should be deleted. View the comment in the constructor.
   // private fetchVersionError: string;
 
@@ -60,8 +59,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    this.subscriptionsGroup.push(this.blockchainService.progress
-      .filter(response => !!response)
+    this.subscriptionsGroup.push(this.blockchainService.progress.pipe(filter(response => !!response))
       .subscribe(response => {
         this.querying = false;
         this.highest = response.highest;

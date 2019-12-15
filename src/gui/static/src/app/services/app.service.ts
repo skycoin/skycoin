@@ -1,3 +1,4 @@
+import { delay, retryWhen } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
 import { Version } from '../app.datatypes';
@@ -62,8 +63,8 @@ export class AppService {
 
   private detectUpdateAvailable() {
     if (AppConfig.urlForVersionChecking) {
-      this.http.get(AppConfig.urlForVersionChecking, { responseType: 'text' })
-        .retryWhen(errors => errors.delay(30000))
+      this.http.get(AppConfig.urlForVersionChecking, { responseType: 'text' }).pipe(
+        retryWhen(errors => errors.pipe(delay(30000))))
         .subscribe((response: string) => {
           this.lastestVersionInternal = response.trim();
           if (this.lastestVersionInternal.startsWith('v')) {

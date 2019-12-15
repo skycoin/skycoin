@@ -1,17 +1,17 @@
-import { Subject } from 'rxjs/Subject';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/operator/debounceTime';
+import { debounceTime, map } from 'rxjs/operators';
+import { Subject, Observable } from 'rxjs';
+
 
 export class Bip39WordListService {
 
   get searchResults(): Observable<string[]> {
-    return this.searchResultsSubject.asObservable().debounceTime(100).map(searchTerm => {
+    return this.searchResultsSubject.asObservable().pipe(debounceTime(100), map(searchTerm => {
       if (searchTerm.length > 1) {
         return this.wordList.filter(option => option.startsWith(searchTerm));
       } else {
         return [];
       }
-    });
+    }));
   }
 
   private lastSearchTerm = '';

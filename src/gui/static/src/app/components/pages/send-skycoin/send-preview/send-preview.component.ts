@@ -4,11 +4,12 @@ import { ButtonComponent } from '../../../layout/button/button.component';
 import { MatDialogConfig, MatDialog } from '@angular/material/dialog';
 import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { PreviewTransaction, Wallet } from '../../../../app.datatypes';
-import { ISubscription } from 'rxjs/Subscription';
+import { SubscriptionLike } from 'rxjs';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { mergeMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-send-preview',
@@ -21,7 +22,7 @@ export class SendVerifyComponent implements OnDestroy {
   @Input() transaction: PreviewTransaction;
   @Output() onBack = new EventEmitter<boolean>();
 
-  private sendSubscription: ISubscription;
+  private sendSubscription: SubscriptionLike;
 
   constructor(
     private walletService: WalletService,
@@ -88,13 +89,13 @@ export class SendVerifyComponent implements OnDestroy {
       this.transaction.wallet,
       passwordDialog ? passwordDialog.password : null,
       this.transaction,
-    ).flatMap(result => {
+    ).pipe(mergeMap(result => {
       if (passwordDialog) {
         passwordDialog.close();
       }
 
       return this.walletService.injectTransaction(result.encoded, note);
-    }).subscribe(noteSaved => {
+    })).subscribe(noteSaved => {
       if (note && !noteSaved) {
         setTimeout(() => this.msgBarService.showWarning(this.translate.instant('send.error-saving-note')));
       } else {

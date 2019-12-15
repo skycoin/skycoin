@@ -1,9 +1,8 @@
 import { Injectable } from '@angular/core';
 import { TranslateService, LangChangeEvent } from '@ngx-translate/core';
-import { ReplaySubject } from 'rxjs/ReplaySubject';
+import { ReplaySubject, SubscriptionLike } from 'rxjs';
 
 import { AppConfig } from '../app.config';
-import { ISubscription } from 'rxjs/Subscription';
 import { StorageService, StorageType } from './storage.service';
 
 export class LanguageData {
@@ -22,7 +21,7 @@ export class LanguageService {
   selectedLanguageLoaded = new ReplaySubject<boolean>(1);
 
   private readonly storageKey = 'lang';
-  private subscription: ISubscription;
+  private subscription: SubscriptionLike;
   private languagesInternal: LanguageData[] = [];
 
   get languages(): LanguageData[] {

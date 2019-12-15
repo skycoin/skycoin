@@ -1,7 +1,7 @@
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { PreviewTransaction, Transaction } from '../../../../../app.datatypes';
 import { PriceService } from '../../../../../services/price.service';
-import { ISubscription } from 'rxjs/Subscription';
+import { SubscriptionLike } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
 import { MatDialogConfig, MatDialog } from '@angular/material/dialog';
 import { ChangeNoteComponent } from './change-note/change-note.component';
@@ -17,7 +17,7 @@ export class TransactionInfoComponent implements OnInit, OnDestroy {
   price: number;
   showInputsOutputs = false;
 
-  private subscription: ISubscription;
+  private subscription: SubscriptionLike;
 
   constructor(private priceService: PriceService, private dialog: MatDialog) {
     this.subscription = this.priceService.price.subscribe(price => this.price = price);

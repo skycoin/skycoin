@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { WalletService } from '../../../services/wallet.service';
 import { LanguageData, LanguageService } from '../../../services/language.service';
-import { ISubscription } from 'rxjs/Subscription';
+import { SubscriptionLike } from 'rxjs';
 import { openChangeLanguageModal } from '../../../utils';
 import { MatDialog } from '@angular/material/dialog';
 import { WalletFormData } from '../wallets/create-wallet/create-wallet-form/create-wallet-form.component';
@@ -22,7 +22,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   password: string|null;
   language: LanguageData;
 
-  private subscription: ISubscription;
+  private subscription: SubscriptionLike;
 
   constructor(
     private router: Router,

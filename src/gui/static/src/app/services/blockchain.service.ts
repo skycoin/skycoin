@@ -1,12 +1,8 @@
+import { timer as observableTimer, throwError as observableThrowError, BehaviorSubject } from 'rxjs';
+import { retryWhen, concat, delay, exhaustMap, take, map } from 'rxjs/operators';
 import { Injectable, NgZone } from '@angular/core';
 import { ApiService } from './api.service';
-import { Observable } from 'rxjs/Observable';
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 import { WalletService } from './wallet.service';
-import 'rxjs/add/observable/timer';
-import 'rxjs/add/operator/retryWhen';
-import 'rxjs/add/operator/concat';
-import 'rxjs/add/operator/exhaustMap';
 
 @Injectable()
 export class BlockchainService {
@@ -34,13 +30,13 @@ export class BlockchainService {
     private walletService: WalletService,
     private ngZone: NgZone,
   ) {
-    this.apiService.get('health').retryWhen(errors => errors.delay(1000).take(10).concat(Observable.throw('')))
+    this.apiService.get('health').pipe(retryWhen(errors => errors.pipe(delay(1000), take(10), concat(observableThrowError('')))))
       .subscribe ((response: any) => this.maxDecimals = response.user_verify_transaction.max_decimals);
 
     this.ngZone.runOutsideAngular(() => {
-      Observable.timer(0, 2000)
-        .exhaustMap(() => this.getBlockchainProgress())
-        .retryWhen(errors => errors.delay(2000))
+      observableTimer(0, 2000).pipe(
+        exhaustMap(() => this.getBlockchainProgress()),
+        retryWhen(errors => errors.pipe(delay(2000))))
         .subscribe(
           response => this.ngZone.run(() => {
             if (!response.current || !response.highest || response.current < this.lastCurrentBlock || response.highest < this.lastHighestBlock) {
@@ -70,7 +66,7 @@ export class BlockchainService {
   }
 
   lastBlock() {
-    return this.apiService.get('last_blocks', { num: 1 }).map(blocks => blocks.blocks[0]);
+    return this.apiService.get('last_blocks', { num: 1 }).pipe(map(blocks => blocks.blocks[0]));
   }
 
   getBlockchainProgress() {

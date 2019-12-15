@@ -3,7 +3,7 @@ import { StoredExchangeOrder } from '../../../app.datatypes';
 import { ExchangeService } from '../../../services/exchange.service';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ExchangeHistoryComponent } from './exchange-history/exchange-history.component';
-import { ISubscription } from 'rxjs/Subscription';
+import { SubscriptionLike } from 'rxjs';
 
 @Component({
   selector: 'app-exchange',
@@ -15,8 +15,8 @@ export class ExchangeComponent implements OnInit, OnDestroy {
   hasHistory = false;
   loading = true;
 
-  private lastViewedSubscription: ISubscription;
-  private historySubscription: ISubscription;
+  private lastViewedSubscription: SubscriptionLike;
+  private historySubscription: SubscriptionLike;
 
   constructor(
     private exchangeService: ExchangeService,

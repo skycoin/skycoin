@@ -1,6 +1,6 @@
+import { throwError as observableThrowError, Observable, BehaviorSubject, SubscriptionLike, of } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
-import { Observable } from 'rxjs/Observable';
 import {
   ExchangeOrder,
   StoredExchangeOrder,
@@ -8,11 +8,9 @@ import {
 } from '../app.datatypes';
 import { StorageService, StorageType } from './storage.service';
 import * as moment from 'moment';
-import 'rxjs/add/operator/repeatWhen';
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
-import { ISubscription } from 'rxjs/Subscription';
 import { ApiService } from './api.service';
 import { environment } from '../../environments/environment';
+import { map, mergeMap, retryWhen, delay, catchError, tap } from 'rxjs/operators';
 
 @Injectable()
 export class ExchangeService {
@@ -24,7 +22,7 @@ export class ExchangeService {
 
   lastViewedOrderLoaded: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
-  private saveLastViewedSubscription: ISubscription;
+  private saveLastViewedSubscription: SubscriptionLike;
   private _lastViewedOrder: StoredExchangeOrder;
 
   set lastViewedOrder(order) {
@@ -54,18 +52,18 @@ export class ExchangeService {
   }
 
   tradingPairs(): Observable<TradingPair[]> {
-    return this.post('trading_pairs').map(data => data.result);
+    return this.post('trading_pairs').pipe(map(data => data.result));
   }
 
   exchange(pair: string, fromAmount: number, toAddress: string, price: number): Observable<ExchangeOrder> {
     let response: ExchangeOrder;
 
-    return this.post('orders', { pair, fromAmount, toAddress })
-      .flatMap(data => {
+    return this.post('orders', { pair, fromAmount, toAddress }).pipe(
+      mergeMap(data => {
         response = data.result;
 
         return this.storeOrder(response, price);
-      }).map(() => response);
+      }), map(() => response));
   }
 
   status(id: string, devForceState?: string): Observable<ExchangeOrder> {
@@ -73,21 +71,21 @@ export class ExchangeService {
       devForceState = 'user_waiting';
     }
 
-    return this.post('orders/status', { id }, this.TEST_MODE ? { status: devForceState } : null)
-      .retryWhen((err) => {
-        return err.flatMap(response => {
+    return this.post('orders/status', { id }, this.TEST_MODE ? { status: devForceState } : null).pipe(
+      retryWhen((err) => {
+        return err.pipe(mergeMap(response => {
           if (response instanceof HttpErrorResponse && response.status === 404) {
-            return Observable.throw(response);
+            return observableThrowError(response);
           }
 
-          return Observable.of(response);
-        }).delay(3000);
-      }).map(data => data.result);
+          return of(response);
+        }), delay(3000));
+      }), map(data => data.result));
   }
 
   history() {
-    return this.storageService.get(StorageType.CLIENT, this.STORAGE_KEY)
-      .map((res) => JSON.parse(res.data));
+    return this.storageService.get(StorageType.CLIENT, this.STORAGE_KEY).pipe(
+      map((res) => JSON.parse(res.data)));
   }
 
   isOrderFinished(order: ExchangeOrder) {
@@ -102,7 +100,7 @@ export class ExchangeService {
         'Accept': 'application/json',
         ...headers,
       }),
-    }).catch((error: any) => this.apiService.processConnectionError(error));
+    }).pipe(catchError((error: any) => this.apiService.processConnectionError(error)));
   }
 
   private buildUrl(url: string) {
@@ -114,20 +112,20 @@ export class ExchangeService {
   }
 
   private storeOrder(order: ExchangeOrder, price: number) {
-    return this.history()
-      .catch(err => {
+    return this.history().pipe(
+      catchError(err => {
         try {
           if (err['_body']) {
             const errorBody = JSON.parse(err['_body']);
             if (errorBody && errorBody.error && errorBody.error.code === 404) {
-              return Observable.of([]);
+              return of([]);
             }
           }
         } catch (e) {}
 
-        return Observable.throw(err);
-      })
-      .flatMap((oldOrders: StoredExchangeOrder[]) => this.storeOrderEntry(oldOrders, order, price));
+        return observableThrowError(err);
+      }),
+      mergeMap((oldOrders: StoredExchangeOrder[]) => this.storeOrderEntry(oldOrders, order, price)));
   }
 
   private storeOrderEntry(orders: StoredExchangeOrder[], order: ExchangeOrder, price: number): Observable<any> {
@@ -145,7 +143,7 @@ export class ExchangeService {
     const data = JSON.stringify(orders);
     orders.pop();
 
-    return this.storageService.store(StorageType.CLIENT, this.STORAGE_KEY, data)
-      .do(() => orders.push(newOrder));
+    return this.storageService.store(StorageType.CLIENT, this.STORAGE_KEY, data).pipe(
+      tap(() => orders.push(newOrder)));
   }
 }

@@ -6,8 +6,8 @@ import { ButtonComponent } from '../../button/button.component';
 import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { TranslateService } from '@ngx-translate/core';
 import { MsgBarService } from '../../../../services/msg-bar.service';
-import { ISubscription } from 'rxjs/Subscription';
-import { Observable } from 'rxjs/Observable';
+import { SubscriptionLike, of } from 'rxjs';
+import { mergeMap, delay } from 'rxjs/operators';
 
 @Component({
   selector: 'app-hw-update-firmware-dialog',
@@ -26,7 +26,7 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
   deviceInBootloaderMode = false;
   deviceHasFirmware = true;
 
-  private checkDeviceSubscription: ISubscription;
+  private checkDeviceSubscription: SubscriptionLike;
 
   get title(): string {
     if (this.currentState === this.states.Connecting) {
@@ -117,10 +117,10 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
     );
   }
 
-  private checkDevice(delay = true) {
+  private checkDevice(delayOperation = true) {
     this.closeCheckDeviceSubscription();
 
-    this.checkDeviceSubscription = Observable.of(0).delay(delay ? 1000 : 0).flatMap(() => this.hwWalletService.getFeatures(false)).subscribe(response => {
+    this.checkDeviceSubscription = of(0).pipe(delay(delayOperation ? 1000 : 0), mergeMap(() => this.hwWalletService.getFeatures(false))).subscribe(response => {
       this.deviceInBootloaderMode = response.rawResponse.bootloader_mode;
       if (this.deviceInBootloaderMode) {
         this.deviceHasFirmware = response.rawResponse.firmware_present;

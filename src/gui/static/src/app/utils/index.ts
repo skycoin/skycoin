@@ -1,5 +1,5 @@
 import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
 
 import { ConfirmationData } from '../app.datatypes';
 import { ConfirmationComponent } from '../components/layout/confirmation/confirmation.component';

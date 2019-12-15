@@ -2,11 +2,11 @@ import { Component, Inject, ViewChild, OnDestroy, ElementRef, AfterViewInit } fr
 import { MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { MatDialogRef } from '@angular/material/dialog';
 import { FormGroup, FormBuilder } from '@angular/forms';
-import { ISubscription } from 'rxjs/Subscription';
-import { Subject } from 'rxjs/Subject';
+import { SubscriptionLike, Subject } from 'rxjs';
 import { copyTextToClipboard } from '../../../utils';
 import { AppConfig } from '../../../app.config';
 import { MsgBarService } from '../../../services/msg-bar.service';
+import { debounceTime } from 'rxjs/operators';
 
 declare const QRCode: any;
 
@@ -39,7 +39,7 @@ export class QrCodeComponent implements AfterViewInit, OnDestroy {
   invalidHours = false;
 
   private defaultQrConfig = new DefaultQrConfig();
-  private subscriptionsGroup: ISubscription[] = [];
+  private subscriptionsGroup: SubscriptionLike[] = [];
   private updateQrEvent: Subject<boolean> = new Subject<boolean>();
 
   static openDialog(dialog: MatDialog, config: QrDialogConfig) {
@@ -88,7 +88,7 @@ export class QrCodeComponent implements AfterViewInit, OnDestroy {
     this.subscriptionsGroup.push(this.form.get('hours').valueChanges.subscribe(this.reportValueChanged.bind(this)));
     this.subscriptionsGroup.push(this.form.get('note').valueChanges.subscribe(this.reportValueChanged.bind(this)));
 
-    this.subscriptionsGroup.push(this.updateQrEvent.debounceTime(500).subscribe(() => {
+    this.subscriptionsGroup.push(this.updateQrEvent.pipe(debounceTime(500)).subscribe(() => {
       this.updateQrContent();
     }));
   }

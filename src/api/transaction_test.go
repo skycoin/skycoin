@@ -230,6 +230,10 @@ func TestGetTransactionByID(t *testing.T) {
 	validSigRaw, err := cipher.SigFromHex(validSig)
 	require.NoError(t, err)
 
+	validTxnHash := "92ad19627d26441c84a2e1faf3c7c556dfc7da754f0291af86fcfb5f0970e0db"
+	validTxnHashRaw, err := cipher.SHA256FromHex(validTxnHash)
+	require.NoError(t, err)
+
 	type httpBody struct {
 		txid    string
 		verbose string
@@ -477,9 +481,10 @@ func TestGetTransactionByID(t *testing.T) {
 					{
 						UxOut: coin.UxOut{
 							Body: coin.UxBody{
-								Coins:   9999,
-								Hours:   1111,
-								Address: validAddrRaw,
+								Coins:          9999,
+								Hours:          1111,
+								Address:        validAddrRaw,
+								SrcTransaction: validTxnHashRaw,
 							},
 						},
 						CalculatedHours: 3333,
@@ -500,9 +505,10 @@ func TestGetTransactionByID(t *testing.T) {
 						Sigs:      []string{validSig},
 						In: []readable.TransactionInput{
 							{
-								Hash:            "50e8ad459e29a051d969f221f1fb9775e26248e8b443982fef0cfaa117ee6c0c",
+								Hash:            "1f3b617258bf6c9a1901a65277d84d1a9483d26146d2c1533e4a29238e560222",
 								Coins:           "0.009999",
 								Hours:           1111,
+								SrcTxid:         validTxnHash,
 								CalculatedHours: 3333,
 								Address:         validAddr,
 							},

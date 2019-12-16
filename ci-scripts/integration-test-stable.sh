@@ -46,16 +46,16 @@ usage () {
 }
 
 shutdown_node() {
-    COIN=$1
-    PID=$2
-    BIN=$3
+    local coin=$1
+    local pid=$2
+    local bin=$3
     echo "shutting down $COIN node"
 
     # Shutdown skycoin node
-    kill -s SIGINT $PID
-    wait $PID
+    kill -s SIGINT $pid
+    wait $pid
 
-    rm "$BIN"
+    rm "$bin"
 }
 
 while getopts "h?t:r:n:uvcxd" args; do

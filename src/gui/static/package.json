@@ -9,8 +9,7 @@
     "build-travis": "ng build --prod --output-path=$BUILD_UI_TRAVIS_DIR",
     "test": "ng test --watch=false",
     "lint": "ng lint",
-    "e2e": "ng e2e desktopwallet-e2e",
-    "e2e-choose-config": "ng e2e --proxy-config $E2E_PROXY_CONFIG --delete-output-path false"
+    "e2e": "ng e2e desktopwallet-e2e"
   },
   "private": true,
   "dependencies": {

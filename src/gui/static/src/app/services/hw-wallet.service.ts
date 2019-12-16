@@ -11,7 +11,7 @@ import { HwWalletPinService, ChangePinStates } from './hw-wallet-pin.service';
 import { HwWalletSeedWordService } from './hw-wallet-seed-word.service';
 import BigNumber from 'bignumber.js';
 import { StorageService, StorageType } from './storage.service';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { ApiService } from './api.service';
 
 export enum OperationResults {
@@ -187,13 +187,10 @@ export class HwWalletService {
   getSavedWalletsData(): Observable<string> {
     return this.storageService.get(StorageType.CLIENT, this.storageKey).pipe(
       map(result => result.data),
-      catchError(err => {
+      catchError((err: HttpErrorResponse) => {
         try {
-          if (err['_body']) {
-            const errorBody = JSON.parse(err['_body']);
-            if (errorBody && errorBody.error && errorBody.error.code === 404) {
-              return of(null);
-            }
+          if (err.status && err.status == 404) {
+            return of(null);
           }
         } catch (e) {}
 

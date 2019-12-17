@@ -49,6 +49,7 @@
 					"uxid": "043836eb6f29aaeb8b9bfce847e07c159c72b25ae17d291f32125e7f1912e2a0",
 					"owner": "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6",
 					"coins": "100000000.000000",
+					"src_txid": "0000000000000000000000000000000000000000000000000000000000000000",
 					"hours": 100000000000000,
 					"calculated_hours": 100000000000000
 				}
@@ -680,6 +681,7 @@
 					"uxid": "fa2b598d233fe434f907f858d5de812eacf50c7b3fd152c77cd6e246fe356a9e",
 					"owner": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
 					"coins": "999890.000000",
+					"src_txid": "0579e7727627cd9815a8a8b5e1df86124f45a4132cc0dbd00d2f110e4f409b69",
 					"hours": 4073,
 					"calculated_hours": 6061184
 				}
@@ -723,6 +725,7 @@
 					"uxid": "c603e99ceae4d15c20360714ee07ba6e3a944a97ea9285d164c23252e93958b6",
 					"owner": "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6",
 					"coins": "10.000000",
+					"src_txid": "d952ef4cc45a89c14230ba0f7e30b782fad83cb6506ac0f503a242c568c1287a",
 					"hours": 0,
 					"calculated_hours": 0
 				}
@@ -760,6 +763,7 @@
 					"uxid": "18ea1b3cceb2ca40c01efc8f3cfd7d1d0dd69430ecdf655515aa4f8b21bd2644",
 					"owner": "qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5",
 					"coins": "10.000000",
+					"src_txid": "260d249883165aa9e59e17fb2bd8ba8995d2c3644993530985f8b813ed378650",
 					"hours": 78,
 					"calculated_hours": 78
 				}
@@ -803,6 +807,7 @@
 					"uxid": "64194899d317e2a007f89df14538795547e927c242a92f83180e6cc952304964",
 					"owner": "qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5",
 					"coins": "5.000000",
+					"src_txid": "9004c779cff67b3895500ec14b2c2e566127bb11a8af3358fe8a63dcfae9badc",
 					"hours": 9,
 					"calculated_hours": 9
 				}
@@ -841,6 +846,7 @@
 					"uxid": "569aa1260e734017c4eee06d84ab4a6285e2ca2041940b2915d9141527caf179",
 					"owner": "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6",
 					"coins": "5.000000",
+					"src_txid": "9004c779cff67b3895500ec14b2c2e566127bb11a8af3358fe8a63dcfae9badc",
 					"hours": 9,
 					"calculated_hours": 9
 				},
@@ -848,6 +854,7 @@
 					"uxid": "eb446b8372559249c8e269b6cd028588e2e9e4f8fe9357719da9d1c22aa29911",
 					"owner": "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6",
 					"coins": "5.000000",
+					"src_txid": "327375203f20cb68847351c30a48597c0588a8c14319a4eb47bf440207fd045a",
 					"hours": 1,
 					"calculated_hours": 1
 				}
@@ -885,6 +892,7 @@
 					"uxid": "e702df2703c3de180f3e4a0e9a503bd534037c2d68e858e97a317575c5a97d95",
 					"owner": "qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5",
 					"coins": "10.000000",
+					"src_txid": "e89ee3e90e72108e4cd6ccb95c9f8d2b18ccfaa7ce61a7d297454debd69cebbf",
 					"hours": 1,
 					"calculated_hours": 1
 				}
@@ -928,6 +936,7 @@
 					"uxid": "10998e83dc5dfe3c3f5f28ef3e5e2fced4dbd1da389678b0ea3ddb552851b6bf",
 					"owner": "qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5",
 					"coins": "6.000000",
+					"src_txid": "08bf0f8f4a8547bcab1fef035adac2a66c80369b4485a736bdd676e782bbb037",
 					"hours": 0,
 					"calculated_hours": 0
 				}
@@ -966,6 +975,7 @@
 					"uxid": "41c6d29aa5de770de684ab19b40bd75b99ec7f1a5ff7d15288ae4bfff568eabd",
 					"owner": "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6",
 					"coins": "4.000000",
+					"src_txid": "08bf0f8f4a8547bcab1fef035adac2a66c80369b4485a736bdd676e782bbb037",
 					"hours": 0,
 					"calculated_hours": 0
 				},
@@ -973,6 +983,7 @@
 					"uxid": "9e5779445f60d62b471862339d7a83dd8355c7a89d5fc3b751f98e9414628ec2",
 					"owner": "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6",
 					"coins": "6.000000",
+					"src_txid": "3170f0635cc40aded3a38f84f2ae07bd2238550ea4ee867328d0f891ea9abf14",
 					"hours": 0,
 					"calculated_hours": 0
 				}
@@ -1010,6 +1021,7 @@
 					"uxid": "d46e91fea3c8a6428885f941e5152dbc7f9abd356ad4d054bf20e0e806f1ec99",
 					"owner": "qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5",
 					"coins": "10.000000",
+					"src_txid": "fba515a9eeaedb891c4dca862bd06108e0452270890b362f0b353b4c86845618",
 					"hours": 0,
 					"calculated_hours": 0
 				}
@@ -1047,6 +1059,7 @@
 					"uxid": "cb8efc0b1082c39258cb6efd59f64d88b36fcb60143c826829fc5f0ed5c0d668",
 					"owner": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
 					"coins": "944790.000000",
+					"src_txid": "df622e8c9dfaed1d7dca83ad7f6d8946bb86b81398bad521d858cbefef8e4688",
 					"hours": 400470,
 					"calculated_hours": 400470
 				}
@@ -1090,6 +1103,7 @@
 					"uxid": "a6061defc41a8a55e37eaf56ebaa1177446f61719b1d5126698e79a6023f5367",
 					"owner": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
 					"coins": "944780.000000",
+					"src_txid": "0a2da0489b14156fad8fb863d051a4dac1f645f144c1e5bb65a44478623b8e4b",
 					"hours": 50058,
 					"calculated_hours": 50058
 				}
@@ -1133,6 +1147,7 @@
 					"uxid": "3b5f72e772ea886dd872b9087395398133576a6561072d5294fbcd04b49e1d95",
 					"owner": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
 					"coins": "944770.000000",
+					"src_txid": "a4a202bc4431d95c307d151dea764bfc6d9ceb7e82b3eb50dc8604050622a22c",
 					"hours": 6257,
 					"calculated_hours": 6257
 				}
@@ -1176,6 +1191,7 @@
 					"uxid": "f265bea876ffcfb8cf64df3aca4dae4a8d7f424ff495d91fb322feddb3a7e505",
 					"owner": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
 					"coins": "944760.000000",
+					"src_txid": "4e6b363423633ad51114b250478ee7645fbd184066fa41c29e5b14d0728cdfec",
 					"hours": 782,
 					"calculated_hours": 782
 				}
@@ -1223,6 +1239,7 @@
 					"uxid": "2987e7c89d353ad5d63cea2bf2724dc5f7a5ef5fb81f5ea160a307f0726ac2f5",
 					"owner": "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6",
 					"coins": "10.000000",
+					"src_txid": "9fb039cd90a4e9b85669bd6ef878b98a9e84eec7d4804e2bff6f0dc9c2739c44",
 					"hours": 0,
 					"calculated_hours": 701
 				},
@@ -1230,6 +1247,7 @@
 					"uxid": "a52408daa8ce7026c70b61d4df4212fb577462060f340bfce779225b3e18193d",
 					"owner": "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6",
 					"coins": "10.000000",
+					"src_txid": "0a2da0489b14156fad8fb863d051a4dac1f645f144c1e5bb65a44478623b8e4b",
 					"hours": 50058,
 					"calculated_hours": 50605
 				},
@@ -1237,6 +1255,7 @@
 					"uxid": "dc73aac74348dd285a1456c1fae2204d7c2039d50a765bdaae0c31f7c7e059db",
 					"owner": "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6",
 					"coins": "10.000000",
+					"src_txid": "a4a202bc4431d95c307d151dea764bfc6d9ceb7e82b3eb50dc8604050622a22c",
 					"hours": 6257,
 					"calculated_hours": 6804
 				},
@@ -1244,6 +1263,7 @@
 					"uxid": "e4e375b9dc55ff53d6de9120f1a87ff00e00a779835f8320f2c6b3090d0466e6",
 					"owner": "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6",
 					"coins": "10.000000",
+					"src_txid": "4e6b363423633ad51114b250478ee7645fbd184066fa41c29e5b14d0728cdfec",
 					"hours": 782,
 					"calculated_hours": 1329
 				},
@@ -1251,6 +1271,7 @@
 					"uxid": "d11b05345917d171f60c31bd2634041b73b97eae364724369ddb8d53369397fb",
 					"owner": "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6",
 					"coins": "10.000000",
+					"src_txid": "edc27c6ecc1f76d0f23489ad7bbbdb8c653af37cc4b8f18197400aea2011ed83",
 					"hours": 97,
 					"calculated_hours": 644
 				}
@@ -1288,6 +1309,7 @@
 					"uxid": "998487775c0e58420673b70204b83c1d6bb5b70e34b1aa0f8169c85ecec2438e",
 					"owner": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
 					"coins": "765600.000000",
+					"src_txid": "211f5fc97ba1797d78f84d4e4db78415b5ff4121f78369535fe3f8015571c6df",
 					"hours": 47330,
 					"calculated_hours": 47330
 				}

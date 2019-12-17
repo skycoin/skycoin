@@ -203,6 +203,10 @@ export class ApiService {
         error['_body'] = error.error.error.message;
 
         return observableThrowError(error);
+      } else if (error.error && error.error.error && typeof error.error.error === 'string')  {
+        error['_body'] = error.error.error;
+
+        return observableThrowError(error);
       } else if (error.message) {
         error['_body'] = error.message;
 

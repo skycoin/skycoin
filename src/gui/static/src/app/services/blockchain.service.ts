@@ -60,7 +60,6 @@ export class BlockchainService {
               this.synchronizedSubject.next(false);
             }
           }),
-          error => console.log(error),
         );
     });
   }

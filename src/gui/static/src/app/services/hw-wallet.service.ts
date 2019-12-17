@@ -189,7 +189,7 @@ export class HwWalletService {
       map(result => result.data),
       catchError((err: HttpErrorResponse) => {
         try {
-          if (err.status && err.status == 404) {
+          if (err.status && err.status === 404) {
             return of(null);
           }
         } catch (e) {}

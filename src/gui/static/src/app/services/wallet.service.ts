@@ -90,7 +90,6 @@ export class WalletService {
 
     return this.apiService.postWalletCreate(label ? label : 'undefined', seed, scan ? scan : 100, password, 'deterministic').pipe(
       tap(wallet => {
-        console.log(wallet);
         this.wallets.pipe(first()).subscribe(wallets => {
           wallets.push(wallet);
           this.wallets.next(wallets);

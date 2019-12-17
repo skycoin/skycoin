@@ -113,13 +113,10 @@ export class ExchangeService {
 
   private storeOrder(order: ExchangeOrder, price: number) {
     return this.history().pipe(
-      catchError(err => {
+      catchError((err: HttpErrorResponse) => {
         try {
-          if (err['_body']) {
-            const errorBody = JSON.parse(err['_body']);
-            if (errorBody && errorBody.error && errorBody.error.code === 404) {
-              return of([]);
-            }
+          if (err.status && err.status === 404) {
+            return of([]);
           }
         } catch (e) {}
 

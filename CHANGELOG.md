@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+### Fixed
+
+### Changed
+
+- Add `src_txid` to verbose transaction inputs, affected apis: `/api/v1/transaction`, `/api/v1/transactions` `/api/v1/block` `/api/v1/blocks` `/api/v1/pendingTxs`
+
+### Removed
+
 ## [0.27.0] - 2019-11-26
 
 ### Added

@@ -207,3 +207,11 @@ mat-option ::ng-deep .mat-pseudo-checkbox-checked {
     }
   }
 }
+
+.view-all-button {
+  color: $blue;
+  font-size: 13px;
+  text-align: center;
+  padding: 20px;
+  cursor: pointer;
+}

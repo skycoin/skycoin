@@ -370,7 +370,8 @@
     "no-filter": "No filter active (press to select wallets/addresses)",
     "filter": "Active filter: ",
     "filters": "Active filters: ",
-    "all-addresses": "All addresses"
+    "all-addresses": "All addresses",
+    "view-all": "View all {{ number }} transactions"
   },
 
   "teller": {

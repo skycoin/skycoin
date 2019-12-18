@@ -11,6 +11,7 @@ import { FormGroup, FormBuilder } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 
 export class Wallet {
+  id: string;
   label: string;
   coins: string;
   hours: string;
@@ -36,8 +37,13 @@ export class TransactionListComponent implements OnInit, OnDestroy {
   wallets: Wallet[];
   form: FormGroup;
 
+  readonly maxInitialElements = 40;
+  viewAll = false;
+  viewingTruncatedList = false;
+  totalElements: number;
+
   private price: number;
-  private requestedAddress: string;
+  private requestedFilters: string[];
   private transactionsLoaded = false;
   private priceSubscription: SubscriptionLike;
   private filterSubscription: SubscriptionLike;
@@ -57,8 +63,14 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     });
 
     this.routeSubscription = route.queryParams.subscribe(params => {
-      this.requestedAddress = params['addr'] ? params['addr'] : '';
-      this.showRequestedAddress();
+      let Addresses = params['addr'] ? (params['addr'] as string).split(',') : [];
+      let Wallets = params['wal'] ? (params['wal'] as string).split(',') : [];
+      Addresses = Addresses.map(element => 'a-' + element);
+      Wallets = Wallets.map(element => 'w-' + element);
+      this.viewAll = false;
+
+      this.requestedFilters = Addresses.concat(Wallets);
+      this.showRequestedFilters();
     });
 
     this.walletsSubscription = walletService.all().pipe(delay(1), mergeMap(wallets => {
@@ -76,6 +88,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
           }
 
           this.wallets.push({
+            id: wallet.filename,
             label: wallet.label,
             coins: wallet.coins.decimalPlaces(6).toString(),
             hours: wallet.hours.decimalPlaces(0).toString(),
@@ -114,7 +127,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
         this.allTransactions = transactions;
 
         this.transactionsLoaded = true;
-        this.showRequestedAddress();
+        this.showRequestedFilters();
 
         this.filterTransactions();
       }
@@ -123,7 +136,10 @@ export class TransactionListComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.priceSubscription = this.priceService.price.subscribe(price => this.price = price);
-    this.filterSubscription = this.form.get('filter').valueChanges.subscribe(() => this.filterTransactions());
+    this.filterSubscription = this.form.get('filter').valueChanges.subscribe(() => {
+      this.viewAll = false;
+      this.filterTransactions();
+    });
   }
 
   ngOnDestroy() {
@@ -131,6 +147,13 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     this.filterSubscription.unsubscribe();
     this.walletsSubscription.unsubscribe();
     this.routeSubscription.unsubscribe();
+  }
+
+  showAll() {
+    if (!this.viewAll) {
+      this.viewAll = true;
+      this.filterTransactions();
+    }
   }
 
   showTransaction(transaction: NormalTransaction) {
@@ -176,29 +199,47 @@ export class TransactionListComponent implements OnInit, OnDestroy {
         tx.inputs.some(input => selectedAddresses.has(input.owner)) || tx.outputs.some(output => selectedAddresses.has(output.dst)),
       );
     }
+
+    this.totalElements = this.transactions.length;
+
+    if (!this.viewAll && this.totalElements > this.maxInitialElements) {
+      this.transactions = this.transactions.slice(0, this.maxInitialElements);
+      this.viewingTruncatedList = true;
+    } else {
+      this.viewingTruncatedList = false;
+    }
   }
 
-  private showRequestedAddress() {
-    if (!this.transactionsLoaded || !this.wallets || this.wallets.length === 0 || this.requestedAddress === null || this.requestedAddress === undefined) {
+  private showRequestedFilters() {
+    if (!this.transactionsLoaded || !this.wallets || this.wallets.length === 0 || this.requestedFilters === null || this.requestedFilters === undefined) {
       return;
     }
 
-    if (this.requestedAddress !== '') {
-      let addressFound: Address;
-      this.wallets.forEach(wallet => {
-        const found = wallet.addresses.find(address => address.address === this.requestedAddress);
-        if (found) {
-          addressFound = found;
-        }
+    if (this.requestedFilters.length > 0) {
+      const filters: (Wallet|Address)[] = [];
+
+      this.requestedFilters.forEach(filter => {
+        const filterContent = filter.substr(2, filter.length - 2);
+        this.wallets.forEach(wallet => {
+          if (filter.startsWith('w-')) {
+            if (filterContent === wallet.id) {
+              filters.push(wallet);
+            }
+          } else if (filter.startsWith('a-')) {
+            wallet.addresses.forEach(address => {
+              if (filterContent === address.address) {
+                filters.push(address);
+              }
+            });
+          }
+        });
       });
 
-      if (addressFound) {
-        this.form.get('filter').setValue([addressFound]);
-      }
+      this.form.get('filter').setValue(filters);
     } else {
       this.form.get('filter').setValue([]);
     }
 
-    this.requestedAddress = null;
+    this.requestedFilters = null;
   }
 }

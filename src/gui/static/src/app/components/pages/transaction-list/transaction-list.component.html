@@ -93,5 +93,6 @@
         </div>
       </div>
     </ng-container>
+    <div *ngIf="viewingTruncatedList" class="view-all-button" (click)="showAll()">{{ 'history.view-all' | translate:{ number:totalElements } }}</div>
   </div>
 </div>

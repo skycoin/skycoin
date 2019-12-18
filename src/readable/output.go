@@ -259,7 +259,13 @@ func NewSpentOutput(out *historydb.UxOut, t uint64) (*SpentOutput, error) {
 	if out.SpentTxnID.Null() {
 		var err error
 		calculatedHours, err = out.Out.CoinHours(t)
-		if err != nil {
+		// Treat overflowing coin hours calculations as a non-error and force hours to 0
+		// This affects bad spent outputs which had overflowed hours, spent in knownBadBlockSeqs.
+		switch err {
+		case nil:
+		case coin.ErrAddEarnedCoinHoursAdditionOverflow:
+			calculatedHours = 0
+		default:
 			return nil, err
 		}
 	}

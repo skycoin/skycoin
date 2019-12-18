@@ -72,6 +72,13 @@ type TestData struct {
 var update = flag.Bool("update", false, "update golden files")
 var testLiveWallet = flag.Bool("test-live-wallet", false, "run live wallet tests, requires wallet envvars set")
 
+// Option to run a quick integration test. It would take a long time to finish the whole
+// integration test by default, cause there are few test cases need to go
+// through the whole blockchain, which is necessary for regression tests and must
+// be applied before the code go to production. However, we do want to have an option to
+// run integration quickly for debugging. And this is the option.
+var testQuick = flag.Bool("test-quick", false, "run a quick integration test")
+
 func nodeAddress() string {
 	addr := os.Getenv("SKYCOIN_NODE_HOST")
 	if addr == "" {
@@ -793,6 +800,10 @@ func testKnownBlocks(t *testing.T) {
 
 	t.Logf("Querying every block in the blockchain")
 
+	if *testQuick {
+		return
+	}
+
 	// Scan every block by seq
 	progress, err := c.BlockchainProgress()
 	require.NoError(t, err)
@@ -918,6 +929,10 @@ func testKnownBlocksVerbose(t *testing.T) {
 	}
 
 	t.Logf("Querying every block in the blockchain")
+
+	if *testQuick {
+		return
+	}
 
 	// Scan every block by seq
 	progress, err := c.BlockchainProgress()

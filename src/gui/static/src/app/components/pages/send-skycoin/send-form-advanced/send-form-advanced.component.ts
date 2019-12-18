@@ -280,8 +280,8 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   assignAll(index: number) {
     this.msgBarService.hide();
 
-    let availableCoins: BigNumber = this.form.get('wallet').value && this.form.get('wallet').value.coins ? this.form.get('wallet').value.coins : new BigNumber(-1);
-    if ((availableCoins as BigNumber).isEqualTo(-1)) {
+    let availableCoins: BigNumber = this.availableCoins;
+    if (!this.form.get('wallet').value) {
       this.msgBarService.showError(this.translate.instant('send.no-wallet-selected'));
 
       return;

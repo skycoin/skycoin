@@ -5,9 +5,11 @@ import { MessageIcons } from './hw-message/hw-message.component';
 import { HwWalletService, OperationResults } from '../../../services/hw-wallet.service';
 import { ButtonComponent } from '../button/button.component';
 import { getHardwareWalletErrorMsg } from '../../../utils/errors';
+import { AppConfig } from '../../../app.config';
 
 export class ResultProcessingResponse {
   text: String;
+  link?: String;
   icon: MessageIcons;
 }
 
@@ -76,6 +78,11 @@ export class HwDialogBaseComponent<T> implements OnDestroy {
 
   protected showResult(result: ResultProcessingResponse, focusButton = true) {
     if (result) {
+      if (result.text === 'hardware-wallet.errors.daemon-connection' || result.text.indexOf('Problem connecting to the Skywallet Daemon') !== -1) {
+        result.text = 'hardware-wallet.errors.daemon-connection-with-configurable-link';
+        result.link = AppConfig.hwWalletDaemonDownloadUrl;
+      }
+
       this.currentState = States.ShowingResult;
       this.result = result;
 

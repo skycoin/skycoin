@@ -17,6 +17,7 @@ import { HwUpdateFirmwareDialogComponent } from '../hw-update-firmware-dialog/hw
 import { HwUpdateAlertDialogComponent } from '../hw-update-alert-dialog/hw-update-alert-dialog.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { map, first } from 'rxjs/operators';
+import { AppConfig } from '../../../../app.config';
 
 export interface ChildHwDialogParams {
   wallet: Wallet;
@@ -233,7 +234,8 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
     }, err => {
       if (err['_body'] && err['_body'] === HwWalletDaemonService.errorConnectingWithTheDaemon) {
         this.showResult({
-          text: 'hardware-wallet.errors.daemon-connection',
+          text: 'hardware-wallet.errors.daemon-connection-with-configurable-link',
+          link: AppConfig.hwWalletDaemonDownloadUrl,
           icon: this.msgIcons.Error,
         });
       } else {

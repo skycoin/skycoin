@@ -1,5 +1,8 @@
 {
   "compileOnSave": false,
+  "angularCompilerOptions": {
+    "preserveWhitespaces": true
+  },
   "compilerOptions": {
     "downlevelIteration": true,
     "importHelpers": true,

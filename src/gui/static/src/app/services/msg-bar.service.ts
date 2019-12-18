@@ -3,6 +3,7 @@ import { MsgBarConfig, MsgBarComponent, MsgBarIcons, MsgBarColors } from '../com
 import { parseResponseMessage } from '../utils/errors';
 import { SubscriptionLike, of } from 'rxjs';
 import { delay } from 'rxjs/operators';
+import { AppConfig } from '../app.config';
 
 @Injectable()
 export class MsgBarService {
@@ -15,6 +16,11 @@ export class MsgBarService {
   }
 
   show(config: MsgBarConfig) {
+    if (config.text === 'hardware-wallet.errors.daemon-connection' || config.text.indexOf('Problem connecting to the Skywallet Daemon') !== -1) {
+      config.text = 'hardware-wallet.errors.daemon-connection-with-configurable-link';
+      config.link = AppConfig.hwWalletDaemonDownloadUrl;
+    }
+
     if (this.msgBarComponentInternal) {
       this.msgBarComponentInternal.config = config;
       this.msgBarComponentInternal.show();

@@ -88,7 +88,7 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
       this.dialog.open(ChangeNameComponent, config).afterClosed().subscribe(result => {
         if (result && !result.errorMsg) {
           this.closeModal();
-        } else if (result.errorMsg) {
+        } else if (result && result.errorMsg) {
           this.msgBarService.showError(result.errorMsg);
         }
       });

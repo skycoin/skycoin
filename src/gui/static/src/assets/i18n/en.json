@@ -418,7 +418,8 @@
     },
     "errors": {
       "too-many-inputs-outputs": "The transaction has too many inputs or outputs for the Skywallet. Please try again creating several smaller transactions, each one with a smaller number of recipients (if the current transaction has many) or coins.",
-      "daemon-connection": "Problem connecting to the Skywallet service.",
+      "daemon-connection": "Problem connecting to the Skywallet Daemon. Please make sure it is running and try again. You can download it from www.skycoin.com/downloads",
+      "daemon-connection-with-configurable-link": "Problem connecting to the Skywallet Daemon. Please make sure it is running and try again. You can download it from ",
       "timeout": "The operation was canceled due to inactivity. Please try again.",
       "invalid-address-generated": "There was a problem with the address generator and the operation had to be canceled.",
       "invalid-address": "Invalid address.",

@@ -4,6 +4,7 @@ export const AppConfig = {
   useHwWalletDaemon: true,
   urlForHwWalletVersionChecking: 'https://version.skycoin.com/skywallet/version.txt',
   hwWalletDownloadUrlAndPrefix: 'https://downloads.skycoin.com/skywallet/skywallet-firmware-v',
+  hwWalletDaemonDownloadUrl: 'https://www.skycoin.com/downloads/',
 
   urlForVersionChecking: 'https://version.skycoin.com/skycoin/version.txt',
   walletDownloadUrl: 'https://www.skycoin.com/downloads/',

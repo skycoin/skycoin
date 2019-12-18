@@ -1736,7 +1736,7 @@ func (vs Visor) GetHeadBlockTime() (uint64, error) {
 // return values:
 //   first: uxout of the provided id, return nil if does not exist, no error would be returned.
 //   second: current head block time
-//   thrid: error
+//   third: error
 func (vs Visor) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, uint64, error) {
 	var outs []historydb.UxOut
 	var headTime uint64
@@ -1770,7 +1770,7 @@ func (vs Visor) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, uint64, error)
 // return values:
 //   first: addresses related uxouts
 //   second: current head block time
-//   thrid: error
+//   third: error
 func (vs Visor) GetSpentOutputsForAddresses(addresses []cipher.Address) ([][]historydb.UxOut, uint64, error) {
 	out := make([][]historydb.UxOut, len(addresses))
 	var headTime uint64

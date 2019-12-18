@@ -3,15 +3,11 @@
   {{ headline }}
 </div>
 <div class="buttons-right">
-  <mat-menu #settingsMenu="matMenu" [overlapTrigger]="false">
+  <mat-menu #menuMenu="matMenu" [overlapTrigger]="false">
     <button mat-menu-item [routerLink]="['/settings/network']">{{ 'title.network' | translate }}</button>
     <button mat-menu-item [routerLink]="['/settings/blockchain']">{{ 'title.blockchain' | translate }}</button>
     <button mat-menu-item [routerLink]="['/settings/outputs']">{{ 'title.outputs' | translate }}</button>
     <button mat-menu-item [routerLink]="['/settings/pending-transactions']">{{ 'title.pending-txs' | translate }}</button>
-    <button mat-menu-item [disabled]="true" *ngIf="appService.version"> v{{ appService.version.version }} </button>
-  </mat-menu>
-
-  <mat-menu #menuMenu="matMenu" [overlapTrigger]="false">
     <button mat-menu-item [routerLink]="['/settings/backup']">{{ 'title.backup' | translate }}</button>
     <a mat-menu-item [href]="appService.explorerUrl" class="color-primary" target="_blank" rel="noreferrer nofollow">{{ 'title.explorer' | translate }}</a>
     <div class="separator"></div>
@@ -19,11 +15,9 @@
       <img [src]="'assets/img/lang/' + language.iconName" class="flag">
       {{ language.name }}
     </div>
+    <div class="separator"></div>
+    <button mat-menu-item [disabled]="true" *ngIf="appService.version"> v{{ appService.version.version }} </button>
   </mat-menu>
-
-  <button mat-icon-button [matMenuTriggerFor]="settingsMenu">
-    <mat-icon>settings</mat-icon>
-  </button>
   <button mat-icon-button [matMenuTriggerFor]="menuMenu">
     <mat-icon>menu</mat-icon>
   </button>

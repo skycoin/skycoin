@@ -1168,9 +1168,14 @@ func TestStableUxOut(t *testing.T) {
 		uxID   string
 	}{
 		{
-			name:   "valid uxID",
+			name:   "valid uxID - unspent",
 			golden: "uxout.golden",
 			uxID:   "fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f20",
+		},
+		{
+			name:   "valid uxID - spent",
+			golden: "uxout-spent-179.golden",
+			uxID:   "8e55f10a0615a0737e6906132e09ac08a206971ba4b656f004acc7f4b7889bc8",
 		},
 	}
 

@@ -1733,29 +1733,56 @@ func (vs Visor) GetHeadBlockTime() (uint64, error) {
 }
 
 // GetUxOutByID gets UxOut by hash id.
-func (vs Visor) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error) {
+// return values:
+//   first: uxout of the provided id, return nil if does not exist, no error would be returned.
+//   second: current head block time
+//   thrid: error
+func (vs Visor) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, uint64, error) {
 	var outs []historydb.UxOut
+	var headTime uint64
 
 	if err := vs.db.View("GetUxOutByID", func(tx *dbutil.Tx) error {
-		var err error
+		head, err := vs.blockchain.Head(tx)
+		if err != nil {
+			return err
+		}
+
+		headTime = head.Time()
+
 		outs, err = vs.history.GetUxOuts(tx, []cipher.SHA256{id})
+		if err != nil {
+			return err
+		}
+
 		return err
 	}); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	if len(outs) == 0 {
-		return nil, nil
+		return nil, 0, nil
 	}
 
-	return &outs[0], nil
+	return &outs[0], headTime, nil
 }
 
 // GetSpentOutputsForAddresses gets all the spent outputs of a set of addresses
-func (vs Visor) GetSpentOutputsForAddresses(addresses []cipher.Address) ([][]historydb.UxOut, error) {
+// return values:
+//   first: addresses related uxouts
+//   second: current head block time
+//   thrid: error
+func (vs Visor) GetSpentOutputsForAddresses(addresses []cipher.Address) ([][]historydb.UxOut, uint64, error) {
 	out := make([][]historydb.UxOut, len(addresses))
+	var headTime uint64
 
 	if err := vs.db.View("GetSpentOutputsForAddresses", func(tx *dbutil.Tx) error {
+		head, err := vs.blockchain.Head(tx)
+		if err != nil {
+			return err
+		}
+
+		headTime = head.Time()
+
 		for i, addr := range addresses {
 			addrUxOuts, err := vs.history.GetOutputsForAddress(tx, addr)
 			if err != nil {
@@ -1767,10 +1794,10 @@ func (vs Visor) GetSpentOutputsForAddresses(addresses []cipher.Address) ([][]his
 
 		return nil
 	}); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return out, nil
+	return out, headTime, nil
 }
 
 // RecvOfAddresses returns unconfirmed receiving uxouts of addresses

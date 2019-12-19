@@ -30,6 +30,7 @@ DISABLE_HEADER_CHECK=""
 HEADER_CHECK="1"
 DB_NO_UNCONFIRMED=""
 DB_FILE="blockchain-180.db"
+TEST_QUICK=""
 
 usage () {
   echo "Usage: $SCRIPT"
@@ -42,6 +43,7 @@ usage () {
   echo "-c <boolean> -- Run tests with CSRF enabled"
   echo "-x <boolean> -- Run test with header check disabled"
   echo "-d <boolean> -- Run tests without unconfirmed transactions"
+  echo "-q <boolean> -- Run quick integration tests"
   exit 1
 }
 
@@ -58,7 +60,7 @@ shutdown_node() {
     rm "$bin"
 }
 
-while getopts "h?t:r:n:uvcxd" args; do
+while getopts "h?t:r:n:uvcxdq" args; do
   case $args in
     h|\?)
         usage;
@@ -70,7 +72,8 @@ while getopts "h?t:r:n:uvcxd" args; do
     v ) VERBOSE="-v";;
     d ) DB_NO_UNCONFIRMED="1"; DB_FILE="blockchain-180-no-unconfirmed.db";;
     c ) DISABLE_CSRF=""; USE_CSRF="1";;
-    x ) DISABLE_HEADER_CHECK="-disable-header-check"; HEADER_CHECK="";
+    x ) DISABLE_HEADER_CHECK="-disable-header-check"; HEADER_CHECK="";;
+    q ) TEST_QUICK="--test-quick"
   esac
 done
 
@@ -140,7 +143,7 @@ if [[ -z $TEST || $TEST = "api" ]]; then
 
     SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST \
     	USE_CSRF=$USE_CSRF HEADER_CHECK=$HEADER_CHECK DB_NO_UNCONFIRMED=$DB_NO_UNCONFIRMED COIN=$COIN \
-        go test -count=1 ./src/api/integration/... $UPDATE -timeout=10m $VERBOSE $RUN_TESTS
+        go test -count=1 ./src/api/integration/... $UPDATE $TEST_QUICK -timeout=10m $VERBOSE $RUN_TESTS
 
     API_FAIL=$?
 

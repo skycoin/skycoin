@@ -65,9 +65,23 @@ fi
 
 IMG="${PKG_NAME}-${APP_VERSION}-x86_64.AppImage"
 DEST_IMG="${PKG_NAME}-${APP_VERSION}-gui-electron-linux-x64.AppImage"
+DEST_IMG_ZIP="${DEST_IMG}.tar.gz"
 if [ -e $IMG ]; then
     mv "$IMG" "$DEST_IMG"
     chmod +x "$DEST_IMG"
+
+    if [ -e $DEST_IMG_ZIP ]; then
+        echo  "Removing old $DEST_IMG_ZIP"
+        rm "$DEST_IMG_ZIP"
+    fi
+
+    echo "Zipping $DEST_IMG_ZIP"
+    if [[ "$OSTYPE" == "linux"* ]]; then
+        tar czf "$DEST_IMG_ZIP" --owner=0 --group=0 "$DEST_IMG"
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        tar czf "$DEST_IMG_ZIP" "$DEST_IMG"
+    fi
+    rm "$DEST_IMG"
 fi
 
 EXE="${PDT_NAME} Setup ${APP_VERSION}.exe"

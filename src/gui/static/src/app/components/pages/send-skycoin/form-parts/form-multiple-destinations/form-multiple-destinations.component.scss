@@ -1,0 +1,48 @@
+@import '../../../../../../theme/variables';
+
+.-destination {
+  &:not(:last-child) {
+    margin-bottom: 5px;
+  }
+
+  .-icons {
+    text-align: right;
+    padding-top: 5px;
+
+    img {
+      width: 32px;
+      cursor: pointer;
+    }
+  }
+}
+
+.-options {
+  padding-left: 5px;
+  color: $gradient-blue-dark;
+  cursor: pointer;
+  font-size: 13px;
+
+  mat-icon {
+    color: $gradient-blue-dark;
+    padding: 0;
+    display: inline;
+    vertical-align: middle;
+    font-size: 13px;
+  }
+}
+
+.-hidden {
+  display: none;
+}
+
+label mat-icon {
+  display: inline;
+  font-size: 14px;
+  color: lighten($grey, 40%);
+  vertical-align: text-bottom;
+  padding-left: 5px;
+}
+
+.destinations-label {
+  display: inline-block;
+}

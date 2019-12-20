@@ -27,7 +27,7 @@ export interface SelectedSources {
 })
 export class FormSourceSelectionComponent implements OnInit, OnDestroy {
   @Input() busy: boolean;
-  @Output() onselectionChanged = new EventEmitter<void>();
+  @Output() onSelectionChanged = new EventEmitter<void>();
 
   form: FormGroup;
   wallets: Wallet[];
@@ -41,8 +41,8 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
   private getOutputsSubscriptions: SubscriptionLike;
 
   constructor(
-    public blockchainService: BlockchainService,
-    public walletService: WalletService,
+    private blockchainService: BlockchainService,
+    private walletService: WalletService,
     private appService: AppService,
     private formBuilder: FormBuilder,
   ) { }
@@ -77,18 +77,18 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
       this.form.get('addresses').setValue(null);
       this.form.get('outputs').setValue(null);
 
-      this.onselectionChanged.emit();
+      this.onSelectionChanged.emit();
     }));
 
     this.subscriptionsGroup.push(this.form.get('addresses').valueChanges.subscribe(() => {
       this.form.get('outputs').setValue(null);
       this.unspentOutputs = this.filterUnspentOutputs();
 
-      this.onselectionChanged.emit();
+      this.onSelectionChanged.emit();
     }));
 
     this.subscriptionsGroup.push(this.form.get('outputs').valueChanges.subscribe(() => {
-      this.onselectionChanged.emit();
+      this.onSelectionChanged.emit();
     }));
 
     this.subscriptionsGroup.push(this.walletService.all().pipe(first()).subscribe(wallets => {

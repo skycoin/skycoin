@@ -22,8 +22,10 @@ export class SendSkycoinComponent implements OnDestroy {
   ) {
     navbarService.setActiveComponent(DoubleButtonActive.LeftButton);
     this.subscription = navbarService.activeComponent.subscribe(value => {
-      this.activeForm = value;
-      this.formData = null;
+      if (this.activeForm !== value) {
+        this.activeForm = value;
+        this.formData = null;
+      }
     });
   }
 

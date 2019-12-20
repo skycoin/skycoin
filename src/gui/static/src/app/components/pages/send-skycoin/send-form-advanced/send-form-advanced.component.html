@@ -1,97 +1,26 @@
 <div [formGroup]="form">
-  <div class="form-field">
-    <label for="wallets">{{ 'send.wallet-label' | translate }}</label>
-    <div class="-select">
-      <select formControlName="wallet" id="wallets" [attr.disabled]="busy ? 'true' : null" [ngClass]="{'element-disabled' : busy}">
-        <option disabled hidden [ngValue]="''">{{ 'send.select-wallet' | translate }}</option>
-        <ng-container *ngIf="wallets">
-          <ng-container *ngFor="let wallet of wallets">
-            <option [disabled]="!wallet.coins || wallet.coins.isLessThanOrEqualTo(0)" [ngValue]="wallet">
-              {{ wallet.label }} - {{ (wallet.coins ? wallet.coins.toString() : 0) | amount }}
-              ({{ wallet.hours.toString() | amount:false }})
-            </option>
-          </ng-container>
-        </ng-container>
-      </select>
-    </div>
+  <app-form-source-selection
+    #formSourceSelection
+    (onselectionChanged)="sourceSelectionChanged()"
+    [busy]="busy"
+    >
+  </app-form-source-selection>
+
+  <div class="form-field -available-msg">
+    <span>{{ 'send.available-msg-part1' | translate }}</span>
+    <span class="value">
+      {{ availableBalance.availableCoins.toString() | amount }}
+    </span>
+    <span>{{ 'send.available-msg-part2' | translate }}</span>
+    <span class="value">
+      {{ availableBalance.availableHours.toString() | amount:false }}
+    </span>
+    <span>{{ 'send.available-msg-part3' | translate }}</span>
+    <span class="value">
+      {{ availableBalance.minimumFee.toString() | amount:false }}
+    </span>
+    <span>{{ 'send.available-msg-part4' | translate }}</span>
   </div>
-
-  <ng-container *ngIf="wallet">
-    <div class="form-field">
-      <label [for]="!busy ? 'addresses' : ''" (click)="!busy ? selectAddresses.open() : null">
-        {{ 'send.addresses-label' | translate }}
-        <mat-icon [matTooltip]="'send.addresses-help' | translate">help</mat-icon>
-      </label>
-      <div class="-select">
-        <mat-select
-          #selectAddresses multiple
-          formControlName="addresses"
-          [compareWith]="addressCompare"
-          id="addresses"
-          [placeholder]="'send.all-addresses' | translate"
-          [attr.disabled]="busy ? 'true' : null"
-          [ngClass]="{'element-disabled' : busy}">
-          <mat-option *ngFor="let addr of addresses" [value]="addr">
-            {{ addr.address }} - {{ (addr.coins ? addr.coins.toString() : 0) | amount }}
-            ({{ addr.hours.toString() | amount:false }})
-          </mat-option>
-          <mat-select-trigger>
-            <div *ngFor="let address of form.get('addresses').value">
-              {{ address.address }} - {{ (address.coins ? address.coins.toString() : 0) | amount }}
-              ({{ address.hours.toString() | amount:false }})
-            </div>
-          </mat-select-trigger>
-        </mat-select>
-      </div>
-    </div>
-
-    <div class="form-field">
-      <label [for]="!busy ? 'outputs' : null" (click)="!busy ? selectOutputs.open() : null">
-        {{ 'send.outputs-label' | translate }}
-        <mat-icon [matTooltip]="'send.outputs-help' | translate">help</mat-icon>
-        <mat-spinner *ngIf="loadingUnspentOutputs"></mat-spinner>
-      </label>
-      <div class="-select">
-        <mat-select
-          #selectOutputs multiple
-          formControlName="outputs"
-          [compareWith]="outputCompare"
-          id="outputs"
-          [placeholder]="'send.all-outputs' | translate"
-          [attr.disabled]="busy ? 'true' : null"
-          [ngClass]="{'element-disabled' : busy}">
-          <mat-option *ngFor="let out of unspentOutputs" [value]="out">
-            {{ out.hash }} - {{ (out.coins ? out.coins.toString() : 0) | amount }}
-            ({{ out.calculated_hours.toString() | amount:false }})
-          </mat-option>
-          <mat-select-trigger *ngIf="form.get('outputs').value && form.get('outputs').value.length > 0">
-            <div *ngFor="let out of form.get('outputs').value">
-              {{ out.hash }} - {{ (out.coins ? out.coins.toString() : 0) | amount }}
-              ({{ out.calculated_hours.toString() | amount:false }})
-            </div>
-          </mat-select-trigger>
-          <mat-select-trigger *ngIf="!form.get('outputs').value || form.get('outputs').value.length === 0">
-              <div>{{ 'send.all-outputs' | translate }}</div>
-            </mat-select-trigger>
-        </mat-select>
-      </div>
-    </div>
-    <div class="form-field -available-msg">
-      <span>{{ 'send.available-msg-part1' | translate }}</span>
-      <span class="value">
-        {{ availableCoins.toString() | amount }}
-      </span>
-      <span>{{ 'send.available-msg-part2' | translate }}</span>
-      <span class="value">
-        {{ availableHours.toString() | amount:false }}
-      </span>
-      <span>{{ 'send.available-msg-part3' | translate }}</span>
-      <span class="value">
-        {{ minimumFee.toString() | amount:false }}
-      </span>
-      <span>{{ 'send.available-msg-part4' | translate }}</span>
-    </div>
-  </ng-container>
 
   <div class="form-field">
     <label for="destination" class="destinations-label">
@@ -114,7 +43,7 @@
     <div formArrayName="destinations" *ngFor="let dest of destControls; let i = index;" class="-destination">
       <div [formGroupName]="i" class="row">
         <div class="col-lg-5 col-md-4">
-          <input formControlName="address" [id]="i === 0 ? 'destination' : ''" [attr.disabled]="busy ? 'true' : null">
+          <input formControlName="address" [id]="i === 0 ? 'destination' : 'address' + i" [attr.disabled]="busy ? 'true' : null">
         </div>
         <div class="col-md-3">
           <div class="-input-addon">

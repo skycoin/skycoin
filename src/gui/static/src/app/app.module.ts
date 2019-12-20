@@ -112,6 +112,7 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
 import { MsgBarService } from './services/msg-bar.service';
 import { SeedWordDialogComponent } from './components/layout/seed-word-dialog/seed-word-dialog.component';
 import { MultipleDestinationsDialogComponent } from './components/layout/multiple-destinations-dialog/multiple-destinations-dialog.component';
+import { FormSourceSelectionComponent } from './components/pages/send-skycoin/form-parts/form-source-selection/form-source-selection.component';
 
 
 const ROUTES = [
@@ -252,6 +253,7 @@ const ROUTES = [
     MsgBarComponent,
     SeedWordDialogComponent,
     MultipleDestinationsDialogComponent,
+    FormSourceSelectionComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,

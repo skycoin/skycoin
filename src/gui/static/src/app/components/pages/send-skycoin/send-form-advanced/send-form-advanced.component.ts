@@ -1,8 +1,8 @@
-import { throwError as observableThrowError, SubscriptionLike } from 'rxjs';
-import { retryWhen, delay, take, concat, first } from 'rxjs/operators';
+import { SubscriptionLike } from 'rxjs';
+import { first } from 'rxjs/operators';
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
-import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormArray, FormBuilder, FormGroup } from '@angular/forms';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { ButtonComponent } from '../../../layout/button/button.component';
@@ -10,7 +10,7 @@ import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { SelectAddressComponent } from './select-address/select-address';
 import { BigNumber } from 'bignumber.js';
-import { Output as UnspentOutput, Wallet, Address, ConfirmationData } from '../../../../app.datatypes';
+import { ConfirmationData } from '../../../../app.datatypes';
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { showConfirmationModal } from '../../../../utils';
 import { AppService } from '../../../../services/app.service';
@@ -22,6 +22,7 @@ import { SendFormComponent } from '../send-form/send-form.component';
 import { ChangeNoteComponent } from '../send-preview/transaction-info/change-note/change-note.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { MultipleDestinationsDialogComponent } from '../../../layout/multiple-destinations-dialog/multiple-destinations-dialog.component';
+import { FormSourceSelectionComponent, AvailableBalanceData } from '../form-parts/form-source-selection/form-source-selection.component';
 
 @Component({
   selector: 'app-send-form-advanced',
@@ -29,6 +30,7 @@ import { MultipleDestinationsDialogComponent } from '../../../layout/multiple-de
   styleUrls: ['./send-form-advanced.component.scss'],
 })
 export class SendFormAdvancedComponent implements OnInit, OnDestroy {
+  @ViewChild('formSourceSelection', { static: false }) formSourceSelection: FormSourceSelectionComponent;
   @ViewChild('previewButton', { static: false }) previewButton: ButtonComponent;
   @ViewChild('sendButton', { static: false }) sendButton: ButtonComponent;
   @Input() formData: any;
@@ -36,14 +38,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
   maxNoteChars = ChangeNoteComponent.MAX_NOTE_CHARS;
   form: FormGroup;
-  wallet: Wallet;
-  addresses = [];
-  allUnspentOutputs: UnspentOutput[] = [];
-  unspentOutputs: UnspentOutput[] = [];
-  loadingUnspentOutputs = false;
-  availableCoins = new BigNumber(0);
-  availableHours = new BigNumber(0);
-  minimumFee = new BigNumber(0);
+  availableBalance = new AvailableBalanceData();
   autoHours = true;
   autoOptions = false;
   autoShareValue = '0.5';
@@ -53,13 +48,11 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   selectedCurrency = DoubleButtonActive.LeftButton;
   values: number[];
   price: number;
-  wallets: Wallet[];
   totalCoins = new BigNumber(0);
   totalConvertedCoins = new BigNumber(0);
   totalHours = new BigNumber(0);
 
   private subscriptionsGroup: SubscriptionLike[] = [];
-  private getOutputsSubscriptions: SubscriptionLike;
   private destinationSubscriptions: SubscriptionLike[] = [];
   private destinationHoursSubscriptions: SubscriptionLike[] = [];
   private syncCheckSubscription: SubscriptionLike;
@@ -83,9 +76,6 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.navbarService.showSwitch('send.simple', 'send.advanced', DoubleButtonActive.RightButton);
 
     this.form = this.formBuilder.group({
-      wallet: ['', Validators.required],
-      addresses: [null],
-      outputs: [null],
       changeAddress: [''],
       destinations: this.formBuilder.array(
         [this.createDestinationFormGroup()],
@@ -93,75 +83,31 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       ),
       note: [''],
     });
-
-    this.subscriptionsGroup.push(this.form.get('wallet').valueChanges.subscribe(wallet => {
-      this.wallet = wallet;
-
-      this.closeGetOutputsSubscriptions();
-      this.allUnspentOutputs = [];
-      this.unspentOutputs = [];
-      this.loadingUnspentOutputs = true;
-
-      this.getOutputsSubscriptions = this.walletService.getWalletUnspentOutputs(wallet).pipe(
-        retryWhen(errors => errors.pipe(delay(1000), take(10), concat(observableThrowError('')))))
-        .subscribe(
-          result => {
-            this.loadingUnspentOutputs = false;
-            this.allUnspentOutputs = result;
-            this.unspentOutputs = this.filterUnspentOutputs();
-          },
-          () => this.loadingUnspentOutputs = false,
-        );
-
-      this.addresses = wallet.addresses.filter(addr => addr.coins > 0);
-      this.form.get('addresses').setValue(null);
-      this.form.get('outputs').setValue(null);
-
-      this.updateAvailableBalance();
-      this.form.get('destinations').updateValueAndValidity();
-    }));
-
-    this.subscriptionsGroup.push(this.form.get('addresses').valueChanges.subscribe(() => {
-      this.form.get('outputs').setValue(null);
-      this.unspentOutputs = this.filterUnspentOutputs();
-
-      this.updateAvailableBalance();
-      this.form.get('destinations').updateValueAndValidity();
-    }));
-
-    this.subscriptionsGroup.push(this.form.get('outputs').valueChanges.subscribe(() => {
-      this.updateAvailableBalance();
-      this.form.get('destinations').updateValueAndValidity();
-    }));
-
     this.subscriptionsGroup.push(this.priceService.price.subscribe(price => {
       this.price = price;
       this.updateValues();
     }));
 
     if (this.formData) {
-      this.fillForm();
+      setTimeout(() => this.fillForm());
     }
-
-    this.subscriptionsGroup.push(this.walletService.all().pipe(first()).subscribe(wallets => {
-      this.wallets = wallets;
-      if (wallets.length === 1) {
-        this.form.get('wallet').setValue(wallets[0]);
-      }
-    }));
   }
 
   ngOnDestroy() {
     if (this.processingSubscription && !this.processingSubscription.closed) {
       this.processingSubscription.unsubscribe();
     }
-    this.closeGetOutputsSubscriptions();
     this.closeSyncCheckSubscription();
     this.subscriptionsGroup.forEach(sub => sub.unsubscribe());
     this.navbarService.hideSwitch();
     this.msgBarService.hide();
     this.destinationSubscriptions.forEach(s => s.unsubscribe());
     this.destinationHoursSubscriptions.forEach(s => s.unsubscribe());
+  }
+
+  sourceSelectionChanged() {
+    this.availableBalance = this.formSourceSelection.availableBalance;
+    this.form.get('destinations').updateValueAndValidity();
   }
 
   preview() {
@@ -280,13 +226,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   assignAll(index: number) {
     this.msgBarService.hide();
 
-    let availableCoins: BigNumber = this.availableCoins;
-    if (!this.form.get('wallet').value) {
-      this.msgBarService.showError(this.translate.instant('send.no-wallet-selected'));
-
-      return;
-    }
-
+    let availableCoins: BigNumber = this.availableBalance.availableCoins;
     if (this.selectedCurrency === DoubleButtonActive.RightButton) {
       availableCoins = availableCoins.multipliedBy(this.price).decimalPlaces(SendFormComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
     }
@@ -401,10 +341,12 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.previewButton.resetState();
     this.sendButton.resetState();
 
-    if (this.form.value.wallet.encrypted && !this.form.value.wallet.isHardware && !this.previewTx) {
+    const selectedSources = this.formSourceSelection.selectedSources;
+
+    if (selectedSources.wallet.encrypted && !selectedSources.wallet.isHardware && !this.previewTx) {
       const config = new MatDialogConfig();
       config.data = {
-        wallet: this.form.value.wallet,
+        wallet: selectedSources.wallet,
       };
 
       this.dialog.open(PasswordDialogComponent, config).componentInstance.passwordSubmit
@@ -412,11 +354,11 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
           this.createTransaction(passwordDialog);
         });
     } else {
-      if (!this.form.value.wallet.isHardware || this.previewTx) {
+      if (!selectedSources.wallet.isHardware || this.previewTx) {
         this.createTransaction();
       } else {
         this.showBusy();
-        this.processingSubscription = this.hwWalletService.checkIfCorrectHwConnected((this.form.value.wallet as Wallet).addresses[0].address).subscribe(
+        this.processingSubscription = this.hwWalletService.checkIfCorrectHwConnected(selectedSources.wallet.addresses[0].address).subscribe(
           () => this.createTransaction(),
           err => this.showError(getHardwareWalletErrorMsg(this.translate, err)),
         );
@@ -523,9 +465,11 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   }
 
   private fillForm() {
-    this.addresses = this.formData.form.wallet.addresses;
+    this.formSourceSelection.fill(this.formData);
 
-    ['wallet', 'addresses', 'changeAddress', 'note'].forEach(name => {
+    this.selectedCurrency = this.formData.form.currency;
+
+    ['changeAddress', 'note'].forEach(name => {
       this.form.get(name).setValue(this.formData.form[name]);
     });
 
@@ -549,26 +493,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
     this.autoOptions = this.formData.form.autoOptions;
 
-    if (this.formData.form.allUnspentOutputs) {
-      this.closeGetOutputsSubscriptions();
-
-      this.allUnspentOutputs = this.formData.form.allUnspentOutputs;
-      this.unspentOutputs = this.filterUnspentOutputs();
-
-      this.form.get('outputs').setValue(this.formData.form.outputs);
-    }
-
-    this.selectedCurrency = this.formData.form.currency;
-
     this.updateValues();
-  }
-
-  addressCompare(a, b) {
-    return a && b && a.address === b.address;
-  }
-
-  outputCompare(a, b) {
-    return a && b && a.hash === b.hash;
   }
 
   get destControls() {
@@ -578,6 +503,10 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   private validateDestinations() {
     if (!this.form) {
       return { Required: true };
+    }
+
+    if (!this.formSourceSelection || !this.formSourceSelection.valid) {
+      return { Invalid: true };
     }
 
     const invalidInput = this.destControls.find(control => {
@@ -602,7 +531,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       return { Invalid: true };
     }
 
-    this.updateAvailableBalance();
+    this.availableBalance = this.formSourceSelection.availableBalance;
 
     let destinationsCoins = new BigNumber(0);
     if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
@@ -616,7 +545,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       this.destControls.map(control => destinationsHours = destinationsHours.plus(control.value.hours));
     }
 
-    if (destinationsCoins.isGreaterThan(this.availableCoins) || destinationsHours.isGreaterThan(this.availableHours)) {
+    if (destinationsCoins.isGreaterThan(this.availableBalance.availableCoins) || destinationsHours.isGreaterThan(this.availableBalance.availableHours)) {
       return { Invalid: true };
     }
 
@@ -685,15 +614,17 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   private createTransaction(passwordDialog?: any) {
     this.showBusy();
 
-    const selectedAddresses = this.form.get('addresses').value && (this.form.get('addresses').value as Address[]).length > 0 ?
-      this.form.get('addresses').value.map(addr => addr.address) : null;
+    const selectedSources = this.formSourceSelection.selectedSources;
 
-    const selectedOutputs = this.form.get('outputs').value && (this.form.get('outputs').value as UnspentOutput[]).length > 0 ?
-      this.form.get('outputs').value.map(addr => addr.hash) : null;
+    const selectedAddresses = selectedSources.addresses && selectedSources.addresses.length > 0 ?
+      selectedSources.addresses.map(addr => addr.address) : null;
+
+    const selectedOutputs = selectedSources.unspentOutputs && selectedSources.unspentOutputs.length > 0 ?
+      selectedSources.unspentOutputs.map(addr => addr.hash) : null;
 
       this.processingSubscription = this.walletService.createTransaction(
-        this.form.value.wallet,
-        selectedAddresses ? selectedAddresses : (this.form.value.wallet as Wallet).addresses.map(address => address.address),
+        selectedSources.wallet,
+        selectedAddresses ? selectedAddresses : selectedSources.wallet.addresses.map(address => address.address),
         selectedOutputs,
         this.destinations,
         this.hoursSelection,
@@ -720,17 +651,16 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
         } else {
           let amount = new BigNumber('0');
           this.destinations.map(destination => amount = amount.plus(destination.coins));
-
           this.onFormSubmitted.emit({
             form: {
-              wallet: this.form.get('wallet').value,
-              addresses: this.form.get('addresses').value,
+              wallet: selectedSources.wallet,
+              addresses: selectedSources.addresses,
               changeAddress: this.form.get('changeAddress').value,
               destinations: this.destinations,
               hoursSelection: this.hoursSelection,
               autoOptions: this.autoOptions,
-              allUnspentOutputs: this.loadingUnspentOutputs ? null : this.allUnspentOutputs,
-              outputs: this.form.get('outputs').value,
+              allUnspentOutputs: this.formSourceSelection.unspentOutputsList,
+              outputs: selectedSources.unspentOutputs,
               currency: this.selectedCurrency,
               note: note,
             },
@@ -755,13 +685,9 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   }
 
   private resetForm() {
-    this.form.get('wallet').setValue('', { emitEvent: false });
-    this.form.get('addresses').setValue(null);
-    this.form.get('outputs').setValue(null);
+    this.formSourceSelection.resetForm();
     this.form.get('changeAddress').setValue('');
     this.form.get('note').setValue('');
-
-    this.wallet = null;
 
     while (this.destControls.length > 0) {
       (this.form.get('destinations') as FormArray).removeAt(0);
@@ -805,60 +731,6 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     }
 
     return hoursSelection;
-  }
-
-  private updateAvailableBalance() {
-    if (this.form.get('wallet').value) {
-      this.availableCoins = new BigNumber(0);
-      this.availableHours = new BigNumber(0);
-
-      const outputs: UnspentOutput[] = this.form.get('outputs').value;
-      const addresses: Address[] = this.form.get('addresses').value;
-
-      if (outputs && outputs.length > 0) {
-        outputs.map(control => {
-          this.availableCoins = this.availableCoins.plus(control.coins);
-          this.availableHours = this.availableHours.plus(control.calculated_hours);
-        });
-      } else if (addresses && addresses.length > 0) {
-        addresses.map(control => {
-          this.availableCoins = this.availableCoins.plus(control.coins);
-          this.availableHours = this.availableHours.plus(control.hours);
-        });
-      } else if (this.form.get('wallet').value) {
-        const wallet: Wallet = this.form.get('wallet').value;
-        this.availableCoins = wallet.coins;
-        this.availableHours = wallet.hours;
-      }
-
-      if (this.availableCoins.isGreaterThan(0)) {
-        const unburnedHoursRatio = new BigNumber(1).minus(new BigNumber(1).dividedBy(this.appService.burnRate));
-        const sendableHours = this.availableHours.multipliedBy(unburnedHoursRatio).decimalPlaces(0, BigNumber.ROUND_FLOOR);
-        this.minimumFee = this.availableHours.minus(sendableHours);
-        this.availableHours = sendableHours;
-      } else {
-        this.minimumFee = new BigNumber(0);
-        this.availableHours = new BigNumber(0);
-      }
-    }
-  }
-
-  private filterUnspentOutputs(): UnspentOutput[] {
-    if (this.allUnspentOutputs.length === 0) {
-      return [];
-    } else if (!this.form.get('addresses').value || (this.form.get('addresses').value as Address[]).length === 0) {
-      return this.allUnspentOutputs;
-    } else {
-      return this.allUnspentOutputs.filter(out => (this.form.get('addresses').value as Address[]).some(addr => addr.address === out.address));
-    }
-  }
-
-  private closeGetOutputsSubscriptions() {
-    this.loadingUnspentOutputs = false;
-
-    if (this.getOutputsSubscriptions) {
-      this.getOutputsSubscriptions.unsubscribe();
-    }
   }
 
   private closeSyncCheckSubscription() {

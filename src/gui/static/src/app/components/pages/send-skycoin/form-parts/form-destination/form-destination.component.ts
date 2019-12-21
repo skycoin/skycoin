@@ -10,7 +10,6 @@ import { AppService } from '../../../../../services/app.service';
 import { TranslateService } from '@ngx-translate/core';
 import { DoubleButtonActive } from '../../../../layout/double-button/double-button.component';
 import { PriceService } from '../../../../../services/price.service';
-import { SendFormComponent } from '../../send-form/send-form.component';
 import { MsgBarService } from '../../../../../services/msg-bar.service';
 import { AvailableBalanceData } from '../../form-parts/form-source-selection/form-source-selection.component';
 
@@ -22,11 +21,13 @@ export interface Destination {
 }
 
 @Component({
-  selector: 'app-form-multiple-destinations',
-  templateUrl: './form-multiple-destinations.component.html',
-  styleUrls: ['./form-multiple-destinations.component.scss'],
+  selector: 'app-form-destination',
+  templateUrl: './form-destination.component.html',
+  styleUrls: ['./form-destination.component.scss'],
 })
-export class FormMultipleDestinationsComponent implements OnInit, OnDestroy {
+export class FormDestinationComponent implements OnInit, OnDestroy {
+  private static readonly MaxUsdDecimals = 6;
+
   @Input() availableBalance: AvailableBalanceData;
   @Input() showHourFields: boolean;
   @Input() busy: boolean;
@@ -177,14 +178,14 @@ export class FormMultipleDestinationsComponent implements OnInit, OnDestroy {
 
         if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
           const newValue = currentValue.dividedBy(this.price).decimalPlaces(this.blockchainService.currentMaxDecimals);
-          const recoveredValue = newValue.multipliedBy(this.price).decimalPlaces(SendFormComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
+          const recoveredValue = newValue.multipliedBy(this.price).decimalPlaces(FormDestinationComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
           if (!recoveredValue.isEqualTo(currentValue)) {
             valuesWithPrecisionErrors += 1;
           }
 
           dest.get('coins').setValue(newValue.toString());
         } else {
-          const newValue = currentValue.multipliedBy(this.price).decimalPlaces(SendFormComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
+          const newValue = currentValue.multipliedBy(this.price).decimalPlaces(FormDestinationComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
           const recoveredValue = newValue.dividedBy(this.price).decimalPlaces(this.blockchainService.currentMaxDecimals);
           if (!recoveredValue.isEqualTo(currentValue)) {
             valuesWithPrecisionErrors += 1;
@@ -213,7 +214,7 @@ export class FormMultipleDestinationsComponent implements OnInit, OnDestroy {
 
     let availableCoins: BigNumber = this.availableBalance.availableCoins;
     if (this.selectedCurrency === DoubleButtonActive.RightButton) {
-      availableCoins = availableCoins.multipliedBy(this.price).decimalPlaces(SendFormComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
+      availableCoins = availableCoins.multipliedBy(this.price).decimalPlaces(FormDestinationComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
     }
 
     this.destControls.forEach((dest, i) => {
@@ -230,7 +231,7 @@ export class FormMultipleDestinationsComponent implements OnInit, OnDestroy {
     if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
       availableCoins = availableCoins.decimalPlaces(this.blockchainService.currentMaxDecimals, BigNumber.ROUND_FLOOR);
     } else {
-      availableCoins = availableCoins.decimalPlaces(SendFormComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
+      availableCoins = availableCoins.decimalPlaces(FormDestinationComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
     }
 
     if (availableCoins.isLessThan(0)) {
@@ -439,7 +440,7 @@ export class FormMultipleDestinationsComponent implements OnInit, OnDestroy {
           return null;
         }
       } else {
-        if (parts.length === 2 && parts[1].length > SendFormComponent.MaxUsdDecimals) {
+        if (parts.length === 2 && parts[1].length > FormDestinationComponent.MaxUsdDecimals) {
           return null;
         }
       }

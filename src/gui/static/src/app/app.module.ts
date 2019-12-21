@@ -62,16 +62,15 @@ import { DoubleButtonComponent } from './components/layout/double-button/double-
 import { SeedModalComponent } from './components/pages/settings/backup/seed-modal/seed-modal.component';
 import { OnboardingComponent } from './components/pages/onboarding/onboarding.component';
 import { DontsavepasswordDirective } from './directives/dontsavepassword.directive';
-import { SendFormComponent } from './components/pages/send-skycoin/send-form/send-form.component';
 import { SendVerifyComponent } from './components/pages/send-skycoin/send-preview/send-preview.component';
 import { TransactionInfoComponent } from './components/pages/send-skycoin/send-preview/transaction-info/transaction-info.component';
-import { SendFormAdvancedComponent } from './components/pages/send-skycoin/send-form-advanced/send-form-advanced.component';
+import { SendCoinsFormComponent } from './components/pages/send-skycoin/send-coins-form/send-coins-form.component';
 import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
 import { AppTranslateLoader } from './app.translate-loader';
 import { NavBarService } from './services/nav-bar.service';
 import { LoadingContentComponent } from './components/layout/loading-content/loading-content.component';
 import { NumberOfAddressesComponent } from './components/pages/wallets/number-of-addresses/number-of-addresses';
-import { SelectAddressComponent } from './components/pages/send-skycoin/send-form-advanced/select-address/select-address';
+import { SelectAddressComponent } from './components/layout/select-address/select-address';
 import { CreateWalletFormComponent } from './components/pages/wallets/create-wallet/create-wallet-form/create-wallet-form.component';
 import { ResetPasswordComponent } from './components/pages/reset-password/reset-password.component';
 import { ExchangeComponent } from './components/pages/exchange/exchange.component';
@@ -113,7 +112,7 @@ import { MsgBarService } from './services/msg-bar.service';
 import { SeedWordDialogComponent } from './components/layout/seed-word-dialog/seed-word-dialog.component';
 import { MultipleDestinationsDialogComponent } from './components/layout/multiple-destinations-dialog/multiple-destinations-dialog.component';
 import { FormSourceSelectionComponent } from './components/pages/send-skycoin/form-parts/form-source-selection/form-source-selection.component';
-import { FormMultipleDestinationsComponent } from './components/pages/send-skycoin/form-parts/form-multiple-destinations/form-multiple-destinations.component';
+import { FormDestinationComponent } from './components/pages/send-skycoin/form-parts/form-destination/form-destination.component';
 
 
 const ROUTES = [
@@ -217,10 +216,9 @@ const ROUTES = [
     SeedModalComponent,
     OnboardingComponent,
     DontsavepasswordDirective,
-    SendFormComponent,
     SendVerifyComponent,
     TransactionInfoComponent,
-    SendFormAdvancedComponent,
+    SendCoinsFormComponent,
     LoadingContentComponent,
     NumberOfAddressesComponent,
     SelectAddressComponent,
@@ -255,7 +253,7 @@ const ROUTES = [
     SeedWordDialogComponent,
     MultipleDestinationsDialogComponent,
     FormSourceSelectionComponent,
-    FormMultipleDestinationsComponent,
+    FormDestinationComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,

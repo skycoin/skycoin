@@ -1,20 +1,20 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { SendFormAdvancedComponent } from './send-form-advanced.component';
+import { FormDestinationComponent } from './form-destination.component';
 
-describe('SendFormAdvancedComponent', () => {
-  let component: SendFormAdvancedComponent;
-  let fixture: ComponentFixture<SendFormAdvancedComponent>;
+describe('FormDestinationComponent', () => {
+  let component: FormDestinationComponent;
+  let fixture: ComponentFixture<FormDestinationComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ SendFormAdvancedComponent ],
+      declarations: [ FormDestinationComponent ],
     })
     .compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(SendFormAdvancedComponent);
+    fixture = TestBed.createComponent(FormDestinationComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

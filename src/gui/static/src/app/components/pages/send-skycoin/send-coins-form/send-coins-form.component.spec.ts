@@ -1,20 +1,20 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { SendFormComponent } from './send-form.component';
+import { SendCoinsFormComponent } from './send-coins-form.component';
 
-describe('SendFormComponent', () => {
-  let component: SendFormComponent;
-  let fixture: ComponentFixture<SendFormComponent>;
+describe('SendCoinsFormComponent', () => {
+  let component: SendCoinsFormComponent;
+  let fixture: ComponentFixture<SendCoinsFormComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ SendFormComponent ],
+      declarations: [ SendCoinsFormComponent ],
     })
     .compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(SendFormComponent);
+    fixture = TestBed.createComponent(SendCoinsFormComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

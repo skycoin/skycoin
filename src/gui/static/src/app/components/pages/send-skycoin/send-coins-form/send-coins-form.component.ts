@@ -8,28 +8,27 @@ import { PasswordDialogComponent } from '../../../layout/password-dialog/passwor
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { NavBarService } from '../../../../services/nav-bar.service';
-import { SelectAddressComponent } from './select-address/select-address';
+import { SelectAddressComponent } from '../../../layout/select-address/select-address';
 import { BigNumber } from 'bignumber.js';
 import { ConfirmationData } from '../../../../app.datatypes';
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { showConfirmationModal } from '../../../../utils';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
-import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
 import { ChangeNoteComponent } from '../send-preview/transaction-info/change-note/change-note.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { MultipleDestinationsDialogComponent } from '../../../layout/multiple-destinations-dialog/multiple-destinations-dialog.component';
 import { FormSourceSelectionComponent, AvailableBalanceData } from '../form-parts/form-source-selection/form-source-selection.component';
-import { FormMultipleDestinationsComponent, Destination } from '../form-parts/form-multiple-destinations/form-multiple-destinations.component';
+import { FormDestinationComponent, Destination } from '../form-parts/form-destination/form-destination.component';
 
 @Component({
-  selector: 'app-send-form-advanced',
-  templateUrl: './send-form-advanced.component.html',
-  styleUrls: ['./send-form-advanced.component.scss'],
+  selector: 'app-send-coins-form',
+  templateUrl: './send-coins-form.component.html',
+  styleUrls: ['./send-coins-form.component.scss'],
 })
-export class SendFormAdvancedComponent implements OnInit, OnDestroy {
+export class SendCoinsFormComponent implements OnInit, OnDestroy {
   @ViewChild('formSourceSelection', { static: false }) formSourceSelection: FormSourceSelectionComponent;
-  @ViewChild('formMultipleDestinations', { static: false }) formMultipleDestinations: FormMultipleDestinationsComponent;
+  @ViewChild('formMultipleDestinations', { static: false }) formMultipleDestinations: FormDestinationComponent;
   @ViewChild('previewButton', { static: false }) previewButton: ButtonComponent;
   @ViewChild('sendButton', { static: false }) sendButton: ButtonComponent;
   @Input() formData: any;

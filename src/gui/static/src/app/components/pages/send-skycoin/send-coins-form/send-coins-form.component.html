@@ -23,7 +23,7 @@
     <span>{{ 'send.available-msg-part4' | translate }}</span>
   </div>
 
-  <app-form-multiple-destinations
+  <app-form-destination
     #formMultipleDestinations
     (onChanges)="multipleDestinationsChanged()"
     (onBulkRequested)="openMultipleDestinationsPopup()"
@@ -32,7 +32,7 @@
     [showHourFields]="!autoHours"
     [showSimpleForm]="showSimpleForm"
     >
-  </app-form-multiple-destinations>
+  </app-form-destination>
 
   <div *ngIf="!showSimpleForm" class="form-field">
     <label for="change-address">

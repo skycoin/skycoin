@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
-import { WalletService } from '../../../../../services/wallet.service';
-import { Wallet } from '../../../../../app.datatypes';
+import { WalletService } from '../../../services/wallet.service';
+import { Wallet } from '../../../app.datatypes';
 import { first } from 'rxjs/operators';
 
 @Component({

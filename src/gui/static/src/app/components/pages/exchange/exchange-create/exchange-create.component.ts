@@ -13,7 +13,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ExchangeService } from '../../../../services/exchange.service';
 import { ExchangeOrder, TradingPair, StoredExchangeOrder } from '../../../../app.datatypes';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { SelectAddressComponent } from '../../send-skycoin/send-form-advanced/select-address/select-address';
+import { SelectAddressComponent } from '../../../layout/select-address/select-address';
 import { WalletService } from '../../../../services/wallet.service';
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { TranslateService } from '@ngx-translate/core';

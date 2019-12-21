@@ -3,10 +3,11 @@
     #formSourceSelection
     (onSelectionChanged)="sourceSelectionChanged()"
     [busy]="busy"
+    [walletOnly]="showSimpleForm"
     >
   </app-form-source-selection>
 
-  <div class="form-field -available-msg">
+  <div *ngIf="!showSimpleForm" class="form-field -available-msg">
     <span>{{ 'send.available-msg-part1' | translate }}</span>
     <span class="value">
       {{ availableBalance.availableCoins.toString() | amount }}
@@ -29,10 +30,11 @@
     [availableBalance]="availableBalance"
     [busy]="busy"
     [showHourFields]="!autoHours"
+    [showSimpleForm]="showSimpleForm"
     >
   </app-form-multiple-destinations>
 
-  <div class="form-field">
+  <div *ngIf="!showSimpleForm" class="form-field">
     <label for="change-address">
       {{ 'send.change-address-label' | translate }}
       <mat-icon [matTooltip]="'send.change-address-help' | translate">help</mat-icon>
@@ -51,7 +53,7 @@
     <input formControlName="note" id="note" (keydown.enter)="preview()" [maxlength]="maxNoteChars" [attr.disabled]="busy ? 'true' : null">
   </div>
 
-  <div class="-autohours" [ngClass]="{'element-disabled' : busy}">
+  <div *ngIf="!showSimpleForm" class="-autohours" [ngClass]="{'element-disabled' : busy}">
     <div class="row">
       <div class="col-xl-4 col-lg-5 col-md-7">
         <mat-checkbox class="-check" (change)="setAutoHours($event)" [checked]="autoHours" [attr.disabled]="busy ? 'true' : null">

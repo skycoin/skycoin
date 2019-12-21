@@ -1,8 +1,13 @@
 <div [formGroup]="form">
+  <div *ngIf="showSimpleForm" class="form-field">
+    <label for="address">{{ 'send.to-label' | translate }}</label>
+    <input formControlName="address" id="address" [attr.disabled]="busy ? 'true' : null">
+  </div>
+
   <div class="form-field">
     <label for="destination" class="destinations-label">
-      {{ 'send.destinations-label' | translate }}
-      <mat-icon [matTooltip]="('send.destinations-help' + (!this.showHourFields ? '1' : '2')) | translate">help</mat-icon>
+      {{ (!showSimpleForm ? 'send.destinations-label' : 'send.amount-label') | translate }}
+      <mat-icon *ngIf="!showSimpleForm" [matTooltip]="('send.destinations-help' + (!this.showHourFields ? '1' : '2')) | translate">help</mat-icon>
     </label>
     <div class="coin-selector-container" *ngIf="price" [ngClass]="{ 'element-disabled': busy }">
       <app-double-button
@@ -13,16 +18,16 @@
         (onStateChange)="changeActiveCurrency($event)"
       ></app-double-button>
     </div>
-    <span class="-options" (click)="requestBulkSend()" [ngClass]="{'element-disabled' : busy}">
+    <span *ngIf="!showSimpleForm" class="-options" (click)="requestBulkSend()" [ngClass]="{'element-disabled' : busy}">
       {{ 'send.bulk-send.title' | translate }} <mat-icon>keyboard_arrow_down</mat-icon>
     </span>
 
     <div formArrayName="destinations" *ngFor="let dest of destControls; let i = index;" class="-destination">
       <div [formGroupName]="i" class="row">
-        <div class="col-lg-5 col-md-4">
+        <div *ngIf="!showSimpleForm" class="col-lg-5 col-md-4">
           <input formControlName="address" [id]="i === 0 ? 'destination' : 'address' + i" [attr.disabled]="busy ? 'true' : null">
         </div>
-        <div class="col-md-3">
+        <div [ngClass]="{'col-md-3' : !showSimpleForm, 'col-md-12' : showSimpleForm}">
           <div class="-input-addon">
             <input formControlName="coins" [attr.disabled]="busy ? 'true' : null">
             <span>{{ selectedCurrency === doubleButtonActive.LeftButton ? ('coin' | commonText) : ('common.usd' | translate) }}</span>
@@ -38,13 +43,13 @@
             <div class="link" [ngClass]="{ 'centerd-link': !price }" (click)="assignAll(i)">({{ 'send.send-all-available-coins' | translate }})</div>
           </div>
         </div>
-        <div class="col-lg-3 col-md-4">
+        <div *ngIf="!showSimpleForm" class="col-lg-3 col-md-4">
           <div [ngClass]="{ '-input-addon': true, '-hidden': !showHourFields }">
             <input formControlName="hours" [attr.disabled]="busy ? 'true' : null">
             <span>{{ 'hours' | commonText }}</span>
           </div>
         </div>
-        <div class="col-md-1 -icons" [ngClass]="{'element-disabled' : busy}">
+        <div *ngIf="!showSimpleForm" class="col-md-1 -icons" [ngClass]="{'element-disabled' : busy}">
           <img *ngIf="i === 0" (click)="addDestination()" src="../../../../../assets/img/plus-green.png" alt="plus">
           <img *ngIf="i !== 0" (click)="removeDestination(i)" src="../../../../../assets/img/minus-grey.png" alt="minus">
         </div>

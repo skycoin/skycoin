@@ -1,6 +1,6 @@
 import { SubscriptionLike } from 'rxjs';
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
-import { FormArray, FormBuilder, FormGroup } from '@angular/forms';
+import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { BigNumber } from 'bignumber.js';
 import { ConfirmationData } from '../../../../../app.datatypes';
@@ -33,6 +33,25 @@ export class FormMultipleDestinationsComponent implements OnInit, OnDestroy {
   @Output() onChanges = new EventEmitter<void>();
   @Output() onBulkRequested = new EventEmitter<void>();
 
+  private showSimpleFormInternal: boolean;
+  @Input() set showSimpleForm(val: boolean) {
+    this.showSimpleFormInternal = val;
+
+    if (this.form) {
+      if (val) {
+        this.form.get('address').setValidators(Validators.required);
+      } else {
+        this.form.get('address').clearValidators();
+      }
+
+      this.form.get('address').updateValueAndValidity();
+      this.form.get('destinations').updateValueAndValidity();
+    }
+  }
+  get showSimpleForm(): boolean {
+    return this.showSimpleFormInternal;
+  }
+
   form: FormGroup;
   doubleButtonActive = DoubleButtonActive;
   selectedCurrency = DoubleButtonActive.LeftButton;
@@ -43,6 +62,7 @@ export class FormMultipleDestinationsComponent implements OnInit, OnDestroy {
   totalHours = new BigNumber(0);
 
   private priceSubscription: SubscriptionLike;
+  private addressSubscription: SubscriptionLike;
   private destinationSubscriptions: SubscriptionLike[] = [];
   private destinationHoursSubscriptions: SubscriptionLike[] = [];
 
@@ -62,11 +82,17 @@ export class FormMultipleDestinationsComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.form = this.formBuilder.group({
+      address: ['', this.showSimpleForm ? Validators.required : null],
       destinations: this.formBuilder.array(
         [this.createDestinationFormGroup()],
         this.validateDestinations.bind(this),
       ),
     });
+
+    this.addressSubscription = this.form.get('address').valueChanges.subscribe(value => {
+      this.onChanges.emit();
+    });
+
     this.priceSubscription = this.priceService.price.subscribe(price => {
       this.price = price;
       this.updateValuesAndValidity();
@@ -74,6 +100,7 @@ export class FormMultipleDestinationsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.addressSubscription.unsubscribe();
     this.priceSubscription.unsubscribe();
     this.destinationSubscriptions.forEach(s => s.unsubscribe());
     this.destinationHoursSubscriptions.forEach(s => s.unsubscribe());
@@ -301,6 +328,10 @@ export class FormMultipleDestinationsComponent implements OnInit, OnDestroy {
           destControl.get(name).setValue(formData.form.destinations[i][name]);
         });
         destControl.get('coins').setValue(formData.form.destinations[i].originalAmount);
+
+        if (this.showSimpleForm) {
+          this.form.get('address').setValue(formData.form.destinations[i]['address']);
+        }
       });
 
       this.updateValuesAndValidity();
@@ -333,7 +364,7 @@ export class FormMultipleDestinationsComponent implements OnInit, OnDestroy {
   getDestinations(includeHours: boolean): Destination[] {
     return this.destControls.map((destControl, i) => {
       const destination = {
-        address: ((destControl.get('address').value) as string).trim(),
+        address: this.showSimpleForm ? ((this.form.get('address').value) as string).trim() : ((destControl.get('address').value) as string).trim(),
         coins: ((this.selectedCurrency === DoubleButtonActive.LeftButton ? destControl.get('coins').value : this.values[i].toString()) as string).trim(),
         originalAmount: destControl.get('coins').value,
       };
@@ -352,7 +383,7 @@ export class FormMultipleDestinationsComponent implements OnInit, OnDestroy {
     }
 
     const invalidInput = this.destControls.find(control => {
-      if (!control.get('address').value || (control.get('address').value as string).trim().length === 0) {
+      if (!this.showSimpleForm && (!control.get('address').value || (control.get('address').value as string).trim().length === 0)) {
         return true;
       }
 
@@ -440,6 +471,8 @@ export class FormMultipleDestinationsComponent implements OnInit, OnDestroy {
   }
 
   resetForm() {
+    this.form.get('address').setValue('');
+
     while (this.destControls.length > 0) {
       (this.form.get('destinations') as FormArray).removeAt(0);
     }

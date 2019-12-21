@@ -1,6 +1,6 @@
 <div [formGroup]="form">
   <div class="form-field">
-    <label for="wallets">{{ 'send.wallet-label' | translate }}</label>
+    <label for="wallets">{{ (walletOnly ? 'send.from-label' : 'send.wallet-label') | translate }}</label>
     <div class="-select">
       <select formControlName="wallet" id="wallets" [attr.disabled]="busy ? 'true' : null" [ngClass]="{'element-disabled' : busy}">
         <option disabled hidden [ngValue]="''">{{ 'send.select-wallet' | translate }}</option>
@@ -16,7 +16,7 @@
     </div>
   </div>
 
-  <ng-container *ngIf="wallet">
+  <ng-container *ngIf="!walletOnly && wallet">
     <div class="form-field">
       <label [for]="!busy ? 'addresses' : ''" (click)="!busy ? selectAddresses.open() : null">
         {{ 'send.addresses-label' | translate }}

@@ -33,6 +33,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   @ViewChild('previewButton', { static: false }) previewButton: ButtonComponent;
   @ViewChild('sendButton', { static: false }) sendButton: ButtonComponent;
   @Input() formData: any;
+  @Input() showSimpleForm: boolean;
   @Output() onFormSubmitted = new EventEmitter<any>();
 
   maxNoteChars = ChangeNoteComponent.MAX_NOTE_CHARS;
@@ -59,8 +60,6 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    this.navbarService.showSwitch('send.simple', 'send.advanced', DoubleButtonActive.RightButton);
-
     this.form = new FormGroup({}, this.validateForm.bind(this));
     this.form.addControl('changeAddress', new FormControl(''));
     this.form.addControl('note', new FormControl(''));
@@ -75,7 +74,6 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       this.processingSubscription.unsubscribe();
     }
     this.closeSyncCheckSubscription();
-    this.navbarService.hideSwitch();
     this.msgBarService.hide();
   }
 
@@ -215,7 +213,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
               address: entry[0],
               coins: entry[1],
               originalAmount: null,
-            }
+            };
             if (!this.autoHours) {
               newDestination.hours = entry[2];
             }
@@ -300,66 +298,68 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     const selectedOutputs = selectedSources.unspentOutputs && selectedSources.unspentOutputs.length > 0 ?
       selectedSources.unspentOutputs.map(addr => addr.hash) : null;
 
-      this.processingSubscription = this.walletService.createTransaction(
-        selectedSources.wallet,
-        selectedAddresses ? selectedAddresses : selectedSources.wallet.addresses.map(address => address.address),
-        selectedOutputs,
-        this.formMultipleDestinations.getDestinations(!this.autoHours),
-        this.hoursSelection,
-        this.form.get('changeAddress').value ? this.form.get('changeAddress').value : null,
-        passwordDialog ? passwordDialog.password : null,
-        this.previewTx,
-      ).subscribe(transaction => {
-        if (passwordDialog) {
-          passwordDialog.close();
-        }
+    const destinations = this.formMultipleDestinations.getDestinations(!this.autoHours);
 
-        const note = this.form.value.note.trim();
-        if (!this.previewTx) {
-          this.processingSubscription = this.walletService.injectTransaction(transaction.encoded, note)
-            .subscribe(noteSaved => {
-              let showDone = true;
-              if (note && !noteSaved) {
-                this.msgBarService.showWarning(this.translate.instant('send.error-saving-note'));
-                showDone = false;
-              }
+    this.processingSubscription = this.walletService.createTransaction(
+      selectedSources.wallet,
+      selectedAddresses ? selectedAddresses : selectedSources.wallet.addresses.map(address => address.address),
+      selectedOutputs,
+      destinations,
+      this.hoursSelection,
+      this.form.get('changeAddress').value ? this.form.get('changeAddress').value : null,
+      passwordDialog ? passwordDialog.password : null,
+      this.previewTx,
+    ).subscribe(transaction => {
+      if (passwordDialog) {
+        passwordDialog.close();
+      }
 
-              this.showSuccess(showDone);
-            }, error => this.showError(error));
-        } else {
-          let amount = new BigNumber('0');
-          this.formMultipleDestinations.getDestinations(!this.autoHours).map(destination => amount = amount.plus(destination.coins));
-          this.onFormSubmitted.emit({
-            form: {
-              wallet: selectedSources.wallet,
-              addresses: selectedSources.addresses,
-              changeAddress: this.form.get('changeAddress').value,
-              destinations: this.formMultipleDestinations.getDestinations(!this.autoHours),
-              hoursSelection: this.hoursSelection,
-              autoOptions: this.autoOptions,
-              allUnspentOutputs: this.formSourceSelection.unspentOutputsList,
-              outputs: selectedSources.unspentOutputs,
-              currency: this.formMultipleDestinations.currentlySelectedCurrency,
-              note: note,
-            },
-            amount: amount,
-            to: this.formMultipleDestinations.getDestinations(!this.autoHours).map(d => d.address),
-            transaction,
-          });
-          this.busy = false;
-          this.navbarService.enableSwitch();
-        }
-      }, error => {
-        if (passwordDialog) {
-          passwordDialog.error(error);
-        }
+      const note = this.form.value.note.trim();
+      if (!this.previewTx) {
+        this.processingSubscription = this.walletService.injectTransaction(transaction.encoded, note)
+          .subscribe(noteSaved => {
+            let showDone = true;
+            if (note && !noteSaved) {
+              this.msgBarService.showWarning(this.translate.instant('send.error-saving-note'));
+              showDone = false;
+            }
 
-        if (error && error.result) {
-          this.showError(getHardwareWalletErrorMsg(this.translate, error));
-        } else {
-          this.showError(error);
-        }
-      });
+            this.showSuccess(showDone);
+          }, error => this.showError(error));
+      } else {
+        let amount = new BigNumber('0');
+        destinations.map(destination => amount = amount.plus(destination.coins));
+        this.onFormSubmitted.emit({
+          form: {
+            wallet: selectedSources.wallet,
+            addresses: selectedSources.addresses,
+            changeAddress: this.form.get('changeAddress').value,
+            destinations: destinations,
+            hoursSelection: this.hoursSelection,
+            autoOptions: this.autoOptions,
+            allUnspentOutputs: this.formSourceSelection.unspentOutputsList,
+            outputs: selectedSources.unspentOutputs,
+            currency: this.formMultipleDestinations.currentlySelectedCurrency,
+            note: note,
+          },
+          amount: amount,
+          to: destinations.map(d => d.address),
+          transaction,
+        });
+        this.busy = false;
+        this.navbarService.enableSwitch();
+      }
+    }, error => {
+      if (passwordDialog) {
+        passwordDialog.error(error);
+      }
+
+      if (error && error.result) {
+        this.showError(getHardwareWalletErrorMsg(this.translate, error));
+      } else {
+        this.showError(error);
+      }
+    });
   }
 
   private resetForm() {

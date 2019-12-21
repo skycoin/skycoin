@@ -17,10 +17,10 @@ export class SendSkycoinComponent implements OnDestroy {
   private subscription: SubscriptionLike;
 
   constructor(
-    navbarService: NavBarService,
+    private navbarService: NavBarService,
     private changeDetector: ChangeDetectorRef,
   ) {
-    navbarService.setActiveComponent(DoubleButtonActive.LeftButton);
+    this.navbarService.showSwitch('send.simple', 'send.advanced', DoubleButtonActive.LeftButton);
     this.subscription = navbarService.activeComponent.subscribe(value => {
       if (this.activeForm !== value) {
         this.activeForm = value;
@@ -31,6 +31,7 @@ export class SendSkycoinComponent implements OnDestroy {
 
   ngOnDestroy() {
     this.subscription.unsubscribe();
+    this.navbarService.hideSwitch();
   }
 
   onFormSubmitted(data) {

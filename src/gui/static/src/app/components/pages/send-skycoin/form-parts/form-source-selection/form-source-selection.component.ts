@@ -5,7 +5,6 @@ import { WalletService } from '../../../../../services/wallet.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { BigNumber } from 'bignumber.js';
 import { Output as UnspentOutput, Wallet, Address } from '../../../../../app.datatypes';
-import { BlockchainService } from '../../../../../services/blockchain.service';
 import { AppService } from '../../../../../services/app.service';
 
 export class AvailableBalanceData {
@@ -27,6 +26,7 @@ export interface SelectedSources {
 })
 export class FormSourceSelectionComponent implements OnInit, OnDestroy {
   @Input() busy: boolean;
+  @Input() walletOnly: boolean;
   @Output() onSelectionChanged = new EventEmitter<void>();
 
   form: FormGroup;
@@ -41,7 +41,6 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
   private getOutputsSubscriptions: SubscriptionLike;
 
   constructor(
-    private blockchainService: BlockchainService,
     private walletService: WalletService,
     private appService: AppService,
     private formBuilder: FormBuilder,
@@ -60,18 +59,20 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
       this.closeGetOutputsSubscriptions();
       this.allUnspentOutputs = [];
       this.unspentOutputs = [];
-      this.loadingUnspentOutputs = true;
 
-      this.getOutputsSubscriptions = this.walletService.getWalletUnspentOutputs(wallet).pipe(
-        retryWhen(errors => errors.pipe(delay(1000), take(10), concat(observableThrowError('')))))
-        .subscribe(
-          result => {
-            this.loadingUnspentOutputs = false;
-            this.allUnspentOutputs = result;
-            this.unspentOutputs = this.filterUnspentOutputs();
-          },
-          () => this.loadingUnspentOutputs = false,
-        );
+      if (!this.walletOnly) {
+        this.loadingUnspentOutputs = true;
+        this.getOutputsSubscriptions = this.walletService.getWalletUnspentOutputs(wallet).pipe(
+          retryWhen(errors => errors.pipe(delay(1000), take(10), concat(observableThrowError('')))))
+          .subscribe(
+            result => {
+              this.loadingUnspentOutputs = false;
+              this.allUnspentOutputs = result;
+              this.unspentOutputs = this.filterUnspentOutputs();
+            },
+            () => this.loadingUnspentOutputs = false,
+          );
+      }
 
       this.addresses = wallet.addresses.filter(addr => addr.coins > 0);
       this.form.get('addresses').setValue(null);
@@ -124,7 +125,9 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
     this.addresses = formData.form.wallet.addresses;
 
     ['wallet', 'addresses'].forEach(name => {
-      this.form.get(name).setValue(formData.form[name]);
+      if (formData.form[name]) {
+        this.form.get(name).setValue(formData.form[name]);
+      }
     });
 
     if (formData.form.allUnspentOutputs) {

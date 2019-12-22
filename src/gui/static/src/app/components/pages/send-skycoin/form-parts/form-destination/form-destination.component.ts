@@ -67,7 +67,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   private destinationSubscriptions: SubscriptionLike[] = [];
   private destinationHoursSubscriptions: SubscriptionLike[] = [];
 
-  private get destControls() {
+  get destControls() {
     return (this.form.get('destinations') as FormArray).controls;
   }
 

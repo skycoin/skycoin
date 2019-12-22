@@ -43,7 +43,7 @@ export class SendPage {
 
   fillFormWithCoins(coins: string) {
     const dest = element(by.css('[formcontrolname="address"]'));
-    const amount = element(by.css('[formcontrolname="amount"]'));
+    const amount = element(by.css('[formcontrolname="coins"]'));
     const btnSend = element(by.buttonText('Send'));
 
     dest.clear();

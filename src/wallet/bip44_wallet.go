@@ -384,12 +384,10 @@ func scanAddressesBip32(generateEntries func(num uint64, childIdx uint32) (Entri
 	}
 
 	nAddAddrs := uint64(0)
-	n := scanN
-	childIdx := initialChildIdx
 	var newEntries Entries
 
 	// Generate the addresses to scan
-	entries, err := generateEntries(n, childIdx)
+	entries, err := generateEntries(scanN, initialChildIdx)
 	if err != nil {
 		return nil, err
 	}
@@ -397,8 +395,6 @@ func scanAddressesBip32(generateEntries func(num uint64, childIdx uint32) (Entri
 	if len(entries) == 0 {
 		return nil, nil
 	}
-
-	childIdx = nextChildIdx(entries)
 
 	newEntries = append(newEntries, entries...)
 

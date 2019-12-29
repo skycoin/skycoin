@@ -385,65 +385,41 @@ func scanAddressesBip32(generateEntries func(num uint64, childIdx uint32) (Entri
 
 	nAddAddrs := uint64(0)
 	n := scanN
-	extraScan := uint64(0)
 	childIdx := initialChildIdx
 	var newEntries Entries
 
-	for {
-		// Generate the addresses to scan
-		entries, err := generateEntries(n, childIdx)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(entries) == 0 {
-			break
-		}
-
-		// The bip32 child key sequence is finite and may be truncated at its limit
-		n = uint64(len(entries))
-		if n == 0 {
-			break
-		}
-
-		childIdx = nextChildIdx(entries)
-
-		newEntries = append(newEntries, entries...)
-
-		addrs := entries.getSkycoinAddresses()
-
-		// Find if these addresses had any activity
-		active, err := tf.AddressesActivity(addrs)
-		if err != nil {
-			return nil, err
-		}
-
-		// Check activity from the last one until we find the address that has activity
-		var keepNum uint64
-		for i := len(active) - 1; i >= 0; i-- {
-			if active[i] {
-				keepNum = uint64(i + 1)
-				break
-			}
-		}
-
-		if keepNum == 0 {
-			break
-		}
-
-		nAddAddrs += keepNum + extraScan
-
-		if n < keepNum {
-			logger.Panic("n should never be less than keepNum")
-		}
-
-		// extraScan is the number of addresses with no activity beyond the
-		// last address with activity
-		extraScan = n - keepNum
-
-		// n is the number of addresses to scan the next iteration
-		n = scanN - extraScan
+	// Generate the addresses to scan
+	entries, err := generateEntries(n, childIdx)
+	if err != nil {
+		return nil, err
 	}
+
+	if len(entries) == 0 {
+		return nil, nil
+	}
+
+	childIdx = nextChildIdx(entries)
+
+	newEntries = append(newEntries, entries...)
+
+	addrs := entries.getSkycoinAddresses()
+
+	// Find if these addresses had any activity
+	active, err := tf.AddressesActivity(addrs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check activity from the last one until we find the address that has activity
+	var keepNum uint64
+	for i := len(active) - 1; i >= 0; i-- {
+		if active[i] {
+			keepNum = uint64(i + 1)
+			break
+		}
+	}
+
+	nAddAddrs += keepNum
 
 	return newEntries[:nAddAddrs], nil
 }

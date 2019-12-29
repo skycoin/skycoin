@@ -2928,16 +2928,6 @@ func TestServiceScanAddresses(t *testing.T) {
 		}
 	}
 
-	// tt := []struct {
-	// 	name              string
-	// 	opts              Options
-	// 	scanN             uint64
-	// 	password          []byte
-	// 	walletAPIDisabled bool
-	// 	tf                TransactionsFinder
-	// 	expectAddrs       []cipher.Address
-	// 	expectErr         error
-	// }{}
 	for _, d := range testData {
 		tt := generateTestCasesFunc(d.walletType, d.seed, d.xpub, d.addrs)
 		for _, tc := range tt {

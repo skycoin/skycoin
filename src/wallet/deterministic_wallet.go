@@ -204,10 +204,9 @@ func (w *DeterministicWallet) ScanAddresses(scanN uint64, tf TransactionsFinder)
 	w2 := w.Clone().(*DeterministicWallet)
 
 	nExistingAddrs := uint64(len(w2.Entries))
-	n := scanN
 
 	// Generate the addresses to scan
-	addrs, err := w2.GenerateSkycoinAddresses(n)
+	addrs, err := w2.GenerateSkycoinAddresses(scanN)
 	if err != nil {
 		return err
 	}

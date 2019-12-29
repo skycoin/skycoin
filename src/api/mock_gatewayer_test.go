@@ -1291,6 +1291,29 @@ func (_m *MockGatewayer) ResendUnconfirmedTxns() ([]cipher.SHA256, error) {
 	return r0, r1
 }
 
+// ScanAddresses provides a mock function with given fields: wltID, password, n, tf
+func (_m *MockGatewayer) ScanAddresses(wltID string, password []byte, n uint64, tf wallet.TransactionsFinder) ([]cipher.Address, error) {
+	ret := _m.Called(wltID, password, n, tf)
+
+	var r0 []cipher.Address
+	if rf, ok := ret.Get(0).(func(string, []byte, uint64, wallet.TransactionsFinder) []cipher.Address); ok {
+		r0 = rf(wltID, password, n, tf)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]cipher.Address)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, []byte, uint64, wallet.TransactionsFinder) error); ok {
+		r1 = rf(wltID, password, n, tf)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // StartedAt provides a mock function with given fields:
 func (_m *MockGatewayer) StartedAt() time.Time {
 	ret := _m.Called()

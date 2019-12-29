@@ -305,7 +305,7 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 				"scanN":      opts.ScanN,
 				"walletType": wltType,
 			}).Info("Scanning addresses for wallet")
-			if err := w.ScanAddresses(opts.ScanN, tf); err != nil {
+			if err := w.ScanAddresses(opts.ScanN-generateN, tf); err != nil {
 				return nil, err
 			}
 		}

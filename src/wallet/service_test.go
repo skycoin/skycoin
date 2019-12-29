@@ -1737,64 +1737,80 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 		},
 		{
-			name: "scan 5 get 6, unencrypted",
+			name: "scan 1 get 1, unencrypted",
 			opts: Options{
 				Seed:  seed,
-				ScanN: 5,
+				ScanN: 1,
 				Type:  WalletTypeDeterministic,
 			},
 			balGetter: mockTxnsFinder{
-				addrs[5]: true,
+				addrs[0]: true,
 			},
 			expect: exp{
 				err:      nil,
 				seed:     seed,
-				lastSeed: childSeeds[5],
-				entryNum: 6,
+				lastSeed: childSeeds[0],
+				entryNum: 1,
 				addrs:    addrs,
 			},
 		},
 		{
-			name: "scan 5 get 9, unencrypted",
+			name: "scan 5 get 5, unencrypted",
 			opts: Options{
 				Seed:  seed,
 				ScanN: 5,
 				Type:  WalletTypeDeterministic,
 			},
 			balGetter: mockTxnsFinder{
-				addrs[5]: true,
-				addrs[8]: true,
+				addrs[4]: true,
 			},
 			expect: exp{
 				err:      nil,
 				seed:     seed,
-				lastSeed: childSeeds[8],
-				entryNum: 9,
+				lastSeed: childSeeds[4],
+				entryNum: 5,
 				addrs:    addrs,
 			},
 		},
 		{
-			name: "scan 5 get 11, unencrypted",
+			name: "scan 5 get 1, unencrypted",
 			opts: Options{
 				Seed:  seed,
 				ScanN: 5,
 				Type:  WalletTypeDeterministic,
 			},
 			balGetter: mockTxnsFinder{
-				addrs[4+1]: true,
-				addrs[10]:  true,
+				addrs[0]: true,
 			},
 			expect: exp{
 				err:      nil,
 				seed:     seed,
-				lastSeed: childSeeds[10],
-				entryNum: 11,
+				lastSeed: childSeeds[0],
+				entryNum: 1,
+				addrs:    addrs,
+			},
+		},
+		{
+			name: "scan 5 get 2, unencrypted",
+			opts: Options{
+				Seed:  seed,
+				ScanN: 5,
+				Type:  WalletTypeDeterministic,
+			},
+			balGetter: mockTxnsFinder{
+				addrs[1]: true,
+			},
+			expect: exp{
+				err:      nil,
+				seed:     seed,
+				lastSeed: childSeeds[1],
+				entryNum: 2,
 				addrs:    addrs,
 			},
 		},
 
 		{
-			name: "scan 5 get 6, encrypted",
+			name: "scan 5 get 3, encrypted",
 			opts: Options{
 				Seed:     seed,
 				Encrypt:  true,
@@ -1803,13 +1819,32 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				Type:     WalletTypeDeterministic,
 			},
 			balGetter: mockTxnsFinder{
-				addrs[5]: true,
+				addrs[2]: true,
 			},
 			expect: exp{
 				err:      nil,
 				seed:     seed,
-				lastSeed: childSeeds[5],
-				entryNum: 6,
+				lastSeed: childSeeds[2],
+				entryNum: 3,
+				addrs:    addrs,
+			},
+		},
+		{
+			name: "scan 5 get 4, unencrypted",
+			opts: Options{
+				Seed:  seed,
+				ScanN: 5,
+				Type:  WalletTypeDeterministic,
+			},
+			balGetter: mockTxnsFinder{
+				addrs[2]: true,
+				addrs[3]: true,
+			},
+			expect: exp{
+				err:      nil,
+				seed:     seed,
+				lastSeed: childSeeds[3],
+				entryNum: 4,
 				addrs:    addrs,
 			},
 		},
@@ -1829,6 +1864,82 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				seed:     seed,
 				lastSeed: childSeeds[4],
 				entryNum: 5,
+				addrs:    addrs,
+			},
+		},
+		{
+			name: "scan 0 get 1, encrypted",
+			opts: Options{
+				Seed:     seed,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				ScanN:    0,
+				Type:     WalletTypeDeterministic,
+			},
+			balGetter: mockTxnsFinder{},
+			expect: exp{
+				err:      nil,
+				seed:     seed,
+				lastSeed: childSeeds[0],
+				entryNum: 1,
+				addrs:    addrs,
+			},
+		},
+		{
+			name: "scan 1 get 1, encrypted",
+			opts: Options{
+				Seed:     seed,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				ScanN:    1,
+				Type:     WalletTypeDeterministic,
+			},
+			balGetter: mockTxnsFinder{
+				addrs[0]: true,
+			},
+			expect: exp{
+				err:      nil,
+				seed:     seed,
+				lastSeed: childSeeds[0],
+				entryNum: 1,
+				addrs:    addrs,
+			},
+		},
+		{
+			name: "scan 2 get 1, encrypted",
+			opts: Options{
+				Seed:     seed,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				ScanN:    2,
+				Type:     WalletTypeDeterministic,
+			},
+			balGetter: mockTxnsFinder{},
+			expect: exp{
+				err:      nil,
+				seed:     seed,
+				lastSeed: childSeeds[0],
+				entryNum: 1,
+				addrs:    addrs,
+			},
+		},
+		{
+			name: "scan 2 get 2, encrypted",
+			opts: Options{
+				Seed:     seed,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				ScanN:    2,
+				Type:     WalletTypeDeterministic,
+			},
+			balGetter: mockTxnsFinder{
+				addrs[1]: true,
+			},
+			expect: exp{
+				err:      nil,
+				seed:     seed,
+				lastSeed: childSeeds[1],
+				entryNum: 2,
 				addrs:    addrs,
 			},
 		},
@@ -1853,145 +1964,6 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				addrs:    addrs,
 			},
 		},
-		{
-			name: "scan 5 get 5 have 7, unencrypted",
-			opts: Options{
-				Seed:  seed,
-				ScanN: 5,
-				Type:  WalletTypeDeterministic,
-			},
-			balGetter: mockTxnsFinder{
-				addrs[3]: true,
-				addrs[4]: true,
-				addrs[6]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     seed,
-				lastSeed: childSeeds[6],
-				entryNum: 7,
-				addrs:    addrs,
-			},
-		},
-		{
-			name: "scan 5 get 3 have 8, unencrypted",
-			opts: Options{
-				Seed:  seed,
-				ScanN: 5,
-				Type:  WalletTypeDeterministic,
-			},
-			balGetter: mockTxnsFinder{
-				addrs[2]: true,
-				addrs[7]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     seed,
-				lastSeed: childSeeds[7],
-				entryNum: 8,
-				addrs:    addrs,
-			},
-		},
-		{
-			name: "scan 5 get 3 get 8 have 13, unencrypted",
-			opts: Options{
-				Seed:  seed,
-				ScanN: 5,
-				Type:  WalletTypeDeterministic,
-			},
-			balGetter: mockTxnsFinder{
-				addrs[2]:  true,
-				addrs[7]:  true,
-				addrs[12]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     seed,
-				lastSeed: childSeeds[12],
-				entryNum: 13,
-				addrs:    addrs,
-			},
-		},
-		{
-			name: "scan 5 get 3 get 8 have 14, unencrypted",
-			opts: Options{
-				Seed:  seed,
-				ScanN: 5,
-				Type:  WalletTypeDeterministic,
-			},
-			balGetter: mockTxnsFinder{
-				addrs[2]:  true,
-				addrs[7]:  true,
-				addrs[13]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     seed,
-				lastSeed: childSeeds[7],
-				entryNum: 8,
-				addrs:    addrs,
-			},
-		},
-		{
-			name: "scan 5 get 3 have 9, unencrypted",
-			opts: Options{
-				Seed:  seed,
-				ScanN: 5,
-				Type:  WalletTypeDeterministic,
-			},
-			balGetter: mockTxnsFinder{
-				addrs[2]: true,
-				addrs[8]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     seed,
-				lastSeed: childSeeds[2],
-				entryNum: 3,
-				addrs:    addrs,
-			},
-		},
-		{
-			name: "confirmed and predicted, unencrypted",
-			opts: Options{
-				Seed:  seed,
-				ScanN: 5,
-				Type:  WalletTypeDeterministic,
-			},
-			balGetter: mockTxnsFinder{
-				addrs[3]: true,
-				addrs[4]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     seed,
-				lastSeed: childSeeds[4],
-				entryNum: 5,
-				addrs:    addrs,
-			},
-		},
-		{
-			name: "confirmed and predicted, encrypted",
-			opts: Options{
-				Seed:     seed,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				ScanN:    5,
-				Type:     WalletTypeDeterministic,
-			},
-			balGetter: mockTxnsFinder{
-				addrs[3]: true,
-				addrs[4]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     seed,
-				lastSeed: childSeeds[4],
-				entryNum: 5,
-				addrs:    addrs,
-			},
-		},
-
 		{
 			name: "bip44 no coins and scan 0, unencrypted",
 			opts: Options{
@@ -2070,75 +2042,146 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 		},
 		{
-			name: "bip44 scan 5 get 6, unencrypted",
+			name: "bip44 scan 0 get 1, unencrypted",
 			opts: Options{
 				Seed:  bip44Seed,
-				ScanN: 5,
+				ScanN: 1,
 				Type:  WalletTypeBip44,
 			},
 			balGetter: mockTxnsFinder{
-				bip44Addrs[5]: true,
+				bip44Addrs[0]: true,
 			},
 			expect: exp{
 				err:      nil,
 				seed:     bip44Seed,
-				entryNum: 6,
+				entryNum: 1,
 				addrs:    bip44Addrs,
 			},
 		},
 		{
-			name: "bip44 scan 5 get 9, unencrypted",
-			opts: Options{
-				Seed:  bip44Seed,
-				ScanN: 5,
-				Type:  WalletTypeBip44,
-			},
-			balGetter: mockTxnsFinder{
-				bip44Addrs[5]: true,
-				bip44Addrs[8]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 9,
-				addrs:    bip44Addrs,
-			},
-		},
-		{
-			name: "bip44 scan 5 get 11, unencrypted",
-			opts: Options{
-				Seed:  bip44Seed,
-				ScanN: 5,
-				Type:  WalletTypeBip44,
-			},
-			balGetter: mockTxnsFinder{
-				bip44Addrs[4+1]: true,
-				bip44Addrs[10]:  true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 11,
-				addrs:    bip44Addrs,
-			},
-		},
-
-		{
-			name: "bip44 scan 5 get 6, encrypted",
+			name: "bip44 scan 0 get 1, encrypted",
 			opts: Options{
 				Seed:     bip44Seed,
+				ScanN:    1,
+				Type:     WalletTypeBip44,
 				Encrypt:  true,
 				Password: []byte("pwd"),
-				ScanN:    5,
-				Type:     WalletTypeBip44,
 			},
 			balGetter: mockTxnsFinder{
-				bip44Addrs[5]: true,
+				bip44Addrs[0]: true,
 			},
 			expect: exp{
 				err:      nil,
 				seed:     bip44Seed,
-				entryNum: 6,
+				entryNum: 1,
+				addrs:    bip44Addrs,
+			},
+		},
+		{
+			name: "bip44 scan 1 get 1, unencrypted",
+			opts: Options{
+				Seed:  bip44Seed,
+				ScanN: 1,
+				Type:  WalletTypeBip44,
+			},
+			balGetter: mockTxnsFinder{
+				bip44Addrs[0]: true,
+			},
+			expect: exp{
+				err:      nil,
+				seed:     bip44Seed,
+				entryNum: 1,
+				addrs:    bip44Addrs,
+			},
+		},
+		{
+			name: "bip44 scan 1 get 1, encrypted",
+			opts: Options{
+				Seed:     bip44Seed,
+				ScanN:    1,
+				Type:     WalletTypeBip44,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			balGetter: mockTxnsFinder{
+				bip44Addrs[0]: true,
+			},
+			expect: exp{
+				err:      nil,
+				seed:     bip44Seed,
+				entryNum: 1,
+				addrs:    bip44Addrs,
+			},
+		},
+		{
+			name: "bip44 scan 2 get 2, unencrypted",
+			opts: Options{
+				Seed:  bip44Seed,
+				ScanN: 2,
+				Type:  WalletTypeBip44,
+			},
+			balGetter: mockTxnsFinder{
+				bip44Addrs[0]: true,
+				bip44Addrs[1]: true,
+			},
+			expect: exp{
+				err:      nil,
+				seed:     bip44Seed,
+				entryNum: 2,
+				addrs:    bip44Addrs,
+			},
+		},
+		{
+			name: "bip44 scan 2 get 2, encrypted",
+			opts: Options{
+				Seed:     bip44Seed,
+				ScanN:    2,
+				Type:     WalletTypeBip44,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			balGetter: mockTxnsFinder{
+				bip44Addrs[0]: true,
+				bip44Addrs[1]: true,
+			},
+			expect: exp{
+				err:      nil,
+				seed:     bip44Seed,
+				entryNum: 2,
+				addrs:    bip44Addrs,
+			},
+		},
+		{
+			name: "bip44 scan 5 get 1, unencrypted",
+			opts: Options{
+				Seed:  bip44Seed,
+				ScanN: 5,
+				Type:  WalletTypeBip44,
+			},
+			balGetter: mockTxnsFinder{
+				bip44Addrs[0]: true,
+			},
+			expect: exp{
+				err:      nil,
+				seed:     bip44Seed,
+				entryNum: 1,
+				addrs:    bip44Addrs,
+			},
+		},
+		{
+			name: "bip44 scan 5 get 2, unencrypted",
+			opts: Options{
+				Seed:  bip44Seed,
+				ScanN: 5,
+				Type:  WalletTypeBip44,
+			},
+			balGetter: mockTxnsFinder{
+				bip44Addrs[1]: true,
+			},
+			expect: exp{
+				err:      nil,
+				seed:     bip44Seed,
+				entryNum: 2,
 				addrs:    bip44Addrs,
 			},
 		},
@@ -2150,7 +2193,6 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				Type:  WalletTypeBip44,
 			},
 			balGetter: mockTxnsFinder{
-				bip44Addrs[3]: true,
 				bip44Addrs[4]: true,
 			},
 			expect: exp{
@@ -2180,156 +2222,6 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				addrs:    bip44Addrs,
 			},
 		},
-		{
-			name: "bip44 scan 5 get 5 have 7, unencrypted",
-			opts: Options{
-				Seed:  bip44Seed,
-				ScanN: 5,
-				Type:  WalletTypeBip44,
-			},
-			balGetter: mockTxnsFinder{
-				bip44Addrs[3]: true,
-				bip44Addrs[4]: true,
-				bip44Addrs[6]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 7,
-				addrs:    bip44Addrs,
-			},
-		},
-		{
-			name: "bip44 scan 5 get 3 have 8, unencrypted",
-			opts: Options{
-				Seed:  bip44Seed,
-				ScanN: 5,
-				Type:  WalletTypeBip44,
-			},
-			balGetter: mockTxnsFinder{
-				bip44Addrs[2]: true,
-				bip44Addrs[7]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 8,
-				addrs:    bip44Addrs,
-			},
-		},
-		{
-			name: "bip44 scan 5 get 3 get 8 have 13, unencrypted",
-			opts: Options{
-				Seed:  bip44Seed,
-				ScanN: 5,
-				Type:  WalletTypeBip44,
-			},
-			balGetter: mockTxnsFinder{
-				bip44Addrs[2]:  true,
-				bip44Addrs[7]:  true,
-				bip44Addrs[12]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 13,
-				addrs:    bip44Addrs,
-			},
-		},
-		{
-			name: "bip44 scan 5 get 3 get 8 have 14, unencrypted",
-			opts: Options{
-				Seed:  bip44Seed,
-				ScanN: 5,
-				Type:  WalletTypeBip44,
-			},
-			balGetter: mockTxnsFinder{
-				bip44Addrs[2]:  true,
-				bip44Addrs[7]:  true,
-				bip44Addrs[13]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 8,
-				addrs:    bip44Addrs,
-			},
-		},
-		{
-			name: "bip44 scan 5 get 3 get 8 have 14, change chain, unencrypted",
-			opts: Options{
-				Seed:  bip44Seed,
-				ScanN: 5,
-				Type:  WalletTypeBip44,
-			},
-			balGetter: mockTxnsFinder{
-				bip44ChangeAddrs[2]:  true,
-				bip44ChangeAddrs[7]:  true,
-				bip44ChangeAddrs[13]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 8 + 1, // 1 address is always generated in the external chain
-				addrs:    append(bip44Addrs[:1], bip44ChangeAddrs...),
-			},
-		}, {
-			name: "bip44 scan 5 get 3 have 9, unencrypted",
-			opts: Options{
-				Seed:  bip44Seed,
-				ScanN: 5,
-				Type:  WalletTypeBip44,
-			},
-			balGetter: mockTxnsFinder{
-				bip44Addrs[2]: true,
-				bip44Addrs[8]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 3,
-				addrs:    bip44Addrs,
-			},
-		},
-		{
-			name: "bip44 confirmed and predicted, unencrypted",
-			opts: Options{
-				Seed:  bip44Seed,
-				ScanN: 5,
-				Type:  WalletTypeBip44,
-			},
-			balGetter: mockTxnsFinder{
-				bip44Addrs[3]: true,
-				bip44Addrs[4]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 5,
-				addrs:    bip44Addrs,
-			},
-		},
-		{
-			name: "bip44 confirmed and predicted, encrypted",
-			opts: Options{
-				Seed:     bip44Seed,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				ScanN:    5,
-				Type:     WalletTypeBip44,
-			},
-			balGetter: mockTxnsFinder{
-				bip44Addrs[3]: true,
-				bip44Addrs[4]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 5,
-				addrs:    bip44Addrs,
-			},
-		},
-
 		{
 			name: "xpub no coins and scan 0, unencrypted",
 			opts: Options{
@@ -2408,75 +2300,146 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 		},
 		{
-			name: "xpub scan 5 get 6, unencrypted",
+			name: "xpub scan 0 get 1, unencrypted",
 			opts: Options{
 				XPub:  xpub,
-				ScanN: 5,
+				ScanN: 0,
 				Type:  WalletTypeXPub,
 			},
 			balGetter: mockTxnsFinder{
-				xpubAddrs[5]: true,
+				xpubAddrs[0]: true,
 			},
 			expect: exp{
 				err:      nil,
 				xpub:     xpub,
-				entryNum: 6,
+				entryNum: 1,
 				addrs:    xpubAddrs,
 			},
 		},
 		{
-			name: "xpub scan 5 get 9, unencrypted",
-			opts: Options{
-				XPub:  xpub,
-				ScanN: 5,
-				Type:  WalletTypeXPub,
-			},
-			balGetter: mockTxnsFinder{
-				xpubAddrs[5]: true,
-				xpubAddrs[8]: true,
-			},
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 9,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub scan 5 get 11, unencrypted",
-			opts: Options{
-				XPub:  xpub,
-				ScanN: 5,
-				Type:  WalletTypeXPub,
-			},
-			balGetter: mockTxnsFinder{
-				xpubAddrs[4+1]: true,
-				xpubAddrs[10]:  true,
-			},
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 11,
-				addrs:    xpubAddrs,
-			},
-		},
-
-		{
-			name: "xpub scan 5 get 6, encrypted",
+			name: "xpub scan 0 get 1, encrypted",
 			opts: Options{
 				XPub:     xpub,
+				ScanN:    0,
+				Type:     WalletTypeXPub,
 				Encrypt:  true,
 				Password: []byte("pwd"),
-				ScanN:    5,
-				Type:     WalletTypeXPub,
 			},
 			balGetter: mockTxnsFinder{
-				xpubAddrs[5]: true,
+				xpubAddrs[0]: true,
 			},
 			expect: exp{
 				err:      nil,
 				xpub:     xpub,
-				entryNum: 6,
+				entryNum: 1,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub scan 1 get 1, unencrypted",
+			opts: Options{
+				XPub:  xpub,
+				ScanN: 1,
+				Type:  WalletTypeXPub,
+			},
+			balGetter: mockTxnsFinder{
+				xpubAddrs[0]: true,
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 1,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub scan 1 get 1, encrypted",
+			opts: Options{
+				XPub:     xpub,
+				ScanN:    1,
+				Type:     WalletTypeXPub,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			balGetter: mockTxnsFinder{
+				xpubAddrs[0]: true,
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 1,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub scan 2 get 1, unencrypted",
+			opts: Options{
+				XPub:  xpub,
+				ScanN: 2,
+				Type:  WalletTypeXPub,
+			},
+			balGetter: mockTxnsFinder{
+				xpubAddrs[0]: true,
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 1,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub scan 2 get 1, encrypted",
+			opts: Options{
+				XPub:     xpub,
+				ScanN:    2,
+				Type:     WalletTypeXPub,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			balGetter: mockTxnsFinder{
+				xpubAddrs[0]: true,
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 1,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub scan 2 get 2, unencrypted",
+			opts: Options{
+				XPub:  xpub,
+				ScanN: 2,
+				Type:  WalletTypeXPub,
+			},
+			balGetter: mockTxnsFinder{
+				xpubAddrs[1]: true,
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 2,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub scan 2 get 2, encrypted",
+			opts: Options{
+				XPub:     xpub,
+				ScanN:    2,
+				Type:     WalletTypeXPub,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			balGetter: mockTxnsFinder{
+				xpubAddrs[1]: true,
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 2,
 				addrs:    xpubAddrs,
 			},
 		},
@@ -2488,13 +2451,102 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				Type:  WalletTypeXPub,
 			},
 			balGetter: mockTxnsFinder{
-				xpubAddrs[3]: true,
 				xpubAddrs[4]: true,
 			},
 			expect: exp{
 				err:      nil,
 				xpub:     xpub,
 				entryNum: 5,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub scan 5 get 4, unencrypted",
+			opts: Options{
+				XPub:  xpub,
+				ScanN: 5,
+				Type:  WalletTypeXPub,
+			},
+			balGetter: mockTxnsFinder{
+				xpubAddrs[1]: true,
+				xpubAddrs[3]: true,
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 4,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub scan 5 get 3, unencrypted",
+			opts: Options{
+				XPub:  xpub,
+				ScanN: 5,
+				Type:  WalletTypeXPub,
+			},
+			balGetter: mockTxnsFinder{
+				xpubAddrs[1]: true,
+				xpubAddrs[2]: true,
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 3,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub scan 5 get 2, unencrypted",
+			opts: Options{
+				XPub:  xpub,
+				ScanN: 5,
+				Type:  WalletTypeXPub,
+			},
+			balGetter: mockTxnsFinder{
+				xpubAddrs[1]: true,
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 2,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub scan 5 get 1, unencrypted",
+			opts: Options{
+				XPub:  xpub,
+				ScanN: 5,
+				Type:  WalletTypeXPub,
+			},
+			balGetter: mockTxnsFinder{
+				xpubAddrs[0]: true,
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 1,
+				addrs:    xpubAddrs,
+			},
+		},
+
+		{
+			name: "xpub scan 5 get 2, encrypted",
+			opts: Options{
+				XPub:     xpub,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				ScanN:    5,
+				Type:     WalletTypeXPub,
+			},
+			balGetter: mockTxnsFinder{
+				xpubAddrs[1]: true,
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 2,
 				addrs:    xpubAddrs,
 			},
 		},
@@ -2518,153 +2570,21 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				addrs:    xpubAddrs,
 			},
 		},
-		{
-			name: "xpub scan 5 get 5 have 7, unencrypted",
-			opts: Options{
-				XPub:  xpub,
-				ScanN: 5,
-				Type:  WalletTypeXPub,
-			},
-			balGetter: mockTxnsFinder{
-				xpubAddrs[3]: true,
-				xpubAddrs[4]: true,
-				xpubAddrs[6]: true,
-			},
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 7,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub scan 5 get 3 have 8, unencrypted",
-			opts: Options{
-				XPub:  xpub,
-				ScanN: 5,
-				Type:  WalletTypeXPub,
-			},
-			balGetter: mockTxnsFinder{
-				xpubAddrs[2]: true,
-				xpubAddrs[7]: true,
-			},
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 8,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub scan 5 get 3 get 8 have 13, unencrypted",
-			opts: Options{
-				XPub:  xpub,
-				ScanN: 5,
-				Type:  WalletTypeXPub,
-			},
-			balGetter: mockTxnsFinder{
-				xpubAddrs[2]:  true,
-				xpubAddrs[7]:  true,
-				xpubAddrs[12]: true,
-			},
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 13,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub scan 5 get 3 get 8 have 14, unencrypted",
-			opts: Options{
-				XPub:  xpub,
-				ScanN: 5,
-				Type:  WalletTypeXPub,
-			},
-			balGetter: mockTxnsFinder{
-				xpubAddrs[2]:  true,
-				xpubAddrs[7]:  true,
-				xpubAddrs[13]: true,
-			},
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 8,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub scan 5 get 3 have 9, unencrypted",
-			opts: Options{
-				XPub:  xpub,
-				ScanN: 5,
-				Type:  WalletTypeXPub,
-			},
-			balGetter: mockTxnsFinder{
-				xpubAddrs[2]: true,
-				xpubAddrs[8]: true,
-			},
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 3,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub confirmed and predicted, unencrypted",
-			opts: Options{
-				XPub:  xpub,
-				ScanN: 5,
-				Type:  WalletTypeXPub,
-			},
-			balGetter: mockTxnsFinder{
-				xpubAddrs[3]: true,
-				xpubAddrs[4]: true,
-			},
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 5,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub confirmed and predicted, encrypted",
-			opts: Options{
-				XPub:     xpub,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				ScanN:    5,
-				Type:     WalletTypeXPub,
-			},
-			balGetter: mockTxnsFinder{
-				xpubAddrs[3]: true,
-				xpubAddrs[4]: true,
-			},
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 5,
-				addrs:    xpubAddrs,
-			},
-		},
-
-		{
-			name: "wallet api disabled",
-			opts: Options{
-				Seed:     seed,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				ScanN:    5,
-				Type:     WalletTypeDeterministic,
-			},
-			balGetter:        mockTxnsFinder{},
-			disableWalletAPI: true,
-			expect: exp{
-				err: ErrWalletAPIDisabled,
-			},
-		},
+		// {
+		// 	name: "wallet api disabled",
+		// 	opts: Options{
+		// 		Seed:     seed,
+		// 		Encrypt:  true,
+		// 		Password: []byte("pwd"),
+		// 		ScanN:    5,
+		// 		Type:     WalletTypeDeterministic,
+		// 	},
+		// 	balGetter:        mockTxnsFinder{},
+		// 	disableWalletAPI: true,
+		// 	expect: exp{
+		// 		err: ErrWalletAPIDisabled,
+		// 	},
+		// },
 	}
 
 	for _, tc := range tt {

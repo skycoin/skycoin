@@ -308,6 +308,10 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 	return addrs, nil
 }
 
+// func (serv *Service) ScanAddresses(wltID string, password []byte, num uint64) (Wallet, error) {
+
+// }
+
 // GetSkycoinAddresses returns all addresses in given wallet
 func (serv *Service) GetSkycoinAddresses(wltID string) ([]cipher.Address, error) {
 	serv.RLock()

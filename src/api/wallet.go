@@ -392,7 +392,7 @@ func walletNewAddressesHandler(gateway Gatewayer) http.HandlerFunc {
 // Method: POST
 // Args:
 //     id: wallet id [required]
-//     num: the number of addresses to scan ahead for balance [required, must be > 0]
+//     num: the number of addresses to scan ahead for balance [optional, must be > 0, default to 20]
 //     password: wallet password [optional, must be provided is the wallet is encrypted]
 func walletScanAddressesHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -409,12 +409,16 @@ func walletScanAddressesHandler(gateway Gatewayer) http.HandlerFunc {
 
 		// Get the number of address to scan
 		num := r.FormValue("num")
-		var n uint64
+		var n uint64 = 20
 		if num != "" {
 			var err error
 			n, err = strconv.ParseUint(num, 10, 64)
 			if err != nil {
 				wh.Error400(w, "invalid num value")
+				return
+			}
+			if n <= 0 {
+				wh.Error400(w, "invalid num value, must be > 0")
 				return
 			}
 		}

@@ -1966,6 +1966,218 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 	}
 }
 
+func TestWalletScanAddressesHandler(t *testing.T) {
+	type httpBody struct {
+		ID       string
+		Num      string
+		Password string
+	}
+
+	type responseAddresses struct {
+		Addresses []string `json:"addresses"`
+	}
+
+	type expect struct {
+		status int
+		addrs  responseAddresses
+		err    string
+	}
+
+	const addrsN = 10
+	const walletID = "test.wlt"
+
+	addrs := make([]cipher.Address, addrsN)
+	addrsStr := make([]string, addrsN)
+	for i := 0; i < addrsN; i++ {
+		pub, _ := cipher.MustGenerateDeterministicKeyPair(cipher.RandByte(32))
+		addrs[i] = cipher.AddressFromPubKey(pub)
+		addrsStr[i] = addrs[i].String()
+	}
+
+	tt := []struct {
+		name                       string
+		method                     string
+		disableCSRF                bool
+		password                   string
+		scanN                      uint64
+		tf                         wallet.TransactionsFinder
+		gatewayScanAddressesResult []cipher.Address
+		gatewayScanAddressesErr    error
+		body                       *httpBody
+		expect                     expect
+	}{
+		{
+			name:   "405 Invalid Method",
+			method: "GET",
+			expect: expect{
+				status: http.StatusMethodNotAllowed,
+				err:    "405 Method Not Allowed",
+			},
+		},
+		{
+			name:   "400 missing wallet id",
+			method: "POST",
+			body: &httpBody{
+				Num: "1",
+			},
+			scanN: 1,
+			// gatewayScanAddressesResult: nil,
+			// gatewayScanAddressesErr:    nil,
+			expect: expect{
+				status: http.StatusBadRequest,
+				err:    "400 Bad Request - missing wallet id",
+			},
+		},
+		{
+			name:   "400 Invalid num value",
+			method: "POST",
+			body: &httpBody{
+				ID:  walletID,
+				Num: "1.01",
+			},
+			gatewayScanAddressesResult: nil,
+			gatewayScanAddressesErr:    wallet.ErrWalletAPIDisabled,
+			expect: expect{
+				status: http.StatusBadRequest,
+				err:    "400 Bad Request - invalid num value",
+			},
+		},
+		{
+			name:   "400 Invalid num value, must be  > 0",
+			method: "POST",
+			body: &httpBody{
+				ID:  walletID,
+				Num: "0",
+			},
+			gatewayScanAddressesResult: nil,
+			gatewayScanAddressesErr:    wallet.ErrWalletAPIDisabled,
+			expect: expect{
+				status: http.StatusBadRequest,
+				err:    "400 Bad Request - invalid num value, must be > 0",
+			},
+		},
+		{
+			name:   "400 other error",
+			method: "POST",
+			body: &httpBody{
+				ID:  walletID,
+				Num: "1",
+			},
+			scanN:                      1,
+			gatewayScanAddressesResult: nil,
+			gatewayScanAddressesErr:    errors.New("other error"),
+			expect: expect{
+				status: http.StatusBadRequest,
+				err:    "400 Bad Request - other error",
+			},
+		},
+		{
+			name:   "403 Wallet API Disabled",
+			method: "POST",
+			body: &httpBody{
+				ID:  walletID,
+				Num: "10",
+			},
+			scanN:                      10,
+			gatewayScanAddressesResult: nil,
+			gatewayScanAddressesErr:    wallet.ErrWalletAPIDisabled,
+			expect: expect{
+				status: http.StatusForbidden,
+				err:    "403 Forbidden",
+			},
+		},
+		{
+			name:   "scan 0 default to 20 get 0",
+			method: "POST",
+			body: &httpBody{
+				ID: walletID,
+			},
+			scanN:                      20,
+			gatewayScanAddressesResult: nil,
+			expect: expect{
+				status: http.StatusOK,
+				addrs:  responseAddresses{},
+			},
+		},
+		{
+			name:   "scan 0 default to 20 get 1",
+			method: "POST",
+			body: &httpBody{
+				ID: walletID,
+			},
+			scanN:                      20,
+			gatewayScanAddressesResult: addrs[:1],
+			expect: expect{
+				status: http.StatusOK,
+				addrs:  responseAddresses{addrsStr[:1]},
+			},
+		},
+		{
+			name:   "scan 1 get 0",
+			method: "POST",
+			body: &httpBody{
+				ID:  walletID,
+				Num: "1",
+			},
+			scanN:                      1,
+			gatewayScanAddressesResult: nil,
+			expect: expect{
+				status: http.StatusOK,
+				addrs:  responseAddresses{},
+			},
+		},
+		{
+			name:   "scan 1 get 1",
+			method: "POST",
+			body: &httpBody{
+				ID:  walletID,
+				Num: "1",
+			},
+			scanN:                      1,
+			gatewayScanAddressesResult: addrs[:1],
+			expect: expect{
+				status: http.StatusOK,
+				addrs:  responseAddresses{addrsStr[:1]},
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &MockGatewayer{}
+			gateway.On("ScanAddresses", walletID, []byte(tc.password), tc.scanN, gateway).Return(tc.gatewayScanAddressesResult, tc.gatewayScanAddressesErr)
+
+			c := newHTTPMockClient(gateway, ContentTypeForm, tc.disableCSRF)
+
+			v := url.Values{}
+			if tc.body != nil {
+				if tc.body.ID != "" {
+					v.Add("id", tc.body.ID)
+				}
+				if tc.body.Password != "" {
+					v.Add("password", tc.body.Password)
+				}
+				if tc.body.Num != "" {
+					v.Add("num", tc.body.Num)
+				}
+			}
+
+			rsp := c.Do(t, tc.method, "/api/v1/wallet/scan", v.Encode())
+			require.Equal(t, tc.expect.status, rsp.Code)
+
+			if rsp.Code != http.StatusOK {
+				v := strings.TrimSpace(rsp.Body.String())
+				require.Equal(t, tc.expect.err, v)
+			} else {
+				var rspAddrs responseAddresses
+				err := json.NewDecoder(rsp.Body).Decode(&rspAddrs)
+				require.NoError(t, err)
+				require.Equal(t, tc.expect.addrs, rspAddrs)
+			}
+		})
+	}
+}
+
 func TestGetWalletFolderHandler(t *testing.T) {
 	tt := []struct {
 		name                 string

@@ -529,3 +529,40 @@ func TestHTTPBasicAuthInvalid(t *testing.T) {
 		}
 	}
 }
+
+////////////////////////////////////////////////////////////////
+// Test helper tools
+////////////////////////////////////////////////////////////////
+type httpMockClient struct {
+	gateway     *MockGatewayer
+	contentType string
+	disableCSRF bool
+}
+
+func newHTTPMockClient(gateway *MockGatewayer, contentType string, disableCSRF bool) *httpMockClient {
+	return &httpMockClient{
+		gateway:     gateway,
+		contentType: contentType,
+		disableCSRF: disableCSRF,
+	}
+}
+
+func (c httpMockClient) Do(t *testing.T, method, endpoint, value string) *httptest.ResponseRecorder {
+	req, err := http.NewRequest(method, endpoint, strings.NewReader(value))
+	require.NoError(t, err)
+	req.Header.Add("Content-Type", c.contentType)
+	if c.disableCSRF {
+		setCSRFParameters(t, tokenInvalid, req)
+	} else {
+		setCSRFParameters(t, tokenValid, req)
+	}
+
+	rr := httptest.NewRecorder()
+
+	cfg := defaultMuxConfig()
+	cfg.disableCSRF = c.disableCSRF
+
+	handler := newServerMux(cfg, c.gateway)
+	handler.ServeHTTP(rr, req)
+	return rr
+}

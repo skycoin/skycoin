@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Add `POST /api/v1/wallet/scan` API to scan wallet addresses ahead, default scan number is `20`.
+
 ### Fixed
 
 ### Changed

@@ -14,8 +14,9 @@ GOLDFLAGS="${GOLDFLAGS} -X main.Commit=${COMMIT} -X main.Branch=${BRANCH}"
 
 GORUNFLAGS=${GORUNFLAGS:-}
 
-go run -ldflags "${GOLDFLAGS}" $GORUNFLAGS cmd/skycoin/skycoin.go \
-    -gui-dir="${DIR}/src/gui/static/" \
+go install -ldflags "${GOLDFLAGS}" $GORUNFLAGS ./cmd/skycoin/...
+
+skycoin -gui-dir="${DIR}/src/gui/static/" \
     -launch-browser=true \
     -enable-all-api-sets=true \
     -enable-gui=true \

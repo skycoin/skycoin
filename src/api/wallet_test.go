@@ -2000,7 +2000,6 @@ func TestWalletScanAddressesHandler(t *testing.T) {
 		disableCSRF                bool
 		password                   string
 		scanN                      uint64
-		tf                         wallet.TransactionsFinder
 		gatewayScanAddressesResult []cipher.Address
 		gatewayScanAddressesErr    error
 		body                       *httpBody
@@ -2021,8 +2020,6 @@ func TestWalletScanAddressesHandler(t *testing.T) {
 				Num: "1",
 			},
 			scanN: 1,
-			// gatewayScanAddressesResult: nil,
-			// gatewayScanAddressesErr:    nil,
 			expect: expect{
 				status: http.StatusBadRequest,
 				err:    "400 Bad Request - missing wallet id",

@@ -1,5 +1,17 @@
 @import '../../../../../theme/variables';
 
+.mode-selector {
+  text-align: right;
+  height: 0px;
+
+  app-double-button {
+    display: inline-block;
+    position: relative;
+    top: -28px;
+    right: -25px;
+  }
+}
+
 mat-checkbox {
   font-size: 12px;
 }

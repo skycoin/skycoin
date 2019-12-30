@@ -113,6 +113,9 @@ import { SeedWordDialogComponent } from './components/layout/seed-word-dialog/se
 import { MultipleDestinationsDialogComponent } from './components/layout/multiple-destinations-dialog/multiple-destinations-dialog.component';
 import { FormSourceSelectionComponent } from './components/pages/send-skycoin/form-parts/form-source-selection/form-source-selection.component';
 import { FormDestinationComponent } from './components/pages/send-skycoin/form-parts/form-destination/form-destination.component';
+import { CopyRawTxComponent } from './components/pages/send-skycoin/offline-dialogs/implementations/copy-raw-tx.component';
+import { SignRawTxComponent } from './components/pages/send-skycoin/offline-dialogs/implementations/sign-raw-tx.component';
+import { BroadcastRawTxComponent } from './components/pages/send-skycoin/offline-dialogs/implementations/broadcast-raw-tx.component';
 
 
 const ROUTES = [
@@ -254,6 +257,9 @@ const ROUTES = [
     MultipleDestinationsDialogComponent,
     FormSourceSelectionComponent,
     FormDestinationComponent,
+    CopyRawTxComponent,
+    SignRawTxComponent,
+    BroadcastRawTxComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -287,6 +293,9 @@ const ROUTES = [
     ChangeNoteComponent,
     SeedWordDialogComponent,
     MultipleDestinationsDialogComponent,
+    CopyRawTxComponent,
+    SignRawTxComponent,
+    BroadcastRawTxComponent,
   ],
   imports: [
     BrowserModule,

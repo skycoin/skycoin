@@ -1,0 +1,43 @@
+<app-modal class="modal" [headline]="title | translate" [dialog]="dialogRef" [disableDismiss]="working">
+  <app-loading-content
+    [isLoading]="currentState === states.Loading"
+    [noDataText]="'offline-transactions.error-loading'"
+    *ngIf="currentState === states.Loading || currentState === states.ErrorLoading"
+  ></app-loading-content>
+
+  <ng-container *ngIf="currentState === states.ShowingForm">
+    <div *ngIf="text" class="-body">
+      {{ text | translate }}
+    </div>
+    <div [formGroup]="form" class="form-container">
+      <div *ngIf="dropdownElements" class="form-field">
+        <label *ngIf="dropdownLabel" for="dropdown">{{ dropdownLabel | translate }}</label>
+        <div class="-select">
+          <select formControlName="dropdown" id="dropdown" [attr.disabled]="working ? 'true' : null" [ngClass]="{'element-disabled' : working}">
+            <option *ngIf="defaultDropdownText" disabled hidden [ngValue]="''">{{ defaultDropdownText | translate }}</option>
+            <ng-container *ngIf="dropdownElements">
+              <ng-container *ngFor="let element of dropdownElements">
+                <option [ngValue]="element.value">
+                  {{ element.name }}
+                </option>
+              </ng-container>
+            </ng-container>
+          </select>
+        </div>
+      </div>
+      <div class="form-field">
+        <label *ngIf="inputLabel" for="input">{{ inputLabel | translate }}</label>
+        <textarea *ngIf="!!contents" [readonly]="true" rows="5">{{ contents }}</textarea>
+        <textarea *ngIf="!contents" formControlName="input" id="input" [readonly]="working" [ngClass]="{'element-disabled' : working}" rows="5"></textarea>
+      </div>
+    </div>
+    <div class="-buttons">
+      <app-button #cancelButton (action)="cancelPressed()" [disabled]="working">
+        {{ cancelButtonText | translate }}
+      </app-button>
+      <app-button #okButton (action)="okPressed()" class="primary" [disabled]="(validateForm && !form.valid) || working">
+        {{ okButtonText | translate }}
+      </app-button>
+    </div>
+  </ng-container>
+</app-modal>

@@ -372,11 +372,11 @@ export class WalletService {
       addresses = null;
     }
 
-    if (wallet.isHardware && !changeAddress) {
+    if (wallet && wallet.isHardware && !changeAddress) {
       changeAddress = wallet.addresses[0].address;
     }
 
-    const useV2Endpoint = !!wallet.isHardware;
+    const useV2Endpoint = !wallet || !!wallet.isHardware;
 
     const params = {
       hours_selection: hoursSelection,
@@ -402,7 +402,7 @@ export class WalletService {
     ).pipe(map(transaction => {
       const data = useV2Endpoint ? transaction.data : transaction;
 
-      if (wallet.isHardware) {
+      if (wallet && wallet.isHardware) {
         if (data.transaction.inputs.length > 8) {
           throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs-outputs'));
         }
@@ -419,7 +419,7 @@ export class WalletService {
       };
     }));
 
-    if (wallet.isHardware && !unsigned) {
+    if (wallet && wallet.isHardware && !unsigned) {
       let unsignedTx: PreviewTransaction;
 
       response = response.pipe(mergeMap(transaction => {
@@ -439,7 +439,8 @@ export class WalletService {
   signTransaction(
     wallet: Wallet,
     password: string|null,
-    transaction: PreviewTransaction): Observable<PreviewTransaction> {
+    transaction: PreviewTransaction,
+    rawTransactionString = ''): Observable<PreviewTransaction> {
 
     if (!wallet.isHardware) {
       return this.apiService.post(
@@ -447,7 +448,7 @@ export class WalletService {
         {
           wallet_id: wallet ? wallet.filename : null,
           password: password,
-          encoded_transaction: transaction.encoded,
+          encoded_transaction: rawTransactionString ? rawTransactionString : transaction.encoded,
         },
         {
           json: true,
@@ -462,6 +463,9 @@ export class WalletService {
       }));
 
     } else {
+      if (rawTransactionString) {
+        throw new Error('Raw transactions not allowed.');
+      }
 
       const txOutputs = [];
       const txInputs = [];
@@ -821,7 +825,7 @@ export class WalletService {
       .subscribe(transactions => this.pendingTxs.next(transactions));
   }
 
-  private getOutputs(addresses): Observable<Output[]> {
+  getOutputs(addresses): Observable<Output[]> {
     if (!addresses) {
       return of([]);
     } else {

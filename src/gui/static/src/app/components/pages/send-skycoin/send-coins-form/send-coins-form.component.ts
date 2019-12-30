@@ -18,8 +18,10 @@ import { TranslateService } from '@ngx-translate/core';
 import { ChangeNoteComponent } from '../send-preview/transaction-info/change-note/change-note.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { MultipleDestinationsDialogComponent } from '../../../layout/multiple-destinations-dialog/multiple-destinations-dialog.component';
-import { FormSourceSelectionComponent, AvailableBalanceData } from '../form-parts/form-source-selection/form-source-selection.component';
+import { FormSourceSelectionComponent, AvailableBalanceData, SelectedSources, SourceSelectionModes } from '../form-parts/form-source-selection/form-source-selection.component';
 import { FormDestinationComponent, Destination } from '../form-parts/form-destination/form-destination.component';
+import { CopyRawTxComponent, CopyRawTxData } from '../offline-dialogs/implementations/copy-raw-tx.component';
+import { DoubleButtonActive } from '../../../../components/layout/double-button/double-button.component';
 
 @Component({
   selector: 'app-send-coins-form',
@@ -27,6 +29,8 @@ import { FormDestinationComponent, Destination } from '../form-parts/form-destin
   styleUrls: ['./send-coins-form.component.scss'],
 })
 export class SendCoinsFormComponent implements OnInit, OnDestroy {
+  public static lastShowForManualUnsignedValue = false;
+
   @ViewChild('formSourceSelection', { static: false }) formSourceSelection: FormSourceSelectionComponent;
   @ViewChild('formMultipleDestinations', { static: false }) formMultipleDestinations: FormDestinationComponent;
   @ViewChild('previewButton', { static: false }) previewButton: ButtonComponent;
@@ -35,14 +39,18 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   @Input() showSimpleForm: boolean;
   @Output() onFormSubmitted = new EventEmitter<any>();
 
+  sourceSelectionModes = SourceSelectionModes;
   maxNoteChars = ChangeNoteComponent.MAX_NOTE_CHARS;
   form: FormGroup;
   availableBalance = new AvailableBalanceData();
+  selectedSources: SelectedSources;
   autoHours = true;
   autoOptions = false;
   autoShareValue = '0.5';
   previewTx: boolean;
   busy = false;
+  showForManualUnsigned = SendCoinsFormComponent.lastShowForManualUnsignedValue;
+  doubleButtonActive = DoubleButtonActive;
 
   private syncCheckSubscription: SubscriptionLike;
   private processingSubscription: SubscriptionLike;
@@ -74,9 +82,12 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     }
     this.closeSyncCheckSubscription();
     this.msgBarService.hide();
+
+    SendCoinsFormComponent.lastShowForManualUnsignedValue = this.showForManualUnsigned;
   }
 
   sourceSelectionChanged() {
+    this.selectedSources = this.formSourceSelection.selectedSources;
     this.availableBalance = this.formSourceSelection.availableBalance;
     if (this.formMultipleDestinations) {
       this.formMultipleDestinations.updateValuesAndValidity();
@@ -99,6 +110,29 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   send() {
     this.previewTx = false;
     this.checkBeforeSending();
+  }
+
+  changeFormType(value: DoubleButtonActive) {
+    if ((value === DoubleButtonActive.LeftButton && !this.showForManualUnsigned) || (value === DoubleButtonActive.RightButton && this.showForManualUnsigned)) {
+      return;
+    }
+
+    if (value === DoubleButtonActive.RightButton) {
+      const confirmationData: ConfirmationData = {
+        text: 'send.unsigned-confirmation',
+        headerText: 'confirmation.header-text',
+        confirmButtonText: 'confirmation.confirm-button',
+        cancelButtonText: 'confirmation.cancel-button',
+      };
+
+      showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+        if (confirmationResult) {
+          this.showForManualUnsigned = true;
+        }
+      });
+    } else {
+      this.showForManualUnsigned = false;
+    }
   }
 
   private checkBeforeSending() {
@@ -136,12 +170,10 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     this.previewButton.resetState();
     this.sendButton.resetState();
 
-    const selectedSources = this.formSourceSelection.selectedSources;
-
-    if (selectedSources.wallet.encrypted && !selectedSources.wallet.isHardware && !this.previewTx) {
+    if (!this.showForManualUnsigned && this.selectedSources.wallet.encrypted && !this.selectedSources.wallet.isHardware && !this.previewTx) {
       const config = new MatDialogConfig();
       config.data = {
-        wallet: selectedSources.wallet,
+        wallet: this.selectedSources.wallet,
       };
 
       this.dialog.open(PasswordDialogComponent, config).componentInstance.passwordSubmit
@@ -149,11 +181,11 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
           this.createTransaction(passwordDialog);
         });
     } else {
-      if (!selectedSources.wallet.isHardware || this.previewTx) {
+      if (this.previewTx || this.showForManualUnsigned || !this.selectedSources.wallet.isHardware) {
         this.createTransaction();
       } else {
         this.showBusy();
-        this.processingSubscription = this.hwWalletService.checkIfCorrectHwConnected(selectedSources.wallet.addresses[0].address).subscribe(
+        this.processingSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.selectedSources.wallet.addresses[0].address).subscribe(
           () => this.createTransaction(),
           err => this.showError(getHardwareWalletErrorMsg(this.translate, err)),
         );
@@ -289,25 +321,29 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   private createTransaction(passwordDialog?: any) {
     this.showBusy();
 
-    const selectedSources = this.formSourceSelection.selectedSources;
+    let selectedAddresses: string[];
 
-    const selectedAddresses = selectedSources.addresses && selectedSources.addresses.length > 0 ?
-      selectedSources.addresses.map(addr => addr.address) : null;
+    if (!this.showForManualUnsigned) {
+      selectedAddresses = this.selectedSources.addresses && this.selectedSources.addresses.length > 0 ?
+        this.selectedSources.addresses.map(addr => addr.address) : null;
+    } else {
+      selectedAddresses = this.selectedSources.manualAddresses;
+    }
 
-    const selectedOutputs = selectedSources.unspentOutputs && selectedSources.unspentOutputs.length > 0 ?
-      selectedSources.unspentOutputs.map(addr => addr.hash) : null;
+    const selectedOutputs = this.selectedSources.unspentOutputs && this.selectedSources.unspentOutputs.length > 0 ?
+      this.selectedSources.unspentOutputs.map(addr => addr.hash) : null;
 
     const destinations = this.formMultipleDestinations.getDestinations(!this.autoHours);
 
     this.processingSubscription = this.walletService.createTransaction(
-      selectedSources.wallet,
-      selectedAddresses ? selectedAddresses : selectedSources.wallet.addresses.map(address => address.address),
+      this.selectedSources.wallet,
+      selectedAddresses ? selectedAddresses : this.selectedSources.wallet.addresses.map(address => address.address),
       selectedOutputs,
       destinations,
       this.hoursSelection,
       this.form.get('changeAddress').value ? this.form.get('changeAddress').value : null,
       passwordDialog ? passwordDialog.password : null,
-      this.previewTx,
+      this.previewTx || !this.selectedSources.wallet,
     ).subscribe(transaction => {
       if (passwordDialog) {
         passwordDialog.close();
@@ -315,29 +351,59 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
 
       const note = this.form.value.note.trim();
       if (!this.previewTx) {
-        this.processingSubscription = this.walletService.injectTransaction(transaction.encoded, note)
-          .subscribe(noteSaved => {
-            let showDone = true;
-            if (note && !noteSaved) {
-              this.msgBarService.showWarning(this.translate.instant('send.error-saving-note'));
-              showDone = false;
-            }
+        if (!this.showForManualUnsigned) {
+          this.processingSubscription = this.walletService.injectTransaction(transaction.encoded, note)
+            .subscribe(noteSaved => {
+              let showDone = true;
+              if (note && !noteSaved) {
+                this.msgBarService.showWarning(this.translate.instant('send.error-saving-note'));
+                showDone = false;
+              }
 
-            this.showSuccess(showDone);
-          }, error => this.showError(error));
+              this.showSuccess(showDone);
+            }, error => this.showError(error));
+        } else {
+          const data: CopyRawTxData = {
+            rawTx: transaction.encoded,
+            isUnsigned: true,
+          };
+
+          const config = new MatDialogConfig();
+          config.width = '566px';
+          config.data = data;
+
+          this.dialog.open(CopyRawTxComponent, config).afterClosed().subscribe(() => {
+            this.resetState();
+
+            const confirmationData: ConfirmationData = {
+              text: 'offline-transactions.copy-tx.reset-confirmation',
+              headerText: 'confirmation.header-text',
+              confirmButtonText: 'confirmation.confirm-button',
+              cancelButtonText: 'confirmation.cancel-button',
+            };
+
+            showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+              if (confirmationResult) {
+                this.resetForm();
+                this.msgBarService.showDone('offline-transactions.copy-tx.reset-done', 4000);
+              }
+            });
+          });
+        }
       } else {
         let amount = new BigNumber('0');
         destinations.map(destination => amount = amount.plus(destination.coins));
         this.onFormSubmitted.emit({
           form: {
-            wallet: selectedSources.wallet,
-            addresses: selectedSources.addresses,
+            wallet: this.selectedSources.wallet,
+            addresses: this.selectedSources.addresses,
+            manualAddresses: this.selectedSources.manualAddresses,
             changeAddress: this.form.get('changeAddress').value,
             destinations: destinations,
             hoursSelection: this.hoursSelection,
             autoOptions: this.autoOptions,
             allUnspentOutputs: this.formSourceSelection.unspentOutputsList,
-            outputs: selectedSources.unspentOutputs,
+            outputs: this.selectedSources.unspentOutputs,
             currency: this.formMultipleDestinations.currentlySelectedCurrency,
             note: note,
           },
@@ -412,6 +478,13 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   private showError(error) {
     this.busy = false;
     this.msgBarService.showError(error);
+    this.navbarService.enableSwitch();
+    this.previewButton.resetState().setEnabled();
+    this.sendButton.resetState().setEnabled();
+  }
+
+  private resetState() {
+    this.busy = false;
     this.navbarService.enableSwitch();
     this.previewButton.resetState().setEnabled();
     this.sendButton.resetState().setEnabled();

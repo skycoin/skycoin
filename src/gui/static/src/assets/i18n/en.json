@@ -211,6 +211,9 @@
   },
 
   "send": {
+    "unsigned-button": "Unsigned",
+    "signed-button": "Signed",
+    "unsigned-confirmation": "The unsigned transactions form does not allow to send transactions normally, but simply creates the text of a transaction, which must be signed before it can be sent to the network. This is useful for creating transactions that will be signed on an always offline device, for security reasons. Are you sure you wish to continue?",
     "synchronizing-warning": "The wallet is still synchronizing the data, so the balance shown may be incorrect. Are you sure you want to continue?",
     "from-label": "Send from",
     "to-label": "Send to",
@@ -231,10 +234,16 @@
     "multiple-problems-warning": "Some values were not converted because they were invalid or could have been converted with precision errors. Please check the amount that will be sent.",
     "no-coins-left": "There are no coins left to send.",
     "addresses-help": "Limit the addresses from where the coins and hours could be sent",
+    "addresses-manual-help": "List of the addresses from which the coins will be sent, comma separated. All addresses must belong to the same wallet or you will not be able to sign the transaction with the desktop wallet",
     "all-addresses": "All the addresses of the selected wallet",
     "outputs-label": "Unspent outputs",
     "outputs-help": "Limit the unspent outputs from where the coins and hours could be sent. Only the outputs from the selected addresses are shown",
+    "outputs-error": "There was an error trying to get the outputs. Please make sure you have entered valid addresses",
     "all-outputs": "All the outputs of the selected addresses",
+    "enter-addresses-for-outputs": "Valid addresses must be entered first",
+    "enter-wallet-for-outputs-and-addresses": "A valid wallet must be selected first",
+    "invalid-addresses-for-outputs": "No outputs available",
+    "loading-available": "Loading...",
     "available-msg-part1": "With your current selection you can send up to",
     "available-msg-part2": "and",
     "available-msg-part3": "(at least",
@@ -251,6 +260,7 @@
     "value-help": "The higher the value, the more coin hours will be sent to the recipients and less will be retained",
     "preview-button": "Preview",
     "send-button": "Send",
+    "show-button": "Show",
     "back-button": "Back",
     "simple": "Simple",
     "advanced": "Advanced",
@@ -266,6 +276,41 @@
       "error-no-data": "There is no text to process.",
       "error-inconsistent-data": "If you set how many hours you want to send to a destinations, you must do so for all destinations.",
       "error-invalid-data": "The entered text has an invalid format."
+    }
+  },
+
+  "offline-transactions": {
+    "error-loading": "Error trying to get the necessary data",
+    "copy-tx": {
+      "signed-title": "Signed Transaction",
+      "unsigned-title": "Unsigned Transaction",
+      "text-unsigned": "This is the unsigned transaction that has been created with the data that you have entered. Please copy the text to be able to sign it with the \"Sign Transaction\" option.",
+      "text-signed": "This is the signed transaction. You can send it to the network using the \"Broadcast Transaction\" option.",
+      "close": "Close",
+      "copy": "Copy",
+      "copied": "The text has been copied to the clipboard.",
+      "reset-confirmation": "Do you want the the form to be cleaned, so you can create another transaction?",
+      "reset-done": "The form has been cleaned."
+    },
+    "sign-tx": {
+      "title": "Sign Transaction",
+      "text": "Use this form to sign a transaction. For the operation to work correctly, you must select the wallet which includes all the inputs/addresses used to send coins in the transaction.",
+      "wallet-label": "Wallet",
+      "select-wallet": "Select Wallet",
+      "input-label": "Transaction text",
+      "cancel": "Cancel",
+      "sign": "Sign",
+      "signed": "The transaction has been signed.",
+      "error": "Error signing the transaction."
+    },
+    "broadcast-tx": {
+      "title": "Broadcast Transaction",
+      "text": "Use this form to send a signed transaction to the network.",
+      "input-label": "Transaction text",
+      "cancel": "Cancel",
+      "send": "Send",
+      "sent": "The transaction has been sent.",
+      "error": "Error sending the transaction."
     }
   },
 

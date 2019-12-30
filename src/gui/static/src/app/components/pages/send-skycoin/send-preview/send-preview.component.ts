@@ -3,13 +3,15 @@ import { WalletService } from '../../../../services/wallet.service';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { MatDialogConfig, MatDialog } from '@angular/material/dialog';
 import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
-import { PreviewTransaction, Wallet } from '../../../../app.datatypes';
+import { PreviewTransaction, ConfirmationData } from '../../../../app.datatypes';
 import { SubscriptionLike } from 'rxjs';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { mergeMap } from 'rxjs/operators';
+import { CopyRawTxData, CopyRawTxComponent } from '../offline-dialogs/implementations/copy-raw-tx.component';
+import { showConfirmationModal } from '../../../../utils';
 
 @Component({
   selector: 'app-send-preview',
@@ -51,6 +53,34 @@ export class SendVerifyComponent implements OnDestroy {
 
     this.msgBarService.hide();
     this.sendButton.resetState();
+
+    if (!this.transaction.wallet) {
+      const data: CopyRawTxData = {
+        rawTx: this.transaction.encoded,
+        isUnsigned: true,
+      };
+
+      const config = new MatDialogConfig();
+      config.width = '566px';
+      config.data = data;
+
+      this.dialog.open(CopyRawTxComponent, config).afterClosed().subscribe(() => {
+        const confirmationData: ConfirmationData = {
+          text: 'offline-transactions.copy-tx.reset-confirmation',
+          headerText: 'confirmation.header-text',
+          confirmButtonText: 'confirmation.confirm-button',
+          cancelButtonText: 'confirmation.cancel-button',
+        };
+
+        showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+          if (confirmationResult) {
+            this.onBack.emit(true);
+          }
+        });
+      });
+
+      return;
+    }
 
     if (this.transaction.wallet.encrypted && !this.transaction.wallet.isHardware) {
       const config = new MatDialogConfig();

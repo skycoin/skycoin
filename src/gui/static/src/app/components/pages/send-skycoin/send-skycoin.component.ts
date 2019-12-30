@@ -2,6 +2,11 @@ import { Component, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { NavBarService } from '../../../services/nav-bar.service';
 import { SubscriptionLike } from 'rxjs';
 import { DoubleButtonActive } from '../../layout/double-button/double-button.component';
+import { Address } from '../../../app.datatypes';
+import { MatDialogConfig, MatDialog } from '@angular/material/dialog';
+import { SignRawTxComponent } from './offline-dialogs/implementations/sign-raw-tx.component';
+import { BroadcastRawTxComponent } from './offline-dialogs/implementations/broadcast-raw-tx.component';
+import { SendCoinsFormComponent } from './send-coins-form/send-coins-form.component';
 
 @Component({
   selector: 'app-send-skycoin',
@@ -19,10 +24,12 @@ export class SendSkycoinComponent implements OnDestroy {
   constructor(
     private navbarService: NavBarService,
     private changeDetector: ChangeDetectorRef,
+    private dialog: MatDialog,
   ) {
     this.navbarService.showSwitch('send.simple', 'send.advanced', DoubleButtonActive.LeftButton);
     this.subscription = navbarService.activeComponent.subscribe(value => {
       if (this.activeForm !== value) {
+        SendCoinsFormComponent.lastShowForManualUnsignedValue = false;
         this.activeForm = value;
         this.formData = null;
       }
@@ -48,11 +55,38 @@ export class SendSkycoinComponent implements OnDestroy {
     this.changeDetector.detectChanges();
   }
 
+  signTransaction() {
+    const config = new MatDialogConfig();
+    config.width = '566px';
+
+    this.dialog.open(SignRawTxComponent, config);
+  }
+
+  broadcastTransaction() {
+    const config = new MatDialogConfig();
+    config.width = '566px';
+
+    this.dialog.open(BroadcastRawTxComponent, config);
+  }
+
   get transaction() {
     const transaction = this.formData.transaction;
 
+    let fromString = '';
+    if (this.formData.form.wallet) {
+      fromString = this.formData.form.wallet.label;
+    } else {
+      const addresses = (this.formData.form.manualAddresses as Address[]);
+      addresses.forEach((address, i) => {
+        fromString += address;
+        if (i < addresses.length - 1) {
+          fromString += ', ';
+        }
+      });
+    }
+
     transaction.wallet = this.formData.form.wallet;
-    transaction.from = this.formData.form.wallet.label;
+    transaction.from = fromString;
     transaction.to = this.formData.to;
     transaction.balance = this.formData.amount;
     transaction.note = this.formData.form.note;

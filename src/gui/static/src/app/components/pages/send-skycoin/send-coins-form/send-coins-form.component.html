@@ -1,26 +1,43 @@
+<div *ngIf="!showSimpleForm" class="mode-selector">
+  <app-double-button
+    [changeActiveButtonManually]="true"
+    [leftButtonText]="'send.signed-button' | translate"
+    [rightButtonText]="'send.unsigned-button' | translate"
+    className="light small"
+    [activeButton]="!showForManualUnsigned ? doubleButtonActive.LeftButton : doubleButtonActive.RightButton"
+    (onStateChange)="changeFormType($event)"
+    [ngClass]="{ 'element-disabled': busy }"
+  ></app-double-button>
+</div>
+
 <div [formGroup]="form">
   <app-form-source-selection
     #formSourceSelection
     (onSelectionChanged)="sourceSelectionChanged()"
     [busy]="busy"
-    [walletOnly]="showSimpleForm"
+    [selectionMode]="showSimpleForm ? sourceSelectionModes.Wallet : (showForManualUnsigned ? sourceSelectionModes.Manual : sourceSelectionModes.All)"
     >
   </app-form-source-selection>
 
   <div *ngIf="!showSimpleForm" class="form-field -available-msg">
-    <span>{{ 'send.available-msg-part1' | translate }}</span>
-    <span class="value">
-      {{ availableBalance.availableCoins.toString() | amount }}
-    </span>
-    <span>{{ 'send.available-msg-part2' | translate }}</span>
-    <span class="value">
-      {{ availableBalance.availableHours.toString() | amount:false }}
-    </span>
-    <span>{{ 'send.available-msg-part3' | translate }}</span>
-    <span class="value">
-      {{ availableBalance.minimumFee.toString() | amount:false }}
-    </span>
-    <span>{{ 'send.available-msg-part4' | translate }}</span>
+    <ng-container *ngIf="!availableBalance.loading">
+      <span>{{ 'send.available-msg-part1' | translate }}</span>
+      <span class="value">
+        {{ availableBalance.availableCoins.toString() | amount }}
+      </span>
+      <span>{{ 'send.available-msg-part2' | translate }}</span>
+      <span class="value">
+        {{ availableBalance.availableHours.toString() | amount:false }}
+      </span>
+      <span>{{ 'send.available-msg-part3' | translate }}</span>
+      <span class="value">
+        {{ availableBalance.minimumFee.toString() | amount:false }}
+      </span>
+      <span>{{ 'send.available-msg-part4' | translate }}</span>
+    </ng-container>
+    <ng-container *ngIf="availableBalance.loading">
+      <span>{{ 'send.loading-available' | translate }}</span>
+    </ng-container>
   </div>
 
   <app-form-destination
@@ -45,7 +62,7 @@
     <input formControlName="changeAddress" id="change-address" [attr.disabled]="busy ? 'true' : null">
   </div>
 
-  <div class="form-field">
+  <div *ngIf="!showForManualUnsigned" class="form-field">
     <label for="note">
       {{ 'send.personal-note-label' | translate }}
       <mat-icon [matTooltip]="'send.personal-note-help' | translate">help</mat-icon>
@@ -92,6 +109,6 @@
     {{ 'send.preview-button' | translate }}
   </app-button>
   <app-button #sendButton (action)="send()" class="primary" [disabled]="!form.valid">
-    {{ 'send.send-button' | translate }}
+    {{ ('send.' + (showForManualUnsigned ? 'show' : 'send') + '-button') | translate }}
   </app-button>
 </div>

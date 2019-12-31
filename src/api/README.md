@@ -32,6 +32,7 @@ The API has two versions, `/api/v1` and `/api/v2`.
 	- [Verify wallet Seed](#verify-wallet-seed)
 	- [Create wallet](#create-wallet)
 	- [Generate new address in wallet](#generate-new-address-in-wallet)
+    - [Scan addresses in wallet](#scan-addresses-in-wallet)
 	- [Change wallet label](#change-wallet-label)
 	- [Get wallet balance](#get-wallet-balance)
 	- [Create transaction](#create-transaction)
@@ -1107,6 +1108,42 @@ curl -X POST http://127.0.0.1:6420/api/v1/wallet/newAddress \
  -d 'id=2017_05_09_d554.wlt' \
  -d 'num=2' \
  -d 'password=$password'
+```
+
+Result:
+
+```json
+{
+    "addresses": [
+        "TDdQmMgbEVTwLe8EAiH2AoRc4SjoEFKrHB"
+    ]
+}
+```
+
+### Scan addresses in wallet
+
+API sets: `WALLET`
+
+This API would scan wallet addresses ahead to search for addresses that currently have unspent outputs (coins) associated with them.
+
+```
+URI: /api/v1/wallet/scan
+Method: POST
+Args:
+    id: wallet file name
+    num: the number you want to scan ahaed [optional(default to 20), must be > 0 if provided]
+    password: wallet password
+```
+
+The return value is a list of `new` generated addresses after scanning.
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v1/wallet/scan \
+-F id=test.wlt \
+-F num=10 \
+-F password="${password}"
 ```
 
 Result:

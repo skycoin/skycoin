@@ -3,7 +3,9 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 
+	"github.com/SkycoinProject/skycoin/src/util/file"
 	"github.com/spf13/cobra"
 )
 
@@ -51,7 +53,19 @@ func runScanAddresses(c *cobra.Command, args []string) error {
 		return err
 	}
 
-	id := args[0]
+	wltFile := args[0]
+	dir, id := filepath.Split(wltFile)
+	if dir != "" {
+		// check the exsiting of the wallet file if the wallet file is specified with filepath
+		exist, err := file.Exists(wltFile)
+		if err != nil {
+			return err
+		}
+
+		if !exist {
+			return fmt.Errorf("wallet file %s does not exist", wltFile)
+		}
+	}
 
 	rsp, err := apiClient.Wallet(id)
 	if err != nil {

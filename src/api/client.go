@@ -692,6 +692,25 @@ func (c *Client) NewWalletAddress(id string, n int, password string) ([]string, 
 	return obj.Addresses, nil
 }
 
+// ScanWalletAddresses makes a request to POST /api/v1/wallet/scan
+// if n is <= 0, defaults to 20
+func (c *Client) ScanWalletAddresses(id string, n int, password string) ([]string, error) {
+	v := url.Values{}
+	v.Add("id", id)
+	v.Add("password", password)
+	if n > 0 {
+		v.Add("num", fmt.Sprint(n))
+	}
+
+	var obj struct {
+		Addresses []string `json:"addresses"`
+	}
+	if err := c.PostForm("/api/v1/wallet/scan", strings.NewReader(v.Encode()), &obj); err != nil {
+		return nil, err
+	}
+	return obj.Addresses, nil
+}
+
 // WalletBalance makes a request to GET /api/v1/wallet/balance
 func (c *Client) WalletBalance(id string) (*BalanceResponse, error) {
 	v := url.Values{}

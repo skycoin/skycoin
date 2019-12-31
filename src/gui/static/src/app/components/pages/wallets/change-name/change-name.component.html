@@ -6,7 +6,13 @@
     <div [formGroup]="form">
       <div class="form-field">
         <label for="label">{{ 'wallet.rename.name-label' | translate }}</label>
-        <input formControlName="label" id="label" (keydown.enter)="rename()" [maxlength]="data.wallet.isHardware ? maxHwWalletLabelLength : null">
+        <input
+          formControlName="label"
+          id="label"
+          (keydown.enter)="rename()"
+          [maxlength]="data.wallet.isHardware ? maxHwWalletLabelLength : null"
+          [attr.disabled]="working ? 'true' : null"
+        >
       </div>
     </div>
     <div class="-buttons">

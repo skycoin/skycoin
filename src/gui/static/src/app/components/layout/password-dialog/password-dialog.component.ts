@@ -1,10 +1,10 @@
-import { Component, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatDialogRef } from '@angular/material/dialog';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ButtonComponent } from '../button/button.component';
 import { parseResponseMessage } from '../../../utils/errors';
-import { Subject, SubscriptionLike } from 'rxjs';
+import { Subject } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { MsgBarService } from '../../../services/msg-bar.service';
 
@@ -19,7 +19,6 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
   passwordSubmit = new Subject<any>();
   working = false;
 
-  private subscriptions: SubscriptionLike[] = [];
   private errors: any;
 
   constructor(
@@ -27,6 +26,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
     public dialogRef: MatDialogRef<PasswordDialogComponent>,
     private msgBarService: MsgBarService,
     private translateService: TranslateService,
+    private changeDetector: ChangeDetectorRef,
   ) {
     this.data = Object.assign({
       confirm: false,
@@ -36,7 +36,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
       wallet: null,
     }, data || {});
 
-    this.translateService.get(['errors.incorrect-password', 'errors.api-disabled', 'errors.no-wallet']).subscribe(res => {
+    this.translateService.get(['errors.incorrect-password', 'errors.api-disabled', 'errors.no-wallet', 'errors.error-decrypting']).subscribe(res => {
       this.errors = res;
     });
   }
@@ -45,14 +45,6 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
     this.form = new FormGroup({}, this.validateForm.bind(this));
     this.form.addControl('password', new FormControl(''));
     this.form.addControl('confirm_password', new FormControl(''));
-
-    ['password', 'confirm_password'].forEach(control => {
-      this.subscriptions.push(this.form.get(control).valueChanges.subscribe(() => {
-        if (this.button.state === 2) {
-          this.button.resetState();
-        }
-      }));
-    });
 
     if (this.data.confirm) {
       this.form.get('confirm_password').enable();
@@ -72,8 +64,6 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
     this.form.get('confirm_password').setValue('');
 
     this.passwordSubmit.complete();
-
-    this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
   proceed() {
@@ -91,6 +81,8 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
       close: this.close.bind(this),
       error: this.error.bind(this),
     });
+
+    this.changeDetector.detectChanges();
   }
 
   private validateForm() {
@@ -128,7 +120,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
           error = this.errors['errors.no-wallet'];
           break;
         default:
-            error = this.errors['errors.error-decrypting'];
+          error = this.errors['errors.error-decrypting'];
         }
       } else {
         error = this.errors['errors.error-decrypting'];

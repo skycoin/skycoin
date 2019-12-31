@@ -29,10 +29,24 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   private static readonly MaxUsdDecimals = 6;
 
   @Input() availableBalance: AvailableBalanceData;
-  @Input() showHourFields: boolean;
   @Input() busy: boolean;
   @Output() onChanges = new EventEmitter<void>();
   @Output() onBulkRequested = new EventEmitter<void>();
+
+  private showHourFieldsInternal: boolean;
+  @Input() set showHourFields(val: boolean) {
+    if (val !== this.showHourFieldsInternal) {
+      this.showHourFieldsInternal = val;
+      if (this.form) {
+        this.destControls.forEach(dest => {
+          dest.get('hours').setValue('');
+        });
+      }
+    }
+  }
+  get showHourFields(): boolean {
+    return this.showHourFieldsInternal;
+  }
 
   private showSimpleFormInternal: boolean;
   @Input() set showSimpleForm(val: boolean) {
@@ -65,7 +79,6 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   private priceSubscription: SubscriptionLike;
   private addressSubscription: SubscriptionLike;
   private destinationSubscriptions: SubscriptionLike[] = [];
-  private destinationHoursSubscriptions: SubscriptionLike[] = [];
 
   get destControls() {
     return (this.form.get('destinations') as FormArray).controls;
@@ -104,7 +117,6 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     this.addressSubscription.unsubscribe();
     this.priceSubscription.unsubscribe();
     this.destinationSubscriptions.forEach(s => s.unsubscribe());
-    this.destinationHoursSubscriptions.forEach(s => s.unsubscribe());
   }
 
   changeActiveCurrency(value) {
@@ -307,8 +319,6 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
     this.destinationSubscriptions[index].unsubscribe();
     this.destinationSubscriptions.splice(index, 1);
-    this.destinationHoursSubscriptions[index].unsubscribe();
-    this.destinationHoursSubscriptions.splice(index, 1);
     this.updateValuesAndValidity();
   }
 
@@ -362,7 +372,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     return this.selectedCurrency;
   }
 
-  getDestinations(includeHours: boolean): Destination[] {
+  getDestinations(includeHours: boolean, cleanNumbers: boolean): Destination[] {
     return this.destControls.map((destControl, i) => {
       const destination = {
         address: this.showSimpleForm ? ((this.form.get('address').value) as string).trim() : ((destControl.get('address').value) as string).trim(),
@@ -370,8 +380,16 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
         originalAmount: destControl.get('coins').value,
       };
 
+      if (cleanNumbers) {
+        destination.coins = new BigNumber(destination.coins).toString();
+        destination.originalAmount = new BigNumber(destination.originalAmount).toString();
+      }
+
       if (includeHours) {
         destination['hours'] = destControl.get('hours').value;
+        if (cleanNumbers) {
+          destination['hours'] = new BigNumber(destination['hours']).toString();
+        }
       }
 
       return destination;
@@ -444,7 +462,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
           return null;
         }
       }
-    } else if (name === 'hours') {
+    } else {
       if (!value.isEqualTo(value.decimalPlaces(0))) {
         return null;
       }
@@ -460,11 +478,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       hours: '',
     });
 
-    this.destinationSubscriptions.push(group.get('coins').valueChanges.subscribe(value => {
-      this.updateValuesAndValidity();
-    }));
-
-    this.destinationHoursSubscriptions.push(group.get('hours').valueChanges.subscribe(value => {
+    this.destinationSubscriptions.push(group.valueChanges.subscribe(value => {
       this.updateValuesAndValidity();
     }));
 

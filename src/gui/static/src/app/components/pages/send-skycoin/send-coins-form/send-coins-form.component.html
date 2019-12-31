@@ -59,7 +59,7 @@
         {{ 'send.change-address-select' | translate }} <mat-icon>keyboard_arrow_down</mat-icon>
       </span>
     </label>
-    <input formControlName="changeAddress" id="change-address" [attr.disabled]="busy ? 'true' : null">
+    <input formControlName="changeAddress" id="change-address" (keydown.enter)="showForManualUnsigned ? preview() : null" [attr.disabled]="busy ? 'true' : null">
   </div>
 
   <div *ngIf="!showForManualUnsigned" class="form-field">

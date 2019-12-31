@@ -39,6 +39,7 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
   msgIcons = MessageIcons;
   maxHwWalletLabelLength = HwWalletService.maxLabelLength;
   showCharactersWarning = false;
+  working = false;
 
   private newLabel: string;
   private hwConnectionSubscription: SubscriptionLike;
@@ -100,14 +101,17 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
   }
 
   private finishRenaming(newLabel) {
+    this.working = true;
     this.newLabel = newLabel;
 
     if (!this.data.wallet.isHardware) {
       this.operationSubscription = this.walletService.renameWallet(this.data.wallet, this.newLabel)
         .subscribe(() => {
+          this.working = false;
           this.dialogRef.close(this.newLabel);
           setTimeout(() => this.msgBarService.showDone('common.changes-made'));
         }, e => {
+          this.working = false;
           this.msgBarService.showError(e);
           if (this.button) {
             this.button.resetState();
@@ -126,6 +130,7 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
         }))
         .subscribe(
           () => {
+            this.working = false;
             this.data.wallet.label = this.newLabel;
             this.walletService.saveHardwareWallets();
             this.dialogRef.close(this.newLabel);
@@ -135,6 +140,7 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
             }
           },
           err => {
+            this.working = false;
             if (this.data.newName) {
               const response = new ChangeNameErrorResponse();
               response.errorMsg = getHardwareWalletErrorMsg(this.translateService, err);

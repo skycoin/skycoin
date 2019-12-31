@@ -31,6 +31,8 @@ import { DoubleButtonActive } from '../../../../components/layout/double-button/
 export class SendCoinsFormComponent implements OnInit, OnDestroy {
   public static lastShowForManualUnsignedValue = false;
 
+  private readonly defaultAutoShareValue = '0.5';
+
   @ViewChild('formSourceSelection', { static: false }) formSourceSelection: FormSourceSelectionComponent;
   @ViewChild('formMultipleDestinations', { static: false }) formMultipleDestinations: FormDestinationComponent;
   @ViewChild('previewButton', { static: false }) previewButton: ButtonComponent;
@@ -46,7 +48,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   selectedSources: SelectedSources;
   autoHours = true;
   autoOptions = false;
-  autoShareValue = '0.5';
+  autoShareValue = this.defaultAutoShareValue;
   previewTx: boolean;
   busy = false;
   showForManualUnsigned = SendCoinsFormComponent.lastShowForManualUnsignedValue;
@@ -211,7 +213,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   openMultipleDestinationsPopup() {
     let currentString = '';
 
-    const currentDestinations = this.formMultipleDestinations.getDestinations(!this.autoHours);
+    const currentDestinations = this.formMultipleDestinations.getDestinations(!this.autoHours, false);
     currentDestinations.map(destControl => {
       if (destControl.address.trim().length > 0 ||
         destControl.coins.trim().length > 0 ||
@@ -263,6 +265,8 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   toggleOptions(event) {
     event.stopPropagation();
     event.preventDefault();
+
+    this.autoShareValue = this.defaultAutoShareValue;
 
     this.autoOptions = !this.autoOptions;
   }
@@ -333,7 +337,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     const selectedOutputs = this.selectedSources.unspentOutputs && this.selectedSources.unspentOutputs.length > 0 ?
       this.selectedSources.unspentOutputs.map(addr => addr.hash) : null;
 
-    const destinations = this.formMultipleDestinations.getDestinations(!this.autoHours);
+    const destinations = this.formMultipleDestinations.getDestinations(!this.autoHours, true);
 
     this.processingSubscription = this.walletService.createTransaction(
       this.selectedSources.wallet,
@@ -434,7 +438,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     this.form.get('note').setValue('');
     this.autoHours = true;
     this.autoOptions = false;
-    this.autoShareValue = '0.5';
+    this.autoShareValue = this.defaultAutoShareValue;
   }
 
   private get hoursSelection() {

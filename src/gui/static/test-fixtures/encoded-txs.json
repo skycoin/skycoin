@@ -3,510 +3,510 @@
         {
             "inputs": [
                 {
-                    "hashIn": "043836eb6f29aaeb8b9bfce847e07c159c72b25ae17d291f32125e7f1912e2a0",
+                    "hash": "043836eb6f29aaeb8b9bfce847e07c159c72b25ae17d291f32125e7f1912e2a0",
                     "index": 0
                 }
             ],
             "outputs": [
                 {
                     "address": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2EYM4WFHe4Dgz6kjAdUkM6Etep7ruz2ia6h",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "25aGyzypSA3T9K6rgPUv1ouR13efNPtWP5m",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "ix44h3cojvN6nqGcdpy62X7Rw6Ahnr3Thk",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "AYV8KEBEAPCg8a59cHgqHMqYHP9nVgQDyW",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2Nu5Jv5Wp3RYGJU1EkjWFFHnebxMx1GjfkF",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2THDupTBEo7UqB6dsVizkYUvkKq82Qn4gjf",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "tWZ11Nvor9parjg4FkwxNVcby59WVTw2iL",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "m2joQiJRZnj3jN6NsoKNxaxzUTijkdRoSR",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "8yf8PAQqU2cDj8Yzgz3LgBEyDqjvCh2xR7",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "sgB3n11ZPUYHToju6TWMpUZTUcKvQnoFMJ",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2UYPbDBnHUEc67e7qD4eXtQQ6zfU2cyvAvk",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "wybwGC9rhm8ZssBuzpy5goXrAdE31MPdsj",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "JbM25o7kY7hqJZt3WGYu9pHZFCpA9TCR6t",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2efrft5Lnwjtk7F1p9d7BnPd72zko2hQWNi",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "Syzmb3MiMoiNVpqFdQ38hWgffHg86D2J4e",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2g3GUmTQooLrNHaRDhKtLU8rWLz36Beow7F",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "D3phtGr9iv6238b3zYXq6VgwrzwvfRzWZQ",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "gpqsFSuMCZmsjPc6Rtgy1FmLx424tH86My",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2EUF3GPEUmfocnUc1w6YPtqXVCy3UZA4rAq",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "TtAaxB3qGz5zEAhhiGkBY9VPV7cekhvRYS",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2fM5gVpi7XaiMPm4i29zddTNkmrKe6TzhVZ",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "ix3NDKgxfYYANKAb5kbmwBYXPrkAsha7uG",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2RkPshpFFrkuaP98GprLtgHFTGvPY5e6wCK",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "Ak1qCDNudRxZVvcW6YDAdD9jpYNNStAVqm",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2eZYSbzBKJ7QCL4kd5LSqV478rJQGb4UNkf",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "KPfqM6S96WtRLMuSy4XLfVwymVqivdcDoM",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "5B98bU1nsedGJBdRD5wLtq7Z8t8ZXio8u5",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2iZWk5tmBynWxj2PpAFyiZzEws9qSnG3a6n",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "XUGdPaVnMh7jtzPe3zkrf9FKh5nztFnQU5",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "hSNgHgewJme8uaHrEuKubHYtYSDckD6hpf",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2DeK765jLgnMweYrMp1NaYHfzxumfR1PaQN",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "orrAssY5V2HuQAbW9K6WktFrGieq2m23pr",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "4Ebf4PkG9QEnQTm4MVvaZvJV6Y9av3jhgb",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "7Uf5xJ3GkiEKaLxC2WmJ1t6SeekJeBdJfu",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "oz4ytDKbCqpgjW3LPc52pW2CaK2gxCcWmL",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2ex5Z7TufQ5Z8xv5mXe53fSQRfUr35SSo7Q",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "WV2ap7ZubTxeDdmEZ1Xo7ufGMkekLWikJu",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "ckCTV4r1pNuz6j2VBRHhaJN9HsCLY7muLV",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "MXJx96ZJVSjktgeYZpVK8vn1H3xWP8ooq5",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "wyQVmno9aBJZmQ99nDSLoYWwp7YDJCWsrH",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2cc9wKxCsFNRkoAQDAoHke3ZoyL1mSV14cj",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "29k9g3F5AYfVaa1joE1PpZjBED6hQXes8Mm",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2XPLzz4ZLf1A9ykyTCjW5gEmVjnWa8CuatH",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "iH7DqqojTgUn2JxmY9hgFp165Nk7wKfan9",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "RJzzwUs3c9C8Y7NFYzNfFoqiUKeBhBfPki",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2W2cGyiCRM4nwmmiGPgMuGaPGeBzEm7VZPn",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "ALJVNKYL7WGxFBSriiZuwZKWD4b7fbV1od",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "tBaeg9zE2sgmw5ZQENaPPYd6jfwpVpGTzS",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2hdTw5Hk3rsgpZjvk8TyKcCZoRVXU5QVrUt",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "A1QU6jKq8YgTP79M8fwZNHUZc7hConFKmy",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "q9RkXoty3X1fuaypDDRUi78rWgJWYJMmpJ",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2Xvm6is5cAPA85xnSYXDuAqiRyoXiky5RaD",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "4CW2CPJEzxhn2PS4JoSLoWGL5QQ7dL2eji",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "24EG6uTzL7DHNzcwsygYGRR1nfu5kco7AZ1",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "KghGnWw5fppTrqHSERXZf61yf7GkuQdCnV",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2WojewRA3LbpyXTP9ANy8CZqJMgmyNm3MDr",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2BsMfywmGV3M2CoDA112Rs7ZBkiMHfy9X11",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "kK1Q4gPyYfVVMzQtAPRzL8qXMqJ67Y7tKs",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "28J4mx8xfUtM92DbQ6i2Jmqw5J7dNivfroN",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "gQvgyG1djgtftoCVrSZmsRxr7okD4LheKw",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "3iFGBKapAWWzbiGFSr5ScbhrEPm6Esyvia",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "NFW2akQH2vu7AqkQXxFz2P5vkXTWkSqrSm",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2MQJjLnWRp9eHh6MpCwpiUeshhtmri12mci",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2QjRQUMyL6iodtHP9zKmxCNYZ7k3jxtk49C",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "USdfKy7B6oFNoauHWMmoCA7ND9rHqYw2Mf",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "cA49et9WtptYHf6wA1F8qqVgH3kS5jJ9vK",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "qaJT9TjcMi46sTKcgwRQU8o5Lw2Ea1gC4N",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "22pyn5RyhqtTQu4obYjuWYRNNw4i54L8xVr",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "22dkmukC6iH4FFLBmHne6modJZZQ3MC9BAT",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "z6CJZfYLvmd41GRVE8HASjRcy5hqbpHZvE",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "GEBWJ2KpRQDBTCCtvnaAJV2cYurgXS8pta",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "oS8fbEm82cprmAeineBeDkaKd7QownDZQh",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "rQpAs1LVQdphyj9ipEAuukAoj9kNpSP8cM",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "6NSJKsPxmqipGAfFFhUKbkopjrvEESTX3j",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "cuC68ycVXmD2EBzYFNYQ6akhKGrh3FGjSf",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "bw4wtYU8toepomrhWP2p8UFYfHBbvEV425",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "HvgNmDz5jD39Gwmi9VfDY1iYMhZUpZ8GKz",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "SbApuZAYquWP3Q6iD51BcMBQjuApYEkRVf",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2Ugii5yxJgLzC59jV1vF8GK7UBZdvxwobeJ",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "21N2iJ1qnQRiJWcEqNRxXwfNp8QcmiyhtPy",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "9TC4RGs6AtFUsbcVWnSoCdoCpSfM66ALAc",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "oQzn55UWG4iMcY9bTNb27aTnRdfiGHAwbD",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2GCdwsRpQhcf8SQcynFrMVDM26Bbj6sgv9M",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2NRFe7REtSmaM2qAgZeG45hC8EtVGV2QjeB",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "25RGnhN7VojHUTvQBJA9nBT5y1qTQGULMzR",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "26uCBDfF8E2PJU2Dzz2ysgKwv9m4BhodTz9",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "Wkvima5cF7DDFdmJQqcdq8Syaq9DuAJJRD",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "286hSoJYxvENFSHwG51ZbmKaochLJyq4ERQ",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "FEGxF3HPoM2HCWHn82tyeh9o7vEQq5ySGE",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "h38DxNxGhWGTq9p5tJnN5r4Fwnn85Krrb6",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2c1UU8J6Y3kL4cmQh21Tj8wkzidCiZxwdwd",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2bJ32KuGmjmwKyAtzWdLFpXNM6t83CCPLq5",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2fi8oLC9zfVVGnzzQtu3Y3rffS65Hiz6QHo",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "TKD93RxFr2Am44TntLiJQus4qcEwTtvEEQ",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "zMDywYdGEDtTSvWnCyc3qsYHWwj9ogws74",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "25NbotTka7TwtbXUpSCQD8RMgHKspyDubXJ",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "2ayCELBERubQWH5QxUr3cTxrYpidvUAzsSw",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "RMTCwLiYDKEAiJu5ekHL1NQ8UKHi5ozCPg",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 },
                 {
                     "address": "ejJjiCwp86ykmFr5iTJ8LxQXJ2wJPTYmkm",
-                    "coin": 1000000000000,
-                    "hour": 1
+                    "coins": 1000000000000,
+                    "hours": 1
                 }
             ],
             "signatures": [
@@ -519,20 +519,20 @@
         {
             "inputs": [
                 {
-                    "hashIn": "e3e72ee077c8b0c3f87da7cf50cad8876bd3f489f373d9fe82fc2e971df56f76",
+                    "hash": "e3e72ee077c8b0c3f87da7cf50cad8876bd3f489f373d9fe82fc2e971df56f76",
                     "index": 0
                 }
             ],
             "outputs": [
                 {
                     "address": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
-                    "coin": 999990000000,
-                    "hour": 1
+                    "coins": 999990000000,
+                    "hours": 1
                 },
                 {
                     "address": "qxmeHkwgAMfwXyaQrwv9jq3qt228xMuoT5",
-                    "coin": 10000000,
-                    "hour": 0
+                    "coins": 10000000,
+                    "hours": 0
                 }
             ],
             "signatures": [
@@ -545,15 +545,15 @@
         {
             "inputs": [
                 {
-                    "hashIn": "af0b2c1cc882a56b6c0c06e99e7d2731413b988329a2c47a5c2aa8be589b707a",
+                    "hash": "af0b2c1cc882a56b6c0c06e99e7d2731413b988329a2c47a5c2aa8be589b707a",
                     "index": 0
                 }
             ],
             "outputs": [
                 {
                     "address": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
-                    "coin": 10000000,
-                    "hour": 0
+                    "coins": 10000000,
+                    "hours": 0
                 }
             ],
             "signatures": [
@@ -566,24 +566,24 @@
         {
             "inputs": [
                 {
-                    "hashIn": "9eb7954461ba0256c9054fe38c00c66e60428dccf900a62e74b9fe39310aea13",
+                    "hash": "9eb7954461ba0256c9054fe38c00c66e60428dccf900a62e74b9fe39310aea13",
                     "index": 0
                 },
                 {
-                    "hashIn": "706f82c481906108880d79372ab5c126d32ecc98cf3f7c74cf33f5fda49dcf70",
+                    "hash": "706f82c481906108880d79372ab5c126d32ecc98cf3f7c74cf33f5fda49dcf70",
                     "index": 0
                 }
             ],
             "outputs": [
                 {
                     "address": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
-                    "coin": 999890000000,
-                    "hour": 4073
+                    "coins": 999890000000,
+                    "hours": 4073
                 },
                 {
                     "address": "2fGC7kwAM9yZyEF1QqBqp8uo9RUsF6ENGJF",
-                    "coin": 100000000,
-                    "hour": 0
+                    "coins": 100000000,
+                    "hours": 0
                 }
             ],
             "signatures": [
@@ -597,19 +597,19 @@
         {
             "inputs": [
                 {
-                    "hashIn": "182b4c32bb5fe0e6809a19db63eecbeefde97a6c043b9248da94d428ab5a94c2",
+                    "hash": "182b4c32bb5fe0e6809a19db63eecbeefde97a6c043b9248da94d428ab5a94c2",
                     "index": 0
                 },
                 {
-                    "hashIn": "20900f1d317e0b10ebab7190a34265f52783ff4f85675398b497ab8eb3723a3c",
+                    "hash": "20900f1d317e0b10ebab7190a34265f52783ff4f85675398b497ab8eb3723a3c",
                     "index": 0
                 }
             ],
             "outputs": [
                 {
                     "address": "Kb9SqqTVA3XyQjZYb4wYrBVUeZWRKEQyzZ",
-                    "coin": 2000000,
-                    "hour": 0
+                    "coins": 2000000,
+                    "hours": 0
                 }
             ],
             "signatures": [
@@ -623,31 +623,31 @@
         {
             "inputs": [
                 {
-                    "hashIn": "2987e7c89d353ad5d63cea2bf2724dc5f7a5ef5fb81f5ea160a307f0726ac2f5",
+                    "hash": "2987e7c89d353ad5d63cea2bf2724dc5f7a5ef5fb81f5ea160a307f0726ac2f5",
                     "index": 0
                 },
                 {
-                    "hashIn": "a52408daa8ce7026c70b61d4df4212fb577462060f340bfce779225b3e18193d",
+                    "hash": "a52408daa8ce7026c70b61d4df4212fb577462060f340bfce779225b3e18193d",
                     "index": 0
                 },
                 {
-                    "hashIn": "dc73aac74348dd285a1456c1fae2204d7c2039d50a765bdaae0c31f7c7e059db",
+                    "hash": "dc73aac74348dd285a1456c1fae2204d7c2039d50a765bdaae0c31f7c7e059db",
                     "index": 0
                 },
                 {
-                    "hashIn": "e4e375b9dc55ff53d6de9120f1a87ff00e00a779835f8320f2c6b3090d0466e6",
+                    "hash": "e4e375b9dc55ff53d6de9120f1a87ff00e00a779835f8320f2c6b3090d0466e6",
                     "index": 0
                 },
                 {
-                    "hashIn": "d11b05345917d171f60c31bd2634041b73b97eae364724369ddb8d53369397fb",
+                    "hash": "d11b05345917d171f60c31bd2634041b73b97eae364724369ddb8d53369397fb",
                     "index": 0
                 }
             ],
             "outputs": [
                 {
                     "address": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
-                    "coin": 50000000,
-                    "hour": 7510
+                    "coins": 50000000,
+                    "hours": 7510
                 }
             ],
             "signatures": [

@@ -179,7 +179,7 @@ function createWindow(url) {
     webPreferences: {
       webgl: false,
       webaudio: false,
-      contextIsolation: false,
+      contextIsolation: true,
       webviewTag: false,
       nodeIntegration: false,
       nodeIntegrationInWorker: false,
@@ -202,7 +202,8 @@ function createWindow(url) {
   win.webContents.executeJavaScript('window.eval = 0;');
 
   const ses = win.webContents.session
-  ses.clearCache(function () {
+
+  ses.clearCache().then(response => {
     console.log('Cleared the caching of the skycoin wallet.');
   });
 

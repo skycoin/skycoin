@@ -4,7 +4,7 @@ import { Injectable, NgZone } from '@angular/core';
 import { ApiService } from './api.service';
 import { Address, NormalTransaction, PreviewTransaction, Wallet, Output } from '../app.datatypes';
 import { BigNumber } from 'bignumber.js';
-import { HwWalletService } from './hw-wallet.service';
+import { HwWalletService, HwOutput, HwInput } from './hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
 import { AppConfig } from '../app.config';
 import { HttpClient } from '@angular/common/http';
@@ -181,9 +181,9 @@ export class WalletService {
 
             const numVersionParts = versionParts.map(value => Number.parseInt(value.replace(/\D/g, ''), 10));
 
-            const devMajorVersion = !AppConfig.useHwWalletDaemon ? result.rawResponse.majorVersion : result.rawResponse.fw_major;
-            const devMinorVersion = !AppConfig.useHwWalletDaemon ? result.rawResponse.minorVersion : result.rawResponse.fw_minor;
-            const devPatchVersion = !AppConfig.useHwWalletDaemon ? result.rawResponse.patchVersion : result.rawResponse.fw_patch;
+            const devMajorVersion = result.rawResponse.fw_major;
+            const devMinorVersion = result.rawResponse.fw_minor;
+            const devPatchVersion = result.rawResponse.fw_patch;
 
             if (devMajorVersion > numVersionParts[0]) {
               firmwareUpdated = true;
@@ -204,24 +204,13 @@ export class WalletService {
         const warnings: HwSecurityWarnings[] = [];
         let hasHwSecurityWarnings = false;
 
-        if (!AppConfig.useHwWalletDaemon) {
-          if (result.rawResponse.needsBackup) {
-            warnings.push(HwSecurityWarnings.NeedsBackup);
-            hasHwSecurityWarnings = true;
-          }
-          if (!result.rawResponse.pinProtection) {
-            warnings.push(HwSecurityWarnings.NeedsPin);
-            hasHwSecurityWarnings = true;
-          }
-        } else {
-          if (result.rawResponse.needs_backup) {
-            warnings.push(HwSecurityWarnings.NeedsBackup);
-            hasHwSecurityWarnings = true;
-          }
-          if (!result.rawResponse.pin_protection) {
-            warnings.push(HwSecurityWarnings.NeedsPin);
-            hasHwSecurityWarnings = true;
-          }
+        if (result.rawResponse.needs_backup) {
+          warnings.push(HwSecurityWarnings.NeedsBackup);
+          hasHwSecurityWarnings = true;
+        }
+        if (!result.rawResponse.pin_protection) {
+          warnings.push(HwSecurityWarnings.NeedsPin);
+          hasHwSecurityWarnings = true;
         }
 
         if (!lastestFirmwareVersionReaded) {
@@ -469,8 +458,8 @@ export class WalletService {
 
       const txOutputs = [];
       const txInputs = [];
-      const hwOutputs = [];
-      const hwInputs = [];
+      const hwOutputs: HwOutput[] = [];
+      const hwInputs: HwInput[] = [];
 
       transaction.outputs.forEach(output => {
         txOutputs.push({
@@ -481,8 +470,8 @@ export class WalletService {
 
         hwOutputs.push({
           address: output.address,
-          coin: parseInt(new BigNumber(output.coins).multipliedBy(1000000).toFixed(0), 10),
-          hour: parseInt(output.hours, 10),
+          coins: new BigNumber(output.coins).toString(),
+          hours: new BigNumber(output.hours).toFixed(0),
         });
       });
 
@@ -509,7 +498,7 @@ export class WalletService {
         });
 
         hwInputs.push({
-          hashIn: input.uxid,
+          hash: input.uxid,
           index: addressesMap.get(input.address),
         });
       });

@@ -24,11 +24,7 @@ export class HwChangePinDialogComponent extends HwDialogBaseComponent<HwChangePi
     this.changingExistingPin = data.walletHasPin;
 
     this.operationSubscription = this.hwWalletService.getFeatures().pipe(mergeMap(features => {
-      if (!AppConfig.useHwWalletDaemon) {
-        return this.hwWalletService.changePin(features.rawResponse.pinProtection);
-      } else {
-        return this.hwWalletService.changePin(features.rawResponse.pin_protection);
-      }
+      return this.hwWalletService.changePin(features.rawResponse.pin_protection);
     })).subscribe(
       () => {
         this.showResult({

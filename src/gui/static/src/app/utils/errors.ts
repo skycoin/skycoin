@@ -27,14 +27,6 @@ export function parseResponseMessage(body: string): string {
 }
 
 export function getHardwareWalletErrorMsg(translateService: TranslateService, error: any, genericError: string = null): string {
-  if (!AppConfig.useHwWalletDaemon && !window['ipcRenderer'].sendSync('hwGetDeviceConnectedSync')) {
-    if (translateService) {
-    return translateService.instant('hardware-wallet.general.error-disconnected');
-    } else {
-      return 'hardware-wallet.general.error-disconnected';
-    }
-  }
-
   let response: string;
   if (error.result) {
     if (error.result === OperationResults.FailedOrRefused) {

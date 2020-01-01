@@ -1,9 +1,9 @@
 import * as Base58 from 'base-x';
 import BigNumber from 'bignumber.js';
-import { Input, Output } from '../services/hw-wallet.service';
+import { HwInput, HwOutput } from '../services/hw-wallet.service';
 
 export class TxEncoder {
-  static encode(inputs: Input[], outputs: Output[], signatures: string[], innerHash: string, transactionType = 0) {
+  static encode(inputs: HwInput[], outputs: HwOutput[], signatures: string[], innerHash: string, transactionType = 0) {
     if (inputs.length !== signatures.length) {
       throw new Error('Invalid number of signatures.');
     }
@@ -59,7 +59,7 @@ export class TxEncoder {
     // Tx inputs
     inputs.forEach(input => {
       // Copy all bytes
-      const binaryInput = this.convertToBytes(input.hashIn);
+      const binaryInput = this.convertToBytes(input.hash);
       binaryInput.forEach(number => {
         dataView.setUint8(currentPos, number);
         currentPos += 1;
@@ -93,9 +93,9 @@ export class TxEncoder {
       }
 
       // Coins
-      currentPos = this.setUint64(dataView, currentPos, new BigNumber(output.coin));
+      currentPos = this.setUint64(dataView, currentPos, new BigNumber(output.coins).multipliedBy(1000000).decimalPlaces(0));
       // Hours
-      currentPos = this.setUint64(dataView, currentPos, new BigNumber(output.hour));
+      currentPos = this.setUint64(dataView, currentPos, new BigNumber(output.hours));
     });
 
     //
@@ -103,7 +103,7 @@ export class TxEncoder {
     return this.convertToHex(buffer);
   }
 
-  private static encodeSizeTransaction(inputs: Input[], outputs: Output[], signatures: string[]): BigNumber {
+  private static encodeSizeTransaction(inputs: HwInput[], outputs: HwOutput[], signatures: string[]): BigNumber {
     let size = new BigNumber(0);
 
     // Tx length

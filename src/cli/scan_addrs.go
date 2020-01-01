@@ -3,9 +3,9 @@ package cli
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 
-	"github.com/SkycoinProject/skycoin/src/util/file"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +27,8 @@ func walletScanAddressesCmd() *cobra.Command {
     history enabled your wallet encryption password can be recovered from the
     history log. If you do not include the "-p" option you will be prompted to
     enter your password after you enter your command.`,
-		RunE: runScanAddresses,
+		RunE:         runScanAddresses,
+		SilenceUsage: true,
 	}
 
 	walletScanAddressesCmd.Flags().Uint64P("num", "n", 20, "Number of addresses to scan ahead")
@@ -56,13 +57,7 @@ func runScanAddresses(c *cobra.Command, args []string) error {
 	wltFile := args[0]
 	dir, id := filepath.Split(wltFile)
 	if dir != "" {
-		// check the exsiting of the wallet file if the wallet file is specified with filepath
-		exist, err := file.Exists(wltFile)
-		if err != nil {
-			return err
-		}
-
-		if !exist {
+		if _, err := os.Stat(wltFile); os.IsNotExist(err) {
 			return fmt.Errorf("wallet file %s does not exist", wltFile)
 		}
 	}
@@ -97,11 +92,11 @@ func runScanAddresses(c *cobra.Command, args []string) error {
 			Addresses: addrs,
 		}
 
-		printJSON(obj)
-	} else {
-		for _, addr := range addrs {
-			fmt.Println(addr)
-		}
+		return printJSON(obj)
+	}
+
+	for _, addr := range addrs {
+		fmt.Println(addr)
 	}
 	return nil
 }

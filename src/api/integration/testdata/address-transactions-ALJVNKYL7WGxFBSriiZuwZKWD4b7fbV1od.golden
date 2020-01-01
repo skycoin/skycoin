@@ -22,6 +22,7 @@
 					"uxid": "043836eb6f29aaeb8b9bfce847e07c159c72b25ae17d291f32125e7f1912e2a0",
 					"owner": "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6",
 					"coins": "100000000.000000",
+					"src_txid": "0000000000000000000000000000000000000000000000000000000000000000",
 					"hours": 100000000000000,
 					"calculated_hours": 100000000000000
 				}

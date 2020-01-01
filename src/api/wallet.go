@@ -387,6 +387,70 @@ func walletNewAddressesHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// Scan addresses to find balances
+// URI: /api/v1/wallet/scan
+// Method: POST
+// Args:
+//     id: wallet id [required]
+//     num: the number of addresses to scan ahead for balance [optional, must be > 0, default to 20]
+//     password: wallet password [optional, must be provided is the wallet is encrypted]
+func walletScanAddressesHandler(gateway Gatewayer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			wh.Error405(w)
+			return
+		}
+
+		wltID := r.FormValue("id")
+		if wltID == "" {
+			wh.Error400(w, "missing wallet id")
+			return
+		}
+
+		// Get the number of address to scan
+		num := r.FormValue("num")
+		var n uint64 = 20
+		if num != "" {
+			var err error
+			n, err = strconv.ParseUint(num, 10, 64)
+			if err != nil {
+				wh.Error400(w, "invalid num value")
+				return
+			}
+			if n <= 0 {
+				wh.Error400(w, "invalid num value, must be > 0")
+				return
+			}
+		}
+
+		password := r.FormValue("password")
+		defer func() {
+			password = ""
+		}()
+
+		addrs, err := gateway.ScanAddresses(wltID, []byte(password), n, gateway)
+		if err != nil {
+			switch err {
+			case wallet.ErrWalletAPIDisabled:
+				wh.Error403(w, "")
+			default:
+				wh.Error400(w, err.Error())
+			}
+			return
+		}
+
+		var rlt = struct {
+			Addresses []string `json:"addresses"`
+		}{}
+
+		for _, a := range addrs {
+			rlt.Addresses = append(rlt.Addresses, a.String())
+		}
+
+		wh.SendJSONOr500(logger, w, rlt)
+	}
+}
+
 // Update wallet label
 // URI: /api/v1/wallet/update
 // Method: POST

@@ -2,11 +2,13 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"errors"
 
@@ -27,6 +29,19 @@ func TestGetUxOutByID(t *testing.T) {
 		uxid string
 	}
 
+	// make unspent uxout
+	headTime := uint64(time.Now().UTC().Unix())
+	uxout, _ := makeUxOutWithSecret(t)
+	unspentUxOut := historydb.UxOut{Out: uxout}
+	unspentUxOutHTTPResponse, err := readable.NewSpentOutput(&unspentUxOut, headTime)
+	require.NoError(t, err)
+
+	// make spent uxout
+	txnHash := cipher.SumSHA256(cipher.RandByte(10))
+	spentUxOut := historydb.UxOut{Out: uxout, SpentTxnID: txnHash, SpentBlockSeq: 100}
+	spentUxOutHTTPResponse, err := readable.NewSpentOutput(&spentUxOut, headTime)
+	require.NoError(t, err)
+
 	tt := []struct {
 		name                    string
 		method                  string
@@ -36,6 +51,7 @@ func TestGetUxOutByID(t *testing.T) {
 		uxid                    string
 		getGetUxOutByIDArg      cipher.SHA256
 		getGetUxOutByIDResponse *historydb.UxOut
+		getGetUxOutByIDHeadTime uint64
 		getGetUxOutByIDError    error
 		httpResponse            readable.SpentOutput
 		csrfDisabled            bool
@@ -99,17 +115,30 @@ func TestGetUxOutByID(t *testing.T) {
 			getGetUxOutByIDArg: testutil.SHA256FromHex(t, validHash),
 		},
 		{
-			name:   "200",
+			name:   "200 - unspent uxout",
 			method: http.MethodGet,
 			status: http.StatusOK,
-			err:    "404 Not Found",
 			httpBody: &httpBody{
 				uxid: validHash,
 			},
 			uxid:                    validHash,
 			getGetUxOutByIDArg:      testutil.SHA256FromHex(t, validHash),
-			getGetUxOutByIDResponse: &historydb.UxOut{},
-			httpResponse:            readable.NewSpentOutput(&historydb.UxOut{}),
+			getGetUxOutByIDResponse: &unspentUxOut,
+			getGetUxOutByIDHeadTime: headTime,
+			httpResponse:            *unspentUxOutHTTPResponse,
+		},
+		{
+			name:   "200 - spent uxout",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			httpBody: &httpBody{
+				uxid: validHash,
+			},
+			uxid:                    validHash,
+			getGetUxOutByIDArg:      testutil.SHA256FromHex(t, validHash),
+			getGetUxOutByIDResponse: &spentUxOut,
+			getGetUxOutByIDHeadTime: headTime,
+			httpResponse:            *spentUxOutHTTPResponse,
 		},
 	}
 
@@ -117,7 +146,7 @@ func TestGetUxOutByID(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
 			endpoint := "/api/v1/uxout"
-			gateway.On("GetUxOutByID", tc.getGetUxOutByIDArg).Return(tc.getGetUxOutByIDResponse, tc.getGetUxOutByIDError)
+			gateway.On("GetUxOutByID", tc.getGetUxOutByIDArg).Return(tc.getGetUxOutByIDResponse, tc.getGetUxOutByIDHeadTime, tc.getGetUxOutByIDError)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -158,6 +187,13 @@ func TestGetUxOutByID(t *testing.T) {
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.httpResponse, msg, tc.name)
+
+				fmt.Println(msg.Hours, msg.CalculatedHours, msg.SpentTxnID)
+				if msg.SpentBlockSeq != 0 {
+					require.Equal(t, msg.Hours, msg.CalculatedHours)
+				} else {
+					require.True(t, msg.CalculatedHours > msg.Hours, fmt.Sprintf("%d:%d", msg.CalculatedHours, msg.Hours))
+				}
 			}
 		})
 	}
@@ -165,10 +201,25 @@ func TestGetUxOutByID(t *testing.T) {
 
 func TestGetAddrUxOuts(t *testing.T) {
 	addressForGwError := testutil.MakeAddress()
-	addressForGwResponse := testutil.MakeAddress()
+	// addressForGwResponse := testutil.MakeAddress()
 	type httpBody struct {
 		address string
 	}
+
+	headTime := uint64(time.Now().UTC().Unix())
+	uxout, seckey := makeUxOutWithSecret(t)
+	addressForUxout := cipher.MustAddressFromSecKey(seckey)
+
+	// make unspent uxout
+	unspentUxOut := historydb.UxOut{Out: uxout}
+	unspentUxOutHTTPResponse, err := readable.NewSpentOutput(&unspentUxOut, headTime)
+	require.NoError(t, err)
+
+	// make spent uxout
+	txnHash := cipher.SumSHA256(cipher.RandByte(10))
+	spentUxOut := historydb.UxOut{Out: uxout, SpentTxnID: txnHash, SpentBlockSeq: 100}
+	spentUxOutHTTPResponse, err := readable.NewSpentOutput(&spentUxOut, headTime)
+	require.NoError(t, err)
 
 	tt := []struct {
 		name                                string
@@ -178,6 +229,7 @@ func TestGetAddrUxOuts(t *testing.T) {
 		httpBody                            *httpBody
 		getSpentOutputsForAddressesArg      []cipher.Address
 		getSpentOutputsForAddressesResponse [][]historydb.UxOut
+		getSpentOutputsForAddressesHeadTime uint64
 		getSpentOutputsForAddressesError    error
 		httpResponse                        []readable.SpentOutput
 		csrfDisabled                        bool
@@ -218,15 +270,28 @@ func TestGetAddrUxOuts(t *testing.T) {
 			getSpentOutputsForAddressesError: errors.New("getSpentOutputsForAddressesError"),
 		},
 		{
-			name:   "200",
+			name:   "200 - spent uxout",
 			method: http.MethodGet,
 			status: http.StatusOK,
 			httpBody: &httpBody{
-				address: addressForGwResponse.String(),
+				address: addressForUxout.String(),
 			},
-			getSpentOutputsForAddressesArg:      []cipher.Address{addressForGwResponse},
-			getSpentOutputsForAddressesResponse: [][]historydb.UxOut{{}},
-			httpResponse:                        []readable.SpentOutput{},
+			getSpentOutputsForAddressesArg:      []cipher.Address{addressForUxout},
+			getSpentOutputsForAddressesResponse: [][]historydb.UxOut{{spentUxOut}},
+			getSpentOutputsForAddressesHeadTime: headTime,
+			httpResponse:                        []readable.SpentOutput{*spentUxOutHTTPResponse},
+		},
+		{
+			name:   "200 - unspent uxout",
+			method: http.MethodGet,
+			status: http.StatusOK,
+			httpBody: &httpBody{
+				address: addressForUxout.String(),
+			},
+			getSpentOutputsForAddressesArg:      []cipher.Address{addressForUxout},
+			getSpentOutputsForAddressesResponse: [][]historydb.UxOut{{unspentUxOut}},
+			getSpentOutputsForAddressesHeadTime: headTime,
+			httpResponse:                        []readable.SpentOutput{*unspentUxOutHTTPResponse},
 		},
 	}
 
@@ -234,7 +299,10 @@ func TestGetAddrUxOuts(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			endpoint := "/api/v1/address_uxouts"
 			gateway := &MockGatewayer{}
-			gateway.On("GetSpentOutputsForAddresses", tc.getSpentOutputsForAddressesArg).Return(tc.getSpentOutputsForAddressesResponse, tc.getSpentOutputsForAddressesError)
+			gateway.On("GetSpentOutputsForAddresses", tc.getSpentOutputsForAddressesArg).Return(
+				tc.getSpentOutputsForAddressesResponse,
+				tc.getSpentOutputsForAddressesHeadTime,
+				tc.getSpentOutputsForAddressesError)
 
 			v := url.Values{}
 			if tc.httpBody != nil {
@@ -274,6 +342,15 @@ func TestGetAddrUxOuts(t *testing.T) {
 				err = json.Unmarshal(rr.Body.Bytes(), &msg)
 				require.NoError(t, err)
 				require.Equal(t, tc.httpResponse, msg, tc.name)
+				for _, m := range msg {
+					if m.SpentBlockSeq != 0 {
+						// uxout already spent
+						require.Equal(t, m.Hours, m.CalculatedHours)
+					} else {
+						// uxout not spent yet
+						require.True(t, m.CalculatedHours > m.Hours)
+					}
+				}
 			}
 		})
 	}

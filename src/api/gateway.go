@@ -76,8 +76,8 @@ type Visorer interface {
 	GetBalanceOfAddresses(addrs []cipher.Address) ([]wallet.BalancePair, error)
 	VerifyTxnVerbose(txn *coin.Transaction, signed visor.TxnSignedFlag) ([]visor.TransactionInput, bool, error)
 	AddressCount() (uint64, error)
-	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error)
-	GetSpentOutputsForAddresses(addr []cipher.Address) ([][]historydb.UxOut, error)
+	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, uint64, error)
+	GetSpentOutputsForAddresses(addr []cipher.Address) ([][]historydb.UxOut, uint64, error)
 	GetVerboseTransactionsForAddress(a cipher.Address) ([]visor.Transaction, [][]visor.TransactionInput, error)
 	GetRichlist(includeDistribution bool) (visor.Richlist, error)
 	GetAllUnconfirmedTransactions() ([]visor.UnconfirmedTransaction, error)
@@ -105,6 +105,7 @@ type Walleter interface {
 	CreateWallet(wltName string, options wallet.Options, bg wallet.TransactionsFinder) (wallet.Wallet, error)
 	RecoverWallet(wltID, seed, seedPassphrase string, password []byte) (wallet.Wallet, error)
 	NewAddresses(wltID string, password []byte, n uint64) ([]cipher.Address, error)
+	ScanAddresses(wltID string, password []byte, n uint64, tf wallet.TransactionsFinder) ([]cipher.Address, error)
 	GetWallet(wltID string) (wallet.Wallet, error)
 	GetWallets() (wallet.Wallets, error)
 	UpdateWalletLabel(wltID, label string) error

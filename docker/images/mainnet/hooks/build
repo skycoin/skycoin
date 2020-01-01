@@ -2,23 +2,23 @@
 
 # This are the git ENV vars present at this point for the build process.
 # more on that in https://docs.docker.com/docker-cloud/builds/advanced
-# 
+#
 # SOURCE_BRANCH: the name of the branch or the tag that is currently being tested.
 # SOURCE_COMMIT: the SHA1 hash of the commit being tested.
 # COMMIT_MSG: the message from the commit being tested and built.
 # DOCKERFILE_PATH: the dockerfile currently being built.
 # DOCKER_REPO: the name of the Docker repository being built.
 # CACHE_TAG: the Docker repository tag being built.
-# IMAGE_NAME: the name and tag of the Docker repository being built. 
+# IMAGE_NAME: the name and tag of the Docker repository being built.
 #             (This variable is a combination of DOCKER_REPO:CACHE_TAG.)
 
 cd ../../../
 
-if ["${CACHE_TAG#release-v}" != "$CACHE_TAG"] ; then
-  export SOURCE_TAG="${CACHE_TAG#release-v}"
+if ["${CACHE_TAG#v}" != "$CACHE_TAG"] ; then
+  export SOURCE_TAG="${CACHE_TAG#v}"
 fi
 
-# Build skycoin/skycoin:latest
+# Build skycoinproject/skycoin:latest
 docker build --build-arg BDATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
              --build-arg SCOMMIT=$SOURCE_COMMIT \
              --build-arg SBRANCH=$SOURCE_BRANCH \
@@ -26,7 +26,7 @@ docker build --build-arg BDATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
              -f $DOCKERFILE_PATH \
              -t $IMAGE_NAME .
 
-# Build skycoin/skycoin:latest-arm32v5
+# Build skycoinproject/skycoin:latest-arm32v5
 docker build --build-arg=ARCH=arm \
              --build-arg=GOARM=5 \
              --build-arg=IMAGE_FROM="arm32v5/busybox" \
@@ -37,7 +37,7 @@ docker build --build-arg=ARCH=arm \
              -f $DOCKERFILE_PATH \
              -t $IMAGE_NAME-arm32v5 .
 
-# Build skycoin/skycoin:latest-arm32v6
+# Build skycoinproject/skycoin:latest-arm32v6
 docker build --build-arg=ARCH=arm \
              --build-arg=GOARM=6 \
              --build-arg=IMAGE_FROM="arm32v6/busybox" \
@@ -48,7 +48,7 @@ docker build --build-arg=ARCH=arm \
              -f $DOCKERFILE_PATH \
              -t $IMAGE_NAME-arm32v6 .
 
-# Build skycoin/skycoin:latest-arm32v7
+# Build skycoinproject/skycoin:latest-arm32v7
 docker build --build-arg=ARCH=arm \
              --build-arg=GOARM=7 \
              --build-arg=IMAGE_FROM="arm32v7/busybox" \
@@ -59,7 +59,7 @@ docker build --build-arg=ARCH=arm \
              -f $DOCKERFILE_PATH \
              -t $IMAGE_NAME-arm32v7 .
 
-# Build skycoin/skycoin:latest-arm64v8
+# Build skycoinproject/skycoin:latest-arm64v8
 docker build --build-arg=ARCH=arm64 \
              --build-arg=IMAGE_FROM="arm64v8/busybox" \
              --build-arg BDATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \

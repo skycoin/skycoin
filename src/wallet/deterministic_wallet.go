@@ -204,50 +204,32 @@ func (w *DeterministicWallet) ScanAddresses(scanN uint64, tf TransactionsFinder)
 	w2 := w.Clone().(*DeterministicWallet)
 
 	nExistingAddrs := uint64(len(w2.Entries))
-	nAddAddrs := uint64(0)
-	n := scanN
-	extraScan := uint64(0)
 
-	for {
-		// Generate the addresses to scan
-		addrs, err := w2.GenerateSkycoinAddresses(n)
-		if err != nil {
-			return err
-		}
+	// Generate the addresses to scan
+	addrs, err := w2.GenerateSkycoinAddresses(scanN)
+	if err != nil {
+		return err
+	}
 
-		// Find if these addresses had any activity
-		active, err := tf.AddressesActivity(addrs)
-		if err != nil {
-			return err
-		}
+	// Find if these addresses had any activity
+	active, err := tf.AddressesActivity(addrs)
+	if err != nil {
+		return err
+	}
 
-		// Check activity from the last one until we find the address that has activity
-		var keepNum uint64
-		for i := len(active) - 1; i >= 0; i-- {
-			if active[i] {
-				keepNum = uint64(i + 1)
-				break
-			}
-		}
-
-		if keepNum == 0 {
+	// Check activity from the last one until we find the address that has activity
+	var keepNum uint64
+	for i := len(active) - 1; i >= 0; i-- {
+		if active[i] {
+			keepNum = uint64(i + 1)
 			break
 		}
-
-		nAddAddrs += keepNum + extraScan
-
-		// extraScan is the number of addresses with no activity beyond the
-		// last address with activity
-		extraScan = n - keepNum
-
-		// n is the number of addresses to scan the next iteration
-		n = scanN - extraScan
 	}
 
 	// Regenerate addresses up to nExistingAddrs + nAddAddrs.
 	// This is necessary to keep the lastSeed updated.
 	w2.reset()
-	if _, err := w2.GenerateSkycoinAddresses(nExistingAddrs + nAddAddrs); err != nil {
+	if _, err := w2.GenerateSkycoinAddresses(nExistingAddrs + keepNum); err != nil {
 		return err
 	}
 

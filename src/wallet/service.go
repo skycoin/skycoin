@@ -308,6 +308,65 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 	return addrs, nil
 }
 
+// ScanAddresses scan ahead addresses to see if contains balance.
+func (serv *Service) ScanAddresses(wltID string, password []byte, num uint64, tf TransactionsFinder) ([]cipher.Address, error) {
+	serv.Lock()
+	defer serv.Unlock()
+	if !serv.config.EnableWalletAPI {
+		return nil, ErrWalletAPIDisabled
+	}
+
+	w, err := serv.getWallet(wltID)
+	if err != nil {
+		return nil, err
+	}
+
+	l := w.EntriesLen()
+	var addrs []cipher.Address
+	f := func(wlt Wallet) error {
+		if err := wlt.ScanAddresses(num, tf); err != nil {
+			return err
+		}
+
+		addrs, err = wlt.GetSkycoinAddresses()
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	if w.IsEncrypted() {
+		if err := GuardUpdate(w, password, f); err != nil {
+			return nil, err
+		}
+	} else {
+		if len(password) != 0 {
+			return nil, ErrWalletNotEncrypted
+		}
+
+		if err := f(w); err != nil {
+			return nil, err
+		}
+	}
+
+	// Checks if the wallet file is writable
+	wf := filepath.Join(serv.config.WalletDir, w.Filename())
+	if !file.IsWritable(wf) {
+		return nil, ErrWalletPermission
+	}
+
+	// Save the wallet first
+	if err := Save(w, serv.config.WalletDir); err != nil {
+		return nil, err
+	}
+
+	serv.wallets.set(w)
+
+	// return new generated addresses
+	return addrs[l:], nil
+}
+
 // GetSkycoinAddresses returns all addresses in given wallet
 func (serv *Service) GetSkycoinAddresses(wltID string) ([]cipher.Address, error) {
 	serv.RLock()

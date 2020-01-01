@@ -16,6 +16,9 @@ func walletScanAddressesCmd() *cobra.Command {
 		Short: "Scan addresses ahead for deterministic, bip44 or xpub wallet",
 		Long: `Scan addresses ahead for deterministic, bip44 or xpub wallet.
 
+    The argument of [wallet] could be a wallet file name or a fullpath of the wallet
+    file. For example, both foo.wlt and $HOME/.skycoin/wallets/foo.wlt could be resolved.
+
     Warning: if you generate long (over 20) sequences of empty addresses and use
     a later address this can cause the wallet history scanner to miss your addresses,
     if you load the wallet from seed elsewhere. In that case, you'll have to manually

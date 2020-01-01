@@ -116,6 +116,7 @@ import { FormDestinationComponent } from './components/pages/send-skycoin/form-p
 import { CopyRawTxComponent } from './components/pages/send-skycoin/offline-dialogs/implementations/copy-raw-tx.component';
 import { SignRawTxComponent } from './components/pages/send-skycoin/offline-dialogs/implementations/sign-raw-tx.component';
 import { BroadcastRawTxComponent } from './components/pages/send-skycoin/offline-dialogs/implementations/broadcast-raw-tx.component';
+import { OfflineDialogsBaseComponent } from './components/pages/send-skycoin/offline-dialogs/offline-dialogs-base.component';
 
 
 const ROUTES = [
@@ -260,6 +261,7 @@ const ROUTES = [
     CopyRawTxComponent,
     SignRawTxComponent,
     BroadcastRawTxComponent,
+    OfflineDialogsBaseComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,

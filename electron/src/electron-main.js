@@ -189,6 +189,7 @@ function createWindow(url) {
       allowRunningInsecureContent: false,
       webSecurity: true,
       plugins: false,
+      enableRemoteModule: false,
       preload: __dirname + '/electron-api.js',
     },
   });
@@ -302,22 +303,23 @@ function createWindow(url) {
     });
 }
 
-// Enforce single instance
-const alreadyRunning = app.makeSingleInstance((commandLine, workingDirectory) => {
-  // Someone tried to run a second instance, we should focus our window.
-  if (win) {
-    if (win.isMinimized()) {
-      win.restore();
-    }
-    win.focus();
-  } else {
-    createWindow(currentURL);
-  }
-});
+const singleInstanceLockObtained = app.requestSingleInstanceLock()
 
-if (alreadyRunning) {
-  app.quit();
+if (!singleInstanceLockObtained) {
+  app.quit()
   return;
+} else {
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    // Someone tried to run a second instance, we should focus our window.
+    if (win) {
+      if (win.isMinimized()) {
+        win.restore();
+      }
+      win.focus();
+    } else {
+      createWindow(currentURL);
+    }
+  });
 }
 
 let walletsFolder = null;

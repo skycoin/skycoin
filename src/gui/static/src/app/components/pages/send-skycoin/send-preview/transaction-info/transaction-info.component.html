@@ -35,7 +35,7 @@
           <span>{{ 'tx.note' | translate }}:</span>
           <span *ngIf="transaction.note">{{ transaction.note }}</span>
           <span *ngIf="!transaction.note" class="-grey">{{ 'tx.without-note' | translate }}</span>
-          <mat-icon (click)="editNote()" *ngIf="!isPreview">edit</mat-icon>
+          <mat-icon class="edit-button" (click)="editNote()" *ngIf="!isPreview">edit</mat-icon>
         </div>
       </div>
 

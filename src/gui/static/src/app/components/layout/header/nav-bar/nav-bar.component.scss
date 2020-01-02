@@ -32,6 +32,10 @@
 
   .-low-opacity {
     opacity: 0.2;
+
+    &:hover {
+      opacity: 0.4;
+    }
   }
 
   .-switch {

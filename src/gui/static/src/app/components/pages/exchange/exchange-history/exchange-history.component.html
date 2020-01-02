@@ -1,5 +1,5 @@
 <app-modal [headline]="'title.order-history' | translate" [dialog]="dialogRef">
-  <div class="select-address-theme" *ngFor="let order of orders">
+  <div class="light-button-theme" *ngFor="let order of orders">
     <button mat-button color="primary" (click)="select(order)">
       <div class="info">
         <div>{{ order.fromAmount }} {{ getFromCoin(order.pair) }} <mat-icon>play_arrow</mat-icon> &asymp;{{ order.toAmount | amount:true:'first' }} {{ getToCoin(order.pair) }}</div>

@@ -83,6 +83,14 @@ h4 {
   }
 }
 
+.edit-button {
+  opacity: 0.5;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
 .-tx-meta {
   .-data {
     margin-bottom: 10px;

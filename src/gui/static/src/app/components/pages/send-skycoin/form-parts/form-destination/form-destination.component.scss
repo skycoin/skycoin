@@ -12,6 +12,11 @@
     img {
       width: 32px;
       cursor: pointer;
+      opacity: 0.5;
+
+      &:hover {
+        opacity: 1;
+      }
     }
   }
 }

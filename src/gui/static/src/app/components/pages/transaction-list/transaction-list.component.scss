@@ -206,6 +206,10 @@ mat-option ::ng-deep .mat-pseudo-checkbox-checked {
       }
     }
   }
+
+  &:hover {
+    background-color: darken($white, 1%);
+  }
 }
 
 .view-all-button {

@@ -1,5 +1,5 @@
 <app-modal [headline]="'title.select-address' | translate" [dialog]="dialogRef">
-  <div class="wallet-container select-address-theme" *ngFor="let wallet of wallets">
+  <div class="wallet-container light-button-theme" *ngFor="let wallet of wallets">
     <div class="title" title="{{ wallet.label }}">{{ wallet.label }}</div>
     <ng-container *ngFor="let address of wallet.addresses">
       <button *ngIf="!wallet.isHardware || address.confirmed" mat-button color="primary" (click)="select(address.address)">

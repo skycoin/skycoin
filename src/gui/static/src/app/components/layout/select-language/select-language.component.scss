@@ -12,7 +12,6 @@
     font-size: 12px;
     line-height: unset;
     padding: 0;
-    color: unset;
     min-width: 0px;
 
     img {
@@ -27,6 +26,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      color: $black;
     }
   }
 }

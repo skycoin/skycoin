@@ -54,6 +54,10 @@
     border-radius: 100px;
     cursor: pointer;
 
+    &:hover {
+      background-color: darken(white, 3%);
+    }
+
     > img {
       width: 32px;
       height: 32px;

@@ -69,7 +69,7 @@ mat-select {
 }
 
 mat-option ::ng-deep .mat-pseudo-checkbox-checked {
-  background: $gradient-blue-dark;
+  background: $main-color;
 }
 
 .mat-option-disabled {
@@ -213,7 +213,7 @@ mat-option ::ng-deep .mat-pseudo-checkbox-checked {
 }
 
 .view-all-button {
-  color: $blue;
+  color: $main-color;
   font-size: 13px;
   text-align: center;
   padding: 20px;

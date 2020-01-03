@@ -1,4 +1,4 @@
-<div class="sky-container sky-container-grey">
+<div>
   <app-header [headline]="'title.backup' | translate"></app-header>
 
   <div class="container">
@@ -27,7 +27,7 @@
           <div class="-width-250 -label" [attr.title]="wallet.label">{{ wallet.label }}</div>
           <div class="-width-150">{{ wallet.filename }}</div>
           <div class="-flex-fill -text-right">
-            <span class="-link" (click)="showSeed(wallet)">{{ 'backup.show-seed' | translate }}</span>
+            <span class="link" (click)="showSeed(wallet)">{{ 'backup.show-seed' | translate }}</span>
           </div>
         </div>
       </div>

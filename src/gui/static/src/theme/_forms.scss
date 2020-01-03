@@ -1,0 +1,100 @@
+@import 'variables';
+
+$input-border-size: 2px;
+$input-border-radius: $rounded-element-border-radius;
+$input-border-color: $grey-very-light;
+
+.form-field {
+  margin-bottom: 20px;
+
+  label {
+    color: $black;
+    display: block;
+    font-size: $font-size-standard;
+    line-height: $font-size-standard * 1.5;
+    margin-bottom: 2px;
+  }
+
+  input {
+    border: $input-border-size solid $input-border-color;
+    border-radius: $input-border-radius;
+    box-sizing: border-box;
+    display: block;
+    font-size: $font-size-standard;
+    line-height: $font-size-standard * 1.5;
+    padding: 10px 10px;
+    width: 100%;
+  }
+
+  .-input-addon {
+    display: flex;
+  
+    input {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+  
+    span {
+      border: $input-border-size;
+      border-radius: 0 $input-border-radius $input-border-radius 0;
+      background: $input-border-color;
+      padding: 0 10px;
+      line-height: 44px;
+      color: $grey;
+      font-size: $font-size-standard;
+      flex-shrink: 0;
+    }
+  }
+
+  select {
+    background-color: white;
+    border: $input-border-size solid $input-border-color;
+    border-radius: $input-border-radius;
+    box-sizing: border-box;
+    display: block;
+    font-size: $font-size-standard;
+    line-height: $font-size-standard * 1.5;
+    padding: 10px 10px;
+    width: 100%;
+    appearance: none;
+  }
+
+  textarea {
+    border: $input-border-size solid $input-border-color;
+    border-radius: $input-border-radius;
+    box-sizing: border-box;
+    display: block;
+    font-size: $font-size-standard;
+    line-height: $font-size-standard * 1.5;
+    padding: 10px 10px;
+    width: 100%;
+  }
+}
+
+.-select {
+  position: relative;
+
+  &::after {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: url('/assets/img/chevron-right-grey.png') no-repeat;
+    background-size: 32px 32px;
+    width: 32px;
+    height: 32px;
+    margin: 6px;
+    pointer-events: none;
+    transform: rotate(90deg);
+  }
+}
+
+textarea {
+  resize: none;
+}
+
+.element-disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}

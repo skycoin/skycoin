@@ -1,25 +1,25 @@
 <div class="container">
   <div class="-buttons">
-    <div class="-button -low-opacity" routerLink="/wallets" routerLinkActive="no-opacity">
+    <div class="-button -low-opacity" routerLink="/wallets" routerLinkActive="full-opacity">
       <img src="../../../../../assets/img/wallet-black.png">
       <span>{{ 'title.wallets' | translate }}</span>
     </div>
-    <div class="-button -low-opacity" routerLink="/send" routerLinkActive="no-opacity">
+    <div class="-button -low-opacity" routerLink="/send" routerLinkActive="full-opacity">
       <img src="../../../../../assets/img/send-black.png">
       <span>{{ 'title.send' | translate }}</span>
     </div>
-    <div class="-button -low-opacity" routerLink="/transactions" routerLinkActive="no-opacity">
+    <div class="-button -low-opacity" routerLink="/transactions" routerLinkActive="full-opacity">
       <img src="../../../../../assets/img/transactions-black.png">
       <span>{{ 'title.history' | translate }}</span>
     </div>
     <div class="flex-fill"></div>
-    <div class="-button -low-opacity" routerLink="/exchange" routerLinkActive="no-opacity" *ngIf="exchangeEnabled">
+    <div class="-button -low-opacity" routerLink="/exchange" routerLinkActive="full-opacity" *ngIf="exchangeEnabled">
       <img src="../../../../../assets/img/money-gold.png">
       <span>{{ 'title.buy-coin' | translate }}</span>
     </div>
     <div class="-button" *ngIf="otcEnabled">
       <img src="../../../../../assets/img/money-gold.png">
-      <span class="secondary-color">{{ 'title.buy-coin' | translate }}</span>
+      <span>{{ 'title.buy-coin' | translate }}</span>
     </div>
     <app-double-button
       *ngIf="navbarService.switchVisible"

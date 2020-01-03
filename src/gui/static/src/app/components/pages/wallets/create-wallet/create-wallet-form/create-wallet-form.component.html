@@ -16,11 +16,11 @@
     <label for="seed">
       <span>{{ 'wallet.new.seed-label' | translate }}</span>
       <span class="generators" [ngClass]="{'-white-text': onboarding}" *ngIf="create">
-        <span (click)="generateSeed(128)" [matTooltip]="'wallet.new.generate-12-seed' | translate">
+        <span class="link" (click)="generateSeed(128)" [matTooltip]="'wallet.new.generate-12-seed' | translate">
           {{ 'wallet.new.12-words' | translate }}
         </span>
         <span class="divider">|</span>
-        <span (click)="generateSeed(256)" [matTooltip]="'wallet.new.generate-24-seed' | translate">
+        <span class="link" (click)="generateSeed(256)" [matTooltip]="'wallet.new.generate-24-seed' | translate">
           {{ 'wallet.new.24-words' | translate }}
         </span>
       </span>

@@ -5,7 +5,7 @@
 
 <div class="-buttons">
   <app-button #backButton (action)="back()">{{ 'send.back-button' | translate }}</app-button>
-  <app-button #sendButton (action)="send()" class="primary">
+  <app-button #sendButton (action)="send()" class="primary-button">
     {{ ('send.' + (transaction && !transaction.wallet ? 'show' : 'send') + '-button') | translate }}
   </app-button>
 </div>

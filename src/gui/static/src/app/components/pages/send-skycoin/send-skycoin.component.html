@@ -20,8 +20,8 @@
     ></app-send-preview>
   </div>
   <div class="-links">
-    <div (click)="signTransaction()">{{ 'offline-transactions.sign-tx.title' | translate }}</div>
-    <span> / </span>
-    <div (click)="broadcastTransaction()">{{ 'offline-transactions.broadcast-tx.title' | translate }}</div>
+    <span class="link" (click)="signTransaction()">{{ 'offline-transactions.sign-tx.title' | translate }}</span>
+    <span class="separator"> / </span>
+    <span class="link" (click)="broadcastTransaction()">{{ 'offline-transactions.broadcast-tx.title' | translate }}</span>
   </div>
 </div>

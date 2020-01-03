@@ -45,7 +45,7 @@
           <span class="-status">
             {{ 'buy.status-button' | translate }} {{ order.status | tellerStatus | translate }}
           </span>
-          <app-button #button (action)="checkStatus()" class="primary">
+          <app-button #button (action)="checkStatus()" class="primary-button">
             {{ 'buy.check-status-button' | translate }}
           </app-button>
           <app-button #button (action)="removeOrder()">

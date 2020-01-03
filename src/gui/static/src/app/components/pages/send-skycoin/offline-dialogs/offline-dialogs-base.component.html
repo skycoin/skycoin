@@ -35,7 +35,7 @@
       <app-button #cancelButton (action)="cancelPressed()" [disabled]="working">
         {{ cancelButtonText | translate }}
       </app-button>
-      <app-button #okButton (action)="okPressed()" class="primary" [disabled]="(validateForm && !form.valid) || working">
+      <app-button #okButton (action)="okPressed()" class="primary-button" [disabled]="(validateForm && !form.valid) || working">
         {{ okButtonText | translate }}
       </app-button>
     </div>

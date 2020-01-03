@@ -47,16 +47,16 @@
     <div class="-buttons">
       <mat-checkbox class="-check" (change)="setAgreement($event)" type="checkbox">
         {{ 'exchange.agree-1' | translate }}
-        <a href="https://swaplab.cc/terms" target="_blank" rel="noreferrer nofollow">
+        <a class="link" href="https://swaplab.cc/terms" target="_blank" rel="noreferrer nofollow">
           {{ 'exchange.agree-2' | translate }}
         </a>
         {{ 'exchange.agree-3' | translate }}
-        <a href="https://swaplab.cc/privacy" target="_blank" rel="noreferrer nofollow">
+        <a class="link" href="https://swaplab.cc/privacy" target="_blank" rel="noreferrer nofollow">
           {{ 'exchange.agree-4' | translate }}
         </a>
       </mat-checkbox>
 
-      <app-button class="primary" #exchangeButton (action)="exchange()" [disabled]="!form.valid">
+      <app-button class="primary-button" #exchangeButton (action)="exchange()" [disabled]="!form.valid">
         {{ 'exchange.exchange-button' | translate }}
       </app-button>
     </div>

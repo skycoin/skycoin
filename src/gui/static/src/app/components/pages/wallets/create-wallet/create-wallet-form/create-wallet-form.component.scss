@@ -98,19 +98,6 @@ label[for=seed] {
   .generators {
     text-align: right;
 
-    span {
-      cursor: pointer;
-      color: $blue;
-    }
-
-    mat-icon {
-      width: 13px;
-      height: 10px;
-      font-size: 13px;
-      position: relative;
-      top: 2px;
-    }
-
     .divider {
       padding: 0 5px;
       color: $grey-dark;
@@ -142,7 +129,7 @@ label[for=seed] {
     height: 8px;
     left: 4.59px;
     top: 9px;
-    stroke: $gradient-blue-dark !important;
+    stroke: $main-color !important;
   }
 
   .mat-checkbox-background, .mat-checkbox-frame {

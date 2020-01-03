@@ -2,3 +2,8 @@ mat-select {
   width: 100%;
   padding: 40px 0 20px;
 }
+
+.button-line {
+  margin-top: 40px;
+  text-align: right;
+}

@@ -9,7 +9,7 @@
     <app-button (action)="closePopup()" [disabled]="button && button.isLoading()">
       {{ 'wallet.add-addresses.cancel-button' | translate }}
     </app-button>
-    <app-button (action)="continue()" class="primary" [disabled]="!form.valid" #button>
+    <app-button (action)="continue()" class="primary-button" [disabled]="!form.valid" #button>
       {{ 'wallet.add-addresses.create-button' | translate }}
     </app-button>
   </div>

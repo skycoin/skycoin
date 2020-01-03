@@ -28,7 +28,7 @@
     <span class="hw-link" (click)="useHardwareWallet()">{{ 'wizard.hardware-wallet-link' | translate }}</span>
   </div>
   <div class="row -buttons-footer">
-    <app-button class="dark -button-min-margin" [disabled]="!formControl.isValid"
+    <app-button class="dark-button -button-min-margin" [disabled]="!formControl.isValid"
                 (action)="showNewForm?createWallet():loadWallet()">
       {{ 'wallet.new.create-button' | translate }}
     </app-button>

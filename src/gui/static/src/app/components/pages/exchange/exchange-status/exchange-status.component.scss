@@ -33,7 +33,7 @@ mat-progress-bar {
   width: calc(100% + 60px);
 
   ::ng-deep .mat-progress-bar-buffer {
-    background-color: $blue;
+    background-color: $main-color;
     opacity: .3;
   }
 }
@@ -94,17 +94,16 @@ mat-progress-bar {
   width: 13px;
   font-size: 16px;
   vertical-align: middle;
-  color: $blue;
+  color: $main-color;
   margin-left: 10px;
 }
 
 .expand {
-  color: $blue;
+  color: $main-color;
   cursor: pointer;
   font-size: 13px;
 
   mat-icon {
-    color: $blue;
     padding: 0;
     display: inline;
     vertical-align: middle;

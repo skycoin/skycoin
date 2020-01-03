@@ -31,12 +31,6 @@
     flex-grow: 1;
     align-self: center;
 
-    .link {
-      color: $blue;
-      cursor: pointer;
-      text-decoration: none;
-    }
-
     .list {
       padding: 10px 0;
 
@@ -68,4 +62,10 @@
   .-blinking {
     animation: alert-blinking 1s linear infinite;
   }
+}
+
+.big-text {
+  color: $black;
+  font-weight: bold;
+  font-size: $font-size-big;
 }

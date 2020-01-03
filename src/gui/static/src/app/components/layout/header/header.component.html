@@ -1,27 +1,29 @@
 <div class="-container">
   <div class="large-header">
-    <app-top-bar [headline]="headline"></app-top-bar>
-    <div class="balance-container">
-      <div class="balance">
-        <p *ngIf="highest && loading" class="coins"><span>{{ percentage | percent:'1.2-2' }}</span></p>
-        <p *ngIf="!loading" class="coins"><span>{{ coins | amount:true:'first' }}</span> {{ coins | amount:true:'last' }}</p>
-        <p *ngIf="!highest && loading" class="coins"><span>&nbsp;</span></p>
-        <p class="dollars">
-          <span *ngIf="price">
-            <span *ngIf="!loading">{{ (coins * price) | currency:'USD':'symbol':'1.2-2' }}</span>
-            <span *ngIf="loading">-</span>
-            ({{ price | currency:'USD':'symbol':'1.2-2' }})
-          </span>
-          <span *ngIf="!price">{{ 'common.loading' | translate }}</span>
-        </p>
+    <div class="gradient">
+      <app-top-bar [headline]="headline"></app-top-bar>
+      <div class="balance-container">
+        <div class="balance">
+          <p *ngIf="highest && loading" class="coins"><span>{{ percentage | percent:'1.2-2' }}</span></p>
+          <p *ngIf="!loading" class="coins"><span>{{ coins | amount:true:'first' }}</span> {{ coins | amount:true:'last' }}</p>
+          <p *ngIf="!highest && loading" class="coins"><span>&nbsp;</span></p>
+          <p class="dollars">
+            <span *ngIf="price">
+              <span *ngIf="!loading">{{ (coins * price) | currency:'USD':'symbol':'1.2-2' }}</span>
+              <span *ngIf="loading">-</span>
+              ({{ price | currency:'USD':'symbol':'1.2-2' }})
+            </span>
+            <span *ngIf="!price">{{ 'common.loading' | translate }}</span>
+          </p>
+        </div>
       </div>
-    </div>
-    <div class="hour-balance">
-      <p *ngIf="loading">
-        {{ 'header.syncing-blocks' | translate }}
-        {{ current && highest ?  '(' + current + '/'  + highest + ')' : '...' }}
-      </p>
-      <p *ngIf="!loading">{{ hours | amount:false }}</p>
+      <div class="hour-balance">
+        <p *ngIf="loading">
+          {{ 'header.syncing-blocks' | translate }}
+          {{ current && highest ?  '(' + current + '/'  + highest + ')' : '...' }}
+        </p>
+        <p *ngIf="!loading">{{ hours | amount:false }}</p>
+      </div>
     </div>
   </div>
   <app-nav-bar></app-nav-bar>

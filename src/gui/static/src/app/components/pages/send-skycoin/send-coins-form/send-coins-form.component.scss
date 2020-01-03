@@ -21,7 +21,7 @@ mat-checkbox {
 
   .-check ::ng-deep {
     .mat-checkbox-checkmark-path {
-      stroke: $gradient-blue-dark !important;
+      stroke: $main-color !important;
     }
 
     .mat-checkbox-background, .mat-checkbox-frame {
@@ -57,7 +57,7 @@ mat-checkbox {
 
       ::ng-deep {
         .mat-slider-thumb, .mat-slider-thumb-label {
-          background-color: $gradient-blue-dark !important;
+          background-color: $main-color !important;
           transform: scale(1) !important;
           border-width: 0 !important;
         }
@@ -79,12 +79,12 @@ mat-checkbox {
 
 .-options {
   padding-left: 5px;
-  color: $gradient-blue-dark;
+  color: $main-color;
   cursor: pointer;
   font-size: 13px;
 
   mat-icon {
-    color: $gradient-blue-dark;
+    color: $main-color;
     padding: 0;
     display: inline;
     vertical-align: middle;

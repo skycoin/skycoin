@@ -19,7 +19,7 @@
       <app-button (action)="closePopup()" [disabled]="button && button.isLoading()">
         {{ 'wallet.rename.cancel-button' | translate }}
       </app-button>
-      <app-button (action)="rename()" class="primary" [disabled]="!form.valid" #button>
+      <app-button (action)="rename()" class="primary-button" [disabled]="!form.valid" #button>
         {{ 'wallet.rename.rename-button' | translate }}
       </app-button>
     </div>

@@ -1,0 +1,25 @@
+@import 'variables';
+
+$onboarding-contents-width: 80%;
+$onboarding-contents-max-width: 450px;
+
+.onboarding-container {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  background: $gradient-dark; /* For browsers that do not support gradients */
+  background: -webkit-linear-gradient(left top, $gradient-dark, $gradient-light); /* For Safari 5.1 to 6.0 */
+  background: -o-linear-gradient(bottom right, $gradient-dark, $gradient-light); /* For Opera 11.1 to 12.0 */
+  background: -moz-linear-gradient(bottom right, $gradient-dark, $gradient-light); /* For Firefox 3.6 to 15 */
+  background: linear-gradient(to bottom right, $gradient-dark, $gradient-light); /* Standard syntax */
+
+  .row-container {
+    max-width: $onboarding-contents-max-width;
+    width: $onboarding-contents-width;
+    margin: 0px auto;
+  }
+
+  label {
+    color: white !important;
+  }
+}

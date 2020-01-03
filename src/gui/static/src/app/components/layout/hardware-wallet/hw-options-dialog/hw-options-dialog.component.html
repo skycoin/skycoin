@@ -80,13 +80,13 @@
   </div>
 
   <div class="-buttons" *ngIf="currentState === states.Finished">
-    <app-button (action)="closeModal()" class="primary">
+    <app-button (action)="closeModal()" class="primary-button">
       {{ 'hardware-wallet.general.close' | translate }}
     </app-button>
   </div>
 
   <div class="-buttons" *ngIf="currentState !== states.Finished">
-    <app-button (action)="closeModal()" class="primary" #closeButton>
+    <app-button (action)="closeModal()" class="primary-button" #closeButton>
       {{ 'hardware-wallet.general.close' | translate }}
     </app-button>
   </div>

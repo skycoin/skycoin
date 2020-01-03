@@ -116,7 +116,6 @@
 }
 
 .action-buttons {
-  margin-bottom: 74px;
   padding: 40px 0 40px;
   text-align: center;
 
@@ -135,4 +134,12 @@
       width: 28px;
     }
   }
+}
+
+.rotate-90 {
+  transform: rotate(90deg);
+}
+
+.rotate-270 {
+  transform: rotate(270deg);
 }

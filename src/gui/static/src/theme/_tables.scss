@@ -8,7 +8,7 @@
   .-headers {
     color: $grey-light;
     display: flex;
-    font-size: 12px;
+    font-size: $font-size-standard-minus;
     font-weight: 700;
     height: 50px;
     line-height: 50px;
@@ -20,29 +20,19 @@
   }
 
   .-body {
-    border-radius: 15px;
+    border-radius: $very-rounded-element-border-radius;
     box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.01), 1px 1px 2px 2px rgba(0, 0, 0, 0.01);
     margin: 0 30px;
+    background: $white;
 
     .-row {
       font-size: $font-size-standard;
       padding: 15px 0;
-      background: $white;
       display: flex;
       align-items: center;
 
       &:not(:last-child) {
-        border-bottom: 1px solid #eff0f0;
-      }
-
-      &:first-child {
-        border-top-left-radius: 15px;
-        border-top-right-radius: 15px;
-      }
-
-      &:last-child {
-        border-bottom-left-radius: 15px;
-        border-bottom-right-radius: 15px;
+        border-bottom: 1px solid $grey-very-light;
       }
 
       > div {

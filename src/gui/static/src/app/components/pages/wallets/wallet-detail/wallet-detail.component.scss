@@ -78,7 +78,7 @@
       color: lighten($grey, 30%);
 
       &:hover {
-        color: $blue;
+        color: $main-color;
       }
     }
   }
@@ -217,7 +217,7 @@
 }
 
 .copy-label {
-  color: $blue;
+  color: $main-color;
   opacity: 0;
   font-size: 12px;
   position: relative;
@@ -249,4 +249,8 @@ mat-spinner {
   ::ng-deep circle {
     stroke: $grey-light;
   }
+}
+
+.mouse-disabled {
+  pointer-events: none;
 }

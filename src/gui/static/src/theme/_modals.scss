@@ -1,56 +1,29 @@
 @import 'variables';
 
+.mat-dialog-content {
+  max-height: 90vh !important;
+}
+
+@media (max-height: 600px) {
+  .mat-dialog-content {
+    max-height: 80vh !important;
+  }
+}
+
+mat-dialog-container {
+  border-radius: $rounded-element-border-radius !important;
+}
+
+.mat-dialog-container {
+  padding: 0 !important;
+}
+
 .modal {
   .-body {
-    line-height: 20px;
-    font-size: 13px;
-    color: $grey-dark;
+    line-height: $font-size-standard * 1.5;
+    font-size: $font-size-standard;
+    color: $black;
     opacity: 0.8;
-  }
-
-  .big-text {
-    color: black;
-    font-weight: bold;
-    font-size: 15px;
-  }
-
-  .-check-container{
-    text-align: center;
-    margin-top: 25px;
-
-    .-check {
-      label {
-        font-family: Skycoin;
-        line-height: normal;
-        font-size: 14px;
-      
-        color: $grey-dark;
-      }
-    
-      .mat-checkbox-checkmark-path {
-        position: absolute;
-        width: 18px;
-        height: 8px;
-        left: 4.59px;
-        top: 9px;
-        stroke: $gradient-blue-dark !important;
-      }
-    
-      .mat-checkbox-background, .mat-checkbox-frame {
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        position: absolute;
-        box-sizing: border-box;
-        pointer-events: none;
-        width: 20px;
-        height: 20px;
-        background: rgba(30, 34, 39, 0.05);
-        border-radius: 6px;
-        border-color: transparent;
-      }
-    }
   }
 
   .-buttons {

@@ -15,20 +15,20 @@
   <div class="-contact">
     <div>
       <span *ngIf="hasHistory" class="history">
-        <a href="#" (click)="showHistory($event)"><mat-icon>history</mat-icon> <span class="history-text">{{ 'exchange.history' | translate }}</span></a>
+        <a class="link" href="#" (click)="showHistory($event)"><mat-icon>history</mat-icon> <span class="history-text">{{ 'exchange.history' | translate }}</span></a>
       </span>
     </div>
     <div>
       <span>
         {{ 'exchange.need-help' | translate }}
-        <a href="https://swaplabcc.freshdesk.com/support/home" target="_blank" rel="noreferrer nofollow">
+        <a class="link" href="https://swaplabcc.freshdesk.com/support/home" target="_blank" rel="noreferrer nofollow">
           {{ 'exchange.support-portal' | translate }}
         </a>
       </span>
       <span>|</span>
       <span>
         {{ 'exchange.powered-by' | translate }}
-        <a href="https://swaplab.cc" target="_blank" rel="noreferrer nofollow">SWAPLAB.CC</a>
+        <a class="link" href="https://swaplab.cc" target="_blank" rel="noreferrer nofollow">SWAPLAB.CC</a>
       </span>
     </div>
   </div>

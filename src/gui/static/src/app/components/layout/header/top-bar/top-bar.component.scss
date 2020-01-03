@@ -32,13 +32,13 @@
   }
 }
 
-button {
+.button {
   height: 50px;
   width: 50px;
 }
 
 .color-primary {
-  color: #0072FF;
+  color: $main-color;
 }
 
 .separator {

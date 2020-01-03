@@ -1,11 +1,14 @@
+@import 'customize/styling.scss';
+
 // Backgrounds
-$gradient-blue-dark: #0072ff;
-$gradient-blue-dark-transparent: rgba(0, 114, 255, 0.7);
-$gradient-blue-light: #00C3ff;
-$gradient-blue-light-transparent: rgba(0, 195, 255, 0.7);
+$gradient-dark: $app-gradient-dark;
+$gradient-light: $app-gradient-light;
 
 // Colors
-$black: #171a1d;
+$main-color: $app-main-color;
+$black: #1e2227;
+$white: #fafafa;
+$transparent: rgba(0,0,0,0);
 
 $grey-lightest: #f7f7f7;
 $grey-very-light: rgba(30, 34, 39, 0.05);
@@ -14,20 +17,22 @@ $grey: rgba(30, 34, 39, 0.5);
 $grey-semi-dark: rgba(30, 34, 39, 0.75);
 $grey-dark: #1e2227;
 
-$white: #fafafa;
-$transparent: rgba(0,0,0,0);
-
 $red: #ff004e;
-$blue: #0072ff;
 $green: #00df80;
 $yellow: #ffc125;
+
+$rounded-element-border-radius: 6px;
+$very-rounded-element-border-radius: 15px;
 
 // Grid
 $row-height: 60px;
 $row-detail-size: 32px;
 
 // Texts
+$font-size-standard-minus: 12px;
 $font-size-standard: 13px;
+$font-size-standard-plus: 14px;
+$font-size-big: 15px;
 $letter-spacing-wide: 1px;
 
 // Responsive sizes

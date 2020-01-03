@@ -17,7 +17,7 @@
       <app-button (action)="closeModal()">
         {{ 'hardware-wallet.general.cancel' | translate }}
       </app-button>
-      <app-button (action)="requestWipe()" class="primary">
+      <app-button (action)="requestWipe()" class="primary-button">
         {{ 'hardware-wallet.general.continue' | translate }}
       </app-button>
     </div>
@@ -35,7 +35,7 @@
     ></app-hw-message>
 
     <div class="-buttons" *ngIf="currentState !== states.Processing">
-      <app-button (action)="closeModal()" class="primary" #closeButton>
+      <app-button (action)="closeModal()" class="primary-button" #closeButton>
         {{ 'hardware-wallet.general.close' | translate }}
       </app-button>
     </div>

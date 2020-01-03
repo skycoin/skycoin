@@ -18,7 +18,7 @@
     <div class="separator"></div>
     <button mat-menu-item [disabled]="true" *ngIf="appService.version"> v{{ appService.version.version }} </button>
   </mat-menu>
-  <button mat-icon-button [matMenuTriggerFor]="menuMenu">
+  <button class="button" mat-icon-button [matMenuTriggerFor]="menuMenu">
     <mat-icon>menu</mat-icon>
   </button>
 </div>

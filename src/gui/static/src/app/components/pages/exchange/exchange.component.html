@@ -1,6 +1,6 @@
 <app-header [headline]="'title.exchange' | translate"></app-header>
 <div class="container">
-  <div class="-paper">
+  <div class="paper">
     <app-exchange-create
       *ngIf="!currentOrderDetails && !loading"
       (submitted)="showStatus($event)"

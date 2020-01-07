@@ -1,7 +1,7 @@
 @import '../../../../../theme/variables';
 
 .-wrapper {
-  font-size: 13px;
+  font-size: $font-size-standard;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -31,11 +31,6 @@
 mat-progress-bar {
   margin: 30px -30px;
   width: calc(100% + 60px);
-
-  ::ng-deep .mat-progress-bar-buffer {
-    background-color: $main-color;
-    opacity: .3;
-  }
 }
 
 .-details {
@@ -48,14 +43,15 @@ mat-progress-bar {
     }
 
     > .-img {
-      width: 17px;
+      width: $qr-code-button-size;
       margin-right: 15px;
+      flex-shrink: 0;
     }
   }
 }
 
 .-item {
-  font-size: 13px;
+  font-size: $font-size-standard;
 
   &:not(:last-child) {
     margin-bottom: 20px;
@@ -68,13 +64,6 @@ mat-progress-bar {
 
   .-value {
     word-break: break-all;
-
-    .info-icon {
-      display: inline;
-      font-size: 14px;
-      color: lighten($grey, 40%);
-      vertical-align: text-bottom;
-    }
   }
 }
 
@@ -89,13 +78,18 @@ mat-progress-bar {
 }
 
 .-external mat-icon {
-  line-height: 13px;
-  height: 13px;
-  width: 13px;
+  line-height: $font-size-standard;
+  height: $font-size-standard;
+  width: $font-size-standard;
   font-size: 16px;
   vertical-align: middle;
   color: $main-color;
   margin-left: 10px;
+  opacity: 0.5;
+
+  &:hover {
+    opacity: 1;
+  }
 }
 
 .expand {
@@ -109,10 +103,4 @@ mat-progress-bar {
     vertical-align: middle;
     font-size: 13px;
   }
-}
-
-.buttons {
-  width: 100%;
-  text-align: center;
-  margin-top: 10px;
 }

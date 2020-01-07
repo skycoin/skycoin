@@ -1,3 +1,6 @@
+/*
+  IMPORTANT: Unused for a long time, it may need changes to work properly.
+*/
 import { filter, first } from 'rxjs/operators';
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { PurchaseService } from '../../../services/purchase.service';

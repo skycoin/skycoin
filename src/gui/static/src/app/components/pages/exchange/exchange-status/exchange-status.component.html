@@ -10,13 +10,13 @@
       <mat-icon [ngClass]="{'-spin': statusIcon === 'refresh'}">{{ statusIcon }}</mat-icon>
       <div class="-item">
         <div class="-key">{{ 'exchange.status' | translate }}</div>
-        <div class="-value">{{ translatedStatus.text | translate:translatedStatus.params }} <mat-icon class="info-icon" [matTooltip]="translatedStatus.info | translate">help</mat-icon></div>
+        <div class="-value">{{ translatedStatus.text | translate:translatedStatus.params }} <mat-icon class="help-icon" [matTooltip]="translatedStatus.info | translate">help</mat-icon></div>
       </div>
     </div>
     <span>{{ 'exchange.exchanging' | translate:{from: fromCoin, to: toCoin} }}</span>
   </div>
 
-  <mat-progress-bar [value]="progress"></mat-progress-bar>
+  <mat-progress-bar [value]="progress" color="primary"></mat-progress-bar>
 
   <div class="-details">
     <div class="-box">
@@ -37,7 +37,7 @@
       </div>
 
       <div class="-box">
-        <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode(order.exchangeAddress)" class="qr-code-button -img">
+        <img src="assets/img/qr-code-black.png" (click)="showQrCode(order.exchangeAddress)" class="qr-code-button -img">
         <div class="-item">
           <div class="-key">{{ 'exchange.details.exchange-addr' | translate }}</div>
           <div class="-value">{{ order.exchangeAddress }}</div>
@@ -45,7 +45,7 @@
       </div>
 
       <div class="-box" *ngIf="order.exchangeTag">
-        <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode(order.exchangeTag)" class="qr-code-button -img">
+        <img src="assets/img/qr-code-black.png" (click)="showQrCode(order.exchangeTag)" class="qr-code-button -img">
         <div class="-item">
           <div class="-key">{{ 'exchange.details.exchange-addr-tag' | translate }}</div>
           <div class="-value">{{ order.exchangeTag }}</div>
@@ -125,7 +125,7 @@
   </div>
 </ng-container>
 
-<div class="buttons">
+<div class="text-center">
   <app-button class="primary-button" (action)="close()">
     {{ 'exchange.details.back' | translate }}
   </app-button>

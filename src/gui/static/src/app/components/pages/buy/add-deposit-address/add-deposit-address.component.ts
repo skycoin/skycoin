@@ -1,3 +1,6 @@
+/*
+  IMPORTANT: Unused for a long time, it may need changes to work properly.
+*/
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { WalletService } from '../../../../services/wallet.service';

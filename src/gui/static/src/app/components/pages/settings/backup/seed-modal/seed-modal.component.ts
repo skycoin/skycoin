@@ -4,7 +4,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 @Component({
   selector: 'app-seed-modal',
   templateUrl: './seed-modal.component.html',
-  styleUrls: ['./seed-modal.component.css'],
+  styleUrls: ['./seed-modal.component.scss'],
 })
 export class SeedModalComponent implements OnDestroy {
   constructor(

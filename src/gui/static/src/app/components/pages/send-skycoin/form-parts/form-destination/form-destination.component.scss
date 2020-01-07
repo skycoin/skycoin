@@ -36,18 +36,6 @@
   }
 }
 
-.-hidden {
-  display: none;
-}
-
-label mat-icon {
-  display: inline;
-  font-size: 14px;
-  color: lighten($grey, 40%);
-  vertical-align: text-bottom;
-  padding-left: 5px;
-}
-
 .destinations-label {
   display: inline-block;
 }
@@ -59,11 +47,11 @@ label mat-icon {
 }
 
 .coins-value-label {
-  font-size: 10px;
+  font-size: $font-size-mini;
   margin-top: 1px;
   padding: 3px 10px;
   background-color: $grey-lightest;
-  border-radius: 4px;
+  border-radius: $input-border-radius;
 
   span {
     opacity: 0.5;
@@ -71,7 +59,6 @@ label mat-icon {
 
   .link {
     display: inline-block;
-    font-size: 11px;
     margin-bottom: 3px;
     margin-top: -5px;
   }

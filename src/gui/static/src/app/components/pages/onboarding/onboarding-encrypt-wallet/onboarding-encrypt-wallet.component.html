@@ -1,5 +1,5 @@
 <div class="onboarding-container">
-  <div class="row justify-content-center">
+  <div class="row">
     <div class="row-container">
       <div class="-header">
         <span>{{ 'wallet.new.encrypt-title' | translate }}</span>
@@ -9,15 +9,17 @@
       </div>
     </div>
   </div>
-  <div class="row justify-content-center">
+  <div class="row">
     <div class="row-container -check-container">
       <mat-checkbox class="-check" (change)="setEncrypt($event)" [checked]="true" type="checkbox" id="encrypt">
-        <img src="../../../../../assets/img/lock-gold.png">
-        {{ 'wallet.new.encrypt' | translate }}
+        <span class="img-label-container">
+          <img src="assets/img/lock-gold.png" />
+          {{ 'wallet.new.encrypt' | translate }}
+        </span>
       </mat-checkbox>
     </div>
   </div>
-  <div class="row justify-content-center">
+  <div class="row">
     <div class="row-container">
       <form [formGroup]="form">
         <div class="form-field">
@@ -36,7 +38,7 @@
     <app-button class="dark-button -button-min-margin" [disabled]="form.enabled && !form.valid" (action)="emitCreatedPassword()" #button>
       {{ 'wizard.finish-button' | translate }}
     </app-button>
-    <app-button class="ghost-button -button-min-margin" (action)="emitBack()" [ngClass]="{ '-hidden': isWorking }">
+    <app-button class="ghost-button -button-min-margin" (action)="emitBack()" [ngClass]="{ 'd-none': isWorking }">
       {{ 'wizard.back-button' | translate }}
     </app-button>
   </div>

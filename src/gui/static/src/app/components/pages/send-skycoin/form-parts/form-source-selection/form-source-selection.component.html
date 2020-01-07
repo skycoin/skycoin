@@ -2,7 +2,7 @@
   <div *ngIf="selectionMode === sourceSelectionModes.Manual" class="form-field">
     <label for="manualAddresses">
       {{ 'send.addresses-label' | translate }}
-      <mat-icon [matTooltip]="'send.addresses-manual-help' | translate">help</mat-icon>
+      <mat-icon class="help-icon" [matTooltip]="'send.addresses-manual-help' | translate">help</mat-icon>
     </label>
     <input formControlName="manualAddresses" id="manualAddresses" [attr.disabled]="busy ? 'true' : null">
   </div>
@@ -28,7 +28,7 @@
   <div *ngIf="selectionMode === sourceSelectionModes.All" class="form-field">
     <label [for]="!busy ? 'addresses' : ''" (click)="!busy ? selectAddresses.open() : null">
       {{ 'send.addresses-label' | translate }}
-      <mat-icon [matTooltip]="'send.addresses-help' | translate">help</mat-icon>
+      <mat-icon class="help-icon" [matTooltip]="'send.addresses-help' | translate">help</mat-icon>
     </label>
     <div class="-select">
       <mat-select
@@ -55,8 +55,8 @@
   <div *ngIf="selectionMode !== sourceSelectionModes.Wallet" class="form-field">
     <label [for]="!busy ? 'outputs' : null" (click)="!busy ? selectOutputs.open() : null">
       {{ 'send.outputs-label' | translate }}
-      <mat-icon [matTooltip]="'send.outputs-help' | translate">help</mat-icon>
-      <mat-icon *ngIf="errorLoadingManualOutputs" [matTooltip]="'send.outputs-error' | translate" class="-red">error</mat-icon>
+      <mat-icon class="help-icon" [matTooltip]="'send.outputs-help' | translate">help</mat-icon>
+      <mat-icon *ngIf="errorLoadingManualOutputs" [matTooltip]="'send.outputs-error' | translate" class="help-icon red-text">error</mat-icon>
       <mat-spinner *ngIf="loadingUnspentOutputs"></mat-spinner>
     </label>
     <div class="-select">

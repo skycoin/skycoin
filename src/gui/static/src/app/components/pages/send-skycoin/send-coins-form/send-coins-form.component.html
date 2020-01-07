@@ -54,7 +54,7 @@
   <div *ngIf="!showSimpleForm" class="form-field">
     <label for="change-address">
       {{ 'send.change-address-label' | translate }}
-      <mat-icon [matTooltip]="'send.change-address-help' | translate">help</mat-icon>
+      <mat-icon class="help-icon" [matTooltip]="'send.change-address-help' | translate">help</mat-icon>
       <span class="-options" (click)="selectChangeAddress($event)" [ngClass]="{'element-disabled' : busy}">
         {{ 'send.change-address-select' | translate }} <mat-icon>keyboard_arrow_down</mat-icon>
       </span>
@@ -65,36 +65,34 @@
   <div *ngIf="!showForManualUnsigned" class="form-field">
     <label for="note">
       {{ 'send.personal-note-label' | translate }}
-      <mat-icon [matTooltip]="'send.personal-note-help' | translate">help</mat-icon>
+      <mat-icon class="help-icon" [matTooltip]="'send.personal-note-help' | translate">help</mat-icon>
     </label>
     <input formControlName="note" id="note" (keydown.enter)="preview()" [maxlength]="maxNoteChars" [attr.disabled]="busy ? 'true' : null">
   </div>
 
-  <div *ngIf="!showSimpleForm" class="-autohours" [ngClass]="{'element-disabled' : busy}">
+  <div *ngIf="!showSimpleForm" class="form-field" [ngClass]="{'element-disabled' : busy}">
     <div class="row">
       <div class="col-xl-4 col-lg-5 col-md-7">
         <mat-checkbox class="-check" (change)="setAutoHours($event)" [checked]="autoHours" [attr.disabled]="busy ? 'true' : null">
-          <div class="-space-between">
-            <span>{{ 'send.hours-allocation-label' | translate }}</span>
-            <span class="-options" (mousedown)="$event.stopPropagation();" (click)="toggleOptions($event)" *ngIf="autoHours">
-              {{ 'send.options-label' | translate }} <mat-icon>{{ autoOptions ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
-            </span>
-          </div>
+          <span>{{ 'send.hours-allocation-label' | translate }}</span>
+          <span class="-options" (mousedown)="$event.stopPropagation();" (click)="toggleOptions($event)" *ngIf="autoHours">
+            {{ 'send.options-label' | translate }} <mat-icon>{{ autoOptions ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
+          </span>
         </mat-checkbox>
       </div>
     </div>
 
-    <div [ngClass]="{ 'row -options-wrapper': true, '-hidden': !autoOptions }">
+    <div [ngClass]="{ 'row -options-wrapper': true, 'd-none': !autoOptions }">
       <div class="col-md-5">
         <div class="form-field">
           <label class="-space-between" for="value">
             <span>
               {{ 'send.value-label' | translate }}
-              <mat-icon [matTooltip]="'send.value-help' | translate">help</mat-icon>
+              <mat-icon class="help-icon" [matTooltip]="'send.value-help' | translate">help</mat-icon>
             </span>
             <span>{{ autoShareValue | number:'1.0-2' }}</span>
           </label>
-          <mat-slider class="-slider" min="0.1" max="1" step="0.01" id="value"
+          <mat-slider min="0.1" max="1" step="0.01" id="value"
                       (input)="setShareValue($event)" [value]="autoShareValue"
                       [attr.disabled]="busy ? 'true' : null"
           ></mat-slider>
@@ -104,7 +102,7 @@
   </div>
 </div>
 
-<div class="-buttons">
+<div class="text-center">
   <app-button #previewButton (action)="preview()" [disabled]="!form.valid">
     {{ 'send.preview-button' | translate }}
   </app-button>

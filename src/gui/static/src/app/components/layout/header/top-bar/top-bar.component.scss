@@ -1,40 +1,43 @@
 @import '../../../../../theme/variables';
+@import '../../../../../customize/styling';
+
+$side-containers-width: 120px;
+$bar-height: 50px;
 
 :host {
   display: flex;
-  color: $white;
+  color: $header-text-color;
   width: 100%;
 }
 
 .buttons-left {
-  display: inline-block;
   padding: 0 10px;
-  width: 120px;
+  width: $side-containers-width;
 }
 
 .title {
   font-size: $font-size-standard;
   font-weight: 700;
-  display: inline;
   flex: 1 1 auto;
   letter-spacing: $letter-spacing-wide;
-  line-height: 50px;
+  line-height: $bar-height;
   text-align: center;
 }
 
 .buttons-right {
-  display: inline-block;
   text-align: right;
-  width: 120px;
+  width: $side-containers-width;
 
-  button {
-    display: inline-block;
+  .button {
+    height: $bar-height;
+    width: $bar-height;
   }
 }
 
-.button {
+.mat-menu-item {
   height: 50px;
-  width: 50px;
+  line-height: 50px;
+  font-size: $font-size-standard-plus;
 }
 
 .color-primary {

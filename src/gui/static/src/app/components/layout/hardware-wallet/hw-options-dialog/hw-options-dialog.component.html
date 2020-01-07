@@ -70,10 +70,10 @@
           <div class="label">{{ (!needsPin ? 'hardware-wallet.options.change-pin' : 'hardware-wallet.options.create-pin') | translate }}</div>
         </button>
         <button mat-button color="primary" (click)="removePin()" *ngIf="!needsPin">
-          <div class="label -red">{{ 'hardware-wallet.options.delete-pin' | translate }}</div>
+          <div class="label red-text">{{ 'hardware-wallet.options.delete-pin' | translate }}</div>
         </button>
         <button mat-button color="primary" (click)="wipe()">
-          <div class="label -red">{{ 'hardware-wallet.options.wipe' | translate }}</div>
+          <div class="label red-text">{{ 'hardware-wallet.options.wipe' | translate }}</div>
         </button>
       </div>
     </div>

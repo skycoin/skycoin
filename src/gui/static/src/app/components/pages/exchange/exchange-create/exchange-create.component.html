@@ -65,27 +65,27 @@
   <div class="-info" *ngIf="activeTradingPair">
     <div class="-item">
       <div class="-key">{{ 'exchange.you-send' | translate }}</div>
-      <div class="-value">{{ sendAmount }} {{ form.get('fromCoin').value }}</div>
+      <div class="break-all">{{ sendAmount }} {{ form.get('fromCoin').value }}</div>
     </div>
 
     <div class="-item">
       <div class="-key">{{ 'exchange.you-get' | translate }}</div>
-      <div class="-value">&asymp; {{ toAmount }} {{ toCoin }}</div>
+      <div class="break-all">&asymp; {{ toAmount }} {{ toCoin }}</div>
     </div>
 
     <div class="-item">
       <div class="-key">{{ 'exchange.to-address' | translate:{coin: toCoin} }}</div>
-      <div class="-value">{{ form.get('toAddress').value || '-' }}</div>
+      <div class="break-all">{{ form.get('toAddress').value || '-' }}</div>
     </div>
 
     <div class="-item">
       <div class="-key">{{ 'exchange.price' | translate }}</div>
-      <div class="-value">1 {{ form.get('fromCoin').value }} &asymp; {{ activeTradingPair.price.toFixed(6) }} {{ toCoin }}</div>
+      <div class="break-all">1 {{ form.get('fromCoin').value }} &asymp; {{ activeTradingPair.price.toFixed(6) }} {{ toCoin }}</div>
     </div>
 
     <div class="-item">
       <div class="-key">{{ 'exchange.time-15' | translate }}</div>
-      <div class="-value">&asymp; 15 minutes</div>
+      <div class="break-all">&asymp; 15 minutes</div>
     </div>
   </div>
 </div>

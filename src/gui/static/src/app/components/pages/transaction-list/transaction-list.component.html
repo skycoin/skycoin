@@ -1,9 +1,8 @@
 <app-header [headline]="'title.transactions' | translate"></app-header>
 <div class="container">
-  <div [formGroup]="form" class="form-field" *ngIf="allTransactions">
+  <div [formGroup]="form" class="form-field" [ngClass]="{ 'bottom-line': !transactions || transactions.length === 0 }" *ngIf="allTransactions">
     <mat-select
       multiple
-      [ngClass]="{ 'bottom-line': !transactions || transactions.length === 0 }"
       formControlName="filter"
       [placeholder]="'history.no-filter' | translate"
       id="filter"
@@ -24,7 +23,7 @@
         <span *ngIf="form.get('filter').value.length === 1">{{ 'history.filter' | translate }}</span>
         <span *ngIf="form.get('filter').value.length > 1">{{ 'history.filters' | translate }}</span>
         <ng-container *ngFor="let filter of form.get('filter').value; let i = index">
-          <div class="filter" *ngIf="filter.label || !filter.showingWholeWallet">
+          <div class="filter text-truncate" *ngIf="filter.label || !filter.showingWholeWallet">
             <span *ngIf="filter.label">{{ filter.label }}</span>
             <span *ngIf="!filter.label">{{ filter.address }}</span>
             - {{ filter.coins | amount }}
@@ -33,7 +32,7 @@
         </ng-container>
       </mat-select-trigger>
     </mat-select>
-    <img class="x-button" src="assets/img/close-grey.png" (click)="removeFilters()" *ngIf="form.get('filter').value.length > 0">
+    <img class="x-button" src="assets/img/delete-grey.png" (click)="removeFilters()" *ngIf="form.get('filter').value.length > 0">
   </div>
 
   <app-loading-content
@@ -42,11 +41,11 @@
     *ngIf="!transactions || transactions.length === 0"
   ></app-loading-content>
 
-  <div class="-paper" *ngIf="transactions && transactions.length > 0">
+  <div class="paper" *ngIf="transactions && transactions.length > 0">
     <ng-container *ngFor="let transaction of transactions">
       <div class="-transaction" (click)="showTransaction(transaction)">
         <div class="-icon" [ngClass]="{ '-incoming': transaction.balance.isGreaterThan(0) && !transaction.coinsMovedInternally, '-pending': !transaction.confirmed }">
-          <img src="/assets/img/send-blue.png">
+          <img src="assets/img/send-blue.png">
         </div>
         <div class="-address">
           <ng-container *ngIf="!transaction.coinsMovedInternally">
@@ -78,8 +77,8 @@
             </h4>
           </ng-container>
           <div class="-item" *ngFor="let address of transaction.addresses">
-            <img src="../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address)" class="qr-code-button">
-            <span>{{ address }}</span>
+            <img src="assets/img/qr-code-black.png" (click)="showQrCode($event, address)" class="qr-code-button">
+            <span class="break-all">{{ address }}</span>
           </div>
           <div class="-item" *ngIf="transaction.note">
             <span>{{ 'history.note' | translate }}: <span class="note">{{ transaction.note }}</span></span>

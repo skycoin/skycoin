@@ -10,13 +10,10 @@
   .-info {
     flex: .4;
     margin-left: 40px;
-    margin-top: 5px;
   }
 }
 
 .form-field {
-  width: 100%;
-
   .-error {
     color: $red;
     margin-left: 20px;
@@ -50,7 +47,7 @@
 }
 
 .-item {
-  font-size: 13px;
+  font-size: $font-size-standard;
 
   &:not(:last-child) {
     margin-bottom: 20px;
@@ -60,55 +57,12 @@
     color: $grey;
     margin-bottom: 5px;
   }
-
-  .-value {
-    word-break: break-all;
-  }
 }
 
 .-buttons {
-  text-align: center;
-
-  mat-checkbox {
-    margin-right: 20px;
-  }
-}
-
-.-check ::ng-deep {
-  .mat-checkbox-layout {
-    align-items: center;
-  }
-
-  .mat-checkbox-checkmark-path {
-    position: absolute;
-    width: 18px;
-    height: 8px;
-    left: 4.59px;
-    top: 9px;
-    stroke: $main-color !important;
-  }
-
-  .mat-checkbox-background, .mat-checkbox-frame {
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    position: absolute;
-    box-sizing: border-box;
-    pointer-events: none;
-    width: 20px;
-    height: 20px;
-    background: rgba(30, 34, 39, 0.05);
-    border-radius: 6px;
-    border-color: transparent;
-  }
-
-  span {
-    font-family: Skycoin;
-    line-height: normal;
-    font-size: 13px;
-    color: $grey-dark;
-  }
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .-select-address {

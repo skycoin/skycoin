@@ -2,10 +2,10 @@
   <app-header [headline]="'title.backup' | translate"></app-header>
 
   <div class="container">
-    <div class="-paper">
-      <p>{{ 'backup.wallet-directory' | translate }} {{ folder }}</p>
+    <div class="paper small-padding mb-0">
+      <p class="mt-0">{{ 'backup.wallet-directory' | translate }} {{ folder }}</p>
       <p>{{ 'backup.seed-warning' | translate }}</p>
-      <p class="-text-muted">
+      <p class="grey-text mb-0">
         <small [innerHtml]="'backup.desc' | translate"></small>
       </p>
     </div>
@@ -24,9 +24,9 @@
       </div>
       <div class="-body">
         <div class="-row" *ngFor="let wallet of onlyEncrypted">
-          <div class="-width-250 -label" [attr.title]="wallet.label">{{ wallet.label }}</div>
+          <div class="-width-250 text-truncate" [attr.title]="wallet.label">{{ wallet.label }}</div>
           <div class="-width-150">{{ wallet.filename }}</div>
-          <div class="-flex-fill -text-right">
+          <div class="-flex-fill text-right">
             <span class="link" (click)="showSeed(wallet)">{{ 'backup.show-seed' | translate }}</span>
           </div>
         </div>

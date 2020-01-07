@@ -1,15 +1,14 @@
 @import '../../../../../theme/variables';
 
-.-port, .-last-seen, .-source {
-  color: $grey;
+.-direction-cell {
+  width: 72px;
+  flex-shrink: 0;
 }
 
-.-direction {
-  width: 72px;
+.-direction-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  flex-shrink: 0;
 
   img {
     width: 32px;
@@ -20,10 +19,15 @@
   }
 }
 
-.-last-seen {
+.-last-seen-cell {
+  width: 180px;
+  flex-shrink: 0;
+}
+
+.-last-seen-container {
   display: flex;
   flex-direction: column;
-  font-size: 12px;
+  font-size: $font-size-mini;
   line-height: 1;
   justify-content: center;
 
@@ -35,30 +39,28 @@
   }
 }
 
-.-text-right {
-  text-align: right;
-}
-
-.-pl-0 {
+.-address-cell {
+  width: 200px;
+  flex-shrink: 0;
   padding-left: 0 !important;
 }
 
-.-block-row {
+.-block-cell {
   width: 150px;
   flex-shrink: 0;
-}
-
-.-invisible {
-  display: none;
+  text-align: right;
 }
 
 @media (max-width: $max-sm-width) {
-  .-pl-0 {
+  .-row {
+    font-size: $font-size-standard-minus !important;
+  }
+
+  .-address-cell {
     width: 160px !important;
   }
 
-  .-block-row {
-    width: 90px;
-    flex-shrink: 0;
+  .-block-cell {
+    width: 100px;
   }
 }

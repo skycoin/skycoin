@@ -1,4 +1,4 @@
-<div [formGroup]="form">
+<div class="main-container" [formGroup]="form">
   <div class="form-field">
     <label for="label">{{ 'wallet.new.name-label' | translate}}</label>
     <input formControlName="label" id="label">
@@ -31,12 +31,12 @@
         <span class="normal-seed-field" *ngIf="create || lastAssistedSeed">{{ lastAssistedSeed }}</span>
         <div *ngIf="!create && lastAssistedSeed" [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.change-seed' | translate }}</div>
         <div *ngIf="!create && !lastAssistedSeed" class="text-with-icon-container">
-          <mat-icon class="yellow">touch_app</mat-icon><span [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.enter-seed' | translate }}</span>
+          <mat-icon class="yellow-text">touch_app</mat-icon><span [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.enter-seed' | translate }}</span>
         </div>
       </div>
       <div class="seed-type-button">
         <div [ngClass]="{'dashed-border': !onboarding}" (click)="changeSeedType();">
-          <img src="../../../../assets/img/lock-gold.png" [matTooltip]="'wallet.new.seed.use-custom-seed' | translate">
+          <img src="assets/img/lock-gold.png" [matTooltip]="'wallet.new.seed.use-custom-seed' | translate">
         </div>
       </div>
     </ng-container>
@@ -45,12 +45,12 @@
       <textarea formControlName="seed" id="seed" rows="2"></textarea>
       <div class="seed-type-button">
         <div [ngClass]="{'dashed-border': !onboarding}" (click)="changeSeedType();">
-          <img src="../../../../assets/img/unlock-grey.png" [matTooltip]="'wallet.new.seed.use-normal-seed' | translate">
+          <img src="assets/img/unlock-grey.png" [matTooltip]="'wallet.new.seed.use-normal-seed' | translate">
         </div>
       </div>
     </ng-container>
 
-    <p [ngClass]="{'red-disclaimer-box': !onboarding, 'white-disclaimer-box transparent-text': onboarding}" *ngIf="create">
+    <p class="disclaimer-box" [ngClass]="{'red-text': !onboarding, 'white-text transparent-text': onboarding}" *ngIf="create">
       {{ 'wallet.new.seed-warning' | translate}}
     </p>
   </div>
@@ -59,10 +59,10 @@
     <ng-container *ngIf="enterSeedWithAssistance">
       <div class="dashed-border non-editable-field" [ngClass]="{'onboarding-version': onboarding, 'show-pointer': !assistedSeedConfirmed}" (click)="confirmNormalSeed()">
         <div *ngIf="!assistedSeedConfirmed" class="text-with-icon-container">
-          <mat-icon class="yellow">touch_app</mat-icon><span [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.confirm-seed' | translate }}</span>
+          <mat-icon class="yellow-text">touch_app</mat-icon><span [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.confirm-seed' | translate }}</span>
         </div>
         <div *ngIf="assistedSeedConfirmed" class="text-with-icon-container">
-          <mat-icon class="green">done</mat-icon> <span [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.confirmed-seed' | translate }}</span>
+          <mat-icon class="green-text">done</mat-icon> <span [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.confirmed-seed' | translate }}</span>
         </div>
       </div>
     </ng-container>
@@ -74,7 +74,7 @@
   <div *ngIf="!onboarding">
     <div>
       <mat-checkbox class="-check" (change)="setEncrypt($event)" type="checkbox" id="encrypt" [checked]="true">
-        <img src="../../../../../assets/img/lock-gold.png"> {{ 'wallet.new.encrypt' | translate }}
+        <span class="img-label-container"><img src="assets/img/lock-gold.png"> {{ 'wallet.new.encrypt' | translate }}</span>
       </mat-checkbox>
     </div>
     <div class="row -passwords">

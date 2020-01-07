@@ -5,19 +5,22 @@
 @import 'theme/forms';
 @import 'theme/onboarding';
 @import 'theme/buttons';
+@import 'theme/text';
+@import 'theme/menu';
 
+@import "~bootstrap/scss/mixins";
 @import '~bootstrap/scss/bootstrap-grid.scss';
 @import '~bootstrap/scss/utilities/_display.scss';
+@import "~bootstrap/scss/utilities/_text.scss";
+@import "~bootstrap/scss/utilities/_spacing.scss";
 
 /* You can add global styles to this file, and also import other style files */
 //@import '~@angular/material/prebuilt-themes/indigo-pink.css';
 @import 'app/app.theme.scss';
 
-$mat-font-family: Skycoin, Roboto, 'Helvetica Neue', sans-serif;
-
 body, div, h1, h2, h3, h4, h5, h6, p, span, a, button, option, select,
 mat-panel-description, mat-panel-title, mat-option.mat-option {
-  font-family: $mat-font-family;
+  font-family: $font-family;
 }
 
 html {
@@ -82,18 +85,18 @@ General Helpers
 Alerts
  */
 
-.alert-box {
+ .alert-box {
   color: $red;
-  font-size: 12px;
+  font-size: $font-size-standard-minus;
   padding: 0 10px;
   line-height: 1.5;
-  background-color: #ffdede;
+  background-color: $light-red-background;
   padding: 15px;
   display: flex;
   margin-bottom: 20px;
 
   .title {
-    font-size: 20px;
+    font-size: $font-size-very-big;
   }
 
   mat-icon {
@@ -106,6 +109,12 @@ Alerts
     margin-top: 10px;
     display: inline-block;
   }
+
+  .-check {
+    span {
+      color: $black !important;
+    }
+  }
 }
 
 @keyframes alert-blinking {
@@ -114,71 +123,26 @@ Alerts
   }
 }
 
-.mat-menu-panel {
-  border-radius: $rounded-element-border-radius !important;
-  background-color: $white;
-
-  .mat-menu-item {
-    font-family: Skycoin;
-    height: 50px;
-    line-height: 50px;
-    font-size: $font-size-standard-plus;
-  }
-
-  &.compact {
-    .mat-menu-item {
-      font-size: $font-size-standard;
-      height: 35px;
-      line-height: 35px;
-    }
-  }
-}
-
 .red {
   color: $red;
-}
-
-.-check-container{
-  text-align: center;
-  margin-top: 25px;
-
-  .-check {
-    label {
-      font-size: $font-size-standard-plus;
-      max-width: 100%;
-      color: $black;
-      white-space: normal;
-      text-align: left;
-    }
-  
-    .mat-checkbox-checkmark-path {
-      position: absolute;
-      width: 18px;
-      height: 8px;
-      left: 4.59px;
-      top: 9px;
-      stroke: $main-color !important;
-    }
-  
-    .mat-checkbox-background, .mat-checkbox-frame {
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      position: absolute;
-      box-sizing: border-box;
-      pointer-events: none;
-      width: 20px;
-      height: 20px;
-      background: $grey-very-light;
-      border-radius: 6px;
-      border-color: transparent;
-    }
-  }
 }
 
 .link {
   color: $main-color;
   cursor: pointer;
   text-decoration: none;
+}
+
+.paper {
+  background-color: $white;
+  border-radius: $very-rounded-element-border-radius;
+  box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.01), 1px 1px 2px 2px rgba(0, 0, 0, 0.01);
+  padding: $main-containers-padding;
+  margin: $main-containers-margin;
+  font-size: $font-size-standard;
+  overflow: hidden;
+
+  &.small-padding {
+    padding: $main-containers-small-padding;
+  }
 }

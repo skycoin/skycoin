@@ -1,8 +1,9 @@
 @import '../../../../theme/variables';
+@import '../../../../customize/styling';
 
 .-container {
-  background-color: #fbfbfb;
-  border-bottom: 2px solid rgba(30, 34, 39, 0.05);
+  background-color: $white;
+  border-bottom: 2px solid $grey-very-light;
 }
 
 .large-header {
@@ -24,10 +25,10 @@
 
 .balance-container {
   align-items: center;
-  color: $white;
+  color: $header-text-color;
   display: flex;
   flex: 1 1 auto;
-  font-size: 12px;
+  font-size: $font-size-standard-minus;
   justify-content: center;
   text-align: center;
 
@@ -51,27 +52,27 @@
   text-align: center;
 
   p {
-    background-color: rgba(255, 255, 255, 0.3);
-    border-radius: 15px;
-    color: $black;
+    background-color: $header-hours-background-color;
+    border-radius: 1000px;
+    color: $header-hours-text-color;
     display: inline-block;
-    font-size: 12px;
-    line-height: 22px;
+    font-size: $font-size-standard-minus;
+    line-height: 1.8;
     margin: 1em 0 2em;
     padding: 0 30px;
   }
 }
 
 .notification-bar {
-  background-color: #F44A4D;
-  color:#FBFBFB;
+  background-color: $red;
+  color: $white;
 
   div {
     margin: auto;
 
     a {
-      text-decoration: none;
-      color: #FFEBEE;
+      text-decoration: underline;
+      color: $white;
     }
   }
 }

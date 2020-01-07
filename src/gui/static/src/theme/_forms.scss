@@ -1,7 +1,6 @@
 @import 'variables';
 
 $input-border-size: 2px;
-$input-border-radius: $rounded-element-border-radius;
 $input-border-color: $grey-very-light;
 
 .form-field {
@@ -69,6 +68,73 @@ $input-border-color: $grey-very-light;
     padding: 10px 10px;
     width: 100%;
   }
+
+  mat-slider {
+    border: $input-border-size solid $input-border-color;
+    border-radius: $input-border-radius;
+    box-sizing: border-box;
+    display: block;
+    font-size: $font-size-standard;
+    line-height: $font-size-standard * 1.5;
+    padding: 0;
+    width: 100%;
+    height: 40px;
+    background: white;
+
+    .mat-slider-thumb, .mat-slider-thumb-label {
+      background-color: $main-color !important;
+      transform: scale(1) !important;
+      border-width: 0 !important;
+    }
+
+    .mat-slider-thumb {
+      right: -6px;
+      width: 12px;
+      height: 32px;
+      border-radius: 3px;
+    }
+
+    .mat-slider-track-fill, .mat-slider-track-background {
+      background-color: white !important;
+    }
+  }
+
+  mat-select {
+    background: white;
+    border: $input-border-size solid $input-border-color;
+    border-radius: $input-border-radius;
+    box-sizing: border-box;
+    display: block;
+    font-size: $font-size-standard;
+    line-height: $font-size-standard * 1.5;
+    width: 100%;
+
+    .mat-select-trigger {
+      padding: 10px 40px 10px 10px;
+      display: block;
+      font-size: $font-size-mini;
+      height: 100%;
+      line-height: 1.9;
+    }
+
+    .mat-select-arrow {
+      border: none;
+    }
+
+    .mat-select-placeholder {
+      color: unset !important;
+      transition: unset !important;
+      //color: $grey;
+    }
+  }
+}
+
+mat-option .mat-pseudo-checkbox-checked {
+  background: $main-color;
+}
+
+.mat-option-disabled .mat-pseudo-checkbox-disabled {
+  opacity: 0.5;
 }
 
 .-select {
@@ -97,4 +163,66 @@ textarea {
 .element-disabled {
   pointer-events: none;
   opacity: 0.5;
+}
+
+.modal-form-container {
+  margin-top: 20px;
+}
+
+.-check-container{
+  text-align: center;
+  margin-top: 25px;
+}
+
+.-check {
+  label {
+    font-size: $font-size-standard;
+    max-width: 100%;
+    color: $black;
+    white-space: normal;
+    text-align: left;
+
+    .img-label-container {
+      position: relative;
+      top: 2px;
+  
+      img {
+        width: 38px;
+        height: 38px;
+        vertical-align: middle;
+      }
+    }
+  }
+
+  .mat-checkbox-checkmark-path {
+    position: absolute;
+    width: 18px;
+    height: 8px;
+    left: 4.59px;
+    top: 9px;
+    stroke: $main-color !important;
+  }
+
+  .mat-checkbox-background, .mat-checkbox-frame {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    position: absolute;
+    box-sizing: border-box;
+    pointer-events: none;
+    width: 20px;
+    height: 20px;
+    background: $grey-very-light !important;
+    border-radius: 6px;
+    border-color: transparent;
+  }
+}
+
+.help-icon {
+  display: inline !important;
+  font-size: $font-size-standard-plus;
+  color: lighten($grey, 40%);
+  vertical-align: text-bottom;
+  padding-left: 5px;
 }

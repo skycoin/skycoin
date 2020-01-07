@@ -9,8 +9,8 @@
   .button {
     width: 118px;
     margin: 20px;
-    font-size: 12px;
-    line-height: unset;
+    font-size: $font-size-standard-minus;
+    line-height: 1.4;
     padding: 0;
     min-width: 0px;
 

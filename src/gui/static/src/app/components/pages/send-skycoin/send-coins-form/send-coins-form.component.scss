@@ -12,69 +12,8 @@
   }
 }
 
-mat-checkbox {
-  font-size: 12px;
-}
-
-.-autohours {
-  margin: 40px 0 20px;
-
-  .-check ::ng-deep {
-    .mat-checkbox-checkmark-path {
-      stroke: $main-color !important;
-    }
-
-    .mat-checkbox-background, .mat-checkbox-frame {
-      width: 20px;
-      height: 20px;
-      background: rgba(30, 34, 39, 0.05);
-      border-radius: 6px;
-      border-color: transparent;
-    }
-
-    .mat-checkbox-label {
-      line-height: 20px;
-      font-size: 13px;
-      color: $grey-dark;
-      flex: 1;
-    }
-
-    .mat-checkbox-layout {
-      display: flex;
-    }
-  }
-
-  .-options-wrapper {
-    margin-top: 20px;
-
-    mat-slider {
-      width: 100%;
-      padding: 0;
-      height: 40px;
-      border: 2px solid rgba(0, 0, 0, 0.05);
-      border-radius: 6px;
-      background: white;
-
-      ::ng-deep {
-        .mat-slider-thumb, .mat-slider-thumb-label {
-          background-color: $main-color !important;
-          transform: scale(1) !important;
-          border-width: 0 !important;
-        }
-
-        .mat-slider-thumb {
-          right: -6px;
-          width: 12px;
-          height: 32px;
-          border-radius: 3px;
-        }
-
-        .mat-slider-track-fill, .mat-slider-track-background {
-          background-color: white !important;
-        }
-      }
-    }
-  }
+.-options-wrapper {
+  margin-top: 20px;
 }
 
 .-options {
@@ -92,33 +31,17 @@ mat-checkbox {
   }
 }
 
-.-buttons {
-  text-align: center;
-}
-
-.-hidden {
-  display: none;
-}
-
 .-space-between {
   display: flex;
   justify-content: space-between;
 }
 
-label mat-icon {
-  display: inline;
-  font-size: 14px;
-  color: lighten($grey, 40%);
-  vertical-align: text-bottom;
-  padding-left: 5px;
-}
-
 .-available-msg {
   background-color: $grey-lightest;
   border: 1px dotted $grey-light;
-  border-radius: 6px;
+  border-radius: $input-border-radius;
   padding: 10px;
-  font-size: 11px;
+  font-size: $font-size-mini;
   text-align: center;
 
   span {
@@ -128,6 +51,6 @@ label mat-icon {
   .value {
     opacity: 1 !important;
     font-weight: bold;
-    font-size: 13px;
+    font-size: $font-size-standard;
   }
 }

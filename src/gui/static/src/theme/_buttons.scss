@@ -29,6 +29,7 @@
 .qr-code-button {
   opacity: 0.6;
   cursor: pointer;
+  width: $qr-code-button-size;
 
   &:hover {
     opacity: 1;

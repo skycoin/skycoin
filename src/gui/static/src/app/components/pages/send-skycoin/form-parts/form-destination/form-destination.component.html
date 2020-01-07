@@ -7,7 +7,7 @@
   <div class="form-field">
     <label for="destination" class="destinations-label">
       {{ (!showSimpleForm ? 'send.destinations-label' : 'send.amount-label') | translate }}
-      <mat-icon *ngIf="!showSimpleForm" [matTooltip]="('send.destinations-help' + (!this.showHourFields ? '1' : '2')) | translate">help</mat-icon>
+      <mat-icon class="help-icon" *ngIf="!showSimpleForm" [matTooltip]="('send.destinations-help' + (!this.showHourFields ? '1' : '2')) | translate">help</mat-icon>
     </label>
     <div class="coin-selector-container" *ngIf="price" [ngClass]="{ 'element-disabled': busy }">
       <app-double-button
@@ -44,14 +44,14 @@
           </div>
         </div>
         <div *ngIf="!showSimpleForm" class="col-lg-3 col-md-4">
-          <div [ngClass]="{ '-input-addon': true, '-hidden': !showHourFields }">
+          <div [ngClass]="{ '-input-addon': true, 'd-none': !showHourFields }">
             <input formControlName="hours" [attr.disabled]="busy ? 'true' : null">
             <span>{{ 'hours' | commonText }}</span>
           </div>
         </div>
         <div *ngIf="!showSimpleForm" class="col-md-1 -icons" [ngClass]="{'element-disabled' : busy}">
-          <img *ngIf="i === 0" (click)="addDestination()" src="../../../../../assets/img/plus-green.png" alt="plus">
-          <img *ngIf="i !== 0" (click)="removeDestination(i)" src="../../../../../assets/img/minus-grey.png" alt="minus">
+          <img *ngIf="i === 0" (click)="addDestination()" src="assets/img/plus-green.png" alt="plus">
+          <img *ngIf="i !== 0" (click)="removeDestination(i)" src="assets/img/minus-grey.png" alt="minus">
         </div>
       </div>
     </div>

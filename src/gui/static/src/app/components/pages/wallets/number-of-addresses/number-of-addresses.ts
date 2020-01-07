@@ -7,7 +7,7 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
 @Component({
   selector: 'app-number-of-addresses',
   templateUrl: './number-of-addresses.html',
-  styleUrls: ['./number-of-addresses.css'],
+  styleUrls: ['./number-of-addresses.scss'],
 })
 export class NumberOfAddressesComponent implements OnInit, OnDestroy {
   @ViewChild('button', { static: false }) button: ButtonComponent;

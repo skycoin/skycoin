@@ -33,7 +33,6 @@
     }
 
     .copy {
-      color: $grey-semi-dark;
       opacity: 0.25;
     }
   }
@@ -58,8 +57,4 @@
     vertical-align: middle;
     font-size: 13px;
   }
-}
-
-.invalid {
-  color: $red;
 }

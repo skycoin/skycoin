@@ -36,27 +36,11 @@
 
       .list-element {
         margin: 10px 0;
-        font-size: 12px;
+        font-size: $font-size-standard-minus;
         color: #000000;
         font-weight: bold;
       }
     }
-  }
-
-  .-red {
-    color: $red;
-  }
-
-  .-yellow {
-    color: $yellow;
-  }
-
-  .-grey {
-    color: $grey-light;
-  }
-
-  .-green {
-    color: $green;
   }
 
   .-blinking {

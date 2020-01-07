@@ -9,7 +9,7 @@
     <div *ngIf="text" class="-body">
       {{ text | translate }}
     </div>
-    <div [formGroup]="form" class="form-container">
+    <div [formGroup]="form" class="modal-form-container">
       <div *ngIf="dropdownElements" class="form-field">
         <label *ngIf="dropdownLabel" for="dropdown">{{ dropdownLabel | translate }}</label>
         <div class="-select">

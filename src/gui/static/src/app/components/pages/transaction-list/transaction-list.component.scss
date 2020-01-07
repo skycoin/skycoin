@@ -1,106 +1,76 @@
 @import '../../../../theme/variables';
 
 .form-field {
-  margin: 10px 40px;
-  margin-bottom: -20px;
+  margin: 10px $main-containers-margin;
+  margin-bottom: -($main-containers-margin * 0.7);
   display: flex;
 
-  .x-button {
-    width: 24px;
-    height: 24px;
-    margin-top: 10px;
-    cursor: pointer;
-  }
-}
-
-.bottom-line {
-  border-bottom: 2px solid rgba(0, 0, 0, 0.02);
-}
-
-mat-select {
-  ::ng-deep .mat-select-trigger {
-    padding: 10px 30px 10px 10px;
-    display: block;
-    font-size: 11px;
-    height: 100%;
-    line-height: 20px;
-  }
-
-  ::ng-deep .mat-select-value {
-    font-size: 13px;
-    line-height: 22px;
-  }
-
-  ::ng-deep .mat-select-arrow {
-    border: none;
-  }
-
-  ::ng-deep .mat-select-placeholder {
-    transition: unset !important;
-    color: $grey;
-
-    &::before {
+  mat-select {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    ::ng-deep .mat-select-value {
+      font-size: $font-size-standard;
+      line-height: 1.7;
+    }
+  
+    .left-icon {
       content: 'filter_list';
       font-family: 'Material Icons';
       font-weight: normal;
       font-style: normal;
       font-size: 13px;
       margin-right: 10px;
+      position: relative;
+      top: 1px;
+    }
+  
+    ::ng-deep .mat-select-placeholder {
+      color: $grey !important;
+  
+      &::before {
+        @extend .left-icon;
+      }
+    }
+  
+    mat-select-trigger::before {
+      @extend .left-icon;
+    }
+  
+    .filter {
+      font-size: $font-size-standard;
+      margin-left: 28px;
+      color: $grey;
     }
   }
 
-  mat-select-trigger::before {
-    content: 'filter_list';
-    font-family: 'Material Icons';
-    font-weight: normal;
-    font-style: normal;
-    font-size: 13px;
-    margin-right: 10px;
-  }
-
-  .filter {
-    font-size: 13px;
-    margin-left: 28px;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: nowrap;
-    color: $grey;
-  }
-}
-
-mat-option ::ng-deep .mat-pseudo-checkbox-checked {
-  background: $main-color;
-}
-
-.mat-option-disabled {
-  ::ng-deep .mat-pseudo-checkbox-disabled {
+  .x-button {
+    width: 24px;
+    height: 24px;
+    margin-top: 10px;
+    cursor: pointer;
     opacity: 0.5;
+
+    &:hover {
+      opacity: 1;
+    }
   }
 }
 
-.-paper {
-  background-color: #fbfbfb;
-  border-radius: 10px;
-  box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.01), 1px 1px 2px 2px rgba(0, 0, 0, 0.01);
-  margin: 30px;
+.bottom-line {
+  border-bottom: 2px solid $grey-very-light;
+}
+
+.paper {
+  padding: 0;
 }
 
 .-transaction {
   background-color: $white;
-  border-bottom: 1px solid #eff0f0;
+  border-bottom: 1px solid $grey-very-light;
   cursor: pointer;
   display: flex;
   padding: 20px 12px;
-
-  &:first-child {
-    border-top-left-radius: 15px;
-    border-top-right-radius: 15px;
-  }
-
-  &:last-child {
-    border-bottom-left-radius: 15px;
-    border-bottom-right-radius: 15px;
-  }
 
   > div {
     padding: 0 8px;
@@ -114,9 +84,6 @@ mat-option ::ng-deep .mat-pseudo-checkbox-checked {
     }
 
     &.-incoming {
-      -moz-transform: scaleX(-1);
-      -o-transform: scaleX(-1);
-      -webkit-transform: scaleX(-1);
       transform: scaleX(-1);
       filter: FlipH;
       -ms-filter: "FlipH";
@@ -131,21 +98,21 @@ mat-option ::ng-deep .mat-pseudo-checkbox-checked {
     flex: 1;
 
     h4 {
-      color: #1e2227;
-      font-size: 13px;
+      color: $black;
+      font-size: $font-size-standard;
       font-weight: 700;
-      line-height: 15px;
+      line-height: 1.15;
       margin: 0 0 8px 0;
 
       span {
-        font-size: 10px;
-        line-height: 12px;
+        font-size: $font-size-mini;
+        line-height: 1.2;
         padding-left: 5px;
         font-weight: 300;
       }
 
       .-pending {
-        color: #FDB51E;
+        color: $yellow;
       }
 
       .-timestamp {
@@ -159,25 +126,19 @@ mat-option ::ng-deep .mat-pseudo-checkbox-checked {
       }
 
       img {
-        display: inline-block;
-        height: 17px;
         vertical-align: middle;
-        width: 17px;
         margin-right: 4px;
       }
 
       span {
-        color: rgba(30, 34, 39, 0.5);
-        display: inline-block;
-        font-size: 13px;
-        line-height: 15px;
-        margin: 0;
+        color: $grey;
+        font-size: $font-size-standard;
+        line-height: 1.15;
       }
 
       .note {
-        color: #1e2227;
+        color: $black;
         word-break: break-word;
-        display: inline;
       }
     }
   }
@@ -185,36 +146,30 @@ mat-option ::ng-deep .mat-pseudo-checkbox-checked {
   .-balance {
     width: 200px;
     text-align: right;
+    font-size: $font-size-standard;
+    line-height: 1.15;
 
     h4 {
-      color: #1e2227;
-      font-size: 13px;
+      color: $black;
       font-weight: 700;
-      line-height: 15px;
       margin: 0 0 8px 0;
     }
 
     p {
-      color: rgba(30, 34, 39, 0.5);
+      color: $grey;
       display: inline-block;
-      font-size: 13px;
-      line-height: 15px;
       margin: 0;
-
-      span {
-        color: lighten($grey, 40%);
-      }
     }
   }
 
   &:hover {
-    background-color: darken($white, 1%);
+    background-color: $white-hover;
   }
 }
 
 .view-all-button {
   color: $main-color;
-  font-size: 13px;
+  font-size: $font-size-standard;
   text-align: center;
   padding: 20px;
   cursor: pointer;

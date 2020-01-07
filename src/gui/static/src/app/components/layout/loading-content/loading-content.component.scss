@@ -3,23 +3,25 @@
 .-content {
   text-align: center;
   margin: 50px 0;
-  color: $grey;
-  font-size: 13px;
+  color: darken($grey, 100%);
+  font-size: $font-size-standard;
 
   p {
     margin-top: 15px;
   }
 
   i {
-    color: $grey-light;
+    color: $grey;
     font-size: 40px;
+    opacity: 0.5;
   }
 
   mat-spinner {
     display: inline-block;
+    opacity: 0.5;
 
     ::ng-deep circle {
-      stroke: $grey-light;
+      stroke: $grey;
     }
   }
 }

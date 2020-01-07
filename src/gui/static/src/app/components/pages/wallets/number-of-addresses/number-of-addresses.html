@@ -5,7 +5,7 @@
       <input formControlName="quantity" id="quantity" type="number" min="1" max="100" (keydown.enter)="continue()">
     </div>
   </div>
-  <div class="-buttons">
+  <div class="text-center">
     <app-button (action)="closePopup()" [disabled]="button && button.isLoading()">
       {{ 'wallet.add-addresses.cancel-button' | translate }}
     </app-button>

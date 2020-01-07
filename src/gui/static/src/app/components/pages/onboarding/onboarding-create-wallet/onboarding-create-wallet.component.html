@@ -1,5 +1,5 @@
 <div class="onboarding-container">
-  <div class="row justify-content-center">
+  <div class="row">
     <div class="row-container">
       <div class="-header">
         <span>{{ 'wallet.new.create-title' | translate }}</span>
@@ -9,7 +9,7 @@
       </div>
     </div>
   </div>
-  <div class="row justify-content-center">
+  <div class="row">
     <div class="row-container -toggle-container">
       <app-double-button
         [leftButtonText]="'common.new' | translate"
@@ -19,7 +19,7 @@
       ></app-double-button>
     </div>
   </div>
-  <div class="row justify-content-center">
+  <div class="row">
     <div class="row-container">
       <app-create-wallet-form #formControl [create]="showNewForm" [onboarding]="true"></app-create-wallet-form>
     </div>

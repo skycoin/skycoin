@@ -1,34 +1,50 @@
 @import '../../../../theme/variables';
 
-.button-container {
-  display: inline-block;
-}
+$button-height: 50px;
 
 button {
-  border-radius: 25px;
-  height: 50px;
+  border-radius: 1000px;
+  height: $button-height;
   margin: 20px 10px 0;
   width: 160px;
   overflow: hidden;
 }
 
+/* Default button color. */
 button.enabled {
-  background-color: rgba(30, 34, 39, 0.05);
+  background-color: $grey-very-light;
   box-shadow: none;
-  color: #1e2227;
+  color: $black;
 }
 
-mat-icon {
-  margin-left: 10px;
-  opacity: 0.3;
-  line-height: 20px;
-}
+/* 2 lines max. Content centered. */
+.content-container {
+  display: flex;
+  align-items: center;
+  max-height: 100%;
+  justify-content: center;
 
-mat-spinner {
-  display: inline-block;
-  height: 24px !important;
-  width: 24px !important;
-  margin-left: 10px;
-  position: relative;
-  top: -2px;
+  .content {
+    flex-grow: 0;
+    overflow: hidden;
+    white-space: normal;
+    line-height: $font-size-standard-plus * 1.3;
+    font-size: $font-size-standard-plus;
+    max-height: min(($font-size-standard-plus * 1.3) * 2, $button-height);
+    word-break: break-word;
+  }
+
+  mat-icon {
+    flex-shrink: 0;
+    margin-left: 10px;
+    opacity: 0.3;
+    line-height: 20px;
+  }
+  
+  mat-spinner {
+    flex-shrink: 0;
+    margin-left: 10px;
+    position: relative;
+    top: -2px;
+  }
 }

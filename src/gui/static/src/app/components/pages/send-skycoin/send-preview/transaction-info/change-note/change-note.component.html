@@ -3,7 +3,7 @@
     <div class="form-field">
       <label for="note">
         {{ 'send.personal-note-label' | translate }}
-        <mat-icon [matTooltip]="'send.personal-note-help' | translate">help</mat-icon>
+        <mat-icon class="help-icon" [matTooltip]="'send.personal-note-help' | translate">help</mat-icon>
       </label>
       <input formControlName="note" id="note" (keydown.enter)="changeNote()" [maxlength]="maxNoteChars">
     </div>

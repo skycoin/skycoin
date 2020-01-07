@@ -1,4 +1,4 @@
-<app-modal class="modal" [class.red-title]="data.redTitle" [headline]="data.headerText | translate" [dialog]="dialogRef" [disableDismiss]="disableDismiss">
+<app-modal class="modal" [class.red-text]="data.redTitle" [headline]="data.headerText | translate" [dialog]="dialogRef" [disableDismiss]="disableDismiss">
   <div class="-body">
     {{ data.text | translate }}
     <span *ngIf="data.linkText && data.linkFunction" class="link" (click)="data.linkFunction(); closeModal(false);">{{ data.linkText | translate }}</span>

@@ -16,13 +16,13 @@
   <div [formGroup]="form" *ngIf="showForm">
     <div class="form-field">
       <label for="coins">
-        {{ 'qr.amount' | translate }} <span class="invalid" *ngIf="invalidCoins">{{ 'qr.invalid' | translate }}</span>
+        {{ 'qr.amount' | translate }} <span class="red-text" *ngIf="invalidCoins">{{ 'qr.invalid' | translate }}</span>
       </label>
       <input maxlength="20" formControlName="coins" id="coins">
     </div>
     <div class="form-field">
       <label for="hours">
-        {{ 'qr.hours' | translate }} <span class="invalid" *ngIf="invalidHours">{{ 'qr.invalid' | translate }}</span>
+        {{ 'qr.hours' | translate }} <span class="red-text" *ngIf="invalidHours">{{ 'qr.invalid' | translate }}</span>
       </label>
       <input maxlength="20" formControlName="hours" id="hours">
     </div>

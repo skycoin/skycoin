@@ -1,5 +1,7 @@
 @import 'customize/styling.scss';
 
+$font-family: Skycoin, Roboto, 'Helvetica Neue', sans-serif;
+
 // Backgrounds
 $gradient-dark: $app-gradient-dark;
 $gradient-light: $app-gradient-light;
@@ -9,6 +11,7 @@ $main-color: $app-main-color;
 $black: #1e2227;
 $white: #fafafa;
 $transparent: rgba(0,0,0,0);
+$white-hover: #f7f7f7;
 
 $grey-lightest: #f7f7f7;
 $grey-very-light: rgba(30, 34, 39, 0.05);
@@ -20,19 +23,33 @@ $grey-dark: #1e2227;
 $red: #ff004e;
 $green: #00df80;
 $yellow: #ffc125;
+$light-red-background: #ffdede;
 
+$wizard-double-button-background:rgba(255, 255, 255, 0.1);
+$internal-double-button-background:rgba(30, 34, 39, 0.065);
+
+// Sizes
 $rounded-element-border-radius: 6px;
-$very-rounded-element-border-radius: 15px;
+$very-rounded-element-border-radius: 10px;
+$input-border-radius: $rounded-element-border-radius;
+
+$main-containers-margin: 30px;
+$main-containers-padding: 30px;
+$main-containers-small-padding: 20px;
+
+$qr-code-button-size: 17px;
 
 // Grid
 $row-height: 60px;
-$row-detail-size: 32px;
 
 // Texts
+$font-size-micro: 9px;
+$font-size-mini: 11px;
 $font-size-standard-minus: 12px;
 $font-size-standard: 13px;
 $font-size-standard-plus: 14px;
 $font-size-big: 15px;
+$font-size-very-big: 18px;
 $letter-spacing-wide: 1px;
 
 // Responsive sizes

@@ -12,6 +12,7 @@
 
 mat-dialog-container {
   border-radius: $rounded-element-border-radius !important;
+  overflow: hidden;
 }
 
 .mat-dialog-container {
@@ -34,5 +35,17 @@ mat-dialog-container {
     button {
       margin-top: 28px;
     }
+  }
+}
+
+.list-button-container {
+  margin: 0px -10px;
+
+  button {
+    width: 100%;
+    text-align: left;
+    padding: 10px 10px;
+    border-bottom: 1px solid $grey-very-light;
+    cursor: pointer;
   }
 }

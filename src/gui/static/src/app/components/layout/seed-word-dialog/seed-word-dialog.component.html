@@ -11,7 +11,7 @@
     [icon]="msgIcons.None"
     *ngIf="!data.isForHwWallet"
   ></app-hw-message>
-  <div [formGroup]="form" class="form-container">
+  <div [formGroup]="form" class="modal-form-container">
     <div class="form-field">
       <label for="word" *ngIf="data.isForHwWallet">{{ 'hardware-wallet.seed-word.word' | translate }}</label>
       <input matInput [matAutocomplete]="auto" formControlName="word" id="word" (keydown.enter)="sendWord()">

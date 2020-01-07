@@ -27,6 +27,7 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 	- [Broadcast a raw transaction](#broadcast-a-raw-transaction)
 	- [Create a wallet](#create-a-wallet)
 	- [Add addresses to a wallet](#add-addresses-to-a-wallet)
+    - [Scan addresses in a wallet](#scan-addresses-in-a-wallet)
 	- [Export a specific key from an HD wallet](#export-a-specific-key-from-an-hd-wallet)
 	- [Encrypt Wallet](#encrypt-wallet)
 	- [Examples](#examples)
@@ -1407,6 +1408,54 @@ $ skycoin-cli walletAddAddresses $WALLET_FILE -n 2
 ##### Add an address to a wallet with JSON output
 ```bash
 $ skycoin-cli walletAddAddresses $WALLET_FILE --json
+```
+
+<details>
+ <summary>View Output</summary>
+
+```json
+{
+  "addresses": [
+    "QuLaPirJNUkBpMoe5tzzY7j6nJ5maUVJF1"
+  ]
+}
+```
+</details>
+
+### Scan addresses in a wallet
+Scan wallet ahead to find addresses with balance.
+
+```bash
+$ skycoin-cli walletScanAddresses [wallet] [flags]
+```
+
+```
+FLAGS:
+  -h, --help              help for walletScanAddresses
+  -j, --json              Returns the results in json format
+  -n, --num uint          Number of addresses to scan ahead (default 20)
+  -p, --password string   wallet password
+```
+
+### Scan ahead `n` addresses in a wallet
+
+```bash
+$ skycoin-cli walletScanAddresses $WALLET_FILE -n 10
+```
+
+<details>
+ <summary>View Output</summary>
+
+```
+2UrEV3Vyu5RJABZNukKRq25ggrrg96RUwdH
+LJN5qGmLbJxLswzD3nFn3RFcmWJyZ2LGHY
+```
+</details>
+
+### Scan ahead `n` addresses in a wallet with JSON output
+
+```bash
+$ skycoin-cli walletScanAddresses $WALLET_FILE -n 10 --json
 ```
 
 <details>

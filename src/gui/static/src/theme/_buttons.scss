@@ -1,5 +1,9 @@
+/*********************
+* Styles for the form elements.
+*********************/
 @import 'variables';
 
+// Buttons with the main gradient.
 .primary-button button.enabled, .primary-gradient-background {
   background: $gradient-dark; /* For browsers that do not support gradients */
   background: -webkit-linear-gradient(left top, $gradient-dark, $gradient-light); /* For Safari 5.1 to 6.0 */
@@ -12,6 +16,7 @@
   }
 }
 
+// Dark buttons for the wizard.
 .dark-button button.enabled {
   background-color: $black !important;
   span {
@@ -19,19 +24,29 @@
   }
 }
 
+// Buttons without background.
 .ghost-button button.enabled {
-  background-color: $transparent !important;
+  background-color: transparent !important;
   span {
     color: black;
   }
 }
 
-.qr-code-button {
-  opacity: 0.6;
+// Mouse efects for the images used as buttons.
+.image-button {
   cursor: pointer;
-  width: $qr-code-button-size;
+  opacity: 0.5;
 
   &:hover {
+    opacity: 0.75;
+  }
+
+  &:active {
     opacity: 1;
   }
+}
+
+.qr-code-button {
+  @extend .image-button;
+  width: $qr-code-button-size;
 }

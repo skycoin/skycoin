@@ -1,4 +1,4 @@
-<app-modal class="modal" [headline]="this.title | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Processing">
+<app-modal [headline]="this.title | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Processing">
   <div *ngIf="currentState === states.Initial">
     <app-hw-message
       [text]="(text | translate)"

@@ -55,14 +55,3 @@
     color: white;
   }
 }
-
-.close-container {
-  mat-icon {
-    cursor: pointer;
-    opacity: 0.7;
-
-    &:hover {
-      opacity: 1;
-    }
-  }
-}

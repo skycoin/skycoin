@@ -55,9 +55,11 @@
     <label for="change-address">
       {{ 'send.change-address-label' | translate }}
       <mat-icon class="help-icon" [matTooltip]="'send.change-address-help' | translate">help</mat-icon>
-      <span class="-options" (click)="selectChangeAddress($event)" [ngClass]="{'element-disabled' : busy}">
-        {{ 'send.change-address-select' | translate }} <mat-icon>keyboard_arrow_down</mat-icon>
-      </span>
+      <app-arrow-link
+        [text]="'send.change-address-select'"
+        (pressed)="selectChangeAddress($event)"
+        [ngClass]="{'element-disabled' : busy}">
+      </app-arrow-link>
     </label>
     <input formControlName="changeAddress" id="change-address" (keydown.enter)="showForManualUnsigned ? preview() : null" [attr.disabled]="busy ? 'true' : null">
   </div>
@@ -75,9 +77,13 @@
       <div class="col-xl-4 col-lg-5 col-md-7">
         <mat-checkbox class="-check" (change)="setAutoHours($event)" [checked]="autoHours" [attr.disabled]="busy ? 'true' : null">
           <span>{{ 'send.hours-allocation-label' | translate }}</span>
-          <span class="-options" (mousedown)="$event.stopPropagation();" (click)="toggleOptions($event)" *ngIf="autoHours">
-            {{ 'send.options-label' | translate }} <mat-icon>{{ autoOptions ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
-          </span>
+          <app-arrow-link
+            *ngIf="autoHours"
+            [text]="'send.options-label'"
+            (mousedown)="$event.stopPropagation();"
+            (pressed)="toggleOptions($event)"
+            [pointDown]="!autoOptions">
+          </app-arrow-link>
         </mat-checkbox>
       </div>
     </div>

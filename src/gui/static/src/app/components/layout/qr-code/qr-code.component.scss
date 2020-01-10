@@ -21,11 +21,11 @@
   margin: 14px 0;
 
   .title {
-    color: $black;
+    color: $grey;
   }
 
   .data {
-    color: $grey-semi-dark;
+    color: $black;
     cursor: pointer;
 
     .text {
@@ -47,14 +47,5 @@
     .copy {
       opacity: 1;
     }
-  }
-}
-
-.link {
-  mat-icon {
-    padding: 0;
-    display: inline;
-    vertical-align: middle;
-    font-size: 13px;
   }
 }

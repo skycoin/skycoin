@@ -35,7 +35,7 @@
           <span>{{ 'tx.note' | translate }}:</span>
           <span *ngIf="transaction.note">{{ transaction.note }}</span>
           <span *ngIf="!transaction.note" class="grey-text">{{ 'tx.without-note' | translate }}</span>
-          <mat-icon class="edit-button" (click)="editNote()" *ngIf="!isPreview">edit</mat-icon>
+          <mat-icon class="edit-button image-button" (click)="editNote()" *ngIf="!isPreview">edit</mat-icon>
         </div>
       </div>
 
@@ -50,9 +50,11 @@
       </div>
     </div>
     <div class="-data -more" *ngIf="!showInputsOutputs">
-      <span (click)="toggleInputsOutputs($event)">
-        {{ 'tx.show-more' | translate }} <mat-icon>keyboard_arrow_down</mat-icon>
-      </span>
+      <app-arrow-link
+        [noPadding]="true"
+        [text]="'tx.show-more'"
+        (pressed)="toggleInputsOutputs($event)">
+      </app-arrow-link>
     </div>
   </div>
   <ng-container *ngIf="showInputsOutputs">

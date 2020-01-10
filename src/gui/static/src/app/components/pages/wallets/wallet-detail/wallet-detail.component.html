@@ -2,7 +2,7 @@
   <ng-container *ngIf="!wallet.isHardware">
     <div class="-button" (click)="newAddress()">
       <span [ngClass]="{ '-img -new-address': !creatingAddress, '-disabled-span': creatingAddress }">
-        <mat-spinner *ngIf="creatingAddress" class="in-button small"></mat-spinner>
+        <mat-spinner *ngIf="creatingAddress"></mat-spinner>
         {{ (wallet.isHardware ? 'wallet.new-address' : 'wallet.new-addresses') | translate }}
       </span>
     </div>
@@ -23,7 +23,7 @@
   </div>
   <div class="-button" (click)="editWallet()">
     <span [ngClass]="{ '-img -edit-wallet': !preparingToEdit, '-disabled-span': preparingToEdit }">
-      <mat-spinner *ngIf="preparingToEdit" class="in-button small"></mat-spinner>
+      <mat-spinner *ngIf="preparingToEdit"></mat-spinner>
       {{ 'wallet.edit' | translate }}
     </span>
   </div>
@@ -37,7 +37,7 @@
         <img src="assets/img/qr-code-black.png" (click)="showQrCode($event, address.address)" class="qr-code-button">
         <p class="click-to-copy" [ngClass]="{ copying: address.copying }" (click)="copyAddress($event, address)" (mouseleave)="address.copying = false">
           {{ address.address }}
-          <mat-spinner class="in-text small" *ngIf="confirmingIndex === i"></mat-spinner>
+          <mat-spinner *ngIf="confirmingIndex === i"></mat-spinner>
           <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">
             {{ 'wallet.address.copy' | translate }}
           </span>
@@ -48,7 +48,7 @@
           <span class="small-preview">{{ address.address }}</span>
           <span class="copy-label unconfirmed-label">
             {{ 'wallet.address.show' | translate }}
-            <mat-spinner class="in-text small" *ngIf="confirmingIndex === i"></mat-spinner>
+            <mat-spinner *ngIf="confirmingIndex === i"></mat-spinner>
           </span>
         </p>
       </ng-container>

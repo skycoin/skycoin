@@ -1,6 +1,6 @@
-<app-modal class="modal" [headline]="'wallet.rename.title' | translate" [dialog]="dialogRef" [disableDismiss]="(button && button.isLoading()) || currentState === states.WaitingForConfirmation">
+<app-modal [headline]="'wallet.rename.title' | translate" [dialog]="dialogRef" [disableDismiss]="(button && button.isLoading()) || currentState === states.WaitingForConfirmation">
   <ng-container *ngIf="currentState === states.Initial">
-    <div class="-body" *ngIf="showCharactersWarning">
+    <div *ngIf="showCharactersWarning">
       {{ 'hardware-wallet.added.characters-warning' | translate }}
     </div>
     <div [ngClass]="{ 'modal-form-container': showCharactersWarning }" [formGroup]="form">

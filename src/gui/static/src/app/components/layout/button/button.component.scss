@@ -2,11 +2,16 @@
 
 $button-height: 50px;
 
+// Class also used by the parents.
+.internal-container {
+  display: inline;
+}
+
 button {
   border-radius: 1000px;
   height: $button-height;
   margin: 20px 10px 0;
-  width: 160px;
+  width: 170px;
   overflow: hidden;
 }
 
@@ -44,7 +49,12 @@ button.enabled {
   mat-spinner {
     flex-shrink: 0;
     margin-left: 10px;
-    position: relative;
-    top: -2px;
+    height: 24px !important;
+    width: 24px !important;
+
+    ::ng-deep svg {
+      height: 24px !important;
+      width: 24px !important;
+    }
   }
 }

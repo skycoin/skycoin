@@ -91,7 +91,10 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
     this.form.updateValueAndValidity();
   }
 
-  selectAddress() {
+  selectAddress(event) {
+    event.stopPropagation();
+    event.preventDefault();
+
     const config = new MatDialogConfig();
     config.width = '566px';
     config.autoFocus = false;

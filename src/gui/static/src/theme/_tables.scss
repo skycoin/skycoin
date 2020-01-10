@@ -1,10 +1,16 @@
+/*********************
+* Styles for the tables.
+*********************/
 @import 'variables';
+@import 'paper';
 
+// Main table container.
 .-table {
   &:last-of-type {
-    margin-bottom: 30px;
+    margin-bottom: $main-containers-margin;
   }
 
+  // Headers container.
   .-headers {
     color: $grey-light;
     display: flex;
@@ -12,19 +18,21 @@
     font-weight: 700;
     height: 50px;
     line-height: 50px;
-    margin: 0 30px;
+    margin: 0 $main-containers-margin;
 
     > div {
-      padding: 0 20px;
+      padding: 0 $main-containers-small-padding;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 
+  // Content area container.
   .-body {
-    border-radius: $very-rounded-element-border-radius;
-    box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.01), 1px 1px 2px 2px rgba(0, 0, 0, 0.01);
-    margin: 0 30px;
-    background: $white;
-    overflow: hidden;
+    @extend .paper;
+    padding: 0;
+    margin: 0 $main-containers-margin;    
 
     .-row {
       font-size: $font-size-standard;
@@ -37,10 +45,15 @@
       }
 
       > div {
-        padding: 0 20px;
+        padding: 0 $main-containers-small-padding;
       }
     }
   }
+
+
+  /**
+  Helpers for setting the width of the columns.
+  **/
 
   .-width-50 {
     width: 50px;

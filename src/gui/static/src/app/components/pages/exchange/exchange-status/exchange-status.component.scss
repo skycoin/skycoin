@@ -85,22 +85,4 @@ mat-progress-bar {
   vertical-align: middle;
   color: $main-color;
   margin-left: 10px;
-  opacity: 0.5;
-
-  &:hover {
-    opacity: 1;
-  }
-}
-
-.expand {
-  color: $main-color;
-  cursor: pointer;
-  font-size: 13px;
-
-  mat-icon {
-    padding: 0;
-    display: inline;
-    vertical-align: middle;
-    font-size: 13px;
-  }
 }

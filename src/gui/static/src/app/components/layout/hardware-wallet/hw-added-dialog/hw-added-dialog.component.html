@@ -1,4 +1,4 @@
-<app-modal class="modal" [headline]="'hardware-wallet.added.title' | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Initial || currentState === states.Finished">
+<app-modal [headline]="'hardware-wallet.added.title' | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Initial || currentState === states.Finished">
   <app-hw-message *ngIf="currentState === states.Initial"
     [text]="'hardware-wallet.added.configuring' | translate"
     [icon]="msgIcons.Spinner"

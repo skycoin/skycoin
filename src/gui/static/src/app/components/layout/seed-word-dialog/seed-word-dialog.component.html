@@ -1,4 +1,4 @@
-<app-modal class="modal" [headline]="(data.isForHwWallet ? 'hardware-wallet.seed-word.title' : 'wallet.new.seed-label') | translate" [dialog]="dialogRef">
+<app-modal [headline]="(data.isForHwWallet ? 'hardware-wallet.seed-word.title' : 'wallet.new.seed-label') | translate" [dialog]="dialogRef">
   <app-hw-message
     [upperBigText]="'hardware-wallet.seed-word.info1' | translate"
     [text]="'hardware-wallet.seed-word.info2' | translate"

@@ -1,4 +1,4 @@
-<app-modal class="modal" [headline]="'wallet.hardware-wallet' | translate" [dialog]="dialogRef">
+<app-modal [headline]="'wallet.hardware-wallet' | translate" [dialog]="dialogRef">
   <app-hw-message *ngIf="currentState === states.ShowingResult"
     [text]="result.text | translate"
     [linkText]="result.link"

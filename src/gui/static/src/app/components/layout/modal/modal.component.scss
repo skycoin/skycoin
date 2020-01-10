@@ -1,6 +1,5 @@
 @import '../../../../theme/variables';
 
-$modal-content-padding: 24px;
 $close-button-size: 32px;
 
 .-header {
@@ -14,22 +13,11 @@ $close-button-size: 32px;
   padding: 0 $close-button-size 0 $close-button-size;
 
   img {
-    cursor: pointer;
     height: $close-button-size;
     position: absolute;
     right: 9px;
     top: 9px;
-    opacity: 0.5;
-
-    &:hover {
-      opacity: 1;
-    }
   }
-}
-
-.-body {
-  background-color: $white;
-  padding: 0px $modal-content-padding;
 }
 
 mat-dialog-content::before {

@@ -1,11 +1,16 @@
 @import '../../../../../../theme/_variables.scss';
 
+$dashed-border-size: 2px;
+$gray-dashed-border: $grey-very-light dashed $dashed-border-size;
+$white-dashed-border: rgba(255, 255, 255, 0.25) dashed $dashed-border-size;
+$lock-icon-size: 32px;
+
 .main-container {
   font-size: $font-size-standard-minus;
 }
 
 .dashed-border {
-  border: $grey-light dashed 1px;
+  border: $gray-dashed-border;
 }
 
 .show-pointer {
@@ -40,28 +45,37 @@
 
   > div {
     display: inline-block;
-    width: 32px;
-    height: 32px;
+    width: $lock-icon-size + ($dashed-border-size * 2);
+    height: $lock-icon-size + ($dashed-border-size * 2);
     position: relative;
     left: 16px;
     top: -10px;
     background-color: $white;
     border-radius: 100px;
     cursor: pointer;
+    border: $gray-dashed-border;
 
     &:hover {
       background-color: $white-hover;
     }
 
     > img {
-      width: 32px;
-      height: 32px;
+      width: $lock-icon-size;
+      height: $lock-icon-size;
     }
   }
 }
 
+.seed-type-button.for-onboarding {
+  > div {
+    width: $lock-icon-size;
+    height: $lock-icon-size;
+    border: none;
+  }
+}
+
 .onboarding-version {
-  border: rgba(255, 255, 255, 0.5) dashed 1px;
+  border: $white-dashed-border;
   color: $white;
 }
 
@@ -86,7 +100,7 @@ label[for=seed] {
 
     .divider {
       padding: 0 5px;
-      color: $grey-dark;
+      color: $black;
     }
   }
 

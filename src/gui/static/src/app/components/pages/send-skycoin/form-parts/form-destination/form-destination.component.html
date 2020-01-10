@@ -18,9 +18,13 @@
         (onStateChange)="changeActiveCurrency($event)"
       ></app-double-button>
     </div>
-    <span *ngIf="!showSimpleForm" class="-options" (click)="requestBulkSend()" [ngClass]="{'element-disabled' : busy}">
-      {{ 'send.bulk-send.title' | translate }} <mat-icon>keyboard_arrow_down</mat-icon>
-    </span>
+
+    <app-arrow-link
+      *ngIf="!showSimpleForm"
+      [text]="'send.bulk-send.title'"
+      (pressed)="requestBulkSend()"
+      [ngClass]="{'element-disabled' : busy}">
+    </app-arrow-link>
 
     <div formArrayName="destinations" *ngFor="let dest of destControls; let i = index;" class="-destination">
       <div [formGroupName]="i" class="row">
@@ -50,8 +54,8 @@
           </div>
         </div>
         <div *ngIf="!showSimpleForm" class="col-md-1 -icons" [ngClass]="{'element-disabled' : busy}">
-          <img *ngIf="i === 0" (click)="addDestination()" src="assets/img/plus-green.png" alt="plus">
-          <img *ngIf="i !== 0" (click)="removeDestination(i)" src="assets/img/minus-grey.png" alt="minus">
+          <img *ngIf="i === 0" class="image-button" (click)="addDestination()" src="assets/img/plus-green.png" alt="plus">
+          <img *ngIf="i !== 0" class="image-button" (click)="removeDestination(i)" src="assets/img/minus-grey.png" alt="minus">
         </div>
       </div>
     </div>

@@ -1,0 +1,4 @@
+<span class="link" (click)="onClick($event)" [ngClass]="{'pl-0' : noPadding}">
+  {{ text | translate }}
+  <mat-icon>{{ pointDown ? 'keyboard_arrow_down' : 'keyboard_arrow_up' }}</mat-icon>
+</span>

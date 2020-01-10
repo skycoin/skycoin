@@ -1,4 +1,4 @@
-<app-modal class="modal" [headline]="title | translate" [dialog]="dialogRef" [disableDismiss]="working">
+<app-modal [headline]="title | translate" [dialog]="dialogRef" [disableDismiss]="working">
   <app-loading-content
     [isLoading]="currentState === states.Loading"
     [noDataText]="'offline-transactions.error-loading'"
@@ -6,9 +6,7 @@
   ></app-loading-content>
 
   <ng-container *ngIf="currentState === states.ShowingForm">
-    <div *ngIf="text" class="-body">
-      {{ text | translate }}
-    </div>
+    {{ text | translate }}
     <div [formGroup]="form" class="modal-form-container">
       <div *ngIf="dropdownElements" class="form-field">
         <label *ngIf="dropdownLabel" for="dropdown">{{ dropdownLabel | translate }}</label>

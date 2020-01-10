@@ -1,8 +1,6 @@
-<app-modal class="modal" [class.red-text]="data.redTitle" [headline]="data.headerText | translate" [dialog]="dialogRef" [disableDismiss]="disableDismiss">
-  <div class="-body">
-    {{ data.text | translate }}
-    <span *ngIf="data.linkText && data.linkFunction" class="link" (click)="data.linkFunction(); closeModal(false);">{{ data.linkText | translate }}</span>
-  </div>
+<app-modal [class.red-text]="data.redTitle" [headline]="data.headerText | translate" [dialog]="dialogRef" [disableDismiss]="disableDismiss">
+  {{ data.text | translate }}
+  <span *ngIf="data.linkText && data.linkFunction" class="link" (click)="data.linkFunction(); closeModal(false);">{{ data.linkText | translate }}</span>
 
   <div class="-check-container" *ngIf="data.checkboxText">
     <mat-checkbox type="checkbox"

@@ -1,7 +1,5 @@
-<app-modal class="modal" [headline]="'send.bulk-send.title' | translate" [dialog]="dialogRef">
-  <div class="-body">
-    {{ 'send.bulk-send.indications' | translate }}
-  </div>
+<app-modal [headline]="'send.bulk-send.title' | translate" [dialog]="dialogRef">
+  {{ 'send.bulk-send.indications' | translate }}
   <div [formGroup]="form" class="modal-form-container">
     <div class="form-field">
       <textarea formControlName="data" id="data" rows="5"></textarea>

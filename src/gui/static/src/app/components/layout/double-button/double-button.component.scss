@@ -7,7 +7,7 @@
   min-width: 100px;
   margin: unset;
   box-shadow: unset;
-  background-color: $transparent !important;
+  background-color: transparent !important;
   line-height: 1 !important;
   min-height: 26px;
 
@@ -53,11 +53,11 @@
   }
 }
 
-@media (min-width: 768px) and (max-width: 991px) {
+@media (max-width: $max-sm-width) {
   .-buttons-container.navbar.light {
     border-radius: 20px;
 
-    app-button ::ng-deep .button-container {
+    app-button ::ng-deep .internal-container {
       display: block;
     }
   }

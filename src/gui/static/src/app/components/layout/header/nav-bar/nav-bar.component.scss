@@ -10,9 +10,16 @@ $nav-bar-height: 66px;
     cursor: pointer;
     padding: 0 20px;
     opacity: 0.2;
+    display: block;
+    text-decoration: none;
+    color: $black;
 
     &:hover {
       opacity: 0.4;
+    }
+
+    &:active {
+      opacity: 0.55;
     }
 
     img {

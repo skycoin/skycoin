@@ -1,4 +1,4 @@
-<app-modal class="modal" [headline]="(!data.hideCoinRequestForm ? 'qr.title' : 'qr.title-read-only') | translate" [dialog]="dialogRef">
+<app-modal [headline]="(!data.hideCoinRequestForm ? 'qr.title' : 'qr.title-read-only') | translate" [dialog]="dialogRef">
   <div class="qr-container">
     <div #qr class="qr" id="qr"></div>
   </div>
@@ -11,7 +11,13 @@
     <div class="title">{{ 'qr.address' | translate }}</div>
     <div class="data" (click)="copyText(data.address)"><span class="text">{{ data.address }}</span><span class="fa copy">&#xf0c5;</span></div>
   </div>
-  <div class="link" *ngIf="!showForm && !data.hideCoinRequestForm" (click)="startShowingForm()">{{ 'qr.request-link' | translate }}<mat-icon>keyboard_arrow_down</mat-icon></div>
+
+  <app-arrow-link
+    *ngIf="!showForm && !data.hideCoinRequestForm"
+    [text]="'qr.request-link'"
+    (pressed)="startShowingForm()"
+    [noPadding]="true">
+  </app-arrow-link>
 
   <div [formGroup]="form" *ngIf="showForm">
     <div class="form-field">

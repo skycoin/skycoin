@@ -1,5 +1,9 @@
+/*********************
+* Styles for the menus.
+*********************/
 @import 'variables';
 
+// Modifies a class added by Angular Material.
 .mat-menu-panel {
   border-radius: $rounded-element-border-radius !important;
   background-color: $white;

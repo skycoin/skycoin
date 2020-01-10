@@ -6,6 +6,11 @@
 
 .-width-250 {
   padding-left: $main-containers-small-padding !important;
+
+  @media (max-width: $max-sm-width) {
+    width: 200px;
+    flex-shrink: 0;
+  }
 }
 
 .-headers {

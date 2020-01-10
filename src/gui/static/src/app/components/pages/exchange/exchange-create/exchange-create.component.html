@@ -37,9 +37,10 @@
     <div class="form-field">
       <label for="toAddress">
         <span>{{ 'exchange.to-address' | translate:{coin: toCoin} }}</span>
-        <span class="-select-address" (click)="selectAddress()">
-          {{ 'exchange.select' | translate }} <mat-icon>keyboard_arrow_down</mat-icon>
-        </span>
+        <app-arrow-link
+          [text]="'exchange.select'"
+          (pressed)="selectAddress($event)">
+        </app-arrow-link>
       </label>
       <input type="text" formControlName="toAddress" id="toAddress">
     </div>

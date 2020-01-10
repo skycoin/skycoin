@@ -34,7 +34,7 @@
           <mat-icon class="yellow-text">touch_app</mat-icon><span [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.enter-seed' | translate }}</span>
         </div>
       </div>
-      <div class="seed-type-button">
+      <div class="seed-type-button" [ngClass]="{'for-onboarding': onboarding}">
         <div [ngClass]="{'dashed-border': !onboarding}" (click)="changeSeedType();">
           <img src="assets/img/lock-gold.png" [matTooltip]="'wallet.new.seed.use-custom-seed' | translate">
         </div>
@@ -43,7 +43,7 @@
 
     <ng-container *ngIf="!enterSeedWithAssistance">
       <textarea formControlName="seed" id="seed" rows="2"></textarea>
-      <div class="seed-type-button">
+      <div class="seed-type-button" [ngClass]="{'for-onboarding': onboarding}">
         <div [ngClass]="{'dashed-border': !onboarding}" (click)="changeSeedType();">
           <img src="assets/img/unlock-grey.png" [matTooltip]="'wallet.new.seed.use-normal-seed' | translate">
         </div>

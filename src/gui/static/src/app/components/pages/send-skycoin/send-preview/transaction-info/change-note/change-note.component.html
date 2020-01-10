@@ -1,4 +1,4 @@
-<app-modal class="modal" [headline]="'edit-note.title' | translate" [dialog]="dialogRef" [disableDismiss]="button && button.isLoading()">
+<app-modal [headline]="'edit-note.title' | translate" [dialog]="dialogRef" [disableDismiss]="button && button.isLoading()">
   <div [formGroup]="form">
     <div class="form-field">
       <label for="note">

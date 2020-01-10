@@ -64,17 +64,3 @@
   flex-direction: column;
   align-items: center;
 }
-
-.-select-address {
-  padding-left: 5px;
-  color: $main-color;
-  cursor: pointer;
-
-  mat-icon {
-    color: $main-color;
-    padding: 0;
-    display: inline;
-    vertical-align: middle;
-    font-size: 13px;
-  }
-}

@@ -192,8 +192,8 @@ export class WalletsPage {
   }
 
   private getWalletWithName(name: string) {
-    return element.all(by.css('.-wallets.ng-star-inserted'))
-      .filter(wallet => wallet.element(by.css('.-label')).getText().then(text => text === name))
+    return element.all(by.css('.e2e-wallets.ng-star-inserted'))
+      .filter(wallet => wallet.element(by.css('.e2e-label')).getText().then(text => text === name))
       .first();
   }
 

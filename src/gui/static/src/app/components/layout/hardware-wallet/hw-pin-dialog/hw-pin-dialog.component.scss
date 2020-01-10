@@ -7,12 +7,10 @@ mat-form-field {
 .form-field {
   input {
     font-size: 25px;
+    line-height: 1;
     letter-spacing: 15px;
     text-align: center;
-  }
-
-  .info {
-    text-align: center;
+    margin-top: 5px;
   }
 }
 

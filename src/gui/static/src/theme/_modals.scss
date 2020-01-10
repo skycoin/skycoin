@@ -1,5 +1,10 @@
+/*********************
+* Styles for the modal windows.
+*********************/
 @import 'variables';
 
+// Limits the height to show a vertical margin.
+// (Modifies an element or class added by Angular Material)
 .mat-dialog-content {
   max-height: 90vh !important;
 }
@@ -10,22 +15,26 @@
   }
 }
 
+// Rounds the corners of the modal windows.
+// (Modifies an element or class added by Angular Material)
 mat-dialog-container {
   border-radius: $rounded-element-border-radius !important;
   overflow: hidden;
 }
 
+// Removes the default padding.
+// (Modifies an element or class added by Angular Material)
 .mat-dialog-container {
   padding: 0 !important;
 }
 
+// Style of the main area of the modal windows.
 .modal {
-  .-body {
-    line-height: $font-size-standard * 1.5;
-    font-size: $font-size-standard;
-    color: $black;
-    opacity: 0.8;
-  }
+  background-color: $white;
+  padding: 0px $modal-content-padding;
+  line-height: 1.5;
+  font-size: $font-size-standard;
+  color: $grey-dark;
 
   .-buttons {
     text-align: center;
@@ -38,6 +47,7 @@ mat-dialog-container {
   }
 }
 
+// Special class for the modal windows which show lists of elements made of buttons.
 .list-button-container {
   margin: 0px -10px;
 

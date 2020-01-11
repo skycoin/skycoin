@@ -123,6 +123,16 @@ export class ApiService {
       }));
   }
 
+  postWalletScan(wallet: Wallet, password?: string): Observable<string[]> {
+    const params = new Object();
+    params['id'] = wallet.filename;
+    if (password) {
+      params['password'] = password;
+    }
+
+    return this.post('wallet/scan', params).pipe(map((response: any) => response.addresses));
+  }
+
   postWalletToggleEncryption(wallet: Wallet, password: string) {
     return this.post('wallet/' + (wallet.encrypted ? 'decrypt' : 'encrypt'), { id: wallet.filename, password });
   }

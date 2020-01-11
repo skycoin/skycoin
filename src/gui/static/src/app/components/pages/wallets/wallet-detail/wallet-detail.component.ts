@@ -17,6 +17,7 @@ import { HwConfirmAddressDialogComponent, AddressConfirmationParams } from '../.
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { ApiService } from '../../../../services/api.service';
 import { mergeMap, first } from 'rxjs/operators';
+import { AddressOptionsComponent, AddressOptions } from './address-options/address-options.component';
 
 @Component({
   selector: 'app-wallet-detail',
@@ -27,7 +28,7 @@ export class WalletDetailComponent implements OnDestroy {
   @Input() wallet: Wallet;
 
   confirmingIndex = null;
-  creatingAddress = false;
+  workingWithAddresses = false;
   preparingToEdit = false;
 
   private howManyAddresses: number;
@@ -88,8 +89,26 @@ export class WalletDetailComponent implements OnDestroy {
     }
   }
 
+  openAddressOptions() {
+    if (this.workingWithAddresses) {
+      return;
+    }
+
+    const config = new MatDialogConfig();
+    config.autoFocus = false;
+    config.width = '566px';
+
+    this.dialog.open(AddressOptionsComponent, config).afterClosed().subscribe(result => {
+      if (result === AddressOptions.new) {
+        this.newAddress();
+      } else if (result === AddressOptions.scan) {
+        this.scanAddresses();
+      }
+    });
+  }
+
   newAddress() {
-    if (this.creatingAddress) {
+    if (this.workingWithAddresses) {
       return;
     }
 
@@ -281,8 +300,12 @@ export class WalletDetailComponent implements OnDestroy {
     QrCodeComponent.openDialog(this.dialog, config);
   }
 
-  private continueNewAddress() {
-    this.creatingAddress = true;
+  private scanAddresses() {
+    if (this.workingWithAddresses) {
+      return;
+    }
+
+    this.workingWithAddresses = true;
 
     if (!this.wallet.isHardware && this.wallet.encrypted) {
       const config = new MatDialogConfig();
@@ -291,7 +314,52 @@ export class WalletDetailComponent implements OnDestroy {
       };
 
       const dialogRef = this.dialog.open(PasswordDialogComponent, config);
-      dialogRef.afterClosed().subscribe(() => this.creatingAddress = false);
+      dialogRef.afterClosed().subscribe(() => this.workingWithAddresses = false);
+      dialogRef.componentInstance.passwordSubmit.subscribe(passwordDialog => {
+        this.walletService.scanAddresses(this.wallet, passwordDialog.password).subscribe(result => {
+          passwordDialog.close();
+
+          setTimeout(() => {
+            if (result) {
+              this.msgBarService.showDone('wallet.scan-addresses.done-with-new-addresses');
+            } else {
+              this.msgBarService.showWarning('wallet.scan-addresses.done-without-new-addresses');
+            }
+          });
+        }, error => {
+          passwordDialog.error(error);
+        });
+      });
+    } else {
+      this.walletService.scanAddresses(this.wallet).subscribe(result => {
+        if (result) {
+          this.msgBarService.showDone('wallet.scan-addresses.done-with-new-addresses');
+        } else {
+          this.msgBarService.showWarning('wallet.scan-addresses.done-without-new-addresses');
+        }
+        this.workingWithAddresses = false;
+      }, err => {
+        if (!this.wallet.isHardware ) {
+          this.msgBarService.showError(err);
+        } else {
+          this.msgBarService.showError(getHardwareWalletErrorMsg(this.translateService, err));
+        }
+        this.workingWithAddresses = false;
+      });
+    }
+  }
+
+  private continueNewAddress() {
+    this.workingWithAddresses = true;
+
+    if (!this.wallet.isHardware && this.wallet.encrypted) {
+      const config = new MatDialogConfig();
+      config.data = {
+        wallet: this.wallet,
+      };
+
+      const dialogRef = this.dialog.open(PasswordDialogComponent, config);
+      dialogRef.afterClosed().subscribe(() => this.workingWithAddresses = false);
       dialogRef.componentInstance.passwordSubmit
         .subscribe(passwordDialog => {
           this.walletService.addAddress(this.wallet, this.howManyAddresses, passwordDialog.password)
@@ -309,14 +377,14 @@ export class WalletDetailComponent implements OnDestroy {
         procedure = this.walletService.addAddress(this.wallet, this.howManyAddresses);
       }
 
-      procedure.subscribe(() => this.creatingAddress = false,
+      procedure.subscribe(() => this.workingWithAddresses = false,
         err => {
           if (!this.wallet.isHardware ) {
             this.msgBarService.showError(err);
           } else {
             this.msgBarService.showError(getHardwareWalletErrorMsg(this.translateService, err));
           }
-          this.creatingAddress = false;
+          this.workingWithAddresses = false;
         },
       );
     }

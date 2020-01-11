@@ -102,8 +102,6 @@
   },
 
   "wallet": {
-    "new-address": "New Address",
-    "new-addresses": "New Addresses",
     "show-empty": "Show Empty",
     "hide-empty": "Hide Empty",
     "encrypt": "Encrypt Wallet",
@@ -145,7 +143,7 @@
       "unconventional-seed-text": "You introduced an unconventional seed. If you did it for any special reason, you can continue (only recommended for advanced users). However, if your intention is to use a normal system seed, you must delete all the additional text and special characters.",
       "unconventional-seed-check": "Continue with the unconventional seed.",
       "synchronizing-warning-title": "Warning",
-      "synchronizing-warning-text": "The wallet is still synchronizing and some addresses may not be restored. If some addresses are not restored, please wait for the wallet to be fully synchronized and add them again manually.",
+      "synchronizing-warning-text": "The wallet is still synchronizing and some addresses may not be restored. If some addresses are not restored, please wait for the wallet to be fully synchronized and use the \"Scan Addresses\" function or add them again manually.",
       "synchronizing-warning-continue": "Continue",
       "synchronizing-warning-cancel": "Cancel",
       "wallet-created": "The wallet has been added to the list.",
@@ -176,6 +174,18 @@
       "name-label": "Name",
       "cancel-button": "Cancel",
       "rename-button": "Rename"
+    },
+
+    "address-options": {
+      "title": "Addresses",
+      "new": "New Addresses",
+      "scan": "Scan Addresses",
+      "scan-help": "Use this option to make the system find already used addresses from this wallet which are missing from the list."
+    },
+
+    "scan-addresses": {
+      "done-with-new-addresses": "The list has been updated.",
+      "done-without-new-addresses": "No new addresses where found."
     },
 
     "add-addresses": {

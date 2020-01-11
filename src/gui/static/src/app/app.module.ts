@@ -118,6 +118,7 @@ import { SignRawTxComponent } from './components/pages/send-skycoin/offline-dial
 import { BroadcastRawTxComponent } from './components/pages/send-skycoin/offline-dialogs/implementations/broadcast-raw-tx.component';
 import { OfflineDialogsBaseComponent } from './components/pages/send-skycoin/offline-dialogs/offline-dialogs-base.component';
 import { ArrowLinkComponent } from './components/layout/arrow-link/arrow-link.component';
+import { AddressOptionsComponent } from './components/pages/wallets/wallet-detail/address-options/address-options.component';
 
 
 const ROUTES = [
@@ -264,6 +265,7 @@ const ROUTES = [
     BroadcastRawTxComponent,
     OfflineDialogsBaseComponent,
     ArrowLinkComponent,
+    AddressOptionsComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -300,6 +302,7 @@ const ROUTES = [
     CopyRawTxComponent,
     SignRawTxComponent,
     BroadcastRawTxComponent,
+    AddressOptionsComponent,
   ],
   imports: [
     BrowserModule,

@@ -77,6 +77,30 @@ export class WalletService {
     }
   }
 
+  scanAddresses(wallet: Wallet, password?: string) {
+    if (!wallet.isHardware) {
+      return this.apiService.postWalletScan(wallet, password).pipe(
+        map((addresses: any[]) => {
+          if (addresses && addresses.length > 0) {
+            addresses.forEach(address => {
+              const currentAddress = new Address();
+              currentAddress.address = address;
+              wallet.addresses.push(currentAddress);
+            });
+
+            this.refreshBalances();
+
+            return true;
+          } else {
+            return false;
+          }
+        }),
+      );
+    } else {
+      // Not implemented.
+    }
+  }
+
   all(): Observable<Wallet[]> {
     return this.wallets.asObservable();
   }
@@ -303,8 +327,8 @@ export class WalletService {
         wallet.hours = response.hours;
         wallet.addresses.map(address => {
           const balance = response.addresses.find(addr => addr.address === address.address);
-          address.coins = balance.coins;
-          address.hours = balance.hours;
+          address.coins = balance ? balance.coins : new BigNumber(0);
+          address.hours = balance ? balance.hours : new BigNumber(0);
         });
 
         return wallet;

@@ -94,8 +94,8 @@
         background-size: 32px 32px;
       }
 
-      &.-new-address::before {
-        background-image: url(assets/img/plus-grey.png);
+      &.-address-options::before {
+        background-image: url(assets/img/list-grey.png);
       }
 
       &.-hide-empty::before {
@@ -126,8 +126,8 @@
         color: $grey;
         opacity: 0.8;
 
-        &.-new-address::before {
-          background-image: url(assets/img/plus-green.png);
+        &.-address-options::before {
+          background-image: url(assets/img/list-blue.png);
         }
 
         &.-hide-empty::before {

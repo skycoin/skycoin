@@ -51,6 +51,10 @@ mat-dialog-container {
 .list-button-container {
   margin: 0px -10px;
 
+  button.top-line:first-of-type {
+    border-top: 1px solid $grey-very-light;
+  }
+
   button {
     width: 100%;
     text-align: left;

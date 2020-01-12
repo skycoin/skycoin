@@ -24,8 +24,8 @@ const DefaultTxnPageSize = 10
 
 // Page is the request data struct that used for pagination.
 type Page struct {
-	Size   uint64 // Page size
-	Number uint64 // Page number, start from 0
+	Size uint64 // Page size
+	N    uint64 // Page number, start from 0
 }
 
 // Cal calculate the slice indexes
@@ -34,7 +34,7 @@ func (p Page) Cal(n int) (start uint64, end uint64, err error) {
 		return 0, 0, ErrZeroPageSize
 	}
 
-	if p.Number == 0 {
+	if p.N == 0 {
 		return 0, p.Size, nil
 	}
 
@@ -53,7 +53,7 @@ func (p Page) Cal(n int) (start uint64, end uint64, err error) {
 }
 
 func (p Page) pageIndex() uint64 {
-	return p.Size * p.Number
+	return p.Size * p.N
 }
 
 // CreateBuckets creates bolt.DB buckets used by the historydb

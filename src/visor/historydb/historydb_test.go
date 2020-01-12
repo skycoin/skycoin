@@ -652,8 +652,8 @@ func TestPage_Cal(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := Page{
-				Size:   tt.fields.Size,
-				Number: tt.fields.Number,
+				Size: tt.fields.Size,
+				N:    tt.fields.Number,
 			}
 			gotStart, gotEnd, err := p.Cal(tt.args.n)
 			if (err != nil) != tt.wantErr {

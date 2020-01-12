@@ -16,6 +16,46 @@ import (
 
 var logger = logging.MustGetLogger("historydb")
 
+// ErrZeroPageSize will be returned when page size is zero
+var ErrZeroPageSize = errors.New("page size must be greater than 0")
+
+// DefaultTxnPageSize the default transaction page size
+const DefaultTxnPageSize = 10
+
+// Page is the request data struct that used for pagination.
+type Page struct {
+	Size   uint64 // Page size
+	Number uint64 // Page number, start from 0
+}
+
+// Cal calculate the slice indexes
+func (p Page) Cal(n int) (start uint64, end uint64, err error) {
+	if p.Size == 0 {
+		return 0, 0, ErrZeroPageSize
+	}
+
+	if p.Number == 0 {
+		return 0, p.Size, nil
+	}
+
+	if uint64(n) <= p.Size {
+		return 0, uint64(n), nil
+	}
+
+	start = p.pageIndex()
+	if start >= uint64(n) {
+		return 0, 0, nil
+	}
+
+	end = start + p.Size
+
+	return
+}
+
+func (p Page) pageIndex() uint64 {
+	return p.Size * p.Number
+}
+
 // CreateBuckets creates bolt.DB buckets used by the historydb
 func CreateBuckets(tx *dbutil.Tx) error {
 	return dbutil.CreateBuckets(tx, [][]byte{
@@ -205,6 +245,21 @@ func (hd HistoryDB) GetTransactionsForAddress(tx *dbutil.Tx, addr cipher.Address
 	}
 
 	return hd.txns.getArray(tx, hashes)
+}
+
+// GetTransactionsForAddressWithPage returns all the address related transactions of specifc page
+func (hd HistoryDB) GetTransactionsForAddressWithPage(tx *dbutil.Tx, addr cipher.Address, page Page) ([]Transaction, error) {
+	hashes, err := hd.addrTxns.get(tx, addr)
+	if err != nil {
+		return nil, err
+	}
+
+	start, end, err := page.Cal(len(hashes))
+	if err != nil {
+		return nil, err
+	}
+
+	return hd.txns.getArray(tx, hashes[start:end])
 }
 
 // AddressSeen returns true if the address appears in the blockchain

@@ -1,11 +1,12 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { MatDialogRef } from '@angular/material/dialog';
+import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { OfflineDialogsBaseComponent, OfflineDialogsStates } from '../offline-dialogs-base.component';
 import { MsgBarService } from '../../../../../services/msg-bar.service';
 import { FormBuilder } from '@angular/forms';
 import { SubscriptionLike } from 'rxjs';
 import { WalletService } from '../../../../../services/wallet.service';
 import { parseResponseMessage } from '../../../../../utils/errors';
+import { AppConfig } from '../../../../../app.config';
 
 @Component({
   selector: 'app-broadcast-raw-tx',
@@ -21,6 +22,14 @@ export class BroadcastRawTxComponent extends OfflineDialogsBaseComponent impleme
   validateForm = true;
 
   private operationSubscription: SubscriptionLike;
+
+  public static openDialog(dialog: MatDialog): MatDialogRef<BroadcastRawTxComponent, any> {
+    const config = new MatDialogConfig();
+    config.autoFocus = true;
+    config.width = AppConfig.mediumModalWidth;
+
+    return dialog.open(BroadcastRawTxComponent, config);
+  }
 
   constructor(
     public dialogRef: MatDialogRef<BroadcastRawTxComponent>,

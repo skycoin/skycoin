@@ -1,6 +1,6 @@
 import { Component, Inject, ViewChild, OnDestroy } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
-import { MatDialogRef, MatDialog } from '@angular/material/dialog';
+import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { CreateWalletFormComponent } from './create-wallet-form/create-wallet-form.component';
@@ -9,6 +9,11 @@ import { BlockchainService } from '../../../../services/blockchain.service';
 import { ConfirmationData } from '../../../../app.datatypes';
 import { showConfirmationModal } from '../../../../utils';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { AppConfig } from '../../../../app.config';
+
+export class CreateWalletParams {
+  create: boolean;
+}
 
 @Component({
   selector: 'app-create-wallet',
@@ -25,6 +30,15 @@ export class CreateWalletComponent implements OnDestroy {
 
   private synchronized = true;
   private synchronizedSubscription: SubscriptionLike;
+
+  public static openDialog(dialog: MatDialog, params: CreateWalletParams): MatDialogRef<CreateWalletComponent, any> {
+    const config = new MatDialogConfig();
+    config.data = params;
+    config.autoFocus = true;
+    config.width = AppConfig.mediumModalWidth;
+
+    return dialog.open(CreateWalletComponent, config);
+  }
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data,

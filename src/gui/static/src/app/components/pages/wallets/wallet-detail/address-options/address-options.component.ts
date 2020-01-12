@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
-import { MatDialogRef } from '@angular/material/dialog';
+import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { AppConfig } from '../../../../../app.config';
 
 export enum AddressOptions {
   new = 'new',
@@ -14,6 +15,14 @@ export enum AddressOptions {
 export class AddressOptionsComponent {
 
   addressOptions = AddressOptions;
+
+  public static openDialog(dialog: MatDialog): MatDialogRef<AddressOptionsComponent, any> {
+    const config = new MatDialogConfig();
+    config.autoFocus = false;
+    config.width = AppConfig.mediumModalWidth;
+
+    return dialog.open(AddressOptionsComponent, config);
+  }
 
   constructor(
     public dialogRef: MatDialogRef<AddressOptionsComponent>,

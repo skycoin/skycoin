@@ -53,6 +53,15 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
   private showErrorRequested = false;
   private wallet: Wallet;
 
+  public static openDialog(dialog: MatDialog, onboarding: boolean): MatDialogRef<HwOptionsDialogComponent, any> {
+    const config = new MatDialogConfig();
+    config.data = onboarding;
+    config.autoFocus = false;
+    config.width = AppConfig.mediumModalWidth;
+
+    return dialog.open(HwOptionsDialogComponent, config);
+  }
+
   constructor(
     @Inject(MAT_DIALOG_DATA) private onboarding: boolean,
     public dialogRef: MatDialogRef<HwOptionsDialogComponent>,

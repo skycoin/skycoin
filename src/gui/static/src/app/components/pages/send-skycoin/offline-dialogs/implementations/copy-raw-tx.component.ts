@@ -1,9 +1,10 @@
 import { Component, Inject, OnInit } from '@angular/core';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { OfflineDialogsBaseComponent, OfflineDialogsStates } from '../offline-dialogs-base.component';
 import { copyTextToClipboard } from '../../../../../utils';
 import { MsgBarService } from '../../../../../services/msg-bar.service';
 import { FormBuilder } from '@angular/forms';
+import { AppConfig } from '../../../../../app.config';
 
 export interface CopyRawTxData {
   rawTx: string;
@@ -18,6 +19,15 @@ export interface CopyRawTxData {
 export class CopyRawTxComponent extends OfflineDialogsBaseComponent implements OnInit {
   cancelButtonText = 'offline-transactions.copy-tx.close';
   okButtonText = 'offline-transactions.copy-tx.copy';
+
+  public static openDialog(dialog: MatDialog, data: CopyRawTxData): MatDialogRef<CopyRawTxComponent, any> {
+    const config = new MatDialogConfig();
+    config.data = data;
+    config.autoFocus = true;
+    config.width = AppConfig.mediumModalWidth;
+
+    return dialog.open(CopyRawTxComponent, config);
+  }
 
   constructor(
     @Inject(MAT_DIALOG_DATA) private data: CopyRawTxData,

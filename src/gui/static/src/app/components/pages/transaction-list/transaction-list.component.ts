@@ -157,10 +157,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
   }
 
   showTransaction(transaction: NormalTransaction) {
-    const config = new MatDialogConfig();
-    config.width = '800px';
-    config.data = transaction;
-    this.dialog.open(TransactionDetailComponent, config);
+    TransactionDetailComponent.openDialog(this.dialog, transaction);
   }
 
   showQrCode(event: any, address: string) {

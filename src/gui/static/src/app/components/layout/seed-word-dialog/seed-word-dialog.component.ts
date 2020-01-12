@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { Observable, SubscriptionLike } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { Bip39WordListService } from '../../../services/bip39-word-list.service';
@@ -8,11 +8,12 @@ import { MsgBarService } from '../../../services/msg-bar.service';
 import { HwWalletService } from '../../../services/hw-wallet.service';
 import { MessageIcons } from '../hardware-wallet/hw-message/hw-message.component';
 import { map } from 'rxjs/operators';
+import { AppConfig } from '../../../app.config';
 
 export class SeedWordDialogParams {
   isForHwWallet: boolean;
   wordNumber: number;
-  restoringSoftwareWallet: false;
+  restoringSoftwareWallet = false;
 }
 
 @Component({
@@ -28,6 +29,15 @@ export class SeedWordDialogComponent implements OnInit, OnDestroy {
   private sendingWord = false;
   private valueChangeSubscription: SubscriptionLike;
   private hwConnectionSubscription: SubscriptionLike;
+
+  public static openDialog(dialog: MatDialog, params: SeedWordDialogParams): MatDialogRef<SeedWordDialogComponent, any> {
+    const config = new MatDialogConfig();
+    config.data = params;
+    config.autoFocus = true;
+    config.width = '350px';
+
+    return dialog.open(SeedWordDialogComponent, config);
+  }
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: SeedWordDialogParams,

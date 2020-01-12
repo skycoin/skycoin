@@ -136,13 +136,10 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
   }
 
   private askForWord(wordIndex: number) {
-    this.dialog.open(SeedWordDialogComponent, <MatDialogConfig> {
-      width: '350px',
-      data: {
-        isForHwWallet: false,
-        wordNumber: wordIndex + 1,
-        restoringSoftwareWallet: !this.create,
-      },
+    return SeedWordDialogComponent.openDialog(this.dialog, {
+      isForHwWallet: false,
+      wordNumber: wordIndex + 1,
+      restoringSoftwareWallet: !this.create,
     }).afterClosed().subscribe(word => {
       if (word) {
         if (this.create) {

@@ -59,17 +59,11 @@ export class WalletsComponent implements OnInit, OnDestroy {
   }
 
   addWallet(create) {
-    const config = new MatDialogConfig();
-    config.width = '566px';
-    config.data = { create };
-    this.dialog.open(CreateWalletComponent, config);
+    CreateWalletComponent.openDialog(this.dialog, { create });
   }
 
   adminHwWallet() {
-    const config = new MatDialogConfig();
-    config.width = '566px';
-    config.autoFocus = false;
-    this.dialog.open(HwOptionsDialogComponent, config).afterClosed().subscribe(() => {
+    HwOptionsDialogComponent.openDialog(this.dialog, false).afterClosed().subscribe(() => {
       this.walletService.all().pipe(first()).subscribe(wallets => {
         if (wallets.length === 0) {
           setTimeout(() => this.router.navigate(['/wizard']), 500);

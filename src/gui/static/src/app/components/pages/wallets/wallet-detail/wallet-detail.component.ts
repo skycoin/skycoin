@@ -4,7 +4,7 @@ import { WalletService } from '../../../../services/wallet.service';
 import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
 import { ChangeNameComponent, ChangeNameData } from '../change-name/change-name.component';
 import { QrCodeComponent, QrDialogConfig } from '../../../layout/qr-code/qr-code.component';
-import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
+import { PasswordDialogComponent, PasswordDialogParams } from '../../../layout/password-dialog/password-dialog.component';
 import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { NumberOfAddressesComponent } from '../number-of-addresses/number-of-addresses';
 import { TranslateService } from '@ngx-translate/core';
@@ -94,11 +94,7 @@ export class WalletDetailComponent implements OnDestroy {
       return;
     }
 
-    const config = new MatDialogConfig();
-    config.autoFocus = false;
-    config.width = '566px';
-
-    this.dialog.open(AddressOptionsComponent, config).afterClosed().subscribe(result => {
+    AddressOptionsComponent.openDialog(this.dialog).afterClosed().subscribe(result => {
       if (result === AddressOptions.new) {
         this.newAddress();
       } else if (result === AddressOptions.scan) {
@@ -128,9 +124,7 @@ export class WalletDetailComponent implements OnDestroy {
     if (!this.wallet.isHardware) {
       const maxAddressesGap = 20;
 
-      const config = new MatDialogConfig();
-      config.width = '566px';
-      config.data = (howManyAddresses, callback) => {
+      const eventFunction = (howManyAddresses, callback) => {
         this.howManyAddresses = howManyAddresses;
 
         let lastWithBalance = 0;
@@ -186,7 +180,7 @@ export class WalletDetailComponent implements OnDestroy {
         }
       };
 
-      this.dialog.open(NumberOfAddressesComponent, config);
+      NumberOfAddressesComponent.openDialog(this.dialog, eventFunction);
     } else {
       this.howManyAddresses = 1;
       this.continueNewAddress();
@@ -224,21 +218,15 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   toggleEncryption() {
-    const config = new MatDialogConfig();
-    config.data = {
+    const params: PasswordDialogParams = {
       confirm: !this.wallet.encrypted,
       title: this.wallet.encrypted ? 'wallet.decrypt' : 'wallet.encrypt',
+      description: this.wallet.encrypted ? 'wallet.decrypt-warning' : 'wallet.new.encrypt-warning',
+      warning: this.wallet.encrypted,
+      wallet: this.wallet.encrypted ? this.wallet : null,
     };
 
-    if (!this.wallet.encrypted) {
-      config.data['description'] = 'wallet.new.encrypt-warning';
-    } else {
-      config.data['description'] = 'wallet.decrypt-warning';
-      config.data['warning'] = true;
-      config.data['wallet'] = this.wallet;
-    }
-
-    this.dialog.open(PasswordDialogComponent, config).componentInstance.passwordSubmit
+    PasswordDialogComponent.openDialog(this.dialog, params, false).componentInstance.passwordSubmit
       .subscribe(passwordDialog => {
         this.walletService.toggleEncryption(this.wallet, passwordDialog.password).subscribe(() => {
           passwordDialog.close();
@@ -308,12 +296,7 @@ export class WalletDetailComponent implements OnDestroy {
     this.workingWithAddresses = true;
 
     if (!this.wallet.isHardware && this.wallet.encrypted) {
-      const config = new MatDialogConfig();
-      config.data = {
-        wallet: this.wallet,
-      };
-
-      const dialogRef = this.dialog.open(PasswordDialogComponent, config);
+      const dialogRef = PasswordDialogComponent.openDialog(this.dialog, { wallet: this.wallet });
       dialogRef.afterClosed().subscribe(() => this.workingWithAddresses = false);
       dialogRef.componentInstance.passwordSubmit.subscribe(passwordDialog => {
         this.walletService.scanAddresses(this.wallet, passwordDialog.password).subscribe(result => {
@@ -353,12 +336,7 @@ export class WalletDetailComponent implements OnDestroy {
     this.workingWithAddresses = true;
 
     if (!this.wallet.isHardware && this.wallet.encrypted) {
-      const config = new MatDialogConfig();
-      config.data = {
-        wallet: this.wallet,
-      };
-
-      const dialogRef = this.dialog.open(PasswordDialogComponent, config);
+      const dialogRef = PasswordDialogComponent.openDialog(this.dialog, { wallet: this.wallet });
       dialogRef.afterClosed().subscribe(() => this.workingWithAddresses = false);
       dialogRef.componentInstance.passwordSubmit
         .subscribe(passwordDialog => {
@@ -391,10 +369,8 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   private continueEditWallet() {
-    const config = new MatDialogConfig();
-    config.width = '566px';
-    config.data = new ChangeNameData();
-    (config.data as ChangeNameData).wallet = this.wallet;
-    this.dialog.open(ChangeNameComponent, config);
+    const data = new ChangeNameData();
+    data.wallet = this.wallet;
+    ChangeNameComponent.openDialog(this.dialog, data, false);
   }
 }

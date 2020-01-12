@@ -1,7 +1,8 @@
 import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { MsgBarService } from '../../../services/msg-bar.service';
+import { AppConfig } from '../../../app.config';
 
 @Component({
   selector: 'app-multiple-destinations-dialog',
@@ -10,6 +11,15 @@ import { MsgBarService } from '../../../services/msg-bar.service';
 })
 export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {
   form: FormGroup;
+
+  public static openDialog(dialog: MatDialog, content: string): MatDialogRef<MultipleDestinationsDialogComponent, any> {
+    const config = new MatDialogConfig();
+    config.data = content;
+    config.autoFocus = true;
+    config.width = AppConfig.mediumModalWidth;
+
+    return dialog.open(MultipleDestinationsDialogComponent, config);
+  }
 
   constructor(
     public dialogRef: MatDialogRef<MultipleDestinationsDialogComponent>,

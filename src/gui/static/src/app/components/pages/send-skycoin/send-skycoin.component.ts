@@ -56,17 +56,11 @@ export class SendSkycoinComponent implements OnDestroy {
   }
 
   signTransaction() {
-    const config = new MatDialogConfig();
-    config.width = '566px';
-
-    this.dialog.open(SignRawTxComponent, config);
+    SignRawTxComponent.openDialog(this.dialog);
   }
 
   broadcastTransaction() {
-    const config = new MatDialogConfig();
-    config.width = '566px';
-
-    this.dialog.open(BroadcastRawTxComponent, config);
+    BroadcastRawTxComponent.openDialog(this.dialog);
   }
 
   get transaction() {

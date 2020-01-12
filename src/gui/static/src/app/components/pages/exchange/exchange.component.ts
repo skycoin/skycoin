@@ -52,11 +52,7 @@ export class ExchangeComponent implements OnInit, OnDestroy {
   showHistory(event) {
     event.preventDefault();
 
-    const config = new MatDialogConfig();
-    config.width = '566px';
-    config.autoFocus = false;
-
-    this.dialog.open(ExchangeHistoryComponent, config).afterClosed().subscribe((oldOrder: StoredExchangeOrder) => {
+    ExchangeHistoryComponent.openDialog(this.dialog).afterClosed().subscribe((oldOrder: StoredExchangeOrder) => {
       if (oldOrder) {
         this.currentOrderDetails = oldOrder;
       }

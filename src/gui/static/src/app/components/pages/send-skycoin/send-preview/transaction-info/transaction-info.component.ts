@@ -59,13 +59,10 @@ export class TransactionInfoComponent implements OnInit, OnDestroy {
   }
 
   editNote() {
-    const config = new MatDialogConfig();
-      config.width = '566px';
-      config.data = this.transaction;
-      this.dialog.open(ChangeNoteComponent, config).afterClosed().subscribe(newNote => {
-        if (newNote || newNote === '') {
-          this.transaction.note = newNote;
-        }
-      });
+    ChangeNoteComponent.openDialog(this.dialog, this.transaction).afterClosed().subscribe(newNote => {
+      if (newNote || newNote === '') {
+        this.transaction.note = newNote;
+      }
+    });
   }
 }

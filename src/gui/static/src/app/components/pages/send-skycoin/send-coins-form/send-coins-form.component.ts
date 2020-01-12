@@ -173,12 +173,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     this.sendButton.resetState();
 
     if (!this.showForManualUnsigned && this.selectedSources.wallet.encrypted && !this.selectedSources.wallet.isHardware && !this.previewTx) {
-      const config = new MatDialogConfig();
-      config.data = {
-        wallet: this.selectedSources.wallet,
-      };
-
-      this.dialog.open(PasswordDialogComponent, config).componentInstance.passwordSubmit
+      PasswordDialogComponent.openDialog(this.dialog, { wallet: this.selectedSources.wallet }).componentInstance.passwordSubmit
         .subscribe(passwordDialog => {
           this.createTransaction(passwordDialog);
         });
@@ -200,10 +195,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   }
 
   selectChangeAddress(event) {
-    const config = new MatDialogConfig();
-    config.width = '566px';
-    config.autoFocus = false;
-    this.dialog.open(SelectAddressComponent, config).afterClosed().subscribe(response => {
+    SelectAddressComponent.openDialog(this.dialog).afterClosed().subscribe(response => {
       if (response) {
         this.form.get('changeAddress').setValue(response);
       }
@@ -232,10 +224,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       currentString = currentString.substr(0, currentString.length - 1);
     }
 
-    const config = new MatDialogConfig();
-    config.width = '566px';
-    config.data = currentString;
-    this.dialog.open(MultipleDestinationsDialogComponent, config).afterClosed().subscribe((response: string[][]) => {
+    MultipleDestinationsDialogComponent.openDialog(this.dialog, currentString).afterClosed().subscribe((response: string[][]) => {
       if (response) {
         if (response.length > 0) {
           this.autoHours = response[0].length === 2;
@@ -372,11 +361,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
             isUnsigned: true,
           };
 
-          const config = new MatDialogConfig();
-          config.width = '566px';
-          config.data = data;
-
-          this.dialog.open(CopyRawTxComponent, config).afterClosed().subscribe(() => {
+          CopyRawTxComponent.openDialog(this.dialog, data).afterClosed().subscribe(() => {
             this.resetState();
 
             const confirmationData: ConfirmationData = {

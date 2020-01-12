@@ -1,6 +1,7 @@
 import { Component, Inject } from '@angular/core';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ConfirmationData } from '../../../app.datatypes';
+import { AppConfig } from '../../../app.config';
 
 @Component({
   selector: 'app-confirmation',
@@ -10,6 +11,15 @@ import { ConfirmationData } from '../../../app.datatypes';
 export class ConfirmationComponent {
   accepted = false;
   disableDismiss = false;
+
+  public static openDialog(dialog: MatDialog, confirmationData: ConfirmationData): MatDialogRef<ConfirmationComponent, any> {
+    const config = new MatDialogConfig();
+    config.data = confirmationData;
+    config.autoFocus = false;
+    config.width = '450px';
+
+    return dialog.open(ConfirmationComponent, config);
+  }
 
   constructor(
     public dialogRef: MatDialogRef<ConfirmationComponent>,

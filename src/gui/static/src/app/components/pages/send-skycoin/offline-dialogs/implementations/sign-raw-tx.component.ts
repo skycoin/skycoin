@@ -10,6 +10,7 @@ import { CopyRawTxData, CopyRawTxComponent } from './copy-raw-tx.component';
 import { Wallet } from '../../../../../app.datatypes';
 import { PasswordDialogComponent } from '../../../../../components/layout/password-dialog/password-dialog.component';
 import { parseResponseMessage } from '../../../../../utils/errors';
+import { AppConfig } from '../../../../../app.config';
 
 @Component({
   selector: 'app-sign-raw-tx',
@@ -28,6 +29,14 @@ export class SignRawTxComponent extends OfflineDialogsBaseComponent implements O
 
   private walletsSubscription: SubscriptionLike;
   private operationSubscription: SubscriptionLike;
+
+  public static openDialog(dialog: MatDialog): MatDialogRef<SignRawTxComponent, any> {
+    const config = new MatDialogConfig();
+    config.autoFocus = true;
+    config.width = AppConfig.mediumModalWidth;
+
+    return dialog.open(SignRawTxComponent, config);
+  }
 
   constructor(
     public dialogRef: MatDialogRef<SignRawTxComponent>,
@@ -85,12 +94,7 @@ export class SignRawTxComponent extends OfflineDialogsBaseComponent implements O
     }
 
     if ((this.form.get('dropdown').value as Wallet).encrypted) {
-      const config = new MatDialogConfig();
-      config.data = {
-        wallet: this.form.get('dropdown').value,
-      };
-
-      this.dialog.open(PasswordDialogComponent, config).componentInstance.passwordSubmit
+      PasswordDialogComponent.openDialog(this.dialog, { wallet: this.form.get('dropdown').value }).componentInstance.passwordSubmit
         .subscribe(passwordDialog => {
           passwordDialog.close();
           this.signTransaction(passwordDialog.password);
@@ -124,11 +128,7 @@ export class SignRawTxComponent extends OfflineDialogsBaseComponent implements O
             isUnsigned: false,
           };
 
-          const config = new MatDialogConfig();
-          config.width = '566px';
-          config.data = data;
-
-          this.dialog.open(CopyRawTxComponent, config);
+          CopyRawTxComponent.openDialog(this.dialog, data);
         }, 500);
     }, error => {
       this.working = false;

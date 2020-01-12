@@ -1,7 +1,7 @@
 <app-modal [headline]="'title.seed' | translate" [dialog]="dialogRef">
   <div class="form-field">
     <label for="seed">{{ 'backup.seed' | translate }}</label>
-    <textarea id="seed" readonly>{{ data.seed }}</textarea>
+    <textarea id="seed" readonly>{{ data }}</textarea>
   </div>
   <div class="-buttons">
     <app-button (action)="dialogRef.close()">

@@ -87,11 +87,7 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
   }
 
   useHardwareWallet() {
-    const config = new MatDialogConfig();
-    config.width = '566px';
-    config.autoFocus = false;
-    config.data = true;
-    this.dialog.open(HwOptionsDialogComponent, config).afterClosed().subscribe(result => {
+    HwOptionsDialogComponent.openDialog(this.dialog, true).afterClosed().subscribe(result => {
       if (result) {
         this.router.navigate(['/wallets']);
       }

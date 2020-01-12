@@ -32,4 +32,6 @@ export const AppConfig = {
     },
   ],
   defaultLanguage: 'en',
+
+  mediumModalWidth: '566px',
 };

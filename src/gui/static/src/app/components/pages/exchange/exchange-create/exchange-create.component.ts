@@ -95,11 +95,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
     event.stopPropagation();
     event.preventDefault();
 
-    const config = new MatDialogConfig();
-    config.width = '566px';
-    config.autoFocus = false;
-
-    this.dialog.open(SelectAddressComponent, config).afterClosed().subscribe(address => {
+    SelectAddressComponent.openDialog(this.dialog).afterClosed().subscribe(address => {
       if (address) {
         this.form.get('toAddress').setValue(address);
       }

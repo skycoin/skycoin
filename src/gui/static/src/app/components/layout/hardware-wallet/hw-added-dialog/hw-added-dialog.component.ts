@@ -80,12 +80,10 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
     } else {
       this.msgBarService.hide();
 
-      const config = new MatDialogConfig();
-      config.width = '400px';
-      config.data = new ChangeNameData();
-      (config.data as ChangeNameData).wallet = this.wallet;
-      (config.data as ChangeNameData).newName = this.form.value.label;
-      this.dialog.open(ChangeNameComponent, config).afterClosed().subscribe(result => {
+      const data = new ChangeNameData();
+      data.wallet = this.wallet;
+      data.newName = this.form.value.label;
+      ChangeNameComponent.openDialog(this.dialog, data, true).afterClosed().subscribe(result => {
         if (result && !result.errorMsg) {
           this.closeModal();
         } else if (result && result.errorMsg) {

@@ -1,5 +1,5 @@
 import { Component, Inject, OnDestroy, OnInit, ViewChild, ChangeDetectorRef } from '@angular/core';
-import { MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { MatDialogRef } from '@angular/material/dialog';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ButtonComponent } from '../button/button.component';
@@ -7,6 +7,16 @@ import { parseResponseMessage } from '../../../utils/errors';
 import { Subject } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { MsgBarService } from '../../../services/msg-bar.service';
+import { AppConfig } from '../../../app.config';
+import { Wallet } from '../../../app.datatypes';
+
+export interface PasswordDialogParams {
+  confirm?: boolean;
+  description?: string;
+  warning?: boolean;
+  title?: string;
+  wallet: Wallet;
+}
 
 @Component({
   selector: 'app-password-dialog',
@@ -20,6 +30,15 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
   working = false;
 
   private errors: any;
+
+  public static openDialog(dialog: MatDialog, params: PasswordDialogParams, smallSize = true): MatDialogRef<PasswordDialogComponent, any> {
+    const config = new MatDialogConfig();
+    config.data = params;
+    config.autoFocus = true;
+    config.width = smallSize ? '260px' : AppConfig.mediumModalWidth;
+
+    return dialog.open(PasswordDialogComponent, config);
+  }
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: any,

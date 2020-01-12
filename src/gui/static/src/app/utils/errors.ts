@@ -1,6 +1,5 @@
-import { HwWalletService, OperationResults } from '../services/hw-wallet.service';
+import { OperationResults } from '../services/hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
-import { AppConfig } from '../app.config';
 
 export function parseResponseMessage(body: string): string {
   if (typeof body === 'object') {

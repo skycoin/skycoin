@@ -17,13 +17,10 @@ export class HwWalletSeedWordService {
   ) {}
 
   requestWord(): Observable<string> {
-    return this.dialog.open(this.requestWordComponentInternal, <MatDialogConfig> {
-      width: '350px',
-      data: {
-        isForHwWallet: true,
-        wordNumber: 0,
-        restoringSoftwareWallet: false,
-      },
+    return this.requestWordComponentInternal.openDialog(this.dialog, <MatDialogConfig> {
+      isForHwWallet: true,
+      wordNumber: 0,
+      restoringSoftwareWallet: false,
     }).afterClosed().pipe(map(word => {
       return word;
     }));

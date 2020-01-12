@@ -1,4 +1,4 @@
-import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { Observable } from 'rxjs';
 
 import { ConfirmationData } from '../app.datatypes';
@@ -6,20 +6,11 @@ import { ConfirmationComponent } from '../components/layout/confirmation/confirm
 import { SelectLanguageComponent } from '../components/layout/select-language/select-language.component';
 
 export function showConfirmationModal(dialog: MatDialog, confirmationData: ConfirmationData): MatDialogRef<ConfirmationComponent, any> {
-  return dialog.open(ConfirmationComponent, <MatDialogConfig> {
-    width: '450px',
-    data: confirmationData,
-    autoFocus: false,
-  });
+  return ConfirmationComponent.openDialog(dialog, confirmationData);
 }
 
 export function openChangeLanguageModal(dialog: MatDialog, disableClose = false): Observable<any> {
-  const config = new MatDialogConfig();
-  config.width = '600px';
-  config.disableClose = disableClose;
-  config.autoFocus = false;
-
-  return dialog.open(SelectLanguageComponent, config).afterClosed();
+  return SelectLanguageComponent.openDialog(dialog).afterClosed();
 }
 
 export function copyTextToClipboard(text: string) {

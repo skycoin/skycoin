@@ -2,8 +2,8 @@ import { mergeMap } from 'rxjs/operators';
 import { Component, OnInit, Inject, ViewChild, OnDestroy } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { Wallet } from '../../../../app.datatypes';
+import { MAT_DIALOG_DATA, MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { Wallet, NormalTransaction } from '../../../../app.datatypes';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { MessageIcons } from '../../../layout/hardware-wallet/hw-message/hw-message.component';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
@@ -11,6 +11,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { SubscriptionLike } from 'rxjs';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { AppConfig } from '../../../../app.config';
 
 enum States {
   Initial,
@@ -44,6 +45,15 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
   private newLabel: string;
   private hwConnectionSubscription: SubscriptionLike;
   private operationSubscription: SubscriptionLike;
+
+  public static openDialog(dialog: MatDialog, data: ChangeNameData, smallSize: boolean): MatDialogRef<ChangeNameComponent, any> {
+    const config = new MatDialogConfig();
+    config.data = data;
+    config.autoFocus = true;
+    config.width = smallSize ? '400px' : AppConfig.mediumModalWidth;
+
+    return dialog.open(ChangeNameComponent, config);
+  }
 
   constructor(
     public dialogRef: MatDialogRef<ChangeNameComponent>,

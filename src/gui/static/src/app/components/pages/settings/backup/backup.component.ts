@@ -38,20 +38,11 @@ export class BackupComponent implements OnInit, OnDestroy {
   }
 
   showSeed(wallet: Wallet) {
-    const initialConfig = new MatDialogConfig();
-    initialConfig.data = {
-      wallet: wallet,
-    };
-
-    this.dialog.open(PasswordDialogComponent, initialConfig).componentInstance.passwordSubmit
+    PasswordDialogComponent.openDialog(this.dialog, { wallet: wallet }).componentInstance.passwordSubmit
       .subscribe(passwordDialog => {
         this.walletService.getWalletSeed(wallet, passwordDialog.password).subscribe(seed => {
           passwordDialog.close();
-          const config = new MatDialogConfig();
-          config.width = '566px';
-          config.data = { seed };
-
-          this.dialog.open(SeedModalComponent, config);
+          SeedModalComponent.openDialog(this.dialog, seed);
         }, err => passwordDialog.error(err));
       });
   }

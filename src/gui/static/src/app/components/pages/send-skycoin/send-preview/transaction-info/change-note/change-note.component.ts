@@ -1,11 +1,12 @@
 import { Component, OnInit, Inject, ViewChild, OnDestroy } from '@angular/core';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { SubscriptionLike } from 'rxjs';
 import { ButtonComponent } from '../../../../../layout/button/button.component';
 import { Transaction } from '../../../../../../app.datatypes';
 import { StorageService, StorageType } from '../../../../../../services/storage.service';
 import { MsgBarService } from '../../../../../../services/msg-bar.service';
+import { AppConfig } from '../../../../../../app.config';
 
 @Component({
   selector: 'app-change-note',
@@ -22,6 +23,15 @@ export class ChangeNoteComponent implements OnInit, OnDestroy {
 
   private OperationSubscription: SubscriptionLike;
   private originalNote: string;
+
+  public static openDialog(dialog: MatDialog, transaction: Transaction): MatDialogRef<ChangeNoteComponent, any> {
+    const config = new MatDialogConfig();
+    config.data = transaction;
+    config.autoFocus = true;
+    config.width = AppConfig.mediumModalWidth;
+
+    return dialog.open(ChangeNoteComponent, config);
+  }
 
   constructor(
     public dialogRef: MatDialogRef<ChangeNoteComponent>,

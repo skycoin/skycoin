@@ -60,11 +60,7 @@ export class SendVerifyComponent implements OnDestroy {
         isUnsigned: true,
       };
 
-      const config = new MatDialogConfig();
-      config.width = '566px';
-      config.data = data;
-
-      this.dialog.open(CopyRawTxComponent, config).afterClosed().subscribe(() => {
+      CopyRawTxComponent.openDialog(this.dialog, data).afterClosed().subscribe(() => {
         const confirmationData: ConfirmationData = {
           text: 'offline-transactions.copy-tx.reset-confirmation',
           headerText: 'confirmation.header-text',
@@ -83,12 +79,7 @@ export class SendVerifyComponent implements OnDestroy {
     }
 
     if (this.transaction.wallet.encrypted && !this.transaction.wallet.isHardware) {
-      const config = new MatDialogConfig();
-      config.data = {
-        wallet: this.transaction.wallet,
-      };
-
-      this.dialog.open(PasswordDialogComponent, config).componentInstance.passwordSubmit
+      PasswordDialogComponent.openDialog(this.dialog, { wallet: this.transaction.wallet }).componentInstance.passwordSubmit
         .subscribe(passwordDialog => {
           this.finishSending(passwordDialog);
         });

@@ -85,6 +85,7 @@ type Visorer interface {
 	GetTransaction(txid cipher.SHA256) (*visor.Transaction, error)
 	GetTransactionWithInputs(txid cipher.SHA256) (*visor.Transaction, []visor.TransactionInput, error)
 	GetTransactions(flts []visor.TxFilter) ([]visor.Transaction, error)
+	GetTransactionsWithPage(flts []visor.TxFilter, page *historydb.PageIndex) ([]visor.Transaction, uint64, error)
 	GetTransactionsWithInputs(flts []visor.TxFilter) ([]visor.Transaction, [][]visor.TransactionInput, error)
 	AddressesActivity(addrs []cipher.Address) ([]bool, error)
 	GetWalletUnconfirmedTransactions(wltID string) ([]visor.UnconfirmedTransaction, error)

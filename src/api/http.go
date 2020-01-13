@@ -572,6 +572,9 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		http.MethodGet:  []string{EndpointsRead},
 		http.MethodPost: []string{EndpointsRead},
 	})
+	webHandlerV2("/transactions", transactionsHandlerV2(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsRead},
+	})
 	webHandlerV1("/injectTransaction", injectTransactionHandler(gateway), map[string][]string{
 		http.MethodPost: []string{EndpointsTransaction, EndpointsWallet},
 	})

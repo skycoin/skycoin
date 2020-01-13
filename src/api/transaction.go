@@ -17,6 +17,7 @@ import (
 	wh "github.com/SkycoinProject/skycoin/src/util/http"
 	"github.com/SkycoinProject/skycoin/src/util/mathutil"
 	"github.com/SkycoinProject/skycoin/src/visor"
+	"github.com/SkycoinProject/skycoin/src/visor/historydb"
 )
 
 // pendingTxnsHandler returns pending (unconfirmed) transactions
@@ -291,6 +292,34 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 			flts = append(flts, visor.NewConfirmedTxFilter(confirmed))
 		}
 
+		var pageSize = historydb.DefaultTxnPageSize
+		pageSizeStr := r.FormValue("page-size")
+		if pageSizeStr != "" {
+			var err error
+			pageSize, err = strconv.ParseUint(pageSizeStr, 10, 64)
+			if err != nil {
+				wh.Error400(w, fmt.Sprintf("invalid 'page-size' value: %v", err))
+				return
+			}
+		}
+
+		var page *historydb.PageIndex
+		var pageNum uint64
+		pageNumStr := r.FormValue("page-num")
+		if pageNumStr != "" {
+			pageNum, err = strconv.ParseUint(pageNumStr, 10, 64)
+			if err != nil {
+				wh.Error400(w, fmt.Sprintf("invalid 'page-number' value: %v", err))
+				return
+			}
+
+			page, err = historydb.NewPageIndex(pageSize, pageNum)
+			if err != nil {
+				wh.Error400(w, err.Error())
+				return
+			}
+		}
+
 		if verbose {
 			txns, inputs, err := gateway.GetTransactionsWithInputs(flts)
 			if err != nil {
@@ -308,7 +337,7 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 
 			wh.SendJSONOr500(logger, w, rTxns.Transactions)
 		} else {
-			txns, err := gateway.GetTransactions(flts)
+			txns, pages, err := gateway.GetTransactionsWithPage(flts, page)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
@@ -321,8 +350,130 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 
 			rTxns.Sort()
+			w.Header().Add("pages", fmt.Sprintf("%d", pages))
 
 			wh.SendJSONOr500(logger, w, rTxns.Transactions)
+		}
+	}
+}
+
+// Returns transactions that match the filters.
+// Method: GET, POST
+// URI: /api/v1/transactions
+// Args:
+//     addrs: Comma separated addresses [optional, returns all transactions if no address provided]
+//     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
+//	   verbose: [bool] include verbose transaction input data
+func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
+		verbose, err := parseBoolFlag(r.FormValue("verbose"))
+		if err != nil {
+			wh.Error400(w, "Invalid value for verbose")
+			return
+		}
+
+		// Gets 'addrs' parameter value
+		addrs, err := parseAddressesFromStr(r.FormValue("addrs"))
+		if err != nil {
+			wh.Error400(w, fmt.Sprintf("parse parameter: 'addrs' failed: %v", err))
+			return
+		}
+
+		// Initialize transaction filters
+		flts := []visor.TxFilter{visor.NewAddrsFilter(addrs)}
+
+		// Gets the 'confirmed' parameter value
+		confirmedStr := r.FormValue("confirmed")
+		if confirmedStr != "" {
+			confirmed, err := strconv.ParseBool(confirmedStr)
+			if err != nil {
+				wh.Error400(w, fmt.Sprintf("invalid 'confirmed' value: %v", err))
+				return
+			}
+
+			flts = append(flts, visor.NewConfirmedTxFilter(confirmed))
+		}
+
+		var pageSize = historydb.DefaultTxnPageSize
+		pageSizeStr := r.FormValue("page-size")
+		if pageSizeStr != "" {
+			var err error
+			pageSize, err = strconv.ParseUint(pageSizeStr, 10, 64)
+			if err != nil {
+				wh.Error400(w, fmt.Sprintf("invalid 'page-size' value: %v", err))
+				return
+			}
+		}
+
+		var pageIndex *historydb.PageIndex
+		var page = uint64(1)
+		pageStr := r.FormValue("page")
+		if pageStr != "" {
+			page, err = strconv.ParseUint(pageStr, 10, 64)
+			if err != nil {
+				wh.Error400(w, fmt.Sprintf("invalid 'page' value: %v", err))
+				return
+			}
+		}
+
+		pageIndex, err = historydb.NewPageIndex(pageSize, page)
+		if err != nil {
+			wh.Error400(w, err.Error())
+			return
+		}
+
+		if verbose {
+			txns, inputs, err := gateway.GetTransactionsWithInputs(flts)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+
+			rTxns, err := NewTransactionsWithStatusVerbose(txns, inputs)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+
+			rTxns.Sort()
+
+			wh.SendJSONOr500(logger, w, rTxns.Transactions)
+		} else {
+			txns, pages, err := gateway.GetTransactionsWithPage(flts, pageIndex)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+
+			if pages == 1 {
+				page = 1
+			}
+
+			rTxns, err := NewTransactionsWithStatus(txns)
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+
+			rTxns.Sort()
+			ret := struct {
+				PageInfo readable.PageInfo                `json:"page_info"`
+				Txns     []readable.TransactionWithStatus `json:"txns"`
+			}{
+				PageInfo: readable.PageInfo{
+					TotalPages:  pages,
+					PageSize:    pageSize,
+					CurrentPage: page,
+				},
+				Txns: rTxns.Transactions,
+			}
+
+			wh.SendJSONOr500(logger, w, ret)
 		}
 	}
 }

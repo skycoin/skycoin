@@ -488,7 +488,7 @@ func TestPage_Cal(t *testing.T) {
 		Number uint64
 	}
 	type args struct {
-		n int
+		n uint64
 	}
 	tests := []struct {
 		name      string
@@ -496,25 +496,22 @@ func TestPage_Cal(t *testing.T) {
 		args      args
 		wantStart uint64
 		wantEnd   uint64
-		wantErr   bool
+		wantPages uint64
+		wantErr   error
 	}{
-		// TODO: Add test cases.
 		{
 			name:      "size=0",
 			fields:    fields{},
 			wantStart: 0,
 			wantEnd:   0,
-			wantErr:   true,
+			wantErr:   ErrZeroPageSize,
 		},
 		{
-			name: "size=1 number=0",
-			fields: fields{
-				Size:   1,
-				Number: 0,
-			},
+			name:      "page num=0",
+			fields:    fields{Size: 1},
 			wantStart: 0,
-			wantEnd:   1,
-			wantErr:   false,
+			wantEnd:   0,
+			wantErr:   ErrZeroPageNum,
 		},
 		{
 			name: "size=1 number=1 input 0",
@@ -525,18 +522,8 @@ func TestPage_Cal(t *testing.T) {
 			args:      args{0},
 			wantStart: 0,
 			wantEnd:   0,
-			wantErr:   false,
-		},
-		{
-			name: "size=1 number=0 input=5",
-			fields: fields{
-				Size:   1,
-				Number: 0,
-			},
-			args:      args{5},
-			wantStart: 0,
-			wantEnd:   1,
-			wantErr:   false,
+			wantPages: 0,
+			wantErr:   nil,
 		},
 		{
 			name: "size=1 number=1 input=5",
@@ -545,9 +532,9 @@ func TestPage_Cal(t *testing.T) {
 				Number: 1,
 			},
 			args:      args{5},
-			wantStart: 1,
-			wantEnd:   2,
-			wantErr:   false,
+			wantStart: 0,
+			wantEnd:   1,
+			wantPages: 5,
 		},
 		{
 			name: "size=1 number=2 input=5",
@@ -556,9 +543,9 @@ func TestPage_Cal(t *testing.T) {
 				Number: 2,
 			},
 			args:      args{5},
-			wantStart: 2,
-			wantEnd:   3,
-			wantErr:   false,
+			wantStart: 1,
+			wantEnd:   2,
+			wantPages: 5,
 		},
 		{
 			name: "size=1 number=3 input=5",
@@ -567,9 +554,9 @@ func TestPage_Cal(t *testing.T) {
 				Number: 3,
 			},
 			args:      args{5},
-			wantStart: 3,
-			wantEnd:   4,
-			wantErr:   false,
+			wantStart: 2,
+			wantEnd:   3,
+			wantPages: 5,
 		},
 		{
 			name: "size=1 number=4 input=5",
@@ -578,9 +565,9 @@ func TestPage_Cal(t *testing.T) {
 				Number: 4,
 			},
 			args:      args{5},
-			wantStart: 4,
-			wantEnd:   5,
-			wantErr:   false,
+			wantStart: 3,
+			wantEnd:   4,
+			wantPages: 5,
 		},
 		{
 			name: "size=1 number=5 input=5",
@@ -589,9 +576,9 @@ func TestPage_Cal(t *testing.T) {
 				Number: 5,
 			},
 			args:      args{5},
-			wantStart: 0,
-			wantEnd:   0,
-			wantErr:   false,
+			wantStart: 4,
+			wantEnd:   5,
+			wantPages: 5,
 		},
 		{
 			name: "size=1 number=6 input=5",
@@ -602,18 +589,7 @@ func TestPage_Cal(t *testing.T) {
 			args:      args{5},
 			wantStart: 0,
 			wantEnd:   0,
-			wantErr:   false,
-		},
-		{
-			name: "size=10 number=0 input=100",
-			fields: fields{
-				Size:   10,
-				Number: 0,
-			},
-			args:      args{100},
-			wantStart: 0,
-			wantEnd:   10,
-			wantErr:   false,
+			wantPages: 5,
 		},
 		{
 			name: "size=10 number=1 input=100",
@@ -622,9 +598,9 @@ func TestPage_Cal(t *testing.T) {
 				Number: 1,
 			},
 			args:      args{100},
-			wantStart: 10,
-			wantEnd:   20,
-			wantErr:   false,
+			wantStart: 0,
+			wantEnd:   10,
+			wantPages: 10,
 		},
 		{
 			name: "size=10 number=9 input=100",
@@ -633,9 +609,9 @@ func TestPage_Cal(t *testing.T) {
 				Number: 9,
 			},
 			args:      args{100},
-			wantStart: 90,
-			wantEnd:   100,
-			wantErr:   false,
+			wantStart: 80,
+			wantEnd:   90,
+			wantPages: 10,
 		},
 		{
 			name: "size=10 number=10 input=100",
@@ -644,19 +620,63 @@ func TestPage_Cal(t *testing.T) {
 				Number: 10,
 			},
 			args:      args{100},
+			wantStart: 90,
+			wantEnd:   100,
+			wantPages: 10,
+		},
+		{
+			name: "size=10 number=11 input=100",
+			fields: fields{
+				Size:   10,
+				Number: 11,
+			},
+			args:      args{100},
 			wantStart: 0,
 			wantEnd:   0,
-			wantErr:   false,
+			wantPages: 10,
+		},
+		{
+			name: "size=9 number=10 input=100",
+			fields: fields{
+				Size:   9,
+				Number: 10,
+			},
+			args:      args{100},
+			wantStart: 81,
+			wantEnd:   90,
+			wantPages: 12,
+		},
+		{
+			name: "size=9 number=11 input=100",
+			fields: fields{
+				Size:   9,
+				Number: 11,
+			},
+			args:      args{100},
+			wantStart: 90,
+			wantEnd:   99,
+			wantPages: 12,
+		},
+		{
+			name: "size=99 number=2 input=100",
+			fields: fields{
+				Size:   99,
+				Number: 2,
+			},
+			args:      args{100},
+			wantStart: 99,
+			wantEnd:   100,
+			wantPages: 2,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := Page{
-				Size: tt.fields.Size,
-				N:    tt.fields.Number,
+			p := PageIndex{
+				size: tt.fields.Size,
+				n:    tt.fields.Number,
 			}
-			gotStart, gotEnd, err := p.Cal(tt.args.n)
-			if (err != nil) != tt.wantErr {
+			gotStart, gotEnd, gotPages, err := p.Cal(tt.args.n)
+			if err != tt.wantErr {
 				t.Errorf("Page.Cal() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
@@ -665,6 +685,9 @@ func TestPage_Cal(t *testing.T) {
 			}
 			if gotEnd != tt.wantEnd {
 				t.Errorf("Page.Cal() gotEnd = %v, want %v", gotEnd, tt.wantEnd)
+			}
+			if gotPages != tt.wantPages {
+				t.Errorf("Page.Cal() gotPages = %v, want %v", gotPages, tt.wantPages)
 			}
 		})
 	}

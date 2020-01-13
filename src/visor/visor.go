@@ -1024,6 +1024,22 @@ func (vs *Visor) GetTransactions(flts []TxFilter) ([]Transaction, error) {
 	return txns, nil
 }
 
+// GetTransactionsWithPage returns transactions that can pass the filters with page.
+// If no filters is provided, returns all transactions.
+func (vs *Visor) GetTransactionsWithPage(flts []TxFilter, page *historydb.PageIndex) ([]Transaction, uint64, error) {
+	var txns []Transaction
+	var pages uint64
+	if err := vs.db.View("GetTransactionsPage", func(tx *dbutil.Tx) error {
+		var err error
+		txns, pages, err = vs.getTransactionsWithPage(tx, flts, page)
+		return err
+	}); err != nil {
+		return nil, 0, err
+	}
+
+	return txns, pages, nil
+}
+
 // GetTransactionsWithInputs is the same as GetTransactions but also returns verbose transaction input data
 func (vs *Visor) GetTransactionsWithInputs(flts []TxFilter) ([]Transaction, [][]TransactionInput, error) {
 	var txns []Transaction
@@ -1125,6 +1141,73 @@ func (vs *Visor) getTransactions(tx *dbutil.Tx, flts []TxFilter) ([]Transaction,
 	return retTxns, nil
 }
 
+func (vs *Visor) getTransactionsWithPage(tx *dbutil.Tx, flts []TxFilter, page *historydb.PageIndex) ([]Transaction, uint64, error) {
+	var addrFlts []AddrsFilter
+	var otherFlts []TxFilter
+	// Splits the filters into AddrsFilter and other filters
+	for _, f := range flts {
+		switch v := f.(type) {
+		case AddrsFilter:
+			addrFlts = append(addrFlts, v)
+		default:
+			otherFlts = append(otherFlts, f)
+		}
+	}
+
+	// Accumulates all addresses in address filters
+	addrs := accumulateAddressInFilter(addrFlts)
+
+	// Traverses all transactions to do collection if there's no address filter.
+	if len(addrs) == 0 {
+		txns, err := vs.traverseTxns(tx, otherFlts)
+		if err != nil {
+			return nil, 0, err
+		}
+		return txns, 1, nil
+	}
+
+	// Gets addresses related transactions
+	addrTxns, pages, err := vs.getTransactionsForAddressesWithPage(tx, addrs, page)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Converts address transactions map into []Transaction,
+	// and remove duplicate txns
+	txnMap := make(map[cipher.SHA256]struct{})
+	var txns []Transaction
+	for _, aTxns := range addrTxns {
+		for _, txn := range aTxns {
+			txnHash := txn.Transaction.Hash()
+			if _, exist := txnMap[txnHash]; exist {
+				continue
+			}
+			txnMap[txnHash] = struct{}{}
+			txns = append(txns, txn)
+		}
+	}
+
+	// Checks other filters
+	f := func(txn *Transaction, flts []TxFilter) bool {
+		for _, flt := range flts {
+			if !flt.Match(txn) {
+				return false
+			}
+		}
+
+		return true
+	}
+
+	var retTxns []Transaction
+	for _, txn := range txns {
+		if f(&txn, otherFlts) {
+			retTxns = append(retTxns, txn)
+		}
+	}
+
+	return retTxns, pages, nil
+}
+
 func accumulateAddressInFilter(afs []AddrsFilter) []cipher.Address {
 	// Accumulate all addresses in address filters
 	addrMap := make(map[cipher.Address]struct{})
@@ -1217,6 +1300,87 @@ func (vs *Visor) getTransactionsForAddresses(tx *dbutil.Tx, addrs []cipher.Addre
 	}
 
 	return ret, nil
+}
+
+// getTransactionsForAddresses returns all addresses related transactions with pagination.
+// Including both confirmed and unconfirmed transactions.
+func (vs *Visor) getTransactionsForAddressesWithPage(tx *dbutil.Tx, addrs []cipher.Address, page *historydb.PageIndex) (map[cipher.Address][]Transaction, uint64, error) {
+	// Get the head block seq, for calculating the txn status
+	headBkSeq, ok, err := vs.blockchain.HeadSeq(tx)
+
+	if err != nil {
+		return nil, 0, err
+	}
+	if !ok {
+		return nil, 0, errors.New("No head block seq")
+	}
+
+	ret := make(map[cipher.Address][]Transaction, len(addrs))
+	var pages uint64
+	for _, a := range addrs {
+		addrTxns, addrPages, err := vs.history.GetTransactionsForAddressWithPage(tx, a, page)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		pages += addrPages
+
+		txns := make([]Transaction, len(addrTxns), len(addrTxns)+4)
+		for i, txn := range addrTxns {
+			if headBkSeq < txn.BlockSeq {
+				err := errors.New("Transaction block sequence is greater than the head block sequence")
+				logger.Critical().WithError(err).WithFields(logrus.Fields{
+					"headBkSeq":   headBkSeq,
+					"txnBlockSeq": txn.BlockSeq,
+				}).Error()
+				return nil, 0, err
+			}
+			h := headBkSeq - txn.BlockSeq + 1
+
+			bk, err := vs.blockchain.GetSignedBlockBySeq(tx, txn.BlockSeq)
+			if err != nil {
+				return nil, 0, err
+			}
+
+			if bk == nil {
+				return nil, 0, fmt.Errorf("block seq=%d doesn't exist", txn.BlockSeq)
+			}
+
+			txns[i] = Transaction{
+				Transaction: txn.Txn,
+				Status:      NewConfirmedTransactionStatus(h, txn.BlockSeq),
+				Time:        bk.Time(),
+			}
+		}
+
+		// Look in the unconfirmed pool
+		uxs, err := vs.unconfirmed.GetUnspentsOfAddr(tx, a)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		for _, ux := range uxs {
+			txn, err := vs.unconfirmed.Get(tx, ux.Body.SrcTransaction)
+			if err != nil {
+				return nil, 0, err
+			}
+
+			if txn == nil {
+				logger.Critical().Error("unconfirmed unspent missing unconfirmed txn")
+				continue
+			}
+
+			txns = append(txns, Transaction{
+				Transaction: txn.Transaction,
+				Status:      NewUnconfirmedTransactionStatus(),
+				Time:        uint64(timeutil.NanoToTime(txn.Received).Unix()),
+			})
+		}
+
+		ret[a] = txns
+	}
+
+	return ret, pages, nil
 }
 
 // traverseTxns traverses transactions in historydb and unconfirmed tx pool in db,

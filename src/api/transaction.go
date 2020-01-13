@@ -292,36 +292,8 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 			flts = append(flts, visor.NewConfirmedTxFilter(confirmed))
 		}
 
-		var pageSize = historydb.DefaultTxnPageSize
-		pageSizeStr := r.FormValue("page-size")
-		if pageSizeStr != "" {
-			var err error
-			pageSize, err = strconv.ParseUint(pageSizeStr, 10, 64)
-			if err != nil {
-				wh.Error400(w, fmt.Sprintf("invalid 'page-size' value: %v", err))
-				return
-			}
-		}
-
-		var page *historydb.PageIndex
-		var pageNum uint64
-		pageNumStr := r.FormValue("page-num")
-		if pageNumStr != "" {
-			pageNum, err = strconv.ParseUint(pageNumStr, 10, 64)
-			if err != nil {
-				wh.Error400(w, fmt.Sprintf("invalid 'page-number' value: %v", err))
-				return
-			}
-
-			page, err = historydb.NewPageIndex(pageSize, pageNum)
-			if err != nil {
-				wh.Error400(w, err.Error())
-				return
-			}
-		}
-
 		if verbose {
-			txns, inputs, err := gateway.GetTransactionsWithInputs(flts)
+			txns, inputs, _, err := gateway.GetTransactionsWithInputs(flts, nil)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
@@ -337,7 +309,7 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 
 			wh.SendJSONOr500(logger, w, rTxns.Transactions)
 		} else {
-			txns, pages, err := gateway.GetTransactionsWithPage(flts, page)
+			txns, _, err := gateway.GetTransactions(flts, nil)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
@@ -350,7 +322,6 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 
 			rTxns.Sort()
-			w.Header().Add("pages", fmt.Sprintf("%d", pages))
 
 			wh.SendJSONOr500(logger, w, rTxns.Transactions)
 		}
@@ -364,6 +335,8 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 //     addrs: Comma separated addresses [optional, returns all transactions if no address provided]
 //     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
 //	   verbose: [bool] include verbose transaction input data
+//     page: Page number
+//     page-size: Page size [optional, default to 10, must be <= 100]
 func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -411,24 +384,24 @@ func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		var pageIndex *historydb.PageIndex
-		var page = uint64(1)
+		var currentPage = uint64(1)
 		pageStr := r.FormValue("page")
 		if pageStr != "" {
-			page, err = strconv.ParseUint(pageStr, 10, 64)
+			currentPage, err = strconv.ParseUint(pageStr, 10, 64)
 			if err != nil {
 				wh.Error400(w, fmt.Sprintf("invalid 'page' value: %v", err))
 				return
 			}
 		}
 
-		pageIndex, err = historydb.NewPageIndex(pageSize, page)
+		pageIndex, err = historydb.NewPageIndex(pageSize, currentPage)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return
 		}
 
 		if verbose {
-			txns, inputs, err := gateway.GetTransactionsWithInputs(flts)
+			txns, inputs, pages, err := gateway.GetTransactionsWithInputs(flts, pageIndex)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
@@ -442,16 +415,24 @@ func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
 
 			rTxns.Sort()
 
-			wh.SendJSONOr500(logger, w, rTxns.Transactions)
+			ret := struct {
+				PageInfo readable.PageInfo                       `json:"page_info"`
+				Txns     []readable.TransactionWithStatusVerbose `json:"txns"`
+			}{
+				PageInfo: readable.PageInfo{
+					TotalPages:  pages,
+					PageSize:    pageSize,
+					CurrentPage: currentPage,
+				},
+				Txns: rTxns.Transactions,
+			}
+
+			wh.SendJSONOr500(logger, w, ret)
 		} else {
-			txns, pages, err := gateway.GetTransactionsWithPage(flts, pageIndex)
+			txns, pages, err := gateway.GetTransactions(flts, pageIndex)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
-			}
-
-			if pages == 1 {
-				page = 1
 			}
 
 			rTxns, err := NewTransactionsWithStatus(txns)
@@ -468,7 +449,7 @@ func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
 				PageInfo: readable.PageInfo{
 					TotalPages:  pages,
 					PageSize:    pageSize,
-					CurrentPage: page,
+					CurrentPage: currentPage,
 				},
 				Txns: rTxns.Transactions,
 			}

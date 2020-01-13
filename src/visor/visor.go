@@ -863,7 +863,7 @@ func (vs *Visor) GetTransactionsForAddress(a cipher.Address) ([]Transaction, err
 
 	if err := vs.db.View("GetTransactionsForAddress", func(tx *dbutil.Tx) error {
 		var err error
-		txns, err = vs.getTransactionsForAddresses(tx, []cipher.Address{a})
+		txns, _, err = vs.getTransactionsForAddresses(tx, []cipher.Address{a}, nil)
 		return err
 	}); err != nil {
 		return nil, err
@@ -1010,28 +1010,28 @@ func NewConfirmedTxFilter(isConfirmed bool) TxFilter {
 
 // GetTransactions returns transactions that can pass the filters.
 // If no filters is provided, returns all transactions.
-func (vs *Visor) GetTransactions(flts []TxFilter) ([]Transaction, error) {
-	var txns []Transaction
+// func (vs *Visor) GetTransactions(flts []TxFilter) ([]Transaction, error) {
+// 	var txns []Transaction
 
-	if err := vs.db.View("GetTransactions", func(tx *dbutil.Tx) error {
-		var err error
-		txns, err = vs.getTransactions(tx, flts)
-		return err
-	}); err != nil {
-		return nil, err
-	}
+// 	if err := vs.db.View("GetTransactions", func(tx *dbutil.Tx) error {
+// 		var err error
+// 		txns, err = vs.getTransactions(tx, flts)
+// 		return err
+// 	}); err != nil {
+// 		return nil, err
+// 	}
 
-	return txns, nil
-}
+// 	return txns, nil
+// }
 
-// GetTransactionsWithPage returns transactions that can pass the filters with page.
+// GetTransactions returns transactions that can pass the filters with page.
 // If no filters is provided, returns all transactions.
-func (vs *Visor) GetTransactionsWithPage(flts []TxFilter, page *historydb.PageIndex) ([]Transaction, uint64, error) {
+func (vs *Visor) GetTransactions(flts []TxFilter, page *historydb.PageIndex) ([]Transaction, uint64, error) {
 	var txns []Transaction
 	var pages uint64
 	if err := vs.db.View("GetTransactionsPage", func(tx *dbutil.Tx) error {
 		var err error
-		txns, pages, err = vs.getTransactionsWithPage(tx, flts, page)
+		txns, pages, err = vs.getTransactions(tx, flts, page)
 		return err
 	}); err != nil {
 		return nil, 0, err
@@ -1041,13 +1041,13 @@ func (vs *Visor) GetTransactionsWithPage(flts []TxFilter, page *historydb.PageIn
 }
 
 // GetTransactionsWithInputs is the same as GetTransactions but also returns verbose transaction input data
-func (vs *Visor) GetTransactionsWithInputs(flts []TxFilter) ([]Transaction, [][]TransactionInput, error) {
+func (vs *Visor) GetTransactionsWithInputs(flts []TxFilter, page *historydb.PageIndex) ([]Transaction, [][]TransactionInput, uint64, error) {
 	var txns []Transaction
 	var inputs [][]TransactionInput
-
+	var pages uint64
 	if err := vs.db.View("GetTransactionsWithInputs", func(tx *dbutil.Tx) error {
 		var err error
-		txns, err = vs.getTransactions(tx, flts)
+		txns, pages, err = vs.getTransactions(tx, flts, page)
 		if err != nil {
 			return err
 		}
@@ -1072,76 +1072,76 @@ func (vs *Visor) GetTransactionsWithInputs(flts []TxFilter) ([]Transaction, [][]
 
 		return nil
 	}); err != nil {
-		return nil, nil, err
+		return nil, nil, 0, err
 	}
 
-	return txns, inputs, nil
+	return txns, inputs, pages, nil
 }
 
-func (vs *Visor) getTransactions(tx *dbutil.Tx, flts []TxFilter) ([]Transaction, error) {
-	var addrFlts []AddrsFilter
-	var otherFlts []TxFilter
-	// Splits the filters into AddrsFilter and other filters
-	for _, f := range flts {
-		switch v := f.(type) {
-		case AddrsFilter:
-			addrFlts = append(addrFlts, v)
-		default:
-			otherFlts = append(otherFlts, f)
-		}
-	}
+// func (vs *Visor) getTransactions(tx *dbutil.Tx, flts []TxFilter) ([]Transaction, error) {
+// 	var addrFlts []AddrsFilter
+// 	var otherFlts []TxFilter
+// 	// Splits the filters into AddrsFilter and other filters
+// 	for _, f := range flts {
+// 		switch v := f.(type) {
+// 		case AddrsFilter:
+// 			addrFlts = append(addrFlts, v)
+// 		default:
+// 			otherFlts = append(otherFlts, f)
+// 		}
+// 	}
 
-	// Accumulates all addresses in address filters
-	addrs := accumulateAddressInFilter(addrFlts)
+// 	// Accumulates all addresses in address filters
+// 	addrs := accumulateAddressInFilter(addrFlts)
 
-	// Traverses all transactions to do collection if there's no address filter.
-	if len(addrs) == 0 {
-		return vs.traverseTxns(tx, otherFlts)
-	}
+// 	// Traverses all transactions to do collection if there's no address filter.
+// 	if len(addrs) == 0 {
+// 		return vs.traverseTxns(tx, otherFlts)
+// 	}
 
-	// Gets addresses related transactions
-	addrTxns, err := vs.getTransactionsForAddresses(tx, addrs)
-	if err != nil {
-		return nil, err
-	}
+// 	// Gets addresses related transactions
+// 	addrTxns, _, err := vs.getTransactionsForAddresses(tx, addrs, nil)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	// Converts address transactions map into []Transaction,
-	// and remove duplicate txns
-	txnMap := make(map[cipher.SHA256]struct{})
-	var txns []Transaction
-	for _, aTxns := range addrTxns {
-		for _, txn := range aTxns {
-			txnHash := txn.Transaction.Hash()
-			if _, exist := txnMap[txnHash]; exist {
-				continue
-			}
-			txnMap[txnHash] = struct{}{}
-			txns = append(txns, txn)
-		}
-	}
+// 	// Converts address transactions map into []Transaction,
+// 	// and remove duplicate txns
+// 	txnMap := make(map[cipher.SHA256]struct{})
+// 	var txns []Transaction
+// 	for _, aTxns := range addrTxns {
+// 		for _, txn := range aTxns {
+// 			txnHash := txn.Transaction.Hash()
+// 			if _, exist := txnMap[txnHash]; exist {
+// 				continue
+// 			}
+// 			txnMap[txnHash] = struct{}{}
+// 			txns = append(txns, txn)
+// 		}
+// 	}
 
-	// Checks other filters
-	f := func(txn *Transaction, flts []TxFilter) bool {
-		for _, flt := range flts {
-			if !flt.Match(txn) {
-				return false
-			}
-		}
+// 	// Checks other filters
+// 	f := func(txn *Transaction, flts []TxFilter) bool {
+// 		for _, flt := range flts {
+// 			if !flt.Match(txn) {
+// 				return false
+// 			}
+// 		}
 
-		return true
-	}
+// 		return true
+// 	}
 
-	var retTxns []Transaction
-	for _, txn := range txns {
-		if f(&txn, otherFlts) {
-			retTxns = append(retTxns, txn)
-		}
-	}
+// 	var retTxns []Transaction
+// 	for _, txn := range txns {
+// 		if f(&txn, otherFlts) {
+// 			retTxns = append(retTxns, txn)
+// 		}
+// 	}
 
-	return retTxns, nil
-}
+// 	return retTxns, nil
+// }
 
-func (vs *Visor) getTransactionsWithPage(tx *dbutil.Tx, flts []TxFilter, page *historydb.PageIndex) ([]Transaction, uint64, error) {
+func (vs *Visor) getTransactions(tx *dbutil.Tx, flts []TxFilter, page *historydb.PageIndex) ([]Transaction, uint64, error) {
 	var addrFlts []AddrsFilter
 	var otherFlts []TxFilter
 	// Splits the filters into AddrsFilter and other filters
@@ -1167,7 +1167,7 @@ func (vs *Visor) getTransactionsWithPage(tx *dbutil.Tx, flts []TxFilter, page *h
 	}
 
 	// Gets addresses related transactions
-	addrTxns, pages, err := vs.getTransactionsForAddressesWithPage(tx, addrs, page)
+	addrTxns, pages, err := vs.getTransactionsForAddresses(tx, addrs, page)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -1226,7 +1226,7 @@ func accumulateAddressInFilter(afs []AddrsFilter) []cipher.Address {
 
 // getTransactionsForAddresses returns all addresses related transactions.
 // Including both confirmed and unconfirmed transactions.
-func (vs *Visor) getTransactionsForAddresses(tx *dbutil.Tx, addrs []cipher.Address) (map[cipher.Address][]Transaction, error) {
+func (vs *Visor) getTransactionsForAddressesBk(tx *dbutil.Tx, addrs []cipher.Address) (map[cipher.Address][]Transaction, error) {
 	// Get the head block seq, for calculating the txn status
 	headBkSeq, ok, err := vs.blockchain.HeadSeq(tx)
 
@@ -1239,7 +1239,7 @@ func (vs *Visor) getTransactionsForAddresses(tx *dbutil.Tx, addrs []cipher.Addre
 
 	ret := make(map[cipher.Address][]Transaction, len(addrs))
 	for _, a := range addrs {
-		addrTxns, err := vs.history.GetTransactionsForAddress(tx, a)
+		addrTxns, _, err := vs.history.GetTransactionsForAddress(tx, a, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -1304,7 +1304,7 @@ func (vs *Visor) getTransactionsForAddresses(tx *dbutil.Tx, addrs []cipher.Addre
 
 // getTransactionsForAddresses returns all addresses related transactions with pagination.
 // Including both confirmed and unconfirmed transactions.
-func (vs *Visor) getTransactionsForAddressesWithPage(tx *dbutil.Tx, addrs []cipher.Address, page *historydb.PageIndex) (map[cipher.Address][]Transaction, uint64, error) {
+func (vs *Visor) getTransactionsForAddresses(tx *dbutil.Tx, addrs []cipher.Address, page *historydb.PageIndex) (map[cipher.Address][]Transaction, uint64, error) {
 	// Get the head block seq, for calculating the txn status
 	headBkSeq, ok, err := vs.blockchain.HeadSeq(tx)
 
@@ -1318,7 +1318,7 @@ func (vs *Visor) getTransactionsForAddressesWithPage(tx *dbutil.Tx, addrs []ciph
 	ret := make(map[cipher.Address][]Transaction, len(addrs))
 	var pages uint64
 	for _, a := range addrs {
-		addrTxns, addrPages, err := vs.history.GetTransactionsForAddressWithPage(tx, a, page)
+		addrTxns, addrPages, err := vs.history.GetTransactionsForAddress(tx, a, page)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -2363,7 +2363,7 @@ func (vs *Visor) GetVerboseTransactionsForAddress(a cipher.Address) ([]Transacti
 	var inputs [][]TransactionInput
 
 	if err := vs.db.View("GetVerboseTransactionsForAddress", func(tx *dbutil.Tx) error {
-		addrTxns, err := vs.getTransactionsForAddresses(tx, []cipher.Address{a})
+		addrTxns, _, err := vs.getTransactionsForAddresses(tx, []cipher.Address{a}, nil)
 		if err != nil {
 			logger.Errorf("GetVerboseTransactionsForAddress: vs.GetTransactionsForAddress failed: %v", err)
 			return err

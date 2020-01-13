@@ -267,17 +267,17 @@ func (hd HistoryDB) GetOutputsForAddress(tx *dbutil.Tx, addr cipher.Address) ([]
 }
 
 // GetTransactionsForAddress returns all the address related transactions
-func (hd HistoryDB) GetTransactionsForAddress(tx *dbutil.Tx, addr cipher.Address) ([]Transaction, error) {
-	hashes, err := hd.addrTxns.get(tx, addr)
-	if err != nil {
-		return nil, err
-	}
+// func (hd HistoryDB) GetTransactionsForAddress(tx *dbutil.Tx, addr cipher.Address, pi *PageIndex) ([]Transaction, error) {
+// 	hashes, err := hd.addrTxns.get(tx, addr)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return hd.txns.getArray(tx, hashes)
-}
+// 	return hd.txns.getArray(tx, hashes)
+// }
 
-// GetTransactionsForAddressWithPage returns all the address related transactions of specifc page
-func (hd HistoryDB) GetTransactionsForAddressWithPage(tx *dbutil.Tx, addr cipher.Address, pi *PageIndex) ([]Transaction, uint64, error) {
+// GetTransactionsForAddress returns all the address related transactions of specifc page
+func (hd HistoryDB) GetTransactionsForAddress(tx *dbutil.Tx, addr cipher.Address, pi *PageIndex) ([]Transaction, uint64, error) {
 	hashes, err := hd.addrTxns.get(tx, addr)
 	if err != nil {
 		return nil, 0, err

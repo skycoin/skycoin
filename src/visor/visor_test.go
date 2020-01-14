@@ -1852,8 +1852,9 @@ func TestGetTransactions(t *testing.T) {
 
 			his := newHistoryerMock2()
 			uncfmTxnPool := NewUnconfirmedTransactionPoolerMock2()
+			var pageIndex *historydb.PageIndex
 			for addr, txns := range tc.addrTxns {
-				his.On("GetTransactionsForAddress", matchDBTx, addr).Return(txns.Txns, nil)
+				his.On("GetTransactionsForAddress", matchDBTx, addr, pageIndex).Return(txns.Txns, uint64(0), nil)
 				his.txns = append(his.txns, txns.Txns...)
 
 				uncfmTxnPool.On("GetUnspentsOfAddr", matchDBTx, addr).Return(makeUncfmUxs(txns.UncfmTxns), nil)
@@ -1880,7 +1881,7 @@ func TestGetTransactions(t *testing.T) {
 				blockchain:  bc,
 			}
 
-			retTxns, err := v.GetTransactions(tc.filters)
+			retTxns, _, err := v.GetTransactions(tc.filters, nil)
 			require.Equal(t, tc.expect.err, err)
 			if err != nil {
 				return

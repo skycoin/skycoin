@@ -19,7 +19,6 @@ type Historyer interface {
 	ParseBlock(tx *dbutil.Tx, b coin.Block) error
 	GetTransaction(tx *dbutil.Tx, hash cipher.SHA256) (*historydb.Transaction, error)
 	GetOutputsForAddress(tx *dbutil.Tx, address cipher.Address) ([]historydb.UxOut, error)
-	// GetTransactionsForAddress(tx *dbutil.Tx, address cipher.Address) ([]historydb.Transaction, error)
 	GetTransactionsForAddress(tx *dbutil.Tx, address cipher.Address, page *historydb.PageIndex) ([]historydb.Transaction, uint64, error)
 	AddressSeen(tx *dbutil.Tx, address cipher.Address) (bool, error)
 	NeedsReset(tx *dbutil.Tx) (bool, error)

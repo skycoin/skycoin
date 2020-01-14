@@ -24,6 +24,7 @@ import (
 	"github.com/SkycoinProject/skycoin/src/readable"
 	"github.com/SkycoinProject/skycoin/src/testutil"
 	"github.com/SkycoinProject/skycoin/src/visor"
+	"github.com/SkycoinProject/skycoin/src/visor/historydb"
 )
 
 func createUnconfirmedTxn(t *testing.T) visor.UnconfirmedTransaction {
@@ -1280,10 +1281,10 @@ func TestGetTransactions(t *testing.T) {
 
 				return true
 			})
-
-			gateway.On("GetTransactions", matchFunc).Return(tc.getTransactionsResponse, tc.getTransactionsError)
-			gateway.On("GetTransactionsWithInputs", matchFunc).Return(tc.getTransactionsVerboseResponse.Transactions,
-				tc.getTransactionsVerboseResponse.Inputs, tc.getTransactionsVerboseError)
+			var pageIndex *historydb.PageIndex
+			gateway.On("GetTransactions", matchFunc, pageIndex).Return(tc.getTransactionsResponse, uint64(0), tc.getTransactionsError)
+			gateway.On("GetTransactionsWithInputs", matchFunc, pageIndex).Return(tc.getTransactionsVerboseResponse.Transactions,
+				tc.getTransactionsVerboseResponse.Inputs, uint64(0), tc.getTransactionsVerboseError)
 
 			v := url.Values{}
 			if tc.httpBody != nil {

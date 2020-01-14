@@ -340,20 +340,20 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
-			wh.Error405(w)
+			writeError405Response(w)
 			return
 		}
 
 		verbose, err := parseBoolFlag(r.FormValue("verbose"))
 		if err != nil {
-			wh.Error400(w, "Invalid value for verbose")
+			writeError400Response(w, "invalid value for verbose")
 			return
 		}
 
 		// Gets 'addrs' parameter value
 		addrs, err := parseAddressesFromStr(r.FormValue("addrs"))
 		if err != nil {
-			wh.Error400(w, fmt.Sprintf("parse parameter: 'addrs' failed: %v", err))
+			writeError400Response(w, fmt.Sprintf("parse parameter: 'addrs' failed: %v", err))
 			return
 		}
 
@@ -365,7 +365,7 @@ func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
 		if confirmedStr != "" {
 			confirmed, err := strconv.ParseBool(confirmedStr)
 			if err != nil {
-				wh.Error400(w, fmt.Sprintf("invalid 'confirmed' value: %v", err))
+				writeError400Response(w, fmt.Sprintf("invalid 'confirmed' value: %v", err))
 				return
 			}
 
@@ -378,7 +378,7 @@ func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
 			var err error
 			pageSize, err = strconv.ParseUint(pageSizeStr, 10, 64)
 			if err != nil {
-				wh.Error400(w, fmt.Sprintf("invalid 'page-size' value: %v", err))
+				writeError400Response(w, fmt.Sprintf("invalid 'page-size' value: %v", err))
 				return
 			}
 		}
@@ -389,33 +389,34 @@ func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
 		if pageStr != "" {
 			currentPage, err = strconv.ParseUint(pageStr, 10, 64)
 			if err != nil {
-				wh.Error400(w, fmt.Sprintf("invalid 'page' value: %v", err))
+				writeError400Response(w, fmt.Sprintf("invalid 'page' value: %v", err))
 				return
 			}
 		}
 
 		pageIndex, err = historydb.NewPageIndex(pageSize, currentPage)
 		if err != nil {
-			wh.Error400(w, err.Error())
+			writeError400Response(w, err.Error())
 			return
 		}
 
+		var resp HTTPResponse
 		if verbose {
 			txns, inputs, pages, err := gateway.GetTransactionsWithInputs(flts, pageIndex)
 			if err != nil {
-				wh.Error500(w, err.Error())
+				writeError500Response(w, err.Error())
 				return
 			}
 
 			rTxns, err := NewTransactionsWithStatusVerbose(txns, inputs)
 			if err != nil {
-				wh.Error500(w, err.Error())
+				writeError500Response(w, err.Error())
 				return
 			}
 
 			rTxns.Sort()
 
-			ret := struct {
+			resp.Data = struct {
 				PageInfo readable.PageInfo                       `json:"page_info"`
 				Txns     []readable.TransactionWithStatusVerbose `json:"txns"`
 			}{
@@ -426,23 +427,22 @@ func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
 				},
 				Txns: rTxns.Transactions,
 			}
-
-			wh.SendJSONOr500(logger, w, ret)
+			writeHTTPResponse(w, resp)
 		} else {
 			txns, pages, err := gateway.GetTransactions(flts, pageIndex)
 			if err != nil {
-				wh.Error500(w, err.Error())
+				writeError500Response(w, err.Error())
 				return
 			}
 
 			rTxns, err := NewTransactionsWithStatus(txns)
 			if err != nil {
-				wh.Error500(w, err.Error())
+				writeError500Response(w, err.Error())
 				return
 			}
 
 			rTxns.Sort()
-			ret := struct {
+			resp.Data = struct {
 				PageInfo readable.PageInfo                `json:"page_info"`
 				Txns     []readable.TransactionWithStatus `json:"txns"`
 			}{
@@ -454,7 +454,7 @@ func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
 				Txns: rTxns.Transactions,
 			}
 
-			wh.SendJSONOr500(logger, w, ret)
+			writeHTTPResponse(w, resp)
 		}
 	}
 }

@@ -132,6 +132,18 @@ func NewHTTPErrorResponse(code int, msg string) HTTPResponse {
 	}
 }
 
+func writeError400Response(w http.ResponseWriter, msg string) {
+	writeHTTPResponse(w, NewHTTPErrorResponse(http.StatusBadRequest, msg))
+}
+
+func writeError405Response(w http.ResponseWriter) {
+	writeHTTPResponse(w, NewHTTPErrorResponse(http.StatusMethodNotAllowed, ""))
+}
+
+func writeError500Response(w http.ResponseWriter, msg string) {
+	writeHTTPResponse(w, NewHTTPErrorResponse(http.StatusInternalServerError, msg))
+}
+
 func writeHTTPResponse(w http.ResponseWriter, resp HTTPResponse) {
 	out, err := json.MarshalIndent(resp, "", "    ")
 	if err != nil {

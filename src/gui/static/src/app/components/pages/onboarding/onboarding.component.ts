@@ -3,11 +3,11 @@ import { Router } from '@angular/router';
 import { WalletService } from '../../../services/wallet.service';
 import { LanguageData, LanguageService } from '../../../services/language.service';
 import { SubscriptionLike } from 'rxjs';
-import { openChangeLanguageModal } from '../../../utils';
 import { MatDialog } from '@angular/material/dialog';
 import { WalletFormData } from '../wallets/create-wallet/create-wallet-form/create-wallet-form.component';
 import { MsgBarService } from '../../../services/msg-bar.service';
 import { OnboardingEncryptWalletComponent } from './onboarding-encrypt-wallet/onboarding-encrypt-wallet.component';
+import { SelectLanguageComponent } from '../../layout/select-language/select-language.component';
 
 @Component({
   selector: 'app-onboarding',
@@ -57,12 +57,11 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   }
 
   changelanguage() {
-    openChangeLanguageModal(this.dialog)
-      .subscribe(response => {
-        if (response) {
-          this.languageService.changeLanguage(response);
-        }
-      });
+    SelectLanguageComponent.openDialog(this.dialog).afterClosed().subscribe(response => {
+      if (response) {
+        this.languageService.changeLanguage(response);
+      }
+    });
   }
 
   get fill() {

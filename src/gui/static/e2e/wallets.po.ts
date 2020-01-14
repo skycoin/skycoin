@@ -78,7 +78,7 @@ export class WalletsPage {
   }
 
   showQrDialog() {
-    return browser.sleep(1000).then(() => element(by.css('.qr-code-button')).click().then(() => {
+    return browser.sleep(1000).then(() => element(by.css('app-qr-code-button')).click().then(() => {
       return element(by.css('app-qr-code')).isPresent();
     }));
   }

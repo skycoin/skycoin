@@ -3,16 +3,14 @@ import { first } from 'rxjs/operators';
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { FormGroup, FormControl } from '@angular/forms';
-import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { NavBarService } from '../../../../services/nav-bar.service';
-import { SelectAddressComponent } from '../../../layout/select-address/select-address';
+import { SelectAddressComponent } from '../../../layout/select-address/select-address.component';
 import { BigNumber } from 'bignumber.js';
-import { ConfirmationData } from '../../../../app.datatypes';
 import { BlockchainService } from '../../../../services/blockchain.service';
-import { showConfirmationModal } from '../../../../utils';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
 import { ChangeNoteComponent } from '../send-preview/transaction-info/change-note/change-note.component';
@@ -22,6 +20,7 @@ import { FormSourceSelectionComponent, AvailableBalanceData, SelectedSources, So
 import { FormDestinationComponent, Destination } from '../form-parts/form-destination/form-destination.component';
 import { CopyRawTxComponent, CopyRawTxData } from '../offline-dialogs/implementations/copy-raw-tx.component';
 import { DoubleButtonActive } from '../../../../components/layout/double-button/double-button.component';
+import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent } from '../../../../components/layout/confirmation/confirmation.component';
 
 @Component({
   selector: 'app-send-coins-form',
@@ -120,14 +119,12 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     }
 
     if (value === DoubleButtonActive.RightButton) {
-      const confirmationData: ConfirmationData = {
+      const confirmationParams: ConfirmationParams = {
         text: 'send.unsigned-confirmation',
-        headerText: 'confirmation.header-text',
-        confirmButtonText: 'confirmation.confirm-button',
-        cancelButtonText: 'confirmation.cancel-button',
+        defaultButtons: DefaultConfirmationButtons.YesNo,
       };
 
-      showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+      ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
         if (confirmationResult) {
           this.showForManualUnsigned = true;
         }
@@ -153,14 +150,12 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   }
 
   private showSynchronizingWarning() {
-    const confirmationData: ConfirmationData = {
+    const confirmationParams: ConfirmationParams = {
       text: 'send.synchronizing-warning',
-      headerText: 'confirmation.header-text',
-      confirmButtonText: 'confirmation.confirm-button',
-      cancelButtonText: 'confirmation.cancel-button',
+      defaultButtons: DefaultConfirmationButtons.YesNo,
     };
 
-    showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+    ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
       if (confirmationResult) {
         this.prepareTransaction();
       }
@@ -364,14 +359,12 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
           CopyRawTxComponent.openDialog(this.dialog, data).afterClosed().subscribe(() => {
             this.resetState();
 
-            const confirmationData: ConfirmationData = {
+            const confirmationParams: ConfirmationParams = {
               text: 'offline-transactions.copy-tx.reset-confirmation',
-              headerText: 'confirmation.header-text',
-              confirmButtonText: 'confirmation.confirm-button',
-              cancelButtonText: 'confirmation.cancel-button',
+              defaultButtons: DefaultConfirmationButtons.YesNo,
             };
 
-            showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+            ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
               if (confirmationResult) {
                 this.resetForm();
                 this.msgBarService.showDone('offline-transactions.copy-tx.reset-done', 4000);

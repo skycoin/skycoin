@@ -9,10 +9,10 @@ import { HwConfirmTxDialogComponent } from './components/layout/hardware-wallet/
 import { HwWalletPinService } from './services/hw-wallet-pin.service';
 import { HwWalletSeedWordService } from './services/hw-wallet-seed-word.service';
 import { LanguageService } from './services/language.service';
-import { openChangeLanguageModal } from './utils';
 import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
 import { MsgBarService } from './services/msg-bar.service';
 import { SeedWordDialogComponent } from './components/layout/seed-word-dialog/seed-word-dialog.component';
+import { SelectLanguageComponent } from './components/layout/select-language/select-language.component';
 
 @Component({
   selector: 'app-root',
@@ -51,7 +51,7 @@ export class AppComponent implements OnInit {
 
     const subscription = this.languageService.selectedLanguageLoaded.subscribe(selectedLanguageLoaded => {
       if (!selectedLanguageLoaded) {
-        openChangeLanguageModal(this.dialog, true).subscribe(response => {
+        SelectLanguageComponent.openDialog(this.dialog, true).afterClosed().subscribe(response => {
           if (response) {
             this.languageService.changeLanguage(response);
           }

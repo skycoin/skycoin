@@ -38,7 +38,6 @@
     "seed": "Wallet Seed",
     "reset": "Reset Password",
     "exchange": "Exchange",
-    "select-address": "Select Address",
     "order-history": "Order history"
   },
 
@@ -289,6 +288,11 @@
     }
   },
 
+  "select-address": {
+    "title": "Select Address",
+    "no-addresses": "There are no confirmed addresses on this wallet."
+  },
+
   "offline-transactions": {
     "error-loading": "Error trying to get the necessary data",
     "copy-tx": {
@@ -439,8 +443,8 @@
 
   "confirmation" : {
     "header-text": "Confirmation",
-    "confirm-button": "Yes",
-    "cancel-button": "No",
+    "yes-button": "Yes",
+    "no-button": "No",
     "close": "Close"
   },
 

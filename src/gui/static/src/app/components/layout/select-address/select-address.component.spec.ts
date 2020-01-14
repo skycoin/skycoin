@@ -1,6 +1,6 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { SelectAddressComponent } from './select-address';
+import { SelectAddressComponent } from './select-address.component';
 
 describe('SelectAddressComponent', () => {
   let component: SelectAddressComponent;

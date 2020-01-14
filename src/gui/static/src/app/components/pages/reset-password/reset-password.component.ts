@@ -16,6 +16,7 @@ export class ResetPasswordComponent implements OnDestroy {
   @ViewChild('resetButton', { static: false }) resetButton: ButtonComponent;
 
   form: FormGroup;
+  busy = false;
 
   private subscription: SubscriptionLike;
   private wallet: Wallet;
@@ -62,10 +63,11 @@ export class ResetPasswordComponent implements OnDestroy {
   }
 
   reset() {
-    if (!this.form.valid || this.resetButton.isLoading() || this.done) {
+    if (!this.form.valid || this.busy || this.done) {
       return;
     }
 
+    this.busy = true;
     this.msgBarService.hide();
     this.resetButton.setLoading();
 
@@ -82,6 +84,7 @@ export class ResetPasswordComponent implements OnDestroy {
           this.router.navigate(['']);
         }, 2000);
       }, error => {
+        this.busy = false;
         this.resetButton.resetState();
         this.msgBarService.showError(error);
       });

@@ -57,7 +57,6 @@ import { AppService } from './services/app.service';
 import { WizardGuardService } from './services/wizard-guard.service';
 import { OnboardingCreateWalletComponent } from './components/pages/onboarding/onboarding-create-wallet/onboarding-create-wallet.component';
 import { OnboardingEncryptWalletComponent } from './components/pages/onboarding/onboarding-encrypt-wallet/onboarding-encrypt-wallet.component';
-import { OnboardingSafeguardComponent } from './components/pages/onboarding/onboarding-create-wallet/onboarding-safeguard/onboarding-safeguard.component';
 import { DoubleButtonComponent } from './components/layout/double-button/double-button.component';
 import { SeedModalComponent } from './components/pages/settings/backup/seed-modal/seed-modal.component';
 import { OnboardingComponent } from './components/pages/onboarding/onboarding.component';
@@ -70,7 +69,7 @@ import { AppTranslateLoader } from './app.translate-loader';
 import { NavBarService } from './services/nav-bar.service';
 import { LoadingContentComponent } from './components/layout/loading-content/loading-content.component';
 import { NumberOfAddressesComponent } from './components/pages/wallets/number-of-addresses/number-of-addresses';
-import { SelectAddressComponent } from './components/layout/select-address/select-address';
+import { SelectAddressComponent } from './components/layout/select-address/select-address.component';
 import { CreateWalletFormComponent } from './components/pages/wallets/create-wallet/create-wallet-form/create-wallet-form.component';
 import { ResetPasswordComponent } from './components/pages/reset-password/reset-password.component';
 import { ExchangeComponent } from './components/pages/exchange/exchange.component';
@@ -119,6 +118,7 @@ import { BroadcastRawTxComponent } from './components/pages/send-skycoin/offline
 import { OfflineDialogsBaseComponent } from './components/pages/send-skycoin/offline-dialogs/offline-dialogs-base.component';
 import { ArrowLinkComponent } from './components/layout/arrow-link/arrow-link.component';
 import { AddressOptionsComponent } from './components/pages/wallets/wallet-detail/address-options/address-options.component';
+import { QrCodeButtonComponent } from './components/layout/qr-code-button/qr-code-button.component';
 
 
 const ROUTES = [
@@ -216,7 +216,6 @@ const ROUTES = [
     ModalComponent,
     OnboardingCreateWalletComponent,
     OnboardingEncryptWalletComponent,
-    OnboardingSafeguardComponent,
     DoubleButtonComponent,
     PasswordDialogComponent,
     SeedModalComponent,
@@ -266,6 +265,7 @@ const ROUTES = [
     OfflineDialogsBaseComponent,
     ArrowLinkComponent,
     AddressOptionsComponent,
+    QrCodeButtonComponent,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -274,7 +274,6 @@ const ROUTES = [
     QrCodeComponent,
     SendSkycoinComponent,
     TransactionDetailComponent,
-    OnboardingSafeguardComponent,
     PasswordDialogComponent,
     SeedModalComponent,
     NumberOfAddressesComponent,

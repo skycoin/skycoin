@@ -37,7 +37,9 @@
       </div>
 
       <div class="-box">
-        <img src="assets/img/qr-code-black.png" (click)="showQrCode(order.exchangeAddress)" class="qr-code-button -img">
+        <div class="-img">
+          <app-qr-code-button [address]="order.exchangeAddress" [hideCoinRequestForm]="true" [ignoreCoinPrefix]="true"></app-qr-code-button>
+        </div>
         <div class="-item">
           <div class="-key">{{ 'exchange.details.exchange-addr' | translate }}</div>
           <div class="-value">{{ order.exchangeAddress }}</div>
@@ -45,7 +47,9 @@
       </div>
 
       <div class="-box" *ngIf="order.exchangeTag">
-        <img src="assets/img/qr-code-black.png" (click)="showQrCode(order.exchangeTag)" class="qr-code-button -img">
+        <div class="-img">
+          <app-qr-code-button [address]="order.exchangeTag" [hideCoinRequestForm]="true" [ignoreCoinPrefix]="true"></app-qr-code-button>
+        </div>
         <div class="-item">
           <div class="-key">{{ 'exchange.details.exchange-addr-tag' | translate }}</div>
           <div class="-value">{{ order.exchangeTag }}</div>

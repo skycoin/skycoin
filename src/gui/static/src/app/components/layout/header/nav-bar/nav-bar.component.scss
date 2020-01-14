@@ -26,7 +26,7 @@ $nav-bar-height: 66px;
       float: left;
       height: $nav-bar-height;
       padding: 17px 0;
-      width: 32px;
+      width: $normal-icon-size;
     }
 
     span {

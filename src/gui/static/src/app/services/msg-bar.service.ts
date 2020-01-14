@@ -4,6 +4,8 @@ import { parseResponseMessage } from '../utils/errors';
 import { SubscriptionLike, of } from 'rxjs';
 import { delay } from 'rxjs/operators';
 import { AppConfig } from '../app.config';
+import { environment } from '../../environments/environment';
+
 
 @Injectable()
 export class MsgBarService {
@@ -69,6 +71,10 @@ export class MsgBarService {
   private setTimer(duration = 10000) {
     if (this.timeSubscription) {
       this.timeSubscription.unsubscribe();
+    }
+
+    if (environment.isInE2eMode) {
+      duration = 500;
     }
 
     this.timeSubscription = of(1).pipe(delay(duration)).subscribe(() => this.hide());

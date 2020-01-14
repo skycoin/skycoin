@@ -118,18 +118,6 @@ export interface Output {
   calculated_hours: BigNumber;
 }
 
-export interface ConfirmationData {
-  text: string;
-  headerText: string;
-  checkboxText?: string;
-  confirmButtonText: string;
-  cancelButtonText?: string;
-  redTitle?: boolean;
-  disableDismiss?: boolean;
-  linkText?: string;
-  linkFunction?(): void;
-}
-
 /**
  * Response Objects
  */

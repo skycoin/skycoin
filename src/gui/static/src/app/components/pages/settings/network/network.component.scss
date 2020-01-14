@@ -11,7 +11,7 @@
   align-items: center;
 
   img {
-    width: 32px;
+    width: $normal-icon-size;
 
     &.-incoming {
       transform: scaleX(-1);

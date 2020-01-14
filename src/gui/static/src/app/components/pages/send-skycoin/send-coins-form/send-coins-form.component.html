@@ -72,10 +72,10 @@
     <input formControlName="note" id="note" (keydown.enter)="preview()" [maxlength]="maxNoteChars" [attr.disabled]="busy ? 'true' : null">
   </div>
 
-  <div *ngIf="!showSimpleForm" class="form-field" [ngClass]="{'element-disabled' : busy}">
-    <div class="row">
+  <div *ngIf="!showSimpleForm" class="form-field">
+    <div class="row" [ngClass]="{'element-disabled' : busy}">
       <div class="col-xl-4 col-lg-5 col-md-7">
-        <mat-checkbox class="-check" (change)="setAutoHours($event)" [checked]="autoHours" [attr.disabled]="busy ? 'true' : null">
+        <mat-checkbox class="-check" (change)="setAutoHours($event)" [checked]="autoHours">
           <span>{{ 'send.hours-allocation-label' | translate }}</span>
           <app-arrow-link
             *ngIf="autoHours"
@@ -100,7 +100,7 @@
           </label>
           <mat-slider min="0.1" max="1" step="0.01" id="value"
                       (input)="setShareValue($event)" [value]="autoShareValue"
-                      [attr.disabled]="busy ? 'true' : null"
+                      [ngClass]="{'element-disabled' : busy}"
           ></mat-slider>
         </div>
       </div>

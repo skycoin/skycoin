@@ -32,13 +32,25 @@
     @extend .field-base;
   }
 
+  input:disabled {
+    @extend .element-disabled;
+  }
+
   select {
     @extend .field-base;
     appearance: none;
   }
 
+  select:disabled {
+    @extend .element-disabled;
+  }
+
   textarea {
     @extend .field-base;
+  }
+
+  textarea:disabled {
+    @extend .element-disabled;
   }
 
   mat-slider {
@@ -85,6 +97,12 @@
       transition: unset !important;
     }
   }
+
+  .-not-allowed {
+    input {
+      cursor: not-allowed;
+    }
+  }
 }
 
 // Styles for the options list of mat-select.
@@ -99,8 +117,7 @@ mat-option .mat-pseudo-checkbox-checked {
 .-select {
   position: relative;
 
-  // before is used instead of after to make the arrow to be transparent when using the
-  // element-disabled class in the child select element.
+  // before is used instead of after to make the arrow to be transparent when necessary.
   &::before {
     content: '';
     display: block;
@@ -108,9 +125,9 @@ mat-option .mat-pseudo-checkbox-checked {
     top: 0;
     right: 0;
     background: url('/assets/img/chevron-right-grey.png') no-repeat;
-    background-size: 32px 32px;
-    width: 32px;
-    height: 32px;
+    background-size: $normal-icon-size $normal-icon-size;
+    width: $normal-icon-size;
+    height: $normal-icon-size;
     margin: 6px;
     pointer-events: none;
     transform: rotate(90deg);
@@ -123,8 +140,8 @@ textarea {
 
 // Used for showing a form field disabled.
 .element-disabled {
-  pointer-events: none;
-  opacity: 0.5;
+  pointer-events: none !important;
+  opacity: 0.5 !important;
 }
 
 // Adds a top marging for the forms inside modal windows. It is only useful when there is an info text

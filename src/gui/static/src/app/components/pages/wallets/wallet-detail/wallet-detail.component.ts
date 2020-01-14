@@ -1,16 +1,15 @@
-import { Component, Input, OnDestroy, OnInit } from '@angular/core';
-import { Wallet, ConfirmationData } from '../../../../app.datatypes';
+import { Component, Input, OnDestroy } from '@angular/core';
+import { Wallet } from '../../../../app.datatypes';
 import { WalletService } from '../../../../services/wallet.service';
-import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
+import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ChangeNameComponent, ChangeNameData } from '../change-name/change-name.component';
-import { QrCodeComponent, QrDialogConfig } from '../../../layout/qr-code/qr-code.component';
 import { PasswordDialogComponent, PasswordDialogParams } from '../../../layout/password-dialog/password-dialog.component';
 import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { NumberOfAddressesComponent } from '../number-of-addresses/number-of-addresses';
 import { TranslateService } from '@ngx-translate/core';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { Observable, SubscriptionLike } from 'rxjs';
-import { showConfirmationModal, copyTextToClipboard } from '../../../../utils';
+import { copyTextToClipboard } from '../../../../utils';
 import { AppConfig } from '../../../../app.config';
 import { Router } from '@angular/router';
 import { HwConfirmAddressDialogComponent, AddressConfirmationParams } from '../../../layout/hardware-wallet/hw-confirm-address-dialog/hw-confirm-address-dialog.component';
@@ -18,6 +17,7 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
 import { ApiService } from '../../../../services/api.service';
 import { mergeMap, first } from 'rxjs/operators';
 import { AddressOptionsComponent, AddressOptions } from './address-options/address-options.component';
+import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent } from '../../../layout/confirmation/confirmation.component';
 
 @Component({
   selector: 'app-wallet-detail',
@@ -109,12 +109,12 @@ export class WalletDetailComponent implements OnDestroy {
     }
 
     if (this.wallet.isHardware && this.wallet.addresses.length >= AppConfig.maxHardwareWalletAddresses) {
-      const confirmationData: ConfirmationData = {
+      const confirmationParams: ConfirmationParams = {
         text: 'wallet.max-hardware-wallets-error',
         headerText: 'errors.error',
-        confirmButtonText: 'confirmation.close',
+        defaultButtons: DefaultConfirmationButtons.Close,
       };
-      showConfirmationModal(this.dialog, confirmationData);
+      ConfirmationComponent.openDialog(this.dialog, confirmationParams);
 
       return;
     }
@@ -160,14 +160,12 @@ export class WalletDetailComponent implements OnDestroy {
               callback(true);
               this.continueNewAddress();
             } else {
-              const confirmationData: ConfirmationData = {
+              const confirmationParams: ConfirmationParams = {
                 text: 'wallet.add-many-confirmation',
-                headerText: 'confirmation.header-text',
-                confirmButtonText: 'confirmation.confirm-button',
-                cancelButtonText: 'confirmation.cancel-button',
+                defaultButtons: DefaultConfirmationButtons.YesNo,
               };
 
-              showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+              ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
                 if (confirmationResult) {
                   callback(true);
                   this.continueNewAddress();
@@ -194,15 +192,13 @@ export class WalletDetailComponent implements OnDestroy {
   deleteWallet() {
     this.msgBarService.hide();
 
-    const confirmationData: ConfirmationData = {
+    const confirmationParams: ConfirmationParams = {
       text: this.translateService.instant('wallet.delete-confirmation', {name: this.wallet.label}),
-      headerText: 'confirmation.header-text',
       checkboxText: 'wallet.delete-confirmation-check',
-      confirmButtonText: 'confirmation.confirm-button',
-      cancelButtonText: 'confirmation.cancel-button',
+      defaultButtons: DefaultConfirmationButtons.YesNo,
     };
 
-    showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+    ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
       if (confirmationResult) {
         this.walletService.deleteHardwareWallet(this.wallet).subscribe(result => {
           if (result) {
@@ -281,13 +277,6 @@ export class WalletDetailComponent implements OnDestroy {
     }, duration);
   }
 
-  showQrCode(event, address: string) {
-    event.stopPropagation();
-
-    const config: QrDialogConfig = { address };
-    QrCodeComponent.openDialog(this.dialog, config);
-  }
-
   private scanAddresses() {
     if (this.workingWithAddresses) {
       return;
@@ -341,7 +330,10 @@ export class WalletDetailComponent implements OnDestroy {
       dialogRef.componentInstance.passwordSubmit
         .subscribe(passwordDialog => {
           this.walletService.addAddress(this.wallet, this.howManyAddresses, passwordDialog.password)
-            .subscribe(() => passwordDialog.close(), error => passwordDialog.error(error));
+            .subscribe(() => {
+              passwordDialog.close();
+              setTimeout(() => this.msgBarService.showDone('common.changes-made'));
+            }, error => passwordDialog.error(error));
         });
     } else {
 
@@ -355,16 +347,17 @@ export class WalletDetailComponent implements OnDestroy {
         procedure = this.walletService.addAddress(this.wallet, this.howManyAddresses);
       }
 
-      procedure.subscribe(() => this.workingWithAddresses = false,
-        err => {
-          if (!this.wallet.isHardware ) {
-            this.msgBarService.showError(err);
-          } else {
-            this.msgBarService.showError(getHardwareWalletErrorMsg(this.translateService, err));
-          }
-          this.workingWithAddresses = false;
-        },
-      );
+      procedure.subscribe(() => {
+        this.workingWithAddresses = false;
+        this.msgBarService.showDone('common.changes-made');
+      }, err => {
+        if (!this.wallet.isHardware ) {
+          this.msgBarService.showError(err);
+        } else {
+          this.msgBarService.showError(getHardwareWalletErrorMsg(this.translateService, err));
+        }
+        this.workingWithAddresses = false;
+      });
     }
   }
 

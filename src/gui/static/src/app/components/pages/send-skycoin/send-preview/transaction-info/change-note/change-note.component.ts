@@ -20,6 +20,7 @@ export class ChangeNoteComponent implements OnInit, OnDestroy {
   @ViewChild('button', { static: false }) button: ButtonComponent;
   form: FormGroup;
   maxNoteChars = ChangeNoteComponent.MAX_NOTE_CHARS;
+  busy = false;
 
   private OperationSubscription: SubscriptionLike;
   private originalNote: string;
@@ -61,7 +62,7 @@ export class ChangeNoteComponent implements OnInit, OnDestroy {
   }
 
   changeNote() {
-    if (this.button.isLoading()) {
+    if (this.busy) {
       return;
     }
 
@@ -73,12 +74,15 @@ export class ChangeNoteComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.busy = true;
     this.msgBarService.hide();
     this.button.setLoading();
 
     this.OperationSubscription = this.storageService.store(StorageType.NOTES, this.data.txid, newNote).subscribe(() => {
+      this.busy = false;
       this.dialogRef.close(newNote);
     }, error => {
+      this.busy = false;
       this.msgBarService.showError(error);
       this.button.resetState().setEnabled();
     });

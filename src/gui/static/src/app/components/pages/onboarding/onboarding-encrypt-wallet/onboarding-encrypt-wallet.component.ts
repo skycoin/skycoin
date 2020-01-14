@@ -23,7 +23,7 @@ export class OnboardingEncryptWalletComponent implements OnInit {
 
   initEncryptForm() {
     this.form = this.formBuilder.group({
-        password: new FormControl('', Validators.compose([Validators.required, Validators.minLength(2)])),
+        password: new FormControl('', Validators.compose([Validators.required])),
         confirm: new FormControl('',
           Validators.compose([
             Validators.required,

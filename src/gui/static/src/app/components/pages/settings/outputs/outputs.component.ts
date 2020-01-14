@@ -2,8 +2,6 @@ import { Component, OnDestroy } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { ActivatedRoute } from '@angular/router';
 import { SubscriptionLike } from 'rxjs';
-import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { QrCodeComponent, QrDialogConfig } from '../../../layout/qr-code/qr-code.component';
 
 @Component({
   selector: 'app-outputs',
@@ -19,7 +17,6 @@ export class OutputsComponent implements OnDestroy {
   constructor(
     public walletService: WalletService,
     private route: ActivatedRoute,
-    private dialog: MatDialog,
   ) {
     route.queryParams.subscribe(params => {
       this.wallets = null;
@@ -50,12 +47,5 @@ export class OutputsComponent implements OnDestroy {
         })
         .filter(wallet => wallet.addresses.length > 0);
     });
-  }
-
-  showQrCode(event: any, address: string) {
-    event.stopPropagation();
-
-    const config: QrDialogConfig = { address };
-    QrCodeComponent.openDialog(this.dialog, config);
   }
 }

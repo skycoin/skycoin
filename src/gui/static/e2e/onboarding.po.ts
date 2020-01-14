@@ -26,7 +26,7 @@ export class OnboardingCreatePage {
   }
 
   getSafeguardIsShown() {
-    return element(by.css('app-onboarding-safeguard')).isPresent();
+    return element(by.css('app-confirmation')).isPresent();
   }
 
   acceptSafeguard() {

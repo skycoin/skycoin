@@ -13,7 +13,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ExchangeService } from '../../../../services/exchange.service';
 import { ExchangeOrder, TradingPair, StoredExchangeOrder } from '../../../../app.datatypes';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { SelectAddressComponent } from '../../../layout/select-address/select-address';
+import { SelectAddressComponent } from '../../../layout/select-address/select-address.component';
 import { WalletService } from '../../../../services/wallet.service';
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { TranslateService } from '@ngx-translate/core';
@@ -36,6 +36,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   tradingPairs: TradingPair[];
   activeTradingPair: TradingPair;
   problemGettingPairs = false;
+  busy = false;
 
   private agreement = false;
   private subscriptionsGroup: SubscriptionLike[] = [];
@@ -103,10 +104,11 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   }
 
   exchange() {
-    if (!this.form.valid || this.exchangeButton.isLoading()) {
+    if (!this.form.valid || this.busy) {
       return;
     }
 
+    this.busy = true;
     this.msgBarService.hide();
 
     this.exchangeButton.resetState();
@@ -126,6 +128,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
           toAddress,
           this.activeTradingPair.price,
         ).subscribe((order: ExchangeOrder) => {
+          this.busy = false;
           this.submitted.emit({
             id: order.id,
             pair: order.pair,
@@ -136,6 +139,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
             price: this.activeTradingPair.price,
           });
         }, err => {
+          this.busy = false;
           this.exchangeButton.resetState();
           this.exchangeButton.setEnabled();
           this.msgBarService.showError(err);
@@ -149,6 +153,8 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   }
 
   private showInvalidAddress() {
+    this.busy = false;
+
     this.exchangeButton.resetState();
     this.exchangeButton.setEnabled();
 

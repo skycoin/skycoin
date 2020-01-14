@@ -3,7 +3,7 @@
 $dashed-border-size: 2px;
 $gray-dashed-border: $grey-very-light dashed $dashed-border-size;
 $white-dashed-border: rgba(255, 255, 255, 0.25) dashed $dashed-border-size;
-$lock-icon-size: 32px;
+$lock-icon-size: $normal-icon-size;
 
 .main-container {
   font-size: $font-size-standard-minus;

@@ -364,7 +364,7 @@ export class HwWalletService {
     });
 
     this.signTransactionDialog = this.dialog.open(this.signTransactionConfirmationComponentInternal, <MatDialogConfig> {
-      width: '560px',
+      width: '600px',
       data: previewData,
     });
 

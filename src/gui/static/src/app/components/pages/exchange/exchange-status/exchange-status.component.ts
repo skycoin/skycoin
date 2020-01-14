@@ -1,14 +1,13 @@
 import { Component, Input, OnDestroy, Output, EventEmitter } from '@angular/core';
-import { ExchangeOrder, StoredExchangeOrder, ConfirmationData } from '../../../../app.datatypes';
+import { ExchangeOrder, StoredExchangeOrder } from '../../../../app.datatypes';
 import { ExchangeService } from '../../../../services/exchange.service';
-import { QrCodeComponent, QrDialogConfig } from '../../../layout/qr-code/qr-code.component';
-import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { SubscriptionLike, Observable, of } from 'rxjs';
-import { showConfirmationModal } from '../../../../utils';
+import { MatDialog } from '@angular/material/dialog';
+import { SubscriptionLike, of } from 'rxjs';
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { environment } from '../../../../../environments/environment';
 import { AppService } from '../../../../services/app.service';
 import { delay, mergeMap } from 'rxjs/operators';
+import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent } from '../../../layout/confirmation/confirmation.component';
 
 @Component({
   selector: 'app-exchange-status',
@@ -106,15 +105,6 @@ export class ExchangeStatusComponent implements OnDestroy {
     this.subscription.unsubscribe();
   }
 
-  showQrCode(address) {
-    const config: QrDialogConfig = {
-      address: address,
-      hideCoinRequestForm: true,
-      ignoreCoinPrefix: true,
-    };
-    QrCodeComponent.openDialog(this.dialog, config);
-  }
-
   toggleDetails() {
     this.expanded = !this.expanded;
   }
@@ -123,14 +113,12 @@ export class ExchangeStatusComponent implements OnDestroy {
     if (this.loading || this.exchangeService.isOrderFinished(this.order)) {
       this.goBack.emit();
     } else {
-      const confirmationData: ConfirmationData = {
+      const confirmationParams: ConfirmationParams = {
         text: 'exchange.details.back-alert',
-        headerText: 'confirmation.header-text',
-        confirmButtonText: 'confirmation.confirm-button',
-        cancelButtonText: 'confirmation.cancel-button',
+        defaultButtons: DefaultConfirmationButtons.YesNo,
       };
 
-      showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+      ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
         if (confirmationResult) {
           this.goBack.emit();
         }

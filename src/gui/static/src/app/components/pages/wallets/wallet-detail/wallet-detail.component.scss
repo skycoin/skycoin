@@ -16,7 +16,7 @@
     display: flex;
     align-items: center;
 
-    img {
+    app-qr-code-button {
       margin-right: 10px;
     }
 
@@ -87,11 +87,11 @@
 
       &.-img::before {
         content: '';
-        height: 32px;
-        width: 32px;
+        height: $normal-icon-size;
+        width: $normal-icon-size;
         margin-right: 5px;
         background-repeat: no-repeat;
-        background-size: 32px 32px;
+        background-size: $normal-icon-size $normal-icon-size;
       }
 
       &.-address-options::before {

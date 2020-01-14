@@ -77,7 +77,7 @@
             </h4>
           </ng-container>
           <div class="-item" *ngFor="let address of transaction.addresses">
-            <img src="assets/img/qr-code-black.png" (click)="showQrCode($event, address)" class="qr-code-button">
+            <app-qr-code-button [address]="address"></app-qr-code-button>
             <span class="break-all">{{ address }}</span>
           </div>
           <div class="-item" *ngIf="transaction.note">

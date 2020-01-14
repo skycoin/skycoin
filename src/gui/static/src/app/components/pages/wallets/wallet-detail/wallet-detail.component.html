@@ -34,7 +34,7 @@
     <div class="-width-50 grey-text">{{ i + 1 }}</div>
     <div class="-flex-fill address-column">
       <ng-container *ngIf="!wallet.isHardware || address.confirmed">
-        <img src="assets/img/qr-code-black.png" (click)="showQrCode($event, address.address)" class="qr-code-button">
+        <app-qr-code-button [address]="address.address"></app-qr-code-button>
         <p class="click-to-copy" [ngClass]="{ copying: address.copying }" (click)="copyAddress($event, address)" (mouseleave)="address.copying = false">
           {{ address.address }}
           <mat-spinner *ngIf="confirmingIndex === i"></mat-spinner>

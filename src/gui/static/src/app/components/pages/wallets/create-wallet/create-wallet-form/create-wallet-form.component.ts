@@ -1,13 +1,12 @@
 import { switchMap } from 'rxjs/operators';
-import { Component, OnInit, OnDestroy, Input } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { SubscriptionLike, Subject, of } from 'rxjs';
 import { ApiService } from '../../../../../services/api.service';
-import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { SeedWordDialogComponent } from '../../../../layout/seed-word-dialog/seed-word-dialog.component';
-import { ConfirmationData } from '../../../../../app.datatypes';
-import { showConfirmationModal } from '../../../../../utils';
 import { MsgBarService } from '../../../../../services/msg-bar.service';
+import { ConfirmationParams, ConfirmationComponent } from '../../../../layout/confirmation/confirmation.component';
 
 export class WalletFormData {
   creatingNewWallet: boolean;
@@ -28,6 +27,8 @@ export class WalletFormData {
 export class CreateWalletFormComponent implements OnInit, OnDestroy {
   @Input() create: boolean;
   @Input() onboarding: boolean;
+  @Input() busy = false;
+  @Output() createRequested = new EventEmitter<void>();
 
   form: FormGroup;
   customSeedIsNormal = true;
@@ -102,7 +103,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
       this.enterSeedWithAssistance = true;
       this.removeConfirmations();
     } else {
-      const confirmationData: ConfirmationData = {
+      const confirmationParams: ConfirmationParams = {
         text: this.create ? 'wallet.new.seed.custom-seed-warning-text' : 'wallet.new.seed.custom-seed-warning-text-recovering',
         headerText: 'wallet.new.seed.custom-seed-warning-title',
         checkboxText: this.create ? 'wallet.new.seed.custom-seed-warning-check' : null,
@@ -110,7 +111,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
         cancelButtonText: 'wallet.new.seed.custom-seed-warning-cancel',
       };
 
-      showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+      ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
         if (confirmationResult) {
           this.enterSeedWithAssistance = false;
           this.removeConfirmations();
@@ -238,6 +239,10 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
       this.form.get('seed').setValue(seed);
       this.removeConfirmations();
     });
+  }
+
+  requestCreation() {
+    this.createRequested.emit();
   }
 
   private removeConfirmations(cleanSecondSeedField = true) {

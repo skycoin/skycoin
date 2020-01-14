@@ -1,16 +1,13 @@
 import { Component, EventEmitter, Input, OnInit, Output, ViewChild, OnDestroy } from '@angular/core';
-import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
-import { OnboardingSafeguardComponent } from './onboarding-safeguard/onboarding-safeguard.component';
-import { MatDialogRef } from '@angular/material/dialog';
 import { CreateWalletFormComponent, WalletFormData } from '../../wallets/create-wallet/create-wallet-form/create-wallet-form.component';
 import { HwOptionsDialogComponent } from '../../../layout/hardware-wallet/hw-options-dialog/hw-options-dialog.component';
 import { Router } from '@angular/router';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { SubscriptionLike } from 'rxjs';
 import { BlockchainService } from '../../../../services/blockchain.service';
-import { ConfirmationData } from '../../../../app.datatypes';
-import { showConfirmationModal } from '../../../../utils';
+import { ConfirmationParams, ConfirmationComponent } from '../../../layout/confirmation/confirmation.component';
 
 @Component({
   selector: 'app-onboarding-create-wallet',
@@ -60,8 +57,16 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
   }
 
   createWallet() {
-    this.showSafe().afterClosed().subscribe(result => {
-      if (result) {
+    const confirmationParams: ConfirmationParams = {
+      headerText: 'wizard.confirm.title',
+      redTitle: true,
+      text: 'wizard.confirm.desc',
+      checkboxText: 'wizard.confirm.checkbox',
+      confirmButtonText: 'wizard.confirm.button',
+    };
+
+    ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
+      if (confirmationResult) {
         this.emitCreatedData();
       }
     });
@@ -71,14 +76,14 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
     if (this.synchronized) {
       this.emitCreatedData();
     } else {
-      const confirmationData: ConfirmationData = {
+      const confirmationParams: ConfirmationParams = {
         headerText: 'wallet.new.synchronizing-warning-title',
         text: 'wallet.new.synchronizing-warning-text',
         confirmButtonText: 'wallet.new.synchronizing-warning-continue',
         cancelButtonText: 'wallet.new.synchronizing-warning-cancel',
       };
 
-      showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+      ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
         if (confirmationResult) {
           this.emitCreatedData();
         }
@@ -96,12 +101,5 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
 
   private emitCreatedData() {
     this.onLabelAndSeedCreated.emit(this.formControl.getData());
-  }
-
-  private showSafe(): MatDialogRef<OnboardingSafeguardComponent> {
-    const config = new MatDialogConfig();
-    config.width = '450px';
-
-    return this.dialog.open(OnboardingSafeguardComponent, config);
   }
 }

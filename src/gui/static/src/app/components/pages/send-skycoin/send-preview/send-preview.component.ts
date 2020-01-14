@@ -1,9 +1,9 @@
 import { Component, EventEmitter, Input, OnDestroy, Output, ViewChild } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { ButtonComponent } from '../../../layout/button/button.component';
-import { MatDialogConfig, MatDialog } from '@angular/material/dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
-import { PreviewTransaction, ConfirmationData } from '../../../../app.datatypes';
+import { PreviewTransaction } from '../../../../app.datatypes';
 import { SubscriptionLike } from 'rxjs';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
@@ -11,7 +11,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { mergeMap } from 'rxjs/operators';
 import { CopyRawTxData, CopyRawTxComponent } from '../offline-dialogs/implementations/copy-raw-tx.component';
-import { showConfirmationModal } from '../../../../utils';
+import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent } from '../../../layout/confirmation/confirmation.component';
 
 @Component({
   selector: 'app-send-preview',
@@ -61,14 +61,12 @@ export class SendVerifyComponent implements OnDestroy {
       };
 
       CopyRawTxComponent.openDialog(this.dialog, data).afterClosed().subscribe(() => {
-        const confirmationData: ConfirmationData = {
+        const confirmationParams: ConfirmationParams = {
           text: 'offline-transactions.copy-tx.reset-confirmation',
-          headerText: 'confirmation.header-text',
-          confirmButtonText: 'confirmation.confirm-button',
-          cancelButtonText: 'confirmation.cancel-button',
+          defaultButtons: DefaultConfirmationButtons.YesNo,
         };
 
-        showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+        ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
           if (confirmationResult) {
             this.onBack.emit(true);
           }

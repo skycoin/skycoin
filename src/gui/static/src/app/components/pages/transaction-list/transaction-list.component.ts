@@ -3,10 +3,9 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { WalletService } from '../../../services/wallet.service';
 import { PriceService } from '../../../services/price.service';
 import { SubscriptionLike, of } from 'rxjs';
-import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { TransactionDetailComponent } from './transaction-detail/transaction-detail.component';
 import { NormalTransaction } from '../../../app.datatypes';
-import { QrCodeComponent, QrDialogConfig } from '../../layout/qr-code/qr-code.component';
 import { FormGroup, FormBuilder } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 
@@ -158,13 +157,6 @@ export class TransactionListComponent implements OnInit, OnDestroy {
 
   showTransaction(transaction: NormalTransaction) {
     TransactionDetailComponent.openDialog(this.dialog, transaction);
-  }
-
-  showQrCode(event: any, address: string) {
-    event.stopPropagation();
-
-    const config: QrDialogConfig = { address };
-    QrCodeComponent.openDialog(this.dialog, config);
   }
 
   removeFilters() {

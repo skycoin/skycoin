@@ -3,15 +3,14 @@ import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angu
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { BigNumber } from 'bignumber.js';
-import { ConfirmationData } from '../../../../../app.datatypes';
 import { BlockchainService } from '../../../../../services/blockchain.service';
-import { showConfirmationModal } from '../../../../../utils';
 import { AppService } from '../../../../../services/app.service';
 import { TranslateService } from '@ngx-translate/core';
 import { DoubleButtonActive } from '../../../../layout/double-button/double-button.component';
 import { PriceService } from '../../../../../services/price.service';
 import { MsgBarService } from '../../../../../services/msg-bar.service';
 import { AvailableBalanceData } from '../../form-parts/form-source-selection/form-source-selection.component';
+import { ConfirmationParams, ConfirmationComponent, DefaultConfirmationButtons } from '../../../../layout/confirmation/confirmation.component';
 
 export interface Destination {
   address: string;
@@ -157,14 +156,12 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       toText = usd;
     }
 
-    const confirmationData: ConfirmationData = {
+    const confirmationParams: ConfirmationParams = {
       text: this.translate.instant(validAmounts === 1 ? 'send.convert-confirmation' : 'send.convert-confirmation-plural', {from: fromText, to: toText}),
-      headerText: 'confirmation.header-text',
-      confirmButtonText: 'confirmation.confirm-button',
-      cancelButtonText: 'confirmation.cancel-button',
+      defaultButtons: DefaultConfirmationButtons.YesNo,
     };
 
-    showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+    ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
       if (confirmationResult) {
         this.convertAmounts();
       }

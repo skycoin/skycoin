@@ -1,5 +1,11 @@
 <app-modal [headline]="'wallet.new.' + (data.create ? 'create' : 'load') + '-title' | translate" [dialog]="dialogRef" [disableDismiss]="disableDismiss">
-  <app-create-wallet-form #formControl [create]="data.create" [onboarding]="false"></app-create-wallet-form>
+  <app-create-wallet-form
+    #formControl
+    [create]="data.create"
+    [onboarding]="false"
+    [busy]="busy"
+    (createRequested)="createWallet();"
+  ></app-create-wallet-form>
   <div class="text-center">
     <app-button (action)="closePopup()" #cancelButton>
       {{ 'wallet.new.cancel-button' | translate }}

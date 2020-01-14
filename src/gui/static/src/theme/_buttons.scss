@@ -45,8 +45,3 @@
     opacity: 1;
   }
 }
-
-.qr-code-button {
-  @extend .image-button;
-  width: $qr-code-button-size;
-}

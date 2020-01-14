@@ -1,6 +1,6 @@
 @import '../../../../theme/variables';
 
-$close-button-size: 32px;
+$close-button-size: $normal-icon-size;
 
 .-header {
   background-color: $grey-lightest;

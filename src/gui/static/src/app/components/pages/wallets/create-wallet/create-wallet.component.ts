@@ -6,10 +6,9 @@ import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { CreateWalletFormComponent } from './create-wallet-form/create-wallet-form.component';
 import { SubscriptionLike } from 'rxjs';
 import { BlockchainService } from '../../../../services/blockchain.service';
-import { ConfirmationData } from '../../../../app.datatypes';
-import { showConfirmationModal } from '../../../../utils';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { AppConfig } from '../../../../app.config';
+import { ConfirmationParams, ConfirmationComponent } from '../../../layout/confirmation/confirmation.component';
 
 export class CreateWalletParams {
   create: boolean;
@@ -27,6 +26,7 @@ export class CreateWalletComponent implements OnDestroy {
 
   scan: Number;
   disableDismiss = false;
+  busy = false;
 
   private synchronized = true;
   private synchronizedSubscription: SubscriptionLike;
@@ -61,7 +61,7 @@ export class CreateWalletComponent implements OnDestroy {
   }
 
   createWallet() {
-    if (!this.formControl.isValid || this.createButton.isLoading()) {
+    if (!this.formControl.isValid || this.busy) {
       return;
     }
 
@@ -70,14 +70,14 @@ export class CreateWalletComponent implements OnDestroy {
     if (this.synchronized || this.data.create) {
       this.continueCreating();
     } else {
-      const confirmationData: ConfirmationData = {
+      const confirmationParams: ConfirmationParams = {
         headerText: 'wallet.new.synchronizing-warning-title',
         text: 'wallet.new.synchronizing-warning-text',
         confirmButtonText: 'wallet.new.synchronizing-warning-continue',
         cancelButtonText: 'wallet.new.synchronizing-warning-cancel',
       };
 
-      showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+      ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
         if (confirmationResult) {
           this.continueCreating();
         }
@@ -86,6 +86,7 @@ export class CreateWalletComponent implements OnDestroy {
   }
 
   private continueCreating() {
+    this.busy = true;
     const data = this.formControl.getData();
 
     this.createButton.resetState();
@@ -95,9 +96,11 @@ export class CreateWalletComponent implements OnDestroy {
 
     this.walletService.create(data.label, data.seed, this.scan, data.password)
       .subscribe(() => {
+        this.busy = false;
         setTimeout(() => this.msgBarService.showDone('wallet.new.wallet-created'));
         this.dialogRef.close();
       }, e => {
+        this.busy = false;
         this.msgBarService.showError(e);
         this.createButton.resetState();
         this.cancelButton.disabled = false;

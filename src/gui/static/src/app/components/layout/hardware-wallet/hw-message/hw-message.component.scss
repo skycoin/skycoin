@@ -35,6 +35,7 @@
       padding: 10px 0;
 
       .list-element {
+        word-break: break-all;
         margin: 10px 0;
         font-size: $font-size-standard-minus;
         color: #000000;

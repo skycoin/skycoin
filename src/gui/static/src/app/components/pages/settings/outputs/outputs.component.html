@@ -18,7 +18,7 @@
         <ng-container *ngFor="let address of wallet.addresses">
           <div class="-row">
             <div class="-flex-fill grey-text text-truncate">
-              <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address.address)" class="qr-code-button">
+              <app-qr-code-button [address]="address.address"></app-qr-code-button>
               <span class="address">{{ address.address }}</span>
             </div>
           </div>

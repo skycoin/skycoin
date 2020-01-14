@@ -1,7 +1,23 @@
 import { Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { ConfirmationData } from '../../../app.datatypes';
-import { AppConfig } from '../../../app.config';
+
+export enum DefaultConfirmationButtons {
+  YesNo = 'YesNo',
+  Close = 'Close',
+}
+
+export interface ConfirmationParams {
+  text: string;
+  headerText?: string;
+  checkboxText?: string;
+  defaultButtons?: DefaultConfirmationButtons;
+  confirmButtonText?: string;
+  cancelButtonText?: string;
+  redTitle?: boolean;
+  disableDismiss?: boolean;
+  linkText?: string;
+  linkFunction?(): void;
+}
 
 @Component({
   selector: 'app-confirmation',
@@ -12,9 +28,9 @@ export class ConfirmationComponent {
   accepted = false;
   disableDismiss = false;
 
-  public static openDialog(dialog: MatDialog, confirmationData: ConfirmationData): MatDialogRef<ConfirmationComponent, any> {
+  public static openDialog(dialog: MatDialog, confirmationParams: ConfirmationParams): MatDialogRef<ConfirmationComponent, any> {
     const config = new MatDialogConfig();
-    config.data = confirmationData;
+    config.data = confirmationParams;
     config.autoFocus = false;
     config.width = '450px';
 
@@ -23,8 +39,23 @@ export class ConfirmationComponent {
 
   constructor(
     public dialogRef: MatDialogRef<ConfirmationComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: ConfirmationData,
+    @Inject(MAT_DIALOG_DATA) public data: ConfirmationParams,
   ) {
+    if (!data.headerText) {
+      data.headerText = 'confirmation.header-text';
+    }
+
+    if (data.defaultButtons) {
+      if (data.defaultButtons === DefaultConfirmationButtons.Close) {
+        data.confirmButtonText = 'confirmation.close';
+      }
+
+      if (data.defaultButtons === DefaultConfirmationButtons.YesNo) {
+        data.confirmButtonText = 'confirmation.yes-button';
+        data.cancelButtonText = 'confirmation.no-button';
+      }
+    }
+
     this.disableDismiss = !!data.disableDismiss;
   }
 

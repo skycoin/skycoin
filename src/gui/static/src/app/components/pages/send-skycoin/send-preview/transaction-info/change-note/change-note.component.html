@@ -5,7 +5,7 @@
         {{ 'send.personal-note-label' | translate }}
         <mat-icon class="help-icon" [matTooltip]="'send.personal-note-help' | translate">help</mat-icon>
       </label>
-      <input formControlName="note" id="note" (keydown.enter)="changeNote()" [maxlength]="maxNoteChars">
+      <input formControlName="note" id="note" (keydown.enter)="changeNote()" [maxlength]="maxNoteChars" [attr.disabled]="busy ? 'true' : null">
     </div>
   </div>
   <div class="-buttons">

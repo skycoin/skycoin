@@ -29,4 +29,14 @@
     line-height: 1.5;
     color: $black;
   }
+
+  .no-addresses-msg {
+    padding: 10px;
+
+    mat-icon {
+      margin-right: 5px;
+      position: relative;
+      top: 2px;
+    }
+  }
 }

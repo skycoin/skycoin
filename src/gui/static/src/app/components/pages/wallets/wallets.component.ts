@@ -1,14 +1,14 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { WalletService } from '../../../services/wallet.service';
-import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { CreateWalletComponent } from './create-wallet/create-wallet.component';
-import { Wallet, ConfirmationData } from '../../../app.datatypes';
+import { Wallet } from '../../../app.datatypes';
 import { HwOptionsDialogComponent } from '../../layout/hardware-wallet/hw-options-dialog/hw-options-dialog.component';
 import { SubscriptionLike } from 'rxjs';
 import { Router } from '@angular/router';
 import { HwWalletService } from '../../../services/hw-wallet.service';
-import { showConfirmationModal } from '../../../utils';
 import { first } from 'rxjs/operators';
+import { ConfirmationParams, ConfirmationComponent } from '../../layout/confirmation/confirmation.component';
 
 @Component({
   selector: 'app-wallets',
@@ -74,7 +74,7 @@ export class WalletsComponent implements OnInit, OnDestroy {
 
   toggleWallet(wallet: Wallet) {
     if (wallet.isHardware && wallet.hasHwSecurityWarnings && !wallet.stopShowingHwSecurityPopup && !wallet.opened) {
-      const confirmationData: ConfirmationData = {
+      const confirmationParams: ConfirmationParams = {
         headerText: 'hardware-wallet.security-warning.title',
         text: 'hardware-wallet.security-warning.text',
         checkboxText: 'hardware-wallet.security-warning.check',
@@ -84,7 +84,7 @@ export class WalletsComponent implements OnInit, OnDestroy {
         linkFunction: this.adminHwWallet.bind(this),
       };
 
-      showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+      ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
         if (confirmationResult) {
           wallet.stopShowingHwSecurityPopup = true;
           this.walletService.saveHardwareWallets();

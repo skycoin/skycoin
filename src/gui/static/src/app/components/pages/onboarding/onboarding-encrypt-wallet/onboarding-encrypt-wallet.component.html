@@ -11,7 +11,7 @@
   </div>
   <div class="row">
     <div class="row-container -check-container">
-      <mat-checkbox class="-check" (change)="setEncrypt($event)" [checked]="true" type="checkbox" id="encrypt">
+      <mat-checkbox class="-check" (change)="setEncrypt($event)" [checked]="true" type="checkbox" id="encrypt" [ngClass]="{'element-disabled' : isWorking}">
         <span class="img-label-container">
           <img src="assets/img/lock-gold.png" />
           {{ 'wallet.new.encrypt' | translate }}
@@ -24,12 +24,26 @@
       <form [formGroup]="form">
         <div class="form-field">
           <label for="password">{{ 'password.label' | translate }}</label>
-          <input class="-input" type="password"  formControlName="password" id="password" [ngClass]="{ disable: form.disabled }">
+          <input
+            class="-input"
+            type="password"
+            formControlName="password"
+            id="password"
+            [attr.disabled]="isWorking ? 'true' : null"
+            [ngClass]="{ 'element-disabled': form.disabled }"
+          >
         </div>
         <div class="form-field">
           <label for="confirm">{{ 'password.confirm-label' | translate }}</label>
-          <input class="-input" type="password" formControlName="confirm" id="confirm"
-                 [ngClass]="{ disable: form.disabled }" (keydown.enter)="emitCreatedPassword()">
+          <input
+            class="-input"
+            type="password"
+            formControlName="confirm"
+            id="confirm"
+            [attr.disabled]="isWorking ? 'true' : null"
+            [ngClass]="{ 'element-disabled': form.disabled }"
+            (keydown.enter)="emitCreatedPassword()"
+          >
         </div>
       </form>
     </div>

@@ -2,10 +2,11 @@ import { Injectable, NgZone } from '@angular/core';
 import { Subject, BehaviorSubject, SubscriptionLike, timer, of } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { delay } from 'rxjs/operators';
+import { AppConfig } from '../app.config';
 
 @Injectable()
 export class PriceService {
-  readonly PRICE_API_ID = 'sky-skycoin';
+  private readonly PRICE_API_ID = AppConfig.priceApiId;
 
   price: Subject<number> = new BehaviorSubject<number>(null);
 

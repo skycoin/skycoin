@@ -63,7 +63,8 @@
       <div class="col-lg-5 col-md-4"></div>
       <div class="col-md-3">
         <div class="coins-value-label">
-          <span>{{ 'send.total' | translate }}</span> {{ totalCoins.toString() | amount }} / {{ totalConvertedCoins.toString() | number:'1.0-2' }} {{ 'common.usd' | translate }}
+          <span>{{ 'send.total' | translate }}</span> {{ totalCoins.toString() | amount }}
+          <ng-container *ngIf="price">/ {{ totalConvertedCoins.toString() | number:'1.0-2' }} {{ 'common.usd' | translate }}</ng-container>
         </div>
       </div>
       <div class="col-lg-3 col-md-4" *ngIf="showHourFields">

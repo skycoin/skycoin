@@ -17,6 +17,7 @@ import { AppConfig } from '../../../app.config';
 export class HeaderComponent implements OnInit, OnDestroy {
   @Input() headline: string;
 
+  showPrice = !!AppConfig.priceApiId;
   addresses = [];
   current: number;
   highest: number;

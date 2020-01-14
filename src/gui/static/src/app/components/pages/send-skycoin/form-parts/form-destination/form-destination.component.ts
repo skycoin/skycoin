@@ -251,10 +251,11 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   }
 
   updateValuesAndValidity() {
+    let inputInUsd = this.selectedCurrency !== DoubleButtonActive.LeftButton;
+    let currentPrice = this.price;
     if (!this.price) {
-      this.values = null;
-
-      return;
+      inputInUsd = false;
+      currentPrice = 0;
     }
 
     this.values = [];
@@ -271,15 +272,15 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
         return;
       }
 
-      if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
-        const convertedValue = value.multipliedBy(this.price).decimalPlaces(2);
+      if (!inputInUsd) {
+        const convertedValue = value.multipliedBy(currentPrice).decimalPlaces(2);
 
         this.totalCoins = this.totalCoins.plus(value);
         this.totalConvertedCoins = this.totalConvertedCoins.plus(convertedValue);
 
         this.values[i] = convertedValue.toNumber();
       } else {
-        const convertedValue = value.dividedBy(this.price).decimalPlaces(this.blockchainService.currentMaxDecimals);
+        const convertedValue = value.dividedBy(currentPrice).decimalPlaces(this.blockchainService.currentMaxDecimals);
 
         this.totalCoins = this.totalCoins.plus(convertedValue);
         this.totalConvertedCoins = this.totalConvertedCoins.plus(value);

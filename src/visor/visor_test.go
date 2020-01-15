@@ -1852,17 +1852,36 @@ func TestGetTransactions(t *testing.T) {
 
 			his := newHistoryerMock2()
 			uncfmTxnPool := NewUnconfirmedTransactionPoolerMock2()
-			var pageIndex *historydb.PageIndex
 			for addr, txns := range tc.addrTxns {
-				his.On("GetTransactionsForAddress", matchDBTx, addr, pageIndex).Return(txns.Txns, uint64(0), nil)
-				his.txns = append(his.txns, txns.Txns...)
+				for i, txn := range txns.Txns {
+					his.On("GetTransaction", matchDBTx, txn.Hash()).Return(&txns.Txns[i], nil)
+				}
 
+				his.txns = append(his.txns, txns.Txns...)
 				uncfmTxnPool.On("GetUnspentsOfAddr", matchDBTx, addr).Return(makeUncfmUxs(txns.UncfmTxns), nil)
 				for i, uncfmTxn := range txns.UncfmTxns {
 					uncfmTxnPool.On("Get", matchDBTx, uncfmTxn.Transaction.Hash()).Return(&txns.UncfmTxns[i], nil)
 				}
 				uncfmTxnPool.txns = append(uncfmTxnPool.txns, txns.UncfmTxns...)
 			}
+
+			var hisHashes []cipher.SHA256
+			var hisAddrs []cipher.Address
+			for _, flt := range tc.filters {
+				switch f := flt.(type) {
+				case AddrsFilter:
+					hisAddrs = f.Addrs
+					for _, a := range f.Addrs {
+						txns, ok := tc.addrTxns[a]
+						require.True(t, ok)
+						for _, txn := range txns.Txns {
+							hisHashes = append(hisHashes, txn.Hash())
+						}
+					}
+				}
+			}
+
+			his.On("GetTransactionHashesForAddresses", matchDBTx, hisAddrs).Return(hisHashes, nil)
 
 			bc := &MockBlockchainer{}
 			for i, b := range tc.blocks {
@@ -1874,11 +1893,18 @@ func TestGetTransactions(t *testing.T) {
 			db, shutdown := prepareDB(t)
 			defer shutdown()
 
+			txnModel := transactionModel{
+				history:     his,
+				unconfirmed: uncfmTxnPool,
+				blockchain:  bc,
+			}
+
 			v := &Visor{
 				db:          db,
 				history:     his,
 				unconfirmed: uncfmTxnPool,
 				blockchain:  bc,
+				txnModel:    &txnModel,
 			}
 
 			retTxns, _, err := v.GetTransactions(tc.filters, nil)

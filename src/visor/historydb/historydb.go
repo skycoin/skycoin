@@ -14,76 +14,7 @@ import (
 	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 )
 
-const (
-	// DefaultTxnPageSize the default transaction page size
-	DefaultTxnPageSize = uint64(10)
-
-	// MaxTxnPageSize the maximum transaction page size
-	MaxTxnPageSize = uint64(100)
-)
-
 var logger = logging.MustGetLogger("historydb")
-
-var (
-	// ErrZeroPageSize will be returned when page size is zero
-	ErrZeroPageSize = errors.New("page size must be greater than 0")
-
-	// ErrZeroPageNum will be returned when page num is zero
-	ErrZeroPageNum = errors.New("page number must be  greater than 0")
-	// ErrMaxTxnPageSize will be returned when page size is greater than MaxTxnPageSize
-	ErrMaxTxnPageSize = fmt.Errorf("transaction page size must be not greater than %d", MaxTxnPageSize)
-)
-
-// PageIndex represents
-type PageIndex struct {
-	size uint64 // Page size
-	n    uint64 // Page number, start from 1
-}
-
-// NewPageIndex creates a page
-func NewPageIndex(size uint64, pageN uint64) (*PageIndex, error) {
-	if size == 0 {
-		return nil, ErrZeroPageSize
-	}
-
-	if pageN == 0 {
-		return nil, ErrZeroPageNum
-	}
-
-	if size > MaxTxnPageSize {
-		return nil, ErrMaxTxnPageSize
-	}
-
-	return &PageIndex{size: size, n: pageN}, nil
-}
-
-// Cal calculate the slice indexes
-func (p PageIndex) Cal(n uint64) (start uint64, end uint64, totalPages uint64, err error) {
-	if p.size == 0 {
-		return 0, 0, 0, ErrZeroPageSize
-	}
-
-	if p.n == 0 {
-		return 0, 0, 0, ErrZeroPageNum
-	}
-
-	totalPages = n / p.size
-	if n%p.size != 0 {
-		totalPages++
-	}
-
-	start = p.size * (p.n - 1)
-	if start >= n {
-		return 0, 0, totalPages, nil
-	}
-
-	end = start + p.size
-	if end > n {
-		end = n
-	}
-
-	return
-}
 
 // CreateBuckets creates bolt.DB buckets used by the historydb
 func CreateBuckets(tx *dbutil.Tx) error {
@@ -266,28 +197,26 @@ func (hd HistoryDB) GetOutputsForAddress(tx *dbutil.Tx, addr cipher.Address) ([]
 	return hd.outputs.getArray(tx, hashes)
 }
 
-// GetTransactionsForAddress returns all the address related transactions of specifc page
-func (hd HistoryDB) GetTransactionsForAddress(tx *dbutil.Tx, addr cipher.Address, pi *PageIndex) ([]Transaction, uint64, error) {
-	hashes, err := hd.addrTxns.get(tx, addr)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	var pages uint64
-	if pi != nil {
-		var start, end uint64
-		start, end, pages, err = pi.Cal(uint64(len(hashes)))
+// GetTransactionHashesForAddresses returns transaction hashes of related addresses
+func (hd HistoryDB) GetTransactionHashesForAddresses(tx *dbutil.Tx, addrs []cipher.Address) ([]cipher.SHA256, error) {
+	var hashes []cipher.SHA256
+	hashMap := make(map[cipher.SHA256]struct{})
+	for _, addr := range addrs {
+		hs, err := hd.addrTxns.get(tx, addr)
 		if err != nil {
-			return nil, 0, err
+			return nil, err
 		}
-		hashes = hashes[start:end]
+		// clear duplicate hashes
+		for _, h := range hs {
+			if _, ok := hashMap[h]; ok {
+				continue
+			}
+			hashes = append(hashes, h)
+			hashMap[h] = struct{}{}
+		}
 	}
 
-	txns, err := hd.txns.getArray(tx, hashes)
-	if err != nil {
-		return nil, 0, err
-	}
-	return txns, pages, nil
+	return hashes, nil
 }
 
 // AddressSeen returns true if the address appears in the blockchain

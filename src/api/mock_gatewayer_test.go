@@ -838,11 +838,11 @@ func (_m *MockGatewayer) GetTransactionWithInputs(txid cipher.SHA256) (*visor.Tr
 }
 
 // GetTransactions provides a mock function with given fields: flts, page
-func (_m *MockGatewayer) GetTransactions(flts []visor.TxFilter, page *historydb.PageIndex) ([]visor.Transaction, uint64, error) {
+func (_m *MockGatewayer) GetTransactions(flts []visor.TxFilter, page *visor.PageIndex) ([]visor.Transaction, uint64, error) {
 	ret := _m.Called(flts, page)
 
 	var r0 []visor.Transaction
-	if rf, ok := ret.Get(0).(func([]visor.TxFilter, *historydb.PageIndex) []visor.Transaction); ok {
+	if rf, ok := ret.Get(0).(func([]visor.TxFilter, *visor.PageIndex) []visor.Transaction); ok {
 		r0 = rf(flts, page)
 	} else {
 		if ret.Get(0) != nil {
@@ -851,14 +851,14 @@ func (_m *MockGatewayer) GetTransactions(flts []visor.TxFilter, page *historydb.
 	}
 
 	var r1 uint64
-	if rf, ok := ret.Get(1).(func([]visor.TxFilter, *historydb.PageIndex) uint64); ok {
+	if rf, ok := ret.Get(1).(func([]visor.TxFilter, *visor.PageIndex) uint64); ok {
 		r1 = rf(flts, page)
 	} else {
 		r1 = ret.Get(1).(uint64)
 	}
 
 	var r2 error
-	if rf, ok := ret.Get(2).(func([]visor.TxFilter, *historydb.PageIndex) error); ok {
+	if rf, ok := ret.Get(2).(func([]visor.TxFilter, *visor.PageIndex) error); ok {
 		r2 = rf(flts, page)
 	} else {
 		r2 = ret.Error(2)
@@ -868,11 +868,11 @@ func (_m *MockGatewayer) GetTransactions(flts []visor.TxFilter, page *historydb.
 }
 
 // GetTransactionsWithInputs provides a mock function with given fields: flts, page
-func (_m *MockGatewayer) GetTransactionsWithInputs(flts []visor.TxFilter, page *historydb.PageIndex) ([]visor.Transaction, [][]visor.TransactionInput, uint64, error) {
+func (_m *MockGatewayer) GetTransactionsWithInputs(flts []visor.TxFilter, page *visor.PageIndex) ([]visor.Transaction, [][]visor.TransactionInput, uint64, error) {
 	ret := _m.Called(flts, page)
 
 	var r0 []visor.Transaction
-	if rf, ok := ret.Get(0).(func([]visor.TxFilter, *historydb.PageIndex) []visor.Transaction); ok {
+	if rf, ok := ret.Get(0).(func([]visor.TxFilter, *visor.PageIndex) []visor.Transaction); ok {
 		r0 = rf(flts, page)
 	} else {
 		if ret.Get(0) != nil {
@@ -881,7 +881,7 @@ func (_m *MockGatewayer) GetTransactionsWithInputs(flts []visor.TxFilter, page *
 	}
 
 	var r1 [][]visor.TransactionInput
-	if rf, ok := ret.Get(1).(func([]visor.TxFilter, *historydb.PageIndex) [][]visor.TransactionInput); ok {
+	if rf, ok := ret.Get(1).(func([]visor.TxFilter, *visor.PageIndex) [][]visor.TransactionInput); ok {
 		r1 = rf(flts, page)
 	} else {
 		if ret.Get(1) != nil {
@@ -890,14 +890,14 @@ func (_m *MockGatewayer) GetTransactionsWithInputs(flts []visor.TxFilter, page *
 	}
 
 	var r2 uint64
-	if rf, ok := ret.Get(2).(func([]visor.TxFilter, *historydb.PageIndex) uint64); ok {
+	if rf, ok := ret.Get(2).(func([]visor.TxFilter, *visor.PageIndex) uint64); ok {
 		r2 = rf(flts, page)
 	} else {
 		r2 = ret.Get(2).(uint64)
 	}
 
 	var r3 error
-	if rf, ok := ret.Get(3).(func([]visor.TxFilter, *historydb.PageIndex) error); ok {
+	if rf, ok := ret.Get(3).(func([]visor.TxFilter, *visor.PageIndex) error); ok {
 		r3 = rf(flts, page)
 	} else {
 		r3 = ret.Error(3)

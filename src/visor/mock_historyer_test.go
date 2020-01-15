@@ -113,34 +113,27 @@ func (_m *MockHistoryer) GetTransaction(tx *dbutil.Tx, hash cipher.SHA256) (*his
 	return r0, r1
 }
 
-// GetTransactionsForAddress provides a mock function with given fields: tx, address, page
-func (_m *MockHistoryer) GetTransactionsForAddress(tx *dbutil.Tx, address cipher.Address, page *historydb.PageIndex) ([]historydb.Transaction, uint64, error) {
-	ret := _m.Called(tx, address, page)
+// GetTransactionHashesForAddresses provides a mock function with given fields: tx, addresses
+func (_m *MockHistoryer) GetTransactionHashesForAddresses(tx *dbutil.Tx, addresses []cipher.Address) ([]cipher.SHA256, error) {
+	ret := _m.Called(tx, addresses)
 
-	var r0 []historydb.Transaction
-	if rf, ok := ret.Get(0).(func(*dbutil.Tx, cipher.Address, *historydb.PageIndex) []historydb.Transaction); ok {
-		r0 = rf(tx, address, page)
+	var r0 []cipher.SHA256
+	if rf, ok := ret.Get(0).(func(*dbutil.Tx, []cipher.Address) []cipher.SHA256); ok {
+		r0 = rf(tx, addresses)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]historydb.Transaction)
+			r0 = ret.Get(0).([]cipher.SHA256)
 		}
 	}
 
-	var r1 uint64
-	if rf, ok := ret.Get(1).(func(*dbutil.Tx, cipher.Address, *historydb.PageIndex) uint64); ok {
-		r1 = rf(tx, address, page)
+	var r1 error
+	if rf, ok := ret.Get(1).(func(*dbutil.Tx, []cipher.Address) error); ok {
+		r1 = rf(tx, addresses)
 	} else {
-		r1 = ret.Get(1).(uint64)
+		r1 = ret.Error(1)
 	}
 
-	var r2 error
-	if rf, ok := ret.Get(2).(func(*dbutil.Tx, cipher.Address, *historydb.PageIndex) error); ok {
-		r2 = rf(tx, address, page)
-	} else {
-		r2 = ret.Error(2)
-	}
-
-	return r0, r1, r2
+	return r0, r1
 }
 
 // GetUxOuts provides a mock function with given fields: tx, uxids

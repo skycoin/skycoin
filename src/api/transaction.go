@@ -17,7 +17,6 @@ import (
 	wh "github.com/SkycoinProject/skycoin/src/util/http"
 	"github.com/SkycoinProject/skycoin/src/util/mathutil"
 	"github.com/SkycoinProject/skycoin/src/visor"
-	"github.com/SkycoinProject/skycoin/src/visor/historydb"
 )
 
 // pendingTxnsHandler returns pending (unconfirmed) transactions
@@ -372,7 +371,7 @@ func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
 			flts = append(flts, visor.NewConfirmedTxFilter(confirmed))
 		}
 
-		var pageSize = historydb.DefaultTxnPageSize
+		var pageSize = visor.DefaultTxnPageSize
 		pageSizeStr := r.FormValue("page-size")
 		if pageSizeStr != "" {
 			var err error
@@ -383,7 +382,7 @@ func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		var pageIndex *historydb.PageIndex
+		var pageIndex *visor.PageIndex
 		var currentPage = uint64(1)
 		pageStr := r.FormValue("page")
 		if pageStr != "" {
@@ -394,7 +393,7 @@ func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
-		pageIndex, err = historydb.NewPageIndex(pageSize, currentPage)
+		pageIndex, err = visor.NewPageIndex(pageSize, currentPage)
 		if err != nil {
 			writeError400Response(w, err.Error())
 			return

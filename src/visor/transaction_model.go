@@ -4,11 +4,12 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/util/timeutil"
 	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 	"github.com/SkycoinProject/skycoin/src/visor/historydb"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -22,7 +23,6 @@ const (
 var (
 	// ErrZeroPageSize will be returned when page size is zero
 	ErrZeroPageSize = errors.New("page size must be greater than 0")
-
 	// ErrZeroPageNum will be returned when page num is zero
 	ErrZeroPageNum = errors.New("page number must be  greater than 0")
 	// ErrMaxTxnPageSize will be returned when page size is greater than MaxTxnPageSize
@@ -156,7 +156,7 @@ func (tm transactionModel) GetTransactionsForAddresses(tx *dbutil.Tx, addrs []ci
 	txns = append(txns, hisTxns...)
 
 	// convert the []*UnconfirmedTransaction to []Transaction struct
-	txns = append(txns, tm.convertUnconfirmedTxns(tx, unconfirmedTxns)...)
+	txns = append(txns, convertUnconfirmedTxns(unconfirmedTxns)...)
 
 	return txns, totalPages, nil
 }
@@ -217,7 +217,7 @@ func (tm transactionModel) getUnconfirmedTransactionsHashes(tx *dbutil.Tx, addrs
 	return hashes, nil
 }
 
-func (tm transactionModel) convertUnconfirmedTxns(tx *dbutil.Tx, unconfirmedTxns []*UnconfirmedTransaction) []Transaction {
+func convertUnconfirmedTxns(unconfirmedTxns []*UnconfirmedTransaction) []Transaction {
 	var txns []Transaction
 	for _, txn := range unconfirmedTxns {
 		txns = append(txns, Transaction{

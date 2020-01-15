@@ -12,6 +12,7 @@ import (
 	"github.com/SkycoinProject/skycoin/src/coin"
 	"github.com/SkycoinProject/skycoin/src/testutil"
 	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
+
 	"github.com/stretchr/testify/require"
 )
 

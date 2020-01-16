@@ -6,10 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"io/ioutil"
 	"math"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -1342,6 +1344,265 @@ func TestGetTransactions(t *testing.T) {
 					require.NoError(t, err)
 					require.Equal(t, tc.httpResponse, msg, tc.name)
 				}
+			}
+		})
+	}
+}
+
+func TestTransactionsHandlerV2(t *testing.T) {
+	var addrs []cipher.Address
+
+	// create 5 addresses
+	for i := 0; i < 5; i++ {
+		addr := makeAddress()
+		addrs = append(addrs, addr)
+	}
+
+	// create 20 confirmed transactions with inputs
+	var txns []visor.Transaction
+	var txnsInputs [][]visor.TransactionInput
+	// txnMap := make(map[cipher.SHA256]transactionAndInputs)
+	for i := 0; i < 20; i++ {
+		txnAndInputs := prepareTxnAndInputs(t)
+		// cfmTxns = append(cfmTxns, txnAndInputs)
+		txn := txnAndInputs.txn
+		// txnMap[txn.Hash()] = txnAndInputs
+		// cfmTxnHashes = append(cfmTxnHashes, txn.Hash())
+		txns = append(txns, visor.Transaction{
+			Transaction: txn,
+			Status:      visor.TransactionStatus{Confirmed: true, BlockSeq: uint64(i + 100)},
+		})
+		txnsInputs = append(txnsInputs, txnAndInputs.inputs)
+	}
+
+	// create unconfirmed txns
+	// var uncfmTxnHashes []cipher.SHA256
+	// var uncfmTxns []visor.UnconfirmedTransaction
+	// for j := 0; j < 20; j++ {
+	// 	uncfmTxn := createUnconfirmedTxn(t)
+	// 	uncfmTxns = append(uncfmTxns, uncfmTxn)
+	// }
+
+	// type TxnResponse struct {
+	// 	PageInfo readable.PageInfo `json:"pageInfo"`
+	// 	Txns     []interface{}     `json:"txns"`
+	// }
+
+	var expectTxns = func(t *testing.T, txns []visor.Transaction, inputs [][]visor.TransactionInput) interface{} {
+		if len(inputs) == 0 {
+			ret, err := NewTransactionsWithStatus(txns)
+			require.NoError(t, err)
+			ret.Sort()
+			return ret.Transactions
+		}
+		txnsVerbose, err := NewTransactionsWithStatusVerbose(txns, inputs)
+		require.NoError(t, err)
+		txnsVerbose.Sort()
+		return txnsVerbose.Transactions
+	}
+
+	tt := []struct {
+		name                         string
+		method                       string
+		disableCSRF                  bool
+		args                         []string
+		verbose                      bool
+		gatewayGetTransactions       []visor.Transaction
+		gatewayGetTransactionsInputs [][]visor.TransactionInput
+		gatewayTotalPage             uint64
+		// gatewayError                 error
+		expectStatusCode int
+		expectErrMsg     string
+		expectPageInfo   readable.PageInfo
+		expectTxns       interface{}
+	}{
+		{
+			name:                   "GET no args",
+			method:                 "GET",
+			gatewayGetTransactions: txns,
+			gatewayTotalPage:       uint64(1),
+			// gatewayGetTransactionsInputs: txnsInputs,
+			expectStatusCode: 200,
+			expectPageInfo:   readable.PageInfo{TotalPages: 1, CurrentPage: 1, PageSize: 10},
+			expectTxns:       expectTxns(t, txns, nil),
+		},
+		{
+			name:                   "GET with one addr",
+			method:                 "GET",
+			args:                   []string{"addrs=" + addrs[0].String()},
+			gatewayGetTransactions: txns[:5],
+			gatewayTotalPage:       uint64(1),
+			// gatewayGetTransactionsInputs: txnsInputs[:5],
+			expectStatusCode: 200,
+			expectPageInfo:   readable.PageInfo{TotalPages: 1, CurrentPage: 1, PageSize: 10},
+			expectTxns:       expectTxns(t, txns[:5], nil),
+		},
+		{
+			name:                   "GET with two addr",
+			method:                 "GET",
+			args:                   []string{"addrs=" + addrs[0].String() + "," + addrs[1].String()},
+			gatewayGetTransactions: txns[:11],
+			gatewayTotalPage:       uint64(2),
+			// gatewayGetTransactionsInputs: txnsInputs[:11],
+			expectStatusCode: 200,
+			expectPageInfo:   readable.PageInfo{TotalPages: 2, CurrentPage: 1, PageSize: 10},
+			expectTxns:       expectTxns(t, txns[:11], nil),
+		},
+		{
+			name:                   "GET with addr page-size=1",
+			method:                 "GET",
+			args:                   []string{"addrs=" + addrs[0].String(), "page-size=1"},
+			gatewayGetTransactions: txns[:1],
+			// gatewayGetTransactionsInputs: txnsInputs[:1],
+			gatewayTotalPage: uint64(10),
+			expectStatusCode: 200,
+			expectPageInfo:   readable.PageInfo{TotalPages: 10, CurrentPage: 1, PageSize: 1},
+			expectTxns:       expectTxns(t, txns[:1], nil),
+		},
+		{
+			name:                   "GET with addr page-size=2",
+			method:                 "GET",
+			args:                   []string{"addrs=" + addrs[0].String(), "page-size=2"},
+			gatewayGetTransactions: txns[:2],
+			// gatewayGetTransactionsInputs: txnsInputs[:2],
+			gatewayTotalPage: uint64(5),
+			expectStatusCode: 200,
+			expectPageInfo:   readable.PageInfo{TotalPages: 5, CurrentPage: 1, PageSize: 2},
+			expectTxns:       expectTxns(t, txns[:2], nil),
+		},
+		{
+			name:                         "GET with addr page-size=2 verbose=true",
+			method:                       "GET",
+			args:                         []string{"addrs=" + addrs[0].String(), "page-size=2", "verbose=true"},
+			verbose:                      true,
+			gatewayGetTransactions:       txns[:2],
+			gatewayGetTransactionsInputs: txnsInputs[:2],
+			gatewayTotalPage:             uint64(5),
+			expectStatusCode:             200,
+			expectPageInfo:               readable.PageInfo{TotalPages: 5, CurrentPage: 1, PageSize: 2},
+			expectTxns:                   expectTxns(t, txns[:2], txnsInputs[:2]),
+		},
+		{
+			name:             "GET with addr page-size=2 err=invalid page number",
+			method:           "GET",
+			args:             []string{"addrs=" + addrs[0].String(), "page-size=2", "page=0"},
+			expectStatusCode: 400,
+			expectErrMsg:     "page number must be  greater than 0",
+		},
+		{
+			name:             "Method Not Allowed",
+			method:           "POST",
+			expectStatusCode: 405,
+			disableCSRF:      true,
+			expectErrMsg:     "Method Not Allowed",
+		},
+		{
+			name:             "invalid page-size",
+			method:           "GET",
+			args:             []string{"page-size=-1"},
+			expectStatusCode: 400,
+			expectErrMsg:     "invalid 'page-size' value: strconv.ParseUint: parsing \"-1\": invalid syntax",
+		},
+		{
+			name:             "invalid verbose value",
+			method:           "GET",
+			args:             []string{"verbose=abc"},
+			expectStatusCode: 400,
+			expectErrMsg:     "invalid value for verbose",
+		},
+		{
+			name:             "invalid confirmed value",
+			method:           "GET",
+			args:             []string{"confirmed=abc"},
+			expectStatusCode: 400,
+			expectErrMsg:     "invalid 'confirmed' value: strconv.ParseBool: parsing \"abc\": invalid syntax",
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			endpoint := "http://127.0.0.1:6420/api/v2/transactions"
+			if len(tc.args) > 0 {
+				endpoint = endpoint + "?" + strings.Join(tc.args, "&")
+			}
+			req, err := http.NewRequest(tc.method, endpoint, nil)
+			require.NoError(t, err)
+			if tc.method == "POST" {
+				req.Header.Add("Content-Type", "application/json")
+			}
+
+			rec := httptest.NewRecorder()
+
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = tc.disableCSRF
+
+			gateway := &MockGatewayer{}
+
+			flts := []visor.TxFilter{}
+			var page = uint64(1)
+			var pageSize = visor.DefaultTxnPageSize
+			for _, arg := range tc.args {
+				kv := strings.Split(arg, "=")
+				if len(kv) < 2 {
+					// no filter exist if param does not have a value
+					continue
+				}
+				switch kv[0] {
+				case "addrs":
+					addrsStr := strings.Split(kv[1], ",")
+					var addrs []cipher.Address
+					for _, addrStr := range addrsStr {
+						addr := cipher.MustDecodeBase58Address(addrStr)
+						addrs = append(addrs, addr)
+					}
+					flts = append(flts, visor.AddrsFilter{Addrs: addrs})
+				case "confirmed":
+					isConfirmed, _ := strconv.ParseBool(kv[1]) // nolint:errcheck
+					flts = append(flts, visor.NewConfirmedTxFilter(isConfirmed))
+				case "page":
+					page, _ = strconv.ParseUint(kv[1], 10, 64) // nolint:errcheck
+				case "page-size":
+					pageSize, _ = strconv.ParseUint(kv[1], 10, 64) // nolint:errcheck
+				}
+			}
+			pi, _ := visor.NewPageIndex(pageSize, page) // nolint:errcheck
+
+			gateway.On("GetTransactions", flts, pi).Return(tc.gatewayGetTransactions, tc.gatewayTotalPage, nil)
+			gateway.On("GetTransactionsWithInputs", flts, pi).Return(tc.gatewayGetTransactions, tc.gatewayGetTransactionsInputs, tc.gatewayTotalPage, nil)
+
+			srv := newServerMux(cfg, gateway)
+			srv.ServeHTTP(rec, req)
+
+			body, err := ioutil.ReadAll(rec.Body)
+			require.NoError(t, err)
+
+			require.Equal(t, tc.expectStatusCode, rec.Code)
+			var rsp ReceivedHTTPResponse
+			err = json.NewDecoder(bytes.NewReader(body)).Decode(&rsp)
+			require.NoError(t, err)
+			if rec.Code != 200 {
+				require.Equal(t, tc.expectErrMsg, rsp.Error.Message)
+				return
+			}
+
+			if tc.verbose {
+				var txnRsp struct {
+					PageInfo readable.PageInfo                       `json:"page_info"`
+					Txns     []readable.TransactionWithStatusVerbose `json:"txns"`
+				}
+				err = json.Unmarshal(rsp.Data, &txnRsp)
+				require.NoError(t, err)
+				require.Equal(t, tc.expectPageInfo, txnRsp.PageInfo)
+				require.Equal(t, tc.expectTxns, txnRsp.Txns)
+			} else {
+				var txnRsp struct {
+					PageInfo readable.PageInfo                `json:"page_info"`
+					Txns     []readable.TransactionWithStatus `json:"txns"`
+				}
+				err = json.Unmarshal(rsp.Data, &txnRsp)
+				require.NoError(t, err)
+				require.Equal(t, tc.expectPageInfo, txnRsp.PageInfo)
+				require.Equal(t, tc.expectTxns, txnRsp.Txns)
 			}
 		})
 	}

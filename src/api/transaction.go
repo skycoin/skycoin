@@ -357,7 +357,10 @@ func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// Initialize transaction filters
-		flts := []visor.TxFilter{visor.NewAddrsFilter(addrs)}
+		flts := []visor.TxFilter{}
+		if len(addrs) > 0 {
+			flts = append(flts, visor.NewAddrsFilter(addrs))
+		}
 
 		// Gets the 'confirmed' parameter value
 		confirmedStr := r.FormValue("confirmed")
@@ -452,7 +455,6 @@ func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
 				},
 				Txns: rTxns.Transactions,
 			}
-
 			writeHTTPResponse(w, resp)
 		}
 	}

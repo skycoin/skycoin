@@ -1361,32 +1361,15 @@ func TestTransactionsHandlerV2(t *testing.T) {
 	// create 20 confirmed transactions with inputs
 	var txns []visor.Transaction
 	var txnsInputs [][]visor.TransactionInput
-	// txnMap := make(map[cipher.SHA256]transactionAndInputs)
 	for i := 0; i < 20; i++ {
 		txnAndInputs := prepareTxnAndInputs(t)
-		// cfmTxns = append(cfmTxns, txnAndInputs)
 		txn := txnAndInputs.txn
-		// txnMap[txn.Hash()] = txnAndInputs
-		// cfmTxnHashes = append(cfmTxnHashes, txn.Hash())
 		txns = append(txns, visor.Transaction{
 			Transaction: txn,
 			Status:      visor.TransactionStatus{Confirmed: true, BlockSeq: uint64(i + 100)},
 		})
 		txnsInputs = append(txnsInputs, txnAndInputs.inputs)
 	}
-
-	// create unconfirmed txns
-	// var uncfmTxnHashes []cipher.SHA256
-	// var uncfmTxns []visor.UnconfirmedTransaction
-	// for j := 0; j < 20; j++ {
-	// 	uncfmTxn := createUnconfirmedTxn(t)
-	// 	uncfmTxns = append(uncfmTxns, uncfmTxn)
-	// }
-
-	// type TxnResponse struct {
-	// 	PageInfo readable.PageInfo `json:"pageInfo"`
-	// 	Txns     []interface{}     `json:"txns"`
-	// }
 
 	var expectTxns = func(t *testing.T, txns []visor.Transaction, inputs [][]visor.TransactionInput) interface{} {
 		if len(inputs) == 0 {
@@ -1410,21 +1393,19 @@ func TestTransactionsHandlerV2(t *testing.T) {
 		gatewayGetTransactions       []visor.Transaction
 		gatewayGetTransactionsInputs [][]visor.TransactionInput
 		gatewayTotalPage             uint64
-		// gatewayError                 error
-		expectStatusCode int
-		expectErrMsg     string
-		expectPageInfo   readable.PageInfo
-		expectTxns       interface{}
+		expectStatusCode             int
+		expectErrMsg                 string
+		expectPageInfo               readable.PageInfo
+		expectTxns                   interface{}
 	}{
 		{
 			name:                   "GET no args",
 			method:                 "GET",
 			gatewayGetTransactions: txns,
 			gatewayTotalPage:       uint64(1),
-			// gatewayGetTransactionsInputs: txnsInputs,
-			expectStatusCode: 200,
-			expectPageInfo:   readable.PageInfo{TotalPages: 1, CurrentPage: 1, PageSize: 10},
-			expectTxns:       expectTxns(t, txns, nil),
+			expectStatusCode:       200,
+			expectPageInfo:         readable.PageInfo{TotalPages: 1, CurrentPage: 1, PageSize: 10},
+			expectTxns:             expectTxns(t, txns, nil),
 		},
 		{
 			name:                   "GET with one addr",
@@ -1432,10 +1413,9 @@ func TestTransactionsHandlerV2(t *testing.T) {
 			args:                   []string{"addrs=" + addrs[0].String()},
 			gatewayGetTransactions: txns[:5],
 			gatewayTotalPage:       uint64(1),
-			// gatewayGetTransactionsInputs: txnsInputs[:5],
-			expectStatusCode: 200,
-			expectPageInfo:   readable.PageInfo{TotalPages: 1, CurrentPage: 1, PageSize: 10},
-			expectTxns:       expectTxns(t, txns[:5], nil),
+			expectStatusCode:       200,
+			expectPageInfo:         readable.PageInfo{TotalPages: 1, CurrentPage: 1, PageSize: 10},
+			expectTxns:             expectTxns(t, txns[:5], nil),
 		},
 		{
 			name:                   "GET with two addr",
@@ -1443,32 +1423,29 @@ func TestTransactionsHandlerV2(t *testing.T) {
 			args:                   []string{"addrs=" + addrs[0].String() + "," + addrs[1].String()},
 			gatewayGetTransactions: txns[:11],
 			gatewayTotalPage:       uint64(2),
-			// gatewayGetTransactionsInputs: txnsInputs[:11],
-			expectStatusCode: 200,
-			expectPageInfo:   readable.PageInfo{TotalPages: 2, CurrentPage: 1, PageSize: 10},
-			expectTxns:       expectTxns(t, txns[:11], nil),
+			expectStatusCode:       200,
+			expectPageInfo:         readable.PageInfo{TotalPages: 2, CurrentPage: 1, PageSize: 10},
+			expectTxns:             expectTxns(t, txns[:11], nil),
 		},
 		{
 			name:                   "GET with addr page-size=1",
 			method:                 "GET",
 			args:                   []string{"addrs=" + addrs[0].String(), "page-size=1"},
 			gatewayGetTransactions: txns[:1],
-			// gatewayGetTransactionsInputs: txnsInputs[:1],
-			gatewayTotalPage: uint64(10),
-			expectStatusCode: 200,
-			expectPageInfo:   readable.PageInfo{TotalPages: 10, CurrentPage: 1, PageSize: 1},
-			expectTxns:       expectTxns(t, txns[:1], nil),
+			gatewayTotalPage:       uint64(10),
+			expectStatusCode:       200,
+			expectPageInfo:         readable.PageInfo{TotalPages: 10, CurrentPage: 1, PageSize: 1},
+			expectTxns:             expectTxns(t, txns[:1], nil),
 		},
 		{
 			name:                   "GET with addr page-size=2",
 			method:                 "GET",
 			args:                   []string{"addrs=" + addrs[0].String(), "page-size=2"},
 			gatewayGetTransactions: txns[:2],
-			// gatewayGetTransactionsInputs: txnsInputs[:2],
-			gatewayTotalPage: uint64(5),
-			expectStatusCode: 200,
-			expectPageInfo:   readable.PageInfo{TotalPages: 5, CurrentPage: 1, PageSize: 2},
-			expectTxns:       expectTxns(t, txns[:2], nil),
+			gatewayTotalPage:       uint64(5),
+			expectStatusCode:       200,
+			expectPageInfo:         readable.PageInfo{TotalPages: 5, CurrentPage: 1, PageSize: 2},
+			expectTxns:             expectTxns(t, txns[:2], nil),
 		},
 		{
 			name:                         "GET with addr page-size=2 verbose=true",

@@ -3,6 +3,7 @@ package visor
 import (
 	"errors"
 	"fmt"
+	"sort"
 
 	"github.com/sirupsen/logrus"
 
@@ -104,7 +105,7 @@ type txnHashWithFlag struct {
 // GetTransactionsForAddresses return transactions of addresses within a specific page,
 // it will return the calculated total pages that calcuated base on the page size.
 func (tm transactionModel) GetTransactionsForAddresses(tx *dbutil.Tx, addrs []cipher.Address, page *PageIndex) ([]Transaction, uint64, error) {
-	txnHashesWithFlag, err := tm.getAllTxnHashesWithFlag(tx, addrs)
+	txnHashesWithFlag, err := tm.getAllTxnHashesWithFlagForAddresses(tx, addrs)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -161,9 +162,201 @@ func (tm transactionModel) GetTransactionsForAddresses(tx *dbutil.Tx, addrs []ci
 	return txns, totalPages, nil
 }
 
-// getAllTxnHashesWithFlag returns all transaction hashes of the addresses
+type txnHashSortItem struct {
+	txnHashWithFlag
+	blockSeq uint64
+}
+
+type txnHashesContainer struct {
+	items []txnHashSortItem
+	m     map[cipher.SHA256]struct{}
+}
+
+func newTxnHashesContainer() *txnHashesContainer {
+	return &txnHashesContainer{
+		m: make(map[cipher.SHA256]struct{}),
+	}
+}
+
+func (s *txnHashesContainer) Add(hash cipher.SHA256, isConfirmed bool, blockSeq uint64) {
+	// check if the hashes already exists
+	if _, exist := s.m[hash]; exist {
+		return
+	}
+
+	s.m[hash] = struct{}{}
+	s.items = append(s.items, txnHashSortItem{
+		txnHashWithFlag: txnHashWithFlag{
+			hash:        hash,
+			isConfirmed: isConfirmed,
+		},
+		blockSeq: blockSeq,
+	})
+}
+
+func (s txnHashesContainer) Sort() {
+	sort.Slice(s.items, func(i, j int) bool {
+		if s.items[i].blockSeq < s.items[j].blockSeq {
+			return true
+		}
+
+		if s.items[i].blockSeq > s.items[j].blockSeq {
+			return false
+		}
+
+		// If transactions in the same block, compare the hash string
+		return s.items[i].hash.Hex() < s.items[j].hash.Hex()
+	})
+}
+
+func (s txnHashesContainer) TxnHashesWithFlag() []txnHashWithFlag {
+	var txnHashesWithFlag []txnHashWithFlag
+	for _, tf := range s.items {
+		txnHashesWithFlag = append(txnHashesWithFlag, tf.txnHashWithFlag)
+	}
+	return txnHashesWithFlag
+}
+
+func (tm transactionModel) getConfirmedTxnHashesWithFlag(tx *dbutil.Tx, flts []TxFilter) ([]txnHashWithFlag, error) {
+	headBkSeq, ok, err := tm.blockchain.HeadSeq(tx)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, errors.New("No head block seq")
+	}
+
+	txnHashes := newTxnHashesContainer()
+	if err := tm.history.ForEachTxn(tx, func(hash cipher.SHA256, hTxn *historydb.Transaction) error {
+		if headBkSeq < hTxn.BlockSeq {
+			err := errors.New("Transaction block sequence is less than the head block sequence")
+			logger.Critical().WithError(err).WithFields(logrus.Fields{
+				"headBkSeq":  headBkSeq,
+				"txBlockSeq": hTxn.BlockSeq,
+			}).Error()
+			return err
+		}
+
+		h := headBkSeq - hTxn.BlockSeq + 1
+
+		bk, err := tm.blockchain.GetSignedBlockBySeq(tx, hTxn.BlockSeq)
+		if err != nil {
+			return fmt.Errorf("get block of seq: %v failed: %v", hTxn.BlockSeq, err)
+		}
+
+		if bk == nil {
+			return fmt.Errorf("block of seq: %d doesn't exist", hTxn.BlockSeq)
+		}
+
+		txn := Transaction{
+			Transaction: hTxn.Txn,
+			Status:      NewConfirmedTransactionStatus(h, hTxn.BlockSeq),
+			Time:        bk.Time(),
+		}
+
+		// Checks filters
+		for _, f := range flts {
+			if !f.Match(&txn) {
+				return nil
+			}
+		}
+
+		txnHashes.Add(hash, true, hTxn.BlockSeq)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	txnHashes.Sort()
+	txnHashesWithFlag := txnHashes.TxnHashesWithFlag()
+	return txnHashesWithFlag, nil
+}
+
+func (tm transactionModel) getUnconfirmedTxnHashesWithFlag(tx *dbutil.Tx, flts []TxFilter) ([]txnHashWithFlag, error) {
+	hashes, err := tm.unconfirmed.GetHashes(tx, func(utxn UnconfirmedTransaction) bool {
+		txn := Transaction{
+			Transaction: utxn.Transaction,
+			Status:      NewUnconfirmedTransactionStatus(),
+			Time:        uint64(timeutil.NanoToTime(utxn.Received).Unix()),
+		}
+
+		for _, f := range flts {
+			if !f.Match(&txn) {
+				return false
+			}
+		}
+
+		return true
+
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var txnHashesWithFlag []txnHashWithFlag
+	for _, hash := range hashes {
+		txnHashesWithFlag = append(txnHashesWithFlag, txnHashWithFlag{
+			hash:        hash,
+			isConfirmed: false,
+		})
+	}
+
+	return txnHashesWithFlag, nil
+}
+
+// traverseTxns traverses transactions in historydb and unconfirmed tx pool in db,
+// returns transaction hashes that can pass the filters.
+func (tm transactionModel) traverseTxns(tx *dbutil.Tx, flts []TxFilter, page *PageIndex) ([]Transaction, uint64, error) {
+	cfmHashFlags, err := tm.getConfirmedTxnHashesWithFlag(tx, flts)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	uncfmHashFlags, err := tm.getUnconfirmedTxnHashesWithFlag(tx, flts)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	txnHashesWithFlag := append(cfmHashFlags, uncfmHashFlags...)
+	start, end, totalPages, err := page.Cal(uint64(len(txnHashesWithFlag)))
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// do pagination
+	txnHashesWithFlag = txnHashesWithFlag[start:end]
+
+	var hisTxns []*historydb.Transaction
+	var uncfmTxns []*UnconfirmedTransaction
+	for _, tf := range txnHashesWithFlag {
+		if tf.isConfirmed {
+			t, err := tm.history.GetTransaction(tx, tf.hash)
+			if err != nil {
+				return nil, 0, err
+			}
+			hisTxns = append(hisTxns, t)
+		} else {
+			t, err := tm.unconfirmed.Get(tx, tf.hash)
+			if err != nil {
+				return nil, 0, err
+			}
+			uncfmTxns = append(uncfmTxns, t)
+		}
+	}
+
+	txns, err := tm.convertConfirmedTxns(tx, hisTxns)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	txns = append(txns, convertUnconfirmedTxns(uncfmTxns)...)
+
+	return txns, totalPages, nil
+}
+
+// getAllTxnHashesWithFlagForAddresses returns all transaction hashes of the addresses
 // returns txn hashes that each with a flag to indicate whether it is a confirmed transaction
-func (tm transactionModel) getAllTxnHashesWithFlag(tx *dbutil.Tx, addrs []cipher.Address) ([]txnHashWithFlag, error) {
+func (tm transactionModel) getAllTxnHashesWithFlagForAddresses(tx *dbutil.Tx, addrs []cipher.Address) ([]txnHashWithFlag, error) {
 	var txnHashesWithFlag []txnHashWithFlag
 
 	// get confirmed transactions from history

@@ -1088,6 +1088,9 @@ func (vs *Visor) getTransactions(tx *dbutil.Tx, flts []TxFilter, page *PageIndex
 
 	// Traverses all transactions to do collection if there's no address filter.
 	if len(addrs) == 0 {
+		if page != nil {
+			return vs.txnModel.traverseTxns(tx, otherFlts, page)
+		}
 		txns, err := vs.traverseTxns(tx, otherFlts)
 		if err != nil {
 			return nil, 0, err
@@ -1216,11 +1219,14 @@ func (vs *Visor) traverseTxns(tx *dbutil.Tx, flts []TxFilter) ([]Transaction, er
 			Time:        uint64(timeutil.NanoToTime(ux.Received).Unix()),
 		}
 
-		// Checks filters
-		for _, f := range flts {
-			if !f.Match(&txn) {
-				continue
+		if matched := func(flts []TxFilter, txn Transaction) bool {
+			for _, f := range flts {
+				if !f.Match(&txn) {
+					return false
+				}
 			}
+			return true
+		}(flts, txn); matched {
 			txns = append(txns, txn)
 		}
 	}

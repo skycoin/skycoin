@@ -846,6 +846,62 @@ func TestStableCreateTransaction(t *testing.T) {
 	}
 }
 
+func TestStableGetTransactionV2(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := newClient()
+
+	tt := []struct {
+		name       string
+		verbose    bool
+		args       []api.RequestArg
+		err        string
+		goldenFile string
+	}{
+		{
+			name: "page=1 default page size",
+			args: []api.RequestArg{
+				api.RequestArg{Key: "page", Value: "1"},
+			},
+			goldenFile: "transactions-page-1-with-default-page-size",
+		},
+		{
+			name: "page=2 page-size=2",
+			args: []api.RequestArg{
+				api.RequestArg{Key: "page", Value: "10"},
+				api.RequestArg{Key: "page-size", Value: "5"},
+			},
+			goldenFile: "transactions-page-10-with-size-5",
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.verbose {
+				txns, err := c.GetTransactionsWithStatusVerboseV2(tc.args...)
+				if err != nil {
+					require.Equal(t, tc.err, err)
+					return
+				}
+				var expected api.TransactionsWithStatusVerboseV2
+				loadGoldenFile(t, tc.goldenFile, TestData{txns, &expected})
+				require.Equal(t, &expected, txns)
+			} else {
+				txns, err := c.GetTransactionsWithStatusV2(tc.args...)
+				if err != nil {
+					require.Equal(t, tc.err, err)
+					return
+				}
+				var expected api.TransactionsWithStatusV2
+				loadGoldenFile(t, tc.goldenFile, TestData{txns, &expected})
+				require.Equal(t, &expected, txns)
+			}
+		})
+	}
+}
+
 type liveCreateTxnTestCase struct {
 	name                 string
 	req                  api.CreateTransactionRequest

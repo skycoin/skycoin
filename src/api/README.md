@@ -2789,6 +2789,129 @@ Result:
 ]
 ```
 
+### Get transactions with pagination
+
+```
+URI: /api/v2/transactions
+Method: GET
+Args:
+    addrs: Comma separated addresses [optional, returns all transactions if no address is provided]
+    confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
+    verbose: [bool] include verbose transaction input data
+    page: Page number [optional, default to 1, must be greater than 0]
+    page-size: Page size [optional, default to 10, maximum to 100]
+``` 
+
+This API is almost the same as the `v1` version, except that it would not return all transactions by default and has
+pagination supported. If there are unconfirmed transactions, they will be appended after the confirmed transactions.
+
+If no argument is provided, the first 10 transactions will be returned. The response would have a `page_info` field which
+includes `total pages`, `page size`, and `current page`.
+
+Example:
+
+```sh
+curl http://127.0.0.1:6420/api/v2/transaction?page=1024&page-size=2
+```
+
+<details>
+  <summary>View Output</summary>
+
+```json
+{
+    "data": {
+        "page_info": {
+            "total_pages": 66530,
+            "page_size": 2,
+            "current_page": 1024
+        },
+        "txns": [
+            {
+                "status": {
+                    "confirmed": true,
+                    "unconfirmed": false,
+                    "height": 128216,
+                    "block_seq": 2016
+                },
+                "time": 1500130512,
+                "txn": {
+                    "timestamp": 1500130512,
+                    "length": 414,
+                    "type": 0,
+                    "txid": "f0a3c01325f3e8f09255d49b490c804b929d668fcb70ea814e1a9868b608cfdb",
+                    "inner_hash": "85a298977f5fa338b7a73359c51b83787130b4f3db4a8425a1c54e45e317499d",
+                    "sigs": [
+                        "25333b9a283691cb189e1d2ade7dd6eeb6a275be820ff031af9b877b56330f1546a875a528bab2e559236141a644f2248a19ee5fcc86b2271f9dc60fb296f3f701",
+                        "e21fdae15af052f9b842bc062ab8a2ed42baf61fe11c60255555c0fc86b99abc659269dd907472091d392d31b3c1ad24e11176ee6a9e27da1fc57e2d8ddbd04d00",
+                        "5e4aa1cfca62e0a0aac1c646c3917a96bb6d1c7b8cde2e255d01730eb9d436b446cd5a09dfec097d28f5e7038a05e7172e7d5ddfe4558b1f9e3c25367051ff4f00"
+                    ],
+                    "inputs": [
+                        "5d83e6df94ca78079c8689e700dcabdab2de959fe9f803b36fec34b47b07d025",
+                        "ba1ba491090065d943ce3990b62c5d94f363bbdf37043032d79046af3687ef4c",
+                        "cdce197632464ee9c46d48cb21c959772b8bf2aa04239399353988b937b6e149"
+                    ],
+                    "outputs": [
+                        {
+                            "uxid": "d19549c470bb6d217bb8095df9ef14346ee8f86730208a4247420307fadbb0f0",
+                            "dst": "WSJoAtC4XcjAxTHAFLKU6MNthhpSDX7i1z",
+                            "coins": "3908.000000",
+                            "hours": 1070530
+                        },
+                        {
+                            "uxid": "1742af80ec06a3ef2123a371c6f5e82c275d881e7444f8a921818bc98032fff4",
+                            "dst": "2f9JhZJ147v9D4KxnJwbj8i5iNxqeKL3xNh",
+                            "coins": "50.000000",
+                            "hours": 1070530
+                        }
+                    ]
+                }
+            },
+            {
+                "status": {
+                    "confirmed": true,
+                    "unconfirmed": false,
+                    "height": 128215,
+                    "block_seq": 2017
+                },
+                "time": 1500130612,
+                "txn": {
+                    "timestamp": 1500130612,
+                    "length": 414,
+                    "type": 0,
+                    "txid": "7dc9ae6524abe9108fdc744f210b94274a9c9fdd3da16eaea1aa88037792c27d",
+                    "inner_hash": "752142fcd1cc4b9bad972611a9e64108d91b7642e1eb6b65ac92360a0c9c6bfc",
+                    "sigs": [
+                        "07973d43d4782ee96af70fa0ee4c73f667b035ade8770d55524b91e6d762a73b7bb6e24358c929609dd91c0140e51fa4f55952b45638bae699e522f4009c8f0c01",
+                        "6d8cd2ebabcb511b1772546c898fa456bfeffefcba69aea0f6c285cda38014c015bb664f66ce0d840c71f66403782e5b6b9fd2688a212eb2e3d275aebee5856b00",
+                        "4844a246eff8b59f177f9a4a43815b1fa8a3168c18d63b50c75773ee51c0b9c047ce59431871ba9fdb7df8827c9a2b175424f22cc6cf02a784b805b50574cc7000"
+                    ],
+                    "inputs": [
+                        "8754b0d917f6690d5e88dd0950bdcb8e09d96ffb14b76964da923f5dc8969e0c",
+                        "8fe7df28494563a5b47abbe737c095da461235a2529dda2a1119a19965293c8b",
+                        "421ec170519fab890e3410af5ba4cf33f71fa57d786d5d39f71b7a96ed898094"
+                    ],
+                    "outputs": [
+                        {
+                            "uxid": "fceb40fd9e8895c050fc165d861ebcbe87789eeb89809879a662fdac854bf84e",
+                            "dst": "2bfYafFtdkCRNcCyuDvsATV66GvBR9xfvjy",
+                            "coins": "37659.000000",
+                            "hours": 93972
+                        },
+                        {
+                            "uxid": "eb8c8677da0200be7a405f2e3497db9beaa6288734d85acc5488d573ce2b8399",
+                            "dst": "fXZv5X2NXhWYShoE8jazbh5UWYVCFgUXdW",
+                            "coins": "25000.000000",
+                            "hours": 187945
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}
+```
+</details>
+
 ### Resend unconfirmed transactions
 
 API sets: `TXN`, `WALLET`

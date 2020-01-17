@@ -868,12 +868,28 @@ func TestStableGetTransactionV2(t *testing.T) {
 			goldenFile: "transactions-page-1-with-default-page-size",
 		},
 		{
-			name: "page=2 page-size=2",
+			name: "page=1 default page size verbose",
+			args: []api.RequestArg{
+				api.RequestArg{Key: "page", Value: "1"},
+			},
+			verbose:    true,
+			goldenFile: "transactions-page-1-with-default-page-size-verbose",
+		},
+		{
+			name: "page=10 page-size=5",
 			args: []api.RequestArg{
 				api.RequestArg{Key: "page", Value: "10"},
 				api.RequestArg{Key: "page-size", Value: "5"},
 			},
 			goldenFile: "transactions-page-10-with-size-5",
+		},
+		{
+			name: "page=19 page-size=10",
+			args: []api.RequestArg{
+				api.RequestArg{Key: "page", Value: "19"},
+				api.RequestArg{Key: "page-size", Value: "10"},
+			},
+			goldenFile: "transactions-page-19-with-size-10",
 		},
 	}
 

@@ -2,18 +2,18 @@
   <div class="row">
     <div class="row-container">
       <div class="-header">
-        <span>{{ 'wallet.new.create-title' | translate }}</span>
+        <span>{{ 'wizard.create-title' | translate }}</span>
       </div>
       <div class="-description">
-        <p>{{ 'wizard.wallet-desc' | translate }}</p>
+        <p>{{ 'wizard.create-desc' | translate:{coinName: appService.fullCoinName} }}</p>
       </div>
     </div>
   </div>
   <div class="row">
     <div class="row-container -toggle-container">
       <app-double-button
-        [leftButtonText]="'common.new' | translate"
-        [rightButtonText]="'common.load' | translate"
+        [leftButtonText]="'wizard.new-button' | translate"
+        [rightButtonText]="'wizard.load-button' | translate"
         [activeButton]="doubleButtonActive"
         (onStateChange)="changeForm($event)"
       ></app-double-button>
@@ -30,7 +30,7 @@
   <div class="row -buttons-footer">
     <app-button class="dark-button -button-min-margin" [disabled]="!formControl.isValid"
                 (action)="showNewForm?createWallet():loadWallet()">
-      {{ 'wallet.new.create-button' | translate }}
+      {{ 'common.create-button' | translate }}
     </app-button>
   </div>
 </div>

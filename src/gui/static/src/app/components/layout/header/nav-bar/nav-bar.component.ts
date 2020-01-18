@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { AppConfig } from '../../../../app.config';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { environment } from '../../../../../environments/environment';
+import { AppService } from '../../../../services/app.service';
 
 @Component({
   selector: 'app-nav-bar',
@@ -13,6 +14,7 @@ export class NavBarComponent {
   exchangeEnabled = !!environment.swaplab.apiKey;
 
   constructor(
+    public appService: AppService,
     public navbarService: NavBarService,
   ) { }
 

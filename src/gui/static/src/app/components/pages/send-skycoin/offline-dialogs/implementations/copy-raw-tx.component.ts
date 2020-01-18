@@ -17,8 +17,9 @@ export interface CopyRawTxData {
   styleUrls: ['../offline-dialogs-base.component.scss'],
 })
 export class CopyRawTxComponent extends OfflineDialogsBaseComponent implements OnInit {
-  cancelButtonText = 'offline-transactions.copy-tx.close';
-  okButtonText = 'offline-transactions.copy-tx.copy';
+  cancelButtonText = 'common.close-button';
+  okButtonText = 'offline-transactions.copy-tx.copy-button';
+  inputLabel = 'offline-transactions.copy-tx.input-label';
 
   public static openDialog(dialog: MatDialog, data: CopyRawTxData): MatDialogRef<CopyRawTxComponent, any> {
     const config = new MatDialogConfig();
@@ -56,6 +57,6 @@ export class CopyRawTxComponent extends OfflineDialogsBaseComponent implements O
 
   okPressed() {
     copyTextToClipboard(this.data.rawTx);
-    this.msgBarService.showDone('offline-transactions.copy-tx.copied', 4000);
+    this.msgBarService.showDone('common.copied', 4000);
   }
 }

@@ -1,5 +1,5 @@
 <div>
-  <app-header [headline]="'title.backup' | translate"></app-header>
+  <app-header [headline]="'backup.title' | translate"></app-header>
 
   <div class="container">
     <div class="paper small-padding mb-0">
@@ -18,8 +18,8 @@
 
     <div class="-table" *ngIf="onlyEncrypted.length > 0">
       <div class="-headers">
-        <div class="-width-250">{{ 'backup.wallet' | translate }}</div>
-        <div class="-width-150">{{ 'backup.filename' | translate }}</div>
+        <div class="-width-250">{{ 'backup.wallet-table-label' | translate }}</div>
+        <div class="-width-150">{{ 'backup.filename-table-label' | translate }}</div>
         <div class="-flex-fill"></div>
       </div>
       <div class="-body">
@@ -27,7 +27,7 @@
           <div class="-width-250 text-truncate" [attr.title]="wallet.label">{{ wallet.label }}</div>
           <div class="-width-150">{{ wallet.filename }}</div>
           <div class="-flex-fill text-right">
-            <span class="link" (click)="showSeed(wallet)">{{ 'backup.show-seed' | translate }}</span>
+            <span class="link" (click)="showSeed(wallet)">{{ 'backup.show-seed-button' | translate }}</span>
           </div>
         </div>
       </div>

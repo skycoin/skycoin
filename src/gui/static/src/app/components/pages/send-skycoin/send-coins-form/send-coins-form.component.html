@@ -21,22 +21,22 @@
 
   <div *ngIf="!showSimpleForm" class="form-field -available-msg">
     <ng-container *ngIf="!availableBalance.loading">
-      <span>{{ 'send.available-msg-part1' | translate }}</span>
+      <span>{{ 'send.available-funds-msg-part1' | translate }}</span>
       <span class="value">
         {{ availableBalance.availableCoins.toString() | amount }}
       </span>
-      <span>{{ 'send.available-msg-part2' | translate }}</span>
+      <span>{{ 'send.available-funds-msg-part2' | translate }}</span>
       <span class="value">
         {{ availableBalance.availableHours.toString() | amount:false }}
       </span>
-      <span>{{ 'send.available-msg-part3' | translate }}</span>
+      <span>{{ 'send.available-funds-msg-part3' | translate }}</span>
       <span class="value">
         {{ availableBalance.minimumFee.toString() | amount:false }}
       </span>
-      <span>{{ 'send.available-msg-part4' | translate }}</span>
+      <span>{{ 'send.available-funds-msg-part4' | translate }}</span>
     </ng-container>
     <ng-container *ngIf="availableBalance.loading">
-      <span>{{ 'send.loading-available' | translate }}</span>
+      <span>{{ 'common.loading' | translate }}</span>
     </ng-container>
   </div>
 
@@ -56,7 +56,7 @@
       {{ 'send.change-address-label' | translate }}
       <mat-icon class="help-icon" [matTooltip]="'send.change-address-help' | translate">help</mat-icon>
       <app-arrow-link
-        [text]="'send.change-address-select'"
+        [text]="'send.change-address-select-from-list-link'"
         (pressed)="selectChangeAddress($event)"
         [ngClass]="{'element-disabled' : busy}">
       </app-arrow-link>
@@ -74,12 +74,12 @@
 
   <div *ngIf="!showSimpleForm" class="form-field">
     <div class="row" [ngClass]="{'element-disabled' : busy}">
-      <div class="col-xl-4 col-lg-5 col-md-7">
+      <div class="col-12">
         <mat-checkbox class="-check" (change)="setAutoHours($event)" [checked]="autoHours">
-          <span>{{ 'send.hours-allocation-label' | translate }}</span>
+          <span>{{ 'send.hours-allocation-check' | translate:{coinHoursName: appService.hoursName} }}</span>
           <app-arrow-link
             *ngIf="autoHours"
-            [text]="'send.options-label'"
+            [text]="'send.options-link'"
             (mousedown)="$event.stopPropagation();"
             (pressed)="toggleOptions($event)"
             [pointDown]="!autoOptions">
@@ -89,12 +89,12 @@
     </div>
 
     <div [ngClass]="{ 'row -options-wrapper': true, 'd-none': !autoOptions }">
-      <div class="col-md-5">
+      <div class="col-md-7">
         <div class="form-field">
           <label class="-space-between" for="value">
             <span>
-              {{ 'send.value-label' | translate }}
-              <mat-icon class="help-icon" [matTooltip]="'send.value-help' | translate">help</mat-icon>
+              {{ 'send.hours-share-factor-label' | translate:{coinHoursName: appService.hoursName} }}
+              <mat-icon class="help-icon" [matTooltip]="'send.hours-share-factor-help' | translate:{coinHoursName: appService.hoursName}">help</mat-icon>
             </span>
             <span>{{ autoShareValue | number:'1.0-2' }}</span>
           </label>

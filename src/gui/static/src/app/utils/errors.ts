@@ -29,11 +29,11 @@ export function getHardwareWalletErrorMsg(translateService: TranslateService, er
   let response: string;
   if (error.result) {
     if (error.result === OperationResults.FailedOrRefused) {
-      response = 'hardware-wallet.general.refused';
+      response = 'hardware-wallet.errors.refused';
     } else if (error.result === OperationResults.WrongPin) {
-      response = 'hardware-wallet.general.error-incorrect-pin';
+      response = 'hardware-wallet.errors.incorrect-pin';
     } else if (error.result === OperationResults.IncorrectHardwareWallet) {
-      response = 'hardware-wallet.general.error-incorrect-wallet';
+      response = 'hardware-wallet.errors.incorrect-wallet';
     } else if (error.result === OperationResults.DaemonError) {
       response = 'hardware-wallet.errors.daemon-connection';
     } else if (error.result === OperationResults.InvalidAddress) {
@@ -41,7 +41,7 @@ export function getHardwareWalletErrorMsg(translateService: TranslateService, er
     } else if (error.result === OperationResults.Timeout) {
       response = 'hardware-wallet.errors.timeout';
     } else if (error.result === OperationResults.Disconnected) {
-      response = 'hardware-wallet.general.error-disconnected';
+      response = 'hardware-wallet.errors.disconnected';
     } else if (error.result === OperationResults.NotInBootloaderMode) {
       response = 'hardware-wallet.errors.not-in-bootloader-mode';
     } else if (error.result === OperationResults.PinMismatch) {
@@ -53,10 +53,10 @@ export function getHardwareWalletErrorMsg(translateService: TranslateService, er
     } else if (error.result === OperationResults.WrongSeed) {
       response = 'hardware-wallet.restore-seed.error-wrong-seed';
     } else {
-      response = genericError ? genericError : 'hardware-wallet.general.generic-error';
+      response = genericError ? genericError : 'hardware-wallet.errors.generic-error';
     }
   } else {
-    response = genericError ? genericError : 'hardware-wallet.general.generic-error';
+    response = genericError ? genericError : 'hardware-wallet.errors.generic-error';
   }
 
   if (translateService) {

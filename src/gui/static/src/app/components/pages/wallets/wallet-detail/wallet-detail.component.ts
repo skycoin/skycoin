@@ -111,7 +111,7 @@ export class WalletDetailComponent implements OnDestroy {
     if (this.wallet.isHardware && this.wallet.addresses.length >= AppConfig.maxHardwareWalletAddresses) {
       const confirmationParams: ConfirmationParams = {
         text: 'wallet.max-hardware-wallets-error',
-        headerText: 'errors.error',
+        headerText: 'common.error',
         defaultButtons: DefaultConfirmationButtons.Close,
       };
       ConfirmationComponent.openDialog(this.dialog, confirmationParams);
@@ -216,7 +216,7 @@ export class WalletDetailComponent implements OnDestroy {
   toggleEncryption() {
     const params: PasswordDialogParams = {
       confirm: !this.wallet.encrypted,
-      title: this.wallet.encrypted ? 'wallet.decrypt' : 'wallet.encrypt',
+      title: this.wallet.encrypted ? 'wallet.decrypt-button' : 'wallet.encrypt-button',
       description: this.wallet.encrypted ? 'wallet.decrypt-warning' : 'wallet.new.encrypt-warning',
       warning: this.wallet.encrypted,
       wallet: this.wallet.encrypted ? this.wallet : null,

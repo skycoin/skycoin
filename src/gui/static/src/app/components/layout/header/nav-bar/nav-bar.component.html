@@ -2,24 +2,24 @@
   <div class="-buttons">
     <a class="-button" routerLink="/wallets" routerLinkActive="full-opacity">
       <img src="assets/img/wallet-black.png">
-      <span>{{ 'title.wallets' | translate }}</span>
+      <span>{{ 'wallet.title-and-button' | translate }}</span>
     </a>
     <a class="-button" routerLink="/send" routerLinkActive="full-opacity">
       <img src="assets/img/send-black.png">
-      <span>{{ 'title.send' | translate }}</span>
+      <span>{{ 'send.title-and-button' | translate }}</span>
     </a>
     <a class="-button" routerLink="/transactions" routerLinkActive="full-opacity">
       <img src="assets/img/transactions-black.png">
-      <span>{{ 'title.history' | translate }}</span>
+      <span>{{ 'history.title-and-button' | translate }}</span>
     </a>
     <div class="flex-fill"></div>
     <a class="-button" routerLink="/exchange" routerLinkActive="full-opacity" *ngIf="exchangeEnabled">
       <img src="assets/img/money-gold.png">
-      <span>{{ 'title.buy-coin' | translate }}</span>
+      <span>{{ 'exchange.title-and-button' | translate:{coinName: appService.coinName} }}</span>
     </a>
     <a class="-button" *ngIf="otcEnabled">
       <img src="assets/img/money-gold.png">
-      <span>{{ 'title.buy-coin' | translate }}</span>
+      <span>{{ 'buy.title-and-button' | translate }}</span>
     </a>
     <app-double-button
       *ngIf="navbarService.switchVisible"

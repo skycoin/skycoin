@@ -71,10 +71,11 @@ export class CreateWalletComponent implements OnDestroy {
       this.continueCreating();
     } else {
       const confirmationParams: ConfirmationParams = {
-        headerText: 'wallet.new.synchronizing-warning-title',
+        headerText: 'common.warning-title',
         text: 'wallet.new.synchronizing-warning-text',
-        confirmButtonText: 'wallet.new.synchronizing-warning-continue',
-        cancelButtonText: 'wallet.new.synchronizing-warning-cancel',
+        confirmButtonText: 'common.continue-button',
+        cancelButtonText: 'common.cancel-button',
+        redTitle: true,
       };
 
       ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {

@@ -346,7 +346,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
 
   private showError() {
     this.showResult({
-      text: this.customErrorMsg ? this.customErrorMsg : 'hardware-wallet.general.generic-error',
+      text: this.customErrorMsg ? this.customErrorMsg : 'hardware-wallet.errors.generic-error',
       icon: this.msgIcons.Error,
     });
     this.customErrorMsg = '';

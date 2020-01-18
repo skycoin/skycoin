@@ -74,7 +74,7 @@ export class QrCodeComponent implements OnInit, OnDestroy {
 
   copyText(text) {
     copyTextToClipboard(text);
-    this.msgBarService.showDone('qr.copied', 4000);
+    this.msgBarService.showDone('common.copied', 4000);
   }
 
   private initForm() {

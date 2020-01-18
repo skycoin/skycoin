@@ -2,7 +2,7 @@
   <div class="row">
     <div class="row-container">
       <div class="-header">
-        <span>{{ 'wallet.new.encrypt-title' | translate }}</span>
+        <span>{{ 'wizard.encrypt-title' | translate }}</span>
       </div>
       <div class="-description">
         <p>{{ 'wizard.encrypt-desc' | translate }}</p>
@@ -14,7 +14,7 @@
       <mat-checkbox class="-check" (change)="setEncrypt($event)" [checked]="true" type="checkbox" id="encrypt" [ngClass]="{'element-disabled' : isWorking}">
         <span class="img-label-container">
           <img src="assets/img/lock-gold.png" />
-          {{ 'wallet.new.encrypt' | translate }}
+          {{ 'wallet.new.encrypt-check' | translate }}
         </span>
       </mat-checkbox>
     </div>
@@ -23,7 +23,7 @@
     <div class="row-container">
       <form [formGroup]="form">
         <div class="form-field">
-          <label for="password">{{ 'password.label' | translate }}</label>
+          <label for="password">{{ 'password.password-label' | translate }}</label>
           <input
             class="-input"
             type="password"
@@ -34,7 +34,7 @@
           >
         </div>
         <div class="form-field">
-          <label for="confirm">{{ 'password.confirm-label' | translate }}</label>
+          <label for="confirm">{{ 'password.confirm-password-label' | translate }}</label>
           <input
             class="-input"
             type="password"
@@ -53,7 +53,7 @@
       {{ 'wizard.finish-button' | translate }}
     </app-button>
     <app-button class="ghost-button -button-min-margin" (action)="emitBack()" [ngClass]="{ 'd-none': isWorking }">
-      {{ 'wizard.back-button' | translate }}
+      {{ 'common.back-button' | translate }}
     </app-button>
   </div>
 </div>

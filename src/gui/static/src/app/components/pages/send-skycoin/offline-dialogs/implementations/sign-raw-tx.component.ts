@@ -23,8 +23,8 @@ export class SignRawTxComponent extends OfflineDialogsBaseComponent implements O
   dropdownLabel = 'offline-transactions.sign-tx.wallet-label';
   defaultDropdownText = 'offline-transactions.sign-tx.select-wallet';
   inputLabel = 'offline-transactions.sign-tx.input-label';
-  cancelButtonText = 'offline-transactions.sign-tx.cancel';
-  okButtonText = 'offline-transactions.sign-tx.sign';
+  cancelButtonText = 'common.cancel-button';
+  okButtonText = 'offline-transactions.sign-tx.sign-button';
   validateForm = true;
 
   private walletsSubscription: SubscriptionLike;

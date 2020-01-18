@@ -31,7 +31,7 @@
       class="primary-button"
       [disabled]="currentState === states.Finished && !form.valid"
       #closeButton>
-      {{ (currentState === states.Finished ? 'hardware-wallet.added.ok' : 'hardware-wallet.general.close') | translate }}
+      {{ (currentState === states.Finished ? 'common.continue-button' : 'common.close-button') | translate }}
     </app-button>
   </div>
 </app-modal>

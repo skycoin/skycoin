@@ -1,14 +1,14 @@
-<app-modal [headline]="(!data.hideCoinRequestForm ? 'qr.title' : 'qr.title-read-only') | translate" [dialog]="dialogRef">
+<app-modal [headline]="'qr.title' | translate" [dialog]="dialogRef">
   <div class="qr-container">
     <div #qr class="qr" id="qr"></div>
   </div>
   <div class="separator"></div>
   <div class="data-container" *ngIf="!data.ignoreCoinPrefix || !data.hideCoinRequestForm">
-    <div class="title">{{ 'qr.data' | translate }}</div>
+    <div class="title">{{ 'qr.data-label' | translate }}</div>
     <div class="data" (click)="copyText(currentQrContent)"><span class="text">{{ currentQrContent }}</span><span class="fa copy">&#xf0c5;</span></div>
   </div>
   <div class="data-container">
-    <div class="title">{{ 'qr.address' | translate }}</div>
+    <div class="title">{{ 'qr.address-label' | translate }}</div>
     <div class="data" (click)="copyText(data.address)"><span class="text">{{ data.address }}</span><span class="fa copy">&#xf0c5;</span></div>
   </div>
 
@@ -22,19 +22,19 @@
   <div [formGroup]="form" *ngIf="showForm">
     <div class="form-field">
       <label for="coins">
-        {{ 'qr.amount' | translate }} <span class="red-text" *ngIf="invalidCoins">{{ 'qr.invalid' | translate }}</span>
+        {{ 'qr.amount-label' | translate }} <span class="red-text" *ngIf="invalidCoins">{{ 'qr.invalid' | translate }}</span>
       </label>
       <input maxlength="20" formControlName="coins" id="coins">
     </div>
     <div class="form-field">
       <label for="hours">
-        {{ 'qr.hours' | translate }} <span class="red-text" *ngIf="invalidHours">{{ 'qr.invalid' | translate }}</span>
+        {{ 'qr.hours-label' | translate }} <span class="red-text" *ngIf="invalidHours">{{ 'qr.invalid' | translate }}</span>
       </label>
       <input maxlength="20" formControlName="hours" id="hours">
     </div>
     <div class="form-field">
       <label for="note">
-        {{ 'qr.message' | translate }}
+        {{ 'qr.message-label' | translate }}
       </label>
       <input maxlength="100" formControlName="note" id="note">
     </div>

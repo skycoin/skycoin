@@ -26,7 +26,7 @@ export class SendSkycoinComponent implements OnDestroy {
     private changeDetector: ChangeDetectorRef,
     private dialog: MatDialog,
   ) {
-    this.navbarService.showSwitch('send.simple', 'send.advanced', DoubleButtonActive.LeftButton);
+    this.navbarService.showSwitch('send.simple-form-button', 'send.advanced-form-button', DoubleButtonActive.LeftButton);
     this.subscription = navbarService.activeComponent.subscribe(value => {
       if (this.activeForm !== value) {
         SendCoinsFormComponent.lastShowForManualUnsignedValue = false;

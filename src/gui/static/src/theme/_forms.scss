@@ -201,7 +201,7 @@ textarea {
 
 .help-icon {
   display: inline !important;
-  font-size: $font-size-standard-plus;
+  font-size: $font-size-standard-plus !important;
   color: $grey;
   opacity: 0.55;
   vertical-align: text-bottom;

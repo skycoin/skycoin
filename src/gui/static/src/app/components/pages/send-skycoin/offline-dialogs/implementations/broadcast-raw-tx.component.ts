@@ -17,8 +17,8 @@ export class BroadcastRawTxComponent extends OfflineDialogsBaseComponent impleme
   title = 'offline-transactions.broadcast-tx.title';
   text = 'offline-transactions.broadcast-tx.text';
   inputLabel = 'offline-transactions.broadcast-tx.input-label';
-  cancelButtonText = 'offline-transactions.broadcast-tx.cancel';
-  okButtonText = 'offline-transactions.broadcast-tx.send';
+  cancelButtonText = 'common.cancel-button';
+  okButtonText = 'offline-transactions.broadcast-tx.send-button';
   validateForm = true;
 
   private operationSubscription: SubscriptionLike;

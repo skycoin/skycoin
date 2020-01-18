@@ -105,10 +105,11 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     } else {
       const confirmationParams: ConfirmationParams = {
         text: this.create ? 'wallet.new.seed.custom-seed-warning-text' : 'wallet.new.seed.custom-seed-warning-text-recovering',
-        headerText: 'wallet.new.seed.custom-seed-warning-title',
-        checkboxText: this.create ? 'wallet.new.seed.custom-seed-warning-check' : null,
-        confirmButtonText: 'wallet.new.seed.custom-seed-warning-continue',
-        cancelButtonText: 'wallet.new.seed.custom-seed-warning-cancel',
+        headerText: 'common.warning-title',
+        checkboxText: this.create ? 'common.generic-confirmation-check' : null,
+        confirmButtonText: 'common.continue-button',
+        cancelButtonText: 'common.cancel-button',
+        redTitle: true,
       };
 
       ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
@@ -146,7 +147,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
         if (this.create) {
           const lastSeedWords = this.lastAssistedSeed.split(' ');
           if (word !== lastSeedWords[wordIndex]) {
-            this.msgBarService.showError('wallet.new.seed.incorrect-word');
+            this.msgBarService.showError('wallet.new.seed.incorrect-word-error');
 
             return;
           }
@@ -166,7 +167,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
             enteredSeed = enteredSeed.substr(0, enteredSeed.length - 1);
 
             this.apiService.post('wallet/seed/verify', {seed: enteredSeed}, {}, true)
-              .subscribe(() => this.lastAssistedSeed = enteredSeed, () => this.msgBarService.showError('wallet.new.seed.invalid-seed'));
+              .subscribe(() => this.lastAssistedSeed = enteredSeed, () => this.msgBarService.showError('wallet.new.seed.invalid-seed-error'));
           }
         }
       }

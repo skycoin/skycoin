@@ -1,11 +1,11 @@
 <div>
-  <app-header [headline]="'title.wallets' | translate"></app-header>
+  <app-header [headline]="'wallet.title-and-button' | translate"></app-header>
 
   <div class="container">
     <div class="-table" *ngFor="let i of [0, 1]">
       <ng-container *ngIf="(i === 0 && hardwareWallets.length > 0) || (i === 1 && wallets.length > 0)">
         <div class="-headers">
-          <div class="-width-250 text-truncate">{{ (i === 0 ? 'wallet.hardware-wallet' : 'wallet.wallet') | translate }}</div>
+          <div class="-width-250 text-truncate">{{ (i === 0 ? 'wallet.hardware-wallet-table-label' : 'wallet.wallet-table-label') | translate }}</div>
           <div class="-flex-fill"></div>
           <div class="-width-130 text-right">{{ 'coin' | commonText }}</div>
           <div class="-width-130 text-right">{{ 'hours' | commonText }}</div>
@@ -24,7 +24,7 @@
                     [matTooltip]="'wallet.encryption-disabled' | translate"
                     *ngIf="!wallet.encrypted && !wallet.isHardware">
                 <img src="assets/img/alert-red.png"
-                    [matTooltip]="'wallet.hw-security-warning' | translate"
+                    [matTooltip]="'wallet.warning-hw-security' | translate"
                     *ngIf="wallet.hasHwSecurityWarnings && wallet.isHardware">
               </div>
               <div class="-width-130 text-right">{{ (wallet.coins ? wallet.coins.toString() : 0) | amount:true:'first' }}</div>
@@ -42,13 +42,13 @@
 
     <div class="action-buttons">
       <button mat-button (click)="addWallet(true)">
-        <img src="assets/img/plus-gold.png"> {{ 'wallet.add' | translate }}
+        <img src="assets/img/plus-gold.png"> {{ 'wallet.add-button' | translate }}
       </button>
       <button mat-button (click)="addWallet(false)">
-        <img src="assets/img/load-gold.png"> {{ 'wallet.load' | translate }}
+        <img src="assets/img/load-gold.png"> {{ 'wallet.load-button' | translate }}
       </button>
       <button mat-button *ngIf="hwCompatibilityActivated" (click)="adminHwWallet()">
-        <img src="assets/img/hw-gold.png"> {{ 'wallet.hardware-wallet' | translate }}
+        <img src="assets/img/hw-gold.png"> {{ 'wallet.hardware-wallet-button' | translate }}
       </button>
     </div>
   </div>

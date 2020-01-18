@@ -8,6 +8,7 @@ import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { SubscriptionLike } from 'rxjs';
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { ConfirmationParams, ConfirmationComponent } from '../../../layout/confirmation/confirmation.component';
+import { AppService } from '../../../../services/app.service';
 
 @Component({
   selector: 'app-onboarding-create-wallet',
@@ -27,6 +28,7 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
   private synchronizedSubscription: SubscriptionLike;
 
   constructor(
+    public appService: AppService,
     private dialog: MatDialog,
     private router: Router,
     hwWalletService: HwWalletService,
@@ -62,7 +64,7 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
       redTitle: true,
       text: 'wizard.confirm.desc',
       checkboxText: 'wizard.confirm.checkbox',
-      confirmButtonText: 'wizard.confirm.button',
+      confirmButtonText: 'common.continue-button',
     };
 
     ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
@@ -77,10 +79,11 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
       this.emitCreatedData();
     } else {
       const confirmationParams: ConfirmationParams = {
-        headerText: 'wallet.new.synchronizing-warning-title',
+        headerText: 'common.warning-title',
         text: 'wallet.new.synchronizing-warning-text',
-        confirmButtonText: 'wallet.new.synchronizing-warning-continue',
-        cancelButtonText: 'wallet.new.synchronizing-warning-cancel',
+        confirmButtonText: 'common.continue-button',
+        cancelButtonText: 'common.cancel-button',
+        redTitle: true,
       };
 
       ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {

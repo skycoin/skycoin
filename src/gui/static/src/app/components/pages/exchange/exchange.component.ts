@@ -1,9 +1,10 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { StoredExchangeOrder } from '../../../app.datatypes';
 import { ExchangeService } from '../../../services/exchange.service';
-import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { ExchangeHistoryComponent } from './exchange-history/exchange-history.component';
 import { SubscriptionLike } from 'rxjs';
+import { AppService } from '../../../services/app.service';
 
 @Component({
   selector: 'app-exchange',
@@ -19,6 +20,7 @@ export class ExchangeComponent implements OnInit, OnDestroy {
   private historySubscription: SubscriptionLike;
 
   constructor(
+    public appService: AppService,
     private exchangeService: ExchangeService,
     private dialog: MatDialog,
   ) { }

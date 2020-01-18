@@ -44,7 +44,7 @@
             <span *ngIf="price && values[i] >= 0 && selectedCurrency === doubleButtonActive.RightButton">
               &#x007e; {{ values[i] | amount }}
             </span>
-            <div class="link" [ngClass]="{ 'centerd-link': !price }" (click)="assignAll(i)">({{ 'send.send-all-available-coins' | translate }})</div>
+            <div class="link" [ngClass]="{ 'centerd-link': !price }" (click)="assignAll(i)">({{ 'send.send-all-available-coins-link' | translate }})</div>
           </div>
         </div>
         <div *ngIf="!showSimpleForm" class="col-lg-3 col-md-4">
@@ -63,13 +63,13 @@
       <div class="col-lg-5 col-md-4"></div>
       <div class="col-md-3">
         <div class="coins-value-label">
-          <span>{{ 'send.total' | translate }}</span> {{ totalCoins.toString() | amount }}
+          <span>{{ 'send.total-to-send' | translate }}</span> {{ totalCoins.toString() | amount }}
           <ng-container *ngIf="price">/ {{ totalConvertedCoins.toString() | number:'1.0-2' }} {{ 'common.usd' | translate }}</ng-container>
         </div>
       </div>
       <div class="col-lg-3 col-md-4" *ngIf="showHourFields">
         <div class="coins-value-label">
-          <span>{{ 'send.total' | translate }}</span> {{ totalHours.toString() | amount:false }}
+          <span>{{ 'send.total-to-send' | translate }}</span> {{ totalHours.toString() | amount:false }}
         </div>
       </div>
     </div>

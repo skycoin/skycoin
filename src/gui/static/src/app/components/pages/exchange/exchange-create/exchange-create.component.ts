@@ -158,7 +158,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
     this.exchangeButton.resetState();
     this.exchangeButton.setEnabled();
 
-    const errMsg = this.translateService.instant('exchange.invalid-address');
+    const errMsg = this.translateService.instant('exchange.invalid-address-error');
     this.msgBarService.showError(errMsg);
   }
 

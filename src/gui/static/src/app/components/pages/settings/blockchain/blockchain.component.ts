@@ -2,6 +2,7 @@ import { switchMap } from 'rxjs/operators';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { SubscriptionLike, interval } from 'rxjs';
 import { BlockchainService } from '../../../../services/blockchain.service';
+import { AppService } from '../../../../services/app.service';
 
 @Component({
   selector: 'app-blockchain',
@@ -15,6 +16,7 @@ export class BlockchainComponent implements OnInit, OnDestroy {
   private subscriptionsGroup: SubscriptionLike[] = [];
 
   constructor(
+    public appService: AppService,
     private blockchainService: BlockchainService,
   ) { }
 

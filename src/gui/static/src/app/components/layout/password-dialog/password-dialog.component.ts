@@ -55,7 +55,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
       wallet: null,
     }, data || {});
 
-    this.translateService.get(['errors.incorrect-password', 'errors.api-disabled', 'errors.no-wallet', 'errors.error-decrypting']).subscribe(res => {
+    this.translateService.get(['password.incorrect-password-error', 'password.api-disabled-error', 'password.no-wallet-error', 'password.decrypting-error']).subscribe(res => {
       this.errors = res;
     });
   }
@@ -130,23 +130,23 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
           error = parseResponseMessage(error['_body']);
           break;
         case 401:
-          error = this.errors['errors.incorrect-password'];
+          error = this.errors['password.incorrect-password-error'];
           break;
         case 403:
-          error = this.errors['errors.api-disabled'];
+          error = this.errors['password.api-disabled-error'];
           break;
         case 404:
-          error = this.errors['errors.no-wallet'];
+          error = this.errors['password.no-wallet-error'];
           break;
         default:
-          error = this.errors['errors.error-decrypting'];
+          error = this.errors['password.decrypting-error'];
         }
       } else {
-        error = this.errors['errors.error-decrypting'];
+        error = this.errors['password.decrypting-error'];
       }
     }
 
-    error = error ? error : this.errors['errors.error-decrypting'];
+    error = error ? error : this.errors['password.decrypting-error'];
 
     this.msgBarService.showError(error);
     this.button.resetState();

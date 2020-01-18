@@ -57,7 +57,7 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
       return;
     }
 
-    let errorMsg = 'hardware-wallet.general.generic-error-internet';
+    let errorMsg = 'hardware-wallet.errors.generic-error-internet';
 
     if (err['_body']) {
       errorMsg = err['_body'];

@@ -244,7 +244,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     }
 
     if (availableCoins.isLessThan(0)) {
-      this.msgBarService.showError(this.translate.instant('send.no-coins-left'));
+      this.msgBarService.showError(this.translate.instant('send.no-coins-left-error'));
     } else {
       this.destControls[index].get('coins').setValue(availableCoins.toString());
     }

@@ -21,6 +21,7 @@ import { FormDestinationComponent, Destination } from '../form-parts/form-destin
 import { CopyRawTxComponent, CopyRawTxData } from '../offline-dialogs/implementations/copy-raw-tx.component';
 import { DoubleButtonActive } from '../../../../components/layout/double-button/double-button.component';
 import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent } from '../../../../components/layout/confirmation/confirmation.component';
+import { AppService } from '../../../../services/app.service';
 
 @Component({
   selector: 'app-send-coins-form',
@@ -59,6 +60,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   constructor(
     public blockchainService: BlockchainService,
     public walletService: WalletService,
+    public appService: AppService,
     private dialog: MatDialog,
     private msgBarService: MsgBarService,
     private navbarService: NavBarService,
@@ -344,7 +346,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
             .subscribe(noteSaved => {
               let showDone = true;
               if (note && !noteSaved) {
-                this.msgBarService.showWarning(this.translate.instant('send.error-saving-note'));
+                this.msgBarService.showWarning(this.translate.instant('send.saving-note-error'));
                 showDone = false;
               }
 

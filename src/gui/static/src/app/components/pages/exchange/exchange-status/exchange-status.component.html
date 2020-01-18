@@ -9,7 +9,7 @@
     <div class="-status">
       <mat-icon [ngClass]="{'-spin': statusIcon === 'refresh'}">{{ statusIcon }}</mat-icon>
       <div class="-item">
-        <div class="-key">{{ 'exchange.status' | translate }}</div>
+        <div class="-key">{{ 'exchange.label-status' | translate }}</div>
         <div class="-value">{{ translatedStatus.text | translate:translatedStatus.params }} <mat-icon class="help-icon" [matTooltip]="translatedStatus.info | translate">help</mat-icon></div>
       </div>
     </div>
@@ -22,7 +22,7 @@
     <div class="-box">
       <div class="-img"></div>
       <div class="-item">
-        <div class="-key">{{ 'exchange.details.order-id' | translate }}</div>
+        <div class="-key">{{ 'exchange.details.order-id-label' | translate }}</div>
         <div class="-value">{{ order.id }}</div>
       </div>
     </div>
@@ -31,7 +31,7 @@
       <div class="-box">
         <div class="-img"></div>
         <div class="-item">
-          <div class="-key">{{ 'exchange.you-send' | translate }}</div>
+          <div class="-key">{{ 'exchange.label-you-send' | translate }}</div>
           <div class="-value">{{ order.fromAmount }} {{ fromCoin }}</div>
         </div>
       </div>
@@ -41,7 +41,7 @@
           <app-qr-code-button [address]="order.exchangeAddress" [hideCoinRequestForm]="true" [ignoreCoinPrefix]="true"></app-qr-code-button>
         </div>
         <div class="-item">
-          <div class="-key">{{ 'exchange.details.exchange-addr' | translate }}</div>
+          <div class="-key">{{ 'exchange.details.exchange-addr-label' | translate }}</div>
           <div class="-value">{{ order.exchangeAddress }}</div>
         </div>
       </div>
@@ -51,7 +51,7 @@
           <app-qr-code-button [address]="order.exchangeTag" [hideCoinRequestForm]="true" [ignoreCoinPrefix]="true"></app-qr-code-button>
         </div>
         <div class="-item">
-          <div class="-key">{{ 'exchange.details.exchange-addr-tag' | translate }}</div>
+          <div class="-key">{{ 'exchange.details.exchange-addr-tag-label' | translate }}</div>
           <div class="-value">{{ order.exchangeTag }}</div>
         </div>
       </div>
@@ -64,7 +64,7 @@
     <div class="-box" *ngIf="order.status === statuses[5]">
       <div class="-img"></div>
       <div class="-item">
-        <div class="-key">{{ 'exchange.details.tx-id' | translate }}</div>
+        <div class="-key">{{ 'exchange.details.tx-id-label' | translate }}</div>
         <div class="-value">
           {{ order.toTx }}
           <a [href]="appService.explorerUrl + '/transaction/' + order.toTx" class="-external" target="_blank" rel="noreferrer nofollow">
@@ -77,7 +77,7 @@
     <div class="-box" *ngIf="order.status === statuses[6]">
       <div class="-img"></div>
       <div class="-item">
-        <div class="-key">{{ 'exchange.details.error-msg' | translate }}</div>
+        <div class="-key">{{ 'exchange.details.error-msg-label' | translate }}</div>
         <div class="-value">{{ order.message }}</div>
       </div>
     </div>
@@ -87,7 +87,7 @@
       <app-arrow-link
         [noPadding]="true"
         [pointDown]="!expanded"
-        [text]="'exchange.details.details'"
+        [text]="'exchange.details.details-link'"
         (pressed)="toggleDetails()">
       </app-arrow-link>
     </div>
@@ -96,7 +96,7 @@
       <div class="-box">
         <div class="-img"></div>
         <div class="-item">
-          <div class="-key">{{ 'exchange.details.start-date' | translate }}</div>
+          <div class="-key">{{ 'exchange.details.start-date-label' | translate }}</div>
           <div class="-value">{{ _orderDetails.timestamp | dateTime }}</div>
         </div>
       </div>
@@ -108,7 +108,7 @@
       <div class="-box">
         <div class="-img"></div>
         <div class="-item">
-          <div class="-key">{{ 'exchange.you-get' | translate }}</div>
+          <div class="-key">{{ 'exchange.label-you-get' | translate }}</div>
           <div class="-value">{{ order.toAmount | amount:true:'first' }} {{ toCoin }}</div>
         </div>
       </div>
@@ -116,7 +116,7 @@
       <div class="-box">
         <div class="-img"></div>
         <div class="-item">
-          <div class="-key">{{ 'exchange.to-address' | translate:{coin: toCoin} }}</div>
+          <div class="-key">{{ 'exchange.label-to-address' | translate:{coin: toCoin} }}</div>
           <div class="-value">{{ order.toAddress }}</div>
         </div>
       </div>
@@ -124,7 +124,7 @@
       <div class="-box">
         <div class="-img"></div>
         <div class="-item">
-          <div class="-key">{{ 'exchange.details.initial-price' | translate }}</div>
+          <div class="-key">{{ 'exchange.details.initial-price-label' | translate }}</div>
           <div class="-value">1 {{ fromCoin }} &asymp; {{ _orderDetails.price }} {{ toCoin }}</div>
         </div>
       </div>
@@ -134,6 +134,6 @@
 
 <div class="text-center">
   <app-button class="primary-button" (action)="close()">
-    {{ 'exchange.details.back' | translate }}
+    {{ 'common.back-button' | translate }}
   </app-button>
 </div>

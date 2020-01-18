@@ -1,7 +1,6 @@
 import { Component, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { NormalTransaction } from '../../../../app.datatypes';
-import { AppConfig } from '../../../../app.config';
 
 @Component({
   selector: 'app-transaction-detail',

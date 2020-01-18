@@ -38,7 +38,7 @@ export class MsgBarService {
   showError(body: string, duration = 20000) {
     const config = new MsgBarConfig();
     config.text = parseResponseMessage(body);
-    config.title = 'errors.error';
+    config.title = 'common.error-title';
     config.icon = MsgBarIcons.Error;
     config.color = MsgBarColors.Red;
 
@@ -49,7 +49,7 @@ export class MsgBarService {
   showWarning(body: string, duration = 20000) {
     const config = new MsgBarConfig();
     config.text = parseResponseMessage(body);
-    config.title = 'common.warning';
+    config.title = 'common.warning-title';
     config.icon = MsgBarIcons.Warning;
     config.color = MsgBarColors.Yellow;
 
@@ -60,7 +60,7 @@ export class MsgBarService {
   showDone(body: string, duration = 10000) {
     const config = new MsgBarConfig();
     config.text = body;
-    config.title = 'common.success';
+    config.title = 'common.done-title';
     config.icon = MsgBarIcons.Done;
     config.color = MsgBarColors.Green;
 

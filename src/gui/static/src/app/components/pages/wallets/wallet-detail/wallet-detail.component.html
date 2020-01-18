@@ -8,23 +8,23 @@
     </div>
     <div class="-button" (click)="toggleEmpty()">
       <span [ngClass]="{ '-img': true, '-show-empty': wallet.hideEmpty, '-hide-empty': !wallet.hideEmpty }">
-        {{ 'wallet.' + (wallet.hideEmpty ? 'show' : 'hide') + '-empty' | translate }}
+        {{ 'wallet.' + (wallet.hideEmpty ? 'show' : 'hide') + '-empty-button' | translate }}
       </span>
     </div>
   </ng-container>
   <div *ngIf="wallet.isHardware" class="-button btn-delete-wallet" (click)="deleteWallet()">
-    <span class="-img -btn-delete">{{ 'wallet.delete' | translate }}</span>
+    <span class="-img -btn-delete">{{ 'wallet.delete-button' | translate }}</span>
   </div>
   <div class="flex-fill"></div>
   <div *ngIf="!wallet.isHardware" class="-button" (click)="toggleEncryption()">
     <span [ngClass]="{ '-img': true, '-enable-encryption': !wallet.encrypted, '-disable-encryption': wallet.encrypted }">
-      {{ 'wallet.' + (wallet.encrypted ? 'decrypt' : 'encrypt') | translate }}
+      {{ 'wallet.' + (wallet.encrypted ? 'decrypt' : 'encrypt') + '-button' | translate }}
     </span>
   </div>
   <div class="-button" (click)="editWallet()">
     <span [ngClass]="{ '-img -edit-wallet': !preparingToEdit, '-disabled-span': preparingToEdit }">
       <mat-spinner *ngIf="preparingToEdit"></mat-spinner>
-      {{ 'wallet.edit' | translate }}
+      {{ 'wallet.edit-button' | translate }}
     </span>
   </div>
 </div>

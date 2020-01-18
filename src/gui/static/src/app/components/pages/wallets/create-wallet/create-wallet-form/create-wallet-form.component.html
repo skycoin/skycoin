@@ -4,7 +4,7 @@
     <input formControlName="label" id="label" [attr.disabled]="busy ? 'true' : null">
   </div>
   <div class="form-field" *ngIf="!create && enterSeedWithAssistance">
-    <label for="number_of_words">{{ 'wallet.new.words-number' | translate}}</label>
+    <label for="number_of_words">{{ 'wallet.new.words-number-label' | translate}}</label>
     <div class="-select">
       <select formControlName="number_of_words" id="number_of_words" [attr.disabled]="busy ? 'true' : null">
         <option [ngValue]="12">{{ 'wallet.new.12-words' | translate }}</option>
@@ -16,11 +16,11 @@
     <label for="seed">
       <span>{{ 'wallet.new.seed-label' | translate }}</span>
       <span class="generators" [ngClass]="{'-white-text': onboarding, 'element-disabled' : busy}" *ngIf="create">
-        <span class="link" (click)="generateSeed(128)" [matTooltip]="'wallet.new.generate-12-seed' | translate">
+        <span class="link" (click)="generateSeed(128)" [matTooltip]="'wallet.new.generate-12-help' | translate">
           {{ 'wallet.new.12-words' | translate }}
         </span>
         <span class="divider">|</span>
-        <span class="link" (click)="generateSeed(256)" [matTooltip]="'wallet.new.generate-24-seed' | translate">
+        <span class="link" (click)="generateSeed(256)" [matTooltip]="'wallet.new.generate-24-help' | translate">
           {{ 'wallet.new.24-words' | translate }}
         </span>
       </span>
@@ -36,7 +36,7 @@
       </div>
       <div class="seed-type-button" [ngClass]="{'for-onboarding': onboarding, 'element-disabled' : busy}">
         <div [ngClass]="{'dashed-border': !onboarding}" (click)="changeSeedType();">
-          <img src="assets/img/lock-gold.png" [matTooltip]="'wallet.new.seed.use-custom-seed' | translate">
+          <img src="assets/img/lock-gold.png" [matTooltip]="'wallet.new.seed.use-custom-seed-help' | translate">
         </div>
       </div>
     </ng-container>
@@ -45,7 +45,7 @@
       <textarea formControlName="seed" id="seed" rows="2" [attr.disabled]="busy ? 'true' : null"></textarea>
       <div class="seed-type-button" [ngClass]="{'for-onboarding': onboarding, 'element-disabled' : busy}">
         <div [ngClass]="{'dashed-border': !onboarding}" (click)="changeSeedType();">
-          <img src="assets/img/unlock-grey.png" [matTooltip]="'wallet.new.seed.use-normal-seed' | translate">
+          <img src="assets/img/unlock-grey.png" [matTooltip]="'wallet.new.seed.use-normal-seed-help' | translate">
         </div>
       </div>
     </ng-container>
@@ -74,7 +74,7 @@
   <div *ngIf="!onboarding">
     <div>
       <mat-checkbox class="-check" (change)="setEncrypt($event)" type="checkbox" id="encrypt" [checked]="true" [ngClass]="{'element-disabled' : busy}">
-        <span class="img-label-container"><img src="assets/img/lock-gold.png"> {{ 'wallet.new.encrypt' | translate }}</span>
+        <span class="img-label-container"><img src="assets/img/lock-gold.png"> {{ 'wallet.new.encrypt-check' | translate }}</span>
       </mat-checkbox>
     </div>
     <div class="row -passwords">
@@ -83,13 +83,13 @@
       </div>
       <div class="col-md-6" *ngIf="encrypt">
         <div class="form-field">
-          <label for="password">{{ 'password.label' | translate }}</label>
+          <label for="password">{{ 'password.password-label' | translate }}</label>
           <input formControlName="password" id="password" type="password" appDontSavePassword [attr.disabled]="busy ? 'true' : null">
         </div>
       </div>
       <div class="col-md-6" *ngIf="encrypt">
         <div class="form-field">
-          <label for="confirm_password">{{ 'password.confirm-label' | translate }}</label>
+          <label for="confirm_password">{{ 'password.confirm-password-label' | translate }}</label>
           <input formControlName="confirm_password" id="confirm_password" type="password" appDontSavePassword (keydown.enter)="requestCreation()" [attr.disabled]="busy ? 'true' : null">
         </div>
       </div>

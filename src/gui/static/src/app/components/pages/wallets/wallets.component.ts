@@ -77,9 +77,9 @@ export class WalletsComponent implements OnInit, OnDestroy {
       const confirmationParams: ConfirmationParams = {
         headerText: 'hardware-wallet.security-warning.title',
         text: 'hardware-wallet.security-warning.text',
-        checkboxText: 'hardware-wallet.security-warning.check',
-        confirmButtonText: 'hardware-wallet.security-warning.continue',
-        cancelButtonText: 'hardware-wallet.security-warning.cancel',
+        checkboxText: 'common.generic-confirmation-check',
+        confirmButtonText: 'common.continue-button',
+        cancelButtonText: 'common.cancel-button',
         linkText: 'hardware-wallet.security-warning.link',
         linkFunction: this.adminHwWallet.bind(this),
       };

@@ -116,7 +116,7 @@ export class SendVerifyComponent implements OnDestroy {
       return this.walletService.injectTransaction(result.encoded, note);
     })).subscribe(noteSaved => {
       if (note && !noteSaved) {
-        setTimeout(() => this.msgBarService.showWarning(this.translate.instant('send.error-saving-note')));
+        setTimeout(() => this.msgBarService.showWarning(this.translate.instant('send.saving-note-error')));
       } else {
         setTimeout(() => this.msgBarService.showDone('send.sent'));
       }

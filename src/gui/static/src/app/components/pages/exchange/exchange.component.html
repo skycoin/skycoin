@@ -1,4 +1,4 @@
-<app-header [headline]="'title.exchange' | translate"></app-header>
+<app-header [headline]="'exchange.title-and-button' | translate:{coinName: appService.coinName}"></app-header>
 <div class="container">
   <div class="paper">
     <app-exchange-create

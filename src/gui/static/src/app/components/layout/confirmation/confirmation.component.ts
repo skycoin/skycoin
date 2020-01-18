@@ -42,12 +42,12 @@ export class ConfirmationComponent {
     @Inject(MAT_DIALOG_DATA) public data: ConfirmationParams,
   ) {
     if (!data.headerText) {
-      data.headerText = 'confirmation.header-text';
+      data.headerText = 'confirmation.default-title';
     }
 
     if (data.defaultButtons) {
       if (data.defaultButtons === DefaultConfirmationButtons.Close) {
-        data.confirmButtonText = 'confirmation.close';
+        data.confirmButtonText = 'common.close-button';
       }
 
       if (data.defaultButtons === DefaultConfirmationButtons.YesNo) {

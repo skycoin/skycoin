@@ -1,4 +1,4 @@
-<app-header [headline]="'title.transactions' | translate"></app-header>
+<app-header [headline]="'history.title-and-button' | translate"></app-header>
 <div class="container">
   <div [formGroup]="form" class="form-field" [ngClass]="{ 'bottom-line': !transactions || transactions.length === 0 }" *ngIf="allTransactions">
     <mat-select
@@ -50,30 +50,30 @@
         <div class="-address">
           <ng-container *ngIf="!transaction.coinsMovedInternally">
             <h4 *ngIf="transaction.balance.isLessThan(0) && transaction.confirmed">
-              {{ 'history.sent' | translate }} {{ 'coin' | commonText }}
+              {{ 'history.sent' | translate:{coinName: appService.coinName} }}
               <span class="-timestamp">{{ transaction.timestamp | dateTime }}</span>
             </h4>
             <h4 *ngIf="transaction.balance.isLessThan(0) && !transaction.confirmed">
-              {{ 'history.sending' | translate }} {{ 'coin' | commonText }}
-              <span class="-pending">{{ 'history.pending' | translate }}</span>
+              {{ 'history.sending' | translate:{coinName: appService.coinName} }}
+              <span class="-pending">{{ 'history.pending-indication' | translate }}</span>
             </h4>
             <h4 *ngIf="transaction.balance.isGreaterThan(0) && transaction.confirmed">
-              {{ 'history.received' | translate }} {{ 'coin' | commonText }}
+              {{ 'history.received' | translate:{coinName: appService.coinName} }}
               <span class="-timestamp">{{ transaction.timestamp | dateTime }}</span>
             </h4>
             <h4 *ngIf="transaction.balance.isGreaterThan(0) && !transaction.confirmed">
-              {{ 'history.receiving' | translate }} {{ 'coin' | commonText }}
-              <span class="-pending">{{ 'history.pending' | translate }}</span>
+              {{ 'history.receiving' | translate:{coinName: appService.coinName} }}
+              <span class="-pending">{{ 'history.pending-indication' | translate }}</span>
             </h4>
           </ng-container>
           <ng-container *ngIf="transaction.coinsMovedInternally">
             <h4 *ngIf="transaction.confirmed">
-              {{ 'history.moved' | translate }} {{ 'coin' | commonText }}
+              {{ 'history.moved' | translate:{coinName: appService.coinName} }}
               <span class="-timestamp">{{ transaction.timestamp | dateTime }}</span>
             </h4>
             <h4 *ngIf="!transaction.confirmed">
-              {{ 'history.moving' | translate }} {{ 'coin' | commonText }}
-              <span class="-pending">{{ 'history.pending' | translate }}</span>
+              {{ 'history.moving' | translate:{coinName: appService.coinName} }}
+              <span class="-pending">{{ 'history.pending-indication' | translate }}</span>
             </h4>
           </ng-container>
           <div class="-item" *ngFor="let address of transaction.addresses">
@@ -81,7 +81,7 @@
             <span class="break-all">{{ address }}</span>
           </div>
           <div class="-item" *ngIf="transaction.note">
-            <span>{{ 'history.note' | translate }}: <span class="note">{{ transaction.note }}</span></span>
+            <span>{{ 'history.transaction-note-small-label' | translate }} <span class="note">{{ transaction.note }}</span></span>
           </div>
         </div>
         <div class="-balance">

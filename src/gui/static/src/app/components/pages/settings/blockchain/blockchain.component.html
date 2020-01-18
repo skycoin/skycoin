@@ -1,5 +1,5 @@
 <div>
-  <app-header [headline]="'title.blockchain' | translate"></app-header>
+  <app-header [headline]="'blockchain.title' | translate"></app-header>
 
   <app-loading-content *ngIf="!(block && block.header && coinSupply)"></app-loading-content>
 
@@ -8,15 +8,15 @@
       <div class="col-md-6 pl-0">
         <div class="paper">
           <div class="-item">
-            <div class="-key">{{ 'blockchain.blocks' | translate }}</div>
+            <div class="-key">{{ 'blockchain.blocks-label' | translate }}</div>
             <div class="break-all">{{ block.header.seq | number }}</div>
           </div>
           <div class="-item">
-            <div class="-key">{{ 'blockchain.time' | translate }}</div>
+            <div class="-key">{{ 'blockchain.time-label' | translate }}</div>
             <div class="break-all">{{ block.header.timestamp | dateTime }}</div>
           </div>
           <div class="-item">
-            <div class="-key">{{ 'blockchain.hash' | translate }}</div>
+            <div class="-key">{{ 'blockchain.hash-label' | translate }}</div>
             <div class="break-all">{{ block.header.block_hash }}</div>
           </div>
         </div>
@@ -26,21 +26,21 @@
           <div class="row">
             <div class="col-md-6">
               <div class="-item">
-                <div class="-key">{{ 'blockchain.current-supply' | translate }}</div>
+                <div class="-key">{{ 'blockchain.current-supply-label' | translate:{coinName: appService.coinName} }}</div>
                 <div class="break-all">{{ coinSupply.current_supply | amount:true:'first' }}</div>
               </div>
               <div class="-item">
-                <div class="-key">{{ 'blockchain.total-supply' | translate }}</div>
+                <div class="-key">{{ 'blockchain.total-supply-label' | translate:{coinName: appService.coinName} }}</div>
                 <div class="break-all">{{ coinSupply.total_supply | amount:true:'first' }}</div>
               </div>
             </div>
             <div class="col-md-6">
               <div class="-item">
-                <div class="-key">{{ 'blockchain.current-coinhour-supply' | translate }}</div>
+                <div class="-key">{{ 'blockchain.current-coinhour-supply-label' | translate:{coinHoursName: appService.hoursName} }}</div>
                 <div class="break-all">{{ coinSupply.current_coinhour_supply | amount:false:'first' }}</div>
               </div>
               <div class="-item">
-                <div class="-key">{{ 'blockchain.total-coinhour-supply' | translate }}</div>
+                <div class="-key">{{ 'blockchain.total-coinhour-supply-label' | translate:{coinHoursName: appService.hoursName} }}</div>
                 <div class="break-all">{{ coinSupply.total_coinhour_supply | amount:false:'first' }}</div>
               </div>
             </div>

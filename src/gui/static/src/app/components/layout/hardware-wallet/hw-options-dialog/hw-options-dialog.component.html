@@ -1,4 +1,4 @@
-<app-modal [headline]="'wallet.hardware-wallet' | translate" [dialog]="dialogRef">
+<app-modal [headline]="'wallet.hardware-wallet-button' | translate" [dialog]="dialogRef">
   <app-hw-message *ngIf="currentState === states.ShowingResult"
     [text]="result.text | translate"
     [linkText]="result.link"
@@ -7,15 +7,15 @@
   ></app-hw-message>
 
   <app-hw-message *ngIf="currentState === states.Other && !otherStateBecauseWrongPin"
-    [text]="('hardware-wallet.general.refused' | translate) + ' ' + ('hardware-wallet.options.forgotten-pin1' | translate)"
-    [linkText]="'hardware-wallet.options.forgotten-pin2' | translate"
+    [text]="('hardware-wallet.errors.refused' | translate) + ' ' + ('hardware-wallet.options.forgotten-pin-part1' | translate)"
+    [linkText]="'hardware-wallet.options.forgotten-pin-part2' | translate"
     [icon]="msgIcons.Error"
     (linkClicked)="wipe()"
   ></app-hw-message>
 
   <app-hw-message *ngIf="currentState === states.Other && otherStateBecauseWrongPin"
-    [text]="('hardware-wallet.general.error-incorrect-pin' | translate) + ' ' + ('hardware-wallet.options.forgotten-pin1' | translate)"
-    [linkText]="'hardware-wallet.options.forgotten-pin2' | translate"
+    [text]="('hardware-wallet.errors.incorrect-pin' | translate) + ' ' + ('hardware-wallet.options.forgotten-pin-part1' | translate)"
+    [linkText]="'hardware-wallet.options.forgotten-pin-part2' | translate"
     [icon]="msgIcons.Error"
     (linkClicked)="wipe()"
   ></app-hw-message>
@@ -81,13 +81,13 @@
 
   <div class="-buttons" *ngIf="currentState === states.Finished">
     <app-button (action)="closeModal()" class="primary-button">
-      {{ 'hardware-wallet.general.close' | translate }}
+      {{ 'common.close-button' | translate }}
     </app-button>
   </div>
 
   <div class="-buttons" *ngIf="currentState !== states.Finished">
     <app-button (action)="closeModal()" class="primary-button" #closeButton>
-      {{ 'hardware-wallet.general.close' | translate }}
+      {{ 'common.close-button' | translate }}
     </app-button>
   </div>
 </app-modal>

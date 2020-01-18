@@ -1,19 +1,19 @@
 <app-modal [headline]="(data.isForHwWallet ? 'hardware-wallet.seed-word.title' : 'wallet.new.seed-label') | translate" [dialog]="dialogRef">
   <app-hw-message
-    [upperBigText]="'hardware-wallet.seed-word.info1' | translate"
-    [text]="'hardware-wallet.seed-word.info2' | translate"
+    [upperBigText]="'hardware-wallet.seed-word.enter-word' | translate"
+    [text]="'hardware-wallet.seed-word.info' | translate"
     [icon]="msgIcons.None"
     *ngIf="data.isForHwWallet"
   ></app-hw-message>
   <app-hw-message
     [upperBigText]="'wallet.new.seed.enter-word' | translate:{number: data.wordNumber}"
-    [text]="(!data.restoringSoftwareWallet ? 'wallet.new.seed.new-seed-help' : 'wallet.new.seed.recover-seed-help') | translate"
+    [text]="(!data.restoringSoftwareWallet ? 'wallet.new.seed.new-seed-info' : 'wallet.new.seed.recover-seed-info') | translate"
     [icon]="msgIcons.None"
     *ngIf="!data.isForHwWallet"
   ></app-hw-message>
   <div [formGroup]="form" class="modal-form-container">
     <div class="form-field">
-      <label for="word" *ngIf="data.isForHwWallet">{{ 'hardware-wallet.seed-word.word' | translate }}</label>
+      <label for="word" *ngIf="data.isForHwWallet">{{ 'hardware-wallet.seed-word.word-label' | translate }}</label>
       <input matInput [matAutocomplete]="auto" formControlName="word" id="word" (keydown.enter)="sendWord()">
       <mat-autocomplete #auto="matAutocomplete" [autoActiveFirstOption]="true">
         <mat-option class="option" *ngFor="let option of filteredOptions | async" [value]="option" (click)="sendWord()">{{option}}</mat-option>
@@ -22,7 +22,7 @@
   </div>
   <div class="-buttons">
     <app-button (action)="sendWord()" class="primary-button" [disabled]="!form.valid">
-      {{ 'hardware-wallet.general.continue' | translate }}
+      {{ 'common.continue-button' | translate }}
     </app-button>
   </div>
 </app-modal>

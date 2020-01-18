@@ -1,5 +1,5 @@
 <div>
-  <app-header [headline]="'title.pending-txs' | translate"></app-header>
+  <app-header [headline]="'pending-txs.title' | translate"></app-header>
 
   <app-loading-content
     [isLoading]="!transactions"
@@ -10,10 +10,10 @@
   <div class="container" *ngIf="transactions && transactions.length > 0">
     <div class="-table">
       <div class="-headers">
-        <div class="-flex-fill">{{ 'pending-txs.txid' | translate }}</div>
+        <div class="-flex-fill">{{ 'pending-txs.txid-table-label' | translate }}</div>
         <div class="-width-150 text-right">{{ 'coin' | commonText }}</div>
         <div class="-width-150 text-right">{{ 'hours' | commonText }}</div>
-        <div class="-width-150">{{ 'pending-txs.timestamp' | translate }}</div>
+        <div class="-width-150">{{ 'pending-txs.timestamp-table-label' | translate }}</div>
       </div>
       <div class="-body">
         <div class="-row" *ngFor="let tx of transactions">

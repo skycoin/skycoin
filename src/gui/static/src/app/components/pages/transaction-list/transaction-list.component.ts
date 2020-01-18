@@ -8,6 +8,7 @@ import { TransactionDetailComponent } from './transaction-detail/transaction-det
 import { NormalTransaction } from '../../../app.datatypes';
 import { FormGroup, FormBuilder } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { AppService } from '../../../services/app.service';
 
 export class Wallet {
   id: string;
@@ -50,6 +51,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
   private routeSubscription: SubscriptionLike;
 
   constructor(
+    public appService: AppService,
     private dialog: MatDialog,
     private priceService: PriceService,
     private walletService: WalletService,

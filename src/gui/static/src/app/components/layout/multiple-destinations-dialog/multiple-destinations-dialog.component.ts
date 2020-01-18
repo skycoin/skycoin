@@ -41,14 +41,14 @@ export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {
   processData() {
     try {
       if ((this.form.value.data as string).trim().length === 0) {
-        this.msgBarService.showError('send.bulk-send.error-no-data');
+        this.msgBarService.showError('send.bulk-send.no-data-error');
 
         return;
       }
 
       let entries = (this.form.value.data as string).split(/\r?\n/);
       if (!entries || entries.length === 0) {
-        this.msgBarService.showError('send.bulk-send.error-no-data');
+        this.msgBarService.showError('send.bulk-send.no-data-error');
 
         return;
       }
@@ -57,7 +57,7 @@ export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {
 
       const firstElementParts = entries[0].split(',').length;
       if (firstElementParts !== 2 && firstElementParts !== 3) {
-        this.msgBarService.showError('send.bulk-send.error-invalid-data');
+        this.msgBarService.showError('send.bulk-send.invalid-data-error');
 
         return;
       }
@@ -72,7 +72,7 @@ export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {
       });
 
       if (!consistentNumberOfParts) {
-        this.msgBarService.showError('send.bulk-send.error-inconsistent-data');
+        this.msgBarService.showError('send.bulk-send.inconsistent-data-error');
 
         return;
       }
@@ -87,7 +87,7 @@ export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {
 
       this.dialogRef.close(response);
     } catch (e) {
-      this.msgBarService.showError('send.bulk-send.error-invalid-data');
+      this.msgBarService.showError('send.bulk-send.invalid-data-error');
     }
   }
 }

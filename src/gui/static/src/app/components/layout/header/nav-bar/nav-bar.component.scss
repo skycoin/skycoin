@@ -13,6 +13,9 @@ $nav-bar-height: 66px;
     display: block;
     text-decoration: none;
     color: $black;
+    display: flex;
+    height: $nav-bar-height;
+    align-items: center;
 
     &:hover {
       opacity: 0.4;
@@ -24,16 +27,27 @@ $nav-bar-height: 66px;
 
     img {
       float: left;
-      height: $nav-bar-height;
-      padding: 17px 0;
+      height: $normal-icon-size;
       width: $normal-icon-size;
+
+      @media (max-width: $max-sm-width) {
+        & {
+          height: $normal-icon-size * 0.85;
+          width: $normal-icon-size * 0.85;
+        }
+      }
     }
 
     span {
       font-size: $font-size-standard-plus;
-      height: $nav-bar-height;
-      line-height: $nav-bar-height;
+      line-height: 1.3;
       margin: 0 5px;
+
+      @media (max-width: $max-sm-width) {
+        & {
+          font-size: $font-size-standard-plus * 0.85;
+        }
+      }
     }
   }
 

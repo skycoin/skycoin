@@ -1,5 +1,5 @@
 <div>
-  <app-header [headline]="'title.network' | translate"></app-header>
+  <app-header [headline]="'network.title' | translate"></app-header>
 
   <app-loading-content *ngIf="!peers"></app-loading-content>
 
@@ -7,17 +7,17 @@
     <div class="-table">
       <div class="-headers">
         <div class="-direction-cell"></div>
-        <div class="-address-cell">{{ 'network.peer' | translate }}</div>
-        <div class="-flex-fill">{{ 'network.source' | translate }}</div>
-        <div class="d-none d-lg-block -block-cell">{{ 'network.block-height' | translate }}</div>
-        <div class="d-lg-none -block-cell">{{ 'network.block-height-short' | translate }}</div>
-        <div class="-last-seen-cell">{{ 'network.last-seen' | translate }}</div>
+        <div class="-address-cell">{{ 'network.peer-small-table-label' | translate }}</div>
+        <div class="-flex-fill">{{ 'network.source-small-table-label' | translate }}</div>
+        <div class="d-none d-lg-block -block-cell">{{ 'network.block-height-small-table-label' | translate }}</div>
+        <div class="d-lg-none -block-cell">{{ 'network.block-height-short-small-table-label' | translate }}</div>
+        <div class="-last-seen-cell">{{ 'network.last-seen-small-table-label' | translate }}</div>
       </div>
       <div class="-body">
         <div class="-row" *ngFor="let peer of peers">
           <div class="-direction-cell -direction-container">
             <img src="/assets/img/send-blue.png" [ngClass]="{ '-incoming': !peer.outgoing }"
-                 [matTooltip]="(peer.outgoing ? 'network.out' : 'network.in') | translate">
+                 [matTooltip]="(peer.outgoing ? 'network.out-help' : 'network.in-help') | translate">
           </div>
           <div class="-address-cell break-all">
             {{ peer.address.split(':')[0] }}<span class="grey-text">:{{ peer.listen_port }}</span>
@@ -26,11 +26,11 @@
           <div class="-block-cell break-all">{{ peer.height }}</div>
           <div class="-last-seen-cell -last-seen-container grey-text">
             <div class="text-truncate">
-              <mat-icon [matTooltip]="'network.last-sent' | translate">keyboard_arrow_up</mat-icon>
+              <mat-icon [matTooltip]="'network.last-sent-help' | translate">keyboard_arrow_up</mat-icon>
               {{ peer.last_sent | dateFromNow }}
             </div>
             <div class="text-truncate">
-              <mat-icon [matTooltip]="'network.last-received' | translate">keyboard_arrow_down</mat-icon>
+              <mat-icon [matTooltip]="'network.last-received-help' | translate">keyboard_arrow_down</mat-icon>
               {{ peer.last_received | dateFromNow }}
             </div>
           </div>

@@ -7,10 +7,10 @@
 
     <div class="-buttons">
       <app-button (action)="closeModal()">
-        {{ 'hardware-wallet.general.cancel' | translate }}
+        {{ 'common.cancel-button' | translate }}
       </app-button>
       <app-button (action)="requestBackup()" class="primary-button">
-        {{ 'hardware-wallet.general.continue' | translate }}
+        {{ 'common.continue-button' | translate }}
       </app-button>
     </div>
   </div>
@@ -28,7 +28,7 @@
 
     <div class="-buttons" *ngIf="currentState !== states.Processing">
       <app-button (action)="closeModal()" class="primary-button" #closeButton>
-        {{ 'hardware-wallet.general.close' | translate }}
+        {{ 'common.close-button' | translate }}
       </app-button>
     </div>
   </div>

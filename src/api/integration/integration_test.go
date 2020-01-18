@@ -258,7 +258,8 @@ func updateGoldenFile(t *testing.T, filename string, content interface{}) {
 
 func checkGoldenFile(t *testing.T, goldenFile string, td TestData) {
 	loadGoldenFile(t, goldenFile, td)
-	require.Equal(t, reflect.Indirect(reflect.ValueOf(td.expected)).Interface(), td.actual)
+	expect := reflect.Indirect(reflect.ValueOf(td.expected)).Interface()
+	require.Equal(t, expect, td.actual)
 
 	// Serialize expected to JSON and compare to the goldenFile's contents
 	// This will detect field changes that could be missed otherwise
@@ -2474,16 +2475,6 @@ func TestStableTransactions(t *testing.T) {
 			},
 		},
 		{
-			name:  "empty addrs",
-			addrs: []string{},
-			err: api.ClientError{
-				Status:     "400 Bad Request",
-				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - txId is empty",
-			},
-			goldenFile: "empty-addrs-transactions.golden",
-		},
-		{
 			name:       "single addr",
 			addrs:      []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"},
 			goldenFile: "single-addr-transactions.golden",
@@ -2501,11 +2492,18 @@ func TestStableTransactions(t *testing.T) {
 	}
 
 	if !dbNoUnconfirmed(t) {
-		cases = append(cases, transactionsTestCase{
-			name:       "confirmed and unconfirmed transactions",
-			addrs:      []string{"212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN"},
-			goldenFile: "confirmed-and-unconfirmed-transactions.golden",
-		})
+		cases = append(cases,
+			transactionsTestCase{
+				name:       "confirmed and unconfirmed transactions",
+				addrs:      []string{"212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN"},
+				goldenFile: "confirmed-and-unconfirmed-transactions.golden",
+			},
+			transactionsTestCase{
+				name:       "empty addrs",
+				addrs:      []string{},
+				goldenFile: "empty-addrs-transactions-all.golden",
+			},
+		)
 	}
 
 	c := newClient()
@@ -2765,11 +2763,6 @@ func TestStableTransactionsVerbose(t *testing.T) {
 			},
 		},
 		{
-			name:       "empty addrs",
-			addrs:      []string{},
-			goldenFile: "empty-addrs-transactions-verbose.golden",
-		},
-		{
 			name:       "single addr",
 			addrs:      []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"},
 			goldenFile: "single-addr-transactions-verbose.golden",
@@ -2791,7 +2784,13 @@ func TestStableTransactionsVerbose(t *testing.T) {
 			name:       "confirmed and unconfirmed transactions",
 			addrs:      []string{"212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN"},
 			goldenFile: "confirmed-and-unconfirmed-transactions-verbose.golden",
-		})
+		},
+			transactionsTestCase{
+				name:       "empty addrs",
+				addrs:      []string{},
+				goldenFile: "empty-addrs-transactions-verbose-all.golden",
+			},
+		)
 	}
 
 	c := newClient()

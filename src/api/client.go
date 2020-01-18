@@ -1350,8 +1350,8 @@ type TransactionsWithStatusVerboseV2 struct {
 	Txns     []readable.TransactionWithStatusVerbose `json:"txns"`
 }
 
-// GetTransactionsWithStatusV2 make a GET request to /api/v2/transaction to get transactions with no verbose.
-func (c *Client) GetTransactionsWithStatusV2(args ...RequestArg) (*TransactionsWithStatusV2, error) {
+// TransactionsV2 make a GET request to /api/v2/transaction to get transactions with no verbose.
+func (c *Client) TransactionsV2(args ...RequestArg) (*TransactionsWithStatusV2, error) {
 	kvs := make([]string, len(args))
 	for i, arg := range args {
 		kvs[i] = fmt.Sprintf("%s=%s", arg.Key, arg.Value)
@@ -1370,8 +1370,8 @@ func (c *Client) GetTransactionsWithStatusV2(args ...RequestArg) (*TransactionsW
 	return &obj, nil
 }
 
-// GetTransactionsWithStatusVerboseV2 make a GET request to /api/v2/transaction to get transactions with no verbose.
-func (c *Client) GetTransactionsWithStatusVerboseV2(args ...RequestArg) (*TransactionsWithStatusVerboseV2, error) {
+// TransactionsVerboseV2 make a GET request to /api/v2/transaction to get transactions with no verbose.
+func (c *Client) TransactionsVerboseV2(args ...RequestArg) (*TransactionsWithStatusVerboseV2, error) {
 	kvs := make([]string, len(args))
 	for i, arg := range args {
 		kvs[i] = fmt.Sprintf("%s=%s", arg.Key, arg.Value)

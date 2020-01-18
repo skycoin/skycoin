@@ -25,7 +25,7 @@ var (
 	// ErrZeroPageSize will be returned when page size is zero
 	ErrZeroPageSize = errors.New("page size must be greater than 0")
 	// ErrZeroPageNum will be returned when page num is zero
-	ErrZeroPageNum = errors.New("page number must be  greater than 0")
+	ErrZeroPageNum = errors.New("page number must be greater than 0")
 	// ErrMaxTxnPageSize will be returned when page size is greater than MaxTxnPageSize
 	ErrMaxTxnPageSize = fmt.Errorf("transaction page size must be not greater than %d", MaxTxnPageSize)
 )

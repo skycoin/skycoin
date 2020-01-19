@@ -3,6 +3,7 @@ import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angu
 
 export enum DefaultConfirmationButtons {
   YesNo = 'YesNo',
+  ContinueCancel = 'ContinueCancel',
   Close = 'Close',
 }
 
@@ -53,6 +54,11 @@ export class ConfirmationComponent {
       if (data.defaultButtons === DefaultConfirmationButtons.YesNo) {
         data.confirmButtonText = 'confirmation.yes-button';
         data.cancelButtonText = 'confirmation.no-button';
+      }
+
+      if (data.defaultButtons === DefaultConfirmationButtons.ContinueCancel) {
+        data.confirmButtonText = 'common.continue-button';
+        data.cancelButtonText = 'common.cancel-button';
       }
     }
 

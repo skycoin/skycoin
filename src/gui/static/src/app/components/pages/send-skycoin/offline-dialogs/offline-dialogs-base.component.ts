@@ -41,7 +41,11 @@ export class OfflineDialogsBaseComponent {
   ) {
     this.form = _formBuilder.group({
       dropdown: ['', Validators.required],
-      input: ['', Validators.required],
+      input: ['', Validators.compose([
+        Validators.required,
+        Validators.minLength(300),
+        Validators.pattern('^[0-9a-fA-F]+$'),
+      ])],
     });
   }
 }

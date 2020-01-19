@@ -7,7 +7,7 @@ import { Router } from '@angular/router';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { SubscriptionLike } from 'rxjs';
 import { BlockchainService } from '../../../../services/blockchain.service';
-import { ConfirmationParams, ConfirmationComponent } from '../../../layout/confirmation/confirmation.component';
+import { ConfirmationParams, ConfirmationComponent, DefaultConfirmationButtons } from '../../../layout/confirmation/confirmation.component';
 import { AppService } from '../../../../services/app.service';
 
 @Component({
@@ -81,8 +81,7 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
       const confirmationParams: ConfirmationParams = {
         headerText: 'common.warning-title',
         text: 'wallet.new.synchronizing-warning-text',
-        confirmButtonText: 'common.continue-button',
-        cancelButtonText: 'common.cancel-button',
+        defaultButtons: DefaultConfirmationButtons.ContinueCancel,
         redTitle: true,
       };
 

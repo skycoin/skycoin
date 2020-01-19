@@ -5,7 +5,7 @@ describe('Transactions', () => {
 
   it('should display title', () => {
     page.navigateTo();
-    expect<any>(page.getHeaderText()).toEqual('Transactions');
+    expect<any>(page.getHeaderText()).toEqual('History');
   });
 
   it('should contain transactions', () => {

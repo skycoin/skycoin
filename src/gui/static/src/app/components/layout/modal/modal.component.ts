@@ -7,6 +7,7 @@ import { MatDialogRef } from '@angular/material/dialog';
   styleUrls: ['./modal.component.scss'],
 })
 export class ModalComponent {
+  @Input() useRedTitle = false;
   @Input() headline: string;
   @Input() disableDismiss: boolean;
 

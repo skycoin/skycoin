@@ -1,5 +1,7 @@
 @import '../../../../theme/variables';
 
+$data-container-margin: 14px;
+
 .qr-container {
   text-align: center;
   margin-bottom: 24px;
@@ -17,8 +19,12 @@
   width: 100%;
 }
 
+.form-separator {
+  margin-bottom: $data-container-margin;
+}
+
 .data-container {
-  margin: 14px 0;
+  margin: $data-container-margin 0;
 
   .title {
     color: $grey;

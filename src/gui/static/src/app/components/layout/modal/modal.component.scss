@@ -11,6 +11,7 @@ $close-button-size: $normal-icon-size;
   text-overflow: ellipsis;
   white-space: nowrap;
   padding: 0 $close-button-size 0 $close-button-size;
+  font-size: $font-size-standard-plus;
 
   img {
     height: $close-button-size;
@@ -32,4 +33,11 @@ mat-dialog-content::after {
   padding-top: $modal-content-padding;
   height: 0px;
   display: block;
+}
+
+.red-title {
+  text-transform: uppercase;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: $red;
 }

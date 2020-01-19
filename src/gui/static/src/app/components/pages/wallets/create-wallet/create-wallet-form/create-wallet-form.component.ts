@@ -6,7 +6,7 @@ import { ApiService } from '../../../../../services/api.service';
 import { MatDialog } from '@angular/material/dialog';
 import { SeedWordDialogComponent } from '../../../../layout/seed-word-dialog/seed-word-dialog.component';
 import { MsgBarService } from '../../../../../services/msg-bar.service';
-import { ConfirmationParams, ConfirmationComponent } from '../../../../layout/confirmation/confirmation.component';
+import { ConfirmationParams, ConfirmationComponent, DefaultConfirmationButtons } from '../../../../layout/confirmation/confirmation.component';
 
 export class WalletFormData {
   creatingNewWallet: boolean;
@@ -107,8 +107,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
         text: this.create ? 'wallet.new.seed.custom-seed-warning-text' : 'wallet.new.seed.custom-seed-warning-text-recovering',
         headerText: 'common.warning-title',
         checkboxText: this.create ? 'common.generic-confirmation-check' : null,
-        confirmButtonText: 'common.continue-button',
-        cancelButtonText: 'common.cancel-button',
+        defaultButtons: DefaultConfirmationButtons.ContinueCancel,
         redTitle: true,
       };
 

@@ -8,7 +8,7 @@ import { SubscriptionLike } from 'rxjs';
 import { Router } from '@angular/router';
 import { HwWalletService } from '../../../services/hw-wallet.service';
 import { first } from 'rxjs/operators';
-import { ConfirmationParams, ConfirmationComponent } from '../../layout/confirmation/confirmation.component';
+import { ConfirmationParams, ConfirmationComponent, DefaultConfirmationButtons } from '../../layout/confirmation/confirmation.component';
 
 @Component({
   selector: 'app-wallets',
@@ -78,8 +78,7 @@ export class WalletsComponent implements OnInit, OnDestroy {
         headerText: 'hardware-wallet.security-warning.title',
         text: 'hardware-wallet.security-warning.text',
         checkboxText: 'common.generic-confirmation-check',
-        confirmButtonText: 'common.continue-button',
-        cancelButtonText: 'common.cancel-button',
+        defaultButtons: DefaultConfirmationButtons.ContinueCancel,
         linkText: 'hardware-wallet.security-warning.link',
         linkFunction: this.adminHwWallet.bind(this),
       };

@@ -86,7 +86,7 @@
         </div>
         <div class="-balance">
           <h4>{{ transaction.balance.toString() | amount }}</h4>
-          <p *ngIf="price" [matTooltip]="'tx.current-rate' | translate">
+          <p *ngIf="price" [matTooltip]="'tx.current-rate-help' | translate">
             {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}<span>*</span>
           </p>
         </div>

@@ -8,7 +8,7 @@ import { SubscriptionLike } from 'rxjs';
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { AppConfig } from '../../../../app.config';
-import { ConfirmationParams, ConfirmationComponent } from '../../../layout/confirmation/confirmation.component';
+import { ConfirmationParams, ConfirmationComponent, DefaultConfirmationButtons } from '../../../layout/confirmation/confirmation.component';
 
 export class CreateWalletParams {
   create: boolean;
@@ -73,8 +73,7 @@ export class CreateWalletComponent implements OnDestroy {
       const confirmationParams: ConfirmationParams = {
         headerText: 'common.warning-title',
         text: 'wallet.new.synchronizing-warning-text',
-        confirmButtonText: 'common.continue-button',
-        cancelButtonText: 'common.cancel-button',
+        defaultButtons: DefaultConfirmationButtons.ContinueCancel,
         redTitle: true,
       };
 

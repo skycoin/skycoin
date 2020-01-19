@@ -1,4 +1,4 @@
-<div class="-header">
+<div class="-header" [ngClass]="{'red-title': useRedTitle}">
   {{ headline }}
   <img class="image-button" src="assets/img/delete-grey.png" (click)="closePopup()" *ngIf="!disableDismiss">
 </div>

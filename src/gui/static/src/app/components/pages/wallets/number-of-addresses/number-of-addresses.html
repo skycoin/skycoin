@@ -5,7 +5,7 @@
       <input formControlName="quantity" id="quantity" type="number" min="1" max="100" (keydown.enter)="continue()">
     </div>
   </div>
-  <div class="text-center">
+  <div class="-buttons">
     <app-button (action)="closePopup()" [disabled]="button && button.isLoading()">
       {{ 'common.cancel-button' | translate }}
     </app-button>

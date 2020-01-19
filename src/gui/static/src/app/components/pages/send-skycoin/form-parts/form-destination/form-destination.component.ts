@@ -221,6 +221,12 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   assignAll(index: number) {
     this.msgBarService.hide();
 
+    if (this.availableBalance.availableCoins.isEqualTo(0)) {
+      this.msgBarService.showError(this.translate.instant('send.no-wallet-selected-error'));
+
+      return;
+    }
+
     let availableCoins: BigNumber = this.availableBalance.availableCoins;
     if (this.selectedCurrency === DoubleButtonActive.RightButton) {
       availableCoins = availableCoins.multipliedBy(this.price).decimalPlaces(FormDestinationComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
@@ -243,7 +249,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       availableCoins = availableCoins.decimalPlaces(FormDestinationComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
     }
 
-    if (availableCoins.isLessThan(0)) {
+    if (availableCoins.isLessThanOrEqualTo(0)) {
       this.msgBarService.showError(this.translate.instant('send.no-coins-left-error'));
     } else {
       this.destControls[index].get('coins').setValue(availableCoins.toString());

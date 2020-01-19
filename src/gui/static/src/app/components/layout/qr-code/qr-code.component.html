@@ -18,6 +18,7 @@
     (pressed)="startShowingForm()"
     [noPadding]="true">
   </app-arrow-link>
+  <div class="separator form-separator" *ngIf="showForm"></div>
 
   <div [formGroup]="form" *ngIf="showForm">
     <div class="form-field">

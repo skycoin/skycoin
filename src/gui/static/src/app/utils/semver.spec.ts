@@ -1,6 +1,6 @@
 import { shouldUpgradeVersion } from './semver';
 
-fdescribe('semver', () => {
+describe('semver', () => {
   it('correctly compares versions', () => {
     expect(shouldUpgradeVersion('0.23.0', '0.22.0')).toBeFalsy();
     expect(shouldUpgradeVersion('0.23.0', '0.23.0')).toBeFalsy();

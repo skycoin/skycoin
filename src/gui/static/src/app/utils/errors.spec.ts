@@ -1,6 +1,6 @@
 import { parseResponseMessage } from './errors';
 
-fdescribe('errors', () => {
+describe('errors', () => {
   const message1 = '400 Bad Request - error description';
   const message2 = '403 Forbidden - error description';
   const message3 = '500 Internal Server Error - error description';

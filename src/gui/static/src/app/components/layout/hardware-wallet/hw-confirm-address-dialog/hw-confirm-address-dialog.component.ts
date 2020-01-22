@@ -33,7 +33,7 @@ export class HwConfirmAddressDialogComponent extends HwDialogBaseComponent<HwCon
         this.data.address.confirmed = true;
         this.walletService.saveHardwareWallets();
       },
-      err => this.processResult(err.result),
+      err => this.processResult(err),
     );
   }
 }

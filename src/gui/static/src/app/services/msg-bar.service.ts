@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
 import { MsgBarConfig, MsgBarComponent, MsgBarIcons, MsgBarColors } from '../components/layout/msg-bar/msg-bar.component';
-import { parseResponseMessage } from '../utils/errors';
+import { processServiceError } from '../utils/errors';
 import { SubscriptionLike, of } from 'rxjs';
 import { delay } from 'rxjs/operators';
 import { AppConfig } from '../app.config';
 import { environment } from '../../environments/environment';
+import { OperationError, HWOperationResults } from '../utils/operation-error';
 
 
 @Injectable()
@@ -18,11 +19,6 @@ export class MsgBarService {
   }
 
   show(config: MsgBarConfig) {
-    if (config.text === 'hardware-wallet.errors.daemon-connection' || config.text.indexOf('Problem connecting to the Skywallet Daemon') !== -1) {
-      config.text = 'hardware-wallet.errors.daemon-connection-with-configurable-link';
-      config.link = AppConfig.hwWalletDaemonDownloadUrl;
-    }
-
     if (this.msgBarComponentInternal) {
       this.msgBarComponentInternal.config = config;
       this.msgBarComponentInternal.show();
@@ -35,12 +31,17 @@ export class MsgBarService {
     }
   }
 
-  showError(body: string, duration = 20000) {
+  showError(body: string | OperationError, duration = 20000) {
     const config = new MsgBarConfig();
-    config.text = parseResponseMessage(body);
+    config.text = processServiceError(body).translatableErrorMsg;
     config.title = 'common.error-title';
     config.icon = MsgBarIcons.Error;
     config.color = MsgBarColors.Red;
+
+    if ((body as OperationError).type && (body as OperationError).type === HWOperationResults.DaemonError) {
+      config.text = 'hardware-wallet.errors.daemon-connection-with-configurable-link';
+      config.link = AppConfig.hwWalletDaemonDownloadUrl;
+    }
 
     this.show(config);
     this.setTimer(duration);
@@ -48,7 +49,7 @@ export class MsgBarService {
 
   showWarning(body: string, duration = 20000) {
     const config = new MsgBarConfig();
-    config.text = parseResponseMessage(body);
+    config.text = processServiceError(body).translatableErrorMsg;
     config.title = 'common.warning-title';
     config.icon = MsgBarIcons.Warning;
     config.color = MsgBarColors.Yellow;

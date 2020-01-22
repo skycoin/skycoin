@@ -3,13 +3,13 @@ import { first, map, mergeMap, catchError } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../environments/environment';
-import { TranslateService } from '@ngx-translate/core';
 import { BigNumber } from 'bignumber.js';
 
 import {
   Address, GetWalletsResponseEntry, GetWalletsResponseWallet, NormalTransaction,
   PostWalletNewAddressResponse, Version, Wallet,
 } from '../app.datatypes';
+import { processServiceError } from '../utils/errors';
 
 @Injectable()
 export class ApiService {
@@ -17,7 +17,6 @@ export class ApiService {
 
   constructor(
     private http: HttpClient,
-    private translate: TranslateService,
   ) { }
 
   getTransactions(addresses: Address[]): Observable<NormalTransaction[]> {
@@ -198,34 +197,7 @@ export class ApiService {
     return this.url + (useV2 ? 'v2/' : 'v1/') + url + '?' + this.getQueryString(options);
   }
 
-  processConnectionError(error: any, connectingToHwWalletDaemon = false): Observable<void> {
-    if (error) {
-      if (typeof error['_body'] === 'string') {
-
-        return observableThrowError(error);
-      }
-
-      if (error.error && typeof error.error === 'string') {
-        error['_body'] = error.error;
-
-        return observableThrowError(error);
-      } else if (error.error && error.error.error && error.error.error.message)  {
-        error['_body'] = error.error.error.message;
-
-        return observableThrowError(error);
-      } else if (error.error && error.error.error && typeof error.error.error === 'string')  {
-        error['_body'] = error.error.error;
-
-        return observableThrowError(error);
-      } else if (error.message) {
-        error['_body'] = error.message;
-
-        return observableThrowError(error);
-      }
-    }
-    const err = Error(this.translate.instant(connectingToHwWalletDaemon ? 'hardware-wallet.errors.daemon-connection' : 'service.api.server-error'));
-    err['_body'] = err.message;
-
-    return observableThrowError(err);
+  private processConnectionError(error: any): Observable<void> {
+    return observableThrowError(processServiceError(error));
   }
 }

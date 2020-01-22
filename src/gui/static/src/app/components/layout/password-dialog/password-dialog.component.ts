@@ -3,12 +3,12 @@ import { MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/d
 import { MatDialogRef } from '@angular/material/dialog';
 import { FormControl, FormGroup } from '@angular/forms';
 import { ButtonComponent } from '../button/button.component';
-import { parseResponseMessage } from '../../../utils/errors';
+import { processServiceError } from '../../../utils/errors';
 import { Subject } from 'rxjs';
-import { TranslateService } from '@ngx-translate/core';
 import { MsgBarService } from '../../../services/msg-bar.service';
 import { AppConfig } from '../../../app.config';
 import { Wallet } from '../../../app.datatypes';
+import { OperationError, OperationErrorTypes } from './../../../utils/operation-error';
 
 export interface PasswordDialogParams {
   confirm?: boolean;
@@ -29,8 +29,6 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
   passwordSubmit = new Subject<any>();
   working = false;
 
-  private errors: any;
-
   public static openDialog(dialog: MatDialog, params: PasswordDialogParams, smallSize = true): MatDialogRef<PasswordDialogComponent, any> {
     const config = new MatDialogConfig();
     config.data = params;
@@ -44,7 +42,6 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
     @Inject(MAT_DIALOG_DATA) public data: any,
     public dialogRef: MatDialogRef<PasswordDialogComponent>,
     private msgBarService: MsgBarService,
-    private translateService: TranslateService,
     private changeDetector: ChangeDetectorRef,
   ) {
     this.data = Object.assign({
@@ -54,10 +51,6 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
       title: null,
       wallet: null,
     }, data || {});
-
-    this.translateService.get(['password.incorrect-password-error', 'password.api-disabled-error', 'password.no-wallet-error', 'password.decrypting-error']).subscribe(res => {
-      this.errors = res;
-    });
   }
 
   ngOnInit() {
@@ -122,31 +115,23 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
     this.dialogRef.close();
   }
 
-  private error(error: any) {
-    if (typeof error === 'object') {
-      if (error.status) {
-      switch (error.status) {
-        case 400:
-          error = parseResponseMessage(error['_body']);
-          break;
-        case 401:
-          error = this.errors['password.incorrect-password-error'];
-          break;
+  private error(error: OperationError) {
+    if (!error.type) {
+      error = processServiceError(error);
+    }
+
+    if (error.originalError && error.originalError.status) {
+      switch (error.originalError.status) {
         case 403:
-          error = this.errors['password.api-disabled-error'];
+          error.translatableErrorMsg = 'password.api-disabled-error';
           break;
         case 404:
-          error = this.errors['password.no-wallet-error'];
+          error.translatableErrorMsg = 'password.no-wallet-error';
           break;
-        default:
-          error = this.errors['password.decrypting-error'];
-        }
-      } else {
-        error = this.errors['password.decrypting-error'];
       }
     }
 
-    error = error ? error : this.errors['password.decrypting-error'];
+    error.translatableErrorMsg = error.translatableErrorMsg ? error.translatableErrorMsg : 'password.decrypting-error';
 
     this.msgBarService.showError(error);
     this.button.resetState();

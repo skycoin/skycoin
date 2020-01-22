@@ -1,6 +1,6 @@
 import { Component, OnDestroy, Inject } from '@angular/core';
 import { MatDialogRef, MatDialogConfig, MatDialog, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
+import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { HwWipeDialogComponent } from '../hw-wipe-dialog/hw-wipe-dialog.component';
 import { SubscriptionLike,  Observable } from 'rxjs';
 import { WalletService, HwSecurityWarnings, HwFeaturesResponse } from '../../../../services/wallet.service';
@@ -11,13 +11,14 @@ import { Wallet } from '../../../../app.datatypes';
 import { HwChangePinDialogComponent } from '../hw-change-pin-dialog/hw-change-pin-dialog.component';
 import { HwRestoreSeedDialogComponent } from '../hw-restore-seed-dialog/hw-restore-seed-dialog.component';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
-import { HwWalletDaemonService } from '../../../../services/hw-wallet-daemon.service';
 import { HwRemovePinDialogComponent } from '../hw-remove-pin-dialog/hw-remove-pin-dialog.component';
 import { HwUpdateFirmwareDialogComponent } from '../hw-update-firmware-dialog/hw-update-firmware-dialog.component';
 import { HwUpdateAlertDialogComponent } from '../hw-update-alert-dialog/hw-update-alert-dialog.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { map, first } from 'rxjs/operators';
 import { AppConfig } from '../../../../app.config';
+import { OperationError, HWOperationResults } from '../../../../utils/operation-error';
+import { processServiceError } from '../../../../utils/errors';
 
 export interface ChildHwDialogParams {
   wallet: Wallet;
@@ -240,8 +241,8 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
           }
         }, () => this.continueCheckingWallet(suggestToUpdate));
       }
-    }, err => {
-      if (err['_body'] && err['_body'] === HwWalletDaemonService.errorConnectingWithTheDaemon) {
+    }, (err: OperationError) => {
+      if (err.type && err.type === HWOperationResults.DaemonError) {
         this.showResult({
           text: 'hardware-wallet.errors.daemon-connection-with-configurable-link',
           link: AppConfig.hwWalletDaemonDownloadUrl,
@@ -285,8 +286,10 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
           }
         });
       },
-      err => {
-        if (err.result && err.result === OperationResults.Timeout) {
+      (err: OperationError) => {
+        err = processServiceError(err);
+
+        if (err.type === HWOperationResults.Timeout) {
           this.operationSubscription = this.hwWalletService.getFeatures(false).subscribe(result => {
             if (result.rawResponse.bootloader_mode) {
               this.openUpdateDialog();
@@ -294,7 +297,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
               this.showError();
             }
           }, () => this.showError());
-        } else if (err.result && err.result === OperationResults.WithoutSeed) {
+        } else if (err.type === HWOperationResults.WithoutSeed) {
           this.currentState = this.states.Finished;
           this.newWalletConnected = true;
 
@@ -303,14 +306,14 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
               this.openUpdateWarning();
             }
           });
-        } else if (err.result && err.result === OperationResults.FailedOrRefused) {
+        } else if (err.type === HWOperationResults.FailedOrRefused) {
           this.currentState = this.states.Other;
           this.otherStateBecauseWrongPin = false;
-        } else if (err.result && err.result === OperationResults.WrongPin) {
+        } else if (err.type === HWOperationResults.WrongPin) {
           this.currentState = this.states.Other;
           this.otherStateBecauseWrongPin = true;
         } else {
-          this.processResult(err.result);
+          this.processResult(err);
         }
       },
     );

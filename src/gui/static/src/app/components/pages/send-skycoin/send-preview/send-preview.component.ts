@@ -2,7 +2,6 @@ import { Component, EventEmitter, Input, OnDestroy, Output, ViewChild } from '@a
 import { WalletService } from '../../../../services/wallet.service';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { MatDialog } from '@angular/material/dialog';
-import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { PreviewTransaction } from '../../../../app.datatypes';
 import { SubscriptionLike } from 'rxjs';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
@@ -88,7 +87,7 @@ export class SendVerifyComponent implements OnDestroy {
         this.showBusy();
         this.sendSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.transaction.wallet.addresses[0].address).subscribe(
           () => this.finishSending(),
-          err => this.showError(getHardwareWalletErrorMsg(this.translate, err)),
+          err => this.showError(err),
         );
       }
     }
@@ -129,11 +128,7 @@ export class SendVerifyComponent implements OnDestroy {
         passwordDialog.error(error);
       }
 
-      if (error && error.result) {
-        this.showError(getHardwareWalletErrorMsg(this.translate, error));
-      } else {
-        this.showError(error);
-      }
+      this.showError(error);
     });
   }
 

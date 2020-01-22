@@ -2,10 +2,11 @@ import { Component, OnDestroy, ViewChild } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
 import { SubscriptionLike } from 'rxjs';
 import { MessageIcons } from './hw-message/hw-message.component';
-import { HwWalletService, OperationResults } from '../../../services/hw-wallet.service';
+import { HwWalletService } from '../../../services/hw-wallet.service';
 import { ButtonComponent } from '../button/button.component';
-import { getHardwareWalletErrorMsg } from '../../../utils/errors';
+import { processServiceError } from '../../../utils/errors';
 import { AppConfig } from '../../../app.config';
+import { OperationError, HWOperationResults } from '../../../utils/operation-error';
 
 export class ResultProcessingResponse {
   text: String;
@@ -65,14 +66,18 @@ export class HwDialogBaseComponent<T> implements OnDestroy {
 
   }
 
-  protected processResult(result: OperationResults, genericError: string = null) {
-    if (result && result === OperationResults.Disconnected && this.closeIfHwDisconnected) {
-      this.closeModal();
-    } else if (result) {
-      this.showResult({
-        text: getHardwareWalletErrorMsg(null, {result: result}, genericError),
-        icon: MessageIcons.Error,
-      });
+  protected processResult(result: OperationError) {
+    if (result) {
+      result = processServiceError(result);
+
+      if (result.type === HWOperationResults.Disconnected && this.closeIfHwDisconnected) {
+        this.closeModal();
+      } else {
+        this.showResult({
+          text: result.translatableErrorMsg,
+          icon: MessageIcons.Error,
+        });
+      }
     }
   }
 

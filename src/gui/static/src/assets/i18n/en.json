@@ -290,8 +290,7 @@
       "select-wallet": "Select wallet",
       "input-label": "Transaction text",
       "sign-button": "Sign",
-      "signed": "The transaction has been signed.",
-      "error": "Error signing the transaction."
+      "signed": "The transaction has been signed."
     },
 
     "broadcast-tx": {
@@ -299,8 +298,7 @@
       "text": "Use this form to send a signed transaction to the network.",
       "input-label": "Transaction text",
       "send-button": "Send",
-      "sent": "The transaction has been sent.",
-      "error": "Error sending the transaction."
+      "sent": "The transaction has been sent."
     }
   },
 
@@ -438,7 +436,9 @@
 
   "service": {
     "api" : {
-      "server-error": "Server error."
+      "no-internet-error": "You do not have a internet connection or the node has stopped working.",
+      "incorrect-password-error": "Incorrect password.",
+      "unknown-error": "It was not possible to perform the operation."
     }
   },
 
@@ -452,9 +452,7 @@
       "name-updated": "The name used to identify this Skywallet in the wallet list has been updated to match the one shown on the device."
     },
     "errors": {
-      "simple-error": "Error. Unable to perform the operation.",
       "generic-error": "Unable to perform the operation. Make sure you have connected a valid Skywallet and that it is not waiting for input.",
-      "generic-error-internet": "Unable to perform the operation. Make sure you have connected a valid Skywallet that is not waiting for input and that you have a connection to the internet/node.",
       "disconnected": "Unable to perform the operation. The Skywallet is not connected.",
       "incorrect-wallet": "Unable to perform the operation. The connected Skywallet is different from the expected one.",
       "incorrect-pin": "Unable to perform the operation. The PIN you have entered is incorrect.",

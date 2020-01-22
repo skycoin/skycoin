@@ -3,12 +3,11 @@ import { Component, OnInit, Inject, ViewChild, OnDestroy } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { Wallet, NormalTransaction } from '../../../../app.datatypes';
+import { Wallet } from '../../../../app.datatypes';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { MessageIcons } from '../../../layout/hardware-wallet/hw-message/hw-message.component';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
-import { TranslateService } from '@ngx-translate/core';
-import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
+import { processServiceError } from '../../../../utils/errors';
 import { SubscriptionLike } from 'rxjs';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { AppConfig } from '../../../../app.config';
@@ -61,7 +60,6 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
     private formBuilder: FormBuilder,
     private walletService: WalletService,
     private hwWalletService: HwWalletService,
-    private translateService: TranslateService,
     private msgBarService: MsgBarService,
   ) {}
 
@@ -153,10 +151,10 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
             this.working = false;
             if (this.data.newName) {
               const response = new ChangeNameErrorResponse();
-              response.errorMsg = getHardwareWalletErrorMsg(this.translateService, err);
+              response.errorMsg = processServiceError(err).translatableErrorMsg;
               this.dialogRef.close(response);
             } else {
-              this.msgBarService.showError(getHardwareWalletErrorMsg(this.translateService, err));
+              this.msgBarService.showError(err);
               this.currentState = States.Initial;
               if (this.button) {
                 this.button.resetState();

@@ -46,7 +46,7 @@ export class HwWipeDialogComponent extends HwDialogBaseComponent<HwWipeDialogCom
           this.walletService.deleteHardwareWallet(this.data.wallet).subscribe();
         }
       },
-      err => this.processResult(err.result),
+      err => this.processResult(err),
     );
   }
 }

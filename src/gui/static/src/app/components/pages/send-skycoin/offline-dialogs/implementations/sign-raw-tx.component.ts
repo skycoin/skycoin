@@ -9,7 +9,6 @@ import { first } from 'rxjs/operators';
 import { CopyRawTxData, CopyRawTxComponent } from './copy-raw-tx.component';
 import { Wallet } from '../../../../../app.datatypes';
 import { PasswordDialogComponent } from '../../../../../components/layout/password-dialog/password-dialog.component';
-import { parseResponseMessage } from '../../../../../utils/errors';
 import { AppConfig } from '../../../../../app.config';
 
 @Component({
@@ -134,14 +133,7 @@ export class SignRawTxComponent extends OfflineDialogsBaseComponent implements O
       this.working = false;
       this.okButton.resetState();
 
-      const parsedErrorMsg = parseResponseMessage(error);
-      if (parsedErrorMsg !== error) {
-        this.msgBarService.showError(parsedErrorMsg);
-      } else if (error && error.error && error.error.error && error.error.error.message) {
-        this.msgBarService.showError(error.error.error.message);
-      } else {
-        this.msgBarService.showError('offline-transactions.sign-tx.error');
-      }
+      this.msgBarService.showError(error);
     });
   }
 

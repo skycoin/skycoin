@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
-import { parseResponseMessage } from '../../../utils/errors';
+import { processServiceError } from '../../../utils/errors';
 import { MatTooltip } from '@angular/material/tooltip';
 
 @Component({
@@ -39,7 +39,7 @@ export class ButtonComponent {
   }
 
   setError(error: any) {
-    this.error = typeof error === 'string' ? error : parseResponseMessage(error['_body']);
+    this.error = processServiceError(error).translatableErrorMsg;
     this.state = 2;
 
     if (this.mouseOver) {

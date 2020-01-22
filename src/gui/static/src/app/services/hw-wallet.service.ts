@@ -1,7 +1,6 @@
 import { throwError as observableThrowError, of, Observable, Subject, SubscriptionLike } from 'rxjs';
 import { mergeMap, map, catchError } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
-import { TranslateService } from '@ngx-translate/core';
 import { AppConfig } from '../app.config';
 import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
 import { HwWalletDaemonService } from './hw-wallet-daemon.service';
@@ -10,24 +9,8 @@ import BigNumber from 'bignumber.js';
 import { StorageService, StorageType } from './storage.service';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { ApiService } from './api.service';
-
-export enum OperationResults {
-  Success,
-  FailedOrRefused,
-  PinMismatch,
-  WithoutSeed,
-  WrongPin,
-  IncorrectHardwareWallet,
-  WrongWord,
-  InvalidSeed,
-  WrongSeed,
-  UndefinedError,
-  Disconnected,
-  DaemonError,
-  InvalidAddress,
-  Timeout,
-  NotInBootloaderMode,
-}
+import { OperationError, OperationErrorCategories, HWOperationResults } from '../utils/operation-error';
+import { getErrorMsg } from '../utils/errors';
 
 export class TxData {
   address: string;
@@ -36,7 +19,7 @@ export class TxData {
 }
 
 export class OperationResult {
-  result: OperationResults;
+  result: HWOperationResults;
   rawResponse: any;
 }
 
@@ -74,7 +57,6 @@ export class HwWalletService {
   }
 
   constructor(
-    private translate: TranslateService,
     private dialog: MatDialog,
     private hwWalletDaemonService: HwWalletDaemonService,
     private hwWalletPinService: HwWalletPinService,
@@ -151,8 +133,16 @@ export class HwWalletService {
       );
     }), mergeMap(response => {
       return this.verifyAddresses(response.rawResponse, 0).pipe(
-        catchError(() => observableThrowError({ _body: this.translate.instant('hardware-wallet.errors.invalid-address-generated') })),
-        map(() => response));
+        catchError(err => {
+          const resp = new OperationError();
+          resp.category = OperationErrorCategories.HwApiError;
+          resp.originalError = err;
+          resp.type = HWOperationResults.AddressGeneratorProblem;
+          resp.translatableErrorMsg = this.hwWalletDaemonService.getHardwareWalletErrorMsg(resp);
+          resp.originalServerErrorMsg = '';
+
+          return observableThrowError(resp);
+        }), map(() => response));
     }));
   }
 
@@ -212,16 +202,20 @@ export class HwWalletService {
 
     return this.getFeatures(false).pipe(mergeMap(result => {
       if (!result.rawResponse.bootloader_mode) {
-        const response: OperationResult = {
-          result: OperationResults.NotInBootloaderMode,
-          rawResponse: null,
-        };
+        const resp = new OperationError();
+        resp.category = OperationErrorCategories.HwApiError;
+        resp.originalError = result;
+        resp.type = HWOperationResults.NotInBootloaderMode;
+        resp.translatableErrorMsg = this.hwWalletDaemonService.getHardwareWalletErrorMsg(resp);
+        resp.originalServerErrorMsg = '';
 
-        return observableThrowError(response);
+        return observableThrowError(resp);
       }
 
       return this.http.get(AppConfig.urlForHwWalletVersionChecking, { responseType: 'text' }).pipe(
-        catchError(() => observableThrowError({ _body: this.translate.instant('hardware-wallet.update-firmware.connection-error') })),
+        catchError(() => {
+          return observableThrowError('hardware-wallet.update-firmware.connection-error');
+        }),
         mergeMap((res: any) => {
           let lastestFirmwareVersion: string = res.trim();
           if (lastestFirmwareVersion.toLowerCase().startsWith('v')) {
@@ -229,7 +223,9 @@ export class HwWalletService {
           }
 
           return this.http.get(AppConfig.hwWalletDownloadUrlAndPrefix + lastestFirmwareVersion + '.bin', { responseType: 'arraybuffer' }).pipe(
-            catchError(() => observableThrowError({ _body: this.translate.instant('hardware-wallet.update-firmware.connection-error') })),
+            catchError(() => {
+              return observableThrowError('hardware-wallet.update-firmware.connection-error');
+            }),
             mergeMap(firmware => {
               downloadCompleteCallback();
               const data = new FormData();
@@ -397,20 +393,29 @@ export class HwWalletService {
     return this.getAddresses(1, 0).pipe(mergeMap(
       response => {
         if (response.rawResponse[0] !== firstAddress) {
-          return observableThrowError({
-            result: OperationResults.IncorrectHardwareWallet,
-            rawResponse: '',
-          });
+          const resp = new OperationError();
+          resp.category = OperationErrorCategories.HwApiError;
+          resp.originalError = response;
+          resp.type = HWOperationResults.IncorrectHardwareWallet;
+          resp.translatableErrorMsg = this.hwWalletDaemonService.getHardwareWalletErrorMsg(resp);
+          resp.originalServerErrorMsg = '';
+
+          return observableThrowError(resp);
         }
 
         return of(true);
       },
     ), catchError(error => {
-      if (error.result && error.result === OperationResults.WithoutSeed) {
-        return observableThrowError({
-          result: OperationResults.IncorrectHardwareWallet,
-          rawResponse: '',
-        });
+      const convertedError = error as OperationError;
+      if (convertedError.type && convertedError.type === HWOperationResults.WithoutSeed) {
+        const resp = new OperationError();
+        resp.category = OperationErrorCategories.HwApiError;
+        resp.originalError = error;
+        resp.type = HWOperationResults.IncorrectHardwareWallet;
+        resp.translatableErrorMsg = this.hwWalletDaemonService.getHardwareWalletErrorMsg(resp);
+        resp.originalServerErrorMsg = '';
+
+        return observableThrowError(resp);
       }
 
       return observableThrowError(error);
@@ -426,24 +431,21 @@ export class HwWalletService {
 
   private processDaemonResponse(daemonResponse: Observable<any>, successTexts: string[] = null, responseShouldBeArray = false) {
     return daemonResponse.pipe(catchError((error: any) => {
-      return observableThrowError(this.dispatchEvent(error['_body'], false));
+      return observableThrowError(this.dispatchEvent(error, false));
     }), mergeMap(result => {
-      if (result !== HwWalletDaemonService.errorCancelled) {
-        if (responseShouldBeArray && result.data && typeof result.data === 'string') {
-          result.data = [result.data];
-        }
+      if (responseShouldBeArray && result.data && typeof result.data === 'string') {
+        result.data = [result.data];
+      }
 
-        const response = this.dispatchEvent(
-          result.data ? result.data : null,
-          !successTexts ? true : typeof result.data === 'string' && successTexts.some(text => (result.data as string).includes(text)));
+      const response = this.dispatchEvent(
+        result.data ? result.data : null,
+        !successTexts ? true : typeof result.data === 'string' && successTexts.some(text => (result.data as string).includes(text)),
+      );
 
-          if (response.result === OperationResults.Success) {
-            return of(response);
-          } else {
-            return observableThrowError(response);
-          }
+      if (response.result === HWOperationResults.Success) {
+        return of(response);
       } else {
-        return observableThrowError(this.dispatchEvent('canceled by user', false));
+        return observableThrowError(response);
       }
     }));
   }
@@ -456,69 +458,27 @@ export class HwWalletService {
   private dispatchEvent(rawResponse: any, success: boolean) {
     if ((!rawResponse || !rawResponse.error) && success) {
       const response: OperationResult = {
-        result: OperationResults.Success,
+        result: HWOperationResults.Success,
         rawResponse: rawResponse,
       };
 
       return response;
     } else {
-      let responseContent: string = rawResponse.error ? rawResponse.error : rawResponse;
-      if (typeof responseContent !== 'string') {
-        responseContent = '';
-      }
-      let result: OperationResults;
-
-      if (responseContent.includes('failed or refused')) {
-        result = OperationResults.FailedOrRefused;
-      } else if (responseContent.includes('PIN invalid')) {
-        result = OperationResults.WrongPin;
-      } else if (responseContent.includes('canceled by user')) {
-        result = OperationResults.FailedOrRefused;
-      } else if (responseContent.includes('cancelled by user')) {
-        result = OperationResults.FailedOrRefused;
-      } else if (responseContent.includes('Expected WordAck after Button')) {
-        result = OperationResults.FailedOrRefused;
-      } else if (responseContent.includes('Wrong word retyped')) {
-        result = OperationResults.WrongWord;
-      } else if (responseContent.includes('PIN mismatch')) {
-        result = OperationResults.PinMismatch;
-      } else if (responseContent.includes('Mnemonic not set')) {
-        result = OperationResults.WithoutSeed;
-      } else if (responseContent.includes('Mnemonic required')) {
-        result = OperationResults.WithoutSeed;
-      } else if (responseContent.includes('Invalid seed, are words in correct order?')) {
-        result = OperationResults.InvalidSeed;
-      } else if (responseContent.includes('The seed is valid but does not match the one in the device')) {
-        result = OperationResults.WrongSeed;
-      } else if (responseContent.includes('Invalid base58 character')) {
-        result = OperationResults.InvalidAddress;
-      } else if (responseContent.includes('Invalid address length')) {
-        result = OperationResults.InvalidAddress;
-      } else if (responseContent.toLocaleLowerCase().includes('LIBUSB'.toLocaleLowerCase())) {
-        result = OperationResults.DaemonError;
-      } else if (responseContent.toLocaleLowerCase().includes('hidapi'.toLocaleLowerCase())) {
-        result = OperationResults.Disconnected;
-        setTimeout(() => this.hwWalletDaemonService.checkHw(false));
-      } else if (responseContent.toLocaleLowerCase().includes('device disconnected'.toLocaleLowerCase())) {
-        result = OperationResults.Disconnected;
-        setTimeout(() => this.hwWalletDaemonService.checkHw(false));
-      } else if (responseContent.toLocaleLowerCase().includes('no device connected'.toLocaleLowerCase())) {
-        result = OperationResults.Disconnected;
-        setTimeout(() => this.hwWalletDaemonService.checkHw(false));
-      } else if (responseContent.includes(HwWalletDaemonService.errorConnectingWithTheDaemon)) {
-        result = OperationResults.DaemonError;
-      } else if (responseContent.includes(HwWalletDaemonService.errorTimeout)) {
-        result = OperationResults.Timeout;
-      } else if (responseContent.includes('MessageType_Success')) {
-        result = OperationResults.Success;
-      } else {
-        result = OperationResults.UndefinedError;
+      if ((rawResponse as OperationError).type) {
+        return rawResponse;
       }
 
-      const response: OperationResult = {
-        result: result,
-        rawResponse: responseContent,
-      };
+      const response = new OperationError();
+      response.category = OperationErrorCategories.HwApiError;
+      response.originalError = rawResponse;
+      response.originalServerErrorMsg = getErrorMsg(rawResponse);
+
+      if (!response.originalServerErrorMsg) {
+        response.originalServerErrorMsg = rawResponse + '';
+      }
+
+      response.type = this.hwWalletDaemonService.getHardwareWalletErrorType(response.originalServerErrorMsg);
+      response.translatableErrorMsg = this.hwWalletDaemonService.getHardwareWalletErrorMsg(response);
 
       return response;
     }

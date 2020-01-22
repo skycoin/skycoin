@@ -11,6 +11,7 @@ import * as moment from 'moment';
 import { ApiService } from './api.service';
 import { environment } from '../../environments/environment';
 import { map, mergeMap, retryWhen, delay, catchError, tap } from 'rxjs/operators';
+import { processServiceError } from '../utils/errors';
 
 @Injectable()
 export class ExchangeService {
@@ -100,7 +101,7 @@ export class ExchangeService {
         'Accept': 'application/json',
         ...headers,
       }),
-    }).pipe(catchError((error: any) => this.apiService.processConnectionError(error)));
+    }).pipe(catchError((error: any) => this.processConnectionError(error)));
   }
 
   private buildUrl(url: string) {
@@ -142,5 +143,9 @@ export class ExchangeService {
 
     return this.storageService.store(StorageType.CLIENT, this.STORAGE_KEY, data).pipe(
       tap(() => orders.push(newOrder)));
+  }
+
+  private processConnectionError(error: any): Observable<void> {
+    return observableThrowError(processServiceError(error));
   }
 }

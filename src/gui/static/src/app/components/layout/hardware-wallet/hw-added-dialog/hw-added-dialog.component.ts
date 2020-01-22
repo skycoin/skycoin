@@ -1,13 +1,15 @@
 import { Component, Inject, OnDestroy, ViewChild, ElementRef } from '@angular/core';
-import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialog } from '@angular/material/dialog';
 import { WalletService } from '../../../../services/wallet.service';
-import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
+import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { ChildHwDialogParams } from '../hw-options-dialog/hw-options-dialog.component';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { Wallet } from '../../../../app.datatypes';
 import { ChangeNameComponent, ChangeNameData } from '../../../pages/wallets/change-name/change-name.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { OperationError, HWOperationResults } from '../../../../utils/operation-error';
+import { processServiceError } from '../../../../utils/errors';
 
 @Component({
   selector: 'app-hw-added-dialog',
@@ -50,23 +52,19 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
     }, err => this.processError(err));
   }
 
-  private processError(err: any) {
-    if (err.result && err.result === OperationResults.Disconnected) {
+  private processError(err: OperationError) {
+    err = processServiceError(err);
+    if (err.type === HWOperationResults.Disconnected) {
       this.closeModal();
 
       return;
     }
 
-    let errorMsg = 'hardware-wallet.errors.generic-error-internet';
-
-    if (err['_body']) {
-      errorMsg = err['_body'];
-    }
     this.showResult({
-      text: errorMsg,
+      text: err.translatableErrorMsg,
       icon: this.msgIcons.Error,
     });
-    this.data.requestOptionsComponentRefresh(errorMsg);
+    this.data.requestOptionsComponentRefresh(err.translatableErrorMsg);
   }
 
   ngOnDestroy() {

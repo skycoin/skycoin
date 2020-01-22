@@ -6,7 +6,6 @@ import { FormGroup, FormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { ButtonComponent } from '../../../layout/button/button.component';
-import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { SelectAddressComponent } from '../../../layout/select-address/select-address.component';
 import { BigNumber } from 'bignumber.js';
@@ -181,7 +180,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
         this.showBusy();
         this.processingSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.selectedSources.wallet.addresses[0].address).subscribe(
           () => this.createTransaction(),
-          err => this.showError(getHardwareWalletErrorMsg(this.translate, err)),
+          err => this.showError(err),
         );
       }
     }
@@ -403,11 +402,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
         passwordDialog.error(error);
       }
 
-      if (error && error.result) {
-        this.showError(getHardwareWalletErrorMsg(this.translate, error));
-      } else {
-        this.showError(error);
-      }
+      this.showError(error);
     });
   }
 

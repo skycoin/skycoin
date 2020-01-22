@@ -5,7 +5,6 @@ import { MsgBarService } from '../../../../../services/msg-bar.service';
 import { FormBuilder } from '@angular/forms';
 import { SubscriptionLike } from 'rxjs';
 import { WalletService } from '../../../../../services/wallet.service';
-import { parseResponseMessage } from '../../../../../utils/errors';
 import { AppConfig } from '../../../../../app.config';
 
 @Component({
@@ -73,14 +72,7 @@ export class BroadcastRawTxComponent extends OfflineDialogsBaseComponent impleme
       this.working = false;
       this.okButton.resetState();
 
-      const parsedErrorMsg = parseResponseMessage(error);
-      if (parsedErrorMsg !== error) {
-        this.msgBarService.showError(parsedErrorMsg);
-      } else if (error && error.error && error.error.error && error.error.error.message) {
-        this.msgBarService.showError(error.error.error.message);
-      } else {
-        this.msgBarService.showError('offline-transactions.broadcast-tx.error');
-      }
+      this.msgBarService.showError(error);
     });
   }
 

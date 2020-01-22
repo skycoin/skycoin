@@ -4,7 +4,6 @@ import { WalletService } from '../../../../services/wallet.service';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ChangeNameComponent, ChangeNameData } from '../change-name/change-name.component';
 import { PasswordDialogComponent, PasswordDialogParams } from '../../../layout/password-dialog/password-dialog.component';
-import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { NumberOfAddressesComponent } from '../number-of-addresses/number-of-addresses';
 import { TranslateService } from '@ngx-translate/core';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
@@ -80,7 +79,7 @@ export class WalletDetailComponent implements OnDestroy {
             }
           },
           err => {
-            this.msgBarService.showError(getHardwareWalletErrorMsg(this.translateService, err));
+            this.msgBarService.showError(err);
             this.preparingToEdit = false;
           },
         );
@@ -257,7 +256,7 @@ export class WalletDetailComponent implements OnDestroy {
 
       this.confirmingIndex = null;
     }, err => {
-      this.msgBarService.showError(getHardwareWalletErrorMsg(this.translateService, err));
+      this.msgBarService.showError(err);
       this.confirmingIndex = null;
     });
   }
@@ -311,11 +310,7 @@ export class WalletDetailComponent implements OnDestroy {
         }
         this.workingWithAddresses = false;
       }, err => {
-        if (!this.wallet.isHardware ) {
-          this.msgBarService.showError(err);
-        } else {
-          this.msgBarService.showError(getHardwareWalletErrorMsg(this.translateService, err));
-        }
+        this.msgBarService.showError(err);
         this.workingWithAddresses = false;
       });
     }
@@ -351,11 +346,7 @@ export class WalletDetailComponent implements OnDestroy {
         this.workingWithAddresses = false;
         this.msgBarService.showDone('common.changes-made');
       }, err => {
-        if (!this.wallet.isHardware ) {
-          this.msgBarService.showError(err);
-        } else {
-          this.msgBarService.showError(getHardwareWalletErrorMsg(this.translateService, err));
-        }
+        this.msgBarService.showError(err);
         this.workingWithAddresses = false;
       });
     }

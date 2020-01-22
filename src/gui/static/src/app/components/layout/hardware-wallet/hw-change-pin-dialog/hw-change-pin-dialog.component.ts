@@ -33,7 +33,7 @@ export class HwChangePinDialogComponent extends HwDialogBaseComponent<HwChangePi
         });
         this.data.requestOptionsComponentRefresh(null, true);
       },
-      err => this.processResult(err.result),
+      err => this.processResult(err),
     );
   }
 }

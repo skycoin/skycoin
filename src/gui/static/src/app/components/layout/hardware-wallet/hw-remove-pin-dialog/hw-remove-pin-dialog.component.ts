@@ -35,7 +35,7 @@ export class HwRemovePinDialogComponent extends HwDialogBaseComponent<HwRemovePi
         });
         this.data.requestOptionsComponentRefresh(null, true);
       },
-      err => this.processResult(err.result),
+      err => this.processResult(err),
     );
   }
 }

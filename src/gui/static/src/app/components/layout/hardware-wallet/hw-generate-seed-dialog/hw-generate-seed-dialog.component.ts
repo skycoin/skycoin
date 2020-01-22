@@ -34,7 +34,7 @@ export class HwGenerateSeedDialogComponent extends HwDialogBaseComponent<HwGener
         this.data.requestOptionsComponentRefresh();
         this.closeModal();
       },
-      err => this.processResult(err.result),
+      err => this.processResult(err),
     );
   }
 }

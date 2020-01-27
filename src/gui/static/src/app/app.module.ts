@@ -123,6 +123,7 @@ import { WalletsAndAddressesService } from './services/wallet-operations/wallets
 import { SoftwareWalletService } from './services/wallet-operations/software-wallet.service';
 import { HardwareWalletService } from './services/wallet-operations/hardware-wallet.service';
 import { BalanceAndOutputsService } from './services/wallet-operations/balance-and-outputs.service';
+import { SpendingService } from './services/wallet-operations/spending.service';
 
 
 const ROUTES = [
@@ -362,6 +363,7 @@ const ROUTES = [
     SoftwareWalletService,
     HardwareWalletService,
     BalanceAndOutputsService,
+    SpendingService,
     {
       provide: MAT_PROGRESS_SPINNER_DEFAULT_OPTIONS,
       useValue: {

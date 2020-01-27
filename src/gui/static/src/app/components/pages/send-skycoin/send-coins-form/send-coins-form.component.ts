@@ -21,6 +21,7 @@ import { CopyRawTxComponent, CopyRawTxData } from '../offline-dialogs/implementa
 import { DoubleButtonActive } from '../../../../components/layout/double-button/double-button.component';
 import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent } from '../../../../components/layout/confirmation/confirmation.component';
 import { AppService } from '../../../../services/app.service';
+import { SpendingService } from 'src/app/services/wallet-operations/spending.service';
 
 @Component({
   selector: 'app-send-coins-form',
@@ -66,6 +67,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     private hwWalletService: HwWalletService,
     private translate: TranslateService,
     private changeDetector: ChangeDetectorRef,
+    private spendingService: SpendingService,
   ) { }
 
   ngOnInit() {
@@ -324,7 +326,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
 
     const destinations = this.formMultipleDestinations.getDestinations(!this.autoHours, true);
 
-    this.processingSubscription = this.walletService.createTransaction(
+    this.processingSubscription = this.spendingService.createTransaction(
       this.selectedSources.wallet,
       selectedAddresses ? selectedAddresses : this.selectedSources.wallet.addresses.map(address => address.address),
       selectedOutputs,
@@ -341,7 +343,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       const note = this.form.value.note.trim();
       if (!this.previewTx) {
         if (!this.showForManualUnsigned) {
-          this.processingSubscription = this.walletService.injectTransaction(transaction.encoded, note)
+          this.processingSubscription = this.spendingService.injectTransaction(transaction.encoded, note)
             .subscribe(noteSaved => {
               let showDone = true;
               if (note && !noteSaved) {

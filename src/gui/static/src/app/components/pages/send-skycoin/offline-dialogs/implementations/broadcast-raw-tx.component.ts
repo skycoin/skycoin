@@ -4,9 +4,9 @@ import { OfflineDialogsBaseComponent, OfflineDialogsStates } from '../offline-di
 import { MsgBarService } from '../../../../../services/msg-bar.service';
 import { FormBuilder } from '@angular/forms';
 import { SubscriptionLike } from 'rxjs';
-import { WalletService } from '../../../../../services/wallet.service';
 import { AppConfig } from '../../../../../app.config';
 import { BalanceAndOutputsService } from 'src/app/services/wallet-operations/balance-and-outputs.service';
+import { SpendingService } from 'src/app/services/wallet-operations/spending.service';
 
 @Component({
   selector: 'app-broadcast-raw-tx',
@@ -33,9 +33,9 @@ export class BroadcastRawTxComponent extends OfflineDialogsBaseComponent impleme
 
   constructor(
     public dialogRef: MatDialogRef<BroadcastRawTxComponent>,
-    private walletService: WalletService,
     private msgBarService: MsgBarService,
     private balanceAndOutputsService: BalanceAndOutputsService,
+    private spendingService: SpendingService,
     formBuilder: FormBuilder,
   ) {
     super(formBuilder);
@@ -65,7 +65,7 @@ export class BroadcastRawTxComponent extends OfflineDialogsBaseComponent impleme
     this.okButton.setLoading();
 
     this.closeOperationSubscription();
-    this.operationSubscription = this.walletService.injectTransaction(this.form.get('input').value, null).subscribe(response => {
+    this.operationSubscription = this.spendingService.injectTransaction(this.form.get('input').value, null).subscribe(response => {
       this.balanceAndOutputsService.refreshBalance();
 
       this.msgBarService.showDone('offline-transactions.broadcast-tx.sent');

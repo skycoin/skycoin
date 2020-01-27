@@ -10,6 +10,7 @@ import { CopyRawTxData, CopyRawTxComponent } from './copy-raw-tx.component';
 import { Wallet } from '../../../../../app.datatypes';
 import { PasswordDialogComponent } from '../../../../../components/layout/password-dialog/password-dialog.component';
 import { AppConfig } from '../../../../../app.config';
+import { SpendingService } from 'src/app/services/wallet-operations/spending.service';
 
 @Component({
   selector: 'app-sign-raw-tx',
@@ -42,6 +43,7 @@ export class SignRawTxComponent extends OfflineDialogsBaseComponent implements O
     private walletService: WalletService,
     private msgBarService: MsgBarService,
     private dialog: MatDialog,
+    private spendingService: SpendingService,
     formBuilder: FormBuilder,
   ) {
     super(formBuilder);
@@ -109,7 +111,7 @@ export class SignRawTxComponent extends OfflineDialogsBaseComponent implements O
     this.okButton.setLoading();
 
     this.closeOperationSubscription();
-    this.operationSubscription = this.walletService.signTransaction(
+    this.operationSubscription = this.spendingService.signTransaction(
       this.form.get('dropdown').value,
       password,
       null,

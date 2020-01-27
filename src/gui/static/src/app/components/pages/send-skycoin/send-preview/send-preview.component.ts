@@ -1,5 +1,4 @@
 import { Component, EventEmitter, Input, OnDestroy, Output, ViewChild } from '@angular/core';
-import { WalletService } from '../../../../services/wallet.service';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { MatDialog } from '@angular/material/dialog';
 import { PreviewTransaction } from '../../../../app.datatypes';
@@ -12,6 +11,7 @@ import { mergeMap } from 'rxjs/operators';
 import { CopyRawTxData, CopyRawTxComponent } from '../offline-dialogs/implementations/copy-raw-tx.component';
 import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent } from '../../../layout/confirmation/confirmation.component';
 import { BalanceAndOutputsService } from 'src/app/services/wallet-operations/balance-and-outputs.service';
+import { SpendingService } from 'src/app/services/wallet-operations/spending.service';
 
 @Component({
   selector: 'app-send-preview',
@@ -27,12 +27,12 @@ export class SendVerifyComponent implements OnDestroy {
   private sendSubscription: SubscriptionLike;
 
   constructor(
-    private walletService: WalletService,
     private msgBarService: MsgBarService,
     private dialog: MatDialog,
     private hwWalletService: HwWalletService,
     private translate: TranslateService,
     private balanceAndOutputsService: BalanceAndOutputsService,
+    private spendingService: SpendingService,
   ) {}
 
   ngOnDestroy() {
@@ -105,7 +105,7 @@ export class SendVerifyComponent implements OnDestroy {
 
     const note = this.transaction.note.trim();
 
-    this.sendSubscription = this.walletService.signTransaction(
+    this.sendSubscription = this.spendingService.signTransaction(
       this.transaction.wallet,
       passwordDialog ? passwordDialog.password : null,
       this.transaction,
@@ -114,7 +114,7 @@ export class SendVerifyComponent implements OnDestroy {
         passwordDialog.close();
       }
 
-      return this.walletService.injectTransaction(result.encoded, note);
+      return this.spendingService.injectTransaction(result.encoded, note);
     })).subscribe(noteSaved => {
       if (note && !noteSaved) {
         setTimeout(() => this.msgBarService.showWarning(this.translate.instant('send.saving-note-error')));

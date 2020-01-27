@@ -4,6 +4,7 @@ import { Wallet } from '../../../../app.datatypes';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { SeedModalComponent } from './seed-modal/seed-modal.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
+import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
 
 @Component({
   selector: 'app-backup',
@@ -19,10 +20,11 @@ export class BackupComponent implements OnInit, OnDestroy {
   constructor(
     public walletService: WalletService,
     private dialog: MatDialog,
+    private walletsAndAddressesService: WalletsAndAddressesService,
   ) {}
 
   ngOnInit() {
-    this.walletService.folder().subscribe(folder => this.folder = folder);
+    this.walletsAndAddressesService.folder().subscribe(folder => this.folder = folder);
 
     this.walletSubscription = this.walletService.all().subscribe(wallets => {
       this.wallets = wallets;

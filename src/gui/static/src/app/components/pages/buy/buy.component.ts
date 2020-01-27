@@ -5,11 +5,12 @@ import { filter, first } from 'rxjs/operators';
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { PurchaseService } from '../../../services/purchase.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { WalletService } from '../../../services/wallet.service';
 import { Address, PurchaseOrder, Wallet } from '../../../app.datatypes';
 import { ButtonComponent } from '../../layout/button/button.component';
 import { SubscriptionLike } from 'rxjs';
 import { MsgBarService } from '../../../services/msg-bar.service';
+import { WalletBase } from 'src/app/services/wallet-operations/wallet-objects';
+import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
 
 @Component({
   selector: 'app-buy',
@@ -23,7 +24,7 @@ export class BuyComponent implements OnInit, OnDestroy {
   config: any;
   form: FormGroup;
   order: PurchaseOrder;
-  wallets: Wallet[];
+  wallets: WalletBase[];
 
   private subscriptionsGroup: SubscriptionLike[] = [];
 
@@ -31,7 +32,7 @@ export class BuyComponent implements OnInit, OnDestroy {
     private formBuilder: FormBuilder,
     private purchaseService: PurchaseService,
     private msgBarService: MsgBarService,
-    private walletService: WalletService,
+    private walletsAndAddressesService: WalletsAndAddressesService,
   ) {}
 
   ngOnInit() {
@@ -65,7 +66,7 @@ export class BuyComponent implements OnInit, OnDestroy {
     });
 
     this.subscriptionsGroup.push(this.form.get('wallet').valueChanges.subscribe(filename => {
-      const wallet = this.wallets.find(wlt => wlt.filename === filename);
+      const wallet = this.wallets.find(wlt => wlt.id === filename);
       console.log('changing wallet value', filename);
       this.purchaseService.generate(wallet).subscribe(
         order => this.saveData(order),
@@ -84,7 +85,7 @@ export class BuyComponent implements OnInit, OnDestroy {
     this.loadConfig();
     this.loadOrder();
 
-    this.subscriptionsGroup.push(this.walletService.all().subscribe(wallets => {
+    this.subscriptionsGroup.push(this.walletsAndAddressesService.allWallets.subscribe(wallets => {
       this.wallets = wallets;
 
       if (this.order) {

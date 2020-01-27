@@ -9,6 +9,7 @@ import { Router } from '@angular/router';
 import { HwWalletService } from '../../../services/hw-wallet.service';
 import { first } from 'rxjs/operators';
 import { ConfirmationParams, ConfirmationComponent, DefaultConfirmationButtons } from '../../layout/confirmation/confirmation.component';
+import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
 
 @Component({
   selector: 'app-wallets',
@@ -29,6 +30,7 @@ export class WalletsComponent implements OnInit, OnDestroy {
     private hwWalletService: HwWalletService,
     private dialog: MatDialog,
     private router: Router,
+    private walletsAndAddressesService: WalletsAndAddressesService,
   ) {
     this.hwCompatibilityActivated = this.hwWalletService.hwWalletCompatibilityActivated;
 
@@ -86,7 +88,7 @@ export class WalletsComponent implements OnInit, OnDestroy {
       ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
         if (confirmationResult) {
           wallet.stopShowingHwSecurityPopup = true;
-          this.walletService.saveHardwareWallets();
+          this.walletsAndAddressesService.informValuesUpdated(wallet);
           wallet.opened = true;
         }
       });

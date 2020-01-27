@@ -11,6 +11,7 @@ import { processServiceError } from '../../../../utils/errors';
 import { SubscriptionLike } from 'rxjs';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { AppConfig } from '../../../../app.config';
+import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
 
 enum States {
   Initial,
@@ -61,6 +62,7 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
     private walletService: WalletService,
     private hwWalletService: HwWalletService,
     private msgBarService: MsgBarService,
+    private walletsAndAddressesService: WalletsAndAddressesService,
   ) {}
 
   ngOnInit() {
@@ -140,7 +142,7 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
           () => {
             this.working = false;
             this.data.wallet.label = this.newLabel;
-            this.walletService.saveHardwareWallets();
+            this.walletsAndAddressesService.informValuesUpdated(this.data.wallet);
             this.dialogRef.close(this.newLabel);
 
             if (!this.data.newName) {

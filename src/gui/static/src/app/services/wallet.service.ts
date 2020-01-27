@@ -55,125 +55,12 @@ export class WalletService {
     return this.allAddresses().pipe(map(addrs => addrs.map(addr => addr.address)), map(addrs => addrs.join(',')));
   }
 
-  addAddress(wallet: Wallet, num: number, password?: string) {
-    if (!wallet.isHardware) {
-      return this.apiService.postWalletNewAddress(wallet, num, password).pipe(
-        tap(addresses => {
-          addresses.forEach(value => wallet.addresses.push(value));
-          this.refreshBalances();
-        }));
-    } else {
-      return this.hwWalletService.getAddresses(num, wallet.addresses.length).pipe(mergeMap(response => {
-        (response.rawResponse as any[]).forEach(value => wallet.addresses.push({
-          address: value,
-          coins: null,
-          hours: null,
-        }));
-        this.saveHardwareWallets();
-        this.refreshBalances();
-
-        return of(response.rawResponse);
-      }));
-    }
-  }
-
-  scanAddresses(wallet: Wallet, password?: string) {
-    if (!wallet.isHardware) {
-      return this.apiService.postWalletScan(wallet, password).pipe(
-        map((addresses: any[]) => {
-          if (addresses && addresses.length > 0) {
-            addresses.forEach(address => {
-              const currentAddress = new Address();
-              currentAddress.address = address;
-              wallet.addresses.push(currentAddress);
-            });
-
-            this.refreshBalances();
-
-            return true;
-          } else {
-            return false;
-          }
-        }),
-      );
-    } else {
-      // Not implemented.
-    }
-  }
-
   all(): Observable<Wallet[]> {
     return this.wallets.asObservable();
   }
 
   allAddresses(): Observable<any[]> {
     return this.all().pipe(map(wallets => wallets.reduce((array, wallet) => array.concat(wallet.addresses), [])));
-  }
-
-  create(label, seed, scan, password) {
-    seed = seed.replace(/(\n|\r\n)$/, '');
-
-    return this.apiService.postWalletCreate(label ? label : 'undefined', seed, scan ? scan : 100, password, 'deterministic').pipe(
-      tap(wallet => {
-        this.wallets.pipe(first()).subscribe(wallets => {
-          wallets.push(wallet);
-          this.wallets.next(wallets);
-          this.refreshBalances();
-        });
-      }));
-  }
-
-  createHardwareWallet(): Observable<Wallet> {
-    let addresses: string[];
-    let lastAddressWithTx = 0;
-    const addressesMap: Map<string, boolean> = new Map<string, boolean>();
-    const addressesWithTxMap: Map<string, boolean> = new Map<string, boolean>();
-
-    return this.hwWalletService.getAddresses(AppConfig.maxHardwareWalletAddresses, 0).pipe(mergeMap(response => {
-      addresses = response.rawResponse;
-      addresses.forEach(address => {
-        addressesMap.set(address, true);
-      });
-
-      const addressesString = addresses.join(',');
-
-      return this.apiService.post('transactions', { addrs: addressesString });
-    }), mergeMap(response => {
-      response.forEach(tx => {
-        tx.txn.outputs.forEach(output => {
-          if (addressesMap.has(output.dst)) {
-            addressesWithTxMap.set(output.dst, true);
-          }
-        });
-      });
-
-      addresses.forEach((address, i) => {
-        if (addressesWithTxMap.has(address)) {
-          lastAddressWithTx = i;
-        }
-      });
-
-      return this.wallets.pipe(first(), map(wallets => {
-        const newWallet = this.createHardwareWalletData(
-          this.translate.instant('hardware-wallet.general.default-wallet-name'),
-          addresses.slice(0, lastAddressWithTx + 1).map(add => {
-            return { address: add, confirmed: false };
-          }), true, false,
-        );
-
-        let lastHardwareWalletIndex = wallets.length - 1;
-        for (let i = 0; i < wallets.length; i++) {
-          if (!wallets[i].isHardware) {
-            lastHardwareWalletIndex = i - 1;
-            break;
-          }
-        }
-        wallets.splice(lastHardwareWalletIndex + 1, 0, newWallet);
-        this.saveHardwareWallets();
-        this.refreshBalances();
-
-        return newWallet;
-      }));
-    }));
   }
 
   getHwFeaturesAndUpdateData(wallet: Wallet): Observable<HwFeaturesResponse> {
@@ -269,30 +156,6 @@ export class WalletService {
     } else {
       return null;
     }
-  }
-
-  deleteHardwareWallet(wallet: Wallet): Observable<boolean> {
-    if (wallet.isHardware) {
-      return this.wallets.pipe(first(), map(wallets => {
-        const index = wallets.indexOf(wallet);
-        if (index !== -1) {
-          wallets.splice(index, 1);
-
-          this.saveHardwareWallets();
-          this.refreshBalances();
-
-          return true;
-        }
-
-        return false;
-      }));
-    }
-
-    return null;
-  }
-
-  folder(): Observable<string> {
-    return this.apiService.get('wallets/folderName').pipe(map(response => response.address));
   }
 
   outputs(): Observable<any> {
@@ -559,22 +422,6 @@ export class WalletService {
       }));
   }
 
-  transaction(txid: string): Observable<any> {
-    return this.apiService.get('transaction', {txid: txid}).pipe(mergeMap(transaction => {
-      if (transaction.txn.inputs && !transaction.txn.inputs.length) {
-        return of(transaction);
-      }
-
-      return observableForkJoin(transaction.txn.inputs.map(input => this.retrieveInputAddress(input).pipe(map(response => {
-        return response.owner_address;
-      })))).pipe(map(inputs => {
-        transaction.txn.inputs = inputs;
-
-        return transaction;
-      }));
-    }));
-  }
-
   transactions(): Observable<NormalTransaction[]> {
     let wallets: Wallet[];
     let transactions: NormalTransaction[];
@@ -712,11 +559,6 @@ export class WalletService {
     });
   }
 
-  verifyAddress(address: string) {
-    return this.apiService.post('address/verify', { address }, {}, true)
-      .pipe(map(() => true), catchError(() => of(false)));
-  }
-
   getWalletUnspentOutputs(wallet: Wallet): Observable<Output[]> {
     const addresses = wallet.addresses.map(a => a.address).join(',');
 
@@ -772,10 +614,6 @@ export class WalletService {
 
       return null;
     }));
-  }
-
-  private retrieveInputAddress(input: string) {
-    return this.apiService.get('uxout', {uxid: input});
   }
 
   private retrieveWalletBalance(wallet: Wallet): Observable<any> {
@@ -854,85 +692,5 @@ export class WalletService {
         return outputs;
       }));
     }
-  }
-
-  private sortOutputs(outputs: Output[], highestToLowest: boolean) {
-    outputs.sort((a, b) => {
-      if (b.coins.isGreaterThan(a.coins)) {
-        return highestToLowest ? 1 : -1;
-      } else if (b.coins.isLessThan(a.coins)) {
-        return highestToLowest ? -1 : 1;
-      } else {
-        if (b.calculated_hours.isGreaterThan(a.calculated_hours)) {
-          return -1;
-        } else if (b.calculated_hours.isLessThan(a.calculated_hours)) {
-          return 1;
-        } else {
-          return 0;
-        }
-      }
-    });
-  }
-
-  private getMinRequiredOutputs(transactionAmount: BigNumber, outputs: Output[]): Output[] {
-
-    // Split the outputs into those with and without hours
-    const outputsWithHours: Output[] = [];
-    const outputsWitouthHours: Output[] = [];
-    outputs.forEach(output => {
-      if (output.calculated_hours.isGreaterThan(0)) {
-        outputsWithHours.push(output);
-      } else {
-        outputsWitouthHours.push(output);
-      }
-    });
-
-    // Abort if there are no outputs with non-zero coinhours.
-    if (outputsWithHours.length === 0) {
-      return [];
-    }
-
-    // Sort the outputs with hours by coins, from highest to lowest. If two items have the same amount of
-    // coins, the one with the least hours is placed first.
-    this.sortOutputs(outputsWithHours, true);
-
-    // Use the first nonzero output.
-    const minRequiredOutputs: Output[] = [outputsWithHours[0]];
-    let sumCoins: BigNumber = new BigNumber(outputsWithHours[0].coins);
-
-    // If it's enough, finish.
-    if (sumCoins.isGreaterThanOrEqualTo(transactionAmount)) {
-      return minRequiredOutputs;
-    }
-
-    // Sort the outputs without hours by coins, from lowest to highest.
-    this.sortOutputs(outputsWitouthHours, false);
-
-    // Add the outputs without hours, until having the necessary amount of coins.
-    outputsWitouthHours.forEach(output => {
-      if (sumCoins.isLessThan(transactionAmount)) {
-        minRequiredOutputs.push(output);
-        sumCoins = sumCoins.plus(output.coins);
-      }
-    });
-
-    // If it's enough, finish.
-    if (sumCoins.isGreaterThanOrEqualTo(transactionAmount)) {
-      return minRequiredOutputs;
-    }
-
-    outputsWithHours.splice(0, 1);
-    // Sort the outputs with hours by coins, from lowest to highest.
-    this.sortOutputs(outputsWithHours, false);
-
-    // Add the outputs with hours, until having the necessary amount of coins.
-    outputsWithHours.forEach((output) => {
-      if (sumCoins.isLessThan(transactionAmount)) {
-        minRequiredOutputs.push(output);
-        sumCoins = sumCoins.plus(output.coins);
-      }
-    });
-
-    return minRequiredOutputs;
   }
 }

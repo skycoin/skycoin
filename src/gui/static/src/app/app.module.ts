@@ -119,6 +119,7 @@ import { OfflineDialogsBaseComponent } from './components/pages/send-skycoin/off
 import { ArrowLinkComponent } from './components/layout/arrow-link/arrow-link.component';
 import { AddressOptionsComponent } from './components/pages/wallets/wallet-detail/address-options/address-options.component';
 import { QrCodeButtonComponent } from './components/layout/qr-code-button/qr-code-button.component';
+import { WalletsAndAddressesService } from './services/wallet-operations/wallets-and-addresses.service';
 
 
 const ROUTES = [
@@ -354,6 +355,7 @@ const ROUTES = [
     StorageService,
     MsgBarService,
     DecimalPipe,
+    WalletsAndAddressesService,
     {
       provide: MAT_PROGRESS_SPINNER_DEFAULT_OPTIONS,
       useValue: {

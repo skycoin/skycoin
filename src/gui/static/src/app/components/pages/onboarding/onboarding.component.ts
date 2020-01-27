@@ -1,6 +1,5 @@
 import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
-import { WalletService } from '../../../services/wallet.service';
 import { LanguageData, LanguageService } from '../../../services/language.service';
 import { SubscriptionLike } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
@@ -8,6 +7,7 @@ import { WalletFormData } from '../wallets/create-wallet/create-wallet-form/crea
 import { MsgBarService } from '../../../services/msg-bar.service';
 import { OnboardingEncryptWalletComponent } from './onboarding-encrypt-wallet/onboarding-encrypt-wallet.component';
 import { SelectLanguageComponent } from '../../layout/select-language/select-language.component';
+import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
 
 @Component({
   selector: 'app-onboarding',
@@ -26,10 +26,10 @@ export class OnboardingComponent implements OnInit, OnDestroy {
 
   constructor(
     private router: Router,
-    private walletService: WalletService,
     private languageService: LanguageService,
     private dialog: MatDialog,
     private msgBarService: MsgBarService,
+    private walletsAndAddressesService: WalletsAndAddressesService,
   ) { }
 
   ngOnInit() {
@@ -69,7 +69,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   }
 
   private createWallet() {
-    this.walletService.create(this.formData.label, this.formData.seed, 100, this.password).subscribe(() => {
+    this.walletsAndAddressesService.createSoftwareWallet(this.formData.label, this.formData.seed, this.password).subscribe(() => {
       this.router.navigate(['/wallets']);
     }, e => {
       this.msgBarService.showError(e);

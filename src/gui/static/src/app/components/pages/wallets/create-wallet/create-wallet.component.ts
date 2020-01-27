@@ -1,5 +1,4 @@
 import { Component, Inject, ViewChild, OnDestroy } from '@angular/core';
-import { WalletService } from '../../../../services/wallet.service';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
@@ -9,6 +8,7 @@ import { BlockchainService } from '../../../../services/blockchain.service';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { AppConfig } from '../../../../app.config';
 import { ConfirmationParams, ConfirmationComponent, DefaultConfirmationButtons } from '../../../layout/confirmation/confirmation.component';
+import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
 
 export class CreateWalletParams {
   create: boolean;
@@ -24,7 +24,6 @@ export class CreateWalletComponent implements OnDestroy {
   @ViewChild('createButton', { static: false }) createButton: ButtonComponent;
   @ViewChild('cancelButton', { static: false }) cancelButton: ButtonComponent;
 
-  scan: Number;
   disableDismiss = false;
   busy = false;
 
@@ -43,9 +42,9 @@ export class CreateWalletComponent implements OnDestroy {
   constructor(
     @Inject(MAT_DIALOG_DATA) public data,
     public dialogRef: MatDialogRef<CreateWalletComponent>,
-    private walletService: WalletService,
     private dialog: MatDialog,
     private msgBarService: MsgBarService,
+    private walletsAndAddressesService: WalletsAndAddressesService,
     blockchainService: BlockchainService,
   ) {
     this.synchronizedSubscription = blockchainService.synchronized.subscribe(value => this.synchronized = value);
@@ -94,7 +93,7 @@ export class CreateWalletComponent implements OnDestroy {
     this.cancelButton.setDisabled();
     this.disableDismiss = true;
 
-    this.walletService.create(data.label, data.seed, this.scan, data.password)
+    this.walletsAndAddressesService.createSoftwareWallet(data.label, data.seed, data.password)
       .subscribe(() => {
         this.busy = false;
         setTimeout(() => this.msgBarService.showDone('wallet.new.wallet-created'));

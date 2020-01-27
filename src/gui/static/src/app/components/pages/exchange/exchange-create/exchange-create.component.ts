@@ -12,13 +12,13 @@ import { ButtonComponent } from '../../../layout/button/button.component';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ExchangeService } from '../../../../services/exchange.service';
 import { ExchangeOrder, TradingPair, StoredExchangeOrder } from '../../../../app.datatypes';
-import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { SelectAddressComponent } from '../../../layout/select-address/select-address.component';
-import { WalletService } from '../../../../services/wallet.service';
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { TranslateService } from '@ngx-translate/core';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { retryWhen, delay, take, concat, mergeMap } from 'rxjs/operators';
+import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
 
 @Component({
   selector: 'app-exchange-create',
@@ -64,12 +64,12 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
 
   constructor(
     private exchangeService: ExchangeService,
-    private walletService: WalletService,
     private formBuilder: FormBuilder,
     private msgBarService: MsgBarService,
     private dialog: MatDialog,
     private blockchainService: BlockchainService,
     private translateService: TranslateService,
+    private walletsAndAddressesService: WalletsAndAddressesService,
   ) { }
 
   ngOnInit() {
@@ -120,7 +120,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
     const toAddress = (this.form.get('toAddress').value as string).trim();
 
     this.removeExchangeSubscription();
-    this.exchangeSubscription = this.walletService.verifyAddress(toAddress).subscribe(addressIsValid => {
+    this.exchangeSubscription = this.walletsAndAddressesService.verifyAddress(toAddress).subscribe(addressIsValid => {
       if (addressIsValid) {
         this.exchangeSubscription = this.exchangeService.exchange(
           this.activeTradingPair.pair,

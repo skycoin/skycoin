@@ -5,11 +5,12 @@ import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { ChildHwDialogParams } from '../hw-options-dialog/hw-options-dialog.component';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
-import { Wallet } from '../../../../app.datatypes';
 import { ChangeNameComponent, ChangeNameData } from '../../../pages/wallets/change-name/change-name.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { OperationError, HWOperationResults } from '../../../../utils/operation-error';
 import { processServiceError } from '../../../../utils/errors';
+import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
+import { WalletBase } from 'src/app/services/wallet-operations/wallet-objects';
 
 @Component({
   selector: 'app-hw-added-dialog',
@@ -18,7 +19,7 @@ import { processServiceError } from '../../../../utils/errors';
 })
 export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogComponent> implements OnDestroy {
   @ViewChild('input', { static: false }) input: ElementRef;
-  wallet: Wallet;
+  wallet: WalletBase;
   form: FormGroup;
   maxHwWalletLabelLength = HwWalletService.maxLabelLength;
 
@@ -32,9 +33,10 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
     private formBuilder: FormBuilder,
     private dialog: MatDialog,
     private msgBarService: MsgBarService,
+    private walletsAndAddressesService: WalletsAndAddressesService,
   ) {
     super(hwWalletService, dialogRef);
-    this.operationSubscription = this.walletService.createHardwareWallet().subscribe(wallet => {
+    this.operationSubscription = this.walletsAndAddressesService.createHardwareWallet().subscribe(wallet => {
       this.operationSubscription = this.walletService.getHwFeaturesAndUpdateData(wallet).subscribe(() => {
         this.wallet = wallet;
         this.initialLabel = wallet.label;

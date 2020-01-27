@@ -1,5 +1,4 @@
 import { Component, Input, OnDestroy } from '@angular/core';
-import { Wallet } from '../../../../app.datatypes';
 import { WalletService } from '../../../../services/wallet.service';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ChangeNameComponent, ChangeNameData } from '../change-name/change-name.component';
@@ -17,6 +16,8 @@ import { ApiService } from '../../../../services/api.service';
 import { mergeMap, first } from 'rxjs/operators';
 import { AddressOptionsComponent, AddressOptions } from './address-options/address-options.component';
 import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent } from '../../../layout/confirmation/confirmation.component';
+import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
+import { WalletBase } from 'src/app/services/wallet-operations/wallet-objects';
 
 @Component({
   selector: 'app-wallet-detail',
@@ -24,7 +25,7 @@ import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent }
   styleUrls: ['./wallet-detail.component.scss'],
 })
 export class WalletDetailComponent implements OnDestroy {
-  @Input() wallet: Wallet;
+  @Input() wallet: WalletBase;
 
   confirmingIndex = null;
   workingWithAddresses = false;
@@ -43,6 +44,7 @@ export class WalletDetailComponent implements OnDestroy {
     private translateService: TranslateService,
     private router: Router,
     private apiService: ApiService,
+    private walletsAndAddressesService: WalletsAndAddressesService,
   ) { }
 
   ngOnDestroy() {
@@ -199,15 +201,14 @@ export class WalletDetailComponent implements OnDestroy {
 
     ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
       if (confirmationResult) {
-        this.walletService.deleteHardwareWallet(this.wallet).subscribe(result => {
-          if (result) {
-            this.walletService.all().pipe(first()).subscribe(wallets => {
-              if (wallets.length === 0) {
-                setTimeout(() => this.router.navigate(['/wizard']), 500);
-              }
-            });
-          }
-        });
+        const result = this.walletsAndAddressesService.deleteHardwareWallet(this.wallet);
+        if (result) {
+          this.walletService.all().pipe(first()).subscribe(wallets => {
+            if (wallets.length === 0) {
+              setTimeout(() => this.router.navigate(['/wizard']), 500);
+            }
+          });
+        }
       }
     });
   }
@@ -287,7 +288,7 @@ export class WalletDetailComponent implements OnDestroy {
       const dialogRef = PasswordDialogComponent.openDialog(this.dialog, { wallet: this.wallet });
       dialogRef.afterClosed().subscribe(() => this.workingWithAddresses = false);
       dialogRef.componentInstance.passwordSubmit.subscribe(passwordDialog => {
-        this.walletService.scanAddresses(this.wallet, passwordDialog.password).subscribe(result => {
+        this.walletsAndAddressesService.scanAddresses(this.wallet, passwordDialog.password).subscribe(result => {
           passwordDialog.close();
 
           setTimeout(() => {
@@ -302,7 +303,7 @@ export class WalletDetailComponent implements OnDestroy {
         });
       });
     } else {
-      this.walletService.scanAddresses(this.wallet).subscribe(result => {
+      this.walletsAndAddressesService.scanAddresses(this.wallet).subscribe(result => {
         if (result) {
           this.msgBarService.showDone('wallet.scan-addresses.done-with-new-addresses');
         } else {
@@ -324,7 +325,7 @@ export class WalletDetailComponent implements OnDestroy {
       dialogRef.afterClosed().subscribe(() => this.workingWithAddresses = false);
       dialogRef.componentInstance.passwordSubmit
         .subscribe(passwordDialog => {
-          this.walletService.addAddress(this.wallet, this.howManyAddresses, passwordDialog.password)
+          this.walletsAndAddressesService.addAddressesToWallet(this.wallet, this.howManyAddresses, passwordDialog.password)
             .subscribe(() => {
               passwordDialog.close();
               setTimeout(() => this.msgBarService.showDone('common.changes-made'));
@@ -336,10 +337,10 @@ export class WalletDetailComponent implements OnDestroy {
 
       if (this.wallet.isHardware ) {
         procedure = this.hwWalletService.checkIfCorrectHwConnected(this.wallet.addresses[0].address).pipe(mergeMap(
-          () => this.walletService.addAddress(this.wallet, this.howManyAddresses),
+          () => this.walletsAndAddressesService.addAddressesToWallet(this.wallet, this.howManyAddresses),
         ));
       } else {
-        procedure = this.walletService.addAddress(this.wallet, this.howManyAddresses);
+        procedure = this.walletsAndAddressesService.addAddressesToWallet(this.wallet, this.howManyAddresses);
       }
 
       procedure.subscribe(() => {

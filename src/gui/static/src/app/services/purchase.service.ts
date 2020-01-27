@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
 import { Subject, BehaviorSubject, Observable } from 'rxjs';
 import { PurchaseOrder, TellerConfig, Wallet } from '../app.datatypes';
-import { WalletService } from './wallet.service';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { map, mergeMap } from 'rxjs/operators';
+import { WalletBase } from './wallet-operations/wallet-objects';
+import { WalletsAndAddressesService } from './wallet-operations/wallets-and-addresses.service';
 
 @Injectable()
 export class PurchaseService {
@@ -14,7 +15,7 @@ export class PurchaseService {
 
   constructor(
     private httpClient: HttpClient,
-    private walletService: WalletService,
+    private walletsAndAddressesService: WalletsAndAddressesService,
   ) {
     this.getConfig();
   }
@@ -36,13 +37,13 @@ export class PurchaseService {
       .subscribe(response => this.configSubject.next(response));
   }
 
-  generate(wallet: Wallet): Observable<PurchaseOrder> {
-    return this.walletService.addAddress(wallet, 1).pipe(mergeMap(address => {
+  generate(wallet: WalletBase): Observable<PurchaseOrder> {
+    return this.walletsAndAddressesService.addAddressesToWallet(wallet, 1).pipe(mergeMap(address => {
       return this.post('bind', { skyaddr: address[0].address, coin_type: 'BTC' }).pipe(
         map(response => ({
           coin_type: response.coin_type,
           deposit_address: response.deposit_address,
-          filename: wallet.filename,
+          filename: wallet.id,
           recipient_address: address[0].address,
           status: 'waiting_deposit',
         })));

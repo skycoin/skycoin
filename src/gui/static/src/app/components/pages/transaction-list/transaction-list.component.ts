@@ -9,6 +9,7 @@ import { NormalTransaction } from '../../../app.datatypes';
 import { FormGroup, FormBuilder } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { AppService } from '../../../services/app.service';
+import { HistoryService } from 'src/app/services/wallet-operations/history.service';
 
 export class Wallet {
   id: string;
@@ -56,6 +57,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     private priceService: PriceService,
     private walletService: WalletService,
     private formBuilder: FormBuilder,
+    private historyService: HistoryService,
     route: ActivatedRoute,
   ) {
 
@@ -118,10 +120,10 @@ export class TransactionListComponent implements OnInit, OnDestroy {
 
           return of(null);
         } else {
-          return this.walletService.transactions().pipe(first());
+          return this.historyService.getTransactionsHistory().pipe(first());
         }
       } else {
-        return this.walletService.transactions().pipe(first());
+        return this.historyService.getTransactionsHistory().pipe(first());
       }
     })).subscribe(transactions => {
       if (transactions) {

@@ -29,6 +29,10 @@ export class BalanceAndOutputsService {
     return this.walletsWithBalanceSubject.asObservable();
   }
 
+  get hasPendingTransactions(): Observable<boolean> {
+    return this.hasPendingTransactionsSubject.asObservable();
+  }
+
   outputsWithWallets(): Observable<WalletWithOutputs[]> {
     return this.balance.pipe(switchMap(wallets => {
       const addresses = wallets.map(wallet => wallet.addresses.map(address => address.address).join(',')).join(',');

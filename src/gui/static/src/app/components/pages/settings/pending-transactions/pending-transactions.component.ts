@@ -6,6 +6,7 @@ import { NavBarService } from '../../../../services/nav-bar.service';
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
 import { BigNumber } from 'bignumber.js';
 import { BalanceAndOutputsService } from 'src/app/services/wallet-operations/balance-and-outputs.service';
+import { HistoryService } from 'src/app/services/wallet-operations/history.service';
 
 @Component({
   selector: 'app-pending-transactions',
@@ -22,6 +23,7 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
     public walletService: WalletService,
     private navbarService: NavBarService,
     private balanceAndOutputsService: BalanceAndOutputsService,
+    private historyService: HistoryService,
   ) {
     this.navbarSubscription = this.navbarService.activeComponent.subscribe(value => {
       this.startCheckingTransactions(value);
@@ -43,7 +45,8 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
 
     this.removeTransactionsSubscription();
 
-    this.transactionsSubscription = this.walletService.pendingTransactions().subscribe(transactions => {
+    // Currently gets the data only one time.
+    this.transactionsSubscription = this.historyService.getPendingTransactions().subscribe(transactions => {
       this.transactions = this.mapTransactions(value === DoubleButtonActive.LeftButton ? transactions.user : transactions.all);
     });
 

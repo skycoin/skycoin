@@ -8,6 +8,7 @@ import { AppService } from '../../../services/app.service';
 import { BigNumber } from 'bignumber.js';
 import { NetworkService } from '../../../services/network.service';
 import { AppConfig } from '../../../app.config';
+import { BalanceAndOutputsService } from 'src/app/services/wallet-operations/balance-and-outputs.service';
 
 @Component({
   selector: 'app-header',
@@ -57,6 +58,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     private blockchainService: BlockchainService,
     private priceService: PriceService,
     private walletService: WalletService,
+    private balanceAndOutputsService: BalanceAndOutputsService,
   ) { }
 
   ngOnInit() {
@@ -86,8 +88,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
       }, []);
     }));
 
-    this.subscriptionsGroup.push(this.walletService.pendingTransactions().subscribe(txs => {
-      this.hasPendingTxs = txs.user.length > 0;
+    this.subscriptionsGroup.push(this.balanceAndOutputsService.hasPendingTransactions.subscribe(hasPendingTxs => {
+      this.hasPendingTxs = hasPendingTxs;
     }));
   }
 

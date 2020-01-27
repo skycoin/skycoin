@@ -3,7 +3,7 @@ import { MatDialogRef, MatDialogConfig, MatDialog, MAT_DIALOG_DATA } from '@angu
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { HwWipeDialogComponent } from '../hw-wipe-dialog/hw-wipe-dialog.component';
 import { SubscriptionLike,  Observable } from 'rxjs';
-import { WalletService, HwSecurityWarnings, HwFeaturesResponse } from '../../../../services/wallet.service';
+import { WalletService } from '../../../../services/wallet.service';
 import { HwAddedDialogComponent } from '../hw-added-dialog/hw-added-dialog.component';
 import { HwGenerateSeedDialogComponent } from '../hw-generate-seed-dialog/hw-generate-seed-dialog.component';
 import { HwBackupDialogComponent } from '../hw-backup-dialog/hw-backup-dialog.component';
@@ -19,6 +19,7 @@ import { map, first } from 'rxjs/operators';
 import { AppConfig } from '../../../../app.config';
 import { OperationError, HWOperationResults } from '../../../../utils/operation-error';
 import { processServiceError } from '../../../../utils/errors';
+import { HardwareWalletService, HwFeaturesResponse, HwSecurityWarnings } from 'src/app/services/wallet-operations/hardware-wallet.service';
 
 export interface ChildHwDialogParams {
   wallet: Wallet;
@@ -70,6 +71,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
     private dialog: MatDialog,
     private walletService: WalletService,
     private msgBarService: MsgBarService,
+    private hardwareWalletService: HardwareWalletService,
   ) {
     super(hwWalletService, dialogRef);
 
@@ -170,7 +172,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
       this.securityWarnings = [];
     }
 
-    return this.walletService.getHwFeaturesAndUpdateData(!dontUpdateWallet ? this.wallet : null).pipe(map(response => {
+    return this.hardwareWalletService.getFeaturesAndUpdateData(!dontUpdateWallet ? this.wallet : null).pipe(map((response: HwFeaturesResponse) => {
       if (waitForResetingCurrentWarnings) {
         this.securityWarnings = [];
       }

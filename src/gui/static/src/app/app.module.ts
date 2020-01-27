@@ -120,6 +120,8 @@ import { ArrowLinkComponent } from './components/layout/arrow-link/arrow-link.co
 import { AddressOptionsComponent } from './components/pages/wallets/wallet-detail/address-options/address-options.component';
 import { QrCodeButtonComponent } from './components/layout/qr-code-button/qr-code-button.component';
 import { WalletsAndAddressesService } from './services/wallet-operations/wallets-and-addresses.service';
+import { SoftwareWalletService } from './services/wallet-operations/software-wallet.service';
+import { HardwareWalletService } from './services/wallet-operations/hardware-wallet.service';
 
 
 const ROUTES = [
@@ -356,6 +358,8 @@ const ROUTES = [
     MsgBarService,
     DecimalPipe,
     WalletsAndAddressesService,
+    SoftwareWalletService,
+    HardwareWalletService,
     {
       provide: MAT_PROGRESS_SPINNER_DEFAULT_OPTIONS,
       useValue: {

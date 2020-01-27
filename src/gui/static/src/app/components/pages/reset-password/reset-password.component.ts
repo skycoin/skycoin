@@ -6,6 +6,7 @@ import { Params, ActivatedRoute, Router } from '@angular/router';
 import { WalletService } from '../../../services/wallet.service';
 import { Wallet } from '../../../app.datatypes';
 import { MsgBarService } from '../../../services/msg-bar.service';
+import { SoftwareWalletService } from 'src/app/services/wallet-operations/software-wallet.service';
 
 @Component({
   selector: 'app-reset-password',
@@ -29,6 +30,7 @@ export class ResetPasswordComponent implements OnDestroy {
     private router: Router,
     private walletService: WalletService,
     private msgBarService: MsgBarService,
+    private softwareWalletService: SoftwareWalletService,
   ) {
     this.initForm('');
     this.subscription = zip(this.route.params, this.walletService.all(), (params: Params, wallets: Wallet[]) => {
@@ -71,7 +73,7 @@ export class ResetPasswordComponent implements OnDestroy {
     this.msgBarService.hide();
     this.resetButton.setLoading();
 
-    this.walletService.resetPassword(this.wallet, this.form.value.seed, this.form.value.password !== '' ? this.form.value.password : null)
+    this.softwareWalletService.resetPassword(this.wallet, this.form.value.seed, this.form.value.password !== '' ? this.form.value.password : null)
       .subscribe(() => {
         this.resetButton.setSuccess();
         this.resetButton.setDisabled();

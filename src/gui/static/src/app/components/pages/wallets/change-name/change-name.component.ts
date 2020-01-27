@@ -1,6 +1,5 @@
 import { mergeMap } from 'rxjs/operators';
 import { Component, OnInit, Inject, ViewChild, OnDestroy } from '@angular/core';
-import { WalletService } from '../../../../services/wallet.service';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { Wallet } from '../../../../app.datatypes';
@@ -12,6 +11,7 @@ import { SubscriptionLike } from 'rxjs';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { AppConfig } from '../../../../app.config';
 import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
+import { SoftwareWalletService } from 'src/app/services/wallet-operations/software-wallet.service';
 
 enum States {
   Initial,
@@ -59,10 +59,10 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
     public dialogRef: MatDialogRef<ChangeNameComponent>,
     @Inject(MAT_DIALOG_DATA) private data: ChangeNameData,
     private formBuilder: FormBuilder,
-    private walletService: WalletService,
     private hwWalletService: HwWalletService,
     private msgBarService: MsgBarService,
     private walletsAndAddressesService: WalletsAndAddressesService,
+    private softwareWalletService: SoftwareWalletService,
   ) {}
 
   ngOnInit() {
@@ -115,7 +115,7 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
     this.newLabel = newLabel;
 
     if (!this.data.wallet.isHardware) {
-      this.operationSubscription = this.walletService.renameWallet(this.data.wallet, this.newLabel)
+      this.operationSubscription = this.softwareWalletService.renameWallet(this.data.wallet, this.newLabel)
         .subscribe(() => {
           this.working = false;
           this.dialogRef.close(this.newLabel);

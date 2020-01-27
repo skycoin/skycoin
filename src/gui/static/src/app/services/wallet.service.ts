@@ -1,28 +1,13 @@
 import { forkJoin as observableForkJoin, throwError as observableThrowError, zip, of, timer, Subject, Observable, ReplaySubject, Subscription, BehaviorSubject } from 'rxjs';
-import { concat, delay, filter, retryWhen, first, take, tap, mergeMap, catchError, map } from 'rxjs/operators';
+import { concat, delay, filter, retryWhen, first, take, mergeMap, catchError, map } from 'rxjs/operators';
 import { Injectable, NgZone } from '@angular/core';
 import { ApiService } from './api.service';
 import { Address, NormalTransaction, PreviewTransaction, Wallet, Output } from '../app.datatypes';
 import { BigNumber } from 'bignumber.js';
 import { HwWalletService, HwOutput, HwInput } from './hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
-import { AppConfig } from '../app.config';
-import { HttpClient } from '@angular/common/http';
 import { StorageService, StorageType } from './storage.service';
 import { TxEncoder } from '../utils/tx-encoder';
-
-export enum HwSecurityWarnings {
-  NeedsBackup,
-  NeedsPin,
-  FirmwareVersionNotVerified,
-  OutdatedFirmware,
-}
-
-export interface HwFeaturesResponse {
-  features: any;
-  securityWarnings: HwSecurityWarnings[];
-  walletNameUpdated: boolean;
-}
 
 export interface PendingTransactions {
   user: any[];
@@ -44,7 +29,6 @@ export class WalletService {
     private hwWalletService: HwWalletService,
     private translate: TranslateService,
     private ngZone: NgZone,
-    private http: HttpClient,
     private storageService: StorageService,
   ) {
     this.loadData();
@@ -61,101 +45,6 @@ export class WalletService {
 
   allAddresses(): Observable<any[]> {
     return this.all().pipe(map(wallets => wallets.reduce((array, wallet) => array.concat(wallet.addresses), [])));
-  }
-
-  getHwFeaturesAndUpdateData(wallet: Wallet): Observable<HwFeaturesResponse> {
-    if (!wallet || wallet.isHardware) {
-
-      let lastestFirmwareVersion: string;
-
-      return this.http.get(AppConfig.urlForHwWalletVersionChecking, { responseType: 'text' }).pipe(
-      catchError(() => of(null)),
-      mergeMap((res: any) => {
-        if (res) {
-          lastestFirmwareVersion = res;
-        } else {
-          lastestFirmwareVersion = null;
-        }
-
-        return this.hwWalletService.getFeatures();
-      }),
-      map(result => {
-        let lastestFirmwareVersionReaded = false;
-        let firmwareUpdated = false;
-
-        if (lastestFirmwareVersion) {
-          lastestFirmwareVersion = lastestFirmwareVersion.trim();
-          const versionParts = lastestFirmwareVersion.split('.');
-
-          if (versionParts.length === 3) {
-            lastestFirmwareVersionReaded = true;
-
-            const numVersionParts = versionParts.map(value => Number.parseInt(value.replace(/\D/g, ''), 10));
-
-            const devMajorVersion = result.rawResponse.fw_major;
-            const devMinorVersion = result.rawResponse.fw_minor;
-            const devPatchVersion = result.rawResponse.fw_patch;
-
-            if (devMajorVersion > numVersionParts[0]) {
-              firmwareUpdated = true;
-            } else {
-              if (devMajorVersion === numVersionParts[0]) {
-                if (devMinorVersion > numVersionParts[1]) {
-                  firmwareUpdated = true;
-                } else {
-                  if (devMinorVersion === numVersionParts[1] && devPatchVersion >= numVersionParts[2]) {
-                    firmwareUpdated = true;
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        const warnings: HwSecurityWarnings[] = [];
-        let hasHwSecurityWarnings = false;
-
-        if (result.rawResponse.needs_backup) {
-          warnings.push(HwSecurityWarnings.NeedsBackup);
-          hasHwSecurityWarnings = true;
-        }
-        if (!result.rawResponse.pin_protection) {
-          warnings.push(HwSecurityWarnings.NeedsPin);
-          hasHwSecurityWarnings = true;
-        }
-
-        if (!lastestFirmwareVersionReaded) {
-          warnings.push(HwSecurityWarnings.FirmwareVersionNotVerified);
-        } else {
-          if (!firmwareUpdated) {
-            warnings.push(HwSecurityWarnings.OutdatedFirmware);
-            hasHwSecurityWarnings = true;
-          }
-        }
-
-        let walletNameUpdated = false;
-
-        if (wallet) {
-          const deviceLabel = result.rawResponse.label ? result.rawResponse.label : (result.rawResponse.deviceId ? result.rawResponse.deviceId : result.rawResponse.device_id);
-          if (wallet.label !== deviceLabel) {
-            wallet.label = deviceLabel;
-            walletNameUpdated = true;
-          }
-          wallet.hasHwSecurityWarnings = hasHwSecurityWarnings;
-          this.saveHardwareWallets();
-        }
-
-        const response = {
-          features: result.rawResponse,
-          securityWarnings: warnings,
-          walletNameUpdated: walletNameUpdated,
-        };
-
-        return response;
-      }));
-    } else {
-      return null;
-    }
   }
 
   outputs(): Observable<any> {
@@ -198,40 +87,6 @@ export class WalletService {
       }))))
       .subscribe(newWallets => this.wallets.next(newWallets));
     });
-  }
-
-  renameWallet(wallet: Wallet, label: string): Observable<Wallet> {
-    return this.apiService.post('wallet/update', { id: wallet.filename, label: label }).pipe(
-      tap(() => {
-        wallet.label = label;
-        this.updateWallet(wallet);
-      }));
-  }
-
-  toggleEncryption(wallet: Wallet, password: string): Observable<Wallet> {
-    return this.apiService.postWalletToggleEncryption(wallet, password).pipe(
-      tap(w => {
-        wallet.encrypted = w.meta.encrypted;
-        this.updateWallet(w);
-      }));
-  }
-
-  resetPassword(wallet: Wallet, seed: string, password: string): Observable<Wallet> {
-    const params = new Object();
-    params['id'] = wallet.filename;
-    params['seed'] = seed;
-    if (password) {
-      params['password'] = password;
-    }
-
-    return this.apiService.post('wallet/recover', params, {}, true).pipe(tap(w => {
-      wallet.encrypted = w.data.meta.encrypted;
-      this.updateWallet(w.data);
-    }));
-  }
-
-  getWalletSeed(wallet: Wallet, password: string): Observable<string> {
-    return this.apiService.getWalletSeed(wallet, password);
   }
 
   createTransaction(
@@ -636,14 +491,6 @@ export class WalletService {
         })),
       };
     }));
-  }
-
-  private updateWallet(wallet: Wallet) {
-    this.wallets.pipe(first()).subscribe(wallets => {
-      const index = wallets.findIndex(w => w.filename === wallet.filename);
-      wallets[index] = wallet;
-      this.wallets.next(wallets);
-    });
   }
 
   private refreshPendingTransactions() {

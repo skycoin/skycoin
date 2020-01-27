@@ -5,6 +5,7 @@ import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { SeedModalComponent } from './seed-modal/seed-modal.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
+import { SoftwareWalletService } from 'src/app/services/wallet-operations/software-wallet.service';
 
 @Component({
   selector: 'app-backup',
@@ -21,6 +22,7 @@ export class BackupComponent implements OnInit, OnDestroy {
     public walletService: WalletService,
     private dialog: MatDialog,
     private walletsAndAddressesService: WalletsAndAddressesService,
+    private softwareWalletService: SoftwareWalletService,
   ) {}
 
   ngOnInit() {
@@ -42,7 +44,7 @@ export class BackupComponent implements OnInit, OnDestroy {
   showSeed(wallet: Wallet) {
     PasswordDialogComponent.openDialog(this.dialog, { wallet: wallet }).componentInstance.passwordSubmit
       .subscribe(passwordDialog => {
-        this.walletService.getWalletSeed(wallet, passwordDialog.password).subscribe(seed => {
+        this.softwareWalletService.getWalletSeed(wallet, passwordDialog.password).subscribe(seed => {
           passwordDialog.close();
           SeedModalComponent.openDialog(this.dialog, seed);
         }, err => passwordDialog.error(err));

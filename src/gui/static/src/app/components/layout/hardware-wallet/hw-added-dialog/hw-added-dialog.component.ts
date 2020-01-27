@@ -1,6 +1,5 @@
 import { Component, Inject, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialog } from '@angular/material/dialog';
-import { WalletService } from '../../../../services/wallet.service';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { ChildHwDialogParams } from '../hw-options-dialog/hw-options-dialog.component';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
@@ -11,6 +10,7 @@ import { OperationError, HWOperationResults } from '../../../../utils/operation-
 import { processServiceError } from '../../../../utils/errors';
 import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
 import { WalletBase } from 'src/app/services/wallet-operations/wallet-objects';
+import { HardwareWalletService } from 'src/app/services/wallet-operations/hardware-wallet.service';
 
 @Component({
   selector: 'app-hw-added-dialog',
@@ -28,16 +28,16 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: ChildHwDialogParams,
     public dialogRef: MatDialogRef<HwAddedDialogComponent>,
-    private walletService: WalletService,
     hwWalletService: HwWalletService,
     private formBuilder: FormBuilder,
     private dialog: MatDialog,
     private msgBarService: MsgBarService,
     private walletsAndAddressesService: WalletsAndAddressesService,
+    private hardwareWalletService: HardwareWalletService,
   ) {
     super(hwWalletService, dialogRef);
     this.operationSubscription = this.walletsAndAddressesService.createHardwareWallet().subscribe(wallet => {
-      this.operationSubscription = this.walletService.getHwFeaturesAndUpdateData(wallet).subscribe(() => {
+      this.operationSubscription = this.hardwareWalletService.getFeaturesAndUpdateData(wallet).subscribe(() => {
         this.wallet = wallet;
         this.initialLabel = wallet.label;
 

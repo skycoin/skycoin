@@ -18,6 +18,8 @@ import { AddressOptionsComponent, AddressOptions } from './address-options/addre
 import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent } from '../../../layout/confirmation/confirmation.component';
 import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
 import { WalletBase } from 'src/app/services/wallet-operations/wallet-objects';
+import { SoftwareWalletService } from 'src/app/services/wallet-operations/software-wallet.service';
+import { HardwareWalletService } from 'src/app/services/wallet-operations/hardware-wallet.service';
 
 @Component({
   selector: 'app-wallet-detail',
@@ -45,6 +47,8 @@ export class WalletDetailComponent implements OnDestroy {
     private router: Router,
     private apiService: ApiService,
     private walletsAndAddressesService: WalletsAndAddressesService,
+    private softwareWalletService: SoftwareWalletService,
+    private hardwareWalletService: HardwareWalletService,
   ) { }
 
   ngOnDestroy() {
@@ -70,7 +74,7 @@ export class WalletDetailComponent implements OnDestroy {
 
       this.preparingToEdit = true;
       this.editSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.wallet.addresses[0].address)
-        .pipe(mergeMap(() => this.walletService.getHwFeaturesAndUpdateData(this.wallet)))
+        .pipe(mergeMap(() => this.hardwareWalletService.getFeaturesAndUpdateData(this.wallet)))
         .subscribe(
           response => {
             this.continueEditWallet();
@@ -224,7 +228,7 @@ export class WalletDetailComponent implements OnDestroy {
 
     PasswordDialogComponent.openDialog(this.dialog, params, false).componentInstance.passwordSubmit
       .subscribe(passwordDialog => {
-        this.walletService.toggleEncryption(this.wallet, passwordDialog.password).subscribe(() => {
+        this.softwareWalletService.toggleEncryption(this.wallet, passwordDialog.password).subscribe(() => {
           passwordDialog.close();
           setTimeout(() => this.msgBarService.showDone('common.changes-made'));
         }, e => passwordDialog.error(e));

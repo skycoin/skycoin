@@ -7,6 +7,7 @@ import { BigNumber } from 'bignumber.js';
 import { Output as UnspentOutput, Wallet, Address } from '../../../../../app.datatypes';
 import { AppService } from '../../../../../services/app.service';
 import { HttpErrorResponse } from '@angular/common/http';
+import { BalanceAndOutputsService } from 'src/app/services/wallet-operations/balance-and-outputs.service';
 
 export class AvailableBalanceData {
   availableCoins = new BigNumber(0);
@@ -67,6 +68,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
     private walletService: WalletService,
     private appService: AppService,
     private formBuilder: FormBuilder,
+    private balanceAndOutputsService: BalanceAndOutputsService,
   ) { }
 
   ngOnInit() {
@@ -117,7 +119,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
 
       if (manualAddresses.length !== 0 && addressesChanged) {
         this.getOutputsSubscriptions = of(1).pipe(delay(500), mergeMap(() => {
-          return this.walletService.getOutputs((this.form.get('manualAddresses').value as string).replace(/ /g, '')).pipe(
+          return this.balanceAndOutputsService.getOutputs((this.form.get('manualAddresses').value as string).replace(/ /g, '')).pipe(
             retryWhen((err) => {
               return err.pipe(mergeMap(response => {
                 if (response instanceof HttpErrorResponse && response.status === 400) {
@@ -155,7 +157,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
 
       if (wallet && this.selectionMode === SourceSelectionModes.All) {
         this.loadingUnspentOutputs = true;
-        this.getOutputsSubscriptions = this.walletService.getWalletUnspentOutputs(wallet).pipe(
+        this.getOutputsSubscriptions = this.balanceAndOutputsService.getWalletUnspentOutputs(wallet).pipe(
           retryWhen(errors => errors.pipe(delay(1000))))
           .subscribe(
             result => {

@@ -122,6 +122,7 @@ import { QrCodeButtonComponent } from './components/layout/qr-code-button/qr-cod
 import { WalletsAndAddressesService } from './services/wallet-operations/wallets-and-addresses.service';
 import { SoftwareWalletService } from './services/wallet-operations/software-wallet.service';
 import { HardwareWalletService } from './services/wallet-operations/hardware-wallet.service';
+import { BalanceAndOutputsService } from './services/wallet-operations/balance-and-outputs.service';
 
 
 const ROUTES = [
@@ -360,6 +361,7 @@ const ROUTES = [
     WalletsAndAddressesService,
     SoftwareWalletService,
     HardwareWalletService,
+    BalanceAndOutputsService,
     {
       provide: MAT_PROGRESS_SPINNER_DEFAULT_OPTIONS,
       useValue: {

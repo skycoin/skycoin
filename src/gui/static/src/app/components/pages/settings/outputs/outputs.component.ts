@@ -2,6 +2,7 @@ import { Component, OnDestroy } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { ActivatedRoute } from '@angular/router';
 import { SubscriptionLike } from 'rxjs';
+import { BalanceAndOutputsService } from 'src/app/services/wallet-operations/balance-and-outputs.service';
 
 @Component({
   selector: 'app-outputs',
@@ -17,11 +18,12 @@ export class OutputsComponent implements OnDestroy {
   constructor(
     public walletService: WalletService,
     private route: ActivatedRoute,
+    private balanceAndOutputsService: BalanceAndOutputsService,
   ) {
     route.queryParams.subscribe(params => {
       this.wallets = null;
       this.lastRouteParams = params;
-      this.walletService.startDataRefreshSubscription();
+      this.balanceAndOutputsService.refreshBalance();
     });
     walletService.all().subscribe(() => this.loadData());
   }
@@ -33,7 +35,7 @@ export class OutputsComponent implements OnDestroy {
   loadData() {
     const addr = this.lastRouteParams['addr'];
 
-    this.outputsSubscription = this.walletService.outputsWithWallets().subscribe(wallets => {
+    this.outputsSubscription = this.balanceAndOutputsService.outputsWithWallets().subscribe(wallets => {
       this.wallets = wallets
         .map(wallet => Object.assign({}, wallet))
         .map(wallet => {

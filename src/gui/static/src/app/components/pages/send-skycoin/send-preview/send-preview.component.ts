@@ -11,6 +11,7 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
 import { mergeMap } from 'rxjs/operators';
 import { CopyRawTxData, CopyRawTxComponent } from '../offline-dialogs/implementations/copy-raw-tx.component';
 import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent } from '../../../layout/confirmation/confirmation.component';
+import { BalanceAndOutputsService } from 'src/app/services/wallet-operations/balance-and-outputs.service';
 
 @Component({
   selector: 'app-send-preview',
@@ -31,6 +32,7 @@ export class SendVerifyComponent implements OnDestroy {
     private dialog: MatDialog,
     private hwWalletService: HwWalletService,
     private translate: TranslateService,
+    private balanceAndOutputsService: BalanceAndOutputsService,
   ) {}
 
   ngOnDestroy() {
@@ -120,7 +122,7 @@ export class SendVerifyComponent implements OnDestroy {
         setTimeout(() => this.msgBarService.showDone('send.sent'));
       }
 
-      this.walletService.startDataRefreshSubscription();
+      this.balanceAndOutputsService.refreshBalance();
 
       this.onBack.emit(true);
     }, error => {

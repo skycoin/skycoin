@@ -5,6 +5,7 @@ import { SubscriptionLike } from 'rxjs';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
 import { BigNumber } from 'bignumber.js';
+import { BalanceAndOutputsService } from 'src/app/services/wallet-operations/balance-and-outputs.service';
 
 @Component({
   selector: 'app-pending-transactions',
@@ -20,6 +21,7 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
   constructor(
     public walletService: WalletService,
     private navbarService: NavBarService,
+    private balanceAndOutputsService: BalanceAndOutputsService,
   ) {
     this.navbarSubscription = this.navbarService.activeComponent.subscribe(value => {
       this.startCheckingTransactions(value);
@@ -45,7 +47,8 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
       this.transactions = this.mapTransactions(value === DoubleButtonActive.LeftButton ? transactions.user : transactions.all);
     });
 
-    this.walletService.startDataRefreshSubscription();
+    // Due to some changes, must use a method for updating or getting the pending transactions, not this.
+    this.balanceAndOutputsService.refreshBalance();
   }
 
   private mapTransactions(transactions) {

@@ -3,6 +3,7 @@ import { retryWhen, concat, delay, exhaustMap, take, map } from 'rxjs/operators'
 import { Injectable, NgZone } from '@angular/core';
 import { ApiService } from './api.service';
 import { WalletService } from './wallet.service';
+import { BalanceAndOutputsService } from './wallet-operations/balance-and-outputs.service';
 
 @Injectable()
 export class BlockchainService {
@@ -29,6 +30,7 @@ export class BlockchainService {
     private apiService: ApiService,
     private walletService: WalletService,
     private ngZone: NgZone,
+    balanceAndOutputsService: BalanceAndOutputsService,
   ) {
     this.apiService.get('health').pipe(retryWhen(errors => errors.pipe(delay(1000), take(10), concat(observableThrowError('')))))
       .subscribe ((response: any) => this.maxDecimals = response.user_verify_transaction.max_decimals);
@@ -49,13 +51,13 @@ export class BlockchainService {
             this.progressSubject.next(response);
 
             if (!this.refreshedBalance) {
-              this.walletService.refreshBalances();
+              balanceAndOutputsService.refreshBalance();
               this.refreshedBalance = true;
             }
 
             if (response.current === response.highest && !this.synchronizedSubject.value) {
               this.synchronizedSubject.next(true);
-              this.walletService.refreshBalances();
+              balanceAndOutputsService.refreshBalance();
             } else if (response.current !== response.highest && this.synchronizedSubject.value) {
               this.synchronizedSubject.next(false);
             }

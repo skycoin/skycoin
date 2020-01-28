@@ -1,6 +1,5 @@
 import { delay, mergeMap, first } from 'rxjs/operators';
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { WalletService } from '../../../services/wallet.service';
 import { PriceService } from '../../../services/price.service';
 import { SubscriptionLike, of } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
@@ -10,6 +9,7 @@ import { FormGroup, FormBuilder } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { AppService } from '../../../services/app.service';
 import { HistoryService } from 'src/app/services/wallet-operations/history.service';
+import { BalanceAndOutputsService } from 'src/app/services/wallet-operations/balance-and-outputs.service';
 
 export class Wallet {
   id: string;
@@ -55,9 +55,9 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     public appService: AppService,
     private dialog: MatDialog,
     private priceService: PriceService,
-    private walletService: WalletService,
     private formBuilder: FormBuilder,
     private historyService: HistoryService,
+    private balanceAndOutputsService: BalanceAndOutputsService,
     route: ActivatedRoute,
   ) {
 
@@ -76,7 +76,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
       this.showRequestedFilters();
     });
 
-    this.walletsSubscription = walletService.all().pipe(delay(1), mergeMap(wallets => {
+    this.walletsSubscription = balanceAndOutputsService.walletsWithBalance.pipe(delay(1), mergeMap(wallets => {
       if (!this.wallets) {
         this.wallets = [];
         let incompleteData = false;
@@ -91,7 +91,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
           }
 
           this.wallets.push({
-            id: wallet.filename,
+            id: wallet.id,
             label: wallet.label,
             coins: wallet.coins.decimalPlaces(6).toString(),
             hours: wallet.hours.decimalPlaces(0).toString(),

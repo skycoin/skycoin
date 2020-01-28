@@ -2,7 +2,6 @@ import { timer as observableTimer, throwError as observableThrowError, BehaviorS
 import { retryWhen, concat, delay, exhaustMap, take, map } from 'rxjs/operators';
 import { Injectable, NgZone } from '@angular/core';
 import { ApiService } from './api.service';
-import { WalletService } from './wallet.service';
 import { BalanceAndOutputsService } from './wallet-operations/balance-and-outputs.service';
 
 @Injectable()
@@ -28,7 +27,6 @@ export class BlockchainService {
 
   constructor(
     private apiService: ApiService,
-    private walletService: WalletService,
     private ngZone: NgZone,
     balanceAndOutputsService: BalanceAndOutputsService,
   ) {

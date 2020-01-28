@@ -1,5 +1,4 @@
 import { Component, Input, OnDestroy } from '@angular/core';
-import { WalletService } from '../../../../services/wallet.service';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ChangeNameComponent, ChangeNameData } from '../change-name/change-name.component';
 import { PasswordDialogComponent, PasswordDialogParams } from '../../../layout/password-dialog/password-dialog.component';
@@ -17,7 +16,7 @@ import { mergeMap, first } from 'rxjs/operators';
 import { AddressOptionsComponent, AddressOptions } from './address-options/address-options.component';
 import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent } from '../../../layout/confirmation/confirmation.component';
 import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
-import { WalletBase } from 'src/app/services/wallet-operations/wallet-objects';
+import { WalletWithBalance } from 'src/app/services/wallet-operations/wallet-objects';
 import { SoftwareWalletService } from 'src/app/services/wallet-operations/software-wallet.service';
 import { HardwareWalletService } from 'src/app/services/wallet-operations/hardware-wallet.service';
 
@@ -27,7 +26,7 @@ import { HardwareWalletService } from 'src/app/services/wallet-operations/hardwa
   styleUrls: ['./wallet-detail.component.scss'],
 })
 export class WalletDetailComponent implements OnDestroy {
-  @Input() wallet: WalletBase;
+  @Input() wallet: WalletWithBalance;
 
   confirmingIndex = null;
   workingWithAddresses = false;
@@ -40,7 +39,6 @@ export class WalletDetailComponent implements OnDestroy {
 
   constructor(
     private dialog: MatDialog,
-    private walletService: WalletService,
     private msgBarService: MsgBarService,
     private hwWalletService: HwWalletService,
     private translateService: TranslateService,
@@ -207,7 +205,7 @@ export class WalletDetailComponent implements OnDestroy {
       if (confirmationResult) {
         const result = this.walletsAndAddressesService.deleteHardwareWallet(this.wallet);
         if (result) {
-          this.walletService.all().pipe(first()).subscribe(wallets => {
+          this.walletsAndAddressesService.allWallets.pipe(first()).subscribe(wallets => {
             if (wallets.length === 0) {
               setTimeout(() => this.router.navigate(['/wizard']), 500);
             }

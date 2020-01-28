@@ -1,5 +1,4 @@
 import { Component, OnDestroy } from '@angular/core';
-import { WalletService } from '../../../../services/wallet.service';
 import { ActivatedRoute } from '@angular/router';
 import { SubscriptionLike } from 'rxjs';
 import { BalanceAndOutputsService } from 'src/app/services/wallet-operations/balance-and-outputs.service';
@@ -16,7 +15,6 @@ export class OutputsComponent implements OnDestroy {
   private lastRouteParams: any;
 
   constructor(
-    public walletService: WalletService,
     private route: ActivatedRoute,
     private balanceAndOutputsService: BalanceAndOutputsService,
   ) {
@@ -25,7 +23,7 @@ export class OutputsComponent implements OnDestroy {
       this.lastRouteParams = params;
       this.balanceAndOutputsService.refreshBalance();
     });
-    walletService.all().subscribe(() => this.loadData());
+    this.loadData();
   }
 
   ngOnDestroy() {

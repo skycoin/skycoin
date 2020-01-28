@@ -3,7 +3,8 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 import { Address } from '../../../../app.datatypes';
-import { WalletService } from '../../../../services/wallet.service';
+import { HardwareWalletService } from 'src/app/services/wallet-operations/hardware-wallet.service';
+import { mergeMap } from 'rxjs/operators';
 
 export class AddressConfirmationParams {
   address: Address;
@@ -21,17 +22,16 @@ export class HwConfirmAddressDialogComponent extends HwDialogBaseComponent<HwCon
     @Inject(MAT_DIALOG_DATA) public data: AddressConfirmationParams,
     public dialogRef: MatDialogRef<HwConfirmAddressDialogComponent>,
     private hwWalletService: HwWalletService,
-    private walletService: WalletService,
+    private hardwareWalletService: HardwareWalletService,
   ) {
     super(hwWalletService, dialogRef);
-    this.operationSubscription = this.hwWalletService.confirmAddress(data.addressIndex).subscribe(
+    this.operationSubscription = this.hwWalletService.confirmAddress(data.addressIndex).pipe(mergeMap(() => this.hardwareWalletService.setAddressConfirmed()))
+    .subscribe(
       () => {
         this.showResult({
           text: data.showCompleteConfirmation ? 'hardware-wallet.confirm-address.confirmation' : 'hardware-wallet.confirm-address.short-confirmation',
           icon: this.msgIcons.Success,
         });
-        this.data.address.confirmed = true;
-        this.walletService.saveHardwareWallets();
       },
       err => this.processResult(err),
     );

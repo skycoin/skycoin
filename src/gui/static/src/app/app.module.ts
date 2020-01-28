@@ -2,7 +2,6 @@ import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { AppComponent } from './app.component';
 import { ApiService } from './services/api.service';
-import { WalletService } from './services/wallet.service';
 import { WalletsComponent } from './components/pages/wallets/wallets.component';
 import { CreateWalletComponent } from './components/pages/wallets/create-wallet/create-wallet.component';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -349,7 +348,6 @@ const ROUTES = [
     NetworkService,
     PriceService,
     PurchaseService,
-    WalletService,
     WizardGuardService,
     HwWalletService,
     Bip39WordListService,

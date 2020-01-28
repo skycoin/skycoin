@@ -1,12 +1,12 @@
 import { Component, OnDestroy, ViewChild } from '@angular/core';
-import { SubscriptionLike, zip } from 'rxjs';
+import { SubscriptionLike,  combineLatest } from 'rxjs';
 import { ButtonComponent } from '../../layout/button/button.component';
 import { FormGroup, FormBuilder, FormControl, Validators } from '@angular/forms';
-import { Params, ActivatedRoute, Router } from '@angular/router';
-import { WalletService } from '../../../services/wallet.service';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Wallet } from '../../../app.datatypes';
 import { MsgBarService } from '../../../services/msg-bar.service';
 import { SoftwareWalletService } from 'src/app/services/wallet-operations/software-wallet.service';
+import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
 
 @Component({
   selector: 'app-reset-password',
@@ -28,13 +28,13 @@ export class ResetPasswordComponent implements OnDestroy {
     public formBuilder: FormBuilder,
     private route: ActivatedRoute,
     private router: Router,
-    private walletService: WalletService,
     private msgBarService: MsgBarService,
     private softwareWalletService: SoftwareWalletService,
+    private walletsAndAddressesService: WalletsAndAddressesService,
   ) {
     this.initForm('');
-    this.subscription = zip(this.route.params, this.walletService.all(), (params: Params, wallets: Wallet[]) => {
-      const wallet = wallets.find(w => w.filename === params['id']);
+    this.subscription = combineLatest(this.route.params, this.walletsAndAddressesService.allWallets, (params, wallets) => {
+      const wallet = wallets.find(w => w.id === params['id']);
       if (!wallet) {
         setTimeout(() => this.router.navigate([''], {skipLocationChange: true}));
 

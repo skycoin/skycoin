@@ -1,5 +1,4 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { WalletService } from '../../../../services/wallet.service';
 import * as moment from 'moment';
 import { SubscriptionLike } from 'rxjs';
 import { NavBarService } from '../../../../services/nav-bar.service';

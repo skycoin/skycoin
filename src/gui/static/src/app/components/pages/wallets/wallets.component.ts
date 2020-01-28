@@ -1,5 +1,4 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { WalletService } from '../../../services/wallet.service';
 import { MatDialog } from '@angular/material/dialog';
 import { CreateWalletComponent } from './create-wallet/create-wallet.component';
 import { Wallet } from '../../../app.datatypes';
@@ -10,6 +9,7 @@ import { HwWalletService } from '../../../services/hw-wallet.service';
 import { first } from 'rxjs/operators';
 import { ConfirmationParams, ConfirmationComponent, DefaultConfirmationButtons } from '../../layout/confirmation/confirmation.component';
 import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
+import { BalanceAndOutputsService } from 'src/app/services/wallet-operations/balance-and-outputs.service';
 
 @Component({
   selector: 'app-wallets',
@@ -26,15 +26,15 @@ export class WalletsComponent implements OnInit, OnDestroy {
   private subscription: SubscriptionLike;
 
   constructor(
-    private walletService: WalletService,
     private hwWalletService: HwWalletService,
     private dialog: MatDialog,
     private router: Router,
     private walletsAndAddressesService: WalletsAndAddressesService,
+    private balanceAndOutputsService: BalanceAndOutputsService,
   ) {
     this.hwCompatibilityActivated = this.hwWalletService.hwWalletCompatibilityActivated;
 
-    this.subscription = this.walletService.all().subscribe(wallets => {
+    this.subscription = this.balanceAndOutputsService.walletsWithBalance.subscribe(wallets => {
       this.wallets = [];
       this.hardwareWallets = [];
       wallets.forEach(value => {
@@ -66,7 +66,7 @@ export class WalletsComponent implements OnInit, OnDestroy {
 
   adminHwWallet() {
     HwOptionsDialogComponent.openDialog(this.dialog, false).afterClosed().subscribe(() => {
-      this.walletService.all().pipe(first()).subscribe(wallets => {
+      this.walletsAndAddressesService.allWallets.pipe(first()).subscribe(wallets => {
         if (wallets.length === 0) {
           setTimeout(() => this.router.navigate(['/wizard']), 500);
         }

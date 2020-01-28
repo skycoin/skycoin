@@ -25,7 +25,7 @@ export class BalanceAndOutputsService {
     this.startDataRefreshSubscription();
   }
 
-  get balance(): Observable<WalletWithBalance[]> {
+  get walletsWithBalance(): Observable<WalletWithBalance[]> {
     return this.walletsWithBalanceSubject.asObservable();
   }
 
@@ -34,7 +34,7 @@ export class BalanceAndOutputsService {
   }
 
   outputsWithWallets(): Observable<WalletWithOutputs[]> {
-    return this.balance.pipe(switchMap(wallets => {
+    return this.walletsWithBalance.pipe(switchMap(wallets => {
       const addresses = wallets.map(wallet => wallet.addresses.map(address => address.address).join(',')).join(',');
 
       return this.getOutputs(addresses);

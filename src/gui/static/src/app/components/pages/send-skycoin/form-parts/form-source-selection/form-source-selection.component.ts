@@ -1,7 +1,6 @@
 import { throwError as observableThrowError, SubscriptionLike, of } from 'rxjs';
 import { retryWhen, delay, first, mergeMap } from 'rxjs/operators';
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
-import { WalletService } from '../../../../../services/wallet.service';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { BigNumber } from 'bignumber.js';
 import { Output as UnspentOutput, Wallet, Address } from '../../../../../app.datatypes';
@@ -65,7 +64,6 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
   private getOutputsSubscriptions: SubscriptionLike;
 
   constructor(
-    private walletService: WalletService,
     private appService: AppService,
     private formBuilder: FormBuilder,
     private balanceAndOutputsService: BalanceAndOutputsService,
@@ -191,7 +189,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
       this.onSelectionChanged.emit();
     }));
 
-    this.subscriptionsGroup.push(this.walletService.all().pipe(first()).subscribe(wallets => {
+    this.subscriptionsGroup.push(this.balanceAndOutputsService.walletsWithBalance.pipe(first()).subscribe(wallets => {
       this.wallets = wallets;
       if (wallets.length === 1) {
         setTimeout(() => {

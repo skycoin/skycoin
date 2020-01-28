@@ -1,7 +1,6 @@
 import { SubscriptionLike } from 'rxjs';
 import { first } from 'rxjs/operators';
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild, ChangeDetectorRef } from '@angular/core';
-import { WalletService } from '../../../../services/wallet.service';
 import { FormGroup, FormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
@@ -59,7 +58,6 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
 
   constructor(
     public blockchainService: BlockchainService,
-    public walletService: WalletService,
     public appService: AppService,
     private dialog: MatDialog,
     private msgBarService: MsgBarService,

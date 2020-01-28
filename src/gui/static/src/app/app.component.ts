@@ -1,7 +1,6 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { AppService } from './services/app.service';
-import { WalletService } from './services/wallet.service';
 import { HwWalletService } from './services/hw-wallet.service';
 import { HwPinDialogComponent } from './components/layout/hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
 import { Bip39WordListService } from './services/bip39-word-list.service';
@@ -13,6 +12,7 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
 import { MsgBarService } from './services/msg-bar.service';
 import { SeedWordDialogComponent } from './components/layout/seed-word-dialog/seed-word-dialog.component';
 import { SelectLanguageComponent } from './components/layout/select-language/select-language.component';
+import { WalletsAndAddressesService } from './services/wallet-operations/wallets-and-addresses.service';
 
 @Component({
   selector: 'app-root',
@@ -25,10 +25,10 @@ export class AppComponent implements OnInit {
   constructor(
     private appService: AppService,
     private languageService: LanguageService,
-    walletService: WalletService,
     hwWalletService: HwWalletService,
     hwWalletPinService: HwWalletPinService,
     hwWalletSeedWordService: HwWalletSeedWordService,
+    walletsAndAddressesService: WalletsAndAddressesService,
     private bip38WordList: Bip39WordListService,
     private dialog: MatDialog,
     private msgBarService: MsgBarService,
@@ -37,7 +37,7 @@ export class AppComponent implements OnInit {
     hwWalletSeedWordService.requestWordComponent = SeedWordDialogComponent;
     hwWalletService.signTransactionConfirmationComponent = HwConfirmTxDialogComponent;
 
-    walletService.initialLoadFailed.subscribe(failed => {
+    walletsAndAddressesService.errorDuringinitialLoad.subscribe(failed => {
       if (failed) {
         // The "?2" part indicates that error number 2 should be displayed.
         window.location.assign('assets/error-alert/index.html?2');

@@ -131,4 +131,22 @@ export class HardwareWalletService {
       return null;
     }
   }
+
+  setAddressConfirmed(wallet: WalletBase, Address: string): Observable<void> {
+    return this.walletsAndAddressesService.allWallets.pipe(map(wallets => {
+      const affectedWallet = wallets.find(w => w.id === wallet.id);
+      if (!affectedWallet) {
+        throw new Error('Invalid wallet.');
+      }
+
+      const affectedAddress = affectedWallet.addresses.find(address => address.address === Address);
+      if (!affectedAddress) {
+        throw new Error('Invalid address.');
+      }
+
+      affectedAddress.confirmed = true;
+
+      this.walletsAndAddressesService.informValuesUpdated(wallet);
+    }));
+  }
 }

@@ -3,7 +3,6 @@ import { MatDialogRef, MatDialogConfig, MatDialog, MAT_DIALOG_DATA } from '@angu
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { HwWipeDialogComponent } from '../hw-wipe-dialog/hw-wipe-dialog.component';
 import { SubscriptionLike,  Observable } from 'rxjs';
-import { WalletService } from '../../../../services/wallet.service';
 import { HwAddedDialogComponent } from '../hw-added-dialog/hw-added-dialog.component';
 import { HwGenerateSeedDialogComponent } from '../hw-generate-seed-dialog/hw-generate-seed-dialog.component';
 import { HwBackupDialogComponent } from '../hw-backup-dialog/hw-backup-dialog.component';
@@ -20,6 +19,7 @@ import { AppConfig } from '../../../../app.config';
 import { OperationError, HWOperationResults } from '../../../../utils/operation-error';
 import { processServiceError } from '../../../../utils/errors';
 import { HardwareWalletService, HwFeaturesResponse, HwSecurityWarnings } from 'src/app/services/wallet-operations/hardware-wallet.service';
+import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
 
 export interface ChildHwDialogParams {
   wallet: Wallet;
@@ -69,9 +69,9 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
     public dialogRef: MatDialogRef<HwOptionsDialogComponent>,
     private hwWalletService: HwWalletService,
     private dialog: MatDialog,
-    private walletService: WalletService,
     private msgBarService: MsgBarService,
     private hardwareWalletService: HardwareWalletService,
+    private walletsAndAddressesService: WalletsAndAddressesService,
   ) {
     super(hwWalletService, dialogRef);
 
@@ -259,7 +259,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
   private continueCheckingWallet(suggestToUpdate) {
     this.operationSubscription = this.hwWalletService.getAddresses(1, 0).subscribe(
       response => {
-        this.operationSubscription = this.walletService.wallets.pipe(first()).subscribe(wallets => {
+        this.operationSubscription = this.walletsAndAddressesService.allWallets.pipe(first()).subscribe(wallets => {
           const alreadySaved = wallets.some(wallet => {
             const found = wallet.addresses[0].address === response.rawResponse[0] && wallet.isHardware;
             if (found) {

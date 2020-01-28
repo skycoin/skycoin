@@ -2,7 +2,6 @@ import { filter } from 'rxjs/operators';
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { PriceService } from '../../../services/price.service';
 import { SubscriptionLike } from 'rxjs';
-import { WalletService } from '../../../services/wallet.service';
 import { BlockchainService } from '../../../services/blockchain.service';
 import { AppService } from '../../../services/app.service';
 import { BigNumber } from 'bignumber.js';
@@ -57,7 +56,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
     public networkService: NetworkService,
     private blockchainService: BlockchainService,
     private priceService: PriceService,
-    private walletService: WalletService,
     private balanceAndOutputsService: BalanceAndOutputsService,
   ) { }
 
@@ -78,14 +76,18 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
     this.subscriptionsGroup.push(this.priceService.price.subscribe(price => this.price = price));
 
-    this.subscriptionsGroup.push(this.walletService.allAddresses().subscribe(addresses => {
-      this.addresses = addresses.reduce((array, item) => {
-        if (!array.find(addr => addr.address === item.address)) {
-          array.push(item);
-        }
+    this.subscriptionsGroup.push(this.balanceAndOutputsService.walletsWithBalance.subscribe(wallets => {
+      this.addresses = [];
+      const alreadyAddedAddresses = new Map<string, boolean>();
 
-        return array;
-      }, []);
+      wallets.forEach(wallet => {
+        wallet.addresses.forEach(address => {
+          if (!alreadyAddedAddresses.has(address.address)) {
+            this.addresses.push(address);
+            alreadyAddedAddresses.set(address.address, true);
+          }
+        });
+      });
     }));
 
     this.subscriptionsGroup.push(this.balanceAndOutputsService.hasPendingTransactions.subscribe(hasPendingTxs => {

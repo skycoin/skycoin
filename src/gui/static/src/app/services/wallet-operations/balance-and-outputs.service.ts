@@ -1,5 +1,5 @@
-import { forkJoin as observableForkJoin, of, timer, Observable, ReplaySubject, Subscription } from 'rxjs';
-import { first, mergeMap, map, switchMap, tap } from 'rxjs/operators';
+import { forkJoin as observableForkJoin, of, timer, Observable, ReplaySubject, Subscription, BehaviorSubject } from 'rxjs';
+import { mergeMap, map, switchMap, tap, delay } from 'rxjs/operators';
 import { Injectable, NgZone } from '@angular/core';
 import { ApiService } from '../api.service';
 import { BigNumber } from 'bignumber.js';
@@ -10,12 +10,14 @@ import { WalletWithBalance, walletWithBalanceFromBase, Output, WalletBase, walle
 export class BalanceAndOutputsService {
   private walletsWithBalanceList: WalletWithBalance[];
   private walletsWithBalanceSubject: ReplaySubject<WalletWithBalance[]> = new ReplaySubject<WalletWithBalance[]>(1);
-  private hasPendingTransactionsSubject: ReplaySubject<boolean> = new ReplaySubject<boolean>(1);
+  private hasPendingTransactionsSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+  private firstFullUpdateMadeSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
   private dataRefreshSubscription: Subscription;
   private gettingBalanceSubscription: Subscription;
 
-  private forceCompleteBalanceArrayUpdate = false;
+  private savedBalanceData = new Map<string, any>();
+  private temporalSavedBalanceData = new Map<string, any>();
 
   constructor(
     private walletsAndAddressesService: WalletsAndAddressesService,
@@ -33,6 +35,10 @@ export class BalanceAndOutputsService {
     return this.hasPendingTransactionsSubject.asObservable();
   }
 
+  get firstFullUpdateMade(): Observable<boolean> {
+    return this.firstFullUpdateMadeSubject.asObservable();
+  }
+
   outputsWithWallets(): Observable<WalletWithOutputs[]> {
     return this.walletsWithBalance.pipe(switchMap(wallets => {
       const addresses = wallets.map(wallet => wallet.addresses.map(address => address.address).join(',')).join(',');
@@ -40,17 +46,15 @@ export class BalanceAndOutputsService {
       return this.getOutputs(addresses);
     }), map(outputs => {
       const walletsList: WalletWithOutputs[] = [];
-      this.walletsWithBalanceList.forEach(result => walletsList.push(walletWithOutputsFromBase(result)));
+      this.walletsWithBalanceList.forEach(wallet => walletsList.push(walletWithOutputsFromBase(wallet)));
 
-      return walletsList.map(wallet => {
-        wallet.addresses = wallet.addresses.map(address => {
+      walletsList.forEach(wallet => {
+        wallet.addresses.forEach(address => {
           address.outputs = outputs.filter(output => output.address === address.address);
-
-          return address;
         });
-
-        return wallet;
       });
+
+      return walletsList;
     }));
   }
 
@@ -92,15 +96,14 @@ export class BalanceAndOutputsService {
 
     this.ngZone.runOutsideAngular(() => {
       this.dataRefreshSubscription = this.walletsAndAddressesService.allWallets.pipe(
-        tap(() => this.forceCompleteBalanceArrayUpdate = true),
-        mergeMap(wallets => timer(0, 10000).pipe(map(() => wallets))),
-      ).subscribe(wallets => {
-        this.ngZone.run(() => this.refreshBalances(wallets));
-      });
+        switchMap(wallets => {
+          return this.refreshBalances(wallets, true).pipe(mergeMap(() => this.refreshBalances(wallets, false)));
+        }),
+      ).subscribe(null, () => this.startDataRefreshSubscription());
     });
   }
 
-  private refreshBalances(wallets: WalletBase[]) {
+  private refreshBalances(wallets: WalletBase[], forceQuickCompleteArrayUpdate: boolean): Observable<any> {
     if (this.gettingBalanceSubscription) {
       this.gettingBalanceSubscription.unsubscribe();
     }
@@ -110,11 +113,21 @@ export class BalanceAndOutputsService {
       temporalWallets.push(walletWithBalanceFromBase(wallet));
     });
 
-    this.gettingBalanceSubscription = observableForkJoin(temporalWallets.map(wallet => this.retrieveWalletBalance(wallet))).subscribe(walletHasPendingTx => {
+    if (!forceQuickCompleteArrayUpdate) {
+      this.temporalSavedBalanceData = new Map<string, any>();
+    }
+
+    let response = observableForkJoin(temporalWallets.map(wallet => this.retrieveWalletBalance(wallet, forceQuickCompleteArrayUpdate))).pipe(tap(walletHasPendingTx => {
       this.hasPendingTransactionsSubject.next(walletHasPendingTx.some(value => value));
 
-      if (!this.walletsWithBalanceList || this.forceCompleteBalanceArrayUpdate || this.walletsWithBalanceList.length !== temporalWallets.length) {
-        this.forceCompleteBalanceArrayUpdate = false;
+      if (!forceQuickCompleteArrayUpdate) {
+        this.savedBalanceData = this.temporalSavedBalanceData;
+        if (!this.firstFullUpdateMadeSubject.value) {
+          this.firstFullUpdateMadeSubject.next(true);
+        }
+      }
+
+      if (!this.walletsWithBalanceList || forceQuickCompleteArrayUpdate || this.walletsWithBalanceList.length !== temporalWallets.length) {
         this.walletsWithBalanceList = temporalWallets;
         this.informDataUpdated();
       } else {
@@ -155,21 +168,43 @@ export class BalanceAndOutputsService {
           }
         }
       }
-    });
+    }));
+
+    if (!forceQuickCompleteArrayUpdate) {
+      response = response.pipe(delay(10000), mergeMap(() => this.refreshBalances(wallets, false)));
+    }
+
+    return response;
   }
 
-  private retrieveWalletBalance(wallet: WalletWithBalance): Observable<boolean> {
+  private retrieveWalletBalance(wallet: WalletWithBalance, useSavedBalanceData: boolean): Observable<boolean> {
     let query: Observable<any>;
-    if (!wallet.isHardware) {
-      query = this.apiService.get('wallet/balance', { id: wallet.id });
+
+    if (!useSavedBalanceData) {
+      if (!wallet.isHardware) {
+        query = this.apiService.get('wallet/balance', { id: wallet.id });
+      } else {
+        const formattedAddresses = wallet.addresses.map(a => a.address).join(',');
+        query = this.apiService.post('balance', { addrs: formattedAddresses });
+      }
     } else {
-      const formattedAddresses = wallet.addresses.map(a => a.address).join(',');
-      query = this.apiService.post('balance', { addrs: formattedAddresses });
+      if (this.savedBalanceData.has(wallet.id)) {
+        query = of(this.savedBalanceData.get(wallet.id));
+      } else {
+        query = of({ addresses: [] });
+      }
     }
 
     return query.pipe(map(balance => {
-      wallet.coins = new BigNumber(balance.confirmed.coins).dividedBy(1000000);
-      wallet.hours = new BigNumber(balance.confirmed.hours);
+      this.temporalSavedBalanceData.set(wallet.id, balance);
+
+      if (balance.confirmed) {
+        wallet.coins = new BigNumber(balance.confirmed.coins).dividedBy(1000000);
+        wallet.hours = new BigNumber(balance.confirmed.hours);
+      } else {
+        wallet.coins = new BigNumber(0);
+        wallet.hours = new BigNumber(0);
+      }
 
       wallet.addresses.forEach(address => {
         if (balance.addresses[address.address]) {
@@ -181,12 +216,18 @@ export class BalanceAndOutputsService {
         }
       });
 
-      return !(new BigNumber(balance.predicted.coins).dividedBy(1000000)).isEqualTo(wallet.coins) ||
-        !(new BigNumber(balance.predicted.hours)).isEqualTo(wallet.hours);
+      if (!useSavedBalanceData) {
+        return !(new BigNumber(balance.predicted.coins).dividedBy(1000000)).isEqualTo(wallet.coins) ||
+          !(new BigNumber(balance.predicted.hours)).isEqualTo(wallet.hours);
+      } else {
+        return this.hasPendingTransactionsSubject.value;
+      }
     }));
   }
 
   private informDataUpdated() {
-    this.walletsWithBalanceSubject.next(this.walletsWithBalanceList);
+    this.ngZone.run(() => {
+      this.walletsWithBalanceSubject.next(this.walletsWithBalanceList);
+    });
   }
 }

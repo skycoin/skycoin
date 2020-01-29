@@ -6,11 +6,11 @@ import { FormBuilder } from '@angular/forms';
 import { SubscriptionLike } from 'rxjs';
 import { first } from 'rxjs/operators';
 import { CopyRawTxData, CopyRawTxComponent } from './copy-raw-tx.component';
-import { Wallet } from '../../../../../app.datatypes';
 import { PasswordDialogComponent } from '../../../../../components/layout/password-dialog/password-dialog.component';
 import { AppConfig } from '../../../../../app.config';
-import { SpendingService } from 'src/app/services/wallet-operations/spending.service';
-import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
+import { SpendingService } from '../../../../../services/wallet-operations/spending.service';
+import { WalletsAndAddressesService } from '../../../../../services/wallet-operations/wallets-and-addresses.service';
+import { WalletBase } from '../../../../../services/wallet-operations/wallet-objects';
 
 @Component({
   selector: 'app-sign-raw-tx',
@@ -94,7 +94,7 @@ export class SignRawTxComponent extends OfflineDialogsBaseComponent implements O
       return;
     }
 
-    if ((this.form.get('dropdown').value as Wallet).encrypted) {
+    if ((this.form.get('dropdown').value as WalletBase).encrypted) {
       PasswordDialogComponent.openDialog(this.dialog, { wallet: this.form.get('dropdown').value }).componentInstance.passwordSubmit
         .subscribe(passwordDialog => {
           passwordDialog.close();

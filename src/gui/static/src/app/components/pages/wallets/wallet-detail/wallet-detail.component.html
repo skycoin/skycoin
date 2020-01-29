@@ -7,8 +7,8 @@
       </span>
     </div>
     <div class="-button" (click)="toggleEmpty()">
-      <span [ngClass]="{ '-img': true, '-show-empty': wallet.hideEmpty, '-hide-empty': !wallet.hideEmpty }">
-        {{ 'wallet.' + (wallet.hideEmpty ? 'show' : 'hide') + '-empty-button' | translate }}
+      <span [ngClass]="{ '-img': true, '-show-empty': hideEmpty, '-hide-empty': !hideEmpty }">
+        {{ 'wallet.' + (hideEmpty ? 'show' : 'hide') + '-empty-button' | translate }}
       </span>
     </div>
   </ng-container>
@@ -30,7 +30,7 @@
 </div>
 
 <ng-container *ngFor="let address of (wallet ? wallet.addresses : []); let i = index">
-  <div class="-record" *ngIf="!wallet.hideEmpty || address.coins.isGreaterThan(0)">
+  <div class="-record" *ngIf="!hideEmpty || address.coins.isGreaterThan(0)">
     <div class="-width-50 grey-text">{{ i + 1 }}</div>
     <div class="-flex-fill address-column">
       <ng-container *ngIf="!wallet.isHardware || address.confirmed">
@@ -44,7 +44,7 @@
         </p>
       </ng-container>
       <ng-container *ngIf="wallet.isHardware && !address.confirmed">
-        <p class="click-to-copy" (click)="confirmAddress(address, i, true)">
+        <p class="click-to-copy" (click)="confirmAddress(wallet, i, true)">
           <span class="small-preview">{{ address.address }}</span>
           <span class="copy-label unconfirmed-label">
             {{ 'wallet.address.show' | translate }}

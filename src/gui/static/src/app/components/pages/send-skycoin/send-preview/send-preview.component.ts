@@ -10,8 +10,8 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
 import { mergeMap } from 'rxjs/operators';
 import { CopyRawTxData, CopyRawTxComponent } from '../offline-dialogs/implementations/copy-raw-tx.component';
 import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent } from '../../../layout/confirmation/confirmation.component';
-import { BalanceAndOutputsService } from 'src/app/services/wallet-operations/balance-and-outputs.service';
-import { SpendingService } from 'src/app/services/wallet-operations/spending.service';
+import { BalanceAndOutputsService } from '../../../../services/wallet-operations/balance-and-outputs.service';
+import { SpendingService } from '../../../../services/wallet-operations/spending.service';
 
 @Component({
   selector: 'app-send-preview',

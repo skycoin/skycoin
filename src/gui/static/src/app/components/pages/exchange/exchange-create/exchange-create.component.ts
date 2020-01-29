@@ -18,7 +18,7 @@ import { BlockchainService } from '../../../../services/blockchain.service';
 import { TranslateService } from '@ngx-translate/core';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { retryWhen, delay, take, concat, mergeMap } from 'rxjs/operators';
-import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
+import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
 
 @Component({
   selector: 'app-exchange-create',

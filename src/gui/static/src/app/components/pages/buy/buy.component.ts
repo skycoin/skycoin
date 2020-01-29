@@ -5,12 +5,12 @@ import { filter, first } from 'rxjs/operators';
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { PurchaseService } from '../../../services/purchase.service';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Address, PurchaseOrder, Wallet } from '../../../app.datatypes';
+import { PurchaseOrder } from '../../../app.datatypes';
 import { ButtonComponent } from '../../layout/button/button.component';
 import { SubscriptionLike } from 'rxjs';
 import { MsgBarService } from '../../../services/msg-bar.service';
-import { WalletBase } from 'src/app/services/wallet-operations/wallet-objects';
-import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
+import { WalletBase, AddressBase } from '../../../services/wallet-operations/wallet-objects';
+import { WalletsAndAddressesService } from '../../../services/wallet-operations/wallets-and-addresses.service';
 
 @Component({
   selector: 'app-buy',
@@ -20,7 +20,7 @@ import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/w
 export class BuyComponent implements OnInit, OnDestroy {
   @ViewChild('button', { static: false }) button: ButtonComponent;
 
-  address: Address;
+  address: AddressBase;
   config: any;
   form: FormGroup;
   order: PurchaseOrder;
@@ -65,9 +65,9 @@ export class BuyComponent implements OnInit, OnDestroy {
       wallet: ['', Validators.required],
     });
 
-    this.subscriptionsGroup.push(this.form.get('wallet').valueChanges.subscribe(filename => {
-      const wallet = this.wallets.find(wlt => wlt.id === filename);
-      console.log('changing wallet value', filename);
+    this.subscriptionsGroup.push(this.form.get('wallet').valueChanges.subscribe(id => {
+      const wallet = this.wallets.find(wlt => wlt.id === id);
+      console.log('changing wallet value', id);
       this.purchaseService.generate(wallet).subscribe(
         order => this.saveData(order),
         error => this.msgBarService.showError(error.toString()),

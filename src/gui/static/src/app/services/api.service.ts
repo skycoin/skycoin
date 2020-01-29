@@ -5,11 +5,9 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { BigNumber } from 'bignumber.js';
 
-import {
-  Address, GetWalletsResponseEntry, GetWalletsResponseWallet, NormalTransaction,
-  PostWalletNewAddressResponse, Version, Wallet,
-} from '../app.datatypes';
+import { NormalTransaction, Version } from '../app.datatypes';
 import { processServiceError } from '../utils/errors';
+import { AddressBase } from './wallet-operations/wallet-objects';
 
 @Injectable()
 export class ApiService {
@@ -19,7 +17,7 @@ export class ApiService {
     private http: HttpClient,
   ) { }
 
-  getTransactions(addresses: Address[]): Observable<NormalTransaction[]> {
+  getTransactions(addresses: AddressBase[]): Observable<NormalTransaction[]> {
     const formattedAddresses = addresses.map(a => a.address).join(',');
 
     return this.post('transactions', {addrs: formattedAddresses, verbose: true}).pipe(
@@ -45,95 +43,6 @@ export class ApiService {
 
   getHealth() {
     return this.get('health');
-  }
-
-  getWallets(): Observable<Wallet[]> {
-    return this.get('wallets').pipe(
-      map((response: GetWalletsResponseWallet[]) => {
-        const wallets: Wallet[] = [];
-        response.forEach(wallet => {
-          const processedWallet: Wallet = {
-            label: wallet.meta.label,
-            filename: wallet.meta.filename,
-            coins: null,
-            hours: null,
-            addresses: [],
-            encrypted: wallet.meta.encrypted,
-          };
-
-          if (wallet.entries) {
-            processedWallet.addresses = wallet.entries.map((entry: GetWalletsResponseEntry) => {
-              return {
-                address: entry.address,
-                coins: null,
-                hours: null,
-                confirmed: true,
-              };
-            });
-          }
-
-          wallets.push(processedWallet);
-        });
-
-        return wallets;
-      }));
-  }
-
-  getWalletSeed(wallet: Wallet, password: string): Observable<string> {
-    return this.post('wallet/seed', { id: wallet.filename, password }).pipe(
-      map(response => response.seed));
-  }
-
-  postWalletCreate(label: string, seed: string, scan: number, password: string, type: string): Observable<Wallet> {
-    const params = { label, seed, scan, type };
-
-    if (password) {
-      params['password'] = password;
-      params['encrypt'] = true;
-    }
-
-    return this.post('wallet/create', params).pipe(
-      map(response => ({
-          label: response.meta.label,
-          filename: response.meta.filename,
-          coins: null,
-          hours: null,
-          addresses: response.entries.map(entry => ({ address: entry.address, coins: null, hours: null, confirmed: true })),
-          encrypted: response.meta.encrypted,
-        })));
-  }
-
-  postWalletNewAddress(wallet: Wallet, num: number, password?: string): Observable<Address[]> {
-    const params = new Object();
-    params['id'] = wallet.filename;
-    params['num'] = num;
-    if (password) {
-      params['password'] = password;
-    }
-
-    return this.post('wallet/newAddress', params).pipe(
-      map((response: PostWalletNewAddressResponse) => {
-        const result: Address[] = [];
-        response.addresses.forEach(value => {
-          result.push({ address: value, coins: null, hours: null });
-        });
-
-        return result;
-      }));
-  }
-
-  postWalletScan(wallet: Wallet, password?: string): Observable<string[]> {
-    const params = new Object();
-    params['id'] = wallet.filename;
-    if (password) {
-      params['password'] = password;
-    }
-
-    return this.post('wallet/scan', params).pipe(map((response: any) => response.addresses));
-  }
-
-  postWalletToggleEncryption(wallet: Wallet, password: string) {
-    return this.post('wallet/' + (wallet.encrypted ? 'decrypt' : 'encrypt'), { id: wallet.filename, password });
   }
 
   get(url, params = null, options: any = {}, useV2 = false) {

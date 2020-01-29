@@ -3,10 +3,10 @@ import { SubscriptionLike,  combineLatest } from 'rxjs';
 import { ButtonComponent } from '../../layout/button/button.component';
 import { FormGroup, FormBuilder, FormControl, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Wallet } from '../../../app.datatypes';
 import { MsgBarService } from '../../../services/msg-bar.service';
-import { SoftwareWalletService } from 'src/app/services/wallet-operations/software-wallet.service';
-import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
+import { SoftwareWalletService } from '../../../services/wallet-operations/software-wallet.service';
+import { WalletsAndAddressesService } from '../../../services/wallet-operations/wallets-and-addresses.service';
+import { WalletBase } from '../../../services/wallet-operations/wallet-objects';
 
 @Component({
   selector: 'app-reset-password',
@@ -20,7 +20,7 @@ export class ResetPasswordComponent implements OnDestroy {
   busy = false;
 
   private subscription: SubscriptionLike;
-  private wallet: Wallet;
+  private wallet: WalletBase;
   private done = false;
   private hideBarWhenClosing = true;
 

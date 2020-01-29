@@ -2,7 +2,6 @@ import { mergeMap } from 'rxjs/operators';
 import { Component, OnInit, Inject, ViewChild, OnDestroy } from '@angular/core';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { Wallet } from '../../../../app.datatypes';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { MessageIcons } from '../../../layout/hardware-wallet/hw-message/hw-message.component';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
@@ -10,8 +9,9 @@ import { processServiceError } from '../../../../utils/errors';
 import { SubscriptionLike } from 'rxjs';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { AppConfig } from '../../../../app.config';
-import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
-import { SoftwareWalletService } from 'src/app/services/wallet-operations/software-wallet.service';
+import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
+import { SoftwareWalletService } from '../../../../services/wallet-operations/software-wallet.service';
+import { WalletBase } from '../../../../services/wallet-operations/wallet-objects';
 
 enum States {
   Initial,
@@ -19,7 +19,7 @@ enum States {
 }
 
 export class ChangeNameData {
-  wallet: Wallet;
+  wallet: WalletBase;
   newName: string;
 }
 

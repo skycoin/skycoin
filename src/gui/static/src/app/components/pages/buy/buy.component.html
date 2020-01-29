@@ -16,7 +16,7 @@
             <div class="-select">
               <select formControlName="wallet" id="wallet" class="-wallet" required>
                 <option disabled selected>{{ 'buy.make-choice' | translate }}</option>
-                <option *ngFor="let wallet of wallets" [value]="wallet.filename">
+                <option *ngFor="let wallet of wallets" [value]="wallet.id">
                   {{ wallet.label }} - <span class="-coins">{{ wallet.coins | amount }}</span>
                 </option>
               </select>

@@ -6,7 +6,7 @@ import { HwWalletService } from '../hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
 import { AppConfig } from '../../app.config';
 import { WalletBase, AddressBase } from './wallet-objects';
-import { processServiceError } from 'src/app/utils/errors';
+import { processServiceError } from '../../utils/errors';
 
 @Injectable()
 export class WalletsAndAddressesService {
@@ -43,10 +43,12 @@ export class WalletsAndAddressesService {
       const params = new Object();
       params['id'] = wallet.id;
       params['num'] = num;
-      params['password'] = password ? password : undefined;
+      if (password) {
+        params['password'] = password;
+      }
 
       return this.apiService.post('wallet/newAddress', params).pipe(map((response: any) => {
-        const affectedWallet = this.walletsList.find(w => w.id = wallet.id);
+        const affectedWallet = this.walletsList.find(w => w.id === wallet.id);
         const newAddresses: AddressBase[] = [];
         (response.addresses as any[]).forEach(value => {
           const newAddress: AddressBase = {address: value, confirmed: true};
@@ -59,7 +61,7 @@ export class WalletsAndAddressesService {
       }));
     } else {
       return this.hwWalletService.getAddresses(num, wallet.addresses.length).pipe(map(response => {
-        const affectedWallet = this.walletsList.find(w => w.id = wallet.id);
+        const affectedWallet = this.walletsList.find(w => w.id === wallet.id);
         const newAddresses: AddressBase[] = [];
         (response.rawResponse as any[]).forEach(value => {
           const newAddress: AddressBase = {address: value, confirmed: false};
@@ -77,10 +79,12 @@ export class WalletsAndAddressesService {
     if (!wallet.isHardware) {
       const params = new Object();
       params['id'] = wallet.id;
-      params['password'] = password ? password : undefined;
+      if (password) {
+        params['password'] = password;
+      }
 
       return this.apiService.post('wallet/scan', params).pipe(map((response: any) => {
-        const affectedWallet = this.walletsList.find(w => w.id = wallet.id);
+        const affectedWallet = this.walletsList.find(w => w.id === wallet.id);
         const newAddresses: string[] = response.addresses;
         if (newAddresses && newAddresses.length > 0) {
           newAddresses.forEach(address => {
@@ -100,9 +104,26 @@ export class WalletsAndAddressesService {
   }
 
   informValuesUpdated(wallet: WalletBase) {
-    const affectedWallet = this.walletsList.find(w => w.id = wallet.id);
-    Object.getOwnPropertyNames(WalletBase).forEach(property => {
-      affectedWallet[property] = wallet[property];
+    const affectedWallet = this.walletsList.find(w => w.id === wallet.id);
+    const referenceWallet = new WalletBase();
+    Object.keys(referenceWallet).forEach(property => {
+      if (property !== 'addresses') {
+        affectedWallet[property] = wallet[property];
+      }
+    });
+
+    if (affectedWallet.addresses.length !== wallet.addresses.length) {
+      affectedWallet.addresses = [];
+      for (let i = 0; i < wallet.addresses.length; i++) {
+        affectedWallet.addresses.push(new AddressBase());
+      }
+    }
+
+    const referenceAddress = new AddressBase();
+    wallet.addresses.forEach((address, i) => {
+      Object.keys(referenceAddress).forEach(property => {
+        affectedWallet.addresses[i][property] = address[property];
+      });
     });
 
     if (wallet.isHardware) {
@@ -310,7 +331,8 @@ export class WalletsAndAddressesService {
         const loadedWallets: WalletBase[] = JSON.parse(storedWallets);
 
         const knownPropertiesMap = new Map<string, boolean>();
-        Object.getOwnPropertyNames(WalletBase).forEach(property => {
+        const referenceObject = new WalletBase();
+        Object.keys(referenceObject).forEach(property => {
           knownPropertiesMap.set(property, true);
         });
 

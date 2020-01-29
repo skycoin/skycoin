@@ -1,10 +1,10 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Wallet } from '../../../../app.datatypes';
-import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { SeedModalComponent } from './seed-modal/seed-modal.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
-import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
-import { SoftwareWalletService } from 'src/app/services/wallet-operations/software-wallet.service';
+import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
+import { SoftwareWalletService } from '../../../../services/wallet-operations/software-wallet.service';
+import { WalletBase } from '../../../../services/wallet-operations/wallet-objects';
 
 @Component({
   selector: 'app-backup',
@@ -13,7 +13,7 @@ import { SoftwareWalletService } from 'src/app/services/wallet-operations/softwa
 })
 export class BackupComponent implements OnInit, OnDestroy {
   folder: string;
-  wallets: Wallet[] = [];
+  wallets: WalletBase[] = [];
 
   private walletSubscription;
 
@@ -39,7 +39,7 @@ export class BackupComponent implements OnInit, OnDestroy {
     return this.wallets.filter(wallet => wallet.encrypted);
   }
 
-  showSeed(wallet: Wallet) {
+  showSeed(wallet: WalletBase) {
     PasswordDialogComponent.openDialog(this.dialog, { wallet: wallet }).componentInstance.passwordSubmit
       .subscribe(passwordDialog => {
         this.softwareWalletService.getWalletSeed(wallet, passwordDialog.password).subscribe(seed => {

@@ -5,8 +5,8 @@ import { MsgBarService } from '../../../../../services/msg-bar.service';
 import { FormBuilder } from '@angular/forms';
 import { SubscriptionLike } from 'rxjs';
 import { AppConfig } from '../../../../../app.config';
-import { BalanceAndOutputsService } from 'src/app/services/wallet-operations/balance-and-outputs.service';
-import { SpendingService } from 'src/app/services/wallet-operations/spending.service';
+import { BalanceAndOutputsService } from '../../../../../services/wallet-operations/balance-and-outputs.service';
+import { SpendingService } from '../../../../../services/wallet-operations/spending.service';
 
 @Component({
   selector: 'app-broadcast-raw-tx',

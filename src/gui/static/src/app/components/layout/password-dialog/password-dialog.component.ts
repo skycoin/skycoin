@@ -7,15 +7,15 @@ import { processServiceError } from '../../../utils/errors';
 import { Subject } from 'rxjs';
 import { MsgBarService } from '../../../services/msg-bar.service';
 import { AppConfig } from '../../../app.config';
-import { Wallet } from '../../../app.datatypes';
-import { OperationError, OperationErrorTypes } from './../../../utils/operation-error';
+import { OperationError } from './../../../utils/operation-error';
+import { WalletBase } from '../../../services/wallet-operations/wallet-objects';
 
 export interface PasswordDialogParams {
   confirm?: boolean;
   description?: string;
   warning?: boolean;
   title?: string;
-  wallet: Wallet;
+  wallet: WalletBase;
 }
 
 @Component({
@@ -39,7 +39,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
   }
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) public data: any,
+    @Inject(MAT_DIALOG_DATA) public data: PasswordDialogParams,
     public dialogRef: MatDialogRef<PasswordDialogComponent>,
     private msgBarService: MsgBarService,
     private changeDetector: ChangeDetectorRef,

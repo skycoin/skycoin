@@ -8,9 +8,9 @@ import { ChangeNameComponent, ChangeNameData } from '../../../pages/wallets/chan
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { OperationError, HWOperationResults } from '../../../../utils/operation-error';
 import { processServiceError } from '../../../../utils/errors';
-import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
-import { WalletBase } from 'src/app/services/wallet-operations/wallet-objects';
-import { HardwareWalletService } from 'src/app/services/wallet-operations/hardware-wallet.service';
+import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
+import { WalletBase } from '../../../../services/wallet-operations/wallet-objects';
+import { HardwareWalletService } from '../../../../services/wallet-operations/hardware-wallet.service';
 
 @Component({
   selector: 'app-hw-added-dialog',

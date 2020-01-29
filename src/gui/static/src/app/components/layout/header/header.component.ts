@@ -7,7 +7,7 @@ import { AppService } from '../../../services/app.service';
 import { BigNumber } from 'bignumber.js';
 import { NetworkService } from '../../../services/network.service';
 import { AppConfig } from '../../../app.config';
-import { BalanceAndOutputsService } from 'src/app/services/wallet-operations/balance-and-outputs.service';
+import { BalanceAndOutputsService } from '../../../services/wallet-operations/balance-and-outputs.service';
 
 @Component({
   selector: 'app-header',
@@ -26,6 +26,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   hasPendingTxs: boolean;
   price: number;
   synchronized = true;
+  balanceObtained = false;
   walletDownloadUrl = AppConfig.walletDownloadUrl;
 
   private subscriptionsGroup: SubscriptionLike[] = [];
@@ -34,7 +35,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
   // private fetchVersionError: string;
 
   get loading() {
-    return !this.current || !this.highest || this.current !== this.highest || !this.coins || this.coins === 'NaN' || !this.hours || this.hours === 'NaN';
+    return !this.current || !this.highest || this.current !== this.highest || !this.coins || this.coins === 'NaN' || !this.hours || this.hours === 'NaN' || !this.balanceObtained;
   }
 
   get coins() {
@@ -92,6 +93,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
     this.subscriptionsGroup.push(this.balanceAndOutputsService.hasPendingTransactions.subscribe(hasPendingTxs => {
       this.hasPendingTxs = hasPendingTxs;
+    }));
+
+    this.subscriptionsGroup.push(this.balanceAndOutputsService.firstFullUpdateMade.subscribe(firstFullUpdateMade => {
+      this.balanceObtained = firstFullUpdateMade;
     }));
   }
 

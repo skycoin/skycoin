@@ -3,7 +3,7 @@ import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dial
 import { first } from 'rxjs/operators';
 import { AppConfig } from '../../../app.config';
 import BigNumber from 'bignumber.js';
-import { BalanceAndOutputsService } from 'src/app/services/wallet-operations/balance-and-outputs.service';
+import { BalanceAndOutputsService } from '../../../services/wallet-operations/balance-and-outputs.service';
 
 class ListElement {
   label: string;

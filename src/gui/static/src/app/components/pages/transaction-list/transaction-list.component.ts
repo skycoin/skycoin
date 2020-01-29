@@ -8,8 +8,8 @@ import { NormalTransaction } from '../../../app.datatypes';
 import { FormGroup, FormBuilder } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { AppService } from '../../../services/app.service';
-import { HistoryService } from 'src/app/services/wallet-operations/history.service';
-import { BalanceAndOutputsService } from 'src/app/services/wallet-operations/balance-and-outputs.service';
+import { HistoryService } from '../../../services/wallet-operations/history.service';
+import { BalanceAndOutputsService } from '../../../services/wallet-operations/balance-and-outputs.service';
 
 export class Wallet {
   id: string;

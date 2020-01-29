@@ -20,7 +20,7 @@ import { CopyRawTxComponent, CopyRawTxData } from '../offline-dialogs/implementa
 import { DoubleButtonActive } from '../../../../components/layout/double-button/double-button.component';
 import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent } from '../../../../components/layout/confirmation/confirmation.component';
 import { AppService } from '../../../../services/app.service';
-import { SpendingService } from 'src/app/services/wallet-operations/spending.service';
+import { SpendingService, HoursDistributionOptions, HoursDistributionTypes } from '../../../../services/wallet-operations/spending.service';
 
 @Component({
   selector: 'app-send-coins-form',
@@ -416,14 +416,14 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     this.autoShareValue = this.defaultAutoShareValue;
   }
 
-  private get hoursSelection() {
-    let hoursSelection = {
-      type: 'manual',
+  private get hoursSelection(): HoursDistributionOptions {
+    let hoursSelection: HoursDistributionOptions = {
+      type: HoursDistributionTypes.Manual,
     };
 
     if (this.autoHours) {
-      hoursSelection = <any> {
-        type: 'auto',
+      hoursSelection = <HoursDistributionOptions> {
+        type: HoursDistributionTypes.Auto,
         mode: 'share',
         share_factor: this.autoShareValue,
       };

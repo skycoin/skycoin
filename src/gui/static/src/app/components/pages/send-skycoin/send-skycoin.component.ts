@@ -2,8 +2,7 @@ import { Component, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { NavBarService } from '../../../services/nav-bar.service';
 import { SubscriptionLike } from 'rxjs';
 import { DoubleButtonActive } from '../../layout/double-button/double-button.component';
-import { Address } from '../../../app.datatypes';
-import { MatDialogConfig, MatDialog } from '@angular/material/dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { SignRawTxComponent } from './offline-dialogs/implementations/sign-raw-tx.component';
 import { BroadcastRawTxComponent } from './offline-dialogs/implementations/broadcast-raw-tx.component';
 import { SendCoinsFormComponent } from './send-coins-form/send-coins-form.component';
@@ -70,7 +69,7 @@ export class SendSkycoinComponent implements OnDestroy {
     if (this.formData.form.wallet) {
       fromString = this.formData.form.wallet.label;
     } else {
-      const addresses = (this.formData.form.manualAddresses as Address[]);
+      const addresses = (this.formData.form.manualAddresses as string[]);
       addresses.forEach((address, i) => {
         fromString += address;
         if (i < addresses.length - 1) {

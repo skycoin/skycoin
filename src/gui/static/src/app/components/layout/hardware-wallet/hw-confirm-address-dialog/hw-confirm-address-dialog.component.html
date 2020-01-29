@@ -1,7 +1,7 @@
 <app-modal [headline]="'hardware-wallet.confirm-address.title' | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Initial">
   <app-hw-message *ngIf="currentState === states.Initial"
     [text]="'hardware-wallet.confirm-address.instructions' | translate"
-    [lowerBigText]="data.address.address"
+    [lowerBigText]="data.wallet.addresses[data.addressIndex].address"
     [icon]="msgIcons.Confirm"
   ></app-hw-message>
 

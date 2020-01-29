@@ -6,7 +6,6 @@ import { SubscriptionLike,  Observable } from 'rxjs';
 import { HwAddedDialogComponent } from '../hw-added-dialog/hw-added-dialog.component';
 import { HwGenerateSeedDialogComponent } from '../hw-generate-seed-dialog/hw-generate-seed-dialog.component';
 import { HwBackupDialogComponent } from '../hw-backup-dialog/hw-backup-dialog.component';
-import { Wallet } from '../../../../app.datatypes';
 import { HwChangePinDialogComponent } from '../hw-change-pin-dialog/hw-change-pin-dialog.component';
 import { HwRestoreSeedDialogComponent } from '../hw-restore-seed-dialog/hw-restore-seed-dialog.component';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
@@ -18,11 +17,12 @@ import { map, first } from 'rxjs/operators';
 import { AppConfig } from '../../../../app.config';
 import { OperationError, HWOperationResults } from '../../../../utils/operation-error';
 import { processServiceError } from '../../../../utils/errors';
-import { HardwareWalletService, HwFeaturesResponse, HwSecurityWarnings } from 'src/app/services/wallet-operations/hardware-wallet.service';
-import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
+import { HardwareWalletService, HwFeaturesResponse, HwSecurityWarnings } from '../../../../services/wallet-operations/hardware-wallet.service';
+import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
+import { WalletBase } from '../../../../services/wallet-operations/wallet-objects';
 
 export interface ChildHwDialogParams {
-  wallet: Wallet;
+  wallet: WalletBase;
   walletHasPin: boolean;
   requestOptionsComponentRefresh: any;
 }
@@ -53,7 +53,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
   private completeRecheckRequested = false;
   private recheckSecurityOnlyRequested = false;
   private showErrorRequested = false;
-  private wallet: Wallet;
+  private wallet: WalletBase;
 
   public static openDialog(dialog: MatDialog, onboarding: boolean): MatDialogRef<HwOptionsDialogComponent, any> {
     const config = new MatDialogConfig();

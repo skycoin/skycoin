@@ -7,7 +7,7 @@ import { WalletFormData } from '../wallets/create-wallet/create-wallet-form/crea
 import { MsgBarService } from '../../../services/msg-bar.service';
 import { OnboardingEncryptWalletComponent } from './onboarding-encrypt-wallet/onboarding-encrypt-wallet.component';
 import { SelectLanguageComponent } from '../../layout/select-language/select-language.component';
-import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
+import { WalletsAndAddressesService } from '../../../services/wallet-operations/wallets-and-addresses.service';
 
 @Component({
   selector: 'app-onboarding',

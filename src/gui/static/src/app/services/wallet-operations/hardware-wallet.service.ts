@@ -1,11 +1,11 @@
 import { Observable, of } from 'rxjs';
-import { map, catchError, mergeMap } from 'rxjs/operators';
+import { map, catchError, mergeMap, first } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 import { WalletsAndAddressesService } from './wallets-and-addresses.service';
 import { WalletBase } from './wallet-objects';
 import { HwWalletService } from '../hw-wallet.service';
 import { HttpClient } from '@angular/common/http';
-import { AppConfig } from 'src/app/app.config';
+import { AppConfig } from '../../app.config';
 
 export enum HwSecurityWarnings {
   NeedsBackup,
@@ -132,21 +132,8 @@ export class HardwareWalletService {
     }
   }
 
-  setAddressConfirmed(wallet: WalletBase, Address: string): Observable<void> {
-    return this.walletsAndAddressesService.allWallets.pipe(map(wallets => {
-      const affectedWallet = wallets.find(w => w.id === wallet.id);
-      if (!affectedWallet) {
-        throw new Error('Invalid wallet.');
-      }
-
-      const affectedAddress = affectedWallet.addresses.find(address => address.address === Address);
-      if (!affectedAddress) {
-        throw new Error('Invalid address.');
-      }
-
-      affectedAddress.confirmed = true;
-
-      this.walletsAndAddressesService.informValuesUpdated(wallet);
-    }));
+  setAddressConfirmed(wallet: WalletBase, addressIndex: number) {
+    wallet.addresses[addressIndex].confirmed = true;
+    this.walletsAndAddressesService.informValuesUpdated(wallet);
   }
 }

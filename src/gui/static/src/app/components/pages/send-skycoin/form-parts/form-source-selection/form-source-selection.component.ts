@@ -3,10 +3,10 @@ import { retryWhen, delay, first, mergeMap } from 'rxjs/operators';
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { BigNumber } from 'bignumber.js';
-import { Output as UnspentOutput, Wallet, Address } from '../../../../../app.datatypes';
 import { AppService } from '../../../../../services/app.service';
 import { HttpErrorResponse } from '@angular/common/http';
-import { BalanceAndOutputsService } from 'src/app/services/wallet-operations/balance-and-outputs.service';
+import { BalanceAndOutputsService } from '../../../../../services/wallet-operations/balance-and-outputs.service';
+import { WalletWithBalance, AddressWithBalance, Output as UnspentOutput } from '../../../../../services/wallet-operations/wallet-objects';
 
 export class AvailableBalanceData {
   availableCoins = new BigNumber(0);
@@ -16,8 +16,8 @@ export class AvailableBalanceData {
 }
 
 export interface SelectedSources {
-  wallet: Wallet;
-  addresses?: Address[];
+  wallet: WalletWithBalance;
+  addresses?: AddressWithBalance[];
   manualAddresses?: string[];
   unspentOutputs: UnspentOutput[];
 }
@@ -51,9 +51,9 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
 
   sourceSelectionModes = SourceSelectionModes;
   form: FormGroup;
-  wallets: Wallet[];
-  wallet: Wallet;
-  addresses: Address[] = [];
+  wallets: WalletWithBalance[];
+  wallet: WalletWithBalance;
+  addresses: AddressWithBalance[] = [];
   manualAddresses: string[] = [];
   allUnspentOutputs: UnspentOutput[] = [];
   unspentOutputs: UnspentOutput[] = [];
@@ -189,7 +189,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
       this.onSelectionChanged.emit();
     }));
 
-    this.subscriptionsGroup.push(this.balanceAndOutputsService.walletsWithBalance.pipe(first()).subscribe(wallets => {
+    this.subscriptionsGroup.push(this.balanceAndOutputsService.walletsWithBalance.subscribe(wallets => {
       this.wallets = wallets;
       if (wallets.length === 1) {
         setTimeout(() => {
@@ -315,7 +315,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
 
     if (this.form.get('wallet').value) {
       const outputs: UnspentOutput[] = this.form.get('outputs').value;
-      const addresses: Address[] = this.form.get('addresses').value;
+      const addresses: AddressWithBalance[] = this.form.get('addresses').value;
 
       if (outputs && outputs.length > 0) {
         outputs.map(control => {
@@ -328,7 +328,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
           response.availableHours = response.availableHours.plus(control.hours);
         });
       } else if (this.form.get('wallet').value) {
-        const wallet: Wallet = this.form.get('wallet').value;
+        const wallet: WalletWithBalance = this.form.get('wallet').value;
         response.availableCoins = wallet.coins;
         response.availableHours = wallet.hours;
       }
@@ -354,7 +354,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
     } else {
       return {
         wallet: this.form.get('wallet').value,
-        addresses: (this.form.get('addresses').value as Address[]),
+        addresses: (this.form.get('addresses').value as AddressWithBalance[]),
         unspentOutputs: this.form.get('outputs').value,
       };
     }
@@ -371,11 +371,11 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
 
     if (this.allUnspentOutputs.length === 0) {
       return [];
-    } else if (!this.form.get('addresses').value || (this.form.get('addresses').value as Address[]).length === 0) {
+    } else if (!this.form.get('addresses').value || (this.form.get('addresses').value as AddressWithBalance[]).length === 0) {
       return this.allUnspentOutputs;
     } else {
       const addressMap = new Map<string, boolean>();
-      (this.form.get('addresses').value as Address[]).forEach(address => addressMap.set(address.address, true));
+      (this.form.get('addresses').value as AddressWithBalance[]).forEach(address => addressMap.set(address.address, true));
 
       return this.allUnspentOutputs.filter(out => addressMap.has(out.address));
     }

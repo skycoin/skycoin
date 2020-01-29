@@ -4,8 +4,8 @@ import { SubscriptionLike } from 'rxjs';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
 import { BigNumber } from 'bignumber.js';
-import { BalanceAndOutputsService } from 'src/app/services/wallet-operations/balance-and-outputs.service';
-import { HistoryService } from 'src/app/services/wallet-operations/history.service';
+import { BalanceAndOutputsService } from '../../../../services/wallet-operations/balance-and-outputs.service';
+import { HistoryService } from '../../../../services/wallet-operations/history.service';
 
 @Component({
   selector: 'app-pending-transactions',
@@ -19,7 +19,6 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
   private navbarSubscription: SubscriptionLike;
 
   constructor(
-    public walletService: WalletService,
     private navbarService: NavBarService,
     private balanceAndOutputsService: BalanceAndOutputsService,
     private historyService: HistoryService,

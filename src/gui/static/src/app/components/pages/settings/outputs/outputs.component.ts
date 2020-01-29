@@ -1,7 +1,7 @@
 import { Component, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { SubscriptionLike } from 'rxjs';
-import { BalanceAndOutputsService } from 'src/app/services/wallet-operations/balance-and-outputs.service';
+import { BalanceAndOutputsService } from '../../../../services/wallet-operations/balance-and-outputs.service';
 
 @Component({
   selector: 'app-outputs',
@@ -21,7 +21,6 @@ export class OutputsComponent implements OnDestroy {
     route.queryParams.subscribe(params => {
       this.wallets = null;
       this.lastRouteParams = params;
-      this.balanceAndOutputsService.refreshBalance();
     });
     this.loadData();
   }

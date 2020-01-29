@@ -4,7 +4,7 @@
 <p>{{ 'buy.deposit-address' | translate }}</p>
 <div [formGroup]="form">
   <mat-select formControlName="address" [placeholder]="'buy.select-address' | translate" class="input-field">
-    <mat-option *ngFor="let address of walletService.allAddresses() | async" [value]="address.address">
+    <mat-option *ngFor="let address of walletsAndAddressesService.allAddresses | async" [value]="address.address">
       {{ address.address }}
     </mat-option>
   </mat-select>

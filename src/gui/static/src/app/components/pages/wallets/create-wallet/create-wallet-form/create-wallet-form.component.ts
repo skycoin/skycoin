@@ -7,6 +7,8 @@ import { MatDialog } from '@angular/material/dialog';
 import { SeedWordDialogComponent } from '../../../../layout/seed-word-dialog/seed-word-dialog.component';
 import { MsgBarService } from '../../../../../services/msg-bar.service';
 import { ConfirmationParams, ConfirmationComponent, DefaultConfirmationButtons } from '../../../../layout/confirmation/confirmation.component';
+import { OperationError } from '../../../../../utils/operation-error';
+import { processServiceError } from '../../../../../utils/errors';
 
 export class WalletFormData {
   creatingNewWallet: boolean;
@@ -267,8 +269,9 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
       }
     })).subscribe(() => {
       this.customSeedIsNormal = true;
-    }, error => {
-      if (error.status && error.status === 422) {
+    }, (error: OperationError) => {
+      error = processServiceError(error);
+      if (error && error.originalError && error.originalError.status === 422) {
         this.customSeedIsNormal = false;
       } else {
         this.customSeedIsNormal = true;

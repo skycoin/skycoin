@@ -1,17 +1,9 @@
 import { BigNumber } from 'bignumber.js';
+import { WalletBase } from './services/wallet-operations/wallet-objects';
+
 /**
  * Internal Objects
  */
-
-export class Address {
-  address: string;
-  coins: BigNumber = new BigNumber('0');
-  hours: BigNumber = new BigNumber('0');
-  copying?: boolean; // Optional parameter indicating whether the address is being copied to clipboard
-  outputs?: any;
-  confirmed?: boolean; // Optional parameter for hardware wallets only
-}
-
 export class PurchaseOrder {
   coin_type: string;
   filename: string;
@@ -41,7 +33,7 @@ export class PreviewTransaction extends Transaction {
   to: string[];
   encoded: string;
   innerHash: string;
-  wallet?: Wallet;
+  wallet?: WalletBase;
 }
 
 export class NormalTransaction extends Transaction {
@@ -53,20 +45,6 @@ export class NormalTransaction extends Transaction {
 
 export class Version {
   version: string;
-}
-
-export class Wallet {
-  label: string;
-  filename: string;
-  coins: BigNumber = new BigNumber('0');
-  hours: BigNumber = new BigNumber('0');
-  addresses: Address[];
-  encrypted: boolean;
-  hideEmpty?: boolean;
-  opened?: boolean;
-  isHardware?: boolean;
-  hasHwSecurityWarnings?: boolean;
-  stopShowingHwSecurityPopup?: boolean;
 }
 
 export class Connection {
@@ -109,13 +87,6 @@ export class StoredExchangeOrder {
   address: string;
   timestamp: number;
   price: number;
-}
-
-export interface Output {
-  address: string;
-  coins: BigNumber;
-  hash: string;
-  calculated_hours: BigNumber;
 }
 
 /**

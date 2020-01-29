@@ -15,10 +15,10 @@ import { ApiService } from '../../../../services/api.service';
 import { mergeMap, first } from 'rxjs/operators';
 import { AddressOptionsComponent, AddressOptions } from './address-options/address-options.component';
 import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent } from '../../../layout/confirmation/confirmation.component';
-import { WalletsAndAddressesService } from 'src/app/services/wallet-operations/wallets-and-addresses.service';
-import { WalletWithBalance } from 'src/app/services/wallet-operations/wallet-objects';
-import { SoftwareWalletService } from 'src/app/services/wallet-operations/software-wallet.service';
-import { HardwareWalletService } from 'src/app/services/wallet-operations/hardware-wallet.service';
+import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
+import { WalletWithBalance } from '../../../../services/wallet-operations/wallet-objects';
+import { SoftwareWalletService } from '../../../../services/wallet-operations/software-wallet.service';
+import { HardwareWalletService } from '../../../../services/wallet-operations/hardware-wallet.service';
 
 @Component({
   selector: 'app-wallet-detail',
@@ -31,6 +31,7 @@ export class WalletDetailComponent implements OnDestroy {
   confirmingIndex = null;
   workingWithAddresses = false;
   preparingToEdit = false;
+  hideEmpty = false;
 
   private howManyAddresses: number;
   private editSubscription: SubscriptionLike;
@@ -189,7 +190,7 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   toggleEmpty() {
-    this.wallet.hideEmpty = !this.wallet.hideEmpty;
+    this.hideEmpty = !this.hideEmpty;
   }
 
   deleteWallet() {
@@ -233,7 +234,7 @@ export class WalletDetailComponent implements OnDestroy {
       });
   }
 
-  confirmAddress(address, addressIndex, showCompleteConfirmation) {
+  confirmAddress(wallet, addressIndex, showCompleteConfirmation) {
     if (this.confirmingIndex !== null) {
       return;
     }
@@ -247,7 +248,7 @@ export class WalletDetailComponent implements OnDestroy {
 
     this.confirmSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.wallet.addresses[0].address).subscribe(response => {
       const data = new AddressConfirmationParams();
-      data.address = address;
+      data.wallet = wallet;
       data.addressIndex = addressIndex;
       data.showCompleteConfirmation = showCompleteConfirmation;
 

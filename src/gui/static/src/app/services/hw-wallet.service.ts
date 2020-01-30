@@ -1,4 +1,4 @@
-import { throwError as observableThrowError, of, Observable, Subject, SubscriptionLike } from 'rxjs';
+import { throwError as observableThrowError, of, Observable, Subject } from 'rxjs';
 import { mergeMap, map, catchError } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 import { AppConfig } from '../app.config';
@@ -6,8 +6,7 @@ import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dial
 import { HwWalletDaemonService } from './hw-wallet-daemon.service';
 import { HwWalletPinService, ChangePinStates } from './hw-wallet-pin.service';
 import BigNumber from 'bignumber.js';
-import { StorageService, StorageType } from './storage.service';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { ApiService } from './api.service';
 import { OperationError, OperationErrorCategories, HWOperationResults } from '../utils/operation-error';
 import { getErrorMsg } from '../utils/errors';
@@ -40,13 +39,9 @@ export class HwWalletService {
 
   public static readonly maxLabelLength = 32;
 
-  private readonly storageKey = 'hw-wallets';
-
   showOptionsWhenPossible = false;
 
   private walletConnectedSubject: Subject<boolean> = new Subject<boolean>();
-
-  private savingDataSubscription: SubscriptionLike;
 
   private signTransactionDialog: MatDialogRef<{}, any>;
 
@@ -60,7 +55,6 @@ export class HwWalletService {
     private dialog: MatDialog,
     private hwWalletDaemonService: HwWalletDaemonService,
     private hwWalletPinService: HwWalletPinService,
-    private storageService: StorageService,
     private apiService: ApiService,
     private http: HttpClient) {
 
@@ -83,28 +77,6 @@ export class HwWalletService {
     return this.hwWalletDaemonService.get('/available').pipe(map((response: any) => {
       return response.data;
     }));
-  }
-
-  getSavedWalletsData(): Observable<string> {
-    return this.storageService.get(StorageType.CLIENT, this.storageKey).pipe(
-      map(result => result.data),
-      catchError((err: HttpErrorResponse) => {
-        try {
-          if (err.status && err.status === 404) {
-            return of(null);
-          }
-        } catch (e) {}
-
-        return observableThrowError(err);
-      }));
-  }
-
-  saveWalletsData(walletsData: string) {
-    if (this.savingDataSubscription) {
-      this.savingDataSubscription.unsubscribe();
-    }
-
-    this.savingDataSubscription = this.storageService.store(StorageType.CLIENT, this.storageKey, walletsData).subscribe();
   }
 
   cancelLastAction(): Observable<OperationResult> {

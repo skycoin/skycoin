@@ -38,7 +38,11 @@ export class WalletsComponent implements OnInit, OnDestroy {
     this.subscription = this.balanceAndOutputsService.walletsWithBalance.subscribe(wallets => {
       this.wallets = [];
       this.hardwareWallets = [];
+
+      const walletsMap = new Map<string, boolean>();
       wallets.forEach(value => {
+        walletsMap.set(value.id, true);
+
         if (!value.isHardware) {
           this.wallets.push(value);
         } else {
@@ -48,6 +52,17 @@ export class WalletsComponent implements OnInit, OnDestroy {
         if (!this.walletsOpenedState.has(value.id)) {
           this.walletsOpenedState.set(value.id, false);
         }
+      });
+
+      const walletsToRemove: string[] = [];
+      this.walletsOpenedState.forEach((value, key) => {
+        if (!walletsMap.has(key)) {
+          walletsToRemove.push(key);
+        }
+      });
+
+      walletsToRemove.forEach(walletToRemove => {
+        this.walletsOpenedState.delete(walletToRemove);
       });
     });
   }

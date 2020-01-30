@@ -1,5 +1,5 @@
 import { Observable, of } from 'rxjs';
-import { map, catchError, mergeMap, first } from 'rxjs/operators';
+import { map, catchError, mergeMap, first, tap } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 import { WalletsAndAddressesService } from './wallets-and-addresses.service';
 import { WalletBase } from './wallet-objects';
@@ -132,8 +132,23 @@ export class HardwareWalletService {
     }
   }
 
-  setAddressConfirmed(wallet: WalletBase, addressIndex: number) {
-    wallet.addresses[addressIndex].confirmed = true;
-    this.walletsAndAddressesService.informValuesUpdated(wallet);
+  confirmAddress(wallet: WalletBase, addressIndex: number): Observable<void> {
+    return this.hwWalletService.checkIfCorrectHwConnected(wallet.id).pipe(
+      mergeMap(() => this.hwWalletService.confirmAddress(addressIndex)),
+      map(() => {
+        wallet.addresses[addressIndex].confirmed = true;
+        this.walletsAndAddressesService.informValuesUpdated(wallet);
+      }),
+    );
+  }
+
+  changeLabel(wallet: WalletBase, newLabel: string): Observable<void> {
+    return this.hwWalletService.checkIfCorrectHwConnected(wallet.id).pipe(
+      mergeMap(() => this.hwWalletService.changeLabel(newLabel)),
+      map(() => {
+        wallet.label = newLabel;
+        this.walletsAndAddressesService.informValuesUpdated(wallet);
+      }),
+    );
   }
 }

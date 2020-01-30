@@ -1,4 +1,4 @@
-import { of, Subject, Observable, ReplaySubject, BehaviorSubject, throwError as observableThrowError } from 'rxjs';
+import { of, Subject, Observable, ReplaySubject, BehaviorSubject, throwError as observableThrowError, Subscription } from 'rxjs';
 import { tap, mergeMap, map, catchError } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 import { ApiService } from '../api.service';
@@ -7,17 +7,23 @@ import { TranslateService } from '@ngx-translate/core';
 import { AppConfig } from '../../app.config';
 import { WalletBase, AddressBase } from './wallet-objects';
 import { processServiceError } from '../../utils/errors';
+import { StorageService, StorageType } from '../storage.service';
+import { OperationError } from '../../utils/operation-error';
 
 @Injectable()
 export class WalletsAndAddressesService {
+  private readonly hwWalletsDataStorageKey = 'hw-wallets';
+
   private walletsList: WalletBase[];
   private walletsSubject: Subject<WalletBase[]> = new ReplaySubject<WalletBase[]>(1);
   private initialLoadFailed: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+  private savingHwWalletDataSubscription: Subscription;
 
   constructor(
     private apiService: ApiService,
     private hwWalletService: HwWalletService,
     private translate: TranslateService,
+    private storageService: StorageService,
   ) {
     this.loadWallets();
   }
@@ -266,7 +272,12 @@ export class WalletsAndAddressesService {
       }
     });
 
-    this.hwWalletService.saveWalletsData(JSON.stringify(hardwareWallets));
+    if (this.savingHwWalletDataSubscription) {
+      this.savingHwWalletDataSubscription.unsubscribe();
+    }
+
+    this.savingHwWalletDataSubscription =
+      this.storageService.store(StorageType.CLIENT, this.hwWalletsDataStorageKey, JSON.stringify(hardwareWallets)).subscribe();
 
     this.informDataUpdated();
   }
@@ -326,42 +337,56 @@ export class WalletsAndAddressesService {
   }
 
   private loadHardwareWallets(): Observable<WalletBase[]> {
-    return this.hwWalletService.getSavedWalletsData().pipe(map(storedWallets => {
-      if (storedWallets) {
-        const loadedWallets: WalletBase[] = JSON.parse(storedWallets);
 
-        const knownPropertiesMap = new Map<string, boolean>();
-        const referenceObject = new WalletBase();
-        Object.keys(referenceObject).forEach(property => {
-          knownPropertiesMap.set(property, true);
-        });
-
-        loadedWallets.forEach(wallet => {
-          const propertiesToRemove: string[] = [];
-          Object.keys(wallet).forEach(property => {
-            if (!knownPropertiesMap.has(property)) {
-              propertiesToRemove.push(property);
-            }
-          });
-
-          propertiesToRemove.forEach(property => {
-            delete wallet[property];
-          });
-
-          wallet.isHardware = true;
-
-          if (!wallet.addresses) {
-            wallet.addresses = [{ address: 'invalid', confirmed: false, }];
+    return this.storageService.get(StorageType.CLIENT, this.hwWalletsDataStorageKey).pipe(
+      map(result => result.data),
+      catchError((err: OperationError) => {
+        err = processServiceError(err);
+        try {
+          if (err && err.originalError &&  err.originalError.status && err.originalError.status === 404) {
+            return of(null);
           }
+        } catch (e) {}
 
-          wallet.id = wallet.addresses[0].address;
-        });
+        return observableThrowError(err);
+      }),
+      map(storedWallets => {
+        if (storedWallets) {
+          const loadedWallets: WalletBase[] = JSON.parse(storedWallets);
 
-        return loadedWallets;
-      }
+          const knownPropertiesMap = new Map<string, boolean>();
+          const referenceObject = new WalletBase();
+          Object.keys(referenceObject).forEach(property => {
+            knownPropertiesMap.set(property, true);
+          });
 
-      return null;
-    }));
+          loadedWallets.forEach(wallet => {
+            const propertiesToRemove: string[] = [];
+            Object.keys(wallet).forEach(property => {
+              if (!knownPropertiesMap.has(property)) {
+                propertiesToRemove.push(property);
+              }
+            });
+
+            propertiesToRemove.forEach(property => {
+              delete wallet[property];
+            });
+
+            wallet.isHardware = true;
+
+            if (!wallet.addresses) {
+              wallet.addresses = [{ address: 'invalid', confirmed: false, }];
+            }
+
+            wallet.id = wallet.addresses[0].address;
+          });
+
+          return loadedWallets;
+        }
+
+        return null;
+      }),
+    );
   }
 
   folder(): Observable<string> {

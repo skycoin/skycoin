@@ -18,13 +18,17 @@ export class BalanceAndOutputsService {
 
   private savedBalanceData = new Map<string, any>();
   private temporalSavedBalanceData = new Map<string, any>();
+  private savedWalletsList: WalletBase[];
 
   constructor(
     private walletsAndAddressesService: WalletsAndAddressesService,
     private apiService: ApiService,
     private ngZone: NgZone,
   ) {
-    this.startDataRefreshSubscription();
+    this.walletsAndAddressesService.allWallets.subscribe(wallets => {
+      this.savedWalletsList = wallets;
+      this.startDataRefreshSubscription(0);
+    });
   }
 
   get walletsWithBalance(): Observable<WalletWithBalance[]> {
@@ -86,21 +90,23 @@ export class BalanceAndOutputsService {
   }
 
   refreshBalance() {
-    this.startDataRefreshSubscription();
+    this.startDataRefreshSubscription(0);
   }
 
-  private startDataRefreshSubscription() {
+  private startDataRefreshSubscription(delayMs: number) {
     if (this.dataRefreshSubscription) {
       this.dataRefreshSubscription.unsubscribe();
     }
 
-    this.ngZone.runOutsideAngular(() => {
-      this.dataRefreshSubscription = this.walletsAndAddressesService.allWallets.pipe(
-        switchMap(wallets => {
-          return this.refreshBalances(wallets, true).pipe(mergeMap(() => this.refreshBalances(wallets, false)));
-        }),
-      ).subscribe(null, () => this.startDataRefreshSubscription());
-    });
+    if (this.savedWalletsList) {
+      this.ngZone.runOutsideAngular(() => {
+        this.dataRefreshSubscription = of(0).pipe(delay(delayMs), mergeMap(() => {
+          return this.refreshBalances(this.savedWalletsList, true);
+        }), mergeMap(() => {
+          return this.refreshBalances(this.savedWalletsList, false);
+        })).subscribe(() => this.startDataRefreshSubscription(10000), () => this.startDataRefreshSubscription(0));
+      });
+    }
   }
 
   private refreshBalances(wallets: WalletBase[], forceQuickCompleteArrayUpdate: boolean): Observable<any> {
@@ -117,7 +123,7 @@ export class BalanceAndOutputsService {
       this.temporalSavedBalanceData = new Map<string, any>();
     }
 
-    let response = observableForkJoin(temporalWallets.map(wallet => this.retrieveWalletBalance(wallet, forceQuickCompleteArrayUpdate))).pipe(tap(walletHasPendingTx => {
+    return observableForkJoin(temporalWallets.map(wallet => this.retrieveWalletBalance(wallet, forceQuickCompleteArrayUpdate))).pipe(tap(walletHasPendingTx => {
       this.hasPendingTransactionsSubject.next(walletHasPendingTx.some(value => value));
 
       if (!forceQuickCompleteArrayUpdate) {
@@ -169,12 +175,6 @@ export class BalanceAndOutputsService {
         }
       }
     }));
-
-    if (!forceQuickCompleteArrayUpdate) {
-      response = response.pipe(delay(10000), mergeMap(() => this.refreshBalances(wallets, false)));
-    }
-
-    return response;
   }
 
   private retrieveWalletBalance(wallet: WalletWithBalance, useSavedBalanceData: boolean): Observable<boolean> {

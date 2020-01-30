@@ -3,6 +3,7 @@ import { Subject, BehaviorSubject, SubscriptionLike, timer, of } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { delay } from 'rxjs/operators';
 import { AppConfig } from '../app.config';
+import { environment } from '../../environments/environment';
 
 @Injectable()
 export class PriceService {
@@ -50,11 +51,15 @@ export class PriceService {
       this.lastPriceSubscription.unsubscribe();
     }
 
-    this.lastPriceSubscription = this.http.get(`https://api.coinpaprika.com/v1/tickers/${this.PRICE_API_ID}?quotes=USD`)
-      .subscribe((response: any) => {
-        this.lastPriceSubscription = null;
-        this.price.next(response.quotes.USD.price);
-      },
-      () => this.startTimer(30000));
+    if (!environment.isInE2eMode) {
+      this.lastPriceSubscription = this.http.get(`https://api.coinpaprika.com/v1/tickers/${this.PRICE_API_ID}?quotes=USD`)
+        .subscribe((response: any) => {
+          this.lastPriceSubscription = null;
+          this.price.next(response.quotes.USD.price);
+        },
+        () => this.startTimer(30000));
+    } else {
+      this.price.next(1);
+    }
   }
 }

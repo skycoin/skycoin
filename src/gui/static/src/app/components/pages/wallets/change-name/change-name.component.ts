@@ -9,9 +9,9 @@ import { processServiceError } from '../../../../utils/errors';
 import { SubscriptionLike } from 'rxjs';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { AppConfig } from '../../../../app.config';
-import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
 import { SoftwareWalletService } from '../../../../services/wallet-operations/software-wallet.service';
 import { WalletBase } from '../../../../services/wallet-operations/wallet-objects';
+import { HardwareWalletService } from '../../../../services/wallet-operations/hardware-wallet.service';
 
 enum States {
   Initial,
@@ -61,8 +61,8 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
     private formBuilder: FormBuilder,
     private hwWalletService: HwWalletService,
     private msgBarService: MsgBarService,
-    private walletsAndAddressesService: WalletsAndAddressesService,
     private softwareWalletService: SoftwareWalletService,
+    private hardwareWalletService: HardwareWalletService,
   ) {}
 
   ngOnInit() {
@@ -128,21 +128,11 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
           }
         });
     } else {
-      if (this.data.newName) {
-        this.currentState = States.WaitingForConfirmation;
-      }
+      this.currentState = States.WaitingForConfirmation;
 
-      this.operationSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.data.wallet.addresses[0].address).pipe(
-        mergeMap(() => {
-          this.currentState = States.WaitingForConfirmation;
-
-          return this.hwWalletService.changeLabel(this.newLabel);
-        }))
-        .subscribe(
+      this.operationSubscription = this.hardwareWalletService.changeLabel(this.data.wallet, this.newLabel).subscribe(
           () => {
             this.working = false;
-            this.data.wallet.label = this.newLabel;
-            this.walletsAndAddressesService.informValuesUpdated(this.data.wallet);
             this.dialogRef.close(this.newLabel);
 
             if (!this.data.newName) {

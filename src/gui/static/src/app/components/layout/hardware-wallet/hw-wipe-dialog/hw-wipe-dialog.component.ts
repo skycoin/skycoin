@@ -43,7 +43,7 @@ export class HwWipeDialogComponent extends HwDialogBaseComponent<HwWipeDialogCom
         });
         this.data.requestOptionsComponentRefresh();
         if (this.deleteFromList) {
-          this.walletsAndAddressesService.deleteHardwareWallet(this.data.wallet);
+          this.walletsAndAddressesService.deleteHardwareWallet(this.data.wallet.id);
         }
       },
       err => this.processResult(err),

@@ -299,12 +299,12 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
       if (selectedOutputs && selectedOutputs.length > 0) {
         selectedOutputs.map(output => {
           response.availableCoins = response.availableCoins.plus(output.coins);
-          response.availableHours = response.availableHours.plus(output.calculated_hours);
+          response.availableHours = response.availableHours.plus(output.hours);
         });
       } else {
         this.unspentOutputs.forEach(output => {
           response.availableCoins = response.availableCoins.plus(output.coins);
-          response.availableHours = response.availableHours.plus(output.calculated_hours);
+          response.availableHours = response.availableHours.plus(output.hours);
         });
       }
     }
@@ -320,7 +320,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
       if (outputs && outputs.length > 0) {
         outputs.map(control => {
           response.availableCoins = response.availableCoins.plus(control.coins);
-          response.availableHours = response.availableHours.plus(control.calculated_hours);
+          response.availableHours = response.availableHours.plus(control.hours);
         });
       } else if (addresses && addresses.length > 0) {
         addresses.map(control => {

@@ -20,7 +20,7 @@ export class StorageService {
       params.key = key;
     }
 
-    return this.apiService.get('data', params, { }, true);
+    return this.apiService.get('data', params, { useV2: true});
   }
 
   store(type: StorageType, key: string, value: string) {
@@ -28,6 +28,6 @@ export class StorageService {
       type: type,
       key: key,
       val: value,
-    }, {}, true);
+    }, {useV2: true});
   }
 }

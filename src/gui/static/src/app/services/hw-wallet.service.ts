@@ -123,7 +123,7 @@ export class HwWalletService {
       address: addresses[currentIndex],
     };
 
-    return this.apiService.post('address/verify', params, {}, true).pipe(mergeMap(() => {
+    return this.apiService.post('address/verify', params, {useV2: true}).pipe(mergeMap(() => {
       if (currentIndex !== addresses.length - 1) {
         return this.verifyAddresses(addresses, currentIndex + 1);
       } else {

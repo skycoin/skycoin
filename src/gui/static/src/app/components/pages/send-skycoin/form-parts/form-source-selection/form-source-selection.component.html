@@ -70,12 +70,12 @@
         [ngClass]="{'element-disabled' : (busy || (unspentOutputs && unspentOutputs.length === 0))}">
         <mat-option *ngFor="let out of unspentOutputs" [value]="out">
           {{ out.hash }} - {{ (out.coins ? out.coins.toString() : 0) | amount }}
-          ({{ out.calculated_hours.toString() | amount:false }})
+          ({{ out.hours.toString() | amount:false }})
         </mat-option>
         <mat-select-trigger>
           <div *ngFor="let out of form.get('outputs').value">
             {{ out.hash }} - {{ (out.coins ? out.coins.toString() : 0) | amount }}
-            ({{ out.calculated_hours.toString() | amount:false }})
+            ({{ out.hours.toString() | amount:false }})
           </div>
         </mat-select-trigger>
       </mat-select>

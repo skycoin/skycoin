@@ -1,25 +1,56 @@
 import { Observable, of } from 'rxjs';
-import { map, catchError, mergeMap, first, tap } from 'rxjs/operators';
+import { map, catchError, mergeMap } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+
 import { WalletsAndAddressesService } from './wallets-and-addresses.service';
 import { WalletBase } from './wallet-objects';
 import { HwWalletService } from '../hw-wallet.service';
-import { HttpClient } from '@angular/common/http';
 import { AppConfig } from '../../app.config';
 
+/**
+ * List with the security problems that can be detected in a hw wallet.
+ */
 export enum HwSecurityWarnings {
-  NeedsBackup,
-  NeedsPin,
-  FirmwareVersionNotVerified,
-  OutdatedFirmware,
+  /**
+   * The user has not made a backup of the seed of the device.
+   */
+  NeedsBackup = 'NeedsBackup',
+  /**
+   * The device does not have PIN code protection activated.
+   */
+  NeedsPin = 'NeedsPin',
+  /**
+   * It was not possible to connect to the remote server to know if the device is running
+   * an outdated firmware.
+   */
+  FirmwareVersionNotVerified = 'FirmwareVersionNotVerified',
+  /**
+   * The device is running an outdated firmware.
+   */
+  OutdatedFirmware = 'FirmwareVersionNotVerified',
 }
 
 export interface HwFeaturesResponse {
+  /**
+   * Features returned by the device.
+   */
   features: any;
+  /**
+   * Security warnings found during the operation.
+   */
   securityWarnings: HwSecurityWarnings[];
+  /**
+   * During the operation it was detected that the device is showing a label which is not
+   * equal to the one known by the app, so the name shown on the app was updated to match
+   * the one on the device.
+   */
   walletNameUpdated: boolean;
 }
 
+/**
+ * Allows to perform operations related to a hardware wallet.
+ */
 @Injectable()
 export class HardwareWalletService {
   constructor(
@@ -28,26 +59,42 @@ export class HardwareWalletService {
     private http: HttpClient,
   ) { }
 
+  /**
+   * Gets the features of the connected hw wallet and also updates the label and security warnings
+   * of a WalletBase instance with the data obtained from the currently connected device.
+   * @param wallet WalletBase instance to be updated. If null, the function will still work, it
+   * just will not update anything.
+   */
   getFeaturesAndUpdateData(wallet: WalletBase): Observable<HwFeaturesResponse> {
     if (!wallet || wallet.isHardware) {
 
       let lastestFirmwareVersion: string;
 
+      // Get the number of the most recent firmware version.
       return this.http.get(AppConfig.urlForHwWalletVersionChecking, { responseType: 'text' }).pipe(
       catchError(() => of(null)),
       mergeMap((res: any) => {
+        // If it was not possible to get the number of the most recent firmware version,
+        // continue anyways.
         if (res) {
           lastestFirmwareVersion = res;
         } else {
           lastestFirmwareVersion = null;
         }
 
-        return this.hwWalletService.getFeatures();
+        // Check if the currently connected device is the expected one.
+        if (wallet) {
+          return this.hwWalletService.checkIfCorrectHwConnected(wallet.addresses[0].address);
+        } else {
+          return of(0);
+        }
       }),
+      mergeMap(() => this.hwWalletService.getFeatures()),
       map(result => {
         let lastestFirmwareVersionReaded = false;
         let firmwareUpdated = false;
 
+        // Compare the version number of the firmware of the connected device and the one obtained from the server.
         if (lastestFirmwareVersion) {
           lastestFirmwareVersion = lastestFirmwareVersion.trim();
           const versionParts = lastestFirmwareVersion.split('.');
@@ -77,6 +124,7 @@ export class HardwareWalletService {
           }
         }
 
+        // Create the security warnings list.
         const warnings: HwSecurityWarnings[] = [];
         let hasHwSecurityWarnings = false;
 
@@ -98,8 +146,8 @@ export class HardwareWalletService {
           }
         }
 
+        // If a wallet was provided, update the label and security warnings, if needed.
         let walletNameUpdated = false;
-
         if (wallet) {
           let changesMade = false;
 
@@ -119,6 +167,7 @@ export class HardwareWalletService {
           }
         }
 
+        // Prepare the response.
         const response = {
           features: result.rawResponse,
           securityWarnings: warnings,
@@ -132,20 +181,34 @@ export class HardwareWalletService {
     }
   }
 
+  /**
+   * Asks the user to confirm an addresses on the connected device. This allows the user
+   * to confirm that the address displayed by this app is equal to the one on the device.
+   * @param wallet Wallet to check.
+   * @param addressIndex Index of the addresses on the provided wallet.
+   */
   confirmAddress(wallet: WalletBase, addressIndex: number): Observable<void> {
     return this.hwWalletService.checkIfCorrectHwConnected(wallet.id).pipe(
       mergeMap(() => this.hwWalletService.confirmAddress(addressIndex)),
       map(() => {
+        // If the user confirms the operation, update the local data.
         wallet.addresses[addressIndex].confirmed = true;
         this.walletsAndAddressesService.informValuesUpdated(wallet);
       }),
     );
   }
 
+  /**
+   * Asks the device to change the label shown on its physical scren. It also changes the
+   * label/name saved on the local wallet object.
+   * @param wallet Wallet to modify.
+   * @param newLabel New label or name.
+   */
   changeLabel(wallet: WalletBase, newLabel: string): Observable<void> {
     return this.hwWalletService.checkIfCorrectHwConnected(wallet.id).pipe(
       mergeMap(() => this.hwWalletService.changeLabel(newLabel)),
       map(() => {
+        // If the user confirms the operation, update the local data.
         wallet.label = newLabel;
         this.walletsAndAddressesService.informValuesUpdated(wallet);
       }),

@@ -12,13 +12,15 @@ import { Router } from '@angular/router';
 import { HwConfirmAddressDialogComponent, AddressConfirmationParams } from '../../../layout/hardware-wallet/hw-confirm-address-dialog/hw-confirm-address-dialog.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { ApiService } from '../../../../services/api.service';
-import { mergeMap, first } from 'rxjs/operators';
+import { mergeMap, first, map } from 'rxjs/operators';
 import { AddressOptionsComponent, AddressOptions } from './address-options/address-options.component';
 import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent } from '../../../layout/confirmation/confirmation.component';
 import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
-import { WalletWithBalance } from '../../../../services/wallet-operations/wallet-objects';
+import { WalletWithBalance, AddressBase } from '../../../../services/wallet-operations/wallet-objects';
 import { SoftwareWalletService } from '../../../../services/wallet-operations/software-wallet.service';
 import { HardwareWalletService } from '../../../../services/wallet-operations/hardware-wallet.service';
+import { NormalTransaction } from '../../../../app.datatypes';
+import { BigNumber } from 'bignumber.js';
 
 @Component({
   selector: 'app-wallet-detail',
@@ -142,7 +144,7 @@ export class WalletDetailComponent implements OnDestroy {
           callback(true);
           this.continueNewAddress();
         } else {
-          this.txHistorySubscription = this.apiService.getTransactions(this.wallet.addresses).pipe(first()).subscribe(transactions => {
+          this.txHistorySubscription = this.getTransactions(this.wallet.addresses).pipe(first()).subscribe(transactions => {
             const AddressesWithTxs = new Map<string, boolean>();
 
             transactions.forEach(transaction => {
@@ -204,14 +206,13 @@ export class WalletDetailComponent implements OnDestroy {
 
     ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
       if (confirmationResult) {
-        const result = this.walletsAndAddressesService.deleteHardwareWallet(this.wallet);
-        if (result) {
-          this.walletsAndAddressesService.allWallets.pipe(first()).subscribe(wallets => {
-            if (wallets.length === 0) {
-              setTimeout(() => this.router.navigate(['/wizard']), 500);
-            }
-          });
-        }
+        this.walletsAndAddressesService.deleteHardwareWallet(this.wallet.id);
+
+        this.walletsAndAddressesService.allWallets.pipe(first()).subscribe(wallets => {
+          if (wallets.length === 0) {
+            setTimeout(() => this.router.navigate(['/wizard']), 500);
+          }
+        });
       }
     });
   }
@@ -360,5 +361,21 @@ export class WalletDetailComponent implements OnDestroy {
     const data = new ChangeNameData();
     data.wallet = this.wallet;
     ChangeNameComponent.openDialog(this.dialog, data, false);
+  }
+
+  private getTransactions(addresses: AddressBase[]): Observable<NormalTransaction[]> {
+    const formattedAddresses = addresses.map(a => a.address).join(',');
+
+    return this.apiService.post('transactions', {addrs: formattedAddresses, verbose: true}).pipe(
+      map(transactions => transactions.map(transaction => ({
+        addresses: [],
+        balance: new BigNumber(0),
+        block: transaction.status.block_seq,
+        confirmed: transaction.status.confirmed,
+        timestamp: transaction.txn.timestamp,
+        txid: transaction.txn.txid,
+        inputs: transaction.txn.inputs,
+        outputs: transaction.txn.outputs,
+      }))));
   }
 }

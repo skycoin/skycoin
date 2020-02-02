@@ -77,9 +77,9 @@ export class SpendingService {
       useV2Endpoint ? 'transaction' : 'wallet/transaction',
       params,
       {
-        json: true,
+        sendDataAsJson: true,
+        useV2: useV2Endpoint,
       },
-      useV2Endpoint,
     ).pipe(map(transaction => {
       const data = useV2Endpoint ? transaction.data : transaction;
 
@@ -132,9 +132,8 @@ export class SpendingService {
           encoded_transaction: rawTransactionString ? rawTransactionString : transaction.encoded,
         },
         {
-          json: true,
+          useV2: true,
         },
-        true,
       ).pipe(map(response => {
         return {
           ...response.data.transaction,
@@ -212,7 +211,7 @@ export class SpendingService {
   }
 
   injectTransaction(encodedTx: string, note: string): Observable<boolean> {
-    return this.apiService.post('injectTransaction', { rawtx: encodedTx }, { json: true }).pipe(
+    return this.apiService.post('injectTransaction', { rawtx: encodedTx }, { sendDataAsJson: true }).pipe(
       mergeMap(txId => {
         setTimeout(() => this.balanceAndOutputsService.refreshBalance(), 32);
 

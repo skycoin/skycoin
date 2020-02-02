@@ -32,7 +32,7 @@ export class OutputsComponent implements OnDestroy {
   loadData() {
     const addr = this.lastRouteParams['addr'];
 
-    this.outputsSubscription = this.balanceAndOutputsService.outputsWithWallets().subscribe(wallets => {
+    this.outputsSubscription = this.balanceAndOutputsService.outputsWithWallets.subscribe(wallets => {
       this.wallets = wallets
         .map(wallet => Object.assign({}, wallet))
         .map(wallet => {

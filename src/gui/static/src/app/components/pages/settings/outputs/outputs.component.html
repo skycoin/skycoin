@@ -25,7 +25,7 @@
           <div class="-row" *ngFor="let output of address.outputs">
             <div class="-flex-fill -hash">{{ output.hash }}</div>
             <div class="-width-150 text-right">{{ output.coins.toString() | amount:true:'first' }}</div>
-            <div class="-width-150 text-right grey-text">{{ output.calculated_hours.toString() | amount:false:'first' }}</div>
+            <div class="-width-150 text-right grey-text">{{ output.hours.toString() | amount:false:'first' }}</div>
           </div>
         </ng-container>
       </div>

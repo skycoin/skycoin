@@ -14,17 +14,6 @@ export class TellerConfig {
   sky_btc_exchange_rate: number;
 }
 
-export class Version {
-  version: string;
-}
-
-export class Connection {
-  id: number;
-  address: string;
-  listen_port: number;
-  source?: string;
-}
-
 export class TradingPair {
   from: string;
   to: string;
@@ -58,31 +47,4 @@ export class StoredExchangeOrder {
   address: string;
   timestamp: number;
   price: number;
-}
-
-/**
- * Response Objects
- */
-
-export class GetWalletsResponseWallet {
-  meta: GetWalletsResponseMeta;
-  entries: GetWalletsResponseEntry[];
-}
-
-export class PostWalletNewAddressResponse {
-  addresses: string[];
-}
-
-/**
- * Response Embedded Objects
- */
-
-export class GetWalletsResponseMeta {
-  label: string;
-  filename: string;
-  encrypted: boolean;
-}
-
-export class GetWalletsResponseEntry {
-  address: string;
 }

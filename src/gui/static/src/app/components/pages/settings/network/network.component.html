@@ -20,18 +20,18 @@
                  [matTooltip]="(peer.outgoing ? 'network.out-help' : 'network.in-help') | translate">
           </div>
           <div class="-address-cell break-all">
-            {{ peer.address.split(':')[0] }}<span class="grey-text">:{{ peer.listen_port }}</span>
+            {{ peer.address.split(':')[0] }}<span class="grey-text">:{{ peer.listenPort }}</span>
           </div>
           <div class="-flex-fill grey-text">{{ ('network.sources.' + peer.source) | translate }}</div>
           <div class="-block-cell break-all">{{ peer.height }}</div>
           <div class="-last-seen-cell -last-seen-container grey-text">
             <div class="text-truncate">
               <mat-icon [matTooltip]="'network.last-sent-help' | translate">keyboard_arrow_up</mat-icon>
-              {{ peer.last_sent | dateFromNow }}
+              {{ peer.lastSent | dateFromNow }}
             </div>
             <div class="text-truncate">
               <mat-icon [matTooltip]="'network.last-received-help' | translate">keyboard_arrow_down</mat-icon>
-              {{ peer.last_received | dateFromNow }}
+              {{ peer.lastReceived | dateFromNow }}
             </div>
           </div>
         </div>

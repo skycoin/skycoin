@@ -1,7 +1,6 @@
 import { delay, retryWhen } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
-import { Version } from '../app.datatypes';
 import BigNumber from 'bignumber.js';
 import { HttpClient } from '@angular/common/http';
 import { shouldUpgradeVersion } from '../utils/semver';
@@ -10,7 +9,7 @@ import { AppConfig } from '../app.config';
 @Injectable()
 export class AppService {
   error: number;
-  version: Version;
+  version: string;
   fullCoinName = ' ';
   coinName = ' ';
   hoursName = ' ';
@@ -39,7 +38,7 @@ export class AppService {
 
   testBackend() {
     this.apiService.get('health').subscribe(response => {
-        this.version = response.version;
+        this.version = response.version.version;
         this.detectUpdateAvailable();
         this.burnRateInternal = new BigNumber(response.user_verify_transaction.burn_factor);
 
@@ -70,7 +69,7 @@ export class AppService {
           if (this.lastestVersionInternal.startsWith('v')) {
             this.lastestVersionInternal = this.lastestVersionInternal.substr(1);
           }
-          this.updateAvailableInternal = shouldUpgradeVersion(this.version.version, this.lastestVersionInternal);
+          this.updateAvailableInternal = shouldUpgradeVersion(this.version, this.lastestVersionInternal);
         });
     }
   }

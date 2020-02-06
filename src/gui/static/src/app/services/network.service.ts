@@ -114,6 +114,7 @@ export class NetworkService {
         if (connectionsResponse.connections === null || connectionsResponse.connections.length === 0) {
           this.noConnections = true;
           this.ngZone.run(() => this.connectionsSubject.next([]));
+          this.startDataRefreshSubscription(5000);
 
           return;
         }

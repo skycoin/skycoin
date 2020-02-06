@@ -120,3 +120,7 @@ export function getErrorMsg(error: any): string {
 
   return null;
 }
+
+export function redirectToErrorPage(errorCode: number) {
+  window.location.assign('assets/error-alert/index.html?' + errorCode);
+}

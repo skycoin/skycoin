@@ -13,6 +13,7 @@ import { MsgBarService } from './services/msg-bar.service';
 import { SeedWordDialogComponent } from './components/layout/seed-word-dialog/seed-word-dialog.component';
 import { SelectLanguageComponent } from './components/layout/select-language/select-language.component';
 import { WalletsAndAddressesService } from './services/wallet-operations/wallets-and-addresses.service';
+import { redirectToErrorPage } from './utils/errors';
 
 @Component({
   selector: 'app-root',
@@ -39,14 +40,14 @@ export class AppComponent implements OnInit {
 
     walletsAndAddressesService.errorDuringinitialLoad.subscribe(failed => {
       if (failed) {
-        // The "?2" part indicates that error number 2 should be displayed.
-        window.location.assign('assets/error-alert/index.html?2');
+        // The error page will show error number 2.
+        redirectToErrorPage(2);
       }
     });
   }
 
   ngOnInit() {
-    this.appService.testBackend();
+    this.appService.UpdateData();
     this.languageService.loadLanguageSettings();
 
     const subscription = this.languageService.selectedLanguageLoaded.subscribe(selectedLanguageLoaded => {

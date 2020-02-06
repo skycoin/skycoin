@@ -7,7 +7,7 @@ import { ApiService } from '../api.service';
 import { HwWalletService } from '../hw-wallet.service';
 import { AppConfig } from '../../app.config';
 import { WalletBase, AddressBase, duplicateWalletBase } from './wallet-objects';
-import { processServiceError } from '../../utils/errors';
+import { processServiceError, redirectToErrorPage } from '../../utils/errors';
 import { StorageService, StorageType } from '../storage.service';
 import { OperationError } from '../../utils/operation-error';
 
@@ -330,7 +330,7 @@ export class WalletsAndAddressesService {
     // The data is saved as a JSON string.
     this.savingHwWalletDataSubscription =
       this.storageService.store(StorageType.CLIENT, this.hwWalletsDataStorageKey, JSON.stringify(hardwareWallets))
-        .subscribe(null, () => window.location.assign('assets/error-alert/index.html?3'));
+        .subscribe(null, () => redirectToErrorPage(3));
 
     this.informDataUpdated();
   }

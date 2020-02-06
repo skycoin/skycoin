@@ -1,6 +1,6 @@
 import { Component, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { NormalTransaction } from '../../../../app.datatypes';
+import { OldTransaction } from '../../../../services/wallet-operations/transaction-objects';
 
 @Component({
   selector: 'app-transaction-detail',
@@ -9,7 +9,7 @@ import { NormalTransaction } from '../../../../app.datatypes';
 })
 export class TransactionDetailComponent {
 
-  public static openDialog(dialog: MatDialog, transaction: NormalTransaction): MatDialogRef<TransactionDetailComponent, any> {
+  public static openDialog(dialog: MatDialog, transaction: OldTransaction): MatDialogRef<TransactionDetailComponent, any> {
     const config = new MatDialogConfig();
     config.data = transaction;
     config.autoFocus = false;
@@ -19,7 +19,7 @@ export class TransactionDetailComponent {
   }
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) public transaction: NormalTransaction,
+    @Inject(MAT_DIALOG_DATA) public transaction: OldTransaction,
     public dialogRef: MatDialogRef<TransactionDetailComponent>,
   ) {}
 

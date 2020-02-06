@@ -115,7 +115,7 @@ export class SignRawTxComponent extends OfflineDialogsBaseComponent implements O
       this.form.get('dropdown').value,
       password,
       null,
-      this.form.get('input').value).subscribe(response => {
+      this.form.get('input').value).subscribe(encodedSignedTx => {
 
         this.working = false;
         this.okButton.resetState();
@@ -125,7 +125,7 @@ export class SignRawTxComponent extends OfflineDialogsBaseComponent implements O
 
         setTimeout(() => {
           const data: CopyRawTxData = {
-            rawTx: response.encoded,
+            rawTx: encodedSignedTx,
             isUnsigned: false,
           };
 

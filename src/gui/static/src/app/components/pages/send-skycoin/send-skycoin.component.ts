@@ -63,27 +63,6 @@ export class SendSkycoinComponent implements OnDestroy {
   }
 
   get transaction() {
-    const transaction = this.formData.transaction;
-
-    let fromString = '';
-    if (this.formData.form.wallet) {
-      fromString = this.formData.form.wallet.label;
-    } else {
-      const addresses = (this.formData.form.manualAddresses as string[]);
-      addresses.forEach((address, i) => {
-        fromString += address;
-        if (i < addresses.length - 1) {
-          fromString += ', ';
-        }
-      });
-    }
-
-    transaction.wallet = this.formData.form.wallet;
-    transaction.from = fromString;
-    transaction.to = this.formData.to;
-    transaction.balance = this.formData.amount;
-    transaction.note = this.formData.form.note;
-
-    return transaction;
+    return this.formData.transaction;
   }
 }

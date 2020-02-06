@@ -9,7 +9,7 @@
             <span>{{ 'tx.from-small-label' | translate }}</span> <span>{{ transaction.from }}</span>
           </div>
           <div class="-data">
-            <span>{{ 'tx.to-small-label' | translate }}</span> <span>{{ transaction.to.join(', ') }}</span>
+            <span>{{ 'tx.to-small-label' | translate }}</span> <span>{{ transaction.to }}</span>
           </div>
         </ng-container>
         <ng-container *ngIf="!isPreview">
@@ -23,13 +23,13 @@
         <div class="-data">
           <span>{{ 'tx.hours-small-label' | translate }}</span>
           <span>
-            {{ transaction.hoursSent.toString() | amount:false:'first' }} {{ hoursText | translate }}
+            {{ (isPreview ? transaction.hoursToSend : transaction.hoursBalance).toString() | amount:false:'first' }} {{ hoursText | translate }}
             |
             {{ transaction.hoursBurned.toString() | amount:false:'first' }} {{ 'tx.hours-burned' | translate }}
           </span>
         </div>
         <div class="-data" *ngIf="!isPreview">
-          <span>{{ 'tx.id-small-label' | translate }}</span> <span>{{ transaction.txid }}</span>
+          <span>{{ 'tx.id-small-label' | translate }}</span> <span>{{ transaction.id }}</span>
         </div>
         <div class="-data" *ngIf="transaction.note || !isPreview">
           <span>{{ 'tx.note-small-label' | translate }}</span>
@@ -43,7 +43,7 @@
         <div class="-icon" [ngClass]="{ '-incoming': !isPreview && transaction.balance.isGreaterThan(0) && !transaction.coinsMovedInternally }">
           <img src="/assets/img/send-blue.png">
         </div>
-        <h4>{{ transaction.balance.toString() | amount }}</h4>
+        <h4>{{ (isPreview ? transaction.coinsToSend : transaction.balance).toString() | amount }}</h4>
         <p *ngIf="price" [matTooltip]="!isPreview ? ('tx.current-rate-help' | translate) : ''">
           {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}<span *ngIf="!isPreview">*</span>
         </p>
@@ -64,12 +64,12 @@
       <div class="-item" *ngFor="let input of transaction.inputs; let i = index">
         <div class="-number">{{ i + 1 }}</div>
         <div class="-info">
-          <div class="-address">{{ isPreview ? input.address : input.owner }}</div>
+          <div class="-address">{{ input.address }}</div>
           <div class="-data">
-            <span>{{ 'tx.coins-small-label' | translate }}</span> {{ input.coins | amount:true:'first' }}
+            <span>{{ 'tx.coins-small-label' | translate }}</span> {{ input.coins.toString() | amount:true:'first' }}
           </div>
           <div class="-data">
-            <span>{{ 'tx.hours-small-label' | translate }}</span> {{ input.calculated_hours | amount:false:'first' }}
+            <span>{{ 'tx.hours-small-label' | translate }}</span> {{ input.hours.toString() | amount:false:'first' }}
           </div>
         </div>
       </div>
@@ -80,12 +80,12 @@
       <div class="-item" *ngFor="let output of transaction.outputs; let i = index">
         <div class="-number">{{ i + 1 }}</div>
         <div class="-info">
-          <div class="-address">{{ isPreview ? output.address : output.dst }}</div>
+          <div class="-address">{{ output.address }}</div>
           <div class="-data">
-            <span>{{ 'tx.coins-small-label' | translate }}</span> {{ output.coins | amount:true:'first' }}
+            <span>{{ 'tx.coins-small-label' | translate }}</span> {{ output.coins.toString() | amount:true:'first' }}
           </div>
           <div class="-data">
-            <span>{{ 'tx.hours-small-label' | translate }}</span> {{ output.hours | amount:false:'first' }}
+            <span>{{ 'tx.hours-small-label' | translate }}</span> {{ output.hours.toString() | amount:false:'first' }}
           </div>
         </div>
       </div>

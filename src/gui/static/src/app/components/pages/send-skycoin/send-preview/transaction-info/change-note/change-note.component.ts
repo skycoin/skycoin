@@ -3,10 +3,10 @@ import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { SubscriptionLike } from 'rxjs';
 import { ButtonComponent } from '../../../../../layout/button/button.component';
-import { Transaction } from '../../../../../../app.datatypes';
 import { StorageService, StorageType } from '../../../../../../services/storage.service';
 import { MsgBarService } from '../../../../../../services/msg-bar.service';
 import { AppConfig } from '../../../../../../app.config';
+import { OldTransaction } from '../../../../../../services/wallet-operations/transaction-objects';
 
 @Component({
   selector: 'app-change-note',
@@ -25,7 +25,7 @@ export class ChangeNoteComponent implements OnInit, OnDestroy {
   private OperationSubscription: SubscriptionLike;
   private originalNote: string;
 
-  public static openDialog(dialog: MatDialog, transaction: Transaction): MatDialogRef<ChangeNoteComponent, any> {
+  public static openDialog(dialog: MatDialog, transaction: OldTransaction): MatDialogRef<ChangeNoteComponent, any> {
     const config = new MatDialogConfig();
     config.data = transaction;
     config.autoFocus = true;
@@ -36,7 +36,7 @@ export class ChangeNoteComponent implements OnInit, OnDestroy {
 
   constructor(
     public dialogRef: MatDialogRef<ChangeNoteComponent>,
-    @Inject(MAT_DIALOG_DATA) private data: Transaction,
+    @Inject(MAT_DIALOG_DATA) private data: OldTransaction,
     private formBuilder: FormBuilder,
     private msgBarService: MsgBarService,
     private storageService: StorageService,
@@ -78,7 +78,7 @@ export class ChangeNoteComponent implements OnInit, OnDestroy {
     this.msgBarService.hide();
     this.button.setLoading();
 
-    this.OperationSubscription = this.storageService.store(StorageType.NOTES, this.data.txid, newNote).subscribe(() => {
+    this.OperationSubscription = this.storageService.store(StorageType.NOTES, this.data.id, newNote).subscribe(() => {
       this.busy = false;
       this.dialogRef.close(newNote);
     }, error => {

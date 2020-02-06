@@ -76,7 +76,7 @@
               <span class="-pending">{{ 'history.pending-indication' | translate }}</span>
             </h4>
           </ng-container>
-          <div class="-item" *ngFor="let address of transaction.addresses">
+          <div class="-item" *ngFor="let address of transaction.relevantAddresses">
             <app-qr-code-button [address]="address"></app-qr-code-button>
             <span class="break-all">{{ address }}</span>
           </div>

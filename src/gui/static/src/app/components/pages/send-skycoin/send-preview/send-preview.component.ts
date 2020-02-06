@@ -1,7 +1,6 @@
 import { Component, EventEmitter, Input, OnDestroy, Output, ViewChild } from '@angular/core';
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { MatDialog } from '@angular/material/dialog';
-import { PreviewTransaction } from '../../../../app.datatypes';
 import { SubscriptionLike } from 'rxjs';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
@@ -12,6 +11,7 @@ import { CopyRawTxData, CopyRawTxComponent } from '../offline-dialogs/implementa
 import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent } from '../../../layout/confirmation/confirmation.component';
 import { BalanceAndOutputsService } from '../../../../services/wallet-operations/balance-and-outputs.service';
 import { SpendingService } from '../../../../services/wallet-operations/spending.service';
+import { GeneratedTransaction } from '../../../../services/wallet-operations/transaction-objects';
 
 @Component({
   selector: 'app-send-preview',
@@ -21,7 +21,7 @@ import { SpendingService } from '../../../../services/wallet-operations/spending
 export class SendVerifyComponent implements OnDestroy {
   @ViewChild('sendButton', { static: false }) sendButton: ButtonComponent;
   @ViewChild('backButton', { static: false }) backButton: ButtonComponent;
-  @Input() transaction: PreviewTransaction;
+  @Input() transaction: GeneratedTransaction;
   @Output() onBack = new EventEmitter<boolean>();
 
   private sendSubscription: SubscriptionLike;
@@ -109,12 +109,12 @@ export class SendVerifyComponent implements OnDestroy {
       this.transaction.wallet,
       passwordDialog ? passwordDialog.password : null,
       this.transaction,
-    ).pipe(mergeMap(result => {
+    ).pipe(mergeMap(encodedSignedTx => {
       if (passwordDialog) {
         passwordDialog.close();
       }
 
-      return this.spendingService.injectTransaction(result.encoded, note);
+      return this.spendingService.injectTransaction(encodedSignedTx, note);
     })).subscribe(noteSaved => {
       if (note && !noteSaved) {
         setTimeout(() => this.msgBarService.showWarning(this.translate.instant('send.saving-note-error')));

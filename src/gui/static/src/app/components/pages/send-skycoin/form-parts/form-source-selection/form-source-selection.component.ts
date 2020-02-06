@@ -6,7 +6,8 @@ import { BigNumber } from 'bignumber.js';
 import { AppService } from '../../../../../services/app.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { BalanceAndOutputsService } from '../../../../../services/wallet-operations/balance-and-outputs.service';
-import { WalletWithBalance, AddressWithBalance, Output as UnspentOutput } from '../../../../../services/wallet-operations/wallet-objects';
+import { WalletWithBalance, AddressWithBalance } from '../../../../../services/wallet-operations/wallet-objects';
+import { Output as UnspentOutput } from '../../../../../services/wallet-operations/transaction-objects';
 
 export class AvailableBalanceData {
   availableCoins = new BigNumber(0);

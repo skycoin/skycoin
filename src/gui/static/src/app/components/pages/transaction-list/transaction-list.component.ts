@@ -1,15 +1,15 @@
-import { delay, mergeMap, first } from 'rxjs/operators';
+import { delay, mergeMap } from 'rxjs/operators';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { PriceService } from '../../../services/price.service';
 import { SubscriptionLike, of } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { TransactionDetailComponent } from './transaction-detail/transaction-detail.component';
-import { NormalTransaction } from '../../../app.datatypes';
 import { FormGroup, FormBuilder } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { AppService } from '../../../services/app.service';
 import { HistoryService } from '../../../services/wallet-operations/history.service';
 import { BalanceAndOutputsService } from '../../../services/wallet-operations/balance-and-outputs.service';
+import { OldTransaction } from '../../../services/wallet-operations/transaction-objects';
 
 export class Wallet {
   id: string;
@@ -33,8 +33,8 @@ export class Address {
   styleUrls: ['./transaction-list.component.scss'],
 })
 export class TransactionListComponent implements OnInit, OnDestroy {
-  allTransactions: NormalTransaction[];
-  transactions: NormalTransaction[];
+  allTransactions: OldTransaction[];
+  transactions: OldTransaction[];
   wallets: Wallet[];
   form: FormGroup;
 
@@ -120,12 +120,12 @@ export class TransactionListComponent implements OnInit, OnDestroy {
 
           return of(null);
         } else {
-          return this.historyService.getTransactionsHistory().pipe(first());
+          return this.historyService.getTransactionsHistory(null);
         }
       } else {
-        return this.historyService.getTransactionsHistory().pipe(first());
+        return this.historyService.getTransactionsHistory(null);
       }
-    })).subscribe(transactions => {
+    })).subscribe((transactions: OldTransaction[]) => {
       if (transactions) {
         this.allTransactions = transactions;
 
@@ -159,7 +159,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     }
   }
 
-  showTransaction(transaction: NormalTransaction) {
+  showTransaction(transaction: OldTransaction) {
     TransactionDetailComponent.openDialog(this.dialog, transaction);
   }
 
@@ -189,7 +189,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
       });
 
       this.transactions = this.allTransactions.filter(tx =>
-        tx.inputs.some(input => selectedAddresses.has(input.owner)) || tx.outputs.some(output => selectedAddresses.has(output.dst)),
+        tx.inputs.some(input => selectedAddresses.has(input.address)) || tx.outputs.some(output => selectedAddresses.has(output.address)),
       );
     }
 

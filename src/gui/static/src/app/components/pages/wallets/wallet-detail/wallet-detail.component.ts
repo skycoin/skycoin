@@ -12,15 +12,14 @@ import { Router } from '@angular/router';
 import { HwConfirmAddressDialogComponent, AddressConfirmationParams } from '../../../layout/hardware-wallet/hw-confirm-address-dialog/hw-confirm-address-dialog.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { ApiService } from '../../../../services/api.service';
-import { mergeMap, first, map } from 'rxjs/operators';
+import { mergeMap, first } from 'rxjs/operators';
 import { AddressOptionsComponent, AddressOptions } from './address-options/address-options.component';
 import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent } from '../../../layout/confirmation/confirmation.component';
 import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
-import { WalletWithBalance, AddressBase } from '../../../../services/wallet-operations/wallet-objects';
+import { WalletWithBalance } from '../../../../services/wallet-operations/wallet-objects';
 import { SoftwareWalletService } from '../../../../services/wallet-operations/software-wallet.service';
 import { HardwareWalletService } from '../../../../services/wallet-operations/hardware-wallet.service';
-import { NormalTransaction } from '../../../../app.datatypes';
-import { BigNumber } from 'bignumber.js';
+import { HistoryService } from '../../../../services/wallet-operations/history.service';
 
 @Component({
   selector: 'app-wallet-detail',
@@ -50,6 +49,7 @@ export class WalletDetailComponent implements OnDestroy {
     private walletsAndAddressesService: WalletsAndAddressesService,
     private softwareWalletService: SoftwareWalletService,
     private hardwareWalletService: HardwareWalletService,
+    private historyService: HistoryService,
   ) { }
 
   ngOnDestroy() {
@@ -144,13 +144,13 @@ export class WalletDetailComponent implements OnDestroy {
           callback(true);
           this.continueNewAddress();
         } else {
-          this.txHistorySubscription = this.getTransactions(this.wallet.addresses).pipe(first()).subscribe(transactions => {
+          this.txHistorySubscription = this.historyService.getTransactionsHistory(this.wallet).pipe(first()).subscribe(transactions => {
             const AddressesWithTxs = new Map<string, boolean>();
 
             transactions.forEach(transaction => {
               transaction.outputs.forEach(output => {
-                if (!AddressesWithTxs.has(output.dst)) {
-                  AddressesWithTxs.set(output.dst, true);
+                if (!AddressesWithTxs.has(output.address)) {
+                  AddressesWithTxs.set(output.address, true);
                 }
               });
             });
@@ -361,21 +361,5 @@ export class WalletDetailComponent implements OnDestroy {
     const data = new ChangeNameData();
     data.wallet = this.wallet;
     ChangeNameComponent.openDialog(this.dialog, data, false);
-  }
-
-  private getTransactions(addresses: AddressBase[]): Observable<NormalTransaction[]> {
-    const formattedAddresses = addresses.map(a => a.address).join(',');
-
-    return this.apiService.post('transactions', {addrs: formattedAddresses, verbose: true}).pipe(
-      map(transactions => transactions.map(transaction => ({
-        addresses: [],
-        balance: new BigNumber(0),
-        block: transaction.status.block_seq,
-        confirmed: transaction.status.confirmed,
-        timestamp: transaction.txn.timestamp,
-        txid: transaction.txn.txid,
-        inputs: transaction.txn.inputs,
-        outputs: transaction.txn.outputs,
-      }))));
   }
 }

@@ -1,5 +1,7 @@
 import BigNumber from 'bignumber.js';
 
+import { Output } from './transaction-objects';
+
 /**
  * This file contains the objects used to represent the wallets and addresses in the app.
  */
@@ -171,16 +173,6 @@ function addressWithBalanceFromBase(address: AddressBase): AddressWithBalance {
 
 // Wallets with outputs
 ////////////////////////////////////////////////
-
-/**
- * Object with the properties of an unspent output.
- */
-export class Output {
-  address: string;
-  coins: BigNumber;
-  hash: string;
-  hours: BigNumber;
-}
 
 /**
  * Object with the basic data of a wallet and data about its unspent outputs.

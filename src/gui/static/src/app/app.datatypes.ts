@@ -1,6 +1,3 @@
-import { BigNumber } from 'bignumber.js';
-import { WalletBase } from './services/wallet-operations/wallet-objects';
-
 /**
  * Internal Objects
  */
@@ -15,32 +12,6 @@ export class PurchaseOrder {
 export class TellerConfig {
   enabled: boolean;
   sky_btc_exchange_rate: number;
-}
-
-export class Transaction {
-  balance: BigNumber = new BigNumber('0');
-  inputs: any[];
-  outputs: any[];
-  txid: string;
-  hoursSent?: BigNumber;
-  hoursBurned?: BigNumber;
-  coinsMovedInternally?: boolean;
-  note?: string;
-}
-
-export class PreviewTransaction extends Transaction {
-  from: string;
-  to: string[];
-  encoded: string;
-  innerHash: string;
-  wallet?: WalletBase;
-}
-
-export class NormalTransaction extends Transaction {
-  addresses: string[];
-  timestamp: number;
-  block: number;
-  confirmed: boolean;
 }
 
 export class Version {

@@ -339,6 +339,8 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       }
 
       const note = this.form.value.note.trim();
+      transaction.note = note;
+
       if (!this.previewTx) {
         if (!this.showForManualUnsigned) {
           this.processingSubscription = this.spendingService.injectTransaction(transaction.encoded, note)

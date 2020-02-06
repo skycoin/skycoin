@@ -5,7 +5,7 @@ import { NavBarService } from '../../../../services/nav-bar.service';
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
 import { BigNumber } from 'bignumber.js';
 import { BalanceAndOutputsService } from '../../../../services/wallet-operations/balance-and-outputs.service';
-import { HistoryService } from '../../../../services/wallet-operations/history.service';
+import { HistoryService, PendingTransactionData } from '../../../../services/wallet-operations/history.service';
 
 @Component({
   selector: 'app-pending-transactions',
@@ -13,7 +13,7 @@ import { HistoryService } from '../../../../services/wallet-operations/history.s
   styleUrls: ['./pending-transactions.component.scss'],
 })
 export class PendingTransactionsComponent implements OnInit, OnDestroy {
-  transactions = null;
+  transactions: PendingTransactionData[] = null;
 
   private transactionsSubscription: SubscriptionLike;
   private navbarSubscription: SubscriptionLike;
@@ -45,30 +45,11 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
 
     // Currently gets the data only one time.
     this.transactionsSubscription = this.historyService.getPendingTransactions().subscribe(transactions => {
-      this.transactions = this.mapTransactions(value === DoubleButtonActive.LeftButton ? transactions.user : transactions.all);
+      this.transactions = value === DoubleButtonActive.LeftButton ? transactions.user : transactions.all;
     });
 
     // Due to some changes, must use a method for updating or getting the pending transactions, not this.
     this.balanceAndOutputsService.refreshBalance();
-  }
-
-  private mapTransactions(transactions) {
-    return transactions.map(transaction => {
-      transaction.transaction.timestamp = moment(transaction.received).unix();
-
-      return transaction.transaction;
-    })
-    .map(transaction => {
-      let amount = new BigNumber('0');
-      transaction.outputs.map(output => amount = amount.plus(output.coins));
-      transaction.amount = amount.decimalPlaces(6).toString();
-
-      let hours = new BigNumber('0');
-      transaction.outputs.map(output => hours = hours.plus(output.hours));
-      transaction.hours = hours.decimalPlaces(0).toString();
-
-      return transaction;
-    });
   }
 
   private removeTransactionsSubscription() {

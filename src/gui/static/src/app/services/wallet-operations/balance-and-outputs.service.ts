@@ -5,7 +5,8 @@ import { BigNumber } from 'bignumber.js';
 
 import { ApiService } from '../api.service';
 import { WalletsAndAddressesService } from './wallets-and-addresses.service';
-import { WalletWithBalance, walletWithBalanceFromBase, Output, WalletBase, walletWithOutputsFromBase, WalletWithOutputs } from './wallet-objects';
+import { WalletWithBalance, walletWithBalanceFromBase, WalletBase, walletWithOutputsFromBase, WalletWithOutputs } from './wallet-objects';
+import { Output } from './transaction-objects';
 
 /**
  * Allows to get the balance of the wallets and is in chage of maintaining those balances updated.
@@ -116,11 +117,12 @@ export class BalanceAndOutputsService {
       return this.apiService.post('outputs', { addrs: addresses }).pipe(map((response) => {
         const outputs: Output[] = [];
         response.head_outputs.forEach(output => {
-          const processedOutput = new Output();
-          processedOutput.address = output.address;
-          processedOutput.coins = new BigNumber(output.coins),
-          processedOutput.hash = output.hash,
-          processedOutput.hours = new BigNumber(output.calculated_hours),
+          const processedOutput: Output = {
+            address: output.address,
+            coins: new BigNumber(output.coins),
+            hash: output.hash,
+            hours: new BigNumber(output.calculated_hours),
+          };
 
           outputs.push(processedOutput);
         });

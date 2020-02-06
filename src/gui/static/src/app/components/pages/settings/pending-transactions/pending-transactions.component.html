@@ -17,8 +17,8 @@
       </div>
       <div class="-body">
         <div class="-row" *ngFor="let tx of transactions">
-          <div class="-flex-fill break-all">{{ tx.txid }}</div>
-          <div class="-width-150 text-right">{{ tx.amount | amount:true:'first' }}</div>
+          <div class="-flex-fill break-all">{{ tx.id }}</div>
+          <div class="-width-150 text-right">{{ tx.coins | amount:true:'first' }}</div>
           <div class="-width-150 text-right">{{ tx.hours | amount:false:'first' }}</div>
           <div class="-width-150 grey-text">{{ tx.timestamp | dateTime }}</div>
         </div>

@@ -39,6 +39,24 @@ export class TransactionInfoComponent implements OnDestroy {
     return 'tx.hours-sent';
   }
 
+  get sentOrReceivedHours(): BigNumber {
+    return this.isPreview ?
+      (this.transaction as GeneratedTransaction).hoursToSend :
+      (this.transaction as OldTransaction).hoursBalance;
+  }
+
+  get shouldShowIncomingIcon(): boolean {
+    return !this.isPreview &&
+      (this.transaction as OldTransaction).balance.isGreaterThan(0) &&
+      !(this.transaction as OldTransaction).coinsMovedInternally;
+  }
+
+  get balanceToShow(): BigNumber {
+    return this.isPreview ?
+      (this.transaction as GeneratedTransaction).coinsToSend :
+      (this.transaction as OldTransaction).balance;
+  }
+
   ngOnDestroy() {
     this.subscription.unsubscribe();
   }

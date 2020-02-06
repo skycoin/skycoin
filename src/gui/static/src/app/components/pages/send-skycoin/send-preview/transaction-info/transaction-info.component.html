@@ -23,7 +23,7 @@
         <div class="-data">
           <span>{{ 'tx.hours-small-label' | translate }}</span>
           <span>
-            {{ (isPreview ? transaction.hoursToSend : transaction.hoursBalance).toString() | amount:false:'first' }} {{ hoursText | translate }}
+            {{ sentOrReceivedHours.toString() | amount:false:'first' }} {{ hoursText | translate }}
             |
             {{ transaction.hoursBurned.toString() | amount:false:'first' }} {{ 'tx.hours-burned' | translate }}
           </span>
@@ -40,10 +40,10 @@
       </div>
 
       <div class="col-md-3 -tx-price">
-        <div class="-icon" [ngClass]="{ '-incoming': !isPreview && transaction.balance.isGreaterThan(0) && !transaction.coinsMovedInternally }">
+        <div class="-icon" [ngClass]="{ '-incoming': shouldShowIncomingIcon }">
           <img src="/assets/img/send-blue.png">
         </div>
-        <h4>{{ (isPreview ? transaction.coinsToSend : transaction.balance).toString() | amount }}</h4>
+        <h4>{{ balanceToShow.toString() | amount }}</h4>
         <p *ngIf="price" [matTooltip]="!isPreview ? ('tx.current-rate-help' | translate) : ''">
           {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}<span *ngIf="!isPreview">*</span>
         </p>

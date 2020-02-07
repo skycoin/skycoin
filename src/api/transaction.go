@@ -308,7 +308,7 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 
 			wh.SendJSONOr500(logger, w, rTxns.Transactions)
 		} else {
-			txns, _, err := gateway.GetTransactions(flts, nil)
+			txns, _, err := gateway.GetTransactions(flts, visor.AscOrder, nil)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
@@ -329,13 +329,15 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 
 // Returns transactions that match the filters.
 // Method: GET, POST
-// URI: /api/v1/transactions
+// URI: /api/v2/transactions
 // Args:
 //     addrs: Comma separated addresses [optional, returns all transactions if no address provided]
 //     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
 //	   verbose: [bool] include verbose transaction input data
 //     page: Page number
 //     page-size: Page size [optional, default to 10, must be <= 100]
+//     sort: Sort the transactions by block seq. [optional, must be desc or asc]; if not provided, return
+//     in asc order.
 func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -372,6 +374,12 @@ func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
 			}
 
 			flts = append(flts, visor.NewConfirmedTxFilter(confirmed))
+		}
+
+		order, err := parseSortOrderFromStr(r.FormValue("sort"))
+		if err != nil {
+			writeError400Response(w, fmt.Sprintf("invalid 'sort' value: %v", err))
+			return
 		}
 
 		var pageSize = visor.DefaultTxnPageSize
@@ -416,8 +424,6 @@ func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			rTxns.Sort()
-
 			resp.Data = struct {
 				PageInfo readable.PageInfo                       `json:"page_info"`
 				Txns     []readable.TransactionWithStatusVerbose `json:"txns"`
@@ -431,7 +437,7 @@ func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
 			}
 			writeHTTPResponse(w, resp)
 		} else {
-			txns, pages, err := gateway.GetTransactions(flts, pageIndex)
+			txns, pages, err := gateway.GetTransactions(flts, order, pageIndex)
 			if err != nil {
 				writeError500Response(w, err.Error())
 				return
@@ -443,7 +449,6 @@ func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 
-			rTxns.Sort()
 			resp.Data = struct {
 				PageInfo readable.PageInfo                `json:"page_info"`
 				Txns     []readable.TransactionWithStatus `json:"txns"`

@@ -6,6 +6,7 @@ package api
 import (
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -24,6 +25,7 @@ import (
 	wh "github.com/SkycoinProject/skycoin/src/util/http"
 	"github.com/SkycoinProject/skycoin/src/util/logging"
 	"github.com/SkycoinProject/skycoin/src/util/useragent"
+	"github.com/SkycoinProject/skycoin/src/visor"
 )
 
 var (
@@ -701,6 +703,22 @@ func parseAddressesFromStr(s string) ([]cipher.Address, error) {
 	}
 
 	return addrs, nil
+}
+
+func parseSortOrderFromStr(s string) (visor.SortOrder, error) {
+	if s == "" {
+		return visor.AscOrder, nil
+	}
+
+	s = strings.ToUpper(strings.TrimSpace(s))
+	switch s {
+	case "ASC":
+		return visor.AscOrder, nil
+	case "DESC":
+		return visor.DescOrder, nil
+	default:
+		return visor.UnknownOrder, errors.New("Unknow sort order")
+	}
 }
 
 // parseAddressesFromStr parses comma-separated hashes string into []cipher.SHA256

@@ -1009,21 +1009,27 @@ type AddrsFilter struct {
 // Match implements the TxFilter interface, this actually won't be used, only the 'Addrs' member is used.
 func (af AddrsFilter) Match(tx *Transaction) bool { return true }
 
-// NewConfirmedTxFilter collects the transaction whose 'Confirmed' status matchs the parameter passed in.
+type ConfirmedTxFilter struct {
+	Confirmed bool
+}
+
+func (cf ConfirmedTxFilter) Match(tx *Transaction) bool {
+	return tx.Status.Confirmed == cf.Confirmed
+}
+
+// NewTxFilter collects the transaction whose 'Confirmed' status matchs the parameter passed in.
 func NewConfirmedTxFilter(isConfirmed bool) TxFilter {
-	return BaseFilter{F: func(tx *Transaction) bool {
-		return tx.Status.Confirmed == isConfirmed
-	}}
+	return ConfirmedTxFilter{Confirmed: isConfirmed}
 }
 
 // GetTransactions returns transactions that can pass the filters with page.
 // If no filters is provided, returns all transactions.
-func (vs *Visor) GetTransactions(flts []TxFilter, page *PageIndex) ([]Transaction, uint64, error) {
+func (vs *Visor) GetTransactions(flts []TxFilter, order SortOrder, page *PageIndex) ([]Transaction, uint64, error) {
 	var txns []Transaction
 	var pages uint64
 	if err := vs.db.View("GetTransactions", func(tx *dbutil.Tx) error {
 		var err error
-		txns, pages, err = vs.getTransactions(tx, flts, page)
+		txns, pages, err = vs.txnModel.GetTransactions(tx, flts, order, page)
 		return err
 	}); err != nil {
 		return nil, 0, err

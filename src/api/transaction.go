@@ -292,7 +292,7 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if verbose {
-			txns, inputs, _, err := gateway.GetTransactionsWithInputs(flts, nil)
+			txns, inputs, _, err := gateway.GetTransactionsWithInputs(flts, visor.AscOrder, nil)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
@@ -412,7 +412,7 @@ func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
 
 		var resp HTTPResponse
 		if verbose {
-			txns, inputs, pages, err := gateway.GetTransactionsWithInputs(flts, pageIndex)
+			txns, inputs, pages, err := gateway.GetTransactionsWithInputs(flts, order, pageIndex)
 			if err != nil {
 				writeError500Response(w, err.Error())
 				return

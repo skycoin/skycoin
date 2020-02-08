@@ -1039,13 +1039,13 @@ func (vs *Visor) GetTransactions(flts []TxFilter, order SortOrder, page *PageInd
 }
 
 // GetTransactionsWithInputs is the same as GetTransactions but also returns verbose transaction input data
-func (vs *Visor) GetTransactionsWithInputs(flts []TxFilter, page *PageIndex) ([]Transaction, [][]TransactionInput, uint64, error) {
+func (vs *Visor) GetTransactionsWithInputs(flts []TxFilter, order SortOrder, page *PageIndex) ([]Transaction, [][]TransactionInput, uint64, error) {
 	var txns []Transaction
 	var inputs [][]TransactionInput
 	var pages uint64
 	if err := vs.db.View("GetTransactionsWithInputs", func(tx *dbutil.Tx) error {
 		var err error
-		txns, pages, err = vs.getTransactions(tx, flts, page)
+		txns, pages, err = vs.txnModel.GetTransactions(tx, flts, order, page)
 		if err != nil {
 			return err
 		}

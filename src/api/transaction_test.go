@@ -1257,6 +1257,15 @@ func TestGetTransactions(t *testing.T) {
 								return false
 							}
 						}
+					case visor.ConfirmedTxFilter:
+						flt, ok := tc.getTransactionsArg[i].(visor.ConfirmedTxFilter)
+						if !ok {
+							return false
+						}
+
+						if flt.Confirmed != f.(visor.ConfirmedTxFilter).Confirmed {
+							return false
+						}
 
 					case visor.BaseFilter:
 						// This part assumes that the filter is a ConfirmedTxFilter
@@ -1283,8 +1292,8 @@ func TestGetTransactions(t *testing.T) {
 				return true
 			})
 			var pageIndex *visor.PageIndex
-			gateway.On("GetTransactions", matchFunc, pageIndex).Return(tc.getTransactionsResponse, uint64(0), tc.getTransactionsError)
-			gateway.On("GetTransactionsWithInputs", matchFunc, pageIndex).Return(tc.getTransactionsVerboseResponse.Transactions,
+			gateway.On("GetTransactions", matchFunc, visor.AscOrder, pageIndex).Return(tc.getTransactionsResponse, uint64(0), tc.getTransactionsError)
+			gateway.On("GetTransactionsWithInputs", matchFunc, visor.AscOrder, pageIndex).Return(tc.getTransactionsVerboseResponse.Transactions,
 				tc.getTransactionsVerboseResponse.Inputs, uint64(0), tc.getTransactionsVerboseError)
 
 			v := url.Values{}
@@ -1375,12 +1384,10 @@ func TestTransactionsHandlerV2(t *testing.T) {
 		if len(inputs) == 0 {
 			ret, err := NewTransactionsWithStatus(txns)
 			require.NoError(t, err)
-			ret.Sort()
 			return ret.Transactions
 		}
 		txnsVerbose, err := NewTransactionsWithStatusVerbose(txns, inputs)
 		require.NoError(t, err)
-		txnsVerbose.Sort()
 		return txnsVerbose.Transactions
 	}
 
@@ -1464,7 +1471,7 @@ func TestTransactionsHandlerV2(t *testing.T) {
 			method:           "GET",
 			args:             []string{"addrs=" + addrs[0].String(), "page-size=2", "page=0"},
 			expectStatusCode: 400,
-			expectErrMsg:     "page number must be  greater than 0",
+			expectErrMsg:     "page number must be greater than 0",
 		},
 		{
 			name:             "Method Not Allowed",
@@ -1544,8 +1551,8 @@ func TestTransactionsHandlerV2(t *testing.T) {
 			}
 			pi, _ := visor.NewPageIndex(pageSize, page) // nolint:errcheck
 
-			gateway.On("GetTransactions", flts, pi).Return(tc.gatewayGetTransactions, tc.gatewayTotalPage, nil)
-			gateway.On("GetTransactionsWithInputs", flts, pi).Return(tc.gatewayGetTransactions, tc.gatewayGetTransactionsInputs, tc.gatewayTotalPage, nil)
+			gateway.On("GetTransactions", flts, visor.AscOrder, pi).Return(tc.gatewayGetTransactions, tc.gatewayTotalPage, nil)
+			gateway.On("GetTransactionsWithInputs", flts, visor.AscOrder, pi).Return(tc.gatewayGetTransactions, tc.gatewayGetTransactionsInputs, tc.gatewayTotalPage, nil)
 
 			srv := newServerMux(cfg, gateway)
 			srv.ServeHTTP(rec, req)

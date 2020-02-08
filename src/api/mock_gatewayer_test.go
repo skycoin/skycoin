@@ -837,13 +837,13 @@ func (_m *MockGatewayer) GetTransactionWithInputs(txid cipher.SHA256) (*visor.Tr
 	return r0, r1, r2
 }
 
-// GetTransactions provides a mock function with given fields: flts, page
-func (_m *MockGatewayer) GetTransactions(flts []visor.TxFilter, page *visor.PageIndex) ([]visor.Transaction, uint64, error) {
-	ret := _m.Called(flts, page)
+// GetTransactions provides a mock function with given fields: flts, order, page
+func (_m *MockGatewayer) GetTransactions(flts []visor.TxFilter, order visor.SortOrder, page *visor.PageIndex) ([]visor.Transaction, uint64, error) {
+	ret := _m.Called(flts, order, page)
 
 	var r0 []visor.Transaction
-	if rf, ok := ret.Get(0).(func([]visor.TxFilter, *visor.PageIndex) []visor.Transaction); ok {
-		r0 = rf(flts, page)
+	if rf, ok := ret.Get(0).(func([]visor.TxFilter, visor.SortOrder, *visor.PageIndex) []visor.Transaction); ok {
+		r0 = rf(flts, order, page)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]visor.Transaction)
@@ -851,15 +851,15 @@ func (_m *MockGatewayer) GetTransactions(flts []visor.TxFilter, page *visor.Page
 	}
 
 	var r1 uint64
-	if rf, ok := ret.Get(1).(func([]visor.TxFilter, *visor.PageIndex) uint64); ok {
-		r1 = rf(flts, page)
+	if rf, ok := ret.Get(1).(func([]visor.TxFilter, visor.SortOrder, *visor.PageIndex) uint64); ok {
+		r1 = rf(flts, order, page)
 	} else {
 		r1 = ret.Get(1).(uint64)
 	}
 
 	var r2 error
-	if rf, ok := ret.Get(2).(func([]visor.TxFilter, *visor.PageIndex) error); ok {
-		r2 = rf(flts, page)
+	if rf, ok := ret.Get(2).(func([]visor.TxFilter, visor.SortOrder, *visor.PageIndex) error); ok {
+		r2 = rf(flts, order, page)
 	} else {
 		r2 = ret.Error(2)
 	}
@@ -867,13 +867,13 @@ func (_m *MockGatewayer) GetTransactions(flts []visor.TxFilter, page *visor.Page
 	return r0, r1, r2
 }
 
-// GetTransactionsWithInputs provides a mock function with given fields: flts, page
-func (_m *MockGatewayer) GetTransactionsWithInputs(flts []visor.TxFilter, page *visor.PageIndex) ([]visor.Transaction, [][]visor.TransactionInput, uint64, error) {
-	ret := _m.Called(flts, page)
+// GetTransactionsWithInputs provides a mock function with given fields: flts, order, page
+func (_m *MockGatewayer) GetTransactionsWithInputs(flts []visor.TxFilter, order visor.SortOrder, page *visor.PageIndex) ([]visor.Transaction, [][]visor.TransactionInput, uint64, error) {
+	ret := _m.Called(flts, order, page)
 
 	var r0 []visor.Transaction
-	if rf, ok := ret.Get(0).(func([]visor.TxFilter, *visor.PageIndex) []visor.Transaction); ok {
-		r0 = rf(flts, page)
+	if rf, ok := ret.Get(0).(func([]visor.TxFilter, visor.SortOrder, *visor.PageIndex) []visor.Transaction); ok {
+		r0 = rf(flts, order, page)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]visor.Transaction)
@@ -881,8 +881,8 @@ func (_m *MockGatewayer) GetTransactionsWithInputs(flts []visor.TxFilter, page *
 	}
 
 	var r1 [][]visor.TransactionInput
-	if rf, ok := ret.Get(1).(func([]visor.TxFilter, *visor.PageIndex) [][]visor.TransactionInput); ok {
-		r1 = rf(flts, page)
+	if rf, ok := ret.Get(1).(func([]visor.TxFilter, visor.SortOrder, *visor.PageIndex) [][]visor.TransactionInput); ok {
+		r1 = rf(flts, order, page)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).([][]visor.TransactionInput)
@@ -890,15 +890,15 @@ func (_m *MockGatewayer) GetTransactionsWithInputs(flts []visor.TxFilter, page *
 	}
 
 	var r2 uint64
-	if rf, ok := ret.Get(2).(func([]visor.TxFilter, *visor.PageIndex) uint64); ok {
-		r2 = rf(flts, page)
+	if rf, ok := ret.Get(2).(func([]visor.TxFilter, visor.SortOrder, *visor.PageIndex) uint64); ok {
+		r2 = rf(flts, order, page)
 	} else {
 		r2 = ret.Get(2).(uint64)
 	}
 
 	var r3 error
-	if rf, ok := ret.Get(3).(func([]visor.TxFilter, *visor.PageIndex) error); ok {
-		r3 = rf(flts, page)
+	if rf, ok := ret.Get(3).(func([]visor.TxFilter, visor.SortOrder, *visor.PageIndex) error); ok {
+		r3 = rf(flts, order, page)
 	} else {
 		r3 = ret.Error(3)
 	}
@@ -968,38 +968,6 @@ func (_m *MockGatewayer) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, uint6
 	var r2 error
 	if rf, ok := ret.Get(2).(func(cipher.SHA256) error); ok {
 		r2 = rf(id)
-	} else {
-		r2 = ret.Error(2)
-	}
-
-	return r0, r1, r2
-}
-
-// GetVerboseTransactionsForAddress provides a mock function with given fields: a
-func (_m *MockGatewayer) GetVerboseTransactionsForAddress(a cipher.Address) ([]visor.Transaction, [][]visor.TransactionInput, error) {
-	ret := _m.Called(a)
-
-	var r0 []visor.Transaction
-	if rf, ok := ret.Get(0).(func(cipher.Address) []visor.Transaction); ok {
-		r0 = rf(a)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]visor.Transaction)
-		}
-	}
-
-	var r1 [][]visor.TransactionInput
-	if rf, ok := ret.Get(1).(func(cipher.Address) [][]visor.TransactionInput); ok {
-		r1 = rf(a)
-	} else {
-		if ret.Get(1) != nil {
-			r1 = ret.Get(1).([][]visor.TransactionInput)
-		}
-	}
-
-	var r2 error
-	if rf, ok := ret.Get(2).(func(cipher.Address) error); ok {
-		r2 = rf(a)
 	} else {
 		r2 = ret.Error(2)
 	}

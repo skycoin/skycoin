@@ -78,7 +78,7 @@ type Visorer interface {
 	AddressCount() (uint64, error)
 	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, uint64, error)
 	GetSpentOutputsForAddresses(addr []cipher.Address) ([][]historydb.UxOut, uint64, error)
-	GetVerboseTransactionsForAddress(a cipher.Address) ([]visor.Transaction, [][]visor.TransactionInput, error)
+	// GetVerboseTransactionsForAddress(a cipher.Address) ([]visor.Transaction, [][]visor.TransactionInput, error)
 	GetRichlist(includeDistribution bool) (visor.Richlist, error)
 	GetAllUnconfirmedTransactions() ([]visor.UnconfirmedTransaction, error)
 	GetAllUnconfirmedTransactionsVerbose() ([]visor.UnconfirmedTransaction, [][]visor.TransactionInput, error)

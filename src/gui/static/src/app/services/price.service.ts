@@ -1,65 +1,69 @@
 import { Injectable, NgZone } from '@angular/core';
-import { Subject, BehaviorSubject, SubscriptionLike, timer, of } from 'rxjs';
+import { Subject, BehaviorSubject, of, Subscription, Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
-import { delay } from 'rxjs/operators';
+import { delay, mergeMap } from 'rxjs/operators';
+
 import { AppConfig } from '../app.config';
 import { environment } from '../../environments/environment';
 
+/**
+ * Maintains updated and allows to known the current USD price of the coin.
+ */
 @Injectable()
 export class PriceService {
   private readonly PRICE_API_ID = AppConfig.priceApiId;
 
-  price: Subject<number> = new BehaviorSubject<number>(null);
+  /**
+   * Allows to know the current USD price of the coin.
+   */
+  get price(): Observable<number> {
+    return this.priceInternal.asObservable();
+  }
+  private priceInternal: Subject<number> = new BehaviorSubject<number>(null);
 
+  /**
+   * Time interval in which periodic data updates will be made.
+   */
   private readonly updatePeriod = 10 * 60 * 1000;
-  private lastPriceSubscription: SubscriptionLike;
-  private timerSubscriptions: SubscriptionLike[];
+  private priceSubscription: Subscription;
 
   constructor(
     private http: HttpClient,
     private ngZone: NgZone,
   ) {
-    this.startTimer();
+    this.startDataRefreshSubscription(0);
   }
 
-  private startTimer(firstConnectionDelay = 0) {
-    if (this.timerSubscriptions) {
-      this.timerSubscriptions.forEach(sub => sub.unsubscribe());
-    }
-
-    this.timerSubscriptions = [];
-
-    this.ngZone.runOutsideAngular(() => {
-      this.timerSubscriptions.push(timer(this.updatePeriod, this.updatePeriod)
-        .subscribe(() => {
-          this.ngZone.run(() => !this.lastPriceSubscription ? this.loadPrice() : null );
-        }));
-    });
-
-    this.timerSubscriptions.push(
-      of(1).pipe(delay(firstConnectionDelay)).subscribe(() => {
-        this.ngZone.run(() => this.loadPrice());
-      }));
-  }
-
-  private loadPrice() {
+  /**
+   * Makes the service start updating the data periodically. If this function was called
+   * before, the previous updating procedure is cancelled.
+   * @param delayMs Delay before starting to update the data.
+   */
+  private startDataRefreshSubscription(delayMs: number) {
+    // If there is no API ID for getting the price, nothing is done.
     if (!this.PRICE_API_ID) {
       return;
     }
 
-    if (this.lastPriceSubscription) {
-      this.lastPriceSubscription.unsubscribe();
+    if (this.priceSubscription) {
+      this.priceSubscription.unsubscribe();
     }
 
     if (!environment.isInE2eMode) {
-      this.lastPriceSubscription = this.http.get(`https://api.coinpaprika.com/v1/tickers/${this.PRICE_API_ID}?quotes=USD`)
-        .subscribe((response: any) => {
-          this.lastPriceSubscription = null;
-          this.price.next(response.quotes.USD.price);
-        },
-        () => this.startTimer(30000));
+      this.ngZone.runOutsideAngular(() => {
+        this.priceSubscription = of(0).pipe(delay(delayMs), mergeMap(() => {
+          return this.http.get(`https://api.coinpaprika.com/v1/tickers/${this.PRICE_API_ID}?quotes=USD`);
+        })).subscribe((response: any) => {
+          this.ngZone.run(() => this.priceInternal.next(response.quotes.USD.price));
+          this.startDataRefreshSubscription(this.updatePeriod);
+        }, () => {
+          this.startDataRefreshSubscription(30000);
+        });
+      });
     } else {
-      this.price.next(1);
+      // Set the price to 1 and stop making updates during e2e tests, to avoid potential
+      // problems with the remote connection.
+      this.priceInternal.next(1);
     }
   }
 }

@@ -89,7 +89,7 @@ export class NetworkService {
   /**
    * Makes the service start updating the data periodically. If this function was called
    * before, the previous updating procedure is cancelled.
-   * @param delayMs Delay before starting to update the balance.
+   * @param delayMs Delay before starting to update the data.
    */
   private startDataRefreshSubscription(delayMs: number) {
     if (this.dataRefreshSubscription) {

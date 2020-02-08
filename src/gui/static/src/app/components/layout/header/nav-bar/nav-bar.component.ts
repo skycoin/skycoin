@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { AppConfig } from '../../../../app.config';
-import { NavBarService } from '../../../../services/nav-bar.service';
+import { NavBarSwitchService } from '../../../../services/nav-bar-switch.service';
 import { environment } from '../../../../../environments/environment';
 import { AppService } from '../../../../services/app.service';
 
@@ -15,10 +15,10 @@ export class NavBarComponent {
 
   constructor(
     public appService: AppService,
-    public navbarService: NavBarService,
+    public navBarSwitchService: NavBarSwitchService,
   ) { }
 
   changeActiveComponent(value) {
-    this.navbarService.setActiveComponent(value);
+    this.navBarSwitchService.setActiveComponent(value);
   }
 }

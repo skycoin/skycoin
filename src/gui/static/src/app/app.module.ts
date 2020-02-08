@@ -65,7 +65,7 @@ import { TransactionInfoComponent } from './components/pages/send-skycoin/send-p
 import { SendCoinsFormComponent } from './components/pages/send-skycoin/send-coins-form/send-coins-form.component';
 import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
 import { AppTranslateLoader } from './app.translate-loader';
-import { NavBarService } from './services/nav-bar.service';
+import { NavBarSwitchService } from './services/nav-bar-switch.service';
 import { LoadingContentComponent } from './components/layout/loading-content/loading-content.component';
 import { NumberOfAddressesComponent } from './components/pages/wallets/number-of-addresses/number-of-addresses';
 import { SelectAddressComponent } from './components/layout/select-address/select-address.component';
@@ -344,7 +344,7 @@ const ROUTES = [
     AppService,
     BlockchainService,
     ExchangeService,
-    NavBarService,
+    NavBarSwitchService,
     NetworkService,
     PriceService,
     PurchaseService,

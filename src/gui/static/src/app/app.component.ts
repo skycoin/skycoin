@@ -48,10 +48,10 @@ export class AppComponent implements OnInit {
 
   ngOnInit() {
     this.appService.UpdateData();
-    this.languageService.loadLanguageSettings();
+    this.languageService.initialize();
 
-    const subscription = this.languageService.selectedLanguageLoaded.subscribe(selectedLanguageLoaded => {
-      if (!selectedLanguageLoaded) {
+    const subscription = this.languageService.savedSelectedLanguageLoaded.subscribe(savedSelectedLanguageLoaded => {
+      if (!savedSelectedLanguageLoaded) {
         SelectLanguageComponent.openDialog(this.dialog, true).afterClosed().subscribe(response => {
           if (response) {
             this.languageService.changeLanguage(response);

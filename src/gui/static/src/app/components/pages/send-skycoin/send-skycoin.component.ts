@@ -1,5 +1,5 @@
 import { Component, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { NavBarService } from '../../../services/nav-bar.service';
+import { NavBarSwitchService } from '../../../services/nav-bar-switch.service';
 import { SubscriptionLike } from 'rxjs';
 import { DoubleButtonActive } from '../../layout/double-button/double-button.component';
 import { MatDialog } from '@angular/material/dialog';
@@ -21,12 +21,12 @@ export class SendSkycoinComponent implements OnDestroy {
   private subscription: SubscriptionLike;
 
   constructor(
-    private navbarService: NavBarService,
+    private navBarSwitchService: NavBarSwitchService,
     private changeDetector: ChangeDetectorRef,
     private dialog: MatDialog,
   ) {
-    this.navbarService.showSwitch('send.simple-form-button', 'send.advanced-form-button', DoubleButtonActive.LeftButton);
-    this.subscription = navbarService.activeComponent.subscribe(value => {
+    this.navBarSwitchService.showSwitch('send.simple-form-button', 'send.advanced-form-button', DoubleButtonActive.LeftButton);
+    this.subscription = navBarSwitchService.activeComponent.subscribe(value => {
       if (this.activeForm !== value) {
         SendCoinsFormComponent.lastShowForManualUnsignedValue = false;
         this.activeForm = value;
@@ -37,7 +37,7 @@ export class SendSkycoinComponent implements OnDestroy {
 
   ngOnDestroy() {
     this.subscription.unsubscribe();
-    this.navbarService.hideSwitch();
+    this.navBarSwitchService.hideSwitch();
   }
 
   onFormSubmitted(data) {

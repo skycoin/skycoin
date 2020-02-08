@@ -5,7 +5,7 @@ import { FormGroup, FormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { ButtonComponent } from '../../../layout/button/button.component';
-import { NavBarService } from '../../../../services/nav-bar.service';
+import { NavBarSwitchService } from '../../../../services/nav-bar-switch.service';
 import { SelectAddressComponent } from '../../../layout/select-address/select-address.component';
 import { BigNumber } from 'bignumber.js';
 import { BlockchainService } from '../../../../services/blockchain.service';
@@ -61,7 +61,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     public appService: AppService,
     private dialog: MatDialog,
     private msgBarService: MsgBarService,
-    private navbarService: NavBarService,
+    private navBarSwitchService: NavBarSwitchService,
     private hwWalletService: HwWalletService,
     private translate: TranslateService,
     private changeDetector: ChangeDetectorRef,
@@ -304,7 +304,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       this.previewButton.setDisabled();
     }
     this.busy = true;
-    this.navbarService.disableSwitch();
+    this.navBarSwitchService.disableSwitch();
   }
 
   private createTransaction(passwordDialog?: any) {
@@ -397,7 +397,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
           transaction,
         });
         this.busy = false;
-        this.navbarService.enableSwitch();
+        this.navBarSwitchService.enableSwitch();
       }
     }, error => {
       if (passwordDialog) {
@@ -442,7 +442,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
 
   private showSuccess(showDone: boolean) {
     this.busy = false;
-    this.navbarService.enableSwitch();
+    this.navBarSwitchService.enableSwitch();
     this.resetForm();
 
     if (showDone) {
@@ -459,14 +459,14 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   private showError(error) {
     this.busy = false;
     this.msgBarService.showError(error);
-    this.navbarService.enableSwitch();
+    this.navBarSwitchService.enableSwitch();
     this.previewButton.resetState().setEnabled();
     this.sendButton.resetState().setEnabled();
   }
 
   private resetState() {
     this.busy = false;
-    this.navbarService.enableSwitch();
+    this.navBarSwitchService.enableSwitch();
     this.previewButton.resetState().setEnabled();
     this.sendButton.resetState().setEnabled();
   }

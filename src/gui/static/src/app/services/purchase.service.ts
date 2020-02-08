@@ -1,3 +1,7 @@
+/*
+  IMPORTANT: Unused for a long time, it may need changes to work properly.
+*/
+
 import { Injectable } from '@angular/core';
 import { Subject, BehaviorSubject, Observable } from 'rxjs';
 import { PurchaseOrder, TellerConfig } from '../app.datatypes';

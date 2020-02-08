@@ -22,11 +22,11 @@
       <span>{{ 'buy.title-and-button' | translate }}</span>
     </a>
     <app-double-button
-      *ngIf="navbarService.switchVisible"
-      [ngClass]="{'-switch': true, 'element-disabled': navbarService.switchDiabled}"
-      [leftButtonText]="navbarService.leftText | translate"
-      [rightButtonText]="navbarService.rightText | translate"
-      [activeButton]="navbarService.activeComponent | async"
+      *ngIf="navBarSwitchService.switchVisible"
+      [ngClass]="{'-switch': true, 'element-disabled': navBarSwitchService.switchDiabled}"
+      [leftButtonText]="navBarSwitchService.leftText | translate"
+      [rightButtonText]="navBarSwitchService.rightText | translate"
+      [activeButton]="navBarSwitchService.activeComponent | async"
       className="light navbar"
       (onStateChange)="changeActiveComponent($event)"
     ></app-double-button>

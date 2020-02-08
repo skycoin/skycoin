@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import * as moment from 'moment';
 import { SubscriptionLike } from 'rxjs';
-import { NavBarService } from '../../../../services/nav-bar.service';
+import { NavBarSwitchService } from '../../../../services/nav-bar-switch.service';
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
 import { BigNumber } from 'bignumber.js';
 import { BalanceAndOutputsService } from '../../../../services/wallet-operations/balance-and-outputs.service';
@@ -19,23 +19,23 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
   private navbarSubscription: SubscriptionLike;
 
   constructor(
-    private navbarService: NavBarService,
+    private navBarSwitchService: NavBarSwitchService,
     private balanceAndOutputsService: BalanceAndOutputsService,
     private historyService: HistoryService,
   ) {
-    this.navbarSubscription = this.navbarService.activeComponent.subscribe(value => {
+    this.navbarSubscription = this.navBarSwitchService.activeComponent.subscribe(value => {
       this.startCheckingTransactions(value);
     });
   }
 
   ngOnInit() {
-    this.navbarService.showSwitch('pending-txs.my-transactions-button', 'pending-txs.all-transactions-button');
+    this.navBarSwitchService.showSwitch('pending-txs.my-transactions-button', 'pending-txs.all-transactions-button');
   }
 
   ngOnDestroy() {
     this.removeTransactionsSubscription();
     this.navbarSubscription.unsubscribe();
-    this.navbarService.hideSwitch();
+    this.navBarSwitchService.hideSwitch();
   }
 
   private startCheckingTransactions(value) {

@@ -1,6 +1,8 @@
 package visor
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestPage_Cal(t *testing.T) {
 	type fields struct {

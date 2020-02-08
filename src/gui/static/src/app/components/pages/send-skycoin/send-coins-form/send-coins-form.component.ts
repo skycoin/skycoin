@@ -141,8 +141,8 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     }
 
     this.closeSyncCheckSubscription();
-    this.syncCheckSubscription = this.blockchainService.synchronized.pipe(first()).subscribe(synchronized => {
-      if (synchronized) {
+    this.syncCheckSubscription = this.blockchainService.progress.pipe(first()).subscribe(response => {
+      if (response.synchronized) {
         this.prepareTransaction();
       } else {
         this.showSynchronizingWarning();

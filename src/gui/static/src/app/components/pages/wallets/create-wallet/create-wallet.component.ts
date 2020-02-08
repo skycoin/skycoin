@@ -28,7 +28,7 @@ export class CreateWalletComponent implements OnDestroy {
   busy = false;
 
   private synchronized = true;
-  private synchronizedSubscription: SubscriptionLike;
+  private blockchainSubscription: SubscriptionLike;
 
   public static openDialog(dialog: MatDialog, params: CreateWalletParams): MatDialogRef<CreateWalletComponent, any> {
     const config = new MatDialogConfig();
@@ -47,11 +47,11 @@ export class CreateWalletComponent implements OnDestroy {
     private walletsAndAddressesService: WalletsAndAddressesService,
     blockchainService: BlockchainService,
   ) {
-    this.synchronizedSubscription = blockchainService.synchronized.subscribe(value => this.synchronized = value);
+    this.blockchainSubscription = blockchainService.progress.subscribe(response => this.synchronized = response.synchronized);
   }
 
   ngOnDestroy() {
-    this.synchronizedSubscription.unsubscribe();
+    this.blockchainSubscription.unsubscribe();
     this.msgBarService.hide();
   }
 

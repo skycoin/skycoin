@@ -25,7 +25,7 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
   hwCompatibilityActivated = false;
 
   private synchronized = true;
-  private synchronizedSubscription: SubscriptionLike;
+  private blockchainSubscription: SubscriptionLike;
 
   constructor(
     public appService: AppService,
@@ -35,7 +35,7 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
     blockchainService: BlockchainService,
   ) {
     this.hwCompatibilityActivated = hwWalletService.hwWalletCompatibilityActivated;
-    this.synchronizedSubscription = blockchainService.synchronized.subscribe(value => this.synchronized = value);
+    this.blockchainSubscription = blockchainService.progress.subscribe(response => this.synchronized = response.synchronized);
   }
 
   ngOnInit() {
@@ -47,7 +47,7 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.synchronizedSubscription.unsubscribe();
+    this.blockchainSubscription.unsubscribe();
   }
 
   changeForm(newState) {

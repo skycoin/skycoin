@@ -14,7 +14,7 @@ import { ExchangeService } from '../../../../services/exchange.service';
 import { ExchangeOrder, TradingPair, StoredExchangeOrder } from '../../../../app.datatypes';
 import { MatDialog } from '@angular/material/dialog';
 import { SelectAddressComponent } from '../../../layout/select-address/select-address.component';
-import { BlockchainService } from '../../../../services/blockchain.service';
+import { AppService } from '../../../../services/app.service';
 import { TranslateService } from '@ngx-translate/core';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { retryWhen, delay, take, concat, mergeMap } from 'rxjs/operators';
@@ -52,7 +52,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
     if (isNaN(fromAmount)) {
       return 0;
     } else {
-      return (this.form.get('fromAmount').value * this.activeTradingPair.price).toFixed(this.blockchainService.currentMaxDecimals);
+      return (this.form.get('fromAmount').value * this.activeTradingPair.price).toFixed(this.appService.currentMaxDecimals);
     }
   }
 
@@ -67,7 +67,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
     private formBuilder: FormBuilder,
     private msgBarService: MsgBarService,
     private dialog: MatDialog,
-    private blockchainService: BlockchainService,
+    private appService: AppService,
     private translateService: TranslateService,
     private walletsAndAddressesService: WalletsAndAddressesService,
   ) { }

@@ -30,7 +30,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
   walletDownloadUrl = AppConfig.walletDownloadUrl;
 
   private subscriptionsGroup: SubscriptionLike[] = [];
-  private synchronizedSubscription: SubscriptionLike;
   // This should be deleted. View the comment in the constructor.
   // private fetchVersionError: string;
 
@@ -64,15 +63,10 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.subscriptionsGroup.push(this.blockchainService.progress.pipe(filter(response => !!response))
       .subscribe(response => {
         this.querying = false;
-        this.highest = response.highest;
-        this.current = response.current;
+        this.highest = response.highestBlock;
+        this.current = response.currentBlock;
         this.percentage = this.current && this.highest ? (this.current / this.highest) : 0;
-
-        // Adding the code here prevents the warning from flashing if the wallet is synchronized. Also, adding the
-        // subscription to this.subscription causes problems.
-        if (!this.synchronizedSubscription) {
-          this.synchronizedSubscription = this.blockchainService.synchronized.subscribe(value => this.synchronized = value);
-        }
+        this.synchronized = response.synchronized;
       }));
 
     this.subscriptionsGroup.push(this.priceService.price.subscribe(price => this.price = price));
@@ -102,8 +96,5 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.subscriptionsGroup.forEach(sub => sub.unsubscribe());
-    if (this.synchronizedSubscription) {
-      this.synchronizedSubscription.unsubscribe();
-    }
   }
 }

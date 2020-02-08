@@ -3,7 +3,6 @@ import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angu
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { BigNumber } from 'bignumber.js';
-import { BlockchainService } from '../../../../../services/blockchain.service';
 import { AppService } from '../../../../../services/app.service';
 import { TranslateService } from '@ngx-translate/core';
 import { DoubleButtonActive } from '../../../../layout/double-button/double-button.component';
@@ -84,7 +83,6 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   }
 
   constructor(
-    private blockchainService: BlockchainService,
     private appService: AppService,
     private formBuilder: FormBuilder,
     private dialog: MatDialog,
@@ -186,7 +184,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
         }
 
         if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
-          const newValue = currentValue.dividedBy(this.price).decimalPlaces(this.blockchainService.currentMaxDecimals);
+          const newValue = currentValue.dividedBy(this.price).decimalPlaces(this.appService.currentMaxDecimals);
           const recoveredValue = newValue.multipliedBy(this.price).decimalPlaces(FormDestinationComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
           if (!recoveredValue.isEqualTo(currentValue)) {
             valuesWithPrecisionErrors += 1;
@@ -195,7 +193,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
           dest.get('coins').setValue(newValue.toString());
         } else {
           const newValue = currentValue.multipliedBy(this.price).decimalPlaces(FormDestinationComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
-          const recoveredValue = newValue.dividedBy(this.price).decimalPlaces(this.blockchainService.currentMaxDecimals);
+          const recoveredValue = newValue.dividedBy(this.price).decimalPlaces(this.appService.currentMaxDecimals);
           if (!recoveredValue.isEqualTo(currentValue)) {
             valuesWithPrecisionErrors += 1;
           }
@@ -244,7 +242,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     });
 
     if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
-      availableCoins = availableCoins.decimalPlaces(this.blockchainService.currentMaxDecimals, BigNumber.ROUND_FLOOR);
+      availableCoins = availableCoins.decimalPlaces(this.appService.currentMaxDecimals, BigNumber.ROUND_FLOOR);
     } else {
       availableCoins = availableCoins.decimalPlaces(FormDestinationComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
     }
@@ -286,7 +284,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
         this.values[i] = convertedValue.toNumber();
       } else {
-        const convertedValue = value.dividedBy(currentPrice).decimalPlaces(this.blockchainService.currentMaxDecimals);
+        const convertedValue = value.dividedBy(currentPrice).decimalPlaces(this.appService.currentMaxDecimals);
 
         this.totalCoins = this.totalCoins.plus(convertedValue);
         this.totalConvertedCoins = this.totalConvertedCoins.plus(value);
@@ -458,7 +456,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       const parts = stringValue.split('.');
 
       if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
-        if (parts.length === 2 && parts[1].length > this.blockchainService.currentMaxDecimals) {
+        if (parts.length === 2 && parts[1].length > this.appService.currentMaxDecimals) {
           return null;
         }
       } else {

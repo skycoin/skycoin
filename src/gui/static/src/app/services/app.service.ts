@@ -70,6 +70,14 @@ export class AppService {
   private explorerUrlInternal = ' ';
 
   /**
+   * Indicates the maximum number of decimals for the coin the node currently accepts.
+   */
+  get currentMaxDecimals() {
+    return this.currentMaxDecimalsInternal;
+  }
+  private currentMaxDecimalsInternal = 6;
+
+  /**
    * Rate used for calculating the amount of hours that should be burned as transaction fee
    * when sending coins. The minimum amount to burn is "totalHours / burnRate".
    */
@@ -107,6 +115,7 @@ export class AppService {
     this.apiService.get('health').subscribe(response => {
       this.nodeVersionInternal = response.version.version;
       this.burnRateInternal = new BigNumber(response.user_verify_transaction.burn_factor);
+      this.currentMaxDecimalsInternal = response.user_verify_transaction.max_decimals;
 
       this.detectUpdateAvailable();
 

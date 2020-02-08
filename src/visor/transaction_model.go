@@ -103,76 +103,10 @@ func (p PageIndex) PageNum() uint64 {
 	return p.n
 }
 
-type transactionModel struct {
-	history     Historyer
-	unconfirmed UnconfirmedTransactionPooler
-	blockchain  Blockchainer
-}
-
 type txnHashConfirm struct {
 	hash        cipher.SHA256
 	seq         uint64
 	isConfirmed bool
-}
-
-// GetTransactionsForAddresses return transactions of addresses within a specific page,
-// it will return the calculated total pages that calcuated base on the page size.
-func (tm transactionModel) GetTransactionsForAddresses(tx *dbutil.Tx, addrs []cipher.Address, page *PageIndex) ([]Transaction, uint64, error) {
-	txnHashesWithFlag, err := tm.getAllTxnHashesWithFlagForAddresses(tx, addrs)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	var totalPages = uint64(1)
-	if page != nil {
-		// paginate the txn hashes
-		var start, end uint64
-		var err error
-		start, end, totalPages, err = page.Cal(uint64(len(txnHashesWithFlag)))
-		if err != nil {
-			return nil, 0, err
-		}
-		txnHashesWithFlag = txnHashesWithFlag[start:end]
-	}
-
-	// get transactions
-	var confirmedTxns []*historydb.Transaction
-	var unconfirmedTxns []*UnconfirmedTransaction
-	for _, txn := range txnHashesWithFlag {
-		if txn.isConfirmed {
-			hisTxn, err := tm.history.GetTransaction(tx, txn.hash)
-			if err != nil {
-				return nil, 0, err
-			}
-
-			confirmedTxns = append(confirmedTxns, hisTxn)
-		} else {
-			// unconfirmedHashes = append(unconfirmedHashes, txnHashesWithFlag[i].hash)
-			unconfirmedTxn, err := tm.unconfirmed.Get(tx, txn.hash)
-			if err != nil {
-				return nil, 0, err
-			}
-			if unconfirmedTxn == nil {
-				logger.Critical().Error("unconfirmed unspent missing unconfirmed txn")
-				continue
-			}
-			unconfirmedTxns = append(unconfirmedTxns, unconfirmedTxn)
-		}
-	}
-
-	// convert the []*historydb.Transaction to []Transaction
-	hisTxns, err := tm.convertConfirmedTxns(tx, confirmedTxns)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	var txns []Transaction
-	txns = append(txns, hisTxns...)
-
-	// convert the []*UnconfirmedTransaction to []Transaction struct
-	txns = append(txns, convertUnconfirmedTxns(unconfirmedTxns)...)
-
-	return txns, totalPages, nil
 }
 
 type txnHashesContainer struct {
@@ -323,252 +257,12 @@ func (s txnHashesContainer) ToTransactions(tx *dbutil.Tx, f txnGetFunc) ([]Trans
 	return txns, nil
 }
 
-func (tm transactionModel) getConfirmedTxnHashesWithFlag(tx *dbutil.Tx, flts []TxFilter) ([]txnHashConfirm, error) {
-	headBkSeq, ok, err := tm.blockchain.HeadSeq(tx)
-	if err != nil {
-		return nil, err
-	}
-	if !ok {
-		return nil, errors.New("No head block seq")
-	}
-
-	txnHashes := newTxnHashesContainer()
-	if err := tm.history.ForEachTxn(tx, func(hash cipher.SHA256, hTxn *historydb.Transaction) error {
-		if headBkSeq < hTxn.BlockSeq {
-			err := errors.New("Transaction block sequence is less than the head block sequence")
-			logger.Critical().WithError(err).WithFields(logrus.Fields{
-				"headBkSeq":  headBkSeq,
-				"txBlockSeq": hTxn.BlockSeq,
-			}).Error()
-			return err
-		}
-
-		h := headBkSeq - hTxn.BlockSeq + 1
-
-		bk, err := tm.blockchain.GetSignedBlockBySeq(tx, hTxn.BlockSeq)
-		if err != nil {
-			return fmt.Errorf("get block of seq: %v failed: %v", hTxn.BlockSeq, err)
-		}
-
-		if bk == nil {
-			return fmt.Errorf("block of seq: %d doesn't exist", hTxn.BlockSeq)
-		}
-
-		txn := Transaction{
-			Transaction: hTxn.Txn,
-			Status:      NewConfirmedTransactionStatus(h, hTxn.BlockSeq),
-			Time:        bk.Time(),
-		}
-
-		// Checks filters
-		for _, f := range flts {
-			if !f.Match(&txn) {
-				return nil
-			}
-		}
-
-		txnHashes.Add(hash, true, hTxn.BlockSeq)
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-
-	txnHashes.Sort(AscOrder)
-	return txnHashes.items, nil
+type transactionModel struct {
+	history     Historyer
+	unconfirmed UnconfirmedTransactionPooler
+	blockchain  Blockchainer
 }
 
-func (tm transactionModel) getUnconfirmedTxnHashesWithFlag(tx *dbutil.Tx, flts []TxFilter) ([]txnHashConfirm, error) {
-	hashes, err := tm.unconfirmed.GetHashes(tx, func(utxn UnconfirmedTransaction) bool {
-		txn := Transaction{
-			Transaction: utxn.Transaction,
-			Status:      NewUnconfirmedTransactionStatus(),
-			Time:        uint64(timeutil.NanoToTime(utxn.Received).Unix()),
-		}
-
-		for _, f := range flts {
-			if !f.Match(&txn) {
-				return false
-			}
-		}
-
-		return true
-
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	var txnHashesWithFlag []txnHashConfirm
-	for _, hash := range hashes {
-		txnHashesWithFlag = append(txnHashesWithFlag, txnHashConfirm{
-			hash:        hash,
-			isConfirmed: false,
-		})
-	}
-
-	return txnHashesWithFlag, nil
-}
-
-// traverseTxns traverses transactions in historydb and unconfirmed tx pool in db,
-// returns transaction hashes that can pass the filters.
-func (tm transactionModel) traverseTxns(tx *dbutil.Tx, flts []TxFilter, page *PageIndex) ([]Transaction, uint64, error) {
-	cfmHashFlags, err := tm.getConfirmedTxnHashesWithFlag(tx, flts)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	uncfmHashFlags, err := tm.getUnconfirmedTxnHashesWithFlag(tx, flts)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	txnHashesWithFlag := append(cfmHashFlags, uncfmHashFlags...)
-	start, end, totalPages, err := page.Cal(uint64(len(txnHashesWithFlag)))
-	if err != nil {
-		return nil, 0, err
-	}
-
-	// do pagination
-	txnHashesWithFlag = txnHashesWithFlag[start:end]
-
-	var hisTxns []*historydb.Transaction
-	var uncfmTxns []*UnconfirmedTransaction
-	for _, tf := range txnHashesWithFlag {
-		if tf.isConfirmed {
-			t, err := tm.history.GetTransaction(tx, tf.hash)
-			if err != nil {
-				return nil, 0, err
-			}
-			hisTxns = append(hisTxns, t)
-		} else {
-			t, err := tm.unconfirmed.Get(tx, tf.hash)
-			if err != nil {
-				return nil, 0, err
-			}
-			uncfmTxns = append(uncfmTxns, t)
-		}
-	}
-
-	txns, err := tm.convertConfirmedTxns(tx, hisTxns)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	txns = append(txns, convertUnconfirmedTxns(uncfmTxns)...)
-
-	return txns, totalPages, nil
-}
-
-// getAllTxnHashesWithFlagForAddresses returns all transaction hashes of the addresses
-// returns txn hashes that each with a flag to indicate whether it is a confirmed transaction
-func (tm transactionModel) getAllTxnHashesWithFlagForAddresses(tx *dbutil.Tx, addrs []cipher.Address) ([]txnHashConfirm, error) {
-	var txnHashesWithFlag []txnHashConfirm
-
-	// get confirmed transactions from history
-	hisTxnHashes, err := tm.history.GetTransactionHashesForAddresses(tx, addrs)
-	if err != nil {
-		return nil, err
-	}
-
-	for i := range hisTxnHashes {
-		txnHashesWithFlag = append(txnHashesWithFlag, txnHashConfirm{
-			hash:        hisTxnHashes[i],
-			isConfirmed: true,
-		})
-	}
-
-	// get unconfirmed transactions
-	unconfirmedHashes, err := tm.getUnconfirmedTransactionsHashes(tx, addrs)
-	if err != nil {
-		return nil, err
-	}
-
-	for i := range unconfirmedHashes {
-		txnHashesWithFlag = append(txnHashesWithFlag, txnHashConfirm{
-			hash:        unconfirmedHashes[i],
-			isConfirmed: false,
-		})
-	}
-	return txnHashesWithFlag, nil
-}
-
-func (tm transactionModel) getUnconfirmedTransactionsHashes(tx *dbutil.Tx, addrs []cipher.Address) ([]cipher.SHA256, error) {
-	var hashes []cipher.SHA256
-	hashMap := make(map[cipher.SHA256]struct{})
-
-	for _, addr := range addrs {
-		uxs, err := tm.unconfirmed.GetUnspentsOfAddr(tx, addr)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, ux := range uxs {
-			hash := ux.Body.SrcTransaction
-			if _, ok := hashMap[hash]; ok {
-				continue
-			}
-			hashes = append(hashes, hash)
-			hashMap[hash] = struct{}{}
-		}
-	}
-
-	return hashes, nil
-}
-
-func convertUnconfirmedTxns(unconfirmedTxns []*UnconfirmedTransaction) []Transaction {
-	var txns []Transaction
-	for _, txn := range unconfirmedTxns {
-		txns = append(txns, Transaction{
-			Transaction: txn.Transaction,
-			Status:      NewUnconfirmedTransactionStatus(),
-			Time:        uint64(timeutil.NanoToTime(txn.Received).Unix()),
-		})
-	}
-	return txns
-}
-
-func (tm transactionModel) convertConfirmedTxns(tx *dbutil.Tx, hisTxns []*historydb.Transaction) ([]Transaction, error) {
-	headBkSeq, ok, err := tm.blockchain.HeadSeq(tx)
-	if err != nil {
-		return nil, err
-	}
-
-	if !ok {
-		return nil, errors.New("No head block seq")
-	}
-
-	var txns []Transaction
-	for _, txn := range hisTxns {
-		if headBkSeq < txn.BlockSeq {
-			err := errors.New("Transaction block sequence is greater than the head block sequence")
-			logger.Critical().WithError(err).WithFields(logrus.Fields{
-				"headBkSeq":   headBkSeq,
-				"txnBlockSeq": txn.BlockSeq,
-			}).Error()
-			return nil, err
-		}
-		h := headBkSeq - txn.BlockSeq + 1
-
-		bk, err := tm.blockchain.GetSignedBlockBySeq(tx, txn.BlockSeq)
-		if err != nil {
-			return nil, err
-		}
-
-		if bk == nil {
-			return nil, fmt.Errorf("block seq=%d doesn't exist", txn.BlockSeq)
-		}
-
-		txns = append(txns, Transaction{
-			Transaction: txn.Txn,
-			Status:      NewConfirmedTransactionStatus(h, txn.BlockSeq),
-			Time:        bk.Time(),
-		})
-	}
-
-	return txns, nil
-}
-
-//////////////////////////////////////////////////////////////
 func (tm transactionModel) GetTransactions(tx *dbutil.Tx, flts []TxFilter, order SortOrder, page *PageIndex) ([]Transaction, uint64, error) {
 	var otherFlts []TxFilter
 	var txnGetter transactionsGetter
@@ -588,10 +282,6 @@ func (tm transactionModel) GetTransactions(tx *dbutil.Tx, flts []TxFilter, order
 
 	return txnGetter.GetTransactions(tx, otherFlts, order, page)
 }
-
-// func (tm transactionModel) GetTransactionsVerbose(tx *dbutil.Tx, flts []TxFilter, order SortOrder, page *PageIndex) ([]Transaction, [][]TransactionInput, uint64, error) {
-
-// }
 
 type transactionsGetter interface {
 	GetTransactions(tx *dbutil.Tx, flts []TxFilter, order SortOrder, page *PageIndex) ([]Transaction, uint64, error)
@@ -893,4 +583,20 @@ func getAddrsFromFlts(flts []TxFilter) ([]cipher.Address, []TxFilter) {
 
 	addrs := accumulateAddressInFilter(addrsFlts)
 	return addrs, otherFlts
+}
+
+func accumulateAddressInFilter(afs []AddrsFilter) []cipher.Address {
+	// Accumulate all addresses in address filters
+	addrMap := make(map[cipher.Address]struct{})
+	var addrs []cipher.Address
+	for _, af := range afs {
+		for _, a := range af.Addrs {
+			if _, exist := addrMap[a]; exist {
+				continue
+			}
+			addrMap[a] = struct{}{}
+			addrs = append(addrs, a)
+		}
+	}
+	return addrs
 }

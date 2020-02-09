@@ -1,10 +1,9 @@
-import BigNumber from 'bignumber.js';
-
-import { WalletBase } from './wallet-objects';
-
 /**
  * This file contains the objects used to represent the transactions and its parts in the app.
  */
+import BigNumber from 'bignumber.js';
+
+import { WalletBase } from './wallet-objects';
 
 /**
  * Object with the properties of an input.

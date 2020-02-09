@@ -50,7 +50,7 @@ export class MsgBarService {
 
     // If showing a msg indicating an error connecting with the hw daemon, the msg is modified
     // to make sure it includes the download URL.
-    if ((body as OperationError).type && (body as OperationError).type === HWOperationResults.DaemonError) {
+    if ((body as OperationError).type && (body as OperationError).type === HWOperationResults.DaemonConnectionError) {
       config.text = 'hardware-wallet.errors.daemon-connection-with-configurable-link';
       config.link = AppConfig.hwWalletDaemonDownloadUrl;
     }

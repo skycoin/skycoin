@@ -4,7 +4,7 @@ import { BigNumber } from 'bignumber.js';
 import { HttpClient } from '@angular/common/http';
 
 import { ApiService } from './api.service';
-import { shouldUpgradeVersion } from '../utils/semver';
+import { shouldUpgradeVersion } from '../utils/general-utils';
 import { AppConfig } from '../app.config';
 import { redirectToErrorPage } from '../utils/errors';
 

@@ -4,7 +4,7 @@ import { Injectable, NgZone } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
 import { HwWalletPinService } from './hw-wallet-pin.service';
 import { HwWalletSeedWordService } from './hw-wallet-seed-word.service';
-import { OperationError, OperationErrorCategories, HWOperationResults } from '../utils/operation-error';
+import { OperationError, HWOperationResults } from '../utils/operation-error';
 import { getErrorMsg } from '../utils/errors';
 
 @Injectable()
@@ -82,7 +82,6 @@ export class HwWalletDaemonService {
             if (!pin) {
               return this.put('/cancel').pipe(mergeMap(() => {
                 const response = new OperationError();
-                response.category = OperationErrorCategories.HwApiError;
                 response.originalError = null;
                 response.originalServerErrorMsg = '';
                 response.type = HWOperationResults.FailedOrRefused;
@@ -101,7 +100,6 @@ export class HwWalletDaemonService {
             if (!word) {
               return this.put('/cancel').pipe(mergeMap(() => {
                 const response = new OperationError();
-                response.category = OperationErrorCategories.HwApiError;
                 response.originalError = null;
                 response.originalServerErrorMsg = '';
                 response.type = HWOperationResults.FailedOrRefused;
@@ -126,7 +124,6 @@ export class HwWalletDaemonService {
         }
 
         const response = new OperationError();
-        response.category = OperationErrorCategories.HwApiError;
         response.originalError = error;
 
         if (error && error.name && error.name === 'TimeoutError') {
@@ -143,7 +140,7 @@ export class HwWalletDaemonService {
         if (convertedError.status !== null && convertedError.status !== undefined) {
           if (convertedError.status === 0 || convertedError.status === 504) {
             response.originalServerErrorMsg = '';
-            response.type = HWOperationResults.DaemonError;
+            response.type = HWOperationResults.DaemonConnectionError;
             response.translatableErrorMsg = this.getHardwareWalletErrorMsg(response);
           }
         }
@@ -237,7 +234,7 @@ export class HwWalletDaemonService {
     } else if (responseContent.toUpperCase().includes('Invalid address length'.toUpperCase())) {
       result = HWOperationResults.InvalidAddress;
     } else if (responseContent.toUpperCase().includes('LIBUSB'.toUpperCase())) {
-      result = HWOperationResults.DaemonError;
+      result = HWOperationResults.DaemonConnectionError;
     } else if (responseContent.toUpperCase().includes('hidapi'.toUpperCase())) {
       result = HWOperationResults.Disconnected;
       setTimeout(() => this.checkHw(false));
@@ -265,7 +262,7 @@ export class HwWalletDaemonService {
         response = 'hardware-wallet.errors.incorrect-pin';
       } else if (error.type === HWOperationResults.IncorrectHardwareWallet) {
         response = 'hardware-wallet.errors.incorrect-wallet';
-      } else if (error.type === HWOperationResults.DaemonError) {
+      } else if (error.type === HWOperationResults.DaemonConnectionError) {
         response = 'hardware-wallet.errors.daemon-connection';
       } else if (error.type === HWOperationResults.InvalidAddress) {
         response = 'hardware-wallet.errors.invalid-address';

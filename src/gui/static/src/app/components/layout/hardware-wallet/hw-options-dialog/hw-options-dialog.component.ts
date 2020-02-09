@@ -244,7 +244,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
         }, () => this.continueCheckingWallet(suggestToUpdate));
       }
     }, (err: OperationError) => {
-      if (err.type && err.type === HWOperationResults.DaemonError) {
+      if (err.type && err.type === HWOperationResults.DaemonConnectionError) {
         this.showResult({
           text: 'hardware-wallet.errors.daemon-connection-with-configurable-link',
           link: AppConfig.hwWalletDaemonDownloadUrl,

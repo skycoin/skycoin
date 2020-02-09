@@ -1,4 +1,4 @@
-import { shouldUpgradeVersion } from './semver';
+import { shouldUpgradeVersion } from './general-utils';
 
 describe('semver', () => {
   it('correctly compares versions', () => {

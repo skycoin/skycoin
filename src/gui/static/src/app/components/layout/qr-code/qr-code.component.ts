@@ -3,7 +3,7 @@ import { MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/d
 import { MatDialogRef } from '@angular/material/dialog';
 import { FormGroup, FormBuilder } from '@angular/forms';
 import { SubscriptionLike, Subject } from 'rxjs';
-import { copyTextToClipboard } from '../../../utils';
+import { copyTextToClipboard } from '../../../utils/general-utils';
 import { AppConfig } from '../../../app.config';
 import { MsgBarService } from '../../../services/msg-bar.service';
 import { debounceTime } from 'rxjs/operators';

@@ -8,7 +8,7 @@ import { HwWalletPinService, ChangePinStates } from './hw-wallet-pin.service';
 import BigNumber from 'bignumber.js';
 import { HttpClient } from '@angular/common/http';
 import { ApiService } from './api.service';
-import { OperationError, OperationErrorCategories, HWOperationResults } from '../utils/operation-error';
+import { OperationError, HWOperationResults } from '../utils/operation-error';
 import { getErrorMsg } from '../utils/errors';
 
 export class TxData {
@@ -107,7 +107,6 @@ export class HwWalletService {
       return this.verifyAddresses(response.rawResponse, 0).pipe(
         catchError(err => {
           const resp = new OperationError();
-          resp.category = OperationErrorCategories.HwApiError;
           resp.originalError = err;
           resp.type = HWOperationResults.AddressGeneratorProblem;
           resp.translatableErrorMsg = this.hwWalletDaemonService.getHardwareWalletErrorMsg(resp);
@@ -175,7 +174,6 @@ export class HwWalletService {
     return this.getFeatures(false).pipe(mergeMap(result => {
       if (!result.rawResponse.bootloader_mode) {
         const resp = new OperationError();
-        resp.category = OperationErrorCategories.HwApiError;
         resp.originalError = result;
         resp.type = HWOperationResults.NotInBootloaderMode;
         resp.translatableErrorMsg = this.hwWalletDaemonService.getHardwareWalletErrorMsg(resp);
@@ -366,7 +364,6 @@ export class HwWalletService {
       response => {
         if (response.rawResponse[0] !== firstAddress) {
           const resp = new OperationError();
-          resp.category = OperationErrorCategories.HwApiError;
           resp.originalError = response;
           resp.type = HWOperationResults.IncorrectHardwareWallet;
           resp.translatableErrorMsg = this.hwWalletDaemonService.getHardwareWalletErrorMsg(resp);
@@ -381,7 +378,6 @@ export class HwWalletService {
       const convertedError = error as OperationError;
       if (convertedError.type && convertedError.type === HWOperationResults.WithoutSeed) {
         const resp = new OperationError();
-        resp.category = OperationErrorCategories.HwApiError;
         resp.originalError = error;
         resp.type = HWOperationResults.IncorrectHardwareWallet;
         resp.translatableErrorMsg = this.hwWalletDaemonService.getHardwareWalletErrorMsg(resp);
@@ -441,7 +437,6 @@ export class HwWalletService {
       }
 
       const response = new OperationError();
-      response.category = OperationErrorCategories.HwApiError;
       response.originalError = rawResponse;
       response.originalServerErrorMsg = getErrorMsg(rawResponse);
 

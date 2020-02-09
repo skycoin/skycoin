@@ -1,7 +1,7 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { OfflineDialogsBaseComponent, OfflineDialogsStates } from '../offline-dialogs-base.component';
-import { copyTextToClipboard } from '../../../../../utils';
+import { copyTextToClipboard } from '../../../../../utils/general-utils';
 import { MsgBarService } from '../../../../../services/msg-bar.service';
 import { FormBuilder } from '@angular/forms';
 import { AppConfig } from '../../../../../app.config';

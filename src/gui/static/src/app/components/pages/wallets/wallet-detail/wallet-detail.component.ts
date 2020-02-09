@@ -6,7 +6,7 @@ import { NumberOfAddressesComponent } from '../number-of-addresses/number-of-add
 import { TranslateService } from '@ngx-translate/core';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { Observable, SubscriptionLike } from 'rxjs';
-import { copyTextToClipboard } from '../../../../utils';
+import { copyTextToClipboard } from '../../../../utils/general-utils';
 import { AppConfig } from '../../../../app.config';
 import { Router } from '@angular/router';
 import { HwConfirmAddressDialogComponent, AddressConfirmationParams } from '../../../layout/hardware-wallet/hw-confirm-address-dialog/hw-confirm-address-dialog.component';

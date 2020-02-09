@@ -335,7 +335,7 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 //     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
 //	   verbose: [bool] include verbose transaction input data
 //     page: Page number
-//     page-size: Page size [optional, default to 10, must be <= 100]
+//     limit: the number of transactions per page [optional, default to 10, must be <= 100]
 //     sort: Sort the transactions by block seq. [optional, must be desc or asc]; if not provided, return
 //     in asc order.
 func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
@@ -383,12 +383,12 @@ func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		var pageSize = visor.DefaultTxnPageSize
-		pageSizeStr := r.FormValue("page-size")
+		pageSizeStr := r.FormValue("limit")
 		if pageSizeStr != "" {
 			var err error
 			pageSize, err = strconv.ParseUint(pageSizeStr, 10, 64)
 			if err != nil {
-				writeError400Response(w, fmt.Sprintf("invalid 'page-size' value: %v", err))
+				writeError400Response(w, fmt.Sprintf("invalid 'limit' value: %v", err))
 				return
 			}
 		}

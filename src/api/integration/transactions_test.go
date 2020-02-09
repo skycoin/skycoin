@@ -883,49 +883,49 @@ func TestStableGetTransactionV2(t *testing.T) {
 		{
 			name: "zero page size",
 			args: []api.RequestArg{
-				api.RequestArg{Key: "page-size", Value: "0"},
+				api.RequestArg{Key: "limit", Value: "0"},
 			},
 			err: "page size must be greater than 0",
 		},
 		{
 			name: "page size > max page size(100)",
 			args: []api.RequestArg{
-				api.RequestArg{Key: "page-size", Value: "101"},
+				api.RequestArg{Key: "limit", Value: "101"},
 			},
 			err: "transaction page size must be not greater than 100",
 		},
 		{
 			name:       "no arguments",
-			goldenFile: "transactions-page-1-with-default-page-size",
+			goldenFile: "transactions-page-1-with-default-limit",
 		},
 		{
-			name: "page=1 default page size",
+			name: "page=1 default limit",
 			args: []api.RequestArg{
 				api.RequestArg{Key: "page", Value: "1"},
 			},
-			goldenFile: "transactions-page-1-with-default-page-size",
+			goldenFile: "transactions-page-1-with-default-limit",
 		},
 		{
-			name: "page=1 default page size verbose",
+			name: "page=1 default limit verbose",
 			args: []api.RequestArg{
 				api.RequestArg{Key: "page", Value: "1"},
 			},
 			verbose:    true,
-			goldenFile: "transactions-page-1-with-default-page-size-verbose",
+			goldenFile: "transactions-page-1-with-default-limit-verbose",
 		},
 		{
-			name: "page=10 page-size=5",
+			name: "page=10 limit=5",
 			args: []api.RequestArg{
 				api.RequestArg{Key: "page", Value: "10"},
-				api.RequestArg{Key: "page-size", Value: "5"},
+				api.RequestArg{Key: "limit", Value: "5"},
 			},
 			goldenFile: "transactions-page-10-with-size-5",
 		},
 		{
-			name: "page=19 page-size=10",
+			name: "page=19 limit=10",
 			args: []api.RequestArg{
 				api.RequestArg{Key: "page", Value: "19"},
-				api.RequestArg{Key: "page-size", Value: "10"},
+				api.RequestArg{Key: "limit", Value: "10"},
 			},
 			goldenFile: "transactions-page-19-with-size-10",
 		},

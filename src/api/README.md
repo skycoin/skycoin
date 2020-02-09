@@ -2799,7 +2799,8 @@ Args:
     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
     verbose: [bool] include verbose transaction input data
     page: Page number [optional, default to 1, must be greater than 0]
-    page-size: Page size [optional, default to 10, maximum to 100]
+    limit: The transactions number per page [optional, default to 10, maximum to 100]
+    sort: Sort the transactions by block seq [optional, default to asc, must be 'asc' or 'desc']
 ``` 
 
 This API is almost the same as the `v1` version, except that it would not return all transactions by default and has
@@ -2811,7 +2812,7 @@ includes `total pages`, `page size`, and `current page`.
 Example:
 
 ```sh
-curl http://127.0.0.1:6420/api/v2/transaction?page=1024&page-size=2
+curl http://127.0.0.1:6420/api/v2/transaction?page=1024&limit=2
 ```
 
 <details>

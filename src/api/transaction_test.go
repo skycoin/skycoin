@@ -1435,9 +1435,9 @@ func TestTransactionsHandlerV2(t *testing.T) {
 			expectTxns:             expectTxns(t, txns[:11], nil),
 		},
 		{
-			name:                   "GET with addr page-size=1",
+			name:                   "GET with addr limit=1",
 			method:                 "GET",
-			args:                   []string{"addrs=" + addrs[0].String(), "page-size=1"},
+			args:                   []string{"addrs=" + addrs[0].String(), "limit=1"},
 			gatewayGetTransactions: txns[:1],
 			gatewayTotalPage:       uint64(10),
 			expectStatusCode:       200,
@@ -1445,9 +1445,9 @@ func TestTransactionsHandlerV2(t *testing.T) {
 			expectTxns:             expectTxns(t, txns[:1], nil),
 		},
 		{
-			name:                   "GET with addr page-size=2",
+			name:                   "GET with addr limit=2",
 			method:                 "GET",
-			args:                   []string{"addrs=" + addrs[0].String(), "page-size=2"},
+			args:                   []string{"addrs=" + addrs[0].String(), "limit=2"},
 			gatewayGetTransactions: txns[:2],
 			gatewayTotalPage:       uint64(5),
 			expectStatusCode:       200,
@@ -1455,9 +1455,9 @@ func TestTransactionsHandlerV2(t *testing.T) {
 			expectTxns:             expectTxns(t, txns[:2], nil),
 		},
 		{
-			name:                         "GET with addr page-size=2 verbose=true",
+			name:                         "GET with addr limit=2 verbose=true",
 			method:                       "GET",
-			args:                         []string{"addrs=" + addrs[0].String(), "page-size=2", "verbose=true"},
+			args:                         []string{"addrs=" + addrs[0].String(), "limit=2", "verbose=true"},
 			verbose:                      true,
 			gatewayGetTransactions:       txns[:2],
 			gatewayGetTransactionsInputs: txnsInputs[:2],
@@ -1467,9 +1467,9 @@ func TestTransactionsHandlerV2(t *testing.T) {
 			expectTxns:                   expectTxns(t, txns[:2], txnsInputs[:2]),
 		},
 		{
-			name:             "GET with addr page-size=2 err=invalid page number",
+			name:             "GET with addr limit=2 err=invalid page number",
 			method:           "GET",
-			args:             []string{"addrs=" + addrs[0].String(), "page-size=2", "page=0"},
+			args:             []string{"addrs=" + addrs[0].String(), "limit=2", "page=0"},
 			expectStatusCode: 400,
 			expectErrMsg:     "page number must be greater than 0",
 		},
@@ -1481,11 +1481,11 @@ func TestTransactionsHandlerV2(t *testing.T) {
 			expectErrMsg:     "Method Not Allowed",
 		},
 		{
-			name:             "invalid page-size",
+			name:             "invalid limit",
 			method:           "GET",
-			args:             []string{"page-size=-1"},
+			args:             []string{"limit=-1"},
 			expectStatusCode: 400,
-			expectErrMsg:     "invalid 'page-size' value: strconv.ParseUint: parsing \"-1\": invalid syntax",
+			expectErrMsg:     "invalid 'limit' value: strconv.ParseUint: parsing \"-1\": invalid syntax",
 		},
 		{
 			name:             "invalid verbose value",
@@ -1545,7 +1545,7 @@ func TestTransactionsHandlerV2(t *testing.T) {
 					flts = append(flts, visor.NewConfirmedTxFilter(isConfirmed))
 				case "page":
 					page, _ = strconv.ParseUint(kv[1], 10, 64) // nolint:errcheck
-				case "page-size":
+				case "limit":
 					pageSize, _ = strconv.ParseUint(kv[1], 10, 64) // nolint:errcheck
 				}
 			}

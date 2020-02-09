@@ -265,8 +265,7 @@ type transactionModel struct {
 
 func (tm transactionModel) GetTransactions(tx *dbutil.Tx, flts []TxFilter, order SortOrder, page *PageIndex) ([]Transaction, uint64, error) {
 	var otherFlts []TxFilter
-	var txnGetter transactionsGetter
-	txnGetter = newAllTxnsGetter(tm)
+	var txnGetter transactionsGetter = newAllTxnsGetter(tm)
 	for _, f := range flts {
 		switch v := f.(type) {
 		case ConfirmedTxFilter:
@@ -420,10 +419,7 @@ type unconfirmedTxnsGetter struct {
 func (uct unconfirmedTxnsGetter) GetTransactions(tx *dbutil.Tx, flts []TxFilter, order SortOrder, page *PageIndex) ([]Transaction, uint64, error) {
 	addrs, otherFlts := getAddrsFromFlts(flts)
 
-	txnHashCon := newTxnHashesContainer()
-
-	var err error
-	txnHashCon, err = uct.getTxnsHashes(tx, addrs)
+	txnHashesCon, err := uct.getTxnsHashes(tx, addrs)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -432,21 +428,22 @@ func (uct unconfirmedTxnsGetter) GetTransactions(tx *dbutil.Tx, flts []TxFilter,
 		return uct.getTransaction(tx, item.hash)
 	}
 
-	txnHashCon, err = txnHashCon.Filter(tx, otherFlts, getTxn)
+	txnHashesCon, err = txnHashesCon.Filter(tx, otherFlts, getTxn)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	if err := txnHashCon.Sort(order); err != nil {
+	if err := txnHashesCon.Sort(order); err != nil {
 		return nil, 0, err
 	}
 
-	txnHashCon, totalPage, err := txnHashCon.Pagination(page)
+	var totalPage uint64
+	txnHashesCon, totalPage, err = txnHashesCon.Pagination(page)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	txns, err := txnHashCon.ToTransactions(tx, getTxn)
+	txns, err := txnHashesCon.ToTransactions(tx, getTxn)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -509,7 +506,7 @@ func newAllTxnsGetter(tm transactionModel) *fullTxnsGetter {
 
 func (ft fullTxnsGetter) GetTransactions(tx *dbutil.Tx, flts []TxFilter, order SortOrder, page *PageIndex) ([]Transaction, uint64, error) {
 	addrs, otherFlts := getAddrsFromFlts(flts)
-	txnHashCon, err := ft.getTxnsHashes(tx, addrs)
+	txnsHashesCon, err := ft.getTxnsHashes(tx, addrs)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -521,22 +518,22 @@ func (ft fullTxnsGetter) GetTransactions(tx *dbutil.Tx, flts []TxFilter, order S
 		return ft.unconfirmedTxnsGetter.getTransaction(tx, item.hash)
 	}
 
-	txnHashCon, err = txnHashCon.Filter(tx, otherFlts, getTxn)
+	txnsHashesCon, err = txnsHashesCon.Filter(tx, otherFlts, getTxn)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	if err := txnHashCon.Sort(order); err != nil {
+	if err := txnsHashesCon.Sort(order); err != nil {
 		return nil, 0, err
 	}
 
 	var totalPages uint64
-	txnHashCon, totalPages, err = txnHashCon.Pagination(page)
+	txnsHashesCon, totalPages, err = txnsHashesCon.Pagination(page)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	txns, err := txnHashCon.ToTransactions(tx, getTxn)
+	txns, err := txnsHashesCon.ToTransactions(tx, getTxn)
 	if err != nil {
 		return nil, 0, err
 	}

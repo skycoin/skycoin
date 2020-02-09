@@ -1863,7 +1863,9 @@ func TestGetTransactions(t *testing.T) {
 			uncfmTxnPool := NewUnconfirmedTransactionPoolerMock2()
 			forEachFunc := mock.MatchedBy(func(f func(hash cipher.SHA256, txn UnconfirmedTransaction) error) bool {
 				for i, txn := range uncfmTxns {
-					f(txn.Transaction.Hash(), uncfmTxns[i])
+					if err := f(txn.Transaction.Hash(), uncfmTxns[i]); err != nil {
+						return false
+					}
 				}
 				return true
 			})

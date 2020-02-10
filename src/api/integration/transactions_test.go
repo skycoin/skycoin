@@ -851,6 +851,10 @@ func TestStableGetTransactionV2(t *testing.T) {
 		return
 	}
 
+	if !dbNoUnconfirmed(t) {
+		return
+	}
+
 	c := newClient()
 	tt := []struct {
 		name       string
@@ -920,14 +924,6 @@ func TestStableGetTransactionV2(t *testing.T) {
 				api.RequestArg{Key: "limit", Value: "5"},
 			},
 			goldenFile: "transactions-page-10-with-size-5",
-		},
-		{
-			name: "page=19 limit=10",
-			args: []api.RequestArg{
-				api.RequestArg{Key: "page", Value: "19"},
-				api.RequestArg{Key: "limit", Value: "10"},
-			},
-			goldenFile: "transactions-page-19-with-size-10",
 		},
 		{
 			name: "single addr",

@@ -846,6 +846,133 @@ func TestStableCreateTransaction(t *testing.T) {
 	}
 }
 
+func TestStableGetTransactionV2(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	if !dbNoUnconfirmed(t) {
+		return
+	}
+
+	c := newClient()
+	tt := []struct {
+		name       string
+		verbose    bool
+		args       []api.RequestArg
+		err        string
+		goldenFile string
+	}{
+		{
+			name: "invalid addr",
+			args: []api.RequestArg{
+				api.RequestArg{Key: "addrs", Value: "abc"},
+			},
+			err: "parse parameter: 'addrs' failed: address \"abc\" is invalid: Invalid address length",
+		},
+		{
+			name: "invalid page number",
+			args: []api.RequestArg{
+				api.RequestArg{Key: "page", Value: "-1"},
+			},
+			err: "invalid 'page' value: strconv.ParseUint: parsing \"-1\": invalid syntax",
+		},
+		{
+			name: "page zero",
+			args: []api.RequestArg{
+				api.RequestArg{Key: "page", Value: "0"},
+			},
+			err: "page number must be greater than 0",
+		},
+		{
+			name: "zero page size",
+			args: []api.RequestArg{
+				api.RequestArg{Key: "limit", Value: "0"},
+			},
+			err: "page size must be greater than 0",
+		},
+		{
+			name: "page size > max page size(100)",
+			args: []api.RequestArg{
+				api.RequestArg{Key: "limit", Value: "101"},
+			},
+			err: "transaction page size must be not greater than 100",
+		},
+		{
+			name:       "no arguments",
+			goldenFile: "transactions-page-1-with-default-limit",
+		},
+		{
+			name: "page=1 default limit",
+			args: []api.RequestArg{
+				api.RequestArg{Key: "page", Value: "1"},
+			},
+			goldenFile: "transactions-page-1-with-default-limit",
+		},
+		{
+			name: "page=1 default limit verbose",
+			args: []api.RequestArg{
+				api.RequestArg{Key: "page", Value: "1"},
+			},
+			verbose:    true,
+			goldenFile: "transactions-page-1-with-default-limit-verbose",
+		},
+		{
+			name: "page=10 limit=5",
+			args: []api.RequestArg{
+				api.RequestArg{Key: "page", Value: "10"},
+				api.RequestArg{Key: "limit", Value: "5"},
+			},
+			goldenFile: "transactions-page-10-with-size-5",
+		},
+		{
+			name: "single addr",
+			args: []api.RequestArg{
+				api.RequestArg{Key: "addrs", Value: "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"},
+			},
+			goldenFile: "single-addr-transactions-v2.golden",
+		},
+		{
+			name: "genesis",
+			args: []api.RequestArg{
+				api.RequestArg{Key: "addrs", Value: "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6"},
+			},
+			goldenFile: "genesis-addr-transactions-v2.golden",
+		},
+		{
+			name: "multiple addrs",
+			args: []api.RequestArg{
+				api.RequestArg{Key: "addrs", Value: "2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt,2JJ8pgq8EDAnrzf9xxBJapE2qkYLefW4uF8"},
+			},
+			goldenFile: "multiple-addr-transactions-all.golden",
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.verbose {
+				txns, err := c.TransactionsVerboseV2(tc.args...)
+				if err != nil {
+					require.Equal(t, tc.err, err.Error())
+					return
+				}
+				var expected api.TransactionsWithStatusVerboseV2
+				loadGoldenFile(t, tc.goldenFile, TestData{txns, &expected})
+				require.Equal(t, &expected, txns)
+			} else {
+				txns, err := c.TransactionsV2(tc.args...)
+				if err != nil {
+					require.Equal(t, tc.err, err.Error())
+					return
+				}
+				var expected api.TransactionsWithStatusV2
+				loadGoldenFile(t, tc.goldenFile, TestData{txns, &expected})
+				require.Equal(t, &expected, txns)
+			}
+		})
+	}
+}
+
 type liveCreateTxnTestCase struct {
 	name                 string
 	req                  api.CreateTransactionRequest

@@ -1331,3 +1331,58 @@ func (c *Client) RemoveStorageValue(storageType kvstorage.Type, key string) erro
 
 	return err
 }
+
+// RequestArg is the general data type for sending request
+type RequestArg struct {
+	Key   string
+	Value string
+}
+
+// TransactionsWithStatusV2 represents transactions result with page info
+type TransactionsWithStatusV2 struct {
+	PageInfo readable.PageInfo                `json:"page_info"`
+	Txns     []readable.TransactionWithStatus `json:"txns"`
+}
+
+// TransactionsWithStatusVerboseV2 represents verbose transactions result with page info
+type TransactionsWithStatusVerboseV2 struct {
+	PageInfo readable.PageInfo                       `json:"page_info"`
+	Txns     []readable.TransactionWithStatusVerbose `json:"txns"`
+}
+
+// TransactionsV2 make a GET request to /api/v2/transaction to get transactions with no verbose.
+func (c *Client) TransactionsV2(args ...RequestArg) (*TransactionsWithStatusV2, error) {
+	kvs := make([]string, len(args))
+	for i, arg := range args {
+		kvs[i] = fmt.Sprintf("%s=%s", arg.Key, arg.Value)
+		if strings.Contains(arg.Key, "verbose") {
+			return nil, errors.New("arguments should not include 'verbose'")
+		}
+	}
+
+	endpoint := fmt.Sprintf("/api/v2/transactions?%s", strings.Join(kvs, "&"))
+
+	var obj TransactionsWithStatusV2
+	_, err := c.GetV2(endpoint, &obj)
+	if err != nil {
+		return nil, err
+	}
+	return &obj, nil
+}
+
+// TransactionsVerboseV2 make a GET request to /api/v2/transaction to get transactions with no verbose.
+func (c *Client) TransactionsVerboseV2(args ...RequestArg) (*TransactionsWithStatusVerboseV2, error) {
+	kvs := make([]string, len(args))
+	for i, arg := range args {
+		kvs[i] = fmt.Sprintf("%s=%s", arg.Key, arg.Value)
+	}
+
+	endpoint := fmt.Sprintf("/api/v2/transactions?verbose=true&%s", strings.Join(kvs, "&"))
+
+	var obj TransactionsWithStatusVerboseV2
+	_, err := c.GetV2(endpoint, &obj)
+	if err != nil {
+		return nil, err
+	}
+	return &obj, nil
+}

@@ -1,5 +1,4 @@
 <app-modal
-  class="modal"
   [headline]="(justCheckingSeed ? 'hardware-wallet.options.confirm-seed' : 'hardware-wallet.options.restore-backup') | translate"
   [dialog]="dialogRef"
   [disableDismiss]="currentState === states.Processing">
@@ -10,7 +9,7 @@
       [icon]="msgIcons.None"
     ></app-hw-message>
 
-    <div [formGroup]="form">
+    <div class="modal-form-container" [formGroup]="form">
       <div class="form-field">
         <div class="-select">
           <select formControlName="words" id="words">
@@ -25,10 +24,10 @@
 
     <div class="-buttons">
       <app-button (action)="closeModal()">
-        {{ 'hardware-wallet.general.cancel' | translate }}
+        {{ 'common.cancel-button' | translate }}
       </app-button>
-      <app-button (action)="startOperation()" class="primary">
-        {{ 'hardware-wallet.general.continue' | translate }}
+      <app-button (action)="startOperation()" class="primary-button">
+        {{ 'common.continue-button' | translate }}
       </app-button>
     </div>
   </div>
@@ -44,8 +43,8 @@
   ></app-hw-message>
 
   <div class="-buttons" *ngIf="currentState !== states.Initial && currentState !== states.Processing">
-    <app-button (action)="closeModal()" class="primary" #closeButton>
-      {{ 'hardware-wallet.general.close' | translate }}
+    <app-button (action)="closeModal()" class="primary-button" #closeButton>
+      {{ 'common.close-button' | translate }}
     </app-button>
   </div>
 </app-modal>

@@ -8,8 +8,6 @@ const childProcess = require('child_process');
 
 const axios = require('axios');
 
-//const hwCode = require('./hardware-wallet');
-
 // This adds refresh and devtools console keybindings
 // Page can refresh with cmd+r, ctrl+r, F5
 // Devtools can be toggled with cmd+alt+i, ctrl+shift+i, F12
@@ -148,7 +146,6 @@ function startSkycoin() {
       .get('http://localhost:4200/api/v1/wallets/folderName')
       .then(response => {
         walletsFolder = response.data.address;
-        //hwCode.setWalletsFolderPath(walletsFolder);
       })
       .catch(() => {});
   }
@@ -182,17 +179,17 @@ function createWindow(url) {
     webPreferences: {
       webgl: false,
       webaudio: false,
-      contextIsolation: false,
+      contextIsolation: true,
       webviewTag: false,
       nodeIntegration: false,
       nodeIntegrationInWorker: false,
       allowRunningInsecureContent: false,
       webSecurity: true,
       plugins: false,
+      enableRemoteModule: false,
       preload: __dirname + '/electron-api.js',
     },
   });
-  //hwCode.setWinRef(win);
 
   win.webContents.on('did-finish-load', function() {
 	if (!splashLoaded) {
@@ -205,7 +202,8 @@ function createWindow(url) {
   win.webContents.executeJavaScript('window.eval = 0;');
 
   const ses = win.webContents.session
-  ses.clearCache(function () {
+
+  ses.clearCache().then(response => {
     console.log('Cleared the caching of the skycoin wallet.');
   });
 
@@ -224,7 +222,6 @@ function createWindow(url) {
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
     win = null;
-    //hwCode.setWinRef(win);
   });
 
   // If in dev mode, allow to open URLs.
@@ -302,22 +299,23 @@ function createWindow(url) {
     });
 }
 
-// Enforce single instance
-const alreadyRunning = app.makeSingleInstance((commandLine, workingDirectory) => {
-  // Someone tried to run a second instance, we should focus our window.
-  if (win) {
-    if (win.isMinimized()) {
-      win.restore();
-    }
-    win.focus();
-  } else {
-    createWindow(currentURL);
-  }
-});
+const singleInstanceLockObtained = app.requestSingleInstanceLock()
 
-if (alreadyRunning) {
-  app.quit();
+if (!singleInstanceLockObtained) {
+  app.quit()
   return;
+} else {
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    // Someone tried to run a second instance, we should focus our window.
+    if (win) {
+      if (win.isMinimized()) {
+        win.restore();
+      }
+      win.focus();
+    } else {
+      createWindow(currentURL);
+    }
+  });
 }
 
 let walletsFolder = null;
@@ -338,7 +336,6 @@ app.on('skycoin-ready', (e) => {
     .get(e.url + '/api/v1/wallets/folderName')
     .then(response => {
       walletsFolder = response.data.address;
-      //hwCode.setWalletsFolderPath(walletsFolder);
     })
     .catch(() => {});
 });

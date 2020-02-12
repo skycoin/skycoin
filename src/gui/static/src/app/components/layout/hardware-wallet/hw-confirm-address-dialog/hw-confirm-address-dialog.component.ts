@@ -2,11 +2,11 @@ import { Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
-import { Address } from '../../../../app.datatypes';
-import { WalletService } from '../../../../services/wallet.service';
+import { HardwareWalletService } from '../../../../services/wallet-operations/hardware-wallet.service';
+import { WalletBase } from '../../../../services/wallet-operations/wallet-objects';
 
 export class AddressConfirmationParams {
-  address: Address;
+  wallet: WalletBase;
   addressIndex: number;
   showCompleteConfirmation: boolean;
 }
@@ -20,20 +20,18 @@ export class HwConfirmAddressDialogComponent extends HwDialogBaseComponent<HwCon
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: AddressConfirmationParams,
     public dialogRef: MatDialogRef<HwConfirmAddressDialogComponent>,
-    private hwWalletService: HwWalletService,
-    private walletService: WalletService,
+    private hardwareWalletService: HardwareWalletService,
+    hwWalletService: HwWalletService,
   ) {
     super(hwWalletService, dialogRef);
-    this.operationSubscription = this.hwWalletService.confirmAddress(data.addressIndex).subscribe(
+    this.operationSubscription = this.hardwareWalletService.confirmAddress(data.wallet, data.addressIndex).subscribe(
       () => {
         this.showResult({
           text: data.showCompleteConfirmation ? 'hardware-wallet.confirm-address.confirmation' : 'hardware-wallet.confirm-address.short-confirmation',
           icon: this.msgIcons.Success,
         });
-        this.data.address.confirmed = true;
-        this.walletService.saveHardwareWallets();
       },
-      err => this.processResult(err.result),
+      err => this.processResult(err),
     );
   }
 }

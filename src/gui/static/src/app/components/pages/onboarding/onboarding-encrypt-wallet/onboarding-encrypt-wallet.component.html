@@ -1,43 +1,59 @@
 <div class="onboarding-container">
-  <div class="row justify-content-center">
+  <div class="row">
     <div class="row-container">
       <div class="-header">
-        <span>{{ 'wallet.new.encrypt-title' | translate }}</span>
+        <span>{{ 'wizard.encrypt-title' | translate }}</span>
       </div>
       <div class="-description">
         <p>{{ 'wizard.encrypt-desc' | translate }}</p>
       </div>
     </div>
   </div>
-  <div class="row justify-content-center">
+  <div class="row">
     <div class="row-container -check-container">
-      <mat-checkbox class="-check" (change)="setEncrypt($event)" [checked]="true" type="checkbox" id="encrypt">
-        <img src="../../../../../assets/img/lock-gold.png">
-        {{ 'wallet.new.encrypt' | translate }}
+      <mat-checkbox class="-check" (change)="setEncrypt($event)" [checked]="true" type="checkbox" id="encrypt" [ngClass]="{'element-disabled' : isWorking}">
+        <span class="img-label-container">
+          <img src="assets/img/lock-gold.png" />
+          {{ 'wallet.new.encrypt-check' | translate }}
+        </span>
       </mat-checkbox>
     </div>
   </div>
-  <div class="row justify-content-center">
+  <div class="row">
     <div class="row-container">
       <form [formGroup]="form">
         <div class="form-field">
-          <label for="password">{{ 'password.label' | translate }}</label>
-          <input class="-input" type="password"  formControlName="password" id="password" [ngClass]="{ disable: form.disabled }">
+          <label for="password">{{ 'password.password-label' | translate }}</label>
+          <input
+            class="-input"
+            type="password"
+            formControlName="password"
+            id="password"
+            [attr.disabled]="isWorking ? 'true' : null"
+            [ngClass]="{ 'element-disabled': form.disabled }"
+          >
         </div>
         <div class="form-field">
-          <label for="confirm">{{ 'password.confirm-label' | translate }}</label>
-          <input class="-input" type="password" formControlName="confirm" id="confirm"
-                 [ngClass]="{ disable: form.disabled }" (keydown.enter)="emitCreatedPassword()">
+          <label for="confirm">{{ 'password.confirm-password-label' | translate }}</label>
+          <input
+            class="-input"
+            type="password"
+            formControlName="confirm"
+            id="confirm"
+            [attr.disabled]="isWorking ? 'true' : null"
+            [ngClass]="{ 'element-disabled': form.disabled }"
+            (keydown.enter)="emitCreatedPassword()"
+          >
         </div>
       </form>
     </div>
   </div>
   <div class="row -buttons-footer">
-    <app-button class="dark -button-min-margin" [disabled]="form.enabled && !form.valid" (action)="emitCreatedPassword()" #button>
+    <app-button class="dark-button -button-min-margin" [disabled]="form.enabled && !form.valid" (action)="emitCreatedPassword()" #button>
       {{ 'wizard.finish-button' | translate }}
     </app-button>
-    <app-button class="ghost -button-min-margin" (action)="emitBack()" [ngClass]="{ '-hidden': isWorking }">
-      {{ 'wizard.back-button' | translate }}
+    <app-button class="ghost-button -button-min-margin" (action)="emitBack()" [ngClass]="{ 'd-none': isWorking }">
+      {{ 'common.back-button' | translate }}
     </app-button>
   </div>
 </div>

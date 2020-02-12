@@ -1,9 +1,10 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { StoredExchangeOrder } from '../../../app.datatypes';
 import { ExchangeService } from '../../../services/exchange.service';
-import { MatDialog, MatDialogConfig } from '@angular/material';
+import { MatDialog } from '@angular/material/dialog';
 import { ExchangeHistoryComponent } from './exchange-history/exchange-history.component';
-import { ISubscription } from 'rxjs/Subscription';
+import { SubscriptionLike } from 'rxjs';
+import { AppService } from '../../../services/app.service';
 
 @Component({
   selector: 'app-exchange',
@@ -15,10 +16,11 @@ export class ExchangeComponent implements OnInit, OnDestroy {
   hasHistory = false;
   loading = true;
 
-  private lastViewedSubscription: ISubscription;
-  private historySubscription: ISubscription;
+  private lastViewedSubscription: SubscriptionLike;
+  private historySubscription: SubscriptionLike;
 
   constructor(
+    public appService: AppService,
     private exchangeService: ExchangeService,
     private dialog: MatDialog,
   ) { }
@@ -52,11 +54,7 @@ export class ExchangeComponent implements OnInit, OnDestroy {
   showHistory(event) {
     event.preventDefault();
 
-    const config = new MatDialogConfig();
-    config.width = '566px';
-    config.autoFocus = false;
-
-    this.dialog.open(ExchangeHistoryComponent, config).afterClosed().subscribe((oldOrder: StoredExchangeOrder) => {
+    ExchangeHistoryComponent.openDialog(this.dialog).afterClosed().subscribe((oldOrder: StoredExchangeOrder) => {
       if (oldOrder) {
         this.currentOrderDetails = oldOrder;
       }

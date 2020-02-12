@@ -1,0 +1,84 @@
+<div [formGroup]="form">
+  <div *ngIf="selectionMode === sourceSelectionModes.Manual" class="form-field">
+    <label for="manualAddresses">
+      {{ 'send.addresses-label' | translate }}
+      <mat-icon class="help-icon" [matTooltip]="'send.addresses-manual-help' | translate">help</mat-icon>
+    </label>
+    <input formControlName="manualAddresses" id="manualAddresses" [attr.disabled]="busy ? 'true' : null">
+  </div>
+  <div *ngIf="selectionMode !== sourceSelectionModes.Manual" class="form-field">
+    <label for="wallet">{{ (selectionMode === sourceSelectionModes.Wallet ? 'send.from-label' : 'send.wallet-label') | translate }}</label>
+    <div class="-select">
+      <select formControlName="wallet" id="wallet" [attr.disabled]="busy ? 'true' : null">
+        <option disabled hidden [ngValue]="''">{{ 'send.select-wallet' | translate }}</option>
+        <ng-container *ngIf="wallets">
+          <ng-container *ngFor="let wallet of wallets">
+            <option
+              [disabled]="!wallet.coins || wallet.coins.isLessThanOrEqualTo(0)"
+              [ngValue]="wallet"
+            >
+              {{ wallet.label }} - {{ (wallet.coins ? wallet.coins.toString() : 0) | amount }}
+              ({{ (wallet.hours ? wallet.hours.toString() : 0) | amount:false }})
+            </option>
+          </ng-container>
+        </ng-container>
+      </select>
+    </div>
+  </div>
+  <div *ngIf="selectionMode === sourceSelectionModes.All" class="form-field">
+    <label [for]="!busy ? 'addresses' : ''" (click)="!busy ? selectAddresses.open() : null">
+      {{ 'send.addresses-label' | translate }}
+      <mat-icon class="help-icon" [matTooltip]="'send.addresses-help' | translate">help</mat-icon>
+    </label>
+    <div class="-select">
+      <mat-select
+        #selectAddresses multiple
+        formControlName="addresses"
+        [compareWith]="addressCompare"
+        id="addresses"
+        [placeholder]="addressessPlaceholder | translate"
+        [attr.disabled]="(busy || (addresses && addresses.length === 0)) ? 'true' : null"
+        [ngClass]="{'element-disabled' : (busy || (addresses && addresses.length === 0))}">
+        <mat-option *ngFor="let addr of addresses" [value]="addr">
+          {{ addr.address }} - {{ (addr.coins ? addr.coins.toString() : 0) | amount }}
+          ({{ addr.hours.toString() | amount:false }})
+        </mat-option>
+        <mat-select-trigger>
+          <div *ngFor="let address of form.get('addresses').value">
+            {{ address.address }} - {{ (address.coins ? address.coins.toString() : 0) | amount }}
+            ({{ address.hours.toString() | amount:false }})
+          </div>
+        </mat-select-trigger>
+      </mat-select>
+    </div>
+  </div>
+  <div *ngIf="selectionMode !== sourceSelectionModes.Wallet" class="form-field">
+    <label [for]="!busy ? 'outputs' : null" (click)="!busy ? selectOutputs.open() : null">
+      {{ 'send.outputs-label' | translate }}
+      <mat-icon class="help-icon" [matTooltip]="'send.outputs-help' | translate">help</mat-icon>
+      <mat-icon *ngIf="errorLoadingManualOutputs" [matTooltip]="'send.outputs-error' | translate" class="help-icon red-text">error</mat-icon>
+      <mat-spinner *ngIf="loadingUnspentOutputs"></mat-spinner>
+    </label>
+    <div class="-select">
+      <mat-select
+        #selectOutputs multiple
+        formControlName="outputs"
+        [compareWith]="outputCompare"
+        id="outputs"
+        [placeholder]="outputsPlaceholder | translate"
+        [attr.disabled]="(busy || (unspentOutputs && unspentOutputs.length === 0)) ? 'true' : null"
+        [ngClass]="{'element-disabled' : (busy || (unspentOutputs && unspentOutputs.length === 0))}">
+        <mat-option *ngFor="let out of unspentOutputs" [value]="out">
+          {{ out.hash }} - {{ (out.coins ? out.coins.toString() : 0) | amount }}
+          ({{ out.hours.toString() | amount:false }})
+        </mat-option>
+        <mat-select-trigger>
+          <div *ngFor="let out of form.get('outputs').value">
+            {{ out.hash }} - {{ (out.coins ? out.coins.toString() : 0) | amount }}
+            ({{ out.hours.toString() | amount:false }})
+          </div>
+        </mat-select-trigger>
+      </mat-select>
+    </div>
+  </div>
+</div>

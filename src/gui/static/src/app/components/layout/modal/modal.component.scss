@@ -1,35 +1,43 @@
+@import '../../../../theme/variables';
+
+$close-button-size: $normal-icon-size;
+
 .-header {
-  background-color: #f7f7f7;
-  border-top-left-radius: 5px;
-  border-top-right-radius: 5px;
+  background-color: $grey-lightest;
   line-height: 50px;
   position: relative;
   text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 $close-button-size 0 $close-button-size;
+  font-size: $font-size-standard-plus;
 
   img {
-    cursor: pointer;
-    height: 32px;
+    height: $close-button-size;
     position: absolute;
     right: 9px;
     top: 9px;
   }
 }
 
-.-body {
-  background-color: #fbfbfb;
-  padding: 0px 24px;
-}
-
 mat-dialog-content::before {
   content: '';
-  padding-top: 24px;
+  padding-top: $modal-content-padding;
   height: 0px;
   display: block;
 }
 
 mat-dialog-content::after {
   content: '';
-  padding-top: 24px;
+  padding-top: $modal-content-padding;
   height: 0px;
   display: block;
+}
+
+.red-title {
+  text-transform: uppercase;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: $red;
 }

@@ -1,29 +1,34 @@
 @import '../../../../theme/variables';
+@import '../../../../customize/styling';
 
 .-container {
-  background-color: #fbfbfb;
-  border-bottom: 2px solid rgba(30, 34, 39, 0.05);
+  background-color: $white;
+  border-bottom: 2px solid $grey-very-light;
 }
 
 .large-header {
-  background: $gradient-blue-dark; /* For browsers that do not support gradients */
-  background: -webkit-linear-gradient(left top, $gradient-blue-dark-transparent, $gradient-blue-light-transparent), url('../../../../assets/img/header.png') center center no-repeat; /* For Safari 5.1 to 6.0 */
-  background: -o-linear-gradient(bottom right, $gradient-blue-dark-transparent, $gradient-blue-light-transparent), url('../../../../assets/img/header.png') center center no-repeat; /* For Opera 11.1 to 12.0 */
-  background: -moz-linear-gradient(bottom right, $gradient-blue-dark-transparent, $gradient-blue-light-transparent), url('../../../../assets/img/header.png') center center no-repeat; /* For Firefox 3.6 to 15 */
-  background: linear-gradient(to bottom right, $gradient-blue-dark-transparent, $gradient-blue-light-transparent), url('../../../../assets/img/header.png') center center no-repeat; /* Standard syntax */
+  background-repeat: no-repeat;
+  background-position: center center;
   background-size: 100% auto;
-  display: flex;
-  flex-flow: column;
-  align-items: stretch;
-  min-height: 190px;
+  background-size: cover;
+  background-image: url('customize/header.png');
+
+  .gradient {
+    background-size: 100% 100%;
+    display: flex;
+    flex-flow: column;
+    align-items: stretch;
+    min-height: 190px;
+    background-image: url('customize/header-gradient.png');
+  }
 }
 
 .balance-container {
   align-items: center;
-  color: $white;
+  color: $header-text-color;
   display: flex;
   flex: 1 1 auto;
-  font-size: 12px;
+  font-size: $font-size-standard-minus;
   justify-content: center;
   text-align: center;
 
@@ -36,6 +41,11 @@
         font-size: 4em;
       }
     }
+
+    .loading-header {
+      margin: 0 0 0.5em;
+      font-size: 2em;
+    }
   }
 
   .dollars {
@@ -47,27 +57,33 @@
   text-align: center;
 
   p {
-    background-color: rgba(255, 255, 255, 0.3);
-    border-radius: 15px;
-    color: $black;
+    background-color: $header-hours-background-color;
+    border-radius: 1000px;
+    color: $header-hours-text-color;
     display: inline-block;
-    font-size: 12px;
-    line-height: 22px;
+    font-size: $font-size-standard-minus;
+    line-height: 1.8;
     margin: 1em 0 2em;
     padding: 0 30px;
   }
 }
 
 .notification-bar {
-  background-color: #F44A4D;
-  color:#FBFBFB;
+  background-color: $red;
+  color: $white;
+  min-height: 64px;
+  display: flex;
+  font-size: 18px;
+  padding: 15px 30px;
+  text-align: center;
+  line-height: 1.2;
 
   div {
     margin: auto;
 
     a {
-      text-decoration: none;
-      color: #FFEBEE;
+      text-decoration: underline;
+      color: $white;
     }
   }
 }

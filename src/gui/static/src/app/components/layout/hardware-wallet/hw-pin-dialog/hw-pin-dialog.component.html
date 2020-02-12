@@ -1,23 +1,22 @@
 <app-modal
-  class="modal"
   [headline]="title | translate"
   [dialog]="dialogRef">
   <div [formGroup]="form">
-    <div class="form-field">
-      <div class="info">
+    <div class="form-field text-center">
+      <div>
         <span *ngIf="data.signingTx">
           {{ 'hardware-wallet.enter-pin.instructions-tx' | translate }}
         </span>
         <span *ngIf="data.changingPin && data.changePinState === changePinStates.RequestingNewPin">
-            {{ 'hardware-wallet.enter-pin.instructions-change' | translate }}
-          </span>
+          {{ 'hardware-wallet.enter-pin.instructions-change' | translate }}
+        </span>
         {{ 'hardware-wallet.enter-pin.instructions' | translate }}
         <span class="link" (click)="openHelp()">{{ 'hardware-wallet.enter-pin.help' | translate }}</span>
       </div>
       <input formControlName="pin" id="pin" type="password" readonly>
     </div>
   </div>
-  <div class="select-address-theme">
+  <div class="light-button-theme">
     <div class="num-pad-row">
       <button mat-button color="primary" (click)="addNumber('7')"><span>{{ buttonsContent }}</span></button>
       <button mat-button color="primary" (click)="addNumber('8')"><span>{{ buttonsContent }}</span></button>
@@ -38,8 +37,8 @@
     </div>
   </div>
   <div class="-buttons">
-    <app-button (action)="sendPin()" class="primary" [disabled]="!form.valid">
-      {{ 'hardware-wallet.general.continue' | translate }}
+    <app-button (action)="sendPin()" class="primary-button" [disabled]="!form.valid">
+      {{ 'common.continue-button' | translate }}
     </app-button>
   </div>
 </app-modal>

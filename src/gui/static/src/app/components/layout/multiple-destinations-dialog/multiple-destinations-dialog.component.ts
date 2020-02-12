@@ -1,7 +1,8 @@
 import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { MsgBarService } from '../../../services/msg-bar.service';
+import { AppConfig } from '../../../app.config';
 
 @Component({
   selector: 'app-multiple-destinations-dialog',
@@ -10,6 +11,15 @@ import { MsgBarService } from '../../../services/msg-bar.service';
 })
 export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {
   form: FormGroup;
+
+  public static openDialog(dialog: MatDialog, content: string): MatDialogRef<MultipleDestinationsDialogComponent, any> {
+    const config = new MatDialogConfig();
+    config.data = content;
+    config.autoFocus = true;
+    config.width = AppConfig.mediumModalWidth;
+
+    return dialog.open(MultipleDestinationsDialogComponent, config);
+  }
 
   constructor(
     public dialogRef: MatDialogRef<MultipleDestinationsDialogComponent>,
@@ -31,14 +41,14 @@ export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {
   processData() {
     try {
       if ((this.form.value.data as string).trim().length === 0) {
-        this.msgBarService.showError('send.bulk-send.error-no-data');
+        this.msgBarService.showError('send.bulk-send.no-data-error');
 
         return;
       }
 
       let entries = (this.form.value.data as string).split(/\r?\n/);
       if (!entries || entries.length === 0) {
-        this.msgBarService.showError('send.bulk-send.error-no-data');
+        this.msgBarService.showError('send.bulk-send.no-data-error');
 
         return;
       }
@@ -47,7 +57,7 @@ export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {
 
       const firstElementParts = entries[0].split(',').length;
       if (firstElementParts !== 2 && firstElementParts !== 3) {
-        this.msgBarService.showError('send.bulk-send.error-invalid-data');
+        this.msgBarService.showError('send.bulk-send.invalid-data-error');
 
         return;
       }
@@ -62,7 +72,7 @@ export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {
       });
 
       if (!consistentNumberOfParts) {
-        this.msgBarService.showError('send.bulk-send.error-inconsistent-data');
+        this.msgBarService.showError('send.bulk-send.inconsistent-data-error');
 
         return;
       }
@@ -77,7 +87,7 @@ export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {
 
       this.dialogRef.close(response);
     } catch (e) {
-      this.msgBarService.showError('send.bulk-send.error-invalid-data');
+      this.msgBarService.showError('send.bulk-send.invalid-data-error');
     }
   }
 }

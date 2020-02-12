@@ -5,7 +5,6 @@
 }
 
 .options-label {
-  color: $black;
   margin-top: 25px;
   margin-bottom: 10px;
   font-weight: bold;
@@ -18,20 +17,16 @@
     width: 100%;
     text-align: left;
     padding: 10px 10px;
-    border-bottom: 1px solid #eff0f0;
+    border-bottom: 1px solid $grey-very-light;
 
     &:first-child {
-      border-top: 1px solid #eff0f0;
+      border-top: 1px solid $grey-very-light;
     }
 
     .label {
-      font-size: 13px;
-      line-height: 22px;
+      font-size: $font-size-standard;
+      line-height: 1.7;
       color: $black;
-    }
-
-    .-red {
-      color: $red;
     }
   }
 }

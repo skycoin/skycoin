@@ -1,75 +1,12 @@
 @import '../../../../../theme/variables';
 
-.-header {
-  color: $white;
-  position: relative;
-  margin-top: 20px;
-  margin-bottom: 10px;
-  line-height: 30px;
-  font-size: 20px;
-  text-align: center;
-}
-
-.-description {
-  line-height: 25px;
-  font-size: 14px;
-  text-align: center;
-
-  color: $white;
-  mix-blend-mode: normal;
-  opacity: 0.5;
+.-toggle-container {
+  margin: 10px auto;
 }
 
 .hw-link {
   cursor: pointer;
-  color: white;
-  font-size: 13px;
-  line-height: 20px;
+  color: $white;
+  font-size: $font-size-standard;
   margin-bottom: 20px;
-}
-
-.-buttons-footer {
-  align-items: center;
-  flex-flow: column;
-  margin-bottom: 20px;
-}
-
-.-toggle-container{
-  margin: 10px auto;
-}
-
-:host ::ng-deep .-buttons-footer button{
-  margin: 2px 10px !important;
-}
-
-.-text-align-center{
-  text-align: center;
-}
-
-label[for=seed] {
-  display: flex;
-
-  > span:last-child {
-    flex: 1;
-  }
-
-  .generators {
-    text-align: right;
-
-    span {
-      cursor: pointer;
-    }
-
-    mat-icon {
-      width: 13px;
-      height: 10px;
-      font-size: 13px;
-      position: relative;
-      top: 2px;
-    }
-
-    .divider {
-      padding: 0 5px;
-    }
-  }
 }

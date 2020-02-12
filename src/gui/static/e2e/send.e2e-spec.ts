@@ -5,7 +5,7 @@ describe('Send', () => {
 
   it('should display title', () => {
     page.navigateTo();
-    expect<any>(page.getHeaderText()).toEqual('Wallets');
+    expect<any>(page.getHeaderText()).toEqual('Send');
   });
 
   it('should have wallets', () => {

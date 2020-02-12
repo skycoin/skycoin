@@ -1,0 +1,12 @@
+@import '../../../../theme/variables';
+@import '../../../../theme/buttons';
+
+:host {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+img {
+  @extend .image-button;
+  width: $qr-code-button-size;
+}

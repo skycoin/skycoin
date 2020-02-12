@@ -1,12 +1,12 @@
-import { Component, Inject, OnInit, ViewChild, OnDestroy, ElementRef } from '@angular/core';
+import { Component, Inject, ViewChild, OnDestroy, ElementRef, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { MatDialogRef } from '@angular/material';
+import { MatDialogRef } from '@angular/material/dialog';
 import { FormGroup, FormBuilder } from '@angular/forms';
-import { ISubscription } from 'rxjs/Subscription';
-import { Subject } from 'rxjs/Subject';
-import { copyTextToClipboard } from '../../../utils';
+import { SubscriptionLike, Subject } from 'rxjs';
+import { copyTextToClipboard } from '../../../utils/general-utils';
 import { AppConfig } from '../../../app.config';
 import { MsgBarService } from '../../../services/msg-bar.service';
+import { debounceTime } from 'rxjs/operators';
 
 declare const QRCode: any;
 
@@ -30,7 +30,7 @@ export interface QrDialogConfig {
   styleUrls: ['./qr-code.component.scss'],
 })
 export class QrCodeComponent implements OnInit, OnDestroy {
-  @ViewChild('qr') qr: ElementRef;
+  @ViewChild('qr', { static: false }) qr: ElementRef;
 
   form: FormGroup;
   currentQrContent: string;
@@ -39,7 +39,7 @@ export class QrCodeComponent implements OnInit, OnDestroy {
   invalidHours = false;
 
   private defaultQrConfig = new DefaultQrConfig();
-  private subscriptionsGroup: ISubscription[] = [];
+  private subscriptionsGroup: SubscriptionLike[] = [];
   private updateQrEvent: Subject<boolean> = new Subject<boolean>();
 
   static openDialog(dialog: MatDialog, config: QrDialogConfig) {
@@ -57,8 +57,10 @@ export class QrCodeComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    this.initForm();
-    this.updateQrContent();
+    setTimeout(() => {
+      this.initForm();
+      this.updateQrContent();
+    });
   }
 
   ngOnDestroy() {
@@ -72,7 +74,7 @@ export class QrCodeComponent implements OnInit, OnDestroy {
 
   copyText(text) {
     copyTextToClipboard(text);
-    this.msgBarService.showDone('qr.copied', 4000);
+    this.msgBarService.showDone('common.copied', 4000);
   }
 
   private initForm() {
@@ -86,7 +88,7 @@ export class QrCodeComponent implements OnInit, OnDestroy {
     this.subscriptionsGroup.push(this.form.get('hours').valueChanges.subscribe(this.reportValueChanged.bind(this)));
     this.subscriptionsGroup.push(this.form.get('note').valueChanges.subscribe(this.reportValueChanged.bind(this)));
 
-    this.subscriptionsGroup.push(this.updateQrEvent.debounceTime(500).subscribe(() => {
+    this.subscriptionsGroup.push(this.updateQrEvent.pipe(debounceTime(500)).subscribe(() => {
       this.updateQrContent();
     }));
   }
@@ -115,7 +117,7 @@ export class QrCodeComponent implements OnInit, OnDestroy {
 
     const hours = this.form.get('hours').value;
     if (hours) {
-      if (Number.parseInt(hours).toString() === hours && Number.parseInt(hours) > 0) {
+      if (Number.parseInt(hours, 10).toString() === hours && Number.parseInt(hours, 10) > 0) {
         this.currentQrContent += nextSeparator + 'hours=' + this.form.get('hours').value;
         nextSeparator = '&';
       } else {

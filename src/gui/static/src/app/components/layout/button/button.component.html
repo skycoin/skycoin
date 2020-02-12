@@ -1,4 +1,4 @@
-<div class="button-container"
+<div class="internal-container"
   (mouseenter)="mouseOver = true"
   (mouseleave)="mouseOver = false"
 >
@@ -14,9 +14,11 @@
     #tooltip="matTooltip"
     #button
   >
-    <ng-content></ng-content>
-    <mat-icon *ngIf="state === 1">done</mat-icon>
-    <mat-icon *ngIf="state === 2">error</mat-icon>
-    <mat-spinner *ngIf="state === 0" class="in-button"></mat-spinner>
+    <div class="content-container">
+      <span class="content"><ng-content></ng-content></span>
+      <mat-icon *ngIf="state === 1">done</mat-icon>
+      <mat-icon *ngIf="state === 2">error</mat-icon>
+      <mat-spinner *ngIf="state === 0"></mat-spinner>
+    </div>
   </button>
 </div>

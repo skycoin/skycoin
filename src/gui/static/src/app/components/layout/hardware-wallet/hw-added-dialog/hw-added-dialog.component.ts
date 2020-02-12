@@ -1,13 +1,16 @@
 import { Component, Inject, OnDestroy, ViewChild, ElementRef } from '@angular/core';
-import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { WalletService } from '../../../../services/wallet.service';
-import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialog } from '@angular/material/dialog';
+import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { ChildHwDialogParams } from '../hw-options-dialog/hw-options-dialog.component';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
-import { Wallet } from '../../../../app.datatypes';
 import { ChangeNameComponent, ChangeNameData } from '../../../pages/wallets/change-name/change-name.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { OperationError, HWOperationResults } from '../../../../utils/operation-error';
+import { processServiceError } from '../../../../utils/errors';
+import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
+import { WalletBase } from '../../../../services/wallet-operations/wallet-objects';
+import { HardwareWalletService } from '../../../../services/wallet-operations/hardware-wallet.service';
 
 @Component({
   selector: 'app-hw-added-dialog',
@@ -15,8 +18,8 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
   styleUrls: ['./hw-added-dialog.component.scss'],
 })
 export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogComponent> implements OnDestroy {
-  @ViewChild('input') input: ElementRef;
-  wallet: Wallet;
+  @ViewChild('input', { static: false }) input: ElementRef;
+  wallet: WalletBase;
   form: FormGroup;
   maxHwWalletLabelLength = HwWalletService.maxLabelLength;
 
@@ -25,15 +28,16 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: ChildHwDialogParams,
     public dialogRef: MatDialogRef<HwAddedDialogComponent>,
-    private walletService: WalletService,
     hwWalletService: HwWalletService,
     private formBuilder: FormBuilder,
     private dialog: MatDialog,
     private msgBarService: MsgBarService,
+    private walletsAndAddressesService: WalletsAndAddressesService,
+    private hardwareWalletService: HardwareWalletService,
   ) {
     super(hwWalletService, dialogRef);
-    this.operationSubscription = this.walletService.createHardwareWallet().subscribe(wallet => {
-      this.operationSubscription = this.walletService.getHwFeaturesAndUpdateData(wallet).subscribe(() => {
+    this.operationSubscription = this.walletsAndAddressesService.createHardwareWallet().subscribe(wallet => {
+      this.operationSubscription = this.hardwareWalletService.getFeaturesAndUpdateData(wallet).subscribe(() => {
         this.wallet = wallet;
         this.initialLabel = wallet.label;
 
@@ -50,23 +54,19 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
     }, err => this.processError(err));
   }
 
-  private processError(err: any) {
-    if (err.result && err.result === OperationResults.Disconnected) {
+  private processError(err: OperationError) {
+    err = processServiceError(err);
+    if (err.type === HWOperationResults.Disconnected) {
       this.closeModal();
 
       return;
     }
 
-    let errorMsg = 'hardware-wallet.general.generic-error-internet';
-
-    if (err['_body']) {
-      errorMsg = err['_body'];
-    }
     this.showResult({
-      text: errorMsg,
+      text: err.translatableErrorMsg,
       icon: this.msgIcons.Error,
     });
-    this.data.requestOptionsComponentRefresh(errorMsg);
+    this.data.requestOptionsComponentRefresh(err.translatableErrorMsg);
   }
 
   ngOnDestroy() {
@@ -80,15 +80,13 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
     } else {
       this.msgBarService.hide();
 
-      const config = new MatDialogConfig();
-      config.width = '400px';
-      config.data = new ChangeNameData();
-      (config.data as ChangeNameData).wallet = this.wallet;
-      (config.data as ChangeNameData).newName = this.form.value.label;
-      this.dialog.open(ChangeNameComponent, config).afterClosed().subscribe(result => {
+      const data = new ChangeNameData();
+      data.wallet = this.wallet;
+      data.newName = this.form.value.label;
+      ChangeNameComponent.openDialog(this.dialog, data, true).afterClosed().subscribe(result => {
         if (result && !result.errorMsg) {
           this.closeModal();
-        } else if (result.errorMsg) {
+        } else if (result && result.errorMsg) {
           this.msgBarService.showError(result.errorMsg);
         }
       });

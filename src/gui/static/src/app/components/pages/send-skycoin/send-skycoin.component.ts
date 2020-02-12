@@ -1,7 +1,11 @@
 import { Component, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { NavBarService } from '../../../services/nav-bar.service';
-import { ISubscription } from 'rxjs/Subscription';
+import { NavBarSwitchService } from '../../../services/nav-bar-switch.service';
+import { SubscriptionLike } from 'rxjs';
 import { DoubleButtonActive } from '../../layout/double-button/double-button.component';
+import { MatDialog } from '@angular/material/dialog';
+import { SignRawTxComponent } from './offline-dialogs/implementations/sign-raw-tx.component';
+import { BroadcastRawTxComponent } from './offline-dialogs/implementations/broadcast-raw-tx.component';
+import { SendCoinsFormComponent } from './send-coins-form/send-coins-form.component';
 
 @Component({
   selector: 'app-send-skycoin',
@@ -14,21 +18,26 @@ export class SendSkycoinComponent implements OnDestroy {
   activeForm: DoubleButtonActive;
   activeForms = DoubleButtonActive;
 
-  private subscription: ISubscription;
+  private subscription: SubscriptionLike;
 
   constructor(
-    navbarService: NavBarService,
+    private navBarSwitchService: NavBarSwitchService,
     private changeDetector: ChangeDetectorRef,
+    private dialog: MatDialog,
   ) {
-    navbarService.setActiveComponent(DoubleButtonActive.LeftButton);
-    this.subscription = navbarService.activeComponent.subscribe(value => {
-      this.activeForm = value;
-      this.formData = null;
+    this.navBarSwitchService.showSwitch('send.simple-form-button', 'send.advanced-form-button', DoubleButtonActive.LeftButton);
+    this.subscription = navBarSwitchService.activeComponent.subscribe(value => {
+      if (this.activeForm !== value) {
+        SendCoinsFormComponent.lastShowForManualUnsignedValue = false;
+        this.activeForm = value;
+        this.formData = null;
+      }
     });
   }
 
   ngOnDestroy() {
     this.subscription.unsubscribe();
+    this.navBarSwitchService.hideSwitch();
   }
 
   onFormSubmitted(data) {
@@ -45,15 +54,15 @@ export class SendSkycoinComponent implements OnDestroy {
     this.changeDetector.detectChanges();
   }
 
+  signTransaction() {
+    SignRawTxComponent.openDialog(this.dialog);
+  }
+
+  broadcastTransaction() {
+    BroadcastRawTxComponent.openDialog(this.dialog);
+  }
+
   get transaction() {
-    const transaction = this.formData.transaction;
-
-    transaction.wallet = this.formData.form.wallet;
-    transaction.from = this.formData.form.wallet.label;
-    transaction.to = this.formData.to;
-    transaction.balance = this.formData.amount;
-    transaction.note = this.formData.form.note;
-
-    return transaction;
+    return this.formData.transaction;
   }
 }

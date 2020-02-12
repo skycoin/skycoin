@@ -1,8 +1,8 @@
+import { switchMap } from 'rxjs/operators';
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import 'rxjs/add/operator/switchMap';
-import { IntervalObservable } from 'rxjs/observable/IntervalObservable';
-import { ISubscription } from 'rxjs/Subscription';
-import { BlockchainService } from '../../../../services/blockchain.service';
+import { SubscriptionLike, interval } from 'rxjs';
+import { BlockchainService, BasicBlockInfo, CoinSupply } from '../../../../services/blockchain.service';
+import { AppService } from '../../../../services/app.service';
 
 @Component({
   selector: 'app-blockchain',
@@ -10,24 +10,21 @@ import { BlockchainService } from '../../../../services/blockchain.service';
   styleUrls: ['./blockchain.component.scss'],
 })
 export class BlockchainComponent implements OnInit, OnDestroy {
-  block: any;
-  coinSupply: any;
+  block: BasicBlockInfo;
+  coinSupply: CoinSupply;
 
-  private subscriptionsGroup: ISubscription[] = [];
+  private subscriptionsGroup: SubscriptionLike[] = [];
 
   constructor(
+    public appService: AppService,
     private blockchainService: BlockchainService,
   ) { }
 
   ngOnInit() {
-    this.subscriptionsGroup.push(IntervalObservable
-      .create(5000)
-      .switchMap(() => this.blockchainService.lastBlock())
+    this.subscriptionsGroup.push(interval(5000).pipe(switchMap(() => this.blockchainService.getLastBlock()))
       .subscribe(block => this.block = block));
 
-    this.subscriptionsGroup.push(IntervalObservable
-      .create(5000)
-      .switchMap(() => this.blockchainService.coinSupply())
+    this.subscriptionsGroup.push(interval(5000).pipe(switchMap(() => this.blockchainService.getCoinSupply()))
       .subscribe(coinSupply => this.coinSupply = coinSupply),
     );
   }

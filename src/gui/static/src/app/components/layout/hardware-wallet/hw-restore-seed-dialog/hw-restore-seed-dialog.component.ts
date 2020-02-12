@@ -44,7 +44,7 @@ export class HwRestoreSeedDialogComponent extends HwDialogBaseComponent<HwRestor
           });
         }
       },
-      err => this.processResult(err.result, 'hardware-wallet.general.simple-error'),
+      err => this.processResult(err),
     );
   }
 }

@@ -1,9 +1,9 @@
 import { Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
-import { WalletService } from '../../../../services/wallet.service';
 import { ChildHwDialogParams } from '../hw-options-dialog/hw-options-dialog.component';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
+import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
 
 @Component({
   selector: 'app-hw-wipe-dialog',
@@ -18,7 +18,7 @@ export class HwWipeDialogComponent extends HwDialogBaseComponent<HwWipeDialogCom
     @Inject(MAT_DIALOG_DATA) public data: ChildHwDialogParams,
     public dialogRef: MatDialogRef<HwWipeDialogComponent>,
     private hwWalletService: HwWalletService,
-    private walletService: WalletService,
+    private walletsAndAddressesService: WalletsAndAddressesService,
   ) {
     super(hwWalletService, dialogRef);
 
@@ -43,10 +43,10 @@ export class HwWipeDialogComponent extends HwDialogBaseComponent<HwWipeDialogCom
         });
         this.data.requestOptionsComponentRefresh();
         if (this.deleteFromList) {
-          this.walletService.deleteHardwareWallet(this.data.wallet).subscribe();
+          this.walletsAndAddressesService.deleteHardwareWallet(this.data.wallet.id);
         }
       },
-      err => this.processResult(err.result),
+      err => this.processResult(err),
     );
   }
 }

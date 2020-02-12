@@ -1,24 +1,25 @@
 <div class="content">
   <div class="icon-container" *ngIf="icon !== icons.None">
     <mat-spinner *ngIf="icon == icons.Spinner"></mat-spinner>
-    <i *ngIf="icon == icons.Success" class="material-icons -green">done</i>
-    <i *ngIf="icon == icons.Error" class="material-icons -red">error_outline</i>
-    <i *ngIf="icon == icons.Usb" class="material-icons -grey">usb</i>
-    <i *ngIf="icon == icons.HardwareWallet" class="material-icons -yellow">memory</i>
-    <i *ngIf="icon == icons.Warning" class="material-icons -red -blinking">error</i>
-    <i *ngIf="icon == icons.Confirm" class="material-icons -yellow">touch_app</i>
+    <i *ngIf="icon == icons.Success" class="material-icons green-text">done</i>
+    <i *ngIf="icon == icons.Error" class="material-icons red-text">error_outline</i>
+    <i *ngIf="icon == icons.Usb" class="material-icons grey-light-text">usb</i>
+    <i *ngIf="icon == icons.HardwareWallet" class="material-icons yellow-text">memory</i>
+    <i *ngIf="icon == icons.Warning" class="material-icons red-text -blinking">error</i>
+    <i *ngIf="icon == icons.Confirm" class="material-icons yellow-text">touch_app</i>
   </div>
   <div class="text-container">
     <div *ngIf="upperBigText">
       <span class="big-text">{{ upperBigText }}</span>
     </div>
     <span *ngIf="text">{{ text }}</span>
-    <span *ngIf="linkText" class="link" (click)="activateLink()">{{ linkText }}</span>
+    <span *ngIf="linkText && !linkIsUrl" class="link" (click)="activateLink()">{{ linkText }}</span>
+    <span *ngIf="linkText && linkIsUrl"><a class="link" [href]="linkText" target="_blank" rel="noreferrer nofollow">{{ linkText }}</a></span>
     <div *ngIf="outputsList" class="list">
       <div *ngFor="let output of outputsList" class="list-element">
         <span>• {{ output.coins.toString() | amount }}</span>
-        <span>{{ 'hardware-wallet.create-tx.send-p1' | translate }} {{ output.hours.toString() | amount:false }}</span>
-        <span>{{ 'hardware-wallet.create-tx.send-p2' | translate }} {{ output.address }}</span>
+        <span>{{ 'hardware-wallet.create-tx.separator-for-coins-and-hours' | translate }} {{ output.hours.toString() | amount:false }}</span>
+        <span>{{ 'hardware-wallet.create-tx.separator-to-destination' | translate }} {{ output.address }}</span>
       </div>
     </div>
     <span *ngIf="lowerText">{{ lowerText }}</span>
@@ -26,7 +27,7 @@
       <span class="big-text">{{ lowerBigText }}</span>
     </div>
     <div *ngIf="lowerLightText">
-      <span class="-grey">{{ lowerLightText }}</span>
+      <span class="grey-light-text">{{ lowerLightText }}</span>
     </div>
   </div>
 </div>

@@ -1,3 +1,4 @@
+import { throwError as observableThrowError, SubscriptionLike, Observable, of } from 'rxjs';
 import {
   Component,
   EventEmitter,
@@ -11,16 +12,13 @@ import { ButtonComponent } from '../../../layout/button/button.component';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ExchangeService } from '../../../../services/exchange.service';
 import { ExchangeOrder, TradingPair, StoredExchangeOrder } from '../../../../app.datatypes';
-import { ISubscription } from 'rxjs/Subscription';
-import 'rxjs/add/observable/merge';
-import { MatDialog, MatDialogConfig } from '@angular/material';
-import { SelectAddressComponent } from '../../send-skycoin/send-form-advanced/select-address/select-address';
-import { WalletService } from '../../../../services/wallet.service';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/operator/switchMap';
-import { BlockchainService } from '../../../../services/blockchain.service';
+import { MatDialog } from '@angular/material/dialog';
+import { SelectAddressComponent } from '../../../layout/select-address/select-address.component';
+import { AppService } from '../../../../services/app.service';
 import { TranslateService } from '@ngx-translate/core';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { retryWhen, delay, take, concat, mergeMap } from 'rxjs/operators';
+import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
 
 @Component({
   selector: 'app-exchange-create',
@@ -32,17 +30,18 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   readonly defaultFromAmount = '0.1';
   readonly toCoin = 'SKY';
 
-  @ViewChild('exchangeButton') exchangeButton: ButtonComponent;
+  @ViewChild('exchangeButton', { static: false }) exchangeButton: ButtonComponent;
   @Output() submitted = new EventEmitter<StoredExchangeOrder>();
   form: FormGroup;
   tradingPairs: TradingPair[];
   activeTradingPair: TradingPair;
   problemGettingPairs = false;
+  busy = false;
 
   private agreement = false;
-  private subscriptionsGroup: ISubscription[] = [];
-  private exchangeSubscription: ISubscription;
-  private priceUpdateSubscription: ISubscription;
+  private subscriptionsGroup: SubscriptionLike[] = [];
+  private exchangeSubscription: SubscriptionLike;
+  private priceUpdateSubscription: SubscriptionLike;
 
   get toAmount() {
     if (!this.activeTradingPair) {
@@ -53,7 +52,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
     if (isNaN(fromAmount)) {
       return 0;
     } else {
-      return (this.form.get('fromAmount').value * this.activeTradingPair.price).toFixed(this.blockchainService.currentMaxDecimals);
+      return (this.form.get('fromAmount').value * this.activeTradingPair.price).toFixed(this.appService.currentMaxDecimals);
     }
   }
 
@@ -65,12 +64,12 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
 
   constructor(
     private exchangeService: ExchangeService,
-    private walletService: WalletService,
     private formBuilder: FormBuilder,
     private msgBarService: MsgBarService,
     private dialog: MatDialog,
-    private blockchainService: BlockchainService,
+    private appService: AppService,
     private translateService: TranslateService,
+    private walletsAndAddressesService: WalletsAndAddressesService,
   ) { }
 
   ngOnInit() {
@@ -93,12 +92,11 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
     this.form.updateValueAndValidity();
   }
 
-  selectAddress() {
-    const config = new MatDialogConfig();
-    config.width = '566px';
-    config.autoFocus = false;
+  selectAddress(event) {
+    event.stopPropagation();
+    event.preventDefault();
 
-    this.dialog.open(SelectAddressComponent, config).afterClosed().subscribe(address => {
+    SelectAddressComponent.openDialog(this.dialog).afterClosed().subscribe(address => {
       if (address) {
         this.form.get('toAddress').setValue(address);
       }
@@ -106,10 +104,11 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   }
 
   exchange() {
-    if (!this.form.valid || this.exchangeButton.isLoading()) {
+    if (!this.form.valid || this.busy) {
       return;
     }
 
+    this.busy = true;
     this.msgBarService.hide();
 
     this.exchangeButton.resetState();
@@ -121,7 +120,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
     const toAddress = (this.form.get('toAddress').value as string).trim();
 
     this.removeExchangeSubscription();
-    this.exchangeSubscription = this.walletService.verifyAddress(toAddress).subscribe(addressIsValid => {
+    this.exchangeSubscription = this.walletsAndAddressesService.verifyAddress(toAddress).subscribe(addressIsValid => {
       if (addressIsValid) {
         this.exchangeSubscription = this.exchangeService.exchange(
           this.activeTradingPair.pair,
@@ -129,6 +128,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
           toAddress,
           this.activeTradingPair.price,
         ).subscribe((order: ExchangeOrder) => {
+          this.busy = false;
           this.submitted.emit({
             id: order.id,
             pair: order.pair,
@@ -139,6 +139,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
             price: this.activeTradingPair.price,
           });
         }, err => {
+          this.busy = false;
           this.exchangeButton.resetState();
           this.exchangeButton.setEnabled();
           this.msgBarService.showError(err);
@@ -152,10 +153,12 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   }
 
   private showInvalidAddress() {
+    this.busy = false;
+
     this.exchangeButton.resetState();
     this.exchangeButton.setEnabled();
 
-    const errMsg = this.translateService.instant('exchange.invalid-address');
+    const errMsg = this.translateService.instant('exchange.invalid-address-error');
     this.msgBarService.showError(errMsg);
   }
 
@@ -175,7 +178,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
 
   private loadData() {
     this.subscriptionsGroup.push(this.exchangeService.tradingPairs()
-      .retryWhen(errors => errors.delay(2000).take(10).concat(Observable.throw('')))
+      .pipe(retryWhen(errors => errors.pipe(delay(2000), take(10), concat(observableThrowError('')))))
       .subscribe(pairs => {
         this.tradingPairs = [];
 
@@ -194,8 +197,8 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   }
 
   private updatePrices() {
-    this.priceUpdateSubscription = Observable.of(1).delay(60000).flatMap(() => this.exchangeService.tradingPairs())
-      .retryWhen(errors => errors.delay(60000))
+    this.priceUpdateSubscription = of(1).pipe(delay(60000), mergeMap(() => this.exchangeService.tradingPairs()),
+      retryWhen(errors => errors.pipe(delay(60000))))
       .subscribe(pairs => {
         pairs.forEach(pair => {
           if (pair.to === this.toCoin) {

@@ -1,7 +1,16 @@
 @import '../../../../../../theme/_variables.scss';
 
+$dashed-border-size: 2px;
+$gray-dashed-border: $grey-very-light dashed $dashed-border-size;
+$white-dashed-border: rgba(255, 255, 255, 0.25) dashed $dashed-border-size;
+$lock-icon-size: $normal-icon-size;
+
+.main-container {
+  font-size: $font-size-standard-minus;
+}
+
 .dashed-border {
-  border: rgba(0, 0, 0, 0.25) dashed 1px;
+  border: $gray-dashed-border;
 }
 
 .show-pointer {
@@ -9,10 +18,9 @@
 }
 
 .non-editable-field {
-  font-size: 12px;
   text-align: center;
   padding: 15px;
-  border-radius: 6px;
+  border-radius: $input-border-radius;
   color: $black;
 
   .text-with-icon-container {
@@ -23,19 +31,11 @@
       margin-right: 5px;
       opacity: 1;
     }
-
-    .green {
-      color: $green;
-    }
-
-    .yellow {
-      color: $yellow;
-    }
   }
 }
 
 .normal-seed-field {
-  font-size: 14px;
+  font-size: $font-size-standard-plus;
 }
 
 .seed-type-button {
@@ -45,41 +45,45 @@
 
   > div {
     display: inline-block;
-    width: 32px;
-    height: 32px;
+    width: $lock-icon-size + ($dashed-border-size * 2);
+    height: $lock-icon-size + ($dashed-border-size * 2);
     position: relative;
     left: 16px;
     top: -10px;
-    background-color: white;
+    background-color: $white;
     border-radius: 100px;
     cursor: pointer;
+    border: $gray-dashed-border;
+
+    &:hover {
+      background-color: $white-hover;
+    }
 
     > img {
-      width: 32px;
-      height: 32px;
+      width: $lock-icon-size;
+      height: $lock-icon-size;
     }
   }
 }
 
+.seed-type-button.for-onboarding {
+  > div {
+    width: $lock-icon-size;
+    height: $lock-icon-size;
+    border: none;
+  }
+}
+
 .onboarding-version {
-  border: rgba(255, 255, 255, 0.5) dashed 1px;
-  color: #fff;
+  border: $white-dashed-border;
+  color: $white;
 }
 
 .transparent-text {
   opacity: 0.75;
 }
 
-.red-disclaimer-box {
-  color: $red;
-  font-size: 12px;
-  padding: 0 10px;
-  line-height: 1.5;
-}
-
-.white-disclaimer-box {
-  color: $white;
-  font-size: 12px;
+.disclaimer-box {
   padding: 0 10px;
   line-height: 1.5;
 }
@@ -94,28 +98,15 @@ label[for=seed] {
   .generators {
     text-align: right;
 
-    span {
-      cursor: pointer;
-      color: $blue;
-    }
-
-    mat-icon {
-      width: 13px;
-      height: 10px;
-      font-size: 13px;
-      position: relative;
-      top: 2px;
-    }
-
     .divider {
       padding: 0 5px;
-      color: $grey-dark;
+      color: $black;
     }
   }
 
   .-white-text {
     span {
-      color: white !important;
+      color: $white !important;
     }
   }
 }
@@ -126,46 +117,6 @@ label[for=seed] {
   .-info {
     margin: 5px 0 15px;
     color: $grey;
-    font-size: 12px;
     line-height: 1.5;
-  }
-}
-
-.-check ::ng-deep {
-  .mat-checkbox-checkmark-path {
-    position: absolute;
-    width: 18px;
-    height: 8px;
-    left: 4.59px;
-    top: 9px;
-    stroke: $gradient-blue-dark !important;
-  }
-
-  .mat-checkbox-background, .mat-checkbox-frame {
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    position: absolute;
-    box-sizing: border-box;
-    pointer-events: none;
-    width: 20px;
-    height: 20px;
-    background: rgba(30, 34, 39, 0.05);
-    border-radius: 6px;
-    border-color: transparent;
-  }
-  span {
-    font-family: Skycoin;
-    line-height: normal;
-    font-size: 14px;
-
-    color: $grey-dark;
-
-    img {
-      width: 38px;
-      height: 38px;
-      vertical-align: middle;
-    }
   }
 }

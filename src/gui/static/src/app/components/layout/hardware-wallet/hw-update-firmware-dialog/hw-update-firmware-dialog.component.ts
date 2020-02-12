@@ -1,13 +1,13 @@
 import { Component, ViewChild, OnDestroy } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
-import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
+import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 import { ButtonComponent } from '../../button/button.component';
-import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
-import { TranslateService } from '@ngx-translate/core';
 import { MsgBarService } from '../../../../services/msg-bar.service';
-import { ISubscription } from 'rxjs/Subscription';
-import { Observable } from 'rxjs/Observable';
+import { SubscriptionLike, of } from 'rxjs';
+import { mergeMap, delay } from 'rxjs/operators';
+import { OperationError, HWOperationResults } from '../../../../utils/operation-error';
+import { processServiceError } from '../../../../utils/errors';
 
 @Component({
   selector: 'app-hw-update-firmware-dialog',
@@ -18,7 +18,7 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
 
   closeIfHwDisconnected = false;
 
-  @ViewChild('button') button: ButtonComponent;
+  @ViewChild('button', { static: false }) button: ButtonComponent;
 
   currentState = this.states.Connecting;
   confirmed = false;
@@ -26,7 +26,7 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
   deviceInBootloaderMode = false;
   deviceHasFirmware = true;
 
-  private checkDeviceSubscription: ISubscription;
+  private checkDeviceSubscription: SubscriptionLike;
 
   get title(): string {
     if (this.currentState === this.states.Connecting) {
@@ -54,7 +54,6 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
     public dialogRef: MatDialogRef<HwUpdateFirmwareDialogComponent>,
     private hwWalletService: HwWalletService,
     private msgBarService: MsgBarService,
-    private translateService: TranslateService,
   ) {
     super(hwWalletService, dialogRef);
     this.checkDevice(false);
@@ -86,28 +85,23 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
           icon: this.msgIcons.Success,
         });
       },
-      err => {
-        if (err.result !== null && err.result !== undefined && err.result === OperationResults.Success) {
+      (err: OperationError) => {
+        err = processServiceError(err);
+
+        if (err.type === HWOperationResults.Success) {
           this.showResult({
             text: 'hardware-wallet.update-firmware.finished',
             icon: this.msgIcons.Success,
           });
-        } else if (err.result && err.result === OperationResults.Timeout) {
+        } else if (err.type === HWOperationResults.Timeout) {
           this.showResult({
             text: 'hardware-wallet.update-firmware.timeout',
             icon: this.msgIcons.Error,
           });
         } else {
-          if (err.result) {
-            const errorMsg = getHardwareWalletErrorMsg(this.translateService, err);
-            setTimeout(() => {
-              this.msgBarService.showError(errorMsg);
-            });
-          } else {
-            setTimeout(() => {
-              this.msgBarService.showError(err);
-            });
-          }
+          setTimeout(() => {
+            this.msgBarService.showError(err);
+          });
 
           this.checkDevice(false);
 
@@ -117,10 +111,10 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
     );
   }
 
-  private checkDevice(delay = true) {
+  private checkDevice(delayOperation = true) {
     this.closeCheckDeviceSubscription();
 
-    this.checkDeviceSubscription = Observable.of(0).delay(delay ? 1000 : 0).flatMap(() => this.hwWalletService.getFeatures(false)).subscribe(response => {
+    this.checkDeviceSubscription = of(0).pipe(delay(delayOperation ? 1000 : 0), mergeMap(() => this.hwWalletService.getFeatures(false))).subscribe(response => {
       this.deviceInBootloaderMode = response.rawResponse.bootloader_mode;
       if (this.deviceInBootloaderMode) {
         this.deviceHasFirmware = response.rawResponse.firmware_present;

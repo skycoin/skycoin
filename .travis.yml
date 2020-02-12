@@ -52,7 +52,7 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PULL_REQUEST" == false ]]; then sudo apt-get install --no-install-recommends -y icnsutils graphicsmagick xz-utils libudev-dev libusb-1.0-0-dev; fi
   - if [[ ! -d $GOPATH/src/github.com/SkycoinProject/skycoin ]]; then mkdir -p $GOPATH/src/github.com/SkycoinProject; ln -s $TRAVIS_BUILD_DIR $GOPATH/src/github.com/SkycoinProject/skycoin; fi
   - cd $GOPATH/src/github.com/SkycoinProject/skycoin
-  - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then nvm install 8.11.0 && nvm use 8.11.0; fi
+  - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then nvm install 10.16.3 && nvm use 10.16.3; fi
   - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then make install-linters && make install-deps-ui; fi
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then ./ci-scripts/install-nodejs-win.sh; fi
 

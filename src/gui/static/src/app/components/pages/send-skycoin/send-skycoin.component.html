@@ -1,20 +1,27 @@
-<app-header [headline]="'title.wallets' | translate"></app-header>
+<app-header [headline]="'send.title-and-button' | translate"></app-header>
 <div class="container">
-  <div class="-paper">
-    <app-send-form
+  <div class="paper">
+    <app-send-coins-form
       *ngIf="showForm && activeForm === activeForms.LeftButton"
       [formData]="formData"
+      [showSimpleForm]="true"
       (onFormSubmitted)="onFormSubmitted($event)"
-    ></app-send-form>
-    <app-send-form-advanced
+    ></app-send-coins-form>
+    <app-send-coins-form
       *ngIf="showForm && activeForm === activeForms.RightButton"
       [formData]="formData"
+      [showSimpleForm]="false"
       (onFormSubmitted)="onFormSubmitted($event)"
-    ></app-send-form-advanced>
+    ></app-send-coins-form>
     <app-send-preview
       *ngIf="!showForm"
       [transaction]="transaction"
       (onBack)="onBack($event)"
     ></app-send-preview>
+  </div>
+  <div class="-links">
+    <span class="link" (click)="signTransaction()">{{ 'offline-transactions.sign-tx.title' | translate }}</span>
+    <span class="separator"> / </span>
+    <span class="link" (click)="broadcastTransaction()">{{ 'offline-transactions.broadcast-tx.title' | translate }}</span>
   </div>
 </div>

@@ -1,0 +1,69 @@
+@import '../../../../../../theme/variables';
+
+.-destination {
+  &:not(:last-child) {
+    margin-bottom: 5px;
+  }
+
+  .-icons {
+    text-align: right;
+    padding-top: 5px;
+
+    img {
+      width: $normal-icon-size;
+    }
+  }
+}
+
+.destinations-label {
+  display: inline-block;
+}
+
+.coin-selector-container {
+  display: inline-block;
+  margin-left: 5px;
+  margin-bottom: 5px;
+}
+
+.coins-value-label {
+  font-size: $font-size-mini;
+  margin-top: 1px;
+  padding: 3px 10px;
+  background-color: $grey-lightest;
+  border-radius: $input-border-radius;
+
+  span {
+    opacity: 0.5;
+  }
+
+  .link {
+    display: inline-block;
+    margin-bottom: 3px;
+    margin-top: -5px;
+  }
+
+  .centerd-link {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+.-input-addon {
+  display: flex;
+
+  input {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  span {
+    border: $input-border-size;
+    border-radius: 0 $input-border-radius $input-border-radius 0;
+    background: $input-border-color;
+    padding: 0 10px;
+    line-height: 44px;
+    color: $grey;
+    font-size: $font-size-standard;
+    flex-shrink: 0;
+  }
+}

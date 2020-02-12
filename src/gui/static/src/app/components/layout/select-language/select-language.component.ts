@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { MatDialogRef } from '@angular/material/dialog';
+import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 
 import { LanguageData, LanguageService } from '../../../services/language.service';
 
@@ -12,6 +12,15 @@ export class SelectLanguageComponent implements OnInit {
 
   languages: LanguageData[];
   disableDismiss: boolean;
+
+  public static openDialog(dialog: MatDialog, disableClose = false): MatDialogRef<SelectLanguageComponent, any> {
+    const config = new MatDialogConfig();
+    config.autoFocus = false;
+    config.disableClose = disableClose;
+    config.width = '600px';
+
+    return dialog.open(SelectLanguageComponent, config);
+  }
 
   constructor(
     public dialogRef: MatDialogRef<SelectLanguageComponent>,

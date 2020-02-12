@@ -1,14 +1,18 @@
 import { Component, Inject, ViewChild, OnDestroy } from '@angular/core';
-import { WalletService } from '../../../../services/wallet.service';
-import { MatDialogRef, MatDialog } from '@angular/material/dialog';
+import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ButtonComponent } from '../../../layout/button/button.component';
-import { MAT_DIALOG_DATA } from '@angular/material';
+import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { CreateWalletFormComponent } from './create-wallet-form/create-wallet-form.component';
-import { ISubscription } from 'rxjs/Subscription';
+import { SubscriptionLike } from 'rxjs';
 import { BlockchainService } from '../../../../services/blockchain.service';
-import { ConfirmationData } from '../../../../app.datatypes';
-import { showConfirmationModal } from '../../../../utils';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { AppConfig } from '../../../../app.config';
+import { ConfirmationParams, ConfirmationComponent, DefaultConfirmationButtons } from '../../../layout/confirmation/confirmation.component';
+import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
+
+export class CreateWalletParams {
+  create: boolean;
+}
 
 @Component({
   selector: 'app-create-wallet',
@@ -16,29 +20,38 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
   styleUrls: ['./create-wallet.component.scss'],
 })
 export class CreateWalletComponent implements OnDestroy {
-  @ViewChild('formControl') formControl: CreateWalletFormComponent;
-  @ViewChild('createButton') createButton: ButtonComponent;
-  @ViewChild('cancelButton') cancelButton: ButtonComponent;
+  @ViewChild('formControl', { static: false }) formControl: CreateWalletFormComponent;
+  @ViewChild('createButton', { static: false }) createButton: ButtonComponent;
+  @ViewChild('cancelButton', { static: false }) cancelButton: ButtonComponent;
 
-  scan: Number;
   disableDismiss = false;
+  busy = false;
 
   private synchronized = true;
-  private synchronizedSubscription: ISubscription;
+  private blockchainSubscription: SubscriptionLike;
+
+  public static openDialog(dialog: MatDialog, params: CreateWalletParams): MatDialogRef<CreateWalletComponent, any> {
+    const config = new MatDialogConfig();
+    config.data = params;
+    config.autoFocus = true;
+    config.width = AppConfig.mediumModalWidth;
+
+    return dialog.open(CreateWalletComponent, config);
+  }
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data,
     public dialogRef: MatDialogRef<CreateWalletComponent>,
-    private walletService: WalletService,
     private dialog: MatDialog,
     private msgBarService: MsgBarService,
+    private walletsAndAddressesService: WalletsAndAddressesService,
     blockchainService: BlockchainService,
   ) {
-    this.synchronizedSubscription = blockchainService.synchronized.subscribe(value => this.synchronized = value);
+    this.blockchainSubscription = blockchainService.progress.subscribe(response => this.synchronized = response.synchronized);
   }
 
   ngOnDestroy() {
-    this.synchronizedSubscription.unsubscribe();
+    this.blockchainSubscription.unsubscribe();
     this.msgBarService.hide();
   }
 
@@ -47,7 +60,7 @@ export class CreateWalletComponent implements OnDestroy {
   }
 
   createWallet() {
-    if (!this.formControl.isValid || this.createButton.isLoading()) {
+    if (!this.formControl.isValid || this.busy) {
       return;
     }
 
@@ -56,14 +69,14 @@ export class CreateWalletComponent implements OnDestroy {
     if (this.synchronized || this.data.create) {
       this.continueCreating();
     } else {
-      const confirmationData: ConfirmationData = {
-        headerText: 'wallet.new.synchronizing-warning-title',
+      const confirmationParams: ConfirmationParams = {
+        headerText: 'common.warning-title',
         text: 'wallet.new.synchronizing-warning-text',
-        confirmButtonText: 'wallet.new.synchronizing-warning-continue',
-        cancelButtonText: 'wallet.new.synchronizing-warning-cancel',
+        defaultButtons: DefaultConfirmationButtons.ContinueCancel,
+        redTitle: true,
       };
 
-      showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+      ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
         if (confirmationResult) {
           this.continueCreating();
         }
@@ -72,6 +85,7 @@ export class CreateWalletComponent implements OnDestroy {
   }
 
   private continueCreating() {
+    this.busy = true;
     const data = this.formControl.getData();
 
     this.createButton.resetState();
@@ -79,11 +93,13 @@ export class CreateWalletComponent implements OnDestroy {
     this.cancelButton.setDisabled();
     this.disableDismiss = true;
 
-    this.walletService.create(data.label, data.seed, this.scan, data.password)
+    this.walletsAndAddressesService.createSoftwareWallet(data.label, data.seed, data.password)
       .subscribe(() => {
+        this.busy = false;
         setTimeout(() => this.msgBarService.showDone('wallet.new.wallet-created'));
         this.dialogRef.close();
       }, e => {
+        this.busy = false;
         this.msgBarService.showError(e);
         this.createButton.resetState();
         this.cancelButton.disabled = false;

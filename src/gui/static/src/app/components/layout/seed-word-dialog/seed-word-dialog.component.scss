@@ -1,8 +1,6 @@
-.form-container {
-  margin-top: 20px;
-}
+@import '../../../../theme/variables';
 
 .option {
-  font-size: 13px;
+  font-size: $font-size-standard;
   height: 42px;
 }

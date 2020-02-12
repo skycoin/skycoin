@@ -1,11 +1,12 @@
-.-buttons {
-  text-align: center;
-}
+@import '../../../../theme/variables';
 
-.-paper {
-  background-color: #fbfbfb;
-  border-radius: 10px;
-  box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.01), 1px 1px 2px 2px rgba(0, 0, 0, 0.01);
-  padding: 30px;
-  margin: 30px;
+.-links {
+  text-align: center;
+  font-size: $font-size-standard;
+  margin-top: -15px;
+  margin-bottom: 15px;
+
+  .separator {
+    margin: 0 10px;
+  }
 }

@@ -1,9 +1,9 @@
 import { Component, Input, OnInit, OnDestroy } from '@angular/core';
-import { Subscription } from 'rxjs/Subscription';
+import { Subscription } from 'rxjs';
 import { AppService } from '../../../../services/app.service';
 import { LanguageData, LanguageService } from '../../../../services/language.service';
-import { openChangeLanguageModal } from '../../../../utils';
-import { MatDialog } from '@angular/material';
+import { MatDialog } from '@angular/material/dialog';
+import { SelectLanguageComponent } from '../../select-language/select-language.component';
 
 @Component({
   selector: 'app-top-bar',
@@ -33,11 +33,10 @@ export class TopBarComponent implements OnInit, OnDestroy {
   }
 
   changelanguage() {
-    openChangeLanguageModal(this.dialog)
-      .subscribe(response => {
-        if (response) {
-          this.languageService.changeLanguage(response);
-        }
-      });
+    SelectLanguageComponent.openDialog(this.dialog).afterClosed().subscribe(response => {
+      if (response) {
+        this.languageService.changeLanguage(response);
+      }
+    });
   }
 }

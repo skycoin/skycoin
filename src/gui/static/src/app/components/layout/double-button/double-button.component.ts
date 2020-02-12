@@ -13,19 +13,24 @@ export class DoubleButtonComponent {
   @Input() leftButtonText: any;
   @Input() activeButton: DoubleButtonActive;
   @Input() className = '';
+  @Input() changeActiveButtonManually = false;
   @Output() onStateChange = new EventEmitter();
   ButtonState = DoubleButtonActive;
 
   onRightClick() {
     if (this.activeButton === DoubleButtonActive.LeftButton) {
-      this.activeButton = DoubleButtonActive.RightButton;
+      if (!this.changeActiveButtonManually) {
+        this.activeButton = DoubleButtonActive.RightButton;
+      }
       this.onStateChange.emit(DoubleButtonActive.RightButton);
     }
   }
 
   onLeftClick() {
     if (this.activeButton === DoubleButtonActive.RightButton) {
-      this.activeButton = DoubleButtonActive.LeftButton;
+      if (!this.changeActiveButtonManually) {
+        this.activeButton = DoubleButtonActive.LeftButton;
+      }
       this.onStateChange.emit(DoubleButtonActive.LeftButton);
     }
   }

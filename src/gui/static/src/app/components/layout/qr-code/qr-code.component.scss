@@ -1,5 +1,7 @@
 @import '../../../../theme/variables';
 
+$data-container-margin: 14px;
+
 .qr-container {
   text-align: center;
   margin-bottom: 24px;
@@ -17,15 +19,19 @@
   width: 100%;
 }
 
+.form-separator {
+  margin-bottom: $data-container-margin;
+}
+
 .data-container {
-  margin: 14px 0;
+  margin: $data-container-margin 0;
 
   .title {
-    color: $black;
+    color: $grey;
   }
 
   .data {
-    color: $grey-semi-dark;
+    color: $black;
     cursor: pointer;
 
     .text {
@@ -33,7 +39,6 @@
     }
 
     .copy {
-      color: $grey-semi-dark;
       opacity: 0.25;
     }
   }
@@ -49,20 +54,4 @@
       opacity: 1;
     }
   }
-}
-
-.link {
-  color: $gradient-blue-dark;
-  cursor: pointer;
-
-  mat-icon {
-    padding: 0;
-    display: inline;
-    vertical-align: middle;
-    font-size: 13px;
-  }
-}
-
-.invalid {
-  color: $red;
 }

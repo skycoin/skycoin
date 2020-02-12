@@ -1,23 +1,23 @@
-import { Component, Input, OnDestroy, OnInit } from '@angular/core';
-import { PreviewTransaction, Transaction } from '../../../../../app.datatypes';
+import { Component, Input, OnDestroy } from '@angular/core';
 import { PriceService } from '../../../../../services/price.service';
-import { ISubscription } from 'rxjs/Subscription';
+import { SubscriptionLike } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
-import { MatDialogConfig, MatDialog } from '@angular/material';
+import { MatDialogConfig, MatDialog } from '@angular/material/dialog';
 import { ChangeNoteComponent } from './change-note/change-note.component';
+import { GeneratedTransaction, OldTransaction } from '../../../../../services/wallet-operations/transaction-objects';
 
 @Component({
   selector: 'app-transaction-info',
   templateUrl: './transaction-info.component.html',
   styleUrls: ['./transaction-info.component.scss'],
 })
-export class TransactionInfoComponent implements OnInit, OnDestroy {
-  @Input() transaction: Transaction;
+export class TransactionInfoComponent implements OnDestroy {
+  @Input() transaction: GeneratedTransaction|OldTransaction;
   @Input() isPreview: boolean;
   price: number;
   showInputsOutputs = false;
 
-  private subscription: ISubscription;
+  private subscription: SubscriptionLike;
 
   constructor(private priceService: PriceService, private dialog: MatDialog) {
     this.subscription = this.priceService.price.subscribe(price => this.price = price);
@@ -31,7 +31,7 @@ export class TransactionInfoComponent implements OnInit, OnDestroy {
     if (!this.isPreview) {
       if ((this.transaction as any).coinsMovedInternally) {
         return 'tx.hours-moved';
-      } else if (this.transaction.balance.isGreaterThan(0)) {
+      } else if ((this.transaction as OldTransaction).balance.isGreaterThan(0)) {
         return 'tx.hours-received';
       }
     }
@@ -39,13 +39,22 @@ export class TransactionInfoComponent implements OnInit, OnDestroy {
     return 'tx.hours-sent';
   }
 
-  ngOnInit() {
-    if (this.isPreview) {
-      this.transaction.hoursSent = new BigNumber('0');
-      this.transaction.outputs
-        .filter(o => (<PreviewTransaction> this.transaction).to.find(addr => addr === o.address))
-        .map(o => this.transaction.hoursSent = this.transaction.hoursSent.plus(new BigNumber(o.hours)));
-    }
+  get sentOrReceivedHours(): BigNumber {
+    return this.isPreview ?
+      (this.transaction as GeneratedTransaction).hoursToSend :
+      (this.transaction as OldTransaction).hoursBalance;
+  }
+
+  get shouldShowIncomingIcon(): boolean {
+    return !this.isPreview &&
+      (this.transaction as OldTransaction).balance.isGreaterThan(0) &&
+      !(this.transaction as OldTransaction).coinsMovedInternally;
+  }
+
+  get balanceToShow(): BigNumber {
+    return this.isPreview ?
+      (this.transaction as GeneratedTransaction).coinsToSend :
+      (this.transaction as OldTransaction).balance;
   }
 
   ngOnDestroy() {
@@ -59,13 +68,10 @@ export class TransactionInfoComponent implements OnInit, OnDestroy {
   }
 
   editNote() {
-    const config = new MatDialogConfig();
-      config.width = '566px';
-      config.data = this.transaction;
-      this.dialog.open(ChangeNoteComponent, config).afterClosed().subscribe(newNote => {
-        if (newNote || newNote === '') {
-          this.transaction.note = newNote;
-        }
-      });
+    ChangeNoteComponent.openDialog(this.dialog, this.transaction as OldTransaction).afterClosed().subscribe(newNote => {
+      if (newNote || newNote === '') {
+        this.transaction.note = newNote;
+      }
+    });
   }
 }

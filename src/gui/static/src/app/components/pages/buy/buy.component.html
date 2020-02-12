@@ -1,3 +1,6 @@
+<!--
+  IMPORTANT: Unused for a long time, it may need changes to work properly.
+-->
 <app-header></app-header>
 <div class="-background-container">
   <div class="container">
@@ -13,7 +16,7 @@
             <div class="-select">
               <select formControlName="wallet" id="wallet" class="-wallet" required>
                 <option disabled selected>{{ 'buy.make-choice' | translate }}</option>
-                <option *ngFor="let wallet of wallets" [value]="wallet.filename">
+                <option *ngFor="let wallet of wallets" [value]="wallet.id">
                   {{ wallet.label }} - <span class="-coins">{{ wallet.coins | amount }}</span>
                 </option>
               </select>
@@ -45,7 +48,7 @@
           <span class="-status">
             {{ 'buy.status-button' | translate }} {{ order.status | tellerStatus | translate }}
           </span>
-          <app-button #button (action)="checkStatus()" class="primary">
+          <app-button #button (action)="checkStatus()" class="primary-button">
             {{ 'buy.check-status-button' | translate }}
           </app-button>
           <app-button #button (action)="removeOrder()">

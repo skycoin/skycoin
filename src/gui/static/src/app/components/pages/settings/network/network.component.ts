@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { NetworkService } from '../../../../services/network.service';
-import { ISubscription } from 'rxjs/Subscription';
+import { NetworkService, Connection } from '../../../../services/network.service';
+import { SubscriptionLike } from 'rxjs';
 
 @Component({
   selector: 'app-network',
@@ -8,24 +8,16 @@ import { ISubscription } from 'rxjs/Subscription';
   styleUrls: ['./network.component.scss'],
 })
 export class NetworkComponent implements OnInit, OnDestroy {
-  peers: any;
+  peers: Connection[];
 
-  private subscription: ISubscription;
+  private subscription: SubscriptionLike;
 
   constructor(
     public networkService: NetworkService,
   ) { }
 
   ngOnInit() {
-    this.subscription = this.networkService.retrieveDefaultConnections().subscribe(trusted => {
-      this.subscription = this.networkService.automatic().subscribe(peers => {
-        this.peers = peers.map(peer => {
-          peer.source = trusted.find(p => p.address === peer.address) ? 'default' : 'exchange';
-
-          return peer;
-        }).sort((a, b) => a.address.localeCompare(b.address));
-      });
-    });
+    this.subscription = this.networkService.connections().subscribe(peers => this.peers = peers);
   }
 
   ngOnDestroy() {

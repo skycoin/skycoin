@@ -8,7 +8,7 @@ import { ButtonComponent } from '../../../layout/button/button.component';
   styleUrls: ['./onboarding-encrypt-wallet.component.scss'],
 })
 export class OnboardingEncryptWalletComponent implements OnInit {
-  @ViewChild('button') button: ButtonComponent;
+  @ViewChild('button', { static: false }) button: ButtonComponent;
   @Output() onPasswordCreated = new EventEmitter<string|null>();
   @Output() onBack = new EventEmitter();
   form: FormGroup;
@@ -23,7 +23,7 @@ export class OnboardingEncryptWalletComponent implements OnInit {
 
   initEncryptForm() {
     this.form = this.formBuilder.group({
-        password: new FormControl('', Validators.compose([Validators.required, Validators.minLength(2)])),
+        password: new FormControl('', Validators.compose([Validators.required])),
         confirm: new FormControl('',
           Validators.compose([
             Validators.required,
@@ -59,7 +59,7 @@ export class OnboardingEncryptWalletComponent implements OnInit {
   }
 
   get isWorking() {
-    return this.button.isLoading();
+    return this.button ? this.button.isLoading() : false;
   }
 
   private passwordMatchValidator(g: FormGroup) {

@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
-import { parseResponseMessage } from '../../../utils/errors';
-import { MatTooltip } from '@angular/material';
+import { processServiceError } from '../../../utils/errors';
+import { MatTooltip } from '@angular/material/tooltip';
 
 @Component({
   selector: 'app-button',
@@ -11,8 +11,8 @@ export class ButtonComponent {
   @Input() disabled: any;
   @Input() forceEmitEvents = false;
   @Output() action = new EventEmitter();
-  @ViewChild('tooltip') tooltip: MatTooltip;
-  @ViewChild('button') button: HTMLButtonElement;
+  @ViewChild('tooltip', { static: false }) tooltip: MatTooltip;
+  @ViewChild('button', { static: false }) button: HTMLButtonElement;
 
   error: string;
   state: number;
@@ -39,7 +39,7 @@ export class ButtonComponent {
   }
 
   setError(error: any) {
-    this.error = typeof error === 'string' ? error : parseResponseMessage(error['_body']);
+    this.error = processServiceError(error).translatableErrorMsg;
     this.state = 2;
 
     if (this.mouseOver) {

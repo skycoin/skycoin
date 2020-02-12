@@ -29,7 +29,7 @@ export class HwBackupDialogComponent extends HwDialogBaseComponent<HwBackupDialo
         });
         this.data.requestOptionsComponentRefresh(null, true);
       },
-      err => this.processResult(err.result),
+      err => this.processResult(err),
     );
   }
 }

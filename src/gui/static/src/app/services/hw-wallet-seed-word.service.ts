@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import { MatDialog, MatDialogConfig } from '@angular/material';
-import { Observable } from 'rxjs/Observable';
+import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 @Injectable()
 export class HwWalletSeedWordService {
@@ -16,15 +17,12 @@ export class HwWalletSeedWordService {
   ) {}
 
   requestWord(): Observable<string> {
-    return this.dialog.open(this.requestWordComponentInternal, <MatDialogConfig> {
-      width: '350px',
-      data: {
-        isForHwWallet: true,
-        wordNumber: 0,
-        restoringSoftwareWallet: false,
-      },
-    }).afterClosed().map(word => {
+    return this.requestWordComponentInternal.openDialog(this.dialog, <MatDialogConfig> {
+      isForHwWallet: true,
+      wordNumber: 0,
+      restoringSoftwareWallet: false,
+    }).afterClosed().pipe(map(word => {
       return word;
-    });
+    }));
   }
 }

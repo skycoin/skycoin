@@ -1,9 +1,10 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { WalletService } from '../../../../services/wallet.service';
-import { Wallet } from '../../../../app.datatypes';
-import { MatDialog, MatDialogConfig } from '@angular/material';
+import { MatDialog } from '@angular/material/dialog';
 import { SeedModalComponent } from './seed-modal/seed-modal.component';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
+import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
+import { SoftwareWalletService } from '../../../../services/wallet-operations/software-wallet.service';
+import { WalletBase } from '../../../../services/wallet-operations/wallet-objects';
 
 @Component({
   selector: 'app-backup',
@@ -12,19 +13,20 @@ import { PasswordDialogComponent } from '../../../layout/password-dialog/passwor
 })
 export class BackupComponent implements OnInit, OnDestroy {
   folder: string;
-  wallets: Wallet[] = [];
+  wallets: WalletBase[] = [];
 
   private walletSubscription;
 
   constructor(
-    public walletService: WalletService,
     private dialog: MatDialog,
+    private walletsAndAddressesService: WalletsAndAddressesService,
+    private softwareWalletService: SoftwareWalletService,
   ) {}
 
   ngOnInit() {
-    this.walletService.folder().subscribe(folder => this.folder = folder);
+    this.walletsAndAddressesService.folder().subscribe(folder => this.folder = folder);
 
-    this.walletSubscription = this.walletService.all().subscribe(wallets => {
+    this.walletSubscription = this.walletsAndAddressesService.allWallets.subscribe(wallets => {
       this.wallets = wallets;
     });
   }
@@ -37,21 +39,12 @@ export class BackupComponent implements OnInit, OnDestroy {
     return this.wallets.filter(wallet => wallet.encrypted);
   }
 
-  showSeed(wallet: Wallet) {
-    const initialConfig = new MatDialogConfig();
-    initialConfig.data = {
-      wallet: wallet,
-    };
-
-    this.dialog.open(PasswordDialogComponent, initialConfig).componentInstance.passwordSubmit
+  showSeed(wallet: WalletBase) {
+    PasswordDialogComponent.openDialog(this.dialog, { wallet: wallet }).componentInstance.passwordSubmit
       .subscribe(passwordDialog => {
-        this.walletService.getWalletSeed(wallet, passwordDialog.password).subscribe(seed => {
+        this.softwareWalletService.getWalletSeed(wallet, passwordDialog.password).subscribe(seed => {
           passwordDialog.close();
-          const config = new MatDialogConfig();
-          config.width = '566px';
-          config.data = { seed };
-
-          this.dialog.open(SeedModalComponent, config);
+          SeedModalComponent.openDialog(this.dialog, seed);
         }, err => passwordDialog.error(err));
       });
   }

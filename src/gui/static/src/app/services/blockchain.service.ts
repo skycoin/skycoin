@@ -1,83 +1,148 @@
+import { Subscription, of, Observable, ReplaySubject } from 'rxjs';
+import { delay,  map, mergeMap } from 'rxjs/operators';
 import { Injectable, NgZone } from '@angular/core';
-import { ApiService } from './api.service';
-import { Observable } from 'rxjs/Observable';
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
-import { WalletService } from './wallet.service';
-import 'rxjs/add/observable/timer';
-import 'rxjs/add/operator/retryWhen';
-import 'rxjs/add/operator/concat';
-import 'rxjs/add/operator/exhaustMap';
 
+import { ApiService } from './api.service';
+import { BalanceAndOutputsService } from './wallet-operations/balance-and-outputs.service';
+
+/**
+ * Basic info of the last block added to the blockchain.
+ */
+export interface BasicBlockInfo {
+  seq: number;
+  timestamp: number;
+  hash: string;
+}
+
+/**
+ * Data about the current and max coin supply.
+ */
+export interface CoinSupply {
+  currentSupply: string;
+  totalSupply: string;
+  currentCoinhourSupply: string;
+  totalCoinhourSupply: string;
+}
+
+/**
+ * Info about the current synchronization state of the blockchain.
+ */
+export interface ProgressEvent {
+  currentBlock: number;
+  highestBlock: number;
+  synchronized: boolean;
+}
+
+/**
+ * Allows to check the current state of the blockchain.
+ */
 @Injectable()
 export class BlockchainService {
-  private progressSubject: BehaviorSubject<any> = new BehaviorSubject<any>(null);
-  private synchronizedSubject: BehaviorSubject<any> = new BehaviorSubject<boolean>(false);
-  private refreshedBalance = false;
+  private progressSubject: ReplaySubject<ProgressEvent> = new ReplaySubject<ProgressEvent>(1);
   private lastCurrentBlock = 0;
   private lastHighestBlock = 0;
-  private maxDecimals = 6;
+  private nodeSynchronized = false;
+  /**
+   * Allows the service to update the balance the first time the blockchain state is updated.
+   */
+  private refreshedBalance = false;
 
-  get progress() {
+  private dataSubscription: Subscription;
+
+  /**
+   * allows to know the current synchronization state of the blockchain.
+   */
+  get progress(): Observable<ProgressEvent> {
     return this.progressSubject.asObservable();
-  }
-
-  get currentMaxDecimals(): number {
-    return this.maxDecimals;
-  }
-
-  get synchronized() {
-    return this.synchronizedSubject.asObservable();
   }
 
   constructor(
     private apiService: ApiService,
-    private walletService: WalletService,
     private ngZone: NgZone,
+    private balanceAndOutputsService: BalanceAndOutputsService,
   ) {
-    this.apiService.get('health').retryWhen(errors => errors.delay(1000).take(10).concat(Observable.throw('')))
-      .subscribe ((response: any) => this.maxDecimals = response.user_verify_transaction.max_decimals);
+    this.startDataRefreshSubscription(0);
+  }
+
+  /**
+   * Gets the basic info of the last block added to the blockchain.
+   */
+  getLastBlock(): Observable<BasicBlockInfo> {
+    return this.apiService.get('last_blocks', { num: 1 }).pipe(map(blocks => {
+      return {
+        seq: blocks.blocks[0].header.seq,
+        timestamp: blocks.blocks[0].header.timestamp,
+        hash: blocks.blocks[0].header.block_hash,
+      };
+    }));
+  }
+
+  /**
+   * Gets info about the coin supply of the blockchain.
+   */
+  getCoinSupply(): Observable<CoinSupply> {
+    return this.apiService.get('coinSupply').pipe(map(supply => {
+      return {
+        currentSupply: supply.current_supply,
+        totalSupply: supply.total_supply,
+        currentCoinhourSupply: supply.current_coinhour_supply,
+        totalCoinhourSupply: supply.total_coinhour_supply,
+      };
+    }));
+  }
+
+  /**
+   * Makes the service start periodically checking the synchronization state of the blockchain.
+   * If this function was called before, the previous procedure is cancelled.
+   * @param delayMs Delay before starting to check the data.
+   */
+  private startDataRefreshSubscription(delayMs: number) {
+    if (this.dataSubscription) {
+      this.dataSubscription.unsubscribe();
+    }
 
     this.ngZone.runOutsideAngular(() => {
-      Observable.timer(0, 2000)
-        .exhaustMap(() => this.getBlockchainProgress())
-        .retryWhen(errors => errors.delay(2000))
-        .subscribe(
-          response => this.ngZone.run(() => {
-            if (!response.current || !response.highest || response.current < this.lastCurrentBlock || response.highest < this.lastHighestBlock) {
-              return;
-            }
+      this.dataSubscription = of(0).pipe(delay(delayMs), mergeMap(() => {
+        return this.apiService.get('blockchain/progress');
+      })).subscribe((response: any) => {
+        this.ngZone.run(() => {
+          // Stop if a value is not valid.
+          if (!response || !response.current || !response.highest || response.current < this.lastCurrentBlock || response.highest < this.lastHighestBlock) {
+            this.startDataRefreshSubscription(2000);
 
-            this.lastCurrentBlock = response.current;
-            this.lastHighestBlock = response.highest;
+            return;
+          }
 
-            this.progressSubject.next(response);
+          this.lastCurrentBlock = response.current;
+          this.lastHighestBlock = response.highest;
 
-            if (!this.refreshedBalance) {
-              this.walletService.refreshBalances();
-              this.refreshedBalance = true;
-            }
+          if (response.current === response.highest && !this.nodeSynchronized) {
+            this.nodeSynchronized = true;
+            this.balanceAndOutputsService.refreshBalance();
+            this.refreshedBalance = true;
+          } else if (response.current !== response.highest && this.nodeSynchronized) {
+            this.nodeSynchronized = false;
+          }
 
-            if (response.current === response.highest && !this.synchronizedSubject.value) {
-              this.synchronizedSubject.next(true);
-              this.walletService.refreshBalances();
-            } else if (response.current !== response.highest && this.synchronizedSubject.value) {
-              this.synchronizedSubject.next(false);
-            }
-          }),
-          error => console.log(error),
-        );
+          this.nodeSynchronized = this.nodeSynchronized;
+
+          // Refresh the balance the first time the info is retrieved.
+          if (!this.refreshedBalance) {
+            this.balanceAndOutputsService.refreshBalance();
+            this.refreshedBalance = true;
+          }
+
+          this.progressSubject.next({
+            currentBlock: this.lastCurrentBlock,
+            highestBlock: this.lastHighestBlock,
+            synchronized: this.nodeSynchronized,
+          });
+
+          this.startDataRefreshSubscription(2000);
+        });
+      }, () => {
+        this.startDataRefreshSubscription(2000);
+      });
     });
-  }
-
-  lastBlock() {
-    return this.apiService.get('last_blocks', { num: 1 }).map(blocks => blocks.blocks[0]);
-  }
-
-  getBlockchainProgress() {
-    return this.apiService.get('blockchain/progress');
-  }
-
-  coinSupply() {
-    return this.apiService.get('coinSupply');
   }
 }

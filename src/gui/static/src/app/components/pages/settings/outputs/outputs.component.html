@@ -1,31 +1,31 @@
-<div class="sky-container sky-container-grey">
-  <app-header [headline]="'title.outputs' | translate"></app-header>
+<div>
+  <app-header [headline]="'outputs.title' | translate"></app-header>
 
   <app-loading-content
     [isLoading]="!wallets"
-    noDataText="errors.no-outputs"
+    noDataText="outputs.error-no-outputs"
     *ngIf="!wallets || wallets.length === 0 || wallets[0].addresses[0].outputs.length === 0"
   ></app-loading-content>
 
   <div class="container" *ngIf="wallets && wallets.length > 0">
     <div class="-table" *ngFor="let wallet of wallets">
       <div class="-headers">
-        <div class="-flex-fill -label" [attr.title]="wallet.label">{{ wallet.label }}</div>
-        <div class="-width-150 -text-right">{{ 'coin' | commonText }}</div>
-        <div class="-width-150 -text-right">{{ 'hours' | commonText }}</div>
+        <div class="-flex-fill text-truncate" [attr.title]="wallet.label">{{ wallet.label }}</div>
+        <div class="-width-150 text-right">{{ 'coin' | commonText }}</div>
+        <div class="-width-150 text-right">{{ 'hours' | commonText }}</div>
       </div>
       <div class="-body">
         <ng-container *ngFor="let address of wallet.addresses">
           <div class="-row">
-            <div class="-flex-fill -address">
-              <img src="../../../../../assets/img/qr-code-black.png" (click)="showQrCode($event, address.address)" class="qr-code-button">
-              {{ address.address }}
+            <div class="-flex-fill grey-text text-truncate">
+              <app-qr-code-button [address]="address.address"></app-qr-code-button>
+              <span class="address">{{ address.address }}</span>
             </div>
           </div>
           <div class="-row" *ngFor="let output of address.outputs">
             <div class="-flex-fill -hash">{{ output.hash }}</div>
-            <div class="-width-150 -text-right">{{ output.coins | amount:true:'first' }}</div>
-            <div class="-width-150 -text-right -grey">{{ output.calculated_hours | amount:false:'first' }}</div>
+            <div class="-width-150 text-right">{{ output.coins.toString() | amount:true:'first' }}</div>
+            <div class="-width-150 text-right grey-text">{{ output.hours.toString() | amount:false:'first' }}</div>
           </div>
         </ng-container>
       </div>

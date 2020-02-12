@@ -1,0 +1,20 @@
+<app-modal [headline]="'select-address.title' | translate" [dialog]="dialogRef">
+  <div class="wallet-container list-button-container light-button-theme" *ngFor="let element of listElements">
+    <div class="title" title="{{ element.label }}">{{ element.label }}</div>
+    <ng-container *ngIf="element.addresses.length > 0">
+      <ng-container *ngFor="let address of element.addresses">
+        <button mat-button color="primary" (click)="select(address.address)">
+          <div class="address">{{ address.address }}</div>
+          <div class="balance">{{ address.coins.toString() | amount:true:'first' }}
+            <span class="grey-text">{{ address.coins.toString() | amount:true:'last' }} | </span>
+            {{ address.hours.toString() | amount:false:'first' }}
+            <span class="grey-text">{{ address.hours.toString() | amount:false:'last' }}</span>
+          </div>
+        </button>
+      </ng-container>
+    </ng-container>
+    <ng-container *ngIf="element.addresses.length === 0">
+      <div class="no-addresses-msg"><mat-icon [inline]="true">error</mat-icon>{{ 'select-address.no-addresses' | translate }}</div>
+    </ng-container>
+  </div>
+</app-modal>

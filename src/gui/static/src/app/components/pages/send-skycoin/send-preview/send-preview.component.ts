@@ -1,14 +1,17 @@
 import { Component, EventEmitter, Input, OnDestroy, Output, ViewChild } from '@angular/core';
-import { WalletService } from '../../../../services/wallet.service';
 import { ButtonComponent } from '../../../layout/button/button.component';
-import { MatDialogConfig, MatDialog } from '@angular/material';
-import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
-import { PreviewTransaction, Wallet } from '../../../../app.datatypes';
-import { ISubscription } from 'rxjs/Subscription';
+import { MatDialog } from '@angular/material/dialog';
+import { SubscriptionLike } from 'rxjs';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { mergeMap } from 'rxjs/operators';
+import { CopyRawTxData, CopyRawTxComponent } from '../offline-dialogs/implementations/copy-raw-tx.component';
+import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent } from '../../../layout/confirmation/confirmation.component';
+import { BalanceAndOutputsService } from '../../../../services/wallet-operations/balance-and-outputs.service';
+import { SpendingService } from '../../../../services/wallet-operations/spending.service';
+import { GeneratedTransaction } from '../../../../services/wallet-operations/transaction-objects';
 
 @Component({
   selector: 'app-send-preview',
@@ -16,19 +19,20 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
   styleUrls: ['./send-preview.component.scss'],
 })
 export class SendVerifyComponent implements OnDestroy {
-  @ViewChild('sendButton') sendButton: ButtonComponent;
-  @ViewChild('backButton') backButton: ButtonComponent;
-  @Input() transaction: PreviewTransaction;
+  @ViewChild('sendButton', { static: false }) sendButton: ButtonComponent;
+  @ViewChild('backButton', { static: false }) backButton: ButtonComponent;
+  @Input() transaction: GeneratedTransaction;
   @Output() onBack = new EventEmitter<boolean>();
 
-  private sendSubscription: ISubscription;
+  private sendSubscription: SubscriptionLike;
 
   constructor(
-    private walletService: WalletService,
     private msgBarService: MsgBarService,
     private dialog: MatDialog,
     private hwWalletService: HwWalletService,
     private translate: TranslateService,
+    private balanceAndOutputsService: BalanceAndOutputsService,
+    private spendingService: SpendingService,
   ) {}
 
   ngOnDestroy() {
@@ -51,13 +55,30 @@ export class SendVerifyComponent implements OnDestroy {
     this.msgBarService.hide();
     this.sendButton.resetState();
 
-    if (this.transaction.wallet.encrypted && !this.transaction.wallet.isHardware) {
-      const config = new MatDialogConfig();
-      config.data = {
-        wallet: this.transaction.wallet,
+    if (!this.transaction.wallet) {
+      const data: CopyRawTxData = {
+        rawTx: this.transaction.encoded,
+        isUnsigned: true,
       };
 
-      this.dialog.open(PasswordDialogComponent, config).componentInstance.passwordSubmit
+      CopyRawTxComponent.openDialog(this.dialog, data).afterClosed().subscribe(() => {
+        const confirmationParams: ConfirmationParams = {
+          text: 'offline-transactions.copy-tx.reset-confirmation',
+          defaultButtons: DefaultConfirmationButtons.YesNo,
+        };
+
+        ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
+          if (confirmationResult) {
+            this.onBack.emit(true);
+          }
+        });
+      });
+
+      return;
+    }
+
+    if (this.transaction.wallet.encrypted && !this.transaction.wallet.isHardware) {
+      PasswordDialogComponent.openDialog(this.dialog, { wallet: this.transaction.wallet }).componentInstance.passwordSubmit
         .subscribe(passwordDialog => {
           this.finishSending(passwordDialog);
         });
@@ -68,7 +89,7 @@ export class SendVerifyComponent implements OnDestroy {
         this.showBusy();
         this.sendSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.transaction.wallet.addresses[0].address).subscribe(
           () => this.finishSending(),
-          err => this.showError(getHardwareWalletErrorMsg(this.translate, err)),
+          err => this.showError(err),
         );
       }
     }
@@ -84,24 +105,24 @@ export class SendVerifyComponent implements OnDestroy {
 
     const note = this.transaction.note.trim();
 
-    this.sendSubscription = this.walletService.signTransaction(
+    this.sendSubscription = this.spendingService.signTransaction(
       this.transaction.wallet,
       passwordDialog ? passwordDialog.password : null,
       this.transaction,
-    ).flatMap(result => {
+    ).pipe(mergeMap(encodedSignedTx => {
       if (passwordDialog) {
         passwordDialog.close();
       }
 
-      return this.walletService.injectTransaction(result.encoded, note);
-    }).subscribe(noteSaved => {
+      return this.spendingService.injectTransaction(encodedSignedTx, note);
+    })).subscribe(noteSaved => {
       if (note && !noteSaved) {
-        setTimeout(() => this.msgBarService.showWarning(this.translate.instant('send.error-saving-note')));
+        setTimeout(() => this.msgBarService.showWarning(this.translate.instant('send.saving-note-error')));
       } else {
         setTimeout(() => this.msgBarService.showDone('send.sent'));
       }
 
-      this.walletService.startDataRefreshSubscription();
+      this.balanceAndOutputsService.refreshBalance();
 
       this.onBack.emit(true);
     }, error => {
@@ -109,11 +130,7 @@ export class SendVerifyComponent implements OnDestroy {
         passwordDialog.error(error);
       }
 
-      if (error && error.result) {
-        this.showError(getHardwareWalletErrorMsg(this.translate, error));
-      } else {
-        this.showError(error);
-      }
+      this.showError(error);
     });
   }
 

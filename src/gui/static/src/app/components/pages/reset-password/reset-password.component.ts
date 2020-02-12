@@ -1,12 +1,12 @@
 import { Component, OnDestroy, ViewChild } from '@angular/core';
-import { ISubscription } from 'rxjs/Subscription';
+import { SubscriptionLike,  combineLatest } from 'rxjs';
 import { ButtonComponent } from '../../layout/button/button.component';
 import { FormGroup, FormBuilder, FormControl, Validators } from '@angular/forms';
-import { Params, ActivatedRoute, Router } from '@angular/router';
-import { Observable } from 'rxjs/Observable';
-import { WalletService } from '../../../services/wallet.service';
-import { Wallet } from '../../../app.datatypes';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MsgBarService } from '../../../services/msg-bar.service';
+import { SoftwareWalletService } from '../../../services/wallet-operations/software-wallet.service';
+import { WalletsAndAddressesService } from '../../../services/wallet-operations/wallets-and-addresses.service';
+import { WalletBase } from '../../../services/wallet-operations/wallet-objects';
 
 @Component({
   selector: 'app-reset-password',
@@ -14,12 +14,13 @@ import { MsgBarService } from '../../../services/msg-bar.service';
   styleUrls: ['./reset-password.component.scss'],
 })
 export class ResetPasswordComponent implements OnDestroy {
-  @ViewChild('resetButton') resetButton: ButtonComponent;
+  @ViewChild('resetButton', { static: false }) resetButton: ButtonComponent;
 
   form: FormGroup;
+  busy = false;
 
-  private subscription: ISubscription;
-  private wallet: Wallet;
+  private subscription: SubscriptionLike;
+  private wallet: WalletBase;
   private done = false;
   private hideBarWhenClosing = true;
 
@@ -27,12 +28,13 @@ export class ResetPasswordComponent implements OnDestroy {
     public formBuilder: FormBuilder,
     private route: ActivatedRoute,
     private router: Router,
-    private walletService: WalletService,
     private msgBarService: MsgBarService,
+    private softwareWalletService: SoftwareWalletService,
+    private walletsAndAddressesService: WalletsAndAddressesService,
   ) {
     this.initForm('');
-    this.subscription = Observable.zip(this.route.params, this.walletService.all(), (params: Params, wallets: Wallet[]) => {
-      const wallet = wallets.find(w => w.filename === params['id']);
+    this.subscription = combineLatest(this.route.params, this.walletsAndAddressesService.allWallets, (params, wallets) => {
+      const wallet = wallets.find(w => w.id === params['id']);
       if (!wallet) {
         setTimeout(() => this.router.navigate([''], {skipLocationChange: true}));
 
@@ -63,14 +65,15 @@ export class ResetPasswordComponent implements OnDestroy {
   }
 
   reset() {
-    if (!this.form.valid || this.resetButton.isLoading() || this.done) {
+    if (!this.form.valid || this.busy || this.done) {
       return;
     }
 
+    this.busy = true;
     this.msgBarService.hide();
     this.resetButton.setLoading();
 
-    this.walletService.resetPassword(this.wallet, this.form.value.seed, this.form.value.password !== '' ? this.form.value.password : null)
+    this.softwareWalletService.resetPassword(this.wallet, this.form.value.seed, this.form.value.password !== '' ? this.form.value.password : null)
       .subscribe(() => {
         this.resetButton.setSuccess();
         this.resetButton.setDisabled();
@@ -83,6 +86,7 @@ export class ResetPasswordComponent implements OnDestroy {
           this.router.navigate(['']);
         }, 2000);
       }, error => {
+        this.busy = false;
         this.resetButton.resetState();
         this.msgBarService.showError(error);
       });

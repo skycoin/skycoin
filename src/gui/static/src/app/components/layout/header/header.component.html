@@ -1,27 +1,29 @@
 <div class="-container">
   <div class="large-header">
-    <app-top-bar [headline]="headline"></app-top-bar>
-    <div class="balance-container">
-      <div class="balance">
-        <p *ngIf="highest && loading" class="coins"><span>{{ percentage | percent:'1.2-2' }}</span></p>
-        <p *ngIf="!loading" class="coins"><span>{{ coins | amount:true:'first' }}</span> {{ coins | amount:true:'last' }}</p>
-        <p *ngIf="!highest && loading" class="coins"><span>&nbsp;</span></p>
-        <p class="dollars">
-          <span *ngIf="price">
-            <span *ngIf="!loading">{{ (coins * price) | currency:'USD':'symbol':'1.2-2' }}</span>
-            <span *ngIf="loading">-</span>
-            ({{ price | currency:'USD':'symbol':'1.2-2' }})
-          </span>
-          <span *ngIf="!price">{{ 'common.loading' | translate }}</span>
-        </p>
+    <div class="gradient">
+      <app-top-bar [headline]="headline"></app-top-bar>
+      <div class="balance-container">
+        <div class="balance">
+          <p *ngIf="!highest && loading" class="loading-header">{{ 'common.loading' | translate }}</p>
+          <p *ngIf="highest && loading" class="coins"><span>{{ percentage | percent:'1.2-2' }}</span></p>
+          <p *ngIf="!loading" class="coins"><span>{{ coins | amount:true:'first' }}</span> {{ coins | amount:true:'last' }}</p>
+          <p class="dollars" *ngIf="showPrice">
+            <span *ngIf="price">
+              <span *ngIf="!loading">{{ (coins * price) | currency:'USD':'symbol':'1.2-2' }}</span>
+              <span *ngIf="loading">-</span>
+              ({{ price | currency:'USD':'symbol':'1.2-2' }})
+            </span>
+            <span *ngIf="!price">{{ 'common.loading' | translate }}</span>
+          </p>
+        </div>
       </div>
-    </div>
-    <div class="hour-balance">
-      <p *ngIf="loading">
-        {{ 'header.syncing-blocks' | translate }}
-        {{ current && highest ?  '(' + current + '/'  + highest + ')' : '...' }}
-      </p>
-      <p *ngIf="!loading">{{ hours | amount:false }}</p>
+      <div class="hour-balance">
+        <p *ngIf="loading">
+          {{ 'header.syncing-blocks' | translate }}
+          {{ current && highest ?  '(' + current + '/'  + highest + ')' : '...' }}
+        </p>
+        <p *ngIf="!loading">{{ hours | amount:false }}</p>
+      </div>
     </div>
   </div>
   <app-nav-bar></app-nav-bar>
@@ -31,32 +33,27 @@
     color="primary"
     [mode]="querying ? 'query' : 'determinate'"
     [value]="percentage * 100"></mat-progress-bar>
-  <mat-toolbar class="notification-bar" *ngIf="appService.updateAvailable">
+  <div class="notification-bar" *ngIf="appService.updateAvailable">
     <div>
-      {{ 'header.update1' | translate }}
+      {{ 'header.warnings.update-part1' | translate }}
       <a [href]="walletDownloadUrl" target="_blank" rel="noreferrer nofollow">v{{ appService.lastestVersion }}</a>
-      {{ 'header.update2' | translate }}
+      {{ 'header.warnings.update-part3' | translate }}
     </div>
-  </mat-toolbar>
-  <mat-toolbar class="notification-bar" *ngIf="appService.error">
-    <div *ngIf="appService.error === 2">
-      {{ 'header.errors.no-backend1' | translate }}
-      <a href='https://web.telegram.org/#/im?p=@skycoinsupport' target="_blank" rel="noreferrer nofollow">{{ 'header.errors.no-backend2' | translate }}</a>
-      {{ 'header.errors.no-backend3' | translate }}
-    </div>
-    <div *ngIf="appService.error === 3">{{ 'header.errors.csrf' | translate }}</div>
-  </mat-toolbar>
-  <mat-toolbar class="notification-bar" *ngIf="!appService.error && networkService.noConnections">
-    <div>{{ 'header.errors.no-connections' | translate }}</div>
-  </mat-toolbar>
-  <mat-toolbar class="notification-bar" *ngIf="hasPendingTxs || !synchronized">
+  </div>
+  <div class="notification-bar" *ngIf="appService.csrfDisabled">
+    <div>{{ 'header.warnings.csrf' | translate }}</div>
+  </div>
+  <div class="notification-bar" *ngIf="!appService.csrfDisabled && networkService.noConnections">
+    <div>{{ 'header.warnings.no-connections' | translate }}</div>
+  </div>
+  <div class="notification-bar" *ngIf="hasPendingTxs || !synchronized">
     <div *ngIf="hasPendingTxs">
-      {{ 'header.pending-txs1' | translate }}
-      <a routerLink='/settings/pending-transactions'>{{ 'header.pending-txs2' | translate }}</a>
-      {{ 'header.pending-txs3' | translate }}
+      {{ 'header.warnings.pending-txs-part1' | translate }}
+      <a routerLink='/settings/pending-transactions'>{{ 'header.warnings.pending-txs-part2' | translate }}</a>
+      {{ 'header.warnings.pending-txs-part3' | translate }}
     </div>
     <div *ngIf="!synchronized && !hasPendingTxs">
-      {{ 'header.synchronizing' | translate }}
+      {{ 'header.warnings.synchronizing' | translate }}
     </div>
-  </mat-toolbar>
+  </div>
 </div>

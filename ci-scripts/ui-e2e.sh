@@ -13,7 +13,8 @@ done
 RPC_ADDR="127.0.0.1:$PORT"
 HOST="http://127.0.0.1:$PORT"
 BINARY="skycoin-integration"
-E2E_PROXY_CONFIG=$(mktemp -t e2e-proxy.config.XXXXXX.js)
+E2E_PROXY_CONFIG="./src/gui/static/proxy.config.js"
+rm "$E2E_PROXY_CONFIG"
 
 COMMIT=$(git rev-parse HEAD)
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
@@ -103,7 +104,7 @@ module.exports = PROXY_CONFIG;
 EOL
 
 # Run e2e tests
-E2E_PROXY_CONFIG=$E2E_PROXY_CONFIG npm --prefix="./src/gui/static" run e2e-choose-config
+E2E_PROXY_CONFIG=$E2E_PROXY_CONFIG npm --prefix="./src/gui/static" run e2e
 
 RESULT=$?
 
@@ -114,7 +115,6 @@ kill -s SIGINT $SKYCOIN_PID
 wait $SKYCOIN_PID
 
 rm "$BINARY"
-rm "$E2E_PROXY_CONFIG"
 
 if [[ $RESULT -ne 0 ]]; then
   exit $RESULT

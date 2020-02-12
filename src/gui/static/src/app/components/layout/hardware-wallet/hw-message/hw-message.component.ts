@@ -23,6 +23,7 @@ export class HwMessageComponent {
   @Input() outputsList: TxData[];
   @Input() lowerText: string;
   @Input() linkText: string;
+  @Input() linkIsUrl = false;
   @Input() upperBigText: string;
   @Input() lowerBigText: string;
   @Input() lowerLightText: string;

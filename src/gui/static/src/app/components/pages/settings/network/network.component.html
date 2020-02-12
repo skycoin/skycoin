@@ -1,37 +1,37 @@
-<div class="sky-container sky-container-grey">
-  <app-header [headline]="'title.network' | translate"></app-header>
+<div>
+  <app-header [headline]="'network.title' | translate"></app-header>
 
   <app-loading-content *ngIf="!peers"></app-loading-content>
 
   <div class="container" *ngIf="peers">
     <div class="-table">
       <div class="-headers">
-        <div class="-direction"></div>
-        <div class="-width-200 -pl-0">{{ 'network.peer' | translate }}</div>
-        <div class="-flex-fill">{{ 'network.source' | translate }}</div>
-        <div class="d-lg-block -invisible -block-row -text-right">{{ 'network.block-height' | translate }}</div>
-        <div class="d-lg-none -block-row -text-right">{{ 'network.block-height-short' | translate }}</div>
-        <div class="-width-200">{{ 'network.last-seen' | translate }}</div>
+        <div class="-direction-cell"></div>
+        <div class="-address-cell">{{ 'network.peer-small-table-label' | translate }}</div>
+        <div class="-flex-fill">{{ 'network.source-small-table-label' | translate }}</div>
+        <div class="d-none d-lg-block -block-cell">{{ 'network.block-height-small-table-label' | translate }}</div>
+        <div class="d-lg-none -block-cell">{{ 'network.block-height-short-small-table-label' | translate }}</div>
+        <div class="-last-seen-cell">{{ 'network.last-seen-small-table-label' | translate }}</div>
       </div>
       <div class="-body">
         <div class="-row" *ngFor="let peer of peers">
-          <div class="-direction">
+          <div class="-direction-cell -direction-container">
             <img src="/assets/img/send-blue.png" [ngClass]="{ '-incoming': !peer.outgoing }"
-                 [matTooltip]="(peer.outgoing ? 'network.out' : 'network.in') | translate">
+                 [matTooltip]="(peer.outgoing ? 'network.out-help' : 'network.in-help') | translate">
           </div>
-          <div class="-width-200 -pl-0">
-            {{ peer.address.split(':')[0] }}<span class="-port">:{{ peer.listen_port }}</span>
+          <div class="-address-cell break-all">
+            {{ peer.address.split(':')[0] }}<span class="grey-text">:{{ peer.listenPort }}</span>
           </div>
-          <div class="-flex-fill -source">{{ ('network.sources.' + peer.source) | translate }}</div>
-          <div class="-block-row -text-right">{{ peer.height }}</div>
-          <div class="-width-200 -last-seen">
-            <div>
-              <mat-icon [matTooltip]="'network.last-sent' | translate">keyboard_arrow_up</mat-icon>
-              {{ peer.last_sent | dateFromNow }}
+          <div class="-flex-fill grey-text">{{ ('network.sources.' + peer.source) | translate }}</div>
+          <div class="-block-cell break-all">{{ peer.height }}</div>
+          <div class="-last-seen-cell -last-seen-container grey-text">
+            <div class="text-truncate">
+              <mat-icon [matTooltip]="'network.last-sent-help' | translate">keyboard_arrow_up</mat-icon>
+              {{ peer.lastSent | dateFromNow }}
             </div>
-            <div>
-              <mat-icon [matTooltip]="'network.last-received' | translate">keyboard_arrow_down</mat-icon>
-              {{ peer.last_received | dateFromNow }}
+            <div class="text-truncate">
+              <mat-icon [matTooltip]="'network.last-received-help' | translate">keyboard_arrow_down</mat-icon>
+              {{ peer.lastReceived | dateFromNow }}
             </div>
           </div>
         </div>

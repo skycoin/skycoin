@@ -1,13 +1,16 @@
 import { Component, OnDestroy, ViewChild } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
-import { ISubscription } from 'rxjs/Subscription';
+import { SubscriptionLike } from 'rxjs';
 import { MessageIcons } from './hw-message/hw-message.component';
-import { HwWalletService, OperationResults } from '../../../services/hw-wallet.service';
+import { HwWalletService } from '../../../services/hw-wallet.service';
 import { ButtonComponent } from '../button/button.component';
-import { getHardwareWalletErrorMsg } from '../../../utils/errors';
+import { processServiceError } from '../../../utils/errors';
+import { AppConfig } from '../../../app.config';
+import { OperationError, HWOperationResults } from '../../../utils/operation-error';
 
 export class ResultProcessingResponse {
   text: String;
+  link?: String;
   icon: MessageIcons;
 }
 
@@ -24,7 +27,7 @@ export enum States {
   template: '',
 })
 export class HwDialogBaseComponent<T> implements OnDestroy {
-  @ViewChild('closeButton') closeButton: ButtonComponent;
+  @ViewChild('closeButton', { static: false }) closeButton: ButtonComponent;
 
   closeIfHwDisconnected = true;
 
@@ -33,8 +36,8 @@ export class HwDialogBaseComponent<T> implements OnDestroy {
   states = States;
   result: ResultProcessingResponse;
 
-  protected operationSubscription: ISubscription;
-  private hwConnectionSubscription: ISubscription;
+  protected operationSubscription: SubscriptionLike;
+  private hwConnectionSubscription: SubscriptionLike;
 
   constructor(
     private _hwWalletService: HwWalletService,
@@ -63,19 +66,28 @@ export class HwDialogBaseComponent<T> implements OnDestroy {
 
   }
 
-  protected processResult(result: OperationResults, genericError: string = null) {
-    if (result && result === OperationResults.Disconnected && this.closeIfHwDisconnected) {
-      this.closeModal();
-    } else if (result) {
-      this.showResult({
-        text: getHardwareWalletErrorMsg(null, {result: result}, genericError),
-        icon: MessageIcons.Error,
-      });
+  protected processResult(result: OperationError) {
+    if (result) {
+      result = processServiceError(result);
+
+      if (result.type === HWOperationResults.Disconnected && this.closeIfHwDisconnected) {
+        this.closeModal();
+      } else {
+        this.showResult({
+          text: result.translatableErrorMsg,
+          icon: MessageIcons.Error,
+        });
+      }
     }
   }
 
   protected showResult(result: ResultProcessingResponse, focusButton = true) {
     if (result) {
+      if (result.text === 'hardware-wallet.errors.daemon-connection' || result.text.indexOf('Problem connecting to the Skywallet Daemon') !== -1) {
+        result.text = 'hardware-wallet.errors.daemon-connection-with-configurable-link';
+        result.link = AppConfig.hwWalletDaemonDownloadUrl;
+      }
+
       this.currentState = States.ShowingResult;
       this.result = result;
 

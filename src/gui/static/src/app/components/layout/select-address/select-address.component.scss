@@ -1,0 +1,42 @@
+@import '../../../../theme/variables';
+
+.wallet-container {
+  padding-top: 30px;
+
+  &:first-child {
+    padding-top: 0px;
+  }
+
+  .title {
+    color: $black;
+    border-bottom: 1px solid $grey-very-light;
+    padding: 0px 10px;
+    font-size: $font-size-very-big;
+    line-height: 1.8;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .address {
+    font-size: $font-size-standard;
+    line-height: 1.7;
+    color: $black;
+  }
+
+  .balance {
+    font-size: $font-size-standard-minus;
+    line-height: 1.5;
+    color: $black;
+  }
+
+  .no-addresses-msg {
+    padding: 10px;
+
+    mat-icon {
+      margin-right: 5px;
+      position: relative;
+      top: 2px;
+    }
+  }
+}

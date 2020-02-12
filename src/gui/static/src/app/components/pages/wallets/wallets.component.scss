@@ -1,118 +1,94 @@
 @import '../../../../theme/variables';
 
-.-width-130 {
-  width: 130px;
-  flex-shrink: 0;
+.-width-85 {
+  padding-right: $main-containers-small-padding !important;
 }
 
 .-width-250 {
-  width: 250px;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
-  padding-right: 20px;
+  padding-left: $main-containers-small-padding !important;
+
+  @media (max-width: $max-sm-width) {
+    width: 200px;
+    flex-shrink: 0;
+  }
 }
 
 .-headers {
-  color: $grey-light;
-  display: flex;
-  font-size: 12px;
-  font-weight: 700;
-  height: 50px;
-  line-height: 50px;
-  padding: 0 130px 0 50px;
-}
-
-.-wallets {
-  margin: 0 30px;
+  > div {
+    padding: 0px;
+  }
 }
 
 .-body {
-  border-radius: 15px;
-  box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.01), 1px 1px 2px 2px rgba(0, 0, 0, 0.01);
-  margin: 0;
   margin-bottom: 10px;
-}
+  color: $black;
+  background-color: transparent !important;
 
-.-wallet {
-  background-color: $white;
-  border-bottom: 1px solid rgba(30, 34, 39, 0.05);
-  display: flex;
-  font-size: $font-size-standard;
-  line-height: 60px;
-  height: 60px;
-  padding-left: 20px;
-  cursor: pointer;
+  .-row {
+    font-size: $font-size-standard;
+    line-height: 60px;
+    height: 60px;
+    background-color: $white;
+    cursor: pointer;
 
-  &:first-child {
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
-  }
+    > div {
+      padding: 0px;
+    }
 
-  &:last-child {
-    border-bottom-left-radius: 10px;
-    border-bottom-right-radius: 10px;
-  }
+    .-hours {
+      color: $grey;
+      text-align: right;
+    }
 
-  .-label {
-    color: $grey-dark;
-  }
+    .-coins {
+      text-align: right;
+    }
 
-  .-hours {
-    color: $grey;
-    text-align: right;
-  }
+    .-encryption {
+      padding-left: 20px !important;
 
-  .-coins {
-    color: $grey-dark;
-    text-align: right;
-  }
+      img {
+        border-radius: 50%;
+        background-color: $grey-lightest;
+        display: inline-block;
+        height: 38px;
+        padding: 3px;
+        width: 38px;
+      }
+    }
 
-  .-encryption {
-    padding-left: 20px;
+    .-expand {
+      display: flex;
+      justify-content: flex-end;
 
-    img {
-      border-radius: 50%;
-      background-color: $grey-lightest;
-      display: inline-block;
-      height: 38px;
-      margin: 11px 0;
-      padding: 3px;
-      width: 38px;
-      cursor: pointer;
+      img {
+        width: $normal-icon-size;
+        height: $normal-icon-size;
+        opacity: 0.7;
+      }
+    }
+
+    &:hover {
+      background-color: $white-hover;
+
+      .-expand img {
+        opacity: 1;
+      }
+
+      .-encryption img {
+        background-color: darken($grey-lightest, 1%);
+      }
     }
   }
-
-  .-expand {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    width: 85px;
-    margin-right: 15px;
-    flex-shrink: 0;
-
-    img {
-      width: $row-detail-size;
-      height: $row-detail-size;
-    }
-  }
-}
-
-.-text-right {
-  text-align: right;
 }
 
 .action-buttons {
-  margin-bottom: 74px;
-  padding: 40px 0 40px;
+  padding: 40px 0;
   text-align: center;
 
   button {
-    background-color: $grey-lightest;
-    border: none;
-    box-shadow: none;
     color: $grey;
-    font-size: 13px;
+    font-size: $font-size-standard;
     margin: 0 5px;
     min-width: 140px;
 
@@ -122,4 +98,12 @@
       width: 28px;
     }
   }
+}
+
+.rotate-90 {
+  transform: rotate(90deg);
+}
+
+.rotate-270 {
+  transform: rotate(270deg);
 }

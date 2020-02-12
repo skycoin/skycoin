@@ -1,0 +1,118 @@
+<div *ngIf="!showSimpleForm" class="mode-selector">
+  <app-double-button
+    [changeActiveButtonManually]="true"
+    [leftButtonText]="'send.signed-button' | translate"
+    [rightButtonText]="'send.unsigned-button' | translate"
+    className="light small"
+    [activeButton]="!showForManualUnsigned ? doubleButtonActive.LeftButton : doubleButtonActive.RightButton"
+    (onStateChange)="changeFormType($event)"
+    [ngClass]="{ 'element-disabled': busy }"
+  ></app-double-button>
+</div>
+
+<div [formGroup]="form">
+  <app-form-source-selection
+    #formSourceSelection
+    (onSelectionChanged)="sourceSelectionChanged()"
+    [busy]="busy"
+    [selectionMode]="showSimpleForm ? sourceSelectionModes.Wallet : (showForManualUnsigned ? sourceSelectionModes.Manual : sourceSelectionModes.All)"
+    >
+  </app-form-source-selection>
+
+  <div *ngIf="!showSimpleForm" class="form-field -available-msg">
+    <ng-container *ngIf="!availableBalance.loading">
+      <span>{{ 'send.available-funds-msg-part1' | translate }}</span>
+      <span class="value">
+        {{ availableBalance.availableCoins.toString() | amount }}
+      </span>
+      <span>{{ 'send.available-funds-msg-part2' | translate }}</span>
+      <span class="value">
+        {{ availableBalance.availableHours.toString() | amount:false }}
+      </span>
+      <span>{{ 'send.available-funds-msg-part3' | translate }}</span>
+      <span class="value">
+        {{ availableBalance.minimumFee.toString() | amount:false }}
+      </span>
+      <span>{{ 'send.available-funds-msg-part4' | translate }}</span>
+    </ng-container>
+    <ng-container *ngIf="availableBalance.loading">
+      <span>{{ 'common.loading' | translate }}</span>
+    </ng-container>
+  </div>
+
+  <app-form-destination
+    #formMultipleDestinations
+    (onChanges)="multipleDestinationsChanged()"
+    (onBulkRequested)="openMultipleDestinationsPopup()"
+    [availableBalance]="availableBalance"
+    [busy]="busy"
+    [showHourFields]="!autoHours"
+    [showSimpleForm]="showSimpleForm"
+    >
+  </app-form-destination>
+
+  <div *ngIf="!showSimpleForm" class="form-field">
+    <label for="change-address">
+      {{ 'send.change-address-label' | translate }}
+      <mat-icon class="help-icon" [matTooltip]="'send.change-address-help' | translate">help</mat-icon>
+      <app-arrow-link
+        [text]="'send.change-address-select-from-list-link'"
+        (pressed)="selectChangeAddress($event)"
+        [ngClass]="{'element-disabled' : busy}">
+      </app-arrow-link>
+    </label>
+    <input formControlName="changeAddress" id="change-address" (keydown.enter)="showForManualUnsigned ? preview() : null" [attr.disabled]="busy ? 'true' : null">
+  </div>
+
+  <div *ngIf="!showForManualUnsigned" class="form-field">
+    <label for="note">
+      {{ 'send.personal-note-label' | translate }}
+      <mat-icon class="help-icon" [matTooltip]="'send.personal-note-help' | translate">help</mat-icon>
+    </label>
+    <input formControlName="note" id="note" (keydown.enter)="preview()" [maxlength]="maxNoteChars" [attr.disabled]="busy ? 'true' : null">
+  </div>
+
+  <div *ngIf="!showSimpleForm" class="form-field">
+    <div class="row" [ngClass]="{'element-disabled' : busy}">
+      <div class="col-12">
+        <mat-checkbox class="-check" (change)="setAutoHours($event)" [checked]="autoHours">
+          <span>{{ 'send.hours-allocation-check' | translate:{coinHoursName: appService.hoursName} }}</span>
+          <app-arrow-link
+            *ngIf="autoHours"
+            [text]="'send.options-link'"
+            (mousedown)="$event.stopPropagation();"
+            (pressed)="toggleOptions($event)"
+            [pointDown]="!autoOptions">
+          </app-arrow-link>
+        </mat-checkbox>
+      </div>
+    </div>
+
+    <div [ngClass]="{ 'row -options-wrapper': true, 'd-none': !autoOptions }">
+      <div class="col-md-7">
+        <div class="form-field">
+          <label class="-space-between" for="value">
+            <span>
+              {{ 'send.hours-share-factor-label' | translate:{coinHoursName: appService.hoursName} }}
+              <mat-icon class="help-icon" [matTooltip]="'send.hours-share-factor-help' | translate:{coinHoursName: appService.hoursName}">help</mat-icon>
+            </span>
+            <span>{{ autoShareValue | number:'1.0-2' }}</span>
+          </label>
+          <mat-slider min="0.1" max="1" step="0.01" id="value"
+                      (input)="setShareValue($event)" [value]="autoShareValue"
+                      [ngClass]="{'element-disabled' : busy}"
+          ></mat-slider>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="text-center">
+  <app-button #previewButton (action)="preview()" [disabled]="!form.valid">
+    {{ 'send.preview-button' | translate }}
+  </app-button>
+  <app-button #sendButton (action)="send()" class="primary-button" [disabled]="!form.valid">
+    {{ ('send.' + (showForManualUnsigned ? 'show' : 'send') + '-button') | translate }}
+  </app-button>
+</div>

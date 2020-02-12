@@ -78,7 +78,7 @@ export class WalletsPage {
   }
 
   showQrDialog() {
-    return browser.sleep(1000).then(() => element(by.css('.qr-code-button')).click().then(() => {
+    return browser.sleep(1000).then(() => element(by.css('app-qr-code-button')).click().then(() => {
       return element(by.css('app-qr-code')).isPresent();
     }));
   }
@@ -91,12 +91,16 @@ export class WalletsPage {
 
   addAddress() {
     return element.all(by.css('.-record')).count().then(originalCount => {
-      return element(by.css('.-new-address')).click().then(() => {
+      return element(by.css('.-address-options')).click().then(() => {
         return browser.sleep(2000).then(() => {
-          return element(by.buttonText('Create')).click().then(() => {
+          return element(by.css('.top-line')).click().then(() => {
             return browser.sleep(2000).then(() => {
-              return element.all(by.css('.-record')).count().then(newCount => {
-                return newCount > originalCount;
+              return element(by.buttonText('Create')).click().then(() => {
+                return browser.sleep(2000).then(() => {
+                  return element.all(by.css('.-record')).count().then(newCount => {
+                    return newCount > originalCount;
+                  });
+                });
               });
             });
           });
@@ -192,8 +196,8 @@ export class WalletsPage {
   }
 
   private getWalletWithName(name: string) {
-    return element.all(by.css('.-wallets.ng-star-inserted'))
-      .filter(wallet => wallet.element(by.css('.-label')).getText().then(text => text === name))
+    return element.all(by.css('.e2e-wallets.ng-star-inserted'))
+      .filter(wallet => wallet.element(by.css('.e2e-label')).getText().then(text => text === name))
       .first();
   }
 

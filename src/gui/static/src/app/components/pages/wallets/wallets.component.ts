@@ -1,13 +1,15 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { WalletService } from '../../../services/wallet.service';
-import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { CreateWalletComponent } from './create-wallet/create-wallet.component';
-import { Wallet, ConfirmationData } from '../../../app.datatypes';
 import { HwOptionsDialogComponent } from '../../layout/hardware-wallet/hw-options-dialog/hw-options-dialog.component';
-import { ISubscription } from 'rxjs/Subscription';
+import { SubscriptionLike } from 'rxjs';
 import { Router } from '@angular/router';
 import { HwWalletService } from '../../../services/hw-wallet.service';
-import { showConfirmationModal } from '../../../utils';
+import { first } from 'rxjs/operators';
+import { ConfirmationParams, ConfirmationComponent, DefaultConfirmationButtons } from '../../layout/confirmation/confirmation.component';
+import { WalletsAndAddressesService } from '../../../services/wallet-operations/wallets-and-addresses.service';
+import { BalanceAndOutputsService } from '../../../services/wallet-operations/balance-and-outputs.service';
+import { WalletWithBalance } from '../../../services/wallet-operations/wallet-objects';
 
 @Component({
   selector: 'app-wallets',
@@ -18,28 +20,49 @@ export class WalletsComponent implements OnInit, OnDestroy {
 
   hwCompatibilityActivated = false;
 
-  wallets: Wallet[] = [];
-  hardwareWallets: Wallet[] = [];
+  wallets: WalletWithBalance[] = [];
+  hardwareWallets: WalletWithBalance[] = [];
+  walletsOpenedState = new Map<string, boolean>();
 
-  private subscription: ISubscription;
+  private subscription: SubscriptionLike;
 
   constructor(
-    private walletService: WalletService,
     private hwWalletService: HwWalletService,
     private dialog: MatDialog,
     private router: Router,
+    private walletsAndAddressesService: WalletsAndAddressesService,
+    private balanceAndOutputsService: BalanceAndOutputsService,
   ) {
     this.hwCompatibilityActivated = this.hwWalletService.hwWalletCompatibilityActivated;
 
-    this.subscription = this.walletService.all().subscribe(wallets => {
+    this.subscription = this.balanceAndOutputsService.walletsWithBalance.subscribe(wallets => {
       this.wallets = [];
       this.hardwareWallets = [];
+
+      const walletsMap = new Map<string, boolean>();
       wallets.forEach(value => {
+        walletsMap.set(value.id, true);
+
         if (!value.isHardware) {
           this.wallets.push(value);
         } else {
           this.hardwareWallets.push(value);
         }
+
+        if (!this.walletsOpenedState.has(value.id)) {
+          this.walletsOpenedState.set(value.id, false);
+        }
+      });
+
+      const walletsToRemove: string[] = [];
+      this.walletsOpenedState.forEach((value, key) => {
+        if (!walletsMap.has(key)) {
+          walletsToRemove.push(key);
+        }
+      });
+
+      walletsToRemove.forEach(walletToRemove => {
+        this.walletsOpenedState.delete(walletToRemove);
       });
     });
   }
@@ -58,18 +81,12 @@ export class WalletsComponent implements OnInit, OnDestroy {
   }
 
   addWallet(create) {
-    const config = new MatDialogConfig();
-    config.width = '566px';
-    config.data = { create };
-    this.dialog.open(CreateWalletComponent, config);
+    CreateWalletComponent.openDialog(this.dialog, { create });
   }
 
   adminHwWallet() {
-    const config = new MatDialogConfig();
-    config.width = '566px';
-    config.autoFocus = false;
-    this.dialog.open(HwOptionsDialogComponent, config).afterClosed().subscribe(() => {
-      this.walletService.all().first().subscribe(wallets => {
+    HwOptionsDialogComponent.openDialog(this.dialog, false).afterClosed().subscribe(() => {
+      this.walletsAndAddressesService.allWallets.pipe(first()).subscribe(wallets => {
         if (wallets.length === 0) {
           setTimeout(() => this.router.navigate(['/wizard']), 500);
         }
@@ -77,27 +94,26 @@ export class WalletsComponent implements OnInit, OnDestroy {
     });
   }
 
-  toggleWallet(wallet: Wallet) {
-    if (wallet.isHardware && wallet.hasHwSecurityWarnings && !wallet.stopShowingHwSecurityPopup && !wallet.opened) {
-      const confirmationData: ConfirmationData = {
+  toggleWallet(wallet: WalletWithBalance) {
+    if (wallet.isHardware && wallet.hasHwSecurityWarnings && !wallet.stopShowingHwSecurityPopup && !this.walletsOpenedState.get(wallet.id)) {
+      const confirmationParams: ConfirmationParams = {
         headerText: 'hardware-wallet.security-warning.title',
         text: 'hardware-wallet.security-warning.text',
-        checkboxText: 'hardware-wallet.security-warning.check',
-        confirmButtonText: 'hardware-wallet.security-warning.continue',
-        cancelButtonText: 'hardware-wallet.security-warning.cancel',
+        checkboxText: 'common.generic-confirmation-check',
+        defaultButtons: DefaultConfirmationButtons.ContinueCancel,
         linkText: 'hardware-wallet.security-warning.link',
         linkFunction: this.adminHwWallet.bind(this),
       };
 
-      showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(confirmationResult => {
+      ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
         if (confirmationResult) {
           wallet.stopShowingHwSecurityPopup = true;
-          this.walletService.saveHardwareWallets();
-          wallet.opened = true;
+          this.walletsAndAddressesService.informValuesUpdated(wallet);
+          this.walletsOpenedState.set(wallet.id, true);
         }
       });
     } else {
-      wallet.opened = !wallet.opened;
+      this.walletsOpenedState.set(wallet.id, !this.walletsOpenedState.get(wallet.id));
     }
   }
 }

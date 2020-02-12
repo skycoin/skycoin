@@ -1,0 +1,19 @@
+<app-modal [headline]="'wallet.address-options.title' | translate" [dialog]="dialogRef">
+  <div class="list-button-container light-button-theme">
+    <button class="top-line" mat-button color="primary" (click)="select(addressOptions.new)">
+      <div class="content">
+        <img src="assets/img/plus-green.png" />
+        <span>{{ 'wallet.address-options.new' | translate }}</span>
+      </div>
+    </button>
+    <button mat-button color="primary" (click)="select(addressOptions.scan)">
+      <div class="content">
+        <img src="assets/img/search-gold.png" />
+        <span>
+          {{ 'wallet.address-options.scan' | translate }}
+          <mat-icon class="help-icon" [matTooltip]="'wallet.address-options.scan-help' | translate">help</mat-icon>
+        </span>
+      </div>
+    </button>
+  </div>
+</app-modal>

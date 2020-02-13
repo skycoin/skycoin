@@ -82,14 +82,9 @@ export class HardwareWalletService {
           lastestFirmwareVersion = null;
         }
 
-        // Check if the currently connected device is the expected one.
-        if (wallet) {
-          return this.hwWalletService.checkIfCorrectHwConnected(wallet.addresses[0].address);
-        } else {
-          return of(0);
-        }
+        // Get the features.
+        return this.hwWalletService.getFeatures();
       }),
-      mergeMap(() => this.hwWalletService.getFeatures()),
       map(result => {
         let lastestFirmwareVersionReaded = false;
         let firmwareUpdated = false;

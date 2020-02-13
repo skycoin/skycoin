@@ -1,6 +1,6 @@
 import { Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { HwWalletService, TxData } from '../../../../services/hw-wallet.service';
+import { HwWalletService, HwWalletTxRecipientData } from '../../../../services/hw-wallet.service';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 
 @Component({
@@ -11,7 +11,7 @@ import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 export class HwConfirmTxDialogComponent extends HwDialogBaseComponent<HwConfirmTxDialogComponent> {
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) public data: TxData[],
+    @Inject(MAT_DIALOG_DATA) public data: HwWalletTxRecipientData[],
     public dialogRef: MatDialogRef<HwConfirmTxDialogComponent>,
     hwWalletService: HwWalletService,
   ) {

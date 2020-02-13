@@ -1,5 +1,5 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { TxData } from '../../../../services/hw-wallet.service';
+import { HwWalletTxRecipientData } from '../../../../services/hw-wallet.service';
 
 export enum MessageIcons {
   None,
@@ -20,7 +20,7 @@ export enum MessageIcons {
 export class HwMessageComponent {
   @Input() icon: MessageIcons = MessageIcons.HardwareWallet;
   @Input() text: string;
-  @Input() outputsList: TxData[];
+  @Input() outputsList: HwWalletTxRecipientData[];
   @Input() lowerText: string;
   @Input() linkText: string;
   @Input() linkIsUrl = false;

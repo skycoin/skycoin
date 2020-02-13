@@ -296,7 +296,7 @@ export class SpendingService {
       }
 
       // Make the device sign the transaction.
-      return this.hwWalletService.signTransaction(hwInputs, hwOutputs).pipe(mergeMap(signatures => {
+      return this.hwWalletService.signTransaction(hwInputs, hwOutputs).pipe(map(signatures => {
         const rawTransaction = TxEncoder.encode(
           hwInputs,
           hwOutputs,

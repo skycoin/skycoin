@@ -22,6 +22,15 @@ export class HwPinDialogComponent extends HwDialogBaseComponent<HwPinDialogCompo
   changePinStates = ChangePinStates;
   buttonsContent = '•';
 
+  public static openDialog(dialog: MatDialog, params: HwPinDialogParams): MatDialogRef<HwPinDialogComponent, any> {
+    const config = new MatDialogConfig();
+    config.data = params;
+    config.autoFocus = false;
+    config.width = '350px';
+
+    return dialog.open(HwPinDialogComponent, config);
+  }
+
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: HwPinDialogParams,
     public dialogRef: MatDialogRef<HwPinDialogComponent>,

@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - Add `POST /api/v1/wallet/scan` API to scan wallet addresses ahead, default scan number is `20`.
+- Add `CLI walletScanAddresses` command to scan wallet addresses ahead.
+- Add `GET /api/v2/transactions` API to get transactions with pagination.
 
 ### Fixed
 

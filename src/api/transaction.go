@@ -292,7 +292,7 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		if verbose {
-			txns, inputs, err := gateway.GetTransactionsWithInputs(flts)
+			txns, inputs, _, err := gateway.GetTransactionsWithInputs(flts, visor.AscOrder, nil)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
@@ -308,7 +308,7 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 
 			wh.SendJSONOr500(logger, w, rTxns.Transactions)
 		} else {
-			txns, err := gateway.GetTransactions(flts)
+			txns, _, err := gateway.GetTransactions(flts, visor.AscOrder, nil)
 			if err != nil {
 				wh.Error500(w, err.Error())
 				return
@@ -323,6 +323,144 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 			rTxns.Sort()
 
 			wh.SendJSONOr500(logger, w, rTxns.Transactions)
+		}
+	}
+}
+
+// Returns transactions that match the filters.
+// Method: GET, POST
+// URI: /api/v2/transactions
+// Args:
+//     addrs: Comma separated addresses [optional, returns all transactions if no address provided]
+//     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
+//	   verbose: [bool] include verbose transaction input data
+//     page: Page number
+//     limit: the number of transactions per page [optional, default to 10, must be <= 100]
+//     sort: Sort the transactions by block seq. [optional, must be desc or asc]; if not provided, return
+//     in asc order.
+func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			writeError405Response(w)
+			return
+		}
+
+		verbose, err := parseBoolFlag(r.FormValue("verbose"))
+		if err != nil {
+			writeError400Response(w, "invalid value for verbose")
+			return
+		}
+
+		// Gets 'addrs' parameter value
+		addrs, err := parseAddressesFromStr(r.FormValue("addrs"))
+		if err != nil {
+			writeError400Response(w, fmt.Sprintf("parse parameter: 'addrs' failed: %v", err))
+			return
+		}
+
+		// Initialize transaction filters
+		flts := []visor.TxFilter{}
+		if len(addrs) > 0 {
+			flts = append(flts, visor.NewAddrsFilter(addrs))
+		}
+
+		// Gets the 'confirmed' parameter value
+		confirmedStr := r.FormValue("confirmed")
+		if confirmedStr != "" {
+			confirmed, err := strconv.ParseBool(confirmedStr)
+			if err != nil {
+				writeError400Response(w, fmt.Sprintf("invalid 'confirmed' value: %v", err))
+				return
+			}
+
+			flts = append(flts, visor.NewConfirmedTxFilter(confirmed))
+		}
+
+		order, err := parseSortOrderFromStr(r.FormValue("sort"))
+		if err != nil {
+			writeError400Response(w, fmt.Sprintf("invalid 'sort' value: %v", err))
+			return
+		}
+
+		var pageSize = visor.DefaultTxnPageSize
+		pageSizeStr := r.FormValue("limit")
+		if pageSizeStr != "" {
+			var err error
+			pageSize, err = strconv.ParseUint(pageSizeStr, 10, 64)
+			if err != nil {
+				writeError400Response(w, fmt.Sprintf("invalid 'limit' value: %v", err))
+				return
+			}
+		}
+
+		var pageIndex *visor.PageIndex
+		var currentPage = uint64(1)
+		pageStr := r.FormValue("page")
+		if pageStr != "" {
+			currentPage, err = strconv.ParseUint(pageStr, 10, 64)
+			if err != nil {
+				writeError400Response(w, fmt.Sprintf("invalid 'page' value: %v", err))
+				return
+			}
+		}
+
+		pageIndex, err = visor.NewPageIndex(pageSize, currentPage)
+		if err != nil {
+			writeError400Response(w, err.Error())
+			return
+		}
+
+		var resp HTTPResponse
+		if verbose {
+			txns, inputs, pages, err := gateway.GetTransactionsWithInputs(flts, order, pageIndex)
+			if err != nil {
+				writeError500Response(w, err.Error())
+				return
+			}
+
+			rTxns, err := NewTransactionsWithStatusVerbose(txns, inputs)
+			if err != nil {
+				writeError500Response(w, err.Error())
+				return
+			}
+
+			resp.Data = struct {
+				PageInfo readable.PageInfo                       `json:"page_info"`
+				Txns     []readable.TransactionWithStatusVerbose `json:"txns"`
+			}{
+				PageInfo: readable.PageInfo{
+					TotalPages:  pages,
+					PageSize:    pageSize,
+					CurrentPage: currentPage,
+				},
+				Txns: rTxns.Transactions,
+			}
+			writeHTTPResponse(w, resp)
+		} else {
+			txns, pages, err := gateway.GetTransactions(flts, order, pageIndex)
+			if err != nil {
+				writeError500Response(w, err.Error())
+				return
+			}
+
+			rTxns, err := NewTransactionsWithStatus(txns)
+			if err != nil {
+				writeError500Response(w, err.Error())
+				return
+			}
+
+			resp.Data = struct {
+				PageInfo readable.PageInfo                `json:"page_info"`
+				Txns     []readable.TransactionWithStatus `json:"txns"`
+			}{
+				PageInfo: readable.PageInfo{
+					TotalPages:  pages,
+					PageSize:    pageSize,
+					CurrentPage: currentPage,
+				},
+				Txns: rTxns.Transactions,
+			}
+			writeHTTPResponse(w, resp)
 		}
 	}
 }

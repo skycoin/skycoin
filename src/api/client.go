@@ -692,6 +692,25 @@ func (c *Client) NewWalletAddress(id string, n int, password string) ([]string, 
 	return obj.Addresses, nil
 }
 
+// ScanWalletAddresses makes a request to POST /api/v1/wallet/scan
+// if n is <= 0, defaults to 20
+func (c *Client) ScanWalletAddresses(id string, n int, password string) ([]string, error) {
+	v := url.Values{}
+	v.Add("id", id)
+	v.Add("password", password)
+	if n > 0 {
+		v.Add("num", fmt.Sprint(n))
+	}
+
+	var obj struct {
+		Addresses []string `json:"addresses"`
+	}
+	if err := c.PostForm("/api/v1/wallet/scan", strings.NewReader(v.Encode()), &obj); err != nil {
+		return nil, err
+	}
+	return obj.Addresses, nil
+}
+
 // WalletBalance makes a request to GET /api/v1/wallet/balance
 func (c *Client) WalletBalance(id string) (*BalanceResponse, error) {
 	v := url.Values{}
@@ -1311,4 +1330,59 @@ func (c *Client) RemoveStorageValue(storageType kvstorage.Type, key string) erro
 	_, err := c.DeleteV2(fmt.Sprintf("/api/v2/data?type=%s&key=%s", storageType, key), nil)
 
 	return err
+}
+
+// RequestArg is the general data type for sending request
+type RequestArg struct {
+	Key   string
+	Value string
+}
+
+// TransactionsWithStatusV2 represents transactions result with page info
+type TransactionsWithStatusV2 struct {
+	PageInfo readable.PageInfo                `json:"page_info"`
+	Txns     []readable.TransactionWithStatus `json:"txns"`
+}
+
+// TransactionsWithStatusVerboseV2 represents verbose transactions result with page info
+type TransactionsWithStatusVerboseV2 struct {
+	PageInfo readable.PageInfo                       `json:"page_info"`
+	Txns     []readable.TransactionWithStatusVerbose `json:"txns"`
+}
+
+// TransactionsV2 make a GET request to /api/v2/transaction to get transactions with no verbose.
+func (c *Client) TransactionsV2(args ...RequestArg) (*TransactionsWithStatusV2, error) {
+	kvs := make([]string, len(args))
+	for i, arg := range args {
+		kvs[i] = fmt.Sprintf("%s=%s", arg.Key, arg.Value)
+		if strings.Contains(arg.Key, "verbose") {
+			return nil, errors.New("arguments should not include 'verbose'")
+		}
+	}
+
+	endpoint := fmt.Sprintf("/api/v2/transactions?%s", strings.Join(kvs, "&"))
+
+	var obj TransactionsWithStatusV2
+	_, err := c.GetV2(endpoint, &obj)
+	if err != nil {
+		return nil, err
+	}
+	return &obj, nil
+}
+
+// TransactionsVerboseV2 make a GET request to /api/v2/transaction to get transactions with no verbose.
+func (c *Client) TransactionsVerboseV2(args ...RequestArg) (*TransactionsWithStatusVerboseV2, error) {
+	kvs := make([]string, len(args))
+	for i, arg := range args {
+		kvs[i] = fmt.Sprintf("%s=%s", arg.Key, arg.Value)
+	}
+
+	endpoint := fmt.Sprintf("/api/v2/transactions?verbose=true&%s", strings.Join(kvs, "&"))
+
+	var obj TransactionsWithStatusVerboseV2
+	_, err := c.GetV2(endpoint, &obj)
+	if err != nil {
+		return nil, err
+	}
+	return &obj, nil
 }

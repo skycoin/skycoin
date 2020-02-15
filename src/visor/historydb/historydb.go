@@ -197,14 +197,26 @@ func (hd HistoryDB) GetOutputsForAddress(tx *dbutil.Tx, addr cipher.Address) ([]
 	return hd.outputs.getArray(tx, hashes)
 }
 
-// GetTransactionsForAddress returns all the address related transactions
-func (hd HistoryDB) GetTransactionsForAddress(tx *dbutil.Tx, addr cipher.Address) ([]Transaction, error) {
-	hashes, err := hd.addrTxns.get(tx, addr)
-	if err != nil {
-		return nil, err
+// GetTransactionHashesForAddresses returns transaction hashes of related addresses
+func (hd HistoryDB) GetTransactionHashesForAddresses(tx *dbutil.Tx, addrs []cipher.Address) ([]cipher.SHA256, error) {
+	var hashes []cipher.SHA256
+	hashMap := make(map[cipher.SHA256]struct{})
+	for _, addr := range addrs {
+		hs, err := hd.addrTxns.get(tx, addr)
+		if err != nil {
+			return nil, err
+		}
+		// clear duplicate hashes
+		for _, h := range hs {
+			if _, ok := hashMap[h]; ok {
+				continue
+			}
+			hashes = append(hashes, h)
+			hashMap[h] = struct{}{}
+		}
 	}
 
-	return hd.txns.getArray(tx, hashes)
+	return hashes, nil
 }
 
 // AddressSeen returns true if the address appears in the blockchain

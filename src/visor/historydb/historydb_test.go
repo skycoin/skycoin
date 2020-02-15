@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/coin"
 	"github.com/SkycoinProject/skycoin/src/testutil"
 	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
+
+	"github.com/stretchr/testify/require"
 )
 
 func prepareDB(t *testing.T) (*dbutil.DB, func()) {

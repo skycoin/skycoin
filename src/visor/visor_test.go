@@ -1255,7 +1255,7 @@ func TestGetTransactions(t *testing.T) {
 			},
 		},
 		{
-			"confirmedTxFilter=1 confirmed=false txns=0 unconfirmedTxns=0",
+			"confirmedTxFilter=1 addrsFilter=1 confirmed=false txns=0 unconfirmedTxns=0",
 			map[cipher.Address]txnsAndUncfmTxns{
 				addrs[0]: txnsAndUncfmTxns{
 					Txns:      nil,
@@ -1265,6 +1265,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
+				NewAddrsFilter(addrs[:1]),
 				NewConfirmedTxFilter(false),
 			},
 			expectTxnResult{
@@ -1284,6 +1285,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
+				NewAddrsFilter(addrs[:1]),
 				NewConfirmedTxFilter(false),
 			},
 			expectTxnResult{
@@ -1303,6 +1305,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
+				NewAddrsFilter(addrs[:1]),
 				NewConfirmedTxFilter(false),
 			},
 			expectTxnResult{
@@ -1322,6 +1325,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
+				NewAddrsFilter(addrs[:1]),
 				NewConfirmedTxFilter(false),
 			},
 			expectTxnResult{
@@ -1341,6 +1345,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
+				NewAddrsFilter(addrs[:1]),
 				NewConfirmedTxFilter(false),
 			},
 			expectTxnResult{
@@ -1360,6 +1365,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
+				NewAddrsFilter(addrs[:1]),
 				NewConfirmedTxFilter(true),
 			},
 			expectTxnResult{
@@ -1379,6 +1385,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
+				NewAddrsFilter(addrs[:1]),
 				NewConfirmedTxFilter(true),
 			},
 			expectTxnResult{
@@ -1398,6 +1405,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
+				NewAddrsFilter(addrs[:1]),
 				NewConfirmedTxFilter(true),
 			},
 			expectTxnResult{
@@ -1417,6 +1425,7 @@ func TestGetTransactions(t *testing.T) {
 			blocks[:],
 			headSeq,
 			[]TxFilter{
+				NewAddrsFilter(addrs[:1]),
 				NewConfirmedTxFilter(true),
 			},
 			expectTxnResult{
@@ -1852,16 +1861,50 @@ func TestGetTransactions(t *testing.T) {
 
 			his := newHistoryerMock2()
 			uncfmTxnPool := NewUnconfirmedTransactionPoolerMock2()
-			for addr, txns := range tc.addrTxns {
-				his.On("GetTransactionsForAddress", matchDBTx, addr).Return(txns.Txns, nil)
-				his.txns = append(his.txns, txns.Txns...)
+			forEachFunc := mock.MatchedBy(func(f func(hash cipher.SHA256, txn UnconfirmedTransaction) error) bool {
+				for i, txn := range uncfmTxns {
+					if err := f(txn.Transaction.Hash(), uncfmTxns[i]); err != nil {
+						return false
+					}
+				}
+				return true
+			})
 
+			uncfmTxnPool.On("ForEach", matchDBTx, forEachFunc).Return(nil)
+			for i, txn := range uncfmTxns {
+				uncfmTxnPool.On("Get", matchDBTx, txn.Transaction.Hash()).Return(&uncfmTxns[i], nil)
+			}
+
+			for addr, txns := range tc.addrTxns {
+				for i, txn := range txns.Txns {
+					his.On("GetTransaction", matchDBTx, txn.Hash()).Return(&txns.Txns[i], nil)
+				}
+
+				his.txns = append(his.txns, txns.Txns...)
 				uncfmTxnPool.On("GetUnspentsOfAddr", matchDBTx, addr).Return(makeUncfmUxs(txns.UncfmTxns), nil)
 				for i, uncfmTxn := range txns.UncfmTxns {
 					uncfmTxnPool.On("Get", matchDBTx, uncfmTxn.Transaction.Hash()).Return(&txns.UncfmTxns[i], nil)
 				}
 				uncfmTxnPool.txns = append(uncfmTxnPool.txns, txns.UncfmTxns...)
 			}
+
+			var hisHashes []cipher.SHA256
+			var hisAddrs []cipher.Address
+			for _, flt := range tc.filters {
+				switch f := flt.(type) {
+				case AddrsFilter:
+					hisAddrs = f.Addrs
+					for _, a := range f.Addrs {
+						txns, ok := tc.addrTxns[a]
+						require.True(t, ok)
+						for _, txn := range txns.Txns {
+							hisHashes = append(hisHashes, txn.Hash())
+						}
+					}
+				}
+			}
+
+			his.On("GetTransactionHashesForAddresses", matchDBTx, hisAddrs).Return(hisHashes, nil)
 
 			bc := &MockBlockchainer{}
 			for i, b := range tc.blocks {
@@ -1873,14 +1916,21 @@ func TestGetTransactions(t *testing.T) {
 			db, shutdown := prepareDB(t)
 			defer shutdown()
 
-			v := &Visor{
-				db:          db,
+			txnModel := transactionModel{
 				history:     his,
 				unconfirmed: uncfmTxnPool,
 				blockchain:  bc,
 			}
 
-			retTxns, err := v.GetTransactions(tc.filters)
+			v := &Visor{
+				db:          db,
+				history:     his,
+				unconfirmed: uncfmTxnPool,
+				blockchain:  bc,
+				txns:        &txnModel,
+			}
+
+			retTxns, _, err := v.GetTransactions(tc.filters, AscOrder, nil)
 			require.Equal(t, tc.expect.err, err)
 			if err != nil {
 				return

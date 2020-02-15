@@ -51,7 +51,7 @@ export class SoftwareWalletService {
    * @param password New password for the wallet. If empty or null, the wallet will be
    * unencrypted after finishing the operation.
    */
-  resetPassword(wallet: WalletBase, seed: string, password: string): Observable<void> {
+  resetPassword(wallet: WalletBase, seed: string, password: string|null): Observable<void> {
     const params = new Object();
     params['id'] = wallet.id;
     params['seed'] = seed;

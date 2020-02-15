@@ -177,7 +177,7 @@ export class WalletsAndAddressesService {
    * @param password Wallet password, if it will be encrypted, null otherwise.
    * @returns The returned observable returns nothing, but it can fail in case of error.
    */
-  createSoftwareWallet(label: string, seed: string, password: string): Observable<void> {
+  createSoftwareWallet(label: string, seed: string, password?: string): Observable<void> {
     seed = seed.replace(/(\n|\r\n)$/, '');
 
     const params = {

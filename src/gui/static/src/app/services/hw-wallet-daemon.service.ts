@@ -9,7 +9,9 @@ import { OperationError, HWOperationResults } from '../utils/operation-error';
 import { getErrorMsg } from '../utils/errors';
 
 /**
- * Allows to make request to the hw wallet daemon with ease.
+ * Allows to make request to the hw wallet daemon with ease. If an API request needs the user
+ * to provide more data, this service shows the appropiate UI for the user to provide it and
+ * then sends it to the daemon.
  */
 @Injectable()
 export class HwWalletDaemonService {
@@ -38,9 +40,17 @@ export class HwWalletDaemonService {
    * to check less frequently.
    */
   private readonly maxFastDisconnectedChecks = 32;
+  /**
+   * Time interval in which periodic data updates will be made.
+   */
+  private readonly updatePeriod = 10 * 1000;
+  /**
+   * Time interval in which periodic data updates will be made.
+   */
+  private readonly fastUpdatePeriod = 2 * 1000;
 
   /**
-   * Allows to know when a device has be connected/disconnected.
+   * Allows to know if a device is connected.
    */
   get connectionEvent() {
     return this.connectionEventSubject.asObservable();
@@ -232,7 +242,7 @@ export class HwWalletDaemonService {
    * Returns the options object requiered by HttpClient for sending a request.
    * @param sendMultipartFormData If true, the data will be sent as multipart/form-data.
    */
-  private returnRequestOptions(sendMultipartFormData = false) {
+  private returnRequestOptions(sendMultipartFormData = false): any {
     const options: any = {};
     options.headers = new HttpHeaders();
     if (!sendMultipartFormData) {
@@ -256,7 +266,7 @@ export class HwWalletDaemonService {
       this.checkHwSubscription = of(1).pipe(
         // The delay will be small for a limited number of times, just to catch the cases in
         // which the user connects/disconnects the device quickly
-        delay(wait ? (this.hwConnected || this.disconnectedChecks < this.maxFastDisconnectedChecks ? 2000 : 10000) : 0),
+        delay(wait ? (this.hwConnected || this.disconnectedChecks < this.maxFastDisconnectedChecks ? this.fastUpdatePeriod : this.updatePeriod) : 0),
         mergeMap(() => this.get('/available')))
         .subscribe(
           // After the response is obtained, the procedure in charge of processing all the

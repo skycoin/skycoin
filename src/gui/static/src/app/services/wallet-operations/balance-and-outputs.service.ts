@@ -25,6 +25,15 @@ export class BalanceAndOutputsService {
   private gettingBalanceSubscription: Subscription;
 
   /**
+   * Time interval in which periodic data updates will be made.
+   */
+  private readonly updatePeriod = 10 * 1000;
+  /**
+   * Time interval in which the periodic data updates will be restarted after an error.
+   */
+  private readonly errorUpdatePeriod = 2 * 1000;
+
+  /**
    * After the service retrieves the balance of each wallet, the response returned by the node for each
    * wallet is saved here, accessible via the wallet id.
    */
@@ -135,7 +144,7 @@ export class BalanceAndOutputsService {
   /**
    * Gets the list of unspent outputs owned by a wallet.
    * @param wallet Wallet to check.
-   * @returns Arrays with all the unspent outputs owned by any of the addresses of the wallet.
+   * @returns Array with all the unspent outputs owned by any of the addresses of the wallet.
    */
   getWalletUnspentOutputs(wallet: WalletBase): Observable<Output[]> {
     const addresses = wallet.addresses.map(a => a.address).join(',');
@@ -176,7 +185,7 @@ export class BalanceAndOutputsService {
           }
         }), mergeMap(() => {
           return this.refreshBalances(this.savedWalletsList, false);
-        })).subscribe(() => this.startDataRefreshSubscription(10000, false), () => this.startDataRefreshSubscription(2000, false));
+        })).subscribe(() => this.startDataRefreshSubscription(this.updatePeriod, false), () => this.startDataRefreshSubscription(this.errorUpdatePeriod, false));
       });
     }
   }

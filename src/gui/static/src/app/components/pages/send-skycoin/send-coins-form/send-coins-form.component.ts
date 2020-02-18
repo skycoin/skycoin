@@ -220,26 +220,11 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       currentString = currentString.substr(0, currentString.length - 1);
     }
 
-    MultipleDestinationsDialogComponent.openDialog(this.dialog, currentString).afterClosed().subscribe((response: string[][]) => {
+    MultipleDestinationsDialogComponent.openDialog(this.dialog, currentString).afterClosed().subscribe((response: Destination[]) => {
       if (response) {
         if (response.length > 0) {
-          this.autoHours = response[0].length === 2;
-
-          const newDestinations: Destination[] = [];
-          response.forEach((entry, i) => {
-            const newDestination: Destination = {
-              address: entry[0],
-              coins: entry[1],
-              originalAmount: null,
-            };
-            if (!this.autoHours) {
-              newDestination.hours = entry[2];
-            }
-
-            newDestinations.push(newDestination);
-          });
-
-          this.formMultipleDestinations.setDestinations(newDestinations);
+          this.autoHours = response[0].hours === undefined;
+          setTimeout(() => this.formMultipleDestinations.setDestinations(response));
         } else {
           this.formMultipleDestinations.resetForm();
         }

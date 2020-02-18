@@ -51,9 +51,7 @@
     "proceed-button": "Proceed",
     "reset-link": "I forgot my password",
     "incorrect-password-error": "Incorrect password.",
-    "decrypting-error": "Error decrypting the wallet.",
-    "api-disabled-error": "API disabled.",
-    "no-wallet-error": "Wallet does not exist."
+    "decrypting-error": "Error decrypting the wallet."
   },
 
   "buy": {
@@ -438,7 +436,8 @@
     "api" : {
       "no-internet-error": "You do not have a internet connection or the node has stopped working.",
       "incorrect-password-error": "Incorrect password.",
-      "unknown-error": "It was not possible to perform the operation."
+      "unknown-error": "It was not possible to perform the operation.",
+      "api-disabled-error": "API disabled."
     }
   },
 

@@ -15,6 +15,10 @@ export enum OperationErrorTypes {
    */
   Unauthorized = 'Unauthorized',
   /**
+   * The needed API endpoint is disabled.
+   */
+  ApiDisabled = 'ApiDisabled',
+  /**
    * The error is not in the list of known errors that require special treatment. This does not
    * mean the error is rare or specially bad. Just showing the error msg should be enough.
    */

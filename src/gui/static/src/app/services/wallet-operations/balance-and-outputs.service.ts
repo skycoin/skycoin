@@ -268,7 +268,9 @@ export class BalanceAndOutputsService {
         this.savedBalanceData = this.temporalSavedBalanceData;
         if (!this.firstFullUpdateMadeSubject.value) {
           // Inform that the service already optained the balance from the node for the first time.
-          this.firstFullUpdateMadeSubject.next(true);
+          this.ngZone.run(() => {
+            this.firstFullUpdateMadeSubject.next(true);
+          });
         }
       }
     }));

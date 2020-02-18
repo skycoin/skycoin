@@ -2,22 +2,63 @@ import { Component, Inject, OnDestroy, OnInit, ViewChild, ChangeDetectorRef } fr
 import { MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { MatDialogRef } from '@angular/material/dialog';
 import { FormControl, FormGroup } from '@angular/forms';
+import { Subject } from 'rxjs';
+
 import { ButtonComponent } from '../button/button.component';
 import { processServiceError } from '../../../utils/errors';
-import { Subject } from 'rxjs';
 import { MsgBarService } from '../../../services/msg-bar.service';
 import { AppConfig } from '../../../app.config';
 import { OperationError } from './../../../utils/operation-error';
 import { WalletBase } from '../../../services/wallet-operations/wallet-objects';
 
+export interface PasswordSubmitEvent {
+  /**
+   * Password entered by the user.
+   */
+  password: string;
+  /**
+   * Function for closing the modal window after completing the operation.
+   */
+  close(): void;
+  /**
+   * Function for informing the modal window about an error while completing the operation.
+   */
+  error(error: OperationError): void;
+}
+
+/**
+ * Settings for PasswordDialogComponent.
+ */
 export interface PasswordDialogParams {
+  /**
+   * If true, the user will have to confirm the password in a second field.
+   */
   confirm?: boolean;
+  /**
+   * Optional felp text.
+   */
   description?: string;
+  /**
+   * Optional warning text.
+   */
   warning?: boolean;
+  /**
+   * Custom title for the modal window.
+   */
   title?: string;
+  /**
+   * Wallet to which the resquested password corresponds.
+   */
   wallet: WalletBase;
 }
 
+/**
+ * Modal window for requesting the password of a wallet. After the user enters the password,
+ * it sends the passwordSubmit event, with the password, to let the code which openned this
+ * modal window to continue with the operation. After finishing the operation, the code
+ * must use the object returned by the passwordSubmit event to close the modal window
+ * or for informing about an error.
+ */
 @Component({
   selector: 'app-password-dialog',
   templateUrl: './password-dialog.component.html',
@@ -26,9 +67,12 @@ export interface PasswordDialogParams {
 export class PasswordDialogComponent implements OnInit, OnDestroy {
   @ViewChild('button', { static: false }) button: ButtonComponent;
   form: FormGroup;
-  passwordSubmit = new Subject<any>();
+  passwordSubmit = new Subject<PasswordSubmitEvent>();
   working = false;
 
+  /**
+   * Opens the modal window. Please use this function instead of opening the window "by hand".
+   */
   public static openDialog(dialog: MatDialog, params: PasswordDialogParams, smallSize = true): MatDialogRef<PasswordDialogComponent, any> {
     const config = new MatDialogConfig();
     config.data = params;
@@ -44,6 +88,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
     private msgBarService: MsgBarService,
     private changeDetector: ChangeDetectorRef,
   ) {
+    // Se default values.
     this.data = Object.assign({
       confirm: false,
       description: null,
@@ -64,6 +109,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
       this.form.get('confirm_password').disable();
     }
 
+    // Make the window bigger if a help msg is going to be shown.
     if (this.data.description) {
       this.dialogRef.updateSize('400px');
     }
@@ -71,15 +117,14 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.msgBarService.hide();
-
-    this.form.get('password').setValue('');
-    this.form.get('confirm_password').setValue('');
-
     this.passwordSubmit.complete();
   }
 
+  /**
+   * Deactivates the UI and sends the password.
+   */
   proceed() {
-    if (!this.form.valid || this.button.isLoading()) {
+    if (this.working) {
       return;
     }
 
@@ -98,7 +143,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
   }
 
   private validateForm() {
-    if (this.form && this.form.get('password') && this.form.get('confirm_password')) {
+    if (this.form) {
       if (this.form.get('password').value.length === 0) {
         return { Required: true };
       }
@@ -115,20 +160,12 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
     this.dialogRef.close();
   }
 
+  /**
+   * Reactivates the UI and shows an error.
+   */
   private error(error: OperationError) {
     if (!error.type) {
       error = processServiceError(error);
-    }
-
-    if (error.originalError && error.originalError.status) {
-      switch (error.originalError.status) {
-        case 403:
-          error.translatableErrorMsg = 'password.api-disabled-error';
-          break;
-        case 404:
-          error.translatableErrorMsg = 'password.no-wallet-error';
-          break;
-      }
     }
 
     error.translatableErrorMsg = error.translatableErrorMsg ? error.translatableErrorMsg : 'password.decrypting-error';

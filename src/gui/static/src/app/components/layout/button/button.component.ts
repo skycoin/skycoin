@@ -1,50 +1,57 @@
 import { Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
-import { processServiceError } from '../../../utils/errors';
-import { MatTooltip } from '@angular/material/tooltip';
 
+enum ButtonStates {
+  Normal = 'Normal',
+  Loading = 'Loading',
+  Success = 'Success',
+}
+
+/**
+ * Normal rounded button used in most parts of the app.
+ */
 @Component({
   selector: 'app-button',
   templateUrl: 'button.component.html',
   styleUrls: ['button.component.scss'],
 })
 export class ButtonComponent {
-  @Input() disabled: any;
+  @Input() disabled: boolean;
+  // If true, the button will send click events even when disabled.
   @Input() forceEmitEvents = false;
+  // Click event.
   @Output() action = new EventEmitter();
-  @ViewChild('tooltip', { static: false }) tooltip: MatTooltip;
   @ViewChild('button', { static: false }) button: HTMLButtonElement;
 
-  error: string;
-  state: number;
-  mouseOver = false;
+  state = ButtonStates.Normal;
+  buttonStates = ButtonStates;
 
   onClick() {
     if (!this.disabled || this.forceEmitEvents) {
-      this.error = '';
       this.action.emit();
     }
   }
 
+  /**
+   * Focuses the button.
+   */
   focus() {
     this.button.focus();
   }
 
+  /**
+   * Shows the loading animation. The button does not send click events while the
+   * animation is active.
+   */
   setLoading() {
-    this.state = 0;
+    this.state = ButtonStates.Loading;
   }
 
+  /**
+   * Shows the success icon.
+   */
   setSuccess() {
-    this.state = 1;
-    setTimeout(() => this.state = null, 3000);
-  }
-
-  setError(error: any) {
-    this.error = processServiceError(error).translatableErrorMsg;
-    this.state = 2;
-
-    if (this.mouseOver) {
-      setTimeout(() => this.tooltip.show(), 50);
-    }
+    this.state = ButtonStates.Success;
+    setTimeout(() => this.state = ButtonStates.Normal, 3000);
   }
 
   setDisabled() {
@@ -55,13 +62,16 @@ export class ButtonComponent {
     this.disabled = false;
   }
 
-  isLoading() {
-    return this.state === 0;
+  isLoading(): boolean {
+    return this.state === ButtonStates.Loading;
   }
 
+  /**
+   * Removes the icons and animations, but does not affects the enabled/disabled status.
+   * @returns The currents instance is returned to make it easier to concatenate function calls.
+   */
   resetState() {
-    this.state = null;
-    this.error = '';
+    this.state = ButtonStates.Normal;
 
     return this;
   }

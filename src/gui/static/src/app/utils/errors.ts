@@ -77,6 +77,9 @@ export function processServiceError(error: any): OperationError {
     if (convertedError.status === 0 || convertedError.status === 504) {
       response.type = OperationErrorTypes.NoInternet;
       response.translatableErrorMsg = 'service.api.no-internet-error';
+    } else if (convertedError.status === 0 || convertedError.status === 403) {
+      response.type = OperationErrorTypes.ApiDisabled;
+      response.translatableErrorMsg = 'service.api.api-disabled-error';
     } else if (convertedError.status === 400 && response.originalServerErrorMsg.toUpperCase().indexOf('Invalid password'.toUpperCase()) !== -1) {
       response.type = OperationErrorTypes.Unauthorized;
       response.translatableErrorMsg = 'service.api.incorrect-password-error';

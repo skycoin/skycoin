@@ -116,7 +116,7 @@ export class BlockchainService {
       })).subscribe((response: any) => {
         this.ngZone.run(() => {
           // Stop if a value is not valid.
-          if (!response || !response.current || !response.highest || response.current < this.lastCurrentBlock || response.highest < this.lastHighestBlock) {
+          if (!response || !response.current || !response.highest || response.highest === 0 || response.current < this.lastCurrentBlock || response.highest < this.lastHighestBlock) {
             this.startDataRefreshSubscription(this.errorUpdatePeriod);
 
             return;

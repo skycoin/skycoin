@@ -52,11 +52,7 @@ export class AppComponent implements OnInit {
 
     const subscription = this.languageService.savedSelectedLanguageLoaded.subscribe(savedSelectedLanguageLoaded => {
       if (!savedSelectedLanguageLoaded) {
-        SelectLanguageComponent.openDialog(this.dialog, true).afterClosed().subscribe(response => {
-          if (response) {
-            this.languageService.changeLanguage(response);
-          }
-        });
+        SelectLanguageComponent.openDialog(this.dialog, true);
       }
 
       subscription.unsubscribe();

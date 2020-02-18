@@ -32,9 +32,7 @@ export class HwWalletSeedWordService {
    */
   requestWord(): Observable<string> {
     return this.requestWordComponentInternal.openDialog(this.dialog, <SeedWordDialogParams> {
-      isForHwWallet: true,
-      wordNumber: 0,
-      restoringSoftwareWallet: false,
+      reason: 'HWWalletOperation',
     }).afterClosed().pipe(map(word => {
       return word;
     }));

@@ -1,16 +1,17 @@
 <div class="-container">
   <div class="large-header">
+    <!-- Balance area. -->
     <div class="gradient">
       <app-top-bar [headline]="headline"></app-top-bar>
       <div class="balance-container">
         <div class="balance">
-          <p *ngIf="!highest && loading" class="loading-header">{{ 'common.loading' | translate }}</p>
-          <p *ngIf="highest && loading" class="coins"><span>{{ percentage | percent:'1.2-2' }}</span></p>
-          <p *ngIf="!loading" class="coins"><span>{{ coins | amount:true:'first' }}</span> {{ coins | amount:true:'last' }}</p>
+          <p *ngIf="!synchronizationInfoObtained || (synchronized && !balanceObtained)" class="loading-header">{{ 'common.loading' | translate }}</p>
+          <p *ngIf="synchronizationInfoObtained && !synchronized" class="coins"><span>{{ synchronizationPercentage | percent:'1.2-2' }}</span></p>
+          <p *ngIf="synchronized && balanceObtained" class="coins"><span>{{ coins | amount:true:'first' }}</span> {{ coins | amount:true:'last' }}</p>
           <p class="dollars" *ngIf="showPrice">
             <span *ngIf="price">
-              <span *ngIf="!loading">{{ (coins * price) | currency:'USD':'symbol':'1.2-2' }}</span>
-              <span *ngIf="loading">-</span>
+              <span *ngIf="synchronized && balanceObtained">{{ (coins * price) | currency:'USD':'symbol':'1.2-2' }}</span>
+              <span *ngIf="!synchronized || !balanceObtained">-</span>
               ({{ price | currency:'USD':'symbol':'1.2-2' }})
             </span>
             <span *ngIf="!price">{{ 'common.loading' | translate }}</span>
@@ -18,21 +19,20 @@
         </div>
       </div>
       <div class="hour-balance">
-        <p *ngIf="loading">
-          {{ 'header.syncing-blocks' | translate }}
-          {{ current && highest ?  '(' + current + '/'  + highest + ')' : '...' }}
-        </p>
-        <p *ngIf="!loading">{{ hours | amount:false }}</p>
+        <p *ngIf="!synchronizationInfoObtained || (synchronized && !balanceObtained)">{{ 'common.loading' | translate }}</p>
+        <p *ngIf="synchronizationInfoObtained && !synchronized">{{ 'header.syncing-blocks' | translate }} {{ '(' + currentBlock + '/'  + highestBlock + ')' }}</p>
+        <p *ngIf="synchronized && balanceObtained">{{ hours | amount:false }}</p>
       </div>
     </div>
   </div>
   <app-nav-bar></app-nav-bar>
   <mat-progress-bar
-    *ngIf="loading"
-    class="example-margin"
+    *ngIf="!synchronized"
     color="primary"
-    [mode]="querying ? 'query' : 'determinate'"
-    [value]="percentage * 100"></mat-progress-bar>
+    [mode]="!synchronizationInfoObtained ? 'query' : 'determinate'"
+    [value]="synchronizationPercentage * 100"></mat-progress-bar
+  >
+  <!-- Errors area. -->
   <div class="notification-bar" *ngIf="appService.updateAvailable">
     <div>
       {{ 'header.warnings.update-part1' | translate }}
@@ -46,13 +46,13 @@
   <div class="notification-bar" *ngIf="!appService.csrfDisabled && networkService.noConnections">
     <div>{{ 'header.warnings.no-connections' | translate }}</div>
   </div>
-  <div class="notification-bar" *ngIf="hasPendingTxs || !synchronized">
+  <div class="notification-bar" *ngIf="hasPendingTxs || (!synchronized && synchronizationInfoObtained)">
     <div *ngIf="hasPendingTxs">
       {{ 'header.warnings.pending-txs-part1' | translate }}
       <a routerLink='/settings/pending-transactions'>{{ 'header.warnings.pending-txs-part2' | translate }}</a>
       {{ 'header.warnings.pending-txs-part3' | translate }}
     </div>
-    <div *ngIf="!synchronized && !hasPendingTxs">
+    <div *ngIf="!synchronized && synchronizationInfoObtained && !hasPendingTxs">
       {{ 'header.warnings.synchronizing' | translate }}
     </div>
   </div>

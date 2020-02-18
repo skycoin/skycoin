@@ -57,11 +57,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   }
 
   changelanguage() {
-    SelectLanguageComponent.openDialog(this.dialog).afterClosed().subscribe(response => {
-      if (response) {
-        this.languageService.changeLanguage(response);
-      }
-    });
+    SelectLanguageComponent.openDialog(this.dialog);
   }
 
   get fill() {

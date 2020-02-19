@@ -53,6 +53,7 @@ The API has two versions, `/api/v1` and `/api/v2`.
 	- [Get raw transaction by id](#get-raw-transaction-by-id)
 	- [Inject raw transaction](#inject-raw-transaction)
 	- [Get transactions for addresses](#get-transactions-for-addresses)
+    - [Get transactions with pagination](#get-transactions-with-pagination)
 	- [Resend unconfirmed transactions](#resend-unconfirmed-transactions)
 	- [Verify encoded transaction](#verify-encoded-transaction)
 - [Block APIs](#block-apis)

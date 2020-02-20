@@ -29,7 +29,6 @@ func TestNewPeer(t *testing.T) {
 	p := NewPeer(testPeers[0])
 	require.NotEqual(t, p.LastSeen, 0)
 	require.Equal(t, p.Addr, testPeers[0])
-	require.False(t, p.Private)
 }
 
 func TestPeerSeen(t *testing.T) {
@@ -348,11 +347,6 @@ func TestPeerlistFindOldestUntrustedPeer(t *testing.T) {
 		LastSeen: time.Now().UTC().Unix() - 60*60*24*30,
 		Trusted:  true,
 	}
-	privatePeer := Peer{
-		Addr:     "5.5.5.5:6060",
-		LastSeen: time.Now().UTC().Unix() - 60*60*24*30,
-		Private:  true,
-	}
 
 	cases := []struct {
 		name      string
@@ -369,7 +363,6 @@ func TestPeerlistFindOldestUntrustedPeer(t *testing.T) {
 			name: "no untrusted public peers",
 			initPeers: []Peer{
 				trustedPeer,
-				privatePeer,
 			},
 			expect: nil,
 		},
@@ -387,17 +380,6 @@ func TestPeerlistFindOldestUntrustedPeer(t *testing.T) {
 			initPeers: []Peer{
 				peer1,
 				trustedPeer,
-				peer2,
-				peer3,
-			},
-			expect: &peer2,
-		},
-
-		{
-			name: "3 peers ignore private",
-			initPeers: []Peer{
-				peer1,
-				privatePeer,
 				peer2,
 				peer3,
 			},
@@ -568,7 +550,6 @@ func TestPeerJSONParsing(t *testing.T) {
 
 	check := func(p *Peer) {
 		require.Equal(t, "11.22.33.44:6000", p.Addr)
-		require.True(t, p.Private)
 		require.True(t, p.Trusted)
 		require.True(t, p.HasIncomingPort)
 		require.Equal(t, int64(1506235338), p.LastSeen)

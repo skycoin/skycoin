@@ -144,7 +144,7 @@ func NewConfig() Config {
 		MaxConnections:                    128,
 		MaxOutgoingMessageLength:          256 * 1024,
 		MaxIncomingMessageLength:          1024 * 1024,
-		MaxDefaultPeerOutgoingConnections: 1,
+		MaxDefaultPeerOutgoingConnections: 2,
 		DialTimeout:                       time.Second * 30,
 		ReadTimeout:                       time.Second * 30,
 		WriteTimeout:                      time.Second * 30,
@@ -420,7 +420,7 @@ func (pool *ConnectionPool) canConnect(a string, solicited bool) error {
 	}
 
 	if solicited {
-		if _, ok := pool.Config.defaultConnections[a]; ok && pool.isMaxOutgoingDefaultConnectionsReached() {
+		if _, ok := pool.Config.defaultConnections[a]; ok && pool.IsMaxOutgoingDefaultConnectionsReached() {
 			return ErrMaxOutgoingDefaultConnectionsReached
 		} else if pool.isMaxOutgoingConnectionsReached() {
 			return ErrMaxOutgoingConnectionsReached
@@ -770,7 +770,8 @@ func (pool *ConnectionPool) isMaxOutgoingConnectionsReached() bool {
 	return len(pool.outgoingConnections) >= pool.Config.MaxOutgoingConnections
 }
 
-func (pool *ConnectionPool) isMaxOutgoingDefaultConnectionsReached() bool {
+// IsMaxOutgoingDefaultConnectionsReached checks whether the max outgoing default connections reached
+func (pool *ConnectionPool) IsMaxOutgoingDefaultConnectionsReached() bool {
 	return len(pool.defaultOutgoingConnections) >= pool.Config.MaxDefaultPeerOutgoingConnections
 }
 

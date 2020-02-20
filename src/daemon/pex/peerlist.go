@@ -160,15 +160,6 @@ loop:
 	return ps
 }
 
-// filters
-func isPrivate(p Peer) bool {
-	return p.Private
-}
-
-func isPublic(p Peer) bool {
-	return !p.Private
-}
-
 func isTrusted(p Peer) bool {
 	return p.Trusted
 }
@@ -182,21 +173,11 @@ func canTry(p Peer) bool {
 }
 
 // isExchangeable filters exchangeable peers
-var isExchangeable = []Filter{hasIncomingPort, isPublic}
+var isExchangeable = []Filter{hasIncomingPort}
 
 // removePeer removes peer
 func (pl *peerlist) removePeer(addr string) {
 	delete(pl.peers, addr)
-}
-
-// SetPrivate sets specific peer as private
-func (pl *peerlist) setPrivate(addr string, private bool) error {
-	if p, ok := pl.peers[addr]; ok {
-		p.Private = private
-		return nil
-	}
-
-	return fmt.Errorf("set peer.Private failed: %v does not exist in peer list", addr)
 }
 
 // setTrusted sets peer as trusted peer
@@ -257,7 +238,7 @@ func (pl *peerlist) clearOld(timeAgo time.Duration) {
 	t := time.Now().UTC()
 	for addr, peer := range pl.peers {
 		lastSeen := time.Unix(peer.LastSeen, 0)
-		if !peer.Private && !peer.Trusted && t.Sub(lastSeen) > timeAgo {
+		if !peer.Trusted && t.Sub(lastSeen) > timeAgo {
 			delete(pl.peers, addr)
 		}
 	}
@@ -329,7 +310,7 @@ func (pl *peerlist) findOldestUntrustedPeer() *Peer {
 	var oldest *Peer
 
 	for _, p := range pl.peers {
-		if p.Trusted || p.Private {
+		if p.Trusted {
 			continue
 		}
 
@@ -365,7 +346,6 @@ func newPeerJSON(p Peer) PeerJSON {
 	return PeerJSON{
 		Addr:            p.Addr,
 		LastSeen:        p.LastSeen,
-		Private:         p.Private,
 		Trusted:         p.Trusted,
 		HasIncomingPort: &p.HasIncomingPort,
 		UserAgent:       p.UserAgent,
@@ -409,7 +389,6 @@ func newPeerFromJSON(p PeerJSON) (*Peer, error) {
 	return &Peer{
 		Addr:            addr,
 		LastSeen:        lastSeen,
-		Private:         p.Private,
 		Trusted:         p.Trusted,
 		HasIncomingPort: hasIncomingPort,
 		UserAgent:       p.UserAgent,

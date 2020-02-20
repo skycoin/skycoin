@@ -171,8 +171,6 @@ type DaemonConfig struct { //nolint:golint
 	OutgoingTrustedRate time.Duration
 	// How often to check and initiate an outgoing connection if needed
 	OutgoingRate time.Duration
-	// How often to re-attempt to fill any missing private (aka required)  connections
-	PrivateRate time.Duration
 	// Maximum number of connections
 	MaxConnections int
 	// Number of outgoing connections to maintain
@@ -239,7 +237,6 @@ func NewDaemonConfig() DaemonConfig {
 		Port:                         6677,
 		OutgoingRate:                 time.Second * 5,
 		OutgoingTrustedRate:          time.Millisecond * 100,
-		PrivateRate:                  time.Second * 5,
 		MaxConnections:               128,
 		MaxOutgoingConnections:       8,
 		MaxPendingConnections:        8,
@@ -462,8 +459,6 @@ func (dm *Daemon) Run() error {
 	outgoingTrustedConnectionsTickerSkip := false
 	var outgoingTrustedConnectionsTickerSkipStart time.Time
 
-	privateConnectionsTicker := time.NewTicker(dm.config.PrivateRate)
-	defer privateConnectionsTicker.Stop()
 	cullInvalidTicker := time.NewTicker(dm.config.CullInvalidRate)
 	defer cullInvalidTicker.Stop()
 	outgoingConnectionsTicker := time.NewTicker(dm.config.OutgoingRate)
@@ -595,14 +590,6 @@ loop:
 				outgoingTrustedConnectionsTickerSkipStart = time.Now()
 			} else {
 				outgoingTrustedConnectionsTickerSkip = false
-			}
-
-		case <-privateConnectionsTicker.C:
-			// Always try to stay connected to our private peers
-			// TODO (also, connect to all of them on start)
-			elapser.Register("privateConnectionsTicker")
-			if !dm.config.DisableOutgoingConnections {
-				dm.makePrivateConnections()
 			}
 
 		case r := <-dm.events:

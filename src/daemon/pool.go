@@ -53,7 +53,7 @@ func NewPoolConfig() PoolConfig {
 		EventChannelSize:                  4096,
 		MaxConnections:                    128,
 		MaxOutgoingConnections:            8,
-		MaxDefaultPeerOutgoingConnections: 1,
+		MaxDefaultPeerOutgoingConnections: 2,
 		MaxOutgoingMessageLength:          256 * 1024,
 		MaxIncomingMessageLength:          1024 * 1024,
 	}
@@ -121,4 +121,9 @@ func (pool *Pool) sendPings() {
 // getStaleConnections returns connections that have been idle for longer than idleLimit
 func (pool *Pool) getStaleConnections() ([]string, error) {
 	return pool.Pool.GetStaleConnections(pool.Config.IdleLimit)
+}
+
+// IsMaxOutgoingDefaultConnectionsReached returns whether max outgoing default connections reached
+func (pool *Pool) IsMaxOutgoingDefaultConnectionsReached() bool {
+	return pool.Pool.IsMaxOutgoingDefaultConnectionsReached()
 }

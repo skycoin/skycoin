@@ -473,14 +473,14 @@ func (dm *Daemon) Run() error {
 	flushAnnouncedTxnsTicker := time.NewTicker(dm.config.FlushAnnouncedTxnsRate)
 	defer flushAnnouncedTxnsTicker.Stop()
 
-	// Connect to all trusted peers on startup to try to ensure a connection establishes quickly.
-	// The number of connections to default peers is restricted;
-	// if multiple connections succeed, extra connections beyond the limit will be disconnected.
+	// Try to connect to limited trusted public peers
 	if !dm.config.DisableOutgoingConnections {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			dm.connectToTrustedPeers()
+			if err := dm.maybeConnectToTrustedPeer(); err != nil {
+				logger.WithError(err).Error("Try to connect to trusted peer failed")
+			}
 		}()
 	}
 
@@ -725,68 +725,38 @@ func (dm *Daemon) connectToPeer(p pex.Peer) error {
 	return nil
 }
 
-// Connects to all private peers
-func (dm *Daemon) makePrivateConnections() {
-	if dm.config.DisableOutgoingConnections {
-		return
-	}
-
-	peers := dm.pex.Private()
-	for _, p := range peers {
-		logger.WithField("addr", p.Addr).Info("Private peer attempt")
-		if err := dm.connectToPeer(p); err != nil {
-			logger.WithField("addr", p.Addr).WithError(err).Debug("Did not connect to private peer")
-		}
-	}
-}
-
-// connectToTrustedPeers tries to connect to all trusted peers
-func (dm *Daemon) connectToTrustedPeers() {
-	if dm.config.DisableOutgoingConnections {
-		return
-	}
-
-	logger.Info("Connect to trusted peers")
-	// Make connections to all trusted peers to try to ensure a connection
-	// MaxDefaultPeerOutgoingConnections limits will be enforced in gnet
-	// after connections have been established, so not all trusted peers will be connected to.
-	peers := dm.pex.TrustedPublic()
-	for _, p := range peers {
-		if err := dm.connectToPeer(p); err != nil {
-			logger.WithError(err).WithField("addr", p.Addr).Warning("connect to trusted peer failed")
-		}
-	}
-}
-
-// maybeConnectToTrustedPeer tries to connect to one trusted peer if there are no trusted connections
+// maybeConnectToTrustedPeer tries to connect to limited number of trusted peer
 func (dm *Daemon) maybeConnectToTrustedPeer() error {
 	if dm.config.DisableOutgoingConnections {
 		return ErrNetworkingDisabled
 	}
 
-	peers := dm.pex.TrustedPublic()
-	for _, p := range peers {
-		// Don't make a connection if we have a trusted peer connection
-		if len(dm.connections.getByListenAddr(p.Addr)) != 0 {
-			return nil
-		}
+	if dm.pool.IsMaxOutgoingDefaultConnectionsReached() {
+		return nil
 	}
 
-	connected := false
+	var triedPeers int
+	peers := dm.pex.Trusted()
 	for _, p := range peers {
 		if err := dm.connectToPeer(p); err != nil {
 			logger.WithError(err).WithField("addr", p.Addr).Warning("maybeConnectToTrustedPeer: connectToPeer failed")
 			continue
 		}
-		connected = true
-		break
+		triedPeers++
+		if triedPeers >= dm.maxDefaultOutgoingConnections() {
+			break
+		}
 	}
 
-	if !connected {
+	if triedPeers == 0 {
 		return errors.New("Could not connect to any trusted peer")
 	}
 
 	return nil
+}
+
+func (dm Daemon) maxDefaultOutgoingConnections() int {
+	return dm.pool.Config.MaxDefaultPeerOutgoingConnections
 }
 
 // connectToRandomPeer attempts to connect to a random peer. If it fails, the peer is removed.
@@ -805,7 +775,7 @@ func (dm *Daemon) connectToRandomPeer() {
 	}
 
 	// Make a connection to a random (public) peer
-	peers := dm.pex.RandomPublic(dm.config.MaxOutgoingConnections - dm.connections.OutgoingLen())
+	peers := dm.pex.Random(dm.config.MaxOutgoingConnections - dm.connections.OutgoingLen())
 	for _, p := range peers {
 		if err := dm.connectToPeer(p); err != nil {
 			logger.WithError(err).WithField("addr", p.Addr).Warning("connectToPeer failed")
@@ -1681,7 +1651,7 @@ func (dm *Daemon) DisconnectByGnetID(gnetID uint64) error {
 
 // GetTrustConnections returns all trusted connections
 func (dm *Daemon) GetTrustConnections() []string {
-	return dm.pex.Trusted().ToAddrs()
+	return dm.pex.AllTrusted().ToAddrs()
 }
 
 // GetExchgConnection returns all connections to peers found through peer exchange

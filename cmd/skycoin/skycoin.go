@@ -61,6 +61,8 @@ var (
 		"45.33.111.142:6000",
 		"109.237.27.172:6000",
 		"172.104.41.14:6000",
+		"172.104.99.241:6000",
+		"172.104.57.147:6000",
 	}
 
 	nodeConfig = skycoin.NewNodeConfig(ConfigMode, fiber.NodeConfig{

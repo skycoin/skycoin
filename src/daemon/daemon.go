@@ -116,11 +116,6 @@ func (cfg *Config) preprocess() (Config, error) {
 		config.Daemon.MaxPendingConnections = config.Daemon.MaxOutgoingConnections
 	}
 
-	config.Pool.MaxConnections = config.Daemon.MaxConnections
-	config.Pool.MaxOutgoingConnections = config.Daemon.MaxOutgoingConnections
-	config.Pool.MaxIncomingMessageLength = int(config.Daemon.MaxIncomingMessageLength)
-	config.Pool.MaxOutgoingMessageLength = int(config.Daemon.MaxOutgoingMessageLength)
-
 	// MaxOutgoingMessageLength must be able to fit a GiveBlocksMessage with at least one maximum-sized block,
 	// otherwise it cannot send certain blocks.
 	// Blocks are the largest object sent over the network, so MaxBlockTransactionsSize is used as an upper limit

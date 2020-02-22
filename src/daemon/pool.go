@@ -26,6 +26,8 @@ type PoolConfig struct {
 	MaxConnections int
 	// Maximum number of outgoing connections
 	MaxOutgoingConnections int
+	// Maximum number of incoming connections
+	MaxIncomingConnections int
 	// Maximum number of outgoing connections to peers in the DefaultConnections list to maintain
 	MaxDefaultPeerOutgoingConnections int
 	// Default "trusted" peers
@@ -53,6 +55,7 @@ func NewPoolConfig() PoolConfig {
 		EventChannelSize:                  4096,
 		MaxConnections:                    128,
 		MaxOutgoingConnections:            8,
+		MaxIncomingConnections:            120,
 		MaxDefaultPeerOutgoingConnections: 2,
 		MaxOutgoingMessageLength:          256 * 1024,
 		MaxIncomingMessageLength:          1024 * 1024,
@@ -76,6 +79,7 @@ func NewPool(cfg PoolConfig, d *Daemon) (*Pool, error) {
 	gnetCfg.ConnectFailureCallback = d.onGnetConnectFailure
 	gnetCfg.MaxConnections = cfg.MaxConnections
 	gnetCfg.MaxOutgoingConnections = cfg.MaxOutgoingConnections
+	gnetCfg.MaxIncomingConnections = cfg.MaxIncomingConnections
 	gnetCfg.MaxDefaultPeerOutgoingConnections = cfg.MaxDefaultPeerOutgoingConnections
 	gnetCfg.DefaultConnections = cfg.DefaultConnections
 	gnetCfg.MaxIncomingMessageLength = cfg.MaxIncomingMessageLength

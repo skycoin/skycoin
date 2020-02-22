@@ -98,10 +98,12 @@ type Config struct {
 	Address string
 	// Port to listen on. Set to 0 for arbitrary assignment
 	Port uint16
-	// Maximum total connections. Must be >= MaxOutgoingConnections + MaxDefaultPeerOutgoingConnections.
+	// Maximum total connections. Must be >= MaxOutgoingConnections + MaxIncomingConnections.
 	MaxConnections int
 	// Maximum outgoing connections
 	MaxOutgoingConnections int
+	// Maximum incoming connections
+	MaxIncomingConnections int
 	// Maximum allowed default outgoing connection number
 	MaxDefaultPeerOutgoingConnections int
 	// Messages greater than length are rejected and the sender disconnected
@@ -142,9 +144,11 @@ func NewConfig() Config {
 		Address:                           "",
 		Port:                              0,
 		MaxConnections:                    128,
+		MaxOutgoingConnections:            8,
+		MaxIncomingConnections:            120,
+		MaxDefaultPeerOutgoingConnections: 2,
 		MaxOutgoingMessageLength:          256 * 1024,
 		MaxIncomingMessageLength:          1024 * 1024,
-		MaxDefaultPeerOutgoingConnections: 2,
 		DialTimeout:                       time.Second * 30,
 		ReadTimeout:                       time.Second * 30,
 		WriteTimeout:                      time.Second * 30,
@@ -236,6 +240,8 @@ type ConnectionPool struct {
 	defaultOutgoingConnections map[string]struct{}
 	// connected outgoing connections
 	outgoingConnections map[string]struct{}
+	// connected incoming connections
+	incomingConnections map[string]struct{}
 	// User-defined state to be passed into message handlers
 	messageState interface{}
 	// Connection ID counter
@@ -259,9 +265,8 @@ func NewConnectionPool(c Config, state interface{}) (*ConnectionPool, error) {
 	for _, p := range c.DefaultConnections {
 		c.defaultConnections[p] = struct{}{}
 	}
-
-	if c.MaxConnections < c.MaxOutgoingConnections+c.MaxDefaultPeerOutgoingConnections {
-		return nil, errors.New("MaxConnections must be >= MaxOutgoingConnections + MaxDefaultPeerOutgoingConnections")
+	if c.MaxConnections < c.MaxOutgoingConnections+c.MaxIncomingConnections {
+		return nil, errors.New("MaxConnections must be >= MaxOutgoingConnections + MaxIncomingConnections")
 	}
 
 	return &ConnectionPool{
@@ -270,6 +275,7 @@ func NewConnectionPool(c Config, state interface{}) (*ConnectionPool, error) {
 		addresses:                  make(map[string]*Connection),
 		defaultOutgoingConnections: make(map[string]struct{}),
 		outgoingConnections:        make(map[string]struct{}),
+		incomingConnections:        make(map[string]struct{}),
 		SendResults:                make(chan SendResult, c.SendResultsSize),
 		messageState:               state,
 		quit:                       make(chan struct{}),
@@ -449,6 +455,8 @@ func (pool *ConnectionPool) newConnection(conn net.Conn, solicited bool) (*Conne
 			l := len(pool.defaultOutgoingConnections)
 			logger.WithField("addr", a).Debugf("%d/%d outgoing default connections in use", l, pool.Config.MaxDefaultPeerOutgoingConnections)
 		}
+	} else {
+		pool.incomingConnections[a] = struct{}{}
 	}
 
 	// ID must start at 1; in case connID overflows back to 0, force it to 1
@@ -763,7 +771,7 @@ func (pool *ConnectionPool) isConnExist(addr string) bool {
 }
 
 func (pool *ConnectionPool) isMaxIncomingConnectionsReached() bool {
-	return len(pool.pool) >= (pool.Config.MaxConnections - pool.Config.MaxOutgoingConnections - pool.Config.MaxDefaultPeerOutgoingConnections)
+	return len(pool.incomingConnections) >= pool.Config.MaxIncomingConnections
 }
 
 func (pool *ConnectionPool) isMaxOutgoingConnectionsReached() bool {
@@ -887,6 +895,7 @@ func (pool *ConnectionPool) disconnect(addr string, r DisconnectReason) *Connect
 	delete(pool.addresses, addr)
 	delete(pool.defaultOutgoingConnections, addr)
 	delete(pool.outgoingConnections, addr)
+	delete(pool.incomingConnections, addr)
 	if err := conn.Close(); err != nil {
 		logger.WithError(err).WithFields(fields).Error("conn.Close")
 	}

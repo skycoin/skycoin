@@ -446,7 +446,10 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc := daemon.NewConfig()
 
 	dc.Pool.DefaultConnections = c.config.Node.DefaultConnections
+	dc.Pool.MaxConnections = c.config.Node.MaxConnections
+	dc.Pool.MaxOutgoingConnections = c.config.Node.MaxOutgoingConnections
 	dc.Pool.MaxDefaultPeerOutgoingConnections = c.config.Node.MaxDefaultPeerOutgoingConnections
+	dc.Pool.MaxIncomingConnections = c.config.Node.MaxIncomingConnections
 	dc.Pool.MaxIncomingMessageLength = c.config.Node.MaxIncomingMessageLength
 	dc.Pool.MaxOutgoingMessageLength = c.config.Node.MaxOutgoingMessageLength
 

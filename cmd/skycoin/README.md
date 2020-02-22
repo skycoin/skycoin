@@ -184,6 +184,8 @@ Usage:
     	Maximum length of outgoing wire messages (default 262144)
   -max-outgoing-connections int
     	Maximum number of outgoing connections allowed (default 8)
+  -max-incoming-connections int
+        Maximum number  of incoming connections allowed (default 120)
   -max-txn-size-create-block uint
     	maximum size of a transaction applied when creating blocks (default 32768)
   -max-txn-size-unconfirmed uint
@@ -535,7 +537,7 @@ More than 1 connections are not typically made, to avoid saturating the default 
 
 ### max-incoming-connections
 
-**This is not an option.** This value is equal to `max-connections` minus `max-outgoing-connections`.
+The maximum number of incoming connections allowed.
 
 ### max-in-msg-len
 

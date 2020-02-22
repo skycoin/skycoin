@@ -85,6 +85,8 @@ type NodeConfig struct {
 	MaxConnections int
 	// Maximum outgoing connections to maintain
 	MaxOutgoingConnections int
+	// Maximum incoming connections to maintain
+	MaxIncomingConnections int
 	// Maximum default outgoing connections
 	MaxDefaultPeerOutgoingConnections int
 	// How often to make outgoing connections
@@ -249,6 +251,8 @@ func NewNodeConfig(mode string, node fiber.NodeConfig) NodeConfig {
 		MaxConnections: 128,
 		// MaxOutgoingConnections is the maximum outgoing connections allowed
 		MaxOutgoingConnections: 8,
+		// MaxIncomingConnections is the maximum incoming connections allowed
+		MaxIncomingConnections: 120,
 		// MaxDefaultOutgoingConnections is the maximum default outgoing connections allowed
 		MaxDefaultPeerOutgoingConnections: 2,
 		DownloadPeerList:                  true,
@@ -467,12 +471,16 @@ func (c *Config) postProcess() error {
 		return errors.New("Web interface auth enabled but HTTPS is not enabled. Use -web-interface-plaintext-auth=true if this is desired")
 	}
 
-	if c.Node.MaxConnections < c.Node.MaxOutgoingConnections+c.Node.MaxDefaultPeerOutgoingConnections {
-		return errors.New("-max-connections must be >= -max-outgoing-connections + -max-default-peer-outgoing-connections")
+	if c.Node.MaxConnections < c.Node.MaxOutgoingConnections+c.Node.MaxIncomingConnections {
+		return errors.New("-max-connections must be >= -max-outgoing-connections + -max-incoming-connections")
 	}
 
 	if c.Node.MaxOutgoingConnections > c.Node.MaxConnections {
 		return errors.New("-max-outgoing-connections cannot be higher than -max-connections")
+	}
+
+	if c.Node.MaxIncomingConnections > c.Node.MaxConnections {
+		return errors.New("-max-incoming-connections cannot be higher than -max-connections")
 	}
 
 	if c.Node.maxBlockSize > math.MaxUint32 {
@@ -713,6 +721,7 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.StringVar(&c.KVStorageDirectory, "storage-dir", c.KVStorageDirectory, "location of the storage data files. Defaults to ~/.skycoin/data/")
 	flag.IntVar(&c.MaxConnections, "max-connections", c.MaxConnections, "Maximum number of total connections allowed")
 	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", c.MaxOutgoingConnections, "Maximum number of outgoing connections allowed")
+	flag.IntVar(&c.MaxIncomingConnections, "max-incoming-connections", c.MaxIncomingConnections, "Maximum number of incoming connections allowd")
 	flag.IntVar(&c.MaxDefaultPeerOutgoingConnections, "max-default-peer-outgoing-connections", c.MaxDefaultPeerOutgoingConnections, "The maximum default peer outgoing connections allowed")
 	flag.IntVar(&c.PeerlistSize, "peerlist-size", c.PeerlistSize, "Max number of peers to track in peerlist")
 	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate", c.OutgoingConnectionsRate, "How often to make an outgoing connection")

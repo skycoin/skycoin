@@ -69,7 +69,6 @@ deploy:
   access_key_id: $AWS_ACCESS_KEY_ID
   secret_access_key: $AWS_SECRET_ACCESS_KEY
   bucket: $AWS_BUCKET
-  skip_cleanup: true
   local_dir: electron/release
   upload_dir: wallet
   acl: public_read

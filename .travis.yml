@@ -37,17 +37,17 @@ jobs:
   - name: linux-wallet-build
     stage: build
     os: linux
-    if: branch =~ env(BUILD_BRANCH)
+    if: branch =~ env(BUILD_BRANCH) AND type != pull_request
   - name: osx-wallet-build
     stage: build
     os: osx
-    if: branch =~ env(BUILD_BRANCH)
+    if: branch =~ env(BUILD_BRANCH) AND type != pull_request
   - name: windows-wallet-build
     stage: build
     os: windows
     env:
     - GOX_OUTPUT='.gox_output'
-    if: branch =~ env(BUILD_BRANCH)
+    if: branch =~ env(BUILD_BRANCH) AND type != pull_request
 
 cache:
   directories:

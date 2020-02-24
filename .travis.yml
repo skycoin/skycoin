@@ -38,15 +38,18 @@ jobs:
     stage: build
     os: linux
     if: branch =~ env(BUILD_BRANCH) AND type != pull_request
+    env: TEST_SUIT=""
   - name: osx-wallet-build
     stage: build
     os: osx
     if: branch =~ env(BUILD_BRANCH) AND type != pull_request
+    env: TEST_SUIT=""
   - name: windows-wallet-build
     stage: build
     os: windows
     env:
     - GOX_OUTPUT='.gox_output'
+    - TEST_SUIT=""
     if: branch =~ env(BUILD_BRANCH) AND type != pull_request
 
 cache:
@@ -89,7 +92,7 @@ before_script:
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then source $HOME/.bashrc; fi
 
 script:
-  - if [[ "$TRAVIS_BUILD_STAGE_NAME" == "Test" ]]; then ./ci-scripts/lint-and-test.sh $TEST_SUIT; fi
+  - if [[ "$TEST_SUIT" != "" ]]; then ./ci-scripts/lint-and-test.sh $TEST_SUIT; fi
   - if [[ "$TRAVIS_BUILD_STAGE_NAME" == "Build" ]] && [[ "$TRAVIS_PULL_REQUEST" == false ]] && [[ "$TRAVIS_BRANCH" =~ $BUILD_BRANCH || -n  "$TRAVIS_TAG" ]]; then
     ./ci-scripts/build-wallet.sh;
     fi

@@ -56,6 +56,7 @@ cache:
   directories:
   - electron/node_modules
   - electron/src/node_modules
+  - src/gui/static/node_modules
   - $HOME/.cache/electron
   - $HOME/.cache/electron-builder
   - $HOME/.npm/_prebuilds
@@ -63,11 +64,11 @@ cache:
 addons:
   chrome: stable
 
-before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-    sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test;
-    sudo apt-get update -qq;
-    fi
+# before_install:
+#   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+#     sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test;
+#     sudo apt-get update -qq;
+#     fi
 
 install:
   # Install gox

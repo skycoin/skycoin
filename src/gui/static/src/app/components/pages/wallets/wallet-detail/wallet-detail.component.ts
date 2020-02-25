@@ -253,11 +253,7 @@ export class WalletDetailComponent implements OnDestroy {
       data.addressIndex = addressIndex;
       data.showCompleteConfirmation = showCompleteConfirmation;
 
-      const config = new MatDialogConfig();
-      config.width = '566px';
-      config.autoFocus = false;
-      config.data = data;
-      this.dialog.open(HwConfirmAddressDialogComponent, config);
+      HwConfirmAddressDialogComponent.openDialog(this.dialog, data);
 
       this.confirmingIndex = null;
     }, err => {

@@ -1,21 +1,27 @@
 <app-modal
   [headline]="title | translate"
   [dialog]="dialogRef">
+
+  <!-- Instructions and form. -->
   <div [formGroup]="form">
     <div class="form-field text-center">
       <div>
-        <span *ngIf="data.signingTx">
+        <span *ngIf="data.signingTx && !data.changingPin">
           {{ 'hardware-wallet.enter-pin.instructions-tx' | translate }}
         </span>
         <span *ngIf="data.changingPin && data.changePinState === changePinStates.RequestingNewPin">
           {{ 'hardware-wallet.enter-pin.instructions-change' | translate }}
         </span>
-        {{ 'hardware-wallet.enter-pin.instructions' | translate }}
+        <span *ngIf="!data.signingTx && (!data.changingPin || data.changePinState !== changePinStates.RequestingNewPin)">
+          {{ 'hardware-wallet.enter-pin.instructions-generic' | translate }}
+        </span>
         <span class="link" (click)="openHelp()">{{ 'hardware-wallet.enter-pin.help' | translate }}</span>
       </div>
       <input formControlName="pin" id="pin" type="password" readonly>
     </div>
   </div>
+
+  <!-- PIN matrix. -->
   <div class="light-button-theme">
     <div class="num-pad-row">
       <button mat-button color="primary" (click)="addNumber('7')"><span>{{ buttonsContent }}</span></button>
@@ -36,6 +42,8 @@
       <button mat-button color="primary" (click)="removeNumber()"><span class="material-icons">backspace</span></button>
     </div>
   </div>
+
+  <!-- Buttons area. -->
   <div class="-buttons">
     <app-button (action)="sendPin()" class="primary-button" [disabled]="!form.valid">
       {{ 'common.continue-button' | translate }}

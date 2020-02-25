@@ -3,13 +3,11 @@
   <app-hw-message
     [upperBigText]="'hardware-wallet.seed-word.enter-word' | translate"
     [text]="'hardware-wallet.seed-word.info' | translate"
-    [icon]="msgIcons.None"
     *ngIf="data.reason === wordAskedReasons.HWWalletOperation"
   ></app-hw-message>
   <app-hw-message
     [upperBigText]="'wallet.new.seed.enter-word' | translate:{number: data.wordNumber}"
     [text]="(data.reason === wordAskedReasons.CreatingSoftwareWallet ? 'wallet.new.seed.new-seed-info' : 'wallet.new.seed.recover-seed-info') | translate"
-    [icon]="msgIcons.None"
     *ngIf="data.reason !== wordAskedReasons.HWWalletOperation"
   ></app-hw-message>
 

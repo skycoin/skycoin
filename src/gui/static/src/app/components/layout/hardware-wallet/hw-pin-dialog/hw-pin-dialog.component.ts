@@ -1,17 +1,35 @@
 import { Component, OnInit, HostListener, Inject } from '@angular/core';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { MatDialogRef, MatDialog, MatDialogConfig, MAT_DIALOG_DATA } from '@angular/material/dialog';
+
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { HwPinHelpDialogComponent } from '../hw-pin-help-dialog/hw-pin-help-dialog.component';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 import { ChangePinStates } from '../../../../services/hw-wallet-pin.service';
 
+/**
+ * Settings for HwPinDialogComponent.
+ */
 export interface HwPinDialogParams {
+  /**
+   * If the PIN code is being requested for signing a tx. Ignored if changingPin is true.
+   */
   signingTx: boolean;
+  /**
+   * If the PIN code is being requested for setting or changing the PIN on the device.
+   */
   changingPin: boolean;
+  /**
+   * State of the PIN changing operation if changingPin is true.
+   */
   changePinState: ChangePinStates;
 }
 
+/**
+ * Allows the user to enter the PIN code. If the user completes the operation, the modal window
+ * is closed and the positions selected by the user on the PIN matrix are returned in the
+ * "afterClosed" envent.
+ */
 @Component({
   selector: 'app-hw-pin-dialog',
   templateUrl: './hw-pin-dialog.component.html',
@@ -22,6 +40,9 @@ export class HwPinDialogComponent extends HwDialogBaseComponent<HwPinDialogCompo
   changePinStates = ChangePinStates;
   buttonsContent = '•';
 
+  /**
+   * Opens the modal window. Please use this function instead of opening the window "by hand".
+   */
   public static openDialog(dialog: MatDialog, params: HwPinDialogParams): MatDialogRef<HwPinDialogComponent, any> {
     const config = new MatDialogConfig();
     config.data = params;
@@ -60,11 +81,12 @@ export class HwPinDialogComponent extends HwDialogBaseComponent<HwPinDialogCompo
   }
 
   openHelp() {
-    this.dialog.open(HwPinHelpDialogComponent, <MatDialogConfig> {
-      width: '450px',
-    });
+    HwPinHelpDialogComponent.openDialog(this.dialog);
   }
 
+  /**
+   * Allow to enter the PIN using the numeric keys to emulate the PIN matrix.
+   */
   @HostListener('window:keyup', ['$event'])
   keyEvent(event: KeyboardEvent) {
     const key = parseInt(event.key, 10);
@@ -77,6 +99,10 @@ export class HwPinDialogComponent extends HwDialogBaseComponent<HwPinDialogCompo
     }
   }
 
+  /**
+   * Add a new number to the PIN.
+   * @param number Position of the number of the new number on the matrix.
+   */
   addNumber(number: string) {
     const currentValue: string = this.form.value.pin;
     if (currentValue.length < 8) {
@@ -84,6 +110,9 @@ export class HwPinDialogComponent extends HwDialogBaseComponent<HwPinDialogCompo
     }
   }
 
+  /**
+   * Removes the last number from the PIN.
+   */
   removeNumber() {
     const currentValue: string = this.form.value.pin;
     this.form.get('pin').setValue(currentValue.substring(0, currentValue.length - 1));

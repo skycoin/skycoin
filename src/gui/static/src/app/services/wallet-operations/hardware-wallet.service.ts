@@ -28,7 +28,7 @@ export enum HwSecurityWarnings {
   /**
    * The device is running an outdated firmware.
    */
-  OutdatedFirmware = 'FirmwareVersionNotVerified',
+  OutdatedFirmware = 'OutdatedFirmware',
 }
 
 export interface HwFeaturesResponse {

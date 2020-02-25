@@ -67,20 +67,27 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
     // Get the current balance.
     this.subscriptionsGroup.push(this.balanceAndOutputsService.walletsWithBalance.subscribe(wallets => {
-      const addresses: AddressWithBalance[] = [];
-      const alreadyAddedAddresses = new Map<string, boolean>();
+      const addresses = new Map<string, AddressWithBalance>();
       wallets.forEach(wallet => {
         wallet.addresses.forEach(address => {
-          if (!alreadyAddedAddresses.has(address.address)) {
-            addresses.push(address);
-            alreadyAddedAddresses.set(address.address, true);
+          if (!addresses.has(address.address)) {
+            addresses.set(address.address, address);
+          } else {
+            // This prevents a minor glich due to an edge case in which, just for a few seconds,
+            // some addresses of a newly added hw wallet which has also been added as a software
+            // wallet can report 0 coins while the node is reporting some coins on the same
+            // addresses on the previously created software wallet.
+            const previouslySavedAddress = addresses.get(address.address);
+            if (previouslySavedAddress.coins.isLessThan(address.coins)) {
+              addresses.set(address.address, address);
+            }
           }
         });
       });
 
       let coins = new BigNumber(0);
       let hours = new BigNumber(0);
-      addresses.map(addr => {
+      addresses.forEach(addr => {
         coins = coins.plus(addr.coins);
         hours = hours.plus(addr.hours);
       });

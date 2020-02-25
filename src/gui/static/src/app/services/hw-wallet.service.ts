@@ -455,14 +455,15 @@ export class HwWalletService {
         previewData.push(currentOutput);
       }
     });
-    this.signTransactionDialog = this.dialog.open(this.signTransactionConfirmationComponentInternal, <MatDialogConfig> {
-      width: '600px',
-      data: previewData,
-    });
+
+    this.signTransactionDialog = this.signTransactionConfirmationComponentInternal.openDialog(this.dialog, previewData);
 
     // Make the device ask for confirmation and create the signatures.
     return this.cancelLastAction().pipe(mergeMap(() => {
       this.prepare();
+
+      // Configure the modal window which will be used to ask for the PIN code.
+      this.hwWalletPinService.signingTx = true;
 
       const params = {
         transaction_inputs: inputs,

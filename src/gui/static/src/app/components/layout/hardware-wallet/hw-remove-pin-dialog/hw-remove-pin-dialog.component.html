@@ -1,4 +1,5 @@
 <app-modal [headline]="'hardware-wallet.options.delete-pin' | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Processing">
+  <!-- Initial instructions and warning. -->
   <div *ngIf="currentState === states.Initial">
     <app-hw-message
       [text]="'hardware-wallet.remove-pin.warning' | translate"
@@ -24,15 +25,19 @@
   </div>
 
   <div *ngIf="currentState !== states.Initial">
+    <!-- Instructions after confirming. -->
     <app-hw-message *ngIf="currentState === states.Processing"
       [text]="'hardware-wallet.general.confirm' | translate"
       [icon]="msgIcons.Confirm"
     ></app-hw-message>
+
+    <!-- Result. -->
     <app-hw-message *ngIf="currentState === states.ShowingResult"
       [text]="result.text | translate"
       [icon]="result.icon"
     ></app-hw-message>
 
+    <!-- Buttons area. -->
     <div class="-buttons" *ngIf="currentState !== states.Processing">
       <app-button (action)="closeModal()" class="primary-button" #closeButton>
         {{ 'common.close-button' | translate }}

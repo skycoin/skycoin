@@ -1,8 +1,8 @@
 <app-modal [headline]="'hardware-wallet.options.configure-automatically' | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Processing">
+  <!-- Initial instructions and form. -->
   <div *ngIf="currentState === states.Initial">
     <app-hw-message
       [text]="'hardware-wallet.generate-seed.text' | translate"
-      [icon]="msgIcons.None"
     ></app-hw-message>
 
     <div class="modal-form-container" [formGroup]="form">
@@ -26,16 +26,19 @@
     </div>
   </div>
 
+  <!-- Instructions after using the form. -->
   <app-hw-message *ngIf="currentState === states.Processing"
     [text]="'hardware-wallet.generate-seed.configuring' | translate"
     [icon]="msgIcons.Spinner"
   ></app-hw-message>
 
+  <!-- Result. -->
   <app-hw-message *ngIf="currentState === states.ShowingResult"
     [text]="result.text | translate"
     [icon]="result.icon"
   ></app-hw-message>
 
+  <!-- Buttons area. -->
   <div class="-buttons" *ngIf="currentState !== states.Initial && currentState !== states.Processing">
     <app-button (action)="closeModal()" class="primary-button" #closeButton>
       {{ 'common.close-button' | translate }}

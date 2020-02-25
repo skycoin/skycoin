@@ -1,8 +1,8 @@
 {
-  "name": "skycoin-electron",
-  "author": "skycoin-electron",
+  "name": "skycoin",
+  "author": "skycoin",
   "main": "electron-main.js",
-  "version": "0.1.0",
+  "version": "0.27.0",
   "license": "MIT",
   "description": "Specific Electron code for the skycoin wallet",
   "private": true,

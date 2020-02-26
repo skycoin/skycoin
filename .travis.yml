@@ -74,7 +74,7 @@ install:
   # Install gox
   - if [[ $TRAVIS_BUILD_STAGE_NAME == "Build" ]]; then go get github.com/mitchellh/gox; fi
   # Install dependences for building wallet
-  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PULL_REQUEST" == false ]]; then
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PULL_REQUEST" == "false" ]]; then
     sudo apt-get install --no-install-recommends -y icnsutils graphicsmagick xz-utils libudev-dev libusb-1.0-0-dev;
     fi
   - if [[ ! -d $GOPATH/src/github.com/SkycoinProject/skycoin ]]; then
@@ -86,7 +86,7 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then ./ci-scripts/install-nodejs-win.sh; fi
 
 before_script:
-  - if [[ $TRAVIS_BUILD_STAGE_NAME == "Build" ]] && [[ "$TRAVIS_PULL_REQUEST" == false ]] && [[ "$TRAVIS_OS_NAME" == "osx" ]] && [[ "$TRAVIS_BRANCH" =~ $BUILD_BRANCH || -n "$TRAVIS_TAG" ]]; then
+  - if [[ $TRAVIS_BUILD_STAGE_NAME == "Build" ]] && [[ "$TRAVIS_PULL_REQUEST" == "false" ]] && [[ "$TRAVIS_OS_NAME" == "osx" ]] && [[ "$TRAVIS_BRANCH" =~ $BUILD_BRANCH || -n "$TRAVIS_TAG" ]]; then
     ./ci-scripts/add-key.sh;
     fi
   # Source the ~/.bashrc to update the PATH for windows

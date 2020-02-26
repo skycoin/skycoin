@@ -2,7 +2,7 @@
 
 set -e -o pipefail
 
-if [[ "$TRAVIS_OS_NAME" == "osx" ]] && [[ ! "$TRAVIS_BRANCH" =~ $BUILD_BRANCH || "$TRAVIS_PULL_REQUEST" == true ]]; then
+if [[ "$TRAVIS_OS_NAME" == "osx" ]] && [[ ! "$TRAVIS_BRANCH" =~ $BUILD_BRANCH || "$TRAVIS_PULL_REQUEST" != "false" ]]; then
     export CSC_IDENTITY_AUTO_DISCOVERY=false;
 fi
 

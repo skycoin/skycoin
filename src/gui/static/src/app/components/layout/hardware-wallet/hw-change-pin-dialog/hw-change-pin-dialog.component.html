@@ -2,16 +2,19 @@
   [headline]="(changingExistingPin ? 'hardware-wallet.options.change-pin' : 'hardware-wallet.options.create-pin') | translate"
   [dialog]="dialogRef"
   [disableDismiss]="currentState === states.Initial">
+  <!-- Initial instructions. -->
   <app-hw-message *ngIf="currentState === states.Initial"
     [text]="'hardware-wallet.general.confirm' | translate"
     [icon]="msgIcons.Confirm"
   ></app-hw-message>
 
+  <!-- Result. -->
   <app-hw-message *ngIf="currentState === states.ShowingResult"
     [text]="result.text | translate"
     [icon]="result.icon"
   ></app-hw-message>
 
+  <!-- Buttons area. -->
   <div class="-buttons" *ngIf="currentState !== states.Initial">
     <app-button (action)="closeModal()" class="primary-button" #closeButton>
       {{ 'common.close-button' | translate }}

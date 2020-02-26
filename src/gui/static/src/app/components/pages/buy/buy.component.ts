@@ -51,7 +51,8 @@ export class BuyComponent implements OnInit, OnDestroy {
         this.button.setSuccess();
         this.order.status = response.status;
       },
-      error => this.button.setError(error),
+      // On this part the error was shown on the button. Now it would have to be shown on the msg bar.
+      error => this.button.resetState(),
     );
   }
 

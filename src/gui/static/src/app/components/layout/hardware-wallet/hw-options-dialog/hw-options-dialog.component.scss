@@ -34,3 +34,36 @@
 .-blinking {
   animation: alert-blinking 1s linear infinite;
 }
+
+.loading-indicator {
+  width: 100px;
+  height: 40px;
+  left: calc(50% - 50px);
+  top: calc(50% - 20px);
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  mat-spinner {
+    margin-left: 7px;
+    margin-right: 12px;
+    height: 18px !important;
+    width: 18px !important;
+  
+    ::ng-deep svg {
+      height: 18px !important;
+      width: 18px !important;
+
+      circle {
+        stroke: $grey-light;
+      }
+    }
+  }
+}
+
+.disabled {
+  opacity: 0.3;
+  cursor: default;
+  pointer-events: none;
+}

@@ -244,8 +244,8 @@ export class HistoryService {
           });
 
           return {
-            user: userTransactions.map(tx => this.processTransactionData(tx)),
-            all: transactions.map(tx => this.processTransactionData(tx)),
+            user: userTransactions.map(tx => this.processTransactionData(tx)).sort((a, b) => b.timestamp - a.timestamp),
+            all: transactions.map(tx => this.processTransactionData(tx)).sort((a, b) => b.timestamp - a.timestamp),
           };
         }));
       }));

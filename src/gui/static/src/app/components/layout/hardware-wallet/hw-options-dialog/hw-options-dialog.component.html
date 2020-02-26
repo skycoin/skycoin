@@ -20,7 +20,7 @@
     (linkClicked)="wipe()"
   ></app-hw-message>
 
-  <div *ngIf="currentState === states.Finished">
+  <div *ngIf="currentState === states.Finished" [ngClass]="{'disabled' : refreshingWarnings}">
     <app-hw-message *ngIf="newWalletConnected"
       [upperBigText]="'hardware-wallet.options.unconfigured-detected-title' | translate"
       [lowerLightText]="('hardware-wallet.options.firmware-version' | translate) + ' ' + firmwareVersion"
@@ -31,7 +31,7 @@
     <app-hw-message *ngIf="!newWalletConnected"
       [text]="'hardware-wallet.options.configured-detected' | translate"
       [lowerLightText]="('hardware-wallet.options.firmware-version' | translate) + ' ' + firmwareVersion"
-      [lowerBigText]="walletName"
+      [lowerBigText]="wallet.label"
       [icon]="msgIcons.HardwareWallet"
     ></app-hw-message>
 
@@ -79,7 +79,12 @@
     </div>
   </div>
 
-  <div class="-buttons" *ngIf="currentState === states.Finished">
+  <div class="loading-indicator" *ngIf="currentState === states.Finished && refreshingWarnings">
+    <mat-spinner></mat-spinner>
+    {{ 'common.loading' | translate }}
+  </div>
+
+  <div class="-buttons" *ngIf="currentState === states.Finished" [ngClass]="{'disabled' : refreshingWarnings}">
     <app-button (action)="closeModal()" class="primary-button">
       {{ 'common.close-button' | translate }}
     </app-button>

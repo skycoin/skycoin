@@ -60,6 +60,15 @@ export class NetworkService {
   noConnections = false;
 
   /**
+   * Time interval in which periodic data updates will be made.
+   */
+  private readonly updatePeriod = 5 * 1000;
+  /**
+   * Time interval in which the periodic data updates will be restarted after an error.
+   */
+  private readonly errorUpdatePeriod = 5 * 1000;
+
+  /**
    * List of default addresses to which the local node will always try connect to when started.
    */
   private dataRefreshSubscription: Subscription;
@@ -114,7 +123,7 @@ export class NetworkService {
         if (connectionsResponse.connections === null || connectionsResponse.connections.length === 0) {
           this.noConnections = true;
           this.ngZone.run(() => this.connectionsSubject.next([]));
-          this.startDataRefreshSubscription(5000);
+          this.startDataRefreshSubscription(this.updatePeriod);
 
           return;
         }
@@ -137,8 +146,8 @@ export class NetworkService {
         this.ngZone.run(() => this.connectionsSubject.next(currentConnections));
 
         // Repeat the operation after an appropiate delay.
-        this.startDataRefreshSubscription(5000);
-      }, () => this.startDataRefreshSubscription(5000));
+        this.startDataRefreshSubscription(this.updatePeriod);
+      }, () => this.startDataRefreshSubscription(this.errorUpdatePeriod));
     });
   }
 }

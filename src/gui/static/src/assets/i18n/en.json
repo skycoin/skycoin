@@ -51,9 +51,7 @@
     "proceed-button": "Proceed",
     "reset-link": "I forgot my password",
     "incorrect-password-error": "Incorrect password.",
-    "decrypting-error": "Error decrypting the wallet.",
-    "api-disabled-error": "API disabled.",
-    "no-wallet-error": "Wallet does not exist."
+    "decrypting-error": "Error decrypting the wallet."
   },
 
   "buy": {
@@ -438,7 +436,8 @@
     "api" : {
       "no-internet-error": "You do not have a internet connection or the node has stopped working.",
       "incorrect-password-error": "Incorrect password.",
-      "unknown-error": "It was not possible to perform the operation."
+      "unknown-error": "It was not possible to perform the operation.",
+      "api-disabled-error": "API disabled."
     }
   },
 
@@ -562,9 +561,9 @@
       "title-change-current": "Enter the Current PIN",
       "title-change-new": "Enter the New PIN",
       "title-change-confirm": "Confirm the New PIN",
-      "instructions": "The PIN layout is displayed on the Skywallet screen.",
-      "instructions-tx": "Enter the PIN to confirm and sign the transaction.",
-      "instructions-change": "Please enter a secure PIN consisting of 4 to 8 numbers.",
+      "instructions-generic": "The PIN layout is displayed on the Skywallet screen.",
+      "instructions-tx": "Enter the PIN to confirm and sign the transaction. The PIN layout is displayed on the Skywallet screen.",
+      "instructions-change": "Please enter a secure PIN consisting of 4 to 8 numbers. The PIN layout is displayed on the Skywallet screen.",
       "help": "Need help?"
     },
     "pin-help" : {

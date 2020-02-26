@@ -27,7 +27,8 @@ export interface NodeApiRequestOptions {
 }
 
 /**
- * Allows to make request to the node api with ease.
+ * Allows to make request to the node api with ease. Check the node API documentation for
+ * information about the API endpoints.
  */
 @Injectable()
 export class ApiService {

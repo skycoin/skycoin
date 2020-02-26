@@ -1,14 +1,17 @@
-<app-modal [headline]="'hardware-wallet.added.title' | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Initial || currentState === states.Finished">
+<app-modal [headline]="'hardware-wallet.added.title' | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Initial">
+  <!-- Loading indicator. -->
   <app-hw-message *ngIf="currentState === states.Initial"
     [text]="'hardware-wallet.added.configuring' | translate"
     [icon]="msgIcons.Spinner"
   ></app-hw-message>
 
+  <!-- Result. -->
   <app-hw-message *ngIf="currentState === states.ShowingResult"
     [text]="result.text | translate"
     [icon]="result.icon"
   ></app-hw-message>
 
+  <!-- Final instructions and form for changing the label. -->
   <div *ngIf="currentState === states.Finished">
     <app-hw-message
       [upperBigText]="'hardware-wallet.added.done' | translate"

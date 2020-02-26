@@ -1,14 +1,19 @@
 import { filter } from 'rxjs/operators';
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
-import { PriceService } from '../../../services/price.service';
 import { SubscriptionLike } from 'rxjs';
+import { BigNumber } from 'bignumber.js';
+
+import { PriceService } from '../../../services/price.service';
 import { BlockchainService } from '../../../services/blockchain.service';
 import { AppService } from '../../../services/app.service';
-import { BigNumber } from 'bignumber.js';
 import { NetworkService } from '../../../services/network.service';
 import { AppConfig } from '../../../app.config';
 import { BalanceAndOutputsService } from '../../../services/wallet-operations/balance-and-outputs.service';
+import { AddressWithBalance } from '../../../services/wallet-operations/wallet-objects';
 
+/**
+ * Header shown at the top of most pages.
+ */
 @Component({
   selector: 'app-header',
   templateUrl: './header.component.html',
@@ -17,39 +22,27 @@ import { BalanceAndOutputsService } from '../../../services/wallet-operations/ba
 export class HeaderComponent implements OnInit, OnDestroy {
   @Input() headline: string;
 
+  // Data about the synchronization status of the node.
+  synchronizationInfoObtained = false;
+  synchronizationPercentage: number;
+  // Use synchronizationInfoObtained to know if the value has been already updated.
+  synchronized = false;
+  currentBlock: number;
+  highestBlock: number;
+
+  // Data about the balance.
+  coins: string;
+  hours: string;
+
   showPrice = !!AppConfig.priceApiId;
-  addresses = [];
-  current: number;
-  highest: number;
-  percentage: number;
-  querying = true;
-  hasPendingTxs: boolean;
   price: number;
-  synchronized = true;
+  // If the node has pending transactions potentially affecting the user balance.
+  hasPendingTxs: boolean;
+  // If the app already got the balance from the node.
   balanceObtained = false;
   walletDownloadUrl = AppConfig.walletDownloadUrl;
 
   private subscriptionsGroup: SubscriptionLike[] = [];
-  // This should be deleted. View the comment in the constructor.
-  // private fetchVersionError: string;
-
-  get loading() {
-    return !this.current || !this.highest || this.current !== this.highest || !this.coins || this.coins === 'NaN' || !this.hours || this.hours === 'NaN' || !this.balanceObtained;
-  }
-
-  get coins() {
-    let coins = new BigNumber('0');
-    this.addresses.map(addr => coins = coins.plus(addr.coins));
-
-    return coins.decimalPlaces(6).toString();
-  }
-
-  get hours() {
-    let hours = new BigNumber('0');
-    this.addresses.map(addr => hours = hours.plus(addr.hours));
-
-    return hours.decimalPlaces(0).toString();
-  }
 
   constructor(
     public appService: AppService,
@@ -60,35 +53,55 @@ export class HeaderComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    this.subscriptionsGroup.push(this.blockchainService.progress.pipe(filter(response => !!response))
-      .subscribe(response => {
-        this.querying = false;
-        this.highest = response.highestBlock;
-        this.current = response.currentBlock;
-        this.percentage = this.current && this.highest ? (this.current / this.highest) : 0;
-        this.synchronized = response.synchronized;
-      }));
+    // Get the synchronization status.
+    this.subscriptionsGroup.push(this.blockchainService.progress.pipe(filter(response => !!response)).subscribe(response => {
+      this.synchronizationInfoObtained = true;
+      this.highestBlock = response.highestBlock;
+      this.currentBlock = response.currentBlock;
+      this.synchronizationPercentage = this.currentBlock && this.highestBlock ? (this.currentBlock / this.highestBlock) : 0;
+      this.synchronized = response.synchronized;
+    }));
 
+    // Get the current price.
     this.subscriptionsGroup.push(this.priceService.price.subscribe(price => this.price = price));
 
+    // Get the current balance.
     this.subscriptionsGroup.push(this.balanceAndOutputsService.walletsWithBalance.subscribe(wallets => {
-      this.addresses = [];
-      const alreadyAddedAddresses = new Map<string, boolean>();
-
+      const addresses = new Map<string, AddressWithBalance>();
       wallets.forEach(wallet => {
         wallet.addresses.forEach(address => {
-          if (!alreadyAddedAddresses.has(address.address)) {
-            this.addresses.push(address);
-            alreadyAddedAddresses.set(address.address, true);
+          if (!addresses.has(address.address)) {
+            addresses.set(address.address, address);
+          } else {
+            // This prevents a minor glich due to an edge case in which, just for a few seconds,
+            // some addresses of a newly added hw wallet which has also been added as a software
+            // wallet can report 0 coins while the node is reporting some coins on the same
+            // addresses on the previously created software wallet.
+            const previouslySavedAddress = addresses.get(address.address);
+            if (previouslySavedAddress.coins.isLessThan(address.coins)) {
+              addresses.set(address.address, address);
+            }
           }
         });
       });
+
+      let coins = new BigNumber(0);
+      let hours = new BigNumber(0);
+      addresses.forEach(addr => {
+        coins = coins.plus(addr.coins);
+        hours = hours.plus(addr.hours);
+      });
+      this.coins = coins.toString();
+      this.hours = hours.toString();
+
     }));
 
+    // Know if there are pending transactions.
     this.subscriptionsGroup.push(this.balanceAndOutputsService.hasPendingTransactions.subscribe(hasPendingTxs => {
       this.hasPendingTxs = hasPendingTxs;
     }));
 
+    // Know when the app gets the balance from the node.
     this.subscriptionsGroup.push(this.balanceAndOutputsService.firstFullUpdateMade.subscribe(firstFullUpdateMade => {
       this.balanceObtained = firstFullUpdateMade;
     }));

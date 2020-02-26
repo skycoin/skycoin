@@ -1,9 +1,13 @@
 import { Component } from '@angular/core';
+
 import { AppConfig } from '../../../../app.config';
 import { NavBarSwitchService } from '../../../../services/nav-bar-switch.service';
 import { environment } from '../../../../../environments/environment';
 import { AppService } from '../../../../services/app.service';
 
+/**
+ * Navigation bar shown on the header.
+ */
 @Component({
   selector: 'app-nav-bar',
   templateUrl: './nav-bar.component.html',

@@ -500,7 +500,7 @@
     },
     "update-firmware-warning" : {
       "title": "Firmware Desactualizado",
-      "text": "WARNING: el firmware de su Skywallet está desactualizado. Para mantenerse seguro se le recomienda actualizarlo.",
+      "text": "ADVERTENCIA: el firmware de su Skywallet está desactualizado. Para mantenerse seguro se le recomienda actualizarlo.",
       "update": "Actualizar"
     },
     "update-firmware" : {
@@ -543,7 +543,7 @@
     },
     "create-backup" : {
       "warning": "ADVERTENCIA: Solo puede usar esta opción para hacer una copia de seguridad de la semilla de su Skywallet una vez. Si decide continuar, tendrá que escribir un grupo de palabras (en papel, nunca en una computadora) que aparecerán en la pantalla de la Skywallet y almacenar la lista en un lugar seguro. Cualquier persona con acceso a la lista de palabras (la \"semilla\") podrá acceder a los fondos de la billetera, por lo que se recomienda extremar las precauciones.",
-      "instructions": "Escriba la lista de palabras que aparecen en la pantalla de la Skywallet. Asegúrate de respetar el orden y escribir cada palabra correctamente."
+      "instructions": "Escriba la lista de palabras que aparecen en la pantalla de la Skywallet. Asegúrese de respetar el orden y escribir cada palabra correctamente."
     },
     "seed-word" : {
       "title": "Ingresar Palabra",

@@ -25,6 +25,10 @@ export class PriceService {
    * Time interval in which periodic data updates will be made.
    */
   private readonly updatePeriod = 10 * 60 * 1000;
+  /**
+   * Time interval in which the periodic data updates will be restarted after an error.
+   */
+  private readonly errorUpdatePeriod = 30 * 1000;
   private priceSubscription: Subscription;
 
   constructor(
@@ -57,7 +61,7 @@ export class PriceService {
           this.ngZone.run(() => this.priceInternal.next(response.quotes.USD.price));
           this.startDataRefreshSubscription(this.updatePeriod);
         }, () => {
-          this.startDataRefreshSubscription(30000);
+          this.startDataRefreshSubscription(this.errorUpdatePeriod);
         });
       });
     } else {

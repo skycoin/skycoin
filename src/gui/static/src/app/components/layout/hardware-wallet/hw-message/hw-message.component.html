@@ -1,4 +1,5 @@
 <div class="content">
+  <!-- Icons. -->
   <div class="icon-container" *ngIf="icon !== icons.None">
     <mat-spinner *ngIf="icon == icons.Spinner"></mat-spinner>
     <i *ngIf="icon == icons.Success" class="material-icons green-text">done</i>
@@ -8,6 +9,7 @@
     <i *ngIf="icon == icons.Warning" class="material-icons red-text -blinking">error</i>
     <i *ngIf="icon == icons.Confirm" class="material-icons yellow-text">touch_app</i>
   </div>
+  <!-- Texts. -->
   <div class="text-container">
     <div *ngIf="upperBigText">
       <span class="big-text">{{ upperBigText }}</span>

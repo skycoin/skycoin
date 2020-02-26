@@ -38,7 +38,7 @@
 
       <div class="-box">
         <div class="-img">
-          <app-qr-code-button [address]="order.exchangeAddress" [hideCoinRequestForm]="true" [ignoreCoinPrefix]="true"></app-qr-code-button>
+          <app-qr-code-button [address]="order.exchangeAddress" [showAddressOnly]="true"></app-qr-code-button>
         </div>
         <div class="-item">
           <div class="-key">{{ 'exchange.details.exchange-addr-label' | translate }}</div>
@@ -48,7 +48,7 @@
 
       <div class="-box" *ngIf="order.exchangeTag">
         <div class="-img">
-          <app-qr-code-button [address]="order.exchangeTag" [hideCoinRequestForm]="true" [ignoreCoinPrefix]="true"></app-qr-code-button>
+          <app-qr-code-button [address]="order.exchangeTag" [showAddressOnly]="true"></app-qr-code-button>
         </div>
         <div class="-item">
           <div class="-key">{{ 'exchange.details.exchange-addr-tag-label' | translate }}</div>

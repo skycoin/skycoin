@@ -50,6 +50,15 @@ export class BlockchainService {
   private dataSubscription: Subscription;
 
   /**
+   * Time interval in which periodic data updates will be made.
+   */
+  private readonly updatePeriod = 2 * 1000;
+  /**
+   * Time interval in which the periodic data updates will be restarted after an error.
+   */
+  private readonly errorUpdatePeriod = 2 * 1000;
+
+  /**
    * allows to know the current synchronization state of the blockchain.
    */
   get progress(): Observable<ProgressEvent> {
@@ -107,8 +116,8 @@ export class BlockchainService {
       })).subscribe((response: any) => {
         this.ngZone.run(() => {
           // Stop if a value is not valid.
-          if (!response || !response.current || !response.highest || response.current < this.lastCurrentBlock || response.highest < this.lastHighestBlock) {
-            this.startDataRefreshSubscription(2000);
+          if (!response || !response.current || !response.highest || response.highest === 0 || response.current < this.lastCurrentBlock || response.highest < this.lastHighestBlock) {
+            this.startDataRefreshSubscription(this.errorUpdatePeriod);
 
             return;
           }
@@ -138,10 +147,10 @@ export class BlockchainService {
             synchronized: this.nodeSynchronized,
           });
 
-          this.startDataRefreshSubscription(2000);
+          this.startDataRefreshSubscription(this.updatePeriod);
         });
       }, () => {
-        this.startDataRefreshSubscription(2000);
+        this.startDataRefreshSubscription(this.errorUpdatePeriod);
       });
     });
   }

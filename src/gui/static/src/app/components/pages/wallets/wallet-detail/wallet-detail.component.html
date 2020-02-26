@@ -61,7 +61,7 @@
         <button mat-menu-item (click)="copyAddress($event, address, 1000)" *ngIf="!wallet.isHardware || address.confirmed">
           {{ 'wallet.address.' + (address.copying ? 'copied': 'copy-address') | translate }}
         </button>
-        <button mat-menu-item (click)="confirmAddress(address, i, !address.confirmed)" *ngIf="wallet.isHardware">
+        <button mat-menu-item (click)="confirmAddress(wallet, i, !address.confirmed)" *ngIf="wallet.isHardware">
           {{ 'wallet.address.confirm' | translate }}
         </button>
         <button mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address }">

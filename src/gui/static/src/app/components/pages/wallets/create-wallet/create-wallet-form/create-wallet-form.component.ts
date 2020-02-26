@@ -4,7 +4,7 @@ import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { SubscriptionLike, Subject, of } from 'rxjs';
 import { ApiService, NodeApiRequestOptions } from '../../../../../services/api.service';
 import { MatDialog } from '@angular/material/dialog';
-import { SeedWordDialogComponent } from '../../../../layout/seed-word-dialog/seed-word-dialog.component';
+import { SeedWordDialogComponent, WordAskedReasons } from '../../../../layout/seed-word-dialog/seed-word-dialog.component';
 import { MsgBarService } from '../../../../../services/msg-bar.service';
 import { ConfirmationParams, ConfirmationComponent, DefaultConfirmationButtons } from '../../../../layout/confirmation/confirmation.component';
 import { OperationError } from '../../../../../utils/operation-error';
@@ -140,9 +140,8 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
 
   private askForWord(wordIndex: number) {
     return SeedWordDialogComponent.openDialog(this.dialog, {
-      isForHwWallet: false,
+      reason: this.create ? WordAskedReasons.CreatingSoftwareWallet : WordAskedReasons.RecoveringSoftwareWallet,
       wordNumber: wordIndex + 1,
-      restoringSoftwareWallet: !this.create,
     }).afterClosed().subscribe(word => {
       if (word) {
         if (this.create) {

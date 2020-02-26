@@ -56,8 +56,7 @@ jobs:
 cache:
   directories:
   - electron/node_modules
-  - electron/src/node_modules
-  - src/gui/static/node_modules
+  - electron/app/node_modules
   - $HOME/.cache/electron
   - $HOME/.cache/electron-builder
   - $HOME/.npm/_prebuilds
@@ -87,7 +86,7 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then ./ci-scripts/install-nodejs-win.sh; fi
 
 before_script:
-  - if [[ $TRAVIS_BUILD_STAGE_NAME == "build" ]] && [[ "$TRAVIS_OS_NAME" == "osx" ]] && [[ "$TRAVIS_BRANCH" =~ $BUILD_BRANCH || -n "$TRAVIS_TAG" ]]; then
+  - if [[ $TRAVIS_BUILD_STAGE_NAME == "Build" ]] && [[ "$TRAVIS_OS_NAME" == "osx" ]] && [[ "$TRAVIS_BRANCH" =~ $BUILD_BRANCH || -n "$TRAVIS_TAG" ]]; then
     ./ci-scripts/add-key.sh;
     fi
   # Source the ~/.bashrc to update the PATH for windows
@@ -95,7 +94,6 @@ before_script:
 
 script:
   - if [[ "$TEST_SUIT" != "" ]]; then ./ci-scripts/lint-and-test.sh $TEST_SUIT; fi
-  # Do not do code signing if pull request, or branch is not in build branches and not a tag build.
   - if [[ "$TRAVIS_BUILD_STAGE_NAME" == "Build" ]]; then ./ci-scripts/build-wallet.sh; fi
 
 deploy:

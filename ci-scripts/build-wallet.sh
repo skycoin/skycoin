@@ -2,10 +2,8 @@
 
 set -e -o pipefail
 
-if [[ "$TRAVIS_BRANCH" =~ $BUILD_BRANCH || -n "$TRAVIS_TAG" ]]; then
-  export CSC_IDENTITY_AUTO_DISCOVERY=true;
-else
-  export CSC_IDENTITY_AUTO_DISCOVERY=false;
+if [[ "$TRAVIS_OS_NAME" == "osx" ]] && [[ ! "$TRAVIS_BRANCH" =~ $BUILD_BRANCH ]]; then
+    export CSC_IDENTITY_AUTO_DISCOVERY=false;
 fi
 
 echo "start to build wallets..."

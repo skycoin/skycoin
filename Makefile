@@ -146,7 +146,7 @@ format: ## Formats the code. Must have goimports installed (use make install-lin
 	goimports -w -local github.com/SkycoinProject/skycoin ./src
 
 install-deps-ui:  ## Install the UI dependencies
-	cd $(GUI_STATIC_DIR) && npm install
+	cd $(GUI_STATIC_DIR) && npm ci
 
 lint-ui:  ## Lint the UI code
 	cd $(GUI_STATIC_DIR) && npm run lint

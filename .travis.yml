@@ -37,26 +37,26 @@ jobs:
   - name: linux-wallet-build
     stage: build
     os: linux
-    if: branch =~ env(BUILD_BRANCH) AND type != pull_request
+    # if: branch =~ env(BUILD_BRANCH) AND type != pull_request
     env: TEST_SUIT=""
   - name: osx-wallet-build
     stage: build
     os: osx
-    if: branch =~ env(BUILD_BRANCH) AND type != pull_request
+    # if: branch =~ env(BUILD_BRANCH) AND type != pull_request
     env: TEST_SUIT=""
+
   - name: windows-wallet-build
     stage: build
     os: windows
     env:
     - GOX_OUTPUT='.gox_output'
     - TEST_SUIT=""
-    if: branch =~ env(BUILD_BRANCH) AND type != pull_request
+    # if: branch =~ env(BUILD_BRANCH) AND type != pull_request
 
 cache:
   directories:
   - electron/node_modules
-  - electron/src/node_modules
-  - src/gui/static/node_modules
+  - electron/app/node_modules
   - $HOME/.cache/electron
   - $HOME/.cache/electron-builder
   - $HOME/.npm/_prebuilds
@@ -74,7 +74,7 @@ install:
   # Install gox
   - if [[ $TRAVIS_BUILD_STAGE_NAME == "Build" ]]; then go get github.com/mitchellh/gox; fi
   # Install dependences for building wallet
-  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PULL_REQUEST" == false ]]; then
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PULL_REQUEST" == "false" ]]; then
     sudo apt-get install --no-install-recommends -y icnsutils graphicsmagick xz-utils libudev-dev libusb-1.0-0-dev;
     fi
   - if [[ ! -d $GOPATH/src/github.com/SkycoinProject/skycoin ]]; then
@@ -86,7 +86,7 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then ./ci-scripts/install-nodejs-win.sh; fi
 
 before_script:
-  - if [[ $TRAVIS_BUILD_STAGE_NAME == "build" ]] && [[ "$TRAVIS_OS_NAME" == "osx" ]] && [[ "$TRAVIS_BRANCH" =~ $BUILD_BRANCH || -n "$TRAVIS_TAG" ]]; then
+  - if [[ $TRAVIS_BUILD_STAGE_NAME == "Build" ]] && [[ "$TRAVIS_PULL_REQUEST" == "false" ]] && [[ "$TRAVIS_OS_NAME" == "osx" ]] && [[ "$TRAVIS_BRANCH" =~ $BUILD_BRANCH || -n "$TRAVIS_TAG" ]]; then
     ./ci-scripts/add-key.sh;
     fi
   # Source the ~/.bashrc to update the PATH for windows
@@ -94,9 +94,7 @@ before_script:
 
 script:
   - if [[ "$TEST_SUIT" != "" ]]; then ./ci-scripts/lint-and-test.sh $TEST_SUIT; fi
-  - if [[ "$TRAVIS_BUILD_STAGE_NAME" == "Build" ]] && [[ "$TRAVIS_PULL_REQUEST" == false ]] && [[ "$TRAVIS_BRANCH" =~ $BUILD_BRANCH || -n  "$TRAVIS_TAG" ]]; then
-    ./ci-scripts/build-wallet.sh;
-    fi
+  - if [[ "$TRAVIS_BUILD_STAGE_NAME" == "Build" ]]; then ./ci-scripts/build-wallet.sh; fi
 
 deploy:
   provider: s3

@@ -37,12 +37,12 @@ jobs:
   - name: linux-wallet-build
     stage: build
     os: linux
-    if: branch =~ env(BUILD_BRANCH) AND type != pull_request
+    # if: branch =~ env(BUILD_BRANCH) AND type != pull_request
     env: TEST_SUIT=""
   - name: osx-wallet-build
     stage: build
     os: osx
-    if: branch =~ env(BUILD_BRANCH) AND type != pull_request
+    # if: branch =~ env(BUILD_BRANCH) AND type != pull_request
     env: TEST_SUIT=""
   - name: windows-wallet-build
     stage: build
@@ -50,7 +50,7 @@ jobs:
     env:
     - GOX_OUTPUT='.gox_output'
     - TEST_SUIT=""
-    if: branch =~ env(BUILD_BRANCH) AND type != pull_request
+    # if: branch =~ env(BUILD_BRANCH) AND type != pull_request
 
 cache:
   directories:
@@ -94,9 +94,17 @@ before_script:
 
 script:
   - if [[ "$TEST_SUIT" != "" ]]; then ./ci-scripts/lint-and-test.sh $TEST_SUIT; fi
-  - if [[ "$TRAVIS_BUILD_STAGE_NAME" == "Build" ]] && [[ "$TRAVIS_PULL_REQUEST" == false ]] && [[ "$TRAVIS_BRANCH" =~ $BUILD_BRANCH || -n  "$TRAVIS_TAG" ]]; then
+  - if [[ "$TRAVIS_BUILD_STAGE_NAME" == "Build" ]]; then
+    # Do not do code signing if pull request, or branch is not in build branches and not a tag build.
+    if [[ "$TRAVIS_PULL_REQUEST" == true ]] || [[ "$TRAVIS_BRANCH" !~ $BUILD_BRANCH && -z "$TRAVIS_TAG" ]]; then
+      export CSC_IDENTITY_AUTO_DISCOVERY=false;
+    fi
+
     ./ci-scripts/build-wallet.sh;
     fi
+#   - if [[ "$TRAVIS_BUILD_STAGE_NAME" == "Build" ]] && [[ "$TRAVIS_PULL_REQUEST" == false ]] && [[ "$TRAVIS_BRANCH" =~ $BUILD_BRANCH || -n  "$TRAVIS_TAG" ]]; then
+#     ./ci-scripts/build-wallet.sh;
+#     fi
 
 deploy:
   provider: s3

@@ -1,14 +1,20 @@
 import { Component, Inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
+
 import { OldTransaction } from '../../../../services/wallet-operations/transaction-objects';
 
+/**
+ * Modal window for showing the details of a transaction from the transaction history.
+ */
 @Component({
   selector: 'app-transaction-detail',
   templateUrl: './transaction-detail.component.html',
   styleUrls: ['./transaction-detail.component.scss'],
 })
 export class TransactionDetailComponent {
-
+  /**
+   * Opens the modal window. Please use this function instead of opening the window "by hand".
+   */
   public static openDialog(dialog: MatDialog, transaction: OldTransaction): MatDialogRef<TransactionDetailComponent, any> {
     const config = new MatDialogConfig();
     config.data = transaction;

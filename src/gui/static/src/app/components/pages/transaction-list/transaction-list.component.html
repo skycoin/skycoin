@@ -1,12 +1,14 @@
 <app-header [headline]="'history.title-and-button' | translate"></app-header>
 <div class="container">
-  <div [formGroup]="form" class="form-field" [ngClass]="{ 'bottom-line': !transactions || transactions.length === 0 }" *ngIf="allTransactions">
+  <!-- Filtering options. -->
+  <div [formGroup]="form" class="form-field" [ngClass]="{ 'bottom-line': !transactions || transactions.length === 0 }" *ngIf="transactionsLoaded">
     <mat-select
       multiple
       formControlName="filter"
       [placeholder]="'history.no-filter' | translate"
       id="filter"
     >
+      <!-- Filter group. -->
       <mat-optgroup *ngFor="let wallet of wallets" label="
         {{ wallet.label }} - {{ wallet.coins | amount }}
         ({{ wallet.hours | amount:false }})
@@ -19,6 +21,7 @@
           ({{ address.hours | amount:false }})
         </mat-option>
       </mat-optgroup>
+      <!-- Content for showing the selected filters. -->
       <mat-select-trigger>
         <span *ngIf="form.get('filter').value.length === 1">{{ 'history.filter' | translate }}</span>
         <span *ngIf="form.get('filter').value.length > 1">{{ 'history.filters' | translate }}</span>
@@ -36,11 +39,12 @@
   </div>
 
   <app-loading-content
-    [isLoading]="!allTransactions"
+    [isLoading]="!transactionsLoaded"
     [noDataText]="!allTransactions || allTransactions.length === 0 ? 'history.no-txs' : 'history.no-txs-filter'"
     *ngIf="!transactions || transactions.length === 0"
   ></app-loading-content>
 
+  <!-- Transaction list. -->
   <div class="paper" *ngIf="transactions && transactions.length > 0">
     <ng-container *ngFor="let transaction of transactions">
       <div class="-transaction" (click)="showTransaction(transaction)">

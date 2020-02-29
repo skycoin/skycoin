@@ -353,6 +353,93 @@ earlyShutdown:
 	return retErr
 }
 
+// DBVersioner
+type DBVersioner interface {
+	GetDBVersion() (*semver.Version, error)
+	SetDBVersion(version *semver.Version) error
+}
+
+type DBCorruptCheckReseter interface {
+	CheckDatabase(pubkey cipher.PubKey, quit chan struct{}) error
+	ResetCorruptDB(pubkey cipher.PubKey, quit chan struct{}) (*dbutil.DB, error)
+}
+
+type DBCheckReseter interface {
+	DBVersioner
+	DBCorruptCheckReseter
+}
+
+// VersionConfig manages the DB verification related factors.
+type VersionConfig struct {
+	// ForceVerify force verify DB
+	ForceVerify bool
+	// ResetCorruptDB reset the DB if it is corrupted
+	ResetCorruptDB bool
+	// AppVersion represets the wallet version
+	AppVersion *semver.Version
+}
+
+func dbVersionVerify(vc VersionConfig, dcr DBCheckReseter, blockchainPubkey cipher.PubKey, logger *logging.Logger, quit chan struct{}) error {
+	// Look for saved app version
+	dbVersion, err := dcr.GetDBVersion(db)
+	if err != nil {
+		logger.WithError(err).Error("visor.GetDBVersion failed")
+		return err
+	}
+
+	appVersion := vc.AppVersion
+	if dbVersion == nil {
+		logger.Info("DB version not found in DB")
+	} else {
+		logger.Infof("DB version: %s", dbVersion)
+	}
+
+	logger.Infof("DB verify checkpoint version: %s", DBVerifyCheckpointVersion)
+
+	// If the saved DB version is higher than the app version, abort.
+	// Otherwise DB corruption could occur.
+	if dbVersion != nil && dbVersion.GT(*vc.AppVersion) {
+		err = fmt.Errorf("Cannot use newer DB version=%v with older software version=%v", dbVersion, v.GetAppVersion())
+		logger.WithError(err).Error()
+		return err
+	}
+
+	// Verify the DB if the version detection says to, or if it was requested on the command line
+	if shouldVerifyDB(appVersion, dbVersion) || vc.ForceVerify {
+		if vc.ResetCorruptDB {
+			// Check the database integrity and recreate it if necessary
+			logger.Info("Checking database and resetting if corrupted")
+			if newDB, err := dcr.ResetCorruptDB(db, v.BlockchainPubkey(), quit); err != nil {
+				if err != visor.ErrVerifyStopped {
+					logger.WithError(err).Error("visor.ResetCorruptDB failed")
+					return err
+					// retErr = err
+				}
+				// goto earlyShutdown
+			} else {
+				db = newDB
+			}
+		} else {
+			logger.Info("Checking database")
+			if err := cr.CheckDatabase(db, v.BlockchainPubkey(), quit); err != nil {
+				if err != visor.ErrVerifyStopped {
+					logger.WithError(err).Error("visor.CheckDatabase failed")
+					return err
+				}
+			}
+		}
+	}
+
+	// Update the DB version
+	if !db.IsReadOnly() {
+		if err := v.SetDBVersion(db, appVersion); err != nil {
+			logger.WithError(err).Error("visor.SetDBVersion failed")
+			return err
+		}
+	}
+	return nil
+}
+
 // NewCoin returns a new fiber coin instance
 func NewCoin(config Config, logger *logging.Logger) *Coin {
 	return &Coin{

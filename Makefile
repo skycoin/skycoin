@@ -94,11 +94,8 @@ integration-tests-stable: integration-test-stable \
 	integration-test-stable-auth \
 	integration-test-stable-db-no-unconfirmed ## Run all stable integration tests
 
-integration-test-stable: ## Run stable integration tests
+integration-test-stable: ## Run stable integration tests use CSRF, with header check disabled
 	COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -c -x -n enable-csrf-header-check
-
-integration-test-stable-disable-header-check: ## Run stable integration tests with header check disabled
-	COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -n disable-header-check
 
 integration-test-stable-disable-csrf: ## Run stable integration tests with CSRF disabled
 	COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -n disable-csrf

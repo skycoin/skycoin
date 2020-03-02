@@ -154,19 +154,46 @@ func (c *Coin) Run() error {
 		return err
 	}
 
-	dbVerify := DBVerify{
-		db:               db,
-		blockchainPubkey: c.config.Node.blockchainPubkey,
-		quit:             quit,
+	defer func() {
+		if db != nil {
+			c.logger.Info("Closing database")
+			if err := db.Close(); err != nil {
+				c.logger.WithError(err).Error("Failed to close DB")
+			}
+		}
+
+		c.logger.Info("Goodbye")
+
+		if logFile != nil {
+			if err := logFile.Close(); err != nil {
+				fmt.Println("Failed to close log file")
+			}
+		}
+	}()
+
+	dbVersion, err := visor.GetDBVersion(db)
+	if err != nil {
+		c.logger.WithError(err).Error("visor.GetDBVersion failed")
+		return err
 	}
 
-	vc := VersionConfig{
-		ForceVerify:    c.config.Node.VerifyDB,
-		ResetCorruptDB: c.config.Node.ResetCorruptDB,
-		AppVersion:     appVersion,
+	if dbVersion == nil {
+		c.logger.Info("DB version not found in DB")
+	} else {
+		c.logger.Infof("DB version: %s", dbVersion)
 	}
 
-	newDB, err := dbCheck(vc, &dbVerify, c.logger)
+	c.logger.Infof("DB verify checkpoint version: %s", DBVerifyCheckpointVersion)
+
+	cf := dbCheckConfig{
+		ForceVerify:         c.config.Node.VerifyDB,
+		ResetCorruptDB:      c.config.Node.ResetCorruptDB,
+		AppVersion:          appVersion,
+		DBVersion:           dbVersion,
+		DBCheckpointVersion: &dbVerifyCheckpointVersionParsed,
+	}
+
+	newDB, err := checkAndUpdateDB(cf, db, c.config.Node.blockchainPubkey, c.logger, quit)
 	if err != nil {
 		retErr = err
 		goto earlyShutdown
@@ -175,66 +202,6 @@ func (c *Coin) Run() error {
 	if newDB != nil {
 		db = newDB
 	}
-
-	// // Look for saved app version
-	// dbVersion, err := visor.GetDBVersion(db)
-	// if err != nil {
-	// 	c.logger.WithError(err).Error("visor.GetDBVersion failed")
-	// 	retErr = err
-	// 	goto earlyShutdown
-	// }
-
-	// if dbVersion == nil {
-	// 	c.logger.Info("DB version not found in DB")
-	// } else {
-	// 	c.logger.Infof("DB version: %s", dbVersion)
-	// }
-
-	// c.logger.Infof("DB verify checkpoint version: %s", DBVerifyCheckpointVersion)
-
-	// // If the saved DB version is higher than the app version, abort.
-	// // Otherwise DB corruption could occur.
-	// if dbVersion != nil && dbVersion.GT(*appVersion) {
-	// 	err = fmt.Errorf("Cannot use newer DB version=%v with older software version=%v", dbVersion, appVersion)
-	// 	c.logger.WithError(err).Error()
-	// 	retErr = err
-	// 	goto earlyShutdown
-	// }
-
-	// // Verify the DB if the version detection says to, or if it was requested on the command line
-	// if shouldVerifyDB(appVersion, dbVersion) || c.config.Node.VerifyDB {
-	// 	if c.config.Node.ResetCorruptDB {
-	// 		// Check the database integrity and recreate it if necessary
-	// 		c.logger.Info("Checking database and resetting if corrupted")
-	// 		if newDB, err := visor.ResetCorruptDB(db, c.config.Node.blockchainPubkey, quit); err != nil {
-	// 			if err != visor.ErrVerifyStopped {
-	// 				c.logger.WithError(err).Error("visor.ResetCorruptDB failed")
-	// 				retErr = err
-	// 			}
-	// 			goto earlyShutdown
-	// 		} else {
-	// 			db = newDB
-	// 		}
-	// 	} else {
-	// 		c.logger.Info("Checking database")
-	// 		if err := visor.CheckDatabase(db, c.config.Node.blockchainPubkey, quit); err != nil {
-	// 			if err != visor.ErrVerifyStopped {
-	// 				c.logger.WithError(err).Error("visor.CheckDatabase failed")
-	// 				retErr = err
-	// 			}
-	// 			goto earlyShutdown
-	// 		}
-	// 	}
-	// }
-
-	// // Update the DB version
-	// if !db.IsReadOnly() {
-	// 	if err := visor.SetDBVersion(db, *appVersion); err != nil {
-	// 		c.logger.WithError(err).Error("visor.SetDBVersion failed")
-	// 		retErr = err
-	// 		goto earlyShutdown
-	// 	}
-	// }
 
 	c.logger.Infof("Coinhour burn factor for user transactions is %d", params.UserVerifyTxn.BurnFactor)
 	c.logger.Infof("Max transaction size for user transactions is %d", params.UserVerifyTxn.MaxTransactionSize)
@@ -356,137 +323,7 @@ func (c *Coin) Run() error {
 	c.logger.Info("Waiting for goroutines to finish")
 	wg.Wait()
 
-earlyShutdown:
-	if db != nil {
-		c.logger.Info("Closing database")
-		if err := db.Close(); err != nil {
-			c.logger.WithError(err).Error("Failed to close DB")
-		}
-	}
-
-	c.logger.Info("Goodbye")
-
-	if logFile != nil {
-		if err := logFile.Close(); err != nil {
-			fmt.Println("Failed to close log file")
-		}
-	}
-
 	return retErr
-}
-
-type DBVerify struct {
-	db               *dbutil.DB
-	blockchainPubkey cipher.PubKey
-	quit             chan struct{}
-}
-
-func (dv DBVerify) GetDBVersion() (*semver.Version, error) {
-	return visor.GetDBVersion(dv.db)
-}
-
-func (dv *DBVerify) SetDBVersion(v *semver.Version) error {
-	return visor.SetDBVersion(dv.db, *v)
-}
-
-func (dv DBVerify) IsDBReadOnly() bool {
-	return dv.db.IsReadOnly()
-}
-
-func (dv DBVerify) CheckDatabase() error {
-	return visor.CheckDatabase(dv.db, dv.blockchainPubkey, dv.quit)
-}
-
-func (dv *DBVerify) ResetCorruptDB() (*dbutil.DB, error) {
-	return visor.ResetCorruptDB(dv.db, dv.blockchainPubkey, dv.quit)
-}
-
-// DBVersioner
-type DBVersioner interface {
-	GetDBVersion() (*semver.Version, error)
-	SetDBVersion(v *semver.Version) error
-}
-
-type DBCorruptCheckReseter interface {
-	IsDBReadOnly() bool
-	CheckDatabase() error
-	ResetCorruptDB() (*dbutil.DB, error)
-}
-
-type DBCheckReseter interface {
-	DBVersioner
-	DBCorruptCheckReseter
-}
-
-// VersionConfig manages the DB verification related factors.
-type VersionConfig struct {
-	// ForceVerify force verify DB
-	ForceVerify bool
-	// ResetCorruptDB reset the DB if it is corrupted
-	ResetCorruptDB bool
-	// AppVersion is the current wallet version
-	AppVersion *semver.Version
-}
-
-func dbCheck(vc VersionConfig, dcr DBCheckReseter, logger *logging.Logger) (*dbutil.DB, error) {
-	// Look for saved app version
-	dbVersion, err := dcr.GetDBVersion()
-	if err != nil {
-		logger.WithError(err).Error("visor.GetDBVersion failed")
-		return nil, err
-	}
-
-	appVersion := vc.AppVersion
-	if dbVersion == nil {
-		logger.Info("DB version not found in DB")
-	} else {
-		logger.Infof("DB version: %s", dbVersion)
-	}
-
-	logger.Infof("DB verify checkpoint version: %s", DBVerifyCheckpointVersion)
-
-	// If the saved DB version is higher than the app version, abort.
-	// Otherwise DB corruption could occur.
-	if dbVersion != nil && dbVersion.GT(*vc.AppVersion) {
-		err = fmt.Errorf("Cannot use newer DB version=%v with older software version=%v", dbVersion, vc.AppVersion)
-		logger.WithError(err).Error()
-		return nil, err
-	}
-
-	// Verify the DB if the version detection says to, or if it was requested on the command line
-	if shouldVerifyDB(appVersion, dbVersion) || vc.ForceVerify {
-		if vc.ResetCorruptDB {
-			// Check the database integrity and recreate it if necessary
-			logger.Info("Checking database and resetting if corrupted")
-			if newDB, err := dcr.ResetCorruptDB(); err != nil {
-				if err != visor.ErrVerifyStopped {
-					logger.WithError(err).Error("visor.ResetCorruptDB failed")
-					return nil, err
-					// retErr = err
-				}
-				// goto earlyShutdown
-			} else {
-				return newDB, nil
-			}
-		} else {
-			logger.Info("Checking database")
-			if err := dcr.CheckDatabase(); err != nil {
-				if err != visor.ErrVerifyStopped {
-					logger.WithError(err).Error("visor.CheckDatabase failed")
-					return nil, err
-				}
-			}
-		}
-	}
-
-	// Update the DB version
-	if !dcr.IsDBReadOnly() {
-		if err := dcr.SetDBVersion(appVersion); err != nil {
-			logger.WithError(err).Error("visor.SetDBVersion failed")
-			return nil, err
-		}
-	}
-	return nil, nil
 }
 
 // NewCoin returns a new fiber coin instance
@@ -793,7 +630,7 @@ func createDirIfNotExist(dir string) error {
 	return os.Mkdir(dir, 0750)
 }
 
-func shouldVerifyDB(appVersion, dbVersion *semver.Version) bool {
+func shouldVerifyDB(appVersion, dbVersion, checkpointVersion *semver.Version) bool {
 	// If the dbVersion is not set, verify
 	if dbVersion == nil {
 		return true
@@ -802,7 +639,7 @@ func shouldVerifyDB(appVersion, dbVersion *semver.Version) bool {
 	// If the dbVersion is less than the verification checkpoint version
 	// and the appVersion is greater than or equal to the checkpoint version,
 	// verify
-	if dbVersion.LT(dbVerifyCheckpointVersionParsed) && appVersion.GTE(dbVerifyCheckpointVersionParsed) {
+	if dbVersion.LT(*checkpointVersion) && appVersion.GTE(*checkpointVersion) {
 		return true
 	}
 

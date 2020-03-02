@@ -30,7 +30,7 @@ func TestCheckDB(t *testing.T) {
 	}{
 		{
 			name:   "do nothing",
-			params: dbCheckConfig{DBVersion: v26, AppVersion: v26},
+			params: dbCheckConfig{DBVersion: v26, AppVersion: v26, DBCheckpointVersion: v25},
 			exp:    expect{action: doNothing},
 		},
 		{

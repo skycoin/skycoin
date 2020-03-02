@@ -154,12 +154,27 @@ func (c *Coin) Run() error {
 		return err
 	}
 
-	// Look for saved app version
+	defer func() {
+		if db != nil {
+			c.logger.Info("Closing database")
+			if err := db.Close(); err != nil {
+				c.logger.WithError(err).Error("Failed to close DB")
+			}
+		}
+
+		c.logger.Info("Goodbye")
+
+		if logFile != nil {
+			if err := logFile.Close(); err != nil {
+				fmt.Println("Failed to close log file")
+			}
+		}
+	}()
+
 	dbVersion, err := visor.GetDBVersion(db)
 	if err != nil {
 		c.logger.WithError(err).Error("visor.GetDBVersion failed")
-		retErr = err
-		goto earlyShutdown
+		return err
 	}
 
 	if dbVersion == nil {
@@ -170,48 +185,21 @@ func (c *Coin) Run() error {
 
 	c.logger.Infof("DB verify checkpoint version: %s", DBVerifyCheckpointVersion)
 
-	// If the saved DB version is higher than the app version, abort.
-	// Otherwise DB corruption could occur.
-	if dbVersion != nil && dbVersion.GT(*appVersion) {
-		err = fmt.Errorf("Cannot use newer DB version=%v with older software version=%v", dbVersion, appVersion)
-		c.logger.WithError(err).Error()
-		retErr = err
-		goto earlyShutdown
+	cf := dbCheckConfig{
+		ForceVerify:         c.config.Node.VerifyDB,
+		ResetCorruptDB:      c.config.Node.ResetCorruptDB,
+		AppVersion:          appVersion,
+		DBVersion:           dbVersion,
+		DBCheckpointVersion: &dbVerifyCheckpointVersionParsed,
 	}
 
-	// Verify the DB if the version detection says to, or if it was requested on the command line
-	if shouldVerifyDB(appVersion, dbVersion) || c.config.Node.VerifyDB {
-		if c.config.Node.ResetCorruptDB {
-			// Check the database integrity and recreate it if necessary
-			c.logger.Info("Checking database and resetting if corrupted")
-			if newDB, err := visor.ResetCorruptDB(db, c.config.Node.blockchainPubkey, quit); err != nil {
-				if err != visor.ErrVerifyStopped {
-					c.logger.WithError(err).Error("visor.ResetCorruptDB failed")
-					retErr = err
-				}
-				goto earlyShutdown
-			} else {
-				db = newDB
-			}
-		} else {
-			c.logger.Info("Checking database")
-			if err := visor.CheckDatabase(db, c.config.Node.blockchainPubkey, quit); err != nil {
-				if err != visor.ErrVerifyStopped {
-					c.logger.WithError(err).Error("visor.CheckDatabase failed")
-					retErr = err
-				}
-				goto earlyShutdown
-			}
-		}
+	newDB, err := checkAndUpdateDB(cf, db, c.config.Node.blockchainPubkey, c.logger, quit)
+	if err != nil {
+		return err
 	}
 
-	// Update the DB version
-	if !db.IsReadOnly() {
-		if err := visor.SetDBVersion(db, *appVersion); err != nil {
-			c.logger.WithError(err).Error("visor.SetDBVersion failed")
-			retErr = err
-			goto earlyShutdown
-		}
+	if newDB != nil {
+		db = newDB
 	}
 
 	c.logger.Infof("Coinhour burn factor for user transactions is %d", params.UserVerifyTxn.BurnFactor)
@@ -222,32 +210,28 @@ func (c *Coin) Run() error {
 	w, err = wallet.NewService(wconf)
 	if err != nil {
 		c.logger.WithError(err).Error("wallet.NewService failed")
-		retErr = err
-		goto earlyShutdown
+		return err
 	}
 
 	c.logger.Info("visor.New")
 	v, err = visor.New(vconf, db, w)
 	if err != nil {
 		c.logger.WithError(err).Error("visor.New failed")
-		retErr = err
-		goto earlyShutdown
+		return err
 	}
 
 	c.logger.Info("daemon.New")
 	d, err = daemon.New(dconf, v)
 	if err != nil {
 		c.logger.WithError(err).Error("daemon.New failed")
-		retErr = err
-		goto earlyShutdown
+		return err
 	}
 
 	c.logger.Info("kvstorage.NewManager")
 	s, err = kvstorage.NewManager(sconf)
 	if err != nil {
 		c.logger.WithError(err).Error("kvstorage.NewManager failed")
-		retErr = err
-		goto earlyShutdown
+		return err
 	}
 
 	c.logger.Info("api.NewGateway")
@@ -257,8 +241,7 @@ func (c *Coin) Run() error {
 		webInterface, err = c.createGUI(gw, host)
 		if err != nil {
 			c.logger.WithError(err).Error("c.createGUI failed")
-			retErr = err
-			goto earlyShutdown
+			return err
 		}
 
 		fullAddress = fmt.Sprintf("%s://%s", scheme, webInterface.Addr())
@@ -268,8 +251,7 @@ func (c *Coin) Run() error {
 	c.logger.Info("visor.Init")
 	if err := v.Init(); err != nil {
 		c.logger.WithError(err).Error("visor.Init failed")
-		retErr = err
-		goto earlyShutdown
+		return err
 	}
 
 	wg.Add(1)
@@ -333,22 +315,6 @@ func (c *Coin) Run() error {
 
 	c.logger.Info("Waiting for goroutines to finish")
 	wg.Wait()
-
-earlyShutdown:
-	if db != nil {
-		c.logger.Info("Closing database")
-		if err := db.Close(); err != nil {
-			c.logger.WithError(err).Error("Failed to close DB")
-		}
-	}
-
-	c.logger.Info("Goodbye")
-
-	if logFile != nil {
-		if err := logFile.Close(); err != nil {
-			fmt.Println("Failed to close log file")
-		}
-	}
 
 	return retErr
 }
@@ -657,7 +623,7 @@ func createDirIfNotExist(dir string) error {
 	return os.Mkdir(dir, 0750)
 }
 
-func shouldVerifyDB(appVersion, dbVersion *semver.Version) bool {
+func shouldVerifyDB(appVersion, dbVersion, checkpointVersion *semver.Version) bool {
 	// If the dbVersion is not set, verify
 	if dbVersion == nil {
 		return true
@@ -666,7 +632,7 @@ func shouldVerifyDB(appVersion, dbVersion *semver.Version) bool {
 	// If the dbVersion is less than the verification checkpoint version
 	// and the appVersion is greater than or equal to the checkpoint version,
 	// verify
-	if dbVersion.LT(dbVerifyCheckpointVersionParsed) && appVersion.GTE(dbVerifyCheckpointVersionParsed) {
+	if dbVersion.LT(*checkpointVersion) && appVersion.GTE(*checkpointVersion) {
 		return true
 	}
 

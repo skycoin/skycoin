@@ -195,8 +195,7 @@ func (c *Coin) Run() error {
 
 	newDB, err := checkAndUpdateDB(cf, db, c.config.Node.blockchainPubkey, c.logger, quit)
 	if err != nil {
-		retErr = err
-		goto earlyShutdown
+		return err
 	}
 
 	if newDB != nil {
@@ -211,32 +210,28 @@ func (c *Coin) Run() error {
 	w, err = wallet.NewService(wconf)
 	if err != nil {
 		c.logger.WithError(err).Error("wallet.NewService failed")
-		retErr = err
-		goto earlyShutdown
+		return err
 	}
 
 	c.logger.Info("visor.New")
 	v, err = visor.New(vconf, db, w)
 	if err != nil {
 		c.logger.WithError(err).Error("visor.New failed")
-		retErr = err
-		goto earlyShutdown
+		return err
 	}
 
 	c.logger.Info("daemon.New")
 	d, err = daemon.New(dconf, v)
 	if err != nil {
 		c.logger.WithError(err).Error("daemon.New failed")
-		retErr = err
-		goto earlyShutdown
+		return err
 	}
 
 	c.logger.Info("kvstorage.NewManager")
 	s, err = kvstorage.NewManager(sconf)
 	if err != nil {
 		c.logger.WithError(err).Error("kvstorage.NewManager failed")
-		retErr = err
-		goto earlyShutdown
+		return err
 	}
 
 	c.logger.Info("api.NewGateway")
@@ -246,8 +241,7 @@ func (c *Coin) Run() error {
 		webInterface, err = c.createGUI(gw, host)
 		if err != nil {
 			c.logger.WithError(err).Error("c.createGUI failed")
-			retErr = err
-			goto earlyShutdown
+			return err
 		}
 
 		fullAddress = fmt.Sprintf("%s://%s", scheme, webInterface.Addr())
@@ -257,8 +251,7 @@ func (c *Coin) Run() error {
 	c.logger.Info("visor.Init")
 	if err := v.Init(); err != nil {
 		c.logger.WithError(err).Error("visor.Init failed")
-		retErr = err
-		goto earlyShutdown
+		return err
 	}
 
 	wg.Add(1)

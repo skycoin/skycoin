@@ -17,5 +17,14 @@ if [[ ${TEST_SUIT} == "units" ]]; then
 elif [[ ${TEST_SUIT} == "integrations" ]]; then
     echo "Do integration tests"
     make integration-tests-stable
+    # make integration-test-stable-disable-wallet-api
+    # make integration-test-stable-enable-seed-api
+    # make integration-test-stable-disable-gui
     make test-ui-e2e
+elif [[ ${TEST_SUIT} == "integrations/disable-csrf" ]]; then
+    echo "Do integration/disable-csrf tests"
+    make integration-test-stable-disable-csrf
+elif [[ ${TEST_SUIT} == "integrations/auth" ]]; then
+    echo "Do integration/auth tests"
+    make integration-test-stable-auth
 fi

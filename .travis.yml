@@ -21,17 +21,27 @@ env:
   jobs:
     - TEST_SUIT=units
     - TEST_SUIT=integrations
+    - TEST_SUIT=integrations/disable-csrf
+    - TEST_SUIT=integrations/auth
 
 osx_image: xcode11
 services: xvfb
 
 jobs:
-  # Exclude tests for windows
+  # Exclude tests for windows and integration tests that disable-csrf and with auth
   exclude:
   - os: windows
     env: TEST_SUIT=units
   - os: windows
     env: TEST_SUIT=integrations
+  - os: windows
+    env: TEST_SUIT=integrations/disable-csrf
+  - os: windows
+    env: TEST_SUIT=integrations/auth
+  - os: osx
+    env: TEST_SUIT=integrations/disable-csrf
+  - os: osx
+    env: TEST_SUIT=integrations/auth
   # Build stage jobs
   include:
   - name: linux-wallet-build
@@ -56,7 +66,6 @@ cache:
   - electron/app/node_modules
   - $HOME/.cache/electron
   - $HOME/.cache/electron-builder
-  - $HOME/.npm/_prebuilds
 
 addons:
   chrome: stable

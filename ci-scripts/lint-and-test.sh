@@ -4,7 +4,6 @@ set -e -o pipefail
 
 make install-deps-ui
 make check-newcoin
-make build-ui-travis
 
 if [[ ${TEST_SUIT} == "units" ]]; then
     echo "Do unit tests"
@@ -16,6 +15,16 @@ if [[ ${TEST_SUIT} == "units" ]]; then
     make test-ui
 elif [[ ${TEST_SUIT} == "integrations" ]]; then
     echo "Do integration tests"
-    make integration-tests-stable
+    make build-ui-travis
     make test-ui-e2e
+    make integration-test-stable
+    make integration-test-stable-disable-wallet-api
+    make integration-test-stable-enable-seed-api
+    make integration-test-stable-disable-gui
+elif [[ ${TEST_SUIT} == "integrations/disable-csrf" ]]; then
+    echo "Do integration/disable-csrf tests"
+    make integration-test-stable-disable-csrf
+elif [[ ${TEST_SUIT} == "integrations/auth" ]]; then
+    echo "Do integration/auth tests"
+    make integration-test-stable-auth
 fi

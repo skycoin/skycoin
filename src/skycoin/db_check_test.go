@@ -4,11 +4,12 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/SkycoinProject/skycoin/src/testutil"
-	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 	"github.com/blang/semver"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/SkycoinProject/skycoin/src/testutil"
+	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 )
 
 func TestCheckDB(t *testing.T) {
@@ -128,7 +129,6 @@ func TestCheckAndUpdateDB(t *testing.T) {
 		resetDBErr      error
 		setDBVersion    *semver.Version
 		setDBVersionErr error
-		retDB           *dbutil.DB
 		retErr          error
 		assertCalled    func(t *testing.T, db *dbutil.DB, m *mockDbCheckCorruptResetter)
 	}{

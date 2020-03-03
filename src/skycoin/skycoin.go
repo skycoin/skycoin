@@ -189,11 +189,16 @@ func (c *Coin) Run() error {
 		ForceVerify:         c.config.Node.VerifyDB,
 		ResetCorruptDB:      c.config.Node.ResetCorruptDB,
 		AppVersion:          appVersion,
-		DBVersion:           dbVersion,
 		DBCheckpointVersion: &dbVerifyCheckpointVersionParsed,
 	}
 
-	newDB, err := checkAndUpdateDB(cf, db, c.config.Node.blockchainPubkey, c.logger, quit)
+	dv := dbVerify{
+		blockchainPubkey: c.config.Node.blockchainPubkey,
+		logger:           c.logger,
+		quit:             quit,
+	}
+
+	newDB, err := checkAndUpdateDB(db, cf, &dv)
 	if err != nil {
 		return err
 	}

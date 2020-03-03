@@ -28,7 +28,7 @@ osx_image: xcode11
 services: xvfb
 
 jobs:
-  # Exclude tests for windows
+  # Exclude tests for windows and integration tests that disable-csrf and with auth
   exclude:
   - os: windows
     env: TEST_SUIT=units
@@ -66,7 +66,6 @@ cache:
   - electron/app/node_modules
   - $HOME/.cache/electron
   - $HOME/.cache/electron-builder
-  - $HOME/.npm/_prebuilds
 
 addons:
   chrome: stable

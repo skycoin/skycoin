@@ -198,13 +198,9 @@ func (c *Coin) Run() error {
 		quit:             quit,
 	}
 
-	newDB, err := checkAndUpdateDB(db, cf, &dv)
+	db, err = checkAndUpdateDB(db, cf, &dv)
 	if err != nil {
 		return err
-	}
-
-	if newDB != nil {
-		db = newDB
 	}
 
 	c.logger.Infof("Coinhour burn factor for user transactions is %d", params.UserVerifyTxn.BurnFactor)

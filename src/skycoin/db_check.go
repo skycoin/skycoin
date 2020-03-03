@@ -31,6 +31,7 @@ type dbCheckConfig struct {
 	DBCheckpointVersion *semver.Version
 }
 
+//go:generate mockery -name dbCheckCorruptResetter -case underscore -inpkg -testonly
 type dbCheckCorruptResetter interface {
 	CheckDatabase(db *dbutil.DB) error
 	ResetCorruptDB(db *dbutil.DB) (*dbutil.DB, error)

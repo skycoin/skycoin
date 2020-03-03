@@ -1,6 +1,7 @@
 <app-header [headline]="'send.title-and-button' | translate"></app-header>
 <div class="container">
   <div class="paper">
+    <!-- Forms. -->
     <app-send-coins-form
       *ngIf="showForm && activeForm === activeForms.LeftButton"
       [formData]="formData"
@@ -13,12 +14,14 @@
       [showSimpleForm]="false"
       (onFormSubmitted)="onFormSubmitted($event)"
     ></app-send-coins-form>
+    <!-- Transaction preview. -->
     <app-send-preview
       *ngIf="!showForm"
-      [transaction]="transaction"
+      [transaction]="formData.transaction"
       (onBack)="onBack($event)"
     ></app-send-preview>
   </div>
+  <!-- Links at the bottom. -->
   <div class="-links">
     <span class="link" (click)="signTransaction()">{{ 'offline-transactions.sign-tx.title' | translate }}</span>
     <span class="separator"> / </span>

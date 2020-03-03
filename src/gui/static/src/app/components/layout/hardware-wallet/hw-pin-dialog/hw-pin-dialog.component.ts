@@ -28,7 +28,7 @@ export interface HwPinDialogParams {
 /**
  * Allows the user to enter the PIN code. If the user completes the operation, the modal window
  * is closed and the positions selected by the user on the PIN matrix are returned in the
- * "afterClosed" envent.
+ * "afterClosed" event.
  */
 @Component({
   selector: 'app-hw-pin-dialog',

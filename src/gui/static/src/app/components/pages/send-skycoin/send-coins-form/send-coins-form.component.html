@@ -1,4 +1,5 @@
 <div *ngIf="!showSimpleForm" class="mode-selector">
+  <!-- Switch for selecting the advanced mode or the manual usingned tx mode. -->
   <app-double-button
     [changeActiveButtonManually]="true"
     [leftButtonText]="'send.signed-button' | translate"
@@ -11,6 +12,7 @@
 </div>
 
 <div [formGroup]="form">
+  <!-- Source. -->
   <app-form-source-selection
     #formSourceSelection
     (onSelectionChanged)="sourceSelectionChanged()"
@@ -19,6 +21,7 @@
     >
   </app-form-source-selection>
 
+  <!-- Available balance box. -->
   <div *ngIf="!showSimpleForm" class="form-field -available-msg">
     <ng-container *ngIf="!availableBalance.loading">
       <span>{{ 'send.available-funds-msg-part1' | translate }}</span>
@@ -40,9 +43,10 @@
     </ng-container>
   </div>
 
+  <!-- Destinations. -->
   <app-form-destination
     #formMultipleDestinations
-    (onChanges)="multipleDestinationsChanged()"
+    (onChanges)="destinationsChanged()"
     (onBulkRequested)="openMultipleDestinationsPopup()"
     [availableBalance]="availableBalance"
     [busy]="busy"
@@ -51,6 +55,7 @@
     >
   </app-form-destination>
 
+  <!-- Change address. -->
   <div *ngIf="!showSimpleForm" class="form-field">
     <label for="change-address">
       {{ 'send.change-address-label' | translate }}
@@ -64,6 +69,7 @@
     <input formControlName="changeAddress" id="change-address" (keydown.enter)="showForManualUnsigned ? preview() : null" [attr.disabled]="busy ? 'true' : null">
   </div>
 
+  <!-- Note. -->
   <div *ngIf="!showForManualUnsigned" class="form-field">
     <label for="note">
       {{ 'send.personal-note-label' | translate }}
@@ -72,6 +78,7 @@
     <input formControlName="note" id="note" (keydown.enter)="preview()" [maxlength]="maxNoteChars" [attr.disabled]="busy ? 'true' : null">
   </div>
 
+  <!-- Automatic hours distributions options. -->
   <div *ngIf="!showSimpleForm" class="form-field">
     <div class="row" [ngClass]="{'element-disabled' : busy}">
       <div class="col-12">
@@ -88,6 +95,7 @@
       </div>
     </div>
 
+    <!-- Automatic hours distributions factor. -->
     <div [ngClass]="{ 'row -options-wrapper': true, 'd-none': !autoOptions }">
       <div class="col-md-7">
         <div class="form-field">
@@ -108,6 +116,7 @@
   </div>
 </div>
 
+<!-- Buttons. -->
 <div class="text-center">
   <app-button #previewButton (action)="preview()" [disabled]="!form.valid">
     {{ 'send.preview-button' | translate }}

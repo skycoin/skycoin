@@ -61,6 +61,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
   transactions: OldTransaction[];
   // All wallets the user has, for filtering.
   wallets: Wallet[];
+  transactionsLoaded = false;
   form: FormGroup;
 
   // Vars for showing only some elements at the same time by default.
@@ -72,7 +73,6 @@ export class TransactionListComponent implements OnInit, OnDestroy {
   price: number;
 
   private requestedFilters: string[];
-  private transactionsLoaded = false;
 
   private priceSubscription: SubscriptionLike;
   private filterSubscription: SubscriptionLike;

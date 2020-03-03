@@ -1,4 +1,5 @@
 <app-modal [headline]="'edit-note.title' | translate" [dialog]="dialogRef" [disableDismiss]="button && button.isLoading()">
+  <!-- Form. -->
   <div [formGroup]="form">
     <div class="form-field">
       <label for="note">
@@ -8,6 +9,7 @@
       <input formControlName="note" id="note" (keydown.enter)="changeNote()" [maxlength]="maxNoteChars" [attr.disabled]="busy ? 'true' : null">
     </div>
   </div>
+  <!-- Buttons. -->
   <div class="-buttons">
     <app-button (action)="closePopup()">
       {{ 'common.cancel-button' | translate }}

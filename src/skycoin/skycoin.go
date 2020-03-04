@@ -171,35 +171,22 @@ func (c *Coin) Run() error {
 		}
 	}()
 
-	dbVersion, err := visor.GetDBVersion(db)
-	if err != nil {
-		c.logger.WithError(err).Error("visor.GetDBVersion failed")
-		return err
-	}
-
-	if dbVersion == nil {
-		c.logger.Info("DB version not found in DB")
-	} else {
-		c.logger.Infof("DB version: %s", dbVersion)
-	}
-
-	c.logger.Infof("DB verify checkpoint version: %s", DBVerifyCheckpointVersion)
-
 	cf := dbCheckConfig{
 		ForceVerify:         c.config.Node.VerifyDB,
 		ResetCorruptDB:      c.config.Node.ResetCorruptDB,
 		AppVersion:          appVersion,
-		DBVersion:           dbVersion,
 		DBCheckpointVersion: &dbVerifyCheckpointVersionParsed,
 	}
 
-	newDB, err := checkAndUpdateDB(cf, db, c.config.Node.blockchainPubkey, c.logger, quit)
-	if err != nil {
-		return err
+	dv := dbVerify{
+		blockchainPubkey: c.config.Node.blockchainPubkey,
+		logger:           c.logger,
+		quit:             quit,
 	}
 
-	if newDB != nil {
-		db = newDB
+	db, err = checkAndUpdateDB(db, cf, &dv)
+	if err != nil {
+		return err
 	}
 
 	c.logger.Infof("Coinhour burn factor for user transactions is %d", params.UserVerifyTxn.BurnFactor)

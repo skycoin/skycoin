@@ -171,20 +171,6 @@ func (c *Coin) Run() error {
 		}
 	}()
 
-	dbVersion, err := visor.GetDBVersion(db)
-	if err != nil {
-		c.logger.WithError(err).Error("visor.GetDBVersion failed")
-		return err
-	}
-
-	if dbVersion == nil {
-		c.logger.Info("DB version not found in DB")
-	} else {
-		c.logger.Infof("DB version: %s", dbVersion)
-	}
-
-	c.logger.Infof("DB verify checkpoint version: %s", DBVerifyCheckpointVersion)
-
 	cf := dbCheckConfig{
 		ForceVerify:         c.config.Node.VerifyDB,
 		ResetCorruptDB:      c.config.Node.ResetCorruptDB,

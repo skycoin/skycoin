@@ -19,7 +19,7 @@ const (
 	doResetCorruptDB
 )
 
-// dbCheckParams contains the parameters for verifying db
+// dbCheckConfig contains the parameters for verifying db
 type dbCheckConfig struct {
 	// ForceVerify force verify DB
 	ForceVerify bool

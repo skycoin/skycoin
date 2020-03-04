@@ -116,12 +116,19 @@ func TestCheckAndUpdateDB(t *testing.T) {
 		return true
 	})
 
-	resetedDB, closeDB := testutil.PrepareDB(t)
+	resetedDB, closeRSDB := testutil.PrepareDB(t)
+	defer closeRSDB()
+
+	readOnlyDB, closeRODB := testutil.PrepareDBReadOnly(t)
+	defer closeRODB()
+
+	db, closeDB := testutil.PrepareDB(t)
 	defer closeDB()
 
 	tt := []struct {
 		name            string
 		config          dbCheckConfig
+		db              *dbutil.DB
 		dbVersion       *semver.Version
 		dbVersionErr    error
 		checkDBErr      error
@@ -135,6 +142,7 @@ func TestCheckAndUpdateDB(t *testing.T) {
 		{
 			name:         "do nothing",
 			config:       dbCheckConfig{AppVersion: v26, DBCheckpointVersion: v25},
+			db:           db,
 			dbVersion:    v26,
 			setDBVersion: v26,
 			assertCalled: func(t *testing.T, db *dbutil.DB, m *mockDbCheckCorruptResetter) {
@@ -147,6 +155,7 @@ func TestCheckAndUpdateDB(t *testing.T) {
 		{
 			name:         "db version nil - check db",
 			config:       dbCheckConfig{AppVersion: v26, DBCheckpointVersion: v25},
+			db:           db,
 			dbVersion:    nil,
 			setDBVersion: v26,
 			assertCalled: func(t *testing.T, db *dbutil.DB, m *mockDbCheckCorruptResetter) {
@@ -159,6 +168,7 @@ func TestCheckAndUpdateDB(t *testing.T) {
 		{
 			name:         "db version nil - reset corrupt db",
 			config:       dbCheckConfig{AppVersion: v26, ResetCorruptDB: true, DBCheckpointVersion: v25},
+			db:           db,
 			dbVersion:    nil,
 			setDBVersion: v26,
 			resetedDB:    resetedDB,
@@ -175,6 +185,7 @@ func TestCheckAndUpdateDB(t *testing.T) {
 				AppVersion:          v241,
 				DBCheckpointVersion: v25,
 			},
+			db:        db,
 			dbVersion: v25,
 			retErr:    errors.New("Cannot use newer DB version=0.25.0 with older software version=0.24.1"),
 			assertCalled: func(t *testing.T, db *dbutil.DB, m *mockDbCheckCorruptResetter) {
@@ -190,6 +201,7 @@ func TestCheckAndUpdateDB(t *testing.T) {
 				AppVersion:          v26,
 				DBCheckpointVersion: v25,
 			},
+			db:           db,
 			dbVersion:    v241,
 			checkDBErr:   nil,
 			setDBVersion: v26,
@@ -201,11 +213,28 @@ func TestCheckAndUpdateDB(t *testing.T) {
 			},
 		},
 		{
+			name: "db version < check point < app version - check db - read only db",
+			config: dbCheckConfig{
+				AppVersion:          v26,
+				DBCheckpointVersion: v25,
+			},
+			db:         readOnlyDB,
+			dbVersion:  v241,
+			checkDBErr: nil,
+			assertCalled: func(t *testing.T, db *dbutil.DB, m *mockDbCheckCorruptResetter) {
+				require.True(t, m.AssertCalled(t, "GetDBVersion", matchFunc))
+				require.True(t, m.AssertCalled(t, "CheckDatabase", matchFunc))
+				require.True(t, m.AssertNotCalled(t, "SetDBVersion", matchFunc, v26))
+				require.True(t, m.AssertNotCalled(t, "ResetCorruptDB", matchFunc))
+			},
+		},
+		{
 			name: "db version < check point < app version - check db - got err",
 			config: dbCheckConfig{
 				AppVersion:          v26,
 				DBCheckpointVersion: v25,
 			},
+			db:         db,
 			dbVersion:  v241,
 			checkDBErr: errors.New("check db error"),
 			retErr:     errors.New("check db error"),
@@ -223,6 +252,7 @@ func TestCheckAndUpdateDB(t *testing.T) {
 				DBCheckpointVersion: v25,
 				ResetCorruptDB:      true,
 			},
+			db:           db,
 			dbVersion:    v241,
 			resetedDB:    resetedDB,
 			setDBVersion: v26,
@@ -240,6 +270,7 @@ func TestCheckAndUpdateDB(t *testing.T) {
 				DBCheckpointVersion: v25,
 				ResetCorruptDB:      true,
 			},
+			db:         db,
 			dbVersion:  v241,
 			resetDBErr: errors.New("reset corrupt db failed"),
 			retErr:     errors.New("reset corrupt db failed"),
@@ -256,6 +287,7 @@ func TestCheckAndUpdateDB(t *testing.T) {
 				AppVersion:          v25,
 				DBCheckpointVersion: v25,
 			},
+			db:           db,
 			dbVersion:    v241,
 			setDBVersion: v25,
 			assertCalled: func(t *testing.T, db *dbutil.DB, m *mockDbCheckCorruptResetter) {
@@ -272,6 +304,7 @@ func TestCheckAndUpdateDB(t *testing.T) {
 				DBCheckpointVersion: v25,
 				ResetCorruptDB:      true,
 			},
+			db:           db,
 			dbVersion:    v241,
 			setDBVersion: v25,
 			resetedDB:    resetedDB,
@@ -289,6 +322,7 @@ func TestCheckAndUpdateDB(t *testing.T) {
 				DBCheckpointVersion: v25,
 				ForceVerify:         true,
 			},
+			db:           db,
 			dbVersion:    v26,
 			setDBVersion: v26,
 			assertCalled: func(t *testing.T, db *dbutil.DB, m *mockDbCheckCorruptResetter) {
@@ -306,6 +340,7 @@ func TestCheckAndUpdateDB(t *testing.T) {
 				ForceVerify:         true,
 				ResetCorruptDB:      true,
 			},
+			db:           db,
 			dbVersion:    v26,
 			setDBVersion: v26,
 			resetedDB:    resetedDB,
@@ -318,9 +353,6 @@ func TestCheckAndUpdateDB(t *testing.T) {
 		},
 	}
 
-	db, closeDBV2 := testutil.PrepareDB(t)
-	defer closeDBV2()
-
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			m := &mockDbCheckCorruptResetter{}
@@ -329,9 +361,9 @@ func TestCheckAndUpdateDB(t *testing.T) {
 			m.On("CheckDatabase", matchFunc).Return(tc.checkDBErr)
 			m.On("ResetCorruptDB", matchFunc).Return(tc.resetedDB, tc.resetDBErr)
 
-			dbAfter, err := checkAndUpdateDB(db, tc.config, m)
+			dbAfter, err := checkAndUpdateDB(tc.db, tc.config, m)
 			require.Equal(t, tc.retErr, err)
-			tc.assertCalled(t, db, m)
+			tc.assertCalled(t, tc.db, m)
 			if err != nil {
 				return
 			}
@@ -339,7 +371,7 @@ func TestCheckAndUpdateDB(t *testing.T) {
 			if tc.resetedDB != nil {
 				require.Equal(t, tc.resetedDB, dbAfter)
 			} else {
-				require.Equal(t, db, dbAfter)
+				require.Equal(t, tc.db, dbAfter)
 			}
 		})
 	}

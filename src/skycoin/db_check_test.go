@@ -18,9 +18,6 @@ func TestCheckDB(t *testing.T) {
 		err    error
 	}
 
-	v241, err := semver.New("0.24.1")
-	require.NoError(t, err)
-
 	v25, err := semver.New("0.25.0")
 	require.NoError(t, err)
 
@@ -57,14 +54,14 @@ func TestCheckDB(t *testing.T) {
 		},
 		{
 			name:      "db version < check point, check DB",
-			params:    dbCheckConfig{DBCheckpointVersion: v25},
-			dbVersion: v241,
+			params:    dbCheckConfig{DBCheckpointVersion: v26},
+			dbVersion: v25,
 			exp:       expect{action: doCheckDB},
 		},
 		{
 			name:      "db version < check point, reset corrupt db",
-			params:    dbCheckConfig{ResetCorruptDB: true, DBCheckpointVersion: v25},
-			dbVersion: v241,
+			params:    dbCheckConfig{ResetCorruptDB: true, DBCheckpointVersion: v26},
+			dbVersion: v25,
 			exp:       expect{action: doResetCorruptDB},
 		},
 		{
@@ -91,9 +88,6 @@ func TestCheckDB(t *testing.T) {
 }
 
 func TestCheckAndUpdateDB(t *testing.T) {
-	v241, err := semver.New("0.24.1")
-	require.NoError(t, err)
-
 	v25, err := semver.New("0.25.0")
 	require.NoError(t, err)
 
@@ -182,69 +176,69 @@ func TestCheckAndUpdateDB(t *testing.T) {
 		},
 		{
 			name:         "db version < check point - check db",
-			config:       dbCheckConfig{DBCheckpointVersion: v25},
+			config:       dbCheckConfig{DBCheckpointVersion: v26},
 			db:           db,
-			dbVersion:    v241,
-			setDBVersion: v25,
+			dbVersion:    v25,
+			setDBVersion: v26,
 			assertCalled: func(t *testing.T, db *dbutil.DB, m *mockDbCheckCorruptResetter) {
 				require.True(t, m.AssertCalled(t, "GetDBVersion", matchFunc))
 				require.True(t, m.AssertCalled(t, "CheckDatabase", matchFunc))
-				require.True(t, m.AssertCalled(t, "SetDBVersion", matchFunc, v25))
+				require.True(t, m.AssertCalled(t, "SetDBVersion", matchFunc, v26))
 				require.True(t, m.AssertNotCalled(t, "ResetCorruptDB", matchFunc))
 			},
 		},
 		{
 			name:      "db version < check point - check db - read only db",
-			config:    dbCheckConfig{DBCheckpointVersion: v25},
+			config:    dbCheckConfig{DBCheckpointVersion: v26},
 			db:        readOnlyDB,
-			dbVersion: v241,
+			dbVersion: v25,
 			assertCalled: func(t *testing.T, db *dbutil.DB, m *mockDbCheckCorruptResetter) {
 				require.True(t, m.AssertCalled(t, "GetDBVersion", matchFunc))
 				require.True(t, m.AssertCalled(t, "CheckDatabase", matchFunc))
-				require.True(t, m.AssertNotCalled(t, "SetDBVersion", matchFunc, v25))
+				require.True(t, m.AssertNotCalled(t, "SetDBVersion", matchFunc, v26))
 				require.True(t, m.AssertNotCalled(t, "ResetCorruptDB", matchFunc))
 			},
 		},
 		{
 			name:       "db version < check point - check db - got err",
-			config:     dbCheckConfig{DBCheckpointVersion: v25},
+			config:     dbCheckConfig{DBCheckpointVersion: v26},
 			db:         db,
-			dbVersion:  v241,
+			dbVersion:  v25,
 			checkDBErr: errors.New("check db error"),
 			retErr:     errors.New("check db error"),
 			assertCalled: func(t *testing.T, db *dbutil.DB, m *mockDbCheckCorruptResetter) {
 				require.True(t, m.AssertCalled(t, "GetDBVersion", matchFunc))
 				require.True(t, m.AssertCalled(t, "CheckDatabase", matchFunc))
-				require.True(t, m.AssertNotCalled(t, "SetDBVersion", matchFunc, v25))
+				require.True(t, m.AssertNotCalled(t, "SetDBVersion", matchFunc, v26))
 				require.True(t, m.AssertNotCalled(t, "ResetCorruptDB", matchFunc))
 			},
 		},
 		{
 			name:         "db version < check point - reset corrupt db",
-			config:       dbCheckConfig{DBCheckpointVersion: v25, ResetCorruptDB: true},
+			config:       dbCheckConfig{DBCheckpointVersion: v26, ResetCorruptDB: true},
 			db:           db,
-			dbVersion:    v241,
+			dbVersion:    v25,
 			resetedDB:    resetedDB,
-			setDBVersion: v25,
+			setDBVersion: v26,
 			assertCalled: func(t *testing.T, db *dbutil.DB, m *mockDbCheckCorruptResetter) {
 				require.True(t, m.AssertCalled(t, "GetDBVersion", matchFunc))
 				require.True(t, m.AssertNotCalled(t, "CheckDatabase", matchFunc))
 				require.True(t, m.AssertCalled(t, "ResetCorruptDB", matchFunc))
-				require.True(t, m.AssertCalled(t, "SetDBVersion", matchFunc, v25))
+				require.True(t, m.AssertCalled(t, "SetDBVersion", matchFunc, v26))
 			},
 		},
 		{
 			name:       "db version < check point - reset corrupt db - got err",
-			config:     dbCheckConfig{DBCheckpointVersion: v25, ResetCorruptDB: true},
+			config:     dbCheckConfig{DBCheckpointVersion: v26, ResetCorruptDB: true},
 			db:         db,
-			dbVersion:  v241,
+			dbVersion:  v25,
 			resetDBErr: errors.New("reset corrupt db failed"),
 			retErr:     errors.New("reset corrupt db failed"),
 			assertCalled: func(t *testing.T, db *dbutil.DB, m *mockDbCheckCorruptResetter) {
 				require.True(t, m.AssertCalled(t, "GetDBVersion", matchFunc))
 				require.True(t, m.AssertNotCalled(t, "CheckDatabase", matchFunc))
 				require.True(t, m.AssertCalled(t, "ResetCorruptDB", matchFunc))
-				require.True(t, m.AssertNotCalled(t, "SetDBVersion", matchFunc, v25))
+				require.True(t, m.AssertNotCalled(t, "SetDBVersion", matchFunc, v26))
 			},
 		},
 		{

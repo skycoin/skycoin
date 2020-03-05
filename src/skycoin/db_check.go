@@ -25,8 +25,8 @@ type dbCheckConfig struct {
 	ForceVerify bool
 	// ResetCorruptDB reset the DB if it is corrupted
 	ResetCorruptDB bool
-	// AppVersion is the current wallet version
-	AppVersion *semver.Version
+	// // AppVersion is the current wallet version
+	// AppVersion *semver.Version
 	// DBCheckpointVersion is the check point db version
 	DBCheckpointVersion *semver.Version
 }

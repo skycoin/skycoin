@@ -717,7 +717,7 @@ func parseSortOrderFromStr(s string) (visor.SortOrder, error) {
 	case "DESC":
 		return visor.DescOrder, nil
 	default:
-		return visor.UnknownOrder, errors.New("Unknow sort order")
+		return visor.UnknownOrder, errors.New("Unknown sort order")
 	}
 }
 

@@ -39,7 +39,7 @@ var (
 	// DBVerifyCheckpointVersion is a checkpoint for determining if DB verification should be run.
 	// Any DB upgrading from less than this version to equal or higher than this version will be forced to verify.
 	// Update this version checkpoint if a newer version requires a new verification run.
-	DBVerifyCheckpointVersion       = "0.25.0"
+	DBVerifyCheckpointVersion       = "0.27.0"
 	dbVerifyCheckpointVersionParsed semver.Version
 )
 
@@ -174,7 +174,6 @@ func (c *Coin) Run() error {
 	cf := dbCheckConfig{
 		ForceVerify:         c.config.Node.VerifyDB,
 		ResetCorruptDB:      c.config.Node.ResetCorruptDB,
-		AppVersion:          appVersion,
 		DBCheckpointVersion: &dbVerifyCheckpointVersionParsed,
 	}
 
@@ -608,22 +607,6 @@ func createDirIfNotExist(dir string) error {
 	}
 
 	return os.Mkdir(dir, 0750)
-}
-
-func shouldVerifyDB(appVersion, dbVersion, checkpointVersion *semver.Version) bool {
-	// If the dbVersion is not set, verify
-	if dbVersion == nil {
-		return true
-	}
-
-	// If the dbVersion is less than the verification checkpoint version
-	// and the appVersion is greater than or equal to the checkpoint version,
-	// verify
-	if dbVersion.LT(*checkpointVersion) && appVersion.GTE(*checkpointVersion) {
-		return true
-	}
-
-	return false
 }
 
 func init() {

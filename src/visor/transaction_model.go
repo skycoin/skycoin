@@ -164,7 +164,7 @@ func (s *txnHashesContainer) Sort(order SortOrder) error {
 			return lessFunc(j, i)
 		})
 	default:
-		return errors.New("unknow sort order")
+		return errors.New("unknown sort order")
 	}
 
 	return nil

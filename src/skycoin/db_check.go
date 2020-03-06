@@ -25,8 +25,8 @@ type dbCheckConfig struct {
 	ForceVerify bool
 	// ResetCorruptDB reset the DB if it is corrupted
 	ResetCorruptDB bool
-	// AppVersion is the current wallet version
-	AppVersion *semver.Version
+	// // AppVersion is the current wallet version
+	// AppVersion *semver.Version
 	// DBCheckpointVersion is the check point db version
 	DBCheckpointVersion *semver.Version
 }
@@ -99,7 +99,7 @@ func checkAndUpdateDB(db *dbutil.DB, c dbCheckConfig, dv dbCheckCorruptResetter)
 		return nil, err
 	}
 
-	action, err := checkDB(c, dbVersion)
+	action, err := checkDBVersion(c, dbVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -116,10 +116,13 @@ func checkAndUpdateDB(db *dbutil.DB, c dbCheckConfig, dv dbCheckCorruptResetter)
 			return nil, err
 		}
 		db = newDB
+	case doNothing:
+		return db, nil
 	}
 
-	if !db.IsReadOnly() {
-		if err := dv.SetDBVersion(db, c.AppVersion); err != nil {
+	// DB version won't be downgraded
+	if !db.IsReadOnly() && (dbVersion == nil || (dbVersion.LE(*c.DBCheckpointVersion))) {
+		if err := dv.SetDBVersion(db, c.DBCheckpointVersion); err != nil {
 			return nil, err
 		}
 	}
@@ -127,16 +130,16 @@ func checkAndUpdateDB(db *dbutil.DB, c dbCheckConfig, dv dbCheckCorruptResetter)
 	return db, nil
 }
 
-// checkDB checks whether need to verify or reset the DB version
-func checkDB(c dbCheckConfig, dbVersion *semver.Version) (dbAction, error) {
+// checkDBVersion checks whether need to verify or reset the DB version
+func checkDBVersion(c dbCheckConfig, dbVersion *semver.Version) (dbAction, error) {
 	// If the saved DB version is higher than the app version, abort.
 	// Otherwise DB corruption could occur.
-	if dbVersion != nil && dbVersion.GT(*c.AppVersion) {
-		return doNothing, fmt.Errorf("Cannot use newer DB version=%v with older software version=%v", dbVersion, c.AppVersion)
+	if dbVersion != nil && dbVersion.GT(*c.DBCheckpointVersion) {
+		return doNothing, fmt.Errorf("Cannot use newer DB version=%v with older check point version=%v", dbVersion, c.DBCheckpointVersion)
 	}
 
 	// Verify the DB if the version detection says to, or if it was requested on the command line
-	if shouldVerifyDB(c.AppVersion, dbVersion, c.DBCheckpointVersion) || c.ForceVerify {
+	if shouldVerifyDB(dbVersion, c.DBCheckpointVersion) || c.ForceVerify {
 		if c.ResetCorruptDB {
 			return doResetCorruptDB, nil
 		}
@@ -145,4 +148,19 @@ func checkDB(c dbCheckConfig, dbVersion *semver.Version) (dbAction, error) {
 	}
 
 	return doNothing, nil
+}
+
+func shouldVerifyDB(dbVersion, checkpointVersion *semver.Version) bool {
+	// If the dbVersion is not set, verify
+	if dbVersion == nil {
+		return true
+	}
+
+	// If the dbVersion is less than the verification checkpoint version,
+	// verify
+	if dbVersion.LT(*checkpointVersion) {
+		return true
+	}
+
+	return false
 }

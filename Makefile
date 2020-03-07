@@ -130,7 +130,9 @@ integration-test-live-disable-networking: ## Run live integration tests against 
 	COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c -k
 
 install-linters: ## Install linters
-	go get -u github.com/FiloSottile/vendorcheck
+	// Turn off go module when install the vendoercheck, otherwise the installation
+	// will pollute the go.mod file.
+	GO111MODULE=off go get -u github.com/FiloSottile/vendorcheck
 	# For some reason this install method is not recommended, see https://github.com/golangci/golangci-lint#install
 	# However, they suggest `curl ... | bash` which we should not do
 	# go get -u github.com/golangci/golangci-lint/cmd/golangci-lint

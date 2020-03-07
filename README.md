@@ -46,7 +46,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
 
 - [Changelog](#changelog)
 - [Installation](#installation)
-	- [Go 1.10+ Installation and Setup](#go-110-installation-and-setup)
+	- [Go 1.14+ Installation and Setup](#go-1.14-installation-and-setup)
 	- [Go get skycoin](#go-get-skycoin)
 	- [Run Skycoin from the command line](#run-skycoin-from-the-command-line)
 	- [Show Skycoin node options](#show-skycoin-node-options)
@@ -107,11 +107,11 @@ scratch, to remedy the rough edges in the Bitcoin design.
 
 ## Installation
 
-Skycoin supports go1.10+.
+Skycoin supports go1.14+.
 
-### Go 1.10+ Installation and Setup
+### Go 1.14+ Installation and Setup
 
-[Golang 1.10+ Installation/Setup](./INSTALLATION.md)
+[Golang 1.14+ Installation/Setup](./INSTALLATION.md)
 
 ### Go get skycoin
 
@@ -669,47 +669,14 @@ different version of the `cipher` dependencies than were developed, which could 
 
 #### Management
 
-Dependencies are managed with [dep](https://github.com/golang/dep).
+Dependencies are managed with [go modules](https://github.com/golang/go/wiki/Modules).
 
-To [install `dep` for development](https://github.com/golang/dep/blob/master/docs/installation.md#development):
+We still use the `vendor` folder to store our dependencies in case any of the them are 
+removed from the internet in the future. 
 
-```sh
-$ go get -u github.com/golang/dep/cmd/dep
-```
+> When the main module contains a top-level vendor directory and its go.mod file specifies go 1.14 or higher, 
+> the go command now defaults to -mod=vendor for operations that accept that flag.
 
-`dep` vendors all dependencies into the repo.
-
-If you change the dependencies, you should update them as needed with `dep ensure`.
-
-Use `dep help` for instructions on vendoring a specific version of a dependency, or updating them.
-
-When updating or initializing, `dep` will find the latest version of a dependency that will compile.
-
-Examples:
-
-Initialize all dependencies:
-
-```sh
-$ dep init
-```
-
-Update all dependencies:
-
-```sh
-$ dep ensure -update -v
-```
-
-Add a single dependency (latest version):
-
-```sh
-$ dep ensure github.com/foo/bar
-```
-
-Add a single dependency (more specific version), or downgrade an existing dependency:
-
-```sh
-$ dep ensure github.com/foo/bar@tag
-```
 
 ### Configuration Modes
 There are 4 configuration modes in which you can run a skycoin node:

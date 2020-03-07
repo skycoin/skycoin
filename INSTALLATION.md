@@ -1,6 +1,6 @@
 # Installing go
 
-Skycoin supports go1.10+.
+Skycoin supports go1.14+.
 
 ## For OSX
 First you need to have `homebrew` installed, if you don't have it yet.
@@ -55,7 +55,7 @@ Let's go to home directory and declare `go`'s version that you want to download.
 
 ```sh
 cd ~
-export GOV=1.11.1 # golang version
+export GOV=1.14 # golang version
 ```
 
 After that, let's download and uncompress golang source.

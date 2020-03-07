@@ -1,5 +1,5 @@
 # Creates an image for skycoin development
-FROM golang:1.11-stretch
+FROM golang:1.14-stretch
 
 ARG BDATE="test_build"
 ARG SCOMMIT="develop"

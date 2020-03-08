@@ -1,7 +1,7 @@
 dist: xenial
 language: go
 go:
-  - "1.11.x"
+  - "1.14.x"
 
 os:
 - osx
@@ -72,7 +72,7 @@ addons:
 
 install:
   # Install gox
-  - if [[ $TRAVIS_BUILD_STAGE_NAME == "Build" ]]; then go get github.com/mitchellh/gox; fi
+  - if [[ $TRAVIS_BUILD_STAGE_NAME == "Build" ]]; then GO111MODULE=off go get github.com/mitchellh/gox; fi
   # Install dependences for building wallet
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PULL_REQUEST" == "false" ]]; then
     sudo apt-get install --no-install-recommends -y icnsutils graphicsmagick xz-utils libudev-dev libusb-1.0-0-dev;

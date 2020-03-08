@@ -28,6 +28,7 @@ var (
 var _ = func() int64 {
 	t := time.Now().Unix()
 	rand.Seed(t)
+	testing.Init()
 	return t
 }()
 

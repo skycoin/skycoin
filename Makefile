@@ -74,7 +74,7 @@ test-amd64: ## Run tests for Skycoin with GOARCH=amd64
 	GOARCH=amd64 COIN=$(COIN) go test ./src/... -timeout=5m
 
 lint: ## Run linters. Use make install-linters first.
-	vendorcheck ./...
+	GO111MODULE=off vendorcheck ./...
 	golangci-lint run -c .golangci.yml ./...
 	@# The govet version in golangci-lint is out of date and has spurious warnings, run it separately
 	go vet -all ./...
@@ -130,7 +130,9 @@ integration-test-live-disable-networking: ## Run live integration tests against 
 	COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c -k
 
 install-linters: ## Install linters
-	go get -u github.com/FiloSottile/vendorcheck
+	# Turn off go module when install the vendoercheck, otherwise the installation
+	# will pollute the go.mod file.
+	GO111MODULE=off go get -u github.com/FiloSottile/vendorcheck
 	# For some reason this install method is not recommended, see https://github.com/golangci/golangci-lint#install
 	# However, they suggest `curl ... | bash` which we should not do
 	# go get -u github.com/golangci/golangci-lint/cmd/golangci-lint

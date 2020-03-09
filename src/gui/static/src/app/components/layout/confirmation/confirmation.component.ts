@@ -60,7 +60,7 @@ export interface ConfirmationParams {
 
 /**
  * Modal window used to ask the user to confirm an operation. If the user confirms the operation,
- * the modal window is closed and "true" is returned in the "afterClosed" envent.
+ * the modal window is closed and "true" is returned in the "afterClosed" event.
  */
 @Component({
   selector: 'app-confirmation',

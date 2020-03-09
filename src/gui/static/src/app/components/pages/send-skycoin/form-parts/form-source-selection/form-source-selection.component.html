@@ -1,4 +1,5 @@
 <div [formGroup]="form">
+  <!-- Manual addresses. -->
   <div *ngIf="selectionMode === sourceSelectionModes.Manual" class="form-field">
     <label for="manualAddresses">
       {{ 'send.addresses-label' | translate }}
@@ -6,13 +7,14 @@
     </label>
     <input formControlName="manualAddresses" id="manualAddresses" [attr.disabled]="busy ? 'true' : null">
   </div>
+  <!-- Wallet. -->
   <div *ngIf="selectionMode !== sourceSelectionModes.Manual" class="form-field">
     <label for="wallet">{{ (selectionMode === sourceSelectionModes.Wallet ? 'send.from-label' : 'send.wallet-label') | translate }}</label>
     <div class="-select">
       <select formControlName="wallet" id="wallet" [attr.disabled]="busy ? 'true' : null">
         <option disabled hidden [ngValue]="''">{{ 'send.select-wallet' | translate }}</option>
-        <ng-container *ngIf="wallets">
-          <ng-container *ngFor="let wallet of wallets">
+        <ng-container *ngIf="allWallets">
+          <ng-container *ngFor="let wallet of allWallets">
             <option
               [disabled]="!wallet.coins || wallet.coins.isLessThanOrEqualTo(0)"
               [ngValue]="wallet"
@@ -25,6 +27,7 @@
       </select>
     </div>
   </div>
+  <!-- Addresses. -->
   <div *ngIf="selectionMode === sourceSelectionModes.All" class="form-field">
     <label [for]="!busy ? 'addresses' : ''" (click)="!busy ? selectAddresses.open() : null">
       {{ 'send.addresses-label' | translate }}
@@ -34,7 +37,6 @@
       <mat-select
         #selectAddresses multiple
         formControlName="addresses"
-        [compareWith]="addressCompare"
         id="addresses"
         [placeholder]="addressessPlaceholder | translate"
         [attr.disabled]="(busy || (addresses && addresses.length === 0)) ? 'true' : null"
@@ -52,6 +54,7 @@
       </mat-select>
     </div>
   </div>
+  <!-- Outputs. -->
   <div *ngIf="selectionMode !== sourceSelectionModes.Wallet" class="form-field">
     <label [for]="!busy ? 'outputs' : null" (click)="!busy ? selectOutputs.open() : null">
       {{ 'send.outputs-label' | translate }}
@@ -63,7 +66,6 @@
       <mat-select
         #selectOutputs multiple
         formControlName="outputs"
-        [compareWith]="outputCompare"
         id="outputs"
         [placeholder]="outputsPlaceholder | translate"
         [attr.disabled]="(busy || (unspentOutputs && unspentOutputs.length === 0)) ? 'true' : null"

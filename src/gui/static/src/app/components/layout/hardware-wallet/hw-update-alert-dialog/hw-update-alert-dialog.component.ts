@@ -7,7 +7,7 @@ import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 /**
  * Modal window for alerting the user that there is a firmware update available. If the user
  * selects to install the update, the modal window is closed and "true" is returned in the
- * "afterClosed" envent.
+ * "afterClosed" event.
  */
 @Component({
   selector: 'app-hw-update-alert-dialog',

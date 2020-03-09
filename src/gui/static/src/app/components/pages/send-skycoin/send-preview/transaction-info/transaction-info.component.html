@@ -1,8 +1,10 @@
 <div class="row">
   <div class="col-md-12">
+    <!-- Title. -->
     <h4 *ngIf="isPreview">{{ 'tx.confirm-transaction-title' | translate }}</h4>
     <h4 *ngIf="!isPreview">{{ 'tx.transaction-title' | translate }}</h4>
     <div class="row">
+      <!-- List with the basic transaction data. The data shown depends on the transaction type. -->
       <div class="col-md-9 -tx-meta">
         <ng-container *ngIf="isPreview">
           <div class="-data">
@@ -39,16 +41,19 @@
         </div>
       </div>
 
+      <!-- Transaction balance. -->
       <div class="col-md-3 -tx-price">
         <div class="-icon" [ngClass]="{ '-incoming': shouldShowIncomingIcon }">
           <img src="/assets/img/send-blue.png">
         </div>
         <h4>{{ balanceToShow.toString() | amount }}</h4>
         <p *ngIf="price" [matTooltip]="!isPreview ? ('tx.current-rate-help' | translate) : ''">
-          {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}<span *ngIf="!isPreview">*</span>
+          {{ balanceToShow.multipliedBy(price).toString() | currency:'USD':'symbol':'1.2-2' }}<span *ngIf="!isPreview">*</span>
         </p>
       </div>
     </div>
+
+    <!-- Link to show the list with the inputs and outputs. -->
     <div class="-data -more" *ngIf="!showInputsOutputs">
       <app-arrow-link
         [noPadding]="true"
@@ -57,7 +62,10 @@
       </app-arrow-link>
     </div>
   </div>
+
+  <!-- List with the inputs and outputs. -->
   <ng-container *ngIf="showInputsOutputs">
+    <!-- Inputs -->
     <div class="col-md-6 -margin-top">
       <h4>{{ 'tx.inputs-title' | translate }}</h4>
 
@@ -74,6 +82,7 @@
         </div>
       </div>
     </div>
+    <!-- Outputs -->
     <div class="col-md-6 -margin-top">
       <h4>{{ 'tx.outputs-title' | translate }}</h4>
 

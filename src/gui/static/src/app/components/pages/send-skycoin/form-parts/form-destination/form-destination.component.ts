@@ -3,34 +3,67 @@ import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angu
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { BigNumber } from 'bignumber.js';
-import { AppService } from '../../../../../services/app.service';
 import { TranslateService } from '@ngx-translate/core';
+
+import { AppService } from '../../../../../services/app.service';
 import { DoubleButtonActive } from '../../../../layout/double-button/double-button.component';
 import { PriceService } from '../../../../../services/price.service';
 import { MsgBarService } from '../../../../../services/msg-bar.service';
 import { AvailableBalanceData } from '../../form-parts/form-source-selection/form-source-selection.component';
 import { ConfirmationParams, ConfirmationComponent, DefaultConfirmationButtons } from '../../../../layout/confirmation/confirmation.component';
+import { SendCoinsData } from '../../send-coins-form/send-coins-form.component';
 
+/**
+ * Data about the destinations entered by the user on FormDestinationComponent.
+ */
 export interface Destination {
+  /**
+   * Destination address.
+   */
   address: string;
+  /**
+   * How many coins to send to the destination.
+   */
   coins: string;
+  /**
+   * Original value entered by the user as the amount to send. It can be how many coins to send,
+   * in which case the value will be the same as the one on the "coins" property, but it can
+   * also contain a fiat value.
+   */
   originalAmount: string;
+  /**
+   * How many hours to send to the destination.
+   */
   hours?: string;
 }
 
+/**
+ * Allows the user to set the destinations to were the coins will be sent, including how many
+ * coins and hours to send to each one.
+ */
 @Component({
   selector: 'app-form-destination',
   templateUrl: './form-destination.component.html',
   styleUrls: ['./form-destination.component.scss'],
 })
 export class FormDestinationComponent implements OnInit, OnDestroy {
+  /**
+   * How many decimals the user can use when entering a value in usd. the UI can use a different
+   * value when showing usd values (normally 2).
+   */
   private static readonly MaxUsdDecimals = 6;
 
+  // Balance available to send.
   @Input() availableBalance: AvailableBalanceData;
+  // Allows to deactivate the form while the system is busy.
   @Input() busy: boolean;
+  // Emits when there have been changes in the contents of the component, so the validation
+  // status could have changed.
   @Output() onChanges = new EventEmitter<void>();
+  // Emits when the user asks to open the modal window for bulk sending.
   @Output() onBulkRequested = new EventEmitter<void>();
 
+  // If the manual hours field must be shown.
   private showHourFieldsInternal: boolean;
   @Input() set showHourFields(val: boolean) {
     if (val !== this.showHourFieldsInternal) {
@@ -46,6 +79,8 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     return this.showHourFieldsInternal;
   }
 
+  // If true, the form only allows to enter one destination and the amount of coins to send
+  // to it. If false, the form allows multiple destinations, with their coins and hours.
   private showSimpleFormInternal: boolean;
   @Input() set showSimpleForm(val: boolean) {
     this.showSimpleFormInternal = val;
@@ -67,17 +102,25 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
   form: FormGroup;
   doubleButtonActive = DoubleButtonActive;
+  // Allows to know if the user is entering the values in the coin (left) or usd (right).
   selectedCurrency = DoubleButtonActive.LeftButton;
-  values: number[];
+  // If the user is entering the values in USD, it contains the coins value of each destination.
+  // if the user is entering the values in coins, it contains the USD value of each destination.
+  values: BigNumber[];
+  // Current USD price per coin.
   price: number;
+  // Total amount of coins that will be sent to all destinations.
   totalCoins = new BigNumber(0);
-  totalConvertedCoins = new BigNumber(0);
+  // Total usd value that will be sent to all destinations.
+  totalFiat = new BigNumber(0);
+  // Total amount of hours that will be sent to all destinations, if the manual hours are active.
   totalHours = new BigNumber(0);
 
   private priceSubscription: SubscriptionLike;
   private addressSubscription: SubscriptionLike;
   private destinationSubscriptions: SubscriptionLike[] = [];
 
+  // Gets all the form field groups on the destinations array.
   get destControls() {
     return (this.form.get('destinations') as FormArray).controls;
   }
@@ -94,16 +137,16 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.form = this.formBuilder.group({
       address: ['', this.showSimpleForm ? Validators.required : null],
-      destinations: this.formBuilder.array(
-        [this.createDestinationFormGroup()],
-        this.validateDestinations.bind(this),
-      ),
+      destinations: this.formBuilder.array([], this.validateDestinations.bind(this)),
     });
+    this.addDestination();
 
-    this.addressSubscription = this.form.get('address').valueChanges.subscribe(value => {
+    // Inform when there are changes on the address field, shown on the simple form.
+    this.addressSubscription = this.form.get('address').valueChanges.subscribe(() => {
       this.onChanges.emit();
     });
 
+    // Keep the price updated.
     this.priceSubscription = this.priceService.price.subscribe(price => {
       this.price = price;
       this.updateValuesAndValidity();
@@ -116,7 +159,8 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     this.destinationSubscriptions.forEach(s => s.unsubscribe());
   }
 
-  changeActiveCurrency(value) {
+  // Changes the currency in which the user enters the values on the UI.
+  changeActiveCurrency(value: DoubleButtonActive) {
     if (value !== this.selectedCurrency) {
       this.selectedCurrency = value;
       this.askIfConvertAmount();
@@ -125,7 +169,11 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Must be called just after changing the currency in which the user enters the values on
+  // the UI. It asks the user if the current values must be converted to the new currency.
+  // If the user accepts, it calls the function to convert the values.
   private askIfConvertAmount() {
+    // Before asking, check if there are valid values to convert.
     let validAmounts = 0;
     this.destControls.forEach(dest => {
       let value: string = dest.get('coins').value;
@@ -142,6 +190,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Prepare the values for the confirmation modal.
     const usd = this.translate.instant('common.usd');
     const currentCoin = this.appService.coinName;
     let fromText: string;
@@ -159,6 +208,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       defaultButtons: DefaultConfirmationButtons.YesNo,
     };
 
+    // Ask for confirmation.
     ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
       if (confirmationResult) {
         this.convertAmounts();
@@ -166,23 +216,31 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     });
   }
 
+  // If the component is set for the user to enter the values in usd, converts all the
+  // destination values from the coin to usd. If it is set for the user to enter the
+  // values in the coin, converts all the destination values from usd to the coin.
   private convertAmounts() {
     this.msgBarService.hide();
 
+    // How many values were invalid numbers and it was not possible to convert them.
     let invalidValues = 0;
+    // How many values were converted but had precision problems due to the amount of
+    // decimal places.
     let valuesWithPrecisionErrors = 0;
+
     this.destControls.forEach(dest => {
       let value: string = dest.get('coins').value;
       value = value ? value.trim() : value;
       const currentValue = new BigNumber(value);
 
       if (value) {
-        if (!value || currentValue.isNaN()) {
+        if (currentValue.isNaN()) {
           invalidValues += 1;
 
           return;
         }
 
+        // Convert the value and check for precision errors.
         if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
           const newValue = currentValue.dividedBy(this.price).decimalPlaces(this.appService.currentMaxDecimals);
           const recoveredValue = newValue.multipliedBy(this.price).decimalPlaces(FormDestinationComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
@@ -203,6 +261,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       }
     });
 
+    // Inform about any problem found during the procedure.
     if (invalidValues > 0 && valuesWithPrecisionErrors > 0) {
       this.msgBarService.showWarning(this.translate.instant('send.multiple-problems-warning'));
     } else if (invalidValues === 1) {
@@ -216,44 +275,51 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Assigns all the remaining coins to the destination corresponding to the provided index.
   assignAll(index: number) {
     this.msgBarService.hide();
 
+    // If there are no available coins on the selected sources, show an error msg.
     if (this.availableBalance.availableCoins.isEqualTo(0)) {
       this.msgBarService.showError(this.translate.instant('send.no-wallet-selected-error'));
 
       return;
     }
 
-    let availableCoins: BigNumber = this.availableBalance.availableCoins;
+    // Calculate the total available balance, in the currency being used on the UI.
+    let availableBalance: BigNumber = this.availableBalance.availableCoins;
     if (this.selectedCurrency === DoubleButtonActive.RightButton) {
-      availableCoins = availableCoins.multipliedBy(this.price).decimalPlaces(FormDestinationComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
+      availableBalance = availableBalance.multipliedBy(this.price).decimalPlaces(FormDestinationComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
     }
 
+    // Subtract to the available balance all the values already asigned to the other destinations.
     this.destControls.forEach((dest, i) => {
       if (i !== index) {
-        const value = Number.parseFloat((dest.get('coins').value as string).trim());
-        if (!value || isNaN(value)) {
+        const value = this.getAmount((dest.get('coins').value as string).trim(), true);
+        if (!value || value.isNaN()) {
           return;
         } else {
-          availableCoins = availableCoins.minus(value);
+          availableBalance = availableBalance.minus(value);
         }
       }
     });
 
+    // Limit the decimal places.
     if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
-      availableCoins = availableCoins.decimalPlaces(this.appService.currentMaxDecimals, BigNumber.ROUND_FLOOR);
+      availableBalance = availableBalance.decimalPlaces(this.appService.currentMaxDecimals, BigNumber.ROUND_FLOOR);
     } else {
-      availableCoins = availableCoins.decimalPlaces(FormDestinationComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
+      availableBalance = availableBalance.decimalPlaces(FormDestinationComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
     }
 
-    if (availableCoins.isLessThanOrEqualTo(0)) {
+    // Use the value or show an error, if there are no enough coins.
+    if (availableBalance.isLessThanOrEqualTo(0)) {
       this.msgBarService.showError(this.translate.instant('send.no-coins-left-error'));
     } else {
-      this.destControls[index].get('coins').setValue(availableCoins.toString());
+      this.destControls[index].get('coins').setValue(availableBalance.toString());
     }
   }
 
+  // Updates the total and converted values and then updates the form validity.
   updateValuesAndValidity() {
     let inputInUsd = this.selectedCurrency !== DoubleButtonActive.LeftButton;
     let currentPrice = this.price;
@@ -262,65 +328,81 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       currentPrice = 0;
     }
 
+    // Reset the values.
     this.values = [];
     this.totalCoins = new BigNumber(0);
-    this.totalConvertedCoins = new BigNumber(0);
+    this.totalFiat = new BigNumber(0);
     this.totalHours = new BigNumber(0);
 
     this.destControls.forEach((dest, i) => {
-      const stringValue: string = dest.get('coins').value;
-      const value = this.getAmount(stringValue, true);
+      // Update the coin values.
+      let stringValue: string = dest.get('coins').value;
+      let value = this.getAmount(stringValue, true);
+
       if (!value) {
-        this.values[i] = -1;
-
-        return;
-      }
-
-      if (!inputInUsd) {
-        const convertedValue = value.multipliedBy(currentPrice).decimalPlaces(2);
-
-        this.totalCoins = this.totalCoins.plus(value);
-        this.totalConvertedCoins = this.totalConvertedCoins.plus(convertedValue);
-
-        this.values[i] = convertedValue.toNumber();
+        this.values[i] = new BigNumber(-1);
       } else {
-        const convertedValue = value.dividedBy(currentPrice).decimalPlaces(this.appService.currentMaxDecimals);
+        if (!inputInUsd) {
+          // Calculate the value in USD.
+          const convertedValue = value.multipliedBy(currentPrice).decimalPlaces(2);
 
-        this.totalCoins = this.totalCoins.plus(convertedValue);
-        this.totalConvertedCoins = this.totalConvertedCoins.plus(value);
+          // Update the values.
+          this.totalCoins = this.totalCoins.plus(value);
+          this.totalFiat = this.totalFiat.plus(convertedValue);
+          this.values[i] = convertedValue;
+        } else {
+          // Calculate the value in coins.
+          const convertedValue = value.dividedBy(currentPrice).decimalPlaces(this.appService.currentMaxDecimals);
 
-        this.values[i] = convertedValue.toNumber();
+          // Update the values.
+          this.totalCoins = this.totalCoins.plus(convertedValue);
+          this.totalFiat = this.totalFiat.plus(value);
+          this.values[i] = convertedValue;
+        }
+      }
+
+      // Update the hour values.
+      stringValue = dest.get('hours').value;
+      value = this.getAmount(stringValue, false);
+      if (value) {
+        this.totalHours = this.totalHours.plus(value);
       }
     });
 
-    this.destControls.forEach(dest => {
-      const stringValue: string = dest.get('hours').value;
-      const value = this.getAmount(stringValue, false);
-      if (!value) {
-        return;
-      }
-
-      this.totalHours = this.totalHours.plus(value);
-    });
-
+    // Update the form validity.
     setTimeout(() => {
       (this.form.get('destinations') as FormArray).updateValueAndValidity();
       this.onChanges.emit();
     });
   }
 
+  // Adds a new empty destination to the form.
   addDestination() {
-    const destinations = this.form.get('destinations') as FormArray;
-    destinations.push(this.createDestinationFormGroup());
+    const group = this.formBuilder.group({
+      address: '',
+      coins: '',
+      hours: '',
+    });
+
+    this.destinationSubscriptions.push(group.valueChanges.subscribe(() => {
+      // Inform when there are changes.
+      this.updateValuesAndValidity();
+    }));
+
+    (this.form.get('destinations') as FormArray).push(group);
+
     this.updateValuesAndValidity();
   }
 
+  // Removes from the form the destination corresponding to the provided index.
   removeDestination(index) {
     const destinations = this.form.get('destinations') as FormArray;
     destinations.removeAt(index);
 
+    // Remove the subscription used to check the changes made to the fields of the destination.
     this.destinationSubscriptions[index].unsubscribe();
     this.destinationSubscriptions.splice(index, 1);
+
     this.updateValuesAndValidity();
   }
 
@@ -328,7 +410,10 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     this.onBulkRequested.emit();
   }
 
-  fill(formData: any) {
+  /**
+   * Fills the form with the provided values.
+   */
+  fill(formData: SendCoinsData) {
     setTimeout(() => {
       this.selectedCurrency = formData.form.currency;
 
@@ -351,6 +436,9 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Allows to change all the destinations.
+   */
   setDestinations(newDestinations: Destination[]) {
     while (this.destControls.length > 0) {
       (this.form.get('destinations') as FormArray).removeAt(0);
@@ -366,28 +454,43 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Allows to know if the form is valid.
+   */
   get valid(): boolean {
     return this.form.valid;
   }
 
+  /**
+   * Allows to know if the user is entering the values in coins (left) or usd (right).
+   */
   get currentlySelectedCurrency(): DoubleButtonActive {
     return this.selectedCurrency;
   }
 
-  getDestinations(includeHours: boolean, cleanNumbers: boolean): Destination[] {
+  /**
+   * Returns all the destinations on the form. The hours are returned only if the form is showing
+   * the fields for manually entering them.
+   * @param cleanNumbers If true, the returned strings for the coins and hours will be cleaned
+   * to be valid numbers. If false, function will just return exactly what the user wrote on
+   * the form fields.
+   */
+  getDestinations(cleanNumbers: boolean): Destination[] {
     return this.destControls.map((destControl, i) => {
+      // Get the string values.
       const destination = {
         address: this.showSimpleForm ? ((this.form.get('address').value) as string).trim() : ((destControl.get('address').value) as string).trim(),
         coins: ((this.selectedCurrency === DoubleButtonActive.LeftButton ? destControl.get('coins').value : this.values[i].toString()) as string).trim(),
         originalAmount: destControl.get('coins').value,
       };
 
+      // Clean the values values.
       if (cleanNumbers) {
         destination.coins = new BigNumber(destination.coins).toString();
         destination.originalAmount = new BigNumber(destination.originalAmount).toString();
       }
 
-      if (includeHours) {
+      if (this.showHourFields) {
         destination['hours'] = destControl.get('hours').value;
         if (cleanNumbers) {
           destination['hours'] = new BigNumber(destination['hours']).toString();
@@ -398,23 +501,20 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Validates the values on the fields of the form destinations array.
   private validateDestinations() {
     if (!this.form) {
       return { Required: true };
     }
 
+    // Check if there are invalid values.
     const invalidInput = this.destControls.find(control => {
-      if (!this.showSimpleForm && (!control.get('address').value || (control.get('address').value as string).trim().length === 0)) {
-        return true;
-      }
-
-      const checkControls = ['coins'];
-
+      const controlsToCheck = ['coins'];
       if (this.showHourFields) {
-        checkControls.push('hours');
+        controlsToCheck.push('hours');
       }
 
-      return checkControls.map(name => {
+      return controlsToCheck.map(name => {
         const stringValue: string = control.get(name).value;
 
         return this.getAmount(stringValue, name === 'coins') === null;
@@ -425,6 +525,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       return { Invalid: true };
     }
 
+    // Check how many coins and hours the user is trying to send.
     let destinationsCoins = new BigNumber(0);
     if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
       this.destControls.map(control => destinationsCoins = destinationsCoins.plus(control.get('coins').value));
@@ -437,6 +538,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       this.destControls.map(control => destinationsHours = destinationsHours.plus(control.get('hours').value));
     }
 
+    // Fail if the user does not have enough coins or hours.
     if (destinationsCoins.isGreaterThan(this.availableBalance.availableCoins) || destinationsHours.isGreaterThan(this.availableBalance.availableHours)) {
       return { Invalid: true };
     }
@@ -444,14 +546,23 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     return null;
   }
 
+  /**
+   * Process a string and converts it to a BigNumber representing a coins or hours amount. If
+   * the string is not a valid value, it returns null.
+   * @param stringValue String to process.
+   * @param checkingCoins If the function must treat the value as coins or hours while checking
+   * for validity.
+   */
   private getAmount(stringValue: string, checkingCoins: boolean): BigNumber {
     stringValue = stringValue ? stringValue.trim() : stringValue;
     const value = new BigNumber(stringValue);
 
+    // Check for basic validity.
     if (!stringValue || value.isNaN() || value.isLessThanOrEqualTo(0)) {
       return null;
     }
 
+    // Check the decimals.
     if (checkingCoins) {
       const parts = stringValue.split('.');
 
@@ -471,20 +582,6 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     }
 
     return value;
-  }
-
-  private createDestinationFormGroup() {
-    const group = this.formBuilder.group({
-      address: '',
-      coins: '',
-      hours: '',
-    });
-
-    this.destinationSubscriptions.push(group.valueChanges.subscribe(value => {
-      this.updateValuesAndValidity();
-    }));
-
-    return group;
   }
 
   resetForm() {

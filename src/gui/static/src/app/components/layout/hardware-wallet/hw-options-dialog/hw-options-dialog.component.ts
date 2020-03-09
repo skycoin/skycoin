@@ -52,7 +52,7 @@ export interface ChildHwDialogParams {
  * onboarding option is set to true, it will just try to find a known hw wallet connected
  * (if an unknown one is connected it will try to add it to the wallet list first and then
  * try to detect it again) and, after finding one, it will just close itself, return "true"
- * iin the "afterClosed" envent and make a service wait to open it again after navigating
+ * iin the "afterClosed" event and make a service wait to open it again after navigating
  * to the wallet list. This behavior allows the user to just add a wallet while on the wizard.
  */
 @Component({

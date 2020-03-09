@@ -1,30 +1,42 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import * as moment from 'moment';
-import { SubscriptionLike } from 'rxjs';
+import { SubscriptionLike, of } from 'rxjs';
+import { delay, mergeMap } from 'rxjs/operators';
+
 import { NavBarSwitchService } from '../../../../services/nav-bar-switch.service';
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
-import { BigNumber } from 'bignumber.js';
-import { BalanceAndOutputsService } from '../../../../services/wallet-operations/balance-and-outputs.service';
 import { HistoryService, PendingTransactionData } from '../../../../services/wallet-operations/history.service';
 
+/**
+ * Allows to see the list of pending transactions. It uses the nav bar to know if it must show
+ * all pending tx or just the pending tx affecting the user.
+ */
 @Component({
   selector: 'app-pending-transactions',
   templateUrl: './pending-transactions.component.html',
   styleUrls: ['./pending-transactions.component.scss'],
 })
 export class PendingTransactionsComponent implements OnInit, OnDestroy {
+  // Transactions to show on the UI.
   transactions: PendingTransactionData[] = null;
 
   private transactionsSubscription: SubscriptionLike;
   private navbarSubscription: SubscriptionLike;
 
+  private selectedNavbarOption: DoubleButtonActive;
+
+  // Time interval in which periodic data updates will be made.
+  private readonly updatePeriod = 10 * 1000;
+  // Time interval in which the periodic data updates will be restarted after an error.
+  private readonly errorUpdatePeriod = 2 * 1000;
+
   constructor(
     private navBarSwitchService: NavBarSwitchService,
-    private balanceAndOutputsService: BalanceAndOutputsService,
     private historyService: HistoryService,
   ) {
     this.navbarSubscription = this.navBarSwitchService.activeComponent.subscribe(value => {
-      this.startCheckingTransactions(value);
+      this.selectedNavbarOption = value;
+      this.transactions = null;
+      this.startDataRefreshSubscription(0);
     });
   }
 
@@ -33,23 +45,25 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.removeTransactionsSubscription();
     this.navbarSubscription.unsubscribe();
+    this.removeTransactionsSubscription();
     this.navBarSwitchService.hideSwitch();
   }
 
-  private startCheckingTransactions(value) {
-    this.transactions = null;
-
+  /**
+   * Makes the page start updating the data periodically. If this function was called before,
+   * the previous updating procedure is cancelled.
+   * @param delayMs Delay before starting to update the data.
+   */
+  private startDataRefreshSubscription(delayMs: number) {
     this.removeTransactionsSubscription();
 
-    // Currently gets the data only one time.
-    this.transactionsSubscription = this.historyService.getPendingTransactions().subscribe(transactions => {
-      this.transactions = value === DoubleButtonActive.LeftButton ? transactions.user : transactions.all;
-    });
+    this.transactionsSubscription = of(0).pipe(delay(delayMs), mergeMap(() => this.historyService.getPendingTransactions())).subscribe(transactions => {
+      this.transactions = this.selectedNavbarOption === DoubleButtonActive.LeftButton ? transactions.user : transactions.all;
 
-    // Due to some changes, must use a method for updating or getting the pending transactions, not this.
-    this.balanceAndOutputsService.refreshBalance();
+      // Update again after a delay.
+      this.startDataRefreshSubscription(this.updatePeriod);
+    }, () => this.startDataRefreshSubscription(this.errorUpdatePeriod));
   }
 
   private removeTransactionsSubscription() {

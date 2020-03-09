@@ -1,6 +1,7 @@
 <div>
   <app-header [headline]="'backup.title' | translate"></app-header>
 
+  <!-- Info area. -->
   <div class="container">
     <div class="paper small-padding mb-0">
       <p class="mt-0">{{ 'backup.wallet-directory' | translate }} {{ folder }}</p>
@@ -16,6 +17,7 @@
       *ngIf="onlyEncrypted.length === 0"
     ></app-loading-content>
 
+    <!-- Wallet list. -->
     <div class="-table" *ngIf="onlyEncrypted.length > 0">
       <div class="-headers">
         <div class="-width-250">{{ 'backup.wallet-table-label' | translate }}</div>

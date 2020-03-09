@@ -1,4 +1,5 @@
 <app-modal [headline]="title | translate" [dialog]="dialogRef" [disableDismiss]="working">
+  <!-- Loading animation. -->
   <app-loading-content
     [isLoading]="currentState === states.Loading"
     [noDataText]="'offline-transactions.loading-problem'"
@@ -6,8 +7,10 @@
   ></app-loading-content>
 
   <ng-container *ngIf="currentState === states.ShowingForm">
+    <!-- Instructions. -->
     {{ text | translate }}
     <div [formGroup]="form" class="modal-form-container">
+      <!-- Dropdown. -->
       <div *ngIf="dropdownElements" class="form-field">
         <label *ngIf="dropdownLabel" for="dropdown">{{ dropdownLabel | translate }}</label>
         <div class="-select">
@@ -23,6 +26,7 @@
           </select>
         </div>
       </div>
+      <!-- Textarea. -->
       <div class="form-field">
         <label *ngIf="inputLabel" for="input">{{ inputLabel | translate }}</label>
         <textarea *ngIf="!!contents" [readonly]="true" rows="5">{{ contents }}</textarea>
@@ -35,6 +39,7 @@
         ></textarea>
       </div>
     </div>
+    <!-- Buttons area. -->
     <div class="-buttons">
       <app-button #cancelButton (action)="cancelPressed()" [disabled]="working">
         {{ cancelButtonText | translate }}

@@ -1,4 +1,5 @@
 <div class="onboarding-container">
+  <!-- Header and indications. -->
   <div class="row">
     <div class="row-container">
       <div class="-header">
@@ -9,6 +10,7 @@
       </div>
     </div>
   </div>
+  <!-- Checkbox. -->
   <div class="row">
     <div class="row-container -check-container">
       <mat-checkbox class="-check" (change)="setEncrypt($event)" [checked]="true" type="checkbox" id="encrypt" [ngClass]="{'element-disabled' : isWorking}">
@@ -19,6 +21,7 @@
       </mat-checkbox>
     </div>
   </div>
+  <!-- Form. -->
   <div class="row">
     <div class="row-container">
       <form [formGroup]="form">
@@ -48,6 +51,7 @@
       </form>
     </div>
   </div>
+  <!-- Button area. -->
   <div class="row -buttons-footer">
     <app-button class="dark-button -button-min-margin" [disabled]="form.enabled && !form.valid" (action)="emitCreatedPassword()" #button>
       {{ 'wizard.finish-button' | translate }}

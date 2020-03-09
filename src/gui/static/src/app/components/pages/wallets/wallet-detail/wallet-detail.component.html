@@ -1,3 +1,4 @@
+<!-- Option buttons. -->
 <div class="-actions">
   <ng-container *ngIf="!wallet.isHardware">
     <div class="-button" (click)="openAddressOptions()">
@@ -12,7 +13,7 @@
       </span>
     </div>
   </ng-container>
-  <div *ngIf="wallet.isHardware" class="-button btn-delete-wallet" (click)="deleteWallet()">
+  <div *ngIf="wallet.isHardware" class="-button btn-delete-wallet" (click)="deleteHwWallet()">
     <span class="-img -btn-delete">{{ 'wallet.delete-button' | translate }}</span>
   </div>
   <div class="flex-fill"></div>
@@ -21,21 +22,25 @@
       {{ 'wallet.' + (wallet.encrypted ? 'decrypt' : 'encrypt') + '-button' | translate }}
     </span>
   </div>
-  <div class="-button" (click)="editWallet()">
-    <span [ngClass]="{ '-img -edit-wallet': !preparingToEdit, '-disabled-span': preparingToEdit }">
-      <mat-spinner *ngIf="preparingToEdit"></mat-spinner>
-      {{ 'wallet.edit-button' | translate }}
+  <div class="-button" (click)="renameWallet()">
+    <span [ngClass]="{ '-img -rename-wallet': !preparingToRename, '-disabled-span': preparingToRename }">
+      <mat-spinner *ngIf="preparingToRename"></mat-spinner>
+      {{ 'wallet.rename-button' | translate }}
     </span>
   </div>
 </div>
 
-<ng-container *ngFor="let address of (wallet ? wallet.addresses : []); let i = index">
+<!-- Address list. -->
+<ng-container *ngFor="let address of wallet.addresses; let i = index">
   <div class="-record" *ngIf="!hideEmpty || address.coins.isGreaterThan(0)">
+    <!-- Address number. -->
     <div class="-width-50 grey-text">{{ i + 1 }}</div>
+    <!-- Address. -->
     <div class="-flex-fill address-column">
+      <!-- For confirmed addresses. -->
       <ng-container *ngIf="!wallet.isHardware || address.confirmed">
         <app-qr-code-button [address]="address.address"></app-qr-code-button>
-        <p class="click-to-copy" [ngClass]="{ copying: address.copying }" (click)="copyAddress($event, address)" (mouseleave)="address.copying = false">
+        <p class="click-to-copy" [ngClass]="{ copying: copying.has(address.address) }" (click)="copyAddress($event, address)" (mouseleave)="copying.delete(address.address)">
           {{ address.address }}
           <mat-spinner *ngIf="confirmingIndex === i"></mat-spinner>
           <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">
@@ -43,6 +48,7 @@
           </span>
         </p>
       </ng-container>
+      <!-- For unconfirmed addresses. -->
       <ng-container *ngIf="wallet.isHardware && !address.confirmed">
         <p class="click-to-copy" (click)="confirmAddress(wallet, i, true)">
           <span class="small-preview">{{ address.address }}</span>
@@ -53,13 +59,15 @@
         </p>
       </ng-container>
     </div>
+    <!-- Coins and hours. -->
     <div class="-width-130 text-right">{{ (address.coins ? address.coins.toString() : 0) | amount:true:'first' }}</div>
     <div class="-width-130 text-right grey-text">{{ (address.hours ? address.hours.toString() : 0) | amount:false:'first' }}</div>
+    <!-- Options. -->
     <div class="-width-85 options-column">
       <mat-icon [matMenuTriggerFor]="optionsMenu">more_vert</mat-icon>
       <mat-menu #optionsMenu="matMenu" [overlapTrigger]="false">
         <button mat-menu-item (click)="copyAddress($event, address, 1000)" *ngIf="!wallet.isHardware || address.confirmed">
-          {{ 'wallet.address.' + (address.copying ? 'copied': 'copy-address') | translate }}
+          {{ 'wallet.address.' + (copying.has(address.address) ? 'copied': 'copy-address') | translate }}
         </button>
         <button mat-menu-item (click)="confirmAddress(wallet, i, !address.confirmed)" *ngIf="wallet.isHardware">
           {{ 'wallet.address.confirm' | translate }}

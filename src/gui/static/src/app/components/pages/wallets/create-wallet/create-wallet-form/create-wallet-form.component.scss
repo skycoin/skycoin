@@ -120,3 +120,21 @@ label[for=seed] {
     line-height: 1.5;
   }
 }
+
+.seed-spinner {
+  height: 0px;
+  position: relative;
+  top: 2px;
+  left: 2px;
+
+  mat-spinner {
+    position: absolute;
+    height: 10px !important;
+    width: 10px !important;
+
+    ::ng-deep svg {
+      height: 10px !important;
+      width: 10px !important;
+    }
+  }
+}

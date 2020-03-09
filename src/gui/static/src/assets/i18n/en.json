@@ -98,7 +98,7 @@
     "decrypt-button": "Decrypt Wallet",
     "decrypt-warning": "Warning: for security reasons, it is not recommended to keep the wallets unencrypted. Caution is advised.",
     "delete-button": "Delete Wallet",
-    "edit-button": "Rename",
+    "rename-button": "Rename",
     "add-button": "Add Wallet",
     "load-button": "Load Wallet",
     "hardware-wallet-button": "Skywallet",
@@ -111,6 +111,7 @@
     "delete-confirmation-check": "Yeah, I want to delete the wallet",
     "max-hardware-wallets-error": "You have already reached the max number of addresses that can be added to the Skywallet.",
     "add-many-confirmation": "WARNING: If you add too many addresses without using the previous ones or if you use the last ones and not the first ones, some addresses may not be recovered automatically if you try to restore the wallet using the seed (you will have to add them manually). Do you want to continue?",
+    "busy-error": "Please wait for the previous operation to be completed.",
 
     "new": {
       "create-title": "Create Wallet",
@@ -126,6 +127,7 @@
       "generate-24-help": "Generate a 24 word seed.",
       "encrypt-check": "Encrypt wallet",
       "encrypt-warning": "We suggest that you encrypt each one of your wallets with a password. If you forget your password, you can reset it with your seed. Make sure you have your seed saved somewhere safe before encrypting your wallet.",
+      "seed-checking-error": "It was not possible to verify the validity of the seed.",
       "unconventional-seed-title": "Possible Error",
       "unconventional-seed-text": "You introduced an unconventional seed. If you did it for any special reason, you can continue (only recommended for advanced users). However, if your intention is to use a normal system seed, you must delete all the additional text and special characters.",
       "unconventional-seed-check": "Continue with the unconventional seed",

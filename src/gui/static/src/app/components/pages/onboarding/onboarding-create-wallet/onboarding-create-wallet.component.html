@@ -1,4 +1,5 @@
 <div class="onboarding-container">
+  <!-- Header and indications. -->
   <div class="row">
     <div class="row-container">
       <div class="-header">
@@ -9,27 +10,31 @@
       </div>
     </div>
   </div>
+  <!-- Form selection buttons. -->
   <div class="row">
     <div class="row-container -toggle-container">
       <app-double-button
         [leftButtonText]="'wizard.new-button' | translate"
         [rightButtonText]="'wizard.load-button' | translate"
-        [activeButton]="doubleButtonActive"
+        [activeButton]="currentFormSelection"
         (onStateChange)="changeForm($event)"
       ></app-double-button>
     </div>
   </div>
+  <!-- Form. -->
   <div class="row">
     <div class="row-container">
-      <app-create-wallet-form #formControl [create]="showNewForm" [onboarding]="true"></app-create-wallet-form>
+      <app-create-wallet-form #formControl [create]="currentFormSelection === doubleButtonActive.LeftButton" [onboarding]="true"></app-create-wallet-form>
     </div>
   </div>
+  <!-- Hw wallet link. -->
   <div class="row justify-content-center" *ngIf="hwCompatibilityActivated">
     <span class="hw-link" (click)="useHardwareWallet()">{{ 'wizard.hardware-wallet-link' | translate }}</span>
   </div>
+  <!-- Buttons area. -->
   <div class="row -buttons-footer">
     <app-button class="dark-button -button-min-margin" [disabled]="!formControl.isValid"
-                (action)="showNewForm?createWallet():loadWallet()">
+                (action)="currentFormSelection === doubleButtonActive.LeftButton ? createWallet() : loadWallet()">
       {{ 'common.create-button' | translate }}
     </app-button>
   </div>

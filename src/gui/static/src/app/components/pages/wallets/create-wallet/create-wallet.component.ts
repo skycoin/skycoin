@@ -1,19 +1,30 @@
-import { Component, Inject, ViewChild, OnDestroy } from '@angular/core';
+import { Component, Inject, ViewChild, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { ButtonComponent } from '../../../layout/button/button.component';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { CreateWalletFormComponent } from './create-wallet-form/create-wallet-form.component';
 import { SubscriptionLike } from 'rxjs';
+
+import { ButtonComponent } from '../../../layout/button/button.component';
+import { CreateWalletFormComponent } from './create-wallet-form/create-wallet-form.component';
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { AppConfig } from '../../../../app.config';
 import { ConfirmationParams, ConfirmationComponent, DefaultConfirmationButtons } from '../../../layout/confirmation/confirmation.component';
 import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
 
+/**
+ * Settings for CreateWalletComponent.
+ */
 export class CreateWalletParams {
+  /**
+   * If the modal window is for creating a new wallet (true) or for loading a wallet
+   * using a seed (false).
+   */
   create: boolean;
 }
 
+/**
+ * Modal window for creating a new software wallet or loading a software wallet using a seed.
+ */
 @Component({
   selector: 'app-create-wallet',
   templateUrl: './create-wallet.component.html',
@@ -24,12 +35,18 @@ export class CreateWalletComponent implements OnDestroy {
   @ViewChild('createButton', { static: false }) createButton: ButtonComponent;
   @ViewChild('cancelButton', { static: false }) cancelButton: ButtonComponent;
 
+  // If the normal ways for closing the modal window must be deactivated.
   disableDismiss = false;
+  // Deactivates the form while the system is busy.
   busy = false;
 
+  // If the blockchain is synchronized.
   private synchronized = true;
   private blockchainSubscription: SubscriptionLike;
 
+  /**
+   * Opens the modal window. Please use this function instead of opening the window "by hand".
+   */
   public static openDialog(dialog: MatDialog, params: CreateWalletParams): MatDialogRef<CreateWalletComponent, any> {
     const config = new MatDialogConfig();
     config.data = params;
@@ -45,6 +62,7 @@ export class CreateWalletComponent implements OnDestroy {
     private dialog: MatDialog,
     private msgBarService: MsgBarService,
     private walletsAndAddressesService: WalletsAndAddressesService,
+    private changeDetector: ChangeDetectorRef,
     blockchainService: BlockchainService,
   ) {
     this.blockchainSubscription = blockchainService.progress.subscribe(response => this.synchronized = response.synchronized);
@@ -59,7 +77,9 @@ export class CreateWalletComponent implements OnDestroy {
     this.dialogRef.close();
   }
 
-  createWallet() {
+  // Checks if the blockchain is synchronized before creating the wallet. If it is synchronized,
+  // it continues creating the wallet, if not, the user must confirm the operation first.
+  checkAndCreateWallet() {
     if (!this.formControl.isValid || this.busy) {
       return;
     }
@@ -82,8 +102,11 @@ export class CreateWalletComponent implements OnDestroy {
         }
       });
     }
+
+    this.changeDetector.detectChanges();
   }
 
+  // Creates the wallet with the data entered on the form.
   private continueCreating() {
     this.busy = true;
     const data = this.formControl.getData();
@@ -102,7 +125,7 @@ export class CreateWalletComponent implements OnDestroy {
         this.busy = false;
         this.msgBarService.showError(e);
         this.createButton.resetState();
-        this.cancelButton.disabled = false;
+        this.cancelButton.setEnabled();
         this.disableDismiss = false;
       });
   }

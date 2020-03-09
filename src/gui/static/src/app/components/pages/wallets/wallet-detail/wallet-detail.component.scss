@@ -114,7 +114,7 @@
         background-image: url(assets/img/unlock-grey.png);
       }
 
-      &.-edit-wallet::before {
+      &.-rename-wallet::before {
         background-image: url(assets/img/edit-grey.png);
       }
 
@@ -146,7 +146,7 @@
           background-image: url(assets/img/unlock-gold.png);
         }
 
-        &.-edit-wallet::before {
+        &.-rename-wallet::before {
           background-image: url(assets/img/edit-blue.png);
         }
 

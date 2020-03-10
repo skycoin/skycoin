@@ -320,9 +320,12 @@ func New(config Config, v *visor.Visor) (*Daemon, error) {
 		return nil, err
 	}
 
+	messages := NewMessages(config.Messages)
+	messages.Config.Register()
+
 	d := &Daemon{
 		config:   config.Daemon,
-		Messages: NewMessages(config.Messages),
+		Messages: messages,
 		pex:      pex,
 		visor:    v,
 
@@ -337,8 +340,6 @@ func New(config Config, v *visor.Visor) (*Daemon, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	d.Messages.Config.Register()
 
 	return d, nil
 }
@@ -441,7 +442,7 @@ func (dm *Daemon) Run() error {
 	blocksAnnounceTicker := time.NewTicker(dm.config.BlocksAnnounceRate)
 	defer blocksAnnounceTicker.Stop()
 
-	// outgoingTrustedConnectionsTicker is used to maintain at least one connection to a trusted peer.
+	// outgoingTrustedConnectionsTicker is used to maintain at least two connections to trusted peers.
 	// This may be configured at a very frequent rate, so if no trusted connections could be reached,
 	// there could be a lot of churn.
 	// The additional outgoingTrustedConnectionsTicker parameters are used to
@@ -505,6 +506,41 @@ func (dm *Daemon) Run() error {
 					return
 				}
 				dm.handleMessageSendResult(r)
+			}
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+	loop:
+		for {
+			select {
+			case <-dm.quit:
+				break loop
+			case <-unconfirmedRefreshTicker.C:
+				elapser.Register("unconfirmedRefreshTicker")
+				// Get the transactions that turn to valid
+				validTxns, err := dm.visor.RefreshUnconfirmed()
+				if err != nil {
+					logger.WithError(err).Error("dm.Visor.RefreshUnconfirmed failed")
+					continue
+				}
+				// Announce these transactions
+				if err := dm.announceTxnHashes(validTxns); err != nil {
+					logger.WithError(err).Warning("announceTxnHashes failed")
+				}
+			case <-unconfirmedRemoveInvalidTicker.C:
+				elapser.Register("unconfirmedRemoveInvalidTicker")
+				// Remove transactions that become invalid (violating hard constraints)
+				removedTxns, err := dm.visor.RemoveInvalidUnconfirmed()
+				if err != nil {
+					logger.WithError(err).Error("dm.Visor.RemoveInvalidUnconfirmed failed")
+					continue
+				}
+				if len(removedTxns) > 0 {
+					logger.Infof("Remove %d txns from pool that began violating hard constraints", len(removedTxns))
+				}
 			}
 		}
 	}()
@@ -620,31 +656,6 @@ loop:
 					"seq":     head.BkSeq,
 					"time":    head.Time,
 				}).Info("Created and published a new block")
-			}
-
-		case <-unconfirmedRefreshTicker.C:
-			elapser.Register("unconfirmedRefreshTicker")
-			// Get the transactions that turn to valid
-			validTxns, err := dm.visor.RefreshUnconfirmed()
-			if err != nil {
-				logger.WithError(err).Error("dm.Visor.RefreshUnconfirmed failed")
-				continue
-			}
-			// Announce these transactions
-			if err := dm.announceTxnHashes(validTxns); err != nil {
-				logger.WithError(err).Warning("announceTxnHashes failed")
-			}
-
-		case <-unconfirmedRemoveInvalidTicker.C:
-			elapser.Register("unconfirmedRemoveInvalidTicker")
-			// Remove transactions that become invalid (violating hard constraints)
-			removedTxns, err := dm.visor.RemoveInvalidUnconfirmed()
-			if err != nil {
-				logger.WithError(err).Error("dm.Visor.RemoveInvalidUnconfirmed failed")
-				continue
-			}
-			if len(removedTxns) > 0 {
-				logger.Infof("Remove %d txns from pool that began violating hard constraints", len(removedTxns))
 			}
 
 		case <-blocksRequestTicker.C:

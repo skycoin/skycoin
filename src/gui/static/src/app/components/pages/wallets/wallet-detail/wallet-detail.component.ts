@@ -88,6 +88,10 @@ export class WalletDetailComponent implements OnDestroy {
 
   // Checks the wallet before opening the modal window for changing its label.
   renameWallet() {
+    if (this.preparingToRename) {
+      return;
+    }
+
     if (WalletsComponent.busy) {
       this.msgBarService.showError('wallet.busy-error');
 
@@ -97,10 +101,6 @@ export class WalletDetailComponent implements OnDestroy {
     this.msgBarService.hide();
 
     if (this.wallet.isHardware) {
-      if (this.preparingToRename) {
-        return;
-      }
-
       if (WalletsComponent.busy) {
         this.msgBarService.showError('wallet.busy-error');
 

@@ -62,6 +62,7 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.blockchainSubscription.unsubscribe();
+    this.onLabelAndSeedCreated.complete();
   }
 
   // Changes the form currently shown on the UI.

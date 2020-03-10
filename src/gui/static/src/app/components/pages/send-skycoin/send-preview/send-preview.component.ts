@@ -49,6 +49,8 @@ export class SendVerifyComponent implements OnDestroy {
     if (this.sendSubscription) {
       this.sendSubscription.unsubscribe();
     }
+
+    this.onBack.complete();
   }
 
   // Returns to the form.

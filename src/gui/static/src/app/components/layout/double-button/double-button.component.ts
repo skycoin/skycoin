@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, ViewEncapsulation } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ViewEncapsulation, OnDestroy } from '@angular/core';
 
 /**
  * Identifies the active button of a DoubleButtonComponent.
@@ -17,7 +17,7 @@ export enum DoubleButtonActive {
   styleUrls: ['./double-button.component.scss'],
   encapsulation: ViewEncapsulation.Emulated,
 })
-export class DoubleButtonComponent {
+export class DoubleButtonComponent implements OnDestroy {
   @Input() rightButtonText: string;
   @Input() leftButtonText: string;
   @Input() activeButton: DoubleButtonActive;
@@ -30,6 +30,10 @@ export class DoubleButtonComponent {
   @Input() changeActiveButtonManually = false;
   @Output() onStateChange = new EventEmitter<DoubleButtonActive>();
   ButtonStates = DoubleButtonActive;
+
+  ngOnDestroy() {
+    this.onStateChange.complete();
+  }
 
   onRightButtonClicked() {
     if (this.activeButton === DoubleButtonActive.LeftButton) {

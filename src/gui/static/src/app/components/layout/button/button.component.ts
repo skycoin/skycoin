@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ViewChild, OnDestroy } from '@angular/core';
 
 enum ButtonStates {
   Normal = 'Normal',
@@ -14,7 +14,7 @@ enum ButtonStates {
   templateUrl: 'button.component.html',
   styleUrls: ['button.component.scss'],
 })
-export class ButtonComponent {
+export class ButtonComponent implements OnDestroy {
   @Input() disabled: boolean;
   // If true, the button will send click events even when disabled.
   @Input() forceEmitEvents = false;
@@ -24,6 +24,10 @@ export class ButtonComponent {
 
   state = ButtonStates.Normal;
   buttonStates = ButtonStates;
+
+  ngOnDestroy() {
+    this.action.complete();
+  }
 
   onClick() {
     if (!this.disabled || this.forceEmitEvents) {

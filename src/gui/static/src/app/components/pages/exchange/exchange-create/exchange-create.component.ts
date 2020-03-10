@@ -1,4 +1,4 @@
-import { throwError as observableThrowError, SubscriptionLike, Observable, of } from 'rxjs';
+import { throwError as observableThrowError, SubscriptionLike, of } from 'rxjs';
 import {
   Component,
   EventEmitter,
@@ -85,6 +85,8 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
     if (this.priceUpdateSubscription) {
       this.priceUpdateSubscription.unsubscribe();
     }
+
+    this.submitted.complete();
   }
 
   setAgreement(event) {

@@ -103,6 +103,7 @@ export class ExchangeStatusComponent implements OnDestroy {
 
   ngOnDestroy() {
     this.subscription.unsubscribe();
+    this.goBack.complete();
   }
 
   toggleDetails() {

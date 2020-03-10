@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnDestroy } from '@angular/core';
 
 /**
  * Shows a link-like text with an arrow at the right. Used for showing more options or a list.
@@ -8,7 +8,7 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
   templateUrl: 'arrow-link.component.html',
   styleUrls: ['arrow-link.component.scss'],
 })
-export class ArrowLinkComponent {
+export class ArrowLinkComponent implements OnDestroy {
   // Removes the padding at the left.
   @Input() noPadding = false;
   // Makes the arrow at the right to point up (false) or down (true).
@@ -18,5 +18,9 @@ export class ArrowLinkComponent {
 
   onClick(event) {
     this.pressed.emit(event);
+  }
+
+  ngOnDestroy() {
+    this.pressed.complete();
   }
 }

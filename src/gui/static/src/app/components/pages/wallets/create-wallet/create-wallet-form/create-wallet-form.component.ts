@@ -120,6 +120,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     this.msgBarService.hide();
     this.statusSubscription.unsubscribe();
     this.seedValiditySubscription.unsubscribe();
+    this.createRequested.complete();
   }
 
   // Allows to know if the form is valid.

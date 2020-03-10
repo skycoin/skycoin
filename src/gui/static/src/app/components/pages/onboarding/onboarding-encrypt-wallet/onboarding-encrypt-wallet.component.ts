@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output, ViewChild, ChangeDetectorRef } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, ViewChild, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 
 import { ButtonComponent } from '../../../layout/button/button.component';
@@ -11,7 +11,7 @@ import { ButtonComponent } from '../../../layout/button/button.component';
   templateUrl: './onboarding-encrypt-wallet.component.html',
   styleUrls: ['./onboarding-encrypt-wallet.component.scss'],
 })
-export class OnboardingEncryptWalletComponent implements OnInit {
+export class OnboardingEncryptWalletComponent implements OnInit, OnDestroy {
   @ViewChild('button', { static: false }) button: ButtonComponent;
   // Emits when the user presses the button for going to the next step of the wizard, after
   // filling the form. Includes the password entered by the user, or null, if the user
@@ -34,6 +34,11 @@ export class OnboardingEncryptWalletComponent implements OnInit {
       {
         validator: this.passwordMatchValidator.bind(this),
       });
+  }
+
+  ngOnDestroy() {
+    this.onPasswordCreated.complete();
+    this.onBack.complete();
   }
 
   // Called after pressing the checkbox for selecting if the wallet must be encrypted with

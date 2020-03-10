@@ -10,7 +10,7 @@ export class WalletsPage {
   }
 
   showAddWallet() {
-    const btnAdd = element(by.buttonText('Add Wallet'));
+    const btnAdd = element(by.buttonText('New Wallet'));
 
     return btnAdd.click().then(() => {
       return element(by.css('app-create-wallet')).isPresent();

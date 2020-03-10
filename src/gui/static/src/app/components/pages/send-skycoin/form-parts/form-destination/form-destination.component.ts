@@ -157,6 +157,8 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     this.addressSubscription.unsubscribe();
     this.priceSubscription.unsubscribe();
     this.destinationSubscriptions.forEach(s => s.unsubscribe());
+    this.onChanges.complete();
+    this.onBulkRequested.complete();
   }
 
   // Changes the currency in which the user enters the values on the UI.

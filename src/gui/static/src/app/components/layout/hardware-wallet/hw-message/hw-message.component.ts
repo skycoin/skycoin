@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnDestroy } from '@angular/core';
 
 import { HwWalletTxRecipientData } from '../../../../services/hw-wallet.service';
 
@@ -25,7 +25,7 @@ export enum MessageIcons {
   templateUrl: './hw-message.component.html',
   styleUrls: ['./hw-message.component.scss'],
 })
-export class HwMessageComponent {
+export class HwMessageComponent implements OnDestroy {
   // Icon to show at the left.
   @Input() icon: MessageIcons = MessageIcons.None;
   // Text to show.
@@ -51,6 +51,10 @@ export class HwMessageComponent {
   @Output() linkClicked = new EventEmitter();
 
   icons = MessageIcons;
+
+  ngOnDestroy() {
+    this.linkClicked.complete();
+  }
 
   activateLink() {
     this.linkClicked.emit();

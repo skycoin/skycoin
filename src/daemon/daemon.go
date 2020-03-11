@@ -401,31 +401,10 @@ func (dm *Daemon) Run() error {
 
 	errC := make(chan error, 5)
 	var wg sync.WaitGroup
-
 	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if err := dm.pex.Run(); err != nil {
-			logger.WithError(err).Error("daemon.Pex.Run failed")
-			errC <- err
-		}
-	}()
-
+	go dm.startPex(&wg, errC)
 	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if dm.config.DisableIncomingConnections {
-			if err := dm.pool.RunOffline(); err != nil {
-				logger.WithError(err).Error("daemon.Pool.RunOffline failed")
-				errC <- err
-			}
-		} else {
-			if err := dm.pool.Run(); err != nil {
-				logger.WithError(err).Error("daemon.Pool.Run failed")
-				errC <- err
-			}
-		}
-	}()
+	go dm.startConnPool(&wg, errC)
 
 	blockInterval := time.Duration(dm.config.BlockCreationInterval)
 	blockCreationTicker := time.NewTicker(time.Second * blockInterval)
@@ -433,38 +412,10 @@ func (dm *Daemon) Run() error {
 		blockCreationTicker.Stop()
 	}
 
-	unconfirmedRefreshTicker := time.NewTicker(dm.config.UnconfirmedRefreshRate)
-	defer unconfirmedRefreshTicker.Stop()
-	unconfirmedRemoveInvalidTicker := time.NewTicker(dm.config.UnconfirmedRemoveInvalidRate)
-	defer unconfirmedRemoveInvalidTicker.Stop()
 	blocksRequestTicker := time.NewTicker(dm.config.BlocksRequestRate)
 	defer blocksRequestTicker.Stop()
 	blocksAnnounceTicker := time.NewTicker(dm.config.BlocksAnnounceRate)
 	defer blocksAnnounceTicker.Stop()
-
-	// outgoingTrustedConnectionsTicker is used to maintain at least two connections to trusted peers.
-	// This may be configured at a very frequent rate, so if no trusted connections could be reached,
-	// there could be a lot of churn.
-	// The additional outgoingTrustedConnectionsTicker parameters are used to
-	// skip ticks of the outgoingTrustedConnectionsTicker in the event of total failure.
-	// outgoingTrustedConnectionsTickerSkipDuration is the minimum time to wait between
-	// ticks in the event of total failure.
-	outgoingTrustedConnectionsTicker := time.NewTicker(dm.config.OutgoingTrustedRate)
-	defer outgoingTrustedConnectionsTicker.Stop()
-	outgoingTrustedConnectionsTickerSkipDuration := time.Second * 5
-	outgoingTrustedConnectionsTickerSkip := false
-	var outgoingTrustedConnectionsTickerSkipStart time.Time
-
-	cullInvalidTicker := time.NewTicker(dm.config.CullInvalidRate)
-	defer cullInvalidTicker.Stop()
-	outgoingConnectionsTicker := time.NewTicker(dm.config.OutgoingRate)
-	defer outgoingConnectionsTicker.Stop()
-	requestPeersTicker := time.NewTicker(dm.pex.Config.RequestRate)
-	defer requestPeersTicker.Stop()
-	clearStaleConnectionsTicker := time.NewTicker(dm.pool.Config.ClearStaleRate)
-	defer clearStaleConnectionsTicker.Stop()
-	idleCheckTicker := time.NewTicker(dm.pool.Config.IdleCheckRate)
-	defer idleCheckTicker.Stop()
 
 	flushAnnouncedTxnsTicker := time.NewTicker(dm.config.FlushAnnouncedTxnsRate)
 	defer flushAnnouncedTxnsTicker.Stop()
@@ -482,68 +433,10 @@ func (dm *Daemon) Run() error {
 
 	var setupErr error
 	elapser := elapse.NewElapser(daemonRunDurationThreshold, logger)
-
-	// Process SendResults in a separate goroutine, otherwise SendResults
-	// will fill up much faster than can be processed by the daemon run loop
-	// dm.handleMessageSendResult must take care not to perform any operation
-	// that would violate thread safety, since it is not serialized by the daemon run loop
 	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		elapser := elapse.NewElapser(daemonRunDurationThreshold, logger)
-	loop:
-		for {
-			elapser.CheckForDone()
-			select {
-			case <-dm.quit:
-				break loop
-
-			case r := <-dm.pool.Pool.SendResults:
-				// Process message sending results
-				elapser.Register("dm.Pool.Pool.SendResults")
-				if dm.config.DisableNetworking {
-					logger.Error("There should be nothing in SendResults")
-					return
-				}
-				dm.handleMessageSendResult(r)
-			}
-		}
-	}()
-
+	go dm.startMessageSendResultProcess(&wg)
 	wg.Add(1)
-	go func() {
-		defer wg.Done()
-	loop:
-		for {
-			select {
-			case <-dm.quit:
-				break loop
-			case <-unconfirmedRefreshTicker.C:
-				elapser.Register("unconfirmedRefreshTicker")
-				// Get the transactions that turn to valid
-				validTxns, err := dm.visor.RefreshUnconfirmed()
-				if err != nil {
-					logger.WithError(err).Error("dm.Visor.RefreshUnconfirmed failed")
-					continue
-				}
-				// Announce these transactions
-				if err := dm.announceTxnHashes(validTxns); err != nil {
-					logger.WithError(err).Warning("announceTxnHashes failed")
-				}
-			case <-unconfirmedRemoveInvalidTicker.C:
-				elapser.Register("unconfirmedRemoveInvalidTicker")
-				// Remove transactions that become invalid (violating hard constraints)
-				removedTxns, err := dm.visor.RemoveInvalidUnconfirmed()
-				if err != nil {
-					logger.WithError(err).Error("dm.Visor.RemoveInvalidUnconfirmed failed")
-					continue
-				}
-				if len(removedTxns) > 0 {
-					logger.Infof("Remove %d txns from pool that began violating hard constraints", len(removedTxns))
-				}
-			}
-		}
-	}()
+	go dm.startUnconfirmedTxnsProcess(&wg)
 
 loop:
 	for {
@@ -551,77 +444,6 @@ loop:
 		select {
 		case <-dm.quit:
 			break loop
-
-		case <-cullInvalidTicker.C:
-			// Remove connections that failed to complete the handshake
-			elapser.Register("cullInvalidTicker")
-			if !dm.config.DisableNetworking {
-				dm.cullInvalidConnections()
-			}
-
-		case <-requestPeersTicker.C:
-			// Request peers via PEX
-			elapser.Register("requestPeersTicker")
-			if dm.pex.Config.Disabled {
-				continue
-			}
-
-			if dm.pex.IsFull() {
-				continue
-			}
-
-			m := NewGetPeersMessage()
-			if _, err := dm.broadcastMessage(m); err != nil {
-				logger.WithError(err).Error("Broadcast GetPeersMessage failed")
-				continue
-			}
-
-		case <-clearStaleConnectionsTicker.C:
-			// Remove connections that haven't said anything in a while
-			elapser.Register("clearStaleConnectionsTicker")
-			if !dm.config.DisableNetworking {
-				conns, err := dm.pool.getStaleConnections()
-				if err != nil {
-					logger.WithError(err).Error("getStaleConnections failed")
-					continue
-				}
-
-				for _, addr := range conns {
-					if err := dm.Disconnect(addr, ErrDisconnectIdle); err != nil {
-						logger.WithError(err).WithField("addr", addr).Error("Disconnect")
-					}
-				}
-			}
-
-		case <-idleCheckTicker.C:
-			// Sends pings as needed
-			elapser.Register("idleCheckTicker")
-			if !dm.config.DisableNetworking {
-				dm.pool.sendPings()
-			}
-
-		case <-outgoingConnectionsTicker.C:
-			// Fill up our outgoing connections
-			elapser.Register("outgoingConnectionsTicker")
-			dm.connectToRandomPeer()
-
-		case <-outgoingTrustedConnectionsTicker.C:
-			// Try to maintain at least one trusted connection
-			elapser.Register("outgoingTrustedConnectionsTicker")
-			// If connecting to a trusted peer totally fails, make sure to wait longer between further attempts
-			if outgoingTrustedConnectionsTickerSkip {
-				if time.Since(outgoingTrustedConnectionsTickerSkipStart) < outgoingTrustedConnectionsTickerSkipDuration {
-					continue
-				}
-			}
-
-			if err := dm.maybeConnectToTrustedPeer(); err != nil && err != ErrNetworkingDisabled {
-				logger.Critical().WithError(err).Error("maybeConnectToTrustedPeer")
-				outgoingTrustedConnectionsTickerSkip = true
-				outgoingTrustedConnectionsTickerSkipStart = time.Now()
-			} else {
-				outgoingTrustedConnectionsTickerSkip = false
-			}
 
 		case r := <-dm.events:
 			elapser.Register("dm.event")
@@ -683,6 +505,206 @@ loop:
 	wg.Wait()
 
 	return nil
+}
+
+func (dm *Daemon) startPex(wg *sync.WaitGroup, errC chan error) {
+	defer wg.Done()
+	go func() {
+		if err := dm.pex.Run(); err != nil {
+			logger.WithError(err).Error("daemon.Pex.Run failed")
+			errC <- err
+		}
+	}()
+
+	elapser := elapse.NewElapser(daemonRunDurationThreshold, logger)
+	requestPeersTicker := time.NewTicker(dm.pex.Config.RequestRate)
+	defer requestPeersTicker.Stop()
+
+	for {
+		select {
+		case <-dm.quit:
+			return
+		case <-requestPeersTicker.C:
+			// Request peers via PEX
+			elapser.Register("requestPeersTicker")
+			if dm.pex.Config.Disabled {
+				continue
+			}
+
+			if dm.pex.IsFull() {
+				continue
+			}
+
+			m := NewGetPeersMessage()
+			if _, err := dm.broadcastMessage(m); err != nil {
+				logger.WithError(err).Error("Broadcast GetPeersMessage failed")
+				continue
+			}
+		}
+	}
+}
+
+func (dm *Daemon) startConnPool(wg *sync.WaitGroup, errC chan error) {
+	defer wg.Done()
+	go func() {
+		if dm.config.DisableIncomingConnections {
+			if err := dm.pool.RunOffline(); err != nil {
+				logger.WithError(err).Error("daemon.Pool.RunOffline failed")
+				errC <- err
+			}
+		} else {
+			if err := dm.pool.Run(); err != nil {
+				logger.WithError(err).Error("daemon.Pool.Run failed")
+				errC <- err
+			}
+		}
+	}()
+
+	elapser := elapse.NewElapser(daemonRunDurationThreshold, logger)
+
+	idleCheckTicker := time.NewTicker(dm.pool.Config.IdleCheckRate)
+	defer idleCheckTicker.Stop()
+	cullInvalidTicker := time.NewTicker(dm.config.CullInvalidRate)
+	defer cullInvalidTicker.Stop()
+	clearStaleConnectionsTicker := time.NewTicker(dm.pool.Config.ClearStaleRate)
+	defer clearStaleConnectionsTicker.Stop()
+
+	// outgoingTrustedConnectionsTicker is used to maintain at least two connections to trusted peers.
+	// This may be configured at a very frequent rate, so if no trusted connections could be reached,
+	// there could be a lot of churn.
+	// The additional outgoingTrustedConnectionsTicker parameters are used to
+	// skip ticks of the outgoingTrustedConnectionsTicker in the event of total failure.
+	// outgoingTrustedConnectionsTickerSkipDuration is the minimum time to wait between
+	// ticks in the event of total failure.
+	outgoingTrustedConnectionsTicker := time.NewTicker(dm.config.OutgoingTrustedRate)
+	defer outgoingTrustedConnectionsTicker.Stop()
+	outgoingTrustedConnectionsTickerSkipDuration := time.Second * 5
+	outgoingTrustedConnectionsTickerSkip := false
+	var outgoingTrustedConnectionsTickerSkipStart time.Time
+
+	outgoingConnectionsTicker := time.NewTicker(dm.config.OutgoingRate)
+	defer outgoingConnectionsTicker.Stop()
+	for {
+		select {
+		case <-dm.quit:
+			return
+		case <-outgoingConnectionsTicker.C:
+			// Fill up our outgoing connections
+			elapser.Register("outgoingConnectionsTicker")
+			dm.connectToRandomPeer()
+
+		case <-outgoingTrustedConnectionsTicker.C:
+			// Try to maintain at least one trusted connection
+			elapser.Register("outgoingTrustedConnectionsTicker")
+			// If connecting to a trusted peer totally fails, make sure to wait longer between further attempts
+			if outgoingTrustedConnectionsTickerSkip {
+				if time.Since(outgoingTrustedConnectionsTickerSkipStart) < outgoingTrustedConnectionsTickerSkipDuration {
+					continue
+				}
+			}
+
+			if err := dm.maybeConnectToTrustedPeer(); err != nil && err != ErrNetworkingDisabled {
+				logger.Critical().WithError(err).Error("maybeConnectToTrustedPeer")
+				outgoingTrustedConnectionsTickerSkip = true
+				outgoingTrustedConnectionsTickerSkipStart = time.Now()
+			} else {
+				outgoingTrustedConnectionsTickerSkip = false
+			}
+
+		case <-idleCheckTicker.C:
+			// Sends pings as needed
+			elapser.Register("idleCheckTicker")
+			if !dm.config.DisableNetworking {
+				dm.pool.sendPings()
+			}
+		case <-cullInvalidTicker.C:
+			// Remove connections that failed to complete the handshake
+			elapser.Register("cullInvalidTicker")
+			if !dm.config.DisableNetworking {
+				dm.cullInvalidConnections()
+			}
+
+		case <-clearStaleConnectionsTicker.C:
+			// Remove connections that haven't said anything in a while
+			elapser.Register("clearStaleConnectionsTicker")
+			if !dm.config.DisableNetworking {
+				conns, err := dm.pool.getStaleConnections()
+				if err != nil {
+					logger.WithError(err).Error("getStaleConnections failed")
+					continue
+				}
+
+				for _, addr := range conns {
+					if err := dm.Disconnect(addr, ErrDisconnectIdle); err != nil {
+						logger.WithError(err).WithField("addr", addr).Error("Disconnect")
+					}
+				}
+			}
+		}
+	}
+}
+
+// Process SendResults in a separate goroutine, otherwise SendResults
+// will fill up much faster than can be processed by the daemon run loop
+// dm.handleMessageSendResult must take care not to perform any operation
+// that would violate thread safety, since it is not serialized by the daemon run loop
+func (dm *Daemon) startMessageSendResultProcess(wg *sync.WaitGroup) {
+	defer wg.Done()
+	elapser := elapse.NewElapser(daemonRunDurationThreshold, logger)
+	for {
+		elapser.CheckForDone()
+		select {
+		case <-dm.quit:
+			return
+
+		case r := <-dm.pool.Pool.SendResults:
+			// Process message sending results
+			elapser.Register("dm.Pool.Pool.SendResults")
+			if dm.config.DisableNetworking {
+				logger.Error("There should be nothing in SendResults")
+				return
+			}
+			dm.handleMessageSendResult(r)
+		}
+	}
+}
+
+func (dm *Daemon) startUnconfirmedTxnsProcess(wg *sync.WaitGroup) {
+	unconfirmedRefreshTicker := time.NewTicker(dm.config.UnconfirmedRefreshRate)
+	defer unconfirmedRefreshTicker.Stop()
+	unconfirmedRemoveInvalidTicker := time.NewTicker(dm.config.UnconfirmedRemoveInvalidRate)
+	defer unconfirmedRemoveInvalidTicker.Stop()
+	elapser := elapse.NewElapser(daemonRunDurationThreshold, logger)
+	defer wg.Done()
+	for {
+		select {
+		case <-dm.quit:
+			return
+		case <-unconfirmedRefreshTicker.C:
+			elapser.Register("unconfirmedRefreshTicker")
+			// Get the transactions that turn to valid
+			validTxns, err := dm.visor.RefreshUnconfirmed()
+			if err != nil {
+				logger.WithError(err).Error("dm.Visor.RefreshUnconfirmed failed")
+				continue
+			}
+			// Announce these transactions
+			if err := dm.announceTxnHashes(validTxns); err != nil {
+				logger.WithError(err).Warning("announceTxnHashes failed")
+			}
+		case <-unconfirmedRemoveInvalidTicker.C:
+			elapser.Register("unconfirmedRemoveInvalidTicker")
+			// Remove transactions that become invalid (violating hard constraints)
+			removedTxns, err := dm.visor.RemoveInvalidUnconfirmed()
+			if err != nil {
+				logger.WithError(err).Error("dm.Visor.RemoveInvalidUnconfirmed failed")
+				continue
+			}
+			if len(removedTxns) > 0 {
+				logger.Infof("Remove %d txns from pool that began violating hard constraints", len(removedTxns))
+			}
+		}
+	}
 }
 
 // Connects to a given peer. Returns an error if no connection attempt was

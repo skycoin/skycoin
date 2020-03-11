@@ -1,5 +1,6 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
+
 import { AppService } from './services/app.service';
 import { HwWalletService } from './services/hw-wallet.service';
 import { HwPinDialogComponent } from './components/layout/hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
@@ -15,28 +16,35 @@ import { SelectLanguageComponent } from './components/layout/select-language/sel
 import { WalletsAndAddressesService } from './services/wallet-operations/wallets-and-addresses.service';
 import { redirectToErrorPage } from './utils/errors';
 
+/**
+ * Main component for the app.
+ */
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
 })
 export class AppComponent implements OnInit {
+  // Single MsgBarComponent instance used on the app.
   @ViewChild('msgBar', { static: false }) msgBar: MsgBarComponent;
 
   constructor(
     private appService: AppService,
     private languageService: LanguageService,
+    private dialog: MatDialog,
+    private msgBarService: MsgBarService,
     hwWalletService: HwWalletService,
     hwWalletPinService: HwWalletPinService,
     hwWalletSeedWordService: HwWalletSeedWordService,
     walletsAndAddressesService: WalletsAndAddressesService,
-    private bip38WordList: Bip39WordListService,
-    private dialog: MatDialog,
-    private msgBarService: MsgBarService,
+    bip38WordList: Bip39WordListService,
   ) {
+    // Asign modal window classes to some services, to avoid circular references.
     hwWalletPinService.requestPinComponent = HwPinDialogComponent;
     hwWalletSeedWordService.requestWordComponent = SeedWordDialogComponent;
     hwWalletService.signTransactionConfirmationComponent = HwConfirmTxDialogComponent;
+
+    bip38WordList.initialize();
 
     walletsAndAddressesService.errorDuringinitialLoad.subscribe(failed => {
       if (failed) {
@@ -50,6 +58,8 @@ export class AppComponent implements OnInit {
     this.appService.UpdateData();
     this.languageService.initialize();
 
+    // If the user has not selected the language for the first time, show the
+    // language selection modal window.
     const subscription = this.languageService.savedSelectedLanguageLoaded.subscribe(savedSelectedLanguageLoaded => {
       if (!savedSelectedLanguageLoaded) {
         SelectLanguageComponent.openDialog(this.dialog, true);

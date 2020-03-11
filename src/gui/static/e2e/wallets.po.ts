@@ -120,7 +120,7 @@ export class WalletsPage {
   }
 
   showChangeWalletName() {
-    return element(by.css('.-edit-wallet')).click().then(() => {
+    return element(by.css('.-rename-wallet')).click().then(() => {
       return element(by.css('app-change-name')).isPresent();
     });
   }

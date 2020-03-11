@@ -60,8 +60,8 @@
       </ng-container>
     </div>
     <!-- Coins and hours. -->
-    <div class="-width-130 text-right">{{ (address.coins ? address.coins.toString() : 0) | amount:true:'first' }}</div>
-    <div class="-width-130 text-right grey-text">{{ (address.hours ? address.hours.toString() : 0) | amount:false:'first' }}</div>
+    <div class="-width-130 text-right">{{ (address.coins ? address.coins : 0) | amount:true:'first' }}</div>
+    <div class="-width-130 text-right grey-text">{{ (address.hours ? address.hours : 0) | amount:false:'first' }}</div>
     <!-- Options. -->
     <div class="-width-85 options-column">
       <mat-icon [matMenuTriggerFor]="optionsMenu">more_vert</mat-icon>

@@ -5,10 +5,10 @@
       <ng-container *ngFor="let address of element.addresses">
         <button mat-button color="primary" (click)="select(address.address)">
           <div class="address">{{ address.address }}</div>
-          <div class="balance">{{ address.coins.toString() | amount:true:'first' }}
-            <span class="grey-text">{{ address.coins.toString() | amount:true:'last' }} | </span>
-            {{ address.hours.toString() | amount:false:'first' }}
-            <span class="grey-text">{{ address.hours.toString() | amount:false:'last' }}</span>
+          <div class="balance">{{ address.coins | amount:true:'first' }}
+            <span class="grey-text">{{ address.coins | amount:true:'last' }} | </span>
+            {{ address.hours | amount:false:'first' }}
+            <span class="grey-text">{{ address.hours | amount:false:'last' }}</span>
           </div>
         </button>
       </ng-container>

@@ -1,5 +1,8 @@
 import { Directive, ElementRef, HostListener } from '@angular/core';
 
+/**
+ * Tries to make an input avoid the "save password" feature of most browsers.
+ */
 @Directive({
   selector: '[appDontSavePassword]',
 })

@@ -291,20 +291,13 @@ func fiberAddressGenCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			defer func() {
-				cErr := addrsF.Close()
-				if cErr != nil {
-					err = cErr
-				}
-			}()
+			defer addrsF.Close()
 
 			seedsF, err := os.Create(seedsFilename)
-			defer func() {
-				cErr := seedsF.Close()
-				if cErr != nil {
-					err = cErr
-				}
-			}()
+			if err != nil {
+				return err
+			}
+			defer seedsF.Close()
 
 			for i, a := range addrs {
 				if _, err := fmt.Fprintf(addrsF, "\"%s\",\n", a); err != nil {
@@ -315,7 +308,11 @@ func fiberAddressGenCmd() *cobra.Command {
 				}
 			}
 
-			return nil
+			if err := addrsF.Sync(); err != nil {
+				return err
+			}
+
+			return seedsF.Sync()
 		},
 	}
 

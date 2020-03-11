@@ -312,7 +312,7 @@ func fiberAddressGenCmd() *cobra.Command {
 				return err
 			}
 
-			return seedsF.Close()
+			return seedsF.Sync()
 		},
 	}
 

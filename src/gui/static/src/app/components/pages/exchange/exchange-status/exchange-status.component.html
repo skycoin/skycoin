@@ -5,6 +5,7 @@
 ></app-loading-content>
 
 <ng-container *ngIf="!loading">
+  <!-- Top area. -->
   <div class="-wrapper">
     <div class="-status">
       <mat-icon [ngClass]="{'-spin': statusIcon === 'refresh'}">{{ statusIcon }}</mat-icon>
@@ -16,9 +17,12 @@
     <span>{{ 'exchange.exchanging' | translate:{from: fromCoin, to: toCoin} }}</span>
   </div>
 
+  <!-- Progress bar. -->
   <mat-progress-bar [value]="progress" color="primary"></mat-progress-bar>
 
+  <!-- Info area. -->
   <div class="-details">
+    <!-- Id. -->
     <div class="-box">
       <div class="-img"></div>
       <div class="-item">
@@ -27,7 +31,9 @@
       </div>
     </div>
 
+    <!-- This part may be always visible or be inside the details panel, depending on the status of the order. -->
     <ng-template #fromInfo>
+      <!-- Amount the user must send. -->
       <div class="-box">
         <div class="-img"></div>
         <div class="-item">
@@ -36,6 +42,7 @@
         </div>
       </div>
 
+      <!-- Address the user must send the coins to. -->
       <div class="-box">
         <div class="-img">
           <app-qr-code-button [address]="order.exchangeAddress" [showAddressOnly]="true"></app-qr-code-button>
@@ -46,6 +53,7 @@
         </div>
       </div>
 
+      <!-- Tag the user must use while sending the coins, if the coin to be send uses tags. -->
       <div class="-box" *ngIf="order.exchangeTag">
         <div class="-img">
           <app-qr-code-button [address]="order.exchangeTag" [showAddressOnly]="true"></app-qr-code-button>
@@ -61,6 +69,7 @@
       <ng-container *ngTemplateOutlet="fromInfo"></ng-container>
     </ng-container>
 
+    <!-- Transaction in which the coins were send to the user. -->
     <div class="-box" *ngIf="order.status === statuses[5]">
       <div class="-img"></div>
       <div class="-item">
@@ -74,6 +83,7 @@
       </div>
     </div>
 
+    <!-- Error msg returned by the backend. -->
     <div class="-box" *ngIf="order.status === statuses[6]">
       <div class="-img"></div>
       <div class="-item">
@@ -82,6 +92,7 @@
       </div>
     </div>
 
+    <!-- Link for showing the details pannel. -->
     <div class="-box">
       <div class="-img"></div>
       <app-arrow-link
@@ -92,7 +103,9 @@
       </app-arrow-link>
     </div>
 
+    <!-- Details pannel. -->
     <ng-container *ngIf="expanded">
+      <!-- Date in which the order was created. -->
       <div class="-box">
         <div class="-img"></div>
         <div class="-item">
@@ -105,6 +118,7 @@
         <ng-container *ngTemplateOutlet="fromInfo"></ng-container>
       </ng-container>
 
+      <!-- How many coins the user will receive. -->
       <div class="-box">
         <div class="-img"></div>
         <div class="-item">
@@ -113,6 +127,7 @@
         </div>
       </div>
 
+      <!-- Address where the user will receive the coins. -->
       <div class="-box">
         <div class="-img"></div>
         <div class="-item">
@@ -121,6 +136,7 @@
         </div>
       </div>
 
+      <!-- Approximately how many coins the user will receive per deposited coin. -->
       <div class="-box">
         <div class="-img"></div>
         <div class="-item">
@@ -132,6 +148,7 @@
   </div>
 </ng-container>
 
+<!-- Button. -->
 <div class="text-center">
   <app-button class="primary-button" (action)="close()">
     {{ 'common.back-button' | translate }}

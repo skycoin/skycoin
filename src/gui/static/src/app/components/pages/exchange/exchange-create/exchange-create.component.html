@@ -5,7 +5,9 @@
 ></app-loading-content>
 
 <div class="-create" *ngIf="activeTradingPair">
+  <!-- Form column. -->
   <div [formGroup]="form" class="-form">
+    <!-- Coins that will be sent. -->
     <div class="form-field">
       <label for="fromAmount">
         {{ 'exchange.label-you-send' | translate }}
@@ -25,6 +27,7 @@
         </div>
       </div>
     </div>
+    <!-- Coins that will be received. -->
     <div class="form-field">
       <label for="toAmount">{{ 'exchange.label-you-get' | translate }}</label>
       <div class="-inputs -not-allowed">
@@ -34,6 +37,7 @@
         </div>
       </div>
     </div>
+    <!-- Address. -->
     <div class="form-field">
       <label for="toAddress">
         <span>{{ 'exchange.label-to-address' | translate:{coin: toCoin} }}</span>
@@ -45,6 +49,7 @@
       <input type="text" formControlName="toAddress" id="toAddress" [attr.disabled]="busy ? 'true' : null">
     </div>
 
+    <!-- Agreement. -->
     <div class="-buttons">
       <mat-checkbox class="-check" (change)="setAgreement($event)" type="checkbox" [ngClass]="{'element-disabled' : busy}">
         {{ 'exchange.agree-part1' | translate }}
@@ -57,12 +62,14 @@
         </a>
       </mat-checkbox>
 
+      <!-- Button. -->
       <app-button class="primary-button" #exchangeButton (action)="exchange()" [disabled]="!form.valid">
         {{ 'exchange.exchange-button' | translate }}
       </app-button>
     </div>
   </div>
 
+  <!-- Info column. -->
   <div class="-info" *ngIf="activeTradingPair">
     <div class="-item">
       <div class="-key">{{ 'exchange.label-you-send' | translate }}</div>

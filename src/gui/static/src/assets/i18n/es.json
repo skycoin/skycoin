@@ -51,9 +51,7 @@
     "proceed-button": "Proceder",
     "reset-link": "He olvidado mi contraseña",
     "incorrect-password-error": "Contraseña incorrecta.",
-    "decrypting-error": "Error al desencriptar la billetera",
-    "api-disabled-error": "API desabilitada",
-    "no-wallet-error": "La billetera no existe"
+    "decrypting-error": "Error al desencriptar la billetera"
   },
 
   "buy": {
@@ -100,8 +98,8 @@
     "decrypt-button": "Desencriptar Billetera",
     "decrypt-warning": "Advertencia: por razones de seguridad, no se recomienda mantener las carteras desencriptadas. Se aconseja precaución.",
     "delete-button" : "Borrar Billetera",
-    "edit-button": "Renombrar",
-    "add-button": "Agregar Billetera",
+    "rename-button": "Rename",
+    "add-button": "Nueva Billetera",
     "load-button": "Cargar Billetera",
     "hardware-wallet-button": "Skywallet",
     "encryption-enabled": "Encriptado habilitado.",
@@ -113,6 +111,7 @@
     "delete-confirmation-check": "Sí, quiero borrar la billetera",
     "max-hardware-wallets-error": "Ya ha alcanzado el número máximo de direcciones que se puede agregar a la Skywallet.",
     "add-many-confirmation": "ADVERTENCIA: si agrega demasiadas direcciones sin usar las anteriores o si usa las últimas y no las primeras, es posible que algunas direcciones no se recuperen automáticamente si intenta restaurar la billetera con la semilla (tendrá que agregarlas manualmente). ¿Desea continuar?",
+    "busy-error": "Por favor espere a que se complete la operación anterior.",
 
     "new": {
       "create-title": "Crear Billetera",
@@ -128,6 +127,7 @@
       "generate-24-help": "Generar una semilla de 24 palabras.",
       "encrypt-check": "Encriptar billetera",
       "encrypt-warning": "Le sugerimos que encripte con una contraseña cada una de sus billeteras. Si olvida su contraseña, puede restaurarla con la semilla. Asegúrese de guardar su semilla en un lugar seguro antes de encriptar la billetera.",
+      "seed-checking-error": "No fue posible verificar la validez de la semilla.",
       "unconventional-seed-title": "Posible Error",
       "unconventional-seed-text": "Usted introdujo una semilla no convencional. Si lo hizo por alguna razón en especial, puede continuar (sólo recomendable para usuarios avanzados). Sin embargo, si su intención es utilizar una semilla normal del sistema, usted debe borrar los textos y/o caracteres especiales adicionales.",
       "unconventional-seed-check": "Continuar con la semilla no convencional",
@@ -219,7 +219,7 @@
     "invaid-amounts-warning": "Se detectaron valores inválidos durante la conversión. Por favor verifique la cantidad que se enviará.",
     "multiple-problems-warning": "Algunos valores no se convirtieron por ser inválidos o podrían haberse convertido con errores de precisión. Por favor verifique la cantidad que se enviará.",
     "addresses-label": "Direcciones",
-    "no-wallet-selected-error": "Usted debe seleccionr una billetera antes de usar esta opción.",
+    "no-wallet-selected-error": "No hay monedas para enviar.",
     "no-coins-left-error": "No hay monedas restantes para enviar.",
     "addresses-help": "Limite las direcciones desde donde se podrían enviar las monedas y las horas.",
     "addresses-manual-help": "Lista de las direcciones desde las cuales se enviarán las monedas, separadas por comas. Todas las direcciones deben pertenecer a la misma billetera o no podrá firmar la transacción con la billetera de escritorio.",
@@ -234,7 +234,7 @@
     "available-funds-msg-part1": "Con su selección actual puede enviar hasta",
     "available-funds-msg-part2": "y",
     "available-funds-msg-part3": "(al menos",
-    "available-funds-msg-part4": "deben ser utilizadas para la tarifa de transacción).",
+    "available-funds-msg-part4": "deben ser utilizadas como tarifa de transacción para enviar todas las monedas u horas).",
     "change-address-label": "Dirección de retorno personalizada",
     "change-address-select-from-list-link": "Seleccionar",
     "change-address-help": "Dirección para recibir el cambio. Si no se proporciona, será elegida automáticamente. Haga clic en el enlace \"Seleccionar\" para elegir una dirección de una de sus billeteras.",
@@ -290,8 +290,7 @@
       "select-wallet": "Seleccione una billetera",
       "input-label": "Texto de la transacción",
       "sign-button": "Firmar",
-      "signed": "La transacción ha sido firmada.",
-      "error": "Error al firmar la transacción."
+      "signed": "La transacción ha sido firmada."
     },
 
     "broadcast-tx": {
@@ -299,8 +298,7 @@
       "text": "Use este formulario para enviar una transacción firmada a la red.",
       "input-label": "Texto de la transacción",
       "send-button": "Enviar",
-      "sent": "La transacción ha sido enviada.",
-      "error": "Error al enviar la transacción."
+      "sent": "La transacción ha sido enviada."
     }
   },
 
@@ -372,6 +370,7 @@
 
   "network": {
     "title": "Red",
+    "error-no-connections": "Sin conexiones",
     "peer-small-table-label": "Par",
     "source-small-table-label": "Fuente",
     "block-height-small-table-label": "Altura del bloque",
@@ -438,7 +437,10 @@
 
   "service": {
     "api" : {
-      "server-error": "Error de servidor"
+      "no-internet-error": "Usted no está conectado a Internet o el nodo ha dejado de funcionar.",
+      "incorrect-password-error": "Contraseña incorrecta.",
+      "unknown-error": "No fue posible realizar la operación.",
+      "api-disabled-error": "API deshabilitada."
     }
   },
 
@@ -452,13 +454,11 @@
       "name-updated": "El nombre utilizado para identificar esta Skywallet en la lista de billeteras se ha actualizado para que coincida con el que se muestra en el dispositivo."
     },
     "errors": {
-      "simple-error": "Error. No se puede realizar la operación.",
       "generic-error": "No se puede realizar la operación. Asegúrese de haber conectado una Skywallet válida y de que no esté esperando por alguna confirmación o respuesta.",
-      "generic-error-internet": "No se puede realizar la operación. Asegúrese de haber conectado una Skywallet válida que no esté esperando por alguna confirmación o respuesta y de que su equipo cuente con conexión a internet y al nodo.",
       "disconnected": "No se puede realizar la operación. La Skywallet no está conectada.",
       "incorrect-wallet": "No se puede realizar la operación. La Skywallet conectada es diferente a la esperada.",
       "incorrect-pin": "No se puede realizar la operación. El PIN que ha introducido no es correcto.",
-      "refused": "La operación falló o fue cancelada.",
+      "refused": "La operación fue cancelada.",
       "too-many-inputs-outputs": "La transacción tiene demasiadas entradas o salidas para la Skywallet. Por favor vuelva a intentarlo creando varias transacciones más pequeñas, cada una con un número menor de destinatarios (si la transacción actual tiene muchos) o monedas.",
       "daemon-connection": "Problema para conectarse al Skywallet Daemon, por favor asegúrese de que se esté ejecutando e inténtelo nuevamente. Usted puede descargarlo desde www.skycoin.com/downloads",
       "daemon-connection-with-configurable-link": "Problema para conectarse al Skywallet Daemon, por favor asegúrese de que se esté ejecutando e inténtelo nuevamente. Usted puede descargarlo desde ",
@@ -564,9 +564,9 @@
       "title-change-current": "Ingrese el PIN Actual",
       "title-change-new": "Ingrese el Nuevo PIN",
       "title-change-confirm": "Confirme el Nuevo PIN",
-      "instructions": "El patrón de números del PIN se muestra en la pantalla de la Skywallet.",
-      "instructions-tx": "Introduzca el PIN para confirmar y firmar la transacción.",
-      "instructions-change": "Por favor ingrese un PIN difícil de adivinar de entre 4 y 8 números.",
+      "instructions-generic": "El patrón de números del PIN se muestra en la pantalla de la Skywallet.",
+      "instructions-tx": "Introduzca el PIN para confirmar y firmar la transacción. El patrón de números del PIN se muestra en la pantalla de la Skywallet.",
+      "instructions-change": "Por favor ingrese un PIN difícil de adivinar de entre 4 y 8 números. El patrón de números del PIN se muestra en la pantalla de la Skywallet.",
       "help": "¿Necesita ayuda?"
     },
     "pin-help" : {
@@ -622,6 +622,7 @@
     "label-status": "Estado",
     "exchanging": "Intercambiando {{from}} por {{to}}",
     "destination-select-from-list-link": "Seleccionar",
+    "unavailable": "El servicio de intercambio no está disponible en versión portable.",
     "offline": "El servicio está temporalmente offline",
     "problem-connecting": "No se puede conectar con el servicio. Por favor compruebe su conexión a Internet y vuelva a intentarlo más tarde.",
     "invalid-address-error": "Dirección inválida.",

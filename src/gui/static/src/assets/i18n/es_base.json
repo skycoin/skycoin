@@ -51,9 +51,7 @@
     "proceed-button": "Proceed",
     "reset-link": "I forgot my password",
     "incorrect-password-error": "Incorrect password.",
-    "decrypting-error": "Error decrypting the wallet.",
-    "api-disabled-error": "API disabled.",
-    "no-wallet-error": "Wallet does not exist."
+    "decrypting-error": "Error decrypting the wallet."
   },
 
   "buy": {
@@ -100,8 +98,8 @@
     "decrypt-button": "Decrypt Wallet",
     "decrypt-warning": "Warning: for security reasons, it is not recommended to keep the wallets unencrypted. Caution is advised.",
     "delete-button": "Delete Wallet",
-    "edit-button": "Rename",
-    "add-button": "Add Wallet",
+    "rename-button": "Rename",
+    "add-button": "New Wallet",
     "load-button": "Load Wallet",
     "hardware-wallet-button": "Skywallet",
     "encryption-enabled": "Encryption enabled.",
@@ -113,6 +111,7 @@
     "delete-confirmation-check": "Yeah, I want to delete the wallet",
     "max-hardware-wallets-error": "You have already reached the max number of addresses that can be added to the Skywallet.",
     "add-many-confirmation": "WARNING: If you add too many addresses without using the previous ones or if you use the last ones and not the first ones, some addresses may not be recovered automatically if you try to restore the wallet using the seed (you will have to add them manually). Do you want to continue?",
+    "busy-error": "Please wait for the previous operation to be completed.",
 
     "new": {
       "create-title": "Create Wallet",
@@ -128,6 +127,7 @@
       "generate-24-help": "Generate a 24 word seed.",
       "encrypt-check": "Encrypt wallet",
       "encrypt-warning": "We suggest that you encrypt each one of your wallets with a password. If you forget your password, you can reset it with your seed. Make sure you have your seed saved somewhere safe before encrypting your wallet.",
+      "seed-checking-error": "It was not possible to verify the validity of the seed.",
       "unconventional-seed-title": "Possible Error",
       "unconventional-seed-text": "You introduced an unconventional seed. If you did it for any special reason, you can continue (only recommended for advanced users). However, if your intention is to use a normal system seed, you must delete all the additional text and special characters.",
       "unconventional-seed-check": "Continue with the unconventional seed",
@@ -219,7 +219,7 @@
     "invaid-amounts-warning": "Invalid values were detected during conversion. Please check the amount that will be sent.",
     "multiple-problems-warning": "Some values were not converted because they were invalid or could have been converted with precision errors. Please check the amount that will be sent.",
     "addresses-label": "Addresses",
-    "no-wallet-selected-error": "You must select a wallet before using this option.",
+    "no-wallet-selected-error": "There are no coins to send.",
     "no-coins-left-error": "There are no coins left to send.",
     "addresses-help": "Limit the addresses from where the coins and hours could be sent.",
     "addresses-manual-help": "List of the addresses from which the coins will be sent, comma separated. All addresses must belong to the same wallet or you will not be able to sign the transaction with the desktop wallet.",
@@ -234,7 +234,7 @@
     "available-funds-msg-part1": "With your current selection you can send up to",
     "available-funds-msg-part2": "and",
     "available-funds-msg-part3": "(at least",
-    "available-funds-msg-part4": "must be used for the transaction fee).",
+    "available-funds-msg-part4": "must be used as transaction fee for sending all the coins or hours).",
     "change-address-label": "Custom change address",
     "change-address-select-from-list-link": "Select",
     "change-address-help": "Address to receive change. If it's not provided, it will be chosen automatically. Click on the \"Select\" link to choose an address from one of your wallets.",
@@ -290,8 +290,7 @@
       "select-wallet": "Select wallet",
       "input-label": "Transaction text",
       "sign-button": "Sign",
-      "signed": "The transaction has been signed.",
-      "error": "Error signing the transaction."
+      "signed": "The transaction has been signed."
     },
 
     "broadcast-tx": {
@@ -299,8 +298,7 @@
       "text": "Use this form to send a signed transaction to the network.",
       "input-label": "Transaction text",
       "send-button": "Send",
-      "sent": "The transaction has been sent.",
-      "error": "Error sending the transaction."
+      "sent": "The transaction has been sent."
     }
   },
 
@@ -372,6 +370,7 @@
 
   "network": {
     "title": "Networking",
+    "error-no-connections": "No connections",
     "peer-small-table-label": "Peer",
     "source-small-table-label": "Source",
     "block-height-small-table-label": "Block height",
@@ -438,7 +437,10 @@
 
   "service": {
     "api" : {
-      "server-error": "Server error."
+      "no-internet-error": "You do not have a internet connection or the node has stopped working.",
+      "incorrect-password-error": "Incorrect password.",
+      "unknown-error": "It was not possible to perform the operation.",
+      "api-disabled-error": "API disabled."
     }
   },
 
@@ -452,13 +454,11 @@
       "name-updated": "The name used to identify this Skywallet in the wallet list has been updated to match the one shown on the device."
     },
     "errors": {
-      "simple-error": "Error. Unable to perform the operation.",
       "generic-error": "Unable to perform the operation. Make sure you have connected a valid Skywallet and that it is not waiting for input.",
-      "generic-error-internet": "Unable to perform the operation. Make sure you have connected a valid Skywallet that is not waiting for input and that you have a connection to the internet/node.",
       "disconnected": "Unable to perform the operation. The Skywallet is not connected.",
       "incorrect-wallet": "Unable to perform the operation. The connected Skywallet is different from the expected one.",
       "incorrect-pin": "Unable to perform the operation. The PIN you have entered is incorrect.",
-      "refused": "The operation failed or was canceled.",
+      "refused": "The operation was canceled.",
       "too-many-inputs-outputs": "The transaction has too many inputs or outputs for the Skywallet. Please try again creating several smaller transactions, each one with a smaller number of recipients (if the current transaction has many) or coins.",
       "daemon-connection": "Problem connecting to the Skywallet Daemon, please make sure it is running and try again. You can download it from www.skycoin.com/downloads",
       "daemon-connection-with-configurable-link": "Problem connecting to the Skywallet Daemon, please make sure it is running and try again. You can download it from ",
@@ -564,9 +564,9 @@
       "title-change-current": "Enter the Current PIN",
       "title-change-new": "Enter the New PIN",
       "title-change-confirm": "Confirm the New PIN",
-      "instructions": "The PIN layout is displayed on the Skywallet screen.",
-      "instructions-tx": "Enter the PIN to confirm and sign the transaction.",
-      "instructions-change": "Please enter a secure PIN consisting of 4 to 8 numbers.",
+      "instructions-generic": "The PIN layout is displayed on the Skywallet screen.",
+      "instructions-tx": "Enter the PIN to confirm and sign the transaction. The PIN layout is displayed on the Skywallet screen.",
+      "instructions-change": "Please enter a secure PIN consisting of 4 to 8 numbers. The PIN layout is displayed on the Skywallet screen.",
       "help": "Need help?"
     },
     "pin-help" : {
@@ -622,6 +622,7 @@
     "label-status": "Status",
     "exchanging": "Exchanging {{from}} for {{to}}",
     "destination-select-from-list-link": "Select",
+    "unavailable": "The exchange service is not available in portable version",
     "offline": "Exchange is temporarily offline",
     "problem-connecting": "Unable to connect with the service. Please check your Internet connection and try again later",
     "invalid-address-error": "Invalid address.",

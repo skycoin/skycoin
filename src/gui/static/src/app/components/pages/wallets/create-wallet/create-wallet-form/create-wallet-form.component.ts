@@ -361,16 +361,17 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
 
     this.seedValiditySubscription = this.seed.asObservable().pipe(switchMap(seed => {
       // Verify the seed if it was entered manually and was confirmed.
-      if ((!this.seedMatchValidator() || !this.create) && !this.enterSeedWithAssistance) {
+      if ((!this.seedMatchValidator() || !this.create) && !this.enterSeedWithAssistance && seed.trim().length > 0) {
         this.checkingCustomSeed = true;
 
         return this.apiService.post('wallet/seed/verify', {seed}, {useV2: true});
       } else {
         return of(0);
       }
-    })).subscribe(() => {
-      // The entered seed does not have problems.
-      this.customSeedIsNormal = true;
+    })).subscribe(result => {
+      // The entered seed does not have problems if the backend (not the previous code) returned
+      // a success response.
+      this.customSeedIsNormal = result !== 0;
       this.checkingCustomSeed = false;
     }, (error: OperationError) => {
       this.checkingCustomSeed = false;

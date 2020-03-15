@@ -12,7 +12,6 @@ import { SelectAddressComponent } from '../../../layout/select-address/select-ad
 import { AppService } from '../../../../services/app.service';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
-import { PriceService } from 'src/app/services/price.service';
 
 /**
  * Shows the form for creating an exchange order.

@@ -214,8 +214,16 @@ func (w *Bip44Wallet) generateEntries(num uint64, changeIdx, initialChildIdx uin
 		return nil, err
 	}
 
-	// Generate the external chain parent node
-	chain, err := account.NewPrivateChildKey(changeIdx)
+	// Generate the chain parent node
+	var chain *bip32.PrivateKey
+	switch changeIdx {
+	case bip44.ExternalChainIndex:
+		chain, err = account.External()
+	case bip44.ChangeChainIndex:
+		chain, err = account.Change()
+	default:
+		err = errors.New("invalid chain index")
+	}
 	if err != nil {
 		logger.Critical().WithError(err).Error("Failed to derive the final bip44 chain node")
 		if bip32.IsImpossibleChildError(err) {

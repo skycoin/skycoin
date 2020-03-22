@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"strconv"
 	"time"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/util/mathutil"
 
 	"github.com/SkycoinProject/skycoin/src/cipher/bip32"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
@@ -71,7 +71,7 @@ func NewBip44WalletNew(opts Bip44WalletCreateOptions) *Bip44WalletNew {
 // NewAccount create a bip44 wallet account, returns account index and
 // error if any.
 func (w *Bip44WalletNew) NewAccount(name string) (uint32, error) {
-	if len(w.Accounts) >= math.MaxUint32 {
+	if _, err := mathutil.AddUint32(uint32(len(w.Accounts)), 1); err != nil {
 		return 0, errors.New("Maximum bip44 account number reached")
 	}
 
@@ -217,8 +217,14 @@ func (c *bip44Chain) newAddresses(num uint32, seckey *bip32.PrivateKey) ([]ciphe
 	}
 
 	var addrs []cipher.Addresser
+	initLen := uint32(len(c.Entries))
+	_, err := mathutil.AddUint32(initLen, num)
+	if err != nil {
+		return nil, fmt.Errorf("can not create %d more addresses, current addresses %d, err: %v", num, initLen, err)
+	}
+
 	for i := uint32(0); i < num; i++ {
-		index := i + uint32(len(c.Entries))
+		index := initLen + i
 		pk, err := c.PubKey.NewPublicChildKey(index)
 		if err != nil {
 			return nil, fmt.Errorf("bip44 chin generate address with index %d failed, err: %v", index, err)

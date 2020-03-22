@@ -20,6 +20,17 @@ const (
 	Bip44WalletVersion = "0.4"
 )
 
+var addressMakers = map[bip44.CoinType]AddressMaker{}
+
+func registerAddressMaker(coinType bip44.CoinType, addrMaker AddressMaker) error {
+	if _, ok := addressMakers[coinType]; ok {
+		return fmt.Errorf("address Maker for coin type %v already registered", coinType)
+	}
+
+	addressMakers[coinType] = addrMaker
+	return nil
+}
+
 // Bip44WalletNew manages keys using the original Skycoin deterministic
 // keypair generator method.
 // With this generator, a single chain of addresses is created, each one dependent
@@ -169,18 +180,26 @@ func newBip44Account(a *bip44.Account, index uint32, name string, coinType bip44
 	}
 
 	ba := &bip44Account{
+		Account:  *a,
 		Name:     name,
 		Index:    index,
 		CoinType: coinType,
 	}
 
+	addrMaker, ok := addressMakers[coinType]
+	if !ok {
+		return nil, fmt.Errorf("address maker of coin type %v not found", coinType)
+	}
+
 	// init the external chain
 	ba.Chains = append(ba.Chains, bip44Chain{
-		PubKey: *externalChainKey,
+		PubKey:    *externalChainKey,
+		addrMaker: addrMaker,
 	})
 	// init the change chain
 	ba.Chains = append(ba.Chains, bip44Chain{
-		PubKey: *changeChainKey,
+		PubKey:    *changeChainKey,
+		addrMaker: addrMaker,
 	})
 	return ba, nil
 }
@@ -202,10 +221,16 @@ func (a *bip44Account) newAddresses(chainIndex, num uint32) ([]cipher.Addresser,
 	return a.Chains[chainIndex].newAddresses(num, a.PrivateKey)
 }
 
+// AddressMaker interface for generating addresses
+type AddressMaker interface {
+	AddressFromPubKey(cipher.PubKey) (cipher.Addresser, error)
+}
+
 // bip44Chain contains the public key for generating addresses
 type bip44Chain struct {
-	PubKey  bip32.PublicKey
-	Entries Entries
+	PubKey    bip32.PublicKey
+	Entries   Entries
+	addrMaker AddressMaker
 }
 
 // newAddresses generates addresses on the chain.
@@ -227,13 +252,17 @@ func (c *bip44Chain) newAddresses(num uint32, seckey *bip32.PrivateKey) ([]ciphe
 		index := initLen + i
 		pk, err := c.PubKey.NewPublicChildKey(index)
 		if err != nil {
-			return nil, fmt.Errorf("bip44 chin generate address with index %d failed, err: %v", index, err)
+			return nil, fmt.Errorf("bip44 chain generate address with index %d failed, err: %v", index, err)
 		}
 		cpk, err := cipher.NewPubKey(pk.Key)
 		if err != nil {
 			return nil, err
 		}
-		addr := cipher.AddressFromPubKey(cpk)
+
+		addr, err := c.addrMaker.AddressFromPubKey(cpk)
+		if err != nil {
+			return nil, err
+		}
 		e := Entry{
 			Address:     addr,
 			Public:      cpk,

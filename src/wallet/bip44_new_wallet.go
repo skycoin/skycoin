@@ -63,8 +63,8 @@ func NewBip44WalletNew(opts Bip44WalletCreateOptions) *Bip44WalletNew {
 		},
 	}
 
-	ca := resolveCoinAdapter(opts.CoinType)
-	wlt.Meta.setBip44Coin(ca.Bip44CoinType())
+	bip44CoinType := resolveCoinAdapter(opts.CoinType).Bip44CoinType()
+	wlt.Meta.setBip44Coin(bip44CoinType)
 
 	return wlt
 }

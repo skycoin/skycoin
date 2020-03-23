@@ -17,7 +17,7 @@ type bip44Account struct {
 	Name     string       // Account name
 	Index    uint32       // Account index
 	CoinType CoinType     // Account coin type, determins the way to generate addresses
-	Chains   []bip44Chain // Chains, external chain with index value 0, and internal(change) chain with 1 index.
+	Chains   []bip44Chain // Chains, external chain with index value of 0, and internal(change) chain with index value of 1.
 }
 
 type bip44AccountCreateOptions struct {
@@ -35,9 +35,9 @@ func newBip44Account(opts bip44AccountCreateOptions) (*bip44Account, error) {
 		return nil, err
 	}
 
-	adpt := resolveCoinAdapter(opts.coinType)
+	ca := resolveCoinAdapter(opts.coinType)
 
-	c, err := bip44.NewCoin(seed, adpt.Bip44CoinType())
+	c, err := bip44.NewCoin(seed, ca.Bip44CoinType())
 	if err != nil {
 		logger.Critical().WithError(err).Error("Failed to derive the bip44 purpose node")
 		if bip32.IsImpossibleChildError(err) {
@@ -65,34 +65,31 @@ func newBip44Account(opts bip44AccountCreateOptions) (*bip44Account, error) {
 	// init the external chain
 	ba.Chains = append(ba.Chains, bip44Chain{
 		PubKey:      *externalChainKey,
-		makeAddress: adpt.AddressFromPubKey,
+		makeAddress: ca.AddressFromPubKey,
 	})
 	// init the change chain
 	ba.Chains = append(ba.Chains, bip44Chain{
 		PubKey:      *changeChainKey,
-		makeAddress: adpt.AddressFromPubKey,
+		makeAddress: ca.AddressFromPubKey,
 	})
 	return ba, nil
 }
 
 func (a *bip44Account) newAddresses(chainIndex, num uint32) ([]cipher.Addresser, error) {
 	if a == nil {
-		return nil, errors.New("account not initialized")
+		return nil, errors.New("cannot generate new addresses on nil account")
 	}
 
 	// chain index can only be 0 or 1.
-	if chainIndex > 1 {
+	switch chainIndex {
+	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
+		return a.Chains[chainIndex].newAddresses(num, a.PrivateKey)
+	default:
 		return nil, fmt.Errorf("invalid chain index: %d", chainIndex)
 	}
-
-	if len(a.Chains) != 2 {
-		return nil, fmt.Errorf("incorrect chain number: %d of account %d", len(a.Chains), a.Index)
-	}
-
-	return a.Chains[chainIndex].newAddresses(num, a.PrivateKey)
 }
 
-// bip44Chain contains the public key for generating addresses
+// bip44Chain bip44 address chain
 type bip44Chain struct {
 	PubKey      bip32.PublicKey
 	Entries     Entries
@@ -100,18 +97,17 @@ type bip44Chain struct {
 }
 
 // newAddresses generates addresses on the chain.
-// private key is optional, if not provided, address will be generated using the public key, and
-// no secret keys would be generated for each entry.
+// private key is optional, if not provided, addresses will be generated using the public key.
 func (c *bip44Chain) newAddresses(num uint32, seckey *bip32.PrivateKey) ([]cipher.Addresser, error) {
 	if c == nil {
-		return nil, errors.New("chain is not initialized")
+		return nil, errors.New("cannot generate new addresses on nil chain")
 	}
 
 	var addrs []cipher.Addresser
 	initLen := uint32(len(c.Entries))
 	_, err := mathutil.AddUint32(initLen, num)
 	if err != nil {
-		return nil, fmt.Errorf("can not create %d more addresses, current addresses %d, err: %v", num, initLen, err)
+		return nil, fmt.Errorf("can not create %d more addresses, current addresses number %d, err: %v", num, initLen, err)
 	}
 
 	for i := uint32(0); i < num; i++ {
@@ -146,6 +142,7 @@ func (c *bip44Chain) newAddresses(num uint32, seckey *bip32.PrivateKey) ([]ciphe
 	return addrs, nil
 }
 
+// bip44Accounts implementes the accountManager interface
 type bip44Accounts struct {
 	accounts []*bip44Account
 }
@@ -169,14 +166,12 @@ func (a *bip44Accounts) NewAddresses(index, chain, num uint32) ([]cipher.Address
 }
 
 func (a *bip44Accounts) New(opts bip44AccountCreateOptions) (uint32, error) {
-	// Try to get next account index, return error if the
-	// account is full.
 	accountIndex, err := a.nextIndex()
 	if err != nil {
 		return 0, err
 	}
 
-	// asign the account index
+	// assign the account index
 	opts.index = accountIndex
 
 	// create a bip44 account
@@ -190,6 +185,8 @@ func (a *bip44Accounts) New(opts bip44AccountCreateOptions) (uint32, error) {
 }
 
 func (a *bip44Accounts) nextIndex() (uint32, error) {
+	// Try to get next account index, return error if the
+	// account is full.
 	if _, err := mathutil.AddUint32(uint32(len(a.accounts)), 1); err != nil {
 		return 0, errors.New("Maximum bip44 account number reached")
 	}

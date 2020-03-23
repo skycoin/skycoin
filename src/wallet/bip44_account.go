@@ -146,6 +146,57 @@ func (c *bip44Chain) newAddresses(num uint32, seckey *bip32.PrivateKey) ([]ciphe
 	return addrs, nil
 }
 
+type bip44Accounts struct {
+	accounts []*bip44Account
+}
+
+func (a bip44Accounts) Len() uint32 {
+	return uint32(len(a.accounts))
+}
+
+func (a *bip44Accounts) NewAddresses(index, chain, num uint32) ([]cipher.Addresser, error) {
+	accountLen := len(a.accounts)
+	if int(index) >= accountLen {
+		return nil, fmt.Errorf("account index %d out of range", index)
+	}
+
+	account := a.accounts[index]
+	if account == nil {
+		return nil, fmt.Errorf("account of index %d not found", index)
+	}
+
+	return account.newAddresses(chain, num)
+}
+
+func (a *bip44Accounts) New(opts bip44AccountCreateOptions) (uint32, error) {
+	// Try to get next account index, return error if the
+	// account is full.
+	accountIndex, err := a.nextIndex()
+	if err != nil {
+		return 0, err
+	}
+
+	// asign the account index
+	opts.index = accountIndex
+
+	// create a bip44 account
+	ba, err := newBip44Account(opts)
+	if err != nil {
+		return 0, err
+	}
+
+	a.accounts = append(a.accounts, ba)
+	return accountIndex, nil
+}
+
+func (a *bip44Accounts) nextIndex() (uint32, error) {
+	if _, err := mathutil.AddUint32(uint32(len(a.accounts)), 1); err != nil {
+		return 0, errors.New("Maximum bip44 account number reached")
+	}
+
+	return uint32(len(a.accounts)), nil
+}
+
 // ReadableBip44Account bip44 account in JSON format
 // type ReadableBip44Account struct {
 // 	Name            string          `json:"name"`

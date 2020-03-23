@@ -5,13 +5,11 @@ package wallet
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/util/mathutil"
 
 	"github.com/SkycoinProject/skycoin/src/cipher/bip32"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
@@ -28,7 +26,16 @@ const (
 // on the previous.
 type Bip44WalletNew struct {
 	Meta
-	Accounts []*bip44Account
+	accounts accountManager
+}
+
+type accountManager interface {
+	// Len returns the account number
+	Len() uint32
+	// New creates a new account, returns the account index, and error if any
+	New(opts bip44AccountCreateOptions) (uint32, error)
+	// NewAddresses generates addresses on account
+	NewAddresses(index, chain, num uint32) ([]cipher.Addresser, error)
 }
 
 // Bip44WalletCreateOptions options for creating the bip44 wallet
@@ -38,7 +45,7 @@ type Bip44WalletCreateOptions struct {
 	Label          string
 	Seed           string
 	SeedPassphrase string
-	Coin           CoinType
+	CoinType       CoinType
 }
 
 // NewBip44WalletNew create a bip44 wallet base on options,
@@ -50,14 +57,14 @@ func NewBip44WalletNew(opts Bip44WalletCreateOptions) *Bip44WalletNew {
 			metaLabel:          opts.Label,
 			metaSeed:           opts.Seed,
 			metaSeedPassphrase: opts.SeedPassphrase,
-			metaCoin:           string(opts.Coin),
+			metaCoin:           string(opts.CoinType),
 			metaTimestamp:      strconv.FormatInt(time.Now().Unix(), 10),
 			metaEncrypted:      "false",
 		},
 	}
 
-	bip44Coin := resolveCoinAdapter(opts.Coin).Bip44CoinType()
-	wlt.Meta.setBip44Coin(bip44Coin)
+	ca := resolveCoinAdapter(opts.CoinType)
+	wlt.Meta.setBip44Coin(ca.Bip44CoinType())
 
 	return wlt
 }
@@ -65,56 +72,19 @@ func NewBip44WalletNew(opts Bip44WalletCreateOptions) *Bip44WalletNew {
 // NewAccount create a bip44 wallet account, returns account index and
 // error if any.
 func (w *Bip44WalletNew) NewAccount(name string) (uint32, error) {
-	accountIndex, err := w.nextAccountIndex()
-	if err != nil {
-		return 0, err
-	}
-
 	opts := bip44AccountCreateOptions{
 		name:           name,
-		index:          accountIndex,
 		seed:           w.Meta.Seed(),
 		seedPassphrase: w.Meta.SeedPassphrase(),
 		coinType:       w.Meta.Coin(),
 	}
 
-	ba, err := newBip44Account(opts)
-	if err != nil {
-		return 0, err
-	}
-
-	w.Accounts = append(w.Accounts, ba)
-
-	return ba.Index, nil
-}
-
-func (w *Bip44WalletNew) nextAccountIndex() (uint32, error) {
-	if _, err := mathutil.AddUint32(uint32(len(w.Accounts)), 1); err != nil {
-		return 0, errors.New("Maximum bip44 account number reached")
-	}
-
-	return uint32(len(w.Accounts)), nil
+	return w.accounts.New(opts)
 }
 
 // NewAddresses creates addresses
 func (w *Bip44WalletNew) NewAddresses(account, chain, n uint32) ([]cipher.Addresser, error) {
-	a, err := w.account(account)
-	if err != nil {
-		return nil, err
-	}
-	return a.newAddresses(chain, n)
-}
-
-// account returns the wallet account
-func (w *Bip44WalletNew) account(index uint32) (*bip44Account, error) {
-	if index >= uint32(len(w.Accounts)) {
-		return nil, fmt.Errorf("account of index %d does not exist", index)
-	}
-	if a := w.Accounts[index]; a != nil {
-		return a, nil
-	}
-
-	return nil, fmt.Errorf("account  of index %d does not exist", index)
+	return w.accounts.NewAddresses(account, chain, n)
 }
 
 func makeChainPubKeys(a *bip44.Account) (*bip32.PublicKey, *bip32.PublicKey, error) {
@@ -133,14 +103,6 @@ func makeChainPubKeys(a *bip44.Account) (*bip32.PublicKey, *bip32.PublicKey, err
 // Serialize returns the JSON representation of the wallet
 func (w *Bip44WalletNew) Serialize() ([]byte, error) {
 	return json.MarshalIndent(w, "", "    ")
-	// rw := ReadableBip44WalletNew{
-	// 	Meta: w.Meta.clone(),
-	// }
-	// rw.Accounts = make([]ReadableBip44Account, len(w.accounts))
-	// for i, a := range w.accounts {
-	// 	rw.Accounts[i] = newReadableBip44Account(a)
-	// }
-	// return json.MarshalIndent(rw, "", "    ")
 }
 
 // Unserialize unserialize data to bip44 wallet

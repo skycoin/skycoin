@@ -34,8 +34,6 @@ type accountManager interface {
 	New(opts bip44AccountCreateOptions) (uint32, error)
 	// NewAddresses generates addresses on selected account
 	NewAddresses(index, chain, num uint32) ([]cipher.Addresser, error)
-	// ToReadable converts the bip44 accounts to readable accounts with JSON tags
-	ToReadable() ReadableBip44Accounts
 }
 
 // WalletDecoder is the interface that wraps the Encode and Decode methods.

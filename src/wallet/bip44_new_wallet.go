@@ -4,7 +4,6 @@
 package wallet
 
 import (
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -22,20 +21,29 @@ const (
 
 // Bip44WalletNew manages keys using the original Skycoin deterministic
 // keypair generator method.
-// With this generator, a single chain of addresses is created, each one dependent
-// on the previous.
 type Bip44WalletNew struct {
 	Meta
 	accounts accountManager
+	decoder  WalletDecoder
 }
 
 type accountManager interface {
 	// Len returns the account number
 	Len() uint32
-	// New creates a new account, returns the account index, and error if any
+	// New creates a new account, returns the account index, and error, if any
 	New(opts bip44AccountCreateOptions) (uint32, error)
-	// NewAddresses generates addresses on account
+	// NewAddresses generates addresses on selected account
 	NewAddresses(index, chain, num uint32) ([]cipher.Addresser, error)
+	// ToReadable converts the bip44 accounts to readable accounts with JSON tags
+	ToReadable() ReadableBip44Accounts
+}
+
+// WalletDecoder is the interface that wraps the Encode and Decode methods.
+//
+// Encode method encodes the wallet to bytes, Decode method decodes
+type WalletDecoder interface {
+	Encode(w *Bip44WalletNew) ([]byte, error)
+	Decode(b []byte) (*Bip44WalletNew, error)
 }
 
 // Bip44WalletCreateOptions options for creating the bip44 wallet
@@ -46,9 +54,10 @@ type Bip44WalletCreateOptions struct {
 	Seed           string
 	SeedPassphrase string
 	CoinType       CoinType
+	WalletDecoder  WalletDecoder
 }
 
-// NewBip44WalletNew create a bip44 wallet base on options,
+// NewBip44WalletNew create a bip44 wallet base on options
 func NewBip44WalletNew(opts Bip44WalletCreateOptions) *Bip44WalletNew {
 	wlt := &Bip44WalletNew{
 		Meta: Meta{
@@ -61,6 +70,13 @@ func NewBip44WalletNew(opts Bip44WalletCreateOptions) *Bip44WalletNew {
 			metaTimestamp:      strconv.FormatInt(time.Now().Unix(), 10),
 			metaEncrypted:      "false",
 		},
+		accounts: &bip44Accounts{},
+		decoder:  opts.WalletDecoder,
+	}
+
+	if wlt.decoder == nil {
+		// TODO:
+		// wlt.decoder = defaultWalletDecoder
 	}
 
 	bip44CoinType := resolveCoinAdapter(opts.CoinType).Bip44CoinType()
@@ -100,18 +116,23 @@ func makeChainPubKeys(a *bip44.Account) (*bip32.PublicKey, *bip32.PublicKey, err
 	return external, change, nil
 }
 
-// Serialize returns the JSON representation of the wallet
+// Serialize serializes the bip44 wallet to bytes
 func (w *Bip44WalletNew) Serialize() ([]byte, error) {
-	return json.MarshalIndent(w, "", "    ")
+	return w.decoder.Encode(w)
 }
 
-// Unserialize unserialize data to bip44 wallet
-func Unserialize(data []byte) *Bip44WalletNew {
+// Unserialize decode the bytes into
+func (w *Bip44WalletNew) Unserialize(b []byte) error {
+	if w.decoder == nil {
+		// TODO: use default wallet decoder if wallet's decoder is nil
+		// w.decoder = defaultWalletDecoder
+	}
+	toW, err := w.decoder.Decode(b)
+	if err != nil {
+		return err
+	}
+
+	toW.decoder = w.decoder
+	*w = *toW
 	return nil
 }
-
-// // ReadableBip44WalletNew readable bip44 wallet
-// type ReadableBip44WalletNew struct {
-// 	Meta     `json:"meta"`
-// 	Accounts ReadableBip44Accounts `json:"accounts"`
-// }

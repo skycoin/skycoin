@@ -27,18 +27,19 @@ type Bip44WalletNew struct {
 	decoder  WalletDecoder
 }
 
+// accountManager is the interface that manages the bip44 wallet accounts.
 type accountManager interface {
-	// Len returns the account number
-	Len() uint32
 	// New creates a new account, returns the account index, and error, if any
 	New(opts bip44AccountCreateOptions) (uint32, error)
 	// NewAddresses generates addresses on selected account
 	NewAddresses(index, chain, num uint32) ([]cipher.Addresser, error)
+	// Len returns the account number
+	Len() uint32
 }
 
 // WalletDecoder is the interface that wraps the Encode and Decode methods.
 //
-// Encode method encodes the wallet to bytes, Decode method decodes
+// Encode method encodes the wallet to bytes, Decode method decodes bytes to bip44 wallet.
 type WalletDecoder interface {
 	Encode(w *Bip44WalletNew) ([]byte, error)
 	Decode(b []byte) (*Bip44WalletNew, error)
@@ -55,7 +56,7 @@ type Bip44WalletCreateOptions struct {
 	WalletDecoder  WalletDecoder
 }
 
-// NewBip44WalletNew create a bip44 wallet base on options
+// NewBip44WalletNew create a bip44 wallet with options
 func NewBip44WalletNew(opts Bip44WalletCreateOptions) *Bip44WalletNew {
 	wlt := &Bip44WalletNew{
 		Meta: Meta{
@@ -84,7 +85,7 @@ func NewBip44WalletNew(opts Bip44WalletCreateOptions) *Bip44WalletNew {
 }
 
 // NewAccount create a bip44 wallet account, returns account index and
-// error if any.
+// error, if any.
 func (w *Bip44WalletNew) NewAccount(name string) (uint32, error) {
 	opts := bip44AccountCreateOptions{
 		name:           name,
@@ -119,8 +120,8 @@ func (w *Bip44WalletNew) Serialize() ([]byte, error) {
 	return w.decoder.Encode(w)
 }
 
-// Unserialize decode the bytes into
-func (w *Bip44WalletNew) Unserialize(b []byte) error {
+// Deserialize decode the bytes to a bip44 wallet
+func (w *Bip44WalletNew) Deserialize(b []byte) error {
 	if w.decoder == nil {
 		// TODO: use default wallet decoder if wallet's decoder is nil
 		// w.decoder = defaultWalletDecoder

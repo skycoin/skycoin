@@ -41,6 +41,9 @@ func resolveCoinAdapter(coinType CoinType) coinAdapter {
 type coinAdapter interface {
 	Bip44CoinType() bip44.CoinType
 	AddressFromPubKey(key cipher.PubKey) cipher.Addresser
+	DecodeBase58Address(addr string) (cipher.Addresser, error)
+	SecKeyToHex(secKey cipher.SecKey) string
+	SecKeyFromHex(secKey string) (cipher.SecKey, error)
 }
 
 type skycoinAdapter struct{}
@@ -53,6 +56,18 @@ func (s skycoinAdapter) AddressFromPubKey(key cipher.PubKey) cipher.Addresser {
 	return cipher.AddressFromPubKey(key)
 }
 
+func (s skycoinAdapter) DecodeBase58Address(addr string) (cipher.Addresser, error) {
+	return cipher.DecodeBase58Address(addr)
+}
+
+func (s skycoinAdapter) SecKeyToHex(secKey cipher.SecKey) string {
+	return secKey.Hex()
+}
+
+func (s skycoinAdapter) SecKeyFromHex(secKey string) (cipher.SecKey, error) {
+	return cipher.SecKeyFromHex(secKey)
+}
+
 type bitcoinAdapter struct{}
 
 func (b bitcoinAdapter) Bip44CoinType() bip44.CoinType {
@@ -61,4 +76,16 @@ func (b bitcoinAdapter) Bip44CoinType() bip44.CoinType {
 
 func (b bitcoinAdapter) AddressFromPubKey(key cipher.PubKey) cipher.Addresser {
 	return cipher.BitcoinAddressFromPubKey(key)
+}
+
+func (s bitcoinAdapter) DecodeBase58Address(addr string) (cipher.Addresser, error) {
+	return cipher.DecodeBase58BitcoinAddress(addr)
+}
+
+func (s bitcoinAdapter) SecKeyToHex(secKey cipher.SecKey) string {
+	return cipher.BitcoinWalletImportFormatFromSeckey(secKey)
+}
+
+func (s bitcoinAdapter) SecKeyFromHex(secKey string) (cipher.SecKey, error) {
+	return cipher.SecKeyFromBitcoinWalletImportFormat(secKey)
 }

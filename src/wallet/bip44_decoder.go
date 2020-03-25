@@ -41,8 +41,14 @@ func NewReadableBip44WalletNew(w *Bip44WalletNew) *ReadableBip44WalletNew {
 
 // ToWallet converts the readable bip44 wallet to a bip44 wallet
 func (rw ReadableBip44WalletNew) ToWallet() (*Bip44WalletNew, error) {
+	accounts, err := rw.Accounts.toBip44Accounts()
+	if err != nil {
+		return nil, err
+	}
+
 	w := Bip44WalletNew{
-		Meta: rw.Meta.clone(),
+		Meta:     rw.Meta.clone(),
+		accounts: accounts,
 	}
 	return &w, nil
 }

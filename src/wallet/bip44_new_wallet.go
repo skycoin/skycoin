@@ -79,8 +79,7 @@ func NewBip44WalletNew(opts Bip44WalletCreateOptions) *Bip44WalletNew {
 	}
 
 	if wlt.decoder == nil {
-		// TODO:
-		// wlt.decoder = defaultWalletDecoder
+		wlt.decoder = defaultBip44WalletDecoder
 	}
 
 	bip44CoinType := resolveCoinAdapter(opts.CoinType).Bip44CoinType()
@@ -120,16 +119,18 @@ func makeChainPubKeys(a *bip44.Account) (*bip32.PublicKey, *bip32.PublicKey, err
 	return external, change, nil
 }
 
-// Serialize serializes the bip44 wallet to bytes
+// Serialize encodes the bip44 wallet to []byte
 func (w *Bip44WalletNew) Serialize() ([]byte, error) {
+	if w.decoder == nil {
+		w.decoder = defaultBip44WalletDecoder
+	}
 	return w.decoder.Encode(w)
 }
 
-// Deserialize decode the bytes to a bip44 wallet
+// Deserialize decodes the []byte to a bip44 wallet
 func (w *Bip44WalletNew) Deserialize(b []byte) error {
 	if w.decoder == nil {
-		// TODO: use default wallet decoder if wallet's decoder is nil
-		// w.decoder = defaultWalletDecoder
+		w.decoder = defaultBip44WalletDecoder
 	}
 	toW, err := w.decoder.Decode(b)
 	if err != nil {

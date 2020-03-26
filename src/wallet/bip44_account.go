@@ -64,13 +64,13 @@ func newBip44Account(opts bip44AccountCreateOptions) (*bip44Account, error) {
 
 	// init the external chain
 	ba.Chains = append(ba.Chains, bip44Chain{
-		PubKey:      *externalChainKey,
-		makeAddress: ca.AddressFromPubKey,
+		PubKey:            *externalChainKey,
+		addressFromPubKey: ca.AddressFromPubKey,
 	})
 	// init the change chain
 	ba.Chains = append(ba.Chains, bip44Chain{
-		PubKey:      *changeChainKey,
-		makeAddress: ca.AddressFromPubKey,
+		PubKey:            *changeChainKey,
+		addressFromPubKey: ca.AddressFromPubKey,
 	})
 	return ba, nil
 }
@@ -91,9 +91,9 @@ func (a *bip44Account) newAddresses(chainIndex, num uint32) ([]cipher.Addresser,
 
 // bip44Chain bip44 address chain
 type bip44Chain struct {
-	PubKey      bip32.PublicKey
-	Entries     Entries
-	makeAddress func(key cipher.PubKey) cipher.Addresser
+	PubKey            bip32.PublicKey
+	Entries           Entries
+	addressFromPubKey func(key cipher.PubKey) cipher.Addresser
 }
 
 // newAddresses generates addresses on the chain.
@@ -121,7 +121,7 @@ func (c *bip44Chain) newAddresses(num uint32, seckey *bip32.PrivateKey) ([]ciphe
 			return nil, err
 		}
 
-		addr := c.makeAddress(cpk)
+		addr := c.addressFromPubKey(cpk)
 		e := Entry{
 			Address:     addr,
 			Public:      cpk,

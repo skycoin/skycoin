@@ -27,9 +27,12 @@ var (
 // Bip44WalletNew manages keys using the original Skycoin deterministic
 // keypair generator method.
 type Bip44WalletNew struct {
+	// Meta wallet meta data
 	Meta
+	// accounts bip44 wallet accounts
 	accounts accountManager
-	decoder  Bip44WalletDecoder
+	// decoder is used to encode/decode bip44 wallet to/from []byte
+	decoder Bip44WalletDecoder
 }
 
 // accountManager is the interface that manages the bip44 wallet accounts.

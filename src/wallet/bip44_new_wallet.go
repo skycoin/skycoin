@@ -19,12 +19,17 @@ const (
 	Bip44WalletVersion = "0.4"
 )
 
+var (
+	// defaultBip44WalletDecoder is the default bip44 wallet decoder
+	defaultBip44WalletDecoder = &Bip44WalletJSONDecoder{}
+)
+
 // Bip44WalletNew manages keys using the original Skycoin deterministic
 // keypair generator method.
 type Bip44WalletNew struct {
 	Meta
 	accounts accountManager
-	decoder  WalletDecoder
+	decoder  Bip44WalletDecoder
 }
 
 // accountManager is the interface that manages the bip44 wallet accounts.
@@ -37,10 +42,10 @@ type accountManager interface {
 	Len() uint32
 }
 
-// WalletDecoder is the interface that wraps the Encode and Decode methods.
+// Bip44WalletDecoder is the interface that wraps the Encode and Decode methods.
 //
 // Encode method encodes the wallet to bytes, Decode method decodes bytes to bip44 wallet.
-type WalletDecoder interface {
+type Bip44WalletDecoder interface {
 	Encode(w *Bip44WalletNew) ([]byte, error)
 	Decode(b []byte) (*Bip44WalletNew, error)
 }
@@ -53,7 +58,7 @@ type Bip44WalletCreateOptions struct {
 	Seed           string
 	SeedPassphrase string
 	CoinType       CoinType
-	WalletDecoder  WalletDecoder
+	WalletDecoder  Bip44WalletDecoder
 }
 
 // NewBip44WalletNew create a bip44 wallet with options

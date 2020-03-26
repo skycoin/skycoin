@@ -8,39 +8,42 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher/bip32"
 )
 
-type bip44WalletJSONDecoder struct {
-}
+// Bip44WalletJSONDecoder implements the WalletDecoder interface,
+// which provides methods for encoding and decoding a bip44 wallet in JSON format.
+type Bip44WalletJSONDecoder struct{}
 
-func (d bip44WalletJSONDecoder) Encode(w *Bip44WalletNew) ([]byte, error) {
-	rw := NewReadableBip44WalletNew(w)
+// Encode encodes the bip44 wallet to []byte, and error, if any.
+func (d Bip44WalletJSONDecoder) Encode(w *Bip44WalletNew) ([]byte, error) {
+	rw := newReadableBip44WalletNew(w)
 	return json.MarshalIndent(rw, "", "    ")
 }
 
-func (d bip44WalletJSONDecoder) Decode(b []byte) (*Bip44WalletNew, error) {
+// Decode decodes  the []byte to a bip44 wallet.
+func (d Bip44WalletJSONDecoder) Decode(b []byte) (*Bip44WalletNew, error) {
 	br := bytes.NewReader(b)
-	rw := ReadableBip44WalletNew{}
+	rw := readableBip44WalletNew{}
 	if err := json.NewDecoder(br).Decode(&rw); err != nil {
 		return nil, err
 	}
-	return rw.ToWallet()
+	return rw.toWallet()
 }
 
-// ReadableBip44WalletNew readable bip44 wallet
-type ReadableBip44WalletNew struct {
+// readableBip44WalletNew readable bip44 wallet
+type readableBip44WalletNew struct {
 	Meta     `json:"meta"`
-	Accounts ReadableBip44Accounts `json:"accounts"`
+	Accounts readableBip44Accounts `json:"accounts"`
 }
 
-// NewReadableBip44WalletNew creates a readable bip44 wallet
-func NewReadableBip44WalletNew(w *Bip44WalletNew) *ReadableBip44WalletNew {
-	return &ReadableBip44WalletNew{
+// newReadableBip44WalletNew creates a readable bip44 wallet
+func newReadableBip44WalletNew(w *Bip44WalletNew) *readableBip44WalletNew {
+	return &readableBip44WalletNew{
 		Meta:     w.Meta.clone(),
-		Accounts: *NewReadableBip44Accounts(w.accounts.(*bip44Accounts)),
+		Accounts: *newReadableBip44Accounts(w.accounts.(*bip44Accounts)),
 	}
 }
 
-// ToWallet converts the readable bip44 wallet to a bip44 wallet
-func (rw ReadableBip44WalletNew) ToWallet() (*Bip44WalletNew, error) {
+// toWallet converts the readable bip44 wallet to a bip44 wallet
+func (rw readableBip44WalletNew) toWallet() (*Bip44WalletNew, error) {
 	accounts, err := rw.Accounts.toBip44Accounts()
 	if err != nil {
 		return nil, err
@@ -53,13 +56,13 @@ func (rw ReadableBip44WalletNew) ToWallet() (*Bip44WalletNew, error) {
 	return &w, nil
 }
 
-// ReadableBip44Accounts is the JSON representation of accounts
-type ReadableBip44Accounts struct {
-	Accounts []*ReadableBip44Account `json:"accounts"`
+// readableBip44Accounts is the JSON representation of accounts
+type readableBip44Accounts struct {
+	Accounts []*readableBip44Account `json:"accounts"`
 }
 
 // ToBip44Accounts converts readable bip44 accounts to bip44 accounts
-func (ras ReadableBip44Accounts) toBip44Accounts() (*bip44Accounts, error) {
+func (ras readableBip44Accounts) toBip44Accounts() (*bip44Accounts, error) {
 	as := bip44Accounts{}
 	for _, ra := range ras.Accounts {
 		a := bip44Account{
@@ -93,21 +96,21 @@ func (ras ReadableBip44Accounts) toBip44Accounts() (*bip44Accounts, error) {
 }
 
 // ReadableBip44Account is the JSON representation of account
-type ReadableBip44Account struct {
+type readableBip44Account struct {
 	PrivateKey string               `json:"private_key,omitempty"`
 	Name       string               `json:"name"`      // Account name
 	Index      uint32               `json:"index"`     // Account index
 	CoinType   string               `json:"coin_type"` // Account coin type, determins the way to generate addresses
-	Chains     []ReadableBip44Chain `json:"chains"`    // Chains, external chain with index value of 0, and internal(change) chain with index value of 1.
+	Chains     []readableBip44Chain `json:"chains"`    // Chains, external chain with index value of 0, and internal(change) chain with index value of 1.
 }
 
 // ReadableBip44Chain bip44 chain with JSON tags
-type ReadableBip44Chain struct {
+type readableBip44Chain struct {
 	PubKey  string               `json:"public_key"`
-	Entries ReadableBip44Entries `json:"entries"`
+	Entries readableBip44Entries `json:"entries"`
 }
 
-func (rc ReadableBip44Chain) toBip44Chain(coinType CoinType) (*bip44Chain, error) {
+func (rc readableBip44Chain) toBip44Chain(coinType CoinType) (*bip44Chain, error) {
 	pubkey, err := bip32.DeserializeEncodedPublicKey(rc.PubKey)
 	if err != nil {
 		return nil, err
@@ -127,7 +130,7 @@ func (rc ReadableBip44Chain) toBip44Chain(coinType CoinType) (*bip44Chain, error
 	return &c, nil
 }
 
-func newBip44EntryFromReadable(re ReadableBip44Entry, coinType CoinType) (*Entry, error) {
+func newBip44EntryFromReadable(re readableBip44Entry, coinType CoinType) (*Entry, error) {
 	ca := resolveCoinAdapter(coinType)
 	addr, err := ca.DecodeBase58Address(re.Address)
 	if err != nil {
@@ -152,24 +155,24 @@ func newBip44EntryFromReadable(re ReadableBip44Entry, coinType CoinType) (*Entry
 	}, nil
 }
 
-// ReadableBip44Entries wraps the slice of ReadableBip44Entry
-type ReadableBip44Entries struct {
-	Entries []ReadableBip44Entry
+// readableBip44Entries wraps the slice of ReadableBip44Entry
+type readableBip44Entries struct {
+	Entries []readableBip44Entry
 }
 
 // ReadableBip44Entry bip44 entry with JSON tags
-type ReadableBip44Entry struct {
+type readableBip44Entry struct {
 	Address     string `json:"address"`
 	Public      string `json:"public"`
 	Secret      string `json:"secret"`
 	ChildNumber uint32 `json:"child_number"` // For bip32/bip44
 }
 
-// NewReadableBip44Accounts converts bip44Accounts to ReadableBip44Accounts
-func NewReadableBip44Accounts(as *bip44Accounts) *ReadableBip44Accounts {
-	var ras ReadableBip44Accounts
+// newReadableBip44Accounts converts bip44Accounts to ReadableBip44Accounts
+func newReadableBip44Accounts(as *bip44Accounts) *readableBip44Accounts {
+	var ras readableBip44Accounts
 	for _, a := range as.accounts {
-		ras.Accounts = append(ras.Accounts, &ReadableBip44Account{
+		ras.Accounts = append(ras.Accounts, &readableBip44Account{
 			PrivateKey: a.Account.String(),
 			Name:       a.Name,
 			Index:      a.Index,
@@ -181,15 +184,15 @@ func NewReadableBip44Accounts(as *bip44Accounts) *ReadableBip44Accounts {
 	return &ras
 }
 
-func newReadableBip44Chains(cs []bip44Chain, coinType CoinType) []ReadableBip44Chain {
+func newReadableBip44Chains(cs []bip44Chain, coinType CoinType) []readableBip44Chain {
 	ca := resolveCoinAdapter(coinType)
-	var rcs []ReadableBip44Chain
+	var rcs []readableBip44Chain
 	for _, c := range cs {
-		rc := ReadableBip44Chain{
+		rc := readableBip44Chain{
 			PubKey: c.PubKey.String(),
 		}
 		for _, e := range c.Entries {
-			rc.Entries.Entries = append(rc.Entries.Entries, ReadableBip44Entry{
+			rc.Entries.Entries = append(rc.Entries.Entries, readableBip44Entry{
 				Address:     e.Address.String(),
 				Public:      e.Public.Hex(),
 				Secret:      ca.SecKeyToHex(e.Secret),

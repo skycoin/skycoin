@@ -9,6 +9,10 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher/bip32"
 )
 
+const (
+	metaAccountsHash = "accountsHash"
+)
+
 // Bip44WalletJSONDecoder implements the WalletDecoder interface,
 // which provides methods for encoding and decoding a bip44 wallet in JSON format.
 type Bip44WalletJSONDecoder struct{}
@@ -29,10 +33,36 @@ func (d Bip44WalletJSONDecoder) Decode(b []byte) (*Bip44WalletNew, error) {
 	if err := json.NewDecoder(br).Decode(&rw); err != nil {
 		return nil, err
 	}
+
+	// verify the integrity of the wallet
+	accountsHashStr, ok := rw.Meta[metaAccountsHash]
+	if !ok {
+		return nil, fmt.Errorf("Decode bip44 wallet failed, missing accountsHash meta info")
+	}
+
+	accountsHashFromMeta, err := cipher.SHA256FromHex(accountsHashStr)
+	if err != nil {
+		return nil, fmt.Errorf("Decode bip44 wallet failed, err: %v", err)
+	}
+
+	ab, err := json.Marshal(rw.Accounts)
+	if err != nil {
+		return nil, fmt.Errorf("Decode bip44 wallet failed, err: %v", err)
+	}
+
+	accountHash := cipher.SumSHA256(ab)
+
+	if accountHash != accountsHashFromMeta {
+		return nil, fmt.Errorf("Decode bip44 wallet failed, wallet accounts hash mismatch")
+	}
+
 	return rw.toWallet()
 }
 
 // readableBip44WalletNew readable bip44 wallet
+// there will have an `accountsHash` in the meta info, which indicates the hash
+// of the accounts. It is used for verifying the integrity of the wallet accounts,
+// so that the wallet won't break after user edit the wallet file mistakenly.
 type readableBip44WalletNew struct {
 	Meta     `json:"meta"`
 	Accounts readableBip44Accounts `json:"accounts"`
@@ -45,10 +75,24 @@ func newReadableBip44WalletNew(w *Bip44WalletNew) (*readableBip44WalletNew, erro
 		return nil, err
 	}
 
-	return &readableBip44WalletNew{
+	rw := &readableBip44WalletNew{
 		Meta:     w.Meta.clone(),
 		Accounts: *ra,
-	}, nil
+	}
+
+	b, err := json.Marshal(ra)
+	if err != nil {
+		return nil, fmt.Errorf("Encode bip44 accounts failed: %v", err)
+	}
+
+	hash := cipher.SumSHA256(b)
+	if err != nil {
+		return nil, fmt.Errorf("Hash bip44 accounts failed: %v", err)
+	}
+
+	// Set accountsHash meta info
+	rw.Meta[metaAccountsHash] = hash.Hex()
+	return rw, nil
 }
 
 // toWallet converts the readable bip44 wallet to a bip44 wallet
@@ -69,14 +113,12 @@ func (rw readableBip44WalletNew) toWallet() (*Bip44WalletNew, error) {
 }
 
 // readableBip44Accounts is the JSON representation of accounts
-type readableBip44Accounts struct {
-	Accounts []*readableBip44Account `json:"accounts"`
-}
+type readableBip44Accounts []*readableBip44Account
 
 // ToBip44Accounts converts readable bip44 accounts to bip44 accounts
 func (ras readableBip44Accounts) toBip44Accounts(ca coinAdapter) (*bip44Accounts, error) {
 	as := bip44Accounts{}
-	for _, ra := range ras.Accounts {
+	for _, ra := range ras {
 		a := bip44Account{
 			Name:     ra.Name,
 			Index:    ra.Index,
@@ -89,7 +131,6 @@ func (ras readableBip44Accounts) toBip44Accounts(ca coinAdapter) (*bip44Accounts
 			if err != nil {
 				return nil, err
 			}
-			a.Account.Identifier()
 			a.PrivateKey = key
 		}
 
@@ -217,7 +258,7 @@ func newReadableBip44Accounts(as *bip44Accounts) (*readableBip44Accounts, error)
 		if err != nil {
 			return nil, err
 		}
-		ras.Accounts = append(ras.Accounts, &readableBip44Account{
+		ras = append(ras, &readableBip44Account{
 			PrivateKey: a.Account.String(),
 			Name:       a.Name,
 			Index:      a.Index,

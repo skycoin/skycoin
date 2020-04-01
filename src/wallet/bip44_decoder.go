@@ -7,6 +7,7 @@ import (
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip32"
+	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 )
 
 const (
@@ -159,9 +160,9 @@ type readableBip44Account struct {
 
 // ReadableBip44Chain bip44 chain with JSON tags
 type readableBip44Chain struct {
-	PubKey     string               `json:"public_key"`
-	ChainIndex string               `json:"chain_index"`
-	Entries    readableBip44Entries `json:"entries"`
+	PubKey  string               `json:"public_key"`
+	Chain   string               `json:"chain"`
+	Entries readableBip44Entries `json:"entries"`
 }
 
 func (rc readableBip44Chain) toBip44Chain(ca coinAdapter) (*bip44Chain, error) {
@@ -170,7 +171,7 @@ func (rc readableBip44Chain) toBip44Chain(ca coinAdapter) (*bip44Chain, error) {
 		return nil, err
 	}
 
-	ci, err := stringToChainIndex(rc.ChainIndex)
+	ci, err := stringToChainIndex(rc.Chain)
 	if err != nil {
 		return nil, err
 	}
@@ -192,9 +193,9 @@ func (rc readableBip44Chain) toBip44Chain(ca coinAdapter) (*bip44Chain, error) {
 
 func chainIndexToString(index uint32) (string, error) {
 	switch index {
-	case externalChainIndex:
+	case bip44.ExternalChainIndex:
 		return "external", nil
-	case changeChainIndex:
+	case bip44.ChangeChainIndex:
 		return "change", nil
 	default:
 		return "", fmt.Errorf("invalid bip44 chain index: %d", index)
@@ -204,9 +205,9 @@ func chainIndexToString(index uint32) (string, error) {
 func stringToChainIndex(s string) (int, error) {
 	switch s {
 	case "external":
-		return int(externalChainIndex), nil
+		return int(bip44.ExternalChainIndex), nil
 	case "change":
-		return int(changeChainIndex), nil
+		return int(bip44.ChangeChainIndex), nil
 	default:
 		return -1, fmt.Errorf("invalid bip44 chain: %s", s)
 	}
@@ -278,8 +279,8 @@ func newReadableBip44Chains(cs []bip44Chain, ca coinAdapter) ([]readableBip44Cha
 			return nil, err
 		}
 		rc := readableBip44Chain{
-			PubKey:     c.PubKey.String(),
-			ChainIndex: chainIndexStr,
+			PubKey: c.PubKey.String(),
+			Chain:  chainIndexStr,
 		}
 		for _, e := range c.Entries {
 			rc.Entries.Entries = append(rc.Entries.Entries, readableBip44Entry{

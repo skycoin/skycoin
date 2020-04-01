@@ -11,13 +11,6 @@ import (
 	"github.com/SkycoinProject/skycoin/src/util/mathutil"
 )
 
-const (
-	// external chain index
-	externalChainIndex uint32 = iota
-	// change chain index
-	changeChainIndex
-)
-
 // bip44Account records the bip44 wallet account info
 type bip44Account struct {
 	bip44.Account
@@ -72,13 +65,13 @@ func newBip44Account(opts bip44AccountCreateOptions) (*bip44Account, error) {
 	// init the external chain
 	ba.Chains = append(ba.Chains, bip44Chain{
 		PubKey:            *externalChainKey,
-		ChainIndex:        externalChainIndex,
+		ChainIndex:        bip44.ExternalChainIndex,
 		addressFromPubKey: ca.AddressFromPubKey,
 	})
 	// init the change chain
 	ba.Chains = append(ba.Chains, bip44Chain{
 		PubKey:            *changeChainKey,
-		ChainIndex:        changeChainIndex,
+		ChainIndex:        bip44.ChangeChainIndex,
 		addressFromPubKey: ca.AddressFromPubKey,
 	})
 	return ba, nil

@@ -168,6 +168,9 @@ func (a *bip44Accounts) NewAddresses(index, chain, num uint32) ([]cipher.Address
 	return account.newAddresses(chain, num)
 }
 
+// New creates a bip44 account with options.
+// Notice: the option.index won't be applied, the bip44Accounts manages
+// the index and will generate a index for the new account.
 func (a *bip44Accounts) New(opts bip44AccountCreateOptions) (uint32, error) {
 	accountIndex, err := a.nextIndex()
 	if err != nil {

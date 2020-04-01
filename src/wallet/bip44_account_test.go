@@ -4,11 +4,44 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 	"github.com/stretchr/testify/require"
 )
 
 const (
 	invalidBip44Seed = "invalid bip44 seed"
+)
+
+var (
+	testSkycoinExternalAddresses = []string{
+		"2JBfeo6y6FQn2rCiuhdQ8F1E6bj6rpnHo5U",
+		"28Wn9scn3wb5nkScHiTHgNmLjSUS3F2SqAj",
+		"qHVbkuuzzxGE6p6CnLY1JxY9ifK1RxjoNS",
+		"2WNKEdCvoR8Mv5a7J5bLeE9syq7vHSzACmk",
+		"2Z1ZcRWwsyiRqTYLm6VJF914FAE8uhfgmkX",
+	}
+	testSkycoinChangeAddresses = []string{
+		"WFonrBarSSMPwFzcE9CS8vDbqmLjLZaJbT",
+		"hiCAv4i9xxtMYXz6Dpwgi1d5Tu1uGzk3Xd",
+		"LvV4KEy2pyAmtWXuqYNB2yqAFzN7m6FPme",
+		"2Y8fDayjHFSTkVQkCBAAHFuw7gLqZTNmdwr",
+		"28JNdPAxvc7yif4gnMhSVLjWh94WTxq9X8y",
+	}
+	testBitcoinExternalAddresses = []string{
+		"162oiGaSrGy8D7iKVC16ga94jDMbqiHmpJ",
+		"18fi8QanVYP2aTmiGEPnFozQSvCES3FQun",
+		"1DPpoHtKjbCD5aMpisW2i8UqTfbAp7Kfua",
+		"1LeT1QohCj6kzeaHbVJZJX3majqKiBct6j",
+		"15rLY7XJkeikn7zt7ovYwAN8wzSREAkyU1",
+	}
+	testBitcoinChangeAddresses = []string{
+		"13yByDTkS4eByiCj8k1S817zpa1kPsqMrp",
+		"1J434AfF1X5KqvxKmB8H46mabKQZ9dn3pw",
+		"1EjD2sUFxFXmqvpw8phbzoPpdBF4QNXLAH",
+		"1MPG25DmFoqmVPEbzP6Cd3geg6N99QezSe",
+		"1FWfeXmdJ72pKLjWnNSbCe3Lwm91d1b5qr",
+	}
 )
 
 func TestNewBip44Account(t *testing.T) {
@@ -143,9 +176,113 @@ func TestNewBip44Account(t *testing.T) {
 	}
 }
 
-func TestBip44ChainNewAddress(t *testing.T) {
-}
+func TestBip44AccountsNewAddresses(t *testing.T) {
+	tt := []struct {
+		name           string
+		coinType       CoinType
+		seed           string
+		seedPassphrase string
+		num            uint32
+		chain          uint32
+		expectErr      error
+		expectAddrs    []string
+	}{
+		{
+			name:           "skycoin, external chain, 1 address",
+			coinType:       CoinTypeSkycoin,
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			num:            uint32(1),
+			chain:          bip44.ExternalChainIndex,
+			expectAddrs:    testSkycoinExternalAddresses[:1],
+		},
+		{
+			name:           "skycoin, change chain, 1 address",
+			coinType:       CoinTypeSkycoin,
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			num:            uint32(1),
+			chain:          bip44.ChangeChainIndex,
+			expectAddrs:    testSkycoinChangeAddresses[:1],
+		},
+		{
+			name:           "skycoin, external chain, 2 addresses",
+			coinType:       CoinTypeSkycoin,
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			num:            uint32(2),
+			chain:          bip44.ExternalChainIndex,
+			expectAddrs:    testSkycoinExternalAddresses[:2],
+		},
+		{
+			name:           "skycoin, change chain, 2 addresses",
+			coinType:       CoinTypeSkycoin,
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			num:            uint32(2),
+			chain:          bip44.ChangeChainIndex,
+			expectAddrs:    testSkycoinChangeAddresses[:2],
+		},
+		{
+			name:           "skycoin, external chain, 2 addresses",
+			coinType:       CoinTypeSkycoin,
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			num:            uint32(2),
+			chain:          bip44.ExternalChainIndex,
+			expectAddrs:    testSkycoinExternalAddresses[:2],
+		},
+		{
+			name:           "Bitcoin, change chain, 2 addresses",
+			coinType:       CoinTypeBitcoin,
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			num:            uint32(2),
+			chain:          bip44.ChangeChainIndex,
+			expectAddrs:    testBitcoinChangeAddresses[:2],
+		},
+		{
+			name:           "Bitcoin, external chain, 2 addresses",
+			coinType:       CoinTypeBitcoin,
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			num:            uint32(2),
+			chain:          bip44.ExternalChainIndex,
+			expectAddrs:    testBitcoinExternalAddresses[:2],
+		},
+	}
 
-func TestBip44AccountNewAddress(t *testing.T) {
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			accounts := bip44Accounts{}
+			accountIndex, err := accounts.New(bip44AccountCreateOptions{
+				name:           "Test",
+				coinType:       tc.coinType,
+				seed:           tc.seed,
+				seedPassphrase: tc.seedPassphrase,
+			})
+			require.NoError(t, err)
 
+			require.Equal(t, uint32(0), accountIndex)
+
+			addrs, err := accounts.NewAddresses(accountIndex, tc.chain, tc.num)
+			require.NoError(t, err)
+			if err != nil {
+				return
+			}
+
+			require.Equal(t, tc.num, uint32(len(addrs)))
+			for i, addr := range addrs {
+				switch tc.coinType {
+				case CoinTypeSkycoin:
+					_, err := cipher.DecodeBase58Address(addr.String())
+					require.NoError(t, err)
+				case CoinTypeBitcoin:
+					_, err := cipher.DecodeBase58BitcoinAddress(addr.String())
+					require.NoError(t, err)
+				}
+				require.Equal(t, tc.expectAddrs[i], addr.String())
+			}
+		})
+	}
 }

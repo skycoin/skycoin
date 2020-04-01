@@ -10,7 +10,9 @@ import (
 )
 
 const (
-	invalidBip44Seed = "invalid bip44 seed"
+	testSeed           = "attitude coach wet rely typical habit alien security deny imitate spike slab"
+	testSeedPassphrase = "pwd"
+	invalidBip44Seed   = "invalid bip44 seed"
 )
 
 var (

@@ -4,6 +4,7 @@
 package wallet
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher"
 
 	"github.com/SkycoinProject/skycoin/src/cipher/bip32"
+	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 )
 
@@ -65,9 +67,10 @@ type Bip44WalletCreateOptions struct {
 }
 
 // NewBip44WalletNew create a bip44 wallet with options
-func NewBip44WalletNew(opts Bip44WalletCreateOptions) *Bip44WalletNew {
+func NewBip44WalletNew(opts Bip44WalletCreateOptions) (*Bip44WalletNew, error) {
 	wlt := &Bip44WalletNew{
 		Meta: Meta{
+			metaType:           WalletTypeBip44,
 			metaFilename:       opts.Filename,
 			metaVersion:        Bip44WalletVersion,
 			metaLabel:          opts.Label,
@@ -88,7 +91,88 @@ func NewBip44WalletNew(opts Bip44WalletCreateOptions) *Bip44WalletNew {
 	bip44CoinType := resolveCoinAdapter(opts.CoinType).Bip44CoinType()
 	wlt.Meta.setBip44Coin(bip44CoinType)
 
-	return wlt
+	if err := bip44MetaValidate(wlt.Meta); err != nil {
+		return nil, err
+	}
+	return wlt, nil
+}
+
+func bip44MetaValidate(m Meta) error {
+	if fn := m[metaFilename]; fn == "" {
+		return errors.New("filename not set")
+	}
+
+	if tm := m[metaTimestamp]; tm != "" {
+		_, err := strconv.ParseInt(tm, 10, 64)
+		if err != nil {
+			return errors.New("invalid timestamp")
+		}
+	}
+
+	walletType, ok := m[metaType]
+	if !ok {
+		return errors.New("type field not set")
+	}
+
+	if walletType != WalletTypeBip44 {
+		return ErrInvalidWalletType
+	}
+
+	if coinType := m[metaCoin]; coinType == "" {
+		return errors.New("coin field not set")
+	}
+
+	// var isEncrypted bool
+	// if encStr, ok := m[metaEncrypted]; ok {
+	// 	// validate the encrypted value
+	// 	var err error
+	// 	isEncrypted, err = strconv.ParseBool(encStr)
+	// 	if err != nil {
+	// 		return errors.New("encrypted field is not a valid bool")
+	// 	}
+	// }
+
+	// if isEncrypted {
+	// cryptoType, ok := m[metaCryptoType]
+	// if !ok {
+	// 	return errors.New("crypto type field not set")
+	// }
+
+	// if _, err := getCrypto(CryptoType(cryptoType)); err != nil {
+	// 	return errors.New("unknown crypto type")
+	// }
+
+	// if s := m[metaSecrets]; s == "" {
+	// 	return errors.New("wallet is encrypted, but secrets field not set")
+	// }
+
+	// if s := m[metaSeed]; s != "" {
+	// 	return errors.New("seed should not be visible in encrypted wallets")
+	// }
+
+	// if s := m[metaLastSeed]; s != "" {
+	// 	return errors.New("lastSeed should not be visible in encrypted wallets")
+	// }
+	// } else {
+	// if s := m[metaSecrets]; s != "" {
+	// 	return errors.New("secrets should not be in unencrypted wallets")
+	// }
+
+	// bip44 wallet seeds must be a valid bip39 mnemonic
+	if s := m[metaSeed]; s == "" {
+		return errors.New("seed missing in unencrypted bip44 wallet")
+	} else if err := bip39.ValidateMnemonic(s); err != nil {
+		return err
+	}
+	// }
+
+	if s := m[metaBip44Coin]; s == "" {
+		return errors.New("bip44Coin missing")
+	} else if _, err := strconv.ParseUint(s, 10, 32); err != nil {
+		return fmt.Errorf("bip44Coin invalid: %v", err)
+	}
+
+	return nil
 }
 
 // NewAccount create a bip44 wallet account, returns account index and

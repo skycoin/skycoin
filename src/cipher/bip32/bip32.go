@@ -147,9 +147,33 @@ type PrivateKey struct {
 	key
 }
 
+// Clone returns a copy of the private key
+func (k PrivateKey) Clone() PrivateKey {
+	newK := PrivateKey{}
+	newK.Depth = k.Depth
+	copy(newK.Version[:], k.Version[:])
+	copy(newK.ParentFingerprint[:], k.ParentFingerprint[:])
+	copy(newK.childNumber[:], k.childNumber[:])
+	copy(newK.ChainCode[:], k.ChainCode[:])
+	copy(newK.Key[:], k.Key[:])
+	return newK
+}
+
 // PublicKey represents a bip32 extended public key
 type PublicKey struct {
 	key
+}
+
+// Clone returns a copy  of the public key
+func (k PublicKey) Clone() PublicKey {
+	newK := PublicKey{}
+	newK.Depth = k.Depth
+	copy(newK.Version[:], k.Version[:])
+	copy(newK.ParentFingerprint[:], k.ParentFingerprint[:])
+	copy(newK.childNumber[:], k.childNumber[:])
+	copy(newK.ChainCode[:], k.ChainCode[:])
+	copy(newK.Key[:], k.Key[:])
+	return newK
 }
 
 // NewMasterKey creates a new master extended key from a seed.

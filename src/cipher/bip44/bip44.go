@@ -91,3 +91,10 @@ func (a *Account) External() (*bip32.PrivateKey, error) {
 func (a *Account) Change() (*bip32.PrivateKey, error) {
 	return a.NewPrivateChildKey(ChangeChainIndex)
 }
+
+// Clone clones the account
+func (a *Account) Clone() Account {
+	na := Account{}
+	*na.PrivateKey = a.PrivateKey.Clone()
+	return na
+}

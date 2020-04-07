@@ -24,6 +24,7 @@ const (
 	metaLastSeed       = "lastSeed"       // seed for generating next address [deterministic wallets]
 	metaSecrets        = "secrets"        // secrets which records the encrypted seeds and secrets of address entries
 	metaBip44Coin      = "bip44Coin"      // bip44 coin type
+	metaAccountsHash   = "accountsHash"   // accounts hash
 	metaSeedPassphrase = "seedPassphrase" // seed passphrase [bip44 wallets]
 	metaXPub           = "xpub"           // xpub key [xpub wallets]
 )

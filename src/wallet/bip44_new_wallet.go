@@ -125,41 +125,38 @@ func bip44MetaValidate(m Meta) error {
 		return errors.New("coin field not set")
 	}
 
-	// var isEncrypted bool
-	// if encStr, ok := m[metaEncrypted]; ok {
-	// 	// validate the encrypted value
-	// 	var err error
-	// 	isEncrypted, err = strconv.ParseBool(encStr)
-	// 	if err != nil {
-	// 		return errors.New("encrypted field is not a valid bool")
-	// 	}
-	// }
+	var isEncrypted bool
+	if encStr, ok := m[metaEncrypted]; ok {
+		// validate the encrypted value
+		var err error
+		isEncrypted, err = strconv.ParseBool(encStr)
+		if err != nil {
+			return errors.New("encrypted field is not a valid bool")
+		}
+	}
 
-	// if isEncrypted {
-	// cryptoType, ok := m[metaCryptoType]
-	// if !ok {
-	// 	return errors.New("crypto type field not set")
-	// }
+	if isEncrypted {
+		cryptoType, ok := m[metaCryptoType]
+		if !ok {
+			return errors.New("crypto type field not set")
+		}
 
-	// if _, err := getCrypto(CryptoType(cryptoType)); err != nil {
-	// 	return errors.New("unknown crypto type")
-	// }
+		if _, err := getCrypto(CryptoType(cryptoType)); err != nil {
+			return errors.New("unknown crypto type")
+		}
 
-	// if s := m[metaSecrets]; s == "" {
-	// 	return errors.New("wallet is encrypted, but secrets field not set")
-	// }
+		if s := m[metaSecrets]; s == "" {
+			return errors.New("wallet is encrypted, but secrets field not set")
+		}
 
-	// if s := m[metaSeed]; s != "" {
-	// 	return errors.New("seed should not be visible in encrypted wallets")
-	// }
-
-	// if s := m[metaLastSeed]; s != "" {
-	// 	return errors.New("lastSeed should not be visible in encrypted wallets")
-	// }
-	// } else {
-	// if s := m[metaSecrets]; s != "" {
-	// 	return errors.New("secrets should not be in unencrypted wallets")
-	// }
+		if s := m[metaSeed]; s != "" {
+			return errors.New("seed should not be visible in encrypted wallets")
+		}
+	} else {
+		if s := m[metaSecrets]; s != "" {
+			return errors.New("secrets should not be in unencrypted wallets")
+		}
+	}
 
 	// bip44 wallet seeds must be a valid bip39 mnemonic
 	if s := m[metaSeed]; s == "" {
@@ -167,7 +164,6 @@ func bip44MetaValidate(m Meta) error {
 	} else if err := bip39.ValidateMnemonic(s); err != nil {
 		return err
 	}
-	// }
 
 	if s := m[metaBip44Coin]; s == "" {
 		return errors.New("bip44Coin missing")
@@ -229,5 +225,161 @@ func (w *Bip44WalletNew) Deserialize(b []byte) error {
 
 	toW.decoder = w.decoder
 	*w = *toW
+	return nil
+}
+
+// IsEncrypted returns whether the wallet is encrypted
+func (w Bip44WalletNew) IsEncrypted() bool {
+	return w.Meta.IsEncrypted()
+}
+
+// clone deep clone of the bip44 wallet
+func (w Bip44WalletNew) clone() Bip44WalletNew {
+	nw := Bip44WalletNew{
+		Meta:     w.Meta.clone(),
+		accounts: w.accounts.clone(),
+		decoder:  w.decoder,
+	}
+
+	return nw
+}
+
+func (w *Bip44WalletNew) copyFrom(wlt *Bip44WalletNew) {
+	w.Meta = wlt.Meta.clone()
+	w.accounts = wlt.accounts.clone()
+	w.decoder = wlt.decoder
+}
+
+func (w Bip44WalletNew) erase() {
+	w.eraseSeeds()
+	w.accounts.erase()
+}
+
+// Lock encrypts the wallet if it is unencrypted, return false
+// if it is already encrypted.
+func (w *Bip44WalletNew) Lock(password []byte) error {
+	if len(password) == 0 {
+		return ErrMissingPassword
+	}
+
+	if w.IsEncrypted() {
+		return ErrWalletEncrypted
+	}
+
+	wlt := w.clone()
+
+	ss := make(Secrets)
+	defer func() {
+		ss.erase()
+		wlt.erase()
+	}()
+
+	wlt.packSecrets(ss)
+
+	sb, err := ss.serialize()
+	if err != nil {
+		return err
+	}
+
+	cryptoType := wlt.Meta.CryptoType()
+	if cryptoType == "" {
+		return errors.New("crypto type field not set")
+	}
+	crypto, err := getCrypto(cryptoType)
+	if err != nil {
+		return err
+	}
+
+	encSecret, err := crypto.Encrypt(sb, password)
+	if err != nil {
+		return err
+	}
+
+	// Sets wallet as encrypted, updates secret field.
+	wlt.SetEncrypted(cryptoType, string(encSecret))
+
+	// Update wallet to the latest version, which indicates encryption support
+	wlt.SetVersion(Version)
+
+	// Wipes the secret fields in wlt
+	wlt.erase()
+
+	// Wipes the secret fields in w
+	w.erase()
+
+	w.copyFrom(&wlt)
+	return nil
+}
+
+// Unlock decrypt the wallet
+func (w *Bip44WalletNew) Unlock(password []byte) (*Bip44WalletNew, error) {
+	if !w.IsEncrypted() {
+		return nil, ErrWalletNotEncrypted
+	}
+
+	if len(password) == 0 {
+		return nil, ErrMissingPassword
+	}
+
+	sstr := w.Secrets()
+	if sstr == "" {
+		return nil, errors.New("secrets missing from wallet")
+	}
+
+	ct := w.CryptoType()
+	if ct == "" {
+		return nil, errors.New("missing crypto type")
+	}
+
+	crypto, err := getCrypto(ct)
+	if err != nil {
+		return nil, err
+	}
+
+	sb, err := crypto.Decrypt([]byte(sstr), password)
+	if err != nil {
+		return nil, ErrInvalidPassword
+	}
+
+	defer func() {
+		// Wipes the dat from secrets bytes buffer
+		for i := range sb {
+			sb[i] = 0
+		}
+	}()
+
+	ss := make(Secrets)
+	defer ss.erase()
+	if err := ss.deserialize(sb); err != nil {
+		return nil, err
+	}
+
+	cw := w.clone()
+	if err := cw.unpackSecrets(ss); err != nil {
+		return nil, err
+	}
+	cw.SetDecrypted()
+
+	return &cw, nil
+}
+
+// packSecrets saves all sensitive data to the secrets map.
+func (w Bip44WalletNew) packSecrets(ss Secrets) {
+	ss.set(secretSeed, w.Meta.Seed())
+	ss.set(secretSeedPassphrase, w.Meta.SeedPassphrase())
+	w.accounts.packSecrets(ss)
+}
+
+func (w *Bip44WalletNew) unpackSecrets(ss Secrets) error {
+	seed, ok := ss.get(secretSeed)
+	if !ok {
+		return errors.New("seed does not exist in secrets")
+	}
+	w.Meta.setSeed(seed)
+
+	passphrase, _ := ss.get(secretSeedPassphrase)
+	w.Meta.setSeedPassphrase(passphrase)
+
+	w.accounts.unpackSecrets(ss)
 	return nil
 }

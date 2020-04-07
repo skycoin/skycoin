@@ -91,6 +91,25 @@ func (a *bip44Account) newAddresses(chainIndex, num uint32) ([]cipher.Addresser,
 	}
 }
 
+// Clone clones the bip44Account, it would also hide the
+// bip44.Account.Clone() function so that user would not
+// call it mistakenly.
+func (a bip44Account) Clone() bip44Account {
+	na := bip44Account{
+		Account:  a.Account.Clone(),
+		Name:     a.Name,
+		Index:    a.Index,
+		CoinType: a.CoinType,
+	}
+
+	na.Chains = make([]bip44Chain, len(a.Chains))
+	for i, c := range a.Chains {
+		cc := c.clone()
+		na.Chains[i] = cc
+	}
+	return na
+}
+
 // bip44Chain bip44 address chain
 type bip44Chain struct {
 	PubKey            bip32.PublicKey
@@ -145,16 +164,35 @@ func (c *bip44Chain) newAddresses(num uint32, seckey *bip32.PrivateKey) ([]ciphe
 	return addrs, nil
 }
 
+func (c *bip44Chain) packSecrets(ss Secrets) {
+	for _, e := range c.Entries {
+		ss.set(e.Address.String(), e.Secret.Hex())
+	}
+}
+
+func (c *bip44Chain) erase() {
+	c.Entries.erase()
+}
+
+func (c bip44Chain) clone() bip44Chain {
+	return bip44Chain{
+		PubKey:            c.PubKey.Clone(),
+		ChainIndex:        c.ChainIndex,
+		addressFromPubKey: c.addressFromPubKey,
+		Entries:           c.Entries.clone(),
+	}
+}
+
 // bip44Accounts implementes the accountManager interface
 type bip44Accounts struct {
 	accounts []*bip44Account
 }
 
-func (a bip44Accounts) Len() uint32 {
+func (a bip44Accounts) len() uint32 {
 	return uint32(len(a.accounts))
 }
 
-func (a *bip44Accounts) NewAddresses(index, chain, num uint32) ([]cipher.Addresser, error) {
+func (a *bip44Accounts) newAddresses(index, chain, num uint32) ([]cipher.Addresser, error) {
 	accountLen := len(a.accounts)
 	if int(index) >= accountLen {
 		return nil, fmt.Errorf("account index %d out of range", index)
@@ -168,10 +206,10 @@ func (a *bip44Accounts) NewAddresses(index, chain, num uint32) ([]cipher.Address
 	return account.newAddresses(chain, num)
 }
 
-// New creates a bip44 account with options.
+// new creates a bip44 account with options.
 // Notice: the option.index won't be applied, the bip44Accounts manages
 // the index and will generate a index for the new account.
-func (a *bip44Accounts) New(opts bip44AccountCreateOptions) (uint32, error) {
+func (a *bip44Accounts) new(opts bip44AccountCreateOptions) (uint32, error) {
 	accountIndex, err := a.nextIndex()
 	if err != nil {
 		return 0, err
@@ -198,4 +236,40 @@ func (a *bip44Accounts) nextIndex() (uint32, error) {
 	}
 
 	return uint32(len(a.accounts)), nil
+}
+
+func (a *bip44Accounts) clone() accountManager {
+	nas := &bip44Accounts{}
+	for _, account := range a.accounts {
+		na := account.Clone()
+		nas.accounts = append(nas.accounts, &na)
+	}
+	return nas
+}
+
+func (a *bip44Accounts) packSecrets(ss Secrets) {
+	for _, account := range a.accounts {
+		for _, c := range account.Chains {
+			c.packSecrets(ss)
+		}
+	}
+}
+
+func (a *bip44Accounts) unpackSecrets(ss Secrets) error {
+	for i := range a.accounts {
+		for j := range a.accounts[i].Chains {
+			if err := a.accounts[i].Chains[j].Entries.unpackSecretKeys(ss); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (a *bip44Accounts) erase() {
+	for _, account := range a.accounts {
+		for i := range account.Chains {
+			account.Chains[i].erase()
+		}
+	}
 }

@@ -16,11 +16,6 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 )
 
-const (
-	// Bip44WalletVersion Bip44 wallet version
-	Bip44WalletVersion = "0.4"
-)
-
 var (
 	// defaultBip44WalletDecoder is the default bip44 wallet decoder
 	defaultBip44WalletDecoder = &Bip44WalletJSONDecoder{}
@@ -40,11 +35,19 @@ type Bip44WalletNew struct {
 // accountManager is the interface that manages the bip44 wallet accounts.
 type accountManager interface {
 	// New creates a new account, returns the account index, and error, if any
-	New(opts bip44AccountCreateOptions) (uint32, error)
+	new(opts bip44AccountCreateOptions) (uint32, error)
 	// NewAddresses generates addresses on selected account
-	NewAddresses(index, chain, num uint32) ([]cipher.Addresser, error)
+	newAddresses(index, chain, num uint32) ([]cipher.Addresser, error)
 	// Len returns the account number
-	Len() uint32
+	len() uint32
+	// Clone returns a deep clone accounts manager
+	clone() accountManager
+	// PackSecrets packs secrets
+	packSecrets(ss Secrets)
+	// UnpackSecrets unpacks secrets
+	unpackSecrets(ss Secrets) error
+	// Erase erase secrets
+	erase()
 }
 
 // Bip44WalletDecoder is the interface that wraps the Encode and Decode methods.
@@ -72,7 +75,7 @@ func NewBip44WalletNew(opts Bip44WalletCreateOptions) (*Bip44WalletNew, error) {
 		Meta: Meta{
 			metaType:           WalletTypeBip44,
 			metaFilename:       opts.Filename,
-			metaVersion:        Bip44WalletVersion,
+			metaVersion:        Version,
 			metaLabel:          opts.Label,
 			metaSeed:           opts.Seed,
 			metaSeedPassphrase: opts.SeedPassphrase,
@@ -185,12 +188,12 @@ func (w *Bip44WalletNew) NewAccount(name string) (uint32, error) {
 		coinType:       w.Meta.Coin(),
 	}
 
-	return w.accounts.New(opts)
+	return w.accounts.new(opts)
 }
 
 // NewAddresses creates addresses
 func (w *Bip44WalletNew) NewAddresses(account, chain, n uint32) ([]cipher.Addresser, error) {
-	return w.accounts.NewAddresses(account, chain, n)
+	return w.accounts.newAddresses(account, chain, n)
 }
 
 func makeChainPubKeys(a *bip44.Account) (*bip32.PublicKey, *bip32.PublicKey, error) {

@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
@@ -8,25 +9,142 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	testSeed           = "attitude coach wet rely typical habit alien security deny imitate spike slab"
-	testSeedPassphrase = "pwd"
-)
-
 func TestBip44WalletNew(t *testing.T) {
-	w := NewBip44WalletNew(Bip44WalletCreateOptions{
-		Filename: "test.wlt",
-		Label:    "test",
-		Seed:     testSeed,
-		Coin:     CoinTypeSkycoin,
-	})
+	tt := []struct {
+		name           string
+		filename       string
+		label          string
+		seed           string
+		seedPassphrase string
+		coinType       CoinType
+		cryptoType     CryptoType
+		err            error
+	}{
+		{
+			name:           "skycoin default crypto type",
+			filename:       "test.wlt",
+			label:          "test",
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			coinType:       CoinTypeSkycoin,
+			cryptoType:     DefaultCryptoType,
+		},
+		{
+			name:           "bitcoin default crypto type",
+			filename:       "test.wlt",
+			label:          "test",
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			coinType:       CoinTypeBitcoin,
+			cryptoType:     DefaultCryptoType,
+		},
+		{
+			name:           "skycoin crypto type sha256xor",
+			filename:       "test.wlt",
+			label:          "test",
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			coinType:       CoinTypeSkycoin,
+			cryptoType:     CryptoTypeSha256Xor,
+		},
+		{
+			name:           "bitcoin crypto type sha256xor",
+			filename:       "test.wlt",
+			label:          "test",
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			coinType:       CoinTypeBitcoin,
+			cryptoType:     CryptoTypeSha256Xor,
+		},
+		{
+			name:           "skycoin no crypto type",
+			filename:       "test.wlt",
+			label:          "test",
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			coinType:       CoinTypeSkycoin,
+		},
+		{
+			name:           "bitcoin no crypto type",
+			filename:       "test.wlt",
+			label:          "test",
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			coinType:       CoinTypeBitcoin,
+		},
+		{
+			name:           "no filename",
+			label:          "test",
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			coinType:       CoinTypeSkycoin,
+			err:            errors.New("filename not set"),
+		},
+		{
+			name:           "no coin type",
+			filename:       "test.wlt",
+			label:          "test",
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			err:            errors.New("coin field not set"),
+		},
+		{
+			name:           "skycoin empty seed",
+			filename:       "test.wlt",
+			label:          "test",
+			seed:           "",
+			seedPassphrase: testSeedPassphrase,
+			coinType:       CoinTypeSkycoin,
+			cryptoType:     DefaultCryptoType,
+			err:            errors.New("seed missing in unencrypted bip44 wallet"),
+		},
+		{
+			name:           "skycoin invalid seed",
+			filename:       "test.wlt",
+			label:          "test",
+			seed:           invalidBip44Seed,
+			seedPassphrase: testSeedPassphrase,
+			coinType:       CoinTypeSkycoin,
+			cryptoType:     DefaultCryptoType,
+			err:            errors.New("Mnemonic must have 12, 15, 18, 21 or 24 words"),
+		},
+	}
 
-	ai, err := w.NewAccount("test")
-	require.NoError(t, err)
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			w, err := NewBip44WalletNew(Bip44WalletCreateOptions{
+				Filename:       tc.filename,
+				Label:          tc.label,
+				Seed:           tc.seed,
+				SeedPassphrase: tc.seedPassphrase,
+				CoinType:       tc.coinType,
+				CryptoType:     tc.cryptoType,
+			})
 
-	as, err := w.NewAddresses(ai, bip44.ExternalChainIndex, 2)
-	require.NoError(t, err)
-	t.Log(as[0])
+			require.Equal(t, tc.err, err)
+			if err != nil {
+				return
+			}
+			require.Equal(t, Version, w.Meta.Version())
+			require.Equal(t, tc.filename, w.Meta.Filename())
+			require.Equal(t, tc.label, w.Meta.Label())
+			require.Equal(t, tc.seed, w.Meta.Seed())
+			require.Equal(t, tc.seedPassphrase, w.Meta.SeedPassphrase())
+			require.Equal(t, tc.coinType, w.Meta.Coin())
+			require.Equal(t, WalletTypeBip44, w.Meta.Type())
+			require.False(t, w.Meta.IsEncrypted())
+			require.NotEmpty(t, w.Meta.Timestamp())
+			require.NotNil(t, w.decoder)
+			require.Equal(t, resolveCoinAdapter(tc.coinType).Bip44CoinType(), w.Meta.Bip44Coin())
+			require.Empty(t, w.Meta.Secrets())
+
+			if tc.cryptoType != "" {
+				require.Equal(t, tc.cryptoType, w.Meta.CryptoType())
+			} else {
+				require.Equal(t, DefaultCryptoType, w.Meta.CryptoType())
+			}
+		})
+	}
 
 	v, err := w.MarshalToJSON()
 	require.NoError(t, err)

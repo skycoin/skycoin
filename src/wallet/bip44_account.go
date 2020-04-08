@@ -93,10 +93,13 @@ func (a *bip44Account) newAddresses(chainIndex, num uint32) ([]cipher.Addresser,
 
 // erase wipes sensitive data
 func (a *bip44Account) erase() {
-	for i := range a.Account.Key {
-		a.Account.Key[i] = 0
+	if a.Account.PrivateKey != nil {
+		for i := range a.Account.Key {
+			a.Account.Key[i] = 0
+		}
+		a.Account.PrivateKey = nil
+		a.Account = bip44.Account{}
 	}
-	a.Account = bip44.Account{}
 
 	for i := range a.Chains {
 		a.Chains[i].erase()

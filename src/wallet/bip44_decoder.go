@@ -52,7 +52,6 @@ func (d Bip44WalletJSONDecoder) Decode(b []byte) (*Bip44WalletNew, error) {
 	if accountHash != accountsHashFromMeta {
 		return nil, fmt.Errorf("Decode bip44 wallet failed, wallet accounts hash mismatch")
 	}
-
 	return rw.toWallet()
 }
 
@@ -220,9 +219,13 @@ func newBip44EntryFromReadable(re readableBip44Entry, ca coinAdapter) (*Entry, e
 		return nil, err
 	}
 
-	secKey, err := ca.SecKeyFromHex(re.Secret)
-	if err != nil {
-		return nil, err
+	var secKey cipher.SecKey
+	if re.Secret != "" {
+		var err error
+		secKey, err = ca.SecKeyFromHex(re.Secret)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &Entry{
@@ -255,8 +258,12 @@ func newReadableBip44Accounts(as *bip44Accounts) (*readableBip44Accounts, error)
 		if err != nil {
 			return nil, err
 		}
+		var privateKey string
+		if a.Account.PrivateKey != nil {
+			privateKey = a.Account.String()
+		}
 		ras = append(ras, &readableBip44Account{
-			PrivateKey: a.Account.String(),
+			PrivateKey: privateKey,
 			Name:       a.Name,
 			Index:      a.Index,
 			CoinType:   string(a.CoinType),
@@ -278,12 +285,18 @@ func newReadableBip44Chains(cs []bip44Chain, ca coinAdapter) ([]readableBip44Cha
 			PubKey: c.PubKey.String(),
 			Chain:  chainIndexStr,
 		}
+
 		for _, e := range c.Entries {
+			var secret string
+			if !e.Secret.Null() {
+				secret = ca.SecKeyToHex(e.Secret)
+			}
+
 			rc.Entries.Entries = append(rc.Entries.Entries, readableBip44Entry{
 				Address:     e.Address.String(),
 				Public:      e.Public.Hex(),
-				Secret:      ca.SecKeyToHex(e.Secret),
 				ChildNumber: e.ChildNumber,
+				Secret:      secret,
 			})
 		}
 		rcs = append(rcs, rc)

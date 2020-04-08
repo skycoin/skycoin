@@ -257,7 +257,7 @@ func TestBip44AccountsNewAddresses(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			accounts := bip44Accounts{}
-			accountIndex, err := accounts.New(bip44AccountCreateOptions{
+			accountIndex, err := accounts.new(bip44AccountCreateOptions{
 				name:           "Test",
 				coinType:       tc.coinType,
 				seed:           tc.seed,
@@ -267,7 +267,7 @@ func TestBip44AccountsNewAddresses(t *testing.T) {
 
 			require.Equal(t, uint32(0), accountIndex)
 
-			addrs, err := accounts.NewAddresses(accountIndex, tc.chain, tc.num)
+			addrs, err := accounts.newAddresses(accountIndex, tc.chain, tc.num)
 			require.NoError(t, err)
 			if err != nil {
 				return
@@ -286,5 +286,49 @@ func TestBip44AccountsNewAddresses(t *testing.T) {
 				require.Equal(t, tc.expectAddrs[i], addr.String())
 			}
 		})
+	}
+}
+
+func TestBip44AccountsClone(t *testing.T) {
+	accounts := bip44Accounts{}
+	accountIndex, err := accounts.new(bip44AccountCreateOptions{
+		name:           "Test",
+		coinType:       CoinTypeSkycoin,
+		seed:           testSeed,
+		seedPassphrase: testSeedPassphrase,
+	})
+	require.NoError(t, err)
+
+	require.Equal(t, uint32(0), accountIndex)
+
+	_, err = accounts.newAddresses(accountIndex, 0, 1)
+	require.NoError(t, err)
+
+	cloneAccounts := accounts.clone().(*bip44Accounts)
+	require.Equal(t, len(accounts.accounts), len(cloneAccounts.accounts))
+	for i, a := range accounts.accounts {
+		ca := cloneAccounts.accounts[i]
+		require.Equal(t, a.Account, ca.Account)
+		require.Equal(t, a.Name, ca.Name)
+		require.Equal(t, a.Index, ca.Index)
+		require.Equal(t, a.CoinType, ca.CoinType)
+
+		require.Equal(t, len(a.Chains), len(ca.Chains))
+		for j, c := range a.Chains {
+			cc := cloneAccounts.accounts[i].Chains[j]
+			require.Equal(t, c.PubKey, cc.PubKey)
+			require.Equal(t, c.ChainIndex, cc.ChainIndex)
+			// verify that the cloned addressFromPubKey func performs the same operation.
+			require.Equal(t, c.addressFromPubKey(cipher.MustNewPubKey(c.PubKey.Key)), cc.addressFromPubKey(cipher.MustNewPubKey(c.PubKey.Key)))
+			require.Equal(t, len(c.Entries), len(cc.Entries))
+			for i, e := range c.Entries {
+				ce := cc.Entries[i]
+				require.Equal(t, e.Address.String(), ce.Address.String())
+				require.Equal(t, e.Public[:], ce.Public[:])
+				require.Equal(t, e.Secret[:], ce.Secret[:])
+				require.Equal(t, e.ChildNumber, ce.ChildNumber)
+				require.Equal(t, e.Change, ce.Change)
+			}
+		}
 	}
 }

@@ -66,6 +66,7 @@ type Bip44WalletCreateOptions struct {
 	Seed           string
 	SeedPassphrase string
 	CoinType       CoinType
+	CryptoType     CryptoType
 	WalletDecoder  Bip44WalletDecoder
 }
 
@@ -81,10 +82,15 @@ func NewBip44WalletNew(opts Bip44WalletCreateOptions) (*Bip44WalletNew, error) {
 			metaSeedPassphrase: opts.SeedPassphrase,
 			metaCoin:           string(opts.CoinType),
 			metaTimestamp:      strconv.FormatInt(time.Now().Unix(), 10),
+			metaCryptoType:     string(opts.CryptoType),
 			metaEncrypted:      "false",
 		},
 		accounts: &bip44Accounts{},
 		decoder:  opts.WalletDecoder,
+	}
+
+	if wlt.Meta.CryptoType() == "" {
+		wlt.Meta[metaCryptoType] = string(DefaultCryptoType)
 	}
 
 	if wlt.decoder == nil {
@@ -250,8 +256,9 @@ func (w *Bip44WalletNew) copyFrom(wlt *Bip44WalletNew) {
 	w.decoder = wlt.decoder
 }
 
-func (w Bip44WalletNew) erase() {
-	w.eraseSeeds()
+func (w *Bip44WalletNew) erase() {
+	w.setSeed("")
+	w.setSeedPassphrase("")
 	w.accounts.erase()
 }
 

@@ -380,6 +380,10 @@ func TestBip44AccountErase(t *testing.T) {
 			require.Equal(t, cipher.SecKey{}, e.Secret)
 		}
 	}
+	// erase multiple times should have no side effect
+	for i := 0; i < 10; i++ {
+		a.erase()
+	}
 }
 
 func TestBip44AccountPackSecrets(t *testing.T) {

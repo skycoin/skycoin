@@ -289,6 +289,31 @@ func TestBip44AccountsNewAddresses(t *testing.T) {
 	}
 }
 
+func requireBip44AccountEqual(t *testing.T, a, b *bip44Account) {
+	require.Equal(t, a.Account, b.Account)
+	require.Equal(t, a.Name, b.Name)
+	require.Equal(t, a.Index, b.Index)
+	require.Equal(t, a.CoinType, b.CoinType)
+
+	require.Equal(t, len(a.Chains), len(b.Chains))
+	for j, c := range a.Chains {
+		cc := b.Chains[j]
+		require.Equal(t, c.PubKey, cc.PubKey)
+		require.Equal(t, c.ChainIndex, cc.ChainIndex)
+		// verify that the cloned addressFromPubKey func performs the same operation.
+		require.Equal(t, c.addressFromPubKey(cipher.MustNewPubKey(c.PubKey.Key)), cc.addressFromPubKey(cipher.MustNewPubKey(c.PubKey.Key)))
+		require.Equal(t, len(c.Entries), len(cc.Entries))
+		for i, e := range c.Entries {
+			ce := cc.Entries[i]
+			require.Equal(t, e.Address.String(), ce.Address.String())
+			require.Equal(t, e.Public[:], ce.Public[:])
+			require.Equal(t, e.Secret[:], ce.Secret[:])
+			require.Equal(t, e.ChildNumber, ce.ChildNumber)
+			require.Equal(t, e.Change, ce.Change)
+		}
+	}
+}
+
 func TestBip44AccountsClone(t *testing.T) {
 	accounts := bip44Accounts{}
 	accountIndex, err := accounts.new(bip44AccountCreateOptions{
@@ -305,30 +330,117 @@ func TestBip44AccountsClone(t *testing.T) {
 	require.NoError(t, err)
 
 	cloneAccounts := accounts.clone().(*bip44Accounts)
+
 	require.Equal(t, len(accounts.accounts), len(cloneAccounts.accounts))
 	for i, a := range accounts.accounts {
-		ca := cloneAccounts.accounts[i]
-		require.Equal(t, a.Account, ca.Account)
-		require.Equal(t, a.Name, ca.Name)
-		require.Equal(t, a.Index, ca.Index)
-		require.Equal(t, a.CoinType, ca.CoinType)
+		b := cloneAccounts.accounts[i]
+		requireBip44AccountEqual(t, a, b)
+	}
 
-		require.Equal(t, len(a.Chains), len(ca.Chains))
-		for j, c := range a.Chains {
-			cc := cloneAccounts.accounts[i].Chains[j]
-			require.Equal(t, c.PubKey, cc.PubKey)
-			require.Equal(t, c.ChainIndex, cc.ChainIndex)
-			// verify that the cloned addressFromPubKey func performs the same operation.
-			require.Equal(t, c.addressFromPubKey(cipher.MustNewPubKey(c.PubKey.Key)), cc.addressFromPubKey(cipher.MustNewPubKey(c.PubKey.Key)))
-			require.Equal(t, len(c.Entries), len(cc.Entries))
-			for i, e := range c.Entries {
-				ce := cc.Entries[i]
-				require.Equal(t, e.Address.String(), ce.Address.String())
-				require.Equal(t, e.Public[:], ce.Public[:])
-				require.Equal(t, e.Secret[:], ce.Secret[:])
-				require.Equal(t, e.ChildNumber, ce.ChildNumber)
-				require.Equal(t, e.Change, ce.Change)
-			}
+	addrs, err := accounts.newAddresses(0, 0, 1)
+	require.NoError(t, err)
+	caddrs, err := cloneAccounts.newAddresses(0, 0, 1)
+	require.NoError(t, err)
+	require.Equal(t, addrs, caddrs)
+}
+
+func TestBip44AccountErase(t *testing.T) {
+	// create a bip44 account
+	a, err := newBip44Account(bip44AccountCreateOptions{
+		name:           "Test",
+		coinType:       CoinTypeSkycoin,
+		seed:           testSeed,
+		seedPassphrase: testSeedPassphrase,
+	})
+	require.NoError(t, err)
+
+	_, err = a.newAddresses(bip44.ExternalChainIndex, 5)
+	require.NoError(t, err)
+
+	_, err = a.newAddresses(bip44.ChangeChainIndex, 5)
+	require.NoError(t, err)
+
+	// Confirms that the account private key is not empty
+	require.NotEmpty(t, a.Account)
+	// Confirms that the chains secrets are not empty
+	for _, c := range a.Chains {
+		for _, e := range c.Entries {
+			require.NotEmpty(t, e.Secret)
 		}
 	}
+
+	// wipes sensitive data
+	a.erase()
+
+	// Confirms that the account privatee key is empty
+	require.Empty(t, a.Account)
+	// Confirms that the secrets in chains are empty
+	for _, c := range a.Chains {
+		for _, e := range c.Entries {
+			require.Equal(t, cipher.SecKey{}, e.Secret)
+		}
+	}
+}
+
+func TestBip44AccountPackSecrets(t *testing.T) {
+	// create a bip44 account
+	a, err := newBip44Account(bip44AccountCreateOptions{
+		name:           "Test",
+		coinType:       CoinTypeSkycoin,
+		seed:           testSeed,
+		seedPassphrase: testSeedPassphrase,
+	})
+	require.NoError(t, err)
+
+	_, err = a.newAddresses(bip44.ExternalChainIndex, 5)
+	require.NoError(t, err)
+	_, err = a.newAddresses(bip44.ChangeChainIndex, 5)
+	require.NoError(t, err)
+
+	ss := make(Secrets)
+	a.packSecrets(ss)
+
+	// 11 = 1 account private key + 5 external chain secrets + 5 change chain secrets
+	require.Equal(t, 11, len(ss))
+	sk, ok := ss.get(secretBip44AccountPrivateKey)
+	require.True(t, ok)
+
+	// Confirms that the Secrets contains account private key
+	require.Equal(t, a.Account.String(), sk)
+	for _, c := range a.Chains {
+		for _, e := range c.Entries {
+			s, ok := ss.get(e.Address.String())
+			require.True(t, ok)
+			require.Equal(t, e.Secret.Hex(), s)
+		}
+	}
+}
+
+func TestBip44AccountUnpackSecrets(t *testing.T) {
+	// create a bip44 account
+	a, err := newBip44Account(bip44AccountCreateOptions{
+		name:           "Test",
+		coinType:       CoinTypeSkycoin,
+		seed:           testSeed,
+		seedPassphrase: testSeedPassphrase,
+	})
+	require.NoError(t, err)
+
+	_, err = a.newAddresses(bip44.ExternalChainIndex, 5)
+	require.NoError(t, err)
+	_, err = a.newAddresses(bip44.ChangeChainIndex, 5)
+	require.NoError(t, err)
+	ss := make(Secrets)
+	a.packSecrets(ss)
+
+	ca := a.Clone()
+
+	// erase sensitive data from cloned account
+	ca.erase()
+	// unpack from Secrets
+	err = ca.unpackSecrets(ss)
+	require.NoError(t, err)
+
+	// compare the account and cloned account
+	requireBip44AccountEqual(t, a, &ca)
 }

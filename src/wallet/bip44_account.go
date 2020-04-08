@@ -91,6 +91,48 @@ func (a *bip44Account) newAddresses(chainIndex, num uint32) ([]cipher.Addresser,
 	}
 }
 
+// erase wipes sensitive data
+func (a *bip44Account) erase() {
+	for i := range a.Account.Key {
+		a.Account.Key[i] = 0
+	}
+	a.Account = bip44.Account{}
+
+	for i := range a.Chains {
+		a.Chains[i].erase()
+	}
+}
+
+// packSecrets packs the secrets of account into Secrets
+func (a *bip44Account) packSecrets(ss Secrets) {
+	// packs the account private key.
+	ss.set(secretBip44AccountPrivateKey, a.Account.String())
+
+	// packs the secrets in chains
+	for _, c := range a.Chains {
+		c.packSecrets(ss)
+	}
+}
+
+func (a *bip44Account) unpackSecrets(ss Secrets) error {
+	prvKey, ok := ss.get(secretBip44AccountPrivateKey)
+	if !ok {
+		return errors.New("missing bip44 account private key when unpacking secrets")
+	}
+
+	key, err := bip32.DeserializeEncodedPrivateKey(prvKey)
+	if err != nil {
+		return err
+	}
+
+	a.Account.PrivateKey = key
+
+	for i := range a.Chains {
+		a.Chains[i].unpackSecrets(ss)
+	}
+	return nil
+}
+
 // Clone clones the bip44Account, it would also hide the
 // bip44.Account.Clone() function so that user would not
 // call it mistakenly.
@@ -168,6 +210,10 @@ func (c *bip44Chain) packSecrets(ss Secrets) {
 	for _, e := range c.Entries {
 		ss.set(e.Address.String(), e.Secret.Hex())
 	}
+}
+
+func (c *bip44Chain) unpackSecrets(ss Secrets) error {
+	return c.Entries.unpackSecretKeys(ss)
 }
 
 func (c *bip44Chain) erase() {
@@ -267,9 +313,7 @@ func (a *bip44Accounts) unpackSecrets(ss Secrets) error {
 }
 
 func (a *bip44Accounts) erase() {
-	for _, account := range a.accounts {
-		for i := range account.Chains {
-			account.Chains[i].erase()
-		}
+	for i := range a.accounts {
+		a.accounts[i].erase()
 	}
 }

@@ -95,7 +95,9 @@ func (a *Account) Change() (*bip32.PrivateKey, error) {
 // Clone clones the account
 func (a *Account) Clone() Account {
 	na := Account{}
-	key := a.PrivateKey.Clone()
-	na.PrivateKey = &key
+	if a.PrivateKey != nil {
+		key := a.PrivateKey.Clone()
+		na.PrivateKey = &key
+	}
 	return na
 }

@@ -77,7 +77,7 @@ func TestBip44WalletNew(t *testing.T) {
 			seed:           testSeed,
 			seedPassphrase: testSeedPassphrase,
 			coinType:       CoinTypeSkycoin,
-			err:            errors.New("filename not set"),
+			err:            errors.New("Filename not set"),
 		},
 		{
 			name:           "no coin type",
@@ -85,7 +85,7 @@ func TestBip44WalletNew(t *testing.T) {
 			label:          "test",
 			seed:           testSeed,
 			seedPassphrase: testSeedPassphrase,
-			err:            errors.New("coin field not set"),
+			err:            errors.New("Coin field not set"),
 		},
 		{
 			name:           "skycoin empty seed",
@@ -95,7 +95,7 @@ func TestBip44WalletNew(t *testing.T) {
 			seedPassphrase: testSeedPassphrase,
 			coinType:       CoinTypeSkycoin,
 			cryptoType:     DefaultCryptoType,
-			err:            errors.New("seed missing in unencrypted bip44 wallet"),
+			err:            errors.New("Seed missing in unencrypted bip44 wallet"),
 		},
 		{
 			name:           "skycoin invalid seed",
@@ -183,12 +183,20 @@ func TestWalletAccountCreateAddresses(t *testing.T) {
 	addrs, err := w.NewAddresses(ai, bip44.ExternalChainIndex, 2)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(addrs))
-	require.Equal(t, testSkycoinExternalAddresses[:2], addrs)
+	addrsStr := make([]string, 2)
+	for i, a := range addrs {
+		addrsStr[i] = a.String()
+	}
+	require.Equal(t, testSkycoinExternalAddresses[:2], addrsStr)
 
 	addrs, err = w.NewAddresses(ai, bip44.ChangeChainIndex, 2)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(addrs))
-	require.Equal(t, testSkycoinChangeAddresses[:2], addrs)
+	addrsStr = make([]string, 2)
+	for i, a := range addrs {
+		addrsStr[i] = a.String()
+	}
+	require.Equal(t, testSkycoinChangeAddresses[:2], addrsStr)
 }
 
 func TestBip44WalletLock(t *testing.T) {
@@ -279,6 +287,56 @@ func TestBip44WalletUnlock(t *testing.T) {
 	wlt.accounts.packSecrets(ss)
 
 	// compare these two secrets, they should have the same keys and values
+	require.Equal(t, len(originSS), len(ss))
+	for k, v := range originSS {
+		vv, ok := ss[k]
+		require.True(t, ok)
+		require.Equal(t, v, vv)
+	}
+}
+
+func TestBip44WalletNewSerializeDeserialize(t *testing.T) {
+	w, err := NewBip44WalletNew(Bip44WalletCreateOptions{
+		Filename:       "test.wlt",
+		Label:          "test",
+		Seed:           testSeed,
+		SeedPassphrase: testSeedPassphrase,
+		CoinType:       CoinTypeSkycoin,
+	})
+	require.NoError(t, err)
+
+	ai, err := w.NewAccount("account1")
+	require.NoError(t, err)
+
+	_, err = w.NewAddresses(ai, bip44.ExternalChainIndex, 2)
+	require.NoError(t, err)
+
+	_, err = w.NewAddresses(ai, bip44.ChangeChainIndex, 2)
+	require.NoError(t, err)
+
+	b, err := w.Serialize()
+	require.NoError(t, err)
+	t.Log(string(b))
+
+	wlt := Bip44WalletNew{}
+	err = wlt.Deserialize(b)
+	require.NoError(t, err)
+
+	// Confirms that serialize/deserialize do not lose meta data
+	require.Equal(t, len(w.Meta), len(wlt.Meta))
+	for k, v := range wlt.Meta {
+		vv, ok := w.Meta[k]
+		require.Truef(t, ok, "key:%s", k)
+		require.Equal(t, v, vv)
+	}
+
+	// confirms that serialize/deserialize do not lose accounts data
+	require.Equal(t, w.accounts.len(), wlt.accounts.len())
+	originSS := make(Secrets)
+	ss := make(Secrets)
+	w.accounts.packSecrets(originSS)
+	wlt.accounts.packSecrets(ss)
+
 	require.Equal(t, len(originSS), len(ss))
 	for k, v := range originSS {
 		vv, ok := ss[k]

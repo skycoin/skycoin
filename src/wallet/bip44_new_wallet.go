@@ -34,19 +34,19 @@ type Bip44WalletNew struct {
 
 // accountManager is the interface that manages the bip44 wallet accounts.
 type accountManager interface {
-	// New creates a new account, returns the account index, and error, if any
+	// new creates a new account, returns the account index, and error, if any
 	new(opts bip44AccountCreateOptions) (uint32, error)
-	// NewAddresses generates addresses on selected account
+	// newAddresses generates addresses on selected account
 	newAddresses(index, chain, num uint32) ([]cipher.Addresser, error)
-	// Len returns the account number
+	// len returns the account number
 	len() uint32
-	// Clone returns a deep clone accounts manager
+	// clone returns a deep clone accounts manager
 	clone() accountManager
-	// PackSecrets packs secrets
+	// packSecrets packs secrets
 	packSecrets(ss Secrets)
-	// UnpackSecrets unpacks secrets
+	// unpackSecrets unpacks secrets
 	unpackSecrets(ss Secrets) error
-	// Erase erase secrets
+	// erase wipes secrets
 	erase()
 }
 
@@ -108,19 +108,19 @@ func NewBip44WalletNew(opts Bip44WalletCreateOptions) (*Bip44WalletNew, error) {
 
 func bip44MetaValidate(m Meta) error {
 	if fn := m[metaFilename]; fn == "" {
-		return errors.New("filename not set")
+		return errors.New("Filename not set")
 	}
 
 	if tm := m[metaTimestamp]; tm != "" {
 		_, err := strconv.ParseInt(tm, 10, 64)
 		if err != nil {
-			return errors.New("invalid timestamp")
+			return errors.New("Invalid timestamp")
 		}
 	}
 
 	walletType, ok := m[metaType]
 	if !ok {
-		return errors.New("type field not set")
+		return errors.New("Type field not set")
 	}
 
 	if walletType != WalletTypeBip44 {
@@ -128,7 +128,7 @@ func bip44MetaValidate(m Meta) error {
 	}
 
 	if coinType := m[metaCoin]; coinType == "" {
-		return errors.New("coin field not set")
+		return errors.New("Coin field not set")
 	}
 
 	var isEncrypted bool
@@ -137,44 +137,44 @@ func bip44MetaValidate(m Meta) error {
 		var err error
 		isEncrypted, err = strconv.ParseBool(encStr)
 		if err != nil {
-			return errors.New("encrypted field is not a valid bool")
+			return errors.New("Encrypted field is not a valid bool")
 		}
 	}
 
 	if isEncrypted {
 		cryptoType, ok := m[metaCryptoType]
 		if !ok {
-			return errors.New("crypto type field not set")
+			return errors.New("Crypto type field not set")
 		}
 
 		if _, err := getCrypto(CryptoType(cryptoType)); err != nil {
-			return errors.New("unknown crypto type")
+			return errors.New("Unknown crypto type")
 		}
 
 		if s := m[metaSecrets]; s == "" {
-			return errors.New("wallet is encrypted, but secrets field not set")
+			return errors.New("Wallet is encrypted, but secrets field not set")
 		}
 
 		if s := m[metaSeed]; s != "" {
-			return errors.New("seed should not be visible in encrypted wallets")
+			return errors.New("Seed should not be visible in encrypted wallets")
 		}
 	} else {
 		if s := m[metaSecrets]; s != "" {
-			return errors.New("secrets should not be in unencrypted wallets")
+			return errors.New("Secrets should not be in unencrypted wallets")
 		}
 	}
 
 	// bip44 wallet seeds must be a valid bip39 mnemonic
 	if s := m[metaSeed]; s == "" {
-		return errors.New("seed missing in unencrypted bip44 wallet")
+		return errors.New("Seed missing in unencrypted bip44 wallet")
 	} else if err := bip39.ValidateMnemonic(s); err != nil {
 		return err
 	}
 
 	if s := m[metaBip44Coin]; s == "" {
-		return errors.New("bip44Coin missing")
+		return errors.New("Bip44Coin missing")
 	} else if _, err := strconv.ParseUint(s, 10, 32); err != nil {
-		return fmt.Errorf("bip44Coin invalid: %v", err)
+		return fmt.Errorf("Bip44Coin invalid: %v", err)
 	}
 
 	return nil
@@ -201,12 +201,12 @@ func (w *Bip44WalletNew) NewAddresses(account, chain, n uint32) ([]cipher.Addres
 func makeChainPubKeys(a *bip44.Account) (*bip32.PublicKey, *bip32.PublicKey, error) {
 	external, err := a.NewPublicChildKey(0)
 	if err != nil {
-		return nil, nil, fmt.Errorf("create external chain public key failed: %v", err)
+		return nil, nil, fmt.Errorf("Create external chain public key failed: %v", err)
 	}
 
 	change, err := a.NewPublicChildKey(1)
 	if err != nil {
-		return nil, nil, fmt.Errorf("create change chain public key failed: %v", err)
+		return nil, nil, fmt.Errorf("Create change chain public key failed: %v", err)
 	}
 	return external, change, nil
 }
@@ -290,7 +290,7 @@ func (w *Bip44WalletNew) Lock(password []byte) error {
 
 	cryptoType := wlt.Meta.CryptoType()
 	if cryptoType == "" {
-		return errors.New("crypto type field not set")
+		return errors.New("Crypto type field not set")
 	}
 	crypto, err := getCrypto(cryptoType)
 	if err != nil {
@@ -330,12 +330,12 @@ func (w *Bip44WalletNew) Unlock(password []byte) (*Bip44WalletNew, error) {
 
 	sstr := w.Secrets()
 	if sstr == "" {
-		return nil, errors.New("secrets missing from wallet")
+		return nil, errors.New("Secrets missing from wallet")
 	}
 
 	ct := w.CryptoType()
 	if ct == "" {
-		return nil, errors.New("missing crypto type")
+		return nil, errors.New("Missing crypto type")
 	}
 
 	crypto, err := getCrypto(ct)
@@ -380,7 +380,7 @@ func (w Bip44WalletNew) packSecrets(ss Secrets) {
 func (w *Bip44WalletNew) unpackSecrets(ss Secrets) error {
 	seed, ok := ss.get(secretSeed)
 	if !ok {
-		return errors.New("seed does not exist in secrets")
+		return errors.New("Seed does not exist in secrets")
 	}
 	w.Meta.setSeed(seed)
 

@@ -52,6 +52,9 @@ func (d Bip44WalletJSONDecoder) Decode(b []byte) (*Bip44WalletNew, error) {
 	if accountHash != accountsHashFromMeta {
 		return nil, fmt.Errorf("Decode bip44 wallet failed, wallet accounts hash mismatch")
 	}
+
+	// remove the accountHash, it is used for verfiying the wallet decoding
+	delete(rw.Meta, metaAccountsHash)
 	return rw.toWallet()
 }
 
@@ -193,7 +196,7 @@ func chainIndexToString(index uint32) (string, error) {
 	case bip44.ChangeChainIndex:
 		return "change", nil
 	default:
-		return "", fmt.Errorf("invalid bip44 chain index: %d", index)
+		return "", fmt.Errorf("Invalid bip44 chain index: %d", index)
 	}
 }
 
@@ -204,7 +207,7 @@ func stringToChainIndex(s string) (int, error) {
 	case "change":
 		return int(bip44.ChangeChainIndex), nil
 	default:
-		return -1, fmt.Errorf("invalid bip44 chain: %s", s)
+		return -1, fmt.Errorf("Invalid bip44 chain: %s", s)
 	}
 }
 

@@ -259,7 +259,7 @@ func TestBip44AccountsNewAddresses(t *testing.T) {
 			seedPassphrase: testSeedPassphrase,
 			num:            uint32(2),
 			chain:          2,
-			expectErr:      errors.New("invalid chain index: 2"),
+			expectErr:      errors.New("Invalid chain index: 2"),
 		},
 	}
 

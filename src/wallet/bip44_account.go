@@ -79,7 +79,7 @@ func newBip44Account(opts bip44AccountCreateOptions) (*bip44Account, error) {
 
 func (a *bip44Account) newAddresses(chainIndex, num uint32) ([]cipher.Addresser, error) {
 	if a == nil {
-		return nil, errors.New("cannot generate new addresses on nil account")
+		return nil, errors.New("Cannot generate new addresses on nil account")
 	}
 
 	// chain index can only be 0 or 1.
@@ -87,7 +87,7 @@ func (a *bip44Account) newAddresses(chainIndex, num uint32) ([]cipher.Addresser,
 	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
 		return a.Chains[chainIndex].newAddresses(num, a.PrivateKey)
 	default:
-		return nil, fmt.Errorf("invalid chain index: %d", chainIndex)
+		return nil, fmt.Errorf("Invalid chain index: %d", chainIndex)
 	}
 }
 
@@ -120,7 +120,7 @@ func (a *bip44Account) packSecrets(ss Secrets) {
 func (a *bip44Account) unpackSecrets(ss Secrets) error {
 	prvKey, ok := ss.get(secretBip44AccountPrivateKey)
 	if !ok {
-		return errors.New("missing bip44 account private key when unpacking secrets")
+		return errors.New("Missing bip44 account private key when unpacking secrets")
 	}
 
 	key, err := bip32.DeserializeEncodedPrivateKey(prvKey)
@@ -167,21 +167,21 @@ type bip44Chain struct {
 // private key is optional, if not provided, addresses will be generated using the public key.
 func (c *bip44Chain) newAddresses(num uint32, seckey *bip32.PrivateKey) ([]cipher.Addresser, error) {
 	if c == nil {
-		return nil, errors.New("cannot generate new addresses on nil chain")
+		return nil, errors.New("Can not generate new addresses on nil chain")
 	}
 
 	var addrs []cipher.Addresser
 	initLen := uint32(len(c.Entries))
 	_, err := mathutil.AddUint32(initLen, num)
 	if err != nil {
-		return nil, fmt.Errorf("can not create %d more addresses, current addresses number %d, err: %v", num, initLen, err)
+		return nil, fmt.Errorf("Can not create %d more addresses, current addresses number %d, err: %v", num, initLen, err)
 	}
 
 	for i := uint32(0); i < num; i++ {
 		index := initLen + i
 		pk, err := c.PubKey.NewPublicChildKey(index)
 		if err != nil {
-			return nil, fmt.Errorf("bip44 chain generate address with index %d failed, err: %v", index, err)
+			return nil, fmt.Errorf("Bip44 chain generate address with index %d failed, err: %v", index, err)
 		}
 		cpk, err := cipher.NewPubKey(pk.Key)
 		if err != nil {
@@ -244,12 +244,12 @@ func (a bip44Accounts) len() uint32 {
 func (a *bip44Accounts) newAddresses(index, chain, num uint32) ([]cipher.Addresser, error) {
 	accountLen := len(a.accounts)
 	if int(index) >= accountLen {
-		return nil, fmt.Errorf("account index %d out of range", index)
+		return nil, fmt.Errorf("Account index %d out of range", index)
 	}
 
 	account := a.accounts[index]
 	if account == nil {
-		return nil, fmt.Errorf("account of index %d not found", index)
+		return nil, fmt.Errorf("Account of index %d not found", index)
 	}
 
 	return account.newAddresses(chain, num)

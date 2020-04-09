@@ -4,7 +4,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 	"github.com/stretchr/testify/require"
 )
@@ -145,96 +144,145 @@ func TestBip44WalletNew(t *testing.T) {
 			}
 		})
 	}
-
-	v, err := w.MarshalToJSON()
-	require.NoError(t, err)
-	t.Log(string(v))
 }
 
-func makeAccount(t *testing.T, seed string, password string) *bip44.Account {
-	s, err := bip39.NewSeed(seed, password)
+func TestWalletCreateAccount(t *testing.T) {
+	w, err := NewBip44WalletNew(Bip44WalletCreateOptions{
+		Filename:       "test.wlt",
+		Label:          "test",
+		Seed:           testSeed,
+		SeedPassphrase: testSeedPassphrase,
+		CoinType:       CoinTypeSkycoin,
+	})
 	require.NoError(t, err)
 
-	c, err := bip44.NewCoin(s, bip44.CoinTypeSkycoin)
+	ai, err := w.NewAccount("account1")
 	require.NoError(t, err)
-	a, err := c.Account(0)
-	require.NoError(t, err)
-	return a
+	require.Equal(t, uint32(0), ai)
+
+	ai, err = w.NewAccount("account2")
+	require.Equal(t, uint32(1), ai)
+
+	require.Equal(t, uint32(2), w.accounts.len())
 }
 
-func TestMakeChainKeys(t *testing.T) {
-	a := makeAccount(t, testSeed, testSeedPassphrase)
-	p1PubKey, err := a.NewPublicChildKey(0)
-	require.NoError(t, err)
-	p2PubKey, err := a.NewPublicChildKey(1)
+func TestWalletAccountCreateAddresses(t *testing.T) {
+	w, err := NewBip44WalletNew(Bip44WalletCreateOptions{
+		Filename:       "test.wlt",
+		Label:          "test",
+		Seed:           testSeed,
+		SeedPassphrase: testSeedPassphrase,
+		CoinType:       CoinTypeSkycoin,
+	})
 	require.NoError(t, err)
 
-	// confirms that multiple times of calling of makeChainPubKeys will not affect the result
-	for i := 0; i < 10; i++ {
-		pexternalKey, pchangeKey, err := makeChainPubKeys(a)
-		require.NoError(t, err)
+	ai, err := w.NewAccount("account1")
+	require.NoError(t, err)
+	require.Equal(t, uint32(0), ai)
 
-		require.Equal(t, p1PubKey, pexternalKey)
-		require.Equal(t, p2PubKey, pchangeKey)
+	addrs, err := w.NewAddresses(ai, bip44.ExternalChainIndex, 2)
+	require.NoError(t, err)
+	require.Equal(t, 2, len(addrs))
+	require.Equal(t, testSkycoinExternalAddresses[:2], addrs)
+
+	addrs, err = w.NewAddresses(ai, bip44.ChangeChainIndex, 2)
+	require.NoError(t, err)
+	require.Equal(t, 2, len(addrs))
+	require.Equal(t, testSkycoinChangeAddresses[:2], addrs)
+}
+
+func TestBip44WalletLock(t *testing.T) {
+	w, err := NewBip44WalletNew(Bip44WalletCreateOptions{
+		Filename:       "test.wlt",
+		Label:          "test",
+		Seed:           testSeed,
+		SeedPassphrase: testSeedPassphrase,
+		CoinType:       CoinTypeSkycoin,
+	})
+	require.NoError(t, err)
+
+	ai, err := w.NewAccount("account1")
+	require.NoError(t, err)
+
+	_, err = w.NewAddresses(ai, bip44.ExternalChainIndex, 2)
+	require.NoError(t, err)
+
+	_, err = w.NewAddresses(ai, bip44.ChangeChainIndex, 2)
+	require.NoError(t, err)
+
+	err = w.Lock([]byte("123456"))
+	require.NoError(t, err)
+
+	require.Empty(t, w.Seed())
+	require.Empty(t, w.SeedPassphrase())
+	require.NotEmpty(t, w.Secrets())
+	require.True(t, w.IsEncrypted())
+
+	// confirms that no secrets exist in the accounts
+	ss := make(Secrets)
+	w.accounts.packSecrets(ss)
+	require.Equal(t, 4, len(ss))
+	for k, v := range ss {
+		if k == secretBip44AccountPrivateKey {
+			require.Empty(t, v)
+		} else {
+			require.Equal(t, "0000000000000000000000000000000000000000000000000000000000000000", v)
+		}
 	}
 }
 
-func TestNewBip44Account(t *testing.T) {
-	tt := []struct {
-		name        string
-		accountName string
-		index       uint32
-		coinType    bip44.CoinType
-		err         error
-	}{
-		{
-			name:        "index 0, test, skycoin",
-			accountName: "test",
-			index:       0,
-			coinType:    bip44.CoinTypeSkycoin,
-		},
-		{
-			name:        "index 1, test1, skycoin",
-			accountName: "test1",
-			index:       1,
-			coinType:    bip44.CoinTypeSkycoin,
-		},
-		{
-			name:        "index 2, test2, bitcoin",
-			accountName: "test2",
-			index:       2,
-			coinType:    bip44.CoinTypeBitcoin,
-		},
+// - Test wallet unlock
+func TestBip44WalletUnlock(t *testing.T) {
+	w, err := NewBip44WalletNew(Bip44WalletCreateOptions{
+		Filename:       "test.wlt",
+		Label:          "test",
+		Seed:           testSeed,
+		SeedPassphrase: testSeedPassphrase,
+		CoinType:       CoinTypeSkycoin,
+	})
+	require.NoError(t, err)
+
+	ai, err := w.NewAccount("account1")
+	require.NoError(t, err)
+
+	_, err = w.NewAddresses(ai, bip44.ExternalChainIndex, 2)
+	require.NoError(t, err)
+
+	_, err = w.NewAddresses(ai, bip44.ChangeChainIndex, 2)
+	require.NoError(t, err)
+
+	cw := w.clone()
+
+	err = cw.Lock([]byte("123456"))
+	require.NoError(t, err)
+
+	// unlock with wrong password
+	_, err = cw.Unlock([]byte("12345"))
+	require.Equal(t, ErrInvalidPassword, err)
+
+	// unlock with the correct password
+	wlt, err := cw.Unlock([]byte("123456"))
+	require.NoError(t, err)
+
+	// confirms that unlocking wallet won't lose data
+	require.Empty(t, wlt.Secrets())
+	require.False(t, wlt.IsEncrypted())
+	require.Equal(t, w.Seed(), wlt.Seed())
+	require.Equal(t, w.SeedPassphrase(), wlt.SeedPassphrase())
+
+	// pack the origin wallet's secrets
+	originSS := make(Secrets)
+	w.accounts.packSecrets(originSS)
+
+	// pack the unlocked wallet's secrets
+	ss := make(Secrets)
+	wlt.accounts.packSecrets(ss)
+
+	// compare these two secrets, they should have the same keys and values
+	require.Equal(t, len(originSS), len(ss))
+	for k, v := range originSS {
+		vv, ok := ss[k]
+		require.True(t, ok)
+		require.Equal(t, v, vv)
 	}
-
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			a := makeAccount(t, testSeed, testSeedPassphrase)
-			ba, err := newBip44Account(a, tc.index, tc.accountName, tc.coinType)
-			if err != nil {
-				require.Equal(t, tc.err, err)
-				return
-			}
-			require.NoError(t, err)
-			require.Equal(t, tc.accountName, ba.Name)
-			require.Equal(t, tc.index, ba.Index)
-			require.Equal(t, tc.coinType, ba.CoinType)
-			require.Equal(t, 2, len(ba.Chains))
-
-			externalKey, changeKey, err := makeChainPubKeys(a)
-			require.NoError(t, err)
-			require.Equal(t, *externalKey, ba.Chains[0].PubKey)
-			require.Equal(t, *changeKey, ba.Chains[1].PubKey)
-			require.Equal(t, 0, len(ba.Chains[0].Entries))
-			require.Equal(t, 0, len(ba.Chains[1].Entries))
-		})
-	}
-}
-
-func TestBip44ChainNewAddress(t *testing.T) {
-
-}
-
-func TestBip44AccountNewAddress(t *testing.T) {
-
 }

@@ -252,6 +252,15 @@ func TestBip44AccountsNewAddresses(t *testing.T) {
 			chain:          bip44.ExternalChainIndex,
 			expectAddrs:    testBitcoinExternalAddresses[:2],
 		},
+		{
+			name:           "Skycoin, invalid chain",
+			coinType:       CoinTypeBitcoin,
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			num:            uint32(2),
+			chain:          2,
+			expectErr:      errors.New("invalid chain index: 2"),
+		},
 	}
 
 	for _, tc := range tt {
@@ -268,7 +277,7 @@ func TestBip44AccountsNewAddresses(t *testing.T) {
 			require.Equal(t, uint32(0), accountIndex)
 
 			addrs, err := accounts.newAddresses(accountIndex, tc.chain, tc.num)
-			require.NoError(t, err)
+			require.Equal(t, tc.expectErr, err)
 			if err != nil {
 				return
 			}

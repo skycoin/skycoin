@@ -12,6 +12,8 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
 	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
+	"github.com/SkycoinProject/skycoin/src/wallet/meta"
 )
 
 func addressGenCmd() *cobra.Command {
@@ -37,7 +39,7 @@ func addressGenCmd() *cobra.Command {
 				return err
 			}
 
-			coinType, err := wallet.ResolveCoinType(coinName)
+			coinType, err := meta.ResolveCoinType(coinName)
 			if err != nil {
 				return err
 			}
@@ -88,7 +90,7 @@ func addressGenCmd() *cobra.Command {
 				Seed:       seed,
 				Encrypt:    encrypt,
 				Password:   password,
-				CryptoType: wallet.DefaultCryptoType,
+				CryptoType: crypto.DefaultCryptoType,
 				GenerateN:  uint64(numAddresses),
 				Type:       wallet.WalletTypeDeterministic,
 			})

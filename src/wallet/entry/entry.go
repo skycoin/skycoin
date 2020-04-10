@@ -1,4 +1,4 @@
-package wallet
+package entry
 
 import (
 	"encoding/hex"
@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/wallet/secrets"
 )
 
 // Entry represents the wallet entry
@@ -53,14 +54,15 @@ func (we *Entry) VerifyPublic() error {
 // Entries are an array of wallet entries
 type Entries []Entry
 
-func (entries Entries) clone() Entries {
+// Clone make an copy of the entire entries.
+func (entries Entries) Clone() Entries {
 	if len(entries) == 0 {
 		return nil
 	}
 	return append(Entries{}, entries...)
 }
 
-func (entries Entries) has(a cipher.Address) bool {
+func (entries Entries) Has(a cipher.Address) bool {
 	// This doesn't use getEntry() to avoid copying an Entry in the return value,
 	// which may contain a secret key
 	for _, e := range entries {
@@ -71,7 +73,7 @@ func (entries Entries) has(a cipher.Address) bool {
 	return false
 }
 
-func (entries Entries) get(a cipher.Address) (Entry, bool) {
+func (entries Entries) Get(a cipher.Address) (Entry, bool) {
 	for _, e := range entries {
 		if e.SkycoinAddress() == a {
 			return e, true
@@ -80,7 +82,7 @@ func (entries Entries) get(a cipher.Address) (Entry, bool) {
 	return Entry{}, false
 }
 
-func (entries Entries) getSkycoinAddresses() []cipher.Address {
+func (entries Entries) GetSkycoinAddresses() []cipher.Address {
 	addrs := make([]cipher.Address, len(entries))
 	for i, e := range entries {
 		addrs[i] = e.SkycoinAddress()
@@ -88,7 +90,7 @@ func (entries Entries) getSkycoinAddresses() []cipher.Address {
 	return addrs
 }
 
-func (entries Entries) getAddresses() []cipher.Addresser {
+func (entries Entries) GetAddresses() []cipher.Addresser {
 	addrs := make([]cipher.Addresser, len(entries))
 	for i, e := range entries {
 		addrs[i] = e.Address
@@ -96,8 +98,8 @@ func (entries Entries) getAddresses() []cipher.Addresser {
 	return addrs
 }
 
-// eraseEntries wipes private keys in entries
-func (entries Entries) erase() {
+// Erase wipes private keys in entries
+func (entries Entries) Erase() {
 	for i := range entries {
 		for j := range entries[i].Secret {
 			entries[i].Secret[j] = 0
@@ -106,10 +108,10 @@ func (entries Entries) erase() {
 	}
 }
 
-// unpackSecretKeys for each entry, look for the secret key in the Secrets dict, keyed by address
-func (entries Entries) unpackSecretKeys(ss Secrets) error {
+// UnpackSecretKeys for each entry, look for the secret key in the Secrets dict, keyed by address
+func (entries Entries) UnpackSecretKeys(ss secrets.Secrets) error {
 	for i, e := range entries {
-		sstr, ok := ss.get(e.Address.String())
+		sstr, ok := ss.Get(e.Address.String())
 		if !ok {
 			return fmt.Errorf("secret of address %s doesn't exist in secrets", e.Address)
 		}

@@ -6,6 +6,8 @@ import (
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
+	"github.com/SkycoinProject/skycoin/src/wallet/entry"
+	"github.com/SkycoinProject/skycoin/src/wallet/meta"
 )
 
 // ReadableEntry wallet entry with json tags
@@ -18,7 +20,7 @@ type ReadableEntry struct {
 }
 
 // NewReadableEntry creates readable wallet entry
-func NewReadableEntry(coinType CoinType, walletType string, e Entry) ReadableEntry {
+func NewReadableEntry(coinType meta.CoinType, walletType string, e entry.Entry) ReadableEntry {
 	re := ReadableEntry{}
 	if !e.Address.Null() {
 		re.Address = e.Address.String()
@@ -30,9 +32,9 @@ func NewReadableEntry(coinType CoinType, walletType string, e Entry) ReadableEnt
 
 	if !e.Secret.Null() {
 		switch coinType {
-		case CoinTypeSkycoin:
+		case meta.CoinTypeSkycoin:
 			re.Secret = e.Secret.Hex()
-		case CoinTypeBitcoin:
+		case meta.CoinTypeBitcoin:
 			re.Secret = cipher.BitcoinWalletImportFormatFromSeckey(e.Secret)
 		default:
 			logger.Panicf("Invalid coin type %q", coinType)
@@ -66,7 +68,7 @@ func NewReadableEntry(coinType CoinType, walletType string, e Entry) ReadableEnt
 // ReadableEntries array of ReadableEntry
 type ReadableEntries []ReadableEntry
 
-func newReadableEntries(entries Entries, coinType CoinType, walletType string) ReadableEntries {
+func newReadableEntries(entries entry.Entries, coinType meta.CoinType, walletType string) ReadableEntries {
 	re := make(ReadableEntries, len(entries))
 	for i, e := range entries {
 		re[i] = NewReadableEntry(coinType, walletType, e)
@@ -81,12 +83,12 @@ func (res ReadableEntries) GetEntries() ReadableEntries {
 
 // toWalletEntries convert readable entries to entries
 // converts base on the wallet version.
-func (res ReadableEntries) toWalletEntries(coinType CoinType, walletType string, isEncrypted bool) ([]Entry, error) {
-	entries := make([]Entry, len(res))
+func (res ReadableEntries) toWalletEntries(coinType meta.CoinType, walletType string, isEncrypted bool) ([]entry.Entry, error) {
+	entries := make([]entry.Entry, len(res))
 	for i, re := range res {
 		e, err := newEntryFromReadable(coinType, walletType, &re)
 		if err != nil {
-			return []Entry{}, err
+			return []entry.Entry{}, err
 		}
 
 		// Verify the wallet if it's not encrypted
@@ -102,14 +104,14 @@ func (res ReadableEntries) toWalletEntries(coinType CoinType, walletType string,
 }
 
 // newEntryFromReadable creates WalletEntry base one ReadableWalletEntry
-func newEntryFromReadable(coinType CoinType, walletType string, re *ReadableEntry) (*Entry, error) {
+func newEntryFromReadable(coinType meta.CoinType, walletType string, re *ReadableEntry) (*entry.Entry, error) {
 	var a cipher.Addresser
 	var err error
 
 	switch coinType {
-	case CoinTypeSkycoin:
+	case meta.CoinTypeSkycoin:
 		a, err = cipher.DecodeBase58Address(re.Address)
-	case CoinTypeBitcoin:
+	case meta.CoinTypeBitcoin:
 		a, err = cipher.DecodeBase58BitcoinAddress(re.Address)
 	default:
 		logger.Panicf("Invalid coin type %q", coinType)
@@ -128,9 +130,9 @@ func newEntryFromReadable(coinType CoinType, walletType string, re *ReadableEntr
 	var secret cipher.SecKey
 	if re.Secret != "" {
 		switch coinType {
-		case CoinTypeSkycoin:
+		case meta.CoinTypeSkycoin:
 			secret, err = cipher.SecKeyFromHex(re.Secret)
-		case CoinTypeBitcoin:
+		case meta.CoinTypeBitcoin:
 			secret, err = cipher.SecKeyFromBitcoinWalletImportFormat(re.Secret)
 		default:
 			logger.Panicf("Invalid coin type %q", coinType)
@@ -180,7 +182,7 @@ func newEntryFromReadable(coinType CoinType, walletType string, re *ReadableEntr
 		}
 	}
 
-	return &Entry{
+	return &entry.Entry{
 		Address:     a,
 		Public:      p,
 		Secret:      secret,

@@ -1,4 +1,4 @@
-package wallet
+package bip44wallet
 
 import (
 	"errors"
@@ -9,15 +9,22 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 	"github.com/SkycoinProject/skycoin/src/util/mathutil"
+	"github.com/SkycoinProject/skycoin/src/wallet/entry"
+	"github.com/SkycoinProject/skycoin/src/wallet/meta"
+	"github.com/SkycoinProject/skycoin/src/wallet/secrets"
+)
+
+const (
+	secretBip44AccountPrivateKey = "bip44AccountPrivateKey"
 )
 
 // bip44Account records the bip44 wallet account info
 type bip44Account struct {
 	bip44.Account
-	Name     string       // Account name
-	Index    uint32       // Account index
-	CoinType CoinType     // Account coin type, determins the way to generate addresses
-	Chains   []bip44Chain // Chains, external chain with index value of 0, and internal(change) chain with index value of 1.
+	Name     string        // Account name
+	Index    uint32        // Account index
+	CoinType meta.CoinType // Account coin type, determins the way to generate addresses
+	Chains   []bip44Chain  // Chains, external chain with index value of 0, and internal(change) chain with index value of 1.
 }
 
 type bip44AccountCreateOptions struct {
@@ -25,7 +32,7 @@ type bip44AccountCreateOptions struct {
 	index          uint32
 	seed           string
 	seedPassphrase string
-	coinType       CoinType
+	coinType       meta.CoinType
 }
 
 func newBip44Account(opts bip44AccountCreateOptions) (*bip44Account, error) {
@@ -106,10 +113,10 @@ func (a *bip44Account) erase() {
 	}
 }
 
-// packSecrets packs the secrets of account into Secrets
-func (a *bip44Account) packSecrets(ss Secrets) {
+// packSecrets packs the secrets of secrets into Secrets
+func (a *bip44Account) packSecrets(ss secrets.Secrets) {
 	// packs the account private key.
-	ss.set(secretBip44AccountPrivateKey, a.Account.String())
+	ss.Set(secretBip44AccountPrivateKey, a.Account.String())
 
 	// packs the secrets in chains
 	for _, c := range a.Chains {
@@ -117,8 +124,8 @@ func (a *bip44Account) packSecrets(ss Secrets) {
 	}
 }
 
-func (a *bip44Account) unpackSecrets(ss Secrets) error {
-	prvKey, ok := ss.get(secretBip44AccountPrivateKey)
+func (a *bip44Account) unpackSecrets(ss secrets.Secrets) error {
+	prvKey, ok := ss.Get(secretBip44AccountPrivateKey)
 	if !ok {
 		return errors.New("Missing bip44 account private key when unpacking secrets")
 	}
@@ -158,7 +165,7 @@ func (a bip44Account) Clone() bip44Account {
 // bip44Chain bip44 address chain
 type bip44Chain struct {
 	PubKey            bip32.PublicKey
-	Entries           Entries
+	Entries           entry.Entries
 	ChainIndex        uint32
 	addressFromPubKey func(key cipher.PubKey) cipher.Addresser
 }
@@ -189,7 +196,7 @@ func (c *bip44Chain) newAddresses(num uint32, seckey *bip32.PrivateKey) ([]ciphe
 		}
 
 		addr := c.addressFromPubKey(cpk)
-		e := Entry{
+		e := entry.Entry{
 			Address:     addr,
 			Public:      cpk,
 			ChildNumber: index,
@@ -209,18 +216,18 @@ func (c *bip44Chain) newAddresses(num uint32, seckey *bip32.PrivateKey) ([]ciphe
 	return addrs, nil
 }
 
-func (c *bip44Chain) packSecrets(ss Secrets) {
+func (c *bip44Chain) packSecrets(ss secrets.Secrets) {
 	for _, e := range c.Entries {
-		ss.set(e.Address.String(), e.Secret.Hex())
+		ss.Set(e.Address.String(), e.Secret.Hex())
 	}
 }
 
-func (c *bip44Chain) unpackSecrets(ss Secrets) error {
-	return c.Entries.unpackSecretKeys(ss)
+func (c *bip44Chain) unpackSecrets(ss secrets.Secrets) error {
+	return c.Entries.UnpackSecretKeys(ss)
 }
 
 func (c *bip44Chain) erase() {
-	c.Entries.erase()
+	c.Entries.Erase()
 }
 
 func (c bip44Chain) clone() bip44Chain {
@@ -228,7 +235,7 @@ func (c bip44Chain) clone() bip44Chain {
 		PubKey:            c.PubKey.Clone(),
 		ChainIndex:        c.ChainIndex,
 		addressFromPubKey: c.addressFromPubKey,
-		Entries:           c.Entries.clone(),
+		Entries:           c.Entries.Clone(),
 	}
 }
 
@@ -296,7 +303,7 @@ func (a *bip44Accounts) clone() accountManager {
 	return nas
 }
 
-func (a *bip44Accounts) packSecrets(ss Secrets) {
+func (a *bip44Accounts) packSecrets(ss secrets.Secrets) {
 	for _, account := range a.accounts {
 		for _, c := range account.Chains {
 			c.packSecrets(ss)
@@ -304,10 +311,10 @@ func (a *bip44Accounts) packSecrets(ss Secrets) {
 	}
 }
 
-func (a *bip44Accounts) unpackSecrets(ss Secrets) error {
+func (a *bip44Accounts) unpackSecrets(ss secrets.Secrets) error {
 	for i := range a.accounts {
 		for j := range a.accounts[i].Chains {
-			if err := a.accounts[i].Chains[j].Entries.unpackSecretKeys(ss); err != nil {
+			if err := a.accounts[i].Chains[j].Entries.UnpackSecretKeys(ss); err != nil {
 				return err
 			}
 		}

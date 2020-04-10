@@ -1,26 +1,27 @@
-package wallet
+package bip44wallet
 
 import (
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
+	"github.com/SkycoinProject/skycoin/src/wallet/meta"
 )
 
 var registeredCoinAdapters = initCoinAdapters()
 
 type coinAdapters struct {
-	adapters map[CoinType]coinAdapter
+	adapters map[meta.CoinType]coinAdapter
 }
 
 func initCoinAdapters() coinAdapters {
 	return coinAdapters{
-		adapters: map[CoinType]coinAdapter{
-			CoinTypeSkycoin: skycoinAdapter{},
-			CoinTypeBitcoin: bitcoinAdapter{},
+		adapters: map[meta.CoinType]coinAdapter{
+			meta.CoinTypeSkycoin: skycoinAdapter{},
+			meta.CoinTypeBitcoin: bitcoinAdapter{},
 		},
 	}
 }
 
-func (a coinAdapters) get(coinType CoinType) coinAdapter {
+func (a coinAdapters) get(coinType meta.CoinType) coinAdapter {
 	adpt, ok := a.adapters[coinType]
 	if !ok {
 		// if no adapter found, returns the default skycoin adapter
@@ -30,11 +31,11 @@ func (a coinAdapters) get(coinType CoinType) coinAdapter {
 }
 
 // RegisterCoinAdapter registers a new adapter
-func RegisterCoinAdapter(coinType CoinType, ca coinAdapter) {
+func RegisterCoinAdapter(coinType meta.CoinType, ca coinAdapter) {
 	//
 }
 
-func resolveCoinAdapter(coinType CoinType) coinAdapter {
+func resolveCoinAdapter(coinType meta.CoinType) coinAdapter {
 	return registeredCoinAdapters.get(coinType)
 }
 

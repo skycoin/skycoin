@@ -21,6 +21,9 @@ import (
 	"github.com/SkycoinProject/skycoin/src/visor/blockdb"
 	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
+	"github.com/SkycoinProject/skycoin/src/wallet/entry"
+	"github.com/SkycoinProject/skycoin/src/wallet/meta"
 )
 
 func TestCreateTransaction(t *testing.T) {
@@ -344,13 +347,13 @@ func prepareWltDir() string {
 	return dir
 }
 
-func makeEntries(n int) ([]wallet.Entry, []cipher.Address) {
+func makeEntries(n int) ([]entry.Entry, []cipher.Address) {
 	addrs := make([]cipher.Address, n)
-	entries := make([]wallet.Entry, n)
+	entries := make([]entry.Entry, n)
 	for i := range addrs {
 		p, s := cipher.GenerateKeyPair()
 		a := cipher.AddressFromPubKey(p)
-		entries[i] = wallet.Entry{
+		entries[i] = entry.Entry{
 			Address: a,
 			Public:  p,
 			Secret:  s,
@@ -881,7 +884,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 
 			ws, err := wallet.NewService(wallet.Config{
 				EnableWalletAPI: true,
-				CryptoType:      wallet.CryptoTypeScryptChacha20poly1305Insecure,
+				CryptoType:      crypto.CryptoTypeScryptChacha20poly1305Insecure,
 				WalletDir:       prepareWltDir(),
 			})
 			require.NoError(t, err)
@@ -893,10 +896,10 @@ func TestWalletCreateTransaction(t *testing.T) {
 			}
 
 			_, err = ws.CreateWallet(tc.walletID, wallet.Options{
-				Coin:       wallet.CoinTypeSkycoin,
+				Coin:       meta.CoinTypeSkycoin,
 				Encrypt:    len(tc.password) != 0,
 				Password:   tc.password,
-				CryptoType: wallet.CryptoTypeScryptChacha20poly1305Insecure,
+				CryptoType: crypto.CryptoTypeScryptChacha20poly1305Insecure,
 				Type:       tc.walletType,
 				GenerateN:  generateN,
 				Seed:       tc.seed,

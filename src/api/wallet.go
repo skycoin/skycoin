@@ -4,6 +4,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -53,7 +54,10 @@ func NewWalletResponse(w wallet.Wallet) (*WalletResponse, error) {
 
 	switch w.Type() {
 	case wallet.WalletTypeBip44:
-		bip44Coin := w.Bip44Coin()
+		bip44Coin, ok := w.Bip44Coin()
+		if !ok {
+			return nil, errors.New("Wallet has no Bip44Coin meta data")
+		}
 		wr.Meta.Bip44Coin = &bip44Coin
 	case wallet.WalletTypeXPub:
 		wr.Meta.XPub = w.XPub()

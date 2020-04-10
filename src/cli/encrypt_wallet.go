@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
 )
 
 func encryptWalletCmd() *cobra.Command {
@@ -23,7 +24,7 @@ func encryptWalletCmd() *cobra.Command {
 		SilenceUsage: true,
 		RunE: func(c *cobra.Command, args []string) error {
 			w := args[0]
-			cryptoType, err := wallet.CryptoTypeFromString(c.Flag("crypto-type").Value.String())
+			cryptoType, err := crypto.CryptoTypeFromString(c.Flag("crypto-type").Value.String())
 			if err != nil {
 				printHelp(c)
 				return err
@@ -50,7 +51,7 @@ func encryptWalletCmd() *cobra.Command {
 	return encryptWalletCmd
 }
 
-func encryptWallet(walletFile string, pr PasswordReader, cryptoType wallet.CryptoType) (wallet.Wallet, error) {
+func encryptWallet(walletFile string, pr PasswordReader, cryptoType crypto.CryptoType) (wallet.Wallet, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return nil, WalletLoadError{err}

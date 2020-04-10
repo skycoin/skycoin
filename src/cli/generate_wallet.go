@@ -14,6 +14,8 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 	secp256k1 "github.com/SkycoinProject/skycoin/src/cipher/secp256k1-go"
 	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
+	"github.com/SkycoinProject/skycoin/src/wallet/meta"
 )
 
 const (
@@ -49,7 +51,7 @@ func walletCreateCmd() *cobra.Command {
 	walletCreateCmd.Flags().StringP("label", "l", "", "Label used to identify your wallet.")
 	walletCreateCmd.Flags().StringP("type", "t", wallet.WalletTypeDeterministic, "Wallet type. Types are \"collection\", \"deterministic\", \"bip44\" or \"xpub\"")
 	walletCreateCmd.Flags().BoolP("encrypt", "e", false, "Create encrypted wallet.")
-	walletCreateCmd.Flags().StringP("crypto-type", "x", string(wallet.DefaultCryptoType), "The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor")
+	walletCreateCmd.Flags().StringP("crypto-type", "x", string(crypto.DefaultCryptoType), "The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor")
 	walletCreateCmd.Flags().StringP("password", "p", "", "Wallet password")
 	walletCreateCmd.Flags().StringP("xpub", "", "", "xpub key for \"xpub\" type wallets")
 
@@ -116,7 +118,7 @@ func generateWalletHandler(c *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	coin, err := wallet.ResolveCoinType(coinStr)
+	coin, err := meta.ResolveCoinType(coinStr)
 	if err != nil {
 		return err
 	}
@@ -176,7 +178,7 @@ func generateWalletHandler(c *cobra.Command, args []string) error {
 		return err
 	}
 
-	cryptoType, err := wallet.CryptoTypeFromString(c.Flag("crypto-type").Value.String())
+	cryptoType, err := crypto.CryptoTypeFromString(c.Flag("crypto-type").Value.String())
 	if err != nil {
 		return err
 	}

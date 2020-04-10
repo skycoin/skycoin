@@ -36,6 +36,7 @@ import (
 	"github.com/SkycoinProject/skycoin/src/util/droplet"
 	wh "github.com/SkycoinProject/skycoin/src/util/http"
 	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
 )
 
 const (
@@ -60,7 +61,7 @@ var (
 	liveTxFull     = flag.Bool("live-tx-full", false, "run live transaction test against full blockchain")
 	testLiveWallet = flag.Bool("test-live-wallet", false, "run live wallet tests, requires wallet envvars set")
 
-	cryptoTypes = []wallet.CryptoType{wallet.CryptoTypeScryptChacha20poly1305, wallet.CryptoTypeSha256Xor}
+	cryptoTypes = []crypto.CryptoType{crypto.CryptoTypeScryptChacha20poly1305, crypto.CryptoTypeSha256Xor}
 
 	validNameRegexp     = regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
 	stripCoverageReport = regexp.MustCompile(`PASS\ncoverage: [\d\.]+% of statements in github.com/SkycoinProject/skycoin/\.\.\.\n$`)

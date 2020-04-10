@@ -33,6 +33,7 @@ import (
 	"github.com/SkycoinProject/skycoin/src/visor"
 	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
 )
 
 var (
@@ -369,7 +370,7 @@ func (c *Coin) ConfigureWallet() wallet.Config {
 	_, wc.EnableSeedAPI = c.config.Node.enabledAPISets[api.EndpointsInsecureWalletSeed]
 
 	// Initialize wallet default crypto type
-	cryptoType, err := wallet.CryptoTypeFromString(c.config.Node.WalletCryptoType)
+	cryptoType, err := crypto.CryptoTypeFromString(c.config.Node.WalletCryptoType)
 	if err != nil {
 		log.Panic(err)
 	}

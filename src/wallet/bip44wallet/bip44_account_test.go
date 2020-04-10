@@ -1,4 +1,4 @@
-package wallet
+package bip44wallet
 
 import (
 	"errors"
@@ -6,6 +6,8 @@ import (
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
+	"github.com/SkycoinProject/skycoin/src/wallet/meta"
+	"github.com/SkycoinProject/skycoin/src/wallet/secrets"
 	"github.com/stretchr/testify/require"
 )
 
@@ -53,7 +55,7 @@ func TestNewBip44Account(t *testing.T) {
 		index          int
 		seed           string
 		seedPassphrase string
-		coinType       CoinType
+		coinType       meta.CoinType
 		err            error
 	}{
 		{
@@ -62,14 +64,14 @@ func TestNewBip44Account(t *testing.T) {
 			index:          0,
 			seed:           testSeed,
 			seedPassphrase: testSeedPassphrase,
-			coinType:       CoinTypeSkycoin,
+			coinType:       meta.CoinTypeSkycoin,
 		},
 		{
 			name:        "index 0, skycoin, without seed passphrase",
 			accountName: "test",
 			index:       0,
 			seed:        testSeed,
-			coinType:    CoinTypeSkycoin,
+			coinType:    meta.CoinTypeSkycoin,
 		},
 		{
 			name:           "index 1, skycoin, with seed passphrase",
@@ -77,14 +79,14 @@ func TestNewBip44Account(t *testing.T) {
 			index:          1,
 			seed:           testSeed,
 			seedPassphrase: testSeedPassphrase,
-			coinType:       CoinTypeSkycoin,
+			coinType:       meta.CoinTypeSkycoin,
 		},
 		{
 			name:        "index 1, skycoin, without seed passphrase",
 			accountName: "test",
 			index:       1,
 			seed:        testSeed,
-			coinType:    CoinTypeSkycoin,
+			coinType:    meta.CoinTypeSkycoin,
 		},
 		{
 			name:           "index 2, bitcoin, with seed passphrase",
@@ -92,35 +94,35 @@ func TestNewBip44Account(t *testing.T) {
 			index:          2,
 			seed:           testSeed,
 			seedPassphrase: testSeedPassphrase,
-			coinType:       CoinTypeBitcoin,
+			coinType:       meta.CoinTypeBitcoin,
 		},
 		{
 			name:        "index 2, bitcoin, without seed passphrase",
 			accountName: "test",
 			index:       2,
 			seed:        testSeed,
-			coinType:    CoinTypeBitcoin,
+			coinType:    meta.CoinTypeBitcoin,
 		},
 		{
 			name:        "index 0x80000000 -1, skycoin, without seed passphrase",
 			accountName: "test",
 			index:       0x80000000 - 1,
 			seed:        testSeed,
-			coinType:    CoinTypeSkycoin,
+			coinType:    meta.CoinTypeSkycoin,
 		},
 		{
 			name:        "index 0x80000000 -1, bitcoin, without seed passphrase",
 			accountName: "test",
 			index:       0x80000000 - 1,
 			seed:        testSeed,
-			coinType:    CoinTypeBitcoin,
+			coinType:    meta.CoinTypeBitcoin,
 		},
 		{
 			name:        "index 0x80000000, skycoin, without seed passphrase",
 			accountName: "test",
 			index:       0x80000000,
 			seed:        testSeed,
-			coinType:    CoinTypeSkycoin,
+			coinType:    meta.CoinTypeSkycoin,
 			err:         errors.New("bip44 account index must be < 0x80000000"),
 		},
 		{
@@ -128,7 +130,7 @@ func TestNewBip44Account(t *testing.T) {
 			accountName: "test",
 			index:       0x80000000,
 			seed:        testSeed,
-			coinType:    CoinTypeBitcoin,
+			coinType:    meta.CoinTypeBitcoin,
 			err:         errors.New("bip44 account index must be < 0x80000000"),
 		},
 		{
@@ -136,7 +138,7 @@ func TestNewBip44Account(t *testing.T) {
 			accountName: "test",
 			index:       -1,
 			seed:        testSeed,
-			coinType:    CoinTypeSkycoin,
+			coinType:    meta.CoinTypeSkycoin,
 			err:         errors.New("bip44 account index must be < 0x80000000"),
 		},
 		{
@@ -144,7 +146,7 @@ func TestNewBip44Account(t *testing.T) {
 			accountName: "test",
 			index:       0,
 			seed:        "abc def ghe a",
-			coinType:    CoinTypeSkycoin,
+			coinType:    meta.CoinTypeSkycoin,
 			err:         errors.New("Mnemonic must have 12, 15, 18, 21 or 24 words"),
 		},
 	}
@@ -181,7 +183,7 @@ func TestNewBip44Account(t *testing.T) {
 func TestBip44AccountsNewAddresses(t *testing.T) {
 	tt := []struct {
 		name           string
-		coinType       CoinType
+		coinType       meta.CoinType
 		seed           string
 		seedPassphrase string
 		num            uint32
@@ -191,7 +193,7 @@ func TestBip44AccountsNewAddresses(t *testing.T) {
 	}{
 		{
 			name:           "skycoin, external chain, 1 address",
-			coinType:       CoinTypeSkycoin,
+			coinType:       meta.CoinTypeSkycoin,
 			seed:           testSeed,
 			seedPassphrase: testSeedPassphrase,
 			num:            uint32(1),
@@ -200,7 +202,7 @@ func TestBip44AccountsNewAddresses(t *testing.T) {
 		},
 		{
 			name:           "skycoin, change chain, 1 address",
-			coinType:       CoinTypeSkycoin,
+			coinType:       meta.CoinTypeSkycoin,
 			seed:           testSeed,
 			seedPassphrase: testSeedPassphrase,
 			num:            uint32(1),
@@ -209,7 +211,7 @@ func TestBip44AccountsNewAddresses(t *testing.T) {
 		},
 		{
 			name:           "skycoin, external chain, 2 addresses",
-			coinType:       CoinTypeSkycoin,
+			coinType:       meta.CoinTypeSkycoin,
 			seed:           testSeed,
 			seedPassphrase: testSeedPassphrase,
 			num:            uint32(2),
@@ -218,7 +220,7 @@ func TestBip44AccountsNewAddresses(t *testing.T) {
 		},
 		{
 			name:           "skycoin, change chain, 2 addresses",
-			coinType:       CoinTypeSkycoin,
+			coinType:       meta.CoinTypeSkycoin,
 			seed:           testSeed,
 			seedPassphrase: testSeedPassphrase,
 			num:            uint32(2),
@@ -227,7 +229,7 @@ func TestBip44AccountsNewAddresses(t *testing.T) {
 		},
 		{
 			name:           "skycoin, external chain, 2 addresses",
-			coinType:       CoinTypeSkycoin,
+			coinType:       meta.CoinTypeSkycoin,
 			seed:           testSeed,
 			seedPassphrase: testSeedPassphrase,
 			num:            uint32(2),
@@ -236,7 +238,7 @@ func TestBip44AccountsNewAddresses(t *testing.T) {
 		},
 		{
 			name:           "Bitcoin, change chain, 2 addresses",
-			coinType:       CoinTypeBitcoin,
+			coinType:       meta.CoinTypeBitcoin,
 			seed:           testSeed,
 			seedPassphrase: testSeedPassphrase,
 			num:            uint32(2),
@@ -245,7 +247,7 @@ func TestBip44AccountsNewAddresses(t *testing.T) {
 		},
 		{
 			name:           "Bitcoin, external chain, 2 addresses",
-			coinType:       CoinTypeBitcoin,
+			coinType:       meta.CoinTypeBitcoin,
 			seed:           testSeed,
 			seedPassphrase: testSeedPassphrase,
 			num:            uint32(2),
@@ -254,7 +256,7 @@ func TestBip44AccountsNewAddresses(t *testing.T) {
 		},
 		{
 			name:           "Skycoin, invalid chain",
-			coinType:       CoinTypeBitcoin,
+			coinType:       meta.CoinTypeBitcoin,
 			seed:           testSeed,
 			seedPassphrase: testSeedPassphrase,
 			num:            uint32(2),
@@ -285,10 +287,10 @@ func TestBip44AccountsNewAddresses(t *testing.T) {
 			require.Equal(t, tc.num, uint32(len(addrs)))
 			for i, addr := range addrs {
 				switch tc.coinType {
-				case CoinTypeSkycoin:
+				case meta.CoinTypeSkycoin:
 					_, err := cipher.DecodeBase58Address(addr.String())
 					require.NoError(t, err)
-				case CoinTypeBitcoin:
+				case meta.CoinTypeBitcoin:
 					_, err := cipher.DecodeBase58BitcoinAddress(addr.String())
 					require.NoError(t, err)
 				}
@@ -327,7 +329,7 @@ func TestBip44AccountsClone(t *testing.T) {
 	accounts := bip44Accounts{}
 	accountIndex, err := accounts.new(bip44AccountCreateOptions{
 		name:           "Test",
-		coinType:       CoinTypeSkycoin,
+		coinType:       meta.CoinTypeSkycoin,
 		seed:           testSeed,
 		seedPassphrase: testSeedPassphrase,
 	})
@@ -357,7 +359,7 @@ func TestBip44AccountErase(t *testing.T) {
 	// create a bip44 account
 	a, err := newBip44Account(bip44AccountCreateOptions{
 		name:           "Test",
-		coinType:       CoinTypeSkycoin,
+		coinType:       meta.CoinTypeSkycoin,
 		seed:           testSeed,
 		seedPassphrase: testSeedPassphrase,
 	})
@@ -399,7 +401,7 @@ func TestBip44AccountPackSecrets(t *testing.T) {
 	// create a bip44 account
 	a, err := newBip44Account(bip44AccountCreateOptions{
 		name:           "Test",
-		coinType:       CoinTypeSkycoin,
+		coinType:       meta.CoinTypeSkycoin,
 		seed:           testSeed,
 		seedPassphrase: testSeedPassphrase,
 	})
@@ -410,19 +412,19 @@ func TestBip44AccountPackSecrets(t *testing.T) {
 	_, err = a.newAddresses(bip44.ChangeChainIndex, 5)
 	require.NoError(t, err)
 
-	ss := make(Secrets)
+	ss := make(secrets.Secrets)
 	a.packSecrets(ss)
 
 	// 11 = 1 account private key + 5 external chain secrets + 5 change chain secrets
 	require.Equal(t, 11, len(ss))
-	sk, ok := ss.get(secretBip44AccountPrivateKey)
+	sk, ok := ss.Get(secretBip44AccountPrivateKey)
 	require.True(t, ok)
 
 	// Confirms that the Secrets contains account private key
 	require.Equal(t, a.Account.String(), sk)
 	for _, c := range a.Chains {
 		for _, e := range c.Entries {
-			s, ok := ss.get(e.Address.String())
+			s, ok := ss.Get(e.Address.String())
 			require.True(t, ok)
 			require.Equal(t, e.Secret.Hex(), s)
 		}
@@ -433,7 +435,7 @@ func TestBip44AccountUnpackSecrets(t *testing.T) {
 	// create a bip44 account
 	a, err := newBip44Account(bip44AccountCreateOptions{
 		name:           "Test",
-		coinType:       CoinTypeSkycoin,
+		coinType:       meta.CoinTypeSkycoin,
 		seed:           testSeed,
 		seedPassphrase: testSeedPassphrase,
 	})
@@ -443,7 +445,7 @@ func TestBip44AccountUnpackSecrets(t *testing.T) {
 	require.NoError(t, err)
 	_, err = a.newAddresses(bip44.ChangeChainIndex, 5)
 	require.NoError(t, err)
-	ss := make(Secrets)
+	ss := make(secrets.Secrets)
 	a.packSecrets(ss)
 
 	ca := a.Clone()

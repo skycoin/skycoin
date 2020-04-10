@@ -17,6 +17,7 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 	"github.com/SkycoinProject/skycoin/src/testutil"
 	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
 )
 
 func skipWalletIfLive(t *testing.T) bool {
@@ -867,7 +868,7 @@ func TestRecoverWallet(t *testing.T) {
 			})
 			require.NoError(t, err)
 			require.True(t, w3.Meta.Encrypted)
-			require.Equal(t, wallet.CryptoTypeScryptChacha20poly1305, w3.Meta.CryptoType)
+			require.Equal(t, crypto.CryptoTypeScryptChacha20poly1305, w3.Meta.CryptoType)
 			checkWalletOnDisk(w3)
 			w3.Meta.Encrypted = w.Meta.Encrypted
 			w3.Meta.CryptoType = w.Meta.CryptoType

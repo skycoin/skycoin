@@ -17,9 +17,14 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 	"github.com/SkycoinProject/skycoin/src/util/file"
 	"github.com/SkycoinProject/skycoin/src/util/logging"
+	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
+	"github.com/SkycoinProject/skycoin/src/wallet/entry"
+	"github.com/SkycoinProject/skycoin/src/wallet/meta"
+	"github.com/SkycoinProject/skycoin/src/wallet/secrets"
 )
 
 // Error wraps wallet-related errors.
@@ -112,31 +117,6 @@ const (
 	WalletTypeXPub = "xpub"
 )
 
-// ResolveCoinType normalizes a coin type string to a CoinType constant
-func ResolveCoinType(s string) (CoinType, error) {
-	switch strings.ToLower(s) {
-	case "sky", "skycoin":
-		return CoinTypeSkycoin, nil
-	case "btc", "bitcoin":
-		return CoinTypeBitcoin, nil
-	default:
-		return CoinType(""), ErrInvalidCoinType
-	}
-}
-
-// IsValidWalletType returns true if a wallet type is recognized
-func IsValidWalletType(t string) bool {
-	switch t {
-	case WalletTypeDeterministic,
-		WalletTypeCollection,
-		WalletTypeBip44,
-		WalletTypeXPub:
-		return true
-	default:
-		return false
-	}
-}
-
 // CoinType represents the wallet coin type, which refers to the pubkey2addr method used
 type CoinType string
 
@@ -150,18 +130,18 @@ func NewWalletFilename() string {
 
 // Options options that could be used when creating a wallet
 type Options struct {
-	Type           string          // wallet type: deterministic, collection. Refers to which key generation mechanism is used.
-	Coin           CoinType        // coin type: skycoin, bitcoin, etc. Refers to which pubkey2addr method is used.
-	Bip44Coin      *bip44.CoinType // bip44 path coin type
-	Label          string          // wallet label
-	Seed           string          // wallet seed
-	SeedPassphrase string          // wallet seed passphrase (bip44 wallets only)
-	Encrypt        bool            // whether the wallet need to be encrypted.
-	Password       []byte          // password that would be used for encryption, and would only be used when 'Encrypt' is true.
-	CryptoType     CryptoType      // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
-	ScanN          uint64          // number of addresses that're going to be scanned for a balance. The highest address with a balance will be used.
-	GenerateN      uint64          // number of addresses to generate, regardless of balance
-	XPub           string          // xpub key (xpub wallets only)
+	Type           string            // wallet type: deterministic, collection. Refers to which key generation mechanism is used.
+	Coin           meta.CoinType     // coin type: skycoin, bitcoin, etc. Refers to which pubkey2addr method is used.
+	Bip44Coin      *bip44.CoinType   // bip44 path coin type
+	Label          string            // wallet label
+	Seed           string            // wallet seed
+	SeedPassphrase string            // wallet seed passphrase (bip44 wallets only)
+	Encrypt        bool              // whether the wallet need to be encrypted.
+	Password       []byte            // password that would be used for encryption, and would only be used when 'Encrypt' is true.
+	CryptoType     crypto.CryptoType // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
+	ScanN          uint64            // number of addresses that're going to be scanned for a balance. The highest address with a balance will be used.
+	GenerateN      uint64            // number of addresses to generate, regardless of balance
+	XPub           string            // xpub key (xpub wallets only)
 }
 
 // newWallet creates a wallet instance with given name and options.
@@ -183,9 +163,9 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 	if wltType == WalletTypeBip44 {
 		if opts.Bip44Coin == nil {
 			switch opts.Coin {
-			case CoinTypeBitcoin:
+			case meta.CoinTypeBitcoin:
 				bip44Coin = bip44.CoinTypeBitcoin
-			case CoinTypeSkycoin:
+			case meta.CoinTypeSkycoin:
 				bip44Coin = bip44.CoinTypeSkycoin
 			default:
 				bip44Coin = bip44.CoinTypeSkycoin
@@ -233,42 +213,42 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 
 	coin := opts.Coin
 	if coin == "" {
-		coin = CoinTypeSkycoin
+		coin = meta.CoinTypeSkycoin
 	}
-	coin, err := ResolveCoinType(string(coin))
+	coin, err := meta.ResolveCoinType(string(coin))
 	if err != nil {
 		return nil, err
 	}
 
-	meta := Meta{
-		metaFilename:       wltName,
-		metaVersion:        Version,
-		metaLabel:          opts.Label,
-		metaSeed:           opts.Seed,
-		metaLastSeed:       lastSeed,
-		metaSeedPassphrase: opts.SeedPassphrase,
-		metaTimestamp:      strconv.FormatInt(time.Now().Unix(), 10),
-		metaType:           wltType,
-		metaCoin:           string(coin),
-		metaEncrypted:      "false",
-		metaCryptoType:     "",
-		metaSecrets:        "",
-		metaXPub:           opts.XPub,
+	metaData := meta.Meta{
+		meta.MetaFilename:       wltName,
+		meta.MetaVersion:        Version,
+		meta.MetaLabel:          opts.Label,
+		meta.MetaSeed:           opts.Seed,
+		meta.MetaLastSeed:       lastSeed,
+		meta.MetaSeedPassphrase: opts.SeedPassphrase,
+		meta.MetaTimestamp:      strconv.FormatInt(time.Now().Unix(), 10),
+		meta.MetaType:           wltType,
+		meta.MetaCoin:           string(coin),
+		meta.MetaEncrypted:      "false",
+		meta.MetaCryptoType:     "",
+		meta.MetaSecrets:        "",
+		meta.MetaXPub:           opts.XPub,
 	}
 
 	// Create the wallet
 	var w Wallet
 	switch wltType {
 	case WalletTypeDeterministic:
-		w, err = newDeterministicWallet(meta)
+		w, err = newDeterministicWallet(metaData)
 	case WalletTypeCollection:
-		w, err = newCollectionWallet(meta)
+		w, err = newCollectionWallet(metaData)
 	case WalletTypeBip44:
-		meta.setBip44Coin(bip44Coin)
-		w, err = newBip44Wallet(meta)
+		metaData.SetBip44Coin(bip44Coin)
+		w, err = newBip44Wallet(metaData)
 	case WalletTypeXPub:
-		meta.setXPub(opts.XPub)
-		w, err = newXPubWallet(meta)
+		metaData.SetXPub(opts.XPub)
+		w, err = newXPubWallet(metaData)
 	default:
 		logger.Panic("unhandled wltType")
 	}
@@ -295,7 +275,7 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 			return nil, err
 		}
 
-		if opts.ScanN != 0 && coin != CoinTypeSkycoin {
+		if opts.ScanN != 0 && coin != meta.CoinTypeSkycoin {
 			return nil, errors.New("Wallet scanning is only supported for Skycoin address wallets")
 		}
 
@@ -339,10 +319,10 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 
 	// Check crypto type
 	if opts.CryptoType == "" {
-		opts.CryptoType = DefaultCryptoType
+		opts.CryptoType = crypto.DefaultCryptoType
 	}
 
-	if _, err := getCrypto(opts.CryptoType); err != nil {
+	if _, err := crypto.GetCrypto(opts.CryptoType); err != nil {
 		return nil, err
 	}
 
@@ -370,7 +350,7 @@ func NewWalletScanAhead(wltName string, opts Options, tf TransactionsFinder) (Wa
 }
 
 // Lock encrypts the wallet with the given password and specific crypto type
-func Lock(w Wallet, password []byte, cryptoType CryptoType) error {
+func Lock(w Wallet, password []byte, cryptoType crypto.CryptoType) error {
 	if len(password) == 0 {
 		return ErrMissingPassword
 	}
@@ -382,21 +362,21 @@ func Lock(w Wallet, password []byte, cryptoType CryptoType) error {
 	wlt := w.Clone()
 
 	// Records seeds in secrets
-	ss := make(Secrets)
+	ss := make(secrets.Secrets)
 	defer func() {
 		// Wipes all unencrypted sensitive data
-		ss.erase()
+		ss.Erase()
 		wlt.Erase()
 	}()
 
 	wlt.PackSecrets(ss)
 
-	sb, err := ss.serialize()
+	sb, err := ss.Serialize()
 	if err != nil {
 		return err
 	}
 
-	crypto, err := getCrypto(cryptoType)
+	crypto, err := crypto.GetCrypto(cryptoType)
 	if err != nil {
 		return err
 	}
@@ -450,7 +430,7 @@ func Unlock(w Wallet, password []byte) (Wallet, error) {
 	}
 
 	// Gets the crypto module
-	crypto, err := getCrypto(ct)
+	crypto, err := crypto.GetCrypto(ct)
 	if err != nil {
 		return nil, err
 	}
@@ -469,9 +449,9 @@ func Unlock(w Wallet, password []byte) (Wallet, error) {
 	}()
 
 	// Deserialize into secrets
-	ss := make(Secrets)
-	defer ss.erase()
-	if err := ss.deserialize(sb); err != nil {
+	ss := make(secrets.Secrets)
+	defer ss.Erase()
+	if err := ss.Deserialize(sb); err != nil {
 		return nil, err
 	}
 
@@ -492,24 +472,24 @@ type Wallet interface {
 	SeedPassphrase() string
 	Timestamp() int64
 	SetTimestamp(int64)
-	Coin() CoinType
-	Bip44Coin() bip44.CoinType
+	Coin() meta.CoinType
+	Bip44Coin() (bip44.CoinType, bool)
 	Type() string
 	Label() string
 	SetLabel(string)
 	Filename() string
 	IsEncrypted() bool
-	SetEncrypted(cryptoType CryptoType, encryptedSecrets string)
+	SetEncrypted(cryptoType crypto.CryptoType, encryptedSecrets string)
 	SetDecrypted()
-	CryptoType() CryptoType
+	CryptoType() crypto.CryptoType
 	Version() string
 	SetVersion(string)
-	AddressConstructor() func(cipher.PubKey) cipher.Addresser
+	// AddressConstructor() func(cipher.PubKey) cipher.Addresser
 	Secrets() string
 	XPub() string
 
-	UnpackSecrets(ss Secrets) error
-	PackSecrets(ss Secrets)
+	UnpackSecrets(ss secrets.Secrets) error
+	PackSecrets(ss secrets.Secrets)
 
 	Erase()
 	Clone() Wallet
@@ -523,11 +503,11 @@ type Wallet interface {
 	Fingerprint() string
 	GetAddresses() []cipher.Addresser
 	GetSkycoinAddresses() ([]cipher.Address, error)
-	GetEntryAt(i int) Entry
-	GetEntry(cipher.Address) (Entry, bool)
+	GetEntryAt(i int) entry.Entry
+	GetEntry(cipher.Address) (entry.Entry, bool)
 	HasEntry(cipher.Address) bool
 	EntriesLen() int
-	GetEntries() Entries
+	GetEntries() entry.Entries
 
 	GenerateAddresses(num uint64) ([]cipher.Addresser, error)
 	GenerateSkycoinAddresses(num uint64) ([]cipher.Address, error)
@@ -597,8 +577,8 @@ type walletLoadMeta struct {
 
 type walletLoader interface {
 	SetFilename(string)
-	SetCoin(CoinType)
-	Coin() CoinType
+	SetCoin(meta.CoinType)
+	Coin() meta.CoinType
 	ToWallet() (Wallet, error)
 }
 
@@ -654,7 +634,7 @@ func Load(filename string) (Wallet, error) {
 	}
 
 	// Make sure "sky", "btc" normalize to "skycoin", "bitcoin"
-	ct, err := ResolveCoinType(string(rw.Coin()))
+	ct, err := meta.ResolveCoinType(string(rw.Coin()))
 	if err != nil {
 		logger.WithError(err).WithField("coinType", rw.Coin()).Error("Load: invalid coin type")
 		return nil, fmt.Errorf("invalid wallet %q: %v", filename, err)
@@ -724,4 +704,153 @@ func filterDir(dir string, suffix string) ([]string, error) {
 		}
 	}
 	return res, nil
+}
+
+// validate validates the wallet
+func metaValidate(m meta.Meta) error {
+	if fn := m[meta.MetaFilename]; fn == "" {
+		return errors.New("filename not set")
+	}
+
+	if tm := m[meta.MetaTimestamp]; tm != "" {
+		_, err := strconv.ParseInt(tm, 10, 64)
+		if err != nil {
+			return errors.New("invalid timestamp")
+		}
+	}
+
+	walletType, ok := m[meta.MetaType]
+	if !ok {
+		return errors.New("type field not set")
+	}
+	if !IsValidWalletType(walletType) {
+		return ErrInvalidWalletType
+	}
+
+	if coinType := m[meta.MetaCoin]; coinType == "" {
+		return errors.New("coin field not set")
+	}
+
+	var isEncrypted bool
+	if encStr, ok := m[meta.MetaEncrypted]; ok {
+		// validate the encrypted value
+		var err error
+		isEncrypted, err = strconv.ParseBool(encStr)
+		if err != nil {
+			return errors.New("encrypted field is not a valid bool")
+		}
+	}
+
+	if isEncrypted {
+		cryptoType, ok := m[meta.MetaCryptoType]
+		if !ok {
+			return errors.New("crypto type field not set")
+		}
+
+		if _, err := crypto.GetCrypto(crypto.CryptoType(cryptoType)); err != nil {
+			return errors.New("unknown crypto type")
+		}
+
+		if s := m[meta.MetaSecrets]; s == "" {
+			return errors.New("wallet is encrypted, but secrets field not set")
+		}
+
+		if s := m[meta.MetaSeed]; s != "" {
+			return errors.New("seed should not be visible in encrypted wallets")
+		}
+
+		if s := m[meta.MetaLastSeed]; s != "" {
+			return errors.New("lastSeed should not be visible in encrypted wallets")
+		}
+	} else {
+		if s := m[meta.MetaSecrets]; s != "" {
+			return errors.New("secrets should not be in unencrypted wallets")
+		}
+	}
+
+	switch walletType {
+	case WalletTypeCollection:
+		if s := m[meta.MetaSeed]; s != "" {
+			return errors.New("seed should not be in collection wallets")
+		}
+
+		if s := m[meta.MetaLastSeed]; s != "" {
+			return errors.New("lastSeed should not be in collection wallets")
+		}
+	case WalletTypeDeterministic:
+		if !isEncrypted {
+			if s := m[meta.MetaSeed]; s == "" {
+				return errors.New("seed missing in unencrypted deterministic wallet")
+			}
+
+			if s := m[meta.MetaLastSeed]; s == "" {
+				return errors.New("lastSeed missing in unencrypted deterministic wallet")
+			}
+		}
+	case WalletTypeBip44:
+		if !isEncrypted {
+			// bip44 wallet seeds must be a valid bip39 mnemonic
+			if s := m[meta.MetaSeed]; s == "" {
+				return errors.New("seed missing in unencrypted bip44 wallet")
+			} else if err := bip39.ValidateMnemonic(s); err != nil {
+				return err
+			}
+		}
+
+		if s := m[meta.MetaBip44Coin]; s == "" {
+			return errors.New("bip44Coin missing")
+		} else if _, err := strconv.ParseUint(s, 10, 32); err != nil {
+			return fmt.Errorf("bip44Coin invalid: %v", err)
+		}
+
+		if s := m[meta.MetaLastSeed]; s != "" {
+			return errors.New("lastSeed should not be in bip44 wallets")
+		}
+	case WalletTypeXPub:
+		if s := m[meta.MetaSeed]; s != "" {
+			return errors.New("seed should not be in xpub wallets")
+		}
+
+		if s := m[meta.MetaLastSeed]; s != "" {
+			return errors.New("lastSeed should not be in xpub wallets")
+		}
+	default:
+		return errors.New("unhandled wallet type")
+	}
+
+	if m[meta.MetaXPub] != "" && walletType != WalletTypeXPub {
+		return errors.New("xpub is only used for xpub wallets")
+	}
+
+	return nil
+}
+
+// IsValidWalletType returns true if a wallet type is recognized
+func IsValidWalletType(t string) bool {
+	switch t {
+	case WalletTypeDeterministic,
+		WalletTypeCollection,
+		WalletTypeBip44,
+		WalletTypeXPub:
+		return true
+	default:
+		return false
+	}
+}
+
+// AddressConstructor returns a function to create a cipher.Addresser from a cipher.PubKey
+func AddressConstructor(m meta.Meta) func(cipher.PubKey) cipher.Addresser {
+	switch m.Coin() {
+	case meta.CoinTypeSkycoin:
+		return func(pk cipher.PubKey) cipher.Addresser {
+			return cipher.AddressFromPubKey(pk)
+		}
+	case meta.CoinTypeBitcoin:
+		return func(pk cipher.PubKey) cipher.Addresser {
+			return cipher.BitcoinAddressFromPubKey(pk)
+		}
+	default:
+		logger.Panicf("Invalid wallet coin type %q", m.Coin())
+		return nil
+	}
 }

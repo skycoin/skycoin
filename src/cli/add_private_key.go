@@ -8,6 +8,7 @@ import (
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/entry"
 )
 
 func addPrivateKeyCmd() *cobra.Command {
@@ -72,9 +73,9 @@ func AddPrivateKey(wlt *wallet.CollectionWallet, key string) error {
 		return err
 	}
 
-	addr := wlt.AddressConstructor()(pk)
+	addr := wallet.AddressConstructor(wlt.Meta)(pk)
 
-	entry := wallet.Entry{
+	entry := entry.Entry{
 		Address: addr,
 		Public:  pk,
 		Secret:  sk,

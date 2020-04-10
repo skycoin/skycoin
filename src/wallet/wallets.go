@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"strings"
+
+	"github.com/SkycoinProject/skycoin/src/wallet/meta"
 )
 
 // Wallets wallets map
@@ -48,7 +50,7 @@ func loadWallets(dir string) (Wallets, error) {
 			return nil, err
 		}
 
-		if w.Coin() != CoinTypeSkycoin {
+		if w.Coin() != meta.CoinTypeSkycoin {
 			err := fmt.Errorf("LoadWallets only support skycoin wallets, %s is a %s wallet", name, w.Coin())
 			logger.WithError(err).WithField("name", name).Error()
 			return nil, err

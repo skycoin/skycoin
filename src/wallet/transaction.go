@@ -7,6 +7,7 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/coin"
 	"github.com/SkycoinProject/skycoin/src/transaction"
+	"github.com/SkycoinProject/skycoin/src/wallet/entry"
 )
 
 var (
@@ -207,7 +208,7 @@ func CreateTransaction(w Wallet, p transaction.Params, auxs coin.AddressUxOuts, 
 	}
 
 	// Generate a new change address for bip44 wallets
-	var changeEntry *Entry
+	var changeEntry *entry.Entry
 	if p.ChangeAddress == nil && w.Type() == WalletTypeBip44 {
 		e, err := w.(*Bip44Wallet).PeekChangeEntry()
 		if err != nil {
@@ -245,7 +246,7 @@ func CreateTransactionSigned(w Wallet, p transaction.Params, auxs coin.AddressUx
 	logger.Infof("CreateTransactionSigned: signing %d inputs", len(uxb))
 
 	// Sign the transaction
-	entriesMap := make(map[cipher.Address]Entry)
+	entriesMap := make(map[cipher.Address]entry.Entry)
 	for i, s := range uxb {
 		entry, ok := entriesMap[s.Address]
 		if !ok {

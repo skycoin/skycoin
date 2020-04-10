@@ -15,6 +15,8 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
 	"github.com/SkycoinProject/skycoin/src/testutil"
+	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
+	"github.com/SkycoinProject/skycoin/src/wallet/entry"
 )
 
 func prepareWltDir() string {
@@ -35,7 +37,7 @@ func dirIsEmpty(t *testing.T, dir string) {
 }
 
 func TestNewService(t *testing.T) {
-	for ct := range cryptoTable {
+	for _, ct := range crypto.Types() {
 		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
 			dir := prepareWltDir()
 			s, err := NewService(Config{
@@ -179,7 +181,7 @@ func TestServiceCreateWallet(t *testing.T) {
 		},
 	}
 	for _, tc := range tt {
-		for ct := range cryptoTable {
+		for _, ct := range crypto.Types() {
 			t.Run(fmt.Sprintf("%v crypto=%v", tc.name, ct), func(t *testing.T) {
 				dir := prepareWltDir()
 				s, err := NewService(Config{
@@ -534,7 +536,7 @@ func TestServiceLoadWallet(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		for _, ct := range []CryptoType{CryptoTypeScryptChacha20poly1305Insecure} {
+		for _, ct := range []crypto.CryptoType{crypto.CryptoTypeScryptChacha20poly1305Insecure} {
 			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
 			t.Run(name, func(t *testing.T) {
 				dir := prepareWltDir()
@@ -793,7 +795,7 @@ func TestServiceNewAddresses(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		for ct := range cryptoTable {
+		for _, ct := range crypto.Types() {
 			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
 			t.Run(name, func(t *testing.T) {
 				dir := prepareWltDir()
@@ -870,7 +872,7 @@ func TestServiceNewAddresses(t *testing.T) {
 
 func TestServiceGetAddress(t *testing.T) {
 	for _, enableWalletAPI := range []bool{true, false} {
-		for ct := range cryptoTable {
+		for _, ct := range crypto.Types() {
 			t.Run(fmt.Sprintf("enable wallet api=%v crypto=%v", enableWalletAPI, ct), func(t *testing.T) {
 				dir := prepareWltDir()
 				s, err := NewService(Config{
@@ -914,7 +916,7 @@ func TestServiceGetWallet(t *testing.T) {
 
 	for _, walletType := range walletTypes {
 		for _, enableWalletAPI := range []bool{true, false} {
-			for ct := range cryptoTable {
+			for _, ct := range crypto.Types() {
 				t.Run(fmt.Sprintf("enable wallet api=%v crypto=%v", enableWalletAPI, ct), func(t *testing.T) {
 					dir := prepareWltDir()
 
@@ -973,7 +975,7 @@ func TestServiceGetWallet(t *testing.T) {
 
 func TestServiceGetWallets(t *testing.T) {
 	for _, enableWalletAPI := range []bool{true, false} {
-		for ct := range cryptoTable {
+		for _, ct := range crypto.Types() {
 			t.Run(fmt.Sprintf("enable wallet=%v crypto=%v", enableWalletAPI, ct), func(t *testing.T) {
 				dir := prepareWltDir()
 				s, err := NewService(Config{
@@ -1075,7 +1077,7 @@ func TestServiceUpdateWalletLabel(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		for ct := range cryptoTable {
+		for _, ct := range crypto.Types() {
 			t.Run(tc.name, func(t *testing.T) {
 				// Create the wallet service
 				dir := prepareWltDir()
@@ -1202,7 +1204,7 @@ func TestServiceEncryptWallet(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		for ct := range cryptoTable {
+		for _, ct := range crypto.Types() {
 			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
 			t.Run(name, func(t *testing.T) {
 				dir := prepareWltDir()
@@ -1229,7 +1231,7 @@ func TestServiceEncryptWallet(t *testing.T) {
 				case WalletTypeCollection:
 					err := s.Update(w.Filename(), func(w Wallet) error {
 						p, s := cipher.GenerateKeyPair()
-						return w.(*CollectionWallet).AddEntry(Entry{
+						return w.(*CollectionWallet).AddEntry(entry.Entry{
 							Public:  p,
 							Secret:  s,
 							Address: cipher.AddressFromPubKey(p),
@@ -1477,7 +1479,7 @@ func TestServiceDecryptWallet(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		for ct := range cryptoTable {
+		for _, ct := range crypto.Types() {
 			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
 			t.Run(name, func(t *testing.T) {
 				dir := prepareWltDir()
@@ -2588,7 +2590,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		for ct := range cryptoTable {
+		for _, ct := range crypto.Types() {
 			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
 			t.Run(name, func(t *testing.T) {
 				dir := prepareWltDir()
@@ -2931,7 +2933,7 @@ func TestServiceScanAddresses(t *testing.T) {
 	for _, d := range testData {
 		tt := generateTestCasesFunc(d.walletType, d.seed, d.xpub, d.addrs)
 		for _, tc := range tt {
-			for ct := range cryptoTable {
+			for _, ct := range crypto.Types() {
 				name := fmt.Sprintf("crypto=%v type=%v %v", ct, d.walletType, tc.name)
 				t.Run(name, func(t *testing.T) {
 					dir := prepareWltDir()
@@ -3054,7 +3056,7 @@ func TestGetWalletSeed(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		for ct := range cryptoTable {
+		for _, ct := range crypto.Types() {
 			t.Run(tc.name, func(t *testing.T) {
 				dir := prepareWltDir()
 				s, err := NewService(Config{
@@ -3324,7 +3326,7 @@ func TestServiceView(t *testing.T) {
 			dir := prepareWltDir()
 			s, err := NewService(Config{
 				WalletDir:       dir,
-				CryptoType:      CryptoTypeSha256Xor,
+				CryptoType:      crypto.CryptoTypeSha256Xor,
 				EnableWalletAPI: true,
 			})
 			require.NoError(t, err)
@@ -3335,7 +3337,7 @@ func TestServiceView(t *testing.T) {
 			if w.Type() == WalletTypeCollection {
 				err := s.UpdateSecrets(w.Filename(), tc.opts.Password, func(w Wallet) error {
 					p, s := cipher.GenerateKeyPair()
-					return w.(*CollectionWallet).AddEntry(Entry{
+					return w.(*CollectionWallet).AddEntry(entry.Entry{
 						Public:  p,
 						Secret:  s,
 						Address: cipher.AddressFromPubKey(p),
@@ -3593,7 +3595,7 @@ func TestServiceViewSecrets(t *testing.T) {
 			dir := prepareWltDir()
 			s, err := NewService(Config{
 				WalletDir:       dir,
-				CryptoType:      CryptoTypeSha256Xor,
+				CryptoType:      crypto.CryptoTypeSha256Xor,
 				EnableWalletAPI: true,
 			})
 			require.NoError(t, err)
@@ -3731,7 +3733,7 @@ func TestServiceUpdate(t *testing.T) {
 			dir := prepareWltDir()
 			s, err := NewService(Config{
 				WalletDir:       dir,
-				CryptoType:      CryptoTypeSha256Xor,
+				CryptoType:      crypto.CryptoTypeSha256Xor,
 				EnableWalletAPI: true,
 			})
 			require.NoError(t, err)
@@ -3987,7 +3989,7 @@ func TestServiceUpdateSecrets(t *testing.T) {
 			dir := prepareWltDir()
 			s, err := NewService(Config{
 				WalletDir:       dir,
-				CryptoType:      CryptoTypeSha256Xor,
+				CryptoType:      crypto.CryptoTypeSha256Xor,
 				EnableWalletAPI: true,
 			})
 			require.NoError(t, err)

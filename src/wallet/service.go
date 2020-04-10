@@ -11,6 +11,7 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 	"github.com/SkycoinProject/skycoin/src/util/file"
+	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
 )
 
 // TransactionsFinder interface for finding address related transaction hashes
@@ -30,7 +31,7 @@ type Service struct {
 // Config wallet service config
 type Config struct {
 	WalletDir       string
-	CryptoType      CryptoType
+	CryptoType      crypto.CryptoType
 	EnableWalletAPI bool
 	EnableSeedAPI   bool
 	Bip44Coin       *bip44.CoinType
@@ -41,7 +42,7 @@ func NewConfig() Config {
 	bc := bip44.CoinTypeSkycoin
 	return Config{
 		WalletDir:       "./",
-		CryptoType:      DefaultCryptoType,
+		CryptoType:      crypto.DefaultCryptoType,
 		EnableWalletAPI: false,
 		EnableSeedAPI:   false,
 		Bip44Coin:       &bc,

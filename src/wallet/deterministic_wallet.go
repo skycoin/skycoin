@@ -7,6 +7,9 @@ import (
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/util/file"
+	"github.com/SkycoinProject/skycoin/src/wallet/entry"
+	"github.com/SkycoinProject/skycoin/src/wallet/meta"
+	"github.com/SkycoinProject/skycoin/src/wallet/secrets"
 )
 
 // DeterministicWallet manages keys using the original Skycoin deterministic
@@ -14,57 +17,57 @@ import (
 // With this generator, a single chain of addresses is created, each one dependent
 // on the previous.
 type DeterministicWallet struct {
-	Meta
-	Entries Entries
+	meta.Meta
+	Entries entry.Entries
 }
 
 // newDeterministicWallet creates a DeterministicWallet
-func newDeterministicWallet(meta Meta) (*DeterministicWallet, error) { //nolint:unparam
+func newDeterministicWallet(meta meta.Meta) (*DeterministicWallet, error) { //nolint:unparam
 	return &DeterministicWallet{
 		Meta: meta,
 	}, nil
 }
 
 // PackSecrets copies data from decrypted wallets into the secrets container
-func (w *DeterministicWallet) PackSecrets(ss Secrets) {
-	ss.set(secretSeed, w.Meta.Seed())
-	ss.set(secretLastSeed, w.Meta.LastSeed())
+func (w *DeterministicWallet) PackSecrets(ss secrets.Secrets) {
+	ss.Set(secrets.SecretSeed, w.Seed())
+	ss.Set(secrets.SecretLastSeed, w.LastSeed())
 
 	// Saves entry secret keys in secrets
 	for _, e := range w.Entries {
-		ss.set(e.Address.String(), e.Secret.Hex())
+		ss.Set(e.Address.String(), e.Secret.Hex())
 	}
 }
 
 // UnpackSecrets copies data from decrypted secrets into the wallet
-func (w *DeterministicWallet) UnpackSecrets(ss Secrets) error {
-	seed, ok := ss.get(secretSeed)
+func (w *DeterministicWallet) UnpackSecrets(ss secrets.Secrets) error {
+	seed, ok := ss.Get(secrets.SecretSeed)
 	if !ok {
 		return errors.New("seed doesn't exist in secrets")
 	}
-	w.Meta.setSeed(seed)
+	w.SetSeed(seed)
 
-	lastSeed, ok := ss.get(secretLastSeed)
+	lastSeed, ok := ss.Get(secrets.SecretLastSeed)
 	if !ok {
 		return errors.New("lastSeed doesn't exist in secrets")
 	}
-	w.Meta.setLastSeed(lastSeed)
+	w.SetLastSeed(lastSeed)
 
-	return w.Entries.unpackSecretKeys(ss)
+	return w.Entries.UnpackSecretKeys(ss)
 }
 
 // Clone clones the wallet a new wallet object
 func (w *DeterministicWallet) Clone() Wallet {
 	return &DeterministicWallet{
-		Meta:    w.Meta.clone(),
-		Entries: w.Entries.clone(),
+		Meta:    w.Meta.Clone(),
+		Entries: w.Entries.Clone(),
 	}
 }
 
 // CopyFrom copies the src wallet to w
 func (w *DeterministicWallet) CopyFrom(src Wallet) {
-	w.Meta = src.(*DeterministicWallet).Meta.clone()
-	w.Entries = src.(*DeterministicWallet).Entries.clone()
+	w.Meta = src.(*DeterministicWallet).Meta.Clone()
+	w.Entries = src.(*DeterministicWallet).Entries.Clone()
 }
 
 // CopyFromRef copies the src wallet with a pointer dereference
@@ -74,8 +77,8 @@ func (w *DeterministicWallet) CopyFromRef(src Wallet) {
 
 // Erase wipes secret fields in wallet
 func (w *DeterministicWallet) Erase() {
-	w.Meta.eraseSeeds()
-	w.Entries.erase()
+	w.Meta.EraseSeeds()
+	w.Entries.Erase()
 }
 
 // ToReadable converts the wallet to its readable (serializable) format
@@ -85,26 +88,26 @@ func (w *DeterministicWallet) ToReadable() Readable {
 
 // Validate validates the wallet
 func (w *DeterministicWallet) Validate() error {
-	return w.Meta.validate()
+	return metaValidate(w.Meta)
 }
 
 // GetAddresses returns all addresses in wallet
 func (w *DeterministicWallet) GetAddresses() []cipher.Addresser {
-	return w.Entries.getAddresses()
+	return w.Entries.GetAddresses()
 }
 
 // GetSkycoinAddresses returns all Skycoin addresses in wallet. The wallet's coin type must be Skycoin.
 func (w *DeterministicWallet) GetSkycoinAddresses() ([]cipher.Address, error) {
-	if w.Meta.Coin() != CoinTypeSkycoin {
+	if w.Meta.Coin() != meta.CoinTypeSkycoin {
 		return nil, errors.New("DeterministicWallet coin type is not skycoin")
 	}
 
-	return w.Entries.getSkycoinAddresses(), nil
+	return w.Entries.GetSkycoinAddresses(), nil
 }
 
 // GetEntries returns a copy of all entries held by the wallet
-func (w *DeterministicWallet) GetEntries() Entries {
-	return w.Entries.clone()
+func (w *DeterministicWallet) GetEntries() entry.Entries {
+	return w.Entries.Clone()
 }
 
 // EntriesLen returns the number of entries in the wallet
@@ -113,18 +116,18 @@ func (w *DeterministicWallet) EntriesLen() int {
 }
 
 // GetEntryAt returns entry at a given index in the entries array
-func (w *DeterministicWallet) GetEntryAt(i int) Entry {
+func (w *DeterministicWallet) GetEntryAt(i int) entry.Entry {
 	return w.Entries[i]
 }
 
 // GetEntry returns entry of given address
-func (w *DeterministicWallet) GetEntry(a cipher.Address) (Entry, bool) {
-	return w.Entries.get(a)
+func (w *DeterministicWallet) GetEntry(a cipher.Address) (entry.Entry, bool) {
+	return w.Entries.Get(a)
 }
 
 // HasEntry returns true if the wallet has an Entry with a given cipher.Address.
 func (w *DeterministicWallet) HasEntry(a cipher.Address) bool {
-	return w.Entries.has(a)
+	return w.Entries.Has(a)
 }
 
 // GenerateAddresses generates addresses
@@ -149,15 +152,15 @@ func (w *DeterministicWallet) GenerateAddresses(num uint64) ([]cipher.Addresser,
 		seed, seckeys = cipher.MustGenerateDeterministicKeyPairsSeed(sd, int(num))
 	}
 
-	w.Meta.setLastSeed(hex.EncodeToString(seed))
+	w.Meta.SetLastSeed(hex.EncodeToString(seed))
 
 	addrs := make([]cipher.Addresser, len(seckeys))
-	makeAddress := w.Meta.AddressConstructor()
+	makeAddress := AddressConstructor(w.Meta)
 	for i, s := range seckeys {
 		p := cipher.MustPubKeyFromSecKey(s)
 		a := makeAddress(p)
 		addrs[i] = a
-		w.Entries = append(w.Entries, Entry{
+		w.Entries = append(w.Entries, entry.Entry{
 			Address: a,
 			Secret:  s,
 			Public:  p,
@@ -168,7 +171,7 @@ func (w *DeterministicWallet) GenerateAddresses(num uint64) ([]cipher.Addresser,
 
 // GenerateSkycoinAddresses generates Skycoin addresses. If the wallet's coin type is not Skycoin, returns an error
 func (w *DeterministicWallet) GenerateSkycoinAddresses(num uint64) ([]cipher.Address, error) {
-	if w.Meta.Coin() != CoinTypeSkycoin {
+	if w.Meta.Coin() != meta.CoinTypeSkycoin {
 		return nil, errors.New("GenerateSkycoinAddresses called for non-skycoin wallet")
 	}
 
@@ -187,13 +190,13 @@ func (w *DeterministicWallet) GenerateSkycoinAddresses(num uint64) ([]cipher.Add
 
 // reset resets the wallet entries and move the lastSeed to origin
 func (w *DeterministicWallet) reset() {
-	w.Entries = Entries{}
-	w.Meta.setLastSeed(w.Meta.Seed())
+	w.Entries = entry.Entries{}
+	w.Meta.SetLastSeed(w.Meta.Seed())
 }
 
 // ScanAddresses scans ahead N addresses, truncating up to the highest address with any transaction history.
 func (w *DeterministicWallet) ScanAddresses(scanN uint64, tf TransactionsFinder) error {
-	if w.Meta.IsEncrypted() {
+	if w.IsEncrypted() {
 		return ErrWalletEncrypted
 	}
 
@@ -245,7 +248,7 @@ func (w *DeterministicWallet) Fingerprint() string {
 	if len(w.Entries) == 0 {
 		if !w.IsEncrypted() {
 			_, pk, _ := cipher.MustDeterministicKeyPairIterator([]byte(w.Meta.Seed()))
-			addr = w.Meta.AddressConstructor()(pk).String()
+			addr = AddressConstructor(w.Meta)(pk).String()
 		}
 	} else {
 		addr = w.Entries[0].Address.String()
@@ -255,7 +258,7 @@ func (w *DeterministicWallet) Fingerprint() string {
 
 // ReadableDeterministicWallet used for [de]serialization of a deterministic wallet
 type ReadableDeterministicWallet struct {
-	Meta            `json:"meta"`
+	meta.Meta       `json:"meta"`
 	ReadableEntries `json:"entries"`
 }
 
@@ -274,7 +277,7 @@ func LoadReadableDeterministicWallet(wltFile string) (*ReadableDeterministicWall
 // NewReadableDeterministicWallet creates readable wallet
 func NewReadableDeterministicWallet(w *DeterministicWallet) *ReadableDeterministicWallet {
 	return &ReadableDeterministicWallet{
-		Meta:            w.Meta.clone(),
+		Meta:            w.Meta.Clone(),
 		ReadableEntries: newReadableEntries(w.Entries, w.Meta.Coin(), w.Meta.Type()),
 	}
 }
@@ -282,7 +285,7 @@ func NewReadableDeterministicWallet(w *DeterministicWallet) *ReadableDeterminist
 // ToWallet convert readable wallet to Wallet
 func (rw *ReadableDeterministicWallet) ToWallet() (Wallet, error) {
 	w := &DeterministicWallet{
-		Meta: rw.Meta.clone(),
+		Meta: rw.Meta.Clone(),
 	}
 
 	if err := w.Validate(); err != nil {

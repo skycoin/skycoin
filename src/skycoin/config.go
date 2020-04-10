@@ -14,6 +14,7 @@ import (
 	"github.com/SkycoinProject/skycoin/src/coin"
 	"github.com/SkycoinProject/skycoin/src/fiber"
 	"github.com/SkycoinProject/skycoin/src/kvstorage"
+	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
 
 	"log"
 
@@ -24,7 +25,6 @@ import (
 	"github.com/SkycoinProject/skycoin/src/util/droplet"
 	"github.com/SkycoinProject/skycoin/src/util/file"
 	"github.com/SkycoinProject/skycoin/src/util/useragent"
-	"github.com/SkycoinProject/skycoin/src/wallet"
 )
 
 var (
@@ -307,7 +307,7 @@ func NewNodeConfig(mode string, node fiber.NodeConfig) NodeConfig {
 
 		// Wallets
 		WalletDirectory:  "",
-		WalletCryptoType: string(wallet.DefaultCryptoType),
+		WalletCryptoType: string(crypto.DefaultCryptoType),
 
 		// Key-value storage
 		KVStorageDirectory: "",

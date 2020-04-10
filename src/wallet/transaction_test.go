@@ -18,6 +18,7 @@ import (
 	"github.com/SkycoinProject/skycoin/src/testutil"
 	"github.com/SkycoinProject/skycoin/src/transaction"
 	"github.com/SkycoinProject/skycoin/src/util/fee"
+	"github.com/SkycoinProject/skycoin/src/wallet/entry"
 )
 
 func TestWalletSignTransaction(t *testing.T) {
@@ -31,7 +32,7 @@ func TestWalletSignTransaction(t *testing.T) {
 	for _, x := range seckeys {
 		p := cipher.MustPubKeyFromSecKey(x)
 		a := cipher.AddressFromPubKey(p)
-		err := w.AddEntry(Entry{
+		err := w.AddEntry(entry.Entry{
 			Address: a,
 			Public:  p,
 			Secret:  x,
@@ -86,7 +87,7 @@ func TestWalletSignTransaction(t *testing.T) {
 	for i := 1; i < 3; i++ {
 		p := cipher.MustPubKeyFromSecKey(secKeysOtherWallet[i])
 		a := cipher.AddressFromPubKey(p)
-		err := otherWallet.AddEntry(Entry{
+		err := otherWallet.AddEntry(entry.Entry{
 			Address: a,
 			Public:  p,
 			Secret:  secKeysOtherWallet[i],
@@ -343,7 +344,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 	for _, x := range secKeys {
 		p := cipher.MustPubKeyFromSecKey(x)
 		a := cipher.AddressFromPubKey(p)
-		err := w.AddEntry(Entry{
+		err := w.AddEntry(entry.Entry{
 			Address: a,
 			Public:  p,
 			Secret:  x,
@@ -815,10 +816,10 @@ func makeAddress() cipher.Address {
 	return cipher.AddressFromPubKey(p)
 }
 
-func makeEntry() Entry {
+func makeEntry() entry.Entry {
 	p, s := cipher.GenerateKeyPair()
 	a := cipher.AddressFromPubKey(p)
-	return Entry{
+	return entry.Entry{
 		Secret:  s,
 		Public:  p,
 		Address: a,

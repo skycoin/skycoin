@@ -16,8 +16,10 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher/bip32"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
-	"github.com/SkycoinProject/skycoin/src/cipher/encrypt"
 	"github.com/SkycoinProject/skycoin/src/util/logging"
+	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
+	"github.com/SkycoinProject/skycoin/src/wallet/entry"
+	"github.com/SkycoinProject/skycoin/src/wallet/meta"
 )
 
 var (
@@ -36,15 +38,6 @@ var u = flag.Bool("u", false, "update test wallet file in ./testdata")
 
 func init() {
 	flag.Parse()
-
-	// Change the scrypt N value in cryptoTable to make test faster, otherwise
-	// it would take more than 200 seconds to finish.
-	cryptoTable[CryptoTypeScryptChacha20poly1305] = encrypt.ScryptChacha20poly1305{
-		N:      1 << 15,
-		R:      encrypt.ScryptR,
-		P:      encrypt.ScryptP,
-		KeyLen: encrypt.ScryptKeyLen,
-	}
 
 	// When -u flag is specified, update the following wallet files:
 	//     - ./testdata/scrypt-chacha20poly1305-encrypted.wlt
@@ -66,7 +59,7 @@ func init() {
 			log.Panic(err)
 		}
 
-		if err := Lock(w, []byte("pwd"), CryptoTypeScryptChacha20poly1305); err != nil {
+		if err := Lock(w, []byte("pwd"), crypto.CryptoTypeScryptChacha20poly1305Insecure); err != nil {
 			log.Panic(err)
 		}
 
@@ -81,7 +74,7 @@ func init() {
 			Label:      "sha256xor",
 			Encrypt:    true,
 			Password:   []byte("pwd"),
-			CryptoType: CryptoTypeSha256Xor,
+			CryptoType: crypto.CryptoTypeSha256Xor,
 		})
 		if err != nil {
 			log.Panic(err)
@@ -115,7 +108,7 @@ func TestNewWallet(t *testing.T) {
 				meta: map[string]string{
 					"label":    "",
 					"filename": "test-collection.wlt",
-					"coin":     string(CoinTypeSkycoin),
+					"coin":     string(meta.CoinTypeSkycoin),
 					"type":     WalletTypeDeterministic,
 					"version":  Version,
 				},
@@ -133,7 +126,7 @@ func TestNewWallet(t *testing.T) {
 				meta: map[string]string{
 					"label":    "",
 					"filename": "test-collection.wlt",
-					"coin":     string(CoinTypeSkycoin),
+					"coin":     string(meta.CoinTypeSkycoin),
 					"type":     WalletTypeDeterministic,
 					"version":  Version,
 					"xpub":     "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
@@ -152,7 +145,7 @@ func TestNewWallet(t *testing.T) {
 				meta: map[string]string{
 					"label":    "",
 					"filename": "test.wlt",
-					"coin":     string(CoinTypeSkycoin),
+					"coin":     string(meta.CoinTypeSkycoin),
 					"type":     WalletTypeDeterministic,
 					"seed":     "testseed123",
 					"version":  Version,
@@ -171,7 +164,7 @@ func TestNewWallet(t *testing.T) {
 				meta: map[string]string{
 					"label":    "",
 					"filename": "test.wlt",
-					"coin":     string(CoinTypeSkycoin),
+					"coin":     string(meta.CoinTypeSkycoin),
 					"type":     WalletTypeDeterministic,
 					"seed":     "testseed123",
 					"version":  Version,
@@ -191,7 +184,7 @@ func TestNewWallet(t *testing.T) {
 				meta: map[string]string{
 					"label":    "wallet1",
 					"filename": "test.wlt",
-					"coin":     string(CoinTypeSkycoin),
+					"coin":     string(meta.CoinTypeSkycoin),
 					"type":     WalletTypeDeterministic,
 					"seed":     "testseed123",
 					"version":  Version,
@@ -204,7 +197,7 @@ func TestNewWallet(t *testing.T) {
 			wltName: "test.wlt",
 			opts: Options{
 				Label: "wallet1",
-				Coin:  CoinTypeBitcoin,
+				Coin:  meta.CoinTypeBitcoin,
 				Seed:  "testseed123",
 				Type:  WalletTypeDeterministic,
 			},
@@ -212,7 +205,7 @@ func TestNewWallet(t *testing.T) {
 				meta: map[string]string{
 					"label":    "wallet1",
 					"filename": "test.wlt",
-					"coin":     string(CoinTypeBitcoin),
+					"coin":     string(meta.CoinTypeBitcoin),
 					"type":     WalletTypeDeterministic,
 					"seed":     "testseed123",
 				},
@@ -224,7 +217,7 @@ func TestNewWallet(t *testing.T) {
 			wltName: "test.wlt",
 			opts: Options{
 				Label:    "wallet1",
-				Coin:     CoinTypeSkycoin,
+				Coin:     meta.CoinTypeSkycoin,
 				Seed:     "testseed123",
 				Encrypt:  true,
 				Password: []byte("pwd"),
@@ -233,7 +226,7 @@ func TestNewWallet(t *testing.T) {
 			expect: expect{
 				meta: map[string]string{
 					"label":     "wallet1",
-					"coin":      string(CoinTypeSkycoin),
+					"coin":      string(meta.CoinTypeSkycoin),
 					"type":      WalletTypeDeterministic,
 					"encrypted": "true",
 				},
@@ -245,7 +238,7 @@ func TestNewWallet(t *testing.T) {
 			wltName: "test.wlt",
 			opts: Options{
 				Label:   "wallet1",
-				Coin:    CoinTypeSkycoin,
+				Coin:    meta.CoinTypeSkycoin,
 				Seed:    "testseed123",
 				Encrypt: true,
 				Type:    WalletTypeDeterministic,
@@ -253,7 +246,7 @@ func TestNewWallet(t *testing.T) {
 			expect: expect{
 				meta: map[string]string{
 					"label":     "wallet1",
-					"coin":      string(CoinTypeSkycoin),
+					"coin":      string(meta.CoinTypeSkycoin),
 					"type":      WalletTypeDeterministic,
 					"encrypted": "true",
 				},
@@ -265,7 +258,7 @@ func TestNewWallet(t *testing.T) {
 			wltName: "test.wlt",
 			opts: Options{
 				Label:    "wallet1",
-				Coin:     CoinTypeSkycoin,
+				Coin:     meta.CoinTypeSkycoin,
 				Encrypt:  true,
 				Password: []byte("pwd"),
 				Type:     WalletTypeDeterministic,
@@ -273,7 +266,7 @@ func TestNewWallet(t *testing.T) {
 			expect: expect{
 				meta: map[string]string{
 					"label":     "wallet1",
-					"coin":      string(CoinTypeSkycoin),
+					"coin":      string(meta.CoinTypeSkycoin),
 					"type":      WalletTypeDeterministic,
 					"encrypted": "true",
 				},
@@ -285,7 +278,7 @@ func TestNewWallet(t *testing.T) {
 			wltName: "test.wlt",
 			opts: Options{
 				Label:    "wallet1",
-				Coin:     CoinTypeSkycoin,
+				Coin:     meta.CoinTypeSkycoin,
 				Encrypt:  false,
 				Seed:     "seed",
 				Password: []byte("pwd"),
@@ -306,7 +299,7 @@ func TestNewWallet(t *testing.T) {
 			expect: expect{
 				meta: map[string]string{
 					"label":     "bip44wallet1",
-					"coin":      string(CoinTypeSkycoin),
+					"coin":      string(meta.CoinTypeSkycoin),
 					"type":      string(WalletTypeBip44),
 					"version":   Version,
 					"bip44Coin": "8000",
@@ -340,7 +333,7 @@ func TestNewWallet(t *testing.T) {
 
 	for _, tc := range tt {
 		// test all supported crypto types
-		for ct := range cryptoTable {
+		for _, ct := range crypto.TypesInsecure() {
 			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
 			if tc.opts.Encrypt {
 				tc.opts.CryptoType = ct
@@ -421,7 +414,7 @@ func TestWalletLock(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		for ct := range cryptoTable {
+		for _, ct := range crypto.TypesInsecure() {
 			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
 			if tc.opts.Encrypt {
 				tc.opts.CryptoType = ct
@@ -510,7 +503,7 @@ func TestWalletUnlock(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		for ct := range cryptoTable {
+		for _, ct := range crypto.TypesInsecure() {
 			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
 			if tc.opts.Encrypt {
 				tc.opts.CryptoType = ct
@@ -576,7 +569,7 @@ func TestLockAndUnLock(t *testing.T) {
 		WalletTypeBip44,
 		WalletTypeDeterministic,
 	} {
-		for ct := range cryptoTable {
+		for _, ct := range crypto.TypesInsecure() {
 			t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
 				w, err := NewWallet("wallet", Options{
 					Label: "wallet",
@@ -669,7 +662,7 @@ func TestLoadWallet(t *testing.T) {
 			filename: "./testdata/test1.wlt",
 			expect: expect{
 				meta: map[string]string{
-					"coin":     string(CoinTypeSkycoin),
+					"coin":     string(meta.CoinTypeSkycoin),
 					"filename": "test1.wlt",
 					"label":    "test3",
 					"lastSeed": "9182b02c0004217ba9a55593f8cf0abecc30d041e094b266dbb5103e1919adaf",
@@ -726,7 +719,7 @@ func TestLoadWallet(t *testing.T) {
 			filename: "./testdata/scrypt-chacha20poly1305-encrypted.wlt",
 			expect: expect{
 				meta: map[string]string{
-					"coin":       string(CoinTypeSkycoin),
+					"coin":       string(meta.CoinTypeSkycoin),
 					"cryptoType": "scrypt-chacha20poly1305",
 					"encrypted":  "true",
 					"filename":   "scrypt-chacha20poly1305-encrypted.wlt",
@@ -744,7 +737,7 @@ func TestLoadWallet(t *testing.T) {
 			filename: "./testdata/sha256xor-encrypted.wlt",
 			expect: expect{
 				meta: map[string]string{
-					"coin":       string(CoinTypeSkycoin),
+					"coin":       string(meta.CoinTypeSkycoin),
 					"cryptoType": "sha256-xor",
 					"encrypted":  "true",
 					"filename":   "sha256xor-encrypted.wlt",
@@ -762,7 +755,7 @@ func TestLoadWallet(t *testing.T) {
 			filename: "./testdata/v2_no_encrypt.wlt",
 			expect: expect{
 				meta: map[string]string{
-					"coin":       string(CoinTypeSkycoin),
+					"coin":       string(meta.CoinTypeSkycoin),
 					"cryptoType": "scrypt-chacha20poly1305",
 					"encrypted":  "false",
 					"filename":   "v2_no_encrypt.wlt",
@@ -782,7 +775,7 @@ func TestLoadWallet(t *testing.T) {
 			expect: expect{
 				meta: map[string]string{
 					"bip44Coin":      fmt.Sprint(bip44.CoinTypeSkycoin),
-					"coin":           string(CoinTypeSkycoin),
+					"coin":           string(meta.CoinTypeSkycoin),
 					"cryptoType":     "",
 					"encrypted":      "false",
 					"filename":       "test5-bip44.wlt",
@@ -803,7 +796,7 @@ func TestLoadWallet(t *testing.T) {
 			expect: expect{
 				meta: map[string]string{
 					"bip44Coin":      fmt.Sprint(bip44.CoinTypeSkycoin),
-					"coin":           string(CoinTypeSkycoin),
+					"coin":           string(meta.CoinTypeSkycoin),
 					"cryptoType":     "",
 					"encrypted":      "false",
 					"filename":       "test6-passphrase-bip44.wlt",
@@ -928,7 +921,7 @@ func TestWalletGenerateAddress(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		for ct := range cryptoTable {
+		for _, ct := range crypto.TypesInsecure() {
 			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
 			if tc.opts.Encrypt {
 				tc.opts.CryptoType = ct
@@ -1082,7 +1075,7 @@ func TestWalletCollectionAddEntry(t *testing.T) {
 
 			a := cipher.MustAddressFromSecKey(tc.secKey)
 			p := cipher.MustPubKeyFromSecKey(tc.secKey)
-			require.Equal(t, tc.err, w.(*CollectionWallet).AddEntry(Entry{
+			require.Equal(t, tc.err, w.(*CollectionWallet).AddEntry(entry.Entry{
 				Address: a,
 				Public:  p,
 				Secret:  tc.secKey,
@@ -1106,7 +1099,7 @@ func TestWalletGuard(t *testing.T) {
 		},
 	}
 
-	for ct := range cryptoTable {
+	for _, ct := range crypto.TypesInsecure() {
 		for _, tc := range cases {
 			t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
 				validate := func(w Wallet) {
@@ -1455,7 +1448,7 @@ func TestWalletValidate(t *testing.T) {
 	goodMetaUnencrypted := map[string]string{
 		"filename":  "foo.wlt",
 		"type":      WalletTypeDeterministic,
-		"coin":      string(CoinTypeSkycoin),
+		"coin":      string(meta.CoinTypeSkycoin),
 		"encrypted": "false",
 		"seed":      "fooseed",
 		"lastSeed":  "foolastseed",
@@ -1464,7 +1457,7 @@ func TestWalletValidate(t *testing.T) {
 	goodMetaEncrypted := map[string]string{
 		"filename":   "foo.wlt",
 		"type":       WalletTypeDeterministic,
-		"coin":       string(CoinTypeSkycoin),
+		"coin":       string(meta.CoinTypeSkycoin),
 		"encrypted":  "true",
 		"cryptoType": "scrypt-chacha20poly1305",
 		"seed":       "",
@@ -1499,57 +1492,57 @@ func TestWalletValidate(t *testing.T) {
 	}{
 		{
 			name: "missing filename",
-			meta: delField(goodMetaUnencrypted, metaFilename),
+			meta: delField(goodMetaUnencrypted, meta.MetaFilename),
 			err:  errors.New("filename not set"),
 		},
 		{
 			name: "wallet type missing",
-			meta: delField(goodMetaUnencrypted, metaType),
+			meta: delField(goodMetaUnencrypted, meta.MetaType),
 			err:  errors.New("type field not set"),
 		},
 		{
 			name: "invalid wallet type",
-			meta: setField(goodMetaUnencrypted, metaType, "footype"),
+			meta: setField(goodMetaUnencrypted, meta.MetaType, "footype"),
 			err:  ErrInvalidWalletType,
 		},
 		{
 			name: "coin field missing",
-			meta: delField(goodMetaUnencrypted, metaCoin),
+			meta: delField(goodMetaUnencrypted, meta.MetaCoin),
 			err:  errors.New("coin field not set"),
 		},
 		{
 			name: "encrypted field invalid",
-			meta: setField(goodMetaUnencrypted, metaEncrypted, "foo"),
+			meta: setField(goodMetaUnencrypted, meta.MetaEncrypted, "foo"),
 			err:  errors.New("encrypted field is not a valid bool"),
 		},
 		{
 			name: "unencrypted missing seed",
-			meta: delField(goodMetaUnencrypted, metaSeed),
+			meta: delField(goodMetaUnencrypted, meta.MetaSeed),
 			err:  errors.New("seed missing in unencrypted deterministic wallet"),
 		},
 		{
 			name: "unencrypted missing last seed",
-			meta: delField(goodMetaUnencrypted, metaLastSeed),
+			meta: delField(goodMetaUnencrypted, meta.MetaLastSeed),
 			err:  errors.New("lastSeed missing in unencrypted deterministic wallet"),
 		},
 		{
 			name: "crypto type missing",
-			meta: delField(goodMetaEncrypted, metaCryptoType),
+			meta: delField(goodMetaEncrypted, meta.MetaCryptoType),
 			err:  errors.New("crypto type field not set"),
 		},
 		{
 			name: "crypto type invalid",
-			meta: setField(goodMetaEncrypted, metaCryptoType, "foocryptotype"),
+			meta: setField(goodMetaEncrypted, meta.MetaCryptoType, "foocryptotype"),
 			err:  errors.New("unknown crypto type"),
 		},
 		{
 			name: "secrets missing",
-			meta: delField(goodMetaEncrypted, metaSecrets),
+			meta: delField(goodMetaEncrypted, meta.MetaSecrets),
 			err:  errors.New("wallet is encrypted, but secrets field not set"),
 		},
 		{
 			name: "secrets empty",
-			meta: setField(goodMetaEncrypted, metaSecrets, ""),
+			meta: setField(goodMetaEncrypted, meta.MetaSecrets, ""),
 			err:  errors.New("wallet is encrypted, but secrets field not set"),
 		},
 		{

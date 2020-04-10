@@ -1,10 +1,14 @@
-package wallet
+package bip44wallet
 
 import (
 	"errors"
 	"testing"
 
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
+	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
+	"github.com/SkycoinProject/skycoin/src/wallet/meta"
+	"github.com/SkycoinProject/skycoin/src/wallet/secrets"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,8 +19,8 @@ func TestBip44WalletNew(t *testing.T) {
 		label          string
 		seed           string
 		seedPassphrase string
-		coinType       CoinType
-		cryptoType     CryptoType
+		coinType       meta.CoinType
+		cryptoType     crypto.CryptoType
 		err            error
 	}{
 		{
@@ -25,8 +29,8 @@ func TestBip44WalletNew(t *testing.T) {
 			label:          "test",
 			seed:           testSeed,
 			seedPassphrase: testSeedPassphrase,
-			coinType:       CoinTypeSkycoin,
-			cryptoType:     DefaultCryptoType,
+			coinType:       meta.CoinType("skycoin"),
+			cryptoType:     crypto.DefaultCryptoType,
 		},
 		{
 			name:           "bitcoin default crypto type",
@@ -34,8 +38,8 @@ func TestBip44WalletNew(t *testing.T) {
 			label:          "test",
 			seed:           testSeed,
 			seedPassphrase: testSeedPassphrase,
-			coinType:       CoinTypeBitcoin,
-			cryptoType:     DefaultCryptoType,
+			coinType:       meta.CoinTypeBitcoin,
+			cryptoType:     crypto.DefaultCryptoType,
 		},
 		{
 			name:           "skycoin crypto type sha256xor",
@@ -43,8 +47,8 @@ func TestBip44WalletNew(t *testing.T) {
 			label:          "test",
 			seed:           testSeed,
 			seedPassphrase: testSeedPassphrase,
-			coinType:       CoinTypeSkycoin,
-			cryptoType:     CryptoTypeSha256Xor,
+			coinType:       meta.CoinTypeSkycoin,
+			cryptoType:     crypto.CryptoTypeSha256Xor,
 		},
 		{
 			name:           "bitcoin crypto type sha256xor",
@@ -52,8 +56,8 @@ func TestBip44WalletNew(t *testing.T) {
 			label:          "test",
 			seed:           testSeed,
 			seedPassphrase: testSeedPassphrase,
-			coinType:       CoinTypeBitcoin,
-			cryptoType:     CryptoTypeSha256Xor,
+			coinType:       meta.CoinTypeBitcoin,
+			cryptoType:     crypto.CryptoTypeSha256Xor,
 		},
 		{
 			name:           "skycoin no crypto type",
@@ -61,7 +65,7 @@ func TestBip44WalletNew(t *testing.T) {
 			label:          "test",
 			seed:           testSeed,
 			seedPassphrase: testSeedPassphrase,
-			coinType:       CoinTypeSkycoin,
+			coinType:       meta.CoinTypeSkycoin,
 		},
 		{
 			name:           "bitcoin no crypto type",
@@ -69,14 +73,14 @@ func TestBip44WalletNew(t *testing.T) {
 			label:          "test",
 			seed:           testSeed,
 			seedPassphrase: testSeedPassphrase,
-			coinType:       CoinTypeBitcoin,
+			coinType:       meta.CoinTypeBitcoin,
 		},
 		{
 			name:           "no filename",
 			label:          "test",
 			seed:           testSeed,
 			seedPassphrase: testSeedPassphrase,
-			coinType:       CoinTypeSkycoin,
+			coinType:       meta.CoinTypeSkycoin,
 			err:            errors.New("Filename not set"),
 		},
 		{
@@ -93,8 +97,8 @@ func TestBip44WalletNew(t *testing.T) {
 			label:          "test",
 			seed:           "",
 			seedPassphrase: testSeedPassphrase,
-			coinType:       CoinTypeSkycoin,
-			cryptoType:     DefaultCryptoType,
+			coinType:       meta.CoinTypeSkycoin,
+			cryptoType:     crypto.DefaultCryptoType,
 			err:            errors.New("Seed missing in unencrypted bip44 wallet"),
 		},
 		{
@@ -103,8 +107,8 @@ func TestBip44WalletNew(t *testing.T) {
 			label:          "test",
 			seed:           invalidBip44Seed,
 			seedPassphrase: testSeedPassphrase,
-			coinType:       CoinTypeSkycoin,
-			cryptoType:     DefaultCryptoType,
+			coinType:       meta.CoinTypeSkycoin,
+			cryptoType:     crypto.DefaultCryptoType,
 			err:            errors.New("Mnemonic must have 12, 15, 18, 21 or 24 words"),
 		},
 	}
@@ -124,23 +128,25 @@ func TestBip44WalletNew(t *testing.T) {
 			if err != nil {
 				return
 			}
-			require.Equal(t, Version, w.Meta.Version())
+			require.Equal(t, wallet.Version, w.Meta.Version())
 			require.Equal(t, tc.filename, w.Meta.Filename())
 			require.Equal(t, tc.label, w.Meta.Label())
 			require.Equal(t, tc.seed, w.Meta.Seed())
 			require.Equal(t, tc.seedPassphrase, w.Meta.SeedPassphrase())
 			require.Equal(t, tc.coinType, w.Meta.Coin())
-			require.Equal(t, WalletTypeBip44, w.Meta.Type())
+			require.Equal(t, wallet.WalletTypeBip44, w.Meta.Type())
 			require.False(t, w.Meta.IsEncrypted())
 			require.NotEmpty(t, w.Meta.Timestamp())
 			require.NotNil(t, w.decoder)
-			require.Equal(t, resolveCoinAdapter(tc.coinType).Bip44CoinType(), w.Meta.Bip44Coin())
+			bip44Coin, ok := w.Bip44Coin()
+			require.True(t, ok)
+			require.Equal(t, resolveCoinAdapter(tc.coinType).Bip44CoinType(), bip44Coin)
 			require.Empty(t, w.Meta.Secrets())
 
 			if tc.cryptoType != "" {
 				require.Equal(t, tc.cryptoType, w.Meta.CryptoType())
 			} else {
-				require.Equal(t, DefaultCryptoType, w.Meta.CryptoType())
+				require.Equal(t, crypto.DefaultCryptoType, w.Meta.CryptoType())
 			}
 		})
 	}
@@ -152,7 +158,7 @@ func TestWalletCreateAccount(t *testing.T) {
 		Label:          "test",
 		Seed:           testSeed,
 		SeedPassphrase: testSeedPassphrase,
-		CoinType:       CoinTypeSkycoin,
+		CoinType:       meta.CoinTypeSkycoin,
 	})
 	require.NoError(t, err)
 
@@ -172,7 +178,7 @@ func TestWalletAccountCreateAddresses(t *testing.T) {
 		Label:          "test",
 		Seed:           testSeed,
 		SeedPassphrase: testSeedPassphrase,
-		CoinType:       CoinTypeSkycoin,
+		CoinType:       meta.CoinTypeSkycoin,
 	})
 	require.NoError(t, err)
 
@@ -205,7 +211,7 @@ func TestBip44WalletLock(t *testing.T) {
 		Label:          "test",
 		Seed:           testSeed,
 		SeedPassphrase: testSeedPassphrase,
-		CoinType:       CoinTypeSkycoin,
+		CoinType:       meta.CoinTypeSkycoin,
 	})
 	require.NoError(t, err)
 
@@ -227,7 +233,7 @@ func TestBip44WalletLock(t *testing.T) {
 	require.True(t, w.IsEncrypted())
 
 	// confirms that no secrets exist in the accounts
-	ss := make(Secrets)
+	ss := make(secrets.Secrets)
 	w.accounts.packSecrets(ss)
 	require.Equal(t, 4, len(ss))
 	for k, v := range ss {
@@ -246,7 +252,7 @@ func TestBip44WalletUnlock(t *testing.T) {
 		Label:          "test",
 		Seed:           testSeed,
 		SeedPassphrase: testSeedPassphrase,
-		CoinType:       CoinTypeSkycoin,
+		CoinType:       meta.CoinTypeSkycoin,
 	})
 	require.NoError(t, err)
 
@@ -266,7 +272,7 @@ func TestBip44WalletUnlock(t *testing.T) {
 
 	// unlock with wrong password
 	_, err = cw.Unlock([]byte("12345"))
-	require.Equal(t, ErrInvalidPassword, err)
+	require.Equal(t, wallet.ErrInvalidPassword, err)
 
 	// unlock with the correct password
 	wlt, err := cw.Unlock([]byte("123456"))
@@ -279,11 +285,11 @@ func TestBip44WalletUnlock(t *testing.T) {
 	require.Equal(t, w.SeedPassphrase(), wlt.SeedPassphrase())
 
 	// pack the origin wallet's secrets
-	originSS := make(Secrets)
+	originSS := make(secrets.Secrets)
 	w.accounts.packSecrets(originSS)
 
 	// pack the unlocked wallet's secrets
-	ss := make(Secrets)
+	ss := make(secrets.Secrets)
 	wlt.accounts.packSecrets(ss)
 
 	// compare these two secrets, they should have the same keys and values
@@ -301,7 +307,7 @@ func TestBip44WalletNewSerializeDeserialize(t *testing.T) {
 		Label:          "test",
 		Seed:           testSeed,
 		SeedPassphrase: testSeedPassphrase,
-		CoinType:       CoinTypeSkycoin,
+		CoinType:       meta.CoinTypeSkycoin,
 	})
 	require.NoError(t, err)
 
@@ -332,8 +338,8 @@ func TestBip44WalletNewSerializeDeserialize(t *testing.T) {
 
 	// confirms that serialize/deserialize do not lose accounts data
 	require.Equal(t, w.accounts.len(), wlt.accounts.len())
-	originSS := make(Secrets)
-	ss := make(Secrets)
+	originSS := make(secrets.Secrets)
+	ss := make(secrets.Secrets)
 	w.accounts.packSecrets(originSS)
 	wlt.accounts.packSecrets(ss)
 

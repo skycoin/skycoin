@@ -10,6 +10,7 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
 	"github.com/SkycoinProject/skycoin/src/util/logging"
 	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/meta"
 )
 
 // Note: Address_gen generates public keys and addresses
@@ -35,11 +36,11 @@ func main() {
 	addrsList := flag.Bool("addrs-list", false, "only print a list of addresses")
 	flag.Parse()
 
-	var coinType wallet.CoinType
+	var coinType meta.CoinType
 	if *isBitcoin {
-		coinType = wallet.CoinTypeBitcoin
+		coinType = meta.CoinTypeBitcoin
 	} else {
-		coinType = wallet.CoinTypeSkycoin
+		coinType = meta.CoinTypeSkycoin
 	}
 
 	if *seed == "" {

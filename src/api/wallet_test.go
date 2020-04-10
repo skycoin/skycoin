@@ -22,6 +22,9 @@ import (
 	"github.com/SkycoinProject/skycoin/src/testutil"
 	"github.com/SkycoinProject/skycoin/src/visor"
 	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
+	"github.com/SkycoinProject/skycoin/src/wallet/entry"
+	"github.com/SkycoinProject/skycoin/src/wallet/meta"
 )
 
 func TestGetBalanceHandler(t *testing.T) {
@@ -268,8 +271,8 @@ func TestWalletGet(t *testing.T) {
 			walletID: "1234",
 			gatewayGetWalletResultFunc: func(_ string) wallet.Wallet {
 				return &wallet.DeterministicWallet{
-					Meta:    wallet.Meta{"seed": "seed", "lastSeed": "seed"},
-					Entries: []wallet.Entry{},
+					Meta:    meta.Meta{"seed": "seed", "lastSeed": "seed"},
+					Entries: []entry.Entry{},
 				}
 			},
 			gatewayGetWalletErr: wallet.ErrWalletAPIDisabled,
@@ -284,7 +287,7 @@ func TestWalletGet(t *testing.T) {
 			walletID: "1234",
 			gatewayGetWalletResultFunc: func(_ string) wallet.Wallet {
 				return &wallet.DeterministicWallet{
-					Meta:    wallet.Meta{"seed": "seed", "lastSeed": "seed"},
+					Meta:    meta.Meta{"seed": "seed", "lastSeed": "seed"},
 					Entries: cloneEntries(entries),
 				}
 			},
@@ -1076,7 +1079,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			},
 			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
 				return &wallet.DeterministicWallet{
-					Meta: wallet.Meta{
+					Meta: meta.Meta{
 						"filename": "filename",
 					},
 					Entries: cloneEntries(entries),
@@ -1112,7 +1115,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			},
 			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
 				return &wallet.DeterministicWallet{
-					Meta: wallet.Meta{
+					Meta: meta.Meta{
 						"filename": "filename",
 					},
 					Entries: cloneEntries(entries),
@@ -1146,7 +1149,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			},
 			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
 				return &wallet.DeterministicWallet{
-					Meta: wallet.Meta{
+					Meta: meta.Meta{
 						"filename": "filename",
 					},
 					Entries: cloneEntries(entries),
@@ -1181,7 +1184,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			},
 			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
 				return &wallet.DeterministicWallet{
-					Meta: wallet.Meta{
+					Meta: meta.Meta{
 						"filename": "filename",
 					},
 				}
@@ -1218,7 +1221,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			},
 			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
 				return &wallet.DeterministicWallet{
-					Meta: wallet.Meta{
+					Meta: meta.Meta{
 						"filename":  "filename",
 						"label":     "bar",
 						"encrypted": "true",
@@ -2299,7 +2302,7 @@ func TestGetWallets(t *testing.T) {
 			status: http.StatusOK,
 			getWalletsResponse: wallet.Wallets{
 				"foofilename": &wallet.DeterministicWallet{
-					Meta: wallet.Meta{
+					Meta: meta.Meta{
 						"foo":        "bar",
 						"seed":       "fooseed",
 						"lastSeed":   "foolastseed",
@@ -2312,7 +2315,7 @@ func TestGetWallets(t *testing.T) {
 						"tm":         "345678",
 						"encrypted":  "true",
 					},
-					Entries: []wallet.Entry{
+					Entries: []entry.Entry{
 						{
 							Address: addrs[0],
 							Public:  pubkeys[0],
@@ -2321,7 +2324,7 @@ func TestGetWallets(t *testing.T) {
 					},
 				},
 				"foofilename2": &wallet.DeterministicWallet{
-					Meta: wallet.Meta{
+					Meta: meta.Meta{
 						"foo":        "bar2",
 						"seed":       "fooseed2",
 						"lastSeed":   "foolastseed2",
@@ -2334,7 +2337,7 @@ func TestGetWallets(t *testing.T) {
 						"tm":         "123456",
 						"encrypted":  "false",
 					},
-					Entries: []wallet.Entry{
+					Entries: []entry.Entry{
 						{
 							Address: addrs[1],
 							Public:  pubkeys[1],
@@ -2343,7 +2346,7 @@ func TestGetWallets(t *testing.T) {
 					},
 				},
 				"foofilename3": &wallet.DeterministicWallet{
-					Meta: wallet.Meta{
+					Meta: meta.Meta{
 						"foo":        "bar3",
 						"seed":       "fooseed3",
 						"lastSeed":   "foolastseed3",
@@ -2356,7 +2359,7 @@ func TestGetWallets(t *testing.T) {
 						"tm":         "234567",
 						"encrypted":  "true",
 					},
-					Entries: []wallet.Entry{
+					Entries: []entry.Entry{
 						{
 							Address: addrs[2],
 							Public:  pubkeys[2],
@@ -2577,7 +2580,7 @@ func TestEncryptWallet(t *testing.T) {
 			password: "pwd",
 			gatewayReturn: gatewayReturnPair{
 				w: &wallet.DeterministicWallet{
-					Meta: wallet.Meta{
+					Meta: meta.Meta{
 						"filename":  "wallet.wlt",
 						"seed":      "seed",
 						"lastSeed":  "lastSeed",
@@ -2733,7 +2736,7 @@ func TestDecryptWallet(t *testing.T) {
 			password: "pwd",
 			gatewayReturn: gatewayReturnPair{
 				w: &wallet.DeterministicWallet{
-					Meta: wallet.Meta{
+					Meta: meta.Meta{
 						"filename":  "wallet",
 						"seed":      "seed",
 						"lastSeed":  "lastSeed",
@@ -2759,7 +2762,7 @@ func TestDecryptWallet(t *testing.T) {
 			password: "pwd",
 			gatewayReturn: gatewayReturnPair{
 				w: &wallet.DeterministicWallet{
-					Meta: wallet.Meta{
+					Meta: meta.Meta{
 						"filename":  "wallet",
 						"seed":      "seed",
 						"lastSeed":  "lastSeed",
@@ -2892,15 +2895,15 @@ func TestDecryptWallet(t *testing.T) {
 }
 
 // makeEntries derives N wallet address entries from given seed
-// Returns set of wallet.Entry and wallet.ReadableEntry, the readable
+// Returns set of entry.Entry and wallet.ReadableEntry, the readable
 // entries' secrets are removed.
-func makeEntries(seed []byte, n int) ([]wallet.Entry, []readable.WalletEntry) { //nolint:unparam
+func makeEntries(seed []byte, n int) ([]entry.Entry, []readable.WalletEntry) { //nolint:unparam
 	seckeys := cipher.MustGenerateDeterministicKeyPairs(seed, n)
-	var entries []wallet.Entry
+	var entries []entry.Entry
 	var responseEntries []readable.WalletEntry
 	for i, seckey := range seckeys {
 		pubkey := cipher.MustPubKeyFromSecKey(seckey)
-		entries = append(entries, wallet.Entry{
+		entries = append(entries, entry.Entry{
 			Address: cipher.AddressFromPubKey(pubkey),
 			Public:  pubkey,
 			Secret:  seckey,
@@ -2913,8 +2916,8 @@ func makeEntries(seed []byte, n int) ([]wallet.Entry, []readable.WalletEntry) { 
 	return entries, responseEntries
 }
 
-func cloneEntries(es []wallet.Entry) []wallet.Entry {
-	var entries []wallet.Entry
+func cloneEntries(es []entry.Entry) []entry.Entry {
+	var entries []entry.Entry
 	entries = append(entries, es...)
 	return entries
 }
@@ -2927,7 +2930,7 @@ func TestWalletRecover(t *testing.T) {
 
 	okWalletUnencrypted, err := wallet.NewWallet("foo", wallet.Options{
 		Type:      wallet.WalletTypeDeterministic,
-		Coin:      wallet.CoinTypeSkycoin,
+		Coin:      meta.CoinTypeSkycoin,
 		Label:     "foolabel",
 		Seed:      "fooseed",
 		GenerateN: 10,
@@ -2938,12 +2941,12 @@ func TestWalletRecover(t *testing.T) {
 
 	okWalletEncrypted, err := wallet.NewWallet("foo", wallet.Options{
 		Type:       wallet.WalletTypeDeterministic,
-		Coin:       wallet.CoinTypeSkycoin,
+		Coin:       meta.CoinTypeSkycoin,
 		Label:      "foolabel",
 		Seed:       "fooseed",
 		Encrypt:    true,
 		Password:   []byte("foopassword"),
-		CryptoType: wallet.CryptoTypeScryptChacha20poly1305Insecure,
+		CryptoType: crypto.CryptoTypeScryptChacha20poly1305Insecure,
 		GenerateN:  10,
 	})
 	require.NoError(t, err)

@@ -12,6 +12,9 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher/bip32"
 	"github.com/SkycoinProject/skycoin/src/util/file"
 	"github.com/SkycoinProject/skycoin/src/util/mathutil"
+	"github.com/SkycoinProject/skycoin/src/wallet/entry"
+	"github.com/SkycoinProject/skycoin/src/wallet/meta"
+	"github.com/SkycoinProject/skycoin/src/wallet/secrets"
 )
 
 // XPubWallet holds a single xpub (extended public key) and derives child public keys from it.
@@ -19,13 +22,13 @@ import (
 // XPub wallets can generate new addresses and receive coins, but can't spend coins
 // because the private keys are not available.
 type XPubWallet struct {
-	Meta
-	Entries Entries
+	meta.Meta
+	Entries entry.Entries
 	xpub    *bip32.PublicKey
 }
 
 // newXPubWallet creates a XPubWallet
-func newXPubWallet(meta Meta) (*XPubWallet, error) {
+func newXPubWallet(meta meta.Meta) (*XPubWallet, error) {
 	xpub, err := parseXPub(meta.XPub())
 	if err != nil {
 		return nil, err
@@ -48,11 +51,11 @@ func parseXPub(xp string) (*bip32.PublicKey, error) {
 }
 
 // PackSecrets does nothing because XPubWallet has no secrets
-func (w *XPubWallet) PackSecrets(ss Secrets) {
+func (w *XPubWallet) PackSecrets(ss secrets.Secrets) {
 }
 
 // UnpackSecrets does nothing because XPubWallet has no secrets
-func (w *XPubWallet) UnpackSecrets(ss Secrets) error {
+func (w *XPubWallet) UnpackSecrets(ss secrets.Secrets) error {
 	return nil
 }
 
@@ -64,8 +67,8 @@ func (w *XPubWallet) Clone() Wallet {
 	}
 
 	return &XPubWallet{
-		Meta:    w.Meta.clone(),
-		Entries: w.Entries.clone(),
+		Meta:    w.Meta.Clone(),
+		Entries: w.Entries.Clone(),
 		xpub:    xpub,
 	}
 }
@@ -77,8 +80,8 @@ func (w *XPubWallet) CopyFrom(src Wallet) {
 		logger.WithError(err).Panic("CopyFrom parseXPub failed")
 	}
 	w.xpub = xpub
-	w.Meta = src.(*XPubWallet).Meta.clone()
-	w.Entries = src.(*XPubWallet).Entries.clone()
+	w.Meta = src.(*XPubWallet).Meta.Clone()
+	w.Entries = src.(*XPubWallet).Entries.Clone()
 }
 
 // CopyFromRef copies the src wallet with a pointer dereference
@@ -94,8 +97,8 @@ func (w *XPubWallet) CopyFromRef(src Wallet) {
 
 // Erase wipes secret fields in wallet
 func (w *XPubWallet) Erase() {
-	w.Meta.eraseSeeds()
-	w.Entries.erase()
+	w.Meta.EraseSeeds()
+	w.Entries.Erase()
 }
 
 // ToReadable converts the wallet to its readable (serializable) format
@@ -105,26 +108,26 @@ func (w *XPubWallet) ToReadable() Readable {
 
 // Validate validates the wallet
 func (w *XPubWallet) Validate() error {
-	return w.Meta.validate()
+	return metaValidate(w.Meta)
 }
 
 // GetAddresses returns all addresses in wallet
 func (w *XPubWallet) GetAddresses() []cipher.Addresser {
-	return w.Entries.getAddresses()
+	return w.Entries.GetAddresses()
 }
 
 // GetSkycoinAddresses returns all Skycoin addresses in wallet. The wallet's coin type must be Skycoin.
 func (w *XPubWallet) GetSkycoinAddresses() ([]cipher.Address, error) {
-	if w.Meta.Coin() != CoinTypeSkycoin {
+	if w.Meta.Coin() != meta.CoinTypeSkycoin {
 		return nil, errors.New("XPubWallet coin type is not skycoin")
 	}
 
-	return w.Entries.getSkycoinAddresses(), nil
+	return w.Entries.GetSkycoinAddresses(), nil
 }
 
 // GetEntries returns a copy of all entries held by the wallet
-func (w *XPubWallet) GetEntries() Entries {
-	return w.Entries.clone()
+func (w *XPubWallet) GetEntries() entry.Entries {
+	return w.Entries.Clone()
 }
 
 // EntriesLen returns the number of entries in the wallet
@@ -133,22 +136,22 @@ func (w *XPubWallet) EntriesLen() int {
 }
 
 // GetEntryAt returns entry at a given index in the entries array
-func (w *XPubWallet) GetEntryAt(i int) Entry {
+func (w *XPubWallet) GetEntryAt(i int) entry.Entry {
 	return w.Entries[i]
 }
 
 // GetEntry returns entry of given address
-func (w *XPubWallet) GetEntry(a cipher.Address) (Entry, bool) {
-	return w.Entries.get(a)
+func (w *XPubWallet) GetEntry(a cipher.Address) (entry.Entry, bool) {
+	return w.Entries.Get(a)
 }
 
 // HasEntry returns true if the wallet has an Entry with a given cipher.Address.
 func (w *XPubWallet) HasEntry(a cipher.Address) bool {
-	return w.Entries.has(a)
+	return w.Entries.Has(a)
 }
 
 // generateEntries generates up to `num` addresses
-func (w *XPubWallet) generateEntries(num uint64, initialChildIdx uint32) (Entries, error) {
+func (w *XPubWallet) generateEntries(num uint64, initialChildIdx uint32) (entry.Entries, error) {
 	if w.Meta.IsEncrypted() {
 		return nil, ErrWalletEncrypted
 	}
@@ -200,11 +203,11 @@ func (w *XPubWallet) generateEntries(num uint64, initialChildIdx uint32) (Entrie
 		addressIndices = append(addressIndices, j-1)
 	}
 
-	entries := make(Entries, len(pubkeys))
-	makeAddress := w.Meta.AddressConstructor()
+	entries := make(entry.Entries, len(pubkeys))
+	makeAddress := AddressConstructor(w.Meta)
 	for i, xp := range pubkeys {
 		pk := cipher.MustNewPubKey(xp.Key)
-		entries[i] = Entry{
+		entries[i] = entry.Entry{
 			Address:     makeAddress(pk),
 			Public:      pk,
 			ChildNumber: addressIndices[i],
@@ -223,13 +226,13 @@ func (w *XPubWallet) GenerateAddresses(num uint64) ([]cipher.Addresser, error) {
 
 	w.Entries = append(w.Entries, entries...)
 
-	return entries.getAddresses(), nil
+	return entries.GetAddresses(), nil
 }
 
 // GenerateSkycoinAddresses generates Skycoin addresses for the external chain, and appends them to the wallet's entries array.
 // If the wallet's coin type is not Skycoin, returns an error
 func (w *XPubWallet) GenerateSkycoinAddresses(num uint64) ([]cipher.Address, error) {
-	if w.Meta.Coin() != CoinTypeSkycoin {
+	if w.Meta.Coin() != meta.CoinTypeSkycoin {
 		return nil, errors.New("GenerateSkycoinAddresses called for non-skycoin wallet")
 	}
 
@@ -240,7 +243,7 @@ func (w *XPubWallet) GenerateSkycoinAddresses(num uint64) ([]cipher.Address, err
 
 	w.Entries = append(w.Entries, entries...)
 
-	return entries.getSkycoinAddresses(), nil
+	return entries.GetSkycoinAddresses(), nil
 }
 
 // ScanAddresses scans ahead N addresses,
@@ -256,7 +259,7 @@ func (w *XPubWallet) ScanAddresses(scanN uint64, tf TransactionsFinder) error {
 
 	w2 := w.Clone().(*XPubWallet)
 
-	entries, err := scanAddressesBip32(func(num uint64, childIdx uint32) (Entries, error) {
+	entries, err := scanAddressesBip32(func(num uint64, childIdx uint32) (entry.Entries, error) {
 		return w2.generateEntries(num, childIdx)
 	}, scanN, tf, nextChildIdx(w2.Entries))
 	if err != nil {
@@ -293,7 +296,7 @@ func (w *XPubWallet) Fingerprint() string {
 
 // ReadableXPubWallet used for [de]serialization of an xpub wallet
 type ReadableXPubWallet struct {
-	Meta            `json:"meta"`
+	meta.Meta       `json:"meta"`
 	ReadableEntries `json:"entries"`
 }
 
@@ -312,7 +315,7 @@ func LoadReadableXPubWallet(wltFile string) (*ReadableXPubWallet, error) {
 // NewReadableXPubWallet creates readable wallet
 func NewReadableXPubWallet(w *XPubWallet) *ReadableXPubWallet {
 	return &ReadableXPubWallet{
-		Meta:            w.Meta.clone(),
+		Meta:            w.Meta.Clone(),
 		ReadableEntries: newReadableEntries(w.Entries, w.Meta.Coin(), w.Meta.Type()),
 	}
 }
@@ -320,7 +323,7 @@ func NewReadableXPubWallet(w *XPubWallet) *ReadableXPubWallet {
 // ToWallet convert readable wallet to Wallet
 func (rw *ReadableXPubWallet) ToWallet() (Wallet, error) {
 	w := &XPubWallet{
-		Meta: rw.Meta.clone(),
+		Meta: rw.Meta.Clone(),
 	}
 
 	if err := w.Validate(); err != nil {

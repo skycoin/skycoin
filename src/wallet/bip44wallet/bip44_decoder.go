@@ -1,4 +1,4 @@
-package wallet
+package bip44wallet
 
 import (
 	"bytes"
@@ -8,7 +8,11 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip32"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
+	"github.com/SkycoinProject/skycoin/src/wallet/entry"
+	"github.com/SkycoinProject/skycoin/src/wallet/meta"
 )
+
+const metaAccountsHash = "metaAccountsHash"
 
 // Bip44WalletJSONDecoder implements the WalletDecoder interface,
 // which provides methods for encoding and decoding a bip44 wallet in JSON format.
@@ -63,8 +67,8 @@ func (d Bip44WalletJSONDecoder) Decode(b []byte) (*Bip44WalletNew, error) {
 // of the accounts. It is used for verifying the integrity of the wallet accounts,
 // so that the wallet won't break after user edit the wallet file mistakenly.
 type readableBip44WalletNew struct {
-	Meta     `json:"meta"`
-	Accounts readableBip44Accounts `json:"accounts"`
+	meta.Meta `json:"meta"`
+	Accounts  readableBip44Accounts `json:"accounts"`
 }
 
 // newReadableBip44WalletNew creates a readable bip44 wallet
@@ -75,7 +79,7 @@ func newReadableBip44WalletNew(w *Bip44WalletNew) (*readableBip44WalletNew, erro
 	}
 
 	rw := &readableBip44WalletNew{
-		Meta:     w.Meta.clone(),
+		Meta:     w.Meta.Clone(),
 		Accounts: *ra,
 	}
 
@@ -97,7 +101,7 @@ func newReadableBip44WalletNew(w *Bip44WalletNew) (*readableBip44WalletNew, erro
 // toWallet converts the readable bip44 wallet to a bip44 wallet
 func (rw readableBip44WalletNew) toWallet() (*Bip44WalletNew, error) {
 	// resolve the coin adapter base on coin type
-	ca := resolveCoinAdapter(rw.Coin())
+	ca := resolveCoinAdapter(meta.CoinType(rw.Coin()))
 
 	accounts, err := rw.Accounts.toBip44Accounts(ca)
 	if err != nil {
@@ -105,7 +109,7 @@ func (rw readableBip44WalletNew) toWallet() (*Bip44WalletNew, error) {
 	}
 
 	return &Bip44WalletNew{
-		Meta:     rw.Meta.clone(),
+		Meta:     rw.Meta.Clone(),
 		accounts: accounts,
 		decoder:  &Bip44WalletJSONDecoder{},
 	}, nil
@@ -121,7 +125,7 @@ func (ras readableBip44Accounts) toBip44Accounts(ca coinAdapter) (*bip44Accounts
 		a := bip44Account{
 			Name:     ra.Name,
 			Index:    ra.Index,
-			CoinType: CoinType(ra.CoinType),
+			CoinType: meta.CoinType(ra.CoinType),
 		}
 
 		// decode private key if not empty
@@ -211,7 +215,7 @@ func stringToChainIndex(s string) (int, error) {
 	}
 }
 
-func newBip44EntryFromReadable(re readableBip44Entry, ca coinAdapter) (*Entry, error) {
+func newBip44EntryFromReadable(re readableBip44Entry, ca coinAdapter) (*entry.Entry, error) {
 	addr, err := ca.DecodeBase58Address(re.Address)
 	if err != nil {
 		return nil, err
@@ -231,7 +235,7 @@ func newBip44EntryFromReadable(re readableBip44Entry, ca coinAdapter) (*Entry, e
 		}
 	}
 
-	return &Entry{
+	return &entry.Entry{
 		Address:     addr,
 		Public:      p,
 		Secret:      secKey,

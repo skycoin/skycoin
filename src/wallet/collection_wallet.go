@@ -76,7 +76,23 @@ func (w *CollectionWallet) ToReadable() Readable {
 
 // Validate validates the wallet
 func (w *CollectionWallet) Validate() error {
-	return metaValidate(w.Meta)
+	if err := w.Meta.Validate(); err != nil {
+		return err
+	}
+
+	walletType := w.Meta.Type()
+	if !IsValidWalletType(walletType) {
+		return ErrInvalidWalletType
+	}
+
+	if s := w.Meta[meta.MetaSeed]; s != "" {
+		return errors.New("seed should not be in collection wallets")
+	}
+
+	if s := w.Meta[meta.MetaLastSeed]; s != "" {
+		return errors.New("lastSeed should not be in collection wallets")
+	}
+	return nil
 }
 
 // GetEntries returns a copy of all entries held by the wallet

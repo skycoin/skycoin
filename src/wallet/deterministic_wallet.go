@@ -88,7 +88,25 @@ func (w *DeterministicWallet) ToReadable() Readable {
 
 // Validate validates the wallet
 func (w *DeterministicWallet) Validate() error {
-	return metaValidate(w.Meta)
+	if err := w.Meta.Validate(); err != nil {
+		return err
+	}
+
+	walletType := w.Meta.Type()
+	if !IsValidWalletType(walletType) {
+		return ErrInvalidWalletType
+	}
+
+	if !w.IsEncrypted() {
+		if s := w.Seed(); s == "" {
+			return errors.New("seed missing in unencrypted deterministic wallet")
+		}
+
+		if s := w.LastSeed(); s == "" {
+			return errors.New("lastSeed missing in unencrypted deterministic wallet")
+		}
+	}
+	return nil
 }
 
 // GetAddresses returns all addresses in wallet

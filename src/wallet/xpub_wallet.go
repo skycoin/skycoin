@@ -108,7 +108,27 @@ func (w *XPubWallet) ToReadable() Readable {
 
 // Validate validates the wallet
 func (w *XPubWallet) Validate() error {
-	return metaValidate(w.Meta)
+	if err := w.Meta.Validate(); err != nil {
+		return err
+	}
+
+	walletType := w.Meta.Type()
+	if !IsValidWalletType(walletType) {
+		return ErrInvalidWalletType
+	}
+
+	if s := w.Meta[meta.MetaSeed]; s != "" {
+		return errors.New("seed should not be in xpub wallets")
+	}
+
+	if s := w.Meta[meta.MetaLastSeed]; s != "" {
+		return errors.New("lastSeed should not be in xpub wallets")
+	}
+
+	if w.Meta[meta.MetaXPub] != "" && walletType != WalletTypeXPub {
+		return errors.New("xpub is only used for xpub wallets")
+	}
+	return nil
 }
 
 // GetAddresses returns all addresses in wallet

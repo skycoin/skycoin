@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strconv"
 
 	"github.com/sirupsen/logrus"
 
@@ -102,7 +103,34 @@ func (w *Bip44Wallet) ToReadable() Readable {
 
 // Validate validates the wallet
 func (w *Bip44Wallet) Validate() error {
-	return metaValidate(w.Meta)
+	if err := w.Meta.Validate(); err != nil {
+		return err
+	}
+
+	walletType := w.Meta.Type()
+	if !IsValidWalletType(walletType) {
+		return ErrInvalidWalletType
+	}
+
+	if !w.IsEncrypted() {
+		// bip44 wallet seeds must be a valid bip39 mnemonic
+		if s := w.Seed(); s == "" {
+			return errors.New("seed missing in unencrypted bip44 wallet")
+		} else if err := bip39.ValidateMnemonic(s); err != nil {
+			return err
+		}
+	}
+
+	if s := w.Meta[meta.MetaBip44Coin]; s == "" {
+		return errors.New("bip44Coin missing")
+	} else if _, err := strconv.ParseUint(s, 10, 32); err != nil {
+		return fmt.Errorf("bip44Coin invalid: %v", err)
+	}
+
+	if s := w.Meta[meta.MetaLastSeed]; s != "" {
+		return errors.New("lastSeed should not be in bip44 wallets")
+	}
+	return nil
 }
 
 // GetAddresses returns all addresses in wallet

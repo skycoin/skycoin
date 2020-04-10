@@ -253,6 +253,67 @@ func (m Meta) XPub() string {
 	return m[MetaXPub]
 }
 
+// Validate validates the meta data
+func (m Meta) Validate() error {
+	if fn := m[MetaFilename]; fn == "" {
+		return errors.New("filename not set")
+	}
+
+	if tm := m[MetaTimestamp]; tm != "" {
+		_, err := strconv.ParseInt(tm, 10, 64)
+		if err != nil {
+			return errors.New("invalid timestamp")
+		}
+	}
+
+	_, ok := m[MetaType]
+	if !ok {
+		return errors.New("type field not set")
+	}
+
+	if coinType := m[MetaCoin]; coinType == "" {
+		return errors.New("coin field not set")
+	}
+
+	var isEncrypted bool
+	if encStr, ok := m[MetaEncrypted]; ok {
+		// validate the encrypted value
+		var err error
+		isEncrypted, err = strconv.ParseBool(encStr)
+		if err != nil {
+			return errors.New("encrypted field is not a valid bool")
+		}
+	}
+
+	if isEncrypted {
+		cryptoType, ok := m[MetaCryptoType]
+		if !ok {
+			return errors.New("crypto type field not set")
+		}
+
+		if _, err := crypto.GetCrypto(crypto.CryptoType(cryptoType)); err != nil {
+			return errors.New("unknown crypto type")
+		}
+
+		if s := m[MetaSecrets]; s == "" {
+			return errors.New("wallet is encrypted, but secrets field not set")
+		}
+
+		if s := m[MetaSeed]; s != "" {
+			return errors.New("seed should not be visible in encrypted wallets")
+		}
+
+		if s := m[MetaLastSeed]; s != "" {
+			return errors.New("lastSeed should not be visible in encrypted wallets")
+		}
+	} else {
+		if s := m[MetaSecrets]; s != "" {
+			return errors.New("secrets should not be in unencrypted wallets")
+		}
+	}
+	return nil
+}
+
 // ResolveCoinType normalizes a coin type string to a CoinType constant
 func ResolveCoinType(s string) (CoinType, error) {
 	switch strings.ToLower(s) {

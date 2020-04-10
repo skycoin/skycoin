@@ -17,7 +17,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 	"github.com/SkycoinProject/skycoin/src/util/file"
 	"github.com/SkycoinProject/skycoin/src/util/logging"
@@ -704,125 +703,6 @@ func filterDir(dir string, suffix string) ([]string, error) {
 		}
 	}
 	return res, nil
-}
-
-// validate validates the wallet
-func metaValidate(m meta.Meta) error {
-	if fn := m[meta.MetaFilename]; fn == "" {
-		return errors.New("filename not set")
-	}
-
-	if tm := m[meta.MetaTimestamp]; tm != "" {
-		_, err := strconv.ParseInt(tm, 10, 64)
-		if err != nil {
-			return errors.New("invalid timestamp")
-		}
-	}
-
-	walletType, ok := m[meta.MetaType]
-	if !ok {
-		return errors.New("type field not set")
-	}
-	if !IsValidWalletType(walletType) {
-		return ErrInvalidWalletType
-	}
-
-	if coinType := m[meta.MetaCoin]; coinType == "" {
-		return errors.New("coin field not set")
-	}
-
-	var isEncrypted bool
-	if encStr, ok := m[meta.MetaEncrypted]; ok {
-		// validate the encrypted value
-		var err error
-		isEncrypted, err = strconv.ParseBool(encStr)
-		if err != nil {
-			return errors.New("encrypted field is not a valid bool")
-		}
-	}
-
-	if isEncrypted {
-		cryptoType, ok := m[meta.MetaCryptoType]
-		if !ok {
-			return errors.New("crypto type field not set")
-		}
-
-		if _, err := crypto.GetCrypto(crypto.CryptoType(cryptoType)); err != nil {
-			return errors.New("unknown crypto type")
-		}
-
-		if s := m[meta.MetaSecrets]; s == "" {
-			return errors.New("wallet is encrypted, but secrets field not set")
-		}
-
-		if s := m[meta.MetaSeed]; s != "" {
-			return errors.New("seed should not be visible in encrypted wallets")
-		}
-
-		if s := m[meta.MetaLastSeed]; s != "" {
-			return errors.New("lastSeed should not be visible in encrypted wallets")
-		}
-	} else {
-		if s := m[meta.MetaSecrets]; s != "" {
-			return errors.New("secrets should not be in unencrypted wallets")
-		}
-	}
-
-	switch walletType {
-	case WalletTypeCollection:
-		if s := m[meta.MetaSeed]; s != "" {
-			return errors.New("seed should not be in collection wallets")
-		}
-
-		if s := m[meta.MetaLastSeed]; s != "" {
-			return errors.New("lastSeed should not be in collection wallets")
-		}
-	case WalletTypeDeterministic:
-		if !isEncrypted {
-			if s := m[meta.MetaSeed]; s == "" {
-				return errors.New("seed missing in unencrypted deterministic wallet")
-			}
-
-			if s := m[meta.MetaLastSeed]; s == "" {
-				return errors.New("lastSeed missing in unencrypted deterministic wallet")
-			}
-		}
-	case WalletTypeBip44:
-		if !isEncrypted {
-			// bip44 wallet seeds must be a valid bip39 mnemonic
-			if s := m[meta.MetaSeed]; s == "" {
-				return errors.New("seed missing in unencrypted bip44 wallet")
-			} else if err := bip39.ValidateMnemonic(s); err != nil {
-				return err
-			}
-		}
-
-		if s := m[meta.MetaBip44Coin]; s == "" {
-			return errors.New("bip44Coin missing")
-		} else if _, err := strconv.ParseUint(s, 10, 32); err != nil {
-			return fmt.Errorf("bip44Coin invalid: %v", err)
-		}
-
-		if s := m[meta.MetaLastSeed]; s != "" {
-			return errors.New("lastSeed should not be in bip44 wallets")
-		}
-	case WalletTypeXPub:
-		if s := m[meta.MetaSeed]; s != "" {
-			return errors.New("seed should not be in xpub wallets")
-		}
-
-		if s := m[meta.MetaLastSeed]; s != "" {
-			return errors.New("lastSeed should not be in xpub wallets")
-		}
-	default:
-		return errors.New("unhandled wallet type")
-	}
-
-	if m[meta.MetaXPub] != "" && walletType != WalletTypeXPub {
-		return errors.New("xpub is only used for xpub wallets")
-	}
-
-	return nil
 }
 
 // IsValidWalletType returns true if a wallet type is recognized

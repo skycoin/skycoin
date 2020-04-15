@@ -4,7 +4,7 @@
   "description": "skycoin wallet",
   "dependencies": {
     "axios": "^0.18.0",
-    "electron-context-menu": "^0.9.1",
+    "electron-context-menu": "^1.0.0",
     "electron-debug": "^1.5.0",
     "rxjs": "^5.5.12"
   },

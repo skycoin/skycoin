@@ -208,9 +208,13 @@ func (serv *Service) EncryptWallet(wltID string, password []byte) (Wallet, error
 		return nil, ErrWalletEncrypted
 	}
 
-	if err := Lock(w, password, serv.config.CryptoType); err != nil {
+	if err := w.Lock(password); err != nil {
 		return nil, err
 	}
+
+	// if err := Lock(w, password, serv.config.CryptoType); err != nil {
+	// 	return nil, err
+	// }
 
 	// Save to disk first
 	if err := Save(w, serv.config.WalletDir); err != nil {
@@ -223,43 +227,100 @@ func (serv *Service) EncryptWallet(wltID string, password []byte) (Wallet, error
 }
 
 // DecryptWallet decrypts wallet with password
-func (serv *Service) DecryptWallet(wltID string, password []byte) (Wallet, error) {
-	serv.Lock()
-	defer serv.Unlock()
-	if !serv.config.EnableWalletAPI {
-		return nil, ErrWalletAPIDisabled
-	}
+// func (serv *Service) DecryptWallet(wltID string, password []byte) (Wallet, error) {
+// 	serv.Lock()
+// 	defer serv.Unlock()
+// 	if !serv.config.EnableWalletAPI {
+// 		return nil, ErrWalletAPIDisabled
+// 	}
 
-	w, err := serv.getWallet(wltID)
-	if err != nil {
-		return nil, err
-	}
+// 	w, err := serv.getWallet(wltID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	// Returns error if wallet is not encrypted
-	if !w.IsEncrypted() {
-		return nil, ErrWalletNotEncrypted
-	}
+// 	// Returns error if wallet is not encrypted
+// 	if !w.IsEncrypted() {
+// 		return nil, ErrWalletNotEncrypted
+// 	}
 
-	// Unlocks the wallet
-	unlockWlt, err := Unlock(w, password)
-	if err != nil {
-		return nil, err
-	}
+// 	// Unlocks the wallet
+// 	if err := w.Unlock(password, func(w Wallet) error {
 
-	// Updates the wallet file
-	if err := Save(unlockWlt, serv.config.WalletDir); err != nil {
-		return nil, err
-	}
+// 	}); err != nil {
+// 		return nil, err
+// 	}
 
-	// Sets the decrypted wallet in memory
-	serv.wallets.set(unlockWlt)
-	return unlockWlt, nil
-}
+// 	// unlockWlt, err := Unlock(w, password)
+// 	// if err != nil {
+// 	// 	return nil, err
+// 	// }
+
+// 	// Updates the wallet file
+// 	if err := Save(unlockWlt, serv.config.WalletDir); err != nil {
+// 		return nil, err
+// 	}
+
+// 	// Sets the decrypted wallet in memory
+// 	serv.wallets.set(unlockWlt)
+// 	return unlockWlt, nil
+// }
 
 // NewAddresses generate address entries in given wallet,
 // return nil if wallet does not exist.
 // Set password as nil if the wallet is not encrypted, otherwise the password must be provided.
-func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]cipher.Address, error) {
+// func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]cipher.Address, error) {
+// 	serv.Lock()
+// 	defer serv.Unlock()
+
+// 	if !serv.config.EnableWalletAPI {
+// 		return nil, ErrWalletAPIDisabled
+// 	}
+
+// 	w, err := serv.getWallet(wltID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	var addrs []cipher.Address
+// 	f := func(wlt Wallet) error {
+// 		var err error
+// 		addrs, err = wlt.GenerateSkycoinAddresses(num)
+// 		return err
+// 	}
+
+// 	if w.IsEncrypted() {
+// 		if err := GuardUpdate(w, password, f); err != nil {
+// 			return nil, err
+// 		}
+// 	} else {
+// 		if len(password) != 0 {
+// 			return nil, ErrWalletNotEncrypted
+// 		}
+
+// 		if err := f(w); err != nil {
+// 			return nil, err
+// 		}
+// 	}
+
+// 	// Checks if the wallet file is writable
+// 	wf := filepath.Join(serv.config.WalletDir, w.Filename())
+// 	if !file.IsWritable(wf) {
+// 		return nil, ErrWalletPermission
+// 	}
+
+// 	// Save the wallet first
+// 	if err := Save(w, serv.config.WalletDir); err != nil {
+// 		return nil, err
+// 	}
+
+// 	serv.wallets.set(w)
+
+// 	return addrs, nil
+// }
+
+// NewAddresses generate addresses
+func (serv *Service) NewAddresses(wltID string, num uint64) ([]cipher.Address, error) {
 	serv.Lock()
 	defer serv.Unlock()
 
@@ -272,25 +333,16 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 		return nil, err
 	}
 
-	var addrs []cipher.Address
-	f := func(wlt Wallet) error {
-		var err error
-		addrs, err = wlt.GenerateSkycoinAddresses(num)
-		return err
+	addrs, err := w.GenerateAddresses(num)
+	if err != nil {
+		return nil, err
 	}
 
-	if w.IsEncrypted() {
-		if err := GuardUpdate(w, password, f); err != nil {
-			return nil, err
-		}
-	} else {
-		if len(password) != 0 {
-			return nil, ErrWalletNotEncrypted
-		}
-
-		if err := f(w); err != nil {
-			return nil, err
-		}
+	// Converts the addresses to skycoin addresses as the wallet service would
+	// only provide service for skycoin
+	skyAddrs := make([]cipher.Address, len(addrs))
+	for i, a := range addrs {
+		skyAddrs[i] = a.(cipher.Address)
 	}
 
 	// Checks if the wallet file is writable
@@ -306,7 +358,7 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64) ([]
 
 	serv.wallets.set(w)
 
-	return addrs, nil
+	return skyAddrs, nil
 }
 
 // ScanAddresses scan ahead addresses to see if contains balance.
@@ -329,10 +381,7 @@ func (serv *Service) ScanAddresses(wltID string, password []byte, num uint64, tf
 			return err
 		}
 
-		addrs, err = wlt.GetSkycoinAddresses()
-		if err != nil {
-			return err
-		}
+		addrs = wlt.GetAddresses()
 
 		return nil
 	}
@@ -369,7 +418,23 @@ func (serv *Service) ScanAddresses(wltID string, password []byte, num uint64, tf
 }
 
 // GetSkycoinAddresses returns all addresses in given wallet
-func (serv *Service) GetSkycoinAddresses(wltID string) ([]cipher.Address, error) {
+// func (serv *Service) GetSkycoinAddresses(wltID string) ([]cipher.Address, error) {
+// 	serv.RLock()
+// 	defer serv.RUnlock()
+// 	if !serv.config.EnableWalletAPI {
+// 		return nil, ErrWalletAPIDisabled
+// 	}
+
+// 	w, err := serv.getWallet(wltID)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	return w.GetSkycoinAddresses()
+// }
+
+// GetAddresses returns all addresses of the selected wallet
+func (serv *Service) GetAddresses(wltID string) ([]cipher.Address, error) {
 	serv.RLock()
 	defer serv.RUnlock()
 	if !serv.config.EnableWalletAPI {
@@ -381,7 +446,7 @@ func (serv *Service) GetSkycoinAddresses(wltID string) ([]cipher.Address, error)
 		return nil, err
 	}
 
-	return w.GetSkycoinAddresses()
+	return w.GetAddresses(), nil
 }
 
 // GetWallet returns wallet by id
@@ -494,7 +559,8 @@ func (serv *Service) GetWalletSeed(wltID string, password []byte) (string, strin
 	}
 
 	var seed, seedPassphrase string
-	if err := GuardView(w, password, func(wlt Wallet) error {
+	// if err := GuardView(w, password, func(wlt Wallet) error {
+	if err := w.Unlock(password, func(wlt Wallet) error {
 		seed = wlt.Seed()
 		seedPassphrase = wlt.SeedPassphrase()
 		return nil
@@ -519,9 +585,12 @@ func (serv *Service) UpdateSecrets(wltID string, password []byte, f func(Wallet)
 	}
 
 	if w.IsEncrypted() {
-		if err := GuardUpdate(w, password, f); err != nil {
+		if err := w.Unlock(password, f); err != nil {
 			return err
 		}
+		// if err := GuardUpdate(w, password, f); err != nil {
+		// 	return err
+		// }
 	} else if len(password) != 0 {
 		return ErrWalletNotEncrypted
 	} else {
@@ -581,7 +650,8 @@ func (serv *Service) ViewSecrets(wltID string, password []byte, f func(Wallet) e
 	}
 
 	if w.IsEncrypted() {
-		return GuardView(w, password, f)
+		return w.Unlock(password, f)
+		// return GuardView(w, password, f)
 	} else if len(password) != 0 {
 		return ErrWalletNotEncrypted
 	} else {

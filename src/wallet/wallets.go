@@ -114,14 +114,18 @@ func (wlts Wallets) containsEmpty() (string, bool) {
 		switch wlt.Type() {
 		case WalletTypeCollection:
 			continue
-		case WalletTypeDeterministic:
+		default:
 			if wlt.EntriesLen() == 0 {
 				return wltID, true
 			}
-		case WalletTypeBip44:
-			if len(wlt.(*Bip44Wallet).ExternalEntries) == 0 {
-				return wltID, true
-			}
+			// case WalletTypeDeterministic:
+			// 	if wlt.EntriesLen() == 0 {
+			// 		return wltID, true
+			// 	}
+			// case WalletTypeBip44:
+			// if len(wlt.(*Bip44Wallet).ExternalEntries) == 0 {
+			// 	return wltID, true
+			// }
 		}
 	}
 	return "", false

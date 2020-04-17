@@ -4,7 +4,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 	"github.com/SkycoinProject/skycoin/src/wallet"
 	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
 	"github.com/SkycoinProject/skycoin/src/wallet/meta"
@@ -186,7 +185,7 @@ func TestWalletAccountCreateAddresses(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, uint32(0), ai)
 
-	addrs, err := w.NewAddresses(ai, bip44.ExternalChainIndex, 2)
+	addrs, err := w.NewExternalAddresses(ai, 2)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(addrs))
 	addrsStr := make([]string, 2)
@@ -195,7 +194,7 @@ func TestWalletAccountCreateAddresses(t *testing.T) {
 	}
 	require.Equal(t, testSkycoinExternalAddresses[:2], addrsStr)
 
-	addrs, err = w.NewAddresses(ai, bip44.ChangeChainIndex, 2)
+	addrs, err = w.NewChangeAddresses(ai, 2)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(addrs))
 	addrsStr = make([]string, 2)
@@ -218,10 +217,10 @@ func TestBip44WalletLock(t *testing.T) {
 	ai, err := w.NewAccount("account1")
 	require.NoError(t, err)
 
-	_, err = w.NewAddresses(ai, bip44.ExternalChainIndex, 2)
+	_, err = w.NewExternalAddresses(ai, 2)
 	require.NoError(t, err)
 
-	_, err = w.NewAddresses(ai, bip44.ChangeChainIndex, 2)
+	_, err = w.NewChangeAddresses(ai, 2)
 	require.NoError(t, err)
 
 	err = w.Lock([]byte("123456"))
@@ -259,13 +258,13 @@ func TestBip44WalletUnlock(t *testing.T) {
 	ai, err := w.NewAccount("account1")
 	require.NoError(t, err)
 
-	_, err = w.NewAddresses(ai, bip44.ExternalChainIndex, 2)
+	_, err = w.NewExternalAddresses(ai, 2)
 	require.NoError(t, err)
 
-	_, err = w.NewAddresses(ai, bip44.ChangeChainIndex, 2)
+	_, err = w.NewChangeAddresses(ai, 2)
 	require.NoError(t, err)
 
-	cw := w.clone()
+	cw := w.Clone()
 
 	err = cw.Lock([]byte("123456"))
 	require.NoError(t, err)
@@ -314,10 +313,10 @@ func TestBip44WalletNewSerializeDeserialize(t *testing.T) {
 	ai, err := w.NewAccount("account1")
 	require.NoError(t, err)
 
-	_, err = w.NewAddresses(ai, bip44.ExternalChainIndex, 2)
+	_, err = w.NewExternalAddresses(ai, 2)
 	require.NoError(t, err)
 
-	_, err = w.NewAddresses(ai, bip44.ChangeChainIndex, 2)
+	_, err = w.NewChangeAddresses(ai, 2)
 	require.NoError(t, err)
 
 	b, err := w.Serialize()

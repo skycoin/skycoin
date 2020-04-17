@@ -200,22 +200,14 @@ func (w *Bip44WalletNew) NewAccount(name string) (uint32, error) {
 	return w.accounts.new(opts)
 }
 
-// NewAddresses creates addresses
-func (w *Bip44WalletNew) NewAddresses(account, chain, n uint32) ([]cipher.Addresser, error) {
-	return w.accounts.newAddresses(account, chain, n)
+// NewExternalAddresses generates addresses on external chain of selected account
+func (w *Bip44WalletNew) NewExternalAddresses(account, n uint32) ([]cipher.Addresser, error) {
+	return w.accounts.newAddresses(account, bip44.ExternalChainIndex, n)
 }
 
-func makeChainPubKeys(a *bip44.Account) (*bip32.PublicKey, *bip32.PublicKey, error) {
-	external, err := a.NewPublicChildKey(0)
-	if err != nil {
-		return nil, nil, fmt.Errorf("Create external chain public key failed: %v", err)
-	}
-
-	change, err := a.NewPublicChildKey(1)
-	if err != nil {
-		return nil, nil, fmt.Errorf("Create change chain public key failed: %v", err)
-	}
-	return external, change, nil
+// NewChangeAddresses generates addresses on change chain of selected account
+func (w *Bip44WalletNew) NewChangeAddresses(account, n uint32) ([]cipher.Addresser, error) {
+	return w.accounts.newAddresses(account, bip44.ChangeChainIndex, n)
 }
 
 // Serialize encodes the bip44 wallet to []byte
@@ -246,29 +238,6 @@ func (w Bip44WalletNew) IsEncrypted() bool {
 	return w.Meta.IsEncrypted()
 }
 
-// clone deep clone of the bip44 wallet
-func (w Bip44WalletNew) clone() Bip44WalletNew {
-	nw := Bip44WalletNew{
-		Meta:     w.Meta.Clone(),
-		accounts: w.accounts.clone(),
-		decoder:  w.decoder,
-	}
-
-	return nw
-}
-
-func (w *Bip44WalletNew) copyFrom(wlt *Bip44WalletNew) {
-	w.Meta = wlt.Meta.Clone()
-	w.accounts = wlt.accounts.clone()
-	w.decoder = wlt.decoder
-}
-
-func (w *Bip44WalletNew) erase() {
-	w.SetSeed("")
-	w.SetSeedPassphrase("")
-	w.accounts.erase()
-}
-
 // Lock encrypts the wallet if it is unencrypted, return false
 // if it is already encrypted.
 func (w *Bip44WalletNew) Lock(password []byte) error {
@@ -280,7 +249,7 @@ func (w *Bip44WalletNew) Lock(password []byte) error {
 		return wallet.ErrWalletEncrypted
 	}
 
-	wlt := w.clone()
+	wlt := w.Clone()
 
 	ss := make(secrets.Secrets)
 	defer func() {
@@ -368,13 +337,49 @@ func (w *Bip44WalletNew) Unlock(password []byte) (*Bip44WalletNew, error) {
 		return nil, err
 	}
 
-	cw := w.clone()
+	cw := w.Clone()
 	if err := cw.unpackSecrets(ss); err != nil {
 		return nil, err
 	}
 	cw.SetDecrypted()
 
 	return &cw, nil
+}
+
+func makeChainPubKeys(a *bip44.Account) (*bip32.PublicKey, *bip32.PublicKey, error) {
+	external, err := a.NewPublicChildKey(0)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Create external chain public key failed: %v", err)
+	}
+
+	change, err := a.NewPublicChildKey(1)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Create change chain public key failed: %v", err)
+	}
+	return external, change, nil
+}
+
+// Clone deep clone of the bip44 wallet
+func (w Bip44WalletNew) Clone() Bip44WalletNew {
+	nw := Bip44WalletNew{
+		Meta:     w.Meta.Clone(),
+		accounts: w.accounts.clone(),
+		decoder:  w.decoder,
+	}
+
+	return nw
+}
+
+func (w *Bip44WalletNew) copyFrom(wlt *Bip44WalletNew) {
+	w.Meta = wlt.Meta.Clone()
+	w.accounts = wlt.accounts.clone()
+	w.decoder = wlt.decoder
+}
+
+func (w *Bip44WalletNew) erase() {
+	w.SetSeed("")
+	w.SetSeedPassphrase("")
+	w.accounts.erase()
 }
 
 // packSecrets saves all sensitive data to the secrets map.

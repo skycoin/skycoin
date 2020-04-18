@@ -186,13 +186,21 @@ func (w *Bip44Wallet) CryptoType() crypto.CryptoType {
 // return len(w.ExternalEntries) + len(w.ChangeEntries)
 // }
 
+// EntriesLen returns the number of entries on external chain
+func (w *Bip44Wallet) EntriesLen() int {
+	el, err := w.ExternalEntriesLen(defaultAccount)
+	if err != nil {
+		logger.WithError(err).Panic("Get external entries length failed")
+		return 0
+	}
+
+	return int(el)
+}
+
 // GetEntryAt returns entry at a given index in the entries array
-// func (w *Bip44Wallet) GetEntryAt(i int) entry.Entry {
-// if i >= len(w.ExternalEntries) {
-// 	return w.ChangeEntries[i-len(w.ExternalEntries)]
-// }
-// return w.ExternalEntries[i]
-// }
+func (w *Bip44Wallet) GetEntryAt(i uint32) (entry.Entry, error) {
+	return w.ExternalEntryAt(defaultAccount, i)
+}
 
 // GetEntry returns entry of given address
 // func (w *Bip44Wallet) GetEntry(a cipher.Address) (entry.Entry, bool) {
@@ -395,22 +403,19 @@ func (w *Bip44Wallet) GenerateAddresses(num uint64) ([]cipher.Address, error) {
 	return skyAddrs, nil
 }
 
-// GenerateSkycoinAddresses generates Skycoin addresses for the external chain, and appends them to the wallet's entries array.
-// If the wallet's coin type is not Skycoin, returns an error
-// func (w *Bip44Wallet) GenerateSkycoinAddresses(num uint64) ([]cipher.Address, error) {
-// if w.Meta.Coin() != meta.CoinTypeSkycoin {
-// 	return nil, errors.New("GenerateSkycoinAddresses called for non-skycoin wallet")
-// }
+// GetAddresses returns all external addresses in wallet
+func (w *Bip44Wallet) GetAddresses() ([]cipher.Address, error) {
+	entries, err := w.ExternalEntries(defaultAccount)
+	if err != nil {
+		return nil, err
+	}
 
-// entries, err := w.generateEntries(num, bip44.ExternalChainIndex, nextChildIdx(w.ExternalEntries))
-// if err != nil {
-// 	return nil, err
-// }
-
-// w.ExternalEntries = append(w.ExternalEntries, entries...)
-
-// return entries.GetSkycoinAddresses(), nil
-// }
+	addrs := make([]cipher.Address, len(entries))
+	for i, e := range entries {
+		addrs[i] = e.SkycoinAddress()
+	}
+	return addrs, nil
+}
 
 // ScanAddresses scans ahead N addresses, truncating up to the highest address with any transaction history.
 func (w *Bip44Wallet) ScanAddresses(scanN uint64, tf TransactionsFinder) error {

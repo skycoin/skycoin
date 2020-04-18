@@ -143,23 +143,35 @@ func (a *bip44Account) unpackSecrets(ss secrets.Secrets) error {
 	return nil
 }
 
-func (a *bip44Account) entries(chain uint32) entry.Entries {
+func (a *bip44Account) entries(chain uint32) (entry.Entries, error) {
 	switch chain {
 	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
 		c := a.Chains[chain]
-		return c.Entries.Clone()
+		return c.Entries.Clone(), nil
 	default:
-		panic(fmt.Errorf("Invalid chain index: %d", chain))
+		return nil, fmt.Errorf("Invalid chain index: %d", chain)
 	}
 }
 
-func (a *bip44Account) changeChainEntries() []ChainEntry {
-	c := a.Chains[bip44.ChangeChainIndex]
-	entries := make([]ChainEntry, 0, len(c.Entries))
-	for i, e := range c.Entries {
-		entries[i] = ChainEntry{Address: e.Address}
+func (a *bip44Account) entriesLen(chain uint32) (uint32, error) {
+	switch chain {
+	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
+		return uint32(len(a.Chains[chain].Entries)), nil
+	default:
+		return 0, fmt.Errorf("Invalid chain index: %d", chain)
 	}
-	return entries
+}
+
+func (a *bip44Account) entryAt(chain, i uint32) (entry.Entry, error) {
+	switch chain {
+	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
+		if i >= uint32(len(a.Chains[chain].Entries)) {
+			return entry.Entry{}, fmt.Errorf("Entry index %d out of range", i)
+		}
+		return a.Chains[chain].Entries[i], nil
+	default:
+		return entry.Entry{}, fmt.Errorf("Invalid chain index: %d", chain)
+	}
 }
 
 // Clone clones the bip44Account, it would also hide the
@@ -367,8 +379,36 @@ func (a *bip44Accounts) entries(account, chain uint32) (entry.Entries, error) {
 
 	switch chain {
 	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
-		return act.entries(chain), nil
+		return act.entries(chain)
 	default:
 		return nil, fmt.Errorf("Invalid chain index: %d", chain)
+	}
+}
+
+func (a *bip44Accounts) entriesLen(account, chain uint32) (uint32, error) {
+	act, err := a.account(account)
+	if err != nil {
+		return 0, err
+	}
+
+	switch chain {
+	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
+		return act.entriesLen(chain)
+	default:
+		return 0, fmt.Errorf("Invalid chain index: %d", chain)
+	}
+}
+
+func (a *bip44Accounts) entryAt(account, chain, i uint32) (entry.Entry, error) {
+	act, err := a.account(account)
+	if err != nil {
+		return entry.Entry{}, err
+	}
+
+	switch chain {
+	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
+		return act.entryAt(chain, i)
+	default:
+		return entry.Entry{}, fmt.Errorf("Invalid chain index: %d", chain)
 	}
 }

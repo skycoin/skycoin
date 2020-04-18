@@ -47,8 +47,12 @@ type accountManager interface {
 	new(opts bip44AccountCreateOptions) (uint32, error)
 	// newAddresses generates addresses on selected account
 	newAddresses(account, chain, num uint32) ([]cipher.Addresser, error)
-	// chainEntries reutrns entries of specific chain of the selected account
+	// entries reutrns entries of specific chain of the selected account
 	entries(account, chain uint32) (entry.Entries, error)
+	// entriesLen returns the entries length of specific chain of selected account
+	entriesLen(account, chain uint32) (uint32, error)
+	// entryAt  returns the entry of specific index
+	entryAt(account, chain, index uint32) (entry.Entry, error)
 	// len returns the account number
 	len() uint32
 	// clone returns a deep clone accounts manager
@@ -226,6 +230,26 @@ func (w *Bip44WalletNew) ExternalEntries(account uint32) (entry.Entries, error) 
 // ChangeEntries returns the entries on external external chain
 func (w *Bip44WalletNew) ChangeEntries(account uint32) (entry.Entries, error) {
 	return w.accounts.entries(account, bip44.ChangeChainIndex)
+}
+
+// ExternalEntriesLen returns the external chain entries length of selected account
+func (w *Bip44WalletNew) ExternalEntriesLen(account uint32) (uint32, error) {
+	return w.accounts.entriesLen(account, bip44.ExternalChainIndex)
+}
+
+// ChangeEntriesLen returns the change chain entries length of selected account
+func (w *Bip44WalletNew) ChangeEntriesLen(account uint32) (uint32, error) {
+	return w.accounts.entriesLen(account, bip44.ChangeChainIndex)
+}
+
+// ExternalEntryAt returns the entry at the given index on external chain of selected account
+func (w *Bip44WalletNew) ExternalEntryAt(account, i uint32) (entry.Entry, error) {
+	return w.accounts.entryAt(account, bip44.ExternalChainIndex, i)
+}
+
+// ChangeEntryAt returns the entry at the given index on change chain of selected account
+func (w *Bip44WalletNew) ChangeEntryAt(account, i uint32) (entry.Entry, error) {
+	return w.accounts.entryAt(account, bip44.ChangeChainIndex, i)
 }
 
 // Serialize encodes the bip44 wallet to []byte

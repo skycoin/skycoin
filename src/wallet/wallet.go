@@ -186,7 +186,7 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 		return nil, ErrInvalidWalletType
 	}
 
-	return fn(opts, tf)
+	return fn(wltName, opts, tf)
 
 	// if !IsValidWalletType(wltType) {
 	// 	return nil, ErrInvalidWalletType
@@ -505,27 +505,27 @@ func NewWalletScanAhead(wltName string, opts Options, tf TransactionsFinder) (Wa
 
 // Wallet defines the wallet API
 type Wallet interface {
-	Find(string) string
+	// Find(string) string
 	Seed() string
 	LastSeed() string
 	SeedPassphrase() string
 	Timestamp() int64
 	SetTimestamp(int64)
 	Coin() meta.CoinType
+	// Type returns the wallet type, e.g. bip44, deterministic, collection
+	Type() string
 	// Bip44Coin returns the coin_type part of bip44 path
 	Bip44Coin() bip44.CoinType
-	Type() string
 	Label() string
 	SetLabel(string)
 	Filename() string
 	IsEncrypted() bool
-	// SetEncrypted(cryptoType crypto.CryptoType, encryptedSecrets string)
-	// SetDecrypted()
+	// CryptoType returns the crypto type for encrypting/decrypting the wallet
 	CryptoType() crypto.CryptoType
 	Version() string
-	SetVersion(string)
+	// SetVersion(string)
 	// AddressConstructor() func(cipher.PubKey) cipher.Addresser
-	Secrets() string
+	// Secrets() string
 	XPub() string
 
 	// UnpackSecrets(ss secrets.Secrets) error
@@ -544,12 +544,11 @@ type Wallet interface {
 
 	// ToReadable() Readable
 
-	Validate() error
+	// Validate() error
 
 	Fingerprint() string
-	GetAddresses() []cipher.Address
-	// GetSkycoinAddresses() ([]cipher.Address, error)
-	GetEntryAt(i int) entry.Entry
+	GetAddresses() ([]cipher.Address, error)
+	GetEntryAt(i int) (entry.Entry, error)
 	GetEntry(cipher.Address) (entry.Entry, bool)
 	HasEntry(cipher.Address) bool
 	EntriesLen() int

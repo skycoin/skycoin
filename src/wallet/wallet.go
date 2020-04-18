@@ -158,12 +158,36 @@ func (w walletFileLoader) get(coinType string) (walletFileLoadFunc, bool) {
 	return fn, ok
 }
 
+type walletCreateFunc func(filename string, opts Options, tf TransactionsFinder) (Wallet, error)
+type walletCreators struct {
+	creators map[string]walletCreateFunc
+}
+
+func (wcs walletCreators) get(walletType string) (walletCreateFunc, bool) {
+	fn, ok := wcs.creators[walletType]
+	return fn, ok
+}
+
+var registeredWalletCreators = walletCreators{
+	creators: map[string]walletCreateFunc{
+		"bip44": NewBip44Wallet,
+	},
+}
+
 // newWallet creates a wallet instance with given name and options.
 func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, error) {
-	// wltType := opts.Type
-	// if wltType == "" {
-	// 	return nil, NewError(errors.New("wallet type is required"))
-	// }
+	wltType := opts.Type
+	if wltType == "" {
+		return nil, NewError(errors.New("wallet type is required"))
+	}
+
+	fn, ok := registeredWalletCreators.get(wltType)
+	if !ok {
+		return nil, ErrInvalidWalletType
+	}
+
+	return fn(opts, tf)
+
 	// if !IsValidWalletType(wltType) {
 	// 	return nil, ErrInvalidWalletType
 	// }
@@ -488,7 +512,8 @@ type Wallet interface {
 	Timestamp() int64
 	SetTimestamp(int64)
 	Coin() meta.CoinType
-	// Bip44Coin() (bip44.CoinType, bool)
+	// Bip44Coin returns the coin_type part of bip44 path
+	Bip44Coin() bip44.CoinType
 	Type() string
 	Label() string
 	SetLabel(string)
@@ -512,7 +537,7 @@ type Wallet interface {
 	Unlock(password []byte, fn func(w Wallet) error) error
 
 	// Erase wipes sensitive data
-	Erase()
+	// Erase()
 	Clone() Wallet
 	// CopyFrom(src Wallet)
 	// CopyFromRef(src Wallet)
@@ -530,7 +555,7 @@ type Wallet interface {
 	EntriesLen() int
 	GetEntries() entry.Entries
 
-	GenerateAddresses(num uint64) ([]cipher.Addresser, error)
+	GenerateAddresses(num uint64) ([]cipher.Address, error)
 	// GenerateSkycoinAddresses(num uint64) ([]cipher.Address, error)
 	ScanAddresses(scanN uint64, tf TransactionsFinder) error
 

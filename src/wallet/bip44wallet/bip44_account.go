@@ -143,6 +143,25 @@ func (a *bip44Account) unpackSecrets(ss secrets.Secrets) error {
 	return nil
 }
 
+func (a *bip44Account) entries(chain uint32) entry.Entries {
+	switch chain {
+	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
+		c := a.Chains[chain]
+		return c.Entries.Clone()
+	default:
+		panic(fmt.Errorf("Invalid chain index: %d", chain))
+	}
+}
+
+func (a *bip44Account) changeChainEntries() []ChainEntry {
+	c := a.Chains[bip44.ChangeChainIndex]
+	entries := make([]ChainEntry, 0, len(c.Entries))
+	for i, e := range c.Entries {
+		entries[i] = ChainEntry{Address: e.Address}
+	}
+	return entries
+}
+
 // Clone clones the bip44Account, it would also hide the
 // bip44.Account.Clone() function so that user would not
 // call it mistakenly.
@@ -248,18 +267,30 @@ func (a bip44Accounts) len() uint32 {
 	return uint32(len(a.accounts))
 }
 
-func (a *bip44Accounts) newAddresses(index, chain, num uint32) ([]cipher.Addresser, error) {
+func (a *bip44Accounts) newAddresses(account, chain, num uint32) ([]cipher.Addresser, error) {
+	act, err := a.account(account)
+	if err != nil {
+		return nil, err
+	}
+
+	return act.newAddresses(chain, num)
+}
+
+// account returns the pinter of the account by index,
+// this should not be used outside the accounts management in case of
+// unsafe behaviour.
+func (a *bip44Accounts) account(index uint32) (*bip44Account, error) {
 	accountLen := len(a.accounts)
 	if int(index) >= accountLen {
 		return nil, fmt.Errorf("Account index %d out of range", index)
 	}
 
-	account := a.accounts[index]
-	if account == nil {
+	act := a.accounts[index]
+	if act == nil {
 		return nil, fmt.Errorf("Account of index %d not found", index)
 	}
 
-	return account.newAddresses(chain, num)
+	return act, nil
 }
 
 // new creates a bip44 account with options.
@@ -325,5 +356,19 @@ func (a *bip44Accounts) unpackSecrets(ss secrets.Secrets) error {
 func (a *bip44Accounts) erase() {
 	for i := range a.accounts {
 		a.accounts[i].erase()
+	}
+}
+
+func (a *bip44Accounts) entries(account, chain uint32) (entry.Entries, error) {
+	act, err := a.account(account)
+	if err != nil {
+		return nil, err
+	}
+
+	switch chain {
+	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
+		return act.entries(chain), nil
+	default:
+		return nil, fmt.Errorf("Invalid chain index: %d", chain)
 	}
 }

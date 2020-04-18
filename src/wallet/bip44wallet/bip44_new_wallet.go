@@ -11,8 +11,8 @@ import (
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/util/logging"
-	"github.com/SkycoinProject/skycoin/src/wallet"
 	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
+	"github.com/SkycoinProject/skycoin/src/wallet/entry"
 	"github.com/SkycoinProject/skycoin/src/wallet/meta"
 	"github.com/SkycoinProject/skycoin/src/wallet/secrets"
 
@@ -20,6 +20,8 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 )
+
+const walletType = "bip44"
 
 var (
 	// defaultBip44WalletDecoder is the default bip44 wallet decoder
@@ -44,7 +46,9 @@ type accountManager interface {
 	// new creates a new account, returns the account index, and error, if any
 	new(opts bip44AccountCreateOptions) (uint32, error)
 	// newAddresses generates addresses on selected account
-	newAddresses(index, chain, num uint32) ([]cipher.Addresser, error)
+	newAddresses(account, chain, num uint32) ([]cipher.Addresser, error)
+	// chainEntries reutrns entries of specific chain of the selected account
+	entries(account, chain uint32) (entry.Entries, error)
 	// len returns the account number
 	len() uint32
 	// clone returns a deep clone accounts manager
@@ -58,11 +62,15 @@ type accountManager interface {
 }
 
 // Bip44WalletDecoder is the interface that wraps the Encode and Decode methods.
-//
 // Encode method encodes the wallet to bytes, Decode method decodes bytes to bip44 wallet.
 type Bip44WalletDecoder interface {
 	Encode(w *Bip44WalletNew) ([]byte, error)
 	Decode(b []byte) (*Bip44WalletNew, error)
+}
+
+// ChainEntry represents an item on the bip44 wallet chain
+type ChainEntry struct {
+	Address cipher.Addresser
 }
 
 // Bip44WalletCreateOptions options for creating the bip44 wallet
@@ -81,9 +89,9 @@ type Bip44WalletCreateOptions struct {
 func NewBip44WalletNew(opts Bip44WalletCreateOptions) (*Bip44WalletNew, error) {
 	wlt := &Bip44WalletNew{
 		Meta: meta.Meta{
-			meta.MetaType:           wallet.WalletTypeBip44,
+			meta.MetaType:           walletType,
 			meta.MetaFilename:       opts.Filename,
-			meta.MetaVersion:        wallet.Version,
+			meta.MetaVersion:        opts.Version,
 			meta.MetaLabel:          opts.Label,
 			meta.MetaSeed:           opts.Seed,
 			meta.MetaSeedPassphrase: opts.SeedPassphrase,
@@ -130,8 +138,8 @@ func bip44MetaValidate(m meta.Meta) error {
 		return errors.New("Type field not set")
 	}
 
-	if walletType != wallet.WalletTypeBip44 {
-		return wallet.ErrInvalidWalletType
+	if walletType != walletType {
+		return errors.New("Invalid wallet type")
 	}
 
 	if coinType := m[meta.MetaCoin]; coinType == "" {
@@ -210,6 +218,16 @@ func (w *Bip44WalletNew) NewChangeAddresses(account, n uint32) ([]cipher.Address
 	return w.accounts.newAddresses(account, bip44.ChangeChainIndex, n)
 }
 
+// ExternalEntries returns the entries on external external chain
+func (w *Bip44WalletNew) ExternalEntries(account uint32) (entry.Entries, error) {
+	return w.accounts.entries(account, bip44.ExternalChainIndex)
+}
+
+// ChangeEntries returns the entries on external external chain
+func (w *Bip44WalletNew) ChangeEntries(account uint32) (entry.Entries, error) {
+	return w.accounts.entries(account, bip44.ChangeChainIndex)
+}
+
 // Serialize encodes the bip44 wallet to []byte
 func (w *Bip44WalletNew) Serialize() ([]byte, error) {
 	if w.decoder == nil {
@@ -242,11 +260,11 @@ func (w Bip44WalletNew) IsEncrypted() bool {
 // if it is already encrypted.
 func (w *Bip44WalletNew) Lock(password []byte) error {
 	if len(password) == 0 {
-		return wallet.ErrMissingPassword
+		return errors.New("Missing password when locking bip44 wallet")
 	}
 
 	if w.IsEncrypted() {
-		return wallet.ErrWalletEncrypted
+		return errors.New("Wallet is already encrypted")
 	}
 
 	wlt := w.Clone()
@@ -281,9 +299,6 @@ func (w *Bip44WalletNew) Lock(password []byte) error {
 	// Sets wallet as encrypted, updates secret field.
 	wlt.SetEncrypted(cryptoType, string(encSecret))
 
-	// Update wallet to the latest version, which indicates encryption support
-	wlt.SetVersion(wallet.Version)
-
 	// Wipes the secret fields in wlt
 	wlt.erase()
 
@@ -297,11 +312,11 @@ func (w *Bip44WalletNew) Lock(password []byte) error {
 // Unlock decrypt the wallet
 func (w *Bip44WalletNew) Unlock(password []byte) (*Bip44WalletNew, error) {
 	if !w.IsEncrypted() {
-		return nil, wallet.ErrWalletNotEncrypted
+		return nil, errors.New("Wallet is not encrypted")
 	}
 
 	if len(password) == 0 {
-		return nil, wallet.ErrMissingPassword
+		return nil, errors.New("Missing password")
 	}
 
 	sstr := w.Secrets()
@@ -321,7 +336,7 @@ func (w *Bip44WalletNew) Unlock(password []byte) (*Bip44WalletNew, error) {
 
 	sb, err := crypto.Decrypt([]byte(sstr), password)
 	if err != nil {
-		return nil, wallet.ErrInvalidPassword
+		return nil, errors.New("Invalid password")
 	}
 
 	defer func() {
@@ -344,19 +359,6 @@ func (w *Bip44WalletNew) Unlock(password []byte) (*Bip44WalletNew, error) {
 	cw.SetDecrypted()
 
 	return &cw, nil
-}
-
-func makeChainPubKeys(a *bip44.Account) (*bip32.PublicKey, *bip32.PublicKey, error) {
-	external, err := a.NewPublicChildKey(0)
-	if err != nil {
-		return nil, nil, fmt.Errorf("Create external chain public key failed: %v", err)
-	}
-
-	change, err := a.NewPublicChildKey(1)
-	if err != nil {
-		return nil, nil, fmt.Errorf("Create change chain public key failed: %v", err)
-	}
-	return external, change, nil
 }
 
 // Clone deep clone of the bip44 wallet
@@ -401,6 +403,19 @@ func (w *Bip44WalletNew) unpackSecrets(ss secrets.Secrets) error {
 
 	w.accounts.unpackSecrets(ss)
 	return nil
+}
+
+func makeChainPubKeys(a *bip44.Account) (*bip32.PublicKey, *bip32.PublicKey, error) {
+	external, err := a.NewPublicChildKey(0)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Create external chain public key failed: %v", err)
+	}
+
+	change, err := a.NewPublicChildKey(1)
+	if err != nil {
+		return nil, nil, fmt.Errorf("Create change chain public key failed: %v", err)
+	}
+	return external, change, nil
 }
 
 // TODO:

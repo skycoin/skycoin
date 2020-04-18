@@ -4,7 +4,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/SkycoinProject/skycoin/src/wallet"
 	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
 	"github.com/SkycoinProject/skycoin/src/wallet/meta"
 	"github.com/SkycoinProject/skycoin/src/wallet/secrets"
@@ -127,13 +126,12 @@ func TestBip44WalletNew(t *testing.T) {
 			if err != nil {
 				return
 			}
-			require.Equal(t, wallet.Version, w.Meta.Version())
 			require.Equal(t, tc.filename, w.Meta.Filename())
 			require.Equal(t, tc.label, w.Meta.Label())
 			require.Equal(t, tc.seed, w.Meta.Seed())
 			require.Equal(t, tc.seedPassphrase, w.Meta.SeedPassphrase())
 			require.Equal(t, tc.coinType, w.Meta.Coin())
-			require.Equal(t, wallet.WalletTypeBip44, w.Meta.Type())
+			require.Equal(t, walletType, w.Meta.Type())
 			require.False(t, w.Meta.IsEncrypted())
 			require.NotEmpty(t, w.Meta.Timestamp())
 			require.NotNil(t, w.decoder)
@@ -271,7 +269,7 @@ func TestBip44WalletUnlock(t *testing.T) {
 
 	// unlock with wrong password
 	_, err = cw.Unlock([]byte("12345"))
-	require.Equal(t, wallet.ErrInvalidPassword, err)
+	require.Equal(t, errors.New("Invalid password"), err)
 
 	// unlock with the correct password
 	wlt, err := cw.Unlock([]byte("123456"))

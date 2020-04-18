@@ -212,10 +212,6 @@ func (serv *Service) EncryptWallet(wltID string, password []byte) (Wallet, error
 		return nil, err
 	}
 
-	// if err := Lock(w, password, serv.config.CryptoType); err != nil {
-	// 	return nil, err
-	// }
-
 	// Save to disk first
 	if err := Save(w, serv.config.WalletDir); err != nil {
 		return nil, err
@@ -338,13 +334,6 @@ func (serv *Service) NewAddresses(wltID string, num uint64) ([]cipher.Address, e
 		return nil, err
 	}
 
-	// Converts the addresses to skycoin addresses as the wallet service would
-	// only provide service for skycoin
-	skyAddrs := make([]cipher.Address, len(addrs))
-	for i, a := range addrs {
-		skyAddrs[i] = a.(cipher.Address)
-	}
-
 	// Checks if the wallet file is writable
 	wf := filepath.Join(serv.config.WalletDir, w.Filename())
 	if !file.IsWritable(wf) {
@@ -358,7 +347,7 @@ func (serv *Service) NewAddresses(wltID string, num uint64) ([]cipher.Address, e
 
 	serv.wallets.set(w)
 
-	return skyAddrs, nil
+	return addrs, nil
 }
 
 // ScanAddresses scan ahead addresses to see if contains balance.
@@ -375,30 +364,30 @@ func (serv *Service) ScanAddresses(wltID string, password []byte, num uint64, tf
 	}
 
 	l := w.EntriesLen()
-	var addrs []cipher.Address
-	f := func(wlt Wallet) error {
-		if err := wlt.ScanAddresses(num, tf); err != nil {
-			return err
-		}
-
-		addrs = wlt.GetAddresses()
-
-		return nil
+	// var addrs []cipher.Address
+	// f := func(wlt Wallet) error {
+	if err := w.ScanAddresses(num, tf); err != nil {
+		return nil, err
 	}
 
-	if w.IsEncrypted() {
-		if err := GuardUpdate(w, password, f); err != nil {
-			return nil, err
-		}
-	} else {
-		if len(password) != 0 {
-			return nil, ErrWalletNotEncrypted
-		}
+	addrs := w.GetAddresses()
 
-		if err := f(w); err != nil {
-			return nil, err
-		}
-	}
+	// return nil
+	// }
+
+	// if w.IsEncrypted() {
+	// 	if err := GuardUpdate(w, password, f); err != nil {
+	// 		return nil, err
+	// 	}
+	// } else {
+	// 	if len(password) != 0 {
+	// 		return nil, ErrWalletNotEncrypted
+	// 	}
+
+	// 	if err := f(w); err != nil {
+	// 		return nil, err
+	// 	}
+	// }
 
 	// Checks if the wallet file is writable
 	wf := filepath.Join(serv.config.WalletDir, w.Filename())

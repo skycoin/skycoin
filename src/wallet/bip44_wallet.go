@@ -172,38 +172,22 @@ func (w *Bip44Wallet) Unlock(password []byte, f func(w Wallet) error) error {
 // return nil
 // }
 
-// GetAddresses returns all addresses in wallet
-// func (w *Bip44Wallet) GetAddresses(num uint64) ([]cipher.Addresser {
-// return append(w.ExternalEntries.GetAddresses(), w.ChangeEntries.GetAddresses()...)
-// addrs, err := w.NewExternalAddresses(defaultAccountIndex, num)
-// if err != nil {
-//     return nil,
-// }
-// }
-
-// GetSkycoinAddresses returns all Skycoin addresses in wallet. The wallet's coin type must be Skycoin.
-// func (w *Bip44Wallet) GetSkycoinAddresses() ([]cipher.Address, error) {
-// if w.Meta.Coin() != meta.CoinTypeSkycoin {
-// 	return nil, errors.New("Bip44Wallet coin type is not skycoin")
-// }
-
-// return append(w.ExternalEntries.GetSkycoinAddresses(), w.ChangeEntries.GetSkycoinAddresses()...), nil
-// }
-
 // GetEntries returns a copy of all entries held by the wallet
-// func (w *Bip44Wallet) GetEntries() entry.Entries {
-// if w.EntriesLen() == 0 {
-// 	return nil
-// }
-// return append(w.ExternalEntries.Clone(), w.ChangeEntries.Clone()...)
-// }
+func (w *Bip44Wallet) GetEntries() (entry.Entries, error) {
+	eEntries, err := w.ExternalEntries(defaultAccount)
+	if err != nil {
+		return nil, err
+	}
 
-// EntriesLen returns the number of entries in the wallet
-// func (w *Bip44Wallet) EntriesLen() int {
-// return len(w.ExternalEntries) + len(w.ChangeEntries)
-// }
+	cEntries, err := w.ChangeEntries(defaultAccount)
+	if err != nil {
+		return nil, err
+	}
 
-// EntriesLen returns the number of entries on external chain
+	return append(eEntries, cEntries...), nil
+}
+
+// EntriesLen returns the number of all entries
 func (w *Bip44Wallet) EntriesLen() int {
 	el, err := w.ExternalEntriesLen(defaultAccount)
 	if err != nil {
@@ -211,60 +195,71 @@ func (w *Bip44Wallet) EntriesLen() int {
 		return 0
 	}
 
-	return int(el)
-}
+	cl, err := w.ChangeEntriesLen(defaultAccount)
+	if err != nil {
+		logger.WithError(err).Panic("Get change entries length failed")
+		return 0
+	}
 
-// GetEntryAt returns entry at a given index in the entries array
-func (w *Bip44Wallet) GetEntryAt(i uint32) (entry.Entry, error) {
-	return w.ExternalEntryAt(defaultAccount, i)
+	return int(el) + int(cl)
 }
 
 // GetEntry returns entry of given address
-// func (w *Bip44Wallet) GetEntry(a cipher.Address) (entry.Entry, bool) {
-// if e, ok := w.ExternalEntries.Get(a); ok {
-// 	return e, true
-// }
+func (w *Bip44Wallet) GetEntry(a cipher.Address) (entry.Entry, bool) {
+	e, ok, err := w.Bip44WalletNew.GetEntry(defaultAccount, a)
+	if err != nil {
+		logger.WithError(err).Panic("Get entry failed")
+		return entry.Entry{}, false
+	}
 
-// return w.ChangeEntries.Get(a)
-// }
+	return e, ok
+}
 
 // HasEntry returns true if the wallet has an entry.Entry with a given cipher.Address.
-// func (w *Bip44Wallet) HasEntry(a cipher.Address) bool {
-// return w.ExternalEntries.Has(a) || w.ChangeEntries.Has(a)
-// }
+func (w *Bip44Wallet) HasEntry(a cipher.Address) bool {
+	_, ok, err := w.Bip44WalletNew.GetEntry(defaultAccount, a)
+	if err != nil {
+		logger.WithError(err).Panic("HasEntry getting entry failed")
+		return false
+	}
 
-// CoinHDNode return the "coin" level bip44 HDNode
-// func (w *Bip44Wallet) CoinHDNode() (*bip44.Coin, error) {
-// 	// w.Meta.Seed() must return a valid bip39 mnemonic
-// 	seed, err := bip39.NewSeed(w.Meta.Seed(), w.Meta.SeedPassphrase())
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	bip44Coin, ok := w.Bip44Coin()
-// 	if !ok {
-// 		return nil, errors.New("Bip44Coin does not exist")
-// 	}
+	return ok
+}
 
-// 	c, err := bip44.NewCoin(seed, bip44Coin)
-// 	if err != nil {
-// 		logger.Critical().WithError(err).Error("Failed to derive the bip44 purpose node")
-// 		if bip32.IsImpossibleChildError(err) {
-// 			logger.Critical().Error("ImpossibleChild: this seed cannot be used for bip44")
-// 		}
-// 		return nil, err
-// 	}
+// PeekChangeAddress returns a change address, do not generate a new address unless
+// the last change address already have transactions associated.
+func (w *Bip44Wallet) PeekChangeAddress(tf TransactionsFinder) (cipher.Address, error) {
+	// Get the length of the change chain
+	len, err := w.ChangeEntriesLen(defaultAccount)
+	if err != nil {
+		return cipher.Address{}, err
+	}
 
-// 	return c, nil
-// }
+	// Get the last entry of the change chain
+	e, err := w.ChangeEntryAt(defaultAccount, len-1)
+	if err != nil {
+		return cipher.Address{}, err
+	}
 
-// nextChildIdx returns the next child index from a sequence of entries.
-// This assumes that entries are sorted by child number ascending.
-// func nextChildIdx(e entry.Entries) uint32 {
-// 	if len(e) == 0 {
-// 		return 0
-// 	}
-// 	return e[len(e)-1].ChildNumber + 1
-// }
+	// Check whehter the entry has transactions associated
+	addr := e.SkycoinAddress()
+	hasTxs, err := tf.AddressesActivity([]cipher.Address{addr})
+	if err != nil {
+		return cipher.Address{}, err
+	}
+
+	if !hasTxs[0] {
+		return addr, nil
+	}
+
+	// Generates a new change address
+	addrs, err := w.NewChangeAddresses(defaultAccount, 1)
+	if err != nil {
+		return cipher.Address{}, err
+	}
+
+	return addrs[0].(cipher.Address), nil
+}
 
 // generateEntries generates addresses for a change chain (should be 0 or 1) starting from an initial child number.
 // func (w *Bip44Wallet) generateEntries(num uint64, changeIdx, initialChildIdx uint32) (entry.Entries, error) {
@@ -406,7 +401,7 @@ func (w *Bip44Wallet) GetEntryAt(i uint32) (entry.Entry, error) {
 // return w.ChangeEntries[len(w.ChangeEntries)-1], nil
 // }
 
-// GenerateAddresses generates addresses for the external chain
+// GenerateAddresses generates addresses on external chain
 func (w *Bip44Wallet) GenerateAddresses(num uint64) ([]cipher.Address, error) {
 	addrs, err := w.NewExternalAddresses(defaultAccount, uint32(num))
 	if err != nil {

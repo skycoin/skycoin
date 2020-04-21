@@ -111,36 +111,40 @@ func SignTransaction(w Wallet, txn *coin.Transaction, signIndexes []int, uxOuts 
 	}
 
 	// Build a mapping of addresses to the inputs that need to be signed
-	addrs := make(map[cipher.Address][]int)
+	addrsMap := make(map[cipher.Address][]int)
 	if len(signIndexes) > 0 {
 		for _, in := range signIndexes {
 			if !signedTxn.Sigs[in].Null() {
 				return nil, NewError(fmt.Errorf("Transaction is already signed at index %d", in))
 			}
-			addrs[uxOuts[in].Body.Address] = append(addrs[uxOuts[in].Body.Address], in)
+			addrsMap[uxOuts[in].Body.Address] = append(addrsMap[uxOuts[in].Body.Address], in)
 		}
 	} else {
 		for i, o := range uxOuts {
 			if !signedTxn.Sigs[i].Null() {
 				continue
 			}
-			addrs[o.Body.Address] = append(addrs[o.Body.Address], i)
+			addrsMap[o.Body.Address] = append(addrsMap[o.Body.Address], i)
 		}
 	}
 
 	// Check that the wallet has all addresses needed for signing
-	toSign := make(map[int][]int)
-	for i, e := range w.GetEntries() {
-		if len(toSign) == len(addrs) {
+	toSign := make(map[cipher.SecKey][]int)
+	entries, err := w.GetEntries()
+	if err != nil {
+		return nil, err
+	}
+	for _, e := range entries {
+		if len(toSign) == len(addrsMap) {
 			break
 		}
 		addr := e.SkycoinAddress()
-		if x, ok := addrs[addr]; ok {
-			toSign[i] = x
+		if x, ok := addrsMap[addr]; ok {
+			toSign[e.Secret] = x
 		}
 	}
 
-	if len(toSign) != len(addrs) {
+	if len(toSign) != len(addrsMap) {
 		return nil, NewError(errors.New("Wallet cannot sign all requested inputs"))
 	}
 
@@ -151,7 +155,7 @@ func SignTransaction(w Wallet, txn *coin.Transaction, signIndexes []int, uxOuts 
 				return nil, NewError(fmt.Errorf("Transaction is already signed at index %d", x))
 			}
 
-			if err := signedTxn.SignInput(w.GetEntryAt(k).Secret, x); err != nil {
+			if err := signedTxn.SignInput(k, x); err != nil {
 				return nil, err
 			}
 		}
@@ -195,7 +199,7 @@ func SignTransaction(w Wallet, txn *coin.Transaction, signIndexes []int, uxOuts 
 // If receiving hours are not explicitly specified, hours are allocated amongst the receiving outputs proportional to the number of coins being sent to them.
 // If the change address is not specified, the address whose bytes are lexically sorted first is chosen from the owners of the outputs being spent.
 // WARNING: This method is not concurrent-safe if operating on the same wallet. Use Service.View or Service.ViewSecrets to lock the wallet, or use your own lock.
-func CreateTransaction(w Wallet, p transaction.Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []transaction.UxBalance, error) {
+func CreateTransaction(w Wallet, p transaction.Params, auxs coin.AddressUxOuts, headTime uint64, tf TransactionsFinder) (*coin.Transaction, []transaction.UxBalance, error) {
 	if err := p.Validate(); err != nil {
 		return nil, nil, err
 	}
@@ -208,28 +212,25 @@ func CreateTransaction(w Wallet, p transaction.Params, auxs coin.AddressUxOuts, 
 	}
 
 	// Generate a new change address for bip44 wallets
-	var changeEntry *entry.Entry
 	if p.ChangeAddress == nil && w.Type() == WalletTypeBip44 {
-		e, err := w.(*Bip44Wallet).PeekChangeEntry()
+		changeAddr, err := w.(*Bip44Wallet).PeekChangeAddress(tf)
 		if err != nil {
 			logger.Critical().WithError(err).Error("PeekChangeEntry failed")
 			return nil, nil, fmt.Errorf("PeekChangeEntry failed: %v", err)
 		}
-		changeAddr := e.Address.(cipher.Address)
 		p.ChangeAddress = &changeAddr
-		changeEntry = &e
 	}
 
 	txn, uxb, err := transaction.Create(p, auxs, headTime)
 
-	if err == nil && changeEntry != nil && w.Type() == WalletTypeBip44 {
-		// Commit the change address to the bip44 wallet, assuming it will be used
-		if e, err := w.(*Bip44Wallet).GenerateChangeEntry(); err != nil {
-			logger.WithError(err).Panic("GenerateChangeEntry failed after a PeekChangeEntry")
-		} else if e != *changeEntry {
-			logger.Panicf("GenerateChangeEntry produced a different change entry than PeekChangeEntry: %s != %s", e.Address, changeEntry.Address)
-		}
-	}
+	// if err == nil && changeEntry != nil && w.Type() == WalletTypeBip44 {
+	// 	// Commit the change address to the bip44 wallet, assuming it will be used
+	// 	if e, err := w.(*Bip44Wallet).GenerateChangeEntry(); err != nil {
+	// 		logger.WithError(err).Panic("GenerateChangeEntry failed after a PeekChangeEntry")
+	// 	} else if e != *changeEntry {
+	// 		logger.Panicf("GenerateChangeEntry produced a different change entry than PeekChangeEntry: %s != %s", e.Address, changeEntry.Address)
+	// 	}
+	// }
 
 	return txn, uxb, err
 }
@@ -237,8 +238,8 @@ func CreateTransaction(w Wallet, p transaction.Params, auxs coin.AddressUxOuts, 
 // CreateTransactionSigned creates and signs a transaction based upon transaction.Params.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided.
 // Refer to CreateTransaction for information about transaction creation.
-func CreateTransactionSigned(w Wallet, p transaction.Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []transaction.UxBalance, error) {
-	txn, uxb, err := CreateTransaction(w, p, auxs, headTime)
+func CreateTransactionSigned(w Wallet, p transaction.Params, auxs coin.AddressUxOuts, headTime uint64, tf TransactionsFinder) (*coin.Transaction, []transaction.UxBalance, error) {
+	txn, uxb, err := CreateTransaction(w, p, auxs, headTime, tf)
 	if err != nil {
 		return nil, nil, err
 	}

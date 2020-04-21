@@ -363,31 +363,30 @@ func (serv *Service) ScanAddresses(wltID string, password []byte, num uint64, tf
 		return nil, err
 	}
 
-	l := w.EntriesLen()
-	// var addrs []cipher.Address
-	// f := func(wlt Wallet) error {
-	if err := w.ScanAddresses(num, tf); err != nil {
-		return nil, err
+	var addrs []cipher.Address
+	f := func(w Wallet) error {
+		var err error
+		addrs, err = w.ScanAddresses(num, tf)
+		if err != nil {
+			return err
+		}
+
+		return nil
 	}
 
-	addrs := w.GetAddresses()
+	if w.IsEncrypted() {
+		if err := w.Unlock(password, f); err != nil {
+			return nil, err
+		}
+	} else {
+		if len(password) != 0 {
+			return nil, ErrWalletNotEncrypted
+		}
 
-	// return nil
-	// }
-
-	// if w.IsEncrypted() {
-	// 	if err := GuardUpdate(w, password, f); err != nil {
-	// 		return nil, err
-	// 	}
-	// } else {
-	// 	if len(password) != 0 {
-	// 		return nil, ErrWalletNotEncrypted
-	// 	}
-
-	// 	if err := f(w); err != nil {
-	// 		return nil, err
-	// 	}
-	// }
+		if err := f(w); err != nil {
+			return nil, err
+		}
+	}
 
 	// Checks if the wallet file is writable
 	wf := filepath.Join(serv.config.WalletDir, w.Filename())
@@ -403,7 +402,7 @@ func (serv *Service) ScanAddresses(wltID string, password []byte, num uint64, tf
 	serv.wallets.set(w)
 
 	// return new generated addresses
-	return addrs[l:], nil
+	return addrs, nil
 }
 
 // GetSkycoinAddresses returns all addresses in given wallet
@@ -435,7 +434,7 @@ func (serv *Service) GetAddresses(wltID string) ([]cipher.Address, error) {
 		return nil, err
 	}
 
-	return w.GetAddresses(), nil
+	return w.GetAddresses()
 }
 
 // GetWallet returns wallet by id

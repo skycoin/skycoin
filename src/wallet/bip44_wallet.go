@@ -95,6 +95,22 @@ func (w *Bip44Wallet) CryptoType() crypto.CryptoType {
 	return w.Bip44WalletNew.CryptoType()
 }
 
+// Lock encrypts the wallet
+func (w *Bip44Wallet) Lock(password []byte) error {
+	return w.Bip44WalletNew.Lock(password)
+}
+
+// Unlock decrypts the wallet
+func (w *Bip44Wallet) Unlock(password []byte, f func(w Wallet) error) error {
+	wlt, err := w.Bip44WalletNew.Unlock(password)
+	if err != nil {
+		return err
+	}
+	defer wlt.Erase()
+
+	return f(&Bip44Wallet{wlt})
+}
+
 // newBip44Wallet creates a Bip44Wallet
 // func newBip44Wallet(meta meta.Meta) (*Bip44Wallet, error) { //nolint:unparam
 // 	return bip44wallet.NewBip44WalletNew(bip44wallet.Bip44WalletCreateOptions{})

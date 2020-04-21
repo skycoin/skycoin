@@ -45,10 +45,11 @@ func loadWallets(dir string) (Wallets, error) {
 	}
 
 	for name, w := range wallets {
-		if err := w.Validate(); err != nil {
-			logger.WithError(err).WithField("name", name).Error("loadWallets: wallet.Validate failed")
-			return nil, err
-		}
+		// TODO: do validate when creating wallet themselves
+		// if err := w.Validate(); err != nil {
+		// 	logger.WithError(err).WithField("name", name).Error("loadWallets: wallet.Validate failed")
+		// 	return nil, err
+		// }
 
 		if w.Coin() != meta.CoinTypeSkycoin {
 			err := fmt.Errorf("LoadWallets only support skycoin wallets, %s is a %s wallet", name, w.Coin())

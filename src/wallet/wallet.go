@@ -548,15 +548,15 @@ type Wallet interface {
 
 	Fingerprint() string
 	GetAddresses() ([]cipher.Address, error)
-	GetEntryAt(i int) (entry.Entry, error)
+	// GetEntryAt(i int) (entry.Entry, error)
 	GetEntry(cipher.Address) (entry.Entry, bool)
 	HasEntry(cipher.Address) bool
 	EntriesLen() int
-	GetEntries() entry.Entries
+	GetEntries() (entry.Entries, error)
 
 	GenerateAddresses(num uint64) ([]cipher.Address, error)
 	// GenerateSkycoinAddresses(num uint64) ([]cipher.Address, error)
-	ScanAddresses(scanN uint64, tf TransactionsFinder) error
+	ScanAddresses(scanN uint64, tf TransactionsFinder) ([]cipher.Address, error)
 
 	// Serialize serialize the wallet to bytes, and error if any
 	Serialize() ([]byte, error)

@@ -53,6 +53,8 @@ type accountManager interface {
 	entriesLen(account, chain uint32) (uint32, error)
 	// entryAt  returns the entry of specific index
 	entryAt(account, chain, index uint32) (entry.Entry, error)
+	// getEntry returns the entry of given address
+	getEntry(account uint32, address cipher.Addresser) (entry.Entry, bool, error)
 	// len returns the account number
 	len() uint32
 	// clone returns a deep clone accounts manager
@@ -222,12 +224,12 @@ func (w *Bip44WalletNew) NewChangeAddresses(account, n uint32) ([]cipher.Address
 	return w.accounts.newAddresses(account, bip44.ChangeChainIndex, n)
 }
 
-// ExternalEntries returns the entries on external external chain
+// ExternalEntries returns the entries on external chain
 func (w *Bip44WalletNew) ExternalEntries(account uint32) (entry.Entries, error) {
 	return w.accounts.entries(account, bip44.ExternalChainIndex)
 }
 
-// ChangeEntries returns the entries on external external chain
+// ChangeEntries returns the entries on change chain
 func (w *Bip44WalletNew) ChangeEntries(account uint32) (entry.Entries, error) {
 	return w.accounts.entries(account, bip44.ChangeChainIndex)
 }
@@ -250,6 +252,11 @@ func (w *Bip44WalletNew) ExternalEntryAt(account, i uint32) (entry.Entry, error)
 // ChangeEntryAt returns the entry at the given index on change chain of selected account
 func (w *Bip44WalletNew) ChangeEntryAt(account, i uint32) (entry.Entry, error) {
 	return w.accounts.entryAt(account, bip44.ChangeChainIndex, i)
+}
+
+// GetEntry returns the entry of given address on selected account
+func (w *Bip44WalletNew) GetEntry(account uint32, address cipher.Addresser) (entry.Entry, bool, error) {
+	return w.accounts.getEntry(account, address)
 }
 
 // Serialize encodes the bip44 wallet to []byte
@@ -296,7 +303,7 @@ func (w *Bip44WalletNew) Lock(password []byte) error {
 	ss := make(secrets.Secrets)
 	defer func() {
 		ss.Erase()
-		wlt.erase()
+		wlt.Erase()
 	}()
 
 	wlt.packSecrets(ss)
@@ -324,10 +331,10 @@ func (w *Bip44WalletNew) Lock(password []byte) error {
 	wlt.SetEncrypted(cryptoType, string(encSecret))
 
 	// Wipes the secret fields in wlt
-	wlt.erase()
+	wlt.Erase()
 
 	// Wipes the secret fields in w
-	w.erase()
+	w.Erase()
 
 	w.copyFrom(&wlt)
 	return nil
@@ -402,7 +409,8 @@ func (w *Bip44WalletNew) copyFrom(wlt *Bip44WalletNew) {
 	w.decoder = wlt.decoder
 }
 
-func (w *Bip44WalletNew) erase() {
+// Erase wipes all sensitive data
+func (w *Bip44WalletNew) Erase() {
 	w.SetSeed("")
 	w.SetSeedPassphrase("")
 	w.accounts.erase()
@@ -441,6 +449,3 @@ func makeChainPubKeys(a *bip44.Account) (*bip32.PublicKey, *bip32.PublicKey, err
 	}
 	return external, change, nil
 }
-
-// TODO:
-// - Integrate the bip44 wallet to wallet system

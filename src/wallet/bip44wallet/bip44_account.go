@@ -174,6 +174,18 @@ func (a *bip44Account) entryAt(chain, i uint32) (entry.Entry, error) {
 	}
 }
 
+func (a *bip44Account) getEntry(address cipher.Addresser) (entry.Entry, bool) {
+	for _, c := range a.Chains {
+		for _, e := range c.Entries {
+			if e.Address == address {
+				return e, true
+			}
+		}
+	}
+
+	return entry.Entry{}, false
+}
+
 // Clone clones the bip44Account, it would also hide the
 // bip44.Account.Clone() function so that user would not
 // call it mistakenly.
@@ -411,4 +423,14 @@ func (a *bip44Accounts) entryAt(account, chain, i uint32) (entry.Entry, error) {
 	default:
 		return entry.Entry{}, fmt.Errorf("Invalid chain index: %d", chain)
 	}
+}
+
+func (a *bip44Accounts) getEntry(account uint32, address cipher.Addresser) (entry.Entry, bool, error) {
+	act, err := a.account(account)
+	if err != nil {
+		return entry.Entry{}, false, err
+	}
+
+	e, ok := act.getEntry(address)
+	return e, ok, nil
 }

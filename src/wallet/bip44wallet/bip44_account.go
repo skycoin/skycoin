@@ -116,7 +116,7 @@ func (a *bip44Account) erase() {
 // packSecrets packs the secrets of secrets into Secrets
 func (a *bip44Account) packSecrets(ss secrets.Secrets) {
 	// packs the account private key.
-	ss.Set(secretBip44AccountPrivateKey, a.Account.String())
+	ss.Set(fmt.Sprintf("%s-%d", secretBip44AccountPrivateKey, a.Index), a.Account.String())
 
 	// packs the secrets in chains
 	for _, c := range a.Chains {
@@ -125,7 +125,7 @@ func (a *bip44Account) packSecrets(ss secrets.Secrets) {
 }
 
 func (a *bip44Account) unpackSecrets(ss secrets.Secrets) error {
-	prvKey, ok := ss.Get(secretBip44AccountPrivateKey)
+	prvKey, ok := ss.Get(fmt.Sprintf("%s-%d", secretBip44AccountPrivateKey, a.Index))
 	if !ok {
 		return errors.New("Missing bip44 account private key when unpacking secrets")
 	}
@@ -433,4 +433,8 @@ func (a *bip44Accounts) getEntry(account uint32, address cipher.Addresser) (entr
 
 	e, ok := act.getEntry(address)
 	return e, ok, nil
+}
+
+func (a *bip44Accounts) syncSecrets() {
+
 }

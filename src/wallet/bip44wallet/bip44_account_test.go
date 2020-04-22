@@ -285,14 +285,31 @@ func TestBip44AccountsNewAddresses(t *testing.T) {
 			}
 
 			require.Equal(t, tc.num, uint32(len(addrs)))
+
+			act, err := accounts.account(accountIndex)
+			require.NoError(t, err)
+			entries := act.Chains[tc.chain].Entries
+			require.Equal(t, len(entries), len(addrs))
+
 			for i, addr := range addrs {
+				// Confirms that the the secrets key matches the addresses
+				secKey := entries[i].Secret
+
 				switch tc.coinType {
 				case meta.CoinTypeSkycoin:
 					_, err := cipher.DecodeBase58Address(addr.String())
 					require.NoError(t, err)
+
+					addrFromSecKey, err := cipher.AddressFromSecKey(secKey)
+					require.NoError(t, err)
+					require.Equal(t, addrFromSecKey.String(), addr.String())
 				case meta.CoinTypeBitcoin:
 					_, err := cipher.DecodeBase58BitcoinAddress(addr.String())
 					require.NoError(t, err)
+
+					addrFromSecKey, err := cipher.BitcoinAddressFromSecKey(secKey)
+					require.NoError(t, err)
+					require.Equal(t, addrFromSecKey.String(), addr.String())
 				}
 				require.Equal(t, tc.expectAddrs[i], addr.String())
 			}
@@ -417,7 +434,7 @@ func TestBip44AccountPackSecrets(t *testing.T) {
 
 	// 11 = 1 account private key + 5 external chain secrets + 5 change chain secrets
 	require.Equal(t, 11, len(ss))
-	sk, ok := ss.Get(secretBip44AccountPrivateKey)
+	sk, ok := ss.Get(a.accountKeyName())
 	require.True(t, ok)
 
 	// Confirms that the Secrets contains account private key
@@ -458,4 +475,37 @@ func TestBip44AccountUnpackSecrets(t *testing.T) {
 
 	// compare the account and cloned account
 	requireBip44AccountEqual(t, a, &ca)
+}
+
+func TestAccountSyncSecrets(t *testing.T) {
+	// create a bip44 account
+	a, err := newBip44Account(bip44AccountCreateOptions{
+		name:           "Test",
+		coinType:       meta.CoinTypeSkycoin,
+		seed:           testSeed,
+		seedPassphrase: testSeedPassphrase,
+	})
+	require.NoError(t, err)
+
+	eAddrs, err := a.newAddresses(bip44.ExternalChainIndex, 5)
+	require.NoError(t, err)
+	cAddrs, err := a.newAddresses(bip44.ChangeChainIndex, 5)
+	require.NoError(t, err)
+	ss := make(secrets.Secrets)
+	a.packSecrets(ss)
+	require.Equal(t, 11, len(ss))
+
+	// wipes secrets
+	a.erase()
+	nEAddrs, err := a.newAddresses(bip44.ExternalChainIndex, 2)
+	nCAddrs, err := a.newAddresses(bip44.ChangeChainIndex, 2)
+	require.NoError(t, err)
+	require.NoError(t, a.syncSecrets(ss))
+	require.Equal(t, 15, len(ss))
+
+	// confirms that all addresses has secrets now
+	for _, a := range append(eAddrs, append(cAddrs, append(nEAddrs, nCAddrs...)...)...) {
+		_, ok := ss.Get(a.String())
+		require.True(t, ok)
+	}
 }

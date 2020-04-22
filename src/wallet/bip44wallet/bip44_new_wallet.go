@@ -59,6 +59,9 @@ type accountManager interface {
 	len() uint32
 	// clone returns a deep clone accounts manager
 	clone() accountManager
+	// syncSecrets checks if there are any addresses that do not have secrets associated with,
+	// if yes, generate the secrets for those addresses
+	syncSecrets(ss secrets.Secrets) error
 	// packSecrets packs secrets
 	packSecrets(ss secrets.Secrets)
 	// unpackSecrets unpacks secrets
@@ -371,7 +374,7 @@ func (w *Bip44WalletNew) Unlock(password []byte) (*Bip44WalletNew, error) {
 	}
 
 	defer func() {
-		// Wipes the dat from secrets bytes buffer
+		// Wipes the data from secrets bytes buffer
 		for i := range sb {
 			sb[i] = 0
 		}
@@ -384,11 +387,33 @@ func (w *Bip44WalletNew) Unlock(password []byte) (*Bip44WalletNew, error) {
 	}
 
 	cw := w.Clone()
+
+	initSSLen := len(ss)
+	// fills secrets for those new generated addresses
+	if err := cw.syncSecrets(ss); err != nil {
+		return nil, err
+	}
+
+	if len(ss) > initSSLen {
+		// new secrets generated, update the secrets field of the locked wallet
+		sb, err := ss.Serialize()
+		if err != nil {
+			return nil, err
+		}
+
+		encSecret, err := crypto.Encrypt(sb, password)
+		if err != nil {
+			return nil, err
+		}
+
+		// Sets wallet as encrypted, updates secret field.
+		w.SetEncrypted(ct, string(encSecret))
+	}
+
 	if err := cw.unpackSecrets(ss); err != nil {
 		return nil, err
 	}
 	cw.SetDecrypted()
-
 	return &cw, nil
 }
 
@@ -414,6 +439,12 @@ func (w *Bip44WalletNew) Erase() {
 	w.SetSeed("")
 	w.SetSeedPassphrase("")
 	w.accounts.erase()
+}
+
+// syncSecrets synchronize the secrets with all addresses, ensure that
+// each address has the secret key stored in the secrets
+func (w Bip44WalletNew) syncSecrets(ss secrets.Secrets) error {
+	return w.accounts.syncSecrets(ss)
 }
 
 // packSecrets saves all sensitive data to the secrets map.

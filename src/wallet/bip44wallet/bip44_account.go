@@ -113,10 +113,50 @@ func (a *bip44Account) erase() {
 	}
 }
 
+// syncSecrets ensure that the secrets covers all addresses in the account,
+// otherwise, generate related secrets and pack to the secrets storage.
+func (a *bip44Account) syncSecrets(ss secrets.Secrets) error {
+	v, ok := ss.Get(a.accountKeyName())
+	if !ok {
+		return errors.New("Account private key does not exist in secrets")
+	}
+
+	key, err := bip32.DeserializeEncodedPrivateKey(v)
+	if err != nil {
+		return err
+	}
+
+	for _, c := range a.Chains {
+		if err := c.syncSecrets(ss, key); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func secretFromPrivateKey(privateKey *bip32.PrivateKey, chain, index uint32) (cipher.SecKey, error) {
+	chainSecKey, err := privateKey.NewPrivateChildKey(chain)
+	if err != nil {
+		return cipher.SecKey{}, err
+	}
+
+	k, err := chainSecKey.NewPrivateChildKey(index)
+	if err != nil {
+		return cipher.SecKey{}, err
+	}
+
+	return cipher.NewSecKey(k.Key)
+}
+
+func (a *bip44Account) accountKeyName() string {
+	return fmt.Sprintf("%s-%d", secretBip44AccountPrivateKey, a.Index)
+}
+
 // packSecrets packs the secrets of secrets into Secrets
 func (a *bip44Account) packSecrets(ss secrets.Secrets) {
 	// packs the account private key.
-	ss.Set(fmt.Sprintf("%s-%d", secretBip44AccountPrivateKey, a.Index), a.Account.String())
+	ss.Set(a.accountKeyName(), a.Account.String())
 
 	// packs the secrets in chains
 	for _, c := range a.Chains {
@@ -125,7 +165,7 @@ func (a *bip44Account) packSecrets(ss secrets.Secrets) {
 }
 
 func (a *bip44Account) unpackSecrets(ss secrets.Secrets) error {
-	prvKey, ok := ss.Get(fmt.Sprintf("%s-%d", secretBip44AccountPrivateKey, a.Index))
+	prvKey, ok := ss.Get(a.accountKeyName())
 	if !ok {
 		return errors.New("Missing bip44 account private key when unpacking secrets")
 	}
@@ -246,17 +286,31 @@ func (c *bip44Chain) newAddresses(num uint32, seckey *bip32.PrivateKey) ([]ciphe
 		}
 
 		if seckey != nil {
-			csk, err := cipher.NewSecKey(seckey.Key)
+			k, err := secretFromPrivateKey(seckey, c.ChainIndex, index)
 			if err != nil {
 				return nil, err
 			}
-			e.Secret = csk
+			e.Secret = k
 		}
 
 		c.Entries = append(c.Entries, e)
 		addrs = append(addrs, addr)
 	}
 	return addrs, nil
+}
+
+func (c *bip44Chain) syncSecrets(ss secrets.Secrets, privateKey *bip32.PrivateKey) error {
+	for i, e := range c.Entries {
+		addr := e.Address.String()
+		if _, ok := ss.Get(addr); !ok {
+			k, err := secretFromPrivateKey(privateKey, c.ChainIndex, uint32(i))
+			if err != nil {
+				return err
+			}
+			ss.Set(addr, k.Hex())
+		}
+	}
+	return nil
 }
 
 func (c *bip44Chain) packSecrets(ss secrets.Secrets) {
@@ -351,16 +405,17 @@ func (a *bip44Accounts) nextIndex() (uint32, error) {
 
 func (a *bip44Accounts) clone() accountManager {
 	nas := &bip44Accounts{}
-	for _, account := range a.accounts {
-		na := account.Clone()
+	for i := range a.accounts {
+		na := a.accounts[i].Clone()
 		nas.accounts = append(nas.accounts, &na)
 	}
 	return nas
 }
 
 func (a *bip44Accounts) packSecrets(ss secrets.Secrets) {
-	for _, account := range a.accounts {
-		for _, c := range account.Chains {
+	for i := range a.accounts {
+		a.accounts[i].packSecrets(ss)
+		for _, c := range a.accounts[i].Chains {
 			c.packSecrets(ss)
 		}
 	}
@@ -368,10 +423,8 @@ func (a *bip44Accounts) packSecrets(ss secrets.Secrets) {
 
 func (a *bip44Accounts) unpackSecrets(ss secrets.Secrets) error {
 	for i := range a.accounts {
-		for j := range a.accounts[i].Chains {
-			if err := a.accounts[i].Chains[j].Entries.UnpackSecretKeys(ss); err != nil {
-				return err
-			}
+		if err := a.accounts[i].unpackSecrets(ss); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -435,6 +488,11 @@ func (a *bip44Accounts) getEntry(account uint32, address cipher.Addresser) (entr
 	return e, ok, nil
 }
 
-func (a *bip44Accounts) syncSecrets() {
-
+func (a *bip44Accounts) syncSecrets(ss secrets.Secrets) error {
+	for _, act := range a.accounts {
+		if err := act.syncSecrets(ss); err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
 	"github.com/SkycoinProject/skycoin/src/wallet/meta"
 	"github.com/SkycoinProject/skycoin/src/wallet/secrets"
@@ -250,6 +251,7 @@ func TestBip44WalletUnlock(t *testing.T) {
 		Seed:           testSeed,
 		SeedPassphrase: testSeedPassphrase,
 		CoinType:       meta.CoinTypeSkycoin,
+		CryptoType:     crypto.CryptoTypeScryptChacha20poly1305Insecure,
 	})
 	require.NoError(t, err)
 
@@ -267,13 +269,27 @@ func TestBip44WalletUnlock(t *testing.T) {
 	err = cw.Lock([]byte("123456"))
 	require.NoError(t, err)
 
+	// generates addresses after locking
+	_, err = cw.NewExternalAddresses(ai, 2)
+	require.NoError(t, err)
+	_, err = cw.NewChangeAddresses(ai, 3)
+	require.NoError(t, err)
+
 	// unlock with wrong password
 	_, err = cw.Unlock([]byte("12345"))
 	require.Equal(t, errors.New("Invalid password"), err)
 
-	// unlock with the correct password
+	// unlock with correct password
 	wlt, err := cw.Unlock([]byte("123456"))
 	require.NoError(t, err)
+
+	el, err := wlt.accounts.entriesLen(ai, bip44.ExternalChainIndex)
+	require.NoError(t, err)
+	require.Equal(t, uint32(4), el)
+
+	cl, err := wlt.accounts.entriesLen(ai, bip44.ChangeChainIndex)
+	require.NoError(t, err)
+	require.Equal(t, uint32(5), cl)
 
 	// confirms that unlocking wallet won't lose data
 	require.Empty(t, wlt.Secrets())
@@ -290,7 +306,7 @@ func TestBip44WalletUnlock(t *testing.T) {
 	wlt.accounts.packSecrets(ss)
 
 	// compare these two secrets, they should have the same keys and values
-	require.Equal(t, len(originSS), len(ss))
+	require.Equal(t, len(originSS)+5, len(ss))
 	for k, v := range originSS {
 		vv, ok := ss[k]
 		require.True(t, ok)

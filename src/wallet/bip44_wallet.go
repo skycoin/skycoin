@@ -445,50 +445,50 @@ func (w *Bip44Wallet) GetAddresses() ([]cipher.Address, error) {
 
 // ScanAddresses scans ahead N addresses, truncating up to the highest address with any transaction history.
 // returns the new generated addresses
+// TODO: Test bip44 wallet scanning address, for both external chain and change chain.
 func (w *Bip44Wallet) ScanAddresses(scanN uint64, tf TransactionsFinder) ([]cipher.Address, error) {
-	if w.Meta.IsEncrypted() {
-		return nil, ErrWalletEncrypted
-	}
-
 	if scanN == 0 {
 		return nil, nil
 	}
 
 	w2 := w.Clone().(*Bip44Wallet)
+	newAddrsFuncs := map[uint32]func(account, num uint32) ([]cipher.Addresser, error){
+		bip44.ExternalChainIndex: w2.NewExternalAddresses,
+		bip44.ChangeChainIndex:   w2.NewChangeAddresses,
+	}
 
-	eKeepNum, err := scanAddressesBip32(func(num uint32) ([]cipher.Address, error) {
-		addrs, err := w2.NewExternalAddresses(defaultAccount, num)
+	dropEntriesFunc := map[uint32]func(n uint32) error{
+		bip44.ExternalChainIndex: w2.DropExternalLastEntriesN,
+		bip44.ChangeChainIndex:   w2.DropChangeLastEntriesN,
+	}
+
+	var retAddrs []cipher.Address
+	for ci, newAddrs := range newAddrsFuncs {
+		addrs, err := newAddrs(defaultAccount, uint32(scanN))
 		if err != nil {
 			return nil, err
 		}
-		return convertToSkyAddrs(addrs), nil
-	}, uint32(scanN), tf)
-	if err != nil {
-		return nil, err
-	}
 
-	cKeepNum, err := scanAddressesBip32(func(num uint32) ([]cipher.Address, error) {
-		addrs, err := w2.NewChangeAddresses(defaultAccount, num)
+		// converts to skycoin addresses
+		skyAddrs := convertToSkyAddrs(addrs)
+
+		keepN, err := scanAddressesBip32(skyAddrs, tf)
 		if err != nil {
 			return nil, err
 		}
-		return convertToSkyAddrs(addrs), nil
-	}, uint32(scanN), tf)
-	if err != nil {
-		return nil, err
+
+		retAddrs = append(retAddrs, convertToSkyAddrs(addrs[:keepN])...)
+
+		// drops the last N entreis that without transactions associated
+		if err := dropEntriesFunc[ci](uint32(scanN) - keepN); err != nil {
+			return nil, err
+		}
 	}
 
-	eAddrs, err := w.NewExternalAddresses(defaultAccount, eKeepNum)
-	if err != nil {
-		return nil, err
-	}
+	// TODO: confirms that this assignment would work as expected
+	*w = *w2
 
-	cAddrs, err := w.NewChangeAddresses(defaultAccount, cKeepNum)
-	if err != nil {
-		return nil, err
-	}
-
-	return append(convertToSkyAddrs(eAddrs), convertToSkyAddrs(cAddrs)...), nil
+	return retAddrs, nil
 }
 
 func convertToSkyAddrs(addrs []cipher.Addresser) []cipher.Address {
@@ -501,17 +501,7 @@ func convertToSkyAddrs(addrs []cipher.Addresser) []cipher.Address {
 
 // scanAddressesBip32 implements the address scanning algorithm for bip32
 // based (e.g. bip44, xpub) wallets
-func scanAddressesBip32(generateAddrs func(num uint32) ([]cipher.Address, error), scanN uint32, tf TransactionsFinder) (uint32, error) {
-	if scanN == 0 {
-		return 0, nil
-	}
-
-	// Generate the addresses to scan
-	addrs, err := generateAddrs(scanN)
-	if err != nil {
-		return 0, err
-	}
-
+func scanAddressesBip32(addrs []cipher.Address, tf TransactionsFinder) (uint32, error) {
 	if len(addrs) == 0 {
 		return 0, nil
 	}

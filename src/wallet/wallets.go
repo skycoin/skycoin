@@ -119,14 +119,6 @@ func (wlts Wallets) containsEmpty() (string, bool) {
 			if wlt.EntriesLen() == 0 {
 				return wltID, true
 			}
-			// case WalletTypeDeterministic:
-			// 	if wlt.EntriesLen() == 0 {
-			// 		return wltID, true
-			// 	}
-			// case WalletTypeBip44:
-			// if len(wlt.(*Bip44Wallet).ExternalEntries) == 0 {
-			// 	return wltID, true
-			// }
 		}
 	}
 	return "", false

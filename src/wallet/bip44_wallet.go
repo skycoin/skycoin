@@ -23,6 +23,15 @@ type Bip44Wallet struct {
 	*bip44wallet.Bip44WalletNew
 }
 
+// LoadBip44Wallet loads wallet from data
+func LoadBip44Wallet(data []byte) (Wallet, error) {
+	w := &bip44wallet.Bip44WalletNew{}
+	if err := w.Deserialize(data); err != nil {
+		return nil, err
+	}
+	return &Bip44Wallet{w}, nil
+}
+
 // NewBip44Wallet creates a bip44 wallet
 func NewBip44Wallet(filename string, opts Options, tf TransactionsFinder) (Wallet, error) {
 	wltType := opts.Type

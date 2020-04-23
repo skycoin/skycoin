@@ -149,6 +149,7 @@ type walletFileLoader struct {
 
 var registeredWalletFileLoader = walletFileLoader{
 	walletLoadFuncs: map[string]walletFileLoadFunc{
+		"bip44": LoadBip44Wallet,
 		// "skycoin":
 	},
 }

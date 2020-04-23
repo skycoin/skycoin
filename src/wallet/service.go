@@ -212,12 +212,12 @@ func (serv *Service) EncryptWallet(wltID string, password []byte) (Wallet, error
 		return nil, err
 	}
 
-	// Save to disk first
+	// Saves to disk
 	if err := Save(w, serv.config.WalletDir); err != nil {
 		return nil, err
 	}
 
-	// Sets the encrypted wallet
+	// Updates wallets in memory
 	serv.wallets.set(w)
 	return w, nil
 }
@@ -374,17 +374,24 @@ func (serv *Service) ScanAddresses(wltID string, password []byte, num uint64, tf
 		return nil
 	}
 
-	if w.IsEncrypted() {
-		if err := w.Unlock(password, f); err != nil {
+	// For bip44 wallets, there is no need to unlock the wallets even it is encrypted.
+	if w.Type() == WalletTypeBip44 {
+		if err := f(w); err != nil {
 			return nil, err
 		}
 	} else {
-		if len(password) != 0 {
-			return nil, ErrWalletNotEncrypted
-		}
+		if w.IsEncrypted() {
+			if err := w.Unlock(password, f); err != nil {
+				return nil, err
+			}
+		} else {
+			if len(password) != 0 {
+				return nil, ErrWalletNotEncrypted
+			}
 
-		if err := f(w); err != nil {
-			return nil, err
+			if err := f(w); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -394,11 +401,12 @@ func (serv *Service) ScanAddresses(wltID string, password []byte, num uint64, tf
 		return nil, ErrWalletPermission
 	}
 
-	// Save the wallet first
+	// Saves the wallet to disk
 	if err := Save(w, serv.config.WalletDir); err != nil {
 		return nil, err
 	}
 
+	// Updates wallet in memory
 	serv.wallets.set(w)
 
 	// return new generated addresses

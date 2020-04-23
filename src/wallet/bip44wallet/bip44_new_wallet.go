@@ -90,6 +90,7 @@ type Bip44WalletCreateOptions struct {
 	Seed           string
 	SeedPassphrase string
 	CoinType       meta.CoinType
+	Bip44CoinType  *bip44.CoinType
 	CryptoType     crypto.CryptoType
 	WalletDecoder  Bip44WalletDecoder
 }
@@ -121,8 +122,13 @@ func NewBip44WalletNew(opts Bip44WalletCreateOptions) (*Bip44WalletNew, error) {
 		wlt.decoder = defaultBip44WalletDecoder
 	}
 
-	bip44CoinType := resolveCoinAdapter(opts.CoinType).Bip44CoinType()
-	wlt.Meta.SetBip44Coin(bip44CoinType)
+	// TODO: Test for option both with and without bip44 coin type
+	if opts.Bip44CoinType != nil {
+		wlt.Meta.SetBip44Coin(*opts.Bip44CoinType)
+	} else {
+		bip44CoinType := resolveCoinAdapter(opts.CoinType).Bip44CoinType()
+		wlt.Meta.SetBip44Coin(bip44CoinType)
+	}
 
 	if err := bip44MetaValidate(wlt.Meta); err != nil {
 		return nil, err

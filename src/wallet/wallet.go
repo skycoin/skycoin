@@ -16,6 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 	"github.com/SkycoinProject/skycoin/src/util/file"
 	"github.com/SkycoinProject/skycoin/src/util/logging"
 	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
@@ -126,9 +127,9 @@ func NewWalletFilename() string {
 
 // Options options that could be used when creating a wallet
 type Options struct {
-	Type string        // wallet type: deterministic, collection. Refers to which key generation mechanism is used.
-	Coin meta.CoinType // coin type: skycoin, bitcoin, etc. Refers to which pubkey2addr method is used.
-	// Bip44Coin      *bip44.CoinType   // bip44 path coin type
+	Type           string            // wallet type: deterministic, collection. Refers to which key generation mechanism is used.
+	Coin           meta.CoinType     // coin type: skycoin, bitcoin, etc. Refers to which pubkey2addr method is used.
+	Bip44Coin      *bip44.CoinType   // bip44 path coin type
 	Label          string            // wallet label
 	Seed           string            // wallet seed
 	SeedPassphrase string            // wallet seed passphrase (bip44 wallets only)

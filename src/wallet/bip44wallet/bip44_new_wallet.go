@@ -68,6 +68,8 @@ type accountManager interface {
 	unpackSecrets(ss secrets.Secrets) error
 	// erase wipes secrets
 	erase()
+	// dropLastEntriesN(account drops last N entreis
+	dropLastEntriesN(account, chain, n uint32) error
 }
 
 // Bip44WalletDecoder is the interface that wraps the Encode and Decode methods.
@@ -432,6 +434,16 @@ func (w Bip44WalletNew) Clone() Bip44WalletNew {
 	}
 
 	return nw
+}
+
+// DropExternalLastEntriesN drops the last N entries on external chain
+func (w *Bip44WalletNew) DropExternalLastEntriesN(account, n uint32) error {
+	return w.accounts.dropLastEntriesN(account, bip44.ExternalChainIndex, n)
+}
+
+// DropChangeLastEntriesN drops the last N entries on change chain
+func (w *Bip44WalletNew) DropChangeLastEntriesN(account, n uint32) error {
+	return w.accounts.dropLastEntriesN(account, bip44.ChangeChainIndex, n)
 }
 
 func (w *Bip44WalletNew) copyFrom(wlt *Bip44WalletNew) {

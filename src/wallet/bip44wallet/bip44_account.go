@@ -135,6 +135,16 @@ func (a *bip44Account) syncSecrets(ss secrets.Secrets) error {
 	return nil
 }
 
+func (a *bip44Account) dropLastEntriesN(chain, n uint32) error {
+	switch chain {
+	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
+		a.Chains[chain].dropLastEntriesN(n)
+	default:
+		return fmt.Errorf("Invalid chain index %d", chain)
+
+	}
+}
+
 func secretFromPrivateKey(privateKey *bip32.PrivateKey, chain, index uint32) (cipher.SecKey, error) {
 	chainSecKey, err := privateKey.NewPrivateChildKey(chain)
 	if err != nil {
@@ -336,6 +346,16 @@ func (c bip44Chain) clone() bip44Chain {
 	}
 }
 
+func (c *bip44Chain) dropLastEntriesN(n uint32) error {
+	l := uint32(len(c.Entries))
+	if n > l {
+		return errors.New("bip44Chain.dropLastEntriesN param 'n' is out of range")
+	}
+
+	c.Entries = c.Entries[:l-n]
+	return nil
+}
+
 // bip44Accounts implementes the accountManager interface
 type bip44Accounts struct {
 	accounts []*bip44Account
@@ -495,4 +515,13 @@ func (a *bip44Accounts) syncSecrets(ss secrets.Secrets) error {
 		}
 	}
 	return nil
+}
+
+func (a *bip44Accounts) dropLastEntriesN(account, chain, n uint32) error {
+	act, err := a.account(account)
+	if err != nil {
+		return err
+	}
+
+	return act.dropLastEntriesN(chain, n)
 }

@@ -160,8 +160,6 @@ func (serv *Service) loadWallet(wltName string, options Options, tf Transactions
 				}).Panic("Unhandled wallet type after fingerprint conflict")
 			}
 		}
-	} else {
-		logger.Warningf("wallet %s has empty fingerprint", w.Filename())
 	}
 
 	if err := serv.wallets.add(w); err != nil {

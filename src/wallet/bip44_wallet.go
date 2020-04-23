@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
@@ -9,6 +10,7 @@ import (
 	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
 	"github.com/SkycoinProject/skycoin/src/wallet/entry"
 	"github.com/SkycoinProject/skycoin/src/wallet/meta"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -33,6 +35,8 @@ func LoadBip44Wallet(data []byte) (Wallet, error) {
 }
 
 // NewBip44Wallet creates a bip44 wallet
+// This function implements the walletCreator for bip44 wallet, which will be registered
+// to registeredWalletCreators in wallet.go
 func NewBip44Wallet(filename string, opts Options, tf TransactionsFinder) (Wallet, error) {
 	wltType := opts.Type
 	if wltType != WalletTypeBip44 {
@@ -75,7 +79,55 @@ func NewBip44Wallet(filename string, opts Options, tf TransactionsFinder) (Walle
 		return nil, err
 	}
 
-	return &Bip44Wallet{Bip44WalletNew: wlt}, nil
+	generateN := opts.GenerateN
+	if generateN == 0 {
+		generateN = 1
+	}
+
+	logger.WithFields(logrus.Fields{
+		"generateN":  generateN,
+		"walletType": wltType,
+	}).Infof("Generating addresses for wallet")
+
+	w := &Bip44Wallet{wlt}
+
+	if _, err := w.GenerateAddresses(generateN); err != nil {
+		return nil, err
+	}
+
+	if opts.ScanN != 0 && coin != meta.CoinTypeSkycoin {
+		return nil, errors.New("Wallet scanning is only supported for Skycoin address wallets")
+	}
+
+	if opts.ScanN > generateN {
+		// Scan for addresses with balances
+		logger.WithFields(logrus.Fields{
+			"scanN":      opts.ScanN,
+			"walletType": wltType,
+		}).Info("Scanning addresses for wallet")
+		if _, err := w.ScanAddresses(opts.ScanN-generateN, tf); err != nil {
+			return nil, err
+		}
+	}
+
+	if !opts.Encrypt {
+		if len(opts.Password) != 0 {
+			return nil, ErrMissingEncrypt
+		}
+		return w, nil
+	}
+
+	// Check if the password is provided
+	if len(opts.Password) == 0 {
+		return nil, ErrMissingPassword
+	}
+
+	// Lock the wallet
+	if err := w.Lock(opts.Password); err != nil {
+		return nil, err
+	}
+
+	return w, nil
 }
 
 // Clone makes a copy the bip44 wallet
@@ -457,7 +509,7 @@ func (w *Bip44Wallet) ScanAddresses(scanN uint64, tf TransactionsFinder) ([]ciph
 		bip44.ChangeChainIndex:   w2.NewChangeAddresses,
 	}
 
-	dropEntriesFunc := map[uint32]func(n uint32) error{
+	dropEntriesFunc := map[uint32]func(account, n uint32) error{
 		bip44.ExternalChainIndex: w2.DropExternalLastEntriesN,
 		bip44.ChangeChainIndex:   w2.DropChangeLastEntriesN,
 	}
@@ -480,7 +532,7 @@ func (w *Bip44Wallet) ScanAddresses(scanN uint64, tf TransactionsFinder) ([]ciph
 		retAddrs = append(retAddrs, convertToSkyAddrs(addrs[:keepN])...)
 
 		// drops the last N entreis that without transactions associated
-		if err := dropEntriesFunc[ci](uint32(scanN) - keepN); err != nil {
+		if err := dropEntriesFunc[ci](defaultAccount, uint32(scanN)-keepN); err != nil {
 			return nil, err
 		}
 	}

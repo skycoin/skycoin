@@ -181,12 +181,27 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 		return nil, NewError(errors.New("wallet type is required"))
 	}
 
-	fn, ok := registeredWalletCreators.get(wltType)
+	createWallet, ok := registeredWalletCreators.get(wltType)
 	if !ok {
 		return nil, ErrInvalidWalletType
 	}
 
-	return fn(wltName, opts, tf)
+	wlt, err := createWallet(wltName, opts, tf)
+	if err != nil {
+		return nil, err
+	}
+
+	if opts.ScanN > 0 && tf == nil {
+		return nil, ErrNilTransactionsFinder
+	}
+
+	if opts.ScanN > 0 && tf != nil {
+		if _, err := wlt.ScanAddresses(opts.ScanN, tf); err != nil {
+			return nil, err
+		}
+	}
+
+	return wlt, nil
 
 	// if !IsValidWalletType(wltType) {
 	// 	return nil, ErrInvalidWalletType

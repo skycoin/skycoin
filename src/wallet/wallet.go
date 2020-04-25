@@ -159,7 +159,9 @@ func (w walletFileLoader) get(coinType string) (walletFileLoadFunc, bool) {
 	return fn, ok
 }
 
+//  walletCreateFunc creates a wallet with the options
 type walletCreateFunc func(filename string, opts Options, tf TransactionsFinder) (Wallet, error)
+
 type walletCreators struct {
 	creators map[string]walletCreateFunc
 }
@@ -176,6 +178,7 @@ var registeredWalletCreators = walletCreators{
 }
 
 // newWallet creates a wallet instance with given name and options.
+// TODO: checks the options.GenerateN
 func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, error) {
 	wltType := opts.Type
 	if wltType == "" {
@@ -190,16 +193,6 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 	wlt, err := createWallet(wltName, opts, tf)
 	if err != nil {
 		return nil, err
-	}
-
-	if opts.ScanN > 0 && tf == nil {
-		return nil, ErrNilTransactionsFinder
-	}
-
-	if opts.ScanN > 0 && tf != nil {
-		if _, err := wlt.ScanAddresses(opts.ScanN, tf); err != nil {
-			return nil, err
-		}
 	}
 
 	return wlt, nil
@@ -531,7 +524,7 @@ type Wallet interface {
 	// Type returns the wallet type, e.g. bip44, deterministic, collection
 	Type() string
 	// Bip44Coin returns the coin_type part of bip44 path
-	// Bip44Coin() bip44.CoinType
+	Bip44Coin() *bip44.CoinType
 	Label() string
 	SetLabel(string)
 	Filename() string

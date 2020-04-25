@@ -568,6 +568,7 @@ func (serv *Service) GetWalletSeed(wltID string, password []byte) (string, strin
 }
 
 // UpdateSecrets opens a wallet for modification of secret data and saves it safely
+// TODO: is this necessary?
 func (serv *Service) UpdateSecrets(wltID string, password []byte, f func(Wallet) error) error {
 	serv.Lock()
 	defer serv.Unlock()
@@ -699,6 +700,7 @@ func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string, passwor
 	w2, err := NewWallet(wltName, Options{
 		Type:           w.Type(),
 		Coin:           w.Coin(),
+		Bip44Coin:      w.Bip44Coin(),
 		Seed:           seed,
 		SeedPassphrase: seedPassphrase,
 		GenerateN:      1,
@@ -722,6 +724,7 @@ func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string, passwor
 		Encrypt:        len(password) != 0,
 		Password:       password,
 		CryptoType:     w.CryptoType(),
+		Bip44Coin:      w.Bip44Coin(),
 		GenerateN:      uint64(w.EntriesLen()),
 	})
 	if err != nil {

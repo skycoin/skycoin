@@ -136,21 +136,6 @@ func (w *Bip44Wallet) Clone() Wallet {
 	return &Bip44Wallet{Bip44WalletNew: &cw}
 }
 
-// Coin returns the coin type of the wallet
-// func (w *Bip44Wallet) Coin() meta.CoinType {
-// 	return w.Coin()
-// }
-
-// Bip44Coin returns registered 'coin_type' of bip44 wallet
-func (w *Bip44Wallet) Bip44Coin() bip44.CoinType {
-	ct, ok := w.Bip44WalletNew.Bip44Coin()
-	if !ok {
-		logger.Panic("Missing bip44 coin type")
-	}
-
-	return ct
-}
-
 // CryptoType returns the crypto type that is used for encrypting/decrypting wallet
 func (w *Bip44Wallet) CryptoType() crypto.CryptoType {
 	return w.Bip44WalletNew.CryptoType()

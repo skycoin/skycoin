@@ -140,17 +140,18 @@ func (m Meta) SetCoin(ct CoinType) {
 // Bip44Coin returns the bip44 coin type, please
 // check the second return value to see if it does
 // exist in the Meta data before using it.
-func (m Meta) Bip44Coin() (bip44.CoinType, bool) {
+func (m Meta) Bip44Coin() *bip44.CoinType {
 	c, ok := m[MetaBip44Coin]
 	if !ok {
-		return bip44.CoinType(0), false
+		return nil
 	}
 	x, err := strconv.ParseUint(c, 10, 32)
 	if err != nil {
 		panic(err)
 	}
+	t := bip44.CoinType(x)
 
-	return bip44.CoinType(x), true
+	return &t
 }
 
 // SetBip44Coin sets the bip44 coin type code

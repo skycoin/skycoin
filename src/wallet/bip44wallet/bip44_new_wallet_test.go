@@ -12,67 +12,98 @@ import (
 )
 
 func TestBip44WalletNew(t *testing.T) {
+	bip44SkycoinType := bip44.CoinTypeSkycoin
+	newBip44Type := bip44.CoinType(1000)
+
 	tt := []struct {
-		name           string
-		filename       string
-		label          string
-		seed           string
-		seedPassphrase string
-		coinType       meta.CoinType
-		cryptoType     crypto.CryptoType
-		err            error
+		name                string
+		filename            string
+		label               string
+		seed                string
+		seedPassphrase      string
+		coinType            meta.CoinType
+		bip44CoinType       *bip44.CoinType
+		cryptoType          crypto.CryptoType
+		expectBip44CoinType bip44.CoinType
+		err                 error
 	}{
 		{
-			name:           "skycoin default crypto type",
-			filename:       "test.wlt",
-			label:          "test",
-			seed:           testSeed,
-			seedPassphrase: testSeedPassphrase,
-			coinType:       meta.CoinType("skycoin"),
-			cryptoType:     crypto.DefaultCryptoType,
+			name:                "skycoin default crypto type",
+			filename:            "test.wlt",
+			label:               "test",
+			seed:                testSeed,
+			seedPassphrase:      testSeedPassphrase,
+			coinType:            meta.CoinType("skycoin"),
+			cryptoType:          crypto.DefaultCryptoType,
+			expectBip44CoinType: bip44.CoinTypeSkycoin,
 		},
 		{
-			name:           "bitcoin default crypto type",
-			filename:       "test.wlt",
-			label:          "test",
-			seed:           testSeed,
-			seedPassphrase: testSeedPassphrase,
-			coinType:       meta.CoinTypeBitcoin,
-			cryptoType:     crypto.DefaultCryptoType,
+			name:                "bitcoin default crypto type",
+			filename:            "test.wlt",
+			label:               "test",
+			seed:                testSeed,
+			seedPassphrase:      testSeedPassphrase,
+			coinType:            meta.CoinTypeBitcoin,
+			cryptoType:          crypto.DefaultCryptoType,
+			expectBip44CoinType: bip44.CoinTypeBitcoin,
 		},
 		{
-			name:           "skycoin crypto type sha256xor",
-			filename:       "test.wlt",
-			label:          "test",
-			seed:           testSeed,
-			seedPassphrase: testSeedPassphrase,
-			coinType:       meta.CoinTypeSkycoin,
-			cryptoType:     crypto.CryptoTypeSha256Xor,
+			name:                "skycoin crypto type sha256xor",
+			filename:            "test.wlt",
+			label:               "test",
+			seed:                testSeed,
+			seedPassphrase:      testSeedPassphrase,
+			coinType:            meta.CoinTypeSkycoin,
+			cryptoType:          crypto.CryptoTypeSha256Xor,
+			expectBip44CoinType: bip44.CoinTypeSkycoin,
 		},
 		{
-			name:           "bitcoin crypto type sha256xor",
-			filename:       "test.wlt",
-			label:          "test",
-			seed:           testSeed,
-			seedPassphrase: testSeedPassphrase,
-			coinType:       meta.CoinTypeBitcoin,
-			cryptoType:     crypto.CryptoTypeSha256Xor,
+			name:                "bitcoin crypto type sha256xor",
+			filename:            "test.wlt",
+			label:               "test",
+			seed:                testSeed,
+			seedPassphrase:      testSeedPassphrase,
+			coinType:            meta.CoinTypeBitcoin,
+			cryptoType:          crypto.CryptoTypeSha256Xor,
+			expectBip44CoinType: bip44.CoinTypeBitcoin,
 		},
 		{
-			name:           "skycoin no crypto type",
-			filename:       "test.wlt",
-			label:          "test",
-			seed:           testSeed,
-			seedPassphrase: testSeedPassphrase,
-			coinType:       meta.CoinTypeSkycoin,
+			name:                "skycoin no crypto type",
+			filename:            "test.wlt",
+			label:               "test",
+			seed:                testSeed,
+			seedPassphrase:      testSeedPassphrase,
+			coinType:            meta.CoinTypeSkycoin,
+			expectBip44CoinType: bip44.CoinTypeSkycoin,
 		},
 		{
-			name:           "bitcoin no crypto type",
-			filename:       "test.wlt",
-			label:          "test",
-			seed:           testSeed,
-			seedPassphrase: testSeedPassphrase,
-			coinType:       meta.CoinTypeBitcoin,
+			name:                "bitcoin no crypto type",
+			filename:            "test.wlt",
+			label:               "test",
+			seed:                testSeed,
+			seedPassphrase:      testSeedPassphrase,
+			coinType:            meta.CoinTypeBitcoin,
+			expectBip44CoinType: bip44.CoinTypeBitcoin,
+		},
+		{
+			name:                "skycoin explicit bip44 coin type",
+			filename:            "test.wlt",
+			label:               "test",
+			seed:                testSeed,
+			seedPassphrase:      testSeedPassphrase,
+			coinType:            meta.CoinTypeSkycoin,
+			bip44CoinType:       &bip44SkycoinType,
+			expectBip44CoinType: bip44.CoinTypeSkycoin,
+		},
+		{
+			name:                "skycoin new bip44 coin type",
+			filename:            "test.wlt",
+			label:               "test",
+			seed:                testSeed,
+			seedPassphrase:      testSeedPassphrase,
+			coinType:            meta.CoinTypeSkycoin,
+			bip44CoinType:       &newBip44Type,
+			expectBip44CoinType: newBip44Type,
 		},
 		{
 			name:           "no filename",
@@ -88,7 +119,7 @@ func TestBip44WalletNew(t *testing.T) {
 			label:          "test",
 			seed:           testSeed,
 			seedPassphrase: testSeedPassphrase,
-			err:            errors.New("Coin field not set"),
+			err:            errors.New("Missing coin type"),
 		},
 		{
 			name:           "skycoin empty seed",
@@ -110,6 +141,15 @@ func TestBip44WalletNew(t *testing.T) {
 			cryptoType:     crypto.DefaultCryptoType,
 			err:            errors.New("Mnemonic must have 12, 15, 18, 21 or 24 words"),
 		},
+		{
+			name:           "new coin type, no bi44 coin type",
+			filename:       "test.wlt",
+			label:          "test",
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			coinType:       meta.CoinType("unknown"),
+			err:            errors.New("Missing bip44 coin type"),
+		},
 	}
 
 	for _, tc := range tt {
@@ -121,6 +161,7 @@ func TestBip44WalletNew(t *testing.T) {
 				SeedPassphrase: tc.seedPassphrase,
 				CoinType:       tc.coinType,
 				CryptoType:     tc.cryptoType,
+				Bip44CoinType:  tc.bip44CoinType,
 			})
 
 			require.Equal(t, tc.err, err)
@@ -138,7 +179,7 @@ func TestBip44WalletNew(t *testing.T) {
 			require.NotNil(t, w.decoder)
 			bip44Coin, ok := w.Bip44Coin()
 			require.True(t, ok)
-			require.Equal(t, resolveCoinAdapter(tc.coinType).Bip44CoinType(), bip44Coin)
+			require.Equal(t, tc.expectBip44CoinType, bip44Coin)
 			require.Empty(t, w.Meta.Secrets())
 
 			if tc.cryptoType != "" {

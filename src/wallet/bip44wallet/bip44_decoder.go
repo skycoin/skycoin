@@ -101,7 +101,7 @@ func newReadableBip44WalletNew(w *Bip44WalletNew) (*readableBip44WalletNew, erro
 // toWallet converts the readable bip44 wallet to a bip44 wallet
 func (rw readableBip44WalletNew) toWallet() (*Bip44WalletNew, error) {
 	// resolve the coin adapter base on coin type
-	ca := resolveCoinAdapter(meta.CoinType(rw.Coin()))
+	ca := resolveCoinAdapter(rw.Coin())
 
 	accounts, err := rw.Accounts.toBip44Accounts(ca)
 	if err != nil {
@@ -261,6 +261,7 @@ func newReadableBip44Accounts(as *bip44Accounts) (*readableBip44Accounts, error)
 	var ras readableBip44Accounts
 	for _, a := range as.accounts {
 		ca := resolveCoinAdapter(a.CoinType)
+
 		rc, err := newReadableBip44Chains(a.Chains, ca)
 		if err != nil {
 			return nil, err

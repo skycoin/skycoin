@@ -33,6 +33,7 @@ type bip44AccountCreateOptions struct {
 	seed           string
 	seedPassphrase string
 	coinType       meta.CoinType
+	bip44CoinType  *bip44.CoinType
 }
 
 func newBip44Account(opts bip44AccountCreateOptions) (*bip44Account, error) {
@@ -43,8 +44,11 @@ func newBip44Account(opts bip44AccountCreateOptions) (*bip44Account, error) {
 	}
 
 	ca := resolveCoinAdapter(opts.coinType)
+	if opts.bip44CoinType == nil {
+		return nil, errors.New("newBip44Account missing bip44 coin type")
+	}
 
-	c, err := bip44.NewCoin(seed, ca.Bip44CoinType())
+	c, err := bip44.NewCoin(seed, *opts.bip44CoinType)
 	if err != nil {
 		logger.Critical().WithError(err).Error("Failed to derive the bip44 purpose node")
 		if bip32.IsImpossibleChildError(err) {
@@ -138,10 +142,9 @@ func (a *bip44Account) syncSecrets(ss secrets.Secrets) error {
 func (a *bip44Account) dropLastEntriesN(chain, n uint32) error {
 	switch chain {
 	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
-		a.Chains[chain].dropLastEntriesN(n)
+		return a.Chains[chain].dropLastEntriesN(n)
 	default:
 		return fmt.Errorf("Invalid chain index %d", chain)
-
 	}
 }
 

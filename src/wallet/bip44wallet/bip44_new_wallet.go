@@ -92,9 +92,10 @@ type Bip44WalletCreateOptions struct {
 	Seed           string
 	SeedPassphrase string
 	CoinType       meta.CoinType
-	Bip44CoinType  *bip44.CoinType
-	CryptoType     crypto.CryptoType
-	WalletDecoder  Bip44WalletDecoder
+	// Bip44CionType is a pointer, cause bip44.CoinType(0) is the bip44 coin type of bitcoin
+	Bip44CoinType *bip44.CoinType
+	CryptoType    crypto.CryptoType
+	WalletDecoder Bip44WalletDecoder
 }
 
 // NewBip44WalletNew create a bip44 wallet with options
@@ -124,12 +125,21 @@ func NewBip44WalletNew(opts Bip44WalletCreateOptions) (*Bip44WalletNew, error) {
 		wlt.decoder = defaultBip44WalletDecoder
 	}
 
-	// TODO: Test for option both with and without bip44 coin type
-	if opts.Bip44CoinType != nil {
-		wlt.Meta.SetBip44Coin(*opts.Bip44CoinType)
+	if opts.CoinType == "" {
+		return nil, errors.New("Missing coin type")
+	}
+
+	if opts.Bip44CoinType == nil {
+		switch opts.CoinType {
+		case meta.CoinTypeSkycoin:
+			wlt.Meta.SetBip44Coin(bip44.CoinTypeSkycoin)
+		case meta.CoinTypeBitcoin:
+			wlt.Meta.SetBip44Coin(bip44.CoinTypeBitcoin)
+		default:
+			return nil, errors.New("Missing bip44 coin type")
+		}
 	} else {
-		bip44CoinType := resolveCoinAdapter(opts.CoinType).Bip44CoinType()
-		wlt.Meta.SetBip44Coin(bip44CoinType)
+		wlt.Meta.SetBip44Coin(*opts.Bip44CoinType)
 	}
 
 	if err := bip44MetaValidate(wlt.Meta); err != nil {
@@ -215,11 +225,17 @@ func bip44MetaValidate(m meta.Meta) error {
 // NewAccount create a bip44 wallet account, returns account index and
 // error, if any.
 func (w *Bip44WalletNew) NewAccount(name string) (uint32, error) {
+	bip44CoinType, ok := w.Bip44Coin()
+	if !ok {
+		return 0, errors.New("Wallet missing bip44 coin type")
+	}
+
 	opts := bip44AccountCreateOptions{
 		name:           name,
 		seed:           w.Seed(),
 		seedPassphrase: w.SeedPassphrase(),
 		coinType:       meta.CoinType(w.Coin()),
+		bip44CoinType:  &bip44CoinType,
 	}
 
 	return w.accounts.new(opts)

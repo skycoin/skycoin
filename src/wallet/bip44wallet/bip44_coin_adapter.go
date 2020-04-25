@@ -1,8 +1,9 @@
 package bip44wallet
 
 import (
+	"fmt"
+
 	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 	"github.com/SkycoinProject/skycoin/src/wallet/meta"
 )
 
@@ -24,15 +25,22 @@ func initCoinAdapters() coinAdapters {
 func (a coinAdapters) get(coinType meta.CoinType) coinAdapter {
 	adpt, ok := a.adapters[coinType]
 	if !ok {
-		// if no adapter found, returns the default skycoin adapter
 		return skycoinAdapter{}
 	}
 	return adpt
 }
 
+func (a coinAdapters) add(coinType meta.CoinType, ca coinAdapter) error {
+	if _, ok := a.adapters[coinType]; ok {
+		return fmt.Errorf("coin adapter for %s already registered", coinType)
+	}
+	a.adapters[coinType] = ca
+	return nil
+}
+
 // RegisterCoinAdapter registers a new adapter
-func RegisterCoinAdapter(coinType meta.CoinType, ca coinAdapter) {
-	//
+func RegisterCoinAdapter(coinType meta.CoinType, ca coinAdapter) error {
+	return registeredCoinAdapters.add(coinType, ca)
 }
 
 func resolveCoinAdapter(coinType meta.CoinType) coinAdapter {
@@ -40,7 +48,7 @@ func resolveCoinAdapter(coinType meta.CoinType) coinAdapter {
 }
 
 type coinAdapter interface {
-	Bip44CoinType() bip44.CoinType
+	// Bip44CoinType() bip44.CoinType
 	AddressFromPubKey(key cipher.PubKey) cipher.Addresser
 	DecodeBase58Address(addr string) (cipher.Addresser, error)
 	SecKeyToHex(secKey cipher.SecKey) string
@@ -48,10 +56,6 @@ type coinAdapter interface {
 }
 
 type skycoinAdapter struct{}
-
-func (s skycoinAdapter) Bip44CoinType() bip44.CoinType {
-	return bip44.CoinTypeSkycoin
-}
 
 func (s skycoinAdapter) AddressFromPubKey(key cipher.PubKey) cipher.Addresser {
 	return cipher.AddressFromPubKey(key)
@@ -70,10 +74,6 @@ func (s skycoinAdapter) SecKeyFromHex(secKey string) (cipher.SecKey, error) {
 }
 
 type bitcoinAdapter struct{}
-
-func (b bitcoinAdapter) Bip44CoinType() bip44.CoinType {
-	return bip44.CoinTypeBitcoin
-}
 
 func (b bitcoinAdapter) AddressFromPubKey(key cipher.PubKey) cipher.Addresser {
 	return cipher.BitcoinAddressFromPubKey(key)

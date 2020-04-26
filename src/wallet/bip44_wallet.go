@@ -39,6 +39,10 @@ func LoadBip44Wallet(data []byte) (Wallet, error) {
 // to registeredWalletCreators in wallet.go
 func NewBip44Wallet(filename string, opts Options, tf TransactionsFinder) (Wallet, error) {
 	wltType := opts.Type
+	if wltType == "" {
+		wltType = WalletTypeBip44
+	}
+
 	if wltType != WalletTypeBip44 {
 		return nil, NewError(fmt.Errorf("Invalid wallet type %q for creating a bip44 wallet", wltType))
 	}
@@ -522,7 +526,6 @@ func (w *Bip44Wallet) ScanAddresses(scanN uint64, tf TransactionsFinder) ([]ciph
 		}
 	}
 
-	// TODO: confirms that this assignment would work as expected
 	*w = *w2
 
 	return retAddrs, nil

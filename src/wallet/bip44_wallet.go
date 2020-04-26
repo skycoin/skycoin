@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 	"github.com/SkycoinProject/skycoin/src/wallet/bip44wallet"
 	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
 	"github.com/SkycoinProject/skycoin/src/wallet/entry"
@@ -488,25 +487,25 @@ func (w *Bip44Wallet) GetAddresses() ([]cipher.Address, error) {
 
 // ScanAddresses scans ahead N addresses, truncating up to the highest address with any transaction history.
 // returns the new generated addresses
-// TODO: Test bip44 wallet scanning address, for both external chain and change chain.
 func (w *Bip44Wallet) ScanAddresses(scanN uint64, tf TransactionsFinder) ([]cipher.Address, error) {
 	if scanN == 0 {
 		return nil, nil
 	}
 
 	w2 := w.Clone().(*Bip44Wallet)
-	newAddrsFuncs := map[uint32]func(account, num uint32) ([]cipher.Addresser, error){
-		bip44.ExternalChainIndex: w2.NewExternalAddresses,
-		bip44.ChangeChainIndex:   w2.NewChangeAddresses,
+	// TODO: should not use map, the order is random
+	newAddrsFuncs := []func(account, num uint32) ([]cipher.Addresser, error){
+		w2.NewExternalAddresses,
+		w2.NewChangeAddresses,
 	}
 
-	dropEntriesFunc := map[uint32]func(account, n uint32) error{
-		bip44.ExternalChainIndex: w2.DropExternalLastEntriesN,
-		bip44.ChangeChainIndex:   w2.DropChangeLastEntriesN,
+	dropEntriesFunc := []func(account, n uint32) error{
+		w2.DropExternalLastEntriesN,
+		w2.DropChangeLastEntriesN,
 	}
 
 	var retAddrs []cipher.Address
-	for ci, newAddrs := range newAddrsFuncs {
+	for i, newAddrs := range newAddrsFuncs {
 		addrs, err := newAddrs(defaultAccount, uint32(scanN))
 		if err != nil {
 			return nil, err
@@ -523,7 +522,7 @@ func (w *Bip44Wallet) ScanAddresses(scanN uint64, tf TransactionsFinder) ([]ciph
 		retAddrs = append(retAddrs, convertToSkyAddrs(addrs[:keepN])...)
 
 		// drops the last N entreis that without transactions associated
-		if err := dropEntriesFunc[ci](defaultAccount, uint32(scanN)-keepN); err != nil {
+		if err := dropEntriesFunc[i](defaultAccount, uint32(scanN)-keepN); err != nil {
 			return nil, err
 		}
 	}

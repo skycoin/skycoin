@@ -1,6 +1,8 @@
 package secrets
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 const (
 	// SecretSeed key of seed in Secrets

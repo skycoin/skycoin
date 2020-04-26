@@ -168,8 +168,10 @@ func (a *bip44Account) accountKeyName() string {
 
 // packSecrets packs the secrets of secrets into Secrets
 func (a *bip44Account) packSecrets(ss secrets.Secrets) {
-	// packs the account private key.
-	ss.Set(a.accountKeyName(), a.Account.String())
+	if a.Account.PrivateKey != nil {
+		// packs the account private key.
+		ss.Set(a.accountKeyName(), a.Account.String())
+	}
 
 	// packs the secrets in chains
 	for _, c := range a.Chains {
@@ -438,9 +440,6 @@ func (a *bip44Accounts) clone() accountManager {
 func (a *bip44Accounts) packSecrets(ss secrets.Secrets) {
 	for i := range a.accounts {
 		a.accounts[i].packSecrets(ss)
-		for _, c := range a.accounts[i].Chains {
-			c.packSecrets(ss)
-		}
 	}
 }
 

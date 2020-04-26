@@ -173,7 +173,9 @@ func (wcs walletCreators) get(walletType string) (walletCreateFunc, bool) {
 
 var registeredWalletCreators = walletCreators{
 	creators: map[string]walletCreateFunc{
-		"bip44": NewBip44Wallet,
+		WalletTypeBip44: func(filename string, opts Options, tf TransactionsFinder) (Wallet, error) {
+			return NewBip44Wallet(filename, opts, tf)
+		},
 	},
 }
 

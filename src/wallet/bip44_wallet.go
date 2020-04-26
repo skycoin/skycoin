@@ -37,7 +37,7 @@ func LoadBip44Wallet(data []byte) (Wallet, error) {
 // NewBip44Wallet creates a bip44 wallet
 // This function implements the walletCreator for bip44 wallet, which will be registered
 // to registeredWalletCreators in wallet.go
-func NewBip44Wallet(filename string, opts Options, tf TransactionsFinder) (Wallet, error) {
+func NewBip44Wallet(filename string, opts Options, tf TransactionsFinder) (*Bip44Wallet, error) {
 	wltType := opts.Type
 	if wltType == "" {
 		wltType = WalletTypeBip44
@@ -285,21 +285,23 @@ func (w *Bip44Wallet) PeekChangeAddress(tf TransactionsFinder) (cipher.Address, 
 		return cipher.Address{}, err
 	}
 
-	// Get the last entry of the change chain
-	e, err := w.ChangeEntryAt(defaultAccount, len-1)
-	if err != nil {
-		return cipher.Address{}, err
-	}
+	if len > 0 {
+		// Get the last entry of the change chain
+		e, err := w.ChangeEntryAt(defaultAccount, len-1)
+		if err != nil {
+			return cipher.Address{}, err
+		}
 
-	// Check whehter the entry has transactions associated
-	addr := e.SkycoinAddress()
-	hasTxs, err := tf.AddressesActivity([]cipher.Address{addr})
-	if err != nil {
-		return cipher.Address{}, err
-	}
+		// Check whehter the entry has transactions associated
+		addr := e.SkycoinAddress()
+		hasTxs, err := tf.AddressesActivity([]cipher.Address{addr})
+		if err != nil {
+			return cipher.Address{}, err
+		}
 
-	if !hasTxs[0] {
-		return addr, nil
+		if !hasTxs[0] {
+			return addr, nil
+		}
 	}
 
 	// Generates a new change address

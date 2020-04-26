@@ -92,10 +92,9 @@ type Bip44WalletCreateOptions struct {
 	Seed           string
 	SeedPassphrase string
 	CoinType       meta.CoinType
-	// Bip44CionType is a pointer, cause bip44.CoinType(0) is the bip44 coin type of bitcoin
-	Bip44CoinType *bip44.CoinType
-	CryptoType    crypto.CryptoType
-	WalletDecoder Bip44WalletDecoder
+	Bip44CoinType  *bip44.CoinType
+	CryptoType     crypto.CryptoType
+	WalletDecoder  Bip44WalletDecoder
 }
 
 // NewBip44WalletNew create a bip44 wallet with options
@@ -129,6 +128,9 @@ func NewBip44WalletNew(opts Bip44WalletCreateOptions) (*Bip44WalletNew, error) {
 		return nil, errors.New("Missing coin type")
 	}
 
+	// Note: if opts.Bip44CoinType is nil, we will only set bip44 coin type for
+	// skycoin and bitcoin. All other coins should explicitly set it, otherwise
+	// an error will be reported.
 	if opts.Bip44CoinType == nil {
 		switch opts.CoinType {
 		case meta.CoinTypeSkycoin:
@@ -214,9 +216,9 @@ func bip44MetaValidate(m meta.Meta) error {
 	}
 
 	if s := m[meta.MetaBip44Coin]; s == "" {
-		return errors.New("Bip44Coin missing")
+		return errors.New("Missing bip44 coin type")
 	} else if _, err := strconv.ParseUint(s, 10, 32); err != nil {
-		return fmt.Errorf("Bip44Coin invalid: %v", err)
+		return fmt.Errorf("Invalid bip44 coin type: %v", err)
 	}
 
 	return nil
@@ -225,20 +227,13 @@ func bip44MetaValidate(m meta.Meta) error {
 // NewAccount create a bip44 wallet account, returns account index and
 // error, if any.
 func (w *Bip44WalletNew) NewAccount(name string) (uint32, error) {
-	bip44CoinType, ok := w.Bip44Coin()
-	if !ok {
-		return 0, errors.New("Wallet missing bip44 coin type")
-	}
-
-	opts := bip44AccountCreateOptions{
+	return w.accounts.new(bip44AccountCreateOptions{
 		name:           name,
 		seed:           w.Seed(),
 		seedPassphrase: w.SeedPassphrase(),
 		coinType:       meta.CoinType(w.Coin()),
-		bip44CoinType:  &bip44CoinType,
-	}
-
-	return w.accounts.new(opts)
+		bip44CoinType:  w.Bip44Coin(),
+	})
 }
 
 // NewExternalAddresses generates addresses on external chain of selected account

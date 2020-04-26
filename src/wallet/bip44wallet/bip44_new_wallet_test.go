@@ -177,9 +177,8 @@ func TestBip44WalletNew(t *testing.T) {
 			require.False(t, w.Meta.IsEncrypted())
 			require.NotEmpty(t, w.Meta.Timestamp())
 			require.NotNil(t, w.decoder)
-			bip44Coin, ok := w.Bip44Coin()
-			require.True(t, ok)
-			require.Equal(t, tc.expectBip44CoinType, bip44Coin)
+			bip44Coin := w.Bip44Coin()
+			require.Equal(t, tc.expectBip44CoinType, *bip44Coin)
 			require.Empty(t, w.Meta.Secrets())
 
 			if tc.cryptoType != "" {

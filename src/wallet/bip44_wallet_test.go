@@ -139,6 +139,11 @@ func TestWalletScanAddresses(t *testing.T) {
 		err         error
 	}{
 		{
+			name:      "no txns",
+			scanN:     10,
+			txnFinder: mockTxnsFinder{map[cipher.Address]bool{}},
+		},
+		{
 			name:        "external addr with txn",
 			scanN:       10,
 			txnFinder:   mockTxnsFinder{map[cipher.Address]bool{eAddrs[0]: true}},
@@ -171,6 +176,32 @@ func TestWalletScanAddresses(t *testing.T) {
 		{
 			name:  "external and change addrs with txns 3",
 			scanN: 10,
+			txnFinder: mockTxnsFinder{map[cipher.Address]bool{
+				eAddrs[4]: true,
+				cAddrs[4]: true,
+			}},
+			expectAddrs: append(getExternalAddrs(t), getChangeAddrs(t)...),
+		},
+		{
+			name:  "not enough addresses scanned",
+			scanN: 3,
+			txnFinder: mockTxnsFinder{map[cipher.Address]bool{
+				eAddrs[4]: true,
+				cAddrs[4]: true,
+			}},
+		},
+		{
+			name:  "just enough addresses scanned",
+			scanN: 5,
+			txnFinder: mockTxnsFinder{map[cipher.Address]bool{
+				eAddrs[4]: true,
+				cAddrs[4]: true,
+			}},
+			expectAddrs: append(getExternalAddrs(t), getChangeAddrs(t)...),
+		},
+		{
+			name:  "more addresses scanned",
+			scanN: 6,
 			txnFinder: mockTxnsFinder{map[cipher.Address]bool{
 				eAddrs[4]: true,
 				cAddrs[4]: true,

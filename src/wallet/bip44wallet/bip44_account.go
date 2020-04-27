@@ -260,6 +260,29 @@ func (a bip44Account) Clone() bip44Account {
 	return na
 }
 
+// accountDiff records the chain changes
+type accountDiff struct {
+	chainsDiff []uint32
+}
+
+// diff gets the differences between the account,
+// we would only recrd the number of new generated addresses on each chain for now.
+func (a bip44Account) diff(na bip44Account) accountDiff {
+	ad := accountDiff{
+		chainsDiff: make([]uint32, len(a.Chains)),
+	}
+
+	for i, c := range a.Chains {
+		newChainLen := len(na.Chains[i].Entries)
+		chainLen := len(c.Entries)
+		if newChainLen > chainLen {
+			ad.chainsDiff[i] = uint32(newChainLen - chainLen)
+		}
+	}
+
+	return ad
+}
+
 // bip44Chain bip44 address chain
 type bip44Chain struct {
 	PubKey            bip32.PublicKey
@@ -526,4 +549,19 @@ func (a *bip44Accounts) dropLastEntriesN(account, chain, n uint32) error {
 	}
 
 	return act.dropLastEntriesN(chain, n)
+}
+
+// diff would only detect the changes base on exist account so far
+func (a *bip44Accounts) diff(am accountManager) []accountDiff {
+	na := am.(*bip44Accounts)
+	if len(a.accounts) != len(na.accounts) {
+		return nil
+	}
+
+	var ads []accountDiff
+	for i, act := range a.accounts {
+		ad := act.diff(*na.accounts[i])
+		ads = append(ads, ad)
+	}
+	return ads
 }

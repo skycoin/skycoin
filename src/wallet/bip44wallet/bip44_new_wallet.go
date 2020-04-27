@@ -70,6 +70,8 @@ type accountManager interface {
 	erase()
 	// dropLastEntriesN(account drops last N entreis
 	dropLastEntriesN(account, chain, n uint32) error
+	// diff get the differences between accounts
+	diff(accountManager) []accountDiff
 }
 
 // Bip44WalletDecoder is the interface that wraps the Encode and Decode methods.
@@ -468,6 +470,77 @@ func (w *Bip44WalletNew) Erase() {
 	w.SetSeed("")
 	w.SetSeedPassphrase("")
 	w.accounts.erase()
+}
+
+// WalletDiff records the wallet differences
+type WalletDiff struct {
+	Meta     meta.Meta
+	Accounts []AccountDiff
+}
+
+// AccountDiff recrds the account differences
+type AccountDiff struct {
+	NewExternalAddressNum int
+	NewChangeAddressNum   int
+}
+
+// DiffNoneSecrets gets the differences of none secrets between wallets
+func (w *Bip44WalletNew) DiffNoneSecrets(wlt *Bip44WalletNew) (*WalletDiff, error) {
+	diff := &WalletDiff{
+		Meta:     make(meta.Meta),
+		Accounts: make([]AccountDiff, w.accounts.len()),
+	}
+	// check the meta change
+	for k, v := range wlt.Meta {
+		switch k {
+		case meta.MetaSecrets,
+			meta.MetaSeed,
+			meta.MetaSeedPassphrase,
+			meta.MetaEncrypted,
+			meta.MetaAccountsHash:
+			continue
+		default:
+			if w.Meta[k] != v {
+				diff.Meta[k] = v
+			}
+		}
+	}
+
+	accountsDiff := w.accounts.diff(wlt.accounts)
+	for i, adf := range accountsDiff {
+		diff.Accounts[i].NewExternalAddressNum = int(adf.chainsDiff[bip44.ExternalChainIndex])
+		diff.Accounts[i].NewChangeAddressNum = int(adf.chainsDiff[bip44.ChangeChainIndex])
+	}
+
+	return diff, nil
+}
+
+// CommitDiff applys the wallet differences
+func (w *Bip44WalletNew) CommitDiff(diff *WalletDiff) error {
+	w2 := w.Clone()
+
+	for k, v := range diff.Meta {
+		w2.Meta[k] = v
+	}
+
+	for i, a := range diff.Accounts {
+		if a.NewExternalAddressNum > 0 {
+			_, err := w.NewExternalAddresses(uint32(i), uint32(a.NewExternalAddressNum))
+			if err != nil {
+				return err
+			}
+		}
+
+		if a.NewChangeAddressNum > 0 {
+			_, err := w.NewChangeAddresses(uint32(i), uint32(a.NewChangeAddressNum))
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	*w = w2
+	return nil
 }
 
 // syncSecrets synchronize the secrets with all addresses, ensure that

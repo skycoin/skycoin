@@ -617,6 +617,24 @@ func TestBip44WalletDiffNoneSecrets(t *testing.T) {
 				w.Meta[meta.MetaAccountsHash] = "new accounts hash"
 			},
 		},
+		{
+			name: "change immutable meta, should not be collected by diff, lock",
+			options: Bip44WalletCreateOptions{
+				Filename:       "test.wlt",
+				Label:          "test",
+				Seed:           testSeed,
+				SeedPassphrase: testSeedPassphrase,
+				CoinType:       meta.CoinTypeSkycoin,
+				CryptoType:     crypto.CryptoTypeScryptChacha20poly1305Insecure,
+			},
+			password: []byte("12345"),
+			changeWalletFunc: func(t *testing.T, w *Bip44WalletNew) {
+				im := immutableMeta()
+				for k := range im {
+					w.Meta[k] = w.Meta[k] + "-changed"
+				}
+			},
+		},
 	}
 
 	for _, tc := range tt {

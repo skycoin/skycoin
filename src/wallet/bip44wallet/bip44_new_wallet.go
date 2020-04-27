@@ -472,6 +472,18 @@ func (w *Bip44WalletNew) Erase() {
 	w.accounts.erase()
 }
 
+// immutableMeta records the meta keys of a wallet that should not be modified
+// once after they are initialized.
+func immutableMeta() map[string]struct{} {
+	emptyStruct := struct{}{}
+	return map[string]struct{}{
+		meta.MetaFilename:   emptyStruct,
+		meta.MetaCoin:       emptyStruct,
+		meta.MetaType:       emptyStruct,
+		meta.MetaCryptoType: emptyStruct,
+	}
+}
+
 // WalletDiff records the wallet differences
 type WalletDiff struct {
 	Meta     meta.Meta
@@ -485,13 +497,24 @@ type AccountDiff struct {
 }
 
 // DiffNoneSecrets gets the differences of none secrets between wallets
+//
+// Note: immutable meta like the wallet filename, coin type, wallet type, etc.
+// will be filter out, they won't be recognized as changes.
 func (w *Bip44WalletNew) DiffNoneSecrets(wlt *Bip44WalletNew) (*WalletDiff, error) {
 	diff := &WalletDiff{
 		Meta:     make(meta.Meta),
 		Accounts: make([]AccountDiff, w.accounts.len()),
 	}
+
+	im := immutableMeta()
+
 	// check the meta change
 	for k, v := range wlt.Meta {
+		// filter out the immutable meta data
+		if _, ok := im[k]; ok {
+			continue
+		}
+
 		switch k {
 		case meta.MetaSecrets,
 			meta.MetaSeed,

@@ -579,6 +579,44 @@ func TestBip44WalletDiffNoneSecrets(t *testing.T) {
 			changeWalletFunc: func(t *testing.T, w *Bip44WalletNew) {
 			},
 		},
+		{
+			name: "change secrets, should not be collected by diff",
+			options: Bip44WalletCreateOptions{
+				Filename:       "test.wlt",
+				Label:          "test",
+				Seed:           testSeed,
+				SeedPassphrase: testSeedPassphrase,
+				CoinType:       meta.CoinTypeSkycoin,
+				CryptoType:     crypto.CryptoTypeScryptChacha20poly1305Insecure,
+			},
+			password: []byte("12345"),
+			changeWalletFunc: func(t *testing.T, w *Bip44WalletNew) {
+				w.Meta[meta.MetaSecrets] = "changed secrets"
+				w.Meta[meta.MetaSeed] = "new seed"
+				w.Meta[meta.MetaSeedPassphrase] = "new seed passphrase"
+				w.Meta[meta.MetaEncrypted] = "true"
+				w.Meta[meta.MetaAccountsHash] = "new accounts hash"
+			},
+		},
+		{
+			name: "change secrets, should not be collected by diff, lock",
+			options: Bip44WalletCreateOptions{
+				Filename:       "test.wlt",
+				Label:          "test",
+				Seed:           testSeed,
+				SeedPassphrase: testSeedPassphrase,
+				CoinType:       meta.CoinTypeSkycoin,
+				CryptoType:     crypto.CryptoTypeScryptChacha20poly1305Insecure,
+			},
+			password: []byte("12345"),
+			changeWalletFunc: func(t *testing.T, w *Bip44WalletNew) {
+				w.Meta[meta.MetaSecrets] = "changed secrets"
+				w.Meta[meta.MetaSeed] = "new seed"
+				w.Meta[meta.MetaSeedPassphrase] = "new seed passphrase"
+				w.Meta[meta.MetaEncrypted] = "false"
+				w.Meta[meta.MetaAccountsHash] = "new accounts hash"
+			},
+		},
 	}
 
 	for _, tc := range tt {

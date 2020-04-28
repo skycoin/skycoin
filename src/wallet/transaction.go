@@ -213,26 +213,12 @@ func CreateTransaction(w Wallet, p transaction.Params, auxs coin.AddressUxOuts, 
 
 	// Generate a new change address for bip44 wallets
 	if p.ChangeAddress == nil && w.Type() == WalletTypeBip44 {
-		changeAddr, err := w.(*Bip44Wallet).PeekChangeAddress(tf)
-		if err != nil {
-			logger.Critical().WithError(err).Error("PeekChangeEntry failed")
-			return nil, nil, fmt.Errorf("PeekChangeEntry failed: %v", err)
-		}
-		p.ChangeAddress = &changeAddr
+		err := errors.New("change address must not be nil")
+		logger.Critical().WithError(err).Error("CreateTransaction change address must not be nil for bip44 wallet")
+		return nil, nil, err
 	}
 
-	txn, uxb, err := transaction.Create(p, auxs, headTime)
-
-	// if err == nil && changeEntry != nil && w.Type() == WalletTypeBip44 {
-	// 	// Commit the change address to the bip44 wallet, assuming it will be used
-	// 	if e, err := w.(*Bip44Wallet).GenerateChangeEntry(); err != nil {
-	// 		logger.WithError(err).Panic("GenerateChangeEntry failed after a PeekChangeEntry")
-	// 	} else if e != *changeEntry {
-	// 		logger.Panicf("GenerateChangeEntry produced a different change entry than PeekChangeEntry: %s != %s", e.Address, changeEntry.Address)
-	// 	}
-	// }
-
-	return txn, uxb, err
+	return transaction.Create(p, auxs, headTime)
 }
 
 // CreateTransactionSigned creates and signs a transaction based upon transaction.Params.

@@ -162,7 +162,17 @@ func (w *Bip44Wallet) Unlock(password []byte, f func(w Wallet) error) error {
 	}
 	defer wlt.Erase()
 
-	return f(&Bip44Wallet{wlt})
+	if err := f(&Bip44Wallet{wlt}); err != nil {
+		return nil
+	}
+
+	// Diff none secrets data
+	diff, err := w.DiffNoneSecrets(wlt)
+	if err != nil {
+		return err
+	}
+
+	return w.CommitDiffs(diff)
 }
 
 // newBip44Wallet creates a Bip44Wallet
@@ -284,19 +294,19 @@ func (w *Bip44Wallet) HasEntry(a cipher.Address) bool {
 // the last change address already have transactions associated.
 func (w *Bip44Wallet) PeekChangeAddress(tf TransactionsFinder) (cipher.Address, error) {
 	// Get the length of the change chain
-	len, err := w.ChangeEntriesLen(defaultAccount)
+	l, err := w.ChangeEntriesLen(defaultAccount)
 	if err != nil {
 		return cipher.Address{}, err
 	}
 
-	if len > 0 {
+	if l > 0 {
 		// Get the last entry of the change chain
-		e, err := w.ChangeEntryAt(defaultAccount, len-1)
+		e, err := w.ChangeEntryAt(defaultAccount, l-1)
 		if err != nil {
 			return cipher.Address{}, err
 		}
 
-		// Check whehter the entry has transactions associated
+		// Check whether the entry has transactions associated
 		addr := e.SkycoinAddress()
 		hasTxs, err := tf.AddressesActivity([]cipher.Address{addr})
 		if err != nil {

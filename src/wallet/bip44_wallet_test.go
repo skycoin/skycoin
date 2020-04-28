@@ -228,3 +228,57 @@ func TestWalletScanAddresses(t *testing.T) {
 		})
 	}
 }
+
+func TestBip44WalletUnlock(t *testing.T) {
+	tt := []struct {
+		name                  string
+		options               Options
+		password              []byte
+		changeWalletFunc      func(w Wallet) error
+		expectedMeta          meta.Meta
+		expectedExternalAddrN int
+		expectedChangeAddrN   int
+	}{
+		{
+			name: "",
+			options: Options{
+				Coin:           meta.CoinTypeSkycoin,
+				Seed:           testSeed,
+				SeedPassphrase: testSeedPassPhrase,
+			},
+			password: []byte("12345"),
+			changeWalletFunc: func(w Wallet) error {
+				w.SetLabel("change_label")
+				return nil
+			},
+			expectedMeta:          meta.Meta{meta.MetaLabel: "change_label"},
+			expectedExternalAddrN: 1,
+			expectedChangeAddrN:   1,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			w, err := NewBip44Wallet("test.wlt", tc.options, nil)
+			require.NoError(t, err)
+
+			err = w.Lock(tc.password)
+			require.NoError(t, err)
+
+			err = w.Unlock(tc.password, tc.changeWalletFunc)
+			require.NoError(t, err)
+
+			for k, v := range tc.expectedMeta {
+				require.Equal(t, w.Meta[k], v)
+			}
+
+			el, err := w.ExternalEntriesLen(defaultAccount)
+			require.NoError(t, err)
+			cl, err := w.ChangeEntriesLen(defaultAccount)
+			require.NoError(t, err)
+
+			require.Equal(t, tc.expectedExternalAddrN, int(el))
+			require.Equal(t, tc.expectedChangeAddrN, int(cl))
+		})
+	}
+}

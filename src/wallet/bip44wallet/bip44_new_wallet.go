@@ -477,10 +477,12 @@ func (w *Bip44WalletNew) Erase() {
 func immutableMeta() map[string]struct{} {
 	empty := struct{}{}
 	return map[string]struct{}{
-		meta.MetaFilename:   empty,
-		meta.MetaCoin:       empty,
-		meta.MetaType:       empty,
-		meta.MetaCryptoType: empty,
+		meta.MetaFilename:       empty,
+		meta.MetaCoin:           empty,
+		meta.MetaType:           empty,
+		meta.MetaCryptoType:     empty,
+		meta.MetaSeed:           empty,
+		meta.MetaSeedPassphrase: empty,
 	}
 }
 

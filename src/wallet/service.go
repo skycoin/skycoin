@@ -567,45 +567,6 @@ func (serv *Service) GetWalletSeed(wltID string, password []byte) (string, strin
 	return seed, seedPassphrase, nil
 }
 
-// UpdateSecrets opens a wallet for modification of secret data and saves it safely
-// TODO: is this necessary?
-func (serv *Service) UpdateSecrets(wltID string, password []byte, f func(Wallet) error) error {
-	serv.Lock()
-	defer serv.Unlock()
-	if !serv.config.EnableWalletAPI {
-		return ErrWalletAPIDisabled
-	}
-
-	w, err := serv.getWallet(wltID)
-	if err != nil {
-		return err
-	}
-
-	if w.IsEncrypted() {
-		if err := w.Unlock(password, f); err != nil {
-			return err
-		}
-		// if err := GuardUpdate(w, password, f); err != nil {
-		// 	return err
-		// }
-	} else if len(password) != 0 {
-		return ErrWalletNotEncrypted
-	} else {
-		if err := f(w); err != nil {
-			return err
-		}
-	}
-
-	// Save the wallet first
-	if err := Save(w, serv.config.WalletDir); err != nil {
-		return err
-	}
-
-	serv.wallets.set(w)
-
-	return nil
-}
-
 // Update opens a wallet for modification of non-secret data and saves it safely
 func (serv *Service) Update(wltID string, f func(Wallet) error) error {
 	serv.Lock()
@@ -648,7 +609,6 @@ func (serv *Service) ViewSecrets(wltID string, password []byte, f func(Wallet) e
 
 	if w.IsEncrypted() {
 		return w.Unlock(password, f)
-		// return GuardView(w, password, f)
 	} else if len(password) != 0 {
 		return ErrWalletNotEncrypted
 	} else {

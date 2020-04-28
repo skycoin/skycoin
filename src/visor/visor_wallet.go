@@ -262,7 +262,25 @@ func (vs *Visor) WalletCreateTransactionSigned(wltID string, password []byte, p 
 	var txn *coin.Transaction
 	var inputs []TransactionInput
 
-	if err := vs.wallets.UpdateSecrets(wltID, password, func(w wallet.Wallet) error {
+	if p.ChangeAddress == nil {
+		// For bip44 wallet, peek a change address if p.ChangeAddress is nill
+		if err := vs.wallets.Update(wltID, func(w wallet.Wallet) error {
+			if w.Type() == wallet.WalletTypeBip44 {
+				addr, err := w.(*wallet.Bip44Wallet).PeekChangeAddress(vs)
+				if err != nil {
+					logger.Critical().WithError(err).Error("PeekChangeAddress failed")
+					return err
+				}
+				p.ChangeAddress = &addr
+			}
+			return nil
+		}); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	// Use wallets.update here in case bip44 wallet generates a new change address.
+	if err := vs.wallets.ViewSecrets(wltID, password, func(w wallet.Wallet) error {
 		var err error
 		txn, inputs, err = vs.walletCreateTransaction("WalletCreateTransactionSigned", w, p, wp, TxnSigned)
 		return err
@@ -274,6 +292,7 @@ func (vs *Visor) WalletCreateTransactionSigned(wltID string, password []byte, p 
 }
 
 // WalletCreateTransaction creates a transaction based upon the parameters in CreateTransactionParams
+// TODO: Only referenced by tests, vs.walletCreateTransaction
 func (vs *Visor) WalletCreateTransaction(wltID string, p transaction.Params, wp CreateTransactionParams) (*coin.Transaction, []TransactionInput, error) {
 	// Validate params before opening wallet
 	if err := p.Validate(); err != nil {
@@ -306,7 +325,7 @@ func (vs *Visor) walletCreateTransaction(methodName string, w wallet.Wallet, p t
 	}
 
 	// Get all addresses from the wallet for checking params against
-	walletAddresses, err := w.GetSkycoinAddresses()
+	walletAddresses, err := w.GetAddresses()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -385,9 +404,9 @@ func (vs *Visor) walletCreateTransactionTx(tx *dbutil.Tx, methodName string,
 
 	switch signed {
 	case TxnSigned:
-		txn, uxb, err = wallet.CreateTransactionSigned(w, p, auxs, head.Time())
+		txn, uxb, err = wallet.CreateTransactionSigned(w, p, auxs, head.Time(), vs)
 	case TxnUnsigned:
-		txn, uxb, err = wallet.CreateTransaction(w, p, auxs, head.Time())
+		txn, uxb, err = wallet.CreateTransaction(w, p, auxs, head.Time(), vs)
 	default:
 		logger.Panic("Invalid TxnSignedFlag")
 	}

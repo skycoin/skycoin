@@ -18,7 +18,7 @@ const (
 	MetaType           = "type"           // wallet type
 	MetaCoin           = "coin"           // coin type
 	MetaEncrypted      = "encrypted"      // whether the wallet is encrypted
-	MetaCryptoType     = "cryptoType"     // encrytion/decryption type
+	MetaCryptoType     = "cryptoType"     // encryption/decryption type
 	MetaSeed           = "seed"           // wallet seed
 	MetaLastSeed       = "lastSeed"       // seed for generating next address [deterministic wallets]
 	MetaSecrets        = "secrets"        // secrets which records the encrypted seeds and secrets of address entries

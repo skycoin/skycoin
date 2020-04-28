@@ -660,6 +660,7 @@ func TestBip44WalletDiffNoneSecrets(t *testing.T) {
 			tc.changeWalletFunc(t, &w2)
 
 			diff, err := w.DiffNoneSecrets(&w2)
+			require.NoError(t, err)
 
 			require.Empty(t, diff.Meta[meta.MetaSecrets])
 			require.Empty(t, diff.Meta[meta.MetaSeed])
@@ -674,6 +675,170 @@ func TestBip44WalletDiffNoneSecrets(t *testing.T) {
 
 			require.Equal(t, tc.expectedNewExternalAddrNum, diff.Accounts[0].NewExternalAddressNum)
 			require.Equal(t, tc.expectedNewChangeAddrNum, diff.Accounts[0].NewChangeAddressNum)
+		})
+	}
+}
+
+func TestBip44WalletCommitDiffs(t *testing.T) {
+	tt := []struct {
+		name                       string
+		options                    Bip44WalletCreateOptions
+		password                   []byte
+		diffs                      *WalletDiff
+		err                        error
+		expectedMeta               meta.Meta
+		expectedNewExternalAddrNum int
+		expectedNewChangeAddrNum   int
+	}{
+		{
+			name: "new external addresses",
+			options: Bip44WalletCreateOptions{
+				Filename:       "test.wlt",
+				Label:          "test",
+				Seed:           testSeed,
+				SeedPassphrase: testSeedPassphrase,
+				CoinType:       meta.CoinTypeSkycoin,
+				CryptoType:     crypto.CryptoTypeScryptChacha20poly1305Insecure,
+			},
+			diffs: &WalletDiff{
+				Accounts: []AccountDiff{{NewExternalAddressNum: 1}},
+			},
+			expectedNewExternalAddrNum: 1,
+		},
+		{
+			name: "new 5 external addresses",
+			options: Bip44WalletCreateOptions{
+				Filename:       "test.wlt",
+				Label:          "test",
+				Seed:           testSeed,
+				SeedPassphrase: testSeedPassphrase,
+				CoinType:       meta.CoinTypeSkycoin,
+				CryptoType:     crypto.CryptoTypeScryptChacha20poly1305Insecure,
+			},
+			diffs: &WalletDiff{
+				Accounts: []AccountDiff{{NewExternalAddressNum: 5}},
+			},
+			expectedNewExternalAddrNum: 5,
+		},
+		{
+			name: "new change addresses",
+			options: Bip44WalletCreateOptions{
+				Filename:       "test.wlt",
+				Label:          "test",
+				Seed:           testSeed,
+				SeedPassphrase: testSeedPassphrase,
+				CoinType:       meta.CoinTypeSkycoin,
+				CryptoType:     crypto.CryptoTypeScryptChacha20poly1305Insecure,
+			},
+			diffs: &WalletDiff{
+				Accounts: []AccountDiff{{NewChangeAddressNum: 1}},
+			},
+			expectedNewChangeAddrNum: 1,
+		},
+		{
+			name: "new 5 change addresses",
+			options: Bip44WalletCreateOptions{
+				Filename:       "test.wlt",
+				Label:          "test",
+				Seed:           testSeed,
+				SeedPassphrase: testSeedPassphrase,
+				CoinType:       meta.CoinTypeSkycoin,
+				CryptoType:     crypto.CryptoTypeScryptChacha20poly1305Insecure,
+			},
+			diffs: &WalletDiff{
+				Accounts: []AccountDiff{{NewChangeAddressNum: 5}},
+			},
+			expectedNewChangeAddrNum: 5,
+		},
+		{
+			name: "change label",
+			options: Bip44WalletCreateOptions{
+				Filename:       "test.wlt",
+				Label:          "test",
+				Seed:           testSeed,
+				SeedPassphrase: testSeedPassphrase,
+				CoinType:       meta.CoinTypeSkycoin,
+				CryptoType:     crypto.CryptoTypeScryptChacha20poly1305Insecure,
+			},
+			diffs: &WalletDiff{
+				Meta: meta.Meta{meta.MetaLabel: "test_changed"},
+			},
+			expectedMeta: meta.Meta{meta.MetaLabel: "test_changed"},
+		},
+		{
+			name: "change secrets, seed, seedPassphrase",
+			options: Bip44WalletCreateOptions{
+				Filename:       "test.wlt",
+				Label:          "test",
+				Seed:           testSeed,
+				SeedPassphrase: testSeedPassphrase,
+				CoinType:       meta.CoinTypeSkycoin,
+				CryptoType:     crypto.CryptoTypeScryptChacha20poly1305Insecure,
+			},
+			diffs: &WalletDiff{
+				Meta: meta.Meta{
+					meta.MetaSecrets:        "secrets_changed",
+					meta.MetaSeed:           "seed_changed",
+					meta.MetaSeedPassphrase: "seed_passphrase_changed",
+				},
+			},
+			expectedMeta: meta.Meta{
+				meta.MetaSecrets:        "secrets_changed",
+				meta.MetaSeed:           "seed_changed",
+				meta.MetaSeedPassphrase: "seed_passphrase_changed",
+			},
+		},
+		{
+			name: "change immutable filename, coin type, crypto type, wallet type, no commit",
+			options: Bip44WalletCreateOptions{
+				Filename:       "test.wlt",
+				Label:          "test",
+				Seed:           testSeed,
+				SeedPassphrase: testSeedPassphrase,
+				CoinType:       meta.CoinTypeSkycoin,
+				CryptoType:     crypto.CryptoTypeScryptChacha20poly1305Insecure,
+			},
+			diffs: &WalletDiff{
+				Meta: meta.Meta{
+					meta.MetaFilename:   "test_changed.wlt",
+					meta.MetaCoin:       "coin_changed",
+					meta.MetaBip44Coin:  "bip44_coin_type_changed",
+					meta.MetaCryptoType: "crypto_changed",
+				},
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			w, err := NewBip44WalletNew(tc.options)
+			require.NoError(t, err)
+
+			aid, err := w.NewAccount("default")
+			require.NoError(t, err)
+
+			// Lock wallet if password is provided
+			if len(tc.password) > 0 {
+				err = w.Lock(tc.password)
+				require.NoError(t, err)
+			}
+
+			err = w.CommitDiffs(tc.diffs)
+			require.NoError(t, err)
+
+			// Confirms that the meta data is applied
+			for k, v := range tc.expectedMeta {
+				require.Equal(t, v, w.Meta[k])
+			}
+
+			// Confirms that external chain addresses length is matched
+			el, err := w.ExternalEntriesLen(aid)
+			require.Equal(t, uint32(tc.expectedNewExternalAddrNum), el)
+
+			// Confirms that change chain addresses length is matched
+			cl, err := w.ChangeEntriesLen(aid)
+			require.NoError(t, err)
+			require.Equal(t, uint32(tc.expectedNewChangeAddrNum), cl)
 		})
 	}
 }

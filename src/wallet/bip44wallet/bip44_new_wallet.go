@@ -341,12 +341,12 @@ func (w *Bip44WalletNew) Lock(password []byte) error {
 	if cryptoType == "" {
 		return errors.New("Crypto type field not set")
 	}
-	crypto, err := crypto.GetCrypto(cryptoType)
+	cryptor, err := crypto.GetCrypto(cryptoType)
 	if err != nil {
 		return err
 	}
 
-	encSecret, err := crypto.Encrypt(sb, password)
+	encSecret, err := cryptor.Encrypt(sb, password)
 	if err != nil {
 		return err
 	}
@@ -384,12 +384,12 @@ func (w *Bip44WalletNew) Unlock(password []byte) (*Bip44WalletNew, error) {
 		return nil, errors.New("Missing crypto type")
 	}
 
-	crypto, err := crypto.GetCrypto(ct)
+	cryptor, err := crypto.GetCrypto(ct)
 	if err != nil {
 		return nil, err
 	}
 
-	sb, err := crypto.Decrypt([]byte(sstr), password)
+	sb, err := cryptor.Decrypt([]byte(sstr), password)
 	if err != nil {
 		return nil, errors.New("Invalid password")
 	}
@@ -422,7 +422,7 @@ func (w *Bip44WalletNew) Unlock(password []byte) (*Bip44WalletNew, error) {
 			return nil, err
 		}
 
-		encSecret, err := crypto.Encrypt(sb, password)
+		encSecret, err := cryptor.Encrypt(sb, password)
 		if err != nil {
 			return nil, err
 		}
@@ -475,12 +475,22 @@ func (w *Bip44WalletNew) Erase() {
 // immutableMeta records the meta keys of a wallet that should not be modified
 // once after they are initialized.
 func immutableMeta() map[string]struct{} {
-	emptyStruct := struct{}{}
+	empty := struct{}{}
 	return map[string]struct{}{
-		meta.MetaFilename:   emptyStruct,
-		meta.MetaCoin:       emptyStruct,
-		meta.MetaType:       emptyStruct,
-		meta.MetaCryptoType: emptyStruct,
+		meta.MetaFilename:   empty,
+		meta.MetaCoin:       empty,
+		meta.MetaType:       empty,
+		meta.MetaCryptoType: empty,
+	}
+}
+
+func secretsMeta() map[string]struct{} {
+	empty := struct{}{}
+	return map[string]struct{}{
+		meta.MetaSeed:           empty,
+		meta.MetaSeedPassphrase: empty,
+		meta.MetaSecrets:        empty,
+		meta.MetaEncrypted:      empty,
 	}
 }
 
@@ -490,7 +500,7 @@ type WalletDiff struct {
 	Accounts []AccountDiff
 }
 
-// AccountDiff recrds the account differences
+// AccountDiff records the account differences
 type AccountDiff struct {
 	NewExternalAddressNum int
 	NewChangeAddressNum   int
@@ -507,6 +517,7 @@ func (w *Bip44WalletNew) DiffNoneSecrets(wlt *Bip44WalletNew) (*WalletDiff, erro
 	}
 
 	im := immutableMeta()
+	sm := secretsMeta()
 
 	// check the meta change
 	for k, v := range wlt.Meta {
@@ -515,17 +526,13 @@ func (w *Bip44WalletNew) DiffNoneSecrets(wlt *Bip44WalletNew) (*WalletDiff, erro
 			continue
 		}
 
-		switch k {
-		case meta.MetaSecrets,
-			meta.MetaSeed,
-			meta.MetaSeedPassphrase,
-			meta.MetaEncrypted,
-			meta.MetaAccountsHash:
+		// filter out the secrets meta
+		if _, ok := sm[k]; ok {
 			continue
-		default:
-			if w.Meta[k] != v {
-				diff.Meta[k] = v
-			}
+		}
+
+		if w.Meta[k] != v {
+			diff.Meta[k] = v
 		}
 	}
 
@@ -538,30 +545,37 @@ func (w *Bip44WalletNew) DiffNoneSecrets(wlt *Bip44WalletNew) (*WalletDiff, erro
 	return diff, nil
 }
 
-// CommitDiff applys the wallet differences
-func (w *Bip44WalletNew) CommitDiff(diff *WalletDiff) error {
+// CommitDiffs applies the wallet differences
+//
+// Immutable meta data will be filter out
+// Secrets meta data will be committed
+func (w *Bip44WalletNew) CommitDiffs(diff *WalletDiff) error {
 	w2 := w.Clone()
+	im := immutableMeta()
 
+	// filter out the immutable meta data
 	for k, v := range diff.Meta {
+		if _, ok := im[k]; ok {
+			continue
+		}
 		w2.Meta[k] = v
 	}
 
 	for i, a := range diff.Accounts {
 		if a.NewExternalAddressNum > 0 {
-			_, err := w.NewExternalAddresses(uint32(i), uint32(a.NewExternalAddressNum))
+			_, err := w2.NewExternalAddresses(uint32(i), uint32(a.NewExternalAddressNum))
 			if err != nil {
 				return err
 			}
 		}
 
 		if a.NewChangeAddressNum > 0 {
-			_, err := w.NewChangeAddresses(uint32(i), uint32(a.NewChangeAddressNum))
+			_, err := w2.NewChangeAddresses(uint32(i), uint32(a.NewChangeAddressNum))
 			if err != nil {
 				return err
 			}
 		}
 	}
-
 	*w = w2
 	return nil
 }
@@ -589,8 +603,7 @@ func (w *Bip44WalletNew) unpackSecrets(ss secrets.Secrets) error {
 	passphrase, _ := ss.Get(secrets.SecretSeedPassphrase)
 	w.Meta.SetSeedPassphrase(passphrase)
 
-	w.accounts.unpackSecrets(ss)
-	return nil
+	return w.accounts.unpackSecrets(ss)
 }
 
 func makeChainPubKeys(a *bip44.Account) (*bip32.PublicKey, *bip32.PublicKey, error) {

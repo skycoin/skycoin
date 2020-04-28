@@ -175,6 +175,11 @@ func (w *Bip44Wallet) Unlock(password []byte, f func(w Wallet) error) error {
 	return w.CommitDiffs(diff)
 }
 
+// Secrets returns the value of meta.MetaSecrets
+func (w *Bip44Wallet) Secrets() string {
+	return w.Meta[meta.MetaSecrets]
+}
+
 // newBip44Wallet creates a Bip44Wallet
 // func newBip44Wallet(meta meta.Meta) (*Bip44Wallet, error) { //nolint:unparam
 // 	return bip44wallet.NewBip44WalletNew(bip44wallet.Bip44WalletCreateOptions{})

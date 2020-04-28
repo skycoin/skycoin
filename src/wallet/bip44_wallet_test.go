@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
 	"github.com/SkycoinProject/skycoin/src/wallet/meta"
 	"github.com/stretchr/testify/require"
 )
@@ -240,11 +241,27 @@ func TestBip44WalletUnlock(t *testing.T) {
 		expectedChangeAddrN   int
 	}{
 		{
-			name: "",
+			name: "no change",
 			options: Options{
 				Coin:           meta.CoinTypeSkycoin,
 				Seed:           testSeed,
 				SeedPassphrase: testSeedPassPhrase,
+				CryptoType:     crypto.CryptoTypeScryptChacha20poly1305Insecure,
+			},
+			password: []byte("12345"),
+			changeWalletFunc: func(w Wallet) error {
+				return nil
+			},
+			expectedExternalAddrN: 1,
+			expectedChangeAddrN:   1,
+		},
+		{
+			name: "change label",
+			options: Options{
+				Coin:           meta.CoinTypeSkycoin,
+				Seed:           testSeed,
+				SeedPassphrase: testSeedPassPhrase,
+				CryptoType:     crypto.CryptoTypeScryptChacha20poly1305Insecure,
 			},
 			password: []byte("12345"),
 			changeWalletFunc: func(w Wallet) error {
@@ -254,6 +271,75 @@ func TestBip44WalletUnlock(t *testing.T) {
 			expectedMeta:          meta.Meta{meta.MetaLabel: "change_label"},
 			expectedExternalAddrN: 1,
 			expectedChangeAddrN:   1,
+		},
+		{
+			name: "change filename, no commit",
+			options: Options{
+				Coin:           meta.CoinTypeSkycoin,
+				Seed:           testSeed,
+				SeedPassphrase: testSeedPassPhrase,
+				CryptoType:     crypto.CryptoTypeScryptChacha20poly1305Insecure,
+			},
+			password: []byte("12345"),
+			changeWalletFunc: func(w Wallet) error {
+				w.(*Bip44Wallet).Meta[meta.MetaFilename] = "filename_changed"
+				return nil
+			},
+			expectedExternalAddrN: 1,
+			expectedChangeAddrN:   1,
+		},
+		{
+			name: "new external addresses",
+			options: Options{
+				Coin:           meta.CoinTypeSkycoin,
+				Seed:           testSeed,
+				SeedPassphrase: testSeedPassPhrase,
+				CryptoType:     crypto.CryptoTypeScryptChacha20poly1305Insecure,
+			},
+			password: []byte("12345"),
+			changeWalletFunc: func(w Wallet) error {
+				_, err := w.(*Bip44Wallet).NewExternalAddresses(defaultAccount, 2)
+				return err
+			},
+			expectedExternalAddrN: 1 + 2,
+			expectedChangeAddrN:   1,
+		},
+		{
+			name: "new change addresses",
+			options: Options{
+				Coin:           meta.CoinTypeSkycoin,
+				Seed:           testSeed,
+				SeedPassphrase: testSeedPassPhrase,
+				CryptoType:     crypto.CryptoTypeScryptChacha20poly1305Insecure,
+			},
+			password: []byte("12345"),
+			changeWalletFunc: func(w Wallet) error {
+				_, err := w.(*Bip44Wallet).NewChangeAddresses(defaultAccount, 2)
+				return err
+			},
+			expectedExternalAddrN: 1,
+			expectedChangeAddrN:   1 + 2,
+		},
+		{
+			name: "new external and change addresses",
+			options: Options{
+				Coin:           meta.CoinTypeSkycoin,
+				Seed:           testSeed,
+				SeedPassphrase: testSeedPassPhrase,
+				CryptoType:     crypto.CryptoTypeScryptChacha20poly1305Insecure,
+			},
+			password: []byte("12345"),
+			changeWalletFunc: func(w Wallet) error {
+				_, err := w.(*Bip44Wallet).NewExternalAddresses(defaultAccount, 2)
+				if err != nil {
+					return err
+				}
+
+				_, err = w.(*Bip44Wallet).NewChangeAddresses(defaultAccount, 2)
+				return err
+			},
+			expectedExternalAddrN: 1 + 2,
+			expectedChangeAddrN:   1 + 2,
 		},
 	}
 

@@ -90,11 +90,16 @@ func NewBip44Wallet(filename string, opts Options, tf TransactionsFinder) (*Bip4
 	logger.WithFields(logrus.Fields{
 		"generateN":  generateN,
 		"walletType": wltType,
-	}).Infof("Generating addresses for wallet")
+	}).Info("Generating addresses for wallet")
 
 	w := &Bip44Wallet{wlt}
 
 	if _, err := w.GenerateAddresses(generateN); err != nil {
+		return nil, err
+	}
+
+	// generate a default change address
+	if _, err := w.NewChangeAddresses(defaultAccount, 1); err != nil {
 		return nil, err
 	}
 

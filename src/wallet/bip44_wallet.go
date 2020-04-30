@@ -159,26 +159,35 @@ func (w *Bip44Wallet) Lock(password []byte) error {
 	return w.Bip44WalletNew.Lock(password)
 }
 
-// Unlock decrypts the wallet
-func (w *Bip44Wallet) Unlock(password []byte, f func(w Wallet) error) error {
+func (w *Bip44Wallet) Unlock(password []byte) (Wallet, error) {
 	wlt, err := w.Bip44WalletNew.Unlock(password)
 	if err != nil {
-		return err
-	}
-	defer wlt.Erase()
-
-	if err := f(&Bip44Wallet{wlt}); err != nil {
-		return nil
+		return nil, err
 	}
 
-	// Diff none secrets data
-	diff, err := w.DiffNoneSecrets(wlt)
-	if err != nil {
-		return err
-	}
-
-	return w.CommitDiffs(diff)
+	return &Bip44Wallet{Bip44WalletNew: wlt}, nil
 }
+
+// Unlock decrypts the wallet
+//func (w *Bip44Wallet) Unlock(password []byte, f func(w Wallet) error) error {
+//	wlt, err := w.Bip44WalletNew.Unlock(password)
+//	if err != nil {
+//		return err
+//	}
+//	defer wlt.Erase()
+//
+//	if err := f(&Bip44Wallet{wlt}); err != nil {
+//		return nil
+//	}
+//
+//	// Diff none secrets data
+//	diff, err := w.DiffNoneSecrets(wlt)
+//	if err != nil {
+//		return err
+//	}
+//
+//	return w.CommitDiffs(diff)
+//}
 
 // Secrets returns the value of meta.MetaSecrets
 func (w *Bip44Wallet) Secrets() string {
@@ -518,7 +527,6 @@ func (w *Bip44Wallet) ScanAddresses(scanN uint64, tf TransactionsFinder) ([]ciph
 	}
 
 	w2 := w.Clone().(*Bip44Wallet)
-	// TODO: should not use map, the order is random
 	newAddrsFuncs := []func(account, num uint32) ([]cipher.Addresser, error){
 		w2.NewExternalAddresses,
 		w2.NewChangeAddresses,

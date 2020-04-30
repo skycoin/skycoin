@@ -144,6 +144,11 @@ func (w *Bip44Wallet) Clone() Wallet {
 	return &Bip44Wallet{Bip44WalletNew: &cw}
 }
 
+// CopyFromRef copies the src wallet with a pointer dereference
+func (w *Bip44Wallet) CopyFromRef(src Wallet) {
+	*w = *(src.(*Bip44Wallet))
+}
+
 // CryptoType returns the crypto type that is used for encrypting/decrypting wallet
 func (w *Bip44Wallet) CryptoType() crypto.CryptoType {
 	return w.Bip44WalletNew.CryptoType()

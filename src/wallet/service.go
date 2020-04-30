@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -223,44 +224,39 @@ func (serv *Service) EncryptWallet(wltID string, password []byte) (Wallet, error
 }
 
 // DecryptWallet decrypts wallet with password
-// func (serv *Service) DecryptWallet(wltID string, password []byte) (Wallet, error) {
-// 	serv.Lock()
-// 	defer serv.Unlock()
-// 	if !serv.config.EnableWalletAPI {
-// 		return nil, ErrWalletAPIDisabled
-// 	}
+// TODO: this function will be deprecated in future.
+func (serv *Service) DecryptWallet(wltID string, password []byte) (Wallet, error) {
+	serv.Lock()
+	defer serv.Unlock()
+	if !serv.config.EnableWalletAPI {
+		return nil, ErrWalletAPIDisabled
+	}
 
-// 	w, err := serv.getWallet(wltID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	w, err := serv.getWallet(wltID)
+	if err != nil {
+		return nil, err
+	}
 
-// 	// Returns error if wallet is not encrypted
-// 	if !w.IsEncrypted() {
-// 		return nil, ErrWalletNotEncrypted
-// 	}
+	// Returns error if wallet is not encrypted
+	if !w.IsEncrypted() {
+		return nil, ErrWalletNotEncrypted
+	}
 
-// 	// Unlocks the wallet
-// 	if err := w.Unlock(password, func(w Wallet) error {
+	// Unlocks the wallet
+	unlockWlt, err := w.Unlock(password)
+	if err != nil {
+		return nil, err
+	}
 
-// 	}); err != nil {
-// 		return nil, err
-// 	}
+	// Updates the wallet file
+	if err := Save(unlockWlt, serv.config.WalletDir); err != nil {
+		return nil, err
+	}
 
-// 	// unlockWlt, err := Unlock(w, password)
-// 	// if err != nil {
-// 	// 	return nil, err
-// 	// }
-
-// 	// Updates the wallet file
-// 	if err := Save(unlockWlt, serv.config.WalletDir); err != nil {
-// 		return nil, err
-// 	}
-
-// 	// Sets the decrypted wallet in memory
-// 	serv.wallets.set(unlockWlt)
-// 	return unlockWlt, nil
-// }
+	// Sets the decrypted wallet in memory
+	serv.wallets.set(unlockWlt)
+	return unlockWlt, nil
+}
 
 // NewAddresses generate address entries in given wallet,
 // return nil if wallet does not exist.

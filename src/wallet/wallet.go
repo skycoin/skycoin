@@ -386,7 +386,7 @@ func newWallet(wltName string, opts Options, tf TransactionsFinder) (Wallet, err
 	// }
 
 	// return w, nil
-	return nil, nil
+	//return nil, nil
 }
 
 // NewWallet creates wallet without scanning addresses
@@ -400,119 +400,119 @@ func NewWalletScanAhead(wltName string, opts Options, tf TransactionsFinder) (Wa
 }
 
 // Lock encrypts the wallet with the given password and specific crypto type
-// func Lock(w Wallet, password []byte, cryptoType crypto.CryptoType) error {
-// 	if len(password) == 0 {
-// 		return ErrMissingPassword
-// 	}
-
-// 	if w.IsEncrypted() {
-// 		return ErrWalletEncrypted
-// 	}
-
-// 	wlt := w.Clone()
-
-// 	// Records seeds in secrets
-// 	ss := make(secrets.Secrets)
-// 	defer func() {
-// 		// Wipes all unencrypted sensitive data
-// 		ss.Erase()
-// 		wlt.Erase()
-// 	}()
-
-// 	wlt.PackSecrets(ss)
-
-// 	sb, err := ss.Serialize()
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	crypto, err := crypto.GetCrypto(cryptoType)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	// Encrypts the secrets
-// 	encSecret, err := crypto.Encrypt(sb, password)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	// Sets wallet as encrypted
-// 	wlt.SetEncrypted(cryptoType, string(encSecret))
-
-// 	// Update the wallet to the latest version, which indicates encryption support
-// 	wlt.SetVersion(Version)
-
-// 	// Wipes unencrypted sensitive data
-// 	wlt.Erase()
-
-// 	// Wipes the secret fields in w
-// 	w.Erase()
-
-// 	// Replace the original wallet with new encrypted wallet
-// 	w.CopyFrom(wlt)
-// 	return nil
-// }
+//func Lock(w Wallet, password []byte, cryptoType crypto.CryptoType) error {
+//	if len(password) == 0 {
+//		return ErrMissingPassword
+//	}
+//
+//	if w.IsEncrypted() {
+//		return ErrWalletEncrypted
+//	}
+//
+//	wlt := w.Clone()
+//
+//	// Records seeds in secrets
+//	ss := make(secrets.Secrets)
+//	defer func() {
+//		// Wipes all unencrypted sensitive data
+//		ss.Erase()
+//		wlt.Erase()
+//	}()
+//
+//	wlt.PackSecrets(ss)
+//
+//	sb, err := ss.Serialize()
+//	if err != nil {
+//		return err
+//	}
+//
+//	crypto, err := crypto.GetCrypto(cryptoType)
+//	if err != nil {
+//		return err
+//	}
+//
+//	// Encrypts the secrets
+//	encSecret, err := crypto.Encrypt(sb, password)
+//	if err != nil {
+//		return err
+//	}
+//
+//	// Sets wallet as encrypted
+//	wlt.SetEncrypted(cryptoType, string(encSecret))
+//
+//	// Update the wallet to the latest version, which indicates encryption support
+//	wlt.SetVersion(Version)
+//
+//	// Wipes unencrypted sensitive data
+//	wlt.Erase()
+//
+//	// Wipes the secret fields in w
+//	w.Erase()
+//
+//	// Replace the original wallet with new encrypted wallet
+//	w.CopyFrom(wlt)
+//	return nil
+//}
 
 // Unlock decrypts the wallet into a temporary decrypted copy of the wallet
 // Returns error if the decryption fails
 // The temporary decrypted wallet should be erased from memory when done.
-// func Unlock(w Wallet, password []byte) (Wallet, error) {
-// 	if !w.IsEncrypted() {
-// 		return nil, ErrWalletNotEncrypted
-// 	}
-
-// 	if len(password) == 0 {
-// 		return nil, ErrMissingPassword
-// 	}
-
-// 	wlt := w.Clone()
-
-// 	// Gets the secrets string
-// 	sstr := w.Secrets()
-// 	if sstr == "" {
-// 		return nil, errors.New("secrets missing from wallet")
-// 	}
-
-// 	ct := w.CryptoType()
-// 	if ct == "" {
-// 		return nil, errors.New("missing crypto type")
-// 	}
-
-// 	// Gets the crypto module
-// 	crypto, err := crypto.GetCrypto(ct)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	// Decrypts the secrets
-// 	sb, err := crypto.Decrypt([]byte(sstr), password)
-// 	if err != nil {
-// 		return nil, ErrInvalidPassword
-// 	}
-
-// 	defer func() {
-// 		// Wipe the data from the secrets bytes buffer
-// 		for i := range sb {
-// 			sb[i] = 0
-// 		}
-// 	}()
-
-// 	// Deserialize into secrets
-// 	ss := make(secrets.Secrets)
-// 	defer ss.Erase()
-// 	if err := ss.Deserialize(sb); err != nil {
-// 		return nil, err
-// 	}
-
-// 	if err := wlt.UnpackSecrets(ss); err != nil {
-// 		return nil, err
-// 	}
-
-// 	wlt.SetDecrypted()
-
-// 	return wlt, nil
-// }
+//func Unlock(w Wallet, password []byte) (Wallet, error) {
+//	if !w.IsEncrypted() {
+//		return nil, ErrWalletNotEncrypted
+//	}
+//
+//	if len(password) == 0 {
+//		return nil, ErrMissingPassword
+//	}
+//
+//	wlt := w.Clone()
+//
+//	// Gets the secrets string
+//	sstr := w.Secrets()
+//	if sstr == "" {
+//		return nil, errors.New("secrets missing from wallet")
+//	}
+//
+//	ct := w.CryptoType()
+//	if ct == "" {
+//		return nil, errors.New("missing crypto type")
+//	}
+//
+//	// Gets the crypto module
+//	cryptor, err := crypto.GetCrypto(ct)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	// Decrypts the secrets
+//	sb, err := cryptor.Decrypt([]byte(sstr), password)
+//	if err != nil {
+//		return nil, ErrInvalidPassword
+//	}
+//
+//	defer func() {
+//		// Wipe the data from the secrets bytes buffer
+//		for i := range sb {
+//			sb[i] = 0
+//		}
+//	}()
+//
+//	// Deserialize into secrets
+//	ss := make(secrets.Secrets)
+//	defer ss.Erase()
+//	if err := ss.Deserialize(sb); err != nil {
+//		return nil, err
+//	}
+//
+//	if err := wlt.UnpackSecrets(ss); err != nil {
+//		return nil, err
+//	}
+//
+//	wlt.SetDecrypted()
+//
+//	return wlt, nil
+//}
 
 // Wallet defines the wallet API
 type Wallet interface {
@@ -536,7 +536,8 @@ type Wallet interface {
 	Version() string
 	// SetVersion(string)
 	// AddressConstructor() func(cipher.PubKey) cipher.Addresser
-	// Secrets() string
+	// Secrets returns the wallet secrets data
+	Secrets() string
 	XPub() string
 
 	// UnpackSecrets(ss secrets.Secrets) error
@@ -545,21 +546,20 @@ type Wallet interface {
 	Lock(password []byte) error
 	// Unlock decrypts the wallet, the callback function `fn` should accept a pointer of
 	// the decrypted wallet and wipes the sensitive data after calling the function.
-	Unlock(password []byte, fn func(w Wallet) error) error
+	Unlock(password []byte) (Wallet, error)
 
 	// Erase wipes sensitive data
-	// Erase()
+	Erase()
 	Clone() Wallet
 	// CopyFrom(src Wallet)
-	// CopyFromRef(src Wallet)
+	CopyFromRef(src Wallet)
 
 	// ToReadable() Readable
 
 	// Validate() error
-
 	Fingerprint() string
 	GetAddresses() ([]cipher.Address, error)
-	// GetEntryAt(i int) (entry.Entry, error)
+	//GetEntryAt(i int) (entry.Entry, error)
 	GetEntry(cipher.Address) (entry.Entry, bool)
 	HasEntry(cipher.Address) bool
 	EntriesLen() int
@@ -577,58 +577,57 @@ type Wallet interface {
 
 // GuardUpdate executes a function within the context of a read-write managed decrypted wallet.
 // Returns ErrWalletNotEncrypted if wallet is not encrypted.
-// func GuardUpdate(w Wallet, password []byte, fn func(w Wallet) error) error {
-// 	if !w.IsEncrypted() {
-// 		return ErrWalletNotEncrypted
-// 	}
+func GuardUpdate(w Wallet, password []byte, fn func(w Wallet) error) error {
+	if !w.IsEncrypted() {
+		return ErrWalletNotEncrypted
+	}
 
-// 	if len(password) == 0 {
-// 		return ErrMissingPassword
-// 	}
+	if len(password) == 0 {
+		return ErrMissingPassword
+	}
 
-// 	cryptoType := w.CryptoType()
-// 	wlt, err := Unlock(w, password)
-// 	if err != nil {
-// 		return err
-// 	}
+	wlt, err := w.Unlock(password)
+	if err != nil {
+		return err
+	}
 
-// 	defer wlt.Erase()
+	defer wlt.Erase()
 
-// 	if err := fn(wlt); err != nil {
-// 		return err
-// 	}
+	if err := fn(wlt); err != nil {
+		return err
+	}
 
-// 	if err := Lock(wlt, password, cryptoType); err != nil {
-// 		return err
-// 	}
+	if err := wlt.Lock(password); err != nil {
+		return err
+	}
 
-// 	w.CopyFromRef(wlt)
+	w.CopyFromRef(wlt)
 
-// 	// Wipes all sensitive data
-// 	w.Erase()
-// 	return nil
-// }
+	// Wipes all sensitive data
+	w.Erase()
+	return nil
+}
 
 // GuardView executes a function within the context of a read-only managed decrypted wallet.
 // Returns ErrWalletNotEncrypted if wallet is not encrypted.
-// func GuardView(w Wallet, password []byte, f func(w Wallet) error) error {
-// 	if !w.IsEncrypted() {
-// 		return ErrWalletNotEncrypted
-// 	}
+func GuardView(w Wallet, password []byte, f func(w Wallet) error) error {
+	if !w.IsEncrypted() {
+		return ErrWalletNotEncrypted
+	}
 
-// 	if len(password) == 0 {
-// 		return ErrMissingPassword
-// 	}
+	if len(password) == 0 {
+		return ErrMissingPassword
+	}
 
-// 	wlt, err := Unlock(w, password)
-// 	if err != nil {
-// 		return err
-// 	}
+	wlt, err := w.Unlock(password)
+	if err != nil {
+		return err
+	}
 
-// 	defer wlt.Erase()
+	defer wlt.Erase()
 
-// 	return f(wlt)
-// }
+	return f(wlt)
+}
 
 type walletLoadMeta struct {
 	Meta struct {

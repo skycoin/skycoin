@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
@@ -20,11 +21,11 @@ var (
 		"dB4GuLyay1jQdafN3JyrFUxfNjHB3kALdS",
 	}
 	externalAddrs = []string{
+		"2b5EwW3UAwieMRUogEEbXV4BzGP1AqRFRB6",
 		"2aSysdajziiE2uexbduqV67VhEd2GdLRB8h",
 		"2FVWhKpYt5uAavLZmT2PZxV5mhD2pRdqCwd",
 		"RHZtm7cf85NDq7SdNR5K5kxwDVgFUPQbRV",
 		"o4d7dY58BV7bPMqmgzAEqDKGCRHwQmhB13",
-		"EZmQLkLfwhiZ9dAwgVf2bLTvP5wtwwnqVf",
 	}
 )
 
@@ -59,12 +60,13 @@ func TestBip44WalletAssign(t *testing.T) {
 	_, err = w.NewExternalAddresses(defaultAccount, 5)
 	require.NoError(t, err)
 
-	require.Equal(t, 5, w.EntriesLen())
+	// 5 added external address + 1 default external + 1 default change address
+	require.Equal(t, 7, w.EntriesLen())
 
 	_, err = w.NewChangeAddresses(defaultAccount, 2)
 	require.NoError(t, err)
 
-	require.Equal(t, 7, w.EntriesLen())
+	require.Equal(t, 9, w.EntriesLen())
 
 	w1, err := NewBip44Wallet("test1.wlt", Options{
 		Seed:           "keep analyst jeans trip erosion race fantasy point spray dinner finger palm",
@@ -74,36 +76,23 @@ func TestBip44WalletAssign(t *testing.T) {
 
 	require.NoError(t, err)
 
-	// Confirms there is one default address
-	require.Equal(t, 1, w1.EntriesLen())
+	// Confirms there are two default addresses, one for external and one for change.
+	require.Equal(t, 2, w1.EntriesLen())
 
 	// Do assignment
 	*w1 = *w
 
 	// Confirms the entries length is correct
-	require.Equal(t, 7, w1.EntriesLen())
+	require.Equal(t, 9, w1.EntriesLen())
 
 	es, err := w1.ExternalEntries(defaultAccount)
 	require.NoError(t, err)
-	require.Equal(t, 5, len(es))
+	require.Equal(t, 6, len(es))
 
 	// Confirms that the seed is the same
 	require.Equal(t, testSeed, w1.Seed())
 	// Confirms  that the seed passphrase is the same
 	require.Equal(t, testSeedPassPhrase, w1.SeedPassphrase())
-}
-
-type mockTxnsFinder struct {
-	v map[cipher.Address]bool
-}
-
-func (mtf mockTxnsFinder) AddressesActivity(addrs []cipher.Address) ([]bool, error) {
-	ret := make([]bool, len(addrs))
-	for i, a := range addrs {
-		_, ok := mtf.v[a]
-		ret[i] = ok
-	}
-	return ret, nil
 }
 
 func TestPeekChangeAddress(t *testing.T) {
@@ -115,15 +104,15 @@ func TestPeekChangeAddress(t *testing.T) {
 	require.NoError(t, err)
 
 	cAddrs := getChangeAddrs(t)
-	addr, err := w.PeekChangeAddress(mockTxnsFinder{map[cipher.Address]bool{}})
+	addr, err := w.PeekChangeAddress(mockTxnsFinder{})
 	require.NoError(t, err)
 	require.Equal(t, addr, cAddrs[0])
 
-	addr, err = w.PeekChangeAddress(mockTxnsFinder{map[cipher.Address]bool{cAddrs[0]: true}})
+	addr, err = w.PeekChangeAddress(mockTxnsFinder{cAddrs[0]: true})
 	require.NoError(t, err)
 	require.Equal(t, addr, cAddrs[1])
 
-	addr, err = w.PeekChangeAddress(mockTxnsFinder{map[cipher.Address]bool{cAddrs[1]: true}})
+	addr, err = w.PeekChangeAddress(mockTxnsFinder{cAddrs[1]: true})
 	require.NoError(t, err)
 	require.Equal(t, addr, cAddrs[2])
 }
@@ -142,72 +131,73 @@ func TestWalletScanAddresses(t *testing.T) {
 		{
 			name:      "no txns",
 			scanN:     10,
-			txnFinder: mockTxnsFinder{map[cipher.Address]bool{}},
+			txnFinder: mockTxnsFinder{},
 		},
 		{
 			name:        "external addr with txn",
 			scanN:       10,
-			txnFinder:   mockTxnsFinder{map[cipher.Address]bool{eAddrs[0]: true}},
-			expectAddrs: eAddrs[:1],
+			txnFinder:   mockTxnsFinder{eAddrs[1]: true},
+			expectAddrs: eAddrs[1:2],
 		},
 		{
-			name:        "change addr with txn",
-			scanN:       10,
-			txnFinder:   mockTxnsFinder{map[cipher.Address]bool{cAddrs[0]: true}},
-			expectAddrs: cAddrs[:1],
+			name:      "change addr with txn",
+			scanN:     10,
+			txnFinder: mockTxnsFinder{cAddrs[1]: true},
+			// The default change address already exist, thus no more new change addresses will be created
+			expectAddrs: cAddrs[1:2],
 		},
 		{
 			name:  "external and change addrs with txns",
 			scanN: 10,
-			txnFinder: mockTxnsFinder{map[cipher.Address]bool{
-				eAddrs[0]: true,
-				cAddrs[0]: true,
-			}},
-			expectAddrs: []cipher.Address{eAddrs[0], cAddrs[0]},
+			txnFinder: mockTxnsFinder{
+				eAddrs[1]: true,
+				cAddrs[1]: true,
+			},
+			expectAddrs: []cipher.Address{eAddrs[1], cAddrs[1]},
 		},
 		{
 			name:  "external and change addrs with txns 2",
 			scanN: 10,
-			txnFinder: mockTxnsFinder{map[cipher.Address]bool{
-				eAddrs[1]: true,
-				cAddrs[0]: true,
-			}},
-			expectAddrs: []cipher.Address{eAddrs[0], eAddrs[1], cAddrs[0]},
+			txnFinder: mockTxnsFinder{
+				eAddrs[2]: true,
+				cAddrs[1]: true,
+			},
+			expectAddrs: []cipher.Address{eAddrs[1], eAddrs[2], cAddrs[1]},
 		},
 		{
 			name:  "external and change addrs with txns 3",
 			scanN: 10,
-			txnFinder: mockTxnsFinder{map[cipher.Address]bool{
+			txnFinder: mockTxnsFinder{
 				eAddrs[4]: true,
 				cAddrs[4]: true,
-			}},
-			expectAddrs: append(getExternalAddrs(t), getChangeAddrs(t)...),
+			},
+			expectAddrs: append(getExternalAddrs(t)[1:], getChangeAddrs(t)[1:]...),
 		},
 		{
 			name:  "not enough addresses scanned",
 			scanN: 3,
-			txnFinder: mockTxnsFinder{map[cipher.Address]bool{
+			txnFinder: mockTxnsFinder{
 				eAddrs[4]: true,
 				cAddrs[4]: true,
-			}},
+			},
 		},
 		{
 			name:  "just enough addresses scanned",
-			scanN: 5,
-			txnFinder: mockTxnsFinder{map[cipher.Address]bool{
+			scanN: 4,
+			txnFinder: mockTxnsFinder{
 				eAddrs[4]: true,
 				cAddrs[4]: true,
-			}},
-			expectAddrs: append(getExternalAddrs(t), getChangeAddrs(t)...),
+			},
+			expectAddrs: append(getExternalAddrs(t)[1:], getChangeAddrs(t)[1:]...),
 		},
 		{
 			name:  "more addresses scanned",
 			scanN: 6,
-			txnFinder: mockTxnsFinder{map[cipher.Address]bool{
+			txnFinder: mockTxnsFinder{
 				eAddrs[4]: true,
 				cAddrs[4]: true,
-			}},
-			expectAddrs: append(getExternalAddrs(t), getChangeAddrs(t)...),
+			},
+			expectAddrs: append(getExternalAddrs(t)[1:], getChangeAddrs(t)[1:]...),
 		},
 	}
 
@@ -219,6 +209,7 @@ func TestWalletScanAddresses(t *testing.T) {
 				SeedPassphrase: testSeedPassPhrase,
 			}, tc.txnFinder)
 			require.NoError(t, err)
+
 			addrs, err := w.ScanAddresses(uint64(tc.scanN), tc.txnFinder)
 			require.Equal(t, tc.err, err)
 			if err != nil {
@@ -351,16 +342,19 @@ func TestBip44WalletUnlock(t *testing.T) {
 			err = w.Lock(tc.password)
 			require.NoError(t, err)
 
-			err = w.Unlock(tc.password, tc.changeWalletFunc)
+			wlt, err := w.Unlock(tc.password)
 			require.NoError(t, err)
+			require.NoError(t, tc.changeWalletFunc(wlt))
+
+			bw := wlt.(*Bip44Wallet)
 
 			for k, v := range tc.expectedMeta {
-				require.Equal(t, w.Meta[k], v)
+				fmt.Println("key:", k, "v:", v)
+				require.Equal(t, v, bw.Meta[k])
 			}
-
-			el, err := w.ExternalEntriesLen(defaultAccount)
+			el, err := bw.ExternalEntriesLen(defaultAccount)
 			require.NoError(t, err)
-			cl, err := w.ChangeEntriesLen(defaultAccount)
+			cl, err := bw.ChangeEntriesLen(defaultAccount)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expectedExternalAddrN, int(el))

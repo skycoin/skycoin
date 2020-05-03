@@ -9,9 +9,7 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 	"github.com/SkycoinProject/skycoin/src/util/mathutil"
-	"github.com/SkycoinProject/skycoin/src/wallet/entry"
-	"github.com/SkycoinProject/skycoin/src/wallet/meta"
-	"github.com/SkycoinProject/skycoin/src/wallet/secrets"
+	"github.com/SkycoinProject/skycoin/src/wallet"
 )
 
 const (
@@ -21,10 +19,10 @@ const (
 // bip44Account records the bip44 wallet account info
 type bip44Account struct {
 	bip44.Account
-	Name     string        // Account name
-	Index    uint32        // Account index
-	CoinType meta.CoinType // Account coin type, determins the way to generate addresses
-	Chains   []bip44Chain  // Chains, external chain with index value of 0, and internal(change) chain with index value of 1.
+	Name     string          // Account name
+	Index    uint32          // Account index
+	CoinType wallet.CoinType // Account coin type, determins the way to generate addresses
+	Chains   []bip44Chain    // Chains, external chain with index value of 0, and internal(change) chain with index value of 1.
 }
 
 type bip44AccountCreateOptions struct {
@@ -32,7 +30,7 @@ type bip44AccountCreateOptions struct {
 	index          uint32
 	seed           string
 	seedPassphrase string
-	coinType       meta.CoinType
+	coinType       wallet.CoinType
 	bip44CoinType  *bip44.CoinType
 }
 
@@ -43,7 +41,7 @@ func newBip44Account(opts bip44AccountCreateOptions) (*bip44Account, error) {
 		return nil, err
 	}
 
-	ca := resolveCoinAdapter(opts.coinType)
+	ca := wallet.ResolveCoinAdapter(opts.coinType)
 	if opts.bip44CoinType == nil {
 		return nil, errors.New("newBip44Account missing bip44 coin type")
 	}
@@ -119,7 +117,7 @@ func (a *bip44Account) erase() {
 
 // syncSecrets ensure that the secrets covers all addresses in the account,
 // otherwise, generate related secrets and pack to the secrets storage.
-func (a *bip44Account) syncSecrets(ss secrets.Secrets) error {
+func (a *bip44Account) syncSecrets(ss wallet.Secrets) error {
 	v, ok := ss.Get(a.accountKeyName())
 	if !ok {
 		return errors.New("Account private key does not exist in secrets")
@@ -167,7 +165,7 @@ func (a *bip44Account) accountKeyName() string {
 }
 
 // packSecrets packs the secrets of secrets into Secrets
-func (a *bip44Account) packSecrets(ss secrets.Secrets) {
+func (a *bip44Account) packSecrets(ss wallet.Secrets) {
 	if a.Account.PrivateKey != nil {
 		// packs the account private key.
 		ss.Set(a.accountKeyName(), a.Account.String())
@@ -179,10 +177,10 @@ func (a *bip44Account) packSecrets(ss secrets.Secrets) {
 	}
 }
 
-func (a *bip44Account) unpackSecrets(ss secrets.Secrets) error {
+func (a *bip44Account) unpackSecrets(ss wallet.Secrets) error {
 	prvKey, ok := ss.Get(a.accountKeyName())
 	if !ok {
-		return errors.New("Missing bip44 account private key when unpacking secrets")
+		return errors.New("missing bip44 account private key when unpacking secrets")
 	}
 
 	key, err := bip32.DeserializeEncodedPrivateKey(prvKey)
@@ -193,18 +191,20 @@ func (a *bip44Account) unpackSecrets(ss secrets.Secrets) error {
 	a.Account.PrivateKey = key
 
 	for i := range a.Chains {
-		a.Chains[i].unpackSecrets(ss)
+		if err := a.Chains[i].unpackSecrets(ss); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func (a *bip44Account) entries(chain uint32) (entry.Entries, error) {
+func (a *bip44Account) entries(chain uint32) (wallet.Entries, error) {
 	switch chain {
 	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
 		c := a.Chains[chain]
 		return c.Entries.Clone(), nil
 	default:
-		return nil, fmt.Errorf("Invalid chain index: %d", chain)
+		return nil, fmt.Errorf("invalid chain index: %d", chain)
 	}
 }
 
@@ -213,23 +213,23 @@ func (a *bip44Account) entriesLen(chain uint32) (uint32, error) {
 	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
 		return uint32(len(a.Chains[chain].Entries)), nil
 	default:
-		return 0, fmt.Errorf("Invalid chain index: %d", chain)
+		return 0, fmt.Errorf("invalid chain index: %d", chain)
 	}
 }
 
-func (a *bip44Account) entryAt(chain, i uint32) (entry.Entry, error) {
+func (a *bip44Account) entryAt(chain, i uint32) (wallet.Entry, error) {
 	switch chain {
 	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
 		if i >= uint32(len(a.Chains[chain].Entries)) {
-			return entry.Entry{}, fmt.Errorf("Entry index %d out of range", i)
+			return wallet.Entry{}, fmt.Errorf("Entry index %d out of range", i)
 		}
 		return a.Chains[chain].Entries[i], nil
 	default:
-		return entry.Entry{}, fmt.Errorf("Invalid chain index: %d", chain)
+		return wallet.Entry{}, fmt.Errorf("Invalid chain index: %d", chain)
 	}
 }
 
-func (a *bip44Account) getEntry(address cipher.Addresser) (entry.Entry, bool) {
+func (a *bip44Account) getEntry(address cipher.Addresser) (wallet.Entry, bool) {
 	for _, c := range a.Chains {
 		for _, e := range c.Entries {
 			if e.Address == address {
@@ -238,7 +238,7 @@ func (a *bip44Account) getEntry(address cipher.Addresser) (entry.Entry, bool) {
 		}
 	}
 
-	return entry.Entry{}, false
+	return wallet.Entry{}, false
 }
 
 // Clone clones the bip44Account, it would also hide the
@@ -286,7 +286,7 @@ func (a bip44Account) diff(na bip44Account) accountDiff {
 // bip44Chain bip44 address chain
 type bip44Chain struct {
 	PubKey            bip32.PublicKey
-	Entries           entry.Entries
+	Entries           wallet.Entries
 	ChainIndex        uint32
 	addressFromPubKey func(key cipher.PubKey) cipher.Addresser
 }
@@ -317,7 +317,7 @@ func (c *bip44Chain) newAddresses(num uint32, seckey *bip32.PrivateKey) ([]ciphe
 		}
 
 		addr := c.addressFromPubKey(cpk)
-		e := entry.Entry{
+		e := wallet.Entry{
 			Address:     addr,
 			Public:      cpk,
 			ChildNumber: index,
@@ -337,7 +337,7 @@ func (c *bip44Chain) newAddresses(num uint32, seckey *bip32.PrivateKey) ([]ciphe
 	return addrs, nil
 }
 
-func (c *bip44Chain) syncSecrets(ss secrets.Secrets, privateKey *bip32.PrivateKey) error {
+func (c *bip44Chain) syncSecrets(ss wallet.Secrets, privateKey *bip32.PrivateKey) error {
 	for i, e := range c.Entries {
 		addr := e.Address.String()
 		if _, ok := ss.Get(addr); !ok {
@@ -351,13 +351,13 @@ func (c *bip44Chain) syncSecrets(ss secrets.Secrets, privateKey *bip32.PrivateKe
 	return nil
 }
 
-func (c *bip44Chain) packSecrets(ss secrets.Secrets) {
+func (c *bip44Chain) packSecrets(ss wallet.Secrets) {
 	for _, e := range c.Entries {
 		ss.Set(e.Address.String(), e.Secret.Hex())
 	}
 }
 
-func (c *bip44Chain) unpackSecrets(ss secrets.Secrets) error {
+func (c *bip44Chain) unpackSecrets(ss wallet.Secrets) error {
 	return c.Entries.UnpackSecretKeys(ss)
 }
 
@@ -460,13 +460,13 @@ func (a *bip44Accounts) clone() accountManager {
 	return nas
 }
 
-func (a *bip44Accounts) packSecrets(ss secrets.Secrets) {
+func (a *bip44Accounts) packSecrets(ss wallet.Secrets) {
 	for i := range a.accounts {
 		a.accounts[i].packSecrets(ss)
 	}
 }
 
-func (a *bip44Accounts) unpackSecrets(ss secrets.Secrets) error {
+func (a *bip44Accounts) unpackSecrets(ss wallet.Secrets) error {
 	for i := range a.accounts {
 		if err := a.accounts[i].unpackSecrets(ss); err != nil {
 			return err
@@ -481,7 +481,7 @@ func (a *bip44Accounts) erase() {
 	}
 }
 
-func (a *bip44Accounts) entries(account, chain uint32) (entry.Entries, error) {
+func (a *bip44Accounts) entries(account, chain uint32) (wallet.Entries, error) {
 	act, err := a.account(account)
 	if err != nil {
 		return nil, err
@@ -509,31 +509,31 @@ func (a *bip44Accounts) entriesLen(account, chain uint32) (uint32, error) {
 	}
 }
 
-func (a *bip44Accounts) entryAt(account, chain, i uint32) (entry.Entry, error) {
+func (a *bip44Accounts) entryAt(account, chain, i uint32) (wallet.Entry, error) {
 	act, err := a.account(account)
 	if err != nil {
-		return entry.Entry{}, err
+		return wallet.Entry{}, err
 	}
 
 	switch chain {
 	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
 		return act.entryAt(chain, i)
 	default:
-		return entry.Entry{}, fmt.Errorf("Invalid chain index: %d", chain)
+		return wallet.Entry{}, fmt.Errorf("Invalid chain index: %d", chain)
 	}
 }
 
-func (a *bip44Accounts) getEntry(account uint32, address cipher.Addresser) (entry.Entry, bool, error) {
+func (a *bip44Accounts) getEntry(account uint32, address cipher.Addresser) (wallet.Entry, bool, error) {
 	act, err := a.account(account)
 	if err != nil {
-		return entry.Entry{}, false, err
+		return wallet.Entry{}, false, err
 	}
 
 	e, ok := act.getEntry(address)
 	return e, ok, nil
 }
 
-func (a *bip44Accounts) syncSecrets(ss secrets.Secrets) error {
+func (a *bip44Accounts) syncSecrets(ss wallet.Secrets) error {
 	for _, act := range a.accounts {
 		if err := act.syncSecrets(ss); err != nil {
 			return err
@@ -564,4 +564,102 @@ func (a *bip44Accounts) diff(am accountManager) []accountDiff {
 		ads = append(ads, ad)
 	}
 	return ads
+}
+
+func (a *bip44Accounts) all() []wallet.Bip44Account {
+	as := make([]wallet.Bip44Account, len(a.accounts))
+	for i, act := range a.accounts {
+		as[i] = wallet.Bip44Account{
+			Name:  act.Name,
+			Index: act.Index,
+		}
+	}
+	return as
+}
+
+type accountEntriesService struct {
+	*bip44Account
+	chain uint32
+	err   error
+}
+
+func (a accountEntriesService) Entries() (wallet.Entries, error) {
+	if a.err != nil {
+		return nil, a.err
+	}
+	return a.entries(a.chain)
+}
+
+func (a accountEntriesService) GetEntryAt(i int) (wallet.Entry, error) {
+	if a.err != nil {
+		return nil, a.err
+	}
+	return a.entryAt(a.chain, uint32(i))
+}
+
+// TODO: limit to specific chain
+func (a accountEntriesService) GetEntry(addresser cipher.Addresser) (wallet.Entry, error) {
+	if a.err != nil {
+		return nil, a.err
+	}
+	e, ok := a.getEntry(addresser)
+	if !ok {
+		return wallet.Entry{}, wallet.ErrEntryNotFound
+	}
+
+	return e, nil
+}
+
+// TODO: limit to the specific chain
+func (a accountEntriesService) HasEntry(addresser cipher.Addresser) (bool, error) {
+	if a.err != nil {
+		return nil, a.err
+	}
+	_, ok := a.getEntry(addresser)
+	return ok, nil
+}
+
+func (a accountEntriesService) Len() (int, error) {
+	if a.err != nil {
+		return nil, a.err
+	}
+	l, err := a.entriesLen(a.chain)
+	if err != nil {
+		// this should not be possible, as the chain was checked when
+		// the accountEntriesService was acquired.
+		return 0, err
+	}
+	return int(l), nil
+}
+
+func (a accountEntriesService) GetAddresses() ([]cipher.Addresser, error) {
+	if a.err != nil {
+		return nil, a.err
+	}
+	entries, err := a.entries(a.chain)
+	if err != nil {
+		return nil, err
+	}
+
+	addrs := make([]cipher.Addresser, len(entries))
+	for i, e := range entries {
+		addrs[i] = e.Address
+	}
+
+	return addrs, nil
+}
+
+func (a accountEntriesService) GenerateAddresses(num uint64) ([]cipher.Addresser, error) {
+	if a.err != nil {
+		return nil, a.err
+	}
+	return a.newAddresses(a.chain, uint32(num))
+}
+
+// TODO: implement this
+func (a accountEntriesService) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]cipher.Addresser, error) {
+	if a.err != nil {
+		return nil, a.err
+	}
+	return nil, nil
 }

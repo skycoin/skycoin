@@ -20,8 +20,6 @@ import (
 	"github.com/SkycoinProject/skycoin/src/util/file"
 	"github.com/SkycoinProject/skycoin/src/util/logging"
 	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
-	"github.com/SkycoinProject/skycoin/src/wallet/entry"
-	"github.com/SkycoinProject/skycoin/src/wallet/meta"
 )
 
 // Error wraps wallet-related errors.
@@ -86,6 +84,9 @@ var (
 	ErrWalletTypeNotRecoverable = NewError(errors.New("wallet type is not recoverable"))
 	// ErrWalletPermission is returned when updating a wallet without writing permission
 	ErrWalletPermission = NewError(errors.New("saving wallet permission denied"))
+
+	// ErrEntryNotFound is returned by GetEntry is the wallet does not contains the entry
+	ErrEntryNotFound = errors.New("entry not found")
 )
 
 const (
@@ -121,14 +122,14 @@ type CoinType string
 func NewWalletFilename() string {
 	timestamp := time.Now().Format(WalletTimestampFormat)
 	// should read in wallet files and make sure does not exist
-	padding := hex.EncodeToString((cipher.RandByte(2)))
+	padding := hex.EncodeToString(cipher.RandByte(2))
 	return fmt.Sprintf("%s_%s.%s", timestamp, padding, WalletExt)
 }
 
 // Options options that could be used when creating a wallet
 type Options struct {
 	Type           string            // wallet type: deterministic, collection. Refers to which key generation mechanism is used.
-	Coin           meta.CoinType     // coin type: skycoin, bitcoin, etc. Refers to which pubkey2addr method is used.
+	Coin           CoinType          // coin type: skycoin, bitcoin, etc. Refers to which pubkey2addr method is used.
 	Bip44Coin      *bip44.CoinType   // bip44 path coin type
 	Label          string            // wallet label
 	Seed           string            // wallet seed
@@ -171,13 +172,13 @@ func (wcs walletCreators) get(walletType string) (walletCreateFunc, bool) {
 	return fn, ok
 }
 
-var registeredWalletCreators = walletCreators{
-	creators: map[string]walletCreateFunc{
-		WalletTypeBip44: func(filename string, opts Options, tf TransactionsFinder) (Wallet, error) {
-			return NewBip44Wallet(filename, opts, tf)
-		},
-	},
-}
+// var registeredWalletCreators = walletCreators{
+// 	creators: map[string]walletCreateFunc{
+// 		WalletTypeBip44: func(filename string, opts Options, tf TransactionsFinder) (Wallet, error) {
+// 			return NewBip44Wallet(filename, opts, tf)
+// 		},
+// 	},
+// }
 
 // newWallet creates a wallet instance with given name and options.
 // TODO: checks the options.GenerateN
@@ -516,13 +517,12 @@ func NewWalletScanAhead(wltName string, opts Options, tf TransactionsFinder) (Wa
 
 // Wallet defines the wallet API
 type Wallet interface {
-	// Find(string) string
 	Seed() string
 	LastSeed() string
 	SeedPassphrase() string
 	Timestamp() int64
 	SetTimestamp(int64)
-	Coin() meta.CoinType
+	Coin() CoinType
 	// Type returns the wallet type, e.g. bip44, deterministic, collection
 	Type() string
 	// Bip44Coin returns the coin_type part of bip44 path
@@ -533,46 +533,54 @@ type Wallet interface {
 	IsEncrypted() bool
 	// CryptoType returns the crypto type for encrypting/decrypting the wallet
 	CryptoType() crypto.CryptoType
+	// Version returns the wallet version
 	Version() string
 	// SetVersion(string)
-	// AddressConstructor() func(cipher.PubKey) cipher.Addresser
 	// Secrets returns the wallet secrets data
 	Secrets() string
+	// XPub returns the xpub key of a xpub wallet
 	XPub() string
-
-	// UnpackSecrets(ss secrets.Secrets) error
-	// PackSecrets(ss secrets.Secrets)
 	// Lock encrypts the wallet
 	Lock(password []byte) error
-	// Unlock decrypts the wallet, the callback function `fn` should accept a pointer of
-	// the decrypted wallet and wipes the sensitive data after calling the function.
+	// Unlock decrypts the wallets, returns an copy of the decrypted wallet
 	Unlock(password []byte) (Wallet, error)
-
 	// Erase wipes sensitive data
 	Erase()
+	// Clone returns a copy of the wallet
 	Clone() Wallet
-	// CopyFrom(src Wallet)
+	// CopyFrom copies the src wallet to w
+	CopyFrom(src Wallet)
+	// CopyFromRef copies the src wallet with a pointer dereference
 	CopyFromRef(src Wallet)
 
-	// ToReadable() Readable
-
-	// Validate() error
 	Fingerprint() string
-	GetAddresses() ([]cipher.Address, error)
-	//GetEntryAt(i int) (entry.Entry, error)
-	GetEntry(cipher.Address) (entry.Entry, bool)
-	HasEntry(cipher.Address) bool
-	EntriesLen() int
-	GetEntries() (entry.Entries, error)
-
-	GenerateAddresses(num uint64) ([]cipher.Address, error)
-	// GenerateSkycoinAddresses(num uint64) ([]cipher.Address, error)
-	ScanAddresses(scanN uint64, tf TransactionsFinder) ([]cipher.Address, error)
-
+	// Accounts returns the list of account for bip44 wallet
+	Accounts() []Bip44Account
+	// Entries
+	Entries(options ...Option) EntriesService
 	// Serialize serialize the wallet to bytes, and error if any
 	Serialize() ([]byte, error)
 	// Deserialize deserialize the data to a Wallet, and error if any
 	Deserialize(data []byte) error
+}
+
+// Bip44Account represents the wallet account
+type Bip44Account struct {
+	Name  string
+	Index uint32
+}
+
+// EntriesService is an interface that provides methods to interact with the wallet entries.
+type EntriesService interface {
+	Entries() (Entries, error)
+	GetEntryAt(i int) (Entry, error)
+	GetEntry(cipher.Addresser) (Entry, error)
+	HasEntry(cipher.Addresser) (bool, error)
+	Len() (int, error)
+	GetAddresses() ([]cipher.Addresser, error)
+	GenerateAddresses(num uint64) ([]cipher.Addresser, error)
+	// ScanAddresses scans ahead given number of addresses
+	ScanAddresses(scanN uint64, tf TransactionsFinder) ([]cipher.Addresser, error)
 }
 
 // GuardUpdate executes a function within the context of a read-write managed decrypted wallet.
@@ -635,12 +643,12 @@ type walletLoadMeta struct {
 	} `json:"meta"`
 }
 
-type walletLoader interface {
-	SetFilename(string)
-	SetCoin(meta.CoinType)
-	Coin() meta.CoinType
-	ToWallet() (Wallet, error)
-}
+//type walletLoader interface {
+//	SetFilename(string)
+//	SetCoin(CoinType)
+//	Coin() CoinType
+//	ToWallet() (Wallet, error)
+//}
 
 // Load loads wallet from a given file
 func Load(filename string) (Wallet, error) {
@@ -819,13 +827,13 @@ func IsValidWalletType(t string) bool {
 }
 
 // AddressConstructor returns a function to create a cipher.Addresser from a cipher.PubKey
-func AddressConstructor(m meta.Meta) func(cipher.PubKey) cipher.Addresser {
+func AddressConstructor(m Meta) func(cipher.PubKey) cipher.Addresser {
 	switch m.Coin() {
-	case meta.CoinTypeSkycoin:
+	case CoinTypeSkycoin:
 		return func(pk cipher.PubKey) cipher.Addresser {
 			return cipher.AddressFromPubKey(pk)
 		}
-	case meta.CoinTypeBitcoin:
+	case CoinTypeBitcoin:
 		return func(pk cipher.PubKey) cipher.Addresser {
 			return cipher.BitcoinAddressFromPubKey(pk)
 		}

@@ -312,7 +312,7 @@ func (serv *Service) DecryptWallet(wltID string, password []byte) (Wallet, error
 // }
 
 // NewAddresses generate addresses
-func (serv *Service) NewAddresses(wltID string, num uint64) ([]cipher.Address, error) {
+func (serv *Service) NewAddresses(wltID string, password []byte, num uint64, options ...Option) ([]cipher.Address, error) {
 	serv.Lock()
 	defer serv.Unlock()
 
@@ -325,9 +325,34 @@ func (serv *Service) NewAddresses(wltID string, num uint64) ([]cipher.Address, e
 		return nil, err
 	}
 
-	addrs, err := w.GenerateAddresses(num)
-	if err != nil {
-		return nil, err
+	var addrs []cipher.Addresser
+	f := func(w Wallet) error {
+		var err error
+		addrs, err = w.Entries(options...).GenerateAddresses(num)
+		return err
+	}
+
+	// TODO: Test this
+	if w.IsEncrypted() {
+		// Bip44 can generate addresses without unlocking the wallet
+		// This will generate addresses on bip44 external chain
+		if w.Type() == WalletTypeBip44 {
+			if err := f(w); err != nil {
+				return nil, err
+			}
+		} else {
+			if err := GuardUpdate(w, password, f); err != nil {
+				return nil, err
+			}
+		}
+	} else {
+		if len(password) != 0 {
+			return nil, ErrWalletNotEncrypted
+		}
+
+		if err := f(w); err != nil {
+			return nil, err
+		}
 	}
 
 	// Checks if the wallet file is writable
@@ -342,12 +367,11 @@ func (serv *Service) NewAddresses(wltID string, num uint64) ([]cipher.Address, e
 	}
 
 	serv.wallets.set(w)
-
-	return addrs, nil
+	return convertToSkyAddrs(addrs), nil
 }
 
 // ScanAddresses scan ahead addresses to see if contains balance.
-func (serv *Service) ScanAddresses(wltID string, password []byte, num uint64, tf TransactionsFinder) ([]cipher.Address, error) {
+func (serv *Service) ScanAddresses(wltID string, password []byte, num uint64, tf TransactionsFinder, options ...Option) ([]cipher.Address, error) {
 	serv.Lock()
 	defer serv.Unlock()
 	if !serv.config.EnableWalletAPI {
@@ -359,25 +383,25 @@ func (serv *Service) ScanAddresses(wltID string, password []byte, num uint64, tf
 		return nil, err
 	}
 
-	var addrs []cipher.Address
+	var addrs []cipher.Addresser
 	f := func(w Wallet) error {
 		var err error
-		addrs, err = w.ScanAddresses(num, tf)
-		if err != nil {
-			return err
-		}
-
-		return nil
+		addrs, err = w.Entries(options...).ScanAddresses(num, tf)
+		return err
 	}
 
 	// For bip44 wallets, there is no need to unlock the wallets even it is encrypted.
 	if w.Type() == WalletTypeBip44 {
+		if len(password) != 0 {
+			return nil, NewError(errors.New("password is not required for scanning bip44 wallet addresses"))
+		}
+
 		if err := f(w); err != nil {
 			return nil, err
 		}
 	} else {
 		if w.IsEncrypted() {
-			if err := w.Unlock(password, f); err != nil {
+			if err := GuardUpdate(w, password, f); err != nil {
 				return nil, err
 			}
 		} else {
@@ -406,7 +430,7 @@ func (serv *Service) ScanAddresses(wltID string, password []byte, num uint64, tf
 	serv.wallets.set(w)
 
 	// return new generated addresses
-	return addrs, nil
+	return convertToSkyAddrs(addrs), nil
 }
 
 // GetSkycoinAddresses returns all addresses in given wallet
@@ -426,7 +450,7 @@ func (serv *Service) ScanAddresses(wltID string, password []byte, num uint64, tf
 // }
 
 // GetAddresses returns all addresses of the selected wallet
-func (serv *Service) GetAddresses(wltID string) ([]cipher.Address, error) {
+func (serv *Service) GetAddresses(wltID string, options ...Option) ([]cipher.Address, error) {
 	serv.RLock()
 	defer serv.RUnlock()
 	if !serv.config.EnableWalletAPI {
@@ -437,8 +461,12 @@ func (serv *Service) GetAddresses(wltID string) ([]cipher.Address, error) {
 	if err != nil {
 		return nil, err
 	}
+	addrs, err := w.Entries(options...).GetAddresses()
+	if err != nil {
+		return nil, err
+	}
 
-	return w.GetAddresses()
+	return convertToSkyAddrs(addrs), nil
 }
 
 // GetWallet returns wallet by id
@@ -551,8 +579,7 @@ func (serv *Service) GetWalletSeed(wltID string, password []byte) (string, strin
 	}
 
 	var seed, seedPassphrase string
-	// if err := GuardView(w, password, func(wlt Wallet) error {
-	if err := w.Unlock(password, func(wlt Wallet) error {
+	if err := GuardView(w, password, func(wlt Wallet) error {
 		seed = wlt.Seed()
 		seedPassphrase = wlt.SeedPassphrase()
 		return nil
@@ -561,6 +588,41 @@ func (serv *Service) GetWalletSeed(wltID string, password []byte) (string, strin
 	}
 
 	return seed, seedPassphrase, nil
+}
+
+// UpdateSecrets opens a wallet for modification of secret data and saves it safely
+func (serv *Service) UpdateSecrets(wltID string, password []byte, f func(Wallet) error) error {
+	serv.Lock()
+	defer serv.Unlock()
+	if !serv.config.EnableWalletAPI {
+		return ErrWalletAPIDisabled
+	}
+
+	w, err := serv.getWallet(wltID)
+	if err != nil {
+		return err
+	}
+
+	if w.IsEncrypted() {
+		if err := GuardUpdate(w, password, f); err != nil {
+			return err
+		}
+	} else if len(password) != 0 {
+		return ErrWalletNotEncrypted
+	} else {
+		if err := f(w); err != nil {
+			return err
+		}
+	}
+
+	// Save the wallet first
+	if err := Save(w, serv.config.WalletDir); err != nil {
+		return err
+	}
+
+	serv.wallets.set(w)
+
+	return nil
 }
 
 // Update opens a wallet for modification of non-secret data and saves it safely
@@ -604,7 +666,7 @@ func (serv *Service) ViewSecrets(wltID string, password []byte, f func(Wallet) e
 	}
 
 	if w.IsEncrypted() {
-		return w.Unlock(password, f)
+		return GuardView(w, password, f)
 	} else if len(password) != 0 {
 		return ErrWalletNotEncrypted
 	} else {
@@ -630,7 +692,7 @@ func (serv *Service) View(wltID string, f func(Wallet) error) error {
 
 // RecoverWallet recovers an encrypted wallet from seed.
 // The recovered wallet will be encrypted with the new password, if provided.
-func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string, password []byte) (Wallet, error) {
+func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string, password []byte, options ...Option) (Wallet, error) {
 	serv.Lock()
 	defer serv.Unlock()
 	if !serv.config.EnableWalletAPI {
@@ -670,6 +732,11 @@ func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string, passwor
 		return nil, ErrWalletRecoverSeedWrong
 	}
 
+	l, err := w.Entries(options...).Len()
+	if err != nil {
+		return nil, err
+	}
+
 	// Create a new wallet with the same number of addresses, encrypting if needed
 	w3, err := NewWallet(wltName, Options{
 		Type:           w.Type(),
@@ -681,7 +748,7 @@ func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string, passwor
 		Password:       password,
 		CryptoType:     w.CryptoType(),
 		Bip44Coin:      w.Bip44Coin(),
-		GenerateN:      uint64(w.EntriesLen()),
+		GenerateN:      uint64(l),
 	})
 	if err != nil {
 		return nil, err

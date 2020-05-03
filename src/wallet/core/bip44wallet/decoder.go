@@ -8,19 +8,18 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip32"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
-	"github.com/SkycoinProject/skycoin/src/wallet/entry"
-	"github.com/SkycoinProject/skycoin/src/wallet/meta"
+	"github.com/SkycoinProject/skycoin/src/wallet"
 )
 
 const metaAccountsHash = "metaAccountsHash"
 
-// Bip44WalletJSONDecoder implements the WalletDecoder interface,
+// JSONDecoder implements the Decoder interface,
 // which provides methods for encoding and decoding a bip44 wallet in JSON format.
-type Bip44WalletJSONDecoder struct{}
+type JSONDecoder struct{}
 
 // Encode encodes the bip44 wallet to []byte, and error, if any.
-func (d Bip44WalletJSONDecoder) Encode(w *Bip44WalletNew) ([]byte, error) {
-	rw, err := newReadableBip44WalletNew(w)
+func (d JSONDecoder) Encode(w Wallet) ([]byte, error) {
+	rw, err := newReadableBip44WalletNew(&w)
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +27,7 @@ func (d Bip44WalletJSONDecoder) Encode(w *Bip44WalletNew) ([]byte, error) {
 }
 
 // Decode decodes  the []byte to a bip44 wallet.
-func (d Bip44WalletJSONDecoder) Decode(b []byte) (*Bip44WalletNew, error) {
+func (d JSONDecoder) Decode(b []byte) (*Wallet, error) {
 	br := bytes.NewReader(b)
 	rw := readableBip44WalletNew{}
 	if err := json.NewDecoder(br).Decode(&rw); err != nil {
@@ -67,12 +66,12 @@ func (d Bip44WalletJSONDecoder) Decode(b []byte) (*Bip44WalletNew, error) {
 // of the accounts. It is used for verifying the integrity of the wallet accounts,
 // so that the wallet won't break after user edit the wallet file mistakenly.
 type readableBip44WalletNew struct {
-	meta.Meta `json:"meta"`
-	Accounts  readableBip44Accounts `json:"accounts"`
+	wallet.Meta `json:"meta"`
+	Accounts    readableBip44Accounts `json:"accounts"`
 }
 
 // newReadableBip44WalletNew creates a readable bip44 wallet
-func newReadableBip44WalletNew(w *Bip44WalletNew) (*readableBip44WalletNew, error) {
+func newReadableBip44WalletNew(w *Wallet) (*readableBip44WalletNew, error) {
 	ra, err := newReadableBip44Accounts(w.accounts.(*bip44Accounts))
 	if err != nil {
 		return nil, err
@@ -99,7 +98,7 @@ func newReadableBip44WalletNew(w *Bip44WalletNew) (*readableBip44WalletNew, erro
 }
 
 // toWallet converts the readable bip44 wallet to a bip44 wallet
-func (rw readableBip44WalletNew) toWallet() (*Bip44WalletNew, error) {
+func (rw readableBip44WalletNew) toWallet() (*Wallet, error) {
 	// resolve the coin adapter base on coin type
 	ca := resolveCoinAdapter(rw.Coin())
 
@@ -108,10 +107,10 @@ func (rw readableBip44WalletNew) toWallet() (*Bip44WalletNew, error) {
 		return nil, err
 	}
 
-	return &Bip44WalletNew{
+	return &Wallet{
 		Meta:     rw.Meta.Clone(),
 		accounts: accounts,
-		decoder:  &Bip44WalletJSONDecoder{},
+		decoder:  &JSONDecoder{},
 	}, nil
 }
 
@@ -125,7 +124,7 @@ func (ras readableBip44Accounts) toBip44Accounts(ca coinAdapter) (*bip44Accounts
 		a := bip44Account{
 			Name:     ra.Name,
 			Index:    ra.Index,
-			CoinType: meta.CoinType(ra.CoinType),
+			CoinType: wallet.CoinType(ra.CoinType),
 		}
 
 		// decode private key if not empty
@@ -215,7 +214,7 @@ func stringToChainIndex(s string) (int, error) {
 	}
 }
 
-func newBip44EntryFromReadable(re readableBip44Entry, ca coinAdapter) (*entry.Entry, error) {
+func newBip44EntryFromReadable(re readableBip44Entry, ca coinAdapter) (*wallet.Entry, error) {
 	addr, err := ca.DecodeBase58Address(re.Address)
 	if err != nil {
 		return nil, err
@@ -235,7 +234,7 @@ func newBip44EntryFromReadable(re readableBip44Entry, ca coinAdapter) (*entry.En
 		}
 	}
 
-	return &entry.Entry{
+	return &wallet.Entry{
 		Address:     addr,
 		Public:      p,
 		Secret:      secKey,

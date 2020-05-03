@@ -1,4 +1,4 @@
-package secrets
+package wallet
 
 import (
 	"encoding/json"

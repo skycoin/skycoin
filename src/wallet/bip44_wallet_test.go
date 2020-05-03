@@ -6,7 +6,6 @@ import (
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
-	"github.com/SkycoinProject/skycoin/src/wallet/meta"
 	"github.com/stretchr/testify/require"
 )
 
@@ -52,7 +51,7 @@ func getExternalAddrs(t *testing.T) []cipher.Address {
 func TestBip44WalletAssign(t *testing.T) {
 	w, err := NewBip44Wallet("test.wlt", Options{
 		Seed:           testSeed,
-		Coin:           meta.CoinTypeSkycoin,
+		Coin:           CoinTypeSkycoin,
 		SeedPassphrase: testSeedPassPhrase,
 	}, nil)
 
@@ -70,7 +69,7 @@ func TestBip44WalletAssign(t *testing.T) {
 
 	w1, err := NewBip44Wallet("test1.wlt", Options{
 		Seed:           "keep analyst jeans trip erosion race fantasy point spray dinner finger palm",
-		Coin:           meta.CoinTypeSkycoin,
+		Coin:           CoinTypeSkycoin,
 		SeedPassphrase: "54321",
 	}, nil)
 
@@ -97,7 +96,7 @@ func TestBip44WalletAssign(t *testing.T) {
 
 func TestPeekChangeAddress(t *testing.T) {
 	w, err := NewBip44Wallet("test1.wlt", Options{
-		Coin:           meta.CoinTypeSkycoin,
+		Coin:           CoinTypeSkycoin,
 		Seed:           testSeed,
 		SeedPassphrase: testSeedPassPhrase,
 	}, nil)
@@ -204,7 +203,7 @@ func TestWalletScanAddresses(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			w, err := NewBip44Wallet("test.wlt", Options{
-				Coin:           meta.CoinTypeSkycoin,
+				Coin:           CoinTypeSkycoin,
 				Seed:           testSeed,
 				SeedPassphrase: testSeedPassPhrase,
 			}, tc.txnFinder)
@@ -227,14 +226,14 @@ func TestBip44WalletUnlock(t *testing.T) {
 		options               Options
 		password              []byte
 		changeWalletFunc      func(w Wallet) error
-		expectedMeta          meta.Meta
+		expectedMeta          Meta
 		expectedExternalAddrN int
 		expectedChangeAddrN   int
 	}{
 		{
 			name: "no change",
 			options: Options{
-				Coin:           meta.CoinTypeSkycoin,
+				Coin:           CoinTypeSkycoin,
 				Seed:           testSeed,
 				SeedPassphrase: testSeedPassPhrase,
 				CryptoType:     crypto.CryptoTypeScryptChacha20poly1305Insecure,
@@ -249,7 +248,7 @@ func TestBip44WalletUnlock(t *testing.T) {
 		{
 			name: "change label",
 			options: Options{
-				Coin:           meta.CoinTypeSkycoin,
+				Coin:           CoinTypeSkycoin,
 				Seed:           testSeed,
 				SeedPassphrase: testSeedPassPhrase,
 				CryptoType:     crypto.CryptoTypeScryptChacha20poly1305Insecure,
@@ -259,21 +258,21 @@ func TestBip44WalletUnlock(t *testing.T) {
 				w.SetLabel("change_label")
 				return nil
 			},
-			expectedMeta:          meta.Meta{meta.MetaLabel: "change_label"},
+			expectedMeta:          Meta{MetaLabel: "change_label"},
 			expectedExternalAddrN: 1,
 			expectedChangeAddrN:   1,
 		},
 		{
 			name: "change filename, no commit",
 			options: Options{
-				Coin:           meta.CoinTypeSkycoin,
+				Coin:           CoinTypeSkycoin,
 				Seed:           testSeed,
 				SeedPassphrase: testSeedPassPhrase,
 				CryptoType:     crypto.CryptoTypeScryptChacha20poly1305Insecure,
 			},
 			password: []byte("12345"),
 			changeWalletFunc: func(w Wallet) error {
-				w.(*Bip44Wallet).Meta[meta.MetaFilename] = "filename_changed"
+				w.(*Bip44Wallet).Meta[MetaFilename] = "filename_changed"
 				return nil
 			},
 			expectedExternalAddrN: 1,
@@ -282,7 +281,7 @@ func TestBip44WalletUnlock(t *testing.T) {
 		{
 			name: "new external addresses",
 			options: Options{
-				Coin:           meta.CoinTypeSkycoin,
+				Coin:           CoinTypeSkycoin,
 				Seed:           testSeed,
 				SeedPassphrase: testSeedPassPhrase,
 				CryptoType:     crypto.CryptoTypeScryptChacha20poly1305Insecure,
@@ -298,7 +297,7 @@ func TestBip44WalletUnlock(t *testing.T) {
 		{
 			name: "new change addresses",
 			options: Options{
-				Coin:           meta.CoinTypeSkycoin,
+				Coin:           CoinTypeSkycoin,
 				Seed:           testSeed,
 				SeedPassphrase: testSeedPassPhrase,
 				CryptoType:     crypto.CryptoTypeScryptChacha20poly1305Insecure,
@@ -314,7 +313,7 @@ func TestBip44WalletUnlock(t *testing.T) {
 		{
 			name: "new external and change addresses",
 			options: Options{
-				Coin:           meta.CoinTypeSkycoin,
+				Coin:           CoinTypeSkycoin,
 				Seed:           testSeed,
 				SeedPassphrase: testSeedPassPhrase,
 				CryptoType:     crypto.CryptoTypeScryptChacha20poly1305Insecure,

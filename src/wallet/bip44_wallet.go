@@ -5,10 +5,8 @@ import (
 	"fmt"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/wallet/bip44wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/core/bip44wallet"
 	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
-	"github.com/SkycoinProject/skycoin/src/wallet/entry"
-	"github.com/SkycoinProject/skycoin/src/wallet/meta"
 	"github.com/sirupsen/logrus"
 )
 
@@ -21,12 +19,12 @@ const (
 // With this generator, a single chain of addresses is created, each one dependent
 // on the previous.
 type Bip44Wallet struct {
-	*bip44wallet.Bip44WalletNew
+	*bip44wallet.Wallet
 }
 
 // LoadBip44Wallet loads wallet from data
 func LoadBip44Wallet(data []byte) (Wallet, error) {
-	w := &bip44wallet.Bip44WalletNew{}
+	w := &bip44wallet.Wallet{}
 	if err := w.Deserialize(data); err != nil {
 		return nil, err
 	}
@@ -56,14 +54,14 @@ func NewBip44Wallet(filename string, opts Options, tf TransactionsFinder) (*Bip4
 
 	coin := opts.Coin
 	if coin == "" {
-		coin = meta.CoinTypeSkycoin
+		coin = CoinTypeSkycoin
 	}
-	coin, err := meta.ResolveCoinType(string(coin))
+	coin, err := ResolveCoinType(string(coin))
 	if err != nil {
 		return nil, err
 	}
 
-	wlt, err := bip44wallet.NewBip44WalletNew(bip44wallet.Bip44WalletCreateOptions{
+	wlt, err := bip44wallet.NewWallet(bip44wallet.Options{
 		Filename:       filename,
 		Version:        Version,
 		Label:          opts.Label,
@@ -103,7 +101,7 @@ func NewBip44Wallet(filename string, opts Options, tf TransactionsFinder) (*Bip4
 		return nil, err
 	}
 
-	if opts.ScanN != 0 && coin != meta.CoinTypeSkycoin {
+	if opts.ScanN != 0 && coin != CoinTypeSkycoin {
 		return nil, errors.New("Wallet scanning is only supported for Skycoin address wallets")
 	}
 
@@ -140,8 +138,8 @@ func NewBip44Wallet(filename string, opts Options, tf TransactionsFinder) (*Bip4
 
 // Clone makes a copy the bip44 wallet
 func (w *Bip44Wallet) Clone() Wallet {
-	cw := w.Bip44WalletNew.Clone()
-	return &Bip44Wallet{Bip44WalletNew: &cw}
+	cw := w.Wallet.Clone()
+	return &Bip44Wallet{Wallet: &cw}
 }
 
 // CopyFromRef copies the src wallet with a pointer dereference
@@ -151,26 +149,26 @@ func (w *Bip44Wallet) CopyFromRef(src Wallet) {
 
 // CryptoType returns the crypto type that is used for encrypting/decrypting wallet
 func (w *Bip44Wallet) CryptoType() crypto.CryptoType {
-	return w.Bip44WalletNew.CryptoType()
+	return w.Wallet.CryptoType()
 }
 
 // Lock encrypts the wallet
 func (w *Bip44Wallet) Lock(password []byte) error {
-	return w.Bip44WalletNew.Lock(password)
+	return w.Wallet.Lock(password)
 }
 
 func (w *Bip44Wallet) Unlock(password []byte) (Wallet, error) {
-	wlt, err := w.Bip44WalletNew.Unlock(password)
+	wlt, err := w.Wallet.Unlock(password)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Bip44Wallet{Bip44WalletNew: wlt}, nil
+	return &Bip44Wallet{Wallet: wlt}, nil
 }
 
 // Unlock decrypts the wallet
 //func (w *Bip44Wallet) Unlock(password []byte, f func(w Wallet) error) error {
-//	wlt, err := w.Bip44WalletNew.Unlock(password)
+//	wlt, err := w.Wallet.Unlock(password)
 //	if err != nil {
 //		return err
 //	}
@@ -191,12 +189,12 @@ func (w *Bip44Wallet) Unlock(password []byte) (Wallet, error) {
 
 // Secrets returns the value of meta.MetaSecrets
 func (w *Bip44Wallet) Secrets() string {
-	return w.Meta[meta.MetaSecrets]
+	return w.Meta[MetaSecrets]
 }
 
 // newBip44Wallet creates a Bip44Wallet
 // func newBip44Wallet(meta meta.Meta) (*Bip44Wallet, error) { //nolint:unparam
-// 	return bip44wallet.NewBip44WalletNew(bip44wallet.Bip44WalletCreateOptions{})
+// 	return bip44wallet.NewWallet(bip44wallet.Options{})
 // }
 
 // // CopyFrom copies the src wallet to w
@@ -256,7 +254,7 @@ func (w *Bip44Wallet) Secrets() string {
 // }
 
 // GetEntries returns a copy of all entries held by the wallet
-func (w *Bip44Wallet) GetEntries() (entry.Entries, error) {
+func (w *Bip44Wallet) GetEntries() (Entries, error) {
 	eEntries, err := w.ExternalEntries(defaultAccount)
 	if err != nil {
 		return nil, err
@@ -288,11 +286,11 @@ func (w *Bip44Wallet) EntriesLen() int {
 }
 
 // GetEntry returns entry of given address
-func (w *Bip44Wallet) GetEntry(a cipher.Address) (entry.Entry, bool) {
-	e, ok, err := w.Bip44WalletNew.GetEntry(defaultAccount, a)
+func (w *Bip44Wallet) GetEntry(a cipher.Address) (Entry, bool) {
+	e, ok, err := w.Wallet.GetEntry(defaultAccount, a)
 	if err != nil {
 		logger.WithError(err).Panic("Get entry failed")
-		return entry.Entry{}, false
+		return Entry{}, false
 	}
 
 	return e, ok
@@ -300,7 +298,7 @@ func (w *Bip44Wallet) GetEntry(a cipher.Address) (entry.Entry, bool) {
 
 // HasEntry returns true if the wallet has an entry.Entry with a given cipher.Address.
 func (w *Bip44Wallet) HasEntry(a cipher.Address) bool {
-	_, ok, err := w.Bip44WalletNew.GetEntry(defaultAccount, a)
+	_, ok, err := w.Wallet.GetEntry(defaultAccount, a)
 	if err != nil {
 		logger.WithError(err).Panic("HasEntry getting entry failed")
 		return false

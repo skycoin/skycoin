@@ -1,4 +1,4 @@
-package meta
+package wallet
 
 import (
 	"errors"
@@ -28,15 +28,15 @@ const (
 	MetaXPub           = "xpub"           // xpub key [xpub wallets]
 )
 
-const (
-	// CoinTypeSkycoin skycoin type
-	CoinTypeSkycoin CoinType = "skycoin"
-	// CoinTypeBitcoin bitcoin type
-	CoinTypeBitcoin CoinType = "bitcoin"
-)
+//const (
+//	// CoinTypeSkycoin skycoin type
+//	CoinTypeSkycoin CoinType = "skycoin"
+//	// CoinTypeBitcoin bitcoin type
+//	CoinTypeBitcoin CoinType = "bitcoin"
+//)
 
 // CoinType represents the wallet coin type, which refers to the pubkey2addr method used
-type CoinType string
+//type CoinType string
 
 // Meta holds wallet metadata
 type Meta map[string]string

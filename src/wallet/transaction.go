@@ -7,7 +7,6 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/coin"
 	"github.com/SkycoinProject/skycoin/src/transaction"
-	"github.com/SkycoinProject/skycoin/src/wallet/entry"
 )
 
 var (
@@ -233,7 +232,7 @@ func CreateTransactionSigned(w Wallet, p transaction.Params, auxs coin.AddressUx
 	logger.Infof("CreateTransactionSigned: signing %d inputs", len(uxb))
 
 	// Sign the transaction
-	entriesMap := make(map[cipher.Address]entry.Entry)
+	entriesMap := make(map[cipher.Address]Entry)
 	for i, s := range uxb {
 		entry, ok := entriesMap[s.Address]
 		if !ok {

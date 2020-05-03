@@ -1,4 +1,4 @@
-package entry
+package wallet
 
 import (
 	"encoding/hex"

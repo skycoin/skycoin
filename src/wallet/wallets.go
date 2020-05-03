@@ -5,8 +5,6 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"strings"
-
-	"github.com/SkycoinProject/skycoin/src/wallet/meta"
 )
 
 // Wallets wallets map
@@ -51,7 +49,7 @@ func loadWallets(dir string) (Wallets, error) {
 		// 	return nil, err
 		// }
 
-		if w.Coin() != meta.CoinTypeSkycoin {
+		if w.Coin() != CoinTypeSkycoin {
 			err := fmt.Errorf("LoadWallets only support skycoin wallets, %s is a %s wallet", name, w.Coin())
 			logger.WithError(err).WithField("name", name).Error()
 			return nil, err
@@ -115,8 +113,27 @@ func (wlts Wallets) containsEmpty() (string, bool) {
 		switch wlt.Type() {
 		case WalletTypeCollection:
 			continue
+		case WalletTypeBip44:
+			var l int
+			// gets the external entries length
+			for _, a := range wlt.Accounts() {
+				el, err := wlt.Entries(Account(a.Index)).Len()
+				if err != nil {
+					panic(err)
+				}
+				l += el
+			}
+
+			if l == 0 {
+				return wltID, true
+			}
 		default:
-			if wlt.EntriesLen() == 0 {
+			l, err := wlt.Entries().Len()
+			if err != nil {
+				panic(err)
+			}
+
+			if l == 0 {
 				return wltID, true
 			}
 		}

@@ -18,8 +18,8 @@ const metaAccountsHash = "metaAccountsHash"
 type JSONDecoder struct{}
 
 // Encode encodes the bip44 wallet to []byte, and error, if any.
-func (d JSONDecoder) Encode(w Wallet) ([]byte, error) {
-	rw, err := newReadableBip44WalletNew(&w)
+func (d JSONDecoder) Encode(w wallet.Wallet) ([]byte, error) {
+	rw, err := newReadableBip44WalletNew(w.(*Wallet))
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +27,7 @@ func (d JSONDecoder) Encode(w Wallet) ([]byte, error) {
 }
 
 // Decode decodes  the []byte to a bip44 wallet.
-func (d JSONDecoder) Decode(b []byte) (*Wallet, error) {
+func (d JSONDecoder) Decode(b []byte) (wallet.Wallet, error) {
 	br := bytes.NewReader(b)
 	rw := readableBip44WalletNew{}
 	if err := json.NewDecoder(br).Decode(&rw); err != nil {
@@ -84,13 +84,10 @@ func newReadableBip44WalletNew(w *Wallet) (*readableBip44WalletNew, error) {
 
 	b, err := json.Marshal(ra)
 	if err != nil {
-		return nil, fmt.Errorf("Encode bip44 accounts failed: %v", err)
+		return nil, fmt.Errorf("encode bip44 accounts failed: %v", err)
 	}
 
 	hash := cipher.SumSHA256(b)
-	if err != nil {
-		return nil, fmt.Errorf("Hash bip44 accounts failed: %v", err)
-	}
 
 	// Set accountsHash meta info
 	rw.Meta[metaAccountsHash] = hash.Hex()
@@ -259,9 +256,9 @@ type readableBip44Entry struct {
 func newReadableBip44Accounts(as *bip44Accounts) (*readableBip44Accounts, error) {
 	var ras readableBip44Accounts
 	for _, a := range as.accounts {
-		ca := resolveCoinAdapter(a.CoinType)
+		d := wallet.ResolveAddressSecKeyDecoder(a.CoinType)
 
-		rc, err := newReadableBip44Chains(a.Chains, ca)
+		rc, err := newReadableBip44Chains(a.Chains, d)
 		if err != nil {
 			return nil, err
 		}

@@ -564,6 +564,13 @@ type Wallet interface {
 	Deserialize(data []byte) error
 }
 
+// Decoder is the interface that wraps the Encode and Decode methods.
+// Encode method encodes the wallet to bytes, Decode method decodes bytes to bip44 wallet.
+type Decoder interface {
+	Encode(w Wallet) ([]byte, error)
+	Decode(b []byte) (*Wallet, error)
+}
+
 // Bip44Account represents the wallet account
 type Bip44Account struct {
 	Name  string

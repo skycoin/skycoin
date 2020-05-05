@@ -36,7 +36,7 @@ type Wallet struct {
 	// accounts bip44 wallet accounts
 	accounts accountManager
 	// decoder is used to encode/decode bip44 wallet to/from []byte
-	decoder Decoder
+	decoder wallet.Decoder
 }
 
 // accountManager is the interface that manages the bip44 wallet accounts.
@@ -71,13 +71,6 @@ type accountManager interface {
 	all() []wallet.Bip44Account
 }
 
-// Decoder is the interface that wraps the Encode and Decode methods.
-// Encode method encodes the wallet to bytes, Decode method decodes bytes to bip44 wallet.
-type Decoder interface {
-	Encode(w Wallet) ([]byte, error)
-	Decode(b []byte) (*Wallet, error)
-}
-
 // ChainEntry represents an item on the bip44 wallet chain
 type ChainEntry struct {
 	Address cipher.Addresser
@@ -88,7 +81,7 @@ type Options struct {
 	Version       string
 	Bip44CoinType *bip44.CoinType
 	CryptoType    crypto.CryptoType
-	WalletDecoder Decoder
+	WalletDecoder wallet.Decoder
 }
 
 // NewWallet create a bip44 wallet with options
@@ -283,7 +276,7 @@ func (w Wallet) Serialize() ([]byte, error) {
 	if w.decoder == nil {
 		w.decoder = defaultBip44WalletDecoder
 	}
-	return w.decoder.Encode(w)
+	return w.decoder.Encode(&w)
 }
 
 // Deserialize decodes the []byte to a bip44 wallet
@@ -295,9 +288,10 @@ func (w *Wallet) Deserialize(b []byte) error {
 	if err != nil {
 		return err
 	}
+	toW2 := toW.(*Wallet)
 
-	toW.decoder = w.decoder
-	*w = *toW
+	toW2.decoder = w.decoder
+	*w = *toW2
 	return nil
 }
 
@@ -647,6 +641,11 @@ func (w *Wallet) unpackSecrets(ss wallet.Secrets) error {
 	w.Meta.SetSeedPassphrase(passphrase)
 
 	return w.accounts.unpackSecrets(ss)
+}
+
+// TODO: implement this
+func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]cipher.Addresser, error) {
+	return nil, nil
 }
 
 func makeChainPubKeys(a *bip44.Account) (*bip32.PublicKey, *bip32.PublicKey, error) {

@@ -554,8 +554,9 @@ type Wallet interface {
 	CopyFrom(src Wallet)
 	// CopyFromRef copies the src wallet with a pointer dereference
 	CopyFromRef(src Wallet)
-
 	Fingerprint() string
+	// ScanAddresses scans ahead given number of addresses
+	ScanAddresses(scanN uint64, tf TransactionsFinder) ([]cipher.Addresser, error)
 	// Accounts returns the list of account for bip44 wallet
 	Accounts() []Bip44Account
 	// Entries
@@ -570,7 +571,7 @@ type Wallet interface {
 // Encode method encodes the wallet to bytes, Decode method decodes bytes to bip44 wallet.
 type Decoder interface {
 	Encode(w Wallet) ([]byte, error)
-	Decode(b []byte) (*Wallet, error)
+	Decode(b []byte) (Wallet, error)
 }
 
 // Bip44Account represents the wallet account
@@ -588,8 +589,6 @@ type EntriesService interface {
 	Len() (int, error)
 	GetAddresses() ([]cipher.Addresser, error)
 	GenerateAddresses(num uint64) ([]cipher.Addresser, error)
-	// ScanAddresses scans ahead given number of addresses
-	ScanAddresses(scanN uint64, tf TransactionsFinder) ([]cipher.Addresser, error)
 }
 
 // GuardUpdate executes a function within the context of a read-write managed decrypted wallet.

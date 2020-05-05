@@ -41,7 +41,7 @@ func newBip44Account(opts bip44AccountCreateOptions) (*bip44Account, error) {
 		return nil, err
 	}
 
-	ca := wallet.ResolveCoinAdapter(opts.coinType)
+	ca := wallet.ResolveAddressSecKeyDecoder(opts.coinType)
 	if opts.bip44CoinType == nil {
 		return nil, errors.New("newBip44Account missing bip44 coin type")
 	}
@@ -654,12 +654,4 @@ func (a accountEntriesService) GenerateAddresses(num uint64) ([]cipher.Addresser
 		return nil, a.err
 	}
 	return a.newAddresses(a.chain, uint32(num))
-}
-
-// TODO: implement this
-func (a accountEntriesService) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]cipher.Addresser, error) {
-	if a.err != nil {
-		return nil, a.err
-	}
-	return nil, nil
 }

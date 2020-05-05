@@ -38,14 +38,14 @@ func (a addressSecKeyDecoders) add(coinType CoinType, ca AddressSecKeyDecoder) e
 }
 
 // RegisterCoinAdapter registers a new adapter
-func RegisterCoinAdapter(coinType CoinType, ca AddressSecKeyDecoder) error {
-	return registeredAddressSecKeyDecoders.add(coinType, ca)
+func RegisterAddressSecKeyDecoder(coinType CoinType, d AddressSecKeyDecoder) error {
+	return registeredAddressSecKeyDecoders.add(coinType, d)
 }
 
-// ResolveCoinAdapter returns a coin adapter by coin type,
-// if the corresponding adapter of given coin type is not found, returns
-// the skycoin adapter.
-func ResolveCoinAdapter(coinType CoinType) AddressSecKeyDecoder {
+// ResolveAddressSecKeyDecoder returns a address and seckey decoder by coin type,
+// if the corresponding decoder of is not found, returns
+// the skycoin decoder.
+func ResolveAddressSecKeyDecoder(coinType CoinType) AddressSecKeyDecoder {
 	return registeredAddressSecKeyDecoders.get(coinType)
 }
 

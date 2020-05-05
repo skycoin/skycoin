@@ -100,9 +100,9 @@ func newReadableBip44WalletNew(w *Wallet) (*readableBip44WalletNew, error) {
 // toWallet converts the readable bip44 wallet to a bip44 wallet
 func (rw readableBip44WalletNew) toWallet() (*Wallet, error) {
 	// resolve the coin adapter base on coin type
-	ca := resolveCoinAdapter(rw.Coin())
+	d := wallet.ResolveAddressSecKeyDecoder(rw.Coin())
 
-	accounts, err := rw.Accounts.toBip44Accounts(ca)
+	accounts, err := rw.Accounts.toBip44Accounts(d)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,7 @@ func (rw readableBip44WalletNew) toWallet() (*Wallet, error) {
 type readableBip44Accounts []*readableBip44Account
 
 // ToBip44Accounts converts readable bip44 accounts to bip44 accounts
-func (ras readableBip44Accounts) toBip44Accounts(ca coinAdapter) (*bip44Accounts, error) {
+func (ras readableBip44Accounts) toBip44Accounts(d wallet.AddressSecKeyDecoder) (*bip44Accounts, error) {
 	as := bip44Accounts{}
 	for _, ra := range ras {
 		a := bip44Account{
@@ -137,7 +137,7 @@ func (ras readableBip44Accounts) toBip44Accounts(ca coinAdapter) (*bip44Accounts
 		}
 
 		for _, rc := range ra.Chains {
-			c, err := rc.toBip44Chain(ca)
+			c, err := rc.toBip44Chain(d)
 			if err != nil {
 				return nil, err
 			}
@@ -166,7 +166,7 @@ type readableBip44Chain struct {
 	Entries readableBip44Entries `json:"entries"`
 }
 
-func (rc readableBip44Chain) toBip44Chain(ca coinAdapter) (*bip44Chain, error) {
+func (rc readableBip44Chain) toBip44Chain(d wallet.AddressSecKeyDecoder) (*bip44Chain, error) {
 	pubkey, err := bip32.DeserializeEncodedPublicKey(rc.PubKey)
 	if err != nil {
 		return nil, err
@@ -183,7 +183,7 @@ func (rc readableBip44Chain) toBip44Chain(ca coinAdapter) (*bip44Chain, error) {
 	}
 
 	for _, re := range rc.Entries.Entries {
-		e, err := newBip44EntryFromReadable(re, ca)
+		e, err := newBip44EntryFromReadable(re, d)
 		if err != nil {
 			return nil, err
 		}
@@ -214,8 +214,8 @@ func stringToChainIndex(s string) (int, error) {
 	}
 }
 
-func newBip44EntryFromReadable(re readableBip44Entry, ca coinAdapter) (*wallet.Entry, error) {
-	addr, err := ca.DecodeBase58Address(re.Address)
+func newBip44EntryFromReadable(re readableBip44Entry, d wallet.AddressSecKeyDecoder) (*wallet.Entry, error) {
+	addr, err := d.DecodeBase58Address(re.Address)
 	if err != nil {
 		return nil, err
 	}
@@ -228,7 +228,7 @@ func newBip44EntryFromReadable(re readableBip44Entry, ca coinAdapter) (*wallet.E
 	var secKey cipher.SecKey
 	if re.Secret != "" {
 		var err error
-		secKey, err = ca.SecKeyFromHex(re.Secret)
+		secKey, err = d.SecKeyFromHex(re.Secret)
 		if err != nil {
 			return nil, err
 		}
@@ -281,7 +281,7 @@ func newReadableBip44Accounts(as *bip44Accounts) (*readableBip44Accounts, error)
 	return &ras, nil
 }
 
-func newReadableBip44Chains(cs []bip44Chain, ca coinAdapter) ([]readableBip44Chain, error) {
+func newReadableBip44Chains(cs []bip44Chain, d wallet.SecKeyDecoder) ([]readableBip44Chain, error) {
 	var rcs []readableBip44Chain
 	for _, c := range cs {
 		chainIndexStr, err := chainIndexToString(c.ChainIndex)
@@ -296,7 +296,7 @@ func newReadableBip44Chains(cs []bip44Chain, ca coinAdapter) ([]readableBip44Cha
 		for _, e := range c.Entries {
 			var secret string
 			if !e.Secret.Null() {
-				secret = ca.SecKeyToHex(e.Secret)
+				secret = d.SecKeyToHex(e.Secret)
 			}
 
 			rc.Entries.Entries = append(rc.Entries.Entries, readableBip44Entry{

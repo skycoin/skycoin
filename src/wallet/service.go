@@ -30,16 +30,32 @@ type Service struct {
 	// fingerprints is used to check for duplicate deterministic wallets
 	fingerprints map[string]string
 	// registered wallet backends
-	loaders map[string]Loader
+	loaders  map[string]Loader
+	creators map[string]Creator
 }
 
-// Loader is the interface that wraps the Load and Type methods.
+// Typer is the interface that wraps the Type method.
+//
+// Typer returns the wallet type
+type Typer interface {
+	Type() string
+}
+
+// Loader is the interface that wraps the Load method and Typer interface.
 //
 // Load loads wallet from specific wallet file path.
-// Type returns the wallet type
 type Loader interface {
+	Typer
 	Load(data []byte) (Wallet, error)
-	Type() string
+}
+
+// Creator is the interface that wraps the Create and Type methods.
+//
+// Create creates a wallet base on the parameters
+// Type returns the type of wallet
+type Creator interface {
+	Typer
+	Create(filename, label, seed string, options *Options) (Wallet, error)
 }
 
 // Config wallet service config
@@ -50,6 +66,7 @@ type Config struct {
 	EnableSeedAPI   bool
 	Bip44Coin       *bip44.CoinType
 	WalletLoaders   []Loader
+	WalletCreators  []Creator
 }
 
 // NewConfig creates a default Config
@@ -87,6 +104,11 @@ func NewService(c Config) (*Service, error) {
 	// loads the wallet loaders
 	for _, l := range c.WalletLoaders {
 		serv.loaders[l.Type()] = l
+	}
+
+	// loads the wallet creators
+	for _, ctr := range c.WalletCreators {
+		serv.creators[ctr.Type()] = ctr
 	}
 
 	// Load all wallets from disk
@@ -240,29 +262,58 @@ func (serv *Service) CreateWallet(wltName string, options Options, tf Transactio
 	return serv.loadWallet(wltName, options, tf)
 }
 
+func (serv *Service) createWallet(wltName string, options Options) (Wallet, error) {
+	creator, ok := serv.creators[options.Type]
+	if !ok {
+		return nil, ErrInvalidWalletType
+	}
+
+	return creator.Create(wltName, options.Label, options.Seed, &options)
+}
+
+func (serv *Service) createWalletScanAhead(wltName string, options Options, tf TransactionsFinder) (Wallet, error) {
+	w, err := serv.createWallet(wltName, options)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = w.ScanAddresses(options.ScanN, tf)
+	if err != nil {
+		return nil, err
+	}
+
+	return w, nil
+}
+
 // loadWallet loads wallet from seed and scan the first N addresses
 func (serv *Service) loadWallet(wltName string, options Options, tf TransactionsFinder) (Wallet, error) {
 	options = serv.updateOptions(options)
-	w, err := NewWalletScanAhead(wltName, options, tf)
+
+	w, err := serv.createWalletScanAhead(wltName, options, tf)
 	if err != nil {
 		return nil, err
 	}
 
 	fingerprint := w.Fingerprint()
+	// Note: collection wallets do not have fingerprints
 	if fingerprint != "" {
 		if _, ok := serv.fingerprints[fingerprint]; ok {
-			// Note: collection wallets do not have fingerprints
-			switch w.Type() {
-			case WalletTypeDeterministic, WalletTypeBip44:
-				return nil, ErrSeedUsed
-			case WalletTypeXPub:
-				return nil, ErrXPubKeyUsed
-			default:
-				logger.WithFields(logrus.Fields{
-					"walletType":  w.Type(),
-					"fingerprint": fingerprint,
-				}).Panic("Unhandled wallet type after fingerprint conflict")
-			}
+			logger.WithFields(logrus.Fields{
+				"walletType":  w.Type(),
+				"fingerprint": fingerprint,
+			}).Error("fingerprint conflict")
+			return nil, fmt.Errorf("fingerprint conflict for %q wallet", w.Type())
+			//switch w.Type() {
+			//case WalletTypeDeterministic, WalletTypeBip44:
+			//	return nil, ErrSeedUsed
+			//case WalletTypeXPub:
+			//	return nil, ErrXPubKeyUsed
+			//default:
+			//	logger.WithFields(logrus.Fields{
+			//		"walletType":  w.Type(),
+			//		"fingerprint": fingerprint,
+			//	}).Panic("Unhandled wallet type after fingerprint conflict")
+			//}
 		}
 	}
 
@@ -489,7 +540,7 @@ func (serv *Service) ScanAddresses(wltID string, password []byte, num uint64, tf
 	var addrs []cipher.Addresser
 	f := func(w Wallet) error {
 		var err error
-		addrs, err = w.Entries(options...).ScanAddresses(num, tf)
+		addrs, err = w.ScanAddresses(num, tf)
 		return err
 	}
 
@@ -718,7 +769,7 @@ func (serv *Service) UpdateSecrets(wltID string, password []byte, f func(Wallet)
 		}
 	}
 
-	// Save the wallet first
+	// Save the wallet to disk
 	if err := Save(w, serv.config.WalletDir); err != nil {
 		return err
 	}
@@ -745,7 +796,7 @@ func (serv *Service) Update(wltID string, f func(Wallet) error) error {
 		return err
 	}
 
-	// Save the wallet first
+	// Save the wallet to disk
 	if err := Save(w, serv.config.WalletDir); err != nil {
 		return err
 	}

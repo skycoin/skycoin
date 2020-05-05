@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/SkycoinProject/skycoin/src/wallet/core/bip44wallet"
 	"github.com/blang/semver"
 	"github.com/toqueteos/webbrowser"
 
@@ -379,6 +380,14 @@ func (c *Coin) ConfigureWallet() wallet.Config {
 
 	bc := c.config.Node.Fiber.Bip44Coin
 	wc.Bip44Coin = &bc
+
+	wc.WalletLoaders = []wallet.Loader{
+		bip44wallet.Loader{},
+	}
+
+	wc.WalletCreators = []wallet.Creator{
+		bip44wallet.Creator{},
+	}
 
 	return wc
 }

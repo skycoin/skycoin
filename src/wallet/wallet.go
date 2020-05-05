@@ -128,6 +128,7 @@ func NewWalletFilename() string {
 
 // Options options that could be used when creating a wallet
 type Options struct {
+	Version        string
 	Type           string            // wallet type: deterministic, collection. Refers to which key generation mechanism is used.
 	Coin           CoinType          // coin type: skycoin, bitcoin, etc. Refers to which pubkey2addr method is used.
 	Bip44Coin      *bip44.CoinType   // bip44 path coin type
@@ -140,6 +141,7 @@ type Options struct {
 	ScanN          uint64            // number of addresses that're going to be scanned for a balance. The highest address with a balance will be used.
 	GenerateN      uint64            // number of addresses to generate, regardless of balance
 	XPub           string            // xpub key (xpub wallets only)
+	Decoder        Decoder
 }
 
 type walletFileLoadFunc func(data []byte) (Wallet, error)
@@ -848,4 +850,68 @@ func AddressConstructor(m Meta) func(cipher.PubKey) cipher.Addresser {
 		logger.Panicf("Invalid wallet coin type %q", m.Coin())
 		return nil
 	}
+}
+
+// ValidateMeta validates the common meta data when initializing a wallet
+func ValidateMeta(m Meta) error {
+	if fn := m[MetaFilename]; fn == "" {
+		return errors.New("filename not set")
+	}
+
+	if tm := m[MetaTimestamp]; tm != "" {
+		_, err := strconv.ParseInt(tm, 10, 64)
+		if err != nil {
+			return errors.New("invalid timestamp")
+		}
+	}
+
+	if tp := m[MetaType]; tp == "" {
+		return errors.New("type field not set")
+	}
+
+	if coinType := m[MetaCoin]; coinType == "" {
+		return errors.New("coin field not set")
+	}
+
+	var isEncrypted bool
+	if encStr, ok := m[MetaEncrypted]; ok {
+		// validate the encrypted value
+		var err error
+		isEncrypted, err = strconv.ParseBool(encStr)
+		if err != nil {
+			return errors.New("encrypted field is not a valid bool")
+		}
+	}
+
+	cryptoType, ok := m[MetaCryptoType]
+	if !ok {
+		return errors.New("crypto type field not set")
+	}
+
+	if _, err := crypto.GetCrypto(crypto.CryptoType(cryptoType)); err != nil {
+		return errors.New("unknown crypto type")
+	}
+
+	if isEncrypted {
+		if s := m[MetaSecrets]; s == "" {
+			return errors.New("wallet is encrypted, but secrets field not set")
+		}
+
+		if s := m[MetaSeed]; s != "" {
+			return errors.New("seed should not be visible in encrypted wallets")
+		}
+	} else {
+		// bip44 wallet seeds must be a valid bip39 mnemonic
+		if s := m[MetaSeed]; s == "" {
+			return errors.New("seed missing in unencrypted wallet")
+		} else if err := bip39.ValidateMnemonic(s); err != nil {
+			return err
+		}
+
+		if s := m[MetaSecrets]; s != "" {
+			return errors.New("secrets should not be in unencrypted wallets")
+		}
+	}
+
+	return nil
 }

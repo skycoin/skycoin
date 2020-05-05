@@ -588,7 +588,7 @@ func (a accountEntriesService) Entries() (wallet.Entries, error) {
 
 func (a accountEntriesService) GetEntryAt(i int) (wallet.Entry, error) {
 	if a.err != nil {
-		return nil, a.err
+		return wallet.Entry{}, a.err
 	}
 	return a.entryAt(a.chain, uint32(i))
 }
@@ -596,7 +596,7 @@ func (a accountEntriesService) GetEntryAt(i int) (wallet.Entry, error) {
 // TODO: limit to specific chain
 func (a accountEntriesService) GetEntry(addresser cipher.Addresser) (wallet.Entry, error) {
 	if a.err != nil {
-		return nil, a.err
+		return wallet.Entry{}, a.err
 	}
 	e, ok := a.getEntry(addresser)
 	if !ok {
@@ -609,7 +609,7 @@ func (a accountEntriesService) GetEntry(addresser cipher.Addresser) (wallet.Entr
 // TODO: limit to the specific chain
 func (a accountEntriesService) HasEntry(addresser cipher.Addresser) (bool, error) {
 	if a.err != nil {
-		return nil, a.err
+		return false, a.err
 	}
 	_, ok := a.getEntry(addresser)
 	return ok, nil
@@ -617,7 +617,7 @@ func (a accountEntriesService) HasEntry(addresser cipher.Addresser) (bool, error
 
 func (a accountEntriesService) Len() (int, error) {
 	if a.err != nil {
-		return nil, a.err
+		return 0, a.err
 	}
 	l, err := a.entriesLen(a.chain)
 	if err != nil {

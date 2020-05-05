@@ -3,8 +3,10 @@ package wallet
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/sirupsen/logrus"
@@ -27,6 +29,17 @@ type Service struct {
 	config  Config
 	// fingerprints is used to check for duplicate deterministic wallets
 	fingerprints map[string]string
+	// registered wallet backends
+	loaders map[string]Loader
+}
+
+// Loader is the interface that wraps the Load and Type methods.
+//
+// Load loads wallet from specific wallet file path.
+// Type returns the wallet type
+type Loader interface {
+	Load(data []byte) (Wallet, error)
+	Type() string
 }
 
 // Config wallet service config
@@ -36,6 +49,7 @@ type Config struct {
 	EnableWalletAPI bool
 	EnableSeedAPI   bool
 	Bip44Coin       *bip44.CoinType
+	WalletLoaders   []Loader
 }
 
 // NewConfig creates a default Config
@@ -70,8 +84,13 @@ func NewService(c Config) (*Service, error) {
 		return nil, fmt.Errorf("remove .wlt.bak files in %v failed: %v", serv.config.WalletDir, err)
 	}
 
+	// loads the wallet loaders
+	for _, l := range c.WalletLoaders {
+		serv.loaders[l.Type()] = l
+	}
+
 	// Load all wallets from disk
-	w, err := loadWallets(serv.config.WalletDir)
+	w, err := serv.loadWallets()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load all wallets: %v", err)
 	}
@@ -107,6 +126,90 @@ func (serv *Service) WalletDir() (string, error) {
 		return "", ErrWalletAPIDisabled
 	}
 	return serv.config.WalletDir, nil
+}
+
+func (serv *Service) loadWallets() (Wallets, error) {
+	dir := serv.config.WalletDir
+	entries, err := ioutil.ReadDir(dir)
+	if err != nil {
+		logger.WithError(err).WithField("dir", dir).Error("loadWallets: ioutil.ReadDir failed")
+		return nil, err
+	}
+
+	wallets := Wallets{}
+	for _, e := range entries {
+		if e.Mode().IsRegular() {
+			name := e.Name()
+			if !strings.HasSuffix(name, WalletExt) {
+				logger.WithField("filename", name).Info("loadWallets: skipping file")
+				continue
+			}
+
+			fullPath := filepath.Join(serv.config.WalletDir, name)
+			w, err := serv.load(fullPath)
+			if err != nil {
+				logger.WithError(err).WithField("filename", fullPath).Error("loadWallets: loadWallet failed")
+				return nil, err
+			}
+
+			logger.WithField("filename", fullPath).Info("loadWallets: loaded wallet")
+
+			wallets[name] = w
+		}
+	}
+
+	for name, w := range wallets {
+		// TODO: do validate when creating wallet
+		// if err := w.Validate(); err != nil {
+		// 	logger.WithError(err).WithField("name", name).Error("loadWallets: wallet.Validate failed")
+		// 	return nil, err
+		// }
+
+		if w.Coin() != CoinTypeSkycoin {
+			err := fmt.Errorf("LoadWallets only support skycoin wallets, %s is a %s wallet", name, w.Coin())
+			logger.WithError(err).WithField("name", name).Error()
+			return nil, err
+		}
+	}
+
+	return wallets, nil
+}
+
+func (serv *Service) load(filename string) (Wallet, error) {
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		return nil, fmt.Errorf("wallet %q doesn't exist", filename)
+	}
+
+	// Load the wallet meta type field from JSON
+	var m walletLoadMeta
+	if err := file.LoadJSON(filename, &m); err != nil {
+		logger.WithError(err).WithField("filename", filename).Error("Load: file.LoadJSON failed")
+		return nil, err
+	}
+
+	if m.Meta.Type == "" {
+		err := errors.New("missing meta.type field")
+		logger.WithError(err).WithField("filename", filename)
+		return nil, err
+	}
+
+	// Depending on the wallet type in the wallet metadata header, load the full wallet data
+	l, ok := serv.loaders[m.Meta.Type]
+	if !ok {
+		return nil, fmt.Errorf("wallet loader for type of %q not found", m.Meta.Type)
+	}
+
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	data, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+
+	return l.Load(data)
 }
 
 func (serv *Service) updateOptions(opts Options) Options {

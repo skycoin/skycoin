@@ -485,11 +485,13 @@ func (w *Wallet) Entries(options ...wallet.Option) wallet.EntriesService {
 	}
 
 	aes := &accountEntriesService{}
+
 	a, err := w.accounts.account(eos.Account)
 	if err != nil {
 		aes.err = err
 		return aes
 	}
+	aes.bip44Account = a
 
 	if eos.Change {
 		aes.chain = uint32(1)
@@ -658,4 +660,19 @@ func makeChainPubKeys(a *bip44.Account) (*bip32.PublicKey, *bip32.PublicKey, err
 		return nil, nil, fmt.Errorf("Create change chain public key failed: %v", err)
 	}
 	return external, change, nil
+}
+
+type Loader struct{}
+
+func (l Loader) Load(data []byte) (wallet.Wallet, error) {
+	w := &Wallet{}
+	if err := w.Deserialize(data); err != nil {
+		return nil, err
+	}
+
+	return w, nil
+}
+
+func (l Loader) Type() string {
+	return "bip44"
 }

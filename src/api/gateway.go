@@ -102,7 +102,7 @@ type Walleter interface {
 	EncryptWallet(wltID string, password []byte) (wallet.Wallet, error)
 	DecryptWallet(wltID string, password []byte) (wallet.Wallet, error)
 	GetWalletSeed(wltID string, password []byte) (string, string, error)
-	CreateWallet(wltName string, options wallet.Options, bg wallet.TransactionsFinder) (wallet.Wallet, error)
+	CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error)
 	RecoverWallet(wltID, seed, seedPassphrase string, password []byte) (wallet.Wallet, error)
 	NewAddresses(wltID string, password []byte, n uint64) ([]cipher.Address, error)
 	ScanAddresses(wltID string, password []byte, n uint64, tf wallet.TransactionsFinder) ([]cipher.Address, error)

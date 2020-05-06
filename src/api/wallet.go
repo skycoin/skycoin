@@ -303,7 +303,8 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 			SeedPassphrase: r.FormValue("seed-passphrase"),
 			Bip44Coin:      bip44Coin,
 			XPub:           r.FormValue("xpub"),
-		}, gateway)
+			TF:             gateway,
+		})
 		if err != nil {
 			switch err.(type) {
 			case wallet.Error:

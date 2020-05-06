@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/SkycoinProject/skycoin/src/wallet/core/bip44wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/core/deterministic"
 	"github.com/blang/semver"
 	"github.com/toqueteos/webbrowser"
 
@@ -387,6 +388,7 @@ func (c *Coin) ConfigureWallet() wallet.Config {
 
 	wc.WalletCreators = []wallet.Creator{
 		bip44wallet.Creator{},
+		deterministic.Creator{},
 	}
 
 	return wc

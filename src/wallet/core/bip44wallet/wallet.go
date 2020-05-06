@@ -78,23 +78,19 @@ type ChainEntry struct {
 }
 
 // Options options for creating the bip44 wallet
-type Options struct {
-	Version       string
-	CoinType      wallet.CoinType
-	Bip44CoinType *bip44.CoinType
-	CryptoType    crypto.CryptoType
-	WalletDecoder wallet.Decoder
-	Encrypt       bool
-	Password      []byte
-}
-
-func DefaultOptions() []wallet.Option {
-
-}
+// type Options struct {
+// 	Version       string
+// 	CoinType      wallet.CoinType
+// 	Bip44CoinType *bip44.CoinType
+// 	CryptoType    crypto.CryptoType
+// 	WalletDecoder wallet.Decoder
+// 	Encrypt       bool
+// 	Password      []byte
+// }
 
 // NewWallet create a bip44 wallet with options
 // TODO: encrypt the wallet if the options.Encrypt is true
-func NewWallet(filename, label, seed, seedPassphrase string, encrypt bool, password []byte, options ...wallet.Option) (*Wallet, error) {
+func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.Option) (*Wallet, error) {
 	wlt := &Wallet{
 		Meta: wallet.Meta{
 			wallet.MetaFilename:       filename,
@@ -113,9 +109,11 @@ func NewWallet(filename, label, seed, seedPassphrase string, encrypt bool, passw
 		decoder:  defaultWalletDecoder,
 	}
 
-	// applies options
+	moreOpts := moreOptions{}
+	// applies options to wallet and moreOptions
 	for _, opt := range options {
 		opt(wlt)
+		opt(&moreOpts)
 	}
 
 	// validate wallet before encrypting
@@ -123,12 +121,24 @@ func NewWallet(filename, label, seed, seedPassphrase string, encrypt bool, passw
 		return nil, err
 	}
 
-	if encrypt {
-		if len(password) == 0 {
+	// scans addresses if options.ScanN > 0
+	if moreOpts.ScanN > 0 {
+		if moreOpts.TF == nil {
+			return nil, errors.New("missing transaction finder for scanning addresses")
+		}
+		_, err := wlt.ScanAddresses(uint64(moreOpts.ScanN), moreOpts.TF)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// encrypts wallet if options.Encrypt is true
+	if moreOpts.Encrypt {
+		if len(moreOpts.Password) == 0 {
 			return nil, errors.New("missing password for encrypting wallet")
 		}
 
-		if err := wlt.Lock(password); err != nil {
+		if err := wlt.Lock(moreOpts.Password); err != nil {
 			return nil, err
 		}
 	}
@@ -601,6 +611,7 @@ func makeChainPubKeys(a *bip44.Account) (*bip32.PublicKey, *bip32.PublicKey, err
 	return external, change, nil
 }
 
+// Loader implements the wallet.Loader interface
 type Loader struct{}
 
 func (l Loader) Load(data []byte) (wallet.Wallet, error) {
@@ -616,6 +627,7 @@ func (l Loader) Type() string {
 	return walletType
 }
 
+// Creator implements the wallet.Creator interface
 type Creator struct{}
 
 func (c Creator) Create(filename, label, seed string, options wallet.Options) (wallet.Wallet, error) {
@@ -625,8 +637,6 @@ func (c Creator) Create(filename, label, seed string, options wallet.Options) (w
 		label,
 		seed,
 		options.SeedPassphrase,
-		options.Encrypt,
-		options.Password,
 		opts...)
 }
 
@@ -655,6 +665,16 @@ func convertOptions(options wallet.Options) []wallet.Option {
 
 	if options.Decoder != nil {
 		opts = append(opts, Decoder(options.Decoder))
+	}
+
+	if options.Encrypt {
+		opts = append(opts, Encrypt(true))
+		opts = append(opts, Password(options.Password))
+	}
+
+	if options.ScanN > 0 {
+		opts = append(opts, ScanN(int(options.ScanN)))
+		opts = append(opts, TransactionsFinder(options.TF))
 	}
 
 	return opts

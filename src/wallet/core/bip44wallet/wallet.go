@@ -121,12 +121,27 @@ func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.O
 		return nil, err
 	}
 
+	// Generate addresses if options.GenrateN > 0
+	generateN := moreOpts.GenerateN
+	if generateN > 0 {
+		_, err := wlt.Entries().GenerateAddresses(generateN)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	scanN := moreOpts.ScanN
 	// scans addresses if options.ScanN > 0
-	if moreOpts.ScanN > 0 {
+	if scanN > 0 {
 		if moreOpts.TF == nil {
 			return nil, errors.New("missing transaction finder for scanning addresses")
 		}
-		_, err := wlt.ScanAddresses(uint64(moreOpts.ScanN), moreOpts.TF)
+
+		if scanN > generateN {
+			scanN = scanN - generateN
+		}
+
+		_, err := wlt.ScanAddresses(scanN, moreOpts.TF)
 		if err != nil {
 			return nil, err
 		}
@@ -457,116 +472,6 @@ func (w *Wallet) Erase() {
 	w.accounts.erase()
 }
 
-// immutableMeta records the meta keys of a wallet that should not be modified
-// once after they are initialized.
-//func immutableMeta() map[string]struct{} {
-//	empty := struct{}{}
-//	return map[string]struct{}{
-//		wallet.MetaFilename:       empty,
-//		wallet.MetaCoin:           empty,
-//		wallet.MetaType:           empty,
-//		wallet.MetaCryptoType:     empty,
-//		wallet.MetaSeed:           empty,
-//		wallet.MetaSeedPassphrase: empty,
-//	}
-//}
-
-//func secretsMeta() map[string]struct{} {
-//	empty := struct{}{}
-//	return map[string]struct{}{
-//		wallet.MetaSeed:           empty,
-//		wallet.MetaSeedPassphrase: empty,
-//		wallet.MetaSecrets:        empty,
-//		wallet.MetaEncrypted:      empty,
-//	}
-//}
-//
-//// WalletDiff records the wallet differences
-//type WalletDiff struct {
-//	Meta     wallet.Meta
-//	Accounts []AccountDiff
-//}
-//
-//// AccountDiff records the account differences
-//type AccountDiff struct {
-//	NewExternalAddressNum int
-//	NewChangeAddressNum   int
-//}
-
-// DiffNoneSecrets gets the differences of none secrets between wallets
-//
-// Note: immutable meta like the wallet filename, coin type, wallet type, etc.
-// will be filter out, they won't be recognized as changes.
-//func (w *Wallet) DiffNoneSecrets(wlt *Wallet) (*WalletDiff, error) {
-//	diff := &WalletDiff{
-//		Meta:     make(wallet.Meta),
-//		Accounts: make([]AccountDiff, w.accounts.len()),
-//	}
-//
-//	im := immutableMeta()
-//	sm := secretsMeta()
-//
-//	// check the meta change
-//	for k, v := range wlt.Meta {
-//		// filter out the immutable meta data
-//		if _, ok := im[k]; ok {
-//			continue
-//		}
-//
-//		// filter out the secrets meta
-//		if _, ok := sm[k]; ok {
-//			continue
-//		}
-//
-//		if w.Meta[k] != v {
-//			diff.Meta[k] = v
-//		}
-//	}
-//
-//	accountsDiff := w.accounts.diff(wlt.accounts)
-//	for i, adf := range accountsDiff {
-//		diff.Accounts[i].NewExternalAddressNum = int(adf.chainsDiff[bip44.ExternalChainIndex])
-//		diff.Accounts[i].NewChangeAddressNum = int(adf.chainsDiff[bip44.ChangeChainIndex])
-//	}
-//
-//	return diff, nil
-//}
-//
-// CommitDiffs applies the wallet differences
-//
-// Immutable meta data will be filter out
-// Secrets meta data will be committed
-//func (w *Wallet) CommitDiffs(diff *WalletDiff) error {
-//	w2 := w.Clone()
-//	im := immutableMeta()
-//
-//	// filter out the immutable meta data
-//	for k, v := range diff.Meta {
-//		if _, ok := im[k]; ok {
-//			continue
-//		}
-//		w2.Meta[k] = v
-//	}
-//
-//	for i, a := range diff.Accounts {
-//		if a.NewExternalAddressNum > 0 {
-//			_, err := w2.NewExternalAddresses(uint32(i), uint32(a.NewExternalAddressNum))
-//			if err != nil {
-//				return err
-//			}
-//		}
-//
-//		if a.NewChangeAddressNum > 0 {
-//			_, err := w2.NewChangeAddresses(uint32(i), uint32(a.NewChangeAddressNum))
-//			if err != nil {
-//				return err
-//			}
-//		}
-//	}
-//	*w = w2
-//	return nil
-//}
-
 // syncSecrets synchronize the secrets with all addresses, ensure that
 // each address has the secret key stored in the secrets
 func (w Wallet) syncSecrets(ss wallet.Secrets) error {
@@ -644,6 +549,8 @@ func (c Creator) Type() string {
 	return walletType
 }
 
+// convertOptions collects the cared fields from wallet.Options
+// and converts them to an wallet.Option slice
 func convertOptions(options wallet.Options) []wallet.Option {
 	var opts []wallet.Option
 
@@ -672,8 +579,12 @@ func convertOptions(options wallet.Options) []wallet.Option {
 		opts = append(opts, Password(options.Password))
 	}
 
+	if options.GenerateN > 0 {
+		opts = append(opts, GenerateN(options.GenerateN))
+	}
+
 	if options.ScanN > 0 {
-		opts = append(opts, ScanN(int(options.ScanN)))
+		opts = append(opts, ScanN(options.ScanN))
 		opts = append(opts, TransactionsFinder(options.TF))
 	}
 

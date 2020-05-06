@@ -58,10 +58,11 @@ func Decoder(d wallet.Decoder) wallet.Option {
 }
 
 type moreOptions struct {
-	Encrypt  bool
-	Password []byte
-	ScanN    int
-	TF       wallet.TransactionsFinder
+	Encrypt   bool
+	Password  []byte
+	GenerateN uint64
+	ScanN     uint64
+	TF        wallet.TransactionsFinder
 }
 
 func Encrypt(encrypt bool) wallet.Option {
@@ -76,7 +77,7 @@ func Password(password []byte) wallet.Option {
 	})
 }
 
-func ScanN(n int) wallet.Option {
+func ScanN(n uint64) wallet.Option {
 	return moreOptionFunc(func(opts *moreOptions) {
 		opts.ScanN = n
 	})
@@ -85,5 +86,11 @@ func ScanN(n int) wallet.Option {
 func TransactionsFinder(tf wallet.TransactionsFinder) wallet.Option {
 	return moreOptionFunc(func(opts *moreOptions) {
 		opts.TF = tf
+	})
+}
+
+func GenerateN(n uint64) wallet.Option {
+	return moreOptionFunc(func(opts *moreOptions) {
+		opts.GenerateN = n
 	})
 }

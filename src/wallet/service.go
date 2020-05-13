@@ -203,9 +203,8 @@ func (serv *Service) load(filename string) (Wallet, error) {
 	}
 
 	// Load the wallet meta type field from JSON
-	var m walletLoadMeta
-	if err := file.LoadJSON(filename, &m); err != nil {
-		logger.WithError(err).WithField("filename", filename).Error("Load: file.LoadJSON failed")
+	m, err := loadWalletMeta(filename)
+	if err != nil {
 		return nil, err
 	}
 

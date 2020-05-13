@@ -10,12 +10,14 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 	"github.com/SkycoinProject/skycoin/src/util/file"
 	"github.com/SkycoinProject/skycoin/src/util/logging"
@@ -791,12 +793,12 @@ func removeBackupFiles(dir string) error {
 		f := strings.TrimRight(bf, ".bak")
 		if _, ok := fm[f]; ok {
 			// Load and check the wallet version
-			w, err := Load(f)
+			m, err := loadWalletMeta(f)
 			if err != nil {
 				return err
 			}
 
-			if w.Version() == "0.1" {
+			if m.Meta.Version == "0.1" {
 				if err := os.Remove(bf); err != nil {
 					return err
 				}
@@ -805,6 +807,16 @@ func removeBackupFiles(dir string) error {
 	}
 
 	return nil
+}
+
+func loadWalletMeta(filename string) (*walletLoadMeta, error) {
+	var m walletLoadMeta
+	if err := file.LoadJSON(filename, &m); err != nil {
+		logger.WithError(err).WithField("filename", filename).Error("Load: file.LoadJSON failed")
+		return nil, err
+	}
+
+	return &m, nil
 }
 
 func filterDir(dir string, suffix string) ([]string, error) {

@@ -915,9 +915,10 @@ func ValidateMeta(m Meta) error {
 		// bip44 wallet seeds must be a valid bip39 mnemonic
 		if s := m[MetaSeed]; s == "" {
 			return errors.New("seed missing in unencrypted wallet")
-		} else if err := bip39.ValidateMnemonic(s); err != nil {
-			return err
 		}
+		//else if err := bip39.ValidateMnemonic(s); err != nil {
+		//	return err
+		//}
 
 		if s := m[MetaSecrets]; s != "" {
 			return errors.New("secrets should not be in unencrypted wallets")

@@ -15,6 +15,7 @@ import (
 	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
 
 	"github.com/SkycoinProject/skycoin/src/cipher/bip32"
+	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 )
 
@@ -116,8 +117,8 @@ func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.O
 		opt(&moreOpts)
 	}
 
-	// validate wallet before encrypting
-	if err := validate(wlt.Meta); err != nil {
+	// validateMeta wallet before encrypting
+	if err := validateMeta(wlt.Meta); err != nil {
 		return nil, err
 	}
 
@@ -158,14 +159,14 @@ func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.O
 		}
 	}
 
-	// validate the wallet again after encrypted
-	if err := validate(wlt.Meta); err != nil {
+	// validateMeta the wallet again after encrypted
+	if err := validateMeta(wlt.Meta); err != nil {
 		return nil, err
 	}
 	return wlt, nil
 }
 
-func validate(m wallet.Meta) error {
+func validateMeta(m wallet.Meta) error {
 	if m[wallet.MetaType] != walletType {
 		return errors.New("invalid wallet type")
 	}
@@ -174,6 +175,12 @@ func validate(m wallet.Meta) error {
 		return errors.New("missing bip44 coin type")
 	} else if _, err := strconv.ParseUint(s, 10, 32); err != nil {
 		return fmt.Errorf("invalid bip44 coin type: %v", err)
+	}
+
+	if s := m[wallet.MetaSeed]; s != "" {
+		if err := bip39.ValidateMnemonic(s); err != nil {
+			return err
+		}
 	}
 
 	return wallet.ValidateMeta(m)

@@ -44,7 +44,7 @@ func NewWallet(filename, label, seed string, options ...wallet.Option) (*Wallet,
 		decoder: defaultWalletDecoder,
 	}
 
-	moreOpts := moreOptions{}
+	moreOpts := &moreOptions{}
 	for _, opt := range options {
 		opt(wlt)
 		opt(moreOpts)
@@ -57,7 +57,7 @@ func NewWallet(filename, label, seed string, options ...wallet.Option) (*Wallet,
 
 	generateN := moreOpts.GenerateN
 	if generateN > 0 {
-		_, err := wlt.Entries().GenerateAddresses(generateN)
+		_, err := wlt.GenerateAddresses(generateN)
 		if err != nil {
 			return nil, err
 		}
@@ -82,11 +82,15 @@ func NewWallet(filename, label, seed string, options ...wallet.Option) (*Wallet,
 	// encrypts wallet if options.Encrypt is true
 	if moreOpts.Encrypt {
 		if len(moreOpts.Password) == 0 {
-			return nil, errors.New("missing password for encrypting wallet")
+			return nil, wallet.ErrMissingPassword
 		}
 
 		if err := wlt.Lock(moreOpts.Password); err != nil {
 			return nil, err
+		}
+	} else {
+		if len(moreOpts.Password) > 0 {
+			return nil, wallet.ErrMissingEncrypt
 		}
 	}
 
@@ -179,6 +183,7 @@ func (w *Wallet) Lock(password []byte) error {
 	return nil
 }
 
+// Unlock unlock the encrypted wallet
 func (w *Wallet) Unlock(password []byte) (wallet.Wallet, error) {
 	if !w.IsEncrypted() {
 		return nil, errors.New("wallet is not encrypted")
@@ -295,14 +300,33 @@ func (w *Wallet) Accounts() []wallet.Bip44Account {
 	return nil
 }
 
-func (w *Wallet) Entries(options ...wallet.Option) wallet.EntriesService {
-	panic("implement me")
-}
-
 // Erase wipes secret fields in wallet
 func (w *Wallet) Erase() {
 	w.Meta.EraseSeeds()
 	w.entries.Erase()
+}
+
+// Validate validates the wallet
+func (w *Wallet) Validate() error {
+	if err := w.Meta.Validate(); err != nil {
+		return err
+	}
+
+	walletType := w.Meta.Type()
+	if !wallet.IsValidWalletType(walletType) {
+		return wallet.ErrInvalidWalletType
+	}
+
+	if !w.IsEncrypted() {
+		if s := w.Seed(); s == "" {
+			return errors.New("seed missing in unencrypted deterministic wallet")
+		}
+
+		if s := w.LastSeed(); s == "" {
+			return errors.New("lastSeed missing in unencrypted deterministic wallet")
+		}
+	}
+	return nil
 }
 
 // ScanAddresses scans ahead N addresses, truncating up to the highest address with any transaction history.
@@ -320,7 +344,8 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 	nExistingAddrs := uint64(len(w2.entries))
 
 	// Generate the addresses to scan
-	addrs, err := w2.GenerateSkycoinAddresses(scanN)
+	//addrs, err := w2.GenerateSkycoinAddresses(scanN)
+	addrs, err := w2.GenerateAddresses(scanN)
 	if err != nil {
 		return nil, err
 	}
@@ -343,7 +368,11 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 	// Regenerate addresses up to nExistingAddrs + nAddAddrs.
 	// This is necessary to keep the lastSeed updated.
 	w2.reset()
-	if _, err := w2.GenerateSkycoinAddresses(nExistingAddrs + keepNum); err != nil {
+	//if _, err := w2.GenerateSkycoinAddresses(nExistingAddrs + keepNum); err != nil {
+	//	return nil, err
+	//}
+
+	if _, err := w2.GenerateAddresses(nExistingAddrs + keepNum); err != nil {
 		return nil, err
 	}
 
@@ -352,8 +381,8 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 	return nil, nil
 }
 
-// GenerateAddresses generates addresses
-func (w *Wallet) GenerateAddresses(num uint64) ([]cipher.Addresser, error) {
+// GenerateAddresses generates N addresses
+func (w *Wallet) GenerateAddresses(num uint64, _ ...wallet.Option) ([]cipher.Addresser, error) {
 	if w.Meta.IsEncrypted() {
 		return nil, wallet.ErrWalletEncrypted
 	}
@@ -391,85 +420,42 @@ func (w *Wallet) GenerateAddresses(num uint64) ([]cipher.Addresser, error) {
 	return addrs, nil
 }
 
-// Validate validates the wallet
-func (w *Wallet) Validate() error {
-	if err := w.Meta.Validate(); err != nil {
-		return err
-	}
-
-	walletType := w.Meta.Type()
-	if !wallet.IsValidWalletType(walletType) {
-		return wallet.ErrInvalidWalletType
-	}
-
-	if !w.IsEncrypted() {
-		if s := w.Seed(); s == "" {
-			return errors.New("seed missing in unencrypted deterministic wallet")
-		}
-
-		if s := w.LastSeed(); s == "" {
-			return errors.New("lastSeed missing in unencrypted deterministic wallet")
-		}
-	}
-	return nil
-}
-
 // GetAddresses returns all addresses in wallet
-func (w *Wallet) GetAddresses() []cipher.Addresser {
-	return w.entries.GetAddresses()
-}
-
-// GetSkycoinAddresses returns all Skycoin addresses in wallet. The wallet's coin type must be Skycoin.
-func (w *Wallet) GetSkycoinAddresses() ([]cipher.Address, error) {
-	if w.Meta.Coin() != wallet.CoinTypeSkycoin {
-		return nil, errors.New("Wallet coin type is not skycoin")
-	}
-
-	return w.entries.GetSkycoinAddresses(), nil
+func (w *Wallet) GetAddresses(_ ...wallet.Option) ([]cipher.Addresser, error) {
+	return w.entries.GetAddresses(), nil
 }
 
 // GetEntries returns a copy of all entries held by the wallet
-func (w *Wallet) GetEntries() wallet.Entries {
-	return w.entries.Clone()
-}
-
-// EntriesLen returns the number of entries in the wallet
-func (w *Wallet) EntriesLen() int {
-	return len(w.entries)
+func (w *Wallet) GetEntries(_ ...wallet.Option) (wallet.Entries, error) {
+	return w.entries.Clone(), nil
 }
 
 // GetEntryAt returns entry at a given index in the entries array
-func (w *Wallet) GetEntryAt(i int) wallet.Entry {
-	return w.entries[i]
+func (w *Wallet) GetEntryAt(i int, _ ...wallet.Option) (wallet.Entry, error) {
+	if i < 0 || i >= len(w.entries) {
+		return wallet.Entry{}, fmt.Errorf("entry index %d is out of range", i)
+	}
+
+	return w.entries[i], nil
 }
 
 // GetEntry returns entry of given address
-func (w *Wallet) GetEntry(a cipher.Address) (wallet.Entry, bool) {
-	return w.entries.Get(a)
+func (w *Wallet) GetEntry(a cipher.Addresser, _ ...wallet.Option) (wallet.Entry, error) {
+	e, ok := w.entries.Get(a)
+	if !ok {
+		return wallet.Entry{}, wallet.ErrEntryNotFound
+	}
+	return e, nil
 }
 
 // HasEntry returns true if the wallet has an Entry with a given cipher.Address.
-func (w *Wallet) HasEntry(a cipher.Address) bool {
-	return w.entries.Has(a)
+func (w *Wallet) HasEntry(a cipher.Addresser, _ ...wallet.Option) (bool, error) {
+	return w.entries.Has(a), nil
 }
 
-// GenerateSkycoinAddresses generates Skycoin addresses. If the wallet's coin type is not Skycoin, returns an error
-func (w *Wallet) GenerateSkycoinAddresses(num uint64) ([]cipher.Address, error) {
-	if w.Meta.Coin() != wallet.CoinTypeSkycoin {
-		return nil, errors.New("GenerateSkycoinAddresses called for non-skycoin wallet")
-	}
-
-	addrs, err := w.GenerateAddresses(num)
-	if err != nil {
-		return nil, err
-	}
-
-	skyAddrs := make([]cipher.Address, len(addrs))
-	for i, a := range addrs {
-		skyAddrs[i] = a.(cipher.Address)
-	}
-
-	return skyAddrs, nil
+// EntriesLen returns the number of entries in the wallet
+func (w *Wallet) EntriesLen(_ ...wallet.Option) (int, error) {
+	return len(w.entries), nil
 }
 
 // reset resets the wallet entries and move the lastSeed to origin
@@ -543,63 +529,4 @@ func convertOptions(options wallet.Options) []wallet.Option {
 	}
 
 	return opts
-}
-
-// entriesService wraps the wallet.Entries to implement the wallet.EntriesService interface
-type entriesService struct {
-	*Wallet
-}
-
-// Entries returns all entries in the wallet
-func (es *entriesService) Entries() (wallet.Entries, error) {
-	return es.entries.Clone(), nil
-}
-
-// GetEntryAt returns entry of the given index
-func (es entriesService) GetEntryAt(i int) (wallet.Entry, error) {
-	if i >= len(es.entries) {
-		return wallet.Entry{}, fmt.Errorf("entry index %d is out of range", i)
-	}
-
-	return es.entries[i], nil
-}
-
-// GetEntry returns the entry by address
-func (es entriesService) GetEntry(addresser cipher.Addresser) (wallet.Entry, error) {
-	for _, e := range es.entries {
-		if e.Address == addresser {
-			return e, nil
-		}
-	}
-	return wallet.Entry{}, wallet.ErrEntryNotFound
-}
-
-// HasEntry checks whether the address belongs to the wallet
-func (es entriesService) HasEntry(addresser cipher.Addresser) (bool, error) {
-	for _, e := range es.entries {
-		if e.Address == addresser {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-// Len returns the entries length
-func (es entriesService) Len() (int, error) {
-	return len(es.entries), nil
-}
-
-// GetAddresses returns all addresses in wallet
-func (es entriesService) GetAddresses() ([]cipher.Addresser, error) {
-	addrs := make([]cipher.Addresser, len(es.entries))
-	for i, e := range es.entries {
-		addrs[i] = e.Address
-	}
-
-	return addrs, nil
-}
-
-// GenerateAddresses generates addresses
-func (es *entriesService) GenerateAddresses(num uint64) ([]cipher.Addresser, error) {
-	return es.Wallet.GenerateAddresses(num)
 }

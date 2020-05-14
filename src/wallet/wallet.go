@@ -14,10 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
+github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 	"github.com/SkycoinProject/skycoin/src/util/file"
 	"github.com/SkycoinProject/skycoin/src/util/logging"
@@ -144,45 +141,8 @@ type Options struct {
 	GenerateN      uint64            // number of addresses to generate, regardless of balance
 	XPub           string            // xpub key (xpub wallets only)
 	Decoder        Decoder
+	TF             TransactionsFinder
 }
-
-type walletFileLoadFunc func(data []byte) (Wallet, error)
-
-type walletFileLoader struct {
-	walletLoadFuncs map[string]walletFileLoadFunc
-}
-
-var registeredWalletFileLoader = walletFileLoader{
-	walletLoadFuncs: map[string]walletFileLoadFunc{
-		"bip44": LoadBip44Wallet,
-		// "skycoin":
-	},
-}
-
-func (w walletFileLoader) get(coinType string) (walletFileLoadFunc, bool) {
-	fn, ok := w.walletLoadFuncs[coinType]
-	return fn, ok
-}
-
-//  walletCreateFunc creates a wallet with the options
-type walletCreateFunc func(filename string, opts Options, tf TransactionsFinder) (Wallet, error)
-
-type walletCreators struct {
-	creators map[string]walletCreateFunc
-}
-
-func (wcs walletCreators) get(walletType string) (walletCreateFunc, bool) {
-	fn, ok := wcs.creators[walletType]
-	return fn, ok
-}
-
-// var registeredWalletCreators = walletCreators{
-// 	creators: map[string]walletCreateFunc{
-// 		WalletTypeBip44: func(filename string, opts Options, tf TransactionsFinder) (Wallet, error) {
-// 			return NewBip44Wallet(filename, opts, tf)
-// 		},
-// 	},
-// }
 
 // newWallet creates a wallet instance with given name and options.
 // TODO: checks the options.GenerateN
@@ -553,16 +513,42 @@ type Wallet interface {
 	// Clone returns a copy of the wallet
 	Clone() Wallet
 	// CopyFrom copies the src wallet to w
-	CopyFrom(src Wallet)
+	// CopyFrom(src Wallet)
 	// CopyFromRef copies the src wallet with a pointer dereference
 	CopyFromRef(src Wallet)
 	Fingerprint() string
 	// ScanAddresses scans ahead given number of addresses
 	ScanAddresses(scanN uint64, tf TransactionsFinder) ([]cipher.Addresser, error)
+	// Entries returns entries,
+	// for bip44 wallet if no options are used, entries on external chain of account
+	// with index 0 will be returned.
+	Entries(options ...Option) (Entries, error)
+	// GetEntryAt returns the entry of given index,
+	// for bip44 wallet, if no options are specified, the entry on external chain of the account
+	// with index 0 will be returned.
+	GetEntryAt(i int, options ...Option) (Entry, error)
+	// GetEntry return the entry by address
+	// for bip44 wallet, if no options are specified, it will search the external chain of account
+	// of index 0.
+	GetEntry(addr cipher.Addresser, options ...Option) (Entry, error)
+	// HasEntry returns whether the entry exists in the wallet
+	// for bip44 wallet, if no options are specified, it will check the external chain of account
+	// of index 0.
+	HasEntry(addr cipher.Addresser, options ...Option) (bool, error)
+	// EntriesLen returns the entries length
+	// for bip44 wallet, if no options are specified, the length of the entries on external chain of account
+	// with index 0 will be returned.
+	EntriesLen() (int, error)
+	// GetAddresses returns all addresses.
+	// for bip44 wallet, if no options are specified, addresses on external chain of account
+	// with index 0 will be returned.
+	GetAddresses(options ...Option) ([]cipher.Addresser, error)
+	// GenerateAddresses generates N addresses,
+	// for bip44 wallet, if no options are specified, addresses will be generated
+	// on external chain of account with index 0.
+	GenerateAddresses(num uint64, options ...Option) ([]cipher.Addresser, error)
 	// Accounts returns the list of account for bip44 wallet
 	Accounts() []Bip44Account
-	// Entries
-	Entries(options ...Option) EntriesService
 	// Serialize serialize the wallet to bytes, and error if any
 	Serialize() ([]byte, error)
 	// Deserialize deserialize the data to a Wallet, and error if any
@@ -649,7 +635,8 @@ func GuardView(w Wallet, password []byte, f func(w Wallet) error) error {
 
 type walletLoadMeta struct {
 	Meta struct {
-		Type string `json:"type"`
+		Type    string `json:"type"`
+		Version string `json:"version"`
 	} `json:"meta"`
 }
 
@@ -912,13 +899,9 @@ func ValidateMeta(m Meta) error {
 			return errors.New("seed should not be visible in encrypted wallets")
 		}
 	} else {
-		// bip44 wallet seeds must be a valid bip39 mnemonic
 		if s := m[MetaSeed]; s == "" {
-			return errors.New("seed missing in unencrypted wallet")
+			return ErrMissingSeed
 		}
-		//else if err := bip39.ValidateMnemonic(s); err != nil {
-		//	return err
-		//}
 
 		if s := m[MetaSecrets]; s != "" {
 			return errors.New("secrets should not be in unencrypted wallets")
@@ -926,4 +909,12 @@ func ValidateMeta(m Meta) error {
 	}
 
 	return nil
+}
+
+func convertToSkyAddrs(addrs []cipher.Addresser) []cipher.Address {
+	skyAddrs := make([]cipher.Address, len(addrs))
+	for i, a := range addrs {
+		skyAddrs[i] = a.(cipher.Address)
+	}
+	return skyAddrs
 }

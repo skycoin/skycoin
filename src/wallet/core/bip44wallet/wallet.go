@@ -445,26 +445,9 @@ func (w *Wallet) Accounts() []wallet.Bip44Account {
 }
 
 // Entries provides entries service to access the external chain of given account
-func (w *Wallet) Entries(options ...wallet.Option) wallet.EntriesService {
-	eos := &wallet.Bip44EntriesOptions{}
-	for _, opt := range options {
-		opt(eos)
-	}
-
-	aes := &accountEntriesService{}
-
-	a, err := w.accounts.account(eos.Account)
-	if err != nil {
-		aes.err = err
-		return aes
-	}
-	aes.bip44Account = a
-
-	if eos.Change {
-		aes.chain = uint32(1)
-	}
-
-	return aes
+func (w *Wallet) GetEntries(options ...wallet.Option) (wallet.Entries, error) {
+	opts := getBip44Options(options...)
+	return w.entries(opts.Account, opts.Change)
 }
 
 func (w *Wallet) copyFrom(wlt *Wallet) {
@@ -506,9 +489,92 @@ func (w *Wallet) unpackSecrets(ss wallet.Secrets) error {
 	return w.unpackSecrets(ss)
 }
 
+func getBip44Options(options ...wallet.Option) *wallet.Bip44EntriesOptions {
+	v := &wallet.Bip44EntriesOptions{}
+	for _, opt := range options {
+		opt(v)
+	}
+
+	return v
+}
+
 // TODO: implement this
 func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]cipher.Addresser, error) {
 	return nil, nil
+}
+
+// GetAddresses returns all addresses on selected account and chain,
+// if no options ware provided, addresses on external chain of account 0 will be returned.
+func (w *Wallet) GetAddresses(options ...wallet.Option) ([]cipher.Addresser, error) {
+	opts := getBip44Options(options...)
+	entries, err := w.entries(opts.Account, opts.Change)
+	if err != nil {
+		return nil, err
+	}
+
+	addrs := make([]cipher.Addresser, len(entries))
+	for i, e := range entries {
+		addrs[i] = e.Address
+	}
+
+	return addrs, nil
+}
+
+// GenerateAddresses generates addresses on selected account and chain,
+// if no options are provided, addresses will be generated on external chain of account 0.
+func (w *Wallet) GenerateAddresses(num uint64, options ...wallet.Option) ([]cipher.Addresser, error) {
+	opts := getBip44Options(options...)
+
+	return w.newAddresses(opts.Account, opts.Change, uint32(num))
+}
+
+func (w *Wallet) Entries(options ...wallet.Option) (wallet.Entries, error) {
+	opts := getBip44Options(options...)
+	return w.entries(opts.Account, opts.Change)
+}
+
+func (w *Wallet) GetEntryAt(i int, options ...wallet.Option) (wallet.Entry, error) {
+	opts := getBip44Options(options...)
+	return w.entryAt(opts.Account, opts.Change, uint32(i))
+}
+
+// TODO: limit to specific chain
+// GetEntry returns the entry of given address on selected account and chain,
+// if no options are provided, check the external chain of account 0.
+func (w *Wallet) GetEntry(addr cipher.Addresser, options ...wallet.Option) (wallet.Entry, error) {
+	opts := getBip44Options(options...)
+	e, ok, err := w.getEntry(opts.Account, addr)
+	if err != nil {
+		return wallet.Entry{}, err
+	}
+
+	if !ok {
+		return wallet.Entry{}, wallet.ErrEntryNotFound
+	}
+
+	return e, nil
+}
+
+// HasEntry checks whether the entry of given address exists on selected account and chain,
+// if no options are provided, check the external chain of account 0.
+// TODO: limit to specific chain
+func (w *Wallet) HasEntry(addr cipher.Addresser, options ...wallet.Option) (bool, error) {
+	opts := getBip44Options(options...)
+	_, ok, err := w.getEntry(opts.Account, addr)
+	if err != nil {
+		return false, err
+	}
+
+	return ok, nil
+}
+
+// EntriesLen returns the entries length of selected account and chain,
+// if no options are provided, entries length of external chain on account 0 will
+// be returned.
+func (w *Wallet) EntriesLen(options ...wallet.Option) (int, error) {
+	opts := getBip44Options(options...)
+	l, err := w.entriesLen(opts.Account, opts.Change)
+	return int(l), err
 }
 
 func makeChainPubKeys(a *bip44.Account) (*bip32.PublicKey, *bip32.PublicKey, error) {

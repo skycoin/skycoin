@@ -1,6 +1,7 @@
 package deterministic
 
 import (
+	"encoding/hex"
 	"fmt"
 	"testing"
 
@@ -16,8 +17,6 @@ func TestNewWallet(t *testing.T) {
 		meta map[string]string
 		err  error
 	}
-
-	//testDefaultMnemonicSeed := bip39.MustNewDefaultMnemonic()
 
 	tt := []struct {
 		name    string
@@ -50,7 +49,7 @@ func TestNewWallet(t *testing.T) {
 			label:   "test",
 			seed:    "testseed123",
 			options: []wallet.Option{
-				CoinType(wallet.CoinTypeBitcoin),
+				wallet.OptionCoinType(wallet.CoinTypeBitcoin),
 			},
 			expect: expect{
 				meta: map[string]string{
@@ -69,8 +68,8 @@ func TestNewWallet(t *testing.T) {
 			label:   "test",
 			seed:    "testseed123",
 			options: []wallet.Option{
-				Encrypt(true),
-				Password([]byte("pwd")),
+				wallet.OptionEncrypt(true),
+				wallet.OptionPassword([]byte("pwd")),
 			},
 			expect: expect{
 				meta: map[string]string{
@@ -88,7 +87,7 @@ func TestNewWallet(t *testing.T) {
 			label:   "wallet1",
 			seed:    "testseed123",
 			options: []wallet.Option{
-				Encrypt(true),
+				wallet.OptionEncrypt(true),
 			},
 			expect: expect{
 				meta: map[string]string{
@@ -105,8 +104,8 @@ func TestNewWallet(t *testing.T) {
 			wltName: "test.wlt",
 			label:   "test",
 			options: []wallet.Option{
-				Encrypt(true),
-				Password([]byte("pwd")),
+				wallet.OptionEncrypt(true),
+				wallet.OptionPassword([]byte("pwd")),
 			},
 			expect: expect{
 				meta: map[string]string{
@@ -124,8 +123,8 @@ func TestNewWallet(t *testing.T) {
 			label:   "test",
 			seed:    "seed",
 			options: []wallet.Option{
-				Encrypt(false),
-				Password([]byte("pwd")),
+				wallet.OptionEncrypt(false),
+				wallet.OptionPassword([]byte("pwd")),
 			},
 			expect: expect{
 				err: wallet.ErrMissingEncrypt,
@@ -140,14 +139,14 @@ func TestNewWallet(t *testing.T) {
 
 			// apply the options to an temporary wallet
 			opts := tc.options
-			mOpts := &moreOptions{}
+			advOpts := &wallet.AdvancedOptions{}
 			for _, opt := range tc.options {
-				opt(mOpts)
+				opt(advOpts)
 			}
 
-			if mOpts.Encrypt {
+			if advOpts.Encrypt {
 				// append the insecure crypto type
-				opts = append(opts, CryptoType(ct))
+				opts = append(opts, wallet.OptionCryptoType(ct))
 			}
 
 			t.Run(name, func(t *testing.T) {
@@ -167,9 +166,8 @@ func TestNewWallet(t *testing.T) {
 					// Confirms the seeds and entry secrets are all empty
 					require.Equal(t, "", w.Seed())
 					require.Equal(t, "", w.LastSeed())
-					//entries, err := w.GetEntries()
-					entries := w.GetEntries()
-					//require.NoError(t, err)
+					entries, err := w.GetEntries()
+					require.NoError(t, err)
 
 					for _, e := range entries {
 						require.True(t, e.Secret.Null())
@@ -186,57 +184,49 @@ func TestNewWallet(t *testing.T) {
 func TestWalletLock(t *testing.T) {
 	tt := []struct {
 		name    string
+		wltName string
 		opts    []wallet.Option
 		lockPwd []byte
 		err     error
 	}{
 		{
-			name: "ok deterministic",
-			opts: Options{
-				Seed: "seed",
-				Type: WalletTypeDeterministic,
-			},
+			name:    "ok deterministic",
 			lockPwd: []byte("pwd"),
 		},
 		{
-			name: "ok bip44",
-			opts: Options{
-				Seed: bip39.MustNewDefaultMnemonic(),
-				Type: WalletTypeBip44,
-			},
-			lockPwd: []byte("pwd"),
-		},
-		{
-			name: "password is nil",
-			opts: Options{
-				Seed: "seed",
-				Type: WalletTypeDeterministic,
-			},
+			name:    "password is nil",
 			lockPwd: nil,
-			err:     ErrMissingPassword,
+			err:     wallet.ErrMissingPassword,
 		},
 		{
 			name: "wallet already encrypted",
-			opts: Options{
-				Seed:     "seed",
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Type:     WalletTypeDeterministic,
+			opts: []wallet.Option{
+				wallet.OptionEncrypt(true),
+				wallet.OptionPassword([]byte("pwd")),
 			},
 			lockPwd: []byte("pwd"),
-			err:     ErrWalletEncrypted,
+			err:     wallet.ErrWalletEncrypted,
 		},
 	}
 
 	for _, tc := range tt {
 		for _, ct := range crypto.TypesInsecure() {
 			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
-			if tc.opts.Encrypt {
-				tc.opts.CryptoType = ct
+			// apply the options to an temporary wallet
+			opts := tc.opts
+			mOpts := &wallet.AdvancedOptions{}
+			for _, opt := range tc.opts {
+				opt(mOpts)
 			}
+
+			if mOpts.Encrypt {
+				// append the insecure crypto type
+				opts = append(opts, wallet.OptionCryptoType(ct))
+			}
+
 			t.Run(name, func(t *testing.T) {
-				wltName := NewWalletFilename()
-				w, err := NewWallet(wltName, tc.opts)
+				wltName := wallet.NewWalletFilename()
+				w, err := NewWallet(wltName, "test", "testseed123", opts...)
 				require.NoError(t, err)
 
 				if !w.IsEncrypted() {
@@ -267,5 +257,150 @@ func TestWalletLock(t *testing.T) {
 			})
 
 		}
+	}
+}
+
+func TestWalletUnlock(t *testing.T) {
+	tt := []struct {
+		name      string
+		opts      []wallet.Option
+		unlockPwd []byte
+		err       error
+	}{
+		{
+			name: "ok deterministic",
+			opts: []wallet.Option{
+				wallet.OptionEncrypt(true),
+				wallet.OptionPassword([]byte("pwd")),
+				wallet.OptionGenerateN(1),
+			},
+			unlockPwd: []byte("pwd"),
+		},
+		{
+			name: "unlock with nil password",
+			opts: []wallet.Option{
+				wallet.OptionEncrypt(true),
+				wallet.OptionPassword([]byte("pwd")),
+			},
+			unlockPwd: nil,
+			err:       wallet.ErrMissingPassword,
+		},
+		{
+			name: "unlock with wrong password",
+			opts: []wallet.Option{
+				wallet.OptionEncrypt(true),
+				wallet.OptionPassword([]byte("pwd")),
+			},
+			unlockPwd: []byte("wrong_pwd"),
+			err:       wallet.ErrInvalidPassword,
+		},
+		{
+			name:      "unlock undecrypted wallet",
+			unlockPwd: []byte("pwd"),
+			err:       wallet.ErrWalletNotEncrypted,
+		},
+	}
+
+	for _, tc := range tt {
+		for _, ct := range crypto.TypesInsecure() {
+			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
+
+			// apply the options to an temporary wallet
+			opts := tc.opts
+			mOpts := &wallet.AdvancedOptions{}
+			for _, opt := range tc.opts {
+				opt(mOpts)
+			}
+
+			if mOpts.Encrypt {
+				// append the insecure crypto type
+				opts = append(opts, wallet.OptionCryptoType(ct))
+			}
+
+			t.Run(name, func(t *testing.T) {
+				w, err := NewWallet("test.wlt", "test", "testseed123", opts...)
+				require.NoError(t, err)
+				// Tests the unlock method
+				wlt, err := w.Unlock(tc.unlockPwd)
+				require.Equal(t, tc.err, err)
+				if err != nil {
+					return
+				}
+
+				require.False(t, wlt.IsEncrypted())
+
+				// Checks the seeds
+				require.Equal(t, "testseed123", wlt.Seed())
+
+				// Checks the generated addresses
+				el, err := wlt.EntriesLen()
+				require.NoError(t, err)
+				require.Equal(t, 1, el)
+
+				sd, sks := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(wlt.Seed()), 1)
+				require.Equal(t, hex.EncodeToString(sd), wlt.LastSeed())
+				entries, err := wlt.GetEntries()
+				require.NoError(t, err)
+				for i, e := range entries {
+					addr := cipher.MustAddressFromSecKey(sks[i])
+					require.Equal(t, addr, e.Address)
+				}
+
+				// Checks the original seeds
+				require.NotEqual(t, "testseed123", w.Seed())
+
+				// Checks if the seckeys in entries of original wallet are empty
+				entries, err = w.GetEntries()
+				require.NoError(t, err)
+				for _, e := range entries {
+					require.True(t, e.Secret.Null())
+				}
+
+				// Checks if the seed and lastSeed in original wallet are still empty
+				require.Empty(t, w.Seed())
+				require.Empty(t, w.LastSeed())
+				require.Empty(t, w.SeedPassphrase())
+			})
+		}
+	}
+}
+
+func TestLockAndUnLock(t *testing.T) {
+	for _, ct := range crypto.TypesInsecure() {
+		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
+			w, err := NewWallet("wallet.wlt", "test", bip39.MustNewDefaultMnemonic())
+			require.NoError(t, err)
+			_, err = w.GenerateAddresses(9)
+			require.NoError(t, err)
+			el, err := w.EntriesLen()
+			require.NoError(t, err)
+			require.Equal(t, 9, el)
+
+			// clone the wallet
+			cw := w.Clone()
+			require.Equal(t, w, cw)
+
+			// lock the cloned wallet
+			err = cw.Lock([]byte("pwd"))
+			require.NoError(t, err)
+
+			checkNoSensitiveData(t, cw)
+
+			// unlock the cloned wallet
+			ucw, err := cw.Unlock([]byte("pwd"))
+			require.NoError(t, err)
+
+			require.Equal(t, w, ucw)
+		})
+	}
+}
+
+func checkNoSensitiveData(t *testing.T, w wallet.Wallet) {
+	require.Empty(t, w.Seed())
+	require.Empty(t, w.LastSeed())
+	entries, err := w.GetEntries()
+	require.NoError(t, err)
+	for _, e := range entries {
+		require.True(t, e.Secret.Null())
 	}
 }

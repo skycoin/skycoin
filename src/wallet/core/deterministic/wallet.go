@@ -44,10 +44,10 @@ func NewWallet(filename, label, seed string, options ...wallet.Option) (*Wallet,
 		decoder: defaultWalletDecoder,
 	}
 
-	moreOpts := &moreOptions{}
+	advOpts := &wallet.AdvancedOptions{}
 	for _, opt := range options {
 		opt(wlt)
-		opt(moreOpts)
+		opt(advOpts)
 	}
 
 	// validateMeta wallet before encrypting
@@ -55,7 +55,7 @@ func NewWallet(filename, label, seed string, options ...wallet.Option) (*Wallet,
 		return nil, err
 	}
 
-	generateN := moreOpts.GenerateN
+	generateN := advOpts.GenerateN
 	if generateN > 0 {
 		_, err := wlt.GenerateAddresses(generateN)
 		if err != nil {
@@ -63,9 +63,9 @@ func NewWallet(filename, label, seed string, options ...wallet.Option) (*Wallet,
 		}
 	}
 
-	scanN := moreOpts.ScanN
+	scanN := advOpts.ScanN
 	if scanN > 0 {
-		if moreOpts.TF == nil {
+		if advOpts.TF == nil {
 			return nil, errors.New("missing transaction finder for scanning addresses")
 		}
 
@@ -73,23 +73,23 @@ func NewWallet(filename, label, seed string, options ...wallet.Option) (*Wallet,
 			scanN = scanN - generateN
 		}
 
-		_, err := wlt.ScanAddresses(scanN, moreOpts.TF)
+		_, err := wlt.ScanAddresses(scanN, advOpts.TF)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	// encrypts wallet if options.Encrypt is true
-	if moreOpts.Encrypt {
-		if len(moreOpts.Password) == 0 {
+	if advOpts.Encrypt {
+		if len(advOpts.Password) == 0 {
 			return nil, wallet.ErrMissingPassword
 		}
 
-		if err := wlt.Lock(moreOpts.Password); err != nil {
+		if err := wlt.Lock(advOpts.Password); err != nil {
 			return nil, err
 		}
 	} else {
-		if len(moreOpts.Password) > 0 {
+		if len(advOpts.Password) > 0 {
 			return nil, wallet.ErrMissingEncrypt
 		}
 	}
@@ -108,6 +108,11 @@ func validateMeta(m wallet.Meta) error {
 	}
 
 	return wallet.ValidateMeta(m)
+}
+
+// SetDecoder sets the decoder
+func (w *Wallet) SetDecoder(d wallet.Decoder) {
+	w.decoder = d
 }
 
 func (w Wallet) Serialize() ([]byte, error) {
@@ -498,34 +503,30 @@ func (c Creator) Type() string {
 func convertOptions(options wallet.Options) []wallet.Option {
 	var opts []wallet.Option
 
-	if options.Version != "" {
-		opts = append(opts, Version(options.Version))
-	}
-
 	if options.Coin != "" {
-		opts = append(opts, CoinType(options.Coin))
+		opts = append(opts, wallet.OptionCoinType(options.Coin))
 	}
 
 	if options.CryptoType != "" {
-		opts = append(opts, CryptoType(options.CryptoType))
+		opts = append(opts, wallet.OptionCryptoType(options.CryptoType))
 	}
 
 	if options.Decoder != nil {
-		opts = append(opts, Decoder(options.Decoder))
+		opts = append(opts, wallet.OptionDecoder(options.Decoder))
 	}
 
 	if options.Encrypt {
-		opts = append(opts, Encrypt(true))
-		opts = append(opts, Password(options.Password))
+		opts = append(opts, wallet.OptionEncrypt(true))
+		opts = append(opts, wallet.OptionPassword(options.Password))
 	}
 
 	if options.GenerateN > 0 {
-		opts = append(opts, GenerateN(options.GenerateN))
+		opts = append(opts, wallet.OptionGenerateN(options.GenerateN))
 	}
 
 	if options.ScanN > 0 {
-		opts = append(opts, ScanN(options.ScanN))
-		opts = append(opts, TransactionsFinder(options.TF))
+		opts = append(opts, wallet.OptionScanN(options.ScanN))
+		opts = append(opts, wallet.OptionTransactionsFinder(options.TF))
 	}
 
 	return opts

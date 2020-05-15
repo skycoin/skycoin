@@ -204,6 +204,11 @@ func (m Meta) CryptoType() crypto.CryptoType {
 	return crypto.CryptoType(m[MetaCryptoType])
 }
 
+// SetCryptoType sets the encryption type
+func (m Meta) SetCryptoType(ct crypto.CryptoType) {
+	m[MetaCryptoType] = string(ct)
+}
+
 // Secrets returns the encrypted wallet secrets
 func (m Meta) Secrets() string {
 	return m[MetaSecrets]

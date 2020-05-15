@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 	"github.com/SkycoinProject/skycoin/src/util/file"
 	"github.com/SkycoinProject/skycoin/src/util/logging"
@@ -487,6 +487,7 @@ type Wallet interface {
 	Timestamp() int64
 	SetTimestamp(int64)
 	Coin() CoinType
+	SetCoin(coinType CoinType)
 	// Type returns the wallet type, e.g. bip44, deterministic, collection
 	Type() string
 	// Bip44Coin returns the coin_type part of bip44 path
@@ -497,9 +498,11 @@ type Wallet interface {
 	IsEncrypted() bool
 	// CryptoType returns the crypto type for encrypting/decrypting the wallet
 	CryptoType() crypto.CryptoType
+	SetCryptoType(ct crypto.CryptoType)
+	// SetDecoder sets the wallet decoder
+	SetDecoder(d Decoder)
 	// Version returns the wallet version
 	Version() string
-	// SetVersion(string)
 	// Secrets returns the wallet secrets data
 	Secrets() string
 	// XPub returns the xpub key of a xpub wallet
@@ -519,10 +522,18 @@ type Wallet interface {
 	Fingerprint() string
 	// ScanAddresses scans ahead given number of addresses
 	ScanAddresses(scanN uint64, tf TransactionsFinder) ([]cipher.Addresser, error)
+	// GetAddresses returns all addresses.
+	// for bip44 wallet, if no options are specified, addresses on external chain of account
+	// with index 0 will be returned.
+	GetAddresses(options ...Option) ([]cipher.Addresser, error)
+	// GenerateAddresses generates N addresses,
+	// for bip44 wallet, if no options are specified, addresses will be generated
+	// on external chain of account with index 0.
+	GenerateAddresses(num uint64, options ...Option) ([]cipher.Addresser, error)
 	// Entries returns entries,
 	// for bip44 wallet if no options are used, entries on external chain of account
 	// with index 0 will be returned.
-	Entries(options ...Option) (Entries, error)
+	GetEntries(options ...Option) (Entries, error)
 	// GetEntryAt returns the entry of given index,
 	// for bip44 wallet, if no options are specified, the entry on external chain of the account
 	// with index 0 will be returned.
@@ -538,15 +549,7 @@ type Wallet interface {
 	// EntriesLen returns the entries length
 	// for bip44 wallet, if no options are specified, the length of the entries on external chain of account
 	// with index 0 will be returned.
-	EntriesLen() (int, error)
-	// GetAddresses returns all addresses.
-	// for bip44 wallet, if no options are specified, addresses on external chain of account
-	// with index 0 will be returned.
-	GetAddresses(options ...Option) ([]cipher.Addresser, error)
-	// GenerateAddresses generates N addresses,
-	// for bip44 wallet, if no options are specified, addresses will be generated
-	// on external chain of account with index 0.
-	GenerateAddresses(num uint64, options ...Option) ([]cipher.Addresser, error)
+	EntriesLen(options ...Option) (int, error)
 	// Accounts returns the list of account for bip44 wallet
 	Accounts() []Bip44Account
 	// Serialize serialize the wallet to bytes, and error if any

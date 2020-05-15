@@ -23,7 +23,7 @@ func TestNewWallet(t *testing.T) {
 		wltName string
 		seed    string
 		label   string
-		options []wallet.Option
+		opts    []wallet.Option
 		expect  expect
 	}{
 		{
@@ -48,7 +48,7 @@ func TestNewWallet(t *testing.T) {
 			wltName: "test.wlt",
 			label:   "test",
 			seed:    "testseed123",
-			options: []wallet.Option{
+			opts: []wallet.Option{
 				wallet.OptionCoinType(wallet.CoinTypeBitcoin),
 			},
 			expect: expect{
@@ -67,7 +67,7 @@ func TestNewWallet(t *testing.T) {
 			wltName: "test.wlt",
 			label:   "test",
 			seed:    "testseed123",
-			options: []wallet.Option{
+			opts: []wallet.Option{
 				wallet.OptionEncrypt(true),
 				wallet.OptionPassword([]byte("pwd")),
 			},
@@ -86,7 +86,7 @@ func TestNewWallet(t *testing.T) {
 			wltName: "test.wlt",
 			label:   "wallet1",
 			seed:    "testseed123",
-			options: []wallet.Option{
+			opts: []wallet.Option{
 				wallet.OptionEncrypt(true),
 			},
 			expect: expect{
@@ -103,7 +103,7 @@ func TestNewWallet(t *testing.T) {
 			name:    "create with no seed, deterministic",
 			wltName: "test.wlt",
 			label:   "test",
-			options: []wallet.Option{
+			opts: []wallet.Option{
 				wallet.OptionEncrypt(true),
 				wallet.OptionPassword([]byte("pwd")),
 			},
@@ -122,7 +122,7 @@ func TestNewWallet(t *testing.T) {
 			wltName: "test.wlt",
 			label:   "test",
 			seed:    "seed",
-			options: []wallet.Option{
+			opts: []wallet.Option{
 				wallet.OptionEncrypt(false),
 				wallet.OptionPassword([]byte("pwd")),
 			},
@@ -136,19 +136,7 @@ func TestNewWallet(t *testing.T) {
 		// test all supported crypto types
 		for _, ct := range crypto.TypesInsecure() {
 			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
-
-			// apply the options to an temporary wallet
-			opts := tc.options
-			advOpts := &wallet.AdvancedOptions{}
-			for _, opt := range tc.options {
-				opt(advOpts)
-			}
-
-			if advOpts.Encrypt {
-				// append the insecure crypto type
-				opts = append(opts, wallet.OptionCryptoType(ct))
-			}
-
+			opts := useInsecureCrypto(tc.opts, ct)
 			t.Run(name, func(t *testing.T) {
 				w, err := NewWallet(tc.wltName, tc.label, tc.seed, opts...)
 				require.Equal(t, tc.expect.err, err)
@@ -212,17 +200,7 @@ func TestWalletLock(t *testing.T) {
 	for _, tc := range tt {
 		for _, ct := range crypto.TypesInsecure() {
 			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
-			// apply the options to an temporary wallet
-			opts := tc.opts
-			mOpts := &wallet.AdvancedOptions{}
-			for _, opt := range tc.opts {
-				opt(mOpts)
-			}
-
-			if mOpts.Encrypt {
-				// append the insecure crypto type
-				opts = append(opts, wallet.OptionCryptoType(ct))
-			}
+			opts := useInsecureCrypto(tc.opts, ct)
 
 			t.Run(name, func(t *testing.T) {
 				wltName := wallet.NewWalletFilename()
@@ -305,17 +283,7 @@ func TestWalletUnlock(t *testing.T) {
 		for _, ct := range crypto.TypesInsecure() {
 			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
 
-			// apply the options to an temporary wallet
-			opts := tc.opts
-			mOpts := &wallet.AdvancedOptions{}
-			for _, opt := range tc.opts {
-				opt(mOpts)
-			}
-
-			if mOpts.Encrypt {
-				// append the insecure crypto type
-				opts = append(opts, wallet.OptionCryptoType(ct))
-			}
+			opts := useInsecureCrypto(tc.opts, ct)
 
 			t.Run(name, func(t *testing.T) {
 				w, err := NewWallet("test.wlt", "test", "testseed123", opts...)
@@ -393,6 +361,108 @@ func TestLockAndUnLock(t *testing.T) {
 			require.Equal(t, w, ucw)
 		})
 	}
+}
+
+func TestWalletGenerateAddress(t *testing.T) {
+	seed := bip39.MustNewDefaultMnemonic()
+
+	tt := []struct {
+		name               string
+		seed               string
+		opts               []wallet.Option
+		num                uint64
+		oneAddressEachTime bool
+		err                error
+	}{
+		{
+			name: "ok with none address deterministic",
+			seed: seed,
+			num:  0,
+		},
+		{
+			name: "ok with one address deterministic",
+			seed: seed,
+			num:  1,
+		},
+		{
+			name: "ok with two address deterministic",
+			seed: seed,
+			num:  2,
+		},
+		{
+			name:               "ok with three address and generate one address each time deterministic",
+			seed:               seed,
+			num:                2,
+			oneAddressEachTime: true,
+		},
+		{
+			name: "wallet is encrypted deterministic",
+			seed: seed,
+			opts: []wallet.Option{
+				wallet.OptionEncrypt(true),
+				wallet.OptionPassword([]byte("pwd")),
+			},
+			num:                2,
+			oneAddressEachTime: true,
+			err:                wallet.ErrWalletEncrypted,
+		},
+	}
+
+	for _, tc := range tt {
+		for _, ct := range crypto.TypesInsecure() {
+			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
+			opts := useInsecureCrypto(tc.opts, ct)
+			t.Run(name, func(t *testing.T) {
+				// create wallet
+				w, err := NewWallet("test.wlt", "test", tc.seed, opts...)
+				require.NoError(t, err)
+
+				// generate addresses
+				if !tc.oneAddressEachTime {
+					_, err = w.GenerateAddresses(tc.num)
+					require.Equal(t, tc.err, err)
+					if err != nil {
+						return
+					}
+				} else {
+					for i := uint64(0); i < tc.num; i++ {
+						_, err := w.GenerateAddresses(1)
+						require.Equal(t, tc.err, err)
+						if err != nil {
+							return
+						}
+					}
+				}
+
+				// check the entry number
+				l, err := w.EntriesLen()
+				require.NoError(t, err)
+				require.Equal(t, int(tc.num), l)
+
+				addrs, err := w.GetAddresses()
+				require.NoError(t, err)
+
+				_, keys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(tc.seed), int(tc.num))
+				for i, k := range keys {
+					a := cipher.MustAddressFromSecKey(k)
+					require.Equal(t, a.String(), addrs[i].String())
+				}
+			})
+		}
+	}
+}
+
+func useInsecureCrypto(opts []wallet.Option, ct crypto.CryptoType) []wallet.Option {
+	mOpts := &wallet.AdvancedOptions{}
+	for _, opt := range opts {
+		opt(mOpts)
+	}
+
+	if mOpts.Encrypt {
+		// append the insecure crypto type
+		opts = append(opts, wallet.OptionCryptoType(ct))
+	}
+	return opts
 }
 
 func checkNoSensitiveData(t *testing.T, w wallet.Wallet) {

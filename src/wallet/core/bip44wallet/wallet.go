@@ -36,7 +36,7 @@ type Wallet struct {
 	//Meta wallet meta data
 	wallet.Meta
 	// accounts bip44 wallet accounts
-	accounts accountManager
+	accountManager
 	// decoder is used to encode/decode bip44 wallet to/from []byte
 	decoder wallet.Decoder
 }
@@ -106,8 +106,8 @@ func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.O
 			wallet.MetaTimestamp:      strconv.FormatInt(time.Now().Unix(), 10),
 			wallet.MetaBip44Coin:      strconv.FormatUint(uint64(bip44.CoinTypeSkycoin), 10),
 		},
-		accounts: &bip44Accounts{},
-		decoder:  defaultWalletDecoder,
+		accountManager: &bip44Accounts{},
+		decoder:        defaultWalletDecoder,
 	}
 
 	moreOpts := moreOptions{}
@@ -125,7 +125,7 @@ func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.O
 	// Generate addresses if options.GenrateN > 0
 	generateN := moreOpts.GenerateN
 	if generateN > 0 {
-		_, err := wlt.Entries().GenerateAddresses(generateN)
+		_, err := wlt.GenerateAddresses(generateN)
 		if err != nil {
 			return nil, err
 		}
@@ -189,7 +189,7 @@ func validateMeta(m wallet.Meta) error {
 // NewAccount create a bip44 wallet account, returns account index and
 // error, if any.
 func (w *Wallet) NewAccount(name string) (uint32, error) {
-	return w.accounts.new(bip44AccountCreateOptions{
+	return w.accountManager.new(bip44AccountCreateOptions{
 		name:           name,
 		seed:           w.Seed(),
 		seedPassphrase: w.SeedPassphrase(),
@@ -198,50 +198,51 @@ func (w *Wallet) NewAccount(name string) (uint32, error) {
 	})
 }
 
-// NewExternalAddresses generates addresses on external chain of selected account
-func (w *Wallet) NewExternalAddresses(account, n uint32) ([]cipher.Addresser, error) {
-	return w.accounts.newAddresses(account, bip44.ExternalChainIndex, n)
+// newExternalAddresses generates addresses on external chain of selected account
+func (w *Wallet) newExternalAddresses(account, n uint32) ([]cipher.Addresser, error) {
+	return w.accountManager.newAddresses(account, bip44.ExternalChainIndex, n)
 }
 
-// NewChangeAddresses generates addresses on change chain of selected account
-func (w *Wallet) NewChangeAddresses(account, n uint32) ([]cipher.Addresser, error) {
-	return w.accounts.newAddresses(account, bip44.ChangeChainIndex, n)
+//// NewChangeAddresses generates addresses on change chain of selected account
+//func (w *Wallet) NewChangeAddresses(account, n uint32) ([]cipher.Addresser, error) {
+//	return w.accounts.newAddresses(account, bip44.ChangeChainIndex, n)
+//}
+//
+// externalEntries returns the entries on external chain
+func (w *Wallet) externalEntries(account uint32) (wallet.Entries, error) {
+	return w.accountManager.entries(account, bip44.ExternalChainIndex)
 }
 
-// ExternalEntries returns the entries on external chain
-func (w *Wallet) ExternalEntries(account uint32) (wallet.Entries, error) {
-	return w.accounts.entries(account, bip44.ExternalChainIndex)
-}
-
-// ChangeEntries returns the entries on change chain
-func (w *Wallet) ChangeEntries(account uint32) (wallet.Entries, error) {
-	return w.accounts.entries(account, bip44.ChangeChainIndex)
-}
-
-// ExternalEntriesLen returns the external chain entries length of selected account
-func (w *Wallet) ExternalEntriesLen(account uint32) (uint32, error) {
-	return w.accounts.entriesLen(account, bip44.ExternalChainIndex)
-}
-
-// ChangeEntriesLen returns the change chain entries length of selected account
-func (w *Wallet) ChangeEntriesLen(account uint32) (uint32, error) {
-	return w.accounts.entriesLen(account, bip44.ChangeChainIndex)
-}
-
-// ExternalEntryAt returns the entry at the given index on external chain of selected account
-func (w *Wallet) ExternalEntryAt(account, i uint32) (wallet.Entry, error) {
-	return w.accounts.entryAt(account, bip44.ExternalChainIndex, i)
-}
-
-// ChangeEntryAt returns the entry at the given index on change chain of selected account
-func (w *Wallet) ChangeEntryAt(account, i uint32) (wallet.Entry, error) {
-	return w.accounts.entryAt(account, bip44.ChangeChainIndex, i)
-}
-
-// GetEntry returns the entry of given address on selected account
-func (w *Wallet) GetEntry(account uint32, address cipher.Addresser) (wallet.Entry, bool, error) {
-	return w.accounts.getEntry(account, address)
-}
+//
+//// ChangeEntries returns the entries on change chain
+//func (w *Wallet) ChangeEntries(account uint32) (wallet.Entries, error) {
+//	return w.accounts.entries(account, bip44.ChangeChainIndex)
+//}
+//
+//// ExternalEntriesLen returns the external chain entries length of selected account
+//func (w *Wallet) ExternalEntriesLen(account uint32) (uint32, error) {
+//	return w.accounts.entriesLen(account, bip44.ExternalChainIndex)
+//}
+//
+//// ChangeEntriesLen returns the change chain entries length of selected account
+//func (w *Wallet) ChangeEntriesLen(account uint32) (uint32, error) {
+//	return w.accounts.entriesLen(account, bip44.ChangeChainIndex)
+//}
+//
+//// ExternalEntryAt returns the entry at the given index on external chain of selected account
+//func (w *Wallet) ExternalEntryAt(account, i uint32) (wallet.Entry, error) {
+//	return w.accounts.entryAt(account, bip44.ExternalChainIndex, i)
+//}
+//
+//// ChangeEntryAt returns the entry at the given index on change chain of selected account
+//func (w *Wallet) ChangeEntryAt(account, i uint32) (wallet.Entry, error) {
+//	return w.accounts.entryAt(account, bip44.ChangeChainIndex, i)
+//}
+//
+//// GetEntry returns the entry of given address on selected account
+//func (w *Wallet) GetEntry(account uint32, address cipher.Addresser) (wallet.Entry, bool, error) {
+//	return w.accounts.getEntry(account, address)
+//}
 
 // Serialize encodes the bip44 wallet to []byte
 func (w Wallet) Serialize() ([]byte, error) {
@@ -401,7 +402,7 @@ func (w *Wallet) Unlock(password []byte) (wallet.Wallet, error) {
 
 func (w Wallet) Fingerprint() string {
 	addr := ""
-	entries, err := w.ExternalEntries(0)
+	entries, err := w.externalEntries(0)
 	if err != nil {
 		logger.WithError(err).Panic("Fingerprint get external entries failed")
 		return ""
@@ -409,7 +410,7 @@ func (w Wallet) Fingerprint() string {
 
 	if len(entries) == 0 {
 		if !w.IsEncrypted() {
-			addrs, err := w.NewExternalAddresses(0, 1)
+			addrs, err := w.newExternalAddresses(0, 1)
 			if err != nil {
 				logger.WithError(err).Panic("Fingerprint failed to generate initial entry for empty wallet")
 			}
@@ -424,9 +425,9 @@ func (w Wallet) Fingerprint() string {
 // Clone deep clone of the bip44 wallet
 func (w Wallet) Clone() wallet.Wallet {
 	return &Wallet{
-		Meta:     w.Meta.Clone(),
-		accounts: w.accounts.clone(),
-		decoder:  w.decoder,
+		Meta:           w.Meta.Clone(),
+		accountManager: w.accountManager.clone(),
+		decoder:        w.decoder,
 	}
 }
 
@@ -440,7 +441,7 @@ func (w *Wallet) CopyFromRef(src wallet.Wallet) {
 }
 
 func (w *Wallet) Accounts() []wallet.Bip44Account {
-	return w.accounts.all()
+	return w.accountManager.all()
 }
 
 // Entries provides entries service to access the external chain of given account
@@ -468,7 +469,7 @@ func (w *Wallet) Entries(options ...wallet.Option) wallet.EntriesService {
 
 func (w *Wallet) copyFrom(wlt *Wallet) {
 	w.Meta = wlt.Meta.Clone()
-	w.accounts = wlt.accounts.clone()
+	w.accountManager = wlt.accountManager.clone()
 	w.decoder = wlt.decoder
 }
 
@@ -476,33 +477,33 @@ func (w *Wallet) copyFrom(wlt *Wallet) {
 func (w *Wallet) Erase() {
 	w.SetSeed("")
 	w.SetSeedPassphrase("")
-	w.accounts.erase()
+	w.accountManager.erase()
 }
 
 // syncSecrets synchronize the secrets with all addresses, ensure that
 // each address has the secret key stored in the secrets
 func (w Wallet) syncSecrets(ss wallet.Secrets) error {
-	return w.accounts.syncSecrets(ss)
+	return w.accountManager.syncSecrets(ss)
 }
 
 // packSecrets saves all sensitive data to the secrets map.
 func (w Wallet) packSecrets(ss wallet.Secrets) {
 	ss.Set(wallet.SecretSeed, w.Meta.Seed())
 	ss.Set(wallet.SecretSeedPassphrase, w.Meta.SeedPassphrase())
-	w.accounts.packSecrets(ss)
+	w.accountManager.packSecrets(ss)
 }
 
 func (w *Wallet) unpackSecrets(ss wallet.Secrets) error {
 	seed, ok := ss.Get(wallet.SecretSeed)
 	if !ok {
-		return errors.New("Seed does not exist in secrets")
+		return errors.New("seed does not exist in secrets")
 	}
 	w.Meta.SetSeed(seed)
 
 	passphrase, _ := ss.Get(wallet.SecretSeedPassphrase)
 	w.Meta.SetSeedPassphrase(passphrase)
 
-	return w.accounts.unpackSecrets(ss)
+	return w.unpackSecrets(ss)
 }
 
 // TODO: implement this

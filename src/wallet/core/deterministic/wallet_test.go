@@ -3,6 +3,7 @@ package deterministic
 import (
 	"encoding/hex"
 	"fmt"
+	"io/ioutil"
 	"testing"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
@@ -449,6 +450,53 @@ func TestWalletGenerateAddress(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestWalletGetEntry(t *testing.T) {
+	tt := []struct {
+		name    string
+		wltFile string
+		address string
+		err     error
+	}{
+		{
+			"ok",
+			"./testdata/test1.wlt",
+			"JUdRuTiqD1mGcw358twMg3VPpXpzbkdRvJ",
+			nil,
+		},
+		{
+			"entry not exist",
+			"./testdata/test1.wlt",
+			"2ULfxDUuenUY5V4Pr8whmoAwFdUseXNyjXC",
+			wallet.ErrEntryNotFound,
+		},
+		{
+			"scrypt-chacha20poly1305 encrypted wallet",
+			"./testdata/scrypt-chacha20poly1305-encrypted.wlt",
+			"LxcitUpWQZbPjgEPs6R1i3G4Xa31nPMoSG",
+			nil,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			data, err := ioutil.ReadFile(tc.wltFile)
+			require.NoError(t, err)
+			ld := Loader{}
+			w, err := ld.Load(data)
+			require.NoError(t, err)
+
+			a, err := cipher.DecodeBase58Address(tc.address)
+			require.NoError(t, err)
+			e, err := w.GetEntry(a)
+			require.Equal(t, tc.err, err)
+			if err != nil {
+				return
+			}
+			require.Equal(t, tc.address, e.Address.String())
+		})
 	}
 }
 

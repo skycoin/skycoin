@@ -467,7 +467,7 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64, opt
 	var addrs []cipher.Addresser
 	f := func(w Wallet) error {
 		var err error
-		addrs, err = w.Entries(options...).GenerateAddresses(num)
+		addrs, err = w.GenerateAddresses(num, options...)
 		return err
 	}
 
@@ -510,7 +510,7 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64, opt
 }
 
 // ScanAddresses scan ahead addresses to see if contains balance.
-func (serv *Service) ScanAddresses(wltID string, password []byte, num uint64, tf TransactionsFinder, options ...Option) ([]cipher.Address, error) {
+func (serv *Service) ScanAddresses(wltID string, password []byte, num uint64, tf TransactionsFinder) ([]cipher.Address, error) {
 	serv.Lock()
 	defer serv.Unlock()
 	if !serv.config.EnableWalletAPI {
@@ -600,7 +600,7 @@ func (serv *Service) GetAddresses(wltID string, options ...Option) ([]cipher.Add
 	if err != nil {
 		return nil, err
 	}
-	addrs, err := w.Entries(options...).GetAddresses()
+	addrs, err := w.GetAddresses(options...)
 	if err != nil {
 		return nil, err
 	}

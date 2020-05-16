@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/wallet/secrets"
 )
 
 // Entry represents the wallet entry
@@ -62,33 +61,33 @@ func (entries Entries) Clone() Entries {
 	return append(Entries{}, entries...)
 }
 
-func (entries Entries) Has(a cipher.Address) bool {
+func (entries Entries) Has(a cipher.Addresser) bool {
 	// This doesn't use getEntry() to avoid copying an Entry in the return value,
 	// which may contain a secret key
 	for _, e := range entries {
-		if e.SkycoinAddress() == a {
+		if e.Address == a {
 			return true
 		}
 	}
 	return false
 }
 
-func (entries Entries) Get(a cipher.Address) (Entry, bool) {
+func (entries Entries) Get(a cipher.Addresser) (Entry, bool) {
 	for _, e := range entries {
-		if e.SkycoinAddress() == a {
+		if e.Address == a {
 			return e, true
 		}
 	}
 	return Entry{}, false
 }
 
-func (entries Entries) GetSkycoinAddresses() []cipher.Address {
-	addrs := make([]cipher.Address, len(entries))
-	for i, e := range entries {
-		addrs[i] = e.SkycoinAddress()
-	}
-	return addrs
-}
+//func (entries Entries) GetSkycoinAddresses() []cipher.Address {
+//	addrs := make([]cipher.Address, len(entries))
+//	for i, e := range entries {
+//		addrs[i] = e.SkycoinAddress()
+//	}
+//	return addrs
+//}
 
 func (entries Entries) GetAddresses() []cipher.Addresser {
 	addrs := make([]cipher.Addresser, len(entries))
@@ -109,7 +108,7 @@ func (entries Entries) Erase() {
 }
 
 // UnpackSecretKeys for each entry, look for the secret key in the Secrets dict, keyed by address
-func (entries Entries) UnpackSecretKeys(ss secrets.Secrets) error {
+func (entries Entries) UnpackSecretKeys(ss Secrets) error {
 	for i, e := range entries {
 		sstr, ok := ss.Get(e.Address.String())
 		if !ok {

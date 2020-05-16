@@ -30,31 +30,21 @@ type Service struct {
 	// fingerprints is used to check for duplicate deterministic wallets
 	fingerprints map[string]string
 	// registered wallet backends
-	loaders  map[string]Loader
-	creators map[string]Creator
+	loaders  map[CoinType]Loader
+	creators map[CoinType]Creator
 }
 
-// Typer is the interface that wraps the Type method.
-//
-// Typer returns the wallet type
-type Typer interface {
-	Type() string
-}
-
-// Loader is the interface that wraps the Load method and Typer interface.
+// Loader is the interface that wraps the Load method.
 //
 // Load loads wallet from specific wallet file path.
 type Loader interface {
-	Typer
 	Load(data []byte) (Wallet, error)
 }
 
 // Creator is the interface that wraps the Create and Type methods.
 //
 // Create creates a wallet base on the parameters
-// Type returns the type of wallet
 type Creator interface {
-	Typer
 	Create(filename, label, seed string, options Options) (Wallet, error)
 }
 
@@ -65,8 +55,8 @@ type Config struct {
 	EnableWalletAPI bool
 	EnableSeedAPI   bool
 	Bip44Coin       *bip44.CoinType
-	WalletLoaders   []Loader
-	WalletCreators  []Creator
+	WalletLoaders   map[CoinType]Loader
+	WalletCreators  map[CoinType]Creator
 }
 
 // NewConfig creates a default Config
@@ -102,13 +92,13 @@ func NewService(c Config) (*Service, error) {
 	}
 
 	// loads the wallet loaders
-	for _, l := range c.WalletLoaders {
-		serv.loaders[l.Type()] = l
+	for t, l := range c.WalletLoaders {
+		serv.loaders[t] = l
 	}
 
 	// loads the wallet creators
-	for _, ctr := range c.WalletCreators {
-		serv.creators[ctr.Type()] = ctr
+	for t, ctr := range c.WalletCreators {
+		serv.creators[t] = ctr
 	}
 
 	// Load all wallets from disk
@@ -215,7 +205,7 @@ func (serv *Service) load(filename string) (Wallet, error) {
 	}
 
 	// Depending on the wallet type in the wallet metadata header, load the full wallet data
-	l, ok := serv.loaders[m.Meta.Type]
+	l, ok := serv.loaders[CoinType(m.Meta.Type)]
 	if !ok {
 		return nil, fmt.Errorf("wallet loader for type of %q not found", m.Meta.Type)
 	}
@@ -262,7 +252,7 @@ func (serv *Service) CreateWallet(wltName string, options Options) (Wallet, erro
 }
 
 func (serv *Service) createWallet(wltName string, options Options) (Wallet, error) {
-	creator, ok := serv.creators[options.Type]
+	creator, ok := serv.creators[CoinType(options.Type)]
 	if !ok {
 		return nil, ErrInvalidWalletType
 	}

@@ -12,7 +12,8 @@ import (
 	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
 )
 
-const walletType = "deterministic"
+// WalletType represents the deterministic wallet type
+const WalletType = "deterministic"
 
 var defaultWalletDecoder = &JSONDecoder{}
 
@@ -34,7 +35,7 @@ func NewWallet(filename, label, seed string, options ...wallet.Option) (*Wallet,
 			wallet.MetaSeed:       seed,
 			wallet.MetaLastSeed:   seed,
 			wallet.MetaEncrypted:  "false",
-			wallet.MetaType:       walletType,
+			wallet.MetaType:       WalletType,
 			wallet.MetaVersion:    wallet.Version,
 			wallet.MetaCoin:       string(wallet.CoinTypeSkycoin),
 			wallet.MetaCryptoType: string(crypto.DefaultCryptoType),
@@ -103,7 +104,7 @@ func NewWallet(filename, label, seed string, options ...wallet.Option) (*Wallet,
 }
 
 func validateMeta(m wallet.Meta) error {
-	if m[wallet.MetaType] != walletType {
+	if m[wallet.MetaType] != WalletType {
 		return errors.New("invalid wallet type")
 	}
 
@@ -349,7 +350,6 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 	nExistingAddrs := uint64(len(w2.entries))
 
 	// Generate the addresses to scan
-	//addrs, err := w2.GenerateSkycoinAddresses(scanN)
 	addrs, err := w2.GenerateAddresses(scanN)
 	if err != nil {
 		return nil, err
@@ -481,10 +481,6 @@ func (l Loader) Load(data []byte) (wallet.Wallet, error) {
 	return w, nil
 }
 
-func (l Loader) Type() string {
-	return walletType
-}
-
 // Creator implements the wallet.Creator and wallet.Typer interface
 type Creator struct{}
 
@@ -494,10 +490,6 @@ func (c Creator) Create(filename, label, seed string, options wallet.Options) (w
 		label,
 		seed,
 		convertOptions(options)...)
-}
-
-func (c Creator) Type() string {
-	return walletType
 }
 
 func convertOptions(options wallet.Options) []wallet.Option {

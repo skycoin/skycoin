@@ -19,9 +19,8 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 )
 
-const (
-	walletType = "bip44"
-)
+// WalletType represents the bip44 wallet type
+const WalletType = "bip44"
 
 var (
 	// defaultWalletDecoder is the default bip44 wallet decoder
@@ -99,7 +98,7 @@ func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.O
 			wallet.MetaSeed:           seed,
 			wallet.MetaSeedPassphrase: seedPassphrase,
 			wallet.MetaEncrypted:      "false",
-			wallet.MetaType:           walletType,
+			wallet.MetaType:           WalletType,
 			wallet.MetaVersion:        wallet.Version,
 			wallet.MetaCoin:           string(wallet.CoinTypeSkycoin),
 			wallet.MetaCryptoType:     string(crypto.DefaultCryptoType),
@@ -167,7 +166,7 @@ func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.O
 }
 
 func validateMeta(m wallet.Meta) error {
-	if m[wallet.MetaType] != walletType {
+	if m[wallet.MetaType] != WalletType {
 		return errors.New("invalid wallet type")
 	}
 
@@ -607,10 +606,6 @@ func (l Loader) Load(data []byte) (wallet.Wallet, error) {
 	return w, nil
 }
 
-func (l Loader) Type() string {
-	return walletType
-}
-
 // Creator implements the wallet.Creator interface
 type Creator struct{}
 
@@ -622,10 +617,6 @@ func (c Creator) Create(filename, label, seed string, options wallet.Options) (w
 		seed,
 		options.SeedPassphrase,
 		opts...)
-}
-
-func (c Creator) Type() string {
-	return walletType
 }
 
 // convertOptions collects the cared fields from wallet.Options

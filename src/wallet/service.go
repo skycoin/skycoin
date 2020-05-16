@@ -55,7 +55,7 @@ type Loader interface {
 // Type returns the type of wallet
 type Creator interface {
 	Typer
-	Create(filename, label, seed string, options *Options) (Wallet, error)
+	Create(filename, label, seed string, options Options) (Wallet, error)
 }
 
 // Config wallet service config
@@ -267,7 +267,7 @@ func (serv *Service) createWallet(wltName string, options Options) (Wallet, erro
 		return nil, ErrInvalidWalletType
 	}
 
-	return creator.Create(wltName, options.Label, options.Seed, &options)
+	return creator.Create(wltName, options.Label, options.Seed, options)
 }
 
 // loadWallet loads wallet from seed and scan the first N addresses
@@ -871,7 +871,7 @@ func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string, passwor
 		return nil, ErrWalletRecoverSeedWrong
 	}
 
-	l, err := w.Entries(options...).Len()
+	l, err := w.EntriesLen(options...)
 	if err != nil {
 		return nil, err
 	}

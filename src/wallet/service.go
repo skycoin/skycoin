@@ -232,6 +232,11 @@ func (serv *Service) updateOptions(opts Options) Options {
 		c := *serv.config.Bip44Coin
 		opts.Bip44Coin = &c
 	}
+
+	// generate one default address if options.GenerateN is 0
+	if opts.GenerateN == 0 {
+		opts.GenerateN = 1
+	}
 	return opts
 }
 

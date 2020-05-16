@@ -19,7 +19,7 @@ import (
 
 // TransactionsFinder interface for finding address related transaction hashes
 type TransactionsFinder interface {
-	AddressesActivity(addrs []cipher.Address) ([]bool, error)
+	AddressesActivity(addrs []cipher.Addresser) ([]bool, error)
 }
 
 // Service wallet service struct

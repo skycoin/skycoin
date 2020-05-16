@@ -2193,10 +2193,20 @@ func (vs *Visor) WithUpdateTx(name string, f func(tx *dbutil.Tx) error) error {
 
 // AddressesActivity returns whether or not each address has any activity on blockchain
 // or in the unconfirmed pool
-func (vs *Visor) AddressesActivity(addrs []cipher.Address) ([]bool, error) {
+func (vs *Visor) AddressesActivity(addrs []cipher.Addresser) ([]bool, error) {
+	skyAddrs := make([]cipher.Address, len(addrs))
+	// convert to skycoin addresses
+	for i, a := range addrs {
+		addr, ok := a.(cipher.Address)
+		if !ok {
+			return nil, errors.New("invalid skycoin address")
+		}
+		skyAddrs[i] = addr
+	}
+
 	active := make([]bool, len(addrs))
 	addrsMap := make(map[cipher.Address]int, len(addrs))
-	for i, a := range addrs {
+	for i, a := range skyAddrs {
 		addrsMap[a] = i
 	}
 
@@ -2206,7 +2216,7 @@ func (vs *Visor) AddressesActivity(addrs []cipher.Address) ([]bool, error) {
 
 	if err := vs.db.View("AddressActivity", func(tx *dbutil.Tx) error {
 		// Check if the addresses appear in the blockchain
-		for i, a := range addrs {
+		for i, a := range skyAddrs {
 			ok, err := vs.history.AddressSeen(tx, a)
 			if err != nil {
 				return err

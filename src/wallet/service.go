@@ -76,6 +76,8 @@ func NewService(c Config) (*Service, error) {
 	serv := &Service{
 		config:       c,
 		fingerprints: make(map[string]string),
+		loaders:      make(map[CoinType]Loader),
+		creators:     make(map[CoinType]Creator),
 	}
 
 	if !serv.config.EnableWalletAPI {
@@ -164,6 +166,11 @@ func (serv *Service) loadWallets() (Wallets, error) {
 				return nil, err
 			}
 
+			if w == nil {
+				logger.WithField("filename", fullPath).Warning("wallet loading skipped")
+				continue
+			}
+
 			logger.WithField("filename", fullPath).Info("loadWallets: loaded wallet")
 
 			wallets[name] = w
@@ -207,15 +214,12 @@ func (serv *Service) load(filename string) (Wallet, error) {
 	// Depending on the wallet type in the wallet metadata header, load the full wallet data
 	l, ok := serv.loaders[CoinType(m.Meta.Type)]
 	if !ok {
-		return nil, fmt.Errorf("wallet loader for type of %q not found", m.Meta.Type)
+		//return nil, fmt.Errorf("wallet loader for type of %q not found", m.Meta.Type)
+		logger.Errorf("wallet loader for type of %q not found", m.Meta.Type)
+		return nil, nil
 	}
 
-	f, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	data, err := ioutil.ReadAll(f)
+	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}

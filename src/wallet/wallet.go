@@ -479,6 +479,8 @@ func NewWalletScanAhead(wltName string, opts Options, tf TransactionsFinder) (Wa
 //	return wlt, nil
 //}
 
+//go:generate mockery -name Wallet -case underscore -inpkg -testonly
+
 // Wallet defines the wallet API
 type Wallet interface {
 	Seed() string

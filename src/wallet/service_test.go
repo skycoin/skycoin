@@ -13,10 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
 	"github.com/SkycoinProject/skycoin/src/testutil"
 	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
-	"github.com/SkycoinProject/skycoin/src/wallet/entry"
 )
 
 func prepareWltDir() string {
@@ -36,7 +34,39 @@ func dirIsEmpty(t *testing.T, dir string) {
 	require.Empty(t, names)
 }
 
+// fake wallet loaders
+type fakeWalletLoader struct {
+	Type          CoinType
+	Accounts      []Bip44Account
+	EntriesLen    int
+	EntriesLenErr error
+	Fingerprint   string
+}
+
+func (f *fakeWalletLoader) Load(data []byte) (Wallet, error) {
+	m := &MockWallet{}
+	m.On("Type").Return(string(f.Type))
+	m.On("Coin").Return(CoinTypeSkycoin)
+	m.On("Accounts").Return(f.Accounts)
+	m.On("EntriesLen").Return(f.EntriesLen, f.EntriesLenErr)
+
+	if f.Fingerprint == "" {
+		f.Fingerprint = hex.EncodeToString(cipher.RandByte(32))
+	}
+
+	m.On("Fingerprint").Return(f.Fingerprint)
+	return m, nil
+}
+
 func TestNewService(t *testing.T) {
+	// create fake wallet loaders
+	loaders := map[CoinType]Loader{
+		WalletTypeDeterministic: &fakeWalletLoader{Type: WalletTypeDeterministic, EntriesLen: 1},
+		//WalletTypeBip44:         &fakeWalletLoader{Type: WalletTypeBip44, Accounts: []Bip44Account{}, EntriesLen: 1},
+		//WalletTypeCollection: &fakeWalletLoader{Type: WalletTypeCollection},
+		//WalletTypeXPub:       &fakeWalletLoader{Type: WalletTypeXPub},
+	}
+
 	for _, ct := range crypto.Types() {
 		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
 			dir := prepareWltDir()
@@ -44,6 +74,7 @@ func TestNewService(t *testing.T) {
 				WalletDir:       dir,
 				CryptoType:      ct,
 				EnableWalletAPI: true,
+				WalletLoaders:   loaders,
 			})
 			require.NoError(t, err)
 
@@ -60,19 +91,30 @@ func TestNewService(t *testing.T) {
 				WalletDir:       "./testdata",
 				CryptoType:      ct,
 				EnableWalletAPI: true,
+				WalletLoaders:   loaders,
 			})
 			require.NoError(t, err)
 
-			require.Equal(t, 11, len(s.wallets))
+			//require.Equal(t, 11, len(s.wallets))
+			require.Equal(t, 6, len(s.wallets))
 
 		})
 	}
 }
 
 func TestNewServiceDupWallets(t *testing.T) {
+	// create fake wallet loaders
+	loaders := map[CoinType]Loader{
+		WalletTypeDeterministic: &fakeWalletLoader{
+			Type:        WalletTypeDeterministic,
+			EntriesLen:  1,
+			Fingerprint: "deterministic-2M755W9o7933roLASK9PZTmqRsjQUsVen9y",
+		},
+	}
 	_, err := NewService(Config{
 		WalletDir:       "./testdata/duplicate_wallets",
 		EnableWalletAPI: true,
+		WalletLoaders:   loaders,
 	})
 	require.NotNil(t, err)
 	require.Error(t, err)

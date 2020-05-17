@@ -450,11 +450,9 @@ func TestServiceLoadWallet(t *testing.T) {
 	//}
 
 	tt := []struct {
-		name          string
-		opts          Options
-		err           error
-		expectAddrNum int
-		expectAddrs   []cipher.Address
+		name string
+		opts Options
+		err  error
 	}{
 		{
 			name: "raw wallet address=1",
@@ -462,201 +460,23 @@ func TestServiceLoadWallet(t *testing.T) {
 				Type:  WalletTypeDeterministic,
 				Seed:  "testseed123",
 				Label: "wallet",
-				ScanN: 5,
-				//TF: mockTxnsFinder{
-				//	addrs[0]: true,
-				//},
 			},
-			tf: mockTxnsFinder{
-				addrs[0]: true,
-			},
-			err:           nil,
-			expectAddrNum: 1,
-			expectAddrs:   addrs[:1],
-		},
-		{
-			name: "raw wallet address=2",
-			opts: Options{
-				Type:  WalletTypeDeterministic,
-				Seed:  seed,
-				Label: "wallet",
-				ScanN: 5,
-			},
-			tf: mockTxnsFinder{
-				addrs[1]: true,
-			},
-			err:           nil,
-			expectAddrNum: 2,
-			expectAddrs:   addrs[:2],
 		},
 		{
 			name: "encrypted wallet address=1",
 			opts: Options{
 				Type:     WalletTypeDeterministic,
-				Seed:     seed,
+				Seed:     "testseed123",
 				Label:    "wallet",
 				Encrypt:  true,
 				Password: []byte("pwd"),
-				ScanN:    5,
 			},
-			tf: mockTxnsFinder{
-				addrs[0]: true,
-			},
-			err:           nil,
-			expectAddrNum: 1,
-			expectAddrs:   addrs[:1],
+			err: nil,
 		},
-		{
-			name: "encrypted wallet address=2",
-			opts: Options{
-				Type:     WalletTypeDeterministic,
-				Seed:     seed,
-				Label:    "wallet",
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				ScanN:    5,
-			},
-			tf: mockTxnsFinder{
-				addrs[1]: true,
-			},
-			err:           nil,
-			expectAddrNum: 2,
-			expectAddrs:   addrs[:2],
-		},
-
-		{
-			name: "bip44 raw wallet address=1",
-			opts: Options{
-				Type:  WalletTypeBip44,
-				Seed:  bip44Seed,
-				Label: "wallet",
-				ScanN: 5,
-			},
-			tf: mockTxnsFinder{
-				bip44Addrs[0]: true,
-			},
-			err:           nil,
-			expectAddrNum: 1,
-			expectAddrs:   bip44Addrs[:1],
-		},
-		{
-			name: "bip44 raw wallet address=2",
-			opts: Options{
-				Type:  WalletTypeBip44,
-				Seed:  bip44Seed,
-				Label: "wallet",
-				ScanN: 5,
-			},
-			tf: mockTxnsFinder{
-				bip44Addrs[1]: true,
-			},
-			err:           nil,
-			expectAddrNum: 2,
-			expectAddrs:   bip44Addrs[:2],
-		},
-		{
-			name: "bip44 encrypted wallet address=1",
-			opts: Options{
-				Type:     WalletTypeBip44,
-				Seed:     bip44Seed,
-				Label:    "wallet",
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				ScanN:    5,
-			},
-			tf: mockTxnsFinder{
-				bip44Addrs[0]: true,
-			},
-			err:           nil,
-			expectAddrNum: 1,
-			expectAddrs:   bip44Addrs[:1],
-		},
-		{
-			name: "bip44 encrypted wallet address=2",
-			opts: Options{
-				Type:     WalletTypeBip44,
-				Seed:     bip44Seed,
-				Label:    "wallet",
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				ScanN:    5,
-			},
-			tf: mockTxnsFinder{
-				bip44Addrs[1]: true,
-			},
-			err:           nil,
-			expectAddrNum: 2,
-			expectAddrs:   bip44Addrs[:2],
-		},
-
-		{
-			name: "bip44 with seed passphrase raw wallet address=1",
-			opts: Options{
-				Type:           WalletTypeBip44,
-				Seed:           bip44Seed,
-				SeedPassphrase: bip44SeedPassphrase,
-				Label:          "wallet",
-				ScanN:          5,
-			},
-			tf: mockTxnsFinder{
-				bip44SeedPassphraseAddrs[0]: true,
-			},
-			err:           nil,
-			expectAddrNum: 1,
-			expectAddrs:   bip44SeedPassphraseAddrs[:1],
-		},
-		{
-			name: "bip44 with seed passphrase raw wallet address=2",
-			opts: Options{
-				Type:           WalletTypeBip44,
-				Seed:           bip44Seed,
-				SeedPassphrase: bip44SeedPassphrase,
-				Label:          "wallet",
-				ScanN:          5,
-			},
-			tf: mockTxnsFinder{
-				bip44SeedPassphraseAddrs[1]: true,
-			},
-			err:           nil,
-			expectAddrNum: 2,
-			expectAddrs:   bip44SeedPassphraseAddrs[:2],
-		},
-		{
-			name: "bip44 with seed passphrase encrypted wallet address=1",
-			opts: Options{
-				Type:           WalletTypeBip44,
-				Seed:           bip44Seed,
-				SeedPassphrase: bip44SeedPassphrase,
-				Label:          "wallet",
-				Encrypt:        true,
-				Password:       []byte("pwd"),
-				ScanN:          5,
-			},
-			tf: mockTxnsFinder{
-				bip44SeedPassphraseAddrs[0]: true,
-			},
-			err:           nil,
-			expectAddrNum: 1,
-			expectAddrs:   bip44SeedPassphraseAddrs[:1],
-		},
-		{
-			name: "bip44 with seed passphrase encrypted wallet address=2",
-			opts: Options{
-				Type:           WalletTypeBip44,
-				Seed:           bip44Seed,
-				SeedPassphrase: bip44SeedPassphrase,
-				Label:          "wallet",
-				Encrypt:        true,
-				Password:       []byte("pwd"),
-				ScanN:          5,
-			},
-			tf: mockTxnsFinder{
-				bip44SeedPassphraseAddrs[1]: true,
-			},
-			err:           nil,
-			expectAddrNum: 2,
-			expectAddrs:   bip44SeedPassphraseAddrs[:2],
-		},
+		// TODO:
+		// - Test bip44 wallet
+		// - Test xpub wallet
+		// - Test collection wallet
 	}
 
 	creators := map[string]Creator{
@@ -702,37 +522,21 @@ func TestServiceLoadWallet(t *testing.T) {
 					require.Equal(t, tc.opts.GenerateN, el)
 				}
 
-				// confirms if the wallet has been saved to the RAM wallet list
+				// confirms that the wallet has been saved to the RAM wallet list
 				getW := s.wallets.get(w.Filename())
 				require.NotNil(t, getW)
 
-				// confirms if the wallet has been saved to disk
+				// confirms that the wallet has been saved to disk
 				_, err = os.Stat(filepath.Join(dir, w.Filename()))
 				require.True(t, !os.IsNotExist(err))
 
-				// This should be tested in the implementation of each creator
-				//el, err := w.EntriesLen()
-				//require.NoError(t, err)
-				//require.Equal(t, tc.expectAddrNum, el)
-				//addrsInWlt, err := w.GetAddresses()
-				//require.NoError(t, err)
-				//for i, a := range tc.expectAddrs {
-				//	require.Equal(t, a, addrsInWlt[i])
-				//}
-				//
-				//require.Equal(t, w.IsEncrypted(), tc.opts.Encrypt)
-				//if w.IsEncrypted() {
-				//	checkNoSensitiveData(t, w)
-				//	// Checks the wallet file doesn't contain sensitive data
-				//	wltPath := filepath.Join(dir, w.Filename())
-				//	lw, err := Load(wltPath)
-				//	require.NoError(t, err)
-				//	checkNoSensitiveData(t, lw)
-				//}
+				// confirms that the fingerprint is saved if not empty
+				if w.Fingerprint() != "" {
+					require.Equal(t, w.Filename(), s.fingerprints[w.Fingerprint()])
+				}
 			})
 		}
 	}
-
 }
 
 func TestServiceNewAddresses(t *testing.T) {

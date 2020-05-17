@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
 	"github.com/SkycoinProject/skycoin/src/testutil"
 	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
 )
@@ -35,7 +36,7 @@ func dirIsEmpty(t *testing.T, dir string) {
 }
 
 // fake wallet loaders
-type fakeWalletLoader struct {
+type mockWalletLoader struct {
 	Type          CoinType
 	Accounts      []Bip44Account
 	EntriesLen    int
@@ -43,28 +44,28 @@ type fakeWalletLoader struct {
 	Fingerprint   string
 }
 
-func (f *fakeWalletLoader) Load(data []byte) (Wallet, error) {
+func (l *mockWalletLoader) Load(data []byte) (Wallet, error) {
 	m := &MockWallet{}
-	m.On("Type").Return(string(f.Type))
+	m.On("Type").Return(string(l.Type))
 	m.On("Coin").Return(CoinTypeSkycoin)
-	m.On("Accounts").Return(f.Accounts)
-	m.On("EntriesLen").Return(f.EntriesLen, f.EntriesLenErr)
+	m.On("Accounts").Return(l.Accounts)
+	m.On("EntriesLen").Return(l.EntriesLen, l.EntriesLenErr)
 
-	if f.Fingerprint == "" {
-		f.Fingerprint = hex.EncodeToString(cipher.RandByte(32))
+	if l.Fingerprint == "" {
+		l.Fingerprint = hex.EncodeToString(cipher.RandByte(32))
 	}
 
-	m.On("Fingerprint").Return(f.Fingerprint)
+	m.On("Fingerprint").Return(l.Fingerprint)
 	return m, nil
 }
 
 func TestNewService(t *testing.T) {
 	// create fake wallet loaders
-	loaders := map[CoinType]Loader{
-		WalletTypeDeterministic: &fakeWalletLoader{Type: WalletTypeDeterministic, EntriesLen: 1},
-		//WalletTypeBip44:         &fakeWalletLoader{Type: WalletTypeBip44, Accounts: []Bip44Account{}, EntriesLen: 1},
-		//WalletTypeCollection: &fakeWalletLoader{Type: WalletTypeCollection},
-		//WalletTypeXPub:       &fakeWalletLoader{Type: WalletTypeXPub},
+	loaders := map[string]Loader{
+		WalletTypeDeterministic: &mockWalletLoader{Type: WalletTypeDeterministic, EntriesLen: 1},
+		//WalletTypeBip44:         &mockWalletLoader{Type: WalletTypeBip44, Accounts: []Bip44Account{}, EntriesLen: 1},
+		//WalletTypeCollection: &mockWalletLoader{Type: WalletTypeCollection},
+		//WalletTypeXPub:       &mockWalletLoader{Type: WalletTypeXPub},
 	}
 
 	for _, ct := range crypto.Types() {
@@ -104,8 +105,8 @@ func TestNewService(t *testing.T) {
 
 func TestNewServiceDupWallets(t *testing.T) {
 	// create fake wallet loaders
-	loaders := map[CoinType]Loader{
-		WalletTypeDeterministic: &fakeWalletLoader{
+	loaders := map[string]Loader{
+		WalletTypeDeterministic: &mockWalletLoader{
 			Type:        WalletTypeDeterministic,
 			EntriesLen:  1,
 			Fingerprint: "deterministic-2M755W9o7933roLASK9PZTmqRsjQUsVen9y",
@@ -122,6 +123,11 @@ func TestNewServiceDupWallets(t *testing.T) {
 }
 
 func TestNewServiceEmptyWallet(t *testing.T) {
+	loaders := map[string]Loader{
+		WalletTypeDeterministic: &mockWalletLoader{
+			Type: WalletTypeDeterministic,
+		},
+	}
 	cases := []struct {
 		dir string
 		fn  string
@@ -130,10 +136,10 @@ func TestNewServiceEmptyWallet(t *testing.T) {
 			dir: "./testdata/empty_wallet",
 			fn:  "empty.wlt",
 		},
-		{
-			dir: "./testdata/empty_bip44_wallet",
-			fn:  "empty.wlt",
-		},
+		//{
+		//	dir: "./testdata/empty_bip44_wallet",
+		//	fn:  "empty.wlt",
+		//},
 	}
 
 	for _, tc := range cases {
@@ -141,6 +147,7 @@ func TestNewServiceEmptyWallet(t *testing.T) {
 			_, err := NewService(Config{
 				WalletDir:       tc.dir,
 				EnableWalletAPI: true,
+				WalletLoaders:   loaders,
 			})
 			testutil.RequireError(t, err, fmt.Sprintf("empty wallet file found: %q", tc.fn))
 		})

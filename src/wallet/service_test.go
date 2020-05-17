@@ -75,31 +75,33 @@ func (c *mockWalletCreator) Create(filename, label, seed string, options Options
 	} else {
 		retSecrets = "some_secrets"
 	}
-
 	m.On("Label").Return(label)
 	m.On("Seed").Return(retSeed)
 	m.On("secrets").Return(retSecrets)
-
 	m.On("Type").Return(c.Type)
 	m.On("Coin").Return(CoinTypeSkycoin)
 	m.On("IsEncrypted").Return(c.Encrypt)
+	m.On("CryptoType").Return(options.CryptoType)
+	m.On("Serialize").Return([]byte("mock_wallet"), nil)
+	m.On("Clone").Return(m)
+
+	_, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), int(options.GenerateN))
+	var addrs []cipher.Address
+	for _, s := range seckeys {
+		addrs = append(addrs, cipher.MustAddressFromSecKey(s))
+	}
 
 	var fp string
 	if c.Type != WalletTypeCollection {
-		pubKey, _, err := cipher.GenerateDeterministicKeyPair([]byte(seed))
-		if err != nil {
-			return nil, err
-		}
-
-		addr := cipher.AddressFromPubKey(pubKey)
-		fp = fmt.Sprintf("%s-%s", c.Type, addr)
+		fp = fmt.Sprintf("%s-%s", c.Type, addrs[0])
 	}
 
 	m.On("Fingerprint").Return(fp)
 
-	m.On("Serialize").Return([]byte("mock_wallet"), nil)
-
-	m.On("Clone").Return(m)
+	if options.GenerateN > 0 {
+		m.On("EntriesLen").Return(int(options.GenerateN), nil)
+		m.On("GetAddresses").Return(addrs, nil)
+	}
 
 	return m, nil
 }
@@ -404,53 +406,52 @@ func (mb mockTxnsFinder) AddressesActivity(addrs []cipher.Address) ([]bool, erro
 
 func TestServiceLoadWallet(t *testing.T) {
 	// Prepare addresss
-	seed := "seed"
-	_, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 10)
-	var addrs []cipher.Address
-	for _, s := range seckeys {
-		addrs = append(addrs, cipher.MustAddressFromSecKey(s))
-	}
-
-	bip44Seed := "voyage say extend find sheriff surge priority merit ignore maple cash argue"
-	bip44AddrStrs := []string{
-		"9BSEAEE3XGtQ2X43BCT2XCYgheGLQQigEG",
-		"29cnQPHuWHCRF26LEAb2gR83ywnF3F9HduW",
-		"2ZUAv9MGSpDKR3dnKMUnrKqLenV22JXAxzP",
-		"fwNVThqdzH7JMsStoLrTpkVsemesbdGftm",
-		"eyr5KDLTnN6ZZeggeHqDcXnrwmNUi7sGk2",
-		"Aee3J9qoFPLoUEJes6YVzdKHdeuvCrMZeJ",
-		"29MZS8aiYUdEwcruwCPggVJG9YJLsm92FHa",
-		"2Hbm3bwKiEwqNAMAzVJmz5hL1dNTfaA3ju7",
-		"WCaSCwSZnVqtkYeiKryeHjR8LbzE3KbkzJ",
-		"baRjCy1yHfishGdZi3bVaPaL7VJM7FZCSd",
-	}
-	bip44Addrs := make([]cipher.Address, len(bip44AddrStrs))
-	for i, a := range bip44AddrStrs {
-		bip44Addrs[i] = cipher.MustDecodeBase58Address(a)
-	}
-
-	bip44SeedPassphrase := "foobar"
-	bip44SeedPassphraseAddrStrs := []string{
-		"n5SteDkkYdR3VJtMnVYcQ45L16rDDrseG8",
-		"mGeG2PDoU4nc9qE1FSSreAjFeKG12zDvur",
-		"rhbE3thvA747E81KfaYCujur7GKXjdhvS4",
-		"BDEmcU8u4oTf9domk19Nzh65MXoWLLUvJN",
-		"cubnvXGENW3gTdcdJADp8XEJaBscpy7gpq",
-		"wv37cSiVhjgo6Qrrs994UJ52YU2zWNGJbu",
-		"7aEzdSrcm1s2pm5YhshsRmkFy4EuYEnJ49",
-		"nQJgxEE2eaggUeGaA73e4DaXq6KAvUiaS4",
-		"2G9bhZaJrTKo1LScgtdvVXpQD4P8tKvgkvL",
-		"4RqFK3qLz26XbPjgJsiJ3587P7p6DesDHd",
-	}
-	bip44SeedPassphraseAddrs := make([]cipher.Address, len(bip44SeedPassphraseAddrStrs))
-	for i, a := range bip44SeedPassphraseAddrStrs {
-		bip44SeedPassphraseAddrs[i] = cipher.MustDecodeBase58Address(a)
-	}
+	//seed := "seed"
+	//_, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 10)
+	//var addrs []cipher.Address
+	//for _, s := range seckeys {
+	//	addrs = append(addrs, cipher.MustAddressFromSecKey(s))
+	//}
+	//
+	//bip44Seed := "voyage say extend find sheriff surge priority merit ignore maple cash argue"
+	//bip44AddrStrs := []string{
+	//	"9BSEAEE3XGtQ2X43BCT2XCYgheGLQQigEG",
+	//	"29cnQPHuWHCRF26LEAb2gR83ywnF3F9HduW",
+	//	"2ZUAv9MGSpDKR3dnKMUnrKqLenV22JXAxzP",
+	//	"fwNVThqdzH7JMsStoLrTpkVsemesbdGftm",
+	//	"eyr5KDLTnN6ZZeggeHqDcXnrwmNUi7sGk2",
+	//	"Aee3J9qoFPLoUEJes6YVzdKHdeuvCrMZeJ",
+	//	"29MZS8aiYUdEwcruwCPggVJG9YJLsm92FHa",
+	//	"2Hbm3bwKiEwqNAMAzVJmz5hL1dNTfaA3ju7",
+	//	"WCaSCwSZnVqtkYeiKryeHjR8LbzE3KbkzJ",
+	//	"baRjCy1yHfishGdZi3bVaPaL7VJM7FZCSd",
+	//}
+	//bip44Addrs := make([]cipher.Address, len(bip44AddrStrs))
+	//for i, a := range bip44AddrStrs {
+	//	bip44Addrs[i] = cipher.MustDecodeBase58Address(a)
+	//}
+	//
+	//bip44SeedPassphrase := "foobar"
+	//bip44SeedPassphraseAddrStrs := []string{
+	//	"n5SteDkkYdR3VJtMnVYcQ45L16rDDrseG8",
+	//	"mGeG2PDoU4nc9qE1FSSreAjFeKG12zDvur",
+	//	"rhbE3thvA747E81KfaYCujur7GKXjdhvS4",
+	//	"BDEmcU8u4oTf9domk19Nzh65MXoWLLUvJN",
+	//	"cubnvXGENW3gTdcdJADp8XEJaBscpy7gpq",
+	//	"wv37cSiVhjgo6Qrrs994UJ52YU2zWNGJbu",
+	//	"7aEzdSrcm1s2pm5YhshsRmkFy4EuYEnJ49",
+	//	"nQJgxEE2eaggUeGaA73e4DaXq6KAvUiaS4",
+	//	"2G9bhZaJrTKo1LScgtdvVXpQD4P8tKvgkvL",
+	//	"4RqFK3qLz26XbPjgJsiJ3587P7p6DesDHd",
+	//}
+	//bip44SeedPassphraseAddrs := make([]cipher.Address, len(bip44SeedPassphraseAddrStrs))
+	//for i, a := range bip44SeedPassphraseAddrStrs {
+	//	bip44SeedPassphraseAddrs[i] = cipher.MustDecodeBase58Address(a)
+	//}
 
 	tt := []struct {
 		name          string
 		opts          Options
-		tf            TransactionsFinder
 		err           error
 		expectAddrNum int
 		expectAddrs   []cipher.Address
@@ -459,9 +460,12 @@ func TestServiceLoadWallet(t *testing.T) {
 			name: "raw wallet address=1",
 			opts: Options{
 				Type:  WalletTypeDeterministic,
-				Seed:  seed,
+				Seed:  "testseed123",
 				Label: "wallet",
 				ScanN: 5,
+				//TF: mockTxnsFinder{
+				//	addrs[0]: true,
+				//},
 			},
 			tf: mockTxnsFinder{
 				addrs[0]: true,
@@ -655,6 +659,11 @@ func TestServiceLoadWallet(t *testing.T) {
 		},
 	}
 
+	creators := map[string]Creator{
+		WalletTypeDeterministic: &mockWalletCreator{
+			Type: WalletTypeDeterministic,
+		},
+	}
 	for _, tc := range tt {
 		for _, ct := range []crypto.CryptoType{crypto.CryptoTypeScryptChacha20poly1305Insecure} {
 			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
@@ -664,30 +673,62 @@ func TestServiceLoadWallet(t *testing.T) {
 					WalletDir:       dir,
 					CryptoType:      ct,
 					EnableWalletAPI: true,
+					WalletCreators:  creators,
 				})
 				require.NoError(t, err)
 				wltName := NewWalletFilename()
 
-				w, err := s.loadWallet(wltName, tc.opts, tc.tf)
+				w, err := s.loadWallet(wltName, tc.opts)
 				require.Equal(t, tc.err, err)
 				if err != nil {
 					return
 				}
+				// confirms that the wallet clone is called, as the loadWallet() method
+				// should return the clone wallet
+				require.True(t, isMethodCalled(w.(*MockWallet), "Clone"))
 
-				require.Equal(t, w.EntriesLen(), tc.expectAddrNum)
-				for i, a := range tc.expectAddrs {
-					require.Equal(t, a, w.GetEntryAt(i).Address)
+				// confirms that serv.config.CryptoType is used when options.Encrypt
+				// is true and the options.CryptoType is not set
+				if tc.opts.Encrypt && tc.opts.CryptoType == "" {
+					require.Equal(t, s.config.CryptoType, w.CryptoType())
 				}
 
-				require.Equal(t, w.IsEncrypted(), tc.opts.Encrypt)
-				if w.IsEncrypted() {
-					checkNoSensitiveData(t, w)
-					// Checks the wallet file doesn't contain sensitive data
-					wltPath := filepath.Join(dir, w.Filename())
-					lw, err := Load(wltPath)
-					require.NoError(t, err)
-					checkNoSensitiveData(t, lw)
+				el, err := w.EntriesLen()
+				require.NoError(t, err)
+				// confirms that  a default address will be generate if options.GenerateN is 0
+				if tc.opts.GenerateN == 0 {
+					require.Equal(t, 1, el)
+				} else {
+					require.Equal(t, tc.opts.GenerateN, el)
 				}
+
+				// confirms if the wallet has been saved to the RAM wallet list
+				getW := s.wallets.get(w.Filename())
+				require.NotNil(t, getW)
+
+				// confirms if the wallet has been saved to disk
+				_, err = os.Stat(filepath.Join(dir, w.Filename()))
+				require.True(t, !os.IsNotExist(err))
+
+				// This should be tested in the implementation of each creator
+				//el, err := w.EntriesLen()
+				//require.NoError(t, err)
+				//require.Equal(t, tc.expectAddrNum, el)
+				//addrsInWlt, err := w.GetAddresses()
+				//require.NoError(t, err)
+				//for i, a := range tc.expectAddrs {
+				//	require.Equal(t, a, addrsInWlt[i])
+				//}
+				//
+				//require.Equal(t, w.IsEncrypted(), tc.opts.Encrypt)
+				//if w.IsEncrypted() {
+				//	checkNoSensitiveData(t, w)
+				//	// Checks the wallet file doesn't contain sensitive data
+				//	wltPath := filepath.Join(dir, w.Filename())
+				//	lw, err := Load(wltPath)
+				//	require.NoError(t, err)
+				//	checkNoSensitiveData(t, lw)
+				//}
 			})
 		}
 	}

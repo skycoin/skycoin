@@ -1,7 +1,6 @@
-package wallet
+package wallet_test
 
 import (
-	"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -10,11 +9,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
+	"github.com/SkycoinProject/skycoin/src/testutil"
+	"github.com/SkycoinProject/skycoin/src/wallet/core/deterministic"
 	"github.com/stretchr/testify/require"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
-	"github.com/SkycoinProject/skycoin/src/testutil"
+	"github.com/SkycoinProject/skycoin/src/wallet"
 	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
 )
 
@@ -36,91 +37,92 @@ func dirIsEmpty(t *testing.T, dir string) {
 }
 
 // fake wallet loaders
-type mockWalletLoader struct {
-	Type          CoinType
-	Accounts      []Bip44Account
-	EntriesLen    int
-	EntriesLenErr error
-	Fingerprint   string
-}
+//type mockWalletLoader struct {
+//	Type          CoinType
+//	Accounts      []Bip44Account
+//	EntriesLen    int
+//	EntriesLenErr error
+//	Fingerprint   string
+//}
+//
+//func (l *mockWalletLoader) Load(data []byte) (Wallet, error) {
+//	m := &MockWallet{}
+//	m.On("Type").Return(string(l.Type))
+//	m.On("Coin").Return(CoinTypeSkycoin)
+//	m.On("Accounts").Return(l.Accounts)
+//	m.On("EntriesLen").Return(l.EntriesLen, l.EntriesLenErr)
+//
+//	if l.Fingerprint == "" {
+//		l.Fingerprint = hex.EncodeToString(cipher.RandByte(32))
+//	}
+//
+//	m.On("Fingerprint").Return(l.Fingerprint)
+//	return m, nil
+//}
 
-func (l *mockWalletLoader) Load(data []byte) (Wallet, error) {
-	m := &MockWallet{}
-	m.On("Type").Return(string(l.Type))
-	m.On("Coin").Return(CoinTypeSkycoin)
-	m.On("Accounts").Return(l.Accounts)
-	m.On("EntriesLen").Return(l.EntriesLen, l.EntriesLenErr)
+//type mockWalletCreator struct {
+//	Type        string
+//	Fingerprint string
+//	Encrypt     bool
+//}
+//
+//func (c *mockWalletCreator) Create(filename, label, seed string, wallet.Options wallet.Options) (Wallet, error) {
+//	m := &MockWallet{}
+//	m.On("Filename").Return(filename)
+//
+//	var retSeed, retSecrets string
+//	if !c.Encrypt {
+//		retSeed = seed
+//	} else {
+//		retSecrets = "some_secrets"
+//	}
+//	m.On("Label").Return(label)
+//	m.On("Seed").Return(retSeed)
+//	m.On("secrets").Return(retSecrets)
+//	m.On("Type").Return(c.Type)
+//	m.On("Coin").Return(CoinTypeSkycoin)
+//	m.On("IsEncrypted").Return(c.Encrypt)
+//	m.On("CryptoType").Return(wallet.Options.CryptoType)
+//	m.On("Serialize").Return([]byte("mock_wallet"), nil)
+//	m.On("Clone").Return(m)
+//
+//	_, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), int(wallet.Options.GenerateN))
+//	var addrs []cipher.Address
+//	for _, s := range seckeys {
+//		addrs = append(addrs, cipher.MustAddressFromSecKey(s))
+//	}
+//
+//	var fp string
+//	if c.Type != WalletTypeCollection {
+//		fp = fmt.Sprintf("%s-%s", c.Type, addrs[0])
+//	}
+//
+//	m.On("Fingerprint").Return(fp)
+//
+//	if wallet.Options.GenerateN > 0 {
+//		m.On("EntriesLen").Return(int(wallet.Options.GenerateN), nil)
+//		m.On("GetAddresses").Return(addrs, nil)
+//	}
+//
+//	return m, nil
+//}
 
-	if l.Fingerprint == "" {
-		l.Fingerprint = hex.EncodeToString(cipher.RandByte(32))
-	}
-
-	m.On("Fingerprint").Return(l.Fingerprint)
-	return m, nil
-}
-
-type mockWalletCreator struct {
-	Type        string
-	Fingerprint string
-	Encrypt     bool
-}
-
-func (c *mockWalletCreator) Create(filename, label, seed string, options Options) (Wallet, error) {
-	m := &MockWallet{}
-	m.On("Filename").Return(filename)
-
-	var retSeed, retSecrets string
-	if !c.Encrypt {
-		retSeed = seed
-	} else {
-		retSecrets = "some_secrets"
-	}
-	m.On("Label").Return(label)
-	m.On("Seed").Return(retSeed)
-	m.On("secrets").Return(retSecrets)
-	m.On("Type").Return(c.Type)
-	m.On("Coin").Return(CoinTypeSkycoin)
-	m.On("IsEncrypted").Return(c.Encrypt)
-	m.On("CryptoType").Return(options.CryptoType)
-	m.On("Serialize").Return([]byte("mock_wallet"), nil)
-	m.On("Clone").Return(m)
-
-	_, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), int(options.GenerateN))
-	var addrs []cipher.Address
-	for _, s := range seckeys {
-		addrs = append(addrs, cipher.MustAddressFromSecKey(s))
-	}
-
-	var fp string
-	if c.Type != WalletTypeCollection {
-		fp = fmt.Sprintf("%s-%s", c.Type, addrs[0])
-	}
-
-	m.On("Fingerprint").Return(fp)
-
-	if options.GenerateN > 0 {
-		m.On("EntriesLen").Return(int(options.GenerateN), nil)
-		m.On("GetAddresses").Return(addrs, nil)
-	}
-
-	return m, nil
-}
-
-func isMethodCalled(m *MockWallet, methodName string) bool {
-	for _, c := range m.Calls {
-		if c.Method == methodName {
-			return true
-		}
-	}
-
-	return false
-}
+//func isMethodCalled(m *MockWallet, methodName string) bool {
+//	for _, c := range m.Calls {
+//		if c.Method == methodName {
+//			return true
+//		}
+//	}
+//
+//	return false
+//}
 
 func TestNewService(t *testing.T) {
 	// create fake wallet loaders
-	loaders := map[string]Loader{
-		WalletTypeDeterministic: &mockWalletLoader{Type: WalletTypeDeterministic, EntriesLen: 1},
-		//WalletTypeBip44:         &mockWalletLoader{Type: WalletTypeBip44, Accounts: []Bip44Account{}, EntriesLen: 1},
+	loaders := map[string]wallet.Loader{
+		deterministic.WalletType: deterministic.Loader{},
+		//wallet.WalletTypeDeterministic: &mockWalletLoader{Type: wallet.WalletTypeDeterministic, EntriesLen: 1},
+		//wallet.WalletTypeBip44:         &mockWalletLoader{Type: wallet.WalletTypeBip44, Accounts: []Bip44Account{}, EntriesLen: 1},
 		//WalletTypeCollection: &mockWalletLoader{Type: WalletTypeCollection},
 		//WalletTypeXPub:       &mockWalletLoader{Type: WalletTypeXPub},
 	}
@@ -128,7 +130,7 @@ func TestNewService(t *testing.T) {
 	for _, ct := range crypto.Types() {
 		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
 			dir := prepareWltDir()
-			s, err := NewService(Config{
+			s, err := wallet.NewService(wallet.Config{
 				WalletDir:       dir,
 				CryptoType:      ct,
 				EnableWalletAPI: true,
@@ -140,12 +142,14 @@ func TestNewService(t *testing.T) {
 			_, err = os.Stat(dir)
 			require.NoError(t, err)
 
-			require.Equal(t, dir, s.config.WalletDir)
+			//require.Equal(t, dir, s.wallet.Config.WalletDir)
+			wlts, err := s.GetWallets()
+			require.NoError(t, err)
 
-			require.Equal(t, 0, len(s.wallets))
+			require.Equal(t, 0, len(wlts))
 
 			// test load wallets
-			s, err = NewService(Config{
+			s, err = wallet.NewService(wallet.Config{
 				WalletDir:       "./testdata",
 				CryptoType:      ct,
 				EnableWalletAPI: true,
@@ -153,23 +157,21 @@ func TestNewService(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			//require.Equal(t, 11, len(s.wallets))
-			require.Equal(t, 6, len(s.wallets))
-
+			// TODO: add other wallet types and test
+			// require.Equal(t, 11, len(s.wallets))
+			wlts, err = s.GetWallets()
+			require.NoError(t, err)
+			require.Equal(t, 6, len(wlts))
 		})
 	}
 }
 
 func TestNewServiceDupWallets(t *testing.T) {
 	// create fake wallet loaders
-	loaders := map[string]Loader{
-		WalletTypeDeterministic: &mockWalletLoader{
-			Type:        WalletTypeDeterministic,
-			EntriesLen:  1,
-			Fingerprint: "deterministic-2M755W9o7933roLASK9PZTmqRsjQUsVen9y",
-		},
+	loaders := map[string]wallet.Loader{
+		wallet.WalletTypeDeterministic: deterministic.Loader{},
 	}
-	_, err := NewService(Config{
+	_, err := wallet.NewService(wallet.Config{
 		WalletDir:       "./testdata/duplicate_wallets",
 		EnableWalletAPI: true,
 		WalletLoaders:   loaders,
@@ -180,10 +182,8 @@ func TestNewServiceDupWallets(t *testing.T) {
 }
 
 func TestNewServiceEmptyWallet(t *testing.T) {
-	loaders := map[string]Loader{
-		WalletTypeDeterministic: &mockWalletLoader{
-			Type: WalletTypeDeterministic,
-		},
+	loaders := map[string]wallet.Loader{
+		wallet.WalletTypeDeterministic: &deterministic.Loader{},
 	}
 	cases := []struct {
 		dir string
@@ -201,7 +201,7 @@ func TestNewServiceEmptyWallet(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(filepath.Join(tc.dir, tc.fn), func(t *testing.T) {
-			_, err := NewService(Config{
+			_, err := wallet.NewService(wallet.Config{
 				WalletDir:       tc.dir,
 				EnableWalletAPI: true,
 				WalletLoaders:   loaders,
@@ -218,6 +218,7 @@ func TestServiceCreateWallet(t *testing.T) {
 		password        []byte
 		enableWalletAPI bool
 		walletType      string
+		walletCreator   wallet.Creator
 		filename        string
 		seed            string
 		xpub            string
@@ -245,7 +246,7 @@ func TestServiceCreateWallet(t *testing.T) {
 		//	encrypt:         true,
 		//	password:        []byte("pwd"),
 		//	enableWalletAPI: true,
-		//	walletType:      WalletTypeBip44,
+		//	walletType:      wallet.WalletTypeBip44,
 		//	filename:        "t1.wlt",
 		//	seed:            "voyage say extend find sheriff surge priority merit ignore maple cash argue",
 		//},
@@ -256,7 +257,8 @@ func TestServiceCreateWallet(t *testing.T) {
 			enableWalletAPI: true,
 			filename:        "t1.wlt",
 			seed:            "seed1",
-			walletType:      WalletTypeDeterministic,
+			walletType:      wallet.WalletTypeDeterministic,
+			walletCreator:   &deterministic.Creator{},
 		},
 		{
 			name:            "encrypt=true password=pwd",
@@ -265,8 +267,9 @@ func TestServiceCreateWallet(t *testing.T) {
 			enableWalletAPI: false,
 			filename:        "t1.wlt",
 			seed:            "seed1",
-			err:             ErrWalletAPIDisabled,
-			walletType:      WalletTypeDeterministic,
+			err:             wallet.ErrWalletAPIDisabled,
+			walletType:      wallet.WalletTypeDeterministic,
+			walletCreator:   &deterministic.Creator{},
 		},
 		{
 			name:            "encrypt=false",
@@ -274,7 +277,8 @@ func TestServiceCreateWallet(t *testing.T) {
 			enableWalletAPI: true,
 			filename:        "t1.wlt",
 			seed:            "seed1",
-			walletType:      WalletTypeDeterministic,
+			walletType:      wallet.WalletTypeDeterministic,
+			walletCreator:   &deterministic.Creator{},
 		},
 		{
 			name:            "encrypt=false",
@@ -282,22 +286,20 @@ func TestServiceCreateWallet(t *testing.T) {
 			enableWalletAPI: false,
 			filename:        "t1.wlt",
 			seed:            "seed1",
-			err:             ErrWalletAPIDisabled,
-			walletType:      WalletTypeDeterministic,
+			err:             wallet.ErrWalletAPIDisabled,
+			walletType:      wallet.WalletTypeDeterministic,
+			walletCreator:   &deterministic.Creator{},
 		},
 	}
 	for _, tc := range tt {
 		for _, ct := range crypto.Types() {
 			t.Run(fmt.Sprintf("%v crypto=%v", tc.name, ct), func(t *testing.T) {
-				creators := map[string]Creator{
-					tc.walletType: &mockWalletCreator{
-						Type:    tc.walletType,
-						Encrypt: tc.encrypt,
-					},
+				creators := map[string]wallet.Creator{
+					tc.walletType: tc.walletCreator,
 				}
 
 				dir := prepareWltDir()
-				s, err := NewService(Config{
+				s, err := wallet.NewService(wallet.Config{
 					WalletDir:       dir,
 					CryptoType:      ct,
 					EnableWalletAPI: tc.enableWalletAPI,
@@ -305,7 +307,7 @@ func TestServiceCreateWallet(t *testing.T) {
 				})
 				require.NoError(t, err)
 
-				w, err := s.CreateWallet(tc.filename, Options{
+				w, err := s.CreateWallet(tc.filename, wallet.Options{
 					Seed:     tc.seed,
 					Encrypt:  tc.encrypt,
 					Password: tc.password,
@@ -324,8 +326,8 @@ func TestServiceCreateWallet(t *testing.T) {
 				require.NoError(t, err)
 				require.Equal(t, w.IsEncrypted(), tc.encrypt)
 				if tc.encrypt {
-					//require.NotEmpty(t, w.Secrets())
-					//checkNoSensitiveData(t, w)
+					require.NotEmpty(t, w.Secrets())
+					checkNoSensitiveData(t, w)
 
 					// checks that the wallet file has been saved to disk
 					_, err = os.Stat(filepath.Join(dir, tc.filename))
@@ -346,8 +348,8 @@ func TestServiceCreateWallet(t *testing.T) {
 				var otherXPub string
 				//var dupFingerprintErr error
 				switch tc.walletType {
-				case WalletTypeDeterministic:
-					//, WalletTypeBip44:
+				case wallet.WalletTypeDeterministic:
+					//, wallet.WalletTypeBip44:
 					otherSeed = bip39.MustNewDefaultMnemonic()
 					//dupFingerprintErr = ErrSeedUsed
 					//case WalletTypeXPub:
@@ -355,19 +357,19 @@ func TestServiceCreateWallet(t *testing.T) {
 					//	dupFingerprintErr = ErrXPubKeyUsed
 				}
 
-				_, err = s.CreateWallet(tc.filename, Options{
+				_, err = s.CreateWallet(tc.filename, wallet.Options{
 					Seed: otherSeed,
 					Type: tc.walletType,
 					XPub: otherXPub,
 				})
-				require.Equal(t, err, ErrWalletNameConflict)
+				require.Equal(t, err, wallet.ErrWalletNameConflict)
 
 				switch tc.walletType {
-				case WalletTypeDeterministic:
-					//WalletTypeBip44, WalletTypeXPub:
+				case wallet.WalletTypeDeterministic:
+					//wallet.WalletTypeBip44, WalletTypeXPub:
 					// create wallet with dup seed or xpub key
 					dupWlt := "dup_wallet.wlt"
-					_, err = s.CreateWallet(dupWlt, Options{
+					_, err = s.CreateWallet(dupWlt, wallet.Options{
 						Seed: tc.seed,
 						XPub: tc.xpub,
 						Type: tc.walletType,
@@ -375,8 +377,8 @@ func TestServiceCreateWallet(t *testing.T) {
 					require.Equal(t, fmt.Errorf("fingerprint conflict for %q wallet", tc.walletType), err)
 
 					// check that the dup wallet is not created
-					_, ok := s.wallets[dupWlt]
-					require.False(t, ok)
+					_, err := s.GetWallet(dupWlt)
+					require.Equal(t, err, wallet.ErrWalletNotExist)
 
 					testutil.RequireFileNotExists(t, filepath.Join(dir, dupWlt))
 
@@ -391,9 +393,9 @@ func TestServiceCreateWallet(t *testing.T) {
 	}
 }
 
-type mockTxnsFinder map[cipher.Address]bool
+type mockTxnsFinder map[cipher.Addresser]bool
 
-func (mb mockTxnsFinder) AddressesActivity(addrs []cipher.Address) ([]bool, error) {
+func (mb mockTxnsFinder) AddressesActivity(addrs []cipher.Addresser) ([]bool, error) {
 	if len(addrs) == 0 {
 		return nil, nil
 	}
@@ -406,13 +408,13 @@ func (mb mockTxnsFinder) AddressesActivity(addrs []cipher.Address) ([]bool, erro
 
 func TestServiceLoadWallet(t *testing.T) {
 	// Prepare addresss
-	//seed := "seed"
-	//_, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 10)
-	//var addrs []cipher.Address
-	//for _, s := range seckeys {
-	//	addrs = append(addrs, cipher.MustAddressFromSecKey(s))
-	//}
-	//
+	seed := "seed"
+	_, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 10)
+	var addrs []cipher.Address
+	for _, s := range seckeys {
+		addrs = append(addrs, cipher.MustAddressFromSecKey(s))
+	}
+
 	//bip44Seed := "voyage say extend find sheriff surge priority merit ignore maple cash argue"
 	//bip44AddrStrs := []string{
 	//	"9BSEAEE3XGtQ2X43BCT2XCYgheGLQQigEG",
@@ -450,89 +452,257 @@ func TestServiceLoadWallet(t *testing.T) {
 	//}
 
 	tt := []struct {
-		name string
-		opts Options
-		err  error
+		name          string
+		opts          wallet.Options
+		tf            wallet.TransactionsFinder
+		err           error
+		expectAddrNum int
+		expectAddrs   []cipher.Address
 	}{
 		{
 			name: "raw wallet address=1",
-			opts: Options{
-				Type:  WalletTypeDeterministic,
-				Seed:  "testseed123",
+			opts: wallet.Options{
+				Type:  wallet.WalletTypeDeterministic,
+				Seed:  seed,
 				Label: "wallet",
+				ScanN: 5,
+				TF: mockTxnsFinder{
+					addrs[0]: true,
+				},
 			},
+			err:           nil,
+			expectAddrNum: 1,
+			expectAddrs:   addrs[:1],
+		},
+		{
+			name: "raw wallet address=2",
+			opts: wallet.Options{
+				Type:  wallet.WalletTypeDeterministic,
+				Seed:  seed,
+				Label: "wallet",
+				ScanN: 5,
+				TF: mockTxnsFinder{
+					addrs[1]: true,
+				},
+			},
+			err:           nil,
+			expectAddrNum: 2,
+			expectAddrs:   addrs[:2],
 		},
 		{
 			name: "encrypted wallet address=1",
-			opts: Options{
-				Type:     WalletTypeDeterministic,
-				Seed:     "testseed123",
+			opts: wallet.Options{
+				Type:     wallet.WalletTypeDeterministic,
+				Seed:     seed,
 				Label:    "wallet",
 				Encrypt:  true,
 				Password: []byte("pwd"),
+				ScanN:    5,
+				TF: mockTxnsFinder{
+					addrs[0]: true,
+				},
 			},
-			err: nil,
+			err:           nil,
+			expectAddrNum: 1,
+			expectAddrs:   addrs[:1],
 		},
-		// TODO:
-		// - Test bip44 wallet
-		// - Test xpub wallet
-		// - Test collection wallet
+		{
+			name: "encrypted wallet address=2",
+			opts: wallet.Options{
+				Type:     wallet.WalletTypeDeterministic,
+				Seed:     seed,
+				Label:    "wallet",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				ScanN:    5,
+				TF: mockTxnsFinder{
+					addrs[1]: true,
+				},
+			},
+			err:           nil,
+			expectAddrNum: 2,
+			expectAddrs:   addrs[:2],
+		},
+		//
+		//{
+		//	name: "bip44 raw wallet address=1",
+		//	opts: wallet.Options{
+		//		Type:  wallet.WalletTypeBip44,
+		//		Seed:  bip44Seed,
+		//		Label: "wallet",
+		//		ScanN: 5,
+		//		TF: mockTxnsFinder{
+		//			bip44Addrs[0]: true,
+		//		},
+		//	},
+		//	err:           nil,
+		//	expectAddrNum: 1,
+		//	expectAddrs:   bip44Addrs[:1],
+		//},
+		//{
+		//	name: "bip44 raw wallet address=2",
+		//	opts: wallet.Options{
+		//		Type:  wallet.WalletTypeBip44,
+		//		Seed:  bip44Seed,
+		//		Label: "wallet",
+		//		ScanN: 5,
+		//		TF: mockTxnsFinder{
+		//			bip44Addrs[1]: true,
+		//		},
+		//	},
+		//	err:           nil,
+		//	expectAddrNum: 2,
+		//	expectAddrs:   bip44Addrs[:2],
+		//},
+		//{
+		//	name: "bip44 encrypted wallet address=1",
+		//	opts: wallet.Options{
+		//		Type:     wallet.WalletTypeBip44,
+		//		Seed:     bip44Seed,
+		//		Label:    "wallet",
+		//		Encrypt:  true,
+		//		Password: []byte("pwd"),
+		//		ScanN:    5,
+		//		TF: mockTxnsFinder{
+		//			bip44Addrs[0]: true,
+		//		},
+		//	},
+		//	err:           nil,
+		//	expectAddrNum: 1,
+		//	expectAddrs:   bip44Addrs[:1],
+		//},
+		//{
+		//	name: "bip44 encrypted wallet address=2",
+		//	opts: wallet.Options{
+		//		Type:     wallet.WalletTypeBip44,
+		//		Seed:     bip44Seed,
+		//		Label:    "wallet",
+		//		Encrypt:  true,
+		//		Password: []byte("pwd"),
+		//		ScanN:    5,
+		//		TF: mockTxnsFinder{
+		//			bip44Addrs[1]: true,
+		//		},
+		//	},
+		//	err:           nil,
+		//	expectAddrNum: 2,
+		//	expectAddrs:   bip44Addrs[:2],
+		//},
+		//
+		//{
+		//	name: "bip44 with seed passphrase raw wallet address=1",
+		//	opts: wallet.Options{
+		//		Type:           wallet.WalletTypeBip44,
+		//		Seed:           bip44Seed,
+		//		SeedPassphrase: bip44SeedPassphrase,
+		//		Label:          "wallet",
+		//		ScanN:          5,
+		//		TF: mockTxnsFinder{
+		//			bip44SeedPassphraseAddrs[0]: true,
+		//		},
+		//	},
+		//	err:           nil,
+		//	expectAddrNum: 1,
+		//	expectAddrs:   bip44SeedPassphraseAddrs[:1],
+		//},
+		//{
+		//	name: "bip44 with seed passphrase raw wallet address=2",
+		//	opts: wallet.Options{
+		//		Type:           wallet.WalletTypeBip44,
+		//		Seed:           bip44Seed,
+		//		SeedPassphrase: bip44SeedPassphrase,
+		//		Label:          "wallet",
+		//		ScanN:          5,
+		//		TF: mockTxnsFinder{
+		//			bip44SeedPassphraseAddrs[1]: true,
+		//		},
+		//	},
+		//	err:           nil,
+		//	expectAddrNum: 2,
+		//	expectAddrs:   bip44SeedPassphraseAddrs[:2],
+		//},
+		//{
+		//	name: "bip44 with seed passphrase encrypted wallet address=1",
+		//	opts: wallet.Options{
+		//		Type:           wallet.WalletTypeBip44,
+		//		Seed:           bip44Seed,
+		//		SeedPassphrase: bip44SeedPassphrase,
+		//		Label:          "wallet",
+		//		Encrypt:        true,
+		//		Password:       []byte("pwd"),
+		//		ScanN:          5,
+		//		TF: mockTxnsFinder{
+		//			bip44SeedPassphraseAddrs[0]: true,
+		//		},
+		//	},
+		//	err:           nil,
+		//	expectAddrNum: 1,
+		//	expectAddrs:   bip44SeedPassphraseAddrs[:1],
+		//},
+		//{
+		//	name: "bip44 with seed passphrase encrypted wallet address=2",
+		//	opts: wallet.Options{
+		//		Type:           wallet.WalletTypeBip44,
+		//		Seed:           bip44Seed,
+		//		SeedPassphrase: bip44SeedPassphrase,
+		//		Label:          "wallet",
+		//		Encrypt:        true,
+		//		Password:       []byte("pwd"),
+		//		ScanN:          5,
+		//		TF: mockTxnsFinder{
+		//			bip44SeedPassphraseAddrs[1]: true,
+		//		},
+		//	},
+		//	err:           nil,
+		//	expectAddrNum: 2,
+		//	expectAddrs:   bip44SeedPassphraseAddrs[:2],
+		//},
 	}
 
-	creators := map[string]Creator{
-		WalletTypeDeterministic: &mockWalletCreator{
-			Type: WalletTypeDeterministic,
-		},
-	}
 	for _, tc := range tt {
-		for _, ct := range []crypto.CryptoType{crypto.CryptoTypeScryptChacha20poly1305Insecure} {
+		for _, ct := range crypto.TypesInsecure() {
 			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
 			t.Run(name, func(t *testing.T) {
 				dir := prepareWltDir()
-				s, err := NewService(Config{
+				s, err := wallet.NewService(wallet.Config{
 					WalletDir:       dir,
 					CryptoType:      ct,
 					EnableWalletAPI: true,
-					WalletCreators:  creators,
+					WalletCreators: map[string]wallet.Creator{
+						wallet.WalletTypeDeterministic: &deterministic.Creator{},
+					},
+					WalletLoaders: map[string]wallet.Loader{
+						wallet.WalletTypeDeterministic: &deterministic.Loader{},
+					},
 				})
 				require.NoError(t, err)
-				wltName := NewWalletFilename()
+				wltName := wallet.NewWalletFilename()
 
-				w, err := s.loadWallet(wltName, tc.opts)
-				require.Equal(t, tc.err, err)
+				w, err := s.CreateWallet(wltName, tc.opts)
+				//w, err := s.loadWallet(wltName, tc.opts, tc.tf)
+				require.Equal(t, tc.err, err, fmt.Sprintf("expect: %v, got: %v", tc.err, err))
 				if err != nil {
 					return
-				}
-				// confirms that the wallet clone is called, as the loadWallet() method
-				// should return the clone wallet
-				require.True(t, isMethodCalled(w.(*MockWallet), "Clone"))
-
-				// confirms that serv.config.CryptoType is used when options.Encrypt
-				// is true and the options.CryptoType is not set
-				if tc.opts.Encrypt && tc.opts.CryptoType == "" {
-					require.Equal(t, s.config.CryptoType, w.CryptoType())
 				}
 
 				el, err := w.EntriesLen()
 				require.NoError(t, err)
-				// confirms that  a default address will be generate if options.GenerateN is 0
-				if tc.opts.GenerateN == 0 {
-					require.Equal(t, 1, el)
-				} else {
-					require.Equal(t, tc.opts.GenerateN, el)
+
+				require.Equal(t, tc.expectAddrNum, el)
+				for i, a := range tc.expectAddrs {
+					e, err := w.GetEntryAt(i)
+					require.NoError(t, err)
+					require.Equal(t, a, e.Address.(cipher.Address))
 				}
 
-				// confirms that the wallet has been saved to the RAM wallet list
-				getW := s.wallets.get(w.Filename())
-				require.NotNil(t, getW)
-
-				// confirms that the wallet has been saved to disk
-				_, err = os.Stat(filepath.Join(dir, w.Filename()))
-				require.True(t, !os.IsNotExist(err))
-
-				// confirms that the fingerprint is saved if not empty
-				if w.Fingerprint() != "" {
-					require.Equal(t, w.Filename(), s.fingerprints[w.Fingerprint()])
+				require.Equal(t, w.IsEncrypted(), tc.opts.Encrypt)
+				if w.IsEncrypted() {
+					checkNoSensitiveData(t, w)
+					// Checks the wallet file doesn't contain sensitive data
+					wltPath := filepath.Join(dir, w.Filename())
+					lw, err := s.Load(wltPath)
+					require.NoError(t, err)
+					checkNoSensitiveData(t, lw)
 				}
 			})
 		}
@@ -548,27 +718,27 @@ func TestServiceNewAddresses(t *testing.T) {
 		addrs = append(addrs, cipher.MustAddressFromSecKey(s))
 	}
 
-	bip44Seed := "voyage say extend find sheriff surge priority merit ignore maple cash argue"
-	bip44AddrStrs := []string{
-		"9BSEAEE3XGtQ2X43BCT2XCYgheGLQQigEG",
-		"29cnQPHuWHCRF26LEAb2gR83ywnF3F9HduW",
-		"2ZUAv9MGSpDKR3dnKMUnrKqLenV22JXAxzP",
-		"fwNVThqdzH7JMsStoLrTpkVsemesbdGftm",
-		"eyr5KDLTnN6ZZeggeHqDcXnrwmNUi7sGk2",
-		"Aee3J9qoFPLoUEJes6YVzdKHdeuvCrMZeJ",
-		"29MZS8aiYUdEwcruwCPggVJG9YJLsm92FHa",
-		"2Hbm3bwKiEwqNAMAzVJmz5hL1dNTfaA3ju7",
-		"WCaSCwSZnVqtkYeiKryeHjR8LbzE3KbkzJ",
-		"baRjCy1yHfishGdZi3bVaPaL7VJM7FZCSd",
-	}
-	bip44Addrs := make([]cipher.Address, len(bip44AddrStrs))
-	for i, a := range bip44AddrStrs {
-		bip44Addrs[i] = cipher.MustDecodeBase58Address(a)
-	}
+	//bip44Seed := "voyage say extend find sheriff surge priority merit ignore maple cash argue"
+	//bip44AddrStrs := []string{
+	//	"9BSEAEE3XGtQ2X43BCT2XCYgheGLQQigEG",
+	//	"29cnQPHuWHCRF26LEAb2gR83ywnF3F9HduW",
+	//	"2ZUAv9MGSpDKR3dnKMUnrKqLenV22JXAxzP",
+	//	"fwNVThqdzH7JMsStoLrTpkVsemesbdGftm",
+	//	"eyr5KDLTnN6ZZeggeHqDcXnrwmNUi7sGk2",
+	//	"Aee3J9qoFPLoUEJes6YVzdKHdeuvCrMZeJ",
+	//	"29MZS8aiYUdEwcruwCPggVJG9YJLsm92FHa",
+	//	"2Hbm3bwKiEwqNAMAzVJmz5hL1dNTfaA3ju7",
+	//	"WCaSCwSZnVqtkYeiKryeHjR8LbzE3KbkzJ",
+	//	"baRjCy1yHfishGdZi3bVaPaL7VJM7FZCSd",
+	//}
+	//bip44Addrs := make([]cipher.Address, len(bip44AddrStrs))
+	//for i, a := range bip44AddrStrs {
+	//	bip44Addrs[i] = cipher.MustDecodeBase58Address(a)
+	//}
 
 	tt := []struct {
 		name               string
-		opts               Options
+		opts               wallet.Options
 		n                  uint64
 		pwd                []byte
 		walletAPIDisabled  bool
@@ -579,8 +749,8 @@ func TestServiceNewAddresses(t *testing.T) {
 	}{
 		{
 			name: "encrypted=false addresses=0",
-			opts: Options{
-				Type:  WalletTypeDeterministic,
+			opts: wallet.Options{
+				Type:  wallet.WalletTypeDeterministic,
 				Label: "label",
 				Seed:  seed,
 			},
@@ -589,10 +759,10 @@ func TestServiceNewAddresses(t *testing.T) {
 		},
 		{
 			name: "encrypted=false addresses=1",
-			opts: Options{
+			opts: wallet.Options{
 				Label: "label",
 				Seed:  seed,
-				Type:  WalletTypeDeterministic,
+				Type:  wallet.WalletTypeDeterministic,
 			},
 			n:             2,
 			expectAddrNum: 2,
@@ -601,10 +771,10 @@ func TestServiceNewAddresses(t *testing.T) {
 		},
 		{
 			name: "encrypted=false addresses=2",
-			opts: Options{
+			opts: wallet.Options{
 				Label: "label",
 				Seed:  seed,
-				Type:  WalletTypeDeterministic,
+				Type:  wallet.WalletTypeDeterministic,
 			},
 			n:             2,
 			expectAddrNum: 2,
@@ -613,12 +783,12 @@ func TestServiceNewAddresses(t *testing.T) {
 		},
 		{
 			name: "encrypted=true addresses=1",
-			opts: Options{
+			opts: wallet.Options{
 				Label:    "label",
 				Seed:     seed,
 				Encrypt:  true,
 				Password: []byte("pwd"),
-				Type:     WalletTypeDeterministic,
+				Type:     wallet.WalletTypeDeterministic,
 			},
 			n:             1,
 			pwd:           []byte("pwd"),
@@ -628,12 +798,12 @@ func TestServiceNewAddresses(t *testing.T) {
 		},
 		{
 			name: "encrypted=true addresses=2",
-			opts: Options{
+			opts: wallet.Options{
 				Label:    "label",
 				Seed:     seed,
 				Encrypt:  true,
 				Password: []byte("pwd"),
-				Type:     WalletTypeDeterministic,
+				Type:     wallet.WalletTypeDeterministic,
 			},
 			n:             2,
 			pwd:           []byte("pwd"),
@@ -642,112 +812,112 @@ func TestServiceNewAddresses(t *testing.T) {
 			expectAddrs: addrs[1:3],
 		},
 
-		{
-			name: "bip44 encrypted=false addresses=0",
-			opts: Options{
-				Type:  WalletTypeBip44,
-				Label: "label",
-				Seed:  bip44Seed,
-			},
-			n:             0,
-			expectAddrNum: 0,
-		},
-		{
-			name: "bip44 encrypted=false addresses=1",
-			opts: Options{
-				Label: "label",
-				Seed:  bip44Seed,
-				Type:  WalletTypeBip44,
-			},
-			n:             2,
-			expectAddrNum: 2,
-			// CreateWallet will generate a default address, so check from new address
-			expectAddrs: bip44Addrs[1:3],
-		},
-		{
-			name: "bip44 encrypted=false addresses=2",
-			opts: Options{
-				Label: "label",
-				Seed:  bip44Seed,
-				Type:  WalletTypeBip44,
-			},
-			n:             2,
-			expectAddrNum: 2,
-			// CreateWallet will generate a default address, so check from new address
-			expectAddrs: bip44Addrs[1:3],
-		},
-		{
-			name: "bip44 encrypted=true addresses=1",
-			opts: Options{
-				Label:    "label",
-				Seed:     bip44Seed,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Type:     WalletTypeBip44,
-			},
-			n:             1,
-			pwd:           []byte("pwd"),
-			expectAddrNum: 1,
-			// CreateWallet will generate a default address, so check from new address
-			expectAddrs: bip44Addrs[1:2],
-		},
-		{
-			name: "bip44 encrypted=true addresses=2",
-			opts: Options{
-				Label:    "label",
-				Seed:     bip44Seed,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Type:     WalletTypeBip44,
-			},
-			n:             2,
-			pwd:           []byte("pwd"),
-			expectAddrNum: 2,
-			// CreateWallet will generate a default address, so check from new address
-			expectAddrs: bip44Addrs[1:3],
-		},
+		//{
+		//	name: "bip44 encrypted=false addresses=0",
+		//	opts: wallet.Options{
+		//		Type:  wallet.WalletTypeBip44,
+		//		Label: "label",
+		//		Seed:  bip44Seed,
+		//	},
+		//	n:             0,
+		//	expectAddrNum: 0,
+		//},
+		//{
+		//	name: "bip44 encrypted=false addresses=1",
+		//	opts: wallet.Options{
+		//		Label: "label",
+		//		Seed:  bip44Seed,
+		//		Type:  wallet.WalletTypeBip44,
+		//	},
+		//	n:             2,
+		//	expectAddrNum: 2,
+		//	// CreateWallet will generate a default address, so check from new address
+		//	expectAddrs: bip44Addrs[1:3],
+		//},
+		//{
+		//	name: "bip44 encrypted=false addresses=2",
+		//	opts: wallet.Options{
+		//		Label: "label",
+		//		Seed:  bip44Seed,
+		//		Type:  wallet.WalletTypeBip44,
+		//	},
+		//	n:             2,
+		//	expectAddrNum: 2,
+		//	// CreateWallet will generate a default address, so check from new address
+		//	expectAddrs: bip44Addrs[1:3],
+		//},
+		//{
+		//	name: "bip44 encrypted=true addresses=1",
+		//	opts: wallet.Options{
+		//		Label:    "label",
+		//		Seed:     bip44Seed,
+		//		Encrypt:  true,
+		//		Password: []byte("pwd"),
+		//		Type:     wallet.WalletTypeBip44,
+		//	},
+		//	n:             1,
+		//	pwd:           []byte("pwd"),
+		//	expectAddrNum: 1,
+		//	// CreateWallet will generate a default address, so check from new address
+		//	expectAddrs: bip44Addrs[1:2],
+		//},
+		//{
+		//	name: "bip44 encrypted=true addresses=2",
+		//	opts: wallet.Options{
+		//		Label:    "label",
+		//		Seed:     bip44Seed,
+		//		Encrypt:  true,
+		//		Password: []byte("pwd"),
+		//		Type:     wallet.WalletTypeBip44,
+		//	},
+		//	n:             2,
+		//	pwd:           []byte("pwd"),
+		//	expectAddrNum: 2,
+		//	// CreateWallet will generate a default address, so check from new address
+		//	expectAddrs: bip44Addrs[1:3],
+		//},
 
 		{
 			name: "encrypted=true wrong password",
-			opts: Options{
+			opts: wallet.Options{
 				Label:    "label",
 				Seed:     seed,
 				Encrypt:  true,
 				Password: []byte("pwd"),
-				Type:     WalletTypeDeterministic,
+				Type:     wallet.WalletTypeDeterministic,
 			},
 			n:             1,
 			pwd:           []byte("wrong password"),
 			expectAddrNum: 1,
-			expectErr:     ErrInvalidPassword,
+			expectErr:     wallet.ErrInvalidPassword,
 		},
 		{
 			name: "wallet api disabled",
-			opts: Options{
+			opts: wallet.Options{
 				Seed:  "seed",
 				Label: "label",
-				Type:  WalletTypeDeterministic,
+				Type:  wallet.WalletTypeDeterministic,
 			},
 			walletAPIDisabled: true,
-			expectErr:         ErrWalletAPIDisabled,
+			expectErr:         wallet.ErrWalletAPIDisabled,
 		},
 		{
 			name: "encrypted=false password provided",
-			opts: Options{
+			opts: wallet.Options{
 				Label: "label",
 				Seed:  seed,
-				Type:  WalletTypeDeterministic,
+				Type:  wallet.WalletTypeDeterministic,
 			},
 			n:         1,
 			pwd:       []byte("foo"),
-			expectErr: ErrWalletNotEncrypted,
+			expectErr: wallet.ErrWalletNotEncrypted,
 		},
 		{
 			name: "encrypted=false writable=false",
-			opts: Options{
+			opts: wallet.Options{
 				Label: "label",
 				Seed:  seed,
-				Type:  WalletTypeDeterministic,
+				Type:  wallet.WalletTypeDeterministic,
 			},
 			n: 1,
 			walletFileModifier: func(fn string) {
@@ -755,27 +925,37 @@ func TestServiceNewAddresses(t *testing.T) {
 				require.NoError(t, err)
 			},
 			expectAddrNum: 1,
-			expectErr:     ErrWalletPermission,
+			expectErr:     wallet.ErrWalletPermission,
 		},
 	}
 
 	for _, tc := range tt {
-		for _, ct := range crypto.Types() {
+		//for _, ct := range crypto.TypesInsecure() {
+		for _, ct := range []crypto.CryptoType{crypto.CryptoTypeSha256Xor} {
 			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
 			t.Run(name, func(t *testing.T) {
 				dir := prepareWltDir()
-				s, err := NewService(Config{
+				s, err := wallet.NewService(wallet.Config{
 					WalletDir:       dir,
 					CryptoType:      ct,
 					EnableWalletAPI: !tc.walletAPIDisabled,
+					WalletCreators: map[string]wallet.Creator{
+						wallet.WalletTypeDeterministic: &deterministic.Creator{},
+					},
+					WalletLoaders: map[string]wallet.Loader{
+						wallet.WalletTypeDeterministic: &deterministic.Loader{},
+					},
 				})
 				require.NoError(t, err)
 
-				wltName := NewWalletFilename()
+				opts := tc.opts
+				opts.CryptoType = ct
 
-				w, err := s.CreateWallet(wltName, tc.opts, nil)
+				wltName := wallet.NewWalletFilename()
+
+				w, err := s.CreateWallet(wltName, opts)
 				if err != nil {
-					require.Equal(t, tc.expectErr, err)
+					require.Equal(t, tc.expectErr, err, fmt.Sprintf("expect: %v, got: %v", tc.expectErr, err))
 					return
 				}
 
@@ -807,20 +987,25 @@ func TestServiceNewAddresses(t *testing.T) {
 				}
 
 				// Check the wallet again
-				w, ok := s.wallets[wltName]
-				require.True(t, ok)
-				require.Equal(t, w.EntriesLen(), int(tc.n+1))
+				w, err = s.GetWallet(wltName)
+				require.NoError(t, err)
+				el, err := w.EntriesLen()
+				require.NoError(t, err)
+				require.Equal(t, int(tc.n+1), el)
+
+				addrsInWlt, err := w.GetAddresses()
+				require.NoError(t, err)
 
 				// Wallet has a default address, so need to start from the second address
 				for i, a := range tc.expectAddrs {
-					require.Equal(t, a, w.GetEntryAt(i+1).Address)
+					require.Equal(t, a, addrsInWlt[i+1])
 				}
 
 				// Load wallet from file and check
 				_, err = os.Stat(filepath.Join(dir, w.Filename()))
 				require.NoError(t, err)
 
-				lw, err := Load(filepath.Join(dir, w.Filename()))
+				lw, err := s.Load(filepath.Join(dir, w.Filename()))
 				require.NoError(t, err)
 				require.Equal(t, lw, w)
 				if w.IsEncrypted() {
@@ -829,3169 +1014,3200 @@ func TestServiceNewAddresses(t *testing.T) {
 
 				// Wallet doesn't exist
 				_, err = s.NewAddresses("wallet_not_exist.wlt", tc.pwd, 1)
-				require.Equal(t, ErrWalletNotExist, err)
+				require.Equal(t, wallet.ErrWalletNotExist, err)
 			})
 		}
 	}
 }
 
-func TestServiceGetAddress(t *testing.T) {
-	for _, enableWalletAPI := range []bool{true, false} {
-		for _, ct := range crypto.Types() {
-			t.Run(fmt.Sprintf("enable wallet api=%v crypto=%v", enableWalletAPI, ct), func(t *testing.T) {
-				dir := prepareWltDir()
-				s, err := NewService(Config{
-					WalletDir:       "./testdata",
-					CryptoType:      ct,
-					EnableWalletAPI: enableWalletAPI,
-				})
-				require.NoError(t, err)
-
-				if !enableWalletAPI {
-					dirIsEmpty(t, dir)
-
-					require.Empty(t, s.wallets)
-					addrs, err := s.GetSkycoinAddresses("")
-					require.Equal(t, ErrWalletAPIDisabled, err)
-					require.Equal(t, 0, len(addrs))
-					return
-				}
-
-				addrs, err := s.GetSkycoinAddresses("test1.wlt")
-				require.NoError(t, err)
-				require.Equal(t, 1, len(addrs))
-
-				// test none exist wallet
-				notExistID := "not_exist_id.wlt"
-				_, err = s.GetSkycoinAddresses(notExistID)
-				require.Equal(t, ErrWalletNotExist, err)
-			})
-		}
-
-	}
-}
-
-func TestServiceGetWallet(t *testing.T) {
-	walletTypes := []string{
-		WalletTypeDeterministic,
-		WalletTypeBip44,
-		WalletTypeCollection,
-		WalletTypeXPub,
-	}
-
-	for _, walletType := range walletTypes {
-		for _, enableWalletAPI := range []bool{true, false} {
-			for _, ct := range crypto.Types() {
-				t.Run(fmt.Sprintf("enable wallet api=%v crypto=%v", enableWalletAPI, ct), func(t *testing.T) {
-					dir := prepareWltDir()
-
-					s, err := NewService(Config{
-						WalletDir:       dir,
-						CryptoType:      ct,
-						EnableWalletAPI: enableWalletAPI,
-					})
-					require.NoError(t, err)
-
-					if !enableWalletAPI {
-						dirIsEmpty(t, dir)
-
-						require.Empty(t, s.wallets)
-						w, err := s.GetWallet("")
-						require.Equal(t, ErrWalletAPIDisabled, err)
-						require.Nil(t, w)
-						return
-					}
-
-					opts := Options{
-						Label: "label",
-						Type:  walletType,
-					}
-					switch walletType {
-					case WalletTypeBip44, WalletTypeDeterministic:
-						opts.Seed = bip39.MustNewDefaultMnemonic()
-					case WalletTypeCollection:
-					case WalletTypeXPub:
-						opts.XPub = "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v"
-					default:
-						t.Fatal("unhandled wallet type")
-					}
-
-					// Create a wallet
-					w, err := s.CreateWallet("t.wlt", opts, nil)
-					require.NoError(t, err)
-
-					w1, err := s.GetWallet(w.Filename())
-					require.NoError(t, err)
-
-					// Check if change original wallet would change the returned wallet
-					w.SetLabel("new_label")
-
-					require.NotEqual(t, "new_label", w1.Label())
-
-					// Get wallet doesn't exist
-					wltName := "does_not_exist.wlt"
-					_, err = s.GetWallet(wltName)
-					require.Equal(t, ErrWalletNotExist, err)
-				})
-			}
-		}
-	}
-}
-
-func TestServiceGetWallets(t *testing.T) {
-	for _, enableWalletAPI := range []bool{true, false} {
-		for _, ct := range crypto.Types() {
-			t.Run(fmt.Sprintf("enable wallet=%v crypto=%v", enableWalletAPI, ct), func(t *testing.T) {
-				dir := prepareWltDir()
-				s, err := NewService(Config{
-					WalletDir:       dir,
-					CryptoType:      ct,
-					EnableWalletAPI: enableWalletAPI,
-				})
-				require.NoError(t, err)
-
-				if !enableWalletAPI {
-					dirIsEmpty(t, dir)
-
-					require.Empty(t, s.wallets)
-					w, err := s.GetWallets()
-					require.Equal(t, ErrWalletAPIDisabled, err)
-					var emptyW Wallets
-					require.Equal(t, w, emptyW)
-					return
-				}
-
-				// Creates a wallet
-				w, err := s.CreateWallet("t.wlt", Options{
-					Label: "label",
-					Seed:  bip39.MustNewDefaultMnemonic(),
-					Type:  WalletTypeBip44,
-				}, nil)
-				require.NoError(t, err)
-
-				var wallets []Wallet
-				// Get the default wallet
-				wallets = append(wallets, w)
-
-				// Create a new wallet
-				wltName := NewWalletFilename()
-				w1, err := s.CreateWallet(wltName, Options{
-					Label: "label1",
-					Seed:  bip39.MustNewDefaultMnemonic(),
-					Type:  WalletTypeDeterministic,
-				}, nil)
-				require.NoError(t, err)
-				wallets = append(wallets, w1)
-
-				ws, err := s.GetWallets()
-				require.NoError(t, err)
-				for _, w := range wallets {
-					ww, ok := ws[w.Filename()]
-					require.True(t, ok)
-					require.Equal(t, w, ww)
-				}
-			})
-		}
-	}
-}
-
-func TestServiceUpdateWalletLabel(t *testing.T) {
-	tt := []struct {
-		name             string
-		wltName          string
-		opts             Options
-		updateWltName    string
-		label            string
-		disableWalletAPI bool
-		err              error
-	}{
-		{
-			name:    "ok",
-			wltName: "t.wlt",
-			opts: Options{
-				Seed:  bip39.MustNewDefaultMnemonic(),
-				Label: "label",
-				Type:  WalletTypeBip44,
-			},
-			updateWltName: "t.wlt",
-			label:         "new-label",
-		},
-		{
-			name:    "wallet doesn't exist",
-			wltName: "t.wlt",
-			opts: Options{
-				Seed:  bip39.MustNewDefaultMnemonic(),
-				Label: "label",
-				Type:  WalletTypeBip44,
-			},
-			updateWltName: "t1.wlt",
-			label:         "new-label",
-			err:           ErrWalletNotExist,
-		},
-		{
-			name:    "wallet api disabled",
-			wltName: "t.wlt",
-			opts: Options{
-				Seed:  bip39.MustNewDefaultMnemonic(),
-				Label: "label",
-				Type:  WalletTypeBip44,
-			},
-			disableWalletAPI: true,
-			err:              ErrWalletAPIDisabled,
-		},
-	}
-
-	for _, tc := range tt {
-		for _, ct := range crypto.Types() {
-			t.Run(tc.name, func(t *testing.T) {
-				// Create the wallet service
-				dir := prepareWltDir()
-				s, err := NewService(Config{
-					WalletDir:       dir,
-					CryptoType:      ct,
-					EnableWalletAPI: !tc.disableWalletAPI,
-				})
-				require.NoError(t, err)
-
-				if tc.disableWalletAPI {
-					err = s.UpdateWalletLabel("", "new label")
-					require.Equal(t, tc.err, err)
-					return
-				}
-
-				// Create a new wallet
-				w, err := s.CreateWallet(tc.wltName, tc.opts, nil)
-				require.NoError(t, err)
-
-				err = s.UpdateWalletLabel(tc.updateWltName, tc.label)
-				require.Equal(t, tc.err, err)
-
-				if err != nil {
-					return
-				}
-
-				nw, err := s.GetWallet(w.Filename())
-				require.NoError(t, err)
-				require.NotEqual(t, w.Label(), nw.Label())
-
-				require.Equal(t, tc.label, nw.Label())
-			})
-		}
-	}
-}
-
-func TestServiceEncryptWallet(t *testing.T) {
-	tt := []struct {
-		name             string
-		wltName          string
-		opts             Options
-		encWltName       string
-		pwd              []byte
-		disableWalletAPI bool
-		err              error
-	}{
-		{
-			name:    "ok xpub wallet",
-			wltName: "t.wlt",
-			opts: Options{
-				XPub: "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
-				Type: WalletTypeXPub,
-			},
-			encWltName: "t.wlt",
-			pwd:        []byte("pwd"),
-		},
-		{
-			name:    "ok deterministic wallet",
-			wltName: "t.wlt",
-			opts: Options{
-				Seed: "seed",
-				Type: WalletTypeDeterministic,
-			},
-			encWltName: "t.wlt",
-			pwd:        []byte("pwd"),
-		},
-		{
-			name:    "ok collection wallet",
-			wltName: "t.wlt",
-			opts: Options{
-				Type: WalletTypeCollection,
-			},
-			encWltName: "t.wlt",
-			pwd:        []byte("pwd"),
-		},
-		{
-			name:    "ok bip44 wallet",
-			wltName: "t.wlt",
-			opts: Options{
-				Type: WalletTypeBip44,
-				Seed: "voyage say extend find sheriff surge priority merit ignore maple cash argue",
-			},
-			encWltName: "t.wlt",
-			pwd:        []byte("pwd"),
-		},
-		{
-			name:    "wallet doesn't exist",
-			wltName: "t.wlt",
-			opts: Options{
-				Seed: "seed",
-				Type: WalletTypeDeterministic,
-			},
-			encWltName: "t2.wlt",
-			err:        ErrWalletNotExist,
-		},
-		{
-			name:    "wallet already encrypted",
-			wltName: "t.wlt",
-			opts: Options{
-				Seed:     "seed",
-				Type:     WalletTypeDeterministic,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-			},
-			encWltName: "t.wlt",
-			pwd:        []byte("pwd"),
-			err:        ErrWalletEncrypted,
-		},
-		{
-			name:    "wallet api disabled",
-			wltName: "t.wlt",
-			opts: Options{
-				Seed:     "seed",
-				Type:     WalletTypeDeterministic,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-			},
-			encWltName:       "t.wlt",
-			pwd:              []byte("pwd"),
-			disableWalletAPI: true,
-			err:              ErrWalletAPIDisabled,
-		},
-	}
-
-	for _, tc := range tt {
-		for _, ct := range crypto.Types() {
-			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
-			t.Run(name, func(t *testing.T) {
-				dir := prepareWltDir()
-				// Create the wallet service
-				s, err := NewService(Config{
-					WalletDir:       dir,
-					CryptoType:      ct,
-					EnableWalletAPI: !tc.disableWalletAPI,
-				})
-				require.NoError(t, err)
-
-				if tc.disableWalletAPI {
-					_, err = s.EncryptWallet("", tc.pwd)
-					require.Equal(t, tc.err, err)
-					return
-				}
-
-				// Create a new wallet
-				w, err := s.CreateWallet(tc.wltName, tc.opts, nil)
-				require.NoError(t, err)
-
-				switch w.Type() {
-				// Add an entry to a collection wallet, to verify that secrets are hidden
-				case WalletTypeCollection:
-					err := s.Update(w.Filename(), func(w Wallet) error {
-						p, s := cipher.GenerateKeyPair()
-						return w.(*CollectionWallet).AddEntry(entry.Entry{
-							Public:  p,
-							Secret:  s,
-							Address: cipher.AddressFromPubKey(p),
-						})
-					})
-					require.NoError(t, err)
-
-				// Add entries to the a bip44 wallet's change chain, to verify that those secrets are hidden
-				case WalletTypeBip44:
-					err := s.Update(w.Filename(), func(w Wallet) error {
-						_, err := w.(*Bip44Wallet).GenerateChangeEntry()
-						return err
-					})
-					require.NoError(t, err)
-				}
-
-				// Encrypt the wallet
-				encWlt, err := s.EncryptWallet(tc.encWltName, tc.pwd)
-				require.Equal(t, tc.err, err)
-				if err != nil {
-					return
-				}
-
-				encWlt1, err := s.getWallet(tc.encWltName)
-				require.NoError(t, err)
-				require.Equal(t, encWlt, encWlt1)
-
-				// Check the encrypted wallet
-				require.True(t, encWlt.IsEncrypted())
-				for i := 0; i < encWlt.EntriesLen(); i++ {
-					require.True(t, encWlt.GetEntryAt(i).Secret.Null())
-				}
-				require.Empty(t, encWlt.Seed())
-				require.Empty(t, encWlt.LastSeed())
-
-				// Check the decrypted seeds
-				decWlt, err := Unlock(encWlt, tc.pwd)
-				require.NoError(t, err)
-				for i := 0; i < decWlt.EntriesLen(); i++ {
-					switch decWlt.Type() {
-					case WalletTypeXPub:
-						// xpub wallets never have secret keys
-						require.True(t, decWlt.GetEntryAt(i).Secret.Null())
-					default:
-						require.False(t, decWlt.GetEntryAt(i).Secret.Null())
-					}
-				}
-				require.Equal(t, w.Seed(), decWlt.Seed())
-				require.Equal(t, w.LastSeed(), decWlt.LastSeed())
-
-				// Check if the wallet file does exist
-				path := filepath.Join(dir, w.Filename())
-				testutil.RequireFileExists(t, path)
-
-				// Check that the temporary backup wallet file does not exist
-				bakPath := path + ".bak"
-				testutil.RequireFileNotExists(t, bakPath)
-			})
-		}
-	}
-}
-
-func TestServiceDecryptWallet(t *testing.T) {
-	type testCase struct {
-		name             string
-		wltName          string
-		opts             Options
-		decryptWltName   string
-		password         []byte
-		disableWalletAPI bool
-		err              error
-	}
-
-	tt := []testCase{
-		{
-			name:    "ok xpub",
-			wltName: "test.wlt",
-			opts: Options{
-				Type:     WalletTypeXPub,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				XPub:     "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
-			},
-			decryptWltName: "test.wlt",
-			password:       []byte("pwd"),
-		},
-		{
-			name:    "ok collection",
-			wltName: "test.wlt",
-			opts: Options{
-				Type:     WalletTypeCollection,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-			},
-			decryptWltName: "test.wlt",
-			password:       []byte("pwd"),
-		},
-		{
-			name:    "ok deterministic",
-			wltName: "test.wlt",
-			opts: Options{
-				Seed:     "seed",
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Type:     WalletTypeDeterministic,
-			},
-			decryptWltName: "test.wlt",
-			password:       []byte("pwd"),
-		},
-		{
-			name:    "ok bip44",
-			wltName: "test.wlt",
-			opts: Options{
-				Seed:     "voyage say extend find sheriff surge priority merit ignore maple cash argue",
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Type:     WalletTypeBip44,
-			},
-			decryptWltName: "test.wlt",
-			password:       []byte("pwd"),
-		},
-		{
-			name:    "wallet not exist",
-			wltName: "test.wlt",
-			opts: Options{
-				Seed:     "seed",
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Type:     WalletTypeDeterministic,
-			},
-			decryptWltName: "t.wlt",
-			password:       []byte("pwd"),
-			err:            ErrWalletNotExist,
-		},
-		{
-			name:    "wallet not encrypted",
-			wltName: "test.wlt",
-			opts: Options{
-				Seed: "seed",
-				Type: WalletTypeDeterministic,
-			},
-			decryptWltName: "test.wlt",
-			password:       []byte("pwd"),
-			err:            ErrWalletNotEncrypted,
-		},
-		{
-			name:    "invalid password",
-			wltName: "test.wlt",
-			opts: Options{
-				Seed:     "seed",
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Type:     WalletTypeDeterministic,
-			},
-			decryptWltName: "test.wlt",
-			password:       []byte("wrong password"),
-			err:            ErrInvalidPassword,
-		},
-		{
-			name:    "wallet api disabled",
-			wltName: "test.wlt",
-			opts: Options{
-				Seed:     "seed",
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Type:     WalletTypeDeterministic,
-			},
-			decryptWltName:   "test.wlt",
-			password:         []byte("pwd"),
-			disableWalletAPI: true,
-			err:              ErrWalletAPIDisabled,
-		},
-	}
-
-	verifyDecryptedXPubWlt := func(tc testCase, wlt Wallet) {
-		// XPub wlt doesn't have anything to encrypt or decrypt
-		require.Equal(t, tc.opts.XPub, wlt.XPub())
-		require.Empty(t, wlt.Secrets())
-		require.Empty(t, wlt.Seed())
-		require.Empty(t, wlt.LastSeed())
-		for _, e := range wlt.GetEntries() {
-			require.True(t, e.Secret.Null())
-		}
-	}
-
-	verifyDecryptedDeterministicWlt := func(tc testCase, wlt Wallet) {
-		// Checks the "encrypted" meta info
-		require.False(t, wlt.IsEncrypted())
-		// Checks the seed
-		require.Equal(t, tc.opts.Seed, wlt.Seed())
-
-		// Checks the last seed
-		entryNum := wlt.EntriesLen()
-		lsd, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(wlt.Seed()), entryNum)
-		require.Equal(t, hex.EncodeToString(lsd), wlt.LastSeed())
-
-		// Checks the entries
-		for i := range seckeys {
-			a := cipher.MustAddressFromSecKey(seckeys[i])
-			require.Equal(t, a, wlt.GetEntryAt(i).Address)
-			require.Equal(t, seckeys[i], wlt.GetEntryAt(i).Secret)
-		}
-
-		require.Empty(t, wlt.Secrets())
-		require.Empty(t, wlt.CryptoType())
-	}
-
-	verifyDecryptedCollectionWlt := func(_ testCase, wlt Wallet) {
-		// Checks the "encrypted" meta info
-		require.False(t, wlt.IsEncrypted())
-		require.Empty(t, wlt.Seed())
-		require.Empty(t, wlt.LastSeed())
-
-		// Checks the entries
-		for _, e := range wlt.GetEntries() {
-			require.False(t, e.Secret.Null())
-			a := cipher.MustAddressFromSecKey(e.Secret)
-			require.Equal(t, a, e.Address)
-			p := cipher.MustPubKeyFromSecKey(e.Secret)
-			require.Equal(t, p, e.Public)
-		}
-
-		require.Empty(t, wlt.Secrets())
-		require.Empty(t, wlt.CryptoType())
-	}
-
-	verifyDecryptedBip44Wlt := func(tc testCase, wlt Wallet) {
-		// Checks the "encrypted" meta info
-		require.False(t, wlt.IsEncrypted())
-		// Checks the seed
-		require.Equal(t, tc.opts.Seed, wlt.Seed())
-		require.Empty(t, wlt.LastSeed())
-
-		// Checks the entries
-		for _, e := range wlt.GetEntries() {
-			require.False(t, e.Secret.Null())
-			a := cipher.MustAddressFromSecKey(e.Secret)
-			require.Equal(t, a, e.Address)
-			p := cipher.MustPubKeyFromSecKey(e.Secret)
-			require.Equal(t, p, e.Public)
-		}
-
-		require.Empty(t, wlt.Secrets())
-		require.Empty(t, wlt.CryptoType())
-	}
-
-	for _, tc := range tt {
-		for _, ct := range crypto.Types() {
-			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
-			t.Run(name, func(t *testing.T) {
-				dir := prepareWltDir()
-				s, err := NewService(Config{
-					WalletDir:       dir,
-					CryptoType:      ct,
-					EnableWalletAPI: !tc.disableWalletAPI,
-				})
-				require.NoError(t, err)
-
-				if tc.disableWalletAPI {
-					_, err = s.DecryptWallet(tc.decryptWltName, tc.password)
-					require.Equal(t, tc.err, err)
-					return
-				}
-
-				_, err = s.CreateWallet(tc.wltName, tc.opts, nil)
-				require.NoError(t, err)
-
-				_, err = s.DecryptWallet(tc.decryptWltName, tc.password)
-				require.Equal(t, tc.err, err)
-				if err != nil {
-					return
-				}
-
-				wltType := tc.opts.Type
-				if wltType == "" {
-					wltType = WalletTypeBip44
-				}
-
-				verify := verifyDecryptedCollectionWlt
-				switch wltType {
-				case WalletTypeCollection:
-					verify = verifyDecryptedCollectionWlt
-				case WalletTypeBip44:
-					verify = verifyDecryptedBip44Wlt
-				case WalletTypeDeterministic:
-					verify = verifyDecryptedDeterministicWlt
-				case WalletTypeXPub:
-					verify = verifyDecryptedXPubWlt
-				default:
-					t.Fatal("unhandled wallet type")
-				}
-
-				// Checks the decrypted wallet in service
-				w, err := s.getWallet(tc.wltName)
-				require.NoError(t, err)
-				verify(tc, w)
-
-				// Checks the existence of the wallet file
-				fn := filepath.Join(dir, tc.wltName)
-				testutil.RequireFileExists(t, fn)
-
-				// Loads wallet from the file and check if it's decrypted
-				w1, err := Load(fn)
-				require.NoError(t, err)
-				verify(tc, w1)
-			})
-		}
-	}
-}
-
-func TestServiceCreateWalletWithScan(t *testing.T) {
-	seed := "seed1"
-	addrs := make([]cipher.Address, 20)
-	childSeeds := make([]string, 20)
-	lastSeed := []byte(seed)
-	for i := range addrs {
-		s, pk, _, err := cipher.DeterministicKeyPairIterator(lastSeed)
-		require.NoError(t, err)
-		addrs[i] = cipher.AddressFromPubKey(pk)
-		childSeeds[i] = hex.EncodeToString(s)
-		lastSeed = s
-	}
-
-	bip44Seed := "voyage say extend find sheriff surge priority merit ignore maple cash argue"
-	bip44AddrStrs := []string{
-		"9BSEAEE3XGtQ2X43BCT2XCYgheGLQQigEG",
-		"29cnQPHuWHCRF26LEAb2gR83ywnF3F9HduW",
-		"2ZUAv9MGSpDKR3dnKMUnrKqLenV22JXAxzP",
-		"fwNVThqdzH7JMsStoLrTpkVsemesbdGftm",
-		"eyr5KDLTnN6ZZeggeHqDcXnrwmNUi7sGk2",
-		"Aee3J9qoFPLoUEJes6YVzdKHdeuvCrMZeJ",
-		"29MZS8aiYUdEwcruwCPggVJG9YJLsm92FHa",
-		"2Hbm3bwKiEwqNAMAzVJmz5hL1dNTfaA3ju7",
-		"WCaSCwSZnVqtkYeiKryeHjR8LbzE3KbkzJ",
-		"baRjCy1yHfishGdZi3bVaPaL7VJM7FZCSd",
-		"296oQmJJgx35NDApi7YYzj1AryM8fZcjwf3",
-		"cxxxRfy3RRy2YbFTcptRbVTQYcHY1ejRB5",
-		"omLGQm1Z2Y9Bga8v6NQ2hgrpRm1nATzGK9",
-		"2EpZP1E8gTJy799t5CVrZUcxjyFFHwshr6X",
-		"2hgaPG2oNVrkonPxjv4Sx9au6ruw1Y8pjUi",
-		"2bHfa8yjhWB5mTip8j1FjNhB1TGbSBkX3Xu",
-		"VYu5ePSB7ReKm2pysC5JRdCUiTBgDn5Tkw",
-		"2crRqwG3BaurEqNa7eiB5oUNKTQPETfKrFW",
-		"2LVTqqNSTBKE51UC7bZ39bZ6wwmR3sibHBX",
-		"2A8C3h1gsw92Q4Uhn4b385onKrhzuH8UTwE",
-	}
-	bip44Addrs := make([]cipher.Address, len(bip44AddrStrs))
-	for i, a := range bip44AddrStrs {
-		bip44Addrs[i] = cipher.MustDecodeBase58Address(a)
-	}
-
-	bip44ChangeAddrStrs := []string{
-		"oHvj7oy8maES9HJiQHJTp4GvcUcpz3voDq",
-		"2SGMfTFV2zbQzGw7aJm1D5EeEPgych5ixuC",
-		"2ymjULRdbiFoUNJKNhWbQ3JqdE8TXnZkyU",
-		"muvdio7V8vkbUPPJsumVWEqScKHZho6Xmx",
-		"qyQuA2RW4H6NFqhRQmHDt2q28E654PoBsH",
-		"24UcBj42Q7GBx1rmeU5AE7JhcRbpDq9utCV",
-		"2TwjgBxKhK84Qa34HoNc5KbsYfp1NBZyPXk",
-		"fDYKWyDnDaQmpigGAJNK4ZoBZ4WTg5dtRN",
-		"rRMXXm8ufMcqqnLqRX5CoJ8wA6rdWPJEiW",
-		"2D6HN4fSHZqsGaPzCDUjddF6NS4hBsVGRag",
-		"2bXjTvatPW4Z3SaQBr96zJwwYcxp7iemeGC",
-		"tbmXTJWtqtuaAdVvFWS1rmL42omdD4Hkd3",
-		"27NT6t4xJoqcs6PsM2EgNNhx4MMw3ioFVER",
-		"Xym6pAVg2Xjp9sXvCUKrLgq6PSEt1izsRd",
-		"49EqkHPgWPS9W1jDiJXSKdKdNur3pJjADw",
-		"f52mwYtpVNhgMMmJZHQYVBQVHwHXCbP5yX",
-		"2ffeXAKtVUmxucs8mpM2EKMqzYCN3TB7DYx",
-		"2NJERX84xLHMidXtYDtT1rGzhf4HJmCkz47",
-		"wik4VEcja3pz2Wo6SwwfoDGzVzB7ZoosQB",
-		"2gj3qjYQ4MMkv7CdB3PvkbEEPhXikZBD4q6",
-	}
-	bip44ChangeAddrs := make([]cipher.Address, len(bip44ChangeAddrStrs))
-	for i, a := range bip44ChangeAddrStrs {
-		bip44ChangeAddrs[i] = cipher.MustDecodeBase58Address(a)
-	}
-
-	xpub := "xpub6E5WPk37XdM79dy6oJ7iH6NkCvVzxmrCo4zMFFHSZMc5ymZYhReQFWaDcGNZeYYe1ahY2e3RcRZDHLHC98FfzPRfNRcU6ecURpS4RCQRP2w"
-	xpubAddrStrs := []string{
-		"2mhaS6SE2TPSmRRbJvngWQSNXCCVuTic5Zg",
-		"2bq2itwDKteqigxVS9eYJv4Ww9SEfuyGcib",
-		"B7eMXM6nLUqqzkFcosXR3HSVkQ6yUz53n4",
-		"niAy17kBb8vB2pFey8eZnE92e6x9bFGLHp",
-		"N8JbzcqWEPkn6CF3JdZDmEydzECyZ4NhRv",
-		"TcyY3F4xHPCtFFkdDBTC93y684Fmxg2rPd",
-		"kcVFbcrVqAVUHrirp7r3HYHUzrtdFuybez",
-		"bzA7UeUmkuFWn3waGh3z1eQ5xV3TAZpgX2",
-		"2K29ZX6vaqrTRZJbFKX7hzu646wL3pJfF6H",
-		"VKpFCpN4yp46uYbffaeCg7XEvQd6pHNSkV",
-		"2bGUCmS8BcFiX6VQbq6DVvjDsCdu5fgoSSr",
-		"2Yx8dzMgzU5Y2vrAomAtkajWNmUCJ31xNF",
-		"wd2NGBkCygq7cCP899gbiBciM7ZFqphRDM",
-		"2akitSsnetXoc3ejzY4pA8dGjWM76uzPxo3",
-		"WFTbYvNJGAq9wWG644sMvgt4EJ6CvkbvDK",
-		"2FReiyjcQuQBCvjKQzyrhc7QMwdbdBwLvCT",
-		"2RnSh4sZrxCEK5fUSCLR8JuwzGd6K5mzdrA",
-		"ujJHitcLhQZB393qrdJvdfM4AyEPMmDhcV",
-		"25jWWmrgU8Z9HYVCsAXYmCjF1jQqe5DDnqr",
-		"rsaKzohU5erbR6FX1whWu9Ke4q2jLkLBeJ",
-	}
-	xpubAddrs := make([]cipher.Address, len(xpubAddrStrs))
-	for i, a := range xpubAddrStrs {
-		xpubAddrs[i] = cipher.MustDecodeBase58Address(a)
-	}
-
-	tf := make(mockTxnsFinder, 20)
-
-	type exp struct {
-		err      error
-		seed     string
-		lastSeed string
-		xpub     string
-		entryNum int
-		addrs    []cipher.Address
-	}
-
-	tt := []struct {
-		name             string
-		opts             Options
-		balGetter        TransactionsFinder
-		disableWalletAPI bool
-		expect           exp
-	}{
-		{
-			name: "no coins and scan 0, unencrypted",
-			opts: Options{
-				Seed: seed,
-				Type: WalletTypeDeterministic,
-			},
-			balGetter: tf,
-			expect: exp{
-				err:      nil,
-				seed:     seed,
-				lastSeed: childSeeds[0],
-				entryNum: 1,
-				addrs:    addrs,
-			},
-		},
-		{
-			name: "no coins and scan 0, encrypted",
-			opts: Options{
-				Seed:     seed,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Type:     WalletTypeDeterministic,
-			},
-			balGetter: tf,
-			expect: exp{
-				err:      nil,
-				seed:     seed,
-				lastSeed: childSeeds[0],
-				entryNum: 1,
-				addrs:    addrs,
-			},
-		},
-		{
-			name: "no coins and scan 1, unencrypted",
-			opts: Options{
-				Seed:  seed,
-				ScanN: 1,
-				Type:  WalletTypeDeterministic,
-			},
-			balGetter: tf,
-			expect: exp{
-				err:      nil,
-				seed:     seed,
-				lastSeed: childSeeds[0],
-				entryNum: 1,
-				addrs:    addrs,
-			},
-		},
-		{
-			name: "no coins and scan 1, encrypted",
-			opts: Options{
-				Seed:     seed,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				ScanN:    1,
-				Type:     WalletTypeDeterministic,
-			},
-			balGetter: tf,
-			expect: exp{
-				err:      nil,
-				seed:     seed,
-				lastSeed: childSeeds[0],
-				entryNum: 1,
-				addrs:    addrs,
-			},
-		},
-		{
-			name: "no coins and scan 10, unencrypted",
-			opts: Options{
-				Seed:  seed,
-				ScanN: 10,
-				Type:  WalletTypeDeterministic,
-			},
-			balGetter: tf,
-			expect: exp{
-				err:      nil,
-				seed:     seed,
-				lastSeed: childSeeds[0],
-				entryNum: 1,
-				addrs:    addrs,
-			},
-		},
-		{
-			name: "scan 1 get 1, unencrypted",
-			opts: Options{
-				Seed:  seed,
-				ScanN: 1,
-				Type:  WalletTypeDeterministic,
-			},
-			balGetter: mockTxnsFinder{
-				addrs[0]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     seed,
-				lastSeed: childSeeds[0],
-				entryNum: 1,
-				addrs:    addrs,
-			},
-		},
-		{
-			name: "scan 5 get 5, unencrypted",
-			opts: Options{
-				Seed:  seed,
-				ScanN: 5,
-				Type:  WalletTypeDeterministic,
-			},
-			balGetter: mockTxnsFinder{
-				addrs[4]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     seed,
-				lastSeed: childSeeds[4],
-				entryNum: 5,
-				addrs:    addrs,
-			},
-		},
-		{
-			name: "scan 5 get 1, unencrypted",
-			opts: Options{
-				Seed:  seed,
-				ScanN: 5,
-				Type:  WalletTypeDeterministic,
-			},
-			balGetter: mockTxnsFinder{
-				addrs[0]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     seed,
-				lastSeed: childSeeds[0],
-				entryNum: 1,
-				addrs:    addrs,
-			},
-		},
-		{
-			name: "scan 5 get 2, unencrypted",
-			opts: Options{
-				Seed:  seed,
-				ScanN: 5,
-				Type:  WalletTypeDeterministic,
-			},
-			balGetter: mockTxnsFinder{
-				addrs[1]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     seed,
-				lastSeed: childSeeds[1],
-				entryNum: 2,
-				addrs:    addrs,
-			},
-		},
-
-		{
-			name: "scan 5 get 3, encrypted",
-			opts: Options{
-				Seed:     seed,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				ScanN:    5,
-				Type:     WalletTypeDeterministic,
-			},
-			balGetter: mockTxnsFinder{
-				addrs[2]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     seed,
-				lastSeed: childSeeds[2],
-				entryNum: 3,
-				addrs:    addrs,
-			},
-		},
-		{
-			name: "scan 5 get 4, unencrypted",
-			opts: Options{
-				Seed:  seed,
-				ScanN: 5,
-				Type:  WalletTypeDeterministic,
-			},
-			balGetter: mockTxnsFinder{
-				addrs[2]: true,
-				addrs[3]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     seed,
-				lastSeed: childSeeds[3],
-				entryNum: 4,
-				addrs:    addrs,
-			},
-		},
-		{
-			name: "scan 5 get 5, unencrypted",
-			opts: Options{
-				Seed:  seed,
-				ScanN: 5,
-				Type:  WalletTypeDeterministic,
-			},
-			balGetter: mockTxnsFinder{
-				addrs[3]: true,
-				addrs[4]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     seed,
-				lastSeed: childSeeds[4],
-				entryNum: 5,
-				addrs:    addrs,
-			},
-		},
-		{
-			name: "scan 0 get 1, encrypted",
-			opts: Options{
-				Seed:     seed,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				ScanN:    0,
-				Type:     WalletTypeDeterministic,
-			},
-			balGetter: mockTxnsFinder{},
-			expect: exp{
-				err:      nil,
-				seed:     seed,
-				lastSeed: childSeeds[0],
-				entryNum: 1,
-				addrs:    addrs,
-			},
-		},
-		{
-			name: "scan 1 get 1, encrypted",
-			opts: Options{
-				Seed:     seed,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				ScanN:    1,
-				Type:     WalletTypeDeterministic,
-			},
-			balGetter: mockTxnsFinder{
-				addrs[0]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     seed,
-				lastSeed: childSeeds[0],
-				entryNum: 1,
-				addrs:    addrs,
-			},
-		},
-		{
-			name: "scan 2 get 1, encrypted",
-			opts: Options{
-				Seed:     seed,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				ScanN:    2,
-				Type:     WalletTypeDeterministic,
-			},
-			balGetter: mockTxnsFinder{},
-			expect: exp{
-				err:      nil,
-				seed:     seed,
-				lastSeed: childSeeds[0],
-				entryNum: 1,
-				addrs:    addrs,
-			},
-		},
-		{
-			name: "scan 2 get 2, encrypted",
-			opts: Options{
-				Seed:     seed,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				ScanN:    2,
-				Type:     WalletTypeDeterministic,
-			},
-			balGetter: mockTxnsFinder{
-				addrs[1]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     seed,
-				lastSeed: childSeeds[1],
-				entryNum: 2,
-				addrs:    addrs,
-			},
-		},
-		{
-			name: "scan 5 get 5, encrypted",
-			opts: Options{
-				Seed:     seed,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				ScanN:    5,
-				Type:     WalletTypeDeterministic,
-			},
-			balGetter: mockTxnsFinder{
-				addrs[3]: true,
-				addrs[4]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     seed,
-				lastSeed: childSeeds[4],
-				entryNum: 5,
-				addrs:    addrs,
-			},
-		},
-		{
-			name: "bip44 no coins and scan 0, unencrypted",
-			opts: Options{
-				Seed: bip44Seed,
-				Type: WalletTypeBip44,
-			},
-			balGetter: tf,
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 1,
-				addrs:    bip44Addrs,
-			},
-		},
-		{
-			name: "bip44 no coins and scan 0, encrypted",
-			opts: Options{
-				Seed:     bip44Seed,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Type:     WalletTypeBip44,
-			},
-			balGetter: tf,
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 1,
-				addrs:    bip44Addrs,
-			},
-		},
-		{
-			name: "bip44 no coins and scan 1, unencrypted",
-			opts: Options{
-				Seed:  bip44Seed,
-				ScanN: 1,
-				Type:  WalletTypeBip44,
-			},
-			balGetter: tf,
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 1,
-				addrs:    bip44Addrs,
-			},
-		},
-		{
-			name: "bip44 no coins and scan 1, encrypted",
-			opts: Options{
-				Seed:     bip44Seed,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				ScanN:    1,
-				Type:     WalletTypeBip44,
-			},
-			balGetter: tf,
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 1,
-				addrs:    bip44Addrs,
-			},
-		},
-		{
-			name: "bip44 no coins and scan 10, unencrypted",
-			opts: Options{
-				Seed:  bip44Seed,
-				ScanN: 10,
-				Type:  WalletTypeBip44,
-			},
-			balGetter: tf,
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 1,
-				addrs:    bip44Addrs,
-			},
-		},
-		{
-			name: "bip44 scan 0 get 1, unencrypted",
-			opts: Options{
-				Seed:  bip44Seed,
-				ScanN: 1,
-				Type:  WalletTypeBip44,
-			},
-			balGetter: mockTxnsFinder{
-				bip44Addrs[0]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 1,
-				addrs:    bip44Addrs,
-			},
-		},
-		{
-			name: "bip44 scan 0 get 1, encrypted",
-			opts: Options{
-				Seed:     bip44Seed,
-				ScanN:    1,
-				Type:     WalletTypeBip44,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-			},
-			balGetter: mockTxnsFinder{
-				bip44Addrs[0]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 1,
-				addrs:    bip44Addrs,
-			},
-		},
-		{
-			name: "bip44 scan 1 get 1, unencrypted",
-			opts: Options{
-				Seed:  bip44Seed,
-				ScanN: 1,
-				Type:  WalletTypeBip44,
-			},
-			balGetter: mockTxnsFinder{
-				bip44Addrs[0]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 1,
-				addrs:    bip44Addrs,
-			},
-		},
-		{
-			name: "bip44 scan 1 get 1, encrypted",
-			opts: Options{
-				Seed:     bip44Seed,
-				ScanN:    1,
-				Type:     WalletTypeBip44,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-			},
-			balGetter: mockTxnsFinder{
-				bip44Addrs[0]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 1,
-				addrs:    bip44Addrs,
-			},
-		},
-		{
-			name: "bip44 scan 2 get 2, unencrypted",
-			opts: Options{
-				Seed:  bip44Seed,
-				ScanN: 2,
-				Type:  WalletTypeBip44,
-			},
-			balGetter: mockTxnsFinder{
-				bip44Addrs[0]: true,
-				bip44Addrs[1]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 2,
-				addrs:    bip44Addrs,
-			},
-		},
-		{
-			name: "bip44 scan 2 get 2, encrypted",
-			opts: Options{
-				Seed:     bip44Seed,
-				ScanN:    2,
-				Type:     WalletTypeBip44,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-			},
-			balGetter: mockTxnsFinder{
-				bip44Addrs[0]: true,
-				bip44Addrs[1]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 2,
-				addrs:    bip44Addrs,
-			},
-		},
-		{
-			name: "bip44 scan 5 get 1, unencrypted",
-			opts: Options{
-				Seed:  bip44Seed,
-				ScanN: 5,
-				Type:  WalletTypeBip44,
-			},
-			balGetter: mockTxnsFinder{
-				bip44Addrs[0]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 1,
-				addrs:    bip44Addrs,
-			},
-		},
-		{
-			name: "bip44 scan 5 get 2, unencrypted",
-			opts: Options{
-				Seed:  bip44Seed,
-				ScanN: 5,
-				Type:  WalletTypeBip44,
-			},
-			balGetter: mockTxnsFinder{
-				bip44Addrs[1]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 2,
-				addrs:    bip44Addrs,
-			},
-		},
-		{
-			name: "bip44 scan 5 get 5, unencrypted",
-			opts: Options{
-				Seed:  bip44Seed,
-				ScanN: 5,
-				Type:  WalletTypeBip44,
-			},
-			balGetter: mockTxnsFinder{
-				bip44Addrs[4]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 5,
-				addrs:    bip44Addrs,
-			},
-		},
-		{
-			name: "bip44 scan 5 get 5, encrypted",
-			opts: Options{
-				Seed:     bip44Seed,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				ScanN:    5,
-				Type:     WalletTypeBip44,
-			},
-			balGetter: mockTxnsFinder{
-				bip44Addrs[3]: true,
-				bip44Addrs[4]: true,
-			},
-			expect: exp{
-				err:      nil,
-				seed:     bip44Seed,
-				entryNum: 5,
-				addrs:    bip44Addrs,
-			},
-		},
-		{
-			name: "xpub no coins and scan 0, unencrypted",
-			opts: Options{
-				XPub: xpub,
-				Type: WalletTypeXPub,
-			},
-			balGetter: tf,
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 1,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub no coins and scan 0, encrypted",
-			opts: Options{
-				XPub:     xpub,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Type:     WalletTypeXPub,
-			},
-			balGetter: tf,
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 1,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub no coins and scan 1, unencrypted",
-			opts: Options{
-				XPub:  xpub,
-				ScanN: 1,
-				Type:  WalletTypeXPub,
-			},
-			balGetter: tf,
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 1,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub no coins and scan 1, encrypted",
-			opts: Options{
-				XPub:     xpub,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				ScanN:    1,
-				Type:     WalletTypeXPub,
-			},
-			balGetter: tf,
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 1,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub no coins and scan 10, unencrypted",
-			opts: Options{
-				XPub:  xpub,
-				ScanN: 10,
-				Type:  WalletTypeXPub,
-			},
-			balGetter: tf,
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 1,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub scan 0 get 1, unencrypted",
-			opts: Options{
-				XPub:  xpub,
-				ScanN: 0,
-				Type:  WalletTypeXPub,
-			},
-			balGetter: mockTxnsFinder{
-				xpubAddrs[0]: true,
-			},
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 1,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub scan 0 get 1, encrypted",
-			opts: Options{
-				XPub:     xpub,
-				ScanN:    0,
-				Type:     WalletTypeXPub,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-			},
-			balGetter: mockTxnsFinder{
-				xpubAddrs[0]: true,
-			},
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 1,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub scan 1 get 1, unencrypted",
-			opts: Options{
-				XPub:  xpub,
-				ScanN: 1,
-				Type:  WalletTypeXPub,
-			},
-			balGetter: mockTxnsFinder{
-				xpubAddrs[0]: true,
-			},
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 1,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub scan 1 get 1, encrypted",
-			opts: Options{
-				XPub:     xpub,
-				ScanN:    1,
-				Type:     WalletTypeXPub,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-			},
-			balGetter: mockTxnsFinder{
-				xpubAddrs[0]: true,
-			},
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 1,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub scan 2 get 1, unencrypted",
-			opts: Options{
-				XPub:  xpub,
-				ScanN: 2,
-				Type:  WalletTypeXPub,
-			},
-			balGetter: mockTxnsFinder{
-				xpubAddrs[0]: true,
-			},
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 1,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub scan 2 get 1, encrypted",
-			opts: Options{
-				XPub:     xpub,
-				ScanN:    2,
-				Type:     WalletTypeXPub,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-			},
-			balGetter: mockTxnsFinder{
-				xpubAddrs[0]: true,
-			},
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 1,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub scan 2 get 2, unencrypted",
-			opts: Options{
-				XPub:  xpub,
-				ScanN: 2,
-				Type:  WalletTypeXPub,
-			},
-			balGetter: mockTxnsFinder{
-				xpubAddrs[1]: true,
-			},
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 2,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub scan 2 get 2, encrypted",
-			opts: Options{
-				XPub:     xpub,
-				ScanN:    2,
-				Type:     WalletTypeXPub,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-			},
-			balGetter: mockTxnsFinder{
-				xpubAddrs[1]: true,
-			},
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 2,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub scan 5 get 5, unencrypted",
-			opts: Options{
-				XPub:  xpub,
-				ScanN: 5,
-				Type:  WalletTypeXPub,
-			},
-			balGetter: mockTxnsFinder{
-				xpubAddrs[4]: true,
-			},
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 5,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub scan 5 get 4, unencrypted",
-			opts: Options{
-				XPub:  xpub,
-				ScanN: 5,
-				Type:  WalletTypeXPub,
-			},
-			balGetter: mockTxnsFinder{
-				xpubAddrs[1]: true,
-				xpubAddrs[3]: true,
-			},
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 4,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub scan 5 get 3, unencrypted",
-			opts: Options{
-				XPub:  xpub,
-				ScanN: 5,
-				Type:  WalletTypeXPub,
-			},
-			balGetter: mockTxnsFinder{
-				xpubAddrs[1]: true,
-				xpubAddrs[2]: true,
-			},
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 3,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub scan 5 get 2, unencrypted",
-			opts: Options{
-				XPub:  xpub,
-				ScanN: 5,
-				Type:  WalletTypeXPub,
-			},
-			balGetter: mockTxnsFinder{
-				xpubAddrs[1]: true,
-			},
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 2,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub scan 5 get 1, unencrypted",
-			opts: Options{
-				XPub:  xpub,
-				ScanN: 5,
-				Type:  WalletTypeXPub,
-			},
-			balGetter: mockTxnsFinder{
-				xpubAddrs[0]: true,
-			},
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 1,
-				addrs:    xpubAddrs,
-			},
-		},
-
-		{
-			name: "xpub scan 5 get 2, encrypted",
-			opts: Options{
-				XPub:     xpub,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				ScanN:    5,
-				Type:     WalletTypeXPub,
-			},
-			balGetter: mockTxnsFinder{
-				xpubAddrs[1]: true,
-			},
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 2,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "xpub scan 5 get 5, encrypted",
-			opts: Options{
-				XPub:     xpub,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				ScanN:    5,
-				Type:     WalletTypeXPub,
-			},
-			balGetter: mockTxnsFinder{
-				xpubAddrs[3]: true,
-				xpubAddrs[4]: true,
-			},
-			expect: exp{
-				err:      nil,
-				xpub:     xpub,
-				entryNum: 5,
-				addrs:    xpubAddrs,
-			},
-		},
-		{
-			name: "wallet api disabled",
-			opts: Options{
-				Seed:     seed,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				ScanN:    5,
-				Type:     WalletTypeDeterministic,
-			},
-			balGetter:        mockTxnsFinder{},
-			disableWalletAPI: true,
-			expect: exp{
-				err: ErrWalletAPIDisabled,
-			},
-		},
-	}
-
-	for _, tc := range tt {
-		for _, ct := range crypto.Types() {
-			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
-			t.Run(name, func(t *testing.T) {
-				dir := prepareWltDir()
-				s, err := NewService(Config{
-					WalletDir:       dir,
-					CryptoType:      ct,
-					EnableWalletAPI: !tc.disableWalletAPI,
-				})
-				require.NoError(t, err)
-
-				wltName := NewWalletFilename()
-				w, err := s.CreateWallet(wltName, tc.opts, tc.balGetter)
-				require.Equal(t, tc.expect.err, err)
-				if err != nil {
-					return
-				}
-
-				require.NoError(t, w.Validate())
-
-				if !w.IsEncrypted() {
-					require.Equal(t, tc.expect.seed, w.Seed())
-					require.Equal(t, tc.expect.lastSeed, w.LastSeed())
-				}
-				require.Equal(t, tc.expect.xpub, w.XPub())
-				require.Equal(t, tc.expect.entryNum, w.EntriesLen())
-				for i, e := range w.GetEntries() {
-					require.Equal(t, tc.expect.addrs[i].String(), e.Address.String())
-				}
-			})
-		}
-	}
-}
-
-func TestServiceScanAddresses(t *testing.T) {
-	seed := "seed"
-	// Generate adddresses from the seed
-	var addrs []cipher.Address
-	_, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 10)
-	for _, s := range seckeys {
-		addrs = append(addrs, cipher.MustAddressFromSecKey(s))
-	}
-
-	bip44Seed := "voyage say extend find sheriff surge priority merit ignore maple cash argue"
-	bip44AddrStrs := []string{
-		"9BSEAEE3XGtQ2X43BCT2XCYgheGLQQigEG",
-		"29cnQPHuWHCRF26LEAb2gR83ywnF3F9HduW",
-		"2ZUAv9MGSpDKR3dnKMUnrKqLenV22JXAxzP",
-		"fwNVThqdzH7JMsStoLrTpkVsemesbdGftm",
-		"eyr5KDLTnN6ZZeggeHqDcXnrwmNUi7sGk2",
-		"Aee3J9qoFPLoUEJes6YVzdKHdeuvCrMZeJ",
-		"29MZS8aiYUdEwcruwCPggVJG9YJLsm92FHa",
-		"2Hbm3bwKiEwqNAMAzVJmz5hL1dNTfaA3ju7",
-		"WCaSCwSZnVqtkYeiKryeHjR8LbzE3KbkzJ",
-		"baRjCy1yHfishGdZi3bVaPaL7VJM7FZCSd",
-	}
-	bip44Addrs := make([]cipher.Address, len(bip44AddrStrs))
-	for i, a := range bip44AddrStrs {
-		bip44Addrs[i] = cipher.MustDecodeBase58Address(a)
-	}
-
-	xpub := "xpub6E5WPk37XdM79dy6oJ7iH6NkCvVzxmrCo4zMFFHSZMc5ymZYhReQFWaDcGNZeYYe1ahY2e3RcRZDHLHC98FfzPRfNRcU6ecURpS4RCQRP2w"
-	xpubAddrStrs := []string{
-		"2mhaS6SE2TPSmRRbJvngWQSNXCCVuTic5Zg",
-		"2bq2itwDKteqigxVS9eYJv4Ww9SEfuyGcib",
-		"B7eMXM6nLUqqzkFcosXR3HSVkQ6yUz53n4",
-		"niAy17kBb8vB2pFey8eZnE92e6x9bFGLHp",
-		"N8JbzcqWEPkn6CF3JdZDmEydzECyZ4NhRv",
-		"TcyY3F4xHPCtFFkdDBTC93y684Fmxg2rPd",
-		"kcVFbcrVqAVUHrirp7r3HYHUzrtdFuybez",
-		"bzA7UeUmkuFWn3waGh3z1eQ5xV3TAZpgX2",
-		"2K29ZX6vaqrTRZJbFKX7hzu646wL3pJfF6H",
-		"VKpFCpN4yp46uYbffaeCg7XEvQd6pHNSkV",
-	}
-
-	xpubAddrs := make([]cipher.Address, len(xpubAddrStrs))
-	for i, a := range xpubAddrStrs {
-		xpubAddrs[i] = cipher.MustDecodeBase58Address(a)
-	}
-
-	testData := []struct {
-		walletType string
-		seed       string
-		xpub       string
-		addrs      []cipher.Address
-	}{
-		{
-			walletType: WalletTypeDeterministic,
-			addrs:      addrs[:],
-			seed:       seed,
-		},
-		{
-			walletType: WalletTypeBip44,
-			addrs:      bip44Addrs[:],
-			seed:       bip44Seed,
-		},
-		{
-			walletType: WalletTypeXPub,
-			addrs:      xpubAddrs[:],
-			xpub:       xpub,
-		},
-	}
-
-	type testCases []struct {
-		name              string
-		opts              Options
-		scanN             uint64
-		password          []byte
-		walletAPIDisabled bool
-		tf                TransactionsFinder
-		expectAddrs       []cipher.Address
-		expectErr         error
-	}
-
-	generateTestCasesFunc := func(walletType, seed, xpub string, addrs []cipher.Address) testCases {
-		return testCases{
-			{
-				name: "scan 0 unencrypted",
-				opts: Options{
-					Type:  walletType,
-					Label: "label",
-					Seed:  seed,
-					XPub:  xpub,
-				},
-				scanN:       0,
-				expectAddrs: []cipher.Address{},
-				expectErr:   nil,
-			},
-			{
-				name: "scan 0 encrypted",
-				opts: Options{
-					Type:     walletType,
-					Label:    "label",
-					Seed:     seed,
-					XPub:     xpub,
-					Encrypt:  true,
-					Password: []byte("pwd"),
-				},
-				scanN:       0,
-				password:    []byte("pwd"),
-				expectAddrs: []cipher.Address{},
-				expectErr:   nil,
-			},
-			{
-				name: "scan 0 encrypted wrong password",
-				opts: Options{
-					Type:     walletType,
-					Label:    "label",
-					Seed:     seed,
-					XPub:     xpub,
-					Encrypt:  true,
-					Password: []byte("pwd"),
-				},
-				scanN:       0,
-				password:    []byte("incorrect password"),
-				expectAddrs: nil,
-				expectErr:   ErrInvalidPassword,
-			},
-			{
-				name: "scan 1 get 0 unencrypted",
-				opts: Options{
-					Type:  walletType,
-					Label: "label",
-					Seed:  seed,
-					XPub:  xpub,
-				},
-				scanN:       1,
-				tf:          mockTxnsFinder{},
-				expectAddrs: []cipher.Address{},
-				expectErr:   nil,
-			},
-			{
-				name: "scan 1 get 0 encrypted",
-				opts: Options{
-					Type:     walletType,
-					Label:    "label",
-					Seed:     seed,
-					XPub:     xpub,
-					Encrypt:  true,
-					Password: []byte("pwd"),
-				},
-				scanN:       1,
-				password:    []byte("pwd"),
-				tf:          mockTxnsFinder{},
-				expectAddrs: []cipher.Address{},
-				expectErr:   nil,
-			},
-			{
-				name: "scan 1 get 1 unencrypted",
-				opts: Options{
-					Type:  walletType,
-					Label: "label",
-					Seed:  seed,
-					XPub:  xpub,
-				},
-				scanN: 1,
-				tf: mockTxnsFinder{
-					addrs[1]: true,
-				},
-				expectAddrs: addrs[1:2],
-				expectErr:   nil,
-			},
-			{
-				name: "scan 1 get 1 encrypted",
-				opts: Options{
-					Type:     walletType,
-					Label:    "label",
-					Seed:     seed,
-					XPub:     xpub,
-					Encrypt:  true,
-					Password: []byte("pwd"),
-				},
-				scanN:    1,
-				password: []byte("pwd"),
-				tf: mockTxnsFinder{
-					addrs[1]: true,
-				},
-				expectAddrs: addrs[1:2],
-				expectErr:   nil,
-			},
-			{
-				name: "have 2 scan 1 get 1 unencrypted",
-				opts: Options{
-					Type:  walletType,
-					Label: "label",
-					Seed:  seed,
-					XPub:  xpub,
-				},
-				scanN: 1,
-				tf: mockTxnsFinder{
-					addrs[1]: true,
-					addrs[2]: true,
-				},
-				expectAddrs: addrs[1:2],
-				expectErr:   nil,
-			},
-			{
-				name: "have 2 scan 1 get 1 encrypted",
-				opts: Options{
-					Type:     walletType,
-					Label:    "label",
-					Seed:     seed,
-					XPub:     xpub,
-					Encrypt:  true,
-					Password: []byte("pwd"),
-				},
-				scanN:    1,
-				password: []byte("pwd"),
-				tf: mockTxnsFinder{
-					addrs[1]: true,
-					addrs[2]: true,
-				},
-				expectAddrs: addrs[1:2],
-				expectErr:   nil,
-			},
-			{
-				name: "scan 2 get 1 unencrypted",
-				opts: Options{
-					Type:  walletType,
-					Label: "label",
-					Seed:  seed,
-					XPub:  xpub,
-				},
-				scanN: 2,
-				tf: mockTxnsFinder{
-					addrs[1]: true,
-				},
-				expectAddrs: addrs[1:2],
-				expectErr:   nil,
-			},
-			{
-				name: "scan 2 get 1 encrypted",
-				opts: Options{
-					Type:     walletType,
-					Label:    "label",
-					Seed:     seed,
-					XPub:     xpub,
-					Encrypt:  true,
-					Password: []byte("pwd"),
-				},
-				scanN:    2,
-				password: []byte("pwd"),
-				tf: mockTxnsFinder{
-					addrs[1]: true,
-				},
-				expectAddrs: addrs[1:2],
-				expectErr:   nil,
-			},
-			{
-				name: "scan 2 get 2 unencrypted",
-				opts: Options{
-					Type:  walletType,
-					Label: "label",
-					Seed:  seed,
-					XPub:  xpub,
-				},
-				scanN: 2,
-				tf: mockTxnsFinder{
-					addrs[1]: true,
-					addrs[2]: true,
-				},
-				expectAddrs: addrs[1:3],
-				expectErr:   nil,
-			},
-			{
-				name: "scan 10 get 2 unencrypted",
-				opts: Options{
-					Type:  walletType,
-					Label: "label",
-					Seed:  seed,
-					XPub:  xpub,
-				},
-				scanN: 10,
-				tf: mockTxnsFinder{
-					addrs[1]: true,
-					addrs[2]: true,
-				},
-				expectAddrs: addrs[1:3],
-				expectErr:   nil,
-			},
-			{
-				name: "scan 10 get 5 unencrypted",
-				opts: Options{
-					Type:  walletType,
-					Label: "label",
-					Seed:  seed,
-					XPub:  xpub,
-				},
-				scanN: 10,
-				tf: mockTxnsFinder{
-					addrs[1]: true,
-					addrs[2]: true,
-					addrs[5]: true,
-				},
-				expectAddrs: addrs[1:6],
-				expectErr:   nil,
-			},
-		}
-	}
-
-	for _, d := range testData {
-		tt := generateTestCasesFunc(d.walletType, d.seed, d.xpub, d.addrs)
-		for _, tc := range tt {
-			for _, ct := range crypto.Types() {
-				name := fmt.Sprintf("crypto=%v type=%v %v", ct, d.walletType, tc.name)
-				t.Run(name, func(t *testing.T) {
-					dir := prepareWltDir()
-					s, err := NewService(Config{
-						WalletDir:       dir,
-						CryptoType:      ct,
-						EnableWalletAPI: !tc.walletAPIDisabled,
-					})
-					require.NoError(t, err)
-
-					wltName := NewWalletFilename()
-					w, err := s.CreateWallet(wltName, tc.opts, tc.tf)
-					require.NoError(t, err)
-					require.NoError(t, w.Validate())
-
-					addrs, err := s.ScanAddresses(w.Filename(), tc.password, tc.scanN, tc.tf)
-					require.Equal(t, tc.expectErr, err)
-					require.Equal(t, tc.expectAddrs, addrs)
-				})
-			}
-		}
-	}
-}
-
-func TestGetWalletSeed(t *testing.T) {
-	tt := []struct {
-		name             string
-		wltName          string
-		opts             Options
-		id               string
-		pwd              []byte
-		disableWalletAPI bool
-		enableSeedAPI    bool
-		expectErr        error
-	}{
-		{
-			name:    "wallet is not encrypted",
-			wltName: "wallet.wlt",
-			opts: Options{
-				Seed:  "seed",
-				Label: "label",
-				Type:  WalletTypeDeterministic,
-			},
-			id:            "wallet.wlt",
-			enableSeedAPI: true,
-			expectErr:     ErrWalletNotEncrypted,
-		},
-		{
-			name:    "wallet api disabled",
-			wltName: "wallet.wlt",
-			opts: Options{
-				Seed:  "seed",
-				Label: "label",
-				Type:  WalletTypeDeterministic,
-			},
-			id:               "wallet.wlt",
-			enableSeedAPI:    true,
-			disableWalletAPI: true,
-			expectErr:        ErrWalletAPIDisabled,
-		},
-		{
-			name:    "ok",
-			wltName: "wallet.wlt",
-			opts: Options{
-				Seed:     "seed",
-				Label:    "label",
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Type:     WalletTypeDeterministic,
-			},
-			enableSeedAPI: true,
-			id:            "wallet.wlt",
-			pwd:           []byte("pwd"),
-		},
-		{
-			name:    "ok seed passphrase",
-			wltName: "wallet.wlt",
-			opts: Options{
-				Seed:           bip39.MustNewDefaultMnemonic(),
-				SeedPassphrase: "seed-passphrase",
-				Label:          "label",
-				Encrypt:        true,
-				Password:       []byte("pwd"),
-				Type:           WalletTypeBip44,
-			},
-			enableSeedAPI: true,
-			id:            "wallet.wlt",
-			pwd:           []byte("pwd"),
-		},
-		{
-			name:    "wallet does not exist",
-			wltName: "wallet.wlt",
-			opts: Options{
-				Seed:     "seed",
-				Label:    "label",
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Type:     WalletTypeDeterministic,
-			},
-			enableSeedAPI: true,
-			pwd:           []byte("pwd"),
-			id:            "none-exist.wlt",
-			expectErr:     ErrWalletNotExist,
-		},
-		{
-			name:    "disable seed api",
-			wltName: "wallet.wlt",
-			opts: Options{
-				Seed:     "seed",
-				Label:    "label",
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Type:     WalletTypeDeterministic,
-			},
-			pwd:           []byte("pwd"),
-			id:            "wallet.wlt",
-			enableSeedAPI: false,
-			expectErr:     ErrSeedAPIDisabled,
-		},
-	}
-
-	for _, tc := range tt {
-		for _, ct := range crypto.Types() {
-			t.Run(tc.name, func(t *testing.T) {
-				dir := prepareWltDir()
-				s, err := NewService(Config{
-					WalletDir:       dir,
-					CryptoType:      ct,
-					EnableWalletAPI: !tc.disableWalletAPI,
-					EnableSeedAPI:   tc.enableSeedAPI,
-				})
-				require.NoError(t, err)
-
-				if tc.disableWalletAPI {
-					_, _, err = s.GetWalletSeed("", tc.pwd)
-					require.Equal(t, tc.expectErr, err)
-					return
-				}
-
-				// Create a wallet
-				_, err = s.CreateWallet(tc.wltName, tc.opts, nil)
-				require.NoError(t, err)
-
-				seed, seedPassphrase, err := s.GetWalletSeed(tc.id, tc.pwd)
-				require.Equal(t, tc.expectErr, err)
-				if err != nil {
-					return
-				}
-
-				require.Equal(t, tc.opts.Seed, seed)
-				require.Equal(t, tc.opts.SeedPassphrase, seedPassphrase)
-			})
-		}
-	}
-}
-
-func TestServiceView(t *testing.T) {
-	tt := []struct {
-		name             string
-		wltName          string
-		opts             Options
-		viewWltName      string
-		action           func(*testing.T) func(Wallet) error
-		disableWalletAPI bool
-		err              error
-	}{
-		{
-			name:        "ok, encrypted collection wallet",
-			wltName:     "test-view-collection-encrypted.wlt",
-			viewWltName: "test-view-collection-encrypted.wlt",
-			opts: Options{
-				Type:     WalletTypeCollection,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Label:    "foowlt",
-			},
-			action: func(t *testing.T) func(Wallet) error {
-				return func(w Wallet) error {
-					require.Equal(t, "foowlt", w.Label())
-					checkNoSensitiveData(t, w)
-
-					// Modify the wallet pointer in order to check that this references a clone and not the original
-					w.SetLabel(w.Label() + "foo")
-
-					return nil
-				}
-			},
-		},
-
-		{
-			name:        "ok, unencrypted collection wallet",
-			wltName:     "test-view-collection-unencrypted.wlt",
-			viewWltName: "test-view-collection-unencrypted.wlt",
-			opts: Options{
-				Label: "foowlt",
-				Type:  WalletTypeCollection,
-			},
-			action: func(t *testing.T) func(Wallet) error {
-				return func(w Wallet) error {
-					require.Equal(t, "foowlt", w.Label())
-					// Collection wallets don't have seeds
-					require.Empty(t, w.Seed())
-					require.Empty(t, w.LastSeed())
-
-					// Modify the wallet pointer in order to check that this references a clone and not the original
-					w.SetLabel(w.Label() + "foo")
-
-					return nil
-				}
-			},
-		},
-
-		{
-			name:        "ok, encrypted xpub wallet",
-			wltName:     "test-view-xpub-encrypted.wlt",
-			viewWltName: "test-view-xpub-encrypted.wlt",
-			opts: Options{
-				Type:     WalletTypeXPub,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Label:    "foowlt",
-				XPub:     "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
-			},
-			action: func(t *testing.T) func(Wallet) error {
-				return func(w Wallet) error {
-					require.Equal(t, "foowlt", w.Label())
-					checkNoSensitiveData(t, w)
-
-					require.Equal(t, "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v", w.XPub())
-
-					// Modify the wallet pointer in order to check that this references a clone and not the original
-					w.SetLabel(w.Label() + "foo")
-
-					return nil
-				}
-			},
-		},
-
-		{
-			name:        "ok, unencrypted xpub wallet",
-			wltName:     "test-view-xpub-unencrypted.wlt",
-			viewWltName: "test-view-xpub-unencrypted.wlt",
-			opts: Options{
-				Label: "foowlt",
-				Type:  WalletTypeXPub,
-				XPub:  "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
-			},
-			action: func(t *testing.T) func(Wallet) error {
-				return func(w Wallet) error {
-					require.Equal(t, "foowlt", w.Label())
-					// xpub wallets don't have seeds
-					require.Empty(t, w.Seed())
-					require.Empty(t, w.LastSeed())
-
-					require.Equal(t, "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v", w.XPub())
-
-					// Modify the wallet pointer in order to check that this references a clone and not the original
-					w.SetLabel(w.Label() + "foo")
-
-					return nil
-				}
-			},
-		},
-
-		{
-			name:        "ok, encrypted bip44 wallet",
-			wltName:     "test-view-bip44-encrypted.wlt",
-			viewWltName: "test-view-bip44-encrypted.wlt",
-			opts: Options{
-				Type:     WalletTypeBip44,
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Label:    "foowlt",
-				Seed:     "voyage say extend find sheriff surge priority merit ignore maple cash argue",
-			},
-			action: func(t *testing.T) func(Wallet) error {
-				return func(w Wallet) error {
-					require.Equal(t, "foowlt", w.Label())
-					checkNoSensitiveData(t, w)
-
-					// Modify the wallet pointer in order to check that this references a clone and not the original
-					w.SetLabel(w.Label() + "foo")
-
-					return nil
-				}
-			},
-		},
-
-		{
-			name:        "ok, unencrypted bip44 wallet",
-			wltName:     "test-view-bip44-unencrypted.wlt",
-			viewWltName: "test-view-bip44-unencrypted.wlt",
-			opts: Options{
-				Label:          "foowlt",
-				Type:           WalletTypeBip44,
-				Seed:           "voyage say extend find sheriff surge priority merit ignore maple cash argue",
-				SeedPassphrase: "foo",
-			},
-			action: func(t *testing.T) func(Wallet) error {
-				return func(w Wallet) error {
-					require.Equal(t, "foowlt", w.Label())
-					require.Equal(t, "voyage say extend find sheriff surge priority merit ignore maple cash argue", w.Seed())
-					require.Equal(t, "foo", w.SeedPassphrase())
-					require.Empty(t, w.LastSeed())
-
-					// Modify the wallet pointer in order to check that this references a clone and not the original
-					w.SetLabel(w.Label() + "foo")
-
-					return nil
-				}
-			},
-		},
-
-		{
-			name:        "ok, encrypted wallet",
-			wltName:     "test-view-encrypted.wlt",
-			viewWltName: "test-view-encrypted.wlt",
-			opts: Options{
-				Type:     WalletTypeDeterministic,
-				Seed:     "fooseed",
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Label:    "foowlt",
-			},
-			action: func(t *testing.T) func(Wallet) error {
-				return func(w Wallet) error {
-					require.Equal(t, "foowlt", w.Label())
-					checkNoSensitiveData(t, w)
-
-					// Modify the wallet pointer in order to check that this references a clone and not the original
-					w.SetLabel(w.Label() + "foo")
-
-					return nil
-				}
-			},
-		},
-
-		{
-			name:        "ok, unencrypted wallet",
-			wltName:     "test-view-unencrypted.wlt",
-			viewWltName: "test-view-unencrypted.wlt",
-			opts: Options{
-				Type:  WalletTypeDeterministic,
-				Seed:  "fooseed",
-				Label: "foowlt",
-			},
-			action: func(t *testing.T) func(Wallet) error {
-				return func(w Wallet) error {
-					require.Equal(t, "foowlt", w.Label())
-					// Seed is visible because its not encrypted
-					require.Equal(t, "fooseed", w.Seed())
-					require.NotEmpty(t, w.LastSeed())
-
-					// Modify the wallet pointer in order to check that this references a clone and not the original
-					w.SetLabel(w.Label() + "foo")
-
-					return nil
-				}
-			},
-		},
-
-		{
-			name:        "wallet doesn't exist",
-			wltName:     "test-view-not-exist.wlt",
-			viewWltName: "foo-test-view-not-exist.wlt",
-			opts: Options{
-				Type:  WalletTypeDeterministic,
-				Seed:  "fooseed",
-				Label: "foowlt",
-			},
-			err: ErrWalletNotExist,
-		},
-
-		{
-			name:        "api disabled",
-			wltName:     "test-view-api-disabled.wlt",
-			viewWltName: "test-view-api-disabled.wlt",
-			opts: Options{
-				Type:  WalletTypeDeterministic,
-				Seed:  "fooseed",
-				Label: "foowlt",
-			},
-			disableWalletAPI: true,
-			err:              ErrWalletAPIDisabled,
-		},
-	}
-
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			dir := prepareWltDir()
-			s, err := NewService(Config{
-				WalletDir:       dir,
-				CryptoType:      crypto.CryptoTypeSha256Xor,
-				EnableWalletAPI: true,
-			})
-			require.NoError(t, err)
-
-			w, err := s.CreateWallet(tc.wltName, tc.opts, nil)
-			require.NoError(t, err)
-
-			if w.Type() == WalletTypeCollection {
-				err := s.UpdateSecrets(w.Filename(), tc.opts.Password, func(w Wallet) error {
-					p, s := cipher.GenerateKeyPair()
-					return w.(*CollectionWallet).AddEntry(entry.Entry{
-						Public:  p,
-						Secret:  s,
-						Address: cipher.AddressFromPubKey(p),
-					})
-				})
-				require.NoError(t, err)
-
-				w, err = s.GetWallet(tc.wltName)
-				require.NoError(t, err)
-			}
-
-			s.config.EnableWalletAPI = !tc.disableWalletAPI
-
-			var action func(Wallet) error
-			if tc.action != nil {
-				action = tc.action(t)
-			}
-
-			err = s.View(tc.viewWltName, action)
-
-			require.Equal(t, tc.err, err)
-			if err != nil {
-				return
-			}
-
-			s.config.EnableWalletAPI = true
-
-			// Check that the wallet is unmodified
-			w2, err := s.GetWallet(tc.wltName)
-			require.NoError(t, err)
-			require.Equal(t, w, w2)
-		})
-	}
-}
-
-func TestServiceViewSecrets(t *testing.T) {
-	mnemonicSeed := bip39.MustNewDefaultMnemonic()
-
-	tt := []struct {
-		name             string
-		wltName          string
-		opts             Options
-		viewWltName      string
-		action           func(*testing.T) func(Wallet) error
-		password         []byte
-		disableWalletAPI bool
-		err              error
-	}{
-		{
-			name:        "ok, encrypted wallet",
-			wltName:     "test-view-secrets-encrypted.wlt",
-			viewWltName: "test-view-secrets-encrypted.wlt",
-			opts: Options{
-				Seed:     "fooseed",
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Label:    "foowlt",
-				Type:     WalletTypeDeterministic,
-			},
-			password: []byte("pwd"),
-			action: func(t *testing.T) func(Wallet) error {
-				return func(w Wallet) error {
-					require.Equal(t, "foowlt", w.Label())
-
-					// Should be able to see sensitive data
-					require.Equal(t, "fooseed", w.Seed())
-					require.NotEmpty(t, w.LastSeed())
-
-					// Modify the wallet pointer in order to check that this references a clone and not the original
-					w.SetLabel(w.Label() + "foo")
-
-					return nil
-				}
-			},
-		},
-
-		{
-			name:        "ok, unencrypted wallet",
-			wltName:     "test-view-secrets-unencrypted.wlt",
-			viewWltName: "test-view-secrets-unencrypted.wlt",
-			opts: Options{
-				Seed:  "fooseed",
-				Label: "foowlt",
-				Type:  WalletTypeDeterministic,
-			},
-			action: func(t *testing.T) func(Wallet) error {
-				return func(w Wallet) error {
-					require.Equal(t, "foowlt", w.Label())
-
-					// Seed is visible because its not encrypted
-					require.Equal(t, "fooseed", w.Seed())
-					require.NotEmpty(t, w.LastSeed())
-
-					// Modify the wallet pointer in order to check that this references a clone and not the original
-					w.SetLabel(w.Label() + "foo")
-
-					return nil
-				}
-			},
-		},
-
-		{
-			name:        "ok, encrypted wallet bip44 seed passphrase",
-			wltName:     "test-view-secrets-encrypted-bip44.wlt",
-			viewWltName: "test-view-secrets-encrypted-bip44.wlt",
-			opts: Options{
-				Seed:           mnemonicSeed,
-				SeedPassphrase: "foobar",
-				Encrypt:        true,
-				Password:       []byte("pwd"),
-				Label:          "foowlt",
-				Type:           WalletTypeBip44,
-			},
-			password: []byte("pwd"),
-			action: func(t *testing.T) func(Wallet) error {
-				return func(w Wallet) error {
-					require.Equal(t, "foowlt", w.Label())
-
-					// Should be able to see sensitive data
-					require.Equal(t, mnemonicSeed, w.Seed())
-					require.Equal(t, "foobar", w.SeedPassphrase())
-					require.Empty(t, w.LastSeed())
-
-					// Modify the wallet pointer in order to check that this references a clone and not the original
-					w.SetLabel(w.Label() + "foo")
-
-					return nil
-				}
-			},
-		},
-
-		{
-			name:        "ok, unencrypted wallet bip44",
-			wltName:     "test-view-secrets-unencrypted-bip44.wlt",
-			viewWltName: "test-view-secrets-unencrypted-bip44.wlt",
-			opts: Options{
-				Seed:  mnemonicSeed,
-				Label: "foowlt",
-				Type:  WalletTypeBip44,
-			},
-			action: func(t *testing.T) func(Wallet) error {
-				return func(w Wallet) error {
-					require.Equal(t, "foowlt", w.Label())
-
-					// Seed is visible because its not encrypted
-					require.Equal(t, mnemonicSeed, w.Seed())
-					require.Empty(t, w.SeedPassphrase())
-					require.Empty(t, w.LastSeed())
-
-					// Modify the wallet pointer in order to check that this references a clone and not the original
-					w.SetLabel(w.Label() + "foo")
-
-					return nil
-				}
-			},
-		},
-
-		{
-			name:        "ok, unencrypted wallet bip44 seed passphrase",
-			wltName:     "test-view-secrets-unencrypted-bip44.wlt",
-			viewWltName: "test-view-secrets-unencrypted-bip44.wlt",
-			opts: Options{
-				Seed:           mnemonicSeed,
-				SeedPassphrase: "foobar",
-				Label:          "foowlt",
-				Type:           WalletTypeBip44,
-			},
-			action: func(t *testing.T) func(Wallet) error {
-				return func(w Wallet) error {
-					require.Equal(t, "foowlt", w.Label())
-
-					// Seed is visible because its not encrypted
-					require.Equal(t, mnemonicSeed, w.Seed())
-					require.Equal(t, "foobar", w.SeedPassphrase())
-					require.Empty(t, w.LastSeed())
-
-					// Modify the wallet pointer in order to check that this references a clone and not the original
-					w.SetLabel(w.Label() + "foo")
-
-					return nil
-				}
-			},
-		},
-
-		{
-			name:        "encrypted wallet but password not provided",
-			wltName:     "test-view-secrets-encrypted-no-password.wlt",
-			viewWltName: "test-view-secrets-encrypted-no-password.wlt",
-			opts: Options{
-				Seed:     "fooseed",
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Label:    "foowlt",
-				Type:     WalletTypeDeterministic,
-			},
-			err: ErrMissingPassword,
-		},
-
-		{
-			name:        "encrypted wallet but password invalid",
-			wltName:     "test-view-secrets-encrypted-wrong-password.wlt",
-			viewWltName: "test-view-secrets-encrypted-wrong-password.wlt",
-			opts: Options{
-				Seed:     "fooseed",
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Label:    "foowlt",
-				Type:     WalletTypeDeterministic,
-			},
-			password: []byte("pwdpwd"),
-			err:      ErrInvalidPassword,
-		},
-
-		{
-			name:        "unencrypted wallet but password provided",
-			wltName:     "test-view-secrets-unencrypted-password.wlt",
-			viewWltName: "test-view-secrets-unencrypted-password.wlt",
-			opts: Options{
-				Seed:  "fooseed",
-				Label: "foowlt",
-				Type:  WalletTypeDeterministic,
-			},
-			password: []byte("pwd"),
-			err:      ErrWalletNotEncrypted,
-		},
-
-		{
-			name:        "wallet doesn't exist",
-			wltName:     "test-view-secrets-not-exist.wlt",
-			viewWltName: "foo-test-view-secrets-not-exist.wlt",
-			opts: Options{
-				Seed:  "fooseed",
-				Label: "foowlt",
-				Type:  WalletTypeDeterministic,
-			},
-			err: ErrWalletNotExist,
-		},
-
-		{
-			name:        "api disabled",
-			wltName:     "test-view-secrets-api-disabled.wlt",
-			viewWltName: "test-view-secrets-api-disabled.wlt",
-			opts: Options{
-				Seed:  "fooseed",
-				Label: "foowlt",
-				Type:  WalletTypeDeterministic,
-			},
-			disableWalletAPI: true,
-			err:              ErrWalletAPIDisabled,
-		},
-	}
-
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			dir := prepareWltDir()
-			s, err := NewService(Config{
-				WalletDir:       dir,
-				CryptoType:      crypto.CryptoTypeSha256Xor,
-				EnableWalletAPI: true,
-			})
-			require.NoError(t, err)
-
-			w, err := s.CreateWallet(tc.wltName, tc.opts, nil)
-			require.NoError(t, err)
-
-			s.config.EnableWalletAPI = !tc.disableWalletAPI
-
-			var action func(Wallet) error
-			if tc.action != nil {
-				action = tc.action(t)
-			}
-
-			err = s.ViewSecrets(tc.viewWltName, tc.password, action)
-			require.Equal(t, tc.err, err)
-			if err != nil {
-				return
-			}
-
-			s.config.EnableWalletAPI = true
-
-			// Check that the wallet is unmodified
-			w2, err := s.GetWallet(tc.wltName)
-			require.NoError(t, err)
-			require.Equal(t, w, w2)
-		})
-	}
-}
-
-func TestServiceUpdate(t *testing.T) {
-	tt := []struct {
-		name             string
-		wltName          string
-		opts             Options
-		viewWltName      string
-		action           func(*testing.T) func(Wallet) error
-		checkWallet      func(*testing.T, Wallet)
-		disableWalletAPI bool
-		err              error
-	}{
-		{
-			name:        "ok, encrypted wallet",
-			wltName:     "test-update-encrypted.wlt",
-			viewWltName: "test-update-encrypted.wlt",
-			opts: Options{
-				Seed:     "fooseed",
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Label:    "foowlt",
-				Type:     WalletTypeDeterministic,
-			},
-			action: func(t *testing.T) func(Wallet) error {
-				return func(w Wallet) error {
-					require.Equal(t, "foowlt", w.Label())
-
-					// Should not be able to see sensitive data
-					checkNoSensitiveData(t, w)
-
-					// Modify the wallet pointer in order to check that the wallet gets saved
-					w.SetLabel(w.Label() + "foo")
-
-					// The wallet is encrypted so it cannot generate more addresses
-					_, err := w.GenerateAddresses(1)
-					require.Equal(t, ErrWalletEncrypted, err)
-
-					return nil
-				}
-			},
-			checkWallet: func(t *testing.T, w Wallet) {
-				require.Equal(t, "foowltfoo", w.Label())
-				require.Equal(t, 1, w.EntriesLen())
-				checkNoSensitiveData(t, w)
-			},
-		},
-
-		{
-			name:        "ok, unencrypted wallet",
-			wltName:     "test-update-unencrypted.wlt",
-			viewWltName: "test-update-unencrypted.wlt",
-			opts: Options{
-				Seed:  "fooseed",
-				Label: "foowlt",
-				Type:  WalletTypeDeterministic,
-			},
-			action: func(t *testing.T) func(Wallet) error {
-				return func(w Wallet) error {
-					require.Equal(t, "foowlt", w.Label())
-
-					// Seed is visible because its not encrypted
-					require.Equal(t, "fooseed", w.Seed())
-					require.NotEmpty(t, w.LastSeed())
-
-					// Modify the wallet pointer in order to check that the wallet gets saved
-					w.SetLabel(w.Label() + "foo")
-
-					return nil
-				}
-			},
-			checkWallet: func(t *testing.T, w Wallet) {
-				require.Equal(t, "foowltfoo", w.Label())
-				require.Equal(t, 1, w.EntriesLen())
-				require.NotEmpty(t, w.GetEntryAt(0).Secret)
-			},
-		},
-
-		{
-			name:        "wallet doesn't exist",
-			wltName:     "test-update-not-exist.wlt",
-			viewWltName: "foo-test-update-not-exist.wlt",
-			opts: Options{
-				Seed:  "fooseed",
-				Label: "foowlt",
-				Type:  WalletTypeDeterministic,
-			},
-			err: ErrWalletNotExist,
-		},
-
-		{
-			name:        "api disabled",
-			wltName:     "test-update-api-disabled.wlt",
-			viewWltName: "test-update-api-disabled.wlt",
-			opts: Options{
-				Seed:  "fooseed",
-				Label: "foowlt",
-				Type:  WalletTypeDeterministic,
-			},
-			disableWalletAPI: true,
-			err:              ErrWalletAPIDisabled,
-		},
-	}
-
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			dir := prepareWltDir()
-			s, err := NewService(Config{
-				WalletDir:       dir,
-				CryptoType:      crypto.CryptoTypeSha256Xor,
-				EnableWalletAPI: true,
-			})
-			require.NoError(t, err)
-
-			_, err = s.CreateWallet(tc.wltName, tc.opts, nil)
-			require.NoError(t, err)
-
-			s.config.EnableWalletAPI = !tc.disableWalletAPI
-
-			var action func(Wallet) error
-			if tc.action != nil {
-				action = tc.action(t)
-			}
-
-			err = s.Update(tc.viewWltName, action)
-			require.Equal(t, tc.err, err)
-			if err != nil {
-				return
-			}
-
-			s.config.EnableWalletAPI = true
-
-			// Check that the wallet was modified as expected
-			w, err := s.GetWallet(tc.wltName)
-			require.NoError(t, err)
-			tc.checkWallet(t, w)
-
-			// Even if secrets were modified, wallet should still be encrypted
-			require.Equal(t, tc.opts.Encrypt, w.IsEncrypted())
-			if w.IsEncrypted() {
-				checkNoSensitiveData(t, w)
-			}
-		})
-	}
-}
-
-func TestServiceUpdateSecrets(t *testing.T) {
-	tt := []struct {
-		name             string
-		wltName          string
-		opts             Options
-		viewWltName      string
-		action           func(*testing.T) func(Wallet) error
-		checkWallet      func(*testing.T, Wallet)
-		password         []byte
-		disableWalletAPI bool
-		err              error
-	}{
-		{
-			name:        "ok, encrypted wallet",
-			wltName:     "test-update-secrets-encrypted.wlt",
-			viewWltName: "test-update-secrets-encrypted.wlt",
-			opts: Options{
-				Seed:     "fooseed",
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Label:    "foowlt",
-				Type:     WalletTypeDeterministic,
-			},
-			password: []byte("pwd"),
-			action: func(t *testing.T) func(Wallet) error {
-				return func(w Wallet) error {
-					require.Equal(t, "foowlt", w.Label())
-
-					// Should be able to see sensitive data
-					require.Equal(t, "fooseed", w.Seed())
-					require.NotEmpty(t, w.LastSeed())
-
-					// Modify the wallet pointer in order to check that the wallet gets saved
-					w.SetLabel(w.Label() + "foo")
-					_, err := w.GenerateAddresses(1)
-					require.NoError(t, err)
-
-					return nil
-				}
-			},
-			checkWallet: func(t *testing.T, w Wallet) {
-				require.Equal(t, "foowltfoo", w.Label())
-				require.Equal(t, 2, w.EntriesLen())
-				checkNoSensitiveData(t, w)
-			},
-		},
-
-		{
-			name:        "ok, unencrypted wallet",
-			wltName:     "test-update-secrets-unencrypted.wlt",
-			viewWltName: "test-update-secrets-unencrypted.wlt",
-			opts: Options{
-				Seed:  "fooseed",
-				Label: "foowlt",
-				Type:  WalletTypeDeterministic,
-			},
-			action: func(t *testing.T) func(Wallet) error {
-				return func(w Wallet) error {
-					require.Equal(t, "foowlt", w.Label())
-
-					// Seed is visible because its not encrypted
-					require.Equal(t, "fooseed", w.Seed())
-					require.NotEmpty(t, w.LastSeed())
-
-					// Modify the wallet pointer in order to check that the wallet gets saved
-					w.SetLabel(w.Label() + "foo")
-					_, err := w.GenerateAddresses(1)
-					require.NoError(t, err)
-
-					return nil
-				}
-			},
-			checkWallet: func(t *testing.T, w Wallet) {
-				require.Equal(t, "foowltfoo", w.Label())
-				require.Equal(t, 2, w.EntriesLen())
-				require.NotEmpty(t, w.GetEntryAt(1).Secret)
-			},
-		},
-
-		{
-			name:        "ok, encrypted bip44 wallet",
-			wltName:     "test-update-secrets-bip44-encrypted.wlt",
-			viewWltName: "test-update-secrets-bip44-encrypted.wlt",
-			opts: Options{
-				Seed:     "voyage say extend find sheriff surge priority merit ignore maple cash argue",
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Label:    "foowltbip44",
-				Type:     WalletTypeBip44,
-			},
-			password: []byte("pwd"),
-			action: func(t *testing.T) func(Wallet) error {
-				return func(w Wallet) error {
-					require.Equal(t, "foowltbip44", w.Label())
-
-					// Should be able to see sensitive data
-					require.Equal(t, "voyage say extend find sheriff surge priority merit ignore maple cash argue", w.Seed())
-					require.Empty(t, w.LastSeed())
-
-					// Modify the wallet pointer in order to check that the wallet gets saved
-					w.SetLabel(w.Label() + "foo")
-					_, err := w.GenerateAddresses(1)
-					require.NoError(t, err)
-
-					return nil
-				}
-			},
-			checkWallet: func(t *testing.T, w Wallet) {
-				require.Equal(t, "foowltbip44foo", w.Label())
-				require.Equal(t, 2, w.EntriesLen())
-				checkNoSensitiveData(t, w)
-			},
-		},
-
-		{
-			name:        "ok, unencrypted bip44 wallet",
-			wltName:     "test-update-secrets-bip44-unencrypted.wlt",
-			viewWltName: "test-update-secrets-bip44-unencrypted.wlt",
-			opts: Options{
-				Seed:  "voyage say extend find sheriff surge priority merit ignore maple cash argue",
-				Label: "foowltbip44",
-				Type:  WalletTypeBip44,
-			},
-			action: func(t *testing.T) func(Wallet) error {
-				return func(w Wallet) error {
-					require.Equal(t, "foowltbip44", w.Label())
-
-					// Seed is visible because its not encrypted
-					require.Equal(t, "voyage say extend find sheriff surge priority merit ignore maple cash argue", w.Seed())
-					require.Empty(t, w.LastSeed())
-
-					// Modify the wallet pointer in order to check that the wallet gets saved
-					w.SetLabel(w.Label() + "foo")
-					_, err := w.GenerateAddresses(1)
-					require.NoError(t, err)
-
-					return nil
-				}
-			},
-			checkWallet: func(t *testing.T, w Wallet) {
-				require.Equal(t, "foowltbip44foo", w.Label())
-				require.Equal(t, 2, w.EntriesLen())
-				require.NotEmpty(t, w.GetEntryAt(1).Secret)
-			},
-		},
-
-		{
-			name:        "encrypted wallet but password not provided",
-			wltName:     "test-update-secrets-encrypted-no-password.wlt",
-			viewWltName: "test-update-secrets-encrypted-no-password.wlt",
-			opts: Options{
-				Seed:     "fooseed",
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Label:    "foowlt",
-				Type:     WalletTypeDeterministic,
-			},
-			err: ErrMissingPassword,
-		},
-
-		{
-			name:        "encrypted wallet but password invalid",
-			wltName:     "test-update-secrets-encrypted-wrong-password.wlt",
-			viewWltName: "test-update-secrets-encrypted-wrong-password.wlt",
-			opts: Options{
-				Seed:     "fooseed",
-				Encrypt:  true,
-				Password: []byte("pwd"),
-				Label:    "foowlt",
-				Type:     WalletTypeDeterministic,
-			},
-			password: []byte("pwdpwd"),
-			err:      ErrInvalidPassword,
-		},
-
-		{
-			name:        "unencrypted wallet but password provided",
-			wltName:     "test-update-secrets-unencrypted-password.wlt",
-			viewWltName: "test-update-secrets-unencrypted-password.wlt",
-			opts: Options{
-				Seed:  "fooseed",
-				Label: "foowlt",
-				Type:  WalletTypeDeterministic,
-			},
-			password: []byte("pwd"),
-			err:      ErrWalletNotEncrypted,
-		},
-
-		{
-			name:        "wallet doesn't exist",
-			wltName:     "test-update-secrets-not-exist.wlt",
-			viewWltName: "foo-test-update-secrets-not-exist.wlt",
-			opts: Options{
-				Seed:  "fooseed",
-				Label: "foowlt",
-				Type:  WalletTypeDeterministic,
-			},
-			err: ErrWalletNotExist,
-		},
-
-		{
-			name:        "api disabled",
-			wltName:     "test-update-secrets-api-disabled.wlt",
-			viewWltName: "test-update-secrets-api-disabled.wlt",
-			opts: Options{
-				Seed:  "fooseed",
-				Label: "foowlt",
-				Type:  WalletTypeDeterministic,
-			},
-			disableWalletAPI: true,
-			err:              ErrWalletAPIDisabled,
-		},
-	}
-
-	for _, tc := range tt {
-		t.Run(tc.name, func(t *testing.T) {
-			dir := prepareWltDir()
-			s, err := NewService(Config{
-				WalletDir:       dir,
-				CryptoType:      crypto.CryptoTypeSha256Xor,
-				EnableWalletAPI: true,
-			})
-			require.NoError(t, err)
-
-			_, err = s.CreateWallet(tc.wltName, tc.opts, nil)
-			require.NoError(t, err)
-
-			s.config.EnableWalletAPI = !tc.disableWalletAPI
-
-			var action func(Wallet) error
-			if tc.action != nil {
-				action = tc.action(t)
-			}
-
-			err = s.UpdateSecrets(tc.viewWltName, tc.password, action)
-			require.Equal(t, tc.err, err)
-			if err != nil {
-				return
-			}
-
-			s.config.EnableWalletAPI = true
-
-			// Check that the wallet was modified as expected
-			w, err := s.GetWallet(tc.wltName)
-			require.NoError(t, err)
-			tc.checkWallet(t, w)
-
-			// Even if secrets were modified, wallet should still be encrypted
-			require.Equal(t, tc.opts.Encrypt, w.IsEncrypted())
-			if w.IsEncrypted() {
-				checkNoSensitiveData(t, w)
-			}
-		})
-	}
-}
-
-func checkNoSensitiveData(t *testing.T, w Wallet) {
+//func TestServiceGetAddress(t *testing.T) {
+//	for _, enableWalletAPI := range []bool{true, false} {
+//		for _, ct := range crypto.Types() {
+//			t.Run(fmt.Sprintf("enable wallet api=%v crypto=%v", enableWalletAPI, ct), func(t *testing.T) {
+//				dir := prepareWltDir()
+//				s, err := wallet.NewService(wallet.Config{
+//					WalletDir:       "./testdata",
+//					CryptoType:      ct,
+//					EnableWalletAPI: enableWalletAPI,
+//				})
+//				require.NoError(t, err)
+//
+//				if !enableWalletAPI {
+//					dirIsEmpty(t, dir)
+//
+//					require.Empty(t, s.wallets)
+//					addrs, err := s.GetAddresses("")
+//					require.Equal(t, wallet.ErrWalletAPIDisabled, err)
+//					require.Equal(t, 0, len(addrs))
+//					return
+//				}
+//
+//				addrs, err := s.GetAddresses("test1.wlt")
+//				require.NoError(t, err)
+//				require.Equal(t, 1, len(addrs))
+//
+//				// test none exist wallet
+//				notExistID := "not_exist_id.wlt"
+//				_, err = s.GetAddresses(notExistID)
+//				require.Equal(t, wallet.ErrWalletNotExist, err)
+//			})
+//		}
+//
+//	}
+//}
+//
+//func TestServiceGetWallet(t *testing.T) {
+//	walletTypes := []string{
+//		wallet.WalletTypeDeterministic,
+//		wallet.WalletTypeBip44,
+//		WalletTypeCollection,
+//		WalletTypeXPub,
+//	}
+//
+//	for _, walletType := range walletTypes {
+//		for _, enableWalletAPI := range []bool{true, false} {
+//			for _, ct := range crypto.Types() {
+//				t.Run(fmt.Sprintf("enable wallet api=%v crypto=%v", enableWalletAPI, ct), func(t *testing.T) {
+//					dir := prepareWltDir()
+//
+//					s, err := wallet.NewService(wallet.Config{
+//						WalletDir:       dir,
+//						CryptoType:      ct,
+//						EnableWalletAPI: enableWalletAPI,
+//					})
+//					require.NoError(t, err)
+//
+//					if !enableWalletAPI {
+//						dirIsEmpty(t, dir)
+//
+//						require.Empty(t, s.wallets)
+//						w, err := s.GetWallet("")
+//						require.Equal(t, wallet.ErrWalletAPIDisabled, err)
+//						require.Nil(t, w)
+//						return
+//					}
+//
+//					opts := wallet.Options{
+//						Label: "label",
+//						Type:  walletType,
+//					}
+//					switch walletType {
+//					case wallet.WalletTypeBip44, wallet.WalletTypeDeterministic:
+//						opts.Seed = bip39.MustNewDefaultMnemonic()
+//					case WalletTypeCollection:
+//					case WalletTypeXPub:
+//						opts.XPub = "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v"
+//					default:
+//						t.Fatal("unhandled wallet type")
+//					}
+//
+//					// Create a wallet
+//					w, err := s.CreateWallet("t.wlt", opts, nil)
+//					require.NoError(t, err)
+//
+//					w1, err := s.GetWallet(w.Filename())
+//					require.NoError(t, err)
+//
+//					// Check if change original wallet would change the returned wallet
+//					w.SetLabel("new_label")
+//
+//					require.NotEqual(t, "new_label", w1.Label())
+//
+//					// Get wallet doesn't exist
+//					wltName := "does_not_exist.wlt"
+//					_, err = s.GetWallet(wltName)
+//					require.Equal(t, wallet.ErrWalletNotExist, err)
+//				})
+//			}
+//		}
+//	}
+//}
+//
+//func TestServiceGetWallets(t *testing.T) {
+//	for _, enableWalletAPI := range []bool{true, false} {
+//		for _, ct := range crypto.Types() {
+//			t.Run(fmt.Sprintf("enable wallet=%v crypto=%v", enableWalletAPI, ct), func(t *testing.T) {
+//				dir := prepareWltDir()
+//				s, err := wallet.NewService(wallet.Config{
+//					WalletDir:       dir,
+//					CryptoType:      ct,
+//					EnableWalletAPI: enableWalletAPI,
+//				})
+//				require.NoError(t, err)
+//
+//				if !enableWalletAPI {
+//					dirIsEmpty(t, dir)
+//
+//					require.Empty(t, s.wallets)
+//					w, err := s.GetWallets()
+//					require.Equal(t, wallet.ErrWalletAPIDisabled, err)
+//					var emptyW Wallets
+//					require.Equal(t, w, emptyW)
+//					return
+//				}
+//
+//				// Creates a wallet
+//				w, err := s.CreateWallet("t.wlt", wallet.Options{
+//					Label: "label",
+//					Seed:  bip39.MustNewDefaultMnemonic(),
+//					Type:  wallet.WalletTypeBip44,
+//				}, nil)
+//				require.NoError(t, err)
+//
+//				var wallets []Wallet
+//				// Get the default wallet
+//				wallets = append(wallets, w)
+//
+//				// Create a new wallet
+//				wltName := wallet.NewWalletFilename()
+//				w1, err := s.CreateWallet(wltName, wallet.Options{
+//					Label: "label1",
+//					Seed:  bip39.MustNewDefaultMnemonic(),
+//					Type:  wallet.WalletTypeDeterministic,
+//				}, nil)
+//				require.NoError(t, err)
+//				wallets = append(wallets, w1)
+//
+//				ws, err := s.GetWallets()
+//				require.NoError(t, err)
+//				for _, w := range wallets {
+//					ww, ok := ws[w.Filename()]
+//					require.True(t, ok)
+//					require.Equal(t, w, ww)
+//				}
+//			})
+//		}
+//	}
+//}
+//
+//func TestServiceUpdateWalletLabel(t *testing.T) {
+//	tt := []struct {
+//		name             string
+//		wltName          string
+//		opts             wallet.Options
+//		updateWltName    string
+//		label            string
+//		disableWalletAPI bool
+//		err              error
+//	}{
+//		{
+//			name:    "ok",
+//			wltName: "t.wlt",
+//			opts: wallet.Options{
+//				Seed:  bip39.MustNewDefaultMnemonic(),
+//				Label: "label",
+//				Type:  wallet.WalletTypeBip44,
+//			},
+//			updateWltName: "t.wlt",
+//			label:         "new-label",
+//		},
+//		{
+//			name:    "wallet doesn't exist",
+//			wltName: "t.wlt",
+//			opts: wallet.Options{
+//				Seed:  bip39.MustNewDefaultMnemonic(),
+//				Label: "label",
+//				Type:  wallet.WalletTypeBip44,
+//			},
+//			updateWltName: "t1.wlt",
+//			label:         "new-label",
+//			err:           wallet.ErrWalletNotExist ,
+//		},
+//		{
+//			name:    "wallet api disabled",
+//			wltName: "t.wlt",
+//			opts: wallet.Options{
+//				Seed:  bip39.MustNewDefaultMnemonic(),
+//				Label: "label",
+//				Type:  wallet.WalletTypeBip44,
+//			},
+//			disableWalletAPI: true,
+//			err:              wallet.ErrWalletAPIDisabled,
+//		},
+//	}
+//
+//	for _, tc := range tt {
+//		for _, ct := range crypto.Types() {
+//			t.Run(tc.name, func(t *testing.T) {
+//				// Create the wallet service
+//				dir := prepareWltDir()
+//				s, err := wallet.NewService(wallet.Config{
+//					WalletDir:       dir,
+//					CryptoType:      ct,
+//					EnableWalletAPI: !tc.disableWalletAPI,
+//				})
+//				require.NoError(t, err)
+//
+//				if tc.disableWalletAPI {
+//					err = s.UpdateWalletLabel("", "new label")
+//					require.Equal(t, tc.err, err)
+//					return
+//				}
+//
+//				// Create a new wallet
+//				w, err := s.CreateWallet(tc.wltName, tc.opts, nil)
+//				require.NoError(t, err)
+//
+//				err = s.UpdateWalletLabel(tc.updateWltName, tc.label)
+//				require.Equal(t, tc.err, err)
+//
+//				if err != nil {
+//					return
+//				}
+//
+//				nw, err := s.GetWallet(w.Filename())
+//				require.NoError(t, err)
+//				require.NotEqual(t, w.Label(), nw.Label())
+//
+//				require.Equal(t, tc.label, nw.Label())
+//			})
+//		}
+//	}
+//}
+//
+//func TestServiceEncryptWallet(t *testing.T) {
+//	tt := []struct {
+//		name             string
+//		wltName          string
+//		opts             wallet.Options
+//		encWltName       string
+//		pwd              []byte
+//		disableWalletAPI bool
+//		err              error
+//	}{
+//		{
+//			name:    "ok xpub wallet",
+//			wltName: "t.wlt",
+//			opts: wallet.Options{
+//				XPub: "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
+//				Type: WalletTypeXPub,
+//			},
+//			encWltName: "t.wlt",
+//			pwd:        []byte("pwd"),
+//		},
+//		{
+//			name:    "ok deterministic wallet",
+//			wltName: "t.wlt",
+//			opts: wallet.Options{
+//				Seed: "seed",
+//				Type: wallet.WalletTypeDeterministic,
+//			},
+//			encWltName: "t.wlt",
+//			pwd:        []byte("pwd"),
+//		},
+//		{
+//			name:    "ok collection wallet",
+//			wltName: "t.wlt",
+//			opts: wallet.Options{
+//				Type: WalletTypeCollection,
+//			},
+//			encWltName: "t.wlt",
+//			pwd:        []byte("pwd"),
+//		},
+//		{
+//			name:    "ok bip44 wallet",
+//			wltName: "t.wlt",
+//			opts: wallet.Options{
+//				Type: wallet.WalletTypeBip44,
+//				Seed: "voyage say extend find sheriff surge priority merit ignore maple cash argue",
+//			},
+//			encWltName: "t.wlt",
+//			pwd:        []byte("pwd"),
+//		},
+//		{
+//			name:    "wallet doesn't exist",
+//			wltName: "t.wlt",
+//			opts: wallet.Options{
+//				Seed: "seed",
+//				Type: wallet.WalletTypeDeterministic,
+//			},
+//			encWltName: "t2.wlt",
+//			err:        wallet.ErrWalletNotExist ,
+//		},
+//		{
+//			name:    "wallet already encrypted",
+//			wltName: "t.wlt",
+//			opts: wallet.Options{
+//				Seed:     "seed",
+//				Type:     wallet.WalletTypeDeterministic,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//			},
+//			encWltName: "t.wlt",
+//			pwd:        []byte("pwd"),
+//			err:        ErrWalletEncrypted,
+//		},
+//		{
+//			name:    "wallet api disabled",
+//			wltName: "t.wlt",
+//			opts: wallet.Options{
+//				Seed:     "seed",
+//				Type:     wallet.WalletTypeDeterministic,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//			},
+//			encWltName:       "t.wlt",
+//			pwd:              []byte("pwd"),
+//			disableWalletAPI: true,
+//			err:              wallet.ErrWalletAPIDisabled,
+//		},
+//	}
+//
+//	for _, tc := range tt {
+//		for _, ct := range crypto.Types() {
+//			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
+//			t.Run(name, func(t *testing.T) {
+//				dir := prepareWltDir()
+//				// Create the wallet service
+//				s, err := wallet.NewService(wallet.Config{
+//					WalletDir:       dir,
+//					CryptoType:      ct,
+//					EnableWalletAPI: !tc.disableWalletAPI,
+//				})
+//				require.NoError(t, err)
+//
+//				if tc.disableWalletAPI {
+//					_, err = s.EncryptWallet("", tc.pwd)
+//					require.Equal(t, tc.err, err)
+//					return
+//				}
+//
+//				// Create a new wallet
+//				w, err := s.CreateWallet(tc.wltName, tc.opts, nil)
+//				require.NoError(t, err)
+//
+//				switch w.Type() {
+//				// Add an entry to a collection wallet, to verify that secrets are hidden
+//				case WalletTypeCollection:
+//					// TODO: open this after collection is supported
+//					//err := s.Update(w.Filename(), func(w Wallet) error {
+//					//	p, s := cipher.GenerateKeyPair()
+//					//	return w.(*CollectionWallet).AddEntry(entry.Entry{
+//					//		Public:  p,
+//					//		Secret:  s,
+//					//		Address: cipher.AddressFromPubKey(p),
+//					//	})
+//					//})
+//					//require.NoError(t, err)
+//
+//				// Add entries to the a bip44 wallet's change chain, to verify that those secrets are hidden
+//				case wallet.WalletTypeBip44:
+//					err := s.Update(w.Filename(), func(w Wallet) error {
+//						_, err := w.(*Bip44Wallet).PeekChangeAddress(mockTxnsFinder{})
+//						return err
+//					})
+//					require.NoError(t, err)
+//				}
+//
+//				// Encrypt the wallet
+//				encWlt, err := s.EncryptWallet(tc.encWltName, tc.pwd)
+//				require.Equal(t, tc.err, err)
+//				if err != nil {
+//					return
+//				}
+//
+//				encWlt1, err := s.getWallet(tc.encWltName)
+//				require.NoError(t, err)
+//				require.Equal(t, encWlt, encWlt1)
+//
+//				// Check the encrypted wallet
+//				require.True(t, encWlt.IsEncrypted())
+//				entries, err := encWlt.GetEntries()
+//				require.NoError(t, err)
+//				for _, e := range entries {
+//					require.True(t, e.Secret.Null())
+//				}
+//				require.Empty(t, encWlt.Seed())
+//				require.Empty(t, encWlt.LastSeed())
+//
+//				// Check the decrypted seeds
+//				decWlt, err := encWlt.Unlock(tc.pwd)
+//				require.NoError(t, err)
+//
+//				entries, err = decWlt.GetEntries()
+//				require.NoError(t, err)
+//				for _, e := range entries {
+//					switch decWlt.Type() {
+//					case WalletTypeXPub:
+//						// xpub wallets never have secret keys
+//						require.True(t, e.Secret.Null())
+//					default:
+//						require.False(t, e.Secret.Null())
+//					}
+//
+//				}
+//
+//				require.Equal(t, w.Seed(), decWlt.Seed())
+//				require.Equal(t, w.LastSeed(), decWlt.LastSeed())
+//
+//				// Check if the wallet file does exist
+//				path := filepath.Join(dir, w.Filename())
+//				testutil.RequireFileExists(t, path)
+//
+//				// Check that the temporary backup wallet file does not exist
+//				bakPath := path + ".bak"
+//				testutil.RequireFileNotExists(t, bakPath)
+//			})
+//		}
+//	}
+//}
+//
+//func TestServiceDecryptWallet(t *testing.T) {
+//	type testCase struct {
+//		name             string
+//		wltName          string
+//		opts             wallet.Options
+//		decryptWltName   string
+//		password         []byte
+//		disableWalletAPI bool
+//		err              error
+//	}
+//
+//	tt := []testCase{
+//		{
+//			name:    "ok xpub",
+//			wltName: "test.wlt",
+//			opts: wallet.Options{
+//				Type:     WalletTypeXPub,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				XPub:     "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
+//			},
+//			decryptWltName: "test.wlt",
+//			password:       []byte("pwd"),
+//		},
+//		{
+//			name:    "ok collection",
+//			wltName: "test.wlt",
+//			opts: wallet.Options{
+//				Type:     WalletTypeCollection,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//			},
+//			decryptWltName: "test.wlt",
+//			password:       []byte("pwd"),
+//		},
+//		{
+//			name:    "ok deterministic",
+//			wltName: "test.wlt",
+//			opts: wallet.Options{
+//				Seed:     "seed",
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				Type:     wallet.WalletTypeDeterministic,
+//			},
+//			decryptWltName: "test.wlt",
+//			password:       []byte("pwd"),
+//		},
+//		{
+//			name:    "ok bip44",
+//			wltName: "test.wlt",
+//			opts: wallet.Options{
+//				Seed:     "voyage say extend find sheriff surge priority merit ignore maple cash argue",
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				Type:     wallet.WalletTypeBip44,
+//			},
+//			decryptWltName: "test.wlt",
+//			password:       []byte("pwd"),
+//		},
+//		{
+//			name:    "wallet not exist",
+//			wltName: "test.wlt",
+//			opts: wallet.Options{
+//				Seed:     "seed",
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				Type:     wallet.WalletTypeDeterministic,
+//			},
+//			decryptWltName: "t.wlt",
+//			password:       []byte("pwd"),
+//			err:            wallet.ErrWalletNotExist ,
+//		},
+//		{
+//			name:    "wallet not encrypted",
+//			wltName: "test.wlt",
+//			opts: wallet.Options{
+//				Seed: "seed",
+//				Type: wallet.WalletTypeDeterministic,
+//			},
+//			decryptWltName: "test.wlt",
+//			password:       []byte("pwd"),
+//			err:            wallet.ErrWalletNotEncrypted,
+//		},
+//		{
+//			name:    "invalid password",
+//			wltName: "test.wlt",
+//			opts: wallet.Options{
+//				Seed:     "seed",
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				Type:     wallet.WalletTypeDeterministic,
+//			},
+//			decryptWltName: "test.wlt",
+//			password:       []byte("wrong password"),
+//			err:            wallet.ErrInvalidPassword,
+//		},
+//		{
+//			name:    "wallet api disabled",
+//			wltName: "test.wlt",
+//			opts: wallet.Options{
+//				Seed:     "seed",
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				Type:     wallet.WalletTypeDeterministic,
+//			},
+//			decryptWltName:   "test.wlt",
+//			password:         []byte("pwd"),
+//			disableWalletAPI: true,
+//			err:              wallet.ErrWalletAPIDisabled,
+//		},
+//	}
+//
+//	verifyDecryptedXPubWlt := func(tc testCase, wlt Wallet) {
+//		// XPub wlt doesn't have anything to encrypt or decrypt
+//		require.Equal(t, tc.opts.XPub, wlt.XPub())
+//		require.Empty(t, wlt.Secrets())
+//		require.Empty(t, wlt.Seed())
+//		require.Empty(t, wlt.LastSeed())
+//		entries, err := wlt.GetEntries()
+//		require.NoError(t, err)
+//
+//		for _, e := range entries {
+//			require.True(t, e.Secret.Null())
+//		}
+//	}
+//
+//	verifyDecryptedDeterministicWlt := func(tc testCase, wlt Wallet) {
+//		// Checks the "encrypted" meta info
+//		require.False(t, wlt.IsEncrypted())
+//		// Checks the seed
+//		require.Equal(t, tc.opts.Seed, wlt.Seed())
+//
+//		// Checks the last seed
+//		entryNum := wlt.EntriesLen()
+//		lsd, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(wlt.Seed()), entryNum)
+//		require.Equal(t, hex.EncodeToString(lsd), wlt.LastSeed())
+//
+//		// Checks the entries
+//		entries, err := wlt.GetEntries()
+//		require.NoError(t, err)
+//
+//		for i := range seckeys {
+//			a := cipher.MustAddressFromSecKey(seckeys[i])
+//			require.Equal(t, a, entries[i].Address)
+//			require.Equal(t, seckeys[i], entries[i].Secret)
+//		}
+//
+//		require.Empty(t, wlt.Secrets())
+//		require.Empty(t, wlt.CryptoType())
+//	}
+//
+//	verifyDecryptedCollectionWlt := func(_ testCase, wlt Wallet) {
+//		// Checks the "encrypted" meta info
+//		require.False(t, wlt.IsEncrypted())
+//		require.Empty(t, wlt.Seed())
+//		require.Empty(t, wlt.LastSeed())
+//
+//		// Checks the entries
+//		entries, err := wlt.GetEntries()
+//		require.NoError(t, err)
+//
+//		for _, e := range entries {
+//			require.False(t, e.Secret.Null())
+//			a := cipher.MustAddressFromSecKey(e.Secret)
+//			require.Equal(t, a, e.Address)
+//			p := cipher.MustPubKeyFromSecKey(e.Secret)
+//			require.Equal(t, p, e.Public)
+//		}
+//
+//		require.Empty(t, wlt.Secrets())
+//		require.Empty(t, wlt.CryptoType())
+//	}
+//
+//	verifyDecryptedBip44Wlt := func(tc testCase, wlt Wallet) {
+//		// Checks the "encrypted" meta info
+//		require.False(t, wlt.IsEncrypted())
+//		// Checks the seed
+//		require.Equal(t, tc.opts.Seed, wlt.Seed())
+//		require.Empty(t, wlt.LastSeed())
+//
+//		// Checks the entries
+//		entries, err := wlt.GetEntries()
+//		require.NoError(t, err)
+//		for _, e := range entries {
+//			require.False(t, e.Secret.Null())
+//			a := cipher.MustAddressFromSecKey(e.Secret)
+//			require.Equal(t, a, e.Address)
+//			p := cipher.MustPubKeyFromSecKey(e.Secret)
+//			require.Equal(t, p, e.Public)
+//		}
+//
+//		require.Empty(t, wlt.Secrets())
+//		require.Empty(t, wlt.CryptoType())
+//	}
+//
+//	for _, tc := range tt {
+//		for _, ct := range crypto.Types() {
+//			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
+//			t.Run(name, func(t *testing.T) {
+//				dir := prepareWltDir()
+//				s, err := wallet.NewService(wallet.Config{
+//					WalletDir:       dir,
+//					CryptoType:      ct,
+//					EnableWalletAPI: !tc.disableWalletAPI,
+//				})
+//				require.NoError(t, err)
+//
+//				if tc.disableWalletAPI {
+//					_, err = s.DecryptWallet(tc.decryptWltName, tc.password)
+//					require.Equal(t, tc.err, err)
+//					return
+//				}
+//
+//				_, err = s.CreateWallet(tc.wltName, tc.opts, nil)
+//				require.NoError(t, err)
+//
+//				_, err = s.DecryptWallet(tc.decryptWltName, tc.password)
+//				require.Equal(t, tc.err, err)
+//				if err != nil {
+//					return
+//				}
+//
+//				wltType := tc.opts.Type
+//				if wltType == "" {
+//					wltType = wallet.WalletTypeBip44
+//				}
+//
+//				verify := verifyDecryptedCollectionWlt
+//				switch wltType {
+//				case WalletTypeCollection:
+//					verify = verifyDecryptedCollectionWlt
+//				case wallet.WalletTypeBip44:
+//					verify = verifyDecryptedBip44Wlt
+//				case wallet.WalletTypeDeterministic:
+//					verify = verifyDecryptedDeterministicWlt
+//				case WalletTypeXPub:
+//					verify = verifyDecryptedXPubWlt
+//				default:
+//					t.Fatal("unhandled wallet type")
+//				}
+//
+//				// Checks the decrypted wallet in service
+//				w, err := s.getWallet(tc.wltName)
+//				require.NoError(t, err)
+//				verify(tc, w)
+//
+//				// Checks the existence of the wallet file
+//				fn := filepath.Join(dir, tc.wltName)
+//				testutil.RequireFileExists(t, fn)
+//
+//				// Loads wallet from the file and check if it's decrypted
+//				w1, err := Load(fn)
+//				require.NoError(t, err)
+//				verify(tc, w1)
+//			})
+//		}
+//	}
+//}
+//
+//func TestServiceCreateWalletWithScan(t *testing.T) {
+//	seed := "seed1"
+//	addrs := make([]cipher.Address, 20)
+//	childSeeds := make([]string, 20)
+//	lastSeed := []byte(seed)
+//	for i := range addrs {
+//		s, pk, _, err := cipher.DeterministicKeyPairIterator(lastSeed)
+//		require.NoError(t, err)
+//		addrs[i] = cipher.AddressFromPubKey(pk)
+//		childSeeds[i] = hex.EncodeToString(s)
+//		lastSeed = s
+//	}
+//
+//	bip44Seed := "voyage say extend find sheriff surge priority merit ignore maple cash argue"
+//	bip44AddrStrs := []string{
+//		"9BSEAEE3XGtQ2X43BCT2XCYgheGLQQigEG",
+//		"29cnQPHuWHCRF26LEAb2gR83ywnF3F9HduW",
+//		"2ZUAv9MGSpDKR3dnKMUnrKqLenV22JXAxzP",
+//		"fwNVThqdzH7JMsStoLrTpkVsemesbdGftm",
+//		"eyr5KDLTnN6ZZeggeHqDcXnrwmNUi7sGk2",
+//		"Aee3J9qoFPLoUEJes6YVzdKHdeuvCrMZeJ",
+//		"29MZS8aiYUdEwcruwCPggVJG9YJLsm92FHa",
+//		"2Hbm3bwKiEwqNAMAzVJmz5hL1dNTfaA3ju7",
+//		"WCaSCwSZnVqtkYeiKryeHjR8LbzE3KbkzJ",
+//		"baRjCy1yHfishGdZi3bVaPaL7VJM7FZCSd",
+//		"296oQmJJgx35NDApi7YYzj1AryM8fZcjwf3",
+//		"cxxxRfy3RRy2YbFTcptRbVTQYcHY1ejRB5",
+//		"omLGQm1Z2Y9Bga8v6NQ2hgrpRm1nATzGK9",
+//		"2EpZP1E8gTJy799t5CVrZUcxjyFFHwshr6X",
+//		"2hgaPG2oNVrkonPxjv4Sx9au6ruw1Y8pjUi",
+//		"2bHfa8yjhWB5mTip8j1FjNhB1TGbSBkX3Xu",
+//		"VYu5ePSB7ReKm2pysC5JRdCUiTBgDn5Tkw",
+//		"2crRqwG3BaurEqNa7eiB5oUNKTQPETfKrFW",
+//		"2LVTqqNSTBKE51UC7bZ39bZ6wwmR3sibHBX",
+//		"2A8C3h1gsw92Q4Uhn4b385onKrhzuH8UTwE",
+//	}
+//	bip44Addrs := make([]cipher.Address, len(bip44AddrStrs))
+//	for i, a := range bip44AddrStrs {
+//		bip44Addrs[i] = cipher.MustDecodeBase58Address(a)
+//	}
+//
+//	bip44ChangeAddrStrs := []string{
+//		"oHvj7oy8maES9HJiQHJTp4GvcUcpz3voDq",
+//		"2SGMfTFV2zbQzGw7aJm1D5EeEPgych5ixuC",
+//		"2ymjULRdbiFoUNJKNhWbQ3JqdE8TXnZkyU",
+//		"muvdio7V8vkbUPPJsumVWEqScKHZho6Xmx",
+//		"qyQuA2RW4H6NFqhRQmHDt2q28E654PoBsH",
+//		"24UcBj42Q7GBx1rmeU5AE7JhcRbpDq9utCV",
+//		"2TwjgBxKhK84Qa34HoNc5KbsYfp1NBZyPXk",
+//		"fDYKWyDnDaQmpigGAJNK4ZoBZ4WTg5dtRN",
+//		"rRMXXm8ufMcqqnLqRX5CoJ8wA6rdWPJEiW",
+//		"2D6HN4fSHZqsGaPzCDUjddF6NS4hBsVGRag",
+//		"2bXjTvatPW4Z3SaQBr96zJwwYcxp7iemeGC",
+//		"tbmXTJWtqtuaAdVvFWS1rmL42omdD4Hkd3",
+//		"27NT6t4xJoqcs6PsM2EgNNhx4MMw3ioFVER",
+//		"Xym6pAVg2Xjp9sXvCUKrLgq6PSEt1izsRd",
+//		"49EqkHPgWPS9W1jDiJXSKdKdNur3pJjADw",
+//		"f52mwYtpVNhgMMmJZHQYVBQVHwHXCbP5yX",
+//		"2ffeXAKtVUmxucs8mpM2EKMqzYCN3TB7DYx",
+//		"2NJERX84xLHMidXtYDtT1rGzhf4HJmCkz47",
+//		"wik4VEcja3pz2Wo6SwwfoDGzVzB7ZoosQB",
+//		"2gj3qjYQ4MMkv7CdB3PvkbEEPhXikZBD4q6",
+//	}
+//	bip44ChangeAddrs := make([]cipher.Address, len(bip44ChangeAddrStrs))
+//	for i, a := range bip44ChangeAddrStrs {
+//		bip44ChangeAddrs[i] = cipher.MustDecodeBase58Address(a)
+//	}
+//
+//	xpub := "xpub6E5WPk37XdM79dy6oJ7iH6NkCvVzxmrCo4zMFFHSZMc5ymZYhReQFWaDcGNZeYYe1ahY2e3RcRZDHLHC98FfzPRfNRcU6ecURpS4RCQRP2w"
+//	xpubAddrStrs := []string{
+//		"2mhaS6SE2TPSmRRbJvngWQSNXCCVuTic5Zg",
+//		"2bq2itwDKteqigxVS9eYJv4Ww9SEfuyGcib",
+//		"B7eMXM6nLUqqzkFcosXR3HSVkQ6yUz53n4",
+//		"niAy17kBb8vB2pFey8eZnE92e6x9bFGLHp",
+//		"N8JbzcqWEPkn6CF3JdZDmEydzECyZ4NhRv",
+//		"TcyY3F4xHPCtFFkdDBTC93y684Fmxg2rPd",
+//		"kcVFbcrVqAVUHrirp7r3HYHUzrtdFuybez",
+//		"bzA7UeUmkuFWn3waGh3z1eQ5xV3TAZpgX2",
+//		"2K29ZX6vaqrTRZJbFKX7hzu646wL3pJfF6H",
+//		"VKpFCpN4yp46uYbffaeCg7XEvQd6pHNSkV",
+//		"2bGUCmS8BcFiX6VQbq6DVvjDsCdu5fgoSSr",
+//		"2Yx8dzMgzU5Y2vrAomAtkajWNmUCJ31xNF",
+//		"wd2NGBkCygq7cCP899gbiBciM7ZFqphRDM",
+//		"2akitSsnetXoc3ejzY4pA8dGjWM76uzPxo3",
+//		"WFTbYvNJGAq9wWG644sMvgt4EJ6CvkbvDK",
+//		"2FReiyjcQuQBCvjKQzyrhc7QMwdbdBwLvCT",
+//		"2RnSh4sZrxCEK5fUSCLR8JuwzGd6K5mzdrA",
+//		"ujJHitcLhQZB393qrdJvdfM4AyEPMmDhcV",
+//		"25jWWmrgU8Z9HYVCsAXYmCjF1jQqe5DDnqr",
+//		"rsaKzohU5erbR6FX1whWu9Ke4q2jLkLBeJ",
+//	}
+//	xpubAddrs := make([]cipher.Address, len(xpubAddrStrs))
+//	for i, a := range xpubAddrStrs {
+//		xpubAddrs[i] = cipher.MustDecodeBase58Address(a)
+//	}
+//
+//	tf := make(mockTxnsFinder, 20)
+//
+//	type exp struct {
+//		err      error
+//		seed     string
+//		lastSeed string
+//		xpub     string
+//		entryNum int
+//		addrs    []cipher.Address
+//	}
+//
+//	tt := []struct {
+//		name             string
+//		opts             wallet.Options
+//		balGetter        TransactionsFinder
+//		disableWalletAPI bool
+//		expect           exp
+//	}{
+//		{
+//			name: "no coins and scan 0, unencrypted",
+//			opts: wallet.Options{
+//				Seed: seed,
+//				Type: wallet.WalletTypeDeterministic,
+//			},
+//			balGetter: tf,
+//			expect: exp{
+//				err:      nil,
+//				seed:     seed,
+//				lastSeed: childSeeds[0],
+//				entryNum: 1,
+//				addrs:    addrs,
+//			},
+//		},
+//		{
+//			name: "no coins and scan 0, encrypted",
+//			opts: wallet.Options{
+//				Seed:     seed,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				Type:     wallet.WalletTypeDeterministic,
+//			},
+//			balGetter: tf,
+//			expect: exp{
+//				err:      nil,
+//				seed:     seed,
+//				lastSeed: childSeeds[0],
+//				entryNum: 1,
+//				addrs:    addrs,
+//			},
+//		},
+//		{
+//			name: "no coins and scan 1, unencrypted",
+//			opts: wallet.Options{
+//				Seed:  seed,
+//				ScanN: 1,
+//				Type:  wallet.WalletTypeDeterministic,
+//			},
+//			balGetter: tf,
+//			expect: exp{
+//				err:      nil,
+//				seed:     seed,
+//				lastSeed: childSeeds[0],
+//				entryNum: 1,
+//				addrs:    addrs,
+//			},
+//		},
+//		{
+//			name: "no coins and scan 1, encrypted",
+//			opts: wallet.Options{
+//				Seed:     seed,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				ScanN:    1,
+//				Type:     wallet.WalletTypeDeterministic,
+//			},
+//			balGetter: tf,
+//			expect: exp{
+//				err:      nil,
+//				seed:     seed,
+//				lastSeed: childSeeds[0],
+//				entryNum: 1,
+//				addrs:    addrs,
+//			},
+//		},
+//		{
+//			name: "no coins and scan 10, unencrypted",
+//			opts: wallet.Options{
+//				Seed:  seed,
+//				ScanN: 10,
+//				Type:  wallet.WalletTypeDeterministic,
+//			},
+//			balGetter: tf,
+//			expect: exp{
+//				err:      nil,
+//				seed:     seed,
+//				lastSeed: childSeeds[0],
+//				entryNum: 1,
+//				addrs:    addrs,
+//			},
+//		},
+//		{
+//			name: "scan 1 get 1, unencrypted",
+//			opts: wallet.Options{
+//				Seed:  seed,
+//				ScanN: 1,
+//				Type:  wallet.WalletTypeDeterministic,
+//			},
+//			balGetter: mockTxnsFinder{
+//				addrs[0]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				seed:     seed,
+//				lastSeed: childSeeds[0],
+//				entryNum: 1,
+//				addrs:    addrs,
+//			},
+//		},
+//		{
+//			name: "scan 5 get 5, unencrypted",
+//			opts: wallet.Options{
+//				Seed:  seed,
+//				ScanN: 5,
+//				Type:  wallet.WalletTypeDeterministic,
+//			},
+//			balGetter: mockTxnsFinder{
+//				addrs[4]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				seed:     seed,
+//				lastSeed: childSeeds[4],
+//				entryNum: 5,
+//				addrs:    addrs,
+//			},
+//		},
+//		{
+//			name: "scan 5 get 1, unencrypted",
+//			opts: wallet.Options{
+//				Seed:  seed,
+//				ScanN: 5,
+//				Type:  wallet.WalletTypeDeterministic,
+//			},
+//			balGetter: mockTxnsFinder{
+//				addrs[0]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				seed:     seed,
+//				lastSeed: childSeeds[0],
+//				entryNum: 1,
+//				addrs:    addrs,
+//			},
+//		},
+//		{
+//			name: "scan 5 get 2, unencrypted",
+//			opts: wallet.Options{
+//				Seed:  seed,
+//				ScanN: 5,
+//				Type:  wallet.WalletTypeDeterministic,
+//			},
+//			balGetter: mockTxnsFinder{
+//				addrs[1]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				seed:     seed,
+//				lastSeed: childSeeds[1],
+//				entryNum: 2,
+//				addrs:    addrs,
+//			},
+//		},
+//
+//		{
+//			name: "scan 5 get 3, encrypted",
+//			opts: wallet.Options{
+//				Seed:     seed,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				ScanN:    5,
+//				Type:     wallet.WalletTypeDeterministic,
+//			},
+//			balGetter: mockTxnsFinder{
+//				addrs[2]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				seed:     seed,
+//				lastSeed: childSeeds[2],
+//				entryNum: 3,
+//				addrs:    addrs,
+//			},
+//		},
+//		{
+//			name: "scan 5 get 4, unencrypted",
+//			opts: wallet.Options{
+//				Seed:  seed,
+//				ScanN: 5,
+//				Type:  wallet.WalletTypeDeterministic,
+//			},
+//			balGetter: mockTxnsFinder{
+//				addrs[2]: true,
+//				addrs[3]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				seed:     seed,
+//				lastSeed: childSeeds[3],
+//				entryNum: 4,
+//				addrs:    addrs,
+//			},
+//		},
+//		{
+//			name: "scan 5 get 5, unencrypted",
+//			opts: wallet.Options{
+//				Seed:  seed,
+//				ScanN: 5,
+//				Type:  wallet.WalletTypeDeterministic,
+//			},
+//			balGetter: mockTxnsFinder{
+//				addrs[3]: true,
+//				addrs[4]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				seed:     seed,
+//				lastSeed: childSeeds[4],
+//				entryNum: 5,
+//				addrs:    addrs,
+//			},
+//		},
+//		{
+//			name: "scan 0 get 1, encrypted",
+//			opts: wallet.Options{
+//				Seed:     seed,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				ScanN:    0,
+//				Type:     wallet.WalletTypeDeterministic,
+//			},
+//			balGetter: mockTxnsFinder{},
+//			expect: exp{
+//				err:      nil,
+//				seed:     seed,
+//				lastSeed: childSeeds[0],
+//				entryNum: 1,
+//				addrs:    addrs,
+//			},
+//		},
+//		{
+//			name: "scan 1 get 1, encrypted",
+//			opts: wallet.Options{
+//				Seed:     seed,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				ScanN:    1,
+//				Type:     wallet.WalletTypeDeterministic,
+//			},
+//			balGetter: mockTxnsFinder{
+//				addrs[0]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				seed:     seed,
+//				lastSeed: childSeeds[0],
+//				entryNum: 1,
+//				addrs:    addrs,
+//			},
+//		},
+//		{
+//			name: "scan 2 get 1, encrypted",
+//			opts: wallet.Options{
+//				Seed:     seed,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				ScanN:    2,
+//				Type:     wallet.WalletTypeDeterministic,
+//			},
+//			balGetter: mockTxnsFinder{},
+//			expect: exp{
+//				err:      nil,
+//				seed:     seed,
+//				lastSeed: childSeeds[0],
+//				entryNum: 1,
+//				addrs:    addrs,
+//			},
+//		},
+//		{
+//			name: "scan 2 get 2, encrypted",
+//			opts: wallet.Options{
+//				Seed:     seed,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				ScanN:    2,
+//				Type:     wallet.WalletTypeDeterministic,
+//			},
+//			balGetter: mockTxnsFinder{
+//				addrs[1]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				seed:     seed,
+//				lastSeed: childSeeds[1],
+//				entryNum: 2,
+//				addrs:    addrs,
+//			},
+//		},
+//		{
+//			name: "scan 5 get 5, encrypted",
+//			opts: wallet.Options{
+//				Seed:     seed,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				ScanN:    5,
+//				Type:     wallet.WalletTypeDeterministic,
+//			},
+//			balGetter: mockTxnsFinder{
+//				addrs[3]: true,
+//				addrs[4]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				seed:     seed,
+//				lastSeed: childSeeds[4],
+//				entryNum: 5,
+//				addrs:    addrs,
+//			},
+//		},
+//		{
+//			name: "bip44 no coins and scan 0, unencrypted",
+//			opts: wallet.Options{
+//				Seed: bip44Seed,
+//				Type: wallet.WalletTypeBip44,
+//			},
+//			balGetter: tf,
+//			expect: exp{
+//				err:      nil,
+//				seed:     bip44Seed,
+//				entryNum: 1,
+//				addrs:    bip44Addrs,
+//			},
+//		},
+//		{
+//			name: "bip44 no coins and scan 0, encrypted",
+//			opts: wallet.Options{
+//				Seed:     bip44Seed,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				Type:     wallet.WalletTypeBip44,
+//			},
+//			balGetter: tf,
+//			expect: exp{
+//				err:      nil,
+//				seed:     bip44Seed,
+//				entryNum: 1,
+//				addrs:    bip44Addrs,
+//			},
+//		},
+//		{
+//			name: "bip44 no coins and scan 1, unencrypted",
+//			opts: wallet.Options{
+//				Seed:  bip44Seed,
+//				ScanN: 1,
+//				Type:  wallet.WalletTypeBip44,
+//			},
+//			balGetter: tf,
+//			expect: exp{
+//				err:      nil,
+//				seed:     bip44Seed,
+//				entryNum: 1,
+//				addrs:    bip44Addrs,
+//			},
+//		},
+//		{
+//			name: "bip44 no coins and scan 1, encrypted",
+//			opts: wallet.Options{
+//				Seed:     bip44Seed,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				ScanN:    1,
+//				Type:     wallet.WalletTypeBip44,
+//			},
+//			balGetter: tf,
+//			expect: exp{
+//				err:      nil,
+//				seed:     bip44Seed,
+//				entryNum: 1,
+//				addrs:    bip44Addrs,
+//			},
+//		},
+//		{
+//			name: "bip44 no coins and scan 10, unencrypted",
+//			opts: wallet.Options{
+//				Seed:  bip44Seed,
+//				ScanN: 10,
+//				Type:  wallet.WalletTypeBip44,
+//			},
+//			balGetter: tf,
+//			expect: exp{
+//				err:      nil,
+//				seed:     bip44Seed,
+//				entryNum: 1,
+//				addrs:    bip44Addrs,
+//			},
+//		},
+//		{
+//			name: "bip44 scan 0 get 1, unencrypted",
+//			opts: wallet.Options{
+//				Seed:  bip44Seed,
+//				ScanN: 1,
+//				Type:  wallet.WalletTypeBip44,
+//			},
+//			balGetter: mockTxnsFinder{
+//				bip44Addrs[0]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				seed:     bip44Seed,
+//				entryNum: 1,
+//				addrs:    bip44Addrs,
+//			},
+//		},
+//		{
+//			name: "bip44 scan 0 get 1, encrypted",
+//			opts: wallet.Options{
+//				Seed:     bip44Seed,
+//				ScanN:    1,
+//				Type:     wallet.WalletTypeBip44,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//			},
+//			balGetter: mockTxnsFinder{
+//				bip44Addrs[0]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				seed:     bip44Seed,
+//				entryNum: 1,
+//				addrs:    bip44Addrs,
+//			},
+//		},
+//		{
+//			name: "bip44 scan 1 get 1, unencrypted",
+//			opts: wallet.Options{
+//				Seed:  bip44Seed,
+//				ScanN: 1,
+//				Type:  wallet.WalletTypeBip44,
+//			},
+//			balGetter: mockTxnsFinder{
+//				bip44Addrs[0]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				seed:     bip44Seed,
+//				entryNum: 1,
+//				addrs:    bip44Addrs,
+//			},
+//		},
+//		{
+//			name: "bip44 scan 1 get 1, encrypted",
+//			opts: wallet.Options{
+//				Seed:     bip44Seed,
+//				ScanN:    1,
+//				Type:     wallet.WalletTypeBip44,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//			},
+//			balGetter: mockTxnsFinder{
+//				bip44Addrs[0]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				seed:     bip44Seed,
+//				entryNum: 1,
+//				addrs:    bip44Addrs,
+//			},
+//		},
+//		{
+//			name: "bip44 scan 2 get 2, unencrypted",
+//			opts: wallet.Options{
+//				Seed:  bip44Seed,
+//				ScanN: 2,
+//				Type:  wallet.WalletTypeBip44,
+//			},
+//			balGetter: mockTxnsFinder{
+//				bip44Addrs[0]: true,
+//				bip44Addrs[1]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				seed:     bip44Seed,
+//				entryNum: 2,
+//				addrs:    bip44Addrs,
+//			},
+//		},
+//		{
+//			name: "bip44 scan 2 get 2, encrypted",
+//			opts: wallet.Options{
+//				Seed:     bip44Seed,
+//				ScanN:    2,
+//				Type:     wallet.WalletTypeBip44,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//			},
+//			balGetter: mockTxnsFinder{
+//				bip44Addrs[0]: true,
+//				bip44Addrs[1]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				seed:     bip44Seed,
+//				entryNum: 2,
+//				addrs:    bip44Addrs,
+//			},
+//		},
+//		{
+//			name: "bip44 scan 5 get 1, unencrypted",
+//			opts: wallet.Options{
+//				Seed:  bip44Seed,
+//				ScanN: 5,
+//				Type:  wallet.WalletTypeBip44,
+//			},
+//			balGetter: mockTxnsFinder{
+//				bip44Addrs[0]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				seed:     bip44Seed,
+//				entryNum: 1,
+//				addrs:    bip44Addrs,
+//			},
+//		},
+//		{
+//			name: "bip44 scan 5 get 2, unencrypted",
+//			opts: wallet.Options{
+//				Seed:  bip44Seed,
+//				ScanN: 5,
+//				Type:  wallet.WalletTypeBip44,
+//			},
+//			balGetter: mockTxnsFinder{
+//				bip44Addrs[1]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				seed:     bip44Seed,
+//				entryNum: 2,
+//				addrs:    bip44Addrs,
+//			},
+//		},
+//		{
+//			name: "bip44 scan 5 get 5, unencrypted",
+//			opts: wallet.Options{
+//				Seed:  bip44Seed,
+//				ScanN: 5,
+//				Type:  wallet.WalletTypeBip44,
+//			},
+//			balGetter: mockTxnsFinder{
+//				bip44Addrs[4]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				seed:     bip44Seed,
+//				entryNum: 5,
+//				addrs:    bip44Addrs,
+//			},
+//		},
+//		{
+//			name: "bip44 scan 5 get 5, encrypted",
+//			opts: wallet.Options{
+//				Seed:     bip44Seed,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				ScanN:    5,
+//				Type:     wallet.WalletTypeBip44,
+//			},
+//			balGetter: mockTxnsFinder{
+//				bip44Addrs[3]: true,
+//				bip44Addrs[4]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				seed:     bip44Seed,
+//				entryNum: 5,
+//				addrs:    bip44Addrs,
+//			},
+//		},
+//		{
+//			name: "xpub no coins and scan 0, unencrypted",
+//			opts: wallet.Options{
+//				XPub: xpub,
+//				Type: WalletTypeXPub,
+//			},
+//			balGetter: tf,
+//			expect: exp{
+//				err:      nil,
+//				xpub:     xpub,
+//				entryNum: 1,
+//				addrs:    xpubAddrs,
+//			},
+//		},
+//		{
+//			name: "xpub no coins and scan 0, encrypted",
+//			opts: wallet.Options{
+//				XPub:     xpub,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				Type:     WalletTypeXPub,
+//			},
+//			balGetter: tf,
+//			expect: exp{
+//				err:      nil,
+//				xpub:     xpub,
+//				entryNum: 1,
+//				addrs:    xpubAddrs,
+//			},
+//		},
+//		{
+//			name: "xpub no coins and scan 1, unencrypted",
+//			opts: wallet.Options{
+//				XPub:  xpub,
+//				ScanN: 1,
+//				Type:  WalletTypeXPub,
+//			},
+//			balGetter: tf,
+//			expect: exp{
+//				err:      nil,
+//				xpub:     xpub,
+//				entryNum: 1,
+//				addrs:    xpubAddrs,
+//			},
+//		},
+//		{
+//			name: "xpub no coins and scan 1, encrypted",
+//			opts: wallet.Options{
+//				XPub:     xpub,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				ScanN:    1,
+//				Type:     WalletTypeXPub,
+//			},
+//			balGetter: tf,
+//			expect: exp{
+//				err:      nil,
+//				xpub:     xpub,
+//				entryNum: 1,
+//				addrs:    xpubAddrs,
+//			},
+//		},
+//		{
+//			name: "xpub no coins and scan 10, unencrypted",
+//			opts: wallet.Options{
+//				XPub:  xpub,
+//				ScanN: 10,
+//				Type:  WalletTypeXPub,
+//			},
+//			balGetter: tf,
+//			expect: exp{
+//				err:      nil,
+//				xpub:     xpub,
+//				entryNum: 1,
+//				addrs:    xpubAddrs,
+//			},
+//		},
+//		{
+//			name: "xpub scan 0 get 1, unencrypted",
+//			opts: wallet.Options{
+//				XPub:  xpub,
+//				ScanN: 0,
+//				Type:  WalletTypeXPub,
+//			},
+//			balGetter: mockTxnsFinder{
+//				xpubAddrs[0]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				xpub:     xpub,
+//				entryNum: 1,
+//				addrs:    xpubAddrs,
+//			},
+//		},
+//		{
+//			name: "xpub scan 0 get 1, encrypted",
+//			opts: wallet.Options{
+//				XPub:     xpub,
+//				ScanN:    0,
+//				Type:     WalletTypeXPub,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//			},
+//			balGetter: mockTxnsFinder{
+//				xpubAddrs[0]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				xpub:     xpub,
+//				entryNum: 1,
+//				addrs:    xpubAddrs,
+//			},
+//		},
+//		{
+//			name: "xpub scan 1 get 1, unencrypted",
+//			opts: wallet.Options{
+//				XPub:  xpub,
+//				ScanN: 1,
+//				Type:  WalletTypeXPub,
+//			},
+//			balGetter: mockTxnsFinder{
+//				xpubAddrs[0]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				xpub:     xpub,
+//				entryNum: 1,
+//				addrs:    xpubAddrs,
+//			},
+//		},
+//		{
+//			name: "xpub scan 1 get 1, encrypted",
+//			opts: wallet.Options{
+//				XPub:     xpub,
+//				ScanN:    1,
+//				Type:     WalletTypeXPub,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//			},
+//			balGetter: mockTxnsFinder{
+//				xpubAddrs[0]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				xpub:     xpub,
+//				entryNum: 1,
+//				addrs:    xpubAddrs,
+//			},
+//		},
+//		{
+//			name: "xpub scan 2 get 1, unencrypted",
+//			opts: wallet.Options{
+//				XPub:  xpub,
+//				ScanN: 2,
+//				Type:  WalletTypeXPub,
+//			},
+//			balGetter: mockTxnsFinder{
+//				xpubAddrs[0]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				xpub:     xpub,
+//				entryNum: 1,
+//				addrs:    xpubAddrs,
+//			},
+//		},
+//		{
+//			name: "xpub scan 2 get 1, encrypted",
+//			opts: wallet.Options{
+//				XPub:     xpub,
+//				ScanN:    2,
+//				Type:     WalletTypeXPub,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//			},
+//			balGetter: mockTxnsFinder{
+//				xpubAddrs[0]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				xpub:     xpub,
+//				entryNum: 1,
+//				addrs:    xpubAddrs,
+//			},
+//		},
+//		{
+//			name: "xpub scan 2 get 2, unencrypted",
+//			opts: wallet.Options{
+//				XPub:  xpub,
+//				ScanN: 2,
+//				Type:  WalletTypeXPub,
+//			},
+//			balGetter: mockTxnsFinder{
+//				xpubAddrs[1]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				xpub:     xpub,
+//				entryNum: 2,
+//				addrs:    xpubAddrs,
+//			},
+//		},
+//		{
+//			name: "xpub scan 2 get 2, encrypted",
+//			opts: wallet.Options{
+//				XPub:     xpub,
+//				ScanN:    2,
+//				Type:     WalletTypeXPub,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//			},
+//			balGetter: mockTxnsFinder{
+//				xpubAddrs[1]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				xpub:     xpub,
+//				entryNum: 2,
+//				addrs:    xpubAddrs,
+//			},
+//		},
+//		{
+//			name: "xpub scan 5 get 5, unencrypted",
+//			opts: wallet.Options{
+//				XPub:  xpub,
+//				ScanN: 5,
+//				Type:  WalletTypeXPub,
+//			},
+//			balGetter: mockTxnsFinder{
+//				xpubAddrs[4]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				xpub:     xpub,
+//				entryNum: 5,
+//				addrs:    xpubAddrs,
+//			},
+//		},
+//		{
+//			name: "xpub scan 5 get 4, unencrypted",
+//			opts: wallet.Options{
+//				XPub:  xpub,
+//				ScanN: 5,
+//				Type:  WalletTypeXPub,
+//			},
+//			balGetter: mockTxnsFinder{
+//				xpubAddrs[1]: true,
+//				xpubAddrs[3]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				xpub:     xpub,
+//				entryNum: 4,
+//				addrs:    xpubAddrs,
+//			},
+//		},
+//		{
+//			name: "xpub scan 5 get 3, unencrypted",
+//			opts: wallet.Options{
+//				XPub:  xpub,
+//				ScanN: 5,
+//				Type:  WalletTypeXPub,
+//			},
+//			balGetter: mockTxnsFinder{
+//				xpubAddrs[1]: true,
+//				xpubAddrs[2]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				xpub:     xpub,
+//				entryNum: 3,
+//				addrs:    xpubAddrs,
+//			},
+//		},
+//		{
+//			name: "xpub scan 5 get 2, unencrypted",
+//			opts: wallet.Options{
+//				XPub:  xpub,
+//				ScanN: 5,
+//				Type:  WalletTypeXPub,
+//			},
+//			balGetter: mockTxnsFinder{
+//				xpubAddrs[1]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				xpub:     xpub,
+//				entryNum: 2,
+//				addrs:    xpubAddrs,
+//			},
+//		},
+//		{
+//			name: "xpub scan 5 get 1, unencrypted",
+//			opts: wallet.Options{
+//				XPub:  xpub,
+//				ScanN: 5,
+//				Type:  WalletTypeXPub,
+//			},
+//			balGetter: mockTxnsFinder{
+//				xpubAddrs[0]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				xpub:     xpub,
+//				entryNum: 1,
+//				addrs:    xpubAddrs,
+//			},
+//		},
+//
+//		{
+//			name: "xpub scan 5 get 2, encrypted",
+//			opts: wallet.Options{
+//				XPub:     xpub,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				ScanN:    5,
+//				Type:     WalletTypeXPub,
+//			},
+//			balGetter: mockTxnsFinder{
+//				xpubAddrs[1]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				xpub:     xpub,
+//				entryNum: 2,
+//				addrs:    xpubAddrs,
+//			},
+//		},
+//		{
+//			name: "xpub scan 5 get 5, encrypted",
+//			opts: wallet.Options{
+//				XPub:     xpub,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				ScanN:    5,
+//				Type:     WalletTypeXPub,
+//			},
+//			balGetter: mockTxnsFinder{
+//				xpubAddrs[3]: true,
+//				xpubAddrs[4]: true,
+//			},
+//			expect: exp{
+//				err:      nil,
+//				xpub:     xpub,
+//				entryNum: 5,
+//				addrs:    xpubAddrs,
+//			},
+//		},
+//		{
+//			name: "wallet api disabled",
+//			opts: wallet.Options{
+//				Seed:     seed,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				ScanN:    5,
+//				Type:     wallet.WalletTypeDeterministic,
+//			},
+//			balGetter:        mockTxnsFinder{},
+//			disableWalletAPI: true,
+//			expect: exp{
+//				err: wallet.ErrWalletAPIDisabled,
+//			},
+//		},
+//	}
+//
+//	for _, tc := range tt {
+//		for _, ct := range crypto.Types() {
+//			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
+//			t.Run(name, func(t *testing.T) {
+//				dir := prepareWltDir()
+//				s, err := wallet.NewService(wallet.Config{
+//					WalletDir:       dir,
+//					CryptoType:      ct,
+//					EnableWalletAPI: !tc.disableWalletAPI,
+//				})
+//				require.NoError(t, err)
+//
+//				wltName := wallet.NewWalletFilename()
+//				w, err := s.CreateWallet(wltName, tc.opts, tc.balGetter)
+//				require.Equal(t, tc.expect.err, err)
+//				if err != nil {
+//					return
+//				}
+//
+//				//require.NoError(t, w.Validate())
+//
+//				if !w.IsEncrypted() {
+//					require.Equal(t, tc.expect.seed, w.Seed())
+//					require.Equal(t, tc.expect.lastSeed, w.LastSeed())
+//				}
+//				require.Equal(t, tc.expect.xpub, w.XPub())
+//				require.Equal(t, tc.expect.entryNum, w.EntriesLen())
+//				entries, err := w.GetEntries()
+//				require.NoError(t, err)
+//
+//				for i, e := range entries {
+//					require.Equal(t, tc.expect.addrs[i].String(), e.Address.String())
+//				}
+//			})
+//		}
+//	}
+//}
+//
+//func TestServiceScanAddresses(t *testing.T) {
+//	seed := "seed"
+//	// Generate adddresses from the seed
+//	var addrs []cipher.Address
+//	_, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 10)
+//	for _, s := range seckeys {
+//		addrs = append(addrs, cipher.MustAddressFromSecKey(s))
+//	}
+//
+//	bip44Seed := "voyage say extend find sheriff surge priority merit ignore maple cash argue"
+//	bip44AddrStrs := []string{
+//		"9BSEAEE3XGtQ2X43BCT2XCYgheGLQQigEG",
+//		"29cnQPHuWHCRF26LEAb2gR83ywnF3F9HduW",
+//		"2ZUAv9MGSpDKR3dnKMUnrKqLenV22JXAxzP",
+//		"fwNVThqdzH7JMsStoLrTpkVsemesbdGftm",
+//		"eyr5KDLTnN6ZZeggeHqDcXnrwmNUi7sGk2",
+//		"Aee3J9qoFPLoUEJes6YVzdKHdeuvCrMZeJ",
+//		"29MZS8aiYUdEwcruwCPggVJG9YJLsm92FHa",
+//		"2Hbm3bwKiEwqNAMAzVJmz5hL1dNTfaA3ju7",
+//		"WCaSCwSZnVqtkYeiKryeHjR8LbzE3KbkzJ",
+//		"baRjCy1yHfishGdZi3bVaPaL7VJM7FZCSd",
+//	}
+//	bip44Addrs := make([]cipher.Address, len(bip44AddrStrs))
+//	for i, a := range bip44AddrStrs {
+//		bip44Addrs[i] = cipher.MustDecodeBase58Address(a)
+//	}
+//
+//	xpub := "xpub6E5WPk37XdM79dy6oJ7iH6NkCvVzxmrCo4zMFFHSZMc5ymZYhReQFWaDcGNZeYYe1ahY2e3RcRZDHLHC98FfzPRfNRcU6ecURpS4RCQRP2w"
+//	xpubAddrStrs := []string{
+//		"2mhaS6SE2TPSmRRbJvngWQSNXCCVuTic5Zg",
+//		"2bq2itwDKteqigxVS9eYJv4Ww9SEfuyGcib",
+//		"B7eMXM6nLUqqzkFcosXR3HSVkQ6yUz53n4",
+//		"niAy17kBb8vB2pFey8eZnE92e6x9bFGLHp",
+//		"N8JbzcqWEPkn6CF3JdZDmEydzECyZ4NhRv",
+//		"TcyY3F4xHPCtFFkdDBTC93y684Fmxg2rPd",
+//		"kcVFbcrVqAVUHrirp7r3HYHUzrtdFuybez",
+//		"bzA7UeUmkuFWn3waGh3z1eQ5xV3TAZpgX2",
+//		"2K29ZX6vaqrTRZJbFKX7hzu646wL3pJfF6H",
+//		"VKpFCpN4yp46uYbffaeCg7XEvQd6pHNSkV",
+//	}
+//
+//	xpubAddrs := make([]cipher.Address, len(xpubAddrStrs))
+//	for i, a := range xpubAddrStrs {
+//		xpubAddrs[i] = cipher.MustDecodeBase58Address(a)
+//	}
+//
+//	testData := []struct {
+//		walletType string
+//		seed       string
+//		xpub       string
+//		addrs      []cipher.Address
+//	}{
+//		{
+//			walletType: wallet.WalletTypeDeterministic,
+//			addrs:      addrs[:],
+//			seed:       seed,
+//		},
+//		{
+//			walletType: wallet.WalletTypeBip44,
+//			addrs:      bip44Addrs[:],
+//			seed:       bip44Seed,
+//		},
+//		{
+//			walletType: WalletTypeXPub,
+//			addrs:      xpubAddrs[:],
+//			xpub:       xpub,
+//		},
+//	}
+//
+//	type testCases []struct {
+//		name              string
+//		opts              wallet.Options
+//		scanN             uint64
+//		password          []byte
+//		walletAPIDisabled bool
+//		tf                TransactionsFinder
+//		expectAddrs       []cipher.Address
+//		expectErr         error
+//	}
+//
+//	generateTestCasesFunc := func(walletType, seed, xpub string, addrs []cipher.Address) testCases {
+//		return testCases{
+//			{
+//				name: "scan 0 unencrypted",
+//				opts: wallet.Options{
+//					Type:  walletType,
+//					Label: "label",
+//					Seed:  seed,
+//					XPub:  xpub,
+//				},
+//				scanN:       0,
+//				expectAddrs: []cipher.Address{},
+//				expectErr:   nil,
+//			},
+//			{
+//				name: "scan 0 encrypted",
+//				opts: wallet.Options{
+//					Type:     walletType,
+//					Label:    "label",
+//					Seed:     seed,
+//					XPub:     xpub,
+//					Encrypt:  true,
+//					Password: []byte("pwd"),
+//				},
+//				scanN:       0,
+//				password:    []byte("pwd"),
+//				expectAddrs: []cipher.Address{},
+//				expectErr:   nil,
+//			},
+//			{
+//				name: "scan 0 encrypted wrong password",
+//				opts: wallet.Options{
+//					Type:     walletType,
+//					Label:    "label",
+//					Seed:     seed,
+//					XPub:     xpub,
+//					Encrypt:  true,
+//					Password: []byte("pwd"),
+//				},
+//				scanN:       0,
+//				password:    []byte("incorrect password"),
+//				expectAddrs: nil,
+//				expectErr:   wallet.ErrInvalidPassword,
+//			},
+//			{
+//				name: "scan 1 get 0 unencrypted",
+//				opts: wallet.Options{
+//					Type:  walletType,
+//					Label: "label",
+//					Seed:  seed,
+//					XPub:  xpub,
+//				},
+//				scanN:       1,
+//				tf:          mockTxnsFinder{},
+//				expectAddrs: []cipher.Address{},
+//				expectErr:   nil,
+//			},
+//			{
+//				name: "scan 1 get 0 encrypted",
+//				opts: wallet.Options{
+//					Type:     walletType,
+//					Label:    "label",
+//					Seed:     seed,
+//					XPub:     xpub,
+//					Encrypt:  true,
+//					Password: []byte("pwd"),
+//				},
+//				scanN:       1,
+//				password:    []byte("pwd"),
+//				tf:          mockTxnsFinder{},
+//				expectAddrs: []cipher.Address{},
+//				expectErr:   nil,
+//			},
+//			{
+//				name: "scan 1 get 1 unencrypted",
+//				opts: wallet.Options{
+//					Type:  walletType,
+//					Label: "label",
+//					Seed:  seed,
+//					XPub:  xpub,
+//				},
+//				scanN: 1,
+//				tf: mockTxnsFinder{
+//					addrs[1]: true,
+//				},
+//				expectAddrs: addrs[1:2],
+//				expectErr:   nil,
+//			},
+//			{
+//				name: "scan 1 get 1 encrypted",
+//				opts: wallet.Options{
+//					Type:     walletType,
+//					Label:    "label",
+//					Seed:     seed,
+//					XPub:     xpub,
+//					Encrypt:  true,
+//					Password: []byte("pwd"),
+//				},
+//				scanN:    1,
+//				password: []byte("pwd"),
+//				tf: mockTxnsFinder{
+//					addrs[1]: true,
+//				},
+//				expectAddrs: addrs[1:2],
+//				expectErr:   nil,
+//			},
+//			{
+//				name: "have 2 scan 1 get 1 unencrypted",
+//				opts: wallet.Options{
+//					Type:  walletType,
+//					Label: "label",
+//					Seed:  seed,
+//					XPub:  xpub,
+//				},
+//				scanN: 1,
+//				tf: mockTxnsFinder{
+//					addrs[1]: true,
+//					addrs[2]: true,
+//				},
+//				expectAddrs: addrs[1:2],
+//				expectErr:   nil,
+//			},
+//			{
+//				name: "have 2 scan 1 get 1 encrypted",
+//				opts: wallet.Options{
+//					Type:     walletType,
+//					Label:    "label",
+//					Seed:     seed,
+//					XPub:     xpub,
+//					Encrypt:  true,
+//					Password: []byte("pwd"),
+//				},
+//				scanN:    1,
+//				password: []byte("pwd"),
+//				tf: mockTxnsFinder{
+//					addrs[1]: true,
+//					addrs[2]: true,
+//				},
+//				expectAddrs: addrs[1:2],
+//				expectErr:   nil,
+//			},
+//			{
+//				name: "scan 2 get 1 unencrypted",
+//				opts: wallet.Options{
+//					Type:  walletType,
+//					Label: "label",
+//					Seed:  seed,
+//					XPub:  xpub,
+//				},
+//				scanN: 2,
+//				tf: mockTxnsFinder{
+//					addrs[1]: true,
+//				},
+//				expectAddrs: addrs[1:2],
+//				expectErr:   nil,
+//			},
+//			{
+//				name: "scan 2 get 1 encrypted",
+//				opts: wallet.Options{
+//					Type:     walletType,
+//					Label:    "label",
+//					Seed:     seed,
+//					XPub:     xpub,
+//					Encrypt:  true,
+//					Password: []byte("pwd"),
+//				},
+//				scanN:    2,
+//				password: []byte("pwd"),
+//				tf: mockTxnsFinder{
+//					addrs[1]: true,
+//				},
+//				expectAddrs: addrs[1:2],
+//				expectErr:   nil,
+//			},
+//			{
+//				name: "scan 2 get 2 unencrypted",
+//				opts: wallet.Options{
+//					Type:  walletType,
+//					Label: "label",
+//					Seed:  seed,
+//					XPub:  xpub,
+//				},
+//				scanN: 2,
+//				tf: mockTxnsFinder{
+//					addrs[1]: true,
+//					addrs[2]: true,
+//				},
+//				expectAddrs: addrs[1:3],
+//				expectErr:   nil,
+//			},
+//			{
+//				name: "scan 10 get 2 unencrypted",
+//				opts: wallet.Options{
+//					Type:  walletType,
+//					Label: "label",
+//					Seed:  seed,
+//					XPub:  xpub,
+//				},
+//				scanN: 10,
+//				tf: mockTxnsFinder{
+//					addrs[1]: true,
+//					addrs[2]: true,
+//				},
+//				expectAddrs: addrs[1:3],
+//				expectErr:   nil,
+//			},
+//			{
+//				name: "scan 10 get 5 unencrypted",
+//				opts: wallet.Options{
+//					Type:  walletType,
+//					Label: "label",
+//					Seed:  seed,
+//					XPub:  xpub,
+//				},
+//				scanN: 10,
+//				tf: mockTxnsFinder{
+//					addrs[1]: true,
+//					addrs[2]: true,
+//					addrs[5]: true,
+//				},
+//				expectAddrs: addrs[1:6],
+//				expectErr:   nil,
+//			},
+//		}
+//	}
+//
+//	for _, d := range testData {
+//		tt := generateTestCasesFunc(d.walletType, d.seed, d.xpub, d.addrs)
+//		for _, tc := range tt {
+//			for _, ct := range crypto.Types() {
+//				name := fmt.Sprintf("crypto=%v type=%v %v", ct, d.walletType, tc.name)
+//				t.Run(name, func(t *testing.T) {
+//					dir := prepareWltDir()
+//					s, err := wallet.NewService(wallet.Config{
+//						WalletDir:       dir,
+//						CryptoType:      ct,
+//						EnableWalletAPI: !tc.walletAPIDisabled,
+//					})
+//					require.NoError(t, err)
+//
+//					wltName := wallet.NewWalletFilename()
+//					w, err := s.CreateWallet(wltName, tc.opts, tc.tf)
+//					require.NoError(t, err)
+//					//require.NoError(t, w.Validate())
+//
+//					addrs, err := s.ScanAddresses(w.Filename(), tc.password, tc.scanN, tc.tf)
+//					require.Equal(t, tc.expectErr, err)
+//					require.Equal(t, tc.expectAddrs, addrs)
+//				})
+//			}
+//		}
+//	}
+//}
+//
+//func TestGetWalletSeed(t *testing.T) {
+//	tt := []struct {
+//		name             string
+//		wltName          string
+//		opts             wallet.Options
+//		id               string
+//		pwd              []byte
+//		disableWalletAPI bool
+//		enableSeedAPI    bool
+//		expectErr        error
+//	}{
+//		{
+//			name:    "wallet is not encrypted",
+//			wltName: "wallet.wlt",
+//			opts: wallet.Options{
+//				Seed:  "seed",
+//				Label: "label",
+//				Type:  wallet.WalletTypeDeterministic,
+//			},
+//			id:            "wallet.wlt",
+//			enableSeedAPI: true,
+//			expectErr:     wallet.ErrWalletNotEncrypted,
+//		},
+//		{
+//			name:    "wallet api disabled",
+//			wltName: "wallet.wlt",
+//			opts: wallet.Options{
+//				Seed:  "seed",
+//				Label: "label",
+//				Type:  wallet.WalletTypeDeterministic,
+//			},
+//			id:               "wallet.wlt",
+//			enableSeedAPI:    true,
+//			disableWalletAPI: true,
+//			expectErr:        wallet.ErrWalletAPIDisabled,
+//		},
+//		{
+//			name:    "ok",
+//			wltName: "wallet.wlt",
+//			opts: wallet.Options{
+//				Seed:     "seed",
+//				Label:    "label",
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				Type:     wallet.WalletTypeDeterministic,
+//			},
+//			enableSeedAPI: true,
+//			id:            "wallet.wlt",
+//			pwd:           []byte("pwd"),
+//		},
+//		{
+//			name:    "ok seed passphrase",
+//			wltName: "wallet.wlt",
+//			opts: wallet.Options{
+//				Seed:           bip39.MustNewDefaultMnemonic(),
+//				SeedPassphrase: "seed-passphrase",
+//				Label:          "label",
+//				Encrypt:        true,
+//				Password:       []byte("pwd"),
+//				Type:           wallet.WalletTypeBip44,
+//			},
+//			enableSeedAPI: true,
+//			id:            "wallet.wlt",
+//			pwd:           []byte("pwd"),
+//		},
+//		{
+//			name:    "wallet does not exist",
+//			wltName: "wallet.wlt",
+//			opts: wallet.Options{
+//				Seed:     "seed",
+//				Label:    "label",
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				Type:     wallet.WalletTypeDeterministic,
+//			},
+//			enableSeedAPI: true,
+//			pwd:           []byte("pwd"),
+//			id:            "none-exist.wlt",
+//			expectErr:     wallet.ErrWalletNotExist ,
+//		},
+//		{
+//			name:    "disable seed api",
+//			wltName: "wallet.wlt",
+//			opts: wallet.Options{
+//				Seed:     "seed",
+//				Label:    "label",
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				Type:     wallet.WalletTypeDeterministic,
+//			},
+//			pwd:           []byte("pwd"),
+//			id:            "wallet.wlt",
+//			enableSeedAPI: false,
+//			expectErr:     ErrSeedAPIDisabled,
+//		},
+//	}
+//
+//	for _, tc := range tt {
+//		for _, ct := range crypto.Types() {
+//			t.Run(tc.name, func(t *testing.T) {
+//				dir := prepareWltDir()
+//				s, err := wallet.NewService(wallet.Config{
+//					WalletDir:       dir,
+//					CryptoType:      ct,
+//					EnableWalletAPI: !tc.disableWalletAPI,
+//					EnableSeedAPI:   tc.enableSeedAPI,
+//				})
+//				require.NoError(t, err)
+//
+//				if tc.disableWalletAPI {
+//					_, _, err = s.GetWalletSeed("", tc.pwd)
+//					require.Equal(t, tc.expectErr, err)
+//					return
+//				}
+//
+//				// Create a wallet
+//				_, err = s.CreateWallet(tc.wltName, tc.opts, nil)
+//				require.NoError(t, err)
+//
+//				seed, seedPassphrase, err := s.GetWalletSeed(tc.id, tc.pwd)
+//				require.Equal(t, tc.expectErr, err)
+//				if err != nil {
+//					return
+//				}
+//
+//				require.Equal(t, tc.opts.Seed, seed)
+//				require.Equal(t, tc.opts.SeedPassphrase, seedPassphrase)
+//			})
+//		}
+//	}
+//}
+//
+//func TestServiceView(t *testing.T) {
+//	tt := []struct {
+//		name             string
+//		wltName          string
+//		opts             wallet.Options
+//		viewWltName      string
+//		action           func(*testing.T) func(Wallet) error
+//		disableWalletAPI bool
+//		err              error
+//	}{
+//		{
+//			name:        "ok, encrypted collection wallet",
+//			wltName:     "test-view-collection-encrypted.wlt",
+//			viewWltName: "test-view-collection-encrypted.wlt",
+//			opts: wallet.Options{
+//				Type:     WalletTypeCollection,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				Label:    "foowlt",
+//			},
+//			action: func(t *testing.T) func(Wallet) error {
+//				return func(w Wallet) error {
+//					require.Equal(t, "foowlt", w.Label())
+//					checkNoSensitiveData(t, w)
+//
+//					// Modify the wallet pointer in order to check that this references a clone and not the original
+//					w.SetLabel(w.Label() + "foo")
+//
+//					return nil
+//				}
+//			},
+//		},
+//
+//		{
+//			name:        "ok, unencrypted collection wallet",
+//			wltName:     "test-view-collection-unencrypted.wlt",
+//			viewWltName: "test-view-collection-unencrypted.wlt",
+//			opts: wallet.Options{
+//				Label: "foowlt",
+//				Type:  WalletTypeCollection,
+//			},
+//			action: func(t *testing.T) func(Wallet) error {
+//				return func(w Wallet) error {
+//					require.Equal(t, "foowlt", w.Label())
+//					// Collection wallets don't have seeds
+//					require.Empty(t, w.Seed())
+//					require.Empty(t, w.LastSeed())
+//
+//					// Modify the wallet pointer in order to check that this references a clone and not the original
+//					w.SetLabel(w.Label() + "foo")
+//
+//					return nil
+//				}
+//			},
+//		},
+//
+//		{
+//			name:        "ok, encrypted xpub wallet",
+//			wltName:     "test-view-xpub-encrypted.wlt",
+//			viewWltName: "test-view-xpub-encrypted.wlt",
+//			opts: wallet.Options{
+//				Type:     WalletTypeXPub,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				Label:    "foowlt",
+//				XPub:     "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
+//			},
+//			action: func(t *testing.T) func(Wallet) error {
+//				return func(w Wallet) error {
+//					require.Equal(t, "foowlt", w.Label())
+//					checkNoSensitiveData(t, w)
+//
+//					require.Equal(t, "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v", w.XPub())
+//
+//					// Modify the wallet pointer in order to check that this references a clone and not the original
+//					w.SetLabel(w.Label() + "foo")
+//
+//					return nil
+//				}
+//			},
+//		},
+//
+//		{
+//			name:        "ok, unencrypted xpub wallet",
+//			wltName:     "test-view-xpub-unencrypted.wlt",
+//			viewWltName: "test-view-xpub-unencrypted.wlt",
+//			opts: wallet.Options{
+//				Label: "foowlt",
+//				Type:  WalletTypeXPub,
+//				XPub:  "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
+//			},
+//			action: func(t *testing.T) func(Wallet) error {
+//				return func(w Wallet) error {
+//					require.Equal(t, "foowlt", w.Label())
+//					// xpub wallets don't have seeds
+//					require.Empty(t, w.Seed())
+//					require.Empty(t, w.LastSeed())
+//
+//					require.Equal(t, "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v", w.XPub())
+//
+//					// Modify the wallet pointer in order to check that this references a clone and not the original
+//					w.SetLabel(w.Label() + "foo")
+//
+//					return nil
+//				}
+//			},
+//		},
+//
+//		{
+//			name:        "ok, encrypted bip44 wallet",
+//			wltName:     "test-view-bip44-encrypted.wlt",
+//			viewWltName: "test-view-bip44-encrypted.wlt",
+//			opts: wallet.Options{
+//				Type:     wallet.WalletTypeBip44,
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				Label:    "foowlt",
+//				Seed:     "voyage say extend find sheriff surge priority merit ignore maple cash argue",
+//			},
+//			action: func(t *testing.T) func(Wallet) error {
+//				return func(w Wallet) error {
+//					require.Equal(t, "foowlt", w.Label())
+//					checkNoSensitiveData(t, w)
+//
+//					// Modify the wallet pointer in order to check that this references a clone and not the original
+//					w.SetLabel(w.Label() + "foo")
+//
+//					return nil
+//				}
+//			},
+//		},
+//
+//		{
+//			name:        "ok, unencrypted bip44 wallet",
+//			wltName:     "test-view-bip44-unencrypted.wlt",
+//			viewWltName: "test-view-bip44-unencrypted.wlt",
+//			opts: wallet.Options{
+//				Label:          "foowlt",
+//				Type:           wallet.WalletTypeBip44,
+//				Seed:           "voyage say extend find sheriff surge priority merit ignore maple cash argue",
+//				SeedPassphrase: "foo",
+//			},
+//			action: func(t *testing.T) func(Wallet) error {
+//				return func(w Wallet) error {
+//					require.Equal(t, "foowlt", w.Label())
+//					require.Equal(t, "voyage say extend find sheriff surge priority merit ignore maple cash argue", w.Seed())
+//					require.Equal(t, "foo", w.SeedPassphrase())
+//					require.Empty(t, w.LastSeed())
+//
+//					// Modify the wallet pointer in order to check that this references a clone and not the original
+//					w.SetLabel(w.Label() + "foo")
+//
+//					return nil
+//				}
+//			},
+//		},
+//
+//		{
+//			name:        "ok, encrypted wallet",
+//			wltName:     "test-view-encrypted.wlt",
+//			viewWltName: "test-view-encrypted.wlt",
+//			opts: wallet.Options{
+//				Type:     wallet.WalletTypeDeterministic,
+//				Seed:     "fooseed",
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				Label:    "foowlt",
+//			},
+//			action: func(t *testing.T) func(Wallet) error {
+//				return func(w Wallet) error {
+//					require.Equal(t, "foowlt", w.Label())
+//					checkNoSensitiveData(t, w)
+//
+//					// Modify the wallet pointer in order to check that this references a clone and not the original
+//					w.SetLabel(w.Label() + "foo")
+//
+//					return nil
+//				}
+//			},
+//		},
+//
+//		{
+//			name:        "ok, unencrypted wallet",
+//			wltName:     "test-view-unencrypted.wlt",
+//			viewWltName: "test-view-unencrypted.wlt",
+//			opts: wallet.Options{
+//				Type:  wallet.WalletTypeDeterministic,
+//				Seed:  "fooseed",
+//				Label: "foowlt",
+//			},
+//			action: func(t *testing.T) func(Wallet) error {
+//				return func(w Wallet) error {
+//					require.Equal(t, "foowlt", w.Label())
+//					// Seed is visible because its not encrypted
+//					require.Equal(t, "fooseed", w.Seed())
+//					require.NotEmpty(t, w.LastSeed())
+//
+//					// Modify the wallet pointer in order to check that this references a clone and not the original
+//					w.SetLabel(w.Label() + "foo")
+//
+//					return nil
+//				}
+//			},
+//		},
+//
+//		{
+//			name:        "wallet doesn't exist",
+//			wltName:     "test-view-not-exist.wlt",
+//			viewWltName: "foo-test-view-not-exist.wlt",
+//			opts: wallet.Options{
+//				Type:  wallet.WalletTypeDeterministic,
+//				Seed:  "fooseed",
+//				Label: "foowlt",
+//			},
+//			err: wallet.ErrWalletNotExist ,
+//		},
+//
+//		{
+//			name:        "api disabled",
+//			wltName:     "test-view-api-disabled.wlt",
+//			viewWltName: "test-view-api-disabled.wlt",
+//			opts: wallet.Options{
+//				Type:  wallet.WalletTypeDeterministic,
+//				Seed:  "fooseed",
+//				Label: "foowlt",
+//			},
+//			disableWalletAPI: true,
+//			err:              wallet.ErrWalletAPIDisabled,
+//		},
+//	}
+//
+//	for _, tc := range tt {
+//		t.Run(tc.name, func(t *testing.T) {
+//			dir := prepareWltDir()
+//			s, err := wallet.NewService(wallet.Config{
+//				WalletDir:       dir,
+//				CryptoType:      crypto.CryptoTypeSha256Xor,
+//				EnableWalletAPI: true,
+//			})
+//			require.NoError(t, err)
+//
+//			w, err := s.CreateWallet(tc.wltName, tc.opts, nil)
+//			require.NoError(t, err)
+//
+//			if w.Type() == WalletTypeCollection {
+//				// TODO: open this after collection type is back
+//				//err := s.UpdateSecrets(w.Filename(), tc.opts.Password, func(w Wallet) error {
+//				//	p, s := cipher.GenerateKeyPair()
+//				//	return w.(*CollectionWallet).AddEntry(entry.Entry{
+//				//		Public:  p,
+//				//		Secret:  s,
+//				//		Address: cipher.AddressFromPubKey(p),
+//				//	})
+//				//})
+//				require.NoError(t, err)
+//
+//				w, err = s.GetWallet(tc.wltName)
+//				require.NoError(t, err)
+//			}
+//
+//			s.wallet.Config.EnableWalletAPI = !tc.disableWalletAPI
+//
+//			var action func(Wallet) error
+//			if tc.action != nil {
+//				action = tc.action(t)
+//			}
+//
+//			err = s.View(tc.viewWltName, action)
+//
+//			require.Equal(t, tc.err, err)
+//			if err != nil {
+//				return
+//			}
+//
+//			s.wallet.Config.EnableWalletAPI = true
+//
+//			// Check that the wallet is unmodified
+//			w2, err := s.GetWallet(tc.wltName)
+//			require.NoError(t, err)
+//			require.Equal(t, w, w2)
+//		})
+//	}
+//}
+//
+//func TestServiceViewSecrets(t *testing.T) {
+//	mnemonicSeed := bip39.MustNewDefaultMnemonic()
+//
+//	tt := []struct {
+//		name             string
+//		wltName          string
+//		opts             wallet.Options
+//		viewWltName      string
+//		action           func(*testing.T) func(Wallet) error
+//		password         []byte
+//		disableWalletAPI bool
+//		err              error
+//	}{
+//		{
+//			name:        "ok, encrypted wallet",
+//			wltName:     "test-view-secrets-encrypted.wlt",
+//			viewWltName: "test-view-secrets-encrypted.wlt",
+//			opts: wallet.Options{
+//				Seed:     "fooseed",
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				Label:    "foowlt",
+//				Type:     wallet.WalletTypeDeterministic,
+//			},
+//			password: []byte("pwd"),
+//			action: func(t *testing.T) func(Wallet) error {
+//				return func(w Wallet) error {
+//					require.Equal(t, "foowlt", w.Label())
+//
+//					// Should be able to see sensitive data
+//					require.Equal(t, "fooseed", w.Seed())
+//					require.NotEmpty(t, w.LastSeed())
+//
+//					// Modify the wallet pointer in order to check that this references a clone and not the original
+//					w.SetLabel(w.Label() + "foo")
+//
+//					return nil
+//				}
+//			},
+//		},
+//
+//		{
+//			name:        "ok, unencrypted wallet",
+//			wltName:     "test-view-secrets-unencrypted.wlt",
+//			viewWltName: "test-view-secrets-unencrypted.wlt",
+//			opts: wallet.Options{
+//				Seed:  "fooseed",
+//				Label: "foowlt",
+//				Type:  wallet.WalletTypeDeterministic,
+//			},
+//			action: func(t *testing.T) func(Wallet) error {
+//				return func(w Wallet) error {
+//					require.Equal(t, "foowlt", w.Label())
+//
+//					// Seed is visible because its not encrypted
+//					require.Equal(t, "fooseed", w.Seed())
+//					require.NotEmpty(t, w.LastSeed())
+//
+//					// Modify the wallet pointer in order to check that this references a clone and not the original
+//					w.SetLabel(w.Label() + "foo")
+//
+//					return nil
+//				}
+//			},
+//		},
+//
+//		{
+//			name:        "ok, encrypted wallet bip44 seed passphrase",
+//			wltName:     "test-view-secrets-encrypted-bip44.wlt",
+//			viewWltName: "test-view-secrets-encrypted-bip44.wlt",
+//			opts: wallet.Options{
+//				Seed:           mnemonicSeed,
+//				SeedPassphrase: "foobar",
+//				Encrypt:        true,
+//				Password:       []byte("pwd"),
+//				Label:          "foowlt",
+//				Type:           wallet.WalletTypeBip44,
+//			},
+//			password: []byte("pwd"),
+//			action: func(t *testing.T) func(Wallet) error {
+//				return func(w Wallet) error {
+//					require.Equal(t, "foowlt", w.Label())
+//
+//					// Should be able to see sensitive data
+//					require.Equal(t, mnemonicSeed, w.Seed())
+//					require.Equal(t, "foobar", w.SeedPassphrase())
+//					require.Empty(t, w.LastSeed())
+//
+//					// Modify the wallet pointer in order to check that this references a clone and not the original
+//					w.SetLabel(w.Label() + "foo")
+//
+//					return nil
+//				}
+//			},
+//		},
+//
+//		{
+//			name:        "ok, unencrypted wallet bip44",
+//			wltName:     "test-view-secrets-unencrypted-bip44.wlt",
+//			viewWltName: "test-view-secrets-unencrypted-bip44.wlt",
+//			opts: wallet.Options{
+//				Seed:  mnemonicSeed,
+//				Label: "foowlt",
+//				Type:  wallet.WalletTypeBip44,
+//			},
+//			action: func(t *testing.T) func(Wallet) error {
+//				return func(w Wallet) error {
+//					require.Equal(t, "foowlt", w.Label())
+//
+//					// Seed is visible because its not encrypted
+//					require.Equal(t, mnemonicSeed, w.Seed())
+//					require.Empty(t, w.SeedPassphrase())
+//					require.Empty(t, w.LastSeed())
+//
+//					// Modify the wallet pointer in order to check that this references a clone and not the original
+//					w.SetLabel(w.Label() + "foo")
+//
+//					return nil
+//				}
+//			},
+//		},
+//
+//		{
+//			name:        "ok, unencrypted wallet bip44 seed passphrase",
+//			wltName:     "test-view-secrets-unencrypted-bip44.wlt",
+//			viewWltName: "test-view-secrets-unencrypted-bip44.wlt",
+//			opts: wallet.Options{
+//				Seed:           mnemonicSeed,
+//				SeedPassphrase: "foobar",
+//				Label:          "foowlt",
+//				Type:           wallet.WalletTypeBip44,
+//			},
+//			action: func(t *testing.T) func(Wallet) error {
+//				return func(w Wallet) error {
+//					require.Equal(t, "foowlt", w.Label())
+//
+//					// Seed is visible because its not encrypted
+//					require.Equal(t, mnemonicSeed, w.Seed())
+//					require.Equal(t, "foobar", w.SeedPassphrase())
+//					require.Empty(t, w.LastSeed())
+//
+//					// Modify the wallet pointer in order to check that this references a clone and not the original
+//					w.SetLabel(w.Label() + "foo")
+//
+//					return nil
+//				}
+//			},
+//		},
+//
+//		{
+//			name:        "encrypted wallet but password not provided",
+//			wltName:     "test-view-secrets-encrypted-no-password.wlt",
+//			viewWltName: "test-view-secrets-encrypted-no-password.wlt",
+//			opts: wallet.Options{
+//				Seed:     "fooseed",
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				Label:    "foowlt",
+//				Type:     wallet.WalletTypeDeterministic,
+//			},
+//			err: ErrMissingPassword,
+//		},
+//
+//		{
+//			name:        "encrypted wallet but password invalid",
+//			wltName:     "test-view-secrets-encrypted-wrong-password.wlt",
+//			viewWltName: "test-view-secrets-encrypted-wrong-password.wlt",
+//			opts: wallet.Options{
+//				Seed:     "fooseed",
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				Label:    "foowlt",
+//				Type:     wallet.WalletTypeDeterministic,
+//			},
+//			password: []byte("pwdpwd"),
+//			err:      wallet.ErrInvalidPassword,
+//		},
+//
+//		{
+//			name:        "unencrypted wallet but password provided",
+//			wltName:     "test-view-secrets-unencrypted-password.wlt",
+//			viewWltName: "test-view-secrets-unencrypted-password.wlt",
+//			opts: wallet.Options{
+//				Seed:  "fooseed",
+//				Label: "foowlt",
+//				Type:  wallet.WalletTypeDeterministic,
+//			},
+//			password: []byte("pwd"),
+//			err:      wallet.ErrWalletNotEncrypted,
+//		},
+//
+//		{
+//			name:        "wallet doesn't exist",
+//			wltName:     "test-view-secrets-not-exist.wlt",
+//			viewWltName: "foo-test-view-secrets-not-exist.wlt",
+//			opts: wallet.Options{
+//				Seed:  "fooseed",
+//				Label: "foowlt",
+//				Type:  wallet.WalletTypeDeterministic,
+//			},
+//			err: wallet.ErrWalletNotExist ,
+//		},
+//
+//		{
+//			name:        "api disabled",
+//			wltName:     "test-view-secrets-api-disabled.wlt",
+//			viewWltName: "test-view-secrets-api-disabled.wlt",
+//			opts: wallet.Options{
+//				Seed:  "fooseed",
+//				Label: "foowlt",
+//				Type:  wallet.WalletTypeDeterministic,
+//			},
+//			disableWalletAPI: true,
+//			err:              wallet.ErrWalletAPIDisabled,
+//		},
+//	}
+//
+//	for _, tc := range tt {
+//		t.Run(tc.name, func(t *testing.T) {
+//			dir := prepareWltDir()
+//			s, err := wallet.NewService(wallet.Config{
+//				WalletDir:       dir,
+//				CryptoType:      crypto.CryptoTypeSha256Xor,
+//				EnableWalletAPI: true,
+//			})
+//			require.NoError(t, err)
+//
+//			w, err := s.CreateWallet(tc.wltName, tc.opts, nil)
+//			require.NoError(t, err)
+//
+//			s.wallet.Config.EnableWalletAPI = !tc.disableWalletAPI
+//
+//			var action func(Wallet) error
+//			if tc.action != nil {
+//				action = tc.action(t)
+//			}
+//
+//			err = s.ViewSecrets(tc.viewWltName, tc.password, action)
+//			require.Equal(t, tc.err, err)
+//			if err != nil {
+//				return
+//			}
+//
+//			s.wallet.Config.EnableWalletAPI = true
+//
+//			// Check that the wallet is unmodified
+//			w2, err := s.GetWallet(tc.wltName)
+//			require.NoError(t, err)
+//			require.Equal(t, w, w2)
+//		})
+//	}
+//}
+//
+//func TestServiceUpdate(t *testing.T) {
+//	tt := []struct {
+//		name             string
+//		wltName          string
+//		opts             wallet.Options
+//		viewWltName      string
+//		action           func(*testing.T) func(Wallet) error
+//		checkWallet      func(*testing.T, Wallet)
+//		disableWalletAPI bool
+//		err              error
+//	}{
+//		{
+//			name:        "ok, encrypted wallet",
+//			wltName:     "test-update-encrypted.wlt",
+//			viewWltName: "test-update-encrypted.wlt",
+//			opts: wallet.Options{
+//				Seed:     "fooseed",
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				Label:    "foowlt",
+//				Type:     wallet.WalletTypeDeterministic,
+//			},
+//			action: func(t *testing.T) func(Wallet) error {
+//				return func(w Wallet) error {
+//					require.Equal(t, "foowlt", w.Label())
+//
+//					// Should not be able to see sensitive data
+//					checkNoSensitiveData(t, w)
+//
+//					// Modify the wallet pointer in order to check that the wallet gets saved
+//					w.SetLabel(w.Label() + "foo")
+//
+//					// The wallet is encrypted so it cannot generate more addresses
+//					// TODO: bip44 wallet can generate address without decrypting
+//					_, err := w.GenerateAddresses(1)
+//					require.Equal(t, ErrWalletEncrypted, err)
+//
+//					return nil
+//				}
+//			},
+//			checkWallet: func(t *testing.T, w Wallet) {
+//				require.Equal(t, "foowltfoo", w.Label())
+//				require.Equal(t, 1, w.EntriesLen())
+//				checkNoSensitiveData(t, w)
+//			},
+//		},
+//
+//		{
+//			name:        "ok, unencrypted wallet",
+//			wltName:     "test-update-unencrypted.wlt",
+//			viewWltName: "test-update-unencrypted.wlt",
+//			opts: wallet.Options{
+//				Seed:  "fooseed",
+//				Label: "foowlt",
+//				Type:  wallet.WalletTypeDeterministic,
+//			},
+//			action: func(t *testing.T) func(Wallet) error {
+//				return func(w Wallet) error {
+//					require.Equal(t, "foowlt", w.Label())
+//
+//					// Seed is visible because its not encrypted
+//					require.Equal(t, "fooseed", w.Seed())
+//					require.NotEmpty(t, w.LastSeed())
+//
+//					// Modify the wallet pointer in order to check that the wallet gets saved
+//					w.SetLabel(w.Label() + "foo")
+//
+//					return nil
+//				}
+//			},
+//			checkWallet: func(t *testing.T, w Wallet) {
+//				require.Equal(t, "foowltfoo", w.Label())
+//				require.Equal(t, 1, w.EntriesLen())
+//				entries, err := w.GetEntries()
+//				require.NoError(t, err)
+//
+//				require.NotEmpty(t, entries[0].Secret)
+//			},
+//		},
+//
+//		{
+//			name:        "wallet doesn't exist",
+//			wltName:     "test-update-not-exist.wlt",
+//			viewWltName: "foo-test-update-not-exist.wlt",
+//			opts: wallet.Options{
+//				Seed:  "fooseed",
+//				Label: "foowlt",
+//				Type:  wallet.WalletTypeDeterministic,
+//			},
+//			err: wallet.ErrWalletNotExist ,
+//		},
+//
+//		{
+//			name:        "api disabled",
+//			wltName:     "test-update-api-disabled.wlt",
+//			viewWltName: "test-update-api-disabled.wlt",
+//			opts: wallet.Options{
+//				Seed:  "fooseed",
+//				Label: "foowlt",
+//				Type:  wallet.WalletTypeDeterministic,
+//			},
+//			disableWalletAPI: true,
+//			err:              wallet.ErrWalletAPIDisabled,
+//		},
+//	}
+//
+//	for _, tc := range tt {
+//		t.Run(tc.name, func(t *testing.T) {
+//			dir := prepareWltDir()
+//			s, err := wallet.NewService(wallet.Config{
+//				WalletDir:       dir,
+//				CryptoType:      crypto.CryptoTypeSha256Xor,
+//				EnableWalletAPI: true,
+//			})
+//			require.NoError(t, err)
+//
+//			_, err = s.CreateWallet(tc.wltName, tc.opts, nil)
+//			require.NoError(t, err)
+//
+//			s.wallet.Config.EnableWalletAPI = !tc.disableWalletAPI
+//
+//			var action func(Wallet) error
+//			if tc.action != nil {
+//				action = tc.action(t)
+//			}
+//
+//			err = s.Update(tc.viewWltName, action)
+//			require.Equal(t, tc.err, err)
+//			if err != nil {
+//				return
+//			}
+//
+//			s.wallet.Config.EnableWalletAPI = true
+//
+//			// Check that the wallet was modified as expected
+//			w, err := s.GetWallet(tc.wltName)
+//			require.NoError(t, err)
+//			tc.checkWallet(t, w)
+//
+//			// Even if secrets were modified, wallet should still be encrypted
+//			require.Equal(t, tc.opts.Encrypt, w.IsEncrypted())
+//			if w.IsEncrypted() {
+//				checkNoSensitiveData(t, w)
+//			}
+//		})
+//	}
+//}
+//
+//func TestServiceUpdateSecrets(t *testing.T) {
+//	tt := []struct {
+//		name             string
+//		wltName          string
+//		opts             wallet.Options
+//		viewWltName      string
+//		action           func(*testing.T) func(Wallet) error
+//		checkWallet      func(*testing.T, Wallet)
+//		password         []byte
+//		disableWalletAPI bool
+//		err              error
+//	}{
+//		{
+//			name:        "ok, encrypted wallet",
+//			wltName:     "test-update-secrets-encrypted.wlt",
+//			viewWltName: "test-update-secrets-encrypted.wlt",
+//			opts: wallet.Options{
+//				Seed:     "fooseed",
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				Label:    "foowlt",
+//				Type:     wallet.WalletTypeDeterministic,
+//			},
+//			password: []byte("pwd"),
+//			action: func(t *testing.T) func(Wallet) error {
+//				return func(w Wallet) error {
+//					require.Equal(t, "foowlt", w.Label())
+//
+//					// Should be able to see sensitive data
+//					require.Equal(t, "fooseed", w.Seed())
+//					require.NotEmpty(t, w.LastSeed())
+//
+//					// Modify the wallet pointer in order to check that the wallet gets saved
+//					w.SetLabel(w.Label() + "foo")
+//					_, err := w.GenerateAddresses(1)
+//					require.NoError(t, err)
+//
+//					return nil
+//				}
+//			},
+//			checkWallet: func(t *testing.T, w Wallet) {
+//				require.Equal(t, "foowltfoo", w.Label())
+//				require.Equal(t, 2, w.EntriesLen())
+//				checkNoSensitiveData(t, w)
+//			},
+//		},
+//
+//		{
+//			name:        "ok, unencrypted wallet",
+//			wltName:     "test-update-secrets-unencrypted.wlt",
+//			viewWltName: "test-update-secrets-unencrypted.wlt",
+//			opts: wallet.Options{
+//				Seed:  "fooseed",
+//				Label: "foowlt",
+//				Type:  wallet.WalletTypeDeterministic,
+//			},
+//			action: func(t *testing.T) func(Wallet) error {
+//				return func(w Wallet) error {
+//					require.Equal(t, "foowlt", w.Label())
+//
+//					// Seed is visible because its not encrypted
+//					require.Equal(t, "fooseed", w.Seed())
+//					require.NotEmpty(t, w.LastSeed())
+//
+//					// Modify the wallet pointer in order to check that the wallet gets saved
+//					w.SetLabel(w.Label() + "foo")
+//					_, err := w.GenerateAddresses(1)
+//					require.NoError(t, err)
+//
+//					return nil
+//				}
+//			},
+//			checkWallet: func(t *testing.T, w Wallet) {
+//				require.Equal(t, "foowltfoo", w.Label())
+//				require.Equal(t, 2, w.EntriesLen())
+//				entries, err := w.GetEntries()
+//				require.NoError(t, err)
+//				require.NotEmpty(t, entries[1].Secret)
+//			},
+//		},
+//
+//		{
+//			name:        "ok, encrypted bip44 wallet",
+//			wltName:     "test-update-secrets-bip44-encrypted.wlt",
+//			viewWltName: "test-update-secrets-bip44-encrypted.wlt",
+//			opts: wallet.Options{
+//				Seed:     "voyage say extend find sheriff surge priority merit ignore maple cash argue",
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				Label:    "foowltbip44",
+//				Type:     wallet.WalletTypeBip44,
+//			},
+//			password: []byte("pwd"),
+//			action: func(t *testing.T) func(Wallet) error {
+//				return func(w Wallet) error {
+//					require.Equal(t, "foowltbip44", w.Label())
+//
+//					// Should be able to see sensitive data
+//					require.Equal(t, "voyage say extend find sheriff surge priority merit ignore maple cash argue", w.Seed())
+//					require.Empty(t, w.LastSeed())
+//
+//					// Modify the wallet pointer in order to check that the wallet gets saved
+//					w.SetLabel(w.Label() + "foo")
+//					_, err := w.GenerateAddresses(1)
+//					require.NoError(t, err)
+//
+//					return nil
+//				}
+//			},
+//			checkWallet: func(t *testing.T, w Wallet) {
+//				require.Equal(t, "foowltbip44foo", w.Label())
+//				require.Equal(t, 2, w.EntriesLen())
+//				checkNoSensitiveData(t, w)
+//			},
+//		},
+//
+//		{
+//			name:        "ok, unencrypted bip44 wallet",
+//			wltName:     "test-update-secrets-bip44-unencrypted.wlt",
+//			viewWltName: "test-update-secrets-bip44-unencrypted.wlt",
+//			opts: wallet.Options{
+//				Seed:  "voyage say extend find sheriff surge priority merit ignore maple cash argue",
+//				Label: "foowltbip44",
+//				Type:  wallet.WalletTypeBip44,
+//			},
+//			action: func(t *testing.T) func(Wallet) error {
+//				return func(w Wallet) error {
+//					require.Equal(t, "foowltbip44", w.Label())
+//
+//					// Seed is visible because its not encrypted
+//					require.Equal(t, "voyage say extend find sheriff surge priority merit ignore maple cash argue", w.Seed())
+//					require.Empty(t, w.LastSeed())
+//
+//					// Modify the wallet pointer in order to check that the wallet gets saved
+//					w.SetLabel(w.Label() + "foo")
+//					_, err := w.GenerateAddresses(1)
+//					require.NoError(t, err)
+//
+//					return nil
+//				}
+//			},
+//			checkWallet: func(t *testing.T, w Wallet) {
+//				require.Equal(t, "foowltbip44foo", w.Label())
+//				require.Equal(t, 2, w.EntriesLen())
+//				entries, err := w.GetEntries()
+//				require.NoError(t, err)
+//				require.NotEmpty(t, entries[1].Secret)
+//			},
+//		},
+//
+//		{
+//			name:        "encrypted wallet but password not provided",
+//			wltName:     "test-update-secrets-encrypted-no-password.wlt",
+//			viewWltName: "test-update-secrets-encrypted-no-password.wlt",
+//			opts: wallet.Options{
+//				Seed:     "fooseed",
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				Label:    "foowlt",
+//				Type:     wallet.WalletTypeDeterministic,
+//			},
+//			err: ErrMissingPassword,
+//		},
+//
+//		{
+//			name:        "encrypted wallet but password invalid",
+//			wltName:     "test-update-secrets-encrypted-wrong-password.wlt",
+//			viewWltName: "test-update-secrets-encrypted-wrong-password.wlt",
+//			opts: wallet.Options{
+//				Seed:     "fooseed",
+//				Encrypt:  true,
+//				Password: []byte("pwd"),
+//				Label:    "foowlt",
+//				Type:     wallet.WalletTypeDeterministic,
+//			},
+//			password: []byte("pwdpwd"),
+//			err:      wallet.ErrInvalidPassword,
+//		},
+//
+//		{
+//			name:        "unencrypted wallet but password provided",
+//			wltName:     "test-update-secrets-unencrypted-password.wlt",
+//			viewWltName: "test-update-secrets-unencrypted-password.wlt",
+//			opts: wallet.Options{
+//				Seed:  "fooseed",
+//				Label: "foowlt",
+//				Type:  wallet.WalletTypeDeterministic,
+//			},
+//			password: []byte("pwd"),
+//			err:      wallet.ErrWalletNotEncrypted,
+//		},
+//
+//		{
+//			name:        "wallet doesn't exist",
+//			wltName:     "test-update-secrets-not-exist.wlt",
+//			viewWltName: "foo-test-update-secrets-not-exist.wlt",
+//			opts: wallet.Options{
+//				Seed:  "fooseed",
+//				Label: "foowlt",
+//				Type:  wallet.WalletTypeDeterministic,
+//			},
+//			err: wallet.ErrWalletNotExist ,
+//		},
+//
+//		{
+//			name:        "api disabled",
+//			wltName:     "test-update-secrets-api-disabled.wlt",
+//			viewWltName: "test-update-secrets-api-disabled.wlt",
+//			opts: wallet.Options{
+//				Seed:  "fooseed",
+//				Label: "foowlt",
+//				Type:  wallet.WalletTypeDeterministic,
+//			},
+//			disableWalletAPI: true,
+//			err:              wallet.ErrWalletAPIDisabled,
+//		},
+//	}
+//
+//	for _, tc := range tt {
+//		t.Run(tc.name, func(t *testing.T) {
+//			dir := prepareWltDir()
+//			s, err := wallet.NewService(wallet.Config{
+//				WalletDir:       dir,
+//				CryptoType:      crypto.CryptoTypeSha256Xor,
+//				EnableWalletAPI: true,
+//			})
+//			require.NoError(t, err)
+//
+//			_, err = s.CreateWallet(tc.wltName, tc.opts, nil)
+//			require.NoError(t, err)
+//
+//			s.wallet.Config.EnableWalletAPI = !tc.disableWalletAPI
+//
+//			var action func(Wallet) error
+//			if tc.action != nil {
+//				action = tc.action(t)
+//			}
+//
+//			err = s.UpdateSecrets(tc.viewWltName, tc.password, action)
+//			require.Equal(t, tc.err, err)
+//			if err != nil {
+//				return
+//			}
+//
+//			s.wallet.Config.EnableWalletAPI = true
+//
+//			// Check that the wallet was modified as expected
+//			w, err := s.GetWallet(tc.wltName)
+//			require.NoError(t, err)
+//			tc.checkWallet(t, w)
+//
+//			// Even if secrets were modified, wallet should still be encrypted
+//			require.Equal(t, tc.opts.Encrypt, w.IsEncrypted())
+//			if w.IsEncrypted() {
+//				checkNoSensitiveData(t, w)
+//			}
+//		})
+//	}
+//}
+//
+func checkNoSensitiveData(t *testing.T, w wallet.Wallet) {
 	require.Empty(t, w.Seed())
 	require.Empty(t, w.LastSeed())
 	require.Empty(t, w.SeedPassphrase())

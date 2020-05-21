@@ -212,7 +212,7 @@ func TestServiceCreateWallet(t *testing.T) {
 		},
 	}
 	for _, tc := range tt {
-		for _, ct := range crypto.Types() {
+		for _, ct := range crypto.TypesInsecure() {
 			t.Run(fmt.Sprintf("%v crypto=%v", tc.name, ct), func(t *testing.T) {
 				creators := map[string]wallet.Creator{
 					tc.walletType: tc.walletCreator,
@@ -3081,7 +3081,8 @@ func TestServiceScanAddresses(t *testing.T) {
 	for _, d := range testData {
 		tt := generateTestCasesFunc(d.walletType, d.seed, d.xpub, d.addrs)
 		for _, tc := range tt {
-			for _, ct := range crypto.TypesInsecure() {
+			//for _, ct := range crypto.TypesInsecure() {
+			for _, ct := range []crypto.CryptoType{crypto.CryptoTypeSha256Xor} {
 				name := fmt.Sprintf("crypto=%v type=%v %v", ct, d.walletType, tc.name)
 				t.Run(name, func(t *testing.T) {
 					dir := prepareWltDir()

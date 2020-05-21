@@ -51,7 +51,7 @@ func newReadableEntry(coinType wallet.CoinType, e wallet.Entry) readableEntry {
 		re.Secret = d.SecKeyToHex(e.Secret)
 	}
 
-	//switch walletType {
+	//switch WalletType {
 	//case wallet.WalletTypeBip44:
 	//	cn := e.ChildNumber
 	//	re.ChildNumber = &cn
@@ -61,14 +61,14 @@ func newReadableEntry(coinType wallet.CoinType, e wallet.Entry) readableEntry {
 	//	cn := e.ChildNumber
 	//	re.ChildNumber = &cn
 	//	if e.Change != 0 {
-	//		wallet.logger.Panicf("wallet.Entry.Change is not 0 but wallet type is %q", walletType)
+	//		wallet.logger.Panicf("wallet.Entry.Change is not 0 but wallet type is %q", WalletType)
 	//	}
 	//default:
 	//if e.ChildNumber != 0 {
-	//	wallet.logger.Panicf("wallet.Entry.ChildNumber is not 0 but wallet type is %q", walletType)
+	//	wallet.logger.Panicf("wallet.Entry.ChildNumber is not 0 but wallet type is %q", WalletType)
 	//}
 	//if e.Change != 0 {
-	//	wallet.logger.Panicf("wallet.Entry.Change is not 0 but wallet type is %q", walletType)
+	//	wallet.logger.Panicf("wallet.Entry.Change is not 0 but wallet type is %q", WalletType)
 	//}
 	//}
 
@@ -154,24 +154,24 @@ func newEntryFromReadable(coinType wallet.CoinType, re *readableEntry) (*wallet.
 
 	//var childNumber uint32
 	//var change uint32
-	//switch walletType {
+	//switch WalletType {
 	//case wallet.WalletTypeXPub:
 	//	if re.ChildNumber == nil {
-	//		return nil, fmt.Errorf("child_number required for %q wallet type", walletType)
+	//		return nil, fmt.Errorf("child_number required for %q wallet type", WalletType)
 	//	}
 	//
 	//	childNumber = *re.ChildNumber
 	//
 	//	if re.Change != nil {
-	//		return nil, fmt.Errorf("change should not be set for %q wallet type", walletType)
+	//		return nil, fmt.Errorf("change should not be set for %q wallet type", WalletType)
 	//	}
 
 	//default:
 	//if re.ChildNumber != nil {
-	//	return nil, fmt.Errorf("child_number should not be set for %q wallet type", walletType)
+	//	return nil, fmt.Errorf("child_number should not be set for %q wallet type", WalletType)
 	//}
 	//if re.Change != nil {
-	//	return nil, fmt.Errorf("change should not be set for %q wallet type", walletType)
+	//	return nil, fmt.Errorf("change should not be set for %q wallet type", WalletType)
 	//}
 	//}
 
@@ -223,6 +223,14 @@ func (rw *readableDeterministicWallet) ToWallet() (wallet.Wallet, error) {
 	w := &Wallet{
 		Meta: rw.Meta.Clone(),
 	}
+
+	// make sure "sky", "btc" normalize to "skycoin", "bitcoin"
+	ct, err := wallet.ResolveCoinType(string(w.Meta.Coin()))
+	if err != nil {
+		return nil, err
+	}
+
+	w.SetCoin(ct)
 
 	if err := w.Validate(); err != nil {
 		err := fmt.Errorf("invalid wallet %q: %v", w.Filename(), err)

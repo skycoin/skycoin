@@ -288,6 +288,7 @@ func (w *Wallet) Clone() wallet.Wallet {
 	return &Wallet{
 		Meta:    w.Meta.Clone(),
 		entries: w.entries.Clone(),
+		decoder: w.decoder,
 	}
 }
 
@@ -383,7 +384,7 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 
 	*w = *w2
 
-	return nil, nil
+	return addrs[:keepNum], nil
 }
 
 // GenerateAddresses generates N addresses

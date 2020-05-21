@@ -337,7 +337,7 @@ func TestWalletUnlock(t *testing.T) {
 func TestLockAndUnLock(t *testing.T) {
 	for _, ct := range crypto.TypesInsecure() {
 		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
-			w, err := NewWallet("wallet.wlt", "test", bip39.MustNewDefaultMnemonic())
+			w, err := NewWallet("wallet.wlt", "test", bip39.MustNewDefaultMnemonic(), wallet.OptionCryptoType(ct))
 			require.NoError(t, err)
 			_, err = w.GenerateAddresses(9)
 			require.NoError(t, err)

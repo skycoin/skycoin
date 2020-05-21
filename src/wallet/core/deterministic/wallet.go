@@ -310,6 +310,7 @@ func (w *Wallet) Accounts() []wallet.Bip44Account {
 // Erase wipes secret fields in wallet
 func (w *Wallet) Erase() {
 	w.Meta.EraseSeeds()
+	w.Meta.SetLastSeed("")
 	w.entries.Erase()
 }
 

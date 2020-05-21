@@ -30,8 +30,8 @@ type Service struct {
 	// fingerprints is used to check for duplicate deterministic wallets
 	fingerprints map[string]string
 	// registered wallet backends
-	loaders  map[CoinType]Loader
-	creators map[CoinType]Creator
+	loaders  map[string]Loader
+	creators map[string]Creator
 }
 
 // Loader is the interface that wraps the Load method.
@@ -55,8 +55,8 @@ type Config struct {
 	EnableWalletAPI bool
 	EnableSeedAPI   bool
 	Bip44Coin       *bip44.CoinType
-	WalletLoaders   map[CoinType]Loader
-	WalletCreators  map[CoinType]Creator
+	WalletLoaders   map[string]Loader
+	WalletCreators  map[string]Creator
 }
 
 // NewConfig creates a default Config
@@ -76,8 +76,8 @@ func NewService(c Config) (*Service, error) {
 	serv := &Service{
 		config:       c,
 		fingerprints: make(map[string]string),
-		loaders:      make(map[CoinType]Loader),
-		creators:     make(map[CoinType]Creator),
+		loaders:      make(map[string]Loader),
+		creators:     make(map[string]Creator),
 	}
 
 	if !serv.config.EnableWalletAPI {
@@ -142,6 +142,11 @@ func (serv *Service) WalletDir() (string, error) {
 	return serv.config.WalletDir, nil
 }
 
+//  SetEnableWalletAPI sets whether or not enables the wallet related APIs
+func (serv *Service) SetEnableWalletAPI(enable bool) {
+	serv.config.EnableWalletAPI = enable
+}
+
 func (serv *Service) loadWallets() (Wallets, error) {
 	dir := serv.config.WalletDir
 	entries, err := ioutil.ReadDir(dir)
@@ -160,7 +165,7 @@ func (serv *Service) loadWallets() (Wallets, error) {
 			}
 
 			fullPath := filepath.Join(serv.config.WalletDir, name)
-			w, err := serv.load(fullPath)
+			w, err := serv.Load(fullPath)
 			if err != nil {
 				logger.WithError(err).WithField("filename", fullPath).Error("loadWallets: loadWallet failed")
 				return nil, err
@@ -194,7 +199,9 @@ func (serv *Service) loadWallets() (Wallets, error) {
 	return wallets, nil
 }
 
-func (serv *Service) load(filename string) (Wallet, error) {
+// Load loads wallet from the given wallet file, it won't not affect the
+// state of the service it self, the loaded wallet will be returned.
+func (serv *Service) Load(filename string) (Wallet, error) {
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		return nil, fmt.Errorf("wallet %q doesn't exist", filename)
 	}
@@ -212,7 +219,7 @@ func (serv *Service) load(filename string) (Wallet, error) {
 	}
 
 	// Depending on the wallet type in the wallet metadata header, load the full wallet data
-	l, ok := serv.loaders[CoinType(m.Meta.Type)]
+	l, ok := serv.loaders[m.Meta.Type]
 	if !ok {
 		//return nil, fmt.Errorf("wallet loader for type of %q not found", m.Meta.Type)
 		logger.Errorf("wallet loader for type of %q not found", m.Meta.Type)
@@ -224,7 +231,13 @@ func (serv *Service) load(filename string) (Wallet, error) {
 		return nil, err
 	}
 
-	return l.Load(data)
+	w, err := l.Load(data)
+	if err != nil {
+		return nil, err
+	}
+
+	w.SetFilename(filepath.Base(filename))
+	return w, nil
 }
 
 func (serv *Service) updateOptions(opts Options) Options {
@@ -232,6 +245,7 @@ func (serv *Service) updateOptions(opts Options) Options {
 	if opts.Encrypt && opts.CryptoType == "" {
 		opts.CryptoType = serv.config.CryptoType
 	}
+
 	if opts.Type == WalletTypeBip44 && opts.Bip44Coin == nil && serv.config.Bip44Coin != nil {
 		c := *serv.config.Bip44Coin
 		opts.Bip44Coin = &c
@@ -261,7 +275,7 @@ func (serv *Service) CreateWallet(wltName string, options Options) (Wallet, erro
 }
 
 func (serv *Service) createWallet(wltName string, options Options) (Wallet, error) {
-	creator, ok := serv.creators[CoinType(options.Type)]
+	creator, ok := serv.creators[options.Type]
 	if !ok {
 		return nil, ErrInvalidWalletType
 	}

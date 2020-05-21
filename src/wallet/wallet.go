@@ -497,6 +497,7 @@ type Wallet interface {
 	Label() string
 	SetLabel(string)
 	Filename() string
+	SetFilename(string)
 	IsEncrypted() bool
 	// CryptoType returns the crypto type for encrypting/decrypting the wallet
 	CryptoType() crypto.CryptoType

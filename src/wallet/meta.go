@@ -174,7 +174,6 @@ func (m Meta) SetEncrypted(cryptoType crypto.CryptoType, encryptedSecrets string
 func (m Meta) SetDecrypted() {
 	m.setIsEncrypted(false)
 	m.setSecrets("")
-	m.setCryptoType("")
 }
 
 // IsEncrypted checks whether the wallet is encrypted.

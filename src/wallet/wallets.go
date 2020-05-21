@@ -13,7 +13,7 @@ type Wallets map[string]Wallet
 // loadWallets Loads all wallets contained in wallet dir.  If any regular file in wallet
 // dir fails to load, loading is aborted and error returned.  Only files with
 // extension WalletExt are considered.
-func loadWallets(dir string) (Wallets, error) {
+func loadWallets(dir string, loader Loader) (Wallets, error) {
 	entries, err := ioutil.ReadDir(dir)
 	if err != nil {
 		logger.WithError(err).WithField("dir", dir).Error("loadWallets: ioutil.ReadDir failed")
@@ -30,7 +30,11 @@ func loadWallets(dir string) (Wallets, error) {
 			}
 
 			fullpath := filepath.Join(dir, name)
-			w, err := Load(fullpath)
+			data, err := ioutil.ReadFile(fullpath)
+			if err != nil {
+				return nil, err
+			}
+			w, err := loader.Load(data)
 			if err != nil {
 				logger.WithError(err).WithField("filename", fullpath).Error("loadWallets: loadWallet failed")
 				return nil, err
@@ -43,7 +47,7 @@ func loadWallets(dir string) (Wallets, error) {
 	}
 
 	for name, w := range wallets {
-		// TODO: do validate when creating wallet themselves
+		// TODO: do validate when creating wallet
 		// if err := w.Validate(); err != nil {
 		// 	logger.WithError(err).WithField("name", name).Error("loadWallets: wallet.Validate failed")
 		// 	return nil, err
@@ -117,7 +121,7 @@ func (wlts Wallets) containsEmpty() (string, bool) {
 			var l int
 			// gets the external entries length
 			for _, a := range wlt.Accounts() {
-				el, err := wlt.Entries(Account(a.Index)).Len()
+				el, err := wlt.EntriesLen(OptionAccount(a.Index))
 				if err != nil {
 					panic(err)
 				}
@@ -128,7 +132,7 @@ func (wlts Wallets) containsEmpty() (string, bool) {
 				return wltID, true
 			}
 		default:
-			l, err := wlt.Entries().Len()
+			l, err := wlt.EntriesLen()
 			if err != nil {
 				panic(err)
 			}

@@ -198,14 +198,18 @@ func SignTransaction(w Wallet, txn *coin.Transaction, signIndexes []int, uxOuts 
 // If receiving hours are not explicitly specified, hours are allocated amongst the receiving outputs proportional to the number of coins being sent to them.
 // If the change address is not specified, the address whose bytes are lexically sorted first is chosen from the owners of the outputs being spent.
 // WARNING: This method is not concurrent-safe if operating on the same wallet. Use Service.View or Service.ViewSecrets to lock the wallet, or use your own lock.
-func CreateTransaction(w Wallet, p transaction.Params, auxs coin.AddressUxOuts, headTime uint64, tf TransactionsFinder) (*coin.Transaction, []transaction.UxBalance, error) {
+func CreateTransaction(w Wallet, p transaction.Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []transaction.UxBalance, error) {
 	if err := p.Validate(); err != nil {
 		return nil, nil, err
 	}
 
 	// Check that auxs does not contain addresses that are not known to this wallet
 	for a := range auxs {
-		if !w.HasEntry(a) {
+		has, err := w.HasEntry(a)
+		if err != nil {
+			return nil, nil, err
+		}
+		if !has {
 			return nil, nil, fmt.Errorf("Address %s from auxs not found in wallet", a)
 		}
 	}
@@ -223,8 +227,8 @@ func CreateTransaction(w Wallet, p transaction.Params, auxs coin.AddressUxOuts, 
 // CreateTransactionSigned creates and signs a transaction based upon transaction.Params.
 // Set the password as nil if the wallet is not encrypted, otherwise the password must be provided.
 // Refer to CreateTransaction for information about transaction creation.
-func CreateTransactionSigned(w Wallet, p transaction.Params, auxs coin.AddressUxOuts, headTime uint64, tf TransactionsFinder) (*coin.Transaction, []transaction.UxBalance, error) {
-	txn, uxb, err := CreateTransaction(w, p, auxs, headTime, tf)
+func CreateTransactionSigned(w Wallet, p transaction.Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transaction, []transaction.UxBalance, error) {
+	txn, uxb, err := CreateTransaction(w, p, auxs, headTime)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -236,8 +240,8 @@ func CreateTransactionSigned(w Wallet, p transaction.Params, auxs coin.AddressUx
 	for i, s := range uxb {
 		entry, ok := entriesMap[s.Address]
 		if !ok {
-			entry, ok = w.GetEntry(s.Address)
-			if !ok {
+			entry, err := w.GetEntry(s.Address)
+			if err == ErrEntryNotFound {
 				// This should not occur because CreateTransaction should have checked it already
 				err := fmt.Errorf("Chosen spend address %s not found in wallet", s.Address)
 				logger.Critical().WithError(err).Error()

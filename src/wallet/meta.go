@@ -53,8 +53,6 @@ func (m Meta) Clone() Meta {
 // EraseSeeds wipes the seed and last seed
 func (m Meta) EraseSeeds() {
 	m.SetSeed("")
-	m.SetLastSeed("")
-	m.SetSeedPassphrase("")
 }
 
 // Find returns a key value from the metadata map
@@ -174,6 +172,7 @@ func (m Meta) SetEncrypted(cryptoType crypto.CryptoType, encryptedSecrets string
 func (m Meta) SetDecrypted() {
 	m.setIsEncrypted(false)
 	m.setSecrets("")
+	delete(m, MetaSecrets)
 }
 
 // IsEncrypted checks whether the wallet is encrypted.

@@ -12,6 +12,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var (
+	skycoinExternalAddrs = skycoinAddressStringsToAddress(testSkycoinExternalAddresses)
+	bitcoinExternalAddrs = bitcoinAddressStringsToAddress(testBitcoinExternalAddresses)
+)
+
+type mockTxnsFinder map[cipher.Addresser]bool
+
+func (mb mockTxnsFinder) AddressesActivity(addrs []cipher.Addresser) ([]bool, error) {
+	if len(addrs) == 0 {
+		return nil, nil
+	}
+	active := make([]bool, len(addrs))
+	for i, addr := range addrs {
+		active[i] = mb[addr]
+	}
+	return active, nil
+}
+
 func TestBip44NewWallet(t *testing.T) {
 	bip44SkycoinType := bip44.CoinTypeSkycoin
 	newBip44Type := bip44.CoinType(1000)
@@ -83,7 +101,7 @@ func TestBip44NewWallet(t *testing.T) {
 			},
 		},
 		{
-			name:           "skycoin geneateN > 0",
+			name:           "skycoin geneateN=5",
 			filename:       "test.wlt",
 			label:          "test",
 			seed:           testSeed,
@@ -96,6 +114,117 @@ func TestBip44NewWallet(t *testing.T) {
 				bip44.CoinTypeSkycoin,
 				5,
 				DefaultAccountName,
+			},
+		},
+		{
+			name:           "skycoin geneateN < scanN entriesLen=generateN",
+			filename:       "test.wlt",
+			label:          "test",
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			opts: []wallet.Option{
+				wallet.OptionGenerateN(3),
+				wallet.OptionScanN(4),
+				wallet.OptionTransactionsFinder(mockTxnsFinder{
+					skycoinExternalAddrs[0]: true,
+				}),
+			},
+			expect: expect{
+				wallet.CoinTypeSkycoin,
+				bip44.CoinTypeSkycoin,
+				3,
+				DefaultAccountName,
+			},
+		},
+		{
+			name:           "skycoin geneateN < scanN entriesLen>generateN",
+			filename:       "test.wlt",
+			label:          "test",
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			opts: []wallet.Option{
+				wallet.OptionGenerateN(3),
+				wallet.OptionScanN(4),
+				wallet.OptionTransactionsFinder(mockTxnsFinder{
+					skycoinExternalAddrs[3]: true,
+				}),
+			},
+			expect: expect{
+				wallet.CoinTypeSkycoin,
+				bip44.CoinTypeSkycoin,
+				4,
+				DefaultAccountName,
+			},
+		},
+		{
+			name:           "skycoin scanN=2 entriesLen=2",
+			filename:       "test.wlt",
+			label:          "test",
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			opts: []wallet.Option{
+				wallet.OptionScanN(2),
+				wallet.OptionTransactionsFinder(mockTxnsFinder{
+					skycoinExternalAddrs[1]: true,
+				}),
+			},
+			expect: expect{
+				wallet.CoinTypeSkycoin,
+				bip44.CoinTypeSkycoin,
+				2,
+				DefaultAccountName,
+			},
+		},
+		{
+			name:           "skycoin scanN=1 entriesLen=1 has txn",
+			filename:       "test.wlt",
+			label:          "test",
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			opts: []wallet.Option{
+				wallet.OptionScanN(1),
+				wallet.OptionTransactionsFinder(mockTxnsFinder{
+					skycoinExternalAddrs[0]: true,
+				}),
+			},
+			expect: expect{
+				wallet.CoinTypeSkycoin,
+				bip44.CoinTypeSkycoin,
+				1,
+				DefaultAccountName,
+			},
+		},
+		{
+			name:           "skycoin scanN=1 entriesLen=1 no txn",
+			filename:       "test.wlt",
+			label:          "test",
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			opts: []wallet.Option{
+				wallet.OptionScanN(1),
+				wallet.OptionTransactionsFinder(mockTxnsFinder{}),
+			},
+			expect: expect{
+				wallet.CoinTypeSkycoin,
+				bip44.CoinTypeSkycoin,
+				1,
+				DefaultAccountName,
+			},
+		},
+		{
+			name:           "skycoin set default account name",
+			filename:       "test.wlt",
+			label:          "test",
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			opts: []wallet.Option{
+				wallet.OptionDefaultBip44AccountName("marketing"),
+			},
+			expect: expect{
+				wallet.CoinTypeSkycoin,
+				bip44.CoinTypeSkycoin,
+				1,
+				"marketing",
 			},
 		},
 		{
@@ -223,8 +352,9 @@ func TestBip44NewWallet(t *testing.T) {
 }
 
 func TestBip44NewWalletDefaultCrypto(t *testing.T) {
-	for _, coinType := range []wallet.CoinType{wallet.CoinTypeSkycoin, wallet.CoinTypeBitcoin} {
-		for _, encrypt := range []bool{false, true} {
+	for _, coinType := range []wallet.CoinType{wallet.CoinTypeSkycoin} {
+		//for _, coinType := range []wallet.CoinType{wallet.CoinTypeSkycoin, wallet.CoinTypeBitcoin} {
+		for _, encrypt := range []bool{true} {
 			name := fmt.Sprintf("coinType %v encrypt %v", coinType, encrypt)
 			t.Run(name, func(t *testing.T) {
 				opts := []wallet.Option{
@@ -294,6 +424,80 @@ func checkNoSensitiveData(t *testing.T, w *Wallet) {
 
 	require.NotEmpty(t, w.Meta.Secrets())
 	return
+}
+
+func TestWalletLock(t *testing.T) {
+	tt := []struct {
+		name    string
+		wltName string
+		opts    []wallet.Option
+		lockPwd []byte
+		err     error
+	}{
+		{
+			name:    "ok",
+			lockPwd: []byte("pwd"),
+		},
+		{
+			name:    "password is nil",
+			lockPwd: nil,
+			err:     wallet.ErrMissingPassword,
+		},
+		{
+			name: "wallet already encrypted",
+			opts: []wallet.Option{
+				wallet.OptionEncrypt(true),
+				wallet.OptionPassword([]byte("pwd")),
+			},
+			lockPwd: []byte("pwd"),
+			err:     wallet.ErrWalletEncrypted,
+		},
+	}
+
+	for _, tc := range tt {
+		for _, ct := range crypto.TypesInsecure() {
+			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
+			opts := tc.opts
+			opts = append(opts, wallet.OptionCryptoType(ct))
+
+			t.Run(name, func(t *testing.T) {
+				w, err := NewWallet("test.wlt", "test", testSeed, testSeedPassphrase, opts...)
+				require.NoError(t, err)
+
+				// create a default account
+				_, err = w.NewAccount("account1")
+				require.NoError(t, err)
+
+				if !w.IsEncrypted() {
+					// Generates 2 addresses
+					_, err = w.GenerateAddresses(2)
+					require.NoError(t, err)
+				}
+
+				err = w.Lock(tc.lockPwd)
+				require.Equal(t, tc.err, err)
+				if err != nil {
+					return
+				}
+
+				checkNoSensitiveData(t, w)
+				//require.True(t, w.IsEncrypted())
+				//
+				//// Checks if the seeds are wiped
+				//require.Empty(t, w.Seed())
+				//require.Empty(t, w.LastSeed())
+				//
+				//// Checks if the entries are encrypted
+				//entries, err := w.GetEntries()
+				//require.NoError(t, err)
+				//
+				//for _, e := range entries {
+				//	require.Equal(t, cipher.SecKey{}, e.Secret)
+				//}
+			})
+
+		}
+	}
 }
 
 func TestWalletCreateAccount(t *testing.T) {
@@ -504,4 +708,23 @@ func TestBip44WalletNewSerializeDeserialize(t *testing.T) {
 		require.True(t, ok)
 		require.Equal(t, v, vv)
 	}
+}
+
+func skycoinAddressStringsToAddress(addrsStr []string) []cipher.Addresser {
+	var addrs []cipher.Addresser
+	for _, addr := range addrsStr {
+		a := cipher.MustDecodeBase58Address(addr)
+		addrs = append(addrs, a)
+	}
+
+	return addrs
+}
+
+func bitcoinAddressStringsToAddress(addrsStr []string) []cipher.Addresser {
+	var addrs []cipher.Addresser
+	for _, addr := range addrsStr {
+		a := cipher.MustDecodeBase58BitcoinAddress(addr)
+		addrs = append(addrs, a)
+	}
+	return addrs
 }

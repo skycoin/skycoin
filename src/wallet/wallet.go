@@ -157,6 +157,7 @@ type Wallet interface {
 	Type() string
 	// Bip44Coin returns the coin_type part of bip44 path
 	Bip44Coin() *bip44.CoinType
+	SetBip44Coin(ct bip44.CoinType)
 	Label() string
 	SetLabel(string)
 	Filename() string

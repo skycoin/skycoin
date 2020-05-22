@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 	"github.com/SkycoinProject/skycoin/src/wallet"
 	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
@@ -18,6 +19,8 @@ func TestBip44NewWallet(t *testing.T) {
 	type expect struct {
 		coinType      wallet.CoinType
 		bip44CoinType bip44.CoinType
+		entriesLen    int
+		accountName   string
 	}
 
 	tt := []struct {
@@ -42,6 +45,8 @@ func TestBip44NewWallet(t *testing.T) {
 			expect: expect{
 				wallet.CoinTypeSkycoin,
 				bip44.CoinTypeSkycoin,
+				1,
+				DefaultAccountName,
 			},
 		},
 		{
@@ -56,6 +61,8 @@ func TestBip44NewWallet(t *testing.T) {
 			expect: expect{
 				wallet.CoinTypeBitcoin,
 				bip44.CoinTypeBitcoin,
+				1,
+				DefaultAccountName,
 			},
 		},
 		{
@@ -71,6 +78,24 @@ func TestBip44NewWallet(t *testing.T) {
 			expect: expect{
 				wallet.CoinTypeSkycoin,
 				bip44.CoinTypeSkycoin,
+				1,
+				DefaultAccountName,
+			},
+		},
+		{
+			name:           "skycoin geneateN > 0",
+			filename:       "test.wlt",
+			label:          "test",
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			opts: []wallet.Option{
+				wallet.OptionGenerateN(5),
+			},
+			expect: expect{
+				wallet.CoinTypeSkycoin,
+				bip44.CoinTypeSkycoin,
+				5,
+				DefaultAccountName,
 			},
 		},
 		{
@@ -86,6 +111,8 @@ func TestBip44NewWallet(t *testing.T) {
 			expect: expect{
 				wallet.CoinTypeSkycoin,
 				newBip44Type,
+				1,
+				DefaultAccountName,
 			},
 		},
 		{
@@ -107,6 +134,8 @@ func TestBip44NewWallet(t *testing.T) {
 			expect: expect{
 				wallet.CoinTypeSkycoin,
 				bip44.CoinTypeSkycoin,
+				1,
+				DefaultAccountName,
 			},
 		},
 		{
@@ -181,6 +210,12 @@ func TestBip44NewWallet(t *testing.T) {
 					require.Equal(t, tc.seedPassphrase, w.Meta.SeedPassphrase())
 					require.False(t, w.Meta.IsEncrypted())
 					require.Empty(t, w.Meta.Secrets())
+					el, err := w.EntriesLen()
+					require.NoError(t, err)
+					require.Equal(t, tc.expect.entriesLen, el)
+					a, err := w.account(0)
+					require.NoError(t, err)
+					require.Equal(t, tc.expect.accountName, a.Name)
 				})
 			}
 		}
@@ -252,7 +287,7 @@ func checkNoSensitiveData(t *testing.T, w *Wallet) {
 
 			// confirms no secrets in the entries
 			for _, e := range entries {
-				require.Empty(t, e.Secret)
+				require.Equal(t, cipher.SecKey{}, e.Secret)
 			}
 		}
 	}

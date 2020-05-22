@@ -1,6 +1,9 @@
 package wallet
 
-import "github.com/SkycoinProject/skycoin/src/wallet/crypto"
+import (
+	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
+	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
+)
 
 // Option represents the general options, it can be used to set optional
 // parameters while creating a new wallet. Also, can be used to get
@@ -72,13 +75,21 @@ func OptionDecoder(d Decoder) Option {
 	})
 }
 
+// OptionBip44Coin is the option type for setting bip44 coin type for bip44 wallet
+func OptionBip44Coin(ct *bip44.CoinType) Option {
+	return walletOptionFunc(func(w Wallet) {
+		w.SetBip44Coin(*ct)
+	})
+}
+
 // AdvancedOptions are advanced options that can be used when creating a new wallet
 type AdvancedOptions struct {
-	Encrypt   bool
-	Password  []byte
-	GenerateN uint64
-	ScanN     uint64
-	TF        TransactionsFinder
+	DefaultBip44AccountName string
+	Encrypt                 bool
+	Password                []byte
+	GenerateN               uint64
+	ScanN                   uint64
+	TF                      TransactionsFinder
 }
 
 // advancedOptionFunc is a helper function that assert the
@@ -92,6 +103,13 @@ func advancedOptionFunc(f func(*AdvancedOptions)) Option {
 		}
 		f(o)
 	}
+}
+
+// OptionDefaultBip44AccountName can be used to set the bip44 default account name
+func OptionDefaultBip44AccountName(name string) Option {
+	return advancedOptionFunc(func(opts *AdvancedOptions) {
+		opts.DefaultBip44AccountName = name
+	})
 }
 
 // OptionEncrypt can be used to set whether the wallet should be encrypted when creating a new wallet

@@ -187,6 +187,80 @@ func TestBip44NewWallet(t *testing.T) {
 	}
 }
 
+func TestBip44NewWalletDefaultCrypto(t *testing.T) {
+	for _, coinType := range []wallet.CoinType{wallet.CoinTypeSkycoin, wallet.CoinTypeBitcoin} {
+		for _, encrypt := range []bool{false, true} {
+			name := fmt.Sprintf("coinType %v encrypt %v", coinType, encrypt)
+			t.Run(name, func(t *testing.T) {
+				opts := []wallet.Option{
+					wallet.OptionCoinType(coinType),
+				}
+				if encrypt {
+					opts = append(opts, wallet.OptionEncrypt(true))
+					opts = append(opts, wallet.OptionPassword([]byte("pwd")))
+				}
+				w, err := NewWallet(
+					"test.wlt",
+					"test",
+					testSeed,
+					testSeedPassphrase,
+					opts...,
+				)
+				require.NoError(t, err)
+				require.Equal(t, "test.wlt", w.Meta.Filename())
+				require.Equal(t, "test", w.Meta.Label())
+				require.Equal(t, WalletType, w.Meta.Type())
+				require.NotEmpty(t, w.Meta.Timestamp())
+				require.NotNil(t, w.decoder)
+				bip44Coin := w.Bip44Coin()
+				switch coinType {
+				case wallet.CoinTypeSkycoin:
+					require.Equal(t, bip44.CoinTypeSkycoin, *bip44Coin)
+				case wallet.CoinTypeBitcoin:
+					require.Equal(t, bip44.CoinTypeBitcoin, *bip44Coin)
+				}
+				require.Equal(t, coinType, w.Meta.Coin())
+
+				if encrypt {
+					require.Equal(t, crypto.DefaultCryptoType, w.Meta.CryptoType())
+					// confirms that seeds and entry secrets are all empty
+					checkNoSensitiveData(t, w)
+					return
+				}
+
+				require.Equal(t, testSeed, w.Meta.Seed())
+				require.Equal(t, testSeedPassphrase, w.Meta.SeedPassphrase())
+				require.False(t, w.Meta.IsEncrypted())
+				require.Empty(t, w.Meta.Secrets())
+			})
+		}
+	}
+}
+
+func checkNoSensitiveData(t *testing.T, w *Wallet) {
+	// confirms that seeds and entry secrets are all empty
+	require.True(t, w.IsEncrypted())
+	require.Equal(t, w.Seed(), "")
+	require.Equal(t, w.SeedPassphrase(), "")
+	for _, a := range w.Accounts() {
+		for _, c := range []uint32{bip44.ExternalChainIndex, bip44.ChangeChainIndex} {
+			entries, err := w.entries(a.Index, c)
+			require.NoError(t, err)
+
+			// confirms account secrets are empty
+			require.Empty(t, w.accountManager.(*bip44Accounts).accounts[a.Index].PrivateKey)
+
+			// confirms no secrets in the entries
+			for _, e := range entries {
+				require.Empty(t, e.Secret)
+			}
+		}
+	}
+
+	require.NotEmpty(t, w.Meta.Secrets())
+	return
+}
+
 func TestWalletCreateAccount(t *testing.T) {
 	w, err := NewWallet(
 		"test.wlt",

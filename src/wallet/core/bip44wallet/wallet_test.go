@@ -588,7 +588,39 @@ func TestWalletUnlock(t *testing.T) {
 			})
 		}
 	}
+}
 
+func TestLockAndUnLock(t *testing.T) {
+	for _, ct := range crypto.TypesInsecure() {
+		w, err := NewWallet("wallet.wlt", "test", testSeed, testSeedPassphrase, wallet.OptionCryptoType(ct))
+		require.NoError(t, err)
+		_, err = w.GenerateAddresses(9)
+		require.NoError(t, err)
+		el, err := w.EntriesLen()
+		require.NoError(t, err)
+		// 1 default address + 9
+		require.Equal(t, 10, el)
+
+		// clone the wallet
+		cw := w.Clone()
+
+		// lock the cloned wallet
+		err = cw.Lock([]byte("pwd"))
+		require.NoError(t, err)
+
+		checkNoSensitiveData(t, cw.(*Wallet))
+
+		// unlock the cloned wallet
+		ucw, err := cw.Unlock([]byte("pwd"))
+		require.NoError(t, err)
+
+		// set the account and decoder to nil
+		w.accountManager = nil
+		ucw.(*Wallet).accountManager = nil
+		w.decoder = nil
+		ucw.(*Wallet).decoder = nil
+		require.Equal(t, w, ucw)
+	}
 }
 
 func TestWalletCreateAccount(t *testing.T) {
@@ -642,114 +674,10 @@ func TestWalletAccountCreateAddresses(t *testing.T) {
 	require.Equal(t, testSkycoinChangeAddresses[:2], addrsStr)
 }
 
-func TestBip44WalletLock(t *testing.T) {
-	w, err := NewWallet(
-		"test.wlt",
-		"test",
-		testSeed,
-		testSeedPassphrase,
-		wallet.OptionCoinType(wallet.CoinTypeSkycoin))
-	require.NoError(t, err)
-	require.NoError(t, err)
-
-	ai, err := w.NewAccount("account1")
-	require.NoError(t, err)
-
-	_, err = w.newExternalAddresses(ai, 2)
-	require.NoError(t, err)
-
-	_, err = w.newChangeAddresses(ai, 2)
-	require.NoError(t, err)
-
-	err = w.Lock([]byte("123456"))
-	require.NoError(t, err)
-
-	require.Empty(t, w.Seed())
-	require.Empty(t, w.SeedPassphrase())
-	require.NotEmpty(t, w.Secrets())
-	require.True(t, w.IsEncrypted())
-
-	// confirms that no secrets exist in the accounts
-	ss := make(wallet.Secrets)
-	w.accountManager.packSecrets(ss)
-	require.Equal(t, 4, len(ss))
-	for k, v := range ss {
-		if k == secretBip44AccountPrivateKey {
-			require.Empty(t, v)
-		} else {
-			require.Equal(t, "0000000000000000000000000000000000000000000000000000000000000000", v)
-		}
-	}
-}
-
-// - Test wallet unlock
-func TestBip44WalletUnlock(t *testing.T) {
-	w, err := NewWallet(
-		"test.wlt",
-		"test",
-		testSeed,
-		testSeedPassphrase,
-		wallet.OptionCoinType(wallet.CoinTypeSkycoin),
-		wallet.OptionCryptoType(crypto.CryptoTypeScryptChacha20poly1305Insecure))
-	require.NoError(t, err)
-
-	ai, err := w.NewAccount("account1")
-	require.NoError(t, err)
-
-	_, err = w.newExternalAddresses(ai, 2)
-	require.NoError(t, err)
-
-	_, err = w.newChangeAddresses(ai, 2)
-	require.NoError(t, err)
-
-	cw := w.Clone().(*Wallet)
-
-	err = cw.Lock([]byte("123456"))
-	require.NoError(t, err)
-
-	// generates addresses after locking
-	_, err = cw.newExternalAddresses(ai, 2)
-	require.NoError(t, err)
-	_, err = cw.newChangeAddresses(ai, 3)
-	require.NoError(t, err)
-
-	// unlock with wrong password
-	_, err = cw.Unlock([]byte("12345"))
-	require.Equal(t, errors.New("invalid password"), err)
-
-	// unlock with correct password
-	wlt, err := cw.Unlock([]byte("123456"))
-	require.NoError(t, err)
-
-	el, err := wlt.EntriesLen(wallet.OptionAccount(ai), wallet.OptionChange(false))
-	require.NoError(t, err)
-	require.Equal(t, 4, el)
-
-	cl, err := wlt.EntriesLen(wallet.OptionAccount(ai), wallet.OptionChange(true))
-	require.NoError(t, err)
-	require.Equal(t, 5, cl)
-
-	// confirms that unlocking wallet won't lose data
-	require.Empty(t, wlt.Secrets())
-	require.False(t, wlt.IsEncrypted())
-	require.Equal(t, w.Seed(), wlt.Seed())
-	require.Equal(t, w.SeedPassphrase(), wlt.SeedPassphrase())
-
-	// pack the origin wallet's secrets
-	originSS := make(wallet.Secrets)
-	w.accountManager.packSecrets(originSS)
-
-	// pack the unlocked wallet's secrets
-	ss := make(wallet.Secrets)
-	wlt.(*Wallet).accountManager.packSecrets(ss)
-
-	// compare these two secrets, they should have the same keys and values
-	require.Equal(t, len(originSS)+5, len(ss))
-	for k, v := range originSS {
-		vv, ok := ss[k]
-		require.True(t, ok)
-		require.Equal(t, v, vv)
-	}
+func TestWalletGenerateAddress(t *testing.T) {
+	//tt := []struct {
+	//
+	//}
 }
 
 func TestBip44WalletNewSerializeDeserialize(t *testing.T) {

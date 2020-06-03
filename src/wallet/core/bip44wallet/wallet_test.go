@@ -634,12 +634,12 @@ func TestWalletCreateAccount(t *testing.T) {
 
 	ai, err := w.NewAccount("account1")
 	require.NoError(t, err)
-	require.Equal(t, uint32(0), ai)
-
-	ai, err = w.NewAccount("account2")
 	require.Equal(t, uint32(1), ai)
 
-	require.Equal(t, uint32(2), w.accountManager.len())
+	ai, err = w.NewAccount("account2")
+	require.Equal(t, uint32(2), ai)
+
+	require.Equal(t, uint32(3), w.accountManager.len())
 }
 
 func TestWalletAccountCreateAddresses(t *testing.T) {
@@ -651,11 +651,7 @@ func TestWalletAccountCreateAddresses(t *testing.T) {
 		wallet.OptionCoinType(wallet.CoinTypeSkycoin))
 	require.NoError(t, err)
 
-	ai, err := w.NewAccount("account1")
-	require.NoError(t, err)
-	require.Equal(t, uint32(0), ai)
-
-	addrs, err := w.newExternalAddresses(ai, 2)
+	addrs, err := w.newExternalAddresses(0, 2)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(addrs))
 	addrsStr := make([]string, 2)
@@ -664,7 +660,7 @@ func TestWalletAccountCreateAddresses(t *testing.T) {
 	}
 	require.Equal(t, testSkycoinExternalAddresses[:2], addrsStr)
 
-	addrs, err = w.newChangeAddresses(ai, 2)
+	addrs, err = w.newChangeAddresses(0, 2)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(addrs))
 	addrsStr = make([]string, 2)

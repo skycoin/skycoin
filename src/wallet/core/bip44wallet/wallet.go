@@ -19,8 +19,12 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 )
 
-// WalletType represents the bip44 wallet type
-const WalletType = "bip44"
+const (
+	// WalletType represents the bip44 wallet type
+	WalletType = "bip44"
+	// DefaultAccountName is the default bip44 account name
+	DefaultAccountName = "default"
+)
 
 var (
 	// defaultWalletDecoder is the default bip44 wallet decoder
@@ -90,6 +94,8 @@ type ChainEntry struct {
 
 // NewWallet create a bip44 wallet with options
 // TODO: encrypt the wallet if the options.Encrypt is true
+// TODO: generate a default account when create a new wallet
+// also, a default address will be generated
 func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.Option) (*Wallet, error) {
 	wlt := &Wallet{
 		Meta: wallet.Meta{
@@ -119,6 +125,17 @@ func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.O
 	// validateMeta wallet before encrypting
 	if err := validateMeta(wlt.Meta); err != nil {
 		return nil, err
+	}
+
+	// generates a default account
+	var accountName = DefaultAccountName
+	if advOpts.DefaultBip44AccountName != "" {
+		accountName = advOpts.DefaultBip44AccountName
+	}
+
+	_, err := wlt.NewAccount(accountName)
+	if err != nil {
+		return nil, fmt.Errorf("generate default account failed: %v", err)
 	}
 
 	// Generate addresses if options.GenrateN > 0
@@ -444,6 +461,7 @@ func (w *Wallet) CopyFromRef(src wallet.Wallet) {
 	*w = *(src.(*Wallet))
 }
 
+// Accounts returns the list of accounts
 func (w *Wallet) Accounts() []wallet.Bip44Account {
 	return w.accountManager.all()
 }
@@ -490,7 +508,7 @@ func (w *Wallet) unpackSecrets(ss wallet.Secrets) error {
 	passphrase, _ := ss.Get(wallet.SecretSeedPassphrase)
 	w.Meta.SetSeedPassphrase(passphrase)
 
-	return w.unpackSecrets(ss)
+	return w.accountManager.unpackSecrets(ss)
 }
 
 func getBip44Options(options ...wallet.Option) *wallet.Bip44EntriesOptions {

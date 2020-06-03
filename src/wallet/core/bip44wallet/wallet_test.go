@@ -667,9 +667,86 @@ func TestWalletAccountCreateAddresses(t *testing.T) {
 }
 
 func TestWalletGenerateAddress(t *testing.T) {
-	//tt := []struct {
-	//
-	//}
+	tt := []struct {
+		name               string
+		opts               []wallet.Option
+		num                uint64
+		oneAddressEachTime bool
+		err                error
+	}{
+		{
+			name: "ok with none address",
+			num:  0,
+		},
+		{
+			name: "ok with one address",
+			num:  1,
+		},
+		{
+			name: "ok with two address",
+			num:  1,
+		},
+		{
+			name:               "ok with three address and generate one address each time deterministic",
+			num:                2,
+			oneAddressEachTime: true,
+		},
+		{
+			name: "encrypt wallet",
+			opts: []wallet.Option{
+				wallet.OptionEncrypt(true),
+				wallet.OptionPassword([]byte("pwd")),
+			},
+			num:                2,
+			oneAddressEachTime: true,
+		},
+	}
+
+	for _, tc := range tt {
+		for _, ct := range crypto.TypesInsecure() {
+			name := fmt.Sprintf("%v crypto=%v num=%d", tc.name, ct, tc.num)
+			opts := tc.opts
+			opts = append(opts, wallet.OptionCryptoType(ct))
+
+			t.Run(name, func(t *testing.T) {
+				// create wallet
+				w, err := NewWallet("test.wlt", "test", testSeed, testSeedPassphrase, opts...)
+				require.NoError(t, err)
+
+				// generate address
+				if !tc.oneAddressEachTime {
+					_, err := w.GenerateAddresses(tc.num)
+					require.NoError(t, err)
+					if err != nil {
+						return
+					}
+				} else {
+					for i := uint64(0); i < tc.num; i++ {
+						_, err := w.GenerateAddresses(1)
+						require.Equal(t, tc.err, err)
+						if err != nil {
+							return
+						}
+					}
+				}
+
+				// check the entry number
+				l, err := w.EntriesLen()
+				require.NoError(t, err)
+				// 1 default address + tc.num = wallet.EntriesLen()
+				require.Equal(t, int(tc.num)+1, l)
+
+				addrs, err := w.GetAddresses()
+				require.NoError(t, err)
+
+				if tc.num == 0 {
+					require.Equal(t, skycoinExternalAddrs[:1], addrs)
+				} else {
+					require.Equal(t, skycoinExternalAddrs[:tc.num+1], addrs)
+				}
+			})
+		}
+	}
 }
 
 func TestBip44WalletNewSerializeDeserialize(t *testing.T) {

@@ -74,23 +74,14 @@ type accountManager interface {
 	account(account uint32) (*bip44Account, error)
 	// all returns all accounts in wallet.Account format
 	all() []wallet.Bip44Account
+	// reset reset all accounts' entries
+	reset()
 }
 
 // ChainEntry represents an item on the bip44 wallet chain
 type ChainEntry struct {
 	Address cipher.Addresser
 }
-
-// Options options for creating the bip44 wallet
-// type Options struct {
-// 	Version       string
-// 	CoinType      wallet.CoinType
-// 	Bip44CoinType *bip44.CoinType
-// 	CryptoType    crypto.CryptoType
-// 	WalletDecoder wallet.Decoder
-// 	Encrypt       bool
-// 	Password      []byte
-// }
 
 // NewWallet create a bip44 wallet with options
 // TODO: encrypt the wallet if the options.Encrypt is true

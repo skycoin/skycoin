@@ -526,9 +526,85 @@ func getBip44Options(options ...wallet.Option) *wallet.Bip44EntriesOptions {
 	return v
 }
 
-// TODO: implement this
+// ScanAddresses scans both the external and change addresses to find addresses with
+// transactions.
+// Only external addresses will be returned.
 func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]cipher.Addresser, error) {
-	return nil, nil
+	if scanN == 0 {
+		return nil, nil
+	}
+
+	w2 := w.Clone().(*Wallet)
+
+	accounts := w2.Accounts()
+	scanAddresses := func(account, chain uint32) ([]cipher.Addresser, int, int, error) {
+		nExistingAddrs, err := w2.entriesLen(account, chain)
+		if err != nil {
+			return nil, 0, 0, err
+		}
+
+		// generates the addresses  to scan
+		addrs, err := w2.accountManager.newAddresses(account, chain, uint32(scanN))
+		if err != nil {
+			return nil, 0, 0, err
+		}
+
+		// finds if these addresses had any activity
+		active, err := tf.AddressesActivity(addrs)
+		if err != nil {
+			return nil, 0, 0, err
+		}
+
+		// checks activity from the last one until we find the address that has activity
+		var keepNum uint64
+		for i := len(active) - 1; i >= 0; i-- {
+			if active[i] {
+				keepNum = uint64(i + 1)
+				break
+			}
+		}
+
+		return addrs[:keepNum], int(nExistingAddrs), int(keepNum), nil
+	}
+
+	// [accounts][chains] array
+	generateAddresses := make([][]uint32, len(accounts))
+
+	// only external addresses will be returned
+	var retAddrs []cipher.Addresser
+
+	for i, a := range accounts {
+		addrs, initLen, keepNum, err := scanAddresses(a.Index, bip44.ExternalChainIndex)
+		if err != nil {
+			return nil, err
+		}
+		// records the external addresses
+		retAddrs = append(retAddrs, addrs...)
+
+		generateAddresses[i] = append(generateAddresses[i], uint32(initLen+keepNum))
+
+		_, initLen, keepNum, err = scanAddresses(a.Index, bip44.ChangeChainIndex)
+		if err != nil {
+			return nil, err
+		}
+
+		generateAddresses[i] = append(generateAddresses[i], uint32(initLen+keepNum))
+	}
+
+	w2.reset()
+	for i, a := range accounts {
+		// generate addresses on external chains
+		for _, c := range []uint32{bip44.ExternalChainIndex, bip44.ChangeChainIndex} {
+			_, err := w2.newAddresses(a.Index, c, generateAddresses[i][c])
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	*w = *w2
+
+	return retAddrs, nil
 }
 
 // GetAddresses returns all addresses on selected account and chain,

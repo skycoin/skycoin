@@ -681,6 +681,10 @@ func (w *Wallet) EntriesLen(options ...wallet.Option) (int, error) {
 	return int(l), err
 }
 
+func (w *Wallet) reset() {
+	w.accountManager.reset()
+}
+
 func makeChainPubKeys(a *bip44.Account) (*bip32.PublicKey, *bip32.PublicKey, error) {
 	external, err := a.NewPublicChildKey(0)
 	if err != nil {
@@ -724,24 +728,20 @@ func (c Creator) Create(filename, label, seed string, options wallet.Options) (w
 func convertOptions(options wallet.Options) []wallet.Option {
 	var opts []wallet.Option
 
-	if options.Version != "" {
-		opts = append(opts, Version(options.Version))
-	}
-
 	if options.Coin != "" {
-		opts = append(opts, CoinType(options.Coin))
+		opts = append(opts, wallet.OptionCoinType(options.Coin))
 	}
 
 	if options.Bip44Coin != nil {
-		opts = append(opts, Bip44CoinType(*options.Bip44Coin))
+		opts = append(opts, wallet.OptionBip44Coin(options.Bip44Coin))
 	}
 
 	if options.CryptoType != "" {
-		opts = append(opts, CryptoType(options.CryptoType))
+		opts = append(opts, wallet.OptionCryptoType(options.CryptoType))
 	}
 
 	if options.Decoder != nil {
-		opts = append(opts, Decoder(options.Decoder))
+		opts = append(opts, wallet.OptionDecoder(options.Decoder))
 	}
 
 	if options.Encrypt {

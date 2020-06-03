@@ -100,7 +100,6 @@ func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.O
 			wallet.MetaCoin:           string(wallet.CoinTypeSkycoin),
 			wallet.MetaCryptoType:     string(crypto.DefaultCryptoType),
 			wallet.MetaTimestamp:      strconv.FormatInt(time.Now().Unix(), 10),
-			wallet.MetaBip44Coin:      strconv.FormatUint(uint64(bip44.CoinTypeSkycoin), 10),
 		},
 		accountManager: &bip44Accounts{},
 		decoder:        defaultWalletDecoder,
@@ -111,6 +110,17 @@ func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.O
 	for _, opt := range options {
 		opt(wlt)
 		opt(&advOpts)
+	}
+
+	if wlt.Bip44Coin() == nil {
+		switch wlt.Coin() {
+		case wallet.CoinTypeSkycoin:
+			wlt.SetBip44Coin(bip44.CoinTypeSkycoin)
+		case wallet.CoinTypeBitcoin:
+			wlt.SetBip44Coin(bip44.CoinTypeBitcoin)
+		default:
+			return nil, errors.New("bip44 coin type not set")
+		}
 	}
 
 	// validateMeta wallet before encrypting

@@ -145,11 +145,8 @@ func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.O
 		generateN = 1
 	}
 
-	if generateN > 0 {
-		_, err := wlt.GenerateAddresses(generateN)
-		if err != nil {
-			return nil, err
-		}
+	if _, err := wlt.GenerateAddresses(generateN); err != nil {
+		return nil, err
 	}
 
 	scanN := advOpts.ScanN
@@ -303,11 +300,11 @@ func (w Wallet) IsEncrypted() bool {
 // if it is already encrypted.
 func (w *Wallet) Lock(password []byte) error {
 	if len(password) == 0 {
-		return errors.New("missing password when locking bip44 wallet")
+		return wallet.ErrMissingPassword
 	}
 
 	if w.IsEncrypted() {
-		return errors.New("wallet is already encrypted")
+		return wallet.ErrWalletEncrypted
 	}
 
 	wlt := w.Clone().(*Wallet)

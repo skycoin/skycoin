@@ -463,10 +463,6 @@ func TestWalletLock(t *testing.T) {
 				w, err := NewWallet("test.wlt", "test", testSeed, testSeedPassphrase, opts...)
 				require.NoError(t, err)
 
-				// create a default account
-				_, err = w.NewAccount("account1")
-				require.NoError(t, err)
-
 				if !w.IsEncrypted() {
 					// Generates 2 addresses
 					_, err = w.GenerateAddresses(2)
@@ -658,7 +654,7 @@ func TestWalletAccountCreateAddresses(t *testing.T) {
 	for i, a := range addrs {
 		addrsStr[i] = a.String()
 	}
-	require.Equal(t, testSkycoinExternalAddresses[:2], addrsStr)
+	require.Equal(t, testSkycoinExternalAddresses[1:3], addrsStr)
 
 	addrs, err = w.newChangeAddresses(0, 2)
 	require.NoError(t, err)

@@ -141,6 +141,10 @@ func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.O
 
 	// Generate addresses if options.GenrateN > 0
 	generateN := advOpts.GenerateN
+	if generateN == 0 {
+		generateN = 1
+	}
+
 	if generateN > 0 {
 		_, err := wlt.GenerateAddresses(generateN)
 		if err != nil {

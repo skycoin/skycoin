@@ -226,17 +226,17 @@ func (w *Wallet) NewAccount(name string) (uint32, error) {
 
 // newExternalAddresses generates addresses on external chain of selected account
 func (w *Wallet) newExternalAddresses(account, n uint32) ([]cipher.Addresser, error) {
-	return w.accountManager.newAddresses(account, bip44.ExternalChainIndex, n)
+	return w.newAddresses(account, bip44.ExternalChainIndex, n)
 }
 
-//// NewChangeAddresses generates addresses on change chain of selected account
-//func (w *Wallet) NewChangeAddresses(account, n uint32) ([]cipher.Addresser, error) {
-//	return w.accounts.newAddresses(account, bip44.ChangeChainIndex, n)
-//}
-//
+// NewChangeAddresses generates addresses on change chain of selected account
+func (w *Wallet) newChangeAddresses(account, n uint32) ([]cipher.Addresser, error) {
+	return w.newAddresses(account, bip44.ChangeChainIndex, n)
+}
+
 // externalEntries returns the entries on external chain
 func (w *Wallet) externalEntries(account uint32) (wallet.Entries, error) {
-	return w.accountManager.entries(account, bip44.ExternalChainIndex)
+	return w.entries(account, bip44.ExternalChainIndex)
 }
 
 //
@@ -426,6 +426,7 @@ func (w *Wallet) Unlock(password []byte) (wallet.Wallet, error) {
 	return cw, nil
 }
 
+// Fingerprint returns a unique ID fingerprint for this wallet, composed of its wallet type and initial address
 func (w Wallet) Fingerprint() string {
 	addr := ""
 	entries, err := w.externalEntries(0)

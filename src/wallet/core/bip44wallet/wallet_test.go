@@ -353,7 +353,6 @@ func TestBip44NewWallet(t *testing.T) {
 
 func TestBip44NewWalletDefaultCrypto(t *testing.T) {
 	for _, coinType := range []wallet.CoinType{wallet.CoinTypeSkycoin} {
-		//for _, coinType := range []wallet.CoinType{wallet.CoinTypeSkycoin, wallet.CoinTypeBitcoin} {
 		for _, encrypt := range []bool{true} {
 			name := fmt.Sprintf("coinType %v encrypt %v", coinType, encrypt)
 			t.Run(name, func(t *testing.T) {
@@ -472,6 +471,9 @@ func TestWalletLock(t *testing.T) {
 					// Generates 2 addresses
 					_, err = w.GenerateAddresses(2)
 					require.NoError(t, err)
+
+					_, err = w.GenerateAddresses(2, wallet.OptionChange(true))
+					require.NoError(t, err)
 				}
 
 				err = w.Lock(tc.lockPwd)
@@ -481,23 +483,112 @@ func TestWalletLock(t *testing.T) {
 				}
 
 				checkNoSensitiveData(t, w)
-				//require.True(t, w.IsEncrypted())
-				//
-				//// Checks if the seeds are wiped
-				//require.Empty(t, w.Seed())
-				//require.Empty(t, w.LastSeed())
-				//
-				//// Checks if the entries are encrypted
-				//entries, err := w.GetEntries()
-				//require.NoError(t, err)
-				//
-				//for _, e := range entries {
-				//	require.Equal(t, cipher.SecKey{}, e.Secret)
-				//}
 			})
-
 		}
 	}
+}
+
+// - Test wallet unlock
+func TestWalletUnlock(t *testing.T) {
+	tt := []struct {
+		name string
+		opts []wallet.Option
+		pwd  []byte
+		err  error
+	}{
+		{
+			name: "ok bip44 wallet",
+			opts: []wallet.Option{
+				wallet.OptionEncrypt(true),
+				wallet.OptionPassword([]byte("pwd")),
+				wallet.OptionGenerateN(5),
+			},
+			pwd: []byte("pwd"),
+		},
+		{
+			name: "password is nil",
+			opts: []wallet.Option{
+				wallet.OptionEncrypt(true),
+				wallet.OptionPassword([]byte("pwd")),
+			},
+			pwd: nil,
+			err: wallet.ErrMissingPassword,
+		},
+		{
+			name: "wrong password",
+			opts: []wallet.Option{
+				wallet.OptionEncrypt(true),
+				wallet.OptionPassword([]byte("pwd")),
+			},
+			pwd: []byte("wrong_pwd"),
+			err: wallet.ErrInvalidPassword,
+		},
+		{
+			name: "wallet not encrypted",
+			pwd:  []byte("pwd"),
+			err:  wallet.ErrWalletNotEncrypted,
+		},
+	}
+
+	for _, tc := range tt {
+		for _, ct := range crypto.TypesInsecure() {
+			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
+
+			opts := tc.opts
+			opts = append(opts, wallet.OptionCryptoType(ct))
+
+			t.Run(name, func(t *testing.T) {
+				w, err := NewWallet("test.wlt", "test", testSeed, testSeedPassphrase, opts...)
+				require.NoError(t, err)
+
+				cw := w.Clone()
+
+				// Unlock the wallet
+				unlockWlt, err := cw.Unlock(tc.pwd)
+				require.Equal(t, tc.err, err, fmt.Sprintf("want: %v get: %v", tc.err, err))
+				if err != nil {
+					return
+				}
+
+				require.False(t, unlockWlt.IsEncrypted())
+				require.Empty(t, unlockWlt.Secrets())
+
+				// Checks the seeds and seed passphrase
+				require.Equal(t, testSeed, unlockWlt.Seed())
+				require.Equal(t, testSeedPassphrase, unlockWlt.SeedPassphrase())
+
+				// Checks the generated external addresses
+				el, err := unlockWlt.EntriesLen()
+				require.NoError(t, err)
+				require.Equal(t, 5, el)
+
+				// pack the origin wallet's secrets
+				originSS := make(wallet.Secrets)
+				w.accountManager.packSecrets(originSS)
+
+				// pack the unlocked wallet's secrets
+				ss := make(wallet.Secrets)
+				unlockWlt.(*Wallet).accountManager.packSecrets(ss)
+
+				// compare these two secrets, they should have the same keys and values
+				// len(ss) - 1, to remove the private account key
+				require.Equal(t, len(originSS), len(ss)-1)
+				for k := range originSS {
+					vv, ok := ss[k]
+					require.True(t, ok)
+
+					addr, err := cipher.DecodeBase58Address(k)
+					require.NoError(t, err)
+					sk, err := cipher.SecKeyFromHex(vv)
+					require.NoError(t, err)
+					genAddr, err := cipher.AddressFromSecKey(sk)
+					require.NoError(t, err)
+					require.Equal(t, addr, genAddr)
+				}
+			})
+		}
+	}
+
 }
 
 func TestWalletCreateAccount(t *testing.T) {

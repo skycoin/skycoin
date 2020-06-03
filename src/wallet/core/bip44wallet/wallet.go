@@ -333,11 +333,11 @@ func (w *Wallet) Lock(password []byte) error {
 // Unlock decrypt the wallet
 func (w *Wallet) Unlock(password []byte) (wallet.Wallet, error) {
 	if !w.IsEncrypted() {
-		return nil, errors.New("wallet is not encrypted")
+		return nil, wallet.ErrWalletNotEncrypted
 	}
 
 	if len(password) == 0 {
-		return nil, errors.New("missing password")
+		return nil, wallet.ErrMissingPassword
 	}
 
 	sstr := w.Secrets()
@@ -357,7 +357,7 @@ func (w *Wallet) Unlock(password []byte) (wallet.Wallet, error) {
 
 	sb, err := cryptor.Decrypt([]byte(sstr), password)
 	if err != nil {
-		return nil, errors.New("invalid password")
+		return nil, wallet.ErrInvalidPassword
 	}
 
 	defer func() {

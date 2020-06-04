@@ -256,27 +256,11 @@ func (a bip44Account) Clone() bip44Account {
 	return na
 }
 
-// accountDiff records the chain changes
-type accountDiff struct {
-	chainsDiff []uint32
-}
-
-// diff gets the differences between the account,
-// we would only records the number of new generated addresses on each chain for now.
-func (a bip44Account) diff(na bip44Account) accountDiff {
-	ad := accountDiff{
-		chainsDiff: make([]uint32, len(a.Chains)),
+// reset resets all entries
+func (a *bip44Account) reset() {
+	for i := range a.Chains {
+		a.Chains[i].Entries = wallet.Entries{}
 	}
-
-	for i, c := range a.Chains {
-		newChainLen := len(na.Chains[i].Entries)
-		chainLen := len(c.Entries)
-		if newChainLen > chainLen {
-			ad.chainsDiff[i] = uint32(newChainLen - chainLen)
-		}
-	}
-
-	return ad
 }
 
 // bip44Chain bip44 address chain
@@ -538,30 +522,6 @@ func (a *bip44Accounts) syncSecrets(ss wallet.Secrets) error {
 	return nil
 }
 
-func (a *bip44Accounts) dropLastEntriesN(account, chain, n uint32) error {
-	act, err := a.account(account)
-	if err != nil {
-		return err
-	}
-
-	return act.dropLastEntriesN(chain, n)
-}
-
-// diff would only detect the changes base on exist account so far
-func (a *bip44Accounts) diff(am accountManager) []accountDiff {
-	na := am.(*bip44Accounts)
-	if len(a.accounts) != len(na.accounts) {
-		return nil
-	}
-
-	var ads []accountDiff
-	for i, act := range a.accounts {
-		ad := act.diff(*na.accounts[i])
-		ads = append(ads, ad)
-	}
-	return ads
-}
-
 func (a *bip44Accounts) all() []wallet.Bip44Account {
 	as := make([]wallet.Bip44Account, len(a.accounts))
 	for i, act := range a.accounts {
@@ -573,81 +533,9 @@ func (a *bip44Accounts) all() []wallet.Bip44Account {
 	return as
 }
 
-type accountEntriesService struct {
-	*bip44Account
-	chain uint32
-	err   error
-}
-
-func (a accountEntriesService) Entries() (wallet.Entries, error) {
-	if a.err != nil {
-		return nil, a.err
+// rest resets all the entries
+func (a *bip44Accounts) reset() {
+	for _, act := range a.accounts {
+		act.reset()
 	}
-	return a.entries(a.chain)
-}
-
-func (a accountEntriesService) GetEntryAt(i int) (wallet.Entry, error) {
-	if a.err != nil {
-		return wallet.Entry{}, a.err
-	}
-	return a.entryAt(a.chain, uint32(i))
-}
-
-// TODO: limit to specific chain
-func (a accountEntriesService) GetEntry(addresser cipher.Addresser) (wallet.Entry, error) {
-	if a.err != nil {
-		return wallet.Entry{}, a.err
-	}
-	e, ok := a.getEntry(addresser)
-	if !ok {
-		return wallet.Entry{}, wallet.ErrEntryNotFound
-	}
-
-	return e, nil
-}
-
-// TODO: limit to the specific chain
-func (a accountEntriesService) HasEntry(addresser cipher.Addresser) (bool, error) {
-	if a.err != nil {
-		return false, a.err
-	}
-	_, ok := a.getEntry(addresser)
-	return ok, nil
-}
-
-func (a accountEntriesService) Len() (int, error) {
-	if a.err != nil {
-		return 0, a.err
-	}
-	l, err := a.entriesLen(a.chain)
-	if err != nil {
-		// this should not be possible, as the chain was checked when
-		// the accountEntriesService was acquired.
-		return 0, err
-	}
-	return int(l), nil
-}
-
-func (a accountEntriesService) GetAddresses() ([]cipher.Addresser, error) {
-	if a.err != nil {
-		return nil, a.err
-	}
-	entries, err := a.entries(a.chain)
-	if err != nil {
-		return nil, err
-	}
-
-	addrs := make([]cipher.Addresser, len(entries))
-	for i, e := range entries {
-		addrs[i] = e.Address
-	}
-
-	return addrs, nil
-}
-
-func (a accountEntriesService) GenerateAddresses(num uint64) ([]cipher.Addresser, error) {
-	if a.err != nil {
-		return nil, a.err
-	}
-	return a.newAddresses(a.chain, uint32(num))
 }

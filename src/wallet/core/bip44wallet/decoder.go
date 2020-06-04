@@ -72,7 +72,7 @@ type readableBip44WalletNew struct {
 
 // newReadableBip44WalletNew creates a readable bip44 wallet
 func newReadableBip44WalletNew(w *Wallet) (*readableBip44WalletNew, error) {
-	ra, err := newReadableBip44Accounts(w.accounts.(*bip44Accounts))
+	ra, err := newReadableBip44Accounts(w.accountManager.(*bip44Accounts))
 	if err != nil {
 		return nil, err
 	}
@@ -105,9 +105,9 @@ func (rw readableBip44WalletNew) toWallet() (*Wallet, error) {
 	}
 
 	return &Wallet{
-		Meta:     rw.Meta.Clone(),
-		accounts: accounts,
-		decoder:  &JSONDecoder{},
+		Meta:           rw.Meta.Clone(),
+		accountManager: accounts,
+		decoder:        &JSONDecoder{},
 	}, nil
 }
 

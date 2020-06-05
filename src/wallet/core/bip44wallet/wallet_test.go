@@ -14,6 +14,7 @@ import (
 
 var (
 	skycoinExternalAddrs = skycoinAddressStringsToAddress(testSkycoinExternalAddresses)
+	skycoinChangeAddrs   = skycoinAddressStringsToAddress(testSkycoinChangeAddresses)
 	bitcoinExternalAddrs = bitcoinAddressStringsToAddress(testBitcoinExternalAddresses)
 )
 
@@ -815,4 +816,22 @@ func bitcoinAddressStringsToAddress(addrsStr []string) []cipher.Addresser {
 		addrs = append(addrs, a)
 	}
 	return addrs
+}
+
+func TestPeekChangeAddress(t *testing.T) {
+	w, err := NewWallet("test.wlt", "test", testSeed, testSeedPassphrase)
+	require.NoError(t, err)
+
+	addr, err := w.PeekChangeAddress(mockTxnsFinder{})
+	require.NoError(t, err)
+
+	require.Equal(t, skycoinChangeAddrs[0], addr)
+
+	addr, err = w.PeekChangeAddress(mockTxnsFinder{skycoinChangeAddrs[0]: true})
+	require.NoError(t, err)
+	require.Equal(t, skycoinChangeAddrs[1], addr)
+
+	addr, err = w.PeekChangeAddress(mockTxnsFinder{skycoinChangeAddrs[1]: true})
+	require.NoError(t, err)
+	require.Equal(t, skycoinChangeAddrs[2], addr)
 }

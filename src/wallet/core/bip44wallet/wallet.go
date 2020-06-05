@@ -682,6 +682,44 @@ func (w *Wallet) reset() {
 	w.accountManager.reset()
 }
 
+// PeekChangeAddress returns the last entry address on change chain if
+// no transactions are found, otherwise, return with a new address.
+func (w *Wallet) PeekChangeAddress(tf wallet.TransactionsFinder, options ...wallet.Option) (cipher.Addresser, error) {
+	options = append(options, wallet.OptionChange(true))
+	entries, err := w.GetEntries(options...)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(entries) == 0 {
+		// generate a new address and return
+		addrs, err := w.GenerateAddresses(1, options...)
+		if err != nil {
+			return nil, err
+		}
+
+		return addrs[0], nil
+	}
+
+	// checks if the last entry address has transactions
+	addr := entries[len(entries)-1].Address
+	oks, err := tf.AddressesActivity([]cipher.Addresser{addr})
+	if err != nil {
+		return nil, err
+	}
+
+	if oks[0] == false {
+		return addr, nil
+	}
+
+	// generate a new address and return it
+	addrs, err := w.GenerateAddresses(1, options...)
+	if err != nil {
+		return nil, err
+	}
+	return addrs[0], nil
+}
+
 func makeChainPubKeys(a *bip44.Account) (*bip32.PublicKey, *bip32.PublicKey, error) {
 	external, err := a.NewPublicChildKey(0)
 	if err != nil {

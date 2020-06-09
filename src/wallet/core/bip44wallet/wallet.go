@@ -149,6 +149,11 @@ func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.O
 		return nil, err
 	}
 
+	// Generate a default change address
+	if _, err := wlt.GenerateAddresses(1, wallet.OptionChange(true)); err != nil {
+		return nil, err
+	}
+
 	scanN := advOpts.ScanN
 	// scans addresses if options.ScanN > 0
 	if scanN > 0 {
@@ -575,7 +580,7 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 		if err != nil {
 			return nil, err
 		}
-		// records the external addresses
+
 		retAddrs = append(retAddrs, addrs...)
 
 		generateAddresses[i] = append(generateAddresses[i], uint32(initLen+keepNum))
@@ -613,9 +618,9 @@ func (w *Wallet) GetAddresses(options ...wallet.Option) ([]cipher.Addresser, err
 		return nil, err
 	}
 
-	addrs := make([]cipher.Addresser, len(entries))
-	for i, e := range entries {
-		addrs[i] = e.Address
+	var addrs []cipher.Addresser
+	for _, e := range entries {
+		addrs = append(addrs, e.Address)
 	}
 
 	return addrs, nil

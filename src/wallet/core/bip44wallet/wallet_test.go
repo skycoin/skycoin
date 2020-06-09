@@ -664,7 +664,7 @@ func TestWalletAccountCreateAddresses(t *testing.T) {
 	for i, a := range addrs {
 		addrsStr[i] = a.String()
 	}
-	require.Equal(t, testSkycoinChangeAddresses[:2], addrsStr)
+	require.Equal(t, testSkycoinChangeAddresses[1:3], addrsStr)
 }
 
 func TestWalletGenerateAddress(t *testing.T) {
@@ -834,4 +834,119 @@ func TestPeekChangeAddress(t *testing.T) {
 	addr, err = w.PeekChangeAddress(mockTxnsFinder{skycoinChangeAddrs[1]: true})
 	require.NoError(t, err)
 	require.Equal(t, skycoinChangeAddrs[2], addr)
+}
+
+func TestScanAddresses(t *testing.T) {
+	eAddrs := skycoinExternalAddrs
+	cAddrs := skycoinChangeAddrs
+
+	tt := []struct {
+		name                 string
+		scanN                uint32
+		txnFinder            wallet.TransactionsFinder
+		expectAddrs          []cipher.Addresser
+		expectAllChangeAddrs []cipher.Addresser
+		err                  error
+	}{
+		{
+			name:                 "no txns",
+			scanN:                10,
+			txnFinder:            mockTxnsFinder{},
+			expectAllChangeAddrs: cAddrs[:1],
+		},
+		{
+			name:                 "external addr with txn",
+			scanN:                10,
+			txnFinder:            mockTxnsFinder{eAddrs[1]: true},
+			expectAddrs:          eAddrs[1:2],
+			expectAllChangeAddrs: cAddrs[:1],
+		},
+		{
+			name:      "change addr with txn",
+			scanN:     10,
+			txnFinder: mockTxnsFinder{cAddrs[1]: true},
+			// The default change address already exist, thus no more new change addresses will be created
+			expectAllChangeAddrs: cAddrs[0:2],
+		},
+		{
+			name:                 "external and change addrs with txns",
+			scanN:                10,
+			txnFinder:            mockTxnsFinder{eAddrs[1]: true, cAddrs[1]: true},
+			expectAddrs:          []cipher.Addresser{eAddrs[1]},
+			expectAllChangeAddrs: cAddrs[:2],
+		},
+		{
+			name: "external and change addrs with txns 2", scanN: 10,
+			txnFinder:            mockTxnsFinder{eAddrs[2]: true, cAddrs[1]: true},
+			expectAddrs:          eAddrs[1:3],
+			expectAllChangeAddrs: cAddrs[:2],
+		},
+		{
+			name:  "external and change addrs with txns 3",
+			scanN: 10,
+			txnFinder: mockTxnsFinder{
+				eAddrs[4]: true,
+				cAddrs[4]: true,
+			},
+			expectAddrs:          eAddrs[1:5],
+			expectAllChangeAddrs: cAddrs[:5],
+		},
+		{
+			name:  "not enough addresses scanned",
+			scanN: 3,
+			txnFinder: mockTxnsFinder{
+				eAddrs[4]: true,
+				cAddrs[4]: true,
+			},
+			expectAllChangeAddrs: cAddrs[:1],
+		},
+		{
+			name:  "just enough addresses scanned",
+			scanN: 4,
+			txnFinder: mockTxnsFinder{
+				eAddrs[4]: true,
+				cAddrs[4]: true,
+			},
+			expectAddrs:          eAddrs[1:5],
+			expectAllChangeAddrs: cAddrs[:5],
+		},
+		{
+			name:  "more addresses scanned",
+			scanN: 6,
+			txnFinder: mockTxnsFinder{
+				eAddrs[4]: true,
+				cAddrs[4]: true,
+			},
+			expectAddrs:          eAddrs[1:5],
+			expectAllChangeAddrs: cAddrs[:5],
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			w, err := NewWallet("test.wlt", "test", testSeed, testSeedPassphrase, wallet.OptionTransactionsFinder(tc.txnFinder))
+			require.NoError(t, err)
+
+			addrs, err := w.ScanAddresses(uint64(tc.scanN), tc.txnFinder)
+			require.Equal(t, tc.err, err)
+			if err != nil {
+				return
+			}
+
+			require.Equal(t, tc.expectAddrs, addrs)
+
+			// get the change address, as the ScanAddresses function won't return the change addresses
+			changeAddrs, err := w.GetAddresses(wallet.OptionChange(true))
+			require.NoError(t, err)
+			require.Equal(t, tc.expectAllChangeAddrs, changeAddrs)
+		})
+	}
+}
+
+func getExternalAddrs(t *testing.T) []cipher.Addresser {
+	return skycoinAddressStringsToAddress(testSkycoinExternalAddresses)
+}
+
+func getChangeAddrs(t *testing.T) []cipher.Addresser {
+	return skycoinAddressStringsToAddress(testSkycoinChangeAddresses)
 }

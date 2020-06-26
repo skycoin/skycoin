@@ -301,6 +301,96 @@ func TestWalletAddEntry(t *testing.T) {
 	require.Equal(t, wallet.ErrWalletEncrypted, err)
 }
 
+func TestWalletUnlock(t *testing.T) {
+	tt := []struct {
+		name      string
+		isLock    bool
+		opts      []wallet.Option
+		unlockPwd []byte
+		err       error
+	}{
+		{
+			name:      "ok",
+			isLock:    true,
+			unlockPwd: []byte("pwd"),
+		},
+		{
+			name:      "unlock with nil password",
+			isLock:    true,
+			unlockPwd: nil,
+			err:       wallet.ErrMissingPassword,
+		},
+		{
+			name:      "unlock with wrong password",
+			isLock:    true,
+			unlockPwd: []byte("wrong_pwd"),
+			err:       wallet.ErrInvalidPassword,
+		},
+		{
+			name:      "unlock undecrypted wallet",
+			unlockPwd: []byte("pwd"),
+			err:       wallet.ErrWalletNotEncrypted,
+		},
+	}
+
+	for _, tc := range tt {
+		for _, ct := range crypto.TypesInsecure() {
+			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
+
+			keys, err := cipher.GenerateDeterministicKeyPairs([]byte("testseed123"), 5)
+			require.NoError(t, err)
+
+			entries := [5]wallet.Entry{}
+			for i := range keys {
+				pubkey, err := cipher.PubKeyFromSecKey(keys[i])
+				require.NoError(t, err)
+				addr, err := cipher.AddressFromSecKey(keys[i])
+				require.NoError(t, err)
+				entry := wallet.Entry{
+					Address: addr,
+					Public:  pubkey,
+					Secret:  keys[i],
+				}
+				entries[i] = entry
+			}
+
+			opts := tc.opts
+			opts = append(opts, wallet.OptionCryptoType(ct))
+
+			t.Run(name, func(t *testing.T) {
+				w, err := NewWallet("test.wlt", "test", opts...)
+				require.NoError(t, err)
+
+				// Add entries
+				for _, e := range entries {
+					err = w.AddEntry(e)
+					require.NoError(t, err)
+				}
+
+				if tc.isLock {
+					err = w.Lock([]byte("pwd"))
+					require.NoError(t, err)
+				}
+
+				// Tests the unlock method
+				wlt, err := w.Unlock(tc.unlockPwd)
+				require.Equal(t, tc.err, err)
+				if err != nil {
+					return
+				}
+
+				require.False(t, wlt.IsEncrypted())
+
+				es, err := wlt.GetEntries()
+				require.NoError(t, err)
+				for i, e := range es {
+					require.Equal(t, entries[i], e)
+				}
+			})
+		}
+	}
+}
+
 func skycoinEntries(es []readableEntry) []wallet.Entry {
 	entries := make([]wallet.Entry, len(es))
 	for i, e := range es {

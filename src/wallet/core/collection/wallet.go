@@ -3,6 +3,8 @@ package collection
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/wallet"
@@ -31,9 +33,17 @@ type Wallet struct {
 func NewWallet(filename, label string, options ...wallet.Option) (*Wallet, error) {
 	var wlt = &Wallet{
 		Meta: wallet.Meta{
-			wallet.MetaFilename: filename,
+			wallet.MetaFilename:   filename,
+			wallet.MetaLabel:      label,
+			wallet.MetaEncrypted:  "false",
+			wallet.MetaType:       WalletType,
+			wallet.MetaVersion:    wallet.Version,
+			wallet.MetaCoin:       string(wallet.CoinTypeSkycoin),
+			wallet.MetaCryptoType: string(crypto.DefaultCryptoType),
+			wallet.MetaTimestamp:  strconv.FormatInt(time.Now().Unix(), 10),
 		},
 		entries: wallet.Entries{},
+		decoder: defaultWalletDecoder,
 	}
 
 	advOpts := &wallet.AdvancedOptions{}

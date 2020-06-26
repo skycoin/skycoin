@@ -328,7 +328,6 @@ func TestWalletUnlock(t *testing.T) {
 				// Checks if the seed and lastSeed in original wallet are still empty
 				require.Empty(t, w.Seed())
 				require.Empty(t, w.LastSeed())
-				require.Empty(t, w.SeedPassphrase())
 			})
 		}
 	}
@@ -417,6 +416,9 @@ func TestWalletGenerateAddress(t *testing.T) {
 				// create wallet
 				w, err := NewWallet("test.wlt", "test", tc.seed, opts...)
 				require.NoError(t, err)
+				l, err := w.EntriesLen()
+				require.NoError(t, err)
+				fmt.Println(l)
 
 				// generate addresses
 				if !tc.oneAddressEachTime {
@@ -436,7 +438,7 @@ func TestWalletGenerateAddress(t *testing.T) {
 				}
 
 				// check the entry number
-				l, err := w.EntriesLen()
+				l, err = w.EntriesLen()
 				require.NoError(t, err)
 				require.Equal(t, int(tc.num), l)
 

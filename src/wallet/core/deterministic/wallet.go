@@ -108,7 +108,11 @@ func validateMeta(m wallet.Meta) error {
 		return errors.New("invalid wallet type")
 	}
 
-	return wallet.ValidateMeta(m)
+	if err := wallet.ValidateMeta(m); err != nil {
+		return err
+	}
+
+	return wallet.ValidateMetaSeed(m)
 }
 
 // SetDecoder sets the decoder
@@ -483,7 +487,7 @@ func (l Loader) Load(data []byte) (wallet.Wallet, error) {
 	return w, nil
 }
 
-// Creator implements the wallet.Creator and wallet.Typer interface
+// Creator implements the wallet.Creator interface
 type Creator struct{}
 
 func (c Creator) Create(filename, label, seed string, options wallet.Options) (wallet.Wallet, error) {

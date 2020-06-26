@@ -391,6 +391,60 @@ func TestWalletUnlock(t *testing.T) {
 	}
 }
 
+func TestLockAndUnLock(t *testing.T) {
+	keys, err := cipher.GenerateDeterministicKeyPairs([]byte("testseed123"), 5)
+	require.NoError(t, err)
+
+	entries := [5]wallet.Entry{}
+	for i := range keys {
+		pubkey, err := cipher.PubKeyFromSecKey(keys[i])
+		require.NoError(t, err)
+		addr, err := cipher.AddressFromSecKey(keys[i])
+		require.NoError(t, err)
+		entry := wallet.Entry{
+			Address: addr,
+			Public:  pubkey,
+			Secret:  keys[i],
+		}
+		entries[i] = entry
+	}
+
+	for _, ct := range crypto.TypesInsecure() {
+		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
+			w, err := NewWallet("wallet.wlt", "test", wallet.OptionCryptoType(ct))
+			require.NoError(t, err)
+			for _, e := range entries {
+				err = w.AddEntry(e)
+				require.NoError(t, err)
+			}
+
+			// clone the wallet
+			cw := w.Clone()
+			require.Equal(t, w, cw)
+
+			// lock the cloned wallet
+			err = cw.Lock([]byte("pwd"))
+			require.NoError(t, err)
+
+			require.True(t, cw.IsEncrypted())
+
+			// Checks if the entries are encrypted
+			es, err := cw.GetEntries()
+			require.NoError(t, err)
+
+			for _, e := range es {
+				require.Equal(t, cipher.SecKey{}, e.Secret)
+			}
+
+			// unlock the cloned wallet
+			ucw, err := cw.Unlock([]byte("pwd"))
+			require.NoError(t, err)
+
+			require.Equal(t, w, ucw)
+		})
+	}
+}
+
 func skycoinEntries(es []readableEntry) []wallet.Entry {
 	entries := make([]wallet.Entry, len(es))
 	for i, e := range es {

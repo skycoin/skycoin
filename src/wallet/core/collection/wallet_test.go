@@ -241,99 +241,65 @@ func TestWalletLock(t *testing.T) {
 
 }
 
-// func TestWalletUnlock(t *testing.T) {
-// 	tt := []struct {
-// 		name      string
-// 		opts      []wallet.Option
-// 		unlockPwd []byte
-// 		err       error
-// 	}{
-// 		{
-// 			name: "ok",
-// 			opts: []wallet.Option{
-// 				wallet.OptionEncrypt(true),
-// 				wallet.OptionPassword([]byte("pwd")),
-// 			},
-// 			unlockPwd: []byte("pwd"),
-// 		},
-// 		{
-// 			name: "unlock with nil password",
-// 			opts: []wallet.Option{
-// 				wallet.OptionEncrypt(true),
-// 				wallet.OptionPassword([]byte("pwd")),
-// 			},
-// 			unlockPwd: nil,
-// 			err:       wallet.ErrMissingPassword,
-// 		},
-// 		{
-// 			name: "unlock with wrong password",
-// 			opts: []wallet.Option{
-// 				wallet.OptionEncrypt(true),
-// 				wallet.OptionPassword([]byte("pwd")),
-// 			},
-// 			unlockPwd: []byte("wrong_pwd"),
-// 			err:       wallet.ErrInvalidPassword,
-// 		},
-// 		{
-// 			name:      "unlock undecrypted wallet",
-// 			unlockPwd: []byte("pwd"),
-// 			err:       wallet.ErrWalletNotEncrypted,
-// 		},
-// 	}
+func TestWalletAddEntry(t *testing.T) {
+	w, err := NewWallet(
+		"collection",
+		"collection",
+		wallet.OptionCryptoType(crypto.CryptoTypeScryptChacha20poly1305Insecure))
+	require.NoError(t, err)
 
-// 	for _, tc := range tt {
-// 		for _, ct := range crypto.TypesInsecure() {
-// 			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
+	keys, err := cipher.GenerateDeterministicKeyPairs([]byte("testseed123"), 5)
+	require.NoError(t, err)
 
-// 			opts := tc.opts
-// 			opts = append(opts, wallet.OptionCryptoType(ct))
+	entries := [5]wallet.Entry{}
+	for i := range keys {
+		pubkey, err := cipher.PubKeyFromSecKey(keys[i])
+		require.NoError(t, err)
+		addr, err := cipher.AddressFromSecKey(keys[i])
+		require.NoError(t, err)
+		entry := wallet.Entry{
+			Address: addr,
+			Public:  pubkey,
+			Secret:  keys[i],
+		}
+		entries[i] = entry
+		err = w.AddEntry(entry)
+		require.NoError(t, err)
+	}
 
-// 			t.Run(name, func(t *testing.T) {
-// 				w, err := NewWallet("test.wlt", "test", opts...)
-// 				require.NoError(t, err)
-// 				// Tests the unlock method
-// 				wlt, err := w.Unlock(tc.unlockPwd)
-// 				require.Equal(t, tc.err, err)
-// 				if err != nil {
-// 					return
-// 				}
+	el, err := w.EntriesLen()
+	require.NoError(t, err)
+	require.Equal(t, 5, el)
 
-// 				require.False(t, wlt.IsEncrypted())
+	es, err := w.GetEntries()
+	require.NoError(t, err)
+	for i := range es {
+		require.Equal(t, entries[i], es[i])
+	}
 
-// 				// Checks the seeds
-// 				require.Equal(t, "testseed123", wlt.Seed())
+	// try to add dup entry
+	err = w.AddEntry(entries[0])
+	require.EqualError(t, err, "wallet already contains entry with this address")
 
-// 				// Checks the generated addresses
-// 				el, err := wlt.EntriesLen()
-// 				require.NoError(t, err)
-// 				require.Equal(t, 1, el)
+	// try to add entry with invalid seckey
+	invalidKey := keys[0]
+	invalidKey[len(invalidKey)-1] = 0
+	err = w.AddEntry(wallet.Entry{Secret: invalidKey})
+	require.EqualError(t, err, "invalid public key for secret key")
 
-// 				sd, sks := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(wlt.Seed()), 1)
-// 				require.Equal(t, hex.EncodeToString(sd), wlt.LastSeed())
-// 				entries, err := wlt.GetEntries()
-// 				require.NoError(t, err)
-// 				for i, e := range entries {
-// 					addr := cipher.MustAddressFromSecKey(sks[i])
-// 					require.Equal(t, addr, e.Address)
-// 				}
+	// mismatch public key
+	entry := entries[0]
+	entry.Public = entries[1].Public
+	err = w.AddEntry(entry)
+	require.EqualError(t, err, "invalid public key for secret key")
 
-// 				// Checks the original seeds
-// 				require.NotEqual(t, "testseed123", w.Seed())
+	// lock the wallet and try to add an entry
+	err = w.Lock([]byte("password"))
+	require.NoError(t, err)
 
-// 				// Checks if the seckeys in entries of original wallet are empty
-// 				entries, err = w.GetEntries()
-// 				require.NoError(t, err)
-// 				for _, e := range entries {
-// 					require.True(t, e.Secret.Null())
-// 				}
-
-// 				// Checks if the seed and lastSeed in original wallet are still empty
-// 				require.Empty(t, w.Seed())
-// 				require.Empty(t, w.LastSeed())
-// 			})
-// 		}
-// 	}
-// }
+	err = w.AddEntry(wallet.Entry{})
+	require.Equal(t, wallet.ErrWalletEncrypted, err)
+}
 
 func skycoinEntries(es []readableEntry) []wallet.Entry {
 	entries := make([]wallet.Entry, len(es))

@@ -1,4 +1,4 @@
-package crypto
+package wallet
 
 import (
 	"testing"
@@ -8,7 +8,7 @@ import (
 
 func TestSecrets(t *testing.T) {
 	s := make(Secrets)
-	s.Set("k1") = "v1"
+	s.Set("k1", "v1")
 
 	v, ok := s.Get("k1")
 	require.True(t, ok)
@@ -17,7 +17,7 @@ func TestSecrets(t *testing.T) {
 	_, ok = s.Get("k2")
 	require.False(t, ok)
 
-	s.Get("k2") = "v2"
+	s.Set("k2", "v2")
 
 	b, err := s.Serialize()
 	require.NoError(t, err)

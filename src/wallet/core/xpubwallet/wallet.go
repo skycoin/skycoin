@@ -34,6 +34,10 @@ type Wallet struct {
 
 // NewWallet creates a xpub wallet with options
 func NewWallet(filename, label, xPub string, options ...wallet.Option) (*Wallet, error) {
+	if xPub == "" {
+		return nil, wallet.ErrMissingXPub
+	}
+
 	key, err := parseXPub(xPub)
 	if err != nil {
 		return nil, err

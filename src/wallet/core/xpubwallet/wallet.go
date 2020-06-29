@@ -33,7 +33,7 @@ type Wallet struct {
 }
 
 // NewWallet creates a xpub wallet with options
-func NewWallet(filename, label, xPub string, options ...wallet.Option) (wallet.Wallet, error) {
+func NewWallet(filename, label, xPub string, options ...wallet.Option) (*Wallet, error) {
 	key, err := parseXPub(xPub)
 	if err != nil {
 		return nil, err
@@ -61,6 +61,29 @@ func NewWallet(filename, label, xPub string, options ...wallet.Option) (wallet.W
 
 	if err := validateMeta(wlt.Meta); err != nil {
 		return nil, err
+	}
+
+	generateN := advOpts.GenerateN
+	if generateN > 0 {
+		_, err := wlt.GenerateAddresses(generateN)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	scanN := advOpts.ScanN
+	if scanN > 0 {
+		if advOpts.TF == nil {
+			return nil, errors.New("missing transaction finder for scanning addresses")
+		}
+
+		if scanN > generateN {
+			scanN = scanN - generateN
+		}
+
+		if _, err := wlt.ScanAddresses(scanN, advOpts.TF); err != nil {
+			return nil, err
+		}
 	}
 
 	return wlt, nil
@@ -369,6 +392,7 @@ func (w *Wallet) reset() {
 // Loader implements the wallet.Loader interface
 type Loader struct{}
 
+// Load loads the xpub wallet from byte slice
 func (l Loader) Load(data []byte) (wallet.Wallet, error) {
 	w := &Wallet{}
 	if err := w.Deserialize(data); err != nil {
@@ -381,12 +405,25 @@ func (l Loader) Load(data []byte) (wallet.Wallet, error) {
 // Creator implements the wallet.Creator interface
 type Creator struct{}
 
+// Create creates a xpub wallet
 func (c Creator) Create(filename, label, xpub string, options wallet.Options) (wallet.Wallet, error) {
+	if err := validateOptions(options); err != nil {
+		return nil, err
+	}
+
 	return NewWallet(
 		filename,
 		label,
 		xpub,
 		convertOptions(options)...)
+}
+
+func validateOptions(options wallet.Options) error {
+	if options.Encrypt {
+		return errors.New("xpub wallet does not support encryption")
+	}
+
+	return nil
 }
 
 func convertOptions(options wallet.Options) []wallet.Option {

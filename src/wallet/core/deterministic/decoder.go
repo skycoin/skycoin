@@ -47,7 +47,7 @@ func newReadableEntry(coinType wallet.CoinType, e wallet.Entry) readableEntry {
 	}
 
 	if !e.Secret.Null() {
-		d := wallet.ResolveAddressSecKeyDecoder(coinType)
+		d := wallet.ResolveSecKeyDecoder(coinType)
 		re.Secret = d.SecKeyToHex(e.Secret)
 	}
 

@@ -256,7 +256,7 @@ type readableBip44Entry struct {
 func newReadableBip44Accounts(as *bip44Accounts) (*readableBip44Accounts, error) {
 	var ras readableBip44Accounts
 	for _, a := range as.accounts {
-		d := wallet.ResolveAddressSecKeyDecoder(a.CoinType)
+		d := wallet.ResolveSecKeyDecoder(a.CoinType)
 
 		rc, err := newReadableBip44Chains(a.Chains, d)
 		if err != nil {

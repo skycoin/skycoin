@@ -41,7 +41,7 @@ func newBip44Account(opts bip44AccountCreateOptions) (*bip44Account, error) {
 		return nil, err
 	}
 
-	ca := wallet.ResolveAddressSecKeyDecoder(opts.coinType)
+	ad := wallet.ResolveAddressDecoder(opts.coinType)
 	if opts.bip44CoinType == nil {
 		return nil, errors.New("newBip44Account missing bip44 coin type")
 	}

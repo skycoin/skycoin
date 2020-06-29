@@ -365,3 +365,49 @@ func (w *Wallet) EntriesLen(_ ...wallet.Option) (int, error) {
 func (w *Wallet) reset() {
 	w.entries = wallet.Entries{}
 }
+
+// Loader implements the wallet.Loader interface
+type Loader struct{}
+
+func (l Loader) Load(data []byte) (wallet.Wallet, error) {
+	w := &Wallet{}
+	if err := w.Deserialize(data); err != nil {
+		return nil, err
+	}
+
+	return w, nil
+}
+
+// Creator implements the wallet.Creator interface
+type Creator struct{}
+
+func (c Creator) Create(filename, label, xpub string, options wallet.Options) (wallet.Wallet, error) {
+	return NewWallet(
+		filename,
+		label,
+		xpub,
+		convertOptions(options)...)
+}
+
+func convertOptions(options wallet.Options) []wallet.Option {
+	var opts []wallet.Option
+
+	if options.Coin != "" {
+		opts = append(opts, wallet.OptionCoinType(options.Coin))
+	}
+
+	if options.Decoder != nil {
+		opts = append(opts, wallet.OptionDecoder(options.Decoder))
+	}
+
+	if options.GenerateN > 0 {
+		opts = append(opts, wallet.OptionGenerateN(options.GenerateN))
+	}
+
+	if options.ScanN > 0 {
+		opts = append(opts, wallet.OptionScanN(options.ScanN))
+		opts = append(opts, wallet.OptionTransactionsFinder(options.TF))
+	}
+
+	return opts
+}

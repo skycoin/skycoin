@@ -49,6 +49,16 @@ func ResolveAddressSecKeyDecoder(coinType CoinType) AddressSecKeyDecoder {
 	return registeredAddressSecKeyDecoders.get(coinType)
 }
 
+// ResolveAddressDecoder returns an address decoder by coin type.
+func ResolveAddressDecoder(coinType CoinType) AddressDecoder {
+	return registeredAddressSecKeyDecoders.get(coinType)
+}
+
+// ResolveSecKeyDecoder returns a SecKey decoder
+func ResolveSecKeyDecoder(coinType CoinType) SecKeyDecoder {
+	return registeredAddressSecKeyDecoders.get(coinType)
+}
+
 type AddressDecoder interface {
 	DecodeBase58Address(addr string) (cipher.Addresser, error)
 	AddressFromPubKey(key cipher.PubKey) cipher.Addresser

@@ -3,6 +3,7 @@ package xpubwallet
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"testing"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
@@ -248,4 +249,25 @@ func TestWalletGetEntry(t *testing.T) {
 		})
 	}
 
+}
+
+func TestWalletSerialize(t *testing.T) {
+	w, err := NewWallet("test.wlt", "test", testXPub)
+	require.NoError(t, err)
+
+	_, err = w.GenerateAddresses(5)
+	require.NoError(t, err)
+
+	w.SetTimestamp(0)
+	b, err := w.Serialize()
+	require.NoError(t, err)
+
+	// load wallet file and compare
+	fb, err := ioutil.ReadFile("./testdata/wallet_serialize.wlt")
+	require.NoError(t, err)
+	require.Equal(t, fb, b)
+
+	wlt := Wallet{}
+	err = wlt.Deserialize(b)
+	require.NoError(t, err)
 }

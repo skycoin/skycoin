@@ -47,14 +47,14 @@ func NewWallet(filename, label, xPub string, options ...wallet.Option) (*Wallet,
 		Meta: wallet.Meta{
 			wallet.MetaFilename:  filename,
 			wallet.MetaLabel:     label,
-			wallet.MetaEncrypted: "false",
 			wallet.MetaType:      WalletType,
 			wallet.MetaVersion:   wallet.Version,
 			wallet.MetaCoin:      string(wallet.CoinTypeSkycoin),
 			wallet.MetaXPub:      xPub,
 			wallet.MetaTimestamp: strconv.FormatInt(time.Now().Unix(), 10),
 		},
-		xpub: key,
+		decoder: defaultWalletDecoder,
+		xpub:    key,
 	}
 
 	advOpts := &wallet.AdvancedOptions{}

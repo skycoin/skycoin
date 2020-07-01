@@ -271,3 +271,22 @@ func TestWalletSerialize(t *testing.T) {
 	err = wlt.Deserialize(b)
 	require.NoError(t, err)
 }
+
+func TestWalletDeserialize(t *testing.T) {
+	b, err := ioutil.ReadFile("./testdata/wallet_serialize.wlt")
+	require.NoError(t, err)
+
+	w := Wallet{}
+	err = w.Deserialize(b)
+	require.NoError(t, err)
+
+	require.Equal(t, w.Filename(), "test.wlt")
+	require.Equal(t, w.Label(), "test")
+	entries, err := w.GetEntries()
+	require.NoError(t, err)
+	require.Equal(t, 5, len(entries))
+	for i, e := range entries {
+		require.Equal(t, testSkycoinAddresses[i], e.Address)
+	}
+	require.Equal(t, testXPub, w.XPub())
+}

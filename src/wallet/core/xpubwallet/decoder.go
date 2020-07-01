@@ -66,13 +66,11 @@ func newReadableWallet(w *Wallet) *readableWallet {
 	}
 }
 
-type readableXPubEntries struct {
-	Entries []readableXPubEntry
-}
+type readableXPubEntries []readableXPubEntry
 
-func (e readableXPubEntries) toXPubEntries(ad wallet.AddressDecoder) (wallet.Entries, error) {
-	entries := make(wallet.Entries, len(e.Entries))
-	for i, e := range e.Entries {
+func (es readableXPubEntries) toXPubEntries(ad wallet.AddressDecoder) (wallet.Entries, error) {
+	entries := make(wallet.Entries, len(es))
+	for i, e := range es {
 		addr, err := ad.DecodeBase58Address(e.Address)
 		if err != nil {
 			return nil, err
@@ -95,9 +93,9 @@ func (e readableXPubEntries) toXPubEntries(ad wallet.AddressDecoder) (wallet.Ent
 
 func newReadableEntries(entries wallet.Entries) readableXPubEntries {
 	var res readableXPubEntries
-	res.Entries = make([]readableXPubEntry, len(entries))
+	res = make([]readableXPubEntry, len(entries))
 	for i, e := range entries {
-		res.Entries[i] = readableXPubEntry{
+		res[i] = readableXPubEntry{
 			Address:     e.Address.String(),
 			Public:      e.Public.Hex(),
 			ChildNumber: e.ChildNumber,

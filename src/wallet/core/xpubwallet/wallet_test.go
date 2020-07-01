@@ -32,6 +32,16 @@ var (
 	})
 )
 
+func stringsToAddresses(addrsStr []string) []cipher.Addresser {
+	var addrs []cipher.Addresser
+	for _, addr := range addrsStr {
+		a := cipher.MustDecodeBase58Address(addr)
+		addrs = append(addrs, a)
+	}
+
+	return addrs
+}
+
 func TestNewWallet(t *testing.T) {
 	type expect struct {
 		meta map[string]string
@@ -203,49 +213,39 @@ func TestWalletGenerateAddresses(t *testing.T) {
 	}
 }
 
-//func TestXPubWalletGenerateAddresses(t *testing.T) {
-//	tests := []struct {
-//		name    string
-//		opts    Options
-//		num     uint32
-//		want    []cipher.Addresser
-//		wantErr error
-//	}{
-//		// TODO: Add test cases.
-//		{
-//			opts: Options{
-//				Filename: "test.wlt",
-//				Label:    "test",
-//				CoinType: meta.CoinTypeSkycoin,
-//			},
-//		},
-//	}
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			w := &XPubWallet{
-//				Meta:    tt.fields.Meta,
-//				entries: tt.fields.entries,
-//				xpub:    tt.fields.xpub,
-//				decoder: tt.fields.decoder,
-//			}
-//			got, err := w.GenerateAddresses(tt.args.num)
-//			if (err != nil) != tt.wantErr {
-//				t.Errorf("GenerateAddresses() error = %v, wantErr %v", err, tt.wantErr)
-//				return
-//			}
-//			if !reflect.DeepEqual(got, tt.want) {
-//				t.Errorf("GenerateAddresses() got = %v, want %v", got, tt.want)
-//			}
-//		})
-//	}
-//}
-
-func stringsToAddresses(addrsStr []string) []cipher.Addresser {
-	var addrs []cipher.Addresser
-	for _, addr := range addrsStr {
-		a := cipher.MustDecodeBase58Address(addr)
-		addrs = append(addrs, a)
+func TestWalletGetEntry(t *testing.T) {
+	tt := []struct {
+		name    string
+		address cipher.Addresser
+		err     error
+	}{
+		{
+			"ok",
+			testSkycoinAddresses[0],
+			nil,
+		},
+		{
+			"entry not exist",
+			testSkycoinAddresses[3],
+			wallet.ErrEntryNotFound,
+		},
 	}
 
-	return addrs
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			w, err := NewWallet("test.wlt", "test", testXPub)
+			require.NoError(t, err)
+			_, err = w.GenerateAddresses(3)
+			require.NoError(t, err)
+
+			e, err := w.GetEntry(tc.address)
+			require.Equal(t, tc.err, err, fmt.Sprintf("expect: %v, got: %v", tc.err, err))
+			if err != nil {
+				return
+			}
+
+			require.Equal(t, tc.address, e.Address)
+		})
+	}
+
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"testing"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
@@ -295,4 +296,144 @@ func TestWalletDeserialize(t *testing.T) {
 		require.Equal(t, testSkycoinAddresses[i], e.Address)
 	}
 	require.Equal(t, testXPub, w.XPub())
+}
+
+type mockTxnsFinder map[cipher.Addresser]bool
+
+func (mb mockTxnsFinder) AddressesActivity(addrs []cipher.Addresser) ([]bool, error) {
+	if len(addrs) == 0 {
+		return nil, nil
+	}
+	active := make([]bool, len(addrs))
+	for i, addr := range addrs {
+		active[i] = mb[addr]
+	}
+	return active, nil
+}
+
+func TestScanAddresses(t *testing.T) {
+	tt := []struct {
+		name           string
+		opts           []wallet.Option
+		scanN          uint64
+		txnFinder      wallet.TransactionsFinder
+		expectAddrs    []cipher.Addresser
+		expectAllAddrs []cipher.Addresser
+		err            error
+	}{
+		{
+			name:           "no txns",
+			scanN:          10,
+			txnFinder:      mockTxnsFinder{},
+			expectAddrs:    []cipher.Addresser{},
+			expectAllAddrs: []cipher.Addresser{},
+		},
+		{
+			name:           "addr with txn",
+			scanN:          10,
+			txnFinder:      mockTxnsFinder{testSkycoinAddresses[1]: true},
+			expectAddrs:    testSkycoinAddresses[:2],
+			expectAllAddrs: testSkycoinAddresses[:2],
+		},
+		{
+			name: "init 1, scan 10, get 1",
+			opts: []wallet.Option{
+				wallet.OptionGenerateN(1),
+			},
+			scanN:          10,
+			txnFinder:      mockTxnsFinder{testSkycoinAddresses[1]: true},
+			expectAddrs:    testSkycoinAddresses[1:2],
+			expectAllAddrs: testSkycoinAddresses[:2],
+		},
+		{
+			name:           "addrs with txns, get 3",
+			scanN:          10,
+			txnFinder:      mockTxnsFinder{testSkycoinAddresses[2]: true},
+			expectAddrs:    testSkycoinAddresses[:3],
+			expectAllAddrs: testSkycoinAddresses[:3],
+		},
+		{
+			name: "addrs with txns, init 1, get 2",
+			opts: []wallet.Option{
+				wallet.OptionGenerateN(1),
+			},
+			scanN:          10,
+			txnFinder:      mockTxnsFinder{testSkycoinAddresses[2]: true},
+			expectAddrs:    testSkycoinAddresses[1:3],
+			expectAllAddrs: testSkycoinAddresses[:3],
+		},
+		{
+			name: "addrs with txns, init 2, get 1",
+			opts: []wallet.Option{
+				wallet.OptionGenerateN(2),
+			},
+			scanN:          10,
+			txnFinder:      mockTxnsFinder{testSkycoinAddresses[2]: true},
+			expectAddrs:    testSkycoinAddresses[2:3],
+			expectAllAddrs: testSkycoinAddresses[:3],
+		},
+		{
+			name: "addrs with txns, init 3, get 0",
+			opts: []wallet.Option{
+				wallet.OptionGenerateN(3),
+			},
+			scanN:          10,
+			txnFinder:      mockTxnsFinder{testSkycoinAddresses[2]: true},
+			expectAddrs:    []cipher.Addresser{},
+			expectAllAddrs: testSkycoinAddresses[:3],
+		},
+		{
+			name:  "not enough addresses scanned",
+			scanN: 3,
+			txnFinder: mockTxnsFinder{
+				testSkycoinAddresses[4]: true,
+			},
+			expectAddrs:    []cipher.Addresser{},
+			expectAllAddrs: []cipher.Addresser{},
+		},
+		{
+			name:  "just enough addresses scanned",
+			scanN: 4,
+			txnFinder: mockTxnsFinder{
+				testSkycoinAddresses[3]: true,
+			},
+			expectAddrs:    testSkycoinAddresses[:4],
+			expectAllAddrs: testSkycoinAddresses[:4],
+		},
+		{
+			name:  "more addresses scanned",
+			scanN: 6,
+			txnFinder: mockTxnsFinder{
+				testSkycoinAddresses[4]: true,
+			},
+			expectAddrs:    testSkycoinAddresses[:5],
+			expectAllAddrs: testSkycoinAddresses[:5],
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := tc.opts
+			opts = append(opts, wallet.OptionTransactionsFinder(tc.txnFinder))
+			w, err := NewWallet(
+				"test.wlt",
+				"test",
+				testXPub,
+				opts...)
+			require.NoError(t, err)
+
+			addrs, err := w.ScanAddresses(uint64(tc.scanN), tc.txnFinder)
+			require.Equal(t, tc.err, err)
+			if err != nil {
+				return
+			}
+
+			require.Equal(t, tc.expectAddrs, addrs)
+
+			// get the change address, as the ScanAddresses function won't return the change addresses
+			addrs, err = w.GetAddresses()
+			require.NoError(t, err)
+			require.Equal(t, tc.expectAllAddrs, addrs)
+		})
+	}
 }

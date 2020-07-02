@@ -133,7 +133,7 @@ func OptionScanN(n uint64) Option {
 	})
 }
 
-// OptionTransactionsFinderOption can be used to set the transactions finder when creating a new wallet
+// OptionTransactionsFinder can be used to set the transactions finder when creating a new wallet
 func OptionTransactionsFinder(tf TransactionsFinder) Option {
 	return advancedOptionFunc(func(opts *AdvancedOptions) {
 		opts.TF = tf

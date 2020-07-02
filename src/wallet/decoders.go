@@ -37,12 +37,12 @@ func (a addressSecKeyDecoders) add(coinType CoinType, ca AddressSecKeyDecoder) e
 	return nil
 }
 
-// RegisterCoinAdapter registers a new adapter
+// RegisterAddressSecKeyDecoder registers an address and seckey decoder
 func RegisterAddressSecKeyDecoder(coinType CoinType, d AddressSecKeyDecoder) error {
 	return registeredAddressSecKeyDecoders.add(coinType, d)
 }
 
-// ResolveAddressSecKeyDecoder returns a address and seckey decoder by coin type,
+// ResolveAddressSecKeyDecoder returns an address and seckey decoder by coin type,
 // if the corresponding decoder of is not found, returns
 // the skycoin decoder.
 func ResolveAddressSecKeyDecoder(coinType CoinType) AddressSecKeyDecoder {
@@ -59,16 +59,19 @@ func ResolveSecKeyDecoder(coinType CoinType) SecKeyDecoder {
 	return registeredAddressSecKeyDecoders.get(coinType)
 }
 
+// AddressDecoder interface that wraps methods for encoding/decoding cipher.Addresser
 type AddressDecoder interface {
 	DecodeBase58Address(addr string) (cipher.Addresser, error)
 	AddressFromPubKey(key cipher.PubKey) cipher.Addresser
 }
 
+// SecKeyDecoder interface that wraps the methods for encoding/decoding cipher.SecKey
 type SecKeyDecoder interface {
 	SecKeyToHex(key cipher.SecKey) string
 	SecKeyFromHex(key string) (cipher.SecKey, error)
 }
 
+// AddressSecKeyDecoder interface that embedes the AddressDecoder and SecKeyDecoder
 type AddressSecKeyDecoder interface {
 	AddressDecoder
 	SecKeyDecoder
@@ -98,14 +101,14 @@ func (b bitcoinDecoder) AddressFromPubKey(key cipher.PubKey) cipher.Addresser {
 	return cipher.BitcoinAddressFromPubKey(key)
 }
 
-func (s bitcoinDecoder) DecodeBase58Address(addr string) (cipher.Addresser, error) {
+func (b bitcoinDecoder) DecodeBase58Address(addr string) (cipher.Addresser, error) {
 	return cipher.DecodeBase58BitcoinAddress(addr)
 }
 
-func (s bitcoinDecoder) SecKeyToHex(secKey cipher.SecKey) string {
+func (b bitcoinDecoder) SecKeyToHex(secKey cipher.SecKey) string {
 	return cipher.BitcoinWalletImportFormatFromSeckey(secKey)
 }
 
-func (s bitcoinDecoder) SecKeyFromHex(secKey string) (cipher.SecKey, error) {
+func (b bitcoinDecoder) SecKeyFromHex(secKey string) (cipher.SecKey, error) {
 	return cipher.SecKeyFromBitcoinWalletImportFormat(secKey)
 }

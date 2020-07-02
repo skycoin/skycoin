@@ -61,6 +61,7 @@ func (entries Entries) Clone() Entries {
 	return append(Entries{}, entries...)
 }
 
+// Has checks if entries contains the entry with specified address
 func (entries Entries) Has(a cipher.Addresser) bool {
 	// This doesn't use getEntry() to avoid copying an Entry in the return value,
 	// which may contain a secret key
@@ -72,6 +73,7 @@ func (entries Entries) Has(a cipher.Addresser) bool {
 	return false
 }
 
+// Get returns the entry of specific address
 func (entries Entries) Get(a cipher.Addresser) (Entry, bool) {
 	for _, e := range entries {
 		if e.Address == a {
@@ -81,14 +83,7 @@ func (entries Entries) Get(a cipher.Addresser) (Entry, bool) {
 	return Entry{}, false
 }
 
-//func (entries Entries) GetSkycoinAddresses() []cipher.Address {
-//	addrs := make([]cipher.Address, len(entries))
-//	for i, e := range entries {
-//		addrs[i] = e.SkycoinAddress()
-//	}
-//	return addrs
-//}
-
+// GetAddresses returns all addresses
 func (entries Entries) GetAddresses() []cipher.Addresser {
 	addrs := make([]cipher.Addresser, len(entries))
 	for i, e := range entries {

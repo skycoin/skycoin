@@ -82,6 +82,5 @@ func TypesInsecure() []CryptoType {
 	return []CryptoType{
 		CryptoTypeSha256Xor,
 		CryptoTypeScryptChacha20poly1305Insecure,
-		DefaultCryptoType,
 	}
 }

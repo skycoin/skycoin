@@ -488,16 +488,10 @@ func (w *Wallet) Accounts() []wallet.Bip44Account {
 	return w.accountManager.all()
 }
 
-// Entries provides entries service to access the external chain of given account
+// GetEntries provides entries service to access the external chain of given account
 func (w *Wallet) GetEntries(options ...wallet.Option) (wallet.Entries, error) {
 	opts := getBip44Options(options...)
 	return w.entries(opts.Account, opts.Change)
-}
-
-func (w *Wallet) copyFrom(wlt *Wallet) {
-	w.Meta = wlt.Meta.Clone()
-	w.accountManager = wlt.accountManager.clone()
-	w.decoder = wlt.decoder
 }
 
 // Erase wipes all sensitive data
@@ -648,12 +642,12 @@ func (w *Wallet) GenerateAddresses(num uint64, options ...wallet.Option) ([]ciph
 	return w.newAddresses(opts.Account, opts.Change, uint32(num))
 }
 
+// GetEntryAt returns the entry at specific index
 func (w *Wallet) GetEntryAt(i int, options ...wallet.Option) (wallet.Entry, error) {
 	opts := getBip44Options(options...)
 	return w.entryAt(opts.Account, opts.Change, uint32(i))
 }
 
-// TODO: limit to specific chain
 // GetEntry returns the entry of given address on selected account and chain,
 // if no options are provided, check the external chain of account 0.
 func (w *Wallet) GetEntry(addr cipher.Addresser, options ...wallet.Option) (wallet.Entry, error) {
@@ -672,7 +666,6 @@ func (w *Wallet) GetEntry(addr cipher.Addresser, options ...wallet.Option) (wall
 
 // HasEntry checks whether the entry of given address exists on selected account and chain,
 // if no options are provided, check the external chain of account 0.
-// TODO: limit to specific chain
 func (w *Wallet) HasEntry(addr cipher.Addresser, options ...wallet.Option) (bool, error) {
 	opts := getBip44Options(options...)
 	_, ok, err := w.getEntry(opts.Account, addr)
@@ -750,6 +743,7 @@ func makeChainPubKeys(a *bip44.Account) (*bip32.PublicKey, *bip32.PublicKey, err
 // Loader implements the wallet.Loader interface
 type Loader struct{}
 
+// Load implements the Load method of the wallet.Loader interface
 func (l Loader) Load(data []byte) (wallet.Wallet, error) {
 	w := &Wallet{}
 	if err := w.Deserialize(data); err != nil {
@@ -762,6 +756,7 @@ func (l Loader) Load(data []byte) (wallet.Wallet, error) {
 // Creator implements the wallet.Creator interface
 type Creator struct{}
 
+// Create implements the Create method of wallet.Creator interface
 func (c Creator) Create(filename, label, seed string, options wallet.Options) (wallet.Wallet, error) {
 	opts := convertOptions(options)
 	return NewWallet(

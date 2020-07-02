@@ -200,13 +200,21 @@ func validateMeta(m wallet.Meta) error {
 		return fmt.Errorf("invalid bip44 coin type: %v", err)
 	}
 
+	if err := wallet.ValidateMeta(m); err != nil {
+		return err
+	}
+
 	if s := m[wallet.MetaSeed]; s != "" {
 		if err := bip39.ValidateMnemonic(s); err != nil {
 			return err
 		}
 	}
 
-	return wallet.ValidateMeta(m)
+	if err := wallet.ValidateMetaCryptoType(m); err != nil {
+		return err
+	}
+
+	return wallet.ValidateMetaSeed(m)
 }
 
 // SetDecoder sets the wallet decoder

@@ -90,6 +90,10 @@ func validateMeta(m wallet.Meta) error {
 	if m[wallet.MetaSeed] != "" {
 		return wallet.NewError(fmt.Errorf("seed should not be provided for %q wallets", WalletType))
 	}
+	if err := wallet.ValidateMetaCryptoType(m); err != nil {
+		return err
+	}
+
 	return wallet.ValidateMeta(m)
 }
 

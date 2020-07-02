@@ -112,6 +112,10 @@ func validateMeta(m wallet.Meta) error {
 		return err
 	}
 
+	if err := wallet.ValidateMetaCryptoType(m); err != nil {
+		return err
+	}
+
 	return wallet.ValidateMetaSeed(m)
 }
 

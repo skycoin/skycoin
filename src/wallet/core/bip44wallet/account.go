@@ -75,13 +75,13 @@ func newBip44Account(opts bip44AccountCreateOptions) (*bip44Account, error) {
 	ba.Chains = append(ba.Chains, bip44Chain{
 		PubKey:            *externalChainKey,
 		ChainIndex:        bip44.ExternalChainIndex,
-		addressFromPubKey: ca.AddressFromPubKey,
+		addressFromPubKey: ad.AddressFromPubKey,
 	})
 	// init the change chain
 	ba.Chains = append(ba.Chains, bip44Chain{
 		PubKey:            *changeChainKey,
 		ChainIndex:        bip44.ChangeChainIndex,
-		addressFromPubKey: ca.AddressFromPubKey,
+		addressFromPubKey: ad.AddressFromPubKey,
 	})
 	return ba, nil
 }

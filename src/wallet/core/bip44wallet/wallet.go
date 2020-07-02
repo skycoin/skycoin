@@ -472,6 +472,12 @@ func (w *Wallet) CopyFrom(src wallet.Wallet) {
 	w.copyFrom(src.(*Wallet))
 }
 
+func (w *Wallet) copyFrom(wlt *Wallet) {
+	w.Meta = wlt.Meta.Clone()
+	w.accountManager = wlt.accountManager.clone()
+	w.decoder = wlt.decoder
+}
+
 // CopyFromRef copies the src wallet with a pointer dereference
 func (w *Wallet) CopyFromRef(src wallet.Wallet) {
 	*w = *(src.(*Wallet))
@@ -640,11 +646,6 @@ func (w *Wallet) GenerateAddresses(num uint64, options ...wallet.Option) ([]ciph
 	opts := getBip44Options(options...)
 
 	return w.newAddresses(opts.Account, opts.Change, uint32(num))
-}
-
-func (w *Wallet) Entries(options ...wallet.Option) (wallet.Entries, error) {
-	opts := getBip44Options(options...)
-	return w.entries(opts.Account, opts.Change)
 }
 
 func (w *Wallet) GetEntryAt(i int, options ...wallet.Option) (wallet.Entry, error) {

@@ -18,7 +18,7 @@ func (d JSONDecoder) Encode(w wallet.Wallet) ([]byte, error) {
 	return json.MarshalIndent(rw, "", "    ")
 }
 
-// Decode decodes the deterministic wallet to []byte, and error if any
+// Decode decodes the deterministic wallet from byte slice
 func (d JSONDecoder) Decode(b []byte) (wallet.Wallet, error) {
 	var rw readableDeterministicWallet
 	if err := json.Unmarshal(b, &rw); err != nil {

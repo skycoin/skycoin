@@ -177,6 +177,12 @@ func TestWalletGenerateAddresses(t *testing.T) {
 			oneAddressEachTime: true,
 			expectAddrs:        testSkycoinAddresses[:2],
 		},
+		{
+			name: "generate num is > math.MaxUint32",
+			xpub: testXPub,
+			num:  math.MaxUint32 + 1,
+			err:  nil,
+		},
 	}
 
 	for _, tc := range tt {

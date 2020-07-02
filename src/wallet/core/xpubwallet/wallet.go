@@ -230,9 +230,11 @@ func (w *Wallet) generateEntries(num uint64, initialChildIdx uint32) (wallet.Ent
 
 // Clone returns a copy of the wallet
 func (w Wallet) Clone() wallet.Wallet {
+	xpub := w.xpub.Clone()
 	return &Wallet{
 		Meta:    w.Meta.Clone(),
 		entries: w.entries.Clone(),
+		xpub:    &xpub,
 		decoder: w.decoder,
 	}
 }

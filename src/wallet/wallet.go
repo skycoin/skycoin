@@ -57,6 +57,8 @@ var (
 	ErrMissingSeed = NewError(errors.New("missing seed"))
 	// ErrMissingAuthenticated is returned if try to decrypt a scrypt chacha20poly1305 encrypted wallet, and find no authenticated metadata.
 	ErrMissingAuthenticated = NewError(errors.New("missing authenticated metadata"))
+	// ErrMissingXPub is returned if try to create a XPub wallet without providing xpub key
+	ErrMissingXPub = NewError(errors.New("missing xpub"))
 	// ErrWrongCryptoType is returned when decrypting wallet with wrong crypto method
 	ErrWrongCryptoType = NewError(errors.New("wrong crypto type"))
 	// ErrWalletNotExist is returned if a wallet does not exist
@@ -435,6 +437,21 @@ func ValidateMeta(m Meta) error {
 		}
 	}
 
+	if isEncrypted {
+		if s := m[MetaSecrets]; s == "" {
+			return errors.New("wallet is encrypted, but secrets field not set")
+		}
+	} else {
+		if s := m[MetaSecrets]; s != "" {
+			return errors.New("secrets should not be in unencrypted wallets")
+		}
+	}
+
+	return nil
+}
+
+// ValidateMetaCryptoType validates meta crypto type
+func ValidateMetaCryptoType(m Meta) error {
 	cryptoType, ok := m[MetaCryptoType]
 	if !ok {
 		return errors.New("crypto type field not set")
@@ -444,11 +461,12 @@ func ValidateMeta(m Meta) error {
 		return errors.New("unknown crypto type")
 	}
 
-	if isEncrypted {
-		if s := m[MetaSecrets]; s == "" {
-			return errors.New("wallet is encrypted, but secrets field not set")
-		}
+	return nil
+}
 
+// ValidateMetaSeed validate meta seed
+func ValidateMetaSeed(m Meta) error {
+	if m.IsEncrypted() {
 		if s := m[MetaSeed]; s != "" {
 			return errors.New("seed should not be visible in encrypted wallets")
 		}
@@ -456,12 +474,7 @@ func ValidateMeta(m Meta) error {
 		if s := m[MetaSeed]; s == "" {
 			return ErrMissingSeed
 		}
-
-		if s := m[MetaSecrets]; s != "" {
-			return errors.New("secrets should not be in unencrypted wallets")
-		}
 	}
-
 	return nil
 }
 

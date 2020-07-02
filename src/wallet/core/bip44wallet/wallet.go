@@ -84,8 +84,6 @@ type ChainEntry struct {
 }
 
 // NewWallet create a bip44 wallet with options
-// TODO: encrypt the wallet if the options.Encrypt is true
-// TODO: generate a default account when create a new wallet
 // also, a default address will be generated
 func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.Option) (*Wallet, error) {
 	wlt := &Wallet{
@@ -466,10 +464,6 @@ func (w Wallet) Clone() wallet.Wallet {
 		accountManager: w.accountManager.clone(),
 		decoder:        w.decoder,
 	}
-}
-
-func (w *Wallet) CopyFrom(src wallet.Wallet) {
-	w.copyFrom(src.(*Wallet))
 }
 
 func (w *Wallet) copyFrom(wlt *Wallet) {

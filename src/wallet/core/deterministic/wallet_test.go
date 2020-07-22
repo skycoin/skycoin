@@ -2,6 +2,7 @@ package deterministic
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"testing"
@@ -522,5 +523,131 @@ func checkNoSensitiveData(t *testing.T, w wallet.Wallet) {
 	require.NoError(t, err)
 	for _, e := range entries {
 		require.True(t, e.Secret.Null())
+	}
+}
+
+func TestWalletValidate(t *testing.T) {
+	goodMetaUnencrypted := map[string]string{
+		"filename":  "foo.wlt",
+		"type":      wallet.WalletTypeDeterministic,
+		"coin":      string(wallet.CoinTypeSkycoin),
+		"encrypted": "false",
+		"seed":      "fooseed",
+		"lastSeed":  "foolastseed",
+	}
+
+	goodMetaEncrypted := map[string]string{
+		"filename":   "foo.wlt",
+		"type":       wallet.WalletTypeDeterministic,
+		"coin":       string(wallet.CoinTypeSkycoin),
+		"encrypted":  "true",
+		"cryptoType": "scrypt-chacha20poly1305",
+		"seed":       "",
+		"lastSeed":   "",
+		"secrets":    "xacsdasdasdasd",
+	}
+
+	copyMap := func(m map[string]string) map[string]string {
+		n := make(map[string]string, len(m))
+		for k, v := range m {
+			n[k] = v
+		}
+		return n
+	}
+
+	delField := func(m map[string]string, f string) map[string]string {
+		n := copyMap(m)
+		delete(n, f)
+		return n
+	}
+
+	setField := func(m map[string]string, f, g string) map[string]string {
+		n := copyMap(m)
+		n[f] = g
+		return n
+	}
+
+	cases := []struct {
+		name string
+		meta map[string]string
+		err  error
+	}{
+		{
+			name: "missing filename",
+			meta: delField(goodMetaUnencrypted, wallet.MetaFilename),
+			err:  errors.New("filename not set"),
+		},
+		{
+			name: "wallet type missing",
+			meta: delField(goodMetaUnencrypted, wallet.MetaType),
+			err:  errors.New("type field not set"),
+		},
+		{
+			name: "invalid wallet type",
+			meta: setField(goodMetaUnencrypted, wallet.MetaType, "footype"),
+			err:  wallet.ErrInvalidWalletType,
+		},
+		{
+			name: "coin field missing",
+			meta: delField(goodMetaUnencrypted, wallet.MetaCoin),
+			err:  errors.New("coin field not set"),
+		},
+		{
+			name: "encrypted field invalid",
+			meta: setField(goodMetaUnencrypted, wallet.MetaEncrypted, "foo"),
+			err:  errors.New("encrypted field is not a valid bool"),
+		},
+		{
+			name: "unencrypted missing seed",
+			meta: delField(goodMetaUnencrypted, wallet.MetaSeed),
+			err:  errors.New("seed missing in unencrypted deterministic wallet"),
+		},
+		{
+			name: "unencrypted missing last seed",
+			meta: delField(goodMetaUnencrypted, wallet.MetaLastSeed),
+			err:  errors.New("lastSeed missing in unencrypted deterministic wallet"),
+		},
+		{
+			name: "crypto type missing",
+			meta: delField(goodMetaEncrypted, wallet.MetaCryptoType),
+			err:  errors.New("crypto type field not set"),
+		},
+		{
+			name: "crypto type invalid",
+			meta: setField(goodMetaEncrypted, wallet.MetaCryptoType, "foocryptotype"),
+			err:  errors.New("unknown crypto type"),
+		},
+		{
+			name: "secrets missing",
+			meta: delField(goodMetaEncrypted, wallet.MetaSecrets),
+			err:  errors.New("wallet is encrypted, but secrets field not set"),
+		},
+		{
+			name: "secrets empty",
+			meta: setField(goodMetaEncrypted, wallet.MetaSecrets, ""),
+			err:  errors.New("wallet is encrypted, but secrets field not set"),
+		},
+		{
+			name: "valid unencrypted",
+			meta: goodMetaUnencrypted,
+		}, {
+			name: "valid encrypted",
+			meta: goodMetaEncrypted,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			w := &Wallet{
+				Meta: tc.meta,
+			}
+			err := w.Validate()
+
+			if tc.err == nil {
+				require.NoError(t, err)
+			} else {
+				require.Equal(t, tc.err, err, "%s != %s", tc.err, err)
+			}
+		})
 	}
 }

@@ -634,9 +634,9 @@ func TestWalletCreateTransaction(t *testing.T) {
 				var inputs []transaction.UxBalance
 				var err error
 				if unsigned {
-					txn, inputs, err = CreateTransaction(w, tc.params, addrUxOuts, tc.headTime)
+					txn, inputs, err = wallet.CreateTransaction(w, tc.params, addrUxOuts, tc.headTime)
 				} else {
-					txn, inputs, err = CreateTransactionSigned(w, tc.params, addrUxOuts, tc.headTime)
+					txn, inputs, err = wallet.CreateTransactionSigned(w, tc.params, addrUxOuts, tc.headTime)
 				}
 				require.Equal(t, tc.err, err, "%v != %v", tc.err, err)
 				if tc.err != nil {
@@ -817,10 +817,10 @@ func makeAddress() cipher.Address {
 	return cipher.AddressFromPubKey(p)
 }
 
-func makeEntry() entry.Entry {
+func makeEntry() wallet.Entry {
 	p, s := cipher.GenerateKeyPair()
 	a := cipher.AddressFromPubKey(p)
-	return entry.Entry{
+	return wallet.Entry{
 		Secret:  s,
 		Public:  p,
 		Address: a,

@@ -1435,15 +1435,24 @@ func TestRemoveBackupFiles(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := prepareWltDir()
 			// Initialize files
-			for _, f := range tc.initFiles {
-				w, err := NewWallet(f.wltName, Options{
-					Seed: "s1",
-					Type: WalletTypeDeterministic,
-				})
-				require.NoError(t, err)
-				w.SetVersion(f.version)
+			mockWltContentTmp := `
+{
+    "meta": {
+        "type": "deterministic",
+        "version": "{{.Version}}"
+    },
+    "entries": []
+}`
 
-				require.NoError(t, Save(w, dir))
+			tmp := template.New("mockWalletCntTmp")
+			tmp, err := tmp.Parse(mockWltContentTmp)
+			require.NoError(t, err)
+
+			for _, f := range tc.initFiles {
+				fw, err := os.Create(filepath.Join(dir, f.wltName))
+				defer fw.Close()
+				err = tmp.Execute(fw, struct{ Version string }{f.version})
+				require.NoError(t, err)
 			}
 
 			require.NoError(t, removeBackupFiles(dir))
@@ -1460,123 +1469,14 @@ func TestRemoveBackupFiles(t *testing.T) {
 	}
 }
 
-func TestWalletValidate(t *testing.T) {
-	goodMetaUnencrypted := map[string]string{
-		"filename":  "foo.wlt",
-		"type":      WalletTypeDeterministic,
-		"coin":      string(meta.CoinTypeSkycoin),
-		"encrypted": "false",
-		"seed":      "fooseed",
-		"lastSeed":  "foolastseed",
+func prepareWltDir() string {
+	dir, err := ioutil.TempDir("", "wallets")
+	if err != nil {
+		panic(err)
 	}
 
-	goodMetaEncrypted := map[string]string{
-		"filename":   "foo.wlt",
-		"type":       WalletTypeDeterministic,
-		"coin":       string(meta.CoinTypeSkycoin),
-		"encrypted":  "true",
-		"cryptoType": "scrypt-chacha20poly1305",
-		"seed":       "",
-		"lastSeed":   "",
-		"secrets":    "xacsdasdasdasd",
-	}
-
-	copyMap := func(m map[string]string) map[string]string {
-		n := make(map[string]string, len(m))
-		for k, v := range m {
-			n[k] = v
-		}
-		return n
-	}
-
-	delField := func(m map[string]string, f string) map[string]string {
-		n := copyMap(m)
-		delete(n, f)
-		return n
-	}
-
-	setField := func(m map[string]string, f, g string) map[string]string {
-		n := copyMap(m)
-		n[f] = g
-		return n
-	}
-
-	cases := []struct {
-		name string
-		meta map[string]string
-		err  error
-	}{
-		{
-			name: "missing filename",
-			meta: delField(goodMetaUnencrypted, meta.MetaFilename),
-			err:  errors.New("filename not set"),
-		},
-		{
-			name: "wallet type missing",
-			meta: delField(goodMetaUnencrypted, meta.MetaType),
-			err:  errors.New("type field not set"),
-		},
-		{
-			name: "invalid wallet type",
-			meta: setField(goodMetaUnencrypted, meta.MetaType, "footype"),
-			err:  ErrInvalidWalletType,
-		},
-		{
-			name: "coin field missing",
-			meta: delField(goodMetaUnencrypted, meta.MetaCoin),
-			err:  errors.New("coin field not set"),
-		},
-		{
-			name: "encrypted field invalid",
-			meta: setField(goodMetaUnencrypted, meta.MetaEncrypted, "foo"),
-			err:  errors.New("encrypted field is not a valid bool"),
-		},
-		{
-			name: "unencrypted missing seed",
-			meta: delField(goodMetaUnencrypted, meta.MetaSeed),
-			err:  errors.New("seed missing in unencrypted deterministic wallet"),
-		},
-		{
-			name: "unencrypted missing last seed",
-			meta: delField(goodMetaUnencrypted, meta.MetaLastSeed),
-			err:  errors.New("lastSeed missing in unencrypted deterministic wallet"),
-		},
-		{
-			name: "crypto type missing",
-			meta: delField(goodMetaEncrypted, meta.MetaCryptoType),
-			err:  errors.New("crypto type field not set"),
-		},
-		{
-			name: "crypto type invalid",
-			meta: setField(goodMetaEncrypted, meta.MetaCryptoType, "foocryptotype"),
-			err:  errors.New("unknown crypto type"),
-		},
-		{
-			name: "secrets missing",
-			meta: delField(goodMetaEncrypted, meta.MetaSecrets),
-			err:  errors.New("wallet is encrypted, but secrets field not set"),
-		},
-		{
-			name: "secrets empty",
-			meta: setField(goodMetaEncrypted, meta.MetaSecrets, ""),
-			err:  errors.New("wallet is encrypted, but secrets field not set"),
-		},
-		{
-			name: "valid unencrypted",
-			meta: goodMetaUnencrypted,
-		},
-		{
-			name: "valid encrypted",
-			meta: goodMetaEncrypted,
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			w := &DeterministicWallet{
-				Meta: tc.meta,
-			}
-			err := w.Validate()
+	return dir
+}
 
 			if tc.err == nil {
 				require.NoError(t, err)

@@ -27,6 +27,7 @@ type Wallet struct {
 	decoder wallet.Decoder
 }
 
+// NewWallet creates a deterministic wallet
 func NewWallet(filename, label, seed string, options ...wallet.Option) (*Wallet, error) {
 	var wlt = &Wallet{
 		Meta: wallet.Meta{
@@ -124,6 +125,7 @@ func (w *Wallet) SetDecoder(d wallet.Decoder) {
 	w.decoder = d
 }
 
+// Serialize encodes the wallet into bytes
 func (w Wallet) Serialize() ([]byte, error) {
 	if w.decoder == nil {
 		w.decoder = defaultWalletDecoder
@@ -132,6 +134,7 @@ func (w Wallet) Serialize() ([]byte, error) {
 	return w.decoder.Encode(&w)
 }
 
+// Deserialize decodes the wallet from bytes
 func (w *Wallet) Deserialize(data []byte) error {
 	if w.decoder == nil {
 		w.decoder = defaultWalletDecoder
@@ -148,6 +151,7 @@ func (w *Wallet) Deserialize(data []byte) error {
 	return nil
 }
 
+// Lock encrypts the sensitive data of the wallet
 func (w *Wallet) Lock(password []byte) error {
 	if len(password) == 0 {
 		return wallet.ErrMissingPassword
@@ -311,6 +315,7 @@ func (w *Wallet) CopyFromRef(src wallet.Wallet) {
 	*w = *(src.(*Wallet))
 }
 
+// Accounts is not implemented, it is an interface for bip44 wallet.
 func (w *Wallet) Accounts() []wallet.Bip44Account {
 	return nil
 }
@@ -482,6 +487,7 @@ func (w *Wallet) reset() {
 // Loader implements the wallet.Loader interface
 type Loader struct{}
 
+// Load loads a determinisitc wallet from bytes
 func (l Loader) Load(data []byte) (wallet.Wallet, error) {
 	w := &Wallet{}
 	if err := w.Deserialize(data); err != nil {
@@ -494,6 +500,7 @@ func (l Loader) Load(data []byte) (wallet.Wallet, error) {
 // Creator implements the wallet.Creator interface
 type Creator struct{}
 
+// Create creates a deterministic wallet
 func (c Creator) Create(filename, label, seed string, options wallet.Options) (wallet.Wallet, error) {
 	return NewWallet(
 		filename,

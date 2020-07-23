@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/util/file"
 	"github.com/SkycoinProject/skycoin/src/wallet"
 )
 
@@ -50,27 +49,6 @@ func newReadableEntry(coinType wallet.CoinType, e wallet.Entry) readableEntry {
 		d := wallet.ResolveSecKeyDecoder(coinType)
 		re.Secret = d.SecKeyToHex(e.Secret)
 	}
-
-	//switch WalletType {
-	//case wallet.WalletTypeBip44:
-	//	cn := e.ChildNumber
-	//	re.ChildNumber = &cn
-	//	change := e.Change
-	//	re.Change = &change
-	//case wallet.WalletTypeXPub:
-	//	cn := e.ChildNumber
-	//	re.ChildNumber = &cn
-	//	if e.Change != 0 {
-	//		wallet.logger.Panicf("wallet.Entry.Change is not 0 but wallet type is %q", WalletType)
-	//	}
-	//default:
-	//if e.ChildNumber != 0 {
-	//	wallet.logger.Panicf("wallet.Entry.ChildNumber is not 0 but wallet type is %q", WalletType)
-	//}
-	//if e.Change != 0 {
-	//	wallet.logger.Panicf("wallet.Entry.Change is not 0 but wallet type is %q", WalletType)
-	//}
-	//}
 
 	return re
 }
@@ -152,29 +130,6 @@ func newEntryFromReadable(coinType wallet.CoinType, re *readableEntry) (*wallet.
 		}
 	}
 
-	//var childNumber uint32
-	//var change uint32
-	//switch WalletType {
-	//case wallet.WalletTypeXPub:
-	//	if re.ChildNumber == nil {
-	//		return nil, fmt.Errorf("child_number required for %q wallet type", WalletType)
-	//	}
-	//
-	//	childNumber = *re.ChildNumber
-	//
-	//	if re.Change != nil {
-	//		return nil, fmt.Errorf("change should not be set for %q wallet type", WalletType)
-	//	}
-
-	//default:
-	//if re.ChildNumber != nil {
-	//	return nil, fmt.Errorf("child_number should not be set for %q wallet type", WalletType)
-	//}
-	//if re.Change != nil {
-	//	return nil, fmt.Errorf("change should not be set for %q wallet type", WalletType)
-	//}
-	//}
-
 	return &wallet.Entry{
 		Address: a,
 		Public:  p,
@@ -182,32 +137,10 @@ func newEntryFromReadable(coinType wallet.CoinType, re *readableEntry) (*wallet.
 	}, nil
 }
 
-// Readable defines the readable wallet API.
-// A readable wallet is the on-disk representation of a wallet.
-//type Readable interface {
-//	ToWallet() (wallet.Wallet, error)
-//	Timestamp() int64
-//	SetFilename(string)
-//	Filename() string
-//	GetEntries() readableEntries
-//}
-
 // readableDeterministicWallet used for [de]serialization of a deterministic wallet
 type readableDeterministicWallet struct {
 	wallet.Meta `json:"meta"`
 	Entries     readableEntries `json:"entries"`
-}
-
-// LoadReadableDeterministicWallet loads a deterministic wallet from disk
-func LoadReadableDeterministicWallet(wltFile string) (*readableDeterministicWallet, error) {
-	var rw readableDeterministicWallet
-	if err := file.LoadJSON(wltFile, &rw); err != nil {
-		return nil, err
-	}
-	if rw.Type() != wallet.WalletTypeDeterministic {
-		return nil, wallet.ErrInvalidWalletType
-	}
-	return &rw, nil
 }
 
 // newReadableDeterministicWallet creates readable wallet

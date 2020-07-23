@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/util/file"
 	"github.com/SkycoinProject/skycoin/src/wallet"
 )
 
@@ -20,7 +19,7 @@ func (d JSONDecoder) Encode(w wallet.Wallet) ([]byte, error) {
 
 // Decode decodes the deterministic wallet to []byte, and error if any
 func (d JSONDecoder) Decode(b []byte) (wallet.Wallet, error) {
-	var rw ReadableDeterministicWallet
+	var rw readableDeterministicWallet
 	if err := json.Unmarshal(b, &rw); err != nil {
 		return nil, err
 	}
@@ -63,11 +62,6 @@ func newReadableEntries(entries wallet.Entries, coinType wallet.CoinType) readab
 		re[i] = newReadableEntry(coinType, e)
 	}
 	return re
-}
-
-// GetEntries returns this array
-func (res readableEntries) GetEntries() readableEntries {
-	return res
 }
 
 // toWalletEntries convert readable entries to entries
@@ -138,34 +132,22 @@ func newEntryFromReadable(coinType wallet.CoinType, re *readableEntry) (*wallet.
 	}, nil
 }
 
-// ReadableDeterministicWallet used for [de]serialization of a deterministic wallet
-type ReadableDeterministicWallet struct {
+// readableDeterministicWallet used for [de]serialization of a deterministic wallet
+type readableDeterministicWallet struct {
 	wallet.Meta `json:"meta"`
 	Entries     readableEntries `json:"entries"`
 }
 
-// LoadReadableDeterministicWallet loads a deterministic wallet from disk
-func LoadReadableDeterministicWallet(wltFile string) (*ReadableDeterministicWallet, error) {
-	var rw ReadableDeterministicWallet
-	if err := file.LoadJSON(wltFile, &rw); err != nil {
-		return nil, err
-	}
-	if rw.Type() != wallet.WalletTypeDeterministic {
-		return nil, wallet.ErrInvalidWalletType
-	}
-	return &rw, nil
-}
-
 // newReadableDeterministicWallet creates readable wallet
-func newReadableDeterministicWallet(w *Wallet) *ReadableDeterministicWallet {
-	return &ReadableDeterministicWallet{
+func newReadableDeterministicWallet(w *Wallet) *readableDeterministicWallet {
+	return &readableDeterministicWallet{
 		Meta:    w.Meta.Clone(),
 		Entries: newReadableEntries(w.entries, w.Meta.Coin()),
 	}
 }
 
 // ToWallet convert readable wallet to Wallet
-func (rw *ReadableDeterministicWallet) ToWallet() (wallet.Wallet, error) {
+func (rw *readableDeterministicWallet) ToWallet() (wallet.Wallet, error) {
 	w := &Wallet{
 		Meta: rw.Meta.Clone(),
 	}

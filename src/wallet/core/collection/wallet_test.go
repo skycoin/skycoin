@@ -514,3 +514,43 @@ func TestWalletGetEntry(t *testing.T) {
 		})
 	}
 }
+
+func TestWalletSerialize(t *testing.T) {
+	w, err := NewWallet("test.wlt", "test")
+	require.NoError(t, err)
+
+	for i := 0; i < 5; i++ {
+		require.NoError(t, w.AddEntry(testSkycoinEntries[i]))
+	}
+
+	w.SetTimestamp(0)
+	b, err := w.Serialize()
+	require.NoError(t, err)
+
+	// load wallet file and compare
+	fb, err := ioutil.ReadFile("./testdata/wallet_serialize.wlt")
+	require.NoError(t, err)
+	require.Equal(t, fb, b)
+
+	wlt := Wallet{}
+	err = wlt.Deserialize(b)
+	require.NoError(t, err)
+}
+
+func TestWalletDeserialize(t *testing.T) {
+	b, err := ioutil.ReadFile("./testdata/wallet_serialize.wlt")
+	require.NoError(t, err)
+
+	w := Wallet{}
+	err = w.Deserialize(b)
+	require.NoError(t, err)
+
+	require.Equal(t, w.Filename(), "test.wlt")
+	require.Equal(t, w.Label(), "test")
+	entries, err := w.GetEntries()
+	require.NoError(t, err)
+	require.Equal(t, 5, len(entries))
+	for i, e := range entries {
+		require.Equal(t, testSkycoinEntries[i], e)
+	}
+}

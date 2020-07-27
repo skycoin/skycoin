@@ -34,30 +34,6 @@ func (d JSONDecoder) Decode(b []byte) (wallet.Wallet, error) {
 		return nil, err
 	}
 
-	// verify the integrity of the wallet
-	accountsHashStr, ok := rw.Meta[metaAccountsHash]
-	if !ok {
-		return nil, fmt.Errorf("Decode bip44 wallet failed, missing accountsHash meta info")
-	}
-
-	accountsHashFromMeta, err := cipher.SHA256FromHex(accountsHashStr)
-	if err != nil {
-		return nil, fmt.Errorf("Decode bip44 wallet failed, err: %v", err)
-	}
-
-	ab, err := json.Marshal(rw.Accounts)
-	if err != nil {
-		return nil, fmt.Errorf("Decode bip44 wallet failed, err: %v", err)
-	}
-
-	accountHash := cipher.SumSHA256(ab)
-
-	if accountHash != accountsHashFromMeta {
-		return nil, fmt.Errorf("Decode bip44 wallet failed, wallet accounts hash mismatch")
-	}
-
-	// remove the accountHash, it is used for verfiying the wallet decoding
-	delete(rw.Meta, metaAccountsHash)
 	return rw.toWallet()
 }
 
@@ -77,21 +53,10 @@ func newReadableBip44WalletNew(w *Wallet) (*readableBip44WalletNew, error) {
 		return nil, err
 	}
 
-	rw := &readableBip44WalletNew{
+	return &readableBip44WalletNew{
 		Meta:     w.Meta.Clone(),
 		Accounts: *ra,
-	}
-
-	b, err := json.Marshal(ra)
-	if err != nil {
-		return nil, fmt.Errorf("encode bip44 accounts failed: %v", err)
-	}
-
-	hash := cipher.SumSHA256(b)
-
-	// Set accountsHash meta info
-	rw.Meta[metaAccountsHash] = hash.Hex()
-	return rw, nil
+	}, nil
 }
 
 // toWallet converts the readable bip44 wallet to a bip44 wallet

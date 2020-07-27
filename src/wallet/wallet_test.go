@@ -1,60 +1,15 @@
 package wallet
 
 import (
-	"encoding/hex"
-	"errors"
-	"flag"
-	"fmt"
+	"html/template"
 	"io/ioutil"
-	"math/rand"
+	"os"
+	"path/filepath"
 	"testing"
-	"time"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip32"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
-	"github.com/SkycoinProject/skycoin/src/util/logging"
-	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
-	"github.com/SkycoinProject/skycoin/src/wallet/entry"
-	"github.com/SkycoinProject/skycoin/src/wallet/meta"
+	"github.com/stretchr/testify/require"
 )
-
-var (
-	log = logging.MustGetLogger("wallet_test")
-)
-
-// set rand seed.
-var _ = func() int64 {
-	t := time.Now().Unix()
-	rand.Seed(t)
-	testing.Init()
-	return t
-}()
-
-var u = flag.Bool("u", false, "update test wallet file in ./testdata")
-
-func init() {
-	flag.Parse()
-
-	// When -u flag is specified, update the following wallet files:
-	//     - ./testdata/scrypt-chacha20poly1305-encrypted.wlt
-	//     - ./testdata/sha256xor-encrypted.wlt
-	if *u {
-		// Update ./testdata/scrypt-chacha20poly1305-encrypted.wlt
-		//     - Create an unencrypted wallet
-		//     - Generate an address
-		//     - Lock the wallet with scrypt-chacha20poly1305 crypto type and password of "pwd".
-		w, err := NewWallet("scrypt-chacha20poly1305-encrypted.wlt", Options{
-			Seed:       "seed-scrypt-chacha20poly1305",
-			Label:      "scrypt-chacha20poly1305",
-			CryptoType: crypto.CryptoTypeScryptChacha20poly1305Insecure,
-		})
-		if err != nil {
-			log.Panic(err)
-		}
 
 type fakeWalletForGuardView struct {
 	*MockWallet
@@ -450,13 +405,4 @@ func prepareWltDir() string {
 	}
 
 	return dir
-}
-
-			if tc.err == nil {
-				require.NoError(t, err)
-			} else {
-				require.Equal(t, tc.err, err, "%s != %s", tc.err, err)
-			}
-		})
-	}
 }

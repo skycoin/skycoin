@@ -487,6 +487,11 @@ func (_m *MockWallet) Serialize() ([]byte, error) {
 	return r0, r1
 }
 
+// SetBip44Coin provides a mock function with given fields: ct
+func (_m *MockWallet) SetBip44Coin(ct bip44.CoinType) {
+	_m.Called(ct)
+}
+
 // SetCoin provides a mock function with given fields: coinType
 func (_m *MockWallet) SetCoin(coinType CoinType) {
 	_m.Called(coinType)
@@ -500,6 +505,11 @@ func (_m *MockWallet) SetCryptoType(ct crypto.CryptoType) {
 // SetDecoder provides a mock function with given fields: d
 func (_m *MockWallet) SetDecoder(d Decoder) {
 	_m.Called(d)
+}
+
+// SetFilename provides a mock function with given fields: _a0
+func (_m *MockWallet) SetFilename(_a0 string) {
+	_m.Called(_a0)
 }
 
 // SetLabel provides a mock function with given fields: _a0

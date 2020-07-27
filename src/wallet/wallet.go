@@ -146,6 +146,8 @@ type Options struct {
 	TF             TransactionsFinder
 }
 
+//go:generate mockery -name Wallet -case underscore -inpkg -testonly
+
 // Wallet defines the wallet API
 type Wallet interface {
 	Seed() string

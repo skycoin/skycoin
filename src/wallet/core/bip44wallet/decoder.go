@@ -125,7 +125,7 @@ type readableBip44Account struct {
 type readableBip44Chain struct {
 	PubKey  string               `json:"public_key"`
 	Chain   string               `json:"chain"`
-	Entries readableBip44Entries `json:"entries"`
+	Entries []readableBip44Entry `json:"entries"`
 }
 
 func (rc readableBip44Chain) toBip44Chain(d wallet.AddressSecKeyDecoder) (*bip44Chain, error) {
@@ -144,7 +144,7 @@ func (rc readableBip44Chain) toBip44Chain(d wallet.AddressSecKeyDecoder) (*bip44
 		ChainIndex: uint32(ci),
 	}
 
-	for _, re := range rc.Entries.Entries {
+	for _, re := range rc.Entries {
 		e, err := newBip44EntryFromReadable(re, d)
 		if err != nil {
 			return nil, err
@@ -204,11 +204,6 @@ func newBip44EntryFromReadable(re readableBip44Entry, d wallet.AddressSecKeyDeco
 	}, nil
 }
 
-// readableBip44Entries wraps the slice of ReadableBip44Entry
-type readableBip44Entries struct {
-	Entries []readableBip44Entry
-}
-
 // ReadableBip44Entry bip44 entry with JSON tags
 type readableBip44Entry struct {
 	Address     string `json:"address"`
@@ -261,7 +256,7 @@ func newReadableBip44Chains(cs []bip44Chain, d wallet.SecKeyDecoder) ([]readable
 				secret = d.SecKeyToHex(e.Secret)
 			}
 
-			rc.Entries.Entries = append(rc.Entries.Entries, readableBip44Entry{
+			rc.Entries = append(rc.Entries, readableBip44Entry{
 				Address:     e.Address.String(),
 				Public:      e.Public.Hex(),
 				ChildNumber: e.ChildNumber,

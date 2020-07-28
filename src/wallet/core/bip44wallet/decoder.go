@@ -28,9 +28,8 @@ func (d JSONDecoder) Encode(w wallet.Wallet) ([]byte, error) {
 
 // Decode decodes  the []byte to a bip44 wallet.
 func (d JSONDecoder) Decode(b []byte) (wallet.Wallet, error) {
-	br := bytes.NewReader(b)
-	rw := readableBip44WalletNew{}
-	if err := json.NewDecoder(br).Decode(&rw); err != nil {
+	var rw readableBip44WalletNew
+	if err := json.Unmarshal(b, &rw); err != nil {
 		return nil, err
 	}
 

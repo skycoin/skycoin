@@ -11,5 +11,5 @@
         "type": "bip44",
         "version": "0.3"
     },
-    "entries": []
+    "accounts": []
 }

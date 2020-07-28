@@ -476,6 +476,10 @@ func (a *bip44Accounts) entries(account, chain uint32) (wallet.Entries, error) {
 }
 
 func (a *bip44Accounts) entriesLen(account, chain uint32) (uint32, error) {
+	if a == nil {
+		return 0, nil
+	}
+
 	act, err := a.account(account)
 	if err != nil {
 		return 0, err

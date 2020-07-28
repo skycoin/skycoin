@@ -104,6 +104,7 @@ func TestNewServiceDupWallets(t *testing.T) {
 func TestNewServiceEmptyWallet(t *testing.T) {
 	loaders := map[string]wallet.Loader{
 		wallet.WalletTypeDeterministic: &deterministic.Loader{},
+		wallet.WalletTypeBip44:         &bip44wallet.Loader{},
 	}
 	cases := []struct {
 		dir string
@@ -113,10 +114,10 @@ func TestNewServiceEmptyWallet(t *testing.T) {
 			dir: "./testdata/empty_wallet",
 			fn:  "empty.wlt",
 		},
-		//{
-		//	dir: "./testdata/empty_bip44_wallet",
-		//	fn:  "empty.wlt",
-		//},
+		{
+			dir: "./testdata/empty_bip44_wallet",
+			fn:  "empty.wlt",
+		},
 	}
 
 	for _, tc := range cases {

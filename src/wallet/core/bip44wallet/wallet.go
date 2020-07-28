@@ -437,15 +437,25 @@ func (w *Wallet) Unlock(password []byte) (wallet.Wallet, error) {
 // Fingerprint returns a unique ID fingerprint for this wallet, composed of its wallet type and initial address
 func (w Wallet) Fingerprint() string {
 	addr := ""
-	entries, err := w.externalEntries(0)
+	cw := w.Clone().(*Wallet)
+	if w.accountManager.len() == 0 {
+		// Due to the value receiver of the Wallet, the new account should not be applied to
+		// the wallet.
+		_, err := cw.NewAccount(DefaultAccountName)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	entries, err := cw.externalEntries(0)
 	if err != nil {
 		logger.WithError(err).Panic("Fingerprint get external entries failed")
 		return ""
 	}
 
 	if len(entries) == 0 {
-		if !w.IsEncrypted() {
-			addrs, err := w.newExternalAddresses(0, 1)
+		if !cw.IsEncrypted() {
+			addrs, err := cw.newExternalAddresses(0, 1)
 			if err != nil {
 				logger.WithError(err).Panic("Fingerprint failed to generate initial entry for empty wallet")
 			}
@@ -454,7 +464,7 @@ func (w Wallet) Fingerprint() string {
 	} else {
 		addr = entries[0].Address.String()
 	}
-	return fmt.Sprintf("%s-%s", w.Type(), addr)
+	return fmt.Sprintf("%s-%s", cw.Type(), addr)
 }
 
 // Clone deep clone of the bip44 wallet

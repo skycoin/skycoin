@@ -1,7 +1,6 @@
 package bip44wallet
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 

@@ -145,13 +145,24 @@ func TestServiceCreateWallet(t *testing.T) {
 		err             error
 	}{
 		{
-			name:            "type=xpub encrypt=false password=pwd",
+			name:            "type=xpub encrypt=false",
 			encrypt:         false,
 			enableWalletAPI: true,
 			walletType:      wallet.WalletTypeXPub,
 			filename:        "t1.wlt",
 			xpub:            "xpub6EFYYRQeAbWLdWQYbtQv8HnemieKNmYUE23RmwphgtMLjz4UaStKADSKNoSSXM5FDcq4gZec2q6n7kdNWfuMdScxK1cXm8tR37kaitHtvuJ",
 			walletCreator:   &xpubwallet.Creator{},
+		},
+		{
+			name:            "type=xpub encrypt=true password=pwd",
+			encrypt:         true,
+			enableWalletAPI: true,
+			password:        []byte("pwd"),
+			walletType:      wallet.WalletTypeXPub,
+			filename:        "t1.wlt",
+			xpub:            "xpub6EFYYRQeAbWLdWQYbtQv8HnemieKNmYUE23RmwphgtMLjz4UaStKADSKNoSSXM5FDcq4gZec2q6n7kdNWfuMdScxK1cXm8tR37kaitHtvuJ",
+			walletCreator:   &xpubwallet.Creator{},
+			err:             wallet.NewError(fmt.Errorf("xpub wallet does not support encryption")),
 		},
 		{
 			name:            "type=collection encrypt=true password=pwd",
@@ -237,7 +248,7 @@ func TestServiceCreateWallet(t *testing.T) {
 					XPub:     tc.xpub,
 				})
 
-				require.Equal(t, tc.err, err, fmt.Sprintf("expect %v; got: %vb", tc.err, err))
+				require.Equal(t, tc.err, err, fmt.Sprintf("expect %v; got: %v", tc.err, err))
 				if err != nil {
 					return
 				}
@@ -270,10 +281,8 @@ func TestServiceCreateWallet(t *testing.T) {
 				case wallet.WalletTypeDeterministic,
 					wallet.WalletTypeBip44:
 					otherSeed = bip39.MustNewDefaultMnemonic()
-					// dupFingerprintErr = ErrSeedUsed
 				case wallet.WalletTypeXPub:
 					otherXPub = "xpub6Ea7Vm9yPWhgrpmH7oTTc8vFmfp5Hpaf4ZpcjNWWJmpqr68viqmndJGkq6UFZcM6MpSXpqxF93PgvC7PuqByk5Pkx1XmcKMqkZhQbg21JXA"
-					// 		dupFingerprintErr = ErrXPubKeyUsed
 				}
 
 				_, err = s.CreateWallet(tc.filename, wallet.Options{

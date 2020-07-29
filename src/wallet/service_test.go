@@ -153,14 +153,15 @@ func TestServiceCreateWallet(t *testing.T) {
 		//	filename:        "t1.wlt",
 		//	xpub:            "xpub6EFYYRQeAbWLdWQYbtQv8HnemieKNmYUE23RmwphgtMLjz4UaStKADSKNoSSXM5FDcq4gZec2q6n7kdNWfuMdScxK1cXm8tR37kaitHtvuJ",
 		//},
-		//{
-		//	name:            "type=collection encrypt=true password=pwd",
-		//	encrypt:         true,
-		//	password:        []byte("pwd"),
-		//	enableWalletAPI: true,
-		//	walletType:      WalletTypeCollection,
-		//	filename:        "t1.wlt",
-		//},
+		{
+			name:            "type=collection encrypt=true password=pwd",
+			encrypt:         true,
+			password:        []byte("pwd"),
+			enableWalletAPI: true,
+			walletType:      wallet.WalletTypeCollection,
+			filename:        "t1.wlt",
+			walletCreator:   &collection.Creator{},
+		},
 		{
 			name:            "type=bip44 encrypt=true password=pwd",
 			encrypt:         true,

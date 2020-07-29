@@ -1,6 +1,7 @@
 package deterministic
 
 import (
+	"bytes"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -719,7 +720,7 @@ func TestWalletSerialize(t *testing.T) {
 	// load wallet file and compare
 	fb, err := ioutil.ReadFile("./testdata/wallet_serialize.wlt")
 	require.NoError(t, err)
-	require.Equal(t, fb, b)
+	require.Equal(t, bytes.TrimRight(fb, "\n"), b)
 
 	wlt := Wallet{}
 	err = wlt.Deserialize(b)

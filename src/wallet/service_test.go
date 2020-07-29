@@ -144,15 +144,15 @@ func TestServiceCreateWallet(t *testing.T) {
 		xpub            string
 		err             error
 	}{
-		//{
-		//	name:            "type=xpub encrypt=true password=pwd",
-		//	encrypt:         true,
-		//	password:        []byte("pwd"),
-		//	enableWalletAPI: true,
-		//	walletType:      WalletTypeXPub,
-		//	filename:        "t1.wlt",
-		//	xpub:            "xpub6EFYYRQeAbWLdWQYbtQv8HnemieKNmYUE23RmwphgtMLjz4UaStKADSKNoSSXM5FDcq4gZec2q6n7kdNWfuMdScxK1cXm8tR37kaitHtvuJ",
-		//},
+		{
+			name:            "type=xpub encrypt=false password=pwd",
+			encrypt:         false,
+			enableWalletAPI: true,
+			walletType:      wallet.WalletTypeXPub,
+			filename:        "t1.wlt",
+			xpub:            "xpub6EFYYRQeAbWLdWQYbtQv8HnemieKNmYUE23RmwphgtMLjz4UaStKADSKNoSSXM5FDcq4gZec2q6n7kdNWfuMdScxK1cXm8tR37kaitHtvuJ",
+			walletCreator:   &xpubwallet.Creator{},
+		},
 		{
 			name:            "type=collection encrypt=true password=pwd",
 			encrypt:         true,
@@ -237,11 +237,8 @@ func TestServiceCreateWallet(t *testing.T) {
 					XPub:     tc.xpub,
 				})
 
-				if tc.err == nil {
-					require.NoError(t, err)
-				} else {
-					require.Error(t, err)
-					require.Equal(t, tc.err, err, "%s != %s", tc.err.Error(), err.Error())
+				require.Equal(t, tc.err, err, fmt.Sprintf("expect %v; got: %vb", tc.err, err))
+				if err != nil {
 					return
 				}
 
@@ -274,8 +271,8 @@ func TestServiceCreateWallet(t *testing.T) {
 					wallet.WalletTypeBip44:
 					otherSeed = bip39.MustNewDefaultMnemonic()
 					// dupFingerprintErr = ErrSeedUsed
-					// 	case WalletTypeXPub:
-					// 		otherXPub = "xpub6Ea7Vm9yPWhgrpmH7oTTc8vFmfp5Hpaf4ZpcjNWWJmpqr68viqmndJGkq6UFZcM6MpSXpqxF93PgvC7PuqByk5Pkx1XmcKMqkZhQbg21JXA"
+				case wallet.WalletTypeXPub:
+					otherXPub = "xpub6Ea7Vm9yPWhgrpmH7oTTc8vFmfp5Hpaf4ZpcjNWWJmpqr68viqmndJGkq6UFZcM6MpSXpqxF93PgvC7PuqByk5Pkx1XmcKMqkZhQbg21JXA"
 					// 		dupFingerprintErr = ErrXPubKeyUsed
 				}
 
@@ -287,8 +284,8 @@ func TestServiceCreateWallet(t *testing.T) {
 				require.Equal(t, err, wallet.ErrWalletNameConflict)
 
 				switch tc.walletType {
-				case wallet.WalletTypeDeterministic:
-					//wallet.WalletTypeBip44, WalletTypeXPub:
+				case wallet.WalletTypeDeterministic,
+					wallet.WalletTypeBip44, wallet.WalletTypeXPub:
 					// create wallet with dup seed or xpub key
 					dupWlt := "dup_wallet.wlt"
 					_, err = s.CreateWallet(dupWlt, wallet.Options{
@@ -304,11 +301,11 @@ func TestServiceCreateWallet(t *testing.T) {
 
 					testutil.RequireFileNotExists(t, filepath.Join(dir, dupWlt))
 
-					//case WalletTypeCollection:
-					// collection wallets never conflict with each other
+				case wallet.WalletTypeCollection:
+				// collection wallets never conflict with each other
 
-					//default:
-					//	t.Fatal("unhandled wallet type")
+				default:
+					t.Fatal("unhandled wallet type")
 				}
 			})
 		}

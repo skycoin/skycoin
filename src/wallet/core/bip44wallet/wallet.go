@@ -189,7 +189,7 @@ func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.O
 
 func validateMeta(m wallet.Meta) error {
 	if m[wallet.MetaType] != WalletType {
-		return errors.New("invalid wallet type")
+		return wallet.ErrInvalidWalletType
 	}
 
 	if s := m[wallet.MetaBip44Coin]; s == "" {

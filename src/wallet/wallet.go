@@ -291,6 +291,9 @@ func GuardView(w Wallet, password []byte, f func(w Wallet) error) error {
 		return err
 	}
 
+	// TODO: consider to catch panic and erase sensitive data in recovery function
+	// in case the f(wlt) function get panic
+
 	defer wlt.Erase()
 
 	return f(wlt)
@@ -305,13 +308,11 @@ type walletLoadMeta struct {
 
 // Save saves the wallet to a directory. The wallet's filename is read from its metadata.
 func Save(w Wallet, dir string) error {
-	// rw := w.ToReadable()
 	data, err := w.Serialize()
 	if err != nil {
 		return err
 	}
 	return file.SaveBinary(filepath.Join(dir, w.Filename()), data, 0600)
-	// return file.SaveJSON(filepath.Join(dir, rw.Filename()), rw, 0600)
 }
 
 // removeBackupFiles removes any *.wlt.bak files whom have version 0.1 and *.wlt matched in the given directory

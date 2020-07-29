@@ -36,7 +36,7 @@ type Service struct {
 
 // Loader is the interface that wraps the Load method.
 //
-// Load loads wallet from specific wallet file path.
+// Load loads wallet from data bytes
 type Loader interface {
 	Load(data []byte) (Wallet, error)
 }
@@ -142,7 +142,7 @@ func (serv *Service) WalletDir() (string, error) {
 	return serv.config.WalletDir, nil
 }
 
-//  SetEnableWalletAPI sets whether or not enables the wallet related APIs
+// SetEnableWalletAPI sets whether or not enables the wallet related APIs
 func (serv *Service) SetEnableWalletAPI(enable bool) {
 	serv.config.EnableWalletAPI = enable
 }
@@ -183,12 +183,6 @@ func (serv *Service) loadWallets() (Wallets, error) {
 	}
 
 	for name, w := range wallets {
-		// TODO: do validate when creating wallet
-		// if err := w.Validate(); err != nil {
-		// 	logger.WithError(err).WithField("name", name).Error("loadWallets: wallet.Validate failed")
-		// 	return nil, err
-		// }
-
 		if w.Coin() != CoinTypeSkycoin {
 			err := fmt.Errorf("LoadWallets only support skycoin wallets, %s is a %s wallet", name, w.Coin())
 			logger.WithError(err).WithField("name", name).Error()

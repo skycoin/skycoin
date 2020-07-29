@@ -1,6 +1,7 @@
 package collection
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"testing"
@@ -530,6 +531,7 @@ func TestWalletSerialize(t *testing.T) {
 	// load wallet file and compare
 	fb, err := ioutil.ReadFile("./testdata/wallet_serialize.wlt")
 	require.NoError(t, err)
+	fb = bytes.TrimRight(fb, "\n")
 	require.Equal(t, fb, b)
 
 	wlt := Wallet{}

@@ -240,7 +240,8 @@ func CreateTransactionSigned(w Wallet, p transaction.Params, auxs coin.AddressUx
 	for i, s := range uxb {
 		entry, ok := entriesMap[s.Address]
 		if !ok {
-			entry, err := w.GetEntry(s.Address)
+			var err error
+			entry, err = w.GetEntry(s.Address)
 			if err == ErrEntryNotFound {
 				// This should not occur because CreateTransaction should have checked it already
 				err := fmt.Errorf("Chosen spend address %s not found in wallet", s.Address)

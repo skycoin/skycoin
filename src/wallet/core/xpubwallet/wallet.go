@@ -100,7 +100,7 @@ func (w *Wallet) SetDecoder(d wallet.Decoder) {
 
 func validateMeta(m wallet.Meta) error {
 	if m[wallet.MetaType] != WalletType {
-		return errors.New("invalid wallet type")
+		return wallet.ErrInvalidWalletType
 	}
 
 	return wallet.ValidateMeta(m)
@@ -426,7 +426,7 @@ func (c Creator) Create(filename, label, _ string, options wallet.Options) (wall
 
 func validateOptions(options wallet.Options) error {
 	if options.Encrypt {
-		return errors.New("xpub wallet does not support encryption")
+		return wallet.NewError(errors.New("xpub wallet does not support encryption"))
 	}
 
 	return nil

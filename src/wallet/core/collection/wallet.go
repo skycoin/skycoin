@@ -397,7 +397,7 @@ func (l Loader) Load(data []byte) (wallet.Wallet, error) {
 type Creator struct{}
 
 // Create implements the wallet.Creator interface
-func (c Creator) Create(filename, label string, options wallet.Options) (wallet.Wallet, error) {
+func (c Creator) Create(filename, label, _ string, options wallet.Options) (wallet.Wallet, error) {
 	return NewWallet(filename, label, convertOptions(options)...)
 }
 

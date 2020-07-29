@@ -1,6 +1,7 @@
 package xpubwallet
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -182,7 +183,7 @@ func TestWalletGenerateAddresses(t *testing.T) {
 			name: "generate num is > math.MaxUint32",
 			xpub: testXPub,
 			num:  math.MaxUint32 + 1,
-			err:  nil,
+			err:  wallet.NewError(fmt.Errorf("XPubWallet.GenerateAddresses num too large")),
 		},
 	}
 
@@ -196,7 +197,7 @@ func TestWalletGenerateAddresses(t *testing.T) {
 			var addrs []cipher.Addresser
 			if !tc.oneAddressEachTime {
 				addrs, err = w.GenerateAddresses(tc.num)
-				require.NoError(t, err)
+				require.Equal(t, tc.err, err, fmt.Sprintf("want: %v; got: %v", tc.err, err))
 				if err != nil {
 					return
 				}
@@ -272,7 +273,7 @@ func TestWalletSerialize(t *testing.T) {
 	// load wallet file and compare
 	fb, err := ioutil.ReadFile("./testdata/wallet_serialize.wlt")
 	require.NoError(t, err)
-	require.Equal(t, fb, b)
+	require.Equal(t, bytes.TrimRight(fb, "\n"), b)
 
 	wlt := Wallet{}
 	err = wlt.Deserialize(b)

@@ -412,7 +412,7 @@ func (l Loader) Load(data []byte) (wallet.Wallet, error) {
 type Creator struct{}
 
 // Create creates a xpub wallet
-func (c Creator) Create(filename, label, xpub string, options wallet.Options) (wallet.Wallet, error) {
+func (c Creator) Create(filename, label, _ string, options wallet.Options) (wallet.Wallet, error) {
 	if err := validateOptions(options); err != nil {
 		return nil, err
 	}
@@ -420,7 +420,7 @@ func (c Creator) Create(filename, label, xpub string, options wallet.Options) (w
 	return NewWallet(
 		filename,
 		label,
-		xpub,
+		options.XPub,
 		convertOptions(options)...)
 }
 

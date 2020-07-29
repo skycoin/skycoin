@@ -161,15 +161,16 @@ func TestServiceCreateWallet(t *testing.T) {
 		//	walletType:      WalletTypeCollection,
 		//	filename:        "t1.wlt",
 		//},
-		//{
-		//	name:            "type=bip44 encrypt=true password=pwd",
-		//	encrypt:         true,
-		//	password:        []byte("pwd"),
-		//	enableWalletAPI: true,
-		//	walletType:      wallet.WalletTypeBip44,
-		//	filename:        "t1.wlt",
-		//	seed:            "voyage say extend find sheriff surge priority merit ignore maple cash argue",
-		//},
+		{
+			name:            "type=bip44 encrypt=true password=pwd",
+			encrypt:         true,
+			password:        []byte("pwd"),
+			enableWalletAPI: true,
+			walletType:      wallet.WalletTypeBip44,
+			filename:        "t1.wlt",
+			seed:            "voyage say extend find sheriff surge priority merit ignore maple cash argue",
+			walletCreator:   &bip44wallet.Creator{},
+		},
 		{
 			name:            "encrypt=true password=pwd",
 			encrypt:         true,
@@ -268,13 +269,13 @@ func TestServiceCreateWallet(t *testing.T) {
 				var otherXPub string
 				//var dupFingerprintErr error
 				switch tc.walletType {
-				case wallet.WalletTypeDeterministic:
-					//, wallet.WalletTypeBip44:
+				case wallet.WalletTypeDeterministic,
+					wallet.WalletTypeBip44:
 					otherSeed = bip39.MustNewDefaultMnemonic()
-					//dupFingerprintErr = ErrSeedUsed
-					//case WalletTypeXPub:
-					//	otherXPub = "xpub6Ea7Vm9yPWhgrpmH7oTTc8vFmfp5Hpaf4ZpcjNWWJmpqr68viqmndJGkq6UFZcM6MpSXpqxF93PgvC7PuqByk5Pkx1XmcKMqkZhQbg21JXA"
-					//	dupFingerprintErr = ErrXPubKeyUsed
+					// dupFingerprintErr = ErrSeedUsed
+					// 	case WalletTypeXPub:
+					// 		otherXPub = "xpub6Ea7Vm9yPWhgrpmH7oTTc8vFmfp5Hpaf4ZpcjNWWJmpqr68viqmndJGkq6UFZcM6MpSXpqxF93PgvC7PuqByk5Pkx1XmcKMqkZhQbg21JXA"
+					// 		dupFingerprintErr = ErrXPubKeyUsed
 				}
 
 				_, err = s.CreateWallet(tc.filename, wallet.Options{

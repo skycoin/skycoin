@@ -24,7 +24,7 @@ func (d JSONDecoder) Decode(b []byte) (wallet.Wallet, error) {
 		return nil, err
 	}
 
-	return rw.ToWallet()
+	return rw.toWallet()
 }
 
 // readableEntry wallet entry with json tags
@@ -62,11 +62,6 @@ func newReadableEntries(entries wallet.Entries, coinType wallet.CoinType) readab
 		re[i] = newReadableEntry(coinType, e)
 	}
 	return re
-}
-
-// GetEntries returns this array
-func (res readableEntries) GetEntries() readableEntries {
-	return res
 }
 
 // toWalletEntries convert readable entries to entries
@@ -151,8 +146,8 @@ func newReadableDeterministicWallet(w *Wallet) *readableDeterministicWallet {
 	}
 }
 
-// ToWallet convert readable wallet to Wallet
-func (rw *readableDeterministicWallet) ToWallet() (wallet.Wallet, error) {
+// toWallet convert readable wallet to Wallet
+func (rw *readableDeterministicWallet) toWallet() (wallet.Wallet, error) {
 	w := &Wallet{
 		Meta: rw.Meta.Clone(),
 	}

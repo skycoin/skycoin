@@ -12,7 +12,10 @@ import (
 
 	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
 	"github.com/SkycoinProject/skycoin/src/testutil"
+	"github.com/SkycoinProject/skycoin/src/wallet/core/bip44wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/core/collection"
 	"github.com/SkycoinProject/skycoin/src/wallet/core/deterministic"
+	"github.com/SkycoinProject/skycoin/src/wallet/core/xpubwallet"
 	"github.com/stretchr/testify/require"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
@@ -38,13 +41,11 @@ func dirIsEmpty(t *testing.T, dir string) {
 }
 
 func TestNewService(t *testing.T) {
-	// create fake wallet loaders
 	loaders := map[string]wallet.Loader{
 		deterministic.WalletType: deterministic.Loader{},
-		//wallet.WalletTypeDeterministic: &mockWalletLoader{Type: wallet.WalletTypeDeterministic, EntriesLen: 1},
-		//wallet.WalletTypeBip44:         &mockWalletLoader{Type: wallet.WalletTypeBip44, Accounts: []Bip44Account{}, EntriesLen: 1},
-		//WalletTypeCollection: &mockWalletLoader{Type: WalletTypeCollection},
-		//WalletTypeXPub:       &mockWalletLoader{Type: WalletTypeXPub},
+		collection.WalletType:    collection.Loader{},
+		bip44wallet.WalletType:   bip44wallet.Loader{},
+		xpubwallet.WalletType:    xpubwallet.Loader{},
 	}
 
 	for _, ct := range crypto.Types() {
@@ -77,11 +78,9 @@ func TestNewService(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			// TODO: add other wallet types and test
-			// require.Equal(t, 11, len(s.wallets))
 			wlts, err = s.GetWallets()
 			require.NoError(t, err)
-			require.Equal(t, 6, len(wlts))
+			require.Equal(t, 11, len(wlts))
 		})
 	}
 }

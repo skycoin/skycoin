@@ -139,12 +139,12 @@ func (w Wallet) IsEncrypted() bool {
 
 // Lock will do nothing to the xpub wallet
 func (w Wallet) Lock(_ []byte) error {
-	return nil
+	return wallet.NewError(errors.New("xpub wallet does not support encryption"))
 }
 
 // Unlock will return the origin xpub wallet
 func (w *Wallet) Unlock(_ []byte) (wallet.Wallet, error) {
-	return w, nil
+	return nil, wallet.NewError(errors.New("xpub wallet does not support encryption"))
 }
 
 // Fingerprint returns a unique ID fingerprint for this wallet, using the first

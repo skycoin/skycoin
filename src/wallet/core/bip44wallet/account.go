@@ -194,7 +194,7 @@ func (a *bip44Account) unpackSecrets(ss wallet.Secrets) error {
 	return nil
 }
 
-func (a *bip44Account) entries(chain uint32) (wallet.Entries, error) {
+func (a bip44Account) entries(chain uint32) (wallet.Entries, error) {
 	switch chain {
 	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
 		c := a.Chains[chain]
@@ -204,7 +204,7 @@ func (a *bip44Account) entries(chain uint32) (wallet.Entries, error) {
 	}
 }
 
-func (a *bip44Account) entriesLen(chain uint32) (uint32, error) {
+func (a bip44Account) entriesLen(chain uint32) (uint32, error) {
 	switch chain {
 	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
 		return uint32(len(a.Chains[chain].Entries)), nil
@@ -213,7 +213,7 @@ func (a *bip44Account) entriesLen(chain uint32) (uint32, error) {
 	}
 }
 
-func (a *bip44Account) entryAt(chain, i uint32) (wallet.Entry, error) {
+func (a bip44Account) entryAt(chain, i uint32) (wallet.Entry, error) {
 	switch chain {
 	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
 		if i >= uint32(len(a.Chains[chain].Entries)) {
@@ -225,7 +225,7 @@ func (a *bip44Account) entryAt(chain, i uint32) (wallet.Entry, error) {
 	}
 }
 
-func (a *bip44Account) getEntry(address cipher.Addresser) (wallet.Entry, bool) {
+func (a bip44Account) getEntry(address cipher.Addresser) (wallet.Entry, bool) {
 	for _, c := range a.Chains {
 		for _, e := range c.Entries {
 			if e.Address == address {
@@ -385,7 +385,7 @@ func (a *bip44Accounts) newAddresses(account, chain, num uint32) ([]cipher.Addre
 // account returns the pinter of the account by index,
 // this should not be used outside the accounts management in case of
 // unsafe behaviour.
-func (a *bip44Accounts) account(index uint32) (*bip44Account, error) {
+func (a bip44Accounts) account(index uint32) (*bip44Account, error) {
 	accountLen := len(a.accounts)
 	if int(index) >= accountLen {
 		return nil, fmt.Errorf("account index %d out of range", index)
@@ -431,7 +431,7 @@ func (a *bip44Accounts) nextIndex() (uint32, error) {
 	return uint32(len(a.accounts)), nil
 }
 
-func (a *bip44Accounts) clone() accountManager {
+func (a bip44Accounts) clone() accountManager {
 	nas := &bip44Accounts{}
 	for i := range a.accounts {
 		na := a.accounts[i].Clone()
@@ -461,7 +461,7 @@ func (a *bip44Accounts) erase() {
 	}
 }
 
-func (a *bip44Accounts) entries(account, chain uint32) (wallet.Entries, error) {
+func (a bip44Accounts) entries(account, chain uint32) (wallet.Entries, error) {
 	act, err := a.account(account)
 	if err != nil {
 		return nil, err
@@ -475,8 +475,8 @@ func (a *bip44Accounts) entries(account, chain uint32) (wallet.Entries, error) {
 	}
 }
 
-func (a *bip44Accounts) entriesLen(account, chain uint32) (uint32, error) {
-	if a == nil {
+func (a bip44Accounts) entriesLen(account, chain uint32) (uint32, error) {
+	if len(a.accounts) == 0 {
 		return 0, nil
 	}
 
@@ -493,7 +493,7 @@ func (a *bip44Accounts) entriesLen(account, chain uint32) (uint32, error) {
 	}
 }
 
-func (a *bip44Accounts) entryAt(account, chain, i uint32) (wallet.Entry, error) {
+func (a bip44Accounts) entryAt(account, chain, i uint32) (wallet.Entry, error) {
 	act, err := a.account(account)
 	if err != nil {
 		return wallet.Entry{}, err
@@ -507,7 +507,7 @@ func (a *bip44Accounts) entryAt(account, chain, i uint32) (wallet.Entry, error) 
 	}
 }
 
-func (a *bip44Accounts) getEntry(account uint32, address cipher.Addresser) (wallet.Entry, bool, error) {
+func (a bip44Accounts) getEntry(account uint32, address cipher.Addresser) (wallet.Entry, bool, error) {
 	act, err := a.account(account)
 	if err != nil {
 		return wallet.Entry{}, false, err
@@ -526,7 +526,7 @@ func (a *bip44Accounts) syncSecrets(ss wallet.Secrets) error {
 	return nil
 }
 
-func (a *bip44Accounts) all() []wallet.Bip44Account {
+func (a bip44Accounts) all() []wallet.Bip44Account {
 	as := make([]wallet.Bip44Account, len(a.accounts))
 	for i, act := range a.accounts {
 		as[i] = wallet.Bip44Account{

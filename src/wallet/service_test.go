@@ -1259,16 +1259,17 @@ func TestServiceEncryptWallet(t *testing.T) {
 		disableWalletAPI bool
 		err              error
 	}{
-		//{
-		//	name:    "ok xpub wallet",
-		//	wltName: "t.wlt",
-		//	opts: wallet.Options{
-		//		XPub: "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
-		//		Type: wallet.WalletTypeXPub,
-		//	},
-		//	encWltName: "t.wlt",
-		//	pwd:        []byte("pwd"),
-		//},
+		{
+			name:    "ok xpub wallet",
+			wltName: "t.wlt",
+			opts: wallet.Options{
+				XPub: "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
+				Type: wallet.WalletTypeXPub,
+			},
+			encWltName: "t.wlt",
+			pwd:        []byte("pwd"),
+			err:        wallet.NewError(fmt.Errorf("xpub wallet does not support encryption")),
+		},
 		{
 			name:    "ok deterministic wallet",
 			wltName: "t.wlt",
@@ -1279,25 +1280,25 @@ func TestServiceEncryptWallet(t *testing.T) {
 			encWltName: "t.wlt",
 			pwd:        []byte("pwd"),
 		},
-		//{
-		//	name:    "ok collection wallet",
-		//	wltName: "t.wlt",
-		//	opts: wallet.Options{
-		//		Type: wallet.WalletTypeCollection,
-		//	},
-		//	encWltName: "t.wlt",
-		//	pwd:        []byte("pwd"),
-		//},
-		//{
-		//	name:    "ok bip44 wallet",
-		//	wltName: "t.wlt",
-		//	opts: wallet.Options{
-		//		Type: wallet.WalletTypeBip44,
-		//		Seed: "voyage say extend find sheriff surge priority merit ignore maple cash argue",
-		//	},
-		//	encWltName: "t.wlt",
-		//	pwd:        []byte("pwd"),
-		//},
+		{
+			name:    "ok collection wallet",
+			wltName: "t.wlt",
+			opts: wallet.Options{
+				Type: wallet.WalletTypeCollection,
+			},
+			encWltName: "t.wlt",
+			pwd:        []byte("pwd"),
+		},
+		{
+			name:    "ok bip44 wallet",
+			wltName: "t.wlt",
+			opts: wallet.Options{
+				Type: wallet.WalletTypeBip44,
+				Seed: "voyage say extend find sheriff surge priority merit ignore maple cash argue",
+			},
+			encWltName: "t.wlt",
+			pwd:        []byte("pwd"),
+		},
 		{
 			name:    "wallet doesn't exist",
 			wltName: "t.wlt",
@@ -1339,6 +1340,9 @@ func TestServiceEncryptWallet(t *testing.T) {
 
 	creators := map[string]wallet.Creator{
 		wallet.WalletTypeDeterministic: deterministic.Creator{},
+		wallet.WalletTypeBip44:         bip44wallet.Creator{},
+		wallet.WalletTypeCollection:    collection.Creator{},
+		wallet.WalletTypeXPub:          xpubwallet.Creator{},
 	}
 
 	for _, tc := range tt {
@@ -1367,28 +1371,28 @@ func TestServiceEncryptWallet(t *testing.T) {
 				w, err := s.CreateWallet(tc.wltName, opts)
 				require.NoError(t, err)
 
-				//switch w.Type() {
-				//// Add an entry to a collection wallet, to verify that secrets are hidden
-				//case wallet.WalletTypeCollection:
-				//	// TODO: open this after collection is supported
-				//	//err := s.Update(w.Filename(), func(w Wallet) error {
-				//	//	p, s := cipher.GenerateKeyPair()
-				//	//	return w.(*CollectionWallet).AddEntry(entry.Entry{
-				//	//		Public:  p,
-				//	//		Secret:  s,
-				//	//		Address: cipher.AddressFromPubKey(p),
-				//	//	})
-				//	//})
-				//	//require.NoError(t, err)
-				//
-				//// Add entries to the a bip44 wallet's change chain, to verify that those secrets are hidden
-				//case wallet.WalletTypeBip44:
-				//	err := s.Update(w.Filename(), func(w wallet.Wallet) error {
-				//		_, err := w.(*Bip44Wallet).PeekChangeAddress(mockTxnsFinder{})
-				//		return err
-				//	})
-				//	require.NoError(t, err)
-				//}
+				switch w.Type() {
+				// Add an entry to a collection wallet, to verify that secrets are hidden
+				case wallet.WalletTypeCollection:
+					// TODO: open this after collection is supported
+					err := s.Update(w.Filename(), func(w wallet.Wallet) error {
+						p, s := cipher.GenerateKeyPair()
+						return w.(*collection.Wallet).AddEntry(wallet.Entry{
+							Public:  p,
+							Secret:  s,
+							Address: cipher.AddressFromPubKey(p),
+						})
+					})
+					require.NoError(t, err)
+
+				// Add entries to the a bip44 wallet's change chain, to verify that those secrets are hidden
+				case wallet.WalletTypeBip44:
+					err := s.Update(w.Filename(), func(w wallet.Wallet) error {
+						_, err := w.(*bip44wallet.Wallet).PeekChangeAddress(mockTxnsFinder{})
+						return err
+					})
+					require.NoError(t, err)
+				}
 
 				// Encrypt the wallet
 				encWlt, err := s.EncryptWallet(tc.encWltName, tc.pwd)
@@ -1400,7 +1404,11 @@ func TestServiceEncryptWallet(t *testing.T) {
 				encWlt1, err := s.GetWallet(tc.encWltName)
 				//encWlt1, err := s.getWallet(tc.encWltName)
 				require.NoError(t, err)
-				require.Equal(t, encWlt, encWlt1)
+				ewb, err := encWlt.Serialize()
+				require.NoError(t, err)
+				ew1b, err := encWlt1.Serialize()
+				require.NoError(t, err)
+				require.Equal(t, ewb, ew1b)
 
 				// Check the encrypted wallet
 				require.True(t, encWlt.IsEncrypted())

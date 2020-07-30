@@ -1113,7 +1113,6 @@ func TestServiceGetWallets(t *testing.T) {
 					return
 				}
 
-				// TODO: add bip44 wallet create support
 				// Creates a bip44 wallet
 				w, err := s.CreateWallet("t.wlt", wallet.Options{
 					Label: "label",
@@ -1170,7 +1169,6 @@ func TestServiceUpdateWalletLabel(t *testing.T) {
 			opts: wallet.Options{
 				Seed:  bip39.MustNewDefaultMnemonic(),
 				Label: "label",
-				//Type:  wallet.WalletTypeBip44,
 			},
 			updateWltName: "t.wlt",
 			label:         "new-label",
@@ -1181,7 +1179,6 @@ func TestServiceUpdateWalletLabel(t *testing.T) {
 			opts: wallet.Options{
 				Seed:  bip39.MustNewDefaultMnemonic(),
 				Label: "label",
-				//Type:  wallet.WalletTypeBip44,
 			},
 			updateWltName: "t1.wlt",
 			label:         "new-label",
@@ -1193,7 +1190,6 @@ func TestServiceUpdateWalletLabel(t *testing.T) {
 			opts: wallet.Options{
 				Seed:  bip39.MustNewDefaultMnemonic(),
 				Label: "label",
-				//Type:  wallet.WalletTypeBip44,
 			},
 			disableWalletAPI: true,
 			err:              wallet.ErrWalletAPIDisabled,
@@ -1202,11 +1198,15 @@ func TestServiceUpdateWalletLabel(t *testing.T) {
 
 	creators := map[string]wallet.Creator{
 		wallet.WalletTypeDeterministic: deterministic.Creator{},
+		wallet.WalletTypeBip44:         bip44wallet.Creator{},
 	}
 
 	for _, tc := range tt {
 		// TODO: add bip44 test
-		for _, walletType := range []string{wallet.WalletTypeDeterministic} {
+		for _, walletType := range []string{
+			wallet.WalletTypeDeterministic,
+			wallet.WalletTypeBip44,
+		} {
 			for _, ct := range crypto.Types() {
 				t.Run(tc.name, func(t *testing.T) {
 					// Create the wallet service

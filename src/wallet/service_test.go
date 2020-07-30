@@ -647,23 +647,23 @@ func TestServiceNewAddresses(t *testing.T) {
 		addrs[i] = cipher.MustAddressFromSecKey(s)
 	}
 
-	//bip44Seed := "voyage say extend find sheriff surge priority merit ignore maple cash argue"
-	//bip44AddrStrs := []string{
-	//	"9BSEAEE3XGtQ2X43BCT2XCYgheGLQQigEG",
-	//	"29cnQPHuWHCRF26LEAb2gR83ywnF3F9HduW",
-	//	"2ZUAv9MGSpDKR3dnKMUnrKqLenV22JXAxzP",
-	//	"fwNVThqdzH7JMsStoLrTpkVsemesbdGftm",
-	//	"eyr5KDLTnN6ZZeggeHqDcXnrwmNUi7sGk2",
-	//	"Aee3J9qoFPLoUEJes6YVzdKHdeuvCrMZeJ",
-	//	"29MZS8aiYUdEwcruwCPggVJG9YJLsm92FHa",
-	//	"2Hbm3bwKiEwqNAMAzVJmz5hL1dNTfaA3ju7",
-	//	"WCaSCwSZnVqtkYeiKryeHjR8LbzE3KbkzJ",
-	//	"baRjCy1yHfishGdZi3bVaPaL7VJM7FZCSd",
-	//}
-	//bip44Addrs := make([]cipher.Address, len(bip44AddrStrs))
-	//for i, a := range bip44AddrStrs {
-	//	bip44Addrs[i] = cipher.MustDecodeBase58Address(a)
-	//}
+	bip44Seed := "voyage say extend find sheriff surge priority merit ignore maple cash argue"
+	bip44AddrStrs := []string{
+		"9BSEAEE3XGtQ2X43BCT2XCYgheGLQQigEG",
+		"29cnQPHuWHCRF26LEAb2gR83ywnF3F9HduW",
+		"2ZUAv9MGSpDKR3dnKMUnrKqLenV22JXAxzP",
+		"fwNVThqdzH7JMsStoLrTpkVsemesbdGftm",
+		"eyr5KDLTnN6ZZeggeHqDcXnrwmNUi7sGk2",
+		"Aee3J9qoFPLoUEJes6YVzdKHdeuvCrMZeJ",
+		"29MZS8aiYUdEwcruwCPggVJG9YJLsm92FHa",
+		"2Hbm3bwKiEwqNAMAzVJmz5hL1dNTfaA3ju7",
+		"WCaSCwSZnVqtkYeiKryeHjR8LbzE3KbkzJ",
+		"baRjCy1yHfishGdZi3bVaPaL7VJM7FZCSd",
+	}
+	bip44Addrs := make([]cipher.Address, len(bip44AddrStrs))
+	for i, a := range bip44AddrStrs {
+		bip44Addrs[i] = cipher.MustDecodeBase58Address(a)
+	}
 
 	tt := []struct {
 		name               string
@@ -740,72 +740,70 @@ func TestServiceNewAddresses(t *testing.T) {
 			// CreateWallet will generate a default address, so check from new address
 			expectAddrs: addrs[1:3],
 		},
-
-		//{
-		//	name: "bip44 encrypted=false addresses=0",
-		//	opts: wallet.Options{
-		//		Type:  wallet.WalletTypeBip44,
-		//		Label: "label",
-		//		Seed:  bip44Seed,
-		//	},
-		//	n:             0,
-		//	expectAddrNum: 0,
-		//},
-		//{
-		//	name: "bip44 encrypted=false addresses=1",
-		//	opts: wallet.Options{
-		//		Label: "label",
-		//		Seed:  bip44Seed,
-		//		Type:  wallet.WalletTypeBip44,
-		//	},
-		//	n:             2,
-		//	expectAddrNum: 2,
-		//	// CreateWallet will generate a default address, so check from new address
-		//	expectAddrs: bip44Addrs[1:3],
-		//},
-		//{
-		//	name: "bip44 encrypted=false addresses=2",
-		//	opts: wallet.Options{
-		//		Label: "label",
-		//		Seed:  bip44Seed,
-		//		Type:  wallet.WalletTypeBip44,
-		//	},
-		//	n:             2,
-		//	expectAddrNum: 2,
-		//	// CreateWallet will generate a default address, so check from new address
-		//	expectAddrs: bip44Addrs[1:3],
-		//},
-		//{
-		//	name: "bip44 encrypted=true addresses=1",
-		//	opts: wallet.Options{
-		//		Label:    "label",
-		//		Seed:     bip44Seed,
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//		Type:     wallet.WalletTypeBip44,
-		//	},
-		//	n:             1,
-		//	pwd:           []byte("pwd"),
-		//	expectAddrNum: 1,
-		//	// CreateWallet will generate a default address, so check from new address
-		//	expectAddrs: bip44Addrs[1:2],
-		//},
-		//{
-		//	name: "bip44 encrypted=true addresses=2",
-		//	opts: wallet.Options{
-		//		Label:    "label",
-		//		Seed:     bip44Seed,
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//		Type:     wallet.WalletTypeBip44,
-		//	},
-		//	n:             2,
-		//	pwd:           []byte("pwd"),
-		//	expectAddrNum: 2,
-		//	// CreateWallet will generate a default address, so check from new address
-		//	expectAddrs: bip44Addrs[1:3],
-		//},
-
+		{
+			name: "bip44 encrypted=false addresses=0",
+			opts: wallet.Options{
+				Type:  wallet.WalletTypeBip44,
+				Label: "label",
+				Seed:  bip44Seed,
+			},
+			n:             0,
+			expectAddrNum: 0,
+		},
+		{
+			name: "bip44 encrypted=false addresses=1",
+			opts: wallet.Options{
+				Label: "label",
+				Seed:  bip44Seed,
+				Type:  wallet.WalletTypeBip44,
+			},
+			n:             2,
+			expectAddrNum: 2,
+			// CreateWallet will generate a default address, so check from new address
+			expectAddrs: bip44Addrs[1:3],
+		},
+		{
+			name: "bip44 encrypted=false addresses=2",
+			opts: wallet.Options{
+				Label: "label",
+				Seed:  bip44Seed,
+				Type:  wallet.WalletTypeBip44,
+			},
+			n:             2,
+			expectAddrNum: 2,
+			// CreateWallet will generate a default address, so check from new address
+			expectAddrs: bip44Addrs[1:3],
+		},
+		{
+			name: "bip44 encrypted=true addresses=1",
+			opts: wallet.Options{
+				Label:    "label",
+				Seed:     bip44Seed,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				Type:     wallet.WalletTypeBip44,
+			},
+			n:             1,
+			pwd:           []byte("pwd"),
+			expectAddrNum: 1,
+			// CreateWallet will generate a default address, so check from new address
+			expectAddrs: bip44Addrs[1:2],
+		},
+		{
+			name: "bip44 encrypted=true addresses=2",
+			opts: wallet.Options{
+				Label:    "label",
+				Seed:     bip44Seed,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				Type:     wallet.WalletTypeBip44,
+			},
+			n:             2,
+			pwd:           []byte("pwd"),
+			expectAddrNum: 2,
+			// CreateWallet will generate a default address, so check from new address
+			expectAddrs: bip44Addrs[1:3],
+		},
 		{
 			name: "encrypted=true wrong password",
 			opts: wallet.Options{
@@ -870,9 +868,11 @@ func TestServiceNewAddresses(t *testing.T) {
 					EnableWalletAPI: !tc.walletAPIDisabled,
 					WalletCreators: map[string]wallet.Creator{
 						wallet.WalletTypeDeterministic: &deterministic.Creator{},
+						wallet.WalletTypeBip44:         &bip44wallet.Creator{},
 					},
 					WalletLoaders: map[string]wallet.Loader{
 						wallet.WalletTypeDeterministic: &deterministic.Loader{},
+						wallet.WalletTypeBip44:         &bip44wallet.Loader{},
 					},
 				})
 				require.NoError(t, err)
@@ -909,7 +909,7 @@ func TestServiceNewAddresses(t *testing.T) {
 					return
 				}
 
-				// Confirms that the wallet addresse number is correct
+				// Confirms that the wallet addresses number is correct
 				require.Len(t, naddrs, tc.expectAddrNum)
 				for i, a := range tc.expectAddrs {
 					require.Equal(t, a, naddrs[i])
@@ -936,7 +936,19 @@ func TestServiceNewAddresses(t *testing.T) {
 
 				lw, err := s.Load(filepath.Join(dir, w.Filename()))
 				require.NoError(t, err)
-				require.Equal(t, lw, w)
+
+				el, err = lw.EntriesLen()
+				require.NoError(t, err)
+
+				require.Equal(t, tc.expectAddrNum+1, el)
+				es, err := w.GetEntries()
+				require.NoError(t, err)
+				for i := range es {
+					e, err := lw.GetEntryAt(i)
+					require.NoError(t, err)
+					require.Equal(t, e, es[i])
+				}
+
 				if w.IsEncrypted() {
 					checkNoSensitiveData(t, lw)
 				}

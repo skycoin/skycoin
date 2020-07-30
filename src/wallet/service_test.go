@@ -338,46 +338,46 @@ func TestServiceLoadWallet(t *testing.T) {
 	// Prepare addresss
 	seed := "seed"
 	_, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 10)
-	var addrs []cipher.Address
-	for _, s := range seckeys {
-		addrs = append(addrs, cipher.MustAddressFromSecKey(s))
+	addrs := make([]cipher.Address, 10)
+	for i, s := range seckeys {
+		addrs[i] = cipher.MustAddressFromSecKey(s)
 	}
 
-	//bip44Seed := "voyage say extend find sheriff surge priority merit ignore maple cash argue"
-	//bip44AddrStrs := []string{
-	//	"9BSEAEE3XGtQ2X43BCT2XCYgheGLQQigEG",
-	//	"29cnQPHuWHCRF26LEAb2gR83ywnF3F9HduW",
-	//	"2ZUAv9MGSpDKR3dnKMUnrKqLenV22JXAxzP",
-	//	"fwNVThqdzH7JMsStoLrTpkVsemesbdGftm",
-	//	"eyr5KDLTnN6ZZeggeHqDcXnrwmNUi7sGk2",
-	//	"Aee3J9qoFPLoUEJes6YVzdKHdeuvCrMZeJ",
-	//	"29MZS8aiYUdEwcruwCPggVJG9YJLsm92FHa",
-	//	"2Hbm3bwKiEwqNAMAzVJmz5hL1dNTfaA3ju7",
-	//	"WCaSCwSZnVqtkYeiKryeHjR8LbzE3KbkzJ",
-	//	"baRjCy1yHfishGdZi3bVaPaL7VJM7FZCSd",
-	//}
-	//bip44Addrs := make([]cipher.Address, len(bip44AddrStrs))
-	//for i, a := range bip44AddrStrs {
-	//	bip44Addrs[i] = cipher.MustDecodeBase58Address(a)
-	//}
-	//
-	//bip44SeedPassphrase := "foobar"
-	//bip44SeedPassphraseAddrStrs := []string{
-	//	"n5SteDkkYdR3VJtMnVYcQ45L16rDDrseG8",
-	//	"mGeG2PDoU4nc9qE1FSSreAjFeKG12zDvur",
-	//	"rhbE3thvA747E81KfaYCujur7GKXjdhvS4",
-	//	"BDEmcU8u4oTf9domk19Nzh65MXoWLLUvJN",
-	//	"cubnvXGENW3gTdcdJADp8XEJaBscpy7gpq",
-	//	"wv37cSiVhjgo6Qrrs994UJ52YU2zWNGJbu",
-	//	"7aEzdSrcm1s2pm5YhshsRmkFy4EuYEnJ49",
-	//	"nQJgxEE2eaggUeGaA73e4DaXq6KAvUiaS4",
-	//	"2G9bhZaJrTKo1LScgtdvVXpQD4P8tKvgkvL",
-	//	"4RqFK3qLz26XbPjgJsiJ3587P7p6DesDHd",
-	//}
-	//bip44SeedPassphraseAddrs := make([]cipher.Address, len(bip44SeedPassphraseAddrStrs))
-	//for i, a := range bip44SeedPassphraseAddrStrs {
-	//	bip44SeedPassphraseAddrs[i] = cipher.MustDecodeBase58Address(a)
-	//}
+	bip44Seed := "voyage say extend find sheriff surge priority merit ignore maple cash argue"
+	bip44AddrStrs := []string{
+		"9BSEAEE3XGtQ2X43BCT2XCYgheGLQQigEG",
+		"29cnQPHuWHCRF26LEAb2gR83ywnF3F9HduW",
+		"2ZUAv9MGSpDKR3dnKMUnrKqLenV22JXAxzP",
+		"fwNVThqdzH7JMsStoLrTpkVsemesbdGftm",
+		"eyr5KDLTnN6ZZeggeHqDcXnrwmNUi7sGk2",
+		"Aee3J9qoFPLoUEJes6YVzdKHdeuvCrMZeJ",
+		"29MZS8aiYUdEwcruwCPggVJG9YJLsm92FHa",
+		"2Hbm3bwKiEwqNAMAzVJmz5hL1dNTfaA3ju7",
+		"WCaSCwSZnVqtkYeiKryeHjR8LbzE3KbkzJ",
+		"baRjCy1yHfishGdZi3bVaPaL7VJM7FZCSd",
+	}
+	bip44Addrs := make([]cipher.Address, len(bip44AddrStrs))
+	for i, a := range bip44AddrStrs {
+		bip44Addrs[i] = cipher.MustDecodeBase58Address(a)
+	}
+
+	bip44SeedPassphrase := "foobar"
+	bip44SeedPassphraseAddrStrs := []string{
+		"n5SteDkkYdR3VJtMnVYcQ45L16rDDrseG8",
+		"mGeG2PDoU4nc9qE1FSSreAjFeKG12zDvur",
+		"rhbE3thvA747E81KfaYCujur7GKXjdhvS4",
+		"BDEmcU8u4oTf9domk19Nzh65MXoWLLUvJN",
+		"cubnvXGENW3gTdcdJADp8XEJaBscpy7gpq",
+		"wv37cSiVhjgo6Qrrs994UJ52YU2zWNGJbu",
+		"7aEzdSrcm1s2pm5YhshsRmkFy4EuYEnJ49",
+		"nQJgxEE2eaggUeGaA73e4DaXq6KAvUiaS4",
+		"2G9bhZaJrTKo1LScgtdvVXpQD4P8tKvgkvL",
+		"4RqFK3qLz26XbPjgJsiJ3587P7p6DesDHd",
+	}
+	bip44SeedPassphraseAddrs := make([]cipher.Address, len(bip44SeedPassphraseAddrStrs))
+	for i, a := range bip44SeedPassphraseAddrStrs {
+		bip44SeedPassphraseAddrs[i] = cipher.MustDecodeBase58Address(a)
+	}
 
 	tt := []struct {
 		name          string
@@ -451,140 +451,139 @@ func TestServiceLoadWallet(t *testing.T) {
 			expectAddrNum: 2,
 			expectAddrs:   addrs[:2],
 		},
-		//
-		//{
-		//	name: "bip44 raw wallet address=1",
-		//	opts: wallet.Options{
-		//		Type:  wallet.WalletTypeBip44,
-		//		Seed:  bip44Seed,
-		//		Label: "wallet",
-		//		ScanN: 5,
-		//		TF: mockTxnsFinder{
-		//			bip44Addrs[0]: true,
-		//		},
-		//	},
-		//	err:           nil,
-		//	expectAddrNum: 1,
-		//	expectAddrs:   bip44Addrs[:1],
-		//},
-		//{
-		//	name: "bip44 raw wallet address=2",
-		//	opts: wallet.Options{
-		//		Type:  wallet.WalletTypeBip44,
-		//		Seed:  bip44Seed,
-		//		Label: "wallet",
-		//		ScanN: 5,
-		//		TF: mockTxnsFinder{
-		//			bip44Addrs[1]: true,
-		//		},
-		//	},
-		//	err:           nil,
-		//	expectAddrNum: 2,
-		//	expectAddrs:   bip44Addrs[:2],
-		//},
-		//{
-		//	name: "bip44 encrypted wallet address=1",
-		//	opts: wallet.Options{
-		//		Type:     wallet.WalletTypeBip44,
-		//		Seed:     bip44Seed,
-		//		Label:    "wallet",
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//		ScanN:    5,
-		//		TF: mockTxnsFinder{
-		//			bip44Addrs[0]: true,
-		//		},
-		//	},
-		//	err:           nil,
-		//	expectAddrNum: 1,
-		//	expectAddrs:   bip44Addrs[:1],
-		//},
-		//{
-		//	name: "bip44 encrypted wallet address=2",
-		//	opts: wallet.Options{
-		//		Type:     wallet.WalletTypeBip44,
-		//		Seed:     bip44Seed,
-		//		Label:    "wallet",
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//		ScanN:    5,
-		//		TF: mockTxnsFinder{
-		//			bip44Addrs[1]: true,
-		//		},
-		//	},
-		//	err:           nil,
-		//	expectAddrNum: 2,
-		//	expectAddrs:   bip44Addrs[:2],
-		//},
-		//
-		//{
-		//	name: "bip44 with seed passphrase raw wallet address=1",
-		//	opts: wallet.Options{
-		//		Type:           wallet.WalletTypeBip44,
-		//		Seed:           bip44Seed,
-		//		SeedPassphrase: bip44SeedPassphrase,
-		//		Label:          "wallet",
-		//		ScanN:          5,
-		//		TF: mockTxnsFinder{
-		//			bip44SeedPassphraseAddrs[0]: true,
-		//		},
-		//	},
-		//	err:           nil,
-		//	expectAddrNum: 1,
-		//	expectAddrs:   bip44SeedPassphraseAddrs[:1],
-		//},
-		//{
-		//	name: "bip44 with seed passphrase raw wallet address=2",
-		//	opts: wallet.Options{
-		//		Type:           wallet.WalletTypeBip44,
-		//		Seed:           bip44Seed,
-		//		SeedPassphrase: bip44SeedPassphrase,
-		//		Label:          "wallet",
-		//		ScanN:          5,
-		//		TF: mockTxnsFinder{
-		//			bip44SeedPassphraseAddrs[1]: true,
-		//		},
-		//	},
-		//	err:           nil,
-		//	expectAddrNum: 2,
-		//	expectAddrs:   bip44SeedPassphraseAddrs[:2],
-		//},
-		//{
-		//	name: "bip44 with seed passphrase encrypted wallet address=1",
-		//	opts: wallet.Options{
-		//		Type:           wallet.WalletTypeBip44,
-		//		Seed:           bip44Seed,
-		//		SeedPassphrase: bip44SeedPassphrase,
-		//		Label:          "wallet",
-		//		Encrypt:        true,
-		//		Password:       []byte("pwd"),
-		//		ScanN:          5,
-		//		TF: mockTxnsFinder{
-		//			bip44SeedPassphraseAddrs[0]: true,
-		//		},
-		//	},
-		//	err:           nil,
-		//	expectAddrNum: 1,
-		//	expectAddrs:   bip44SeedPassphraseAddrs[:1],
-		//},
-		//{
-		//	name: "bip44 with seed passphrase encrypted wallet address=2",
-		//	opts: wallet.Options{
-		//		Type:           wallet.WalletTypeBip44,
-		//		Seed:           bip44Seed,
-		//		SeedPassphrase: bip44SeedPassphrase,
-		//		Label:          "wallet",
-		//		Encrypt:        true,
-		//		Password:       []byte("pwd"),
-		//		ScanN:          5,
-		//		TF: mockTxnsFinder{
-		//			bip44SeedPassphraseAddrs[1]: true,
-		//		},
-		//	},
-		//	err:           nil,
-		//	expectAddrNum: 2,
-		//	expectAddrs:   bip44SeedPassphraseAddrs[:2],
-		//},
+		{
+			name: "bip44 raw wallet address=1",
+			opts: wallet.Options{
+				Type:  wallet.WalletTypeBip44,
+				Seed:  bip44Seed,
+				Label: "wallet",
+				ScanN: 5,
+				TF: mockTxnsFinder{
+					bip44Addrs[0]: true,
+				},
+			},
+			err:           nil,
+			expectAddrNum: 1,
+			expectAddrs:   bip44Addrs[:1],
+		},
+		{
+			name: "bip44 raw wallet address=2",
+			opts: wallet.Options{
+				Type:  wallet.WalletTypeBip44,
+				Seed:  bip44Seed,
+				Label: "wallet",
+				ScanN: 5,
+				TF: mockTxnsFinder{
+					bip44Addrs[1]: true,
+				},
+			},
+			err:           nil,
+			expectAddrNum: 2,
+			expectAddrs:   bip44Addrs[:2],
+		},
+		{
+			name: "bip44 encrypted wallet address=1",
+			opts: wallet.Options{
+				Type:     wallet.WalletTypeBip44,
+				Seed:     bip44Seed,
+				Label:    "wallet",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				ScanN:    5,
+				TF: mockTxnsFinder{
+					bip44Addrs[0]: true,
+				},
+			},
+			err:           nil,
+			expectAddrNum: 1,
+			expectAddrs:   bip44Addrs[:1],
+		},
+		{
+			name: "bip44 encrypted wallet address=2",
+			opts: wallet.Options{
+				Type:     wallet.WalletTypeBip44,
+				Seed:     bip44Seed,
+				Label:    "wallet",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				ScanN:    5,
+				TF: mockTxnsFinder{
+					bip44Addrs[1]: true,
+				},
+			},
+			err:           nil,
+			expectAddrNum: 2,
+			expectAddrs:   bip44Addrs[:2],
+		},
+
+		{
+			name: "bip44 with seed passphrase raw wallet address=1",
+			opts: wallet.Options{
+				Type:           wallet.WalletTypeBip44,
+				Seed:           bip44Seed,
+				SeedPassphrase: bip44SeedPassphrase,
+				Label:          "wallet",
+				ScanN:          5,
+				TF: mockTxnsFinder{
+					bip44SeedPassphraseAddrs[0]: true,
+				},
+			},
+			err:           nil,
+			expectAddrNum: 1,
+			expectAddrs:   bip44SeedPassphraseAddrs[:1],
+		},
+		{
+			name: "bip44 with seed passphrase raw wallet address=2",
+			opts: wallet.Options{
+				Type:           wallet.WalletTypeBip44,
+				Seed:           bip44Seed,
+				SeedPassphrase: bip44SeedPassphrase,
+				Label:          "wallet",
+				ScanN:          5,
+				TF: mockTxnsFinder{
+					bip44SeedPassphraseAddrs[1]: true,
+				},
+			},
+			err:           nil,
+			expectAddrNum: 2,
+			expectAddrs:   bip44SeedPassphraseAddrs[:2],
+		},
+		{
+			name: "bip44 with seed passphrase encrypted wallet address=1",
+			opts: wallet.Options{
+				Type:           wallet.WalletTypeBip44,
+				Seed:           bip44Seed,
+				SeedPassphrase: bip44SeedPassphrase,
+				Label:          "wallet",
+				Encrypt:        true,
+				Password:       []byte("pwd"),
+				ScanN:          5,
+				TF: mockTxnsFinder{
+					bip44SeedPassphraseAddrs[0]: true,
+				},
+			},
+			err:           nil,
+			expectAddrNum: 1,
+			expectAddrs:   bip44SeedPassphraseAddrs[:1],
+		},
+		{
+			name: "bip44 with seed passphrase encrypted wallet address=2",
+			opts: wallet.Options{
+				Type:           wallet.WalletTypeBip44,
+				Seed:           bip44Seed,
+				SeedPassphrase: bip44SeedPassphrase,
+				Label:          "wallet",
+				Encrypt:        true,
+				Password:       []byte("pwd"),
+				ScanN:          5,
+				TF: mockTxnsFinder{
+					bip44SeedPassphraseAddrs[1]: true,
+				},
+			},
+			err:           nil,
+			expectAddrNum: 2,
+			expectAddrs:   bip44SeedPassphraseAddrs[:2],
+		},
 	}
 
 	for _, tc := range tt {
@@ -598,9 +597,11 @@ func TestServiceLoadWallet(t *testing.T) {
 					EnableWalletAPI: true,
 					WalletCreators: map[string]wallet.Creator{
 						wallet.WalletTypeDeterministic: &deterministic.Creator{},
+						wallet.WalletTypeBip44:         &bip44wallet.Creator{},
 					},
 					WalletLoaders: map[string]wallet.Loader{
 						wallet.WalletTypeDeterministic: &deterministic.Loader{},
+						wallet.WalletTypeBip44:         &bip44wallet.Loader{},
 					},
 				})
 				require.NoError(t, err)
@@ -640,10 +641,10 @@ func TestServiceLoadWallet(t *testing.T) {
 func TestServiceNewAddresses(t *testing.T) {
 	seed := "seed"
 	// Generate adddresses from the seed
-	var addrs []cipher.Address
 	_, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 10)
-	for _, s := range seckeys {
-		addrs = append(addrs, cipher.MustAddressFromSecKey(s))
+	addrs := make([]cipher.Address, 10)
+	for i, s := range seckeys {
+		addrs[i] = cipher.MustAddressFromSecKey(s)
 	}
 
 	//bip44Seed := "voyage say extend find sheriff surge priority merit ignore maple cash argue"
@@ -997,7 +998,7 @@ func TestServiceGetWallet(t *testing.T) {
 		wallet.Creator
 	}
 	walletTypes := map[string]loaderCreator{
-		wallet.WalletTypeDeterministic: loaderCreator{
+		wallet.WalletTypeDeterministic: {
 			Loader:  &deterministic.Loader{},
 			Creator: &deterministic.Creator{},
 		},

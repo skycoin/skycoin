@@ -1089,6 +1089,7 @@ func TestServiceGetWallet(t *testing.T) {
 func TestServiceGetWallets(t *testing.T) {
 	creators := map[string]wallet.Creator{
 		wallet.WalletTypeDeterministic: deterministic.Creator{},
+		wallet.WalletTypeBip44:         bip44wallet.Creator{},
 	}
 	for _, enableWalletAPI := range []bool{true, false} {
 		for _, ct := range crypto.TypesInsecure() {
@@ -1113,17 +1114,17 @@ func TestServiceGetWallets(t *testing.T) {
 				}
 
 				// TODO: add bip44 wallet create support
-				//// Creates a wallet
-				//w, err := s.CreateWallet("t.wlt", wallet.Options{
-				//	Label: "label",
-				//	Seed:  bip39.MustNewDefaultMnemonic(),
-				//	Type:  wallet.WalletTypeBip44,
-				//})
-				//require.NoError(t, err)
-				//
+				// Creates a bip44 wallet
+				w, err := s.CreateWallet("t.wlt", wallet.Options{
+					Label: "label",
+					Seed:  bip39.MustNewDefaultMnemonic(),
+					Type:  wallet.WalletTypeBip44,
+				})
+				require.NoError(t, err)
+
 				var wallets []wallet.Wallet
-				//// Get the default wallet
-				//wallets = append(wallets, w)
+				// Get the default wallet
+				wallets = append(wallets, w)
 
 				// Create a new wallet
 				wltName := wallet.NewWalletFilename()
@@ -1140,7 +1141,13 @@ func TestServiceGetWallets(t *testing.T) {
 				for _, w := range wallets {
 					ww, ok := ws[w.Filename()]
 					require.True(t, ok)
-					require.Equal(t, w, ww)
+
+					wb, err := w.Serialize()
+					require.NoError(t, err)
+
+					wwb, err := ww.Serialize()
+					require.NoError(t, err)
+					require.Equal(t, wb, wwb)
 				}
 			})
 		}

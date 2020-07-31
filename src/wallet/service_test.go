@@ -3200,21 +3200,21 @@ func TestGetWalletSeed(t *testing.T) {
 			id:            "wallet.wlt",
 			pwd:           []byte("pwd"),
 		},
-		//{
-		//	name:    "ok seed passphrase",
-		//	wltName: "wallet.wlt",
-		//	opts: wallet.Options{
-		//		Seed:           bip39.MustNewDefaultMnemonic(),
-		//		SeedPassphrase: "seed-passphrase",
-		//		Label:          "label",
-		//		Encrypt:        true,
-		//		Password:       []byte("pwd"),
-		//		Type:           wallet.WalletTypeBip44,
-		//	},
-		//	enableSeedAPI: true,
-		//	id:            "wallet.wlt",
-		//	pwd:           []byte("pwd"),
-		//},
+		{
+			name:    "ok seed passphrase",
+			wltName: "wallet.wlt",
+			opts: wallet.Options{
+				Seed:           bip39.MustNewDefaultMnemonic(),
+				SeedPassphrase: "seed-passphrase",
+				Label:          "label",
+				Encrypt:        true,
+				Password:       []byte("pwd"),
+				Type:           wallet.WalletTypeBip44,
+			},
+			enableSeedAPI: true,
+			id:            "wallet.wlt",
+			pwd:           []byte("pwd"),
+		},
 		{
 			name:    "wallet does not exist",
 			wltName: "wallet.wlt",
@@ -3258,6 +3258,7 @@ func TestGetWalletSeed(t *testing.T) {
 					EnableSeedAPI:   tc.enableSeedAPI,
 					WalletCreators: map[string]wallet.Creator{
 						wallet.WalletTypeDeterministic: deterministic.Creator{},
+						wallet.WalletTypeBip44:         bip44wallet.Creator{},
 					},
 				})
 				require.NoError(t, err)

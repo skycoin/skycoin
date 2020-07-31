@@ -2808,64 +2808,41 @@ func TestServiceScanAddresses(t *testing.T) {
 		addrs = append(addrs, cipher.MustAddressFromSecKey(s))
 	}
 
-	//bip44Seed := "voyage say extend find sheriff surge priority merit ignore maple cash argue"
-	//bip44AddrStrs := []string{
-	//	"9BSEAEE3XGtQ2X43BCT2XCYgheGLQQigEG",
-	//	"29cnQPHuWHCRF26LEAb2gR83ywnF3F9HduW",
-	//	"2ZUAv9MGSpDKR3dnKMUnrKqLenV22JXAxzP",
-	//	"fwNVThqdzH7JMsStoLrTpkVsemesbdGftm",
-	//	"eyr5KDLTnN6ZZeggeHqDcXnrwmNUi7sGk2",
-	//	"Aee3J9qoFPLoUEJes6YVzdKHdeuvCrMZeJ",
-	//	"29MZS8aiYUdEwcruwCPggVJG9YJLsm92FHa",
-	//	"2Hbm3bwKiEwqNAMAzVJmz5hL1dNTfaA3ju7",
-	//	"WCaSCwSZnVqtkYeiKryeHjR8LbzE3KbkzJ",
-	//	"baRjCy1yHfishGdZi3bVaPaL7VJM7FZCSd",
-	//}
-	//bip44Addrs := make([]cipher.Address, len(bip44AddrStrs))
-	//for i, a := range bip44AddrStrs {
-	//	bip44Addrs[i] = cipher.MustDecodeBase58Address(a)
-	//}
-	//
-	//xpub := "xpub6E5WPk37XdM79dy6oJ7iH6NkCvVzxmrCo4zMFFHSZMc5ymZYhReQFWaDcGNZeYYe1ahY2e3RcRZDHLHC98FfzPRfNRcU6ecURpS4RCQRP2w"
-	//xpubAddrStrs := []string{
-	//	"2mhaS6SE2TPSmRRbJvngWQSNXCCVuTic5Zg",
-	//	"2bq2itwDKteqigxVS9eYJv4Ww9SEfuyGcib",
-	//	"B7eMXM6nLUqqzkFcosXR3HSVkQ6yUz53n4",
-	//	"niAy17kBb8vB2pFey8eZnE92e6x9bFGLHp",
-	//	"N8JbzcqWEPkn6CF3JdZDmEydzECyZ4NhRv",
-	//	"TcyY3F4xHPCtFFkdDBTC93y684Fmxg2rPd",
-	//	"kcVFbcrVqAVUHrirp7r3HYHUzrtdFuybez",
-	//	"bzA7UeUmkuFWn3waGh3z1eQ5xV3TAZpgX2",
-	//	"2K29ZX6vaqrTRZJbFKX7hzu646wL3pJfF6H",
-	//	"VKpFCpN4yp46uYbffaeCg7XEvQd6pHNSkV",
-	//}
-	//
-	//xpubAddrs := make([]cipher.Address, len(xpubAddrStrs))
-	//for i, a := range xpubAddrStrs {
-	//	xpubAddrs[i] = cipher.MustDecodeBase58Address(a)
-	//}
+	bip44Seed := "voyage say extend find sheriff surge priority merit ignore maple cash argue"
+	bip44AddrStrs := []string{
+		"9BSEAEE3XGtQ2X43BCT2XCYgheGLQQigEG",
+		"29cnQPHuWHCRF26LEAb2gR83ywnF3F9HduW",
+		"2ZUAv9MGSpDKR3dnKMUnrKqLenV22JXAxzP",
+		"fwNVThqdzH7JMsStoLrTpkVsemesbdGftm",
+		"eyr5KDLTnN6ZZeggeHqDcXnrwmNUi7sGk2",
+		"Aee3J9qoFPLoUEJes6YVzdKHdeuvCrMZeJ",
+		"29MZS8aiYUdEwcruwCPggVJG9YJLsm92FHa",
+		"2Hbm3bwKiEwqNAMAzVJmz5hL1dNTfaA3ju7",
+		"WCaSCwSZnVqtkYeiKryeHjR8LbzE3KbkzJ",
+		"baRjCy1yHfishGdZi3bVaPaL7VJM7FZCSd",
+	}
+	bip44Addrs := make([]cipher.Address, len(bip44AddrStrs))
+	for i, a := range bip44AddrStrs {
+		bip44Addrs[i] = cipher.MustDecodeBase58Address(a)
+	}
 
-	testData := []struct {
-		walletType string
-		seed       string
-		xpub       string
-		addrs      []cipher.Address
-	}{
-		{
-			walletType: wallet.WalletTypeDeterministic,
-			addrs:      addrs[:],
-			seed:       seed,
-		},
-		//{
-		//	walletType: wallet.WalletTypeBip44,
-		//	addrs:      bip44Addrs[:],
-		//	seed:       bip44Seed,
-		//},
-		//{
-		//	walletType: wallet.WalletTypeXPub,
-		//	addrs:      xpubAddrs[:],
-		//	xpub:       xpub,
-		//},
+	xpub := "xpub6E5WPk37XdM79dy6oJ7iH6NkCvVzxmrCo4zMFFHSZMc5ymZYhReQFWaDcGNZeYYe1ahY2e3RcRZDHLHC98FfzPRfNRcU6ecURpS4RCQRP2w"
+	xpubAddrStrs := []string{
+		"2mhaS6SE2TPSmRRbJvngWQSNXCCVuTic5Zg",
+		"2bq2itwDKteqigxVS9eYJv4Ww9SEfuyGcib",
+		"B7eMXM6nLUqqzkFcosXR3HSVkQ6yUz53n4",
+		"niAy17kBb8vB2pFey8eZnE92e6x9bFGLHp",
+		"N8JbzcqWEPkn6CF3JdZDmEydzECyZ4NhRv",
+		"TcyY3F4xHPCtFFkdDBTC93y684Fmxg2rPd",
+		"kcVFbcrVqAVUHrirp7r3HYHUzrtdFuybez",
+		"bzA7UeUmkuFWn3waGh3z1eQ5xV3TAZpgX2",
+		"2K29ZX6vaqrTRZJbFKX7hzu646wL3pJfF6H",
+		"VKpFCpN4yp46uYbffaeCg7XEvQd6pHNSkV",
+	}
+
+	xpubAddrs := make([]cipher.Address, len(xpubAddrStrs))
+	for i, a := range xpubAddrStrs {
+		xpubAddrs[i] = cipher.MustDecodeBase58Address(a)
 	}
 
 	type testCases []struct {
@@ -2879,7 +2856,34 @@ func TestServiceScanAddresses(t *testing.T) {
 	}
 
 	generateTestCasesFunc := func(walletType, seed, xpub string, addrs []cipher.Address) testCases {
-		return testCases{
+		password := []byte("pwd")
+		var encrypt bool
+		var tt testCases
+		switch walletType {
+		case wallet.WalletTypeXPub, wallet.WalletTypeBip44:
+			password = []byte("")
+		default:
+			encrypt = true
+			tt = testCases{
+				{
+					name: "scan 0 encrypted wrong password",
+					opts: wallet.Options{
+						Type:     walletType,
+						Label:    "label",
+						Seed:     seed,
+						XPub:     xpub,
+						Encrypt:  true,
+						Password: []byte("pwd"),
+					},
+					scanN:       0,
+					password:    []byte("incorrect password"),
+					expectAddrs: nil,
+					expectErr:   wallet.ErrInvalidPassword,
+				},
+			}
+		}
+
+		tt = append(tt, testCases{
 			{
 				name: "scan 0 unencrypted",
 				opts: wallet.Options{
@@ -2899,28 +2903,13 @@ func TestServiceScanAddresses(t *testing.T) {
 					Label:    "label",
 					Seed:     seed,
 					XPub:     xpub,
-					Encrypt:  true,
-					Password: []byte("pwd"),
+					Encrypt:  encrypt,
+					Password: password,
 				},
 				scanN:       0,
-				password:    []byte("pwd"),
+				password:    password,
 				expectAddrs: []cipher.Address{},
 				expectErr:   nil,
-			},
-			{
-				name: "scan 0 encrypted wrong password",
-				opts: wallet.Options{
-					Type:     walletType,
-					Label:    "label",
-					Seed:     seed,
-					XPub:     xpub,
-					Encrypt:  true,
-					Password: []byte("pwd"),
-				},
-				scanN:       0,
-				password:    []byte("incorrect password"),
-				expectAddrs: nil,
-				expectErr:   wallet.ErrInvalidPassword,
 			},
 			{
 				name: "scan 1 get 0 unencrypted",
@@ -2942,12 +2931,12 @@ func TestServiceScanAddresses(t *testing.T) {
 					Label:    "label",
 					Seed:     seed,
 					XPub:     xpub,
-					Encrypt:  true,
-					Password: []byte("pwd"),
+					Encrypt:  encrypt,
+					Password: password,
 					TF:       mockTxnsFinder{},
 				},
 				scanN:       1,
-				password:    []byte("pwd"),
+				password:    password,
 				expectAddrs: []cipher.Address{},
 				expectErr:   nil,
 			},
@@ -2973,14 +2962,14 @@ func TestServiceScanAddresses(t *testing.T) {
 					Label:    "label",
 					Seed:     seed,
 					XPub:     xpub,
-					Encrypt:  true,
-					Password: []byte("pwd"),
+					Encrypt:  encrypt,
+					Password: password,
 					TF: mockTxnsFinder{
 						addrs[1]: true,
 					},
 				},
 				scanN:       1,
-				password:    []byte("pwd"),
+				password:    password,
 				expectAddrs: addrs[1:2],
 				expectErr:   nil,
 			},
@@ -3007,15 +2996,15 @@ func TestServiceScanAddresses(t *testing.T) {
 					Label:    "label",
 					Seed:     seed,
 					XPub:     xpub,
-					Encrypt:  true,
-					Password: []byte("pwd"),
+					Encrypt:  encrypt,
+					Password: password,
 					TF: mockTxnsFinder{
 						addrs[1]: true,
 						addrs[2]: true,
 					},
 				},
 				scanN:       1,
-				password:    []byte("pwd"),
+				password:    password,
 				expectAddrs: addrs[1:2],
 				expectErr:   nil,
 			},
@@ -3041,14 +3030,14 @@ func TestServiceScanAddresses(t *testing.T) {
 					Label:    "label",
 					Seed:     seed,
 					XPub:     xpub,
-					Encrypt:  true,
-					Password: []byte("pwd"),
+					Encrypt:  encrypt,
+					Password: password,
 					TF: mockTxnsFinder{
 						addrs[1]: true,
 					},
 				},
 				scanN:       2,
-				password:    []byte("pwd"),
+				password:    password,
 				expectAddrs: addrs[1:2],
 				expectErr:   nil,
 			},
@@ -3101,14 +3090,37 @@ func TestServiceScanAddresses(t *testing.T) {
 				expectAddrs: addrs[1:6],
 				expectErr:   nil,
 			},
-		}
+		}...)
+		return tt
+	}
+
+	testData := []struct {
+		walletType string
+		seed       string
+		xpub       string
+		addrs      []cipher.Address
+	}{
+		{
+			walletType: wallet.WalletTypeDeterministic,
+			addrs:      addrs[:],
+			seed:       seed,
+		},
+		{
+			walletType: wallet.WalletTypeBip44,
+			addrs:      bip44Addrs[:],
+			seed:       bip44Seed,
+		},
+		{
+			walletType: wallet.WalletTypeXPub,
+			addrs:      xpubAddrs[:],
+			xpub:       xpub,
+		},
 	}
 
 	for _, d := range testData {
 		tt := generateTestCasesFunc(d.walletType, d.seed, d.xpub, d.addrs)
 		for _, tc := range tt {
-			//for _, ct := range crypto.TypesInsecure() {
-			for _, ct := range []crypto.CryptoType{crypto.CryptoTypeSha256Xor} {
+			for _, ct := range crypto.TypesInsecure() {
 				name := fmt.Sprintf("crypto=%v type=%v %v", ct, d.walletType, tc.name)
 				t.Run(name, func(t *testing.T) {
 					dir := prepareWltDir()
@@ -3118,6 +3130,8 @@ func TestServiceScanAddresses(t *testing.T) {
 						EnableWalletAPI: !tc.walletAPIDisabled,
 						WalletCreators: map[string]wallet.Creator{
 							wallet.WalletTypeDeterministic: &deterministic.Creator{},
+							wallet.WalletTypeBip44:         &bip44wallet.Creator{},
+							wallet.WalletTypeXPub:          &xpubwallet.Creator{},
 						},
 					})
 					require.NoError(t, err)
@@ -3128,7 +3142,7 @@ func TestServiceScanAddresses(t *testing.T) {
 					//require.NoError(t, w.Validate())
 
 					addrs, err := s.ScanAddresses(w.Filename(), tc.password, tc.scanN, tc.opts.TF)
-					require.Equal(t, tc.expectErr, err)
+					require.Equal(t, tc.expectErr, err, fmt.Sprintf("%v", err))
 					require.Equal(t, tc.expectAddrs, addrs)
 				})
 			}

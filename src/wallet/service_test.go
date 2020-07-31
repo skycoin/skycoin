@@ -1737,88 +1737,88 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		lastSeed = s
 	}
 
-	//bip44Seed := "voyage say extend find sheriff surge priority merit ignore maple cash argue"
-	//bip44AddrStrs := []string{
-	//	"9BSEAEE3XGtQ2X43BCT2XCYgheGLQQigEG",
-	//	"29cnQPHuWHCRF26LEAb2gR83ywnF3F9HduW",
-	//	"2ZUAv9MGSpDKR3dnKMUnrKqLenV22JXAxzP",
-	//	"fwNVThqdzH7JMsStoLrTpkVsemesbdGftm",
-	//	"eyr5KDLTnN6ZZeggeHqDcXnrwmNUi7sGk2",
-	//	"Aee3J9qoFPLoUEJes6YVzdKHdeuvCrMZeJ",
-	//	"29MZS8aiYUdEwcruwCPggVJG9YJLsm92FHa",
-	//	"2Hbm3bwKiEwqNAMAzVJmz5hL1dNTfaA3ju7",
-	//	"WCaSCwSZnVqtkYeiKryeHjR8LbzE3KbkzJ",
-	//	"baRjCy1yHfishGdZi3bVaPaL7VJM7FZCSd",
-	//	"296oQmJJgx35NDApi7YYzj1AryM8fZcjwf3",
-	//	"cxxxRfy3RRy2YbFTcptRbVTQYcHY1ejRB5",
-	//	"omLGQm1Z2Y9Bga8v6NQ2hgrpRm1nATzGK9",
-	//	"2EpZP1E8gTJy799t5CVrZUcxjyFFHwshr6X",
-	//	"2hgaPG2oNVrkonPxjv4Sx9au6ruw1Y8pjUi",
-	//	"2bHfa8yjhWB5mTip8j1FjNhB1TGbSBkX3Xu",
-	//	"VYu5ePSB7ReKm2pysC5JRdCUiTBgDn5Tkw",
-	//	"2crRqwG3BaurEqNa7eiB5oUNKTQPETfKrFW",
-	//	"2LVTqqNSTBKE51UC7bZ39bZ6wwmR3sibHBX",
-	//	"2A8C3h1gsw92Q4Uhn4b385onKrhzuH8UTwE",
-	//}
-	//bip44Addrs := make([]cipher.Address, len(bip44AddrStrs))
-	//for i, a := range bip44AddrStrs {
-	//	bip44Addrs[i] = cipher.MustDecodeBase58Address(a)
-	//}
-	//
-	//bip44ChangeAddrStrs := []string{
-	//	"oHvj7oy8maES9HJiQHJTp4GvcUcpz3voDq",
-	//	"2SGMfTFV2zbQzGw7aJm1D5EeEPgych5ixuC",
-	//	"2ymjULRdbiFoUNJKNhWbQ3JqdE8TXnZkyU",
-	//	"muvdio7V8vkbUPPJsumVWEqScKHZho6Xmx",
-	//	"qyQuA2RW4H6NFqhRQmHDt2q28E654PoBsH",
-	//	"24UcBj42Q7GBx1rmeU5AE7JhcRbpDq9utCV",
-	//	"2TwjgBxKhK84Qa34HoNc5KbsYfp1NBZyPXk",
-	//	"fDYKWyDnDaQmpigGAJNK4ZoBZ4WTg5dtRN",
-	//	"rRMXXm8ufMcqqnLqRX5CoJ8wA6rdWPJEiW",
-	//	"2D6HN4fSHZqsGaPzCDUjddF6NS4hBsVGRag",
-	//	"2bXjTvatPW4Z3SaQBr96zJwwYcxp7iemeGC",
-	//	"tbmXTJWtqtuaAdVvFWS1rmL42omdD4Hkd3",
-	//	"27NT6t4xJoqcs6PsM2EgNNhx4MMw3ioFVER",
-	//	"Xym6pAVg2Xjp9sXvCUKrLgq6PSEt1izsRd",
-	//	"49EqkHPgWPS9W1jDiJXSKdKdNur3pJjADw",
-	//	"f52mwYtpVNhgMMmJZHQYVBQVHwHXCbP5yX",
-	//	"2ffeXAKtVUmxucs8mpM2EKMqzYCN3TB7DYx",
-	//	"2NJERX84xLHMidXtYDtT1rGzhf4HJmCkz47",
-	//	"wik4VEcja3pz2Wo6SwwfoDGzVzB7ZoosQB",
-	//	"2gj3qjYQ4MMkv7CdB3PvkbEEPhXikZBD4q6",
-	//}
-	//bip44ChangeAddrs := make([]cipher.Address, len(bip44ChangeAddrStrs))
-	//for i, a := range bip44ChangeAddrStrs {
-	//	bip44ChangeAddrs[i] = cipher.MustDecodeBase58Address(a)
-	//}
-	//
-	//xpub := "xpub6E5WPk37XdM79dy6oJ7iH6NkCvVzxmrCo4zMFFHSZMc5ymZYhReQFWaDcGNZeYYe1ahY2e3RcRZDHLHC98FfzPRfNRcU6ecURpS4RCQRP2w"
-	//xpubAddrStrs := []string{
-	//	"2mhaS6SE2TPSmRRbJvngWQSNXCCVuTic5Zg",
-	//	"2bq2itwDKteqigxVS9eYJv4Ww9SEfuyGcib",
-	//	"B7eMXM6nLUqqzkFcosXR3HSVkQ6yUz53n4",
-	//	"niAy17kBb8vB2pFey8eZnE92e6x9bFGLHp",
-	//	"N8JbzcqWEPkn6CF3JdZDmEydzECyZ4NhRv",
-	//	"TcyY3F4xHPCtFFkdDBTC93y684Fmxg2rPd",
-	//	"kcVFbcrVqAVUHrirp7r3HYHUzrtdFuybez",
-	//	"bzA7UeUmkuFWn3waGh3z1eQ5xV3TAZpgX2",
-	//	"2K29ZX6vaqrTRZJbFKX7hzu646wL3pJfF6H",
-	//	"VKpFCpN4yp46uYbffaeCg7XEvQd6pHNSkV",
-	//	"2bGUCmS8BcFiX6VQbq6DVvjDsCdu5fgoSSr",
-	//	"2Yx8dzMgzU5Y2vrAomAtkajWNmUCJ31xNF",
-	//	"wd2NGBkCygq7cCP899gbiBciM7ZFqphRDM",
-	//	"2akitSsnetXoc3ejzY4pA8dGjWM76uzPxo3",
-	//	"WFTbYvNJGAq9wWG644sMvgt4EJ6CvkbvDK",
-	//	"2FReiyjcQuQBCvjKQzyrhc7QMwdbdBwLvCT",
-	//	"2RnSh4sZrxCEK5fUSCLR8JuwzGd6K5mzdrA",
-	//	"ujJHitcLhQZB393qrdJvdfM4AyEPMmDhcV",
-	//	"25jWWmrgU8Z9HYVCsAXYmCjF1jQqe5DDnqr",
-	//	"rsaKzohU5erbR6FX1whWu9Ke4q2jLkLBeJ",
-	//}
-	//xpubAddrs := make([]cipher.Address, len(xpubAddrStrs))
-	//for i, a := range xpubAddrStrs {
-	//	xpubAddrs[i] = cipher.MustDecodeBase58Address(a)
-	//}
+	bip44Seed := "voyage say extend find sheriff surge priority merit ignore maple cash argue"
+	bip44AddrStrs := []string{
+		"9BSEAEE3XGtQ2X43BCT2XCYgheGLQQigEG",
+		"29cnQPHuWHCRF26LEAb2gR83ywnF3F9HduW",
+		"2ZUAv9MGSpDKR3dnKMUnrKqLenV22JXAxzP",
+		"fwNVThqdzH7JMsStoLrTpkVsemesbdGftm",
+		"eyr5KDLTnN6ZZeggeHqDcXnrwmNUi7sGk2",
+		"Aee3J9qoFPLoUEJes6YVzdKHdeuvCrMZeJ",
+		"29MZS8aiYUdEwcruwCPggVJG9YJLsm92FHa",
+		"2Hbm3bwKiEwqNAMAzVJmz5hL1dNTfaA3ju7",
+		"WCaSCwSZnVqtkYeiKryeHjR8LbzE3KbkzJ",
+		"baRjCy1yHfishGdZi3bVaPaL7VJM7FZCSd",
+		"296oQmJJgx35NDApi7YYzj1AryM8fZcjwf3",
+		"cxxxRfy3RRy2YbFTcptRbVTQYcHY1ejRB5",
+		"omLGQm1Z2Y9Bga8v6NQ2hgrpRm1nATzGK9",
+		"2EpZP1E8gTJy799t5CVrZUcxjyFFHwshr6X",
+		"2hgaPG2oNVrkonPxjv4Sx9au6ruw1Y8pjUi",
+		"2bHfa8yjhWB5mTip8j1FjNhB1TGbSBkX3Xu",
+		"VYu5ePSB7ReKm2pysC5JRdCUiTBgDn5Tkw",
+		"2crRqwG3BaurEqNa7eiB5oUNKTQPETfKrFW",
+		"2LVTqqNSTBKE51UC7bZ39bZ6wwmR3sibHBX",
+		"2A8C3h1gsw92Q4Uhn4b385onKrhzuH8UTwE",
+	}
+	bip44Addrs := make([]cipher.Address, len(bip44AddrStrs))
+	for i, a := range bip44AddrStrs {
+		bip44Addrs[i] = cipher.MustDecodeBase58Address(a)
+	}
+
+	bip44ChangeAddrStrs := []string{
+		"oHvj7oy8maES9HJiQHJTp4GvcUcpz3voDq",
+		"2SGMfTFV2zbQzGw7aJm1D5EeEPgych5ixuC",
+		"2ymjULRdbiFoUNJKNhWbQ3JqdE8TXnZkyU",
+		"muvdio7V8vkbUPPJsumVWEqScKHZho6Xmx",
+		"qyQuA2RW4H6NFqhRQmHDt2q28E654PoBsH",
+		"24UcBj42Q7GBx1rmeU5AE7JhcRbpDq9utCV",
+		"2TwjgBxKhK84Qa34HoNc5KbsYfp1NBZyPXk",
+		"fDYKWyDnDaQmpigGAJNK4ZoBZ4WTg5dtRN",
+		"rRMXXm8ufMcqqnLqRX5CoJ8wA6rdWPJEiW",
+		"2D6HN4fSHZqsGaPzCDUjddF6NS4hBsVGRag",
+		"2bXjTvatPW4Z3SaQBr96zJwwYcxp7iemeGC",
+		"tbmXTJWtqtuaAdVvFWS1rmL42omdD4Hkd3",
+		"27NT6t4xJoqcs6PsM2EgNNhx4MMw3ioFVER",
+		"Xym6pAVg2Xjp9sXvCUKrLgq6PSEt1izsRd",
+		"49EqkHPgWPS9W1jDiJXSKdKdNur3pJjADw",
+		"f52mwYtpVNhgMMmJZHQYVBQVHwHXCbP5yX",
+		"2ffeXAKtVUmxucs8mpM2EKMqzYCN3TB7DYx",
+		"2NJERX84xLHMidXtYDtT1rGzhf4HJmCkz47",
+		"wik4VEcja3pz2Wo6SwwfoDGzVzB7ZoosQB",
+		"2gj3qjYQ4MMkv7CdB3PvkbEEPhXikZBD4q6",
+	}
+	bip44ChangeAddrs := make([]cipher.Address, len(bip44ChangeAddrStrs))
+	for i, a := range bip44ChangeAddrStrs {
+		bip44ChangeAddrs[i] = cipher.MustDecodeBase58Address(a)
+	}
+
+	xpub := "xpub6E5WPk37XdM79dy6oJ7iH6NkCvVzxmrCo4zMFFHSZMc5ymZYhReQFWaDcGNZeYYe1ahY2e3RcRZDHLHC98FfzPRfNRcU6ecURpS4RCQRP2w"
+	xpubAddrStrs := []string{
+		"2mhaS6SE2TPSmRRbJvngWQSNXCCVuTic5Zg",
+		"2bq2itwDKteqigxVS9eYJv4Ww9SEfuyGcib",
+		"B7eMXM6nLUqqzkFcosXR3HSVkQ6yUz53n4",
+		"niAy17kBb8vB2pFey8eZnE92e6x9bFGLHp",
+		"N8JbzcqWEPkn6CF3JdZDmEydzECyZ4NhRv",
+		"TcyY3F4xHPCtFFkdDBTC93y684Fmxg2rPd",
+		"kcVFbcrVqAVUHrirp7r3HYHUzrtdFuybez",
+		"bzA7UeUmkuFWn3waGh3z1eQ5xV3TAZpgX2",
+		"2K29ZX6vaqrTRZJbFKX7hzu646wL3pJfF6H",
+		"VKpFCpN4yp46uYbffaeCg7XEvQd6pHNSkV",
+		"2bGUCmS8BcFiX6VQbq6DVvjDsCdu5fgoSSr",
+		"2Yx8dzMgzU5Y2vrAomAtkajWNmUCJ31xNF",
+		"wd2NGBkCygq7cCP899gbiBciM7ZFqphRDM",
+		"2akitSsnetXoc3ejzY4pA8dGjWM76uzPxo3",
+		"WFTbYvNJGAq9wWG644sMvgt4EJ6CvkbvDK",
+		"2FReiyjcQuQBCvjKQzyrhc7QMwdbdBwLvCT",
+		"2RnSh4sZrxCEK5fUSCLR8JuwzGd6K5mzdrA",
+		"ujJHitcLhQZB393qrdJvdfM4AyEPMmDhcV",
+		"25jWWmrgU8Z9HYVCsAXYmCjF1jQqe5DDnqr",
+		"rsaKzohU5erbR6FX1whWu9Ke4q2jLkLBeJ",
+	}
+	xpubAddrs := make([]cipher.Address, len(xpubAddrStrs))
+	for i, a := range xpubAddrStrs {
+		xpubAddrs[i] = cipher.MustDecodeBase58Address(a)
+	}
 
 	tf := make(mockTxnsFinder, 20)
 
@@ -1832,9 +1832,8 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 	}
 
 	tt := []struct {
-		name string
-		opts wallet.Options
-		//balGetter        wallet.TransactionsFinder
+		name             string
+		opts             wallet.Options
 		disableWalletAPI bool
 		expect           exp
 	}{
@@ -2148,612 +2147,596 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				addrs:    addrs,
 			},
 		},
-		//{
-		//	name: "bip44 no coins and scan 0, unencrypted",
-		//	opts: wallet.Options{
-		//		Seed: bip44Seed,
-		//		Type: wallet.WalletTypeBip44,
-		//	},
-		//	balGetter: tf,
-		//	expect: exp{
-		//		err:      nil,
-		//		seed:     bip44Seed,
-		//		entryNum: 1,
-		//		addrs:    bip44Addrs,
-		//	},
-		//},
-		//{
-		//	name: "bip44 no coins and scan 0, encrypted",
-		//	opts: wallet.Options{
-		//		Seed:     bip44Seed,
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//		Type:     wallet.WalletTypeBip44,
-		//	},
-		//	balGetter: tf,
-		//	expect: exp{
-		//		err:      nil,
-		//		seed:     bip44Seed,
-		//		entryNum: 1,
-		//		addrs:    bip44Addrs,
-		//	},
-		//},
-		//{
-		//	name: "bip44 no coins and scan 1, unencrypted",
-		//	opts: wallet.Options{
-		//		Seed:  bip44Seed,
-		//		ScanN: 1,
-		//		Type:  wallet.WalletTypeBip44,
-		//	},
-		//	balGetter: tf,
-		//	expect: exp{
-		//		err:      nil,
-		//		seed:     bip44Seed,
-		//		entryNum: 1,
-		//		addrs:    bip44Addrs,
-		//	},
-		//},
-		//{
-		//	name: "bip44 no coins and scan 1, encrypted",
-		//	opts: wallet.Options{
-		//		Seed:     bip44Seed,
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//		ScanN:    1,
-		//		Type:     wallet.WalletTypeBip44,
-		//	},
-		//	balGetter: tf,
-		//	expect: exp{
-		//		err:      nil,
-		//		seed:     bip44Seed,
-		//		entryNum: 1,
-		//		addrs:    bip44Addrs,
-		//	},
-		//},
-		//{
-		//	name: "bip44 no coins and scan 10, unencrypted",
-		//	opts: wallet.Options{
-		//		Seed:  bip44Seed,
-		//		ScanN: 10,
-		//		Type:  wallet.WalletTypeBip44,
-		//	},
-		//	balGetter: tf,
-		//	expect: exp{
-		//		err:      nil,
-		//		seed:     bip44Seed,
-		//		entryNum: 1,
-		//		addrs:    bip44Addrs,
-		//	},
-		//},
-		//{
-		//	name: "bip44 scan 0 get 1, unencrypted",
-		//	opts: wallet.Options{
-		//		Seed:  bip44Seed,
-		//		ScanN: 1,
-		//		Type:  wallet.WalletTypeBip44,
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		bip44Addrs[0]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		seed:     bip44Seed,
-		//		entryNum: 1,
-		//		addrs:    bip44Addrs,
-		//	},
-		//},
-		//{
-		//	name: "bip44 scan 0 get 1, encrypted",
-		//	opts: wallet.Options{
-		//		Seed:     bip44Seed,
-		//		ScanN:    1,
-		//		Type:     wallet.WalletTypeBip44,
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		bip44Addrs[0]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		seed:     bip44Seed,
-		//		entryNum: 1,
-		//		addrs:    bip44Addrs,
-		//	},
-		//},
-		//{
-		//	name: "bip44 scan 1 get 1, unencrypted",
-		//	opts: wallet.Options{
-		//		Seed:  bip44Seed,
-		//		ScanN: 1,
-		//		Type:  wallet.WalletTypeBip44,
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		bip44Addrs[0]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		seed:     bip44Seed,
-		//		entryNum: 1,
-		//		addrs:    bip44Addrs,
-		//	},
-		//},
-		//{
-		//	name: "bip44 scan 1 get 1, encrypted",
-		//	opts: wallet.Options{
-		//		Seed:     bip44Seed,
-		//		ScanN:    1,
-		//		Type:     wallet.WalletTypeBip44,
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		bip44Addrs[0]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		seed:     bip44Seed,
-		//		entryNum: 1,
-		//		addrs:    bip44Addrs,
-		//	},
-		//},
-		//{
-		//	name: "bip44 scan 2 get 2, unencrypted",
-		//	opts: wallet.Options{
-		//		Seed:  bip44Seed,
-		//		ScanN: 2,
-		//		Type:  wallet.WalletTypeBip44,
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		bip44Addrs[0]: true,
-		//		bip44Addrs[1]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		seed:     bip44Seed,
-		//		entryNum: 2,
-		//		addrs:    bip44Addrs,
-		//	},
-		//},
-		//{
-		//	name: "bip44 scan 2 get 2, encrypted",
-		//	opts: wallet.Options{
-		//		Seed:     bip44Seed,
-		//		ScanN:    2,
-		//		Type:     wallet.WalletTypeBip44,
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		bip44Addrs[0]: true,
-		//		bip44Addrs[1]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		seed:     bip44Seed,
-		//		entryNum: 2,
-		//		addrs:    bip44Addrs,
-		//	},
-		//},
-		//{
-		//	name: "bip44 scan 5 get 1, unencrypted",
-		//	opts: wallet.Options{
-		//		Seed:  bip44Seed,
-		//		ScanN: 5,
-		//		Type:  wallet.WalletTypeBip44,
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		bip44Addrs[0]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		seed:     bip44Seed,
-		//		entryNum: 1,
-		//		addrs:    bip44Addrs,
-		//	},
-		//},
-		//{
-		//	name: "bip44 scan 5 get 2, unencrypted",
-		//	opts: wallet.Options{
-		//		Seed:  bip44Seed,
-		//		ScanN: 5,
-		//		Type:  wallet.WalletTypeBip44,
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		bip44Addrs[1]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		seed:     bip44Seed,
-		//		entryNum: 2,
-		//		addrs:    bip44Addrs,
-		//	},
-		//},
-		//{
-		//	name: "bip44 scan 5 get 5, unencrypted",
-		//	opts: wallet.Options{
-		//		Seed:  bip44Seed,
-		//		ScanN: 5,
-		//		Type:  wallet.WalletTypeBip44,
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		bip44Addrs[4]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		seed:     bip44Seed,
-		//		entryNum: 5,
-		//		addrs:    bip44Addrs,
-		//	},
-		//},
-		//{
-		//	name: "bip44 scan 5 get 5, encrypted",
-		//	opts: wallet.Options{
-		//		Seed:     bip44Seed,
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//		ScanN:    5,
-		//		Type:     wallet.WalletTypeBip44,
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		bip44Addrs[3]: true,
-		//		bip44Addrs[4]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		seed:     bip44Seed,
-		//		entryNum: 5,
-		//		addrs:    bip44Addrs,
-		//	},
-		//},
-		//{
-		//	name: "xpub no coins and scan 0, unencrypted",
-		//	opts: wallet.Options{
-		//		XPub: xpub,
-		//		Type: WalletTypeXPub,
-		//	},
-		//	balGetter: tf,
-		//	expect: exp{
-		//		err:      nil,
-		//		xpub:     xpub,
-		//		entryNum: 1,
-		//		addrs:    xpubAddrs,
-		//	},
-		//},
-		//{
-		//	name: "xpub no coins and scan 0, encrypted",
-		//	opts: wallet.Options{
-		//		XPub:     xpub,
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//		Type:     WalletTypeXPub,
-		//	},
-		//	balGetter: tf,
-		//	expect: exp{
-		//		err:      nil,
-		//		xpub:     xpub,
-		//		entryNum: 1,
-		//		addrs:    xpubAddrs,
-		//	},
-		//},
-		//{
-		//	name: "xpub no coins and scan 1, unencrypted",
-		//	opts: wallet.Options{
-		//		XPub:  xpub,
-		//		ScanN: 1,
-		//		Type:  WalletTypeXPub,
-		//	},
-		//	balGetter: tf,
-		//	expect: exp{
-		//		err:      nil,
-		//		xpub:     xpub,
-		//		entryNum: 1,
-		//		addrs:    xpubAddrs,
-		//	},
-		//},
-		//{
-		//	name: "xpub no coins and scan 1, encrypted",
-		//	opts: wallet.Options{
-		//		XPub:     xpub,
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//		ScanN:    1,
-		//		Type:     WalletTypeXPub,
-		//	},
-		//	balGetter: tf,
-		//	expect: exp{
-		//		err:      nil,
-		//		xpub:     xpub,
-		//		entryNum: 1,
-		//		addrs:    xpubAddrs,
-		//	},
-		//},
-		//{
-		//	name: "xpub no coins and scan 10, unencrypted",
-		//	opts: wallet.Options{
-		//		XPub:  xpub,
-		//		ScanN: 10,
-		//		Type:  WalletTypeXPub,
-		//	},
-		//	balGetter: tf,
-		//	expect: exp{
-		//		err:      nil,
-		//		xpub:     xpub,
-		//		entryNum: 1,
-		//		addrs:    xpubAddrs,
-		//	},
-		//},
-		//{
-		//	name: "xpub scan 0 get 1, unencrypted",
-		//	opts: wallet.Options{
-		//		XPub:  xpub,
-		//		ScanN: 0,
-		//		Type:  WalletTypeXPub,
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		xpubAddrs[0]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		xpub:     xpub,
-		//		entryNum: 1,
-		//		addrs:    xpubAddrs,
-		//	},
-		//},
-		//{
-		//	name: "xpub scan 0 get 1, encrypted",
-		//	opts: wallet.Options{
-		//		XPub:     xpub,
-		//		ScanN:    0,
-		//		Type:     WalletTypeXPub,
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		xpubAddrs[0]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		xpub:     xpub,
-		//		entryNum: 1,
-		//		addrs:    xpubAddrs,
-		//	},
-		//},
-		//{
-		//	name: "xpub scan 1 get 1, unencrypted",
-		//	opts: wallet.Options{
-		//		XPub:  xpub,
-		//		ScanN: 1,
-		//		Type:  WalletTypeXPub,
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		xpubAddrs[0]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		xpub:     xpub,
-		//		entryNum: 1,
-		//		addrs:    xpubAddrs,
-		//	},
-		//},
-		//{
-		//	name: "xpub scan 1 get 1, encrypted",
-		//	opts: wallet.Options{
-		//		XPub:     xpub,
-		//		ScanN:    1,
-		//		Type:     WalletTypeXPub,
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		xpubAddrs[0]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		xpub:     xpub,
-		//		entryNum: 1,
-		//		addrs:    xpubAddrs,
-		//	},
-		//},
-		//{
-		//	name: "xpub scan 2 get 1, unencrypted",
-		//	opts: wallet.Options{
-		//		XPub:  xpub,
-		//		ScanN: 2,
-		//		Type:  WalletTypeXPub,
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		xpubAddrs[0]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		xpub:     xpub,
-		//		entryNum: 1,
-		//		addrs:    xpubAddrs,
-		//	},
-		//},
-		//{
-		//	name: "xpub scan 2 get 1, encrypted",
-		//	opts: wallet.Options{
-		//		XPub:     xpub,
-		//		ScanN:    2,
-		//		Type:     WalletTypeXPub,
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		xpubAddrs[0]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		xpub:     xpub,
-		//		entryNum: 1,
-		//		addrs:    xpubAddrs,
-		//	},
-		//},
-		//{
-		//	name: "xpub scan 2 get 2, unencrypted",
-		//	opts: wallet.Options{
-		//		XPub:  xpub,
-		//		ScanN: 2,
-		//		Type:  WalletTypeXPub,
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		xpubAddrs[1]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		xpub:     xpub,
-		//		entryNum: 2,
-		//		addrs:    xpubAddrs,
-		//	},
-		//},
-		//{
-		//	name: "xpub scan 2 get 2, encrypted",
-		//	opts: wallet.Options{
-		//		XPub:     xpub,
-		//		ScanN:    2,
-		//		Type:     WalletTypeXPub,
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		xpubAddrs[1]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		xpub:     xpub,
-		//		entryNum: 2,
-		//		addrs:    xpubAddrs,
-		//	},
-		//},
-		//{
-		//	name: "xpub scan 5 get 5, unencrypted",
-		//	opts: wallet.Options{
-		//		XPub:  xpub,
-		//		ScanN: 5,
-		//		Type:  WalletTypeXPub,
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		xpubAddrs[4]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		xpub:     xpub,
-		//		entryNum: 5,
-		//		addrs:    xpubAddrs,
-		//	},
-		//},
-		//{
-		//	name: "xpub scan 5 get 4, unencrypted",
-		//	opts: wallet.Options{
-		//		XPub:  xpub,
-		//		ScanN: 5,
-		//		Type:  WalletTypeXPub,
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		xpubAddrs[1]: true,
-		//		xpubAddrs[3]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		xpub:     xpub,
-		//		entryNum: 4,
-		//		addrs:    xpubAddrs,
-		//	},
-		//},
-		//{
-		//	name: "xpub scan 5 get 3, unencrypted",
-		//	opts: wallet.Options{
-		//		XPub:  xpub,
-		//		ScanN: 5,
-		//		Type:  WalletTypeXPub,
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		xpubAddrs[1]: true,
-		//		xpubAddrs[2]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		xpub:     xpub,
-		//		entryNum: 3,
-		//		addrs:    xpubAddrs,
-		//	},
-		//},
-		//{
-		//	name: "xpub scan 5 get 2, unencrypted",
-		//	opts: wallet.Options{
-		//		XPub:  xpub,
-		//		ScanN: 5,
-		//		Type:  WalletTypeXPub,
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		xpubAddrs[1]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		xpub:     xpub,
-		//		entryNum: 2,
-		//		addrs:    xpubAddrs,
-		//	},
-		//},
-		//{
-		//	name: "xpub scan 5 get 1, unencrypted",
-		//	opts: wallet.Options{
-		//		XPub:  xpub,
-		//		ScanN: 5,
-		//		Type:  WalletTypeXPub,
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		xpubAddrs[0]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		xpub:     xpub,
-		//		entryNum: 1,
-		//		addrs:    xpubAddrs,
-		//	},
-		//},
-		//
-		//{
-		//	name: "xpub scan 5 get 2, encrypted",
-		//	opts: wallet.Options{
-		//		XPub:     xpub,
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//		ScanN:    5,
-		//		Type:     WalletTypeXPub,
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		xpubAddrs[1]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		xpub:     xpub,
-		//		entryNum: 2,
-		//		addrs:    xpubAddrs,
-		//	},
-		//},
-		//{
-		//	name: "xpub scan 5 get 5, encrypted",
-		//	opts: wallet.Options{
-		//		XPub:     xpub,
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//		ScanN:    5,
-		//		Type:     WalletTypeXPub,
-		//	},
-		//	balGetter: mockTxnsFinder{
-		//		xpubAddrs[3]: true,
-		//		xpubAddrs[4]: true,
-		//	},
-		//	expect: exp{
-		//		err:      nil,
-		//		xpub:     xpub,
-		//		entryNum: 5,
-		//		addrs:    xpubAddrs,
-		//	},
-		//},
+		{
+			name: "bip44 no coins and scan 0, unencrypted",
+			opts: wallet.Options{
+				Seed: bip44Seed,
+				Type: wallet.WalletTypeBip44,
+				TF:   tf,
+			},
+			expect: exp{
+				err:      nil,
+				seed:     bip44Seed,
+				entryNum: 1,
+				addrs:    bip44Addrs,
+			},
+		},
+		{
+			name: "bip44 no coins and scan 0, encrypted",
+			opts: wallet.Options{
+				Seed:     bip44Seed,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				Type:     wallet.WalletTypeBip44,
+				TF:       tf,
+			},
+			expect: exp{
+				err:      nil,
+				seed:     bip44Seed,
+				entryNum: 1,
+				addrs:    bip44Addrs,
+			},
+		},
+		{
+			name: "bip44 no coins and scan 1, unencrypted",
+			opts: wallet.Options{
+				Seed:  bip44Seed,
+				ScanN: 1,
+				Type:  wallet.WalletTypeBip44,
+				TF:    tf,
+			},
+			expect: exp{
+				err:      nil,
+				seed:     bip44Seed,
+				entryNum: 1,
+				addrs:    bip44Addrs,
+			},
+		},
+		{
+			name: "bip44 no coins and scan 1, encrypted",
+			opts: wallet.Options{
+				Seed:     bip44Seed,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				ScanN:    1,
+				Type:     wallet.WalletTypeBip44,
+				TF:       tf,
+			},
+			expect: exp{
+				err:      nil,
+				seed:     bip44Seed,
+				entryNum: 1,
+				addrs:    bip44Addrs,
+			},
+		},
+		{
+			name: "bip44 no coins and scan 10, unencrypted",
+			opts: wallet.Options{
+				Seed:  bip44Seed,
+				ScanN: 10,
+				Type:  wallet.WalletTypeBip44,
+				TF:    tf,
+			},
+			expect: exp{
+				err:      nil,
+				seed:     bip44Seed,
+				entryNum: 1,
+				addrs:    bip44Addrs,
+			},
+		},
+		{
+			name: "bip44 scan 0 get 1, unencrypted",
+			opts: wallet.Options{
+				Seed:  bip44Seed,
+				ScanN: 1,
+				Type:  wallet.WalletTypeBip44,
+				TF: mockTxnsFinder{
+					bip44Addrs[0]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				seed:     bip44Seed,
+				entryNum: 1,
+				addrs:    bip44Addrs,
+			},
+		},
+		{
+			name: "bip44 scan 0 get 1, encrypted",
+			opts: wallet.Options{
+				Seed:     bip44Seed,
+				ScanN:    1,
+				Type:     wallet.WalletTypeBip44,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				TF: mockTxnsFinder{
+					bip44Addrs[0]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				seed:     bip44Seed,
+				entryNum: 1,
+				addrs:    bip44Addrs,
+			},
+		},
+		{
+			name: "bip44 scan 1 get 1, unencrypted",
+			opts: wallet.Options{
+				Seed:  bip44Seed,
+				ScanN: 1,
+				Type:  wallet.WalletTypeBip44,
+				TF: mockTxnsFinder{
+					bip44Addrs[0]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				seed:     bip44Seed,
+				entryNum: 1,
+				addrs:    bip44Addrs,
+			},
+		},
+		{
+			name: "bip44 scan 1 get 1, encrypted",
+			opts: wallet.Options{
+				Seed:     bip44Seed,
+				ScanN:    1,
+				Type:     wallet.WalletTypeBip44,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				TF: mockTxnsFinder{
+					bip44Addrs[0]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				seed:     bip44Seed,
+				entryNum: 1,
+				addrs:    bip44Addrs,
+			},
+		},
+		{
+			name: "bip44 scan 2 get 2, unencrypted",
+			opts: wallet.Options{
+				Seed:  bip44Seed,
+				ScanN: 2,
+				Type:  wallet.WalletTypeBip44,
+				TF: mockTxnsFinder{
+					bip44Addrs[0]: true,
+					bip44Addrs[1]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				seed:     bip44Seed,
+				entryNum: 2,
+				addrs:    bip44Addrs,
+			},
+		},
+		{
+			name: "bip44 scan 2 get 2, encrypted",
+			opts: wallet.Options{
+				Seed:     bip44Seed,
+				ScanN:    2,
+				Type:     wallet.WalletTypeBip44,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				TF: mockTxnsFinder{
+					bip44Addrs[0]: true,
+					bip44Addrs[1]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				seed:     bip44Seed,
+				entryNum: 2,
+				addrs:    bip44Addrs,
+			},
+		},
+		{
+			name: "bip44 scan 5 get 1, unencrypted",
+			opts: wallet.Options{
+				Seed:  bip44Seed,
+				ScanN: 5,
+				Type:  wallet.WalletTypeBip44,
+				TF: mockTxnsFinder{
+					bip44Addrs[0]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				seed:     bip44Seed,
+				entryNum: 1,
+				addrs:    bip44Addrs,
+			},
+		},
+		{
+			name: "bip44 scan 5 get 2, unencrypted",
+			opts: wallet.Options{
+				Seed:  bip44Seed,
+				ScanN: 5,
+				Type:  wallet.WalletTypeBip44,
+				TF: mockTxnsFinder{
+					bip44Addrs[1]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				seed:     bip44Seed,
+				entryNum: 2,
+				addrs:    bip44Addrs,
+			},
+		},
+		{
+			name: "bip44 scan 5 get 5, unencrypted",
+			opts: wallet.Options{
+				Seed:  bip44Seed,
+				ScanN: 5,
+				Type:  wallet.WalletTypeBip44,
+				TF: mockTxnsFinder{
+					bip44Addrs[4]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				seed:     bip44Seed,
+				entryNum: 5,
+				addrs:    bip44Addrs,
+			},
+		},
+		{
+			name: "bip44 scan 5 get 5, encrypted",
+			opts: wallet.Options{
+				Seed:     bip44Seed,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				ScanN:    5,
+				Type:     wallet.WalletTypeBip44,
+				TF: mockTxnsFinder{
+					bip44Addrs[3]: true,
+					bip44Addrs[4]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				seed:     bip44Seed,
+				entryNum: 5,
+				addrs:    bip44Addrs,
+			},
+		},
+		{
+			name: "xpub no coins and scan 0, unencrypted",
+			opts: wallet.Options{
+				XPub: xpub,
+				Type: wallet.WalletTypeXPub,
+				TF:   tf,
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 1,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub no coins and scan 0",
+			opts: wallet.Options{
+				XPub: xpub,
+				Type: wallet.WalletTypeXPub,
+				TF:   tf,
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 1,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub no coins and scan 1, unencrypted",
+			opts: wallet.Options{
+				XPub:  xpub,
+				ScanN: 1,
+				Type:  wallet.WalletTypeXPub,
+				TF:    tf,
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 1,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub no coins and scan 1",
+			opts: wallet.Options{
+				XPub:  xpub,
+				ScanN: 1,
+				Type:  wallet.WalletTypeXPub,
+				TF:    tf,
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 1,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub no coins and scan 10, unencrypted",
+			opts: wallet.Options{
+				XPub:  xpub,
+				ScanN: 10,
+				Type:  wallet.WalletTypeXPub,
+				TF:    tf,
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 1,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub scan 0 get 1, unencrypted",
+			opts: wallet.Options{
+				XPub:  xpub,
+				ScanN: 0,
+				Type:  wallet.WalletTypeXPub,
+				TF: mockTxnsFinder{
+					xpubAddrs[0]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 1,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub scan 0 get 1",
+			opts: wallet.Options{
+				XPub:  xpub,
+				ScanN: 0,
+				Type:  wallet.WalletTypeXPub,
+				TF: mockTxnsFinder{
+					xpubAddrs[0]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 1,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub scan 1 get 1, unencrypted",
+			opts: wallet.Options{
+				XPub:  xpub,
+				ScanN: 1,
+				Type:  wallet.WalletTypeXPub,
+				TF: mockTxnsFinder{
+					xpubAddrs[0]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 1,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub scan 1 get 1",
+			opts: wallet.Options{
+				XPub:  xpub,
+				ScanN: 1,
+				Type:  wallet.WalletTypeXPub,
+				TF: mockTxnsFinder{
+					xpubAddrs[0]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 1,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub scan 2 get 1, unencrypted",
+			opts: wallet.Options{
+				XPub:  xpub,
+				ScanN: 2,
+				Type:  wallet.WalletTypeXPub,
+				TF: mockTxnsFinder{
+					xpubAddrs[0]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 1,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub scan 2 get 1",
+			opts: wallet.Options{
+				XPub:  xpub,
+				ScanN: 2,
+				Type:  wallet.WalletTypeXPub,
+				TF: mockTxnsFinder{
+					xpubAddrs[0]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 1,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub scan 2 get 2, unencrypted",
+			opts: wallet.Options{
+				XPub:  xpub,
+				ScanN: 2,
+				Type:  wallet.WalletTypeXPub,
+				TF: mockTxnsFinder{
+					xpubAddrs[1]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 2,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub scan 2 get 2",
+			opts: wallet.Options{
+				XPub:  xpub,
+				ScanN: 2,
+				Type:  wallet.WalletTypeXPub,
+				TF: mockTxnsFinder{
+					xpubAddrs[1]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 2,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub scan 5 get 5, unencrypted",
+			opts: wallet.Options{
+				XPub:  xpub,
+				ScanN: 5,
+				Type:  wallet.WalletTypeXPub,
+				TF: mockTxnsFinder{
+					xpubAddrs[4]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 5,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub scan 5 get 4, unencrypted",
+			opts: wallet.Options{
+				XPub:  xpub,
+				ScanN: 5,
+				Type:  wallet.WalletTypeXPub,
+				TF: mockTxnsFinder{
+					xpubAddrs[1]: true,
+					xpubAddrs[3]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 4,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub scan 5 get 3, unencrypted",
+			opts: wallet.Options{
+				XPub:  xpub,
+				ScanN: 5,
+				Type:  wallet.WalletTypeXPub,
+				TF: mockTxnsFinder{
+					xpubAddrs[1]: true,
+					xpubAddrs[2]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 3,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub scan 5 get 2, unencrypted",
+			opts: wallet.Options{
+				XPub:  xpub,
+				ScanN: 5,
+				Type:  wallet.WalletTypeXPub,
+				TF: mockTxnsFinder{
+					xpubAddrs[1]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 2,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub scan 5 get 1, unencrypted",
+			opts: wallet.Options{
+				XPub:  xpub,
+				ScanN: 5,
+				Type:  wallet.WalletTypeXPub,
+				TF: mockTxnsFinder{
+					xpubAddrs[0]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 1,
+				addrs:    xpubAddrs,
+			},
+		},
+
+		{
+			name: "xpub scan 5 get 2",
+			opts: wallet.Options{
+				XPub:  xpub,
+				ScanN: 5,
+				Type:  wallet.WalletTypeXPub,
+				TF: mockTxnsFinder{
+					xpubAddrs[1]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 2,
+				addrs:    xpubAddrs,
+			},
+		},
+		{
+			name: "xpub scan 5 get 5",
+			opts: wallet.Options{
+				XPub:  xpub,
+				ScanN: 5,
+				Type:  wallet.WalletTypeXPub,
+				TF: mockTxnsFinder{
+					xpubAddrs[3]: true,
+					xpubAddrs[4]: true,
+				},
+			},
+			expect: exp{
+				err:      nil,
+				xpub:     xpub,
+				entryNum: 5,
+				addrs:    xpubAddrs,
+			},
+		},
 		{
 			name: "wallet api disabled",
 			opts: wallet.Options{
@@ -2782,13 +2765,15 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 					EnableWalletAPI: !tc.disableWalletAPI,
 					WalletCreators: map[string]wallet.Creator{
 						wallet.WalletTypeDeterministic: deterministic.Creator{},
+						wallet.WalletTypeBip44:         bip44wallet.Creator{},
+						wallet.WalletTypeXPub:          xpubwallet.Creator{},
 					},
 				})
 				require.NoError(t, err)
 
 				wltName := wallet.NewWalletFilename()
 				w, err := s.CreateWallet(wltName, tc.opts)
-				require.Equal(t, tc.expect.err, err)
+				require.Equal(t, tc.expect.err, err, fmt.Sprintf("expected: %v; got : %v", tc.expect.err, err))
 				if err != nil {
 					return
 				}

@@ -3296,152 +3296,125 @@ func TestServiceView(t *testing.T) {
 		disableWalletAPI bool
 		err              error
 	}{
-		//{
-		//	name:        "ok, encrypted collection wallet",
-		//	wltName:     "test-view-collection-encrypted.wlt",
-		//	viewWltName: "test-view-collection-encrypted.wlt",
-		//	opts: wallet.Options{
-		//		Type:     wallet.WalletTypeCollection,
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//		Label:    "foowlt",
-		//	},
-		//	action: func(t *testing.T) func(wallet.Wallet) error {
-		//		return func(w wallet.Wallet) error {
-		//			require.Equal(t, "foowlt", w.Label())
-		//			checkNoSensitiveData(t, w)
-		//
-		//			// Modify the wallet pointer in order to check that this references a clone and not the original
-		//			w.SetLabel(w.Label() + "foo")
-		//
-		//			return nil
-		//		}
-		//	},
-		//},
-		//
-		//{
-		//	name:        "ok, unencrypted collection wallet",
-		//	wltName:     "test-view-collection-unencrypted.wlt",
-		//	viewWltName: "test-view-collection-unencrypted.wlt",
-		//	opts: wallet.Options{
-		//		Label: "foowlt",
-		//		Type:  wallet.WalletTypeCollection,
-		//	},
-		//	action: func(t *testing.T) func(wallet.Wallet) error {
-		//		return func(w wallet.Wallet) error {
-		//			require.Equal(t, "foowlt", w.Label())
-		//			// Collection wallets don't have seeds
-		//			require.Empty(t, w.Seed())
-		//			require.Empty(t, w.LastSeed())
-		//
-		//			// Modify the wallet pointer in order to check that this references a clone and not the original
-		//			w.SetLabel(w.Label() + "foo")
-		//
-		//			return nil
-		//		}
-		//	},
-		//},
-		//
-		//{
-		//	name:        "ok, encrypted xpub wallet",
-		//	wltName:     "test-view-xpub-encrypted.wlt",
-		//	viewWltName: "test-view-xpub-encrypted.wlt",
-		//	opts: wallet.Options{
-		//		Type:     wallet.WalletTypeXPub,
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//		Label:    "foowlt",
-		//		XPub:     "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
-		//	},
-		//	action: func(t *testing.T) func(wallet.Wallet) error {
-		//		return func(w wallet.Wallet) error {
-		//			require.Equal(t, "foowlt", w.Label())
-		//			checkNoSensitiveData(t, w)
-		//
-		//			require.Equal(t, "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v", w.XPub())
-		//
-		//			// Modify the wallet pointer in order to check that this references a clone and not the original
-		//			w.SetLabel(w.Label() + "foo")
-		//
-		//			return nil
-		//		}
-		//	},
-		//},
-		//
-		//{
-		//	name:        "ok, unencrypted xpub wallet",
-		//	wltName:     "test-view-xpub-unencrypted.wlt",
-		//	viewWltName: "test-view-xpub-unencrypted.wlt",
-		//	opts: wallet.Options{
-		//		Label: "foowlt",
-		//		Type:  wallet.WalletTypeXPub,
-		//		XPub:  "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
-		//	},
-		//	action: func(t *testing.T) func(wallet.Wallet) error {
-		//		return func(w wallet.Wallet) error {
-		//			require.Equal(t, "foowlt", w.Label())
-		//			// xpub wallets don't have seeds
-		//			require.Empty(t, w.Seed())
-		//			require.Empty(t, w.LastSeed())
-		//
-		//			require.Equal(t, "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v", w.XPub())
-		//
-		//			// Modify the wallet pointer in order to check that this references a clone and not the original
-		//			w.SetLabel(w.Label() + "foo")
-		//
-		//			return nil
-		//		}
-		//	},
-		//},
-		//
-		//{
-		//	name:        "ok, encrypted bip44 wallet",
-		//	wltName:     "test-view-bip44-encrypted.wlt",
-		//	viewWltName: "test-view-bip44-encrypted.wlt",
-		//	opts: wallet.Options{
-		//		Type:     wallet.WalletTypeBip44,
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//		Label:    "foowlt",
-		//		Seed:     "voyage say extend find sheriff surge priority merit ignore maple cash argue",
-		//	},
-		//	action: func(t *testing.T) func(wallet.Wallet) error {
-		//		return func(w wallet.Wallet) error {
-		//			require.Equal(t, "foowlt", w.Label())
-		//			checkNoSensitiveData(t, w)
-		//
-		//			// Modify the wallet pointer in order to check that this references a clone and not the original
-		//			w.SetLabel(w.Label() + "foo")
-		//
-		//			return nil
-		//		}
-		//	},
-		//},
-		//
-		//{
-		//	name:        "ok, unencrypted bip44 wallet",
-		//	wltName:     "test-view-bip44-unencrypted.wlt",
-		//	viewWltName: "test-view-bip44-unencrypted.wlt",
-		//	opts: wallet.Options{
-		//		Label:          "foowlt",
-		//		Type:           wallet.WalletTypeBip44,
-		//		Seed:           "voyage say extend find sheriff surge priority merit ignore maple cash argue",
-		//		SeedPassphrase: "foo",
-		//	},
-		//	action: func(t *testing.T) func(wallet.Wallet) error {
-		//		return func(w wallet.Wallet) error {
-		//			require.Equal(t, "foowlt", w.Label())
-		//			require.Equal(t, "voyage say extend find sheriff surge priority merit ignore maple cash argue", w.Seed())
-		//			require.Equal(t, "foo", w.SeedPassphrase())
-		//			require.Empty(t, w.LastSeed())
-		//
-		//			// Modify the wallet pointer in order to check that this references a clone and not the original
-		//			w.SetLabel(w.Label() + "foo")
-		//
-		//			return nil
-		//		}
-		//	},
-		//},
+		{
+			name:        "ok, encrypted collection wallet",
+			wltName:     "test-view-collection-encrypted.wlt",
+			viewWltName: "test-view-collection-encrypted.wlt",
+			opts: wallet.Options{
+				Type:     wallet.WalletTypeCollection,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				Label:    "foowlt",
+			},
+			action: func(t *testing.T) func(wallet.Wallet) error {
+				return func(w wallet.Wallet) error {
+					require.Equal(t, "foowlt", w.Label())
+					checkNoSensitiveData(t, w)
+
+					// Modify the wallet pointer in order to check that this references a clone and not the original
+					w.SetLabel(w.Label() + "foo")
+
+					return nil
+				}
+			},
+		},
+
+		{
+			name:        "ok, unencrypted collection wallet",
+			wltName:     "test-view-collection-unencrypted.wlt",
+			viewWltName: "test-view-collection-unencrypted.wlt",
+			opts: wallet.Options{
+				Label: "foowlt",
+				Type:  wallet.WalletTypeCollection,
+			},
+			action: func(t *testing.T) func(wallet.Wallet) error {
+				return func(w wallet.Wallet) error {
+					require.Equal(t, "foowlt", w.Label())
+					// Collection wallets don't have seeds
+					require.Empty(t, w.Seed())
+					require.Empty(t, w.LastSeed())
+
+					// Modify the wallet pointer in order to check that this references a clone and not the original
+					w.SetLabel(w.Label() + "foo")
+
+					return nil
+				}
+			},
+		},
+		{
+			name:        "ok, unencrypted xpub wallet",
+			wltName:     "test-view-xpub-unencrypted.wlt",
+			viewWltName: "test-view-xpub-unencrypted.wlt",
+			opts: wallet.Options{
+				Label: "foowlt",
+				Type:  wallet.WalletTypeXPub,
+				XPub:  "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
+			},
+			action: func(t *testing.T) func(wallet.Wallet) error {
+				return func(w wallet.Wallet) error {
+					require.Equal(t, "foowlt", w.Label())
+					// xpub wallets don't have seeds
+					require.Empty(t, w.Seed())
+					require.Empty(t, w.LastSeed())
+
+					require.Equal(t, "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v", w.XPub())
+
+					// Modify the wallet pointer in order to check that this references a clone and not the original
+					w.SetLabel(w.Label() + "foo")
+
+					return nil
+				}
+			},
+		},
+
+		{
+			name:        "ok, encrypted bip44 wallet",
+			wltName:     "test-view-bip44-encrypted.wlt",
+			viewWltName: "test-view-bip44-encrypted.wlt",
+			opts: wallet.Options{
+				Type:     wallet.WalletTypeBip44,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				Label:    "foowlt",
+				Seed:     "voyage say extend find sheriff surge priority merit ignore maple cash argue",
+			},
+			action: func(t *testing.T) func(wallet.Wallet) error {
+				return func(w wallet.Wallet) error {
+					require.Equal(t, "foowlt", w.Label())
+					checkNoSensitiveData(t, w)
+
+					// Modify the wallet pointer in order to check that this references a clone and not the original
+					w.SetLabel(w.Label() + "foo")
+
+					return nil
+				}
+			},
+		},
+
+		{
+			name:        "ok, unencrypted bip44 wallet",
+			wltName:     "test-view-bip44-unencrypted.wlt",
+			viewWltName: "test-view-bip44-unencrypted.wlt",
+			opts: wallet.Options{
+				Label:          "foowlt",
+				Type:           wallet.WalletTypeBip44,
+				Seed:           "voyage say extend find sheriff surge priority merit ignore maple cash argue",
+				SeedPassphrase: "foo",
+			},
+			action: func(t *testing.T) func(wallet.Wallet) error {
+				return func(w wallet.Wallet) error {
+					require.Equal(t, "foowlt", w.Label())
+					require.Equal(t, "voyage say extend find sheriff surge priority merit ignore maple cash argue", w.Seed())
+					require.Equal(t, "foo", w.SeedPassphrase())
+					require.Empty(t, w.LastSeed())
+
+					// Modify the wallet pointer in order to check that this references a clone and not the original
+					w.SetLabel(w.Label() + "foo")
+
+					return nil
+				}
+			},
+		},
 
 		{
 			name:        "ok, encrypted wallet",
@@ -3526,6 +3499,9 @@ func TestServiceView(t *testing.T) {
 				EnableWalletAPI: true,
 				WalletCreators: map[string]wallet.Creator{
 					wallet.WalletTypeDeterministic: deterministic.Creator{},
+					wallet.WalletTypeCollection:    collection.Creator{},
+					wallet.WalletTypeXPub:          xpubwallet.Creator{},
+					wallet.WalletTypeBip44:         bip44wallet.Creator{},
 				},
 			})
 			require.NoError(t, err)
@@ -3535,14 +3511,14 @@ func TestServiceView(t *testing.T) {
 
 			if w.Type() == wallet.WalletTypeCollection {
 				// TODO: open this after collection type is back
-				//err := s.UpdateSecrets(w.Filename(), tc.opts.Password, func(w Wallet) error {
-				//	p, s := cipher.GenerateKeyPair()
-				//	return w.(*CollectionWallet).AddEntry(entry.Entry{
-				//		Public:  p,
-				//		Secret:  s,
-				//		Address: cipher.AddressFromPubKey(p),
-				//	})
-				//})
+				err := s.UpdateSecrets(w.Filename(), tc.opts.Password, func(w wallet.Wallet) error {
+					p, s := cipher.GenerateKeyPair()
+					return w.(*collection.Wallet).AddEntry(wallet.Entry{
+						Public:  p,
+						Secret:  s,
+						Address: cipher.AddressFromPubKey(p),
+					})
+				})
 				require.NoError(t, err)
 
 				w, err = s.GetWallet(tc.wltName)
@@ -3568,7 +3544,11 @@ func TestServiceView(t *testing.T) {
 			// Check that the wallet is unmodified
 			w2, err := s.GetWallet(tc.wltName)
 			require.NoError(t, err)
-			require.Equal(t, w, w2)
+			wd, err := w.Serialize()
+			require.NoError(t, err)
+			w2d, err := w2.Serialize()
+			require.NoError(t, err)
+			require.Equal(t, wd, w2d)
 		})
 	}
 }

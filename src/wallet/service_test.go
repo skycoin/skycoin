@@ -2,6 +2,7 @@ package wallet_test
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -1464,29 +1465,30 @@ func TestServiceDecryptWallet(t *testing.T) {
 	}
 
 	tt := []testCase{
-		//{
-		//	name:    "ok xpub",
-		//	wltName: "test.wlt",
-		//	opts: wallet.Options{
-		//		Type:     wallet.WalletTypeXPub,
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//		XPub:     "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
-		//	},
-		//	decryptWltName: "test.wlt",
-		//	password:       []byte("pwd"),
-		//},
-		//{
-		//	name:    "ok collection",
-		//	wltName: "test.wlt",
-		//	opts: wallet.Options{
-		//		Type:     wallet.WalletTypeCollection,
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//	},
-		//	decryptWltName: "test.wlt",
-		//	password:       []byte("pwd"),
-		//},
+		{
+			name:    "ok xpub",
+			wltName: "test.wlt",
+			opts: wallet.Options{
+				Type: wallet.WalletTypeXPub,
+				XPub: "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
+			},
+			decryptWltName: "test.wlt",
+			password:       []byte("pwd"),
+			// xpub wallet does not support encryption,
+			// hence decrypts wallet would only return wallet is not encrypted
+			err: wallet.NewError(errors.New("wallet is not encrypted")),
+		},
+		{
+			name:    "ok collection",
+			wltName: "test.wlt",
+			opts: wallet.Options{
+				Type:     wallet.WalletTypeCollection,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			decryptWltName: "test.wlt",
+			password:       []byte("pwd"),
+		},
 		{
 			name:    "ok deterministic",
 			wltName: "test.wlt",
@@ -1499,18 +1501,18 @@ func TestServiceDecryptWallet(t *testing.T) {
 			decryptWltName: "test.wlt",
 			password:       []byte("pwd"),
 		},
-		//{
-		//	name:    "ok bip44",
-		//	wltName: "test.wlt",
-		//	opts: wallet.Options{
-		//		Seed:     "voyage say extend find sheriff surge priority merit ignore maple cash argue",
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//		Type:     wallet.WalletTypeBip44,
-		//	},
-		//	decryptWltName: "test.wlt",
-		//	password:       []byte("pwd"),
-		//},
+		{
+			name:    "ok bip44",
+			wltName: "test.wlt",
+			opts: wallet.Options{
+				Seed:     "voyage say extend find sheriff surge priority merit ignore maple cash argue",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				Type:     wallet.WalletTypeBip44,
+			},
+			decryptWltName: "test.wlt",
+			password:       []byte("pwd"),
+		},
 		{
 			name:    "wallet not exist",
 			wltName: "test.wlt",
@@ -1564,19 +1566,19 @@ func TestServiceDecryptWallet(t *testing.T) {
 		},
 	}
 
-	//verifyDecryptedXPubWlt := func(tc testCase, wlt Wallet) {
-	//	// XPub wlt doesn't have anything to encrypt or decrypt
-	//	require.Equal(t, tc.opts.XPub, wlt.XPub())
-	//	require.Empty(t, wlt.Secrets())
-	//	require.Empty(t, wlt.Seed())
-	//	require.Empty(t, wlt.LastSeed())
-	//	entries, err := wlt.GetEntries()
-	//	require.NoError(t, err)
-	//
-	//	for _, e := range entries {
-	//		require.True(t, e.Secret.Null())
-	//	}
-	//}
+	verifyDecryptedXPubWlt := func(tc testCase, wlt wallet.Wallet) {
+		// XPub wlt doesn't have anything to encrypt or decrypt
+		require.Equal(t, tc.opts.XPub, wlt.XPub())
+		require.Empty(t, wlt.Secrets())
+		require.Empty(t, wlt.Seed())
+		require.Empty(t, wlt.LastSeed())
+		entries, err := wlt.GetEntries()
+		require.NoError(t, err)
+
+		for _, e := range entries {
+			require.True(t, e.Secret.Null())
+		}
+	}
 
 	verifyDecryptedDeterministicWlt := func(tc testCase, wlt wallet.Wallet) {
 		// Checks the "encrypted" meta info
@@ -1601,52 +1603,49 @@ func TestServiceDecryptWallet(t *testing.T) {
 		}
 
 		require.Empty(t, wlt.Secrets())
-		//require.Empty(t, wlt.CryptoType())
 	}
 
-	//verifyDecryptedCollectionWlt := func(_ testCase, wlt Wallet) {
-	//	// Checks the "encrypted" meta info
-	//	require.False(t, wlt.IsEncrypted())
-	//	require.Empty(t, wlt.Seed())
-	//	require.Empty(t, wlt.LastSeed())
-	//
-	//	// Checks the entries
-	//	entries, err := wlt.GetEntries()
-	//	require.NoError(t, err)
-	//
-	//	for _, e := range entries {
-	//		require.False(t, e.Secret.Null())
-	//		a := cipher.MustAddressFromSecKey(e.Secret)
-	//		require.Equal(t, a, e.Address)
-	//		p := cipher.MustPubKeyFromSecKey(e.Secret)
-	//		require.Equal(t, p, e.Public)
-	//	}
-	//
-	//	require.Empty(t, wlt.Secrets())
-	//	require.Empty(t, wlt.CryptoType())
-	//}
+	verifyDecryptedCollectionWlt := func(_ testCase, wlt wallet.Wallet) {
+		// Checks the "encrypted" meta info
+		require.False(t, wlt.IsEncrypted())
+		require.Empty(t, wlt.Seed())
+		require.Empty(t, wlt.LastSeed())
 
-	//verifyDecryptedBip44Wlt := func(tc testCase, wlt Wallet) {
-	//	// Checks the "encrypted" meta info
-	//	require.False(t, wlt.IsEncrypted())
-	//	// Checks the seed
-	//	require.Equal(t, tc.opts.Seed, wlt.Seed())
-	//	require.Empty(t, wlt.LastSeed())
-	//
-	//	// Checks the entries
-	//	entries, err := wlt.GetEntries()
-	//	require.NoError(t, err)
-	//	for _, e := range entries {
-	//		require.False(t, e.Secret.Null())
-	//		a := cipher.MustAddressFromSecKey(e.Secret)
-	//		require.Equal(t, a, e.Address)
-	//		p := cipher.MustPubKeyFromSecKey(e.Secret)
-	//		require.Equal(t, p, e.Public)
-	//	}
-	//
-	//	require.Empty(t, wlt.Secrets())
-	//	require.Empty(t, wlt.CryptoType())
-	//}
+		// Checks the entries
+		entries, err := wlt.GetEntries()
+		require.NoError(t, err)
+
+		for _, e := range entries {
+			require.False(t, e.Secret.Null())
+			a := cipher.MustAddressFromSecKey(e.Secret)
+			require.Equal(t, a, e.Address)
+			p := cipher.MustPubKeyFromSecKey(e.Secret)
+			require.Equal(t, p, e.Public)
+		}
+
+		require.Empty(t, wlt.Secrets())
+	}
+
+	verifyDecryptedBip44Wlt := func(tc testCase, wlt wallet.Wallet) {
+		// Checks the "encrypted" meta info
+		require.False(t, wlt.IsEncrypted())
+		// Checks the seed
+		require.Equal(t, tc.opts.Seed, wlt.Seed())
+		require.Empty(t, wlt.LastSeed())
+
+		// Checks the entries
+		entries, err := wlt.GetEntries()
+		require.NoError(t, err)
+		for _, e := range entries {
+			require.False(t, e.Secret.Null())
+			a := cipher.MustAddressFromSecKey(e.Secret)
+			require.Equal(t, a, e.Address)
+			p := cipher.MustPubKeyFromSecKey(e.Secret)
+			require.Equal(t, p, e.Public)
+		}
+
+		require.Empty(t, wlt.Secrets())
+	}
 
 	for _, tc := range tt {
 		for _, ct := range crypto.TypesInsecure() {
@@ -1659,9 +1658,15 @@ func TestServiceDecryptWallet(t *testing.T) {
 					EnableWalletAPI: !tc.disableWalletAPI,
 					WalletCreators: map[string]wallet.Creator{
 						wallet.WalletTypeDeterministic: deterministic.Creator{},
+						wallet.WalletTypeXPub:          xpubwallet.Creator{},
+						wallet.WalletTypeCollection:    collection.Creator{},
+						wallet.WalletTypeBip44:         bip44wallet.Creator{},
 					},
 					WalletLoaders: map[string]wallet.Loader{
 						wallet.WalletTypeDeterministic: deterministic.Loader{},
+						wallet.WalletTypeXPub:          xpubwallet.Loader{},
+						wallet.WalletTypeCollection:    collection.Loader{},
+						wallet.WalletTypeBip44:         bip44wallet.Loader{},
 					},
 				})
 				require.NoError(t, err)
@@ -1688,18 +1693,18 @@ func TestServiceDecryptWallet(t *testing.T) {
 
 				//verify := verifyDecryptedCollectionWlt
 				verify := verifyDecryptedDeterministicWlt
-				//switch wltType {
-				//case WalletTypeCollection:
-				//	verify = verifyDecryptedCollectionWlt
-				//case wallet.WalletTypeBip44:
-				//	verify = verifyDecryptedBip44Wlt
-				//case wallet.WalletTypeDeterministic:
-				//	verify = verifyDecryptedDeterministicWlt
-				//case WalletTypeXPub:
-				//	verify = verifyDecryptedXPubWlt
-				//default:
-				//	t.Fatal("unhandled wallet type")
-				//}
+				switch wltType {
+				case wallet.WalletTypeCollection:
+					verify = verifyDecryptedCollectionWlt
+				case wallet.WalletTypeBip44:
+					verify = verifyDecryptedBip44Wlt
+				case wallet.WalletTypeDeterministic:
+					verify = verifyDecryptedDeterministicWlt
+				case wallet.WalletTypeXPub:
+					verify = verifyDecryptedXPubWlt
+				default:
+					t.Fatal("unhandled wallet type")
+				}
 
 				// Checks the decrypted wallet in service
 				w, err := s.GetWallet(tc.wltName)

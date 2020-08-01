@@ -3554,7 +3554,7 @@ func TestServiceView(t *testing.T) {
 }
 
 func TestServiceViewSecrets(t *testing.T) {
-	//mnemonicSeed := bip39.MustNewDefaultMnemonic()
+	mnemonicSeed := bip39.MustNewDefaultMnemonic()
 
 	tt := []struct {
 		name             string
@@ -3619,89 +3619,89 @@ func TestServiceViewSecrets(t *testing.T) {
 			},
 		},
 
-		//{
-		//	name:        "ok, encrypted wallet bip44 seed passphrase",
-		//	wltName:     "test-view-secrets-encrypted-bip44.wlt",
-		//	viewWltName: "test-view-secrets-encrypted-bip44.wlt",
-		//	opts: wallet.Options{
-		//		Seed:           mnemonicSeed,
-		//		SeedPassphrase: "foobar",
-		//		Encrypt:        true,
-		//		Password:       []byte("pwd"),
-		//		Label:          "foowlt",
-		//		Type:           wallet.WalletTypeBip44,
-		//	},
-		//	password: []byte("pwd"),
-		//	action: func(t *testing.T) func(wallet.Wallet) error {
-		//		return func(w wallet.Wallet) error {
-		//			require.Equal(t, "foowlt", w.Label())
-		//
-		//			// Should be able to see sensitive data
-		//			require.Equal(t, mnemonicSeed, w.Seed())
-		//			require.Equal(t, "foobar", w.SeedPassphrase())
-		//			require.Empty(t, w.LastSeed())
-		//
-		//			// Modify the wallet pointer in order to check that this references a clone and not the original
-		//			w.SetLabel(w.Label() + "foo")
-		//
-		//			return nil
-		//		}
-		//	},
-		//},
-		//
-		//{
-		//	name:        "ok, unencrypted wallet bip44",
-		//	wltName:     "test-view-secrets-unencrypted-bip44.wlt",
-		//	viewWltName: "test-view-secrets-unencrypted-bip44.wlt",
-		//	opts: wallet.Options{
-		//		Seed:  mnemonicSeed,
-		//		Label: "foowlt",
-		//		Type:  wallet.WalletTypeBip44,
-		//	},
-		//	action: func(t *testing.T) func(wallet.Wallet) error {
-		//		return func(w wallet.Wallet) error {
-		//			require.Equal(t, "foowlt", w.Label())
-		//
-		//			// Seed is visible because its not encrypted
-		//			require.Equal(t, mnemonicSeed, w.Seed())
-		//			require.Empty(t, w.SeedPassphrase())
-		//			require.Empty(t, w.LastSeed())
-		//
-		//			// Modify the wallet pointer in order to check that this references a clone and not the original
-		//			w.SetLabel(w.Label() + "foo")
-		//
-		//			return nil
-		//		}
-		//	},
-		//},
-		//
-		//{
-		//	name:        "ok, unencrypted wallet bip44 seed passphrase",
-		//	wltName:     "test-view-secrets-unencrypted-bip44.wlt",
-		//	viewWltName: "test-view-secrets-unencrypted-bip44.wlt",
-		//	opts: wallet.Options{
-		//		Seed:           mnemonicSeed,
-		//		SeedPassphrase: "foobar",
-		//		Label:          "foowlt",
-		//		Type:           wallet.WalletTypeBip44,
-		//	},
-		//	action: func(t *testing.T) func(wallet.Wallet) error {
-		//		return func(w wallet.Wallet) error {
-		//			require.Equal(t, "foowlt", w.Label())
-		//
-		//			// Seed is visible because its not encrypted
-		//			require.Equal(t, mnemonicSeed, w.Seed())
-		//			require.Equal(t, "foobar", w.SeedPassphrase())
-		//			require.Empty(t, w.LastSeed())
-		//
-		//			// Modify the wallet pointer in order to check that this references a clone and not the original
-		//			w.SetLabel(w.Label() + "foo")
-		//
-		//			return nil
-		//		}
-		//	},
-		//},
-		//
+		{
+			name:        "ok, encrypted wallet bip44 seed passphrase",
+			wltName:     "test-view-secrets-encrypted-bip44.wlt",
+			viewWltName: "test-view-secrets-encrypted-bip44.wlt",
+			opts: wallet.Options{
+				Seed:           mnemonicSeed,
+				SeedPassphrase: "foobar",
+				Encrypt:        true,
+				Password:       []byte("pwd"),
+				Label:          "foowlt",
+				Type:           wallet.WalletTypeBip44,
+			},
+			password: []byte("pwd"),
+			action: func(t *testing.T) func(wallet.Wallet) error {
+				return func(w wallet.Wallet) error {
+					require.Equal(t, "foowlt", w.Label())
+
+					// Should be able to see sensitive data
+					require.Equal(t, mnemonicSeed, w.Seed())
+					require.Equal(t, "foobar", w.SeedPassphrase())
+					require.Empty(t, w.LastSeed())
+
+					// Modify the wallet pointer in order to check that this references a clone and not the original
+					w.SetLabel(w.Label() + "foo")
+
+					return nil
+				}
+			},
+		},
+
+		{
+			name:        "ok, unencrypted wallet bip44",
+			wltName:     "test-view-secrets-unencrypted-bip44.wlt",
+			viewWltName: "test-view-secrets-unencrypted-bip44.wlt",
+			opts: wallet.Options{
+				Seed:  mnemonicSeed,
+				Label: "foowlt",
+				Type:  wallet.WalletTypeBip44,
+			},
+			action: func(t *testing.T) func(wallet.Wallet) error {
+				return func(w wallet.Wallet) error {
+					require.Equal(t, "foowlt", w.Label())
+
+					// Seed is visible because its not encrypted
+					require.Equal(t, mnemonicSeed, w.Seed())
+					require.Empty(t, w.SeedPassphrase())
+					require.Empty(t, w.LastSeed())
+
+					// Modify the wallet pointer in order to check that this references a clone and not the original
+					w.SetLabel(w.Label() + "foo")
+
+					return nil
+				}
+			},
+		},
+
+		{
+			name:        "ok, unencrypted wallet bip44 seed passphrase",
+			wltName:     "test-view-secrets-unencrypted-bip44.wlt",
+			viewWltName: "test-view-secrets-unencrypted-bip44.wlt",
+			opts: wallet.Options{
+				Seed:           mnemonicSeed,
+				SeedPassphrase: "foobar",
+				Label:          "foowlt",
+				Type:           wallet.WalletTypeBip44,
+			},
+			action: func(t *testing.T) func(wallet.Wallet) error {
+				return func(w wallet.Wallet) error {
+					require.Equal(t, "foowlt", w.Label())
+
+					// Seed is visible because its not encrypted
+					require.Equal(t, mnemonicSeed, w.Seed())
+					require.Equal(t, "foobar", w.SeedPassphrase())
+					require.Empty(t, w.LastSeed())
+
+					// Modify the wallet pointer in order to check that this references a clone and not the original
+					w.SetLabel(w.Label() + "foo")
+
+					return nil
+				}
+			},
+		},
+
 		{
 			name:        "encrypted wallet but password not provided",
 			wltName:     "test-view-secrets-encrypted-no-password.wlt",
@@ -3779,6 +3779,7 @@ func TestServiceViewSecrets(t *testing.T) {
 				EnableWalletAPI: true,
 				WalletCreators: map[string]wallet.Creator{
 					wallet.WalletTypeDeterministic: deterministic.Creator{},
+					wallet.WalletTypeBip44:         bip44wallet.Creator{},
 				},
 			})
 			require.NoError(t, err)
@@ -3805,7 +3806,12 @@ func TestServiceViewSecrets(t *testing.T) {
 			// Check that the wallet is unmodified
 			w2, err := s.GetWallet(tc.wltName)
 			require.NoError(t, err)
-			require.Equal(t, w, w2)
+
+			wd, err := w.Serialize()
+			require.NoError(t, err)
+			w2d, err := w2.Serialize()
+			require.NoError(t, err)
+			require.Equal(t, wd, w2d)
 		})
 	}
 }

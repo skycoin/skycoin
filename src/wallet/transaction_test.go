@@ -19,7 +19,7 @@ import (
 	"github.com/SkycoinProject/skycoin/src/transaction"
 	"github.com/SkycoinProject/skycoin/src/util/fee"
 	"github.com/SkycoinProject/skycoin/src/wallet"
-	"github.com/SkycoinProject/skycoin/src/wallet/core/collection"
+	"github.com/SkycoinProject/skycoin/src/wallet/collection"
 )
 
 func TestWalletSignTransaction(t *testing.T) {

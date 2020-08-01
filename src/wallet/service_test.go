@@ -13,10 +13,10 @@ import (
 
 	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
 	"github.com/SkycoinProject/skycoin/src/testutil"
-	"github.com/SkycoinProject/skycoin/src/wallet/core/bip44wallet"
-	"github.com/SkycoinProject/skycoin/src/wallet/core/collection"
-	"github.com/SkycoinProject/skycoin/src/wallet/core/deterministic"
-	"github.com/SkycoinProject/skycoin/src/wallet/core/xpubwallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/bip44wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/collection"
+	"github.com/SkycoinProject/skycoin/src/wallet/deterministic"
+	"github.com/SkycoinProject/skycoin/src/wallet/xpubwallet"
 	"github.com/stretchr/testify/require"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"

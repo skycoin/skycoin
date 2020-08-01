@@ -3864,7 +3864,113 @@ func TestServiceUpdate(t *testing.T) {
 				checkNoSensitiveData(t, w)
 			},
 		},
+		{
+			name:        "ok, bip44 encrypted wallet",
+			wltName:     "test-update-encrypted-bip44.wlt",
+			viewWltName: "test-update-encrypted-bip44.wlt",
+			opts: wallet.Options{
+				Seed:     "voyage say extend find sheriff surge priority merit ignore maple cash argue",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				Label:    "foowlt",
+				Type:     wallet.WalletTypeBip44,
+			},
+			action: func(t *testing.T) func(wallet.Wallet) error {
+				return func(w wallet.Wallet) error {
+					require.Equal(t, "foowlt", w.Label())
 
+					// Should not be able to see sensitive data
+					checkNoSensitiveData(t, w)
+
+					// Modify the wallet pointer in order to check that the wallet gets saved
+					w.SetLabel(w.Label() + "foo")
+
+					// The wallet is encrypted so it cannot generate more addresses
+					// TODO: bip44 wallet can generate address without decrypting
+					_, err := w.GenerateAddresses(1)
+					require.NoError(t, err)
+					//require.Equal(t, wallet.ErrWalletEncrypted, err)
+
+					return nil
+				}
+			},
+			checkWallet: func(t *testing.T, w wallet.Wallet) {
+				require.Equal(t, "foowltfoo", w.Label())
+				el, err := w.EntriesLen()
+				require.NoError(t, err)
+				require.Equal(t, 2, el)
+				checkNoSensitiveData(t, w)
+			},
+		},
+		{
+			name:        "ok, encrypted collection wallet",
+			wltName:     "test-update-encrypted-coll.wlt",
+			viewWltName: "test-update-encrypted-coll.wlt",
+			opts: wallet.Options{
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				Label:    "foowlt",
+				Type:     wallet.WalletTypeCollection,
+			},
+			action: func(t *testing.T) func(wallet.Wallet) error {
+				return func(w wallet.Wallet) error {
+					require.Equal(t, "foowlt", w.Label())
+
+					// Should not be able to see sensitive data
+					checkNoSensitiveData(t, w)
+
+					// Modify the wallet pointer in order to check that the wallet gets saved
+					w.SetLabel(w.Label() + "foo")
+
+					// The wallet is encrypted so it cannot generate more addresses
+					_, err := w.GenerateAddresses(1)
+					require.Equal(t, wallet.NewError(errors.New("A collection wallet does not implement GenerateAddresses")), err)
+
+					return nil
+				}
+			},
+			checkWallet: func(t *testing.T, w wallet.Wallet) {
+				require.Equal(t, "foowltfoo", w.Label())
+				el, err := w.EntriesLen()
+				require.NoError(t, err)
+				require.Equal(t, 0, el)
+				checkNoSensitiveData(t, w)
+			},
+		},
+		{
+			name:        "ok, unencrypted xpub wallet",
+			wltName:     "test-update-unencrypted-xpub.wlt",
+			viewWltName: "test-update-unencrypted-xpub.wlt",
+			opts: wallet.Options{
+				XPub:  "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
+				Label: "foowlt",
+				Type:  wallet.WalletTypeXPub,
+			},
+			action: func(t *testing.T) func(wallet.Wallet) error {
+				return func(w wallet.Wallet) error {
+					require.Equal(t, "foowlt", w.Label())
+
+					// Should not be able to see sensitive data
+					checkNoSensitiveData(t, w)
+
+					// Modify the wallet pointer in order to check that the wallet gets saved
+					w.SetLabel(w.Label() + "foo")
+
+					// The wallet is encrypted so it cannot generate more addresses
+					_, err := w.GenerateAddresses(1)
+					require.NoError(t, err)
+
+					return nil
+				}
+			},
+			checkWallet: func(t *testing.T, w wallet.Wallet) {
+				require.Equal(t, "foowltfoo", w.Label())
+				el, err := w.EntriesLen()
+				require.NoError(t, err)
+				require.Equal(t, 2, el)
+				checkNoSensitiveData(t, w)
+			},
+		},
 		{
 			name:        "ok, unencrypted wallet",
 			wltName:     "test-update-unencrypted.wlt",
@@ -3935,6 +4041,9 @@ func TestServiceUpdate(t *testing.T) {
 				EnableWalletAPI: true,
 				WalletCreators: map[string]wallet.Creator{
 					wallet.WalletTypeDeterministic: deterministic.Creator{},
+					wallet.WalletTypeBip44:         bip44wallet.Creator{},
+					wallet.WalletTypeCollection:    collection.Creator{},
+					wallet.WalletTypeXPub:          xpubwallet.Creator{},
 				},
 			})
 			require.NoError(t, err)

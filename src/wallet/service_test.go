@@ -4056,79 +4056,171 @@ func TestServiceUpdateSecrets(t *testing.T) {
 			},
 		},
 
-		//{
-		//	name:        "ok, encrypted bip44 wallet",
-		//	wltName:     "test-update-secrets-bip44-encrypted.wlt",
-		//	viewWltName: "test-update-secrets-bip44-encrypted.wlt",
-		//	opts: wallet.Options{
-		//		Seed:     "voyage say extend find sheriff surge priority merit ignore maple cash argue",
-		//		Encrypt:  true,
-		//		Password: []byte("pwd"),
-		//		Label:    "foowltbip44",
-		//		Type:     wallet.WalletTypeBip44,
-		//	},
-		//	password: []byte("pwd"),
-		//	action: func(t *testing.T) func(wallet.Wallet) error {
-		//		return func(w wallet.Wallet) error {
-		//			require.Equal(t, "foowltbip44", w.Label())
-		//
-		//			// Should be able to see sensitive data
-		//			require.Equal(t, "voyage say extend find sheriff surge priority merit ignore maple cash argue", w.Seed())
-		//			require.Empty(t, w.LastSeed())
-		//
-		//			// Modify the wallet pointer in order to check that the wallet gets saved
-		//			w.SetLabel(w.Label() + "foo")
-		//			_, err := w.GenerateAddresses(1)
-		//			require.NoError(t, err)
-		//
-		//			return nil
-		//		}
-		//	},
-		//	checkWallet: func(t *testing.T, w wallet.Wallet) {
-		//		require.Equal(t, "foowltbip44foo", w.Label())
-		//		el, err := w.EntriesLen()
-		//		require.NoError(t, err)
-		//		require.Equal(t, 2, el)
-		//		checkNoSensitiveData(t, w)
-		//	},
-		//},
-		//
-		//{
-		//	name:        "ok, unencrypted bip44 wallet",
-		//	wltName:     "test-update-secrets-bip44-unencrypted.wlt",
-		//	viewWltName: "test-update-secrets-bip44-unencrypted.wlt",
-		//	opts: wallet.Options{
-		//		Seed:  "voyage say extend find sheriff surge priority merit ignore maple cash argue",
-		//		Label: "foowltbip44",
-		//		Type:  wallet.WalletTypeBip44,
-		//	},
-		//	action: func(t *testing.T) func(wallet.Wallet) error {
-		//		return func(w wallet.Wallet) error {
-		//			require.Equal(t, "foowltbip44", w.Label())
-		//
-		//			// Seed is visible because its not encrypted
-		//			require.Equal(t, "voyage say extend find sheriff surge priority merit ignore maple cash argue", w.Seed())
-		//			require.Empty(t, w.LastSeed())
-		//
-		//			// Modify the wallet pointer in order to check that the wallet gets saved
-		//			w.SetLabel(w.Label() + "foo")
-		//			_, err := w.GenerateAddresses(1)
-		//			require.NoError(t, err)
-		//
-		//			return nil
-		//		}
-		//	},
-		//	checkWallet: func(t *testing.T, w wallet.Wallet) {
-		//		require.Equal(t, "foowltbip44foo", w.Label())
-		//		el, err := w.EntriesLen()
-		//		require.NoError(t, err)
-		//		require.Equal(t, 2, el)
-		//		entries, err := w.GetEntries()
-		//		require.NoError(t, err)
-		//		require.NotEmpty(t, entries[1].Secret)
-		//	},
-		//},
-		//
+		{
+			name:        "ok, encrypted bip44 wallet",
+			wltName:     "test-update-secrets-bip44-encrypted.wlt",
+			viewWltName: "test-update-secrets-bip44-encrypted.wlt",
+			opts: wallet.Options{
+				Seed:     "voyage say extend find sheriff surge priority merit ignore maple cash argue",
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				Label:    "foowltbip44",
+				Type:     wallet.WalletTypeBip44,
+			},
+			password: []byte("pwd"),
+			action: func(t *testing.T) func(wallet.Wallet) error {
+				return func(w wallet.Wallet) error {
+					require.Equal(t, "foowltbip44", w.Label())
+
+					// Should be able to see sensitive data
+					require.Equal(t, "voyage say extend find sheriff surge priority merit ignore maple cash argue", w.Seed())
+					require.Empty(t, w.LastSeed())
+
+					// Modify the wallet pointer in order to check that the wallet gets saved
+					w.SetLabel(w.Label() + "foo")
+					_, err := w.GenerateAddresses(1)
+					require.NoError(t, err)
+
+					return nil
+				}
+			},
+			checkWallet: func(t *testing.T, w wallet.Wallet) {
+				require.Equal(t, "foowltbip44foo", w.Label())
+				el, err := w.EntriesLen()
+				require.NoError(t, err)
+				require.Equal(t, 2, el)
+				checkNoSensitiveData(t, w)
+			},
+		},
+
+		{
+			name:        "ok, unencrypted bip44 wallet",
+			wltName:     "test-update-secrets-bip44-unencrypted.wlt",
+			viewWltName: "test-update-secrets-bip44-unencrypted.wlt",
+			opts: wallet.Options{
+				Seed:  "voyage say extend find sheriff surge priority merit ignore maple cash argue",
+				Label: "foowltbip44",
+				Type:  wallet.WalletTypeBip44,
+			},
+			action: func(t *testing.T) func(wallet.Wallet) error {
+				return func(w wallet.Wallet) error {
+					require.Equal(t, "foowltbip44", w.Label())
+
+					// Seed is visible because its not encrypted
+					require.Equal(t, "voyage say extend find sheriff surge priority merit ignore maple cash argue", w.Seed())
+					require.Empty(t, w.LastSeed())
+
+					// Modify the wallet pointer in order to check that the wallet gets saved
+					w.SetLabel(w.Label() + "foo")
+					_, err := w.GenerateAddresses(1)
+					require.NoError(t, err)
+
+					return nil
+				}
+			},
+			checkWallet: func(t *testing.T, w wallet.Wallet) {
+				require.Equal(t, "foowltbip44foo", w.Label())
+				el, err := w.EntriesLen()
+				require.NoError(t, err)
+				require.Equal(t, 2, el)
+				entries, err := w.GetEntries()
+				require.NoError(t, err)
+				require.NotEmpty(t, entries[1].Secret)
+			},
+		},
+		{
+			name:        "ok, xpub wallet",
+			wltName:     "test-update-secrets-xpub.wlt",
+			viewWltName: "test-update-secrets-xpub.wlt",
+			opts: wallet.Options{
+				XPub:  "xpub6EFYYRQeAbWLdWQYbtQv8HnemieKNmYUE23RmwphgtMLjz4UaStKADSKNoSSXM5FDcq4gZec2q6n7kdNWfuMdScxK1cXm8tR37kaitHtvuJ",
+				Label: "foowltxpub",
+				Type:  wallet.WalletTypeXPub,
+			},
+			action: func(t *testing.T) func(wallet.Wallet) error {
+				return func(w wallet.Wallet) error {
+					require.Equal(t, "foowltxpub", w.Label())
+
+					// Seed is visible because its not encrypted
+					require.Equal(t, "xpub6EFYYRQeAbWLdWQYbtQv8HnemieKNmYUE23RmwphgtMLjz4UaStKADSKNoSSXM5FDcq4gZec2q6n7kdNWfuMdScxK1cXm8tR37kaitHtvuJ", w.XPub())
+					require.Empty(t, w.LastSeed())
+
+					// Modify the wallet pointer in order to check that the wallet gets saved
+					w.SetLabel(w.Label() + "foo")
+					_, err := w.GenerateAddresses(1)
+					require.NoError(t, err)
+
+					return nil
+				}
+			},
+			checkWallet: func(t *testing.T, w wallet.Wallet) {
+				require.Equal(t, "foowltxpubfoo", w.Label())
+				el, err := w.EntriesLen()
+				require.NoError(t, err)
+				require.Equal(t, 2, el)
+				entries, err := w.GetEntries()
+				require.NoError(t, err)
+				require.Equal(t, entries[1].Secret, cipher.SecKey{})
+			},
+		},
+
+		{
+			name:        "ok, collection wallet",
+			wltName:     "test-update-secrets-collection.wlt",
+			viewWltName: "test-update-secrets-collection.wlt",
+			opts: wallet.Options{
+				Label: "foowltcollection",
+				Type:  wallet.WalletTypeCollection,
+			},
+			action: func(t *testing.T) func(wallet.Wallet) error {
+				return func(w wallet.Wallet) error {
+					require.Equal(t, "foowltcollection", w.Label())
+
+					require.Empty(t, w.Seed())
+					require.Empty(t, w.LastSeed())
+
+					// Modify the wallet pointer in order to check that the wallet gets saved
+					w.SetLabel(w.Label() + "foo")
+
+					seed := []byte("seed")
+					_, keys, err := cipher.GenerateDeterministicKeyPairsSeed(seed, 5)
+					require.NoError(t, err)
+					for i := range keys {
+						pk, err := cipher.PubKeyFromSecKey(keys[i])
+						require.NoError(t, err)
+						addr := cipher.AddressFromPubKey(pk)
+						err = w.(*collection.Wallet).AddEntry(wallet.Entry{
+							Address: addr,
+							Public:  pk,
+							Secret:  keys[i],
+						})
+						require.NoError(t, err)
+					}
+
+					return nil
+				}
+			},
+			checkWallet: func(t *testing.T, w wallet.Wallet) {
+				require.Equal(t, "foowltcollectionfoo", w.Label())
+				el, err := w.EntriesLen()
+				require.NoError(t, err)
+				require.Equal(t, 5, el)
+				entries, err := w.GetEntries()
+				require.NoError(t, err)
+
+				addrs := []string{
+					"2EVNa4CK9SKosT4j1GEn8SuuUUEAXaHAMbM",
+					"68enNSvabNYLf97xhb19vmLrrG3yqXPmkV",
+					"CHAJD8BMpnZ14iv34VWs23BzkBbBNcb5sH",
+					"2ip6roWzqAxwLjNdy36HUAqjCRkh6scWbLD",
+					"jT1aTYGN4XSUC6bLTCmaEbEeidqjPQCLnK",
+				}
+				for i, e := range entries {
+					require.Equal(t, e.Address.String(), addrs[i])
+				}
+			},
+		},
+
 		{
 			name:        "encrypted wallet but password not provided",
 			wltName:     "test-update-secrets-encrypted-no-password.wlt",
@@ -4206,6 +4298,9 @@ func TestServiceUpdateSecrets(t *testing.T) {
 				EnableWalletAPI: true,
 				WalletCreators: map[string]wallet.Creator{
 					wallet.WalletTypeDeterministic: deterministic.Creator{},
+					wallet.WalletTypeBip44:         bip44wallet.Creator{},
+					wallet.WalletTypeXPub:          xpubwallet.Creator{},
+					wallet.WalletTypeCollection:    collection.Creator{},
 				},
 			})
 			require.NoError(t, err)

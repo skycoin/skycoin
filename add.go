@@ -5,25 +5,16 @@ import ("fmt"
 "strconv")
 
 func main() {
-   // var n1,n2,err,err1 string
-   // var sum,num1,num2 int
-   // n1= os.Args[1]
-   // n2= os.Args[2]
-   // num1, err := strconv.Atoi(n1)
-   // num2, err1 := strconv.Atoi(n2)
-    //sum = num1 + num2
-    //if err==nil || err1 == nil{
-    //fmt.Sprintf("Addition is:%v \n %v",num1,num2)}
-    x := os.Args[1]
-    y, e := strconv.Atoi(x) 
+    num1 := os.Args[1]
+    n1, e := strconv.Atoi(num1) 
     if e == nil { 
-        fmt.Printf("%T \n %v", y, y) 
+        fmt.Printf("1st Number is : %v\n", n1) 
     }
-    a := os.Args[2]
-    b, err := strconv.Atoi(a)
+    num2 := os.Args[2]
+    n2, err := strconv.Atoi(num2)
     if err == nil {
-        fmt.Printf("\n 2nd number :- %T is  %v", b, b)
+        fmt.Printf("2nd Number is : %v\n", n2)
     }
-    sum := y+b
-    fmt.Printf("sum:- %v",sum)
+    sum := n1+n2
+    fmt.Printf("Summation is : %v\n",sum)
 }

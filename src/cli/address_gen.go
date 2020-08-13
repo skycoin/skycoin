@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -13,7 +12,6 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
 	"github.com/SkycoinProject/skycoin/src/wallet"
 	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
-	"github.com/SkycoinProject/skycoin/src/wallet/meta"
 )
 
 func addressGenCmd() *cobra.Command {
@@ -39,7 +37,7 @@ func addressGenCmd() *cobra.Command {
 				return err
 			}
 
-			coinType, err := meta.ResolveCoinType(coinName)
+			coinType, err := wallet.ResolveCoinType(coinName)
 			if err != nil {
 				return err
 			}
@@ -84,10 +82,8 @@ func addressGenCmd() *cobra.Command {
 				}
 			}
 
-			w, err := wallet.NewWallet(wallet.NewWalletFilename(), wallet.Options{
+			w, err := wallet.NewWallet(wallet.NewWalletFilename(), label, seed, wallet.Options{
 				Coin:       coinType,
-				Label:      label,
-				Seed:       seed,
 				Encrypt:    encrypt,
 				Password:   password,
 				CryptoType: crypto.DefaultCryptoType,
@@ -102,26 +98,35 @@ func addressGenCmd() *cobra.Command {
 				w.Erase()
 			}
 
-			rw := w.ToReadable()
+			//rw := w.ToReadable()
 
 			switch strings.ToLower(mode) {
 			case "json", "wallet":
-				output, err := json.MarshalIndent(rw, "", "    ")
+				output, err := w.Serialize()
 				if err != nil {
 					return err
 				}
 
 				fmt.Println(string(output))
 			case "addrs", "addresses":
-				for _, e := range rw.GetEntries() {
+				es, err := w.GetEntries()
+				if err != nil {
+					return err
+				}
+				for _, e := range es {
 					fmt.Println(e.Address)
 				}
 			case "secrets":
 				if hideSecrets {
 					return errors.New("secrets mode selected but hideSecrets enabled")
 				}
-				for _, e := range rw.GetEntries() {
-					fmt.Println(e.Secret)
+				es, err := w.GetEntries()
+				if err != nil {
+					return err
+				}
+
+				for _, e := range es {
+					fmt.Println(e.Secret.Hex())
 				}
 			default:
 				return errors.New("invalid mode")

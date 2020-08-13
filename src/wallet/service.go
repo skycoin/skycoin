@@ -41,13 +41,6 @@ type Loader interface {
 	Load(data []byte) (Wallet, error)
 }
 
-// Creator is the interface that wraps the Create and Type methods.
-//
-// Create creates a wallet base on the parameters
-type Creator interface {
-	Create(filename, label, seed string, options Options) (Wallet, error)
-}
-
 // Config wallet service config
 type Config struct {
 	WalletDir       string

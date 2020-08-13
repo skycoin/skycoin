@@ -406,3 +406,8 @@ func prepareWltDir() string {
 
 	return dir
 }
+
+func TestGetWalletCreator(t *testing.T) {
+	_, ok := getCreator("collection")
+	require.True(t, ok)
+}

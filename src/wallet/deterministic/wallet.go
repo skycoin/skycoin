@@ -17,6 +17,12 @@ const WalletType = "deterministic"
 
 var defaultWalletDecoder = &JSONDecoder{}
 
+func init() {
+	if err := wallet.RegisterCreator(WalletType, &Creator{}); err != nil {
+		panic(err)
+	}
+}
+
 // Wallet manages keys using the original Skycoin deterministic
 // keypair generator method.
 // With this generator, a single chain of addresses is created, each one dependent

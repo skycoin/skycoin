@@ -21,6 +21,12 @@ const WalletType = "xpub"
 var defaultWalletDecoder = &JSONDecoder{}
 var logger = logging.MustGetLogger("xpubwallet")
 
+func init() {
+	if err := wallet.RegisterCreator(WalletType, &Creator{}); err != nil {
+		panic(err)
+	}
+}
+
 // Wallet holds a single xpub (extended public key) and derives child public keys from it.
 // Refer to the bip32 spec to understand xpub keys.
 // XPub wallets can generate new addresses and receive coins, but can't spend coins

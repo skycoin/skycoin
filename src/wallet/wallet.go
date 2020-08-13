@@ -488,3 +488,13 @@ func convertToSkyAddrs(addrs []cipher.Addresser) []cipher.Address {
 	}
 	return skyAddrs
 }
+
+// NewWallet creates a new wallet
+func NewWallet(filename, label, seed string, options Options) (Wallet, error) {
+	c, ok := getCreator(options.Type)
+	if !ok {
+		return nil, fmt.Errorf("wallet.NewWallet failed, wallet type %q is not supported", options.Type)
+	}
+
+	return c.Create(filename, label, seed, options)
+}

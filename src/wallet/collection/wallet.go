@@ -18,6 +18,12 @@ const (
 
 var defaultWalletDecoder = &JSONDecoder{}
 
+func init() {
+	if err := wallet.RegisterCreator(WalletType, &Creator{}); err != nil {
+		panic(err)
+	}
+}
+
 // Wallet manages keys as an arbitrary collection.
 // It has no defined keypair generator. The only way to add keys to the
 // wallet is to explicitly add them.

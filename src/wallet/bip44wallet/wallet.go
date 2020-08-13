@@ -33,6 +33,12 @@ var (
 
 var logger = logging.MustGetLogger("bip44wallet")
 
+func init() {
+	if err := wallet.RegisterCreator(WalletType, &Creator{}); err != nil {
+		panic(err)
+	}
+}
+
 // Wallet manages keys using the original Skycoin deterministic
 // keypair generator method.
 type Wallet struct {

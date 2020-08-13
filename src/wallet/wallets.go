@@ -63,7 +63,7 @@ func loadWallets(dir string, loader Loader) (Wallets, error) {
 	return wallets, nil
 }
 
-// add add walet to current wallet
+// add add wallet to current wallet
 func (wlts Wallets) add(w Wallet) error {
 	if _, dup := wlts[w.Filename()]; dup {
 		return ErrWalletNameConflict

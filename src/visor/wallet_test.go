@@ -21,9 +21,8 @@ import (
 	"github.com/SkycoinProject/skycoin/src/visor/blockdb"
 	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/collection"
 	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
-	"github.com/SkycoinProject/skycoin/src/wallet/entry"
-	"github.com/SkycoinProject/skycoin/src/wallet/meta"
 )
 
 func TestCreateTransaction(t *testing.T) {
@@ -347,13 +346,13 @@ func prepareWltDir() string {
 	return dir
 }
 
-func makeEntries(n int) ([]entry.Entry, []cipher.Address) {
+func makeEntries(n int) ([]wallet.Entry, []cipher.Address) {
 	addrs := make([]cipher.Address, n)
-	entries := make([]entry.Entry, n)
+	entries := make([]wallet.Entry, n)
 	for i := range addrs {
 		p, s := cipher.GenerateKeyPair()
 		a := cipher.AddressFromPubKey(p)
-		entries[i] = entry.Entry{
+		entries[i] = wallet.Entry{
 			Address: a,
 			Public:  p,
 			Secret:  s,
@@ -370,15 +369,26 @@ func TestWalletCreateTransaction(t *testing.T) {
 	// Load the 5th through 8th entries for a known bip44 wallet.
 	// These entries will be used for the test data.
 	bip44Seed := "voyage say extend find sheriff surge priority merit ignore maple cash argue"
-	w, err := wallet.NewWallet("bip44.wlt", wallet.Options{
-		Type:      wallet.WalletTypeBip44,
-		GenerateN: 8,
-		Seed:      bip44Seed,
-	})
+	w, err := wallet.NewWallet(
+		"bip44.wlt",
+		"label",
+		bip44Seed,
+		wallet.Options{
+			Type:      wallet.WalletTypeBip44,
+			GenerateN: 8,
+		})
 	require.NoError(t, err)
-	bip44Entries := w.GetEntries()[5:8]
+	bip44Entries := func() wallet.Entries {
+		entries, err := w.GetEntries()
+		require.NoError(t, err)
+		return entries[5:8]
+	}()
 	require.Len(t, bip44Entries, 3)
-	bip44Addrs, err := w.GetSkycoinAddresses()
+	bip44Addrs, err := func() ([]cipher.Address, error) {
+		addrs, err := w.GetAddresses()
+		require.NoError(t, err)
+		return wallet.SkycoinAddresses(addrs), nil
+	}()
 	require.NoError(t, err)
 	bip44Addrs = bip44Addrs[5:8]
 	require.Len(t, bip44Addrs, 3)
@@ -896,14 +906,14 @@ func TestWalletCreateTransaction(t *testing.T) {
 			}
 
 			_, err = ws.CreateWallet(tc.walletID, wallet.Options{
-				Coin:       meta.CoinTypeSkycoin,
+				Coin:       wallet.CoinTypeSkycoin,
 				Encrypt:    len(tc.password) != 0,
 				Password:   tc.password,
 				CryptoType: crypto.CryptoTypeScryptChacha20poly1305Insecure,
 				Type:       tc.walletType,
 				GenerateN:  generateN,
 				Seed:       tc.seed,
-			}, nil)
+			})
 			require.NoError(t, err)
 
 			err = ws.UpdateSecrets(tc.walletID, tc.password, func(w wallet.Wallet) error {
@@ -912,7 +922,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 					// Add 5 unused entries into the wallet, in addition to the 3 above
 					uniqueEntries, _ := makeEntries(5)
 					for _, e := range append(uniqueEntries, entries...) {
-						err := w.(*wallet.CollectionWallet).AddEntry(e)
+						err := w.(*collection.Wallet).AddEntry(e)
 						require.NoError(t, err)
 					}
 				}
@@ -920,7 +930,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			walletAddrs, err := ws.GetSkycoinAddresses(tc.walletID)
+			walletAddrs, err := ws.GetAddresses(tc.walletID)
 			require.NoError(t, err)
 
 			b := &MockBlockchainer{}

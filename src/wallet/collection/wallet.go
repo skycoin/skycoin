@@ -22,6 +22,10 @@ func init() {
 	if err := wallet.RegisterCreator(WalletType, &Creator{}); err != nil {
 		panic(err)
 	}
+
+	if err := wallet.RegisterLoader(WalletType, &Loader{}); err != nil {
+		panic(err)
+	}
 }
 
 // Wallet manages keys as an arbitrary collection.

@@ -29,16 +29,6 @@ type Service struct {
 	config  Config
 	// fingerprints is used to check for duplicate deterministic wallets
 	fingerprints map[string]string
-	// registered wallet backends
-	loaders  map[string]Loader
-	creators map[string]Creator
-}
-
-// Loader is the interface that wraps the Load method.
-//
-// Load loads wallet from data bytes
-type Loader interface {
-	Load(data []byte) (Wallet, error)
 }
 
 // Config wallet service config
@@ -48,8 +38,6 @@ type Config struct {
 	EnableWalletAPI bool
 	EnableSeedAPI   bool
 	Bip44Coin       *bip44.CoinType
-	WalletLoaders   map[string]Loader
-	WalletCreators  map[string]Creator
 }
 
 // NewConfig creates a default Config
@@ -69,8 +57,6 @@ func NewService(c Config) (*Service, error) {
 	serv := &Service{
 		config:       c,
 		fingerprints: make(map[string]string),
-		loaders:      make(map[string]Loader),
-		creators:     make(map[string]Creator),
 	}
 
 	if !serv.config.EnableWalletAPI {
@@ -84,16 +70,6 @@ func NewService(c Config) (*Service, error) {
 	// Removes .wlt.bak files before loading wallets
 	if err := removeBackupFiles(serv.config.WalletDir); err != nil {
 		return nil, fmt.Errorf("remove .wlt.bak files in %v failed: %v", serv.config.WalletDir, err)
-	}
-
-	// loads the wallet loaders
-	for t, l := range c.WalletLoaders {
-		serv.loaders[t] = l
-	}
-
-	// loads the wallet creators
-	for t, ctr := range c.WalletCreators {
-		serv.creators[t] = ctr
 	}
 
 	// Load all wallets from disk
@@ -206,9 +182,8 @@ func (serv *Service) Load(filename string) (Wallet, error) {
 	}
 
 	// Depending on the wallet type in the wallet metadata header, load the full wallet data
-	l, ok := serv.loaders[m.Meta.Type]
+	l, ok := getLoader(m.Meta.Type)
 	if !ok {
-		//return nil, fmt.Errorf("wallet loader for type of %q not found", m.Meta.Type)
 		logger.Errorf("wallet loader for type of %q not found", m.Meta.Type)
 		return nil, nil
 	}
@@ -262,7 +237,7 @@ func (serv *Service) CreateWallet(wltName string, options Options) (Wallet, erro
 }
 
 func (serv *Service) createWallet(wltName string, options Options) (Wallet, error) {
-	creator, ok := serv.creators[options.Type]
+	creator, ok := getCreator(options.Type)
 	if !ok {
 		return nil, ErrInvalidWalletType
 	}
@@ -288,17 +263,6 @@ func (serv *Service) loadWallet(wltName string, options Options) (Wallet, error)
 				"fingerprint": fingerprint,
 			}).Error("fingerprint conflict")
 			return nil, fmt.Errorf("fingerprint conflict for %q wallet", w.Type())
-			//switch w.Type() {
-			//case WalletTypeDeterministic, WalletTypeBip44:
-			//	return nil, ErrSeedUsed
-			//case WalletTypeXPub:
-			//	return nil, ErrXPubKeyUsed
-			//default:
-			//	logger.WithFields(logrus.Fields{
-			//		"walletType":  w.Type(),
-			//		"fingerprint": fingerprint,
-			//	}).Panic("Unhandled wallet type after fingerprint conflict")
-			//}
 		}
 	}
 

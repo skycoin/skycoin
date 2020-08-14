@@ -1200,13 +1200,13 @@ func TestGetCreateTransactionAuxsUxOut(t *testing.T) {
 			},
 			expectedAuxs: coin.AddressUxOuts{
 				allAddrs[1]: []coin.UxOut{
-					coin.UxOut{
+					{
 						Body: coin.UxBody{
 							SrcTransaction: srcTxns[5],
 							Address:        allAddrs[1],
 						},
 					},
-					coin.UxOut{
+					{
 						Body: coin.UxBody{
 							SrcTransaction: srcTxns[5],
 							Address:        allAddrs[1],
@@ -1214,7 +1214,7 @@ func TestGetCreateTransactionAuxsUxOut(t *testing.T) {
 					},
 				},
 				allAddrs[3]: []coin.UxOut{
-					coin.UxOut{
+					{
 						Body: coin.UxBody{
 							SrcTransaction: srcTxns[6],
 							Address:        allAddrs[3],
@@ -1265,7 +1265,7 @@ func TestGetCreateTransactionAuxsUxOut(t *testing.T) {
 			},
 			expectedAuxs: coin.AddressUxOuts{
 				allAddrs[1]: []coin.UxOut{
-					coin.UxOut{
+					{
 						Body: coin.UxBody{
 							SrcTransaction: srcTxns[5],
 							Address:        allAddrs[1],
@@ -1428,13 +1428,13 @@ func TestGetCreateTransactionAuxsAddress(t *testing.T) {
 			},
 			expectedAuxs: coin.AddressUxOuts{
 				allAddrs[1]: []coin.UxOut{
-					coin.UxOut{
+					{
 						Body: coin.UxBody{
 							SrcTransaction: srcTxns[5],
 							Address:        allAddrs[1],
 						},
 					},
-					coin.UxOut{
+					{
 						Body: coin.UxBody{
 							SrcTransaction: srcTxns[5],
 							Address:        allAddrs[1],
@@ -1442,7 +1442,7 @@ func TestGetCreateTransactionAuxsAddress(t *testing.T) {
 					},
 				},
 				allAddrs[3]: []coin.UxOut{
-					coin.UxOut{
+					{
 						Body: coin.UxBody{
 							SrcTransaction: srcTxns[6],
 							Address:        allAddrs[3],
@@ -1502,13 +1502,13 @@ func TestGetCreateTransactionAuxsAddress(t *testing.T) {
 			},
 			expectedAuxs: coin.AddressUxOuts{
 				allAddrs[1]: []coin.UxOut{
-					coin.UxOut{
+					{
 						Body: coin.UxBody{
 							SrcTransaction: srcTxns[5],
 							Address:        allAddrs[1],
 						},
 					},
-					coin.UxOut{
+					{
 						Body: coin.UxBody{
 							SrcTransaction: srcTxns[5],
 							Address:        allAddrs[1],
@@ -1516,7 +1516,7 @@ func TestGetCreateTransactionAuxsAddress(t *testing.T) {
 					},
 				},
 				allAddrs[3]: []coin.UxOut{
-					coin.UxOut{
+					{
 						Body: coin.UxBody{
 							SrcTransaction: srcTxns[6],
 							Address:        allAddrs[3],

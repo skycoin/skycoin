@@ -1,5 +1,15 @@
 /*
 Package wallet implements wallets and the wallet database service
+
+Values of the Wallet interface can be created by calling function NewWallet,
+or by loading from `[]byte` that containing wallet data of type such as
+"deterministic", "collection", "bip44" or "xpubwallet". Loading any particular
+type of wallet requires the prior registration of a loader. Registration is typically
+automatic as a side effect of initializing that wallet's package so that, to load a
+"deterministic" wallet, it suffices to have
+	import _ "github.com/SkycoinProject/skycoin/src/wallet/deterministic"
+in a program's main package. The _ means to import a package purely for its
+initialization side effects.
 */
 package wallet
 
@@ -234,6 +244,16 @@ type Wallet interface {
 type Decoder interface {
 	Encode(w Wallet) ([]byte, error)
 	Decode(b []byte) (Wallet, error)
+}
+
+// NewWallet creates a new wallet
+func NewWallet(filename, label, seed string, options Options) (Wallet, error) {
+	c, ok := getCreator(options.Type)
+	if !ok {
+		return nil, fmt.Errorf("wallet.NewWallet failed, wallet type %q is not supported", options.Type)
+	}
+
+	return c.Create(filename, label, seed, options)
 }
 
 // Bip44Account represents the wallet account
@@ -487,14 +507,4 @@ func convertToSkyAddrs(addrs []cipher.Addresser) []cipher.Address {
 		skyAddrs[i] = a.(cipher.Address)
 	}
 	return skyAddrs
-}
-
-// NewWallet creates a new wallet
-func NewWallet(filename, label, seed string, options Options) (Wallet, error) {
-	c, ok := getCreator(options.Type)
-	if !ok {
-		return nil, fmt.Errorf("wallet.NewWallet failed, wallet type %q is not supported", options.Type)
-	}
-
-	return c.Create(filename, label, seed, options)
 }

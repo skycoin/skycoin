@@ -12,6 +12,7 @@ import (
 	"github.com/SkycoinProject/skycoin/src/util/mathutil"
 	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/bip44wallet"
 )
 
 // UserError wraps user input-related errors.
@@ -57,10 +58,13 @@ func (vs *Visor) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.Addr
 
 	if err := vs.wallets.View(wltID, func(w wallet.Wallet) error {
 		var err error
-		addrs, err = w.GetSkycoinAddresses()
-		if err != nil {
-			return err
-		}
+		addrs, err = func() ([]cipher.Address, error) {
+			addrs, err := w.GetAddresses()
+			if err != nil {
+				return nil, err
+			}
+			return wallet.SkycoinAddresses(addrs), nil
+		}()
 
 		addrsBalanceList, err = vs.GetBalanceOfAddresses(addrs)
 		return err
@@ -106,12 +110,12 @@ func (vs *Visor) GetWalletUnconfirmedTransactions(wltID string) ([]UnconfirmedTr
 	var txns []UnconfirmedTransaction
 
 	if err := vs.wallets.View(wltID, func(w wallet.Wallet) error {
-		addrs, err := w.GetSkycoinAddresses()
+		addrs, err := w.GetAddresses()
 		if err != nil {
 			return err
 		}
 
-		txns, err = vs.GetUnconfirmedTransactions(SendsToAddresses(addrs))
+		txns, err = vs.GetUnconfirmedTransactions(SendsToAddresses(wallet.SkycoinAddresses(addrs)))
 		return err
 	}); err != nil {
 		return nil, err
@@ -126,7 +130,13 @@ func (vs *Visor) GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]Unconf
 	var inputs [][]TransactionInput
 
 	if err := vs.wallets.View(wltID, func(w wallet.Wallet) error {
-		addrs, err := w.GetSkycoinAddresses()
+		addrs, err := func() ([]cipher.Address, error) {
+			addrs, err := w.GetAddresses()
+			if err != nil {
+				return nil, err
+			}
+			return wallet.SkycoinAddresses(addrs), nil
+		}()
 		if err != nil {
 			return err
 		}
@@ -263,15 +273,20 @@ func (vs *Visor) WalletCreateTransactionSigned(wltID string, password []byte, p 
 	var inputs []TransactionInput
 
 	if p.ChangeAddress == nil {
+		// TODO: Maybe add the `PeekChangeAddress` to wallet.Wallet interface, and
+		// only bip44 wallet will implement it, all others do nothing. In this way
+		// we don't have to explicitly check the wallet type here.
+		//
 		// For bip44 wallet, peek a change address if p.ChangeAddress is nill
 		if err := vs.wallets.Update(wltID, func(w wallet.Wallet) error {
 			if w.Type() == wallet.WalletTypeBip44 {
-				addr, err := w.(*wallet.Bip44Wallet).PeekChangeAddress(vs)
+				addr, err := w.(*bip44wallet.Wallet).PeekChangeAddress(vs)
 				if err != nil {
 					logger.Critical().WithError(err).Error("PeekChangeAddress failed")
 					return err
 				}
-				p.ChangeAddress = &addr
+				skyAddr := addr.(cipher.Address)
+				p.ChangeAddress = &skyAddr
 			}
 			return nil
 		}); err != nil {
@@ -325,7 +340,13 @@ func (vs *Visor) walletCreateTransaction(methodName string, w wallet.Wallet, p t
 	}
 
 	// Get all addresses from the wallet for checking params against
-	walletAddresses, err := w.GetAddresses()
+	walletAddresses, err := func() ([]cipher.Address, error) {
+		addrs, err := w.GetAddresses()
+		if err != nil {
+			return nil, err
+		}
+		return wallet.SkycoinAddresses(addrs), nil
+	}()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -404,9 +425,9 @@ func (vs *Visor) walletCreateTransactionTx(tx *dbutil.Tx, methodName string,
 
 	switch signed {
 	case TxnSigned:
-		txn, uxb, err = wallet.CreateTransactionSigned(w, p, auxs, head.Time(), vs)
+		txn, uxb, err = wallet.CreateTransactionSigned(w, p, auxs, head.Time())
 	case TxnUnsigned:
-		txn, uxb, err = wallet.CreateTransaction(w, p, auxs, head.Time(), vs)
+		txn, uxb, err = wallet.CreateTransaction(w, p, auxs, head.Time())
 	default:
 		logger.Panic("Invalid TxnSignedFlag")
 	}
@@ -557,7 +578,7 @@ func (vs *Visor) getCreateTransactionAuxsUxOut(tx *dbutil.Tx, uxOutHashes []ciph
 	}
 
 	// Build coin.AddressUxOuts map
-	return coin.NewAddressUxOuts(coin.UxArray(uxOuts)), nil
+	return coin.NewAddressUxOuts(uxOuts), nil
 }
 
 // getCreateTransactionAuxsAddress returns a map of the addresses to their unspent outputs,

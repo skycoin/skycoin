@@ -15,8 +15,8 @@ import (
 	"github.com/SkycoinProject/skycoin/src/testutil"
 	"github.com/SkycoinProject/skycoin/src/wallet/bip44wallet"
 	"github.com/SkycoinProject/skycoin/src/wallet/collection"
-	"github.com/SkycoinProject/skycoin/src/wallet/deterministic"
-	"github.com/SkycoinProject/skycoin/src/wallet/xpubwallet"
+	_ "github.com/SkycoinProject/skycoin/src/wallet/deterministic"
+	_ "github.com/SkycoinProject/skycoin/src/wallet/xpubwallet"
 	"github.com/stretchr/testify/require"
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
@@ -42,13 +42,6 @@ func dirIsEmpty(t *testing.T, dir string) {
 }
 
 func TestNewService(t *testing.T) {
-	loaders := map[string]wallet.Loader{
-		deterministic.WalletType: deterministic.Loader{},
-		collection.WalletType:    collection.Loader{},
-		bip44wallet.WalletType:   bip44wallet.Loader{},
-		xpubwallet.WalletType:    xpubwallet.Loader{},
-	}
-
 	for _, ct := range crypto.Types() {
 		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
 			dir := prepareWltDir()
@@ -56,7 +49,6 @@ func TestNewService(t *testing.T) {
 				WalletDir:       dir,
 				CryptoType:      ct,
 				EnableWalletAPI: true,
-				WalletLoaders:   loaders,
 			})
 			require.NoError(t, err)
 
@@ -75,7 +67,6 @@ func TestNewService(t *testing.T) {
 				WalletDir:       "./testdata",
 				CryptoType:      ct,
 				EnableWalletAPI: true,
-				WalletLoaders:   loaders,
 			})
 			require.NoError(t, err)
 
@@ -87,14 +78,9 @@ func TestNewService(t *testing.T) {
 }
 
 func TestNewServiceDupWallets(t *testing.T) {
-	// create fake wallet loaders
-	loaders := map[string]wallet.Loader{
-		wallet.WalletTypeDeterministic: deterministic.Loader{},
-	}
 	_, err := wallet.NewService(wallet.Config{
 		WalletDir:       "./testdata/duplicate_wallets",
 		EnableWalletAPI: true,
-		WalletLoaders:   loaders,
 	})
 	require.NotNil(t, err)
 	require.Error(t, err)
@@ -102,10 +88,6 @@ func TestNewServiceDupWallets(t *testing.T) {
 }
 
 func TestNewServiceEmptyWallet(t *testing.T) {
-	loaders := map[string]wallet.Loader{
-		wallet.WalletTypeDeterministic: &deterministic.Loader{},
-		wallet.WalletTypeBip44:         &bip44wallet.Loader{},
-	}
 	cases := []struct {
 		dir string
 		fn  string
@@ -125,7 +107,6 @@ func TestNewServiceEmptyWallet(t *testing.T) {
 			_, err := wallet.NewService(wallet.Config{
 				WalletDir:       tc.dir,
 				EnableWalletAPI: true,
-				WalletLoaders:   loaders,
 			})
 			testutil.RequireError(t, err, fmt.Sprintf("empty wallet file found: %q", tc.fn))
 		})
@@ -139,7 +120,6 @@ func TestServiceCreateWallet(t *testing.T) {
 		password        []byte
 		enableWalletAPI bool
 		walletType      string
-		walletCreator   wallet.Creator
 		filename        string
 		seed            string
 		xpub            string
@@ -152,7 +132,6 @@ func TestServiceCreateWallet(t *testing.T) {
 			walletType:      wallet.WalletTypeXPub,
 			filename:        "t1.wlt",
 			xpub:            "xpub6EFYYRQeAbWLdWQYbtQv8HnemieKNmYUE23RmwphgtMLjz4UaStKADSKNoSSXM5FDcq4gZec2q6n7kdNWfuMdScxK1cXm8tR37kaitHtvuJ",
-			walletCreator:   &xpubwallet.Creator{},
 		},
 		{
 			name:            "type=xpub encrypt=true password=pwd",
@@ -162,7 +141,6 @@ func TestServiceCreateWallet(t *testing.T) {
 			walletType:      wallet.WalletTypeXPub,
 			filename:        "t1.wlt",
 			xpub:            "xpub6EFYYRQeAbWLdWQYbtQv8HnemieKNmYUE23RmwphgtMLjz4UaStKADSKNoSSXM5FDcq4gZec2q6n7kdNWfuMdScxK1cXm8tR37kaitHtvuJ",
-			walletCreator:   &xpubwallet.Creator{},
 			err:             wallet.NewError(fmt.Errorf("xpub wallet does not support encryption")),
 		},
 		{
@@ -172,7 +150,6 @@ func TestServiceCreateWallet(t *testing.T) {
 			enableWalletAPI: true,
 			walletType:      wallet.WalletTypeCollection,
 			filename:        "t1.wlt",
-			walletCreator:   &collection.Creator{},
 		},
 		{
 			name:            "type=bip44 encrypt=true password=pwd",
@@ -182,7 +159,6 @@ func TestServiceCreateWallet(t *testing.T) {
 			walletType:      wallet.WalletTypeBip44,
 			filename:        "t1.wlt",
 			seed:            "voyage say extend find sheriff surge priority merit ignore maple cash argue",
-			walletCreator:   &bip44wallet.Creator{},
 		},
 		{
 			name:            "encrypt=true password=pwd",
@@ -192,7 +168,6 @@ func TestServiceCreateWallet(t *testing.T) {
 			filename:        "t1.wlt",
 			seed:            "seed1",
 			walletType:      wallet.WalletTypeDeterministic,
-			walletCreator:   &deterministic.Creator{},
 		},
 		{
 			name:            "encrypt=true password=pwd",
@@ -203,7 +178,6 @@ func TestServiceCreateWallet(t *testing.T) {
 			seed:            "seed1",
 			err:             wallet.ErrWalletAPIDisabled,
 			walletType:      wallet.WalletTypeDeterministic,
-			walletCreator:   &deterministic.Creator{},
 		},
 		{
 			name:            "encrypt=false",
@@ -212,7 +186,6 @@ func TestServiceCreateWallet(t *testing.T) {
 			filename:        "t1.wlt",
 			seed:            "seed1",
 			walletType:      wallet.WalletTypeDeterministic,
-			walletCreator:   &deterministic.Creator{},
 		},
 		{
 			name:            "encrypt=false",
@@ -222,22 +195,16 @@ func TestServiceCreateWallet(t *testing.T) {
 			seed:            "seed1",
 			err:             wallet.ErrWalletAPIDisabled,
 			walletType:      wallet.WalletTypeDeterministic,
-			walletCreator:   &deterministic.Creator{},
 		},
 	}
 	for _, tc := range tt {
 		for _, ct := range crypto.TypesInsecure() {
 			t.Run(fmt.Sprintf("%v crypto=%v", tc.name, ct), func(t *testing.T) {
-				creators := map[string]wallet.Creator{
-					tc.walletType: tc.walletCreator,
-				}
-
 				dir := prepareWltDir()
 				s, err := wallet.NewService(wallet.Config{
 					WalletDir:       dir,
 					CryptoType:      ct,
 					EnableWalletAPI: tc.enableWalletAPI,
-					WalletCreators:  creators,
 				})
 				require.NoError(t, err)
 
@@ -596,14 +563,6 @@ func TestServiceLoadWallet(t *testing.T) {
 					WalletDir:       dir,
 					CryptoType:      ct,
 					EnableWalletAPI: true,
-					WalletCreators: map[string]wallet.Creator{
-						wallet.WalletTypeDeterministic: &deterministic.Creator{},
-						wallet.WalletTypeBip44:         &bip44wallet.Creator{},
-					},
-					WalletLoaders: map[string]wallet.Loader{
-						wallet.WalletTypeDeterministic: &deterministic.Loader{},
-						wallet.WalletTypeBip44:         &bip44wallet.Loader{},
-					},
 				})
 				require.NoError(t, err)
 				wltName := wallet.NewWalletFilename()
@@ -867,14 +826,6 @@ func TestServiceNewAddresses(t *testing.T) {
 					WalletDir:       dir,
 					CryptoType:      ct,
 					EnableWalletAPI: !tc.walletAPIDisabled,
-					WalletCreators: map[string]wallet.Creator{
-						wallet.WalletTypeDeterministic: &deterministic.Creator{},
-						wallet.WalletTypeBip44:         &bip44wallet.Creator{},
-					},
-					WalletLoaders: map[string]wallet.Loader{
-						wallet.WalletTypeDeterministic: &deterministic.Loader{},
-						wallet.WalletTypeBip44:         &bip44wallet.Loader{},
-					},
 				})
 				require.NoError(t, err)
 
@@ -971,12 +922,6 @@ func TestServiceGetAddress(t *testing.T) {
 					WalletDir:       "./testdata",
 					CryptoType:      ct,
 					EnableWalletAPI: enableWalletAPI,
-					WalletLoaders: map[string]wallet.Loader{
-						wallet.WalletTypeDeterministic: &deterministic.Loader{},
-					},
-					WalletCreators: map[string]wallet.Creator{
-						wallet.WalletTypeDeterministic: &deterministic.Creator{},
-					},
 				})
 				require.NoError(t, err)
 
@@ -1006,36 +951,15 @@ func TestServiceGetAddress(t *testing.T) {
 }
 
 func TestServiceGetWallet(t *testing.T) {
-	type loaderCreator struct {
-		wallet.Loader
-		wallet.Creator
-	}
-	walletTypes := map[string]loaderCreator{
-		wallet.WalletTypeDeterministic: {
-			Loader:  &deterministic.Loader{},
-			Creator: &deterministic.Creator{},
-		},
-	}
-
-	for walletType, lcs := range walletTypes {
+	for _, walletType := range []string{wallet.WalletTypeDeterministic} {
 		for _, enableWalletAPI := range []bool{true, false} {
 			for _, ct := range crypto.Types() {
 				t.Run(fmt.Sprintf("enable wallet api=%v crypto=%v", enableWalletAPI, ct), func(t *testing.T) {
 					dir := prepareWltDir()
-					creators := map[string]wallet.Creator{
-						walletType: lcs.Creator,
-					}
-
-					loaders := map[string]wallet.Loader{
-						walletType: lcs.Loader,
-					}
-
 					s, err := wallet.NewService(wallet.Config{
 						WalletDir:       dir,
 						CryptoType:      ct,
 						EnableWalletAPI: enableWalletAPI,
-						WalletCreators:  creators,
-						WalletLoaders:   loaders,
 					})
 					require.NoError(t, err)
 
@@ -1088,10 +1012,6 @@ func TestServiceGetWallet(t *testing.T) {
 }
 
 func TestServiceGetWallets(t *testing.T) {
-	creators := map[string]wallet.Creator{
-		wallet.WalletTypeDeterministic: deterministic.Creator{},
-		wallet.WalletTypeBip44:         bip44wallet.Creator{},
-	}
 	for _, enableWalletAPI := range []bool{true, false} {
 		for _, ct := range crypto.TypesInsecure() {
 			t.Run(fmt.Sprintf("enable wallet=%v crypto=%v", enableWalletAPI, ct), func(t *testing.T) {
@@ -1100,7 +1020,6 @@ func TestServiceGetWallets(t *testing.T) {
 					WalletDir:       dir,
 					CryptoType:      ct,
 					EnableWalletAPI: enableWalletAPI,
-					WalletCreators:  creators,
 				})
 				require.NoError(t, err)
 
@@ -1197,11 +1116,6 @@ func TestServiceUpdateWalletLabel(t *testing.T) {
 		},
 	}
 
-	creators := map[string]wallet.Creator{
-		wallet.WalletTypeDeterministic: deterministic.Creator{},
-		wallet.WalletTypeBip44:         bip44wallet.Creator{},
-	}
-
 	for _, tc := range tt {
 		// TODO: add bip44 test
 		for _, walletType := range []string{
@@ -1216,7 +1130,6 @@ func TestServiceUpdateWalletLabel(t *testing.T) {
 						WalletDir:       dir,
 						CryptoType:      ct,
 						EnableWalletAPI: !tc.disableWalletAPI,
-						WalletCreators:  creators,
 					})
 					require.NoError(t, err)
 
@@ -1339,13 +1252,6 @@ func TestServiceEncryptWallet(t *testing.T) {
 		},
 	}
 
-	creators := map[string]wallet.Creator{
-		wallet.WalletTypeDeterministic: deterministic.Creator{},
-		wallet.WalletTypeBip44:         bip44wallet.Creator{},
-		wallet.WalletTypeCollection:    collection.Creator{},
-		wallet.WalletTypeXPub:          xpubwallet.Creator{},
-	}
-
 	for _, tc := range tt {
 		for _, ct := range crypto.TypesInsecure() {
 			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
@@ -1356,7 +1262,6 @@ func TestServiceEncryptWallet(t *testing.T) {
 					WalletDir:       dir,
 					CryptoType:      ct,
 					EnableWalletAPI: !tc.disableWalletAPI,
-					WalletCreators:  creators,
 				})
 				require.NoError(t, err)
 
@@ -1656,18 +1561,6 @@ func TestServiceDecryptWallet(t *testing.T) {
 					WalletDir:       dir,
 					CryptoType:      ct,
 					EnableWalletAPI: !tc.disableWalletAPI,
-					WalletCreators: map[string]wallet.Creator{
-						wallet.WalletTypeDeterministic: deterministic.Creator{},
-						wallet.WalletTypeXPub:          xpubwallet.Creator{},
-						wallet.WalletTypeCollection:    collection.Creator{},
-						wallet.WalletTypeBip44:         bip44wallet.Creator{},
-					},
-					WalletLoaders: map[string]wallet.Loader{
-						wallet.WalletTypeDeterministic: deterministic.Loader{},
-						wallet.WalletTypeXPub:          xpubwallet.Loader{},
-						wallet.WalletTypeCollection:    collection.Loader{},
-						wallet.WalletTypeBip44:         bip44wallet.Loader{},
-					},
 				})
 				require.NoError(t, err)
 
@@ -2763,11 +2656,6 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 					WalletDir:       dir,
 					CryptoType:      ct,
 					EnableWalletAPI: !tc.disableWalletAPI,
-					WalletCreators: map[string]wallet.Creator{
-						wallet.WalletTypeDeterministic: deterministic.Creator{},
-						wallet.WalletTypeBip44:         bip44wallet.Creator{},
-						wallet.WalletTypeXPub:          xpubwallet.Creator{},
-					},
 				})
 				require.NoError(t, err)
 
@@ -3128,11 +3016,6 @@ func TestServiceScanAddresses(t *testing.T) {
 						WalletDir:       dir,
 						CryptoType:      ct,
 						EnableWalletAPI: !tc.walletAPIDisabled,
-						WalletCreators: map[string]wallet.Creator{
-							wallet.WalletTypeDeterministic: &deterministic.Creator{},
-							wallet.WalletTypeBip44:         &bip44wallet.Creator{},
-							wallet.WalletTypeXPub:          &xpubwallet.Creator{},
-						},
 					})
 					require.NoError(t, err)
 
@@ -3256,10 +3139,6 @@ func TestGetWalletSeed(t *testing.T) {
 					CryptoType:      ct,
 					EnableWalletAPI: !tc.disableWalletAPI,
 					EnableSeedAPI:   tc.enableSeedAPI,
-					WalletCreators: map[string]wallet.Creator{
-						wallet.WalletTypeDeterministic: deterministic.Creator{},
-						wallet.WalletTypeBip44:         bip44wallet.Creator{},
-					},
 				})
 				require.NoError(t, err)
 
@@ -3497,12 +3376,6 @@ func TestServiceView(t *testing.T) {
 				WalletDir:       dir,
 				CryptoType:      crypto.CryptoTypeSha256Xor,
 				EnableWalletAPI: true,
-				WalletCreators: map[string]wallet.Creator{
-					wallet.WalletTypeDeterministic: deterministic.Creator{},
-					wallet.WalletTypeCollection:    collection.Creator{},
-					wallet.WalletTypeXPub:          xpubwallet.Creator{},
-					wallet.WalletTypeBip44:         bip44wallet.Creator{},
-				},
 			})
 			require.NoError(t, err)
 
@@ -3777,10 +3650,6 @@ func TestServiceViewSecrets(t *testing.T) {
 				WalletDir:       dir,
 				CryptoType:      crypto.CryptoTypeSha256Xor,
 				EnableWalletAPI: true,
-				WalletCreators: map[string]wallet.Creator{
-					wallet.WalletTypeDeterministic: deterministic.Creator{},
-					wallet.WalletTypeBip44:         bip44wallet.Creator{},
-				},
 			})
 			require.NoError(t, err)
 
@@ -4039,12 +3908,6 @@ func TestServiceUpdate(t *testing.T) {
 				WalletDir:       dir,
 				CryptoType:      crypto.CryptoTypeSha256Xor,
 				EnableWalletAPI: true,
-				WalletCreators: map[string]wallet.Creator{
-					wallet.WalletTypeDeterministic: deterministic.Creator{},
-					wallet.WalletTypeBip44:         bip44wallet.Creator{},
-					wallet.WalletTypeCollection:    collection.Creator{},
-					wallet.WalletTypeXPub:          xpubwallet.Creator{},
-				},
 			})
 			require.NoError(t, err)
 
@@ -4405,12 +4268,6 @@ func TestServiceUpdateSecrets(t *testing.T) {
 				WalletDir:       dir,
 				CryptoType:      crypto.CryptoTypeSha256Xor,
 				EnableWalletAPI: true,
-				WalletCreators: map[string]wallet.Creator{
-					wallet.WalletTypeDeterministic: deterministic.Creator{},
-					wallet.WalletTypeBip44:         bip44wallet.Creator{},
-					wallet.WalletTypeXPub:          xpubwallet.Creator{},
-					wallet.WalletTypeCollection:    collection.Creator{},
-				},
 			})
 			require.NoError(t, err)
 

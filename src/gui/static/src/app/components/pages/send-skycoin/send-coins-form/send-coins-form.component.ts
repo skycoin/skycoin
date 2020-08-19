@@ -269,10 +269,27 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     event.stopPropagation();
     event.preventDefault();
 
-    // Resets the hours distribution options.
-    this.autoShareValue = this.defaultAutoShareValue;
+    if (this.autoOptions && this.autoShareValue !== this.defaultAutoShareValue) {
+      // Ask for confirmation before closing the options and resetting the value.
+      const confirmationParams: ConfirmationParams = {
+        text: 'send.close-hours-share-factor-alert',
+        defaultButtons: DefaultConfirmationButtons.YesNo,
+      };
 
-    this.autoOptions = !this.autoOptions;
+      ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
+        if (confirmationResult) {
+          // Resets the hours distribution options.
+          this.autoShareValue = this.defaultAutoShareValue;
+
+          this.autoOptions = !this.autoOptions;
+        }
+      });
+    } else {
+      // Resets the hours distribution options.
+      this.autoShareValue = this.defaultAutoShareValue;
+
+      this.autoOptions = !this.autoOptions;
+    }
   }
 
   // Activates/deactivates the option for automatic hours distribution.

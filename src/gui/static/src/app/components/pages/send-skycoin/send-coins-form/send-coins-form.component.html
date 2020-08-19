@@ -78,6 +78,21 @@
     <input formControlName="note" id="note" (keydown.enter)="preview()" [maxlength]="maxNoteChars" [attr.disabled]="busy ? 'true' : null">
   </div>
 
+  <!-- Hours distributions options for the basic form. -->
+  <div *ngIf="showSimpleForm" class="form-field">
+    <app-arrow-link
+      *ngIf="showSimpleForm"
+      [noPadding]="true"
+      [text]="'send.coin-hours-options-link'"
+      (pressed)="toggleOptions($event)"
+      [pointDown]="!autoOptions">
+    </app-arrow-link>
+  </div>
+
+  <div *ngIf="showSimpleForm" class="form-field row -options-wrapper" [ngClass]="{ 'd-none': !autoOptions }">
+    <ng-container *ngTemplateOutlet="hoursSelector"></ng-container>
+  </div>
+
   <!-- Automatic hours distributions options. -->
   <div *ngIf="!showSimpleForm" class="form-field">
     <div class="row" [ngClass]="{'element-disabled' : busy}">
@@ -97,21 +112,7 @@
 
     <!-- Automatic hours distributions factor. -->
     <div [ngClass]="{ 'row -options-wrapper': true, 'd-none': !autoOptions }">
-      <div class="col-md-7">
-        <div class="form-field">
-          <label class="-space-between" for="value">
-            <span>
-              {{ 'send.hours-share-factor-label' | translate:{coinHoursName: appService.hoursName} }}
-              <mat-icon class="help-icon" [matTooltip]="'send.hours-share-factor-help' | translate:{coinHoursName: appService.hoursName}">help</mat-icon>
-            </span>
-            <span>{{ autoShareValue | number:'1.0-2' }}</span>
-          </label>
-          <mat-slider min="0.1" max="1" step="0.01" id="value"
-                      (input)="setShareValue($event)" [value]="autoShareValue"
-                      [ngClass]="{'element-disabled' : busy}"
-          ></mat-slider>
-        </div>
-      </div>
+      <ng-container *ngTemplateOutlet="hoursSelector"></ng-container>
     </div>
   </div>
 </div>
@@ -125,3 +126,21 @@
     {{ ('send.' + (showForManualUnsigned ? 'show' : 'send') + '-button') | translate }}
   </app-button>
 </div>
+
+<ng-template #hoursSelector>
+  <div class="col-md-7">
+    <div class="form-field">
+      <label class="-space-between" for="value">
+        <span>
+          {{ 'send.hours-share-factor-label' | translate:{coinHoursName: appService.hoursName} }}
+          <mat-icon class="help-icon" [matTooltip]="'send.hours-share-factor-help' | translate:{coinHoursName: appService.hoursName}">help</mat-icon>
+        </span>
+        <span>{{ autoShareValue | number:'1.0-2' }}</span>
+      </label>
+      <mat-slider min="0" max="1" step="0.01" id="value"
+                  (input)="setShareValue($event)" [value]="autoShareValue"
+                  [ngClass]="{'element-disabled' : busy}"
+      ></mat-slider>
+    </div>
+  </div>
+</ng-template>

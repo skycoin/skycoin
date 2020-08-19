@@ -350,8 +350,12 @@
     "desc": "Use the table below to get seeds from your encrypted wallets. <br>To get seeds from unencrypted wallets, open the folder above, open the .wlt files in a text editor and recover the seeds.",
     "wallet-table-label": "Wallet name",
     "filename-table-label": "Filename",
+    "save-addresses-button": "Save Addresses",
     "show-seed-button": "Show Seed",
-    "no-wallets": "No encrypted wallets",
+    "no-wallets": "There are no wallets",
+    "unencrypted-info": "For security reasons, it is not possible to show the seeds of unencrypted wallets. To get the seed, please encrypt the wallet with a password or follow the instruction shown at the top of this page.",
+    "hw-wallet-info": "For getting the seed of a Skywallet, please use the \"Skywallet\" option at the bottom of the wallets page.",
+    "not-compatible-error": "Your web browser is not compatible with this function.",
 
     "seed-modal-window": {
       "title": "Wallet Seed",

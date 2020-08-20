@@ -85,11 +85,11 @@
       [noPadding]="true"
       [text]="'send.coin-hours-options-link'"
       (pressed)="toggleOptions($event)"
-      [pointDown]="!autoOptions">
+      [pointDown]="!showAutoHourDistributionOptions">
     </app-arrow-link>
   </div>
 
-  <div *ngIf="showSimpleForm" class="form-field row -options-wrapper" [ngClass]="{ 'd-none': !autoOptions }">
+  <div *ngIf="showSimpleForm" class="form-field row -options-wrapper" [ngClass]="{ 'd-none': !showAutoHourDistributionOptions }">
     <ng-container *ngTemplateOutlet="hoursSelector"></ng-container>
   </div>
 
@@ -104,14 +104,14 @@
             [text]="'send.options-link'"
             (mousedown)="$event.stopPropagation();"
             (pressed)="toggleOptions($event)"
-            [pointDown]="!autoOptions">
+            [pointDown]="!showAutoHourDistributionOptions">
           </app-arrow-link>
         </mat-checkbox>
       </div>
     </div>
 
     <!-- Automatic hours distributions factor. -->
-    <div [ngClass]="{ 'row -options-wrapper': true, 'd-none': !autoOptions }">
+    <div [ngClass]="{ 'row -options-wrapper': true, 'd-none': !showAutoHourDistributionOptions }">
       <ng-container *ngTemplateOutlet="hoursSelector"></ng-container>
     </div>
   </div>

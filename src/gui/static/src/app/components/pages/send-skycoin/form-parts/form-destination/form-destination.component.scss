@@ -5,6 +5,11 @@
     margin-bottom: 5px;
   }
 
+  .red-field {
+    border: $red solid 2px;
+    color: $red;
+  }
+
   .-icons {
     text-align: right;
     padding-top: 5px;

@@ -254,6 +254,10 @@
     "saving-note-error": "La transacción se envió correctamente, pero no fue posible guardar la nota.",
     "sent": "La transacción se envió correctamente.",
     "total-to-send": "Total:",
+    "invalid-address-error": "La dirección de destino no es válida.",
+    "one-invalid-address-error": "Una de las direcciones de destino no es válida.",
+    "various-invalid-addresses-error": "Algunas direcciones de destino no son válidas.",
+    "all-addresses-invalid-error": "Las direcciones de destino no son válidas.",
 
     "bulk-send": {
       "title": "Envío Masivo",

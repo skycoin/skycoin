@@ -1,5 +1,5 @@
-import { SubscriptionLike } from 'rxjs';
-import { first } from 'rxjs/operators';
+import { SubscriptionLike, forkJoin, throwError } from 'rxjs';
+import { first, mergeMap } from 'rxjs/operators';
 import { Component, EventEmitter, Input, OnDestroy, OnInit, ViewChild, ChangeDetectorRef, Output as AgularOutput } from '@angular/core';
 import { FormGroup, FormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
@@ -24,6 +24,7 @@ import { AppService } from '../../../../services/app.service';
 import { SpendingService, HoursDistributionOptions, HoursDistributionTypes } from '../../../../services/wallet-operations/spending.service';
 import { GeneratedTransaction, Output } from '../../../../services/wallet-operations/transaction-objects';
 import { WalletWithBalance, AddressWithBalance } from '../../../../services/wallet-operations/wallet-objects';
+import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
 
 /**
  * Data returned when SendCoinsFormComponent asks to show the preview of a transaction. Useful
@@ -145,6 +146,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     private translate: TranslateService,
     private changeDetector: ChangeDetectorRef,
     private spendingService: SpendingService,
+    private walletsAndAddressesService: WalletsAndAddressesService,
   ) { }
 
   ngOnInit() {
@@ -393,17 +395,49 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       this.selectedSources.unspentOutputs.map(addr => addr.hash) : null;
 
     const destinations = this.formMultipleDestinations.getDestinations(true);
+    // Stop showing addresses as invalid.
+    this.formMultipleDestinations.setValidAddressesList(null);
 
-    // Create the transaction.
-    this.processingSubscription = this.spendingService.createTransaction(
-      this.selectedSources.wallet,
-      selectedAddresses ? selectedAddresses : this.selectedSources.wallet.addresses.map(address => address.address),
-      selectedOutputs,
-      destinations,
-      this.hoursSelection,
-      this.form.get('changeAddress').value ? this.form.get('changeAddress').value : null,
-      passwordDialog ? passwordDialog.password : null,
-      creatingPreviewTx || this.showForManualUnsigned,
+    // Check if the addresses are valid.
+    this.processingSubscription = forkJoin(destinations.map(destination => this.walletsAndAddressesService.verifyAddress(destination.address))).pipe(
+      mergeMap(validityList => {
+        // Check how many addresses are invalid.
+        let invalidAddresses = 0;
+        validityList.forEach(valid => {
+          if (!valid) {
+            invalidAddresses += 1;
+          }
+        });
+
+        if (invalidAddresses === 0) {
+          // Create the transaction.
+          return this.spendingService.createTransaction(
+            this.selectedSources.wallet,
+            selectedAddresses ? selectedAddresses : this.selectedSources.wallet.addresses.map(address => address.address),
+            selectedOutputs,
+            destinations,
+            this.hoursSelection,
+            this.form.get('changeAddress').value ? this.form.get('changeAddress').value : null,
+            passwordDialog ? passwordDialog.password : null,
+            creatingPreviewTx || this.showForManualUnsigned,
+          );
+        } else {
+          // Show the appropiate error msg.
+          if (destinations.length > 1) {
+            this.formMultipleDestinations.setValidAddressesList(validityList);
+
+            if (invalidAddresses === destinations.length) {
+              return throwError(this.translate.instant('send.all-addresses-invalid-error'));
+            } else if (invalidAddresses === 1) {
+              return throwError(this.translate.instant('send.one-invalid-address-error'));
+            } else {
+              return throwError(this.translate.instant('send.various-invalid-addresses-error'));
+            }
+          }
+
+          return throwError(this.translate.instant('send.invalid-address-error'));
+        }
+      }),
     ).subscribe(transaction => {
       // Close the password dialog, if it exists.
       if (passwordDialog) {

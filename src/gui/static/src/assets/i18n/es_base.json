@@ -254,6 +254,10 @@
     "saving-note-error": "The transaction was successfully sent, but it was not possible to save the note.",
     "sent": "Transaction successfully sent.",
     "total-to-send": "Total:",
+    "invalid-address-error": "The destination address is not valid.",
+    "one-invalid-address-error": "One of the destination addresses is not valid.",
+    "various-invalid-addresses-error": "Some destination addresses are not valid.",
+    "all-addresses-invalid-error": "The destination addresses are not valid.",
 
     "bulk-send": {
       "title": "Bulk Send",

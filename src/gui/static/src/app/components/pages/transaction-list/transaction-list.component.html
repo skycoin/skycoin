@@ -48,8 +48,8 @@
   <div class="paper" *ngIf="transactions && transactions.length > 0">
     <ng-container *ngFor="let transaction of transactions">
       <div class="-transaction" (click)="showTransaction(transaction)">
-        <div class="-icon" [ngClass]="{ '-incoming': transaction.balance.isGreaterThan(0) && !transaction.coinsMovedInternally, '-pending': !transaction.confirmed }">
-          <img src="assets/img/send-blue.png">
+        <div class="-icon" [ngClass]="{ '-pending': !transaction.confirmed }">
+          <img [src]="'assets/img/' + (transaction.balance.isGreaterThan(0) && !transaction.coinsMovedInternally ? 'received' : 'sent') + '-blue.png'">
         </div>
         <div class="-address">
           <ng-container *ngIf="!transaction.coinsMovedInternally">

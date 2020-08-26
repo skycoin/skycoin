@@ -303,7 +303,7 @@ func (mb mockTxnsFinder) AddressesActivity(addrs []cipher.Addresser) ([]bool, er
 }
 
 func TestServiceLoadWallet(t *testing.T) {
-	// Prepare addresss
+	// Prepare addresses
 	seed := "seed"
 	_, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 10)
 	addrs := make([]cipher.Address, 10)

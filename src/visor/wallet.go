@@ -260,7 +260,7 @@ func (p CreateTransactionParams) Validate() error {
 }
 
 // WalletCreateTransactionSigned creates a signed transaction based upon the parameters in CreateTransactionParams
-func (vs *Visor) WalletCreateTransactionSigned(wltID string, password []byte, p transaction.Params, wp CreateTransactionParams) (*coin.Transaction, []TransactionInput, error) {
+func (vs *Visor) WalletCreateTransactionSigned(wltID string, password []byte, p transaction.Params, wp CreateTransactionParams, tf wallet.TransactionsFinder) (*coin.Transaction, []TransactionInput, error) {
 	// Validate params before unlocking wallet
 	if err := p.Validate(); err != nil {
 		return nil, nil, err
@@ -283,7 +283,7 @@ func (vs *Visor) WalletCreateTransactionSigned(wltID string, password []byte, p 
 		//
 		// For bip44 wallet, peek a change address if p.ChangeAddress is nill
 		if err := vs.wallets.Update(wltID, func(w wallet.Wallet) error {
-			addr, err := w.(*bip44wallet.Wallet).PeekChangeAddress(vs)
+			addr, err := w.(*bip44wallet.Wallet).PeekChangeAddress(tf)
 			if err != nil {
 				logger.Critical().WithError(err).Error("PeekChangeAddress failed")
 				return err
@@ -309,7 +309,7 @@ func (vs *Visor) WalletCreateTransactionSigned(wltID string, password []byte, p 
 
 // WalletCreateTransaction creates a transaction based upon the parameters in CreateTransactionParams
 // TODO: Only referenced by tests, vs.walletCreateTransaction
-func (vs *Visor) WalletCreateTransaction(wltID string, p transaction.Params, wp CreateTransactionParams) (*coin.Transaction, []TransactionInput, error) {
+func (vs *Visor) WalletCreateTransaction(wltID string, p transaction.Params, wp CreateTransactionParams, tf wallet.TransactionsFinder) (*coin.Transaction, []TransactionInput, error) {
 	// Validate params before opening wallet
 	if err := p.Validate(); err != nil {
 		return nil, nil, err
@@ -328,7 +328,7 @@ func (vs *Visor) WalletCreateTransaction(wltID string, p transaction.Params, wp 
 			// we don't have to explicitly check the wallet type here.
 			//
 			// For bip44 wallet, peek a change address if p.ChangeAddress is nill
-			addr, err := w.(*bip44wallet.Wallet).PeekChangeAddress(vs)
+			addr, err := w.(*bip44wallet.Wallet).PeekChangeAddress(tf)
 			if err != nil {
 				logger.Critical().WithError(err).Error("PeekChangeAddress failed")
 				return err

@@ -985,13 +985,15 @@ func TestWalletCreateTransaction(t *testing.T) {
 				},
 			}
 
+			tf := mockTxnsFinder{}
+
 			var txn *coin.Transaction
 			var inputs []TransactionInput
 			switch tc.signed {
 			case TxnSigned:
-				txn, inputs, err = v.WalletCreateTransactionSigned(tc.walletID, tc.password, tc.p, tc.wp)
+				txn, inputs, err = v.WalletCreateTransactionSigned(tc.walletID, tc.password, tc.p, tc.wp, tf)
 			case TxnUnsigned:
-				txn, inputs, err = v.WalletCreateTransaction(tc.walletID, tc.p, tc.wp)
+				txn, inputs, err = v.WalletCreateTransaction(tc.walletID, tc.p, tc.wp, tf)
 			default:
 				t.Fatal("invalid tc.signed value")
 			}
@@ -1122,10 +1124,10 @@ func TestWalletCreateTransactionValidation(t *testing.T) {
 			// setup visor
 			v := &Visor{}
 
-			_, _, err := v.WalletCreateTransaction("foo.wlt", tc.p, tc.wp)
+			_, _, err := v.WalletCreateTransaction("foo.wlt", tc.p, tc.wp, nil)
 			require.Equal(t, tc.err, err)
 
-			_, _, err = v.WalletCreateTransactionSigned("foo.wlt", nil, tc.p, tc.wp)
+			_, _, err = v.WalletCreateTransactionSigned("foo.wlt", nil, tc.p, tc.wp, nil)
 			require.Equal(t, tc.err, err)
 
 			if tc.err != nil {
@@ -1636,4 +1638,17 @@ func unconfirmedForEachMockRun(t *testing.T, unconfirmedTxns []coin.Transaction,
 
 		}
 	}
+}
+
+type mockTxnsFinder map[cipher.Addresser]bool
+
+func (mb mockTxnsFinder) AddressesActivity(addrs []cipher.Addresser) ([]bool, error) {
+	if len(addrs) == 0 {
+		return nil, nil
+	}
+	active := make([]bool, len(addrs))
+	for i, addr := range addrs {
+		active[i] = mb[addr]
+	}
+	return active, nil
 }

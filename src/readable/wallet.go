@@ -4,7 +4,6 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 	"github.com/SkycoinProject/skycoin/src/wallet"
 	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
-	"github.com/SkycoinProject/skycoin/src/wallet/meta"
 )
 
 // Balance has coins and hours
@@ -57,7 +56,7 @@ type WalletEntry struct {
 
 // WalletMeta the wallet meta struct
 type WalletMeta struct {
-	Coin       meta.CoinType     `json:"coin"`
+	Coin       wallet.CoinType   `json:"coin"`
 	Filename   string            `json:"filename"`
 	Label      string            `json:"label"`
 	Type       string            `json:"type"`

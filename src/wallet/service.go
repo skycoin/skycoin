@@ -165,41 +165,7 @@ func (serv *Service) loadWallets() (Wallets, error) {
 // Load loads wallet from the given wallet file, it won't not affect the
 // state of the service it self, the loaded wallet will be returned.
 func (serv *Service) Load(filename string) (Wallet, error) {
-	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		return nil, fmt.Errorf("wallet %q doesn't exist", filename)
-	}
-
-	// Load the wallet meta type field from JSON
-	m, err := loadWalletMeta(filename)
-	if err != nil {
-		return nil, err
-	}
-
-	if m.Meta.Type == "" {
-		err := errors.New("missing meta.type field")
-		logger.WithError(err).WithField("filename", filename)
-		return nil, err
-	}
-
-	// Depending on the wallet type in the wallet metadata header, load the full wallet data
-	l, ok := getLoader(m.Meta.Type)
-	if !ok {
-		logger.Errorf("wallet loader for type of %q not found", m.Meta.Type)
-		return nil, nil
-	}
-
-	data, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-
-	w, err := l.Load(data)
-	if err != nil {
-		return nil, err
-	}
-
-	w.SetFilename(filepath.Base(filename))
-	return w, nil
+	return Load(filename)
 }
 
 func (serv *Service) updateOptions(opts Options) Options {

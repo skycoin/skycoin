@@ -501,7 +501,8 @@ func ValidateMetaSeed(m Meta) error {
 	return nil
 }
 
-func convertToSkyAddrs(addrs []cipher.Addresser) []cipher.Address {
+// SkycoinAddresses converts the addresses to skycoin addresses
+func SkycoinAddresses(addrs []cipher.Addresser) []cipher.Address {
 	skyAddrs := make([]cipher.Address, len(addrs))
 	for i, a := range addrs {
 		skyAddrs[i] = a.(cipher.Address)

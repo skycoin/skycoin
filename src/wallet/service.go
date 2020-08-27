@@ -470,7 +470,7 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64, opt
 	}
 
 	serv.wallets.set(w)
-	return convertToSkyAddrs(addrs), nil
+	return SkycoinAddresses(addrs), nil
 }
 
 // ScanAddresses scan ahead addresses to see if contains balance.
@@ -533,7 +533,7 @@ func (serv *Service) ScanAddresses(wltID string, password []byte, num uint64, tf
 	serv.wallets.set(w)
 
 	// return new generated addresses
-	return convertToSkyAddrs(addrs), nil
+	return SkycoinAddresses(addrs), nil
 }
 
 // GetSkycoinAddresses returns all addresses in given wallet
@@ -569,7 +569,7 @@ func (serv *Service) GetAddresses(wltID string, options ...Option) ([]cipher.Add
 		return nil, err
 	}
 
-	return convertToSkyAddrs(addrs), nil
+	return SkycoinAddresses(addrs), nil
 }
 
 // GetWallet returns wallet by id

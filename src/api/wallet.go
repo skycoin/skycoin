@@ -54,16 +54,19 @@ func NewWalletResponse(w wallet.Wallet) (*WalletResponse, error) {
 
 	switch w.Type() {
 	case wallet.WalletTypeBip44:
-		bip44Coin, ok := w.Bip44Coin()
-		if !ok {
+		bip44Coin := w.Bip44Coin()
+		if bip44Coin == nil {
 			return nil, errors.New("Wallet has no Bip44Coin meta data")
 		}
-		wr.Meta.Bip44Coin = &bip44Coin
+		wr.Meta.Bip44Coin = bip44Coin
 	case wallet.WalletTypeXPub:
 		wr.Meta.XPub = w.XPub()
 	}
 
-	entries := w.GetEntries()
+	entries, err := w.GetEntries()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get wallet entries: %v", err)
+	}
 	wr.Entries = make([]readable.WalletEntry, len(entries))
 
 	for i, e := range entries {

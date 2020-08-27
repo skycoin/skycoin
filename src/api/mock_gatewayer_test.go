@@ -64,11 +64,11 @@ func (_m *MockGatewayer) AddressCount() (uint64, error) {
 }
 
 // AddressesActivity provides a mock function with given fields: addrs
-func (_m *MockGatewayer) AddressesActivity(addrs []cipher.Address) ([]bool, error) {
+func (_m *MockGatewayer) AddressesActivity(addrs []cipher.Addresser) ([]bool, error) {
 	ret := _m.Called(addrs)
 
 	var r0 []bool
-	if rf, ok := ret.Get(0).(func([]cipher.Address) []bool); ok {
+	if rf, ok := ret.Get(0).(func([]cipher.Addresser) []bool); ok {
 		r0 = rf(addrs)
 	} else {
 		if ret.Get(0) != nil {
@@ -77,7 +77,7 @@ func (_m *MockGatewayer) AddressesActivity(addrs []cipher.Address) ([]bool, erro
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func([]cipher.Address) error); ok {
+	if rf, ok := ret.Get(1).(func([]cipher.Addresser) error); ok {
 		r1 = rf(addrs)
 	} else {
 		r1 = ret.Error(1)
@@ -118,13 +118,13 @@ func (_m *MockGatewayer) CreateTransaction(p transaction.Params, wp visor.Create
 	return r0, r1, r2
 }
 
-// CreateWallet provides a mock function with given fields: wltName, options, bg
-func (_m *MockGatewayer) CreateWallet(wltName string, options wallet.Options, bg wallet.TransactionsFinder) (wallet.Wallet, error) {
-	ret := _m.Called(wltName, options, bg)
+// CreateWallet provides a mock function with given fields: wltName, options
+func (_m *MockGatewayer) CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error) {
+	ret := _m.Called(wltName, options)
 
 	var r0 wallet.Wallet
-	if rf, ok := ret.Get(0).(func(string, wallet.Options, wallet.TransactionsFinder) wallet.Wallet); ok {
-		r0 = rf(wltName, options, bg)
+	if rf, ok := ret.Get(0).(func(string, wallet.Options) wallet.Wallet); ok {
+		r0 = rf(wltName, options)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(wallet.Wallet)
@@ -132,8 +132,8 @@ func (_m *MockGatewayer) CreateWallet(wltName string, options wallet.Options, bg
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, wallet.Options, wallet.TransactionsFinder) error); ok {
-		r1 = rf(wltName, options, bg)
+	if rf, ok := ret.Get(1).(func(string, wallet.Options) error); ok {
+		r1 = rf(wltName, options)
 	} else {
 		r1 = ret.Error(1)
 	}

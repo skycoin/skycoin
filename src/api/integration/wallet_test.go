@@ -181,7 +181,11 @@ func TestCreateWallet(t *testing.T) {
 			// Loads the wallet and confirms that the wallet has the same seed
 			lw, err := wallet.Load(walletPath)
 			require.NoError(t, err)
-			require.Equal(t, len(w.Entries), lw.EntriesLen())
+
+			les, err := lw.GetEntries()
+			require.NoError(t, err)
+
+			require.Equal(t, len(w.Entries), len(les))
 			require.Equal(t, tc.walletType, lw.Type())
 
 			if tc.encrypted {
@@ -195,13 +199,13 @@ func TestCreateWallet(t *testing.T) {
 			}
 
 			for i := range w.Entries {
-				require.Equal(t, w.Entries[i].Address, lw.GetEntryAt(i).Address.String())
-				require.Equal(t, w.Entries[i].Public, lw.GetEntryAt(i).Public.Hex())
+				require.Equal(t, w.Entries[i].Address, les[i].Address.String())
+				require.Equal(t, w.Entries[i].Public, les[i].Public.Hex())
 
 				if tc.encrypted || tc.walletType == wallet.WalletTypeXPub {
-					require.True(t, lw.GetEntryAt(i).Secret.Null())
+					require.True(t, les[i].Secret.Null())
 				} else {
-					require.False(t, lw.GetEntryAt(i).Secret.Null())
+					require.False(t, les[i].Secret.Null())
 				}
 
 				switch tc.walletType {
@@ -711,7 +715,11 @@ func TestDecryptWallet(t *testing.T) {
 			require.NoError(t, err)
 
 			require.Equal(t, lw.Seed(), seed)
-			require.Equal(t, 1, lw.EntriesLen())
+
+			les, err := lw.GetEntries()
+			require.NoError(t, err)
+
+			require.Equal(t, 1, len(les))
 
 			switch walletType {
 			case wallet.WalletTypeDeterministic:
@@ -722,7 +730,7 @@ func TestDecryptWallet(t *testing.T) {
 				// Confirms that the first address is derived from the private key
 				pubkey := cipher.MustPubKeyFromSecKey(seckeys[0])
 				require.Equal(t, w.Entries[0].Address, cipher.AddressFromPubKey(pubkey).String())
-				require.Equal(t, lw.GetEntryAt(0).Address.String(), w.Entries[0].Address)
+				require.Equal(t, les[0].Address.String(), w.Entries[0].Address)
 				require.Empty(t, lw.XPub())
 
 			case wallet.WalletTypeBip44:
@@ -1038,8 +1046,11 @@ func prepareAndCheckWallet(t *testing.T, c *api.Client, minCoins, minCoinHours u
 	}
 
 	// Generate more addresses if address entries less than 2.
-	if w.EntriesLen() < 2 {
-		_, err := c.NewWalletAddress(w.Filename(), 2-w.EntriesLen(), password)
+	wl, err := w.EntriesLen()
+	require.NoError(t, err)
+
+	if wl < 2 {
+		_, err := c.NewWalletAddress(w.Filename(), 2-wl, password)
 		if err != nil {
 			t.Fatalf("New wallet address failed: %v", err)
 		}

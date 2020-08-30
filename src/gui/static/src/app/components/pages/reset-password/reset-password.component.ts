@@ -1,7 +1,7 @@
 import { Component, OnDestroy, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { SubscriptionLike,  combineLatest } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FormGroup, FormBuilder, FormControl, Validators } from '@angular/forms';
+import { FormGroup, FormBuilder, FormControl } from '@angular/forms';
 
 import { ButtonComponent } from '../../layout/button/button.component';
 import { MsgBarService } from '../../../services/msg-bar.service';
@@ -25,6 +25,10 @@ export class ResetPasswordComponent implements OnDestroy {
   form: FormGroup;
   // Allows to deactivate the form while the component is busy.
   busy = true;
+
+  // Vars with the validation error messages.
+  seedErrorMsg = '';
+  passwordErrorMsg = '';
 
   private subscription: SubscriptionLike;
   private wallet: WalletBase;
@@ -66,14 +70,13 @@ export class ResetPasswordComponent implements OnDestroy {
   }
 
   initForm() {
-    const validators = [];
-    validators.push(this.passwordMatchValidator.bind(this));
-
-    this.form = new FormGroup({}, validators);
+    this.form = new FormGroup({});
     this.form.addControl('wallet', new FormControl());
-    this.form.addControl('seed', new FormControl('', [Validators.required]));
+    this.form.addControl('seed', new FormControl(''));
     this.form.addControl('password', new FormControl(''));
     this.form.addControl('confirm', new FormControl(''));
+
+    this.form.setValidators(this.validateForm.bind(this));
   }
 
   // Resets the wallet password.
@@ -111,12 +114,30 @@ export class ResetPasswordComponent implements OnDestroy {
     this.changeDetector.detectChanges();
   }
 
-  // Checks if the 2 passwords entered by the user are equal.
-  private passwordMatchValidator() {
-    if (this.form && this.form.get('password') && this.form.get('confirm')) {
-      return this.form.get('password').value === this.form.get('confirm').value ? null : { NotEqual: true };
-    } else {
-      return { NotEqual: true };
+  /**
+   * Validates the form and updates the vars with the validation errors.
+   */
+  private validateForm() {
+    this.seedErrorMsg = '';
+    this.passwordErrorMsg = '';
+
+    let valid = true;
+
+    if (!this.form.get('seed').value) {
+      valid = false;
+      if (this.form.get('seed').touched) {
+        this.seedErrorMsg = 'reset.seed-error-info';
+      }
     }
+
+    // Check if the 2 passwords entered by the user are equal.
+    if (this.form.get('password').value !== this.form.get('confirm').value) {
+      valid = false;
+      if (this.form.get('confirm').touched) {
+        this.passwordErrorMsg = 'reset.confirm-error-info';
+      }
+    }
+
+    return valid ? null : { Invalid: true };
   }
 }

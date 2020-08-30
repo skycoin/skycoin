@@ -1,12 +1,12 @@
-import { mergeMap } from 'rxjs/operators';
 import { Component, OnInit, Inject, ViewChild, OnDestroy } from '@angular/core';
-import { FormBuilder, Validators, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { SubscriptionLike } from 'rxjs';
+
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { MessageIcons } from '../../../layout/hardware-wallet/hw-message/hw-message.component';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { processServiceError } from '../../../../utils/errors';
-import { SubscriptionLike } from 'rxjs';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { AppConfig } from '../../../../app.config';
 import { SoftwareWalletService } from '../../../../services/wallet-operations/software-wallet.service';
@@ -42,6 +42,9 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
   showCharactersWarning = false;
   working = false;
 
+  // Vars with the validation error messages.
+  inputErrorMsg = '';
+
   private newLabel: string;
   private hwConnectionSubscription: SubscriptionLike;
   private operationSubscription: SubscriptionLike;
@@ -68,8 +71,10 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
   ngOnInit() {
     if (!this.data.newName) {
       this.form = this.formBuilder.group({
-        label: [this.data.wallet.label, Validators.required],
+        label: [this.data.wallet.label],
       });
+
+      this.form.setValidators(this.validateForm.bind(this));
     } else {
       this.finishRenaming(this.data.newName);
     }
@@ -155,5 +160,23 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
           },
         );
     }
+  }
+
+  /**
+   * Validates the form and updates the vars with the validation errors.
+   */
+  private validateForm() {
+    this.inputErrorMsg = '';
+
+    let valid = true;
+
+    if (!this.form.get('label').value) {
+      valid = false;
+      if (this.form.get('label').touched) {
+        this.inputErrorMsg = 'wallet.rename.label-error-info';
+      }
+    }
+
+    return valid ? null : { Invalid: true };
   }
 }

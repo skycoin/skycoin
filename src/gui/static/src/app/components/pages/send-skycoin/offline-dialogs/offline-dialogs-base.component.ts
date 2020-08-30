@@ -1,5 +1,5 @@
 import { Component, ViewChild } from '@angular/core';
-import { FormBuilder, Validators, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup } from '@angular/forms';
 
 import { ButtonComponent } from '../../../layout/button/button.component';
 
@@ -53,6 +53,10 @@ export class OfflineDialogsBaseComponent {
   cancelButtonText = '';
   okButtonText = '';
 
+  // Vars with the validation error messages.
+  dropdownErrorMsg = '';
+  inputErrorMsg = '';
+
   // If not set, the dropdown control is not shown.
   dropdownElements: OfflineDialogsDropdownElement[];
 
@@ -60,14 +64,37 @@ export class OfflineDialogsBaseComponent {
     _formBuilder: FormBuilder,
   ) {
     this.form = _formBuilder.group({
-      dropdown: ['', Validators.required],
-      input: ['', Validators.compose([
-        Validators.required,
-        // Mim for a transaction.
-        Validators.minLength(300),
-        // Hex characters only.
-        Validators.pattern('^[0-9a-fA-F]+$'),
-      ])],
+      dropdown: [''],
+      input: [''],
     });
+
+    this.form.setValidators(this.validate.bind(this));
+  }
+
+  /**
+   * Validates the form and updates the vars with the validation errors.
+   */
+  private validate() {
+    this.dropdownErrorMsg = '';
+    this.inputErrorMsg = '';
+
+    let valid = true;
+
+    if (!this.form.get('dropdown').value) {
+      valid = false;
+      if (this.form.get('dropdown').touched) {
+        this.dropdownErrorMsg = 'offline-transactions.wallet-error-info';
+      }
+    }
+
+    const inputValue = this.form.get('input').value as string;
+    if (!inputValue || inputValue.length < 300 || !/^[0-9a-fA-F]+$/.test(inputValue)) {
+      valid = false;
+      if (this.form.get('input').touched) {
+        this.inputErrorMsg = 'offline-transactions.tx-error-info';
+      }
+    }
+
+    return valid ? null : { Invalid: true };
   }
 }

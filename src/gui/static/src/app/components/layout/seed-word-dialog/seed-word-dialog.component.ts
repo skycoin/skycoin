@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
-import { FormBuilder, Validators, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { Observable, SubscriptionLike } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
@@ -51,6 +51,9 @@ export class SeedWordDialogComponent implements OnInit, OnDestroy {
   msgIcons = MessageIcons;
   wordAskedReasons = WordAskedReasons;
 
+  // Vars with the validation error messages.
+  inputErrorMsg = '';
+
   private sendingWord = false;
   private valueChangeSubscription: SubscriptionLike;
   private hwConnectionSubscription: SubscriptionLike;
@@ -88,8 +91,10 @@ export class SeedWordDialogComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.form = this.formBuilder.group({
-      word: ['', Validators.required],
+      word: [''],
     });
+
+    this.form.setValidators(this.validateForm.bind(this));
 
     // Search for sugestions when the user changes the content of the word field.
     this.valueChangeSubscription = this.form.controls.word.valueChanges.subscribe(value => {
@@ -131,5 +136,23 @@ export class SeedWordDialogComponent implements OnInit, OnDestroy {
         this.sendingWord = false;
       }, 32);
     }
+  }
+
+  /**
+   * Validates the form and updates the vars with the validation errors.
+   */
+  private validateForm() {
+    this.inputErrorMsg = '';
+
+    let valid = true;
+
+    if (!this.form.get('word').value) {
+      valid = false;
+      if (this.form.get('word').touched) {
+        this.inputErrorMsg = 'wallet.new.seed.word-error-info';
+      }
+    }
+
+    return valid ? null : { Invalid: true };
   }
 }

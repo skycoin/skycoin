@@ -285,12 +285,26 @@ func TestWalletGet(t *testing.T) {
 			status:   http.StatusOK,
 			walletID: "1234",
 			gatewayGetWalletResultFunc: func(_ string) wallet.Wallet {
-				return &wallet.DeterministicWallet{
-					Meta:    meta.Meta{"seed": "seed", "lastSeed": "seed"},
-					Entries: cloneEntries(entries),
-				}
+				w, err := deterministic.NewWallet(
+					"test.wlt",
+					"test", "seed",
+					wallet.OptionGenerateN(5))
+				require.NoError(t, err)
+				w.SetTimestamp(0)
+				return w
 			},
-			responseBody: WalletResponse{Entries: resEntries[:]},
+			responseBody: WalletResponse{
+				Meta: readable.WalletMeta{
+					Coin:       "skycoin",
+					Filename:   "test.wlt",
+					Type:       "deterministic",
+					Label:      "test",
+					Version:    "0.4",
+					CryptoType: "scrypt-chacha20poly1305",
+					Encrypted:  false,
+				},
+				Entries: resEntries[:],
+			},
 		},
 	}
 

@@ -56,7 +56,7 @@ export class BackupComponent implements OnInit, OnDestroy {
     // Create the address list.
     let addresses = '';
     wallet.addresses.forEach(address => {
-      addresses += address.address + ',';
+      addresses += address.address + '\n';
     });
     addresses = addresses.substr(0, addresses.length - 1);
 

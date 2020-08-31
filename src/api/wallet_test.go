@@ -2797,8 +2797,13 @@ func TestDecryptWallet(t *testing.T) {
 			status: http.StatusOK,
 			expectWallet: WalletResponse{
 				Meta: readable.WalletMeta{
-					Filename:  "wallet",
-					Encrypted: false,
+					Coin:       "skycoin",
+					Filename:   "wallet",
+					Label:      "filename",
+					Type:       "deterministic",
+					Version:    "0.4",
+					CryptoType: "scrypt-chacha20poly1305",
+					Encrypted:  false,
 				},
 				Entries: responseEntries,
 			},
@@ -2814,8 +2819,13 @@ func TestDecryptWallet(t *testing.T) {
 			status: http.StatusOK,
 			expectWallet: WalletResponse{
 				Meta: readable.WalletMeta{
-					Filename:  "wallet",
-					Encrypted: false,
+					Coin:       "skycoin",
+					Filename:   "wallet",
+					Label:      "filename",
+					Type:       "deterministic",
+					Version:    "0.4",
+					CryptoType: "scrypt-chacha20poly1305",
+					Encrypted:  false,
 				},
 				Entries: responseEntries,
 			},

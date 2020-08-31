@@ -871,7 +871,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 }
 
 func TestWalletCreateHandler(t *testing.T) {
-	entries, responseEntries := makeEntries([]byte("seed"), 5)
+	_, responseEntries := makeEntries([]byte("seed"), 5)
 	type httpBody struct {
 		Seed           string
 		Label          string
@@ -891,7 +891,7 @@ func TestWalletCreateHandler(t *testing.T) {
 		err                       string
 		wltName                   string
 		options                   wallet.Options
-		gatewayCreateWalletResult func(string, wallet.Options, wallet.TransactionsFinder) wallet.Wallet
+		gatewayCreateWalletResult func(string, wallet.Options) wallet.Wallet
 		gatewayCreateWalletErr    error
 		responseBody              WalletResponse
 		csrfDisabled              bool
@@ -1090,17 +1090,24 @@ func TestWalletCreateHandler(t *testing.T) {
 				Password: []byte{},
 				ScanN:    2,
 			},
-			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
-				return &wallet.DeterministicWallet{
-					Meta: meta.Meta{
-						"filename": "filename",
-					},
-					Entries: cloneEntries(entries),
-				}
+			gatewayCreateWalletResult: func(_ string, _ wallet.Options) wallet.Wallet {
+				w, err := deterministic.NewWallet(
+					"filename",
+					"",
+					"seed",
+					wallet.OptionGenerateN(5),
+				)
+				w.SetTimestamp(0)
+				require.NoError(t, err)
+				return w
 			},
 			responseBody: WalletResponse{
 				Meta: readable.WalletMeta{
-					Filename: "filename",
+					Coin:       "skycoin",
+					Filename:   "filename",
+					Type:       "deterministic",
+					Version:    "0.4",
+					CryptoType: "scrypt-chacha20poly1305",
 				},
 				Entries: responseEntries[:],
 			},
@@ -1126,17 +1133,24 @@ func TestWalletCreateHandler(t *testing.T) {
 				ScanN:          2,
 				SeedPassphrase: "foobar",
 			},
-			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
-				return &wallet.DeterministicWallet{
-					Meta: meta.Meta{
-						"filename": "filename",
-					},
-					Entries: cloneEntries(entries),
-				}
+			gatewayCreateWalletResult: func(_ string, _ wallet.Options) wallet.Wallet {
+				w, err := deterministic.NewWallet(
+					"filename",
+					"",
+					"seed",
+					wallet.OptionGenerateN(5),
+				)
+				require.NoError(t, err)
+				w.SetTimestamp(0)
+				return w
 			},
 			responseBody: WalletResponse{
 				Meta: readable.WalletMeta{
-					Filename: "filename",
+					Coin:       "skycoin",
+					Filename:   "filename",
+					Type:       "deterministic",
+					Version:    "0.4",
+					CryptoType: "scrypt-chacha20poly1305",
 				},
 				Entries: responseEntries[:],
 			},
@@ -1160,17 +1174,24 @@ func TestWalletCreateHandler(t *testing.T) {
 				ScanN:    2,
 				XPub:     "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8",
 			},
-			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
-				return &wallet.DeterministicWallet{
-					Meta: meta.Meta{
-						"filename": "filename",
-					},
-					Entries: cloneEntries(entries),
-				}
+			gatewayCreateWalletResult: func(_ string, _ wallet.Options) wallet.Wallet {
+				w, err := deterministic.NewWallet(
+					"filename",
+					"",
+					"seed",
+					wallet.OptionGenerateN(5),
+				)
+				require.NoError(t, err)
+				w.SetTimestamp(0)
+				return w
 			},
 			responseBody: WalletResponse{
 				Meta: readable.WalletMeta{
-					Filename: "filename",
+					Coin:       "skycoin",
+					Filename:   "filename",
+					Type:       "deterministic",
+					Version:    "0.4",
+					CryptoType: "scrypt-chacha20poly1305",
 				},
 				Entries: responseEntries[:],
 			},
@@ -1271,7 +1292,8 @@ func TestWalletCreateHandler(t *testing.T) {
 			if tc.options.ScanN == 0 {
 				tc.options.ScanN = 1
 			}
-			gateway.On("CreateWallet", "", tc.options, gateway).Return(tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
+			tc.options.TF = gateway
+			gateway.On("CreateWallet", "", tc.options).Return(tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
 
 			endpoint := "/api/v1/wallet/create"
 

@@ -70,7 +70,11 @@ func encryptWallet(walletFile string, pr PasswordReader, cryptoType crypto.Crypt
 		return nil, err
 	}
 
-	if err := wallet.Lock(wlt, password, cryptoType); err != nil {
+	if wlt.CryptoType() != cryptoType {
+		wlt.SetCryptoType(cryptoType)
+	}
+
+	if err := wlt.Lock(password); err != nil {
 		return nil, err
 	}
 

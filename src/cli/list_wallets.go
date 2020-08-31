@@ -69,10 +69,15 @@ func listWallets(_ *cobra.Command, args []string) error {
 			if err != nil {
 				return WalletLoadError{err}
 			}
+			el, err := w.EntriesLen()
+			if err != nil {
+				return err
+			}
+
 			wlts.Wallets = append(wlts.Wallets, WalletEntry{
 				Name:       name,
 				Label:      w.Label(),
-				AddressNum: w.EntriesLen(),
+				AddressNum: el,
 			})
 		}
 	}

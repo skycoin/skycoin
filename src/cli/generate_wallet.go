@@ -15,7 +15,6 @@ import (
 	secp256k1 "github.com/SkycoinProject/skycoin/src/cipher/secp256k1-go"
 	"github.com/SkycoinProject/skycoin/src/wallet"
 	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
-	"github.com/SkycoinProject/skycoin/src/wallet/meta"
 )
 
 const (
@@ -118,7 +117,7 @@ func generateWalletHandler(c *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	coin, err := meta.ResolveCoinType(coinStr)
+	coin, err := wallet.ResolveCoinType(coinStr)
 	if err != nil {
 		return err
 	}
@@ -219,7 +218,7 @@ func generateWalletHandler(c *cobra.Command, args []string) error {
 		XPub:           xpub,
 	}
 
-	wlt, err := wallet.NewWallet(filepath.Base(wltName), opts)
+	wlt, err := wallet.NewWallet(filepath.Base(wltName), label, sd, opts)
 	if err != nil {
 		return err
 	}
@@ -228,7 +227,12 @@ func generateWalletHandler(c *cobra.Command, args []string) error {
 		return err
 	}
 
-	return printJSON(wlt.ToReadable())
+	out, err := wlt.Serialize()
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(out))
+	return nil
 }
 
 // wordCountToEntropy maps a mnemonic word count to its entropy size in bits

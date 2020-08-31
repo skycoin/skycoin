@@ -25,7 +25,10 @@ func listAddresses(_ *cobra.Command, args []string) error {
 		return WalletLoadError{err}
 	}
 
-	addrs := wlt.GetAddresses()
+	addrs, err := wlt.GetAddresses()
+	if err != nil {
+		return err
+	}
 
 	s, err := FormatAddressesAsJSON(addrs)
 	if err != nil {

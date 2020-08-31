@@ -103,7 +103,11 @@ func CheckWalletBalance(c GetOutputser, walletFile string) (*BalanceResult, erro
 	}
 
 	var addrs []string
-	addresses := wlt.GetAddresses()
+	addresses, err := wlt.GetAddresses()
+	if err != nil {
+		return nil, err
+	}
+
 	for _, a := range addresses {
 		addrs = append(addrs, a.String())
 	}

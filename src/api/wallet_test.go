@@ -2597,11 +2597,12 @@ func TestWalletUnloadHandler(t *testing.T) {
 }
 
 func TestEncryptWallet(t *testing.T) {
-	entries, responseEntries := makeEntries([]byte("seed"), 5)
+	_, responseEntries := makeEntries([]byte("seed"), 5)
 	type gatewayReturnPair struct {
 		w   wallet.Wallet
 		err error
 	}
+
 	tt := []struct {
 		name          string
 		method        string
@@ -2634,8 +2635,12 @@ func TestEncryptWallet(t *testing.T) {
 			status: http.StatusOK,
 			expectWallet: WalletResponse{
 				Meta: readable.WalletMeta{
-					Filename:  "wallet.wlt",
-					Encrypted: true,
+					Coin:       "skycoin",
+					Filename:   "wallet.wlt",
+					Type:       "deterministic",
+					Version:    "0.4",
+					CryptoType: "scrypt-chacha20poly1305",
+					Encrypted:  true,
 				},
 				Entries: responseEntries,
 			},
@@ -2948,12 +2953,6 @@ func makeEntries(seed []byte, n int) ([]wallet.Entry, []readable.WalletEntry) { 
 		})
 	}
 	return entries, responseEntries
-}
-
-func cloneEntries(es []entry.Entry) []entry.Entry {
-	var entries []entry.Entry
-	entries = append(entries, es...)
-	return entries
 }
 
 func TestWalletRecover(t *testing.T) {

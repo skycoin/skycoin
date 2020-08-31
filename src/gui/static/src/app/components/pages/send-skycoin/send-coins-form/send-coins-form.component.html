@@ -66,7 +66,14 @@
         [ngClass]="{'element-disabled' : busy}">
       </app-arrow-link>
     </label>
-    <input formControlName="changeAddress" id="change-address" (keydown.enter)="showForManualUnsigned ? preview() : null" [attr.disabled]="busy ? 'true' : null">
+    <input
+      formControlName="changeAddress"
+      id="change-address"
+      (keydown.enter)="showForManualUnsigned ? preview() : null"
+      [attr.disabled]="busy ? 'true' : null"
+      [appFormFieldError]="invalidChangeAddress ? 'send.invalid-addresses-error' : changeAddressErrorMsg"
+      (blur)="validateForm()"
+    >
   </div>
 
   <!-- Note. -->

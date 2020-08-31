@@ -133,6 +133,10 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   // Sources the user has selected.
   private selectedSources: SelectedSources;
 
+  // Vars with the validation error messages.
+  changeAddressErrorMsg = '';
+  invalidChangeAddress = false;
+
   private syncCheckSubscription: SubscriptionLike;
   private processingSubscription: SubscriptionLike;
 
@@ -150,9 +154,11 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    this.form = new FormGroup({}, this.validateForm.bind(this));
+    this.form = new FormGroup({});
     this.form.addControl('changeAddress', new FormControl(''));
     this.form.addControl('note', new FormControl(''));
+
+    this.form.setValidators(this.validateForm.bind(this));
 
     if (this.formData) {
       setTimeout(() => this.fillForm());
@@ -308,18 +314,28 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     this.autoOptions = this.formData.form.autoOptions;
   }
 
-  // Validates the form.
+  /**
+   * Validates the form and updates the vars with the validation errors.
+   */
   private validateForm() {
-    if (!this.form) {
-      return { Required: true };
+    this.changeAddressErrorMsg = '';
+
+    let valid = true;
+
+    const changeAddress = this.form.get('changeAddress').value as string;
+    if (changeAddress && changeAddress.length < 20) {
+      valid = false;
+      if (this.form.get('changeAddress').touched) {
+        this.changeAddressErrorMsg = 'send.address-error-info';
+      }
     }
 
     // Check the validity of the subforms.
     if (!this.formSourceSelection || !this.formSourceSelection.valid || !this.formMultipleDestinations || !this.formMultipleDestinations.valid) {
-      return { Invalid: true };
+      valid = false;
     }
 
-    return null;
+    return valid ? null : { Invalid: true };
   }
 
   // Checks if the blockchain is synchronized. It continues normally creating the tx if the
@@ -398,9 +414,22 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     // Stop showing addresses as invalid.
     this.formMultipleDestinations.setValidAddressesList(null);
 
+    this.invalidChangeAddress = false;
+    const customChangeAddress = this.form.get('changeAddress').value;
+    const addresses = destinations.map(destination => destination.address);
+    if (customChangeAddress) {
+      addresses.push(customChangeAddress);
+    }
+
     // Check if the addresses are valid.
-    this.processingSubscription = forkJoin(destinations.map(destination => this.walletsAndAddressesService.verifyAddress(destination.address))).pipe(
+    this.processingSubscription = forkJoin(addresses.map(address => this.walletsAndAddressesService.verifyAddress(address))).pipe(
       mergeMap(validityList => {
+        if (customChangeAddress) {
+          this.invalidChangeAddress = !validityList.pop();
+
+          return throwError(this.translate.instant('send.change-address-error-info'));
+        }
+
         // Check how many addresses are invalid.
         let invalidAddresses = 0;
         validityList.forEach(valid => {
@@ -422,10 +451,10 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
             creatingPreviewTx || this.showForManualUnsigned,
           );
         } else {
+          this.formMultipleDestinations.setValidAddressesList(validityList);
+
           // Show the appropiate error msg.
           if (destinations.length > 1) {
-            this.formMultipleDestinations.setValidAddressesList(validityList);
-
             if (invalidAddresses === destinations.length) {
               return throwError(this.translate.instant('send.all-addresses-invalid-error'));
             } else if (invalidAddresses === 1) {

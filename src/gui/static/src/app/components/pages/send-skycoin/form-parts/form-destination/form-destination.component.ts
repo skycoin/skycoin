@@ -116,7 +116,16 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   // Total amount of hours that will be sent to all destinations, if the manual hours are active.
   totalHours = new BigNumber(0);
 
-  // List for knowing which destination addresses are valid, by index.
+  // Vars with the validation error messages.
+  addressErrorMsgs: string[] = [];
+  coinsErrorMsgs: string[] = [];
+  hoursErrorMsgs: string[] = [];
+  singleAddressErrorMsg = '';
+  insufficientCoins = false;
+  insufficientHours = false;
+
+  // List for knowing which destination addresses were indentified as valid by the server,
+  // by index.
   validAddressesList: boolean[];
 
   private priceSubscription: SubscriptionLike;
@@ -139,9 +148,11 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.form = this.formBuilder.group({
-      address: ['', this.showSimpleForm ? Validators.required : null],
-      destinations: this.formBuilder.array([], this.validateDestinations.bind(this)),
+      address: [''],
+      destinations: this.formBuilder.array([]),
     });
+    this.form.setValidators(this.validateForm.bind(this));
+
     this.addDestination();
 
     // Inform when there are changes on the address field, shown on the simple form.
@@ -393,6 +404,9 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     }));
 
     (this.form.get('destinations') as FormArray).push(group);
+    this.addressErrorMsgs.push('');
+    this.coinsErrorMsgs.push('');
+    this.hoursErrorMsgs.push('');
 
     this.updateValuesAndValidity();
   }
@@ -402,9 +416,18 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     const destinations = this.form.get('destinations') as FormArray;
     destinations.removeAt(index);
 
-    // Remove the associated entry in the address validity list, if needed.
+    // Remove the associated entry in the error arrays, if needed.
     if (this.validAddressesList && this.validAddressesList.length > index) {
       this.validAddressesList.splice(index, 1);
+    }
+    if (this.addressErrorMsgs && this.addressErrorMsgs.length > index) {
+      this.addressErrorMsgs.splice(index, 1);
+    }
+    if (this.coinsErrorMsgs && this.coinsErrorMsgs.length > index) {
+      this.coinsErrorMsgs.splice(index, 1);
+    }
+    if (this.hoursErrorMsgs && this.hoursErrorMsgs.length > index) {
+      this.hoursErrorMsgs.splice(index, 1);
     }
 
     // Remove the subscription used to check the changes made to the fields of the destination.
@@ -477,7 +500,8 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Allows to set a list indicating which addresses are valid.
+   * Allows to set a list indicating which addresses are valid, as validated by
+   * the backend.
    * @param list Validity list. It must include if the address is valid for the index of
    * each destination. It can be null, to show all addresses as valid.
    */
@@ -490,15 +514,58 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Allows to check if the address of a destination must be shown as valid.
+   * Allows to check if the address of a destination must be shown as valid, as validated by
+   * the backend.
    * @param addressIndex Index of the address.
    */
-  isAddressValid(addressIndex: number) {
+  isAddressValid(addressIndex: number): boolean {
     if (this.validAddressesList && this.validAddressesList.length > addressIndex) {
       return this.validAddressesList[addressIndex];
     }
 
     return true;
+  }
+
+  /**
+   * Gets the error msg that has to be shown for the coins field of a destination.
+   * @param destinationIndex Index of the destination.
+   */
+  getCoinsErrorMsg(destinationIndex: number): string {
+    if (destinationIndex < this.coinsErrorMsgs.length) {
+      // Check if there is a validation error.
+      if (this.coinsErrorMsgs[destinationIndex]) {
+        return this.coinsErrorMsgs[destinationIndex];
+      }
+
+      // Check if the user is trying to send more coins than available, but only if
+      // there is just one destination.
+      if (this.destControls.length === 1 && this.insufficientCoins) {
+        return 'send.insufficient-funds-error-info';
+      }
+    }
+
+    return '';
+  }
+
+  /**
+   * Gets the error msg that has to be shown for the hours field of a destination.
+   * @param destinationIndex Index of the destination.
+   */
+  gethoursErrorMsg(destinationIndex: number): string {
+    if (destinationIndex < this.hoursErrorMsgs.length) {
+      // Check if there is a validation error.
+      if (this.hoursErrorMsgs[destinationIndex]) {
+        return this.hoursErrorMsgs[destinationIndex];
+      }
+
+      // Check if the user is trying to send more hours than available, but only if
+      // there is just one destination.
+      if (this.destControls.length === 1 && this.insufficientHours) {
+        return 'send.insufficient-funds-error-info';
+      }
+    }
+
+    return '';
   }
 
   /**
@@ -534,49 +601,118 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Validates the values on the fields of the form destinations array.
-  private validateDestinations() {
-    if (!this.form) {
-      return { Required: true };
+  /**
+   * Makes sure an errors array is the same size as "this.destControls.length" and sets all the
+   * values to empty strings.
+   */
+  private resetErrorMsgsArray(array: string[]) {
+    while (array.length > this.destControls.length) {
+      array.pop();
+    }
+    while (array.length < this.destControls.length) {
+      array.push('');
+    }
+    for (let i = 0; i < array.length; i++) {
+      array[i] = '';
+    }
+  }
+
+  /**
+   * Validates the form and updates the vars with the validation errors.
+   */
+  private validateForm() {
+    this.singleAddressErrorMsg = '';
+    this.resetErrorMsgsArray(this.addressErrorMsgs);
+    this.resetErrorMsgsArray(this.coinsErrorMsgs);
+    this.resetErrorMsgsArray(this.hoursErrorMsgs);
+    this.insufficientCoins = false;
+    this.insufficientHours = false;
+
+    let valid = true;
+
+    // Check the address field of the simple form.
+    if (this.showSimpleForm) {
+      const address = this.form.get('address').value as string;
+      if (!address || address.length < 20) {
+        valid = false;
+        if (this.form.get('address').touched) {
+          this.singleAddressErrorMsg = 'send.address-error-info';
+        }
+      }
     }
 
     // Check if there are invalid values.
-    const invalidInput = this.destControls.find(control => {
-      const controlsToCheck = ['coins'];
-      if (this.showHourFields) {
-        controlsToCheck.push('hours');
+    this.destControls.forEach((control, i) => {
+      // Check the address, but not if showing the simple form.
+      if (!this.showSimpleForm) {
+        const address = control.get('address').value as string;
+        if (!address || address.length < 20) {
+          valid = false;
+          if (control.get('address').touched) {
+            this.addressErrorMsgs[i] = 'send.address-error-info';
+          }
+        }
       }
 
-      return controlsToCheck.map(name => {
-        const stringValue: string = control.get(name).value;
+      // Check the coins.
+      const coinsValue: string = control.get('coins').value;
+      if (this.getAmount(coinsValue, true) === null) {
+        valid = false;
+        if (control.get('coins').touched) {
+          this.coinsErrorMsgs[i] = 'send.invalid-value-error-info';
+        }
+      }
 
-        return this.getAmount(stringValue, name === 'coins') === null;
-      }).find(e => e === true);
+      // Check the hours, if showing the hours field.
+      if (this.showHourFields) {
+        const hoursValue: string = control.get('hours').value;
+        if (this.getAmount(hoursValue, false) === null) {
+          valid = false;
+          if (control.get('hours').touched) {
+            this.hoursErrorMsgs[i] = 'send.invalid-value-error-info';
+          }
+        }
+      }
     });
-
-    if (invalidInput) {
-      return { Invalid: true };
-    }
 
     // Check how many coins and hours the user is trying to send.
     let destinationsCoins = new BigNumber(0);
     if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
-      this.destControls.map(control => destinationsCoins = destinationsCoins.plus(control.get('coins').value));
+      this.destControls.map(control => {
+        const value = new BigNumber(control.get('coins').value);
+        if (!value.isNaN()) {
+          destinationsCoins = destinationsCoins.plus(value);
+        }
+      });
     } else {
       this.updateValuesAndValidity();
-      this.values.map(value => destinationsCoins = destinationsCoins.plus(value));
+      this.values.map(value => {
+        if (!value.isNaN()) {
+          destinationsCoins = destinationsCoins.plus(value);
+        }
+      });
     }
     let destinationsHours = new BigNumber(0);
     if (this.showHourFields) {
-      this.destControls.map(control => destinationsHours = destinationsHours.plus(control.get('hours').value));
+      this.destControls.map(control => {
+        const value = new BigNumber(control.get('hours').value);
+        if (!value.isNaN()) {
+          destinationsHours = destinationsHours.plus(control.get('hours').value);
+        }
+      });
     }
 
     // Fail if the user does not have enough coins or hours.
-    if (destinationsCoins.isGreaterThan(this.availableBalance.availableCoins) || destinationsHours.isGreaterThan(this.availableBalance.availableHours)) {
-      return { Invalid: true };
+    if (destinationsCoins.isGreaterThan(this.availableBalance.availableCoins)) {
+      this.insufficientCoins = true;
+      valid = false;
+    }
+    if (destinationsHours.isGreaterThan(this.availableBalance.availableHours)) {
+      this.insufficientHours = true;
+      valid = false;
     }
 
-    return null;
+    return valid ? null : { Invalid: true };
   }
 
   /**

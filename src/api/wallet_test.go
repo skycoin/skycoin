@@ -2282,17 +2282,40 @@ func TestGetWalletFolderHandler(t *testing.T) {
 	}
 }
 
+func TestNewWallet(t *testing.T) {
+	w, err := deterministic.NewWallet("filename", "", "seed", wallet.OptionGenerateN(1))
+	require.NoError(t, err)
+	es, err := w.GetEntries()
+	require.NoError(t, err)
+	fmt.Println(es[0].Address.String())
+}
+
 func TestGetWallets(t *testing.T) {
 	var pubkeys []cipher.PubKey
 	var seckeys []cipher.SecKey
 	var addrs []cipher.Address
 
-	for i := 0; i < 4; i++ {
-		pubkey, seckey := cipher.GenerateKeyPair()
-		addr := cipher.AddressFromPubKey(pubkey)
-		pubkeys = append(pubkeys, pubkey)
-		seckeys = append(seckeys, seckey)
-		addrs = append(addrs, addr)
+	seckeys, err := cipher.GenerateDeterministicKeyPairs([]byte("seed"), 5)
+	require.NoError(t, err)
+	for _, sk := range seckeys {
+		pk := cipher.MustPubKeyFromSecKey(sk)
+		pubkeys = append(pubkeys, pk)
+		addrs = append(addrs, cipher.AddressFromPubKey(pk))
+	}
+
+	// create a deterministic and overwrite its meta data
+	makeDeterministicWalletWithMeta := func(n uint64, m wallet.Meta) wallet.Wallet {
+		w, err := deterministic.NewWallet(
+			"wallet",
+			"filename",
+			"seed",
+			wallet.OptionGenerateN(n))
+		require.NoError(t, err)
+		// overwrite
+		for k, v := range m {
+			w.Meta[k] = v
+		}
+		return w
 	}
 
 	cases := []struct {
@@ -2336,30 +2359,21 @@ func TestGetWallets(t *testing.T) {
 			method: http.MethodGet,
 			status: http.StatusOK,
 			getWalletsResponse: wallet.Wallets{
-				"foofilename": &wallet.DeterministicWallet{
-					Meta: meta.Meta{
-						"foo":        "bar",
-						"seed":       "fooseed",
-						"lastSeed":   "foolastseed",
-						"coin":       "foocoin",
-						"filename":   "foofilename",
-						"label":      "foolabel",
-						"type":       "footype",
-						"version":    "fooversion",
-						"cryptoType": "foocryptotype",
-						"tm":         "345678",
-						"encrypted":  "true",
-					},
-					Entries: []entry.Entry{
-						{
-							Address: addrs[0],
-							Public:  pubkeys[0],
-							Secret:  seckeys[0],
-						},
-					},
-				},
-				"foofilename2": &wallet.DeterministicWallet{
-					Meta: meta.Meta{
+				"foofilename": makeDeterministicWalletWithMeta(1, wallet.Meta{
+					"foo":        "bar",
+					"seed":       "fooseed",
+					"lastSeed":   "foolastseed",
+					"coin":       "foocoin",
+					"filename":   "foofilename",
+					"label":      "foolabel",
+					"type":       "footype",
+					"version":    "fooversion",
+					"cryptoType": "foocryptotype",
+					"tm":         "345678",
+					"encrypted":  "true",
+				}),
+				"foofilename2": makeDeterministicWalletWithMeta(2,
+					wallet.Meta{
 						"foo":        "bar2",
 						"seed":       "fooseed2",
 						"lastSeed":   "foolastseed2",
@@ -2371,17 +2385,9 @@ func TestGetWallets(t *testing.T) {
 						"cryptoType": "foocryptotype",
 						"tm":         "123456",
 						"encrypted":  "false",
-					},
-					Entries: []entry.Entry{
-						{
-							Address: addrs[1],
-							Public:  pubkeys[1],
-							Secret:  seckeys[1],
-						},
-					},
-				},
-				"foofilename3": &wallet.DeterministicWallet{
-					Meta: meta.Meta{
+					}),
+				"foofilename3": makeDeterministicWalletWithMeta(3,
+					wallet.Meta{
 						"foo":        "bar3",
 						"seed":       "fooseed3",
 						"lastSeed":   "foolastseed3",
@@ -2393,20 +2399,7 @@ func TestGetWallets(t *testing.T) {
 						"cryptoType": "foocryptotype",
 						"tm":         "234567",
 						"encrypted":  "true",
-					},
-					Entries: []entry.Entry{
-						{
-							Address: addrs[2],
-							Public:  pubkeys[2],
-							Secret:  seckeys[2],
-						},
-						{
-							Address: addrs[3],
-							Public:  pubkeys[3],
-							Secret:  seckeys[3],
-						},
-					},
-				},
+					}),
 			},
 			httpResponse: []*WalletResponse{
 				{
@@ -2421,6 +2414,10 @@ func TestGetWallets(t *testing.T) {
 						Encrypted:  false,
 					},
 					Entries: []readable.WalletEntry{
+						{
+							Address: addrs[0].String(),
+							Public:  pubkeys[0].Hex(),
+						},
 						{
 							Address: addrs[1].String(),
 							Public:  pubkeys[1].Hex(),
@@ -2440,12 +2437,16 @@ func TestGetWallets(t *testing.T) {
 					},
 					Entries: []readable.WalletEntry{
 						{
-							Address: addrs[2].String(),
-							Public:  pubkeys[2].Hex(),
+							Address: addrs[0].String(),
+							Public:  pubkeys[0].Hex(),
 						},
 						{
-							Address: addrs[3].String(),
-							Public:  pubkeys[3].Hex(),
+							Address: addrs[1].String(),
+							Public:  pubkeys[1].Hex(),
+						},
+						{
+							Address: addrs[2].String(),
+							Public:  pubkeys[2].Hex(),
 						},
 					},
 				},
@@ -2472,39 +2473,42 @@ func TestGetWallets(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		gateway := &MockGatewayer{}
-		gateway.On("GetWallets").Return(tc.getWalletsResponse, tc.getWalletsErr)
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &MockGatewayer{}
+			gateway.On("GetWallets").Return(tc.getWalletsResponse, tc.getWalletsErr)
 
-		endpoint := "/api/v1/wallets"
+			endpoint := "/api/v1/wallets"
 
-		req, err := http.NewRequest(tc.method, endpoint, nil)
-		require.NoError(t, err)
-
-		setCSRFParameters(t, tokenValid, req)
-
-		rr := httptest.NewRecorder()
-
-		cfg := defaultMuxConfig()
-		cfg.disableCSRF = false
-
-		handler := newServerMux(cfg, gateway)
-
-		handler.ServeHTTP(rr, req)
-
-		status := rr.Code
-		require.Equal(t, tc.status, status, "got `%v` want `%v`",
-			tc.name, status, tc.status)
-
-		if status != http.StatusOK {
-			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
-				strings.TrimSpace(rr.Body.String()), status, tc.err)
-		} else {
-			var msg []*WalletResponse
-			err := json.Unmarshal(rr.Body.Bytes(), &msg)
+			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
-			require.NotNil(t, msg)
-			require.Equal(t, tc.httpResponse, msg, tc.name)
-		}
+
+			setCSRFParameters(t, tokenValid, req)
+
+			rr := httptest.NewRecorder()
+
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway)
+
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "got `%v` want `%v`",
+				tc.name, status, tc.status)
+
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
+			} else {
+				var msg []*WalletResponse
+				err := json.Unmarshal(rr.Body.Bytes(), &msg)
+				require.NoError(t, err)
+				require.NotNil(t, msg)
+				require.Equal(t, tc.httpResponse, msg, tc.name)
+			}
+
+		})
 	}
 }
 

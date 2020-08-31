@@ -983,17 +983,16 @@ func TestWalletCreateTransaction(t *testing.T) {
 				Config: Config{
 					Distribution: params.MainNetDistribution,
 				},
+				tf: mockTxnsFinder{},
 			}
-
-			tf := mockTxnsFinder{}
 
 			var txn *coin.Transaction
 			var inputs []TransactionInput
 			switch tc.signed {
 			case TxnSigned:
-				txn, inputs, err = v.WalletCreateTransactionSigned(tc.walletID, tc.password, tc.p, tc.wp, tf)
+				txn, inputs, err = v.WalletCreateTransactionSigned(tc.walletID, tc.password, tc.p, tc.wp)
 			case TxnUnsigned:
-				txn, inputs, err = v.WalletCreateTransaction(tc.walletID, tc.p, tc.wp, tf)
+				txn, inputs, err = v.WalletCreateTransaction(tc.walletID, tc.p, tc.wp)
 			default:
 				t.Fatal("invalid tc.signed value")
 			}
@@ -1124,10 +1123,10 @@ func TestWalletCreateTransactionValidation(t *testing.T) {
 			// setup visor
 			v := &Visor{}
 
-			_, _, err := v.WalletCreateTransaction("foo.wlt", tc.p, tc.wp, nil)
+			_, _, err := v.WalletCreateTransaction("foo.wlt", tc.p, tc.wp)
 			require.Equal(t, tc.err, err)
 
-			_, _, err = v.WalletCreateTransactionSigned("foo.wlt", nil, tc.p, tc.wp, nil)
+			_, _, err = v.WalletCreateTransactionSigned("foo.wlt", nil, tc.p, tc.wp)
 			require.Equal(t, tc.err, err)
 
 			if tc.err != nil {

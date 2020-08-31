@@ -41,6 +41,7 @@ type Visor struct {
 	history     Historyer
 	wallets     *wallet.Service
 	txns        transactionsGetter
+	tf          wallet.TransactionsFinder
 }
 
 // New creates a Visor for managing the blockchain database
@@ -117,6 +118,8 @@ func New(c Config, db *dbutil.DB, wltServ *wallet.Service) (*Visor, error) {
 		wallets:     wltServ,
 		txns:        &txns,
 	}
+
+	v.tf = &TransactionsFinder{v}
 
 	return v, nil
 }
@@ -2230,6 +2233,65 @@ func (vs *Visor) AddressesActivity(addrs []cipher.Addresser) ([]bool, error) {
 		// Check if the addresses appears in the unconfirmed pool
 		// NOTE: if this needs to be optimized, add an index to the unconfirmed pool
 		return vs.unconfirmed.ForEach(tx, func(h cipher.SHA256, ut UnconfirmedTransaction) error {
+			// Only transaction outputs need to be checked; if the address is associated
+			// with an input, it must have appeared in a transaction in the blockchain history
+			for _, o := range ut.Transaction.Out {
+				if i, ok := addrsMap[o.Address]; ok {
+					active[i] = true
+				}
+			}
+			return nil
+		})
+	}); err != nil {
+		return nil, err
+	}
+
+	return active, nil
+}
+
+// TransactionsFinder implements the wallet.TransactionsFinder interface
+type TransactionsFinder struct {
+	v *Visor
+}
+
+// AddressesActivity implements the methods of wallet.TransactionsFinder interface
+func (tf *TransactionsFinder) AddressesActivity(addrs []cipher.Addresser) ([]bool, error) {
+	skyAddrs := make([]cipher.Address, len(addrs))
+	// convert to skycoin addresses
+	for i, a := range addrs {
+		addr, ok := a.(cipher.Address)
+		if !ok {
+			return nil, errors.New("invalid skycoin address")
+		}
+		skyAddrs[i] = addr
+	}
+
+	active := make([]bool, len(addrs))
+	addrsMap := make(map[cipher.Address]int, len(addrs))
+	for i, a := range skyAddrs {
+		addrsMap[a] = i
+	}
+
+	if len(addrsMap) != len(addrs) {
+		return nil, errors.New("duplicates addresses not allowed")
+	}
+
+	if err := tf.v.db.View("AddressActivity", func(tx *dbutil.Tx) error {
+		// Check if the addresses appear in the blockchain
+		for i, a := range skyAddrs {
+			ok, err := tf.v.history.AddressSeen(tx, a)
+			if err != nil {
+				return err
+			}
+
+			if ok {
+				active[i] = true
+			}
+		}
+
+		// Check if the addresses appears in the unconfirmed pool
+		// NOTE: if this needs to be optimized, add an index to the unconfirmed pool
+		return tf.v.unconfirmed.ForEach(tx, func(h cipher.SHA256, ut UnconfirmedTransaction) error {
 			// Only transaction outputs need to be checked; if the address is associated
 			// with an input, it must have appeared in a transaction in the blockchain history
 			for _, o := range ut.Transaction.Out {

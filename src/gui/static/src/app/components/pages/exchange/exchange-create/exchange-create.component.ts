@@ -232,7 +232,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   /**
    * Validates the form and updates the vars with the validation errors.
    */
-  private validateForm() {
+  validateForm() {
     this.amountErrorMsg = '';
     this.addressErrorMsg = '';
     this.amountTooLow = false;

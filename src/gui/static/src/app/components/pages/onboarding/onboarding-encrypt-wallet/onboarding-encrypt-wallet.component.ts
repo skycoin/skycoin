@@ -65,7 +65,7 @@ export class OnboardingEncryptWalletComponent implements OnInit {
   /**
    * Validates the form and updates the vars with the validation errors.
    */
-  private validateForm() {
+  validateForm() {
     this.password1ErrorMsg = '';
     this.password2ErrorMsg = '';
 

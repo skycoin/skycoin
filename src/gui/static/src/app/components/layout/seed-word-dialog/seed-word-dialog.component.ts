@@ -141,7 +141,7 @@ export class SeedWordDialogComponent implements OnInit, OnDestroy {
   /**
    * Validates the form and updates the vars with the validation errors.
    */
-  private validateForm() {
+  validateForm() {
     this.inputErrorMsg = '';
 
     let valid = true;

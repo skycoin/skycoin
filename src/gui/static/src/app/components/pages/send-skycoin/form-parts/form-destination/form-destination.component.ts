@@ -622,7 +622,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   /**
    * Validates the form and updates the vars with the validation errors.
    */
-  private validateForm() {
+  validateForm() {
     this.singleAddressErrorMsg = '';
     this.resetErrorMsgsArray(this.addressErrorMsgs);
     this.resetErrorMsgsArray(this.coinsErrorMsgs);

@@ -148,7 +148,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
     this.changeDetector.detectChanges();
   }
 
-  private validateForm() {
+  validateForm() {
     this.password1ErrorMsg = '';
     this.password2ErrorMsg = '';
 

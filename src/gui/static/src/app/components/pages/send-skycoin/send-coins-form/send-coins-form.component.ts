@@ -333,7 +333,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   /**
    * Validates the form and updates the vars with the validation errors.
    */
-  private validateForm() {
+  validateForm() {
     this.changeAddressErrorMsg = '';
 
     let valid = true;

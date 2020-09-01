@@ -117,7 +117,7 @@ export class ResetPasswordComponent implements OnDestroy {
   /**
    * Validates the form and updates the vars with the validation errors.
    */
-  private validateForm() {
+  validateForm() {
     this.seedErrorMsg = '';
     this.passwordErrorMsg = '';
 

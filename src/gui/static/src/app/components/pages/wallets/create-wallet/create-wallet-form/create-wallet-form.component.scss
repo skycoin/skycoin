@@ -49,14 +49,6 @@ $lock-icon-size: $normal-icon-size;
   }
 }
 
-.seed-type-button.for-onboarding {
-  > div {
-    width: $lock-icon-size;
-    height: $lock-icon-size;
-    border: none;
-  }
-}
-
 .onboarding-version {
   border: $white-dashed-border;
   color: $white;

@@ -311,7 +311,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
   /**
    * Validates the form and updates the vars with the validation errors.
    */
-  private validateForm() {
+  validateForm() {
     this.labelErrorMsg = '';
     this.seed1ErrorMsg = '';
     this.seed2ErrorMsg = '';

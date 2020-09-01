@@ -39,30 +39,13 @@ $lock-icon-size: $normal-icon-size;
 }
 
 .seed-type-button {
-  width: 100%;
-  height: 10px;
   text-align: right;
+  position: relative;
+  top: 2px;
 
-  > div {
-    display: inline-block;
-    width: $lock-icon-size + ($dashed-border-size * 2);
-    height: $lock-icon-size + ($dashed-border-size * 2);
+  mat-icon {
     position: relative;
-    left: 16px;
-    top: -10px;
-    background-color: $white;
-    border-radius: 100px;
-    cursor: pointer;
-    border: $gray-dashed-border;
-
-    &:hover {
-      background-color: $white-hover;
-    }
-
-    > img {
-      width: $lock-icon-size;
-      height: $lock-icon-size;
-    }
+    top: 2px;
   }
 }
 
@@ -103,11 +86,13 @@ label[for=seed] {
       color: $black;
     }
   }
+}
 
-  .-white-text {
-    span {
-      color: $white !important;
-    }
+.-white-text {
+  color: $white !important;
+
+  span {
+    color: $white !important;
   }
 }
 
@@ -119,4 +104,27 @@ label[for=seed] {
     color: $grey;
     line-height: 1.5;
   }
+}
+
+.seed-spinner {
+  height: 0px;
+  position: relative;
+  top: 2px;
+  left: 2px;
+
+  mat-spinner {
+    position: absolute;
+    height: 10px !important;
+    width: 10px !important;
+
+    ::ng-deep svg {
+      height: 10px !important;
+      width: 10px !important;
+    }
+  }
+}
+
+.assisted-seed-spinner {
+  top: -14px !important;
+  left: -14px !important;
 }

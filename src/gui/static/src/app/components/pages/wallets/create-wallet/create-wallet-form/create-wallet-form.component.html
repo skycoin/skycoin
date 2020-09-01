@@ -28,25 +28,29 @@
 
     <ng-container *ngIf="enterSeedWithAssistance">
       <div class="dashed-border non-editable-field" [ngClass]="{'onboarding-version': onboarding, 'show-pointer': !create, 'element-disabled' : busy}" (click)="enterSeed()">
+        <div class="seed-spinner assisted-seed-spinner" *ngIf="checkingAssistedSeed"><mat-spinner></mat-spinner></div>
         <span class="normal-seed-field" *ngIf="create || lastAssistedSeed">{{ lastAssistedSeed }}</span>
         <div *ngIf="!create && lastAssistedSeed" [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.change-seed' | translate }}</div>
         <div *ngIf="!create && !lastAssistedSeed" class="text-with-icon-container">
           <mat-icon class="yellow-text">touch_app</mat-icon><span [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.enter-seed' | translate }}</span>
         </div>
       </div>
-      <div class="seed-type-button" [ngClass]="{'for-onboarding': onboarding, 'element-disabled' : busy}">
-        <div [ngClass]="{'dashed-border': !onboarding}" (click)="changeSeedType();">
-          <img src="assets/img/lock-gold.png" [matTooltip]="'wallet.new.seed.use-custom-seed-help' | translate">
-        </div>
+      <div [ngClass]="{'element-disabled' : busy}" class="seed-type-button">
+        <span class="link" [ngClass]="{'-white-text': onboarding}" (click)="changeSeedType()">
+          <mat-icon [inline]="true">edit</mat-icon>
+          {{ 'wallet.new.seed.use-custom' | translate }}
+        </span>
       </div>
     </ng-container>
 
     <ng-container *ngIf="!enterSeedWithAssistance">
+      <div class="seed-spinner" *ngIf="checkingCustomSeed"><mat-spinner></mat-spinner></div>
       <textarea formControlName="seed" id="seed" rows="2" [attr.disabled]="busy ? 'true' : null"></textarea>
-      <div class="seed-type-button" [ngClass]="{'for-onboarding': onboarding, 'element-disabled' : busy}">
-        <div [ngClass]="{'dashed-border': !onboarding}" (click)="changeSeedType();">
-          <img src="assets/img/unlock-grey.png" [matTooltip]="'wallet.new.seed.use-normal-seed-help' | translate">
-        </div>
+      <div [ngClass]="{'element-disabled' : busy}" class="seed-type-button">
+        <span class="link" [ngClass]="{'-white-text': onboarding}" (click)="changeSeedType()">
+          <mat-icon [inline]="true">format_list_numbered</mat-icon>
+          {{ 'wallet.new.seed.use-normal' | translate }}
+        </span>
       </div>
     </ng-container>
 
@@ -68,6 +72,7 @@
     </ng-container>
 
     <ng-container *ngIf="!enterSeedWithAssistance">
+      <div class="seed-spinner" *ngIf="checkingCustomSeed"><mat-spinner></mat-spinner></div>
       <textarea formControlName="confirm_seed" id="confirm_seed" rows="2" [attr.disabled]="busy ? 'true' : null"></textarea>
     </ng-container>
   </div>

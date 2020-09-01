@@ -67,7 +67,7 @@
         <div class="-key">{{ 'exchange.details.tx-id-label' | translate }}</div>
         <div class="-value">
           {{ order.toTx }}
-          <a [href]="appService.explorerUrl + '/transaction/' + order.toTx" class="-external" target="_blank" rel="noreferrer nofollow">
+          <a [href]="appService.explorerUrl + '/transaction/' + order.toTx" class="-external" target="_blank" rel="noreferrer nofollow noopener">
             <mat-icon class="image-button">launch</mat-icon>
           </a>
         </div>

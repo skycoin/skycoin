@@ -254,6 +254,9 @@
     "saving-note-error": "La transacción se envió correctamente, pero no fue posible guardar la nota.",
     "sent": "La transacción se envió correctamente.",
     "total-to-send": "Total:",
+    "sending-all-hours-with-coins-waning": "Al enviar todas las monedas, todas las horas de la billetera serán enviadas o quemadas. Si desea retener horas, no debe enviar todas las monedas. ¿Seguro que desea continuar?",
+    "sending-all-hours-waning": "Usted seleccionó enviar todas las horas. ¿Seguro que desea continuar?",
+    "high-hours-share-waning": "Su selección puede resultar en el envío de todas las horas de la billetera. ¿Seguro que desea continuar?",
 
     "bulk-send": {
       "title": "Envío Masivo",

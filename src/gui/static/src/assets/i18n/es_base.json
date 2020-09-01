@@ -254,6 +254,9 @@
     "saving-note-error": "The transaction was successfully sent, but it was not possible to save the note.",
     "sent": "Transaction successfully sent.",
     "total-to-send": "Total:",
+    "sending-all-hours-with-coins-waning": "By sending all the available coins, all the hours in the wallet will be sent or burn. If you want to retain hours, you must not send all the coins. Are you sure you want to continue?",
+    "sending-all-hours-waning": "You selected to send all the hours. Are you sure you want to continue?",
+    "high-hours-share-waning": "Your selection may result in sending all the hours in the wallet. Are you sure you want to continue?",
 
     "bulk-send": {
       "title": "Bulk Send",

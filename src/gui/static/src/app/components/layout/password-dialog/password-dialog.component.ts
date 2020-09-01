@@ -130,7 +130,7 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
    * Deactivates the UI and sends the password.
    */
   proceed() {
-    if (this.working) {
+    if (this.working || !this.form.valid) {
       return;
     }
 

@@ -27,16 +27,16 @@
   </div>
   <app-nav-bar></app-nav-bar>
   <mat-progress-bar
-    *ngIf="!synchronized"
+    *ngIf="!synchronized && synchronizationInfoObtained"
     color="primary"
-    [mode]="!synchronizationInfoObtained ? 'query' : 'determinate'"
+    [mode]="'determinate'"
     [value]="synchronizationPercentage * 100"></mat-progress-bar
   >
   <!-- Errors area. -->
   <div class="notification-bar" *ngIf="appService.updateAvailable">
     <div>
       {{ 'header.warnings.update-part1' | translate }}
-      <a [href]="walletDownloadUrl" target="_blank" rel="noreferrer nofollow">v{{ appService.lastestVersion }}</a>
+      <a [href]="walletDownloadUrl" target="_blank" rel="noreferrer nofollow noopener">v{{ appService.lastestVersion }}</a>
       {{ 'header.warnings.update-part3' | translate }}
     </div>
   </div>

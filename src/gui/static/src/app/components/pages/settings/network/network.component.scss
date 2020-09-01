@@ -12,10 +12,6 @@
 
   img {
     width: $normal-icon-size;
-
-    &.-incoming {
-      transform: scaleX(-1);
-    }
   }
 }
 

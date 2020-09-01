@@ -43,8 +43,8 @@
 
       <!-- Transaction balance. -->
       <div class="col-md-3 -tx-price">
-        <div class="-icon" [ngClass]="{ '-incoming': shouldShowIncomingIcon }">
-          <img src="/assets/img/send-blue.png">
+        <div class="-icon">
+          <img [src]="'assets/img/' + (shouldShowIncomingIcon ? 'received' : 'sent') + '-blue.png'">
         </div>
         <h4>{{ balanceToShow.toString() | amount }}</h4>
         <p *ngIf="price" [matTooltip]="!isPreview ? ('tx.current-rate-help' | translate) : ''">

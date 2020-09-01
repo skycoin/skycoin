@@ -70,10 +70,9 @@ export interface FormData {
   destinations: Destination[];
   hoursSelection: HoursDistributionOptions;
   /**
-   * If true, the hours must be distributed automatically. If false, the user must manually
-   * enter the hours for each destination.
+   * If true, the options for selecting the auto hours distribution factor are shown.
    */
-  autoOptions: boolean;
+  showAutoHourDistributionOptions: boolean;
   /**
    * All unspent outputs obtained from the node, not the selected ones.
    */
@@ -123,7 +122,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   // enter how many hours to send to each destination.
   autoHours = true;
   // If true, the options for selecting the auto hours distribution factor are shown.
-  autoOptions = false;
+  showAutoHourDistributionOptions = false;
   // Factor used for automatically distributing the coins.
   autoShareValue = this.defaultAutoShareValue;
   // If true, the form is shown deactivated.
@@ -277,10 +276,27 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     event.stopPropagation();
     event.preventDefault();
 
-    // Resets the hours distribution options.
-    this.autoShareValue = this.defaultAutoShareValue;
+    if (this.showAutoHourDistributionOptions && this.autoShareValue !== this.defaultAutoShareValue) {
+      // Ask for confirmation before closing the options and resetting the value.
+      const confirmationParams: ConfirmationParams = {
+        text: 'send.close-hours-share-factor-alert',
+        defaultButtons: DefaultConfirmationButtons.YesNo,
+      };
 
-    this.autoOptions = !this.autoOptions;
+      ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
+        if (confirmationResult) {
+          // Resets the hours distribution options.
+          this.autoShareValue = this.defaultAutoShareValue;
+
+          this.showAutoHourDistributionOptions = !this.showAutoHourDistributionOptions;
+        }
+      });
+    } else {
+      // Resets the hours distribution options.
+      this.autoShareValue = this.defaultAutoShareValue;
+
+      this.showAutoHourDistributionOptions = !this.showAutoHourDistributionOptions;
+    }
   }
 
   // Activates/deactivates the option for automatic hours distribution.
@@ -289,7 +305,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     this.formMultipleDestinations.updateValuesAndValidity();
 
     if (!this.autoHours) {
-      this.autoOptions = false;
+      this.showAutoHourDistributionOptions = false;
     }
   }
 
@@ -311,7 +327,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       this.autoHours = false;
     }
 
-    this.autoOptions = this.formData.form.autoOptions;
+    this.showAutoHourDistributionOptions = this.formData.form.showAutoHourDistributionOptions;
   }
 
   /**
@@ -526,7 +542,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
             changeAddress: this.form.get('changeAddress').value,
             destinations: destinations,
             hoursSelection: this.hoursSelection,
-            autoOptions: this.autoOptions,
+            showAutoHourDistributionOptions: this.showAutoHourDistributionOptions,
             allUnspentOutputs: this.formSourceSelection.unspentOutputsList,
             outputs: this.selectedSources.unspentOutputs,
             currency: this.formMultipleDestinations.currentlySelectedCurrency,
@@ -555,7 +571,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     this.form.get('changeAddress').setValue('');
     this.form.get('note').setValue('');
     this.autoHours = true;
-    this.autoOptions = false;
+    this.showAutoHourDistributionOptions = false;
     this.autoShareValue = this.defaultAutoShareValue;
   }
 

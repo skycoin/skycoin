@@ -16,8 +16,8 @@
       <div class="-body">
         <div class="-row" *ngFor="let peer of peers">
           <div class="-direction-cell -direction-container">
-            <img src="/assets/img/send-blue.png" [ngClass]="{ '-incoming': !peer.outgoing }"
-                 [matTooltip]="(peer.outgoing ? 'network.out-help' : 'network.in-help') | translate">
+            <img *ngIf="peer.outgoing" src="assets/img/sent-blue.png" [matTooltip]="'network.out-help' | translate">
+            <img *ngIf="!peer.outgoing" src="assets/img/received-blue.png" [matTooltip]="'network.in-help' | translate">
           </div>
           <div class="-address-cell break-all">
             {{ peer.address.split(':')[0] }}<span class="grey-text">:{{ peer.listenPort }}</span>

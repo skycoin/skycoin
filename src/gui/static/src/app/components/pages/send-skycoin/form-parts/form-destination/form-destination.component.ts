@@ -376,10 +376,12 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       }
 
       // Update the hour values.
-      stringValue = dest.get('hours').value;
-      value = this.getAmount(stringValue, false);
-      if (value) {
-        this.totalHours = this.totalHours.plus(value);
+      if (this.showHourFields) {
+        stringValue = dest.get('hours').value;
+        value = this.getAmount(stringValue, false);
+        if (value) {
+          this.totalHours = this.totalHours.plus(value);
+        }
       }
     });
 
@@ -727,7 +729,13 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     const value = new BigNumber(stringValue);
 
     // Check for basic validity.
-    if (!stringValue || value.isNaN() || value.isLessThanOrEqualTo(0)) {
+    if (!stringValue || value.isNaN()) {
+      return null;
+    }
+    if (checkingCoins && value.isLessThanOrEqualTo(0)) {
+      return null;
+    }
+    if (!checkingCoins && value.isLessThan(0)) {
       return null;
     }
 

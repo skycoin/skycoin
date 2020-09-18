@@ -1190,13 +1190,20 @@ func (_m *MockGatewayer) InjectTransaction(txn coin.Transaction) error {
 	return r0
 }
 
-// NewAddresses provides a mock function with given fields: wltID, password, n
-func (_m *MockGatewayer) NewAddresses(wltID string, password []byte, n uint64) ([]cipher.Address, error) {
-	ret := _m.Called(wltID, password, n)
+// NewAddresses provides a mock function with given fields: wltID, password, n, options
+func (_m *MockGatewayer) NewAddresses(wltID string, password []byte, n uint64, options ...wallet.Option) ([]cipher.Address, error) {
+	_va := make([]interface{}, len(options))
+	for _i := range options {
+		_va[_i] = options[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, wltID, password, n)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
 
 	var r0 []cipher.Address
-	if rf, ok := ret.Get(0).(func(string, []byte, uint64) []cipher.Address); ok {
-		r0 = rf(wltID, password, n)
+	if rf, ok := ret.Get(0).(func(string, []byte, uint64, ...wallet.Option) []cipher.Address); ok {
+		r0 = rf(wltID, password, n, options...)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]cipher.Address)
@@ -1204,8 +1211,8 @@ func (_m *MockGatewayer) NewAddresses(wltID string, password []byte, n uint64) (
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, []byte, uint64) error); ok {
-		r1 = rf(wltID, password, n)
+	if rf, ok := ret.Get(1).(func(string, []byte, uint64, ...wallet.Option) error); ok {
+		r1 = rf(wltID, password, n, options...)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1213,13 +1220,20 @@ func (_m *MockGatewayer) NewAddresses(wltID string, password []byte, n uint64) (
 	return r0, r1
 }
 
-// RecoverWallet provides a mock function with given fields: wltID, seed, seedPassphrase, password
-func (_m *MockGatewayer) RecoverWallet(wltID string, seed string, seedPassphrase string, password []byte) (wallet.Wallet, error) {
-	ret := _m.Called(wltID, seed, seedPassphrase, password)
+// RecoverWallet provides a mock function with given fields: wltID, seed, seedPassphrase, password, options
+func (_m *MockGatewayer) RecoverWallet(wltID string, seed string, seedPassphrase string, password []byte, options ...wallet.Option) (wallet.Wallet, error) {
+	_va := make([]interface{}, len(options))
+	for _i := range options {
+		_va[_i] = options[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, wltID, seed, seedPassphrase, password)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
 
 	var r0 wallet.Wallet
-	if rf, ok := ret.Get(0).(func(string, string, string, []byte) wallet.Wallet); ok {
-		r0 = rf(wltID, seed, seedPassphrase, password)
+	if rf, ok := ret.Get(0).(func(string, string, string, []byte, ...wallet.Option) wallet.Wallet); ok {
+		r0 = rf(wltID, seed, seedPassphrase, password, options...)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(wallet.Wallet)
@@ -1227,8 +1241,8 @@ func (_m *MockGatewayer) RecoverWallet(wltID string, seed string, seedPassphrase
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string, string, []byte) error); ok {
-		r1 = rf(wltID, seed, seedPassphrase, password)
+	if rf, ok := ret.Get(1).(func(string, string, string, []byte, ...wallet.Option) error); ok {
+		r1 = rf(wltID, seed, seedPassphrase, password, options...)
 	} else {
 		r1 = ret.Error(1)
 	}

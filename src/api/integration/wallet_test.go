@@ -694,6 +694,11 @@ func TestDecryptWallet(t *testing.T) {
 
 	for _, walletType := range createWalletTypes {
 		t.Run(walletType, func(t *testing.T) {
+			// xpub wallet does not support encryption/decryption
+			if walletType == wallet.WalletTypeXPub {
+				return
+			}
+
 			w, seed, clean := createWallet(t, c, api.CreateWalletOptions{
 				Type:     walletType,
 				Password: "pwd",
@@ -714,7 +719,6 @@ func TestDecryptWallet(t *testing.T) {
 			require.NoError(t, err)
 
 			// Confirms that no sensitive data are returned
-			require.Empty(t, dw.Meta.CryptoType)
 			require.False(t, dw.Meta.Encrypted)
 
 			// Loads wallet from file

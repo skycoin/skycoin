@@ -650,6 +650,10 @@ func TestEncryptWallet(t *testing.T) {
 
 			// Encrypts the wallet
 			rlt, err := c.EncryptWallet(w.Meta.Filename, "pwd")
+			if walletType == wallet.WalletTypeXPub {
+				require.EqualError(t, err, "500 Internal Server Error - xpub wallet does not support encryption")
+				return
+			}
 			require.NoError(t, err)
 			require.NotEmpty(t, rlt.Meta.CryptoType)
 			require.True(t, rlt.Meta.Encrypted)

@@ -3477,7 +3477,6 @@ func TestDecryptWallet(t *testing.T) {
 			setup: createEncryptedWallet,
 			checkWallet: func(t *testing.T, w wallet.Wallet) {
 				require.False(t, w.IsEncrypted())
-				require.Empty(t, w.CryptoType())
 				require.Empty(t, w.Secrets())
 				require.NotEmpty(t, w.Seed())
 				require.NotEmpty(t, w.LastSeed())

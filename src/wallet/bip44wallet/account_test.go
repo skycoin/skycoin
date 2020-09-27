@@ -51,7 +51,7 @@ func TestNewBip44Account(t *testing.T) {
 	tt := []struct {
 		name           string
 		accountName    string
-		index          int
+		index          int64
 		seed           string
 		seedPassphrase string
 		coinType       wallet.CoinType

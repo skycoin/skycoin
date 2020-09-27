@@ -862,18 +862,17 @@ func TestAddressGen(t *testing.T) {
 
 				entries, err := w.GetEntries()
 				require.NoError(t, err)
-				require.Len(t, len(entries), 2)
+				require.Equal(t, len(entries), 2)
 
 				// Confirms the addresses are bitcoin addresses that generated from the seed
 				seed := w.Seed()
 				_, keys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 2)
 				for i, key := range keys {
 					pk := cipher.MustPubKeyFromSecKey(key)
-					sk := cipher.BitcoinWalletImportFormatFromSeckey(key)
 					address := cipher.BitcoinAddressFromPubKey(pk)
-					require.Equal(t, address.String(), entries[i].Address)
-					require.Equal(t, pk.Hex(), entries[i].Public)
-					require.Equal(t, sk, entries[i].Secret)
+					require.Equal(t, address.String(), entries[i].Address.String())
+					require.Equal(t, pk.Hex(), entries[i].Public.Hex())
+					require.Equal(t, key, entries[i].Secret)
 				}
 			},
 		},

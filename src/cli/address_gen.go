@@ -126,7 +126,12 @@ func addressGenCmd() *cobra.Command {
 				}
 
 				for _, e := range es {
-					fmt.Println(e.Secret.Hex())
+					switch coinType {
+					case wallet.CoinTypeSkycoin:
+						fmt.Println(e.Secret.Hex())
+					case wallet.CoinTypeBitcoin:
+						fmt.Println(cipher.BitcoinWalletImportFormatFromSeckey(e.Secret))
+					}
 				}
 			default:
 				return errors.New("invalid mode")

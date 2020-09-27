@@ -85,6 +85,8 @@ var (
 	ErrWalletNameConflict = NewError(errors.New("wallet name would conflict with existing wallet, renaming"))
 	// ErrWalletRecoverSeedWrong is returned if the seed or seed passphrase does not match the specified wallet when recovering
 	ErrWalletRecoverSeedWrong = NewError(errors.New("wallet recovery seed or seed passphrase is wrong"))
+	// ErrWalletSeedPassphrase is returned when using seed passphrase for none bip44 wallet
+	ErrWalletSeedPassphrase = NewError(errors.New("seedPassphrase is only used for \"bip44\" wallets"))
 	// ErrNilTransactionsFinder is returned if Options.ScanN > 0 but a nil TransactionsFinder was provided
 	ErrNilTransactionsFinder = NewError(errors.New("scan ahead requested but balance getter is nil"))
 	// ErrInvalidCoinType is returned for invalid coin types
@@ -154,6 +156,13 @@ type Options struct {
 	XPub           string            // xpub key (xpub wallets only)
 	Decoder        Decoder
 	TF             TransactionsFinder
+}
+
+func (opts Options) Validate() error {
+	if opts.Type == WalletTypeDeterministic && opts.SeedPassphrase != "" {
+		return ErrWalletSeedPassphrase
+	}
+	return nil
 }
 
 //go:generate mockery -name Wallet -case underscore -inpkg -testonly
@@ -248,6 +257,10 @@ type Decoder interface {
 
 // NewWallet creates a new wallet
 func NewWallet(filename, label, seed string, options Options) (Wallet, error) {
+	if err := options.Validate(); err != nil {
+		return nil, err
+	}
+
 	c, ok := getCreator(options.Type)
 	if !ok {
 		return nil, fmt.Errorf("wallet.NewWallet failed, wallet type %q is not supported", options.Type)

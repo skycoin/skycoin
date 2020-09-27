@@ -203,6 +203,10 @@ func (serv *Service) CreateWallet(wltName string, options Options) (Wallet, erro
 }
 
 func (serv *Service) createWallet(wltName string, options Options) (Wallet, error) {
+	if err := options.Validate(); err != nil {
+		return nil, err
+	}
+
 	creator, ok := getCreator(options.Type)
 	if !ok {
 		return nil, ErrInvalidWalletType
@@ -778,7 +782,7 @@ func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string, passwor
 	}
 
 	switch w.Type() {
-	case WalletTypeDeterministic, WalletTypeBip44:
+	case WalletTypeBip44, WalletTypeDeterministic:
 	default:
 		return nil, ErrWalletTypeNotRecoverable
 	}

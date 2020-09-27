@@ -512,11 +512,7 @@ type Creator struct{}
 
 // Create creates a deterministic wallet
 func (c Creator) Create(filename, label, seed string, options wallet.Options) (wallet.Wallet, error) {
-	return NewWallet(
-		filename,
-		label,
-		seed,
-		convertOptions(options)...)
+	return NewWallet(filename, label, seed, convertOptions(options)...)
 }
 
 func convertOptions(options wallet.Options) []wallet.Option {

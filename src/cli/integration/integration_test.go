@@ -252,6 +252,17 @@ func createTempWallet(t *testing.T, filename string, encrypt bool) (string, func
 	}
 }
 
+type readableDeterministicEntry struct {
+	Address string `json:"address"`
+	Public  string `json:"public_key"`
+	Secret  string `json:"secret_key"`
+}
+
+type readableDeterministicWallet struct {
+	Meta    wallet.Meta                  `json:"meta"`
+	Entries []readableDeterministicEntry `json:"entries"`
+}
+
 // createTempWalletDir creates a temporary wallet dir,
 // Returns wallet dir path and callback function to clean up the dir.
 func createTempWalletDir(t *testing.T) (string, func()) {
@@ -537,8 +548,8 @@ func TestWalletAddAddresses(t *testing.T) {
 				// wipe secrets as it's not stable
 				expect.Erase()
 				w.Erase()
-				//expect.Meta["secrets"] = ""
-				//w.Meta["secrets"] = ""
+				expect.(*deterministic.Wallet).Meta["secrets"] = ""
+				w.(*deterministic.Wallet).Meta["secrets"] = ""
 			}
 			require.Equal(t, expect, w)
 		})
@@ -736,9 +747,9 @@ func TestAddressGen(t *testing.T) {
 				for i, key := range keys {
 					pk := cipher.MustPubKeyFromSecKey(key)
 					addr := cipher.MustAddressFromSecKey(key)
-					require.Equal(t, addr.String(), entries[i].Address)
-					require.Equal(t, pk.Hex(), entries[i].Public)
-					require.Equal(t, key.Hex(), entries[i].Secret)
+					require.Equal(t, addr.String(), entries[i].Address.String())
+					require.Equal(t, pk.Hex(), entries[i].Public.Hex())
+					require.Equal(t, key.Hex(), entries[i].Secret.Hex())
 				}
 			},
 		},
@@ -770,9 +781,9 @@ func TestAddressGen(t *testing.T) {
 				for i, key := range keys {
 					pk := cipher.MustPubKeyFromSecKey(key)
 					addr := cipher.MustAddressFromSecKey(key)
-					require.Equal(t, addr.String(), entries[i].Address)
-					require.Equal(t, pk.Hex(), entries[i].Public)
-					require.Equal(t, key.Hex(), entries[i].Secret)
+					require.Equal(t, addr.String(), entries[i].Address.String())
+					require.Equal(t, pk.Hex(), entries[i].Public.Hex())
+					require.Equal(t, key.Hex(), entries[i].Secret.Hex())
 				}
 			},
 		},
@@ -780,19 +791,16 @@ func TestAddressGen(t *testing.T) {
 			name: "addressGen  --mode=wallet --hide-secrets -n 2",
 			args: []string{"addressGen", "--mode=wallet", "--hide-secrets", "-n", "2"},
 			check: func(t *testing.T, v []byte) {
-				//var w wallet.ReadableDeterministicWallet
-				//err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
-				//require.NoError(t, err)
-				w := loadDeterministicWalletFromBytes(t, v)
+				var w readableDeterministicWallet
+				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
+				require.NoError(t, err)
 
 				// Confirms the wallet type is skycoin
-				require.Equal(t, wallet.CoinTypeSkycoin, w.Coin())
+				require.Equal(t, wallet.CoinTypeSkycoin, wallet.CoinType(w.Meta["coin"]))
 
 				// Confirms the secrets in Entries are hidden
-				entries, err := w.GetEntries()
-				require.NoError(t, err)
-				require.Len(t, len(entries), 2)
-				for _, e := range entries {
+				require.Len(t, w.Entries, 2)
+				for _, e := range w.Entries {
 					require.Equal(t, e.Secret, "")
 				}
 			},
@@ -801,20 +809,16 @@ func TestAddressGen(t *testing.T) {
 			name: "addressGen -m=wallet -i -n 2",
 			args: []string{"addressGen", "-m=wallet", "-i", "-n", "2"},
 			check: func(t *testing.T, v []byte) {
-				//var w wallet.ReadableDeterministicWallet
-				//err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
-				//require.NoError(t, err)
-				w := loadDeterministicWalletFromBytes(t, v)
+				var w readableDeterministicWallet
+				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
+				require.NoError(t, err)
 
 				// Confirms the wallet type is skycoin
 				require.Equal(t, wallet.CoinTypeSkycoin, wallet.CoinType(w.Meta["coin"]))
 
 				// Confirms the secrets in Entries are hidden
-				entries, err := w.GetEntries()
-				require.NoError(t, err)
-
-				require.Len(t, len(entries), 2)
-				for _, e := range entries {
+				require.Len(t, w.Entries, 2)
+				for _, e := range w.Entries {
 					require.Equal(t, e.Secret, "")
 				}
 			},
@@ -840,11 +844,10 @@ func TestAddressGen(t *testing.T) {
 				_, keys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 2)
 				for i, key := range keys {
 					pk := cipher.MustPubKeyFromSecKey(key)
-					sk := cipher.BitcoinWalletImportFormatFromSeckey(key)
 					address := cipher.BitcoinAddressFromPubKey(pk)
-					require.Equal(t, address.String(), entries[i].Address)
-					require.Equal(t, pk.Hex(), entries[i].Public)
-					require.Equal(t, sk, entries[i].Secret)
+					require.Equal(t, address.String(), entries[i].Address.String())
+					require.Equal(t, pk.Hex(), entries[i].Public.Hex())
+					require.Equal(t, key, entries[i].Secret)
 				}
 			},
 		},
@@ -932,9 +935,9 @@ func TestAddressGen(t *testing.T) {
 				entries, err := w.GetEntries()
 				require.NoError(t, err)
 				require.Len(t, entries, 1)
-				require.Equal(t, addr.String(), entries[0].Address)
-				require.Equal(t, pk.Hex(), entries[0].Public)
-				require.Equal(t, sk.Hex(), entries[0].Secret)
+				require.Equal(t, addr.String(), entries[0].Address.String())
+				require.Equal(t, pk.Hex(), entries[0].Public.Hex())
+				require.Equal(t, sk.Hex(), entries[0].Secret.Hex())
 			},
 		},
 		{
@@ -951,9 +954,9 @@ func TestAddressGen(t *testing.T) {
 				entries, err := w.GetEntries()
 				require.NoError(t, err)
 				require.Len(t, entries, 1)
-				require.Equal(t, addr.String(), entries[0].Address)
-				require.Equal(t, pk.Hex(), entries[0].Public)
-				require.Equal(t, sk.Hex(), entries[0].Secret)
+				require.Equal(t, addr.String(), entries[0].Address.String())
+				require.Equal(t, pk.Hex(), entries[0].Public.Hex())
+				require.Equal(t, sk.Hex(), entries[0].Secret.Hex())
 			},
 		},
 		{

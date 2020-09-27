@@ -3075,12 +3075,12 @@ func TestStableWalletCreate(t *testing.T) {
 				// get external entries length
 				extLen, err := w.EntriesLen()
 				require.NoError(t, err)
-				require.Len(t, extLen, 5)
+				require.Equal(t, extLen, 5)
 
 				// get change entries length
 				chgLen, err := w.EntriesLen(wallet.OptionChange(true))
 				require.NoError(t, err)
-				require.Len(t, chgLen, 1)
+				require.Equal(t, chgLen, 1)
 			},
 		},
 		{
@@ -3094,7 +3094,7 @@ func TestStableWalletCreate(t *testing.T) {
 				// Confirms wallet has 5 address entries
 				l, err := w.EntriesLen()
 				require.NoError(t, err)
-				require.Len(t, l, 5)
+				require.Equal(t, l, 5)
 			},
 		},
 		{

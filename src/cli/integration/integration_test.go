@@ -533,28 +533,19 @@ func TestWalletAddAddresses(t *testing.T) {
 			require.Equal(t, tc.expectOutput, output)
 
 			require.NoError(t, err)
-
-			//w := collection.Wallet{}
-			//w.Deserialize()
-			w, err := wallet.Load(walletFile)
-			require.NoError(t, err)
-			//var w wallet.ReadableCollectionWallet
-			//loadJSON(t, walletFile, &w)
+			var w readableDeterministicWallet
+			loadJSON(t, walletFile, &w)
 
 			// Use loadJSON instead of loadGoldenFile because this golden file
 			// should not use the *update flag
 			goldenFile := filepath.Join(testFixturesDir, tc.goldenFile)
-			//var expect wallet.ReadableCollectionWallet
-			//loadJSON(t, goldenFile, &expect)
-			expect, err := wallet.Load(goldenFile)
-			require.NoError(t, err)
+			var expect readableDeterministicWallet
+			loadJSON(t, goldenFile, &expect)
 
 			if tc.encrypted {
 				// wipe secrets as it's not stable
-				expect.Erase()
-				w.Erase()
-				expect.(*deterministic.Wallet).Meta["secrets"] = ""
-				w.(*deterministic.Wallet).Meta["secrets"] = ""
+				expect.Meta["secrets"] = ""
+				w.Meta["secrets"] = ""
 			}
 			require.Equal(t, expect, w)
 		})

@@ -38,6 +38,11 @@ import (
 	"github.com/SkycoinProject/skycoin/src/wallet"
 	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
 	"github.com/SkycoinProject/skycoin/src/wallet/deterministic"
+
+	// register wallets
+	_ "github.com/SkycoinProject/skycoin/src/wallet/bip44wallet"
+	_ "github.com/SkycoinProject/skycoin/src/wallet/collection"
+	_ "github.com/SkycoinProject/skycoin/src/wallet/xpubwallet"
 )
 
 const (

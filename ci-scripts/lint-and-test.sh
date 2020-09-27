@@ -10,7 +10,6 @@ if [[ ${TEST_SUIT} == "units" ]]; then
     make install-linters
     make lint
     make lint-ui
-    make test-386
     make test-amd64
     make test-ui
 elif [[ ${TEST_SUIT} == "integrations" ]]; then

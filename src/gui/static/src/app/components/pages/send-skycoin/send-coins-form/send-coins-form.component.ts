@@ -347,7 +347,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     this.closeSyncCheckSubscription();
     this.syncCheckSubscription = this.blockchainService.progress.pipe(first()).subscribe(response => {
       if (response.synchronized) {
-        this.prepareTransaction(creatingPreviewTx);
+        this.checkHoursBeforeCreatingTx(creatingPreviewTx);
       } else {
         const confirmationParams: ConfirmationParams = {
           text: 'send.synchronizing-warning',
@@ -356,11 +356,56 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
 
         ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
           if (confirmationResult) {
-            this.prepareTransaction(creatingPreviewTx);
+            this.checkHoursBeforeCreatingTx(creatingPreviewTx);
           }
         });
       }
     });
+  }
+
+  // Checks if the user is going to send or burn all the hours. If true, it asks for
+  // confirmation before continuing. It does nothing if the form is not valid or busy.
+  private checkHoursBeforeCreatingTx(creatingPreviewTx: boolean) {
+    if (!this.form.valid || this.previewButton.isLoading() || this.sendButton.isLoading()) {
+      return;
+    }
+
+    // Check how many hours the user manually selected to send.
+    let coinsToSend = new BigNumber(0);
+    let hoursToSend = new BigNumber(0);
+    this.formMultipleDestinations.getDestinations(true).forEach(destination => {
+      coinsToSend = coinsToSend.plus(destination.coins);
+      if (!this.autoHours) {
+        hoursToSend = hoursToSend.plus(destination.hours);
+      }
+    });
+
+    // Check if all hours are going to be sent due to the values entered by the user or the
+    // value entered with the share slider.
+    if (
+      coinsToSend.isEqualTo(this.availableBalance.availableCoins) ||
+      hoursToSend.isEqualTo(this.availableBalance.availableHours) ||
+      Number(this.autoShareValue) === 1
+    ) {
+      // Ask for confirmation.
+      const confirmationParams: ConfirmationParams = {
+        headerText: 'common.warning-title',
+        redTitle: true,
+        text: coinsToSend.isEqualTo(this.availableBalance.availableCoins) ?
+          'send.sending-all-hours-with-coins-waning' :
+          (hoursToSend.isEqualTo(this.availableBalance.availableHours) ? 'send.sending-all-hours-waning' : 'send.high-hours-share-waning'),
+        defaultButtons: DefaultConfirmationButtons.YesNo,
+      };
+
+      ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
+        if (confirmationResult) {
+          this.prepareTransaction(creatingPreviewTx);
+        }
+      });
+    } else {
+      // Continue normally.
+      this.prepareTransaction(creatingPreviewTx);
+    }
   }
 
   // Makes the preparation steps, like asking for the password, and then calls the function

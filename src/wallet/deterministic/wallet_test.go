@@ -192,7 +192,7 @@ func TestNewWallet(t *testing.T) {
 		// test all supported crypto types
 		for _, ct := range crypto.TypesInsecure() {
 			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
-			opts := useInsecureCrypto(tc.opts, ct)
+			opts := append(tc.opts, wallet.OptionCryptoType(ct))
 			t.Run(name, func(t *testing.T) {
 				w, err := NewWallet(tc.wltName, tc.label, tc.seed, opts...)
 				require.Equal(t, tc.expect.err, err)
@@ -256,7 +256,7 @@ func TestWalletLock(t *testing.T) {
 	for _, tc := range tt {
 		for _, ct := range crypto.TypesInsecure() {
 			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
-			opts := useInsecureCrypto(tc.opts, ct)
+			opts := append(tc.opts, wallet.OptionCryptoType(ct))
 
 			t.Run(name, func(t *testing.T) {
 				wltName := wallet.NewWalletFilename()
@@ -339,7 +339,7 @@ func TestWalletUnlock(t *testing.T) {
 		for _, ct := range crypto.TypesInsecure() {
 			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
 
-			opts := useInsecureCrypto(tc.opts, ct)
+			opts := append(tc.opts, wallet.OptionCryptoType(ct))
 
 			t.Run(name, func(t *testing.T) {
 				w, err := NewWallet("test.wlt", "test", "testseed123", opts...)
@@ -466,7 +466,7 @@ func TestWalletGenerateAddress(t *testing.T) {
 	for _, tc := range tt {
 		for _, ct := range crypto.TypesInsecure() {
 			name := fmt.Sprintf("crypto=%v %v", ct, tc.name)
-			opts := useInsecureCrypto(tc.opts, ct)
+			opts := append(tc.opts, wallet.OptionCryptoType(ct))
 			t.Run(name, func(t *testing.T) {
 				// create wallet
 				w, err := NewWallet("test.wlt", "test", tc.seed, opts...)
@@ -555,19 +555,6 @@ func TestWalletGetEntry(t *testing.T) {
 			require.Equal(t, tc.address, e.Address.String())
 		})
 	}
-}
-
-func useInsecureCrypto(opts []wallet.Option, ct crypto.CryptoType) []wallet.Option {
-	mOpts := &wallet.AdvancedOptions{}
-	for _, opt := range opts {
-		opt(mOpts)
-	}
-
-	if mOpts.Encrypt {
-		// append the insecure crypto type
-		opts = append(opts, wallet.OptionCryptoType(ct))
-	}
-	return opts
 }
 
 func checkNoSensitiveData(t *testing.T, w wallet.Wallet) {

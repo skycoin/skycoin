@@ -80,7 +80,7 @@ func Types() []CryptoType {
 // would be used in testing to speed up the tests.
 func TypesInsecure() []CryptoType {
 	return []CryptoType{
-		//CryptoTypeSha256Xor,
+		CryptoTypeSha256Xor,
 		CryptoTypeScryptChacha20poly1305Insecure,
 	}
 }

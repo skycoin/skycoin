@@ -14,22 +14,29 @@
     <app-loading-content
       [isLoading]="false"
       noDataText="backup.no-wallets"
-      *ngIf="onlyEncrypted.length === 0"
+      *ngIf="wallets.length === 0"
     ></app-loading-content>
 
     <!-- Wallet list. -->
-    <div class="-table" *ngIf="onlyEncrypted.length > 0">
+    <div class="-table" *ngIf="wallets.length > 0">
       <div class="-headers">
         <div class="-width-250">{{ 'backup.wallet-table-label' | translate }}</div>
         <div class="-width-150">{{ 'backup.filename-table-label' | translate }}</div>
         <div class="-flex-fill"></div>
       </div>
       <div class="-body">
-        <div class="-row" *ngFor="let wallet of onlyEncrypted">
+        <div class="-row" *ngFor="let wallet of wallets">
           <div class="-width-250 text-truncate" [attr.title]="wallet.label">{{ wallet.label }}</div>
           <div class="-width-150">{{ wallet.id }}</div>
+          <!-- Buttons. -->
           <div class="-flex-fill text-right">
-            <span class="link" (click)="showSeed(wallet)">{{ 'backup.show-seed-button' | translate }}</span>
+            <div class="link address-link" (click)="saveAddresses(wallet)">{{ 'backup.save-addresses-button' | translate }}</div>
+            <div class="link" (click)="showSeed(wallet)" *ngIf="wallet.encrypted && !wallet.isHardware">{{ 'backup.show-seed-button' | translate }}</div>
+            <div *ngIf="!wallet.encrypted || wallet.isHardware">
+              <mat-icon *ngIf="!wallet.encrypted && !wallet.isHardware" class="help-icon" [matTooltip]="'backup.unencrypted-info' | translate">help</mat-icon>
+              <mat-icon *ngIf="wallet.isHardware" class="help-icon" [matTooltip]="'backup.hw-wallet-info' | translate">help</mat-icon>
+              {{ 'backup.show-seed-button' | translate }}
+            </div>
           </div>
         </div>
       </div>

@@ -356,8 +356,12 @@
     "desc": "Use la tabla de más abajo para obtener las semillas de sus billeteras encriptadas. <br>Para obtener las semillas de las billeteras no encriptadas, abra el directorio de más arriba, abra los archivos .wlt en un editor de texto y recupere las semillas.",
     "wallet-table-label": "Nombre de la billetera",
     "filename-table-label": "Archivo",
+    "save-addresses-button": "Guardar Direcciones",
     "show-seed-button": "Mostrar semilla",
-    "no-wallets": "No hay billeteras encriptadas",
+    "no-wallets": "No hay billeteras",
+    "unencrypted-info": "Por razones de seguridad, no es posible mostrar las semillas de las billeteras sin encriptar. Para obtener la semilla, por favor encripte la billetera con una contraseña o siga las instrucciones en la parte superior de esta página.",
+    "hw-wallet-info": "Para obtener la semilla de una Skywallet, por favor use la opción \"Skywallet\" de la parte inferior de la página de billeteras.",
+    "not-compatible-error": "Su navegador web no es compatible con esta función.",
 
     "seed-modal-window": {
       "title": "Semilla de la Billetera",

@@ -259,6 +259,23 @@
     "sending-all-hours-waning": "You selected to send all the hours. Are you sure you want to continue?",
     "high-hours-share-waning": "Your selection may result in sending all the hours in the wallet. Are you sure you want to continue?",
 
+    "known-node-errors": {
+      "null-change-address-error": "The null address can't be used as the custom change address. Please enter a valid address.",
+      "to-required-error": "You must provide a destination address for sending coins. Please enter a valid address.",
+      "zero-coins-error": "It's not possible to send zero coins. Please enter a valid amount.",
+      "null-destination-error": "The null address can't be used as destination. Please enter a valid address.",
+      "duplicate-destination-error": "There are duplicate destinations. Please do not repeat the same address and amount in more than one destination.",
+      "hours-in-automatic-mode-error": "Specific hour amounts can't be specified while using automatic hour distribution. Please try with different values and contact support if the problem is not solved.",
+      "hours-allocation-mode-needed-error": "The hour allocation mode is required. Please try with different values and contact support if the problem is not solved.",
+      "invalid-hours-allocation-mode-error": "Invalid hour allocation mode. Please try with different values and contact support if the problem is not solved.",
+      "hours-allocation-mode-not-needed-error": "The hour allocation mode can't be specified while using manual hour distribution. Please try with different values and contact support if the problem is not solved.",
+      "invalid-hours-mode-error": "Invalid hour distribution method. Please try with different values and contact support if the problem is not solved.",
+      "share-factor-needed-error": "The hours share factor is needed. Please try with different values and contact support if the problem is not solved.",
+      "share-factor-not-needed-error": "The hours share factor can't be specified while using manual hour distribution. Please try with different values and contact support if the problem is not solved.",
+      "invalid-share-factor-error": "Invalid share factor. Please try with different values and contact support if the problem is not solved.",
+      "change-equal-to-destination-error": "The transaction can't be created because a repeated amount of coins would be returned to the same destination address. Please try again with different values."
+    },
+
     "bulk-send": {
       "title": "Bulk Send",
       "indications": "To send to multiple destinations in a quick way, type each address, coin amount and hour amount (optional) on a line, separated by a comma. Example: if you want to send 10 coins and 5 hours to the \"xyz\" address, type \"xyz,10,5\"; if you want the hours to be calculated automatically, type \"xyz,10\". Decimal values must be separated with a dot.",

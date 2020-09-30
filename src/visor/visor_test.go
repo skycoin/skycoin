@@ -33,6 +33,10 @@ const (
 	blockchainPubkeyStr = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
 )
 
+func TestMain(m *testing.M) {
+	params.UserVerifyTxn.BurnFactor = 10
+}
+
 func prepareDB(t *testing.T) (*dbutil.DB, func()) {
 	db, shutdown := testutil.PrepareDB(t)
 

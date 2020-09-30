@@ -22,6 +22,10 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 )
 
+func TestMain(m *testing.M) {
+	params.UserVerifyTxn.BurnFactor = 10
+}
+
 func TestHealthHandler(t *testing.T) {
 	cases := []struct {
 		name                     string

@@ -1693,6 +1693,8 @@ func TestStableStatus(t *testing.T) {
 	var expect cli.StatusResult
 	td := TestData{ret, &expect}
 	loadGoldenFile(t, goldenFile, td)
+	fmt.Println("expect.burnFactor", expect.Status.UserVerifyTxn.BurnFactor)
+	fmt.Println("expect.burnFactor", expect.Status.UnconfirmedVerifyTxn.BurnFactor)
 
 	// The RPC port is not always the same between runs of the stable integration tests,
 	// so use the RPC_ADDR envvar instead of the golden file value for comparison

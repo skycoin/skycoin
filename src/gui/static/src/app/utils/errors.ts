@@ -13,6 +13,12 @@ export function processErrorMsg(msg: string): string {
     return msg;
   }
 
+  // Check if the string is from a known error. If it is, use the correct error string.
+  const knownErrorMsg = checkIfKnownErrorStrings(msg);
+  if (knownErrorMsg) {
+    return knownErrorMsg;
+  }
+
   // Some times an error message could be in fact a JSON string. In those cases, the real
   // error msg is inside the "error.message" property.
   if (msg.indexOf('"error":') !== -1) {
@@ -141,4 +147,52 @@ export function getErrorMsg(error: any): string {
  */
 export function redirectToErrorPage(errorCode: number) {
   window.location.assign('assets/error-alert/index.html?' + errorCode);
+}
+
+/**
+ * Checks if a string contains a known error msg.
+ * @param errorString String to check.
+ * @returns If the string is known, the translatable var for showing the error in the UI. If
+ * not, null is returned.
+ */
+function checkIfKnownErrorStrings(errorString: string): string {
+  errorString = errorString.toUpperCase();
+
+  let translatableVar: string = null;
+
+  if (errorString.includes('CHANGEADDRESS MUST NOT BE THE NULL ADDRESS')) {
+    translatableVar = 'null-change-address-error';
+  } else if (errorString.includes('TO IS REQUIRED')) {
+    translatableVar = 'to-required-error';
+  } else if (errorString.includes('TO.COINS MUST NOT BE ZERO')) {
+    translatableVar = 'zero-coins-error';
+  } else if (errorString.includes('TO.ADDRESS MUST NOT BE THE NULL ADDRESS')) {
+    translatableVar = 'null-destination-error';
+  } else if (errorString.includes('TO CONTAINS DUPLICATE VALUES')) {
+    translatableVar = 'duplicate-destination-error';
+  } else if (errorString.includes('TO.HOURS MUST BE ZERO FOR AUTO TYPE HOURS SELECTION')) {
+    translatableVar = 'hours-in-automatic-mode-error';
+  } else if (errorString.includes('HOURSSELECTION.MODE IS REQUIRED FOR AUTO TYPE HOURS SELECTION')) {
+    translatableVar = 'hours-allocation-mode-needed-error';
+  } else if (errorString.includes('INVALID HOURSSELECTION.MODE')) {
+    translatableVar = 'invalid-hours-allocation-mode-error';
+  } else if (errorString.includes('HOURSSELECTION.MODE CANNOT BE USED FOR MANUAL TYPE HOURS SELECTION')) {
+    translatableVar = 'hours-allocation-mode-not-needed-error';
+  } else if (errorString.includes('INVALID HOURSSELECTION.TYPE')) {
+    translatableVar = 'invalid-hours-mode-error';
+  } else if (errorString.includes('HOURSSELECTION.SHAREFACTOR MUST BE SET FOR SHARE MODE')) {
+    translatableVar = 'share-factor-needed-error';
+  } else if (errorString.includes('HOURSSELECTION.SHAREFACTOR CAN ONLY BE USED FOR SHARE MODE')) {
+    translatableVar = 'share-factor-not-needed-error';
+  } else if (errorString.includes('HOURSSELECTION.SHAREFACTOR MUST BE >= 0 AND <= 1')) {
+    translatableVar = 'invalid-share-factor-error';
+  } else if (errorString.includes('TRANSACTION VIOLATES HARD CONSTRAINT: DUPLICATE OUTPUT IN TRANSACTION')) {
+    translatableVar = 'change-equal-to-destination-error';
+  }
+
+  if (translatableVar) {
+    return 'send.known-node-errors.' + translatableVar;
+  }
+
+  return null;
 }

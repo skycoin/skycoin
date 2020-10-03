@@ -265,6 +265,23 @@
     "sending-all-hours-waning": "Usted seleccionó enviar todas las horas. ¿Seguro que desea continuar?",
     "high-hours-share-waning": "Su selección puede resultar en el envío de todas las horas de la billetera. ¿Seguro que desea continuar?",
 
+    "known-node-errors": {
+      "null-change-address-error": "La dirección nula no se puede utilizar como dirección de retorno personalizada. Por favor introduzca una dirección válida.",
+      "to-required-error": "Debe proporcionar una dirección de destino para enviar monedas. Por favor introduzca una dirección válida.",
+      "zero-coins-error": "No es posible enviar cero monedas. Por favor introduzca una cantidad válida.",
+      "null-destination-error": "La dirección nula no se puede utilizar como dirección de destino. Por favor introduzca una dirección válida.",
+      "duplicate-destination-error": "Hay destinos duplicados. Por favor no repita la misma dirección y cantidad en más de un destino.",
+      "hours-in-automatic-mode-error": "No se pueden especificar cantidades de horas mientras se usa la distribución automática de horas. Por favor pruebe con valores diferentes y póngase en contacto con el servicio de soporte si el problema no se resuelve.",
+      "hours-allocation-mode-needed-error": "Se requiere el modo de asignación de horas. Por favor pruebe con valores diferentes y póngase en contacto con el servicio de soporte si el problema no se resuelve.",
+      "invalid-hours-allocation-mode-error": "Modo de asignación de horas no válido. Por favor pruebe con valores diferentes y póngase en contacto con el servicio de soporte si el problema no se resuelve.",
+      "hours-allocation-mode-not-needed-error": "El modo de asignación de horas no se puede especificar mientras se usa la distribución de horas manual. Por favor pruebe con valores diferentes y póngase en contacto con el servicio de soporte si el problema no se resuelve.",
+      "invalid-hours-mode-error": "Método de distribución de horas no válido. Por favor pruebe con valores diferentes y póngase en contacto con el servicio de soporte si el problema no se resuelve.",
+      "share-factor-needed-error": "Se necesita el factor de distribución de horas. Por favor pruebe con valores diferentes y póngase en contacto con el servicio de soporte si el problema no se resuelve.",
+      "share-factor-not-needed-error": "El factor de distribución de horas no puede ser especificado mientras se usa la distribución de horas manual. Por favor pruebe con valores diferentes y póngase en contacto con el servicio de soporte si el problema no se resuelve.",
+      "invalid-share-factor-error": "Factor de distribución de horas inv+alido. Por favor pruebe con valores diferentes y póngase en contacto con el servicio de soporte si el problema no se resuelve.",
+      "change-equal-to-destination-error": "No es posible crear la transacción debido a que se regresaría una cantidad repetida de monedas a la misma dirección de destino. Por favor inténtelo nuevamente con valores diferentes."
+    },
+
     "bulk-send": {
       "title": "Envío Masivo",
       "indications": "Para enviar a múltiples destinos de forma rápida, escriba cada dirección, cantidad de monedas y cantidad de horas (opcional) en una línea, separadas por una coma. Ejemplo: si desea enviar 10 monedas y 5 horas a la dirección \"xyz\", escriba \"xyz,10,5\"; si desea que las horas se calculen automáticamente, escriba \"xyz,10\". Los valores decimales se deben separar con un punto.",

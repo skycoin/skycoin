@@ -5,13 +5,25 @@
       {{ 'send.addresses-label' | translate }}
       <mat-icon class="help-icon" [matTooltip]="'send.addresses-manual-help' | translate">help</mat-icon>
     </label>
-    <input formControlName="manualAddresses" id="manualAddresses" [attr.disabled]="busy ? 'true' : null">
+    <input
+      formControlName="manualAddresses"
+      id="manualAddresses"
+      [attr.disabled]="busy ? 'true' : null"
+      [appFormFieldError]="manualAddressesErrorMsg"
+      (blur)="validateForm()"
+    >
   </div>
   <!-- Wallet. -->
   <div *ngIf="selectionMode !== sourceSelectionModes.Manual" class="form-field">
     <label for="wallet">{{ (selectionMode === sourceSelectionModes.Wallet ? 'send.from-label' : 'send.wallet-label') | translate }}</label>
     <div class="-select">
-      <select formControlName="wallet" id="wallet" [attr.disabled]="busy ? 'true' : null">
+      <select
+        formControlName="wallet"
+        id="wallet"
+        [attr.disabled]="busy ? 'true' : null"
+        [appFormFieldError]="walletErrorMsg"
+        (blur)="validateForm()"
+      >
         <option disabled hidden [ngValue]="''">{{ 'send.select-wallet' | translate }}</option>
         <ng-container *ngIf="allWallets">
           <ng-container *ngFor="let wallet of allWallets">

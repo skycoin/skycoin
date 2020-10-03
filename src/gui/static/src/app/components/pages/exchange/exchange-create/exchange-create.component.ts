@@ -38,6 +38,12 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   problemGettingPairs = false;
   busy = false;
 
+  // Vars with the validation error messages.
+  amountErrorMsg = '';
+  addressErrorMsg = '';
+  amountTooLow = false;
+  amountTooHight = false;
+
   private agreement = false;
   private subscriptionsGroup: SubscriptionLike[] = [];
   private exchangeSubscription: SubscriptionLike;
@@ -164,12 +170,12 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
 
   private createForm() {
     this.form = this.formBuilder.group({
-      fromCoin: [this.defaultFromCoin, Validators.required],
+      fromCoin: [this.defaultFromCoin],
       fromAmount: [this.defaultFromAmount, Validators.required],
-      toAddress: ['', Validators.required],
-    }, {
-      validator: this.validate.bind(this),
+      toAddress: [''],
     });
+
+    this.form.setValidators(this.validateForm.bind(this));
 
     this.subscriptionsGroup.push(this.form.get('fromCoin').valueChanges.subscribe(() => {
       this.updateActiveTradingPair();
@@ -223,36 +229,70 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
     }
   }
 
-  private validate(group: FormGroup) {
-    if (!group || !this.activeTradingPair) {
+  /**
+   * Validates the form and updates the vars with the validation errors.
+   */
+  validateForm() {
+    this.amountErrorMsg = '';
+    this.addressErrorMsg = '';
+    this.amountTooLow = false;
+    this.amountTooHight = false;
+
+    if (!this.activeTradingPair) {
       return null;
     }
 
-    const fromAmount = group.get('fromAmount').value;
+    let valid = true;
 
-    if (isNaN(fromAmount)) {
-      return { invalid: true };
+    const fromAmount = this.form.get('fromAmount').value;
+
+    if (!fromAmount || isNaN(fromAmount)) {
+      valid = false;
+      if (this.form.get('fromAmount').touched) {
+        this.amountErrorMsg = 'exchange.invalid-value-error-info';
+      }
+    } else {
+      const parts = (fromAmount as string).split('.');
+
+      if (parts.length > 1 && parts[1].length > 6) {
+        valid = false;
+        if (this.form.get('fromAmount').touched) {
+          this.amountErrorMsg = 'exchange.invalid-value-error-info';
+        }
+      }
     }
 
-    if (fromAmount < this.activeTradingPair.min || fromAmount === '') {
-      return { min: this.activeTradingPair.min };
+    if (valid) {
+      if (fromAmount < this.activeTradingPair.min) {
+        this.amountTooLow = true;
+        valid = false;
+        if (this.form.get('fromAmount').touched) {
+          this.amountErrorMsg = 'exchange.invalid-value-error-info';
+        }
+      }
+
+      if (fromAmount > this.activeTradingPair.max) {
+        this.amountTooHight = true;
+        valid = false;
+        if (this.form.get('fromAmount').touched) {
+          this.amountErrorMsg = 'exchange.invalid-value-error-info';
+        }
+      }
     }
 
-    if (fromAmount > this.activeTradingPair.max) {
-      return { max: this.activeTradingPair.max };
-    }
-
-    const parts = (fromAmount as string).split('.');
-
-    if (parts.length > 1 && parts[1].length > 6) {
-      return { decimals: true };
+    const address = this.form.get('toAddress').value as string;
+    if (!address || address.length < 20) {
+      valid = false;
+      if (this.form.get('toAddress').touched) {
+        this.addressErrorMsg = 'exchange.address-error-info';
+      }
     }
 
     if (!this.agreement) {
-      return { agreement: true };
+      valid = false;
     }
 
-    return null;
+    return valid ? null : { Invalid: true };
   }
 
   private removeExchangeSubscription() {

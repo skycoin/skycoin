@@ -48,6 +48,11 @@
   }
 }
 
+.error-coins-value {
+  background-color: $red !important;
+  color: $white !important
+}
+
 .-input-addon {
   display: flex;
 

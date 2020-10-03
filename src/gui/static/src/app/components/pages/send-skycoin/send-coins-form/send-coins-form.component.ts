@@ -1,5 +1,5 @@
-import { SubscriptionLike } from 'rxjs';
-import { first } from 'rxjs/operators';
+import { SubscriptionLike, forkJoin, throwError } from 'rxjs';
+import { first, mergeMap } from 'rxjs/operators';
 import { Component, EventEmitter, Input, OnDestroy, OnInit, ViewChild, ChangeDetectorRef, Output as AgularOutput } from '@angular/core';
 import { FormGroup, FormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
@@ -24,6 +24,7 @@ import { AppService } from '../../../../services/app.service';
 import { SpendingService, HoursDistributionOptions, HoursDistributionTypes } from '../../../../services/wallet-operations/spending.service';
 import { GeneratedTransaction, Output } from '../../../../services/wallet-operations/transaction-objects';
 import { WalletWithBalance, AddressWithBalance } from '../../../../services/wallet-operations/wallet-objects';
+import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
 
 /**
  * Data returned when SendCoinsFormComponent asks to show the preview of a transaction. Useful
@@ -131,6 +132,10 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   // Sources the user has selected.
   private selectedSources: SelectedSources;
 
+  // Vars with the validation error messages.
+  changeAddressErrorMsg = '';
+  invalidChangeAddress = false;
+
   private syncCheckSubscription: SubscriptionLike;
   private processingSubscription: SubscriptionLike;
 
@@ -144,12 +149,15 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     private translate: TranslateService,
     private changeDetector: ChangeDetectorRef,
     private spendingService: SpendingService,
+    private walletsAndAddressesService: WalletsAndAddressesService,
   ) { }
 
   ngOnInit() {
-    this.form = new FormGroup({}, this.validateForm.bind(this));
+    this.form = new FormGroup({});
     this.form.addControl('changeAddress', new FormControl(''));
     this.form.addControl('note', new FormControl(''));
+
+    this.form.setValidators(this.validateForm.bind(this));
 
     if (this.formData) {
       setTimeout(() => this.fillForm());
@@ -322,18 +330,28 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     this.showAutoHourDistributionOptions = this.formData.form.showAutoHourDistributionOptions;
   }
 
-  // Validates the form.
-  private validateForm() {
-    if (!this.form) {
-      return { Required: true };
+  /**
+   * Validates the form and updates the vars with the validation errors.
+   */
+  validateForm() {
+    this.changeAddressErrorMsg = '';
+
+    let valid = true;
+
+    const changeAddress = this.form.get('changeAddress').value as string;
+    if (changeAddress && changeAddress.length < 20) {
+      valid = false;
+      if (this.form.get('changeAddress').touched) {
+        this.changeAddressErrorMsg = 'send.address-error-info';
+      }
     }
 
     // Check the validity of the subforms.
     if (!this.formSourceSelection || !this.formSourceSelection.valid || !this.formMultipleDestinations || !this.formMultipleDestinations.valid) {
-      return { Invalid: true };
+      valid = false;
     }
 
-    return null;
+    return valid ? null : { Invalid: true };
   }
 
   // Checks if the blockchain is synchronized. It continues normally creating the tx if the
@@ -454,17 +472,62 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       this.selectedSources.unspentOutputs.map(addr => addr.hash) : null;
 
     const destinations = this.formMultipleDestinations.getDestinations(true);
+    // Stop showing addresses as invalid.
+    this.formMultipleDestinations.setValidAddressesList(null);
 
-    // Create the transaction.
-    this.processingSubscription = this.spendingService.createTransaction(
-      this.selectedSources.wallet,
-      selectedAddresses ? selectedAddresses : this.selectedSources.wallet.addresses.map(address => address.address),
-      selectedOutputs,
-      destinations,
-      this.hoursSelection,
-      this.form.get('changeAddress').value ? this.form.get('changeAddress').value : null,
-      passwordDialog ? passwordDialog.password : null,
-      creatingPreviewTx || this.showForManualUnsigned,
+    this.invalidChangeAddress = false;
+    const customChangeAddress = this.form.get('changeAddress').value;
+    const addresses = destinations.map(destination => destination.address);
+    if (customChangeAddress) {
+      addresses.push(customChangeAddress);
+    }
+
+    // Check if the addresses are valid.
+    this.processingSubscription = forkJoin(addresses.map(address => this.walletsAndAddressesService.verifyAddress(address))).pipe(
+      mergeMap(validityList => {
+        if (customChangeAddress) {
+          this.invalidChangeAddress = !validityList.pop();
+
+          return throwError(this.translate.instant('send.change-address-error-info'));
+        }
+
+        // Check how many addresses are invalid.
+        let invalidAddresses = 0;
+        validityList.forEach(valid => {
+          if (!valid) {
+            invalidAddresses += 1;
+          }
+        });
+
+        if (invalidAddresses === 0) {
+          // Create the transaction.
+          return this.spendingService.createTransaction(
+            this.selectedSources.wallet,
+            selectedAddresses ? selectedAddresses : this.selectedSources.wallet.addresses.map(address => address.address),
+            selectedOutputs,
+            destinations,
+            this.hoursSelection,
+            this.form.get('changeAddress').value ? this.form.get('changeAddress').value : null,
+            passwordDialog ? passwordDialog.password : null,
+            creatingPreviewTx || this.showForManualUnsigned,
+          );
+        } else {
+          this.formMultipleDestinations.setValidAddressesList(validityList);
+
+          // Show the appropiate error msg.
+          if (destinations.length > 1) {
+            if (invalidAddresses === destinations.length) {
+              return throwError(this.translate.instant('send.all-addresses-invalid-error'));
+            } else if (invalidAddresses === 1) {
+              return throwError(this.translate.instant('send.one-invalid-address-error'));
+            } else {
+              return throwError(this.translate.instant('send.various-invalid-addresses-error'));
+            }
+          }
+
+          return throwError(this.translate.instant('send.invalid-address-error'));
+        }
+      }),
     ).subscribe(transaction => {
       // Close the password dialog, if it exists.
       if (passwordDialog) {

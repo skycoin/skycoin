@@ -20,7 +20,15 @@
     <div class="upper-text">{{ 'hardware-wallet.added.added1' | translate }}</div>
     <div [formGroup]="form">
       <div class="form-field">
-        <input formControlName="label" id="label" [maxlength]="maxHwWalletLabelLength" (keydown.enter)="saveNameAndCloseModal()" #input>
+        <input
+          #input
+          formControlName="label"
+          id="label"
+          [maxlength]="maxHwWalletLabelLength"
+          (keydown.enter)="saveNameAndCloseModal()"
+          [appFormFieldError]="inputErrorMsg"
+          (blur)="validateForm()"
+        >
       </div>
     </div>
     <div class="warning">{{ 'hardware-wallet.added.characters-warning' | translate }}</div>

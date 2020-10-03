@@ -1,7 +1,7 @@
 <div class="main-container" [formGroup]="form">
   <div class="form-field">
     <label for="label">{{ 'wallet.new.name-label' | translate}}</label>
-    <input formControlName="label" id="label" [attr.disabled]="busy ? 'true' : null">
+    <input formControlName="label" id="label" [attr.disabled]="busy ? 'true' : null" [appFormFieldError]="labelErrorMsg" (blur)="validateForm()">
   </div>
   <div class="form-field" *ngIf="!create && enterSeedWithAssistance">
     <label for="number_of_words">{{ 'wallet.new.words-number-label' | translate}}</label>
@@ -45,8 +45,15 @@
 
     <ng-container *ngIf="!enterSeedWithAssistance">
       <div class="seed-spinner" *ngIf="checkingCustomSeed"><mat-spinner></mat-spinner></div>
-      <textarea formControlName="seed" id="seed" rows="2" [attr.disabled]="busy ? 'true' : null"></textarea>
-      <div [ngClass]="{'element-disabled' : busy}" class="seed-type-button">
+      <textarea
+        formControlName="seed"
+        id="seed"
+        rows="2"
+        [attr.disabled]="busy ? 'true' : null"
+        [appFormFieldError]="seed1ErrorMsg"
+        (blur)="validateForm()"
+      ></textarea>
+      <div class="seed-type-button" [ngClass]="{'element-disabled' : busy}">
         <span class="link" [ngClass]="{'-white-text': onboarding}" (click)="changeSeedType()">
           <mat-icon [inline]="true">format_list_numbered</mat-icon>
           {{ 'wallet.new.seed.use-normal' | translate }}
@@ -73,7 +80,14 @@
 
     <ng-container *ngIf="!enterSeedWithAssistance">
       <div class="seed-spinner" *ngIf="checkingCustomSeed"><mat-spinner></mat-spinner></div>
-      <textarea formControlName="confirm_seed" id="confirm_seed" rows="2" [attr.disabled]="busy ? 'true' : null"></textarea>
+      <textarea
+        formControlName="confirm_seed"
+        id="confirm_seed"
+        rows="2"
+        [attr.disabled]="busy ? 'true' : null"
+        [appFormFieldError]="seed2ErrorMsg"
+        (blur)="validateForm()"
+      ></textarea>
     </ng-container>
   </div>
   <div *ngIf="!onboarding">
@@ -89,13 +103,30 @@
       <div class="col-md-6" *ngIf="encrypt">
         <div class="form-field">
           <label for="password">{{ 'password.password-label' | translate }}</label>
-          <input formControlName="password" id="password" type="password" appDontSavePassword [attr.disabled]="busy ? 'true' : null">
+          <input
+            formControlName="password"
+            id="password"
+            type="password"
+            appDontSavePassword
+            [attr.disabled]="busy ? 'true' : null"
+            [appFormFieldError]="password1ErrorMsg"
+            (blur)="validateForm()"
+          >
         </div>
       </div>
       <div class="col-md-6" *ngIf="encrypt">
         <div class="form-field">
           <label for="confirm_password">{{ 'password.confirm-password-label' | translate }}</label>
-          <input formControlName="confirm_password" id="confirm_password" type="password" appDontSavePassword (keydown.enter)="requestCreation()" [attr.disabled]="busy ? 'true' : null">
+          <input
+            formControlName="confirm_password"
+            id="confirm_password"
+            type="password"
+            appDontSavePassword
+            (keydown.enter)="requestCreation()"
+            [attr.disabled]="busy ? 'true' : null"
+            [appFormFieldError]="password2ErrorMsg"
+            (blur)="validateForm()"
+          >
         </div>
       </div>
     </div>

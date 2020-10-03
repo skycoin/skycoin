@@ -131,6 +131,10 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
   // If there was an error downloading the list of unspent outputs from the node.
   errorLoadingManualOutputs = false;
 
+  // Vars with the validation error messages.
+  manualAddressesErrorMsg = '';
+  walletErrorMsg = '';
+
   private subscriptionsGroup: SubscriptionLike[] = [];
   private getOutputsSubscription: SubscriptionLike;
 
@@ -485,24 +489,31 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Validates the form.
+   * Validates the form and updates the vars with the validation errors.
    */
-  private validateForm() {
-    if (!this.form) {
-      return { Required: true };
-    }
+  validateForm() {
+    this.manualAddressesErrorMsg = '';
+    this.walletErrorMsg = '';
+
+    let valid = true;
 
     // The validation depends on the current mode.
     if (this.selectionMode === SourceSelectionModes.Manual) {
-      if (!this.form.get('manualAddresses').value) {
-        return { Invalid: true };
+      if (!this.form.get('manualAddresses').value || (this.form.get('manualAddresses').value as string).length < 20) {
+        valid = false;
+        if (this.form.get('manualAddresses').touched) {
+          this.manualAddressesErrorMsg = 'send.addresses-error-info';
+        }
       }
     } else {
       if (!this.form.get('wallet').value) {
-        return { Invalid: true };
+        valid = false;
+        if (this.form.get('wallet').touched) {
+          this.walletErrorMsg = 'send.wallet-error-info';
+        }
       }
     }
 
-    return null;
+    return valid ? null : { Invalid: true };
   }
 }

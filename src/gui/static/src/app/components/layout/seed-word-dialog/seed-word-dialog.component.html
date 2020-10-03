@@ -15,7 +15,15 @@
   <div [formGroup]="form" class="modal-form-container">
     <div class="form-field">
       <label for="word" *ngIf="data.reason === wordAskedReasons.HWWalletOperation">{{ 'hardware-wallet.seed-word.word-label' | translate }}</label>
-      <input matInput [matAutocomplete]="auto" formControlName="word" id="word" (keydown.enter)="sendWord()">
+      <input
+        matInput
+        [matAutocomplete]="auto"
+        formControlName="word"
+        id="word"
+        (keydown.enter)="sendWord()"
+        [appFormFieldError]="inputErrorMsg"
+        (blur)="validateForm()"
+      >
       <mat-autocomplete #auto="matAutocomplete" [autoActiveFirstOption]="true">
         <mat-option class="option" *ngFor="let option of filteredOptions | async" [value]="option" (click)="sendWord()">{{option}}</mat-option>
       </mat-autocomplete>

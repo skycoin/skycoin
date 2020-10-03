@@ -124,6 +124,7 @@ import { HardwareWalletService } from './services/wallet-operations/hardware-wal
 import { BalanceAndOutputsService } from './services/wallet-operations/balance-and-outputs.service';
 import { SpendingService } from './services/wallet-operations/spending.service';
 import { HistoryService } from './services/wallet-operations/history.service';
+import { FormFieldErrorDirective } from './directives/form-field-error.directive';
 
 
 const ROUTES = [
@@ -271,6 +272,7 @@ const ROUTES = [
     ArrowLinkComponent,
     AddressOptionsComponent,
     QrCodeButtonComponent,
+    FormFieldErrorDirective,
   ],
   entryComponents: [
     AddDepositAddressComponent,

@@ -28,6 +28,9 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
   form: FormGroup;
   maxHwWalletLabelLength = HwWalletService.maxLabelLength;
 
+  // Vars with the validation error messages.
+  inputErrorMsg = '';
+
   // Saves the initial label of the device, to know if the user tried to change it.
   private initialLabel: string;
 
@@ -51,8 +54,10 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
         this.initialLabel = wallet.label;
 
         this.form = this.formBuilder.group({
-          label: [wallet.label, Validators.required],
+          label: [wallet.label],
         });
+
+        this.form.setValidators(this.validateForm.bind(this));
 
         this.currentState = this.states.Finished;
 
@@ -96,5 +101,23 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
         }
       });
     }
+  }
+
+  /**
+   * Validates the form and updates the vars with the validation errors.
+   */
+  validateForm() {
+    this.inputErrorMsg = '';
+
+    let valid = true;
+
+    if (!this.form.get('label').value) {
+      valid = false;
+      if (this.form.get('label').touched) {
+        this.inputErrorMsg = 'hardware-wallet.added.added-error-info';
+      }
+    }
+
+    return valid ? null : { Invalid: true };
   }
 }

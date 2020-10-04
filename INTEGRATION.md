@@ -145,7 +145,7 @@ After each spend, wait for the transaction to confirm before trying to spend aga
 For higher throughput, combine multiple spends into one transaction.
 
 Skycoin uses "coin hours" to ratelimit transactions.
-The total number of coinhours in a transaction's outputs must be 50% or less than the number of coinhours in a transaction's inputs,
+The total number of coinhours in a transaction's outputs must be 99% or less than the number of coinhours in a transaction's inputs,
 or else the transaction is invalid and will not be accepted. A transaction must have at least 1 input with at least 1 coin hour.
 Sending too many transactions in quick succession will use up all available coinhours.
 Coinhours are earned at a rate of 1 coinhour per coin per hour, calculated per second.
@@ -166,7 +166,7 @@ coinhours quickly.
 When sending coins from the CLI tool, a wallet file local to the caller is used.
 The CLI tool allows you to specify the wallet file on disk to use for operations.
 
-See [CLI command API](cmd/skycoin-cli/README.md) for documentation of the CLI interface.
+See [CLI command API](cmd/skycoin-cli/README.md) for the documentation of the CLI interface.
 
 To perform a send, the preferred method follows these steps in a loop:
 
@@ -196,8 +196,8 @@ A REST API client is also available: [Skycoin REST API Client Godoc](https://god
 
 #### Coinhours
 
-Transaction fees in skycoin is paid in coinhours and is currently set to `50%`,
-every transaction created burns `50%` of the total coinhours in all the input
+Transaction fees in skycoin is paid in coinhours and is currently set to `1%`,
+every transaction created burns `1%` of the total coinhours in all the input
 unspents.
 
 You need a minimum of `1` of coinhour to create a transaction.
@@ -210,7 +210,7 @@ which are then converted to `coinhours`, `1` coinhour = `3600` coinseconds.
 ##### REST API
 
 When using the REST API, the coin hours sent to the destination and change can be controlled.
-The 50% burn fee is still required.
+The 1% burn fee is still required.
 
 See the [POST /wallet/transaction](https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#create-transaction)
 documentation for more information on how to control the coin hours.
@@ -224,12 +224,12 @@ When using the CLI the amount of coinhours sent to the receiver is capped to
 the number of coins they receive with a minimum of `1` coinhour for transactions
 with `<1` skycoin being sent.
 
-The coinhours left after burning `50%` and sending to receivers are sent to the change address.
+The coinhours left after burning `1%` and sending to receivers are sent to the change address.
 
 For eg. If an address has `10` skycoins and `50` coinhours and only `1` unspent.
 If we send `5` skycoins to another address then that address will receive
-`5` skycoins and `5` coinhours, `26` coinhours will be burned.
-The sending address will be left with `5` skycoins and `19` coinhours which
+`5` skycoins and `5` coinhours, `1` coinhours will be burned.
+The sending address will be left with `5` skycoins and `44` coinhours which
 will then be sent to the change address.
 
 

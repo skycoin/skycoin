@@ -32,6 +32,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
     * Add flag `scan`.
 - CLI command walletKeyExport -p flag is replaced with --path, and -p will be used as shorthand of -password.
 - CLI command `encryptWallet/decryptWallet` will only return none-sensitive data. Data like the seed, secrets and private keys will no longer be returned.
+- Change `coinhours` burn factor to 1 percent.
+
 ### Removed
 
 ## [0.27.0] - 2019-11-26

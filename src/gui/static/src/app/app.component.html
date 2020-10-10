@@ -4,5 +4,11 @@
     <div>{{ 'errors.window-size' | translate }}</div>
   </div>
 </div>
+<!--
+  Div which is shown in the background, needed to avoid a problem which makes the background
+  color of the <body> element to be shown incorrectly in the Electron build when a modal window
+  is open and the content has been scrolled.
+-->
+<div class="background-fixer"></div>
 <router-outlet></router-outlet>
 <app-msg-bar #msgBar></app-msg-bar>

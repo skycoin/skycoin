@@ -25,8 +25,8 @@ mat-panel-description, mat-panel-title, mat-option.mat-option {
 }
 
 // Class for the div which is shown in the background, needed to avoid a problem which makes the
-// background color of the <body> element to be shown incorrectly in the Electron build when a
-// modal window is open and the content has been scrolled.
+// background color of the <body> element to be shown incorrectly when a modal window is open
+// and the content has been scrolled.
 .background-fixer {
   background-color: $grey-lightest;
   width: 100%;

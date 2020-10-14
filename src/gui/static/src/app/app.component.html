@@ -6,8 +6,9 @@
 </div>
 <!--
   Div which is shown in the background, needed to avoid a problem which makes the background
-  color of the <body> element to be shown incorrectly in the Electron build when a modal window
-  is open and the content has been scrolled.
+  color of the <body> element to be shown incorrectly when a modal window is open and the
+  content has been scrolled. In that case, the browser window background (which may be different
+  from the document background) may replace part of the document background.
 -->
 <div class="background-fixer"></div>
 <router-outlet></router-outlet>

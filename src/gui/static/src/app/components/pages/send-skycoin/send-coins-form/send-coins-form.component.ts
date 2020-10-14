@@ -403,15 +403,38 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     if (
       coinsToSend.isEqualTo(this.availableBalance.availableCoins) ||
       hoursToSend.isEqualTo(this.availableBalance.availableHours) ||
-      Number(this.autoShareValue) === 1
+      (Number(this.autoShareValue) === 1 && this.autoHours)
     ) {
+      // Msg that will be shown in the confirmation window.
+      let confirmationText = '';
+      if (hoursToSend.isEqualTo(this.availableBalance.availableHours)) {
+        // Sending all hours because the user entered them manually.
+        confirmationText = 'send.sending-all-hours-waning';
+      } else {
+        if (coinsToSend.isEqualTo(this.availableBalance.availableCoins)) {
+          if ((this.formSourceSelection.wallet.coins.isEqualTo(this.availableBalance.availableCoins))) {
+            // Sending all hours in the wallet, because the user is sending all the coins it has.
+            confirmationText = 'send.sending-all-hours-with-coins-waning';
+          } else {
+            // Sending all hours in the selected sources, because the user is sending all available coins.
+            confirmationText = 'send.advanced-sending-all-hours-with-coins-waning';
+          }
+        } else {
+          if ((this.formSourceSelection.wallet.coins.isEqualTo(this.availableBalance.availableCoins))) {
+            // Potentially sending all hours in the selected wallet, due to the sharing factor.
+            confirmationText = 'send.high-hours-share-waning';
+          } else {
+            // Potentially sending all hours in the selected sources, due to the sharing factor.
+            confirmationText = 'send.advanced-high-hours-share-waning';
+          }
+        }
+      }
+
       // Ask for confirmation.
       const confirmationParams: ConfirmationParams = {
         headerText: 'common.warning-title',
         redTitle: true,
-        text: coinsToSend.isEqualTo(this.availableBalance.availableCoins) ?
-          'send.sending-all-hours-with-coins-waning' :
-          (hoursToSend.isEqualTo(this.availableBalance.availableHours) ? 'send.sending-all-hours-waning' : 'send.high-hours-share-waning'),
+        text: confirmationText,
         defaultButtons: DefaultConfirmationButtons.YesNo,
       };
 

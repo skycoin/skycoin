@@ -474,7 +474,7 @@
   "confirmation" : {
     "default-title": "确认",
     "yes-button": "是",
-    "no-button": "否",
+    "no-button": "否"
   },
 
   "service": {
@@ -483,7 +483,7 @@
       "incorrect-password-error": "密码错误。",
       "unknown-error": "无法执行当前操作。",
       "api-disabled-error": "API已禁用。"
-    },
+    }
   },
 
   "hardware-wallet": {
@@ -507,7 +507,7 @@
       "timeout": "由于不活动，操作被取消。 请再试一次。",
       "invalid-address-generated": "地址生成器存在问题，必须取消该操作.",
       "invalid-address": "无效地址.",
-      "not-in-bootloader-mode": "使用该选项，硬件钱包必须进入bootloader模式.",
+      "not-in-bootloader-mode": "使用该选项，硬件钱包必须进入bootloader模式."
     },
     "security-warning": {
       "title": "安全警告",

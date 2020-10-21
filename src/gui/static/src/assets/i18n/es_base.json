@@ -298,6 +298,7 @@
     "bulk-send": {
       "title": "Bulk Send",
       "indications": "To send to multiple destinations in a quick way, type each address, coin amount and hour amount (optional) on a line, separated by a comma. Example: if you want to send 10 coins and 5 hours to the \"xyz\" address, type \"xyz,10,5\"; if you want the hours to be calculated automatically, type \"xyz,10\". Decimal values must be separated with a dot.",
+      "data-error-info": "You must enter a value.",
       "process-button": "Process",
       "no-data-error": "There is no text to process.",
       "inconsistent-data-error": "If you set how many hours you want to send to a destination, you must do so for all destinations.",
@@ -673,6 +674,7 @@
     "offline": "Exchange is temporarily offline",
     "problem-connecting": "Unable to connect with the service. Please check your Internet connection and try again later",
     "invalid-address-error": "Invalid address.",
+    "from-coin-error-info": "You must select a coin.",
     "invalid-value-error-info": "Invalid value.",
     "address-error-info": "Please enter a valid address.",
     "statuses": {

@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import * as moment from 'moment';
 import { ButtonComponent } from '../../../layout/button/button.component';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup } from '@angular/forms';
 import { ExchangeService } from '../../../../services/exchange.service';
 import { ExchangeOrder, TradingPair, StoredExchangeOrder } from '../../../../app.datatypes';
 import { MatDialog } from '@angular/material/dialog';
@@ -39,6 +39,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   busy = false;
 
   // Vars with the validation error messages.
+  coinErrorMsg = '';
   amountErrorMsg = '';
   addressErrorMsg = '';
   amountTooLow = false;
@@ -87,10 +88,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
     this.subscriptionsGroup.forEach(sub => sub.unsubscribe());
     this.removeExchangeSubscription();
     this.msgBarService.hide();
-
-    if (this.priceUpdateSubscription) {
-      this.priceUpdateSubscription.unsubscribe();
-    }
+    this.removePriceUpdateSubscription();
   }
 
   setAgreement(event) {
@@ -171,7 +169,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   private createForm() {
     this.form = this.formBuilder.group({
       fromCoin: [this.defaultFromCoin],
-      fromAmount: [this.defaultFromAmount, Validators.required],
+      fromAmount: [this.defaultFromAmount],
       toAddress: [''],
     });
 
@@ -203,6 +201,8 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   }
 
   private updatePrices() {
+    this.removePriceUpdateSubscription();
+
     this.priceUpdateSubscription = of(1).pipe(delay(60000), mergeMap(() => this.exchangeService.tradingPairs()),
       retryWhen(errors => errors.pipe(delay(60000))))
       .subscribe(pairs => {
@@ -233,6 +233,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
    * Validates the form and updates the vars with the validation errors.
    */
   validateForm() {
+    this.coinErrorMsg = '';
     this.amountErrorMsg = '';
     this.addressErrorMsg = '';
     this.amountTooLow = false;
@@ -246,6 +247,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
 
     const fromAmount = this.form.get('fromAmount').value;
 
+    // The must be a from amount.
     if (!fromAmount || isNaN(fromAmount)) {
       valid = false;
       if (this.form.get('fromAmount').touched) {
@@ -254,6 +256,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
     } else {
       const parts = (fromAmount as string).split('.');
 
+      // If there is a from amount, it must not have more than 6 decimals.
       if (parts.length > 1 && parts[1].length > 6) {
         valid = false;
         if (this.form.get('fromAmount').touched) {
@@ -262,6 +265,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
       }
     }
 
+    // If there is a from amount, it must be inside the limits.
     if (valid) {
       if (fromAmount < this.activeTradingPair.min) {
         this.amountTooLow = true;
@@ -280,6 +284,15 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
       }
     }
 
+    // There must be a selected coin for the from amount.
+    if (!this.form.get('fromCoin').value) {
+      valid = false;
+      if (this.form.get('fromCoin').touched) {
+        this.coinErrorMsg = 'exchange.from-coin-error-info';
+      }
+    }
+
+    // There must be a valid destination address.
     const address = this.form.get('toAddress').value as string;
     if (!address || address.length < 20) {
       valid = false;
@@ -288,6 +301,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
       }
     }
 
+    // The user must accept the agreement.
     if (!this.agreement) {
       valid = false;
     }
@@ -298,6 +312,12 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   private removeExchangeSubscription() {
     if (this.exchangeSubscription) {
       this.exchangeSubscription.unsubscribe();
+    }
+  }
+
+  private removePriceUpdateSubscription() {
+    if (this.priceUpdateSubscription) {
+      this.priceUpdateSubscription.unsubscribe();
     }
   }
 }

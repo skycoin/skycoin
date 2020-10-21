@@ -699,7 +699,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       this.destControls.map(control => {
         const value = new BigNumber(control.get('hours').value);
         if (!value.isNaN()) {
-          destinationsHours = destinationsHours.plus(control.get('hours').value);
+          destinationsHours = destinationsHours.plus(value);
         }
       });
     }

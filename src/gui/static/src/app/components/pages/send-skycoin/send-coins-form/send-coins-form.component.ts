@@ -475,8 +475,12 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     // Stop showing addresses as invalid.
     this.formMultipleDestinations.setValidAddressesList(null);
 
+    // Remove any error previously detected by the node in the change address.
     this.invalidChangeAddress = false;
     const customChangeAddress = this.form.get('changeAddress').value;
+
+    // Create a list with the destination addresses, to check them with the node. If there is
+    // a custom change address, it is added.
     const addresses = destinations.map(destination => destination.address);
     if (customChangeAddress) {
       addresses.push(customChangeAddress);
@@ -488,7 +492,9 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
         if (customChangeAddress) {
           this.invalidChangeAddress = !validityList.pop();
 
-          return throwError(this.translate.instant('send.change-address-error-info'));
+          if (this.invalidChangeAddress) {
+            return throwError(this.translate.instant('send.change-address-error-info'));
+          }
         }
 
         // Check how many addresses are invalid.

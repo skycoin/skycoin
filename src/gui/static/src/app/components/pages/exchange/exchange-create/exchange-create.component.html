@@ -26,7 +26,12 @@
           (blur)="validateForm()"
         >
         <div class="-select">
-          <select formControlName="fromCoin" [attr.disabled]="busy ? 'true' : null">
+          <select
+            formControlName="fromCoin"
+            [attr.disabled]="busy ? 'true' : null"
+            [appFormFieldError]="coinErrorMsg"
+            (blur)="validateForm()"
+          >
             <option *ngFor="let pair of tradingPairs" [value]="pair.from">{{ pair.from }}</option>
           </select>
         </div>

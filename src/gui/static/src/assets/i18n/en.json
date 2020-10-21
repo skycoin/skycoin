@@ -178,7 +178,7 @@
     "add-addresses": {
       "title": "Select Quantity",
       "quantity-label": "How many addresses to create",
-      "quantity-error-info": "You must enter a value between 1 and 100",
+      "quantity-error-info": "You must enter a value between 1 and 100.",
       "error": "There was an unexpected error. Please try again."
     },
 

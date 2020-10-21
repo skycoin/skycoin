@@ -14,6 +14,7 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 	secp256k1 "github.com/SkycoinProject/skycoin/src/cipher/secp256k1-go"
 	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
 )
 
 const (
@@ -49,7 +50,7 @@ func walletCreateCmd() *cobra.Command {
 	walletCreateCmd.Flags().StringP("label", "l", "", "Label used to identify your wallet.")
 	walletCreateCmd.Flags().StringP("type", "t", wallet.WalletTypeDeterministic, "Wallet type. Types are \"collection\", \"deterministic\", \"bip44\" or \"xpub\"")
 	walletCreateCmd.Flags().BoolP("encrypt", "e", false, "Create encrypted wallet.")
-	walletCreateCmd.Flags().StringP("crypto-type", "x", string(wallet.DefaultCryptoType), "The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor")
+	walletCreateCmd.Flags().StringP("crypto-type", "x", string(crypto.DefaultCryptoType), "The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor")
 	walletCreateCmd.Flags().StringP("password", "p", "", "Wallet password")
 	walletCreateCmd.Flags().StringP("xpub", "", "", "xpub key for \"xpub\" type wallets")
 
@@ -176,7 +177,7 @@ func generateWalletHandler(c *cobra.Command, args []string) error {
 		return err
 	}
 
-	cryptoType, err := wallet.CryptoTypeFromString(c.Flag("crypto-type").Value.String())
+	cryptoType, err := crypto.CryptoTypeFromString(c.Flag("crypto-type").Value.String())
 	if err != nil {
 		return err
 	}
@@ -217,7 +218,7 @@ func generateWalletHandler(c *cobra.Command, args []string) error {
 		XPub:           xpub,
 	}
 
-	wlt, err := wallet.NewWallet(filepath.Base(wltName), opts)
+	wlt, err := wallet.NewWallet(filepath.Base(wltName), label, sd, opts)
 	if err != nil {
 		return err
 	}
@@ -226,7 +227,12 @@ func generateWalletHandler(c *cobra.Command, args []string) error {
 		return err
 	}
 
-	return printJSON(wlt.ToReadable())
+	out, err := wlt.Serialize()
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(out))
+	return nil
 }
 
 // wordCountToEntropy maps a mnemonic word count to its entropy size in bits

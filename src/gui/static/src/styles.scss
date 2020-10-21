@@ -24,6 +24,19 @@ mat-panel-description, mat-panel-title, mat-option.mat-option {
   font-family: $font-family;
 }
 
+// Class for the div which is shown in the background, needed to avoid a problem which makes the
+// background color of the <body> element to be shown incorrectly when a modal window is open
+// and the content has been scrolled.
+.background-fixer {
+  background-color: $grey-lightest;
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+}
+
 html {
   height: 100%;
 }

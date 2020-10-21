@@ -1,4 +1,4 @@
-package wallet
+package crypto
 
 import (
 	"errors"
@@ -7,7 +7,8 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher/encrypt"
 )
 
-type cryptor interface {
+// Cryptor wraps the Encrypt and Decrypt method
+type Cryptor interface {
 	Encrypt(data, password []byte) ([]byte, error)
 	Decrypt(data, password []byte) ([]byte, error)
 }
@@ -44,7 +45,7 @@ const (
 
 // cryptoTable records all supported wallet crypto methods
 // If want to support new crypto methods, register here.
-var cryptoTable = map[CryptoType]cryptor{
+var cryptoTable = map[CryptoType]Cryptor{
 	CryptoTypeSha256Xor:              encrypt.DefaultSha256Xor,
 	CryptoTypeScryptChacha20poly1305: encrypt.DefaultScryptChacha20poly1305,
 	CryptoTypeScryptChacha20poly1305Insecure: encrypt.ScryptChacha20poly1305{
@@ -55,12 +56,31 @@ var cryptoTable = map[CryptoType]cryptor{
 	},
 }
 
-// getCrypto gets crypto of given type
-func getCrypto(cryptoType CryptoType) (cryptor, error) {
+// GetCrypto gets crypto of given type
+func GetCrypto(cryptoType CryptoType) (Cryptor, error) {
 	c, ok := cryptoTable[cryptoType]
 	if !ok {
 		return nil, fmt.Errorf("can not find crypto %v in crypto table", cryptoType)
 	}
 
 	return c, nil
+}
+
+// Types returns all supported crypto types
+func Types() []CryptoType {
+	return []CryptoType{
+		CryptoTypeSha256Xor,
+		CryptoTypeScryptChacha20poly1305,
+		CryptoTypeScryptChacha20poly1305Insecure,
+		DefaultCryptoType,
+	}
+}
+
+// TypesInsecure returns the CryptoTypeScryptChacha21poly1305Insecure, it
+// would be used in testing to speed up the tests.
+func TypesInsecure() []CryptoType {
+	return []CryptoType{
+		CryptoTypeSha256Xor,
+		CryptoTypeScryptChacha20poly1305Insecure,
+	}
 }

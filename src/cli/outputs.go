@@ -85,7 +85,11 @@ func GetWalletOutputsFromFile(c GetOutputser, walletFile string) (*readable.Unsp
 
 // GetWalletOutputs returns unspent outputs associated with all addresses in a wallet.Wallet
 func GetWalletOutputs(c GetOutputser, wlt wallet.Wallet) (*readable.UnspentOutputsSummary, error) {
-	cipherAddrs := wlt.GetAddresses()
+	cipherAddrs, err := wlt.GetAddresses()
+	if err != nil {
+		return nil, err
+	}
+
 	addrs := make([]string, len(cipherAddrs))
 	for i := range cipherAddrs {
 		addrs[i] = cipherAddrs[i].String()

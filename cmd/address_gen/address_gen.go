@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -10,13 +9,13 @@ import (
 	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
 	"github.com/SkycoinProject/skycoin/src/util/logging"
 	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/deterministic"
 )
 
 // Note: Address_gen generates public keys and addresses
 // address, pubkey, privatekey
 // -n=5 for number of addresses
-// -seed to set wallet seed. Prompt will ask
-// for seed to prevent seed from being stored in .bashrc
+// -seed to set wallet seed.
 
 // -json for json output
 // -add option to password the secret key
@@ -26,7 +25,6 @@ func main() {
 	logging.Disable()
 
 	genCount := flag.Int("n", 1, "Number of addresses to generate")
-	hideSecKey := flag.Bool("s", false, "Hide the secret key from the output")
 	isBitcoin := flag.Bool("b", false, "Print address as a bitcoin address")
 	hexSeed := flag.Bool("x", false, "Use hex(sha256sum(rand(1024))) (CSPRNG-generated) as the seed if seed is not provided")
 	hideSecrets := flag.Bool("hide-secrets", false, "Hide seed and secret key")
@@ -57,18 +55,19 @@ func main() {
 		}
 	}
 
-	// w, err := wallet.NewWallet(coinType, *seed, *genCount, *hideSecKey)
-	w, err := wallet.NewWallet("a.wlt", wallet.Options{
-		Type:      "deterministic",
+	w, err := wallet.NewWallet("a.wlt", "", *seed, wallet.Options{
+		Type:      deterministic.WalletType,
 		Coin:      coinType,
-		Seed:      *seed,
 		GenerateN: uint64(*genCount),
-		Encrypt:   *hideSecKey,
 	})
 
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
+	}
+
+	if *hideSecrets {
+		w.Erase()
 	}
 
 	if *hideSecrets && *secKeysList {
@@ -82,23 +81,29 @@ func main() {
 	}
 
 	if *addrsList {
-		for _, a := range w.GetAddresses() {
+		addrs, err := w.GetAddresses()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		for _, a := range addrs {
 			fmt.Println(a)
 		}
-		// for _, e := range w.Entries {
-		// }
 	} else if *secKeysList {
-		// for _, e := range w.Entries {
-		// 	fmt.Println(e.Secret)
-		// }
-		for _, e := range w.GetEntries() {
+		es, err := w.GetEntries()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		for _, e := range es {
 			fmt.Println(e.Secret.Hex())
 		}
 	} else {
 		if *hideSecrets {
 			w.Erase()
 		}
-		output, err := json.MarshalIndent(w.ToReadable(), "", "    ")
+		output, err := w.Serialize()
 		if err != nil {
 			fmt.Println("Error formating wallet to JSON. Error:", err)
 			os.Exit(1)

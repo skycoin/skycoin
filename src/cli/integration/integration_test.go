@@ -36,6 +36,13 @@ import (
 	"github.com/SkycoinProject/skycoin/src/util/droplet"
 	wh "github.com/SkycoinProject/skycoin/src/util/http"
 	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
+	"github.com/SkycoinProject/skycoin/src/wallet/deterministic"
+
+	// register wallets
+	_ "github.com/SkycoinProject/skycoin/src/wallet/bip44wallet"
+	_ "github.com/SkycoinProject/skycoin/src/wallet/collection"
+	_ "github.com/SkycoinProject/skycoin/src/wallet/xpubwallet"
 )
 
 const (
@@ -60,7 +67,7 @@ var (
 	liveTxFull     = flag.Bool("live-tx-full", false, "run live transaction test against full blockchain")
 	testLiveWallet = flag.Bool("test-live-wallet", false, "run live wallet tests, requires wallet envvars set")
 
-	cryptoTypes = []wallet.CryptoType{wallet.CryptoTypeScryptChacha20poly1305, wallet.CryptoTypeSha256Xor}
+	cryptoTypes = []crypto.CryptoType{crypto.CryptoTypeScryptChacha20poly1305, crypto.CryptoTypeSha256Xor}
 
 	validNameRegexp     = regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
 	stripCoverageReport = regexp.MustCompile(`PASS\ncoverage: [\d\.]+% of statements in github.com/SkycoinProject/skycoin/\.\.\.\n$`)
@@ -248,6 +255,17 @@ func createTempWallet(t *testing.T, filename string, encrypt bool) (string, func
 			t.Logf("Failed to cleanup temp wallet dir %s: %v", dir, err)
 		}
 	}
+}
+
+type readableDeterministicEntry struct {
+	Address string `json:"address"`
+	Public  string `json:"public_key"`
+	Secret  string `json:"secret_key"`
+}
+
+type readableDeterministicWallet struct {
+	Meta    wallet.Meta                  `json:"meta"`
+	Entries []readableDeterministicEntry `json:"entries"`
 }
 
 // createTempWalletDir creates a temporary wallet dir,
@@ -515,15 +533,15 @@ func TestWalletAddAddresses(t *testing.T) {
 			require.Equal(t, tc.expectOutput, output)
 
 			require.NoError(t, err)
-
-			var w wallet.ReadableCollectionWallet
+			var w readableDeterministicWallet
 			loadJSON(t, walletFile, &w)
 
 			// Use loadJSON instead of loadGoldenFile because this golden file
 			// should not use the *update flag
 			goldenFile := filepath.Join(testFixturesDir, tc.goldenFile)
-			var expect wallet.ReadableCollectionWallet
+			var expect readableDeterministicWallet
 			loadJSON(t, goldenFile, &expect)
+
 			if tc.encrypted {
 				// wipe secrets as it's not stable
 				expect.Meta["secrets"] = ""
@@ -682,9 +700,10 @@ func TestAddressGen(t *testing.T) {
 			name: "addressGen --mode=wallet",
 			args: []string{"addressGen", "--mode=wallet"},
 			check: func(t *testing.T, v []byte) {
-				var w wallet.ReadableDeterministicWallet
-				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
-				require.NoError(t, err)
+				//var w wallet.ReadableDeterministicWallet
+				//err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
+				//require.NoError(t, err)
+				w := loadDeterministicWalletFromBytes(t, v)
 
 				// Confirms the wallet type is skycoin
 				require.Equal(t, wallet.CoinTypeSkycoin, wallet.CoinType(w.Meta["coin"]))
@@ -700,12 +719,13 @@ func TestAddressGen(t *testing.T) {
 			name: "addressGen  --mode=wallet --num 2",
 			args: []string{"addressGen", "--mode=wallet", "--num", "2"},
 			check: func(t *testing.T, v []byte) {
-				var w wallet.ReadableDeterministicWallet
-				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
-				require.NoError(t, err)
+				//var w wallet.ReadableDeterministicWallet
+				//err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
+				//require.NoError(t, err)
+				w := loadDeterministicWalletFromBytes(t, v)
 
 				// Confirms the wallet type is skycoin
-				require.Equal(t, wallet.CoinTypeSkycoin, wallet.CoinType(w.Meta["coin"]))
+				require.Equal(t, wallet.CoinTypeSkycoin, w.Coin())
 
 				// Confirms that the seed is consisted of 12 words
 				seed := w.Seed()
@@ -714,7 +734,8 @@ func TestAddressGen(t *testing.T) {
 				require.Len(t, ss, 12)
 
 				// Confirms that the wallet have 2 address
-				entries := w.GetEntries()
+				entries, err := w.GetEntries()
+				require.NoError(t, err)
 				require.Len(t, entries, 2)
 
 				// Confirms the addresses are generated from the seed
@@ -722,9 +743,9 @@ func TestAddressGen(t *testing.T) {
 				for i, key := range keys {
 					pk := cipher.MustPubKeyFromSecKey(key)
 					addr := cipher.MustAddressFromSecKey(key)
-					require.Equal(t, addr.String(), entries[i].Address)
-					require.Equal(t, pk.Hex(), entries[i].Public)
-					require.Equal(t, key.Hex(), entries[i].Secret)
+					require.Equal(t, addr.String(), entries[i].Address.String())
+					require.Equal(t, pk.Hex(), entries[i].Public.Hex())
+					require.Equal(t, key.Hex(), entries[i].Secret.Hex())
 				}
 			},
 		},
@@ -732,12 +753,13 @@ func TestAddressGen(t *testing.T) {
 			name: "addressGen --mode=wallet -n 2",
 			args: []string{"addressGen", "--mode=wallet", "-n", "2"},
 			check: func(t *testing.T, v []byte) {
-				var w wallet.ReadableDeterministicWallet
-				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
-				require.NoError(t, err)
+				//var w wallet.ReadableDeterministicWallet
+				//err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
+				//require.NoError(t, err)
+				w := loadDeterministicWalletFromBytes(t, v)
 
 				// Confirms the wallet type is skycoin
-				require.Equal(t, wallet.CoinTypeSkycoin, wallet.CoinType(w.Meta["coin"]))
+				require.Equal(t, wallet.CoinTypeSkycoin, w.Coin())
 
 				// Confirms that the seed is consisted of 12 words
 				seed := w.Seed()
@@ -746,7 +768,8 @@ func TestAddressGen(t *testing.T) {
 				require.Len(t, ss, 12)
 
 				// Confirms that the wallet have 2 address
-				entries := w.GetEntries()
+				entries, err := w.GetEntries()
+				require.NoError(t, err)
 				require.Len(t, entries, 2)
 
 				// Confirms the addresses are generated from the seed
@@ -754,9 +777,9 @@ func TestAddressGen(t *testing.T) {
 				for i, key := range keys {
 					pk := cipher.MustPubKeyFromSecKey(key)
 					addr := cipher.MustAddressFromSecKey(key)
-					require.Equal(t, addr.String(), entries[i].Address)
-					require.Equal(t, pk.Hex(), entries[i].Public)
-					require.Equal(t, key.Hex(), entries[i].Secret)
+					require.Equal(t, addr.String(), entries[i].Address.String())
+					require.Equal(t, pk.Hex(), entries[i].Public.Hex())
+					require.Equal(t, key.Hex(), entries[i].Secret.Hex())
 				}
 			},
 		},
@@ -764,7 +787,7 @@ func TestAddressGen(t *testing.T) {
 			name: "addressGen  --mode=wallet --hide-secrets -n 2",
 			args: []string{"addressGen", "--mode=wallet", "--hide-secrets", "-n", "2"},
 			check: func(t *testing.T, v []byte) {
-				var w wallet.ReadableDeterministicWallet
+				var w readableDeterministicWallet
 				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
 				require.NoError(t, err)
 
@@ -772,8 +795,8 @@ func TestAddressGen(t *testing.T) {
 				require.Equal(t, wallet.CoinTypeSkycoin, wallet.CoinType(w.Meta["coin"]))
 
 				// Confirms the secrets in Entries are hidden
-				require.Len(t, w.GetEntries(), 2)
-				for _, e := range w.GetEntries() {
+				require.Len(t, w.Entries, 2)
+				for _, e := range w.Entries {
 					require.Equal(t, e.Secret, "")
 				}
 			},
@@ -782,7 +805,7 @@ func TestAddressGen(t *testing.T) {
 			name: "addressGen -m=wallet -i -n 2",
 			args: []string{"addressGen", "-m=wallet", "-i", "-n", "2"},
 			check: func(t *testing.T, v []byte) {
-				var w wallet.ReadableDeterministicWallet
+				var w readableDeterministicWallet
 				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
 				require.NoError(t, err)
 
@@ -790,8 +813,8 @@ func TestAddressGen(t *testing.T) {
 				require.Equal(t, wallet.CoinTypeSkycoin, wallet.CoinType(w.Meta["coin"]))
 
 				// Confirms the secrets in Entries are hidden
-				require.Len(t, w.GetEntries(), 2)
-				for _, e := range w.GetEntries() {
+				require.Len(t, w.Entries, 2)
+				for _, e := range w.Entries {
 					require.Equal(t, e.Secret, "")
 				}
 			},
@@ -800,14 +823,16 @@ func TestAddressGen(t *testing.T) {
 			name: "addressGen --mode=wallet--coin=bitcoin -n 2",
 			args: []string{"addressGen", "--mode=wallet", "--coin=bitcoin", "-n", "2"},
 			check: func(t *testing.T, v []byte) {
-				var w wallet.ReadableDeterministicWallet
-				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
-				require.NoError(t, err)
+				//var w wallet.ReadableDeterministicWallet
+				//err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
+				//require.NoError(t, err)
+				w := loadDeterministicWalletFromBytes(t, v)
 
 				// Confirms the wallet type is skycoin
 				require.Equal(t, wallet.CoinTypeBitcoin, wallet.CoinType(w.Meta["coin"]))
 
-				entries := w.GetEntries()
+				entries, err := w.GetEntries()
+				require.NoError(t, err)
 				require.Len(t, entries, 2)
 
 				// Confirms the addresses are bitcoin addresses that generated from the seed
@@ -815,11 +840,10 @@ func TestAddressGen(t *testing.T) {
 				_, keys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 2)
 				for i, key := range keys {
 					pk := cipher.MustPubKeyFromSecKey(key)
-					sk := cipher.BitcoinWalletImportFormatFromSeckey(key)
 					address := cipher.BitcoinAddressFromPubKey(pk)
-					require.Equal(t, address.String(), entries[i].Address)
-					require.Equal(t, pk.Hex(), entries[i].Public)
-					require.Equal(t, sk, entries[i].Secret)
+					require.Equal(t, address.String(), entries[i].Address.String())
+					require.Equal(t, pk.Hex(), entries[i].Public.Hex())
+					require.Equal(t, key, entries[i].Secret)
 				}
 			},
 		},
@@ -827,26 +851,27 @@ func TestAddressGen(t *testing.T) {
 			name: "addressGen --mode=wallet -c=btc -n 2",
 			args: []string{"addressGen", "--mode=wallet", "-c=btc", "-n", "2"},
 			check: func(t *testing.T, v []byte) {
-				var w wallet.ReadableDeterministicWallet
-				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
-				require.NoError(t, err)
+				//var w wallet.ReadableDeterministicWallet
+				//err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
+				//require.NoError(t, err)
+				w := loadDeterministicWalletFromBytes(t, v)
 
 				// Confirms the wallet type is skycoin
 				require.Equal(t, wallet.CoinTypeBitcoin, wallet.CoinType(w.Meta["coin"]))
 
-				entries := w.GetEntries()
-				require.Len(t, w.GetEntries(), 2)
+				entries, err := w.GetEntries()
+				require.NoError(t, err)
+				require.Equal(t, len(entries), 2)
 
 				// Confirms the addresses are bitcoin addresses that generated from the seed
 				seed := w.Seed()
 				_, keys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), 2)
 				for i, key := range keys {
 					pk := cipher.MustPubKeyFromSecKey(key)
-					sk := cipher.BitcoinWalletImportFormatFromSeckey(key)
 					address := cipher.BitcoinAddressFromPubKey(pk)
-					require.Equal(t, address.String(), entries[i].Address)
-					require.Equal(t, pk.Hex(), entries[i].Public)
-					require.Equal(t, sk, entries[i].Secret)
+					require.Equal(t, address.String(), entries[i].Address.String())
+					require.Equal(t, pk.Hex(), entries[i].Public.Hex())
+					require.Equal(t, key, entries[i].Secret)
 				}
 			},
 		},
@@ -854,12 +879,13 @@ func TestAddressGen(t *testing.T) {
 			name: "addressGen --mode=wallet --hex",
 			args: []string{"addressGen", "--mode=wallet", "--hex"},
 			check: func(t *testing.T, v []byte) {
-				var w wallet.ReadableDeterministicWallet
-				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
-				require.NoError(t, err)
+				//var w wallet.ReadableDeterministicWallet
+				//err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
+				//require.NoError(t, err)
+				w := loadDeterministicWalletFromBytes(t, v)
 
 				// Confirms the seed is a valid hex string
-				_, err = hex.DecodeString(w.Seed())
+				_, err := hex.DecodeString(w.Seed())
 				require.NoError(t, err)
 			},
 		},
@@ -895,34 +921,38 @@ func TestAddressGen(t *testing.T) {
 			name: "addressGen --mode=wallet --seed 123",
 			args: []string{"addressGen", "--mode=wallet", "--seed", "123"},
 			check: func(t *testing.T, v []byte) {
-				var w wallet.ReadableDeterministicWallet
-				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
-				require.NoError(t, err)
+				//var w wallet.ReadableDeterministicWallet
+				//err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
+				//require.NoError(t, err)
+				w := loadDeterministicWalletFromBytes(t, v)
 
 				pk, sk := cipher.MustGenerateDeterministicKeyPair([]byte("123"))
 				addr := cipher.AddressFromPubKey(pk)
-				entries := w.GetEntries()
+				entries, err := w.GetEntries()
+				require.NoError(t, err)
 				require.Len(t, entries, 1)
-				require.Equal(t, addr.String(), entries[0].Address)
-				require.Equal(t, pk.Hex(), entries[0].Public)
-				require.Equal(t, sk.Hex(), entries[0].Secret)
+				require.Equal(t, addr.String(), entries[0].Address.String())
+				require.Equal(t, pk.Hex(), entries[0].Public.Hex())
+				require.Equal(t, sk.Hex(), entries[0].Secret.Hex())
 			},
 		},
 		{
 			name: "addressGen --mode=wallet -s 123",
 			args: []string{"addressGen", "--mode=wallet", "-s", "123"},
 			check: func(t *testing.T, v []byte) {
-				var w wallet.ReadableDeterministicWallet
-				err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
-				require.NoError(t, err)
+				//var w wallet.ReadableDeterministicWallet
+				//err := json.NewDecoder(bytes.NewReader(v)).Decode(&w)
+				//require.NoError(t, err)
+				w := loadDeterministicWalletFromBytes(t, v)
 
 				pk, sk := cipher.MustGenerateDeterministicKeyPair([]byte("123"))
 				addr := cipher.AddressFromPubKey(pk)
-				entries := w.GetEntries()
+				entries, err := w.GetEntries()
+				require.NoError(t, err)
 				require.Len(t, entries, 1)
-				require.Equal(t, addr.String(), entries[0].Address)
-				require.Equal(t, pk.Hex(), entries[0].Public)
-				require.Equal(t, sk.Hex(), entries[0].Secret)
+				require.Equal(t, addr.String(), entries[0].Address.String())
+				require.Equal(t, pk.Hex(), entries[0].Public.Hex())
+				require.Equal(t, sk.Hex(), entries[0].Secret.Hex())
 			},
 		},
 		{
@@ -1753,7 +1783,8 @@ func TestLiveCreateRawTransactionV2(t *testing.T) {
 	walletFile := requireWalletEnv(t)
 	w, err := wallet.Load(walletFile)
 	require.NoError(t, err)
-	addrs := w.GetAddresses()
+	addrs, err := w.GetAddresses()
+	require.NoError(t, err)
 	require.Truef(t, len(addrs) >= 2, "wallet must have at least 2 addresses")
 
 	// prepare csv file for testing
@@ -2252,7 +2283,8 @@ func TestLiveSend(t *testing.T) {
 
 	// prepares wallet and confirms the wallet has at least 2 coins and 16 coin hours.
 	w, totalCoins, _ := prepareAndCheckWallet(t, 2e6, 16)
-	entries := w.GetEntries()
+	entries, err := w.GetEntries()
+	require.NoError(t, err)
 
 	if w.IsEncrypted() {
 		t.Skip("CLI wallet integration tests do not support encrypted wallets yet")
@@ -2421,6 +2453,9 @@ func TestLiveSendNotEnoughDecimals(t *testing.T) {
 		return
 	}
 
+	entries, err := w.GetEntries()
+	require.NoError(t, err)
+
 	// Send with too small decimal value
 	// CLI send is a litte bit slow, almost 300ms each. so we only test 20 invalid decimal coin.
 	errMsg := []byte("See 'skycoin-cli send --help'\nError: Transaction violates soft constraint: invalid amount, too many decimal places")
@@ -2429,7 +2464,7 @@ func TestLiveSendNotEnoughDecimals(t *testing.T) {
 		require.NoError(t, err)
 		name := fmt.Sprintf("send %v", v)
 		t.Run(name, func(t *testing.T) {
-			output, err := execCommandCombinedOutput("send", fn, w.GetEntryAt(0).Address.String(), v)
+			output, err := execCommandCombinedOutput("send", fn, entries[0].Address.String(), v)
 			require.Error(t, err)
 			require.Equal(t, err.Error(), "exit status 1")
 			output = bytes.TrimRight(output, "\n")
@@ -2467,6 +2502,9 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 		}
 	}()
 
+	entries, err := w.GetEntries()
+	require.NoError(t, err)
+
 	tt := []struct {
 		name     string
 		args     func() []string
@@ -2479,7 +2517,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 			args: func() []string {
 				coins, err := droplet.ToString(totalCoins)
 				require.NoError(t, err)
-				return []string{"createRawTransaction", fn, w.GetEntryAt(0).Address.String(), coins}
+				return []string{"createRawTransaction", fn, entries[0].Address.String(), coins}
 			},
 			checkTxn: func(t *testing.T, txid string) {
 				// Confirms all coins are in the first address in one output
@@ -2501,11 +2539,11 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 					Coins string `json:"coins"`
 				}{
 					{
-						w.GetEntryAt(1).Address.String(),
+						entries[1].Address.String(),
 						"0.5",
 					},
 					{
-						w.GetEntryAt(2).Address.String(),
+						entries[2].Address.String(),
 						"0.5",
 					},
 				}
@@ -2517,7 +2555,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 			},
 			checkTxn: func(t *testing.T, txid string) {
 				// Confirms the first address has at least 1 coin left.
-				coins, _ := getAddressBalance(t, w.GetEntryAt(0).Address.String())
+				coins, _ := getAddressBalance(t, entries[0].Address.String())
 				require.True(t, coins >= 1e6)
 			},
 		},
@@ -2528,8 +2566,8 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 			name: "send to multiple address with --csv option",
 			args: func() []string {
 				fields := [][]string{
-					{w.GetEntryAt(1).Address.String(), "0.5"},
-					{w.GetEntryAt(2).Address.String(), "0.5"},
+					{entries[1].Address.String(), "0.5"},
+					{entries[2].Address.String(), "0.5"},
 				}
 
 				f, err := ioutil.TempFile("", "createrawtxn")
@@ -2551,7 +2589,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 			},
 			checkTxn: func(t *testing.T, txid string) {
 				// Confirms the first address has at least 1 coin left.
-				coins, _ := getAddressBalance(t, w.GetEntryAt(0).Address.String())
+				coins, _ := getAddressBalance(t, entries[0].Address.String())
 				require.True(t, coins >= 1e6)
 			},
 		},
@@ -2606,7 +2644,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 		require.NoError(t, err)
 		name := fmt.Sprintf("send %v", v)
 		t.Run(name, func(t *testing.T) {
-			output, err := execCommandCombinedOutput("createRawTransaction", fn, w.GetEntryAt(0).Address.String(), v)
+			output, err := execCommandCombinedOutput("createRawTransaction", fn, entries[0].Address.String(), v)
 			require.Error(t, err)
 			output = bytes.Trim(output, "\n")
 			require.Equal(t, errMsg, string(output))
@@ -2680,9 +2718,12 @@ func prepareAndCheckWallet(t *testing.T, miniCoins, miniCoinHours uint64) (walle
 		t.Fatalf("Load wallet failed: %v", err)
 	}
 
-	if w.EntriesLen() < 3 {
+	el, err := w.EntriesLen()
+	require.NoError(t, err)
+
+	if el < 3 {
 		// Generates addresses
-		_, err = w.GenerateAddresses(uint64(3 - w.EntriesLen()))
+		_, err = w.GenerateAddresses(uint64(3 - el))
 		if err != nil {
 			t.Fatalf("Wallet generateAddress failed: %v", err)
 		}
@@ -2895,8 +2936,12 @@ func TestStableWalletCreateXPubFlow(t *testing.T) {
 	w2, err := wallet.Load(xpubFilename)
 	require.NoError(t, err)
 
-	for i, e := range w.GetEntries() {
-		e2 := w2.GetEntryAt(i)
+	entries, err := w.GetEntries()
+	require.NoError(t, err)
+
+	for i, e := range entries {
+		e2, err := w2.GetEntryAt(i)
+		require.NoError(t, err)
 		require.Equal(t, e.Public, e2.Public)
 		require.Equal(t, e.Address, e2.Address)
 		require.False(t, e.Secret.Null())
@@ -2969,9 +3014,11 @@ func TestStableWalletCreate(t *testing.T) {
 				require.Empty(t, w.Label())
 
 				require.Equal(t, "great duck trophy inhale dad pluck include maze smart mechanic ring merge", w.Seed())
-				require.Equal(t, "2amA8sxKJhNRp3wfWrE5JfTEUjr9S3C2BaU", w.GetEntryAt(0).Address.String())
-				require.Equal(t, "02b4a4b63f2f8ba56f9508712815eca3c088693333715eaf7a73275d8928e1be5a", w.GetEntryAt(0).Public.Hex())
-				require.Equal(t, "f4a281d094a6e9e95a84c23701a7d01a0e413c838758e94ad86a10b9b83e0434", w.GetEntryAt(0).Secret.Hex())
+				e, err := w.GetEntryAt(0)
+				require.NoError(t, err)
+				require.Equal(t, "2amA8sxKJhNRp3wfWrE5JfTEUjr9S3C2BaU", e.Address.String())
+				require.Equal(t, "02b4a4b63f2f8ba56f9508712815eca3c088693333715eaf7a73275d8928e1be5a", e.Public.Hex())
+				require.Equal(t, "f4a281d094a6e9e95a84c23701a7d01a0e413c838758e94ad86a10b9b83e0434", e.Secret.Hex())
 			},
 		},
 		{
@@ -2983,9 +3030,11 @@ func TestStableWalletCreate(t *testing.T) {
 				require.Empty(t, w.Label())
 
 				require.Equal(t, "great duck trophy inhale dad pluck include maze smart mechanic ring merge", w.Seed())
-				require.Equal(t, "skPFvAokn63RTHh8MR8cZuHUpzZiutFeks", w.GetEntryAt(0).Address.String())
-				require.Equal(t, "0381a3a0ed879eae12a612d24c73c39ff1d9f3c238e10ecf29c318db11e84e1143", w.GetEntryAt(0).Public.Hex())
-				require.Equal(t, "7519c63c890d593a11eeebfe4b4552f3d8a01094c086262e7c68a3e7adc61677", w.GetEntryAt(0).Secret.Hex())
+				e, err := w.GetEntryAt(0)
+				require.NoError(t, err)
+				require.Equal(t, "skPFvAokn63RTHh8MR8cZuHUpzZiutFeks", e.Address.String())
+				require.Equal(t, "0381a3a0ed879eae12a612d24c73c39ff1d9f3c238e10ecf29c318db11e84e1143", e.Public.Hex())
+				require.Equal(t, "7519c63c890d593a11eeebfe4b4552f3d8a01094c086262e7c68a3e7adc61677", e.Secret.Hex())
 			},
 		},
 		{
@@ -2996,11 +3045,13 @@ func TestStableWalletCreate(t *testing.T) {
 				// Confirms the label is empty
 				require.Empty(t, w.Label())
 
+				e, err := w.GetEntryAt(0)
+				require.NoError(t, err)
 				require.Equal(t, "foobar", w.SeedPassphrase())
 				require.Equal(t, "great duck trophy inhale dad pluck include maze smart mechanic ring merge", w.Seed())
-				require.Equal(t, "29bFTouyAtgRhdhHqiC6kccom3avjBpfnxS", w.GetEntryAt(0).Address.String())
-				require.Equal(t, "02dbaefd35105e27ac7428505186844dcb9472021a5fdfb057c106722f3396bdf6", w.GetEntryAt(0).Public.Hex())
-				require.Equal(t, "c2edb45b4c5c7828d6b879a163cb2bf016746e9c03efe5df24e9ded878b0b772", w.GetEntryAt(0).Secret.Hex())
+				require.Equal(t, "29bFTouyAtgRhdhHqiC6kccom3avjBpfnxS", e.Address.String())
+				require.Equal(t, "02dbaefd35105e27ac7428505186844dcb9472021a5fdfb057c106722f3396bdf6", e.Public.Hex())
+				require.Equal(t, "c2edb45b4c5c7828d6b879a163cb2bf016746e9c03efe5df24e9ded878b0b772", e.Secret.Hex())
 			},
 		},
 		{
@@ -3017,8 +3068,19 @@ func TestStableWalletCreate(t *testing.T) {
 				// Confirms the label is empty
 				require.Empty(t, w.Label())
 				// Confirms wallet has 5 address entries
-				require.Len(t, w.(*wallet.Bip44Wallet).ExternalEntries, 5)
-				require.Len(t, w.GetEntries(), 5)
+				//bip44Wlt, ok := w.(*bip44wallet.Wallet)
+				//require.True(t, ok)
+				//extEntries, err := bip44Wlt.GetEntry()
+
+				// get external entries length
+				extLen, err := w.EntriesLen()
+				require.NoError(t, err)
+				require.Equal(t, extLen, 5)
+
+				// get change entries length
+				chgLen, err := w.EntriesLen(wallet.OptionChange(true))
+				require.NoError(t, err)
+				require.Equal(t, chgLen, 1)
 			},
 		},
 		{
@@ -3030,7 +3092,9 @@ func TestStableWalletCreate(t *testing.T) {
 				// Confirms the label is empty
 				require.Empty(t, w.Label())
 				// Confirms wallet has 5 address entries
-				require.Len(t, w.GetEntries(), 5)
+				l, err := w.EntriesLen()
+				require.NoError(t, err)
+				require.Equal(t, l, 5)
 			},
 		},
 		{
@@ -3065,7 +3129,9 @@ func TestStableWalletCreate(t *testing.T) {
 				require.Empty(t, w.LastSeed())
 
 				// Confirms the secrets in address entries are empty
-				for _, e := range w.GetEntries() {
+				entries, err := w.GetEntries()
+				require.NoError(t, err)
+				for _, e := range entries {
 					require.Equal(t, cipher.SecKey{}, e.Secret)
 				}
 			},
@@ -3153,12 +3219,14 @@ func checkWalletEntriesAndLastSeedDeterministic(t *testing.T, w wallet.Wallet) {
 	seed := w.Seed()
 	require.NotEmpty(t, seed)
 
-	newSeed, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), w.EntriesLen())
-	require.Len(t, seckeys, w.EntriesLen())
+	entries, err := w.GetEntries()
+	require.NoError(t, err)
+	newSeed, seckeys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(seed), len(entries))
+	require.Len(t, seckeys, len(entries))
 	for i, sk := range seckeys {
-		require.Equal(t, w.GetEntryAt(i).Secret, sk)
+		require.Equal(t, entries[i].Secret, sk)
 		pk := cipher.MustPubKeyFromSecKey(sk)
-		require.Equal(t, w.GetEntryAt(i).Public, pk)
+		require.Equal(t, entries[i].Public, pk)
 	}
 
 	lastSeed := w.LastSeed()
@@ -3175,7 +3243,10 @@ func checkWalletEntriesAndLastSeedBip44(t *testing.T, w wallet.Wallet) {
 	err := bip39.ValidateMnemonic(seed)
 	require.NoError(t, err)
 
-	for _, e := range w.GetEntries() {
+	entries, err := w.GetEntries()
+	require.NoError(t, err)
+
+	for _, e := range entries {
 		require.False(t, e.Secret.Null())
 		require.False(t, e.Public.Null())
 	}
@@ -3209,6 +3280,9 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 		return
 	}
 
+	entries, err := w.GetEntries()
+	require.NoError(t, err)
+
 	tt := []struct {
 		name     string
 		args     func() []string
@@ -3221,7 +3295,7 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 			args: func() []string {
 				coins, err := droplet.ToString(totalCoins)
 				require.NoError(t, err)
-				return []string{"createRawTransaction", fn, w.GetEntryAt(0).Address.String(), coins}
+				return []string{"createRawTransaction", fn, entries[0].Address.String(), coins}
 			},
 			checkTxn: func(t *testing.T, txid string) {
 				// Confirms all coins are in the first address in one output
@@ -3243,11 +3317,11 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 					Coins string `json:"coins"`
 				}{
 					{
-						w.GetEntryAt(1).Address.String(),
+						entries[1].Address.String(),
 						"0.5",
 					},
 					{
-						w.GetEntryAt(2).Address.String(),
+						entries[2].Address.String(),
 						"0.5",
 					},
 				}
@@ -3259,7 +3333,7 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 			},
 			checkTxn: func(t *testing.T, txid string) {
 				// Confirms the first address has at least 1 coin left.
-				coins, _ := getAddressBalance(t, w.GetEntryAt(0).Address.String())
+				coins, _ := getAddressBalance(t, entries[0].Address.String())
 				require.True(t, coins >= 1e6)
 			},
 		},
@@ -3332,7 +3406,9 @@ func TestEncryptWallet(t *testing.T) {
 				require.Empty(t, w.LastSeed())
 
 				// Confirms that secrets in address entries are empty
-				for _, e := range w.GetEntries() {
+				entries, err := w.GetEntries()
+				require.NoError(t, err)
+				for _, e := range entries {
 					require.Equal(t, cipher.SecKey{}, e.Secret)
 				}
 			},
@@ -3399,12 +3475,13 @@ func TestDecryptWallet(t *testing.T) {
 			setup: createEncryptedWallet,
 			checkWallet: func(t *testing.T, w wallet.Wallet) {
 				require.False(t, w.IsEncrypted())
-				require.Empty(t, w.CryptoType())
 				require.Empty(t, w.Secrets())
 				require.NotEmpty(t, w.Seed())
 				require.NotEmpty(t, w.LastSeed())
 
-				for _, e := range w.GetEntries() {
+				entries, err := w.GetEntries()
+				require.NoError(t, err)
+				for _, e := range entries {
 					require.False(t, e.Secret.Null())
 				}
 			},
@@ -3526,4 +3603,11 @@ func TestWalletShowSeed(t *testing.T) {
 			require.Equal(t, tc.expectOutput, output)
 		})
 	}
+}
+
+func loadDeterministicWalletFromBytes(t *testing.T, data []byte) *deterministic.Wallet {
+	var w deterministic.Wallet
+	err := w.Deserialize(data)
+	require.NoError(t, err)
+	return &w
 }

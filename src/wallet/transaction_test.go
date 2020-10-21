@@ -1,4 +1,4 @@
-package wallet
+package wallet_test
 
 import (
 	"bytes"
@@ -18,6 +18,8 @@ import (
 	"github.com/SkycoinProject/skycoin/src/testutil"
 	"github.com/SkycoinProject/skycoin/src/transaction"
 	"github.com/SkycoinProject/skycoin/src/util/fee"
+	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/collection"
 )
 
 func TestWalletSignTransaction(t *testing.T) {
@@ -27,11 +29,11 @@ func TestWalletSignTransaction(t *testing.T) {
 	txnUnsigned := txnSigned
 	txnUnsigned.Sigs = make([]cipher.Sig, len(txnSigned.Sigs))
 
-	w := &CollectionWallet{}
+	w := &collection.Wallet{}
 	for _, x := range seckeys {
 		p := cipher.MustPubKeyFromSecKey(x)
 		a := cipher.AddressFromPubKey(p)
-		err := w.AddEntry(Entry{
+		err := w.AddEntry(wallet.Entry{
 			Address: a,
 			Public:  p,
 			Secret:  x,
@@ -82,11 +84,11 @@ func TestWalletSignTransaction(t *testing.T) {
 	err = txnOtherWallet.UpdateHeader()
 	require.NoError(t, err)
 
-	otherWallet := &CollectionWallet{}
+	otherWallet := &collection.Wallet{}
 	for i := 1; i < 3; i++ {
 		p := cipher.MustPubKeyFromSecKey(secKeysOtherWallet[i])
 		a := cipher.AddressFromPubKey(p)
-		err := otherWallet.AddEntry(Entry{
+		err := otherWallet.AddEntry(wallet.Entry{
 			Address: a,
 			Public:  p,
 			Secret:  secKeysOtherWallet[i],
@@ -96,7 +98,7 @@ func TestWalletSignTransaction(t *testing.T) {
 
 	cases := []struct {
 		name        string
-		w           Wallet
+		w           wallet.Wallet
 		txn         coin.Transaction
 		signIndexes []int
 		uxOuts      []coin.UxOut
@@ -109,7 +111,7 @@ func TestWalletSignTransaction(t *testing.T) {
 			w:      w,
 			txn:    txnSigned,
 			uxOuts: uxs,
-			err:    NewError(errors.New("Transaction is fully signed")),
+			err:    wallet.NewError(errors.New("Transaction is fully signed")),
 		},
 
 		{
@@ -118,28 +120,28 @@ func TestWalletSignTransaction(t *testing.T) {
 			txn:         txnPartiallySigned,
 			uxOuts:      uxs,
 			signIndexes: []int{3},
-			err:         NewError(errors.New("Transaction is already signed at index 3")),
+			err:         wallet.NewError(errors.New("Transaction is already signed at index 3")),
 		},
 
 		{
 			name: "bad txn inner hash",
 			w:    w,
 			txn:  badTxnInnerHash,
-			err:  NewError(errors.New("Transaction inner hash does not match computed inner hash")),
+			err:  wallet.NewError(errors.New("Transaction inner hash does not match computed inner hash")),
 		},
 
 		{
 			name: "txn no inputs",
 			w:    w,
 			txn:  badTxnNoInputs,
-			err:  NewError(errors.New("No transaction inputs to sign")),
+			err:  wallet.NewError(errors.New("No transaction inputs to sign")),
 		},
 
 		{
 			name: "txn no sigs",
 			w:    w,
 			txn:  badTxnNoSigs,
-			err:  NewError(errors.New("Transaction signatures array is empty")),
+			err:  wallet.NewError(errors.New("Transaction signatures array is empty")),
 		},
 
 		{
@@ -156,7 +158,7 @@ func TestWalletSignTransaction(t *testing.T) {
 			txn:         txnUnsigned,
 			uxOuts:      uxs,
 			signIndexes: []int{0, 1, 2, 3, 4, 5},
-			err:         NewError(errors.New("Number of signature indexes exceeds number of inputs")),
+			err:         wallet.NewError(errors.New("Number of signature indexes exceeds number of inputs")),
 		},
 
 		{
@@ -165,7 +167,7 @@ func TestWalletSignTransaction(t *testing.T) {
 			txn:         txnUnsigned,
 			uxOuts:      uxs,
 			signIndexes: []int{0, 1, 5, 2},
-			err:         NewError(errors.New("Signature index out of range")),
+			err:         wallet.NewError(errors.New("Signature index out of range")),
 		},
 
 		{
@@ -174,7 +176,7 @@ func TestWalletSignTransaction(t *testing.T) {
 			txn:         txnUnsigned,
 			uxOuts:      uxs,
 			signIndexes: []int{0, 1, 1},
-			err:         NewError(errors.New("Duplicate value in signature indexes")),
+			err:         wallet.NewError(errors.New("Duplicate value in signature indexes")),
 		},
 
 		{
@@ -182,7 +184,7 @@ func TestWalletSignTransaction(t *testing.T) {
 			w:      w,
 			txn:    txnOtherWallet,
 			uxOuts: uxsOtherWallet,
-			err:    NewError(errors.New("Wallet cannot sign all requested inputs")),
+			err:    wallet.NewError(errors.New("Wallet cannot sign all requested inputs")),
 		},
 
 		{
@@ -190,7 +192,7 @@ func TestWalletSignTransaction(t *testing.T) {
 			w:      otherWallet,
 			txn:    txnOtherWallet,
 			uxOuts: uxsOtherWallet,
-			err:    NewError(errors.New("Wallet cannot sign all requested inputs")),
+			err:    wallet.NewError(errors.New("Wallet cannot sign all requested inputs")),
 		},
 
 		{
@@ -199,7 +201,7 @@ func TestWalletSignTransaction(t *testing.T) {
 			txn:         txnOtherWallet,
 			uxOuts:      uxsOtherWallet,
 			signIndexes: []int{2, 0},
-			err:         NewError(errors.New("Wallet cannot sign all requested inputs")),
+			err:         wallet.NewError(errors.New("Wallet cannot sign all requested inputs")),
 		},
 
 		{
@@ -271,7 +273,7 @@ func TestWalletSignTransaction(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			signedTxn, err := SignTransaction(tc.w, &tc.txn, tc.signIndexes, tc.uxOuts)
+			signedTxn, err := wallet.SignTransaction(tc.w, &tc.txn, tc.signIndexes, tc.uxOuts)
 			if tc.err != nil {
 				require.Equal(t, tc.err, err)
 				return
@@ -339,11 +341,11 @@ func TestWalletCreateTransaction(t *testing.T) {
 		addrs = append(addrs, a)
 	}
 
-	w := &CollectionWallet{}
+	w := &collection.Wallet{}
 	for _, x := range secKeys {
 		p := cipher.MustPubKeyFromSecKey(x)
 		a := cipher.AddressFromPubKey(p)
-		err := w.AddEntry(Entry{
+		err := w.AddEntry(wallet.Entry{
 			Address: a,
 			Public:  p,
 			Secret:  x,
@@ -632,9 +634,9 @@ func TestWalletCreateTransaction(t *testing.T) {
 				var inputs []transaction.UxBalance
 				var err error
 				if unsigned {
-					txn, inputs, err = CreateTransaction(w, tc.params, addrUxOuts, tc.headTime)
+					txn, inputs, err = wallet.CreateTransaction(w, tc.params, addrUxOuts, tc.headTime)
 				} else {
-					txn, inputs, err = CreateTransactionSigned(w, tc.params, addrUxOuts, tc.headTime)
+					txn, inputs, err = wallet.CreateTransactionSigned(w, tc.params, addrUxOuts, tc.headTime)
 				}
 				require.Equal(t, tc.err, err, "%v != %v", tc.err, err)
 				if tc.err != nil {
@@ -815,10 +817,10 @@ func makeAddress() cipher.Address {
 	return cipher.AddressFromPubKey(p)
 }
 
-func makeEntry() Entry {
+func makeEntry() wallet.Entry {
 	p, s := cipher.GenerateKeyPair()
 	a := cipher.AddressFromPubKey(p)
-	return Entry{
+	return wallet.Entry{
 		Secret:  s,
 		Public:  p,
 		Address: a,

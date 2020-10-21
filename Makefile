@@ -137,7 +137,7 @@ install-linters: ## Install linters
 	# However, they suggest `curl ... | bash` which we should not do
 	# go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
 	# Change to use go get -u with version when go is v1.12+
-	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(shell go env GOPATH)/bin v1.18.0
+	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(shell go env GOPATH)/bin v1.21.0
 
 format: ## Formats the code. Must have goimports installed (use make install-linters).
 	goimports -w -local github.com/SkycoinProject/skycoin ./cmd

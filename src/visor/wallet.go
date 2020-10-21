@@ -12,6 +12,7 @@ import (
 	"github.com/SkycoinProject/skycoin/src/util/mathutil"
 	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/bip44wallet"
 )
 
 // UserError wraps user input-related errors.
@@ -57,10 +58,13 @@ func (vs *Visor) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.Addr
 
 	if err := vs.wallets.View(wltID, func(w wallet.Wallet) error {
 		var err error
-		addrs, err = w.GetSkycoinAddresses()
-		if err != nil {
-			return err
-		}
+		addrs, err = func() ([]cipher.Address, error) {
+			addrs, err := w.GetAddresses()
+			if err != nil {
+				return nil, err
+			}
+			return wallet.SkycoinAddresses(addrs), nil
+		}()
 
 		addrsBalanceList, err = vs.GetBalanceOfAddresses(addrs)
 		return err
@@ -106,12 +110,12 @@ func (vs *Visor) GetWalletUnconfirmedTransactions(wltID string) ([]UnconfirmedTr
 	var txns []UnconfirmedTransaction
 
 	if err := vs.wallets.View(wltID, func(w wallet.Wallet) error {
-		addrs, err := w.GetSkycoinAddresses()
+		addrs, err := w.GetAddresses()
 		if err != nil {
 			return err
 		}
 
-		txns, err = vs.GetUnconfirmedTransactions(SendsToAddresses(addrs))
+		txns, err = vs.GetUnconfirmedTransactions(SendsToAddresses(wallet.SkycoinAddresses(addrs)))
 		return err
 	}); err != nil {
 		return nil, err
@@ -126,7 +130,13 @@ func (vs *Visor) GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]Unconf
 	var inputs [][]TransactionInput
 
 	if err := vs.wallets.View(wltID, func(w wallet.Wallet) error {
-		addrs, err := w.GetSkycoinAddresses()
+		addrs, err := func() ([]cipher.Address, error) {
+			addrs, err := w.GetAddresses()
+			if err != nil {
+				return nil, err
+			}
+			return wallet.SkycoinAddresses(addrs), nil
+		}()
 		if err != nil {
 			return err
 		}
@@ -261,8 +271,36 @@ func (vs *Visor) WalletCreateTransactionSigned(wltID string, password []byte, p 
 
 	var txn *coin.Transaction
 	var inputs []TransactionInput
+	w, err := vs.wallets.GetWallet(wltID)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	if err := vs.wallets.UpdateSecrets(wltID, password, func(w wallet.Wallet) error {
+	if vs.tf == nil {
+		vs.tf = &TransactionsFinder{vs}
+	}
+
+	if p.ChangeAddress == nil && w.Type() == wallet.WalletTypeBip44 {
+		// TODO: Maybe add the `PeekChangeAddress` to wallet.Wallet interface, and
+		// only bip44 wallet will implement it, all others do nothing. In this way
+		// we don't have to explicitly check the wallet type here.
+		//
+		// For bip44 wallet, peek a change address if p.ChangeAddress is nill
+		if err := vs.wallets.Update(wltID, func(w wallet.Wallet) error {
+			addr, err := w.(*bip44wallet.Wallet).PeekChangeAddress(vs.tf)
+			if err != nil {
+				logger.Critical().WithError(err).Error("PeekChangeAddress failed")
+				return err
+			}
+			skyAddr := addr.(cipher.Address)
+			p.ChangeAddress = &skyAddr
+			return nil
+		}); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	if err := vs.wallets.ViewSecrets(wltID, password, func(w wallet.Wallet) error {
 		var err error
 		txn, inputs, err = vs.walletCreateTransaction("WalletCreateTransactionSigned", w, p, wp, TxnSigned)
 		return err
@@ -274,6 +312,7 @@ func (vs *Visor) WalletCreateTransactionSigned(wltID string, password []byte, p 
 }
 
 // WalletCreateTransaction creates a transaction based upon the parameters in CreateTransactionParams
+// TODO: Only referenced by tests, vs.walletCreateTransaction
 func (vs *Visor) WalletCreateTransaction(wltID string, p transaction.Params, wp CreateTransactionParams) (*coin.Transaction, []TransactionInput, error) {
 	// Validate params before opening wallet
 	if err := p.Validate(); err != nil {
@@ -286,7 +325,26 @@ func (vs *Visor) WalletCreateTransaction(wltID string, p transaction.Params, wp 
 	var txn *coin.Transaction
 	var inputs []TransactionInput
 
+	if vs.tf == nil {
+		vs.tf = &TransactionsFinder{vs}
+	}
+
 	if err := vs.wallets.Update(wltID, func(w wallet.Wallet) error {
+		if p.ChangeAddress == nil && w.Type() == wallet.WalletTypeBip44 {
+			// TODO: Maybe add the `PeekChangeAddress` to wallet.Wallet interface, and
+			// only bip44 wallet will implement it, all others do nothing. In this way
+			// we don't have to explicitly check the wallet type here.
+			//
+			// For bip44 wallet, peek a change address if p.ChangeAddress is nill
+			addr, err := w.(*bip44wallet.Wallet).PeekChangeAddress(vs.tf)
+			if err != nil {
+				logger.Critical().WithError(err).Error("PeekChangeAddress failed")
+				return err
+			}
+			skyAddr := addr.(cipher.Address)
+			p.ChangeAddress = &skyAddr
+		}
+
 		var err error
 		txn, inputs, err = vs.walletCreateTransaction("WalletCreateTransaction", w, p, wp, TxnUnsigned)
 		return err
@@ -306,7 +364,13 @@ func (vs *Visor) walletCreateTransaction(methodName string, w wallet.Wallet, p t
 	}
 
 	// Get all addresses from the wallet for checking params against
-	walletAddresses, err := w.GetSkycoinAddresses()
+	walletAddresses, err := func() ([]cipher.Address, error) {
+		addrs, err := w.GetAddresses()
+		if err != nil {
+			return nil, err
+		}
+		return wallet.SkycoinAddresses(addrs), nil
+	}()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -538,7 +602,7 @@ func (vs *Visor) getCreateTransactionAuxsUxOut(tx *dbutil.Tx, uxOutHashes []ciph
 	}
 
 	// Build coin.AddressUxOuts map
-	return coin.NewAddressUxOuts(coin.UxArray(uxOuts)), nil
+	return coin.NewAddressUxOuts(uxOuts), nil
 }
 
 // getCreateTransactionAuxsAddress returns a map of the addresses to their unspent outputs,

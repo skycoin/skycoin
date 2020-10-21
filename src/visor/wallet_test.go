@@ -21,6 +21,8 @@ import (
 	"github.com/SkycoinProject/skycoin/src/visor/blockdb"
 	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
 	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/collection"
+	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
 )
 
 func TestCreateTransaction(t *testing.T) {
@@ -367,15 +369,26 @@ func TestWalletCreateTransaction(t *testing.T) {
 	// Load the 5th through 8th entries for a known bip44 wallet.
 	// These entries will be used for the test data.
 	bip44Seed := "voyage say extend find sheriff surge priority merit ignore maple cash argue"
-	w, err := wallet.NewWallet("bip44.wlt", wallet.Options{
-		Type:      wallet.WalletTypeBip44,
-		GenerateN: 8,
-		Seed:      bip44Seed,
-	})
+	w, err := wallet.NewWallet(
+		"bip44.wlt",
+		"label",
+		bip44Seed,
+		wallet.Options{
+			Type:      wallet.WalletTypeBip44,
+			GenerateN: 8,
+		})
 	require.NoError(t, err)
-	bip44Entries := w.GetEntries()[5:8]
+	bip44Entries := func() wallet.Entries {
+		entries, err := w.GetEntries()
+		require.NoError(t, err)
+		return entries[5:8]
+	}()
 	require.Len(t, bip44Entries, 3)
-	bip44Addrs, err := w.GetSkycoinAddresses()
+	bip44Addrs, err := func() ([]cipher.Address, error) {
+		addrs, err := w.GetAddresses()
+		require.NoError(t, err)
+		return wallet.SkycoinAddresses(addrs), nil
+	}()
 	require.NoError(t, err)
 	bip44Addrs = bip44Addrs[5:8]
 	require.Len(t, bip44Addrs, 3)
@@ -881,7 +894,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 
 			ws, err := wallet.NewService(wallet.Config{
 				EnableWalletAPI: true,
-				CryptoType:      wallet.CryptoTypeScryptChacha20poly1305Insecure,
+				CryptoType:      crypto.CryptoTypeScryptChacha20poly1305Insecure,
 				WalletDir:       prepareWltDir(),
 			})
 			require.NoError(t, err)
@@ -896,11 +909,11 @@ func TestWalletCreateTransaction(t *testing.T) {
 				Coin:       wallet.CoinTypeSkycoin,
 				Encrypt:    len(tc.password) != 0,
 				Password:   tc.password,
-				CryptoType: wallet.CryptoTypeScryptChacha20poly1305Insecure,
+				CryptoType: crypto.CryptoTypeScryptChacha20poly1305Insecure,
 				Type:       tc.walletType,
 				GenerateN:  generateN,
 				Seed:       tc.seed,
-			}, nil)
+			})
 			require.NoError(t, err)
 
 			err = ws.UpdateSecrets(tc.walletID, tc.password, func(w wallet.Wallet) error {
@@ -909,7 +922,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 					// Add 5 unused entries into the wallet, in addition to the 3 above
 					uniqueEntries, _ := makeEntries(5)
 					for _, e := range append(uniqueEntries, entries...) {
-						err := w.(*wallet.CollectionWallet).AddEntry(e)
+						err := w.(*collection.Wallet).AddEntry(e)
 						require.NoError(t, err)
 					}
 				}
@@ -917,7 +930,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			walletAddrs, err := ws.GetSkycoinAddresses(tc.walletID)
+			walletAddrs, err := ws.GetAddresses(tc.walletID)
 			require.NoError(t, err)
 
 			b := &MockBlockchainer{}
@@ -970,6 +983,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 				Config: Config{
 					Distribution: params.MainNetDistribution,
 				},
+				tf: mockTxnsFinder{},
 			}
 
 			var txn *coin.Transaction
@@ -1187,13 +1201,13 @@ func TestGetCreateTransactionAuxsUxOut(t *testing.T) {
 			},
 			expectedAuxs: coin.AddressUxOuts{
 				allAddrs[1]: []coin.UxOut{
-					coin.UxOut{
+					{
 						Body: coin.UxBody{
 							SrcTransaction: srcTxns[5],
 							Address:        allAddrs[1],
 						},
 					},
-					coin.UxOut{
+					{
 						Body: coin.UxBody{
 							SrcTransaction: srcTxns[5],
 							Address:        allAddrs[1],
@@ -1201,7 +1215,7 @@ func TestGetCreateTransactionAuxsUxOut(t *testing.T) {
 					},
 				},
 				allAddrs[3]: []coin.UxOut{
-					coin.UxOut{
+					{
 						Body: coin.UxBody{
 							SrcTransaction: srcTxns[6],
 							Address:        allAddrs[3],
@@ -1252,7 +1266,7 @@ func TestGetCreateTransactionAuxsUxOut(t *testing.T) {
 			},
 			expectedAuxs: coin.AddressUxOuts{
 				allAddrs[1]: []coin.UxOut{
-					coin.UxOut{
+					{
 						Body: coin.UxBody{
 							SrcTransaction: srcTxns[5],
 							Address:        allAddrs[1],
@@ -1415,13 +1429,13 @@ func TestGetCreateTransactionAuxsAddress(t *testing.T) {
 			},
 			expectedAuxs: coin.AddressUxOuts{
 				allAddrs[1]: []coin.UxOut{
-					coin.UxOut{
+					{
 						Body: coin.UxBody{
 							SrcTransaction: srcTxns[5],
 							Address:        allAddrs[1],
 						},
 					},
-					coin.UxOut{
+					{
 						Body: coin.UxBody{
 							SrcTransaction: srcTxns[5],
 							Address:        allAddrs[1],
@@ -1429,7 +1443,7 @@ func TestGetCreateTransactionAuxsAddress(t *testing.T) {
 					},
 				},
 				allAddrs[3]: []coin.UxOut{
-					coin.UxOut{
+					{
 						Body: coin.UxBody{
 							SrcTransaction: srcTxns[6],
 							Address:        allAddrs[3],
@@ -1489,13 +1503,13 @@ func TestGetCreateTransactionAuxsAddress(t *testing.T) {
 			},
 			expectedAuxs: coin.AddressUxOuts{
 				allAddrs[1]: []coin.UxOut{
-					coin.UxOut{
+					{
 						Body: coin.UxBody{
 							SrcTransaction: srcTxns[5],
 							Address:        allAddrs[1],
 						},
 					},
-					coin.UxOut{
+					{
 						Body: coin.UxBody{
 							SrcTransaction: srcTxns[5],
 							Address:        allAddrs[1],
@@ -1503,7 +1517,7 @@ func TestGetCreateTransactionAuxsAddress(t *testing.T) {
 					},
 				},
 				allAddrs[3]: []coin.UxOut{
-					coin.UxOut{
+					{
 						Body: coin.UxBody{
 							SrcTransaction: srcTxns[6],
 							Address:        allAddrs[3],
@@ -1623,4 +1637,17 @@ func unconfirmedForEachMockRun(t *testing.T, unconfirmedTxns []coin.Transaction,
 
 		}
 	}
+}
+
+type mockTxnsFinder map[cipher.Addresser]bool
+
+func (mb mockTxnsFinder) AddressesActivity(addrs []cipher.Addresser) ([]bool, error) {
+	if len(addrs) == 0 {
+		return nil, nil
+	}
+	active := make([]bool, len(addrs))
+	for i, addr := range addrs {
+		active[i] = mb[addr]
+	}
+	return active, nil
 }

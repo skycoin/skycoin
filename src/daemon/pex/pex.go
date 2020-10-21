@@ -667,7 +667,7 @@ func backoffDownloadText(url string) (string, error) {
 	}
 
 	if err := backoff.RetryNotify(operation, b, notify); err != nil {
-		logger.WithField("url", url).WithError(err).Info("Gave up dowloading peers list")
+		logger.WithField("url", url).WithError(err).Info("Gave up downloading peers list")
 		return "", err
 	}
 

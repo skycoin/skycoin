@@ -63,7 +63,7 @@ func decryptWallet(walletFile string, pr PasswordReader) (wallet.Wallet, error) 
 		return nil, err
 	}
 
-	unlockedWlt, err := wallet.Unlock(wlt, wltPassword)
+	unlockedWlt, err := wlt.Unlock(wltPassword)
 	if err != nil {
 		return nil, err
 	}

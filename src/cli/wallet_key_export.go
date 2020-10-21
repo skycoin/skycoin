@@ -10,7 +10,10 @@ import (
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/cipher/bip32"
+	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
+	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/SkycoinProject/skycoin/src/wallet/bip44wallet"
 )
 
 func walletKeyExportCmd() *cobra.Command {
@@ -38,7 +41,8 @@ func walletKeyExportCmd() *cobra.Command {
 	}
 
 	walletKeyExportCmd.Flags().StringP("key", "k", "xpub", "key type (\"xpub\", \"xprv\", \"pub\", \"prv\")")
-	walletKeyExportCmd.Flags().StringP("path", "p", "0/0", "bip44 account'/change subpath")
+	walletKeyExportCmd.Flags().StringP("path", "", "0/0", "bip44 account'/change subpath")
+	walletKeyExportCmd.Flags().StringP("password", "p", "", "wallet password")
 
 	return walletKeyExportCmd
 }
@@ -63,9 +67,27 @@ func walletKeyExportHandler(c *cobra.Command, args []string) error {
 		return fmt.Errorf("support wallet types: %q", wallet.WalletTypeBip44)
 	}
 
-	wb := w.(*wallet.Bip44Wallet)
+	if w.IsEncrypted() {
+		pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
+		password, err := pr.Password()
+		if err != nil {
+			return err
+		}
 
-	coin, err := wb.CoinHDNode()
+		w, err = w.Unlock(password)
+		if err != nil {
+			return err
+		}
+	}
+
+	wb := w.(*bip44wallet.Wallet)
+
+	seed, err := bip39.NewSeed(wb.Seed(), wb.SeedPassphrase())
+	if err != nil {
+		return err
+	}
+
+	coin, err := bip44.NewCoin(seed, *(wb.Bip44Coin()))
 	if err != nil {
 		return err
 	}

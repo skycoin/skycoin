@@ -238,7 +238,10 @@ func getAddresses(f string) ([]string, error) {
 		return nil, err
 	}
 
-	addrs := wlt.GetAddresses()
+	addrs, err := wlt.GetAddresses()
+	if err != nil {
+		return nil, err
+	}
 
 	strAddrs := make([]string, len(addrs))
 	for i, a := range addrs {

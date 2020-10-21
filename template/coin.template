@@ -17,6 +17,12 @@ import (
 	"github.com/SkycoinProject/skycoin/src/readable"
 	"github.com/SkycoinProject/skycoin/src/skycoin"
 	"github.com/SkycoinProject/skycoin/src/util/logging"
+
+	// register the supported wallets
+	_ "github.com/SkycoinProject/skycoin/src/wallet/bip44wallet"
+	_ "github.com/SkycoinProject/skycoin/src/wallet/collection"
+	_ "github.com/SkycoinProject/skycoin/src/wallet/deterministic"
+	_ "github.com/SkycoinProject/skycoin/src/wallet/xpubwallet"
 )
 
 var (

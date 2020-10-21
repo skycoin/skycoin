@@ -13,7 +13,7 @@ type Wallets map[string]Wallet
 // loadWallets Loads all wallets contained in wallet dir.  If any regular file in wallet
 // dir fails to load, loading is aborted and error returned.  Only files with
 // extension WalletExt are considered.
-func loadWallets(dir string) (Wallets, error) {
+func loadWallets(dir string, loader Loader) (Wallets, error) {
 	entries, err := ioutil.ReadDir(dir)
 	if err != nil {
 		logger.WithError(err).WithField("dir", dir).Error("loadWallets: ioutil.ReadDir failed")
@@ -30,7 +30,11 @@ func loadWallets(dir string) (Wallets, error) {
 			}
 
 			fullpath := filepath.Join(dir, name)
-			w, err := Load(fullpath)
+			data, err := ioutil.ReadFile(fullpath)
+			if err != nil {
+				return nil, err
+			}
+			w, err := loader.Load(data)
 			if err != nil {
 				logger.WithError(err).WithField("filename", fullpath).Error("loadWallets: loadWallet failed")
 				return nil, err
@@ -43,10 +47,11 @@ func loadWallets(dir string) (Wallets, error) {
 	}
 
 	for name, w := range wallets {
-		if err := w.Validate(); err != nil {
-			logger.WithError(err).WithField("name", name).Error("loadWallets: wallet.Validate failed")
-			return nil, err
-		}
+		// TODO: do validate when creating wallet
+		// if err := w.Validate(); err != nil {
+		// 	logger.WithError(err).WithField("name", name).Error("loadWallets: wallet.Validate failed")
+		// 	return nil, err
+		// }
 
 		if w.Coin() != CoinTypeSkycoin {
 			err := fmt.Errorf("LoadWallets only support skycoin wallets, %s is a %s wallet", name, w.Coin())
@@ -58,7 +63,7 @@ func loadWallets(dir string) (Wallets, error) {
 	return wallets, nil
 }
 
-// add add walet to current wallet
+// add add wallet to current wallet
 func (wlts Wallets) add(w Wallet) error {
 	if _, dup := wlts[w.Filename()]; dup {
 		return ErrWalletNameConflict
@@ -112,12 +117,27 @@ func (wlts Wallets) containsEmpty() (string, bool) {
 		switch wlt.Type() {
 		case WalletTypeCollection:
 			continue
-		case WalletTypeDeterministic:
-			if wlt.EntriesLen() == 0 {
+		case WalletTypeBip44:
+			var l int
+			// gets the external entries length
+			for _, a := range wlt.Accounts() {
+				el, err := wlt.EntriesLen(OptionAccount(a.Index))
+				if err != nil {
+					panic(err)
+				}
+				l += el
+			}
+
+			if l == 0 {
 				return wltID, true
 			}
-		case WalletTypeBip44:
-			if len(wlt.(*Bip44Wallet).ExternalEntries) == 0 {
+		default:
+			l, err := wlt.EntriesLen()
+			if err != nil {
+				panic(err)
+			}
+
+			if l == 0 {
 				return wltID, true
 			}
 		}

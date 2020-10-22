@@ -274,9 +274,11 @@
     "address-error-info": "Por favor introduzca una dirección válida.",
     "invalid-value-error-info": "Valor inválido.",
     "insufficient-funds-error-info": "El valor ingresado es mayor que el saldo disponible.",
-    "sending-all-hours-with-coins-waning": "Al enviar todas las monedas, todas las horas de la billetera serán enviadas o quemadas. Si desea retener horas, no debe enviar todas las monedas. ¿Seguro que desea continuar?",
+    "sending-all-hours-with-coins-waning": "Al enviar todas las monedas, todas las horas de la billetera seleccionada serán enviadas o quemadas. Si desea retener horas, no debe enviar todas las monedas. ¿Seguro que desea continuar?",
+    "advanced-sending-all-hours-with-coins-waning": "Al enviar todas las monedas, todas las horas de la(s) fuente(s) seleccionada(s) serán enviadas o quemadas. Si desea retener horas, no debe enviar todas las monedas. ¿Seguro que desea continuar?",
     "sending-all-hours-waning": "Usted seleccionó enviar todas las horas. ¿Seguro que desea continuar?",
-    "high-hours-share-waning": "Su selección puede resultar en el envío de todas las horas de la billetera. ¿Seguro que desea continuar?",
+    "high-hours-share-waning": "Su selección puede resultar en el envío de todas las horas de la billetera seleccionada. ¿Seguro que desea continuar?",
+    "advanced-high-hours-share-waning": "Su selección puede resultar en el envío de todas las horas de la(s) fuente(s) seleccionada(s). ¿Seguro que desea continuar?",
 
     "known-node-errors": {
       "null-change-address-error": "La dirección nula no se puede utilizar como dirección de retorno personalizada. Por favor introduzca una dirección válida.",

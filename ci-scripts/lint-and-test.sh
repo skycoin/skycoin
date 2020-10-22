@@ -10,6 +10,7 @@ if [[ ${TEST_SUIT} == "units" ]]; then
     make install-linters
     make lint
     make lint-ui
+    make check-lang
     make test-386
     make test-amd64
     make test-ui

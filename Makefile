@@ -21,6 +21,7 @@
 .PHONY: install-deps-ui build-ui build-ui-travis help newcoin merge-coverage
 .PHONY: generate update-golden-files
 .PHONY: fuzz-base58 fuzz-encoder
+.PHONY: check-lang check-lang-es check-lang-zh
 
 COIN ?= skycoin
 
@@ -148,6 +149,15 @@ install-deps-ui:  ## Install the UI dependencies
 
 lint-ui:  ## Lint the UI code
 	cd $(GUI_STATIC_DIR) && npm run lint
+
+check-lang-es: ## Check the Spanish translation
+	cd $(GUI_STATIC_DIR)/src/assets/i18n &&node check.js es
+
+check-lang-zh: ## Check the Chinese translation
+	cd $(GUI_STATIC_DIR)/src/assets/i18n &&node check.js zh
+
+check-lang: check-lang-es \
+	check-lang-zh
 
 test-ui:  ## Run UI tests
 	cd $(GUI_STATIC_DIR) && npm run test

@@ -156,8 +156,7 @@ check-lang-es: ## Check the Spanish translation
 check-lang-zh: ## Check the Chinese translation
 	cd $(GUI_STATIC_DIR)/src/assets/i18n &&node check.js zh
 
-check-lang: ## Lint the language translation in i18n
-	check-lang-es
+check-lang: check-lang-es \
 	check-lang-zh
 
 test-ui:  ## Run UI tests

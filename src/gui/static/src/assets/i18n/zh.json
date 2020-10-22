@@ -49,6 +49,7 @@
     "password-label": "密码",
     "password-error-info": "请输入密码",
     "confirm-password-label": "确认密码",
+    "confirm-error-info": "两次密码必须匹配",
     "proceed-button": "继续",
     "reset-link": "我忘记了密码",
     "incorrect-password-error": "密码不正确。",
@@ -77,6 +78,7 @@
   "wizard": {
     "create-title": "创建钱包",
     "create-desc": "如果你没有{{ coinName }}钱包，请使用生成的种子来创建一个新钱包。如果你已经有一个钱包，切换到\"加载钱包\"并输入你的种子。",
+    "encrypt-title": "加密钱包",
     "encrypt-desc": "通过加密来增加钱包的安全性。输入密码后，你的钱包会被加密。只有输入密码才可以访问的钱包或移动资金。",
     "hardware-wallet-link": "使用硬件钱包？",
     "new-button": "新建",
@@ -134,24 +136,24 @@
       "unconventional-seed-text": "你引进了一种非传统的种子。如果你出于任何特殊原因这样做，你可以继续(只推荐高级用户)。但是，如果你打算使用普通的系统种子，则必须删除所有附加文本和特殊字符。",
       "unconventional-seed-check": "继续使用非传统种子。",
       "synchronizing-warning-text": "钱包正在同步中，当前操作无法可能无法恢复所有地址。如有未恢复地址，请同步完成后使用\"扫描地址\"功能或手动重新添加",
-      "wallet-created": "钱包已添加到列表"
-    },
+      "wallet-created": "钱包已添加到列表",
 
-    "seed": {
-      "enter-seed": "点击此处输入种子",
-      "change-seed": "点击修改",
-      "confirm-seed": "点击此处确认种子",
-      "confirmed-seed": "种子已确认",
-      "use-custom": "手动输入种子",
-      "use-normal": "使用推荐方式输入种子",
-      "custom-seed-warning-text": "仅建议高级用户使用。一旦输入种子过程中出现失误，你有可能会永久失去资产",
-      "custom-seed-warning-text-recovering": "为避免出现问题，该选项请仅用于恢复非传统种子",
-      "incorrect-word-error": "输入的字不匹配。",
-      "invalid-seed-error": "输入的种子无效，请重试。",
-      "enter-word": "输入第#{{number}}个字",
-      "word-error-info": "请输入字",
-      "new-seed-info": "请输入系统生成的种子以确认",
-      "recover-seed-info": "请确认按正确的顺序输入种子"
+      "seed": {
+        "enter-seed": "点击此处输入种子",
+        "change-seed": "点击修改",
+        "confirm-seed": "点击此处确认种子",
+        "confirmed-seed": "种子已确认",
+        "use-custom": "手动输入种子",
+        "use-normal": "使用推荐方式输入种子",
+        "custom-seed-warning-text": "仅建议高级用户使用。一旦输入种子过程中出现失误，你有可能会永久失去资产",
+        "custom-seed-warning-text-recovering": "为避免出现问题，该选项请仅用于恢复非传统种子",
+        "incorrect-word-error": "输入的字不匹配。",
+        "invalid-seed-error": "输入的种子无效，请重试。",
+        "enter-word": "输入第#{{number}}个字",
+        "word-error-info": "请输入字",
+        "new-seed-info": "请输入系统生成的种子以确认",
+        "recover-seed-info": "请确认按正确的顺序输入种子"
+      }
     },
 
     "rename": {
@@ -219,8 +221,10 @@
     "convert-confirmation": "是否需要将数额从{{from}}转换为{{to}}?",
     "convert-confirmation-plural": "是否需要将数额从{{from}}转换为{{to}}?",
     "send-all-available-coins-link": "发送所有",
+    "precision-error-warning": "转换过程中检测到一个精度问题，请检查发送的数额",
+    "invaid-amount-warning": "转换过程中检测到一个无效值，请检查发送的数额",
     "precision-errors-warning": "转换过程中检测到精度问题，请检查发送的数额",
-    "invalid-amount-warning": "转换过程中检测到无效值，请检查发送的数额",
+    "invaid-amounts-warning": "转换过程中检测到无效值，请检查发送的数额",
     "multiple-problems-warning": "因为无效值或精度问题，有些值转换失败，亲检查发送的数额",
     "addresses-label": "地址",
     "addresses-error-info": "请至少输入一个有效地址",
@@ -247,7 +251,7 @@
     "destinations-label": "目标地址",
     "destinations-help1": "目标地址和即将发送的币",
     "destinations-help2": "目标地址和即将发送的币以及币时",
-    "hours-allocation-label": "自动分配币时",
+    "hours-allocation-check": "自动分配币时{{ coinHoursName }}",
     "options-link": "选项",
     "coin-hours-options-link":"币时选项",
     "hours-share-factor-label": "币时分发因子",
@@ -272,34 +276,35 @@
     "insufficient-funds-error-info": "当前输入值超过可用余额。",
     "sending-all-hours-with-coins-waning": "如果发送所有币，当前钱包中所有币时将会发送或销毁。如果你想保留币时，请不要发送所有币。你确定继续吗?",
     "sending-all-hours-waning": "你选择发送所有币。你确定继续吗?",
-    "high-hours-share-waning": "你的选择可能会导致钱包中所有币时。你确定继续吗?"
+    "high-hours-share-waning": "你的选择可能会导致钱包中所有币时。你确定继续吗?",
+
+    "known-node-errors": {
+      "null-change-address-error": "无法使用空地址作为找零地址。请输入一个有效的地址",
+      "to-required-error": "你需要提供一个有效的目标地址用于发送币。请输入一个有效的地址",
+      "zero-coins-error": "无法发送0个币。请输入有效值",
+      "null-destination-error": "无法使用空地址作为目标地址。请输入一个有效的地址",
+      "duplicate-destination-error": "目标地址重复。请不要在一个交易中发送相同数值的币到同一目标地址多次",
+      "hours-in-automatic-mode-error": "自动分发币时模式无法指定具体币时。请重试其他值。如问题无法解决，请联系技术支持",
+      "hours-allocation-mode-needed-error": "币时分发模式未指定。请设置并重试。如问题无法解决，请联系技术支持",
+      "invalid-hours-allocation-mode-error": "无效的币时分发模式。请使用不同模式并重试。如问题无法解决，请联系技术支持",
+      "hours-allocation-mode-not-needed-error": "手动分发币时模式无法指定币时分配模式。请使用其他值并重试。如问题无法解决，请联系技术支持",
+      "invalid-hours-mode-error": "无效币时分发模式。请使用有效值并重试。如问题无法解决，请联系技术支持",
+      "share-factor-needed-error": "需要设置币时分发因子。请设置并重试。如问题无法解决，请联系技术支持",
+      "share-factor-not-needed-error": "已启动手动币时分发模式，币时分发因子无法设置。如问题无法解决，请联系技术支持",
+      "invalid-share-factor-error": "无效的币时分发因子。请使用正确的值并重试。如问题无法解决，请联系技术支持",
+      "change-equal-to-destination-error": "交易无法创建，请不要在一个交易中发送相同数值的币到同一目标地址多次"
+    },
+
+    "bulk-send": {
+      "title": "批量发送",
+      "indications": "快捷方式发送到多个地址，在一行中键入每个地址,币数,币时(可选)，并用逗号隔开。示例: 如果你发送10个币,5币时到\"xyz\"地址，请键入\"xyz,10,5\"; 如果想自动计算币时，可以键入\"xy,10\"。小数值必须以小数点隔开。",
+      "process-button": "处理",
+      "no-data-error": "无数据可处理",
+      "inconsistent-data-error": "如果你想要发送指定币时数，所有地址均需指定币时。",
+      "invalid-data-error": "键入数据格式误。"
+    }
   },
 
-  "known-node-errors": {
-    "null-change-address-error": "无法使用空地址作为找零地址。请输入一个有效的地址",
-    "to-required-error": "你需要提供一个有效的目标地址用于发送币。请输入一个有效的地址",
-    "zero-coins-error": "无法发送0个币。请输入有效值",
-    "null-destination-error": "无法使用空地址作为目标地址。请输入一个有效的地址",
-    "duplicate-destination-error": "目标地址重复。请不要在一个交易中发送相同数值的币到同一目标地址多次",
-    "hours-in-automatic-mode-error": "自动分发币时模式无法指定具体币时。请重试其他值。如问题无法解决，请联系技术支持",
-    "hours-allocation-mode-needed-error": "币时分发模式未指定。请设置并重试。如问题无法解决，请联系技术支持",
-    "invalid-hours-allocation-mode-error": "无效的币时分发模式。请使用不同模式并重试。如问题无法解决，请联系技术支持",
-    "hours-allocation-mode-not-needed-error": "手动分发币时模式无法指定币时分配模式。请使用其他值并重试。如问题无法解决，请联系技术支持",
-    "invalid-hours-mode-error": "无效币时分发模式。请使用有效值并重试。如问题无法解决，请联系技术支持",
-    "share-factor-needed-error": "需要设置币时分发因子。请设置并重试。如问题无法解决，请联系技术支持",
-    "share-factor-not-needed-error": "已启动手动币时分发模式，币时分发因子无法设置。如问题无法解决，请联系技术支持",
-    "invalid-share-factor-error": "无效的币时分发因子。请使用正确的值并重试。如问题无法解决，请联系技术支持",
-    "change-equal-to-destination-error": "交易无法创建，请不要在一个交易中发送相同数值的币到同一目标地址多次"
-  },
-
-  "bulk-send": {
-    "title": "批量发送",
-    "indications": "快捷方式发送到多个地址，在一行中键入每个地址,币数,币时(可选)，并用逗号隔开。示例: 如果你发送10个币,5币时到\"xyz\"地址，请键入\"xyz,10,5\"; 如果想自动计算币时，可以键入\"xy,10\"。小数值必须以小数点隔开。",
-    "process-button": "处理",
-    "no-data-error": "无数据可处理",
-    "inconsistent-data-error": "如果你想要发送指定币时数，所有地址均需指定币时。",
-    "invalid-data-error": "键入数据格式误。"
-  },
   "select-address": {
     "title": "选择地址",
     "no-addresses": "该钱包中无确认的地址。"
@@ -522,7 +527,7 @@
       "configured-detected": "检测到硬件钱包。该设备在钱包列表中被识别为:",
       "security-warnings-title": "安全警告",
       "security-warning-title": "安全警告",
-      "unchecked-version-title": "无法检测硬件钱包固件是否最新版本。可能原因是网络存在问题或者服务处于维护状态.",
+      "unchecked-version-warning": "无法检测硬件钱包固件是否最新版本。可能原因是网络存在问题或者服务处于维护状态.",
       "outdated-version-warning": "硬件钱包固件版本过低。为了钱包安全，建议点击\"更新固件\"，尽快升级",
       "backup-warning": "你应该备份硬件钱包种子，否则万一出现问题，你可能将无法访问你的资金，要做到这一点。选择\"创建一个备份\"选项。",
       "pin-warning": "当前连接的硬件钱包未设置密码。密码可保护硬件钱包，以防丢失、盗窃和黑客入侵。要创建一个密码，选择\"创建PIN码\"选项。",
@@ -582,7 +587,7 @@
     },
     "wipe": {
       "warning": "警告: 硬件钱包中的所有数据将被删除。如果没有备份，你将无法再次访问你的资金。",
-      "confirm-delete": "还是将其从钱包列表中删除"
+      "confirm-delete-check": "还是将其从钱包列表中删除"
     },
     "create-backup": {
       "warning": "警告: 你只能使用此选项备份你的硬件钱包种子一次。如果你决定继续，你将不得不写下一组单词(建议写在纸上，而不是电脑上)，这些单词将出现在硬件钱包的屏幕上，并将其存储在一个安全的地方。任何可以访问单词列表(\"种子\")的人都可以访问钱包余额，因此建议请格外谨慎。",
@@ -598,6 +603,9 @@
     },
     "change-pin" : {
       "pin-mismatch":"无法执行操作。你输入的两个密码不匹配"
+    },
+    "remove-pin" : {
+      "warning": "警告: 不建议从硬件钱包中删除密码，因为它将很容易被未经授权的各方使用。"
     },
     "enter-pin" : {
       "title": "输入密码",

@@ -275,8 +275,10 @@
     "invalid-value-error-info": "无效值",
     "insufficient-funds-error-info": "当前输入值超过可用余额。",
     "sending-all-hours-with-coins-waning": "如果发送所有币，当前钱包中所有币时将会发送或销毁。如果你想保留币时，请不要发送所有币。你确定继续吗?",
+    "advanced-sending-all-hours-with-coins-waning": "如果发送所有币, 当前选择源的所有币时将会被发送或或销毁. 如果你想保留币时，请不要发送所有币。你确定继续吗?",
     "sending-all-hours-waning": "你选择发送所有币。你确定继续吗?",
-    "high-hours-share-waning": "你的选择可能会导致钱包中所有币时。你确定继续吗?",
+    "high-hours-share-waning": "你的选择可能会发送钱包中所有币时。你确定继续吗?",
+    "advanced-high-hours-share-waning": "你的选择可能会发送选择源中的所有币时。你确定继续吗?",
 
     "known-node-errors": {
       "null-change-address-error": "无法使用空地址作为找零地址。请输入一个有效的地址",

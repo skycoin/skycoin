@@ -41,7 +41,6 @@ func newBip44Account(opts bip44AccountCreateOptions) (*bip44Account, error) {
 		return nil, err
 	}
 
-	ad := wallet.ResolveAddressDecoder(opts.coinType)
 	if opts.bip44CoinType == nil {
 		return nil, errors.New("newBip44Account missing bip44 coin type")
 	}
@@ -73,15 +72,13 @@ func newBip44Account(opts bip44AccountCreateOptions) (*bip44Account, error) {
 
 	// init the external chain
 	ba.Chains = append(ba.Chains, bip44Chain{
-		PubKey:            *externalChainKey,
-		ChainIndex:        bip44.ExternalChainIndex,
-		addressFromPubKey: ad.AddressFromPubKey,
+		PubKey:     *externalChainKey,
+		ChainIndex: bip44.ExternalChainIndex,
 	})
 	// init the change chain
 	ba.Chains = append(ba.Chains, bip44Chain{
-		PubKey:            *changeChainKey,
-		ChainIndex:        bip44.ChangeChainIndex,
-		addressFromPubKey: ad.AddressFromPubKey,
+		PubKey:     *changeChainKey,
+		ChainIndex: bip44.ChangeChainIndex,
 	})
 	return ba, nil
 }
@@ -90,7 +87,8 @@ func (a *bip44Account) newAddresses(chainIndex, num uint32) ([]cipher.Addresser,
 	// chain index can only be 0 or 1.
 	switch chainIndex {
 	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
-		return a.Chains[chainIndex].newAddresses(num, a.PrivateKey)
+		ad := wallet.ResolveAddressDecoder(a.CoinType)
+		return a.Chains[chainIndex].newAddresses(num, a.PrivateKey, ad.AddressFromPubKey)
 	default:
 		return nil, fmt.Errorf("invalid chain index: %d", chainIndex)
 	}
@@ -265,15 +263,14 @@ func (a *bip44Account) reset() {
 
 // bip44Chain bip44 address chain
 type bip44Chain struct {
-	PubKey            bip32.PublicKey
-	Entries           wallet.Entries
-	ChainIndex        uint32
-	addressFromPubKey func(key cipher.PubKey) cipher.Addresser
+	PubKey     bip32.PublicKey
+	Entries    wallet.Entries
+	ChainIndex uint32
 }
 
 // newAddresses generates addresses on the chain.
 // private key is optional, if not provided, addresses will be generated using the public key.
-func (c *bip44Chain) newAddresses(num uint32, seckey *bip32.PrivateKey) ([]cipher.Addresser, error) {
+func (c *bip44Chain) newAddresses(num uint32, seckey *bip32.PrivateKey, addressFromPubKey func(key cipher.PubKey) cipher.Addresser) ([]cipher.Addresser, error) {
 	if c == nil {
 		return nil, errors.New("can not generate new addresses on nil chain")
 	}
@@ -296,7 +293,7 @@ func (c *bip44Chain) newAddresses(num uint32, seckey *bip32.PrivateKey) ([]ciphe
 			return nil, err
 		}
 
-		addr := c.addressFromPubKey(cpk)
+		addr := addressFromPubKey(cpk)
 		e := wallet.Entry{
 			Address:     addr,
 			Public:      cpk,
@@ -347,10 +344,9 @@ func (c *bip44Chain) erase() {
 
 func (c bip44Chain) clone() bip44Chain {
 	return bip44Chain{
-		PubKey:            c.PubKey.Clone(),
-		ChainIndex:        c.ChainIndex,
-		addressFromPubKey: c.addressFromPubKey,
-		Entries:           c.Entries.Clone(),
+		PubKey:     c.PubKey.Clone(),
+		ChainIndex: c.ChainIndex,
+		Entries:    c.Entries.Clone(),
 	}
 }
 

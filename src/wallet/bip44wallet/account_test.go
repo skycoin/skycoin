@@ -356,12 +356,14 @@ func requireBip44AccountEqual(t *testing.T, a, b *bip44Account) {
 	require.Equal(t, a.CoinType, b.CoinType)
 
 	require.Equal(t, len(a.Chains), len(b.Chains))
+	aDecoder := wallet.ResolveAddressDecoder(a.CoinType)
+	bDecoder := wallet.ResolveAddressDecoder(b.CoinType)
 	for j, c := range a.Chains {
 		cc := b.Chains[j]
 		require.Equal(t, c.PubKey, cc.PubKey)
 		require.Equal(t, c.ChainIndex, cc.ChainIndex)
 		// verify that the cloned addressFromPubKey func performs the same operation.
-		require.Equal(t, c.addressFromPubKey(cipher.MustNewPubKey(c.PubKey.Key)), cc.addressFromPubKey(cipher.MustNewPubKey(c.PubKey.Key)))
+		require.Equal(t, aDecoder.AddressFromPubKey(cipher.MustNewPubKey(c.PubKey.Key)), bDecoder.AddressFromPubKey(cipher.MustNewPubKey(c.PubKey.Key)))
 		require.Equal(t, len(c.Entries), len(cc.Entries))
 		for i, e := range c.Entries {
 			ce := cc.Entries[i]

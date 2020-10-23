@@ -1,12 +1,9 @@
 package cli
 
 import (
-	"path/filepath"
-
 	"github.com/spf13/cobra"
 
 	"github.com/SkycoinProject/skycoin/src/wallet"
-	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
 )
 
 func encryptWalletCmd() *cobra.Command {
@@ -24,69 +21,35 @@ func encryptWalletCmd() *cobra.Command {
 		SilenceUsage: true,
 		RunE: func(c *cobra.Command, args []string) error {
 			w := args[0]
-			cryptoType, err := crypto.CryptoTypeFromString(c.Flag("crypto-type").Value.String())
-			if err != nil {
-				printHelp(c)
-				return err
-			}
-
 			pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
 
-			_, err = encryptWallet(w, pr, cryptoType)
-			switch err.(type) {
-			case nil:
-			case WalletLoadError:
-				printHelp(c)
-				return err
-			default:
-				return err
-			}
-
-			return nil
+			return encryptWallet(w, pr)
 		},
 	}
 
 	encryptWalletCmd.Flags().StringP("password", "p", "", "wallet password")
-	encryptWalletCmd.Flags().StringP("crypto-type", "x", "scrypt-chacha20poly1305", "The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor")
 	return encryptWalletCmd
 }
 
-func encryptWallet(walletFile string, pr PasswordReader, cryptoType crypto.CryptoType) (wallet.Wallet, error) {
-	wlt, err := wallet.Load(walletFile)
+func encryptWallet(id string, pr PasswordReader) error {
+	wlt, err := apiClient.Wallet(id)
 	if err != nil {
-		return nil, WalletLoadError{err}
+		return err
 	}
 
-	if wlt.IsEncrypted() {
-		return nil, wallet.ErrWalletEncrypted
+	if wlt.Meta.Encrypted {
+		return wallet.ErrWalletEncrypted
 	}
 
 	if pr == nil {
-		return nil, wallet.ErrMissingPassword
+		return wallet.ErrMissingPassword
 	}
 
-	password, err := pr.Password()
+	pwd, err := pr.Password()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	if wlt.CryptoType() != cryptoType {
-		wlt.SetCryptoType(cryptoType)
-	}
-
-	if err := wlt.Lock(password); err != nil {
-		return nil, err
-	}
-
-	dir, err := filepath.Abs(filepath.Dir(walletFile))
-	if err != nil {
-		return nil, err
-	}
-
-	// save the wallet
-	if err := wallet.Save(wlt, dir); err != nil {
-		return nil, WalletLoadError{err}
-	}
-
-	return wlt, nil
+	_, err = apiClient.EncryptWallet(id, string(pwd))
+	return err
 }

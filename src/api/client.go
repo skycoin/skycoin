@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
 	"github.com/SkycoinProject/skycoin/src/coin"
 	"github.com/SkycoinProject/skycoin/src/daemon"
 	"github.com/SkycoinProject/skycoin/src/kvstorage"
@@ -644,9 +645,10 @@ type CreateWalletOptions struct {
 	SeedPassphrase string
 	Label          string
 	Password       string
-	ScanN          int
+	ScanN          uint64
 	XPub           string
 	Encrypt        bool
+	Bip44Coin      *bip44.CoinType
 }
 
 // CreateWallet makes a request to POST /api/v1/wallet/create and creates a wallet.
@@ -655,14 +657,27 @@ func (c *Client) CreateWallet(o CreateWalletOptions) (*WalletResponse, error) {
 	v := url.Values{}
 	v.Add("type", o.Type)
 	v.Add("seed", o.Seed)
-	v.Add("seed-passphrase", o.SeedPassphrase)
 	v.Add("label", o.Label)
-	v.Add("password", o.Password)
 	v.Add("encrypt", fmt.Sprint(o.Encrypt))
-	v.Add("xpub", o.XPub)
+
+	if o.Password != "" {
+		v.Add("password", o.Password)
+	}
 
 	if o.ScanN > 0 {
 		v.Add("scan", fmt.Sprint(o.ScanN))
+	}
+
+	if o.SeedPassphrase != "" {
+		v.Add("seed-passphrase", o.SeedPassphrase)
+	}
+
+	if o.Bip44Coin != nil {
+		v.Add("bip44-coin", fmt.Sprintf("%d", *o.Bip44Coin))
+	}
+
+	if o.XPub != "" {
+		v.Add("xpub", o.XPub)
 	}
 
 	var w WalletResponse

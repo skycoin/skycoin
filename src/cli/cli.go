@@ -294,7 +294,7 @@ type PasswordFromBytes []byte
 
 // Password implements the PasswordReader's Password method
 func (p PasswordFromBytes) Password() ([]byte, error) {
-	return []byte(p), nil
+	return p, nil
 }
 
 // PasswordFromTerm reads password from terminal

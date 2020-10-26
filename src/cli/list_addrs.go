@@ -18,14 +18,9 @@ func listAddressesCmd() *cobra.Command {
 }
 
 func listAddresses(_ *cobra.Command, args []string) error {
-	wlt, err := apiClient.Wallet(args[0])
+	addrs, err := getWalletAddresses(args[0])
 	if err != nil {
 		return err
-	}
-
-	var addrs []string
-	for _, e := range wlt.Entries {
-		addrs = append(addrs, e.Address)
 	}
 
 	s, err := FormatAddressesAsJSON(addrs)
@@ -36,4 +31,17 @@ func listAddresses(_ *cobra.Command, args []string) error {
 	fmt.Println(s)
 
 	return nil
+}
+
+func getWalletAddresses(id string) ([]string, error) {
+	wlt, err := apiClient.Wallet(id)
+	if err != nil {
+		return nil, err
+	}
+
+	var addrs []string
+	for _, e := range wlt.Entries {
+		addrs = append(addrs, e.Address)
+	}
+	return addrs, nil
 }

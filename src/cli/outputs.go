@@ -39,14 +39,9 @@ type OutputsResult struct {
 }
 
 func getWalletOutputsCmd(_ *cobra.Command, args []string) error {
-	wlt, err := apiClient.Wallet(args[0])
+	addrs, err := getWalletAddresses(args[0])
 	if err != nil {
 		return err
-	}
-
-	var addrs []string
-	for _, e := range wlt.Entries {
-		addrs = append(addrs, e.Address)
 	}
 
 	outputs, err := apiClient.OutputsForAddresses(addrs)

@@ -25,6 +25,8 @@ func walletKeyExportCmd() *cobra.Command {
     HDNode in a bip44 wallet. The HDNode path is specified with --path.
     This path is the <account/change> portion of the bip44 path.
 
+    Please make sure that the node has wallet seed API enabled (--enable-api-sets="INSECURE_WALLET_SEED").
+
     Example: -k xpub --path=0 prints the account 0 xpub
     Example: -k xpub --path=0/0 prints the account 0, external chain xpub
     Example: -k xprv --path=0/1 prints the account 0, change chain xprv

@@ -7,7 +7,6 @@ import (
 
 	"github.com/SkycoinProject/skycoin/src/cipher"
 	"github.com/SkycoinProject/skycoin/src/readable"
-	"github.com/SkycoinProject/skycoin/src/wallet"
 )
 
 func walletOutputsCmd() *cobra.Command {
@@ -40,7 +39,17 @@ type OutputsResult struct {
 }
 
 func getWalletOutputsCmd(_ *cobra.Command, args []string) error {
-	outputs, err := GetWalletOutputsFromFile(apiClient, args[0])
+	wlt, err := apiClient.Wallet(args[0])
+	if err != nil {
+		return err
+	}
+
+	var addrs []string
+	for _, e := range wlt.Entries {
+		addrs = append(addrs, e.Address)
+	}
+
+	outputs, err := apiClient.OutputsForAddresses(addrs)
 	if err != nil {
 		return err
 	}
@@ -69,31 +78,4 @@ func getAddressOutputsCmd(_ *cobra.Command, args []string) error {
 	return printJSON(OutputsResult{
 		Outputs: *outputs,
 	})
-}
-
-// PUBLIC
-
-// GetWalletOutputsFromFile returns unspent outputs associated with all addresses in a wallet file
-func GetWalletOutputsFromFile(c GetOutputser, walletFile string) (*readable.UnspentOutputsSummary, error) {
-	wlt, err := wallet.Load(walletFile)
-	if err != nil {
-		return nil, err
-	}
-
-	return GetWalletOutputs(c, wlt)
-}
-
-// GetWalletOutputs returns unspent outputs associated with all addresses in a wallet.Wallet
-func GetWalletOutputs(c GetOutputser, wlt wallet.Wallet) (*readable.UnspentOutputsSummary, error) {
-	cipherAddrs, err := wlt.GetAddresses()
-	if err != nil {
-		return nil, err
-	}
-
-	addrs := make([]string, len(cipherAddrs))
-	for i := range cipherAddrs {
-		addrs[i] = cipherAddrs[i].String()
-	}
-
-	return c.OutputsForAddresses(addrs)
 }

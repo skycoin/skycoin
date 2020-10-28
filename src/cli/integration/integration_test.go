@@ -1815,7 +1815,7 @@ func TestLiveCreateRawTransactionV2(t *testing.T) {
 			},
 			verify: func(t *testing.T, data []byte) {
 				s := strings.TrimSuffix(string(data), "\n")
-				txn, err := coin.DeserializeTransactionHex(string(s))
+				txn, err := coin.DeserializeTransactionHex(s)
 				require.NoError(t, err)
 				require.Equal(t, 1, len(txn.Sigs))
 				require.NotEqual(t, cipher.Sig{}, txn.Sigs[0])
@@ -1835,7 +1835,7 @@ func TestLiveCreateRawTransactionV2(t *testing.T) {
 			},
 			verify: func(t *testing.T, data []byte) {
 				s := strings.TrimSuffix(string(data), "\n")
-				txn, err := coin.DeserializeTransactionHex(string(s))
+				txn, err := coin.DeserializeTransactionHex(s)
 				require.NoError(t, err)
 				require.Equal(t, 1, len(txn.Sigs))
 				require.Equal(t, cipher.Sig{}, txn.Sigs[0])
@@ -1868,7 +1868,7 @@ func TestLiveCreateRawTransactionV2(t *testing.T) {
 			},
 			verify: func(t *testing.T, data []byte) {
 				s := strings.TrimSuffix(string(data), "\n")
-				txn, err := coin.DeserializeTransactionHex(string(s))
+				txn, err := coin.DeserializeTransactionHex(s)
 				require.NoError(t, err)
 				require.Equal(t, 1, len(txn.Sigs))
 				require.Equal(t, cipher.Sig{}, txn.Sigs[0])
@@ -1892,7 +1892,7 @@ func TestLiveCreateRawTransactionV2(t *testing.T) {
 			},
 			verify: func(t *testing.T, data []byte) {
 				s := strings.TrimSuffix(string(data), "\n")
-				txn, err := coin.DeserializeTransactionHex(string(s))
+				txn, err := coin.DeserializeTransactionHex(s)
 				require.NoError(t, err)
 				require.Equal(t, 1, len(txn.Sigs))
 				require.Equal(t, cipher.Sig{}, txn.Sigs[0])
@@ -3299,15 +3299,20 @@ func TestEncryptWallet(t *testing.T) {
 	tt := []struct {
 		name        string
 		args        []string
-		setup       func(t *testing.T) (string, func())
+		setup       func(t *testing.T) string
 		errMsg      []byte
 		errWithHelp bool
 		checkWallet func(t *testing.T, w wallet.Wallet)
 	}{
 		{
-			name:  "wallet is not encrypted",
-			args:  []string{"-p", "pwd"},
-			setup: createUnencryptedWallet,
+			name: "wallet is not encrypted",
+			args: []string{"-p", "pwd"},
+			//setup: createUnencryptedWallet,
+			setup: func(t *testing.T) string {
+				seed := "connect about napkin explain urge stool engage left wool laundry divorce elbow"
+				wlt := createTempWallet(t, "test-encrypt-wallet", seed, false, nil)
+				return wlt.Meta.Filename
+			},
 			checkWallet: func(t *testing.T, w wallet.Wallet) {
 				require.True(t, w.IsEncrypted())
 				require.Empty(t, w.Seed())
@@ -3322,45 +3327,51 @@ func TestEncryptWallet(t *testing.T) {
 			},
 		},
 		{
-			name:   "wallet is encrypted",
-			args:   []string{"-p", "pwd"},
-			setup:  createEncryptedWallet,
+			name: "wallet is encrypted",
+			args: []string{"-p", "pwd"},
+			setup: func(t *testing.T) string {
+				seed := "shop casino phrase produce silk coil harbor local stable eagle tool rude"
+				wlt := createTempWallet(t, "test-encrypt-wallet", seed, true, []byte("pwd"))
+				return wlt.Meta.Filename
+			},
 			errMsg: []byte("Error: wallet is encrypted\n"),
 		},
 		{
 			name: "wallet doesn't exist",
 			args: []string{"-p", "pwd"},
-			setup: func(t *testing.T) (string, func()) {
-				return "not-exist.wlt", func() {}
+			setup: func(t *testing.T) string {
+				return "not-exist.wlt"
 			},
 			errWithHelp: true,
-			errMsg:      []byte("not-exist.wlt\" doesn't exist"),
+			errMsg:      []byte("400 Bad Request - wallet doesn't exist"),
 		},
 	}
 
 	for _, tc := range tt {
-		for _, ct := range cryptoTypes {
-			name := fmt.Sprintf("name=%v crypto type=%v", tc.name, ct)
-			t.Run(name, func(t *testing.T) {
-				walletFile, clean := tc.setup(t)
-				defer clean()
-				args := append([]string{"encryptWallet", walletFile, "-x", string(ct)}, tc.args[:]...)
-				output, err := execCommandCombinedOutput(args...)
-				if err != nil {
-					require.EqualError(t, err, "exit status 1")
-					if tc.errWithHelp {
-						require.True(t, bytes.Contains(output, tc.errMsg), string(output))
-					} else {
-						require.Equal(t, tc.errMsg, output)
-					}
-					return
+		name := fmt.Sprintf("name=%v", tc.name)
+		t.Run(name, func(t *testing.T) {
+			walletID := tc.setup(t)
+			args := append([]string{"encryptWallet", walletID}, tc.args[:]...)
+			output, err := execCommandCombinedOutput(args...)
+			if err != nil {
+				require.EqualError(t, err, "exit status 1")
+				if tc.errWithHelp {
+					require.True(t, bytes.Contains(output, tc.errMsg), fmt.Sprintf("expect: %s, get: %s", tc.errMsg, string(output)))
+				} else {
+					require.Equal(t, string(tc.errMsg), string(output))
 				}
+				return
+			}
 
-				w, err := wallet.Load(walletFile)
-				require.NoError(t, err)
-				tc.checkWallet(t, w)
-			})
-		}
+			c := newClient()
+			fn, err := c.WalletFolderName()
+			require.NoError(t, err)
+			walletPath := filepath.Join(fn.Address, walletID)
+
+			w, err := wallet.Load(walletPath)
+			require.NoError(t, err)
+			tc.checkWallet(t, w)
+		})
 	}
 }
 

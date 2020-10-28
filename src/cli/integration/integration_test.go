@@ -2915,42 +2915,36 @@ func TestStableWalletCreate(t *testing.T) {
 		return
 	}
 
-	defaultFilename := "skycoin-cli-integration-test.wlt"
-
 	tt := []struct {
 		name        string
 		filename    string
 		args        []string
-		setup       func(t *testing.T, filename string) func()
+		setup       func(t *testing.T)
 		errMsg      string
 		errMsgFunc  func(filename string) string
 		checkWallet func(t *testing.T, w wallet.Wallet)
 	}{
 		{
 			name: "generate wallet with -r option",
-			args: []string{"-r", "-t", wallet.WalletTypeDeterministic},
+			args: []string{"-r", "-e=false", "-t", wallet.WalletTypeDeterministic},
 			checkWallet: func(t *testing.T, w wallet.Wallet) {
-				require.Equal(t, defaultFilename, w.Filename())
-
 				// Confirms the seed is a valid hex string
 				_, err := hex.DecodeString(w.Seed())
 				require.NoError(t, err)
 
 				// Confirms the label is empty
-				require.Empty(t, w.Label())
+				require.Equal(t, "test-stable-wallet-create", w.Label())
 			},
 		},
 		{
 			name:   "generate wallet with -r option bip44",
-			args:   []string{"-r", "-t", wallet.WalletTypeBip44},
+			args:   []string{"-r", "-e=false", "-t", wallet.WalletTypeBip44},
 			errMsg: "Error: -r can't be used for bip44 wallets\n",
 		},
 		{
 			name: "generate wallet with -m option",
-			args: []string{"-m"},
+			args: []string{"-m", "-e=false"},
 			checkWallet: func(t *testing.T, w wallet.Wallet) {
-				require.Equal(t, defaultFilename, w.Filename())
-
 				// Confirms the seed has 12 words
 				seed := w.Seed()
 				words := strings.Split(seed, " ")
@@ -2960,16 +2954,14 @@ func TestStableWalletCreate(t *testing.T) {
 				require.NoError(t, err)
 
 				// Confirms the label is empty
-				require.Empty(t, w.Label())
+				require.Equal(t, "test-stable-wallet-create", w.Label())
 			},
 		},
 		{
 			name: "generate wallet with -s option",
-			args: []string{"-t", wallet.WalletTypeDeterministic, "-s", "great duck trophy inhale dad pluck include maze smart mechanic ring merge"},
+			args: []string{"-e=false", "-t", wallet.WalletTypeDeterministic, "-s", "great duck trophy inhale dad pluck include maze smart mechanic ring merge"},
 			checkWallet: func(t *testing.T, w wallet.Wallet) {
-				require.Equal(t, defaultFilename, w.Filename())
-				// Confirms the label is empty
-				require.Empty(t, w.Label())
+				require.Equal(t, "test-stable-wallet-create", w.Label())
 
 				require.Equal(t, "great duck trophy inhale dad pluck include maze smart mechanic ring merge", w.Seed())
 				e, err := w.GetEntryAt(0)
@@ -2981,11 +2973,9 @@ func TestStableWalletCreate(t *testing.T) {
 		},
 		{
 			name: "generate wallet with -s option bip44",
-			args: []string{"-t", wallet.WalletTypeBip44, "-s", "great duck trophy inhale dad pluck include maze smart mechanic ring merge"},
+			args: []string{"-e=false", "-t", wallet.WalletTypeBip44, "-s", "great duck trophy inhale dad pluck include maze smart mechanic ring merge"},
 			checkWallet: func(t *testing.T, w wallet.Wallet) {
-				require.Equal(t, defaultFilename, w.Filename())
-				// Confirms the label is empty
-				require.Empty(t, w.Label())
+				require.Equal(t, "test-stable-wallet-create", w.Label())
 
 				require.Equal(t, "great duck trophy inhale dad pluck include maze smart mechanic ring merge", w.Seed())
 				e, err := w.GetEntryAt(0)
@@ -2997,11 +2987,9 @@ func TestStableWalletCreate(t *testing.T) {
 		},
 		{
 			name: "generate wallet with -s option and seed-passphrase bip44",
-			args: []string{"-t", wallet.WalletTypeBip44, "--seed-passphrase", "foobar", "-s", "great duck trophy inhale dad pluck include maze smart mechanic ring merge"},
+			args: []string{"-e=false", "-t", wallet.WalletTypeBip44, "--seed-passphrase", "foobar", "-s", "great duck trophy inhale dad pluck include maze smart mechanic ring merge"},
 			checkWallet: func(t *testing.T, w wallet.Wallet) {
-				require.Equal(t, defaultFilename, w.Filename())
-				// Confirms the label is empty
-				require.Empty(t, w.Label())
+				require.Equal(t, "test-stable-wallet-create", w.Label())
 
 				e, err := w.GetEntryAt(0)
 				require.NoError(t, err)
@@ -3014,21 +3002,15 @@ func TestStableWalletCreate(t *testing.T) {
 		},
 		{
 			name:   "generate wallet with -s option and seed-passphrase deterministic",
-			args:   []string{"-t", wallet.WalletTypeDeterministic, "--seed-passphrase", "foobar", "-s", "great duck trophy inhale dad pluck include maze smart mechanic ring merge"},
-			errMsg: "Error: seedPassphrase is only used for \"bip44\" wallets\n",
+			args:   []string{"-e=false", "-t", wallet.WalletTypeDeterministic, "--seed-passphrase", "foobar", "-s", "great duck trophy inhale dad pluck include maze smart mechanic ring merge"},
+			errMsg: "Error: 400 Bad Request - seedPassphrase is only used for \"bip44\" wallets\n",
 		},
 		{
 			name: "generate wallet with -n option, bip44",
-			args: []string{"-n", "5", "-t", wallet.WalletTypeBip44},
+			args: []string{"-e=false", "-n", "5", "-t", wallet.WalletTypeBip44},
 			checkWallet: func(t *testing.T, w wallet.Wallet) {
-				require.Equal(t, defaultFilename, w.Filename())
 				require.Equal(t, wallet.WalletTypeBip44, w.Type())
-				// Confirms the label is empty
-				require.Empty(t, w.Label())
-				// Confirms wallet has 5 address entries
-				//bip44Wlt, ok := w.(*bip44wallet.Wallet)
-				//require.True(t, ok)
-				//extEntries, err := bip44Wlt.GetEntry()
+				require.Equal(t, "test-stable-wallet-create", w.Label())
 
 				// get external entries length
 				extLen, err := w.EntriesLen()
@@ -3043,12 +3025,10 @@ func TestStableWalletCreate(t *testing.T) {
 		},
 		{
 			name: "generate wallet with -n option",
-			args: []string{"-n", "5"},
+			args: []string{"-e=false", "-n", "5"},
 			checkWallet: func(t *testing.T, w wallet.Wallet) {
-				require.Equal(t, defaultFilename, w.Filename())
 				require.Equal(t, wallet.WalletTypeDeterministic, w.Type())
-				// Confirms the label is empty
-				require.Empty(t, w.Label())
+				require.Equal(t, "test-stable-wallet-create", w.Label())
 				// Confirms wallet has 5 address entries
 				l, err := w.EntriesLen()
 				require.NoError(t, err)
@@ -3056,31 +3036,18 @@ func TestStableWalletCreate(t *testing.T) {
 			},
 		},
 		{
-			name: "generate wallet with -l option",
-			args: []string{"-l", "integration-cli"},
-			checkWallet: func(t *testing.T, w wallet.Wallet) {
-				require.Equal(t, defaultFilename, w.Filename())
-				label := w.Label()
-				require.Equal(t, "integration-cli", label)
+			name: "generate wallet with duplicate seed for deterministic wallet",
+			args: []string{"-s", "session eyebrow giant vote volcano eight code ahead return yard essay copy", "-e=false"},
+			setup: func(t *testing.T) {
+				seed := "session eyebrow giant vote volcano eight code ahead return yard essay copy"
+				createTempWallet(t, "test-stable-wallet-create", seed, false, nil)
 			},
-		},
-		{
-			name:     "generate wallet with duplicate wallet name",
-			args:     []string{},
-			filename: stableWalletName,
-			setup: func(t *testing.T, filename string) func() {
-				_, clean := createUnencryptedWalletAt(t, filename)
-				return clean
-			},
-			errMsgFunc: func(filename string) string {
-				return fmt.Sprintf("Error: %s already exists\n", filename)
-			},
+			errMsg: "Error: 400 Bad Request - fingerprint conflict for \"deterministic\" wallet\n",
 		},
 		{
 			name: "encrypt=true",
 			args: []string{"-e", "-p", "pwd"},
 			checkWallet: func(t *testing.T, w wallet.Wallet) {
-				require.Equal(t, defaultFilename, w.Filename())
 				// Confirms the wallet is encrypted
 				require.True(t, w.IsEncrypted())
 				require.Empty(t, w.Seed())
@@ -3094,66 +3061,49 @@ func TestStableWalletCreate(t *testing.T) {
 				}
 			},
 		},
-		{
-			name:   "encrypt=false password=pwd",
-			args:   []string{"-p", "pwd"},
-			errMsg: "Error: password should not be set as we're not going to create a wallet with encryption\n",
-		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			dir, clean := createTempWalletDir(t)
-			defer clean()
-
-			if tc.filename == "" {
-				tc.filename = defaultFilename
-			}
-
-			walletName := filepath.Join(dir, tc.filename)
-
 			if tc.setup != nil {
-				clean := tc.setup(t, walletName)
-				defer clean()
-			}
-
-			if tc.errMsg != "" && tc.errMsgFunc != nil {
-				t.Fatal("errMsg and errMsgFunc can't be set together")
-			}
-
-			errMsg := tc.errMsg
-			if tc.errMsgFunc != nil {
-				errMsg = tc.errMsgFunc(walletName)
+				tc.setup(t)
 			}
 
 			// Run command with arguments
-			args := append([]string{"walletCreate", walletName}, tc.args...)
+			args := append([]string{"walletCreate", "test-stable-wallet-create"}, tc.args...)
 			output, err := execCommandCombinedOutput(args...)
 			if err != nil {
 				require.EqualError(t, err, "exit status 1")
-				require.Equal(t, []byte(errMsg), output)
+				require.Equal(t, tc.errMsg, string(output))
 				return
 			}
 
-			require.Empty(t, errMsg, "the command did not return an error, but we expected one")
+			require.Empty(t, tc.errMsg, "the command did not return an error, but we expected one")
 
-			// os.Stdout should match the wallet written on disk
-			contents, err := ioutil.ReadFile(walletName)
+			var w api.WalletResponse
+			require.NoError(t, json.Unmarshal(output, &w))
+
+			c := newClient()
+			walletDir := getWalletDir(t, c)
+
+			// Confirms the wallet does exist
+			walletPath := filepath.Join(walletDir, w.Meta.Filename)
+			_, err = os.Stat(walletPath)
 			require.NoError(t, err)
-			require.Equal(t, append(contents, '\n'), output)
 
-			w, err := wallet.Load(walletName)
+			// Loads the wallet and confirms that the wallet has the same seed
+			wl, err := wallet.Load(walletPath)
 			require.NoError(t, err)
 
-			if !w.IsEncrypted() {
+			if !wl.IsEncrypted() {
 				// Confirms all entries and lastSeed are derived from seed.
-				checkWalletEntriesAndLastSeed(t, w)
+				checkWalletEntriesAndLastSeed(t, wl)
 			}
 
 			// Checks the wallet with provided checking method.
-			require.NotNil(t, w)
+			require.NotNil(t, wl)
 			require.NotNil(t, tc.checkWallet)
-			tc.checkWallet(t, w)
+			tc.checkWallet(t, wl)
 		})
 	}
 }
@@ -3568,4 +3518,11 @@ func loadDeterministicWalletFromBytes(t *testing.T, data []byte) *deterministic.
 	err := w.Deserialize(data)
 	require.NoError(t, err)
 	return &w
+}
+func getWalletDir(t *testing.T, c *api.Client) string {
+	wf, err := c.WalletFolderName()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	return wf.Address
 }

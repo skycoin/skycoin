@@ -1391,10 +1391,10 @@ func TestStableWalletOutputs(t *testing.T) {
 		return
 	}
 
-	fn, clean := createUnencryptedWallet(t)
-	defer clean()
+	seed := "crush dice soccer what dress bread cancel predict rose relax truck side"
+	wlt := createTempWallet(t, "test-stable-wallet-outputs", seed, false, nil)
 
-	output, err := execCommandCombinedOutput("walletOutputs", fn)
+	output, err := execCommandCombinedOutput("walletOutputs", wlt.Meta.Filename)
 	require.NoError(t, err, output)
 
 	var wltOutput cli.OutputsResult
@@ -2751,10 +2751,10 @@ func TestStableWalletHistory(t *testing.T) {
 		return
 	}
 
-	fn, clean := createUnencryptedWallet(t)
-	defer clean()
+	seed := "visit harbor excite frown flat nothing reduce price wrist label destroy citizen"
+	wlt := createTempWallet(t, "test-stable-wallet-history", seed, false, nil)
 
-	output, err := execCommandCombinedOutput("walletHistory", fn)
+	output, err := execCommandCombinedOutput("walletHistory", wlt.Meta.Filename)
 	require.NoError(t, err, output)
 
 	var history []cli.AddrHistory

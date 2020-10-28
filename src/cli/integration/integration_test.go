@@ -1282,11 +1282,10 @@ func TestStableListAddress(t *testing.T) {
 	if !doStable(t) {
 		return
 	}
+	seed := "radar erase claw much slush custom symbol cable poem apology genre edit"
+	wlt := createTempWallet(t, "test", seed, false, nil)
 
-	walletName, clean := createUnencryptedWallet(t)
-	defer clean()
-
-	output, err := execCommandCombinedOutput("listAddresses", walletName)
+	output, err := execCommandCombinedOutput("listAddresses", wlt.Meta.Filename)
 	require.NoError(t, err)
 
 	var wltAddresses struct {

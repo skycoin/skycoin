@@ -3477,70 +3477,78 @@ func TestWalletShowSeed(t *testing.T) {
 		return
 	}
 
+	// create an unencrypted wallet
+	seed := "scare winner long civil walk beyond little tuition seat bubble wall giggle"
+	unencryptedWlt := createTempWallet(t, "test-wallet-show-seed-unencrypted", seed, false, nil)
+	password := []byte("pwd")
+
+	// create an encrypted wallet
+	seed2 := "bike net index explain deliver garbage combine awkward lift struggle paddle duck"
+	encryptedWlt := createTempWallet(t, "test-wallet-show-seed-encrypted", seed2, true, password)
+
 	tt := []struct {
 		name         string
+		walletID     string
 		args         []string
-		setup        func(t *testing.T) (string, func())
 		errWithHelp  bool
 		errMsg       []byte
 		expectOutput []byte
 	}{
 		{
-			name:         "unencrypted wallet",
-			setup:        createUnencryptedWallet,
-			expectOutput: []byte("exchange stage green marine palm tobacco decline shadow cereal chapter lamp copy\n"),
+			name:     "unencrypted wallet",
+			walletID: unencryptedWlt.Meta.Filename,
+			errMsg:   []byte("Error: 400 Bad Request - wallet is not encrypted\n"),
 		},
 		{
-			name:         "unencrypted wallet with -j option",
-			args:         []string{"-j"},
-			setup:        createUnencryptedWallet,
-			expectOutput: []byte("{\n    \"seed\": \"exchange stage green marine palm tobacco decline shadow cereal chapter lamp copy\"\n}\n"),
+			name:     "unencrypted wallet with -j option",
+			walletID: unencryptedWlt.Meta.Filename,
+			args:     []string{"-j"},
+			errMsg:   []byte("Error: 400 Bad Request - wallet is not encrypted\n"),
 		},
 		{
 			name:         "encrypted wallet",
-			setup:        createEncryptedWallet,
+			walletID:     encryptedWlt.Meta.Filename,
 			args:         []string{"-p", "pwd"},
-			expectOutput: []byte("exchange stage green marine palm tobacco decline shadow cereal chapter lamp copy\n"),
+			expectOutput: []byte(seed2 + "\n"),
 		},
 		{
 			name:         "encrypted wallet with -j option",
-			setup:        createEncryptedWallet,
+			walletID:     encryptedWlt.Meta.Filename,
 			args:         []string{"-p", "pwd", "-j"},
-			expectOutput: []byte("{\n    \"seed\": \"exchange stage green marine palm tobacco decline shadow cereal chapter lamp copy\"\n}\n"),
+			expectOutput: []byte(fmt.Sprintf("{\n    \"seed\": \"%s\"\n}\n", seed2)),
 		},
 		{
-			name:   "encrypted wallet with invalid password",
-			setup:  createEncryptedWallet,
-			args:   []string{"-p", "wrong password"},
-			errMsg: []byte("Error: invalid password\n"),
+			name:     "encrypted wallet with invalid password",
+			walletID: encryptedWlt.Meta.Filename,
+			args:     []string{"-p", "wrong password"},
+			errMsg:   []byte("Error: 400 Bad Request - invalid password\n"),
 		},
 		{
-			name: "wallet doesn't exist",
-			setup: func(t *testing.T) (string, func()) {
-				return "not-exist.wlt", func() {}
-			},
+			name:        "wallet doesn't exist",
+			walletID:    "none-exist.wlt",
 			errWithHelp: true,
-			errMsg:      []byte("not-exist.wlt\" doesn't exist"),
+			errMsg:      []byte("Error: 400 Bad Request - wallet doesn't exist"),
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			wltFilename, clean := tc.setup(t)
-			defer clean()
-			args := append([]string{"showSeed", wltFilename}, tc.args...)
+			//wltFilename, clean := tc.setup(t)
+			//defer clean()
+			args := append([]string{"showSeed", tc.walletID}, tc.args...)
 			output, err := execCommandCombinedOutput(args...)
 			if err != nil {
 				require.EqualError(t, err, "exit status 1")
 				if tc.errWithHelp {
-					require.True(t, bytes.Contains(output, tc.errMsg), string(output))
+					require.True(t, bytes.Contains(output, tc.errMsg),
+						fmt.Sprintf("expect: %s, get: %v", tc.errMsg, string(output)))
 				} else {
-					require.Equal(t, tc.errMsg, output)
+					require.Equal(t, string(tc.errMsg), string(output))
 				}
 				return
 			}
 
-			require.Equal(t, tc.expectOutput, output)
+			require.Equal(t, string(tc.expectOutput), string(output))
 		})
 	}
 }

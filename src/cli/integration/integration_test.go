@@ -1354,10 +1354,10 @@ func TestStableWalletBalance(t *testing.T) {
 		return
 	}
 
-	fn, clean := createUnencryptedWallet(t)
-	defer clean()
+	seed := "recall large warrior cargo harbor ask moral strong mixture small october aerobic"
+	wlt := createTempWallet(t, "test-stable-wallet-balance", seed, false, nil)
 
-	output, err := execCommandCombinedOutput("walletBalance", fn)
+	output, err := execCommandCombinedOutput("walletBalance", wlt.Meta.Filename)
 	require.NoError(t, err, output)
 
 	var wltBalance cli.BalanceResult

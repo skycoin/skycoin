@@ -66,8 +66,8 @@ func generateAddrs(c *cobra.Command, args []string) error {
 	}
 
 	var pwd []byte
+	pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
 	if wlt.Meta.Encrypted && wlt.Meta.Type != wallet.WalletTypeBip44 {
-		pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
 		pwd, err = pr.Password()
 		if err != nil {
 			return err

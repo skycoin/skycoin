@@ -1,27 +1,6 @@
 {
-    "meta": {
-        "coin": "skycoin",
-        "cryptoType": "scrypt-chacha20poly1305",
-        "encrypted": "true",
-        "filename": "integration-test-encrypted.wlt",
-        "label": "integration-test",
-        "lastSeed": "",
-        "secrets": "dgB7Im4iOjEwNDg1NzYsInIiOjgsInAiOjEsImtleUxlbiI6MzIsInNhbHQiOiIzVnNyWjlUSGt5WWhsR3l1ODhLRlhZRHlyVkR2MUN1QWdKcmNwNlBVVTFrPSIsIm5vbmNlIjoiWG9YeWo4bndLUHVqaHJBRiJ98R91s9GQgV6P+RhiTxX+Xuh0OgbYbDI/to2aGz4yZ79lrQNxmZo1sockxOP1p+fWbfdnnX+6hoHJcu4ktHg4pAx8sc+gzCtdHwcswV8tKnlNyyQMhKY+Avt1emxoA2Rt9Ao22QqCW8Rkm5KAkqAFDcKBA7XRyG8M+t6TbxzRLuAZ3/PUO8yQeLoii58A524CDfvqzQNyz1H/qA306oNHJgorlL/LQ3xoa3pN2GsSazl/ysD85b1VcMLHS1RTGvn+HHWCCJ6Wv+z9cD0lV6zuwPLwY8+2eu05SJrBQCuz986S7FqAoE+AnSvnTbbWCpBVmw/c0SpmdwFZM1Gc8RDw6QeaNq1JZCfi1ZsBHRS/xoz7U58gA0YZbMv7Gve8S8fA5CCPVT2Ilu8FxlTT5zDf1TUcR7AjUSJLYXlU4IEJagSnPQlVtrGCxw7jIgH5Fer/Pppe6my2gsBVsRj6hzaJN1ri+R4/89TUY5yfVxGBs6BxTgXE7Yr+0ajmw5EUAiv9Ff5cizgRYICkig==",
-        "seed": "",
-        "tm": "1518271871",
-        "type": "deterministic",
-        "version": "0.4"
-    },
-    "entries": [
-        {
-            "address": "2Kg3eRXUhY6hrDZvNGB99DKahtrPDQ1W9vN",
-            "public_key": "03aefe8fc5952f67aca014ae4da6e7eba1321542be02d2d6f718c666750bf4c630",
-            "secret_key": ""
-        },
-        {
-            "address": "7g3M372kxwNwwQEAmrronu4anXTW8aD1XC",
-            "public_key": "0319527fa74053b148d7efe973c0ee734e49f52a11417232e582b8c51e389d638a",
-            "secret_key": ""
-        }
-    ]
+	"Addresses": [
+		"vcMKaEkTPJWRgxH1ghrAN1Jp2hUn7gLxbH",
+		"2c3Dr4YdHSyc9HAPrjnHcXLQEKnHEitHUn2"
+	]
 }

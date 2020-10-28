@@ -9,7 +9,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -55,9 +54,6 @@ const (
 	randomLiveTransactionNum = 500
 
 	testFixturesDir = "testdata"
-
-	stableWalletName        = "integration-test.wlt"
-	stableEncryptWalletName = "integration-test-encrypted.wlt"
 )
 
 var (
@@ -198,63 +194,21 @@ func TestMain(m *testing.M) {
 	os.Exit(ret)
 }
 
-func createUnencryptedWallet(t *testing.T) (string, func()) {
-	return createTempWallet(t, "", false)
-}
-
-func createUnencryptedWalletAt(t *testing.T, filename string) (string, func()) {
-	return createTempWallet(t, filename, false)
-}
-
-func createEncryptedWallet(t *testing.T) (string, func()) { //nolint:unparam
-	return createTempWallet(t, "", true)
-}
-
 // createTempWallet creates a temporary dir, and if encrypt is true, copy
 // the testdata/$stableEncryptedWalletName file to the dir. If it's false, then
 // copy the testdata/$stableWalletName file to the dir
 // returns the temporary wallet filename, cleanup callback function, and error if any.
-func createTempWallet(t *testing.T, filename string, encrypt bool) (string, func()) {
-	var dir string
-	if filename == "" {
-		var err error
-		dir, err = ioutil.TempDir("", "wallet-data-dir")
-		require.NoError(t, err)
-	} else {
-		dir = filepath.Dir(filename)
-	}
-
-	// Copy the testdata/$stableWalletName to the temporary dir.
-	wltName := filepath.Base(filename)
-	if wltName == "" || wltName == "." {
-		if encrypt {
-			wltName = stableEncryptWalletName
-		} else {
-			wltName = stableWalletName
-		}
-	}
-
-	walletFile := filepath.Join(dir, wltName)
-	f, err := os.Create(walletFile)
+func createTempWallet(t *testing.T, label, seed string, encrypt bool, password []byte) *api.WalletResponse {
+	c := newClient()
+	wlt, err := c.CreateWallet(api.CreateWalletOptions{
+		Seed:     seed,
+		Type:     wallet.WalletTypeDeterministic,
+		Label:    label,
+		Encrypt:  encrypt,
+		Password: string(password),
+	})
 	require.NoError(t, err)
-
-	defer f.Close()
-
-	rf, err := os.Open(filepath.Join(testFixturesDir, wltName))
-	require.NoError(t, err)
-
-	defer rf.Close()
-
-	_, err = io.Copy(f, rf)
-	require.NoError(t, err)
-
-	return walletFile, func() {
-		// Delete the temporary dir
-		err = os.RemoveAll(dir)
-		if err != nil {
-			t.Logf("Failed to cleanup temp wallet dir %s: %v", dir, err)
-		}
-	}
+	return wlt
 }
 
 type readableDeterministicEntry struct {
@@ -466,6 +420,7 @@ func TestWalletAddAddresses(t *testing.T) {
 	tt := []struct {
 		name         string
 		encrypted    bool
+		seed         string
 		args         []string
 		isUsageErr   bool
 		expectOutput []byte
@@ -474,51 +429,54 @@ func TestWalletAddAddresses(t *testing.T) {
 		{
 			name:         "walletAddAddresses",
 			encrypted:    false,
+			seed:         "exchange stage green marine palm tobacco decline shadow cereal chapter lamp copy",
 			expectOutput: []byte("7g3M372kxwNwwQEAmrronu4anXTW8aD1XC\n"),
 			goldenFile:   "generate-addresses.golden",
 		},
 		{
 			name:         "walletAddAddresses -n 2 -j",
 			encrypted:    false,
+			seed:         "visual ancient fancy body choose trigger drama window toward resource enough another",
 			args:         []string{"-n", "2", "-j"},
-			expectOutput: []byte("{\n    \"addresses\": [\n        \"7g3M372kxwNwwQEAmrronu4anXTW8aD1XC\",\n        \"2EDapDfn1VC6P2hx4nTH2cRUkboGAE16evV\"\n    ]\n}\n"),
+			expectOutput: []byte("{\n    \"addresses\": [\n        \"buDFq2kR9JLJcPoirZbiEL5DJGGBgpbXaU\",\n        \"Xzm3BCV8XCWUgCuM7rtdZ1RUTZnPqKcvw1\"\n    ]\n}\n"),
 			goldenFile:   "generate-addresses-2.golden",
 		},
 		{
 			name:         "walletAddAddresses -n -2 -j",
 			encrypted:    false,
+			seed:         "bronze nut vehicle book vehicle matter curve amused jaguar fall finger fade",
 			args:         []string{"-n", "-2", "-j"},
 			isUsageErr:   true,
 			expectOutput: []byte("Error: invalid value \"-2\" for flag -n: strconv.ParseUint: parsing \"-2\": invalid syntax"),
-			goldenFile:   "generate-addresses-2.golden",
 		},
 		{
 			name:         "walletAddAddresses in encrypted wallet",
 			encrypted:    true,
+			seed:         "chunk tortoise solid extra casual lend merry tooth captain inform alpha zebra",
 			args:         []string{"-p", "pwd", "-j"},
-			expectOutput: []byte("{\n    \"addresses\": [\n        \"7g3M372kxwNwwQEAmrronu4anXTW8aD1XC\"\n    ]\n}\n"),
+			expectOutput: []byte("{\n    \"addresses\": [\n        \"2c3Dr4YdHSyc9HAPrjnHcXLQEKnHEitHUn2\"\n    ]\n}\n"),
 			goldenFile:   "generate-addresses-encrypted.golden",
 		},
 		{
 			name:         "walletAddAddresses in encrypted wallet with invalid password",
 			encrypted:    true,
+			seed:         "lazy poverty prepare mad pen celery come panel animal approve cattle already",
 			args:         []string{"-p", "invalid password", "-j"},
 			expectOutput: []byte("invalid password\n"),
-		},
-		{
-			name:         "walletAddAddresses in unencrypted wallet with password",
-			encrypted:    false,
-			args:         []string{"-p", "pwd"},
-			expectOutput: []byte("wallet is not encrypted\n"),
+			isUsageErr:   true,
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			walletFile, clean := createTempWallet(t, "", tc.encrypted)
-			defer clean()
+			var password []byte
+			if tc.encrypted {
+				password = []byte("pwd")
+			}
+			wlt := createTempWallet(t, "test", tc.seed, tc.encrypted, password)
+			id := wlt.Meta.Filename
 
-			args := append([]string{"walletAddAddresses", walletFile}, tc.args...)
+			args := append([]string{"walletAddAddresses", id}, tc.args...)
 			output, err := execCommandCombinedOutput(args...)
 			if err != nil {
 				require.EqualError(t, err, "exit status 1")
@@ -532,22 +490,23 @@ func TestWalletAddAddresses(t *testing.T) {
 
 			require.Equal(t, tc.expectOutput, output)
 
+			c := newClient()
+			wlt, err = c.Wallet(id)
 			require.NoError(t, err)
-			var w readableDeterministicWallet
-			loadJSON(t, walletFile, &w)
 
-			// Use loadJSON instead of loadGoldenFile because this golden file
-			// should not use the *update flag
-			goldenFile := filepath.Join(testFixturesDir, tc.goldenFile)
-			var expect readableDeterministicWallet
-			loadJSON(t, goldenFile, &expect)
+			require.Equal(t, tc.encrypted, wlt.Meta.Encrypted)
 
-			if tc.encrypted {
-				// wipe secrets as it's not stable
-				expect.Meta["secrets"] = ""
-				w.Meta["secrets"] = ""
+			var addrs struct {
+				Addresses []string
 			}
-			require.Equal(t, expect, w)
+			for _, e := range wlt.Entries {
+				addrs.Addresses = append(addrs.Addresses, e.Address)
+			}
+
+			var expect struct {
+				Addresses []string
+			}
+			checkGoldenFile(t, tc.goldenFile, TestData{addrs, &expect})
 		})
 	}
 }

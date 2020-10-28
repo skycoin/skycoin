@@ -323,7 +323,6 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 				wh.Error500(w, err.Error())
 				return
 			}
-
 		}
 
 		rlt, err := NewWalletResponse(wlt)

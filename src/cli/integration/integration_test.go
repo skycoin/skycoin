@@ -3372,15 +3372,19 @@ func TestDecryptWallet(t *testing.T) {
 	tt := []struct {
 		name        string
 		args        []string
-		setup       func(t *testing.T) (string, func())
+		setup       func(t *testing.T) string
 		errMsg      []byte
 		errWithHelp bool
 		checkWallet func(t *testing.T, w wallet.Wallet)
 	}{
 		{
-			name:  "wallet is encrypted",
-			args:  []string{"-p", "pwd"},
-			setup: createEncryptedWallet,
+			name: "wallet is encrypted",
+			args: []string{"-p", "pwd"},
+			setup: func(t *testing.T) string {
+				seed := "crouch admit shy nurse olympic sphere palace void memory chunk pool scorpion"
+				wlt := createTempWallet(t, "test-decrypt-wallet", seed, true, []byte("pwd"))
+				return wlt.Meta.Filename
+			},
 			checkWallet: func(t *testing.T, w wallet.Wallet) {
 				require.False(t, w.IsEncrypted())
 				require.Empty(t, w.Secrets())
@@ -3395,45 +3399,62 @@ func TestDecryptWallet(t *testing.T) {
 			},
 		},
 		{
-			name:   "wallet is not encrypted",
-			args:   []string{"-p", "pwd"},
-			setup:  createUnencryptedWallet,
+			name: "wallet is not encrypted",
+			args: []string{"-p", "pwd"},
+			setup: func(t *testing.T) string {
+				seed := "smooth shift cargo stereo fatigue chicken giggle mushroom belt able bus erase"
+				wlt := createTempWallet(t, "test-decrypt-wallet", seed, false, nil)
+				return wlt.Meta.Filename
+			},
 			errMsg: []byte("Error: wallet is not encrypted\n"),
 		},
 		{
-			name:   "invalid password",
-			args:   []string{"-p", "wrong password"},
-			setup:  createEncryptedWallet,
-			errMsg: []byte("Error: invalid password\n"),
+			name: "invalid password",
+			args: []string{"-p", "wrong password"},
+			setup: func(t *testing.T) string {
+				seed := "habit fortune rather sniff hotel armed tool frequent type wash camera expire"
+				wlt := createTempWallet(t, "test-decrypt-wallet", seed, true, []byte("pwd"))
+				return wlt.Meta.Filename
+			},
+			errMsg: []byte("Error: 400 Bad Request - invalid password\n"),
 		},
 		{
 			name: "wallet doesn't exist",
 			args: []string{"-p", "pwd"},
-			setup: func(t *testing.T) (string, func()) {
-				return "not-exist.wlt", func() {}
+			setup: func(t *testing.T) string {
+				return "not-exist.wlt"
 			},
 			errWithHelp: true,
-			errMsg:      []byte("not-exist.wlt\" doesn't exist"),
+			errMsg:      []byte("400 Bad Request - wallet doesn't exist"),
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			walletFile, clean := tc.setup(t)
-			defer clean()
-			args := append([]string{"decryptWallet", walletFile}, tc.args...)
+			walletID := tc.setup(t)
+
+			args := append([]string{"decryptWallet", walletID}, tc.args...)
 			output, err := execCommandCombinedOutput(args...)
 			if err != nil {
 				require.EqualError(t, err, "exit status 1")
 				if tc.errWithHelp {
-					require.True(t, bytes.Contains(output, tc.errMsg), string(output))
+					require.True(t, bytes.Contains(output, tc.errMsg), fmt.Sprintf("expect: %s, get: %s", tc.errMsg, string(output)))
 				} else {
-					require.Equal(t, tc.errMsg, output)
+					require.Equal(t, string(tc.errMsg), string(output))
 				}
 				return
 			}
 
-			w, err := wallet.Load(walletFile)
+			c := newClient()
+			fn, err := c.WalletFolderName()
+			require.NoError(t, err)
+
+			// Confirms the wallet does exist
+			walletPath := filepath.Join(fn.Address, walletID)
+			_, err = os.Stat(walletPath)
+			require.NoError(t, err)
+
+			w, err := wallet.Load(walletPath)
 			require.NoError(t, err)
 			tc.checkWallet(t, w)
 		})

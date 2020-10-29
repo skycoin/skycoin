@@ -200,7 +200,7 @@ func generateWalletHandler(c *cobra.Command, args []string) error {
 	addrN := len(wlt.Entries)
 	if walletType == wallet.WalletTypeBip44 {
 		for _, e := range wlt.Entries {
-			if *e.Change > 0 {
+			if *e.Change == 1 {
 				addrN--
 			}
 		}

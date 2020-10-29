@@ -62,6 +62,11 @@ export class FormFieldErrorDirective extends MatTooltip {
   private updateField() {
     if (this.message) {
       this.renderer.addClass(this.elementRef.nativeElement, 'red-field');
+
+      // If the fied is focussed, show the tooltip, enven if the mouse cursor is not over the field.
+      if (document.activeElement === this.elementRef.nativeElement) {
+        this.show();
+      }
     } else {
       this.renderer.removeClass(this.elementRef.nativeElement, 'red-field');
     }

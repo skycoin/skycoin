@@ -1,6 +1,6 @@
 import { switchMap, delay, flatMap } from 'rxjs/operators';
 import { Component, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
-import { FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormControl, FormGroup } from '@angular/forms';
 import { SubscriptionLike, Subject, of } from 'rxjs';
 import { ApiService } from '../../../../../services/api.service';
 import { MatDialog } from '@angular/material/dialog';
@@ -201,7 +201,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     this.enterSeedWithAssistance = true;
 
     this.form = new FormGroup({});
-    this.form.addControl('label', new FormControl(data ? data.label : '', [Validators.required]));
+    this.form.addControl('label', new FormControl(data ? data.label : ''));
     this.form.addControl('seed', new FormControl(data ? data.lastCustomSeed : ''));
     this.form.addControl('confirm_seed', new FormControl(data ? data.lastCustomSeed : ''));
     this.form.addControl('password', new FormControl());

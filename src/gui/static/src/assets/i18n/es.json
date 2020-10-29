@@ -300,6 +300,7 @@
     "bulk-send": {
       "title": "Envío Masivo",
       "indications": "Para enviar a múltiples destinos de forma rápida, escriba cada dirección, cantidad de monedas y cantidad de horas (opcional) en una línea, separadas por una coma. Ejemplo: si desea enviar 10 monedas y 5 horas a la dirección \"xyz\", escriba \"xyz,10,5\"; si desea que las horas se calculen automáticamente, escriba \"xyz,10\". Los valores decimales se deben separar con un punto.",
+      "data-error-info": "Debe ingresar un valor.",
       "process-button": "Procesar",
       "no-data-error": "No hay texto para procesar.",
       "inconsistent-data-error": "Si establece cuántas horas desea enviar a un destino, debe hacerlo para todos los destinos.",
@@ -675,6 +676,7 @@
     "offline": "El servicio está temporalmente offline",
     "problem-connecting": "No se puede conectar con el servicio. Por favor compruebe su conexión a Internet y vuelva a intentarlo más tarde.",
     "invalid-address-error": "Dirección inválida.",
+    "from-coin-error-info": "Debe seleccionar una moneda.",
     "invalid-value-error-info": "Valor inválido.",
     "address-error-info": "Por favor introduzca una dirección válida.",
     "statuses": {

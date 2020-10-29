@@ -300,6 +300,7 @@
     "bulk-send": {
       "title": "批量发送",
       "indications": "快捷方式发送到多个地址，在一行中键入每个地址,币数,币时(可选)，并用逗号隔开。示例: 如果你发送10个币,5币时到\"xyz\"地址，请键入\"xyz,10,5\"; 如果想自动计算币时，可以键入\"xy,10\"。小数值必须以小数点隔开。",
+      "data-error-info": "请输入值",
       "process-button": "处理",
       "no-data-error": "无数据可处理",
       "inconsistent-data-error": "如果你想要发送指定币时数，所有地址均需指定币时。",
@@ -675,6 +676,7 @@
     "offline": "交易暂时下线",
     "problem-connecting": "未能连接到服务器。请检查你的网络连接并稍后再试。",
     "invalid-address-error": "无效地址.",
+    "from-coin-error-info": "请选择币",
     "invalid-value-error-info": "无效的值.",
     "address-error-info": "请输入一个有效的地址.",
     "statuses": {

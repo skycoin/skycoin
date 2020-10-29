@@ -210,13 +210,14 @@ func createTempWallet(t *testing.T, label, seed string, encrypt bool, password [
 	})
 	require.NoError(t, err)
 
-	// the request above will create a wallet with default address
-	if generateN > 0 {
+	// the request above will create a wallet with a default address,
+	// hence we only need to generate more addresses when the generateN is greater than 1
+	if generateN > 1 {
 		generateN--
+		_, err = c.NewWalletAddress(wlt.Meta.Filename, int(generateN), string(password))
+		require.NoError(t, err)
 	}
 
-	_, err = c.NewWalletAddress(wlt.Meta.Filename, int(generateN), string(password))
-	require.NoError(t, err)
 	return wlt
 }
 

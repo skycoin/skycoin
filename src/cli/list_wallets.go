@@ -14,13 +14,13 @@ type WalletEntry struct {
 func listWalletsCmd() *cobra.Command {
 	return &cobra.Command{
 		Short: "Lists all wallets stored in the wallet directory",
-		Use:   "listWallets [directory]",
+		Use:   "listWallets",
 		Long: `Lists all wallets stored in the wallet directory.
 
     The [wallet dir] argument is optional. If not provided, defaults to $DATA_DIR/wallets`,
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
-		Args:                  cobra.MaximumNArgs(1),
+		Args:                  cobra.MaximumNArgs(0),
 		RunE:                  listWallets,
 	}
 }

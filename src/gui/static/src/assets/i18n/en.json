@@ -294,7 +294,8 @@
       "share-factor-needed-error": "The hours share factor is needed. Please try with different values and contact support if the problem is not solved.",
       "share-factor-not-needed-error": "The hours share factor can't be specified while using manual hour distribution. Please try with different values and contact support if the problem is not solved.",
       "invalid-share-factor-error": "Invalid share factor. Please try with different values and contact support if the problem is not solved.",
-      "change-equal-to-destination-error": "The transaction can't be created because a repeated amount of coins would be returned to the same destination address. Please try again with different values."
+      "change-equal-to-destination-error": "The transaction can't be created because a repeated amount of coins would be returned to the same destination address. Please try again with different values.",
+      "repeated-wallet": "A wallet for the specified seed already exists."
     },
 
     "bulk-send": {

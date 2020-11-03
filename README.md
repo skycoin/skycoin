@@ -94,6 +94,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
 		- [Translations](#translations)
 	- [Releases](#releases)
 		- [Update the version](#update-the-version)
+		- [Check the translations](#check-the-translations)
 		- [Pre-release testing](#pre-release-testing)
 		- [Creating release builds](#creating-release-builds)
 		- [Release signing](#release-signing)
@@ -747,6 +748,12 @@ You can find information about how to work with translation files in the [Transl
 
 If there are problems discovered after merging to `master`, start over, and increment the 3rd version number.
 For example, `v0.20.0` becomes `v0.20.1`, for minor fixes.
+
+#### Check the translations
+
+Run `make check-lang` to check if the translation files of the UI are updated. If there is any error running
+that command, one or more translation files may need to be updated. For more information, check the
+[translations](#translations) section.
 
 #### Pre-release testing
 

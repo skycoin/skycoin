@@ -48,11 +48,14 @@
     #formMultipleDestinations
     (onChanges)="destinationsChanged()"
     (onBulkRequested)="openMultipleDestinationsPopup()"
+    (newNoteRequested)="changeNote($event)"
+    (manualHoursRequested)="setManualHours()"
+    (hoursAddedToSimpleForm)="changeHoursAddedToSimpleForm($event)"
     [availableBalance]="availableBalance"
     [busy]="busy"
     [showHourFields]="!autoHours"
     [showSimpleForm]="showSimpleForm"
-    >
+  >
   </app-form-destination>
 
   <!-- Change address. -->
@@ -85,8 +88,8 @@
     <input formControlName="note" id="note" (keydown.enter)="preview()" [maxlength]="maxNoteChars" [attr.disabled]="busy ? 'true' : null">
   </div>
 
-  <!-- Hours distributions options for the basic form. -->
-  <div *ngIf="showSimpleForm" class="form-field">
+  <!-- Hours distribution options for the basic form. -->
+  <div *ngIf="showSimpleForm && !hoursAddedToSimpleForm" class="form-field">
     <app-arrow-link
       *ngIf="showSimpleForm"
       [noPadding]="true"
@@ -96,11 +99,11 @@
     </app-arrow-link>
   </div>
 
-  <div *ngIf="showSimpleForm" class="form-field row -options-wrapper" [ngClass]="{ 'd-none': !showAutoHourDistributionOptions }">
+  <div *ngIf="showSimpleForm && !hoursAddedToSimpleForm" class="form-field row -options-wrapper" [ngClass]="{ 'd-none': !showAutoHourDistributionOptions }">
     <ng-container *ngTemplateOutlet="hoursSelector"></ng-container>
   </div>
 
-  <!-- Automatic hours distributions options. -->
+  <!-- Automatic hours distribution options. -->
   <div *ngIf="!showSimpleForm" class="form-field">
     <div class="row" [ngClass]="{'element-disabled' : busy}">
       <div class="col-12">

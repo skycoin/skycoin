@@ -248,9 +248,13 @@
     "change-address-error-info": "La dirección de retorno no es válida.",
     "change-address-select-from-list-link": "Seleccionar",
     "change-address-help": "Dirección para recibir el cambio. Si no se proporciona, será elegida automáticamente. Haga clic en el enlace \"Seleccionar\" para elegir una dirección de una de sus billeteras.",
+    "specific-hours": "Horas a enviar:",
+    "remove-specific-hours-info": "Remover.",
+    "remove-specific-hours-confirmation": "¿Seguro que desea eliminar la cantidad específica de horas a enviar?",
     "destinations-label": "Destinos",
     "destinations-help1": "Direcciones de destino y sus monedas.",
     "destinations-help2": "Direcciones de destino, sus monedas y horas.",
+    "destination-tools-title": "Herramientas de destino",
     "hours-allocation-check": "Usar una distribución automática de {{ coinHoursName }}",
     "options-link": "Opciones",
     "coin-hours-options-link": "Opciones de horas",
@@ -279,6 +283,18 @@
     "sending-all-hours-waning": "Usted seleccionó enviar todas las horas. ¿Seguro que desea continuar?",
     "high-hours-share-waning": "Su selección puede resultar en el envío de todas las horas de la billetera seleccionada. ¿Seguro que desea continuar?",
     "advanced-high-hours-share-waning": "Su selección puede resultar en el envío de todas las horas de la(s) fuente(s) seleccionada(s). ¿Seguro que desea continuar?",
+
+    "fill-with-link": {
+      "title": "Utilizar un link de transacción",
+      "link-info": "Aquí puede ingresar un link que se le hubiese enviado solicitando monedas. El formulario se rellenará con los datos obtenidos del link.",
+      "link-label": "Link de transacción",
+      "link-error-info": "Debe ingresar un link de transacción válido.",
+      "process-button": "Procesar",
+      "invalid-link-error": "El contenido del link de transacción no es válido.",
+      "invalid-link-hours-error": "El link de transacción contiene una cantidad de horas no válida.",
+      "data-overwritten-alert": "Se sobrescribirán algunos datos que ha introducido. Seguro de que desea continuar?",
+      "confirmation": "El formulario se ha actualizado con los datos obtenidos del link de transacción."
+    },
 
     "known-node-errors": {
       "null-change-address-error": "La dirección nula no se puede utilizar como dirección de retorno personalizada. Por favor introduzca una dirección válida.",

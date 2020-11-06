@@ -270,7 +270,7 @@ func TestServiceCreateWallet(t *testing.T) {
 						XPub: tc.xpub,
 						Type: tc.walletType,
 					})
-					require.Equal(t, fmt.Errorf("fingerprint conflict for %q wallet", tc.walletType), err)
+					require.Equal(t, wallet.NewError(fmt.Errorf("fingerprint conflict for %q wallet", tc.walletType)), err)
 
 					// check that the dup wallet is not created
 					_, err := s.GetWallet(dupWlt)

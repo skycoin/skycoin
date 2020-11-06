@@ -232,7 +232,7 @@ func (serv *Service) loadWallet(wltName string, options Options) (Wallet, error)
 				"walletType":  w.Type(),
 				"fingerprint": fingerprint,
 			}).Error("fingerprint conflict")
-			return nil, fmt.Errorf("fingerprint conflict for %q wallet", w.Type())
+			return nil, NewError(fmt.Errorf("fingerprint conflict for %q wallet", w.Type()))
 		}
 	}
 

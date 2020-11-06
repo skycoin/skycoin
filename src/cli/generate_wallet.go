@@ -154,6 +154,8 @@ func generateWalletHandler(c *cobra.Command, args []string) error {
 		num = 0
 
 	case wallet.WalletTypeXPub:
+		// xpub wallet does not support encryption
+		encrypt = false
 		if s != "" || random || mnemonic {
 			return fmt.Errorf("%q type wallets do not use seeds", walletType)
 		}

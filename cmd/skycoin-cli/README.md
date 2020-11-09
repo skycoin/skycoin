@@ -1489,8 +1489,10 @@ $ skycoin-cli walletKeyExport [wallet] [flags]
 
 ```
 FLAGS:
-  -k, --key string    key type ("xpub", "xprv", "pub", "prv") (default "xpub")
-  -p, --path string   bip44 account'/change subpath (default "0/0")
+  -h, --help              help for walletKeyExport
+  -k, --key string        key type ("xpub", "xprv", "pub", "prv") (default "xpub")
+  -p, --password string   wallet password
+      --path string       bip44 account'/change subpath (default "0/0")
 ```
 
 The `path` arg is the `account'/change` portion of the bip44 path.
@@ -1512,7 +1514,7 @@ xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8Y
 
 ##### Export the xprv key for the change chain
 ```bash
-$ skycoin-cli walletKeyExport mywallet.wlt -k xprv -p "0/1"
+$ skycoin-cli walletKeyExport mywallet.wlt -k xprv --path "0/1"
 ```
 
 <details>
@@ -1525,7 +1527,7 @@ xprv9uHRZZhk6KAJC1avXpDAp4MDc3sQKNxDiPvvkX8Br5ngLNv1TxvUxt4cV1rGL5hj6KCesnDYUhd7
 
 ##### Export the pub key for the 5th child in the external chain
 ```bash
-$ skycoin-cli walletKeyExport mywallet.wlt -k pub -p "0/0/5"
+$ skycoin-cli walletKeyExport mywallet.wlt -k pub --path "0/0/5"
 ```
 
 <details>
@@ -1539,7 +1541,7 @@ $ skycoin-cli walletKeyExport mywallet.wlt -k pub -p "0/0/5"
 
 ##### Export the prv key for the 5th child in the change chain
 ```bash
-$ skycoin-cli walletKeyExport mywallet.wlt -k prv -p "0/1/5"
+$ skycoin-cli walletKeyExport mywallet.wlt -k prv --path "0/1/5"
 ```
 
 <details>
@@ -1553,7 +1555,7 @@ d647077f0f6824a25af7cd934ff196e611f5122bff4310f8eb0f2e643c5213cd
 
 ##### Export the xpub key for account number 2
 ```bash
-$ skycoin-cli walletKeyExport mywallet.wlt -k xpub -p "2"
+$ skycoin-cli walletKeyExport mywallet.wlt -k xpub --path "2"
 ```
 
 <details>

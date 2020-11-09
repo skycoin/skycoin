@@ -473,6 +473,16 @@ skycoin-cli addressOutputs tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V 29fDBQuJs2MDLymJsj
 ```json
 {
  "outputs": {
+    "head": {
+                "seq": 148674,
+                "block_hash": "f95885435045e267c95607c897e66168bae909ababf3dfe98c55cf30d0a87332",
+                "previous_block_hash": "b8760f7fc9349901db79333658103ff387a5700fc64a0bbc9e7afc17f3a3d58b",
+                "timestamp": 1604826679,
+                "fee": 436,
+                "version": 0,
+                "tx_body_hash": "0e135542bd8caf3d6c49707336e5a69fbb5ba1918e098ac287a3cf555b8bb98d",
+                "ux_hash": "e155735d7aac020930a8f92fb1fbb5d196b75421fca4cc23a4a5a890e8a3bea9"
+     },
      "head_outputs": [
          {
              "hash": "f5f838edf75b68882cacb7fa071538bcf800515d5a7f42e3a8c5e6d681879a82",

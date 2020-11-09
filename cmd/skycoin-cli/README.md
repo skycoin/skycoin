@@ -36,7 +36,6 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 	- [Last blocks](#last-blocks)
 	- [List wallet addresses](#list-wallet-addresses)
 	- [List wallets](#list-wallets)
-	- [Rich list](#rich-list)
 	- [Send](#send)
 	- [Show Seed](#show-seed)
 	- [Show Config](#show-config)
@@ -2041,55 +2040,6 @@ $ skycoin-cli listWallets .
 ```
 </details>
 
-
-### Rich list
-Returns the top N address (default 20) balances (based on unspent outputs). Optionally include distribution addresses (exluded by default).
-
-```bash
-$ skycoin-cli richlist [top N addresses] [include distribution addresses]
-```
-
-#### Example
-```bash
-$ skycoin-cli richlist 5 false
-```
-
-<details>
- <summary>View Output</summary>
-
-```json
-{
-    "richlist": [
-        {
-            "address": "2iNNt6fm9LszSWe51693BeyNUKX34pPaLx8",
-            "coins": "1072264.838000",
-            "locked": false
-        },
-        {
-            "address": "2fGi2jhvp6ppHg3DecguZgzqvpJj2Gd4KHW",
-            "coins": "500000.000000",
-            "locked": false
-        },
-        {
-            "address": "2jNwfvZNUoRLiFzJtmnevSF6TKPfSehvrc1",
-            "coins": "252297.068000",
-            "locked": false
-        },
-        {
-            "address": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv",
-            "coins": "236884.364000",
-            "locked": false
-        },
-        {
-            "address": "2fR8BkeTRQC4R3ATNnujHsQQXcaB6m4Aqwo",
-            "coins": "173571.990000",
-            "locked": false
-        }
-    ]
-}
-```
-</details>
-
 ### Send
 Make a skycoin transaction.
 
@@ -2821,74 +2771,10 @@ $ skycoin-cli walletBalance [wallet]
 ```
 
 #### Example
-##### Balance of default wallet
-```bash
-$ skycoin-cli walletBalance
-```
-
-<details>
- <summary>View Output</summary>
-
-```json
-{
-    "confirmed": {
-        "coins": "123.000000",
-        "hours": "456"
-    },
-    "spendable": {
-        "coins": "123.000000",
-        "hours": "456"
-    },
-    "expected": {
-        "coins": "123.000000",
-        "hours": "456"
-    },
-    "addresses": [
-        {
-            "confirmed": {
-                "coins": "123.000000",
-                "hours": "456"
-            },
-            "spendable": {
-                "coins": "123.000000",
-                "hours": "456"
-            },
-            "expected": {
-                "coins": "123.000000",
-                "hours": "456"
-            },
-            "address": "2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc"
-        }, {
-            "confirmed": {
-                "coins": "0.000000",
-                "hours": "0"
-            },
-            "spendable": {
-                "coins": "0.000000",
-                "hours": "0"
-            },
-            "expected": {
-                "coins": "0.000000",
-                "hours": "0"
-            },
-            "address": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv"
-        }
-    ]
-}
-```
-</details>
-
-
 ##### Balance of a specific wallet
 ```bash
 $ skycoin-cli walletBalance 2018_04_01_198c.wlt
 ```
-*OR*
-
-```bash
-$ skycoin-cli walletBalance ~/.skycoin/wallets/2018_04_01_198c.wlt
-```
-
 <details>
  <summary>View Output</summary>
 

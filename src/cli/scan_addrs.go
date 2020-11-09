@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/SkycoinProject/skycoin/src/wallet"
 	"github.com/spf13/cobra"
 )
 
@@ -70,17 +71,20 @@ func runScanAddresses(c *cobra.Command, args []string) error {
 		return err
 	}
 
-	pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
 	var password []byte
-	if rsp.Meta.Encrypted {
-		var err error
-		password, err = pr.Password()
-		if err != nil {
-			return err
+	// bip44 can add new addresses without unlocking.
+	if rsp.Meta.Type != wallet.WalletTypeBip44 {
+		pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
+		if rsp.Meta.Encrypted {
+			var err error
+			password, err = pr.Password()
+			if err != nil {
+				return err
+			}
+			defer func() {
+				password = []byte("")
+			}()
 		}
-		defer func() {
-			password = []byte("")
-		}()
 	}
 
 	addrs, err := apiClient.ScanWalletAddresses(id, int(num), string(password))

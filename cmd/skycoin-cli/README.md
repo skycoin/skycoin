@@ -1595,16 +1595,13 @@ $ skycoin-cli encryptWallet $WALLET_FILE -p test
  {
      "meta": {
          "coin": "skycoin",
-         "cryptoType": "scrypt-chacha20poly1305",
-         "encrypted": "true",
          "filename": "skycoin_cli.wlt",
-         "label": "",
-         "lastSeed": "",
-         "secrets": "dgB7Im4iOjEwNDg1NzYsInIiOjgsInAiOjEsImtleUxlbiI6MzIsInNhbHQiOiJRNVRSVHh0VFpieERpUWt0dnkzc01SYTl6U0t2aFJqVlpUUHQzeldSVGs4PSIsIm5vbmNlIjoiSUt5VG8zdWdGdFY3MWYxTiJ9LB7Cu3bvZFzsmKqToPi3bjARIRfmhL8HBUdnwLzS5Rxu4uw1tIlDDmEKUpgDWV3RvB+xDz3sHchQr5BpK72LDOwbZ6BubMHovTqC4+lx9hKc2qnDGwsymxLQJHQrQ23DkHMioSUVYNZv1/DwzJ2qI0WIOTkb+L34e9f60YV+2zF7v+C/nTS8AjMwjGYldKinPEjyDXkpxB2d4Sd3EnfUm8u76TvTKxqZpZ/tr+in/OfRsJsN7dC7rMFRZukoCJYNnWv/wgPn/NMu4DIxqF+WUQhCsCgqk6oMderdK/E/xtLJmKnbHRLH4PO/Dh4ypLXg2EzW+JBN6RpzVEXxYdvVCqmKfs7d+hnHWDmDtCLGqYyPsUa+d4PPhylruNE=",
-         "seed": "",
-         "tm": "1540305209",
+         "label": "test",
          "type": "deterministic",
-         "version": "0.2"
+         "version": "0.4",
+         "crypto_type": "scrypt-chacha20poly1305",
+         "timestamp": "1540305209",
+         "encrypted": "true"
      },
      "entries": [
          {
@@ -1630,24 +1627,18 @@ $ skycoin-cli encryptWallet $WALLET_FILE -x sha256-xor -p test
  {
      "meta": {
          "coin": "skycoin",
-         "cryptoType": "sha256-xor",
+         "filename": "skycoin_test.wlt",
+         "label": "skycoin_test",
+         "crypto_type": "sha256-xor",
          "encrypted": "true",
-         "filename": "skycoin_cli.wlt",
-         "label": "",
-         "lastSeed": "",
-         "secrets": "mJ4g+/NgncOVp7gKIZqVPysmrRYKjprSuMvvpq3HLt7ajjMOheEdyU0PGtueDQADIhhTFZlQh/eaaYXF3fecS7OrGa79F+2lRRdD7Tva/MueiL9TL0ng12x0I7dXkUVsXLTl3MJK27JwS9hKedcVvnmFysJA6W3lX2aE7Qn+v6cyMbfgR8r89OHGaUZ9SPZn2HKOhhIcXt66Q/t0kVWU0XEH+G
- xUyX23ksN3scQoAshVidLAgXwpkgExEl+qjCpDNQga3MncZV+WuQxpIKodJ3l5TKoJAA0/Taz9O9Se0tIoiK2ls2m6JUayev3Id0+hkmNNSUKQ53Ni3xwjNzZXoPQAemMWpkdUSv8qNuhh7C/4gBBrZROM6ZyxmsdlWgcG0Yfrh8o505D0i4mtubkdZSGi8Djm9j1mpWTZi3VuUjtGvBAmH3Qzdma+nvORZj11QuEuCcO+
- 8jmQB9bVxcTL9u4Nan2+cYijVNul93m7xWik/mSB7uIFVIJAm4kSMiJm",
-         "seed": "",
-         "tm": "1540305209",
+         "timestamp": "1540305209",
          "type": "deterministic",
-         "version": "0.2"
+         "version": "0.4"
      },
      "entries": [
          {
              "address": "2gvvvS5jziMDQTUPB98LFipCTDjm1H723k2",
              "public_key": "032fe2ceacabc1a6acad8c93bd3493a3570fb76a9f8dc625dd200d13f96abed3e0",
-             "secret_key": ""
          }
      ]
  }
@@ -1678,22 +1669,18 @@ $ skycoin-cli decryptWallet $WALLET_FILE -p test
  {
      "meta": {
          "coin": "skycoin",
-         "cryptoType": "",
+         "crypto_type": "",
          "encrypted": "false",
          "filename": "skycoin_cli.wlt",
-         "label": "",
-         "lastSeed": "522dba68fe58c179f3467f9e799c02b25552143b250626cc03281faa28c262c0",
-         "secrets": "",
-         "seed": "select salute trip target blur short link suspect river ready senior bleak",
-         "tm": "1540305209",
+         "label": "test",
+         "timestamp": "1540305209",
          "type": "deterministic",
-         "version": "0.2"
+         "version": "0.4"
      },
      "entries": [
          {
              "address": "2gvvvS5jziMDQTUPB98LFipCTDjm1H723k2",
              "public_key": "032fe2ceacabc1a6acad8c93bd3493a3570fb76a9f8dc625dd200d13f96abed3e0",
-             "secret_key": "080bfb86463da87e06f816c4326a11b84806c9744235bb7ce7bc8d63acb4f6c2"
          }
      ]
  }

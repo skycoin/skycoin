@@ -1495,6 +1495,8 @@ FLAGS:
       --path string       bip44 account'/change subpath (default "0/0")
 ```
 
+Note: Node must start with the API set of `INSECURE_WALLET_SEED`.
+
 The `path` arg is the `account'/change` portion of the bip44 path.
 It can have 1 to 3 nodes (i.e. `0`, `0/0` and `0/0/0`).
 The apostrophe for the `account` node is omitted.

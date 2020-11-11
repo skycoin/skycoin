@@ -11,17 +11,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
-	"github.com/SkycoinProject/skycoin/src/testutil"
-	"github.com/SkycoinProject/skycoin/src/wallet/bip44wallet"
-	"github.com/SkycoinProject/skycoin/src/wallet/collection"
-	_ "github.com/SkycoinProject/skycoin/src/wallet/deterministic"
-	_ "github.com/SkycoinProject/skycoin/src/wallet/xpubwallet"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/wallet/bip44wallet"
+	"github.com/skycoin/skycoin/src/wallet/collection"
+	_ "github.com/skycoin/skycoin/src/wallet/deterministic"
+	_ "github.com/skycoin/skycoin/src/wallet/xpubwallet"
 	"github.com/stretchr/testify/require"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/wallet"
-	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/wallet/crypto"
 )
 
 func prepareWltDir() string {

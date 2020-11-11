@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/SkycoinProject/skycoin/src/cipher/encrypt"
+	"github.com/skycoin/skycoin/src/cipher/encrypt"
 )
 
 // Cryptor wraps the Encrypt and Decrypt method

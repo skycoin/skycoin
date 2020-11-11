@@ -10,10 +10,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/cipher/base58"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip32"
-	secp256k1 "github.com/SkycoinProject/skycoin/src/cipher/secp256k1-go"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/base58"
+	"github.com/skycoin/skycoin/src/cipher/bip32"
+	secp256k1 "github.com/skycoin/skycoin/src/cipher/secp256k1-go"
 )
 
 // InputTestDataJSON contains hashes to be signed

@@ -11,20 +11,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SkycoinProject/skycoin/src/coin"
-	"github.com/SkycoinProject/skycoin/src/fiber"
-	"github.com/SkycoinProject/skycoin/src/kvstorage"
-	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/fiber"
+	"github.com/skycoin/skycoin/src/kvstorage"
+	"github.com/skycoin/skycoin/src/wallet/crypto"
 
 	"log"
 
-	"github.com/SkycoinProject/skycoin/src/api"
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/params"
-	"github.com/SkycoinProject/skycoin/src/readable"
-	"github.com/SkycoinProject/skycoin/src/util/droplet"
-	"github.com/SkycoinProject/skycoin/src/util/file"
-	"github.com/SkycoinProject/skycoin/src/util/useragent"
+	"github.com/skycoin/skycoin/src/api"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/params"
+	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/util/file"
+	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
 var (

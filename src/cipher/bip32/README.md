@@ -36,8 +36,8 @@ method never returns an error.
 package main
 
 import (
-	"github.com/SkycoinProject/skycoin/src/cipher/bip32"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/cipher/bip32"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
 	"fmt"
 	"log"
 )

@@ -13,11 +13,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
-	"github.com/SkycoinProject/skycoin/src/coin"
-	"github.com/SkycoinProject/skycoin/src/daemon"
-	"github.com/SkycoinProject/skycoin/src/kvstorage"
-	"github.com/SkycoinProject/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/kvstorage"
+	"github.com/skycoin/skycoin/src/readable"
 )
 
 const (

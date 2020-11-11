@@ -1,4 +1,4 @@
-ARG IMAGE_FROM=SkycoinProject/skycoindev-cli:develop
+ARG IMAGE_FROM=skycoin/skycoindev-cli:develop
 FROM $IMAGE_FROM
 
 ARG BDATE
@@ -13,10 +13,10 @@ LABEL "org.label-schema.name"="skycoindev-cli" \
       "org.label-schema.version"="1.0.0-rc.1" \
       "org.label-schema.schema-version"="1.0" \
       "org.label-schema.build-date"=$BDATE \
-      "org.label-schema.vcs-url"="https://github.com/SkycoinProject/skycoin.git" \
+      "org.label-schema.vcs-url"="https://github.com/skycoin/skycoin.git" \
       "org.label-schema.vcs-ref"=$SCOMMIT \
-      "org.label-schema.usage"="https://github.com/SkycoinProject/skycoin/blob/"$SCOMMIT"/docker/images/dev-vscode/README.md" \
-      "org.label-schema.docker.cmd"="xhost +; cd src; docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix -v $PWD:/go/src -w /go/src -e DISPLAY=$DISPLAY SkycoinProject/skycoindev-vscode:develop"
+      "org.label-schema.usage"="https://github.com/skycoin/skycoin/blob/"$SCOMMIT"/docker/images/dev-vscode/README.md" \
+      "org.label-schema.docker.cmd"="xhost +; cd src; docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix -v $PWD:/go/src -w /go/src -e DISPLAY=$DISPLAY skycoin/skycoindev-vscode:develop"
 
 # Tell debconf to run in non-interactive mode
 ENV DEBIAN_FRONTEND noninteractive

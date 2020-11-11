@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/SkycoinProject/skycoin/src/coin"
-	"github.com/SkycoinProject/skycoin/src/params"
-	"github.com/SkycoinProject/skycoin/src/util/fee"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
+	"github.com/skycoin/skycoin/src/util/fee"
 )
 
 /*

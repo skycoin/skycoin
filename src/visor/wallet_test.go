@@ -13,16 +13,16 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/coin"
-	"github.com/SkycoinProject/skycoin/src/params"
-	"github.com/SkycoinProject/skycoin/src/testutil"
-	"github.com/SkycoinProject/skycoin/src/transaction"
-	"github.com/SkycoinProject/skycoin/src/visor/blockdb"
-	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
-	"github.com/SkycoinProject/skycoin/src/wallet"
-	"github.com/SkycoinProject/skycoin/src/wallet/collection"
-	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
+	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/transaction"
+	"github.com/skycoin/skycoin/src/visor/blockdb"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/wallet/collection"
+	"github.com/skycoin/skycoin/src/wallet/crypto"
 )
 
 func TestCreateTransaction(t *testing.T) {

@@ -3,7 +3,7 @@ package wallet
 import (
 	"fmt"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher"
 )
 
 var registeredAddressSecKeyDecoders = initAddressSecKeyDecoders()

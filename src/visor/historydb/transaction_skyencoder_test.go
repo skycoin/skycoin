@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/SkycoinProject/encodertest"
-	"github.com/SkycoinProject/skycoin/src/cipher/encoder"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )

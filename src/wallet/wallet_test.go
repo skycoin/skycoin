@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
 	"github.com/stretchr/testify/require"
 )
 

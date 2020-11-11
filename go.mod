@@ -1,4 +1,4 @@
-module github.com/SkycoinProject/skycoin
+module github.com/skycoin/skycoin
 
 go 1.14
 

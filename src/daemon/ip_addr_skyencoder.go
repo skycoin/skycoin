@@ -2,7 +2,7 @@
 
 package daemon
 
-import "github.com/SkycoinProject/skycoin/src/cipher/encoder"
+import "github.com/skycoin/skycoin/src/cipher/encoder"
 
 // encodeSizeIPAddr computes the size of an encoded object of type IPAddr
 func encodeSizeIPAddr(obj *IPAddr) uint64 {

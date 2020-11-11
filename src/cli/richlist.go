@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/SkycoinProject/skycoin/src/api"
+	"github.com/skycoin/skycoin/src/api"
 )
 
 func richlistCmd() *cobra.Command {

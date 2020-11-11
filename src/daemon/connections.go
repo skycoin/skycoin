@@ -8,10 +8,10 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/params"
-	"github.com/SkycoinProject/skycoin/src/util/iputil"
-	"github.com/SkycoinProject/skycoin/src/util/useragent"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/params"
+	"github.com/skycoin/skycoin/src/util/iputil"
+	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
 // ConnectionState connection state in the state machine

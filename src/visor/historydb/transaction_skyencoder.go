@@ -5,9 +5,9 @@ import (
 	"errors"
 	"math"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/cipher/encoder"
-	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
+	"github.com/skycoin/skycoin/src/coin"
 )
 
 // encodeSizeTransaction computes the size of an encoded object of type Transaction

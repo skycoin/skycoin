@@ -6,8 +6,8 @@ import (
 	"errors"
 	"math"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/cipher/encoder"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
 )
 
 // encodeSizeAnnounceTxnsMessage computes the size of an encoded object of type AnnounceTxnsMessage

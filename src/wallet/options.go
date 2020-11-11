@@ -1,8 +1,8 @@
 package wallet
 
 import (
-	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
-	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
+	"github.com/skycoin/skycoin/src/wallet/crypto"
 )
 
 // Option represents the general options, it can be used to set optional

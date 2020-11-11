@@ -2,7 +2,7 @@
 
 package coin
 
-import "github.com/SkycoinProject/skycoin/src/cipher/encoder"
+import "github.com/skycoin/skycoin/src/cipher/encoder"
 
 // encodeSizeUxHead computes the size of an encoded object of type UxHead
 func encodeSizeUxHead(obj *UxHead) uint64 {

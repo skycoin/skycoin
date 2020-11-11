@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/SkycoinProject/skycoin/src/cipher/base58"
+	"github.com/skycoin/skycoin/src/cipher/base58"
 )
 
 const (

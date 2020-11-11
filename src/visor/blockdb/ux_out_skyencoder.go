@@ -3,8 +3,8 @@
 package blockdb
 
 import (
-	"github.com/SkycoinProject/skycoin/src/cipher/encoder"
-	"github.com/SkycoinProject/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
+	"github.com/skycoin/skycoin/src/coin"
 )
 
 // encodeSizeUxOut computes the size of an encoded object of type UxOut

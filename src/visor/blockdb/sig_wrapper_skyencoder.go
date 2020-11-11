@@ -2,7 +2,7 @@
 
 package blockdb
 
-import "github.com/SkycoinProject/skycoin/src/cipher/encoder"
+import "github.com/skycoin/skycoin/src/cipher/encoder"
 
 // encodeSizeSigWrapper computes the size of an encoded object of type sigWrapper
 func encodeSizeSigWrapper(obj *sigWrapper) uint64 {

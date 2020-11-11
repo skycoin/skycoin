@@ -25,23 +25,23 @@ import (
 	"github.com/andreyvit/diff"
 	"github.com/stretchr/testify/require"
 
-	"github.com/SkycoinProject/skycoin/src/api"
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
-	"github.com/SkycoinProject/skycoin/src/cli"
-	"github.com/SkycoinProject/skycoin/src/coin"
-	"github.com/SkycoinProject/skycoin/src/readable"
-	"github.com/SkycoinProject/skycoin/src/testutil"
-	"github.com/SkycoinProject/skycoin/src/util/droplet"
-	wh "github.com/SkycoinProject/skycoin/src/util/http"
-	"github.com/SkycoinProject/skycoin/src/wallet"
-	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
-	"github.com/SkycoinProject/skycoin/src/wallet/deterministic"
+	"github.com/skycoin/skycoin/src/api"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/cli"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/util/droplet"
+	wh "github.com/skycoin/skycoin/src/util/http"
+	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/wallet/crypto"
+	"github.com/skycoin/skycoin/src/wallet/deterministic"
 
 	// register wallets
-	_ "github.com/SkycoinProject/skycoin/src/wallet/bip44wallet"
-	_ "github.com/SkycoinProject/skycoin/src/wallet/collection"
-	_ "github.com/SkycoinProject/skycoin/src/wallet/xpubwallet"
+	_ "github.com/skycoin/skycoin/src/wallet/bip44wallet"
+	_ "github.com/skycoin/skycoin/src/wallet/collection"
+	_ "github.com/skycoin/skycoin/src/wallet/xpubwallet"
 )
 
 const (
@@ -67,7 +67,7 @@ var (
 	cryptoTypes = []crypto.CryptoType{crypto.CryptoTypeScryptChacha20poly1305, crypto.CryptoTypeSha256Xor}
 
 	validNameRegexp     = regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
-	stripCoverageReport = regexp.MustCompile(`PASS\ncoverage: [\d\.]+% of statements in github.com/SkycoinProject/skycoin/\.\.\.\n$`)
+	stripCoverageReport = regexp.MustCompile(`PASS\ncoverage: [\d\.]+% of statements in github.com/skycoin/skycoin/\.\.\.\n$`)
 )
 
 type TestData struct {
@@ -156,7 +156,7 @@ func execCommandCombinedOutput(args ...string) ([]byte, error) {
 	}
 	// Remove the trailing coverage statements that the test cli binary produces due to coverage mode, e.g.
 	// PASS
-	// coverage: 8.1% of statements in github.com/SkycoinProject/skycoin/...
+	// coverage: 8.1% of statements in github.com/skycoin/skycoin/...
 	output = stripCoverageReport.ReplaceAll(output, nil)
 	return output, nil
 }
@@ -178,7 +178,7 @@ func TestMain(m *testing.M) {
 	// Args to build the cli binary without coverage:
 	// args := []string{"build", "-o", binaryPath, "../../../cmd/skycoin-cli/skycoin-cli.go"}
 	// Compile the binary with test flags enabled to get a coverage report from the binary
-	args := []string{"test", "-c", "-tags", "testrunmain", "-o", binaryPath, "-coverpkg=github.com/SkycoinProject/skycoin/...", "../../../cmd/skycoin-cli/"}
+	args := []string{"test", "-c", "-tags", "testrunmain", "-o", binaryPath, "-coverpkg=github.com/skycoin/skycoin/...", "../../../cmd/skycoin-cli/"}
 	if err := exec.Command("go", args...).Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Make %v binary failed: %v\n", binaryName, err)
 		os.Exit(1)

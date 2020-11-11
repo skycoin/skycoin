@@ -21,9 +21,9 @@ import (
 	"errors"
 	"math"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/cipher/chacha20poly1305"
-	"github.com/SkycoinProject/skycoin/src/cipher/scrypt"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/chacha20poly1305"
+	"github.com/skycoin/skycoin/src/cipher/scrypt"
 )
 
 const (

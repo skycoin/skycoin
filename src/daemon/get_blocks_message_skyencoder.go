@@ -2,7 +2,7 @@
 
 package daemon
 
-import "github.com/SkycoinProject/skycoin/src/cipher/encoder"
+import "github.com/skycoin/skycoin/src/cipher/encoder"
 
 // encodeSizeGetBlocksMessage computes the size of an encoded object of type GetBlocksMessage
 func encodeSizeGetBlocksMessage(obj *GetBlocksMessage) uint64 {

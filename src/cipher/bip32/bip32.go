@@ -142,14 +142,35 @@ func (k key) ChildNumber() uint32 {
 	return binary.BigEndian.Uint32(k.childNumber)
 }
 
+func (k key) clone() key {
+	newK := key{}
+	newK.Depth = k.Depth
+	newK.Version = append(newK.Version, k.Version...)
+	newK.ParentFingerprint = append(newK.ParentFingerprint, k.ParentFingerprint...)
+	newK.childNumber = append(newK.childNumber, k.childNumber...)
+	newK.ChainCode = append(newK.ChainCode, k.ChainCode...)
+	newK.Key = append(newK.Key, k.Key...)
+	return newK
+}
+
 // PrivateKey represents a bip32 extended private key
 type PrivateKey struct {
 	key
 }
 
+// Clone returns a copy of the private key
+func (k PrivateKey) Clone() PrivateKey {
+	return PrivateKey{key: k.clone()}
+}
+
 // PublicKey represents a bip32 extended public key
 type PublicKey struct {
 	key
+}
+
+// Clone returns a copy of the public key
+func (k PublicKey) Clone() PublicKey {
+	return PublicKey{key: k.clone()}
 }
 
 // NewMasterKey creates a new master extended key from a seed.

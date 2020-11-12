@@ -6,6 +6,7 @@ package api
 import (
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -24,6 +25,7 @@ import (
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/useragent"
+	"github.com/skycoin/skycoin/src/visor"
 )
 
 var (
@@ -130,6 +132,18 @@ func NewHTTPErrorResponse(code int, msg string) HTTPResponse {
 			Message: msg,
 		},
 	}
+}
+
+func writeError400Response(w http.ResponseWriter, msg string) {
+	writeHTTPResponse(w, NewHTTPErrorResponse(http.StatusBadRequest, msg))
+}
+
+func writeError405Response(w http.ResponseWriter) {
+	writeHTTPResponse(w, NewHTTPErrorResponse(http.StatusMethodNotAllowed, ""))
+}
+
+func writeError500Response(w http.ResponseWriter, msg string) {
+	writeHTTPResponse(w, NewHTTPErrorResponse(http.StatusInternalServerError, msg))
 }
 
 func writeHTTPResponse(w http.ResponseWriter, resp HTTPResponse) {
@@ -467,6 +481,9 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	webHandlerV1("/wallet/newAddress", walletNewAddressesHandler(gateway), map[string][]string{
 		http.MethodPost: []string{EndpointsWallet},
 	})
+	webHandlerV1("/wallet/scan", walletScanAddressesHandler(gateway), map[string][]string{
+		http.MethodPost: []string{EndpointsWallet},
+	})
 	webHandlerV1("/wallet/balance", walletBalanceHandler(gateway), map[string][]string{
 		http.MethodGet: []string{EndpointsWallet},
 	})
@@ -568,6 +585,9 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	webHandlerV1("/transactions", transactionsHandler(gateway), map[string][]string{
 		http.MethodGet:  []string{EndpointsRead},
 		http.MethodPost: []string{EndpointsRead},
+	})
+	webHandlerV2("/transactions", transactionsHandlerV2(gateway), map[string][]string{
+		http.MethodGet: []string{EndpointsRead},
 	})
 	webHandlerV1("/injectTransaction", injectTransactionHandler(gateway), map[string][]string{
 		http.MethodPost: []string{EndpointsTransaction, EndpointsWallet},
@@ -683,6 +703,22 @@ func parseAddressesFromStr(s string) ([]cipher.Address, error) {
 	}
 
 	return addrs, nil
+}
+
+func parseSortOrderFromStr(s string) (visor.SortOrder, error) {
+	if s == "" {
+		return visor.AscOrder, nil
+	}
+
+	s = strings.ToUpper(strings.TrimSpace(s))
+	switch s {
+	case "ASC":
+		return visor.AscOrder, nil
+	case "DESC":
+		return visor.DescOrder, nil
+	default:
+		return visor.UnknownOrder, errors.New("Unknown sort order")
+	}
 }
 
 // parseAddressesFromStr parses comma-separated hashes string into []cipher.SHA256

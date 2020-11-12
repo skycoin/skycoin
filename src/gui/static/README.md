@@ -6,13 +6,13 @@ The project contains both the source (src) and target (dist) files of this web i
 
 ## Prerequisites
 
-The Skycoin web interface requires Node 8.10.0 or higher, together with NPM 5.6 or higher.
+The Skycoin web interface requires Node 10.9.0 or higher, together with NPM 6.0 or higher.
 
 ## Installation
 
 This project is generated using Angular CLI, therefore it is adviced to first run `npm install -g @angular/cli`.
 
-Dependencies are managed with NPM 5, to install these run `npm install`.
+Dependencies are managed with NPM, to install these run `npm install`.
 
 You will only have to run this again, if any dependencies have been changed in the `package-lock.json` file.
 
@@ -58,7 +58,7 @@ all the faked operations will end in an error, instead of success.
 
 Please note that at the moment the Purchase API (teller) is both offline and not supporting CORS headers.
 
-While event.skycoin.net is not working, we will have to run the purchase API locally.
+While event.skycoin.com is not working, we will have to run the purchase API locally.
 
 Similar as the solution for the above CORS issue, you can circumvent CORS issues by changing the url property to '/teller/'
 

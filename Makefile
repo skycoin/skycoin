@@ -21,6 +21,7 @@
 .PHONY: install-deps-ui build-ui build-ui-travis help newcoin merge-coverage
 .PHONY: generate update-golden-files
 .PHONY: fuzz-base58 fuzz-encoder
+.PHONY: check-lang check-lang-es check-lang-zh
 
 COIN ?= skycoin
 
@@ -74,7 +75,7 @@ test-amd64: ## Run tests for Skycoin with GOARCH=amd64
 	GOARCH=amd64 COIN=$(COIN) go test ./src/... -timeout=5m
 
 lint: ## Run linters. Use make install-linters first.
-	vendorcheck ./...
+	GO111MODULE=off vendorcheck ./...
 	golangci-lint run -c .golangci.yml ./...
 	@# The govet version in golangci-lint is out of date and has spurious warnings, run it separately
 	go vet -all ./...
@@ -87,18 +88,14 @@ check-newcoin: newcoin ## Check that make newcoin succeeds and no templated file
 check: lint clean-coverage test test-386 integration-tests-stable check-newcoin ## Run tests and linters
 
 integration-tests-stable: integration-test-stable \
-	integration-test-stable-disable-csrf \
 	integration-test-stable-disable-wallet-api \
 	integration-test-stable-enable-seed-api \
 	integration-test-stable-disable-gui \
 	integration-test-stable-auth \
-	integration-test-stable-db-no-unconfirmed ## Run all stable integration tests
+	integration-test-stable-disable-csrf ## Run all stable integration tests
 
-integration-test-stable: ## Run stable integration tests
+integration-test-stable: ## Run stable integration tests use CSRF, with header check disabled
 	COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -c -x -n enable-csrf-header-check
-
-integration-test-stable-disable-header-check: ## Run stable integration tests with header check disabled
-	COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -n disable-header-check
 
 integration-test-stable-disable-csrf: ## Run stable integration tests with CSRF disabled
 	COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -n disable-csrf
@@ -134,20 +131,33 @@ integration-test-live-disable-networking: ## Run live integration tests against 
 	COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c -k
 
 install-linters: ## Install linters
-	go get -u github.com/FiloSottile/vendorcheck
+	# Turn off go module when install the vendoercheck, otherwise the installation
+	# will pollute the go.mod file.
+	GO111MODULE=off go get -u github.com/FiloSottile/vendorcheck
 	# For some reason this install method is not recommended, see https://github.com/golangci/golangci-lint#install
 	# However, they suggest `curl ... | bash` which we should not do
-	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+	# go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+	# Change to use go get -u with version when go is v1.12+
+	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(shell go env GOPATH)/bin v1.21.0
 
 format: ## Formats the code. Must have goimports installed (use make install-linters).
 	goimports -w -local github.com/skycoin/skycoin ./cmd
 	goimports -w -local github.com/skycoin/skycoin ./src
 
 install-deps-ui:  ## Install the UI dependencies
-	cd $(GUI_STATIC_DIR) && npm install
+	cd $(GUI_STATIC_DIR) && npm ci
 
 lint-ui:  ## Lint the UI code
 	cd $(GUI_STATIC_DIR) && npm run lint
+
+check-lang-es: ## Check the Spanish translation
+	cd $(GUI_STATIC_DIR)/src/assets/i18n &&node check.js es
+
+check-lang-zh: ## Check the Chinese translation
+	cd $(GUI_STATIC_DIR)/src/assets/i18n &&node check.js zh
+
+check-lang: check-lang-es \
+	check-lang-zh
 
 test-ui:  ## Run UI tests
 	cd $(GUI_STATIC_DIR) && npm run test
@@ -205,7 +215,7 @@ generate: ## Generate test interface mocks and struct encoders
 
 install-generators: ## Install tools used by go generate
 	go get github.com/vektra/mockery/.../
-	go get github.com/skycoin/skyencoder/cmd/skyencoder
+	go get github.com/SkycoinProject/skyencoder/cmd/skyencoder
 
 update-golden-files: ## Run integration tests in update mode
 	./ci-scripts/integration-test-stable.sh -u >/dev/null 2>&1 || true

@@ -1,0 +1,108 @@
+<div [formGroup]="form">
+  <!-- Address field for the simple form. -->
+  <div *ngIf="showSimpleForm" class="form-field">
+    <label for="address">{{ 'send.to-label' | translate }}</label>
+    <input
+      formControlName="address"
+      id="address"
+      [attr.disabled]="busy ? 'true' : null"
+      [appFormFieldError]="!isAddressValid(0) ? 'send.invalid-addresses-error' : singleAddressErrorMsg"
+      (blur)="validateForm()"
+    >
+  </div>
+
+  <div class="form-field">
+    <!-- Label. -->
+    <label for="destination" class="destinations-label">
+      {{ (!showSimpleForm ? 'send.destinations-label' : 'send.amount-label') | translate }}
+      <mat-icon class="help-icon" *ngIf="!showSimpleForm" [matTooltip]="('send.destinations-help' + (!this.showHourFields ? '1' : '2')) | translate">help</mat-icon>
+    </label>
+    <!-- Currency selector. -->
+    <div class="coin-selector-container" *ngIf="price" [ngClass]="{ 'element-disabled': busy }">
+      <app-double-button
+        [leftButtonText]="'coin' | commonText"
+        [rightButtonText]="'common.usd' | translate"
+        className="light small"
+        [activeButton]="selectedCurrency"
+        (onStateChange)="changeActiveCurrency($event)"
+      ></app-double-button>
+    </div>
+
+    <!-- Bulk send button. -->
+    <app-arrow-link
+      *ngIf="!showSimpleForm"
+      [text]="'send.bulk-send.title'"
+      (pressed)="requestBulkSend()"
+      [ngClass]="{'element-disabled' : busy}">
+    </app-arrow-link>
+
+    <!-- Destinations. -->
+    <div formArrayName="destinations" *ngFor="let dest of destControls; let i = index;" class="-destination">
+      <div [formGroupName]="i" class="row">
+        <!-- Address. -->
+        <div *ngIf="!showSimpleForm" class="col-lg-5 col-md-4">
+          <input
+            formControlName="address"
+            [id]="i === 0 ? 'destination' : 'address' + i"
+            [attr.disabled]="busy ? 'true' : null"
+            [appFormFieldError]="!isAddressValid(i) ? 'send.invalid-addresses-error' : addressErrorMsgs[i]"
+            (blur)="validateForm()"
+          >
+        </div>
+        <!-- Coins. Only part of the group shown on the simple form. -->
+        <div [ngClass]="{'col-md-3' : !showSimpleForm, 'col-md-12' : showSimpleForm}">
+          <div class="-input-addon">
+            <input formControlName="coins" [attr.disabled]="busy ? 'true' : null" [appFormFieldError]="getCoinsErrorMsg(i)" (blur)="validateForm()">
+            <span>{{ selectedCurrency === doubleButtonActive.LeftButton ? ('coin' | commonText) : ('common.usd' | translate) }}</span>
+          </div>
+          <!-- Converted values. -->
+          <div class="coins-value-label">
+            <span *ngIf="price && values[i].isLessThanOrEqualTo(0)">{{ 'send.invalid-amount' | translate }}</span>
+            <span *ngIf="price && values[i].isGreaterThan(0) && selectedCurrency === doubleButtonActive.LeftButton">
+              &#x007e; {{ values[i].toString() | number:'1.0-2' }} {{ 'common.usd' | translate }}
+            </span>
+            <span *ngIf="price && values[i].isGreaterThan(0) && selectedCurrency === doubleButtonActive.RightButton">
+              &#x007e; {{ values[i].toString() | amount }}
+            </span>
+            <div class="link" [ngClass]="{ 'centerd-link': !price }" (click)="assignAll(i)">({{ 'send.send-all-available-coins-link' | translate }})</div>
+          </div>
+        </div>
+        <!-- Hours. -->
+        <div *ngIf="!showSimpleForm" class="col-lg-3 col-md-4">
+          <div [ngClass]="{ '-input-addon': true, 'd-none': !showHourFields }">
+            <input formControlName="hours" [attr.disabled]="busy ? 'true' : null" [appFormFieldError]="gethoursErrorMsg(i)" (blur)="validateForm()">
+            <span>{{ 'hours' | commonText }}</span>
+          </div>
+        </div>
+        <div *ngIf="!showSimpleForm" class="col-md-1 -icons" [ngClass]="{'element-disabled' : busy}">
+          <img *ngIf="i === 0" class="image-button" (click)="addDestination()" src="assets/img/plus-green.png" alt="plus">
+          <img *ngIf="i !== 0" class="image-button" (click)="removeDestination(i)" src="assets/img/minus-grey.png" alt="minus">
+        </div>
+      </div>
+    </div>
+    <div class="row" *ngIf="destControls.length > 1">
+      <div class="col-lg-5 col-md-4"></div>
+      <div class="col-md-3">
+        <div
+          class="coins-value-label"
+          [ngClass]="{'error-coins-value': insufficientCoins}"
+          [matTooltip]="insufficientCoins ? ('send.insufficient-funds-error-info' | translate) : ''"
+          matTooltipClass="error-tooltip"
+        >
+          <span>{{ 'send.total-to-send' | translate }}</span> {{ totalCoins.toString() | amount }}
+          <ng-container *ngIf="price">/ {{ totalFiat.toString() | number:'1.0-2' }} {{ 'common.usd' | translate }}</ng-container>
+        </div>
+      </div>
+      <div class="col-lg-3 col-md-4" *ngIf="showHourFields">
+        <div
+          class="coins-value-label"
+          [ngClass]="{'error-coins-value': insufficientHours}"
+          [matTooltip]="insufficientHours ? ('send.insufficient-funds-error-info' | translate) : ''"
+          matTooltipClass="error-tooltip"
+        >
+          <span>{{ 'send.total-to-send' | translate }}</span> {{ totalHours.toString() | amount:false }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

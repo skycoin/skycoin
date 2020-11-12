@@ -18,10 +18,10 @@ echo "set keychain locking timeout to 3600"
 security set-keychain-settings -t 3600 -u $KEY_CHAIN
 
 # Add certificates to keychain and allow codesign to access them
-# security import ./electron/ci-scripts/certs/dist.cer -k $KEY_CHAIN -T /usr/bin/codesign
-# security import ./electron/ci-scripts/certs/dev.cer -k $KEY_CHAIN -T /usr/bin/codesign
 echo "import distp12"
-security import $GOPATH/src/github.com/skycoin/skycoin/ci-scripts/certs/dist.p12 -k $KEY_CHAIN -P $CERT_PWD  -A /usr/bin/codesign
+security import $GOPATH/src/github.com/skycoin/skycoin/ci-scripts/certs/dist.p12 -k ~/Library/Keychains/$KEY_CHAIN -P $CERT_PWD -T /usr/bin/codesign
+
+security set-key-partition-list -S apple-tool:,apple: -s -k $OSX_KEYCHAIN_PWD $KEY_CHAIN
 
 echo "list keychains: "
 security list-keychains

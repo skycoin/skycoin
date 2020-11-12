@@ -1,11 +1,11 @@
-<app-modal [headline]="'title.seed' | translate" [dialog]="dialogRef">
+<app-modal [headline]="'backup.seed-modal-window.title' | translate" [dialog]="dialogRef">
   <div class="form-field">
-    <label for="seed">{{ 'backup.seed' | translate }}</label>
-    <textarea id="seed" readonly>{{ data.seed }}</textarea>
+    <label for="seed">{{ 'backup.seed-modal-window.seed-label' | translate }}</label>
+    <textarea id="seed" readonly>{{ data }}</textarea>
   </div>
   <div class="-buttons">
-    <app-button (action)="dialogRef.close()">
-      {{ 'backup.close-button' | translate }}
+    <app-button (action)="dialogRef.close()" class="primary-button">
+      {{ 'common.close-button' | translate }}
     </app-button>
   </div>
 </app-modal>

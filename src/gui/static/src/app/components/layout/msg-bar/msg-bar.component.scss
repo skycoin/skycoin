@@ -17,8 +17,8 @@
   max-width: 90%;
   display: flex;
   padding: 10px;
-  border-top-left-radius: 5px;
-  border-top-right-radius: 5px;
+  border-top-left-radius: $rounded-element-border-radius;
+  border-top-right-radius: $rounded-element-border-radius;
 }
 
 .red-background {
@@ -42,18 +42,16 @@
   margin-right: 10px;
 
   .title {
-    font-size: 15px;
+    font-size: $font-size-big;
     margin-top: -1px;
   }
 
   .text {
-    font-size: 13px;
+    font-size: $font-size-standard;
     margin-top: 2px;
   }
-}
 
-.close-container {
-  mat-icon {
-    cursor: pointer;
+  .link {
+    color: white;
   }
 }

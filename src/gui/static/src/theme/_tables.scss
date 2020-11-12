@@ -1,58 +1,77 @@
+/*********************
+* Styles for the tables.
+*********************/
 @import 'variables';
+@import 'paper';
 
+// Main table container.
 .-table {
   &:last-of-type {
-    margin-bottom: 30px;
+    margin-bottom: $main-containers-margin;
   }
 
+  // Headers container.
   .-headers {
     color: $grey-light;
     display: flex;
-    font-size: 12px;
+    font-size: $font-size-standard-minus;
     font-weight: 700;
     height: 50px;
     line-height: 50px;
-    margin: 0 30px;
+    margin: 0 $main-containers-margin;
 
     > div {
-      padding: 0 20px;
+      padding: 0 $main-containers-small-padding;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 
+  // Content area container.
   .-body {
-    border-radius: 15px;
-    box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.01), 1px 1px 2px 2px rgba(0, 0, 0, 0.01);
-    margin: 0 30px;
+    @extend .paper;
+    padding: 0;
+    margin: 0 $main-containers-margin;    
 
     .-row {
       font-size: $font-size-standard;
       padding: 15px 0;
-      background: $white;
       display: flex;
       align-items: center;
 
       &:not(:last-child) {
-        border-bottom: 1px solid #eff0f0;
-      }
-
-      &:first-child {
-        border-top-left-radius: 15px;
-        border-top-right-radius: 15px;
-      }
-
-      &:last-child {
-        border-bottom-left-radius: 15px;
-        border-bottom-right-radius: 15px;
+        border-bottom: 1px solid $grey-very-light;
       }
 
       > div {
-        padding: 0 20px;
+        padding: 0 $main-containers-small-padding;
       }
     }
   }
 
+
+  /**
+  Helpers for setting the width of the columns.
+  **/
+
+  .-width-50 {
+    width: 50px;
+    flex-shrink: 0;
+  }
+
   .-width-70 {
     width: 70px;
+    flex-shrink: 0;
+  }
+
+  .-width-85 {
+    width: 85px;
+    flex-shrink: 0;
+  }
+  
+  .-width-130 {
+    width: 130px;
     flex-shrink: 0;
   }
 

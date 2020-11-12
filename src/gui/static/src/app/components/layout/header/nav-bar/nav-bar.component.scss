@@ -1,9 +1,6 @@
 @import '../../../../../theme/variables';
 
-:host {
-  background-color: #fbfbfb;
-  min-height: 66px;
-}
+$nav-bar-height: 66px;
 
 .-buttons {
   display: flex;
@@ -12,30 +9,54 @@
   .-button {
     cursor: pointer;
     padding: 0 20px;
+    opacity: 0.2;
+    display: block;
+    text-decoration: none;
+    color: $black;
+    display: flex;
+    height: $nav-bar-height;
+    align-items: center;
+
+    &:hover {
+      opacity: 0.4;
+    }
+
+    &:active {
+      opacity: 0.55;
+    }
 
     img {
-      display: inline-block;
       float: left;
-      height: 66px;
-      padding: 17px 0;
-      width: 32px;
+      height: $normal-icon-size;
+      width: $normal-icon-size;
+
+      @media (max-width: $max-sm-width) {
+        & {
+          height: $normal-icon-size * 0.85;
+          width: $normal-icon-size * 0.85;
+        }
+      }
     }
 
     span {
-      display: inline-block;
-      font-size: 14px;
-      height: 66px;
-      line-height: 66px;
+      font-size: $font-size-standard-plus;
+      line-height: 1.3;
       margin: 0 5px;
-    }
-  }
 
-  .-low-opacity {
-    opacity: 0.2;
+      @media (max-width: $max-sm-width) {
+        & {
+          font-size: $font-size-standard-plus * 0.85;
+        }
+      }
+    }
   }
 
   .-switch {
     align-self: center;
     padding: 0 20px;
   }
+}
+
+.full-opacity {
+  opacity: 1 !important;
 }

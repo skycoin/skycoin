@@ -48,6 +48,7 @@ type TransactionInput struct {
 	Hash            string `json:"uxid"`
 	Address         string `json:"owner"`
 	Coins           string `json:"coins"`
+	SrcTxid         string `json:"src_txid"`
 	Hours           uint64 `json:"hours"`
 	CalculatedHours uint64 `json:"calculated_hours"`
 }
@@ -80,6 +81,7 @@ func NewTransactionInput(input visor.TransactionInput) (TransactionInput, error)
 		Address:         input.UxOut.Body.Address.String(),
 		Coins:           coinStr,
 		Hours:           input.UxOut.Body.Hours,
+		SrcTxid:         input.UxOut.Body.SrcTransaction.Hex(),
 		CalculatedHours: input.CalculatedHours,
 	}, nil
 }

@@ -184,6 +184,8 @@ Usage:
     	Maximum length of outgoing wire messages (default 262144)
   -max-outgoing-connections int
     	Maximum number of outgoing connections allowed (default 8)
+  -max-incoming-connections int
+        Maximum number  of incoming connections allowed (default 120)
   -max-txn-size-create-block uint
     	maximum size of a transaction applied when creating blocks (default 32768)
   -max-txn-size-unconfirmed uint
@@ -193,7 +195,7 @@ Usage:
   -peerlist-size int
     	Max number of peers to track in peerlist (default 65535)
   -peerlist-url string
-    	with -download-peerlist=true, download a peers.txt file from this url (default "https://downloads.skycoin.net/blockchain/peers.txt")
+    	with -download-peerlist=true, download a peers.txt file from this url (default "https://downloads.skycoin.com/blockchain/peers.txt")
   -port int
     	Port to run application on (default 6000)
   -profile-cpu
@@ -535,7 +537,7 @@ More than 1 connections are not typically made, to avoid saturating the default 
 
 ### max-incoming-connections
 
-**This is not an option.** This value is equal to `max-connections` minus `max-outgoing-connections`.
+The maximum number of incoming connections allowed.
 
 ### max-in-msg-len
 
@@ -578,7 +580,7 @@ Maximum number of peers to track in the local peer database.
 
 ### peerlist-url
 
-The URL of the remote peer list bootstrap file. Defaults to https://downloads.skycoin.net/blockchain/peers.txt.
+The URL of the remote peer list bootstrap file. Defaults to https://downloads.skycoin.com/blockchain/peers.txt.
 
 ### port
 

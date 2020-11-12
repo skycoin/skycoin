@@ -1,9 +1,14 @@
 import { Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { ChildHwDialogParams } from '../hw-options-dialog/hw-options-dialog.component';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 
+/**
+ * Allows to create a backup of the seed of the device. This modal window was created for being
+ * oppenend by the hw wallet options modal window.
+ */
 @Component({
   selector: 'app-hw-backup-dialog',
   templateUrl: './hw-backup-dialog.component.html',
@@ -27,9 +32,10 @@ export class HwBackupDialogComponent extends HwDialogBaseComponent<HwBackupDialo
           text: 'hardware-wallet.general.completed',
           icon: this.msgIcons.Success,
         });
+        // Request the hw wallet options modal window to refresh the security warnings.
         this.data.requestOptionsComponentRefresh(null, true);
       },
-      err => this.processResult(err.result),
+      err => this.processHwOperationError(err),
     );
   }
 }

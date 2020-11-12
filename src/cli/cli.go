@@ -28,7 +28,7 @@ import (
 
 var (
 	// Version is the CLI Version
-	Version = "0.26.0"
+	Version = "0.27.0"
 )
 
 const (
@@ -186,6 +186,8 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 		checkDBCmd(),
 		checkDBEncodingCmd(),
 		createRawTxnCmd(),
+		createRawTxnV2Cmd(),
+		signTxnCmd(),
 		decodeRawTxnCmd(),
 		encodeJSONTxnCmd(),
 		decryptWalletCmd(),
@@ -203,6 +205,7 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 		versionCmd(),
 		walletCreateCmd(),
 		walletAddAddressesCmd(),
+		walletScanAddressesCmd(),
 		walletKeyExportCmd(),
 		walletBalanceCmd(),
 		walletHisCmd(),
@@ -291,7 +294,7 @@ type PasswordFromBytes []byte
 
 // Password implements the PasswordReader's Password method
 func (p PasswordFromBytes) Password() ([]byte, error) {
-	return []byte(p), nil
+	return p, nil
 }
 
 // PasswordFromTerm reads password from terminal

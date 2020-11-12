@@ -1,15 +1,19 @@
-<app-modal class="modal" [headline]="'send.bulk-send.title' | translate" [dialog]="dialogRef">
-  <div class="-body">
-    {{ 'send.bulk-send.indications' | translate }}
-  </div>
-  <div [formGroup]="form" class="form-container">
+<app-modal [headline]="'send.bulk-send.title' | translate" [dialog]="dialogRef">
+  {{ 'send.bulk-send.indications' | translate }}
+  <div [formGroup]="form" class="modal-form-container">
     <div class="form-field">
-      <textarea formControlName="data" id="data" rows="5"></textarea>
+      <textarea
+        formControlName="data"
+        id="data"
+        rows="5"
+        [appFormFieldError]="inputErrorMsg"
+        (blur)="validateForm()"
+      ></textarea>
     </div>
   </div>
   <div class="-buttons">
-    <app-button (action)="processData()" class="primary">
-      {{ 'send.bulk-send.process' | translate }}
+    <app-button (action)="processData()" class="primary-button" [disabled]="!form.valid">
+      {{ 'send.bulk-send.process-button' | translate }}
     </app-button>
   </div>
 </app-modal>

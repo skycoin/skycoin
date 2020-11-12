@@ -1,5 +1,5 @@
 # Creates an image for skycoin development
-FROM golang:1.11-stretch
+FROM golang:1.14-stretch
 
 ARG BDATE="test_build"
 ARG SCOMMIT="develop"
@@ -8,7 +8,7 @@ ARG SCOMMIT="develop"
 LABEL "org.label-schema.name"="skycoindev-cli" \
       "org.label-schema.description"="Docker image with go, node and command line tools for Skycoin developers" \
       "org.label-schema.vendor"="Skycoin project" \
-      "org.label-schema.url"="skycoin.net" \
+      "org.label-schema.url"="skycoin.com" \
       "org.label-schema.schema-version"="1.0" \
       "org.label-schema.build-date"=$BDATE \
       "org.label-schema.vcs-url"="https://github.com/skycoin/skycoin.git" \

@@ -1,24 +1,26 @@
-<app-modal class="modal" [headline]="'wallet.hardware-wallet' | translate" [dialog]="dialogRef">
+<app-modal [headline]="'wallet.hardware-wallet-button' | translate" [dialog]="dialogRef">
   <app-hw-message *ngIf="currentState === states.ShowingResult"
     [text]="result.text | translate"
+    [linkText]="result.link"
+    [linkIsUrl]="true"
     [icon]="result.icon"
   ></app-hw-message>
 
   <app-hw-message *ngIf="currentState === states.Other && !otherStateBecauseWrongPin"
-    [text]="('hardware-wallet.general.refused' | translate) + ' ' + ('hardware-wallet.options.forgotten-pin1' | translate)"
-    [linkText]="'hardware-wallet.options.forgotten-pin2' | translate"
+    [text]="('hardware-wallet.errors.refused' | translate) + ' ' + ('hardware-wallet.options.forgotten-pin-part1' | translate)"
+    [linkText]="'hardware-wallet.options.forgotten-pin-part2' | translate"
     [icon]="msgIcons.Error"
     (linkClicked)="wipe()"
   ></app-hw-message>
 
   <app-hw-message *ngIf="currentState === states.Other && otherStateBecauseWrongPin"
-    [text]="('hardware-wallet.general.error-incorrect-pin' | translate) + ' ' + ('hardware-wallet.options.forgotten-pin1' | translate)"
-    [linkText]="'hardware-wallet.options.forgotten-pin2' | translate"
+    [text]="('hardware-wallet.errors.incorrect-pin' | translate) + ' ' + ('hardware-wallet.options.forgotten-pin-part1' | translate)"
+    [linkText]="'hardware-wallet.options.forgotten-pin-part2' | translate"
     [icon]="msgIcons.Error"
     (linkClicked)="wipe()"
   ></app-hw-message>
 
-  <div *ngIf="currentState === states.Finished">
+  <div *ngIf="currentState === states.Finished" [ngClass]="{'disabled' : refreshingWarnings}">
     <app-hw-message *ngIf="newWalletConnected"
       [upperBigText]="'hardware-wallet.options.unconfigured-detected-title' | translate"
       [lowerLightText]="('hardware-wallet.options.firmware-version' | translate) + ' ' + firmwareVersion"
@@ -29,7 +31,7 @@
     <app-hw-message *ngIf="!newWalletConnected"
       [text]="'hardware-wallet.options.configured-detected' | translate"
       [lowerLightText]="('hardware-wallet.options.firmware-version' | translate) + ' ' + firmwareVersion"
-      [lowerBigText]="walletName"
+      [lowerBigText]="wallet.label"
       [icon]="msgIcons.HardwareWallet"
     ></app-hw-message>
 
@@ -45,7 +47,7 @@
     </div>
 
     <div class="options-label">{{ 'hardware-wallet.options.options' | translate }}</div>
-    <div class="option-buttons-container select-address-theme">
+    <div class="option-buttons-container light-button-theme">
       <button mat-button color="primary" (click)="update()" *ngIf="outdatedFirmware">
         <div class="label -blinking">{{ 'hardware-wallet.options.update-firmware' | translate }}</div>
       </button>
@@ -68,24 +70,29 @@
           <div class="label">{{ (!needsPin ? 'hardware-wallet.options.change-pin' : 'hardware-wallet.options.create-pin') | translate }}</div>
         </button>
         <button mat-button color="primary" (click)="removePin()" *ngIf="!needsPin">
-          <div class="label -red">{{ 'hardware-wallet.options.delete-pin' | translate }}</div>
+          <div class="label red-text">{{ 'hardware-wallet.options.delete-pin' | translate }}</div>
         </button>
         <button mat-button color="primary" (click)="wipe()">
-          <div class="label -red">{{ 'hardware-wallet.options.wipe' | translate }}</div>
+          <div class="label red-text">{{ 'hardware-wallet.options.wipe' | translate }}</div>
         </button>
       </div>
     </div>
   </div>
 
-  <div class="-buttons" *ngIf="currentState === states.Finished">
-    <app-button (action)="closeModal()" class="primary">
-      {{ 'hardware-wallet.general.close' | translate }}
+  <div class="loading-indicator" *ngIf="currentState === states.Finished && refreshingWarnings">
+    <mat-spinner></mat-spinner>
+    {{ 'common.loading' | translate }}
+  </div>
+
+  <div class="-buttons" *ngIf="currentState === states.Finished" [ngClass]="{'disabled' : refreshingWarnings}">
+    <app-button (action)="closeModal()" class="primary-button">
+      {{ 'common.close-button' | translate }}
     </app-button>
   </div>
 
   <div class="-buttons" *ngIf="currentState !== states.Finished">
-    <app-button (action)="closeModal()" class="primary" #closeButton>
-      {{ 'hardware-wallet.general.close' | translate }}
+    <app-button (action)="closeModal()" class="primary-button" #closeButton>
+      {{ 'common.close-button' | translate }}
     </app-button>
   </div>
 </app-modal>

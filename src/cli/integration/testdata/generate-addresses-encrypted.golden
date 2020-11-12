@@ -1,28 +1,6 @@
 {
-    "meta": {
-        "coin": "skycoin",
-        "cryptoType": "scrypt-chacha20poly1305",
-        "encrypted": "true",
-        "filename": "integration-test-encrypted.wlt",
-        "label": "integration-test",
-        "lastSeed": "",
-        "secrets": "",
-        "seed": "",
-        "seedPassphrase": "",
-        "tm": "1518271871",
-        "type": "deterministic",
-        "version": "0.4"
-    },
-    "entries": [
-        {
-            "address": "2Kg3eRXUhY6hrDZvNGB99DKahtrPDQ1W9vN",
-            "public_key": "03aefe8fc5952f67aca014ae4da6e7eba1321542be02d2d6f718c666750bf4c630",
-            "secret_key": ""
-        },
-        {
-            "address": "7g3M372kxwNwwQEAmrronu4anXTW8aD1XC",
-            "public_key": "0319527fa74053b148d7efe973c0ee734e49f52a11417232e582b8c51e389d638a",
-            "secret_key": ""
-        }
-    ]
+	"Addresses": [
+		"vcMKaEkTPJWRgxH1ghrAN1Jp2hUn7gLxbH",
+		"2c3Dr4YdHSyc9HAPrjnHcXLQEKnHEitHUn2"
+	]
 }

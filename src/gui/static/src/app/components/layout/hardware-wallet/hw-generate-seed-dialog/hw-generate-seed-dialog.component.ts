@@ -1,10 +1,15 @@
 import { Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { FormGroup, FormBuilder, Validators } from '@angular/forms';
+
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { ChildHwDialogParams } from '../hw-options-dialog/hw-options-dialog.component';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
-import { FormGroup, FormBuilder, Validators } from '@angular/forms';
 
+/**
+ * Allows to make a seedless device create a new random seed and use it. This modal window was
+ * created for being oppenend by the hw wallet options modal window.
+ */
 @Component({
   selector: 'app-hw-generate-seed-dialog',
   templateUrl: './hw-generate-seed-dialog.component.html',
@@ -31,10 +36,11 @@ export class HwGenerateSeedDialogComponent extends HwDialogBaseComponent<HwGener
 
     this.operationSubscription = this.hwWalletService.generateMnemonic(this.form.controls['words'].value).subscribe(
       () => {
+        // Request the data and state of the hw wallet options modal window to be refreshed.
         this.data.requestOptionsComponentRefresh();
         this.closeModal();
       },
-      err => this.processResult(err.result),
+      err => this.processHwOperationError(err),
     );
   }
 }

@@ -33,7 +33,7 @@ import (
 
 const (
 	// DefaultPeerListURL is the default URL to download remote peers list from, if enabled
-	DefaultPeerListURL = "https://downloads.skycoin.net/blockchain/peers.txt"
+	DefaultPeerListURL = "https://downloads.skycoin.com/blockchain/peers.txt"
 	// PeerCacheFilename filename for disk-cached peers
 	PeerCacheFilename = "peers.json"
 	// oldPeerCacheFilename previous filename for disk-cached peers. The cache loader will fall back onto this filename if it can't load peers.json
@@ -100,7 +100,6 @@ func validateAddress(ipPort string, allowLocalhost bool) (string, error) {
 type Peer struct {
 	Addr            string         // An address of the form ip:port
 	LastSeen        int64          // Unix timestamp when this peer was last seen
-	Private         bool           // Whether it should omitted from public requests
 	Trusted         bool           // Whether this peer is trusted
 	HasIncomingPort bool           // Whether this peer has accessible public port
 	UserAgent       useragent.Data // Peer's last reported user agent
@@ -111,7 +110,6 @@ type Peer struct {
 func NewPeer(address string) *Peer {
 	p := &Peer{
 		Addr:    address,
-		Private: false,
 		Trusted: false,
 	}
 	p.Seen()
@@ -137,7 +135,7 @@ func (peer *Peer) ResetRetryTimes() {
 	peer.RetryTimes = 0
 }
 
-// CanTry returns whether this peer is tryable base on the exponential backoff algorithm
+// CanTry returns whether this peer is triable base on the exponential backoff algorithm
 func (peer *Peer) CanTry() bool {
 	// Exponential backoff
 	mod := (math.Exp2(float64(peer.RetryTimes)) - 1) * 5
@@ -502,20 +500,6 @@ func (px *Pex) AddPeers(addrs []string) int {
 	return len(addrs)
 }
 
-// SetPrivate updates peer's private value
-func (px *Pex) SetPrivate(addr string, private bool) error {
-	px.Lock()
-	defer px.Unlock()
-
-	cleanAddr, err := validateAddress(addr, px.Config.AllowLocalhost)
-	if err != nil {
-		logger.WithError(err).WithField("addr", addr).Error("Invalid address")
-		return ErrInvalidAddress
-	}
-
-	return px.peerlist.setPrivate(cleanAddr, private)
-}
-
 // setTrusted marks a peer as a default peer by setting its trusted flag to true
 func (px *Pex) setTrusted(addr string) error {
 	px.Lock()
@@ -586,33 +570,26 @@ func (px *Pex) GetPeer(addr string) (Peer, bool) {
 	return px.peerlist.getPeer(addr)
 }
 
-// Trusted returns trusted peers
-func (px *Pex) Trusted() Peers {
+// AllTrusted returns all trusted peers
+func (px *Pex) AllTrusted() Peers {
 	px.RLock()
 	defer px.RUnlock()
 	return px.peerlist.getPeers([]Filter{isTrusted})
 }
 
-// Private returns private peers
-func (px *Pex) Private() Peers {
+// Trusted returns trusted triable peers
+func (px *Pex) Trusted() Peers {
 	px.RLock()
 	defer px.RUnlock()
-	return px.peerlist.getCanTryPeers([]Filter{isPrivate})
+	return px.peerlist.getCanTryPeers([]Filter{isTrusted})
 }
 
-// TrustedPublic returns trusted public peers
-func (px *Pex) TrustedPublic() Peers {
-	px.RLock()
-	defer px.RUnlock()
-	return px.peerlist.getCanTryPeers([]Filter{isPublic, isTrusted})
-}
-
-// RandomPublic returns N random public untrusted peers
-func (px *Pex) RandomPublic(n int) Peers {
+// Random returns N random untrusted peers
+func (px *Pex) Random(n int) Peers {
 	px.RLock()
 	defer px.RUnlock()
 	return px.peerlist.random(n, []Filter{func(p Peer) bool {
-		return !p.Private
+		return !p.Trusted
 	}})
 }
 
@@ -690,7 +667,7 @@ func backoffDownloadText(url string) (string, error) {
 	}
 
 	if err := backoff.RetryNotify(operation, b, notify); err != nil {
-		logger.WithField("url", url).WithError(err).Info("Gave up dowloading peers list")
+		logger.WithField("url", url).WithError(err).Info("Gave up downloading peers list")
 		return "", err
 	}
 

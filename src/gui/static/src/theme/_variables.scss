@@ -1,35 +1,102 @@
-// Backgrounds
-$gradient-blue-dark: #0072ff;
-$gradient-blue-dark-transparent: rgba(0, 114, 255, 0.7);
-$gradient-blue-light: #00C3ff;
-$gradient-blue-light-transparent: rgba(0, 195, 255, 0.7);
+/*********************
+* Centralized repository of variables that allow changing the appearance of the application.
+*********************/
+@import 'customize/styling.scss';
 
-// Colors
-$black: #171a1d;
+/**
+General values
+**/
 
+// Font family used in the whole app.
+$font-family: Skycoin, Roboto, 'Helvetica Neue', sans-serif;
+
+// Colors for the gradients, used mainly as background on the wizard and big buttons.
+$gradient-dark: $app-gradient-dark;
+$gradient-light: $app-gradient-light;
+
+
+/**
+Colors
+**/
+
+// Main color, used for links and some other UI elements.
+$main-color: $app-main-color;
+$black: #1e2227;
+$white: #fafafa;
+// Used to highlight items on some lists.
+$white-hover: #f7f7f7;
+
+// Colors used for separators, texts, backgrounds and more.
 $grey-lightest: #f7f7f7;
 $grey-very-light: rgba(30, 34, 39, 0.05);
 $grey-light: rgba(30, 34, 39, 0.2);
 $grey: rgba(30, 34, 39, 0.5);
-$grey-semi-dark: rgba(30, 34, 39, 0.75);
-$grey-dark: #1e2227;
+$grey-dark: rgba(30, 34, 39, 0.7);
 
-$white: #fafafa;
-$transparent: rgba(0,0,0,0);
+// Color of the border line used by the form fields.
+$input-border-color: $grey-very-light;
 
+// Used for some icons and error texts.
 $red: #ff004e;
-$blue: #0072ff;
+// Used for some icons.
 $green: #00df80;
+// Used for some icons.
 $yellow: #ffc125;
+// Used for the background of some alert messages.
+$light-red-background: #ffdede;
 
-// Grid
-$row-height: 60px;
-$row-detail-size: 32px;
+// Background colors for the double buttons.
+$wizard-double-button-background:rgba(255, 255, 255, 0.1);
+$internal-double-button-background:rgba(30, 34, 39, 0.065);
 
-// Texts
+
+/**
+Sizes
+**/
+
+// Small radius for elements like mnenus and modal windows.
+$rounded-element-border-radius: 6px;
+// Big radius for elements like lists.
+$very-rounded-element-border-radius: 10px;
+// Radius for the form elements.
+$input-border-radius: $rounded-element-border-radius;
+// Size of the border line used by the form fields.
+$input-border-size: 2px;
+
+// External margin used by big containers, like the main white areas shown by most pages.
+$main-containers-margin: 30px;
+// Normal internal margin used mainly by the main white areas shown by most pages.
+$main-containers-padding: 30px;
+// Small internal margin used mainly by the tables.
+$main-containers-small-padding: 20px;
+// Normal internal margin used in the modal windows.
+$modal-content-padding: 24px;
+// Vertical margin used by the form fields.
+$form-field-margin: 20px;
+
+// Size of the qr code buttons.
+$qr-code-button-size: 17px;
+
+$normal-icon-size: 32px;
+
+
+/**
+Font sizes
+**/
+
+// $font-size-standard should be used as the prefered size whenever possible.
+$font-size-micro: 9px;
+$font-size-mini: 11px;
+$font-size-standard-minus: 12px;
 $font-size-standard: 13px;
-$letter-spacing-wide: 1px;
+$font-size-standard-plus: 14px;
+$font-size-big: 15px;
+$font-size-very-big: 18px;
 
-// Responsive sizes
+
+/**
+Responsive sizes
+**/
+
 $max-xs-width: 767px;
 $max-sm-width: 991px;

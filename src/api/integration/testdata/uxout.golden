@@ -6,6 +6,7 @@
 	"owner_address": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
 	"coins": 615700000000,
 	"hours": 5521648,
+	"calculated_hours": 45730107,
 	"spent_block_seq": 0,
 	"spent_tx": "0000000000000000000000000000000000000000000000000000000000000000"
 }

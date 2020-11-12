@@ -1,13 +1,29 @@
-import * as Base58 from 'base-x';
 import BigNumber from 'bignumber.js';
-import { Input, Output } from '../services/hw-wallet.service';
+import * as Base58 from 'base-x';
 
+import { HwInput, HwOutput } from '../services/hw-wallet.service';
+
+/**
+ * Allows to encode transactions, to be able to send them to the network.
+ */
 export class TxEncoder {
-  static encode(inputs: Input[], outputs: Output[], signatures: string[], innerHash: string, transactionType = 0) {
+  /**
+   * Creates an encoded transaction using the Skycoin format. Check the encoded Skycoin
+   * transaction reference for more info.
+   * @param inputs List of all inputs.
+   * @param outputs List of all outputs.
+   * @param signatures List of all signatures. There must be one signature per input.
+   * @param innerHash Inner hash of the transaction.
+   * @param transactionType Number identifying the type of the transaction, as per the Skycoin
+   * transaction format.
+   */
+  static encode(inputs: HwInput[], outputs: HwOutput[], signatures: string[], innerHash: string, transactionType = 0): string {
     if (inputs.length !== signatures.length) {
       throw new Error('Invalid number of signatures.');
     }
 
+    // Calculate the size of the transaction and initialize the object used
+    // for writting the byte data.
     const transactionSize = this.encodeSizeTransaction(inputs, outputs, signatures).toNumber();
     const buffer = new ArrayBuffer(transactionSize);
     const dataView = new DataView(buffer);
@@ -59,7 +75,7 @@ export class TxEncoder {
     // Tx inputs
     inputs.forEach(input => {
       // Copy all bytes
-      const binaryInput = this.convertToBytes(input.hashIn);
+      const binaryInput = this.convertToBytes(input.hash);
       binaryInput.forEach(number => {
         dataView.setUint8(currentPos, number);
         currentPos += 1;
@@ -75,6 +91,7 @@ export class TxEncoder {
     dataView.setUint32(currentPos, outputs.length, true);
     currentPos += 4;
 
+    // Create an instance of the base58 decoder.
     const decoder = Base58('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz');
 
     // Tx outputs
@@ -93,9 +110,9 @@ export class TxEncoder {
       }
 
       // Coins
-      currentPos = this.setUint64(dataView, currentPos, new BigNumber(output.coin));
+      currentPos = this.setUint64(dataView, currentPos, new BigNumber(output.coins).multipliedBy(1000000).decimalPlaces(0));
       // Hours
-      currentPos = this.setUint64(dataView, currentPos, new BigNumber(output.hour));
+      currentPos = this.setUint64(dataView, currentPos, new BigNumber(output.hours));
     });
 
     //
@@ -103,7 +120,13 @@ export class TxEncoder {
     return this.convertToHex(buffer);
   }
 
-  private static encodeSizeTransaction(inputs: Input[], outputs: Output[], signatures: string[]): BigNumber {
+  /**
+   * Calculates the final size, in bytes, that an encoded transaction will have.
+   * @param inputs List of all inputs.
+   * @param outputs List of all outputs.
+   * @param signatures List of all signatures.
+   */
+  private static encodeSizeTransaction(inputs: HwInput[], outputs: HwOutput[], signatures: string[]): BigNumber {
     let size = new BigNumber(0);
 
     // Tx length
@@ -130,8 +153,16 @@ export class TxEncoder {
     return size;
   }
 
+  /**
+   * Writes an Uint64 value on a DataView.
+   * @param dataView DataView in which the value will be written.
+   * @param currentPos Position inside the DataView in which the value will be written.
+   * @param value Value to be written.
+   * @returns The position in which the next value will have to be written on the DataView.
+   */
   private static setUint64(dataView: DataView, currentPos: number, value: BigNumber): number {
     let hex = value.toString(16);
+    // Make sure the hex string has an even number of characters.
     if (hex.length % 2 !== 0) {
       hex = '0' + hex;
     }
@@ -142,6 +173,7 @@ export class TxEncoder {
       currentPos += 1;
     }
 
+    // Add zeros to fill the remaining space.
     for (let i = 0; i < 8 - bytes.length; i++) {
       dataView.setUint8(currentPos, 0);
       currentPos += 1;
@@ -150,6 +182,10 @@ export class TxEncoder {
     return currentPos;
   }
 
+  /**
+   * Converts a hex string to a byte array.
+   * @param hexString String to convert.
+   */
   private static convertToBytes(hexString: string): number[] {
     if (hexString.length % 2 !== 0) {
       throw new Error('Invalid hex string.');
@@ -164,6 +200,10 @@ export class TxEncoder {
     return result;
   }
 
+  /**
+   * Converts an ArrayBuffer to a hex string.
+   * @param buffer ArrayBuffer to convert.
+   */
   private static convertToHex(buffer: ArrayBuffer) {
     let result = '';
 

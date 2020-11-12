@@ -10,6 +10,8 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/bip32"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -23,10 +25,12 @@ func walletKeyExportCmd() *cobra.Command {
     HDNode in a bip44 wallet. The HDNode path is specified with --path.
     This path is the <account/change> portion of the bip44 path.
 
+    Please make sure that the node has wallet seed API enabled (--enable-api-sets="INSECURE_WALLET_SEED").
+
     Example: -k xpub --path=0 prints the account 0 xpub
     Example: -k xpub --path=0/0 prints the account 0, external chain xpub
     Example: -k xprv --path=0/1 prints the account 0, change chain xprv
-    Example: -k pub --path=0/1/9 prints the account 0, external chain child 9 public key
+    Example: -k pub --path=0/0/9 prints the account 0, external chain child 9 public key
     Example: -k prv --path=0/1/8 prints the account 0, change chain child 8 private key
 
     The bip32 path node apostrophe is implicit for the first element of the path.
@@ -38,7 +42,8 @@ func walletKeyExportCmd() *cobra.Command {
 	}
 
 	walletKeyExportCmd.Flags().StringP("key", "k", "xpub", "key type (\"xpub\", \"xprv\", \"pub\", \"prv\")")
-	walletKeyExportCmd.Flags().StringP("path", "p", "0/0", "bip44 account'/change subpath")
+	walletKeyExportCmd.Flags().StringP("path", "", "0/0", "bip44 account'/change subpath")
+	walletKeyExportCmd.Flags().StringP("password", "p", "", "wallet password")
 
 	return walletKeyExportCmd
 }
@@ -52,20 +57,36 @@ func walletKeyExportHandler(c *cobra.Command, args []string) error {
 		return err
 	}
 
-	w, err := wallet.Load(args[0])
+	id := args[0]
+	wlt, err := apiClient.Wallet(id)
 	if err != nil {
 		return err
 	}
 
-	switch w.Type() {
-	case wallet.WalletTypeBip44:
-	default:
-		return fmt.Errorf("support wallet types: %q", wallet.WalletTypeBip44)
+	if wlt.Meta.Type != wallet.WalletTypeBip44 {
+		return errors.New("unsupported wallet type for key export command")
 	}
 
-	wb := w.(*wallet.Bip44Wallet)
+	var password []byte
+	if wlt.Meta.Encrypted {
+		pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
+		var err error
+		password, err = pr.Password()
+		if err != nil {
+			return err
+		}
+	}
+	rsp, err := apiClient.WalletSeed(id, string(password))
+	if err != nil {
+		return err
+	}
 
-	coin, err := wb.CoinHDNode()
+	seed, err := bip39.NewSeed(rsp.Seed, rsp.SeedPassphrase)
+	if err != nil {
+		return err
+	}
+
+	coin, err := bip44.NewCoin(seed, *wlt.Meta.Bip44Coin)
 	if err != nil {
 		return err
 	}

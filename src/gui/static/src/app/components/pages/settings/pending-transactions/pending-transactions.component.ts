@@ -1,70 +1,69 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { WalletService } from '../../../../services/wallet.service';
-import * as moment from 'moment';
-import { ISubscription } from 'rxjs/Subscription';
-import { NavBarService } from '../../../../services/nav-bar.service';
-import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
-import { BigNumber } from 'bignumber.js';
+import { SubscriptionLike, of } from 'rxjs';
+import { delay, mergeMap } from 'rxjs/operators';
 
+import { NavBarSwitchService } from '../../../../services/nav-bar-switch.service';
+import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
+import { HistoryService, PendingTransactionData } from '../../../../services/wallet-operations/history.service';
+
+/**
+ * Allows to see the list of pending transactions. It uses the nav bar to know if it must show
+ * all pending tx or just the pending tx affecting the user.
+ */
 @Component({
   selector: 'app-pending-transactions',
   templateUrl: './pending-transactions.component.html',
   styleUrls: ['./pending-transactions.component.scss'],
 })
 export class PendingTransactionsComponent implements OnInit, OnDestroy {
-  transactions = null;
+  // Transactions to show on the UI.
+  transactions: PendingTransactionData[] = null;
 
-  private transactionsSubscription: ISubscription;
-  private navbarSubscription: ISubscription;
+  private transactionsSubscription: SubscriptionLike;
+  private navbarSubscription: SubscriptionLike;
+
+  private selectedNavbarOption: DoubleButtonActive;
+
+  // Time interval in which periodic data updates will be made.
+  private readonly updatePeriod = 10 * 1000;
+  // Time interval in which the periodic data updates will be restarted after an error.
+  private readonly errorUpdatePeriod = 2 * 1000;
 
   constructor(
-    public walletService: WalletService,
-    private navbarService: NavBarService,
+    private navBarSwitchService: NavBarSwitchService,
+    private historyService: HistoryService,
   ) {
-    this.navbarSubscription = this.navbarService.activeComponent.subscribe(value => {
-      this.startCheckingTransactions(value);
+    this.navbarSubscription = this.navBarSwitchService.activeComponent.subscribe(value => {
+      this.selectedNavbarOption = value;
+      this.transactions = null;
+      this.startDataRefreshSubscription(0);
     });
   }
 
   ngOnInit() {
-    this.navbarService.showSwitch('pending-txs.my', 'pending-txs.all');
+    this.navBarSwitchService.showSwitch('pending-txs.my-transactions-button', 'pending-txs.all-transactions-button');
   }
 
   ngOnDestroy() {
-    this.removeTransactionsSubscription();
     this.navbarSubscription.unsubscribe();
-    this.navbarService.hideSwitch();
+    this.removeTransactionsSubscription();
+    this.navBarSwitchService.hideSwitch();
   }
 
-  private startCheckingTransactions(value) {
-    this.transactions = null;
-
+  /**
+   * Makes the page start updating the data periodically. If this function was called before,
+   * the previous updating procedure is cancelled.
+   * @param delayMs Delay before starting to update the data.
+   */
+  private startDataRefreshSubscription(delayMs: number) {
     this.removeTransactionsSubscription();
 
-    this.transactionsSubscription = this.walletService.pendingTransactions().subscribe(transactions => {
-      this.transactions = this.mapTransactions(value === DoubleButtonActive.LeftButton ? transactions.user : transactions.all);
-    });
+    this.transactionsSubscription = of(0).pipe(delay(delayMs), mergeMap(() => this.historyService.getPendingTransactions())).subscribe(transactions => {
+      this.transactions = this.selectedNavbarOption === DoubleButtonActive.LeftButton ? transactions.user : transactions.all;
 
-    this.walletService.startDataRefreshSubscription();
-  }
-
-  private mapTransactions(transactions) {
-    return transactions.map(transaction => {
-      transaction.transaction.timestamp = moment(transaction.received).unix();
-
-      return transaction.transaction;
-    })
-    .map(transaction => {
-      let amount = new BigNumber('0');
-      transaction.outputs.map(output => amount = amount.plus(output.coins));
-      transaction.amount = amount.decimalPlaces(6).toString();
-
-      let hours = new BigNumber('0');
-      transaction.outputs.map(output => hours = hours.plus(output.hours));
-      transaction.hours = hours.decimalPlaces(0).toString();
-
-      return transaction;
-    });
+      // Update again after a delay.
+      this.startDataRefreshSubscription(this.updatePeriod);
+    }, () => this.startDataRefreshSubscription(this.errorUpdatePeriod));
   }
 
   private removeTransactionsSubscription() {

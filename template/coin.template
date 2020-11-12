@@ -17,11 +17,17 @@ import (
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/skycoin"
 	"github.com/skycoin/skycoin/src/util/logging"
+
+	// register the supported wallets
+	_ "github.com/skycoin/skycoin/src/wallet/bip44wallet"
+	_ "github.com/skycoin/skycoin/src/wallet/collection"
+	_ "github.com/skycoin/skycoin/src/wallet/deterministic"
+	_ "github.com/skycoin/skycoin/src/wallet/xpubwallet"
 )
 
 var (
 	// Version of the node. Can be set by -ldflags
-	Version = "0.26.0"
+	Version = "0.27.0"
 	// Commit ID. Can be set by -ldflags
 	Commit = ""
 	// Branch name. Can be set by -ldflags
@@ -85,6 +91,7 @@ var (
 		CoinHoursNameSingular: "{{.CoinHoursNameSingular}}",
 		CoinHoursTicker:       "{{.CoinHoursTicker}}",
 		ExplorerURL:           "{{.ExplorerURL}}",
+		VersionURL:            "{{.VersionURL}}",
 		Bip44Coin:             {{.Bip44Coin}},
 	})
 

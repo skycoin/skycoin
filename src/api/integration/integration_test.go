@@ -72,6 +72,13 @@ type TestData struct {
 var update = flag.Bool("update", false, "update golden files")
 var testLiveWallet = flag.Bool("test-live-wallet", false, "run live wallet tests, requires wallet envvars set")
 
+// Option to run a quick integration test. It would take a long time to finish the whole
+// integration test by default, cause there are few test cases need to go
+// through the whole blockchain, which is necessary for regression tests and must
+// be applied before the code go to production. However, we do want to have an option to
+// run integration quickly for debugging. And this is the option.
+var testQuick = flag.Bool("test-quick", false, "run a quick integration test")
+
 func nodeAddress() string {
 	addr := os.Getenv("SKYCOIN_NODE_HOST")
 	if addr == "" {
@@ -251,7 +258,8 @@ func updateGoldenFile(t *testing.T, filename string, content interface{}) {
 
 func checkGoldenFile(t *testing.T, goldenFile string, td TestData) {
 	loadGoldenFile(t, goldenFile, td)
-	require.Equal(t, reflect.Indirect(reflect.ValueOf(td.expected)).Interface(), td.actual)
+	expect := reflect.Indirect(reflect.ValueOf(td.expected)).Interface()
+	require.Equal(t, expect, td.actual)
 
 	// Serialize expected to JSON and compare to the goldenFile's contents
 	// This will detect field changes that could be missed otherwise
@@ -793,6 +801,10 @@ func testKnownBlocks(t *testing.T) {
 
 	t.Logf("Querying every block in the blockchain")
 
+	if *testQuick {
+		return
+	}
+
 	// Scan every block by seq
 	progress, err := c.BlockchainProgress()
 	require.NoError(t, err)
@@ -918,6 +930,10 @@ func testKnownBlocksVerbose(t *testing.T) {
 	}
 
 	t.Logf("Querying every block in the blockchain")
+
+	if *testQuick {
+		return
+	}
 
 	// Scan every block by seq
 	progress, err := c.BlockchainProgress()
@@ -1168,9 +1184,14 @@ func TestStableUxOut(t *testing.T) {
 		uxID   string
 	}{
 		{
-			name:   "valid uxID",
+			name:   "valid uxID - unspent",
 			golden: "uxout.golden",
 			uxID:   "fe6762d753d626115c8dd3a053b5fb75d6d419a8d0fb1478c5fffc1fe41c5f20",
+		},
+		{
+			name:   "valid uxID - spent",
+			golden: "uxout-spent-179.golden",
+			uxID:   "8e55f10a0615a0737e6906132e09ac08a206971ba4b656f004acc7f4b7889bc8",
 		},
 	}
 
@@ -2454,16 +2475,6 @@ func TestStableTransactions(t *testing.T) {
 			},
 		},
 		{
-			name:  "empty addrs",
-			addrs: []string{},
-			err: api.ClientError{
-				Status:     "400 Bad Request",
-				StatusCode: http.StatusBadRequest,
-				Message:    "400 Bad Request - txId is empty",
-			},
-			goldenFile: "empty-addrs-transactions.golden",
-		},
-		{
 			name:       "single addr",
 			addrs:      []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"},
 			goldenFile: "single-addr-transactions.golden",
@@ -2481,11 +2492,18 @@ func TestStableTransactions(t *testing.T) {
 	}
 
 	if !dbNoUnconfirmed(t) {
-		cases = append(cases, transactionsTestCase{
-			name:       "confirmed and unconfirmed transactions",
-			addrs:      []string{"212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN"},
-			goldenFile: "confirmed-and-unconfirmed-transactions.golden",
-		})
+		cases = append(cases,
+			transactionsTestCase{
+				name:       "confirmed and unconfirmed transactions",
+				addrs:      []string{"212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN"},
+				goldenFile: "confirmed-and-unconfirmed-transactions.golden",
+			},
+			transactionsTestCase{
+				name:       "empty addrs",
+				addrs:      []string{},
+				goldenFile: "empty-addrs-transactions-all.golden",
+			},
+		)
 	}
 
 	c := newClient()
@@ -2745,11 +2763,6 @@ func TestStableTransactionsVerbose(t *testing.T) {
 			},
 		},
 		{
-			name:       "empty addrs",
-			addrs:      []string{},
-			goldenFile: "empty-addrs-transactions-verbose.golden",
-		},
-		{
 			name:       "single addr",
 			addrs:      []string{"2kvLEyXwAYvHfJuFCkjnYNRTUfHPyWgVwKt"},
 			goldenFile: "single-addr-transactions-verbose.golden",
@@ -2771,7 +2784,13 @@ func TestStableTransactionsVerbose(t *testing.T) {
 			name:       "confirmed and unconfirmed transactions",
 			addrs:      []string{"212mwY3Dmey6vwnWpiph99zzCmopXTqeVEN"},
 			goldenFile: "confirmed-and-unconfirmed-transactions-verbose.golden",
-		})
+		},
+			transactionsTestCase{
+				name:       "empty addrs",
+				addrs:      []string{},
+				goldenFile: "empty-addrs-transactions-verbose-all.golden",
+			},
+		)
 	}
 
 	c := newClient()

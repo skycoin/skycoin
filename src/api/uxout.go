@@ -32,7 +32,7 @@ func uxOutHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		uxout, err := gateway.GetUxOutByID(id)
+		uxout, headTime, err := gateway.GetUxOutByID(id)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return
@@ -43,7 +43,13 @@ func uxOutHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		wh.SendJSONOr500(logger, w, readable.NewSpentOutput(uxout))
+		out, err := readable.NewSpentOutput(uxout, headTime)
+		if err != nil {
+			wh.Error400(w, err.Error())
+			return
+		}
+
+		wh.SendJSONOr500(logger, w, *out)
 	}
 }
 
@@ -71,7 +77,7 @@ func addrUxOutsHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		uxs, err := gateway.GetSpentOutputsForAddresses([]cipher.Address{cipherAddr})
+		uxs, headTime, err := gateway.GetSpentOutputsForAddresses([]cipher.Address{cipherAddr})
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return
@@ -79,7 +85,12 @@ func addrUxOutsHandler(gateway Gatewayer) http.HandlerFunc {
 
 		ret := make([]readable.SpentOutput, 0)
 		for _, u := range uxs {
-			ret = append(ret, readable.NewSpentOutputs(u)...)
+			out, err := readable.NewSpentOutputs(u, headTime)
+			if err != nil {
+				wh.Error400(w, err.Error())
+				return
+			}
+			ret = append(ret, out...)
 		}
 
 		wh.SendJSONOr500(logger, w, ret)

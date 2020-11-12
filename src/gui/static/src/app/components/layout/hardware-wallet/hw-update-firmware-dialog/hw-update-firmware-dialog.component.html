@@ -1,4 +1,5 @@
-<app-modal class="modal" [headline]="this.title | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Processing">
+<app-modal [headline]="this.title | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Processing">
+  <!-- Initial instructions and warnings. -->
   <div *ngIf="currentState === states.Initial">
     <app-hw-message
       [text]="(text | translate)"
@@ -9,39 +10,43 @@
       <mat-checkbox type="checkbox"
                     class="-check"
                     [checked]="confirmed"
-                    (change)="setConfirmed($event)">{{ 'hardware-wallet.update-firmware.check' | translate }}
+                    (change)="setConfirmed($event)">{{ 'common.generic-confirmation-check' | translate }}
       </mat-checkbox>
     </div>
 
     <div class="-buttons">
       <app-button (action)="closeModal()">
-        {{ 'hardware-wallet.general.cancel' | translate }}
+        {{ 'common.cancel-button' | translate }}
       </app-button>
-      <app-button (action)="startUpdating()" class="primary" [disabled]="deviceHasFirmware && !confirmed" #button>
-        {{ 'hardware-wallet.general.continue' | translate }}
+      <app-button (action)="startUpdating()" class="primary-button" [disabled]="deviceHasFirmware && !confirmed">
+        {{ 'common.continue-button' | translate }}
       </app-button>
     </div>
   </div>
 
   <div *ngIf="currentState !== states.Initial">
+    <!-- Initial connection animation. -->
     <app-hw-message *ngIf="currentState === states.Connecting"
       [text]="'hardware-wallet.update-firmware.title-connecting' | translate"
       [icon]="msgIcons.Spinner"
     ></app-hw-message>
 
+    <!-- Install instructions. -->
     <app-hw-message *ngIf="currentState === states.Processing"
       [text]="'hardware-wallet.update-firmware.follow' | translate"
       [icon]="msgIcons.Confirm"
     ></app-hw-message>
 
+    <!-- Result. -->
     <app-hw-message *ngIf="currentState === states.ShowingResult"
       [text]="result.text | translate"
       [icon]="result.icon"
     ></app-hw-message>
 
+    <!-- Buttons area. -->
     <div class="-buttons" *ngIf="currentState !== states.Processing">
-      <app-button (action)="closeModal()" class="primary" #closeButton>
-        {{ 'hardware-wallet.general.close' | translate }}
+      <app-button (action)="closeModal()" class="primary-button" #closeButton>
+        {{ 'common.close-button' | translate }}
       </app-button>
     </div>
   </div>

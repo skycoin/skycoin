@@ -1,22 +1,17 @@
-<div class="button-container"
-  (mouseenter)="mouseOver = true"
-  (mouseleave)="mouseOver = false"
->
+<div class="internal-container">
   <button
     mat-button
-    type="submit"
     mat-raised-button
     color="primary"
     [disabled]="disabled && !forceEmitEvents"
-    [matTooltip]="error ? error : null"
-    (click)="this.state !== 0 ? onClick() : null"
+    (click)="this.state !== buttonStates.Loading ? onClick() : null"
     [ngClass]="{ enabled: !disabled }"
-    #tooltip="matTooltip"
     #button
   >
-    <ng-content></ng-content>
-    <mat-icon *ngIf="state === 1">done</mat-icon>
-    <mat-icon *ngIf="state === 2">error</mat-icon>
-    <mat-spinner *ngIf="state === 0" class="in-button"></mat-spinner>
+    <div class="content-container">
+      <span class="content"><ng-content></ng-content></span>
+      <mat-icon *ngIf="state === buttonStates.Success">done</mat-icon>
+      <mat-spinner *ngIf="state === buttonStates.Loading"></mat-spinner>
+    </div>
   </button>
 </div>

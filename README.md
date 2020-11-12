@@ -33,10 +33,10 @@ scratch, to remedy the rough edges in the Bitcoin design.
 
 ## Links
 
-* [skycoin.net](https://www.skycoin.net)
-* [Skycoin Blog](https://www.skycoin.net/blog)
-* [Skycoin Docs](https://www.skycoin.net/docs)
-* [Skycoin Blockchain Explorer](https://explorer.skycoin.net)
+* [skycoin.com](https://www.skycoin.com)
+* [Skycoin Blog](https://www.skycoin.com/blog)
+* [Skycoin Docs](https://www.skycoin.com/docs)
+* [Skycoin Blockchain Explorer](https://explorer.skycoin.com)
 * [Skycoin Development Telegram Channel](https://t.me/skycoindev)
 * [Skycoin Github Wiki](https://github.com/skycoin/skycoin/wiki)
 
@@ -46,7 +46,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
 
 - [Changelog](#changelog)
 - [Installation](#installation)
-	- [Go 1.10+ Installation and Setup](#go-110-installation-and-setup)
+	- [Go 1.14+ Installation and Setup](#go-1.14-installation-and-setup)
 	- [Go get skycoin](#go-get-skycoin)
 	- [Run Skycoin from the command line](#run-skycoin-from-the-command-line)
 	- [Show Skycoin node options](#show-skycoin-node-options)
@@ -63,6 +63,8 @@ scratch, to remedy the rough edges in the Bitcoin design.
 - [Daemon CLI Options](#daemon-cli-options)
 - [URI Specification](#uri-specification)
 - [Wire protocol user agent](#wire-protocol-user-agent)
+- [Offline transaction signing](#offline-transaction-signing)
+- [Deploy a public Skycoin API node with HTTPS](#deploy-a-public-skycoin-api-node-with-https)
 - [Development](#development)
 	- [Modules](#modules)
 	- [Client libraries](#client-libraries)
@@ -92,6 +94,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
 		- [Translations](#translations)
 	- [Releases](#releases)
 		- [Update the version](#update-the-version)
+		- [Check the translations](#check-the-translations)
 		- [Pre-release testing](#pre-release-testing)
 		- [Creating release builds](#creating-release-builds)
 		- [Release signing](#release-signing)
@@ -105,11 +108,11 @@ scratch, to remedy the rough edges in the Bitcoin design.
 
 ## Installation
 
-Skycoin supports go1.10+.
+Skycoin supports go1.14+.
 
-### Go 1.10+ Installation and Setup
+### Go 1.14+ Installation and Setup
 
-[Golang 1.10+ Installation/Setup](./INSTALLATION.md)
+[Golang 1.14+ Installation/Setup](./INSTALLATION.md)
 
 ### Go get skycoin
 
@@ -202,7 +205,7 @@ and useful tools included in `skycoin/skycoindev-cli`.
 
 ### Skycoin command line interface
 
-[CLI command API](cmd/cli/README.md).
+[CLI command API](cmd/skycoin-cli/README.md).
 
 ## Integrating Skycoin with your application
 
@@ -211,7 +214,7 @@ and useful tools included in `skycoin/skycoindev-cli`.
 ## Contributing a node to the network
 
 Add your node's `ip:port` to the [peers.txt](peers.txt) file.
-This file will be periodically uploaded to https://downloads.skycoin.net/blockchain/peers.txt
+This file will be periodically uploaded to https://downloads.skycoin.com/blockchain/peers.txt
 and used to seed client with peers.
 
 *Note*: Do not add Skywire nodes to `peers.txt`.
@@ -245,6 +248,133 @@ However, do not use this URI in QR codes displayed to the user, because the addr
 ## Wire protocol user agent
 
 [Wire protocol user agent description](https://github.com/skycoin/skycoin/wiki/Wire-protocol-user-agent)
+
+## Offline transaction signing
+
+Before doing the offline transaction signing, we need to have the unsigned transaction created. Using the `skycoin-cli` tool to create an unsigned transaction in hot wallet, and copy the hex encoded transaction to the computer where the cold wallet is installed. Then use the `skycoin-cli` tool to sign it offline.
+
+### Create an unsigned transaction
+
+The `skycoin-cli` tool replys on the APIs of the `skycoin node`, hence we have to start the node before running the tool.
+
+ Go to the project root and run:
+
+```bash
+$ ./run-client.sh -launch-browser=false
+```
+
+Once the node is started, we could use the following command to create an unsigned transaction.
+
+```bash
+$ skycoin-cli createRawTransactionV2 $WALLET_FILE $RECIPIENT_ADDRESS $AMOUNT --unsign
+```
+
+> Note: Don't forget the `--unsign` flag, otherwise it would try to sign the transaction.
+
+<details>
+ <summary>View Output</summary>
+
+```json
+b700000000e6b869f570e2bfebff1b4d7e7c9e86885dbc34d6de988da6ff998e7acd7e6e14010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000007531184ad0afeebbff2049b855e0921329cb1cb74d769ac57c057c9c8bd2b6810100000000ed5ea2ca4fe9b4560409b50c5bf7cb39b6c5ff6e50690f00000000000000000000000000
+```
+
+</details>
+
+Copy and save the generated transaction string. We will sign it with a cold wallet offline in the next section.
+
+### Sign the transaction
+
+The `skycoin node` needs to have the most recently `DB` so that the user would not lose much coin hours when signing the transaction. We could copy the full synchronized `data.db` from the hot wallet to the computer where the cold wallet is installed. And place it in `$HOME/.skycoin/data.db`. Then start the node with the network disabled.
+
+```bash
+$ ./run-client.sh -launch-browser=false -disable-networking
+```
+
+Run the following command to sign the transaction:
+
+```bash
+$ skycoin-cli signTransaction $RAW_TRANSACTION
+```
+
+The `$RAW_TRANSACTION` is the transaction string that we generated in the hot wallet.
+
+If the cold wallet is encrypted, you will be prompted to enter the password to sign the transaction.
+
+<details>
+ <summary>View Output</summary>
+
+```json
+b700000000e6b869f570e2bfebff1b4d7e7c9e86885dbc34d6de988da6ff998e7acd7e6e14010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000007531184ad0afeebbff2049b855e0921329cb1cb74d769ac57c057c9c8bd2b6810100000000ed5ea2ca4fe9b4560409b50c5bf7cb39b6c5ff6e50690f00000000000000000000000000
+```
+
+</details>
+
+Once the transaction is signed, we could copy and save the signed transaction string and broadcast it in the hot wallet.
+
+```bash
+$ skycoin-cli broadcastTransaction $SIGNED_RAW_TRANSACTION
+```
+
+A transaction id would be returned and you can check it in the [explorer](https://explorer.skycoin.com).
+
+## Deploy a public Skycoin API node with HTTPS
+
+We recommend using [caddy server](https://caddyserver.com/) to deploy a public Skycoin API node on a
+Linux server. The public API node should have the `HTTPS` support, which could be handled automatically
+by the `caddy server`. But we need to have a domain and create a DNS record to bind the server ip address
+to it.
+
+Suppose we're going to deploy a Skycoin API node on `apitest.skycoin.com`, and we have already bound
+the server's IP to it. Follow the steps below to complete the deployment.
+
+### Install and run a skycoin api node
+
+```bash
+# Create a skycoin folder so that the files could be isolated
+$ mkdir $HOME/skycoin && cd $HOME/skycoin
+# Download the skycoin binary file
+$ wget https://downloads.skycoin.com/wallet/skycoin-0.26.0-gui-standalone-linux-x64.tar.gz
+$ tar -zxvf skycoin-0.26.0-gui-standalone-linux-x64.tar.gz
+$ cd skycoin-0.26.0-gui-standalone-linux-x64
+$ ./skycoin -web-interface-port=6420 -host-whitelist=$DOMAIN_NAME -enable-api-sets="READ,TXN"
+```
+
+> Note: we should running the `skycoin` node with `-host-whitelist` flag, otherwise it would
+> throw `403 Forbidden` error.
+
+### Install the caddy server
+
+```bash
+# Create a caddy folder
+$ mkdir $HOME/caddy && cd $HOME/caddy
+# Download the caddy server binary file
+$ wget https://github.com/caddyserver/caddy/releases/download/v1.0.4/caddy_v1.0.4_linux_amd64.tar.gz
+$ tar -zxvf caddy_v1.0.4_linux_amd64.tar.gz
+$ cd caddy_v1.0.4_linux_amd64
+```
+
+The `caddy` tool would be exist in the folder, let's create a `Caddyfile` to define the reverse proxy
+rules now.
+
+```bash
+cat <<EOF >Caddyfile
+apitest.skycoin.com {
+   proxy / localhost:6420 {
+      transparent
+   }
+}
+EOF
+```
+
+Then run the caddy server
+
+```bash
+$ ./caddy
+```
+
+You will be prompted to enter an email address to receive the notifications from let's Encrypt.
+That's all about the deployment, check the https://apitest.skycoin.com/api/v1/version to see if
+the Skycoin API node is working correctly.
 
 ## Development
 
@@ -540,47 +670,14 @@ different version of the `cipher` dependencies than were developed, which could 
 
 #### Management
 
-Dependencies are managed with [dep](https://github.com/golang/dep).
+Dependencies are managed with [go modules](https://github.com/golang/go/wiki/Modules).
 
-To [install `dep` for development](https://github.com/golang/dep/blob/master/docs/installation.md#development):
+We still use the `vendor` folder to store our dependencies in case any of the them are 
+removed from the internet in the future. 
 
-```sh
-$ go get -u github.com/golang/dep/cmd/dep
-```
+> When the main module contains a top-level vendor directory and its go.mod file specifies go 1.14 or higher, 
+> the go command now defaults to -mod=vendor for operations that accept that flag.
 
-`dep` vendors all dependencies into the repo.
-
-If you change the dependencies, you should update them as needed with `dep ensure`.
-
-Use `dep help` for instructions on vendoring a specific version of a dependency, or updating them.
-
-When updating or initializing, `dep` will find the latest version of a dependency that will compile.
-
-Examples:
-
-Initialize all dependencies:
-
-```sh
-$ dep init
-```
-
-Update all dependencies:
-
-```sh
-$ dep ensure -update -v
-```
-
-Add a single dependency (latest version):
-
-```sh
-$ dep ensure github.com/foo/bar
-```
-
-Add a single dependency (more specific version), or downgrade an existing dependency:
-
-```sh
-$ dep ensure github.com/foo/bar@tag
-```
 
 ### Configuration Modes
 There are 4 configuration modes in which you can run a skycoin node:
@@ -652,6 +749,12 @@ You can find information about how to work with translation files in the [Transl
 If there are problems discovered after merging to `master`, start over, and increment the 3rd version number.
 For example, `v0.20.0` becomes `v0.20.1`, for minor fixes.
 
+#### Check the translations
+
+Run `make check-lang` to check if the translation files of the UI are updated. If there is any error running
+that command, one or more translation files may need to be updated. For more information, check the
+[translations](#translations) section.
+
 #### Pre-release testing
 
 Performs these actions before releasing:
@@ -661,15 +764,15 @@ Performs these actions before releasing:
 * `make integration-test-live-disable-networking` (requires node run with `-disable-networking`)
 * `make integration-test-live-disable-csrf` (requires node run with `-disable-csrf`)
 * `make intergration-test-live-wallet` (see [live integration tests](#live-integration-tests)) 6 times: with an unencrypted and encrypted wallet for each wallet type: `deterministic`, `bip44` and `collection`
-* `go run cmd/cli/cli.go checkdb` against a fully synced database
-* `go run cmd/cli/cli.go checkDBDecoding` against a fully synced database
+* `go run cmd/skycoin-cli/skycoin-cli.go checkdb` against a fully synced database
+* `go run cmd/skycoin-cli/skycoin-cli.go checkDBDecoding` against a fully synced database
 * On all OSes, make sure that the client runs properly from the command line (`./run-client.sh` and `./run-daemon.sh`)
 * Build the releases and make sure that the Electron client runs properly on Windows, Linux and macOS.
     * Use a clean data directory with no wallets or database to sync from scratch and verify the wallet setup wizard.
     * Load a test wallet with nonzero balance from seed to confirm wallet loading works
     * Send coins to another wallet to confirm spending works
     * Restart the client, confirm that it reloads properly
-* For both the Android and iOS mobile wallets, configure the node url to be https://staging.node.skycoin.net
+* For both the Android and iOS mobile wallets, configure the node url to be https://staging.node.skycoin.com
   and test all operations to ensure it will work with the new node version.
 
 #### Creating release builds
@@ -680,31 +783,31 @@ Performs these actions before releasing:
 
 Releases are signed with this PGP key:
 
-`0x5801631BD27C7874`
+`0x913BBD5206B19620`
 
 The fingerprint for this key is:
 
 ```
-pub   ed25519 2017-09-01 [SC] [expires: 2023-03-18]
-      10A7 22B7 6F2F FE7B D238  0222 5801 631B D27C 7874
-uid                      GZ-C SKYCOIN <token@protonmail.com>
-sub   cv25519 2017-09-01 [E] [expires: 2023-03-18]
+pub   ed25519 2019-09-17 [SC] [expires: 2023-09-16]
+      98F934F04F9334B81DFA3398913BBD5206B19620
+uid           [ultimate] iketheadore skycoin <luxairlake@protonmail.com>
+sub   cv25519 2019-09-17 [E] [expires: 2023-09-16]
 ```
 
-Keybase.io account: https://keybase.io/gzc
+Keybase.io account: https://keybase.io/iketheadore
 
 Follow the [Tor Project's instructions for verifying signatures](https://www.torproject.org/docs/verifying-signatures.html.en).
 
-If you can't or don't want to import the keys from a keyserver, the signing key is available in the repo: [gz-c.asc](gz-c.asc).
+If you can't or don't want to import the keys from a keyserver, the signing key is available in the repo: [iketheadore.asc](iketheadore.asc).
 
 Releases and their signatures can be found on the [releases page](https://github.com/skycoin/skycoin/releases).
 
 Instructions for generating a PGP key, publishing it, signing the tags and binaries:
-https://gist.github.com/gz-c/de3f9c43343b2f1a27c640fe529b067c
+https://gist.github.com/iketheadore/6485585ce2d22231c2cb3cbc77e1d7b7
 
 ## Responsible Disclosure
 
-Security flaws in skycoin source or infrastructure can be sent to security@skycoin.net.
+Security flaws in skycoin source or infrastructure can be sent to security@skycoin.com.
 Bounties are available for accepted critical bug reports.
 
 PGP Key for signing:
@@ -712,28 +815,30 @@ PGP Key for signing:
 ```
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 
-mDMEWaj46RYJKwYBBAHaRw8BAQdApB44Kgde4Kiax3M9Ta+QbzKQQPoUHYP51fhN
-1XTSbRi0I0daLUMgU0tZQ09JTiA8dG9rZW5AcHJvdG9ubWFpbC5jb20+iJYEExYK
-AD4CGwMFCwkIBwIGFQgJCgsCBBYCAwECHgECF4AWIQQQpyK3by/+e9I4AiJYAWMb
-0nx4dAUCWq/TNwUJCmzbzgAKCRBYAWMb0nx4dKzqAP4tKJIk1vV2bO60nYdEuFB8
-FAgb5ITlkj9PyoXcunETVAEAhigo4miyE/nmE9JT3Q/ZAB40YXS6w3hWSl3YOF1P
-VQq4OARZqPjpEgorBgEEAZdVAQUBAQdAa8NkEMxo0dr2x9PlNjTZ6/gGwhaf5OEG
-t2sLnPtYxlcDAQgHiH4EGBYKACYCGwwWIQQQpyK3by/+e9I4AiJYAWMb0nx4dAUC
-Wq/TTQUJCmzb5AAKCRBYAWMb0nx4dFPAAQD7otGsKbV70UopH+Xdq0CDTzWRbaGw
-FAoZLIZRcFv8zwD/Z3i9NjKJ8+LS5oc8rn8yNx8xRS+8iXKQq55bDmz7Igw=
-=5fwW
+mDMEXYCYPxYJKwYBBAHaRw8BAQdAeDPi3n9xLv5xGsxbcbwZjfV4h772W+GPZ3Mz
+RS17STm0L2lrZXRoZWFkb3JlIHNreWNvaW4gPGx1eGFpcmxha2VAcHJvdG9ubWFp
+bC5jb20+iJYEExYIAD4WIQSY+TTwT5M0uB36M5iRO71SBrGWIAUCXYCYPwIbAwUJ
+B4TOAAULCQgHAgYVCgkICwIEFgIDAQIeAQIXgAAKCRCRO71SBrGWID0NAP0VRiNA
+2Kq2uakPMqV29HY39DVhc9QgxJfMIwXWtFxKAwEAn0NqGRV/iKXNf+qxqAtMWa5X
+F2S36hkEfDHO5W44DwC4OARdgJg/EgorBgEEAZdVAQUBAQdAeiEz/tUmCgOA67Rq
+ANmHmX2vrdZp/SfJ9KOI2ANCCm8DAQgHiH4EGBYIACYWIQSY+TTwT5M0uB36M5iR
+O71SBrGWIAUCXYCYPwIbDAUJB4TOAAAKCRCRO71SBrGWIJOJAQDTaqxpcLtAw5kH
+Hp2jWvUnLudIONeqeUTCmkLJhcNv1wD+PFJZWMKD1btIG4pkXRW9YoA7M7t5by5O
+x5I+LywZNww=
+=p6Gq
 -----END PGP PUBLIC KEY BLOCK-----
 ```
 
-Key ID: [0x5801631BD27C7874](https://pgp.mit.edu/pks/lookup?search=0x5801631BD27C7874&op=index)
+
+Key ID: [0x913BBD5206B19620](https://pgp.mit.edu/pks/lookup?search=0x913BBD5206B19620&op=index)
 
 The fingerprint for this key is:
 
 ```
-pub   ed25519 2017-09-01 [SC] [expires: 2023-03-18]
-      10A7 22B7 6F2F FE7B D238  0222 5801 631B D27C 7874
-uid                      GZ-C SKYCOIN <token@protonmail.com>
-sub   cv25519 2017-09-01 [E] [expires: 2023-03-18]
+pub   ed25519 2019-09-17 [SC] [expires: 2023-09-16]
+      98F934F04F9334B81DFA3398913BBD5206B19620
+uid           [ultimate] iketheadore skycoin <luxairlake@protonmail.com>
+sub   cv25519 2019-09-17 [E] [expires: 2023-09-16]
 ```
 
-Keybase.io account: https://keybase.io/gzc
+Keybase.io account: https://keybase.io/iketheadore

@@ -17,6 +17,9 @@ ELN_VERSION="v1.4.13"
 ELN_OUTPUT_BASE=".electron_output"
 ELN_OUTPUT_DIR="${ELN_OUTPUT_BASE}/${ELN_VERSION}"
 
+# whether do code signing for osx builds
+CODE_SIGN=$CSC_IDENTITY_AUTO_DISCOVERY
+
 
 if [ -n "$1" ]; then
     GOX_OSARCH="$@"

@@ -31,40 +31,26 @@
     flex-grow: 1;
     align-self: center;
 
-    .link {
-      color: $blue;
-      cursor: pointer;
-    }
-
     .list {
       padding: 10px 0;
 
       .list-element {
+        word-break: break-all;
         margin: 10px 0;
-        font-size: 12px;
+        font-size: $font-size-standard-minus;
         color: #000000;
         font-weight: bold;
       }
     }
   }
 
-  .-red {
-    color: $red;
-  }
-
-  .-yellow {
-    color: $yellow;
-  }
-
-  .-grey {
-    color: $grey-light;
-  }
-
-  .-green {
-    color: $green;
-  }
-
   .-blinking {
     animation: alert-blinking 1s linear infinite;
   }
+}
+
+.big-text {
+  color: $black;
+  font-weight: bold;
+  font-size: $font-size-big;
 }

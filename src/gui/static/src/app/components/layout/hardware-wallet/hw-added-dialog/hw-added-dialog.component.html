@@ -1,14 +1,17 @@
-<app-modal class="modal" [headline]="'hardware-wallet.added.title' | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Initial || currentState === states.Finished">
+<app-modal [headline]="'hardware-wallet.added.title' | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Initial">
+  <!-- Loading indicator. -->
   <app-hw-message *ngIf="currentState === states.Initial"
     [text]="'hardware-wallet.added.configuring' | translate"
     [icon]="msgIcons.Spinner"
   ></app-hw-message>
 
+  <!-- Result. -->
   <app-hw-message *ngIf="currentState === states.ShowingResult"
     [text]="result.text | translate"
     [icon]="result.icon"
   ></app-hw-message>
 
+  <!-- Final instructions and form for changing the label. -->
   <div *ngIf="currentState === states.Finished">
     <app-hw-message
       [upperBigText]="'hardware-wallet.added.done' | translate"
@@ -17,7 +20,15 @@
     <div class="upper-text">{{ 'hardware-wallet.added.added1' | translate }}</div>
     <div [formGroup]="form">
       <div class="form-field">
-        <input formControlName="label" id="label" [maxlength]="maxHwWalletLabelLength" (keydown.enter)="saveNameAndCloseModal()" #input>
+        <input
+          #input
+          formControlName="label"
+          id="label"
+          [maxlength]="maxHwWalletLabelLength"
+          (keydown.enter)="saveNameAndCloseModal()"
+          [appFormFieldError]="inputErrorMsg"
+          (blur)="validateForm()"
+        >
       </div>
     </div>
     <div class="warning">{{ 'hardware-wallet.added.characters-warning' | translate }}</div>
@@ -28,10 +39,10 @@
   <div class="-buttons" *ngIf="currentState === states.Finished || currentState === states.ShowingResult">
     <app-button
       (action)="currentState === states.Finished ? saveNameAndCloseModal() : closeModal()"
-      class="primary"
+      class="primary-button"
       [disabled]="currentState === states.Finished && !form.valid"
       #closeButton>
-      {{ (currentState === states.Finished ? 'hardware-wallet.added.ok' : 'hardware-wallet.general.close') | translate }}
+      {{ (currentState === states.Finished ? 'common.continue-button' : 'common.close-button') | translate }}
     </app-button>
   </div>
 </app-modal>

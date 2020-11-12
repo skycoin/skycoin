@@ -1,378 +1,312 @@
-// NOTE: some  code for using the hw wallet js library was left here only for precaution and should be deleted soon.
-
+import { throwError as observableThrowError, of, Observable, Subject } from 'rxjs';
+import { mergeMap, map, catchError } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs/Observable';
-import { Subscriber } from 'rxjs/Subscriber';
-import { Subject } from 'rxjs/Subject';
-import { TranslateService } from '@ngx-translate/core';
+import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
+import { BigNumber } from 'bignumber.js';
+import { HttpClient } from '@angular/common/http';
+
 import { AppConfig } from '../app.config';
-import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material';
 import { HwWalletDaemonService } from './hw-wallet-daemon.service';
 import { HwWalletPinService, ChangePinStates } from './hw-wallet-pin.service';
-import { HwWalletSeedWordService } from './hw-wallet-seed-word.service';
-import BigNumber from 'bignumber.js';
-import { StorageService, StorageType } from './storage.service';
-import { ISubscription } from 'rxjs/Subscription';
-import { Http, ResponseContentType } from '@angular/http';
 import { ApiService } from './api.service';
+import { OperationError, HWOperationResults } from '../utils/operation-error';
+import { getErrorMsg } from '../utils/errors';
 
-export enum OperationResults {
-  Success,
-  FailedOrRefused,
-  PinMismatch,
-  WithoutSeed,
-  WrongPin,
-  IncorrectHardwareWallet,
-  WrongWord,
-  InvalidSeed,
-  WrongSeed,
-  UndefinedError,
-  Disconnected,
-  DaemonError,
-  InvalidAddress,
-  Timeout,
-  NotInBootloaderMode,
-}
-
-export class TxData {
+/**
+ * Data about a transaction recipient.
+ */
+export class HwWalletTxRecipientData {
   address: string;
   coins: BigNumber;
   hours: BigNumber;
 }
 
+/**
+ * Response when a hw wallet operation completes correctly.
+ */
 export class OperationResult {
-  result: OperationResults;
+  // This property is currently not very usseful, as it is always set to done, but is not
+  // removed because there is chance of needing it in the future.
+  /**
+   * Operation result.
+   */
+  result: HWOperationResults;
+  /**
+   * Raw response returned by the hw wallet daemon.
+   */
   rawResponse: any;
 }
 
-export interface Input {
-  hashIn: string;
+/**
+ * Input of a hw wallet transaction.
+ */
+export interface HwInput {
+  hash: string;
   index: number;
 }
 
-export interface Output {
+/**
+ * Output of a hw wallet transaction.
+ */
+export interface HwOutput {
   address: string;
-  coin: number;
-  hour: number;
+  coins: string;
+  hours: string;
+  /**
+   * Index of the address on the hw wallet. This indicates the device that the output is
+   * used for returning unused remaining coins and hours and that, because of that, it should
+   * not be shown while asking the user for confirmation. It only works if the destination
+   * address really is is on the device at the indicated index.
+   */
   address_index?: number;
-}
-
-interface EventData {
-  event: string;
-  successTexts?: string[];
 }
 
 @Injectable()
 export class HwWalletService {
-
+  /**
+   * Max number of characters the hw wallet label can have.
+   */
   public static readonly maxLabelLength = 32;
 
-  private readonly storageKey = 'hw-wallets';
-
+  /**
+   * If true, the hw wallet options modal window will be shown the next time the wallets list
+   * is loaded on the UI.
+   */
   showOptionsWhenPossible = false;
 
-  private requestSequence = 0;
-
-  private eventsObservers = new Map<number, Subscriber<OperationResult>>();
+  /**
+   * Emits every time a device connection/disconnection event is detected.
+   */
   private walletConnectedSubject: Subject<boolean> = new Subject<boolean>();
-
-  private savingDataSubscription: ISubscription;
-
+  /**
+   * Last modal window openned for asking the user confirmation for signing a transaction.
+   */
   private signTransactionDialog: MatDialogRef<{}, any>;
 
   // Set on AppComponent to avoid a circular reference.
   private signTransactionConfirmationComponentInternal;
+  /**
+   * Sets the class of the modal window used for asking the user confirmation for signing a tx.
+   */
   set signTransactionConfirmationComponent(value) {
     this.signTransactionConfirmationComponentInternal = value;
   }
 
   constructor(
-    private translate: TranslateService,
     private dialog: MatDialog,
     private hwWalletDaemonService: HwWalletDaemonService,
     private hwWalletPinService: HwWalletPinService,
-    private hwWalletSeedWordService: HwWalletSeedWordService,
-    private storageService: StorageService,
     private apiService: ApiService,
-    private http: Http) {
+    private http: HttpClient) {
 
     if (this.hwWalletCompatibilityActivated) {
-      if (!AppConfig.useHwWalletDaemon) {
-        window['ipcRenderer'].on('hwConnectionEvent', (event, connected) => {
-          if (!connected) {
-            this.eventsObservers.forEach((value, key) => {
-              this.dispatchError(key, OperationResults.Disconnected, this.translate.instant('hardware-wallet.general.error-disconnected'));
-            });
-          }
-          this.walletConnectedSubject.next(connected);
-        });
-      } else {
-        hwWalletDaemonService.connectionEvent.subscribe(connected => {
-          this.walletConnectedSubject.next(connected);
-        });
-      }
-
-      if (!AppConfig.useHwWalletDaemon) {
-        window['ipcRenderer'].on('hwPinRequested', (event) => {
-          this.hwWalletPinService.requestPin().subscribe(pin => {
-            if (!pin) {
-              this.cancelAllOperations();
-              window['ipcRenderer'].send('hwCancelPin');
-            } else {
-              window['ipcRenderer'].send('hwSendPin', pin);
-            }
-          });
-        });
-        window['ipcRenderer'].on('hwSeedWordRequested', (event) => {
-          this.hwWalletSeedWordService.requestWord().subscribe(word => {
-            if (!word) {
-              this.cancelAllOperations();
-              window['ipcRenderer'].send('hwCancelLastAction');
-            }
-            window['ipcRenderer'].send('hwSendSeedWord', word);
-          });
-        });
-
-        window['ipcRenderer'].on('hwSignTransactionResponse', (event, requestId, result) => {
-          this.closeTransactionDialog();
-          this.dispatchEvent(requestId, result, true);
-        });
-
-        const data: EventData[] = [
-          { event: 'hwChangePinResponse', successTexts: ['PIN changed'] },
-          { event: 'hwGenerateMnemonicResponse', successTexts: ['operation completed'] },
-          { event: 'hwRecoverMnemonicResponse', successTexts: ['Device recovered', 'The seed is valid and matches the one in the device'] },
-          { event: 'hwBackupDeviceResponse', successTexts: ['operation completed'] },
-          { event: 'hwWipeResponse', successTexts: ['operation completed'] },
-          { event: 'hwChangeLabelResponse', successTexts: ['Settings applied'] },
-          { event: 'hwCancelLastActionResponse' },
-          { event: 'hwGetAddressesResponse' },
-          { event: 'hwGetFeaturesResponse' },
-          { event: 'hwSignMessageResponse' },
-        ];
-
-        data.forEach(item => {
-          window['ipcRenderer'].on(item.event, (event, requestId, result) => {
-            const success = item.successTexts
-              ? typeof result === 'string' && item.successTexts.some(text => (result as string).includes(text))
-              : true;
-
-            this.dispatchEvent(requestId, result, success);
-          });
-        });
-      }
+      hwWalletDaemonService.connectionEvent.subscribe(connected => {
+        this.walletConnectedSubject.next(connected);
+      });
     }
   }
 
+  /**
+   * Indicates if the hw wallet compatibility should be activated in the app or not.
+   */
   get hwWalletCompatibilityActivated(): boolean {
-    if (!AppConfig.useHwWalletDaemon) {
-      return window['isElectron'] && window['ipcRenderer'].sendSync('hwCompatibilityActivated');
-    } else {
-      return true;
-    }
+    return true;
   }
 
+  /**
+   * Emits every time a device connection/disconnection event is detected.
+   */
   get walletConnectedAsyncEvent(): Observable<boolean> {
     return this.walletConnectedSubject.asObservable();
   }
 
+  /**
+   * Detects if there is currently a hw wallet connected.
+   */
   getDeviceConnected(): Observable<boolean> {
-    if (!AppConfig.useHwWalletDaemon) {
-      return Observable.of(window['ipcRenderer'].sendSync('hwGetDeviceConnectedSync'));
-    } else {
-      return this.hwWalletDaemonService.get('/available').map(response => {
-        return response.data;
-      });
-    }
+    return this.hwWalletDaemonService.get('/available').pipe(map((response: any) => {
+      return response.data;
+    }));
   }
 
-  getSavedWalletsData(): Observable<string> {
-    return this.storageService.get(StorageType.CLIENT, this.storageKey)
-      .map(result => result.data)
-      .catch(err => {
-        try {
-          if (err['_body']) {
-            const errorBody = JSON.parse(err['_body']);
-            if (errorBody && errorBody.error && errorBody.error.code === 404) {
-              return Observable.of(null);
-            }
-          }
-        } catch (e) {}
-
-        return Observable.throw(err);
-      });
-  }
-
-  saveWalletsData(walletsData: string) {
-    if (this.savingDataSubscription) {
-      this.savingDataSubscription.unsubscribe();
-    }
-
-    this.savingDataSubscription = this.storageService.store(StorageType.CLIENT, this.storageKey, walletsData).subscribe();
-  }
-
+  /**
+   * Makes the device to cancel any currently active operation and return to the home screen.
+   */
   cancelLastAction(): Observable<OperationResult> {
-    if (!AppConfig.useHwWalletDaemon) {
-      const requestId = this.createRandomIdAndPrepare();
-      window['ipcRenderer'].send('hwCancelLastAction', requestId);
+    this.prepare();
 
-      return this.createRequestResponse(requestId);
-    } else {
+    return this.processDaemonResponse(
+      this.hwWalletDaemonService.put('/cancel'),
+    );
+  }
+
+  /**
+   * Gets one or more of the addresses of the hw wallet.
+   * @param addressN How many addresses to recover.
+   * @param startIndex Starting index.
+   */
+  getAddresses(addressN: number, startIndex: number): Observable<OperationResult> {
+    // Cancel the current pending operation, if any.
+    return this.cancelLastAction().pipe(mergeMap(() => {
       this.prepare();
 
+      const params = {
+        address_n: addressN,
+        start_index: startIndex,
+        confirm_address: false,
+      };
+
+      // Recover the addresses.
       return this.processDaemonResponse(
-        this.hwWalletDaemonService.put('/cancel', null, false, true),
+        this.hwWalletDaemonService.post(
+          '/generate_addresses',
+          params,
+        ), null, true,
       );
-    }
+    }), mergeMap(response => {
+      // Check if the device returned valid addresses and create an appropiate error if nedded.
+      return this.verifyAddresses(response.rawResponse, 0).pipe(
+        catchError(err => {
+          const resp = new OperationError();
+          resp.originalError = err;
+          resp.type = HWOperationResults.AddressGeneratorProblem;
+          resp.translatableErrorMsg = this.hwWalletDaemonService.getHardwareWalletErrorMsg(resp.type);
+          resp.originalServerErrorMsg = '';
+
+          return observableThrowError(resp);
+        }), map(() => response));
+    }));
   }
 
-  getAddresses(addressN: number, startIndex: number): Observable<OperationResult> {
-    return this.cancelLastAction().flatMap(() => {
-      if (!AppConfig.useHwWalletDaemon) {
-        const requestId = this.createRandomIdAndPrepare();
-        window['ipcRenderer'].send('hwGetAddresses', requestId, addressN, startIndex, false);
-
-        return this.createRequestResponse(requestId);
-      } else {
-        this.prepare();
-
-        const params = {
-          address_n: addressN,
-          start_index: startIndex,
-          confirm_address: false,
-        };
-
-        return this.processDaemonResponse(
-          this.hwWalletDaemonService.post(
-            '/generate_addresses',
-            params,
-          ), null, true,
-        );
-      }
-    }).flatMap(response => {
-      return this.verifyAddresses(response.rawResponse, 0)
-        .catch(() => Observable.throw({ _body: this.translate.instant('hardware-wallet.errors.invalid-address-generated') }))
-        .map(() => response);
-    });
-  }
-
+  /**
+   * Uses the node to check if all the addresses on an array are valid. Uses concurrency.
+   * @param addresses List with the addresses to check.
+   * @param currentIndex Index of the address that will be checked on this pass, as this
+   * function uses concurrency. This value must normally be 0 when calling this function
+   * from outside.
+   * @returns No useful value is returned, but the observable will fail if there is an error
+   * in any of the addresses.
+   */
   private verifyAddresses(addresses: string[], currentIndex: number): Observable<any> {
     const params = {
       address: addresses[currentIndex],
     };
 
-    return this.apiService.post('address/verify', params, {}, true).flatMap(() => {
+    return this.apiService.post('address/verify', params, {useV2: true}).pipe(mergeMap(() => {
       if (currentIndex !== addresses.length - 1) {
         return this.verifyAddresses(addresses, currentIndex + 1);
       } else {
-        return Observable.of(0);
+        return of(0);
       }
-    });
+    }));
   }
 
+  /**
+   * Makes the device ask the user to confirm an address. This allows to check if the software and
+   * hardware wallets are showing the same data.
+   * @param index Index of the address to confirm.
+   */
   confirmAddress(index: number): Observable<OperationResult> {
-    return this.cancelLastAction().flatMap(() => {
-      if (!AppConfig.useHwWalletDaemon) {
-        const requestId = this.createRandomIdAndPrepare();
-        window['ipcRenderer'].send('hwGetAddresses', requestId, 1, index, true);
+    return this.cancelLastAction().pipe(mergeMap(() => {
+      this.prepare();
 
-        return this.createRequestResponse(requestId);
-      } else {
-        this.prepare();
+      const params = {
+        address_n: 1,
+        start_index: index,
+        confirm_address: true,
+      };
 
-        const params = {
-          address_n: 1,
-          start_index: index,
-          confirm_address: true,
-        };
-
-        return this.processDaemonResponse(
-          this.hwWalletDaemonService.post(
-            '/generate_addresses',
-            params,
-          ), null, true,
-        );
-      }
-    });
+      return this.processDaemonResponse(
+        this.hwWalletDaemonService.post(
+          '/generate_addresses',
+          params,
+        ), null, true,
+      );
+    }));
   }
 
+  /**
+   * Gets the features of the connected hw wallet.
+   * @param cancelPreviousOperation If true, the function will cancel any current pending
+   * operation. Trying to cancel the pending operations may cause problems if the device
+   * is in bootloader mode.
+   */
   getFeatures(cancelPreviousOperation = true): Observable<OperationResult> {
 
     let cancel: Observable<any>;
     if (cancelPreviousOperation) {
       cancel = this.cancelLastAction();
     } else {
-      cancel = Observable.of(0);
+      cancel = of(0);
     }
 
-    return cancel.flatMap(() => {
-      if (!AppConfig.useHwWalletDaemon) {
-        const requestId = this.createRandomIdAndPrepare();
-        window['ipcRenderer'].send('hwGetFeatures', requestId);
-
-        return this.createRequestResponse(requestId);
-      } else {
-        this.prepare();
-
-        return this.processDaemonResponse(
-          this.hwWalletDaemonService.get('/features'),
-        );
-      }
-    });
-  }
-
-  updateFirmware(downloadCompleteCallback: () => any): Observable<OperationResult> {
-    if (!AppConfig.useHwWalletDaemon) {
-      // Unimplemented.
-      return null;
-    } else {
+    return cancel.pipe(mergeMap(() => {
       this.prepare();
 
-      return this.getFeatures(false).flatMap(result => {
-        if (!result.rawResponse.bootloader_mode) {
-          const response: OperationResult = {
-            result: OperationResults.NotInBootloaderMode,
-            rawResponse: null,
-          };
-
-          return Observable.throw(response);
-        }
-
-        return this.http.get(AppConfig.urlForHwWalletVersionChecking)
-          .catch(() => Observable.throw({ _body: this.translate.instant('hardware-wallet.update-firmware.connection-error') }))
-          .map((res: any) => res.text())
-          .flatMap((res: any) => {
-            let lastestFirmwareVersion: string = res.trim();
-            if (lastestFirmwareVersion.toLowerCase().startsWith('v')) {
-              lastestFirmwareVersion = lastestFirmwareVersion.substr(1, lastestFirmwareVersion.length - 1);
-            }
-
-            return this.http.get(AppConfig.hwWalletDownloadUrlAndPrefix + lastestFirmwareVersion + '.bin', { responseType: ResponseContentType.Blob })
-              .map(firmwareResponse => firmwareResponse.blob())
-              .catch(() => Observable.throw({ _body: this.translate.instant('hardware-wallet.update-firmware.connection-error') }))
-              .flatMap(firmware => {
-                downloadCompleteCallback();
-                const data = new FormData();
-                data.set('file', (firmware as Blob));
-
-                return this.processDaemonResponse(
-                  this.hwWalletDaemonService.put('/firmware_update', data, true),
-                );
-              });
-          });
-      });
-    }
+      return this.processDaemonResponse(
+        this.hwWalletDaemonService.get('/features'),
+      );
+    }));
   }
 
-  changePin(changingCurrentPin: boolean): Observable<OperationResult> {
-    return this.cancelLastAction().flatMap(() => {
-      let requestId = 0;
-      if (!AppConfig.useHwWalletDaemon) {
-        requestId = this.createRandomIdAndPrepare();
-      } else {
-        this.prepare();
+  /**
+   * Downloads the lastest firmware version and installs it on the connected hw wallet.
+   * For the operation to work the device must be in bootloader mode.
+   * @param downloadCompleteCallback Function called just after the firmware has been
+   * downloaded and is going to be sent to the device.
+   */
+  updateFirmware(downloadCompleteCallback: () => any): Observable<OperationResult> {
+    this.prepare();
+
+    // Check if the device is in bootloader mode.
+    return this.getFeatures(false).pipe(mergeMap(result => {
+      if (!result.rawResponse.bootloader_mode) {
+        const resp = new OperationError();
+        resp.originalError = result;
+        resp.type = HWOperationResults.NotInBootloaderMode;
+        resp.translatableErrorMsg = this.hwWalletDaemonService.getHardwareWalletErrorMsg(resp.type);
+        resp.originalServerErrorMsg = '';
+
+        return observableThrowError(resp);
       }
 
+      // Get the version number of the lastest firmware.
+      return this.http.get(AppConfig.urlForHwWalletVersionChecking, { responseType: 'text' }).pipe(
+        catchError(() => {
+          return observableThrowError('hardware-wallet.update-firmware.connection-error');
+        }),
+        mergeMap((res: any) => {
+          let lastestFirmwareVersion: string = res.trim();
+          if (lastestFirmwareVersion.toLowerCase().startsWith('v')) {
+            lastestFirmwareVersion = lastestFirmwareVersion.substr(1, lastestFirmwareVersion.length - 1);
+          }
+
+          // Download the lastest firmware.
+          return this.http.get(AppConfig.hwWalletDownloadUrlAndPrefix + lastestFirmwareVersion + '.bin', { responseType: 'arraybuffer' }).pipe(
+            catchError(() => {
+              return observableThrowError('hardware-wallet.update-firmware.connection-error');
+            }),
+            mergeMap(firmware => {
+              downloadCompleteCallback();
+              const data = new FormData();
+              data.set('file', new Blob([firmware], { type: 'application/octet-stream'}));
+
+              return this.hwWalletDaemonService.put('/firmware_update', data, true);
+            }));
+        }));
+    }));
+  }
+
+  /**
+   * Sets or changes the PIN of the device.
+   * @param changingCurrentPin false if the function was called for setting a PIN in a device
+   * which does not have one, true otherwise.
+   */
+  changePin(changingCurrentPin: boolean): Observable<OperationResult> {
+    return this.cancelLastAction().pipe(mergeMap(() => {
+      this.prepare();
+
+      // Configure the modal window which will be used to ask for the PIN code.
       this.hwWalletPinService.changingPin = true;
       if (changingCurrentPin) {
         this.hwWalletPinService.changePinState = ChangePinStates.RequestingCurrentPin;
@@ -380,235 +314,219 @@ export class HwWalletService {
         this.hwWalletPinService.changePinState = ChangePinStates.RequestingNewPin;
       }
 
-      if (!AppConfig.useHwWalletDaemon) {
-        window['ipcRenderer'].send('hwChangePin', requestId);
-
-        return this.createRequestResponse(requestId);
-      } else {
-        return this.processDaemonResponse(
-          this.hwWalletDaemonService.post('/configure_pin_code'),
-          ['PIN changed'],
-        );
-      }
-    });
+      return this.processDaemonResponse(
+        this.hwWalletDaemonService.post('/configure_pin_code'),
+        ['PIN changed'],
+      );
+    }));
   }
 
+  /**
+   * Removes the PIN code protection from the connected device.
+   */
   removePin(): Observable<OperationResult> {
-    return this.cancelLastAction().flatMap(() => {
-       if (!AppConfig.useHwWalletDaemon) {
-        // Unimplemented.
-        return null;
-      } else {
-        this.prepare();
+    return this.cancelLastAction().pipe(mergeMap(() => {
+      this.prepare();
 
-        const params = {};
-        params['remove_pin'] = true;
+      const params = {};
+      params['remove_pin'] = true;
 
-        return this.processDaemonResponse(
-          this.hwWalletDaemonService.post(
-            '/configure_pin_code',
-            params,
-          ),
-          ['PIN removed'],
-        );
-      }
-    });
+      return this.processDaemonResponse(
+        this.hwWalletDaemonService.post(
+          '/configure_pin_code',
+          params,
+        ),
+        ['PIN removed'],
+      );
+    }));
   }
 
+  /**
+   * Makes a seedless device configure itself with a new random seed.
+   * @param wordCount How many words the new seed must have. Must be 12 or 24.
+   */
   generateMnemonic(wordCount: number): Observable<OperationResult> {
-    return this.cancelLastAction().flatMap(() => {
-       if (!AppConfig.useHwWalletDaemon) {
-        const requestId = this.createRandomIdAndPrepare();
-        window['ipcRenderer'].send('hwGenerateMnemonic', requestId, wordCount);
+    return this.cancelLastAction().pipe(mergeMap(() => {
+      this.prepare();
 
-        return this.createRequestResponse(requestId);
-      } else {
-        this.prepare();
+      const params = {};
+      params['word_count'] = wordCount;
+      params['use_passphrase'] = false;
 
-        const params = {};
-        params['word_count'] = wordCount;
-        params['use_passphrase'] = false;
-
-        return this.processDaemonResponse(
-          this.hwWalletDaemonService.post(
-            '/generate_mnemonic',
-            params,
-          ),
-          ['Mnemonic successfully configured'],
-        );
-      }
-    });
+      return this.processDaemonResponse(
+        this.hwWalletDaemonService.post(
+          '/generate_mnemonic',
+          params,
+        ),
+        ['Mnemonic successfully configured'],
+      );
+    }));
   }
 
+  /**
+   * Configures a seedless device with a seed entered by the user or checks if a seed entered
+   * by the user is equal to the one on the device. The procedure started by the function takes
+   * care of showing the UI needed for the user to enter the seed.
+   * @param wordCount How many words the seed has.
+   * @param dryRun If false, the function will be used to configure a seedless device with the
+   * seed provided by the user. If true, the function will just check if the seed provided
+   * by the user is equal to the one on the device.
+   */
   recoverMnemonic(wordCount: number, dryRun: boolean): Observable<OperationResult> {
-    return this.cancelLastAction().flatMap(() => {
-      if (!AppConfig.useHwWalletDaemon) {
-        const requestId = this.createRandomIdAndPrepare();
-        window['ipcRenderer'].send('hwRecoverMnemonic', requestId, wordCount, dryRun);
+    return this.cancelLastAction().pipe(mergeMap(() => {
+      this.prepare();
 
-        return this.createRequestResponse(requestId);
-      } else {
-        this.prepare();
+      const params = {};
+      params['word_count'] = wordCount;
+      params['use_passphrase'] = false;
+      params['dry_run'] = dryRun;
 
-        const params = {};
-        params['word_count'] = wordCount;
-        params['use_passphrase'] = false;
-        params['dry_run'] = dryRun;
-
-        return this.processDaemonResponse(
-          this.hwWalletDaemonService.post(
-            '/recovery',
-            params,
-          ),
-          ['Device recovered', 'The seed is valid and matches the one in the device'],
-        );
-      }
-    });
+      return this.processDaemonResponse(
+        this.hwWalletDaemonService.post(
+          '/recovery',
+          params,
+        ),
+        ['Device recovered', 'The seed is valid and matches the one in the device'],
+      );
+    }));
   }
 
+  /**
+   * Makes the device show the words of its seed, so the user can back it up. This function
+   * works only if the user has not completed a backup before.
+   */
   backup(): Observable<OperationResult> {
-    return this.cancelLastAction().flatMap(() => {
-      if (!AppConfig.useHwWalletDaemon) {
-        const requestId = this.createRandomIdAndPrepare();
-        window['ipcRenderer'].send('hwBackupDevice', requestId);
+    return this.cancelLastAction().pipe(mergeMap(() => {
+      this.prepare();
 
-        return this.createRequestResponse(requestId);
-      } else {
-        this.prepare();
-
-        return this.processDaemonResponse(
-          this.hwWalletDaemonService.post(
-            '/backup',
-          ),
-          ['Device backed up!'],
-        );
-      }
-    });
+      return this.processDaemonResponse(
+        this.hwWalletDaemonService.post(
+          '/backup',
+        ),
+        ['Device backed up!'],
+      );
+    }));
   }
 
+  /**
+   * Wipes the connected device, deleting the seed, label, PIN, etc.
+   */
   wipe(): Observable<OperationResult> {
-    return this.cancelLastAction().flatMap(() => {
-      if (!AppConfig.useHwWalletDaemon) {
-        const requestId = this.createRandomIdAndPrepare();
-        window['ipcRenderer'].send('hwWipe', requestId);
+    return this.cancelLastAction().pipe(mergeMap(() => {
+      this.prepare();
 
-        return this.createRequestResponse(requestId);
-      } else {
-        this.prepare();
-
-        return this.processDaemonResponse(
-          this.hwWalletDaemonService.delete('/wipe'),
-          ['Device wiped'],
-        );
-      }
-    });
+      return this.processDaemonResponse(
+        this.hwWalletDaemonService.delete('/wipe'),
+        ['Device wiped'],
+      );
+    }));
   }
 
+  /**
+   * Changes the label the device displays on the home screen.
+   * @param label New label to show.
+   */
   changeLabel(label: string): Observable<OperationResult> {
-    return this.cancelLastAction().flatMap(() => {
-      if (!AppConfig.useHwWalletDaemon) {
-        const requestId = this.createRandomIdAndPrepare();
-        window['ipcRenderer'].send('hwChangeLabel', requestId, label);
+    return this.cancelLastAction().pipe(mergeMap(() => {
+      this.prepare();
 
-        return this.createRequestResponse(requestId);
-      } else {
-        this.prepare();
-
-        return this.processDaemonResponse(
-          this.hwWalletDaemonService.post('/apply_settings', {label: label}),
-          ['Settings applied'],
-        );
-      }
-    });
+      return this.processDaemonResponse(
+        this.hwWalletDaemonService.post('/apply_settings', {label: label}),
+        ['Settings applied'],
+      );
+    }));
   }
 
-  signTransaction(inputs: Input[], outputs: Output[]): Observable<OperationResult> {
-    const previewData: TxData[] = [];
+  /**
+   * Makes the connected device create the signatures for a transaction.
+   * @param inputs Transaction inputs.
+   * @param outputs Transaction outputs.
+   */
+  signTransaction(inputs: HwInput[], outputs: HwOutput[]): Observable<OperationResult> {
+    // Show the confirmation dialog.
+    const previewData: HwWalletTxRecipientData[] = [];
     outputs.forEach(output => {
       if (output.address_index === undefined || output.address_index === null) {
-        const currentOutput = new TxData();
+        const currentOutput = new HwWalletTxRecipientData();
         currentOutput.address = output.address;
-        currentOutput.coins = new BigNumber(output.coin).dividedBy(1000000);
-        currentOutput.hours = new BigNumber(output.hour);
+        currentOutput.coins = new BigNumber(output.coins).decimalPlaces(6);
+        currentOutput.hours = new BigNumber(output.hours);
 
         previewData.push(currentOutput);
       }
     });
 
-    this.signTransactionDialog = this.dialog.open(this.signTransactionConfirmationComponentInternal, <MatDialogConfig> {
-      width: '560px',
-      data: previewData,
-    });
+    this.signTransactionDialog = this.signTransactionConfirmationComponentInternal.openDialog(this.dialog, previewData);
 
-    return this.cancelLastAction().flatMap(() => {
-      if (!AppConfig.useHwWalletDaemon) {
-        const requestId = this.createRandomIdAndPrepare();
-        this.hwWalletPinService.signingTx = true;
-        window['ipcRenderer'].send('hwSignTransaction', requestId, inputs, outputs);
+    // Make the device ask for confirmation and create the signatures.
+    return this.cancelLastAction().pipe(mergeMap(() => {
+      this.prepare();
 
-        return this.createRequestResponse(requestId);
-      } else {
-        this.prepare();
+      // Configure the modal window which will be used to ask for the PIN code.
+      this.hwWalletPinService.signingTx = true;
 
-        const params = {
-          transaction_inputs: (inputs as any[]).map(val => {
-            return {
-              index: val.index,
-              hash: val.hashIn,
-            };
-          }),
-          transaction_outputs : (outputs as any[]).map(val => {
-            return {
-              address_index: val.address_index,
-              address: val.address,
-              coins: new BigNumber(val.coin).dividedBy(1000000).toFixed(6),
-              hours: val.hour.toString(),
-            };
-          }),
-        };
+      const params = {
+        transaction_inputs: inputs,
+        transaction_outputs: outputs,
+      };
 
-        return this.processDaemonResponse(
-          this.hwWalletDaemonService.post(
-            '/transaction_sign',
-            params,
-          ), null, true,
-        ).map(response => {
-          this.closeTransactionDialog();
+      return this.processDaemonResponse(
+        this.hwWalletDaemonService.post(
+          '/transaction_sign',
+          params,
+        ), null, true,
+      ).pipe(map(response => {
+        this.closeTransactionDialog();
 
-          return response;
-        }).catch(error => {
-          this.closeTransactionDialog();
+        return response;
+      }), catchError(error => {
+        this.closeTransactionDialog();
 
-          return Observable.throw(error);
-        });
-      }
-    });
+        return observableThrowError(error);
+      }));
+    }));
   }
 
-  checkIfCorrectHwConnected(firstAddress: string): Observable<boolean> {
-    return this.getAddresses(1, 0).flatMap(
+  /**
+   * Checks if the first address of the connected hw wallet is equal to the provided address.
+   * This allows to check if the connected hw wallet is the one this app needs for an operation.
+   * @param firstAddress Address the device should have at index 0.
+   * @returns An observable which will fail if the connected device is not the expected one.
+   */
+  checkIfCorrectHwConnected(firstAddress: string): Observable<any> {
+    return this.getAddresses(1, 0).pipe(mergeMap(
       response => {
         if (response.rawResponse[0] !== firstAddress) {
-          return Observable.throw({
-            result: OperationResults.IncorrectHardwareWallet,
-            rawResponse: '',
-          });
+          const resp = new OperationError();
+          resp.originalError = response;
+          resp.type = HWOperationResults.IncorrectHardwareWallet;
+          resp.translatableErrorMsg = this.hwWalletDaemonService.getHardwareWalletErrorMsg(resp.type);
+          resp.originalServerErrorMsg = '';
+
+          return observableThrowError(resp);
         }
 
-        return Observable.of(true);
+        return of(true);
       },
-    ).catch(error => {
-      if (error.result && error.result === OperationResults.WithoutSeed) {
-        return Observable.throw({
-          result: OperationResults.IncorrectHardwareWallet,
-          rawResponse: '',
-        });
+    ), catchError(error => {
+      const convertedError = error as OperationError;
+      if (convertedError.type && convertedError.type === HWOperationResults.WithoutSeed) {
+        const resp = new OperationError();
+        resp.originalError = error;
+        resp.type = HWOperationResults.IncorrectHardwareWallet;
+        resp.translatableErrorMsg = this.hwWalletDaemonService.getHardwareWalletErrorMsg(resp.type);
+        resp.originalServerErrorMsg = '';
+
+        return observableThrowError(resp);
       }
 
-      return Observable.throw(error);
-    });
+      return observableThrowError(error);
+    }));
   }
 
+  /**
+   * Closes the modal window used for asking the user to confirm a transaction.
+   */
   private closeTransactionDialog() {
     if (this.signTransactionDialog) {
       this.signTransactionDialog.close();
@@ -616,153 +534,87 @@ export class HwWalletService {
     }
   }
 
-  private processDaemonResponse(daemonResponse: Observable<any>, successTexts: string[] = null, responseShouldBeArray = false) {
-    return daemonResponse.catch((error: any) => {
-      return Observable.throw(this.dispatchEvent(0, error['_body'], false, true));
-    }).flatMap(result => {
-      if (result !== HwWalletDaemonService.errorCancelled) {
-        if (responseShouldBeArray && result.data && typeof result.data === 'string') {
-          result.data = [result.data];
-        }
-
-        const response = this.dispatchEvent(0,
-          result.data ? result.data : null,
-          !successTexts ? true : typeof result.data === 'string' && successTexts.some(text => (result.data as string).includes(text)),
-          true);
-
-          if (response.result === OperationResults.Success) {
-            return Observable.of(response);
-          } else {
-            return Observable.throw(response);
-          }
-      } else {
-        return Observable.throw(this.dispatchEvent(0, 'canceled by user', false, true));
+  /**
+   * Gets the observable of an operation made with the hw wallet daemon service and
+   * adds to it the steps neded to process the response and errors, to get a properly
+   * formated response.
+   * @param daemonResponse Observable which will emit the response obtained from the daemon.
+   * @param successTexts Texts which are known to be part of the daemon response when the
+   * operation finishes correctly. If provided, the daemon response will have to contain
+   * any of the text on the array for the operation to be considered successful.
+   * @param responseShouldBeArray True if the daemon is expected to return the response
+   * as an array.
+   * @returns daemonResponse, but with extra steps for making all appropiate operations with
+   * the daemon response before emiting it to the subscription.
+   */
+  private processDaemonResponse(daemonResponse: Observable<any>, successTexts: string[] = null, responseShouldBeArray = false): Observable<any> {
+    return daemonResponse.pipe(catchError((error: any) => {
+      // Process the error to get it in an appropiate format.
+      return observableThrowError(this.buildResponseObject(error, false));
+    }), mergeMap(result => {
+      // If the response was expected to be an array but was a single value, add it to an array.
+      if (responseShouldBeArray && result.data && typeof result.data === 'string') {
+        result.data = [result.data];
       }
-    });
+
+      // Process the response to get it in an appropiate format.
+      const response = this.buildResponseObject(
+        result.data ? result.data : null,
+        !successTexts ? true : typeof result.data === 'string' && successTexts.some(text => (result.data as string).includes(text)),
+      );
+
+      if (response.result === HWOperationResults.Success) {
+        return of(response);
+      } else {
+        return observableThrowError(response);
+      }
+    }));
   }
 
-  private createRequestResponse(requestId: number): Observable<OperationResult> {
-    return new Observable(observer => {
-      this.eventsObservers.set(requestId, observer);
-    });
-  }
-
-  private createRandomIdAndPrepare(): number {
-    this.prepare();
-
-    return this.requestSequence++;
-  }
-
+  /**
+   * Makes all initial preparations needed before sending a request to the hw wallet daemon.
+   */
   private prepare() {
     this.hwWalletPinService.changingPin = false;
     this.hwWalletPinService.signingTx = false;
   }
 
-  private dispatchEvent(requestId: number, rawResponse: any, success: boolean, justReturnTheEvent = false) {
-    if (this.eventsObservers.has(requestId) || justReturnTheEvent) {
-      if ((!rawResponse || !rawResponse.error) && success) {
-        const response: OperationResult = {
-          result: OperationResults.Success,
-          rawResponse: rawResponse,
-        };
+  /**
+   * Process a response obtained from the daemon and creates an appropriate object to return to
+   * the code which originally requested the operation.
+   * @param rawResponse Response obtained from the daemon.
+   * @param success If the operation was completed successfuly (true) or ended in an error (false).
+   */
+  private buildResponseObject(rawResponse: any, success: boolean): any {
+    // If the daemon did not respond with an error.
+    if ((!rawResponse || !rawResponse.error) && success) {
+      const response: OperationResult = {
+        result: HWOperationResults.Success,
+        rawResponse: rawResponse,
+      };
 
-        if (justReturnTheEvent) {
-          return response;
-        } else {
-          this.eventsObservers.get(requestId).next(response);
-        }
-      } else {
-        let responseContent: string = rawResponse.error ? rawResponse.error : rawResponse;
-        if (typeof responseContent !== 'string') {
-          responseContent = '';
-        }
-        let result: OperationResults;
+      return response;
 
-        if (responseContent.includes('failed or refused')) {
-          result = OperationResults.FailedOrRefused;
-        } else if (responseContent.includes('PIN invalid')) {
-          result = OperationResults.WrongPin;
-        } else if (responseContent.includes('canceled by user')) {
-          result = OperationResults.FailedOrRefused;
-        } else if (responseContent.includes('cancelled by user')) {
-          result = OperationResults.FailedOrRefused;
-        } else if (responseContent.includes('Expected WordAck after Button')) {
-          result = OperationResults.FailedOrRefused;
-        } else if (responseContent.includes('Wrong word retyped')) {
-          result = OperationResults.WrongWord;
-        } else if (responseContent.includes('PIN mismatch')) {
-          result = OperationResults.PinMismatch;
-        } else if (responseContent.includes('Mnemonic not set')) {
-          result = OperationResults.WithoutSeed;
-        } else if (responseContent.includes('Mnemonic required')) {
-          result = OperationResults.WithoutSeed;
-        } else if (responseContent.includes('Invalid seed, are words in correct order?')) {
-          result = OperationResults.InvalidSeed;
-        } else if (responseContent.includes('The seed is valid but does not match the one in the device')) {
-          result = OperationResults.WrongSeed;
-        } else if (responseContent.includes('Invalid base58 character')) {
-          result = OperationResults.InvalidAddress;
-        } else if (responseContent.includes('Invalid address length')) {
-          result = OperationResults.InvalidAddress;
-        } else if (responseContent.toLocaleLowerCase().includes('LIBUSB'.toLocaleLowerCase())) {
-          result = OperationResults.DaemonError;
-        } else if (responseContent.toLocaleLowerCase().includes('hidapi'.toLocaleLowerCase())) {
-          result = OperationResults.Disconnected;
-          if (AppConfig.useHwWalletDaemon) {
-            setTimeout(() => this.hwWalletDaemonService.checkHw(false));
-          }
-        } else if (responseContent.toLocaleLowerCase().includes('device disconnected'.toLocaleLowerCase())) {
-          result = OperationResults.Disconnected;
-          if (AppConfig.useHwWalletDaemon) {
-            setTimeout(() => this.hwWalletDaemonService.checkHw(false));
-          }
-        } else if (responseContent.toLocaleLowerCase().includes('no device connected'.toLocaleLowerCase())) {
-          result = OperationResults.Disconnected;
-          if (AppConfig.useHwWalletDaemon) {
-            setTimeout(() => this.hwWalletDaemonService.checkHw(false));
-          }
-        } else if (responseContent.includes(HwWalletDaemonService.errorConnectingWithTheDaemon)) {
-          result = OperationResults.DaemonError;
-        } else if (responseContent.includes(HwWalletDaemonService.errorTimeout)) {
-          result = OperationResults.Timeout;
-        } else if (responseContent.includes('MessageType_Success')) {
-          result = OperationResults.Success;
-        } else {
-          result = OperationResults.UndefinedError;
-        }
-
-        const response: OperationResult = {
-          result: result,
-          rawResponse: responseContent,
-        };
-
-        if (justReturnTheEvent) {
-          return response;
-        } else {
-          this.eventsObservers.get(requestId).error(response);
-        }
+      // If the daemon did respond with an error.
+    } else {
+      // If the response is already an OperationError instance, return it.
+      if ((rawResponse as OperationError).type) {
+        return rawResponse;
       }
-      if (!justReturnTheEvent) {
-        this.eventsObservers.get(requestId).complete();
-        this.eventsObservers.delete(requestId);
+
+      // Create an appropiate OperationError instance.
+      const response = new OperationError();
+      response.originalError = rawResponse;
+      response.originalServerErrorMsg = getErrorMsg(rawResponse);
+
+      if (!response.originalServerErrorMsg) {
+        response.originalServerErrorMsg = rawResponse + '';
       }
+
+      response.type = this.hwWalletDaemonService.getHardwareWalletErrorType(response.originalServerErrorMsg);
+      response.translatableErrorMsg = this.hwWalletDaemonService.getHardwareWalletErrorMsg(response.type);
+
+      return response;
     }
   }
-
-  private dispatchError(requestId: number, result: OperationResults, error: String) {
-    if (this.eventsObservers.has(requestId)) {
-      this.eventsObservers.get(requestId).error({
-        result: result,
-        rawResponse: error,
-      });
-      this.eventsObservers.delete(requestId);
-    }
-  }
-
-  private cancelAllOperations() {
-    this.eventsObservers.forEach((value, key) => {
-      this.dispatchEvent(key, 'failed or refused', false);
-    });
-  }
-
 }

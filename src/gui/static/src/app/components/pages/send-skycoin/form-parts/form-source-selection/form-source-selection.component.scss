@@ -1,0 +1,19 @@
+@import '../../../../../../theme/variables';
+
+.form-field {
+  mat-spinner {
+    height: 12px !important;
+    width: 12px !important;
+    opacity: 0.5;
+    margin: 0 !important;
+    display: inline-block;
+    position: relative;
+    top: 2px;
+    margin-left: 8px;
+
+    ::ng-deep svg {
+      height: 12px !important;
+      width: 12px !important;
+    }
+  }
+}

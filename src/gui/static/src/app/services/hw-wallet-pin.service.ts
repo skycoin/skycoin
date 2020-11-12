@@ -1,48 +1,70 @@
 import { Injectable } from '@angular/core';
-import { MatDialog, MatDialogConfig } from '@angular/material';
-import { HwPinDialogParams } from '../components/layout/hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
-import { Observable } from 'rxjs/Observable';
+import { MatDialog } from '@angular/material/dialog';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
+import { HwPinDialogParams } from '../components/layout/hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
+
+/**
+ * Diferent modes in which the modal window used for requesting the hw wallet PIN can be while
+ * setting or changing the PIN.
+ */
 export enum ChangePinStates {
-  RequestingCurrentPin,
-  RequestingNewPin,
-  ConfirmingNewPin,
+  RequestingCurrentPin = 'RequestingCurrentPin',
+  RequestingNewPin = 'RequestingNewPin',
+  ConfirmingNewPin = 'ConfirmingNewPin',
 }
 
+/**
+ * Allows to easily show the modal window used for requesting the hw wallet PIN.
+ */
 @Injectable()
 export class HwWalletPinService {
 
   // Set on AppComponent to avoid a circular reference.
   private requestPinComponentInternal;
+  /**
+   * Sets the class of the modal window used for entering the hw wallet PIN.
+   */
   set requestPinComponent(value) {
     this.requestPinComponentInternal = value;
   }
 
-  // Values to be sent to HwPinDialogComponent
+  // Values to be sent to HwPinDialogComponent to configure the modal window the next
+  // time it is openned. The values are public to make it posible to change them from
+  // different parts of the code, as there are multiple parts which need to configure
+  // the modal window but it is automatically opened by the daemon service.
+  /**
+   * If the modal window will be openned the next time for setting or changing the PIN
+   * (true) or just for checking the current PIN (false).
+   */
   changingPin: boolean;
+  /**
+   * If the modal window will be openned the next time for signing a transaction or not.
+   */
   signingTx: boolean;
+  /**
+   * State in which the modal window will be shown the next time if changingPin is true.
+   */
   changePinState: ChangePinStates;
 
   constructor(
     private dialog: MatDialog,
   ) {}
 
-  resetValues() {
-    this.changingPin = false;
-    this.signingTx = false;
-  }
-
+  /**
+   * Opens the modal window for the user to enter the PIN.
+   * @returns The PIN entered by the user, or null if the user cancelled the operation.
+   */
   requestPin(): Observable<string> {
-    return this.dialog.open(this.requestPinComponentInternal, <MatDialogConfig> {
-      width: '350px',
-      autoFocus: false,
-      data : <HwPinDialogParams> {
-        changingPin: this.changingPin,
-        changePinState: this.changePinState,
-        signingTx: this.signingTx,
-      },
-    }).afterClosed().map(pin => {
+    return this.requestPinComponentInternal.openDialog(this.dialog, <HwPinDialogParams> {
+      changingPin: this.changingPin,
+      changePinState: this.changePinState,
+      signingTx: this.signingTx,
+    }).afterClosed().pipe(map(pin => {
       if (this.changingPin) {
+        // If setting or changing the PIN, automatically change the state to the one corresponding
+        // to the next step.
         if (this.changePinState === ChangePinStates.RequestingCurrentPin) {
           this.changePinState = ChangePinStates.RequestingNewPin;
         } else if (this.changePinState === ChangePinStates.RequestingNewPin) {
@@ -51,6 +73,6 @@ export class HwWalletPinService {
       }
 
       return pin;
-    });
+    }));
   }
 }

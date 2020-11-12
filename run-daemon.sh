@@ -14,7 +14,7 @@ GOLDFLAGS="-X main.Commit=${COMMIT} -X main.Branch=${BRANCH}"
 
 GORUNFLAGS=${GORUNFLAGS:-}
 
-go run -ldflags "${GOLDFLAGS}" $GORUNFLAGS cmd/skycoin/skycoin.go \
+go run -ldflags "${GOLDFLAGS}" $GORUNFLAGS ./cmd/skycoin/... \
     -enable-gui=false \
     -launch-browser=false \
     -log-level=debug \

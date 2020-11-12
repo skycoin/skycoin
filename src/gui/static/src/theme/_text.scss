@@ -1,0 +1,32 @@
+/*********************
+* Styles for the text.
+*********************/
+@import 'variables';
+
+.white-text {
+  color: $white !important;
+}
+
+.red-text {
+  color: $red !important;
+}
+
+.yellow-text {
+  color: $yellow !important;
+}
+
+.green-text {
+  color: $green !important;
+}
+
+.grey-light-text {
+  color: $grey-light !important;
+}
+
+.grey-text {
+  color: $grey !important;
+}
+
+.break-all {
+  word-break: break-all;
+}

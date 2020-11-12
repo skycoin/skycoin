@@ -1,10 +1,14 @@
 import { Component, Input, OnInit, OnDestroy } from '@angular/core';
-import { Subscription } from 'rxjs/Subscription';
+import { Subscription } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+
 import { AppService } from '../../../../services/app.service';
 import { LanguageData, LanguageService } from '../../../../services/language.service';
-import { openChangeLanguageModal } from '../../../../utils';
-import { MatDialog } from '@angular/material';
+import { SelectLanguageComponent } from '../../select-language/select-language.component';
 
+/**
+ * Area of the header with the title and the menu.
+ */
 @Component({
   selector: 'app-top-bar',
   templateUrl: './top-bar.component.html',
@@ -13,6 +17,7 @@ import { MatDialog } from '@angular/material';
 export class TopBarComponent implements OnInit, OnDestroy {
   @Input() headline: string;
 
+  // Currently selected language.
   language: LanguageData;
 
   private subscription: Subscription;
@@ -33,11 +38,6 @@ export class TopBarComponent implements OnInit, OnDestroy {
   }
 
   changelanguage() {
-    openChangeLanguageModal(this.dialog)
-      .subscribe(response => {
-        if (response) {
-          this.languageService.changeLanguage(response);
-        }
-      });
+    SelectLanguageComponent.openDialog(this.dialog);
   }
 }

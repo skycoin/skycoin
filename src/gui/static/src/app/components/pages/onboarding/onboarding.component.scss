@@ -1,7 +1,14 @@
+@import '../../../../theme/variables';
+
 button {
   position: fixed;
   right: 30px;
-  top: 10px;
+  top: 20px;
+  background-color: $white !important;
+
+  &:hover {
+    background-color: $white-hover !important;
+  }
 }
 
 .flag {

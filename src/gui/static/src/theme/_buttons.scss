@@ -1,0 +1,47 @@
+/*********************
+* Styles for the form elements.
+*********************/
+@import 'variables';
+
+// Buttons with the main gradient.
+.primary-button button.enabled, .primary-gradient-background {
+  background: $gradient-dark; /* For browsers that do not support gradients */
+  background: -webkit-linear-gradient(left top, $gradient-dark, $gradient-light); /* For Safari 5.1 to 6.0 */
+  background: -o-linear-gradient(bottom right, $gradient-dark, $gradient-light); /* For Opera 11.1 to 12.0 */
+  background: -moz-linear-gradient(bottom right, $gradient-dark, $gradient-light); /* For Firefox 3.6 to 15 */
+  background: linear-gradient(to bottom right, $gradient-dark, $gradient-light); /* Standard syntax */
+
+  span {
+    color: white;
+  }
+}
+
+// Dark buttons for the wizard.
+.dark-button button.enabled {
+  background-color: $black !important;
+  span {
+    color: white;
+  }
+}
+
+// Buttons without background.
+.ghost-button button.enabled {
+  background-color: transparent !important;
+  span {
+    color: black;
+  }
+}
+
+// Mouse efects for the images used as buttons.
+.image-button {
+  cursor: pointer;
+  opacity: 0.5;
+
+  &:hover {
+    opacity: 0.75;
+  }
+
+  &:active {
+    opacity: 1;
+  }
+}

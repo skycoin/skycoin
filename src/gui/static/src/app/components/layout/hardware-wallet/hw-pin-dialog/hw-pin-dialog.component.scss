@@ -1,23 +1,16 @@
 @import '../../../../../theme/variables';
 
-mat-input-container {
+mat-form-field {
   width: 100%;
 }
 
 .form-field {
   input {
     font-size: 25px;
+    line-height: 1;
     letter-spacing: 15px;
     text-align: center;
-  }
-
-  .info {
-    text-align: center;
-
-    .link {
-      color: $blue;
-      cursor: pointer;
-    }
+    margin-top: 5px;
   }
 }
 
@@ -27,7 +20,7 @@ mat-input-container {
   button {
     flex-grow: 1;
     height: 50px;
-    border: #eff0f0 solid 1px;
+    border: $grey-very-light solid 1px;
     margin: 2px;
 
     span {

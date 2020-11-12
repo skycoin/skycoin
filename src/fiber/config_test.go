@@ -29,7 +29,7 @@ func TestNewConfig(t *testing.T) {
 				"139.162.7.132:6000",
 			},
 			Port:                           6000,
-			PeerListURL:                    "https://downloads.skycoin.net/blockchain/peers.txt",
+			PeerListURL:                    "https://downloads.skycoin.com/blockchain/peers.txt",
 			WebInterfacePort:               6420,
 			UnconfirmedBurnFactor:          10,
 			UnconfirmedMaxTransactionSize:  777,
@@ -44,6 +44,7 @@ func TestNewConfig(t *testing.T) {
 			CoinHoursNameSingular:          "Testcoin Hour",
 			CoinHoursTicker:                "TCH",
 			ExplorerURL:                    "https://explorer.testcoin.com",
+			VersionURL:                     "https://version.testcoin.com/testcoin/version.txt",
 			Bip44Coin:                      bip44.CoinTypeSkycoin,
 		},
 		Params: ParamsConfig{

@@ -1,6 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
-import { BlockchainService } from '../services/blockchain.service';
 import { AppService } from '../services/app.service';
 
 @Pipe({
@@ -11,7 +10,6 @@ export class AmountPipe implements PipeTransform {
 
   constructor(
     private decimalPipe: DecimalPipe,
-    private blockchainService: BlockchainService,
     private appService: AppService,
   ) { }
 
@@ -20,7 +18,7 @@ export class AmountPipe implements PipeTransform {
     let response = '';
 
     if (partToReturn !== 'last') {
-      firstPart = this.decimalPipe.transform(value, showingCoins ? ('1.0-' + this.blockchainService.currentMaxDecimals) : '1.0-0');
+      firstPart = this.decimalPipe.transform(value, showingCoins ? ('1.0-' + this.appService.currentMaxDecimals) : '1.0-0');
       response = firstPart;
       if (partToReturn !== 'first') {
         response += ' ';

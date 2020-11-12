@@ -1,38 +1,22 @@
 @import '../../../../../theme/variables';
 
-button {
-  width: 100%;
-  text-align: left;
-  padding: 10px 10px;
-  border-bottom: 1px solid #eff0f0;
-  cursor: pointer;
+.info {
+  font-size: $font-size-standard;
+  line-height: 1.7;
+  color: $black;
 
-  .info {
-    font-size: 13px;
-    line-height: 22px;
-    color: $black;
+  div {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
 
-    div {
-      text-overflow: ellipsis;
-      overflow: hidden;
-      white-space: nowrap;
-
-      mat-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
-        position: relative;
-        top: 3px;
-        margin: 0px 5px;
-      }
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      position: relative;
+      top: 3px;
+      margin: 0px 5px;
     }
-
-    .grey {
-      color: $grey;
-    }
-  }
-
-  .action {
-    color: $blue;
   }
 }

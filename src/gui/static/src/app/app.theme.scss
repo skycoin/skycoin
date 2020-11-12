@@ -1,4 +1,5 @@
 @import '~@angular/material/theming';
+@import '../customize/styling.scss';
 // Plus imports for other components in your app.
 
 // Include the common styles for Angular Material. We include this here so that you only
@@ -11,8 +12,8 @@
 // hue.
 
 $mat-skycoin-primary: (
-  100: #00C3FF,
-  500: #0072FF,
+  100: $app-gradient-light,
+  500: $app-main-color,
   contrast: (
     100: white,
     500: white,
@@ -40,44 +41,18 @@ $candy-app-theme: mat-light-theme($candy-app-primary, $candy-app-accent, $candy-
 // that you are using.
 @include angular-material-theme($candy-app-theme);
 
-$mat-select-address-primary: (
-  100: #ddd,
-  500: #ddd,
+$mat-light-button-primary: (
+  100: #777,
+  500: #777,
   contrast: (
-    100: #ddd,
-    500: #ddd,
+    100: #777,
+    500: #777,
   )
 );
 
-$select-address-primary: mat-palette($mat-select-address-primary);
-$select-address-theme: mat-light-theme($select-address-primary, $candy-app-accent);
+$light-button-primary: mat-palette($mat-light-button-primary);
+$light-button-theme: mat-light-theme($light-button-primary, $candy-app-accent);
 
-.select-address-theme {
-  @include angular-material-theme($select-address-theme);
-}
-
-$mat-subtle-primary: (
-  100: white,
-  500: white,
-  contrast: (
-    100: white,
-    500: white,
-  )
-);
-
-$mat-subtle-accent: (
-  100: #cccccc,
-  500: #cccccc,
-  contrast: (
-    100: #cccccc,
-    500: #cccccc,
-  )
-);
-
-$subtle-primary: mat-palette($mat-subtle-primary);
-$subtle-accent: mat-palette($mat-subtle-accent);
-$subtle-theme:   mat-light-theme($subtle-primary, $subtle-accent);
-
-.subtle-theme {
-  @include angular-material-theme($subtle-theme);
+.light-button-theme {
+  @include angular-material-theme($light-button-theme);
 }

@@ -1,72 +1,63 @@
 {
   "common": {
-    "coin-id": "SKY",
-    "coin-hours": "Coin Hours",
     "usd": "USD",
     "loading": "Cargando...",
-    "new": "Nueva",
-    "load": "Cargar"
+    "done-title": "Listo",
+    "warning-title": "Advertencia",
+    "error-title": "Error",
+    "changes-made": "Los cambios se han hecho.",
+    "back-button": "Volver",
+    "create-button": "Crear",
+    "load-button": "Cargar",
+    "cancel-button": "Cancelar",
+    "continue-button": "Continuar",
+    "close-button": "Cerrar",
+    "generic-confirmation-check": "Entiendo los riesgos y deseo continuar",
+    "copied": "El texto ha sido copiado al portapapeles."
   },
 
   "errors": {
-    "error": "Error",
-    "fetch-version": "No ha sido posible verificar la última versión desde Github",
-    "incorrect-password": "Contraseña incorrecta",
-    "error-decrypting": "Error al desencriptar la billetera",
-    "api-disabled": "API desabilitada",
-    "no-wallet": "La billetera no existe",
-    "no-outputs": "No hay salidas no gastadas",
-    "window-size": "La ventana es demasiado estrecha para el contenido"
+    "window-size": "La ventana es demasiado estrecha para el contenido."
   },
 
-  "title": {
-    "language": "Seleccionar Lenguaje",
-    "wallets": "Billeteras",
-    "send": "Enviar",
-    "history": "Historial",
-    "buy-coin": "Comprar Skycoins",
-    "network": "Red",
-    "blockchain": "Blockchain",
-    "outputs": "Salidas",
-    "transactions": "Transacciones",
-    "pending-txs": "Transacciones Pendientes",
-    "backup": "Respaldar Billetera",
-    "explorer": "Explorador de Skycoin",
-    "seed": "Semilla de la Billetera",
-    "qrcode": "Código QR",
-    "reset": "Restablecer contraseña",
-    "exchange": "Intercambiar",
-    "select-address": "Seleccionar Dirección",
-    "order-history": "Historial de órdenes"
+  "language": {
+    "title": "Seleccionar Lenguaje"
   },
 
   "header": {
     "syncing-blocks": "Sincronizando bloques",
-    "update1": "La actualización",
-    "update2": "está disponible.",
-    "synchronizing": "El nodo está sincronizando. Los datos mostrados pueden estar desactualizados.",
-    "pending-txs1": "Hay una o más",
-    "pending-txs2": "transacciones pendientes.",
-    "pending-txs3": "Los datos mostrados pueden estar desactualizados.",
+    "explorer-link": "Explorador de {{ coinName }}",
 
-    "errors": {
+    "warnings": {
+      "update-part1": "La actualización",
+      "update-part2": "Not used. The code adds the versión number of the lastest update here.",
+      "update-part3": "está disponible.",
+      "synchronizing": "La billetera está sincronizando. Los datos mostrados pueden estar desactualizados.",
+      "pending-txs-part1": "Hay una o más",
+      "pending-txs-part2": "transacciones pendientes.",
+      "pending-txs-part3": "Los datos mostrados pueden estar desactualizados.",
       "no-connections": "Sin conexiones activas, ¡el cliente no está conectado a otros nodos!",
-      "no-backend1": "Sin acceso al servidor. Por favor, reinicie la aplicación y/o contáctenos vía",
-      "no-backend2": "Telegram.",
-      "no-backend3": "",
+      "no-backend-part1": "Sin acceso al servidor. Por favor, reinicie la aplicación y/o contáctenos vía",
+      "no-backend-part2": "Telegram.",
+      "no-backend-part3": "",
       "csrf": "Vulnerabilidad de seguridad: CSRF no funciona. Por favor, salga de inmediato."
     }
   },
 
   "password": {
     "title": "Introduzca Su Contraseña",
-    "label": "Contraseña",
-    "confirm-label": "Confirmar contraseña",
-    "button": "Continuar",
-    "reset-link": "He olvidado mi contraseña"
+    "password-label": "Contraseña",
+    "password-error-info": "Debe ingresar una contraseña.",
+    "confirm-password-label": "Confirmar contraseña",
+    "confirm-error-info": "Las dos contraseñas deben coincidir.",
+    "proceed-button": "Proceder",
+    "reset-link": "He olvidado mi contraseña",
+    "incorrect-password-error": "Contraseña incorrecta.",
+    "decrypting-error": "Error al desencriptar la billetera"
   },
 
   "buy": {
+    "title-and-button": "Comprar",
     "deposit-address": "Seleccione una dirección para la cual generar un enlace de depósito BTC:",
     "select-address": "Seleccione una dirección",
     "generate": "Generar",
@@ -85,187 +76,361 @@
   },
 
   "wizard": {
-    "wallet-desc": "Si no tiene una billetera, use la semilla generada automáticamente para crear una nueva. Si ya tiene una billetera, seleccione \"Cargar\" e introduzca su semilla.",
+    "create-title": "Crear Billetera",
+    "create-desc": "Si no tiene una billetera de {{ coinName }}, use la semilla generada automáticamente para crear una nueva. Si ya tiene una billetera, seleccione \"Cargar\" e introduzca su semilla.",
+    "encrypt-title": "Encriptar Billetera",
     "encrypt-desc": "Incremente la seguridad de su billetera encriptándola. Al introducir una contraseña más abajo, su billetera será encriptada. Sólo quien tenga la contraseña podrá acceder a la billetera y retirar fondos.",
-    "hardware-wallet-link": "¿Utilizando una billetera de hardware?",
+    "hardware-wallet-link": "¿Utilizando una Skywallet?",
+    "new-button": "Nueva",
+    "load-button": "Cargar",
     "finish-button": "Finalizar",
-    "back-button": "Volver",
 
     "confirm": {
-      "title": "¡Resguarde su semilla!",
+      "title": "¡Resguarde Su Semilla!",
       "desc": "Queremos asegurarnos de que ha anotado su semilla y la ha almacenado en un lugar seguro. ¡Si olvida su semilla, NO podrá recuperar su billetera!",
-      "checkbox": "Está segura, lo garantizo.",
-      "button": "Continuar"
+      "checkbox": "Está segura, lo garantizo."
     }
   },
 
   "wallet": {
-    "new-address": "Nueva Dirección",
-    "new-addresses": "Nuevas Direcciones",
-    "show-empty": "Mostrar Vacías",
-    "hide-empty": "Ocultar Vacías",
-    "encrypt": "Encriptar Billetera",
-    "decrypt": "Desencriptar Billetera",
+    "title-and-button": "Billeteras",
+    "show-empty-button": "Mostrar Vacías",
+    "hide-empty-button": "Ocultar Vacías",
+    "encrypt-button": "Encriptar Billetera",
+    "decrypt-button": "Desencriptar Billetera",
     "decrypt-warning": "Advertencia: por razones de seguridad, no se recomienda mantener las carteras desencriptadas. Se aconseja precaución.",
-    "delete" : "Borrar Billetera",
-    "edit": "Editar Billetera",
-    "add": "Agregar Billetera",
-    "load": "Cargar Billetera",
-    "encryption-enabled": "Encriptado habilitado",
-    "encryption-disabled": "Encriptado deshabilitado",
-    "hw-security-warning": "Posible riesgo de seguridad. Acceda a las opciones de la billetera de hardware (presionando el botón \"Billetera de Hardware\" debajo de la lista de billeteras) mientras el dispositivo está conectado, para más información.",
-    "wallet": "Billetera",
-    "hardware-wallet": "Billetera de Hardware",
-    "delete-confirmation": "ADVERTENCIA: la billetera \"{{ name }}\" será removida de la lista. Para agregarla nuevamente, deberá volver a conectar el dispositivo y abrir las opciones de la billetera del hardware (presionando el botón \"Billetera de hardware\" debajo de la lista de las billeteras). ¿Desea continuar?",
-    "delete-confirmation-check": "Sí, quiero borrar la billetera.",
-    "max-hardware-wallets-error": "Ya ha alcanzado el número máximo de direcciones que se puede agregar a la billetera de hardware.",
+    "delete-button" : "Borrar Billetera",
+    "edit-button": "Renombrar",
+    "add-button": "Agregar Billetera",
+    "load-button": "Cargar Billetera",
+    "hardware-wallet-button": "Skywallet",
+    "encryption-enabled": "Encriptado habilitado.",
+    "encryption-disabled": "Encriptado deshabilitado.",
+    "warning-hw-security": "Posible riesgo de seguridad. Acceda a las opciones de la Skywallet (presionando el botón \"Skywallet\" debajo de la lista de billeteras) mientras el dispositivo está conectado, para más información.",
+    "wallet-table-label": "Billetera",
+    "hardware-wallet-table-label": "Skywallet",
+    "delete-confirmation": "ADVERTENCIA: la billetera \"{{ name }}\" será removida de la lista. Para agregarla nuevamente, deberá volver a conectar el dispositivo y abrir las opciones de la Skywallet (presionando el botón \"Skywallet\" debajo de la lista de las billeteras). ¿Desea continuar?",
+    "delete-confirmation-check": "Sí, quiero borrar la billetera",
+    "max-hardware-wallets-error": "Ya ha alcanzado el número máximo de direcciones que se puede agregar a la Skywallet.",
     "add-many-confirmation": "ADVERTENCIA: si agrega demasiadas direcciones sin usar las anteriores o si usa las últimas y no las primeras, es posible que algunas direcciones no se recuperen automáticamente si intenta restaurar la billetera con la semilla (tendrá que agregarlas manualmente). ¿Desea continuar?",
 
     "new": {
       "create-title": "Crear Billetera",
       "load-title": "Cargar Billetera",
-      "encrypt-title": "Encriptar la billetera",
       "name-label": "Nombre",
+      "name-error-info": "Debe ingresar un nombre.",
+      "words-number-label": "Cuantas palabras tiene la semilla",
       "seed-label": "Semilla",
+      "seed-error-info": "Debe ingresar una semilla.",
       "confirm-seed-label": "Confirmar semilla",
+      "confirm-seed-error-info": "Las dos semillas deben coincidir.",
       "seed-warning": "¡Recuerde esta semilla! Manténgala en un lugar seguro. ¡Si olvida su semilla, no podrá recuperar la billetera!",
-      "create-button": "Crear",
-      "load-button": "Cargar",
-      "cancel-button": "Cancelar",
       "12-words": "12 palabras",
       "24-words": "24 palabras",
-      "generate-12-seed": "Generar una semilla de 12 palabras",
-      "generate-24-seed": "Generar una semilla de 24 palabras",
-      "encrypt": "Encriptar billetera",
+      "generate-12-help": "Generar una semilla de 12 palabras.",
+      "generate-24-help": "Generar una semilla de 24 palabras.",
+      "encrypt-check": "Encriptar billetera",
       "encrypt-warning": "Le sugerimos que encripte con una contraseña cada una de sus billeteras. Si olvida su contraseña, puede restaurarla con la semilla. Asegúrese de guardar su semilla en un lugar seguro antes de encriptar la billetera.",
-      "unconventional-seed-title": "Posible error",
+      "seed-checking-error": "No fue posible verificar la validez de la semilla.",
+      "unconventional-seed-title": "Posible Error",
       "unconventional-seed-text": "Usted introdujo una semilla no convencional. Si lo hizo por alguna razón en especial, puede continuar (sólo recomendable para usuarios avanzados). Sin embargo, si su intención es utilizar una semilla normal del sistema, usted debe borrar los textos y/o caracteres especiales adicionales.",
-      "unconventional-seed-check": "Continuar con la semilla no convencional."
+      "unconventional-seed-check": "Continuar con la semilla no convencional",
+      "synchronizing-warning-text": "La billetera todavía está sincronizando los datos y la operación podría no restaurar todas las direcciones. Si algunas direcciones no son restauradas, usted deberá esperar a que la billetera esté totalmente sincronizada y usar la opción \"Escanear Direcciones\" o agregarlas nuevamente de forma manual.",
+      "wallet-created": "La billetera ha sido agregada a la lista.",
+
+      "seed": {
+        "enter-seed": "Presione aquí para ingresar la semilla",
+        "change-seed": "Presione para cambiar",
+        "confirm-seed": "Presione aquí para confirmar la semilla",
+        "confirmed-seed": "Semilla confirmada",
+        "use-custom": "Ingresar la semilla manualmente",
+        "use-normal": "Ingresar la semilla usando el método recomendado",
+        "custom-seed-warning-text": "Esta opción solo es recomendada para usuarios avanzados. Cometer errores con la semilla puede hacer que pierda el acceso a los fondos en caso de que surja algún problema.",
+        "custom-seed-warning-text-recovering": "Para evitar posibles problemas, esta opción solo debe usarse si desea recuperar una semilla no convencional.",
+        "incorrect-word-error": "La palabra que ha ingresado no coincide con la que se ha solicitado.",
+        "invalid-seed-error": "La semilla que ha ingresado no es válida. Por favor, vuelva a intentarlo.",
+        "enter-word": "Ingrese la palabra número {{number}}",
+        "word-error-info": "Debe ingresar una palabra.",
+        "new-seed-info": "Usted debe ingresar las palabras de la semilla que fue generada por el sistema, para confirmarla.",
+        "recover-seed-info": "Por favor, asegúrese de ingresar las palabras correctas en el orden correcto."
+      }
     },
 
     "rename": {
       "title": "Renombrar Billetera",
       "name-label": "Nombre",
-      "cancel-button": "Cancelar",
+      "label-error-info": "Debe ingresar un nombre.",
       "rename-button": "Renombrar"
     },
 
+    "address-options": {
+      "title": "Direcciones",
+      "new": "Nuevas Direcciones",
+      "scan": "Escanear Direcciones",
+      "scan-help": "Use esta opción para hacer que el sistema encuentre direcciones ya usadas de esta billetera que faltan en la lista."
+    },
+
+    "scan-addresses": {
+      "done-with-new-addresses": "La lista ha sido actualizada.",
+      "done-without-new-addresses": "No se encontraron nuevas direcciones."
+    },
+
     "add-addresses": {
-      "title": "Seleccionar cantidad",
-      "name-quantity": "Cantidad de direcciones a crear",
-      "cancel-button": "Cancelar",
-      "create-button": "Crear"
+      "title": "Seleccionar Cantidad",
+      "quantity-label": "Cantidad de direcciones a crear",
+      "quantity-error-info": "Debe ingresar un valor entre 1 y 100.",
+      "error": "Hubo un error inesperado. Por favor, inténtelo de nuevo."
     },
 
     "address": {
       "show": "Presione para mostrar",
       "copy": "Copiar",
-      "copy-address": "Copiar Dirección",
+      "copy-address": "Copiar dirección",
       "copied": "¡Copiado!",
-      "confirm": "Confirmar Dirección",
-      "outputs": "Salidas No Gastadas",
+      "confirm": "Confirmar dirección",
+      "outputs": "Salidas no gastadas",
       "history": "Historial"
     }
   },
 
+  "qr": {
+    "title": "Código QR",
+    "data-label": "Datos del código QR",
+    "address-label": "Dirección",
+    "request-link": "Solicitar monto específico",
+    "amount-label": "Monto solicitado",
+    "hours-label": "Horas solicitadas",
+    "message-label": "Mensaje",
+    "invalid": "(valor inválido)"
+  },
+
   "send": {
+    "title-and-button": "Enviar",
+    "unsigned-button": "Sin firmar",
+    "signed-button": "Firmada",
+    "unsigned-confirmation": "El formulario de transacciones sin firmar no permite enviar transacciones normalmente, sino que simplemente crea el texto de la transacción, el cual debe ser firmado antes de que pueda ser enviado a la red. Esto es útil para crear transacciones que serán firmadas en un equipo que siempre está fuera de línea, por razones de seguridad. ¿Desea continuar?",
     "synchronizing-warning": "La billetera todavía está sincronizando los datos, por lo que el saldo que se muestra puede ser incorrecto. ¿Seguro de que desea continuar?",
     "from-label": "Enviar desde",
     "to-label": "Enviar a",
     "amount-label": "Cantidad",
-    "notes-label": "Notas",
+    "personal-note-label": "Nota personal",
+    "personal-note-help": "Use este campo para agregar un texto que le permita identificar la transacción en el futuro. Este texto se guarda localmente, por lo que solo será visible desde esta computadora.",
     "wallet-label": "Billetera",
-    "addresses-label": "Dirección",
+    "wallet-error-info": "Debe seleccionar una billetera.",
     "invalid-amount": "Por favor introduzca una cantidad válida",
-    "addresses-help": "Limite las direcciones desde donde se podrían enviar las monedas y las horas",
+    "convert-confirmation": "¿También desea que la cantidad introducida se convierta de {{from}} a {{to}}?",
+    "convert-confirmation-plural": "¿También desea que las cantidades introducidas se conviertan de {{from}} a {{to}}?",
+    "send-all-available-coins-link": "enviar todo",
+    "precision-error-warning": "Se detectó un error de precisión durante la conversión. Por favor verifique la cantidad que se enviará.",
+    "invaid-amount-warning": "Se detectó un valor inválido durante la conversión. Por favor verifique la cantidad que se enviará.",
+    "precision-errors-warning": "Se detectaron errores de precisión durante la conversión. Por favor verifique la cantidad que se enviará.",
+    "invaid-amounts-warning": "Se detectaron valores inválidos durante la conversión. Por favor verifique la cantidad que se enviará.",
+    "multiple-problems-warning": "Algunos valores no se convirtieron por ser inválidos o podrían haberse convertido con errores de precisión. Por favor verifique la cantidad que se enviará.",
+    "addresses-label": "Direcciones",
+    "addresses-error-info": "Debe ingresar al menos una dirección válida.",
+    "no-wallet-selected-error": "No hay monedas para enviar.",
+    "no-coins-left-error": "No hay monedas restantes para enviar.",
+    "addresses-help": "Limite las direcciones desde donde se podrían enviar las monedas y las horas.",
+    "addresses-manual-help": "Lista de las direcciones desde las cuales se enviarán las monedas, separadas por comas. Todas las direcciones deben pertenecer a la misma billetera o no podrá firmar la transacción con la billetera de escritorio.",
     "all-addresses": "Todas las direcciones de la billetera seleccionada",
     "outputs-label": "Salidas no gastadas",
     "outputs-help": "Limite las salidas no gastadas desde donde se podrían enviar las monedas y las horas. Solo se muestran las salidas de las direcciones seleccionadas.",
+    "outputs-error": "Hubo un error al intentar obtener las salidas. Por favor asegúrese de haber ingresado direcciones válidas.",
     "all-outputs": "Todas las salidas no gastadas de las direcciones seleccionadas",
-    "available-msg-part1": "Con su selección actual puede enviar hasta",
-    "available-msg-part2": "y",
-    "available-msg-part3": "(al menos",
-    "available-msg-part4": "deben ser utilizadas para la tarifa de transacción).",
+    "enter-addresses-for-outputs": "Debe ingresar direcciones válidas primero",
+    "enter-wallet-for-outputs-and-addresses": "Debe seleccionar una billetera válida primero",
+    "invalid-addresses-for-outputs": "No hay salidas disponibles",
+    "available-funds-msg-part1": "Con su selección actual puede enviar hasta",
+    "available-funds-msg-part2": "y",
+    "available-funds-msg-part3": "(al menos",
+    "available-funds-msg-part4": "deben ser utilizadas como tarifa de transacción para enviar todas las monedas u horas).",
     "change-address-label": "Dirección de retorno personalizada",
-    "change-address-select": "Seleccionar",
-    "change-address-help": "Dirección para recibir el cambio. Si no se proporciona, será elegida automáticamente. Haga clic en el enlace \"Seleccionar\" para elegir una dirección de una de sus billeteras",
+    "change-address-error-info": "La dirección de retorno no es válida.",
+    "change-address-select-from-list-link": "Seleccionar",
+    "change-address-help": "Dirección para recibir el cambio. Si no se proporciona, será elegida automáticamente. Haga clic en el enlace \"Seleccionar\" para elegir una dirección de una de sus billeteras.",
     "destinations-label": "Destinos",
-    "destinations-help1": "Direcciones de destino y sus monedas",
-    "destinations-help2": "Direcciones de destino, sus monedas y coin hours",
-    "hours-allocation-label": "Distribución automática de coin hours",
-    "options-label": "Opciones",
-    "value-label": "Factor de distribución de las coin hours",
-    "value-help": "Mientras mayor sea el valor, más coin hours se enviarán a las salidas",
+    "destinations-help1": "Direcciones de destino y sus monedas.",
+    "destinations-help2": "Direcciones de destino, sus monedas y horas.",
+    "hours-allocation-check": "Usar una distribución automática de {{ coinHoursName }}",
+    "options-link": "Opciones",
+    "coin-hours-options-link": "Opciones de horas",
+    "hours-share-factor-label": "Factor de distribución de {{ coinHoursName }}",
+    "hours-share-factor-help": "Este control permite seleccionar el porcentaje de {{ coinHoursName }} que serán enviadas. de Mientras mayor sea el valor, más {{ coinHoursName }} se enviarán y menos serán retenidas.",
+    "close-hours-share-factor-alert": "La opción se restablecerá al valor predeterminado. Seguro que desea continuar?",
     "preview-button": "Preview",
     "send-button": "Enviar",
-    "back-button": "Volver",
-    "simple": "Simple",
-    "advanced": "Advanzado",
-    "select-wallet": "Seleccionar Billetera"
+    "show-button": "Mostrar",
+    "simple-form-button": "Simple",
+    "advanced-form-button": "Advanzado",
+    "select-wallet": "Seleccionar billetera",
+    "saving-note-error": "La transacción se envió correctamente, pero no fue posible guardar la nota.",
+    "sent": "La transacción se envió correctamente.",
+    "total-to-send": "Total:",
+    "invalid-address-error": "La dirección de destino no es válida.",
+    "one-invalid-address-error": "Una de las direcciones de destino no es válida.",
+    "various-invalid-addresses-error": "Algunas direcciones de destino no son válidas.",
+    "all-addresses-invalid-error": "Las direcciones de destino no son válidas.",
+    "invalid-addresses-error": "Por favor asegúrese de que la dirección sea válida.",
+    "address-error-info": "Por favor introduzca una dirección válida.",
+    "invalid-value-error-info": "Valor inválido.",
+    "insufficient-funds-error-info": "El valor ingresado es mayor que el saldo disponible.",
+    "sending-all-hours-with-coins-waning": "Al enviar todas las monedas, todas las horas de la billetera seleccionada serán enviadas o quemadas. Si desea retener horas, no debe enviar todas las monedas. ¿Seguro que desea continuar?",
+    "advanced-sending-all-hours-with-coins-waning": "Al enviar todas las monedas, todas las horas de la(s) fuente(s) seleccionada(s) serán enviadas o quemadas. Si desea retener horas, no debe enviar todas las monedas. ¿Seguro que desea continuar?",
+    "sending-all-hours-waning": "Usted seleccionó enviar todas las horas. ¿Seguro que desea continuar?",
+    "high-hours-share-waning": "Su selección puede resultar en el envío de todas las horas de la billetera seleccionada. ¿Seguro que desea continuar?",
+    "advanced-high-hours-share-waning": "Su selección puede resultar en el envío de todas las horas de la(s) fuente(s) seleccionada(s). ¿Seguro que desea continuar?",
+
+    "known-node-errors": {
+      "null-change-address-error": "La dirección nula no se puede utilizar como dirección de retorno personalizada. Por favor introduzca una dirección válida.",
+      "to-required-error": "Debe proporcionar una dirección de destino para enviar monedas. Por favor introduzca una dirección válida.",
+      "zero-coins-error": "No es posible enviar cero monedas. Por favor introduzca una cantidad válida.",
+      "null-destination-error": "La dirección nula no se puede utilizar como dirección de destino. Por favor introduzca una dirección válida.",
+      "duplicate-destination-error": "Hay destinos duplicados. Por favor no repita la misma dirección y cantidad en más de un destino.",
+      "hours-in-automatic-mode-error": "No se pueden especificar cantidades de horas mientras se usa la distribución automática de horas. Por favor pruebe con valores diferentes y póngase en contacto con el servicio de soporte si el problema no se resuelve.",
+      "hours-allocation-mode-needed-error": "Se requiere el modo de asignación de horas. Por favor pruebe con valores diferentes y póngase en contacto con el servicio de soporte si el problema no se resuelve.",
+      "invalid-hours-allocation-mode-error": "Modo de asignación de horas no válido. Por favor pruebe con valores diferentes y póngase en contacto con el servicio de soporte si el problema no se resuelve.",
+      "hours-allocation-mode-not-needed-error": "El modo de asignación de horas no se puede especificar mientras se usa la distribución de horas manual. Por favor pruebe con valores diferentes y póngase en contacto con el servicio de soporte si el problema no se resuelve.",
+      "invalid-hours-mode-error": "Método de distribución de horas no válido. Por favor pruebe con valores diferentes y póngase en contacto con el servicio de soporte si el problema no se resuelve.",
+      "share-factor-needed-error": "Se necesita el factor de distribución de horas. Por favor pruebe con valores diferentes y póngase en contacto con el servicio de soporte si el problema no se resuelve.",
+      "share-factor-not-needed-error": "El factor de distribución de horas no puede ser especificado mientras se usa la distribución de horas manual. Por favor pruebe con valores diferentes y póngase en contacto con el servicio de soporte si el problema no se resuelve.",
+      "invalid-share-factor-error": "Factor de distribución de horas inv+alido. Por favor pruebe con valores diferentes y póngase en contacto con el servicio de soporte si el problema no se resuelve.",
+      "change-equal-to-destination-error": "No es posible crear la transacción debido a que se regresaría una cantidad repetida de monedas a la misma dirección de destino. Por favor inténtelo nuevamente con valores diferentes.",
+      "repeated-wallet": "Una billetera para la semilla indicada ya existe."
+    },
+
+    "bulk-send": {
+      "title": "Envío Masivo",
+      "indications": "Para enviar a múltiples destinos de forma rápida, escriba cada dirección, cantidad de monedas y cantidad de horas (opcional) en una línea, separadas por una coma. Ejemplo: si desea enviar 10 monedas y 5 horas a la dirección \"xyz\", escriba \"xyz,10,5\"; si desea que las horas se calculen automáticamente, escriba \"xyz,10\". Los valores decimales se deben separar con un punto.",
+      "data-error-info": "Debe ingresar un valor.",
+      "process-button": "Procesar",
+      "no-data-error": "No hay texto para procesar.",
+      "inconsistent-data-error": "Si establece cuántas horas desea enviar a un destino, debe hacerlo para todos los destinos.",
+      "invalid-data-error": "El texto ingresado tiene un formato inválido."
+    }
+  },
+
+  "select-address": {
+    "title": "Seleccionar Dirección",
+    "no-addresses": "No hay direcciones confirmadas en esta billetera."
+  },
+
+  "offline-transactions": {
+    "loading-problem": "Error al intentar obtener los datos necesarios",
+    "wallet-error-info": "Debe seleccionar una billetera.",
+    "tx-error-info": "Debe ingresar un texto de transacción válido.",
+    "copy-tx": {
+      "signed-title": "Transacción Firmada",
+      "unsigned-title": "Transacción Sin Firmar",
+      "text-unsigned": "Esta es la transacción sin firmar que se ha creado con los datos que ha ingresado. Por favor copie el texto para poder firmarlo con la opción \"Firmar transacción\".",
+      "text-signed": "Esta es la transacción firmada. Puede enviarla a la red utilizando la opción \"Transmitir Transacción\".",
+      "input-label": "Texto de la transacción",
+      "copy-button": "Copiar",
+      "reset-confirmation": "¿Desea que se limpie el formulario, de forma que pueda crear otra transacción?",
+      "reset-done": "El formulario ha sido limpiado."
+    },
+
+    "sign-tx": {
+      "title": "Firmar Transacción",
+      "text": "Use este formulario para firmar una transacción. Para que la operación funcione correctamente debe seleccionar la billetera que incluye todas las entradas/direcciones utilizadas para enviar monedas en la transacción.",
+      "wallet-label": "Billetera",
+      "select-wallet": "Seleccione una billetera",
+      "input-label": "Texto de la transacción",
+      "sign-button": "Firmar",
+      "signed": "La transacción ha sido firmada."
+    },
+
+    "broadcast-tx": {
+      "title": "Transmitir Transacción",
+      "text": "Use este formulario para enviar una transacción firmada a la red.",
+      "input-label": "Texto de la transacción",
+      "send-button": "Enviar",
+      "sent": "La transacción ha sido enviada."
+    }
   },
 
   "reset": {
+    "title": "Restablecer Contraseña",
     "wallet-label": "Billetera",
     "seed-label": "Semilla de la billetera",
+    "seed-error-info": "Debe ingresar una semilla.",
     "password-label": "Nueva contraseña (deje en blanco si desea que la billetera no esté encriptada)",
     "confirm-label": "Confirme la contraseña",
-    "reset-button": "Restaurar"
+    "confirm-error-info": "Las dos contraseñas deben coincidir.",
+    "reset-button": "Restablecer",
+    "done": "Contraseña cambiada correctamente."
   },
 
   "tx": {
-    "transaction": "Transacción",
-    "confirm-transaction": "Confirmar Transacción",
-    "from": "Desde",
-    "to": "A",
-    "date": "Fecha",
-    "status": "Estatus",
-    "coins": "Monedas",
-    "hours": "Horas",
-    "id": "Tx ID",
-    "show-more": "Mostrar más",
+    "transaction-title": "Transacción",
+    "confirm-transaction-title": "Confirmar Transacción",
+    "from-small-label": "Desde:",
+    "to-small-label": "A:",
+    "date-small-label": "Fecha:",
+    "status-small-label": "Estatus:",
+    "coins-small-label": "Monedas:",
+    "hours-small-label": "Horas:",
+    "id-small-label": "Tx ID:",
+    "note-small-label": "Nota:",
+    "without-note": "Sin nota",
+    "show-more-link": "Mostrar más",
     "hours-moved": "movida(s)",
     "hours-sent": "enviada(s)",
     "hours-received": "recibida(s)",
     "hours-burned": "quemada(s)",
-    "inputs": "Entradas",
-    "outputs": "Salidas",
-    "confirmed": "Confirmada",
-    "pending": "Pendiente",
-    "current-rate": "Calculado a la tasa actual"
+    "inputs-title": "Entradas",
+    "outputs-title": "Salidas",
+    "confirmed-transaction": "Confirmada",
+    "pending-transaction": "Pendiente",
+    "current-rate-help": "Calculado a la tasa actual."
+  },
+
+  "edit-note": {
+    "title": "Editar Nota",
+    "change-button": "Cambiar"
   },
 
   "backup": {
+    "title": "Respaldar Billetera",
     "wallet-directory": "Directorio de la Billetera:",
     "seed-warning": "RESPALDE SU SEMILLA. EN PAPEL. EN UN LUGAR SEGURO. Mientras tenga su semilla, podrá recuperar las monedas.",
     "desc": "Use la tabla de más abajo para obtener las semillas de sus billeteras encriptadas. <br>Para obtener las semillas de las billeteras no encriptadas, abra el directorio de más arriba, abra los archivos .wlt en un editor de texto y recupere las semillas.",
-    "close-button": "Cerrar",
-    "wallet": "Nombre de la Billetera",
-    "filename": "Archivo",
-    "seed": "Semilla",
-    "show-seed": "Mostrar semilla",
-    "no-wallets": "No hay billeteras encriptadas"
+    "wallet-table-label": "Nombre de la billetera",
+    "filename-table-label": "Archivo",
+    "save-addresses-button": "Guardar Direcciones",
+    "show-seed-button": "Mostrar semilla",
+    "no-wallets": "No hay billeteras",
+    "unencrypted-info": "Por razones de seguridad, no es posible mostrar las semillas de las billeteras sin encriptar. Para obtener la semilla, por favor encripte la billetera con una contraseña o siga las instrucciones en la parte superior de esta página.",
+    "hw-wallet-info": "Para obtener la semilla de una Skywallet, por favor use la opción \"Skywallet\" de la parte inferior de la página de billeteras.",
+    "not-compatible-error": "Su navegador web no es compatible con esta función.",
+
+    "seed-modal-window": {
+      "title": "Semilla de la Billetera",
+      "seed-label": "Semilla"
+    }
   },
 
   "blockchain": {
-    "blocks": "Cantidad de bloques",
-    "time": "Fecha del último bloque",
-    "hash": "Hash del último bloque",
-    "current-supply": "Suministro de SKY actual",
-    "total-supply": "Suministro de SKY total",
-    "current-coinhour-supply": "Suministro de Coin Hours actual",
-    "total-coinhour-supply": "Suministro de Coin Hours total"
+    "title": "Blockchain",
+    "blocks-label": "Cantidad de bloques",
+    "time-label": "Fecha del último bloque",
+    "hash-label": "Hash del último bloque",
+    "current-supply-label": "Suministro de {{ coinName }} actual",
+    "total-supply-label": "Suministro de {{ coinName }} total",
+    "current-coinhour-supply-label": "Suministro de {{ coinHoursName }} actual",
+    "total-coinhour-supply-label": "Suministro de {{ coinHoursName }} total"
   },
 
   "network": {
-    "peer": "Par",
-    "source": "Fuente",
-    "block-height": "Altura del bloque",
-    "block-height-short": "Bloque",
-    "last-seen": "Última vez visto",
-    "last-received": "Última recepción",
-    "last-sent": "Último envío",
-    "in": "Entrante",
-    "out": "Saliente",
+    "title": "Red",
+    "peer-small-table-label": "Par",
+    "source-small-table-label": "Fuente",
+    "block-height-small-table-label": "Altura del bloque",
+    "block-height-short-small-table-label": "Bloque",
+    "last-seen-small-table-label": "Última vez visto",
+    "last-received-help": "Última recepción.",
+    "last-sent-help": "Último envío.",
+    "in-help": "Entrante.",
+    "out-help": "Saliente.",
 
     "sources": {
       "default": "Par por defecto",
@@ -274,28 +439,37 @@
   },
 
   "pending-txs": {
-    "timestamp": "Fecha",
-    "txid": "ID de la transacción",
+    "title": "Transacciones Pendientes",
+    "timestamp-table-label": "Fecha",
+    "txid-table-label": "ID de la transacción",
     "none": "Actualmente no hay transacciones pendientes",
-    "my": "Mías",
-    "all": "Todas"
+    "my-transactions-button": "Mías",
+    "all-transactions-button": "Todas"
+  },
+
+  "outputs": {
+    "title": "Salidas",
+    "error-no-outputs": "No hay salidas no gastadas"
   },
 
   "history": {
-    "tx-detail": "Detalles de la Transacción",
-    "moving": "Moviendo internamente",
-    "moved": "Movida internamente",
-    "sending": "Enviando",
-    "sent": "Enviada",
-    "received": "Recibida",
-    "receiving": "Recibiendo",
-    "pending": "Pendiente",
+    "title-and-button": "Historial",
+    "tx-detail-title": "Detalles de la Transacción",
+    "moving": "Moviendo  {{ coinName }} internamente",
+    "moved": "{{ coinName }} movido internamente",
+    "sending": "Enviando {{ coinName }}",
+    "sent": "{{ coinName }} enviado",
+    "received": "{{ coinName }} recibido",
+    "receiving": "Recibiendo {{ coinName }}",
+    "pending-indication": "Pendiente",
+    "transaction-note-small-label": "Nota:",
     "no-txs": "Usted no tiene historial de transacciones",
     "no-txs-filter": "No hay transacciones que coincidan con los criterios de filtro actuales",
-    "no-filter": "Sin filtros activos (Presione para seleccionar billeteras/direcciones)",
+    "no-filter": "Sin filtros activos (presione para seleccionar billeteras/direcciones)",
     "filter": "Filtro activo: ",
-    "filters": "Filtros activo: ",
-    "all-addresses": "Todas las direcciones"
+    "filters": "Filtros activos: ",
+    "all-addresses": "Todas las direcciones",
+    "view-all": "Ver todas las {{ number }} transacciones"
   },
 
   "teller": {
@@ -307,132 +481,164 @@
   },
 
   "confirmation" : {
-    "header-text": "Confirmación",
-    "confirm-button": "Sí",
-    "cancel-button": "No",
-    "close": "Cerrar"
+    "default-title": "Confirmación",
+    "yes-button": "Sí",
+    "no-button": "No"
   },
 
   "service": {
     "api" : {
-      "server-error": "Error de servidor"
-    },
-    "wallet": {
-      "not-enough-hours": "¡No cuenta con suficientes Coin Hours para realizar la operación!"
+      "no-internet-error": "No cuenta con conexión a Internet o el nodo ha dejado de funcionar.",
+      "incorrect-password-error": "Contraseña incorrecta.",
+      "unknown-error": "No fue posible realizar la operación.",
+      "api-disabled-error": "API deshabilitada."
     }
   },
 
   "hardware-wallet": {
     "general" : {
-      "default-wallet-name": "Nueva billetera de hardware",
-      "error-disconnected": "No se puede realizar la operación. La billetera de hardware no está conectada.",
-      "simple-error": "Error, no se puede realizar la operación.",
-      "generic-error": "No se puede realizar la operación. Asegúrese de haber conectado una billetera de hardware válida y de que no esté esperando por alguna confirmación o respuesta.",
-      "generic-error-internet": "No se puede realizar la operación. Asegúrese de haber conectado una billetera de hardware válida que no esté esperando por alguna confirmación o respuesta y de que su equipo cuente con conexión a internet y al nodo.",
-      "error-incorrect-wallet": "No se puede realizar la operación. La billetera de hardware conectada es diferente a la esperada.",
-      "error-incorrect-pin": "No se puede realizar la operación. El PIN que ha introducido no es correcto.",
-      "confirm": "Por favor, confirme la operación en la billetera de hardware.",
-      "confirm-and-more": "Por favor, confirme la operación en la billetera de hardware y siga las instrucciones.",
-      "close": "Cerrar",
-      "cancel": "Cancelar",
-      "continue": "Continuar",
+      "default-wallet-name": "Nueva Skywallet",
+      "confirm": "Por favor, confirme la operación en la Skywallet.",
+      "confirm-and-more": "Por favor confirme la operación en la Skywallet y siga las instrucciones.",
+      "follow": "Por favor siga las instrucciones mostradas en la Skywallet.",
       "completed": "La operación se realizó con éxito.",
-      "refused": "La operación falló o fue cancelada."
+      "name-updated": "El nombre utilizado para identificar esta Skywallet en la lista de billeteras se ha actualizado para que coincida con el que se muestra en el dispositivo."
     },
     "errors": {
-      "too-many-inputs": "La transacción tiene demasiadas entradas y no se puede procesar. Por favor, póngase en contacto con el soporte técnico.",
-      "too-many-outputs": "La transacción tiene demasiadas salidas y no se puede procesar. Por favor, póngase en contacto con el soporte técnico."
+      "generic-error": "No se puede realizar la operación. Asegúrese de haber conectado una Skywallet válida y de que no esté esperando por alguna confirmación o respuesta.",
+      "disconnected": "No se puede realizar la operación. La Skywallet no está conectada.",
+      "incorrect-wallet": "No se puede realizar la operación. La Skywallet conectada es diferente a la esperada.",
+      "incorrect-pin": "No se puede realizar la operación. El PIN que ha introducido no es correcto.",
+      "refused": "La operación falló o fue cancelada.",
+      "too-many-inputs-outputs": "La transacción tiene demasiadas entradas o salidas para la Skywallet. Por favor vuelva a intentarlo creando varias transacciones más pequeñas, cada una con un número menor de destinatarios (si la transacción actual tiene muchos) o monedas.",
+      "daemon-connection": "Problema para conectarse al Skywallet Daemon, por favor asegúrese de que se esté ejecutando e inténtelo nuevamente. Usted puede descargarlo desde www.skycoin.com/downloads",
+      "daemon-connection-with-configurable-link": "Problema para conectarse al Skywallet Daemon, por favor asegúrese de que se esté ejecutando e inténtelo nuevamente. Usted puede descargarlo desde ",
+      "timeout": "La operación se canceló por inactividad. Por favor inténtelo de nuevo.",
+      "invalid-address-generated": "Hubo un problema con el generador de direcciones y la operación tuvo que ser cancelada.",
+      "invalid-address": "Dirección inválida.",
+      "not-in-bootloader-mode": "Para usar esta opción la Skywallet debe estar en modo bootloader."
     },
     "security-warning" : {
-      "title": "Advertencia de seguridad",
-      "text": "La última vez que se conectó esta billetera de hardware, se encontraron una o más advertencias de seguridad. Le recomendamos que abra las opciones de billetera de hardware (presionando el botón \"Billetera de hardware\" debajo de la lista de billeteras) mientras el dispositivo está conectado y resuelva los problemas de seguridad antes de continuar.",
-      "check": "Entiendo los riesgos y deseo continuar.",
-      "continue": "Continuar",
-      "cancel": "Cancelar"
+      "title": "Advertencia de Seguridad",
+      "text": "La última vez que se conectó esta Skywallet, se encontraron una o más advertencias de seguridad. Le recomendamos que abra las opciones de Skywallet (presionando el enlace de más abajo) mientras el dispositivo está conectado y resuelva los problemas de seguridad antes de continuar.",
+      "link": "Abrir la ventana de opciones de Skywallet."
     },
     "options" : {
       "connecting": "Conectando...",
-      "disconnected": "Billetera de hardware no detectada. Por favor, conecte una billetera de hardware para usar esta opción.",
-      "unconfigured-detected-title": "Billetera de hardware no configurada",
-      "unconfigured-detected": "Se ha detectado una billetera de hardware sin semilla. Seleccione \"Configurar automáticamente\" si desea configurarla como una billetera nueva y comenzar a usarla inmediatamente, o seleccione \"Restaurar una copia de seguridad\" si desea configurarla con la copia de seguridad de una semilla creada anteriormente y así poder acceder a sus fondos de nuevo.",
-      "configured-detected": "Billetera de hardware detectada. El dispositivo se identifica en la lista de billeteras como:",
-      "security-warnings-title": "Advertencias de seguridad",
-      "security-warning-title": "Advertencia de seguridad",
-      "backup-warning": "Debe hacer una copia de seguridad de la semilla de la billetera de hardware o podría perder acceso a los fondos en caso de problemas. Para hacer esto, seleccione la opción \"Crear copia de seguridad\".",
-      "pin-warning": "La billetera de hardware conectada no tiene un PIN. El código PIN protege la billetera de hardware en caso de pérdida, robo y pirateo. Para crear un código PIN, seleccione la opción \"Crear código PIN\".",
+      "disconnected": "Skywallet no detectada. Por favor, conecte una Skywallet para usar esta opción.",
+      "unconfigured-detected-title": "Skywallet No Configurada",
+      "unconfigured-detected": "Se ha detectado una Skywallet sin semilla. Seleccione \"Configurar Automáticamente\" si desea configurarla como una billetera nueva y comenzar a usarla. Seleccione \"Restaurar Copia de Seguridad\" si desea configurar la Skywallet con la copia de seguridad de una semilla creada anteriormente.",
+      "configured-detected": "Skywallet detectada. El dispositivo se identifica en la lista de billeteras como:",
+      "security-warnings-title": "Advertencias de Seguridad",
+      "security-warning-title": "Advertencia de Seguridad",
+      "unchecked-version-warning": "No fue posible verificar si el firmware de su Skywallet está actualizado. Esto podría deberse a problemas con su conexión a Internet o a que el servicio esté en mantenimiento.",
+      "outdated-version-warning": "El firmware de su Skywallet está desactualizado. Le recomendamos que lo actualice lo antes posible para garantizar la seguridad. Para hacer esto, seleccione la opción \"Actualizar Firmware\".",
+      "backup-warning": "Debe hacer una copia de seguridad de la semilla de su Skywallet o podría perder acceso a los fondos en caso de problemas. Para hacer esto, seleccione la opción \"Crear Copia de Seguridad\".",
+      "pin-warning": "La Skywallet conectada no tiene un PIN. El código PIN protege la Skywallet de accesos no autorizados. Para crear un código PIN, seleccione la opción \"Crear Código PIN\".",
       "options": "Opciones:",
-      "configure-automatically": "Configurar automáticamente",
-      "restore-backup": "Restaurar una copia de seguridad",
-      "create-backup": "Crear copia de seguridad",
-      "wipe": "Borrar el dispositivo",
-      "confirm-seed": "Confirmar la semilla",
-      "create-pin": "Crear código PIN",
-      "change-pin": "Cambiar el código PIN",
-      "forgotten-pin1": "Si no puede acceder a la billetera porque ha olvidado el PIN, puede borrar la billetera del hardware y luego restaurarla con la semilla haciendo clic",
-      "forgotten-pin2": "aquí."
+      "update-firmware": "Actualizar Firmware",
+      "configure-automatically": "Configurar Automáticamente",
+      "restore-backup": "Restaurar Copia de Seguridad",
+      "create-backup": "Crear Copia de Seguridad",
+      "wipe": "Borrar el Dispositivo",
+      "confirm-seed": "Confirmar la Semilla",
+      "create-pin": "Crear Código PIN",
+      "change-pin": "Cambiar el Código PIN",
+      "delete-pin": "Borrar el Código PIN",
+      "forgotten-pin-part1": "Si no puede acceder a la billetera porque ha olvidado el PIN, puede borrar la Skywallet y luego restaurarla con la semilla haciendo clic",
+      "forgotten-pin-part2": "aquí.",
+      "firmware-version": "Versión del firmware del dispositivo:"
+    },
+    "update-firmware-warning" : {
+      "title": "Firmware Desactualizado",
+      "text": "ADVERTENCIA: el firmware de su Skywallet está desactualizado. Para mantenerse seguro se le recomienda actualizarlo.",
+      "update": "Actualizar"
+    },
+    "update-firmware" : {
+      "title-connecting": "Conectando...",
+      "title-update": "Actualizar Firmware",
+      "title-install": "Instalar Firmware",
+      "text-downloading": "Comprobando el dispositivo y descargando archivos...",
+      "text-bootloader": "ADVERTENCIA: si ya ha configurado este dispositivo, antes de continuar debe tener una copia de seguridad de su semilla o podría perder permanentemente el acceso a los fondos.",
+      "text-not-bootloader": "Para actualizar el firmware de su Skywallet debe conectarla en modo bootloader (conéctela al computador mientras presiona los dos botones físicos del dispositivo). ADVERTENCIA: si ya ha configurado este dispositivo, antes de continuar debe tener una copia de seguridad de su semilla o podría perder permanentemente el acceso a los fondos.",
+      "text-no-firmware": "Le damos la bienvenida. La Skywallet conectada actualmente no tiene un firmware instalado. Ahora se instalará un firmware para que pueda comenzar a usar el dispositivo. NOTA: si ya ha configurado este dispositivo y desea recuperar los fondos, necesitará la semilla.",
+      "follow": "La actualización del firmware se envió a la Skywallet. Por favor continúe el proceso en el dispositivo.",
+      "connection-error": "No fue posible descargar el firmware. Esto podría deberse a problemas con su conexión a Internet o a que el servicio esté en mantenimiento.",
+      "timeout": "La operación se canceló por inactividad. Por favor desconecte el dispositivo, vuelva a conectarlo e intente nuevamente.",
+      "finished": "Su dispositivo ha sido configurado correctamente. Por favor desconéctelo antes de continuar."
     },
     "generate-seed" : {
-      "text": "Antes de continuar, puede seleccionar el número de palabras que desea que tenga la semilla. La semilla es una lista de palabras que se pueden usar para recuperar el acceso a las monedas en caso de problemas. Ambos valores son seguros, por lo que si no tiene una razón especial para seleccionar uno u otro, puede dejar el valor predeterminado.",
+      "text": "Antes de continuar puede seleccionar el número de palabras que desea que tenga la semilla. La semilla es una lista de palabras que se pueden usar para recuperar el acceso a las monedas en caso de problemas. Ambos valores son seguros, por lo que si no tiene una razón especial para seleccionar uno u otro, puede dejar el valor predeterminado.",
       "configuring": "Configurando..."
     },
     "restore-seed" : {
       "text": "Antes de continuar, por favor seleccione la cantidad de palabras de la semilla que desea recuperar.",
-      "check-text": "Puede usar esta opción para ingresar una semilla y verificar si es igual a la de la billetera de hardware. Antes de comenzar, seleccione el número de palabras de la semilla que desea verificar.",
-      "warning" : "ADVERTENCIA: para evitar posibles problemas, use solo semillas creadas con una billetera de hardware de la misma marca/modelo.",
-      "error-wrong-word": "Error: la palabra introducida no coincide con la solicitada por la billetera de hardware.",
-      "error-invalid-seed": "Error: La semilla no es válida. Por favor, asegúrese de ingresar las palabras correctas en el orden correcto.",
-      "error-wrong-seed": "Error: la semilla es válida pero no coincide con la del dispositivo."
+      "check-text": "Puede usar esta opción para ingresar una semilla y verificar si es igual a la de la Skywallet. Antes de comenzar, seleccione el número de palabras de la semilla que desea verificar.",
+      "warning" : "ADVERTENCIA: para evitar posibles problemas, use solo semillas creadas con una Skywallet.",
+      "error-wrong-word": "Error: la palabra introducida no coincide con la solicitada por la Skywallet.",
+      "error-invalid-seed": "Error: la semilla no es válida. Por favor asegúrese de ingresar las palabras correctas en el orden correcto.",
+      "error-wrong-seed": "Error: la semilla es válida pero no coincide con la del dispositivo.",
+      "correct-seed": "La semilla es válida y coincide con la del dispositivo."
     },
     "added" : {
-      "title": "Nueva Billetera de Hardware",
-      "configuring": "Nueva billetera de hardware detectada. Configurando...",
+      "title": "Nueva Skywallet",
+      "configuring": "Nueva Skywallet detectada. Configurando...",
       "done": "Hecho",
-      "added1": "La billetera de hardware conectada se ha agregado a la lista de billeteras con el siguiente nombre:",
-      "added2": "Ahora puede consultar el saldo y las direcciones de la billetera de hardware incluso cuando no está conectada. Además, puede cambiar el nombre de la billetera o eliminarla de la lista de billeteras, si lo desea."
+      "added1": "La Skywallet conectada se ha agregado a la lista de billeteras con el siguiente nombre:",
+      "added2": "Ahora puede consultar el saldo y las direcciones de la Skywallet incluso cuando no está conectada.",
+      "added-error-info": "Debe ingresar un nombre.",
+      "characters-warning": "Si utiliza caracteres no comunes en el idioma inglés, es posible que el nombre no se muestre correctamente en el dispositivo."
     },
     "wipe" : {
-      "warning": "ADVERTENCIA: Todos los datos en la billetera de hardware serán eliminados. Si no tiene una copia de seguridad, no podrá volver a acceder a sus fondos.",
-      "confirm-delete": "Quitar también de la lista de billeteras."
+      "warning": "ADVERTENCIA: Todos los datos en la Skywallet serán eliminados. Si no tiene una copia de seguridad, no podrá volver a acceder a sus fondos.",
+      "confirm-delete-check": "Quitar también de la lista de billeteras"
     },
     "create-backup" : {
-      "warning": "ADVERTENCIA: Solo puede usar esta opción para hacer una copia de seguridad de la semilla de su billetera de hardware una vez. Si decide continuar, tendrá que escribir un grupo de palabras (se recomienda hacerlo en papel y no en una computadora) que aparecerán en la pantalla de la billetera de hardware y almacenar la lista en un lugar seguro. Cualquier persona con acceso a la lista de palabras (la \"semilla\") podrá acceder a los fondos de la cartera, por lo que se recomienda extremar las precauciones.",
-      "instructions": "Escriba la lista de palabras que aparecen en la pantalla de la billetera de hardware. Asegúrate de respetar el orden y escribir cada palabra correctamente."
+      "warning": "ADVERTENCIA: Solo puede usar esta opción para hacer una copia de seguridad de la semilla de su Skywallet una vez. Si decide continuar, tendrá que escribir un grupo de palabras (en papel, nunca en una computadora) que aparecerán en la pantalla de la Skywallet y almacenar la lista en un lugar seguro. Cualquier persona con acceso a la lista de palabras (la \"semilla\") podrá acceder a los fondos de la billetera, por lo que se recomienda extremar las precauciones.",
+      "instructions": "Escriba la lista de palabras que aparecen en la pantalla de la Skywallet. Asegúrese de respetar el orden y escribir cada palabra correctamente."
     },
     "seed-word" : {
-      "title": "Ingresar palabra",
-      "info1": "Introduzca la palabra indicada en el dispositivo",
-      "info2": "Se le pedirá que ingrese las palabras de su semilla de respaldo en orden aleatorio, más algunas palabras adicionales.",
-      "word": "Palabra solicitada",
+      "title": "Ingresar Palabra",
+      "enter-word": "Introduzca la palabra indicada en el dispositivo",
+      "info": "Se le pedirá que ingrese las palabras de su semilla de respaldo en orden aleatorio. Adicionalmente, algunas palabras adicionales aleatorias podrían serle solicitadas.",
+      "word-label": "Palabra solicitada",
       "error-invalid-word": "La palabra introducida no es válida.",
       "error-loading-words": "Cargando la lista de palabras. Por favor espere."
     },
     "change-pin" : {
       "pin-mismatch": "No se puede realizar la operación. Los dos PIN que ha introducido no coinciden."
     },
+    "remove-pin" : {
+      "warning": "ADVERTENCIA: No se recomienda eliminar el código PIN de su Skywallet, ya que será vulnerable a ser utilizada por terceros no autorizados."
+    },
     "enter-pin" : {
       "title": "Ingresar PIN",
-      "title-change-current": "Ingrese el PIN actual",
-      "title-change-new": "Ingrese el nuevo PIN",
-      "title-change-confirm": "Confirme el nuevo PIN",
-      "instructions": "El patrón de números del PIN se muestra en la pantalla de la billetera de hardware.",
-      "instructions-tx": "Introduzca el PIN para confirmar y firmar la transacción.",
-      "instructions-change": "Ingrese un PIN difícil de adivinar de entre 4 y 8 números.",
+      "title-change-current": "Ingrese el PIN Actual",
+      "title-change-new": "Ingrese el Nuevo PIN",
+      "title-change-confirm": "Confirme el Nuevo PIN",
+      "instructions-generic": "El patrón de números del PIN se muestra en la pantalla de la Skywallet.",
+      "instructions-tx": "Introduzca el PIN para confirmar y firmar la transacción. El patrón de números del PIN se muestra en la pantalla de la Skywallet.",
+      "instructions-change": "Por favor ingrese un PIN difícil de adivinar de entre 4 y 8 números. El patrón de números del PIN se muestra en la pantalla de la Skywallet.",
       "help": "¿Necesita ayuda?"
     },
     "pin-help" : {
       "title": "Ayuda",
-      "part1": "Cuando sea necesario ingresar el PIN para continuar, la pantalla de la billetera del hardware mostrará una matriz de 9 casillas con números en orden aleatorio (el orden cambia cada vez) y se le pedirá que ingrese el PIN en la billetera de software usando una matriz de 9 botones que simplemente muestran el símbolo #.",
-      "part2": "Para ingresar el PIN, mire la posición de los números del PIN en la matriz de números en la pantalla de la billetera de hardware y presione los botones correspondientes en la billetera de software. Por ejemplo, si el PIN es \"23\", el número 2 está en la esquina superior izquierda y el número 3 en el centro de la matriz de números de billetera de hardware, presione los botones superior izquierdo y central, en ese orden, en la billetera de software.",
-      "part3": "Si lo desea, también puede usar el teclado numérico para ingresar el PIN. Sin embargo, como en el ejemplo anterior, si el PIN es \"23\", no puede simplemente escribir \"23\" con el teclado numérico, sino que deberá presionar las teclas que están en la posición donde están los números 2 y 3 en la pantalla de la billetera de hardware."
+      "part1": "Cuando sea necesario ingresar el PIN para continuar, la pantalla de la Skywallet mostrará una matriz de 9 casillas con números en orden aleatorio (el orden cambia cada vez) y se le pedirá que ingrese el PIN en la billetera de software usando una matriz de 9 botones que simplemente muestran el símbolo #.",
+      "part2": "Para ingresar el PIN, mire la posición de los números del PIN en la matriz de números en la pantalla de la Skywallet y presione los botones correspondientes en la billetera de software. Por ejemplo, si el PIN es \"23\", el número 2 está en la esquina superior izquierda y el número 3 en el centro de la matriz de números de la Skywallet, presione los botones superior izquierdo y central, en ese orden, en la billetera de software.",
+      "part3": "Si lo desea, también puede usar el teclado numérico para ingresar el PIN. Sin embargo, como en el ejemplo anterior, si el PIN es \"23\", no puede simplemente escribir \"23\" con el teclado numérico, sino que deberá presionar las teclas que están en la posición donde están los números 2 y 3 en la pantalla de la Skywallet."
     },
     "create-tx" : {
-      "title": "Crear transacción"
+      "title": "Crear Transacción",
+      "upper-text": "Por favor confirme la operación en la Skywallet después de verificar si los siguientes datos coinciden EXACTAMENTE con la transacción que desea enviar y con los que muestra la Skywallet:",
+      "lower-text": "Si algún dato no corresponde a lo que muestra la Skywallet o la transacción que desea enviar, cancele la operación en su Skywallet.",
+      "separator-for-coins-and-hours": "y",
+      "separator-to-destination": "a"
     },
     "confirm-address" : {
-      "title": "Confirmar dirección",
-      "instructions": "Por favor confirme en la billetera de hardware si la dirección es:",
+      "title": "Confirmar Dirección",
+      "instructions": "Por favor confirme en la Skywallet si la dirección es:",
       "short-confirmation": "Dirección confirmada.",
-      "confirmation": "Dirección confirmada. Por seguridad, puede volver a mostrar la dirección en la billetera de hardware usando la opción \"Confirmar dirección\", en el menú que puede mostrar presionando el botón a la derecha del balance de la direccion."
+      "confirmation": "Dirección confirmada. Por seguridad, puede volver a mostrar la dirección en la Skywallet usando la opción \"Confirmar dirección\", en el menú que puede mostrar presionando el botón a la derecha del balance de la direccion."
     }
   },
 
@@ -447,32 +653,36 @@
   },
 
   "exchange": {
-    "you-send": "Usted envía",
-    "you-get": "Usted recibe (aprox.)",
-    "to-address": "A la dirección de {{coin}}",
-    "price": "Tasa de cambio",
-    "time-15": "Duración del intercambio",
+    "title-and-button": "Comprar {{ coinName }}",
+    "label-you-send": "Usted envía",
+    "label-you-get": "Usted recibe (aprox.)",
+    "label-to-address": "A la dirección de {{coin}}",
+    "label-price": "Tasa de cambio",
+    "label-stimate-transaction-time": "Duración del intercambio",
     "exchange-button": "Intercambiar",
     "min-amount": "Monto minimo:",
     "max-amount": "Monto maximo:",
-    "agree-1": "Acepto los",
-    "agree-2": "Términos de Uso",
-    "agree-3": "y la ",
-    "agree-4": "Política de Privacidad",
+    "agree-part1": "Acepto los",
+    "agree-part2": "Términos de Uso",
+    "agree-part3": "y la ",
+    "agree-part4": "Política de Privacidad",
     "powered-by": "Manejado por",
     "need-help": "¿Necesita ayuda?",
     "support-portal": "Portal de soporte",
     "history": "Historial de órdenes",
     "order-not-found": "Orden no encontrada",
-    "status": "Estado",
+    "label-status": "Estado",
     "exchanging": "Intercambiando {{from}} por {{to}}",
-    "select": "Seleccionar",
+    "destination-select-from-list-link": "Seleccionar",
     "offline": "El servicio está temporalmente offline",
-    "problem-connecting": "No se puede conectar con el servicio. Por favor, compruebe su conexión a Internet y vuelva a intentarlo más tarde.",
-    "invalid-address": "Dirección inválida.",
+    "problem-connecting": "No se puede conectar con el servicio. Por favor compruebe su conexión a Internet y vuelva a intentarlo más tarde.",
+    "invalid-address-error": "Dirección inválida.",
+    "from-coin-error-info": "Debe seleccionar una moneda.",
+    "invalid-value-error-info": "Valor inválido.",
+    "address-error-info": "Por favor introduzca una dirección válida.",
     "statuses": {
-      "user-waiting": "Esperando el deposito. Por favor, envíe {{amount}} {{from}} a la dirección de intercambio indicada más abajo",
-      "user-waiting-info": "El sistema está a la espera de que realice el depósito en la dirección de intercambio. El proceso de intercambio comenzará después de que se detecte el depósito y sea confirmado en la cadena de bloques. Si ya ha realizado el depósito, debería ser detectado en breve.",
+      "user-waiting": "Esperando el deposito. Por favor envíe {{amount}} {{from}} a la dirección de intercambio indicada más abajo",
+      "user-waiting-info": "El sistema está a la espera de que usted realice el depósito en la dirección de intercambio. El proceso de intercambio comenzará después de que se detecte el depósito y sea confirmado en la cadena de bloques. Si ya ha realizado el depósito, debería ser detectado en breve.",
       "market-waiting-confirmations": "Esperando las confirmaciones de la transacción",
       "market-waiting-confirmations-info": "El depósito ya ha sido detectado y el sistema está esperando que sea confirmado en la cadena de bloques.",
       "market-confirmed": "Transacción aceptada",
@@ -484,22 +694,24 @@
       "complete": "¡Intercambio completado!",
       "complete-info": "Los fondos han sido enviados con éxito a su dirección.",
       "error": "Se produjo un error",
-      "error-info": "Hubo un error en la operación, puede encontrar más información más abajo. Si necesita ayuda, por favor guarde todos los datos de operación que se muestran más abajo y comuníquese con soporte técnico utilizando el enlace que se encuentra en la parte inferior derecha de esta página."
+      "error-info": "Hubo un error en la operación, puede encontrar más información más abajo. Si necesita ayuda, por favor guarde todos los datos de operación que se muestran más abajo y comuníquese con soporte técnico utilizando el enlace que se encuentra en la parte inferior derecha de esta página.",
+      "user-deposit-timeout": "Orden cancelada por inactividad",
+      "user-deposit-timeout-info": "El sistema ha cancelado la orden porque no se detectó ningún depósito, por favor abra una nueva orden. Si necesita ayuda, por favor guarde todos los datos de operación que se muestran más abajo y comuníquese con soporte técnico utilizando el enlace que se encuentra en la parte inferior derecha de esta página."
     },
     "history-window": {
-      "address": "Dirección",
-      "date": "Fecha"
+      "title": "Historial de Órdenes",
+      "address": "Dirección:",
+      "date": "Fecha:"
     },
     "details": {
-      "exchange-addr": "Dirección de intercambio",
-      "exchange-addr-tag": "Payment ID o Destination Tag que debe usarse para la transacción",
-      "tx-id": "ID de la transacción",
-      "order-id": "ID de la orden",
-      "initial-price": "Tasa de cambio inicial",
-      "error-msg": "Mensaje de error",
-      "details": "Detalles",
-      "start-date": "Fecha de inicio",
-      "back": "Volver",
+      "exchange-addr-label": "Dirección de intercambio (válida solo para esta operación de intercambio)",
+      "exchange-addr-tag-label": "Payment ID o Destination Tag que debe usarse para la transacción",
+      "tx-id-label": "ID de la transacción",
+      "order-id-label": "ID de la orden",
+      "initial-price-label": "Tasa de cambio inicial",
+      "error-msg-label": "Mensaje de error",
+      "details-link": "Detalles",
+      "start-date-label": "Fecha de inicio",
       "back-alert": "La operación aún está en progreso. ¿Realmente desea volver al formulario? Puede ver el progreso de esta operación nuevamente presionando el botón \"Historial de pedidos\""
     }
   }

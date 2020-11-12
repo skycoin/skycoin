@@ -1,0 +1,12 @@
+{
+	"uxid": "8e55f10a0615a0737e6906132e09ac08a206971ba4b656f004acc7f4b7889bc8",
+	"time": 1430908702,
+	"src_block_seq": 175,
+	"src_tx": "9364ed6cfcc289df74dc6bac1993f7ab3441b898cb3f06918198d2476c83dbac",
+	"owner_address": "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
+	"coins": 625750000000,
+	"hours": 18358,
+	"calculated_hours": 18358,
+	"spent_block_seq": 179,
+	"spent_tx": "f58f664eea258100126636a4111838e489ef5aec848ca8498319c290fa2a0805"
+}

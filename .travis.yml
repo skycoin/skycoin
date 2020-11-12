@@ -1,93 +1,117 @@
-sudo: required
 dist: xenial
 language: go
 go:
-  - "1.11.x"
+  - "1.14.x"
 
-matrix:
-  include:
-    - os: linux
-      env: VERSION_UPGRADE_TEST_WAIT_TIMEOUT=45s
-    - os: osx
-      # Do not start osx build for PR
-      if: type != pull_request
-      osx_image: xcode8
-      env: VERSION_UPGRADE_TEST_WAIT_TIMEOUT=60s
-
-before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test && sudo apt-get update -qq; fi
+os:
+- osx
+- linux
+- windows
 
 env:
   global:
-    - ELECTRON_CACHE: $HOME/.cache/electron
-    - ELECTRON_BUILDER_CACHE: $HOME/.cache/electron-builder
-    - BUILD_DIR: build
-    - BUILDLIB_DIR: $BUILD_DIR/libskycoin
-    - LIB_DIR: lib
-    - BUILD_UI_TRAVIS_DIR: HOME/.skycoin-ui-travis
+    - electron_cache: $home/.cache/electron
+    - electron_builder_cache: $home/.cache/electron-builder
+    - build_dir: build
+    - buildlib_dir: $build_dir/libskycoin
+    - lib_dir: lib
+    - build_ui_travis_dir: $home/.skycoin-ui-travis
+    - VERSION_UPGRADE_TEST_WAIT_TIMEOUT: 60s
+    - BUILD_BRANCH: '"^(master|develop)$"'
+  jobs:
+    - TEST_SUIT=units
+    - TEST_SUIT=integrations
+    - TEST_SUIT=integrations/disable-csrf
+    - TEST_SUIT=integrations/auth
+
+osx_image: xcode11
+services: xvfb
+
+jobs:
+  # Exclude tests for windows and integration tests that disable-csrf and with auth
+  exclude:
+  - os: windows
+    env: TEST_SUIT=units
+  - os: windows
+    env: TEST_SUIT=integrations
+  - os: windows
+    env: TEST_SUIT=integrations/disable-csrf
+  - os: windows
+    env: TEST_SUIT=integrations/auth
+  - os: osx
+    env: TEST_SUIT=integrations/disable-csrf
+  - os: osx
+    env: TEST_SUIT=integrations/auth
+  # Build stage jobs
+  include:
+  - name: linux-wallet-build
+    stage: build
+    os: linux
+    env: TEST_SUIT=""
+  - name: osx-wallet-build
+    stage: build
+    os: osx
+    env: TEST_SUIT=""
+
+  - name: windows-wallet-build
+    stage: build
+    os: windows
+    env:
+    - GOX_OUTPUT='.gox_output'
+    - TEST_SUIT=""
 
 cache:
   directories:
   - electron/node_modules
-  - electron/src/node_modules
+  - electron/app/node_modules
   - $HOME/.cache/electron
   - $HOME/.cache/electron-builder
-  - $HOME/.npm/_prebuilds
-  - src/gui/static/node_modules
 
 addons:
   chrome: stable
 
 install:
   # Install gox
-  - go get github.com/gz-c/gox
+  - if [[ $TRAVIS_BUILD_STAGE_NAME == "Build" ]]; then GO111MODULE=off go get github.com/mitchellh/gox; fi
   # Install dependences for building wallet
-  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PULL_REQUEST" == false ]]; then sudo apt-get install --no-install-recommends -y icnsutils graphicsmagick xz-utils libudev-dev libusb-1.0-0-dev && nvm install 8; fi
-  - if [[ ! -d $GOPATH/src/github.com/skycoin/skycoin ]]; then mkdir -p $GOPATH/src/github.com/skycoin; ln -s $TRAVIS_BUILD_DIR $GOPATH/src/github.com/skycoin/skycoin; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PULL_REQUEST" == "false" ]]; then
+    sudo apt-get install --no-install-recommends -y icnsutils graphicsmagick xz-utils libudev-dev libusb-1.0-0-dev;
+    fi
+  - if [[ ! -d $GOPATH/src/github.com/skycoin/skycoin ]]; then
+    mkdir -p $GOPATH/src/github.com/skycoin;
+    ln -s $TRAVIS_BUILD_DIR $GOPATH/src/github.com/skycoin/skycoin;
+    fi
   - cd $GOPATH/src/github.com/skycoin/skycoin
-  - go get -t ./...
-  - make install-linters
-  # Install pinned golangci-lint, overriding the latest version install by make install-linters
-  - VERSION=1.17.0 ./ci-scripts/install-golangci-lint.sh
-  - nvm install 8.11.0
-  - nvm use 8.11.0
-  - make install-deps-ui
+  - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then nvm install 10.16.3 && nvm use 10.16.3; fi
+  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then ./ci-scripts/install-nodejs-win.sh; fi
 
 before_script:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" && "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/add-key.sh; fi
-
-services:
-  - xvfb
+  - if [[ $TRAVIS_BUILD_STAGE_NAME == "Build" ]] && [[ "$TRAVIS_PULL_REQUEST" == "false" ]] && [[ "$TRAVIS_OS_NAME" == "osx" ]] && [[ "$TRAVIS_BRANCH" =~ $BUILD_BRANCH || -n "$TRAVIS_TAG" ]]; then
+    ./ci-scripts/add-key.sh;
+    fi
+  # Source the ~/.bashrc to update the PATH for windows
+  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then source $HOME/.bashrc; fi
 
 script:
-  - make check-newcoin
-  - make lint
-  - make test-386
-  - make test-amd64
-  - make integration-tests-stable
-  - make lint-ui
-  - make build-ui-travis
-  - make test-ui
-  - make test-ui-e2e
-  # Build wallets
-  - if [[ "$TRAVIS_PULL_REQUEST" == false ]]; then ./ci-scripts/build-wallet.sh; fi
-
-notifications:
-  email:
-    - travis@skycoin.net
-  # https://github.com/kvld/travisci-telegram TravisCI Telegram Bot integration
-  webhooks: https://fathomless-fjord-24024.herokuapp.com/notify
+  - if [[ "$TEST_SUIT" != "" ]]; then ./ci-scripts/lint-and-test.sh $TEST_SUIT; fi
+  - if [[ "$TRAVIS_BUILD_STAGE_NAME" == "Build" ]]; then ./ci-scripts/build-wallet.sh; fi
 
 deploy:
   provider: s3
   access_key_id: $AWS_ACCESS_KEY_ID
   secret_access_key: $AWS_SECRET_ACCESS_KEY
   bucket: $AWS_BUCKET
-  skip_cleanup: true
   local_dir: electron/release
-  upload-dir: wallet
+  upload_dir: wallet
   acl: public_read
   region: $AWS_REGION
+  edge: true # opt in to dpl v2
   on:
     repo: skycoin/skycoin
     tags: true
+
+notifications:
+  email:
+    - travis@skycoin.com
+  # https://github.com/kvld/travisci-telegram TravisCI Telegram Bot integration
+  webhooks: https://fathomless-fjord-24024.herokuapp.com/notify

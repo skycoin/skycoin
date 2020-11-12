@@ -55,8 +55,10 @@ function codesign_if_exists {
     BIN="${GOX_GUI_OUTPUT_DIR}/${1}"
 
     if [ -f "$BIN" ]; then
-        echo "signing daemon binary"
-        codesign --force --sign "Developer ID Application: yunfei mao" "${BIN}"
+        if $CODE_SIGN; then
+            echo "signing daemon binary"
+            codesign --force --sign "Developer ID Application: yunfei mao" "${BIN}"
+        fi
     else
         echo "$BIN does not exsit"
     fi

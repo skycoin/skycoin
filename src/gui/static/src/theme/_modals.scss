@@ -1,57 +1,40 @@
+/*********************
+* Styles for the modal windows.
+*********************/
 @import 'variables';
 
+// Limits the height to show a vertical margin.
+// (Modifies an element or class added by Angular Material)
+.mat-dialog-content {
+  max-height: 90vh !important;
+}
+
+@media (max-height: 600px) {
+  .mat-dialog-content {
+    max-height: 80vh !important;
+  }
+}
+
+// Rounds the corners of the modal windows.
+// (Modifies an element or class added by Angular Material)
+mat-dialog-container {
+  border-radius: $rounded-element-border-radius !important;
+  overflow: hidden;
+}
+
+// Removes the default padding.
+// (Modifies an element or class added by Angular Material)
+.mat-dialog-container {
+  padding: 0 !important;
+}
+
+// Style of the main area of the modal windows.
 .modal {
-  .-body {
-    line-height: 20px;
-    font-size: 13px;
-    color: $grey-dark;
-    opacity: 0.8;
-  }
-
-  .big-text {
-    color: black;
-    font-weight: bold;
-    font-size: 15px;
-  }
-
-  .-check-container{
-    text-align: center;
-    margin-top: 25px;
-
-    .-check {
-      label {
-        font-family: Skycoin;
-        line-height: normal;
-        font-size: 14px;
-      
-        color: $grey-dark;
-      }
-    
-      .mat-checkbox-checkmark-path {
-        position: absolute;
-        width: 18px;
-        height: 8px;
-        left: 4.59px;
-        top: 9px;
-        stroke: $gradient-blue-dark !important;
-      }
-    
-      .mat-checkbox-background, .mat-checkbox-frame {
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        position: absolute;
-        box-sizing: border-box;
-        pointer-events: none;
-        width: 20px;
-        height: 20px;
-        background: rgba(30, 34, 39, 0.05);
-        border-radius: 6px;
-        border-color: transparent;
-      }
-    }
-  }
+  background-color: $white;
+  padding: 0px $modal-content-padding;
+  line-height: 1.5;
+  font-size: $font-size-standard;
+  color: $grey-dark;
 
   .-buttons {
     text-align: center;
@@ -61,5 +44,22 @@
     button {
       margin-top: 28px;
     }
+  }
+}
+
+// Special class for the modal windows which show lists of elements made of buttons.
+.list-button-container {
+  margin: 0px -10px;
+
+  button.top-line:first-of-type {
+    border-top: 1px solid $grey-very-light;
+  }
+
+  button {
+    width: 100%;
+    text-align: left;
+    padding: 10px 10px;
+    border-bottom: 1px solid $grey-very-light;
+    cursor: pointer;
   }
 }

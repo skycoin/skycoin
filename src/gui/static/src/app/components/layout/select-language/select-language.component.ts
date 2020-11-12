@@ -1,17 +1,33 @@
 import { Component, OnInit } from '@angular/core';
-import { MatDialogRef } from '@angular/material/dialog';
+import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 
 import { LanguageData, LanguageService } from '../../../services/language.service';
 
+/**
+ * Allows to change the language displayed by the UI.
+ */
 @Component({
   selector: 'app-select-language',
   templateUrl: './select-language.component.html',
   styleUrls: ['./select-language.component.scss'],
 })
 export class SelectLanguageComponent implements OnInit {
-
   languages: LanguageData[];
   disableDismiss: boolean;
+
+  /**
+   * Opens the modal window. Please use this function instead of opening the window "by hand".
+   * @param disableClose Disables the options for closing the modal window without
+   * selecting a langhuage.
+   */
+  public static openDialog(dialog: MatDialog, disableClose = false): MatDialogRef<SelectLanguageComponent, any> {
+    const config = new MatDialogConfig();
+    config.autoFocus = false;
+    config.disableClose = disableClose;
+    config.width = '600px';
+
+    return dialog.open(SelectLanguageComponent, config);
+  }
 
   constructor(
     public dialogRef: MatDialogRef<SelectLanguageComponent>,
@@ -24,6 +40,10 @@ export class SelectLanguageComponent implements OnInit {
   }
 
   closePopup(language: LanguageData = null) {
-    this.dialogRef.close(language ? language.code : undefined);
+    if (language) {
+      this.languageService.changeLanguage(language.code);
+    }
+
+    this.dialogRef.close();
   }
 }

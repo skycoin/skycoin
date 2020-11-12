@@ -3,6 +3,7 @@ package readable
 import (
 	"github.com/skycoin/skycoin/src/cipher/bip44"
 	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/wallet/crypto"
 )
 
 // Balance has coins and hours
@@ -60,7 +61,7 @@ type WalletMeta struct {
 	Label      string            `json:"label"`
 	Type       string            `json:"type"`
 	Version    string            `json:"version"`
-	CryptoType wallet.CryptoType `json:"crypto_type"`
+	CryptoType crypto.CryptoType `json:"crypto_type"`
 	Timestamp  int64             `json:"timestamp"`
 	Encrypted  bool              `json:"encrypted"`
 	Bip44Coin  *bip44.CoinType   `json:"bip44_coin,omitempty"` // For bip44

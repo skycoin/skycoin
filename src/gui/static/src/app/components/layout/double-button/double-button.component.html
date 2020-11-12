@@ -1,14 +1,14 @@
 <div class="-buttons-container {{ className }}">
   <app-button
-    class="-toggle dark -small-button"
-    [disabled]="activeButton !== ButtonState.LeftButton"
-    (action)="onLeftClick()"
+    class="-toggle -small-button"
+    [disabled]="activeButton !== ButtonStates.LeftButton"
+    (action)="onLeftButtonClicked()"
     [forceEmitEvents]="true"
   >{{ leftButtonText }}</app-button>
   <app-button
-    class="-toggle dark -small-button"
-    [disabled]="activeButton !== ButtonState.RightButton"
-    (action)="onRightClick()"
+    class="-toggle -small-button"
+    [disabled]="activeButton !== ButtonStates.RightButton"
+    (action)="onRightButtonClicked()"
     [forceEmitEvents]="true"
   >{{ rightButtonText }}</app-button>
 </div>

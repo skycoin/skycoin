@@ -16,7 +16,7 @@ default_connections = [
 	"139.162.7.132:6000",
 ]
 launch_browser = true
-peer_list_url = "https://downloads.skycoin.net/blockchain/peers.txt"
+peer_list_url = "https://downloads.skycoin.com/blockchain/peers.txt"
 unconfirmed_burn_factor = 10
 unconfirmed_max_transaction_size = 777
 unconfirmed_max_decimals = 3
@@ -30,6 +30,7 @@ coin_hours_display_name = "Testcoin Hours"
 coin_hours_display_name_singular = "Testcoin Hour"
 coin_hours_ticker = "TCH"
 explorer_url = "https://explorer.testcoin.com"
+version_url = "https://version.testcoin.com/testcoin/version.txt"
 
 [params]
 user_burn_factor = 3

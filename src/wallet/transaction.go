@@ -110,36 +110,40 @@ func SignTransaction(w Wallet, txn *coin.Transaction, signIndexes []int, uxOuts 
 	}
 
 	// Build a mapping of addresses to the inputs that need to be signed
-	addrs := make(map[cipher.Address][]int)
+	addrsMap := make(map[cipher.Address][]int)
 	if len(signIndexes) > 0 {
 		for _, in := range signIndexes {
 			if !signedTxn.Sigs[in].Null() {
 				return nil, NewError(fmt.Errorf("Transaction is already signed at index %d", in))
 			}
-			addrs[uxOuts[in].Body.Address] = append(addrs[uxOuts[in].Body.Address], in)
+			addrsMap[uxOuts[in].Body.Address] = append(addrsMap[uxOuts[in].Body.Address], in)
 		}
 	} else {
 		for i, o := range uxOuts {
 			if !signedTxn.Sigs[i].Null() {
 				continue
 			}
-			addrs[o.Body.Address] = append(addrs[o.Body.Address], i)
+			addrsMap[o.Body.Address] = append(addrsMap[o.Body.Address], i)
 		}
 	}
 
 	// Check that the wallet has all addresses needed for signing
-	toSign := make(map[int][]int)
-	for i, e := range w.GetEntries() {
-		if len(toSign) == len(addrs) {
+	toSign := make(map[cipher.SecKey][]int)
+	entries, err := w.GetEntries()
+	if err != nil {
+		return nil, err
+	}
+	for _, e := range entries {
+		if len(toSign) == len(addrsMap) {
 			break
 		}
 		addr := e.SkycoinAddress()
-		if x, ok := addrs[addr]; ok {
-			toSign[i] = x
+		if x, ok := addrsMap[addr]; ok {
+			toSign[e.Secret] = x
 		}
 	}
 
-	if len(toSign) != len(addrs) {
+	if len(toSign) != len(addrsMap) {
 		return nil, NewError(errors.New("Wallet cannot sign all requested inputs"))
 	}
 
@@ -150,7 +154,7 @@ func SignTransaction(w Wallet, txn *coin.Transaction, signIndexes []int, uxOuts 
 				return nil, NewError(fmt.Errorf("Transaction is already signed at index %d", x))
 			}
 
-			if err := signedTxn.SignInput(w.GetEntryAt(k).Secret, x); err != nil {
+			if err := signedTxn.SignInput(k, x); err != nil {
 				return nil, err
 			}
 		}
@@ -201,36 +205,23 @@ func CreateTransaction(w Wallet, p transaction.Params, auxs coin.AddressUxOuts, 
 
 	// Check that auxs does not contain addresses that are not known to this wallet
 	for a := range auxs {
-		if !w.HasEntry(a) {
+		has, err := w.HasEntry(a)
+		if err != nil {
+			return nil, nil, err
+		}
+		if !has {
 			return nil, nil, fmt.Errorf("Address %s from auxs not found in wallet", a)
 		}
 	}
 
 	// Generate a new change address for bip44 wallets
-	var changeEntry *Entry
 	if p.ChangeAddress == nil && w.Type() == WalletTypeBip44 {
-		e, err := w.(*Bip44Wallet).PeekChangeEntry()
-		if err != nil {
-			logger.Critical().WithError(err).Error("PeekChangeEntry failed")
-			return nil, nil, fmt.Errorf("PeekChangeEntry failed: %v", err)
-		}
-		changeAddr := e.Address.(cipher.Address)
-		p.ChangeAddress = &changeAddr
-		changeEntry = &e
+		err := errors.New("change address must not be nil")
+		logger.Critical().WithError(err).Error("CreateTransaction change address must not be nil for bip44 wallet")
+		return nil, nil, err
 	}
 
-	txn, uxb, err := transaction.Create(p, auxs, headTime)
-
-	if err == nil && changeEntry != nil && w.Type() == WalletTypeBip44 {
-		// Commit the change address to the bip44 wallet, assuming it will be used
-		if e, err := w.(*Bip44Wallet).GenerateChangeEntry(); err != nil {
-			logger.WithError(err).Panic("GenerateChangeEntry failed after a PeekChangeEntry")
-		} else if e != *changeEntry {
-			logger.Panicf("GenerateChangeEntry produced a different change entry than PeekChangeEntry: %s != %s", e.Address, changeEntry.Address)
-		}
-	}
-
-	return txn, uxb, err
+	return transaction.Create(p, auxs, headTime)
 }
 
 // CreateTransactionSigned creates and signs a transaction based upon transaction.Params.
@@ -249,8 +240,9 @@ func CreateTransactionSigned(w Wallet, p transaction.Params, auxs coin.AddressUx
 	for i, s := range uxb {
 		entry, ok := entriesMap[s.Address]
 		if !ok {
-			entry, ok = w.GetEntry(s.Address)
-			if !ok {
+			var err error
+			entry, err = w.GetEntry(s.Address)
+			if err == ErrEntryNotFound {
 				// This should not occur because CreateTransaction should have checked it already
 				err := fmt.Errorf("Chosen spend address %s not found in wallet", s.Address)
 				logger.Critical().WithError(err).Error()

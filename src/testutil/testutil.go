@@ -45,6 +45,37 @@ func PrepareDB(t *testing.T) (*dbutil.DB, func()) {
 	}
 }
 
+// PrepareDBReadOnly creates and opens a readonly temporary test DB and returns it with a cleanup callback
+func PrepareDBReadOnly(t *testing.T) (*dbutil.DB, func()) {
+	f, err := ioutil.TempFile("", "testdb")
+	require.NoError(t, err)
+
+	// Open to init the DB, otherwise bolt will try to open an readonly db to init and fail.
+	db, err := bolt.Open(f.Name(), 0700, nil)
+	require.NoError(t, err)
+	require.NoError(t, db.Close())
+
+	db, err = bolt.Open(f.Name(), 0600, &bolt.Options{ReadOnly: true})
+	require.NoError(t, err)
+
+	return dbutil.WrapDB(db), func() {
+		err := db.Close()
+		if err != nil {
+			t.Logf("Failed to close database: %v", err)
+		}
+
+		err = f.Close()
+		if err != nil {
+			t.Logf("Failed to close file: %v", err)
+		}
+
+		err = os.Remove(f.Name())
+		if err != nil {
+			t.Logf("Failed to remove temp file %s: %v", f.Name(), err)
+		}
+	}
+}
+
 // RequireError requires that an error is not nil and that its message matches
 func RequireError(t *testing.T, err error, msg string) {
 	t.Helper()

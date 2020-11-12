@@ -1,182 +1,136 @@
+import { throwError as observableThrowError, Observable } from 'rxjs';
+import { first, map, mergeMap, catchError } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
-import { Http, RequestOptions, Headers } from '@angular/http';
-import { Observable } from 'rxjs/Observable';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+
 import { environment } from '../../environments/environment';
-import 'rxjs/add/observable/throw';
-import 'rxjs/add/operator/catch';
-import 'rxjs/add/operator/map';
-import { TranslateService } from '@ngx-translate/core';
-import { BigNumber } from 'bignumber.js';
+import { processServiceError } from '../utils/errors';
+import { OperationError } from '../utils/operation-error';
 
-import {
-  Address, GetWalletsResponseEntry, GetWalletsResponseWallet, NormalTransaction,
-  PostWalletNewAddressResponse, Version, Wallet,
-} from '../app.datatypes';
+// IMPORTANT: AFTER MAKING MODIFICATIONS TO THIS INTERFACE YOU MUST ALSO
+// MAKE APPROPIATE CHANGES TO THE createDefaultRequestOptions
+// FUNCTION INSIDE ApiService.
+/**
+ * Options for configuring the requests to the node API.
+ */
+export interface NodeApiRequestOptions {
+  /**
+   * If true, the request will be sent to the API v2 and not to the v1.
+   */
+  useV2?: boolean;
+  /**
+   * If true, the data will be sent to the node encoded as JSON. This only makes sense for POST
+   * request while using the v1, as GET request only send the data as params on the URL and the
+   * data is always sent encoded as JSON when using the API v2.
+   */
+  sendDataAsJson?: boolean;
+}
 
+/**
+ * Allows to make request to the node api with ease. Check the node API documentation for
+ * information about the API endpoints.
+ */
 @Injectable()
 export class ApiService {
+  /**
+   * URL for accessing the node API.
+   */
   private url = environment.nodeUrl;
 
   constructor(
-    private http: Http,
-    private translate: TranslateService,
+    private http: HttpClient,
   ) { }
 
-  getTransactions(addresses: Address[]): Observable<NormalTransaction[]> {
-    const formattedAddresses = addresses.map(a => a.address).join(',');
-
-    return this.post('transactions', {addrs: formattedAddresses, verbose: true})
-      .map(transactions => transactions.map(transaction => ({
-        addresses: [],
-        balance: new BigNumber(0),
-        block: transaction.status.block_seq,
-        confirmed: transaction.status.confirmed,
-        timestamp: transaction.txn.timestamp,
-        txid: transaction.txn.txid,
-        inputs: transaction.txn.inputs,
-        outputs: transaction.txn.outputs,
-      })));
-  }
-
-  getVersion(): Observable<Version> {
-    return this.get('version');
-  }
-
-  generateSeed(entropy: number = 128): Observable<string> {
-    return this.get('wallet/newSeed', { entropy }).map(response => response.seed);
-  }
-
-  getHealth() {
-    return this.get('health');
-  }
-
-  getWallets(): Observable<Wallet[]> {
-    return this.get('wallets')
-      .map((response: GetWalletsResponseWallet[]) => {
-        const wallets: Wallet[] = [];
-        response.forEach(wallet => {
-          const processedWallet: Wallet = {
-            label: wallet.meta.label,
-            filename: wallet.meta.filename,
-            coins: null,
-            hours: null,
-            addresses: [],
-            encrypted: wallet.meta.encrypted,
-          };
-
-          if (wallet.entries) {
-            processedWallet.addresses = wallet.entries.map((entry: GetWalletsResponseEntry) => {
-              return {
-                address: entry.address,
-                coins: null,
-                hours: null,
-                confirmed: true,
-              };
-            });
-          }
-
-          wallets.push(processedWallet);
-        });
-
-        return wallets;
-      });
-  }
-
-  getWalletSeed(wallet: Wallet, password: string): Observable<string> {
-    return this.post('wallet/seed', { id: wallet.filename, password })
-      .map(response => response.seed);
-  }
-
-  postWalletCreate(label: string, seed: string, scan: number, password: string, type: string): Observable<Wallet> {
-    const params = { label, seed, scan, type };
-
-    if (password) {
-      params['password'] = password;
-      params['encrypt'] = true;
+  /**
+   * Sends a GET request to the node API.
+   * @param url URL to send the request to. You must omit the "http://x:x/api/vx/" part.
+   * @param params Object with the key/value pairs to be sent to the node as part of
+   * the querystring.
+   * @param options Request options.
+   */
+  get(url: string, params: any = null, options: NodeApiRequestOptions = null): Observable<any> {
+    if (!options) {
+      options = this.createDefaultRequestOptions();
+    } else {
+      options = Object.assign(this.createDefaultRequestOptions(), options);
     }
 
-    return this.post('wallet/create', params)
-      .map(response => ({
-          label: response.meta.label,
-          filename: response.meta.filename,
-          coins: null,
-          hours: null,
-          addresses: response.entries.map(entry => ({ address: entry.address, coins: null, hours: null, confirmed: true })),
-          encrypted: response.meta.encrypted,
-        }));
+    return this.http.get(this.getUrl(url, params, options.useV2), this.returnRequestOptions(options, null)).pipe(
+      catchError((error: any) => this.processConnectionError(error)));
   }
 
-  postWalletNewAddress(wallet: Wallet, num: number, password?: string): Observable<Address[]> {
-    const params = new Object();
-    params['id'] = wallet.filename;
-    params['num'] = num;
-    if (password) {
-      params['password'] = password;
+  /**
+   * Sends a POST request to the node API.
+   * @param url URL to send the request to. You must omit the "http://x:x/api/vx/" part.
+   * @param params Object with the key/value pairs to be sent to the node as
+   * x-www-form-urlencoded or JSON, as defined in the options param.
+   * @param options Request options.
+   */
+  post(url: string, params: any = null, options: NodeApiRequestOptions = null): Observable<any> {
+    if (!options) {
+      options = this.createDefaultRequestOptions();
+    } else {
+      options = Object.assign(this.createDefaultRequestOptions(), options);
     }
 
-    return this.post('wallet/newAddress', params)
-      .map((response: PostWalletNewAddressResponse) => {
-        const result: Address[] = [];
-        response.addresses.forEach(value => {
-          result.push({ address: value, coins: null, hours: null });
-        });
-
-        return result;
-      });
-  }
-
-  postWalletToggleEncryption(wallet: Wallet, password: string) {
-    return this.post('wallet/' + (wallet.encrypted ? 'decrypt' : 'encrypt'), { id: wallet.filename, password });
-  }
-
-  get(url, params = null, options: any = {}, useV2 = false) {
-    return this.http.get(this.getUrl(url, params, useV2), this.returnRequestOptions(options))
-      .map((res: any) => res.json())
-      .catch((error: any) => this.processConnectionError(error));
-  }
-
-  getCsrf() {
-    return this.get('csrf').map(response => response.csrf_token);
-  }
-
-  post(url, params = {}, options: any = {}, useV2 = false) {
-    return this.getCsrf().first().flatMap(csrf => {
-      options.csrf = csrf;
-
-      if (useV2) {
-        options.json = true;
+    return this.getCsrf().pipe(first(), mergeMap(csrf => {
+      // V2 always needs the data to be sent encoded as JSON.
+      if (options.useV2) {
+        options.sendDataAsJson = true;
       }
 
       return this.http.post(
-        this.getUrl(url, null, useV2),
-        options.json || useV2 ? JSON.stringify(params) : this.getQueryString(params),
-        this.returnRequestOptions(options),
-      )
-        .map((res: any) => res.json())
-        .catch((error: any) => this.processConnectionError(error));
-    });
+        this.getUrl(url, null, options.useV2),
+        options.sendDataAsJson ? (params ? JSON.stringify(params) : '') : this.getQueryString(params),
+        this.returnRequestOptions(options, csrf),
+      ).pipe(
+        catchError((error: any) => this.processConnectionError(error)));
+    }));
   }
 
-  returnRequestOptions(additionalOptions) {
-    const options = new RequestOptions();
+  /**
+   * Creates a NodeApiRequestOptions instance with the default values.
+   */
+  private createDefaultRequestOptions(): NodeApiRequestOptions {
+    return {
+      useV2: false,
+      sendDataAsJson: false,
+    };
+  }
 
-    options.headers = this.getHeaders(additionalOptions);
+  /**
+   * Gets a csrf token from the node, to be able to make a post request to the node API.
+   */
+  private getCsrf(): Observable<string> {
+    return this.get('csrf').pipe(map(response => response.csrf_token));
+  }
 
-    if (additionalOptions.csrf) {
-      options.headers.append('X-CSRF-Token', additionalOptions.csrf);
+  /**
+   * Returns the options object requiered by HttpClient for sending a request.
+   * @param options Options that will be used for making the request.
+   * @param csrfToken Csrf token to be added on a header, for being able to make
+   * POST requests.
+   */
+  private returnRequestOptions(options: NodeApiRequestOptions, csrfToken: string): any {
+    const requestOptions: any = {};
+
+    requestOptions.headers = new HttpHeaders();
+    requestOptions.headers = requestOptions.headers.append('Content-Type', options.sendDataAsJson ? 'application/json' : 'application/x-www-form-urlencoded');
+
+    if (csrfToken) {
+      requestOptions.headers = requestOptions.headers.append('X-CSRF-Token', csrfToken);
     }
 
-    return options;
+    return requestOptions;
   }
 
-  private getHeaders(options) {
-    const headers = new Headers();
-    headers.append('Content-Type', options.json ? 'application/json' : 'application/x-www-form-urlencoded');
-
-    return headers;
-  }
-
-  private getQueryString(parameters = null) {
+  /**
+   * Encodes a list of params as a query string, for being used for sending data
+   * in a request.
+   * @param parameters Object with the key/value pairs that will be used for
+   * creating the querystring.
+   */
+  private getQueryString(parameters: any = null): string {
     if (!parameters) {
       return '';
     }
@@ -188,34 +142,26 @@ export class ApiService {
     }, []).join('&');
   }
 
-  private getUrl(url, options = null, useV2 = false) {
-    if ((url as string).startsWith('/')) {
-      url = (url as string).substr(1, (url as string).length - 1);
+  /**
+   * Get the complete URL needed for making a request to the node API.
+   * @param url URL to send the request to, omitting the "http://x:x/api/vx/" part.
+   * @param params Object with the key/value pairs to be sent to the node as part of
+   * the querystring.
+   * @param useV2 If the returned URL must point to the API v2 (true) or v1 (false).
+   */
+  private getUrl(url: string, params: any = null, useV2 = false): string {
+    if (url.startsWith('/')) {
+      url = url.substr(1, url.length - 1);
     }
 
-    return this.url + (useV2 ? 'v2/' : 'v1/') + url + '?' + this.getQueryString(options);
+    return this.url + (useV2 ? 'v2/' : 'v1/') + url + '?' + this.getQueryString(params);
   }
 
-  processConnectionError(error: any, connectingToHwWalletDaemon = false): Observable<void> {
-    if (error) {
-      if (typeof error['_body'] === 'string') {
-
-        return Observable.throw(error);
-      }
-
-      if (error.error && typeof error.error === 'string') {
-        error['_body'] = error.error;
-
-        return Observable.throw(error);
-      } else if (error.message) {
-        error['_body'] = error.message;
-
-        return Observable.throw(error);
-      }
-    }
-    const err = Error(this.translate.instant(connectingToHwWalletDaemon ? 'hardware-wallet.errors.daemon-connection' : 'service.api.server-error'));
-    err['_body'] = err.message;
-
-    return Observable.throw(err);
+  /**
+   * Takes an error returned by the node and converts it to an instance of OperationError.
+   * @param error Error obtained while triying to connect to the node API.
+   */
+  private processConnectionError(error: any): Observable<OperationError> {
+    return observableThrowError(processServiceError(error));
   }
 }

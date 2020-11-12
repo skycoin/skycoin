@@ -11,7 +11,7 @@ import (
 )
 
 func Example() {
-	// In cmd/cli/cli.go:
+	// In cmd/skycoin-cli/skycion-cli.go:
 	cfg, err := LoadConfig()
 	if err != nil {
 		fmt.Println(err)

@@ -1,28 +1,37 @@
-<app-modal class="modal" [headline]="(data.isForHwWallet ? 'hardware-wallet.seed-word.title' : 'wallet.new.seed-label') | translate" [dialog]="dialogRef">
+<app-modal [headline]="(data.reason === wordAskedReasons.HWWalletOperation ? 'hardware-wallet.seed-word.title' : 'wallet.new.seed-label') | translate" [dialog]="dialogRef">
+  <!-- Instructions. -->
   <app-hw-message
-    [upperBigText]="'hardware-wallet.seed-word.info1' | translate"
-    [text]="'hardware-wallet.seed-word.info2' | translate"
-    [icon]="msgIcons.None"
-    *ngIf="data.isForHwWallet"
+    [upperBigText]="'hardware-wallet.seed-word.enter-word' | translate"
+    [text]="'hardware-wallet.seed-word.info' | translate"
+    *ngIf="data.reason === wordAskedReasons.HWWalletOperation"
   ></app-hw-message>
   <app-hw-message
     [upperBigText]="'wallet.new.seed.enter-word' | translate:{number: data.wordNumber}"
-    [text]="(!data.restoringSoftwareWallet ? 'wallet.new.seed.new-seed-help' : 'wallet.new.seed.recover-seed-help') | translate"
-    [icon]="msgIcons.None"
-    *ngIf="!data.isForHwWallet"
+    [text]="(data.reason === wordAskedReasons.CreatingSoftwareWallet ? 'wallet.new.seed.new-seed-info' : 'wallet.new.seed.recover-seed-info') | translate"
+    *ngIf="data.reason !== wordAskedReasons.HWWalletOperation"
   ></app-hw-message>
-  <div [formGroup]="form" class="form-container">
+
+  <!-- Form. -->
+  <div [formGroup]="form" class="modal-form-container">
     <div class="form-field">
-      <label for="word" *ngIf="data.isForHwWallet">{{ 'hardware-wallet.seed-word.word' | translate }}</label>
-      <input matInput [matAutocomplete]="auto" formControlName="word" id="word" (keydown.enter)="sendWord()">
-      <mat-autocomplete #auto="matAutocomplete">
+      <label for="word" *ngIf="data.reason === wordAskedReasons.HWWalletOperation">{{ 'hardware-wallet.seed-word.word-label' | translate }}</label>
+      <input
+        matInput
+        [matAutocomplete]="auto"
+        formControlName="word"
+        id="word"
+        (keydown.enter)="sendWord()"
+        [appFormFieldError]="inputErrorMsg"
+        (blur)="validateForm()"
+      >
+      <mat-autocomplete #auto="matAutocomplete" [autoActiveFirstOption]="true">
         <mat-option class="option" *ngFor="let option of filteredOptions | async" [value]="option" (click)="sendWord()">{{option}}</mat-option>
       </mat-autocomplete>
     </div>
   </div>
   <div class="-buttons">
-    <app-button (action)="sendWord()" class="primary" [disabled]="!form.valid">
-      {{ 'hardware-wallet.general.continue' | translate }}
+    <app-button (action)="sendWord()" class="primary-button" [disabled]="!form.valid">
+      {{ 'common.continue-button' | translate }}
     </app-button>
   </div>
 </app-modal>

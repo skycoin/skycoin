@@ -1,6 +1,11 @@
 {
   "compileOnSave": false,
+  "angularCompilerOptions": {
+    "preserveWhitespaces": true
+  },
   "compilerOptions": {
+    "downlevelIteration": true,
+    "importHelpers": true,
     "outDir": "./dist/out-tsc",
     "sourceMap": true,
     "declaration": false,
@@ -14,6 +19,8 @@
     "lib": [
       "es2016",
       "dom"
-    ]
+    ],
+    "module": "esnext",
+    "baseUrl": "./"
   }
 }

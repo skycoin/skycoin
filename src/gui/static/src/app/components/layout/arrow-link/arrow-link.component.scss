@@ -1,0 +1,12 @@
+@import '../../../../theme/variables';
+
+span {
+  padding-left: 5px;
+
+  mat-icon {
+    padding: 0;
+    display: inline;
+    vertical-align: middle;
+    font-size: 13px;
+  }
+}

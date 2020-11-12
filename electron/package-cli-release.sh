@@ -39,9 +39,9 @@ function copy_if_exists {
         echo "Copying CHANGELOG.md to $DESTDIR"
         cp ../CHANGELOG.md "$DESTDIR"
 
-        # Copy cmd/cli/README.md to app
-        echo "Copying cmd/cli/README.md to $DESTDIR"
-        cp ../cmd/cli/README.md "$DESTDIR"
+        # Copy cmd/skycoin-cli/README.md to app
+        echo "Copying cmd/skycoin-cli/README.md to $DESTDIR"
+        cp ../cmd/skycoin-cli/README.md "$DESTDIR"
 
         echo "Adding $DESTSRC to package-source.sh list"
         DESTSRCS+=("$DESTSRC")

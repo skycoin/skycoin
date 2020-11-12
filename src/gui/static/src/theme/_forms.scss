@@ -1,0 +1,219 @@
+/*********************
+* Styles for the form elements.
+*********************/
+@import 'variables';
+
+// General container for one label and a form field.
+.form-field {
+  margin-bottom: $form-field-margin;
+
+  label {
+    color: $black;
+    display: block;
+    font-size: $font-size-standard;
+    line-height: 1.5;
+    margin-bottom: 2px;
+  }
+
+  // Base style for the form fields, not to be used directly.
+  .field-base {
+    color: $black;
+    background-color: white;
+    border: $input-border-size solid $input-border-color;
+    border-radius: $input-border-radius;
+    box-sizing: border-box;
+    display: block;
+    font-size: $font-size-standard;
+    line-height: 1.5;
+    padding: 10px 10px;
+    width: 100%;
+  }
+
+  input {
+    @extend .field-base;
+  }
+
+  input:disabled {
+    @extend .element-disabled;
+  }
+
+  select {
+    @extend .field-base;
+    appearance: none;
+
+    option {
+      color: $black;
+    }
+
+    option:disabled {
+      color: $grey-dark;
+    }
+  }
+
+  select:disabled {
+    @extend .element-disabled;
+  }
+
+  textarea {
+    @extend .field-base;
+  }
+
+  textarea:disabled {
+    @extend .element-disabled;
+  }
+
+  mat-slider {
+    @extend .field-base;
+    padding: 0;
+    height: 40px;
+
+    .mat-slider-thumb, .mat-slider-thumb-label {
+      background-color: $main-color !important;
+      transform: scale(1) !important;
+      border-width: 0 !important;
+    }
+
+    .mat-slider-thumb {
+      right: -6px;
+      width: 12px;
+      height: 32px;
+      border-radius: 3px;
+    }
+
+    .mat-slider-track-fill, .mat-slider-track-background {
+      background-color: white !important;
+    }
+  }
+
+  mat-select {
+    @extend .field-base;
+    padding: 0;
+
+    .mat-select-trigger {
+      padding: 10px 40px 10px 10px;
+      display: block;
+      font-size: $font-size-mini;
+      height: 100%;
+      line-height: 1.9;
+    }
+
+    .mat-select-arrow {
+      border: none;
+    }
+
+    .mat-select-placeholder {
+      color: unset !important;
+      transition: unset !important;
+    }
+  }
+
+  .-not-allowed {
+    input {
+      cursor: not-allowed;
+    }
+  }
+}
+
+// Styles for the options list of mat-select.
+mat-option .mat-pseudo-checkbox-checked {
+  background: $main-color;
+}
+.mat-option-disabled .mat-pseudo-checkbox-disabled {
+  opacity: 0.5;
+}
+
+// Container for the select elements, it shows the down arrow at the right of the control.
+.-select {
+  position: relative;
+
+  // before is used instead of after to make the arrow to be transparent when necessary.
+  &::before {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: url('/assets/img/chevron-right-grey.png') no-repeat;
+    background-size: $normal-icon-size $normal-icon-size;
+    width: $normal-icon-size;
+    height: $normal-icon-size;
+    margin: 6px;
+    pointer-events: none;
+    transform: rotate(90deg);
+  }
+}
+
+textarea {
+  resize: none;
+}
+
+// Used for showing a form field disabled.
+.element-disabled {
+  pointer-events: none !important;
+  opacity: 0.5 !important;
+}
+
+// Adds a top marging for the forms inside modal windows. It is only useful when there is an info text
+// at the top of the form.
+.modal-form-container {
+  margin-top: $form-field-margin;
+}
+
+.-check-container {
+  text-align: center;
+  margin-top: 25px;
+}
+
+// Style for the check boxes.
+.-check {
+  label {
+    font-size: $font-size-standard;
+    max-width: 100%;
+    color: $black;
+    white-space: normal;
+    text-align: left;
+
+    .img-label-container {
+      position: relative;
+      top: 2px;
+  
+      img {
+        width: 38px;
+        height: 38px;
+        vertical-align: middle;
+      }
+    }
+  }
+
+  .mat-checkbox-label {
+    position: relative;
+    top: 2px;
+  }
+
+  .mat-checkbox-checkmark-path {
+    stroke: $main-color !important;
+  }
+
+  .mat-checkbox-background, .mat-checkbox-frame {
+    width: 20px;
+    height: 20px;
+    background: $grey-very-light !important;
+    border-radius: 6px;
+    border-color: transparent;
+  }
+
+  .mat-checkbox-ripple {
+    top: -11px !important;
+    left: -11px !important;
+  }
+}
+
+.help-icon {
+  display: inline !important;
+  font-size: $font-size-standard-plus !important;
+  color: $grey;
+  opacity: 0.55;
+  vertical-align: text-bottom;
+  padding-left: 5px;
+  cursor: default;
+}

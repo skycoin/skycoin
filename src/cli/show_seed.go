@@ -4,8 +4,6 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-
-	"github.com/skycoin/skycoin/src/wallet"
 )
 
 func showSeedCmd() *cobra.Command {
@@ -70,46 +68,24 @@ func showSeedCmd() *cobra.Command {
 	return showSeedCmd
 }
 
-func getSeed(walletFile string, pr PasswordReader) (string, string, error) {
-	wlt, err := wallet.Load(walletFile)
+func getSeed(walletID string, pr PasswordReader) (string, string, error) {
+	wlt, err := apiClient.Wallet(walletID)
 	if err != nil {
-		return "", "", WalletLoadError{err}
+		return "", "", err
 	}
 
-	switch pr.(type) {
-	case nil:
-		if wlt.IsEncrypted() {
-			return "", "", wallet.ErrWalletEncrypted
-		}
-	case PasswordFromBytes:
-		p, err := pr.Password()
+	var pwd []byte
+	if wlt.Meta.Encrypted {
+		pwd, err = pr.Password()
 		if err != nil {
 			return "", "", err
 		}
-
-		if !wlt.IsEncrypted() && len(p) != 0 {
-			return "", "", wallet.ErrWalletNotEncrypted
-		}
 	}
 
-	if !wlt.IsEncrypted() {
-		return wlt.Seed(), wlt.SeedPassphrase(), nil
-	}
-
-	password, err := pr.Password()
+	sr, err := apiClient.WalletSeed(walletID, string(pwd))
 	if err != nil {
 		return "", "", err
 	}
 
-	var seed string
-	var seedPassphrase string
-	if err := wallet.GuardView(wlt, password, func(w wallet.Wallet) error {
-		seed = w.Seed()
-		seedPassphrase = w.SeedPassphrase()
-		return nil
-	}); err != nil {
-		return "", "", err
-	}
-
-	return seed, seedPassphrase, nil
+	return sr.Seed, sr.SeedPassphrase, nil
 }

@@ -1,11 +1,8 @@
 package cli
 
 import (
-	"path/filepath"
-
-	"github.com/spf13/cobra"
-
 	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/spf13/cobra"
 )
 
 func decryptWalletCmd() *cobra.Command {
@@ -25,17 +22,7 @@ func decryptWalletCmd() *cobra.Command {
 			w := args[0]
 			pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
 
-			_, err := decryptWallet(w, pr)
-			switch err.(type) {
-			case nil:
-			case WalletLoadError:
-				printHelp(c)
-				return err
-			default:
-				return err
-			}
-
-			return nil
+			return decryptWallet(w, pr)
 		},
 	}
 
@@ -44,39 +31,25 @@ func decryptWalletCmd() *cobra.Command {
 	return decryptWalletCmd
 }
 
-func decryptWallet(walletFile string, pr PasswordReader) (wallet.Wallet, error) {
-	wlt, err := wallet.Load(walletFile)
+func decryptWallet(id string, pr PasswordReader) error {
+	wlt, err := apiClient.Wallet(id)
 	if err != nil {
-		return nil, WalletLoadError{err}
+		return err
 	}
 
-	if !wlt.IsEncrypted() {
-		return nil, wallet.ErrWalletNotEncrypted
+	if !wlt.Meta.Encrypted {
+		return wallet.ErrWalletNotEncrypted
 	}
 
 	if pr == nil {
-		return nil, wallet.ErrMissingPassword
+		return wallet.ErrMissingPassword
 	}
 
-	wltPassword, err := pr.Password()
+	pwd, err := pr.Password()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	unlockedWlt, err := wallet.Unlock(wlt, wltPassword)
-	if err != nil {
-		return nil, err
-	}
-
-	dir, err := filepath.Abs(filepath.Dir(walletFile))
-	if err != nil {
-		return nil, err
-	}
-
-	// save the wallet
-	if err := wallet.Save(unlockedWlt, dir); err != nil {
-		return nil, WalletLoadError{err}
-	}
-
-	return unlockedWlt, nil
+	_, err = apiClient.DecryptWallet(id, string(pwd))
+	return err
 }

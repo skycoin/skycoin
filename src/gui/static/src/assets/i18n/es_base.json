@@ -1,72 +1,63 @@
 {
   "common": {
-    "coin-id": "SKY",
-    "coin-hours": "Coin Hours",
     "usd": "USD",
     "loading": "Loading...",
-    "new": "New",
-    "load": "Load"
+    "done-title": "Done",
+    "warning-title": "Warning",
+    "error-title": "Error",
+    "changes-made": "The changes have been made.",
+    "back-button": "Back",
+    "create-button": "Create",
+    "load-button": "Load",
+    "cancel-button": "Cancel",
+    "continue-button": "Continue",
+    "close-button": "Close",
+    "generic-confirmation-check": "I understand the risks and want to continue",
+    "copied": "The text has been copied to the clipboard."
   },
 
   "errors": {
-    "error": "Error",
-    "fetch-version": "Unable to fetch latest release version from Github",
-    "incorrect-password": "Incorrect password",
-    "error-decrypting": "Error decrypting the wallet",
-    "api-disabled": "API disabled",
-    "no-wallet": "Wallet does not exist",
-    "no-outputs": "No unspent outputs",
-    "window-size": "The window is too narrow for the content"
+    "window-size": "The window is too narrow for the content."
   },
 
-  "title": {
-    "language": "Select Language",
-    "wallets": "Wallets",
-    "send": "Send",
-    "history": "History",
-    "buy-coin": "Buy Skycoin",
-    "network": "Networking",
-    "blockchain": "Blockchain",
-    "outputs": "Outputs",
-    "transactions": "Transactions",
-    "pending-txs": "Pending Transactions",
-    "backup": "Backup Wallet",
-    "explorer": "Skycoin Explorer",
-    "seed": "Wallet Seed",
-    "qrcode": "QR Code",
-    "reset": "Reset Password",
-    "exchange": "Exchange",
-    "select-address": "Select Address",
-    "order-history": "Order history"
+  "language": {
+    "title": "Select Language"
   },
 
   "header": {
     "syncing-blocks": "Syncing blocks",
-    "update1": "Wallet update",
-    "update2": "available.",
-    "synchronizing": "The wallet is synchronizing. Data you see may not be updated.",
-    "pending-txs1": "There are some",
-    "pending-txs2": "pending transactions.",
-    "pending-txs3": "Data you see may not be updated.",
+    "explorer-link": "{{ coinName }} Explorer",
 
-    "errors": {
+    "warnings": {
+      "update-part1": "Wallet update",
+      "update-part2": "Not used. The code adds the versión number of the lastest update here.",
+      "update-part3": "available.",
+      "synchronizing": "The wallet is synchronizing. Data you see may not be updated.",
+      "pending-txs-part1": "There are some",
+      "pending-txs-part2": "pending transactions.",
+      "pending-txs-part3": "Data you see may not be updated.",
       "no-connections": "No connections active, your client is not connected to any other nodes!",
-      "no-backend1": "Cannot reach backend. Please restart the app and/or seek help on our",
-      "no-backend2": "Telegram.",
-      "no-backend3": "",
+      "no-backend-part1": "Cannot reach backend. Please restart the app and/or seek help on our",
+      "no-backend-part2": "Telegram.",
+      "no-backend-part3": "",
       "csrf": "Security vulnerability: CSRF is not working, please exit immediately."
     }
   },
 
   "password": {
     "title": "Enter Password",
-    "label": "Password",
-    "confirm-label": "Confirm password",
-    "button": "Proceed",
-    "reset-link": "I forgot my password"
+    "password-label": "Password",
+    "password-error-info": "You must enter a password.",
+    "confirm-password-label": "Confirm password",
+    "confirm-error-info": "The two passwords must match.",
+    "proceed-button": "Proceed",
+    "reset-link": "I forgot my password",
+    "incorrect-password-error": "Incorrect password.",
+    "decrypting-error": "Error decrypting the wallet."
   },
 
   "buy": {
+    "title-and-button": "Buy",
     "deposit-address": "Choose an address to generate a BTC deposit link for:",
     "select-address": "Select address",
     "generate": "Generate",
@@ -85,76 +76,110 @@
   },
 
   "wizard": {
-    "wallet-desc": "If you don't have a Skycoin wallet, use the generated seed to create a new one. If you already have a wallet, toggle over to \"Load Wallet\" and enter your seed.",
+    "create-title": "Create Wallet",
+    "create-desc": "If you don't have a {{ coinName }} wallet, use the generated seed to create a new one. If you already have a wallet, toggle over to \"Load\" and enter your seed.",
+    "encrypt-title": "Encrypt Wallet",
     "encrypt-desc": "Increase security of your wallet by encrypting it. By entering a password below, your wallet will be encrypted. Only those with the password will be able access the wallet and remove funds.",
-    "hardware-wallet-link": "Using a hardware wallet?",
+    "hardware-wallet-link": "Using a Skywallet?",
+    "new-button": "New",
+    "load-button": "Load",
     "finish-button": "Finish",
-    "back-button": "Back",
 
     "confirm": {
-      "title": "Safeguard your seed!",
-      "desc": "We want to make sure that you wrote down your seed and stored it in a safe place. If you forget your seed, you WILL NOT be able to recover your Skycoin wallet!",
-      "checkbox": "It’s safe, I swear.",
-      "button": "Continue"
+      "title": "Safeguard Your Seed!",
+      "desc": "We want to make sure that you wrote down your seed and stored it in a safe place. If you forget your seed, you WILL NOT be able to recover your wallet!",
+      "checkbox": "It’s safe, I swear."
     }
   },
 
   "wallet": {
-    "new-address": "New Address",
-    "new-addresses": "New Addresses",
-    "show-empty": "Show Empty",
-    "hide-empty": "Hide Empty",
-    "encrypt": "Encrypt Wallet",
-    "decrypt": "Decrypt Wallet",
+    "title-and-button": "Wallets",
+    "show-empty-button": "Show Empty",
+    "hide-empty-button": "Hide Empty",
+    "encrypt-button": "Encrypt Wallet",
+    "decrypt-button": "Decrypt Wallet",
     "decrypt-warning": "Warning: for security reasons, it is not recommended to keep the wallets unencrypted. Caution is advised.",
-    "delete": "Delete Wallet",
-    "edit": "Edit Wallet",
-    "add": "Add Wallet",
-    "load": "Load Wallet",
-    "encryption-enabled": "Encryption enabled",
-    "encryption-disabled": "Encryption disabled",
-    "hw-security-warning": "Possible security risk. Access the hardware wallet options (by pressing the \"Hardware Wallet\" button below the wallets list) while the device is connected for more information.",
-    "wallet": "Wallet",
-    "hardware-wallet": "Hardware Wallet",
-    "delete-confirmation": "WARNING: The wallet \"{{ name }}\" will be removed from the list. To add it again, you will have to reconnect the device and open the hardware wallet options (by pressing the \"Hardware Wallet\" button below the wallets list). Do you want to continue?",
-    "delete-confirmation-check": "Yeah, I want to delete the wallet.",
-    "max-hardware-wallets-error": "You have already reached the max number of addresses that can be added to the hardware wallet.",
+    "delete-button": "Delete Wallet",
+    "edit-button": "Rename",
+    "add-button": "Add Wallet",
+    "load-button": "Load Wallet",
+    "hardware-wallet-button": "Skywallet",
+    "encryption-enabled": "Encryption enabled.",
+    "encryption-disabled": "Encryption disabled.",
+    "warning-hw-security": "Possible security risk. Access the Skywallet options (by pressing the \"Skywallet\" button below the wallets list) while the device is connected for more information.",
+    "wallet-table-label": "Wallet",
+    "hardware-wallet-table-label": "Skywallet",
+    "delete-confirmation": "WARNING: The wallet \"{{ name }}\" will be removed from the list. To add it again, you will have to reconnect the device and open the Skywallet options (by pressing the \"Skywallet\" button below the wallets list). Do you want to continue?",
+    "delete-confirmation-check": "Yeah, I want to delete the wallet",
+    "max-hardware-wallets-error": "You have already reached the max number of addresses that can be added to the Skywallet.",
     "add-many-confirmation": "WARNING: If you add too many addresses without using the previous ones or if you use the last ones and not the first ones, some addresses may not be recovered automatically if you try to restore the wallet using the seed (you will have to add them manually). Do you want to continue?",
 
     "new": {
       "create-title": "Create Wallet",
       "load-title": "Load Wallet",
-      "encrypt-title": "Encrypt Wallet",
       "name-label": "Name",
+      "name-error-info": "You must enter a name.",
+      "words-number-label": "How many words the seed has",
       "seed-label": "Seed",
+      "seed-error-info": "You must enter a seed.",
       "confirm-seed-label": "Confirm seed",
+      "confirm-seed-error-info": "The two seeds must match.",
       "seed-warning": "Remember this seed! Keep it in a safe place. If you forget your seed, you will not be able to recover your wallet!",
-      "create-button": "Create",
-      "load-button": "Load",
-      "cancel-button": "Cancel",
       "12-words": "12 words",
       "24-words": "24 words",
-      "generate-12-seed": "Generate 12 word seed",
-      "generate-24-seed": "Generate 24 word seed",
-      "encrypt": "Encrypt wallet",
+      "generate-12-help": "Generate a 12 word seed.",
+      "generate-24-help": "Generate a 24 word seed.",
+      "encrypt-check": "Encrypt wallet",
       "encrypt-warning": "We suggest that you encrypt each one of your wallets with a password. If you forget your password, you can reset it with your seed. Make sure you have your seed saved somewhere safe before encrypting your wallet.",
-      "unconventional-seed-title": "Possible error",
+      "seed-checking-error": "It was not possible to verify the validity of the seed.",
+      "unconventional-seed-title": "Possible Error",
       "unconventional-seed-text": "You introduced an unconventional seed. If you did it for any special reason, you can continue (only recommended for advanced users). However, if your intention is to use a normal system seed, you must delete all the additional text and special characters.",
-      "unconventional-seed-check": "Continue with the unconventional seed."
+      "unconventional-seed-check": "Continue with the unconventional seed",
+      "synchronizing-warning-text": "The wallet is still synchronizing and the operation could not restore all the addresses. If some addresses are not restored, you will have to wait for the wallet to be fully synchronized and use the \"Scan Addresses\" function or add them again manually.",
+      "wallet-created": "The wallet has been added to the list.",
+
+      "seed": {
+        "enter-seed": "Press here to enter the seed",
+        "change-seed": "Press to change",
+        "confirm-seed": "Press here to confirm the seed",
+        "confirmed-seed": "Seed confirmed",
+        "use-custom": "Enter the seed manually",
+        "use-normal": "Enter the seed using the recommended method",
+        "custom-seed-warning-text": "This option is only recommended for advanced users. Making mistakes with the seed could cause you to lose access to the funds in case of a problem.",
+        "custom-seed-warning-text-recovering": "To avoid possible problems, this option should only be used if you want to recover an unconventional seed.",
+        "incorrect-word-error": "The word you have entered does not match the requested one.",
+        "invalid-seed-error": "The seed you have entered is not valid. Please try again.",
+        "enter-word": "Enter the word #{{number}}",
+        "word-error-info": "You must enter a word.",
+        "new-seed-info": "You must enter the words of the seed that was generated by the system, to confirm it.",
+        "recover-seed-info": "Please be sure to enter the correct words in the correct order."
+      }
     },
 
     "rename": {
       "title": "Rename Wallet",
       "name-label": "Name",
-      "cancel-button": "Cancel",
+      "label-error-info": "You must enter a name.",
       "rename-button": "Rename"
     },
 
+    "address-options": {
+      "title": "Addresses",
+      "new": "New Addresses",
+      "scan": "Scan Addresses",
+      "scan-help": "Use this option to make the system find already used addresses from this wallet which are missing from the list."
+    },
+
+    "scan-addresses": {
+      "done-with-new-addresses": "The list has been updated.",
+      "done-without-new-addresses": "No new addresses were found."
+    },
+
     "add-addresses": {
-      "title": "Select quantity",
-      "name-quantity": "How many addresses to create",
-      "cancel-button": "Cancel",
-      "create-button": "Create"
+      "title": "Select Quantity",
+      "quantity-label": "How many addresses to create",
+      "quantity-error-info": "You must enter a value between 1 and 100.",
+      "error": "There was an unexpected error. Please try again."
     },
 
     "address": {
@@ -168,104 +193,244 @@
     }
   },
 
+  "qr": {
+    "title": "QR Code",
+    "data-label": "QR data",
+    "address-label": "Address",
+    "request-link": "Request specific amount",
+    "amount-label": "Requested amount",
+    "hours-label": "Requested hours",
+    "message-label": "Message",
+    "invalid": "(invalid value)"
+  },
+
   "send": {
+    "title-and-button": "Send",
+    "unsigned-button": "Unsigned",
+    "signed-button": "Signed",
+    "unsigned-confirmation": "The unsigned transactions form does not allow to send transactions normally, but simply creates the text of a transaction, which must be signed before it can be sent to the network. This is useful for creating transactions that will be signed on an always offline device, for security reasons. Are you sure you wish to continue?",
     "synchronizing-warning": "The wallet is still synchronizing the data, so the balance shown may be incorrect. Are you sure you want to continue?",
     "from-label": "Send from",
     "to-label": "Send to",
     "amount-label": "Amount",
-    "notes-label": "Notes",
+    "personal-note-label": "Personal note",
+    "personal-note-help": "Use this field to add a text for allowing you to identify the transaction in the future. This text is saved locally, so it will only be visible from this computer.",
     "wallet-label": "Wallet",
-    "addresses-label": "Addresses",
+    "wallet-error-info": "You must select a wallet.",
     "invalid-amount": "Please enter a valid amount",
-    "addresses-help": "Limit the addresses from where the coins and hours could be sent",
+    "convert-confirmation": "Do you also want the already introduced amount to be converted from {{from}} to {{to}}?",
+    "convert-confirmation-plural": "Do you also want the already introduced amounts to be converted from {{from}} to {{to}}?",
+    "send-all-available-coins-link": "send all",
+    "precision-error-warning": "A precision error was detected during conversion. Please check the amount that will be sent.",
+    "invaid-amount-warning": "An invalid value was detected during conversion. Please check the amount that will be sent.",
+    "precision-errors-warning": "Precision errors were detected during conversion. Please check the amount that will be sent.",
+    "invaid-amounts-warning": "Invalid values were detected during conversion. Please check the amount that will be sent.",
+    "multiple-problems-warning": "Some values were not converted because they were invalid or could have been converted with precision errors. Please check the amount that will be sent.",
+    "addresses-label": "Addresses",
+    "addresses-error-info": "You must enter at least one valid address.",
+    "no-wallet-selected-error": "There are no coins to send.",
+    "no-coins-left-error": "There are no coins left to send.",
+    "addresses-help": "Limit the addresses from where the coins and hours could be sent.",
+    "addresses-manual-help": "List of the addresses from which the coins will be sent, comma separated. All addresses must belong to the same wallet or you will not be able to sign the transaction with the desktop wallet.",
     "all-addresses": "All the addresses of the selected wallet",
     "outputs-label": "Unspent outputs",
-    "outputs-help": "Limit the unspent outputs from where the coins and hours could be sent. Only the outputs from the selected addresses are shown",
+    "outputs-help": "Limit the unspent outputs from where the coins and hours could be sent. Only the outputs from the selected addresses are shown.",
+    "outputs-error": "There was an error trying to get the outputs. Please make sure you have entered valid addresses.",
     "all-outputs": "All the outputs of the selected addresses",
-    "available-msg-part1": "With your current selection you can send up to",
-    "available-msg-part2": "and",
-    "available-msg-part3": "(at least",
-    "available-msg-part4": "must be used for the transaction fee).",
+    "enter-addresses-for-outputs": "Valid addresses must be entered first",
+    "enter-wallet-for-outputs-and-addresses": "A valid wallet must be selected first",
+    "invalid-addresses-for-outputs": "No outputs available",
+    "available-funds-msg-part1": "With your current selection you can send up to",
+    "available-funds-msg-part2": "and",
+    "available-funds-msg-part3": "(at least",
+    "available-funds-msg-part4": "must be used as transaction fee for sending all the coins or hours).",
     "change-address-label": "Custom change address",
-    "change-address-select": "Select",
-    "change-address-help": "Address to receive change. If it's not provided, it will be chosen automatically. Click on the \"Select\" link to choose an address from one of your wallets",
+    "change-address-error-info": "The change address is not valid.",
+    "change-address-select-from-list-link": "Select",
+    "change-address-help": "Address to receive change. If it's not provided, it will be chosen automatically. Click on the \"Select\" link to choose an address from one of your wallets.",
     "destinations-label": "Destinations",
-    "destinations-help1": "Destination addresses and their coins",
-    "destinations-help2": "Destination addresses, their coins and coin hours",
-    "hours-allocation-label": "Automatic coin hours allocation",
-    "options-label": "Options",
-    "value-label": "Coin hours share factor",
-    "value-help": "The higher the value, the more coin hours will be sent to outputs",
+    "destinations-help1": "Destination addresses and their coins.",
+    "destinations-help2": "Destination addresses, their coins and hours.",
+    "hours-allocation-check": "Use automatic {{ coinHoursName }} allocation",
+    "options-link": "Options",
+    "coin-hours-options-link": "Hours options",
+    "hours-share-factor-label": "{{ coinHoursName }} share factor",
+    "hours-share-factor-help": "This control allows to select the factor (percentage) of {{ coinHoursName }} that will be send. The higher the value, the more {{ coinHoursName }} will be sent and less will be retained.",
+    "close-hours-share-factor-alert": "The option will be resetted to the default value. Are you sure you want to continue?",
     "preview-button": "Preview",
     "send-button": "Send",
-    "back-button": "Back",
-    "simple": "Simple",
-    "advanced": "Advanced",
-    "select-wallet": "Select Wallet"
+    "show-button": "Show",
+    "simple-form-button": "Simple",
+    "advanced-form-button": "Advanced",
+    "select-wallet": "Select wallet",
+    "saving-note-error": "The transaction was successfully sent, but it was not possible to save the note.",
+    "sent": "Transaction successfully sent.",
+    "total-to-send": "Total:",
+    "invalid-address-error": "The destination address is not valid.",
+    "one-invalid-address-error": "One of the destination addresses is not valid.",
+    "various-invalid-addresses-error": "Some destination addresses are not valid.",
+    "all-addresses-invalid-error": "The destination addresses are not valid.",
+    "invalid-addresses-error": "Please make sure the address is valid.",
+    "address-error-info": "Please enter a valid address.",
+    "invalid-value-error-info": "Invalid value.",
+    "insufficient-funds-error-info": "The entered value is greater than the available balance.",
+    "sending-all-hours-with-coins-waning": "By sending all the available coins, all the hours in the selected wallet will be sent or burn. If you want to retain hours, you must not send all the coins. Are you sure you want to continue?",
+    "advanced-sending-all-hours-with-coins-waning": "By sending all the available coins, all the hours in the selected source(s) will be sent or burn. If you want to retain hours, you must not send all the coins. Are you sure you want to continue?",
+    "sending-all-hours-waning": "You selected to send all the hours. Are you sure you want to continue?",
+    "high-hours-share-waning": "Your selection may result in sending all the hours in the selected wallet. Are you sure you want to continue?",
+    "advanced-high-hours-share-waning": "Your selection may result in sending all the hours in the selected source(s). Are you sure you want to continue?",
+
+    "known-node-errors": {
+      "null-change-address-error": "The null address can't be used as the custom change address. Please enter a valid address.",
+      "to-required-error": "You must provide a destination address for sending coins. Please enter a valid address.",
+      "zero-coins-error": "It's not possible to send zero coins. Please enter a valid amount.",
+      "null-destination-error": "The null address can't be used as destination. Please enter a valid address.",
+      "duplicate-destination-error": "There are duplicate destinations. Please do not repeat the same address and amount in more than one destination.",
+      "hours-in-automatic-mode-error": "Specific hour amounts can't be specified while using automatic hour distribution. Please try with different values and contact support if the problem is not solved.",
+      "hours-allocation-mode-needed-error": "The hour allocation mode is required. Please try with different values and contact support if the problem is not solved.",
+      "invalid-hours-allocation-mode-error": "Invalid hour allocation mode. Please try with different values and contact support if the problem is not solved.",
+      "hours-allocation-mode-not-needed-error": "The hour allocation mode can't be specified while using manual hour distribution. Please try with different values and contact support if the problem is not solved.",
+      "invalid-hours-mode-error": "Invalid hour distribution method. Please try with different values and contact support if the problem is not solved.",
+      "share-factor-needed-error": "The hours share factor is needed. Please try with different values and contact support if the problem is not solved.",
+      "share-factor-not-needed-error": "The hours share factor can't be specified while using manual hour distribution. Please try with different values and contact support if the problem is not solved.",
+      "invalid-share-factor-error": "Invalid share factor. Please try with different values and contact support if the problem is not solved.",
+      "change-equal-to-destination-error": "The transaction can't be created because a repeated amount of coins would be returned to the same destination address. Please try again with different values.",
+      "repeated-wallet": "A wallet for the specified seed already exists."
+    },
+
+    "bulk-send": {
+      "title": "Bulk Send",
+      "indications": "To send to multiple destinations in a quick way, type each address, coin amount and hour amount (optional) on a line, separated by a comma. Example: if you want to send 10 coins and 5 hours to the \"xyz\" address, type \"xyz,10,5\"; if you want the hours to be calculated automatically, type \"xyz,10\". Decimal values must be separated with a dot.",
+      "data-error-info": "You must enter a value.",
+      "process-button": "Process",
+      "no-data-error": "There is no text to process.",
+      "inconsistent-data-error": "If you set how many hours you want to send to a destination, you must do so for all destinations.",
+      "invalid-data-error": "The entered text has an invalid format."
+    }
+  },
+
+  "select-address": {
+    "title": "Select Address",
+    "no-addresses": "There are no confirmed addresses on this wallet."
+  },
+
+  "offline-transactions": {
+    "loading-problem": "Error trying to get the necessary data",
+    "wallet-error-info": "You must select a wallet.",
+    "tx-error-info": "You must enter a valid transaction text.",
+    "copy-tx": {
+      "signed-title": "Signed Transaction",
+      "unsigned-title": "Unsigned Transaction",
+      "text-unsigned": "This is the unsigned transaction that has been created with the data that you have entered. Please copy the text to be able to sign it with the \"Sign Transaction\" option.",
+      "text-signed": "This is the signed transaction. You can send it to the network using the \"Broadcast Transaction\" option.",
+      "input-label": "Transaction text",
+      "copy-button": "Copy",
+      "reset-confirmation": "Do you want the the form to be cleaned, so you can create another transaction?",
+      "reset-done": "The form has been cleaned."
+    },
+
+    "sign-tx": {
+      "title": "Sign Transaction",
+      "text": "Use this form to sign a transaction. For the operation to work correctly, you must select the wallet which includes all the inputs/addresses used to send coins in the transaction.",
+      "wallet-label": "Wallet",
+      "select-wallet": "Select wallet",
+      "input-label": "Transaction text",
+      "sign-button": "Sign",
+      "signed": "The transaction has been signed."
+    },
+
+    "broadcast-tx": {
+      "title": "Broadcast Transaction",
+      "text": "Use this form to send a signed transaction to the network.",
+      "input-label": "Transaction text",
+      "send-button": "Send",
+      "sent": "The transaction has been sent."
+    }
   },
 
   "reset": {
+    "title": "Reset Password",
     "wallet-label": "Wallet",
     "seed-label": "Wallet seed",
+    "seed-error-info": "You must enter a seed.",
     "password-label": "New password (leave empty if you want the wallet not to be encrypted)",
     "confirm-label": "Confirm new password",
-    "reset-button": "Reset"
+    "confirm-error-info": "The two passwords must match.",
+    "reset-button": "Reset",
+    "done": "Password successfully changed."
   },
 
   "tx": {
-    "transaction": "Transaction",
-    "confirm-transaction": "Confirm Transaction",
-    "from": "From",
-    "to": "To",
-    "date": "Date",
-    "status": "Status",
-    "coins": "Coins",
-    "hours": "Hours",
-    "id": "Tx ID",
-    "show-more": "Show more",
+    "transaction-title": "Transaction",
+    "confirm-transaction-title": "Confirm Transaction",
+    "from-small-label": "From:",
+    "to-small-label": "To:",
+    "date-small-label": "Date:",
+    "status-small-label": "Status:",
+    "coins-small-label": "Coins:",
+    "hours-small-label": "Hours:",
+    "id-small-label": "Tx ID:",
+    "note-small-label": "Note:",
+    "without-note": "Without note",
+    "show-more-link": "Show more",
     "hours-moved": "moved",
     "hours-sent": "sent",
     "hours-received": "received",
     "hours-burned": "burned",
-    "inputs": "Inputs",
-    "outputs": "Outputs",
-    "confirmed": "Confirmed",
-    "pending": "Pending",
-    "current-rate": "Calculated at the current rate"
+    "inputs-title": "Inputs",
+    "outputs-title": "Outputs",
+    "confirmed-transaction": "Confirmed",
+    "pending-transaction": "Pending",
+    "current-rate-help": "Calculated at the current rate."
+  },
+
+  "edit-note": {
+    "title": "Edit Note",
+    "change-button": "Change"
   },
 
   "backup": {
+    "title": "Backup Wallet",
     "wallet-directory": "Wallet Directory:",
     "seed-warning": "BACKUP YOUR SEED. ON PAPER. IN A SAFE PLACE. As long as you have your seed, you can recover your coins.",
     "desc": "Use the table below to get seeds from your encrypted wallets. <br>To get seeds from unencrypted wallets, open the folder above, open the .wlt files in a text editor and recover the seeds.",
-    "close-button": "Close",
-    "wallet": "Wallet Label",
-    "filename": "Filename",
-    "seed": "Seed",
-    "show-seed": "Show seed",
-    "no-wallets": "No encrypted wallets"
+    "wallet-table-label": "Wallet name",
+    "filename-table-label": "Filename",
+    "save-addresses-button": "Save Addresses",
+    "show-seed-button": "Show Seed",
+    "no-wallets": "There are no wallets",
+    "unencrypted-info": "For security reasons, it is not possible to show the seeds of unencrypted wallets. To get the seed, please encrypt the wallet with a password or follow the instruction shown at the top of this page.",
+    "hw-wallet-info": "For getting the seed of a Skywallet, please use the \"Skywallet\" option at the bottom of the wallets page.",
+    "not-compatible-error": "Your web browser is not compatible with this function.",
+
+    "seed-modal-window": {
+      "title": "Wallet Seed",
+      "seed-label": "Seed"
+    }
   },
 
   "blockchain": {
-    "blocks": "Number of blocks",
-    "time": "Timestamp of last block",
-    "hash": "Hash of last block",
-    "current-supply": "Current SKY supply",
-    "total-supply": "Total SKY supply",
-    "current-coinhour-supply": "Current Coin Hours supply",
-    "total-coinhour-supply": "Total Coin Hours supply"
+    "title": "Blockchain",
+    "blocks-label": "Number of blocks",
+    "time-label": "Timestamp of last block",
+    "hash-label": "Hash of last block",
+    "current-supply-label": "Current {{ coinName }} supply",
+    "total-supply-label": "Total {{ coinName }} supply",
+    "current-coinhour-supply-label": "Current {{ coinHoursName }} supply",
+    "total-coinhour-supply-label": "Total {{ coinHoursName }} supply"
   },
 
   "network": {
-    "peer": "Peer",
-    "source": "Source",
-    "block-height": "Block height",
-    "block-height-short": "Block",
-    "last-seen": "Last seen",
-    "last-received": "Last received",
-    "last-sent": "Last sent",
-    "in": "Incoming",
-    "out": "Outgoing",
+    "title": "Networking",
+    "peer-small-table-label": "Peer",
+    "source-small-table-label": "Source",
+    "block-height-small-table-label": "Block height",
+    "block-height-short-small-table-label": "Block",
+    "last-seen-small-table-label": "Last seen",
+    "last-received-help": "Last received.",
+    "last-sent-help": "Last sent.",
+    "in-help": "Incoming.",
+    "out-help": "Outgoing.",
 
     "sources": {
       "default": "Default peer",
@@ -274,28 +439,37 @@
   },
 
   "pending-txs": {
-    "timestamp": "Timestamp",
-    "txid": "Transaction ID",
+    "title": "Pending Transactions",
+    "timestamp-table-label": "Timestamp",
+    "txid-table-label": "Transaction ID",
     "none": "No pending transactions",
-    "my": "Mine",
-    "all": "All"
+    "my-transactions-button": "Mine",
+    "all-transactions-button": "All"
+  },
+
+  "outputs": {
+    "title": "Outputs",
+    "error-no-outputs": "No unspent outputs"
   },
 
   "history": {
-    "tx-detail": "Transaction Detail",
-    "moving": "Internally moving",
-    "moved": "Internally moved",
-    "sending": "Sending",
-    "sent": "Sent",
-    "received": "Received",
-    "receiving": "Receiving",
-    "pending": "Pending",
+    "title-and-button": "History",
+    "tx-detail-title": "Transaction Detail",
+    "moving": "Internally moving {{ coinName }}",
+    "moved": "Internally moved {{ coinName }}",
+    "sending": "Sending {{ coinName }}",
+    "sent": "Sent {{ coinName }}",
+    "received": "Received {{ coinName }}",
+    "receiving": "Receiving {{ coinName }}",
+    "pending-indication": "Pending",
+    "transaction-note-small-label": "Note:",
     "no-txs": "You have no transaction history",
     "no-txs-filter": "There are no transactions matching the current filter criteria",
     "no-filter": "No filter active (press to select wallets/addresses)",
     "filter": "Active filter: ",
     "filters": "Active filters: ",
-    "all-addresses": "All addresses"
+    "all-addresses": "All addresses",
+    "view-all": "View all {{ number }} transactions"
   },
 
   "teller": {
@@ -307,69 +481,91 @@
   },
 
   "confirmation" : {
-    "header-text": "Confirmation",
-    "confirm-button": "Yes",
-    "cancel-button": "No",
-    "close": "Close"
+    "default-title": "Confirmation",
+    "yes-button": "Yes",
+    "no-button": "No"
   },
 
   "service": {
     "api" : {
-      "server-error": "Server error"
-    },
-    "wallet": {
-      "not-enough-hours": "Not enough available Coin Hours to perform the transaction!"
+      "no-internet-error": "You do not have a internet connection or the node has stopped working.",
+      "incorrect-password-error": "Incorrect password.",
+      "unknown-error": "It was not possible to perform the operation.",
+      "api-disabled-error": "API disabled."
     }
   },
 
   "hardware-wallet": {
     "general" : {
-      "default-wallet-name": "New hardware wallet",
-      "error-disconnected": "Unable to perform the operation. The hardware wallet is not connected.",
-      "simple-error": "Error, Unable to perform the operation.",
-      "generic-error": "Unable to perform the operation. Make sure you have connected a valid hardware wallet and that it is not waiting for input.",
-      "generic-error-internet": "Unable to perform the operation. Make sure you have connected a valid hardware wallet that is not waiting for input and that you have a connection to the internet/node.",
-      "error-incorrect-wallet": "Unable to perform the operation. The connected hardware wallet is different from the expected one.",
-      "error-incorrect-pin": "Unable to perform the operation. The PIN you have entered is not correct.",
-      "confirm": "Please, confirm the operation in the hardware wallet.",
-      "confirm-and-more": "Please, confirm the operation in the hardware wallet and follow the instructions.",
-      "close": "Close",
-      "cancel": "Cancel",
-      "continue": "Continue",
+      "default-wallet-name": "New Skywallet",
+      "confirm": "Please confirm the operation on the Skywallet.",
+      "confirm-and-more": "Please confirm the operation on the Skywallet and follow the instructions displayed.",
+      "follow": "Please follow the instructions displayed on the Skywallet.",
       "completed": "Operation completed successfully.",
-      "refused": "The operation failed or was canceled."
+      "name-updated": "The name used to identify this Skywallet in the wallet list has been updated to match the one shown on the device."
     },
     "errors": {
-      "too-many-inputs": "The transaction has too many inputs and can not be processed. Please contact technical support.",
-      "too-many-outputs": "The transaction has too many outputs and can not be processed. Please contact technical support."
+      "generic-error": "Unable to perform the operation. Make sure you have connected a valid Skywallet and that it is not waiting for input.",
+      "disconnected": "Unable to perform the operation. The Skywallet is not connected.",
+      "incorrect-wallet": "Unable to perform the operation. The connected Skywallet is different from the expected one.",
+      "incorrect-pin": "Unable to perform the operation. The PIN you have entered is incorrect.",
+      "refused": "The operation failed or was canceled.",
+      "too-many-inputs-outputs": "The transaction has too many inputs or outputs for the Skywallet. Please try again creating several smaller transactions, each one with a smaller number of recipients (if the current transaction has many) or coins.",
+      "daemon-connection": "Problem connecting to the Skywallet Daemon, please make sure it is running and try again. You can download it from www.skycoin.com/downloads",
+      "daemon-connection-with-configurable-link": "Problem connecting to the Skywallet Daemon, please make sure it is running and try again. You can download it from ",
+      "timeout": "The operation was canceled due to inactivity. Please try again.",
+      "invalid-address-generated": "There was a problem with the address generator and the operation had to be canceled.",
+      "invalid-address": "Invalid address.",
+      "not-in-bootloader-mode": "To use this option the Skywallet must be in bootloader mode."
     },
     "security-warning" : {
-      "title": "Security warning",
-      "text": "The last time this hardware wallet was connected, one or more security warnings were found. We recommend you to open the hardware wallet options (by pressing the \"Hardware Wallet\" button below the wallets list) while the device is connected and solve the security problems before continuing.",
-      "check": "I understand the risks and want to continue",
-      "continue": "Continue",
-      "cancel": "Cancel"
+      "title": "Security Warning",
+      "text": "The last time this Skywallet was connected, one or more security warnings were found. We recommend that you open the Skywallet options (by pressing the link below) while the device is connected and solve the security problems before continuing.",
+      "link": "Open the Skywallet options window."
     },
     "options" : {
       "connecting": "Connecting...",
-      "disconnected": "No hardware wallet detected. Please connect a hardware wallet to use this option.",
-      "unconfigured-detected-title": "Unconfigured hardware wallet",
-      "unconfigured-detected": "A seedless hardware wallet has been detected. Select \"Configure automatically\" if you want to configure it as a brand new wallet and start using it immediately, or select \"Restore backup\" if you want to configure it with a previously created seed backup and thus be able to access your funds again.",
-      "configured-detected": "Hardware wallet detected. The device is identified in the wallets list as:",
-      "security-warnings-title": "Security warnings",
-      "security-warning-title": "Security warning",
-      "backup-warning": "You should backup the hardware wallet seed or you could lose access to the funds in case of problems. To do this, select the \"Create a backup\" option.",
-      "pin-warning": "The connected hardware wallet does not have a PIN. The PIN code protects the hardware wallet in case of loss, theft and hacks. To create a PIN code, select the \"Create PIN code\" option.",
+      "disconnected": "No Skywallet detected. Please connect a Skywallet to use this option.",
+      "unconfigured-detected-title": "Unconfigured Skywallet",
+      "unconfigured-detected": "A seedless Skywallet has been detected. Select \"Configure Automatically\" if you want to configure it as a brand new wallet and start using it. Select \"Restore Backup\" if you want to configure the Skywallet with a previously created seed backup.",
+      "configured-detected": "Skywallet detected. The device is identified in the wallets list as:",
+      "security-warnings-title": "Security Warnings",
+      "security-warning-title": "Security Warning",
+      "unchecked-version-warning": "It was not possible to verify if the firmware of your Skywallet is up to date. This could be due to problems with your internet connection or because the service is under maintenance.",
+      "outdated-version-warning": "The firmware of your Skywallet is outdated. We recommend you to update it as soon as possible to ensure safety. To do this, select the \"Update Firmware\" option.",
+      "backup-warning": "You should backup the Skywallet seed or you could lose access to the funds in case of problems. To do this, select the \"Create a Backup\" option.",
+      "pin-warning": "The connected Skywallet does not have a PIN. The PIN code protects the Skywallet from unauthorized parties accessing the device. To create a PIN code, select the \"Create PIN Code\" option.",
       "options": "Options:",
-      "configure-automatically": "Configure automatically",
-      "restore-backup": "Restore backup",
-      "create-backup": "Create a backup",
-      "wipe": "Wipe the device",
-      "confirm-seed": "Confirm seed",
-      "create-pin": "Create PIN code",
-      "change-pin": "Change PIN code",
-      "forgotten-pin1": "If you can not access the wallet because you have forgotten the PIN, you can wipe the hardware wallet and then restore it with the seed by clicking",
-      "forgotten-pin2": "here."
+      "update-firmware": "Update Firmware",
+      "configure-automatically": "Configure Automatically",
+      "restore-backup": "Restore Backup",
+      "create-backup": "Create a Backup",
+      "wipe": "Wipe the Device",
+      "confirm-seed": "Confirm Seed",
+      "create-pin": "Create PIN Code",
+      "change-pin": "Change PIN Code",
+      "delete-pin": "Delete PIN Code",
+      "forgotten-pin-part1": "If you cannot access the wallet because you have forgotten the PIN, you can wipe the Skywallet and then restore it with the seed by clicking",
+      "forgotten-pin-part2": "here.",
+      "firmware-version": "Device firmware version:"
+    },
+    "update-firmware-warning" : {
+      "title": "Outdated Firmware",
+      "text": "WARNING: the firmware in your Skywallet is outdated. To stay safe, it is recommended to update it.",
+      "update": "Update"
+    },
+    "update-firmware" : {
+      "title-connecting": "Connecting...",
+      "title-update": "Update Firmware",
+      "title-install": "Install Firmware",
+      "text-downloading": "Checking device and downloading files...",
+      "text-bootloader": "WARNING: if you have already configured this device, before continuing you must have a backup of your seed or you could permanently lose access to the funds.",
+      "text-not-bootloader": "To update the firmware of your Skywallet you must connect it in bootloader mode (connect it to the computer while pressing the two physical buttons of the device). WARNING: if you have already configured this device, before continuing you must have a backup of your seed or you could permanently lose access to the funds.",
+      "text-no-firmware": "Welcome. The currently connected Skywallet does not have a firmware installed. A firmware will now be installed so you can start using the device. NOTE: if you have already configured this device and want to recover the funds, you will need your seed.",
+      "follow": "The firmware update has been sent to the Skywallet. Please continue the process on the device.",
+      "connection-error": "It was not possible to download the firmware. This could be due to problems with your internet connection or because the service is under maintenance.",
+      "timeout": "The operation was canceled due to inactivity. Please disconnect the device, reconnect it and try again.",
+      "finished": "Your device has been configured correctly. Please unplug it before continuing."
     },
     "generate-seed" : {
       "text": "Before proceeding, you can select the number of words you want the seed to have. The seed is a list of words that can be used to recover access to the coins in case of problems. Both values are safe, so if you do not have a special reason for selecting one or the other, you can leave the default value.",
@@ -377,62 +573,72 @@
     },
     "restore-seed" : {
       "text": "Before proceeding, please select the number of words that the seed you want to recover has.",
-      "check-text": "You can use this option to enter a seed and check if it is equal to the one in the hardware wallet. Before start, select the number of words the seed you want to check has.",
-      "warning" : "WARNING: to avoid potential problems, use only seeds created with a hardware wallet from the same brand/model.",
-      "error-wrong-word": "Error: The retyped word does not match the one requested by the hardware wallet.",
-      "error-invalid-seed": "Error: The seed is not valid. Please be sure to enter the correct words in the correct order.",
-      "error-wrong-seed": "Error: The seed is valid but does not match the one in the device."
+      "check-text": "You can use this option to enter a seed and check if it is equal to the one in the Skywallet. Before start, select the number of words the seed you want to check has.",
+      "warning" : "WARNING: to avoid potential problems, use only seeds created with a Skywallet.",
+      "error-wrong-word": "Error: the retyped word does not match the one requested by the Skywallet.",
+      "error-invalid-seed": "Error: the seed is not valid. Please be sure to enter the correct words in the correct order.",
+      "error-wrong-seed": "Error: the seed is valid but does not match the one in the device.",
+      "correct-seed": "The seed is valid and matches the one in the device."
     },
     "added" : {
-      "title": "New Hardware Wallet",
-      "configuring": "New hardware wallet detected. Configuring...",
+      "title": "New Skywallet",
+      "configuring": "New Skywallet detected. Configuring...",
       "done": "Done",
-      "added1": "The connected hardware wallet has been added to the wallets list with the following name:",
-      "added2": "Now you can check the balance and the addresses of the hardware wallet even when it is not connected. Additionally, you can change the name of the wallet or remove it from the wallets list, if you wish."
+      "added1": "The connected Skywallet has been added to the wallets list with the following name:",
+      "added2": "Now you can check the balance and the addresses of the Skywallet even when it is not connected.",
+      "added-error-info": "You must enter a name.",
+      "characters-warning": "If you use non-standard English characters, the name may not be displayed correctly on the device."
     },
     "wipe" : {
-      "warning": "WARNING: All the data in the hardware wallet will be deleted. If you do not have a backup, you will not be able to access your funds again.",
-      "confirm-delete": "Also remove from the wallets list"
+      "warning": "WARNING: All the data on the Skywallet will be deleted. If you do not have a backup, you will not be able to access your funds again.",
+      "confirm-delete-check": "Also remove from the wallets list"
     },
     "create-backup" : {
-      "warning": "WARNING: You can only use this option to backup your hardware wallet seed once. If you decide to continue, you will have to write down a group of words (it is recommended to do it on paper and not on a computer) that will appear on the screen of the hardware wallet and store the list in a safe place. Anyone with access to the word list (the \"seed\") will be able access the wallet balance, so extreme caution is advised.",
-      "instructions": "Write down the word list that appear on the screen of the hardware wallet. Make sure you respect the order and write each word correctly."
+      "warning": "WARNING: You can only create a backup of your Skywallet seed once. If you decide to continue, you will have to write down a group of words (on paper, never on a computer) that will appear on the screen of the Skywallet and store the list in a safe place. Anyone with access to the word list (the \"seed\") will be able access the wallet funds, so extreme caution is advised.",
+      "instructions": "Write down the word list that appear on the screen of the Skywallet. Make sure you respect the order and write each word correctly."
     },
     "seed-word" : {
-      "title": "Enter word",
-      "info1": "Enter the word indicated in the device",
-      "info2": "You will be asked to enter the words of your backup seed in random order, plus a few additional words.",
-      "word": "Requested word",
+      "title": "Enter Word",
+      "enter-word": "Enter the word shown on the device",
+      "info": "You will be asked to enter the words of your backup seed in random order. Also, additional random words could be requested.",
+      "word-label": "Requested word",
       "error-invalid-word": "The entered word is not valid.",
       "error-loading-words": "Loading the word list. Please wait."
     },
     "change-pin" : {
-      "pin-mismatch": "Unable to perform the operation. Two PINs you have entered do not match."
+      "pin-mismatch": "Unable to perform the operation. The PINs you have entered do not match."
+    },
+    "remove-pin" : {
+      "warning": "WARNING: It is not recommended to remove the PIN code from your Skywallet, as it will be vulnerable to being used by unauthorized parties."
     },
     "enter-pin" : {
       "title": "Enter PIN",
-      "title-change-current": "Enter the current PIN",
-      "title-change-new": "Enter the new PIN",
-      "title-change-confirm": "Confirm the new PIN",
-      "instructions": "The PIN layout is displayed on the hardware wallet screen.",
-      "instructions-tx": "Enter the PIN to confirm and sign the transaction.",
-      "instructions-change": "Please enter a hard-to-guess PIN of between 4 and 8 numbers.",
+      "title-change-current": "Enter the Current PIN",
+      "title-change-new": "Enter the New PIN",
+      "title-change-confirm": "Confirm the New PIN",
+      "instructions-generic": "The PIN layout is displayed on the Skywallet screen.",
+      "instructions-tx": "Enter the PIN to confirm and sign the transaction. The PIN layout is displayed on the Skywallet screen.",
+      "instructions-change": "Please enter a secure PIN consisting of 4 to 8 numbers. The PIN layout is displayed on the Skywallet screen.",
       "help": "Need help?"
     },
     "pin-help" : {
       "title": "Help",
-      "part1": "When it is necessary to enter the PIN to continue, the hardware wallet screen will display a matrix of 9 boxes with numbers in random order (the order changes each time) and you will be asked to enter the PIN in the software wallet using a matrix of 9 buttons that simply show the symbol #.",
-      "part2": "To enter the PIN, look at the position of the PIN numbers in numbers matrix on the screen of the hardware wallet and press the corresponding buttons in the software wallet. For example, if the PIN is \"23\" and the number 2 is in the upper left, number 3 in the middle of the hardware wallet numbers matrix, press the upper left and middle button in that order in the software wallet.",
-      "part3": "If you wish, you can also use the numpad on your keyboard to enter the PIN. However, as in the previous example, if the PIN is \"23\", you can not simply type \"23\" with the numpad, but you will have to press the keys that are in the position where the numbers 2 and 3 are shown on the screen of the hardware wallet."
+      "part1": "When it is necessary to enter the PIN to continue, the Skywallet screen will display a matrix of 9 boxes with numbers in random order (the order changes each time) and you will be asked to enter the PIN in the software wallet using a matrix of 9 buttons that simply show the symbol •.",
+      "part2": "To enter the PIN, look at the position of the PIN numbers in numbers matrix on the screen of the Skywallet and press the corresponding buttons in the software wallet. For example, if the PIN is \"23\" and the number 2 is in the upper left, number 3 in the middle of the Skywallet numbers matrix, press the upper left and middle button in that order in the software wallet.",
+      "part3": "If you wish, you can also use the numpad on your keyboard to enter the PIN. However, as in the previous example, if the PIN is \"23\", you can not simply type \"23\" with the numpad, but you will have to press the keys that are in the position where the numbers 2 and 3 are shown on the screen of the Skywallet. Taking into account the previous example, you would have to press the \"7\" and \"5\" keys, because those are the keys that you are in the same position as the numbers shown by the Skywallet."
     },
     "create-tx" : {
-      "title": "Create transaction"
+      "title": "Create Transaction",
+      "upper-text": "Please confirm the operation in the Skywallet after verifying if the following data matches EXACTLY with the transaction you wish to send and with those shown by the Skywallet:",
+      "lower-text": "If any data does not correspond to what the Skywallet shows or the transaction you wish to send, cancel the operation on your Skywallet.",
+      "separator-for-coins-and-hours": "and",
+      "separator-to-destination": "to"
     },
     "confirm-address" : {
-      "title": "Confirm address",
-      "instructions": "Please confirm on the hardware wallet if the address is:",
+      "title": "Confirm Address",
+      "instructions": "Please confirm on the Skywallet if the address is:",
       "short-confirmation": "Address confirmed.",
-      "confirmation": "Address confirmed. For security, you can re-show the address in the hardware wallet using the \"Confirm address\" option, in the menu that you can display by pressing the button at the right of the address balance."
+      "confirmation": "Address confirmed. For security, you can re-show the address in the Skywallet using the \"Confirm address\" option, in the menu that you can display by pressing the button at the right of the address balance."
     }
   },
 
@@ -447,29 +653,33 @@
   },
 
   "exchange": {
-    "you-send": "You send",
-    "you-get": "You get (approx.)",
-    "to-address": "To {{coin}} address",
-    "price": "Exchange rate",
-    "time-15": "Exchange time",
+    "title-and-button": "Buy {{ coinName }}",
+    "label-you-send": "You send",
+    "label-you-get": "You get (approx.)",
+    "label-to-address": "To {{coin}} address",
+    "label-price": "Exchange rate",
+    "label-stimate-transaction-time": "Exchange time",
     "exchange-button": "Exchange",
     "min-amount": "Minimum amount:",
     "max-amount": "Maximum amount:",
-    "agree-1": "I agree with",
-    "agree-2": "Terms of Use",
-    "agree-3": "and",
-    "agree-4": "Privacy Policy",
+    "agree-part1": "I agree with the",
+    "agree-part2": "Terms of Use",
+    "agree-part3": "and the",
+    "agree-part4": "Privacy Policy",
     "powered-by": "Powered by",
     "need-help": "Need help?",
     "support-portal": "Support portal",
     "history": "Order history",
     "order-not-found": "Order not found",
-    "status": "Status",
+    "label-status": "Status",
     "exchanging": "Exchanging {{from}} for {{to}}",
-    "select": "Select",
+    "destination-select-from-list-link": "Select",
     "offline": "Exchange is temporarily offline",
-    "problem-connecting": "Unable to connect with the service. Please check your Internet connection and try again later.",
-    "invalid-address": "Invalid address.",
+    "problem-connecting": "Unable to connect with the service. Please check your Internet connection and try again later",
+    "invalid-address-error": "Invalid address.",
+    "from-coin-error-info": "You must select a coin.",
+    "invalid-value-error-info": "Invalid value.",
+    "address-error-info": "Please enter a valid address.",
     "statuses": {
       "user-waiting": "Waiting for deposit. Please send {{amount}} {{from}} to the exchange address shown below",
       "user-waiting-info": "The system is waiting for you to make the deposit into the exchange address. The exchange process will start after the deposit is detected and confirmed in the blockchain. If you have already made the deposit, it should be detected shortly.",
@@ -484,22 +694,24 @@
       "complete": "Exchange completed!",
       "complete-info": "The funds have been successfully sent to your address.",
       "error": "Error occurred",
-      "error-info": "There was an error in the operation, you can find more information below. If you need help, please save all the operation data shown below and contact technical support using the link in the lower right part of this page."
+      "error-info": "There was an error in the operation, you can find more information below. If you need help, please save all the operation data shown below and contact technical support using the link in the lower right part of this page.",
+      "user-deposit-timeout": "Order canceled due to inactivity",
+      "user-deposit-timeout-info": "The system has canceled the order because no deposit was detected, please open a new order. If you need help, please save all the operation data shown below and contact technical support using the link in the lower right part of this page."
     },
     "history-window": {
-      "address": "Address",
-      "date": "Date"
+      "title": "Order History",
+      "address": "Address:",
+      "date": "Date:"
     },
     "details": {
-      "exchange-addr": "Exchange address",
-      "exchange-addr-tag": "Payment ID or Destination Tag which must be used for the transaction",
-      "tx-id": "Transaction ID",
-      "order-id": "Order ID",
-      "initial-price": "Initial exchange rate",
-      "error-msg": "Error message",
-      "details": "Details",
-      "start-date": "Start date",
-      "back": "Back",
+      "exchange-addr-label": "Exchange address (valid for this exchange operation only)",
+      "exchange-addr-tag-label": "Payment ID or Destination Tag which must be used for the transaction",
+      "tx-id-label": "Transaction ID",
+      "order-id-label": "Order ID",
+      "initial-price-label": "Initial exchange rate",
+      "error-msg-label": "Error message",
+      "details-link": "Details",
+      "start-date-label": "Start date",
       "back-alert": "The operation is still in progress. Do you really want to return to the form? You can see the progress of this operation again by pressing the \"Order history\" button"
     }
   }

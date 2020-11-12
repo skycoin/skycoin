@@ -1,9 +1,7 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { AppComponent } from './app.component';
-import { HttpModule } from '@angular/http';
 import { ApiService } from './services/api.service';
-import { WalletService } from './services/wallet.service';
 import { WalletsComponent } from './components/pages/wallets/wallets.component';
 import { CreateWalletComponent } from './components/pages/wallets/create-wallet/create-wallet.component';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -44,34 +42,33 @@ import { MatInputModule } from '@angular/material/input';
 import { MatListModule } from '@angular/material/list';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatProgressSpinnerModule, MAT_PROGRESS_SPINNER_DEFAULT_OPTIONS } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatSliderModule, MatAutocompleteModule } from '@angular/material';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatSliderModule } from '@angular/material/slider';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { HttpClientModule } from '@angular/common/http';
 import { AppService } from './services/app.service';
 import { WizardGuardService } from './services/wizard-guard.service';
 import { OnboardingCreateWalletComponent } from './components/pages/onboarding/onboarding-create-wallet/onboarding-create-wallet.component';
 import { OnboardingEncryptWalletComponent } from './components/pages/onboarding/onboarding-encrypt-wallet/onboarding-encrypt-wallet.component';
-import { OnboardingSafeguardComponent } from './components/pages/onboarding/onboarding-create-wallet/onboarding-safeguard/onboarding-safeguard.component';
 import { DoubleButtonComponent } from './components/layout/double-button/double-button.component';
 import { SeedModalComponent } from './components/pages/settings/backup/seed-modal/seed-modal.component';
 import { OnboardingComponent } from './components/pages/onboarding/onboarding.component';
 import { DontsavepasswordDirective } from './directives/dontsavepassword.directive';
-import { SendFormComponent } from './components/pages/send-skycoin/send-form/send-form.component';
 import { SendVerifyComponent } from './components/pages/send-skycoin/send-preview/send-preview.component';
 import { TransactionInfoComponent } from './components/pages/send-skycoin/send-preview/transaction-info/transaction-info.component';
-import { SendFormAdvancedComponent } from './components/pages/send-skycoin/send-form-advanced/send-form-advanced.component';
+import { SendCoinsFormComponent } from './components/pages/send-skycoin/send-coins-form/send-coins-form.component';
 import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
 import { AppTranslateLoader } from './app.translate-loader';
-import { NavBarService } from './services/nav-bar.service';
+import { NavBarSwitchService } from './services/nav-bar-switch.service';
 import { LoadingContentComponent } from './components/layout/loading-content/loading-content.component';
 import { NumberOfAddressesComponent } from './components/pages/wallets/number-of-addresses/number-of-addresses';
-import { SelectAddressComponent } from './components/pages/send-skycoin/send-form-advanced/select-address/select-address';
+import { SelectAddressComponent } from './components/layout/select-address/select-address.component';
 import { CreateWalletFormComponent } from './components/pages/wallets/create-wallet/create-wallet-form/create-wallet-form.component';
 import { ResetPasswordComponent } from './components/pages/reset-password/reset-password.component';
 import { ExchangeComponent } from './components/pages/exchange/exchange.component';
@@ -112,6 +109,22 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
 import { MsgBarService } from './services/msg-bar.service';
 import { SeedWordDialogComponent } from './components/layout/seed-word-dialog/seed-word-dialog.component';
 import { MultipleDestinationsDialogComponent } from './components/layout/multiple-destinations-dialog/multiple-destinations-dialog.component';
+import { FormSourceSelectionComponent } from './components/pages/send-skycoin/form-parts/form-source-selection/form-source-selection.component';
+import { FormDestinationComponent } from './components/pages/send-skycoin/form-parts/form-destination/form-destination.component';
+import { CopyRawTxComponent } from './components/pages/send-skycoin/offline-dialogs/implementations/copy-raw-tx.component';
+import { SignRawTxComponent } from './components/pages/send-skycoin/offline-dialogs/implementations/sign-raw-tx.component';
+import { BroadcastRawTxComponent } from './components/pages/send-skycoin/offline-dialogs/implementations/broadcast-raw-tx.component';
+import { OfflineDialogsBaseComponent } from './components/pages/send-skycoin/offline-dialogs/offline-dialogs-base.component';
+import { ArrowLinkComponent } from './components/layout/arrow-link/arrow-link.component';
+import { AddressOptionsComponent } from './components/pages/wallets/wallet-detail/address-options/address-options.component';
+import { QrCodeButtonComponent } from './components/layout/qr-code-button/qr-code-button.component';
+import { WalletsAndAddressesService } from './services/wallet-operations/wallets-and-addresses.service';
+import { SoftwareWalletService } from './services/wallet-operations/software-wallet.service';
+import { HardwareWalletService } from './services/wallet-operations/hardware-wallet.service';
+import { BalanceAndOutputsService } from './services/wallet-operations/balance-and-outputs.service';
+import { SpendingService } from './services/wallet-operations/spending.service';
+import { HistoryService } from './services/wallet-operations/history.service';
+import { FormFieldErrorDirective } from './directives/form-field-error.directive';
 
 
 const ROUTES = [
@@ -209,16 +222,14 @@ const ROUTES = [
     ModalComponent,
     OnboardingCreateWalletComponent,
     OnboardingEncryptWalletComponent,
-    OnboardingSafeguardComponent,
     DoubleButtonComponent,
     PasswordDialogComponent,
     SeedModalComponent,
     OnboardingComponent,
     DontsavepasswordDirective,
-    SendFormComponent,
     SendVerifyComponent,
     TransactionInfoComponent,
-    SendFormAdvancedComponent,
+    SendCoinsFormComponent,
     LoadingContentComponent,
     NumberOfAddressesComponent,
     SelectAddressComponent,
@@ -252,6 +263,16 @@ const ROUTES = [
     MsgBarComponent,
     SeedWordDialogComponent,
     MultipleDestinationsDialogComponent,
+    FormSourceSelectionComponent,
+    FormDestinationComponent,
+    CopyRawTxComponent,
+    SignRawTxComponent,
+    BroadcastRawTxComponent,
+    OfflineDialogsBaseComponent,
+    ArrowLinkComponent,
+    AddressOptionsComponent,
+    QrCodeButtonComponent,
+    FormFieldErrorDirective,
   ],
   entryComponents: [
     AddDepositAddressComponent,
@@ -260,7 +281,6 @@ const ROUTES = [
     QrCodeComponent,
     SendSkycoinComponent,
     TransactionDetailComponent,
-    OnboardingSafeguardComponent,
     PasswordDialogComponent,
     SeedModalComponent,
     NumberOfAddressesComponent,
@@ -285,10 +305,13 @@ const ROUTES = [
     ChangeNoteComponent,
     SeedWordDialogComponent,
     MultipleDestinationsDialogComponent,
+    CopyRawTxComponent,
+    SignRawTxComponent,
+    BroadcastRawTxComponent,
+    AddressOptionsComponent,
   ],
   imports: [
     BrowserModule,
-    HttpModule,
     HttpClientModule,
     MatButtonModule,
     MatCardModule,
@@ -323,11 +346,10 @@ const ROUTES = [
     AppService,
     BlockchainService,
     ExchangeService,
-    NavBarService,
+    NavBarSwitchService,
     NetworkService,
     PriceService,
     PurchaseService,
-    WalletService,
     WizardGuardService,
     HwWalletService,
     Bip39WordListService,
@@ -338,6 +360,18 @@ const ROUTES = [
     StorageService,
     MsgBarService,
     DecimalPipe,
+    WalletsAndAddressesService,
+    SoftwareWalletService,
+    HardwareWalletService,
+    BalanceAndOutputsService,
+    SpendingService,
+    HistoryService,
+    {
+      provide: MAT_PROGRESS_SPINNER_DEFAULT_OPTIONS,
+      useValue: {
+          _forceAnimations: true,
+      },
+    },
   ],
   bootstrap: [AppComponent],
 })

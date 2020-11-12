@@ -1,4 +1,5 @@
-<app-modal class="modal" [headline]="'hardware-wallet.options.wipe' | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Processing">
+<app-modal [headline]="'hardware-wallet.options.wipe' | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Processing">
+  <!-- Initial instructions and warning. -->
   <div *ngIf="currentState === states.Initial">
     <app-hw-message
       [text]="'hardware-wallet.wipe.warning' | translate"
@@ -9,34 +10,37 @@
       <mat-checkbox type="checkbox"
                     class="-check"
                     [checked]="deleteFromList"
-                    (change)="setDeleteFromList($event)">{{ 'hardware-wallet.wipe.confirm-delete' | translate }}
+                    (change)="setDeleteFromList($event)">{{ 'hardware-wallet.wipe.confirm-delete-check' | translate }}
       </mat-checkbox>
     </div>
 
     <div class="-buttons">
       <app-button (action)="closeModal()">
-        {{ 'hardware-wallet.general.cancel' | translate }}
+        {{ 'common.cancel-button' | translate }}
       </app-button>
-      <app-button (action)="requestWipe()" class="primary">
-        {{ 'hardware-wallet.general.continue' | translate }}
+      <app-button (action)="requestWipe()" class="primary-button">
+        {{ 'common.continue-button' | translate }}
       </app-button>
     </div>
   </div>
 
   <div *ngIf="currentState !== states.Initial">
+    <!-- Instructions after confirming. -->
     <app-hw-message *ngIf="currentState === states.Processing"
       [text]="'hardware-wallet.general.confirm' | translate"
       [icon]="msgIcons.Confirm"
     ></app-hw-message>
 
+    <!-- Result. -->
     <app-hw-message *ngIf="currentState === states.ShowingResult"
       [text]="result.text | translate"
       [icon]="result.icon"
     ></app-hw-message>
 
+    <!-- Buttons area. -->
     <div class="-buttons" *ngIf="currentState !== states.Processing">
-      <app-button (action)="closeModal()" class="primary" #closeButton>
-        {{ 'hardware-wallet.general.close' | translate }}
+      <app-button (action)="closeModal()" class="primary-button" #closeButton>
+        {{ 'common.close-button' | translate }}
       </app-button>
     </div>
   </div>

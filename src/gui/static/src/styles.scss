@@ -1,65 +1,40 @@
+/*********************
+* General styles for the app.
+*********************/
 @import 'theme/variables';
 @import 'theme/tables';
 @import 'theme/_modals';
+@import 'theme/fonts';
+@import 'theme/forms';
+@import 'theme/onboarding';
+@import 'theme/buttons';
+@import 'theme/text';
+@import 'theme/menu';
+
+@import "~bootstrap/scss/mixins";
 @import '~bootstrap/scss/bootstrap-grid.scss';
 @import '~bootstrap/scss/utilities/_display.scss';
+@import "~bootstrap/scss/utilities/_text.scss";
+@import "~bootstrap/scss/utilities/_spacing.scss";
 
-/* You can add global styles to this file, and also import other style files */
-//@import '~@angular/material/prebuilt-themes/indigo-pink.css';
 @import 'app/app.theme.scss';
-
-@font-face {
-  font-family: 'Skycoin';
-  font-style: normal;
-  font-weight: 300;
-  src: url('assets/fonts/skycoin/Skycoin-Light.woff2') format('woff2'),
-  url('assets/fonts/skycoin/Skycoin-Light.woff') format('woff');
-}
-@font-face {
-  font-family: 'Skycoin';
-  font-style: italic;
-  font-weight: 300;
-  src: url('assets/fonts/skycoin/Skycoin-LightItalic.woff2') format('woff2'),
-  url('assets/fonts/skycoin/Skycoin-LightItalic.woff') format('woff');
-}
-@font-face {
-  font-family: 'Skycoin';
-  font-style: normal;
-  font-weight: 400;
-  src: url('assets/fonts/skycoin/Skycoin-Regular.woff2') format('woff2'),
-  url('assets/fonts/skycoin/Skycoin-Regular.woff') format('woff');
-}
-@font-face {
-  font-family: 'Skycoin';
-  font-style: italic;
-  font-weight: 400;
-  src: url('assets/fonts/skycoin/Skycoin-RegularItalic.woff2') format('woff2'),
-  url('assets/fonts/skycoin/Skycoin-RegularItalic.woff') format('woff');
-}
-@font-face {
-  font-family: 'Skycoin';
-  font-style: normal;
-  font-weight: 700;
-  src: url('assets/fonts/skycoin/Skycoin-Bold.woff2') format('woff2'),
-  url('assets/fonts/skycoin/Skycoin-Bold.woff') format('woff');
-}
-@font-face {
-  font-family: 'Skycoin';
-  font-style: italic;
-  font-weight: 700;
-  src: url('assets/fonts/skycoin/Skycoin-BoldItalic.woff2') format('woff2'),
-  url('assets/fonts/skycoin/Skycoin-BoldItalic.woff') format('woff');
-}
-
-$mat-font-family: Skycoin, sans-serif;
-$white: #FBFBFB;
-
-$primary-color: #0072ff;
-$secondary-color: #ffc125;
 
 body, div, h1, h2, h3, h4, h5, h6, p, span, a, button, option, select,
 mat-panel-description, mat-panel-title, mat-option.mat-option {
-  font-family: $mat-font-family;
+  font-family: $font-family;
+}
+
+// Class for the div which is shown in the background, needed to avoid a problem which makes the
+// background color of the <body> element to be shown incorrectly when a modal window is open
+// and the content has been scrolled.
+.background-fixer {
+  background-color: $grey-lightest;
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
 }
 
 html {
@@ -67,228 +42,31 @@ html {
 }
 
 body {
-  background-color: #f7f7f7;
+  background-color: $grey-lightest;
   margin: 0;
   padding: 0;
   height: 100%;
+  color: $black;
+  font-size: $font-size-standard;
 }
 
-header {
-  background: url("assets/header.png") center center / cover, linear-gradient(-155deg, #686e96 0%, #373b5c 100%);
-  width: 100%;
-  height: 300px;
+.mat-tooltip {
+  font-size: 11px !important;
+  line-height: 1.3;
 }
 
-mat-dialog-container {
-  border-radius: 5px !important;
-}
-
-.mat-dialog-container {
-  padding: 0 !important;
-}
-
-.header-container {
-  max-width: 848px;
-  text-align: center;
-  padding-top: 40px;
-  margin-right: auto;
-  margin-left: auto;
-}
-
-.header-container h1 {
-  font-size: 3em;
-  color: white;
-}
-
-.button-line {
-  margin-top: 40px;
-  text-align: right;
-}
-
-.datatable-row-group {
-  cursor: pointer;
-}
-
-button.active {
-  background-color: rgba(0,0,0,.12);
-}
-
-mat-spinner.in-button .mat-spinner path {
-  stroke: #000;
-  opacity: 0.3;
-}
-
-mat-spinner.in-button {
-  display: inline-block;
-  margin-left: 10px;
-  
-  &.small {
-    height: 18px !important;
-    width: 18px !important;
-  
-    svg {
-      height: 18px !important;
-      width: 18px !important;
-    }
-  }
-}
-
-mat-spinner.in-text {
-  display: inline-block;
-  height: 12px !important;
-  width: 12px !important;
-  margin: 0 !important;
-  margin-left: 7px !important;
-
-  svg {
-    height: 12px !important;
-    width: 12px !important;
-
-    circle {
-      stroke: $gradient-blue-dark;
-    }
-  }
-}
-
-snack-bar-container {
-  background-color: rgba(255, 0, 0, 0.8) !important;
-}
-
-mat-panel-title {
-  width: 60%;
-  display: block;
-  flex-grow: 0 !important;
-}
-
-.sky-container {
-  min-width: 100%;
-  min-height: 100%;
-
-  &.sky-container-grey {
-    background-color: $grey-lightest;
-  }
-}
+/**
+General Helpers
+**/
 
 .flex-fill, .-flex-fill {
   flex: 1 1 auto;
 }
 
-.form-field {
-  margin-bottom: 20px;
-
-  label {
-    color: #1e2227;
-    display: block;
-    font-size: 13px;
-    line-height: 20px;
-    margin-bottom: 2px;
-  }
-
-  input {
-    border: 2px solid rgba(0, 0, 0, 0.05);
-    border-radius: 6px;
-    box-sizing: border-box;
-    display: block;
-    line-height: 20px;
-    padding: 10px 10px;
-    width: 100%;
-  }
-
-  .-input-addon {
-    display: flex;
-  
-    input {
-      border-top-right-radius: 0;
-      border-bottom-right-radius: 0;
-    }
-  
-    span {
-      border: 2px;
-      border-radius: 0 6px 6px 0;
-      background: #f1f1f1;
-      padding: 0 10px;
-      line-height: 44px;
-      color: $grey;
-      font-size: 14px;
-      flex-shrink: 0;
-    }
-  }
-
-  select {
-    background-color: white;
-    border: 2px solid rgba(0, 0, 0, 0.05);
-    border-radius: 6px;
-    box-sizing: border-box;
-    display: block;
-    line-height: 20px;
-    padding: 10px 10px;
-    width: 100%;
-    appearance: none;
-  }
-
-  textarea {
-    border: 2px solid rgba(0, 0, 0, 0.05);
-    border-radius: 6px;
-    box-sizing: border-box;
-    display: block;
-    line-height: 20px;
-    padding: 10px 10px;
-    width: 100%;
-  }
-}
-
-.primary button.enabled, .primary-gradient-background {
-  background: $gradient-blue-dark; /* For browsers that do not support gradients */
-  background: -webkit-linear-gradient(left top, $gradient-blue-dark, $gradient-blue-light); /* For Safari 5.1 to 6.0 */
-  background: -o-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Opera 11.1 to 12.0 */
-  background: -moz-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Firefox 3.6 to 15 */
-  background: linear-gradient(to bottom right, $gradient-blue-dark, $gradient-blue-light); /* Standard syntax */
-
-  span {
-    color: white;
-  }
-}
-
-/**
-General Helpers
- */
-
-.primary-color {
-  color: $primary-color;
-}
-
-.secondary-color {
-  color: $secondary-color;
-}
-
-.no-opacity {
-  opacity: 1 !important;
-}
-
-.light-opacity {
-  opacity: 0.2
-}
-
-.rotate-90 {
-  transform: rotate(90deg);
-}
-
-.rotate-180 {
-  transform: rotate(180deg);
-}
-
-.rotate-270 {
-  transform: rotate(270deg);
-}
-
-mat-spinner.in-button svg {
-  height: 24px !important;
-  width: 24px !important;
-}
-
-.empty-row {
-  padding: 0 1.2rem !important;
-  line-height: 50px !important;
+.link {
+  color: $main-color;
+  cursor: pointer;
+  text-decoration: none;
 }
 
 /**
@@ -297,16 +75,16 @@ Alerts
 
 .alert-box {
   color: $red;
-  font-size: 12px;
+  font-size: $font-size-standard-minus;
   padding: 0 10px;
   line-height: 1.5;
-  background-color: #ffdede;
+  background-color: $light-red-background;
   padding: 15px;
   display: flex;
   margin-bottom: 20px;
 
   .title {
-    font-size: 20px;
+    font-size: $font-size-very-big;
   }
 
   mat-icon {
@@ -319,6 +97,12 @@ Alerts
     margin-top: 10px;
     display: inline-block;
   }
+
+  .-check {
+    span {
+      color: $black !important;
+    }
+  }
 }
 
 @keyframes alert-blinking {
@@ -327,175 +111,15 @@ Alerts
   }
 }
 
-/**
-On-boarding components
- */
-
-.onboarding-container {
-  width: 100%;
-  height: 100%;
-  overflow-x: hidden;
-  background: $gradient-blue-dark; /* For browsers that do not support gradients */
-  background: -webkit-linear-gradient(left top, $gradient-blue-dark, $gradient-blue-light); /* For Safari 5.1 to 6.0 */
-  background: -o-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Opera 11.1 to 12.0 */
-  background: -moz-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Firefox 3.6 to 15 */
-  background: linear-gradient(to bottom right, $gradient-blue-dark, $gradient-blue-light); /* Standard syntax */
-
-  .row-container {
-    max-width: 450px;
-    width: 80%;
-    margin: 0px auto;
-  }
-
-  label {
-    color: white;
-  }
-
-  input {
-    border: 2px solid rgba(0, 0, 0, 0.05);
-    border-radius: 6px;
-    box-sizing: border-box;
-    display: block;
-    line-height: 20px;
-    padding: 10px 10px;
-    width: 100%;
-  }
-
-  select {
-    background-color: white;
-    border: 2px solid rgba(0, 0, 0, 0.05);
-    border-radius: 6px;
-    box-sizing: border-box;
-    display: block;
-    line-height: 20px;
-    padding: 10px 10px;
-    width: 100%;
-    -webkit-appearance:none;
-  }
-
-  textarea {
-    border: 2px solid rgba(0, 0, 0, 0.05);
-    border-radius: 6px;
-    box-sizing: border-box;
-    display: block;
-    line-height: 20px;
-    padding: 10px 10px;
-    width: 100%;
-  }
-}
-
-.dark button.enabled {
-  background-color: $black !important;
-  span {
-    color: white;
-  }
-}
-
-.ghost button.enabled {
-  background-color: $transparent !important;
-  span {
-    color: black;
-  }
-}
-
-
-.-select {
-  position: relative;
-
-  &::after {
-    content: '';
-    display: block;
-    position: absolute;
-    top: 0;
-    right: 0;
-    background: url('/assets/img/chevron-right-grey.png') no-repeat;
-    background-size: 32px 32px;
-    width: 32px;
-    height: 32px;
-    margin: 6px;
-    pointer-events: none;
-    transform: rotate(90deg);
-  }
-}
-
-.mat-menu-panel {
-  border-radius: 5px !important;
-  background-color: #fefefe;
-
-  .mat-menu-item {
-    font-family: Skycoin;
-    line-height: 50px;
-  }
-
-  &.compact {
-    .mat-menu-item {
-      font-size: 13px;
-      height: 35px;
-      line-height: 35px;
-    }
-  }
-}
-
-.qr-code-button {
-  opacity: 0.6;
-  cursor: pointer;
-
-  &:hover {
-    opacity: 1;
-  }
-}
-
-.mat-dialog-content {
-  max-height: 90vh !important;
-}
-
-@media (max-height: 600px) {
-  .mat-dialog-content {
-    max-height: 80vh !important;
-  }
-}
-
-.mouse-disabled {
-  pointer-events: none;
-}
-
-.coin-selector-container {
-  display: inline-block;
-  margin-left: 5px;
-  margin-bottom: 5px;
-}
-
-.coins-value-label {
-  font-size: 10px;
-  margin-top: 1px;
-  padding: 3px 10px;
-  background-color: $grey-lightest;
-  border-radius: 4px;
-
-  span {
-    opacity: 0.5;
-  }
-
-  .link {
-    color: $gradient-blue-dark;
-    cursor: pointer;
-    display: inline-block;
-    font-size: 11px;
-    margin-bottom: 3px;
-    margin-top: -5px;
-  }
-
-  .centerd-link {
-    width: 100%;
-    text-align: center;
-  }
-}
-
 .red {
   color: $red;
 }
 
-.element-disabled {
-  pointer-events: none;
-  opacity: 0.5;
+.red-field {
+  border: $red solid 2px !important;
+  color: $red !important;
+}
+
+.error-tooltip {
+  background-color: $red !important;
 }

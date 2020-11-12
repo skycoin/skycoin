@@ -1,12 +1,14 @@
 export const AppConfig = {
   otcEnabled: false,
   maxHardwareWalletAddresses: 1,
-  useHwWalletDaemon: true,
-  urlForHwWalletVersionChecking: 'https://version.skycoin.net/skywallet/version.txt',
-  hwWalletDownloadUrlAndPrefix: 'https://downloads.skycoin.net/skywallet/skywallet-firmware-v',
+  urlForHwWalletVersionChecking: 'https://version.skycoin.com/skywallet/version.txt',
+  hwWalletDownloadUrlAndPrefix: 'https://downloads.skycoin.com/skywallet/skywallet-firmware-v',
+  hwWalletDaemonDownloadUrl: 'https://www.skycoin.com/downloads/',
 
-  urlForVersionChecking: 'https://version.skycoin.net/skycoin/version.txt',
-  walletDownloadUrl: 'https://www.skycoin.net/downloads/',
+  urlForVersionChecking: 'https://version.skycoin.com/skycoin/version.txt',
+  walletDownloadUrl: 'https://www.skycoin.com/downloads/',
+
+  priceApiId: 'sky-skycoin',
 
   /**
    * This wallet uses the Skycoin URI Specification (based on BIP-21) when creating QR codes and
@@ -32,4 +34,6 @@ export const AppConfig = {
     },
   ],
   defaultLanguage: 'en',
+
+  mediumModalWidth: '566px',
 };

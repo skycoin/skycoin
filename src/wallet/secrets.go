@@ -1,34 +1,44 @@
 package wallet
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 const (
-	secretSeed           = "seed"
-	secretLastSeed       = "lastSeed"
-	secretSeedPassphrase = "seedPassphrase"
+	// SecretSeed key of seed in Secrets
+	SecretSeed = "seed"
+	// SecretLastSeed key of last sees in Secrets
+	SecretLastSeed = "lastSeed"
+	// SecretSeedPassphrase key of seed passphrase in Secrets
+	SecretSeedPassphrase = "seedPassphrase"
 )
 
 // Secrets hold secret data, to be encrypted
 type Secrets map[string]string
 
-func (s Secrets) get(key string) (string, bool) {
+// Get returns the secret value of given key
+func (s Secrets) Get(key string) (string, bool) {
 	v, ok := s[key]
 	return v, ok
 }
 
-func (s Secrets) set(key, v string) {
+// Set sets the secret key and value
+func (s Secrets) Set(key, v string) {
 	s[key] = v
 }
 
-func (s Secrets) serialize() ([]byte, error) {
+// Serialize encodes the secrets into []bytes
+func (s Secrets) Serialize() ([]byte, error) {
 	return json.Marshal(s)
 }
 
-func (s Secrets) deserialize(data []byte) error {
+// Deserialize decodes  the secrets from []bytes
+func (s Secrets) Deserialize(data []byte) error {
 	return json.Unmarshal(data, &s)
 }
 
-func (s Secrets) erase() {
+// Erase wipes all secrets
+func (s Secrets) Erase() {
 	for k := range s {
 		s[k] = ""
 		delete(s, k)

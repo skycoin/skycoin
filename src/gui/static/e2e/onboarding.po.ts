@@ -26,7 +26,7 @@ export class OnboardingCreatePage {
   }
 
   getSafeguardIsShown() {
-    return element(by.css('app-onboarding-safeguard')).isPresent();
+    return element(by.css('app-confirmation')).isPresent();
   }
 
   acceptSafeguard() {
@@ -41,7 +41,7 @@ export class OnboardingCreatePage {
     element(by.buttonText('New')).click();
 
     if (goToManualSeedMode) {
-      element(by.css('.seed-type-button >div')).click();
+      element(by.css('.seed-type-button >span')).click();
       element(by.css('.e2e-confirm-checkbox')).click();
       element(by.buttonText('Continue')).click();
     }
@@ -74,7 +74,7 @@ export class OnboardingCreatePage {
   loadWallet() {
     element(by.buttonText('Load')).click();
 
-    element(by.css('.seed-type-button >div')).click();
+    element(by.css('.seed-type-button >span')).click();
     element(by.buttonText('Continue')).click();
 
     const label = element(by.css('[formcontrolname="label"]'));

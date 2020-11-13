@@ -219,6 +219,7 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 
 	skyCLI.Version = Version
 	skyCLI.SuggestionsMinimumDistance = 1
+	skyCLI.SilenceUsage = true
 	skyCLI.AddCommand(commands...)
 
 	skyCLI.SetHelpTemplate(helpTemplate)

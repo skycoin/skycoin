@@ -50,6 +50,10 @@ func decryptWallet(id string, pr PasswordReader) error {
 		return err
 	}
 
-	_, err = apiClient.DecryptWallet(id, string(pwd))
-	return err
+	wlt, err = apiClient.DecryptWallet(id, string(pwd))
+	if err != nil {
+		return err
+	}
+
+	return printJSON(wlt)
 }

@@ -12,9 +12,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `CLI walletScanAddresses` command to scan wallet addresses ahead.
 - Add `GET /api/v2/transactions` API to get transactions with pagination.
 - Add `-max-incoming-connection` flag to control the maximum allowed incoming connections.
+- Add `qr_uri_prefix` field to `/api/v1/health` endpoint.
 
 ### Fixed
-
 
 ### Changed
 

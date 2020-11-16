@@ -339,6 +339,7 @@ func NewNodeConfig(mode string, node fiber.NodeConfig) NodeConfig {
 			CoinHoursName:         node.CoinHoursName,
 			CoinHoursNameSingular: node.CoinHoursNameSingular,
 			CoinHoursTicker:       node.CoinHoursTicker,
+			QrURIPrefix:           node.QrURIPrefix,
 			ExplorerURL:           node.ExplorerURL,
 			VersionURL:            node.VersionURL,
 			Bip44Coin:             node.Bip44Coin,

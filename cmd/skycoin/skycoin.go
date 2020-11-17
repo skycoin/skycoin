@@ -94,6 +94,7 @@ var (
 		CoinHoursName:         "Coin Hours",
 		CoinHoursNameSingular: "Coin Hour",
 		CoinHoursTicker:       "SCH",
+		QrURIPrefix:           "skycoin",
 		ExplorerURL:           "https://explorer.skycoin.com",
 		VersionURL:            "https://version.skycoin.com/skycoin/version.txt",
 		Bip44Coin:             8000,

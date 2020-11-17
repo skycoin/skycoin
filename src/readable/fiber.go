@@ -10,6 +10,7 @@ type FiberConfig struct {
 	CoinHoursName         string         `json:"coin_hours_display_name"`
 	CoinHoursNameSingular string         `json:"coin_hours_display_name_singular"`
 	CoinHoursTicker       string         `json:"coin_hours_ticker"`
+	QrURIPrefix           string         `json:"qr_uri_prefix"`
 	ExplorerURL           string         `json:"explorer_url"`
 	VersionURL            string         `json:"version_url"`
 	Bip44Coin             bip44.CoinType `json:"bip44_coin"`

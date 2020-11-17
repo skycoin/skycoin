@@ -90,6 +90,7 @@ var (
 		CoinHoursName:         "{{.CoinHoursName}}",
 		CoinHoursNameSingular: "{{.CoinHoursNameSingular}}",
 		CoinHoursTicker:       "{{.CoinHoursTicker}}",
+		QrURIPrefix:           "{{.QrURIPrefix}}",
 		ExplorerURL:           "{{.ExplorerURL}}",
 		VersionURL:            "{{.VersionURL}}",
 		Bip44Coin:             {{.Bip44Coin}},

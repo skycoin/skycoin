@@ -3,9 +3,6 @@
 # github.com/NYTimes/gziphandler v1.0.1
 ## explicit
 github.com/NYTimes/gziphandler
-# github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
-## explicit
-github.com/skycoin/encodertest
 # github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 ## explicit
 github.com/andreyvit/diff
@@ -103,6 +100,9 @@ github.com/shopspring/decimal
 # github.com/sirupsen/logrus v1.1.1
 ## explicit
 github.com/sirupsen/logrus
+# github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
+## explicit
+github.com/skycoin/encodertest
 # github.com/spf13/afero v1.1.2
 github.com/spf13/afero
 github.com/spf13/afero/mem

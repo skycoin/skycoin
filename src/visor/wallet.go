@@ -276,10 +276,6 @@ func (vs *Visor) WalletCreateTransactionSigned(wltID string, password []byte, p 
 		return nil, nil, err
 	}
 
-	if vs.tf == nil {
-		vs.tf = &TransactionsFinder{vs}
-	}
-
 	if p.ChangeAddress == nil && w.Type() == wallet.WalletTypeBip44 {
 		// TODO: Maybe add the `PeekChangeAddress` to wallet.Wallet interface, and
 		// only bip44 wallet will implement it, all others do nothing. In this way
@@ -324,10 +320,6 @@ func (vs *Visor) WalletCreateTransaction(wltID string, p transaction.Params, wp 
 
 	var txn *coin.Transaction
 	var inputs []TransactionInput
-
-	if vs.tf == nil {
-		vs.tf = &TransactionsFinder{vs}
-	}
 
 	if err := vs.wallets.Update(wltID, func(w wallet.Wallet) error {
 		if p.ChangeAddress == nil && w.Type() == wallet.WalletTypeBip44 {

@@ -306,7 +306,7 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 			SeedPassphrase: r.FormValue("seed-passphrase"),
 			Bip44Coin:      bip44Coin,
 			XPub:           r.FormValue("xpub"),
-			TF:             gateway,
+			TF:             gateway.TransactionsFinder(),
 		})
 		if err != nil {
 			switch err.(type) {
@@ -435,7 +435,7 @@ func walletScanAddressesHandler(gateway Gatewayer) http.HandlerFunc {
 			password = ""
 		}()
 
-		addrs, err := gateway.ScanAddresses(wltID, []byte(password), n, gateway)
+		addrs, err := gateway.ScanWalletAddresses(wltID, []byte(password), n)
 		if err != nil {
 			switch err {
 			case wallet.ErrWalletAPIDisabled:

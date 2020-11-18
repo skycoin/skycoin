@@ -435,7 +435,7 @@ func walletScanAddressesHandler(gateway Gatewayer) http.HandlerFunc {
 			password = ""
 		}()
 
-		addrs, err := gateway.ScanAddresses(wltID, []byte(password), n, gateway)
+		addrs, err := gateway.ScanWalletAddresses(wltID, []byte(password), n)
 		if err != nil {
 			switch err {
 			case wallet.ErrWalletAPIDisabled:

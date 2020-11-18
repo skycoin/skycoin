@@ -94,6 +94,7 @@ type Visorer interface {
 	WalletCreateTransaction(wltID string, p transaction.Params, wp visor.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error)
 	WalletCreateTransactionSigned(wltID string, password []byte, p transaction.Params, wp visor.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error)
 	WalletSignTransaction(wltID string, password []byte, txn *coin.Transaction, signIndexes []int) (*coin.Transaction, []visor.TransactionInput, error)
+	ScanWalletAddresses(wltID string, password []byte, num uint64) ([]cipher.Address, error)
 }
 
 // Walleter interface for wallet.Service methods used by the API

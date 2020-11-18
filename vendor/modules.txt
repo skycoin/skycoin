@@ -3,9 +3,9 @@
 # github.com/NYTimes/gziphandler v1.0.1
 ## explicit
 github.com/NYTimes/gziphandler
-# github.com/SkycoinProject/encodertest v0.0.0-20190217072920-14c2e31898b9
+# github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
 ## explicit
-github.com/SkycoinProject/encodertest
+github.com/skycoin/encodertest
 # github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 ## explicit
 github.com/andreyvit/diff

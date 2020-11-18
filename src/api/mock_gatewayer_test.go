@@ -1310,6 +1310,29 @@ func (_m *MockGatewayer) ScanAddresses(wltID string, password []byte, n uint64, 
 	return r0, r1
 }
 
+// ScanWalletAddresses provides a mock function with given fields: wltID, password, num
+func (_m *MockGatewayer) ScanWalletAddresses(wltID string, password []byte, num uint64) ([]cipher.Address, error) {
+	ret := _m.Called(wltID, password, num)
+
+	var r0 []cipher.Address
+	if rf, ok := ret.Get(0).(func(string, []byte, uint64) []cipher.Address); ok {
+		r0 = rf(wltID, password, num)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]cipher.Address)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, []byte, uint64) error); ok {
+		r1 = rf(wltID, password, num)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // StartedAt provides a mock function with given fields:
 func (_m *MockGatewayer) StartedAt() time.Time {
 	ret := _m.Called()

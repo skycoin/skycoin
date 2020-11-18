@@ -63,29 +63,6 @@ func (_m *MockGatewayer) AddressCount() (uint64, error) {
 	return r0, r1
 }
 
-// AddressesActivity provides a mock function with given fields: addrs
-func (_m *MockGatewayer) AddressesActivity(addrs []cipher.Addresser) ([]bool, error) {
-	ret := _m.Called(addrs)
-
-	var r0 []bool
-	if rf, ok := ret.Get(0).(func([]cipher.Addresser) []bool); ok {
-		r0 = rf(addrs)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]bool)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func([]cipher.Addresser) error); ok {
-		r1 = rf(addrs)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // CreateTransaction provides a mock function with given fields: p, wp
 func (_m *MockGatewayer) CreateTransaction(p transaction.Params, wp visor.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error) {
 	ret := _m.Called(p, wp)
@@ -1342,6 +1319,22 @@ func (_m *MockGatewayer) StartedAt() time.Time {
 		r0 = rf()
 	} else {
 		r0 = ret.Get(0).(time.Time)
+	}
+
+	return r0
+}
+
+// TransactionsFinder provides a mock function with given fields:
+func (_m *MockGatewayer) TransactionsFinder() wallet.TransactionsFinder {
+	ret := _m.Called()
+
+	var r0 wallet.TransactionsFinder
+	if rf, ok := ret.Get(0).(func() wallet.TransactionsFinder); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(wallet.TransactionsFinder)
+		}
 	}
 
 	return r0

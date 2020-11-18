@@ -2913,7 +2913,7 @@ func TestTransactionsFinder(t *testing.T) {
 				addrsInHistory[addr] = struct{}{}
 			}
 
-			tf := transactionsFinder{
+			tf := TransactionsFinder{
 				db:          db,
 				history:     &MockHistoryerAddressSeen{addrsMap: addrsInHistory},
 				unconfirmed: &MockUnconfirmedTransactionPoolerForEach{txns: tc.unconfirmedTxns},

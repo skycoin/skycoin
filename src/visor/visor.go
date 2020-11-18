@@ -2199,15 +2199,20 @@ func (vs *Visor) ScanWalletAddresses(wltID string, password []byte, num uint64) 
 	return vs.wallets.ScanAddresses(wltID, password, num, vs.tf)
 }
 
-// transactionsFinder implements the wallet.TransactionsFinder interface
-type transactionsFinder struct {
+// TransactionsFinder returns a transactions finder
+func (vs *Visor) TransactionsFinder() wallet.TransactionsFinder {
+	return newTransactionsFinder(vs)
+}
+
+// TransactionsFinder implements the wallet.TransactionsFinder interface
+type TransactionsFinder struct {
 	db          *dbutil.DB
 	history     Historyer
 	unconfirmed UnconfirmedTransactionPooler
 }
 
-func newTransactionsFinder(v *Visor) *transactionsFinder {
-	return &transactionsFinder{
+func newTransactionsFinder(v *Visor) *TransactionsFinder {
+	return &TransactionsFinder{
 		db:          v.db,
 		history:     v.history,
 		unconfirmed: v.unconfirmed,
@@ -2215,7 +2220,7 @@ func newTransactionsFinder(v *Visor) *transactionsFinder {
 }
 
 // AddressesActivity implements the methods of wallet.TransactionsFinder interface
-func (tf *transactionsFinder) AddressesActivity(addrs []cipher.Addresser) ([]bool, error) {
+func (tf *TransactionsFinder) AddressesActivity(addrs []cipher.Addresser) ([]bool, error) {
 	if len(addrs) == 0 {
 		return nil, nil
 	}

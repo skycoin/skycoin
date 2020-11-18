@@ -86,7 +86,6 @@ type Visorer interface {
 	GetTransactionWithInputs(txid cipher.SHA256) (*visor.Transaction, []visor.TransactionInput, error)
 	GetTransactions(flts []visor.TxFilter, order visor.SortOrder, page *visor.PageIndex) ([]visor.Transaction, uint64, error)
 	GetTransactionsWithInputs(flts []visor.TxFilter, order visor.SortOrder, page *visor.PageIndex) ([]visor.Transaction, [][]visor.TransactionInput, uint64, error)
-	AddressesActivity(addrs []cipher.Addresser) ([]bool, error)
 	GetWalletUnconfirmedTransactions(wltID string) ([]visor.UnconfirmedTransaction, error)
 	GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]visor.UnconfirmedTransaction, [][]visor.TransactionInput, error)
 	GetWalletBalance(wltID string) (wallet.BalancePair, wallet.AddressBalances, error)
@@ -95,6 +94,7 @@ type Visorer interface {
 	WalletCreateTransactionSigned(wltID string, password []byte, p transaction.Params, wp visor.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error)
 	WalletSignTransaction(wltID string, password []byte, txn *coin.Transaction, signIndexes []int) (*coin.Transaction, []visor.TransactionInput, error)
 	ScanWalletAddresses(wltID string, password []byte, num uint64) ([]cipher.Address, error)
+	TransactionsFinder() wallet.TransactionsFinder
 }
 
 // Walleter interface for wallet.Service methods used by the API

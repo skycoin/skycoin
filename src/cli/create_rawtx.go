@@ -167,7 +167,7 @@ func makeWalletCreateTxnRequest(c *cobra.Command, args []string) (*api.WalletCre
 	}
 
 	walletFile := args[0]
-	w, err := wallet.Load(walletFile)
+	w, err := apiClient.Wallet(args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -181,13 +181,8 @@ func makeWalletCreateTxnRequest(c *cobra.Command, args []string) (*api.WalletCre
 	if wltAddr.Address != "" {
 		addrs = append(addrs, wltAddr.Address)
 	} else {
-		as, err := w.GetAddresses()
-		if err != nil {
-			return nil, err
-		}
-
-		for _, addr := range as {
-			addrs = append(addrs, addr.String())
+		for _, e := range w.Entries {
+			addrs = append(addrs, e.Address)
 		}
 	}
 
@@ -198,11 +193,11 @@ func makeWalletCreateTxnRequest(c *cobra.Command, args []string) (*api.WalletCre
 
 	req := api.WalletCreateTransactionRequest{
 		Unsigned:                 unsign,
-		WalletID:                 w.Filename(),
+		WalletID:                 w.Meta.Filename,
 		CreateTransactionRequest: *ctr,
 	}
 
-	if w.IsEncrypted() && !unsign {
+	if w.Meta.Encrypted && !unsign {
 		p, err := getPassword(c)
 		if err != nil {
 			return nil, err

@@ -266,7 +266,7 @@ $ ./run-client.sh -launch-browser=false
 Once the node is started, we could use the following command to create an unsigned transaction.
 
 ```bash
-$ skycoin-cli createRawTransactionV2 $WALLET_FILE $RECIPIENT_ADDRESS $AMOUNT --unsign
+$ skycoin-cli createRawTransactionV2 $WALLET_NAME $RECIPIENT_ADDRESS $AMOUNT --unsign
 ```
 
 > Note: Don't forget the `--unsign` flag, otherwise it would try to sign the transaction.

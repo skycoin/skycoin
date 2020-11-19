@@ -244,8 +244,10 @@ func Create(host string, c Config, gateway Gatewayer) (*Server, error) {
 
 	s, err := create(host, c, gateway)
 	if err != nil {
-		if closeErr := s.listener.Close(); closeErr != nil {
-			logger.WithError(err).Warning("s.listener.Close() error")
+		if s != nil {
+			if closeErr := s.listener.Close(); closeErr != nil {
+				logger.WithError(err).Warning("s.listener.Close() error")
+			}
 		}
 		return nil, err
 	}
@@ -278,8 +280,10 @@ func CreateHTTPS(host string, c Config, gateway Gatewayer, certFile, keyFile str
 
 	s, err := create(host, c, gateway)
 	if err != nil {
-		if closeErr := s.listener.Close(); closeErr != nil {
-			logger.WithError(err).Warning("s.listener.Close() error")
+		if s != nil {
+			if closeErr := s.listener.Close(); closeErr != nil {
+				logger.WithError(err).Warning("s.listener.Close() error")
+			}
 		}
 		return nil, err
 	}

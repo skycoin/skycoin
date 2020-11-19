@@ -2,22 +2,22 @@
 # Defaults are shown, commented out
 # Some values have no defaults and must be filled in
 [node]
-genesis_signature_str = "eb10468d10054d15f2b6f8946cd46797779aa20a7617ceb4be884189f219bc9a164e56a5b9f7bec392a804ff3740210348d73db77a37adb542a8e08d429ac92700"
-genesis_address_str = "2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6"
-blockchain_pubkey_str = "0328c576d3f420e7682058a981173a4b374c7cc5ff55bf394d3cf57059bbe6456a"
+genesis_signature_str = "0b0661652a064c48f5ec565b596cf3be1a438e9e1bd1de551f16f76172ae0a02628a5cecdd366aaba070786c2040c32113da871ca3a80d26902eb7566a319d6f00"
+genesis_address_str = "2LuKycJ7SQwbSxoX65Bu8BwZ66RegDaWGK"
+blockchain_pubkey_str = "0278d26405ec24c8bf8998cf767b65c29f0dfcdff3542cdb1de44ed0539e9c9d9b"
 blockchain_seckey_str = ""
-genesis_timestamp = 1426562704
-# genesis_coin_volume = 100e12
+genesis_timestamp = 1605751429
+genesis_coin_volume = 200e12
 default_connections = [
-	"139.162.121.185:6000",
-	"172.104.164.147:6000",
-	"139.162.248.183:6000",
-	"45.56.109.228:6000",
-	"173.230.130.174:6000",
-	"172.104.99.241:6000",
-	"172.104.57.147:6000",
+	"192.243.100.192:6000",
+	"167.114.97.165:6000",
+	"198.245.62.172:6000",
+//	"45.56.109.228:6000",
+//	"173.230.130.174:6000",
+//	"172.104.99.241:6000",
+//	"172.104.57.147:6000",
 ]
-peer_list_url = "https://downloads.skycoin.com/blockchain/peers.txt"
+peer_list_url = "https://fuckyc.com/blockchain/peers.txt"
 # port = 6000
 # web_interface_port = 6420
 # unconfirmed_burn_factor = 10
@@ -27,23 +27,23 @@ peer_list_url = "https://downloads.skycoin.com/blockchain/peers.txt"
 # create_block_max_transaction_size = 32 * 1024
 # create_block_max_decimals = 3
 # max_block_transactions_size = 32 * 1024
-# display_name = "Skycoin"
-# ticker = "SKY"
+  display_name = "PrivateNess"
+  ticker = "NESS"
 # coin_hours_display_name = "Coin Hours"
 # coin_hours_display_name_singular = "Coin Hour"
-# coin_hours_ticker = "SCH"
-# qr_uri_prefix = "skycoin"
-# explorer_url = "https://explorer.skycoin.com"
+  coin_hours_ticker = "HNESS"
+# qr_uri_prefix = "PrivateNess"
+  explorer_url = "https://explorer.privateness.network"
 # bip44_coin = 8000
 
 [params]
-# max_coin_supply = 1e8
-# initial_unlocked_count = 25
-# unlock_address_rate = 5
-# unlock_time_interval = 60 * 60 * 24 * 365
+  max_coin_supply = 2e8
+  initial_unlocked_count = 50
+  unlock_address_rate = 5
+  unlock_time_interval = 60 * 60 * 24 * 365
 # user_max_decimals = 3
 # user_max_transaction_size = 32 * 1024
-# user_burn_factor = 10
+user_burn_factor = 10
 distribution_addresses = [
     "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
     "2EYM4WFHe4Dgz6kjAdUkM6Etep7ruz2ia6h",

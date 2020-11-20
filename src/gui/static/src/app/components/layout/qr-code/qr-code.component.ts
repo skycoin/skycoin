@@ -134,7 +134,7 @@ export class QrCodeComponent implements OnInit, OnDestroy {
     }
 
     // Add the BIP21 prefix.
-    this.currentQrContent = AppConfig.uriSpecificatioPrefix.toLowerCase() + ':' + this.data.address;
+    this.currentQrContent = this.appService.uriSpecificatioPrefix.toLowerCase() + ':' + this.data.address;
 
     this.invalidCoins = false;
     this.invalidHours = false;

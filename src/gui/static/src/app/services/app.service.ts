@@ -102,6 +102,16 @@ export class AppService {
   }
   private lastestVersionInternal = '';
 
+  /**
+   * This wallet uses the Skycoin URI Specification (based on BIP-21) when creating QR codes and
+   * requesting coins. This variable defines the prefix that will be used for creating QR codes
+   * and URLs. IT MUST BE UNIQUE FOR EACH COIN.
+   */
+  get uriSpecificatioPrefix(): string {
+    return this.uriSpecificatioPrefixInternal;
+  }
+  private uriSpecificatioPrefixInternal = '';
+
   constructor(
     private apiService: ApiService,
     private http: HttpClient,
@@ -124,6 +134,7 @@ export class AppService {
       this.hoursNameInternal = response.fiber.coin_hours_display_name;
       this.hoursNameSingularInternal = response.fiber.coin_hours_display_name_singular;
       this.explorerUrlInternal = response.fiber.explorer_url;
+      this.uriSpecificatioPrefixInternal = response.fiber.qr_uri_prefix;
 
       if (this.explorerUrlInternal.endsWith('/')) {
         this.explorerUrlInternal = this.explorerUrlInternal.substr(0, this.explorerUrl.length - 1);

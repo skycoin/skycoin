@@ -32,7 +32,7 @@ peer_list_url = "https://fuckyc.com/blockchain/peers.txt"
 # coin_hours_display_name = "Coin Hours"
 # coin_hours_display_name_singular = "Coin Hour"
   coin_hours_ticker = "HNESS"
-# qr_uri_prefix = "PrivateNess"
+ qr_uri_prefix = "PrivateNess"
   explorer_url = "https://explorer.privateness.network"
 # bip44_coin = 8000
 

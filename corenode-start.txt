@@ -1,0 +1,11 @@
+export GENESIS_ADDRESS=2LuKycJ7SQwbSxoX65Bu8BwZ66RegDaWGK
+export PUBLIC_KEY=0278d26405ec24c8bf8998cf767b65c29f0dfcdff3542cdb1de44ed0539e9c9d9b
+export GENESIS_SIGNATURE=0b0661652a064c48f5ec565b596cf3be1a438e9e1bd1de551f16f76172ae0a02628a5cecdd366aaba070786c2040c32113da871ca3a80d26902eb7566a319d6f00
+export USER_BURN_FACTOR=2
+go run cmd/privateness/privateness.go \
+  --custom-peers-file=./peers-whitelist.txt \
+  --disable-default-peers \
+  --download-peerlist=false \
+  --disable-pex \
+  --disable-incoming
+

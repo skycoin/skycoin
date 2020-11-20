@@ -145,7 +145,7 @@ func NewConfig(configName, appDir string) (Config, error) {
 
 func setDefaults() {
 	// node defaults
-	viper.SetDefault("node.genesis_coin_volume", 100e12)
+	viper.SetDefault("node.genesis_coin_volume", 200e12)
 	viper.SetDefault("node.port", 6000)
 	viper.SetDefault("node.web_interface_port", 6420)
 	viper.SetDefault("node.unconfirmed_burn_factor", 10)
@@ -155,13 +155,13 @@ func setDefaults() {
 	viper.SetDefault("node.create_block_max_transaction_size", 32*1024)
 	viper.SetDefault("node.create_block_max_decimals", 3)
 	viper.SetDefault("node.max_block_transactions_size", 32*1024)
-	viper.SetDefault("node.display_name", "Skycoin")
-	viper.SetDefault("node.ticker", "SKY")
+	viper.SetDefault("node.display_name", "PrivateNess")
+	viper.SetDefault("node.ticker", "NESS")
 	viper.SetDefault("node.coin_hours_display_name", "Coin Hours")
 	viper.SetDefault("node.coin_hours_display_name_singular", "Coin Hour")
-	viper.SetDefault("node.coin_hours_ticker", "SCH")
-	viper.SetDefault("node.qr_uri_prefix", "skycoin")
-	viper.SetDefault("node.explorer_url", "https://explorer.skycoin.com")
+	viper.SetDefault("node.coin_hours_ticker", "HNESS")
+	viper.SetDefault("node.qr_uri_prefix", "privateness")
+	viper.SetDefault("node.explorer_url", "https://explorer.privateness.network")
 	viper.SetDefault("node.version_url", "https://version.skycoin.com/skycoin/version.txt")
 	viper.SetDefault("node.bip44_coin", bip44.CoinTypeSkycoin)
 
@@ -170,11 +170,11 @@ func setDefaults() {
 	viper.SetDefault("build.branch", "")
 
 	// params defaults
-	viper.SetDefault("params.max_coin_supply", 1e8)
+	viper.SetDefault("params.max_coin_supply", 2e8)
 	viper.SetDefault("params.initial_unlocked_count", 25)
-	viper.SetDefault("params.unlock_address_rate", 5)
+	viper.SetDefault("params.unlock_address_rate", 10)
 	viper.SetDefault("params.unlock_time_interval", 60*60*24*365)
 	viper.SetDefault("params.user_max_decimals", 3)
-	viper.SetDefault("params.user_burn_factor", 10)
+	viper.SetDefault("params.user_burn_factor", 2)
 	viper.SetDefault("params.user_max_transaction_size", 32*1024)
 }

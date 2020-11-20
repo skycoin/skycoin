@@ -744,13 +744,13 @@ $ skycoin-cli createRawTransactionV2 [wallet] [to address] [amount] [flags]
 ### Example
 
 ```bash
-$ skycoin-cli createRawTransactionV2 $WALLET_FILE $RECIPIENT_ADDRESS $AMOUNT --unsign
+$ skycoin-cli createRawTransactionV2 $WALLET_NAME $RECIPIENT_ADDRESS $AMOUNT --unsign
 ```
 
 <details>
  <summary>View Output</summary>
 
-```json
+```
 b700000000e6b869f570e2bfebff1b4d7e7c9e86885dbc34d6de988da6ff998e7acd7e6e14010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000007531184ad0afeebbff2049b855e0921329cb1cb74d769ac57c057c9c8bd2b6810100000000ed5ea2ca4fe9b4560409b50c5bf7cb39b6c5ff6e50690f00000000000000000000000000
 ```
 
@@ -771,7 +771,7 @@ $ skycoin-cli signTransaction $WALLET_FILE $RAW_TRANSACTION
 <details>
  <summary>View Output</summary>
 
-```json
+```
 b700000000e6b869f570e2bfebff1b4d7e7c9e86885dbc34d6de988da6ff998e7acd7e6e14010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000007531184ad0afeebbff2049b855e0921329cb1cb74d769ac57c057c9c8bd2b6810100000000ed5ea2ca4fe9b4560409b50c5bf7cb39b6c5ff6e50690f00000000000000000000000000
 ```
 
@@ -1122,7 +1122,7 @@ $ skycoin-cli walletCreate $WALLET_LABEL -m
  "entries": [
      {
          "address": "E9p6Eck7Q6bYBnEkCdB3vCDf3YYkQxCHwv",
-         "public_key": "02c41e7b03a6a848a417d7d270b9d83c4d9534c2cd5eace8046c67d012b920f1db",
+         "public_key": "02c41e7b03a6a848a417d7d270b9d83c4d9534c2cd5eace8046c67d012b920f1db"
      }
  ]
 }
@@ -1276,7 +1276,7 @@ $ skycoin-cli walletCreate $WALLET_LABEL -t bip44
         "label": "test",
         "timestamp": "1563205737",
         "type": "bip44",
-        "version": "0.4",
+        "version": "0.4"
     },
     "entries": [
         {
@@ -1344,7 +1344,7 @@ FLAGS:
 ##### Add 1 address to a wallet
 
 ```bash
-$ skycoin-cli walletAddAddresses $WALLET_FILE
+$ skycoin-cli walletAddAddresses $WALLET_NAME
 ```
 
 <details>
@@ -1357,7 +1357,7 @@ $ skycoin-cli walletAddAddresses $WALLET_FILE
 
 ##### Add `n` addresses
 ```bash
-$ skycoin-cli walletAddAddresses $WALLET_FILE -n 2
+$ skycoin-cli walletAddAddresses $WALLET_NAME -n 2
 ```
 
 <details>
@@ -1370,7 +1370,7 @@ $ skycoin-cli walletAddAddresses $WALLET_FILE -n 2
 
 ##### Add an address to a wallet with JSON output
 ```bash
-$ skycoin-cli walletAddAddresses $WALLET_FILE --json
+$ skycoin-cli walletAddAddresses $WALLET_NAME --json
 ```
 
 <details>
@@ -1403,7 +1403,7 @@ FLAGS:
 ### Scan ahead `n` addresses in a wallet
 
 ```bash
-$ skycoin-cli walletScanAddresses $WALLET_FILE -n 10
+$ skycoin-cli walletScanAddresses $WALLET_NAME -n 10
 ```
 
 <details>
@@ -1418,7 +1418,7 @@ LJN5qGmLbJxLswzD3nFn3RFcmWJyZ2LGHY
 ### Scan ahead `n` addresses in a wallet with JSON output
 
 ```bash
-$ skycoin-cli walletScanAddresses $WALLET_FILE -n 10 --json
+$ skycoin-cli walletScanAddresses $WALLET_NAME -n 10 --json
 ```
 
 <details>
@@ -1538,7 +1538,7 @@ FLAGS:
 ### Examples
 #### Encrypt wallet
 ```bash
-$ skycoin-cli encryptWallet $WALLET_FILE -p test
+$ skycoin-cli encryptWallet $WALLET_NAME -p test
 ```
 
 <details>
@@ -1570,7 +1570,7 @@ $ skycoin-cli encryptWallet $WALLET_FILE -p test
 
 #### Encrypt wallet with different crypto type
 ```bash
-$ skycoin-cli encryptWallet $WALLET_FILE -x sha256-xor -p test
+$ skycoin-cli encryptWallet $WALLET_NAME -x sha256-xor -p test
 ```
 
 <details>
@@ -1591,7 +1591,7 @@ $ skycoin-cli encryptWallet $WALLET_FILE -x sha256-xor -p test
      "entries": [
          {
              "address": "2gvvvS5jziMDQTUPB98LFipCTDjm1H723k2",
-             "public_key": "032fe2ceacabc1a6acad8c93bd3493a3570fb76a9f8dc625dd200d13f96abed3e0",
+             "public_key": "032fe2ceacabc1a6acad8c93bd3493a3570fb76a9f8dc625dd200d13f96abed3e0"
          }
      ]
  }
@@ -1612,7 +1612,7 @@ FLAGS:
 
 ### Example
 ```bash
-$ skycoin-cli decryptWallet $WALLET_FILE -p test
+$ skycoin-cli decryptWallet $WALLET_NAME -p test
 ```
 
 <details>
@@ -1633,7 +1633,7 @@ $ skycoin-cli decryptWallet $WALLET_FILE -p test
      "entries": [
          {
              "address": "2gvvvS5jziMDQTUPB98LFipCTDjm1H723k2",
-             "public_key": "032fe2ceacabc1a6acad8c93bd3493a3570fb76a9f8dc625dd200d13f96abed3e0",
+             "public_key": "032fe2ceacabc1a6acad8c93bd3493a3570fb76a9f8dc625dd200d13f96abed3e0"
          }
      ]
  }
@@ -1894,7 +1894,7 @@ $ skycoin-cli listAddresses [wallet]
 #### Example
 
 ```bash
-$ skycoin-cli listAddresses $WALLET_FILE
+$ skycoin-cli listAddresses $WALLET_NAME
 ```
 
 <details>
@@ -1918,12 +1918,12 @@ $ skycoin-cli listAddresses $WALLET_FILE
 List wallets in the Skycoin wallet directory (`$DATA_DIR/wallets`) or in a specific directory.
 
 ```bash
-$ skycoin-cli listWallets [directory]
+$ skycoin-cli listWallets
 ```
 
 #### Examples
 
-##### List wallets in default wallets directory
+##### List wallets
 
 ```bash
 $ skycoin-cli listWallets
@@ -1955,34 +1955,6 @@ $ skycoin-cli listWallets
             "name": "secret_wallet.wlt",
             "label": "",
             "address_num": 1
-        },
-        {
-            "name": "skycoin_cli.wlt",
-            "label": "cli wallet",
-            "address_num": 6
-        }
-    ]
-}
-```
-</details>
-
-##### List wallets in specific wallet directory
-
-```bash
-$ skycoin-cli listWallets .
-```
-
-<details>
- <summary>View Output</summary>
-
-```json
-{
-    "directory": "/home/foo/github.com/skycoin",
-    "wallets": [
-        {
-            "name": "2018_02_04_45bc.wlt",
-            "label": "Your Wallet",
-            "address_num": 60
         },
         {
             "name": "skycoin_cli.wlt",
@@ -2090,7 +2062,7 @@ FLAGS:
 ##### Wallet with a seed
 
 ```bash
-$ skycoin-cli showSeed $WALLET_FILE
+$ skycoin-cli showSeed $WALLET_NAME
 ```
 
 <details>
@@ -2103,7 +2075,7 @@ $ skycoin-cli showSeed $WALLET_FILE
 ##### Wallet with a seed and a seed passphrase
 
 ```bash
-$ skycoin-cli showSeed $WALLET_FILE
+$ skycoin-cli showSeed $WALLET_NAME
 ```
 
 <details>
@@ -2117,7 +2089,7 @@ mypassphrase
 ##### Wallet with a seed and a seed passphrase in JSON format
 
 ```bash
-$ skycoin-cli showSeed $WALLET_FILE -j
+$ skycoin-cli showSeed $WALLET_NAME -j
 ```
 
 <details>
@@ -2792,7 +2764,7 @@ $ skycoin-cli walletHistory [wallet]
 #### Example
 
 ```bash
-$ skycoin-cli walletHistory $WALLET_FILE
+$ skycoin-cli walletHistory $WALLET_NAME
 ```
 
 <details>
@@ -2828,7 +2800,7 @@ $ skycoin-cli walletOutputs [wallet]
 #### Example
 
 ```bash
-$ skycoin-cli walletHistory $WALLET_FILE
+$ skycoin-cli walletHistory $WALLET_NAME
 ```
 
 <details>

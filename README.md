@@ -1,3 +1,5 @@
+[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/skycoin/skycoin)
+
 ![skycoin logo](https://user-images.githubusercontent.com/26845312/32426705-d95cb988-c281-11e7-9463-a3fce8076a72.png)
 
 # Skycoin
@@ -266,7 +268,7 @@ $ ./run-client.sh -launch-browser=false
 Once the node is started, we could use the following command to create an unsigned transaction.
 
 ```bash
-$ skycoin-cli createRawTransactionV2 $WALLET_FILE $RECIPIENT_ADDRESS $AMOUNT --unsign
+$ skycoin-cli createRawTransactionV2 $WALLET_NAME $RECIPIENT_ADDRESS $AMOUNT --unsign
 ```
 
 > Note: Don't forget the `--unsign` flag, otherwise it would try to sign the transaction.

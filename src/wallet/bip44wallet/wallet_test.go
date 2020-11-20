@@ -469,7 +469,7 @@ func TestWalletLock(t *testing.T) {
 					_, err = w.GenerateAddresses(2)
 					require.NoError(t, err)
 
-					_, err = w.GenerateAddresses(2, wallet.OptionChange(true))
+					_, err = w.GenerateAddresses(2, wallet.OptionChange())
 					require.NoError(t, err)
 				}
 
@@ -936,7 +936,7 @@ func TestScanAddresses(t *testing.T) {
 			require.Equal(t, tc.expectAddrs, addrs)
 
 			// get the change address, as the ScanAddresses function won't return the change addresses
-			changeAddrs, err := w.GetAddresses(wallet.OptionChange(true))
+			changeAddrs, err := w.GetAddresses(wallet.OptionChange())
 			require.NoError(t, err)
 			require.Equal(t, tc.expectAllChangeAddrs, changeAddrs)
 		})

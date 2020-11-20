@@ -195,8 +195,11 @@ func (a *bip44Account) unpackSecrets(ss wallet.Secrets) error {
 func (a bip44Account) entries(chain uint32) (wallet.Entries, error) {
 	switch chain {
 	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
-		c := a.Chains[chain]
-		return c.Entries.Clone(), nil
+		es := a.Chains[chain].Entries.Clone()
+		for i := range es {
+			es[i].Change = chain
+		}
+		return es, nil
 	default:
 		return nil, fmt.Errorf("invalid chain index: %d", chain)
 	}

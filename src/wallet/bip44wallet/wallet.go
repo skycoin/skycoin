@@ -158,7 +158,7 @@ func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.O
 	}
 
 	// Generate a default change address
-	if _, err := wlt.GenerateAddresses(1, wallet.OptionChange(true)); err != nil {
+	if _, err := wlt.GenerateAddresses(1, wallet.OptionChange()); err != nil {
 		return nil, err
 	}
 
@@ -505,7 +505,37 @@ func (w *Wallet) Accounts() []wallet.Bip44Account {
 // GetEntries provides entries service to access the external chain of given account
 func (w *Wallet) GetEntries(options ...wallet.Option) (wallet.Entries, error) {
 	opts := getBip44Options(options...)
-	return w.entries(opts.Account, opts.Change)
+
+	var entries wallet.Entries
+	switch opts.ChainMode {
+	case wallet.AllChains:
+		ees, err := w.entries(opts.Account, bip44.ExternalChainIndex)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get external chain, err: %v", err)
+		}
+
+		ces, err := w.entries(opts.Account, bip44.ChangeChainIndex)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get change chain, err: %v", err)
+		}
+
+		entries = append(ees, ces...)
+	case wallet.DefaultChain, wallet.ExternalChain:
+		es, err := w.entries(opts.Account, bip44.ExternalChainIndex)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get external chain, err: %v", err)
+		}
+		entries = es
+	case wallet.ChangeChain:
+		es, err := w.entries(opts.Account, bip44.ChangeChainIndex)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get change chain, err: %v", err)
+		}
+		entries = es
+	default:
+		return nil, fmt.Errorf("unknown chain mode: %d", opts.ChainMode)
+	}
+	return entries, nil
 }
 
 // Erase wipes all sensitive data
@@ -634,8 +664,7 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 // GetAddresses returns all addresses on selected account and chain,
 // if no options ware provided, addresses on external chain of account 0 will be returned.
 func (w *Wallet) GetAddresses(options ...wallet.Option) ([]cipher.Addresser, error) {
-	opts := getBip44Options(options...)
-	entries, err := w.entries(opts.Account, opts.Change)
+	entries, err := w.GetEntries(options...)
 	if err != nil {
 		return nil, err
 	}
@@ -652,14 +681,31 @@ func (w *Wallet) GetAddresses(options ...wallet.Option) ([]cipher.Addresser, err
 // if no options are provided, addresses will be generated on external chain of account 0.
 func (w *Wallet) GenerateAddresses(num uint64, options ...wallet.Option) ([]cipher.Addresser, error) {
 	opts := getBip44Options(options...)
-
-	return w.newAddresses(opts.Account, opts.Change, uint32(num))
+	switch opts.ChainMode {
+	case wallet.DefaultChain, wallet.ExternalChain:
+		return w.newAddresses(opts.Account, bip44.ExternalChainIndex, uint32(num))
+	case wallet.ChangeChain:
+		return w.newAddresses(opts.Account, bip44.ChangeChainIndex, uint32(num))
+	case wallet.AllChains:
+		return nil, errors.New("could not generate new addresses on both external and internal chains at once")
+	default:
+		return nil, fmt.Errorf("unknown chain mode: %d", opts.ChainMode)
+	}
 }
 
-// GetEntryAt returns the entry at specific index
+// GetEntryAt returns the entry at specified index of selected chain.
+// If no chain is specified, the entry of append(external chain, change chain)[index] will be returned.
 func (w *Wallet) GetEntryAt(i int, options ...wallet.Option) (wallet.Entry, error) {
-	opts := getBip44Options(options...)
-	return w.entryAt(opts.Account, opts.Change, uint32(i))
+	entries, err := w.GetEntries(options...)
+	if err != nil {
+		return wallet.Entry{}, err
+	}
+
+	if i >= len(entries) {
+		return wallet.Entry{}, fmt.Errorf("entry index %d out of range", i)
+	}
+
+	return entries[i], nil
 }
 
 // GetEntry returns the entry of given address on selected account and chain,
@@ -695,8 +741,27 @@ func (w *Wallet) HasEntry(addr cipher.Addresser, options ...wallet.Option) (bool
 // be returned.
 func (w *Wallet) EntriesLen(options ...wallet.Option) (int, error) {
 	opts := getBip44Options(options...)
-	l, err := w.entriesLen(opts.Account, opts.Change)
-	return int(l), err
+	switch opts.ChainMode {
+	case wallet.DefaultChain, wallet.ExternalChain:
+		l, err := w.entriesLen(opts.Account, bip44.ExternalChainIndex)
+		return int(l), err
+	case wallet.ChangeChain:
+		l, err := w.entriesLen(opts.Account, bip44.ChangeChainIndex)
+		return int(l), err
+	case wallet.AllChains:
+		el, err := w.entriesLen(opts.Account, bip44.ExternalChainIndex)
+		if err != nil {
+			return 0, fmt.Errorf("failed to get entries length of external chain, err: %v", err)
+		}
+
+		cl, err := w.entriesLen(opts.Account, bip44.ChangeChainIndex)
+		if err != nil {
+			return 0, fmt.Errorf("failed to get entries length of change chain, err: %v", err)
+		}
+		return int(el + cl), err
+	default:
+		return 0, fmt.Errorf("unknown chain mode: %d", opts.ChainMode)
+	}
 }
 
 func (w *Wallet) reset() {
@@ -704,17 +769,17 @@ func (w *Wallet) reset() {
 }
 
 // PeekChangeAddress returns the last entry address on change chain if
-// no transactions are found, otherwise, return with a new address.
-func (w *Wallet) PeekChangeAddress(tf wallet.TransactionsFinder, options ...wallet.Option) (cipher.Addresser, error) {
-	options = append(options, wallet.OptionChange(true))
-	entries, err := w.GetEntries(options...)
+// no transactions are found, otherwise, returns with a new address.
+func (w *Wallet) PeekChangeAddress(tf wallet.TransactionsFinder) (cipher.Addresser, error) {
+	onChangeChain := wallet.OptionChange()
+	entries, err := w.GetEntries(onChangeChain)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(entries) == 0 {
 		// generate a new address and return
-		addrs, err := w.GenerateAddresses(1, options...)
+		addrs, err := w.GenerateAddresses(1, onChangeChain)
 		if err != nil {
 			return nil, err
 		}
@@ -734,7 +799,7 @@ func (w *Wallet) PeekChangeAddress(tf wallet.TransactionsFinder, options ...wall
 	}
 
 	// generate a new address and return it
-	addrs, err := w.GenerateAddresses(1, options...)
+	addrs, err := w.GenerateAddresses(1, onChangeChain)
 	if err != nil {
 		return nil, err
 	}

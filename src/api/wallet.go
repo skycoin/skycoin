@@ -52,6 +52,7 @@ func NewWalletResponse(w wallet.Wallet) (*WalletResponse, error) {
 	wr.Meta.Encrypted = w.IsEncrypted()
 	wr.Meta.Timestamp = w.Timestamp()
 
+	var options []wallet.Option
 	switch w.Type() {
 	case wallet.WalletTypeBip44:
 		bip44Coin := w.Bip44Coin()
@@ -59,11 +60,14 @@ func NewWalletResponse(w wallet.Wallet) (*WalletResponse, error) {
 			return nil, errors.New("Wallet has no Bip44Coin meta data")
 		}
 		wr.Meta.Bip44Coin = bip44Coin
+
+		// get entries on both external and change chains
+		options = append(options, wallet.OptionExternal(), wallet.OptionChange())
 	case wallet.WalletTypeXPub:
 		wr.Meta.XPub = w.XPub()
 	}
 
-	entries, err := w.GetEntries()
+	entries, err := w.GetEntries(options...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get wallet entries: %v", err)
 	}

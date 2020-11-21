@@ -18,7 +18,7 @@ import { WalletsAndAddressesService } from '../../../services/wallet-operations/
   styleUrls: ['./buy.component.scss'],
 })
 export class BuyComponent implements OnInit, OnDestroy {
-  @ViewChild('button', { static: false }) button: ButtonComponent;
+  @ViewChild('button') button: ButtonComponent;
 
   address: AddressBase;
   config: any;

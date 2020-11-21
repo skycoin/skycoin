@@ -54,7 +54,7 @@ export enum States {
 export class HwDialogBaseComponent<T> implements OnDestroy {
   // Reference to the close button. For it to work the implementation must have "#closeButton"
   // added to the close button tag.
-  @ViewChild('closeButton', { static: false }) closeButton: ButtonComponent;
+  @ViewChild('closeButton') closeButton: ButtonComponent;
 
   // If true, the modal window will be automatically closed if the device is disconnected.
   closeIfHwDisconnected = true;

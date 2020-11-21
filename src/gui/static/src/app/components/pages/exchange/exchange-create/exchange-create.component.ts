@@ -30,7 +30,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   readonly defaultFromAmount = '0.1';
   readonly toCoin = 'SKY';
 
-  @ViewChild('exchangeButton', { static: false }) exchangeButton: ButtonComponent;
+  @ViewChild('exchangeButton') exchangeButton: ButtonComponent;
   @Output() submitted = new EventEmitter<StoredExchangeOrder>();
   form: FormGroup;
   tradingPairs: TradingPair[];

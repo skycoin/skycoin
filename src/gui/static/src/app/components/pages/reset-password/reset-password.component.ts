@@ -20,7 +20,7 @@ import { WalletBase } from '../../../services/wallet-operations/wallet-objects';
   styleUrls: ['./reset-password.component.scss'],
 })
 export class ResetPasswordComponent implements OnDestroy {
-  @ViewChild('resetButton', { static: false }) resetButton: ButtonComponent;
+  @ViewChild('resetButton') resetButton: ButtonComponent;
 
   form: FormGroup;
   // Allows to deactivate the form while the component is busy.

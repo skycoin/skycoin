@@ -7,12 +7,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip32"
-	"github.com/SkycoinProject/skycoin/src/util/logging"
-	"github.com/SkycoinProject/skycoin/src/util/mathutil"
-	"github.com/SkycoinProject/skycoin/src/wallet"
 	"github.com/sirupsen/logrus"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip32"
+	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/util/mathutil"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 // WalletType represents the xpub wallet type
@@ -50,7 +50,7 @@ func NewWallet(filename, label, xPub string, options ...wallet.Option) (*Wallet,
 
 	key, err := parseXPub(xPub)
 	if err != nil {
-		return nil, err
+		return nil, wallet.NewError(err)
 	}
 
 	wlt := &Wallet{

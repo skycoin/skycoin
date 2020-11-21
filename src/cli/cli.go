@@ -21,9 +21,9 @@ import (
 	"github.com/spf13/pflag"
 	"golang.org/x/crypto/ssh/terminal"
 
-	"github.com/SkycoinProject/skycoin/src/api"
-	"github.com/SkycoinProject/skycoin/src/util/file"
-	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/api"
+	"github.com/skycoin/skycoin/src/util/file"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 var (
@@ -219,6 +219,7 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 
 	skyCLI.Version = Version
 	skyCLI.SuggestionsMinimumDistance = 1
+	skyCLI.SilenceUsage = true
 	skyCLI.AddCommand(commands...)
 
 	skyCLI.SetHelpTemplate(helpTemplate)
@@ -294,7 +295,7 @@ type PasswordFromBytes []byte
 
 // Password implements the PasswordReader's Password method
 func (p PasswordFromBytes) Password() ([]byte, error) {
-	return []byte(p), nil
+	return p, nil
 }
 
 // PasswordFromTerm reads password from terminal

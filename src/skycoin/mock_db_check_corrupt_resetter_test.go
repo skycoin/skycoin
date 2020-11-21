@@ -3,7 +3,7 @@
 package skycoin
 
 import (
-	dbutil "github.com/SkycoinProject/skycoin/src/visor/dbutil"
+	dbutil "github.com/skycoin/skycoin/src/visor/dbutil"
 	mock "github.com/stretchr/testify/mock"
 
 	semver "github.com/blang/semver"

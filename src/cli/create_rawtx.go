@@ -10,17 +10,17 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/SkycoinProject/skycoin/src/api"
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/coin"
-	"github.com/SkycoinProject/skycoin/src/params"
-	"github.com/SkycoinProject/skycoin/src/readable"
-	"github.com/SkycoinProject/skycoin/src/transaction"
-	"github.com/SkycoinProject/skycoin/src/util/droplet"
-	"github.com/SkycoinProject/skycoin/src/util/fee"
-	"github.com/SkycoinProject/skycoin/src/util/mathutil"
-	"github.com/SkycoinProject/skycoin/src/visor"
-	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/api"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
+	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/transaction"
+	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/util/fee"
+	"github.com/skycoin/skycoin/src/util/mathutil"
+	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 var (
@@ -167,7 +167,7 @@ func makeWalletCreateTxnRequest(c *cobra.Command, args []string) (*api.WalletCre
 	}
 
 	walletFile := args[0]
-	w, err := wallet.Load(walletFile)
+	w, err := apiClient.Wallet(args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -181,13 +181,8 @@ func makeWalletCreateTxnRequest(c *cobra.Command, args []string) (*api.WalletCre
 	if wltAddr.Address != "" {
 		addrs = append(addrs, wltAddr.Address)
 	} else {
-		as, err := w.GetAddresses()
-		if err != nil {
-			return nil, err
-		}
-
-		for _, addr := range as {
-			addrs = append(addrs, addr.String())
+		for _, e := range w.Entries {
+			addrs = append(addrs, e.Address)
 		}
 	}
 
@@ -198,11 +193,11 @@ func makeWalletCreateTxnRequest(c *cobra.Command, args []string) (*api.WalletCre
 
 	req := api.WalletCreateTransactionRequest{
 		Unsigned:                 unsign,
-		WalletID:                 w.Filename(),
+		WalletID:                 w.Meta.Filename,
 		CreateTransactionRequest: *ctr,
 	}
 
-	if w.IsEncrypted() && !unsign {
+	if w.Meta.Encrypted && !unsign {
 		p, err := getPassword(c)
 		if err != nil {
 			return nil, err

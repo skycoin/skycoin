@@ -136,7 +136,7 @@ linters-settings:
     range-loops: true # Report preallocation suggestions on range loops, true by default
     for-loops: false # Report preallocation suggestions on for loops, false by default
   goimports:
-    local-prefixes: github.com/SkycoinProject/skycoin
+    local-prefixes: github.com/skycoin/skycoin
 
 
 linters:

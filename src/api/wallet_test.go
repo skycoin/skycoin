@@ -16,15 +16,15 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
-	"github.com/SkycoinProject/skycoin/src/coin"
-	"github.com/SkycoinProject/skycoin/src/readable"
-	"github.com/SkycoinProject/skycoin/src/testutil"
-	"github.com/SkycoinProject/skycoin/src/visor"
-	"github.com/SkycoinProject/skycoin/src/wallet"
-	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
-	"github.com/SkycoinProject/skycoin/src/wallet/deterministic"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/wallet/crypto"
+	"github.com/skycoin/skycoin/src/wallet/deterministic"
 )
 
 func TestGetBalanceHandler(t *testing.T) {
@@ -1292,7 +1292,8 @@ func TestWalletCreateHandler(t *testing.T) {
 			if tc.options.ScanN == 0 {
 				tc.options.ScanN = 1
 			}
-			tc.options.TF = gateway
+			gateway.On("TransactionsFinder").Return(&visor.TransactionsFinder{})
+			tc.options.TF = gateway.TransactionsFinder()
 			gateway.On("CreateWallet", "", tc.options).Return(tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
 
 			endpoint := "/api/v1/wallet/create"
@@ -2180,7 +2181,7 @@ func TestWalletScanAddressesHandler(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
-			gateway.On("ScanAddresses", walletID, []byte(tc.password), tc.scanN, gateway).Return(tc.gatewayScanAddressesResult, tc.gatewayScanAddressesErr)
+			gateway.On("ScanWalletAddresses", walletID, []byte(tc.password), tc.scanN).Return(tc.gatewayScanAddressesResult, tc.gatewayScanAddressesErr)
 
 			c := newHTTPMockClient(gateway, ContentTypeForm, tc.disableCSRF)
 

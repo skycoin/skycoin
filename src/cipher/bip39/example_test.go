@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
 )
 
 func ExampleNewMnemonic() {

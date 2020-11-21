@@ -8,8 +8,8 @@ import (
 	"math"
 	"testing"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/wallet"
 	"github.com/stretchr/testify/require"
 )
 
@@ -125,7 +125,7 @@ func TestNewWallet(t *testing.T) {
 			label:   "test",
 			xpub:    "invalid xpub string",
 			expect: expect{
-				err: errors.New("invalid xpub key: Invalid base58 character"),
+				err: wallet.NewError(errors.New("invalid xpub key: Invalid base58 character")),
 			},
 		},
 	}

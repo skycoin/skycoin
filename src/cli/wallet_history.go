@@ -8,12 +8,11 @@ import (
 
 	"sort"
 
-	cobra "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 
-	"github.com/SkycoinProject/skycoin/src/api"
-	"github.com/SkycoinProject/skycoin/src/readable"
-	"github.com/SkycoinProject/skycoin/src/util/droplet"
-	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/api"
+	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/util/droplet"
 )
 
 // AddrHistory represents a transactional event for an address
@@ -54,11 +53,8 @@ func walletHisCmd() *cobra.Command {
 	return walletHisCmd
 }
 
-func walletHistoryAction(c *cobra.Command, args []string) error {
-	w := args[0]
-
-	// Get all addresses in the wallet
-	addrs, err := getAddresses(w)
+func walletHistoryAction(_ *cobra.Command, args []string) error {
+	addrs, err := getWalletAddresses(args[0])
 	if err != nil {
 		return err
 	}
@@ -68,7 +64,7 @@ func walletHistoryAction(c *cobra.Command, args []string) error {
 	}
 
 	// Get all the addresses' historical uxouts
-	totalAddrHis := []AddrHistory{}
+	var totalAddrHis []AddrHistory
 	for _, addr := range addrs {
 		uxouts, err := apiClient.AddressUxOuts(addr)
 		if err != nil {
@@ -230,23 +226,4 @@ func createBlkTimeFinder(c *api.Client, ss []uint64) (func(uint64) int64, error)
 		}
 		panic("block not found")
 	}, nil
-}
-
-func getAddresses(f string) ([]string, error) {
-	wlt, err := wallet.Load(f)
-	if err != nil {
-		return nil, err
-	}
-
-	addrs, err := wlt.GetAddresses()
-	if err != nil {
-		return nil, err
-	}
-
-	strAddrs := make([]string, len(addrs))
-	for i, a := range addrs {
-		strAddrs[i] = a.String()
-	}
-
-	return strAddrs, nil
 }

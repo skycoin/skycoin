@@ -3,7 +3,7 @@ package daemon
 import (
 	"time"
 
-	"github.com/SkycoinProject/skycoin/src/daemon/gnet"
+	"github.com/skycoin/skycoin/src/daemon/gnet"
 )
 
 // PoolConfig pool config

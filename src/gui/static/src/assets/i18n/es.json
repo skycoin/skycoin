@@ -310,7 +310,8 @@
       "share-factor-needed-error": "Se necesita el factor de distribución de horas. Por favor pruebe con valores diferentes y póngase en contacto con el servicio de soporte si el problema no se resuelve.",
       "share-factor-not-needed-error": "El factor de distribución de horas no puede ser especificado mientras se usa la distribución de horas manual. Por favor pruebe con valores diferentes y póngase en contacto con el servicio de soporte si el problema no se resuelve.",
       "invalid-share-factor-error": "Factor de distribución de horas inv+alido. Por favor pruebe con valores diferentes y póngase en contacto con el servicio de soporte si el problema no se resuelve.",
-      "change-equal-to-destination-error": "No es posible crear la transacción debido a que se regresaría una cantidad repetida de monedas a la misma dirección de destino. Por favor inténtelo nuevamente con valores diferentes."
+      "change-equal-to-destination-error": "No es posible crear la transacción debido a que se regresaría una cantidad repetida de monedas a la misma dirección de destino. Por favor inténtelo nuevamente con valores diferentes.",
+      "repeated-wallet": "Una billetera para la semilla indicada ya existe."
     },
 
     "bulk-send": {

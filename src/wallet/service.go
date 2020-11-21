@@ -11,10 +11,10 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
-	"github.com/SkycoinProject/skycoin/src/util/file"
-	"github.com/SkycoinProject/skycoin/src/wallet/crypto"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
+	"github.com/skycoin/skycoin/src/util/file"
+	"github.com/skycoin/skycoin/src/wallet/crypto"
 )
 
 // TransactionsFinder interface for finding address related transaction hashes
@@ -232,7 +232,7 @@ func (serv *Service) loadWallet(wltName string, options Options) (Wallet, error)
 				"walletType":  w.Type(),
 				"fingerprint": fingerprint,
 			}).Error("fingerprint conflict")
-			return nil, fmt.Errorf("fingerprint conflict for %q wallet", w.Type())
+			return nil, NewError(fmt.Errorf("fingerprint conflict for %q wallet", w.Type()))
 		}
 	}
 

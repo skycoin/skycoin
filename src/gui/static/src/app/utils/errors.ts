@@ -188,6 +188,8 @@ function checkIfKnownErrorStrings(errorString: string): string {
     translatableVar = 'invalid-share-factor-error';
   } else if (errorString.includes('TRANSACTION VIOLATES HARD CONSTRAINT: DUPLICATE OUTPUT IN TRANSACTION')) {
     translatableVar = 'change-equal-to-destination-error';
+  } else if (errorString.includes('FINGERPRINT CONFLICT FOR')) {
+    translatableVar = 'repeated-wallet';
   }
 
   if (translatableVar) {

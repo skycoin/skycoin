@@ -4,12 +4,12 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
 )
 
 func Example() {
 	// Create a bip39 seed from a mnenomic
-	// import "github.com/SkycoinProject/skycoin/src/cipher/bip39"
+	// import "github.com/skycoin/skycoin/src/cipher/bip39"
 	// mnemonic := bip39.NewDefaultMnemonic()
 	mnemonic := "dizzy cigar grant ramp inmate uniform gold success able payment faith practice"
 	passphrase := ""

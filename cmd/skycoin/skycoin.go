@@ -13,16 +13,16 @@ import (
 	_ "net/http/pprof"
 	"os"
 
-	"github.com/SkycoinProject/skycoin/src/fiber"
-	"github.com/SkycoinProject/skycoin/src/readable"
-	"github.com/SkycoinProject/skycoin/src/skycoin"
-	"github.com/SkycoinProject/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/fiber"
+	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/skycoin"
+	"github.com/skycoin/skycoin/src/util/logging"
 
 	// register the supported wallets
-	_ "github.com/SkycoinProject/skycoin/src/wallet/bip44wallet"
-	_ "github.com/SkycoinProject/skycoin/src/wallet/collection"
-	_ "github.com/SkycoinProject/skycoin/src/wallet/deterministic"
-	_ "github.com/SkycoinProject/skycoin/src/wallet/xpubwallet"
+	_ "github.com/skycoin/skycoin/src/wallet/bip44wallet"
+	_ "github.com/skycoin/skycoin/src/wallet/collection"
+	_ "github.com/skycoin/skycoin/src/wallet/deterministic"
+	_ "github.com/skycoin/skycoin/src/wallet/xpubwallet"
 )
 
 var (
@@ -94,6 +94,7 @@ var (
 		CoinHoursName:         "Coin Hours",
 		CoinHoursNameSingular: "Coin Hour",
 		CoinHoursTicker:       "SCH",
+		QrURIPrefix:           "skycoin",
 		ExplorerURL:           "https://explorer.skycoin.com",
 		VersionURL:            "https://version.skycoin.com/skycoin/version.txt",
 		Bip44Coin:             8000,

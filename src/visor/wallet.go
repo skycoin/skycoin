@@ -5,14 +5,14 @@ package visor
 import (
 	"errors"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/coin"
-	"github.com/SkycoinProject/skycoin/src/params"
-	"github.com/SkycoinProject/skycoin/src/transaction"
-	"github.com/SkycoinProject/skycoin/src/util/mathutil"
-	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
-	"github.com/SkycoinProject/skycoin/src/wallet"
-	"github.com/SkycoinProject/skycoin/src/wallet/bip44wallet"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
+	"github.com/skycoin/skycoin/src/transaction"
+	"github.com/skycoin/skycoin/src/util/mathutil"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/wallet/bip44wallet"
 )
 
 // UserError wraps user input-related errors.
@@ -276,10 +276,6 @@ func (vs *Visor) WalletCreateTransactionSigned(wltID string, password []byte, p 
 		return nil, nil, err
 	}
 
-	if vs.tf == nil {
-		vs.tf = &TransactionsFinder{vs}
-	}
-
 	if p.ChangeAddress == nil && w.Type() == wallet.WalletTypeBip44 {
 		// TODO: Maybe add the `PeekChangeAddress` to wallet.Wallet interface, and
 		// only bip44 wallet will implement it, all others do nothing. In this way
@@ -324,10 +320,6 @@ func (vs *Visor) WalletCreateTransaction(wltID string, p transaction.Params, wp 
 
 	var txn *coin.Transaction
 	var inputs []TransactionInput
-
-	if vs.tf == nil {
-		vs.tf = &TransactionsFinder{vs}
-	}
 
 	if err := vs.wallets.Update(wltID, func(w wallet.Wallet) error {
 		if p.ChangeAddress == nil && w.Type() == wallet.WalletTypeBip44 {

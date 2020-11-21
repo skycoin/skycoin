@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
 )
 
 // TODO(therealssj): write better tests
@@ -43,6 +43,7 @@ func TestNewConfig(t *testing.T) {
 			CoinHoursName:                  "Testcoin Hours",
 			CoinHoursNameSingular:          "Testcoin Hour",
 			CoinHoursTicker:                "TCH",
+			QrURIPrefix:                    "skycoin",
 			ExplorerURL:                    "https://explorer.testcoin.com",
 			VersionURL:                     "https://version.testcoin.com/testcoin/version.txt",
 			Bip44Coin:                      bip44.CoinTypeSkycoin,

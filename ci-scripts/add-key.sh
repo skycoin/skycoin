@@ -19,7 +19,7 @@ security set-keychain-settings -t 3600 -u $KEY_CHAIN
 
 # Add certificates to keychain and allow codesign to access them
 echo "import distp12"
-security import $GOPATH/src/github.com/SkycoinProject/skycoin/ci-scripts/certs/dist.p12 -k ~/Library/Keychains/$KEY_CHAIN -P $CERT_PWD -T /usr/bin/codesign
+security import $GOPATH/src/github.com/skycoin/skycoin/ci-scripts/certs/dist.p12 -k ~/Library/Keychains/$KEY_CHAIN -P $CERT_PWD -T /usr/bin/codesign
 
 security set-key-partition-list -S apple-tool:,apple: -s -k $OSX_KEYCHAIN_PWD $KEY_CHAIN
 

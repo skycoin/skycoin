@@ -1,11 +1,10 @@
-module github.com/SkycoinProject/skycoin
+module github.com/skycoin/skycoin
 
 go 1.14
 
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/NYTimes/gziphandler v1.0.1
-	github.com/SkycoinProject/encodertest v0.0.0-20190217072920-14c2e31898b9
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
 	github.com/blang/semver v3.5.1+incompatible
@@ -28,6 +27,7 @@ require (
 	github.com/sergi/go-diff v1.0.0 // indirect
 	github.com/shopspring/decimal v0.0.0-20180709203117-cd690d0c9e24
 	github.com/sirupsen/logrus v1.1.1
+	github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.3
 	github.com/spf13/viper v1.2.1

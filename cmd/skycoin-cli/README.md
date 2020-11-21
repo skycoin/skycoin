@@ -2,7 +2,7 @@
 
 Skycoin command line interface
 
-The CLI command APIs can be used directly from a Go application, see [Skycoin CLI Godoc](https://godoc.org/github.com/SkycoinProject/skycoin/src/cli).
+The CLI command APIs can be used directly from a Go application, see [Skycoin CLI Godoc](https://godoc.org/github.com/skycoin/skycoin/src/cli).
 
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3" -->
 
@@ -36,7 +36,6 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 	- [Last blocks](#last-blocks)
 	- [List wallet addresses](#list-wallet-addresses)
 	- [List wallets](#list-wallets)
-	- [Rich list](#rich-list)
 	- [Send](#send)
 	- [Show Seed](#show-seed)
 	- [Show Config](#show-config)
@@ -58,7 +57,7 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 ## Install
 
 ```bash
-$ cd $GOPATH/src/github.com/SkycoinProject/skycoin/cmd/skycoin-cli
+$ cd $GOPATH/src/github.com/skycoin/skycoin/cmd/skycoin-cli
 $ go install ./...
 ```
 
@@ -473,6 +472,16 @@ skycoin-cli addressOutputs tWPDM36ex9zLjJw1aPMfYTVPbYgkL2Xp9V 29fDBQuJs2MDLymJsj
 ```json
 {
  "outputs": {
+    "head": {
+                "seq": 148674,
+                "block_hash": "f95885435045e267c95607c897e66168bae909ababf3dfe98c55cf30d0a87332",
+                "previous_block_hash": "b8760f7fc9349901db79333658103ff387a5700fc64a0bbc9e7afc17f3a3d58b",
+                "timestamp": 1604826679,
+                "fee": 436,
+                "version": 0,
+                "tx_body_hash": "0e135542bd8caf3d6c49707336e5a69fbb5ba1918e098ac287a3cf555b8bb98d",
+                "ux_hash": "e155735d7aac020930a8f92fb1fbb5d196b75421fca4cc23a4a5a890e8a3bea9"
+     },
      "head_outputs": [
          {
              "hash": "f5f838edf75b68882cacb7fa071538bcf800515d5a7f42e3a8c5e6d681879a82",
@@ -735,13 +744,13 @@ $ skycoin-cli createRawTransactionV2 [wallet] [to address] [amount] [flags]
 ### Example
 
 ```bash
-$ skycoin-cli createRawTransactionV2 $WALLET_FILE $RECIPIENT_ADDRESS $AMOUNT --unsign
+$ skycoin-cli createRawTransactionV2 $WALLET_NAME $RECIPIENT_ADDRESS $AMOUNT --unsign
 ```
 
 <details>
  <summary>View Output</summary>
 
-```json
+```
 b700000000e6b869f570e2bfebff1b4d7e7c9e86885dbc34d6de988da6ff998e7acd7e6e14010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000007531184ad0afeebbff2049b855e0921329cb1cb74d769ac57c057c9c8bd2b6810100000000ed5ea2ca4fe9b4560409b50c5bf7cb39b6c5ff6e50690f00000000000000000000000000
 ```
 
@@ -762,7 +771,7 @@ $ skycoin-cli signTransaction $WALLET_FILE $RAW_TRANSACTION
 <details>
  <summary>View Output</summary>
 
-```json
+```
 b700000000e6b869f570e2bfebff1b4d7e7c9e86885dbc34d6de988da6ff998e7acd7e6e14010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000007531184ad0afeebbff2049b855e0921329cb1cb74d769ac57c057c9c8bd2b6810100000000ed5ea2ca4fe9b4560409b50c5bf7cb39b6c5ff6e50690f00000000000000000000000000
 ```
 
@@ -1002,22 +1011,22 @@ ee700309aba9b8b552f1c932a667c3701eff98e71c0e5b0e807485cea28170e5
 Create a new Skycoin wallet.
 
 ```bash
-$ skycoin-cli walletCreate [wallet] [flags]
+$ skycoin-cli walletCreate [label] [flags]
 ```
 
-Note: the `wallet` argument must be a filename that ends with `.wlt`.
+> NOTE: you will be prompted to enter a password to encrypt the wallet.
+> All sensitive data, such as the secrets, seed and seedPassphrase, will not be returned anymore.
 
 ```
 FLAGS:
       --bip44-coin uint32        BIP44 coin type (default 8000)
-  -c, --coin string              Wallet address coin type (options: skycoin, bitcoin) (default "skycoin")
-  -x, --crypto-type string       The crypto type for wallet encryption, can be scrypt-chacha20poly1305 or sha256-xor (default "scrypt-chacha20poly1305")
-  -e, --encrypt                  Create encrypted wallet.
-  -l, --label string             Label used to identify your wallet.
+  -e, --encrypt                  Create encrypted wallet. (default true)
+  -h, --help                     help for walletCreate
   -m, --mnemonic                 A mnemonic seed consisting of 12 dictionary words will be generated
   -n, --num uint                 Number of addresses to generate. (default 1)
   -p, --password string          Wallet password
   -r, --random                   A random alpha numeric seed will be generated.
+      --scan uint                Number of addresses to scan ahead for balances. (default 1)
   -s, --seed string              Your seed
       --seed-passphrase string   Seed passphrase (bip44 wallets only)
   -t, --type string              Wallet type. Types are "collection", "deterministic", "bip44" or "xpub" (default "deterministic")
@@ -1028,11 +1037,11 @@ FLAGS:
 #### Examples
 ##### Create a deterministic wallet
 
-Creates a deterministic wallet using the [Skycoin deterministic address generator](https://github.com/SkycoinProject/skycoin/wiki/Deterministic-Keypair-Generation-Method).
+Creates a deterministic wallet using the [Skycoin deterministic address generator](https://github.com/skycoin/skycoin/wiki/Deterministic-Keypair-Generation-Method).
 Alternatively, you can create a `bip44` type wallet.
 
 ```bash
-$ skycoin-cli walletCreate $WALLET_FILE -t deterministic
+$ skycoin-cli walletCreate $WALLET_LABEL -t deterministic
 ```
 
 <details>
@@ -1042,33 +1051,27 @@ $ skycoin-cli walletCreate $WALLET_FILE -t deterministic
 {
  "meta": {
      "coin": "skycoin",
-     "cryptoType": "",
-     "encrypted": "false",
-     "filename": "skycoin_cli.wlt",
-     "label": "",
-     "lastSeed": "781576ec74bfa2cc9eb06f8613b96db9be21438b9cd6b6ded09df3bc5b9da279",
-     "secrets": "",
-     "seed": "foster blossom glare cube reopen october refuse about journey arrange music alone",
-     "tm": "1523176366",
+     "crypto_type": "scrypt-chacha20poly1305",
+     "encrypted": true,
+     "filename": "2020_11_16_4c88.wlt",
+     "label": "test",
+     "timestamp": "1523176366",
      "type": "deterministic",
-     "version": "0.2"
+     "version": "0.4"
  },
  "entries": [
      {
          "address": "FSkC7V5rAkCnNrtCe1HBnD2iTm1J8jn63V",
-         "public_key": "03a16c8e9ea86ea2358364757431b84cc388b34be776bb6a23ed2b83731957d33a",
-         "secret_key": "3938826649631e2abc1c47c050d0fea5ceac7c45e3fa6cd3ddf1621bdd519150"
+         "public_key": "03a16c8e9ea86ea2358364757431b84cc388b34be776bb6a23ed2b83731957d33a"
      }
  ]
 }
 ```
 </details>
 
-> NOTE: If a wallet with the same name already exists then the cli exits with an error.
-
 ##### Create a wallet with a random alpha numeric seed
 ```bash
-$ skycoin-cli walletCreate $WALLET_FILE -r
+$ skycoin-cli walletCreate $WALLET_LABEL -r
 ```
 
 <details>
@@ -1078,22 +1081,18 @@ $ skycoin-cli walletCreate $WALLET_FILE -r
 {
  "meta": {
      "coin": "skycoin",
-     "cryptoType": "",
-     "encrypted": "false",
-     "filename": "skycoin_cli.wlt",
-     "label": "",
-     "lastSeed": "fdaf0729903fbd5962301f16531a1da102bf0875b4a636cb43ce24b967b932ac",
-     "secrets": "",
-     "seed": "8af187f04c306538544a1c2c4d0a51e9220bd17fc2fcb3fd72ba2ca3ce7aa212",
-     "tm": "1523177044",
+     "crypto_type": "scrypt-chacha20poly1305",
+     "encrypted": true,
+     "filename": "2020_11_16_4c88.wlt",
+     "label": "test",
+     "timestamp": "1523177044",
      "type": "deterministic",
-     "version": "0.2"
+     "version": "0.4"
  },
  "entries": [
      {
          "address": "9YogvtjYgeLn3gQX2wzsXDpZn7LuoArdzZ",
-         "public_key": "022b4bd33f0ad037756ae19f8dfab935fed1118980b4067b4a6b7f03333ba5ccae",
-         "secret_key": "b4cf1731be9f930ba3a67179eed5dca5af2adee1ce4df96383923f775bf575c0"
+         "public_key": "022b4bd33f0ad037756ae19f8dfab935fed1118980b4067b4a6b7f03333ba5ccae"
      }
  ]
 }
@@ -1102,7 +1101,7 @@ $ skycoin-cli walletCreate $WALLET_FILE -r
 
 ##### Create a wallet with a 12 word mnemomic seed
 ```bash
-$ skycoin-cli walletCreate $WALLET_FILE -m
+$ skycoin-cli walletCreate $WALLET_LABEL -m
 ```
 
 <details>
@@ -1112,22 +1111,18 @@ $ skycoin-cli walletCreate $WALLET_FILE -m
 {
  "meta": {
      "coin": "skycoin",
-     "cryptoType": "",
-     "encrypted": "false",
-     "filename": "skycoin_cli.wlt",
-     "label": "",
-     "lastSeed": "f219c2e902940f27ea735d866a495372debcbd01da287a2ec1226d0eb43b9890",
-     "secrets": "",
-     "seed": "motor cross wrap intact soup critic club allow track come dizzy cool",
-     "tm": "1523177162",
+     "crypto_type": "scrypt-chacha20poly1305",
+     "encrypted": true,
+     "filename": "2020_11_16_4c88.wlt",
+     "label": "test",
+     "timestamp": "1523177162",
      "type": "deterministic",
-     "version": "0.2"
+     "version": "0.4"
  },
  "entries": [
      {
          "address": "E9p6Eck7Q6bYBnEkCdB3vCDf3YYkQxCHwv",
-         "public_key": "02c41e7b03a6a848a417d7d270b9d83c4d9534c2cd5eace8046c67d012b920f1db",
-         "secret_key": "41b6aa1780f425dac942c8bd1570248ebfca24778e866705a6573b17ead57a4d"
+         "public_key": "02c41e7b03a6a848a417d7d270b9d83c4d9534c2cd5eace8046c67d012b920f1db"
      }
  ]
 }
@@ -1136,7 +1131,7 @@ $ skycoin-cli walletCreate $WALLET_FILE -m
 
 ##### Create a wallet with a specified seed
 ```bash
-$ skycoin-cli walletCreate $WALLET_FILE -s "this is the super secret seed everyone needs but does not have"
+$ skycoin-cli walletCreate $WALLET_LABEL -s "this is the super secret seed everyone needs but does not have"
 ```
 
 <details>
@@ -1146,22 +1141,18 @@ $ skycoin-cli walletCreate $WALLET_FILE -s "this is the super secret seed everyo
 {
  "meta": {
      "coin": "skycoin",
-     "cryptoType": "",
-     "encrypted": "false",
-     "filename": "skycoin_cli.wlt",
-     "label": "",
-     "lastSeed": "c34a83b473ea4d2f9dc394d0b9c1c0d4578012252b842ef1bfce9950cfe50b06",
-     "secrets": "",
-     "seed": "this is the super secret everyone needs but does not have",
-     "tm": "1523178336",
+     "crypto_type": "scrypt-chacha20poly1305",
+     "encrypted": true,
+     "filename": "2020_11_16_4c88.wlt",
+     "label": "test",
+     "timestamp": "1523178336",
      "type": "deterministic",
-     "version": "0.2"
+     "version": "0.4"
  },
  "entries": [
      {
          "address": "NEQVmBJPidzo3SfDRJHNDMHL7VbqNa7Cku",
-         "public_key": "0348400c3c1a733a6e25c77f1ffea64c887bc9344a0366821ef07b9b3abadcaf10",
-         "secret_key": "42e3906d86ca25eb408d2af90b0810d7831b7d777e756021b607bca6538952eb"
+         "public_key": "0348400c3c1a733a6e25c77f1ffea64c887bc9344a0366821ef07b9b3abadcaf10"
      }
  ]
 }
@@ -1171,7 +1162,7 @@ $ skycoin-cli walletCreate $WALLET_FILE -s "this is the super secret seed everyo
 
 ##### Create more than 1 default address
 ```bash
-$ skycoin-cli walletCreate $WALLET_FILE -n 2
+$ skycoin-cli walletCreate $WALLET_LABEL -n 2
 ```
 
 <details>
@@ -1181,27 +1172,22 @@ $ skycoin-cli walletCreate $WALLET_FILE -n 2
 {
  "meta": {
      "coin": "skycoin",
-     "cryptoType": "",
-     "encrypted": "false",
-     "filename": "skycoin_cli.wlt",
-     "label": "",
-     "lastSeed": "861a8989e6c85fb69cf5968586fe9d5a1e26936ab122c5d542bf78fb35e0d247",
-     "secrets": "",
-     "seed": "cause custom canal kitchen short cement round cat shine renew pair crowd",
-     "tm": "1523178418",
+     "crypto_type": "scrypt-chacha20poly1305",
+     "encrypted": true,
+     "filename": "2020_11_16_4c88.wlt",
+     "label": "test",
+     "timestamp": "1523178418",
      "type": "deterministic",
-     "version": "0.2"
+     "version": "0.4"
  },
  "entries": [
      {
          "address": "2accTtyD7tqzLh7c62BE9zjGiyEpoMyQ3bb",
-         "public_key": "027c30928161755c913e1b3db208f95a66be0f550b9620cefd44902b5354365b73",
-         "secret_key": "89b2f71fb773a00480637fd83c93e27499fd5e55f69a6e2b58f0847c3ce5040c"
+         "public_key": "027c30928161755c913e1b3db208f95a66be0f550b9620cefd44902b5354365b73"
      },
      {
          "address": "goyx9VE3q73zAWntmwwyaUoTZhtTyG4vt",
-         "public_key": "025c0b06471b865cb5eab23f9a9dc0a992fe70d0576eb400aa4978ddd0a2124b95",
-         "secret_key": "75deabceedb9b09a109f5d982fba13a56622d93916a8ef81ddccca69fcc9d7e3"
+         "public_key": "025c0b06471b865cb5eab23f9a9dc0a992fe70d0576eb400aa4978ddd0a2124b95"
      }
  ]
 }
@@ -1209,10 +1195,9 @@ $ skycoin-cli walletCreate $WALLET_FILE -n 2
 </details>
 
 
-##### Create a wallet with a custom wallet label
-By default the wallet label is an empty field
+##### Create a wallet without encryption
 ```bash
-$ skycoin-cli walletCreate $WALLET_FILE -l "cli wallet"
+$ skycoin-cli walletCreate $WALLET_LABEL --encrypt=false
 ```
 
 <details>
@@ -1222,22 +1207,18 @@ $ skycoin-cli walletCreate $WALLET_FILE -l "cli wallet"
 {
  "meta": {
      "coin": "skycoin",
-     "cryptoType": "",
-     "encrypted": "false",
-     "filename": "skycoin_cli.wlt",
-     "label": "cli wallet",
-     "lastSeed": "b3b3c13419a8343f8845a8de30543fa33680e25251a3a1bda3e49346f1d640f9",
-     "secrets": "",
-     "seed": "offer spoil crane trial submit kite venture edit repair mushroom fetch bounce",
-     "tm": "1523178769",
+     "crypto_type": "",
+     "encrypted": false,
+     "filename": "2020_11_16_4c88.wlt",
+     "label": "test",
+     "timestamp": "1523178769",
      "type": "deterministic",
-     "version": "0.2"
+     "version": "0.4"
  },
  "entries": [
      {
          "address": "21YPgFwkLxQ1e9JTCZ43G7JUyCaGRGqAsda",
-         "public_key": "03784cf30195259e4bf89e15d343417d38ecd05b2f61fd2b2f71020ad7b1de3577",
-         "secret_key": "8f6f2e3b63310f94c1440ba230eb170dbc1ffd2ad355274c05b169c290216a3c"
+         "public_key": "03784cf30195259e4bf89e15d343417d38ecd05b2f61fd2b2f71020ad7b1de3577"
      }
  ]
 }
@@ -1249,7 +1230,7 @@ $ skycoin-cli walletCreate $WALLET_FILE -l "cli wallet"
 Create an empty collection wallet. Use `addPrivateKey` to add keys to it after creation.
 
 ```bash
-$ skycoin-cli walletCreate $WALLET_FILE -t collection
+$ skycoin-cli walletCreate $WALLET_LABEL -t collection
 ```
 
 <details>
@@ -1259,18 +1240,13 @@ $ skycoin-cli walletCreate $WALLET_FILE -t collection
 {
     "meta": {
         "coin": "skycoin",
-        "cryptoType": "",
-        "encrypted": "false",
-        "filename": "collection-test2.wlt",
-        "label": "",
-        "lastSeed": "",
-        "secrets": "",
-        "seed": "",
-        "seedPassphrase": "",
-        "tm": "1563205581",
+        "crypto_type": "scrypt-chacha20poly1305",
+        "encrypted": true,
+        "filename": "2020_11_16_83a8.wlt",
+        "label": "test",
+        "timestamp": "1563205581",
         "type": "collection",
-        "version": "0.4",
-        "xpub": ""
+        "version": "0.4"
     },
     "entries": []
 }
@@ -1283,7 +1259,7 @@ Create a bip44 wallet. BIP44 wallets use the same mnemonic seeds as `determinist
 wallets, but are supported on 3rd party wallets such as Trezor.
 
 ```bash
-$ skycoin-cli walletCreate $WALLET_FILE -t bip44
+$ skycoin-cli walletCreate $WALLET_LABEL -t bip44
 ```
 
 <details>
@@ -1292,26 +1268,20 @@ $ skycoin-cli walletCreate $WALLET_FILE -t bip44
 ```json
 {
     "meta": {
-        "bip44Coin": "8000",
+        "bip44_coin": "8000",
         "coin": "skycoin",
-        "cryptoType": "",
-        "encrypted": "false",
-        "filename": "bip44-cli-test.wlt",
-        "label": "",
-        "lastSeed": "",
-        "secrets": "",
-        "seed": "bacon crush gate artist outer true aware topple pupil include neutral stamp",
-        "seedPassphrase": "",
-        "tm": "1563205737",
+        "crypto_type": "2020_11_16_83a8.wlt",
+        "encrypted": true,
+        "filename": "2020_11_16_ac0d.wlt",
+        "label": "test",
+        "timestamp": "1563205737",
         "type": "bip44",
-        "version": "0.4",
-        "xpub": ""
+        "version": "0.4"
     },
     "entries": [
         {
             "address": "zbqJ8tGRKNEpR3X2RxHTyodCFtVDB7wFKf",
             "public_key": "0255a1148a188d5b5f08c3296ad5de6577e08f8cd035b2e53d974aad56f748abb9",
-            "secret_key": "8f49323cc06089df5e74fbab8bc211ccc8fc21b44cf495e67fc5c4613bde11af",
             "child_number": 0,
             "change": 0
         }
@@ -1325,7 +1295,7 @@ $ skycoin-cli walletCreate $WALLET_FILE -t bip44
 Create an xpub wallet. Obtain an xpub key from a BIP44 wallet with `walletKeyExport`.
 
 ```bash
-$ skycoin-cli walletCreate $WALLET_FILE -t xpub --xpub xpub6FHa3pjLCk84BayeJxFW2SP4XRrFd1JYnxeLeU8EqN3vDfZmbqBqaGJAyiLjTAwm6ZLRQUMv1ZACTj37sR62cfN7fe5JnJ7dh8zL4fiyLHV
+$ skycoin-cli walletCreate $WALLET_LABEL -t xpub --xpub xpub7FHa3pjLCk84BayeJxFW2SP4XRrFd1JYnxeLeU8EqN3vDfZmbqBqaGJAyiLjTAwm6ZLRQUMv1ZACTj37sR62cfN7fe5JnJ7dh8zL4fiyLHV
 ```
 
 <details>
@@ -1336,15 +1306,10 @@ $ skycoin-cli walletCreate $WALLET_FILE -t xpub --xpub xpub6FHa3pjLCk84BayeJxFW2
 {
     "meta": {
         "coin": "skycoin",
-        "cryptoType": "",
-        "encrypted": "false",
-        "filename": "xpub-test-cli.wlt",
-        "label": "",
-        "lastSeed": "",
-        "secrets": "",
-        "seed": "",
-        "seedPassphrase": "",
-        "tm": "1563205611",
+        "crypto_type": "scrypt-chacha20poly1305",
+        "encrypted": false,
+        "filename": "2020_11_16_83a8.wlt",
+        "timestamp": "1563205611",
         "type": "xpub",
         "version": "0.4",
         "xpub": "xpub6FHa3pjLCk84BayeJxFW2SP4XRrFd1JYnxeLeU8EqN3vDfZmbqBqaGJAyiLjTAwm6ZLRQUMv1ZACTj37sR62cfN7fe5JnJ7dh8zL4fiyLHV"
@@ -1352,9 +1317,7 @@ $ skycoin-cli walletCreate $WALLET_FILE -t xpub --xpub xpub6FHa3pjLCk84BayeJxFW2
     "entries": [
         {
             "address": "2as3T8JqSVm41k47phe4vbnrzbTqBEaAwG7",
-            "public_key": "02df12b7035bdac8e3bab862a3a83d06ea6b17b6753d52edecba9be46f5d09e076",
-            "secret_key": "",
-            "child_number": 0
+            "public_key": "02df12b7035bdac8e3bab862a3a83d06ea6b17b6753d52edecba9be46f5d09e076"
         }
     ]
 }
@@ -1381,7 +1344,7 @@ FLAGS:
 ##### Add 1 address to a wallet
 
 ```bash
-$ skycoin-cli walletAddAddresses $WALLET_FILE
+$ skycoin-cli walletAddAddresses $WALLET_NAME
 ```
 
 <details>
@@ -1394,7 +1357,7 @@ $ skycoin-cli walletAddAddresses $WALLET_FILE
 
 ##### Add `n` addresses
 ```bash
-$ skycoin-cli walletAddAddresses $WALLET_FILE -n 2
+$ skycoin-cli walletAddAddresses $WALLET_NAME -n 2
 ```
 
 <details>
@@ -1407,7 +1370,7 @@ $ skycoin-cli walletAddAddresses $WALLET_FILE -n 2
 
 ##### Add an address to a wallet with JSON output
 ```bash
-$ skycoin-cli walletAddAddresses $WALLET_FILE --json
+$ skycoin-cli walletAddAddresses $WALLET_NAME --json
 ```
 
 <details>
@@ -1440,7 +1403,7 @@ FLAGS:
 ### Scan ahead `n` addresses in a wallet
 
 ```bash
-$ skycoin-cli walletScanAddresses $WALLET_FILE -n 10
+$ skycoin-cli walletScanAddresses $WALLET_NAME -n 10
 ```
 
 <details>
@@ -1455,7 +1418,7 @@ LJN5qGmLbJxLswzD3nFn3RFcmWJyZ2LGHY
 ### Scan ahead `n` addresses in a wallet with JSON output
 
 ```bash
-$ skycoin-cli walletScanAddresses $WALLET_FILE -n 10 --json
+$ skycoin-cli walletScanAddresses $WALLET_NAME -n 10 --json
 ```
 
 <details>
@@ -1479,9 +1442,13 @@ $ skycoin-cli walletKeyExport [wallet] [flags]
 
 ```
 FLAGS:
-  -k, --key string    key type ("xpub", "xprv", "pub", "prv") (default "xpub")
-  -p, --path string   bip44 account'/change subpath (default "0/0")
+  -h, --help              help for walletKeyExport
+  -k, --key string        key type ("xpub", "xprv", "pub", "prv") (default "xpub")
+  -p, --password string   wallet password
+      --path string       bip44 account'/change subpath (default "0/0")
 ```
+
+Note: Node must start with the API set of `INSECURE_WALLET_SEED`.
 
 The `path` arg is the `account'/change` portion of the bip44 path.
 It can have 1 to 3 nodes (i.e. `0`, `0/0` and `0/0/0`).
@@ -1502,7 +1469,7 @@ xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8Y
 
 ##### Export the xprv key for the change chain
 ```bash
-$ skycoin-cli walletKeyExport mywallet.wlt -k xprv -p "0/1"
+$ skycoin-cli walletKeyExport mywallet.wlt -k xprv --path "0/1"
 ```
 
 <details>
@@ -1515,7 +1482,7 @@ xprv9uHRZZhk6KAJC1avXpDAp4MDc3sQKNxDiPvvkX8Br5ngLNv1TxvUxt4cV1rGL5hj6KCesnDYUhd7
 
 ##### Export the pub key for the 5th child in the external chain
 ```bash
-$ skycoin-cli walletKeyExport mywallet.wlt -k pub -p "0/0/5"
+$ skycoin-cli walletKeyExport mywallet.wlt -k pub --path "0/0/5"
 ```
 
 <details>
@@ -1529,7 +1496,7 @@ $ skycoin-cli walletKeyExport mywallet.wlt -k pub -p "0/0/5"
 
 ##### Export the prv key for the 5th child in the change chain
 ```bash
-$ skycoin-cli walletKeyExport mywallet.wlt -k prv -p "0/1/5"
+$ skycoin-cli walletKeyExport mywallet.wlt -k prv --path "0/1/5"
 ```
 
 <details>
@@ -1543,7 +1510,7 @@ d647077f0f6824a25af7cd934ff196e611f5122bff4310f8eb0f2e643c5213cd
 
 ##### Export the xpub key for account number 2
 ```bash
-$ skycoin-cli walletKeyExport mywallet.wlt -k xpub -p "2"
+$ skycoin-cli walletKeyExport mywallet.wlt -k xpub --path "2"
 ```
 
 <details>
@@ -1571,7 +1538,7 @@ FLAGS:
 ### Examples
 #### Encrypt wallet
 ```bash
-$ skycoin-cli encryptWallet $WALLET_FILE -p test
+$ skycoin-cli encryptWallet $WALLET_NAME -p test
 ```
 
 <details>
@@ -1581,16 +1548,13 @@ $ skycoin-cli encryptWallet $WALLET_FILE -p test
  {
      "meta": {
          "coin": "skycoin",
-         "cryptoType": "scrypt-chacha20poly1305",
-         "encrypted": "true",
          "filename": "skycoin_cli.wlt",
-         "label": "",
-         "lastSeed": "",
-         "secrets": "dgB7Im4iOjEwNDg1NzYsInIiOjgsInAiOjEsImtleUxlbiI6MzIsInNhbHQiOiJRNVRSVHh0VFpieERpUWt0dnkzc01SYTl6U0t2aFJqVlpUUHQzeldSVGs4PSIsIm5vbmNlIjoiSUt5VG8zdWdGdFY3MWYxTiJ9LB7Cu3bvZFzsmKqToPi3bjARIRfmhL8HBUdnwLzS5Rxu4uw1tIlDDmEKUpgDWV3RvB+xDz3sHchQr5BpK72LDOwbZ6BubMHovTqC4+lx9hKc2qnDGwsymxLQJHQrQ23DkHMioSUVYNZv1/DwzJ2qI0WIOTkb+L34e9f60YV+2zF7v+C/nTS8AjMwjGYldKinPEjyDXkpxB2d4Sd3EnfUm8u76TvTKxqZpZ/tr+in/OfRsJsN7dC7rMFRZukoCJYNnWv/wgPn/NMu4DIxqF+WUQhCsCgqk6oMderdK/E/xtLJmKnbHRLH4PO/Dh4ypLXg2EzW+JBN6RpzVEXxYdvVCqmKfs7d+hnHWDmDtCLGqYyPsUa+d4PPhylruNE=",
-         "seed": "",
-         "tm": "1540305209",
+         "label": "test",
          "type": "deterministic",
-         "version": "0.2"
+         "version": "0.4",
+         "crypto_type": "scrypt-chacha20poly1305",
+         "timestamp": "1540305209",
+         "encrypted": "true"
      },
      "entries": [
          {
@@ -1606,7 +1570,7 @@ $ skycoin-cli encryptWallet $WALLET_FILE -p test
 
 #### Encrypt wallet with different crypto type
 ```bash
-$ skycoin-cli encryptWallet $WALLET_FILE -x sha256-xor -p test
+$ skycoin-cli encryptWallet $WALLET_NAME -x sha256-xor -p test
 ```
 
 <details>
@@ -1616,24 +1580,18 @@ $ skycoin-cli encryptWallet $WALLET_FILE -x sha256-xor -p test
  {
      "meta": {
          "coin": "skycoin",
-         "cryptoType": "sha256-xor",
+         "filename": "skycoin_test.wlt",
+         "label": "skycoin_test",
+         "crypto_type": "sha256-xor",
          "encrypted": "true",
-         "filename": "skycoin_cli.wlt",
-         "label": "",
-         "lastSeed": "",
-         "secrets": "mJ4g+/NgncOVp7gKIZqVPysmrRYKjprSuMvvpq3HLt7ajjMOheEdyU0PGtueDQADIhhTFZlQh/eaaYXF3fecS7OrGa79F+2lRRdD7Tva/MueiL9TL0ng12x0I7dXkUVsXLTl3MJK27JwS9hKedcVvnmFysJA6W3lX2aE7Qn+v6cyMbfgR8r89OHGaUZ9SPZn2HKOhhIcXt66Q/t0kVWU0XEH+G
- xUyX23ksN3scQoAshVidLAgXwpkgExEl+qjCpDNQga3MncZV+WuQxpIKodJ3l5TKoJAA0/Taz9O9Se0tIoiK2ls2m6JUayev3Id0+hkmNNSUKQ53Ni3xwjNzZXoPQAemMWpkdUSv8qNuhh7C/4gBBrZROM6ZyxmsdlWgcG0Yfrh8o505D0i4mtubkdZSGi8Djm9j1mpWTZi3VuUjtGvBAmH3Qzdma+nvORZj11QuEuCcO+
- 8jmQB9bVxcTL9u4Nan2+cYijVNul93m7xWik/mSB7uIFVIJAm4kSMiJm",
-         "seed": "",
-         "tm": "1540305209",
+         "timestamp": "1540305209",
          "type": "deterministic",
-         "version": "0.2"
+         "version": "0.4"
      },
      "entries": [
          {
              "address": "2gvvvS5jziMDQTUPB98LFipCTDjm1H723k2",
-             "public_key": "032fe2ceacabc1a6acad8c93bd3493a3570fb76a9f8dc625dd200d13f96abed3e0",
-             "secret_key": ""
+             "public_key": "032fe2ceacabc1a6acad8c93bd3493a3570fb76a9f8dc625dd200d13f96abed3e0"
          }
      ]
  }
@@ -1654,7 +1612,7 @@ FLAGS:
 
 ### Example
 ```bash
-$ skycoin-cli decryptWallet $WALLET_FILE -p test
+$ skycoin-cli decryptWallet $WALLET_NAME -p test
 ```
 
 <details>
@@ -1664,22 +1622,18 @@ $ skycoin-cli decryptWallet $WALLET_FILE -p test
  {
      "meta": {
          "coin": "skycoin",
-         "cryptoType": "",
+         "crypto_type": "",
          "encrypted": "false",
          "filename": "skycoin_cli.wlt",
-         "label": "",
-         "lastSeed": "522dba68fe58c179f3467f9e799c02b25552143b250626cc03281faa28c262c0",
-         "secrets": "",
-         "seed": "select salute trip target blur short link suspect river ready senior bleak",
-         "tm": "1540305209",
+         "label": "test",
+         "timestamp": "1540305209",
          "type": "deterministic",
-         "version": "0.2"
+         "version": "0.4"
      },
      "entries": [
          {
              "address": "2gvvvS5jziMDQTUPB98LFipCTDjm1H723k2",
-             "public_key": "032fe2ceacabc1a6acad8c93bd3493a3570fb76a9f8dc625dd200d13f96abed3e0",
-             "secret_key": "080bfb86463da87e06f816c4326a11b84806c9744235bb7ce7bc8d63acb4f6c2"
+             "public_key": "032fe2ceacabc1a6acad8c93bd3493a3570fb76a9f8dc625dd200d13f96abed3e0"
          }
      ]
  }
@@ -1940,7 +1894,7 @@ $ skycoin-cli listAddresses [wallet]
 #### Example
 
 ```bash
-$ skycoin-cli listAddresses $WALLET_FILE
+$ skycoin-cli listAddresses $WALLET_NAME
 ```
 
 <details>
@@ -1964,12 +1918,12 @@ $ skycoin-cli listAddresses $WALLET_FILE
 List wallets in the Skycoin wallet directory (`$DATA_DIR/wallets`) or in a specific directory.
 
 ```bash
-$ skycoin-cli listWallets [directory]
+$ skycoin-cli listWallets
 ```
 
 #### Examples
 
-##### List wallets in default wallets directory
+##### List wallets
 
 ```bash
 $ skycoin-cli listWallets
@@ -2006,83 +1960,6 @@ $ skycoin-cli listWallets
             "name": "skycoin_cli.wlt",
             "label": "cli wallet",
             "address_num": 6
-        }
-    ]
-}
-```
-</details>
-
-##### List wallets in specific wallet directory
-
-```bash
-$ skycoin-cli listWallets .
-```
-
-<details>
- <summary>View Output</summary>
-
-```json
-{
-    "directory": "/home/foo/github.com/skycoin",
-    "wallets": [
-        {
-            "name": "2018_02_04_45bc.wlt",
-            "label": "Your Wallet",
-            "address_num": 60
-        },
-        {
-            "name": "skycoin_cli.wlt",
-            "label": "cli wallet",
-            "address_num": 6
-        }
-    ]
-}
-```
-</details>
-
-
-### Rich list
-Returns the top N address (default 20) balances (based on unspent outputs). Optionally include distribution addresses (exluded by default).
-
-```bash
-$ skycoin-cli richlist [top N addresses] [include distribution addresses]
-```
-
-#### Example
-```bash
-$ skycoin-cli richlist 5 false
-```
-
-<details>
- <summary>View Output</summary>
-
-```json
-{
-    "richlist": [
-        {
-            "address": "2iNNt6fm9LszSWe51693BeyNUKX34pPaLx8",
-            "coins": "1072264.838000",
-            "locked": false
-        },
-        {
-            "address": "2fGi2jhvp6ppHg3DecguZgzqvpJj2Gd4KHW",
-            "coins": "500000.000000",
-            "locked": false
-        },
-        {
-            "address": "2jNwfvZNUoRLiFzJtmnevSF6TKPfSehvrc1",
-            "coins": "252297.068000",
-            "locked": false
-        },
-        {
-            "address": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv",
-            "coins": "236884.364000",
-            "locked": false
-        },
-        {
-            "address": "2fR8BkeTRQC4R3ATNnujHsQQXcaB6m4Aqwo",
-            "coins": "173571.990000",
-            "locked": false
         }
     ]
 }
@@ -2185,7 +2062,7 @@ FLAGS:
 ##### Wallet with a seed
 
 ```bash
-$ skycoin-cli showSeed $WALLET_FILE
+$ skycoin-cli showSeed $WALLET_NAME
 ```
 
 <details>
@@ -2198,7 +2075,7 @@ $ skycoin-cli showSeed $WALLET_FILE
 ##### Wallet with a seed and a seed passphrase
 
 ```bash
-$ skycoin-cli showSeed $WALLET_FILE
+$ skycoin-cli showSeed $WALLET_NAME
 ```
 
 <details>
@@ -2212,7 +2089,7 @@ mypassphrase
 ##### Wallet with a seed and a seed passphrase in JSON format
 
 ```bash
-$ skycoin-cli showSeed $WALLET_FILE -j
+$ skycoin-cli showSeed $WALLET_NAME -j
 ```
 
 <details>
@@ -2820,74 +2697,10 @@ $ skycoin-cli walletBalance [wallet]
 ```
 
 #### Example
-##### Balance of default wallet
-```bash
-$ skycoin-cli walletBalance
-```
-
-<details>
- <summary>View Output</summary>
-
-```json
-{
-    "confirmed": {
-        "coins": "123.000000",
-        "hours": "456"
-    },
-    "spendable": {
-        "coins": "123.000000",
-        "hours": "456"
-    },
-    "expected": {
-        "coins": "123.000000",
-        "hours": "456"
-    },
-    "addresses": [
-        {
-            "confirmed": {
-                "coins": "123.000000",
-                "hours": "456"
-            },
-            "spendable": {
-                "coins": "123.000000",
-                "hours": "456"
-            },
-            "expected": {
-                "coins": "123.000000",
-                "hours": "456"
-            },
-            "address": "2iVtHS5ye99Km5PonsB42No3pQRGEURmxyc"
-        }, {
-            "confirmed": {
-                "coins": "0.000000",
-                "hours": "0"
-            },
-            "spendable": {
-                "coins": "0.000000",
-                "hours": "0"
-            },
-            "expected": {
-                "coins": "0.000000",
-                "hours": "0"
-            },
-            "address": "2GgFvqoyk9RjwVzj8tqfcXVXB4orBwoc9qv"
-        }
-    ]
-}
-```
-</details>
-
-
 ##### Balance of a specific wallet
 ```bash
 $ skycoin-cli walletBalance 2018_04_01_198c.wlt
 ```
-*OR*
-
-```bash
-$ skycoin-cli walletBalance ~/.skycoin/wallets/2018_04_01_198c.wlt
-```
-
 <details>
  <summary>View Output</summary>
 
@@ -2951,7 +2764,7 @@ $ skycoin-cli walletHistory [wallet]
 #### Example
 
 ```bash
-$ skycoin-cli walletHistory $WALLET_FILE
+$ skycoin-cli walletHistory $WALLET_NAME
 ```
 
 <details>
@@ -2987,7 +2800,7 @@ $ skycoin-cli walletOutputs [wallet]
 #### Example
 
 ```bash
-$ skycoin-cli walletHistory $WALLET_FILE
+$ skycoin-cli walletHistory $WALLET_NAME
 ```
 
 <details>

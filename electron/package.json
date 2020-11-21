@@ -2,10 +2,11 @@
     "name": "skycoin",
     "productName": "Skycoin",
     "author": "skycoin",
-    "main": "src/electron-main.js",
+    "main": "app/electron-main.js",
     "version": "0.27.0",
-    "description": "skycoin wallet",
+    "description": "skycoin electron wallet",
     "license": "MIT",
+    "private": true,
     "build": {
         "appId": "org.skycoin.skycoin",
         "nsis": {
@@ -43,10 +44,6 @@
                 }
             ]
         },
-        "files": [
-            "!**/*",
-            "src/**/*"
-        ],
         "extraResources": [
             {
                 "from": "../src/gui/static/dist/",
@@ -65,18 +62,18 @@
         }
     },
     "scripts": {
-        "start": "electron ./src/electron-main.js dev",
-        "dist-win32": "build -w --ia32 -p=never",
-        "dist-win64": "build -w --x64 -p=never",
-        "dist-win": "build -w --x64 --ia32 -p=never",
-        "dist-linux": "build -l --x64 -p=never",
-        "dist-mac": "build -m --x64 -p=never",
-        "pack-mac": "build --dir -m -p=never",
+        "start": "electron ./app/electron-main.js dev",
+        "dist-win32": "electron-builder -w --ia32 -p=never",
+        "dist-win64": "electron-builder -w --x64 -p=never",
+        "dist-win": "electron-builder -w --x64 --ia32 -p=never",
+        "dist-linux": "electron-builder -l --x64 -p=never",
+        "dist-mac": "electron-builder -m --x64 -p=never",
+        "pack-mac": "electron-builder --dir -m -p=never",
         "postinstall": "electron-builder install-app-deps"
     },
     "devDependencies": {
-        "electron": "^2.0.18",
-        "electron-builder": "20.13.3"
+        "electron": "^10.1.5",
+        "electron-builder": "22.9.1"
     },
     "dependencies": {}
 }

@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher"
 )
 
 func getLockedMap(distributionAddresses [4]cipher.Address) map[cipher.Address]struct{} {

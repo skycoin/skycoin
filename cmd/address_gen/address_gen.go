@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
-	"github.com/SkycoinProject/skycoin/src/util/logging"
-	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 // Note: Address_gen generates public keys and addresses

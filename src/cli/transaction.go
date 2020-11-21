@@ -7,13 +7,13 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/SkycoinProject/skycoin/src/util/droplet"
-	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/wallet"
 
-	"github.com/SkycoinProject/skycoin/src/api"
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/coin"
-	"github.com/SkycoinProject/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/api"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/readable"
 
 	"github.com/spf13/cobra"
 )

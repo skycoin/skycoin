@@ -12,10 +12,10 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/coin"
-	"github.com/SkycoinProject/skycoin/src/testutil"
-	"github.com/SkycoinProject/skycoin/src/util/fee"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/util/fee"
 )
 
 func TestCreate(t *testing.T) {

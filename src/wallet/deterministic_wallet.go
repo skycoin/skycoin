@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/util/file"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/util/file"
 )
 
 // DeterministicWallet manages keys using the original Skycoin deterministic

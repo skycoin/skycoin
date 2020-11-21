@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/SkycoinProject/skycoin/src/cipher/bip39/wordlists"
+	"github.com/skycoin/skycoin/src/cipher/bip39/wordlists"
 )
 
 type vector struct {

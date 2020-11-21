@@ -13,9 +13,9 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/SkycoinProject/skycoin/src/coin"
-	"github.com/SkycoinProject/skycoin/src/readable"
-	"github.com/SkycoinProject/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/visor"
 )
 
 func TestGetOutputsHandler(t *testing.T) {

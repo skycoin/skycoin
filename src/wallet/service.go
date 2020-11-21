@@ -8,9 +8,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
-	"github.com/SkycoinProject/skycoin/src/util/file"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
+	"github.com/skycoin/skycoin/src/util/file"
 )
 
 // TransactionsFinder interface for finding address related transaction hashes

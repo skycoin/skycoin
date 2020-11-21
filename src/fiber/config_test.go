@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
 )
 
 // TODO(therealssj): write better tests

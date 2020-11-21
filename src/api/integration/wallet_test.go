@@ -11,12 +11,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/SkycoinProject/skycoin/src/api"
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
-	"github.com/SkycoinProject/skycoin/src/testutil"
-	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/api"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
+	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 func skipWalletIfLive(t *testing.T) bool {

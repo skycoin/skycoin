@@ -15,11 +15,11 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip32"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
-	"github.com/SkycoinProject/skycoin/src/cipher/testsuite"
-	"github.com/SkycoinProject/skycoin/src/util/file"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip32"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/cipher/testsuite"
+	"github.com/skycoin/skycoin/src/util/file"
 )
 
 const (

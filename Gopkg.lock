@@ -12,7 +12,7 @@
 [[projects]]
   branch = "master"
   digest = "1:8a50c4460a24ce3cff0f50d094fa086db29119b4a0b58e70b87e922274526804"
-  name = "github.com/SkycoinProject/encodertest"
+  name = "github.com/skycoin/encodertest"
   packages = ["."]
   pruneopts = "UT"
   revision = "14c2e31898b98265cc642f54d53f7280998e7208"
@@ -411,7 +411,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/NYTimes/gziphandler",
-    "github.com/SkycoinProject/encodertest",
+    "github.com/skycoin/encodertest",
     "github.com/andreyvit/diff",
     "github.com/blang/semver",
     "github.com/boltdb/bolt",

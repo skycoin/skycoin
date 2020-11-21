@@ -7,8 +7,8 @@ package chacha20poly1305
 import (
 	"encoding/binary"
 
-	"github.com/SkycoinProject/skycoin/src/cipher/chacha20poly1305/internal/chacha20"
-	"github.com/SkycoinProject/skycoin/src/cipher/poly1305"
+	"github.com/skycoin/skycoin/src/cipher/chacha20poly1305/internal/chacha20"
+	"github.com/skycoin/skycoin/src/cipher/poly1305"
 )
 
 func roundTo16(n int) int {

@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `signTransaction` CLI command to sign transaction.
 - Do windows electron builds by travis and abandon the appveyor
 - Migrate `skycoin.net` to `skycoin.com`
-- Migrate project path to `SkycoinProject/skycoin`
+- Migrate project path to `skycoin/skycoin`
 - Use transaction history when scanning wallet addresses, instead of the current address balance
 - Document the daemon's CLI options
 - Add the ability to save transaction notes

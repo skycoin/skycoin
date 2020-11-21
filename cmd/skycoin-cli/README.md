@@ -2,7 +2,7 @@
 
 Skycoin command line interface
 
-The CLI command APIs can be used directly from a Go application, see [Skycoin CLI Godoc](https://godoc.org/github.com/SkycoinProject/skycoin/src/cli).
+The CLI command APIs can be used directly from a Go application, see [Skycoin CLI Godoc](https://godoc.org/github.com/skycoin/skycoin/src/cli).
 
 <!-- MarkdownTOC autolink="true" bracket="round" levels="1,2,3" -->
 
@@ -57,7 +57,7 @@ The CLI command APIs can be used directly from a Go application, see [Skycoin CL
 ## Install
 
 ```bash
-$ cd $GOPATH/src/github.com/SkycoinProject/skycoin/cmd/skycoin-cli
+$ cd $GOPATH/src/github.com/skycoin/skycoin/cmd/skycoin-cli
 $ go install ./...
 ```
 
@@ -1027,7 +1027,7 @@ FLAGS:
 #### Examples
 ##### Create a deterministic wallet
 
-Creates a deterministic wallet using the [Skycoin deterministic address generator](https://github.com/SkycoinProject/skycoin/wiki/Deterministic-Keypair-Generation-Method).
+Creates a deterministic wallet using the [Skycoin deterministic address generator](https://github.com/skycoin/skycoin/wiki/Deterministic-Keypair-Generation-Method).
 Alternatively, you can create a `bip44` type wallet.
 
 ```bash

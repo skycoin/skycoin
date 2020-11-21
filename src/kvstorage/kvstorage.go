@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/SkycoinProject/skycoin/src/util/file"
+	"github.com/skycoin/skycoin/src/util/file"
 )
 
 var (

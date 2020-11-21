@@ -1,5 +1,5 @@
 # bip39
-[![Documentation](https://godoc.org/github.com/SkycoinProject/skycoin/src/cipher/bip39?status.svg)](http://godoc.org/github.com/SkycoinProject/skycoin/src/cipher/bip39)
+[![Documentation](https://godoc.org/github.com/skycoin/skycoin/src/cipher/bip39?status.svg)](http://godoc.org/github.com/skycoin/skycoin/src/cipher/bip39)
 
 A golang implementation of the BIP0039 spec for mnemonic seeds.
 
@@ -12,7 +12,7 @@ and to make some structural modifications.
 package main
 
 import (
-  "github.com/SkycoinProject/skycoin/src/cipher/bip39"
+  "github.com/skycoin/skycoin/src/cipher/bip39"
   "github.com/tyler-smith/go-bip32"
   "fmt"
 )

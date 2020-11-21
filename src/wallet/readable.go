@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
 )
 
 // ReadableEntry wallet entry with json tags

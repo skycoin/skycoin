@@ -1,5 +1,5 @@
-import { throwError as observableThrowError, of, Observable } from 'rxjs';
-import { concat, delay, retryWhen, take, mergeMap, catchError, map } from 'rxjs/operators';
+import { throwError as observableThrowError, of, Observable, concat } from 'rxjs';
+import { delay, retryWhen, take, mergeMap, catchError, map } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
 import { BigNumber } from 'bignumber.js';
 import { TranslateService } from '@ngx-translate/core';
@@ -327,7 +327,7 @@ export class SpendingService {
         } else {
           // Save the note. Retry 3 times if an error is found.
           return this.storageService.store(StorageType.NOTES, txId, note).pipe(
-            retryWhen(errors => errors.pipe(delay(1000), take(3), concat(observableThrowError(-1)))),
+            retryWhen(errors => concat(errors.pipe(delay(1000), take(3)), observableThrowError(-1))),
             catchError(err => err === -1 ? of(-1) : err),
             map(result => result === -1 ? false : true));
         }

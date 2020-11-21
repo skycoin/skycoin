@@ -15,7 +15,7 @@ import { processServiceError } from '../utils/errors';
 
 @Injectable()
 export class ExchangeService {
-  private readonly API_ENDPOINT = 'https://swaplab.cc/api/v3';
+  private readonly API_ENDPOINT = environment.production ? 'https://swaplab.cc/api/v3' : '/swaplab/api/v3';
   private readonly STORAGE_KEY = 'exchange-orders';
   private readonly LAST_VIEWED_STORAGE_KEY = 'last-viewed-order';
   private readonly API_KEY = environment.swaplab.apiKey;

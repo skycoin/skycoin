@@ -674,6 +674,7 @@
     "label-status": "Status",
     "exchanging": "Exchanging {{from}} for {{to}}",
     "destination-select-from-list-link": "Select",
+    "unavailable": "The exchange service is not available in the portable version",
     "offline": "Exchange is temporarily offline",
     "problem-connecting": "Unable to connect with the service. Please check your Internet connection and try again later",
     "invalid-address-error": "Invalid address.",

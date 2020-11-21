@@ -8,6 +8,8 @@ export const AppConfig = {
   urlForVersionChecking: 'https://version.skycoin.com/skycoin/version.txt',
   walletDownloadUrl: 'https://www.skycoin.com/downloads/',
 
+  priceApiId: 'sky-skycoin',
+
   languages: [{
       code: 'en',
       name: 'English',

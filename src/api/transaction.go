@@ -327,6 +327,12 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// InjectTransactionRequest is sent to POST /api/v1/injectTransaction
+type InjectTransactionRequest struct {
+	RawTxn      string `json:"rawtx"`
+	NoBroadcast bool   `json:"no_broadcast,omitempty"`
+}
+
 // URI: /api/v1/injectTransaction
 // Method: POST
 // Content-Type: application/json
@@ -342,41 +348,52 @@ func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			wh.Error405(w)
 			return
 		}
-		// get the rawtransaction
-		v := struct {
-			Rawtx string `json:"rawtx"`
-		}{}
 
+		var v InjectTransactionRequest
 		if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
 			wh.Error400(w, err.Error())
 			return
 		}
 
-		if v.Rawtx == "" {
+		if v.RawTxn == "" {
 			wh.Error400(w, "rawtx is required")
 			return
 		}
 
-		txn, err := coin.DeserializeTransactionHex(v.Rawtx)
+		txn, err := coin.DeserializeTransactionHex(v.RawTxn)
 		if err != nil {
 			wh.Error400(w, err.Error())
 			return
 		}
 
-		if err := gateway.InjectBroadcastTransaction(txn); err != nil {
-			switch err.(type) {
-			case visor.ErrTxnViolatesUserConstraint,
-				visor.ErrTxnViolatesHardConstraint,
-				visor.ErrTxnViolatesSoftConstraint:
-				wh.Error400(w, err.Error())
-			default:
-				if daemon.IsBroadcastFailure(err) {
-					wh.Error503(w, err.Error())
-				} else {
+		if v.NoBroadcast {
+			if err := gateway.InjectTransaction(txn); err != nil {
+				switch err.(type) {
+				case visor.ErrTxnViolatesUserConstraint,
+					visor.ErrTxnViolatesHardConstraint,
+					visor.ErrTxnViolatesSoftConstraint:
+					wh.Error400(w, err.Error())
+				default:
 					wh.Error500(w, err.Error())
 				}
+				return
 			}
-			return
+		} else {
+			if err := gateway.InjectBroadcastTransaction(txn); err != nil {
+				switch err.(type) {
+				case visor.ErrTxnViolatesUserConstraint,
+					visor.ErrTxnViolatesHardConstraint,
+					visor.ErrTxnViolatesSoftConstraint:
+					wh.Error400(w, err.Error())
+				default:
+					if daemon.IsBroadcastFailure(err) {
+						wh.Error503(w, err.Error())
+					} else {
+						wh.Error500(w, err.Error())
+					}
+				}
+				return
+			}
 		}
 
 		wh.SendJSONOr500(logger, w, txn.Hash().Hex())
@@ -494,12 +511,6 @@ func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
-			writeHTTPResponse(w, resp)
-			return
-		}
-
-		if r.Header.Get("Content-Type") != ContentTypeJSON {
-			resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
 			writeHTTPResponse(w, resp)
 			return
 		}

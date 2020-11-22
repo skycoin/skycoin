@@ -1,7 +1,13 @@
 package kvstorage
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/skycoin/skycoin/src/util/file"
@@ -15,23 +21,69 @@ var (
 
 // kvStorage is a key-value storage for storing arbitrary data
 type kvStorage struct {
-	fileName string
-	data     map[string]string
+	fn   string
+	data map[string]string
 	sync.RWMutex
 }
 
-// newKVStorage constructs new storage instance using the file with the `fileName`
+// newKVStorage constructs new storage instance using the file with the filename
 // to persist data
-func newKVStorage(fileName string) (*kvStorage, error) {
+func newKVStorage(fn string) (*kvStorage, error) {
 	storage := kvStorage{
-		fileName: fileName,
+		fn: fn,
 	}
 
-	if err := file.LoadJSON(fileName, &storage.data); err != nil {
-		return nil, err
+	if err := file.LoadJSON(fn, &storage.data); err != nil {
+		logger.Warningf("newKVStorage LoadJSON(%s) failed: %v", fn, err)
+		cfp, err := makeCorruptFilePath(fn)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to make corrupt file path: %v", err)
+		}
+		if err := os.Rename(fn, cfp); err != nil {
+			return nil, fmt.Errorf("Rename %s to %s failed: %v", fn, cfp, err)
+		}
+		logger.Infof("Backup the corrupted file from: %s to %s", fn, cfp)
+		if err := initEmptyStorage(fn); err != nil {
+			return nil, err
+		}
+		storage.data = make(map[string]string)
 	}
 
 	return &storage, nil
+}
+
+// makeCorruptFilePath creates a $FILE.corrupt.$HASH string based on file path,
+// where $HASH is truncated SHA1 of $FILE.
+func makeCorruptFilePath(path string) (string, error) {
+	fileHash, err := shaFileID(path)
+	if err != nil {
+		return "", err
+	}
+
+	dir, file := filepath.Split(path)
+	newFile := fmt.Sprintf("%s.corrupt.%s", file, fileHash)
+	newPath := filepath.Join(dir, newFile)
+
+	return newPath, nil
+}
+
+// shaFileID return the first 8 bytes of the SHA1 hash of the file,
+// hex-encoded
+func shaFileID(path string) (string, error) {
+	fi, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer fi.Close()
+
+	h := sha256.New()
+	if _, err := io.Copy(h, fi); err != nil {
+		return "", err
+	}
+
+	sum := h.Sum(nil)
+	encodedSum := base64.RawURLEncoding.EncodeToString(sum[:8])
+	return encodedSum, nil
 }
 
 // get gets the value associated with the `key`. Returns `ErrNoSuchKey`
@@ -106,5 +158,5 @@ func (s *kvStorage) remove(key string) error {
 
 // flush persists data to file
 func (s *kvStorage) flush() error {
-	return file.SaveJSON(s.fileName, s.data, 0600)
+	return file.SaveJSON(s.fn, s.data, 0600)
 }

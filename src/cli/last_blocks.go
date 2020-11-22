@@ -2,24 +2,23 @@ package cli
 
 import (
 	"fmt"
-
 	"strconv"
 
-	gcli "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 )
 
-func lastBlocksCmd() *gcli.Command {
-	return &gcli.Command{
+func lastBlocksCmd() *cobra.Command {
+	return &cobra.Command{
 		Short:                 "Displays the content of the most recently N generated blocks",
 		Use:                   "lastBlocks [numberOfBlocks]",
-		Args:                  gcli.MaximumNArgs(1),
+		Args:                  cobra.ExactArgs(1),
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		RunE:                  getLastBlocks,
 	}
 }
 
-func getLastBlocks(_ *gcli.Command, args []string) error {
+func getLastBlocks(_ *cobra.Command, args []string) error {
 	num := args[0]
 	if num == "" {
 		num = "1"

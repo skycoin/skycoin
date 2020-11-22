@@ -13,6 +13,9 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip32"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
 	"github.com/skycoin/skycoin/src/cipher/encrypt"
 	"github.com/skycoin/skycoin/src/util/logging"
 )
@@ -62,11 +65,11 @@ func init() {
 			log.Panic(err)
 		}
 
-		if err := w.Lock([]byte("pwd"), CryptoTypeScryptChacha20poly1305); err != nil {
+		if err := Lock(w, []byte("pwd"), CryptoTypeScryptChacha20poly1305); err != nil {
 			log.Panic(err)
 		}
 
-		if err := w.Save("./testdata"); err != nil {
+		if err := Save(w, "./testdata"); err != nil {
 			log.Panic(err)
 		}
 
@@ -83,21 +86,10 @@ func init() {
 			log.Panic(err)
 		}
 
-		if err := w1.Save("./testdata"); err != nil {
+		if err := Save(w1, "./testdata"); err != nil {
 			log.Panic(err)
 		}
 	}
-}
-
-type mockBalanceGetter map[cipher.Address]BalancePair
-
-func (mb mockBalanceGetter) GetBalanceOfAddrs(addrs []cipher.Address) ([]BalancePair, error) {
-	var bals []BalancePair
-	for _, addr := range addrs {
-		bal := mb[addr]
-		bals = append(bals, bal)
-	}
-	return bals, nil
 }
 
 func TestNewWallet(t *testing.T) {
@@ -109,16 +101,53 @@ func TestNewWallet(t *testing.T) {
 	tt := []struct {
 		name    string
 		wltName string
-		ops     Options
+		opts    Options
 		expect  expect
 	}{
 		{
-			"ok with seed set",
-			"test.wlt",
-			Options{
-				Seed: "testseed123",
+			name:    "ok, empty collection wallet",
+			wltName: "test-collection.wlt",
+			opts: Options{
+				Type: WalletTypeCollection,
 			},
-			expect{
+			expect: expect{
+				meta: map[string]string{
+					"label":    "",
+					"filename": "test-collection.wlt",
+					"coin":     string(CoinTypeSkycoin),
+					"type":     WalletTypeDeterministic,
+					"version":  Version,
+				},
+				err: nil,
+			},
+		},
+		{
+			name:    "ok, xpub wallet",
+			wltName: "test-xpub.wlt",
+			opts: Options{
+				Type: WalletTypeXPub,
+				XPub: "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
+			},
+			expect: expect{
+				meta: map[string]string{
+					"label":    "",
+					"filename": "test-collection.wlt",
+					"coin":     string(CoinTypeSkycoin),
+					"type":     WalletTypeDeterministic,
+					"version":  Version,
+					"xpub":     "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
+				},
+				err: nil,
+			},
+		},
+		{
+			name:    "ok all defaults",
+			wltName: "test.wlt",
+			opts: Options{
+				Seed: bip39.MustNewDefaultMnemonic(),
+				Type: WalletTypeBip44,
+			},
+			expect: expect{
 				meta: map[string]string{
 					"label":    "",
 					"filename": "test.wlt",
@@ -131,13 +160,33 @@ func TestNewWallet(t *testing.T) {
 			},
 		},
 		{
-			"ok with label and seed set",
-			"test.wlt",
-			Options{
+			name:    "ok with seed set, deterministic",
+			wltName: "test.wlt",
+			opts: Options{
+				Seed: "testseed123",
+				Type: WalletTypeDeterministic,
+			},
+			expect: expect{
+				meta: map[string]string{
+					"label":    "",
+					"filename": "test.wlt",
+					"coin":     string(CoinTypeSkycoin),
+					"type":     WalletTypeDeterministic,
+					"seed":     "testseed123",
+					"version":  Version,
+				},
+				err: nil,
+			},
+		},
+		{
+			name:    "ok with label and seed set, deterministic",
+			wltName: "test.wlt",
+			opts: Options{
 				Label: "wallet1",
 				Seed:  "testseed123",
+				Type:  WalletTypeDeterministic,
 			},
-			expect{
+			expect: expect{
 				meta: map[string]string{
 					"label":    "wallet1",
 					"filename": "test.wlt",
@@ -150,14 +199,15 @@ func TestNewWallet(t *testing.T) {
 			},
 		},
 		{
-			"ok with label, seed and coin set",
-			"test.wlt",
-			Options{
+			name:    "ok with label, seed and coin set, deterministic",
+			wltName: "test.wlt",
+			opts: Options{
 				Label: "wallet1",
 				Coin:  CoinTypeBitcoin,
 				Seed:  "testseed123",
+				Type:  WalletTypeDeterministic,
 			},
-			expect{
+			expect: expect{
 				meta: map[string]string{
 					"label":    "wallet1",
 					"filename": "test.wlt",
@@ -169,16 +219,17 @@ func TestNewWallet(t *testing.T) {
 			},
 		},
 		{
-			"ok default crypto type",
-			"test.wlt",
-			Options{
+			name:    "ok default crypto type, deterministic",
+			wltName: "test.wlt",
+			opts: Options{
 				Label:    "wallet1",
 				Coin:     CoinTypeSkycoin,
 				Seed:     "testseed123",
 				Encrypt:  true,
 				Password: []byte("pwd"),
+				Type:     WalletTypeDeterministic,
 			},
-			expect{
+			expect: expect{
 				meta: map[string]string{
 					"label":     "wallet1",
 					"coin":      string(CoinTypeSkycoin),
@@ -189,15 +240,16 @@ func TestNewWallet(t *testing.T) {
 			},
 		},
 		{
-			"encrypt without password",
-			"test.wlt",
-			Options{
+			name:    "encrypt without password, deterministic",
+			wltName: "test.wlt",
+			opts: Options{
 				Label:   "wallet1",
 				Coin:    CoinTypeSkycoin,
 				Seed:    "testseed123",
 				Encrypt: true,
+				Type:    WalletTypeDeterministic,
 			},
-			expect{
+			expect: expect{
 				meta: map[string]string{
 					"label":     "wallet1",
 					"coin":      string(CoinTypeSkycoin),
@@ -208,15 +260,16 @@ func TestNewWallet(t *testing.T) {
 			},
 		},
 		{
-			"create with no seed",
-			"test.wlt",
-			Options{
+			name:    "create with no seed, deterministic",
+			wltName: "test.wlt",
+			opts: Options{
 				Label:    "wallet1",
 				Coin:     CoinTypeSkycoin,
 				Encrypt:  true,
 				Password: []byte("pwd"),
+				Type:     WalletTypeDeterministic,
 			},
-			expect{
+			expect: expect{
 				meta: map[string]string{
 					"label":     "wallet1",
 					"coin":      string(CoinTypeSkycoin),
@@ -227,17 +280,59 @@ func TestNewWallet(t *testing.T) {
 			},
 		},
 		{
-			"password=pwd encrypt=false",
-			"test.wlt",
-			Options{
+			name:    "password=pwd encrypt=false, deterministic",
+			wltName: "test.wlt",
+			opts: Options{
 				Label:    "wallet1",
 				Coin:     CoinTypeSkycoin,
 				Encrypt:  false,
 				Seed:     "seed",
 				Password: []byte("pwd"),
+				Type:     WalletTypeDeterministic,
 			},
-			expect{
+			expect: expect{
 				err: ErrMissingEncrypt,
+			},
+		},
+		{
+			name:    "ok bip44",
+			wltName: "bip44.wlt",
+			opts: Options{
+				Label: "bip44wallet1",
+				Type:  WalletTypeBip44,
+				Seed:  "voyage say extend find sheriff surge priority merit ignore maple cash argue",
+			},
+			expect: expect{
+				meta: map[string]string{
+					"label":     "bip44wallet1",
+					"coin":      string(CoinTypeSkycoin),
+					"type":      string(WalletTypeBip44),
+					"version":   Version,
+					"bip44Coin": "8000",
+				},
+			},
+		},
+		{
+			name:    "invalid xpub wallet",
+			wltName: "test-xpub.wlt",
+			opts: Options{
+				Type: WalletTypeXPub,
+				XPub: "xpubbad",
+			},
+			expect: expect{
+				err: NewError(errors.New("invalid xpub key: Serialized keys should be exactly 82 bytes")),
+			},
+		},
+		{
+			name:    "seed provided with xpub wallet",
+			wltName: "test-xpub.wlt",
+			opts: Options{
+				Type: WalletTypeXPub,
+				Seed: "foobar",
+				XPub: "xpub6CkxdS1d4vNqqcnf9xPgqR5e2jE2PZKmKSw93QQMjHE1hRk22nU4zns85EDRgmLWYXYtu62XexwqaET33XA28c26NbXCAUJh1xmqq6B3S2v",
+			},
+			expect: expect{
+				err: NewError(errors.New("seed should not be provided for \"xpub\" wallets")),
 			},
 		},
 	}
@@ -246,29 +341,33 @@ func TestNewWallet(t *testing.T) {
 		// test all supported crypto types
 		for ct := range cryptoTable {
 			name := fmt.Sprintf("%v crypto=%v", tc.name, ct)
-			if tc.ops.Encrypt {
-				tc.ops.CryptoType = ct
+			if tc.opts.Encrypt {
+				tc.opts.CryptoType = ct
 			}
 			t.Run(name, func(t *testing.T) {
-				w, err := NewWallet(tc.wltName, tc.ops)
-				require.Equal(t, tc.expect.err, err)
-				if err != nil {
+				w, err := NewWallet(tc.wltName, tc.opts)
+
+				if tc.expect.err == nil {
+					require.NoError(t, err)
+				} else {
+					require.Error(t, err)
+					require.Equal(t, tc.expect.err, err, "%s != %s", tc.expect.err.Error(), err.Error())
 					return
 				}
 
-				require.Equal(t, tc.ops.Encrypt, w.IsEncrypted())
+				require.Equal(t, tc.opts.Encrypt, w.IsEncrypted())
 
 				if w.IsEncrypted() {
 					// Confirms the seeds and entry secrets are all empty
-					require.Equal(t, "", w.seed())
-					require.Equal(t, "", w.lastSeed())
+					require.Equal(t, "", w.Seed())
+					require.Equal(t, "", w.LastSeed())
 
-					for _, e := range w.Entries {
+					for _, e := range w.GetEntries() {
 						require.True(t, e.Secret.Null())
 					}
 
 					// Confirms that secrets field is not empty
-					require.NotEmpty(t, w.secrets())
+					require.NotEmpty(t, w.Secrets())
 				}
 			})
 		}
@@ -283,30 +382,40 @@ func TestWalletLock(t *testing.T) {
 		err     error
 	}{
 		{
-			"ok",
-			Options{
+			name: "ok deterministic",
+			opts: Options{
 				Seed: "seed",
+				Type: WalletTypeDeterministic,
 			},
-			[]byte("pwd"),
-			nil,
+			lockPwd: []byte("pwd"),
 		},
 		{
-			"password is nil",
-			Options{
-				Seed: "seed",
+			name: "ok bip44",
+			opts: Options{
+				Seed: bip39.MustNewDefaultMnemonic(),
+				Type: WalletTypeBip44,
 			},
-			nil,
-			ErrMissingPassword,
+			lockPwd: []byte("pwd"),
 		},
 		{
-			"wallet already encrypted",
-			Options{
+			name: "password is nil",
+			opts: Options{
+				Seed: "seed",
+				Type: WalletTypeDeterministic,
+			},
+			lockPwd: nil,
+			err:     ErrMissingPassword,
+		},
+		{
+			name: "wallet already encrypted",
+			opts: Options{
 				Seed:     "seed",
 				Encrypt:  true,
 				Password: []byte("pwd"),
+				Type:     WalletTypeDeterministic,
 			},
-			[]byte("pwd"),
-			ErrWalletEncrypted,
+			lockPwd: []byte("pwd"),
+			err:     ErrWalletEncrypted,
 		},
 	}
 
@@ -327,7 +436,7 @@ func TestWalletLock(t *testing.T) {
 					require.NoError(t, err)
 				}
 
-				err = w.Lock(tc.lockPwd, ct)
+				err = Lock(w, tc.lockPwd, ct)
 				require.Equal(t, tc.err, err)
 				if err != nil {
 					return
@@ -336,18 +445,17 @@ func TestWalletLock(t *testing.T) {
 				require.True(t, w.IsEncrypted())
 
 				// Checks if the seeds are wiped
-				require.Empty(t, w.seed())
-				require.Empty(t, w.lastSeed())
+				require.Empty(t, w.Seed())
+				require.Empty(t, w.LastSeed())
 
 				// Checks if the entries are encrypted
-				for i := range w.Entries {
-					require.Equal(t, cipher.SecKey{}, w.Entries[i].Secret)
+				for _, e := range w.GetEntries() {
+					require.Equal(t, cipher.SecKey{}, e.Secret)
 				}
 			})
 
 		}
 	}
-
 }
 
 func TestWalletUnlock(t *testing.T) {
@@ -358,33 +466,45 @@ func TestWalletUnlock(t *testing.T) {
 		err       error
 	}{
 		{
-			"ok",
-			Options{
+			name: "ok deterministic",
+			opts: Options{
 				Seed:     "seed",
 				Encrypt:  true,
 				Password: []byte("pwd"),
+				Type:     WalletTypeDeterministic,
 			},
-			[]byte("pwd"),
-			nil,
+			unlockPwd: []byte("pwd"),
 		},
 		{
-			"unlock with nil password",
-			Options{
+			name: "ok bip44",
+			opts: Options{
+				Seed:     bip39.MustNewDefaultMnemonic(),
+				Encrypt:  true,
+				Password: []byte("pwd"),
+				Type:     WalletTypeBip44,
+			},
+			unlockPwd: []byte("pwd"),
+		},
+		{
+			name: "unlock with nil password",
+			opts: Options{
 				Seed:     "seed",
 				Encrypt:  true,
 				Password: []byte("pwd"),
+				Type:     WalletTypeDeterministic,
 			},
-			nil,
-			ErrMissingPassword,
+			unlockPwd: nil,
+			err:       ErrMissingPassword,
 		},
 		{
-			"unlock undecrypted wallet",
-			Options{
+			name: "unlock undecrypted wallet",
+			opts: Options{
 				Seed:    "seed",
 				Encrypt: false,
+				Type:    WalletTypeDeterministic,
 			},
-			[]byte("pwd"),
-			ErrWalletNotEncrypted,
+			unlockPwd: []byte("pwd"),
+			err:       ErrWalletNotEncrypted,
 		},
 	}
 
@@ -397,7 +517,7 @@ func TestWalletUnlock(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				w := makeWallet(t, tc.opts, 1)
 				// Tests the unlock method
-				wlt, err := w.Unlock(tc.unlockPwd)
+				wlt, err := Unlock(w, tc.unlockPwd)
 				require.Equal(t, tc.err, err)
 				if err != nil {
 					return
@@ -406,66 +526,114 @@ func TestWalletUnlock(t *testing.T) {
 				require.False(t, wlt.IsEncrypted())
 
 				// Checks the seeds
-				require.Equal(t, tc.opts.Seed, wlt.seed())
+				require.Equal(t, tc.opts.Seed, wlt.Seed())
 
 				// Checks the generated addresses
-				sd, sks := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(wlt.seed()), 1)
-				require.Equal(t, uint64(1), uint64(len(wlt.Entries)))
+				require.Equal(t, 1, wlt.EntriesLen())
 
-				// Checks the last seed
-				require.Equal(t, hex.EncodeToString(sd), wlt.lastSeed())
+				switch tc.opts.Type {
+				case WalletTypeBip44:
+					require.Empty(t, wlt.LastSeed())
+					keys := generateBip44Chain(t, wlt.Seed(), wlt.SeedPassphrase(), bip44.ExternalChainIndex, 1)
+					for i, e := range wlt.GetEntries() {
+						sk := cipher.MustNewSecKey(keys[i].Key)
+						addr := cipher.MustAddressFromSecKey(sk)
+						require.Equal(t, addr, e.Address)
+					}
 
-				for i := range wlt.Entries {
-					addr := cipher.MustAddressFromSecKey(sks[i])
-					require.Equal(t, addr, wlt.Entries[i].Address)
+				case WalletTypeDeterministic:
+					sd, sks := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(wlt.Seed()), 1)
+					require.Equal(t, hex.EncodeToString(sd), wlt.LastSeed())
+
+					for i, e := range wlt.GetEntries() {
+						addr := cipher.MustAddressFromSecKey(sks[i])
+						require.Equal(t, addr, e.Address)
+					}
+				default:
+					t.Fatalf("unhandled wallet type %q", tc.opts.Type)
 				}
 
 				// Checks the original seeds
-				require.NotEqual(t, tc.opts.Seed, w.seed())
+				require.NotEqual(t, tc.opts.Seed, w.Seed())
 
 				// Checks if the seckeys in entries of original wallet are empty
-				for i := range w.Entries {
-					require.Equal(t, cipher.SecKey{}, w.Entries[i].Secret)
+				for _, e := range w.GetEntries() {
+					require.True(t, e.Secret.Null())
 				}
 
-				// Checks if the seed and lastSeed in original wallet are sitll empty
-				require.Empty(t, w.seed())
-				require.Empty(t, w.lastSeed())
+				// Checks if the seed and lastSeed in original wallet are still empty
+				require.Empty(t, w.Seed())
+				require.Empty(t, w.LastSeed())
+				require.Empty(t, w.SeedPassphrase())
 			})
 		}
 	}
 }
 
 func TestLockAndUnLock(t *testing.T) {
-	for ct := range cryptoTable {
-		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
-			w, err := NewWallet("wallet", Options{
-				Label: "wallet",
-				Seed:  "seed",
+	for _, walletType := range []string{
+		WalletTypeBip44,
+		WalletTypeDeterministic,
+	} {
+		for ct := range cryptoTable {
+			t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
+				w, err := NewWallet("wallet", Options{
+					Label: "wallet",
+					Seed:  bip39.MustNewDefaultMnemonic(),
+					Type:  walletType,
+				})
+				require.NoError(t, err)
+				_, err = w.GenerateAddresses(9)
+				require.NoError(t, err)
+				require.Equal(t, 10, w.EntriesLen())
+
+				if walletType == WalletTypeBip44 {
+					// Generate change entries, to verify that their secret keys
+					// are protected and revealed when locked and unlocked
+					for i := 0; i < 5; i++ {
+						e, err := w.(*Bip44Wallet).GenerateChangeEntry()
+						require.NoError(t, err)
+						require.Equal(t, bip44.ChangeChainIndex, e.Change)
+					}
+
+					require.Equal(t, 15, w.EntriesLen())
+					nExternal := 0
+					nChange := 0
+					for _, e := range w.GetEntries() {
+						switch e.Change {
+						case bip44.ExternalChainIndex:
+							nExternal++
+						case bip44.ChangeChainIndex:
+							nChange++
+						default:
+							t.Fatalf("invalid change chain index: %d", e.Change)
+						}
+					}
+					require.Equal(t, 10, nExternal)
+					require.Equal(t, 5, nChange)
+				}
+
+				// clone the wallet
+				cw := w.Clone()
+				require.Equal(t, w, cw)
+
+				// lock the cloned wallet
+				err = Lock(cw, []byte("pwd"), ct)
+				require.NoError(t, err)
+
+				checkNoSensitiveData(t, cw)
+
+				// unlock the cloned wallet
+				ucw, err := Unlock(cw, []byte("pwd"))
+				require.NoError(t, err)
+
+				require.Equal(t, w, ucw)
 			})
-			require.NoError(t, err)
-			_, err = w.GenerateAddresses(9)
-			require.NoError(t, err)
-			require.Len(t, w.Entries, 10)
-
-			// clone the wallet
-			cw := w.clone()
-			require.Equal(t, w, cw)
-
-			// lock the cloned wallet
-			err = cw.Lock([]byte("pwd"), ct)
-			require.NoError(t, err)
-
-			// unlock the cloned wallet
-			ucw, err := cw.Unlock([]byte("pwd"))
-			require.NoError(t, err)
-
-			require.Equal(t, w, ucw)
-		})
+		}
 	}
 }
 
-func makeWallet(t *testing.T, opts Options, addrNum uint64) *Wallet { // nolint: unparam
+func makeWallet(t *testing.T, opts Options, addrNum uint64) Wallet { //nolint:unparam
 	// Create an unlocked wallet, then generate addresses, lock if the options.Encrypt is true.
 	preOpts := opts
 	opts.Encrypt = false
@@ -478,7 +646,7 @@ func makeWallet(t *testing.T, opts Options, addrNum uint64) *Wallet { // nolint:
 		require.NoError(t, err)
 	}
 	if preOpts.Encrypt {
-		err = w.Lock(preOpts.Password, preOpts.CryptoType)
+		err = Lock(w, preOpts.Password, preOpts.CryptoType)
 		require.NoError(t, err)
 	}
 	return w
@@ -491,14 +659,14 @@ func TestLoadWallet(t *testing.T) {
 	}
 
 	tt := []struct {
-		name   string
-		file   string
-		expect expect
+		name     string
+		filename string
+		expect   expect
 	}{
 		{
-			"ok",
-			"./testdata/test1.wlt",
-			expect{
+			name:     "ok",
+			filename: "./testdata/test1.wlt",
+			expect: expect{
 				meta: map[string]string{
 					"coin":     string(CoinTypeSkycoin),
 					"filename": "test1.wlt",
@@ -513,49 +681,49 @@ func TestLoadWallet(t *testing.T) {
 			},
 		},
 		{
-			"wallet file doesn't exist",
-			"not_exist_file.wlt",
-			expect{
+			name:     "wallet file doesn't exist",
+			filename: "not_exist_file.wlt",
+			expect: expect{
 				meta: map[string]string{},
-				err:  fmt.Errorf("wallet not_exist_file.wlt doesn't exist"),
+				err:  fmt.Errorf("wallet \"not_exist_file.wlt\" doesn't exist"),
 			},
 		},
 		{
-			"invalid wallet: no type",
-			"./testdata/invalid_wallets/no_type.wlt",
-			expect{
+			name:     "invalid wallet: no type",
+			filename: "./testdata/invalid_wallets/no_type.wlt",
+			expect: expect{
 				meta: map[string]string{},
-				err:  fmt.Errorf("invalid wallet no_type.wlt: type field not set"),
+				err:  fmt.Errorf("invalid wallet \"./testdata/invalid_wallets/no_type.wlt\": invalid wallet type"),
 			},
 		},
 		{
-			"invalid wallet: invalid type",
-			"./testdata/invalid_wallets/err_type.wlt",
-			expect{
+			name:     "invalid wallet: invalid type",
+			filename: "./testdata/invalid_wallets/err_type.wlt",
+			expect: expect{
 				meta: map[string]string{},
-				err:  fmt.Errorf("invalid wallet err_type.wlt: wallet type invalid"),
+				err:  fmt.Errorf("invalid wallet \"./testdata/invalid_wallets/err_type.wlt\": invalid wallet type"),
 			},
 		},
 		{
-			"invalid wallet: no coin",
-			"./testdata/invalid_wallets/no_coin.wlt",
-			expect{
+			name:     "invalid wallet: no coin",
+			filename: "./testdata/invalid_wallets/no_coin.wlt",
+			expect: expect{
 				meta: map[string]string{},
-				err:  fmt.Errorf("invalid wallet no_coin.wlt: coin field not set"),
+				err:  fmt.Errorf("invalid wallet \"./testdata/invalid_wallets/no_coin.wlt\": invalid coin type"),
 			},
 		},
 		{
-			"invalid wallet: no seed",
-			"./testdata/invalid_wallets/no_seed.wlt",
-			expect{
+			name:     "invalid wallet: no seed",
+			filename: "./testdata/invalid_wallets/no_seed.wlt",
+			expect: expect{
 				meta: map[string]string{},
-				err:  fmt.Errorf("invalid wallet no_seed.wlt: seed missing in unencrypted wallet"),
+				err:  fmt.Errorf("invalid wallet \"no_seed.wlt\": seed missing in unencrypted deterministic wallet"),
 			},
 		},
 		{
-			"version=0.2 encrypted=true crypto=scrypt-chacha20poly1305",
-			"./testdata/scrypt-chacha20poly1305-encrypted.wlt",
-			expect{
+			name:     "version=0.2 encrypted=true crypto=scrypt-chacha20poly1305",
+			filename: "./testdata/scrypt-chacha20poly1305-encrypted.wlt",
+			expect: expect{
 				meta: map[string]string{
 					"coin":       string(CoinTypeSkycoin),
 					"cryptoType": "scrypt-chacha20poly1305",
@@ -571,9 +739,9 @@ func TestLoadWallet(t *testing.T) {
 			},
 		},
 		{
-			"version=0.2 encrypted=true crypto=sha256xor",
-			"./testdata/sha256xor-encrypted.wlt",
-			expect{
+			name:     "version=0.2 encrypted=true crypto=sha256xor",
+			filename: "./testdata/sha256xor-encrypted.wlt",
+			expect: expect{
 				meta: map[string]string{
 					"coin":       string(CoinTypeSkycoin),
 					"cryptoType": "sha256-xor",
@@ -589,9 +757,9 @@ func TestLoadWallet(t *testing.T) {
 			},
 		},
 		{
-			"version=0.2 encrypted=false",
-			"./testdata/v2_no_encrypt.wlt",
-			expect{
+			name:     "version=0.2 encrypted=false",
+			filename: "./testdata/v2_no_encrypt.wlt",
+			expect: expect{
 				meta: map[string]string{
 					"coin":       string(CoinTypeSkycoin),
 					"cryptoType": "scrypt-chacha20poly1305",
@@ -607,23 +775,67 @@ func TestLoadWallet(t *testing.T) {
 				err: nil,
 			},
 		},
+		{
+			name:     "version=0.3 encrypted=false type=bip44",
+			filename: "./testdata/test5-bip44.wlt",
+			expect: expect{
+				meta: map[string]string{
+					"bip44Coin":      fmt.Sprint(bip44.CoinTypeSkycoin),
+					"coin":           string(CoinTypeSkycoin),
+					"cryptoType":     "",
+					"encrypted":      "false",
+					"filename":       "test5-bip44.wlt",
+					"label":          "test5-bip44",
+					"lastSeed":       "",
+					"secrets":        "",
+					"seed":           "voyage say extend find sheriff surge priority merit ignore maple cash argue",
+					"seedPassphrase": "",
+					"type":           WalletTypeBip44,
+					"version":        "0.3",
+				},
+				err: nil,
+			},
+		},
+		{
+			name:     "version=0.3 encrypted=false type=bip44 seed-passphrase=true",
+			filename: "./testdata/test6-passphrase-bip44.wlt",
+			expect: expect{
+				meta: map[string]string{
+					"bip44Coin":      fmt.Sprint(bip44.CoinTypeSkycoin),
+					"coin":           string(CoinTypeSkycoin),
+					"cryptoType":     "",
+					"encrypted":      "false",
+					"filename":       "test6-passphrase-bip44.wlt",
+					"label":          "test6-passphrase-bip44",
+					"lastSeed":       "",
+					"secrets":        "",
+					"seed":           "voyage say extend find sheriff surge priority merit ignore maple cash argue",
+					"seedPassphrase": "foobar",
+					"type":           WalletTypeBip44,
+					"version":        "0.3",
+				},
+				err: nil,
+			},
+		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			w, err := Load(tc.file)
-			require.Equal(t, tc.expect.err, err)
+			w, err := Load(tc.filename)
+			if err != nil {
+				require.Equal(t, tc.expect.err.Error(), err.Error())
+			}
 			if err != nil {
 				return
 			}
 
 			for k, v := range tc.expect.meta {
-				vv := w.Meta[k]
+				vv := w.Find(k)
 				require.Equal(t, v, vv)
 			}
 
 			if w.IsEncrypted() {
-				require.NotEmpty(t, w.Meta[metaSecrets])
+				require.NotEmpty(t, w.Secrets())
 			}
 		})
 	}
@@ -638,42 +850,79 @@ func TestWalletGenerateAddress(t *testing.T) {
 		err                error
 	}{
 		{
-			"ok with one address",
-			Options{
-				Seed: "seed",
+			name: "ok with one address deterministic",
+			opts: Options{
+				Seed: bip39.MustNewDefaultMnemonic(),
+				Type: WalletTypeDeterministic,
 			},
-			1,
-			false,
-			nil,
+			num: 1,
 		},
 		{
-			"ok with two address",
-			Options{
-				Seed: "seed",
+			name: "ok with two address deterministic",
+			opts: Options{
+				Seed: bip39.MustNewDefaultMnemonic(),
+				Type: WalletTypeDeterministic,
 			},
-			2,
-			false,
-			nil,
+			num: 2,
 		},
 		{
-			"ok with three address and generate one address each time",
-			Options{
-				Seed: "seed",
+			name: "ok with three address and generate one address each time deterministic",
+			opts: Options{
+				Seed: bip39.MustNewDefaultMnemonic(),
+				Type: WalletTypeDeterministic,
 			},
-			2,
-			true,
-			nil,
+			num:                2,
+			oneAddressEachTime: true,
 		},
 		{
-			"wallet is encrypted",
-			Options{
-				Seed:     "seed",
+			name: "wallet is encrypted deterministic",
+			opts: Options{
+				Seed:     bip39.MustNewDefaultMnemonic(),
+				Type:     WalletTypeDeterministic,
 				Encrypt:  true,
 				Password: []byte("pwd"),
 			},
-			2,
-			true,
-			ErrWalletEncrypted,
+			num:                2,
+			oneAddressEachTime: true,
+			err:                ErrWalletEncrypted,
+		},
+
+		{
+			name: "ok with one address bip44",
+			opts: Options{
+				Seed: bip39.MustNewDefaultMnemonic(),
+				Type: WalletTypeBip44,
+			},
+			num: 1,
+		},
+		{
+			name: "ok with two address bip44",
+			opts: Options{
+				Seed: bip39.MustNewDefaultMnemonic(),
+				Type: WalletTypeBip44,
+			},
+			num: 2,
+		},
+		{
+			name: "ok with three address and generate one address each time bip44",
+			opts: Options{
+				Seed: bip39.MustNewDefaultMnemonic(),
+				Type: WalletTypeBip44,
+			},
+			num:                2,
+			oneAddressEachTime: true,
+		},
+		{
+			name: "wallet is encrypted bip44",
+			opts: Options{
+				Seed:     bip39.MustNewDefaultMnemonic(),
+				Type:     WalletTypeBip44,
+				Encrypt:  true,
+				Password: []byte("pwd"),
+			},
+			num:                2,
+			oneAddressEachTime: true,
+			err:                ErrWalletEncrypted,
 		},
 	}
 
@@ -707,18 +956,54 @@ func TestWalletGenerateAddress(t *testing.T) {
 				}
 
 				// check the entry number
-				require.Equal(t, int(tc.num), len(w.Entries))
+				require.Equal(t, w.EntriesLen(), int(tc.num))
 
 				addrs := w.GetAddresses()
 
-				_, keys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(tc.opts.Seed), int(tc.num))
-				for i, k := range keys {
-					a := cipher.MustAddressFromSecKey(k)
-					require.Equal(t, a.String(), addrs[i].String())
+				switch tc.opts.Type {
+				case WalletTypeDeterministic:
+					_, keys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(tc.opts.Seed), int(tc.num))
+					for i, k := range keys {
+						a := cipher.MustAddressFromSecKey(k)
+						require.Equal(t, a.String(), addrs[i].String())
+					}
+				case WalletTypeBip44:
+					keys := generateBip44Chain(t, tc.opts.Seed, tc.opts.SeedPassphrase, bip44.ExternalChainIndex, int(tc.num))
+					for i, k := range keys {
+						sk := cipher.MustNewSecKey(k.Key)
+						a := cipher.MustAddressFromSecKey(sk)
+						require.Equal(t, a.String(), addrs[i].String())
+					}
+				default:
+					t.Fatalf("unhandled wallet type %q", tc.opts.Type)
 				}
 			})
 		}
 	}
+}
+
+// generateBip44Chain generates N keys for the leaf change chain
+func generateBip44Chain(t *testing.T, seed, seedPassphrase string, change uint32, num int) []*bip32.PrivateKey {
+	ss, err := bip39.NewSeed(seed, seedPassphrase)
+	require.NoError(t, err)
+
+	cc, err := bip44.NewCoin(ss, bip44.CoinTypeSkycoin)
+	require.NoError(t, err)
+
+	acct, err := cc.Account(0)
+	require.NoError(t, err)
+
+	chain, err := acct.NewPrivateChildKey(change)
+	require.NoError(t, err)
+
+	keys := make([]*bip32.PrivateKey, num)
+	for i := 0; i < num; i++ {
+		k, err := chain.NewPrivateChildKey(uint32(i))
+		require.NoError(t, err)
+		keys[i] = k
+	}
+
+	return keys
 }
 
 func TestWalletGetEntry(t *testing.T) {
@@ -741,7 +1026,7 @@ func TestWalletGetEntry(t *testing.T) {
 			false,
 		},
 		{
-			"scrypt-chacha20poly1305 encrytped wallet",
+			"scrypt-chacha20poly1305 encrypted wallet",
 			"./testdata/scrypt-chacha20poly1305-encrypted.wlt",
 			"LxcitUpWQZbPjgEPs6R1i3G4Xa31nPMoSG",
 			true,
@@ -763,17 +1048,13 @@ func TestWalletGetEntry(t *testing.T) {
 	}
 }
 
-func TestWalletAddEntry(t *testing.T) {
+func TestWalletCollectionAddEntry(t *testing.T) {
 	test1SecKey, err := cipher.SecKeyFromHex("1fc5396e91e60b9fc613d004ea5bd2ccea17053a12127301b3857ead76fdb93e")
 	require.NoError(t, err)
 
 	_, s := cipher.GenerateKeyPair()
-	seckeys := []cipher.SecKey{
-		test1SecKey,
-		s,
-	}
 
-	tt := []struct {
+	cases := []struct {
 		name    string
 		wltFile string
 		secKey  cipher.SecKey
@@ -781,72 +1062,91 @@ func TestWalletAddEntry(t *testing.T) {
 	}{
 		{
 			"ok",
-			"./testdata/test1.wlt",
-			seckeys[1],
+			"./testdata/test4-collection.wlt",
+			s,
 			nil,
 		},
 		{
 			"dup entry",
-			"./testdata/test1.wlt",
-			seckeys[0],
-			errors.New("duplicate address entry"),
+			"./testdata/test4-collection.wlt",
+			test1SecKey,
+			errors.New("wallet already contains entry with this address"),
 		},
 	}
 
-	for _, tc := range tt {
+	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			w, err := Load(tc.wltFile)
 			require.NoError(t, err)
+
 			a := cipher.MustAddressFromSecKey(tc.secKey)
 			p := cipher.MustPubKeyFromSecKey(tc.secKey)
-			require.Equal(t, tc.err, w.AddEntry(Entry{
+			require.Equal(t, tc.err, w.(*CollectionWallet).AddEntry(Entry{
 				Address: a,
 				Public:  p,
-				Secret:  s,
+				Secret:  tc.secKey,
 			}))
 		})
 	}
 }
 
 func TestWalletGuard(t *testing.T) {
+	cases := []struct {
+		name       string
+		walletType string
+	}{
+		{
+			name:       "deterministic",
+			walletType: WalletTypeDeterministic,
+		},
+		{
+			name:       "bip44",
+			walletType: WalletTypeBip44,
+		},
+	}
+
 	for ct := range cryptoTable {
-		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
-			validate := func(w *Wallet) {
-				require.Equal(t, "", w.seed())
-				require.Equal(t, "", w.lastSeed())
-				for _, e := range w.Entries {
-					require.Equal(t, cipher.SecKey{}, e.Secret)
+		for _, tc := range cases {
+			t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
+				validate := func(w Wallet) {
+					require.Equal(t, "", w.Seed())
+					require.Equal(t, "", w.LastSeed())
+					require.Equal(t, "", w.SeedPassphrase())
+					for _, e := range w.GetEntries() {
+						require.True(t, e.Secret.Null())
+					}
 				}
-			}
 
-			w, err := NewWallet("t.wlt", Options{
-				Seed:       "seed",
-				Encrypt:    true,
-				Password:   []byte("pwd"),
-				CryptoType: ct,
-			})
-			require.NoError(t, err)
+				seed := bip39.MustNewDefaultMnemonic()
+				w, err := NewWallet("t.wlt", Options{
+					Seed:       seed,
+					Encrypt:    true,
+					Password:   []byte("pwd"),
+					CryptoType: ct,
+					Type:       tc.walletType,
+				})
+				require.NoError(t, err)
 
-			err = w.GuardUpdate([]byte("pwd"), func(w *Wallet) error {
-				require.Equal(t, "seed", w.seed())
-				w.setLabel("label")
-				return nil
-			})
-			require.NoError(t, err)
-			require.Equal(t, "label", w.Label())
-			validate(w)
-
-			err = w.GuardView([]byte("pwd"), func(w *Wallet) error {
+				err = GuardUpdate(w, []byte("pwd"), func(w Wallet) error {
+					require.Equal(t, seed, w.Seed())
+					w.SetLabel("label")
+					return nil
+				})
+				require.NoError(t, err)
 				require.Equal(t, "label", w.Label())
-				w.setLabel("new label")
-				return nil
+				validate(w)
+
+				err = GuardView(w, []byte("pwd"), func(w Wallet) error {
+					require.Equal(t, "label", w.Label())
+					w.SetLabel("new label")
+					return nil
+				})
+				require.NoError(t, err)
+
+				require.Equal(t, "label", w.Label())
+				validate(w)
 			})
-			require.NoError(t, err)
-
-			require.Equal(t, "label", w.Label())
-			validate(w)
-
-		})
+		}
 	}
 }
 
@@ -862,13 +1162,13 @@ func TestRemoveBackupFiles(t *testing.T) {
 		expectedRemainingFiles map[string]struct{}
 	}{
 		{
-			"no file",
-			[]wltInfo{},
-			map[string]struct{}{},
+			name:                   "no file",
+			initFiles:              []wltInfo{},
+			expectedRemainingFiles: map[string]struct{}{},
 		},
 		{
-			"wlt v0.1=1 bak v0.1=1 delete 1 bak",
-			[]wltInfo{
+			name: "wlt v0.1=1 bak v0.1=1 delete 1 bak",
+			initFiles: []wltInfo{
 				{
 					"t1.wlt",
 					"0.1",
@@ -878,13 +1178,13 @@ func TestRemoveBackupFiles(t *testing.T) {
 					"0.1",
 				},
 			},
-			map[string]struct{}{
+			expectedRemainingFiles: map[string]struct{}{
 				"t1.wlt": struct{}{},
 			},
 		},
 		{
-			"wlt v0.1=2 bak v0.1=1 delete 1 bak",
-			[]wltInfo{
+			name: "wlt v0.1=2 bak v0.1=1 delete 1 bak",
+			initFiles: []wltInfo{
 				{
 					"t1.wlt",
 					"0.1",
@@ -898,14 +1198,14 @@ func TestRemoveBackupFiles(t *testing.T) {
 					"0.1",
 				},
 			},
-			map[string]struct{}{
+			expectedRemainingFiles: map[string]struct{}{
 				"t1.wlt": struct{}{},
 				"t2.wlt": struct{}{},
 			},
 		},
 		{
-			"wlt v0.1=3 bak v0.1=1 delete 1 bak",
-			[]wltInfo{
+			name: "wlt v0.1=3 bak v0.1=1 delete 1 bak",
+			initFiles: []wltInfo{
 				{
 					"t1.wlt",
 					"0.1",
@@ -923,15 +1223,15 @@ func TestRemoveBackupFiles(t *testing.T) {
 					"0.1",
 				},
 			},
-			map[string]struct{}{
+			expectedRemainingFiles: map[string]struct{}{
 				"t1.wlt": struct{}{},
 				"t2.wlt": struct{}{},
 				"t3.wlt": struct{}{},
 			},
 		},
 		{
-			"wlt v0.1=3 bak v0.1=2 delete 2 bak",
-			[]wltInfo{
+			name: "wlt v0.1=3 bak v0.1=2 delete 2 bak",
+			initFiles: []wltInfo{
 				{
 					"t1.wlt",
 					"0.1",
@@ -953,15 +1253,15 @@ func TestRemoveBackupFiles(t *testing.T) {
 					"0.1",
 				},
 			},
-			map[string]struct{}{
+			expectedRemainingFiles: map[string]struct{}{
 				"t1.wlt": struct{}{},
 				"t2.wlt": struct{}{},
 				"t3.wlt": struct{}{},
 			},
 		},
 		{
-			"wlt v0.1=3 bak v0.1=3 delete 3 bak",
-			[]wltInfo{
+			name: "wlt v0.1=3 bak v0.1=3 delete 3 bak",
+			initFiles: []wltInfo{
 				{
 					"t1.wlt",
 					"0.1",
@@ -987,15 +1287,15 @@ func TestRemoveBackupFiles(t *testing.T) {
 					"0.1",
 				},
 			},
-			map[string]struct{}{
+			expectedRemainingFiles: map[string]struct{}{
 				"t1.wlt": struct{}{},
 				"t2.wlt": struct{}{},
 				"t3.wlt": struct{}{},
 			},
 		},
 		{
-			"wlt v0.1=3 bak v0.1=1 no delete",
-			[]wltInfo{
+			name: "wlt v0.1=3 bak v0.1=1 no delete",
+			initFiles: []wltInfo{
 				{
 					"t1.wlt",
 					"0.1",
@@ -1013,7 +1313,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 					"0.1",
 				},
 			},
-			map[string]struct{}{
+			expectedRemainingFiles: map[string]struct{}{
 				"t1.wlt":     struct{}{},
 				"t2.wlt":     struct{}{},
 				"t3.wlt":     struct{}{},
@@ -1021,8 +1321,8 @@ func TestRemoveBackupFiles(t *testing.T) {
 			},
 		},
 		{
-			"wlt v0.2=3 bak v0.2=1 no delete",
-			[]wltInfo{
+			name: "wlt v0.2=3 bak v0.2=1 no delete",
+			initFiles: []wltInfo{
 				{
 					"t1.wlt",
 					"0.2",
@@ -1040,7 +1340,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 					"0.2",
 				},
 			},
-			map[string]struct{}{
+			expectedRemainingFiles: map[string]struct{}{
 				"t1.wlt":     struct{}{},
 				"t2.wlt":     struct{}{},
 				"t3.wlt":     struct{}{},
@@ -1048,8 +1348,8 @@ func TestRemoveBackupFiles(t *testing.T) {
 			},
 		},
 		{
-			"wlt v0.1=1 bak v0.1=1 wlt v0.2=2 bak v0.2=2 delete 1 bak",
-			[]wltInfo{
+			name: "wlt v0.1=1 bak v0.1=1 wlt v0.2=2 bak v0.2=2 delete 1 bak",
+			initFiles: []wltInfo{
 				{
 					"t1.wlt",
 					"0.1",
@@ -1075,7 +1375,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 					"0.2",
 				},
 			},
-			map[string]struct{}{
+			expectedRemainingFiles: map[string]struct{}{
 				"t1.wlt":     struct{}{},
 				"t2.wlt":     struct{}{},
 				"t2.wlt.bak": struct{}{},
@@ -1084,8 +1384,8 @@ func TestRemoveBackupFiles(t *testing.T) {
 			},
 		},
 		{
-			"wlt v0.1=1 bak v0.1=2 wlt v0.2=2 bak v0.2=1 delete 1 bak",
-			[]wltInfo{
+			name: "wlt v0.1=1 bak v0.1=2 wlt v0.2=2 bak v0.2=1 delete 1 bak",
+			initFiles: []wltInfo{
 				{
 					"t1.wlt",
 					"0.1",
@@ -1111,7 +1411,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 					"0.2",
 				},
 			},
-			map[string]struct{}{
+			expectedRemainingFiles: map[string]struct{}{
 				"t1.wlt":     struct{}{},
 				"t2.wlt":     struct{}{},
 				"t2.wlt.bak": struct{}{},
@@ -1128,11 +1428,12 @@ func TestRemoveBackupFiles(t *testing.T) {
 			for _, f := range tc.initFiles {
 				w, err := NewWallet(f.wltName, Options{
 					Seed: "s1",
+					Type: WalletTypeDeterministic,
 				})
 				require.NoError(t, err)
-				w.setVersion(f.version)
+				w.SetVersion(f.version)
 
-				require.NoError(t, w.Save(dir))
+				require.NoError(t, Save(w, dir))
 			}
 
 			require.NoError(t, removeBackupFiles(dir))
@@ -1206,9 +1507,9 @@ func TestWalletValidate(t *testing.T) {
 			err:  errors.New("type field not set"),
 		},
 		{
-			name: "wallet type invalid",
+			name: "invalid wallet type",
 			meta: setField(goodMetaUnencrypted, metaType, "footype"),
-			err:  errors.New("wallet type invalid"),
+			err:  ErrInvalidWalletType,
 		},
 		{
 			name: "coin field missing",
@@ -1223,12 +1524,12 @@ func TestWalletValidate(t *testing.T) {
 		{
 			name: "unencrypted missing seed",
 			meta: delField(goodMetaUnencrypted, metaSeed),
-			err:  errors.New("seed missing in unencrypted wallet"),
+			err:  errors.New("seed missing in unencrypted deterministic wallet"),
 		},
 		{
 			name: "unencrypted missing last seed",
 			meta: delField(goodMetaUnencrypted, metaLastSeed),
-			err:  errors.New("lastSeed missing in unencrypted wallet"),
+			err:  errors.New("lastSeed missing in unencrypted deterministic wallet"),
 		},
 		{
 			name: "crypto type missing",
@@ -1262,11 +1563,16 @@ func TestWalletValidate(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			w := &Wallet{
+			w := &DeterministicWallet{
 				Meta: tc.meta,
 			}
 			err := w.Validate()
-			require.Equal(t, tc.err, err)
+
+			if tc.err == nil {
+				require.NoError(t, err)
+			} else {
+				require.Equal(t, tc.err, err, "%s != %s", tc.err, err)
+			}
 		})
 	}
 }

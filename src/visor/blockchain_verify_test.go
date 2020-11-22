@@ -170,7 +170,7 @@ func makeTransactionForChain(t *testing.T, tx *dbutil.Tx, bc *Blockchain, ux coi
 	return txn
 }
 
-func makeLostCoinTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction { // nolint: unparam
+func makeLostCoinTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction { //nolint:unparam
 	txn := coin.Transaction{}
 	var totalCoins uint64
 	var totalHours uint64
@@ -196,7 +196,7 @@ func makeLostCoinTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAdd
 	return txn
 }
 
-func makeDuplicateUxOutTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction { // nolint: unparam
+func makeDuplicateUxOutTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins uint64) coin.Transaction { //nolint:unparam
 	txn := coin.Transaction{}
 	var totalCoins uint64
 	var totalHours uint64
@@ -228,7 +228,7 @@ func makeDuplicateUxOutTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey,
 // The genesis block has only one unspent output, so only one transaction can be made from it.
 // This is useful for when multiple test transactions need to be made from the same block.
 // Coins and hours are distributed equally amongst all new outputs.
-func makeUnspentsTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, nUnspents int, maxDroplets uint8) coin.Transaction { // nolint: unparam
+func makeUnspentsTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, nUnspents int, maxDroplets uint8) coin.Transaction { //nolint:unparam
 	// Add inputs to the transaction
 	spendTxn := coin.Transaction{}
 	var totalHours uint64
@@ -311,7 +311,7 @@ func makeSpendTxWithFee(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, to
 }
 
 // makeSpendTxWithHoursBurned creates a txn specified with the total number of hours to burn
-func makeSpendTxWithHoursBurned(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins, hoursBurned uint64) coin.Transaction { // nolint: unparam
+func makeSpendTxWithHoursBurned(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAddr cipher.Address, coins, hoursBurned uint64) coin.Transaction { //nolint:unparam
 	spendTxn := coin.Transaction{}
 	var totalHours uint64
 	var totalCoins uint64
@@ -379,7 +379,7 @@ func testVerifyTransactionSoftHardConstraints(t *testing.T, signed TxnSignedFlag
 
 	verifySingleTxnSoftHardConstraints := func(txn coin.Transaction, verifyParams params.VerifyTxn) error {
 		return db.View("", func(tx *dbutil.Tx) error {
-			_, _, err := bc.VerifySingleTxnSoftHardConstraints(tx, txn, verifyParams, signed)
+			_, _, err := bc.VerifySingleTxnSoftHardConstraints(tx, txn, params.MainNetDistribution, verifyParams, signed)
 			return err
 		})
 	}
@@ -578,7 +578,7 @@ func TestVerifyTxnFeeCoinHoursAdditionFails(t *testing.T) {
 	testutil.RequireError(t, coinHoursErr, "UxOut.CoinHours addition of earned coin hours overflow")
 
 	// VerifySingleTxnSoftConstraints should fail on this, when trying to calculate the TransactionFee
-	err = VerifySingleTxnSoftConstraints(txn, head.Time()+1e6, uxIn, params.UserVerifyTxn)
+	err = VerifySingleTxnSoftConstraints(txn, head.Time()+1e6, uxIn, params.MainNetDistribution, params.UserVerifyTxn)
 	testutil.RequireError(t, err, NewErrTxnViolatesSoftConstraint(coinHoursErr).Error())
 
 	// VerifySingleTxnHardConstraints should fail on this, when performing the extra check of
@@ -590,7 +590,7 @@ func TestVerifyTxnFeeCoinHoursAdditionFails(t *testing.T) {
 }
 
 func TestVerifyTransactionIsLocked(t *testing.T) {
-	for _, addr := range params.GetLockedDistributionAddresses() {
+	for _, addr := range params.MainNetDistribution.LockedAddresses() {
 		t.Run(fmt.Sprintf("IsLocked: %s", addr), func(t *testing.T) {
 			testVerifyTransactionAddressLocking(t, addr, errors.New("Transaction has locked address inputs"))
 		})
@@ -598,7 +598,7 @@ func TestVerifyTransactionIsLocked(t *testing.T) {
 }
 
 func TestVerifyTransactionIsUnlocked(t *testing.T) {
-	for _, addr := range params.GetUnlockedDistributionAddresses() {
+	for _, addr := range params.MainNetDistribution.UnlockedAddresses() {
 		t.Run(fmt.Sprintf("IsUnlocked: %s", addr), func(t *testing.T) {
 			testVerifyTransactionAddressLocking(t, addr, nil)
 		})
@@ -656,7 +656,7 @@ func testVerifyTransactionAddressLocking(t *testing.T, toAddr string, expectedEr
 	})
 	require.NoError(t, err)
 
-	err = VerifySingleTxnSoftConstraints(txn, head.Time(), uxIn, params.UserVerifyTxn)
+	err = VerifySingleTxnSoftConstraints(txn, head.Time(), uxIn, params.MainNetDistribution, params.UserVerifyTxn)
 	if expectedErr == nil {
 		require.NoError(t, err)
 	} else {

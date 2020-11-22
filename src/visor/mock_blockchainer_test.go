@@ -314,6 +314,20 @@ func (_m *MockBlockchainer) Unspent() blockdb.UnspentPooler {
 	return r0
 }
 
+// VerifyBlock provides a mock function with given fields: tx, sb
+func (_m *MockBlockchainer) VerifyBlock(tx *dbutil.Tx, sb *coin.SignedBlock) error {
+	ret := _m.Called(tx, sb)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(*dbutil.Tx, *coin.SignedBlock) error); ok {
+		r0 = rf(tx, sb)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // VerifyBlockTxnConstraints provides a mock function with given fields: tx, txn
 func (_m *MockBlockchainer) VerifyBlockTxnConstraints(tx *dbutil.Tx, txn coin.Transaction) error {
 	ret := _m.Called(tx, txn)
@@ -342,13 +356,13 @@ func (_m *MockBlockchainer) VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn co
 	return r0
 }
 
-// VerifySingleTxnSoftHardConstraints provides a mock function with given fields: tx, txn, verifyParams, signed
-func (_m *MockBlockchainer) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, verifyParams params.VerifyTxn, signed TxnSignedFlag) (*coin.SignedBlock, coin.UxArray, error) {
-	ret := _m.Called(tx, txn, verifyParams, signed)
+// VerifySingleTxnSoftHardConstraints provides a mock function with given fields: tx, txn, distParams, verifyParams, signed
+func (_m *MockBlockchainer) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, distParams params.Distribution, verifyParams params.VerifyTxn, signed TxnSignedFlag) (*coin.SignedBlock, coin.UxArray, error) {
+	ret := _m.Called(tx, txn, distParams, verifyParams, signed)
 
 	var r0 *coin.SignedBlock
-	if rf, ok := ret.Get(0).(func(*dbutil.Tx, coin.Transaction, params.VerifyTxn, TxnSignedFlag) *coin.SignedBlock); ok {
-		r0 = rf(tx, txn, verifyParams, signed)
+	if rf, ok := ret.Get(0).(func(*dbutil.Tx, coin.Transaction, params.Distribution, params.VerifyTxn, TxnSignedFlag) *coin.SignedBlock); ok {
+		r0 = rf(tx, txn, distParams, verifyParams, signed)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*coin.SignedBlock)
@@ -356,8 +370,8 @@ func (_m *MockBlockchainer) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, tx
 	}
 
 	var r1 coin.UxArray
-	if rf, ok := ret.Get(1).(func(*dbutil.Tx, coin.Transaction, params.VerifyTxn, TxnSignedFlag) coin.UxArray); ok {
-		r1 = rf(tx, txn, verifyParams, signed)
+	if rf, ok := ret.Get(1).(func(*dbutil.Tx, coin.Transaction, params.Distribution, params.VerifyTxn, TxnSignedFlag) coin.UxArray); ok {
+		r1 = rf(tx, txn, distParams, verifyParams, signed)
 	} else {
 		if ret.Get(1) != nil {
 			r1 = ret.Get(1).(coin.UxArray)
@@ -365,8 +379,8 @@ func (_m *MockBlockchainer) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, tx
 	}
 
 	var r2 error
-	if rf, ok := ret.Get(2).(func(*dbutil.Tx, coin.Transaction, params.VerifyTxn, TxnSignedFlag) error); ok {
-		r2 = rf(tx, txn, verifyParams, signed)
+	if rf, ok := ret.Get(2).(func(*dbutil.Tx, coin.Transaction, params.Distribution, params.VerifyTxn, TxnSignedFlag) error); ok {
+		r2 = rf(tx, txn, distParams, verifyParams, signed)
 	} else {
 		r2 = ret.Error(2)
 	}

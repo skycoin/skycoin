@@ -151,15 +151,15 @@ func (e ErrTxnViolatesUserConstraint) Error() string {
 //      * That the transaction burn enough coin hours (the fee)
 //      * That if that transaction does not spend from a locked distribution address
 //      * That the transaction does not create outputs with a higher decimal precision than is allowed
-func VerifySingleTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.UxArray, verifyParams params.VerifyTxn) error {
-	if err := verifyTxnSoftConstraints(txn, headTime, uxIn, verifyParams); err != nil {
+func VerifySingleTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.UxArray, distParams params.Distribution, verifyParams params.VerifyTxn) error {
+	if err := verifyTxnSoftConstraints(txn, headTime, uxIn, distParams, verifyParams); err != nil {
 		return NewErrTxnViolatesSoftConstraint(err)
 	}
 
 	return nil
 }
 
-func verifyTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.UxArray, verifyParams params.VerifyTxn) error {
+func verifyTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.UxArray, distParams params.Distribution, verifyParams params.VerifyTxn) error {
 	txnSize, err := txn.Size()
 	if err != nil {
 		return ErrTxnExceedsMaxBlockSize
@@ -178,7 +178,7 @@ func verifyTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.U
 		return err
 	}
 
-	if TransactionIsLocked(uxIn) {
+	if TransactionIsLocked(distParams, uxIn) {
 		return ErrTxnIsLocked
 	}
 

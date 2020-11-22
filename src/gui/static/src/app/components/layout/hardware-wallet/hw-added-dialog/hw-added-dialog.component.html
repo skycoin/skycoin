@@ -4,11 +4,11 @@
     [icon]="msgIcons.Spinner"
   ></app-hw-message>
 
-  <app-hw-message *ngIf="currentState === states.Failed"
-    [text]="errorMsg | translate"
-    [icon]="msgIcons.Error"
+  <app-hw-message *ngIf="currentState === states.ShowingResult"
+    [text]="result.text | translate"
+    [icon]="result.icon"
   ></app-hw-message>
-  
+
   <div *ngIf="currentState === states.Finished">
     <app-hw-message
       [upperBigText]="'hardware-wallet.added.done' | translate"
@@ -17,15 +17,21 @@
     <div class="upper-text">{{ 'hardware-wallet.added.added1' | translate }}</div>
     <div [formGroup]="form">
       <div class="form-field">
-        <input formControlName="label" id="label">
+        <input formControlName="label" id="label" [maxlength]="maxHwWalletLabelLength" (keydown.enter)="saveNameAndCloseModal()" #input>
       </div>
     </div>
+    <div class="warning">{{ 'hardware-wallet.added.characters-warning' | translate }}</div>
+    
     <div>{{ 'hardware-wallet.added.added2' | translate }}</div>
   </div>
 
-  <div class="-buttons" *ngIf="currentState === states.Finished || currentState === states.Failed">
-    <app-button (action)="saveNameAndCloseModal()" class="primary" [disabled]="!form.valid">
-      {{ 'hardware-wallet.general.close' | translate }}
+  <div class="-buttons" *ngIf="currentState === states.Finished || currentState === states.ShowingResult">
+    <app-button
+      (action)="currentState === states.Finished ? saveNameAndCloseModal() : closeModal()"
+      class="primary"
+      [disabled]="currentState === states.Finished && !form.valid"
+      #closeButton>
+      {{ (currentState === states.Finished ? 'hardware-wallet.added.ok' : 'hardware-wallet.general.close') | translate }}
     </app-button>
   </div>
 </app-modal>

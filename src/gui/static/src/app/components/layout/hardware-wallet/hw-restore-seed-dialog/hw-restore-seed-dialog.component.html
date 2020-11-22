@@ -2,7 +2,7 @@
   class="modal"
   [headline]="(justCheckingSeed ? 'hardware-wallet.options.confirm-seed' : 'hardware-wallet.options.restore-backup') | translate"
   [dialog]="dialogRef"
-  [disableDismiss]="currentState === states.Initial">
+  [disableDismiss]="currentState === states.Processing">
 
   <div *ngIf="currentState === states.Initial">
     <app-hw-message
@@ -34,42 +34,17 @@
   </div>
 
   <app-hw-message *ngIf="currentState === states.Processing"
-    [text]="'hardware-wallet.general.confirm-and-more' | translate"
+    [text]="(justCheckingSeed ? 'hardware-wallet.general.follow' : 'hardware-wallet.general.confirm-and-more') | translate"
     [icon]="msgIcons.Confirm"
   ></app-hw-message>
 
-  <app-hw-message *ngIf="currentState === states.ReturnedSuccess"
-    [text]="'hardware-wallet.general.completed' | translate"
-    [icon]="msgIcons.Success"
-  ></app-hw-message>
-
-  <app-hw-message *ngIf="currentState === states.ReturnedRefused"
-    [text]="'hardware-wallet.general.refused' | translate"
-    [icon]="msgIcons.Error"
-  ></app-hw-message>
-
-  <app-hw-message *ngIf="currentState === states.WrongWord"
-    [text]="'hardware-wallet.restore-seed.error-wrong-word' | translate"
-    [icon]="msgIcons.Error"
-  ></app-hw-message>
-
-  <app-hw-message *ngIf="currentState === states.InvalidSeed"
-    [text]="'hardware-wallet.restore-seed.error-invalid-seed' | translate"
-    [icon]="msgIcons.Error"
-  ></app-hw-message>
-
-  <app-hw-message *ngIf="currentState === states.WrongSeed"
-    [text]="'hardware-wallet.restore-seed.error-wrong-seed' | translate"
-    [icon]="msgIcons.Error"
-  ></app-hw-message>
-
-  <app-hw-message *ngIf="currentState === states.Failed"
-    [text]="'hardware-wallet.general.simple-error' | translate"
-    [icon]="msgIcons.Error"
+  <app-hw-message *ngIf="currentState === states.ShowingResult"
+    [text]="result.text | translate"
+    [icon]="result.icon"
   ></app-hw-message>
 
   <div class="-buttons" *ngIf="currentState !== states.Initial && currentState !== states.Processing">
-    <app-button (action)="closeModal()" class="primary">
+    <app-button (action)="closeModal()" class="primary" #closeButton>
       {{ 'hardware-wallet.general.close' | translate }}
     </app-button>
   </div>

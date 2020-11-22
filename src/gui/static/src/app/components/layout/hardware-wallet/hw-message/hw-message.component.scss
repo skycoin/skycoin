@@ -35,6 +35,17 @@
       color: $blue;
       cursor: pointer;
     }
+
+    .list {
+      padding: 10px 0;
+
+      .list-element {
+        margin: 10px 0;
+        font-size: 12px;
+        color: #000000;
+        font-weight: bold;
+      }
+    }
   }
 
   .-red {

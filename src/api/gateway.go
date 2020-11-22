@@ -52,10 +52,12 @@ type Daemoner interface {
 	GetExchgConnection() []string
 	GetBlockchainProgress(headSeq uint64) *daemon.BlockchainProgress
 	InjectBroadcastTransaction(txn coin.Transaction) error
+	InjectTransaction(txn coin.Transaction) error
 }
 
 // Visorer interface for visor.Visor methods used by the API
 type Visorer interface {
+	VisorConfig() visor.Config
 	StartedAt() time.Time
 	HeadBkSeq() (uint64, bool, error)
 	GetBlockchainMetadata() (*visor.BlockchainMetadata, error)
@@ -71,7 +73,7 @@ type Visorer interface {
 	GetLastBlocks(num uint64) ([]coin.SignedBlock, error)
 	GetLastBlocksVerbose(num uint64) ([]coin.SignedBlock, [][][]visor.TransactionInput, error)
 	GetUnspentOutputsSummary(filters []visor.OutputsFilter) (*visor.UnspentOutputsSummary, error)
-	GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error)
+	GetBalanceOfAddresses(addrs []cipher.Address) ([]wallet.BalancePair, error)
 	VerifyTxnVerbose(txn *coin.Transaction, signed visor.TxnSignedFlag) ([]visor.TransactionInput, bool, error)
 	AddressCount() (uint64, error)
 	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, error)
@@ -84,6 +86,7 @@ type Visorer interface {
 	GetTransactionWithInputs(txid cipher.SHA256) (*visor.Transaction, []visor.TransactionInput, error)
 	GetTransactions(flts []visor.TxFilter) ([]visor.Transaction, error)
 	GetTransactionsWithInputs(flts []visor.TxFilter) ([]visor.Transaction, [][]visor.TransactionInput, error)
+	AddressesActivity(addrs []cipher.Address) ([]bool, error)
 	GetWalletUnconfirmedTransactions(wltID string) ([]visor.UnconfirmedTransaction, error)
 	GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]visor.UnconfirmedTransaction, [][]visor.TransactionInput, error)
 	GetWalletBalance(wltID string) (wallet.BalancePair, wallet.AddressBalances, error)
@@ -96,13 +99,13 @@ type Visorer interface {
 // Walleter interface for wallet.Service methods used by the API
 type Walleter interface {
 	UnloadWallet(wltID string) error
-	EncryptWallet(wltID string, password []byte) (*wallet.Wallet, error)
-	DecryptWallet(wltID string, password []byte) (*wallet.Wallet, error)
-	GetWalletSeed(wltID string, password []byte) (string, error)
-	CreateWallet(wltName string, options wallet.Options, bg wallet.BalanceGetter) (*wallet.Wallet, error)
-	RecoverWallet(wltID, seed string, password []byte) (*wallet.Wallet, error)
+	EncryptWallet(wltID string, password []byte) (wallet.Wallet, error)
+	DecryptWallet(wltID string, password []byte) (wallet.Wallet, error)
+	GetWalletSeed(wltID string, password []byte) (string, string, error)
+	CreateWallet(wltName string, options wallet.Options, bg wallet.TransactionsFinder) (wallet.Wallet, error)
+	RecoverWallet(wltID, seed, seedPassphrase string, password []byte) (wallet.Wallet, error)
 	NewAddresses(wltID string, password []byte, n uint64) ([]cipher.Address, error)
-	GetWallet(wltID string) (*wallet.Wallet, error)
+	GetWallet(wltID string) (wallet.Wallet, error)
 	GetWallets() (wallet.Wallets, error)
 	UpdateWalletLabel(wltID, label string) error
 	WalletDir() (string, error)

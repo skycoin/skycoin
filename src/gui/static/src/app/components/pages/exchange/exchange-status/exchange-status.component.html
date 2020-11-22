@@ -32,7 +32,7 @@
         <div class="-img"></div>
         <div class="-item">
           <div class="-key">{{ 'exchange.you-send' | translate }}</div>
-          <div class="-value">{{ order.fromAmount }}</div>
+          <div class="-value">{{ order.fromAmount }} {{ fromCoin }}</div>
         </div>
       </div>
 
@@ -63,7 +63,7 @@
         <div class="-key">{{ 'exchange.details.tx-id' | translate }}</div>
         <div class="-value">
           {{ order.toTx }}
-          <a [href]="'https://explorer.skycoin.net/app/transaction/' + order.toTx" class="-external" target="_blank" rel="noreferrer nofollow">
+          <a [href]="appService.explorerUrl + '/transaction/' + order.toTx" class="-external" target="_blank" rel="noreferrer nofollow">
             <mat-icon>launch</mat-icon>
           </a>
         </div>
@@ -81,7 +81,7 @@
     <div class="-box">
       <div class="-img"></div>
       <span class="expand" (click)="toggleDetails()">
-        {{ 'exchange.details.details' | translate }} <mat-icon>keyboard_arrow_down</mat-icon>
+        {{ 'exchange.details.details' | translate }} <mat-icon>{{ expanded ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
       </span>
     </div>
 
@@ -102,7 +102,7 @@
         <div class="-img"></div>
         <div class="-item">
           <div class="-key">{{ 'exchange.you-get' | translate }}</div>
-          <div class="-value">{{ order.toAmount | number:('1.0-' + blockchainService.currentMaxDecimals) }}</div>
+          <div class="-value">{{ order.toAmount | amount:true:'first' }} {{ toCoin }}</div>
         </div>
       </div>
 

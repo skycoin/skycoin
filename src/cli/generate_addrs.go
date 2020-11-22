@@ -6,35 +6,42 @@ import (
 	"path/filepath"
 	"strings"
 
-	gcli "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-func walletAddAddressesCmd() *gcli.Command {
-	walletAddAddressesCmd := &gcli.Command{
-		Use:   "walletAddAddresses",
-		Short: "Generate additional addresses for a wallet",
-		Long: fmt.Sprintf(`The default wallet (%s) will be used if no wallet was specified.
+func walletAddAddressesCmd() *cobra.Command {
+	walletAddAddressesCmd := &cobra.Command{
+		Args:  cobra.ExactArgs(1),
+		Use:   "walletAddAddresses [wallet]",
+		Short: "Generate additional addresses for a deterministic, bip44 or xpub wallet",
+		Long: `Generate additional addresses for a deterministic, bip44 or xpub wallet.
+    Addresses are generated according to the wallet type's generation mechanism.
+
+    Warning: if you generate long (over 20) sequences of empty addresses and use
+    a later address this can cause the wallet history scanner to miss your addresses,
+    if you load the wallet from seed elsewhere. In that case, you'll have to manually
+    generate addresses to cover the gap of unused addresses in the sequence.
+
+    BIP44 wallets generate their addresses on the external (0'/0) chain.
 
     Use caution when using the "-p" command. If you have command
     history enabled your wallet encryption password can be recovered from the
     history log. If you do not include the "-p" option you will be prompted to
-    enter your password after you enter your command.`, cliConfig.FullWalletPath()),
-		SilenceUsage: true,
-		RunE:         generateAddrs,
+    enter your password after you enter your command.`,
+		RunE: generateAddrs,
 	}
 
 	walletAddAddressesCmd.Flags().Uint64P("num", "n", 1, "Number of addresses to generate")
-	walletAddAddressesCmd.Flags().StringP("wallet-file", "f", cliConfig.FullWalletPath(), "Generate addresses in the wallet")
 	walletAddAddressesCmd.Flags().StringP("password", "p", "", "wallet password")
 	walletAddAddressesCmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format")
 
 	return walletAddAddressesCmd
 }
 
-func generateAddrs(c *gcli.Command, _ []string) error {
+func generateAddrs(c *cobra.Command, args []string) error {
 	// get number of address that are need to be generated.
 	num, err := c.Flags().GetUint64("num")
 	if err != nil {
@@ -50,10 +57,7 @@ func generateAddrs(c *gcli.Command, _ []string) error {
 		return err
 	}
 
-	w, err := resolveWalletPath(cliConfig, c.Flag("wallet-file").Value.String())
-	if err != nil {
-		return err
-	}
+	w := args[0]
 
 	pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
 	addrs, err := GenerateAddressesInFile(w, num, pr)
@@ -103,19 +107,19 @@ func GenerateAddressesInFile(walletFile string, num uint64, pr PasswordReader) (
 		}
 	}
 
-	genAddrsInWallet := func(w *wallet.Wallet, n uint64) ([]cipher.Addresser, error) {
+	genAddrsInWallet := func(w wallet.Wallet, n uint64) ([]cipher.Addresser, error) {
 		return w.GenerateAddresses(n)
 	}
 
 	if wlt.IsEncrypted() {
-		genAddrsInWallet = func(w *wallet.Wallet, n uint64) ([]cipher.Addresser, error) {
+		genAddrsInWallet = func(w wallet.Wallet, n uint64) ([]cipher.Addresser, error) {
 			password, err := pr.Password()
 			if err != nil {
 				return nil, err
 			}
 
 			var addrs []cipher.Addresser
-			if err := w.GuardUpdate(password, func(wlt *wallet.Wallet) error {
+			if err := wallet.GuardUpdate(w, password, func(wlt wallet.Wallet) error {
 				var err error
 				addrs, err = wlt.GenerateAddresses(n)
 				return err
@@ -137,7 +141,7 @@ func GenerateAddressesInFile(walletFile string, num uint64, pr PasswordReader) (
 		return nil, err
 	}
 
-	if err := wlt.Save(dir); err != nil {
+	if err := wallet.Save(wlt, dir); err != nil {
 		return nil, WalletSaveError{err}
 	}
 

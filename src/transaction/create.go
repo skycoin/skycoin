@@ -12,6 +12,7 @@ import (
 	"sort"
 
 	"github.com/shopspring/decimal"
+	"github.com/sirupsen/logrus"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -42,6 +43,13 @@ func Create(p Params, auxs coin.AddressUxOuts, headTime uint64) (*coin.Transacti
 }
 
 func create(p Params, auxs coin.AddressUxOuts, headTime uint64, callCount int) (*coin.Transaction, []UxBalance, error) {
+	logger.WithFields(logrus.Fields{
+		"params":    p,
+		"nAuxs":     len(auxs),
+		"headTime":  headTime,
+		"callCount": callCount,
+	}).Info("create requested")
+
 	if err := p.Validate(); err != nil {
 		return nil, nil, err
 	}
@@ -120,7 +128,12 @@ func create(p Params, auxs coin.AddressUxOuts, headTime uint64, callCount int) (
 
 	switch p.HoursSelection.Type {
 	case HoursSelectionTypeManual:
-		txn.Out = append(txn.Out, p.To...)
+		for _, o := range p.To {
+			if err := txn.PushOutput(o.Address, o.Coins, o.Hours); err != nil {
+				logger.Critical().WithError(err).WithField("selectionType", HoursSelectionTypeManual).Error("PushOutput failed")
+				return nil, nil, err
+			}
+		}
 
 	case HoursSelectionTypeAuto:
 		var addrHours []uint64
@@ -156,7 +169,10 @@ func create(p Params, auxs coin.AddressUxOuts, headTime uint64, callCount int) (
 
 		for i, out := range p.To {
 			out.Hours = addrHours[i]
-			txn.Out = append(txn.Out, out)
+			if err := txn.PushOutput(out.Address, out.Coins, addrHours[i]); err != nil {
+				logger.Critical().WithError(err).WithField("selectionType", HoursSelectionTypeAuto).Error("PushOutput failed")
+				return nil, nil, err
+			}
 		}
 
 	default:
@@ -186,20 +202,35 @@ func create(p Params, auxs coin.AddressUxOuts, headTime uint64, callCount int) (
 	changeCoins := totalInputCoins - totalOutCoins
 	changeHours := remainingHours - totalOutHours
 
+	logger.WithFields(logrus.Fields{
+		"totalOutCoins":   totalOutCoins,
+		"totalOutHours":   totalOutHours,
+		"requestedHours":  requestedHours,
+		"nUnspents":       len(uxb),
+		"totalInputCoins": totalInputCoins,
+		"totalInputHours": totalInputHours,
+		"feeHours":        feeHours,
+		"remainingHours":  remainingHours,
+		"changeCoins":     changeCoins,
+		"changeHours":     changeHours,
+		"nSpends":         len(spends),
+		"nInputs":         len(txn.In),
+	}).Info("Calculated spend parameters")
+
 	// If there are no change coins but there are change hours, try to add another
 	// input to save the change hours.
 	// This chooses an available input with the least number of coin hours;
 	// if the extra coin hour fee incurred by this additional input is less than
 	// the remaining coin hours, the input is added.
 	if changeCoins == 0 && changeHours > 0 {
-		logger.Debug("Trying to recover change hours by forcing an extra input")
+		logger.Info("Trying to recover change hours by forcing an extra input")
 		// Find the output with the least coin hours
 		// If size of the fee for this output is less than the changeHours, add it
 		// Update changeCoins and changeHours
 		z := uxBalancesSub(uxb, spends)
 		sortSpendsHoursLowToHigh(z)
 		if len(z) > 0 {
-			logger.Debug("Extra input found, evaluating if it can recover change hours")
+			logger.Info("Extra input found, evaluating if it can recover change hours")
 			extra := z[0]
 
 			// Calculate the new hours being spent
@@ -220,7 +251,7 @@ func create(p Params, auxs coin.AddressUxOuts, headTime uint64, callCount int) (
 			// can save, use the input
 			additionalFee := newFee - feeHours
 			if additionalFee < changeHours {
-				logger.Debug("Change hours can be recovered by forcing an extra input")
+				logger.Info("Change hours can be recovered by forcing an extra input")
 				changeCoins = extra.Coins
 
 				if extra.Hours < additionalFee {
@@ -241,18 +272,29 @@ func create(p Params, auxs coin.AddressUxOuts, headTime uint64, callCount int) (
 					logger.Critical().WithError(err).Error("PushInput failed")
 					return nil, nil, err
 				}
+
+				logger.WithFields(logrus.Fields{
+					"changeCoins":     changeCoins,
+					"changeHours":     changeHours,
+					"nSpends":         len(spends),
+					"nInputs":         len(txn.In),
+					"newTotalHours":   newTotalHours,
+					"newFee":          "newFee",
+					"additionalFee":   additionalFee,
+					"additionalHours": additionalHours,
+				}).Info("Recalculated spend parameters after forcing a change output")
 			} else {
-				logger.Debug("Unable to recover change hours by forcing an extra input")
+				logger.Info("Unable to recover change hours by forcing an extra input")
 			}
 		} else {
-			logger.Debug("No more inputs left to use to recover change hours")
+			logger.Info("No more inputs left to use to recover change hours")
 		}
 	}
 
 	// With auto share mode, if there are leftover hours and change couldn't be force-added,
 	// recalculate that share ratio at 100%
 	if changeCoins == 0 && changeHours > 0 && p.HoursSelection.Type == HoursSelectionTypeAuto && p.HoursSelection.Mode == HoursSelectionModeShare {
-		logger.Debug("Recalculating share factor at 1.0 to avoid burning change hours")
+		logger.Info("Recalculating share factor at 1.0 to avoid burning change hours")
 		oneDecimal := decimal.New(1, 0)
 
 		if p.HoursSelection.ShareFactor.Equal(oneDecimal) {
@@ -300,7 +342,15 @@ func create(p Params, auxs coin.AddressUxOuts, headTime uint64, callCount int) (
 				logger.Critical().WithError(err).Error("cipher.AddressFromBytes failed for change address converted to bytes")
 				return nil, nil, err
 			}
+
+			logger.WithField("addr", changeAddress).Info("Automatically selected a change address")
 		}
+
+		logger.WithFields(logrus.Fields{
+			"changeAddress": changeAddress,
+			"changeCoins":   changeCoins,
+			"changeHours":   changeHours,
+		}).Info("Adding a change output")
 
 		if err := txn.PushOutput(changeAddress, changeCoins, changeHours); err != nil {
 			logger.Critical().WithError(err).Error("PushOutput failed")
@@ -403,12 +453,18 @@ func VerifyCreatedInvariants(p Params, txn *coin.Transaction, inputs []UxBalance
 			return errors.New("Calculated input hours are unexpectedly less than the initial hours")
 		}
 
-		if i.SrcTransaction.Null() {
-			return errors.New("Input's source transaction is a null hash")
+		if i.BkSeq == 0 {
+			if !i.SrcTransaction.Null() {
+				return errors.New("Input is the genesis UTXO but its source transaction hash is not null")
+			}
+		} else {
+			if i.SrcTransaction.Null() {
+				return errors.New("Input's source transaction hash is null")
+			}
 		}
 
 		if i.Hash.Null() {
-			return errors.New("Input's hash is a null hash")
+			return errors.New("Input's hash is null")
 		}
 
 		if _, ok := inputsMap[i.Hash]; ok {
@@ -441,7 +497,7 @@ func VerifyCreatedInvariants(p Params, txn *coin.Transaction, inputs []UxBalance
 	}
 
 	if inputHours-outputHours < fee.RequiredFee(inputHours, params.UserVerifyTxn.BurnFactor) {
-		return errors.New("Transaction will not satisy required fee")
+		return errors.New("Transaction will not satisfy required fee")
 	}
 
 	return nil

@@ -2,7 +2,7 @@
 
 # Skycoin
 
-[![Build Status](https://travis-ci.org/skycoin/skycoin.svg)](https://travis-ci.org/skycoin/skycoin)
+[![Build Status](https://travis-ci.com/skycoin/skycoin.svg)](https://travis-ci.com/skycoin/skycoin)
 [![GoDoc](https://godoc.org/github.com/skycoin/skycoin?status.svg)](https://godoc.org/github.com/skycoin/skycoin)
 [![Go Report Card](https://goreportcard.com/badge/github.com/skycoin/skycoin)](https://goreportcard.com/report/github.com/skycoin/skycoin)
 
@@ -33,10 +33,10 @@ scratch, to remedy the rough edges in the Bitcoin design.
 
 ## Links
 
-* [skycoin.net](https://www.skycoin.net)
-* [Skycoin Blog](https://www.skycoin.net/blog)
-* [Skycoin Docs](https://www.skycoin.net/docs)
-* [Skycoin Blockchain Explorer](https://explorer.skycoin.net)
+* [skycoin.com](https://www.skycoin.com)
+* [Skycoin Blog](https://www.skycoin.com/blog)
+* [Skycoin Docs](https://www.skycoin.com/docs)
+* [Skycoin Blockchain Explorer](https://explorer.skycoin.com)
 * [Skycoin Development Telegram Channel](https://t.me/skycoindev)
 * [Skycoin Github Wiki](https://github.com/skycoin/skycoin/wiki)
 
@@ -60,11 +60,11 @@ scratch, to remedy the rough edges in the Bitcoin design.
 - [Integrating Skycoin with your application](#integrating-skycoin-with-your-application)
 - [Contributing a node to the network](#contributing-a-node-to-the-network)
 - [Creating a new coin](#creating-a-new-coin)
-- [Running with a custom coin hour burn factor](#running-with-a-custom-coin-hour-burn-factor)
-- [Running with a custom max transaction size](#running-with-a-custom-max-transaction-size)
-- [Running with a custom max decimal places](#running-with-a-custom-max-decimal-places)
+- [Daemon CLI Options](#daemon-cli-options)
 - [URI Specification](#uri-specification)
 - [Wire protocol user agent](#wire-protocol-user-agent)
+- [Offline transaction signing](#offline-transaction-signing)
+- [Deploy a public Skycoin API node with HTTPS](#deploy-a-public-skycoin-api-node-with-https)
 - [Development](#development)
 	- [Modules](#modules)
 	- [Client libraries](#client-libraries)
@@ -196,7 +196,6 @@ Also, the [skycoin/skycoindev-vscode docker image](docker/images/dev-vscode/READ
 to facilitate the setup of the development process with [Visual Studio Code](https://code.visualstudio.com)
 and useful tools included in `skycoin/skycoindev-cli`.
 
-
 ## API Documentation
 
 ### REST API
@@ -205,7 +204,7 @@ and useful tools included in `skycoin/skycoindev-cli`.
 
 ### Skycoin command line interface
 
-[CLI command API](cmd/cli/README.md).
+[CLI command API](cmd/skycoin-cli/README.md).
 
 ## Integrating Skycoin with your application
 
@@ -214,7 +213,7 @@ and useful tools included in `skycoin/skycoindev-cli`.
 ## Contributing a node to the network
 
 Add your node's `ip:port` to the [peers.txt](peers.txt) file.
-This file will be periodically uploaded to https://downloads.skycoin.net/blockchain/peers.txt
+This file will be periodically uploaded to https://downloads.skycoin.com/blockchain/peers.txt
 and used to seed client with peers.
 
 *Note*: Do not add Skywire nodes to `peers.txt`.
@@ -224,44 +223,9 @@ Only add Skycoin nodes with high uptime and a static IP address (such as a Skyco
 
 See the [newcoin tool README](./cmd/newcoin/README.md)
 
-## Running with a custom coin hour burn factor
+## Daemon CLI Options
 
-The coin hour burn factor is the denominator in the ratio of coinhours that must be burned by a transaction.
-For example, a burn factor of 2 means 1/2 of hours must be burned. A burn factor of 10 means 1/10 of coin hours must be burned.
-
-The coin hour burn factor can be configured with a `USER_BURN_FACTOR` envvar. It cannot be configured through the command line.
-
-```sh
-$ USER_BURN_FACTOR=999 ./run-client.sh
-```
-
-This burn factor applies to user-created transactions.
-
-To control the burn factor in other scenarios, use `-burn-factor-unconfirmed` and `-burn-factor-create-block`.
-
-## Running with a custom max transaction size
-
-```sh
-$ USER_MAX_TXN_SIZE=1024 ./run-client.sh
-```
-
-This maximum transaction size applies to user-created transactions.
-
-To control the transaction size in other scenarios, use `-max-txn-size-unconfirmed` and `-max-txn-size-create-block`.
-
-To control the max block size, use `-max-block-size`.
-
-Transaction and block size are measured in bytes.
-
-## Running with a custom max decimal places
-
-```sh
-$ USER_MAX_DECIMALS=4 ./run-client.sh
-```
-
-This maximum transaction size applies to user-created transactions.
-
-To control the maximum decimals in other scenarios, use `-max-decimals-unconfirmed` and `-max-decimals-create-block`.
+See the [Skycoin Daemon CLI options](./cmd/skycoin/README.md)
 
 ## URI Specification
 
@@ -283,6 +247,133 @@ However, do not use this URI in QR codes displayed to the user, because the addr
 ## Wire protocol user agent
 
 [Wire protocol user agent description](https://github.com/skycoin/skycoin/wiki/Wire-protocol-user-agent)
+
+## Offline transaction signing
+
+Before doing the offline transaction signing, we need to have the unsigned transaction created. Using the `skycoin-cli` tool to create an unsigned transaction in hot wallet, and copy the hex encoded transaction to the computer where the cold wallet is installed. Then use the `skycoin-cli` tool to sign it offline.
+
+### Create an unsigned transaction
+
+The `skycoin-cli` tool replys on the APIs of the `skycoin node`, hence we have to start the node before running the tool.
+
+ Go to the project root and run:
+
+```bash
+$ ./run-client.sh -launch-browser=false
+```
+
+Once the node is started, we could use the following command to create an unsigned transaction.
+
+```bash
+$ skycoin-cli createRawTransactionV2 $WALLET_FILE $RECIPIENT_ADDRESS $AMOUNT --unsign
+```
+
+> Note: Don't forget the `--unsign` flag, otherwise it would try to sign the transaction.
+
+<details>
+ <summary>View Output</summary>
+
+```json
+b700000000e6b869f570e2bfebff1b4d7e7c9e86885dbc34d6de988da6ff998e7acd7e6e14010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000007531184ad0afeebbff2049b855e0921329cb1cb74d769ac57c057c9c8bd2b6810100000000ed5ea2ca4fe9b4560409b50c5bf7cb39b6c5ff6e50690f00000000000000000000000000
+```
+
+</details>
+
+Copy and save the generated transaction string. We will sign it with a cold wallet offline in the next section.
+
+### Sign the transaction
+
+The `skycoin node` needs to have the most recently `DB` so that the user would not lose much coin hours when signing the transaction. We could copy the full synchronized `data.db` from the hot wallet to the computer where the cold wallet is installed. And place it in `$HOME/.skycoin/data.db`. Then start the node with the network disabled.
+
+```bash
+$ ./run-client.sh -launch-browser=false -disable-networking
+```
+
+Run the following command to sign the transaction:
+
+```bash
+$ skycoin-cli signTransaction $RAW_TRANSACTION
+```
+
+The `$RAW_TRANSACTION` is the transaction string that we generated in the hot wallet.
+
+If the cold wallet is encrypted, you will be prompted to enter the password to sign the transaction.
+
+<details>
+ <summary>View Output</summary>
+
+```json
+b700000000e6b869f570e2bfebff1b4d7e7c9e86885dbc34d6de988da6ff998e7acd7e6e14010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000007531184ad0afeebbff2049b855e0921329cb1cb74d769ac57c057c9c8bd2b6810100000000ed5ea2ca4fe9b4560409b50c5bf7cb39b6c5ff6e50690f00000000000000000000000000
+```
+
+</details>
+
+Once the transaction is signed, we could copy and save the signed transaction string and broadcast it in the hot wallet.
+
+```bash
+$ skycoin-cli broadcastTransaction $SIGNED_RAW_TRANSACTION
+```
+
+A transaction id would be returned and you can check it in the [explorer](https://explorer.skycoin.com).
+
+## Deploy a public Skycoin API node with HTTPS
+
+We recommend using [caddy server](https://caddyserver.com/) to deploy a public Skycoin API node on a
+Linux server. The public API node should have the `HTTPS` support, which could be handled automatically
+by the `caddy server`. But we need to have a domain and create a DNS record to bind the server ip address
+to it.
+
+Suppose we're going to deploy a Skycoin API node on `apitest.skycoin.com`, and we have already bound
+the server's IP to it. Follow the steps below to complete the deployment.
+
+### Install and run a skycoin api node
+
+```bash
+# Create a skycoin folder so that the files could be isolated
+$ mkdir $HOME/skycoin && cd $HOME/skycoin
+# Download the skycoin binary file
+$ wget https://downloads.skycoin.com/wallet/skycoin-0.26.0-gui-standalone-linux-x64.tar.gz
+$ tar -zxvf skycoin-0.26.0-gui-standalone-linux-x64.tar.gz
+$ cd skycoin-0.26.0-gui-standalone-linux-x64
+$ ./skycoin -web-interface-port=6420 -host-whitelist=$DOMAIN_NAME -enable-api-sets="READ,TXN"
+```
+
+> Note: we should running the `skycoin` node with `-host-whitelist` flag, otherwise it would
+> throw `403 Forbidden` error.
+
+### Install the caddy server
+
+```bash
+# Create a caddy folder
+$ mkdir $HOME/caddy && cd $HOME/caddy
+# Download the caddy server binary file
+$ wget https://github.com/caddyserver/caddy/releases/download/v1.0.4/caddy_v1.0.4_linux_amd64.tar.gz
+$ tar -zxvf caddy_v1.0.4_linux_amd64.tar.gz
+$ cd caddy_v1.0.4_linux_amd64
+```
+
+The `caddy` tool would be exist in the folder, let's create a `Caddyfile` to define the reverse proxy
+rules now.
+
+```bash
+cat <<EOF >Caddyfile
+apitest.skycoin.com {
+   proxy / localhost:6420 {
+      transparent
+   }
+}
+EOF
+```
+
+Then run the caddy server
+
+```bash
+$ ./caddy
+```
+
+You will be prompted to enter an email address to receive the notifications from let's Encrypt.
+That's all about the deployment, check the https://apitest.skycoin.com/api/v1/version to see if
+the Skycoin API node is working correctly.
 
 ## Development
 
@@ -376,19 +467,22 @@ The above command will run all tests except the wallet-related tests. To run wal
 need to manually specify a wallet file, and it must have at least `2 coins` and `256 coinhours`,
 it also must have been loaded by the node.
 
-We can specify the wallet by setting two environment variables: `WALLET_DIR` and `WALLET_NAME`. The `WALLET_DIR`
-represents the absolute path of the wallet directory, and `WALLET_NAME` represents the wallet file name.
+We can specify the wallet by setting two environment variables:
 
-Note: `WALLET_DIR` is only used by the CLI integration tests. The GUI integration tests use the node's
-configured wallet directory, which can be controlled with `-wallet-dir` when running the node.
+* `API_WALLET_ID`, which is the filename (without path), that is loaded by the daemon to test against.
+  This is the `"id"` field in API requests. It is used by the API integration tests.
+  The wallet directory that the daemon uses can be controlled with the `-wallet-dir` option.
+* `CLI_WALLET_FILE`, which is the filename (with path), to be used by the CLI integration tests
 
 If the wallet is encrypted, also set `WALLET_PASSWORD`.
 
+Example of running the daemon with settings for integration tests:
+
 ```sh
-$ export WALLET_DIR="$HOME/.skycoin/wallets"
-$ export WALLET_NAME="$valid_wallet_filename"
+$ export API_WALLET_ID="$valid_wallet_filename"
+$ export CLI_WALLET_FILE="$HOME/.skycoin/wallets/$valid_wallet_filename"
 $ export WALLET_PASSWORD="$wallet_password"
-$ ./run-client.sh -launch-browser=false -enable-all-api-sets
+$ make run-integration-test-live
 ```
 
 Then run the tests with the following command:
@@ -402,24 +496,29 @@ There are two other live integration test modes for CSRF disabled and networking
 To run the CSRF disabled tests:
 
 ```sh
-$ ./run-daemon.sh -disable-csrf
+$ export API_WALLET_ID="$valid_wallet_filename"
+$ export CLI_WALLET_FILE="$HOME/.skycoin/wallets/$valid_wallet_filename"
+$ export WALLET_PASSWORD="$wallet_password"
+$ make run-integration-test-live-disable-csrf
 ```
 
 ```sh
 $ make integration-test-live-disable-csrf
 ```
 
-To run the networking disabled tests, which requires a live wallet:
+To run the networking disabled tests, which require a live wallet:
 
 ```sh
-$ ./run-client.sh -disable-networking -launch-browser=false
+$ export API_WALLET_ID="$valid_wallet_filename"
+$ export CLI_WALLET_FILE="$HOME/.skycoin/wallets/$valid_wallet_filename"
+$ export WALLET_PASSWORD="$wallet_password"
+$ make run-integration-test-live-disable-networking
 ```
 
+Then run the tests with the following command:
+
 ```sh
-$ export WALLET_DIR="$HOME/.skycoin/wallets"
-$ export WALLET_NAME="$valid_wallet_filename"
-$ export WALLET_PASSWORD="$wallet_password"
-$ make integration-test-live-disable-networking
+$ make integration-test-live-wallet
 ```
 
 #### Debugging Integration Tests
@@ -690,16 +789,16 @@ Performs these actions before releasing:
 * `make integration-test-live`
 * `make integration-test-live-disable-networking` (requires node run with `-disable-networking`)
 * `make integration-test-live-disable-csrf` (requires node run with `-disable-csrf`)
-* `make intergration-test-live-wallet` (see [live integration tests](#live-integration-tests)) both with an unencrypted and encrypted wallet
-* `go run cmd/cli/cli.go checkdb` against a fully synced database
-* `go run cmd/cli/cli.go checkDBDecoding` against a fully synced database
+* `make intergration-test-live-wallet` (see [live integration tests](#live-integration-tests)) 6 times: with an unencrypted and encrypted wallet for each wallet type: `deterministic`, `bip44` and `collection`
+* `go run cmd/skycoin-cli/skycoin-cli.go checkdb` against a fully synced database
+* `go run cmd/skycoin-cli/skycoin-cli.go checkDBDecoding` against a fully synced database
 * On all OSes, make sure that the client runs properly from the command line (`./run-client.sh` and `./run-daemon.sh`)
 * Build the releases and make sure that the Electron client runs properly on Windows, Linux and macOS.
     * Use a clean data directory with no wallets or database to sync from scratch and verify the wallet setup wizard.
     * Load a test wallet with nonzero balance from seed to confirm wallet loading works
     * Send coins to another wallet to confirm spending works
     * Restart the client, confirm that it reloads properly
-* For both the Android and iOS mobile wallets, configure the node url to be https://staging.node.skycoin.net
+* For both the Android and iOS mobile wallets, configure the node url to be https://staging.node.skycoin.com
   and test all operations to ensure it will work with the new node version.
 
 #### Creating release builds
@@ -710,31 +809,31 @@ Performs these actions before releasing:
 
 Releases are signed with this PGP key:
 
-`0x5801631BD27C7874`
+`0x913BBD5206B19620`
 
 The fingerprint for this key is:
 
 ```
-pub   ed25519 2017-09-01 [SC] [expires: 2023-03-18]
-      10A7 22B7 6F2F FE7B D238  0222 5801 631B D27C 7874
-uid                      GZ-C SKYCOIN <token@protonmail.com>
-sub   cv25519 2017-09-01 [E] [expires: 2023-03-18]
+pub   ed25519 2019-09-17 [SC] [expires: 2023-09-16]
+      98F934F04F9334B81DFA3398913BBD5206B19620
+uid           [ultimate] iketheadore skycoin <luxairlake@protonmail.com>
+sub   cv25519 2019-09-17 [E] [expires: 2023-09-16]
 ```
 
-Keybase.io account: https://keybase.io/gzc
+Keybase.io account: https://keybase.io/iketheadore
 
 Follow the [Tor Project's instructions for verifying signatures](https://www.torproject.org/docs/verifying-signatures.html.en).
 
-If you can't or don't want to import the keys from a keyserver, the signing key is available in the repo: [gz-c.asc](gz-c.asc).
+If you can't or don't want to import the keys from a keyserver, the signing key is available in the repo: [iketheadore.asc](iketheadore.asc).
 
 Releases and their signatures can be found on the [releases page](https://github.com/skycoin/skycoin/releases).
 
 Instructions for generating a PGP key, publishing it, signing the tags and binaries:
-https://gist.github.com/gz-c/de3f9c43343b2f1a27c640fe529b067c
+https://gist.github.com/iketheadore/6485585ce2d22231c2cb3cbc77e1d7b7
 
 ## Responsible Disclosure
 
-Security flaws in skycoin source or infrastructure can be sent to security@skycoin.net.
+Security flaws in skycoin source or infrastructure can be sent to security@skycoin.com.
 Bounties are available for accepted critical bug reports.
 
 PGP Key for signing:
@@ -742,28 +841,30 @@ PGP Key for signing:
 ```
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 
-mDMEWaj46RYJKwYBBAHaRw8BAQdApB44Kgde4Kiax3M9Ta+QbzKQQPoUHYP51fhN
-1XTSbRi0I0daLUMgU0tZQ09JTiA8dG9rZW5AcHJvdG9ubWFpbC5jb20+iJYEExYK
-AD4CGwMFCwkIBwIGFQgJCgsCBBYCAwECHgECF4AWIQQQpyK3by/+e9I4AiJYAWMb
-0nx4dAUCWq/TNwUJCmzbzgAKCRBYAWMb0nx4dKzqAP4tKJIk1vV2bO60nYdEuFB8
-FAgb5ITlkj9PyoXcunETVAEAhigo4miyE/nmE9JT3Q/ZAB40YXS6w3hWSl3YOF1P
-VQq4OARZqPjpEgorBgEEAZdVAQUBAQdAa8NkEMxo0dr2x9PlNjTZ6/gGwhaf5OEG
-t2sLnPtYxlcDAQgHiH4EGBYKACYCGwwWIQQQpyK3by/+e9I4AiJYAWMb0nx4dAUC
-Wq/TTQUJCmzb5AAKCRBYAWMb0nx4dFPAAQD7otGsKbV70UopH+Xdq0CDTzWRbaGw
-FAoZLIZRcFv8zwD/Z3i9NjKJ8+LS5oc8rn8yNx8xRS+8iXKQq55bDmz7Igw=
-=5fwW
+mDMEXYCYPxYJKwYBBAHaRw8BAQdAeDPi3n9xLv5xGsxbcbwZjfV4h772W+GPZ3Mz
+RS17STm0L2lrZXRoZWFkb3JlIHNreWNvaW4gPGx1eGFpcmxha2VAcHJvdG9ubWFp
+bC5jb20+iJYEExYIAD4WIQSY+TTwT5M0uB36M5iRO71SBrGWIAUCXYCYPwIbAwUJ
+B4TOAAULCQgHAgYVCgkICwIEFgIDAQIeAQIXgAAKCRCRO71SBrGWID0NAP0VRiNA
+2Kq2uakPMqV29HY39DVhc9QgxJfMIwXWtFxKAwEAn0NqGRV/iKXNf+qxqAtMWa5X
+F2S36hkEfDHO5W44DwC4OARdgJg/EgorBgEEAZdVAQUBAQdAeiEz/tUmCgOA67Rq
+ANmHmX2vrdZp/SfJ9KOI2ANCCm8DAQgHiH4EGBYIACYWIQSY+TTwT5M0uB36M5iR
+O71SBrGWIAUCXYCYPwIbDAUJB4TOAAAKCRCRO71SBrGWIJOJAQDTaqxpcLtAw5kH
+Hp2jWvUnLudIONeqeUTCmkLJhcNv1wD+PFJZWMKD1btIG4pkXRW9YoA7M7t5by5O
+x5I+LywZNww=
+=p6Gq
 -----END PGP PUBLIC KEY BLOCK-----
 ```
 
-Key ID: [0x5801631BD27C7874](https://pgp.mit.edu/pks/lookup?search=0x5801631BD27C7874&op=index)
+
+Key ID: [0x913BBD5206B19620](https://pgp.mit.edu/pks/lookup?search=0x913BBD5206B19620&op=index)
 
 The fingerprint for this key is:
 
 ```
-pub   ed25519 2017-09-01 [SC] [expires: 2023-03-18]
-      10A7 22B7 6F2F FE7B D238  0222 5801 631B D27C 7874
-uid                      GZ-C SKYCOIN <token@protonmail.com>
-sub   cv25519 2017-09-01 [E] [expires: 2023-03-18]
+pub   ed25519 2019-09-17 [SC] [expires: 2023-09-16]
+      98F934F04F9334B81DFA3398913BBD5206B19620
+uid           [ultimate] iketheadore skycoin <luxairlake@protonmail.com>
+sub   cv25519 2019-09-17 [E] [expires: 2023-09-16]
 ```
 
-Keybase.io account: https://keybase.io/gzc
+Keybase.io account: https://keybase.io/iketheadore

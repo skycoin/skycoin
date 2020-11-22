@@ -3,7 +3,7 @@ import { MatDialogRef, MatDialogConfig, MatDialog, MAT_DIALOG_DATA } from '@angu
 import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
 import { HwWipeDialogComponent } from '../hw-wipe-dialog/hw-wipe-dialog.component';
 import { ISubscription } from 'rxjs/Subscription';
-import { WalletService, HwSecurityWarnings } from '../../../../services/wallet.service';
+import { WalletService, HwSecurityWarnings, HwFeaturesResponse } from '../../../../services/wallet.service';
 import { HwAddedDialogComponent } from '../hw-added-dialog/hw-added-dialog.component';
 import { HwGenerateSeedDialogComponent } from '../hw-generate-seed-dialog/hw-generate-seed-dialog.component';
 import { HwBackupDialogComponent } from '../hw-backup-dialog/hw-backup-dialog.component';
@@ -12,16 +12,11 @@ import { HwChangePinDialogComponent } from '../hw-change-pin-dialog/hw-change-pi
 import { HwRestoreSeedDialogComponent } from '../hw-restore-seed-dialog/hw-restore-seed-dialog.component';
 import { Observable } from 'rxjs/Observable';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
-
-enum States {
-  Disconnected,
-  Processing,
-  NewConnected,
-  ConfiguredConnected,
-  Error,
-  ReturnedRefused,
-  WrongPin,
-}
+import { HwWalletDaemonService } from '../../../../services/hw-wallet-daemon.service';
+import { HwRemovePinDialogComponent } from '../hw-remove-pin-dialog/hw-remove-pin-dialog.component';
+import { HwUpdateFirmwareDialogComponent } from '../hw-update-firmware-dialog/hw-update-firmware-dialog.component';
+import { HwUpdateAlertDialogComponent } from '../hw-update-alert-dialog/hw-update-alert-dialog.component';
+import { MsgBarService } from '../../../../services/msg-bar.service';
 
 export interface ChildHwDialogParams {
   wallet: Wallet;
@@ -38,10 +33,15 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
 
   closeIfHwDisconnected = false;
 
-  currentState: States;
-  states = States;
+  newWalletConnected = false;
+  otherStateBecauseWrongPin = false;
   walletName = '';
   customErrorMsg = '';
+  firmwareVersion = '';
+
+  securityWarnings: string[] = [];
+  firmwareVersionNotVerified: boolean;
+  outdatedFirmware: boolean;
   needsBackup: boolean;
   needsPin: boolean;
 
@@ -58,19 +58,26 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
     private hwWalletService: HwWalletService,
     private dialog: MatDialog,
     private walletService: WalletService,
+    private msgBarService: MsgBarService,
   ) {
     super(hwWalletService, dialogRef);
 
-    this.checkWallet();
+    this.checkWallet(true);
   }
 
   ngOnDestroy() {
     super.ngOnDestroy();
     this.removeDialogSubscription();
+    this.removeOperationSubscription();
+    this.msgBarService.hide();
   }
 
   hwConnectionChanged(connected: boolean) {
-    this.checkWallet();
+    this.checkWallet(true);
+  }
+
+  update() {
+    this.openUpdateDialog();
   }
 
   generateMnemonic() {
@@ -83,6 +90,10 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
 
   changePin() {
     this.openDialog(HwChangePinDialogComponent);
+  }
+
+  removePin() {
+    this.openDialog(HwRemovePinDialogComponent);
   }
 
   backup() {
@@ -127,9 +138,9 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
         if (this.completeRecheckRequested) {
           this.checkWallet();
         } else if (this.recheckSecurityOnlyRequested) {
-          this.updateSecurityWarnings().subscribe();
+          this.updateSecurityWarningsAndData(false, true).subscribe();
         } else if (this.showErrorRequested) {
-          this.currentState = States.Error;
+          this.showError();
         }
         this.completeRecheckRequested = false;
         this.recheckSecurityOnlyRequested = false;
@@ -143,65 +154,190 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
     }
   }
 
-  private updateSecurityWarnings(): Observable<HwSecurityWarnings[]> {
-    return this.walletService.updateWalletHasHwSecurityWarnings(this.wallet).map(warnings => {
-      this.needsBackup = warnings.includes(HwSecurityWarnings.NeedsBackup);
-      this.needsPin = warnings.includes(HwSecurityWarnings.NeedsPin);
+  private updateSecurityWarningsAndData(dontUpdateWallet = false, waitForResetingCurrentWarnings = false): Observable<HwFeaturesResponse> {
+    if (!waitForResetingCurrentWarnings) {
+      this.securityWarnings = [];
+    }
 
-      return warnings;
+    return this.walletService.getHwFeaturesAndUpdateData(!dontUpdateWallet ? this.wallet : null).map(response => {
+      if (waitForResetingCurrentWarnings) {
+        this.securityWarnings = [];
+      }
+
+      if (response.securityWarnings.includes(HwSecurityWarnings.FirmwareVersionNotVerified)) {
+        this.firmwareVersionNotVerified = true;
+        this.securityWarnings.push('hardware-wallet.options.unchecked-version-warning');
+      } else {
+        this.firmwareVersionNotVerified = false;
+      }
+
+      if (response.securityWarnings.includes(HwSecurityWarnings.OutdatedFirmware)) {
+        this.outdatedFirmware = true;
+        this.securityWarnings.push('hardware-wallet.options.outdated-version-warning');
+      } else {
+        this.outdatedFirmware = false;
+      }
+
+      if (!dontUpdateWallet && response.securityWarnings.includes(HwSecurityWarnings.NeedsBackup)) {
+        this.needsBackup = true;
+        this.securityWarnings.push('hardware-wallet.options.backup-warning');
+      } else {
+        this.needsBackup = false;
+      }
+
+      if (!dontUpdateWallet && response.securityWarnings.includes(HwSecurityWarnings.NeedsPin)) {
+        this.needsPin = true;
+        this.securityWarnings.push('hardware-wallet.options.pin-warning');
+      } else {
+        this.needsPin = false;
+      }
+
+      if (!dontUpdateWallet) {
+        this.walletName = this.wallet.label;
+      }
+
+      if (response.walletNameUpdated) {
+        this.msgBarService.showWarning('hardware-wallet.general.name-updated');
+      }
+
+      this.firmwareVersion = response.features.fw_major + '.' + response.features.fw_minor + '.' + response.features.fw_patch;
+
+      return response;
     });
   }
 
-  private checkWallet() {
+  private checkWallet(suggestToUpdate = false) {
     this.wallet = null;
+    this.showResult({
+      text: 'hardware-wallet.options.connecting',
+      icon: this.msgIcons.Spinner,
+    }, false);
 
-    if (!this.hwWalletService.getDeviceConnectedSync()) {
-      this.currentState = States.Disconnected;
-    } else {
-      this.currentState = States.Processing;
+    this.removeOperationSubscription();
 
-      if (this.operationSubscription) {
-        this.operationSubscription.unsubscribe();
+    this.operationSubscription = this.hwWalletService.getDeviceConnected().subscribe(connected => {
+      if (!connected) {
+        this.showResult({
+          text: 'hardware-wallet.options.disconnected',
+          icon: this.msgIcons.Usb,
+        });
+      } else {
+        this.operationSubscription = this.hwWalletService.getFeatures(false).subscribe(result => {
+          if (result.rawResponse.bootloader_mode) {
+            this.openUpdateDialog();
+          } else {
+            this.continueCheckingWallet(suggestToUpdate);
+          }
+        }, () => this.continueCheckingWallet(suggestToUpdate));
       }
+    }, err => {
+      if (err['_body'] && err['_body'] === HwWalletDaemonService.errorConnectingWithTheDaemon) {
+        this.showResult({
+          text: 'hardware-wallet.errors.daemon-connection',
+          icon: this.msgIcons.Error,
+        });
+      } else {
+        this.showError();
+      }
+    });
+  }
 
-      this.operationSubscription = this.hwWalletService.getAddresses(1, 0).subscribe(
-        response => {
-          this.walletService.wallets.first().subscribe(wallets => {
-            const alreadySaved = wallets.some(wallet => {
-              const found = wallet.addresses[0].address === response.rawResponse[0] && wallet.isHardware;
-              if (found) {
-                this.wallet = wallet;
-                this.walletName = wallet.label;
+  private continueCheckingWallet(suggestToUpdate) {
+    this.operationSubscription = this.hwWalletService.getAddresses(1, 0).subscribe(
+      response => {
+        this.operationSubscription = this.walletService.wallets.first().subscribe(wallets => {
+          const alreadySaved = wallets.some(wallet => {
+            const found = wallet.addresses[0].address === response.rawResponse[0] && wallet.isHardware;
+            if (found) {
+              this.wallet = wallet;
+              this.walletName = wallet.label;
+            }
+
+            return found;
+          });
+          if (alreadySaved) {
+            this.operationSubscription = this.updateSecurityWarningsAndData().subscribe(result => {
+              if (suggestToUpdate && result.securityWarnings.find(warning => warning === HwSecurityWarnings.OutdatedFirmware)) {
+                this.openUpdateWarning();
               }
 
-              return found;
+              if (!this.onboarding) {
+                this.currentState = this.states.Finished;
+                this.newWalletConnected = false;
+              } else {
+                this.hwWalletService.showOptionsWhenPossible = true;
+                this.dialogRef.close(true);
+              }
             });
-            if (alreadySaved) {
-              this.updateSecurityWarnings().subscribe(() => {
-                if (!this.onboarding) {
-                  this.currentState = States.ConfiguredConnected;
-                } else {
-                  this.hwWalletService.showOptionsWhenPossible = true;
-                  this.dialogRef.close(true);
-                }
-              });
+          } else {
+            this.openDialog(HwAddedDialogComponent);
+          }
+        });
+      },
+      err => {
+        if (err.result && err.result === OperationResults.Timeout) {
+          this.operationSubscription = this.hwWalletService.getFeatures(false).subscribe(result => {
+            if (result.rawResponse.bootloader_mode) {
+              this.openUpdateDialog();
             } else {
-              this.openDialog(HwAddedDialogComponent);
+              this.showError();
+            }
+          }, () => this.showError());
+        } else if (err.result && err.result === OperationResults.WithoutSeed) {
+          this.currentState = this.states.Finished;
+          this.newWalletConnected = true;
+
+          this.operationSubscription = this.updateSecurityWarningsAndData(true).subscribe(result => {
+            if (suggestToUpdate && result.securityWarnings.find(warning => warning === HwSecurityWarnings.OutdatedFirmware)) {
+              this.openUpdateWarning();
             }
           });
-        },
-        err => {
-          if (err.result && err.result === OperationResults.WithoutSeed) {
-            this.currentState = States.NewConnected;
-          } else if (err.result && err.result === OperationResults.FailedOrRefused) {
-            this.currentState = States.ReturnedRefused;
-          } else if (err.result && err.result === OperationResults.WrongPin) {
-            this.currentState = States.WrongPin;
-          } else {
-            this.currentState = States.Error;
-          }
-        },
-      );
+        } else if (err.result && err.result === OperationResults.FailedOrRefused) {
+          this.currentState = this.states.Other;
+          this.otherStateBecauseWrongPin = false;
+        } else if (err.result && err.result === OperationResults.WrongPin) {
+          this.currentState = this.states.Other;
+          this.otherStateBecauseWrongPin = true;
+        } else {
+          this.processResult(err.result);
+        }
+      },
+    );
+  }
+
+  private removeOperationSubscription() {
+    if (this.operationSubscription) {
+      this.operationSubscription.unsubscribe();
     }
+  }
+
+  private openUpdateWarning() {
+    const config = new MatDialogConfig();
+    config.width = '450px';
+    config.autoFocus = false;
+
+    this.dialog.open(HwUpdateAlertDialogComponent, config).afterClosed().subscribe(update => {
+      if (update) {
+        this.openUpdateDialog();
+      }
+    });
+  }
+
+  private openUpdateDialog() {
+    const config = new MatDialogConfig();
+    config.width = '450px';
+    config.autoFocus = false;
+
+    this.dialog.open(HwUpdateFirmwareDialogComponent, config);
+
+    this.closeModal();
+  }
+
+  private showError() {
+    this.showResult({
+      text: this.customErrorMsg ? this.customErrorMsg : 'hardware-wallet.general.generic-error',
+      icon: this.msgIcons.Error,
+    });
+    this.customErrorMsg = '';
   }
 }

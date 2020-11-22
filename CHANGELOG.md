@@ -4,12 +4,69 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.27.1] - 2020-11-22
+
+### Fixed
+
+- #2540 Desktop wallet v0.27.0 failed to load the price.
+
+## [0.27.0] - 2019-11-26
 
 ### Added
+
+- Add `createRawTransactionV2` CLI command, which calls the API of `/wallet/transaction` to create the transaction and can create then unsigned transaction. Once the API's performance issue has been fixed, we will replace the `createRawTransaction` with it.
+- Add `signTransaction` CLI command to sign transaction.
+- Do windows electron builds by travis and abandon the appveyor
+- Migrate `skycoin.net` to `skycoin.com`
+- Migrate project path to `skycoin/skycoin`
+- Use transaction history when scanning wallet addresses, instead of the current address balance
+- Document the daemon's CLI options
+- Add the ability to save transaction notes
+- Add CLI `encodeJsonTransaction` command to retrieve raw transaction given its JSON representation
+- Add `package bip44`, implementing the bip44 spec https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki
+- Codesign daemon and standalone binaries
+- Add a guided method for entering the seeds in the GUI
+- Add new wallet type `collection` for wallets that are an arbitrary collection of private keys, rather than generated from a seed
+- Add new wallet type `bip44` for hierarchical deterministic (HD) wallets obeying the bip44 protocol.
+  The Skycoin bip44 `coin` number is `8000`.
+  `bip44` wallets avoid address reuse, generating a new change address for each transaction.
+  Affects APIs are `POST /api/v1/wallet`, `GET /api/v1/wallets`, `GET /api/v1/wallet`, `POST /api/v1/wallet/seed` and `POST /api/v1/wallet/recover`.
+  Refer to the [API documentation](./src/api/README.md) for API changes.
+  `bip44` wallets support bip39 "seed passphrases".
+  More details are explained in https://github.com/skycoin/skycoin/wiki/Wallet-File-Formats-and-Types
+- `cli walletCreate` support for `bip44` wallets added
+- Add `bip44_coin` field to `GET /api/v1/health` `fiber` params
+- Add the "bulk send" option to the GUI advanced form
+- Add `cli walletKeyExport` command to export `xpub`, `xprv`, `pub` and `prv` key from a `bip44` wallet
+- Add `xpub` type wallet, which can generate addresses without exposing private keys
+- Add `block_publisher` flag to `/api/v1/health`
+- Add `no_broadcast` option to `POST /api/v1/injectTransaction` to disable broadcast of the transaction. The transaction will only be added to the local pool.
+- Add `cli distributeGenesis` command to split the genesis block into distribution addresses when setting up a new fiber coin
+
 ### Fixed
+
+- #7, #162, corrupted file in ~/.skycoin/data/ dir makes the desktop wallet show ERROR #1.
+- #87, can not run web gui from skycoin docker image.
+- #2287 A `Content-Type` with a `charset` specified, for example `application/json; charset=utf-8`, will not return an HTTP 415 error anymore
+- Fix `fiber.toml` transaction verification parameters ignored by newcoin
+- #2373 Fix and clean-up further panics with various `skycoin-cli` commands (lastBlocks, checkdb) which were not correctly handling arguments.
+- #2442 Reset the "trusted" flag to false for all peers on load, before registering default hardcoded peers in the peerlist
+- #26 Add additional database corruption checks in ResetCorruptDB to detect encoder ErrBufferUnderflow and ErrMaxLenExceeded
+
 ### Changed
+
+- `type` is now a required parameter for `POST /api/v1/wallet`. `type` can be `deterministic`, `bip44` or `xpub`.
+- Add `display_name`, `ticker`, `coin_hours_display_name`, `coin_hours_display_name_singular`, `coin_hours_ticker`, `explorer_url` to the `/health` endpoint response
+- `cli addPrivateKey` will only work on a `collection` type wallet. Create one with `cli walletCreate -t collection`
+- Don't print the wallet in the terminal after `cli encryptWallet` or `cli decryptWallet`
+- Remove `WALLET_DIR` and `WALLET_NAME` envvars from the `cli` tool. Commands which need to operate on a wallet file accept the wallet file on the command line instead.
+- Now the modal window for showing QR codes in the GUI allows to request specific amounts of coins, as in mobile wallets. This changes did no include the ability to read QR codes or URLs.
+
 ### Removed
+
+- Remove `-arbitrating` option from the daemon CLI options
+- Remove `-print-web-interface-address` option from the daemon CLI options
+- Remove `cli walletDir` command
 
 ## [0.26.0] - 2019-05-21
 
@@ -31,6 +88,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `POST /api/v2/transaction` to create an unsigned transaction from addresses or unspent outputs without a wallet
 - Add `/api/v2/data` APIs for transaction notes and generic key-value storage.
 - Update `/metrics` endpoint to add metrics from `/health`: `unspent_outputs`, `unconfirmed_txns`, `time_since_last_block_seconds`, `open_connections`, `outgoing_connections`, `incoming_connections`, `start_at`, `uptime_seconds`, `last_block_seq`.
+- Add to the GUI the ability to choose specific unspent outputs to spend
 
 ### Fixed
 
@@ -384,7 +442,7 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - Require transactions to have an input with non-zero coinhours
 - Add `-peerlist-size` and `-max-outgoing-connections` CLI options
 - Add `-download-peerlist` and `-peerlist-url` CLI options, to get peers from a URL
-- For electron clients, download a list of peers from https://downloads.skycoin.net/blockchain/peers.txt by default
+- For electron clients, download a list of peers from https://downloads.skycoin.com/blockchain/peers.txt by default
 
 ### Fixed
 

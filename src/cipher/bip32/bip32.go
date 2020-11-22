@@ -123,6 +123,9 @@ var (
 
 	// ErrInvalidPublicKey is returned if a deserialized xpub key's public key is invalid
 	ErrInvalidPublicKey = NewError(errors.New("Invalid public key"))
+
+	// ErrMaxDepthReached maximum allowed depth (255) reached for child key
+	ErrMaxDepthReached = NewError(errors.New("Maximum child depth reached"))
 )
 
 // key represents a bip32 extended key
@@ -305,6 +308,10 @@ func fingerprint(key []byte) []byte {
 // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#private-parent-key--private-child-key
 // This method can return an ImpossibleChild error.
 func (k *PrivateKey) NewPrivateChildKey(childIdx uint32) (*PrivateKey, error) {
+	if k.Depth == 0xFF {
+		return nil, ErrMaxDepthReached
+	}
+
 	intermediary := k.ckdPrivHMAC(childIdx)
 
 	iL := intermediary[:32]        // used for computing the next key
@@ -345,6 +352,10 @@ func (k *PrivateKey) NewPublicChildKey(childIdx uint32) (*PublicKey, error) {
 // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#public-parent-key--public-child-key
 // This method can return an ImpossibleChild error.
 func (k *PublicKey) NewPublicChildKey(childIdx uint32) (*PublicKey, error) {
+	if k.Depth == 0xFF {
+		return nil, ErrMaxDepthReached
+	}
+
 	// CKDPub step 1
 	intermediary, err := k.ckdPubHMAC(childIdx)
 	if err != nil {
@@ -497,7 +508,16 @@ func (k *PublicKey) String() string {
 	return base58.Encode(k.Serialize())
 }
 
-// DeserializePrivateKey deserializes a byte slice into a PrivateKey
+// DeserializeEncodedPrivateKey deserializes a base58 xprv key to a PrivateKey
+func DeserializeEncodedPrivateKey(xprv string) (*PrivateKey, error) {
+	b, err := base58.Decode(xprv)
+	if err != nil {
+		return nil, err
+	}
+	return DeserializePrivateKey(b)
+}
+
+// DeserializePrivateKey deserializes the []byte serialization of a PrivateKey
 func DeserializePrivateKey(data []byte) (*PrivateKey, error) {
 	k, err := deserialize(data, true)
 	if err != nil {
@@ -516,7 +536,16 @@ func DeserializePrivateKey(data []byte) (*PrivateKey, error) {
 	}, nil
 }
 
-// DeserializePublicKey deserializes a byte slice into a PublicKey
+// DeserializeEncodedPublicKey deserializes a base58 xpub key to a PublicKey
+func DeserializeEncodedPublicKey(xpub string) (*PublicKey, error) {
+	b, err := base58.Decode(xpub)
+	if err != nil {
+		return nil, err
+	}
+	return DeserializePublicKey(b)
+}
+
+// DeserializePublicKey deserializes the []byte serialization of a PublicKey
 func DeserializePublicKey(data []byte) (*PublicKey, error) {
 	k, err := deserialize(data, false)
 	if err != nil {

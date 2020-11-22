@@ -6,7 +6,11 @@ go:
   - tip
 
 install:
-  - go get -t github.com/skycoin/encodertest
+  - go get -t github.com/skycoin/encodertest/...
 
 script:
   - go test .
+
+notifications:
+  # https://github.com/kvld/travisci-telegram TravisCI Telegram Bot integration
+  webhooks: https://fathomless-fjord-24024.herokuapp.com/notify

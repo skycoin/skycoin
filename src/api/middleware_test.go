@@ -80,6 +80,11 @@ func TestOriginRefererCheck(t *testing.T) {
 
 				setCSRFParameters(t, tokenValid, req)
 
+				isAPIV2 := strings.HasPrefix(endpoint, "/api/v2")
+				if isAPIV2 {
+					req.Header.Set("Content-Type", ContentTypeJSON)
+				}
+
 				if tc.origin != "" {
 					req.Header.Set("Origin", tc.origin)
 				}
@@ -102,7 +107,7 @@ func TestOriginRefererCheck(t *testing.T) {
 				case http.StatusForbidden:
 					require.Equal(t, tc.status, rr.Code)
 
-					if strings.HasPrefix(endpoint, "/api/v2") {
+					if isAPIV2 {
 						require.Equal(t, tc.errV2, rr.Body.String())
 					} else {
 						require.Equal(t, tc.errV1, rr.Body.String())
@@ -164,6 +169,11 @@ func TestHostCheck(t *testing.T) {
 
 					setCSRFParameters(t, tokenValid, req)
 
+					isAPIV2 := strings.HasPrefix(endpoint, "/api/v2")
+					if isAPIV2 {
+						req.Header.Set("Content-Type", ContentTypeJSON)
+					}
+
 					req.Host = "example.com"
 
 					rr := httptest.NewRecorder()
@@ -181,7 +191,7 @@ func TestHostCheck(t *testing.T) {
 					switch tc.status {
 					case http.StatusForbidden:
 						require.Equal(t, http.StatusForbidden, rr.Code)
-						if strings.HasPrefix(endpoint, "/api/v2") {
+						if isAPIV2 {
 							require.Equal(t, tc.errV2, rr.Body.String())
 						} else {
 							require.Equal(t, tc.errV1, rr.Body.String())
@@ -213,7 +223,7 @@ func TestContentSecurityPolicy(t *testing.T) {
 			endpoint:  "/",
 			enableCSP: true,
 			appLoc:    "../gui/static/dist",
-			expectCSPHeader: "default-src 'self'; connect-src 'self' https://api.coinpaprika.com https://swaplab.cc; img-src 'self' 'unsafe-inline' data:; style-src 'self' 'unsafe-inline'; object-src	'none'; form-action 'none'; frame-ancestors 'none'; block-all-mixed-content; base-uri 'self'",
+			expectCSPHeader: "default-src 'self'; connect-src 'self' https://api.coinpaprika.com https://swaplab.cc https://version.skycoin.com https://downloads.skycoin.com http://127.0.0.1:9510; img-src 'self' 'unsafe-inline' data:; style-src 'self' 'unsafe-inline'; object-src	'none'; form-action 'none'; frame-ancestors 'none'; block-all-mixed-content; base-uri 'self'",
 			enableGUI: true,
 		},
 		{
@@ -263,4 +273,12 @@ func TestContentSecurityPolicy(t *testing.T) {
 			require.Equal(t, tc.expectCSPHeader, csp)
 		})
 	}
+}
+
+func TestIsContentTypeJSON(t *testing.T) {
+	require.True(t, isContentTypeJSON(ContentTypeJSON))
+	require.True(t, isContentTypeJSON("application/json"))
+	require.True(t, isContentTypeJSON("application/json; charset=utf-8"))
+	require.False(t, isContentTypeJSON("application/x-www-form-urlencoded"))
+	require.False(t, isContentTypeJSON(ContentTypeForm))
 }

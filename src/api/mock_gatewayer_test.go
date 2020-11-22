@@ -53,6 +53,29 @@ func (_m *MockGatewayer) AddressCount() (uint64, error) {
 	return r0, r1
 }
 
+// AddressesActivity provides a mock function with given fields: addrs
+func (_m *MockGatewayer) AddressesActivity(addrs []cipher.Address) ([]bool, error) {
+	ret := _m.Called(addrs)
+
+	var r0 []bool
+	if rf, ok := ret.Get(0).(func([]cipher.Address) []bool); ok {
+		r0 = rf(addrs)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]bool)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]cipher.Address) error); ok {
+		r1 = rf(addrs)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // CreateTransaction provides a mock function with given fields: p, wp
 func (_m *MockGatewayer) CreateTransaction(p transaction.Params, wp visor.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error) {
 	ret := _m.Called(p, wp)
@@ -86,20 +109,20 @@ func (_m *MockGatewayer) CreateTransaction(p transaction.Params, wp visor.Create
 }
 
 // CreateWallet provides a mock function with given fields: wltName, options, bg
-func (_m *MockGatewayer) CreateWallet(wltName string, options wallet.Options, bg wallet.BalanceGetter) (*wallet.Wallet, error) {
+func (_m *MockGatewayer) CreateWallet(wltName string, options wallet.Options, bg wallet.TransactionsFinder) (wallet.Wallet, error) {
 	ret := _m.Called(wltName, options, bg)
 
-	var r0 *wallet.Wallet
-	if rf, ok := ret.Get(0).(func(string, wallet.Options, wallet.BalanceGetter) *wallet.Wallet); ok {
+	var r0 wallet.Wallet
+	if rf, ok := ret.Get(0).(func(string, wallet.Options, wallet.TransactionsFinder) wallet.Wallet); ok {
 		r0 = rf(wltName, options, bg)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*wallet.Wallet)
+			r0 = ret.Get(0).(wallet.Wallet)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, wallet.Options, wallet.BalanceGetter) error); ok {
+	if rf, ok := ret.Get(1).(func(string, wallet.Options, wallet.TransactionsFinder) error); ok {
 		r1 = rf(wltName, options, bg)
 	} else {
 		r1 = ret.Error(1)
@@ -123,15 +146,15 @@ func (_m *MockGatewayer) DaemonConfig() daemon.DaemonConfig {
 }
 
 // DecryptWallet provides a mock function with given fields: wltID, password
-func (_m *MockGatewayer) DecryptWallet(wltID string, password []byte) (*wallet.Wallet, error) {
+func (_m *MockGatewayer) DecryptWallet(wltID string, password []byte) (wallet.Wallet, error) {
 	ret := _m.Called(wltID, password)
 
-	var r0 *wallet.Wallet
-	if rf, ok := ret.Get(0).(func(string, []byte) *wallet.Wallet); ok {
+	var r0 wallet.Wallet
+	if rf, ok := ret.Get(0).(func(string, []byte) wallet.Wallet); ok {
 		r0 = rf(wltID, password)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*wallet.Wallet)
+			r0 = ret.Get(0).(wallet.Wallet)
 		}
 	}
 
@@ -160,15 +183,15 @@ func (_m *MockGatewayer) DisconnectByGnetID(gnetID uint64) error {
 }
 
 // EncryptWallet provides a mock function with given fields: wltID, password
-func (_m *MockGatewayer) EncryptWallet(wltID string, password []byte) (*wallet.Wallet, error) {
+func (_m *MockGatewayer) EncryptWallet(wltID string, password []byte) (wallet.Wallet, error) {
 	ret := _m.Called(wltID, password)
 
-	var r0 *wallet.Wallet
-	if rf, ok := ret.Get(0).(func(string, []byte) *wallet.Wallet); ok {
+	var r0 wallet.Wallet
+	if rf, ok := ret.Get(0).(func(string, []byte) wallet.Wallet); ok {
 		r0 = rf(wltID, password)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*wallet.Wallet)
+			r0 = ret.Get(0).(wallet.Wallet)
 		}
 	}
 
@@ -260,8 +283,8 @@ func (_m *MockGatewayer) GetAllUnconfirmedTransactionsVerbose() ([]visor.Unconfi
 	return r0, r1, r2
 }
 
-// GetBalanceOfAddrs provides a mock function with given fields: addrs
-func (_m *MockGatewayer) GetBalanceOfAddrs(addrs []cipher.Address) ([]wallet.BalancePair, error) {
+// GetBalanceOfAddresses provides a mock function with given fields: addrs
+func (_m *MockGatewayer) GetBalanceOfAddresses(addrs []cipher.Address) ([]wallet.BalancePair, error) {
 	ret := _m.Called(addrs)
 
 	var r0 []wallet.BalancePair
@@ -947,15 +970,15 @@ func (_m *MockGatewayer) GetVerboseTransactionsForAddress(a cipher.Address) ([]v
 }
 
 // GetWallet provides a mock function with given fields: wltID
-func (_m *MockGatewayer) GetWallet(wltID string) (*wallet.Wallet, error) {
+func (_m *MockGatewayer) GetWallet(wltID string) (wallet.Wallet, error) {
 	ret := _m.Called(wltID)
 
-	var r0 *wallet.Wallet
-	if rf, ok := ret.Get(0).(func(string) *wallet.Wallet); ok {
+	var r0 wallet.Wallet
+	if rf, ok := ret.Get(0).(func(string) wallet.Wallet); ok {
 		r0 = rf(wltID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*wallet.Wallet)
+			r0 = ret.Get(0).(wallet.Wallet)
 		}
 	}
 
@@ -1000,7 +1023,7 @@ func (_m *MockGatewayer) GetWalletBalance(wltID string) (wallet.BalancePair, wal
 }
 
 // GetWalletSeed provides a mock function with given fields: wltID, password
-func (_m *MockGatewayer) GetWalletSeed(wltID string, password []byte) (string, error) {
+func (_m *MockGatewayer) GetWalletSeed(wltID string, password []byte) (string, string, error) {
 	ret := _m.Called(wltID, password)
 
 	var r0 string
@@ -1010,14 +1033,21 @@ func (_m *MockGatewayer) GetWalletSeed(wltID string, password []byte) (string, e
 		r0 = ret.Get(0).(string)
 	}
 
-	var r1 error
-	if rf, ok := ret.Get(1).(func(string, []byte) error); ok {
+	var r1 string
+	if rf, ok := ret.Get(1).(func(string, []byte) string); ok {
 		r1 = rf(wltID, password)
 	} else {
-		r1 = ret.Error(1)
+		r1 = ret.Get(1).(string)
 	}
 
-	return r0, r1
+	var r2 error
+	if rf, ok := ret.Get(2).(func(string, []byte) error); ok {
+		r2 = rf(wltID, password)
+	} else {
+		r2 = ret.Error(2)
+	}
+
+	return r0, r1, r2
 }
 
 // GetWalletUnconfirmedTransactions provides a mock function with given fields: wltID
@@ -1140,6 +1170,20 @@ func (_m *MockGatewayer) InjectBroadcastTransaction(txn coin.Transaction) error 
 	return r0
 }
 
+// InjectTransaction provides a mock function with given fields: txn
+func (_m *MockGatewayer) InjectTransaction(txn coin.Transaction) error {
+	ret := _m.Called(txn)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(coin.Transaction) error); ok {
+		r0 = rf(txn)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // NewAddresses provides a mock function with given fields: wltID, password, n
 func (_m *MockGatewayer) NewAddresses(wltID string, password []byte, n uint64) ([]cipher.Address, error) {
 	ret := _m.Called(wltID, password, n)
@@ -1163,22 +1207,22 @@ func (_m *MockGatewayer) NewAddresses(wltID string, password []byte, n uint64) (
 	return r0, r1
 }
 
-// RecoverWallet provides a mock function with given fields: wltID, seed, password
-func (_m *MockGatewayer) RecoverWallet(wltID string, seed string, password []byte) (*wallet.Wallet, error) {
-	ret := _m.Called(wltID, seed, password)
+// RecoverWallet provides a mock function with given fields: wltID, seed, seedPassphrase, password
+func (_m *MockGatewayer) RecoverWallet(wltID string, seed string, seedPassphrase string, password []byte) (wallet.Wallet, error) {
+	ret := _m.Called(wltID, seed, seedPassphrase, password)
 
-	var r0 *wallet.Wallet
-	if rf, ok := ret.Get(0).(func(string, string, []byte) *wallet.Wallet); ok {
-		r0 = rf(wltID, seed, password)
+	var r0 wallet.Wallet
+	if rf, ok := ret.Get(0).(func(string, string, string, []byte) wallet.Wallet); ok {
+		r0 = rf(wltID, seed, seedPassphrase, password)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*wallet.Wallet)
+			r0 = ret.Get(0).(wallet.Wallet)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string, string, []byte) error); ok {
-		r1 = rf(wltID, seed, password)
+	if rf, ok := ret.Get(1).(func(string, string, string, []byte) error); ok {
+		r1 = rf(wltID, seed, seedPassphrase, password)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1293,6 +1337,20 @@ func (_m *MockGatewayer) VerifyTxnVerbose(txn *coin.Transaction, signed visor.Tx
 	}
 
 	return r0, r1, r2
+}
+
+// VisorConfig provides a mock function with given fields:
+func (_m *MockGatewayer) VisorConfig() visor.Config {
+	ret := _m.Called()
+
+	var r0 visor.Config
+	if rf, ok := ret.Get(0).(func() visor.Config); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(visor.Config)
+	}
+
+	return r0
 }
 
 // WalletCreateTransaction provides a mock function with given fields: wltID, p, wp

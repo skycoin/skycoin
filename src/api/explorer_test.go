@@ -23,7 +23,7 @@ import (
 )
 
 func makeSuccessCoinSupplyResult(t *testing.T, allUnspents readable.UnspentOutputsSummary) *CoinSupply {
-	unlockedAddrs := params.GetUnlockedDistributionAddressesDecoded()
+	unlockedAddrs := params.MainNetDistribution.UnlockedAddressesDecoded()
 	var unlockedSupply uint64
 	// check confirmed unspents only
 	// Search map of unlocked addresses
@@ -38,8 +38,8 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents readable.UnspentOutpu
 		}
 	}
 	// "total supply" is the number of coins unlocked.
-	// Each distribution address was allocated params.DistributionAddressInitialBalance coins.
-	totalSupply := uint64(len(unlockedAddrs)) * params.DistributionAddressInitialBalance
+	// Each distribution address was allocated params.MainNetDistribution.AddressInitialBalance coins.
+	totalSupply := uint64(len(unlockedAddrs)) * params.MainNetDistribution.AddressInitialBalance()
 	totalSupply *= droplet.Multiplier
 
 	// "current supply" is the number of coins distribution from the unlocked pool
@@ -51,11 +51,11 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents readable.UnspentOutpu
 	totalSupplyStr, err := droplet.ToString(totalSupply)
 	require.NoError(t, err)
 
-	maxSupplyStr, err := droplet.ToString(params.MaxCoinSupply * droplet.Multiplier)
+	maxSupplyStr, err := droplet.ToString(params.MainNetDistribution.MaxCoinSupply * droplet.Multiplier)
 	require.NoError(t, err)
 
 	// locked distribution addresses
-	lockedAddrs := params.GetLockedDistributionAddressesDecoded()
+	lockedAddrs := params.MainNetDistribution.LockedAddressesDecoded()
 	lockedAddrSet := newAddrSet(lockedAddrs)
 
 	// get total coins hours which excludes locked distribution addresses
@@ -84,8 +84,8 @@ func makeSuccessCoinSupplyResult(t *testing.T, allUnspents readable.UnspentOutpu
 		MaxSupply:             maxSupplyStr,
 		CurrentCoinHourSupply: strconv.FormatUint(currentCoinHours, 10),
 		TotalCoinHourSupply:   strconv.FormatUint(totalCoinHours, 10),
-		UnlockedAddresses:     params.GetUnlockedDistributionAddresses(),
-		LockedAddresses:       params.GetLockedDistributionAddresses(),
+		UnlockedAddresses:     params.MainNetDistribution.UnlockedAddresses(),
+		LockedAddresses:       params.MainNetDistribution.LockedAddresses(),
 	}
 	return &cs
 }
@@ -96,7 +96,7 @@ func TestCoinSupply(t *testing.T) {
 		testutil.MakeAddress(),
 	}
 
-	unlockedAddrs := params.GetUnlockedDistributionAddressesDecoded()
+	unlockedAddrs := params.MainNetDistribution.UnlockedAddressesDecoded()
 	successGatewayGetUnspentOutputsResult := readable.UnspentOutputsSummary{
 		HeadOutputs: readable.UnspentOutputs{
 			readable.UnspentOutput{
@@ -207,6 +207,9 @@ func TestCoinSupply(t *testing.T) {
 			endpoint := "/api/v1/coinSupply"
 			gateway := &MockGatewayer{}
 			gateway.On("GetUnspentOutputsSummary", mock.Anything).Return(tc.gatewayGetUnspentOutputsResult, tc.gatewayGetUnspentOutputsErr)
+			gateway.On("VisorConfig").Return(visor.Config{
+				Distribution: params.MainNetDistribution,
+			})
 
 			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)

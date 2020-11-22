@@ -127,7 +127,7 @@ if [[ -z $TEST || $TEST = "api" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE SKYCOIN_NODE_HOST=$HOST \
 	USE_CSRF=$USE_CSRF HEADER_CHECK=$HEADER_CHECK DB_NO_UNCONFIRMED=$DB_NO_UNCONFIRMED COIN=$COIN \
-    go test ./src/api/integration/... $UPDATE -timeout=3m $VERBOSE $RUN_TESTS
+    go test -count=1 ./src/api/integration/... $UPDATE -timeout=10m $VERBOSE $RUN_TESTS
 
 API_FAIL=$?
 
@@ -137,7 +137,7 @@ if [[ -z $TEST  || $TEST = "cli" ]]; then
 
 SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR \
 	USE_CSRF=$USE_CSRF HEADER_CHECK=$HEADER_CHECK DB_NO_UNCONFIRMED=$DB_NO_UNCONFIRMED COIN=$COIN \
-    go test ./src/cli/integration/... $UPDATE -timeout=3m $VERBOSE $RUN_TESTS
+    go test -count=1 ./src/cli/integration/... $UPDATE -timeout=10m $VERBOSE $RUN_TESTS
 
 CLI_FAIL=$?
 

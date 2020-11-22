@@ -308,7 +308,7 @@ func TestCreateTransaction(t *testing.T) {
 			b.On("Unspent").Return(up)
 
 			if tc.txn != nil {
-				b.On("VerifySingleTxnSoftHardConstraints", matchDBTx, *tc.txn, params.UserVerifyTxn, TxnUnsigned).Return(nil, nil, tc.verifyErr)
+				b.On("VerifySingleTxnSoftHardConstraints", matchDBTx, *tc.txn, params.MainNetDistribution, params.UserVerifyTxn, TxnUnsigned).Return(nil, nil, tc.verifyErr)
 			}
 
 			db, shutdown := prepareDB(t)
@@ -318,6 +318,9 @@ func TestCreateTransaction(t *testing.T) {
 				db:          db,
 				blockchain:  b,
 				unconfirmed: ut,
+				Config: Config{
+					Distribution: params.MainNetDistribution,
+				},
 			}
 
 			txn, inputs, err := v.CreateTransaction(tc.p, tc.wp)
@@ -341,9 +344,9 @@ func prepareWltDir() string {
 	return dir
 }
 
-func TestWalletCreateTransaction(t *testing.T) {
-	addrs := make([]cipher.Address, 3)
-	entries := make([]wallet.Entry, 3)
+func makeEntries(n int) ([]wallet.Entry, []cipher.Address) {
+	addrs := make([]cipher.Address, n)
+	entries := make([]wallet.Entry, n)
 	for i := range addrs {
 		p, s := cipher.GenerateKeyPair()
 		a := cipher.AddressFromPubKey(p)
@@ -354,10 +357,37 @@ func TestWalletCreateTransaction(t *testing.T) {
 		}
 		addrs[i] = a
 	}
+	return entries, addrs
+}
+
+func TestWalletCreateTransaction(t *testing.T) {
+	// Create arbitrary entries for a "collection" wallet
+	entries, addrs := makeEntries(3)
+
+	// Load the 5th through 8th entries for a known bip44 wallet.
+	// These entries will be used for the test data.
+	bip44Seed := "voyage say extend find sheriff surge priority merit ignore maple cash argue"
+	w, err := wallet.NewWallet("bip44.wlt", wallet.Options{
+		Type:      wallet.WalletTypeBip44,
+		GenerateN: 8,
+		Seed:      bip44Seed,
+	})
+	require.NoError(t, err)
+	bip44Entries := w.GetEntries()[5:8]
+	require.Len(t, bip44Entries, 3)
+	bip44Addrs, err := w.GetSkycoinAddresses()
+	require.NoError(t, err)
+	bip44Addrs = bip44Addrs[5:8]
+	require.Len(t, bip44Addrs, 3)
 
 	uxOuts := make([]cipher.SHA256, 3)
 	for i := range uxOuts {
 		uxOuts[i] = testutil.RandSHA256(t)
+	}
+
+	bip44UxOuts := make([]cipher.SHA256, 3)
+	for i := range bip44UxOuts {
+		bip44UxOuts[i] = testutil.RandSHA256(t)
 	}
 
 	validParams := transaction.Params{
@@ -442,7 +472,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 		In:     []cipher.SHA256{getArrayRet[0].Hash()},
 		Out:    validParams.To,
 	}
-	err := txn.UpdateHeader()
+	err = txn.UpdateHeader()
 	require.NoError(t, err)
 
 	invalidParamsTxn := &coin.Transaction{
@@ -450,6 +480,62 @@ func TestWalletCreateTransaction(t *testing.T) {
 		Type:   0,
 		Sigs:   make([]cipher.Sig, 1),
 		In:     []cipher.SHA256{getArrayRet[0].Hash()},
+		Out:    invalidParams.To,
+	}
+	err = invalidParamsTxn.UpdateHeader()
+	require.NoError(t, err)
+
+	bip44GetArrayRet := coin.UxArray{
+		{
+			Head: coin.UxHead{
+				Time:  uint64(time.Now().Unix()) - 3700,
+				BkSeq: 100,
+			},
+			Body: coin.UxBody{
+				SrcTransaction: testutil.RandSHA256(t),
+				Address:        bip44Addrs[1],
+				Coins:          1e6,
+				Hours:          100,
+			},
+		},
+	}
+	bip44UxOuts[1] = bip44GetArrayRet[0].Hash()
+
+	bip44UnknownUxOutGetArrayRet := append(bip44GetArrayRet, coin.UxOut{
+		Head: coin.UxHead{
+			Time:  uint64(time.Now().Unix()) - 3700,
+			BkSeq: 100,
+		},
+		Body: coin.UxBody{
+			SrcTransaction: testutil.RandSHA256(t),
+			Address:        testutil.MakeAddress(),
+			Coins:          1e6,
+			Hours:          100,
+		},
+	})
+
+	bip44Inputs := []TransactionInput{
+		{
+			UxOut:           bip44GetArrayRet[0],
+			CalculatedHours: bip44GetArrayRet[0].Body.Hours + 1,
+		},
+	}
+
+	bip44Txn := &coin.Transaction{
+		Length: 183,
+		Type:   0,
+		Sigs:   make([]cipher.Sig, 1),
+		In:     []cipher.SHA256{bip44GetArrayRet[0].Hash()},
+		Out:    validParams.To,
+	}
+	err = bip44Txn.UpdateHeader()
+	require.NoError(t, err)
+
+	bip44InvalidParamsTxn := &coin.Transaction{
+		Length: 183,
+		Type:   0,
+		Sigs:   make([]cipher.Sig, 1),
+		In:     []cipher.SHA256{bip44GetArrayRet[0].Hash()},
 		Out:    invalidParams.To,
 	}
 	err = invalidParamsTxn.UpdateHeader()
@@ -464,15 +550,17 @@ func TestWalletCreateTransaction(t *testing.T) {
 	}
 
 	type testCase struct {
-		name     string
-		txn      *coin.Transaction
-		inputs   []TransactionInput
-		p        transaction.Params
-		wp       CreateTransactionParams
-		signed   TxnSignedFlag
-		walletID string
-		password []byte
-		err      error
+		name       string
+		txn        *coin.Transaction
+		inputs     []TransactionInput
+		p          transaction.Params
+		wp         CreateTransactionParams
+		signed     TxnSignedFlag
+		walletID   string
+		walletType string
+		seed       string
+		password   []byte
+		err        error
 
 		blockchainHead    *coin.SignedBlock
 		blockchainHeadErr error
@@ -497,6 +585,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 			p:              validParams,
 			wp:             CreateTransactionParams{},
 			walletID:       "foo.wlt",
+			walletType:     wallet.WalletTypeCollection,
 			blockchainHead: headBlock,
 			getUnspentHashesOfAddrs: blockdb.AddressHashes{
 				addrs[1]: uxOuts,
@@ -514,6 +603,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 				Addresses: addrs,
 			},
 			walletID:       "foo.wlt",
+			walletType:     wallet.WalletTypeCollection,
 			blockchainHead: headBlock,
 			getUnspentHashesOfAddrs: blockdb.AddressHashes{
 				addrs[1]: uxOuts,
@@ -531,6 +621,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 				UxOuts: uxOuts,
 			},
 			walletID:       "foo.wlt",
+			walletType:     wallet.WalletTypeCollection,
 			blockchainHead: headBlock,
 			getArrayInputs: uxOuts,
 			getArray:       getArrayRet,
@@ -545,6 +636,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 				Addresses: append(addrs, testutil.MakeAddress()),
 			},
 			walletID:       "foo.wlt",
+			walletType:     wallet.WalletTypeCollection,
 			blockchainHead: headBlock,
 			getUnspentHashesOfAddrs: blockdb.AddressHashes{
 				addrs[1]: uxOuts,
@@ -561,6 +653,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 				UxOuts: uxOuts,
 			},
 			walletID:       "foo.wlt",
+			walletType:     wallet.WalletTypeCollection,
 			blockchainHead: headBlock,
 			getArrayInputs: uxOuts,
 			getArray:       unknownUxOutGetArrayRet,
@@ -574,6 +667,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 				UxOuts: uxOuts,
 			},
 			walletID:       "foo.wlt",
+			walletType:     wallet.WalletTypeCollection,
 			blockchainHead: headBlock,
 			getArrayInputs: uxOuts,
 			getArray:       getArrayRet,
@@ -587,6 +681,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 				UxOuts: uxOuts,
 			},
 			walletID:       "foo.wlt",
+			walletType:     wallet.WalletTypeCollection,
 			blockchainHead: headBlock,
 			getArrayInputs: uxOuts,
 			getArray:       getArrayRet,
@@ -599,6 +694,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 			name:              "Blockchain.Head failed",
 			p:                 validParams,
 			walletID:          "foo.wlt",
+			walletType:        wallet.WalletTypeCollection,
 			blockchainHeadErr: errors.New("failure"),
 			err:               errors.New("failure"),
 		},
@@ -610,11 +706,157 @@ func TestWalletCreateTransaction(t *testing.T) {
 				UxOuts: uxOuts,
 			},
 			walletID:       "foo.wlt",
+			walletType:     wallet.WalletTypeCollection,
 			blockchainHead: headBlock,
 			getArrayInputs: uxOuts,
 			getArray:       getArrayRet,
 			txn:            txn,
 			inputs:         inputs,
+			verifyErr:      NewErrTxnViolatesSoftConstraint(errors.New("Violates soft constraints")),
+			err:            NewErrTxnViolatesSoftConstraint(errors.New("Violates soft constraints")),
+		},
+
+		{
+			name:           "all wallet addresses bip44 wallet",
+			p:              validParams,
+			wp:             CreateTransactionParams{},
+			walletID:       "foo.wlt",
+			walletType:     wallet.WalletTypeBip44,
+			seed:           bip44Seed,
+			blockchainHead: headBlock,
+			getUnspentHashesOfAddrs: blockdb.AddressHashes{
+				bip44Addrs[1]: bip44UxOuts,
+			},
+			getArrayInputs: bip44UxOuts,
+			getArray:       bip44GetArrayRet,
+			txn:            bip44Txn,
+			inputs:         bip44Inputs,
+		},
+
+		{
+			name: "specific wallet addresses bip44 wallet",
+			p:    validParams,
+			wp: CreateTransactionParams{
+				Addresses: bip44Addrs,
+			},
+			walletID:       "foo.wlt",
+			walletType:     wallet.WalletTypeBip44,
+			seed:           bip44Seed,
+			blockchainHead: headBlock,
+			getUnspentHashesOfAddrs: blockdb.AddressHashes{
+				bip44Addrs[1]: bip44UxOuts,
+			},
+			getArrayInputs: bip44UxOuts,
+			getArray:       bip44GetArrayRet,
+			txn:            bip44Txn,
+			inputs:         bip44Inputs,
+		},
+
+		{
+			name: "specific uxouts bip44 wallet",
+			p:    validParams,
+			wp: CreateTransactionParams{
+				UxOuts: bip44UxOuts,
+			},
+			walletID:       "foo.wlt",
+			walletType:     wallet.WalletTypeBip44,
+			seed:           bip44Seed,
+			blockchainHead: headBlock,
+			getArrayInputs: bip44UxOuts,
+			getArray:       bip44GetArrayRet,
+			txn:            bip44Txn,
+			inputs:         bip44Inputs,
+		},
+
+		{
+			name: "unknown wallet address bip44 wallet",
+			p:    validParams,
+			wp: CreateTransactionParams{
+				Addresses: append(bip44Addrs, testutil.MakeAddress()),
+			},
+			walletID:       "foo.wlt",
+			walletType:     wallet.WalletTypeBip44,
+			seed:           bip44Seed,
+			blockchainHead: headBlock,
+			getUnspentHashesOfAddrs: blockdb.AddressHashes{
+				bip44Addrs[1]: bip44UxOuts,
+			},
+			getArrayInputs: bip44UxOuts,
+			getArray:       bip44GetArrayRet,
+			err:            wallet.ErrUnknownAddress,
+		},
+
+		{
+			name: "unknown wallet uxouts bip44 wallet",
+			p:    validParams,
+			wp: CreateTransactionParams{
+				UxOuts: bip44UxOuts,
+			},
+			walletID:       "foo.wlt",
+			walletType:     wallet.WalletTypeBip44,
+			seed:           bip44Seed,
+			blockchainHead: headBlock,
+			getArrayInputs: bip44UxOuts,
+			getArray:       bip44UnknownUxOutGetArrayRet,
+			err:            wallet.ErrUnknownUxOut,
+		},
+
+		{
+			name: "insufficient balance bip44 wallet",
+			p:    insufficientBalanceParams,
+			wp: CreateTransactionParams{
+				UxOuts: bip44UxOuts,
+			},
+			walletID:       "foo.wlt",
+			walletType:     wallet.WalletTypeBip44,
+			seed:           bip44Seed,
+			blockchainHead: headBlock,
+			getArrayInputs: bip44UxOuts,
+			getArray:       bip44GetArrayRet,
+			err:            transaction.ErrInsufficientBalance,
+		},
+
+		{
+			name: "invalid params for transaction.Create, uxouts bip44 wallet",
+			p:    invalidParams,
+			wp: CreateTransactionParams{
+				UxOuts: bip44UxOuts,
+			},
+			walletID:       "foo.wlt",
+			walletType:     wallet.WalletTypeBip44,
+			seed:           bip44Seed,
+			blockchainHead: headBlock,
+			getArrayInputs: bip44UxOuts,
+			getArray:       bip44GetArrayRet,
+			txn:            bip44InvalidParamsTxn,
+			inputs:         bip44Inputs,
+			err:            transaction.ErrNullAddressReceiver,
+		},
+
+		{
+			name:              "Blockchain.Head failed bip44 wallet",
+			p:                 validParams,
+			walletID:          "foo.wlt",
+			walletType:        wallet.WalletTypeBip44,
+			seed:              bip44Seed,
+			blockchainHeadErr: errors.New("failure"),
+			err:               errors.New("failure"),
+		},
+
+		{
+			name: "blockchain verify error, uxouts bip44 wallet",
+			p:    validParams,
+			wp: CreateTransactionParams{
+				UxOuts: bip44UxOuts,
+			},
+			walletID:       "foo.wlt",
+			walletType:     wallet.WalletTypeBip44,
+			seed:           bip44Seed,
+			blockchainHead: headBlock,
+			getArrayInputs: bip44UxOuts,
+			getArray:       bip44GetArrayRet,
+			txn:            bip44Txn,
+			inputs:         bip44Inputs,
 			verifyErr:      NewErrTxnViolatesSoftConstraint(errors.New("Violates soft constraints")),
 			err:            NewErrTxnViolatesSoftConstraint(errors.New("Violates soft constraints")),
 		},
@@ -644,20 +886,32 @@ func TestWalletCreateTransaction(t *testing.T) {
 			})
 			require.NoError(t, err)
 
+			generateN := uint64(0)
+			if tc.walletType == wallet.WalletTypeBip44 {
+				// Generate 8 addresses, the last 3 were used in the test data above
+				generateN = 8
+			}
+
 			_, err = ws.CreateWallet(tc.walletID, wallet.Options{
 				Coin:       wallet.CoinTypeSkycoin,
-				Seed:       "foo",
 				Encrypt:    len(tc.password) != 0,
 				Password:   tc.password,
 				CryptoType: wallet.CryptoTypeScryptChacha20poly1305Insecure,
-				GenerateN:  5,
+				Type:       tc.walletType,
+				GenerateN:  generateN,
+				Seed:       tc.seed,
 			}, nil)
 			require.NoError(t, err)
 
-			err = ws.UpdateSecrets(tc.walletID, tc.password, func(w *wallet.Wallet) error {
-				for _, e := range entries {
-					err := w.AddEntry(e)
-					require.NoError(t, err)
+			err = ws.UpdateSecrets(tc.walletID, tc.password, func(w wallet.Wallet) error {
+				switch w.Type() {
+				case wallet.WalletTypeCollection:
+					// Add 5 unused entries into the wallet, in addition to the 3 above
+					uniqueEntries, _ := makeEntries(5)
+					for _, e := range append(uniqueEntries, entries...) {
+						err := w.(*wallet.CollectionWallet).AddEntry(e)
+						require.NoError(t, err)
+					}
 				}
 				return nil
 			})
@@ -665,11 +919,6 @@ func TestWalletCreateTransaction(t *testing.T) {
 
 			walletAddrs, err := ws.GetSkycoinAddresses(tc.walletID)
 			require.NoError(t, err)
-
-			// TODO -- setup wallet service with fake wallet
-			// Extra tests: - wallet.ErrUnknownUxOut
-			// wallet.ErrUnknownAddress
-			// Run tests signed + unsigned
 
 			b := &MockBlockchainer{}
 			ut := &MockUnconfirmedTransactionPooler{}
@@ -707,7 +956,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 			})
 
 			if tc.txn != nil {
-				b.On("VerifySingleTxnSoftHardConstraints", matchDBTx, matchTxnIgnoreSigs, params.UserVerifyTxn, tc.signed).Return(nil, nil, tc.verifyErr)
+				b.On("VerifySingleTxnSoftHardConstraints", matchDBTx, matchTxnIgnoreSigs, params.MainNetDistribution, params.UserVerifyTxn, tc.signed).Return(nil, nil, tc.verifyErr)
 			}
 
 			db, shutdown := prepareDB(t)
@@ -718,6 +967,9 @@ func TestWalletCreateTransaction(t *testing.T) {
 				blockchain:  b,
 				unconfirmed: ut,
 				wallets:     ws,
+				Config: Config{
+					Distribution: params.MainNetDistribution,
+				},
 			}
 
 			var txn *coin.Transaction

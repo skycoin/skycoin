@@ -1,6 +1,9 @@
 package readable
 
-import "github.com/skycoin/skycoin/src/wallet"
+import (
+	"github.com/skycoin/skycoin/src/cipher/bip44"
+	"github.com/skycoin/skycoin/src/wallet"
+)
 
 // Balance has coins and hours
 type Balance struct {
@@ -44,18 +47,22 @@ func NewAddressBalances(wab wallet.AddressBalances) AddressBalances {
 
 // WalletEntry the wallet entry struct
 type WalletEntry struct {
-	Address string `json:"address"`
-	Public  string `json:"public_key"`
+	Address     string  `json:"address"`
+	Public      string  `json:"public_key"`
+	ChildNumber *uint32 `json:"child_number,omitempty"` // For bip32/44
+	Change      *uint32 `json:"change,omitempty"`       // For bip44
 }
 
 // WalletMeta the wallet meta struct
 type WalletMeta struct {
-	Coin       string `json:"coin"`
-	Filename   string `json:"filename"`
-	Label      string `json:"label"`
-	Type       string `json:"type"`
-	Version    string `json:"version"`
-	CryptoType string `json:"crypto_type"`
-	Timestamp  int64  `json:"timestamp"`
-	Encrypted  bool   `json:"encrypted"`
+	Coin       wallet.CoinType   `json:"coin"`
+	Filename   string            `json:"filename"`
+	Label      string            `json:"label"`
+	Type       string            `json:"type"`
+	Version    string            `json:"version"`
+	CryptoType wallet.CryptoType `json:"crypto_type"`
+	Timestamp  int64             `json:"timestamp"`
+	Encrypted  bool              `json:"encrypted"`
+	Bip44Coin  *bip44.CoinType   `json:"bip44_coin,omitempty"` // For bip44
+	XPub       string            `json:"xpub,omitempty"`       // For xpub
 }

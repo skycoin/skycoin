@@ -133,6 +133,23 @@ mat-spinner.in-button {
   }
 }
 
+mat-spinner.in-text {
+  display: inline-block;
+  height: 12px !important;
+  width: 12px !important;
+  margin: 0 !important;
+  margin-left: 7px !important;
+
+  svg {
+    height: 12px !important;
+    width: 12px !important;
+
+    circle {
+      stroke: $gradient-blue-dark;
+    }
+  }
+}
+
 snack-bar-container {
   background-color: rgba(255, 0, 0, 0.8) !important;
 }
@@ -175,6 +192,26 @@ mat-panel-title {
     line-height: 20px;
     padding: 10px 10px;
     width: 100%;
+  }
+
+  .-input-addon {
+    display: flex;
+  
+    input {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+  
+    span {
+      border: 2px;
+      border-radius: 0 6px 6px 0;
+      background: #f1f1f1;
+      padding: 0 10px;
+      line-height: 44px;
+      color: $grey;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
   }
 
   select {
@@ -437,6 +474,20 @@ On-boarding components
 
   span {
     opacity: 0.5;
+  }
+
+  .link {
+    color: $gradient-blue-dark;
+    cursor: pointer;
+    display: inline-block;
+    font-size: 11px;
+    margin-bottom: 3px;
+    margin-top: -5px;
+  }
+
+  .centerd-link {
+    width: 100%;
+    text-align: center;
   }
 }
 

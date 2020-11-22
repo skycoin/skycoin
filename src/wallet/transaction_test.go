@@ -27,7 +27,7 @@ func TestWalletSignTransaction(t *testing.T) {
 	txnUnsigned := txnSigned
 	txnUnsigned.Sigs = make([]cipher.Sig, len(txnSigned.Sigs))
 
-	w := &Wallet{}
+	w := &CollectionWallet{}
 	for _, x := range seckeys {
 		p := cipher.MustPubKeyFromSecKey(x)
 		a := cipher.AddressFromPubKey(p)
@@ -82,7 +82,7 @@ func TestWalletSignTransaction(t *testing.T) {
 	err = txnOtherWallet.UpdateHeader()
 	require.NoError(t, err)
 
-	otherWallet := &Wallet{}
+	otherWallet := &CollectionWallet{}
 	for i := 1; i < 3; i++ {
 		p := cipher.MustPubKeyFromSecKey(secKeysOtherWallet[i])
 		a := cipher.AddressFromPubKey(p)
@@ -96,7 +96,7 @@ func TestWalletSignTransaction(t *testing.T) {
 
 	cases := []struct {
 		name        string
-		w           *Wallet
+		w           Wallet
 		txn         coin.Transaction
 		signIndexes []int
 		uxOuts      []coin.UxOut
@@ -271,7 +271,7 @@ func TestWalletSignTransaction(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			signedTxn, err := tc.w.SignTransaction(&tc.txn, tc.signIndexes, tc.uxOuts)
+			signedTxn, err := SignTransaction(tc.w, &tc.txn, tc.signIndexes, tc.uxOuts)
 			if tc.err != nil {
 				require.Equal(t, tc.err, err)
 				return
@@ -339,7 +339,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 		addrs = append(addrs, a)
 	}
 
-	w := &Wallet{}
+	w := &CollectionWallet{}
 	for _, x := range secKeys {
 		p := cipher.MustPubKeyFromSecKey(x)
 		a := cipher.AddressFromPubKey(p)
@@ -632,9 +632,9 @@ func TestWalletCreateTransaction(t *testing.T) {
 				var inputs []transaction.UxBalance
 				var err error
 				if unsigned {
-					txn, inputs, err = w.CreateTransaction(tc.params, addrUxOuts, tc.headTime)
+					txn, inputs, err = CreateTransaction(w, tc.params, addrUxOuts, tc.headTime)
 				} else {
-					txn, inputs, err = w.CreateTransactionSigned(tc.params, addrUxOuts, tc.headTime)
+					txn, inputs, err = CreateTransactionSigned(w, tc.params, addrUxOuts, tc.headTime)
 				}
 				require.Equal(t, tc.err, err, "%v != %v", tc.err, err)
 				if tc.err != nil {
@@ -766,7 +766,7 @@ func makeTransaction(t *testing.T, nInputs int) (coin.Transaction, []coin.UxOut,
 	return txn, uxs, toSign
 }
 
-func makeUxOut(t *testing.T, s cipher.SecKey, coins, hours uint64) coin.UxOut { // nolint: unparam
+func makeUxOut(t *testing.T, s cipher.SecKey, coins, hours uint64) coin.UxOut { //nolint:unparam
 	body := makeUxBody(t, s, coins, hours)
 	tm := rand.Int31n(1000)
 	seq := rand.Int31n(100)

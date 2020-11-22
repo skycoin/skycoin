@@ -275,7 +275,7 @@ func TestEnableGUI(t *testing.T) {
 			}()
 
 			url := fmt.Sprintf("http://%s/%s", host, tc.endpoint)
-			rsp, err := http.Get(url)
+			rsp, err := http.Get(url) //nolint:gosec
 			require.NoError(t, err)
 
 			defer rsp.Body.Close()
@@ -296,6 +296,11 @@ func TestAPISetDisabled(t *testing.T) {
 		req, err := http.NewRequest(method, endpoint, nil)
 		require.NoError(t, err)
 
+		isAPIV2 := strings.HasPrefix(endpoint, "/api/v2/")
+		if isAPIV2 {
+			req.Header.Set("Content-Type", ContentTypeJSON)
+		}
+
 		cfg := defaultMuxConfig()
 		cfg.disableCSRF = disableCSRF
 		cfg.enabledAPISets = map[string]struct{}{} // disable all API sets
@@ -310,7 +315,7 @@ func TestAPISetDisabled(t *testing.T) {
 			require.Equal(t, http.StatusOK, rr.Code)
 		default:
 			require.Equal(t, http.StatusForbidden, rr.Code)
-			if strings.HasPrefix(endpoint, "/api/v2/") {
+			if isAPIV2 {
 				require.Equal(t, "{\n    \"error\": {\n        \"message\": \"Endpoint is disabled\",\n        \"code\": 403\n    }\n}", rr.Body.String())
 			} else {
 				require.Equal(t, "403 Forbidden - Endpoint is disabled", strings.TrimSpace(rr.Body.String()))
@@ -369,6 +374,11 @@ func TestCORS(t *testing.T) {
 					require.NoError(t, err)
 
 					setCSRFParameters(t, tokenValid, req)
+
+					isAPIV2 := strings.HasPrefix(e, "/api/v2/")
+					if isAPIV2 {
+						req.Header.Set("Content-Type", ContentTypeJSON)
+					}
 
 					req.Header.Set("Origin", fmt.Sprintf("http://%s", tc.origin))
 					req.Header.Set("Access-Control-Request-Method", m)

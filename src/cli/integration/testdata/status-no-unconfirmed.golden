@@ -21,7 +21,7 @@
 			"branch": ""
 		},
 		"coin": "skycoin",
-		"user_agent": "skycoin:0.26.0",
+		"user_agent": "skycoin:0.27.1",
 		"open_connections": 0,
 		"outgoing_connections": 0,
 		"incoming_connections": 0,
@@ -31,6 +31,7 @@
 		"csp_enabled": true,
 		"wallet_api_enabled": true,
 		"gui_enabled": false,
+		"block_publisher": false,
 		"user_verify_transaction": {
 			"burn_factor": 10,
 			"max_transaction_size": 32768,
@@ -41,7 +42,18 @@
 			"max_transaction_size": 32768,
 			"max_decimals": 3
 		},
-		"started_at": 0
+		"started_at": 0,
+		"fiber": {
+			"name": "skycoin",
+			"display_name": "Skycoin",
+			"ticker": "SKY",
+			"coin_hours_display_name": "Coin Hours",
+			"coin_hours_display_name_singular": "Coin Hour",
+			"coin_hours_ticker": "SCH",
+			"explorer_url": "https://explorer.skycoin.com",
+			"version_url": "https://version.skycoin.com/skycoin/version.txt",
+			"bip44_coin": 8000
+		}
 	},
 	"cli_config": {
 		"webrpc_address": "http://127.0.0.1:1024"

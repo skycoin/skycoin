@@ -2,7 +2,7 @@
 
 A Skycoin node offers a REST API on port 6420 (when running from source; if you are using the releases downloaded from the website, the port is randomized)
 
-A CLI tool is provided in `cmd/cli/cli.go`. This tool communicates over the REST API.
+A CLI tool is provided in `cmd/skycoin-cli/skycoin-cli.go`. This tool communicates over the REST API.
 
 The API interfaces do not support authentication or encryption so they should only be used over localhost.
 
@@ -60,6 +60,16 @@ and to use the CLI tool for wallet operations (seed and address generation, tran
 		- [Using the CLI](#using-the-cli-4)
 		- [Using the REST API](#using-the-rest-api-4)
 		- [Using skycoin as a library in a Go application](#using-skycoin-as-a-library-in-a-go-application-4)
+- [xpub wallets](#xpub-wallets)
+	- [Create a bip44 HD wallet](#create-a-bip44-hd-wallet)
+		- [Using the CLI](#using-the-cli-5)
+		- [Using the REST API](#using-the-rest-api-5)
+	- [Export an xpub key from a bip44 wallet](#export-an-xpub-key-from-a-bip44-wallet)
+		- [Using the CLI](#using-the-cli-6)
+		- [Using the REST API](#using-the-rest-api-6)
+	- [Create an xpub wallet](#create-an-xpub-wallet)
+		- [Using the CLI](#using-the-cli-7)
+		- [Using the REST API](#using-the-rest-api-7)
 
 <!-- /MarkdownTOC -->
 
@@ -75,7 +85,7 @@ For integrations, the skycoin node should be run from source with `./run-daemon.
 
 ### Skycoin command line interface
 
-[CLI command API](cmd/cli/README.md).
+[CLI command API](cmd/skycoin-cli/README.md).
 
 ### Skycoin REST API Client Documentation
 
@@ -86,6 +96,11 @@ For integrations, the skycoin node should be run from source with `./run-daemon.
 [Skycoin Godoc](https://godoc.org/github.com/skycoin/skycoin)
 
 ### libskycoin Documentation
+
+`libskycoin` provides a C library for Skycoin's cryptographic operations.
+This allows python, ruby, C#, Java, etc applications to perform operations
+such as transaction signing and address verification, without using the Skycoin daemon API
+or calling the CLI tool from the shell.
 
 [libskycoin documentation](https://github.com/skycoin/libskycoin)
 
@@ -151,11 +166,11 @@ coinhours quickly.
 When sending coins from the CLI tool, a wallet file local to the caller is used.
 The CLI tool allows you to specify the wallet file on disk to use for operations.
 
-See [CLI command API](cmd/cli/README.md) for documentation of the CLI interface.
+See [CLI command API](cmd/skycoin-cli/README.md) for documentation of the CLI interface.
 
 To perform a send, the preferred method follows these steps in a loop:
 
-* `skycoin-cli createRawTransaction -m '[{"addr:"$addr1,"coins:"$coins1"}, ...]` - `-m` flag is send-to-many
+* `skycoin-cli createRawTransaction $WALLET_FILE -m '[{"addr:"$addr1,"coins:"$coins1"}, ...]` - `-m` flag is send-to-many
 * `skycoin-cli broadcastTransaction` - returns `txid`
 * `skycoin-cli transaction $txid` - repeat this command until `"status"` is `"confirmed"`
 
@@ -281,3 +296,54 @@ A method similar to `skycoin-cli status` is not implemented, but these endpoints
 #### Using skycoin as a library in a Go application
 
 Use the [Skycoin CLI package](https://godoc.org/github.com/skycoin/skycoin/src/cli)
+
+## xpub wallets
+
+You can create a wallet from an `xpub` key, which allows you to generate new
+addresses without exposing secret keys. You can use any `xpub` key from an
+existing Bitcoin or Ethereum HD wallet you may already have, or you can create
+a new HD wallet in Skycoin.
+
+To create an xpub wallet from scratch:
+
+1. Create a bip44 wallet
+2. Export an xpub key from the bip44 wallet
+3. Create the xpub wallet
+
+If you already have an xpub key, you can skip to step 3.
+
+### Create a bip44 HD wallet
+
+#### Using the CLI
+
+```sh
+skycoin-cli bip44-wallet.wlt -t bip44
+```
+
+#### Using the REST API
+
+* `POST /api/v1/wallet/create`
+
+### Export an xpub key from a bip44 wallet
+
+#### Using the CLI
+
+```sh
+skycoin-cli walletKeyExport bip44-wallet.wlt -k xpub --path "0/0"
+```
+
+#### Using the REST API
+
+Not possible
+
+### Create an xpub wallet
+
+#### Using the CLI
+
+```sh
+skycoin-cli walletCreate xpub-wallet.wlt -t xpub --xpub $MY_XPUB_KEY
+```
+
+#### Using the REST API
+
+* `POST /api/v1/wallet/create`

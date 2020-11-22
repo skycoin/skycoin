@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/fiber"
 	"github.com/skycoin/skycoin/src/kvstorage"
 
 	"log"
@@ -117,9 +118,6 @@ type NodeConfig struct {
 	// Launch System Default Browser after client startup
 	LaunchBrowser bool
 
-	// If true, print the configured client web interface address and exit
-	PrintWebInterfaceAddress bool
-
 	// Data directory holds app data -- defaults to ~/.skycoin
 	DataDirectory string
 	// GUI directory contains assets for the HTML interface
@@ -190,11 +188,10 @@ type NodeConfig struct {
 	// Expose HTTP profiling on this interface
 	HTTPProfHost string
 
-	DBPath      string
-	DBReadOnly  bool
-	Arbitrating bool
-	LogToFile   bool
-	Version     bool // show node version
+	DBPath     string
+	DBReadOnly bool
+	LogToFile  bool
+	Version    bool // show node version
 
 	GenesisSignatureStr string
 	GenesisAddressStr   string
@@ -210,10 +207,12 @@ type NodeConfig struct {
 
 	blockchainPubkey cipher.PubKey
 	blockchainSeckey cipher.SecKey
+
+	Fiber readable.FiberConfig
 }
 
 // NewNodeConfig returns a new node config instance
-func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
+func NewNodeConfig(mode string, node fiber.NodeConfig) NodeConfig {
 	nodeConfig := NodeConfig{
 		CoinName:            node.CoinName,
 		GenesisSignatureStr: node.GenesisSignatureStr,
@@ -290,13 +289,21 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		ResetCorruptDB: false,
 
 		// Blockchain/transaction validation
-		UnconfirmedVerifyTxn:     params.UserVerifyTxn,
-		CreateBlockVerifyTxn:     params.UserVerifyTxn,
-		MaxBlockTransactionsSize: params.UserVerifyTxn.MaxTransactionSize,
+		UnconfirmedVerifyTxn: params.VerifyTxn{
+			BurnFactor:          node.UnconfirmedBurnFactor,
+			MaxTransactionSize:  node.UnconfirmedMaxTransactionSize,
+			MaxDropletPrecision: node.UnconfirmedMaxDropletPrecision,
+		},
+		CreateBlockVerifyTxn: params.VerifyTxn{
+			BurnFactor:          node.CreateBlockBurnFactor,
+			MaxTransactionSize:  node.CreateBlockMaxTransactionSize,
+			MaxDropletPrecision: node.CreateBlockMaxDropletPrecision,
+		},
+		MaxBlockTransactionsSize: node.MaxBlockTransactionsSize,
 
 		// Wallets
 		WalletDirectory:  "",
-		WalletCryptoType: string(wallet.CryptoTypeScryptChacha20poly1305),
+		WalletCryptoType: string(wallet.DefaultCryptoType),
 
 		// Key-value storage
 		KVStorageDirectory: "",
@@ -320,6 +327,18 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 		// HTTP profiling interface (see http://golang.org/pkg/net/http/pprof/)
 		HTTPProf:     false,
 		HTTPProfHost: "localhost:6060",
+
+		Fiber: readable.FiberConfig{
+			Name:                  node.CoinName,
+			DisplayName:           node.DisplayName,
+			Ticker:                node.Ticker,
+			CoinHoursName:         node.CoinHoursName,
+			CoinHoursNameSingular: node.CoinHoursNameSingular,
+			CoinHoursTicker:       node.CoinHoursTicker,
+			ExplorerURL:           node.ExplorerURL,
+			VersionURL:            node.VersionURL,
+			Bip44Coin:             node.Bip44Coin,
+		},
 	}
 
 	nodeConfig.applyConfigMode(mode)
@@ -330,10 +349,6 @@ func NewNodeConfig(mode string, node NodeParameters) NodeConfig {
 func (c *Config) postProcess() error {
 	if help {
 		flag.Usage()
-		fmt.Println("Additional environment variables:")
-		fmt.Printf("* USER_BURN_FACTOR - Set the coin hour burn factor required for user-created transactions. Must be >= %d.\n", params.MinBurnFactor)
-		fmt.Printf("* USER_MAX_TXN_SIZE - Set the maximum transaction size (in bytes) allowed for user-created transactions. Must be >= %d.\n", params.MinTransactionSize)
-		fmt.Printf("* USER_MAX_DECIMALS - Set the maximum decimals allowed for user-created transactions. Must be <= %d.\n", droplet.Exponent)
 		os.Exit(0)
 	}
 
@@ -406,11 +421,6 @@ func (c *Config) postProcess() error {
 		c.Node.DBPath = filepath.Join(c.Node.DataDirectory, "data.db")
 	} else {
 		c.Node.DBPath = replaceHome(c.Node.DBPath, home)
-	}
-
-	if c.Node.RunBlockPublisher {
-		// Run in arbitrating mode if the node is block publisher
-		c.Node.Arbitrating = true
 	}
 
 	userAgentData := useragent.Data{
@@ -638,8 +648,8 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.WebInterface, "web-interface", c.WebInterface, "enable the web interface")
 	flag.IntVar(&c.WebInterfacePort, "web-interface-port", c.WebInterfacePort, "port to serve web interface on")
 	flag.StringVar(&c.WebInterfaceAddr, "web-interface-addr", c.WebInterfaceAddr, "addr to serve web interface on")
-	flag.StringVar(&c.WebInterfaceCert, "web-interface-cert", c.WebInterfaceCert, "skycoind.cert file for web interface HTTPS. If not provided, will autogenerate or use skycoind.cert in -data-directory")
-	flag.StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "skycoind.key file for web interface HTTPS. If not provided, will autogenerate or use skycoind.key in -data-directory")
+	flag.StringVar(&c.WebInterfaceCert, "web-interface-cert", c.WebInterfaceCert, "skycoind.cert file for web interface HTTPS. If not provided, will autogenerate or use skycoind.cert in --data-dir")
+	flag.StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "skycoind.key file for web interface HTTPS. If not provided, will autogenerate or use skycoind.key in --data-dir")
 	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https", c.WebInterfaceHTTPS, "enable HTTPS for web interface")
 	flag.StringVar(&c.HostWhitelist, "host-whitelist", c.HostWhitelist, "Hostnames to whitelist in the Host header check. Only applies when the web interface is bound to localhost.")
 
@@ -662,7 +672,6 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.BoolVar(&c.WebInterfacePlaintextAuth, "web-interface-plaintext-auth", c.WebInterfacePlaintextAuth, "allow web interface auth without https")
 
 	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser, "launch system default webbrowser at client startup")
-	flag.BoolVar(&c.PrintWebInterfaceAddress, "print-web-interface-address", c.PrintWebInterfaceAddress, "print configured web interface address and exit")
 	flag.StringVar(&c.DataDirectory, "data-dir", c.DataDirectory, "directory to store app data (defaults to ~/.skycoin)")
 	flag.StringVar(&c.DBPath, "db-path", c.DBPath, "path of database file (defaults to ~/.skycoin/data.db)")
 	flag.BoolVar(&c.DBReadOnly, "db-read-only", c.DBReadOnly, "open bolt db read-only")
@@ -710,7 +719,6 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.IntVar(&c.MaxOutgoingMessageLength, "max-out-msg-len", c.MaxOutgoingMessageLength, "Maximum length of outgoing wire messages")
 	flag.IntVar(&c.MaxIncomingMessageLength, "max-in-msg-len", c.MaxIncomingMessageLength, "Maximum length of incoming wire messages")
 	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly, "Run on localhost and only connect to localhost peers")
-	flag.BoolVar(&c.Arbitrating, "arbitrating", c.Arbitrating, "Run node in arbitrating mode")
 	flag.StringVar(&c.WalletCryptoType, "wallet-crypto-type", c.WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")
 	flag.BoolVar(&c.Version, "version", false, "show node version")
 }
@@ -739,7 +747,7 @@ func (c *NodeConfig) applyConfigMode(configMode string) {
 	}
 }
 
-func panicIfError(err error, msg string, args ...interface{}) { // nolint: unparam
+func panicIfError(err error, msg string, args ...interface{}) { //nolint:unparam
 	if err != nil {
 		log.Panicf(msg+": %v", append(args, err)...)
 	}

@@ -20,6 +20,16 @@
   padding: 0px 24px;
 }
 
-mat-dialog-content {
-  padding: 24px;
+mat-dialog-content::before {
+  content: '';
+  padding-top: 24px;
+  height: 0px;
+  display: block;
+}
+
+mat-dialog-content::after {
+  content: '';
+  padding-top: 24px;
+  height: 0px;
+  display: block;
 }

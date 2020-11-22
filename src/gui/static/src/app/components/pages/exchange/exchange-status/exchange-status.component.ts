@@ -1,13 +1,14 @@
 import { Component, Input, OnDestroy, Output, EventEmitter } from '@angular/core';
 import { ExchangeOrder, StoredExchangeOrder, ConfirmationData } from '../../../../app.datatypes';
 import { ExchangeService } from '../../../../services/exchange.service';
-import { QrCodeComponent } from '../../../layout/qr-code/qr-code.component';
+import { QrCodeComponent, QrDialogConfig } from '../../../layout/qr-code/qr-code.component';
 import { MatDialog, MatDialogConfig } from '@angular/material';
 import { ISubscription } from 'rxjs/Subscription';
 import { Observable } from 'rxjs/Observable';
 import { showConfirmationModal } from '../../../../utils';
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { environment } from '../../../../../environments/environment';
+import { AppService } from '../../../../services/app.service';
 
 @Component({
   selector: 'app-exchange-status',
@@ -25,6 +26,7 @@ export class ExchangeStatusComponent implements OnDestroy {
     'market_withdraw_waiting',
     'complete',
     'error',
+    'user_deposit_timeout',
   ];
 
   loading = true;
@@ -78,7 +80,7 @@ export class ExchangeStatusComponent implements OnDestroy {
       return 'done';
     }
 
-    if (this.order.status === this.statuses[6]) {
+    if (this.order.status === this.statuses[6] || this.order.status === this.statuses[7]) {
       return 'close';
     }
 
@@ -97,6 +99,7 @@ export class ExchangeStatusComponent implements OnDestroy {
     private exchangeService: ExchangeService,
     private dialog: MatDialog,
     public blockchainService: BlockchainService,
+    public appService: AppService,
   ) { }
 
   ngOnDestroy() {
@@ -104,9 +107,12 @@ export class ExchangeStatusComponent implements OnDestroy {
   }
 
   showQrCode(address) {
-    const config = new MatDialogConfig();
-    config.data = { address };
-    this.dialog.open(QrCodeComponent, config);
+    const config: QrDialogConfig = {
+      address: address,
+      hideCoinRequestForm: true,
+      ignoreCoinPrefix: true,
+    };
+    QrCodeComponent.openDialog(this.dialog, config);
   }
 
   toggleDetails() {

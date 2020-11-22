@@ -1,13 +1,14 @@
 import { Component, EventEmitter, Input, OnDestroy, Output, ViewChild } from '@angular/core';
 import { WalletService } from '../../../../services/wallet.service';
 import { ButtonComponent } from '../../../layout/button/button.component';
-import { MatSnackBar, MatDialogConfig, MatDialog } from '@angular/material';
-import { showSnackbarError, getHardwareWalletErrorMsg } from '../../../../utils/errors';
+import { MatDialogConfig, MatDialog } from '@angular/material';
+import { getHardwareWalletErrorMsg } from '../../../../utils/errors';
 import { PreviewTransaction, Wallet } from '../../../../app.datatypes';
 import { ISubscription } from 'rxjs/Subscription';
 import { PasswordDialogComponent } from '../../../layout/password-dialog/password-dialog.component';
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
+import { MsgBarService } from '../../../../services/msg-bar.service';
 
 @Component({
   selector: 'app-send-preview',
@@ -24,14 +25,14 @@ export class SendVerifyComponent implements OnDestroy {
 
   constructor(
     private walletService: WalletService,
-    private snackbar: MatSnackBar,
+    private msgBarService: MsgBarService,
     private dialog: MatDialog,
     private hwWalletService: HwWalletService,
     private translate: TranslateService,
   ) {}
 
   ngOnDestroy() {
-    this.snackbar.dismiss();
+    this.msgBarService.hide();
 
     if (this.sendSubscription) {
       this.sendSubscription.unsubscribe();
@@ -47,7 +48,7 @@ export class SendVerifyComponent implements OnDestroy {
       return;
     }
 
-    this.snackbar.dismiss();
+    this.msgBarService.hide();
     this.sendButton.resetState();
 
     if (this.transaction.wallet.encrypted && !this.transaction.wallet.isHardware) {
@@ -67,7 +68,7 @@ export class SendVerifyComponent implements OnDestroy {
         this.showBusy();
         this.sendSubscription = this.hwWalletService.checkIfCorrectHwConnected(this.transaction.wallet.addresses[0].address).subscribe(
           () => this.finishSending(),
-          err => this.showError(getHardwareWalletErrorMsg(this.hwWalletService, this.translate, err)),
+          err => this.showError(getHardwareWalletErrorMsg(this.translate, err)),
         );
       }
     }
@@ -81,6 +82,8 @@ export class SendVerifyComponent implements OnDestroy {
   private finishSending(passwordDialog?: any) {
     this.showBusy();
 
+    const note = this.transaction.note.trim();
+
     this.sendSubscription = this.walletService.signTransaction(
       this.transaction.wallet,
       passwordDialog ? passwordDialog.password : null,
@@ -90,23 +93,24 @@ export class SendVerifyComponent implements OnDestroy {
         passwordDialog.close();
       }
 
-      return this.walletService.injectTransaction(result.encoded);
-    }).subscribe(() => {
-      this.sendButton.setSuccess();
-      this.sendButton.setDisabled();
+      return this.walletService.injectTransaction(result.encoded, note);
+    }).subscribe(noteSaved => {
+      if (note && !noteSaved) {
+        setTimeout(() => this.msgBarService.showWarning(this.translate.instant('send.error-saving-note')));
+      } else {
+        setTimeout(() => this.msgBarService.showDone('send.sent'));
+      }
 
       this.walletService.startDataRefreshSubscription();
 
-      setTimeout(() => {
-        this.onBack.emit(true);
-      }, 3000);
+      this.onBack.emit(true);
     }, error => {
       if (passwordDialog) {
         passwordDialog.error(error);
       }
 
       if (error && error.result) {
-        this.showError(getHardwareWalletErrorMsg(this.hwWalletService, this.translate, error));
+        this.showError(getHardwareWalletErrorMsg(this.translate, error));
       } else {
         this.showError(error);
       }
@@ -114,8 +118,8 @@ export class SendVerifyComponent implements OnDestroy {
   }
 
   private showError(error) {
-    showSnackbarError(this.snackbar, error);
-    this.sendButton.resetState().setError(error);
+    this.msgBarService.showError(error);
+    this.sendButton.resetState();
     this.backButton.resetState().setEnabled();
   }
 }

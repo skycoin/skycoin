@@ -33,12 +33,14 @@ export class Transaction {
   hoursSent?: BigNumber;
   hoursBurned?: BigNumber;
   coinsMovedInternally?: boolean;
+  note?: string;
 }
 
 export class PreviewTransaction extends Transaction {
   from: string;
   to: string[];
   encoded: string;
+  innerHash: string;
   wallet?: Wallet;
 }
 
@@ -124,6 +126,8 @@ export interface ConfirmationData {
   cancelButtonText?: string;
   redTitle?: boolean;
   disableDismiss?: boolean;
+  linkText?: string;
+  linkFunction?(): void;
 }
 
 /**

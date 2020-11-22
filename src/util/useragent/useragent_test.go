@@ -256,7 +256,7 @@ func TestMustParse(t *testing.T) {
 	}, d)
 
 	require.Panics(t, func() {
-		MustParse("foo") // nolint: errcheck
+		MustParse("foo") //nolint:errcheck
 	})
 }
 
@@ -265,6 +265,6 @@ func TestMustBuild(t *testing.T) {
 		Version: "0",
 	}
 	require.Panics(t, func() {
-		d.MustBuild() // nolint: errcheck
+		d.MustBuild() //nolint:errcheck
 	})
 }

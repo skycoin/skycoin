@@ -628,18 +628,21 @@ func TestGetTransactionByID(t *testing.T) {
 func TestInjectTransaction(t *testing.T) {
 	validTransaction := makeTransaction(t)
 
-	type httpBody struct {
-		Rawtx string `json:"rawtx"`
-	}
-
-	validTxnBody := &httpBody{
-		Rawtx: validTransaction.MustSerializeHex(),
+	validTxnBody := &InjectTransactionRequest{
+		RawTxn: validTransaction.MustSerializeHex(),
 	}
 	validTxnBodyJSON, err := json.Marshal(validTxnBody)
 	require.NoError(t, err)
 
-	b := &httpBody{
-		Rawtx: hex.EncodeToString(testutil.RandBytes(t, 128)),
+	validTxnBodyNoBroadcast := &InjectTransactionRequest{
+		RawTxn:      validTransaction.MustSerializeHex(),
+		NoBroadcast: true,
+	}
+	validTxnBodyNoBroadcastJSON, err := json.Marshal(validTxnBodyNoBroadcast)
+	require.NoError(t, err)
+
+	b := &InjectTransactionRequest{
+		RawTxn: hex.EncodeToString(testutil.RandBytes(t, 128)),
 	}
 	invalidTxnBodyJSON, err := json.Marshal(b)
 	require.NoError(t, err)
@@ -717,19 +720,58 @@ func TestInjectTransaction(t *testing.T) {
 			injectTransactionError: gnet.ErrPoolEmpty,
 		},
 		{
-			name:                   "500 - other injectTransactionError",
+			name:                   "500 - other injectBroadcastTransactionError",
+			method:                 http.MethodPost,
+			status:                 http.StatusInternalServerError,
+			err:                    "500 Internal Server Error - injectBroadcastTransactionError",
+			httpBody:               string(validTxnBodyJSON),
+			injectTransactionArg:   validTransaction,
+			injectTransactionError: errors.New("injectBroadcastTransactionError"),
+		},
+		{
+			name:                   "500 - no broadcast other injectTransactionError",
 			method:                 http.MethodPost,
 			status:                 http.StatusInternalServerError,
 			err:                    "500 Internal Server Error - injectTransactionError",
-			httpBody:               string(validTxnBodyJSON),
+			httpBody:               string(validTxnBodyNoBroadcastJSON),
 			injectTransactionArg:   validTransaction,
 			injectTransactionError: errors.New("injectTransactionError"),
+		},
+		{
+			name:                 "400 - txn constraint violation",
+			method:               http.MethodPost,
+			status:               http.StatusBadRequest,
+			err:                  "400 Bad Request - Transaction violates hard constraint: bad transaction",
+			httpBody:             string(validTxnBodyJSON),
+			injectTransactionArg: validTransaction,
+			injectTransactionError: visor.ErrTxnViolatesHardConstraint{
+				Err: errors.New("bad transaction"),
+			},
+		},
+		{
+			name:                 "400 - no broadcast txn constraint violation",
+			method:               http.MethodPost,
+			status:               http.StatusBadRequest,
+			err:                  "400 Bad Request - Transaction violates hard constraint: bad transaction",
+			httpBody:             string(validTxnBodyNoBroadcastJSON),
+			injectTransactionArg: validTransaction,
+			injectTransactionError: visor.ErrTxnViolatesHardConstraint{
+				Err: errors.New("bad transaction"),
+			},
 		},
 		{
 			name:                 "200",
 			method:               http.MethodPost,
 			status:               http.StatusOK,
 			httpBody:             string(validTxnBodyJSON),
+			injectTransactionArg: validTransaction,
+			httpResponse:         validTransaction.Hash().Hex(),
+		},
+		{
+			name:                 "200 no broadcast",
+			method:               http.MethodPost,
+			status:               http.StatusOK,
+			httpBody:             string(validTxnBodyNoBroadcastJSON),
 			injectTransactionArg: validTransaction,
 			httpResponse:         validTransaction.Hash().Hex(),
 		},
@@ -749,6 +791,7 @@ func TestInjectTransaction(t *testing.T) {
 			endpoint := "/api/v1/injectTransaction"
 			gateway := &MockGatewayer{}
 			gateway.On("InjectBroadcastTransaction", tc.injectTransactionArg).Return(tc.injectTransactionError)
+			gateway.On("InjectTransaction", tc.injectTransactionArg).Return(tc.injectTransactionError)
 
 			req, err := http.NewRequest(tc.method, endpoint, strings.NewReader(tc.httpBody))
 			require.NoError(t, err)

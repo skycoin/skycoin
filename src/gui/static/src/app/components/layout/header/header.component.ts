@@ -1,18 +1,14 @@
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { PriceService } from '../../../services/price.service';
-import { Subscription, ISubscription } from 'rxjs/Subscription';
+import { ISubscription } from 'rxjs/Subscription';
 import { WalletService } from '../../../services/wallet.service';
 import { BlockchainService } from '../../../services/blockchain.service';
-import { Observable } from 'rxjs/Observable';
-import { ApiService } from '../../../services/api.service';
-import { Http } from '@angular/http';
 import { AppService } from '../../../services/app.service';
 import 'rxjs/add/operator/skip';
 import 'rxjs/add/operator/take';
-import { shouldUpgradeVersion } from '../../../utils/semver';
-import { TranslateService } from '@ngx-translate/core';
 import { BigNumber } from 'bignumber.js';
 import { NetworkService } from '../../../services/network.service';
+import { AppConfig } from '../../../app.config';
 
 @Component({
   selector: 'app-header',
@@ -27,14 +23,12 @@ export class HeaderComponent implements OnInit, OnDestroy {
   highest: number;
   percentage: number;
   querying = true;
-  version: string;
-  releaseVersion: string;
-  updateAvailable: boolean;
   hasPendingTxs: boolean;
   price: number;
   synchronized = true;
+  walletDownloadUrl = AppConfig.walletDownloadUrl;
 
-  private subscription: Subscription;
+  private subscriptionsGroup: ISubscription[] = [];
   private synchronizedSubscription: ISubscription;
   // This should be deleted. View the comment in the constructor.
   // private fetchVersionError: string;
@@ -60,23 +54,13 @@ export class HeaderComponent implements OnInit, OnDestroy {
   constructor(
     public appService: AppService,
     public networkService: NetworkService,
-    private apiService: ApiService,
     private blockchainService: BlockchainService,
     private priceService: PriceService,
     private walletService: WalletService,
-    private http: Http,
-    private translateService: TranslateService,
-  ) {
-    // This should not be used anymore, as this does not allow to update the text if the user changes the language.
-    /*
-    this.translateService.get('errors.fetch-version').subscribe(msg => {
-      this.fetchVersionError = msg;
-    });
-    */
-  }
+  ) { }
 
   ngOnInit() {
-    this.subscription = this.blockchainService.progress
+    this.subscriptionsGroup.push(this.blockchainService.progress
       .filter(response => !!response)
       .subscribe(response => {
         this.querying = false;
@@ -89,13 +73,11 @@ export class HeaderComponent implements OnInit, OnDestroy {
         if (!this.synchronizedSubscription) {
           this.synchronizedSubscription = this.blockchainService.synchronized.subscribe(value => this.synchronized = value);
         }
-      });
+      }));
 
-    this.setVersion();
+    this.subscriptionsGroup.push(this.priceService.price.subscribe(price => this.price = price));
 
-    this.subscription.add(this.priceService.price.subscribe(price => this.price = price));
-
-    this.subscription.add(this.walletService.allAddresses().subscribe(addresses => {
+    this.subscriptionsGroup.push(this.walletService.allAddresses().subscribe(addresses => {
       this.addresses = addresses.reduce((array, item) => {
         if (!array.find(addr => addr.address === item.address)) {
           array.push(item);
@@ -105,42 +87,15 @@ export class HeaderComponent implements OnInit, OnDestroy {
       }, []);
     }));
 
-    this.subscription.add(this.walletService.pendingTransactions().subscribe(txs => {
-      this.hasPendingTxs = txs.length > 0;
+    this.subscriptionsGroup.push(this.walletService.pendingTransactions().subscribe(txs => {
+      this.hasPendingTxs = txs.user.length > 0;
     }));
   }
 
   ngOnDestroy() {
-    this.subscription.unsubscribe();
+    this.subscriptionsGroup.forEach(sub => sub.unsubscribe());
     if (this.synchronizedSubscription) {
       this.synchronizedSubscription.unsubscribe();
     }
-  }
-
-  setVersion() {
-    // Set build version
-    setTimeout(() => {
-      this.apiService.getVersion().first()
-        .subscribe(output =>  {
-          this.version = output.version;
-          this.retrieveReleaseVersion();
-        });
-    }, 1000);
-  }
-
-  private retrieveReleaseVersion() {
-    /*
-    // Old method for checking if an update is available. Must be replaced after adding the
-    // number of the lastest version in a Skycoin domain.
-    // Also, note that the catch block does not seem to do anything relevant.
-    this.http.get('https://api.github.com/repos/skycoin/skycoin/tags')
-      .map((res: any) => res.json())
-      .catch((error: any) => Observable.throw(error || this.fetchVersionError))
-      .subscribe(response =>  {
-        this.releaseVersion = response.find(element => element['name'].indexOf('rc') === -1)['name'].substr(1);
-        this.updateAvailable = shouldUpgradeVersion(this.version, this.releaseVersion);
-      });
-    */
-    this.updateAvailable = false;
   }
 }

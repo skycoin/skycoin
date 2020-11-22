@@ -1,20 +1,9 @@
 import { Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
+import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { ChildHwDialogParams } from '../hw-options-dialog/hw-options-dialog.component';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 import { FormGroup, FormBuilder, Validators } from '@angular/forms';
-
-enum States {
-  Initial,
-  Processing,
-  ReturnedSuccess,
-  ReturnedRefused,
-  Failed,
-  WrongWord,
-  WrongSeed,
-  InvalidSeed,
-}
 
 @Component({
   selector: 'app-hw-restore-seed-dialog',
@@ -22,9 +11,6 @@ enum States {
   styleUrls: ['./hw-restore-seed-dialog.component.scss'],
 })
 export class HwRestoreSeedDialogComponent extends HwDialogBaseComponent<HwRestoreSeedDialogComponent> {
-
-  currentState: States = States.Initial;
-  states = States;
   form: FormGroup;
   justCheckingSeed: boolean;
 
@@ -44,28 +30,21 @@ export class HwRestoreSeedDialogComponent extends HwDialogBaseComponent<HwRestor
   }
 
   startOperation() {
-    this.currentState = States.Processing;
+    this.currentState = this.states.Processing;
 
     this.operationSubscription = this.hwWalletService.recoverMnemonic(this.form.controls['words'].value, this.justCheckingSeed).subscribe(
       () => {
         if (!this.justCheckingSeed) {
           this.data.requestOptionsComponentRefresh();
-        }
-        this.currentState = States.ReturnedSuccess;
-      },
-      err => {
-        if (err.result && err.result === OperationResults.FailedOrRefused) {
-          this.currentState = States.ReturnedRefused;
-        } else if (err.result && err.result === OperationResults.WrongWord) {
-          this.currentState = States.WrongWord;
-        } else if (err.result && err.result === OperationResults.InvalidSeed) {
-          this.currentState = States.InvalidSeed;
-        } else if (err.result && err.result === OperationResults.WrongSeed) {
-          this.currentState = States.WrongSeed;
+          this.closeModal();
         } else {
-          this.currentState = States.Failed;
+          this.showResult({
+            text: 'hardware-wallet.restore-seed.correct-seed',
+            icon: this.msgIcons.Success,
+          });
         }
       },
+      err => this.processResult(err.result, 'hardware-wallet.general.simple-error'),
     );
   }
 }

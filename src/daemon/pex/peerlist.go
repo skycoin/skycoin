@@ -199,7 +199,7 @@ func (pl *peerlist) setPrivate(addr string, private bool) error {
 	return fmt.Errorf("set peer.Private failed: %v does not exist in peer list", addr)
 }
 
-// SetTrusted sets peer as trusted peer
+// setTrusted sets peer as trusted peer
 func (pl *peerlist) setTrusted(addr string, trusted bool) error {
 	if p, ok := pl.peers[addr]; ok {
 		p.Trusted = trusted

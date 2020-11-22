@@ -54,6 +54,10 @@ export class OnboardingEncryptWalletComponent implements OnInit {
     this.onBack.emit();
   }
 
+  resetButton() {
+    this.button.resetState();
+  }
+
   get isWorking() {
     return this.button.isLoading();
   }

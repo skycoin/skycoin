@@ -1,11 +1,22 @@
 .DEFAULT_GOAL := help
-.PHONY: run run-help test test-386 test-amd64 check check-newcoin
-.PHONY: integration-test-stable integration-test-stable-disable-csrf
+.PHONY: run-client run-daemon run-help
+.PHONY: test test-386 test-amd64
+.PHONY: check check-newcoin
+.PHONY: run-integration-test-live
+.PHONY: run-integration-test-live-disable-csrf
+.PHONY: run-integration-test-live-disable-networking
+.PHONY: run-integration-test-live-cover
+.PHONY: run-integration-test-live-cover-disable-csrf
+.PHONY: run-integration-test-live-cover-disable-networking
+.PHONY: integration-tests-stable
+.PHONY: integration-test-stable
+.PHONY: integration-test-stable-disable-csrf
+.PHONY: integration-test-stable-disable-wallet-api
+.PHONY: integration-test-stable-enable-seed-api
+.PHONY: integration-test-stable-disable-gui
+.PHONY: integration-test-stable-db-no-unconfirmed
+.PHONY: integration-test-stable-auth
 .PHONY: integration-test-live integration-test-live-wallet
-.PHONY: integration-test-disable-wallet-api integration-test-disable-seed-api
-.PHONY: integration-test-enable-seed-api integration-test-enable-seed-api
-.PHONY: integration-test-disable-gui integration-test-disable-gui
-.PHONY: integration-test-db-no-unconfirmed integration-test-auth
 .PHONY: install-linters format release clean-release clean-coverage
 .PHONY: install-deps-ui build-ui build-ui-travis help newcoin merge-coverage
 .PHONY: generate update-golden-files
@@ -34,8 +45,20 @@ run-help: ## Show skycoin node help
 run-integration-test-live: ## Run the skycoin node configured for live integration tests
 	./ci-scripts/run-live-integration-test-node.sh
 
+run-integration-test-live-disable-csrf: ## Run the skycoin node configured for live integration tests with CSRF disabled
+	./ci-scripts/run-live-integration-test-node.sh -disable-csrf
+
+run-integration-test-live-disable-networking: ## Run the skycoin node configured for live integration tests with networking disabled
+	./ci-scripts/run-live-integration-test-node.sh -disable-networking
+
 run-integration-test-live-cover: ## Run the skycoin node configured for live integration tests with coverage
 	./ci-scripts/run-live-integration-test-node-cover.sh
+
+run-integration-test-live-cover-disable-csrf: ## Run the skycoin node configured for live integration tests with CSRF disabled and with coverage
+	./ci-scripts/run-live-integration-test-node-cover.sh -disable-csrf
+
+run-integration-test-live-cover-disable-networking: ## Run the skycoin node configured for live integration tests with networking disabled and with coverage
+	./ci-scripts/run-live-integration-test-node-cover.sh -disable-networking
 
 test: ## Run tests for Skycoin
 	@mkdir -p coverage/
@@ -61,56 +84,62 @@ check-newcoin: newcoin ## Check that make newcoin succeeds and no templated file
 	@if [ "$(shell git diff ./cmd/skycoin/skycoin_test.go | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
 	@if [ "$(shell git diff ./src/params/params.go | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
 
-check: lint clean-coverage test test-386 \
-	integration-test-stable integration-test-stable-disable-csrf \
-	integration-test-disable-wallet-api integration-test-disable-seed-api \
-	integration-test-enable-seed-api integration-test-disable-gui \
-	integration-test-auth integration-test-db-no-unconfirmed check-newcoin ## Run tests and linters
+check: lint clean-coverage test test-386 integration-tests-stable check-newcoin ## Run tests and linters
+
+integration-tests-stable: integration-test-stable \
+	integration-test-stable-disable-csrf \
+	integration-test-stable-disable-wallet-api \
+	integration-test-stable-enable-seed-api \
+	integration-test-stable-disable-gui \
+	integration-test-stable-auth \
+	integration-test-stable-db-no-unconfirmed ## Run all stable integration tests
 
 integration-test-stable: ## Run stable integration tests
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -c -x -n enable-csrf-header-check
+	COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -c -x -n enable-csrf-header-check
 
 integration-test-stable-disable-header-check: ## Run stable integration tests with header check disabled
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -n disable-header-check
+	COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -n disable-header-check
 
 integration-test-stable-disable-csrf: ## Run stable integration tests with CSRF disabled
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -n disable-csrf
+	COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -n disable-csrf
+
+integration-test-stable-disable-wallet-api: ## Run disable wallet api integration tests
+	COIN=$(COIN) ./ci-scripts/integration-test-disable-wallet-api.sh
+
+integration-test-stable-enable-seed-api: ## Run enable seed api integration test
+	COIN=$(COIN) ./ci-scripts/integration-test-enable-seed-api.sh
+
+integration-test-stable-disable-gui: ## Run tests with the GUI disabled
+	COIN=$(COIN) ./ci-scripts/integration-test-disable-gui.sh
+
+integration-test-stable-db-no-unconfirmed: ## Run stable tests against the stable database that has no unconfirmed transactions
+	COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -d -n no-unconfirmed
+
+integration-test-stable-auth: ## Run stable tests with HTTP Basic auth enabled
+	COIN=$(COIN) ./ci-scripts/integration-test-auth.sh
 
 integration-test-live: ## Run live integration tests
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c
+	COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c
 
 integration-test-live-wallet: ## Run live integration tests with wallet
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-live.sh -w
+	COIN=$(COIN) ./ci-scripts/integration-test-live.sh -w
 
 integration-test-live-enable-header-check: ## Run live integration tests against a node with header check enabled
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-live.sh
+	COIN=$(COIN) ./ci-scripts/integration-test-live.sh
 
 integration-test-live-disable-csrf: ## Run live integration tests against a node with CSRF disabled
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-live.sh
+	COIN=$(COIN) ./ci-scripts/integration-test-live.sh
 
 integration-test-live-disable-networking: ## Run live integration tests against a node with networking disabled (requires wallet)
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c -k
-
-integration-test-disable-wallet-api: ## Run disable wallet api integration tests
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-disable-wallet-api.sh
-
-integration-test-enable-seed-api: ## Run enable seed api integration test
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-enable-seed-api.sh
-
-integration-test-disable-gui: ## Run tests with the GUI disabled
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-disable-gui.sh
-
-integration-test-db-no-unconfirmed: ## Run stable tests against the stable database that has no unconfirmed transactions
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-stable.sh -d -n no-unconfirmed
-
-integration-test-auth: ## Run stable tests with HTTP Basic auth enabled
-	GOCACHE=off COIN=$(COIN) ./ci-scripts/integration-test-auth.sh
+	COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c -k
 
 install-linters: ## Install linters
 	go get -u github.com/FiloSottile/vendorcheck
 	# For some reason this install method is not recommended, see https://github.com/golangci/golangci-lint#install
 	# However, they suggest `curl ... | bash` which we should not do
-	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+	# go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+	# Change to use go get -u with version when go is v1.12+
+	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(shell go env GOPATH)/bin v1.18.0
 
 format: ## Formats the code. Must have goimports installed (use make install-linters).
 	goimports -w -local github.com/skycoin/skycoin ./cmd
@@ -174,6 +203,7 @@ generate: ## Generate test interface mocks and struct encoders
 	mv ./src/visor/blockdb/mock_unspent_pooler_test.go ./src/visor/mock_unspent_pooler_test.go
 	sed -i "" -e 's/package blockdb/package visor/g' ./src/visor/mock_unspent_pooler_test.go
 	sed -i "" -e 's/AddressHashes/blockdb.AddressHashes/g' ./src/visor/mock_unspent_pooler_test.go
+	goimports -w -local github.com/skycoin/skycoin ./src/visor/mock_unspent_pooler_test.go
 
 install-generators: ## Install tools used by go generate
 	go get github.com/vektra/mockery/.../

@@ -12,6 +12,7 @@
     (click)="this.state !== 0 ? onClick() : null"
     [ngClass]="{ enabled: !disabled }"
     #tooltip="matTooltip"
+    #button
   >
     <ng-content></ng-content>
     <mat-icon *ngIf="state === 1">done</mat-icon>

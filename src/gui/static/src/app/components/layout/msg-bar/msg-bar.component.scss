@@ -1,0 +1,59 @@
+@import '../../../../theme/variables';
+
+.main-container {
+  position: fixed;
+  bottom: 0px;
+  width: 100%;
+  z-index: 1000000;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
+.internal-container {
+  color: white;
+  width: fit-content;
+  min-width: 40%;
+  max-width: 90%;
+  display: flex;
+  padding: 10px;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+}
+
+.red-background {
+  background-color: rgba(255, 0, 0, 0.7);
+}
+
+.green-background {
+  background-color: rgba(31, 177, 31, 0.7);
+}
+
+.yellow-background {
+  background-color: rgba(255, 94, 0, 0.7);
+}
+
+.icon-container {
+  margin-right: 10px;
+}
+
+.text-container {
+  flex-grow: 1;
+  margin-right: 10px;
+
+  .title {
+    font-size: 15px;
+    margin-top: -1px;
+  }
+
+  .text {
+    font-size: 13px;
+    margin-top: 2px;
+  }
+}
+
+.close-container {
+  mat-icon {
+    cursor: pointer;
+  }
+}

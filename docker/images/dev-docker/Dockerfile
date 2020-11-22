@@ -8,14 +8,14 @@ LABEL "org.label-schema.name"="skycoindev-cli:dind" \
       "org.label-schema.description"="Skycoin cli develop image with docker in docker support" \
       "org.label-schema.vcs-url"="https://github.com/skycoin/skycoin/tree/develop/docker/images/dev-docker" \
       "org.label-schema.vendor"="Skycoin project" \
-      "org.label-schema.url"="skycoin.net" \
+      "org.label-schema.url"="skycoin.com" \
       "org.label-schema.schema-version"="1.0" \
       "org.label-schema.build-date"=$BDATE \
       "org.label-schema.vcs-ref"=$SCOMMIT \
       "org.label-schema.version"="1.0.0-rc.1" \
       "org.label-schema.usage"="https://github.com/skycoin/skycoin/blob/"$SCOMMIT"/docker/images/dev-docker/README.md" \
       "org.label-schema.docker.cmd"="mkdir src; docker run --privileged --rm -v src:/go/src skycoin/skycoindev-cli:dind go get github.com/skycoin/skycoin; sudo chown -R `whoami` src"
-      
+
 # Install docker
 
 RUN curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
@@ -60,7 +60,7 @@ ENV DIND_COMMIT 3b5fac462d21ca164b3778647420016315289034
 
 RUN set -ex; \
 	wget -O /usr/local/bin/dind "https://raw.githubusercontent.com/docker/docker/${DIND_COMMIT}/hack/dind"; \
-	chmod +x /usr/local/bin/dind; 
+	chmod +x /usr/local/bin/dind;
 
 COPY dockerd-entrypoint.sh /usr/local/bin/
 

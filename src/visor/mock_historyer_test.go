@@ -13,6 +13,27 @@ type MockHistoryer struct {
 	mock.Mock
 }
 
+// AddressSeen provides a mock function with given fields: tx, address
+func (_m *MockHistoryer) AddressSeen(tx *dbutil.Tx, address cipher.Address) (bool, error) {
+	ret := _m.Called(tx, address)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(*dbutil.Tx, cipher.Address) bool); ok {
+		r0 = rf(tx, address)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(*dbutil.Tx, cipher.Address) error); ok {
+		r1 = rf(tx, address)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Erase provides a mock function with given fields: tx
 func (_m *MockHistoryer) Erase(tx *dbutil.Tx) error {
 	ret := _m.Called(tx)

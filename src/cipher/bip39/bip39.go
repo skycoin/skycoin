@@ -135,7 +135,7 @@ func MustNewDefaultMnemonic() string {
 // NewEntropy will create random entropy bytes
 // so long as the requested size bitSize is an appropriate size.
 //
-// bitSize has to be a multiple 32 and be within the inclusive range of {128, 256}
+// bitSize has to be a multiple of 32 and be within the inclusive range of {128, 256}
 func NewEntropy(bitSize int) ([]byte, error) {
 	err := validateEntropyBitSize(bitSize)
 	if err != nil {
@@ -182,7 +182,7 @@ func EntropyFromMnemonic(mnemonic string) ([]byte, error) {
 	entropy := b.Bytes()
 	entropy = padByteSlice(entropy, len(words)/3*4)
 
-	// Generate the checksum and compare with the one we got from the mneomnic.
+	// Generate the checksum and compare with the one we got from the mnemonic.
 	entropyChecksumBytes := computeChecksum(entropy)
 	entropyChecksum := big.NewInt(int64(entropyChecksumBytes[0]))
 	if l := len(words); l != 24 {
@@ -382,7 +382,7 @@ func addChecksum(data []byte) []byte {
 
 func computeChecksum(data []byte) []byte {
 	hasher := sha256.New()
-	hasher.Write(data) // nolint: errcheck
+	hasher.Write(data) //nolint:errcheck
 	return hasher.Sum(nil)
 }
 

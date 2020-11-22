@@ -3,6 +3,8 @@ import { PreviewTransaction, Transaction } from '../../../../../app.datatypes';
 import { PriceService } from '../../../../../services/price.service';
 import { ISubscription } from 'rxjs/Subscription';
 import { BigNumber } from 'bignumber.js';
+import { MatDialogConfig, MatDialog } from '@angular/material';
+import { ChangeNoteComponent } from './change-note/change-note.component';
 
 @Component({
   selector: 'app-transaction-info',
@@ -17,7 +19,7 @@ export class TransactionInfoComponent implements OnInit, OnDestroy {
 
   private subscription: ISubscription;
 
-  constructor(private priceService: PriceService) {
+  constructor(private priceService: PriceService, private dialog: MatDialog) {
     this.subscription = this.priceService.price.subscribe(price => this.price = price);
   }
 
@@ -54,5 +56,16 @@ export class TransactionInfoComponent implements OnInit, OnDestroy {
     event.preventDefault();
 
     this.showInputsOutputs = !this.showInputsOutputs;
+  }
+
+  editNote() {
+    const config = new MatDialogConfig();
+      config.width = '566px';
+      config.data = this.transaction;
+      this.dialog.open(ChangeNoteComponent, config).afterClosed().subscribe(newNote => {
+        if (newNote || newNote === '') {
+          this.transaction.note = newNote;
+        }
+      });
   }
 }

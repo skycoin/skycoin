@@ -231,10 +231,10 @@ func (utp *UnconfirmedTransactionPool) SetTransactionsAnnounced(tx *dbutil.Tx, h
 // existed in the pool.
 // If the transaction violates hard constraints, it is rejected.
 // Soft constraints violations mark a txn as invalid, but the txn is inserted. The soft violation is returned.
-func (utp *UnconfirmedTransactionPool) InjectTransaction(tx *dbutil.Tx, bc Blockchainer, txn coin.Transaction, verifyParams params.VerifyTxn) (bool, *ErrTxnViolatesSoftConstraint, error) {
+func (utp *UnconfirmedTransactionPool) InjectTransaction(tx *dbutil.Tx, bc Blockchainer, txn coin.Transaction, distParams params.Distribution, verifyParams params.VerifyTxn) (bool, *ErrTxnViolatesSoftConstraint, error) {
 	var isValid int8 = 1
 	var softErr *ErrTxnViolatesSoftConstraint
-	if _, _, err := bc.VerifySingleTxnSoftHardConstraints(tx, txn, verifyParams, TxnSigned); err != nil {
+	if _, _, err := bc.VerifySingleTxnSoftHardConstraints(tx, txn, distParams, verifyParams, TxnSigned); err != nil {
 		logger.Warningf("bc.VerifySingleTxnSoftHardConstraints failed for txn %s: %v", txn.Hash().Hex(), err)
 		switch e := err.(type) {
 		case ErrTxnViolatesSoftConstraint:
@@ -332,7 +332,7 @@ func (utp *UnconfirmedTransactionPool) RemoveTransactions(tx *dbutil.Tx, txHashe
 // Refresh checks all unconfirmed txns against the blockchain.
 // If the transaction becomes invalid it is marked invalid.
 // If the transaction becomes valid it is marked valid and is returned to the caller.
-func (utp *UnconfirmedTransactionPool) Refresh(tx *dbutil.Tx, bc Blockchainer, verifyParams params.VerifyTxn) ([]cipher.SHA256, error) {
+func (utp *UnconfirmedTransactionPool) Refresh(tx *dbutil.Tx, bc Blockchainer, distParams params.Distribution, verifyParams params.VerifyTxn) ([]cipher.SHA256, error) {
 	utxns, err := utp.txns.getAll(tx)
 	if err != nil {
 		return nil, err
@@ -344,7 +344,7 @@ func (utp *UnconfirmedTransactionPool) Refresh(tx *dbutil.Tx, bc Blockchainer, v
 	for _, utxn := range utxns {
 		utxn.Checked = now.UnixNano()
 
-		_, _, err := bc.VerifySingleTxnSoftHardConstraints(tx, utxn.Transaction, verifyParams, TxnSigned)
+		_, _, err := bc.VerifySingleTxnSoftHardConstraints(tx, utxn.Transaction, distParams, verifyParams, TxnSigned)
 
 		switch err.(type) {
 		case ErrTxnViolatesSoftConstraint, ErrTxnViolatesHardConstraint:

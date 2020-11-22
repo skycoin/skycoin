@@ -14,8 +14,19 @@
     </div>
     <span *ngIf="text">{{ text }}</span>
     <span *ngIf="linkText" class="link" (click)="activateLink()">{{ linkText }}</span>
+    <div *ngIf="outputsList" class="list">
+      <div *ngFor="let output of outputsList" class="list-element">
+        <span>• {{ output.coins.toString() | amount }}</span>
+        <span>{{ 'hardware-wallet.create-tx.send-p1' | translate }} {{ output.hours.toString() | amount:false }}</span>
+        <span>{{ 'hardware-wallet.create-tx.send-p2' | translate }} {{ output.address }}</span>
+      </div>
+    </div>
+    <span *ngIf="lowerText">{{ lowerText }}</span>
     <div *ngIf="lowerBigText">
       <span class="big-text">{{ lowerBigText }}</span>
+    </div>
+    <div *ngIf="lowerLightText">
+      <span class="-grey">{{ lowerLightText }}</span>
     </div>
   </div>
 </div>

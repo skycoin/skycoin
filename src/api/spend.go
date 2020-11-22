@@ -191,7 +191,7 @@ func (r *CreatedTransaction) ToTransaction() (*coin.Transaction, error) {
 	}
 
 	if t.Hash() != hash {
-		return nil, errors.New("readable.Transaction.Hash does not match parsed transaction hash")
+		return nil, fmt.Errorf("readable.Transaction.Hash %s does not match parsed transaction hash %s", t.Hash().Hex(), hash.Hex())
 	}
 
 	return &t, nil
@@ -487,12 +487,6 @@ func transactionHandlerV2(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if r.Header.Get("Content-Type") != ContentTypeJSON {
-			resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
-			writeHTTPResponse(w, resp)
-			return
-		}
-
 		var req createTransactionRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			resp := NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
@@ -578,7 +572,7 @@ func walletCreateTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if r.Header.Get("Content-Type") != ContentTypeJSON {
+		if !isContentTypeJSON(r.Header.Get("Content-Type")) {
 			wh.Error415(w)
 			return
 		}
@@ -658,12 +652,6 @@ func walletSignTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
-			writeHTTPResponse(w, resp)
-			return
-		}
-
-		if r.Header.Get("Content-Type") != ContentTypeJSON {
-			resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
 			writeHTTPResponse(w, resp)
 			return
 		}

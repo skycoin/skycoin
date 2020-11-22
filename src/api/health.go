@@ -19,22 +19,24 @@ type BlockchainMetadata struct {
 
 // HealthResponse is returned by the /health endpoint
 type HealthResponse struct {
-	BlockchainMetadata   BlockchainMetadata `json:"blockchain"`
-	Version              readable.BuildInfo `json:"version"`
-	CoinName             string             `json:"coin"`
-	DaemonUserAgent      string             `json:"user_agent"`
-	OpenConnections      int                `json:"open_connections"`
-	OutgoingConnections  int                `json:"outgoing_connections"`
-	IncomingConnections  int                `json:"incoming_connections"`
-	Uptime               wh.Duration        `json:"uptime"`
-	CSRFEnabled          bool               `json:"csrf_enabled"`
-	HeaderCheckEnabled   bool               `json:"header_check_enabled"`
-	CSPEnabled           bool               `json:"csp_enabled"`
-	WalletAPIEnabled     bool               `json:"wallet_api_enabled"`
-	GUIEnabled           bool               `json:"gui_enabled"`
-	UserVerifyTxn        readable.VerifyTxn `json:"user_verify_transaction"`
-	UnconfirmedVerifyTxn readable.VerifyTxn `json:"unconfirmed_verify_transaction"`
-	StartedAt            int64              `json:"started_at"`
+	BlockchainMetadata   BlockchainMetadata   `json:"blockchain"`
+	Version              readable.BuildInfo   `json:"version"`
+	CoinName             string               `json:"coin"`
+	DaemonUserAgent      string               `json:"user_agent"`
+	OpenConnections      int                  `json:"open_connections"`
+	OutgoingConnections  int                  `json:"outgoing_connections"`
+	IncomingConnections  int                  `json:"incoming_connections"`
+	Uptime               wh.Duration          `json:"uptime"`
+	CSRFEnabled          bool                 `json:"csrf_enabled"`
+	HeaderCheckEnabled   bool                 `json:"header_check_enabled"`
+	CSPEnabled           bool                 `json:"csp_enabled"`
+	WalletAPIEnabled     bool                 `json:"wallet_api_enabled"`
+	GUIEnabled           bool                 `json:"gui_enabled"`
+	BlockPublisher       bool                 `json:"block_publisher"`
+	UserVerifyTxn        readable.VerifyTxn   `json:"user_verify_transaction"`
+	UnconfirmedVerifyTxn readable.VerifyTxn   `json:"unconfirmed_verify_transaction"`
+	StartedAt            int64                `json:"started_at"`
+	Fiber                readable.FiberConfig `json:"fiber"`
 }
 
 func getHealthData(c muxConfig, gateway Gatewayer) (*HealthResponse, error) {
@@ -76,7 +78,8 @@ func getHealthData(c muxConfig, gateway Gatewayer) (*HealthResponse, error) {
 			TimeSinceLastBlock: wh.FromDuration(timeSinceLastBlock),
 		},
 		Version:              c.health.BuildInfo,
-		CoinName:             c.health.CoinName,
+		CoinName:             c.health.Fiber.Name,
+		Fiber:                c.health.Fiber,
 		DaemonUserAgent:      userAgent,
 		OpenConnections:      len(conns),
 		OutgoingConnections:  outgoingConns,
@@ -85,6 +88,7 @@ func getHealthData(c muxConfig, gateway Gatewayer) (*HealthResponse, error) {
 		HeaderCheckEnabled:   !c.disableHeaderCheck,
 		CSPEnabled:           !c.disableCSP,
 		GUIEnabled:           c.enableGUI,
+		BlockPublisher:       c.health.BlockPublisher,
 		WalletAPIEnabled:     walletAPIEnabled,
 		UserVerifyTxn:        readable.NewVerifyTxn(params.UserVerifyTxn),
 		UnconfirmedVerifyTxn: readable.NewVerifyTxn(gateway.DaemonConfig().UnconfirmedVerifyTxn),

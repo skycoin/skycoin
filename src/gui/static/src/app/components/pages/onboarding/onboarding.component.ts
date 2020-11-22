@@ -1,10 +1,13 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { WalletService } from '../../../services/wallet.service';
 import { LanguageData, LanguageService } from '../../../services/language.service';
 import { ISubscription } from 'rxjs/Subscription';
 import { openChangeLanguageModal } from '../../../utils';
 import { MatDialog } from '@angular/material';
+import { WalletFormData } from '../wallets/create-wallet/create-wallet-form/create-wallet-form.component';
+import { MsgBarService } from '../../../services/msg-bar.service';
+import { OnboardingEncryptWalletComponent } from './onboarding-encrypt-wallet/onboarding-encrypt-wallet.component';
 
 @Component({
   selector: 'app-onboarding',
@@ -12,10 +15,10 @@ import { MatDialog } from '@angular/material';
   styleUrls: ['./onboarding.component.scss'],
 })
 export class OnboardingComponent implements OnInit, OnDestroy {
+  @ViewChild('encryptForm') encryptForm: OnboardingEncryptWalletComponent;
+
   step = 1;
-  label: string;
-  seed: string;
-  create: boolean;
+  formData: WalletFormData;
   password: string|null;
   language: LanguageData;
 
@@ -26,6 +29,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     private walletService: WalletService,
     private languageService: LanguageService,
     private dialog: MatDialog,
+    private msgBarService: MsgBarService,
   ) { }
 
   ngOnInit() {
@@ -37,11 +41,8 @@ export class OnboardingComponent implements OnInit, OnDestroy {
     this.subscription.unsubscribe();
   }
 
-  onLabelAndSeedCreated(data: [string, string, boolean]) {
-    this.label = data[0];
-    this.seed = data[1];
-    this.create = data[2];
-
+  onLabelAndSeedCreated(data: WalletFormData) {
+    this.formData = data,
     this.step = 2;
   }
 
@@ -65,12 +66,15 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   }
 
   get fill() {
-    return this.label ? { label: this.label, seed: this.seed, create: this.create } : null;
+    return this.formData;
   }
 
   private createWallet() {
-    this.walletService.create(this.label, this.seed, 100, this.password).subscribe(() => {
+    this.walletService.create(this.formData.label, this.formData.seed, 100, this.password).subscribe(() => {
       this.router.navigate(['/wallets']);
+    }, e => {
+      this.msgBarService.showError(e);
+      this.encryptForm.resetButton();
     });
   }
 }

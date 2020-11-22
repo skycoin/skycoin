@@ -1,16 +1,26 @@
-<app-modal [headline]="'wallet.rename.title' | translate" [dialog]="dialogRef">
-  <div [formGroup]="form">
-    <div class="form-field">
-      <label for="label">{{ 'wallet.rename.name-label' | translate }}</label>
-      <input formControlName="label" id="label" (keydown.enter)="rename()">
+<app-modal class="modal" [headline]="'wallet.rename.title' | translate" [dialog]="dialogRef" [disableDismiss]="(button && button.isLoading()) || currentState === states.WaitingForConfirmation">
+  <ng-container *ngIf="currentState === states.Initial">
+    <div class="info" *ngIf="showCharactersWarning">
+      {{ 'hardware-wallet.added.characters-warning' | translate }}
     </div>
-  </div>
-  <div class="-buttons">
-    <app-button (action)="closePopup()">
-      {{ 'wallet.rename.cancel-button' | translate }}
-    </app-button>
-    <app-button (action)="rename()" class="primary" [disabled]="!form.valid" #button>
-      {{ 'wallet.rename.rename-button' | translate }}
-    </app-button>
-  </div>
+    <div [formGroup]="form">
+      <div class="form-field">
+        <label for="label">{{ 'wallet.rename.name-label' | translate }}</label>
+        <input formControlName="label" id="label" (keydown.enter)="rename()" [maxlength]="data.wallet.isHardware ? maxHwWalletLabelLength : null">
+      </div>
+    </div>
+    <div class="-buttons">
+      <app-button (action)="closePopup()" [disabled]="button && button.isLoading()">
+        {{ 'wallet.rename.cancel-button' | translate }}
+      </app-button>
+      <app-button (action)="rename()" class="primary" [disabled]="!form.valid" #button>
+        {{ 'wallet.rename.rename-button' | translate }}
+      </app-button>
+    </div>
+  </ng-container>
+
+  <app-hw-message *ngIf="currentState === states.WaitingForConfirmation"
+    [text]="'hardware-wallet.general.confirm' | translate"
+    [icon]="msgIcons.Confirm"
+  ></app-hw-message>
 </app-modal>

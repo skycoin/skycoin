@@ -2,6 +2,7 @@ package logging
 
 import (
 	"os"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -15,6 +16,11 @@ type Logger struct {
 // since logrus lacks a distinct critical field and does not have configurable log levels
 func (logger *Logger) Critical() logrus.FieldLogger {
 	return logger.WithField(logPriorityKey, logPriorityCritical)
+}
+
+// WithTime overrides time, used by logger.
+func (logger *Logger) WithTime(t time.Time) *logrus.Entry {
+	return logger.WithFields(logrus.Fields{}).WithTime(t)
 }
 
 // MasterLogger wraps logrus.Logger and is able to create new package-aware loggers

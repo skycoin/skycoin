@@ -4,7 +4,7 @@
     <div class="balance-container">
       <div class="balance">
         <p *ngIf="highest && loading" class="coins"><span>{{ percentage | percent:'1.2-2' }}</span></p>
-        <p *ngIf="!loading" class="coins"><span>{{ coins | number:'1.0-6' }}</span> {{ 'common.coin-id' | translate }}</p>
+        <p *ngIf="!loading" class="coins"><span>{{ coins | amount:true:'first' }}</span> {{ coins | amount:true:'last' }}</p>
         <p *ngIf="!highest && loading" class="coins"><span>&nbsp;</span></p>
         <p class="dollars">
           <span *ngIf="price">
@@ -19,9 +19,9 @@
     <div class="hour-balance">
       <p *ngIf="loading">
         {{ 'header.syncing-blocks' | translate }}
-        {{ current && highest ?  '(' + current + '/'  + highest + ')' : '..' }}
+        {{ current && highest ?  '(' + current + '/'  + highest + ')' : '...' }}
       </p>
-      <p *ngIf="!loading">{{ hours | number:'1.0-0' }} {{ 'common.coin-hours' | translate }}</p>
+      <p *ngIf="!loading">{{ hours | amount:false }}</p>
     </div>
   </div>
   <app-nav-bar></app-nav-bar>
@@ -31,17 +31,17 @@
     color="primary"
     [mode]="querying ? 'query' : 'determinate'"
     [value]="percentage * 100"></mat-progress-bar>
-  <mat-toolbar class="notification-bar" *ngIf="updateAvailable">
+  <mat-toolbar class="notification-bar" *ngIf="appService.updateAvailable">
     <div>
       {{ 'header.update1' | translate }}
-      <a href="https://www.skycoin.net/downloads/" target="_blank">v{{ releaseVersion }}</a>
+      <a [href]="walletDownloadUrl" target="_blank" rel="noreferrer nofollow">v{{ appService.lastestVersion }}</a>
       {{ 'header.update2' | translate }}
     </div>
   </mat-toolbar>
   <mat-toolbar class="notification-bar" *ngIf="appService.error">
     <div *ngIf="appService.error === 2">
       {{ 'header.errors.no-backend1' | translate }}
-      <a href='https://web.telegram.org/#/im?p=@skycoinsupport'>{{ 'header.errors.no-backend2' | translate }}</a>
+      <a href='https://web.telegram.org/#/im?p=@skycoinsupport' target="_blank" rel="noreferrer nofollow">{{ 'header.errors.no-backend2' | translate }}</a>
       {{ 'header.errors.no-backend3' | translate }}
     </div>
     <div *ngIf="appService.error === 3">{{ 'header.errors.csrf' | translate }}</div>

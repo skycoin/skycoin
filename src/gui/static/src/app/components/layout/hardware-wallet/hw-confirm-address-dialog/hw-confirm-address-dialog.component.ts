@@ -1,16 +1,9 @@
 import { Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { HwWalletService, OperationResults } from '../../../../services/hw-wallet.service';
+import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 import { Address } from '../../../../app.datatypes';
 import { WalletService } from '../../../../services/wallet.service';
-
-enum States {
-  Initial,
-  ReturnedSuccess,
-  ReturnedRefused,
-  Failed,
-}
 
 export class AddressConfirmationParams {
   address: Address;
@@ -24,10 +17,6 @@ export class AddressConfirmationParams {
   styleUrls: ['./hw-confirm-address-dialog.component.scss'],
 })
 export class HwConfirmAddressDialogComponent extends HwDialogBaseComponent<HwConfirmAddressDialogComponent> {
-
-  currentState: States = States.Initial;
-  states = States;
-
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: AddressConfirmationParams,
     public dialogRef: MatDialogRef<HwConfirmAddressDialogComponent>,
@@ -37,17 +26,14 @@ export class HwConfirmAddressDialogComponent extends HwDialogBaseComponent<HwCon
     super(hwWalletService, dialogRef);
     this.operationSubscription = this.hwWalletService.confirmAddress(data.addressIndex).subscribe(
       () => {
-        this.currentState = States.ReturnedSuccess;
+        this.showResult({
+          text: data.showCompleteConfirmation ? 'hardware-wallet.confirm-address.confirmation' : 'hardware-wallet.confirm-address.short-confirmation',
+          icon: this.msgIcons.Success,
+        });
         this.data.address.confirmed = true;
         this.walletService.saveHardwareWallets();
       },
-      err => {
-        if (err.result && err.result === OperationResults.FailedOrRefused) {
-          this.currentState = States.ReturnedRefused;
-        } else {
-          this.currentState = States.Failed;
-        }
-      },
+      err => this.processResult(err.result),
     );
   }
 }

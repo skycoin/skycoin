@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	testDataFilename  = "data" + storageFileExtension
-	testEmptyFilename = "empty" + storageFileExtension
+	testDataFilename    = "data" + storageFileExtension
+	testEmptyFilename   = "empty" + storageFileExtension
+	testCorruptFilename = "corrupt" + storageFileExtension
 )
 
 func setupTmpDir(t *testing.T) (string, func()) {
@@ -25,58 +26,71 @@ func setupTmpDir(t *testing.T) (string, func()) {
 	}
 
 	return tmpDir, func() {
-		_ = os.RemoveAll(tmpDir) // nolint: errcheck
+		_ = os.RemoveAll(tmpDir) //nolint:errcheck
 	}
 }
 
-func setupTestFile(t *testing.T, fileName string) {
+func setupTestFile(t *testing.T, fn string) {
 	data := map[string]string{
 		"test1": "some value",
 		"test2": "{\"key\":\"val\",\"key2\":2}",
 	}
 
-	err := file.SaveJSON(fileName, data, 0600)
+	err := file.SaveJSON(fn, data, 0600)
 	require.NoError(t, err)
 }
 
-func setupEmptyTestFile(t *testing.T, fileName string) {
+func setupEmptyTestFile(t *testing.T, fn string) {
 	data := make(map[string]string)
 
-	err := file.SaveJSON(fileName, data, 0600)
+	err := file.SaveJSON(fn, data, 0600)
+	require.NoError(t, err)
+}
+
+func setupCorruptedTestFile(t *testing.T, fn string) {
+	f, err := os.Create(fn)
+	require.NoError(t, err)
+	defer f.Close()
+	_, err = f.Write([]byte("corrupt json file"))
 	require.NoError(t, err)
 }
 
 func TestNewKVStorage(t *testing.T) {
 	type expect struct {
-		storage     *kvStorage
-		expectError bool
+		storage           *kvStorage
+		expectError       bool
+		expectCorruptFile string
 	}
 
 	tmpDir, cleanup := setupTmpDir(t)
 	defer cleanup()
 
+	// Setup test data
 	dataFilename := filepath.Join(tmpDir, testDataFilename)
 	setupTestFile(t, dataFilename)
+	// Setup corrupt data file
+	corruptDataFilename := filepath.Join(tmpDir, testCorruptFilename)
+	setupCorruptedTestFile(t, corruptDataFilename)
 
 	tt := []struct {
-		name     string
-		fileName string
-		expect   expect
+		name   string
+		fn     string
+		expect expect
 	}{
 		{
-			name:     "no such file",
-			fileName: "nofile.json",
+			name: "no such file",
+			fn:   "nofile.json",
 			expect: expect{
 				storage:     nil,
 				expectError: true,
 			},
 		},
 		{
-			name:     "file exists",
-			fileName: dataFilename,
+			name: "file exists",
+			fn:   dataFilename,
 			expect: expect{
 				storage: &kvStorage{
-					fileName: dataFilename,
+					fn: dataFilename,
 					data: map[string]string{
 						"test1": "some value",
 						"test2": "{\"key\":\"val\",\"key2\":2}",
@@ -84,11 +98,22 @@ func TestNewKVStorage(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "corrupted file",
+			fn:   corruptDataFilename,
+			expect: expect{
+				storage: &kvStorage{
+					fn:   corruptDataFilename,
+					data: map[string]string{}, // an empty file will be when a corrupted file is detected
+				},
+				expectCorruptFile: corruptDataFilename + ".corrupt.9NGyOAcMBB4",
+			},
+		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			storage, err := newKVStorage(tc.fileName)
+			storage, err := newKVStorage(tc.fn)
 			if tc.expect.expectError {
 				require.Error(t, err)
 			} else {
@@ -99,6 +124,12 @@ func TestNewKVStorage(t *testing.T) {
 			}
 
 			require.Equal(t, tc.expect.storage, storage)
+
+			if tc.expect.expectCorruptFile != "" {
+				// Check if the file does exist
+				_, err := os.Stat(tc.expect.expectCorruptFile)
+				require.False(t, os.IsNotExist(err))
+			}
 		})
 	}
 }
@@ -280,7 +311,7 @@ func TestKVStorageAdd(t *testing.T) {
 			modifiedData := storage.getAll()
 
 			// resave the original data back to file
-			err = file.SaveJSON(storage.fileName, originalData, 0600)
+			err = file.SaveJSON(storage.fn, originalData, 0600)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expect.newData, modifiedData)
@@ -350,7 +381,7 @@ func TestKVStorageRemove(t *testing.T) {
 			newData := storage.getAll()
 
 			// resave the original data back to file
-			err = file.SaveJSON(storage.fileName, originalData, 0600)
+			err = file.SaveJSON(storage.fn, originalData, 0600)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expect.newData, newData)

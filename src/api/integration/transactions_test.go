@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"testing"
 	"time"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
@@ -82,7 +84,7 @@ func TestLiveInjectTransactionDisableNetworking(t *testing.T) {
 
 	w, totalCoins, totalHours, password := prepareAndCheckWallet(t, c, 2e6, 20)
 
-	defaultChangeAddress := w.Entries[0].Address.String()
+	defaultChangeAddress := w.GetEntryAt(0).Address.String()
 
 	type testCase struct {
 		name         string
@@ -106,7 +108,7 @@ func TestLiveInjectTransactionDisableNetworking(t *testing.T) {
 					ChangeAddress: &defaultChangeAddress,
 					To: []api.Receiver{
 						{
-							Address: w.Entries[1].Address.String(),
+							Address: w.GetEntryAt(1).Address.String(),
 							Coins:   toDropletString(t, totalCoins),
 							Hours:   fmt.Sprint(totalHours / 2),
 						},
@@ -157,7 +159,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 	c := newClient()
 	w, totalCoins, _, password := prepareAndCheckWallet(t, c, 2e6, 2)
 
-	defaultChangeAddress := w.Entries[0].Address.String()
+	defaultChangeAddress := w.GetEntryAt(0).Address.String()
 
 	// prepareTxnFunc prepares a valid transaction
 	prepareTxnFunc := func(t *testing.T, toAddr string, coins uint64, shareFactor string) (coin.Transaction, *api.CreateTransactionResponse) {
@@ -173,7 +175,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
-						// Address: w.Entries[1].Address.String(),
+						// Address: w.GetEntryAt(1).Address.String(),
 						Address: toAddr,
 						Coins:   toDropletString(t, coins),
 					},
@@ -189,11 +191,11 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 		return txn, txnResp
 	}
 
-	reSignTxnFunc := func(t *testing.T, txn coin.Transaction, txnRsp *api.CreateTransactionResponse, wlt *wallet.Wallet) coin.Transaction {
+	reSignTxnFunc := func(t *testing.T, txn coin.Transaction, txnRsp *api.CreateTransactionResponse, wlt wallet.Wallet) coin.Transaction {
 		walletPassword := os.Getenv("WALLET_PASSWORD")
-		err := wlt.GuardView([]byte(walletPassword), func(unlockWlt *wallet.Wallet) error {
-			keyMap := make(map[string]cipher.SecKey, len(unlockWlt.Entries))
-			for _, e := range unlockWlt.Entries {
+		err := wallet.GuardView(wlt, []byte(walletPassword), func(unlockWlt wallet.Wallet) error {
+			keyMap := make(map[string]cipher.SecKey, unlockWlt.EntriesLen())
+			for _, e := range unlockWlt.GetEntries() {
 				addr := cipher.MustAddressFromSecKey(e.Secret)
 				keyMap[addr.String()] = e.Secret
 			}
@@ -227,7 +229,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 		{
 			name: "send all coins to the first address",
 			createTxn: func(t *testing.T) *coin.Transaction {
-				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn, _ := prepareTxnFunc(t, w.GetEntryAt(0).Address.String(), totalCoins, "1")
 				return &txn
 			},
 			checkTxn: func(t *testing.T, tx *readable.TransactionWithStatus) {
@@ -241,7 +243,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				}
 
 				// Confirms the address balance are equal to the totalCoins
-				coins, _ = getAddressBalance(t, c, w.Entries[0].Address.String())
+				coins, _ = getAddressBalance(t, c, w.GetEntryAt(0).Address.String())
 				require.Equal(t, totalCoins, coins)
 			},
 			code: http.StatusOK,
@@ -251,7 +253,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 			// this amount is chosen to not interfere with TestLiveWalletCreateTransaction
 			name: "send 0.003 coin to second address",
 			createTxn: func(t *testing.T) *coin.Transaction {
-				txn, _ := prepareTxnFunc(t, w.Entries[1].Address.String(), 3e3, "0.5")
+				txn, _ := prepareTxnFunc(t, w.GetEntryAt(1).Address.String(), 3e3, "0.5")
 				return &txn
 			},
 			checkTxn: func(t *testing.T, tx *readable.TransactionWithStatus) {
@@ -269,11 +271,11 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 					return nil
 				}
 
-				out := getAddrOutputInTxn(t, tx, w.Entries[1].Address.String())
+				out := getAddrOutputInTxn(t, tx, w.GetEntryAt(1).Address.String())
 
 				// Confirms the second address has 0.003 coin
 				require.Equal(t, out.Coins, "0.003000")
-				require.Equal(t, out.Address, w.Entries[1].Address.String())
+				require.Equal(t, out.Address, w.GetEntryAt(1).Address.String())
 
 				coin, err := droplet.FromString(out.Coins)
 				require.NoError(t, err)
@@ -282,7 +284,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 				expectChangeCoins := totalCoins - coin
 
 				// Gets the real change coins
-				changeOut := getAddrOutputInTxn(t, tx, w.Entries[0].Address.String())
+				changeOut := getAddrOutputInTxn(t, tx, w.GetEntryAt(0).Address.String())
 				changeCoins, err := droplet.FromString(changeOut.Coins)
 				require.NoError(t, err)
 				// Confirms the change coins are matched.
@@ -293,7 +295,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 		{
 			name: "send to null address",
 			createTxn: func(t *testing.T) *coin.Transaction {
-				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn, _ := prepareTxnFunc(t, w.GetEntryAt(0).Address.String(), totalCoins, "1")
 
 				// set the transaction output address as null
 				txn.Out[0].Address = cipher.Address{}
@@ -306,7 +308,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 			// Use an input from block 1024: 2f842b0fbf5ef2dd59c8b5127795f1e88bfa6b510a41c62eac28fc2006d279e3
 			name: "double spend",
 			createTxn: func(t *testing.T) *coin.Transaction {
-				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn, _ := prepareTxnFunc(t, w.GetEntryAt(0).Address.String(), totalCoins, "1")
 
 				hash, err := cipher.SHA256FromHex("2f842b0fbf5ef2dd59c8b5127795f1e88bfa6b510a41c62eac28fc2006d279e3")
 				require.NoError(t, err)
@@ -319,7 +321,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 		{
 			name: "output hours overflow",
 			createTxn: func(t *testing.T) *coin.Transaction {
-				txn, _ := prepareTxnFunc(t, w.Entries[1].Address.String(), 1e6, "1")
+				txn, _ := prepareTxnFunc(t, w.GetEntryAt(1).Address.String(), 1e6, "1")
 
 				// set one output hours as math.MaxUint64
 				txn.Out[0].Hours = math.MaxUint64 - 1
@@ -333,7 +335,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 		{
 			name: "no inputs",
 			createTxn: func(t *testing.T) *coin.Transaction {
-				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn, _ := prepareTxnFunc(t, w.GetEntryAt(0).Address.String(), totalCoins, "1")
 
 				txn.In = []cipher.SHA256{}
 				txn.InnerHash = txn.HashInner()
@@ -345,7 +347,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 		{
 			name: "no outputs",
 			createTxn: func(t *testing.T) *coin.Transaction {
-				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn, _ := prepareTxnFunc(t, w.GetEntryAt(0).Address.String(), totalCoins, "1")
 
 				txn.Out = []coin.TransactionOutput{}
 				txn.InnerHash = txn.HashInner()
@@ -357,7 +359,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 		{
 			name: "invalid number of signatures",
 			createTxn: func(t *testing.T) *coin.Transaction {
-				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn, _ := prepareTxnFunc(t, w.GetEntryAt(0).Address.String(), totalCoins, "1")
 				txn.Sigs = []cipher.Sig{}
 				txn.InnerHash = txn.HashInner()
 				return &txn
@@ -368,7 +370,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 		{
 			name: "duplicate spend",
 			createTxn: func(t *testing.T) *coin.Transaction {
-				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn, _ := prepareTxnFunc(t, w.GetEntryAt(0).Address.String(), totalCoins, "1")
 				// Make duplicate inputs
 				txn.In = append(txn.In, txn.In[0])
 				// Make duplicate sigs
@@ -382,7 +384,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 		{
 			name: "transaction type invalid",
 			createTxn: func(t *testing.T) *coin.Transaction {
-				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn, _ := prepareTxnFunc(t, w.GetEntryAt(0).Address.String(), totalCoins, "1")
 				txn.Type = 1
 				return &txn
 			},
@@ -392,7 +394,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 		{
 			name: "zero coin output",
 			createTxn: func(t *testing.T) *coin.Transaction {
-				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn, _ := prepareTxnFunc(t, w.GetEntryAt(0).Address.String(), totalCoins, "1")
 				txn.Out[0].Coins = 0
 				txn.InnerHash = txn.HashInner()
 				return &txn
@@ -403,7 +405,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 		{
 			name: "output coins overflow",
 			createTxn: func(t *testing.T) *coin.Transaction {
-				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), 1e6, "1")
+				txn, _ := prepareTxnFunc(t, w.GetEntryAt(0).Address.String(), 1e6, "1")
 				txn.Out[0].Coins = math.MaxUint64 - 1
 				txn.Out[1].Coins = 2
 				return &txn
@@ -414,7 +416,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 		{
 			name: "incorrect transaction length",
 			createTxn: func(t *testing.T) *coin.Transaction {
-				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn, _ := prepareTxnFunc(t, w.GetEntryAt(0).Address.String(), totalCoins, "1")
 				txn.Length = 1
 				txn.InnerHash = txn.HashInner()
 				return &txn
@@ -425,7 +427,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 		{
 			name: "duplicate output",
 			createTxn: func(t *testing.T) *coin.Transaction {
-				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn, _ := prepareTxnFunc(t, w.GetEntryAt(0).Address.String(), totalCoins, "1")
 				txn.Out = append(txn.Out, txn.Out[0])
 				txn.InnerHash = txn.HashInner()
 				size, _, err := txn.SizeHash()
@@ -439,7 +441,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 		{
 			name: "inner hash does not match",
 			createTxn: func(t *testing.T) *coin.Transaction {
-				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn, _ := prepareTxnFunc(t, w.GetEntryAt(0).Address.String(), totalCoins, "1")
 				txn.InnerHash = testutil.RandSHA256(t)
 				return &txn
 			},
@@ -449,7 +451,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 		{
 			name: "unsigned input",
 			createTxn: func(t *testing.T) *coin.Transaction {
-				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn, _ := prepareTxnFunc(t, w.GetEntryAt(0).Address.String(), totalCoins, "1")
 				txn.Sigs[0] = cipher.Sig{}
 				txn.InnerHash = txn.HashInner()
 				return &txn
@@ -460,7 +462,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 		{
 			name: "invalid sig",
 			createTxn: func(t *testing.T) *coin.Transaction {
-				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn, _ := prepareTxnFunc(t, w.GetEntryAt(0).Address.String(), totalCoins, "1")
 				txn.Sigs[0] = testutil.RandSig(t)
 
 				txn.InnerHash = txn.HashInner()
@@ -472,7 +474,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 		{
 			name: "signature not valid for output being spent",
 			createTxn: func(t *testing.T) *coin.Transaction {
-				txn, _ := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn, _ := prepareTxnFunc(t, w.GetEntryAt(0).Address.String(), totalCoins, "1")
 				// Use a wrong private key to sign txn.In[0] and change txn.Sigs[0]
 				_, seckey := cipher.GenerateKeyPair()
 				h := cipher.AddSHA256(txn.InnerHash, txn.In[0])
@@ -486,7 +488,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 		{
 			name: "insufficient coins",
 			createTxn: func(t *testing.T) *coin.Transaction {
-				txn, txnRsp := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn, txnRsp := prepareTxnFunc(t, w.GetEntryAt(0).Address.String(), totalCoins, "1")
 				// Make output coins > input coins
 				txn.Out[0].Coins = txn.Out[0].Coins + 1
 				txn.InnerHash = txn.HashInner()
@@ -501,7 +503,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 		{
 			name: "transaction may not destry coins",
 			createTxn: func(t *testing.T) *coin.Transaction {
-				txn, txnRsp := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn, txnRsp := prepareTxnFunc(t, w.GetEntryAt(0).Address.String(), totalCoins, "1")
 				// Make output coins < input coins
 				txn.Out[0].Coins = txn.Out[0].Coins - 1
 				txn.InnerHash = txn.HashInner()
@@ -515,7 +517,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 		{
 			name: "insufficient coin hours",
 			createTxn: func(t *testing.T) *coin.Transaction {
-				txn, txnRsp := prepareTxnFunc(t, w.Entries[0].Address.String(), totalCoins, "1")
+				txn, txnRsp := prepareTxnFunc(t, w.GetEntryAt(0).Address.String(), totalCoins, "1")
 				// Make up more output coin hours
 				txn.Out[0].Hours = txn.Out[0].Hours + 1e6
 				// Recalculate inner hash
@@ -532,7 +534,7 @@ func TestLiveInjectTransactionEnableNetworking(t *testing.T) {
 			createTxn: func(t *testing.T) *coin.Transaction {
 				// Make a txn with txn.Out[0].Coins equal 1e3, as we have at least 2e6 coins
 				// so there will have at least two outputs.
-				txn, txnRsp := prepareTxnFunc(t, w.Entries[0].Address.String(), 1e3, "1")
+				txn, txnRsp := prepareTxnFunc(t, w.GetEntryAt(0).Address.String(), 1e3, "1")
 				// Make txn.Out[0].Coins too many decimal places
 				txn.Out[0].Coins = 5e2
 				// Move the remaining 5e2 from the first output to the second output, so that
@@ -610,8 +612,8 @@ func TestLiveWalletSignTransaction(t *testing.T) {
 	w, _, _, password := prepareAndCheckWallet(t, c, 2e6, 20)
 
 	// Fetch outputs held by the wallet
-	addrs := make([]string, len(w.Entries))
-	for i, e := range w.Entries {
+	addrs := make([]string, w.EntriesLen())
+	for i, e := range w.GetEntries() {
 		addrs[i] = e.SkycoinAddress().String()
 	}
 
@@ -653,7 +655,7 @@ func TestLiveWalletSignTransaction(t *testing.T) {
 			},
 			To: []api.Receiver{
 				{
-					Address: w.Entries[0].SkycoinAddress().String(),
+					Address: w.GetEntryAt(0).SkycoinAddress().String(),
 					Coins:   totalCoinsStr,
 				},
 			},
@@ -855,11 +857,11 @@ type liveCreateTxnTestCase struct {
 	additionalRespVerify func(t *testing.T, r *api.CreateTransactionResponse)
 }
 
-func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, totalHours uint64) []liveCreateTxnTestCase {
+func makeLiveCreateTxnTestCases(t *testing.T, w wallet.Wallet, totalCoins, totalHours uint64) []liveCreateTxnTestCase {
 	remainingHours := fee.RemainingHours(totalHours, params.UserVerifyTxn.BurnFactor)
 	require.True(t, remainingHours > 1)
 	unknownOutput := testutil.RandSHA256(t)
-	defaultChangeAddress := w.Entries[0].Address.String()
+	defaultChangeAddress := w.GetEntryAt(0).Address.String()
 
 	// Get all outputs
 	c := newClient()
@@ -867,9 +869,9 @@ func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, tota
 	require.NoError(t, err)
 
 	// Split outputs into those held by the wallet and those not
-	addresses := make([]string, len(w.Entries))
-	addressMap := make(map[string]struct{}, len(w.Entries))
-	for i, e := range w.Entries {
+	addresses := make([]string, w.EntriesLen())
+	addressMap := make(map[string]struct{}, w.EntriesLen())
+	for i, e := range w.GetEntries() {
 		addresses[i] = e.Address.String()
 		addressMap[e.Address.String()] = struct{}{}
 	}
@@ -898,7 +900,7 @@ func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, tota
 				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
-						Address: w.Entries[0].Address.String(),
+						Address: w.GetEntryAt(0).Address.String(),
 						Coins:   "0.0001",
 						Hours:   "1",
 					},
@@ -918,17 +920,17 @@ func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, tota
 				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
-						Address: w.Entries[0].Address.String(),
+						Address: w.GetEntryAt(0).Address.String(),
 						Coins:   "0.001",
 						Hours:   "1",
 					},
 					{
-						Address: w.Entries[0].Address.String(),
+						Address: w.GetEntryAt(0).Address.String(),
 						Coins:   "0.001",
 						Hours:   fmt.Sprint(uint64(math.MaxUint64)),
 					},
 					{
-						Address: w.Entries[0].Address.String(),
+						Address: w.GetEntryAt(0).Address.String(),
 						Coins:   "0.001",
 						Hours:   fmt.Sprint(uint64(math.MaxUint64) - 1),
 					},
@@ -948,7 +950,7 @@ func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, tota
 				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
-						Address: w.Entries[0].Address.String(),
+						Address: w.GetEntryAt(0).Address.String(),
 						Coins:   fmt.Sprint(totalCoins + 1),
 						Hours:   "1",
 					},
@@ -968,7 +970,7 @@ func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, tota
 				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
-						Address: w.Entries[0].Address.String(),
+						Address: w.GetEntryAt(0).Address.String(),
 						Coins:   toDropletString(t, totalCoins),
 						Hours:   fmt.Sprint(totalHours + 1),
 					},
@@ -994,7 +996,7 @@ func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, tota
 				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
-						Address: w.Entries[1].Address.String(),
+						Address: w.GetEntryAt(1).Address.String(),
 						Coins:   toDropletString(t, totalCoins-1e3),
 						Hours:   "1",
 					},
@@ -1002,12 +1004,12 @@ func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, tota
 			},
 			outputs: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].SkycoinAddress(),
+					Address: w.GetEntryAt(1).SkycoinAddress(),
 					Coins:   totalCoins - 1e3,
 					Hours:   1,
 				},
 				{
-					Address: w.Entries[0].SkycoinAddress(),
+					Address: w.GetEntryAt(0).SkycoinAddress(),
 					Coins:   1e3,
 					Hours:   remainingHours - 1,
 				},
@@ -1029,7 +1031,7 @@ func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, tota
 				Addresses: addresses,
 				To: []api.Receiver{
 					{
-						Address: w.Entries[1].Address.String(),
+						Address: w.GetEntryAt(1).Address.String(),
 						Coins:   toDropletString(t, totalCoins-1e3),
 						Hours:   "1",
 					},
@@ -1037,7 +1039,7 @@ func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, tota
 			},
 			outputs: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].SkycoinAddress(),
+					Address: w.GetEntryAt(1).SkycoinAddress(),
 					Coins:   totalCoins - 1e3,
 					Hours:   1,
 				},
@@ -1059,7 +1061,7 @@ func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, tota
 				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
-						Address: w.Entries[1].Address.String(),
+						Address: w.GetEntryAt(1).Address.String(),
 						Coins:   toDropletString(t, 1e3),
 						Hours:   "1",
 					},
@@ -1067,7 +1069,7 @@ func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, tota
 			},
 			outputsSubset: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].SkycoinAddress(),
+					Address: w.GetEntryAt(1).SkycoinAddress(),
 					Coins:   1e3,
 					Hours:   1,
 				},
@@ -1087,7 +1089,7 @@ func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, tota
 				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
-						Address: w.Entries[1].Address.String(),
+						Address: w.GetEntryAt(1).Address.String(),
 						Coins:   toDropletString(t, totalCoins),
 						Hours:   "1",
 					},
@@ -1095,7 +1097,7 @@ func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, tota
 			},
 			outputs: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].SkycoinAddress(),
+					Address: w.GetEntryAt(1).SkycoinAddress(),
 					Coins:   totalCoins,
 					Hours:   1,
 				},
@@ -1116,7 +1118,7 @@ func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, tota
 				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
-						Address: w.Entries[1].Address.String(),
+						Address: w.GetEntryAt(1).Address.String(),
 						Coins:   toDropletString(t, totalCoins),
 						Hours:   "1",
 					},
@@ -1124,7 +1126,7 @@ func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, tota
 			},
 			outputs: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].SkycoinAddress(),
+					Address: w.GetEntryAt(1).SkycoinAddress(),
 					Coins:   totalCoins,
 					Hours:   1,
 				},
@@ -1143,14 +1145,14 @@ func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, tota
 				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
-						Address: w.Entries[1].Address.String(),
+						Address: w.GetEntryAt(1).Address.String(),
 						Coins:   toDropletString(t, totalCoins),
 					},
 				},
 			},
 			outputs: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].SkycoinAddress(),
+					Address: w.GetEntryAt(1).SkycoinAddress(),
 					Coins:   totalCoins,
 					Hours:   remainingHours,
 				},
@@ -1169,26 +1171,26 @@ func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, tota
 				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
-						Address: w.Entries[1].Address.String(),
+						Address: w.GetEntryAt(1).Address.String(),
 						Coins:   toDropletString(t, 1e3),
 					},
 					{
-						Address: w.Entries[1].Address.String(),
+						Address: w.GetEntryAt(1).Address.String(),
 						Coins:   toDropletString(t, totalCoins-2e3),
 					},
 				},
 			},
 			outputs: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].SkycoinAddress(),
+					Address: w.GetEntryAt(1).SkycoinAddress(),
 					Coins:   1e3,
 				},
 				{
-					Address: w.Entries[1].SkycoinAddress(),
+					Address: w.GetEntryAt(1).SkycoinAddress(),
 					Coins:   totalCoins - 2e3,
 				},
 				{
-					Address: w.Entries[0].SkycoinAddress(),
+					Address: w.GetEntryAt(0).SkycoinAddress(),
 					Coins:   1e3,
 				},
 			},
@@ -1205,7 +1207,7 @@ func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, tota
 				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
-						Address: w.Entries[1].Address.String(),
+						Address: w.GetEntryAt(1).Address.String(),
 						Coins:   toDropletString(t, totalCoins),
 						Hours:   "1",
 					},
@@ -1225,7 +1227,7 @@ func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, tota
 				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
-						Address: w.Entries[1].Address.String(),
+						Address: w.GetEntryAt(1).Address.String(),
 						Coins:   toDropletString(t, totalCoins+1e3),
 						Hours:   "1",
 					},
@@ -1246,7 +1248,7 @@ func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, tota
 				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
-						Address: w.Entries[1].Address.String(),
+						Address: w.GetEntryAt(1).Address.String(),
 						Coins:   toDropletString(t, 1e3),
 						Hours:   fmt.Sprint(totalHours + 1),
 					},
@@ -1271,7 +1273,7 @@ func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, tota
 				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
-						Address: w.Entries[1].Address.String(),
+						Address: w.GetEntryAt(1).Address.String(),
 						Coins:   toDropletString(t, totalCoins-1e3),
 						Hours:   "1",
 					},
@@ -1279,12 +1281,12 @@ func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, tota
 			},
 			outputs: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].SkycoinAddress(),
+					Address: w.GetEntryAt(1).SkycoinAddress(),
 					Coins:   totalCoins - 1e3,
 					Hours:   1,
 				},
 				{
-					Address: w.Entries[0].SkycoinAddress(),
+					Address: w.GetEntryAt(0).SkycoinAddress(),
 					Coins:   1e3,
 					Hours:   remainingHours - 1,
 				},
@@ -1309,7 +1311,7 @@ func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, tota
 				ChangeAddress: &defaultChangeAddress,
 				To: []api.Receiver{
 					{
-						Address: w.Entries[1].Address.String(),
+						Address: w.GetEntryAt(1).Address.String(),
 						Coins:   toDropletString(t, totalCoins-1e3),
 						Hours:   "1",
 					},
@@ -1317,12 +1319,12 @@ func makeLiveCreateTxnTestCases(t *testing.T, w *wallet.Wallet, totalCoins, tota
 			},
 			outputs: []coin.TransactionOutput{
 				{
-					Address: w.Entries[1].SkycoinAddress(),
+					Address: w.GetEntryAt(1).SkycoinAddress(),
 					Coins:   totalCoins - 1e3,
 					Hours:   1,
 				},
 				{
-					Address: w.Entries[0].SkycoinAddress(),
+					Address: w.GetEntryAt(0).SkycoinAddress(),
 					Coins:   1e3,
 					Hours:   remainingHours - 1,
 				},
@@ -1355,13 +1357,8 @@ func TestLiveCreateTransaction(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			if tc.err != "" {
-				assertResponseError(t, err, tc.code, tc.err)
-				return
-			}
 
-			require.NoError(t, err)
-			assertCreateTransactionResult(t, tc, result, true)
+			assertCreateTransactionResult(t, c, tc, result, true, nil)
 		})
 	}
 }
@@ -1389,9 +1386,9 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 	require.True(t, remainingHours > 1)
 
 	// Split outputs into those held by the wallet and those not
-	addresses := make([]string, len(w.Entries))
-	addressMap := make(map[string]struct{}, len(w.Entries))
-	for i, e := range w.Entries {
+	addresses := make([]string, w.EntriesLen())
+	addressMap := make(map[string]struct{}, w.EntriesLen())
+	for i, e := range w.GetEntries() {
 		addresses[i] = e.Address.String()
 		addressMap[e.Address.String()] = struct{}{}
 	}
@@ -1414,7 +1411,7 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 	require.NotEmpty(t, walletOutputs)
 	require.NotEmpty(t, nonWalletOutputs)
 
-	defaultChangeAddress := w.Entries[0].Address.String()
+	defaultChangeAddress := w.GetEntryAt(0).Address.String()
 
 	baseCases := makeLiveCreateTxnTestCases(t, w, totalCoins, totalHours)
 
@@ -1447,7 +1444,7 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 					ChangeAddress: &defaultChangeAddress,
 					To: []api.Receiver{
 						{
-							Address: w.Entries[1].Address.String(),
+							Address: w.GetEntryAt(1).Address.String(),
 							Coins:   nonWalletOutputs[0].Coins,
 							Hours:   "1",
 						},
@@ -1471,7 +1468,7 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 					ChangeAddress: &defaultChangeAddress,
 					To: []api.Receiver{
 						{
-							Address: w.Entries[1].Address.String(),
+							Address: w.GetEntryAt(1).Address.String(),
 							Coins:   toDropletString(t, totalCoins),
 							Hours:   "1",
 						},
@@ -1494,7 +1491,7 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 					ChangeAddress: &defaultChangeAddress,
 					To: []api.Receiver{
 						{
-							Address: w.Entries[1].Address.String(),
+							Address: w.GetEntryAt(1).Address.String(),
 							Coins:   toDropletString(t, totalCoins-1e3),
 							Hours:   "1",
 						},
@@ -1502,12 +1499,12 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 				},
 				outputs: []coin.TransactionOutput{
 					{
-						Address: w.Entries[1].SkycoinAddress(),
+						Address: w.GetEntryAt(1).SkycoinAddress(),
 						Coins:   totalCoins - 1e3,
 						Hours:   1,
 					},
 					{
-						Address: w.Entries[0].SkycoinAddress(),
+						Address: w.GetEntryAt(0).SkycoinAddress(),
 						Coins:   1e3,
 						Hours:   remainingHours - 1,
 					},
@@ -1529,7 +1526,7 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 					ChangeAddress: &defaultChangeAddress,
 					To: []api.Receiver{
 						{
-							Address: w.Entries[0].Address.String(),
+							Address: w.GetEntryAt(0).Address.String(),
 							Coins:   "1000",
 							Hours:   "1",
 						},
@@ -1552,7 +1549,7 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 					ChangeAddress: &defaultChangeAddress,
 					To: []api.Receiver{
 						{
-							Address: w.Entries[0].Address.String(),
+							Address: w.GetEntryAt(0).Address.String(),
 							Coins:   "1000",
 							Hours:   "1",
 						},
@@ -1581,7 +1578,7 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 					ChangeAddress: &defaultChangeAddress,
 					To: []api.Receiver{
 						{
-							Address: w.Entries[0].Address.String(),
+							Address: w.GetEntryAt(0).Address.String(),
 							Coins:   "1000",
 							Hours:   "1",
 						},
@@ -1597,6 +1594,11 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 		name := fmt.Sprintf("unsigned=%v %s", unsigned, tc.name)
 		t.Run(name, func(t *testing.T) {
 			require.False(t, len(tc.outputs) != 0 && len(tc.outputsSubset) != 0, "outputs and outputsSubset can't both be set")
+
+			// Fetch a copy of the wallet to look for modifications to the wallet
+			// after the transaction is created
+			w, err := c.Wallet(tc.walletID)
+			require.NoError(t, err)
 
 			req := api.WalletCreateTransactionRequest{
 				CreateTransactionRequest: tc.req,
@@ -1616,40 +1618,48 @@ func testLiveWalletCreateTransactionSpecific(t *testing.T, unsigned bool) {
 			}
 
 			require.NoError(t, err)
-			assertCreateTransactionResult(t, tc.liveCreateTxnTestCase, result, unsigned)
+
+			assertCreateTransactionResult(t, c, tc.liveCreateTxnTestCase, result, unsigned, w)
 		})
 	}
 }
 
-func assertCreateTransactionResult(t *testing.T, tc liveCreateTxnTestCase, result *api.CreateTransactionResponse, unsigned bool) {
+func getLastChangeEntry(t *testing.T, w *api.WalletResponse) *readable.WalletEntry {
+	require.Equal(t, wallet.WalletTypeBip44, w.Meta.Type)
+
+	// Find the last "change" entry
+	require.NotEmpty(t, w.Entries)
+	sort.Slice(w.Entries, func(i, j int) bool {
+		if *w.Entries[i].Change == *w.Entries[j].Change {
+			return *w.Entries[i].ChildNumber > *w.Entries[j].ChildNumber
+		}
+		return *w.Entries[i].Change > *w.Entries[j].Change
+	})
+
+	lastChangeEntry := w.Entries[0]
+	if *lastChangeEntry.Change != bip44.ChangeChainIndex {
+		// no change entry
+		return nil
+	}
+
+	return &lastChangeEntry
+}
+
+func isNullAddress(a string) bool {
+	if a == "" {
+		return true
+	}
+
+	addr := cipher.MustDecodeBase58Address(a)
+	return addr.Null()
+}
+
+func assertCreateTransactionResult(t *testing.T, c *api.Client, tc liveCreateTxnTestCase, result *api.CreateTransactionResponse, unsigned bool, w *api.WalletResponse) {
 	if len(tc.outputsSubset) == 0 {
 		require.Equal(t, len(tc.outputs), len(result.Transaction.Out))
 	}
 
 	for i, o := range tc.outputs {
-		// The final change output may not have the address specified,
-		// if the ChangeAddress was not specified in the wallet params.
-		// Calculate it automatically based upon the transaction inputs
-		if o.Address.Null() {
-			require.Equal(t, i, len(tc.outputs)-1)
-			require.Nil(t, tc.req.ChangeAddress)
-
-			changeAddr := result.Transaction.Out[i].Address
-			// The changeAddr must be associated with one of the transaction inputs
-			changeAddrFound := false
-			for _, x := range result.Transaction.In {
-				require.NotNil(t, x.Address)
-				if changeAddr == x.Address {
-					changeAddrFound = true
-					break
-				}
-			}
-
-			require.True(t, changeAddrFound)
-		} else {
-			require.Equal(t, o.Address.String(), result.Transaction.Out[i].Address)
-		}
-
 		coins, err := droplet.FromString(result.Transaction.Out[i].Coins)
 		require.NoError(t, err)
 		require.Equal(t, o.Coins, coins, "[%d] %d != %d", i, o.Coins, coins)
@@ -1659,6 +1669,64 @@ func assertCreateTransactionResult(t *testing.T, tc liveCreateTxnTestCase, resul
 			require.NoError(t, err)
 			require.Equal(t, o.Hours, hours, "[%d] %d != %d", i, o.Hours, hours)
 		}
+
+		if o.Address.Null() {
+			// The final change output may not have the address specified,
+			// if the ChangeAddress was not specified in the wallet params.
+			require.Equal(t, i, len(tc.outputs)-1)
+			require.Nil(t, tc.req.ChangeAddress)
+			changeAddr := result.Transaction.Out[i].Address
+			require.False(t, isNullAddress(changeAddr))
+
+			if w != nil && w.Meta.Type == wallet.WalletTypeBip44 {
+				// Check that the change address was a new address generated
+				// from the wallet's change path
+
+				// Get the update wallet from the API.
+				// Look for the last change address.
+				// It should match the change address that was used.
+				// Compare it to the previous wallet
+				w2, err := c.Wallet(w.Meta.Filename)
+				require.NoError(t, err)
+				lastChangeEntry := getLastChangeEntry(t, w2)
+
+				// Compare it to the initial wallet state.
+				// It should be a new address with an incremented child number
+				prevLastChangeEntry := getLastChangeEntry(t, w)
+				require.NotEqual(t, prevLastChangeEntry, lastChangeEntry)
+				if prevLastChangeEntry == nil {
+					require.Equal(t, uint32(0), *lastChangeEntry.ChildNumber)
+				} else {
+					require.Equal(t, *prevLastChangeEntry.ChildNumber+1, *lastChangeEntry.ChildNumber)
+				}
+
+				// Make sure that the last change address in the wallet was used
+				require.False(t, isNullAddress(lastChangeEntry.Address))
+				require.Equal(t, changeAddr, lastChangeEntry.Address)
+			} else {
+				// Check that the automatically-selected change address was one
+				// of the addresses for the UTXOs spent by the transaction
+				changeAddrFound := false
+				for _, x := range result.Transaction.In {
+					require.False(t, isNullAddress(x.Address))
+					if changeAddr == x.Address {
+						changeAddrFound = true
+						break
+					}
+				}
+
+				require.True(t, changeAddrFound)
+			}
+		} else {
+			require.Equal(t, o.Address.String(), result.Transaction.Out[i].Address)
+		}
+	}
+
+	// The wallet should be unmodified if the wallet type is not bip44
+	if w != nil && w.Meta.Type != wallet.WalletTypeBip44 {
+		w2, err := c.Wallet(w.Meta.Filename)
+		require.NoError(t, err)
+		require.Equal(t, w, w2)
 	}
 
 	assertEncodeTxnMatchesTxn(t, result)
@@ -1674,7 +1742,6 @@ func assertCreateTransactionResult(t *testing.T, tc liveCreateTxnTestCase, resul
 	}
 
 	assertVerifyTransaction(t, result.EncodedTransaction, unsigned)
-
 }
 
 func TestLiveWalletCreateTransactionRandomUnsigned(t *testing.T) {
@@ -1758,7 +1825,7 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 		tLog(t, "sendCoins", coins)
 		tLog(t, "sendHours", hours)
 
-		changeAddress := w.Entries[0].Address.String()
+		changeAddress := w.GetEntryAt(0).Address.String()
 
 		shareFactor := strconv.FormatFloat(rand.Float64(), 'f', 8, 64)
 
@@ -2096,7 +2163,7 @@ func getTransaction(t *testing.T, c *api.Client, txid string) *readable.Transact
 
 // getAddressBalance gets balance of given address.
 // Returns coins and coin hours.
-func getAddressBalance(t *testing.T, c *api.Client, addr string) (uint64, uint64) { // nolint: unparam
+func getAddressBalance(t *testing.T, c *api.Client, addr string) (uint64, uint64) { //nolint:unparam
 	bp, err := c.Balance([]string{addr})
 	if err != nil {
 		t.Fatalf("%v", err)

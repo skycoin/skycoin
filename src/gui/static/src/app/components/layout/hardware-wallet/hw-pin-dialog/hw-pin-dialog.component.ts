@@ -1,9 +1,10 @@
 import { Component, OnInit, HostListener, Inject } from '@angular/core';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { MatDialogRef, MatDialog, MatDialogConfig, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { HwWalletService, ChangePinStates } from '../../../../services/hw-wallet.service';
+import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { HwPinHelpDialogComponent } from '../hw-pin-help-dialog/hw-pin-help-dialog.component';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
+import { ChangePinStates } from '../../../../services/hw-wallet-pin.service';
 
 export interface HwPinDialogParams {
   signingTx: boolean;
@@ -19,6 +20,7 @@ export interface HwPinDialogParams {
 export class HwPinDialogComponent extends HwDialogBaseComponent<HwPinDialogComponent> implements OnInit {
   form: FormGroup;
   changePinStates = ChangePinStates;
+  buttonsContent = '•';
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: HwPinDialogParams,

@@ -9,7 +9,7 @@ SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 pushd "$SCRIPTDIR" >/dev/null
 
 npm install
-cd src/
+cd app/
 ./install-dependencies.sh
 
 popd >/dev/null

@@ -1,11 +1,12 @@
 <app-modal class="modal" [class.red-title]="data.redTitle" [headline]="data.headerText | translate" [dialog]="dialogRef" [disableDismiss]="disableDismiss">
   <div class="-body">
     {{ data.text | translate }}
+    <span *ngIf="data.linkText && data.linkFunction" class="link" (click)="data.linkFunction(); closeModal(false);">{{ data.linkText | translate }}</span>
   </div>
 
   <div class="-check-container" *ngIf="data.checkboxText">
     <mat-checkbox type="checkbox"
-                  class="-check"
+                  class="-check e2e-confirm-checkbox"
                   id="terms"
                   [checked]="accepted"
                   (change)="setAccept($event)">{{ data.checkboxText | translate }}

@@ -1,36 +1,31 @@
 package cli
 
 import (
-	"fmt"
 	"path/filepath"
+
+	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-import (
-	gcli "github.com/spf13/cobra"
-)
-
-func decryptWalletCmd() *gcli.Command {
-	decryptWalletCmd := &gcli.Command{
-		Use:   "decryptWallet",
-		Short: "Decrypt wallet",
-		Long: fmt.Sprintf(`The default wallet (%s) will be used if no wallet was specified.
+func decryptWalletCmd() *cobra.Command {
+	decryptWalletCmd := &cobra.Command{
+		Args:  cobra.ExactArgs(1),
+		Use:   "decryptWallet [wallet]",
+		Short: "Decrypt a wallet",
+		Long: `Decrypt an encrypted wallet. The decrypted wallet will be written
+    on the filesystem in place of the encrypted wallet.
 
     Use caution when using the "-p" command. If you have command history enabled
     your wallet encryption password can be recovered from the history log. If you
     do not include the "-p" option you will be prompted to enter your password
-    after you enter your command.`, cliConfig.FullWalletPath()),
+    after you enter your command.`,
 		SilenceUsage: true,
-		RunE: func(c *gcli.Command, _ []string) error {
-			w, err := resolveWalletPath(cliConfig, "")
-			if err != nil {
-				return err
-			}
-
+		RunE: func(c *cobra.Command, args []string) error {
+			w := args[0]
 			pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
 
-			wlt, err := decryptWallet(w, pr)
+			_, err := decryptWallet(w, pr)
 			switch err.(type) {
 			case nil:
 			case WalletLoadError:
@@ -40,7 +35,7 @@ func decryptWalletCmd() *gcli.Command {
 				return err
 			}
 
-			return printJSON(wallet.NewReadableWallet(wlt))
+			return nil
 		},
 	}
 
@@ -49,7 +44,7 @@ func decryptWalletCmd() *gcli.Command {
 	return decryptWalletCmd
 }
 
-func decryptWallet(walletFile string, pr PasswordReader) (*wallet.Wallet, error) {
+func decryptWallet(walletFile string, pr PasswordReader) (wallet.Wallet, error) {
 	wlt, err := wallet.Load(walletFile)
 	if err != nil {
 		return nil, WalletLoadError{err}
@@ -68,7 +63,7 @@ func decryptWallet(walletFile string, pr PasswordReader) (*wallet.Wallet, error)
 		return nil, err
 	}
 
-	unlockedWlt, err := wlt.Unlock(wltPassword)
+	unlockedWlt, err := wallet.Unlock(wlt, wltPassword)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +74,7 @@ func decryptWallet(walletFile string, pr PasswordReader) (*wallet.Wallet, error)
 	}
 
 	// save the wallet
-	if err := unlockedWlt.Save(dir); err != nil {
+	if err := wallet.Save(unlockedWlt, dir); err != nil {
 		return nil, WalletLoadError{err}
 	}
 

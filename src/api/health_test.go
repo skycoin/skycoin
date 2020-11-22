@@ -72,6 +72,9 @@ func TestHealthHandler(t *testing.T) {
 			method: http.MethodGet,
 			code:   http.StatusOK,
 			cfg: muxConfig{
+				health: HealthConfig{
+					BlockPublisher: true,
+				},
 				host:        configuredHost,
 				appLoc:      ".",
 				disableCSRF: false,
@@ -125,7 +128,7 @@ func TestHealthHandler(t *testing.T) {
 			}
 			tc.cfg.health.BuildInfo = buildInfo
 
-			tc.cfg.health.CoinName = "skycoin"
+			tc.cfg.health.Fiber.Name = "skycoin"
 			tc.cfg.health.DaemonUserAgent = useragent.Data{
 				Coin:    "skycoin",
 				Version: "0.25.0",
@@ -224,6 +227,7 @@ func TestHealthHandler(t *testing.T) {
 			require.Equal(t, len(conns), r.OpenConnections)
 			require.Equal(t, "skycoin", r.CoinName)
 			require.Equal(t, "skycoin:0.25.0(test)", r.DaemonUserAgent)
+			require.Equal(t, tc.cfg.health.BlockPublisher, r.BlockPublisher)
 
 			require.Equal(t, unconfirmed, r.BlockchainMetadata.Unconfirmed)
 			require.Equal(t, unspents, r.BlockchainMetadata.Unspents)

@@ -30,7 +30,7 @@ describe('Onboarding', () => {
 
   it('should be able to go back from wallet encryption', () => {
     expect<any>(page.goBack()).toEqual('Create Wallet');
-    page.createWallet();
+    page.createWallet(false);
     page.acceptSafeguard();
   });
 

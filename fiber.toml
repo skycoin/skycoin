@@ -9,18 +9,17 @@ blockchain_seckey_str = ""
 genesis_timestamp = 1426562704
 # genesis_coin_volume = 100e12
 default_connections = [
-    "118.178.135.93:6000",
-    "47.88.33.156:6000",
-    "104.237.142.206:6000",
-    "176.58.126.224:6000",
-    "172.104.85.6:6000",
-    "139.162.7.132:6000",
-    "139.162.39.186:6000",
-    "45.33.111.142:6000",
-    "109.237.27.172:6000",
-    "172.104.41.14:6000",
+	"139.162.121.185:6000",
+	"172.104.164.147:6000",
+	"139.162.248.183:6000",
+	"45.56.109.228:6000",
+	"173.230.130.174:6000",
+	"139.162.39.186:6000",
+	"45.33.111.142:6000",
+	"109.237.27.172:6000",
+	"172.104.41.14:6000"
 ]
-peer_list_url = "https://downloads.skycoin.net/blockchain/peers.txt"
+peer_list_url = "https://downloads.skycoin.com/blockchain/peers.txt"
 # port = 6000
 # web_interface_port = 6420
 # unconfirmed_burn_factor = 10
@@ -30,10 +29,16 @@ peer_list_url = "https://downloads.skycoin.net/blockchain/peers.txt"
 # create_block_max_transaction_size = 32 * 1024
 # create_block_max_decimals = 3
 # max_block_transactions_size = 32 * 1024
+# display_name = "Skycoin"
+# ticker = "SKY"
+# coin_hours_display_name = "Coin Hours"
+# coin_hours_display_name_singular = "Coin Hour"
+# coin_hours_ticker = "SCH"
+# explorer_url = "https://explorer.skycoin.com"
+# bip44_coin = 8000
 
 [params]
 # max_coin_supply = 1e8
-# distribution_addresses_total = 100
 # initial_unlocked_count = 25
 # unlock_address_rate = 5
 # unlock_time_interval = 60 * 60 * 24 * 365

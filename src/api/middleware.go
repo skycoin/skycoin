@@ -15,7 +15,7 @@ import (
 // ContentSecurityPolicy represents the value of content-security-policy
 // header in http response
 const ContentSecurityPolicy = "default-src 'self'" +
-	"; connect-src 'self' https://api.coinpaprika.com https://swaplab.cc" +
+	"; connect-src 'self' https://api.coinpaprika.com https://swaplab.cc https://version.skycoin.com https://downloads.skycoin.com http://127.0.0.1:9510" +
 	"; img-src 'self' 'unsafe-inline' data:" +
 	"; style-src 'self' 'unsafe-inline'" +
 	"; object-src	'none'" +
@@ -24,12 +24,37 @@ const ContentSecurityPolicy = "default-src 'self'" +
 	"; block-all-mixed-content" +
 	"; base-uri 'self'"
 
-// CSPHandler enables CSP
-func CSPHandler(handler http.Handler) http.Handler {
+// CSPHandler sets the Content-Security-Policy header
+func CSPHandler(handler http.Handler, policy string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Security-Policy", ContentSecurityPolicy)
+		w.Header().Set("Content-Security-Policy", policy)
 		handler.ServeHTTP(w, r)
 	})
+}
+
+// ContentTypeJSONRequired enforces Content-Type: application/json in a POST request.
+// Return 415 Unsupported Media Type if the Content-Type is not application/json,
+// in the V2 error format.
+func ContentTypeJSONRequired(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			contentType := r.Header.Get("Content-Type")
+			if !isContentTypeJSON(contentType) {
+				resp := NewHTTPErrorResponse(http.StatusUnsupportedMediaType, "")
+				writeHTTPResponse(w, resp)
+				return
+			}
+		}
+
+		handler.ServeHTTP(w, r)
+	})
+}
+
+// isContentTypeJSON returns true if the content type is application/json,
+// allowing the content-type string to include extra parameters like charset=utf-8,
+// for example `Content-Type: application/json; charset=utf-8` will return true.
+func isContentTypeJSON(contentType string) bool {
+	return contentType == ContentTypeJSON || strings.HasPrefix(contentType, ContentTypeJSON+";")
 }
 
 // HostCheck checks that the request's Host header is 127.0.0.1:$port or localhost:$port
@@ -97,7 +122,7 @@ func originRefererCheck(apiVersion, host string, hostWhitelist []string, handler
 		hostWhitelistMap[k] = struct{}{}
 	}
 
-	if addr, port, _ := iputil.SplitAddr(host); iputil.IsLocalhost(addr) { // nolint: errcheck
+	if addr, port, _ := iputil.SplitAddr(host); iputil.IsLocalhost(addr) { //nolint:errcheck
 		hostWhitelistMap[fmt.Sprintf("127.0.0.1:%d", port)] = struct{}{}
 		hostWhitelistMap[fmt.Sprintf("localhost:%d", port)] = struct{}{}
 	} else {

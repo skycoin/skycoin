@@ -1,6 +1,6 @@
-import { MatSnackBar, MatSnackBarConfig } from '@angular/material';
 import { HwWalletService, OperationResults } from '../services/hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
+import { AppConfig } from '../app.config';
 
 export function parseResponseMessage(body: string): string {
   if (typeof body === 'object') {
@@ -26,27 +26,51 @@ export function parseResponseMessage(body: string): string {
   return body;
 }
 
-export function showSnackbarError(snackbar: MatSnackBar, body: string, duration = 300000) {
-  const config = new MatSnackBarConfig();
-  config.duration = duration;
-
-  snackbar.open(parseResponseMessage(body), null, config);
-}
-
-export function getHardwareWalletErrorMsg(hwWalletService: HwWalletService, translateService: TranslateService, error: any): string {
-  if (!hwWalletService.getDeviceConnectedSync()) {
+export function getHardwareWalletErrorMsg(translateService: TranslateService, error: any, genericError: string = null): string {
+  if (!AppConfig.useHwWalletDaemon && !window['ipcRenderer'].sendSync('hwGetDeviceConnectedSync')) {
+    if (translateService) {
     return translateService.instant('hardware-wallet.general.error-disconnected');
-  } else {
-    if (error.result) {
-      if (error.result === OperationResults.FailedOrRefused) {
-        return translateService.instant('hardware-wallet.general.refused');
-      } else if (error.result === OperationResults.WrongPin) {
-        return translateService.instant('hardware-wallet.general.error-incorrect-pin');
-      } else if (error.result === OperationResults.IncorrectHardwareWallet) {
-        return translateService.instant('hardware-wallet.general.error-incorrect-wallet');
-      }
+    } else {
+      return 'hardware-wallet.general.error-disconnected';
     }
+  }
 
-    return translateService.instant('hardware-wallet.general.generic-error');
+  let response: string;
+  if (error.result) {
+    if (error.result === OperationResults.FailedOrRefused) {
+      response = 'hardware-wallet.general.refused';
+    } else if (error.result === OperationResults.WrongPin) {
+      response = 'hardware-wallet.general.error-incorrect-pin';
+    } else if (error.result === OperationResults.IncorrectHardwareWallet) {
+      response = 'hardware-wallet.general.error-incorrect-wallet';
+    } else if (error.result === OperationResults.DaemonError) {
+      response = 'hardware-wallet.errors.daemon-connection';
+    } else if (error.result === OperationResults.InvalidAddress) {
+      response = 'hardware-wallet.errors.invalid-address';
+    } else if (error.result === OperationResults.Timeout) {
+      response = 'hardware-wallet.errors.timeout';
+    } else if (error.result === OperationResults.Disconnected) {
+      response = 'hardware-wallet.general.error-disconnected';
+    } else if (error.result === OperationResults.NotInBootloaderMode) {
+      response = 'hardware-wallet.errors.not-in-bootloader-mode';
+    } else if (error.result === OperationResults.PinMismatch) {
+      response = 'hardware-wallet.change-pin.pin-mismatch';
+    } else if (error.result === OperationResults.WrongWord) {
+      response = 'hardware-wallet.restore-seed.error-wrong-word';
+    } else if (error.result === OperationResults.InvalidSeed) {
+      response = 'hardware-wallet.restore-seed.error-invalid-seed';
+    } else if (error.result === OperationResults.WrongSeed) {
+      response = 'hardware-wallet.restore-seed.error-wrong-seed';
+    } else {
+      response = genericError ? genericError : 'hardware-wallet.general.generic-error';
+    }
+  } else {
+    response = genericError ? genericError : 'hardware-wallet.general.generic-error';
+  }
+
+  if (translateService) {
+    return translateService.instant(response);
+  } else {
+    return response;
   }
 }

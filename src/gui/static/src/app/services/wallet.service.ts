@@ -19,20 +19,35 @@ import { HwWalletService } from './hw-wallet.service';
 import { TranslateService } from '@ngx-translate/core';
 import { catchError, map } from 'rxjs/operators';
 import { AppConfig } from '../app.config';
-
-declare var Cipher: any;
+import { Http } from '@angular/http';
+import { StorageService, StorageType } from './storage.service';
+import { shouldUpgradeVersion } from '../utils/semver';
+import { TxEncoder } from '../utils/tx-encoder';
 
 export enum HwSecurityWarnings {
   NeedsBackup,
   NeedsPin,
+  FirmwareVersionNotVerified,
+  OutdatedFirmware,
+}
+
+export interface HwFeaturesResponse {
+  features: any;
+  securityWarnings: HwSecurityWarnings[];
+  walletNameUpdated: boolean;
+}
+
+export interface PendingTransactions {
+  user: any[];
+  all: any[];
 }
 
 @Injectable()
 export class WalletService {
 
   addresses: Address[];
-  wallets: Subject<Wallet[]> = new ReplaySubject<Wallet[]>();
-  pendingTxs: Subject<any[]> = new ReplaySubject<any[]>();
+  wallets: Subject<Wallet[]> = new ReplaySubject<Wallet[]>(1);
+  pendingTxs: Subject<PendingTransactions> = new ReplaySubject<PendingTransactions>(1);
   dataRefreshSubscription: Subscription;
 
   initialLoadFailed: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
@@ -42,6 +57,8 @@ export class WalletService {
     private hwWalletService: HwWalletService,
     private translate: TranslateService,
     private ngZone: NgZone,
+    private http: Http,
+    private storageService: StorageService,
   ) {
     this.loadData();
     this.startDataRefreshSubscription();
@@ -84,7 +101,7 @@ export class WalletService {
   create(label, seed, scan, password) {
     seed = seed.replace(/(\n|\r\n)$/, '');
 
-    return this.apiService.postWalletCreate(label ? label : 'undefined', seed, scan ? scan : 100, password)
+    return this.apiService.postWalletCreate(label ? label : 'undefined', seed, scan ? scan : 100, password, 'deterministic')
       .do(wallet => {
         console.log(wallet);
         this.wallets.first().subscribe(wallets => {
@@ -149,26 +166,109 @@ export class WalletService {
     });
   }
 
-  updateWalletHasHwSecurityWarnings(wallet: Wallet): Observable<HwSecurityWarnings[]> {
-    if (wallet.isHardware) {
-      return this.hwWalletService.getFeatures().map(result => {
+  getHwFeaturesAndUpdateData(wallet: Wallet): Observable<HwFeaturesResponse> {
+    if (!wallet || wallet.isHardware) {
+
+      let lastestFirmwareVersion: string;
+
+      return this.http.get(AppConfig.urlForHwWalletVersionChecking)
+      .catch(() => Observable.of(null))
+      .flatMap((res: any) => {
+        if (res) {
+          lastestFirmwareVersion = res.text();
+        } else {
+          lastestFirmwareVersion = null;
+        }
+
+        return this.hwWalletService.getFeatures();
+      })
+      .map(result => {
+        let lastestFirmwareVersionReaded = false;
+        let firmwareUpdated = false;
+
+        if (lastestFirmwareVersion) {
+          lastestFirmwareVersion = lastestFirmwareVersion.trim();
+          const versionParts = lastestFirmwareVersion.split('.');
+
+          if (versionParts.length === 3) {
+            lastestFirmwareVersionReaded = true;
+
+            const numVersionParts = versionParts.map(value => Number.parseInt(value.replace(/\D/g, '')));
+
+            const devMajorVersion = !AppConfig.useHwWalletDaemon ? result.rawResponse.majorVersion : result.rawResponse.fw_major;
+            const devMinorVersion = !AppConfig.useHwWalletDaemon ? result.rawResponse.minorVersion : result.rawResponse.fw_minor;
+            const devPatchVersion = !AppConfig.useHwWalletDaemon ? result.rawResponse.patchVersion : result.rawResponse.fw_patch;
+
+            if (devMajorVersion > numVersionParts[0]) {
+              firmwareUpdated = true;
+            } else {
+              if (devMajorVersion === numVersionParts[0]) {
+                if (devMinorVersion > numVersionParts[1]) {
+                  firmwareUpdated = true;
+                } else {
+                  if (devMinorVersion === numVersionParts[1] && devPatchVersion >= numVersionParts[2]) {
+                    firmwareUpdated = true;
+                  }
+                }
+              }
+            }
+          }
+        }
+
         const warnings: HwSecurityWarnings[] = [];
+        let hasHwSecurityWarnings = false;
 
-        wallet.hasHwSecurityWarnings = false;
-        if (result.rawResponse.needsBackup) {
-          warnings.push(HwSecurityWarnings.NeedsBackup);
-          wallet.hasHwSecurityWarnings = true;
+        if (!AppConfig.useHwWalletDaemon) {
+          if (result.rawResponse.needsBackup) {
+            warnings.push(HwSecurityWarnings.NeedsBackup);
+            hasHwSecurityWarnings = true;
+          }
+          if (!result.rawResponse.pinProtection) {
+            warnings.push(HwSecurityWarnings.NeedsPin);
+            hasHwSecurityWarnings = true;
+          }
+        } else {
+          if (result.rawResponse.needs_backup) {
+            warnings.push(HwSecurityWarnings.NeedsBackup);
+            hasHwSecurityWarnings = true;
+          }
+          if (!result.rawResponse.pin_protection) {
+            warnings.push(HwSecurityWarnings.NeedsPin);
+            hasHwSecurityWarnings = true;
+          }
         }
-        if (!result.rawResponse.pinProtection) {
-          warnings.push(HwSecurityWarnings.NeedsPin);
-          wallet.hasHwSecurityWarnings = true;
-        }
-        this.saveHardwareWallets();
 
-        return warnings;
+        if (!lastestFirmwareVersionReaded) {
+          warnings.push(HwSecurityWarnings.FirmwareVersionNotVerified);
+        } else {
+          if (!firmwareUpdated) {
+            warnings.push(HwSecurityWarnings.OutdatedFirmware);
+            hasHwSecurityWarnings = true;
+          }
+        }
+
+        let walletNameUpdated = false;
+
+        if (wallet) {
+          const deviceLabel = result.rawResponse.label ? result.rawResponse.label : (result.rawResponse.deviceId ? result.rawResponse.deviceId : result.rawResponse.device_id);
+          if (wallet.label !== deviceLabel) {
+            wallet.label = deviceLabel;
+            walletNameUpdated = true;
+          }
+          wallet.hasHwSecurityWarnings = hasHwSecurityWarnings;
+          this.saveHardwareWallets();
+        }
+
+        const response = {
+          features: result.rawResponse,
+          securityWarnings: warnings,
+          walletNameUpdated: walletNameUpdated,
+        };
+
+        return response;
       });
     } else {
-      return Observable.of([]);
+      return null;
     }
   }
 
@@ -217,11 +317,7 @@ export class WalletService {
     });
   }
 
-  allPendingTransactions(): Observable<any> {
-    return Observable.timer(0, 10000).flatMap(() => this.apiService.get('pendingTxs', {verbose: 1}));
-  }
-
-  pendingTransactions(): Observable<any> {
+  pendingTransactions(): Observable<PendingTransactions> {
     return this.pendingTxs.asObservable();
   }
 
@@ -322,10 +418,10 @@ export class WalletService {
 
       if (wallet.isHardware) {
         if (data.transaction.inputs.length > 8) {
-          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs'));
+          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs-outputs'));
         }
         if (data.transaction.outputs.length > 8) {
-          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-outputs'));
+          throw new Error(this.translate.instant('hardware-wallet.errors.too-many-inputs-outputs'));
         }
       }
 
@@ -333,6 +429,7 @@ export class WalletService {
         ...data.transaction,
         hoursBurned: new BigNumber(data.transaction.fee),
         encoded: data.encoded_transaction,
+        innerHash: data.transaction.inner_hash,
       };
     });
 
@@ -428,10 +525,11 @@ export class WalletService {
       });
 
       return this.hwWalletService.signTransaction(hwInputs, hwOutputs).flatMap(signatures => {
-        const rawTransaction = Cipher.PrepareTransactionWithSignatures(
-          JSON.stringify(txInputs),
-          JSON.stringify(txOutputs),
-          JSON.stringify(signatures.rawResponse),
+        const rawTransaction = TxEncoder.encode(
+          hwInputs,
+          hwOutputs,
+          signatures.rawResponse,
+          transaction.innerHash,
         );
 
         return Observable.of( {
@@ -442,8 +540,20 @@ export class WalletService {
     }
   }
 
-  injectTransaction(encodedTx: string) {
-    return this.apiService.post('injectTransaction', { rawtx: encodedTx }, { json: true });
+  injectTransaction(encodedTx: string, note: string): Observable<boolean> {
+    return this.apiService.post('injectTransaction', { rawtx: encodedTx }, { json: true })
+      .flatMap(txId => {
+        setTimeout(() => this.startDataRefreshSubscription(), 32);
+
+        if (!note) {
+          return Observable.of(false);
+        } else {
+          return this.storageService.store(StorageType.NOTES, txId, note)
+            .retryWhen(errors => errors.delay(1000).take(3).concat(Observable.throw(-1)))
+            .catch(err => err === -1 ? Observable.of(-1) : err)
+            .map(result => result === -1 ? false : true);
+        }
+      });
   }
 
   transaction(txid: string): Observable<any> {
@@ -464,6 +574,7 @@ export class WalletService {
 
   transactions(): Observable<NormalTransaction[]> {
     let wallets: Wallet[];
+    let transactions: NormalTransaction[];
     const addressesMap: Map<string, boolean> = new Map<string, boolean>();
 
 
@@ -476,7 +587,16 @@ export class WalletService {
       addresses.map(add => addressesMap.set(add.address, true));
 
       return this.apiService.getTransactions(addresses);
-    }).map(transactions => {
+    }).flatMap(recoveredTransactions => {
+      transactions = recoveredTransactions;
+
+      return this.storageService.get(StorageType.NOTES, null);
+    }).map(notes => {
+      const notesMap: Map<string, string> = new Map<string, string>();
+      Object.keys(notes.data).forEach(key => {
+        notesMap.set(key, notes.data[key]);
+      });
+
       return transactions
         .sort((a, b) =>  b.timestamp - a.timestamp)
         .map(transaction => {
@@ -542,6 +662,11 @@ export class WalletService {
           transaction.outputs.map(output => outputsHours = outputsHours.plus(new BigNumber(output.hours)));
           transaction.hoursBurned = inputsHours.minus(outputsHours);
 
+          const txNote = notesMap.get(transaction.txid);
+          if (txNote) {
+            transaction.note = txNote;
+          }
+
           return transaction;
         });
     });
@@ -578,7 +703,7 @@ export class WalletService {
         }
       });
 
-      this.hwWalletService.saveWalletsDataSync(JSON.stringify(hardwareWallets));
+      this.hwWalletService.saveWalletsData(JSON.stringify(hardwareWallets));
 
       this.wallets.next(wallets);
     });
@@ -617,25 +742,33 @@ export class WalletService {
   }
 
   private loadData(): void {
-    this.apiService.getWallets().first().subscribe(
-      recoveredWallets => {
-        let wallets: Wallet[] = [];
-        if (this.hwWalletService.hwWalletCompatibilityActivated) {
-          this.loadHardwareWallets(wallets);
-        }
-        wallets = wallets.concat(recoveredWallets);
+    let wallets: Wallet[] = [];
+    let softwareWallets: Wallet[] = [];
+
+    this.apiService.getWallets().first().flatMap(recoveredWallets => {
+      softwareWallets = recoveredWallets;
+
+      if (this.hwWalletService.hwWalletCompatibilityActivated) {
+        return this.loadHardwareWallets(wallets);
+      }
+
+      return Observable.of(null);
+
+    }).subscribe(() => {
+        wallets = wallets.concat(softwareWallets);
         this.wallets.next(wallets);
-      },
-      () => this.initialLoadFailed.next(true),
-    );
+    }, () => this.initialLoadFailed.next(true));
   }
 
-  private loadHardwareWallets(wallets: Wallet[]) {
-    const storedWallets: string = this.hwWalletService.getSavedWalletsDataSync();
-    if (storedWallets) {
-      const loadedWallets: Wallet[] = JSON.parse(storedWallets);
-      loadedWallets.map(wallet => wallets.push(wallet));
-    }
+  private loadHardwareWallets(wallets: Wallet[]): Observable<any> {
+    return this.hwWalletService.getSavedWalletsData().map(storedWallets => {
+      if (storedWallets) {
+        const loadedWallets: Wallet[] = JSON.parse(storedWallets);
+        loadedWallets.map(wallet => wallets.push(wallet));
+      }
+
+      return null;
+    });
   }
 
   private retrieveInputAddress(input: string) {
@@ -676,7 +809,10 @@ export class WalletService {
     this.apiService.get('pendingTxs', { verbose: true })
       .flatMap((transactions: any) => {
         if (transactions.length === 0) {
-          return Observable.of([]);
+          return Observable.of({
+            user: [],
+            all: [],
+          });
         }
 
         return this.wallets.first().map((wallets: Wallet[]) => {
@@ -685,10 +821,15 @@ export class WalletService {
             wallet.addresses.forEach(address => walletAddresses.add(address.address));
           });
 
-          return transactions.filter(tran => {
+          const userTransactions = transactions.filter(tran => {
             return tran.transaction.inputs.some(input => walletAddresses.has(input.owner)) ||
             tran.transaction.outputs.some(output => walletAddresses.has(output.dst));
           });
+
+          return {
+            user: userTransactions,
+            all: transactions,
+          };
         });
       })
       .subscribe(transactions => this.pendingTxs.next(transactions));

@@ -55,21 +55,27 @@ export class ApiService {
       .map((response: GetWalletsResponseWallet[]) => {
         const wallets: Wallet[] = [];
         response.forEach(wallet => {
-          wallets.push(<Wallet> {
+          const processedWallet: Wallet = {
             label: wallet.meta.label,
             filename: wallet.meta.filename,
             coins: null,
             hours: null,
-            addresses: wallet.entries.map((entry: GetWalletsResponseEntry) => {
+            addresses: [],
+            encrypted: wallet.meta.encrypted,
+          };
+
+          if (wallet.entries) {
+            processedWallet.addresses = wallet.entries.map((entry: GetWalletsResponseEntry) => {
               return {
                 address: entry.address,
                 coins: null,
                 hours: null,
                 confirmed: true,
               };
-            }),
-            encrypted: wallet.meta.encrypted,
-          });
+            });
+          }
+
+          wallets.push(processedWallet);
         });
 
         return wallets;
@@ -81,8 +87,8 @@ export class ApiService {
       .map(response => response.seed);
   }
 
-  postWalletCreate(label: string, seed: string, scan: number, password: string): Observable<Wallet> {
-    const params = { label, seed, scan };
+  postWalletCreate(label: string, seed: string, scan: number, password: string, type: string): Observable<Wallet> {
+    const params = { label, seed, scan, type };
 
     if (password) {
       params['password'] = password;
@@ -190,7 +196,7 @@ export class ApiService {
     return this.url + (useV2 ? 'v2/' : 'v1/') + url + '?' + this.getQueryString(options);
   }
 
-  processConnectionError(error: any): Observable<void> {
+  processConnectionError(error: any, connectingToHwWalletDaemon = false): Observable<void> {
     if (error) {
       if (typeof error['_body'] === 'string') {
 
@@ -207,8 +213,7 @@ export class ApiService {
         return Observable.throw(error);
       }
     }
-
-    const err = Error(this.translate.instant('service.api.server-error'));
+    const err = Error(this.translate.instant(connectingToHwWalletDaemon ? 'hardware-wallet.errors.daemon-connection' : 'service.api.server-error'));
     err['_body'] = err.message;
 
     return Observable.throw(err);

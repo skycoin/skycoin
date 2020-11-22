@@ -173,6 +173,12 @@ mat-option ::ng-deep .mat-pseudo-checkbox-checked {
         line-height: 15px;
         margin: 0;
       }
+
+      .note {
+        color: #1e2227;
+        word-break: break-word;
+        display: inline;
+      }
     }
   }
 

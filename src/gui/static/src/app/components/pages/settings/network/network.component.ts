@@ -17,7 +17,7 @@ export class NetworkComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    this.networkService.retrieveDefaultConnections().subscribe(trusted => {
+    this.subscription = this.networkService.retrieveDefaultConnections().subscribe(trusted => {
       this.subscription = this.networkService.automatic().subscribe(peers => {
         this.peers = peers.map(peer => {
           peer.source = trusted.find(p => p.address === peer.address) ? 'default' : 'exchange';

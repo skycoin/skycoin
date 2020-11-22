@@ -113,7 +113,7 @@ func TestConvertToMessageNotMessage(t *testing.T) {
 	// don't verify messages
 	c := &Connection{}
 	require.Panics(t, func() {
-		_, _ = convertToMessage(c.ID, NothingPrefix[:], testing.Verbose()) // nolint: errcheck
+		_, _ = convertToMessage(c.ID, NothingPrefix[:], testing.Verbose()) //nolint:errcheck
 	})
 }
 
@@ -143,7 +143,7 @@ func TestEncodeMessageUnknownMessage(t *testing.T) {
 	resetHandler()
 	EraseMessages()
 	require.Panics(t, func() {
-		_, _ = EncodeMessage(&DummyMessage{}) // nolint: errcheck
+		_, _ = EncodeMessage(&DummyMessage{}) //nolint:errcheck
 	})
 }
 

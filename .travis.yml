@@ -4,6 +4,10 @@ language: go
 go:
   - "1.11.x"
 
+brances:
+  only:
+    - "v0.27.1"
+
 matrix:
   include:
     - os: linux

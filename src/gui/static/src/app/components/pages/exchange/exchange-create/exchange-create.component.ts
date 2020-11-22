@@ -1,4 +1,4 @@
-import { throwError as observableThrowError, SubscriptionLike, Observable, of } from 'rxjs';
+import { throwError as observableThrowError, SubscriptionLike, concat, of } from 'rxjs';
 import {
   Component,
   EventEmitter,
@@ -17,7 +17,7 @@ import { SelectAddressComponent } from '../../../layout/select-address/select-ad
 import { AppService } from '../../../../services/app.service';
 import { TranslateService } from '@ngx-translate/core';
 import { MsgBarService } from '../../../../services/msg-bar.service';
-import { retryWhen, delay, take, concat, mergeMap } from 'rxjs/operators';
+import { retryWhen, delay, take, mergeMap } from 'rxjs/operators';
 import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
 
 @Component({
@@ -30,7 +30,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   readonly defaultFromAmount = '0.1';
   readonly toCoin = 'SKY';
 
-  @ViewChild('exchangeButton', { static: false }) exchangeButton: ButtonComponent;
+  @ViewChild('exchangeButton') exchangeButton: ButtonComponent;
   @Output() submitted = new EventEmitter<StoredExchangeOrder>();
   form: FormGroup;
   tradingPairs: TradingPair[];
@@ -182,7 +182,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
 
   private loadData() {
     this.subscriptionsGroup.push(this.exchangeService.tradingPairs()
-      .pipe(retryWhen(errors => errors.pipe(delay(2000), take(10), concat(observableThrowError('')))))
+      .pipe(retryWhen(errors => concat(errors.pipe(delay(2000), take(10)), observableThrowError(''))))
       .subscribe(pairs => {
         this.tradingPairs = [];
 

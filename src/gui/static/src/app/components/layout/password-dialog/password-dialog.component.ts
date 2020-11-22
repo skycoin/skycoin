@@ -65,7 +65,7 @@ export interface PasswordDialogParams {
   styleUrls: ['./password-dialog.component.scss'],
 })
 export class PasswordDialogComponent implements OnInit, OnDestroy {
-  @ViewChild('button', { static: false }) button: ButtonComponent;
+  @ViewChild('button') button: ButtonComponent;
   form: FormGroup;
   passwordSubmit = new Subject<PasswordSubmitEvent>();
   working = false;

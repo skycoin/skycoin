@@ -98,11 +98,11 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   private readonly defaultAutoShareValue = '0.5';
 
   // Subform for selecting the sources.
-  @ViewChild('formSourceSelection', { static: false }) formSourceSelection: FormSourceSelectionComponent;
+  @ViewChild('formSourceSelection') formSourceSelection: FormSourceSelectionComponent;
   // Subform for entering the destinations.
-  @ViewChild('formMultipleDestinations', { static: false }) formMultipleDestinations: FormDestinationComponent;
-  @ViewChild('previewButton', { static: false }) previewButton: ButtonComponent;
-  @ViewChild('sendButton', { static: false }) sendButton: ButtonComponent;
+  @ViewChild('formMultipleDestinations') formMultipleDestinations: FormDestinationComponent;
+  @ViewChild('previewButton') previewButton: ButtonComponent;
+  @ViewChild('sendButton') sendButton: ButtonComponent;
   // Data the form must have just after being created.
   @Input() formData: SendCoinsData;
   // If true, the simple form will be used.

@@ -1,7 +1,8 @@
 import { Component, OnDestroy, ViewChild, ChangeDetectorRef } from '@angular/core';
-import { SubscriptionLike,  combineLatest } from 'rxjs';
+import { SubscriptionLike, combineLatest } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormGroup, FormBuilder, FormControl } from '@angular/forms';
+import { map } from 'rxjs/operators';
 
 import { ButtonComponent } from '../../layout/button/button.component';
 import { MsgBarService } from '../../../services/msg-bar.service';
@@ -20,7 +21,7 @@ import { WalletBase } from '../../../services/wallet-operations/wallet-objects';
   styleUrls: ['./reset-password.component.scss'],
 })
 export class ResetPasswordComponent implements OnDestroy {
-  @ViewChild('resetButton', { static: false }) resetButton: ButtonComponent;
+  @ViewChild('resetButton') resetButton: ButtonComponent;
 
   form: FormGroup;
   // Allows to deactivate the form while the component is busy.
@@ -46,7 +47,10 @@ export class ResetPasswordComponent implements OnDestroy {
   ) {
     this.initForm();
     // Get the wallets and route params.
-    this.subscription = combineLatest(this.route.params, this.walletsAndAddressesService.allWallets, (params, wallets) => {
+    this.subscription = combineLatest([this.route.params, this.walletsAndAddressesService.allWallets]).pipe(map(result => {
+      const params = result[0];
+      const wallets = result[1];
+
       const wallet = wallets.find(w => w.id === params['id']);
       // Abort if the requested wallet does not exists.
       if (!wallet) {
@@ -59,7 +63,7 @@ export class ResetPasswordComponent implements OnDestroy {
       this.form.get('wallet').setValue(wallet.label);
       // Activate the form.
       this.busy = false;
-    }).subscribe();
+    })).subscribe();
   }
 
   ngOnDestroy() {

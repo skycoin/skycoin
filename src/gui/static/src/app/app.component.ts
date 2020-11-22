@@ -21,7 +21,7 @@ import { redirectToErrorPage } from './utils/errors';
   styleUrls: ['./app.component.scss'],
 })
 export class AppComponent implements OnInit {
-  @ViewChild('msgBar', { static: false }) msgBar: MsgBarComponent;
+  @ViewChild('msgBar') msgBar: MsgBarComponent;
 
   constructor(
     private appService: AppService,

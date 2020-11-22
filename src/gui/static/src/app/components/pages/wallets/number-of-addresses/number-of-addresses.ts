@@ -11,7 +11,7 @@ import { AppConfig } from '../../../../app.config';
   styleUrls: ['./number-of-addresses.scss'],
 })
 export class NumberOfAddressesComponent implements OnInit, OnDestroy {
-  @ViewChild('button', { static: false }) button: ButtonComponent;
+  @ViewChild('button') button: ButtonComponent;
   form: FormGroup;
 
   // Vars with the validation error messages.

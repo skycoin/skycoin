@@ -6,7 +6,7 @@ go:
 
 brances:
   only:
-    - "v0.27.1"
+    - "release/0.27.1"
 
 matrix:
   include:

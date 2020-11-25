@@ -2,7 +2,7 @@
 
 # Skycoin
 
-[![Build Status](https://travis-ci.com/skycoin/skycoin.svg)](https://travis-ci.com/skycoin/skycoin)
+[![Go](https://github.com/skycoin/skycoin/workflows/Go/badge.svg)](https://github.com/skycoin/skycoin/actions)
 [![GoDoc](https://godoc.org/github.com/skycoin/skycoin?status.svg)](https://godoc.org/github.com/skycoin/skycoin)
 [![Go Report Card](https://goreportcard.com/badge/github.com/skycoin/skycoin)](https://goreportcard.com/report/github.com/skycoin/skycoin)
 
@@ -46,7 +46,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
 
 - [Changelog](#changelog)
 - [Installation](#installation)
-	- [Go 1.14+ Installation and Setup](#go-1.14-installation-and-setup)
+	- [Go 1.14+ Installation and Setup](#go-114-installation-and-setup)
 	- [Go get skycoin](#go-get-skycoin)
 	- [Run Skycoin from the command line](#run-skycoin-from-the-command-line)
 	- [Show Skycoin node options](#show-skycoin-node-options)

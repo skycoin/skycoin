@@ -35,14 +35,14 @@ jobs:
                 Xvfb -ac :99 -screen 0 1280x1024x16 & export DISPLAY=:99
                 ./ci-scripts/lint-and-test.sh
     Build:
-        name: Build Wallets
+        name: Build wallets
         needs: Test
         runs-on: macos-latest
         steps:
             - name: Set up Go 1.x
               uses: actions/setup-go@v2
               with:
-                  go-version: 1.14
+                  go-version: 1.14.x
             - name: Check out code into the Go module directory
               uses: actions/checkout@v2
             - name: Set up Gox

@@ -2,7 +2,7 @@
 
 # Skycoin
 
-[![Build Status](https://travis-ci.com/skycoin/skycoin.svg)](https://travis-ci.com/skycoin/skycoin)
+[![Go](https://github.com/skycoin/skycoin/workflows/Go/badge.svg)](https://github.com/skycoin/skycoin/actions)
 [![GoDoc](https://godoc.org/github.com/skycoin/skycoin?status.svg)](https://godoc.org/github.com/skycoin/skycoin)
 [![Go Report Card](https://goreportcard.com/badge/github.com/skycoin/skycoin)](https://goreportcard.com/report/github.com/skycoin/skycoin)
 
@@ -46,7 +46,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
 
 - [Changelog](#changelog)
 - [Installation](#installation)
-	- [Go 1.14+ Installation and Setup](#go-1.14-installation-and-setup)
+	- [Go 1.14+ Installation and Setup](#go-114-installation-and-setup)
 	- [Go get skycoin](#go-get-skycoin)
 	- [Run Skycoin from the command line](#run-skycoin-from-the-command-line)
 	- [Show Skycoin node options](#show-skycoin-node-options)
@@ -274,7 +274,7 @@ $ skycoin-cli createRawTransactionV2 $WALLET_NAME $RECIPIENT_ADDRESS $AMOUNT --u
 <details>
  <summary>View Output</summary>
 
-```json
+```
 b700000000e6b869f570e2bfebff1b4d7e7c9e86885dbc34d6de988da6ff998e7acd7e6e14010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000007531184ad0afeebbff2049b855e0921329cb1cb74d769ac57c057c9c8bd2b6810100000000ed5ea2ca4fe9b4560409b50c5bf7cb39b6c5ff6e50690f00000000000000000000000000
 ```
 
@@ -303,7 +303,7 @@ If the cold wallet is encrypted, you will be prompted to enter the password to s
 <details>
  <summary>View Output</summary>
 
-```json
+```
 b700000000e6b869f570e2bfebff1b4d7e7c9e86885dbc34d6de988da6ff998e7acd7e6e14010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000007531184ad0afeebbff2049b855e0921329cb1cb74d769ac57c057c9c8bd2b6810100000000ed5ea2ca4fe9b4560409b50c5bf7cb39b6c5ff6e50690f00000000000000000000000000
 ```
 

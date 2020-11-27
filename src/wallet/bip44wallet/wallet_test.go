@@ -64,7 +64,7 @@ func TestBip44NewWallet(t *testing.T) {
 			expect: expect{
 				wallet.CoinTypeSkycoin,
 				bip44.CoinTypeSkycoin,
-				1,
+				2, // 1 external, 1 change
 				DefaultAccountName,
 			},
 		},
@@ -80,7 +80,7 @@ func TestBip44NewWallet(t *testing.T) {
 			expect: expect{
 				wallet.CoinTypeBitcoin,
 				bip44.CoinTypeBitcoin,
-				1,
+				2, // 1 external, 1 change,
 				DefaultAccountName,
 			},
 		},
@@ -97,7 +97,7 @@ func TestBip44NewWallet(t *testing.T) {
 			expect: expect{
 				wallet.CoinTypeSkycoin,
 				bip44.CoinTypeSkycoin,
-				1,
+				2, // one external, 1 change,
 				DefaultAccountName,
 			},
 		},
@@ -113,7 +113,7 @@ func TestBip44NewWallet(t *testing.T) {
 			expect: expect{
 				wallet.CoinTypeSkycoin,
 				bip44.CoinTypeSkycoin,
-				5,
+				6, // 5 external, 1 change
 				DefaultAccountName,
 			},
 		},
@@ -133,7 +133,7 @@ func TestBip44NewWallet(t *testing.T) {
 			expect: expect{
 				wallet.CoinTypeSkycoin,
 				bip44.CoinTypeSkycoin,
-				3,
+				4, // 3 external, 1 change
 				DefaultAccountName,
 			},
 		},
@@ -153,7 +153,7 @@ func TestBip44NewWallet(t *testing.T) {
 			expect: expect{
 				wallet.CoinTypeSkycoin,
 				bip44.CoinTypeSkycoin,
-				4,
+				5, // 4 external, 1 change
 				DefaultAccountName,
 			},
 		},
@@ -172,7 +172,7 @@ func TestBip44NewWallet(t *testing.T) {
 			expect: expect{
 				wallet.CoinTypeSkycoin,
 				bip44.CoinTypeSkycoin,
-				2,
+				3, // 2 external, one change
 				DefaultAccountName,
 			},
 		},
@@ -191,7 +191,7 @@ func TestBip44NewWallet(t *testing.T) {
 			expect: expect{
 				wallet.CoinTypeSkycoin,
 				bip44.CoinTypeSkycoin,
-				1,
+				2, // 1 external, 1 change
 				DefaultAccountName,
 			},
 		},
@@ -208,7 +208,7 @@ func TestBip44NewWallet(t *testing.T) {
 			expect: expect{
 				wallet.CoinTypeSkycoin,
 				bip44.CoinTypeSkycoin,
-				1,
+				2, // 1 external, 1 change
 				DefaultAccountName,
 			},
 		},
@@ -224,7 +224,7 @@ func TestBip44NewWallet(t *testing.T) {
 			expect: expect{
 				wallet.CoinTypeSkycoin,
 				bip44.CoinTypeSkycoin,
-				1,
+				2, // 1 external, 1 change
 				"marketing",
 			},
 		},
@@ -241,7 +241,7 @@ func TestBip44NewWallet(t *testing.T) {
 			expect: expect{
 				wallet.CoinTypeSkycoin,
 				newBip44Type,
-				1,
+				2, // 1 external, 1 change
 				DefaultAccountName,
 			},
 		},
@@ -264,7 +264,7 @@ func TestBip44NewWallet(t *testing.T) {
 			expect: expect{
 				wallet.CoinTypeSkycoin,
 				bip44.CoinTypeSkycoin,
-				1,
+				2, // 1 external, 1 change
 				DefaultAccountName,
 			},
 		},
@@ -557,7 +557,7 @@ func TestWalletUnlock(t *testing.T) {
 				// Checks the generated external addresses
 				el, err := unlockWlt.EntriesLen()
 				require.NoError(t, err)
-				require.Equal(t, 5, el)
+				require.Equal(t, 6, el)
 
 				// pack the origin wallet's secrets
 				originSS := make(wallet.Secrets)
@@ -596,7 +596,7 @@ func TestLockAndUnLock(t *testing.T) {
 		el, err := w.EntriesLen()
 		require.NoError(t, err)
 		// 1 default address + 9
-		require.Equal(t, 10, el)
+		require.Equal(t, 11, el)
 
 		// clone the wallet
 		cw := w.Clone()
@@ -672,25 +672,30 @@ func TestWalletGenerateAddress(t *testing.T) {
 		name               string
 		opts               []wallet.Option
 		num                uint64
+		expectNum          uint64
 		oneAddressEachTime bool
 		err                error
 	}{
 		{
-			name: "ok with none address",
-			num:  0,
+			name:      "ok with none address",
+			num:       0,
+			expectNum: 2, // 1 external, 1 change
 		},
 		{
-			name: "ok with one address",
-			num:  1,
+			name:      "ok with one address",
+			num:       1,
+			expectNum: 3, // 2 external, 1 change
 		},
 		{
-			name: "ok with two address",
-			num:  1,
+			name:      "ok with two address",
+			num:       2,
+			expectNum: 4, // 3 external, 1 change
 		},
 		{
 			name:               "ok with three address and generate one address each time deterministic",
 			num:                2,
 			oneAddressEachTime: true,
+			expectNum:          4, // 3 external, 1 change
 		},
 		{
 			name: "encrypt wallet",
@@ -700,6 +705,7 @@ func TestWalletGenerateAddress(t *testing.T) {
 			},
 			num:                2,
 			oneAddressEachTime: true,
+			expectNum:          4, // 3 external, 1 change
 		},
 	}
 
@@ -735,16 +741,15 @@ func TestWalletGenerateAddress(t *testing.T) {
 				l, err := w.EntriesLen()
 				require.NoError(t, err)
 				// 1 default address + tc.num = wallet.EntriesLen()
-				require.Equal(t, int(tc.num)+1, l)
+				require.Equal(t, int(tc.expectNum), l)
 
 				addrs, err := w.GetAddresses()
 				require.NoError(t, err)
 
-				if tc.num == 0 {
-					require.Equal(t, skycoinExternalAddrs[:1], addrs)
-				} else {
-					require.Equal(t, skycoinExternalAddrs[:tc.num+1], addrs)
-				}
+				expectAddrs := make([]cipher.Addresser, tc.num+2)
+				copy(expectAddrs, skycoinExternalAddrs[:tc.num+1])
+				copy(expectAddrs[tc.num+1:], skycoinChangeAddrs[:1])
+				require.Equal(t, expectAddrs, addrs)
 			})
 		}
 	}

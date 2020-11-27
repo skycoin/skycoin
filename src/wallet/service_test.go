@@ -431,7 +431,7 @@ func TestServiceLoadWallet(t *testing.T) {
 				},
 			},
 			err:           nil,
-			expectAddrNum: 1,
+			expectAddrNum: 2,
 			expectAddrs:   bip44Addrs[:1],
 		},
 		{
@@ -446,7 +446,7 @@ func TestServiceLoadWallet(t *testing.T) {
 				},
 			},
 			err:           nil,
-			expectAddrNum: 2,
+			expectAddrNum: 3,
 			expectAddrs:   bip44Addrs[:2],
 		},
 		{
@@ -463,7 +463,7 @@ func TestServiceLoadWallet(t *testing.T) {
 				},
 			},
 			err:           nil,
-			expectAddrNum: 1,
+			expectAddrNum: 2,
 			expectAddrs:   bip44Addrs[:1],
 		},
 		{
@@ -480,7 +480,7 @@ func TestServiceLoadWallet(t *testing.T) {
 				},
 			},
 			err:           nil,
-			expectAddrNum: 2,
+			expectAddrNum: 3,
 			expectAddrs:   bip44Addrs[:2],
 		},
 
@@ -497,7 +497,7 @@ func TestServiceLoadWallet(t *testing.T) {
 				},
 			},
 			err:           nil,
-			expectAddrNum: 1,
+			expectAddrNum: 2,
 			expectAddrs:   bip44SeedPassphraseAddrs[:1],
 		},
 		{
@@ -513,7 +513,7 @@ func TestServiceLoadWallet(t *testing.T) {
 				},
 			},
 			err:           nil,
-			expectAddrNum: 2,
+			expectAddrNum: 3,
 			expectAddrs:   bip44SeedPassphraseAddrs[:2],
 		},
 		{
@@ -531,7 +531,7 @@ func TestServiceLoadWallet(t *testing.T) {
 				},
 			},
 			err:           nil,
-			expectAddrNum: 1,
+			expectAddrNum: 2,
 			expectAddrs:   bip44SeedPassphraseAddrs[:1],
 		},
 		{
@@ -549,7 +549,7 @@ func TestServiceLoadWallet(t *testing.T) {
 				},
 			},
 			err:           nil,
-			expectAddrNum: 2,
+			expectAddrNum: 3,
 			expectAddrs:   bip44SeedPassphraseAddrs[:2],
 		},
 	}
@@ -872,7 +872,11 @@ func TestServiceNewAddresses(t *testing.T) {
 				require.NoError(t, err)
 				el, err := w.EntriesLen()
 				require.NoError(t, err)
-				require.Equal(t, int(tc.n+1), el)
+				if w.Type() == wallet.WalletTypeBip44 {
+					require.Equal(t, int(tc.n+2), el) // bip44 wallet has a change address
+				} else {
+					require.Equal(t, int(tc.n+1), el)
+				}
 
 				addrsInWlt, err := w.GetAddresses()
 				require.NoError(t, err)
@@ -892,7 +896,12 @@ func TestServiceNewAddresses(t *testing.T) {
 				el, err = lw.EntriesLen()
 				require.NoError(t, err)
 
-				require.Equal(t, tc.expectAddrNum+1, el)
+				if w.Type() == wallet.WalletTypeBip44 {
+					require.Equal(t, tc.expectAddrNum+2, el)
+				} else {
+					require.Equal(t, tc.expectAddrNum+1, el)
+				}
+
 				es, err := w.GetEntries()
 				require.NoError(t, err)
 				for i := range es {
@@ -2050,8 +2059,8 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			expect: exp{
 				err:      nil,
 				seed:     bip44Seed,
-				entryNum: 1,
-				addrs:    bip44Addrs,
+				entryNum: 2,
+				addrs:    combineAddrs(bip44Addrs[:1], bip44ChangeAddrs[:1]),
 			},
 		},
 		{
@@ -2066,8 +2075,8 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			expect: exp{
 				err:      nil,
 				seed:     bip44Seed,
-				entryNum: 1,
-				addrs:    bip44Addrs,
+				entryNum: 2,
+				addrs:    combineAddrs(bip44Addrs[:1], bip44ChangeAddrs[:1]),
 			},
 		},
 		{
@@ -2081,8 +2090,8 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			expect: exp{
 				err:      nil,
 				seed:     bip44Seed,
-				entryNum: 1,
-				addrs:    bip44Addrs,
+				entryNum: 2,
+				addrs:    combineAddrs(bip44Addrs[:1], bip44ChangeAddrs[:1]),
 			},
 		},
 		{
@@ -2091,15 +2100,15 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				Seed:     bip44Seed,
 				Encrypt:  true,
 				Password: []byte("pwd"),
-				ScanN:    1,
+				ScanN:    2,
 				Type:     wallet.WalletTypeBip44,
 				TF:       tf,
 			},
 			expect: exp{
 				err:      nil,
 				seed:     bip44Seed,
-				entryNum: 1,
-				addrs:    bip44Addrs,
+				entryNum: 2,
+				addrs:    combineAddrs(bip44Addrs[:1], bip44ChangeAddrs[:1]),
 			},
 		},
 		{
@@ -2113,8 +2122,8 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			expect: exp{
 				err:      nil,
 				seed:     bip44Seed,
-				entryNum: 1,
-				addrs:    bip44Addrs,
+				entryNum: 2,
+				addrs:    combineAddrs(bip44Addrs[:1], bip44ChangeAddrs[:1]),
 			},
 		},
 		{
@@ -2130,8 +2139,8 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			expect: exp{
 				err:      nil,
 				seed:     bip44Seed,
-				entryNum: 1,
-				addrs:    bip44Addrs,
+				entryNum: 2,
+				addrs:    combineAddrs(bip44Addrs[:1], bip44ChangeAddrs[:1]),
 			},
 		},
 		{
@@ -2149,8 +2158,8 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			expect: exp{
 				err:      nil,
 				seed:     bip44Seed,
-				entryNum: 1,
-				addrs:    bip44Addrs,
+				entryNum: 2,
+				addrs:    combineAddrs(bip44Addrs[:1], bip44ChangeAddrs[:1]),
 			},
 		},
 		{
@@ -2166,8 +2175,8 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			expect: exp{
 				err:      nil,
 				seed:     bip44Seed,
-				entryNum: 1,
-				addrs:    bip44Addrs,
+				entryNum: 2,
+				addrs:    combineAddrs(bip44Addrs[:1], bip44ChangeAddrs[:1]),
 			},
 		},
 		{
@@ -2185,8 +2194,8 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			expect: exp{
 				err:      nil,
 				seed:     bip44Seed,
-				entryNum: 1,
-				addrs:    bip44Addrs,
+				entryNum: 2,
+				addrs:    combineAddrs(bip44Addrs[:1], bip44ChangeAddrs[:1]),
 			},
 		},
 		{
@@ -2203,8 +2212,8 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			expect: exp{
 				err:      nil,
 				seed:     bip44Seed,
-				entryNum: 2,
-				addrs:    bip44Addrs,
+				entryNum: 3,
+				addrs:    combineAddrs(bip44Addrs[:2], bip44ChangeAddrs[:1]),
 			},
 		},
 		{
@@ -2223,8 +2232,8 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			expect: exp{
 				err:      nil,
 				seed:     bip44Seed,
-				entryNum: 2,
-				addrs:    bip44Addrs,
+				entryNum: 3,
+				addrs:    combineAddrs(bip44Addrs[:2], bip44ChangeAddrs[:1]),
 			},
 		},
 		{
@@ -2240,8 +2249,8 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			expect: exp{
 				err:      nil,
 				seed:     bip44Seed,
-				entryNum: 1,
-				addrs:    bip44Addrs,
+				entryNum: 2,
+				addrs:    combineAddrs(bip44Addrs[:1], bip44ChangeAddrs[:1]),
 			},
 		},
 		{
@@ -2257,8 +2266,8 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			expect: exp{
 				err:      nil,
 				seed:     bip44Seed,
-				entryNum: 2,
-				addrs:    bip44Addrs,
+				entryNum: 3,
+				addrs:    combineAddrs(bip44Addrs[:2], bip44ChangeAddrs[:1]),
 			},
 		},
 		{
@@ -2274,8 +2283,8 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			expect: exp{
 				err:      nil,
 				seed:     bip44Seed,
-				entryNum: 5,
-				addrs:    bip44Addrs,
+				entryNum: 6,
+				addrs:    combineAddrs(bip44Addrs[:5], bip44ChangeAddrs[:1]),
 			},
 		},
 		{
@@ -2294,8 +2303,8 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			expect: exp{
 				err:      nil,
 				seed:     bip44Seed,
-				entryNum: 5,
-				addrs:    bip44Addrs,
+				entryNum: 6,
+				addrs:    combineAddrs(bip44Addrs[:5], bip44ChangeAddrs[:1]),
 			},
 		},
 		{
@@ -3758,7 +3767,6 @@ func TestServiceUpdate(t *testing.T) {
 					// TODO: bip44 wallet can generate address without decrypting
 					_, err := w.GenerateAddresses(1)
 					require.NoError(t, err)
-					//require.Equal(t, wallet.ErrWalletEncrypted, err)
 
 					return nil
 				}
@@ -3767,7 +3775,7 @@ func TestServiceUpdate(t *testing.T) {
 				require.Equal(t, "foowltfoo", w.Label())
 				el, err := w.EntriesLen()
 				require.NoError(t, err)
-				require.Equal(t, 2, el)
+				require.Equal(t, 3, el)
 				checkNoSensitiveData(t, w)
 			},
 		},
@@ -4060,7 +4068,7 @@ func TestServiceUpdateSecrets(t *testing.T) {
 				require.Equal(t, "foowltbip44foo", w.Label())
 				el, err := w.EntriesLen()
 				require.NoError(t, err)
-				require.Equal(t, 2, el)
+				require.Equal(t, 3, el)
 				checkNoSensitiveData(t, w)
 			},
 		},
@@ -4094,7 +4102,7 @@ func TestServiceUpdateSecrets(t *testing.T) {
 				require.Equal(t, "foowltbip44foo", w.Label())
 				el, err := w.EntriesLen()
 				require.NoError(t, err)
-				require.Equal(t, 2, el)
+				require.Equal(t, 3, el)
 				entries, err := w.GetEntries()
 				require.NoError(t, err)
 				require.NotEmpty(t, entries[1].Secret)
@@ -4312,4 +4320,11 @@ func checkNoSensitiveData(t *testing.T, w wallet.Wallet) {
 	for _, e := range entries {
 		require.True(t, e.Secret.Null())
 	}
+}
+
+func combineAddrs(a []cipher.Address, b []cipher.Address) []cipher.Address {
+	addrs := make([]cipher.Address, len(a)+len(b))
+	copy(addrs, a[:])
+	copy(addrs[len(a):], b[:])
+	return addrs
 }

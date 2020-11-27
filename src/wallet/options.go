@@ -9,7 +9,7 @@ import (
 type ChainMode uint32
 
 const (
-	DefaultChain  ChainMode = 0 // indicates the default chain, usually it is the external chain
+	DefaultChain  ChainMode = 0 // indicates the default chain when no chain is specified.
 	ExternalChain           = 1 // indicates the external chain
 	ChangeChain             = 2 // indicates the change chain
 	AllChains               = 3 // indicates both external and change chains

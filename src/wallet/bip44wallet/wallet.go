@@ -508,7 +508,7 @@ func (w *Wallet) GetEntries(options ...wallet.Option) (wallet.Entries, error) {
 
 	var entries wallet.Entries
 	switch opts.ChainMode {
-	case wallet.AllChains:
+	case wallet.DefaultChain, wallet.AllChains:
 		ees, err := w.entries(opts.Account, bip44.ExternalChainIndex)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get external chain, err: %v", err)
@@ -520,7 +520,7 @@ func (w *Wallet) GetEntries(options ...wallet.Option) (wallet.Entries, error) {
 		}
 
 		entries = append(ees, ces...)
-	case wallet.DefaultChain, wallet.ExternalChain:
+	case wallet.ExternalChain:
 		es, err := w.entries(opts.Account, bip44.ExternalChainIndex)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get external chain, err: %v", err)
@@ -694,7 +694,7 @@ func (w *Wallet) GenerateAddresses(num uint64, options ...wallet.Option) ([]ciph
 }
 
 // GetEntryAt returns the entry at specified index of selected chain.
-// If no chain is specified, the entry of append(external chain, change chain)[index] will be returned.
+// If no chain is specified, the entry of append(external, change)[index] will be returned.
 func (w *Wallet) GetEntryAt(i int, options ...wallet.Option) (wallet.Entry, error) {
 	entries, err := w.GetEntries(options...)
 	if err != nil {
@@ -737,18 +737,18 @@ func (w *Wallet) HasEntry(addr cipher.Addresser, options ...wallet.Option) (bool
 }
 
 // EntriesLen returns the entries length of selected account and chain,
-// if no options are provided, entries length of external chain on account 0 will
+// if no options are provided, entries length of all chains will
 // be returned.
 func (w *Wallet) EntriesLen(options ...wallet.Option) (int, error) {
 	opts := getBip44Options(options...)
 	switch opts.ChainMode {
-	case wallet.DefaultChain, wallet.ExternalChain:
+	case wallet.ExternalChain:
 		l, err := w.entriesLen(opts.Account, bip44.ExternalChainIndex)
 		return int(l), err
 	case wallet.ChangeChain:
 		l, err := w.entriesLen(opts.Account, bip44.ChangeChainIndex)
 		return int(l), err
-	case wallet.AllChains:
+	case wallet.DefaultChain, wallet.AllChains:
 		el, err := w.entriesLen(opts.Account, bip44.ExternalChainIndex)
 		if err != nil {
 			return 0, fmt.Errorf("failed to get entries length of external chain, err: %v", err)

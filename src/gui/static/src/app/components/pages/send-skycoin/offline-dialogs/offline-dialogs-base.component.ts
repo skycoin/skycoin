@@ -34,7 +34,7 @@ export interface OfflineDialogsDropdownElement {
   template: '',
 })
 export class OfflineDialogsBaseComponent {
-  @ViewChild('okButton', { static: false }) okButton: ButtonComponent;
+  @ViewChild('okButton') okButton: ButtonComponent;
   // Allows to deactivate the form while the component is busy.
   working = false;
   form: FormGroup;

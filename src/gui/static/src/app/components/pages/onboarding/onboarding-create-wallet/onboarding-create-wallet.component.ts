@@ -16,7 +16,7 @@ import { AppService } from '../../../../services/app.service';
   styleUrls: ['./onboarding-create-wallet.component.scss'],
 })
 export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
-  @ViewChild('formControl', { static: false }) formControl: CreateWalletFormComponent;
+  @ViewChild('formControl') formControl: CreateWalletFormComponent;
   @Input() fill: WalletFormData = null;
   @Output() onLabelAndSeedCreated = new EventEmitter<WalletFormData>();
 

@@ -23,7 +23,7 @@ import { HardwareWalletService } from '../../../../services/wallet-operations/ha
   styleUrls: ['./hw-added-dialog.component.scss'],
 })
 export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogComponent> implements OnDestroy {
-  @ViewChild('input', { static: false }) input: ElementRef;
+  @ViewChild('input') input: ElementRef;
   wallet: WalletBase;
   form: FormGroup;
   maxHwWalletLabelLength = HwWalletService.maxLabelLength;

@@ -175,6 +175,7 @@ func (c *Coin) Run() error {
 	cf := dbCheckConfig{
 		ForceVerify:         c.config.Node.VerifyDB,
 		ResetCorruptDB:      c.config.Node.ResetCorruptDB,
+		AppVersion:          appVersion,
 		DBCheckpointVersion: &dbVerifyCheckpointVersionParsed,
 	}
 

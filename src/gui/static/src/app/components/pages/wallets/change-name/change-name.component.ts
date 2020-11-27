@@ -33,7 +33,7 @@ export class ChangeNameErrorResponse {
   styleUrls: ['./change-name.component.scss'],
 })
 export class ChangeNameComponent implements OnInit, OnDestroy {
-  @ViewChild('button', { static: false }) button: ButtonComponent;
+  @ViewChild('button') button: ButtonComponent;
   form: FormGroup;
   currentState: States = States.Initial;
   states = States;

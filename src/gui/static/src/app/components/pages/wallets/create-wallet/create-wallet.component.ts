@@ -20,9 +20,9 @@ export class CreateWalletParams {
   styleUrls: ['./create-wallet.component.scss'],
 })
 export class CreateWalletComponent implements OnDestroy {
-  @ViewChild('formControl', { static: false }) formControl: CreateWalletFormComponent;
-  @ViewChild('createButton', { static: false }) createButton: ButtonComponent;
-  @ViewChild('cancelButton', { static: false }) cancelButton: ButtonComponent;
+  @ViewChild('formControl') formControl: CreateWalletFormComponent;
+  @ViewChild('createButton') createButton: ButtonComponent;
+  @ViewChild('cancelButton') cancelButton: ButtonComponent;
 
   disableDismiss = false;
   busy = false;

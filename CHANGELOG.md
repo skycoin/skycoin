@@ -20,7 +20,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Add `src_txid` to verbose transaction inputs, affected apis: `/api/v1/transaction`, `/api/v1/transactions` `/api/v1/block` `/api/v1/blocks` `/api/v1/pendingTxs`
 - Add `calculated_hours` to `/api/v1/uxout` and `/api/v1/address_uxouts`.
-- Update DB version only when DB structure is changed.
 - Add go version of go1.14 support
 - Changes on the CLI command `walletCreate`:
     * Replaced the first argument of wallet filename with label, which is the wallet name 

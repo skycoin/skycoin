@@ -3126,7 +3126,7 @@ func TestStableWalletCreate(t *testing.T) {
 				// get external entries length
 				extLen, err := w.EntriesLen()
 				require.NoError(t, err)
-				require.Equal(t, extLen, 5)
+				require.Equal(t, 6, extLen) // 5 external, 1 change
 
 				// get change entries length
 				chgLen, err := w.EntriesLen(wallet.OptionChange())

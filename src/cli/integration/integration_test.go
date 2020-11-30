@@ -2975,11 +2975,11 @@ func TestStableWalletCreateXPubFlow(t *testing.T) {
 	args := []string{"walletCreate", "xpub-flow", "-t", "bip44", "-n", "10", "-p", "pwd"}
 	output, err := execCommandCombinedOutput(args...)
 	require.NoError(t, err, fmt.Sprintf("expect no error, got: %s", string(output)))
-	var wrsp api.WalletResponse
-	require.NoError(t, json.Unmarshal(output, &wrsp))
+	var bip44Wlt api.WalletResponse
+	require.NoError(t, json.Unmarshal(output, &bip44Wlt))
 
 	// Export the xpub key from the bip44 wallet subpath 0'/0
-	args = []string{"walletKeyExport", wrsp.Meta.Filename, "-k", "xpub", "--path", "0/0", "-p", "pwd"}
+	args = []string{"walletKeyExport", bip44Wlt.Meta.Filename, "-k", "xpub", "--path", "0/0", "-p", "pwd"}
 	output, err = execCommandCombinedOutput(args...)
 	require.NoError(t, err, fmt.Sprintf("expect no error, got: %s", string(output)))
 
@@ -2987,25 +2987,25 @@ func TestStableWalletCreateXPubFlow(t *testing.T) {
 
 	c := newClient()
 	dir := getWalletDir(t, c)
-	xpubFilename := filepath.Join(dir, wrsp.Meta.Filename)
+	bip44Filename := filepath.Join(dir, bip44Wlt.Meta.Filename)
 
 	// Create an xpub wallet
 	args = []string{"walletCreate", "xpubwallet", "-t", "xpub", "--xpub", xpub, "-n", "10"}
 	output, err = execCommandCombinedOutput(args...)
 	require.NoError(t, err, fmt.Sprintf("expect no error, got: %s", string(output)))
-	var wrsp2 api.WalletResponse
-	require.NoError(t, json.Unmarshal(output, &wrsp2))
+	var xpubWlt api.WalletResponse
+	require.NoError(t, json.Unmarshal(output, &xpubWlt))
 
-	xpubFilename2 := filepath.Join(dir, wrsp2.Meta.Filename)
+	xpubFilename := filepath.Join(dir, xpubWlt.Meta.Filename)
 	// Compare the entries of both wallets: they should match
 
-	w, err := wallet.Load(xpubFilename)
+	w, err := wallet.Load(bip44Filename)
 	require.NoError(t, err)
 
-	w2, err := wallet.Load(xpubFilename2)
+	w2, err := wallet.Load(xpubFilename)
 	require.NoError(t, err)
 
-	entries, err := w.GetEntries()
+	entries, err := w.GetEntries(wallet.OptionExternal())
 	require.NoError(t, err)
 
 	for i, e := range entries {

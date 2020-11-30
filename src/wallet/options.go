@@ -5,6 +5,16 @@ import (
 	"github.com/skycoin/skycoin/src/wallet/crypto"
 )
 
+// ChainMode represents the bip44 chain mode. AllChains =  ExternalChain | ChangeChain
+type ChainMode uint32
+
+const (
+	DefaultChain  ChainMode = 0 // indicates the default chain when no chain is specified.
+	ExternalChain           = 1 // indicates the external chain
+	ChangeChain             = 2 // indicates the change chain
+	AllChains               = 3 // indicates both external and change chains
+)
+
 // Option represents the general options, it can be used to set optional
 // parameters while creating a new wallet. Also, can be used to get
 // entries service of a wallet.
@@ -13,8 +23,8 @@ type Option func(interface{})
 // Bip44EntriesOptions represents the options that will be used
 // by bip44 to get entries service
 type Bip44EntriesOptions struct {
-	Account uint32
-	Change  uint32
+	Account   uint32
+	ChainMode ChainMode
 }
 
 // OptionAccount is the option type for specifying a bip44 account
@@ -28,19 +38,27 @@ func OptionAccount(index uint32) Option {
 	}
 }
 
-// OptionChange is the option type for specifying a bip44 chain
-func OptionChange(change bool) Option {
+// OptionChange is the option for selecting the change chain
+func OptionChange() Option {
 	return func(opts interface{}) {
-		bip44, ok := opts.(*Bip44EntriesOptions)
+		o, ok := opts.(*Bip44EntriesOptions)
 		if !ok {
 			return
 		}
 
-		var chain uint32
-		if change {
-			chain = 1
+		o.ChainMode += ChangeChain
+	}
+}
+
+// OptionExternal is the option type for selecting the external chain
+func OptionExternal() Option {
+	return func(opts interface{}) {
+		o, ok := opts.(*Bip44EntriesOptions)
+		if !ok {
+			return
 		}
-		bip44.Change = chain
+
+		o.ChainMode += ExternalChain
 	}
 }
 

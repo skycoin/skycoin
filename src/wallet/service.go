@@ -765,7 +765,7 @@ func (serv *Service) View(wltID string, f func(Wallet) error) error {
 
 // RecoverWallet recovers an encrypted wallet from seed.
 // The recovered wallet will be encrypted with the new password, if provided.
-func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string, password []byte, options ...Option) (Wallet, error) {
+func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string, password []byte) (Wallet, error) {
 	serv.Lock()
 	defer serv.Unlock()
 	if !serv.config.EnableWalletAPI {
@@ -805,6 +805,12 @@ func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string, passwor
 		return nil, ErrWalletRecoverSeedWrong
 	}
 
+	var options []Option
+	if w.Type() == WalletTypeBip44 {
+		// regenerate external address for bip44 wallet when creating the wallet
+		options = append(options, OptionExternal())
+	}
+
 	l, err := w.EntriesLen(options...)
 	if err != nil {
 		return nil, err
@@ -825,6 +831,22 @@ func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string, passwor
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if w.Type() == WalletTypeBip44 {
+		// regenerate external address for bip44 wallet when creating the wallet
+		cl, err := w.EntriesLen(OptionChange())
+		if err != nil {
+			return nil, err
+		}
+
+		// regenerate the change addresses
+		if cl > 1 {
+			_, err := w3.GenerateAddresses(uint64(cl-1), OptionChange())
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	// Preserve the timestamp of the old wallet

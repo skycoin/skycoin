@@ -217,9 +217,16 @@ func TestCreateWallet(t *testing.T) {
 				switch tc.walletType {
 				case wallet.WalletTypeBip44:
 					require.NotNil(t, w.Entries[i].ChildNumber)
-					require.Equal(t, uint32(i), *w.Entries[i].ChildNumber)
 					require.NotNil(t, w.Entries[i].Change)
-					require.Equal(t, bip44.ExternalChainIndex, *w.Entries[i].Change)
+					// the last entry must be the change address
+					if i < len(w.Entries)-1 {
+						require.Equal(t, uint32(i), *w.Entries[i].ChildNumber)
+						require.Equal(t, bip44.ExternalChainIndex, *w.Entries[i].Change)
+						return
+					}
+
+					require.Equal(t, uint32(0), w.Entries[i].ChildNumber)
+					require.Equal(t, bip44.ChangeChainIndex, *w.Entries[i].Change)
 				case wallet.WalletTypeXPub:
 					require.NotNil(t, w.Entries[i].ChildNumber)
 					require.Equal(t, uint32(i), *w.Entries[i].ChildNumber)
@@ -733,7 +740,12 @@ func TestDecryptWallet(t *testing.T) {
 			les, err := lw.GetEntries()
 			require.NoError(t, err)
 
-			require.Equal(t, 1, len(les))
+			expectedEntriesLen := 1
+			if walletType == wallet.WalletTypeBip44 {
+				// change address
+				expectedEntriesLen += 1
+			}
+			require.Equal(t, expectedEntriesLen, len(les))
 
 			switch walletType {
 			case wallet.WalletTypeDeterministic:

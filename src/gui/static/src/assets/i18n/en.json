@@ -248,9 +248,13 @@
     "change-address-error-info": "The change address is not valid.",
     "change-address-select-from-list-link": "Select",
     "change-address-help": "Address to receive change. If it's not provided, it will be chosen automatically. Click on the \"Select\" link to choose an address from one of your wallets.",
+    "specific-hours": "Hours to send:",
+    "remove-specific-hours-info": "Remove.",
+    "remove-specific-hours-confirmation": "Are you sure you want to remove the specific amount of hours to send?",
     "destinations-label": "Destinations",
     "destinations-help1": "Destination addresses and their coins.",
     "destinations-help2": "Destination addresses, their coins and hours.",
+    "destination-tools-title": "Destination Tools",
     "hours-allocation-check": "Use automatic {{ coinHoursName }} allocation",
     "options-link": "Options",
     "coin-hours-options-link": "Hours options",
@@ -279,6 +283,18 @@
     "sending-all-hours-waning": "You selected to send all the hours. Are you sure you want to continue?",
     "high-hours-share-waning": "Your selection may result in sending all the hours in the selected wallet. Are you sure you want to continue?",
     "advanced-high-hours-share-waning": "Your selection may result in sending all the hours in the selected source(s). Are you sure you want to continue?",
+
+    "fill-with-link": {
+      "title": "Use a Transaction Link",
+      "link-info": "Here you can enter a link sent to you requesting coins. The form will be filled in with the data obtained from the link.",
+      "link-label": "Transaction link",
+      "link-error-info": "You must enter a valid transaction link.",
+      "process-button": "Process",
+      "invalid-link-error": "The contents of the transaction link are not valid.",
+      "invalid-link-hours-error": "The transaction link contains an invalid amount of hours.",
+      "data-overwritten-alert": "Some data you have entered will be overwritten. Are you sure you want to continue?",
+      "confirmation": "The form has been updated with the data obtained from the transaction link."
+    },
 
     "known-node-errors": {
       "null-change-address-error": "The null address can't be used as the custom change address. Please enter a valid address.",

@@ -72,3 +72,18 @@
     flex-shrink: 0;
   }
 }
+
+.simple-form-hours {
+  display: flex;
+  align-items: center;
+
+  .remove-icon {
+    margin-left: 2px;
+    color: $red;
+    cursor: pointer;
+  }
+}
+
+.simple-form-hours-error {
+  color: $red;
+}

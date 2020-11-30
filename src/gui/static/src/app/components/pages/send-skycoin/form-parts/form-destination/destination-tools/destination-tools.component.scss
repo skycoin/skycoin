@@ -1,0 +1,18 @@
+@import '../../../../../../../theme/variables';
+
+.content {
+  display: flex;
+  align-items: center;
+
+  img {
+    height: $normal-icon-size;
+    width: $normal-icon-size;
+    margin-right: 5px;
+  }
+
+  span {
+    font-size: $font-size-standard;
+    line-height: 1.7;
+    color: $black;
+  }
+}

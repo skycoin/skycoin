@@ -125,6 +125,8 @@ import { BalanceAndOutputsService } from './services/wallet-operations/balance-a
 import { SpendingService } from './services/wallet-operations/spending.service';
 import { HistoryService } from './services/wallet-operations/history.service';
 import { FormFieldErrorDirective } from './directives/form-field-error.directive';
+import { EnterLinkComponent } from './components/pages/send-skycoin/enter-link/enter-link.component';
+import { DestinationToolsComponent } from './components/pages/send-skycoin/form-parts/form-destination/destination-tools/destination-tools.component';
 
 
 const ROUTES = [
@@ -273,6 +275,8 @@ const ROUTES = [
     AddressOptionsComponent,
     QrCodeButtonComponent,
     FormFieldErrorDirective,
+    EnterLinkComponent,
+    DestinationToolsComponent,
   ],
   imports: [
     BrowserModule,

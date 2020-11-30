@@ -1,0 +1,28 @@
+<app-modal [headline]="'send.fill-with-link.title' | translate" [dialog]="dialogRef">
+  <!-- Info area. -->
+  <div>
+    {{ 'send.fill-with-link.link-info' | translate }}
+  </div>
+  <!-- Form. -->
+  <div class="modal-form-container" [formGroup]="form">
+    <div class="form-field">
+      <label for="link">{{ 'send.fill-with-link.link-label' | translate }}</label>
+      <input
+        formControlName="link"
+        id="link"
+        (keydown.enter)="process()"
+        [appFormFieldError]="inputErrorMsg"
+        (blur)="validateForm()"
+      >
+    </div>
+  </div>
+  <!-- Buttons. -->
+  <div class="-buttons">
+    <app-button (action)="closePopup()">
+      {{ 'common.cancel-button' | translate }}
+    </app-button>
+    <app-button (action)="process()" class="primary-button" [disabled]="!form.valid">
+      {{ 'send.fill-with-link.process-button' | translate }}
+    </app-button>
+  </div>
+</app-modal>

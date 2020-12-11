@@ -46,7 +46,7 @@ jobs:
             - name: Check out code into the Go module directory
               uses: actions/checkout@v2
             - name: Set up Gox
-              run: GO111MODULE=off go get github.com/mitchellh/gox
+              run: GO111MODULE=off go get github.com/skycoin/gox
             - uses: actions/cache@v2
               with:
                 path: |

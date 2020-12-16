@@ -1,0 +1,13 @@
+[2020-12-16T16:47:15Z] INFO [main]: App version: 0.27.1
+[2020-12-16T16:47:15Z] INFO [main]: OS: linux
+[2020-12-16T16:47:15Z] INFO [main]: Arch: amd64
+[2020-12-16T16:47:15Z] INFO [main]: Opening database /root/.privateness/data.db
+[2020-12-16T16:47:15Z] INFO [main]: DB version: 0.27.1
+[2020-12-16T16:47:15Z] INFO [main]: DB verify checkpoint version: 0.25.0
+[2020-12-16T16:47:15Z] INFO [main]: Coinhour burn factor for user transactions is 0
+[2020-12-16T16:47:15Z] INFO [main]: Max transaction size for user transactions is 32768
+[2020-12-16T16:47:15Z] INFO [main]: Max decimals for user transactions is 3
+[2020-12-16T16:47:15Z] INFO [main]: wallet.NewService
+[2020-12-16T16:47:15Z] INFO [main]: visor.New
+[2020-12-16T16:47:15Z] INFO [visor]: Creating new visor
+[2020-12-16T16:47:15Z] INFO [visor]: Visor running in block publisher mode

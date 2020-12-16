@@ -8,7 +8,7 @@ import (
 
 const (
 	// MinBurnFactor minimum value for BurnFactor
-	MinBurnFactor uint32 = 2
+	MinBurnFactor uint32 = 0
 	// MinTransactionSize minimum value for MaxTransactionSize
 	MinTransactionSize uint32 = 1024
 )

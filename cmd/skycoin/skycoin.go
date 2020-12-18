@@ -37,11 +37,11 @@ var (
 	CoinName = "skycoin"
 
 	// GenesisSignatureStr hex string of genesis signature
-	GenesisSignatureStr = "0b0661652a064c48f5ec565b596cf3be1a438e9e1bd1de551f16f76172ae0a02628a5cecdd366aaba070786c2040c32113da871ca3a80d26902eb7566a319d6f00"
+	GenesisSignatureStr = ""
 	// GenesisAddressStr genesis address string
-	GenesisAddressStr = "2LuKycJ7SQwbSxoX65Bu8BwZ66RegDaWGK"
+	GenesisAddressStr = "EvS7nJ6ckPrjK5G3dZeBAVAKjVRbeCSF7a"
 	// BlockchainPubkeyStr pubic key string
-	BlockchainPubkeyStr = "0278d26405ec24c8bf8998cf767b65c29f0dfcdff3542cdb1de44ed0539e9c9d9b"
+	BlockchainPubkeyStr = "0366f7e3d2073911a61fd479f7737bd18b238a93c3831aa24b41d31306bafd2be9"
 	// BlockchainSeckeyStr empty private key string
 	BlockchainSeckeyStr = ""
 
@@ -68,7 +68,7 @@ var (
 		BlockchainPubkeyStr: BlockchainPubkeyStr,
 		BlockchainSeckeyStr: BlockchainSeckeyStr,
 		DefaultConnections:  DefaultConnections,
-		PeerListURL:         "https://cantdoevil.com/blockchain/peers.txt",
+		PeerListURL:         "http://cantdoevil.com/blockchain/peers.txt",
 		Port:                6660,
 		WebInterfacePort:    6420,
 		DataDirectory:       "$HOME/.skycoin",

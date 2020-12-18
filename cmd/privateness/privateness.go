@@ -68,7 +68,7 @@ var (
 		BlockchainPubkeyStr: BlockchainPubkeyStr,
 		BlockchainSeckeyStr: BlockchainSeckeyStr,
 		DefaultConnections:  DefaultConnections,
-		PeerListURL:         "https://cantdoevil.com/blockchain/peers.txt",
+		PeerListURL:         "http://cantdoevil.com/blockchain/peers.txt",
 		Port:                6660,
 		WebInterfacePort:    6420,
 		DataDirectory:       "$HOME/.privateness",

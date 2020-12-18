@@ -1,0 +1,114 @@
+[2020-12-16T16:45:20Z] INFO [main]: App version: 0.27.1
+[2020-12-16T16:45:20Z] INFO [main]: OS: linux
+[2020-12-16T16:45:20Z] INFO [main]: Arch: amd64
+[2020-12-16T16:45:20Z] INFO [main]: Opening database /root/.privateness/data.db
+[2020-12-16T16:45:20Z] INFO [main]: DB version: 0.27.1
+[2020-12-16T16:45:20Z] INFO [main]: DB verify checkpoint version: 0.25.0
+[2020-12-16T16:45:20Z] INFO [main]: Coinhour burn factor for user transactions is 0
+[2020-12-16T16:45:20Z] INFO [main]: Max transaction size for user transactions is 32768
+[2020-12-16T16:45:20Z] INFO [main]: Max decimals for user transactions is 3
+[2020-12-16T16:45:20Z] INFO [main]: wallet.NewService
+[2020-12-16T16:45:20Z] INFO [main]: visor.New
+[2020-12-16T16:45:20Z] INFO [visor]: Creating new visor
+[2020-12-16T16:45:20Z] INFO [visor]: Coinhour burn factor for unconfirmed transactions is 10
+[2020-12-16T16:45:20Z] INFO [visor]: Max transaction size for unconfirmed transactions is 32768
+[2020-12-16T16:45:20Z] INFO [visor]: Max decimals for unconfirmed transactions is 3
+[2020-12-16T16:45:20Z] INFO [visor]: Coinhour burn factor for transactions when creating blocks is 10
+[2020-12-16T16:45:20Z] INFO [visor]: Max transaction size for transactions when creating blocks is 32768
+[2020-12-16T16:45:20Z] INFO [visor]: Max decimals for transactions when creating blocks is 3
+[2020-12-16T16:45:20Z] INFO [visor]: Max block size is 32768
+[2020-12-16T16:45:20Z] INFO [blockdb]: Unspents.MaybeBuildIndexes
+[2020-12-16T16:45:20Z] INFO [visor]: Visor initHistory
+[2020-12-16T16:45:20Z] INFO [visor]: Unconfirmed transaction pool size: 0
+[2020-12-16T16:45:20Z] INFO [main]: daemon.New
+[2020-12-16T16:45:20Z] INFO [main]: kvstorage.NewManager
+[2020-12-16T16:45:20Z] INFO [kvstorage]: Creating new KVStorage manager
+[2020-12-16T16:45:20Z] INFO [kvstorage]: KVStorage is disabled
+[2020-12-16T16:45:20Z] INFO [main]: api.NewGateway
+[2020-12-16T16:45:20Z] INFO [pex]: Trying to download peers list url="https://cantdoevil.com/blockchain/peers.txt"
+[2020-12-16T16:45:20Z] WARN [api]: HTTPS not in use!
+[2020-12-16T16:45:20Z] INFO [main:CRITICAL]: Full address: http://127.0.0.1:6420
+[2020-12-16T16:45:20Z] INFO [main]: visor.Init
+[2020-12-16T16:45:20Z] INFO [visor]: Visor init
+[2020-12-16T16:45:20Z] INFO [visor]: Visor maybeCreateGenesisBlock
+[2020-12-16T16:45:20Z] INFO [visor]: Removed 0 invalid txns from pool
+[2020-12-16T16:45:20Z] INFO [main]: daemon.Run
+[2020-12-16T16:45:20Z] INFO [daemon]: Daemon UserAgent is privateness:0.27.1
+[2020-12-16T16:45:20Z] INFO [daemon]: Daemon unconfirmed BurnFactor is 10
+[2020-12-16T16:45:20Z] INFO [daemon]: Daemon unconfirmed MaxTransactionSize is 32768
+[2020-12-16T16:45:20Z] INFO [daemon]: Daemon unconfirmed MaxDropletPrecision is 3
+[2020-12-16T16:45:20Z] INFO [daemon]: daemon.Pool listening on port 6660
+[2020-12-16T16:45:20Z] INFO [gnet]: Listening for connections on :6660...
+[2020-12-16T16:45:20Z] INFO [main]: webInterface.Serve
+[2020-12-16T16:45:20Z] INFO [api]: Starting web interface on 127.0.0.1:6420
+[2020-12-16T16:45:20Z] INFO [pex]: Pex.Run started
+[2020-12-16T16:45:20Z] INFO [daemon]: Connect to trusted peers
+[2020-12-16T16:45:20Z] INFO [daemon]: onConnectEvent addr="198.245.62.172:6660" gnetID=1 outgoing=true
+[2020-12-16T16:45:20Z] INFO [daemon]: onConnectEvent addr="198.245.62.172:43932" gnetID=2 outgoing=false
+[2020-12-16T16:45:20Z] INFO [daemon]: Remote mirror value matches ours addr="198.245.62.172:43932" gnetID=2 mirror=947447939
+[2020-12-16T16:45:20Z] INFO [daemon]: Remote mirror value matches ours addr="198.245.62.172:6660" gnetID=1 mirror=947447939
+[2020-12-16T16:45:20Z] ERROR [gnet]: handleConnection failure addr="198.245.62.172:6660" error="read failed: EOF" method="readLoop"
+[2020-12-16T16:45:20Z] ERROR [gnet]: handleConnection failure addr="198.245.62.172:43932" error="read failed: read tcp 198.245.62.172:6660->198.245.62.172:43932: use of closed network connection" method="readLoop"
+[2020-12-16T16:45:20Z] INFO [daemon]: onDisconnectEvent addr="198.245.62.172:43932" gnetID=2 reason="Self connect"
+[2020-12-16T16:45:20Z] INFO [daemon]: onDisconnectEvent addr="198.245.62.172:6660" gnetID=1 reason="read failed: EOF"
+[2020-12-16T16:45:20Z] ERROR [gnet]: pool.handleConnection addr=198.245.62.172:6660 error="read failed: EOF" outgoing=true
+[2020-12-16T16:45:20Z] INFO [daemon]: onMessageEvent no connection found addr="198.245.62.172:6660" messageType="*daemon.DisconnectMessage"
+[2020-12-16T16:45:20Z] ERROR [gnet]: Disconnect addr="198.245.62.172:43932" error="Disconnect: connection does not exist"
+[2020-12-16T16:45:20Z] ERROR [gnet]: strand req.Func failed error="Disconnect: connection does not exist" operation="daemon.gnet.ConnectionPool.Disconnect"
+[2020-12-16T16:45:20Z] ERROR [gnet]: pool.handleConnection addr=198.245.62.172:43932 error="read failed: read tcp 198.245.62.172:6660->198.245.62.172:43932: use of closed network connection" outgoing=false
+[2020-12-16T16:45:20Z] ERROR [daemon:CRITICAL]: maybeConnectToTrustedPeer error="Could not connect to any trusted peer"
+[2020-12-16T16:45:20Z] INFO [pex]: Peers list downloaded url="https://cantdoevil.com/blockchain/peers.txt"
+[2020-12-16T16:45:20Z] INFO [pex]: Downloaded peers list, got 5 peers url="https://cantdoevil.com/blockchain/peers.txt"
+[2020-12-16T16:45:20Z] INFO [pex]: Added 5/5 peers from downloaded peers list url="https://cantdoevil.com/blockchain/peers.txt"
+[2020-12-16T16:45:25Z] WARN [daemon]: connectToPeer failed addr="192.243.100.192:6660" error="Already connected to a peer with this base IP"
+[2020-12-16T16:45:25Z] INFO [daemon]: onConnectEvent addr="198.245.62.172:6660" gnetID=3 outgoing=true
+[2020-12-16T16:45:25Z] INFO [daemon]: onConnectEvent addr="198.245.62.172:43940" gnetID=4 outgoing=false
+[2020-12-16T16:45:25Z] INFO [daemon]: Remote mirror value matches ours addr="198.245.62.172:6660" gnetID=3 mirror=947447939
+[2020-12-16T16:45:25Z] INFO [daemon]: Remote mirror value matches ours addr="198.245.62.172:43940" gnetID=4 mirror=947447939
+[2020-12-16T16:45:25Z] ERROR [gnet]: handleConnection failure addr="198.245.62.172:43940" error="read failed: read tcp 198.245.62.172:6660->198.245.62.172:43940: read: connection reset by peer" method="readLoop"
+[2020-12-16T16:45:25Z] INFO [daemon]: onDisconnectEvent addr="198.245.62.172:6660" gnetID=3 reason="Self connect"
+[2020-12-16T16:45:25Z] WARN [daemon]: disconnectNow addr="198.245.62.172:43940" error="Disconnect: connection does not exist"
+[2020-12-16T16:45:25Z] ERROR [gnet]: handleConnection failure addr="198.245.62.172:6660" error="read failed: read tcp 198.245.62.172:43940->198.245.62.172:6660: use of closed network connection" method="readLoop"
+[2020-12-16T16:45:25Z] INFO [daemon]: DisconnectMessage received addr="198.245.62.172:43940" code=4 gnetID=4 reason="Self connect"
+[2020-12-16T16:45:25Z] ERROR [gnet]: pool.handleConnection addr=198.245.62.172:43940 error="read failed: read tcp 198.245.62.172:6660->198.245.62.172:43940: read: connection reset by peer" outgoing=false
+[2020-12-16T16:45:25Z] ERROR [gnet]: strand req.Func failed error="Disconnect: connection does not exist" operation="daemon.gnet.ConnectionPool.Disconnect"
+[2020-12-16T16:45:25Z] ERROR [gnet]: strand req.Func failed error="Disconnect: connection does not exist" operation="daemon.gnet.ConnectionPool.Disconnect"
+[2020-12-16T16:45:25Z] ERROR [gnet]: Disconnect addr="198.245.62.172:6660" error="Disconnect: connection does not exist"
+[2020-12-16T16:45:25Z] ERROR [gnet]: strand req.Func failed error="Disconnect: connection does not exist" operation="daemon.gnet.ConnectionPool.Disconnect"
+[2020-12-16T16:45:25Z] ERROR [gnet]: pool.handleConnection addr=198.245.62.172:6660 error="read failed: read tcp 198.245.62.172:43940->198.245.62.172:6660: use of closed network connection" outgoing=true
+[2020-12-16T16:45:25Z] WARN [daemon]: disconnectNow addr="198.245.62.172:43940" error="Disconnect: connection does not exist"
+[2020-12-16T16:45:25Z] INFO [daemon]: onDisconnectEvent addr="198.245.62.172:43940" gnetID=4 reason="read failed: read tcp 198.245.62.172:6660->198.245.62.172:43940: read: connection reset by peer"
+[2020-12-16T16:45:25Z] WARN [daemon]: maybeConnectToTrustedPeer: connectToPeer failed addr="192.243.100.192:6660" error="Already connected to a peer with this base IP"
+[2020-12-16T16:45:25Z] ERROR [daemon:CRITICAL]: maybeConnectToTrustedPeer error="Could not connect to any trusted peer"
+[2020-12-16T16:45:30Z] WARN [daemon]: connectToPeer failed addr="192.243.100.192:6660" error="Already connected to a peer with this base IP"
+[2020-12-16T16:45:30Z] WARN [daemon]: connectToPeer failed addr="192.243.100.192:6000" error="Already connected to this peer"
+[2020-12-16T16:45:30Z] WARN [daemon]: maybeConnectToTrustedPeer: connectToPeer failed addr="192.243.100.192:6660" error="Already connected to a peer with this base IP"
+[2020-12-16T16:45:30Z] WARN [daemon]: maybeConnectToTrustedPeer: connectToPeer failed addr="192.243.100.192:6660" error="Already connected to a peer with this base IP"
+[2020-12-16T16:45:30Z] WARN [daemon]: maybeConnectToTrustedPeer: connectToPeer failed addr="192.243.100.192:6660" error="Already connected to a peer with this base IP"
+[2020-12-16T16:45:30Z] ERROR [daemon:CRITICAL]: maybeConnectToTrustedPeer error="Could not connect to any trusted peer"
+[2020-12-16T16:45:31Z] INFO [main]: Shutting down...
+[2020-12-16T16:45:31Z] INFO [main]: Closing web interface
+[2020-12-16T16:45:31Z] INFO [api]: Shutting down web interface
+[2020-12-16T16:45:31Z] INFO [api]: Web interface closed
+[2020-12-16T16:45:31Z] ERROR [main]: webInterface.Serve failed error="accept tcp 127.0.0.1:6420: use of closed network connection"
+[2020-12-16T16:45:31Z] INFO [api]: Web interface shut down
+[2020-12-16T16:45:31Z] INFO [main]: Closing daemon
+[2020-12-16T16:45:31Z] INFO [daemon]: Stopping the daemon run loop
+[2020-12-16T16:45:31Z] INFO [daemon]: Shutting down Pool
+[2020-12-16T16:45:31Z] INFO [gnet]: ConnectionPool.Shutdown called
+[2020-12-16T16:45:31Z] INFO [gnet]: ConnectionPool.Shutdown closed pool.quit
+[2020-12-16T16:45:31Z] INFO [gnet]: ConnectionPool.Shutdown waiting for strandDone
+[2020-12-16T16:45:31Z] INFO [gnet]: ConnectionPool.Shutdown closing the listener
+[2020-12-16T16:45:31Z] INFO [gnet]: Connection pool closed
+[2020-12-16T16:45:31Z] INFO [gnet]: ConnectionPool.Shutdown disconnecting all connections
+[2020-12-16T16:45:31Z] INFO [gnet]: ConnectionPool.Shutdown waiting for done
+[2020-12-16T16:45:31Z] INFO [daemon]: Shutting down Pex
+[2020-12-16T16:45:31Z] INFO [pex]: Shutting down pex
+[2020-12-16T16:45:31Z] INFO [pex]: Save peerlist
+[2020-12-16T16:45:31Z] INFO [pex]: Pex.Run stopped
+[2020-12-16T16:45:31Z] INFO [daemon]: Daemon closed
+[2020-12-16T16:45:31Z] INFO [pex]: Pex shutdown
+[2020-12-16T16:45:31Z] INFO [daemon]: Daemon shutdown complete
+[2020-12-16T16:45:31Z] INFO [main]: Waiting for goroutines to finish
+[2020-12-16T16:45:31Z] INFO [main]: Closing database
+[2020-12-16T16:45:31Z] INFO [main]: Goodbye

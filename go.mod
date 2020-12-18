@@ -4,7 +4,6 @@ go 1.15
 
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
-	github.com/FiloSottile/vendorcheck v0.0.0-20160511012517-d6d54d1b5894 // indirect
 	github.com/NYTimes/gziphandler v1.0.1
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
@@ -15,7 +14,6 @@ require (
 	github.com/golang/protobuf v1.2.0 // indirect
 	github.com/google/go-cmp v0.2.0
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
-	github.com/kisielk/gotool v1.0.0 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.1 // indirect
 	github.com/mattn/go-colorable v0.0.9 // indirect
 	github.com/mattn/go-isatty v0.0.4 // indirect
@@ -44,5 +42,4 @@ require (
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	golang.org/x/net v0.0.0-20201021035429-f5854403a974 // indirect
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9 // indirect
-	golang.org/x/tools v0.0.0-20201215192005-fa10ef0b8743 // indirect
 )

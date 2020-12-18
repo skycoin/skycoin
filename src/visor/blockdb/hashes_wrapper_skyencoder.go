@@ -6,8 +6,8 @@ import (
 	"errors"
 	"math"
 
-	"github.com/skycoin/skycoin/src/cipher"
-	"github.com/skycoin/skycoin/src/cipher/encoder"
+	"github.com/ness-network/privateness/src/cipher"
+	"github.com/ness-network/privateness/src/cipher/encoder"
 )
 
 // encodeSizeHashesWrapper computes the size of an encoded object of type hashesWrapper

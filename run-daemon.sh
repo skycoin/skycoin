@@ -15,6 +15,7 @@ GOLDFLAGS="-X main.Commit=${COMMIT} -X main.Branch=${BRANCH}"
 GORUNFLAGS=${GORUNFLAGS:-}
 
 go run -ldflags "${GOLDFLAGS}" $GORUNFLAGS cmd/privateness/privateness.go \
+    -max-default-peer-outgoing-connections=26 \
     -enable-gui=false \
     -launch-browser=false \
     -log-level=debug \

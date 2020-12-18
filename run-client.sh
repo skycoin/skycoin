@@ -18,7 +18,7 @@ go run -ldflags "${GOLDFLAGS}" $GORUNFLAGS cmd/privateness/privateness.go \
     -gui-dir="${DIR}/src/gui/static/" \
     -launch-browser=true \
     -enable-all-api-sets=true \
-    -enable-gui=true \
+    -enable-gui=false \
     -log-level=debug \
     $@
 

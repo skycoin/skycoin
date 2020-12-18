@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: run-client run-daemon run-help
+.PHONY: run-client run-daemon run-help run-cli
 .PHONY: test test-386 test-amd64
 .PHONY: check check-newcoin
 .PHONY: run-integration-test-live
@@ -22,7 +22,7 @@
 .PHONY: generate update-golden-files
 .PHONY: fuzz-base58 fuzz-encoder
 
-COIN ?= skycoin
+COIN ?= privateness
 
 # Static files directory
 GUI_STATIC_DIR = src/gui/static
@@ -35,6 +35,8 @@ OSNAME = $(TRAVIS_OS_NAME)
 
 run-client:  ## Run skycoin with desktop client configuration. To add arguments, do 'make ARGS="--foo" run'.
 	./run-client.sh ${ARGS}
+run-cli:
+	 ./run-cli.sh ${ARGS}
 
 run-daemon:  ## Run skycoin with server daemon configuration. To add arguments, do 'make ARGS="--foo" run'.
 	./run-daemon.sh ${ARGS}

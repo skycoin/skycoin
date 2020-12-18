@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Runs skycoin in daemon mode configuration
-
+export USER_BURN_FACTOR=0
 set -x
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

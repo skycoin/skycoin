@@ -20,6 +20,8 @@ github.com/boltdb/bolt
 github.com/cenkalti/backoff
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
+# github.com/fatih/structtag v1.2.0
+## explicit
 # github.com/fsnotify/fsnotify v1.4.7
 github.com/fsnotify/fsnotify
 # github.com/golang/protobuf v1.2.0
@@ -156,6 +158,8 @@ github.com/skycoin/skycoin/src/visor/blockdb
 github.com/skycoin/skycoin/src/visor/dbutil
 github.com/skycoin/skycoin/src/visor/historydb
 github.com/skycoin/skycoin/src/wallet
+# github.com/skycoin/skyencoder v0.0.0-20190624072340-28f1af5256c7
+## explicit
 # github.com/spf13/afero v1.1.2
 github.com/spf13/afero
 github.com/spf13/afero/mem
@@ -186,6 +190,8 @@ github.com/toqueteos/webbrowser
 # github.com/urfave/cli v1.20.0
 ## explicit
 github.com/urfave/cli
+# github.com/vektra/mockery v1.1.2
+## explicit
 # golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 ## explicit
 golang.org/x/crypto/ssh/terminal

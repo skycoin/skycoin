@@ -19,6 +19,7 @@ default_connections = [
 peer_list_url = "http://cantdoevil.com/blockchain/peers.txt"
 port = 6660
 web_interface_port = 6420
+# web_interface_addr = "192.243.100.192:6420"
 # unconfirmed_burn_factor = 10
 # unconfirmed_max_transaction_size = 32 * 1024
 # unconfirmed_max_decimals = 3

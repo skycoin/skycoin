@@ -19,6 +19,7 @@ go run -ldflags "${GOLDFLAGS}" $GORUNFLAGS cmd/privateness/privateness.go \
     -enable-gui=false \
     -launch-browser=false \
     -log-level=debug \
+    -web-interface-https \
     $@
 
 popd >/dev/null

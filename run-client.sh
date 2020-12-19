@@ -20,6 +20,8 @@ go run -ldflags "${GOLDFLAGS}" $GORUNFLAGS cmd/privateness/privateness.go \
     -enable-all-api-sets=true \
     -enable-gui=false \
     -log-level=debug \
+    -disable-csrf \
+    -disable-csp \
     $@
 
 popd >/dev/null

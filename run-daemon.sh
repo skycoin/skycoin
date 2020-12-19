@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Runs skycoin in daemon mode configuration
-
+export USER_BURN_FACTOR=0
 set -x
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -19,6 +19,7 @@ go run -ldflags "${GOLDFLAGS}" $GORUNFLAGS cmd/privateness/privateness.go \
     -enable-gui=false \
     -launch-browser=false \
     -log-level=debug \
+    -web-interface-https \
     $@
 
 popd >/dev/null

@@ -16,6 +16,7 @@ GORUNFLAGS=${GORUNFLAGS:-}
 
 go run -ldflags "${GOLDFLAGS}" $GORUNFLAGS cmd/privateness/privateness.go \
     -gui-dir="${DIR}/src/gui/static/" \
+    -max-default-peer-outgoing-connections=26 \
     -launch-browser=true \
     -enable-all-api-sets=true \
     -enable-gui=false \

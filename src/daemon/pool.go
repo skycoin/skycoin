@@ -52,8 +52,8 @@ func NewPoolConfig() PoolConfig {
 		ClearStaleRate:                    1 * time.Second,
 		EventChannelSize:                  4096,
 		MaxConnections:                    128,
-		MaxOutgoingConnections:            8,
-		MaxDefaultPeerOutgoingConnections: 1,
+		MaxOutgoingConnections:            30,
+		MaxDefaultPeerOutgoingConnections: 14,
 		MaxOutgoingMessageLength:          256 * 1024,
 		MaxIncomingMessageLength:          1024 * 1024,
 	}

@@ -2,7 +2,7 @@
 
 # Runs skycoin in daemon mode configuration
 export USER_BURN_FACTOR=0
-export DATA_DIR=$HOME/.privateness
+export DATA_DIR=/root/.privateness
 set -x
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -20,11 +20,8 @@ go run -ldflags "${GOLDFLAGS}" $GORUNFLAGS cmd/privateness/privateness.go \
     -enable-gui=false \
     -launch-browser=false \
     -log-level=debug \
-<<<<<<< HEAD
-=======
     -disable-csrf \
     -disable-csp \
->>>>>>> 248779d965152479bd0f1b7cbe3eb7da9a1e47a8
     $@
 
 popd >/dev/null

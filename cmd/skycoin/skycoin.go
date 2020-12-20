@@ -37,7 +37,7 @@ var (
 	CoinName = "skycoin"
 
 	// GenesisSignatureStr hex string of genesis signature
-	GenesisSignatureStr = ""
+	GenesisSignatureStr = "07505945fd5224729ef9f97a24588f8cf9b9a189a7fbbcdbb1881d3c573cf06318ebc015c3ac35b3f9379a6b3606846e232897b4e8a9ceb13380f845a936065000"
 	// GenesisAddressStr genesis address string
 	GenesisAddressStr = "EvS7nJ6ckPrjK5G3dZeBAVAKjVRbeCSF7a"
 	// BlockchainPubkeyStr pubic key string

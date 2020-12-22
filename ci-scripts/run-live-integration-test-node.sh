@@ -14,6 +14,7 @@ GOLDFLAGS="-X main.Commit=${COMMIT} -X main.Branch=${BRANCH}"
 
 go run -ldflags "${GOLDFLAGS}" cmd/${COIN}/${COIN}.go \
     -gui-dir="${DIR}/src/gui/static/" \
+    -max-default-peer-outgoing-connections=7 \
     -launch-browser=false \
     -enable-all-api-sets=true \
     -enable-api-sets=INSECURE_WALLET_SEED \

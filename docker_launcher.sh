@@ -1,7 +1,7 @@
 #!/bin/sh
-COMMAND="skycoin --data-dir $DATA_DIR --wallet-dir $WALLET_DIR $@"
+COMMAND="cmd/privateness/privateness --data-dir $DATA_DIR --wallet-dir $WALLET_DIR $@"
 
-adduser -D -u 10000 skycoin
+# adduser -u 10000 skycoin
 
 if [[ \! -d $DATA_DIR ]]; then
     mkdir -p $DATA_DIR

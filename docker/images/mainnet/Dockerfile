@@ -59,14 +59,14 @@ ARG STAG
 LABEL "org.label-schema.name"="Ness" \
       "org.label-schema.description"="Ness core docker image" \
       "org.label-schema.vcs-url"="https://github.com/ness-network/privateness/tree/develop/docker/images/mainnet" \
-      "org.label-schema.vendor"="Skycoin project" \
-      "org.label-schema.url"="skycoin.com" \
+      "org.label-schema.vendor"="Ness-Network" \
+      "org.label-schema.url"="privateness.network" \
       "org.label-schema.schema-version"="1.0" \
       "org.label-schema.build-date"=$BDATE \
       "org.label-schema.vcs-ref"=$SCOMMIT \
       "org.label-schema.version"=$STAG \
       "org.label-schema.usage"="https://github.com/ness-network/privateness/blob/"$SCOMMIT"/docker/images/mainnet/README.md" \
-      "org.label-schema.docker.cmd"="docker volume create skycoin-data; docker volume create skycoin-wallet; docker run -d -v skycoin-data:/data/.skycoin -v skycoin-wallet:/wallet -p 6000:6000 -p 6420:6420 --name skycoin-node-stable ness-network/privateness"
+      "org.label-schema.docker.cmd"="docker volume create ness-data; docker volume create ness-wallet; docker run -d -v ness-data:/data/.privateness -v ness-wallet:/wallet -p 6660:6660 -p 6420:6420 --name ness-node-stable ness-network/privateness"
 
 ENV COIN="privateness"
 ENV RPC_ADDR="http://0.0.0.0:6420" \
@@ -81,6 +81,6 @@ COPY --from=build /tmp/files /
 VOLUME $WALLET_DIR
 VOLUME $DATA_DIR
 
-EXPOSE 6000 6420
+EXPOSE 6660 6420
 
 ENTRYPOINT ["docker_launcher.sh", "--web-interface-addr=0.0.0.0", "--gui-dir=/usr/local/skycoin/src/gui/static"]

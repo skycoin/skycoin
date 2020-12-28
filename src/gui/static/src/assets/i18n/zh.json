@@ -248,9 +248,13 @@
     "change-address-error-info": "找零地址无效",
     "change-address-select-from-list-link": "选择",
     "change-address-help": "自定义找零地址。如果不提供，钱包将会自动选择。点击\"选择\" 来选择一个地址",
+    "specific-hours": "发送币时:",
+    "remove-specific-hours-info": "删除.",
+    "remove-specific-hours-confirmation": "你确定删除将发送的指定数额的币时吗?",
     "destinations-label": "目标地址",
     "destinations-help1": "目标地址和即将发送的币",
     "destinations-help2": "目标地址和即将发送的币以及币时",
+    "destination-tools-title": "目标地址工具",
     "hours-allocation-check": "自动分配币时{{ coinHoursName }}",
     "options-link": "选项",
     "coin-hours-options-link":"币时选项",
@@ -280,6 +284,18 @@
     "high-hours-share-waning": "你的选择可能会发送钱包中所有币时。你确定继续吗?",
     "advanced-high-hours-share-waning": "你的选择可能会发送选择源中的所有币时。你确定继续吗?",
 
+    "fill-with-link": {
+      "title": "使用交易链接",
+      "link-info": "在此输入交易链接。交易数据将从链接中获取并填充到表单。",
+      "link-label": "交易链接",
+      "link-error-info": "请输入有效的链接",
+      "process-button": "执行",
+      "invalid-link-error": "链接中的内容无效",
+      "invalid-link-hours-error": "交易链接中包含无效的币时数",
+      "data-overwritten-alert": "部分之前输入的数据将会被覆写。你确定要继续吗?",
+      "confirmation": "表单已根据交易链接中的数据更新。"
+    },
+
     "known-node-errors": {
       "null-change-address-error": "无法使用空地址作为找零地址。请输入一个有效的地址",
       "to-required-error": "你需要提供一个有效的目标地址用于发送币。请输入一个有效的地址",
@@ -294,7 +310,8 @@
       "share-factor-needed-error": "需要设置币时分发因子。请设置并重试。如问题无法解决，请联系技术支持",
       "share-factor-not-needed-error": "已启动手动币时分发模式，币时分发因子无法设置。如问题无法解决，请联系技术支持",
       "invalid-share-factor-error": "无效的币时分发因子。请使用正确的值并重试。如问题无法解决，请联系技术支持",
-      "change-equal-to-destination-error": "交易无法创建，请不要在一个交易中发送相同数值的币到同一目标地址多次"
+      "change-equal-to-destination-error": "交易无法创建，请不要在一个交易中发送相同数值的币到同一目标地址多次",
+      "repeated-wallet": "指定种子的钱包已存在"
     },
 
     "bulk-send": {

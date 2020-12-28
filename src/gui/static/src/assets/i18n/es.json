@@ -690,6 +690,7 @@
     "label-status": "Estado",
     "exchanging": "Intercambiando {{from}} por {{to}}",
     "destination-select-from-list-link": "Seleccionar",
+    "unavailable": "El servicio de intercambio no está disponible en la versión portable.",
     "offline": "El servicio está temporalmente offline",
     "problem-connecting": "No se puede conectar con el servicio. Por favor compruebe su conexión a Internet y vuelva a intentarlo más tarde.",
     "invalid-address-error": "Dirección inválida.",

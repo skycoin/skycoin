@@ -209,6 +209,52 @@ function createWindow(url) {
     console.log('Cleared the caching of the skycoin wallet.');
   });
 
+  // When an options request to Swaplab using an https endpoint is detected, asume that it is a
+  // cors request and redirect it to an invalid endpoint on the node API.
+  ses.protocol.registerHttpProtocol('https', (request, callback) => {
+    if (request.method.toLowerCase().includes('options') && request.url.toLowerCase().includes('swaplab.cc')) {
+      callback({ url: currentURL + '/api/v1/unused', method: 'get' });
+    } else {
+      callback({ url:request.url });
+    }
+  }, (error) => {
+    if (error) console.error('Failed to register protocol')
+  })
+
+  // Remove the origin headers when connecting to Swaplab.
+  ses.webRequest.onBeforeSendHeaders({
+    urls: ['https://swaplab.cc/*']
+  }, (details, callback) => {
+    details.requestHeaders['origin'] = null;
+    details.requestHeaders['referer'] = null;
+    details.requestHeaders['host'] = null;
+    details.requestHeaders['Origin'] = null;
+    details.requestHeaders['Referer'] = null;
+    details.requestHeaders['Host'] = null;
+
+    callback({ requestHeaders: details.requestHeaders });
+  })
+
+  // Make all connections made to swaplab include permisive cors headers.
+  ses.webRequest.onHeadersReceived({
+    urls: ['https://swaplab.cc/*']
+  }, (details, callback) => {
+    const headers = details.responseHeaders;
+    if (headers) {
+      headers['Access-Control-Allow-Origin'] = '*';
+      headers['Access-Control-Allow-Headers'] = '*';
+    }
+    const response = { responseHeaders: headers };
+
+    // Options request are redirected to an invalid url, so the status must be changed to 200
+    // to simulate a good response.
+    if (details.method.toLowerCase().includes('options')) {
+      response['statusLine'] = '200';
+    }
+
+    callback(response);
+  });
+
   if (url) {
     win.loadURL(url);
   } else {

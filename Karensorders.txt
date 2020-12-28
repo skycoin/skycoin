@@ -1,0 +1,14 @@
+go version
+mkdir $GOPATH/src/github.com
+mkdir $GOPATH/src/github.com/ness-network
+cd $GOPATH/src/github.com/ness-network
+git clone https://github.com/ness-network/privateness
+cd privateness
+git checkout Karen
+go mod tidy
+go mod vendor
+make check-newcoin
+export RPC_ADDR=http://127.0.0.1:6420
+export DATA_DIR=$HOME/.privateness
+export COIN=privateness
+make run-client

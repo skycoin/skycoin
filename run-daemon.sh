@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Runs Privateness in desktop client configuration
+# Runs Privateness in server daemon configuration
 
 set -x
 

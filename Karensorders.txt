@@ -1,4 +1,6 @@
-go version
+go version # Go must be installed already
+# Copy all these lines and paste them into any debian-based linux terminal window to start a Ness Corenode
+# Recommend using "screen" utility, "apt install screen"
 sudo su
 mkdir $GOPATH/src/
 mkdir $GOPATH/src/github.com
@@ -11,4 +13,5 @@ export RPC_ADDR=http://127.0.0.1:6420
 export DATA_DIR=$HOME/.privateness
 export COIN=privateness
 make run-daemon
+@
 

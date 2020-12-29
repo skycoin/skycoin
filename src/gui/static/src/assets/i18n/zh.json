@@ -690,6 +690,7 @@
     "label-status": "状态",
     "exchanging": "{{from}}交易{{to}}",
     "destination-select-from-list-link": "选择",
+    "unavailable": "网页版本暂不提供交易服务",
     "offline": "交易暂时下线",
     "problem-connecting": "未能连接到服务器。请检查你的网络连接并稍后再试。",
     "invalid-address-error": "无效地址.",

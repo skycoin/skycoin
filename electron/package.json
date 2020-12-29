@@ -3,7 +3,7 @@
     "productName": "Skycoin",
     "author": "skycoin",
     "main": "app/electron-main.js",
-    "version": "0.27.0",
+    "version": "0.27.1",
     "description": "skycoin electron wallet",
     "license": "MIT",
     "private": true,

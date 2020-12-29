@@ -40,7 +40,7 @@ var (
 	// DBVerifyCheckpointVersion is a checkpoint for determining if DB verification should be run.
 	// Any DB upgrading from less than this version to equal or higher than this version will be forced to verify.
 	// Update this version checkpoint if a newer version requires a new verification run.
-	DBVerifyCheckpointVersion       = "0.27.0"
+	DBVerifyCheckpointVersion       = "0.27.1"
 	dbVerifyCheckpointVersionParsed semver.Version
 )
 

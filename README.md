@@ -1,3 +1,10 @@
+![ness logo](https://avatars0.githubusercontent.com/u/74679402?s=400&u=0a07ababf03eb9bc82f752ae99f7be44079f7330&v=4)
+
+Ness is an offspring of Skycoin and Emercoin (hence Peercoin, Namecoin)
+Our Testnet "Karen" is now open for node testing and scalability (if you have an usued Raspeberry pi try it out!)
+
+
+
 ![skycoin logo](https://user-images.githubusercontent.com/26845312/32426705-d95cb988-c281-11e7-9463-a3fce8076a72.png)
 
 # Skycoin

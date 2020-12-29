@@ -11,7 +11,6 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/boltdb/bolt v1.3.1
 	github.com/cenkalti/backoff v1.1.0
-	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/golang/protobuf v1.2.0 // indirect
 	github.com/google/go-cmp v0.2.0
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
@@ -32,7 +31,6 @@ require (
 	github.com/sirupsen/logrus v1.1.1
 	github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
 	github.com/skycoin/skycoin v0.27.1
-	github.com/skycoin/skyencoder v0.0.0-20190624072340-28f1af5256c7 // indirect
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.3
 	github.com/spf13/viper v1.2.1
@@ -40,9 +38,7 @@ require (
 	github.com/stretchr/testify v1.2.2
 	github.com/toqueteos/webbrowser v1.1.0
 	github.com/urfave/cli v1.20.0
-	github.com/vektra/mockery v1.1.2 // indirect
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
-	golang.org/x/net v0.0.0-20201021035429-f5854403a974 // indirect
-	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9 // indirect
-	golang.org/x/tools v0.0.0-20201222163215-f2e330f49058 // indirect
+	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a // indirect
+	golang.org/x/tools v0.0.0-20201226215659-b1c90890d22a // indirect
 )

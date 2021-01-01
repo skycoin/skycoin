@@ -37,7 +37,7 @@ var (
 	CoinName = "privateness"
 
 	// GenesisSignatureStr hex string of genesis signature
-	GenesisSignatureStr = ""
+	GenesisSignatureStr = "c809d1ad8ff0f699280c735b524d215768c242970ad1abbb94e7265a5c5cead50cd67ca95d43939fac2453bafcafec0dc44acef78e6afd013df4494a40f4178400"
 	// GenesisAddressStr genesis address string
 	GenesisAddressStr = "2gCKbJzkVYZA3EvsYosexq9jdvP3iQ8iFBv"
 	// BlockchainPubkeyStr pubic key string

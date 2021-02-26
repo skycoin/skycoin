@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Include change addresses for a bip44 wallet of the endpoint `/api/v1/wallet`.
 
 ### Removed
+- Removed endpoint `/api/v2/metrics`. The prometheus dependency was removed, this endpoint will no long be supported. 
 
 ## [0.27.0] - 2019-11-26
 

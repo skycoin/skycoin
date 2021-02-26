@@ -54,8 +54,6 @@ const (
 	EndpointsWallet = "WALLET"
 	// EndpointsInsecureWalletSeed endpoints implement wallet interface
 	EndpointsInsecureWalletSeed = "INSECURE_WALLET_SEED"
-	// EndpointsPrometheus endpoints for Go application metrics
-	EndpointsPrometheus = "PROMETHEUS"
 	// EndpointsNetCtrl endpoints for managing network connections
 	EndpointsNetCtrl = "NET_CTRL"
 	// EndpointsStorage endpoints implement interface for key-value storage for arbitrary data
@@ -617,11 +615,6 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	})
 	webHandlerV1("/address_uxouts", addrUxOutsHandler(gateway), map[string][]string{
 		http.MethodGet: {EndpointsRead},
-	})
-
-	// golang process internal metrics for Prometheus
-	webHandlerV2("/metrics", metricsHandler(c, gateway), map[string][]string{
-		http.MethodGet: {EndpointsPrometheus},
 	})
 
 	// Address related endpoints

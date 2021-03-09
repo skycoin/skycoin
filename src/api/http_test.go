@@ -20,7 +20,6 @@ var allAPISetsEnabled = map[string]struct{}{
 	EndpointsStatus:             struct{}{},
 	EndpointsWallet:             struct{}{},
 	EndpointsInsecureWalletSeed: struct{}{},
-	EndpointsPrometheus:         struct{}{},
 	EndpointsNetCtrl:            struct{}{},
 	EndpointsStorage:            struct{}{},
 }

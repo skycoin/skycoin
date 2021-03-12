@@ -31,7 +31,11 @@ export class HwMessageComponent {
   // Text to show.
   @Input() text: string;
   // Link to show after the main text.
+  @Input() link: string;
+  // Text to show in the UI for the link (optional).
   @Input() linkText: string;
+  // If true, the link is not openned in a new tab.
+  @Input() linkIsInternal: boolean;
   // URL for the link. If no URL is set, the linkClicked event is dispatched when the user
   // clicks the link.
   @Input() linkIsUrl = false;

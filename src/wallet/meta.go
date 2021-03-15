@@ -2,36 +2,47 @@ package wallet
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
+	"strings"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
+	"github.com/skycoin/skycoin/src/wallet/crypto"
 )
 
 // wallet meta fields
 const (
-	metaVersion        = "version"        // wallet version
-	metaFilename       = "filename"       // wallet file name
-	metaLabel          = "label"          // wallet label
-	metaTimestamp      = "tm"             // the timestamp when creating the wallet
-	metaType           = "type"           // wallet type
-	metaCoin           = "coin"           // coin type
-	metaEncrypted      = "encrypted"      // whether the wallet is encrypted
-	metaCryptoType     = "cryptoType"     // encrytion/decryption type
-	metaSeed           = "seed"           // wallet seed
-	metaLastSeed       = "lastSeed"       // seed for generating next address [deterministic wallets]
-	metaSecrets        = "secrets"        // secrets which records the encrypted seeds and secrets of address entries
-	metaBip44Coin      = "bip44Coin"      // bip44 coin type
-	metaSeedPassphrase = "seedPassphrase" // seed passphrase [bip44 wallets]
-	metaXPub           = "xpub"           // xpub key [xpub wallets]
+	MetaVersion        = "version"        // wallet version
+	MetaFilename       = "filename"       // wallet file name
+	MetaLabel          = "label"          // wallet label
+	MetaTimestamp      = "tm"             // the timestamp when creating the wallet
+	MetaType           = "type"           // wallet type
+	MetaCoin           = "coin"           // coin type
+	MetaEncrypted      = "encrypted"      // whether the wallet is encrypted
+	MetaCryptoType     = "cryptoType"     // encryption/decryption type
+	MetaSeed           = "seed"           // wallet seed
+	MetaLastSeed       = "lastSeed"       // seed for generating next address [deterministic wallets]
+	MetaSecrets        = "secrets"        // secrets which records the encrypted seeds and secrets of address entries
+	MetaBip44Coin      = "bip44Coin"      // bip44 coin type
+	MetaAccountsHash   = "accountsHash"   // accounts hash
+	MetaSeedPassphrase = "seedPassphrase" // seed passphrase [bip44 wallets]
+	MetaXPub           = "xpub"           // xpub key [xpub wallets]
 )
+
+//const (
+//	// CoinTypeSkycoin skycoin type
+//	CoinTypeSkycoin CoinType = "skycoin"
+//	// CoinTypeBitcoin bitcoin type
+//	CoinTypeBitcoin CoinType = "bitcoin"
+//)
+
+// CoinType represents the wallet coin type, which refers to the pubkey2addr method used
+//type CoinType string
 
 // Meta holds wallet metadata
 type Meta map[string]string
 
-func (m Meta) clone() Meta {
+// Clone make an copy of the Meta
+func (m Meta) Clone() Meta {
 	mm := make(Meta, len(m))
 	for k, v := range m {
 		mm[k] = v
@@ -39,130 +50,9 @@ func (m Meta) clone() Meta {
 	return mm
 }
 
-// erase wipes the seed and last seed
-func (m Meta) eraseSeeds() {
-	m.setSeed("")
-	m.setLastSeed("")
-	m.setSeedPassphrase("")
-}
-
-// validate validates the wallet
-func (m Meta) validate() error {
-	if fn := m[metaFilename]; fn == "" {
-		return errors.New("filename not set")
-	}
-
-	if tm := m[metaTimestamp]; tm != "" {
-		_, err := strconv.ParseInt(tm, 10, 64)
-		if err != nil {
-			return errors.New("invalid timestamp")
-		}
-	}
-
-	walletType, ok := m[metaType]
-	if !ok {
-		return errors.New("type field not set")
-	}
-	if !IsValidWalletType(walletType) {
-		return ErrInvalidWalletType
-	}
-
-	if coinType := m[metaCoin]; coinType == "" {
-		return errors.New("coin field not set")
-	}
-
-	var isEncrypted bool
-	if encStr, ok := m[metaEncrypted]; ok {
-		// validate the encrypted value
-		var err error
-		isEncrypted, err = strconv.ParseBool(encStr)
-		if err != nil {
-			return errors.New("encrypted field is not a valid bool")
-		}
-	}
-
-	if isEncrypted {
-		cryptoType, ok := m[metaCryptoType]
-		if !ok {
-			return errors.New("crypto type field not set")
-		}
-
-		if _, err := getCrypto(CryptoType(cryptoType)); err != nil {
-			return errors.New("unknown crypto type")
-		}
-
-		if s := m[metaSecrets]; s == "" {
-			return errors.New("wallet is encrypted, but secrets field not set")
-		}
-
-		if s := m[metaSeed]; s != "" {
-			return errors.New("seed should not be visible in encrypted wallets")
-		}
-
-		if s := m[metaLastSeed]; s != "" {
-			return errors.New("lastSeed should not be visible in encrypted wallets")
-		}
-	} else {
-		if s := m[metaSecrets]; s != "" {
-			return errors.New("secrets should not be in unencrypted wallets")
-		}
-	}
-
-	switch walletType {
-	case WalletTypeCollection:
-		if s := m[metaSeed]; s != "" {
-			return errors.New("seed should not be in collection wallets")
-		}
-
-		if s := m[metaLastSeed]; s != "" {
-			return errors.New("lastSeed should not be in collection wallets")
-		}
-	case WalletTypeDeterministic:
-		if !isEncrypted {
-			if s := m[metaSeed]; s == "" {
-				return errors.New("seed missing in unencrypted deterministic wallet")
-			}
-
-			if s := m[metaLastSeed]; s == "" {
-				return errors.New("lastSeed missing in unencrypted deterministic wallet")
-			}
-		}
-	case WalletTypeBip44:
-		if !isEncrypted {
-			// bip44 wallet seeds must be a valid bip39 mnemonic
-			if s := m[metaSeed]; s == "" {
-				return errors.New("seed missing in unencrypted bip44 wallet")
-			} else if err := bip39.ValidateMnemonic(s); err != nil {
-				return err
-			}
-		}
-
-		if s := m[metaBip44Coin]; s == "" {
-			return errors.New("bip44Coin missing")
-		} else if _, err := strconv.ParseUint(s, 10, 32); err != nil {
-			return fmt.Errorf("bip44Coin invalid: %v", err)
-		}
-
-		if s := m[metaLastSeed]; s != "" {
-			return errors.New("lastSeed should not be in bip44 wallets")
-		}
-	case WalletTypeXPub:
-		if s := m[metaSeed]; s != "" {
-			return errors.New("seed should not be in xpub wallets")
-		}
-
-		if s := m[metaLastSeed]; s != "" {
-			return errors.New("lastSeed should not be in xpub wallets")
-		}
-	default:
-		return errors.New("unhandled wallet type")
-	}
-
-	if m[metaXPub] != "" && walletType != WalletTypeXPub {
-		return errors.New("xpub is only used for xpub wallets")
-	}
-
-	return nil
+// EraseSeeds wipes the seed and last seed
+func (m Meta) EraseSeeds() {
+	m.SetSeed("")
 }
 
 // Find returns a key value from the metadata map
@@ -172,102 +62,107 @@ func (m Meta) Find(k string) string {
 
 // Type gets the wallet type
 func (m Meta) Type() string {
-	return m[metaType]
+	return m[MetaType]
 }
 
 // Version gets the wallet version
 func (m Meta) Version() string {
-	return m[metaVersion]
+	return m[MetaVersion]
 }
 
 // SetVersion sets the wallet version
 func (m Meta) SetVersion(v string) {
-	m[metaVersion] = v
+	m[MetaVersion] = v
 }
 
 // Filename gets the wallet filename
 func (m Meta) Filename() string {
-	return m[metaFilename]
+	return m[MetaFilename]
 }
 
 // SetFilename sets the wallet filename
 func (m Meta) SetFilename(fn string) {
-	m[metaFilename] = fn
+	m[MetaFilename] = fn
 }
 
 // Label gets the wallet label
 func (m Meta) Label() string {
-	return m[metaLabel]
+	return m[MetaLabel]
 }
 
 // SetLabel sets the wallet label
 func (m Meta) SetLabel(label string) {
-	m[metaLabel] = label
+	m[MetaLabel] = label
 }
 
 // LastSeed returns the last seed
 func (m Meta) LastSeed() string {
-	return m[metaLastSeed]
+	return m[MetaLastSeed]
 }
 
-func (m Meta) setLastSeed(lseed string) {
-	m[metaLastSeed] = lseed
+// SetLastSeed sets or updates the last seed
+func (m Meta) SetLastSeed(lseed string) {
+	m[MetaLastSeed] = lseed
 }
 
 // Seed returns the seed
 func (m Meta) Seed() string {
-	return m[metaSeed]
+	return m[MetaSeed]
 }
 
-func (m Meta) setSeed(seed string) {
-	m[metaSeed] = seed
+// SetSeed sets the seed
+func (m Meta) SetSeed(seed string) {
+	m[MetaSeed] = seed
 }
 
 // SeedPassphrase returns the seed passphrase
 func (m Meta) SeedPassphrase() string {
-	return m[metaSeedPassphrase]
+	return m[MetaSeedPassphrase]
 }
 
-func (m Meta) setSeedPassphrase(p string) {
-	m[metaSeedPassphrase] = p
+// SetSeedPassphrase sets the seed passphrase
+func (m Meta) SetSeedPassphrase(p string) {
+	m[MetaSeedPassphrase] = p
 }
 
 // Coin returns the wallet's coin type
 func (m Meta) Coin() CoinType {
-	return CoinType(m[metaCoin])
+	return CoinType(m[MetaCoin])
 }
 
 // SetCoin sets the wallet's coin type
 func (m Meta) SetCoin(ct CoinType) {
-	m[metaCoin] = string(ct)
+	m[MetaCoin] = string(ct)
 }
 
-// Bip44Coin returns the bip44 coin type
-func (m Meta) Bip44Coin() bip44.CoinType {
-	c := m[metaBip44Coin]
-	if c == "" {
-		logger.Critical().Error("wallet.Meta.Bip44Coin() is empty")
-		return bip44.CoinType(0)
+// Bip44Coin returns the bip44 coin type, please
+// check the second return value to see if it does
+// exist in the Meta data before using it.
+func (m Meta) Bip44Coin() *bip44.CoinType {
+	c, ok := m[MetaBip44Coin]
+	if !ok {
+		return nil
 	}
-
 	x, err := strconv.ParseUint(c, 10, 32)
 	if err != nil {
-		logger.WithError(err).Panic()
+		panic(err)
 	}
+	t := bip44.CoinType(x)
 
-	return bip44.CoinType(x)
+	return &t
 }
 
-func (m Meta) setBip44Coin(ct bip44.CoinType) {
-	m[metaBip44Coin] = strconv.FormatUint(uint64(ct), 10)
+// SetBip44Coin sets the bip44 coin type code
+func (m Meta) SetBip44Coin(ct bip44.CoinType) {
+	m[MetaBip44Coin] = strconv.FormatUint(uint64(ct), 10)
 }
 
 func (m Meta) setIsEncrypted(encrypt bool) {
-	m[metaEncrypted] = strconv.FormatBool(encrypt)
+	m[MetaEncrypted] = strconv.FormatBool(encrypt)
 }
 
 // SetEncrypted sets encryption fields
-func (m Meta) SetEncrypted(cryptoType CryptoType, encryptedSecrets string) {
+func (m Meta) SetEncrypted(cryptoType crypto.CryptoType, encryptedSecrets string) {
 	m.setCryptoType(cryptoType)
 	m.setSecrets(encryptedSecrets)
 	m.setIsEncrypted(true)
@@ -277,12 +172,12 @@ func (m Meta) SetEncrypted(cryptoType CryptoType, encryptedSecrets string) {
 func (m Meta) SetDecrypted() {
 	m.setIsEncrypted(false)
 	m.setSecrets("")
-	m.setCryptoType("")
+	delete(m, MetaSecrets)
 }
 
 // IsEncrypted checks whether the wallet is encrypted.
 func (m Meta) IsEncrypted() bool {
-	encStr, ok := m[metaEncrypted]
+	encStr, ok := m[MetaEncrypted]
 	if !ok {
 		return false
 	}
@@ -292,28 +187,33 @@ func (m Meta) IsEncrypted() bool {
 		// This can't happen, the meta.encrypted value is either set by
 		// setEncrypted() method or converted in ReadableWallet.toWallet().
 		// toWallet() method will throw error if the meta.encrypted string is invalid.
-		logger.Critical().WithError(err).Error("parse wallet.meta.encrypted string failed")
-		return false
+		// logger.Critical().WithError(err).Error("parse wallet.meta.encrypted string failed")
+		panic(err)
 	}
 	return b
 }
 
-func (m Meta) setCryptoType(tp CryptoType) {
-	m[metaCryptoType] = string(tp)
+func (m Meta) setCryptoType(tp crypto.CryptoType) {
+	m[MetaCryptoType] = string(tp)
 }
 
 // CryptoType returns the encryption type
-func (m Meta) CryptoType() CryptoType {
-	return CryptoType(m[metaCryptoType])
+func (m Meta) CryptoType() crypto.CryptoType {
+	return crypto.CryptoType(m[MetaCryptoType])
+}
+
+// SetCryptoType sets the encryption type
+func (m Meta) SetCryptoType(ct crypto.CryptoType) {
+	m[MetaCryptoType] = string(ct)
 }
 
 // Secrets returns the encrypted wallet secrets
 func (m Meta) Secrets() string {
-	return m[metaSecrets]
+	return m[MetaSecrets]
 }
 
 func (m Meta) setSecrets(s string) {
-	m[metaSecrets] = s
+	m[MetaSecrets] = s
 }
 
 // Timestamp returns the timestamp
@@ -321,37 +221,111 @@ func (m Meta) Timestamp() int64 {
 	// Intentionally ignore the error when parsing the timestamp,
 	// if it isn't valid or is missing it will be set to 0.
 	// Also, this value is validated by wallet.validate()
-	x, _ := strconv.ParseInt(m[metaTimestamp], 10, 64) //nolint:errcheck
+	x, _ := strconv.ParseInt(m[MetaTimestamp], 10, 64) //nolint:errcheck
 	return x
 }
 
 // SetTimestamp sets the timestamp
 func (m Meta) SetTimestamp(t int64) {
-	m[metaTimestamp] = strconv.FormatInt(t, 10)
+	m[MetaTimestamp] = strconv.FormatInt(t, 10)
 }
 
 // AddressConstructor returns a function to create a cipher.Addresser from a cipher.PubKey
-func (m Meta) AddressConstructor() func(cipher.PubKey) cipher.Addresser {
-	switch m.Coin() {
-	case CoinTypeSkycoin:
-		return func(pk cipher.PubKey) cipher.Addresser {
-			return cipher.AddressFromPubKey(pk)
-		}
-	case CoinTypeBitcoin:
-		return func(pk cipher.PubKey) cipher.Addresser {
-			return cipher.BitcoinAddressFromPubKey(pk)
-		}
-	default:
-		logger.Panicf("Invalid wallet coin type %q", m.Coin())
-		return nil
-	}
-}
+// func (m Meta) AddressConstructor() func(cipher.PubKey) cipher.Addresser {
+// 	switch m.Coin() {
+// 	case CoinTypeSkycoin:
+// 		return func(pk cipher.PubKey) cipher.Addresser {
+// 			return cipher.AddressFromPubKey(pk)
+// 		}
+// 	case CoinTypeBitcoin:
+// 		return func(pk cipher.PubKey) cipher.Addresser {
+// 			return cipher.BitcoinAddressFromPubKey(pk)
+// 		}
+// 	default:
+// 		logger.Panicf("Invalid wallet coin type %q", m.Coin())
+// 		return nil
+// 	}
+// }
 
-func (m Meta) setXPub(xpub string) {
-	m[metaXPub] = xpub
+// SetXPub sets xpub
+func (m Meta) SetXPub(xpub string) {
+	m[MetaXPub] = xpub
 }
 
 // XPub returns the wallet's configured XPub key
 func (m Meta) XPub() string {
-	return m[metaXPub]
+	return m[MetaXPub]
+}
+
+// Validate validates the meta data
+func (m Meta) Validate() error {
+	if fn := m[MetaFilename]; fn == "" {
+		return errors.New("filename not set")
+	}
+
+	if tm := m[MetaTimestamp]; tm != "" {
+		_, err := strconv.ParseInt(tm, 10, 64)
+		if err != nil {
+			return errors.New("invalid timestamp")
+		}
+	}
+
+	_, ok := m[MetaType]
+	if !ok {
+		return errors.New("type field not set")
+	}
+
+	if coinType := m[MetaCoin]; coinType == "" {
+		return errors.New("coin field not set")
+	}
+
+	var isEncrypted bool
+	if encStr, ok := m[MetaEncrypted]; ok {
+		// validate the encrypted value
+		var err error
+		isEncrypted, err = strconv.ParseBool(encStr)
+		if err != nil {
+			return errors.New("encrypted field is not a valid bool")
+		}
+	}
+
+	if isEncrypted {
+		cryptoType, ok := m[MetaCryptoType]
+		if !ok {
+			return errors.New("crypto type field not set")
+		}
+
+		if _, err := crypto.GetCrypto(crypto.CryptoType(cryptoType)); err != nil {
+			return errors.New("unknown crypto type")
+		}
+
+		if s := m[MetaSecrets]; s == "" {
+			return errors.New("wallet is encrypted, but secrets field not set")
+		}
+
+		if s := m[MetaSeed]; s != "" {
+			return errors.New("seed should not be visible in encrypted wallets")
+		}
+
+		if s := m[MetaLastSeed]; s != "" {
+			return errors.New("lastSeed should not be visible in encrypted wallets")
+		}
+	} else {
+		if s := m[MetaSecrets]; s != "" {
+			return errors.New("secrets should not be in unencrypted wallets")
+		}
+	}
+	return nil
+}
+
+// ResolveCoinType normalizes a coin type string to a CoinType constant
+func ResolveCoinType(s string) (CoinType, error) {
+	switch strings.ToLower(s) {
+	case "sky", "skycoin":
+		return CoinTypeSkycoin, nil
+	case "btc", "bitcoin":
+		return CoinTypeBitcoin, nil
+	default:
+		return CoinType(""), errors.New("invalid coin type")
+	}
 }

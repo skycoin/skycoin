@@ -2,9 +2,9 @@
 
 # Skycoin
 
-[![Build Status](https://travis-ci.com/SkycoinProject/skycoin.svg)](https://travis-ci.com/SkycoinProject/skycoin)
-[![GoDoc](https://godoc.org/github.com/SkycoinProject/skycoin?status.svg)](https://godoc.org/github.com/SkycoinProject/skycoin)
-[![Go Report Card](https://goreportcard.com/badge/github.com/SkycoinProject/skycoin)](https://goreportcard.com/report/github.com/SkycoinProject/skycoin)
+[![Go](https://github.com/skycoin/skycoin/workflows/Go/badge.svg)](https://github.com/skycoin/skycoin/actions)
+[![GoDoc](https://godoc.org/github.com/skycoin/skycoin?status.svg)](https://godoc.org/github.com/skycoin/skycoin)
+[![Go Report Card](https://goreportcard.com/badge/github.com/skycoin/skycoin)](https://goreportcard.com/report/github.com/skycoin/skycoin)
 
 Skycoin is a next-generation cryptocurrency.
 
@@ -38,7 +38,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
 * [Skycoin Docs](https://www.skycoin.com/docs)
 * [Skycoin Blockchain Explorer](https://explorer.skycoin.com)
 * [Skycoin Development Telegram Channel](https://t.me/skycoindev)
-* [Skycoin Github Wiki](https://github.com/SkycoinProject/skycoin/wiki)
+* [Skycoin Github Wiki](https://github.com/skycoin/skycoin/wiki)
 
 ## Table of Contents
 
@@ -46,7 +46,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
 
 - [Changelog](#changelog)
 - [Installation](#installation)
-	- [Go 1.10+ Installation and Setup](#go-110-installation-and-setup)
+	- [Go 1.14+ Installation and Setup](#go-114-installation-and-setup)
 	- [Go get skycoin](#go-get-skycoin)
 	- [Run Skycoin from the command line](#run-skycoin-from-the-command-line)
 	- [Show Skycoin node options](#show-skycoin-node-options)
@@ -94,6 +94,7 @@ scratch, to remedy the rough edges in the Bitcoin design.
 		- [Translations](#translations)
 	- [Releases](#releases)
 		- [Update the version](#update-the-version)
+		- [Check the translations](#check-the-translations)
 		- [Pre-release testing](#pre-release-testing)
 		- [Creating release builds](#creating-release-builds)
 		- [Release signing](#release-signing)
@@ -107,34 +108,34 @@ scratch, to remedy the rough edges in the Bitcoin design.
 
 ## Installation
 
-Skycoin supports go1.10+.
+Skycoin supports go1.14+.
 
-### Go 1.10+ Installation and Setup
+### Go 1.14+ Installation and Setup
 
-[Golang 1.10+ Installation/Setup](./INSTALLATION.md)
+[Golang 1.14+ Installation/Setup](./INSTALLATION.md)
 
 ### Go get skycoin
 
 ```sh
-$ go get github.com/SkycoinProject/skycoin/cmd/...
+$ go get github.com/skycoin/skycoin/cmd/...
 ```
 
-This will download `github.com/SkycoinProject/skycoin` to `$GOPATH/src/github.com/SkycoinProject/skycoin`.
+This will download `github.com/skycoin/skycoin` to `$GOPATH/src/github.com/skycoin/skycoin`.
 
-You can also clone the repo directly with `git clone https://github.com/SkycoinProject/skycoin`,
-but it must be cloned to this path: `$GOPATH/src/github.com/SkycoinProject/skycoin`.
+You can also clone the repo directly with `git clone https://github.com/skycoin/skycoin`,
+but it must be cloned to this path: `$GOPATH/src/github.com/skycoin/skycoin`.
 
 ### Run Skycoin from the command line
 
 ```sh
-$ cd $GOPATH/src/github.com/SkycoinProject/skycoin
+$ cd $GOPATH/src/github.com/skycoin/skycoin
 $ make run-client
 ```
 
 ### Show Skycoin node options
 
 ```sh
-$ cd $GOPATH/src/github.com/SkycoinProject/skycoin
+$ cd $GOPATH/src/github.com/skycoin/skycoin
 $ make run-help
 ```
 
@@ -143,7 +144,7 @@ $ make run-help
 Example:
 
 ```sh
-$ cd $GOPATH/src/github.com/SkycoinProject/skycoin
+$ cd $GOPATH/src/github.com/skycoin/skycoin
 $ make ARGS="--launch-browser=false -data-dir=/custom/path" run
 ```
 
@@ -159,7 +160,7 @@ $ docker run -ti --rm \
     -v skycoin-wallet:/wallet \
     -p 6000:6000 \
     -p 6420:6420 \
-    SkycoinProject/skycoin
+    skycoin/skycoin
 ```
 
 This image has a `skycoin` user for the skycoin daemon to run, with UID and GID 10000.
@@ -172,7 +173,7 @@ by just appending flags at the end of the `docker run` command. The following
 example will show you the available options.
 
 ```sh
-$ docker run --rm SkycoinProject/skycoin -help
+$ docker run --rm skycoin/skycoin -help
 ```
 
 Access the dashboard: [http://localhost:6420](http://localhost:6420).
@@ -185,16 +186,16 @@ Access the API: [http://localhost:6420/version](http://localhost:6420/version).
 
 ### Development image
 
-The [SkycoinProject/skycoindev-cli docker image](docker/images/dev-cli/README.md) is provided in order to make
+The [skycoin/skycoindev-cli docker image](docker/images/dev-cli/README.md) is provided in order to make
 easy to start developing Skycoin. It comes with the compiler, linters, debugger
 and the vim editor among other tools.
 
-The [SkycoinProject/skycoindev-dind docker image](docker/images/dev-docker/README.md) comes with docker installed
-and all tools available on `SkycoinProject/skycoindev-cli:develop` docker image.
+The [skycoin/skycoindev-dind docker image](docker/images/dev-docker/README.md) comes with docker installed
+and all tools available on `skycoin/skycoindev-cli:develop` docker image.
 
-Also, the [SkycoinProject/skycoindev-vscode docker image](docker/images/dev-vscode/README.md) is provided
+Also, the [skycoin/skycoindev-vscode docker image](docker/images/dev-vscode/README.md) is provided
 to facilitate the setup of the development process with [Visual Studio Code](https://code.visualstudio.com)
-and useful tools included in `SkycoinProject/skycoindev-cli`.
+and useful tools included in `skycoin/skycoindev-cli`.
 
 ## API Documentation
 
@@ -246,7 +247,7 @@ However, do not use this URI in QR codes displayed to the user, because the addr
 
 ## Wire protocol user agent
 
-[Wire protocol user agent description](https://github.com/SkycoinProject/skycoin/wiki/Wire-protocol-user-agent)
+[Wire protocol user agent description](https://github.com/skycoin/skycoin/wiki/Wire-protocol-user-agent)
 
 ## Offline transaction signing
 
@@ -265,7 +266,7 @@ $ ./run-client.sh -launch-browser=false
 Once the node is started, we could use the following command to create an unsigned transaction.
 
 ```bash
-$ skycoin-cli createRawTransactionV2 $WALLET_FILE $RECIPIENT_ADDRESS $AMOUNT --unsign
+$ skycoin-cli createRawTransactionV2 $WALLET_NAME $RECIPIENT_ADDRESS $AMOUNT --unsign
 ```
 
 > Note: Don't forget the `--unsign` flag, otherwise it would try to sign the transaction.
@@ -273,7 +274,7 @@ $ skycoin-cli createRawTransactionV2 $WALLET_FILE $RECIPIENT_ADDRESS $AMOUNT --u
 <details>
  <summary>View Output</summary>
 
-```json
+```
 b700000000e6b869f570e2bfebff1b4d7e7c9e86885dbc34d6de988da6ff998e7acd7e6e14010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000007531184ad0afeebbff2049b855e0921329cb1cb74d769ac57c057c9c8bd2b6810100000000ed5ea2ca4fe9b4560409b50c5bf7cb39b6c5ff6e50690f00000000000000000000000000
 ```
 
@@ -302,7 +303,7 @@ If the cold wallet is encrypted, you will be prompted to enter the password to s
 <details>
  <summary>View Output</summary>
 
-```json
+```
 b700000000e6b869f570e2bfebff1b4d7e7c9e86885dbc34d6de988da6ff998e7acd7e6e14010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000007531184ad0afeebbff2049b855e0921329cb1cb74d769ac57c057c9c8bd2b6810100000000ed5ea2ca4fe9b4560409b50c5bf7cb39b6c5ff6e50690f00000000000000000000000000
 ```
 
@@ -413,7 +414,7 @@ Skycoin implements client libraries which export core functionality for usage fr
 other programming languages.
 
 * [libskycoin C client library and SWIG interface](https://github.com/skycoin/libskycoin)
-* [skycoin-lite: Javascript and mobile bindings](https://github.com/SkycoinProject/skycoin-lite)
+* [skycoin-lite: Javascript and mobile bindings](https://github.com/skycoin/skycoin-lite)
 
 ### Running Tests
 
@@ -669,47 +670,14 @@ different version of the `cipher` dependencies than were developed, which could 
 
 #### Management
 
-Dependencies are managed with [dep](https://github.com/golang/dep).
+Dependencies are managed with [go modules](https://github.com/golang/go/wiki/Modules).
 
-To [install `dep` for development](https://github.com/golang/dep/blob/master/docs/installation.md#development):
+We still use the `vendor` folder to store our dependencies in case any of the them are 
+removed from the internet in the future. 
 
-```sh
-$ go get -u github.com/golang/dep/cmd/dep
-```
+> When the main module contains a top-level vendor directory and its go.mod file specifies go 1.14 or higher, 
+> the go command now defaults to -mod=vendor for operations that accept that flag.
 
-`dep` vendors all dependencies into the repo.
-
-If you change the dependencies, you should update them as needed with `dep ensure`.
-
-Use `dep help` for instructions on vendoring a specific version of a dependency, or updating them.
-
-When updating or initializing, `dep` will find the latest version of a dependency that will compile.
-
-Examples:
-
-Initialize all dependencies:
-
-```sh
-$ dep init
-```
-
-Update all dependencies:
-
-```sh
-$ dep ensure -update -v
-```
-
-Add a single dependency (latest version):
-
-```sh
-$ dep ensure github.com/foo/bar
-```
-
-Add a single dependency (more specific version), or downgrade an existing dependency:
-
-```sh
-$ dep ensure github.com/foo/bar@tag
-```
 
 ### Configuration Modes
 There are 4 configuration modes in which you can run a skycoin node:
@@ -765,7 +733,7 @@ You can find information about how to work with translation files in the [Transl
 0. Make sure the translations are up to date. See the [i18n README](./src/gui/static/src/assets/i18n/README.md) for instructions on how to update translations and how to check if they are up to date.
 0. Compile the `src/gui/static/dist/` to make sure that it is up to date (see [Wallet GUI Development README](src/gui/static/README.md))
 0. Update version strings to the new version in the following files: `electron/package-lock.json`, `electron/package.json`, `electron/skycoin/current-skycoin.json`, `src/cli/cli.go`, `src/gui/static/src/current-skycoin.json`, `src/cli/integration/testdata/status*.golden`, `template/coin.template`, `README.md` files .
-0. If changes require a new database verification on the next upgrade, update `src/SkycoinProject/skycoin.go`'s `DBVerifyCheckpointVersion` value
+0. If changes require a new database verification on the next upgrade, update `src/skycoin/skycoin.go`'s `DBVerifyCheckpointVersion` value
 0. Update `CHANGELOG.md`: move the "unreleased" changes to the version and add the date
 0. Update the files in https://github.com/skycoin/repo-info by following the [metadata update procedure](https://github.com/skycoin/repo-info/#updating-skycoin-repository-metadate),
 0. Merge these changes to `develop`
@@ -780,6 +748,12 @@ You can find information about how to work with translation files in the [Transl
 
 If there are problems discovered after merging to `master`, start over, and increment the 3rd version number.
 For example, `v0.20.0` becomes `v0.20.1`, for minor fixes.
+
+#### Check the translations
+
+Run `make check-lang` to check if the translation files of the UI are updated. If there is any error running
+that command, one or more translation files may need to be updated. For more information, check the
+[translations](#translations) section.
 
 #### Pre-release testing
 
@@ -826,7 +800,7 @@ Follow the [Tor Project's instructions for verifying signatures](https://www.tor
 
 If you can't or don't want to import the keys from a keyserver, the signing key is available in the repo: [iketheadore.asc](iketheadore.asc).
 
-Releases and their signatures can be found on the [releases page](https://github.com/SkycoinProject/skycoin/releases).
+Releases and their signatures can be found on the [releases page](https://github.com/skycoin/skycoin/releases).
 
 Instructions for generating a PGP key, publishing it, signing the tags and binaries:
 https://gist.github.com/iketheadore/6485585ce2d22231c2cb3cbc77e1d7b7

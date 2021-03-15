@@ -4,16 +4,17 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"sort"
 	"strconv"
 
-	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
-	"github.com/SkycoinProject/skycoin/src/readable"
-	wh "github.com/SkycoinProject/skycoin/src/util/http"
-	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
+	"github.com/skycoin/skycoin/src/readable"
+	wh "github.com/skycoin/skycoin/src/util/http"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 // UnconfirmedTxnsResponse contains unconfirmed transaction data
@@ -51,15 +52,25 @@ func NewWalletResponse(w wallet.Wallet) (*WalletResponse, error) {
 	wr.Meta.Encrypted = w.IsEncrypted()
 	wr.Meta.Timestamp = w.Timestamp()
 
+	var options []wallet.Option
 	switch w.Type() {
 	case wallet.WalletTypeBip44:
 		bip44Coin := w.Bip44Coin()
-		wr.Meta.Bip44Coin = &bip44Coin
+		if bip44Coin == nil {
+			return nil, errors.New("Wallet has no Bip44Coin meta data")
+		}
+		wr.Meta.Bip44Coin = bip44Coin
+
+		// get entries on both external and change chains
+		options = append(options, wallet.OptionExternal(), wallet.OptionChange())
 	case wallet.WalletTypeXPub:
 		wr.Meta.XPub = w.XPub()
 	}
 
-	entries := w.GetEntries()
+	entries, err := w.GetEntries(options...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get wallet entries: %v", err)
+	}
 	wr.Entries = make([]readable.WalletEntry, len(entries))
 
 	for i, e := range entries {
@@ -299,7 +310,8 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 			SeedPassphrase: r.FormValue("seed-passphrase"),
 			Bip44Coin:      bip44Coin,
 			XPub:           r.FormValue("xpub"),
-		}, gateway)
+			TF:             gateway.TransactionsFinder(),
+		})
 		if err != nil {
 			switch err.(type) {
 			case wallet.Error:
@@ -315,7 +327,6 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 				wh.Error500(w, err.Error())
 				return
 			}
-
 		}
 
 		rlt, err := NewWalletResponse(wlt)
@@ -428,7 +439,7 @@ func walletScanAddressesHandler(gateway Gatewayer) http.HandlerFunc {
 			password = ""
 		}()
 
-		addrs, err := gateway.ScanAddresses(wltID, []byte(password), n, gateway)
+		addrs, err := gateway.ScanWalletAddresses(wltID, []byte(password), n)
 		if err != nil {
 			switch err {
 			case wallet.ErrWalletAPIDisabled:

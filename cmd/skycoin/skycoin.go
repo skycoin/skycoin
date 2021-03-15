@@ -13,15 +13,21 @@ import (
 	_ "net/http/pprof"
 	"os"
 
-	"github.com/SkycoinProject/skycoin/src/fiber"
-	"github.com/SkycoinProject/skycoin/src/readable"
-	"github.com/SkycoinProject/skycoin/src/skycoin"
-	"github.com/SkycoinProject/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/fiber"
+	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/skycoin"
+	"github.com/skycoin/skycoin/src/util/logging"
+
+	// register the supported wallets
+	_ "github.com/skycoin/skycoin/src/wallet/bip44wallet"
+	_ "github.com/skycoin/skycoin/src/wallet/collection"
+	_ "github.com/skycoin/skycoin/src/wallet/deterministic"
+	_ "github.com/skycoin/skycoin/src/wallet/xpubwallet"
 )
 
 var (
 	// Version of the node. Can be set by -ldflags
-	Version = "0.27.0"
+	Version = "0.27.1"
 	// Commit ID. Can be set by -ldflags
 	Commit = ""
 	// Branch name. Can be set by -ldflags
@@ -57,10 +63,8 @@ var (
 		"139.162.248.183:6000",
 		"45.56.109.228:6000",
 		"173.230.130.174:6000",
-		"139.162.39.186:6000",
-		"45.33.111.142:6000",
-		"109.237.27.172:6000",
-		"172.104.41.14:6000",
+		"172.104.99.241:6000",
+		"172.104.57.147:6000",
 	}
 
 	nodeConfig = skycoin.NewNodeConfig(ConfigMode, fiber.NodeConfig{
@@ -90,6 +94,7 @@ var (
 		CoinHoursName:         "Coin Hours",
 		CoinHoursNameSingular: "Coin Hour",
 		CoinHoursTicker:       "SCH",
+		QrURIPrefix:           "skycoin",
 		ExplorerURL:           "https://explorer.skycoin.com",
 		VersionURL:            "https://version.skycoin.com/skycoin/version.txt",
 		Bip44Coin:             8000,

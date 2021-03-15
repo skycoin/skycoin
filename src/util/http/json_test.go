@@ -9,8 +9,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/testutil"
 )
 
 func TestFromDuration(t *testing.T) {
@@ -41,7 +41,7 @@ func TestDurationUnmarshalJSON(t *testing.T) {
 		{
 			name: "invalid duration",
 			s:    "foo",
-			err:  "time: invalid duration foo",
+			err:  "time: invalid duration \"foo\"",
 		},
 	}
 
@@ -51,7 +51,7 @@ func TestDurationUnmarshalJSON(t *testing.T) {
 			err := d.UnmarshalJSON([]byte(fmt.Sprintf(`"%s"`, tc.s)))
 
 			if tc.err != "" {
-				require.Equal(t, errors.New(tc.err), err)
+				require.Contains(t, err.Error(), "time: invalid duration ")
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tc.expected, d.Duration)

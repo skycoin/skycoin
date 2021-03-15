@@ -14,7 +14,13 @@
       <div *ngIf="dropdownElements" class="form-field">
         <label *ngIf="dropdownLabel" for="dropdown">{{ dropdownLabel | translate }}</label>
         <div class="-select">
-          <select formControlName="dropdown" id="dropdown" [attr.disabled]="working ? 'true' : null">
+          <select
+            formControlName="dropdown"
+            id="dropdown"
+            [attr.disabled]="working ? 'true' : null"
+            [appFormFieldError]="dropdownErrorMsg"
+            (blur)="validate()"
+          >
             <option *ngIf="defaultDropdownText" disabled hidden [ngValue]="''">{{ defaultDropdownText | translate }}</option>
             <ng-container *ngIf="dropdownElements">
               <ng-container *ngFor="let element of dropdownElements">
@@ -36,6 +42,8 @@
           id="input"
           [attr.disabled]="working ? 'true' : null"
           rows="5"
+          [appFormFieldError]="inputErrorMsg"
+          (blur)="validate()"
         ></textarea>
       </div>
     </div>

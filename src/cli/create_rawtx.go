@@ -10,17 +10,17 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/SkycoinProject/skycoin/src/api"
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/coin"
-	"github.com/SkycoinProject/skycoin/src/params"
-	"github.com/SkycoinProject/skycoin/src/readable"
-	"github.com/SkycoinProject/skycoin/src/transaction"
-	"github.com/SkycoinProject/skycoin/src/util/droplet"
-	"github.com/SkycoinProject/skycoin/src/util/fee"
-	"github.com/SkycoinProject/skycoin/src/util/mathutil"
-	"github.com/SkycoinProject/skycoin/src/visor"
-	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/api"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
+	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/transaction"
+	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/util/fee"
+	"github.com/skycoin/skycoin/src/util/mathutil"
+	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 var (
@@ -167,7 +167,7 @@ func makeWalletCreateTxnRequest(c *cobra.Command, args []string) (*api.WalletCre
 	}
 
 	walletFile := args[0]
-	w, err := wallet.Load(walletFile)
+	w, err := apiClient.Wallet(args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -181,8 +181,8 @@ func makeWalletCreateTxnRequest(c *cobra.Command, args []string) (*api.WalletCre
 	if wltAddr.Address != "" {
 		addrs = append(addrs, wltAddr.Address)
 	} else {
-		for _, addr := range w.GetAddresses() {
-			addrs = append(addrs, addr.String())
+		for _, e := range w.Entries {
+			addrs = append(addrs, e.Address)
 		}
 	}
 
@@ -193,11 +193,11 @@ func makeWalletCreateTxnRequest(c *cobra.Command, args []string) (*api.WalletCre
 
 	req := api.WalletCreateTransactionRequest{
 		Unsigned:                 unsign,
-		WalletID:                 w.Filename(),
+		WalletID:                 w.Meta.Filename,
 		CreateTransactionRequest: *ctr,
 	}
 
-	if w.IsEncrypted() && !unsign {
+	if w.Meta.Encrypted && !unsign {
 		p, err := getPassword(c)
 		if err != nil {
 			return nil, err
@@ -351,9 +351,13 @@ func getChangeAddress(wltAddr walletAddress, chgAddr string) (string, error) {
 			if err != nil {
 				return "", WalletLoadError{err}
 			}
+			es, err := wlt.GetEntries()
+			if err != nil {
+				return "", err
+			}
 
-			if wlt.EntriesLen() > 0 {
-				chgAddr = wlt.GetEntryAt(0).Address.String()
+			if len(es) > 0 {
+				chgAddr = es[0].Address.String()
 			} else {
 				return "", errors.New("no change address was found")
 			}
@@ -647,9 +651,11 @@ func CreateRawTxnFromWallet(c GetOutputser, walletFile, chgAddr string, toAddrs 
 		return nil, err
 	}
 
-	_, ok := wlt.GetEntry(cAddr)
-	if !ok {
-		return nil, fmt.Errorf("change address %v is not in wallet", chgAddr)
+	if _, err := wlt.GetEntry(cAddr); err != nil {
+		if err == wallet.ErrEntryNotFound {
+			return nil, fmt.Errorf("change address %v is not in wallet", chgAddr)
+		}
+		return nil, err
 	}
 
 	switch pr.(type) {
@@ -678,7 +684,11 @@ func CreateRawTxnFromWallet(c GetOutputser, walletFile, chgAddr string, toAddrs 
 	}
 
 	// get all address in the wallet
-	totalAddrs := wlt.GetAddresses()
+	totalAddrs, err := wlt.GetAddresses()
+	if err != nil {
+		return nil, err
+	}
+
 	addrStrArray := make([]string, len(totalAddrs))
 	for i, a := range totalAddrs {
 		addrStrArray[i] = a.String()
@@ -700,9 +710,11 @@ func CreateRawTxnFromAddress(c GetOutputser, addr, walletFile, chgAddr string, t
 		return nil, ErrAddress
 	}
 
-	_, ok := wlt.GetEntry(srcAddr)
-	if !ok {
-		return nil, fmt.Errorf("%v address is not in wallet", addr)
+	if _, err := wlt.GetEntry(srcAddr); err != nil {
+		if err == wallet.ErrEntryNotFound {
+			return nil, fmt.Errorf("%v address is not in wallet", addr)
+		}
+		return nil, err
 	}
 
 	// validate change address
@@ -711,9 +723,11 @@ func CreateRawTxnFromAddress(c GetOutputser, addr, walletFile, chgAddr string, t
 		return nil, ErrAddress
 	}
 
-	_, ok = wlt.GetEntry(cAddr)
-	if !ok {
-		return nil, fmt.Errorf("change address %v is not in wallet", chgAddr)
+	if _, err := wlt.GetEntry(cAddr); err != nil {
+		if err == wallet.ErrEntryNotFound {
+			return nil, fmt.Errorf("change address %v is not in wallet", chgAddr)
+		}
+		return nil, err
 	}
 
 	switch pr.(type) {
@@ -960,11 +974,13 @@ func mustMakeUtxoOutput(addr string, coins, hours uint64) coin.TransactionOutput
 func getKeys(wlt wallet.Wallet, outs []transaction.UxBalance) ([]cipher.SecKey, error) {
 	keys := make([]cipher.SecKey, len(outs))
 	for i, o := range outs {
-		entry, ok := wlt.GetEntry(o.Address)
-		if !ok {
-			return nil, fmt.Errorf("%v is not in wallet", o.Address.String())
+		entry, err := wlt.GetEntry(o.Address)
+		if err != nil {
+			if err == wallet.ErrEntryNotFound {
+				return nil, fmt.Errorf("%v is not in wallet", o.Address.String())
+			}
+			return nil, err
 		}
-
 		keys[i] = entry.Secret
 	}
 	return keys, nil

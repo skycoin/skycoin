@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -9,9 +8,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
-	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/wallet/crypto"
 )
 
 func addressGenCmd() *cobra.Command {
@@ -82,13 +82,11 @@ func addressGenCmd() *cobra.Command {
 				}
 			}
 
-			w, err := wallet.NewWallet(wallet.NewWalletFilename(), wallet.Options{
+			w, err := wallet.NewWallet(wallet.NewWalletFilename(), label, seed, wallet.Options{
 				Coin:       coinType,
-				Label:      label,
-				Seed:       seed,
 				Encrypt:    encrypt,
 				Password:   password,
-				CryptoType: wallet.DefaultCryptoType,
+				CryptoType: crypto.DefaultCryptoType,
 				GenerateN:  uint64(numAddresses),
 				Type:       wallet.WalletTypeDeterministic,
 			})
@@ -100,26 +98,40 @@ func addressGenCmd() *cobra.Command {
 				w.Erase()
 			}
 
-			rw := w.ToReadable()
+			//rw := w.ToReadable()
 
 			switch strings.ToLower(mode) {
 			case "json", "wallet":
-				output, err := json.MarshalIndent(rw, "", "    ")
+				output, err := w.Serialize()
 				if err != nil {
 					return err
 				}
 
 				fmt.Println(string(output))
 			case "addrs", "addresses":
-				for _, e := range rw.GetEntries() {
+				es, err := w.GetEntries()
+				if err != nil {
+					return err
+				}
+				for _, e := range es {
 					fmt.Println(e.Address)
 				}
 			case "secrets":
 				if hideSecrets {
 					return errors.New("secrets mode selected but hideSecrets enabled")
 				}
-				for _, e := range rw.GetEntries() {
-					fmt.Println(e.Secret)
+				es, err := w.GetEntries()
+				if err != nil {
+					return err
+				}
+
+				for _, e := range es {
+					switch coinType {
+					case wallet.CoinTypeSkycoin:
+						fmt.Println(e.Secret.Hex())
+					case wallet.CoinTypeBitcoin:
+						fmt.Println(cipher.BitcoinWalletImportFormatFromSeckey(e.Secret))
+					}
 				}
 			default:
 				return errors.New("invalid mode")
@@ -291,20 +303,13 @@ func fiberAddressGenCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			defer func() {
-				cErr := addrsF.Close()
-				if cErr != nil {
-					err = cErr
-				}
-			}()
+			defer addrsF.Close()
 
 			seedsF, err := os.Create(seedsFilename)
-			defer func() {
-				cErr := seedsF.Close()
-				if cErr != nil {
-					err = cErr
-				}
-			}()
+			if err != nil {
+				return err
+			}
+			defer seedsF.Close()
 
 			for i, a := range addrs {
 				if _, err := fmt.Fprintf(addrsF, "\"%s\",\n", a); err != nil {
@@ -315,7 +320,11 @@ func fiberAddressGenCmd() *cobra.Command {
 				}
 			}
 
-			return nil
+			if err := addrsF.Sync(); err != nil {
+				return err
+			}
+
+			return seedsF.Sync()
 		},
 	}
 

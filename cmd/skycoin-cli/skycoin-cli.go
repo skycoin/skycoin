@@ -9,8 +9,14 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/SkycoinProject/skycoin/src/cli"
-	"github.com/SkycoinProject/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/cli"
+	"github.com/skycoin/skycoin/src/util/logging"
+
+	// register the supported wallets
+	_ "github.com/skycoin/skycoin/src/wallet/bip44wallet"
+	_ "github.com/skycoin/skycoin/src/wallet/collection"
+	_ "github.com/skycoin/skycoin/src/wallet/deterministic"
+	_ "github.com/skycoin/skycoin/src/wallet/xpubwallet"
 )
 
 func main() {

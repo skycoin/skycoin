@@ -1,5 +1,5 @@
 import { Component, EventEmitter, OnInit, Output, ViewChild, ChangeDetectorRef, OnDestroy } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
 
 import { ButtonComponent } from '../../../layout/button/button.component';
 
@@ -12,7 +12,7 @@ import { ButtonComponent } from '../../../layout/button/button.component';
   styleUrls: ['./onboarding-encrypt-wallet.component.scss'],
 })
 export class OnboardingEncryptWalletComponent implements OnInit, OnDestroy {
-  @ViewChild('button', { static: false }) button: ButtonComponent;
+  @ViewChild('button') button: ButtonComponent;
   // Emits when the user presses the button for going to the next step of the wizard, after
   // filling the form. Includes the password entered by the user, or null, if the user
   // selected not to encrypt the wallet.
@@ -21,6 +21,10 @@ export class OnboardingEncryptWalletComponent implements OnInit, OnDestroy {
   @Output() onBack = new EventEmitter();
   form: FormGroup;
 
+  // Vars with the validation error messages.
+  password1ErrorMsg = '';
+  password2ErrorMsg = '';
+
   constructor(
     private formBuilder: FormBuilder,
     private changeDetector: ChangeDetectorRef,
@@ -28,12 +32,12 @@ export class OnboardingEncryptWalletComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.form = this.formBuilder.group({
-        password: new FormControl('', Validators.compose([Validators.required])),
-        confirm: new FormControl('', Validators.compose([Validators.required])),
+        password: new FormControl(''),
+        confirm: new FormControl(''),
       },
-      {
-        validator: this.passwordMatchValidator.bind(this),
-      });
+    );
+
+    this.form.setValidators(this.validateForm.bind(this));
   }
 
   ngOnDestroy() {
@@ -74,8 +78,36 @@ export class OnboardingEncryptWalletComponent implements OnInit, OnDestroy {
     return this.button ? this.button.isLoading() : false;
   }
 
-  // Checks if both password fields match.
-  private passwordMatchValidator(g: FormGroup) {
-    return g.get('password').value === g.get('confirm').value ? null : { mismatch: true };
+  /**
+   * Validates the form and updates the vars with the validation errors.
+   */
+  validateForm() {
+    this.password1ErrorMsg = '';
+    this.password2ErrorMsg = '';
+
+    let valid = true;
+
+    if (!this.form.get('password').value) {
+      valid = false;
+      if (this.form.get('password').touched) {
+        this.password1ErrorMsg = 'password.password-error-info';
+      }
+    }
+
+    if (!this.form.get('confirm').value) {
+      valid = false;
+      if (this.form.get('confirm').touched) {
+        this.password2ErrorMsg = 'password.password-error-info';
+      }
+    }
+
+    // If both password fields have a value, check if the 2 passwords entered by the user
+    // are equal.
+    if (valid && this.form.get('password').value !== this.form.get('confirm').value) {
+      valid = false;
+      this.password2ErrorMsg = 'password.confirm-error-info';
+    }
+
+    return valid ? null : { Invalid: true };
   }
 }

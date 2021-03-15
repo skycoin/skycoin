@@ -11,17 +11,29 @@
     <div class="form-field">
       <label for="fromAmount">
         {{ 'exchange.label-you-send' | translate }}
-        <span *ngIf="form.hasError('min')" class="-error">
-          {{ 'exchange.min-amount' | translate }} {{ form.getError('min') }}
+        <span *ngIf="amountTooLow" class="-error">
+          {{ 'exchange.min-amount' | translate }} {{ activeTradingPair.min }}
         </span>
-        <span *ngIf="form.hasError('max')" class="-error">
-          {{ 'exchange.max-amount' | translate }} {{ form.getError('max') }}
+        <span *ngIf="amountTooHight" class="-error">
+          {{ 'exchange.max-amount' | translate }} {{ this.activeTradingPair.max }}
         </span>
       </label>
       <div class="-inputs">
-        <input type="text" formControlName="fromAmount" id="fromAmount" [attr.disabled]="busy ? 'true' : null">
+        <input
+          type="text"
+          formControlName="fromAmount"
+          id="fromAmount"
+          [attr.disabled]="busy ? 'true' : null"
+          [appFormFieldError]="amountErrorMsg"
+          (blur)="validateForm()"
+        >
         <div class="-select">
-          <select formControlName="fromCoin" [attr.disabled]="busy ? 'true' : null">
+          <select
+            formControlName="fromCoin"
+            [attr.disabled]="busy ? 'true' : null"
+            [appFormFieldError]="coinErrorMsg"
+            (blur)="validateForm()"
+          >
             <option *ngFor="let pair of tradingPairs" [value]="pair.from">{{ pair.from }}</option>
           </select>
         </div>
@@ -46,18 +58,25 @@
           (pressed)="selectAddress($event)">
         </app-arrow-link>
       </label>
-      <input type="text" formControlName="toAddress" id="toAddress" [attr.disabled]="busy ? 'true' : null">
+      <input
+        type="text"
+        formControlName="toAddress"
+        id="toAddress"
+        [attr.disabled]="busy ? 'true' : null"
+        [appFormFieldError]="addressErrorMsg"
+        (blur)="validateForm()"
+      >
     </div>
 
     <!-- Agreement. -->
     <div class="-buttons">
       <mat-checkbox class="-check" (change)="setAgreement($event)" type="checkbox" [ngClass]="{'element-disabled' : busy}">
         {{ 'exchange.agree-part1' | translate }}
-        <a class="link" href="https://swaplab.cc/terms" target="_blank" rel="noreferrer nofollow">
+        <a class="link" href="https://swaplab.cc/terms" target="_blank" rel="noreferrer nofollow noopener">
           {{ 'exchange.agree-part2' | translate }}
         </a>
         {{ 'exchange.agree-part3' | translate }}
-        <a class="link" href="https://swaplab.cc/privacy" target="_blank" rel="noreferrer nofollow">
+        <a class="link" href="https://swaplab.cc/privacy" target="_blank" rel="noreferrer nofollow noopener">
           {{ 'exchange.agree-part4' | translate }}
         </a>
       </mat-checkbox>

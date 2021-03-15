@@ -35,6 +35,8 @@
             id="password"
             [attr.disabled]="isWorking ? 'true' : null"
             [ngClass]="{ 'element-disabled': form.disabled }"
+            [appFormFieldError]="password1ErrorMsg"
+            (blur)="validateForm()"
           >
         </div>
         <div class="form-field">
@@ -48,6 +50,8 @@
             [attr.disabled]="isWorking ? 'true' : null"
             [ngClass]="{ 'element-disabled': form.disabled }"
             (keydown.enter)="emitCreatedPassword()"
+            [appFormFieldError]="password2ErrorMsg"
+            (blur)="validateForm()"
           >
         </div>
       </form>

@@ -8,8 +8,8 @@ The API interfaces do not support authentication or encryption so they should on
 
 If your application is written in Go, you can use these client libraries to interface with the node:
 
-* [Skycoin REST API Client Godoc](https://godoc.org/github.com/SkycoinProject/skycoin/src/api#Client)
-* [Skycoin CLI Godoc](https://godoc.org/github.com/SkycoinProject/skycoin/src/cli)
+* [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/api#Client)
+* [Skycoin CLI Godoc](https://godoc.org/github.com/skycoin/skycoin/src/cli)
 
 *Note*: The CLI interface will be deprecated and replaced with a better one in the future.
 
@@ -89,11 +89,11 @@ For integrations, the skycoin node should be run from source with `./run-daemon.
 
 ### Skycoin REST API Client Documentation
 
-[Skycoin REST API Client](https://godoc.org/github.com/SkycoinProject/skycoin/src/api#Client)
+[Skycoin REST API Client](https://godoc.org/github.com/skycoin/skycoin/src/api#Client)
 
 ### Skycoin Go Library Documentation
 
-[Skycoin Godoc](https://godoc.org/github.com/SkycoinProject/skycoin)
+[Skycoin Godoc](https://godoc.org/github.com/skycoin/skycoin)
 
 ### libskycoin Documentation
 
@@ -134,7 +134,7 @@ To check address outputs, call `GET /api/v1/outputs?addrs=`. If you only want th
 
 #### Using skycoin as a library in a Go application
 
-We recommend using the [Skycoin REST API Client](https://godoc.org/github.com/SkycoinProject/skycoin/src/api#Client).
+We recommend using the [Skycoin REST API Client](https://godoc.org/github.com/skycoin/skycoin/src/api#Client).
 
 ### Sending coins
 
@@ -180,8 +180,8 @@ That is, create a raw transaction, broadcast it, and wait for it to confirm.
 
 The wallet APIs must be enabled with `-enable-api-sets=WALLET,READ`.
 
-Create a transaction with [POST /wallet/transaction](https://github.com/SkycoinProject/skycoin/blob/develop/src/api/README.md#create-transaction),
-then inject it to the network with [POST /injectTransaction](https://github.com/SkycoinProject/skycoin/blob/develop/src/api/README.md#inject-raw-transaction).
+Create a transaction with [POST /wallet/transaction](https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#create-transaction),
+then inject it to the network with [POST /injectTransaction](https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#inject-raw-transaction).
 
 When using `POST /wallet/transaction`, a wallet file local to the skycoin node is used.
 The wallet file is specified by wallet ID, and all wallet files are in the
@@ -190,9 +190,9 @@ configured data directory (which is `$HOME/.skycoin/wallets` by default).
 #### Using skycoin as a library in a Go application
 
 If your application is written in Go, you can interface with the CLI library
-directly, see [Skycoin CLI Godoc](https://godoc.org/github.com/SkycoinProject/skycoin/src/cli).
+directly, see [Skycoin CLI Godoc](https://godoc.org/github.com/skycoin/skycoin/src/cli).
 
-A REST API client is also available: [Skycoin REST API Client Godoc](https://godoc.org/github.com/SkycoinProject/skycoin/src/api#Client).
+A REST API client is also available: [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/api#Client).
 
 #### Coinhours
 
@@ -212,7 +212,7 @@ which are then converted to `coinhours`, `1` coinhour = `3600` coinseconds.
 When using the REST API, the coin hours sent to the destination and change can be controlled.
 The 50% burn fee is still required.
 
-See the [POST /wallet/transaction](https://github.com/SkycoinProject/skycoin/blob/develop/src/api/README.md#create-transaction)
+See the [POST /wallet/transaction](https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#create-transaction)
 documentation for more information on how to control the coin hours.
 
 We recommend sending at least 1 coin hour to each destination, otherwise the receiver will have to
@@ -247,7 +247,7 @@ Not directly supported, but API calls that have an address argument will return 
 
 #### Using skycoin as a library in a Go application
 
-https://godoc.org/github.com/SkycoinProject/skycoin/src/cipher#DecodeBase58Address
+https://godoc.org/github.com/skycoin/skycoin/src/cipher#DecodeBase58Address
 
 ```go
 if _, err := cipher.DecodeBase58Address(address); err != nil {
@@ -274,7 +274,7 @@ Not implemented
 
 #### Using skycoin as a library in a Go application
 
-Use the [Skycoin REST API Client](https://godoc.org/github.com/SkycoinProject/skycoin/src/api#Client)
+Use the [Skycoin REST API Client](https://godoc.org/github.com/skycoin/skycoin/src/api#Client)
 
 ### Checking Skycoin node status
 
@@ -295,7 +295,7 @@ A method similar to `skycoin-cli status` is not implemented, but these endpoints
 
 #### Using skycoin as a library in a Go application
 
-Use the [Skycoin CLI package](https://godoc.org/github.com/SkycoinProject/skycoin/src/cli)
+Use the [Skycoin CLI package](https://godoc.org/github.com/skycoin/skycoin/src/cli)
 
 ## xpub wallets
 

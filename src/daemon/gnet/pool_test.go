@@ -12,7 +12,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/SkycoinProject/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 const (
@@ -34,6 +34,7 @@ func newTestConfig() Config {
 	cfg.Address = address
 	cfg.MaxConnections = 24
 	cfg.MaxOutgoingConnections = 8
+	cfg.MaxIncomingConnections = 16
 	cfg.MaxDefaultPeerOutgoingConnections = 8
 	return cfg
 }

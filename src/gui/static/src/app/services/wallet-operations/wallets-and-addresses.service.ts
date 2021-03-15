@@ -1,4 +1,4 @@
-import { of, Subject, Observable, ReplaySubject, BehaviorSubject, throwError as observableThrowError, Subscription } from 'rxjs';
+import { of, Subject, Observable, ReplaySubject, BehaviorSubject, throwError as observableThrowError, Subscription, throwError } from 'rxjs';
 import { mergeMap, map, catchError } from 'rxjs/operators';
 import { TranslateService } from '@ngx-translate/core';
 import { Injectable } from '@angular/core';
@@ -9,7 +9,7 @@ import { AppConfig } from '../../app.config';
 import { WalletBase, AddressBase, duplicateWalletBase } from './wallet-objects';
 import { processServiceError, redirectToErrorPage } from '../../utils/errors';
 import { StorageService, StorageType } from '../storage.service';
-import { OperationError } from '../../utils/operation-error';
+import { OperationError, OperationErrorTypes } from '../../utils/operation-error';
 
 /**
  * Manages the list with the wallets and its addresses. It works like a CRUD for the wallet list, so
@@ -330,7 +330,10 @@ export class WalletsAndAddressesService {
     // The data is saved as a JSON string.
     this.savingHwWalletDataSubscription =
       this.storageService.store(StorageType.CLIENT, this.hwWalletsDataStorageKey, JSON.stringify(hardwareWallets))
-        .subscribe(null, () => redirectToErrorPage(3));
+        .subscribe({
+          next: null,
+          error: () => redirectToErrorPage(3),
+        });
 
     this.informDataUpdated();
   }
@@ -470,8 +473,19 @@ export class WalletsAndAddressesService {
    * @returns True if the address is valid or false otherwise.
    */
   verifyAddress(address: string): Observable<boolean> {
-    return this.apiService.post('address/verify', { address }, {useV2: true})
-      .pipe(map(() => true), catchError(() => of(false)));
+    return this.apiService.post('address/verify', { address }, {useV2: true}).pipe(
+      map(() => true),
+      catchError((err: OperationError) => {
+        err = processServiceError(err);
+
+        // Return false in case of error, but not if the error was for a connection problem.
+        if (err.type !== OperationErrorTypes.NoInternet) {
+          return of(false);
+        } else {
+          return throwError(err);
+        }
+      }),
+    );
   }
 
   /**

@@ -14,8 +14,8 @@ import (
 
 	"github.com/boltdb/bolt"
 
-	"github.com/SkycoinProject/skycoin/src/cipher/encoder"
-	"github.com/SkycoinProject/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/cipher/encoder"
+	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 var (
@@ -325,11 +325,14 @@ func Len(tx *Tx, bktName []byte) (uint64, error) {
 
 // IsEmpty returns true if the bucket is empty
 func IsEmpty(tx *Tx, bktName []byte) (bool, error) {
-	length, err := Len(tx, bktName)
-	if err != nil {
-		return false, err
+	b := tx.Bucket(bktName)
+	if b == nil {
+		return false, NewErrBucketNotExist(bktName)
 	}
-	return length == 0, nil
+
+	c := b.Cursor()
+	k, _ := c.First()
+	return k == nil, nil
 }
 
 // Exists returns true if the bucket exists

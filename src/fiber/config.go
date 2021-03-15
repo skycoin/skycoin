@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
 )
 
 // Config records fiber coin parameters
@@ -19,7 +19,7 @@ type Config struct {
 }
 
 // NodeConfig configures the default CLI options for the skycoin node.
-// These parameters are loaded via cmd/skycoin/skycoin.go into src/SkycoinProject/skycoin.go.
+// These parameters are loaded via cmd/skycoin/skycoin.go into src/skycoin/skycoin.go.
 type NodeConfig struct {
 	// Port is the default port that the wire protocol communicates over
 	Port int `mapstructure:"port"`
@@ -68,6 +68,8 @@ type NodeConfig struct {
 	CoinHoursNameSingular string `mapstructure:"coin_hours_display_name_singular"`
 	// CoinHoursTicker is the name of the coinhour asset type's price ticker, e.g. SCH (Skycoin Coin Hours)
 	CoinHoursTicker string `mapstructure:"coin_hours_ticker"`
+	// QrURIPrefix is the prefix name of a QR url, e.g. skycoin:[address], the skycoin is the prefix.
+	QrURIPrefix string `mapstructure:"qr_uri_prefix"`
 	// ExplorerURL is the URL of the public explorer
 	ExplorerURL string `mapstructure:"explorer_url"`
 	// VersionURL is the URL for wallet to check the latest version number
@@ -158,6 +160,7 @@ func setDefaults() {
 	viper.SetDefault("node.coin_hours_display_name", "Coin Hours")
 	viper.SetDefault("node.coin_hours_display_name_singular", "Coin Hour")
 	viper.SetDefault("node.coin_hours_ticker", "SCH")
+	viper.SetDefault("node.qr_uri_prefix", "skycoin")
 	viper.SetDefault("node.explorer_url", "https://explorer.skycoin.com")
 	viper.SetDefault("node.version_url", "https://version.skycoin.com/skycoin/version.txt")
 	viper.SetDefault("node.bip44_coin", bip44.CoinTypeSkycoin)

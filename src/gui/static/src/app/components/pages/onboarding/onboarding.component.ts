@@ -19,7 +19,7 @@ import { WalletsAndAddressesService } from '../../../services/wallet-operations/
   styleUrls: ['./onboarding.component.scss'],
 })
 export class OnboardingComponent implements OnInit, OnDestroy {
-  @ViewChild('encryptForm', { static: false }) encryptForm: OnboardingEncryptWalletComponent;
+  @ViewChild('encryptForm') encryptForm: OnboardingEncryptWalletComponent;
 
   // Current stept to show.
   step = 1;

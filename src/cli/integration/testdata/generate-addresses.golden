@@ -1,24 +1,6 @@
 {
-	"meta": {
-		"coin": "skycoin",
-		"filename": "integration-test.wlt",
-		"label": "integration-test",
-		"lastSeed": "f4ee62d76b32106664da3be08ffcab6944a8826bf82f4e8be6c9e790169b1a95",
-		"seed": "exchange stage green marine palm tobacco decline shadow cereal chapter lamp copy",
-		"tm": "1518271871",
-		"type": "deterministic",
-		"version": "0.1"
-	},
-	"entries": [
-		{
-			"address": "2Kg3eRXUhY6hrDZvNGB99DKahtrPDQ1W9vN",
-			"public_key": "03aefe8fc5952f67aca014ae4da6e7eba1321542be02d2d6f718c666750bf4c630",
-			"secret_key": "f1877ae49e2233db10460d3c971b2aaccc04d771629bc98ee7a1dafca9baed8e"
-		},
-		{
-			"address": "7g3M372kxwNwwQEAmrronu4anXTW8aD1XC",
-			"public_key": "0319527fa74053b148d7efe973c0ee734e49f52a11417232e582b8c51e389d638a",
-			"secret_key": "f46d3e7661a1daef6229f83b641f9666bcfce4f9f2bd1a0161b35ac8d8ff8a8b"
-		}
+	"Addresses": [
+		"2Kg3eRXUhY6hrDZvNGB99DKahtrPDQ1W9vN",
+		"7g3M372kxwNwwQEAmrronu4anXTW8aD1XC"
 	]
 }

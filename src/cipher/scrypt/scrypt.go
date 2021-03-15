@@ -5,13 +5,13 @@
 // Package scrypt implements the scrypt key derivation function as defined in
 // Colin Percival's paper "Stronger Key Derivation via Sequential Memory-Hard
 // Functions" (http://www.tarsnap.com/scrypt/scrypt.pdf).
-package scrypt // import "github.com/SkycoinProject/skycoin/src/cipher/scrypt"
+package scrypt // import "github.com/skycoin/skycoin/src/cipher/scrypt"
 
 import (
 	"crypto/sha256"
 	"errors"
 
-	"github.com/SkycoinProject/skycoin/src/cipher/pbkdf2"
+	"github.com/skycoin/skycoin/src/cipher/pbkdf2"
 )
 
 const maxInt = int(^uint(0) >> 1)

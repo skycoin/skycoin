@@ -26,7 +26,7 @@ import { redirectToErrorPage } from './utils/errors';
 })
 export class AppComponent implements OnInit {
   // Single MsgBarComponent instance used on the app.
-  @ViewChild('msgBar', { static: false }) msgBar: MsgBarComponent;
+  @ViewChild('msgBar') msgBar: MsgBarComponent;
 
   constructor(
     private appService: AppService,

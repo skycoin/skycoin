@@ -17,6 +17,7 @@
 
   // Base style for the form fields, not to be used directly.
   .field-base {
+    color: $black;
     background-color: white;
     border: $input-border-size solid $input-border-color;
     border-radius: $input-border-radius;
@@ -39,6 +40,14 @@
   select {
     @extend .field-base;
     appearance: none;
+
+    option {
+      color: $black;
+    }
+
+    option:disabled {
+      color: $grey-dark;
+    }
   }
 
   select:disabled {
@@ -206,4 +215,5 @@ textarea {
   opacity: 0.55;
   vertical-align: text-bottom;
   padding-left: 5px;
+  cursor: default;
 }

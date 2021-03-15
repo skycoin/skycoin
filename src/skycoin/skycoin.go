@@ -19,27 +19,28 @@ import (
 	"github.com/blang/semver"
 	"github.com/toqueteos/webbrowser"
 
-	"github.com/SkycoinProject/skycoin/src/api"
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/coin"
-	"github.com/SkycoinProject/skycoin/src/daemon"
-	"github.com/SkycoinProject/skycoin/src/kvstorage"
-	"github.com/SkycoinProject/skycoin/src/params"
-	"github.com/SkycoinProject/skycoin/src/readable"
-	"github.com/SkycoinProject/skycoin/src/util/apputil"
-	"github.com/SkycoinProject/skycoin/src/util/certutil"
-	"github.com/SkycoinProject/skycoin/src/util/droplet"
-	"github.com/SkycoinProject/skycoin/src/util/logging"
-	"github.com/SkycoinProject/skycoin/src/visor"
-	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
-	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/api"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/kvstorage"
+	"github.com/skycoin/skycoin/src/params"
+	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/util/apputil"
+	"github.com/skycoin/skycoin/src/util/certutil"
+	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/wallet/crypto"
 )
 
 var (
 	// DBVerifyCheckpointVersion is a checkpoint for determining if DB verification should be run.
 	// Any DB upgrading from less than this version to equal or higher than this version will be forced to verify.
 	// Update this version checkpoint if a newer version requires a new verification run.
-	DBVerifyCheckpointVersion       = "0.25.0"
+	DBVerifyCheckpointVersion       = "0.27.1"
 	dbVerifyCheckpointVersionParsed semver.Version
 )
 
@@ -154,64 +155,39 @@ func (c *Coin) Run() error {
 		return err
 	}
 
-	// Look for saved app version
-	dbVersion, err := visor.GetDBVersion(db)
+	defer func() {
+		if db != nil {
+			c.logger.Info("Closing database")
+			if err := db.Close(); err != nil {
+				c.logger.WithError(err).Error("Failed to close DB")
+			}
+		}
+
+		c.logger.Info("Goodbye")
+
+		if logFile != nil {
+			if err := logFile.Close(); err != nil {
+				fmt.Println("Failed to close log file")
+			}
+		}
+	}()
+
+	cf := dbCheckConfig{
+		ForceVerify:         c.config.Node.VerifyDB,
+		ResetCorruptDB:      c.config.Node.ResetCorruptDB,
+		AppVersion:          appVersion,
+		DBCheckpointVersion: &dbVerifyCheckpointVersionParsed,
+	}
+
+	dv := dbVerify{
+		blockchainPubkey: c.config.Node.blockchainPubkey,
+		logger:           c.logger,
+		quit:             quit,
+	}
+
+	db, err = checkAndUpdateDB(db, cf, &dv)
 	if err != nil {
-		c.logger.WithError(err).Error("visor.GetDBVersion failed")
-		retErr = err
-		goto earlyShutdown
-	}
-
-	if dbVersion == nil {
-		c.logger.Info("DB version not found in DB")
-	} else {
-		c.logger.Infof("DB version: %s", dbVersion)
-	}
-
-	c.logger.Infof("DB verify checkpoint version: %s", DBVerifyCheckpointVersion)
-
-	// If the saved DB version is higher than the app version, abort.
-	// Otherwise DB corruption could occur.
-	if dbVersion != nil && dbVersion.GT(*appVersion) {
-		err = fmt.Errorf("Cannot use newer DB version=%v with older software version=%v", dbVersion, appVersion)
-		c.logger.WithError(err).Error()
-		retErr = err
-		goto earlyShutdown
-	}
-
-	// Verify the DB if the version detection says to, or if it was requested on the command line
-	if shouldVerifyDB(appVersion, dbVersion) || c.config.Node.VerifyDB {
-		if c.config.Node.ResetCorruptDB {
-			// Check the database integrity and recreate it if necessary
-			c.logger.Info("Checking database and resetting if corrupted")
-			if newDB, err := visor.ResetCorruptDB(db, c.config.Node.blockchainPubkey, quit); err != nil {
-				if err != visor.ErrVerifyStopped {
-					c.logger.WithError(err).Error("visor.ResetCorruptDB failed")
-					retErr = err
-				}
-				goto earlyShutdown
-			} else {
-				db = newDB
-			}
-		} else {
-			c.logger.Info("Checking database")
-			if err := visor.CheckDatabase(db, c.config.Node.blockchainPubkey, quit); err != nil {
-				if err != visor.ErrVerifyStopped {
-					c.logger.WithError(err).Error("visor.CheckDatabase failed")
-					retErr = err
-				}
-				goto earlyShutdown
-			}
-		}
-	}
-
-	// Update the DB version
-	if !db.IsReadOnly() {
-		if err := visor.SetDBVersion(db, *appVersion); err != nil {
-			c.logger.WithError(err).Error("visor.SetDBVersion failed")
-			retErr = err
-			goto earlyShutdown
-		}
+		return err
 	}
 
 	c.logger.Infof("Coinhour burn factor for user transactions is %d", params.UserVerifyTxn.BurnFactor)
@@ -222,32 +198,28 @@ func (c *Coin) Run() error {
 	w, err = wallet.NewService(wconf)
 	if err != nil {
 		c.logger.WithError(err).Error("wallet.NewService failed")
-		retErr = err
-		goto earlyShutdown
+		return err
 	}
 
 	c.logger.Info("visor.New")
 	v, err = visor.New(vconf, db, w)
 	if err != nil {
 		c.logger.WithError(err).Error("visor.New failed")
-		retErr = err
-		goto earlyShutdown
+		return err
 	}
 
 	c.logger.Info("daemon.New")
 	d, err = daemon.New(dconf, v)
 	if err != nil {
 		c.logger.WithError(err).Error("daemon.New failed")
-		retErr = err
-		goto earlyShutdown
+		return err
 	}
 
 	c.logger.Info("kvstorage.NewManager")
 	s, err = kvstorage.NewManager(sconf)
 	if err != nil {
 		c.logger.WithError(err).Error("kvstorage.NewManager failed")
-		retErr = err
-		goto earlyShutdown
+		return err
 	}
 
 	c.logger.Info("api.NewGateway")
@@ -257,8 +229,7 @@ func (c *Coin) Run() error {
 		webInterface, err = c.createGUI(gw, host)
 		if err != nil {
 			c.logger.WithError(err).Error("c.createGUI failed")
-			retErr = err
-			goto earlyShutdown
+			return err
 		}
 
 		fullAddress = fmt.Sprintf("%s://%s", scheme, webInterface.Addr())
@@ -268,8 +239,7 @@ func (c *Coin) Run() error {
 	c.logger.Info("visor.Init")
 	if err := v.Init(); err != nil {
 		c.logger.WithError(err).Error("visor.Init failed")
-		retErr = err
-		goto earlyShutdown
+		return err
 	}
 
 	wg.Add(1)
@@ -333,22 +303,6 @@ func (c *Coin) Run() error {
 
 	c.logger.Info("Waiting for goroutines to finish")
 	wg.Wait()
-
-earlyShutdown:
-	if db != nil {
-		c.logger.Info("Closing database")
-		if err := db.Close(); err != nil {
-			c.logger.WithError(err).Error("Failed to close DB")
-		}
-	}
-
-	c.logger.Info("Goodbye")
-
-	if logFile != nil {
-		if err := logFile.Close(); err != nil {
-			fmt.Println("Failed to close log file")
-		}
-	}
 
 	return retErr
 }
@@ -417,7 +371,7 @@ func (c *Coin) ConfigureWallet() wallet.Config {
 	_, wc.EnableSeedAPI = c.config.Node.enabledAPISets[api.EndpointsInsecureWalletSeed]
 
 	// Initialize wallet default crypto type
-	cryptoType, err := wallet.CryptoTypeFromString(c.config.Node.WalletCryptoType)
+	cryptoType, err := crypto.CryptoTypeFromString(c.config.Node.WalletCryptoType)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -446,7 +400,10 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc := daemon.NewConfig()
 
 	dc.Pool.DefaultConnections = c.config.Node.DefaultConnections
+	dc.Pool.MaxConnections = c.config.Node.MaxConnections
+	dc.Pool.MaxOutgoingConnections = c.config.Node.MaxOutgoingConnections
 	dc.Pool.MaxDefaultPeerOutgoingConnections = c.config.Node.MaxDefaultPeerOutgoingConnections
+	dc.Pool.MaxIncomingConnections = c.config.Node.MaxIncomingConnections
 	dc.Pool.MaxIncomingMessageLength = c.config.Node.MaxIncomingMessageLength
 	dc.Pool.MaxOutgoingMessageLength = c.config.Node.MaxOutgoingMessageLength
 
@@ -652,22 +609,6 @@ func createDirIfNotExist(dir string) error {
 	}
 
 	return os.Mkdir(dir, 0750)
-}
-
-func shouldVerifyDB(appVersion, dbVersion *semver.Version) bool {
-	// If the dbVersion is not set, verify
-	if dbVersion == nil {
-		return true
-	}
-
-	// If the dbVersion is less than the verification checkpoint version
-	// and the appVersion is greater than or equal to the checkpoint version,
-	// verify
-	if dbVersion.LT(dbVerifyCheckpointVersionParsed) && appVersion.GTE(dbVerifyCheckpointVersionParsed) {
-		return true
-	}
-
-	return false
 }
 
 func init() {

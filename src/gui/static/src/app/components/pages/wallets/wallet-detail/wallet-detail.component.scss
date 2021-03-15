@@ -95,31 +95,31 @@
       }
 
       &.-address-options::before {
-        background-image: url(assets/img/list-grey.png);
+        background-image: url(/assets/img/list-grey.png);
       }
 
       &.-hide-empty::before {
-        background-image: url(assets/img/minus-grey.png);
+        background-image: url(/assets/img/minus-grey.png);
       }
 
       &.-show-empty::before {
-        background-image: url(assets/img/plus-grey.png);
+        background-image: url(/assets/img/plus-grey.png);
       }
 
       &.-enable-encryption::before {
-        background-image: url(assets/img/lock-grey.png);
+        background-image: url(/assets/img/lock-grey.png);
       }
 
       &.-disable-encryption::before {
-        background-image: url(assets/img/unlock-grey.png);
+        background-image: url(/assets/img/unlock-grey.png);
       }
 
       &.-rename-wallet::before {
-        background-image: url(assets/img/edit-grey.png);
+        background-image: url(/assets/img/edit-grey.png);
       }
 
       &.-btn-delete::before {
-        background-image: url(assets/img/delete-grey.png);
+        background-image: url(/assets/img/delete-grey.png);
       }
 
       &:active {
@@ -133,31 +133,31 @@
         opacity: 0.8;
 
         &.-address-options::before {
-          background-image: url(assets/img/list-blue.png);
+          background-image: url(/assets/img/list-blue.png);
         }
 
         &.-hide-empty::before {
-          background-image: url(assets/img/minus-red.png);
+          background-image: url(/assets/img/minus-red.png);
         }
 
         &.-show-empty::before {
-          background-image: url(assets/img/plus-green.png);
+          background-image: url(/assets/img/plus-green.png);
         }
 
         &.-enable-encryption::before {
-          background-image: url(assets/img/lock-gold.png);
+          background-image: url(/assets/img/lock-gold.png);
         }
 
         &.-disable-encryption::before {
-          background-image: url(assets/img/unlock-gold.png);
+          background-image: url(/assets/img/unlock-gold.png);
         }
 
         &.-rename-wallet::before {
-          background-image: url(assets/img/edit-blue.png);
+          background-image: url(/assets/img/edit-blue.png);
         }
 
         &.-btn-delete::before {
-          background-image: url(assets/img/delete-red.png);
+          background-image: url(/assets/img/delete-red.png);
         }
       }
     }

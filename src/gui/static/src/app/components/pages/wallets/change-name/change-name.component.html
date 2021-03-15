@@ -18,6 +18,8 @@
           (keydown.enter)="rename()"
           [maxlength]="data.wallet.isHardware ? maxHwWalletLabelLength : null"
           [attr.disabled]="working ? 'true' : null"
+          [appFormFieldError]="inputErrorMsg"
+          (blur)="validateForm()"
         >
       </div>
     </div>

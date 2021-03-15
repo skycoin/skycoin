@@ -16,16 +16,16 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/NYTimes/gziphandler"
 	"github.com/rs/cors"
+	"github.com/skycoin/skycoin/src/util/gziphandler"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/readable"
-	"github.com/SkycoinProject/skycoin/src/util/file"
-	wh "github.com/SkycoinProject/skycoin/src/util/http"
-	"github.com/SkycoinProject/skycoin/src/util/logging"
-	"github.com/SkycoinProject/skycoin/src/util/useragent"
-	"github.com/SkycoinProject/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/util/file"
+	wh "github.com/skycoin/skycoin/src/util/http"
+	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/util/useragent"
+	"github.com/skycoin/skycoin/src/visor"
 )
 
 var (
@@ -54,8 +54,6 @@ const (
 	EndpointsWallet = "WALLET"
 	// EndpointsInsecureWalletSeed endpoints implement wallet interface
 	EndpointsInsecureWalletSeed = "INSECURE_WALLET_SEED"
-	// EndpointsPrometheus endpoints for Go application metrics
-	EndpointsPrometheus = "PROMETHEUS"
 	// EndpointsNetCtrl endpoints for managing network connections
 	EndpointsNetCtrl = "NET_CTRL"
 	// EndpointsStorage endpoints implement interface for key-value storage for arbitrary data
@@ -244,8 +242,10 @@ func Create(host string, c Config, gateway Gatewayer) (*Server, error) {
 
 	s, err := create(host, c, gateway)
 	if err != nil {
-		if closeErr := s.listener.Close(); closeErr != nil {
-			logger.WithError(err).Warning("s.listener.Close() error")
+		if s != nil {
+			if closeErr := s.listener.Close(); closeErr != nil {
+				logger.WithError(err).Warning("s.listener.Close() error")
+			}
 		}
 		return nil, err
 	}
@@ -278,8 +278,10 @@ func CreateHTTPS(host string, c Config, gateway Gatewayer, certFile, keyFile str
 
 	s, err := create(host, c, gateway)
 	if err != nil {
-		if closeErr := s.listener.Close(); closeErr != nil {
-			logger.WithError(err).Warning("s.listener.Close() error")
+		if s != nil {
+			if closeErr := s.listener.Close(); closeErr != nil {
+				logger.WithError(err).Warning("s.listener.Close() error")
+			}
 		}
 		return nil, err
 	}
@@ -410,7 +412,7 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		}
 
 		handler = basicAuth(apiVersion, c.username, c.password, "skycoin daemon", handler)
-		handler = gziphandler.GzipHandler(handler)
+		handler = gziphandler.New(handler)
 		mux.Handle(endpoint, handler)
 	}
 
@@ -468,179 +470,174 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	// Status endpoints
 	webHandlerV1("/version", versionHandler(c.health.BuildInfo), nil) // version is always available, regardless of the API set
 	webHandlerV1("/health", healthHandler(c, gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsRead, EndpointsStatus},
+		http.MethodGet: {EndpointsRead, EndpointsStatus},
 	})
 
 	// Wallet endpoints
 	webHandlerV1("/wallet", walletHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsWallet},
+		http.MethodGet: {EndpointsWallet},
 	})
 	webHandlerV1("/wallet/create", walletCreateHandler(gateway), map[string][]string{
-		http.MethodPost: []string{EndpointsWallet},
+		http.MethodPost: {EndpointsWallet},
 	})
 	webHandlerV1("/wallet/newAddress", walletNewAddressesHandler(gateway), map[string][]string{
-		http.MethodPost: []string{EndpointsWallet},
+		http.MethodPost: {EndpointsWallet},
 	})
 	webHandlerV1("/wallet/scan", walletScanAddressesHandler(gateway), map[string][]string{
-		http.MethodPost: []string{EndpointsWallet},
+		http.MethodPost: {EndpointsWallet},
 	})
 	webHandlerV1("/wallet/balance", walletBalanceHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsWallet},
+		http.MethodGet: {EndpointsWallet},
 	})
 	webHandlerV1("/wallet/transaction", walletCreateTransactionHandler(gateway), map[string][]string{
-		http.MethodPost: []string{EndpointsWallet},
+		http.MethodPost: {EndpointsWallet},
 	})
 	webHandlerV2("/wallet/transaction/sign", walletSignTransactionHandler(gateway), map[string][]string{
-		http.MethodPost: []string{EndpointsWallet},
+		http.MethodPost: {EndpointsWallet},
 	})
 	webHandlerV1("/wallet/transactions", walletTransactionsHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsWallet},
+		http.MethodGet: {EndpointsWallet},
 	})
 	webHandlerV1("/wallet/update", walletUpdateHandler(gateway), map[string][]string{
-		http.MethodPost: []string{EndpointsWallet},
+		http.MethodPost: {EndpointsWallet},
 	})
 	webHandlerV1("/wallets", walletsHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsWallet},
+		http.MethodGet: {EndpointsWallet},
 	})
 	webHandlerV1("/wallets/folderName", walletFolderHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsWallet},
+		http.MethodGet: {EndpointsWallet},
 	})
 	webHandlerV1("/wallet/newSeed", newSeedHandler(), map[string][]string{
-		http.MethodGet: []string{EndpointsWallet},
+		http.MethodGet: {EndpointsWallet},
 	})
 	webHandlerV1("/wallet/seed", walletSeedHandler(gateway), map[string][]string{
-		http.MethodPost: []string{EndpointsInsecureWalletSeed},
+		http.MethodPost: {EndpointsInsecureWalletSeed},
 	})
 	webHandlerV2("/wallet/seed/verify", http.HandlerFunc(walletVerifySeedHandler), map[string][]string{
-		http.MethodPost: []string{EndpointsWallet},
+		http.MethodPost: {EndpointsWallet},
 	})
 
 	webHandlerV1("/wallet/unload", walletUnloadHandler(gateway), map[string][]string{
-		http.MethodPost: []string{EndpointsWallet},
+		http.MethodPost: {EndpointsWallet},
 	})
 	webHandlerV1("/wallet/encrypt", walletEncryptHandler(gateway), map[string][]string{
-		http.MethodPost: []string{EndpointsWallet},
+		http.MethodPost: {EndpointsWallet},
 	})
 	webHandlerV1("/wallet/decrypt", walletDecryptHandler(gateway), map[string][]string{
-		http.MethodPost: []string{EndpointsWallet},
+		http.MethodPost: {EndpointsWallet},
 	})
 	webHandlerV2("/wallet/recover", walletRecoverHandler(gateway), map[string][]string{
-		http.MethodPost: []string{EndpointsWallet},
+		http.MethodPost: {EndpointsWallet},
 	})
 
 	// Blockchain interface
 	webHandlerV1("/blockchain/metadata", blockchainMetadataHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsRead, EndpointsStatus},
+		http.MethodGet: {EndpointsRead, EndpointsStatus},
 	})
 	webHandlerV1("/blockchain/progress", blockchainProgressHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsRead, EndpointsStatus},
+		http.MethodGet: {EndpointsRead, EndpointsStatus},
 	})
 	webHandlerV1("/block", blockHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsRead},
+		http.MethodGet: {EndpointsRead},
 	})
 	webHandlerV1("/blocks", blocksHandler(gateway), map[string][]string{
-		http.MethodGet:  []string{EndpointsRead},
-		http.MethodPost: []string{EndpointsRead},
+		http.MethodGet:  {EndpointsRead},
+		http.MethodPost: {EndpointsRead},
 	})
 	webHandlerV1("/last_blocks", lastBlocksHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsRead},
+		http.MethodGet: {EndpointsRead},
 	})
 
 	// Network stats endpoints
 	webHandlerV1("/network/connection", connectionHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsRead, EndpointsStatus},
+		http.MethodGet: {EndpointsRead, EndpointsStatus},
 	})
 	webHandlerV1("/network/connections", connectionsHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsRead, EndpointsStatus},
+		http.MethodGet: {EndpointsRead, EndpointsStatus},
 	})
 	webHandlerV1("/network/defaultConnections", defaultConnectionsHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsRead, EndpointsStatus},
+		http.MethodGet: {EndpointsRead, EndpointsStatus},
 	})
 	webHandlerV1("/network/connections/trust", trustConnectionsHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsRead, EndpointsStatus},
+		http.MethodGet: {EndpointsRead, EndpointsStatus},
 	})
 	webHandlerV1("/network/connections/exchange", exchgConnectionsHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsRead, EndpointsStatus},
+		http.MethodGet: {EndpointsRead, EndpointsStatus},
 	})
 
 	// Network admin endpoints
 	webHandlerV1("/network/connection/disconnect", disconnectHandler(gateway), map[string][]string{
-		http.MethodPost: []string{EndpointsNetCtrl},
+		http.MethodPost: {EndpointsNetCtrl},
 	})
 
 	// Transaction related endpoints
 	webHandlerV1("/pendingTxs", pendingTxnsHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsRead},
+		http.MethodGet: {EndpointsRead},
 	})
 	webHandlerV1("/transaction", transactionHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsRead},
+		http.MethodGet: {EndpointsRead},
 	})
 	webHandlerV2("/transaction", transactionHandlerV2(gateway), map[string][]string{
 		// http.MethodGet:  []string{EndpointsRead},
-		http.MethodPost: []string{EndpointsTransaction},
+		http.MethodPost: {EndpointsTransaction},
 	})
 	webHandlerV2("/transaction/verify", verifyTxnHandler(gateway), map[string][]string{
-		http.MethodPost: []string{EndpointsRead},
+		http.MethodPost: {EndpointsRead},
 	})
 	webHandlerV1("/transactions", transactionsHandler(gateway), map[string][]string{
-		http.MethodGet:  []string{EndpointsRead},
-		http.MethodPost: []string{EndpointsRead},
+		http.MethodGet:  {EndpointsRead},
+		http.MethodPost: {EndpointsRead},
 	})
 	webHandlerV2("/transactions", transactionsHandlerV2(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsRead},
+		http.MethodGet: {EndpointsRead},
 	})
 	webHandlerV1("/injectTransaction", injectTransactionHandler(gateway), map[string][]string{
-		http.MethodPost: []string{EndpointsTransaction, EndpointsWallet},
+		http.MethodPost: {EndpointsTransaction, EndpointsWallet},
 	})
 	webHandlerV1("/resendUnconfirmedTxns", resendUnconfirmedTxnsHandler(gateway), map[string][]string{
-		http.MethodPost: []string{EndpointsTransaction, EndpointsWallet},
+		http.MethodPost: {EndpointsTransaction, EndpointsWallet},
 	})
 	webHandlerV1("/rawtx", rawTxnHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsRead},
+		http.MethodGet: {EndpointsRead},
 	})
 
 	// Unspent output related endpoints
 	webHandlerV1("/outputs", outputsHandler(gateway), map[string][]string{
-		http.MethodGet:  []string{EndpointsRead},
-		http.MethodPost: []string{EndpointsRead},
+		http.MethodGet:  {EndpointsRead},
+		http.MethodPost: {EndpointsRead},
 	})
 	webHandlerV1("/balance", balanceHandler(gateway), map[string][]string{
-		http.MethodGet:  []string{EndpointsRead},
-		http.MethodPost: []string{EndpointsRead},
+		http.MethodGet:  {EndpointsRead},
+		http.MethodPost: {EndpointsRead},
 	})
 	webHandlerV1("/uxout", uxOutHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsRead},
+		http.MethodGet: {EndpointsRead},
 	})
 	webHandlerV1("/address_uxouts", addrUxOutsHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsRead},
-	})
-
-	// golang process internal metrics for Prometheus
-	webHandlerV2("/metrics", metricsHandler(c, gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsPrometheus},
+		http.MethodGet: {EndpointsRead},
 	})
 
 	// Address related endpoints
 	webHandlerV2("/address/verify", http.HandlerFunc(addressVerifyHandler), map[string][]string{
-		http.MethodPost: []string{EndpointsRead},
+		http.MethodPost: {EndpointsRead},
 	})
 
 	// Explorer endpoints
 	webHandlerV1("/coinSupply", coinSupplyHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsRead},
+		http.MethodGet: {EndpointsRead},
 	})
 	webHandlerV1("/richlist", richlistHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsRead},
+		http.MethodGet: {EndpointsRead},
 	})
 	webHandlerV1("/addresscount", addressCountHandler(gateway), map[string][]string{
-		http.MethodGet: []string{EndpointsRead},
+		http.MethodGet: {EndpointsRead},
 	})
 
 	// Storage endpoint
 	webHandlerV2("/data", storageHandler(gateway), map[string][]string{
-		http.MethodGet:    []string{EndpointsStorage},
-		http.MethodPost:   []string{EndpointsStorage},
-		http.MethodDelete: []string{EndpointsStorage},
+		http.MethodGet:    {EndpointsStorage},
+		http.MethodPost:   {EndpointsStorage},
+		http.MethodDelete: {EndpointsStorage},
 	})
 
 	return mux
@@ -717,7 +714,7 @@ func parseSortOrderFromStr(s string) (visor.SortOrder, error) {
 	case "DESC":
 		return visor.DescOrder, nil
 	default:
-		return visor.UnknownOrder, errors.New("Unknow sort order")
+		return visor.UnknownOrder, errors.New("Unknown sort order")
 	}
 }
 

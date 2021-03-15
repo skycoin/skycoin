@@ -108,8 +108,8 @@ fi
 
 if [[ -z $TEST  || $TEST = "cli" ]]; then
 
-# SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR \
-#     go test -count=1 ./src/cli/integration/... -timeout=300s $VERBOSE $RUN_TESTS
+ SKYCOIN_INTEGRATION_TESTS=1 SKYCOIN_INTEGRATION_TEST_MODE=$MODE RPC_ADDR=$RPC_ADDR \
+     go test -count=1 ./src/cli/integration/... -timeout=300s $VERBOSE $RUN_TESTS
 
 CLI_FAIL=$?
 

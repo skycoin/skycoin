@@ -123,6 +123,9 @@ import { SpendingService } from './services/wallet-operations/spending.service';
 import { HistoryService } from './services/wallet-operations/history.service';
 import { AppRoutingModule } from './app-routing.module';
 import { AppTranslationModule } from './app-translation.module';
+import { FormFieldErrorDirective } from './directives/form-field-error.directive';
+import { EnterLinkComponent } from './components/pages/send-skycoin/enter-link/enter-link.component';
+import { DestinationToolsComponent } from './components/pages/send-skycoin/form-parts/form-destination/destination-tools/destination-tools.component';
 
 @NgModule({
   declarations: [
@@ -202,42 +205,9 @@ import { AppTranslationModule } from './app-translation.module';
     ArrowLinkComponent,
     AddressOptionsComponent,
     QrCodeButtonComponent,
-  ],
-  entryComponents: [
-    AddDepositAddressComponent,
-    CreateWalletComponent,
-    ChangeNameComponent,
-    QrCodeComponent,
-    SendSkycoinComponent,
-    TransactionDetailComponent,
-    PasswordDialogComponent,
-    SeedModalComponent,
-    NumberOfAddressesComponent,
-    SelectAddressComponent,
-    HwOptionsDialogComponent,
-    HwWipeDialogComponent,
-    HwAddedDialogComponent,
-    HwGenerateSeedDialogComponent,
-    HwBackupDialogComponent,
-    ConfirmationComponent,
-    HwPinDialogComponent,
-    HwChangePinDialogComponent,
-    HwPinHelpDialogComponent,
-    HwRestoreSeedDialogComponent,
-    HwConfirmTxDialogComponent,
-    HwConfirmAddressDialogComponent,
-    SelectLanguageComponent,
-    ExchangeHistoryComponent,
-    HwRemovePinDialogComponent,
-    HwUpdateFirmwareDialogComponent,
-    HwUpdateAlertDialogComponent,
-    ChangeNoteComponent,
-    SeedWordDialogComponent,
-    MultipleDestinationsDialogComponent,
-    CopyRawTxComponent,
-    SignRawTxComponent,
-    BroadcastRawTxComponent,
-    AddressOptionsComponent,
+    FormFieldErrorDirective,
+    EnterLinkComponent,
+    DestinationToolsComponent,
   ],
   imports: [
     AppTranslationModule,

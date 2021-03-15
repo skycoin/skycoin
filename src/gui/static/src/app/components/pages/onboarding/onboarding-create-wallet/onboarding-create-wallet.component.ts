@@ -21,7 +21,7 @@ import { AppService } from '../../../../services/app.service';
   styleUrls: ['./onboarding-create-wallet.component.scss'],
 })
 export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
-  @ViewChild('formControl', { static: false }) formControl: CreateWalletFormComponent;
+  @ViewChild('formControl') formControl: CreateWalletFormComponent;
   // Data for filling the form just after loading it.
   @Input() fill: WalletFormData = null;
   // Emits when the user press the button for going to the next step of the wizard, after

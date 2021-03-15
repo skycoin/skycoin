@@ -10,7 +10,7 @@
         "seed": "",
         "tm": "1518271871",
         "type": "deterministic",
-        "version": "0.3"
+        "version": "0.4"
     },
     "entries": [
         {

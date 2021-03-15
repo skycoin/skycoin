@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/SkycoinProject/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/testutil"
 )
 
 func Example() {

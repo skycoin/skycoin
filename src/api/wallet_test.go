@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"math"
 	"net/http"
@@ -15,13 +16,15 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
-	"github.com/SkycoinProject/skycoin/src/coin"
-	"github.com/SkycoinProject/skycoin/src/readable"
-	"github.com/SkycoinProject/skycoin/src/testutil"
-	"github.com/SkycoinProject/skycoin/src/visor"
-	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/wallet/crypto"
+	"github.com/skycoin/skycoin/src/wallet/deterministic"
 )
 
 func TestGetBalanceHandler(t *testing.T) {
@@ -210,7 +213,7 @@ func TestGetBalanceHandler(t *testing.T) {
 }
 
 func TestWalletGet(t *testing.T) {
-	entries, resEntries := makeEntries([]byte("seed"), 5)
+	_, resEntries := makeEntries([]byte("seed"), 5)
 	type httpBody struct {
 		WalletID string
 		Dst      string
@@ -252,7 +255,7 @@ func TestWalletGet(t *testing.T) {
 			err:      "400 Bad Request - wallet 123 doesn't exist",
 			walletID: "123",
 			gatewayGetWalletResultFunc: func(_ string) wallet.Wallet {
-				var p *wallet.DeterministicWallet
+				var p *deterministic.Wallet
 				return p
 			},
 			gatewayGetWalletErr: errors.New("wallet 123 doesn't exist"),
@@ -267,9 +270,8 @@ func TestWalletGet(t *testing.T) {
 			err:      "403 Forbidden",
 			walletID: "1234",
 			gatewayGetWalletResultFunc: func(_ string) wallet.Wallet {
-				return &wallet.DeterministicWallet{
-					Meta:    wallet.Meta{"seed": "seed", "lastSeed": "seed"},
-					Entries: []wallet.Entry{},
+				return &deterministic.Wallet{
+					Meta: wallet.Meta{"seed": "seed", "lastSeed": "seed"},
 				}
 			},
 			gatewayGetWalletErr: wallet.ErrWalletAPIDisabled,
@@ -283,12 +285,26 @@ func TestWalletGet(t *testing.T) {
 			status:   http.StatusOK,
 			walletID: "1234",
 			gatewayGetWalletResultFunc: func(_ string) wallet.Wallet {
-				return &wallet.DeterministicWallet{
-					Meta:    wallet.Meta{"seed": "seed", "lastSeed": "seed"},
-					Entries: cloneEntries(entries),
-				}
+				w, err := deterministic.NewWallet(
+					"test.wlt",
+					"test", "seed",
+					wallet.OptionGenerateN(5))
+				require.NoError(t, err)
+				w.SetTimestamp(0)
+				return w
 			},
-			responseBody: WalletResponse{Entries: resEntries[:]},
+			responseBody: WalletResponse{
+				Meta: readable.WalletMeta{
+					Coin:       "skycoin",
+					Filename:   "test.wlt",
+					Type:       "deterministic",
+					Label:      "test",
+					Version:    "0.4",
+					CryptoType: "scrypt-chacha20poly1305",
+					Encrypted:  false,
+				},
+				Entries: resEntries[:],
+			},
 		},
 	}
 
@@ -855,7 +871,7 @@ func TestWalletTransactionsHandler(t *testing.T) {
 }
 
 func TestWalletCreateHandler(t *testing.T) {
-	entries, responseEntries := makeEntries([]byte("seed"), 5)
+	_, responseEntries := makeEntries([]byte("seed"), 5)
 	type httpBody struct {
 		Seed           string
 		Label          string
@@ -875,7 +891,7 @@ func TestWalletCreateHandler(t *testing.T) {
 		err                       string
 		wltName                   string
 		options                   wallet.Options
-		gatewayCreateWalletResult func(string, wallet.Options, wallet.TransactionsFinder) wallet.Wallet
+		gatewayCreateWalletResult func(string, wallet.Options) wallet.Wallet
 		gatewayCreateWalletErr    error
 		responseBody              WalletResponse
 		csrfDisabled              bool
@@ -1002,8 +1018,8 @@ func TestWalletCreateHandler(t *testing.T) {
 				Password: []byte{},
 			},
 			gatewayCreateWalletErr: wallet.ErrSeedUsed,
-			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
-				var p *wallet.DeterministicWallet
+			gatewayCreateWalletResult: func(_ string, _ wallet.Options) wallet.Wallet {
+				var p *deterministic.Wallet
 				return p
 			},
 		},
@@ -1025,8 +1041,8 @@ func TestWalletCreateHandler(t *testing.T) {
 				Password: []byte{},
 			},
 			gatewayCreateWalletErr: errors.New("gateway.CreateWallet error"),
-			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
-				var p *wallet.DeterministicWallet
+			gatewayCreateWalletResult: func(_ string, _ wallet.Options) wallet.Wallet {
+				var p *deterministic.Wallet
 				return p
 			},
 		},
@@ -1050,8 +1066,8 @@ func TestWalletCreateHandler(t *testing.T) {
 				ScanN:    2,
 			},
 			gatewayCreateWalletErr: wallet.ErrWalletAPIDisabled,
-			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
-				var p *wallet.DeterministicWallet
+			gatewayCreateWalletResult: func(_ string, _ wallet.Options) wallet.Wallet {
+				var p *deterministic.Wallet
 				return p
 			},
 		},
@@ -1074,17 +1090,24 @@ func TestWalletCreateHandler(t *testing.T) {
 				Password: []byte{},
 				ScanN:    2,
 			},
-			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
-				return &wallet.DeterministicWallet{
-					Meta: wallet.Meta{
-						"filename": "filename",
-					},
-					Entries: cloneEntries(entries),
-				}
+			gatewayCreateWalletResult: func(_ string, _ wallet.Options) wallet.Wallet {
+				w, err := deterministic.NewWallet(
+					"filename",
+					"",
+					"seed",
+					wallet.OptionGenerateN(5),
+				)
+				w.SetTimestamp(0)
+				require.NoError(t, err)
+				return w
 			},
 			responseBody: WalletResponse{
 				Meta: readable.WalletMeta{
-					Filename: "filename",
+					Coin:       "skycoin",
+					Filename:   "filename",
+					Type:       "deterministic",
+					Version:    "0.4",
+					CryptoType: "scrypt-chacha20poly1305",
 				},
 				Entries: responseEntries[:],
 			},
@@ -1110,17 +1133,24 @@ func TestWalletCreateHandler(t *testing.T) {
 				ScanN:          2,
 				SeedPassphrase: "foobar",
 			},
-			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
-				return &wallet.DeterministicWallet{
-					Meta: wallet.Meta{
-						"filename": "filename",
-					},
-					Entries: cloneEntries(entries),
-				}
+			gatewayCreateWalletResult: func(_ string, _ wallet.Options) wallet.Wallet {
+				w, err := deterministic.NewWallet(
+					"filename",
+					"",
+					"seed",
+					wallet.OptionGenerateN(5),
+				)
+				require.NoError(t, err)
+				w.SetTimestamp(0)
+				return w
 			},
 			responseBody: WalletResponse{
 				Meta: readable.WalletMeta{
-					Filename: "filename",
+					Coin:       "skycoin",
+					Filename:   "filename",
+					Type:       "deterministic",
+					Version:    "0.4",
+					CryptoType: "scrypt-chacha20poly1305",
 				},
 				Entries: responseEntries[:],
 			},
@@ -1144,17 +1174,24 @@ func TestWalletCreateHandler(t *testing.T) {
 				ScanN:    2,
 				XPub:     "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8",
 			},
-			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
-				return &wallet.DeterministicWallet{
-					Meta: wallet.Meta{
-						"filename": "filename",
-					},
-					Entries: cloneEntries(entries),
-				}
+			gatewayCreateWalletResult: func(_ string, _ wallet.Options) wallet.Wallet {
+				w, err := deterministic.NewWallet(
+					"filename",
+					"",
+					"seed",
+					wallet.OptionGenerateN(5),
+				)
+				require.NoError(t, err)
+				w.SetTimestamp(0)
+				return w
 			},
 			responseBody: WalletResponse{
 				Meta: readable.WalletMeta{
-					Filename: "filename",
+					Coin:       "skycoin",
+					Filename:   "filename",
+					Type:       "deterministic",
+					Version:    "0.4",
+					CryptoType: "scrypt-chacha20poly1305",
 				},
 				Entries: responseEntries[:],
 			},
@@ -1179,8 +1216,8 @@ func TestWalletCreateHandler(t *testing.T) {
 				Password: []byte{},
 				ScanN:    2,
 			},
-			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
-				return &wallet.DeterministicWallet{
+			gatewayCreateWalletResult: func(_ string, _ wallet.Options) wallet.Wallet {
+				return &deterministic.Wallet{
 					Meta: wallet.Meta{
 						"filename": "filename",
 					},
@@ -1216,8 +1253,8 @@ func TestWalletCreateHandler(t *testing.T) {
 				Password: []byte("pwd"),
 				ScanN:    2,
 			},
-			gatewayCreateWalletResult: func(_ string, _ wallet.Options, _ wallet.TransactionsFinder) wallet.Wallet {
-				return &wallet.DeterministicWallet{
+			gatewayCreateWalletResult: func(_ string, _ wallet.Options) wallet.Wallet {
+				return &deterministic.Wallet{
 					Meta: wallet.Meta{
 						"filename":  "filename",
 						"label":     "bar",
@@ -1255,7 +1292,9 @@ func TestWalletCreateHandler(t *testing.T) {
 			if tc.options.ScanN == 0 {
 				tc.options.ScanN = 1
 			}
-			gateway.On("CreateWallet", "", tc.options, gateway).Return(tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
+			gateway.On("TransactionsFinder").Return(&visor.TransactionsFinder{})
+			tc.options.TF = gateway.TransactionsFinder()
+			gateway.On("CreateWallet", "", tc.options).Return(tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
 
 			endpoint := "/api/v1/wallet/create"
 
@@ -2142,7 +2181,7 @@ func TestWalletScanAddressesHandler(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
-			gateway.On("ScanAddresses", walletID, []byte(tc.password), tc.scanN, gateway).Return(tc.gatewayScanAddressesResult, tc.gatewayScanAddressesErr)
+			gateway.On("ScanWalletAddresses", walletID, []byte(tc.password), tc.scanN).Return(tc.gatewayScanAddressesResult, tc.gatewayScanAddressesErr)
 
 			c := newHTTPMockClient(gateway, ContentTypeForm, tc.disableCSRF)
 
@@ -2244,17 +2283,40 @@ func TestGetWalletFolderHandler(t *testing.T) {
 	}
 }
 
+func TestNewWallet(t *testing.T) {
+	w, err := deterministic.NewWallet("filename", "", "seed", wallet.OptionGenerateN(1))
+	require.NoError(t, err)
+	es, err := w.GetEntries()
+	require.NoError(t, err)
+	fmt.Println(es[0].Address.String())
+}
+
 func TestGetWallets(t *testing.T) {
 	var pubkeys []cipher.PubKey
 	var seckeys []cipher.SecKey
 	var addrs []cipher.Address
 
-	for i := 0; i < 4; i++ {
-		pubkey, seckey := cipher.GenerateKeyPair()
-		addr := cipher.AddressFromPubKey(pubkey)
-		pubkeys = append(pubkeys, pubkey)
-		seckeys = append(seckeys, seckey)
-		addrs = append(addrs, addr)
+	seckeys, err := cipher.GenerateDeterministicKeyPairs([]byte("seed"), 5)
+	require.NoError(t, err)
+	for _, sk := range seckeys {
+		pk := cipher.MustPubKeyFromSecKey(sk)
+		pubkeys = append(pubkeys, pk)
+		addrs = append(addrs, cipher.AddressFromPubKey(pk))
+	}
+
+	// create a deterministic and overwrite its meta data
+	makeDeterministicWalletWithMeta := func(n uint64, m wallet.Meta) wallet.Wallet {
+		w, err := deterministic.NewWallet(
+			"wallet",
+			"filename",
+			"seed",
+			wallet.OptionGenerateN(n))
+		require.NoError(t, err)
+		// overwrite
+		for k, v := range m {
+			w.Meta[k] = v
+		}
+		return w
 	}
 
 	cases := []struct {
@@ -2298,30 +2360,21 @@ func TestGetWallets(t *testing.T) {
 			method: http.MethodGet,
 			status: http.StatusOK,
 			getWalletsResponse: wallet.Wallets{
-				"foofilename": &wallet.DeterministicWallet{
-					Meta: wallet.Meta{
-						"foo":        "bar",
-						"seed":       "fooseed",
-						"lastSeed":   "foolastseed",
-						"coin":       "foocoin",
-						"filename":   "foofilename",
-						"label":      "foolabel",
-						"type":       "footype",
-						"version":    "fooversion",
-						"cryptoType": "foocryptotype",
-						"tm":         "345678",
-						"encrypted":  "true",
-					},
-					Entries: []wallet.Entry{
-						{
-							Address: addrs[0],
-							Public:  pubkeys[0],
-							Secret:  seckeys[0],
-						},
-					},
-				},
-				"foofilename2": &wallet.DeterministicWallet{
-					Meta: wallet.Meta{
+				"foofilename": makeDeterministicWalletWithMeta(1, wallet.Meta{
+					"foo":        "bar",
+					"seed":       "fooseed",
+					"lastSeed":   "foolastseed",
+					"coin":       "foocoin",
+					"filename":   "foofilename",
+					"label":      "foolabel",
+					"type":       "footype",
+					"version":    "fooversion",
+					"cryptoType": "foocryptotype",
+					"tm":         "345678",
+					"encrypted":  "true",
+				}),
+				"foofilename2": makeDeterministicWalletWithMeta(2,
+					wallet.Meta{
 						"foo":        "bar2",
 						"seed":       "fooseed2",
 						"lastSeed":   "foolastseed2",
@@ -2333,17 +2386,9 @@ func TestGetWallets(t *testing.T) {
 						"cryptoType": "foocryptotype",
 						"tm":         "123456",
 						"encrypted":  "false",
-					},
-					Entries: []wallet.Entry{
-						{
-							Address: addrs[1],
-							Public:  pubkeys[1],
-							Secret:  seckeys[1],
-						},
-					},
-				},
-				"foofilename3": &wallet.DeterministicWallet{
-					Meta: wallet.Meta{
+					}),
+				"foofilename3": makeDeterministicWalletWithMeta(3,
+					wallet.Meta{
 						"foo":        "bar3",
 						"seed":       "fooseed3",
 						"lastSeed":   "foolastseed3",
@@ -2355,20 +2400,7 @@ func TestGetWallets(t *testing.T) {
 						"cryptoType": "foocryptotype",
 						"tm":         "234567",
 						"encrypted":  "true",
-					},
-					Entries: []wallet.Entry{
-						{
-							Address: addrs[2],
-							Public:  pubkeys[2],
-							Secret:  seckeys[2],
-						},
-						{
-							Address: addrs[3],
-							Public:  pubkeys[3],
-							Secret:  seckeys[3],
-						},
-					},
-				},
+					}),
 			},
 			httpResponse: []*WalletResponse{
 				{
@@ -2383,6 +2415,10 @@ func TestGetWallets(t *testing.T) {
 						Encrypted:  false,
 					},
 					Entries: []readable.WalletEntry{
+						{
+							Address: addrs[0].String(),
+							Public:  pubkeys[0].Hex(),
+						},
 						{
 							Address: addrs[1].String(),
 							Public:  pubkeys[1].Hex(),
@@ -2402,12 +2438,16 @@ func TestGetWallets(t *testing.T) {
 					},
 					Entries: []readable.WalletEntry{
 						{
-							Address: addrs[2].String(),
-							Public:  pubkeys[2].Hex(),
+							Address: addrs[0].String(),
+							Public:  pubkeys[0].Hex(),
 						},
 						{
-							Address: addrs[3].String(),
-							Public:  pubkeys[3].Hex(),
+							Address: addrs[1].String(),
+							Public:  pubkeys[1].Hex(),
+						},
+						{
+							Address: addrs[2].String(),
+							Public:  pubkeys[2].Hex(),
 						},
 					},
 				},
@@ -2434,39 +2474,42 @@ func TestGetWallets(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		gateway := &MockGatewayer{}
-		gateway.On("GetWallets").Return(tc.getWalletsResponse, tc.getWalletsErr)
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &MockGatewayer{}
+			gateway.On("GetWallets").Return(tc.getWalletsResponse, tc.getWalletsErr)
 
-		endpoint := "/api/v1/wallets"
+			endpoint := "/api/v1/wallets"
 
-		req, err := http.NewRequest(tc.method, endpoint, nil)
-		require.NoError(t, err)
-
-		setCSRFParameters(t, tokenValid, req)
-
-		rr := httptest.NewRecorder()
-
-		cfg := defaultMuxConfig()
-		cfg.disableCSRF = false
-
-		handler := newServerMux(cfg, gateway)
-
-		handler.ServeHTTP(rr, req)
-
-		status := rr.Code
-		require.Equal(t, tc.status, status, "got `%v` want `%v`",
-			tc.name, status, tc.status)
-
-		if status != http.StatusOK {
-			require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
-				strings.TrimSpace(rr.Body.String()), status, tc.err)
-		} else {
-			var msg []*WalletResponse
-			err := json.Unmarshal(rr.Body.Bytes(), &msg)
+			req, err := http.NewRequest(tc.method, endpoint, nil)
 			require.NoError(t, err)
-			require.NotNil(t, msg)
-			require.Equal(t, tc.httpResponse, msg, tc.name)
-		}
+
+			setCSRFParameters(t, tokenValid, req)
+
+			rr := httptest.NewRecorder()
+
+			cfg := defaultMuxConfig()
+			cfg.disableCSRF = false
+
+			handler := newServerMux(cfg, gateway)
+
+			handler.ServeHTTP(rr, req)
+
+			status := rr.Code
+			require.Equal(t, tc.status, status, "got `%v` want `%v`",
+				tc.name, status, tc.status)
+
+			if status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
+					strings.TrimSpace(rr.Body.String()), status, tc.err)
+			} else {
+				var msg []*WalletResponse
+				err := json.Unmarshal(rr.Body.Bytes(), &msg)
+				require.NoError(t, err)
+				require.NotNil(t, msg)
+				require.Equal(t, tc.httpResponse, msg, tc.name)
+			}
+
+		})
 	}
 }
 
@@ -2555,11 +2598,12 @@ func TestWalletUnloadHandler(t *testing.T) {
 }
 
 func TestEncryptWallet(t *testing.T) {
-	entries, responseEntries := makeEntries([]byte("seed"), 5)
+	_, responseEntries := makeEntries([]byte("seed"), 5)
 	type gatewayReturnPair struct {
 		w   wallet.Wallet
 		err error
 	}
+
 	tt := []struct {
 		name          string
 		method        string
@@ -2576,22 +2620,28 @@ func TestEncryptWallet(t *testing.T) {
 			wltID:    "wallet.wlt",
 			password: "pwd",
 			gatewayReturn: gatewayReturnPair{
-				w: &wallet.DeterministicWallet{
-					Meta: wallet.Meta{
-						"filename":  "wallet.wlt",
-						"seed":      "seed",
-						"lastSeed":  "lastSeed",
-						"secrets":   "secrets",
-						"encrypted": "true",
-					},
-					Entries: cloneEntries(entries),
-				},
+				w: func() wallet.Wallet {
+					wlt, err := deterministic.NewWallet(
+						"wallet.wlt",
+						"",
+						"seed",
+						wallet.OptionPassword([]byte("pwd")),
+						wallet.OptionGenerateN(5),
+						wallet.OptionEncrypt(true))
+					require.NoError(t, err)
+					wlt.SetTimestamp(0)
+					return wlt
+				}(),
 			},
 			status: http.StatusOK,
 			expectWallet: WalletResponse{
 				Meta: readable.WalletMeta{
-					Filename:  "wallet.wlt",
-					Encrypted: true,
+					Coin:       "skycoin",
+					Filename:   "wallet.wlt",
+					Type:       "deterministic",
+					Version:    "0.4",
+					CryptoType: "scrypt-chacha20poly1305",
+					Encrypted:  true,
 				},
 				Entries: responseEntries,
 			},
@@ -2709,10 +2759,21 @@ func TestEncryptWallet(t *testing.T) {
 }
 
 func TestDecryptWallet(t *testing.T) {
-	entries, responseEntries := makeEntries([]byte("seed"), 5)
+	_, responseEntries := makeEntries([]byte("seed"), 5)
 	type gatewayReturnPair struct {
 		w   wallet.Wallet
 		err error
+	}
+
+	makeDeterministicWallet := func() wallet.Wallet {
+		w, err := deterministic.NewWallet(
+			"wallet",
+			"filename",
+			"seed",
+			wallet.OptionGenerateN(5))
+		require.NoError(t, err)
+		w.SetTimestamp(0)
+		return w
 	}
 
 	tt := []struct {
@@ -2732,22 +2793,18 @@ func TestDecryptWallet(t *testing.T) {
 			wltID:    "wallet.wlt",
 			password: "pwd",
 			gatewayReturn: gatewayReturnPair{
-				w: &wallet.DeterministicWallet{
-					Meta: wallet.Meta{
-						"filename":  "wallet",
-						"seed":      "seed",
-						"lastSeed":  "lastSeed",
-						"secrets":   "",
-						"encrypted": "false",
-					},
-					Entries: cloneEntries(entries),
-				},
+				w: makeDeterministicWallet(),
 			},
 			status: http.StatusOK,
 			expectWallet: WalletResponse{
 				Meta: readable.WalletMeta{
-					Filename:  "wallet",
-					Encrypted: false,
+					Coin:       "skycoin",
+					Filename:   "wallet",
+					Label:      "filename",
+					Type:       "deterministic",
+					Version:    "0.4",
+					CryptoType: "scrypt-chacha20poly1305",
+					Encrypted:  false,
 				},
 				Entries: responseEntries,
 			},
@@ -2758,22 +2815,18 @@ func TestDecryptWallet(t *testing.T) {
 			wltID:    "wallet.wlt",
 			password: "pwd",
 			gatewayReturn: gatewayReturnPair{
-				w: &wallet.DeterministicWallet{
-					Meta: wallet.Meta{
-						"filename":  "wallet",
-						"seed":      "seed",
-						"lastSeed":  "lastSeed",
-						"secrets":   "",
-						"encrypted": "false",
-					},
-					Entries: cloneEntries(entries),
-				},
+				w: makeDeterministicWallet(),
 			},
 			status: http.StatusOK,
 			expectWallet: WalletResponse{
 				Meta: readable.WalletMeta{
-					Filename:  "wallet",
-					Encrypted: false,
+					Coin:       "skycoin",
+					Filename:   "wallet",
+					Label:      "filename",
+					Type:       "deterministic",
+					Version:    "0.4",
+					CryptoType: "scrypt-chacha20poly1305",
+					Encrypted:  false,
 				},
 				Entries: responseEntries,
 			},
@@ -2892,7 +2945,7 @@ func TestDecryptWallet(t *testing.T) {
 }
 
 // makeEntries derives N wallet address entries from given seed
-// Returns set of wallet.Entry and wallet.ReadableEntry, the readable
+// Returns set of entry.Entry and wallet.ReadableEntry, the readable
 // entries' secrets are removed.
 func makeEntries(seed []byte, n int) ([]wallet.Entry, []readable.WalletEntry) { //nolint:unparam
 	seckeys := cipher.MustGenerateDeterministicKeyPairs(seed, n)
@@ -2913,39 +2966,37 @@ func makeEntries(seed []byte, n int) ([]wallet.Entry, []readable.WalletEntry) { 
 	return entries, responseEntries
 }
 
-func cloneEntries(es []wallet.Entry) []wallet.Entry {
-	var entries []wallet.Entry
-	entries = append(entries, es...)
-	return entries
-}
-
 func TestWalletRecover(t *testing.T) {
 	type gatewayReturnPair struct {
 		w   wallet.Wallet
 		err error
 	}
 
-	okWalletUnencrypted, err := wallet.NewWallet("foo", wallet.Options{
-		Type:      wallet.WalletTypeDeterministic,
-		Coin:      wallet.CoinTypeSkycoin,
-		Label:     "foolabel",
-		Seed:      "fooseed",
-		GenerateN: 10,
-	})
+	okWalletUnencrypted, err := wallet.NewWallet(
+		"foo",
+		"foolabel",
+		"fooseed",
+		wallet.Options{
+			Type:      wallet.WalletTypeDeterministic,
+			Coin:      wallet.CoinTypeSkycoin,
+			GenerateN: 10,
+		})
 	require.NoError(t, err)
 	okWalletUnencryptedResponse, err := NewWalletResponse(okWalletUnencrypted)
 	require.NoError(t, err)
 
-	okWalletEncrypted, err := wallet.NewWallet("foo", wallet.Options{
-		Type:       wallet.WalletTypeDeterministic,
-		Coin:       wallet.CoinTypeSkycoin,
-		Label:      "foolabel",
-		Seed:       "fooseed",
-		Encrypt:    true,
-		Password:   []byte("foopassword"),
-		CryptoType: wallet.CryptoTypeScryptChacha20poly1305Insecure,
-		GenerateN:  10,
-	})
+	okWalletEncrypted, err := wallet.NewWallet(
+		"foo",
+		"foolabel",
+		"fooseed",
+		wallet.Options{
+			Type:       wallet.WalletTypeDeterministic,
+			Coin:       wallet.CoinTypeSkycoin,
+			Encrypt:    true,
+			Password:   []byte("foopassword"),
+			CryptoType: crypto.CryptoTypeScryptChacha20poly1305Insecure,
+			GenerateN:  10,
+		})
 	require.NoError(t, err)
 	okWalletEncryptedResponse, err := NewWalletResponse(okWalletEncrypted)
 	require.NoError(t, err)

@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 func walletAddAddressesCmd() *cobra.Command {
@@ -57,17 +57,25 @@ func generateAddrs(c *cobra.Command, args []string) error {
 		return err
 	}
 
-	w := args[0]
+	wltID := args[0]
 
-	pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
-	addrs, err := GenerateAddressesInFile(w, num, pr)
-
-	switch err.(type) {
-	case nil:
-	case WalletLoadError:
-		printHelp(c)
+	// get the wallet to check if it is encrypted
+	wlt, err := apiClient.Wallet(wltID)
+	if err != nil {
 		return err
-	default:
+	}
+
+	var pwd []byte
+	pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
+	if wlt.Meta.Encrypted && wlt.Meta.Type != wallet.WalletTypeBip44 {
+		pwd, err = pr.Password()
+		if err != nil {
+			return err
+		}
+	}
+
+	addrs, err := apiClient.NewWalletAddress(wltID, int(num), string(pwd))
+	if err != nil {
 		return err
 	}
 
@@ -149,11 +157,11 @@ func GenerateAddressesInFile(walletFile string, num uint64, pr PasswordReader) (
 }
 
 // FormatAddressesAsJSON converts []cipher.Address to strings and formats the array into a standard JSON object wrapper
-func FormatAddressesAsJSON(addrs []cipher.Addresser) (string, error) {
+func FormatAddressesAsJSON(addrs []string) (string, error) {
 	d, err := formatJSON(struct {
 		Addresses []string `json:"addresses"`
 	}{
-		Addresses: AddressesToStrings(addrs),
+		Addresses: addrs,
 	})
 
 	if err != nil {
@@ -164,8 +172,8 @@ func FormatAddressesAsJSON(addrs []cipher.Addresser) (string, error) {
 }
 
 // FormatAddressesAsJoinedArray converts []cipher.Address to strings and concatenates them with a comma
-func FormatAddressesAsJoinedArray(addrs []cipher.Addresser) string {
-	return strings.Join(AddressesToStrings(addrs), ",")
+func FormatAddressesAsJoinedArray(addrs []string) string {
+	return strings.Join(addrs, ",")
 }
 
 // AddressesToStrings converts []cipher.Address to []string

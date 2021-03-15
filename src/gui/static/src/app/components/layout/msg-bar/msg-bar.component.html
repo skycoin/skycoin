@@ -4,7 +4,7 @@
     <div class="text-container">
       <div class="title" *ngIf="config.title">{{ config.title | translate }}</div>
       <div class="text">{{ config.text | translate }}
-      <a *ngIf="config.link" class="link" [href]="config.link" target="_blank" rel="noreferrer nofollow">{{ config.link }}</a></div>
+      <a *ngIf="config.link" class="link" [href]="config.link" target="_blank" rel="noreferrer nofollow noopener">{{ config.link }}</a></div>
     </div>
     <div class="close-container"><mat-icon class="image-button" (click)="hide()">close</mat-icon></div>
   </div>

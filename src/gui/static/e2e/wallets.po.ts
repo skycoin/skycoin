@@ -32,7 +32,7 @@ export class WalletsPage {
   fillWalletForm(label: string, seed: string, confirm: string|null, goToManualSeedMode = true) {
 
     if (goToManualSeedMode) {
-      element(by.css('.seed-type-button >div')).click();
+      element(by.css('.seed-type-button >span')).click();
       if (confirm !== null) {
         element(by.css('.e2e-confirm-checkbox')).click();
       }

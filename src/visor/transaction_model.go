@@ -7,10 +7,10 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/util/timeutil"
-	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
-	"github.com/SkycoinProject/skycoin/src/visor/historydb"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/util/timeutil"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
+	"github.com/skycoin/skycoin/src/visor/historydb"
 )
 
 const (
@@ -164,7 +164,7 @@ func (s *txnHashesContainer) Sort(order SortOrder) error {
 			return lessFunc(j, i)
 		})
 	default:
-		return errors.New("unknow sort order")
+		return errors.New("unknown sort order")
 	}
 
 	return nil

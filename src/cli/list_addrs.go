@@ -4,8 +4,6 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-
-	"github.com/SkycoinProject/skycoin/src/wallet"
 )
 
 func listAddressesCmd() *cobra.Command {
@@ -20,12 +18,10 @@ func listAddressesCmd() *cobra.Command {
 }
 
 func listAddresses(_ *cobra.Command, args []string) error {
-	wlt, err := wallet.Load(args[0])
+	addrs, err := getWalletAddresses(args[0])
 	if err != nil {
-		return WalletLoadError{err}
+		return err
 	}
-
-	addrs := wlt.GetAddresses()
 
 	s, err := FormatAddressesAsJSON(addrs)
 	if err != nil {
@@ -35,4 +31,17 @@ func listAddresses(_ *cobra.Command, args []string) error {
 	fmt.Println(s)
 
 	return nil
+}
+
+func getWalletAddresses(id string) ([]string, error) {
+	wlt, err := apiClient.Wallet(id)
+	if err != nil {
+		return nil, err
+	}
+
+	var addrs []string
+	for _, e := range wlt.Entries {
+		addrs = append(addrs, e.Address)
+	}
+	return addrs, nil
 }

@@ -3,14 +3,14 @@ package api
 import (
 	"time"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/coin"
-	"github.com/SkycoinProject/skycoin/src/daemon"
-	"github.com/SkycoinProject/skycoin/src/kvstorage"
-	"github.com/SkycoinProject/skycoin/src/transaction"
-	"github.com/SkycoinProject/skycoin/src/visor"
-	"github.com/SkycoinProject/skycoin/src/visor/historydb"
-	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/daemon"
+	"github.com/skycoin/skycoin/src/kvstorage"
+	"github.com/skycoin/skycoin/src/transaction"
+	"github.com/skycoin/skycoin/src/visor"
+	"github.com/skycoin/skycoin/src/visor/historydb"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 //go:generate mockery -name Gatewayer -case underscore -inpkg -testonly
@@ -86,7 +86,6 @@ type Visorer interface {
 	GetTransactionWithInputs(txid cipher.SHA256) (*visor.Transaction, []visor.TransactionInput, error)
 	GetTransactions(flts []visor.TxFilter, order visor.SortOrder, page *visor.PageIndex) ([]visor.Transaction, uint64, error)
 	GetTransactionsWithInputs(flts []visor.TxFilter, order visor.SortOrder, page *visor.PageIndex) ([]visor.Transaction, [][]visor.TransactionInput, uint64, error)
-	AddressesActivity(addrs []cipher.Address) ([]bool, error)
 	GetWalletUnconfirmedTransactions(wltID string) ([]visor.UnconfirmedTransaction, error)
 	GetWalletUnconfirmedTransactionsVerbose(wltID string) ([]visor.UnconfirmedTransaction, [][]visor.TransactionInput, error)
 	GetWalletBalance(wltID string) (wallet.BalancePair, wallet.AddressBalances, error)
@@ -94,6 +93,8 @@ type Visorer interface {
 	WalletCreateTransaction(wltID string, p transaction.Params, wp visor.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error)
 	WalletCreateTransactionSigned(wltID string, password []byte, p transaction.Params, wp visor.CreateTransactionParams) (*coin.Transaction, []visor.TransactionInput, error)
 	WalletSignTransaction(wltID string, password []byte, txn *coin.Transaction, signIndexes []int) (*coin.Transaction, []visor.TransactionInput, error)
+	ScanWalletAddresses(wltID string, password []byte, num uint64) ([]cipher.Address, error)
+	TransactionsFinder() wallet.TransactionsFinder
 }
 
 // Walleter interface for wallet.Service methods used by the API
@@ -102,9 +103,9 @@ type Walleter interface {
 	EncryptWallet(wltID string, password []byte) (wallet.Wallet, error)
 	DecryptWallet(wltID string, password []byte) (wallet.Wallet, error)
 	GetWalletSeed(wltID string, password []byte) (string, string, error)
-	CreateWallet(wltName string, options wallet.Options, bg wallet.TransactionsFinder) (wallet.Wallet, error)
+	CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error)
 	RecoverWallet(wltID, seed, seedPassphrase string, password []byte) (wallet.Wallet, error)
-	NewAddresses(wltID string, password []byte, n uint64) ([]cipher.Address, error)
+	NewAddresses(wltID string, password []byte, n uint64, options ...wallet.Option) ([]cipher.Address, error)
 	ScanAddresses(wltID string, password []byte, n uint64, tf wallet.TransactionsFinder) ([]cipher.Address, error)
 	GetWallet(wltID string) (wallet.Wallet, error)
 	GetWallets() (wallet.Wallets, error)

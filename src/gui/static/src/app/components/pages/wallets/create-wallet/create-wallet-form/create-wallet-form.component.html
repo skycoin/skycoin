@@ -2,7 +2,7 @@
   <!-- Wallet label. -->
   <div class="form-field">
     <label for="label">{{ 'wallet.new.name-label' | translate}}</label>
-    <input formControlName="label" id="label" [attr.disabled]="busy ? 'true' : null">
+    <input formControlName="label" id="label" [attr.disabled]="busy ? 'true' : null" [appFormFieldError]="labelErrorMsg" (blur)="validateForm()">
   </div>
   <!-- How many coins the seed has (while loading only). -->
   <div class="form-field" *ngIf="!create && enterSeedWithAssistance">
@@ -29,30 +29,40 @@
       </span>
     </label>
 
-    <!-- First seed field fo the assisted mode. -->
+    <!-- First seed field for the assisted mode. -->
     <ng-container *ngIf="enterSeedWithAssistance">
       <div class="dashed-border non-editable-field" [ngClass]="{'onboarding-version': onboarding, 'show-pointer': !create, 'element-disabled' : busy}" (click)="enterSeed()">
+        <div class="seed-spinner assisted-seed-spinner" *ngIf="checkingAssistedSeed"><mat-spinner></mat-spinner></div>
         <span class="normal-seed-field" *ngIf="create || lastAssistedSeed">{{ lastAssistedSeed }}</span>
         <div *ngIf="!create && lastAssistedSeed" [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.change-seed' | translate }}</div>
         <div *ngIf="!create && !lastAssistedSeed" class="text-with-icon-container">
           <mat-icon class="yellow-text">touch_app</mat-icon><span [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.enter-seed' | translate }}</span>
         </div>
       </div>
-      <div class="seed-type-button" [ngClass]="{'for-onboarding': onboarding, 'element-disabled' : busy}">
-        <div [ngClass]="{'dashed-border': !onboarding}" (click)="changeSeedType();">
-          <img src="assets/img/lock-gold.png" [matTooltip]="'wallet.new.seed.use-custom-seed-help' | translate">
-        </div>
+      <div [ngClass]="{'element-disabled' : busy}" class="seed-type-button">
+        <span class="link" [ngClass]="{'-white-text': onboarding}" (click)="changeSeedType()">
+          <mat-icon [inline]="true">edit</mat-icon>
+          {{ 'wallet.new.seed.use-custom' | translate }}
+        </span>
       </div>
     </ng-container>
 
-    <!-- First seed field fo the manual mode. -->
+    <!-- First seed field for the manual mode. -->
     <ng-container *ngIf="!enterSeedWithAssistance">
       <div class="seed-spinner" *ngIf="checkingCustomSeed"><mat-spinner></mat-spinner></div>
-      <textarea formControlName="seed" id="seed" rows="2" [attr.disabled]="busy ? 'true' : null"></textarea>
-      <div class="seed-type-button" [ngClass]="{'for-onboarding': onboarding, 'element-disabled' : busy}">
-        <div [ngClass]="{'dashed-border': !onboarding}" (click)="changeSeedType();">
-          <img src="assets/img/unlock-grey.png" [matTooltip]="'wallet.new.seed.use-normal-seed-help' | translate">
-        </div>
+      <textarea
+        formControlName="seed"
+        id="seed"
+        rows="2"
+        [attr.disabled]="busy ? 'true' : null"
+        [appFormFieldError]="seed1ErrorMsg"
+        (blur)="validateForm()"
+      ></textarea>
+      <div class="seed-type-button" [ngClass]="{'element-disabled' : busy}">
+        <span class="link" [ngClass]="{'-white-text': onboarding}" (click)="changeSeedType()">
+          <mat-icon [inline]="true">format_list_numbered</mat-icon>
+          {{ 'wallet.new.seed.use-normal' | translate }}
+        </span>
       </div>
     </ng-container>
 
@@ -62,7 +72,7 @@
   </div>
   <div class="form-field" *ngIf="create">
     <label for="confirm_seed">{{ 'wallet.new.confirm-seed-label' | translate}}</label>
-    <!-- Second seed field fo the assisted mode. -->
+    <!-- Second seed field for the assisted mode. -->
     <ng-container *ngIf="enterSeedWithAssistance">
       <div class="dashed-border non-editable-field" [ngClass]="{'onboarding-version': onboarding, 'show-pointer': !assistedSeedConfirmed, 'element-disabled' : busy}" (click)="confirmSeed()">
         <div *ngIf="!assistedSeedConfirmed" class="text-with-icon-container">
@@ -74,9 +84,17 @@
       </div>
     </ng-container>
 
-    <!-- Second seed field fo the manual mode. -->
+    <!-- Second seed field for the manual mode. -->
     <ng-container *ngIf="!enterSeedWithAssistance">
-      <textarea formControlName="confirm_seed" id="confirm_seed" rows="2" [attr.disabled]="busy ? 'true' : null"></textarea>
+      <div class="seed-spinner" *ngIf="checkingCustomSeed"><mat-spinner></mat-spinner></div>
+      <textarea
+        formControlName="confirm_seed"
+        id="confirm_seed"
+        rows="2"
+        [attr.disabled]="busy ? 'true' : null"
+        [appFormFieldError]="seed2ErrorMsg"
+        (blur)="validateForm()"
+      ></textarea>
     </ng-container>
   </div>
   <!-- Password area. -->
@@ -95,13 +113,30 @@
       <div class="col-md-6" *ngIf="encrypt">
         <div class="form-field">
           <label for="password">{{ 'password.password-label' | translate }}</label>
-          <input formControlName="password" id="password" type="password" appDontSavePassword [attr.disabled]="busy ? 'true' : null">
+          <input
+            formControlName="password"
+            id="password"
+            type="password"
+            appDontSavePassword
+            [attr.disabled]="busy ? 'true' : null"
+            [appFormFieldError]="password1ErrorMsg"
+            (blur)="validateForm()"
+          >
         </div>
       </div>
       <div class="col-md-6" *ngIf="encrypt">
         <div class="form-field">
           <label for="confirm_password">{{ 'password.confirm-password-label' | translate }}</label>
-          <input formControlName="confirm_password" id="confirm_password" type="password" appDontSavePassword (keydown.enter)="requestCreation()" [attr.disabled]="busy ? 'true' : null">
+          <input
+            formControlName="confirm_password"
+            id="confirm_password"
+            type="password"
+            appDontSavePassword
+            (keydown.enter)="requestCreation()"
+            [attr.disabled]="busy ? 'true' : null"
+            [appFormFieldError]="password2ErrorMsg"
+            (blur)="validateForm()"
+          >
         </div>
       </div>
     </div>

@@ -1,10 +1,10 @@
-import { throwError as observableThrowError, SubscriptionLike, of } from 'rxjs';
+import { throwError as observableThrowError, SubscriptionLike, concat, of } from 'rxjs';
 import { Component, EventEmitter, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import * as moment from 'moment';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { TranslateService } from '@ngx-translate/core';
-import { retryWhen, delay, take, concat, mergeMap } from 'rxjs/operators';
+import { retryWhen, delay, take, mergeMap } from 'rxjs/operators';
 
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { ExchangeService, StoredExchangeOrder, TradingPair, ExchangeOrder } from '../../../../services/exchange.service';
@@ -29,7 +29,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   // Coin the user will receive.
   readonly toCoin = 'SKY';
 
-  @ViewChild('exchangeButton', { static: false }) exchangeButton: ButtonComponent;
+  @ViewChild('exchangeButton') exchangeButton: ButtonComponent;
   // Event emited when the order has been created.
   @Output() submitted = new EventEmitter<StoredExchangeOrder>();
 
@@ -40,6 +40,13 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   problemGettingPairs = false;
   // If true, the form is shown deactivated.
   busy = false;
+
+  // Vars with the validation error messages.
+  coinErrorMsg = '';
+  amountErrorMsg = '';
+  addressErrorMsg = '';
+  amountTooLow = false;
+  amountTooHight = false;
 
   // If the user has acepted the agreement.
   private agreement = false;
@@ -176,12 +183,12 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   // Inits the form.
   private createForm() {
     this.form = this.formBuilder.group({
-      fromCoin: [this.defaultFromCoin, Validators.required],
-      fromAmount: [this.defaultFromAmount, Validators.required],
-      toAddress: ['', Validators.required],
-    }, {
-      validator: this.validate.bind(this),
+      fromCoin: [this.defaultFromCoin],
+      fromAmount: [this.defaultFromAmount],
+      toAddress: [''],
     });
+
+    this.form.setValidators(this.validateForm.bind(this));
 
     this.subscriptionsGroup.push(this.form.get('fromCoin').valueChanges.subscribe(() => {
       this.updateActiveTradingPair();
@@ -191,7 +198,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   // Loads the available trading pairs from the backend.
   private loadData() {
     this.subscriptionsGroup.push(this.exchangeService.tradingPairs()
-      .pipe(retryWhen(errors => errors.pipe(delay(2000), take(10), concat(observableThrowError('')))))
+      .pipe(retryWhen(errors => concat(errors.pipe(delay(2000), take(10)), observableThrowError(''))))
       .subscribe(pairs => {
         this.tradingPairs = [];
 
@@ -242,38 +249,84 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Validates the form.
-  private validate(group: FormGroup) {
-    if (!group || !this.activeTradingPair) {
-      return { invalid: true };
+  /**
+   * Validates the form and updates the vars with the validation errors.
+   */
+  validateForm() {
+    this.coinErrorMsg = '';
+    this.amountErrorMsg = '';
+    this.addressErrorMsg = '';
+    this.amountTooLow = false;
+    this.amountTooHight = false;
+
+    if (!this.activeTradingPair) {
+      return null;
     }
 
-    const fromAmount = group.get('fromAmount').value;
+    let valid = true;
 
-    if (isNaN(fromAmount)) {
-      return { invalid: true };
+    const fromAmount = this.form.get('fromAmount').value;
+
+    // There must be a from amount.
+    if (!fromAmount || isNaN(fromAmount)) {
+      valid = false;
+      if (this.form.get('fromAmount').touched) {
+        this.amountErrorMsg = 'exchange.invalid-value-error-info';
+      }
+    } else {
+      const parts = (fromAmount as string).split('.');
+
+      // If there is a from amount, it must not have more than 6 decimals.
+      if (parts.length > 1 && parts[1].length > 6) {
+        valid = false;
+        if (this.form.get('fromAmount').touched) {
+          this.amountErrorMsg = 'exchange.invalid-value-error-info';
+        }
+      }
     }
 
-    // The value is included in the error to show it on the UI.
-    if (fromAmount < this.activeTradingPair.min || fromAmount === '') {
-      return { min: this.activeTradingPair.min };
+    // If there is a from amount, it must be inside the limits.
+    if (valid) {
+      if (fromAmount < this.activeTradingPair.min) {
+        this.amountTooLow = true;
+        valid = false;
+        if (this.form.get('fromAmount').touched) {
+          this.amountErrorMsg = 'exchange.invalid-value-error-info';
+        }
+      }
+
+      if (fromAmount > this.activeTradingPair.max) {
+        this.amountTooHight = true;
+        valid = false;
+        if (this.form.get('fromAmount').touched) {
+          this.amountErrorMsg = 'exchange.invalid-value-error-info';
+        }
+      }
     }
 
-    if (fromAmount > this.activeTradingPair.max) {
-      return { max: this.activeTradingPair.max };
+    // There must be a selected coin for the from amount.
+    if (!this.form.get('fromCoin').value) {
+      valid = false;
+      if (this.form.get('fromCoin').touched) {
+        this.coinErrorMsg = 'exchange.from-coin-error-info';
+      }
     }
 
-    const parts = (fromAmount as string).split('.');
-
-    if (parts.length > 1 && parts[1].length > 6) {
-      return { decimals: true };
+    // There must be a valid destination address.
+    const address = this.form.get('toAddress').value as string;
+    if (!address || address.length < 20) {
+      valid = false;
+      if (this.form.get('toAddress').touched) {
+        this.addressErrorMsg = 'exchange.address-error-info';
+      }
     }
 
+    // The user must accept the agreement.
     if (!this.agreement) {
-      return { agreement: true };
+      valid = false;
     }
 
-    return null;
+    return valid ? null : { Invalid: true };
   }
 
   private removeExchangeSubscription() {

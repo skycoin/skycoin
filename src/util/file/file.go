@@ -12,8 +12,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/util/logging"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 var (
@@ -146,8 +146,9 @@ func SaveJSONSafe(filename string, thing interface{}, mode os.FileMode) error {
 		if removeErr := os.Remove(filename); removeErr != nil {
 			logger.WithError(removeErr).Warningf("os.Remove(%s) failed", filename)
 		}
+		return err
 	}
-	return err
+	return f.Sync()
 }
 
 // SaveBinary persists data into given file in binary,

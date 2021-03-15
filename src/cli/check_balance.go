@@ -6,10 +6,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/readable"
-	"github.com/SkycoinProject/skycoin/src/util/droplet"
-	"github.com/SkycoinProject/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/util/droplet"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 // Balance represents an coin and hours balance
@@ -96,16 +96,15 @@ func addrBalance(_ *cobra.Command, args []string) error {
 // PUBLIC
 
 // CheckWalletBalance returns the total and individual balances of addresses in a wallet file
-func CheckWalletBalance(c GetOutputser, walletFile string) (*BalanceResult, error) {
-	wlt, err := wallet.Load(walletFile)
+func CheckWalletBalance(c GetOutputser, id string) (*BalanceResult, error) {
+	wlt, err := apiClient.Wallet(id)
 	if err != nil {
-		return nil, WalletLoadError{err}
+		return nil, err
 	}
 
 	var addrs []string
-	addresses := wlt.GetAddresses()
-	for _, a := range addresses {
-		addrs = append(addrs, a.String())
+	for _, e := range wlt.Entries {
+		addrs = append(addrs, e.Address)
 	}
 
 	return GetBalanceOfAddresses(c, addrs)

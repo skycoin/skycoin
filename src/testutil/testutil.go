@@ -12,11 +12,11 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/stretchr/testify/require"
 
-	"github.com/SkycoinProject/skycoin/src/cipher"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip32"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip39"
-	"github.com/SkycoinProject/skycoin/src/cipher/bip44"
-	"github.com/SkycoinProject/skycoin/src/visor/dbutil"
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/bip32"
+	"github.com/skycoin/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
+	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
 
 // PrepareDB creates and opens a temporary test DB and returns it with a cleanup callback
@@ -25,6 +25,37 @@ func PrepareDB(t *testing.T) (*dbutil.DB, func()) {
 	require.NoError(t, err)
 
 	db, err := bolt.Open(f.Name(), 0700, nil)
+	require.NoError(t, err)
+
+	return dbutil.WrapDB(db), func() {
+		err := db.Close()
+		if err != nil {
+			t.Logf("Failed to close database: %v", err)
+		}
+
+		err = f.Close()
+		if err != nil {
+			t.Logf("Failed to close file: %v", err)
+		}
+
+		err = os.Remove(f.Name())
+		if err != nil {
+			t.Logf("Failed to remove temp file %s: %v", f.Name(), err)
+		}
+	}
+}
+
+// PrepareDBReadOnly creates and opens a readonly temporary test DB and returns it with a cleanup callback
+func PrepareDBReadOnly(t *testing.T) (*dbutil.DB, func()) {
+	f, err := ioutil.TempFile("", "testdb")
+	require.NoError(t, err)
+
+	// Open to init the DB, otherwise bolt will try to open an readonly db to init and fail.
+	db, err := bolt.Open(f.Name(), 0700, nil)
+	require.NoError(t, err)
+	require.NoError(t, db.Close())
+
+	db, err = bolt.Open(f.Name(), 0600, &bolt.Options{ReadOnly: true})
 	require.NoError(t, err)
 
 	return dbutil.WrapDB(db), func() {

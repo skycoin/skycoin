@@ -38,7 +38,7 @@ export class WalletDetailComponent implements OnDestroy {
   confirmingIndex = null;
   // If there is currently an operation with the addresses being done.
   workingWithAddresses = false;
-  // If the preparations for renaming a wallet are being done.
+  // If the preparations for renaming the wallet are being done.
   preparingToRename = false;
   // If all addresses without coins must be hidden on the address list.
   hideEmpty = false;
@@ -101,12 +101,6 @@ export class WalletDetailComponent implements OnDestroy {
     this.msgBarService.hide();
 
     if (this.wallet.isHardware) {
-      if (WalletsComponent.busy) {
-        this.msgBarService.showError('wallet.busy-error');
-
-        return;
-      }
-
       this.preparingToRename = true;
       WalletsComponent.busy = true;
 
@@ -204,8 +198,8 @@ export class WalletDetailComponent implements OnDestroy {
         });
 
         // Try to use the current known balance to check if the new addresses will create
-        // a gap of unused addresses bigger than the aceptable one. This is just a quick
-        // which is faster but could fail, as the code must detect a gap of unused addresses,
+        // a gap of unused addresses bigger than the aceptable one. This is just a quick method
+        // which is fast but could fail, as the code must detect a gap of unused addresses,
         // not one of addresses without balance.
         if ((this.wallet.addresses.length - (lastWithBalance + 1)) + howManyAddresses < maxAddressesGap) {
           callback(true);
@@ -327,10 +321,10 @@ export class WalletDetailComponent implements OnDestroy {
 
   /**
    * Shows a modal window for the user to confirm if the address shown on the UI is equal to
-   * the one stored on the device.
-   * @param wallet Wallet with the address toc be confirmed.
-   * @param addressIndex Index of the address on the wallet.
-   * @param showCompleteConfirmation Must be true if the address has not been donfirmed yet, to
+   * the one stored on the hw wallet.
+   * @param wallet Wallet with the address to be confirmed.
+   * @param addressIndex Index of the address on the hw wallet.
+   * @param showCompleteConfirmation Must be true if the address has not been confirmed yet, to
    * show a longer success message after the user confirms the address.
    */
   confirmAddress(wallet: WalletWithBalance, addressIndex: number, showCompleteConfirmation: boolean) {
@@ -393,7 +387,7 @@ export class WalletDetailComponent implements OnDestroy {
   // to add to it the addresses with transactions which have not been added to the addresses
   // list. Only for software wallets.
   private scanAddresses() {
-    if (this.workingWithAddresses) {
+    if (this.workingWithAddresses || this.wallet.isHardware) {
       return;
     }
 
@@ -407,7 +401,7 @@ export class WalletDetailComponent implements OnDestroy {
     WalletsComponent.busy = true;
 
     // Ask for the password if the wallet is encrypted.
-    if (!this.wallet.isHardware && this.wallet.encrypted) {
+    if (this.wallet.encrypted) {
       const dialogRef = PasswordDialogComponent.openDialog(this.dialog, { wallet: this.wallet });
 
       dialogRef.afterClosed().subscribe(() => {
@@ -424,6 +418,9 @@ export class WalletDetailComponent implements OnDestroy {
   // Asks the node to scan the addresses of the wallet again.
   private continueScanningAddresses(passwordSubmitEvent?: PasswordSubmitEvent) {
     const password = passwordSubmitEvent ? passwordSubmitEvent.password : null;
+
+    this.workingWithAddresses = true;
+    WalletsComponent.busy = true;
 
     this.scanSubscription = this.walletsAndAddressesService.scanAddresses(this.wallet, password).subscribe(result => {
       if (passwordSubmitEvent) {
@@ -470,10 +467,9 @@ export class WalletDetailComponent implements OnDestroy {
         }, error => passwordDialog.error(error));
       });
     } else {
-
       let procedure: Observable<any>;
 
-      if (this.wallet.isHardware ) {
+      if (this.wallet.isHardware) {
         // Continue after checking the device.
         procedure = this.hwWalletService.checkIfCorrectHwConnected(this.wallet.addresses[0].address).pipe(mergeMap(
           () => this.walletsAndAddressesService.addAddressesToWallet(this.wallet, howManyAddresses),

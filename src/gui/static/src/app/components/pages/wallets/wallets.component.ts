@@ -53,7 +53,7 @@ export class WalletsComponent implements OnInit, OnDestroy {
       this.wallets = [];
       this.hardwareWallets = [];
 
-      // Create a map wit the wallets and put each wallet on the appropiate array.
+      // Create a map with the wallets and put each wallet on the appropiate array.
       const walletsMap = new Map<string, boolean>();
       wallets.forEach(value => {
         walletsMap.set(value.id, true);

@@ -5,10 +5,11 @@ export const AppConfig = {
 
   /**
    * If true, the option for buying coins via the OTC service will be enabled.
+   * Note: not updated in long time, most likely it won't work.
    */
   otcEnabled: false,
   /**
-   * How many coins the hw wallet can have.
+   * How many addresses the hw wallet can have.
    */
   maxHardwareWalletAddresses: 1,
   /**

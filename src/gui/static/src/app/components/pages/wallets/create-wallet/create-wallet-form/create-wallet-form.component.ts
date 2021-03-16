@@ -46,7 +46,8 @@ export class WalletFormData {
   lastCustomSeed: string;
   /**
    * If creating a new wallet, how many words the automatically generated seed for the
-   * assisted mode has. If loading a wallet, how many words the seed entered by the user has.
+   * assisted mode has. If loading a wallet, how many words the seed entered by the user with
+   * the assisted mode has.
    */
   numberOfWords: number;
   /**
@@ -320,7 +321,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
       this.statusSubscription.unsubscribe();
     }
     this.statusSubscription = this.form.statusChanges.subscribe(() => {
-      // Invaidate the custom seed confirmation if the data on the form is changed.
+      // Invalidate the custom seed confirmation if the data on the form is changed.
       this.customSeedAccepted = false;
       this.seed.next(this.form.get('seed').value);
     });
@@ -378,9 +379,11 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
       } else {
         return of(0);
       }
-    })).subscribe(() => {
+    })).subscribe(result => {
+      // The entered seed does not have problems if the backend (not the previous code) returned
+      // a success response.
+      this.customSeedIsNormal = result !== 0;
       this.checkingCustomSeed = false;
-      this.customSeedIsNormal = true;
     }, (error: OperationError) => {
       this.checkingCustomSeed = false;
       // If the node said the seed is not standard, ask the user for confirmation before
@@ -389,6 +392,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
       if (error && error.originalError && error.originalError.status === 422) {
         this.customSeedIsNormal = false;
       } else {
+        // There was a problem performing the procedure.
         this.customSeedIsNormal = true;
         this.msgBarService.showWarning('wallet.new.seed-checking-error');
       }

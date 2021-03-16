@@ -10,7 +10,7 @@ import { AppService } from '../services/app.service';
  * Also, the pipe can receive 2 optional arguments: the first one is a boolean value indicating
  * if the provided number must be converted to a coin amount (true) or an hour amount (false);
  * while the second one is a string which can be 'first', for the pipe to return only the first part
- * of the amount (the fometted number without the coin name), or 'last', for the pipe to return
+ * of the amount (the formatted number without the coin name), or 'last', for the pipe to return
  * only the last part of the amount (the coin or hours name).
  */
 @Pipe({

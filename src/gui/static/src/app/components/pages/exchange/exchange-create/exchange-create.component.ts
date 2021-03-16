@@ -55,7 +55,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   private exchangeSubscription: SubscriptionLike;
   private priceUpdateSubscription: SubscriptionLike;
 
-  // Approximately how many coin will be received for the amount of coins the user will send,
+  // Approximately how many coins will be received for the amount of coins the user will send,
   // as per the value entered on the form and the current price.
   get toAmount(): string {
     if (!this.activeTradingPair) {
@@ -70,7 +70,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
     }
   }
 
-  // How many coin the user will send, converted to a valid number.
+  // How many coins the user will send, converted to a valid number.
   get sendAmount(): number {
     const val = this.form.get('fromAmount').value;
 

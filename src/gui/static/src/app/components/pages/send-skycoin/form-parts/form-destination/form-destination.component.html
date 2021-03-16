@@ -97,7 +97,7 @@
           [matTooltip]="insufficientCoins ? ('send.insufficient-funds-error-info' | translate) : ''"
           matTooltipClass="error-tooltip"
         >
-          <span>{{ 'send.total-to-send' | translate }}</span> {{ totalCoins.toString() | amount }}
+          <span>{{ 'send.total-to-send' | translate }}</span> {{ totalCoins | amount }}
           <ng-container *ngIf="price">/ {{ totalFiat.toString() | number:'1.0-2' }} {{ 'common.usd' | translate }}</ng-container>
         </div>
       </div>
@@ -108,7 +108,7 @@
           [matTooltip]="insufficientHours ? ('send.insufficient-funds-error-info' | translate) : ''"
           matTooltipClass="error-tooltip"
         >
-          <span>{{ 'send.total-to-send' | translate }}</span> {{ totalHours.toString() | amount:false }}
+          <span>{{ 'send.total-to-send' | translate }}</span> {{ totalHours | amount:false }}
         </div>
       </div>
     </div>

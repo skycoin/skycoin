@@ -43,7 +43,7 @@ export class ExchangeComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Check if there is a "last vieved" order saved and, if there is one, show its status.
+    // Check if there is a "last viewed" order saved and, if there is one, show its status.
     this.lastViewedSubscription = this.exchangeService.lastViewedOrderLoaded.subscribe(response => {
       if (response) {
         const lastViewedOrder = this.exchangeService.lastViewedOrder;
@@ -56,7 +56,7 @@ export class ExchangeComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Check if there is an previously created orders history.
+    // Check if there is a previously created orders history.
     this.historySubscription = this.exchangeService.history().subscribe(() => this.hasHistory = true);
   }
 

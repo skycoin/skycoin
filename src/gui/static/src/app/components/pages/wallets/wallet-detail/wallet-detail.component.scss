@@ -84,6 +84,7 @@
       margin: 0 5px;
       display: flex;
       align-items: center;
+      opacity: 0.8;
 
       &.-img::before {
         content: '';
@@ -130,7 +131,6 @@
     &:hover {
       span {
         color: $grey;
-        opacity: 0.8;
 
         &.-address-options::before {
           background-image: url(/assets/img/list-blue.png);

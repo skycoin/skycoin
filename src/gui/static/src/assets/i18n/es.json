@@ -100,7 +100,7 @@
     "decrypt-button": "Desencriptar Billetera",
     "decrypt-warning": "Advertencia: por razones de seguridad, no se recomienda mantener las carteras desencriptadas. Se aconseja precaución.",
     "delete-button" : "Borrar Billetera",
-    "rename-button": "Rename",
+    "rename-button": "Renombrar",
     "add-button": "Nueva Billetera",
     "load-button": "Cargar Billetera",
     "hardware-wallet-button": "Skywallet",

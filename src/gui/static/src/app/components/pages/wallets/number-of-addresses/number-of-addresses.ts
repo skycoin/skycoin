@@ -24,7 +24,7 @@ export interface NumberOfAddressesEventData {
 }
 
 /**
- * Modal window for entering how many addresses to add to a wallet. If does not add the
+ * Modal window for entering how many addresses to add to a wallet. It does not add the
  * addresses, but emits an event for informing the caller when the addresses must be created.
  */
 @Component({

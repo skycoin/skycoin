@@ -7,7 +7,7 @@ import { AppService } from '../services/app.service';
  * hours: returns the name of the coin hours.
  * coin: returns the short name of the coin, like 'SKY' for Skycoin.
  * coinFull: returns the full name of the coin, like 'Skycoin'.
- * The pipe expect the value to be exactly one of the previously listed strings.
+ * The pipe expects the value to be exactly one of the previously listed strings.
  */
 @Pipe({
   name: 'commonText',

@@ -68,6 +68,7 @@ export class AppComponent implements OnInit {
       subscription.unsubscribe();
     });
 
+    // Assign the snackbar UI, but after it is loaded.
     setTimeout(() => {
       this.msgBarService.msgBarComponent = this.msgBar;
     });

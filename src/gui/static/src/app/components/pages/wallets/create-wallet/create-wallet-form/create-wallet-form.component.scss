@@ -116,6 +116,14 @@ label[for=seed] {
   }
 }
 
+.white-mat-spinner {
+  ::ng-deep svg {
+    circle {
+      stroke: $white;
+    }
+  }
+}
+
 .assisted-seed-spinner {
   top: -14px !important;
   left: -14px !important;

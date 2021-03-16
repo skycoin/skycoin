@@ -69,6 +69,7 @@ export class OnboardingEncryptWalletComponent implements OnInit, OnDestroy {
     this.onBack.emit();
   }
 
+  // Returns the continue button to its initial state.
   resetButton() {
     this.button.resetState();
   }

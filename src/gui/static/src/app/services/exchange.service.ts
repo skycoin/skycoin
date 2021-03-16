@@ -123,7 +123,7 @@ export class ExchangeService {
 
   /**
    * Allows to know when the process of loading the last viewed order has been finished.
-   * If does not guarantee that an order was loaded, as maybe the user has never
+   * It does not guarantee that an order was loaded, as maybe the user has never
    * checked the state of an order.
    */
   lastViewedOrderLoaded: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);

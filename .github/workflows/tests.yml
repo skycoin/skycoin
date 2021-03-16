@@ -9,7 +9,7 @@ on:
 jobs:
     Test:
         name: Do ${{ matrix.test }} tests
-        runs-on: ubuntu-16.04
+        runs-on: ubuntu-20.04
         strategy:
             matrix:
                 test: [units, integrations, integrations/disable-csrf, integrations/auth]
@@ -30,8 +30,6 @@ jobs:
               env:
                   TEST_SUIT: ${{ matrix.test }}
               run: |
-                sudo apt-get update
-                sudo apt-get upgrade google-chrome-stable -y
                 Xvfb -ac :99 -screen 0 1280x1024x16 & export DISPLAY=:99
                 ./ci-scripts/lint-and-test.sh
     Build:

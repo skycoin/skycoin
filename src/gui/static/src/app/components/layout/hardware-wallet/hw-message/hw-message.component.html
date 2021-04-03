@@ -15,8 +15,9 @@
       <span class="big-text">{{ upperBigText }}</span>
     </div>
     <span *ngIf="text">{{ text }}</span>
-    <span *ngIf="linkText && !linkIsUrl" class="link" (click)="activateLink()">{{ linkText }}</span>
-    <span *ngIf="linkText && linkIsUrl"><a class="link" [href]="linkText" target="_blank" rel="noreferrer nofollow noopener">{{ linkText }}</a></span>
+    <span *ngIf="link && !linkIsUrl" class="link" (click)="activateLink()">{{ linkText ? linkText : link }}</span>
+    <span *ngIf="link && linkIsUrl && !linkIsInternal"><a class="link" [href]="link" target="_blank" rel="noreferrer nofollow noopener">{{ linkText ? linkText : link }}</a></span>
+    <span *ngIf="link && linkIsUrl && linkIsInternal"><a class="link" [href]="link">{{ linkText ? linkText : link }}</a></span>
     <div *ngIf="outputsList" class="list">
       <div *ngFor="let output of outputsList" class="list-element">
         <span>• {{ output.coins.toString() | amount }}</span>

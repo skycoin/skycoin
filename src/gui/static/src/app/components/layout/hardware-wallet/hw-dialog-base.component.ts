@@ -22,6 +22,16 @@ export class ResultData {
    */
   link?: String;
   /**
+   * Text to show for the link, in case the raw value set in the "link" var is not what the
+   * UI must show. If not set, the value of the "link" var is used.
+   */
+  linkText?: String;
+  /**
+   * If true, the route set in the "link" var is used as an internal link, so it is not openned
+   * in a new tab.
+   */
+  linkIsInternal?: boolean;
+  /**
    * Icon to show.
    */
   icon: MessageIcons;
@@ -138,6 +148,15 @@ export class HwDialogBaseComponent<T> implements OnDestroy {
       if (result.text === 'hardware-wallet.errors.daemon-connection' || result.text.indexOf('Problem connecting to the Skywallet Daemon') !== -1) {
         result.text = 'hardware-wallet.errors.daemon-connection-with-configurable-link';
         result.link = AppConfig.hwWalletDaemonDownloadUrl;
+      }
+
+      // If the operation was cancelled for inactivity, a link to open the page for wiping the
+      // Skywallet is added.
+      if (result.text === 'hardware-wallet.errors.timeout') {
+        result.text = 'hardware-wallet.errors.timeout-with-configurable-link';
+        result.linkText = 'force-skywallet-wipe.title';
+        result.link = '#/skywallet-wipe';
+        result.linkIsInternal = true;
       }
 
       this.currentState = States.ShowingResult;

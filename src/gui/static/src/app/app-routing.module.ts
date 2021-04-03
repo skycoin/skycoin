@@ -41,11 +41,16 @@ const ROUTES = [
     component: BuyComponent,
     canActivate: [WizardGuardService],
   },
+  /*
+
+  Route for the Swaplab integration. Should be removed if the integration is not restored.
+
   {
     path: 'exchange',
     component: ExchangeComponent,
     canActivate: [WizardGuardService],
   },
+  */
   {
     path: 'settings',
     children: [

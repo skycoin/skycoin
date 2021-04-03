@@ -32,6 +32,7 @@ peer_list_url = "https://downloads.skycoin.com/blockchain/peers.txt"
 # coin_hours_display_name = "Coin Hours"
 # coin_hours_display_name_singular = "Coin Hour"
 # coin_hours_ticker = "SCH"
+# qr_uri_prefix = "skycoin"
 # explorer_url = "https://explorer.skycoin.com"
 # bip44_coin = 8000
 

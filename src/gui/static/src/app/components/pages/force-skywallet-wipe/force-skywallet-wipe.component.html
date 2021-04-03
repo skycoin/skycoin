@@ -1,0 +1,19 @@
+<app-header [headline]="'force-skywallet-wipe.title' | translate"></app-header>
+<div class="container">
+  <div class="paper">
+    <div class="text-center">
+      <mat-icon class="icon yellow-text" [inline]="true">warning</mat-icon>
+    </div>
+    <div class="text-center">
+      {{ 'force-skywallet-wipe.operation-warning' | translate }}
+    </div>
+    <div class="text-center">
+      <app-button (action)="back()">
+        {{ 'common.back-button' | translate }}
+      </app-button>
+      <app-button (action)="proceed()" class="primary-button">
+        {{ 'force-skywallet-wipe.proceed-button' | translate }}
+      </app-button>
+    </div>
+  </div>
+</div>

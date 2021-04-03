@@ -98,4 +98,6 @@
     </ng-container>
     <div *ngIf="viewingTruncatedList" class="view-all-button" (click)="showAll()">{{ 'history.view-all' | translate:{ number:totalElements } }}</div>
   </div>
+  <!-- Needed to force Chrome respect any previous bottom margin. -->
+  <div class="final-element"></div>
 </div>

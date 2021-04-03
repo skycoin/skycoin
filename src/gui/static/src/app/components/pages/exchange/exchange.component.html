@@ -1,6 +1,12 @@
 <app-header [headline]="'exchange.title-and-button' | translate:{coinName: appService.coinName}"></app-header>
 <div class="container">
   <div class="paper">
+    <app-loading-content
+      [isLoading]="false"
+      noDataText="exchange.unavailable"
+      *ngIf="unavailable"
+    ></app-loading-content>
+
     <app-exchange-create
       *ngIf="!currentOrderDetails && !loading"
       (submitted)="showStatus($event)"
@@ -32,4 +38,6 @@
       </span>
     </div>
   </div>
+  <!-- Needed to force Chrome respect any previous bottom margin. -->
+  <div class="final-element"></div>
 </div>

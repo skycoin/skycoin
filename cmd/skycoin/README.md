@@ -119,7 +119,7 @@ Usage:
   -db-read-only
     	open bolt db read-only
   -disable-api-sets string
-    	disable API set. Options are READ, STATUS, WALLET, TXN, PROMETHEUS, NET_CTRL, INSECURE_WALLET_SEED, STORAGE. Multiple values should be separated by comma
+    	disable API set. Options are READ, STATUS, WALLET, TXN, NET_CTRL, INSECURE_WALLET_SEED, STORAGE. Multiple values should be separated by comma
   -disable-csp
     	disable content-security-policy in http response
   -disable-csrf
@@ -141,7 +141,7 @@ Usage:
   -enable-all-api-sets
     	enable all API sets, except for deprecated or insecure sets. This option is applied before -disable-api-sets.
   -enable-api-sets string
-    	enable API set. Options are READ, STATUS, WALLET, TXN, PROMETHEUS, NET_CTRL, INSECURE_WALLET_SEED, STORAGE. Multiple values should be separated by comma (default "READ,TXN")
+    	enable API set. Options are READ, STATUS, WALLET, TXN, NET_CTRL, INSECURE_WALLET_SEED, STORAGE. Multiple values should be separated by comma (default "READ,TXN")
   -enable-gui
     	Enable GUI
   -genesis-address string
@@ -394,7 +394,7 @@ Open the database file in read-only mode.
 ### disable-api-sets
 
 Disable one or more API sets. Possible API sets are:
-`READ`, `STATUS`, `WALLET`, `TXN`, `PROMETHEUS`, `NET_CTRL`, `INSECURE_WALLET_SEED`, `STORAGE`.
+`READ`, `STATUS`, `WALLET`, `TXN`, `NET_CTRL`, `INSECURE_WALLET_SEED`, `STORAGE`.
 Multiple values should be separated by comma. Combine with `enable-all-api-sets` to blacklist specific API sets.
 
 Read more about API sets here: https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#api-sets
@@ -449,7 +449,7 @@ Read more about API sets here: https://github.com/skycoin/skycoin/blob/develop/s
 ### enable-api-sets
 
 Enable one or more API sets. Possible API sets are:
-`READ`, `STATUS`, `WALLET`, `TXN`, `PROMETHEUS`, `NET_CTRL`, `INSECURE_WALLET_SEED`, `STORAGE`.
+`READ`, `STATUS`, `WALLET`, `TXN`, `NET_CTRL`, `INSECURE_WALLET_SEED`, `STORAGE`.
 Multiple values should be separated by comma.
 
 Read more about API sets here: https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#api-sets

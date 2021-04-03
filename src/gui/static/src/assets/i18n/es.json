@@ -248,9 +248,13 @@
     "change-address-error-info": "La dirección de retorno no es válida.",
     "change-address-select-from-list-link": "Seleccionar",
     "change-address-help": "Dirección para recibir el cambio. Si no se proporciona, será elegida automáticamente. Haga clic en el enlace \"Seleccionar\" para elegir una dirección de una de sus billeteras.",
+    "specific-hours": "Horas a enviar:",
+    "remove-specific-hours-info": "Remover.",
+    "remove-specific-hours-confirmation": "¿Seguro que desea eliminar la cantidad específica de horas a enviar?",
     "destinations-label": "Destinos",
     "destinations-help1": "Direcciones de destino y sus monedas.",
     "destinations-help2": "Direcciones de destino, sus monedas y horas.",
+    "destination-tools-title": "Herramientas de destino",
     "hours-allocation-check": "Usar una distribución automática de {{ coinHoursName }}",
     "options-link": "Opciones",
     "coin-hours-options-link": "Opciones de horas",
@@ -279,6 +283,18 @@
     "sending-all-hours-waning": "Usted seleccionó enviar todas las horas. ¿Seguro que desea continuar?",
     "high-hours-share-waning": "Su selección puede resultar en el envío de todas las horas de la billetera seleccionada. ¿Seguro que desea continuar?",
     "advanced-high-hours-share-waning": "Su selección puede resultar en el envío de todas las horas de la(s) fuente(s) seleccionada(s). ¿Seguro que desea continuar?",
+
+    "fill-with-link": {
+      "title": "Utilizar un link de transacción",
+      "link-info": "Aquí puede ingresar un link que se le hubiese enviado solicitando monedas. El formulario se rellenará con los datos obtenidos del link.",
+      "link-label": "Link de transacción",
+      "link-error-info": "Debe ingresar un link de transacción válido.",
+      "process-button": "Procesar",
+      "invalid-link-error": "El contenido del link de transacción no es válido.",
+      "invalid-link-hours-error": "El link de transacción contiene una cantidad de horas no válida.",
+      "data-overwritten-alert": "Se sobrescribirán algunos datos que ha introducido. Seguro de que desea continuar?",
+      "confirmation": "El formulario se ha actualizado con los datos obtenidos del link de transacción."
+    },
 
     "known-node-errors": {
       "null-change-address-error": "La dirección nula no se puede utilizar como dirección de retorno personalizada. Por favor introduzca una dirección válida.",
@@ -495,6 +511,12 @@
     }
   },
 
+  "force-skywallet-wipe": {
+    "title": "Borrado Forzado de Skywallet",
+    "operation-warning": "Esta opción está diseñada sólo como último recurso para los casos en los que el dispositivo no se puede utilizar con las opciones normales. Se borrarán todos los datos del dispositivo, por lo que necesitará la semilla para recuperar los fondos.",
+    "proceed-button": "Proceder"
+  },
+
   "hardware-wallet": {
     "general" : {
       "default-wallet-name": "Nueva Skywallet",
@@ -514,6 +536,7 @@
       "daemon-connection": "Problema para conectarse al Skywallet Daemon, por favor asegúrese de que se esté ejecutando e inténtelo nuevamente. Usted puede descargarlo desde www.skycoin.com/downloads",
       "daemon-connection-with-configurable-link": "Problema para conectarse al Skywallet Daemon, por favor asegúrese de que se esté ejecutando e inténtelo nuevamente. Usted puede descargarlo desde ",
       "timeout": "La operación se canceló por inactividad. Por favor inténtelo de nuevo.",
+      "timeout-with-configurable-link": "La operación se canceló por inactividad. Por favor inténtelo de nuevo. Si este problema impide que el dispositivo sea utilizable, puede utilizar la siguiente opción:",
       "invalid-address-generated": "Hubo un problema con el generador de direcciones y la operación tuvo que ser cancelada.",
       "invalid-address": "Dirección inválida.",
       "not-in-bootloader-mode": "Para usar esta opción la Skywallet debe estar en modo bootloader."
@@ -674,6 +697,7 @@
     "label-status": "Estado",
     "exchanging": "Intercambiando {{from}} por {{to}}",
     "destination-select-from-list-link": "Seleccionar",
+    "unavailable": "El servicio de intercambio no está disponible en la versión portable.",
     "offline": "El servicio está temporalmente offline",
     "problem-connecting": "No se puede conectar con el servicio. Por favor compruebe su conexión a Internet y vuelva a intentarlo más tarde.",
     "invalid-address-error": "Dirección inválida.",

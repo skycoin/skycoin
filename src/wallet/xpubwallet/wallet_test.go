@@ -125,7 +125,7 @@ func TestNewWallet(t *testing.T) {
 			label:   "test",
 			xpub:    "invalid xpub string",
 			expect: expect{
-				err: errors.New("invalid xpub key: Invalid base58 character"),
+				err: wallet.NewError(errors.New("invalid xpub key: Invalid base58 character")),
 			},
 		},
 	}

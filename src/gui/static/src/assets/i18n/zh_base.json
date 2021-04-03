@@ -248,9 +248,13 @@
     "change-address-error-info": "The change address is not valid.",
     "change-address-select-from-list-link": "Select",
     "change-address-help": "Address to receive change. If it's not provided, it will be chosen automatically. Click on the \"Select\" link to choose an address from one of your wallets.",
+    "specific-hours": "Hours to send:",
+    "remove-specific-hours-info": "Remove.",
+    "remove-specific-hours-confirmation": "Are you sure you want to remove the specific amount of hours to send?",
     "destinations-label": "Destinations",
     "destinations-help1": "Destination addresses and their coins.",
     "destinations-help2": "Destination addresses, their coins and hours.",
+    "destination-tools-title": "Destination Tools",
     "hours-allocation-check": "Use automatic {{ coinHoursName }} allocation",
     "options-link": "Options",
     "coin-hours-options-link": "Hours options",
@@ -280,6 +284,18 @@
     "high-hours-share-waning": "Your selection may result in sending all the hours in the selected wallet. Are you sure you want to continue?",
     "advanced-high-hours-share-waning": "Your selection may result in sending all the hours in the selected source(s). Are you sure you want to continue?",
 
+    "fill-with-link": {
+      "title": "Use a Transaction Link",
+      "link-info": "Here you can enter a link sent to you requesting coins. The form will be filled in with the data obtained from the link.",
+      "link-label": "Transaction link",
+      "link-error-info": "You must enter a valid transaction link.",
+      "process-button": "Process",
+      "invalid-link-error": "The contents of the transaction link are not valid.",
+      "invalid-link-hours-error": "The transaction link contains an invalid amount of hours.",
+      "data-overwritten-alert": "Some data you have entered will be overwritten. Are you sure you want to continue?",
+      "confirmation": "The form has been updated with the data obtained from the transaction link."
+    },
+
     "known-node-errors": {
       "null-change-address-error": "The null address can't be used as the custom change address. Please enter a valid address.",
       "to-required-error": "You must provide a destination address for sending coins. Please enter a valid address.",
@@ -294,7 +310,8 @@
       "share-factor-needed-error": "The hours share factor is needed. Please try with different values and contact support if the problem is not solved.",
       "share-factor-not-needed-error": "The hours share factor can't be specified while using manual hour distribution. Please try with different values and contact support if the problem is not solved.",
       "invalid-share-factor-error": "Invalid share factor. Please try with different values and contact support if the problem is not solved.",
-      "change-equal-to-destination-error": "The transaction can't be created because a repeated amount of coins would be returned to the same destination address. Please try again with different values."
+      "change-equal-to-destination-error": "The transaction can't be created because a repeated amount of coins would be returned to the same destination address. Please try again with different values.",
+      "repeated-wallet": "A wallet for the specified seed already exists."
     },
 
     "bulk-send": {
@@ -673,6 +690,7 @@
     "label-status": "Status",
     "exchanging": "Exchanging {{from}} for {{to}}",
     "destination-select-from-list-link": "Select",
+    "unavailable": "The exchange service is not available in the portable version",
     "offline": "Exchange is temporarily offline",
     "problem-connecting": "Unable to connect with the service. Please check your Internet connection and try again later",
     "invalid-address-error": "Invalid address.",

@@ -5,6 +5,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { ExchangeHistoryComponent } from './exchange-history/exchange-history.component';
 import { SubscriptionLike } from 'rxjs';
 import { AppService } from '../../../services/app.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-exchange',
@@ -15,6 +16,7 @@ export class ExchangeComponent implements OnInit, OnDestroy {
   currentOrderDetails: StoredExchangeOrder;
   hasHistory = false;
   loading = true;
+  unavailable = false;
 
   private lastViewedSubscription: SubscriptionLike;
   private historySubscription: SubscriptionLike;
@@ -26,6 +28,12 @@ export class ExchangeComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
+    if (environment.production && navigator.userAgent.toLowerCase().indexOf('electron') === -1) {
+      this.unavailable = true;
+
+      return;
+    }
+
     this.lastViewedSubscription = this.exchangeService.lastViewedOrderLoaded.subscribe(response => {
       if (response) {
         const lastViewedOrder = this.exchangeService.lastViewedOrder;
@@ -42,8 +50,12 @@ export class ExchangeComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.lastViewedSubscription.unsubscribe();
-    this.historySubscription.unsubscribe();
+    if (this.lastViewedSubscription) {
+      this.lastViewedSubscription.unsubscribe();
+    }
+    if (this.historySubscription) {
+      this.historySubscription.unsubscribe();
+    }
   }
 
   showStatus(order) {

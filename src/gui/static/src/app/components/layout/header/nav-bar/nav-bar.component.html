@@ -13,10 +13,15 @@
       <span>{{ 'history.title-and-button' | translate }}</span>
     </a>
     <div class="flex-fill"></div>
+    <!--
+
+    Link for the Swaplab integration. Should be removed if the integration is not restored.
+
     <a class="-button" routerLink="/exchange" routerLinkActive="full-opacity" *ngIf="exchangeEnabled">
       <img src="assets/img/money-gold.png">
       <span>{{ 'exchange.title-and-button' | translate:{coinName: appService.coinName} }}</span>
     </a>
+    -->
     <a class="-button" *ngIf="otcEnabled">
       <img src="assets/img/money-gold.png">
       <span>{{ 'buy.title-and-button' | translate }}</span>

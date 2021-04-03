@@ -1292,7 +1292,8 @@ func TestWalletCreateHandler(t *testing.T) {
 			if tc.options.ScanN == 0 {
 				tc.options.ScanN = 1
 			}
-			tc.options.TF = gateway
+			gateway.On("TransactionsFinder").Return(&visor.TransactionsFinder{})
+			tc.options.TF = gateway.TransactionsFinder()
 			gateway.On("CreateWallet", "", tc.options).Return(tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
 
 			endpoint := "/api/v1/wallet/create"
@@ -2180,7 +2181,7 @@ func TestWalletScanAddressesHandler(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
-			gateway.On("ScanAddresses", walletID, []byte(tc.password), tc.scanN, gateway).Return(tc.gatewayScanAddressesResult, tc.gatewayScanAddressesErr)
+			gateway.On("ScanWalletAddresses", walletID, []byte(tc.password), tc.scanN).Return(tc.gatewayScanAddressesResult, tc.gatewayScanAddressesErr)
 
 			c := newHTTPMockClient(gateway, ContentTypeForm, tc.disableCSRF)
 

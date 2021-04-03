@@ -9,7 +9,7 @@ import { ButtonComponent } from '../../../layout/button/button.component';
   styleUrls: ['./onboarding-encrypt-wallet.component.scss'],
 })
 export class OnboardingEncryptWalletComponent implements OnInit {
-  @ViewChild('button', { static: false }) button: ButtonComponent;
+  @ViewChild('button') button: ButtonComponent;
   @Output() onPasswordCreated = new EventEmitter<string|null>();
   @Output() onBack = new EventEmitter();
   form: FormGroup;

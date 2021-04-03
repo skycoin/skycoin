@@ -1,8 +1,10 @@
 <app-modal [headline]="'wallet.hardware-wallet-button' | translate" [dialog]="dialogRef">
   <app-hw-message *ngIf="currentState === states.ShowingResult"
     [text]="result.text | translate"
-    [linkText]="result.link"
+    [linkText]="result.linkText ? (result.linkText | translate) : null"
+    [link]="result.link"
     [linkIsUrl]="true"
+    [linkIsInternal]="result.linkIsInternal"
     [icon]="result.icon"
   ></app-hw-message>
 

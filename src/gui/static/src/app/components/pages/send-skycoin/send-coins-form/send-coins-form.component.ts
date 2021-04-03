@@ -98,11 +98,11 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   private readonly defaultAutoShareValue = '0.5';
 
   // Subform for selecting the sources.
-  @ViewChild('formSourceSelection', { static: false }) formSourceSelection: FormSourceSelectionComponent;
+  @ViewChild('formSourceSelection') formSourceSelection: FormSourceSelectionComponent;
   // Subform for entering the destinations.
-  @ViewChild('formMultipleDestinations', { static: false }) formMultipleDestinations: FormDestinationComponent;
-  @ViewChild('previewButton', { static: false }) previewButton: ButtonComponent;
-  @ViewChild('sendButton', { static: false }) sendButton: ButtonComponent;
+  @ViewChild('formMultipleDestinations') formMultipleDestinations: FormDestinationComponent;
+  @ViewChild('previewButton') previewButton: ButtonComponent;
+  @ViewChild('sendButton') sendButton: ButtonComponent;
   // Data the form must have just after being created.
   @Input() formData: SendCoinsData;
   // If true, the simple form will be used.
@@ -121,6 +121,8 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   // If true, the hours are distributed automatically. If false, the user can manually
   // enter how many hours to send to each destination.
   autoHours = true;
+  // If true, specific hours were added to the simple form.
+  hoursAddedToSimpleForm = false;
   // If true, the options for selecting the auto hours distribution factor are shown.
   showAutoHourDistributionOptions = false;
   // Factor used for automatically distributing the coins.
@@ -271,6 +273,24 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Changes the content of the note field.
+  changeNote(newNote: string) {
+    this.form.get('note').setValue(newNote);
+    this.form.get('note').markAsTouched();
+
+    this.form.updateValueAndValidity();
+  }
+
+  // Activates the manual hours mode of the advanced form.
+  setManualHours() {
+    this.autoHours = false;
+  }
+
+  // Changes the value indicating if a specific hours amount has been added to the simple form.
+  changeHoursAddedToSimpleForm(hoursAdded: boolean) {
+    this.hoursAddedToSimpleForm = hoursAdded;
+  }
+
   // Shows or hides the hours distribution options.
   toggleOptions(event) {
     event.stopPropagation();
@@ -320,8 +340,12 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       this.form.get(name).setValue(this.formData.form[name]);
     });
 
-    if (this.formData.form.hoursSelection.type === HoursDistributionTypes.Auto) {
-      this.autoShareValue = this.formData.form.hoursSelection.share_factor;
+    if (this.showSimpleForm || this.formData.form.hoursSelection.type === HoursDistributionTypes.Auto) {
+      if (this.formData.form.hoursSelection.share_factor) {
+        this.autoShareValue = this.formData.form.hoursSelection.share_factor;
+      } else {
+        this.autoShareValue = this.defaultAutoShareValue;
+      }
       this.autoHours = true;
     } else {
       this.autoHours = false;
@@ -656,7 +680,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
       type: HoursDistributionTypes.Manual,
     };
 
-    if (this.autoHours) {
+    if (this.autoHours && !this.hoursAddedToSimpleForm) {
       hoursSelection = <HoursDistributionOptions> {
         type: HoursDistributionTypes.Auto,
         mode: 'share',

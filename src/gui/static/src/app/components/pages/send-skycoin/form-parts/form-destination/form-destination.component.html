@@ -28,11 +28,19 @@
       ></app-double-button>
     </div>
 
-    <!-- Bulk send button. -->
+    <!-- Destination tools button. -->
     <app-arrow-link
       *ngIf="!showSimpleForm"
-      [text]="'send.bulk-send.title'"
-      (pressed)="requestBulkSend()"
+      [text]="'send.destination-tools-title'"
+      (pressed)="showDestinationTools()"
+      [ngClass]="{'element-disabled' : busy}">
+    </app-arrow-link>
+
+    <!-- Transaction link button. -->
+    <app-arrow-link
+      *ngIf="showSimpleForm"
+      [text]="'send.fill-with-link.title'"
+      (pressed)="openLinkModalWindow()"
       [ngClass]="{'element-disabled' : busy}">
     </app-arrow-link>
 
@@ -104,5 +112,20 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- Hours field for the simple form. Shown only if a link with hours was used. -->
+  <div *ngIf="showSimpleForm && simpleFormSpecificHours" class="form-field simple-form-hours">
+    <span
+      [ngClass]="{'simple-form-hours-error': simpleFormHoursErrorMsg}"
+      [matTooltip]="(simpleFormHoursErrorMsg ? simpleFormHoursErrorMsg : '') | translate"
+      matTooltipClass="error-tooltip"
+    >{{ 'send.specific-hours' | translate }} {{ simpleFormSpecificHours.toString() }}</span>
+    <mat-icon
+      [inline]="true"
+      class="remove-icon"
+      [matTooltip]="'send.remove-specific-hours-info' | translate"
+      (click)="removeSimpleFormhours()"
+    >clear</mat-icon>
   </div>
 </div>

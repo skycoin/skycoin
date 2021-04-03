@@ -268,12 +268,12 @@ export class HwWalletDaemonService {
         // which the user connects/disconnects the device quickly
         delay(wait ? (this.hwConnected || this.disconnectedChecks < this.maxFastDisconnectedChecks ? this.fastUpdatePeriod : this.updatePeriod) : 0),
         mergeMap(() => this.get('/available')))
-        .subscribe(
+        .subscribe({
           // After the response is obtained, the procedure in charge of processing all the
           // responses obtained from the daemon automatically updates the connection status.
-          null,
-          () => this.ngZone.run(() => this.updateHwConnected(false)),
-        );
+          next: null,
+          error: () => this.ngZone.run(() => this.updateHwConnected(false)),
+        });
     });
   }
 

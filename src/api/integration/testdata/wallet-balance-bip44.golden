@@ -17,6 +17,16 @@
 				"coins": 0,
 				"hours": 0
 			}
+		},
+		"cLkNhXDYteSkhpUHCdNYBtNriSKwhqJGUZ": {
+			"confirmed": {
+				"coins": 0,
+				"hours": 0
+			},
+			"predicted": {
+				"coins": 0,
+				"hours": 0
+			}
 		}
 	}
 }

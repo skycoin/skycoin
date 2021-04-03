@@ -339,6 +339,7 @@ func NewNodeConfig(mode string, node fiber.NodeConfig) NodeConfig {
 			CoinHoursName:         node.CoinHoursName,
 			CoinHoursNameSingular: node.CoinHoursNameSingular,
 			CoinHoursTicker:       node.CoinHoursTicker,
+			QrURIPrefix:           node.QrURIPrefix,
 			ExplorerURL:           node.ExplorerURL,
 			VersionURL:            node.VersionURL,
 			Bip44Coin:             node.Bip44Coin,
@@ -590,7 +591,6 @@ func buildAPISets(c NodeConfig) (map[string]struct{}, error) {
 		api.EndpointsStatus,
 		api.EndpointsWallet,
 		api.EndpointsTransaction,
-		api.EndpointsPrometheus,
 		api.EndpointsNetCtrl,
 		api.EndpointsStorage,
 		// Do not include insecure or deprecated API sets, they must always
@@ -625,7 +625,6 @@ func validateAPISets(opt string, apiSets []string) error {
 			api.EndpointsTransaction,
 			api.EndpointsWallet,
 			api.EndpointsInsecureWalletSeed,
-			api.EndpointsPrometheus,
 			api.EndpointsNetCtrl,
 			api.EndpointsStorage:
 		case "":
@@ -666,7 +665,6 @@ func (c *NodeConfig) RegisterFlags() {
 		api.EndpointsStatus,
 		api.EndpointsWallet,
 		api.EndpointsTransaction,
-		api.EndpointsPrometheus,
 		api.EndpointsNetCtrl,
 		api.EndpointsInsecureWalletSeed,
 		api.EndpointsStorage,

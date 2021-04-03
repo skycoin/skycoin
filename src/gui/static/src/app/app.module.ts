@@ -125,6 +125,9 @@ import { BalanceAndOutputsService } from './services/wallet-operations/balance-a
 import { SpendingService } from './services/wallet-operations/spending.service';
 import { HistoryService } from './services/wallet-operations/history.service';
 import { FormFieldErrorDirective } from './directives/form-field-error.directive';
+import { EnterLinkComponent } from './components/pages/send-skycoin/enter-link/enter-link.component';
+import { DestinationToolsComponent } from './components/pages/send-skycoin/form-parts/form-destination/destination-tools/destination-tools.component';
+import { ForceSkywalletWipeComponent } from './components/pages/force-skywallet-wipe/force-skywallet-wipe.component';
 
 
 const ROUTES = [
@@ -153,11 +156,16 @@ const ROUTES = [
     component: BuyComponent,
     canActivate: [WizardGuardService],
   },
+  /*
+
+  Route for the Swaplab integration. Should be removed if the integration is not restored.
+
   {
     path: 'exchange',
     component: ExchangeComponent,
     canActivate: [WizardGuardService],
   },
+  */
   {
     path: 'settings',
     children: [
@@ -191,6 +199,10 @@ const ROUTES = [
   {
     path: 'reset/:id',
     component: ResetPasswordComponent,
+  },
+  {
+    path: 'skywallet-wipe',
+    component: ForceSkywalletWipeComponent,
   },
 ];
 
@@ -273,42 +285,9 @@ const ROUTES = [
     AddressOptionsComponent,
     QrCodeButtonComponent,
     FormFieldErrorDirective,
-  ],
-  entryComponents: [
-    AddDepositAddressComponent,
-    CreateWalletComponent,
-    ChangeNameComponent,
-    QrCodeComponent,
-    SendSkycoinComponent,
-    TransactionDetailComponent,
-    PasswordDialogComponent,
-    SeedModalComponent,
-    NumberOfAddressesComponent,
-    SelectAddressComponent,
-    HwOptionsDialogComponent,
-    HwWipeDialogComponent,
-    HwAddedDialogComponent,
-    HwGenerateSeedDialogComponent,
-    HwBackupDialogComponent,
-    ConfirmationComponent,
-    HwPinDialogComponent,
-    HwChangePinDialogComponent,
-    HwPinHelpDialogComponent,
-    HwRestoreSeedDialogComponent,
-    HwConfirmTxDialogComponent,
-    HwConfirmAddressDialogComponent,
-    SelectLanguageComponent,
-    ExchangeHistoryComponent,
-    HwRemovePinDialogComponent,
-    HwUpdateFirmwareDialogComponent,
-    HwUpdateAlertDialogComponent,
-    ChangeNoteComponent,
-    SeedWordDialogComponent,
-    MultipleDestinationsDialogComponent,
-    CopyRawTxComponent,
-    SignRawTxComponent,
-    BroadcastRawTxComponent,
-    AddressOptionsComponent,
+    EnterLinkComponent,
+    DestinationToolsComponent,
+    ForceSkywalletWipeComponent,
   ],
   imports: [
     BrowserModule,
@@ -333,7 +312,7 @@ const ROUTES = [
     MatAutocompleteModule,
     NoopAnimationsModule,
     ReactiveFormsModule,
-    RouterModule.forRoot(ROUTES, { useHash: true }),
+    RouterModule.forRoot(ROUTES, { useHash: true, relativeLinkResolution: 'legacy' }),
     TranslateModule.forRoot({
       loader: {
         provide: TranslateLoader,

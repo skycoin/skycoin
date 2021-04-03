@@ -3,6 +3,21 @@ to easily make any necessary updates to the translation files after updating
 the main text file, please follow its instructions if you are working with
 its contents.
 
+# Table of Contents
+
+- [Contents of this folder](#contents-of-this-folder)
+- [About the meaning of "xx" in this file](#about-the-meaning-of-"xx"-in-this-file)
+- [Add a new translation](#add-a-new-translation)
+- [Verify the translation files](#verify-the-translation-files)
+  - [Checking for problems](#checking-for-problems)
+  - [Checking if a language file needs to be updated](#checking-if-a-language-file-needs-to-be-updated)
+- [Update a translation](#update-a-translation)
+- [How to edit the translation files](#how-to-edit-the-translation-files)
+  - [Which application should be used for editing the files](#which-application-should-be-used-for-editing-the-files)
+  - [Special codes](#special-codes)
+- [Writing style](#writing-style)
+- [Make a translation available in the application](#make-a-translation-available-in-the-application)
+
 # Contents of this folder
 
 The contents of this folder are:
@@ -229,6 +244,86 @@ the same after it if you want a white space after the value.
 
 - **\<br>**: this code means "new line". It is just a way to tell
 the code that the text after it should be added in a new line.
+
+# Writing style
+
+The file contains many different types of texts: buttons, labels,
+indications, titles and more. the name of each text can give important
+information about what the text is used for and which writing format
+should be used. Specifically, many texts have predefined prefixes or
+suffixes that indicate what the text is used for and some special
+characteristics that the text must follow. The prefixes and suffixes are:
+
+- **title**: the text if the title of a page or a modal window. Those
+text use title format, so each word must start with an uppercase letter
+and don't end with period.
+
+- **button**: the text is used in a small button (like the blue
+confirmation buttons shown in most modal windows). Those text indicate
+actions and should be kept as short as possible, as the button are small.
+Those text use title format, so each word must start with an uppercase
+letter and don't end with period.
+
+- **title-and-button**: the text is a title, but it is also used inside
+a button, so it must be treated as a title, but must also be kept as
+short as possible.
+
+- **label**: the text is used to identify a form field (it is shown at
+the top of an area in wich the user can enter text or select an option).
+Those text don't dont use title format, so normally only the first word
+must start with an uppercase letter. Those text don't end with period or
+any other spcial character.
+
+- **check**: the text is used in a check box (a small box which the user
+can select to accept something). Those text don't dont use title format,
+so normally only the first word must start with an uppercase letter.
+Those text don't end with period.
+
+- **error**, **warning**, **help**, **desc** and **info**: those text are
+used to give general information to the user; don't dont use title format,
+so normally only the first word must start with an uppercase letter; and
+end with period.
+
+- **confirmation**: the text is used for asking the user to confirm an
+action. Those texts normally end with a question which should be answered
+with yes/no, continue/cancel or similar options which are added by the
+code, so it is important to maintain the nature of the question.
+
+- **part#**: those text are divided in various parts. The reason for
+dividing a text is that the whoole text will be shown in a single line,
+but each part will have different properties in the UI. For example, a
+part could be a link, or could be in a different color, or the code could
+add additional content in the middle of 2 parts.
+
+- **small-label**: the text is used to identify a data that the code will
+add at the right of it. Those text are normally parts of list, just like
+this one, so they end with a colon. those text must be kept as short
+as possible, as the UI has little space for them.
+
+- **table-label**: the text is used on the header of a table, to identify
+a column. In the case of small-table-label, the text must be kept as short
+as possible. Those text don't dont use title format, so normally only the
+first word must start with an uppercase letter.
+
+Not all the text have a prefix o rsuffix from the previous list and
+sometimes it is not too easy to identify what each text is for and how
+it is used in the code. Because of that, and to avoid having to check the
+previous list constantly, it is advisable to follow the following
+recommendations:
+
+- **Respect the capitalization style**: different elements on the
+application use a particular capitalization style, so changing
+capitalization on the translation file may make the UI look
+inconsistent.
+
+- **Respect the finishing characters**: some texts end with a period and
+others with a blank space. Those elements may be important for the
+UI, as a way for separating the texts from another text which is added
+at the right by the code, so removing the periods and blank spaces at
+the end may cause problems to the UI.
+
+- **Use the contex**t: most of the texts are inside groups with other
+related texts, which may give some context.
 
 # Make a translation available in the application
 

@@ -20,7 +20,7 @@ export class ButtonComponent {
   @Input() forceEmitEvents = false;
   // Click event.
   @Output() action = new EventEmitter();
-  @ViewChild('button', { static: false }) button: HTMLButtonElement;
+  @ViewChild('button') button: HTMLButtonElement;
 
   state = ButtonStates.Normal;
   buttonStates = ButtonStates;

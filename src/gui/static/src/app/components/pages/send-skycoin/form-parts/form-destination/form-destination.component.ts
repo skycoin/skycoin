@@ -12,6 +12,9 @@ import { MsgBarService } from '../../../../../services/msg-bar.service';
 import { AvailableBalanceData } from '../../form-parts/form-source-selection/form-source-selection.component';
 import { ConfirmationParams, ConfirmationComponent, DefaultConfirmationButtons } from '../../../../layout/confirmation/confirmation.component';
 import { SendCoinsData } from '../../send-coins-form/send-coins-form.component';
+import { parseRequestLink, RequestLinkParams } from '../../../../../utils/general-utils';
+import { EnterLinkComponent } from '../../enter-link/enter-link.component';
+import { DestinationToolsComponent, DestinationTools } from './destination-tools/destination-tools.component';
 
 /**
  * Data about the destinations entered by the user on FormDestinationComponent.
@@ -62,6 +65,14 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   @Output() onChanges = new EventEmitter<void>();
   // Emits when the user asks to open the modal window for bulk sending.
   @Output() onBulkRequested = new EventEmitter<void>();
+  // Emits when a link is used for filling the form and it includes a note.
+  @Output() newNoteRequested = new EventEmitter<string>();
+  // Emits when a link is used for filling the advanced form and it includes hours. It indicates
+  // that the manual hours fields must be shown.
+  @Output() manualHoursRequested = new EventEmitter<void>();
+  // Emits when a link is used for filling the simple form and it includes hours. If true, it
+  // indicates that the hour options must be hidden.
+  @Output() hoursAddedToSimpleForm = new EventEmitter<boolean>();
 
   // If the manual hours field must be shown.
   private showHourFieldsInternal: boolean;
@@ -115,12 +126,16 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   totalFiat = new BigNumber(0);
   // Total amount of hours that will be sent to all destinations, if the manual hours are active.
   totalHours = new BigNumber(0);
+  // Indicates the specific hours that must be sent with the simple form. It gets a value if
+  // the user enters a request link with hours.
+  simpleFormSpecificHours: BigNumber;
 
   // Vars with the validation error messages.
   addressErrorMsgs: string[] = [];
   coinsErrorMsgs: string[] = [];
   hoursErrorMsgs: string[] = [];
   singleAddressErrorMsg = '';
+  simpleFormHoursErrorMsg = '';
   insufficientCoins = false;
   insufficientHours = false;
 
@@ -171,6 +186,10 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     this.addressSubscription.unsubscribe();
     this.priceSubscription.unsubscribe();
     this.destinationSubscriptions.forEach(s => s.unsubscribe());
+    this.onBulkRequested.unsubscribe();
+    this.newNoteRequested.unsubscribe();
+    this.manualHoursRequested.unsubscribe();
+    this.hoursAddedToSimpleForm.unsubscribe();
   }
 
   // Changes the currency in which the user enters the values on the UI.
@@ -439,8 +458,149 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     this.updateValuesAndValidity();
   }
 
+  // Opens the bulk send modal window.
   requestBulkSend() {
     this.onBulkRequested.emit();
+  }
+
+  // Opens a modal window for the user to select a tool for entering the destinations.
+  showDestinationTools() {
+    DestinationToolsComponent.openDialog(this.dialog).afterClosed().subscribe(result => {
+      // Open the selected tool.
+      if (result === DestinationTools.bulk) {
+        this.requestBulkSend();
+      } else if (result === DestinationTools.link) {
+        this.openLinkModalWindow();
+      }
+    });
+  }
+
+  // Opens the modal window for entering a transation link with the destination data.
+  openLinkModalWindow() {
+    EnterLinkComponent.openDialog(this.dialog).afterClosed().subscribe(result => {
+      if (result) {
+        // Process the link.
+        this.processRequestLink(result);
+      }
+    });
+  }
+
+  // Checks a transation link and initiates the process for putting its data in the form.
+  private processRequestLink(link: string) {
+    const requestLinkParams = parseRequestLink(link);
+
+    if (!requestLinkParams) {
+      this.msgBarService.showError('send.fill-with-link.invalid-link-error');
+
+      return;
+    }
+
+    if (this.showSimpleForm && requestLinkParams.hours) {
+      // Check the hours.
+      const convertedHours = this.getAmount(requestLinkParams.hours, false);
+      if (!convertedHours) {
+        this.msgBarService.showError('send.fill-with-link.invalid-link-hours-error');
+
+        return;
+      }
+    }
+
+    this.checkChangesBeforeUsingLink(requestLinkParams);
+  }
+
+  // Checks if the data of a link will overwrite data entered by the user. If true, a confirmation
+  // modal window is shown. The function continues the process for adding the data to the form.
+  private checkChangesBeforeUsingLink(requestLinkParams: RequestLinkParams) {
+    let dataWillBeChanged = false;
+
+    if (this.showSimpleForm) {
+      if (this.form.get('address').value) {
+        dataWillBeChanged = true;
+      }
+    } else {
+      if (this.destControls[0].get('address').value) {
+        dataWillBeChanged = true;
+      }
+      if (requestLinkParams.hours && this.destControls[0].get('hours').value) {
+        dataWillBeChanged = true;
+      }
+    }
+
+    if (requestLinkParams.coins && this.destControls[0].get('coins').value) {
+      dataWillBeChanged = true;
+    }
+
+    if (dataWillBeChanged) {
+      const confirmationParams: ConfirmationParams = {
+        text: 'send.fill-with-link.data-overwritten-alert',
+        defaultButtons: DefaultConfirmationButtons.YesNo,
+      };
+
+      // Ask for confirmation.
+      ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
+        if (confirmationResult) {
+          this.finishUsingRequestLink(requestLinkParams);
+        }
+      });
+    } else {
+      // Continue.
+      this.finishUsingRequestLink(requestLinkParams);
+    }
+  }
+
+  // Adds the data from a transaction link to the form.
+  private finishUsingRequestLink(requestLinkParams: RequestLinkParams) {
+    if (this.showSimpleForm) {
+      this.form.get('address').setValue(requestLinkParams.address);
+      this.form.get('address').markAsTouched();
+
+      if (requestLinkParams.hours) {
+        this.simpleFormSpecificHours = this.getAmount(requestLinkParams.hours, false);
+        this.hoursAddedToSimpleForm.next(true);
+      } else {
+        this.hoursAddedToSimpleForm.next(false);
+      }
+    } else {
+      this.destControls[0].get('address').setValue(requestLinkParams.address);
+      this.destControls[0].get('address').markAsTouched();
+
+      if (requestLinkParams.hours) {
+        this.manualHoursRequested.next();
+        setTimeout(() => {
+          this.destControls[0].get('hours').setValue(requestLinkParams.hours);
+          this.destControls[0].get('hours').markAsTouched();
+        });
+      }
+    }
+
+    if (requestLinkParams.coins) {
+      this.destControls[0].get('coins').setValue(requestLinkParams.coins);
+      this.destControls[0].get('coins').markAsTouched();
+    }
+
+    if (requestLinkParams.message) {
+      this.newNoteRequested.next(requestLinkParams.message);
+    }
+
+    this.form.updateValueAndValidity();
+
+    this.msgBarService.showDone('send.fill-with-link.confirmation');
+  }
+
+  // Removes the specific hours to send from the simple form.
+  removeSimpleFormhours() {
+    const confirmationParams: ConfirmationParams = {
+      text: 'send.remove-specific-hours-confirmation',
+      defaultButtons: DefaultConfirmationButtons.YesNo,
+    };
+
+    // Ask for confirmation.
+    ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
+      if (confirmationResult) {
+        this.simpleFormSpecificHours = null;
+        this.hoursAddedToSimpleForm.next(false);
+      }
+    });
   }
 
   /**
@@ -455,13 +615,20 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       }
 
       this.destControls.forEach((destControl, i) => {
-        ['address', 'hours'].forEach(name => {
-          destControl.get(name).setValue(formData.form.destinations[i][name]);
-        });
+        destControl.get('address').setValue(formData.form.destinations[i]['address']);
         destControl.get('coins').setValue(formData.form.destinations[i].originalAmount);
 
         if (this.showSimpleForm) {
           this.form.get('address').setValue(formData.form.destinations[i]['address']);
+
+          if (formData.form.destinations[i]['hours']) {
+            this.simpleFormSpecificHours = this.getAmount(formData.form.destinations[i]['hours'], false);
+            this.hoursAddedToSimpleForm.next(true);
+          } else {
+            this.hoursAddedToSimpleForm.next(false);
+          }
+        } else {
+          destControl.get('hours').setValue(formData.form.destinations[i]['hours']);
         }
       });
 
@@ -572,7 +739,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
   /**
    * Returns all the destinations on the form. The hours are returned only if the form is showing
-   * the fields for manually entering them.
+   * the fields for manually entering them or specific hours were added to the simple form.
    * @param cleanNumbers If true, the returned strings for the coins and hours will be cleaned
    * to be valid numbers. If false, function will just return exactly what the user wrote on
    * the form fields.
@@ -586,14 +753,14 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
         originalAmount: destControl.get('coins').value,
       };
 
-      // Clean the values values.
+      // Clean the values.
       if (cleanNumbers) {
         destination.coins = new BigNumber(destination.coins).toString();
         destination.originalAmount = new BigNumber(destination.originalAmount).toString();
       }
 
-      if (this.showHourFields) {
-        destination['hours'] = destControl.get('hours').value;
+      if (this.showHourFields || this.simpleFormSpecificHours) {
+        destination['hours'] = this.simpleFormSpecificHours ? this.simpleFormSpecificHours.toString() : destControl.get('hours').value;
         if (cleanNumbers) {
           destination['hours'] = new BigNumber(destination['hours']).toString();
         }
@@ -624,6 +791,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
    */
   validateForm() {
     this.singleAddressErrorMsg = '';
+    this.simpleFormHoursErrorMsg = '';
     this.resetErrorMsgsArray(this.addressErrorMsgs);
     this.resetErrorMsgsArray(this.coinsErrorMsgs);
     this.resetErrorMsgsArray(this.hoursErrorMsgs);
@@ -632,14 +800,20 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
     let valid = true;
 
-    // Check the address field of the simple form.
     if (this.showSimpleForm) {
+      // Check the address field of the simple form.
       const address = this.form.get('address').value as string;
       if (!address || address.length < 20) {
         valid = false;
         if (this.form.get('address').touched) {
           this.singleAddressErrorMsg = 'send.address-error-info';
         }
+      }
+
+      // Check the hours of the simple form, if any.
+      if (this.simpleFormSpecificHours && this.simpleFormSpecificHours.isGreaterThan(this.availableBalance.availableHours)) {
+        valid = false;
+        this.simpleFormHoursErrorMsg = 'send.insufficient-funds-error-info';
       }
     }
 

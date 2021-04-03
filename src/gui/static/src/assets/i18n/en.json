@@ -248,9 +248,13 @@
     "change-address-error-info": "The change address is not valid.",
     "change-address-select-from-list-link": "Select",
     "change-address-help": "Address to receive change. If it's not provided, it will be chosen automatically. Click on the \"Select\" link to choose an address from one of your wallets.",
+    "specific-hours": "Hours to send:",
+    "remove-specific-hours-info": "Remove.",
+    "remove-specific-hours-confirmation": "Are you sure you want to remove the specific amount of hours to send?",
     "destinations-label": "Destinations",
     "destinations-help1": "Destination addresses and their coins.",
     "destinations-help2": "Destination addresses, their coins and hours.",
+    "destination-tools-title": "Destination Tools",
     "hours-allocation-check": "Use automatic {{ coinHoursName }} allocation",
     "options-link": "Options",
     "coin-hours-options-link": "Hours options",
@@ -279,6 +283,18 @@
     "sending-all-hours-waning": "You selected to send all the hours. Are you sure you want to continue?",
     "high-hours-share-waning": "Your selection may result in sending all the hours in the selected wallet. Are you sure you want to continue?",
     "advanced-high-hours-share-waning": "Your selection may result in sending all the hours in the selected source(s). Are you sure you want to continue?",
+
+    "fill-with-link": {
+      "title": "Use a Transaction Link",
+      "link-info": "Here you can enter a link sent to you requesting coins. The form will be filled in with the data obtained from the link.",
+      "link-label": "Transaction link",
+      "link-error-info": "You must enter a valid transaction link.",
+      "process-button": "Process",
+      "invalid-link-error": "The contents of the transaction link are not valid.",
+      "invalid-link-hours-error": "The transaction link contains an invalid amount of hours.",
+      "data-overwritten-alert": "Some data you have entered will be overwritten. Are you sure you want to continue?",
+      "confirmation": "The form has been updated with the data obtained from the transaction link."
+    },
 
     "known-node-errors": {
       "null-change-address-error": "The null address can't be used as the custom change address. Please enter a valid address.",
@@ -495,6 +511,12 @@
     }
   },
 
+  "force-skywallet-wipe": {
+    "title": "Forced Skywallet Wipe",
+    "operation-warning": "This option is designed only as a last resort for cases where the device cannot be used with the normal options. All data on the device will be erased, so you will need your seed to recover the funds.",
+    "proceed-button": "Proceed"
+  },
+
   "hardware-wallet": {
     "general" : {
       "default-wallet-name": "New Skywallet",
@@ -514,6 +536,7 @@
       "daemon-connection": "Problem connecting to the Skywallet Daemon, please make sure it is running and try again. You can download it from www.skycoin.com/downloads",
       "daemon-connection-with-configurable-link": "Problem connecting to the Skywallet Daemon, please make sure it is running and try again. You can download it from ",
       "timeout": "The operation was canceled due to inactivity. Please try again.",
+      "timeout-with-configurable-link": "The operation was canceled due to inactivity. Please try again. If this issue prevents the device from being usable, you can use the following option:",
       "invalid-address-generated": "There was a problem with the address generator and the operation had to be canceled.",
       "invalid-address": "Invalid address.",
       "not-in-bootloader-mode": "To use this option the Skywallet must be in bootloader mode."
@@ -674,6 +697,7 @@
     "label-status": "Status",
     "exchanging": "Exchanging {{from}} for {{to}}",
     "destination-select-from-list-link": "Select",
+    "unavailable": "The exchange service is not available in the portable version",
     "offline": "Exchange is temporarily offline",
     "problem-connecting": "Unable to connect with the service. Please check your Internet connection and try again later",
     "invalid-address-error": "Invalid address.",

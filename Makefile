@@ -215,7 +215,7 @@ generate: ## Generate test interface mocks and struct encoders
 
 install-generators: ## Install tools used by go generate
 	go get github.com/vektra/mockery/.../
-	go get github.com/SkycoinProject/skyencoder/cmd/skyencoder
+	go get github.com/skycoin/skyencoder/cmd/skyencoder
 
 update-golden-files: ## Run integration tests in update mode
 	./ci-scripts/integration-test-stable.sh -u >/dev/null 2>&1 || true

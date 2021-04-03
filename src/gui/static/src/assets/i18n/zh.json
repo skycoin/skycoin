@@ -511,6 +511,12 @@
     }
   },
 
+  "force-skywallet-wipe": {
+    "title": "强制清除硬件钱包",
+    "operation-warning": "警告: 此选项仅在无法将设备与常规选项一起使用的情况下用作最后的选择。 设备上的所有数据都将被删除，因此您将需要种子才能恢复资金。",
+    "proceed-button": "执行"
+  },
+
   "hardware-wallet": {
     "general": {
       "default-wallet-name": "新硬件钱包",
@@ -530,6 +536,7 @@
       "daemon-connection": "连接到硬件钱包守护程序时出现问题，请确保其正在运行，然后重试。你可以从www.skycoin.com/downloads下载",
       "daemon-connection-with-configurable-link": "连接到硬件钱包守护程序时出现问题，请确保其正在运行，然后重试。下载",
       "timeout": "由于不活动，操作被取消。 请再试一次。",
+      "timeout-with-configurable-link": "由于不活动，操作被取消。 请再试一次。 如果此问题导致设备无法使用，则可以使用以下选项：",
       "invalid-address-generated": "地址生成器存在问题，必须取消该操作.",
       "invalid-address": "无效地址.",
       "not-in-bootloader-mode": "使用该选项，硬件钱包必须进入bootloader模式."

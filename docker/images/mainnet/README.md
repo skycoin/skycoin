@@ -7,17 +7,14 @@
 - latest-arm32v6
 - latest-arm32v7
 - latest-arm64v8
-- develop
-- develop-arm32v5
-- develop-arm32v6
-- develop-arm32v7
-- develop-arm64v8
-- release-v0.23.0
-- release-v0.23.0-arm32v5
-- release-v0.23.0-arm32v6
-- release-v0.23.0-arm32v7
-- release-v0.23.0-arm64v8
-- release-v0.22.0
+- v0.27.1
+- v0.27.0
+- v0.23.0
+- v0.23.0-arm32v5
+- v0.23.0-arm32v6
+- v0.23.0-arm32v7
+- v0.23.0-arm64v8
+- v0.22.0
 
 ## Building your own images
 

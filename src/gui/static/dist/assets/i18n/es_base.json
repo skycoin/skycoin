@@ -511,6 +511,12 @@
     }
   },
 
+  "force-skywallet-wipe": {
+    "title": "Forced Skywallet Wipe",
+    "operation-warning": "This option is designed only as a last resort for cases where the device cannot be used with the normal options. All data on the device will be erased, so you will need your seed to recover the funds.",
+    "proceed-button": "Proceed"
+  },
+
   "hardware-wallet": {
     "general" : {
       "default-wallet-name": "New Skywallet",
@@ -530,6 +536,7 @@
       "daemon-connection": "Problem connecting to the Skywallet Daemon, please make sure it is running and try again. You can download it from www.skycoin.com/downloads",
       "daemon-connection-with-configurable-link": "Problem connecting to the Skywallet Daemon, please make sure it is running and try again. You can download it from ",
       "timeout": "The operation was canceled due to inactivity. Please try again.",
+      "timeout-with-configurable-link": "The operation was canceled due to inactivity. Please try again. If this issue prevents the device from being usable, you can use the following option:",
       "invalid-address-generated": "There was a problem with the address generator and the operation had to be canceled.",
       "invalid-address": "Invalid address.",
       "not-in-bootloader-mode": "To use this option the Skywallet must be in bootloader mode."

@@ -100,8 +100,8 @@
     "decrypt-button": "Desencriptar Billetera",
     "decrypt-warning": "Advertencia: por razones de seguridad, no se recomienda mantener las carteras desencriptadas. Se aconseja precaución.",
     "delete-button" : "Borrar Billetera",
-    "edit-button": "Renombrar",
-    "add-button": "Agregar Billetera",
+    "rename-button": "Renombrar",
+    "add-button": "Nueva Billetera",
     "load-button": "Cargar Billetera",
     "hardware-wallet-button": "Skywallet",
     "encryption-enabled": "Encriptado habilitado.",
@@ -113,6 +113,7 @@
     "delete-confirmation-check": "Sí, quiero borrar la billetera",
     "max-hardware-wallets-error": "Ya ha alcanzado el número máximo de direcciones que se puede agregar a la Skywallet.",
     "add-many-confirmation": "ADVERTENCIA: si agrega demasiadas direcciones sin usar las anteriores o si usa las últimas y no las primeras, es posible que algunas direcciones no se recuperen automáticamente si intenta restaurar la billetera con la semilla (tendrá que agregarlas manualmente). ¿Desea continuar?",
+    "busy-error": "Por favor espere a que se complete la operación anterior.",
 
     "new": {
       "create-title": "Crear Billetera",
@@ -438,6 +439,7 @@
 
   "network": {
     "title": "Red",
+    "error-no-connections": "Sin conexiones",
     "peer-small-table-label": "Par",
     "source-small-table-label": "Fuente",
     "block-height-small-table-label": "Altura del bloque",
@@ -531,7 +533,7 @@
       "disconnected": "No se puede realizar la operación. La Skywallet no está conectada.",
       "incorrect-wallet": "No se puede realizar la operación. La Skywallet conectada es diferente a la esperada.",
       "incorrect-pin": "No se puede realizar la operación. El PIN que ha introducido no es correcto.",
-      "refused": "La operación falló o fue cancelada.",
+      "refused": "La operación fue cancelada.",
       "too-many-inputs-outputs": "La transacción tiene demasiadas entradas o salidas para la Skywallet. Por favor vuelva a intentarlo creando varias transacciones más pequeñas, cada una con un número menor de destinatarios (si la transacción actual tiene muchos) o monedas.",
       "daemon-connection": "Problema para conectarse al Skywallet Daemon, por favor asegúrese de que se esté ejecutando e inténtelo nuevamente. Usted puede descargarlo desde www.skycoin.com/downloads",
       "daemon-connection-with-configurable-link": "Problema para conectarse al Skywallet Daemon, por favor asegúrese de que se esté ejecutando e inténtelo nuevamente. Usted puede descargarlo desde ",

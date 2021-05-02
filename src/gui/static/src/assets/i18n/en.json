@@ -100,8 +100,8 @@
     "decrypt-button": "Decrypt Wallet",
     "decrypt-warning": "Warning: for security reasons, it is not recommended to keep the wallets unencrypted. Caution is advised.",
     "delete-button": "Delete Wallet",
-    "edit-button": "Rename",
-    "add-button": "Add Wallet",
+    "rename-button": "Rename",
+    "add-button": "New Wallet",
     "load-button": "Load Wallet",
     "hardware-wallet-button": "Skywallet",
     "encryption-enabled": "Encryption enabled.",
@@ -113,6 +113,7 @@
     "delete-confirmation-check": "Yeah, I want to delete the wallet",
     "max-hardware-wallets-error": "You have already reached the max number of addresses that can be added to the Skywallet.",
     "add-many-confirmation": "WARNING: If you add too many addresses without using the previous ones or if you use the last ones and not the first ones, some addresses may not be recovered automatically if you try to restore the wallet using the seed (you will have to add them manually). Do you want to continue?",
+    "busy-error": "Please wait for the previous operation to be completed.",
 
     "new": {
       "create-title": "Create Wallet",
@@ -438,6 +439,7 @@
 
   "network": {
     "title": "Networking",
+    "error-no-connections": "No connections",
     "peer-small-table-label": "Peer",
     "source-small-table-label": "Source",
     "block-height-small-table-label": "Block height",
@@ -531,7 +533,7 @@
       "disconnected": "Unable to perform the operation. The Skywallet is not connected.",
       "incorrect-wallet": "Unable to perform the operation. The connected Skywallet is different from the expected one.",
       "incorrect-pin": "Unable to perform the operation. The PIN you have entered is incorrect.",
-      "refused": "The operation failed or was canceled.",
+      "refused": "The operation was canceled.",
       "too-many-inputs-outputs": "The transaction has too many inputs or outputs for the Skywallet. Please try again creating several smaller transactions, each one with a smaller number of recipients (if the current transaction has many) or coins.",
       "daemon-connection": "Problem connecting to the Skywallet Daemon, please make sure it is running and try again. You can download it from www.skycoin.com/downloads",
       "daemon-connection-with-configurable-link": "Problem connecting to the Skywallet Daemon, please make sure it is running and try again. You can download it from ",

@@ -10,7 +10,7 @@ export class WalletsPage {
   }
 
   showAddWallet() {
-    const btnAdd = element(by.buttonText('Add Wallet'));
+    const btnAdd = element(by.buttonText('New Wallet'));
 
     return btnAdd.click().then(() => {
       return element(by.css('app-create-wallet')).isPresent();
@@ -120,7 +120,7 @@ export class WalletsPage {
   }
 
   showChangeWalletName() {
-    return element(by.css('.-edit-wallet')).click().then(() => {
+    return element(by.css('.-rename-wallet')).click().then(() => {
       return element(by.css('app-change-name')).isPresent();
     });
   }

@@ -1,29 +1,35 @@
 <app-header [headline]="'exchange.title-and-button' | translate:{coinName: appService.coinName}"></app-header>
 <div class="container">
   <div class="paper">
+    <!-- Loading animation. -->
     <app-loading-content
       [isLoading]="false"
       noDataText="exchange.unavailable"
       *ngIf="unavailable"
     ></app-loading-content>
 
+    <!-- Order creation form. -->
     <app-exchange-create
       *ngIf="!currentOrderDetails && !loading"
       (submitted)="showStatus($event)"
     ></app-exchange-create>
 
+    <!-- Order status. -->
     <app-exchange-status
       *ngIf="currentOrderDetails && !loading"
       [orderDetails]="currentOrderDetails"
       (goBack)="goBack()"
     ></app-exchange-status>
   </div>
+  <!-- Footer. -->
   <div class="-contact">
+    <!-- History link. -->
     <div>
       <span *ngIf="hasHistory" class="history">
         <a class="link" href="#" (click)="showHistory($event)"><mat-icon>history</mat-icon> <span class="history-text">{{ 'exchange.history' | translate }}</span></a>
       </span>
     </div>
+    <!-- Contact links. -->
     <div>
       <span>
         {{ 'exchange.need-help' | translate }}

@@ -1,9 +1,15 @@
-<app-modal [headline]="'wallet.rename.title' | translate" [dialog]="dialogRef" [disableDismiss]="(button && button.isLoading()) || currentState === states.WaitingForConfirmation">
+<app-modal
+  [headline]="'wallet.rename.title' | translate"
+  [dialog]="dialogRef"
+  [disableDismiss]="(button && button.isLoading()) || currentState === states.WaitingForConfirmation"
+>
+  <!-- Form. -->
   <ng-container *ngIf="currentState === states.Initial">
-    <div *ngIf="showCharactersWarning">
+    <div *ngIf="data.wallet.isHardware">
       {{ 'hardware-wallet.added.characters-warning' | translate }}
     </div>
-    <div [ngClass]="{ 'modal-form-container': showCharactersWarning }" [formGroup]="form">
+    <div [ngClass]="{ 'modal-form-container': data.wallet.isHardware }" [formGroup]="form">
+      <!-- Form field. -->
       <div class="form-field">
         <label for="label">{{ 'wallet.rename.name-label' | translate }}</label>
         <input
@@ -17,6 +23,7 @@
         >
       </div>
     </div>
+    <!-- Button area. -->
     <div class="-buttons">
       <app-button (action)="closePopup()" [disabled]="button && button.isLoading()">
         {{ 'common.cancel-button' | translate }}
@@ -27,6 +34,7 @@
     </div>
   </ng-container>
 
+  <!-- Hw wallet confirmation msg. -->
   <app-hw-message *ngIf="currentState === states.WaitingForConfirmation"
     [text]="'hardware-wallet.general.confirm' | translate"
     [icon]="msgIcons.Confirm"

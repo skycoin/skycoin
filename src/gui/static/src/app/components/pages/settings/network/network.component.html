@@ -1,9 +1,13 @@
 <div>
   <app-header [headline]="'network.title' | translate"></app-header>
 
-  <app-loading-content *ngIf="!peers"></app-loading-content>
+  <app-loading-content
+    [isLoading]="!peers"
+    noDataText="network.error-no-connections"
+    *ngIf="!peers || peers.length === 0"
+  ></app-loading-content>
 
-  <div class="container" *ngIf="peers">
+  <div class="container" *ngIf="peers && peers.length > 0">
     <div class="-table">
       <div class="-headers">
         <div class="-direction-cell"></div>

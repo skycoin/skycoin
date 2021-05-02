@@ -1,16 +1,18 @@
 <app-modal [headline]="'wallet.new.' + (data.create ? 'create' : 'load') + '-title' | translate" [dialog]="dialogRef" [disableDismiss]="disableDismiss">
+  <!-- Form. -->
   <app-create-wallet-form
     #formControl
     [create]="data.create"
     [onboarding]="false"
     [busy]="busy"
-    (createRequested)="createWallet();"
+    (createRequested)="checkAndCreateWallet();"
   ></app-create-wallet-form>
+  <!-- Button area. -->
   <div class="-buttons">
     <app-button (action)="closePopup()" #cancelButton>
       {{ 'common.cancel-button' | translate }}
     </app-button>
-    <app-button (action)="createWallet()" class="primary-button" [disabled]="!formControl.isValid" #createButton>
+    <app-button (action)="checkAndCreateWallet()" class="primary-button" [disabled]="!formControl.isValid" #createButton>
       {{ 'common.' + (data.create ? 'create' : 'load') + '-button' | translate }}
     </app-button>
   </div>

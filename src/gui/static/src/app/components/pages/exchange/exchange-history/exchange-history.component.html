@@ -1,4 +1,5 @@
 <app-modal [headline]="'exchange.history-window.title' | translate" [dialog]="dialogRef">
+  <!-- List elements. -->
   <div class="light-button-theme list-button-container" *ngFor="let order of orders">
     <button class="top-line" mat-button color="primary" (click)="select(order)">
       <div class="info">

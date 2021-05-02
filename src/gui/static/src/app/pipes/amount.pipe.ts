@@ -1,7 +1,18 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
+import { BigNumber } from 'bignumber.js';
+
 import { AppService } from '../services/app.service';
 
+/**
+ * Converts a number into a coin or hour amount. The resulting string is formatted with the
+ * correct max number of decimals and the small name of the coin or the full name of the
+ * coin hours at the end. It expects a number, numeric string or BigNumber instance as argument.
+ * Also, the pipe can receive 2 optional arguments: the first one is a boolean value indicating
+ * if the provided number must be converted to a coin amount (true) or an hour amount (false);
+ * while the second one is a string which can be 'first', for the pipe to return only the first part
+ * of the amount (the formatted number without the coin name), or 'last', for the pipe to return
+ * only the last part of the amount (the coin or hours name).
+ */
 @Pipe({
   name: 'amount',
   pure: false,
@@ -9,23 +20,30 @@ import { AppService } from '../services/app.service';
 export class AmountPipe implements PipeTransform {
 
   constructor(
-    private decimalPipe: DecimalPipe,
     private appService: AppService,
   ) { }
 
   transform(value: any, showingCoins = true, partToReturn = '') {
-    let firstPart: string;
+    const convertedVal = new BigNumber(value).decimalPlaces(showingCoins ? this.appService.currentMaxDecimals : 0);
+
     let response = '';
 
+    // Add the numeric part.
     if (partToReturn !== 'last') {
-      firstPart = this.decimalPipe.transform(value, showingCoins ? ('1.0-' + this.appService.currentMaxDecimals) : '1.0-0');
-      response = firstPart;
+      if (convertedVal.isNaN()) {
+        response = 'NaN';
+      } else {
+        response = convertedVal.toFormat();
+      }
+
       if (partToReturn !== 'first') {
         response += ' ';
       }
     }
+
+    // Add the name.
     if (partToReturn !== 'first') {
-      response += showingCoins ? this.appService.coinName : (Number(value) === 1 || Number(value) === -1 ? this.appService.hoursNameSingular : this.appService.hoursName);
+      response += showingCoins ? this.appService.coinName : (convertedVal.absoluteValue().isEqualTo(1) ? this.appService.hoursNameSingular : this.appService.hoursName);
     }
 
     return response;

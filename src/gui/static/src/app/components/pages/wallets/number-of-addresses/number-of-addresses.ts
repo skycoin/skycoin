@@ -1,25 +1,52 @@
-import { Component, OnInit, Inject, ViewChild, OnDestroy } from '@angular/core';
+import { Component, OnInit, ViewChild, OnDestroy, Output, EventEmitter } from '@angular/core';
 import { FormGroup, FormControl } from '@angular/forms';
-import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
+
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { AppConfig } from '../../../../app.config';
 
+/**
+ * Data sent when the user tries to add addresses with NumberOfAddressesComponent.
+ */
+export interface NumberOfAddressesEventData {
+  /**
+   * How many addresses the user wants to add.
+   */
+  howManyAddresses: number;
+  /**
+   * Callback function that must be used for informing the NumberOfAddressesComponent
+   * instance that the preparations for adding the addresses have been finished.
+   * @param close If the modal window must be closed.
+   * @param endedWithError If the preparations ended because of an error.
+   */
+  callback(close: boolean, endedWithError?: boolean): void;
+}
+
+/**
+ * Modal window for entering how many addresses to add to a wallet. It does not add the
+ * addresses, but emits an event for informing the caller when the addresses must be created.
+ */
 @Component({
   selector: 'app-number-of-addresses',
   templateUrl: './number-of-addresses.html',
   styleUrls: ['./number-of-addresses.scss'],
 })
 export class NumberOfAddressesComponent implements OnInit, OnDestroy {
+  // Confirmation button.
   @ViewChild('button') button: ButtonComponent;
   form: FormGroup;
+  // Emits when the user request the addresses to be added.
+  @Output() createRequested = new EventEmitter<NumberOfAddressesEventData>();
 
   // Vars with the validation error messages.
   inputErrorMsg = '';
 
-  public static openDialog(dialog: MatDialog, eventFunction: any): MatDialogRef<NumberOfAddressesComponent, any> {
+  /**
+   * Opens the modal window. Please use this function instead of opening the window "by hand".
+   */
+  public static openDialog(dialog: MatDialog): MatDialogRef<NumberOfAddressesComponent, any> {
     const config = new MatDialogConfig();
-    config.data = eventFunction;
     config.autoFocus = true;
     config.width = AppConfig.mediumModalWidth;
 
@@ -27,7 +54,6 @@ export class NumberOfAddressesComponent implements OnInit, OnDestroy {
   }
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) private data: any,
     public dialogRef: MatDialogRef<NumberOfAddressesComponent>,
     private msgBarService: MsgBarService,
   ) {}
@@ -41,6 +67,7 @@ export class NumberOfAddressesComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.msgBarService.hide();
+    this.createRequested.complete();
   }
 
   closePopup() {
@@ -55,15 +82,18 @@ export class NumberOfAddressesComponent implements OnInit, OnDestroy {
     this.msgBarService.hide();
     this.button.setLoading();
 
-    this.data(this.form.value.quantity, (close, endedWithError = false) => {
-      this.button.resetState();
-      if (!endedWithError) {
-        if (close) {
-          this.closePopup();
+    this.createRequested.emit({
+      howManyAddresses: this.form.value.quantity,
+      callback: (close, endedWithError = false) => {
+        this.button.resetState();
+        if (!endedWithError) {
+          if (close) {
+            this.closePopup();
+          }
+        } else {
+          this.msgBarService.showError('wallet.add-addresses.error');
         }
-      } else {
-        this.msgBarService.showError('wallet.add-addresses.error');
-      }
+      },
     });
   }
 

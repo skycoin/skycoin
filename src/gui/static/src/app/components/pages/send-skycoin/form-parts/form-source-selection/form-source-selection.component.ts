@@ -290,6 +290,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.closeGetOutputsSubscription();
     this.subscriptionsGroup.forEach(sub => sub.unsubscribe());
+    this.onSelectionChanged.complete();
   }
 
   resetForm() {

@@ -7,7 +7,6 @@ import { CreateWalletComponent } from './components/pages/wallets/create-wallet/
 import { ReactiveFormsModule } from '@angular/forms';
 import { SendSkycoinComponent } from './components/pages/send-skycoin/send-skycoin.component';
 import { DateFromNowPipe } from './pipes/date-from-now.pipe';
-import { RouterModule } from '@angular/router';
 import { BlockchainService } from './services/blockchain.service';
 import { DateTimePipe } from './pipes/date-time.pipe';
 import { PendingTransactionsComponent } from './components/pages/settings/pending-transactions/pending-transactions.component';
@@ -63,8 +62,6 @@ import { DontsavepasswordDirective } from './directives/dontsavepassword.directi
 import { SendVerifyComponent } from './components/pages/send-skycoin/send-preview/send-preview.component';
 import { TransactionInfoComponent } from './components/pages/send-skycoin/send-preview/transaction-info/transaction-info.component';
 import { SendCoinsFormComponent } from './components/pages/send-skycoin/send-coins-form/send-coins-form.component';
-import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
-import { AppTranslateLoader } from './app.translate-loader';
 import { NavBarSwitchService } from './services/nav-bar-switch.service';
 import { LoadingContentComponent } from './components/layout/loading-content/loading-content.component';
 import { NumberOfAddressesComponent } from './components/pages/wallets/number-of-addresses/number-of-addresses';
@@ -124,87 +121,12 @@ import { HardwareWalletService } from './services/wallet-operations/hardware-wal
 import { BalanceAndOutputsService } from './services/wallet-operations/balance-and-outputs.service';
 import { SpendingService } from './services/wallet-operations/spending.service';
 import { HistoryService } from './services/wallet-operations/history.service';
+import { AppRoutingModule } from './app-routing.module';
+import { AppTranslationModule } from './app-translation.module';
 import { FormFieldErrorDirective } from './directives/form-field-error.directive';
 import { EnterLinkComponent } from './components/pages/send-skycoin/enter-link/enter-link.component';
 import { DestinationToolsComponent } from './components/pages/send-skycoin/form-parts/form-destination/destination-tools/destination-tools.component';
 import { ForceSkywalletWipeComponent } from './components/pages/force-skywallet-wipe/force-skywallet-wipe.component';
-
-
-const ROUTES = [
-  {
-    path: '',
-    redirectTo: 'wallets',
-    pathMatch: 'full',
-  },
-  {
-    path: 'wallets',
-    component: WalletsComponent,
-    canActivate: [WizardGuardService],
-  },
-  {
-    path: 'send',
-    component: SendSkycoinComponent,
-    canActivate: [WizardGuardService],
-  },
-  {
-    path: 'transactions',
-    component: TransactionListComponent,
-    canActivate: [WizardGuardService],
-  },
-  {
-    path: 'buy',
-    component: BuyComponent,
-    canActivate: [WizardGuardService],
-  },
-  /*
-
-  Route for the Swaplab integration. Should be removed if the integration is not restored.
-
-  {
-    path: 'exchange',
-    component: ExchangeComponent,
-    canActivate: [WizardGuardService],
-  },
-  */
-  {
-    path: 'settings',
-    children: [
-      {
-        path: 'backup',
-        component: BackupComponent,
-      },
-      {
-        path: 'blockchain',
-        component: BlockchainComponent,
-      },
-      {
-        path: 'network',
-        component: NetworkComponent,
-      },
-      {
-        path: 'outputs',
-        component: OutputsComponent,
-      },
-      {
-        path: 'pending-transactions',
-        component: PendingTransactionsComponent,
-      },
-    ],
-    canActivate: [WizardGuardService],
-  },
-  {
-    path: 'wizard',
-    component: OnboardingComponent,
-  },
-  {
-    path: 'reset/:id',
-    component: ResetPasswordComponent,
-  },
-  {
-    path: 'skywallet-wipe',
-    component: ForceSkywalletWipeComponent,
-  },
-];
 
 @NgModule({
   declarations: [
@@ -290,6 +212,8 @@ const ROUTES = [
     ForceSkywalletWipeComponent,
   ],
   imports: [
+    AppTranslationModule,
+    AppRoutingModule,
     BrowserModule,
     HttpClientModule,
     MatButtonModule,
@@ -312,13 +236,6 @@ const ROUTES = [
     MatAutocompleteModule,
     NoopAnimationsModule,
     ReactiveFormsModule,
-    RouterModule.forRoot(ROUTES, { useHash: true, relativeLinkResolution: 'legacy' }),
-    TranslateModule.forRoot({
-      loader: {
-        provide: TranslateLoader,
-        useClass: AppTranslateLoader,
-      },
-    }),
   ],
   providers: [
     ApiService,

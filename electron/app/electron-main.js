@@ -207,8 +207,8 @@ function createWindow(url) {
     console.log('Cleared the caching of the skycoin wallet.');
   });
 
-  // When an options request to Swaplab using an https endpoint is detected, asume that it is a
-  // cors request and redirect it to an invalid endpoint on the node API.
+  // When an options request to an https endpoint is detected, asume that it is a cors request
+  // and redirect it to an invalid endpoint on the node API.
   ses.protocol.registerHttpProtocol('https', (request, callback) => {
     if (request.method.toLowerCase().includes('options') && request.url.toLowerCase().includes('swaplab.cc')) {
       callback({ url: currentURL + '/api/v1/unused', method: 'get' });

@@ -33,7 +33,7 @@ export class Bip39WordListService {
    */
   private wordMap: Map<string, boolean> = new Map<string, boolean>();
 
-  constructor() {
+  initialize() {
     // Load the word list.
     const name = 'bip39-word-list';
     from(import(`../../assets/${name}.json`)).subscribe(result => {

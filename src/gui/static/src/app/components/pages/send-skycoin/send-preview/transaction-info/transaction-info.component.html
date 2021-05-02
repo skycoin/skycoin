@@ -25,9 +25,9 @@
         <div class="-data">
           <span>{{ 'tx.hours-small-label' | translate }}</span>
           <span>
-            {{ sentOrReceivedHours.toString() | amount:false:'first' }} {{ hoursText | translate }}
+            {{ sentOrReceivedHours | amount:false:'first' }} {{ hoursText | translate }}
             |
-            {{ transaction.hoursBurned.toString() | amount:false:'first' }} {{ 'tx.hours-burned' | translate }}
+            {{ transaction.hoursBurned | amount:false:'first' }} {{ 'tx.hours-burned' | translate }}
           </span>
         </div>
         <div class="-data" *ngIf="!isPreview">
@@ -46,7 +46,7 @@
         <div class="-icon">
           <img [src]="'assets/img/' + (shouldShowIncomingIcon ? 'received' : 'sent') + '-blue.png'">
         </div>
-        <h4>{{ balanceToShow.toString() | amount }}</h4>
+        <h4>{{ balanceToShow | amount }}</h4>
         <p *ngIf="price" [matTooltip]="!isPreview ? ('tx.current-rate-help' | translate) : ''">
           {{ balanceToShow.multipliedBy(price).toString() | currency:'USD':'symbol':'1.2-2' }}<span *ngIf="!isPreview">*</span>
         </p>
@@ -74,10 +74,10 @@
         <div class="-info">
           <div class="-address">{{ input.address }}</div>
           <div class="-data">
-            <span>{{ 'tx.coins-small-label' | translate }}</span> {{ input.coins.toString() | amount:true:'first' }}
+            <span>{{ 'tx.coins-small-label' | translate }}</span> {{ input.coins | amount:true:'first' }}
           </div>
           <div class="-data">
-            <span>{{ 'tx.hours-small-label' | translate }}</span> {{ input.hours.toString() | amount:false:'first' }}
+            <span>{{ 'tx.hours-small-label' | translate }}</span> {{ input.hours | amount:false:'first' }}
           </div>
         </div>
       </div>
@@ -91,10 +91,10 @@
         <div class="-info">
           <div class="-address">{{ output.address }}</div>
           <div class="-data">
-            <span>{{ 'tx.coins-small-label' | translate }}</span> {{ output.coins.toString() | amount:true:'first' }}
+            <span>{{ 'tx.coins-small-label' | translate }}</span> {{ output.coins | amount:true:'first' }}
           </div>
           <div class="-data">
-            <span>{{ 'tx.hours-small-label' | translate }}</span> {{ output.hours.toString() | amount:false:'first' }}
+            <span>{{ 'tx.hours-small-label' | translate }}</span> {{ output.hours | amount:false:'first' }}
           </div>
         </div>
       </div>

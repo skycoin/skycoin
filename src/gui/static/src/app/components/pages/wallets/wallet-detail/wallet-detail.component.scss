@@ -65,6 +65,7 @@
   .-button {
     padding-right: 20px;
     padding-left: 0px;
+    cursor: pointer;
 
     &:first-child {
       padding-left: 5px;
@@ -81,9 +82,9 @@
       font-size: $font-size-standard-minus;
       height: 60px;
       margin: 0 5px;
-      cursor: pointer;
       display: flex;
       align-items: center;
+      opacity: 0.8;
 
       &.-img::before {
         content: '';
@@ -114,7 +115,7 @@
         background-image: url(/assets/img/unlock-grey.png);
       }
 
-      &.-edit-wallet::before {
+      &.-rename-wallet::before {
         background-image: url(/assets/img/edit-grey.png);
       }
 
@@ -122,9 +123,14 @@
         background-image: url(/assets/img/delete-grey.png);
       }
 
-      &:hover {
+      &:active {
+        opacity: 1;
+      }
+    }
+
+    &:hover {
+      span {
         color: $grey;
-        opacity: 0.8;
 
         &.-address-options::before {
           background-image: url(/assets/img/list-blue.png);
@@ -146,17 +152,13 @@
           background-image: url(/assets/img/unlock-gold.png);
         }
 
-        &.-edit-wallet::before {
+        &.-rename-wallet::before {
           background-image: url(/assets/img/edit-blue.png);
         }
 
         &.-btn-delete::before {
           background-image: url(/assets/img/delete-red.png);
         }
-      }
-
-      &:active {
-        opacity: 1;
       }
     }
 

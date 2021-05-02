@@ -1,4 +1,5 @@
 <app-modal [headline]="'wallet.add-addresses.title' | translate" [dialog]="dialogRef" [disableDismiss]="button.isLoading()">
+  <!-- Form. -->
   <div [formGroup]="form">
     <div class="form-field">
       <label for="quantity">{{ 'wallet.add-addresses.quantity-label' | translate }}</label>
@@ -14,6 +15,7 @@
       >
     </div>
   </div>
+  <!-- Button area. -->
   <div class="-buttons">
     <app-button (action)="closePopup()" [disabled]="button && button.isLoading()">
       {{ 'common.cancel-button' | translate }}

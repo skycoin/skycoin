@@ -2,8 +2,10 @@
   <app-header [headline]="'wallet.title-and-button' | translate"></app-header>
 
   <div class="container">
+    <!-- One table for hw wallets and other for software wallet. -->
     <div class="-table" *ngFor="let i of [0, 1]">
       <ng-container *ngIf="(i === 0 && hardwareWallets.length > 0) || (i === 1 && wallets.length > 0)">
+        <!-- Table header. -->
         <div class="-headers">
           <div class="-width-250 text-truncate">{{ (i === 0 ? 'wallet.hardware-wallet-table-label' : 'wallet.wallet-table-label') | translate }}</div>
           <div class="-flex-fill"></div>
@@ -12,10 +14,13 @@
           <div class="-width-85"></div>
         </div>
 
+        <!-- Wallet panels. -->
         <div class="e2e-wallets" *ngFor="let wallet of (i === 0 ? hardwareWallets : wallets)">
           <div class="-body">
             <div class="-row" (click)="toggleWallet(wallet)">
+              <!-- Label. -->
               <div class="-width-250 text-truncate e2e-label" [attr.title]="wallet.label">{{ wallet.label }}</div>
+              <!-- Security icon. -->
               <div class="-flex-fill -encryption d-flex">
                 <img src="assets/img/lock-gold.png"
                     [matTooltip]="'wallet.encryption-enabled' | translate"
@@ -27,19 +32,23 @@
                     [matTooltip]="'wallet.warning-hw-security' | translate"
                     *ngIf="wallet.hasHwSecurityWarnings && wallet.isHardware">
               </div>
-              <div class="-width-130 text-right">{{ (wallet.coins ? wallet.coins.toString() : 0) | amount:true:'first' }}</div>
-              <div class="-width-130 text-right grey-text">{{ (wallet.hours ? wallet.hours.toString() : 0) | amount:false:'first' }}</div>
+              <!-- Coins and hours. -->
+              <div class="-width-130 text-right">{{ (wallet.coins ? wallet.coins : 0) | amount:true:'first' }}</div>
+              <div class="-width-130 text-right grey-text">{{ (wallet.hours ? wallet.hours : 0) | amount:false:'first' }}</div>
+              <!-- Expand icon. -->
               <div class="-width-85 -expand">
                 <img src="assets/img/chevron-right-grey.png"
                     [ngClass]="{'rotate-270': walletsOpenedState.get(wallet.id), 'rotate-90': !walletsOpenedState.get(wallet.id)}">
               </div>
             </div>
+            <!-- Wallet options and address list. -->
             <app-wallet-detail [wallet]="wallet" *ngIf="walletsOpenedState.get(wallet.id)"></app-wallet-detail>
           </div>
         </div>
       </ng-container>
     </div>
 
+    <!-- Options at the bottom. -->
     <div class="action-buttons">
       <button mat-button (click)="addWallet(true)">
         <img src="assets/img/plus-gold.png"> {{ 'wallet.add-button' | translate }}

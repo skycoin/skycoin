@@ -115,9 +115,7 @@ export class OnboardingCreatePage {
     const button = element(by.buttonText('Finish'));
 
     return element(by.css('.mat-checkbox-label')).click().then(() => {
-      password.clear();
       password.sendKeys('password');
-      confirm.clear();
       confirm.sendKeys('password');
 
       return button.isEnabled();

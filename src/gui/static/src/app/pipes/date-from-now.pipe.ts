@@ -2,6 +2,11 @@ import { Pipe, PipeTransform } from '@angular/core';
 import * as moment from 'moment';
 import { TranslateService } from '@ngx-translate/core';
 
+/**
+ * Takes an Unix date (UTC seconds since the Epoch) and returns a translated string indicating
+ * how much time has passed since that moment. It expects a number or a numeric string as
+ * argument.
+ */
 @Pipe({
   name: 'dateFromNow',
   pure: false,
@@ -11,7 +16,7 @@ export class DateFromNowPipe implements PipeTransform {
     public translateService: TranslateService,
   ) { }
 
-  transform(value: any) {
+  transform(value: number) {
     const diff: number = moment().unix() - value;
 
     if (diff < 60) {

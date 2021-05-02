@@ -1,5 +1,11 @@
 const PROXY_CONFIG = {
-  "/api/*": {
+  "/swaplab": {
+    "target": "https://swaplab.cc",
+    "logLevel": "debug",
+    "changeOrigin": true,
+    pathRewrite: {'^/swaplab' : ''}
+  },
+  "/api": {
     "target": "http://127.0.0.1:6420",
     "secure": false,
     "logLevel": "debug",
@@ -8,12 +14,6 @@ const PROXY_CONFIG = {
       req.headers["referer"] = 'http://127.0.0.1:6420';
       req.headers["origin"] = 'http://127.0.0.1:6420';
     }
-  },
-  "/swaplab": {
-    "target": "https://swaplab.cc",
-    "logLevel": "debug",
-    "changeOrigin": true,
-    pathRewrite: {'^/swaplab' : ''}
   },
   "/teller/*": {
     "target": "http://127.0.0.1:7071",

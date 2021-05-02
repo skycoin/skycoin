@@ -100,7 +100,7 @@
     "decrypt-button": "解密钱包",
     "decrypt-warning": "警告: 出于安全考虑，建议将钱包加密。建议谨慎一点。",
     "delete-button": "删除钱包",
-    "edit-button": "编辑钱包",
+    "rename-button": "修改钱包名称",
     "add-button": "添加钱包",
     "load-button": "加载钱包",
     "hardware-wallet-button": "硬件钱包",
@@ -113,6 +113,7 @@
     "delete-confirmation-check": "是的，我想要删除钱包。",
     "max-hardware-wallets-error": "你的硬件钱包里的地址已经达到允许的最大值。",
     "add-many-confirmation": "警告: 如果你在不使用前一个地址的情况下添加太多地址，或者如果你使用的是最后一个地址而不是第一个地址，那么如果你尝试使用种子恢复钱包，有些地址将可能无法自动恢复（你必须手动添加它们）。 你想继续吗？",
+    "busy-error": "请等待上一操作完成。",
 
     "new": {
       "create-title": "创建钱包",
@@ -438,6 +439,7 @@
 
   "network": {
     "title": "网络",
+    "error-no-connections": "无连接",
     "peer-small-table-label": "节点",
     "source-small-table-label": "节点来源",
     "block-height-small-table-label": "区块高度",

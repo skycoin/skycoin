@@ -165,7 +165,7 @@ func (w *Wallet) Lock(password []byte) error {
 
 	cryptoType := wlt.CryptoType()
 	if cryptoType == "" {
-		return errors.New("crypto type field not set")
+		cryptoType = crypto.DefaultCryptoType
 	}
 
 	cryptor, err := crypto.GetCrypto(cryptoType)

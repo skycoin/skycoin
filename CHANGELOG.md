@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `-max-incoming-connection` flag to control the maximum allowed incoming connections.
 - Add `qr_uri_prefix` field to `/api/v1/health` endpoint.
 
+### changed
+
+- Change `POST /api/v1/wallet/encrypt` to encrypt wallet that has no 'cryptoType' field with the default 
+  crypto type for `deterministic`, `collection`, `bip44` wallets.
+
 ### Fixed
 
 ### Changed

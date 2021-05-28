@@ -88,3 +88,15 @@ export function parseRequestLink(linkText: string): RequestLinkParams {
 
   return response;
 }
+
+/**
+ * Removes the commas from the string representation of a number.
+ */
+export function removeCommas(formattedNumber: string): string {
+  if (formattedNumber) {
+    var commaReg = new RegExp(',', 'g');
+    return formattedNumber.replace(commaReg, '');
+  }
+
+  return formattedNumber;
+}

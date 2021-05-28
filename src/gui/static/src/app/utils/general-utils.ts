@@ -94,7 +94,8 @@ export function parseRequestLink(linkText: string): RequestLinkParams {
  */
 export function removeCommas(formattedNumber: string): string {
   if (formattedNumber) {
-    var commaReg = new RegExp(',', 'g');
+    const commaReg = new RegExp(',', 'g');
+
     return formattedNumber.replace(commaReg, '');
   }
 

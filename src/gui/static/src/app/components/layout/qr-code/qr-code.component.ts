@@ -6,7 +6,7 @@ import { SubscriptionLike, Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { BigNumber } from 'bignumber.js';
 
-import { copyTextToClipboard } from '../../../utils/general-utils';
+import { copyTextToClipboard, removeCommas } from '../../../utils/general-utils';
 import { AppConfig } from '../../../app.config';
 import { MsgBarService } from '../../../services/msg-bar.service';
 import { AppService } from '../../../services/app.service';
@@ -143,7 +143,7 @@ export class QrCodeComponent implements OnInit, OnDestroy {
 
     // Add the coins or alert if the value is not valid.
     if (this.form.get('coins').value) {
-      const coins = new BigNumber(this.form.get('coins').value);
+      const coins = new BigNumber(removeCommas(this.form.get('coins').value));
       if (!coins.isNaN() && coins.isGreaterThan(0) && coins.decimalPlaces() <= this.appService.currentMaxDecimals) {
         this.currentQrContent += nextSeparator + 'amount=' + coins.toString();
         nextSeparator = '&';
@@ -154,7 +154,7 @@ export class QrCodeComponent implements OnInit, OnDestroy {
 
     // Add the hours or alert if the value is not valid.
     if (this.form.get('hours').value) {
-      const hours = new BigNumber(this.form.get('hours').value);
+      const hours = new BigNumber(removeCommas(this.form.get('hours').value));
       if (!hours.isNaN() && hours.isGreaterThan(0) && hours.decimalPlaces() === 0) {
         this.currentQrContent += nextSeparator + 'hours=' + hours.toString();
         nextSeparator = '&';

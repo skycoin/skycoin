@@ -27,7 +27,6 @@ describe('Send', () => {
   it('should not be able to send with wrong amount', () => {
     expect<any>(page.fillFormWithCoins('615701')).toBeFalsy();
     expect<any>(page.fillFormWithCoins('0')).toBeFalsy();
-    expect<any>(page.fillFormWithCoins('-1')).toBeFalsy();
     expect<any>(page.fillFormWithCoins('a')).toBeFalsy();
   });
 

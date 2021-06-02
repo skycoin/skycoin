@@ -12,7 +12,7 @@ import { MsgBarService } from '../../../../../services/msg-bar.service';
 import { AvailableBalanceData } from '../../form-parts/form-source-selection/form-source-selection.component';
 import { ConfirmationParams, ConfirmationComponent, DefaultConfirmationButtons } from '../../../../layout/confirmation/confirmation.component';
 import { SendCoinsData } from '../../send-coins-form/send-coins-form.component';
-import { parseRequestLink, RequestLinkParams } from '../../../../../utils/general-utils';
+import { parseRequestLink, removeCommas, RequestLinkParams } from '../../../../../utils/general-utils';
 import { EnterLinkComponent } from '../../enter-link/enter-link.component';
 import { DestinationToolsComponent, DestinationTools } from './destination-tools/destination-tools.component';
 
@@ -211,7 +211,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     // Before asking, check if there are valid values to convert.
     let validAmounts = 0;
     this.destControls.forEach(dest => {
-      let value: string = dest.get('coins').value;
+      let value: string = removeCommas(dest.get('coins').value);
       value = value ? value.trim() : value;
       const currentValue = new BigNumber(value);
 
@@ -264,7 +264,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     let valuesWithPrecisionErrors = 0;
 
     this.destControls.forEach(dest => {
-      let value: string = dest.get('coins').value;
+      let value: string = removeCommas(dest.get('coins').value);
       value = value ? value.trim() : value;
       const currentValue = new BigNumber(value);
 
@@ -330,7 +330,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     // Subtract to the available balance all the values already asigned to the other destinations.
     this.destControls.forEach((dest, i) => {
       if (i !== index) {
-        const value = this.getAmount((dest.get('coins').value as string).trim(), true);
+        const value = this.getAmount(removeCommas(dest.get('coins').value).trim(), true);
         if (!value || value.isNaN()) {
           return;
         } else {
@@ -371,7 +371,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
     this.destControls.forEach((dest, i) => {
       // Update the coin values.
-      let stringValue: string = dest.get('coins').value;
+      let stringValue: string = removeCommas(dest.get('coins').value);
       let value = this.getAmount(stringValue, true);
 
       if (!value) {
@@ -398,7 +398,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
       // Update the hour values.
       if (this.showHourFields) {
-        stringValue = dest.get('hours').value;
+        stringValue = removeCommas(dest.get('hours').value);
         value = this.getAmount(stringValue, false);
         if (value) {
           this.totalHours = this.totalHours.plus(value);
@@ -751,8 +751,8 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       // Get the string values.
       const destination = {
         address: this.showSimpleForm ? ((this.form.get('address').value) as string).trim() : ((destControl.get('address').value) as string).trim(),
-        coins: ((this.selectedCurrency === DoubleButtonActive.LeftButton ? destControl.get('coins').value : this.values[i].toString()) as string).trim(),
-        originalAmount: destControl.get('coins').value,
+        coins: ((this.selectedCurrency === DoubleButtonActive.LeftButton ? removeCommas(destControl.get('coins').value) : this.values[i].toString()) as string).trim(),
+        originalAmount: removeCommas(destControl.get('coins').value),
       };
 
       // Clean the values.
@@ -762,7 +762,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       }
 
       if (this.showHourFields || this.simpleFormSpecificHours) {
-        destination['hours'] = this.simpleFormSpecificHours ? this.simpleFormSpecificHours.toString() : destControl.get('hours').value;
+        destination['hours'] = this.simpleFormSpecificHours ? this.simpleFormSpecificHours.toString() : removeCommas(destControl.get('hours').value);
         if (cleanNumbers) {
           destination['hours'] = new BigNumber(destination['hours']).toString();
         }
@@ -833,7 +833,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       }
 
       // Check the coins.
-      const coinsValue: string = control.get('coins').value;
+      const coinsValue: string = removeCommas(control.get('coins').value);
       if (this.getAmount(coinsValue, true) === null) {
         valid = false;
         if (control.get('coins').touched) {
@@ -843,7 +843,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
       // Check the hours, if showing the hours field.
       if (this.showHourFields) {
-        const hoursValue: string = control.get('hours').value;
+        const hoursValue: string = removeCommas(control.get('hours').value);
         if (this.getAmount(hoursValue, false) === null) {
           valid = false;
           if (control.get('hours').touched) {
@@ -857,7 +857,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     let destinationsCoins = new BigNumber(0);
     if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
       this.destControls.map(control => {
-        const value = new BigNumber(control.get('coins').value);
+        const value = new BigNumber(removeCommas(control.get('coins').value));
         if (!value.isNaN()) {
           destinationsCoins = destinationsCoins.plus(value);
         }
@@ -873,7 +873,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     let destinationsHours = new BigNumber(0);
     if (this.showHourFields) {
       this.destControls.map(control => {
-        const value = new BigNumber(control.get('hours').value);
+        const value = new BigNumber(removeCommas(control.get('hours').value));
         if (!value.isNaN()) {
           destinationsHours = destinationsHours.plus(value);
         }

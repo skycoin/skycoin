@@ -28,13 +28,13 @@
       <label for="coins">
         {{ 'qr.amount-label' | translate }} <span class="red-text" *ngIf="invalidCoins">{{ 'qr.invalid' | translate }}</span>
       </label>
-      <input maxlength="20" formControlName="coins" id="coins">
+      <input appFormatNumber maxlength="20" formControlName="coins" id="coins">
     </div>
     <div class="form-field">
       <label for="hours">
         {{ 'qr.hours-label' | translate }} <span class="red-text" *ngIf="invalidHours">{{ 'qr.invalid' | translate }}</span>
       </label>
-      <input maxlength="20" formControlName="hours" id="hours">
+      <input appFormatNumber maxlength="20" formControlName="hours" id="hours">
     </div>
     <div class="form-field">
       <label for="note">

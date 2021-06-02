@@ -59,6 +59,7 @@ import { DoubleButtonComponent } from './components/layout/double-button/double-
 import { SeedModalComponent } from './components/pages/settings/backup/seed-modal/seed-modal.component';
 import { OnboardingComponent } from './components/pages/onboarding/onboarding.component';
 import { DontsavepasswordDirective } from './directives/dontsavepassword.directive';
+import { FormatNumberDirective } from './directives/format-number.directive';
 import { SendVerifyComponent } from './components/pages/send-skycoin/send-preview/send-preview.component';
 import { TransactionInfoComponent } from './components/pages/send-skycoin/send-preview/transaction-info/transaction-info.component';
 import { SendCoinsFormComponent } from './components/pages/send-skycoin/send-coins-form/send-coins-form.component';
@@ -161,6 +162,7 @@ import { ForceSkywalletWipeComponent } from './components/pages/force-skywallet-
     SeedModalComponent,
     OnboardingComponent,
     DontsavepasswordDirective,
+    FormatNumberDirective,
     SendVerifyComponent,
     TransactionInfoComponent,
     SendCoinsFormComponent,

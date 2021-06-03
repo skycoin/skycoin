@@ -5,6 +5,7 @@ import { Platform } from '@angular/cdk/platform';
 import { AriaDescriber, FocusMonitor } from '@angular/cdk/a11y';
 import { Directionality } from '@angular/cdk/bidi';
 import { TranslateService } from '@ngx-translate/core';
+import { DOCUMENT } from '@angular/common';
 
 /**
  * Makes a form field show red boders and text, as well as a tooltip, if there is a
@@ -40,6 +41,7 @@ export class FormFieldErrorDirective extends MatTooltip {
     @Inject(MAT_TOOLTIP_SCROLL_STRATEGY) scrollStrategy: any,
     @Optional() dir: Directionality,
     @Optional() @Inject(MAT_TOOLTIP_DEFAULT_OPTIONS) defaultOptions: MatTooltipDefaultOptions,
+    @Inject(DOCUMENT) document: HTMLDocument,
   ) {
     super(
       overlay,
@@ -53,6 +55,7 @@ export class FormFieldErrorDirective extends MatTooltip {
       scrollStrategy,
       dir,
       defaultOptions,
+      document,
     );
 
     this.tooltipClass = 'error-tooltip';

@@ -1172,6 +1172,7 @@ func TestGetLastBlocks(t *testing.T) {
 			endpoint := "/api/v1/last_blocks"
 			gateway := &MockGatewayer{}
 
+			gateway.On("DaemonConfig").Return(daemon.DaemonConfig{MaxLastBlocksCount: 256})
 			gateway.On("GetLastBlocks", tc.num).Return(tc.gatewayGetLastBlocksResult, tc.gatewayGetLastBlocksError)
 			gateway.On("GetLastBlocksVerbose", tc.num).Return(tc.gatewayGetLastBlocksVerboseResult.Blocks,
 				tc.gatewayGetLastBlocksVerboseResult.Inputs, tc.gatewayGetLastBlocksVerboseError)

@@ -95,6 +95,8 @@ type NodeConfig struct {
 	MaxOutgoingMessageLength int
 	// MaxIncomingMessageLength maximum size of incoming messages
 	MaxIncomingMessageLength int
+	// MaxLastBlocksCount maximum number of blocks to response to API /api/v1/last_blocks
+	MaxLastBlocksCount uint64
 	// PeerlistSize represents the maximum number of peers that the pex would maintain
 	PeerlistSize int
 	// Wallet Address Version
@@ -261,6 +263,7 @@ func NewNodeConfig(mode string, node fiber.NodeConfig) NodeConfig {
 		OutgoingConnectionsRate:  time.Second * 5,
 		MaxOutgoingMessageLength: 256 * 1024,
 		MaxIncomingMessageLength: 1024 * 1024,
+		MaxLastBlocksCount:       256,
 		PeerlistSize:             65535,
 		// Wallet Address Version
 		// AddressVersion: "test",
@@ -504,6 +507,10 @@ func (c *Config) postProcess() error {
 		return errors.New("-max-decimals-create-block exceeds MaxUint8")
 	}
 
+	if c.Node.MaxLastBlocksCount > math.MaxUint64 {
+		return fmt.Errorf("-max-last-blocks-count exceeds math.MaxUint64")
+	}
+
 	c.Node.UnconfirmedVerifyTxn.BurnFactor = uint32(c.Node.unconfirmedBurnFactor)
 	c.Node.UnconfirmedVerifyTxn.MaxTransactionSize = uint32(c.Node.maxUnconfirmedTransactionSize)
 	c.Node.UnconfirmedVerifyTxn.MaxDropletPrecision = uint8(c.Node.unconfirmedMaxDropletPrecision)
@@ -706,6 +713,7 @@ func (c *NodeConfig) RegisterFlags() {
 	flag.Uint64Var(&c.createBlockMaxTransactionSize, "max-txn-size-create-block", uint64(c.CreateBlockVerifyTxn.MaxTransactionSize), "maximum size of a transaction applied when creating blocks")
 	flag.Uint64Var(&c.createBlockMaxDropletPrecision, "max-decimals-create-block", uint64(c.CreateBlockVerifyTxn.MaxDropletPrecision), "max number of decimal places applied when creating blocks")
 	flag.Uint64Var(&c.maxBlockSize, "max-block-size", uint64(c.MaxBlockTransactionsSize), "maximum total size of transactions in a block")
+	flag.Uint64Var(&c.MaxLastBlocksCount, "max-last-blocks-count", c.MaxLastBlocksCount, "Maximum number of blocks to response for API /api/v1/last_blocks")
 
 	flag.BoolVar(&c.RunBlockPublisher, "block-publisher", c.RunBlockPublisher, "run the daemon as a block publisher")
 	flag.StringVar(&c.BlockchainPubkeyStr, "blockchain-public-key", c.BlockchainPubkeyStr, "public key of the blockchain")

@@ -341,6 +341,8 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 // Args:
 //	num [int]
 //  verbose [bool]
+//
+// NOTE: num will be limited to 1000
 func lastBlocksHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -358,6 +360,12 @@ func lastBlocksHandler(gateway Gatewayer) http.HandlerFunc {
 		n, err := strconv.ParseUint(num, 10, 64)
 		if err != nil {
 			wh.Error400(w, fmt.Sprintf("Invalid num value %q", num))
+			return
+		}
+
+		maxLBC := gateway.DaemonConfig().MaxLastBlocksCount
+		if n > maxLBC {
+			wh.Error400(w, fmt.Sprintf("num: %q must < %d", num, maxLBC))
 			return
 		}
 

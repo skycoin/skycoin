@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Change `POST /api/v1/wallet/encrypt` to encrypt wallet that has no 'cryptoType' field with the default 
   crypto type for `deterministic`, `collection`, `bip44` wallets.
+- Add `-max-last-blocks-count` flag to limit the maximum number of blocks the api `/api/v1/last_blocks` can return.
+    This also fixes the `out of memory` panic. The default maximum number is `256`.
 
 ### Fixed
 

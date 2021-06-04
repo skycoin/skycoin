@@ -361,6 +361,12 @@ func lastBlocksHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
+		maxLBC := gateway.DaemonConfig().MaxLastBlocksCount
+		if n > maxLBC {
+			wh.Error400(w, fmt.Sprintf("num: %q must < %d", num, maxLBC))
+			return
+		}
+
 		if verbose {
 			blocks, inputs, err := gateway.GetLastBlocksVerbose(n)
 			if err != nil {

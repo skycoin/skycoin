@@ -221,6 +221,8 @@ type DaemonConfig struct { //nolint:golint
 	MaxOutgoingMessageLength uint64
 	// Maximum total size of transactions in a block
 	MaxBlockTransactionsSize uint32
+	// Maximum number of blocks to response on /api/v1/last_blocks API
+	MaxLastBlocksCount uint64
 }
 
 // NewDaemonConfig creates daemon config

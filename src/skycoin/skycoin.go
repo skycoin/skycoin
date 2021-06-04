@@ -420,6 +420,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Daemon.MaxOutgoingMessageLength = uint64(c.config.Node.MaxOutgoingMessageLength)
 	dc.Daemon.MaxIncomingMessageLength = uint64(c.config.Node.MaxIncomingMessageLength)
 	dc.Daemon.MaxBlockTransactionsSize = c.config.Node.MaxBlockTransactionsSize
+	dc.Daemon.MaxLastBlocksCount = c.config.Node.MaxLastBlocksCount
 	dc.Daemon.DefaultConnections = c.config.Node.DefaultConnections
 	dc.Daemon.DisableOutgoingConnections = c.config.Node.DisableOutgoingConnections
 	dc.Daemon.DisableIncomingConnections = c.config.Node.DisableIncomingConnections

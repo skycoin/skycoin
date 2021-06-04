@@ -341,8 +341,6 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 // Args:
 //	num [int]
 //  verbose [bool]
-//
-// NOTE: num will be limited to 1000
 func lastBlocksHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {

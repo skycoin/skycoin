@@ -128,6 +128,7 @@ import { FormFieldErrorDirective } from './directives/form-field-error.directive
 import { EnterLinkComponent } from './components/pages/send-skycoin/enter-link/enter-link.component';
 import { DestinationToolsComponent } from './components/pages/send-skycoin/form-parts/form-destination/destination-tools/destination-tools.component';
 import { ForceSkywalletWipeComponent } from './components/pages/force-skywallet-wipe/force-skywallet-wipe.component';
+import { NumberFormatterComponent } from './components/layout/number-formatter/number-formatter.component';
 
 @NgModule({
   declarations: [
@@ -212,6 +213,7 @@ import { ForceSkywalletWipeComponent } from './components/pages/force-skywallet-
     EnterLinkComponent,
     DestinationToolsComponent,
     ForceSkywalletWipeComponent,
+    NumberFormatterComponent,
   ],
   imports: [
     AppTranslationModule,

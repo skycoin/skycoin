@@ -20,8 +20,14 @@
     <span *ngIf="link && linkIsUrl && linkIsInternal"><a class="link" [href]="link">{{ linkText ? linkText : link }}</a></span>
     <div *ngIf="outputsList" class="list">
       <div *ngFor="let output of outputsList" class="list-element">
-        <span>• {{ output.coins | amount }}</span>
-        <span>{{ 'hardware-wallet.create-tx.separator-for-coins-and-hours' | translate }} {{ output.hours | amount:false }}</span>
+        <span>
+          • <app-number-formatter [number]="output.coins | amount:true:'first'"></app-number-formatter>
+          {{output.coins | amount:true:'last' }}
+        </span>
+        <span>{{ 'hardware-wallet.create-tx.separator-for-coins-and-hours' | translate }}
+          <app-number-formatter [number]="output.hours | amount:false:'first'"></app-number-formatter>
+          {{output.hours | amount:false:'last' }}
+        </span>
         <span>{{ 'hardware-wallet.create-tx.separator-to-destination' | translate }} {{ output.address }}</span>
       </div>
     </div>

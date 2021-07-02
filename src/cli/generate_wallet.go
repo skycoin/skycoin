@@ -22,7 +22,6 @@ const (
 
 func walletCreateCmd() *cobra.Command {
 	walletCreateCmd := &cobra.Command{
-		Args:  cobra.ExactArgs(1),
 		Use:   "walletCreate [label]",
 		Short: "Create a new wallet",
 		Long: `Create a new wallet.
@@ -37,6 +36,7 @@ func walletCreateCmd() *cobra.Command {
 		RunE:         generateWalletHandler,
 	}
 
+	walletCreateCmd.Flags().StringP("label", "l", "", "Wallet label used to identify your wallet")
 	walletCreateCmd.Flags().BoolP("random", "r", false, "A random alpha numeric seed will be generated.")
 	walletCreateCmd.Flags().BoolP("mnemonic", "m", false, "A mnemonic seed consisting of 12 dictionary words will be generated")
 	walletCreateCmd.Flags().Uint64P("wordcount", "w", 12, "Number of seed words to use for mnemonic. Must be 12, 15, 18, 21 or 24")
@@ -53,8 +53,15 @@ func walletCreateCmd() *cobra.Command {
 	return walletCreateCmd
 }
 
-func generateWalletHandler(c *cobra.Command, args []string) error {
-	label := args[0]
+func generateWalletHandler(c *cobra.Command, _ []string) error {
+	label, err := c.Flags().GetString("label")
+	if err != nil {
+		return err
+	}
+
+	if label == "" {
+		return errors.New("label must not be empty")
+	}
 
 	scan, err := c.Flags().GetUint64("scan")
 	if err != nil {

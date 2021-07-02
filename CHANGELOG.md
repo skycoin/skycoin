@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Add `-max-last-blocks-count` flag to limit the maximum number of blocks the api `/api/v1/last_blocks` can return.
+  This also fixes the `out of memory` panic. The default maximum number is `256`.
+- Add `src_txid` to verbose transaction inputs, affected apis: `/api/v1/transaction`, `/api/v1/transactions` `/api/v1/block` `/api/v1/blocks` `/api/v1/pendingTxs`
+- Add `calculated_hours` to `/api/v1/uxout` and `/api/v1/address_uxouts`.
+- Add go version of go1.14 support
 - Add `POST /api/v1/wallet/scan` API to scan wallet addresses ahead, default scan number is `20`.
 - Add `CLI walletScanAddresses` command to scan wallet addresses ahead.
 - Add `GET /api/v2/transactions` API to get transactions with pagination.
@@ -18,16 +23,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Change `POST /api/v1/wallet/encrypt` to encrypt wallet that has no 'cryptoType' field with the default 
   crypto type for `deterministic`, `collection`, `bip44` wallets.
-- Add `-max-last-blocks-count` flag to limit the maximum number of blocks the api `/api/v1/last_blocks` can return.
-    This also fixes the `out of memory` panic. The default maximum number is `256`.
-
-### Fixed
-
-### Changed
-
-- Add `src_txid` to verbose transaction inputs, affected apis: `/api/v1/transaction`, `/api/v1/transactions` `/api/v1/block` `/api/v1/blocks` `/api/v1/pendingTxs`
-- Add `calculated_hours` to `/api/v1/uxout` and `/api/v1/address_uxouts`.
-- Add go version of go1.14 support
+- Change on the CLI command `walletBalance`:
+  * Change the argument from the full path of wallet file to wallet filename only. For example:
+    Previously, to check wallet balance we need to run:
+    `skycoin-cli walletBalance $HOME/.skycoin/wallets/wallet.wlt`,
+    Now, we can run:
+    `skycoin-cli walletbalance wallet.wlt`.
 - Changes on the CLI command `walletCreate`:
     * Removed `-wallet-file` flag, it was used to specific the wallet file name, and now the filename 
       will be automatically generated.

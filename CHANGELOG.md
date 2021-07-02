@@ -21,8 +21,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### changed
 
-- Change `POST /api/v1/wallet/encrypt` to encrypt wallet that has no 'cryptoType' field with the default 
-  crypto type for `deterministic`, `collection`, `bip44` wallets.
+- CLI command `decryptWallet` shows wallet details after decryption, it used to show nothing if wallet is decrypted successfully.
+- Change `POST /api/v1/wallet/encrypt` to encrypt wallet that has no 'cryptoType' field with the default crypto type.
 - CLI command `walletBalance, createRawTransactionV2` use wallet file name to load wallet instead of 
   the full path of the wallet file. For example, For example, previously, to check wallet 
   balance we need to run:

@@ -23,12 +23,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Change `POST /api/v1/wallet/encrypt` to encrypt wallet that has no 'cryptoType' field with the default 
   crypto type for `deterministic`, `collection`, `bip44` wallets.
-- Change on the CLI command `walletBalance`:
-  * Change the argument from the full path of wallet file to wallet filename only. For example:
-    Previously, to check wallet balance we need to run:
-    `skycoin-cli walletBalance $HOME/.skycoin/wallets/wallet.wlt`,
+- CLI command `walletBalance, createRawTransactionV2` use wallet file name to load wallet instead of 
+  the full path of the wallet file. For example, For example, previously, to check wallet 
+  balance we need to run:
+    `skycoin-cli walletBalance $HOME/.skycoin/wallets/wallet-with-balance.wlt`,
     Now, we can run:
-    `skycoin-cli walletbalance wallet.wlt`.
+    `skycoin-cli walletbalance wallet-with-balance.wlt`.
+- CLI command `createRawTransactionV2` accepts wallet filename instead of the full path of the wallet file.
 - Changes on the CLI command `walletCreate`:
     * Removed `-wallet-file` flag, it was used to specific the wallet file name, and now the filename 
       will be automatically generated.

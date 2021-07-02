@@ -738,7 +738,7 @@ $ skycoin-cli createRawTransaction $WALLET_FILE $RECIPIENT_ADDRESS $AMOUNT -a $F
 ### Create an unsigned raw transaction
 
 ```bash
-$ skycoin-cli createRawTransactionV2 [wallet] [to address] [amount] [flags]
+$ skycoin-cli createRawTransactionV2 [wallet] [to address] [amount] --unsign
 ```
 
 ### Example

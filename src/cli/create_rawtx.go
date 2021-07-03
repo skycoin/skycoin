@@ -167,7 +167,7 @@ func makeWalletCreateTxnRequest(c *cobra.Command, args []string) (*api.WalletCre
 	}
 
 	walletFile := args[0]
-	w, err := apiClient.Wallet(args[0])
+	w, err := apiClient.Wallet(walletFile)
 	if err != nil {
 		return nil, err
 	}

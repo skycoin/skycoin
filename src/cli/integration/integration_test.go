@@ -2972,7 +2972,7 @@ func TestStableWalletCreateXPubFlow(t *testing.T) {
 	// - Create an xpub wallet from the xpub key
 
 	// Create a bip44 wallet
-	args := []string{"walletCreate", "xpub-flow", "-t", "bip44", "-n", "10", "-p", "pwd"}
+	args := []string{"walletCreate", "xpub-flow", "-t", "bip44", "-n", "10", "-p", "pwd", "-l", "bip44one"}
 	output, err := execCommandCombinedOutput(args...)
 	require.NoError(t, err, fmt.Sprintf("expect no error, got: %s", string(output)))
 	var bip44Wlt api.WalletResponse
@@ -2990,7 +2990,7 @@ func TestStableWalletCreateXPubFlow(t *testing.T) {
 	bip44Filename := filepath.Join(dir, bip44Wlt.Meta.Filename)
 
 	// Create an xpub wallet
-	args = []string{"walletCreate", "xpubwallet", "-t", "xpub", "--xpub", xpub, "-n", "10"}
+	args = []string{"walletCreate", "xpubwallet", "-t", "xpub", "--xpub", xpub, "-n", "10", "-l", "xpubone"}
 	output, err = execCommandCombinedOutput(args...)
 	require.NoError(t, err, fmt.Sprintf("expect no error, got: %s", string(output)))
 	var xpubWlt api.WalletResponse
@@ -3181,7 +3181,7 @@ func TestStableWalletCreate(t *testing.T) {
 			}
 
 			// Run command with arguments
-			args := append([]string{"walletCreate", "test-stable-wallet-create"}, tc.args...)
+			args := append([]string{"walletCreate", "-l", "test-stable-wallet-create"}, tc.args...)
 			output, err := execCommandCombinedOutput(args...)
 			if err != nil {
 				require.EqualError(t, err, "exit status 1")

@@ -90,12 +90,12 @@ func AddPrivateKey(wlt *collection.Wallet, key string) error {
 func AddPrivateKeyToFile(walletFile, key string, pr PasswordReader) error {
 	data, err := ioutil.ReadFile(walletFile)
 	if err != nil {
-		return err
+		return WalletLoadError{err}
 	}
 
 	wlt := &collection.Wallet{}
 	if err := wlt.Deserialize(data); err != nil {
-		return err
+		return WalletLoadError{err}
 	}
 
 	if wlt.Type() != collection.WalletType {

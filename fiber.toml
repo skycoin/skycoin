@@ -20,10 +20,10 @@ default_connections = [
 peer_list_url = "https://downloads.skycoin.com/blockchain/peers.txt"
 # port = 6000
 # web_interface_port = 6420
-# unconfirmed_burn_factor = 10
+# unconfirmed_burn_factor = 100
 # unconfirmed_max_transaction_size = 32 * 1024
 # unconfirmed_max_decimals = 3
-# create_block_burn_factor = 10
+# create_block_burn_factor = 100
 # create_block_max_transaction_size = 32 * 1024
 # create_block_max_decimals = 3
 # max_block_transactions_size = 32 * 1024
@@ -43,7 +43,7 @@ peer_list_url = "https://downloads.skycoin.com/blockchain/peers.txt"
 # unlock_time_interval = 60 * 60 * 24 * 365
 # user_max_decimals = 3
 # user_max_transaction_size = 32 * 1024
-# user_burn_factor = 10
+# user_burn_factor = 100
 distribution_addresses = [
     "R6aHqKWSQfvpdo2fGSrq4F1RYXkBWR9HHJ",
     "2EYM4WFHe4Dgz6kjAdUkM6Etep7ruz2ia6h",

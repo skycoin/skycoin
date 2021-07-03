@@ -81,10 +81,10 @@ var (
 		WebInterfacePort:    6420,
 		DataDirectory:       "$HOME/.skycoin",
 
-		UnconfirmedBurnFactor:          10,
+		UnconfirmedBurnFactor:          100,
 		UnconfirmedMaxTransactionSize:  32768,
 		UnconfirmedMaxDropletPrecision: 3,
-		CreateBlockBurnFactor:          10,
+		CreateBlockBurnFactor:          100,
 		CreateBlockMaxTransactionSize:  32768,
 		CreateBlockMaxDropletPrecision: 3,
 		MaxBlockTransactionsSize:       32768,

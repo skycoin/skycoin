@@ -15,12 +15,17 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/wallet"
 	"github.com/skycoin/skycoin/src/wallet/collection"
 )
+
+func TestMain(m *testing.M) {
+	params.UserVerifyTxn.BurnFactor = 10
+}
 
 func TestWalletSignTransaction(t *testing.T) {
 	txnSigned, uxs, seckeys := makeTransaction(t, 4)

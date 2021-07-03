@@ -176,8 +176,6 @@ example will show you the available options.
 $ docker run --rm skycoin/skycoin -help
 ```
 
-Access the dashboard: [http://localhost:6420](http://localhost:6420).
-
 Access the API: [http://localhost:6420/version](http://localhost:6420/version).
 
 ### Building your own images

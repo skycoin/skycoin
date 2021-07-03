@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- GUI add format to the number input fields. Now the numeric input fields add commas to the numbers, to make 
+  them easier to read. Now the fields show 1,111,111 instead of just 1111111.
 - Add `-max-last-blocks-count` flag to limit the maximum number of blocks the api `/api/v1/last_blocks` can return.
   This also fixes the `out of memory` panic. The default maximum number is `256`.
 - Add `src_txid` to verbose transaction inputs, affected apis: `/api/v1/transaction`, `/api/v1/transactions` `/api/v1/block` `/api/v1/blocks` `/api/v1/pendingTxs`
@@ -19,8 +21,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `-max-incoming-connection` flag to control the maximum allowed incoming connections.
 - Add `qr_uri_prefix` field to `/api/v1/health` endpoint.
 
+### Fixed
+
+- #2579 Add emergency wipe option for the Skywallet. 
+
 ### changed
 
+- GUI get the uri prefix from the api
+- GUI update electron and electron builder.
+- GUI General improvements for the front-end, see details in [#2589](https://github.com/skycoin/skycoin/pull/2589)
+- GUI exchange page has been disabled, because the Swaplab integration is not working. The code was not removed
 - CLI command `listWallets` removed the argument of `[directory]`, it is not being used at all.
 - API change `POST /api/v1/wallet/encrypt` to encrypt wallet that has no 'cryptoType' field with the default crypto type.
 - CLI command `/encryptWallet/decryptWallet` shows wallet details after encryption/decryption, it used to show nothing if wallet is decrypted successfully.

@@ -25,9 +25,11 @@
         <div class="-data">
           <span>{{ 'tx.hours-small-label' | translate }}</span>
           <span>
-            {{ sentOrReceivedHours | amount:false:'first' }} {{ hoursText | translate }}
+            <app-number-formatter [number]="sentOrReceivedHours | amount:false:'first'"></app-number-formatter>
+            {{ hoursText | translate }}
             |
-            {{ transaction.hoursBurned | amount:false:'first' }} {{ 'tx.hours-burned' | translate }}
+            <app-number-formatter [number]="transaction.hoursBurned | amount:false:'first'"></app-number-formatter>
+            {{ 'tx.hours-burned' | translate }}
           </span>
         </div>
         <div class="-data" *ngIf="!isPreview">
@@ -46,7 +48,10 @@
         <div class="-icon">
           <img [src]="'assets/img/' + (shouldShowIncomingIcon ? 'received' : 'sent') + '-blue.png'">
         </div>
-        <h4>{{ balanceToShow | amount }}</h4>
+        <h4>
+          <app-number-formatter [number]="balanceToShow | amount:true:'first'"></app-number-formatter>
+          {{ balanceToShow | amount:true:'last' }}
+        </h4>
         <p *ngIf="price" [matTooltip]="!isPreview ? ('tx.current-rate-help' | translate) : ''">
           {{ balanceToShow.multipliedBy(price).toString() | currency:'USD':'symbol':'1.2-2' }}<span *ngIf="!isPreview">*</span>
         </p>
@@ -74,10 +79,12 @@
         <div class="-info">
           <div class="-address">{{ input.address }}</div>
           <div class="-data">
-            <span>{{ 'tx.coins-small-label' | translate }}</span> {{ input.coins | amount:true:'first' }}
+            <span>{{ 'tx.coins-small-label' | translate }}</span>
+            <app-number-formatter [number]="input.coins | amount:true:'first'"></app-number-formatter>
           </div>
           <div class="-data">
-            <span>{{ 'tx.hours-small-label' | translate }}</span> {{ input.hours | amount:false:'first' }}
+            <span>{{ 'tx.hours-small-label' | translate }}</span>
+            <app-number-formatter [number]="input.hours | amount:false:'first'"></app-number-formatter>
           </div>
         </div>
       </div>
@@ -91,10 +98,12 @@
         <div class="-info">
           <div class="-address">{{ output.address }}</div>
           <div class="-data">
-            <span>{{ 'tx.coins-small-label' | translate }}</span> {{ output.coins | amount:true:'first' }}
+            <span>{{ 'tx.coins-small-label' | translate }}</span>
+            <app-number-formatter [number]="output.coins | amount:true:'first'"></app-number-formatter>
           </div>
           <div class="-data">
-            <span>{{ 'tx.hours-small-label' | translate }}</span> {{ output.hours | amount:false:'first' }}
+            <span>{{ 'tx.hours-small-label' | translate }}</span>
+            <app-number-formatter [number]="output.hours | amount:false:'first'"></app-number-formatter>
           </div>
         </div>
       </div>

@@ -70,7 +70,9 @@
               &#x007e; {{ values[i].toString() | number:'1.0-2' }} {{ 'common.usd' | translate }}
             </span>
             <span *ngIf="price && values[i].isGreaterThan(0) && selectedCurrency === doubleButtonActive.RightButton">
-              &#x007e; {{ values[i] | amount }}
+              &#x007e;
+              <app-number-formatter [number]="values[i] | amount:true:'first'"></app-number-formatter>
+              {{ values[i] | amount:true:'last' }}
             </span>
             <div class="link" [ngClass]="{ 'centerd-link': !price }" (click)="assignAll(i)">({{ 'send.send-all-available-coins-link' | translate }})</div>
           </div>
@@ -97,7 +99,11 @@
           [matTooltip]="insufficientCoins ? ('send.insufficient-funds-error-info' | translate) : ''"
           matTooltipClass="error-tooltip"
         >
-          <span>{{ 'send.total-to-send' | translate }}</span> {{ totalCoins | amount }}
+          <span>{{ 'send.total-to-send' | translate }}</span>
+          <ng-container>
+            <app-number-formatter [number]="totalCoins | amount:true:'first'"></app-number-formatter>
+            {{ totalCoins | amount:true:'last' }}
+          </ng-container>
           <ng-container *ngIf="price">/ {{ totalFiat.toString() | number:'1.0-2' }} {{ 'common.usd' | translate }}</ng-container>
         </div>
       </div>
@@ -108,7 +114,11 @@
           [matTooltip]="insufficientHours ? ('send.insufficient-funds-error-info' | translate) : ''"
           matTooltipClass="error-tooltip"
         >
-          <span>{{ 'send.total-to-send' | translate }}</span> {{ totalHours | amount:false }}
+          <span>{{ 'send.total-to-send' | translate }}</span>
+          <ng-container>
+            <app-number-formatter [number]="totalHours | amount:false:'first'"></app-number-formatter>
+            {{ totalHours | amount:false:'last' }}
+          </ng-container>
         </div>
       </div>
     </div>

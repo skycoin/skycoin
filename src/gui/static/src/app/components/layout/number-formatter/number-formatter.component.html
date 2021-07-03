@@ -1,0 +1,7 @@
+<span>{{ integerPart }}</span><span
+  *ngIf="decimalPart"
+  [ngClass]="{
+    'decimal-part' : !altDecimalsStyle,
+    'alt-decimal-part': altDecimalsStyle
+  }"
+>.{{ decimalPart }}</span>

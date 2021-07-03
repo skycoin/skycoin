@@ -26,15 +26,18 @@
     <ng-container *ngIf="!availableBalance.loading">
       <span>{{ 'send.available-funds-msg-part1' | translate }}</span>
       <span class="value">
-        {{ availableBalance.availableCoins | amount }}
+        <app-number-formatter [number]="availableBalance.availableCoins | amount:true:'first'"></app-number-formatter>
+        {{ availableBalance.availableCoins | amount:true:'last' }}
       </span>
       <span>{{ 'send.available-funds-msg-part2' | translate }}</span>
       <span class="value">
-        {{ availableBalance.availableHours | amount:false }}
+        <app-number-formatter [number]="availableBalance.availableHours | amount:false:'first'"></app-number-formatter>
+        {{ availableBalance.availableHours | amount:false:'last' }}
       </span>
       <span>{{ 'send.available-funds-msg-part3' | translate }}</span>
       <span class="value">
-        {{ availableBalance.minimumFee | amount:false }}
+        <app-number-formatter [number]="availableBalance.minimumFee | amount:false:'first'"></app-number-formatter>
+        {{ availableBalance.minimumFee | amount:false:'last' }}
       </span>
       <span>{{ 'send.available-funds-msg-part4' | translate }}</span>
     </ng-container>

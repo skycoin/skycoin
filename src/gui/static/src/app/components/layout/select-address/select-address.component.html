@@ -5,9 +5,10 @@
       <ng-container *ngFor="let address of element.addresses">
         <button mat-button color="primary" (click)="select(address.address)">
           <div class="address">{{ address.address }}</div>
-          <div class="balance">{{ address.coins | amount:true:'first' }}
+          <div class="balance">
+            <app-number-formatter [number]="address.coins | amount:true:'first'"></app-number-formatter>
             <span class="grey-text">{{ address.coins | amount:true:'last' }} | </span>
-            {{ address.hours | amount:false:'first' }}
+            <app-number-formatter [number]="address.hours | amount:false:'first'"></app-number-formatter>
             <span class="grey-text">{{ address.hours | amount:false:'last' }}</span>
           </div>
         </button>

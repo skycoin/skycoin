@@ -7,7 +7,10 @@
         <div class="balance">
           <p *ngIf="!synchronizationInfoObtained || (synchronized && !balanceObtained)" class="loading-header">{{ 'common.loading' | translate }}</p>
           <p *ngIf="synchronizationInfoObtained && !synchronized" class="coins"><span>{{ synchronizationPercentage | percent:'1.2-2' }}</span></p>
-          <p *ngIf="synchronized && balanceObtained" class="coins"><span>{{ coins | amount:true:'first' }}</span> {{ coins | amount:true:'last' }}</p>
+          <p *ngIf="synchronized && balanceObtained" class="coins">
+            <span class="number"><app-number-formatter [number]="coins | amount:true:'first'" [altDecimalsStyle]="'true'"></app-number-formatter></span>
+            <span class="name">{{ coins | amount:true:'last' }}</span>
+          </p>
           <p class="dollars" *ngIf="showPrice">
             <span *ngIf="price">
               <span *ngIf="synchronized && balanceObtained">{{ (coins * price) | currency:'USD':'symbol':'1.2-2' }}</span>

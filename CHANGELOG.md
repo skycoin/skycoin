@@ -21,9 +21,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### changed
 
-- CLI command `decryptWallet` shows wallet details after decryption, it used to show nothing if wallet is decrypted successfully.
-- Change `POST /api/v1/wallet/encrypt` to encrypt wallet that has no 'cryptoType' field with the default crypto type.
-- CLI command `walletBalance, createRawTransactionV2` use wallet file name to load wallet instead of 
+- CLI command `listWallets` removed the argument of `[directory]`, it is not being used at all.
+- API change `POST /api/v1/wallet/encrypt` to encrypt wallet that has no 'cryptoType' field with the default crypto type.
+- CLI command `/encryptWallet/decryptWallet` shows wallet details after encryption/decryption, it used to show nothing if wallet is decrypted successfully.
+- CLI command `walletBalance, createRawTransactionV2, showSeed` use wallet file name to load wallet instead of 
   the full path of the wallet file. For example, For example, previously, to check wallet 
   balance we need to run:
     `skycoin-cli walletBalance $HOME/.skycoin/wallets/wallet-with-balance.wlt`,

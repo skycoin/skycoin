@@ -6,7 +6,7 @@ import (
 	cipher "github.com/skycoin/skycoin/src/cipher"
 	bip44 "github.com/skycoin/skycoin/src/cipher/bip44"
 
-	crypto "github.com/skycoin/skycoin/src/wallet/crypto"
+	crypto "github.com/skycoin/skycoin/src/cipher/crypto"
 
 	mock "github.com/stretchr/testify/mock"
 )

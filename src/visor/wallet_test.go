@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/crypto"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/testutil"
@@ -22,7 +23,6 @@ import (
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/wallet"
 	"github.com/skycoin/skycoin/src/wallet/collection"
-	"github.com/skycoin/skycoin/src/wallet/crypto"
 )
 
 func TestCreateTransaction(t *testing.T) {

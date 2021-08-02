@@ -2,7 +2,7 @@ package wallet
 
 import (
 	"github.com/skycoin/skycoin/src/cipher/bip44"
-	"github.com/skycoin/skycoin/src/wallet/crypto"
+	"github.com/skycoin/skycoin/src/cipher/crypto"
 )
 
 // ChainMode represents the bip44 chain mode. AllChains =  ExternalChain | ChangeChain

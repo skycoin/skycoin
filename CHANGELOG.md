@@ -31,6 +31,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### changed
 
+- Move package `src/wallet/crypto` to `src/cipher/crypto` as each sub-package in `src/wallet` folder
+  represents a wallet type we support. Since `src/wallet/crypto` is not a wallet type, it may confuse people.
+  Therefore, it will be moved to `src/cipher/crypto`.
 - GUI get the uri prefix from the api
 - GUI update electron and electron builder.
 - GUI General improvements for the front-end, see details in [#2589](https://github.com/skycoin/skycoin/pull/2589)

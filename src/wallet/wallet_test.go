@@ -17,6 +17,7 @@ type fakeWalletForGuardView struct {
 	label     string
 	n         int
 	encrypted bool
+	isTemp    bool
 }
 
 func (f fakeWalletForGuardView) Label() string {
@@ -31,7 +32,7 @@ func (f fakeWalletForGuardView) IsEncrypted() bool {
 	return f.encrypted
 }
 
-func (f fakeWalletForGuardView) Unlock(pwd []byte) (Wallet, error) {
+func (f fakeWalletForGuardView) Unlock(_ []byte) (Wallet, error) {
 	nf := f
 	nf.encrypted = false
 	return &nf, nil
@@ -39,6 +40,14 @@ func (f fakeWalletForGuardView) Unlock(pwd []byte) (Wallet, error) {
 
 func (f *fakeWalletForGuardView) Erase() {
 	f.seed = ""
+}
+
+func (f *fakeWalletForGuardView) IsTemp() bool {
+	return f.isTemp
+}
+
+func (f *fakeWalletForGuardView) SetTemp(tmp bool) {
+	f.isTemp = tmp
 }
 
 func TestWalletGuard(t *testing.T) {
@@ -118,7 +127,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 				},
 			},
 			expectedRemainingFiles: map[string]struct{}{
-				"t1.wlt": struct{}{},
+				"t1.wlt": {},
 			},
 		},
 		{
@@ -138,8 +147,8 @@ func TestRemoveBackupFiles(t *testing.T) {
 				},
 			},
 			expectedRemainingFiles: map[string]struct{}{
-				"t1.wlt": struct{}{},
-				"t2.wlt": struct{}{},
+				"t1.wlt": {},
+				"t2.wlt": {},
 			},
 		},
 		{
@@ -163,9 +172,9 @@ func TestRemoveBackupFiles(t *testing.T) {
 				},
 			},
 			expectedRemainingFiles: map[string]struct{}{
-				"t1.wlt": struct{}{},
-				"t2.wlt": struct{}{},
-				"t3.wlt": struct{}{},
+				"t1.wlt": {},
+				"t2.wlt": {},
+				"t3.wlt": {},
 			},
 		},
 		{
@@ -193,9 +202,9 @@ func TestRemoveBackupFiles(t *testing.T) {
 				},
 			},
 			expectedRemainingFiles: map[string]struct{}{
-				"t1.wlt": struct{}{},
-				"t2.wlt": struct{}{},
-				"t3.wlt": struct{}{},
+				"t1.wlt": {},
+				"t2.wlt": {},
+				"t3.wlt": {},
 			},
 		},
 		{
@@ -227,9 +236,9 @@ func TestRemoveBackupFiles(t *testing.T) {
 				},
 			},
 			expectedRemainingFiles: map[string]struct{}{
-				"t1.wlt": struct{}{},
-				"t2.wlt": struct{}{},
-				"t3.wlt": struct{}{},
+				"t1.wlt": {},
+				"t2.wlt": {},
+				"t3.wlt": {},
 			},
 		},
 		{
@@ -253,10 +262,10 @@ func TestRemoveBackupFiles(t *testing.T) {
 				},
 			},
 			expectedRemainingFiles: map[string]struct{}{
-				"t1.wlt":     struct{}{},
-				"t2.wlt":     struct{}{},
-				"t3.wlt":     struct{}{},
-				"t4.wlt.bak": struct{}{},
+				"t1.wlt":     {},
+				"t2.wlt":     {},
+				"t3.wlt":     {},
+				"t4.wlt.bak": {},
 			},
 		},
 		{
@@ -280,10 +289,10 @@ func TestRemoveBackupFiles(t *testing.T) {
 				},
 			},
 			expectedRemainingFiles: map[string]struct{}{
-				"t1.wlt":     struct{}{},
-				"t2.wlt":     struct{}{},
-				"t3.wlt":     struct{}{},
-				"t3.wlt.bak": struct{}{},
+				"t1.wlt":     {},
+				"t2.wlt":     {},
+				"t3.wlt":     {},
+				"t3.wlt.bak": {},
 			},
 		},
 		{
@@ -315,11 +324,11 @@ func TestRemoveBackupFiles(t *testing.T) {
 				},
 			},
 			expectedRemainingFiles: map[string]struct{}{
-				"t1.wlt":     struct{}{},
-				"t2.wlt":     struct{}{},
-				"t2.wlt.bak": struct{}{},
-				"t3.wlt":     struct{}{},
-				"t3.wlt.bak": struct{}{},
+				"t1.wlt":     {},
+				"t2.wlt":     {},
+				"t2.wlt.bak": {},
+				"t3.wlt":     {},
+				"t3.wlt.bak": {},
 			},
 		},
 		{
@@ -351,11 +360,11 @@ func TestRemoveBackupFiles(t *testing.T) {
 				},
 			},
 			expectedRemainingFiles: map[string]struct{}{
-				"t1.wlt":     struct{}{},
-				"t2.wlt":     struct{}{},
-				"t2.wlt.bak": struct{}{},
-				"t3.wlt":     struct{}{},
-				"t3.wlt.bak": struct{}{},
+				"t1.wlt":     {},
+				"t2.wlt":     {},
+				"t2.wlt.bak": {},
+				"t3.wlt":     {},
+				"t3.wlt.bak": {},
 			},
 		},
 	}

@@ -687,6 +687,34 @@ func (c *Client) CreateWallet(o CreateWalletOptions) (*WalletResponse, error) {
 	return &w, nil
 }
 
+// CreateWalletTemp makes a request to POST /api/v1/wallet/createTemp and creates a
+// temporary wallet.
+// If scanN is <= 0, the scan number defaults to 1
+func (c *Client) CreateWalletTemp(o CreateWalletOptions) (*WalletResponse, error) {
+	v := url.Values{}
+	v.Add("type", o.Type)
+	v.Add("seed", o.Seed)
+	v.Add("label", o.Label)
+
+	if o.ScanN > 0 {
+		v.Add("scan", fmt.Sprint(o.ScanN))
+	}
+
+	if o.Bip44Coin != nil {
+		v.Add("bip44-coin", fmt.Sprintf("%d", *o.Bip44Coin))
+	}
+
+	if o.XPub != "" {
+		v.Add("xpub", o.XPub)
+	}
+
+	var w WalletResponse
+	if err := c.PostForm("/api/v1/wallet/createTemp", strings.NewReader(v.Encode()), &w); err != nil {
+		return nil, err
+	}
+	return &w, nil
+}
+
 // NewWalletAddress makes a request to POST /api/v1/wallet/newAddress
 // if n is <= 0, defaults to 1
 func (c *Client) NewWalletAddress(id string, n int, password string) ([]string, error) {

@@ -231,6 +231,184 @@ func generateWalletHandler(c *cobra.Command, _ []string) error {
 	return printJSON(wlt)
 }
 
+func walletCreateTempCmd() *cobra.Command {
+	walletCreateTempCmd := &cobra.Command{
+		Use:   "walletCreateTemp",
+		Short: "Create a new temporary wallet",
+		Long: `Create a new temporary wallet.
+
+    All results are returned in JSON format in addition to being written to the specified filename.`,
+		SilenceUsage: true,
+		RunE:         generateWalletTempHandler,
+	}
+
+	walletCreateTempCmd.Flags().StringP("label", "l", "", "Wallet label used to identify your wallet")
+	walletCreateTempCmd.Flags().BoolP("random", "r", false, "A random alpha numeric seed will be generated.")
+	walletCreateTempCmd.Flags().BoolP("mnemonic", "m", false, "A mnemonic seed consisting of 12 dictionary words will be generated")
+	walletCreateTempCmd.Flags().Uint64P("wordcount", "w", 12, "Number of seed words to use for mnemonic. Must be 12, 15, 18, 21 or 24")
+	walletCreateTempCmd.Flags().StringP("seed", "s", "", "Your seed")
+	walletCreateTempCmd.Flags().Uint32P("bip44-coin", "", uint32(bip44.CoinTypeSkycoin), "BIP44 coin type")
+	walletCreateTempCmd.Flags().Uint64P("num", "n", 1, `Number of addresses to generate.`)
+	walletCreateTempCmd.Flags().Uint64P("scan", "", 1, `Number of addresses to scan ahead for balances.`)
+	walletCreateTempCmd.Flags().StringP("type", "t", wallet.WalletTypeDeterministic, "Wallet type. Types are \"collection\", \"deterministic\", \"bip44\" or \"xpub\"")
+	walletCreateTempCmd.Flags().StringP("xpub", "", "", "xpub key for \"xpub\" type wallets")
+
+	return walletCreateTempCmd
+}
+
+func generateWalletTempHandler(c *cobra.Command, _ []string) error {
+	label, err := c.Flags().GetString("label")
+	if err != nil {
+		return err
+	}
+
+	if label == "" {
+		return errors.New("label must not be empty")
+	}
+
+	scan, err := c.Flags().GetUint64("scan")
+	if err != nil {
+		return err
+	}
+	if scan == 0 {
+		return errors.New("scan must be > 0")
+	}
+
+	// get number of address that are need to be generated
+	num, err := c.Flags().GetUint64("num")
+	if err != nil {
+		return err
+	}
+	if num == 0 {
+		return errors.New("-n must > 0")
+	}
+
+	// set scan number as 1 when generate num is greater than scan number to avoid
+	// unnecessary addresses scanning for API.
+	if num >= scan {
+		scan = 1
+	}
+
+	s := c.Flag("seed").Value.String()
+	random, err := c.Flags().GetBool("random")
+	if err != nil {
+		return err
+	}
+
+	mnemonic, err := c.Flags().GetBool("mnemonic")
+	if err != nil {
+		return err
+	}
+
+	wordCount, err := c.Flags().GetUint64("wordcount")
+	if err != nil {
+		return err
+	}
+
+	if !mnemonic && c.Flags().Changed("wordcount") {
+		return errors.New("-m must also be set when using -wordcount")
+	}
+
+	walletType, err := c.Flags().GetString("type")
+	if err != nil {
+		return err
+	}
+	if !wallet.IsValidWalletType(walletType) {
+		return wallet.ErrInvalidWalletType
+	}
+
+	var bip44Coin *bip44.CoinType
+	if c.Flags().Changed("bip44-coin") {
+		bip44CoinInt, err := c.Flags().GetUint32("bip44-coin")
+		if err != nil {
+			return err
+		}
+
+		c := bip44.CoinType(bip44CoinInt)
+		bip44Coin = &c
+	}
+
+	xpub, err := c.Flags().GetString("xpub")
+	if err != nil {
+		return err
+	}
+
+	var sd string
+	switch walletType {
+	case wallet.WalletTypeBip44:
+		var err error
+		sd, err = parseBip44WalletSeedOptions(s, random, mnemonic, wordCount)
+		if err != nil {
+			return err
+		}
+
+	case wallet.WalletTypeDeterministic:
+		var err error
+		sd, err = parseDeterministicWalletSeedOptions(s, random, mnemonic, wordCount)
+		if err != nil {
+			return err
+		}
+
+	case wallet.WalletTypeCollection:
+		if s != "" || random || mnemonic {
+			return fmt.Errorf("%q type wallets do not use seeds", walletType)
+		}
+		if c.Flags().Changed("num") {
+			return fmt.Errorf("%q type wallets do not support address generation", walletType)
+		}
+		num = 0
+
+	case wallet.WalletTypeXPub:
+		if s != "" || random || mnemonic {
+			return fmt.Errorf("%q type wallets do not use seeds", walletType)
+		}
+
+	default:
+		return fmt.Errorf("unhandled wallet type %q", walletType)
+	}
+
+	opts := api.CreateWalletOptions{
+		Label:     label,
+		Seed:      sd,
+		Type:      walletType,
+		Bip44Coin: bip44Coin,
+		ScanN:     scan,
+		XPub:      xpub,
+	}
+
+	wlt, err := apiClient.CreateWalletTemp(opts)
+	if err != nil {
+		return err
+	}
+
+	id := wlt.Meta.Filename
+
+	// check the address num
+	addrN := len(wlt.Entries)
+	if walletType == wallet.WalletTypeBip44 {
+		for _, e := range wlt.Entries {
+			if *e.Change == 1 {
+				addrN--
+			}
+		}
+	}
+
+	n := num - uint64(addrN)
+	if n > 0 {
+		_, err := apiClient.NewWalletAddress(id, int(n), "")
+		if err != nil {
+			return err
+		}
+	}
+
+	wlt, err = apiClient.Wallet(id)
+	if err != nil {
+		return err
+	}
+
+	return printJSON(wlt)
+}
+
 // wordCountToEntropy maps a mnemonic word count to its entropy size in bits
 func wordCountToEntropy(wc uint64) (int, error) {
 	switch wc {

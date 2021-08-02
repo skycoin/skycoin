@@ -128,6 +128,26 @@ func TestNewWallet(t *testing.T) {
 				err: wallet.NewError(errors.New("invalid xpub key: Invalid base58 character")),
 			},
 		},
+		{
+			name:    "temp wallet",
+			wltName: "test.wlt",
+			label:   "test",
+			xpub:    testXPub,
+			opts: []wallet.Option{
+				wallet.OptionTemp(true),
+			},
+			expect: expect{
+				meta: map[string]string{
+					"label":    "test",
+					"filename": "test.wlt",
+					"coin":     string(wallet.CoinTypeSkycoin),
+					"type":     wallet.WalletTypeXPub,
+					"version":  wallet.Version,
+					"temp":     "true",
+				},
+				err: nil,
+			},
+		},
 	}
 
 	for _, tc := range tt {

@@ -480,6 +480,9 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	webHandlerV1("/wallet/create", walletCreateHandler(gateway), map[string][]string{
 		http.MethodPost: {EndpointsWallet},
 	})
+	webHandlerV1("/wallet/createTemp", walletCreateTempHandler(gateway), map[string][]string{
+		http.MethodPost: {EndpointsWallet},
+	})
 	webHandlerV1("/wallet/newAddress", walletNewAddressesHandler(gateway), map[string][]string{
 		http.MethodPost: {EndpointsWallet},
 	})

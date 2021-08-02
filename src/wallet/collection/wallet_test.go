@@ -135,6 +135,25 @@ func TestNewWallet(t *testing.T) {
 				err: wallet.ErrMissingEncrypt,
 			},
 		},
+		{
+			name:    "temp wallet",
+			wltName: "test.wlt",
+			label:   "",
+			opts: []wallet.Option{
+				wallet.OptionTemp(true),
+			},
+			expect: expect{
+				meta: map[string]string{
+					"label":    "",
+					"filename": "test.wlt",
+					"coin":     string(wallet.CoinTypeSkycoin),
+					"type":     wallet.WalletTypeCollection,
+					"version":  wallet.Version,
+					"temp":     "true",
+				},
+				err: nil,
+			},
+		},
 	}
 
 	for _, tc := range tt {

@@ -462,5 +462,9 @@ func convertOptions(options wallet.Options) []wallet.Option {
 		opts = append(opts, wallet.OptionTransactionsFinder(options.TF))
 	}
 
+	if options.Temp {
+		opts = append(opts, wallet.OptionTemp(true))
+	}
+
 	return opts
 }

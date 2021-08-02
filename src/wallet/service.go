@@ -428,15 +428,19 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64, opt
 		}
 	}
 
-	// Checks if the wallet file is writable
-	wf := filepath.Join(serv.config.WalletDir, w.Filename())
-	if !file.IsWritable(wf) {
-		return nil, ErrWalletPermission
-	}
+	// check if wallet is writable only when it's not a temporary wallet.
+	// this checking would create a temp file
+	if !w.IsTemp() {
+		// Checks if the wallet file is writable
+		wf := filepath.Join(serv.config.WalletDir, w.Filename())
+		if !file.IsWritable(wf) {
+			return nil, ErrWalletPermission
+		}
 
-	// Save the wallet first
-	if err := Save(w, serv.config.WalletDir); err != nil {
-		return nil, err
+		// Save the wallet
+		if err := Save(w, serv.config.WalletDir); err != nil {
+			return nil, err
+		}
 	}
 
 	serv.wallets.set(w)
@@ -489,14 +493,16 @@ func (serv *Service) ScanAddresses(wltID string, password []byte, num uint64, tf
 	}
 
 	// Checks if the wallet file is writable
-	wf := filepath.Join(serv.config.WalletDir, w.Filename())
-	if !file.IsWritable(wf) {
-		return nil, ErrWalletPermission
-	}
+	if !w.IsTemp() {
+		wf := filepath.Join(serv.config.WalletDir, w.Filename())
+		if !file.IsWritable(wf) {
+			return nil, ErrWalletPermission
+		}
 
-	// Saves the wallet to disk
-	if err := Save(w, serv.config.WalletDir); err != nil {
-		return nil, err
+		// Saves the wallet to disk
+		if err := Save(w, serv.config.WalletDir); err != nil {
+			return nil, err
+		}
 	}
 
 	// Updates wallet in memory

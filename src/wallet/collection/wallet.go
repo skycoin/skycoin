@@ -430,5 +430,9 @@ func convertOptions(options wallet.Options) []wallet.Option {
 		opts = append(opts, wallet.OptionPassword(options.Password))
 	}
 
+	if options.Temp {
+		opts = append(opts, wallet.OptionTemp(true))
+	}
+
 	return opts
 }

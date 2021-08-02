@@ -93,6 +93,13 @@ func OptionDecoder(d Decoder) Option {
 	})
 }
 
+// OptionTemp is the option for setting whether wallet is a temporary wallet
+func OptionTemp(temp bool) Option {
+	return walletOptionFunc(func(w Wallet) {
+		w.SetTemp(temp)
+	})
+}
+
 // OptionBip44Coin is the option type for setting bip44 coin type for bip44 wallet
 func OptionBip44Coin(ct *bip44.CoinType) Option {
 	return walletOptionFunc(func(w Wallet) {

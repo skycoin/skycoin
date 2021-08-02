@@ -26,6 +26,7 @@ const (
 	MetaAccountsHash   = "accountsHash"   // accounts hash
 	MetaSeedPassphrase = "seedPassphrase" // seed passphrase [bip44 wallets]
 	MetaXPub           = "xpub"           // xpub key [xpub wallets]
+	MetaTemp           = "temp"           // whether the wallet is a temporary wallet
 )
 
 //const (
@@ -328,4 +329,20 @@ func ResolveCoinType(s string) (CoinType, error) {
 	default:
 		return CoinType(""), errors.New("invalid coin type")
 	}
+}
+
+// SetTemp sets temp
+func (m Meta) SetTemp(temp bool) {
+	if temp {
+		m[MetaTemp] = "true"
+	}
+}
+
+// IsTemp returns whether the wallet is a temporary wallet
+func (m Meta) IsTemp() bool {
+	if m[MetaTemp] == "true" {
+		return true
+	}
+
+	return false
 }

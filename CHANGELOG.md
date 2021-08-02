@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Add `CLI walletCreateTemp` command to create a temporary wallet.
+- Add `POST /api/v1/wallet/createTemp` API to create a temporary wallet. Warning: The temporary wallet would not be
+  persisted after restarting.
 - GUI add format to the number input fields. Now the numeric input fields add commas to the numbers, to make 
   them easier to read. Now the fields show 1,111,111 instead of just 1111111.
 - Add `-max-last-blocks-count` flag to limit the maximum number of blocks the api `/api/v1/last_blocks` can return.
@@ -24,6 +27,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 
 - #2579 Add emergency wipe option for the Skywallet. 
+- #1109 Temporary wallet load feature
 
 ### changed
 
@@ -272,7 +276,7 @@ Make sure to upgrade to v0.25.0 so that your node will continue to connect once 
 - `go run cmd/skycoin/skycoin.go` will have exit status 1 on failure and exit status 2 on panic
 - The deprecated JSON 2.0 RPC interface is disabled by default for all run modes, since it is no longer needed for the CLI tool
 - Remove `"unknown"` from the `"status"` field in responses from `/api/v1/explorer/address`, `/api/v1/transaction`, `/api/v1/transactions`
-- `cli decodeRawTransaction` output format changed, see the [CLI README](./src/cli/README.md)
+- `cli decodeRawTransaction` output format changed, see the [CLI README](./cmd/skycoin-cli/README.md)
 - `/api/v1/wallet/spend` is deprecated, disabled by default and requires `-enable-api-sets=DEPRECATED_WALLET_SPEND` to enable it. Use `/api/v1/wallet/transaction` and `/api/v1/injectTransaction` instead.
 - Invalid password in `/api/v1/wallet` requests now return `400` instead of `401`
 - Replace `cmd/address_gen/` and `cmd/address_gen2` with `go run cmd/cli/cli.go addressGen`

@@ -40,6 +40,7 @@ func TestBip44NewWallet(t *testing.T) {
 		bip44CoinType bip44.CoinType
 		entriesLen    int
 		accountName   string
+		isTemp        bool
 	}
 
 	tt := []struct {
@@ -66,6 +67,7 @@ func TestBip44NewWallet(t *testing.T) {
 				bip44.CoinTypeSkycoin,
 				2, // 1 external, 1 change
 				DefaultAccountName,
+				false,
 			},
 		},
 		{
@@ -82,6 +84,7 @@ func TestBip44NewWallet(t *testing.T) {
 				bip44.CoinTypeBitcoin,
 				2, // 1 external, 1 change,
 				DefaultAccountName,
+				false,
 			},
 		},
 		{
@@ -99,6 +102,7 @@ func TestBip44NewWallet(t *testing.T) {
 				bip44.CoinTypeSkycoin,
 				2, // one external, 1 change,
 				DefaultAccountName,
+				false,
 			},
 		},
 		{
@@ -115,6 +119,7 @@ func TestBip44NewWallet(t *testing.T) {
 				bip44.CoinTypeSkycoin,
 				6, // 5 external, 1 change
 				DefaultAccountName,
+				false,
 			},
 		},
 		{
@@ -135,6 +140,7 @@ func TestBip44NewWallet(t *testing.T) {
 				bip44.CoinTypeSkycoin,
 				4, // 3 external, 1 change
 				DefaultAccountName,
+				false,
 			},
 		},
 		{
@@ -155,6 +161,7 @@ func TestBip44NewWallet(t *testing.T) {
 				bip44.CoinTypeSkycoin,
 				5, // 4 external, 1 change
 				DefaultAccountName,
+				false,
 			},
 		},
 		{
@@ -174,6 +181,7 @@ func TestBip44NewWallet(t *testing.T) {
 				bip44.CoinTypeSkycoin,
 				3, // 2 external, one change
 				DefaultAccountName,
+				false,
 			},
 		},
 		{
@@ -193,6 +201,7 @@ func TestBip44NewWallet(t *testing.T) {
 				bip44.CoinTypeSkycoin,
 				2, // 1 external, 1 change
 				DefaultAccountName,
+				false,
 			},
 		},
 		{
@@ -210,6 +219,7 @@ func TestBip44NewWallet(t *testing.T) {
 				bip44.CoinTypeSkycoin,
 				2, // 1 external, 1 change
 				DefaultAccountName,
+				false,
 			},
 		},
 		{
@@ -226,6 +236,7 @@ func TestBip44NewWallet(t *testing.T) {
 				bip44.CoinTypeSkycoin,
 				2, // 1 external, 1 change
 				"marketing",
+				false,
 			},
 		},
 		{
@@ -243,6 +254,7 @@ func TestBip44NewWallet(t *testing.T) {
 				newBip44Type,
 				2, // 1 external, 1 change
 				DefaultAccountName,
+				false,
 			},
 		},
 		{
@@ -266,6 +278,7 @@ func TestBip44NewWallet(t *testing.T) {
 				bip44.CoinTypeSkycoin,
 				2, // 1 external, 1 change
 				DefaultAccountName,
+				false,
 			},
 		},
 		{
@@ -300,6 +313,25 @@ func TestBip44NewWallet(t *testing.T) {
 				wallet.OptionCoinType("unknown"),
 			},
 			err: errors.New("bip44 coin type not set"),
+		},
+		{
+			name:           "temp wallet",
+			filename:       "test.wlt",
+			label:          "test",
+			seed:           testSeed,
+			seedPassphrase: testSeedPassphrase,
+			opts: []wallet.Option{
+				wallet.OptionCoinType(wallet.CoinTypeSkycoin),
+				wallet.OptionBip44Coin(&newBip44Type),
+				wallet.OptionTemp(true),
+			},
+			expect: expect{
+				wallet.CoinTypeSkycoin,
+				newBip44Type,
+				2, // 1 external, 1 change
+				DefaultAccountName,
+				true,
+			},
 		},
 	}
 

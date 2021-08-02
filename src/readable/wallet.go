@@ -63,6 +63,7 @@ type WalletMeta struct {
 	Version    string            `json:"version"`
 	CryptoType crypto.CryptoType `json:"crypto_type"`
 	Timestamp  int64             `json:"timestamp"`
+	Temp       bool              `json:"temp"`
 	Encrypted  bool              `json:"encrypted"`
 	Bip44Coin  *bip44.CoinType   `json:"bip44_coin,omitempty"` // For bip44
 	XPub       string            `json:"xpub,omitempty"`       // For xpub

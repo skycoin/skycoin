@@ -51,6 +51,7 @@ func NewWalletResponse(w wallet.Wallet) (*WalletResponse, error) {
 	wr.Meta.CryptoType = w.CryptoType()
 	wr.Meta.Encrypted = w.IsEncrypted()
 	wr.Meta.Timestamp = w.Timestamp()
+	wr.Meta.Temp = w.IsTemp()
 
 	var options []wallet.Option
 	switch w.Type() {
@@ -118,7 +119,7 @@ func walletBalanceHandler(gateway Gatewayer) http.HandlerFunc {
 
 		walletBalance, addressBalances, err := gateway.GetWalletBalance(wltID)
 		if err != nil {
-			logger.Errorf("Get wallet balance failed: %v", err)
+			logger.Errorf("Get wallet balance failed: id: %v, err: %v", wltID, err)
 			switch err {
 			case wallet.ErrWalletNotExist:
 				wh.Error404(w, "")
@@ -311,6 +312,116 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 			Bip44Coin:      bip44Coin,
 			XPub:           r.FormValue("xpub"),
 			TF:             gateway.TransactionsFinder(),
+		})
+		if err != nil {
+			switch err.(type) {
+			case wallet.Error:
+				switch err {
+				case wallet.ErrWalletAPIDisabled:
+					wh.Error403(w, "")
+					return
+				default:
+					wh.Error400(w, err.Error())
+					return
+				}
+			default:
+				wh.Error500(w, err.Error())
+				return
+			}
+		}
+
+		rlt, err := NewWalletResponse(wlt)
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+		wh.SendJSONOr500(logger, w, rlt)
+	}
+}
+
+// Note: The wallet will not be saved to disk
+// Loads wallet from seed temporary in memory, will scan ahead N address and
+// load addresses till the last one that have coins.
+// URI: /api/v1/wallet/createTemp
+// Method: POST
+// Args:
+//     seed: wallet seed [required]
+//     type: wallet type [required, one of "deterministic", "bip44" or "xpub"]
+//     bip44-coin: BIP44 coin type [optional, defaults to 8000 (skycoin's coin type), only valid if type is "bip44"]
+//     xpub: xpub key [required for xpub wallets]
+//     label: wallet label [required]
+//     scan: the number of addresses to scan ahead for balances [optional, must be > 0]
+func walletCreateTempHandler(gateway Gatewayer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			wh.Error405(w)
+			return
+		}
+
+		walletType := r.FormValue("type")
+		if walletType == "" {
+			wh.Error400(w, "missing type")
+			return
+		}
+
+		seed := r.FormValue("seed")
+		switch walletType {
+		case wallet.WalletTypeDeterministic, wallet.WalletTypeBip44:
+			if seed == "" {
+				wh.Error400(w, "missing seed")
+				return
+			}
+		}
+
+		label := r.FormValue("label")
+		if label == "" {
+			wh.Error400(w, "missing label")
+			return
+		}
+
+		scanNStr := r.FormValue("scan")
+		var scanN uint64 = 1
+		if scanNStr != "" {
+			var err error
+			scanN, err = strconv.ParseUint(scanNStr, 10, 64)
+			if err != nil {
+				wh.Error400(w, "invalid scan value")
+				return
+			}
+		}
+
+		if scanN == 0 {
+			wh.Error400(w, "scan must be > 0")
+			return
+		}
+
+		var bip44Coin *bip44.CoinType
+		bip44CoinStr := r.FormValue("bip44-coin")
+		if bip44CoinStr != "" {
+			if walletType != wallet.WalletTypeBip44 {
+				wh.Error400(w, "bip44-coin is only valid for bip44 type wallets")
+				return
+			}
+
+			bip44CoinInt, err := strconv.ParseUint(bip44CoinStr, 10, 32)
+			if err != nil {
+				wh.Error400(w, "invalid bip44-coin value")
+				return
+			}
+
+			c := bip44.CoinType(bip44CoinInt)
+			bip44Coin = &c
+		}
+
+		wlt, err := gateway.CreateWallet("", wallet.Options{
+			Temp:      true,
+			Seed:      seed,
+			Label:     label,
+			ScanN:     scanN,
+			Type:      walletType,
+			Bip44Coin: bip44Coin,
+			XPub:      r.FormValue("xpub"),
+			TF:        gateway.TransactionsFinder(),
 		})
 		if err != nil {
 			switch err.(type) {

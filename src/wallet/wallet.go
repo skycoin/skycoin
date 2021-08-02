@@ -156,6 +156,7 @@ type Options struct {
 	XPub           string            // xpub key (xpub wallets only)
 	Decoder        Decoder
 	TF             TransactionsFinder
+	Temp           bool // whether the wallet is created temporary in memory.
 }
 
 func (opts Options) Validate() error {
@@ -246,6 +247,10 @@ type Wallet interface {
 	Serialize() ([]byte, error)
 	// Deserialize deserialize the data to a Wallet, and error if any
 	Deserialize(data []byte) error
+	// IsTemp returns whether the wallet is a temporary wallet
+	IsTemp() bool
+	// SetTemp sets wallet temporary flag
+	SetTemp(temp bool)
 }
 
 // Decoder is the interface that wraps the Encode and Decode methods.
@@ -341,6 +346,10 @@ type walletLoadMeta struct {
 
 // Save saves the wallet to a directory. The wallet's filename is read from its metadata.
 func Save(w Wallet, dir string) error {
+	if w.IsTemp() {
+		return nil
+	}
+
 	data, err := w.Serialize()
 	if err != nil {
 		return err

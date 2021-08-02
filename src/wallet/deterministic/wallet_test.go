@@ -186,6 +186,27 @@ func TestNewWallet(t *testing.T) {
 				err: wallet.ErrMissingEncrypt,
 			},
 		},
+		{
+			name:    "ok all defaults",
+			wltName: "test.wlt",
+			label:   "",
+			seed:    "testseed123",
+			opts: []wallet.Option{
+				wallet.OptionTemp(true),
+			},
+			expect: expect{
+				meta: map[string]string{
+					"label":    "",
+					"filename": "test.wlt",
+					"coin":     string(wallet.CoinTypeSkycoin),
+					"type":     wallet.WalletTypeDeterministic,
+					"seed":     "testseed123",
+					"version":  wallet.Version,
+					"temp":     "true",
+				},
+				err: nil,
+			},
+		},
 	}
 
 	for _, tc := range tt {
@@ -195,7 +216,7 @@ func TestNewWallet(t *testing.T) {
 			opts := append(tc.opts, wallet.OptionCryptoType(ct))
 			t.Run(name, func(t *testing.T) {
 				w, err := NewWallet(tc.wltName, tc.label, tc.seed, opts...)
-				require.Equal(t, tc.expect.err, err)
+				require.Equal(t, tc.expect.err, err, fmt.Sprintf("export: %v, got: %v", tc.expect.err, err))
 				if err != nil {
 					return
 				}

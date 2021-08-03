@@ -96,6 +96,14 @@ type ChainEntry struct {
 // NewWallet create a bip44 wallet with options
 // also, a default address will be generated
 func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.Option) (*Wallet, error) {
+	if label == "" {
+		return nil, wallet.ErrMissingLabel
+	}
+
+	if seed == "" {
+		return nil, wallet.ErrMissingSeed
+	}
+
 	wlt := &Wallet{
 		Meta: wallet.Meta{
 			wallet.MetaFilename:       filename,
@@ -163,6 +171,9 @@ func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.O
 	}
 
 	scanN := advOpts.ScanN
+	if scanN == 0 {
+		return nil, errors.New("scan num must be > 0")
+	}
 	// scans addresses if options.ScanN > 0
 	if scanN > 0 {
 		if advOpts.TF == nil {
@@ -877,10 +888,14 @@ func convertOptions(options wallet.Options) []wallet.Option {
 		opts = append(opts, wallet.OptionGenerateN(options.GenerateN))
 	}
 
-	if options.ScanN > 0 {
-		opts = append(opts, wallet.OptionScanN(options.ScanN))
-		opts = append(opts, wallet.OptionTransactionsFinder(options.TF))
+	scanN := options.ScanN
+	if scanN == 0 {
+		// set default scan to 1
+		scanN = 1
 	}
+
+	opts = append(opts, wallet.OptionScanN(scanN))
+	opts = append(opts, wallet.OptionTransactionsFinder(options.TF))
 
 	if options.Temp {
 		opts = append(opts, wallet.OptionTemp(true))

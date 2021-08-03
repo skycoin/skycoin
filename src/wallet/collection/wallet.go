@@ -41,6 +41,10 @@ type Wallet struct {
 
 // NewWallet creates a collection wallet
 func NewWallet(filename, label string, options ...wallet.Option) (*Wallet, error) {
+	if label == "" {
+		return nil, wallet.ErrMissingLabel
+	}
+
 	var wlt = &Wallet{
 		Meta: wallet.Meta{
 			wallet.MetaFilename:   filename,
@@ -69,6 +73,23 @@ func NewWallet(filename, label string, options ...wallet.Option) (*Wallet, error
 
 	if advOpts.GenerateN != 0 || advOpts.ScanN != 0 {
 		return nil, wallet.NewError(fmt.Errorf("wallet scanning is not defined for %q wallet", WalletType))
+	}
+
+	if len(advOpts.PrivateKeys) > 0 {
+		wlt.entries = make([]wallet.Entry, 0, len(advOpts.PrivateKeys))
+		// generate new entries from private keys and add them to wallet
+		for _, sk := range advOpts.PrivateKeys {
+			pk, err := cipher.PubKeyFromSecKey(sk)
+			if err != nil {
+				return nil, wallet.NewError(errors.New("invalid wallet private key"))
+			}
+
+			wlt.entries = append(wlt.entries, wallet.Entry{
+				Address: cipher.AddressFromPubKey(pk),
+				Public:  pk,
+				Secret:  sk,
+			})
+		}
 	}
 
 	if advOpts.Encrypt {
@@ -432,6 +453,10 @@ func convertOptions(options wallet.Options) []wallet.Option {
 
 	if options.Temp {
 		opts = append(opts, wallet.OptionTemp(true))
+	}
+
+	if len(options.CollectionPrivateKeys) > 0 {
+		opts = append(opts, wallet.OptionCollectionPrivateKeys(options.CollectionPrivateKeys))
 	}
 
 	return opts

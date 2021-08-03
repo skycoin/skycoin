@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/bip44"
 	"github.com/skycoin/skycoin/src/cipher/crypto"
 )
@@ -115,6 +116,7 @@ type AdvancedOptions struct {
 	GenerateN               uint64
 	ScanN                   uint64
 	TF                      TransactionsFinder
+	PrivateKeys             []cipher.SecKey // private keys of collection wallet
 }
 
 // advancedOptionFunc is a helper function that assert the
@@ -170,5 +172,12 @@ func OptionTransactionsFinder(tf TransactionsFinder) Option {
 func OptionGenerateN(n uint64) Option {
 	return advancedOptionFunc(func(opts *AdvancedOptions) {
 		opts.GenerateN = n
+	})
+}
+
+// OptionCollectionPrivateKeys can be used to set the private keys when creating a collection wallet
+func OptionCollectionPrivateKeys(keys []cipher.SecKey) Option {
+	return advancedOptionFunc(func(opts *AdvancedOptions) {
+		opts.PrivateKeys = keys
 	})
 }

@@ -65,6 +65,8 @@ var (
 	ErrInvalidPassword = NewError(errors.New("invalid password"))
 	// ErrMissingSeed is returned when trying to create wallet without a seed
 	ErrMissingSeed = NewError(errors.New("missing seed"))
+	// ErrMissingLabel is returned when trying to create wallet without label
+	ErrMissingLabel = NewError(errors.New("missing label"))
 	// ErrMissingAuthenticated is returned if try to decrypt a scrypt chacha20poly1305 encrypted wallet, and find no authenticated metadata.
 	ErrMissingAuthenticated = NewError(errors.New("missing authenticated metadata"))
 	// ErrMissingXPub is returned if try to create a XPub wallet without providing xpub key
@@ -141,22 +143,23 @@ func NewWalletFilename() string {
 
 // Options options that could be used when creating a wallet
 type Options struct {
-	Version        string
-	Type           string            // wallet type: deterministic, collection. Refers to which key generation mechanism is used.
-	Coin           CoinType          // coin type: skycoin, bitcoin, etc. Refers to which pubkey2addr method is used.
-	Bip44Coin      *bip44.CoinType   // bip44 path coin type
-	Label          string            // wallet label
-	Seed           string            // wallet seed
-	SeedPassphrase string            // wallet seed passphrase (bip44 wallets only)
-	Encrypt        bool              // whether the wallet need to be encrypted.
-	Password       []byte            // password that would be used for encryption, and would only be used when 'Encrypt' is true.
-	CryptoType     crypto.CryptoType // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
-	ScanN          uint64            // number of addresses that're going to be scanned for a balance. The highest address with a balance will be used.
-	GenerateN      uint64            // number of addresses to generate, regardless of balance
-	XPub           string            // xpub key (xpub wallets only)
-	Decoder        Decoder
-	TF             TransactionsFinder
-	Temp           bool // whether the wallet is created temporary in memory.
+	Version               string
+	Type                  string            // wallet type: deterministic, collection. Refers to which key generation mechanism is used.
+	Coin                  CoinType          // coin type: skycoin, bitcoin, etc. Refers to which pubkey2addr method is used.
+	Bip44Coin             *bip44.CoinType   // bip44 path coin type
+	Label                 string            // wallet label
+	Seed                  string            // wallet seed
+	SeedPassphrase        string            // wallet seed passphrase (bip44 wallets only)
+	Encrypt               bool              // whether the wallet need to be encrypted.
+	Password              []byte            // password that would be used for encryption, and would only be used when 'Encrypt' is true.
+	CryptoType            crypto.CryptoType // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
+	ScanN                 uint64            // number of addresses that're going to be scanned for a balance. The highest address with a balance will be used.
+	GenerateN             uint64            // number of addresses to generate, regardless of balance
+	XPub                  string            // xpub key (xpub wallets only)
+	Decoder               Decoder
+	TF                    TransactionsFinder
+	Temp                  bool            // whether the wallet is created temporary in memory.
+	CollectionPrivateKeys []cipher.SecKey // private keys for collection wallet
 }
 
 func (opts Options) Validate() error {

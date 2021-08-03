@@ -9,7 +9,9 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 
+	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/bip39"
 	"github.com/skycoin/skycoin/src/cipher/bip44"
 	"github.com/skycoin/skycoin/src/readable"
@@ -227,21 +229,9 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		seed := r.FormValue("seed")
-		switch walletType {
-		case wallet.WalletTypeDeterministic, wallet.WalletTypeBip44:
-			if seed == "" {
-				wh.Error400(w, "missing seed")
-				return
-			}
-		}
-
 		label := r.FormValue("label")
-		if label == "" {
-			wh.Error400(w, "missing label")
-			return
-		}
-
 		password := r.FormValue("password")
+
 		defer func() {
 			password = ""
 		}()
@@ -268,7 +258,7 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		scanNStr := r.FormValue("scan")
-		var scanN uint64 = 1
+		var scanN uint64
 		if scanNStr != "" {
 			var err error
 			scanN, err = strconv.ParseUint(scanNStr, 10, 64)
@@ -276,11 +266,6 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 				wh.Error400(w, "invalid scan value")
 				return
 			}
-		}
-
-		if scanN == 0 {
-			wh.Error400(w, "scan must be > 0")
-			return
 		}
 
 		var bip44Coin *bip44.CoinType
@@ -301,17 +286,29 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 			bip44Coin = &c
 		}
 
+		seckeys, err := parsePrivateKeys(r)
+		if err != nil {
+			wh.Error400(w, "invalid collection private keys")
+			return
+		}
+		defer func() {
+			for i := range seckeys {
+				seckeys[i] = cipher.SecKey{}
+			}
+		}()
+
 		wlt, err := gateway.CreateWallet("", wallet.Options{
-			Seed:           seed,
-			Label:          label,
-			Encrypt:        encrypt,
-			Password:       []byte(password),
-			ScanN:          scanN,
-			Type:           walletType,
-			SeedPassphrase: r.FormValue("seed-passphrase"),
-			Bip44Coin:      bip44Coin,
-			XPub:           r.FormValue("xpub"),
-			TF:             gateway.TransactionsFinder(),
+			Seed:                  seed,
+			Label:                 label,
+			Encrypt:               encrypt,
+			Password:              []byte(password),
+			ScanN:                 scanN,
+			Type:                  walletType,
+			SeedPassphrase:        r.FormValue("seed-passphrase"),
+			Bip44Coin:             bip44Coin,
+			XPub:                  r.FormValue("xpub"),
+			TF:                    gateway.TransactionsFinder(),
+			CollectionPrivateKeys: seckeys,
 		})
 		if err != nil {
 			switch err.(type) {
@@ -337,6 +334,28 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 		wh.SendJSONOr500(logger, w, rlt)
 	}
+}
+
+// parsePrivateKeys get and parse private keys
+func parsePrivateKeys(r *http.Request) ([]cipher.SecKey, error) {
+	keysStr := r.FormValue("private-keys")
+	if keysStr == "" {
+		return nil, nil
+	}
+
+	ss := strings.Split(keysStr, ",")
+	keys := make([]cipher.SecKey, 0, len(ss))
+	for _, s := range ss {
+		v := strings.TrimSpace(s)
+		if len(v) > 0 {
+			sk, err := cipher.SecKeyFromHex(v)
+			if err != nil {
+				return nil, fmt.Errorf("invalid private key: %v", err)
+			}
+			keys = append(keys, sk)
+		}
+	}
+	return keys, nil
 }
 
 // Note: The wallet will not be saved to disk
@@ -365,14 +384,6 @@ func walletCreateTempHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		seed := r.FormValue("seed")
-		switch walletType {
-		case wallet.WalletTypeDeterministic, wallet.WalletTypeBip44:
-			if seed == "" {
-				wh.Error400(w, "missing seed")
-				return
-			}
-		}
-
 		label := r.FormValue("label")
 		if label == "" {
 			wh.Error400(w, "missing label")
@@ -380,7 +391,7 @@ func walletCreateTempHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		scanNStr := r.FormValue("scan")
-		var scanN uint64 = 1
+		var scanN uint64
 		if scanNStr != "" {
 			var err error
 			scanN, err = strconv.ParseUint(scanNStr, 10, 64)
@@ -388,11 +399,6 @@ func walletCreateTempHandler(gateway Gatewayer) http.HandlerFunc {
 				wh.Error400(w, "invalid scan value")
 				return
 			}
-		}
-
-		if scanN == 0 {
-			wh.Error400(w, "scan must be > 0")
-			return
 		}
 
 		var bip44Coin *bip44.CoinType
@@ -412,6 +418,17 @@ func walletCreateTempHandler(gateway Gatewayer) http.HandlerFunc {
 			c := bip44.CoinType(bip44CoinInt)
 			bip44Coin = &c
 		}
+
+		seckeys, err := parsePrivateKeys(r)
+		if err != nil {
+			wh.Error400(w, "invalid collection private keys")
+			return
+		}
+		defer func() {
+			for i := range seckeys {
+				seckeys[i] = cipher.SecKey{}
+			}
+		}()
 
 		wlt, err := gateway.CreateWallet("", wallet.Options{
 			Temp:      true,

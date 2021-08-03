@@ -49,7 +49,7 @@ func walletCreateCmd() *cobra.Command {
 	walletCreateCmd.Flags().BoolP("encrypt", "e", true, "Create encrypted wallet.")
 	walletCreateCmd.Flags().StringP("password", "p", "", "Wallet password")
 	walletCreateCmd.Flags().StringP("xpub", "", "", "xpub key for \"xpub\" type wallets")
-	walletCreateCmd.Flags().StringP("private-keys", "pks", "", "Collection private keys")
+	walletCreateCmd.Flags().StringP("private-keys", "", "", "Collection private keys")
 
 	return walletCreateCmd
 }
@@ -268,7 +268,7 @@ func walletCreateTempCmd() *cobra.Command {
 	walletCreateTempCmd.Flags().Uint64P("scan", "", 1, `Number of addresses to scan ahead for balances.`)
 	walletCreateTempCmd.Flags().StringP("type", "t", wallet.WalletTypeDeterministic, "Wallet type. Types are \"collection\", \"deterministic\", \"bip44\" or \"xpub\"")
 	walletCreateTempCmd.Flags().StringP("xpub", "", "", "xpub key for \"xpub\" type wallets")
-	walletCreateTempCmd.Flags().StringP("private-keys", "pks", "", "Collection private keys")
+	walletCreateTempCmd.Flags().StringP("private-keys", "", "", "Collection private keys")
 
 	return walletCreateTempCmd
 }

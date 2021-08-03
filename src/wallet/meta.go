@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher/bip44"
-	"github.com/skycoin/skycoin/src/wallet/crypto"
+	"github.com/skycoin/skycoin/src/cipher/crypto"
 )
 
 // wallet meta fields

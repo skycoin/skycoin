@@ -28,6 +28,7 @@ import (
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/cipher/crypto"
 	"github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
@@ -35,7 +36,6 @@ import (
 	"github.com/skycoin/skycoin/src/util/droplet"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/wallet"
-	"github.com/skycoin/skycoin/src/wallet/crypto"
 	"github.com/skycoin/skycoin/src/wallet/deterministic"
 
 	// register wallets

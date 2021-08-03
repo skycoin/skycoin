@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/skycoin/skycoin/src/cipher/crypto"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/fiber"
 	"github.com/skycoin/skycoin/src/kvstorage"
-	"github.com/skycoin/skycoin/src/wallet/crypto"
 
 	"log"
 

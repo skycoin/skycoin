@@ -26,9 +26,9 @@ import (
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/bip44"
+	"github.com/skycoin/skycoin/src/cipher/crypto"
 	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skycoin/src/wallet/crypto"
 )
 
 // Error wraps wallet-related errors.

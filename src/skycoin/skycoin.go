@@ -21,6 +21,7 @@ import (
 
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/cipher/crypto"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/kvstorage"
@@ -33,7 +34,6 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 	"github.com/skycoin/skycoin/src/wallet"
-	"github.com/skycoin/skycoin/src/wallet/crypto"
 )
 
 var (

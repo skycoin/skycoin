@@ -770,7 +770,8 @@ func (serv *Service) View(wltID string, f func(Wallet) error) error {
 
 // RecoverWallet recovers an encrypted wallet from seed.
 // The recovered wallet will be encrypted with the new password, if provided.
-func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string, password []byte) (Wallet, error) {
+func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string,
+	password []byte, tf TransactionsFinder) (Wallet, error) {
 	serv.Lock()
 	defer serv.Unlock()
 	if !serv.config.EnableWalletAPI {
@@ -797,9 +798,11 @@ func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string, passwor
 		Type:           w.Type(),
 		Coin:           w.Coin(),
 		Bip44Coin:      w.Bip44Coin(),
+		Label:          w.Label(),
 		Seed:           seed,
 		SeedPassphrase: seedPassphrase,
 		GenerateN:      1,
+		TF:             tf,
 	})
 	if err != nil {
 		err = NewError(fmt.Errorf("RecoverWallet failed to create temporary wallet for fingerprint comparison: %v", err))
@@ -833,6 +836,7 @@ func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string, passwor
 		CryptoType:     w.CryptoType(),
 		Bip44Coin:      w.Bip44Coin(),
 		GenerateN:      uint64(l),
+		TF:             tf,
 	})
 	if err != nil {
 		return nil, err

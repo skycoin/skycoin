@@ -2789,7 +2789,7 @@ func prepareAndCheckWallet(t *testing.T, miniCoins, miniCoinHours uint64) (walle
 
 	if el < 3 {
 		// Generates addresses
-		_, err = w.GenerateAddresses(uint64(3 - el))
+		_, err = w.GenerateAddresses(wallet.OptionGenerateN(uint64(3 - el)))
 		if err != nil {
 			t.Fatalf("Wallet generateAddress failed: %v", err)
 		}

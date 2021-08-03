@@ -82,10 +82,10 @@ func TestNewWallet(t *testing.T) {
 		{
 			name:    "ok all defaults",
 			wltName: "test.wlt",
-			label:   "",
+			label:   "test",
 			expect: expect{
 				meta: map[string]string{
-					"label":    "",
+					"label":    "test",
 					"filename": "test.wlt",
 					"coin":     string(wallet.CoinTypeSkycoin),
 					"type":     wallet.WalletTypeCollection,
@@ -161,13 +161,13 @@ func TestNewWallet(t *testing.T) {
 		{
 			name:    "temp wallet",
 			wltName: "test.wlt",
-			label:   "",
+			label:   "temp",
 			opts: []wallet.Option{
 				wallet.OptionTemp(true),
 			},
 			expect: expect{
 				meta: map[string]string{
-					"label":    "",
+					"label":    "temp",
 					"filename": "test.wlt",
 					"coin":     string(wallet.CoinTypeSkycoin),
 					"type":     wallet.WalletTypeCollection,

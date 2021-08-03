@@ -116,7 +116,7 @@ func GenerateAddressesInFile(walletFile string, num uint64, pr PasswordReader) (
 	}
 
 	genAddrsInWallet := func(w wallet.Wallet, n uint64) ([]cipher.Addresser, error) {
-		return w.GenerateAddresses(n)
+		return w.GenerateAddresses(wallet.OptionGenerateN(n))
 	}
 
 	if wlt.IsEncrypted() {
@@ -129,7 +129,7 @@ func GenerateAddressesInFile(walletFile string, num uint64, pr PasswordReader) (
 			var addrs []cipher.Addresser
 			if err := wallet.GuardUpdate(w, password, func(wlt wallet.Wallet) error {
 				var err error
-				addrs, err = wlt.GenerateAddresses(n)
+				addrs, err = wlt.GenerateAddresses(wallet.OptionGenerateN(n))
 				return err
 			}); err != nil {
 				return nil, err

@@ -336,9 +336,24 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 	return nil, wallet.NewError(errors.New("A collection wallet does not implement ScanAddresses"))
 }
 
-// GenerateAddresses is a no-op for "collection" wallets
-func (w *Wallet) GenerateAddresses(num uint64, _ ...wallet.Option) ([]cipher.Addresser, error) {
-	return nil, wallet.NewError(errors.New("A collection wallet does not implement GenerateAddresses"))
+// GenerateAddresses generates new addresses base on private keys parsed from options
+func (w *Wallet) GenerateAddresses(options ...wallet.Option) ([]cipher.Addresser, error) {
+	privateKeys := wallet.GetPrivateKeysFromOptions(options...)
+	addrs := make([]cipher.Addresser, 0, len(privateKeys))
+	for i, k := range privateKeys {
+		pk, err := cipher.PubKeyFromSecKey(k)
+		if err != nil {
+			return nil, err
+		}
+		addr := cipher.AddressFromPubKey(pk)
+		addrs = append(addrs, addr)
+		w.entries = append(w.entries, wallet.Entry{
+			Address: addr,
+			Public:  pk,
+			Secret:  privateKeys[i],
+		})
+	}
+	return addrs, nil
 }
 
 // GetAddresses returns all addresses in wallet

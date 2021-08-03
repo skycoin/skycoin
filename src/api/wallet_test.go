@@ -14,6 +14,7 @@ import (
 
 	"encoding/json"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -1969,8 +1970,13 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			mb := mock.MatchedBy(func(option wallet.Option) bool {
+				n := wallet.GetGenerateNFromOptions(option)
+				return tc.n == n
+			})
 			gateway := &MockGatewayer{}
-			gateway.On("NewAddresses", tc.walletID, []byte(tc.password), tc.n).Return(tc.gatewayNewAddressesResult, tc.gatewayNewAddressesErr)
+			gateway.On("NewAddresses", tc.walletID,
+				[]byte(tc.password), mb).Return(tc.gatewayNewAddressesResult, tc.gatewayNewAddressesErr)
 
 			endpoint := "/api/v1/wallet/newAddress"
 

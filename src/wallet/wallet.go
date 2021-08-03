@@ -225,8 +225,8 @@ type Wallet interface {
 	// GenerateAddresses generates N addresses,
 	// for bip44 wallet, if no options are specified, addresses will be generated
 	// on external chain of account with index 0.
-	GenerateAddresses(num uint64, options ...Option) ([]cipher.Addresser, error)
-	// Entries returns entries,
+	GenerateAddresses(options ...Option) ([]cipher.Addresser, error)
+	// GetEntries returns entries,
 	// for bip44 wallet if no options are used, entries on external chain of account
 	// with index 0 will be returned.
 	GetEntries(options ...Option) (Entries, error)
@@ -596,4 +596,23 @@ func ParsePrivateKeys(keys string) ([]cipher.SecKey, error) {
 		}
 	}
 	return secKeys, nil
+}
+
+func applyAdvancedOptions(options ...Option) *AdvancedOptions {
+	var advOpts AdvancedOptions
+	for _, f := range options {
+		f(&advOpts)
+	}
+
+	return &advOpts
+}
+
+// GetGenerateNFromOptions gets generateN from options
+func GetGenerateNFromOptions(options ...Option) uint64 {
+	return applyAdvancedOptions(options...).GenerateN
+}
+
+// GetPrivateKeysFromOptions gets private keys from options
+func GetPrivateKeysFromOptions(options ...Option) []cipher.SecKey {
+	return applyAdvancedOptions(options...).PrivateKeys
 }

@@ -462,16 +462,16 @@ func walletNewAddressesHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
+		var opts []wallet.Option
 		// Compute the number of addresses to create, default is 1
-		var n uint64 = 1
-		var err error
 		num := r.FormValue("num")
 		if num != "" {
-			n, err = strconv.ParseUint(num, 10, 64)
+			n, err := strconv.ParseUint(num, 10, 64)
 			if err != nil {
 				wh.Error400(w, "invalid num value")
 				return
 			}
+			opts = append(opts, wallet.OptionGenerateN(n))
 		}
 
 		password := r.FormValue("password")
@@ -479,7 +479,16 @@ func walletNewAddressesHandler(gateway Gatewayer) http.HandlerFunc {
 			password = ""
 		}()
 
-		addrs, err := gateway.NewAddresses(wltID, []byte(password), n)
+		privateKeys, err := wallet.ParsePrivateKeys(r.FormValue("private-keys"))
+		if err != nil {
+			wh.Error400(w, "invalid private keys")
+			return
+		}
+		if len(privateKeys) > 0 {
+			opts = append(opts, wallet.OptionCollectionPrivateKeys(privateKeys))
+		}
+
+		addrs, err := gateway.NewAddresses(wltID, []byte(password), opts...)
 		if err != nil {
 			switch err {
 			case wallet.ErrWalletAPIDisabled:

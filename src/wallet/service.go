@@ -384,7 +384,7 @@ func (serv *Service) DecryptWallet(wltID string, password []byte) (Wallet, error
 // }
 
 // NewAddresses generate addresses
-func (serv *Service) NewAddresses(wltID string, password []byte, num uint64, options ...Option) ([]cipher.Address, error) {
+func (serv *Service) NewAddresses(wltID string, password []byte, options ...Option) ([]cipher.Address, error) {
 	serv.Lock()
 	defer serv.Unlock()
 
@@ -400,7 +400,7 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64, opt
 	var addrs []cipher.Addresser
 	f := func(w Wallet) error {
 		var err error
-		addrs, err = w.GenerateAddresses(num, options...)
+		addrs, err = w.GenerateAddresses(options...)
 		return err
 	}
 
@@ -849,7 +849,7 @@ func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string,
 
 		// regenerate the change addresses
 		if cl > 1 {
-			_, err := w3.GenerateAddresses(uint64(cl-1), OptionChange())
+			_, err := w3.GenerateAddresses(OptionGenerateN(uint64(cl-1)), OptionChange())
 			if err != nil {
 				return nil, err
 			}

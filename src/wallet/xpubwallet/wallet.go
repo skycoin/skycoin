@@ -79,7 +79,7 @@ func NewWallet(filename, label, xPub string, options ...wallet.Option) (*Wallet,
 
 	generateN := advOpts.GenerateN
 	if generateN > 0 {
-		_, err := wlt.GenerateAddresses(generateN)
+		_, err := wlt.GenerateAddresses(wallet.OptionGenerateN(generateN))
 		if err != nil {
 			return nil, err
 		}
@@ -290,7 +290,7 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 	nExistingAddrs := uint64(len(w2.entries))
 
 	// Generate the addresses to scan
-	addrs, err := w2.GenerateAddresses(scanN)
+	addrs, err := w2.GenerateAddresses(wallet.OptionGenerateN(scanN))
 	if err != nil {
 		return nil, err
 	}
@@ -311,7 +311,7 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 	}
 
 	w2.reset()
-	if _, err := w2.GenerateAddresses(nExistingAddrs + keepNum); err != nil {
+	if _, err := w2.GenerateAddresses(wallet.OptionGenerateN(nExistingAddrs + keepNum)); err != nil {
 		return nil, err
 	}
 
@@ -326,7 +326,8 @@ func (w *Wallet) GetAddresses(_ ...wallet.Option) ([]cipher.Addresser, error) {
 }
 
 // GenerateAddresses generates addresses for the external chain, and appends them to the wallet's entries array
-func (w *Wallet) GenerateAddresses(num uint64, _ ...wallet.Option) ([]cipher.Addresser, error) {
+func (w *Wallet) GenerateAddresses(options ...wallet.Option) ([]cipher.Addresser, error) {
+	num := wallet.GetGenerateNFromOptions(options...)
 	if num > math.MaxUint32 {
 		return nil, wallet.NewError(errors.New("XPubWallet.GenerateAddresses num too large"))
 	}

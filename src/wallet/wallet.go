@@ -99,6 +99,8 @@ var (
 	ErrWalletTypeNotRecoverable = NewError(errors.New("wallet type is not recoverable"))
 	// ErrWalletPermission is returned when updating a wallet without writing permission
 	ErrWalletPermission = NewError(errors.New("saving wallet permission denied"))
+	// ErrInvalidPrivateKeys is returned when creating a collection wallet with invalid private keys
+	ErrInvalidPrivateKeys = NewError(errors.New("invalid private keys"))
 
 	// ErrEntryNotFound is returned by GetEntry is the wallet does not contains the entry
 	ErrEntryNotFound = errors.New("entry not found")
@@ -572,4 +574,26 @@ func SkycoinAddresses(addrs []cipher.Addresser) []cipher.Address {
 		skyAddrs[i] = a.(cipher.Address)
 	}
 	return skyAddrs
+}
+
+// ParsePrivateKeys parse private keys from a string
+// keys must be joined with commas
+func ParsePrivateKeys(keys string) ([]cipher.SecKey, error) {
+	if keys == "" {
+		return nil, nil
+	}
+
+	ss := strings.Split(keys, ",")
+	secKeys := make([]cipher.SecKey, 0, len(ss))
+	for _, s := range ss {
+		v := strings.TrimSpace(s)
+		if len(v) > 0 {
+			sk, err := cipher.SecKeyFromHex(v)
+			if err != nil {
+				return nil, fmt.Errorf("invalid private key: %v", err)
+			}
+			secKeys = append(secKeys, sk)
+		}
+	}
+	return secKeys, nil
 }

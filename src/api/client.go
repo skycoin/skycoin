@@ -640,15 +640,16 @@ func (c *Client) Wallets() ([]WalletResponse, error) {
 
 // CreateWalletOptions are the options for creating a wallet
 type CreateWalletOptions struct {
-	Type           string
-	Seed           string
-	SeedPassphrase string
-	Label          string
-	Password       string
-	ScanN          uint64
-	XPub           string
-	Encrypt        bool
-	Bip44Coin      *bip44.CoinType
+	Type                  string
+	Seed                  string
+	SeedPassphrase        string
+	Label                 string
+	Password              string
+	ScanN                 uint64
+	XPub                  string
+	Encrypt               bool
+	Bip44Coin             *bip44.CoinType
+	CollectionPrivateKeys string
 }
 
 // CreateWallet makes a request to POST /api/v1/wallet/create and creates a wallet.
@@ -680,6 +681,10 @@ func (c *Client) CreateWallet(o CreateWalletOptions) (*WalletResponse, error) {
 		v.Add("xpub", o.XPub)
 	}
 
+	if o.CollectionPrivateKeys != "" {
+		v.Add("private-keys", o.CollectionPrivateKeys)
+	}
+
 	var w WalletResponse
 	if err := c.PostForm("/api/v1/wallet/create", strings.NewReader(v.Encode()), &w); err != nil {
 		return nil, err
@@ -706,6 +711,10 @@ func (c *Client) CreateWalletTemp(o CreateWalletOptions) (*WalletResponse, error
 
 	if o.XPub != "" {
 		v.Add("xpub", o.XPub)
+	}
+
+	if o.CollectionPrivateKeys != "" {
+		v.Add("private-keys", o.CollectionPrivateKeys)
 	}
 
 	var w WalletResponse

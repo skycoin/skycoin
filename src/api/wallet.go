@@ -1131,8 +1131,7 @@ func walletRecoverHandler(gateway Gatewayer) http.HandlerFunc {
 			password = nil
 		}()
 
-		wlt, err := gateway.RecoverWallet(req.ID, req.Seed, req.SeedPassphrase,
-			password, gateway.TransactionsFinder())
+		wlt, err := gateway.RecoverWallet(req.ID, req.Seed, req.SeedPassphrase, password)
 		if err != nil {
 			var resp HTTPResponse
 			switch err.(type) {

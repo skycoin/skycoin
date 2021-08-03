@@ -13,8 +13,6 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-//go:generate mockery -name Gatewayer -case underscore -inpkg -testonly
-
 // Gateway bundles daemon.Daemon, Visor, wallet.Service and kvstorage.Manager into a single object
 type Gateway struct {
 	*daemon.Daemon
@@ -32,6 +30,8 @@ func NewGateway(d *daemon.Daemon, v *visor.Visor, w *wallet.Service, m *kvstorag
 		Manager: m,
 	}
 }
+
+//go:generate mockery -name Gatewayer -case underscore -inpkg -testonly
 
 // Gatewayer interface for Gateway methods
 type Gatewayer interface {
@@ -78,7 +78,6 @@ type Visorer interface {
 	AddressCount() (uint64, error)
 	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, uint64, error)
 	GetSpentOutputsForAddresses(addr []cipher.Address) ([][]historydb.UxOut, uint64, error)
-	// GetVerboseTransactionsForAddress(a cipher.Address) ([]visor.Transaction, [][]visor.TransactionInput, error)
 	GetRichlist(includeDistribution bool) (visor.Richlist, error)
 	GetAllUnconfirmedTransactions() ([]visor.UnconfirmedTransaction, error)
 	GetAllUnconfirmedTransactionsVerbose() ([]visor.UnconfirmedTransaction, [][]visor.TransactionInput, error)
@@ -104,7 +103,7 @@ type Walleter interface {
 	DecryptWallet(wltID string, password []byte) (wallet.Wallet, error)
 	GetWalletSeed(wltID string, password []byte) (string, string, error)
 	CreateWallet(wltName string, options wallet.Options) (wallet.Wallet, error)
-	RecoverWallet(wltID, seed, seedPassphrase string, password []byte, tf wallet.TransactionsFinder) (wallet.Wallet, error)
+	RecoverWallet(wltID, seed, seedPassphrase string, password []byte) (wallet.Wallet, error)
 	NewAddresses(wltID string, password []byte, n uint64, options ...wallet.Option) ([]cipher.Address, error)
 	ScanAddresses(wltID string, password []byte, n uint64, tf wallet.TransactionsFinder) ([]cipher.Address, error)
 	GetWallet(wltID string) (wallet.Wallet, error)

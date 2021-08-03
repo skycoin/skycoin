@@ -1019,7 +1019,7 @@ func TestAddressGen(t *testing.T) {
 				require.Error(t, err)
 				require.Equal(t, tc.err.Error(), err.Error())
 			} else {
-				require.NoError(t, err)
+				require.NoError(t, err, string(output))
 			}
 
 			tc.check(t, output)

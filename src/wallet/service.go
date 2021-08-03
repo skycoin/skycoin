@@ -198,7 +198,6 @@ func (serv *Service) CreateWallet(wltName string, options Options) (Wallet, erro
 		wltName = serv.generateUniqueWalletFilename()
 	}
 
-	options = serv.updateOptions(options)
 	return serv.loadWallet(wltName, options)
 }
 

@@ -547,14 +547,10 @@ func convertOptions(options wallet.Options) []wallet.Option {
 		opts = append(opts, wallet.OptionGenerateN(options.GenerateN))
 	}
 
-	scanN := options.ScanN
-	if scanN == 0 {
-		// set default scan to 1
-		scanN = 1
+	if options.ScanN > 0 {
+		opts = append(opts, wallet.OptionScanN(options.ScanN))
+		opts = append(opts, wallet.OptionTransactionsFinder(options.TF))
 	}
-
-	opts = append(opts, wallet.OptionScanN(scanN))
-	opts = append(opts, wallet.OptionTransactionsFinder(options.TF))
 
 	if options.Temp {
 		opts = append(opts, wallet.OptionTemp(true))

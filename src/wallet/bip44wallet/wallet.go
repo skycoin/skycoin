@@ -122,7 +122,7 @@ func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.O
 	}
 
 	advOpts := wallet.AdvancedOptions{}
-	// applies options to wallet and AdvancedOptions
+	// apply options to wallet and AdvancedOptions
 	for _, opt := range options {
 		opt(wlt)
 		opt(&advOpts)
@@ -171,10 +171,6 @@ func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.O
 	}
 
 	scanN := advOpts.ScanN
-	if scanN == 0 {
-		return nil, errors.New("scan num must be > 0")
-	}
-	// scans addresses if options.ScanN > 0
 	if scanN > 0 {
 		if advOpts.TF == nil {
 			return nil, errors.New("missing transaction finder for scanning addresses")
@@ -888,14 +884,10 @@ func convertOptions(options wallet.Options) []wallet.Option {
 		opts = append(opts, wallet.OptionGenerateN(options.GenerateN))
 	}
 
-	scanN := options.ScanN
-	if scanN == 0 {
-		// set default scan to 1
-		scanN = 1
+	if options.ScanN > 0 {
+		opts = append(opts, wallet.OptionScanN(options.ScanN))
+		opts = append(opts, wallet.OptionTransactionsFinder(options.TF))
 	}
-
-	opts = append(opts, wallet.OptionScanN(scanN))
-	opts = append(opts, wallet.OptionTransactionsFinder(options.TF))
 
 	if options.Temp {
 		opts = append(opts, wallet.OptionTemp(true))

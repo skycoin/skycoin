@@ -970,31 +970,6 @@ func TestWalletCreateHandler(t *testing.T) {
 			wltName: "foo",
 		},
 		{
-			name:   "400 - scan num must be > 0",
-			method: http.MethodPost,
-			body: &httpBody{
-				Type:  wallet.WalletTypeDeterministic,
-				Seed:  "foo",
-				Label: "bar",
-				ScanN: "0",
-			},
-			options: wallet.Options{
-				Type:     wallet.WalletTypeDeterministic,
-				Seed:     "foo",
-				Label:    "bar",
-				ScanN:    0,
-				Password: []byte{},
-			},
-			gatewayCreateWalletErr: wallet.NewError(errors.New("scan num must be > 0")),
-			gatewayCreateWalletResult: func(_ string, _ wallet.Options) wallet.Wallet {
-				var p *deterministic.Wallet
-				return p
-			},
-			status:  http.StatusBadRequest,
-			err:     "400 Bad Request - scan num must be > 0",
-			wltName: "foo",
-		},
-		{
 			name:   "400 - invalid bip44 coin",
 			method: http.MethodPost,
 			body: &httpBody{

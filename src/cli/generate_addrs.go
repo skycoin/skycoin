@@ -37,21 +37,14 @@ func walletAddAddressesCmd() *cobra.Command {
 	walletAddAddressesCmd.Flags().Uint64P("num", "n", 1, "Number of addresses to generate")
 	walletAddAddressesCmd.Flags().StringP("password", "p", "", "wallet password")
 	walletAddAddressesCmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format")
+	walletAddAddressesCmd.Flags().StringP("private-keys", "", "", "wallet private keys for collection wallet")
 
 	return walletAddAddressesCmd
 }
 
 func generateAddrs(c *cobra.Command, args []string) error {
 	// get number of address that are need to be generated.
-	num, err := c.Flags().GetUint64("num")
-	if err != nil {
-		return err
-	}
-
-	if num == 0 {
-		return errors.New("-n must > 0")
-	}
-
+	var opts []wallet.Option
 	jsonFmt, err := c.Flags().GetBool("json")
 	if err != nil {
 		return err
@@ -65,6 +58,30 @@ func generateAddrs(c *cobra.Command, args []string) error {
 		return err
 	}
 
+	switch wlt.Meta.Type {
+	case wallet.WalletTypeCollection:
+		s, err := c.Flags().GetString("private-keys")
+		if err != nil {
+			return err
+		}
+		privateKeys, err := wallet.ParsePrivateKeys(s)
+		if err != nil {
+			return err
+		}
+		opts = append(opts, wallet.OptionCollectionPrivateKeys(privateKeys))
+	default:
+		num, err := c.Flags().GetUint64("num")
+		if err != nil {
+			return err
+		}
+
+		if num == 0 {
+			return errors.New("-n must > 0")
+		}
+
+		opts = append(opts, wallet.OptionGenerateN(num))
+	}
+
 	var pwd []byte
 	pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
 	if wlt.Meta.Encrypted && wlt.Meta.Type != wallet.WalletTypeBip44 {
@@ -74,7 +91,7 @@ func generateAddrs(c *cobra.Command, args []string) error {
 		}
 	}
 
-	addrs, err := apiClient.NewWalletAddress(wltID, int(num), string(pwd))
+	addrs, err := apiClient.NewWalletAddress(wltID, string(pwd), opts...)
 	if err != nil {
 		return err
 	}

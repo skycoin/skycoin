@@ -263,7 +263,7 @@ func createTempWallet(t *testing.T, label, seed string, options ...walletCreateO
 	// hence we only need to generate more addresses when the generateN is greater than 1
 	if opts.GenerateN > 1 {
 		opts.GenerateN--
-		_, err = c.NewWalletAddress(wlt.Meta.Filename, int(opts.GenerateN), opts.Password)
+		_, err = c.NewWalletAddress(wlt.Meta.Filename, opts.Password, wallet.OptionGenerateN(opts.GenerateN))
 		require.NoError(t, err)
 	}
 
@@ -480,6 +480,17 @@ func doHeaderCheck(t *testing.T) bool {
 
 }
 
+func createWallet(t *testing.T, label string, args []string) *api.WalletResponse {
+	args = append([]string{"walletCreate", "--label", label}, args...)
+	output, err := execCommandCombinedOutput(args...)
+	require.NoError(t, err, fmt.Sprintf("err: %s", string(output)))
+
+	var w api.WalletResponse
+	err = json.Unmarshal(output, &w)
+	require.NoError(t, err)
+	return &w
+}
+
 func TestWalletCreate(t *testing.T) {
 	if !doLiveOrStable(t) {
 		return
@@ -618,48 +629,80 @@ func TestWalletAddAddresses(t *testing.T) {
 
 	tt := []struct {
 		name         string
-		encrypted    bool
-		seed         string
+		setupWallet  func(t *testing.T) *api.WalletResponse
 		args         []string
 		isUsageErr   bool
 		expectOutput []byte
 		goldenFile   string
 	}{
 		{
-			name:         "walletAddAddresses",
-			encrypted:    false,
-			seed:         "exchange stage green marine palm tobacco decline shadow cereal chapter lamp copy",
+			name: "walletAddAddresses",
+			setupWallet: func(t *testing.T) *api.WalletResponse {
+				return createWallet(t, "test", []string{
+					"--seed", "exchange stage green marine palm tobacco decline shadow cereal chapter lamp copy",
+					"--encrypt=false",
+				})
+			},
 			expectOutput: []byte("7g3M372kxwNwwQEAmrronu4anXTW8aD1XC\n"),
 			goldenFile:   "generate-addresses.golden",
 		},
 		{
-			name:         "walletAddAddresses -n 2 -j",
-			encrypted:    false,
-			seed:         "visual ancient fancy body choose trigger drama window toward resource enough another",
+			name: "walletAddAddresses -n 2 -j",
+			setupWallet: func(t *testing.T) *api.WalletResponse {
+				return createWallet(t, "test", []string{
+					"--seed", "visual ancient fancy body choose trigger drama window toward resource enough another",
+					"--encrypt=false",
+				})
+			},
 			args:         []string{"-n", "2", "-j"},
 			expectOutput: []byte("{\n    \"addresses\": [\n        \"buDFq2kR9JLJcPoirZbiEL5DJGGBgpbXaU\",\n        \"Xzm3BCV8XCWUgCuM7rtdZ1RUTZnPqKcvw1\"\n    ]\n}\n"),
 			goldenFile:   "generate-addresses-2.golden",
 		},
 		{
-			name:         "walletAddAddresses -n -2 -j",
-			encrypted:    false,
-			seed:         "bronze nut vehicle book vehicle matter curve amused jaguar fall finger fade",
+			name: "walletAddAddresses collection wallet",
+			setupWallet: func(t *testing.T) *api.WalletResponse {
+				return createWallet(t, "test", []string{
+					"--type", "collection",
+					"--encrypt=false",
+				})
+			},
+			args:       []string{"--private-keys", "c6a24b92afa0eff6ff5f5688da3f5c0cf59656a469349c3e8c29435b462db421,95fdb587bdd4aaaa337c73b3d4102f7dc40e60ee089445ff4ba398f81c27ebe0"},
+			goldenFile: "generate-address-collection.golden",
+		},
+		{
+			name: "walletAddAddresses -n -2 -j",
+			setupWallet: func(t *testing.T) *api.WalletResponse {
+				return createWallet(t, "test", []string{
+					"--seed", "bronze nut vehicle book vehicle matter curve amused jaguar fall finger fade",
+					"--encrypt=false",
+				})
+			},
 			args:         []string{"-n", "-2", "-j"},
 			isUsageErr:   true,
 			expectOutput: []byte("Error: invalid value \"-2\" for flag -n: strconv.ParseUint: parsing \"-2\": invalid syntax"),
 		},
 		{
-			name:         "walletAddAddresses in encrypted wallet",
-			encrypted:    true,
-			seed:         "chunk tortoise solid extra casual lend merry tooth captain inform alpha zebra",
+			name: "walletAddAddresses in encrypted wallet",
+			setupWallet: func(t *testing.T) *api.WalletResponse {
+				return createWallet(t, "test", []string{
+					"--seed", "chunk tortoise solid extra casual lend merry tooth captain inform alpha zebra",
+					"--encrypt",
+					"--password", "pwd",
+				})
+			},
 			args:         []string{"-p", "pwd", "-j"},
 			expectOutput: []byte("{\n    \"addresses\": [\n        \"2c3Dr4YdHSyc9HAPrjnHcXLQEKnHEitHUn2\"\n    ]\n}\n"),
 			goldenFile:   "generate-addresses-encrypted.golden",
 		},
 		{
-			name:         "walletAddAddresses in encrypted wallet with invalid password",
-			encrypted:    true,
-			seed:         "lazy poverty prepare mad pen celery come panel animal approve cattle already",
+			name: "walletAddAddresses in encrypted wallet with invalid password",
+			setupWallet: func(t *testing.T) *api.WalletResponse {
+				return createWallet(t, "test", []string{
+					"--seed", "lazy poverty prepare mad pen celery come panel animal approve cattle already",
+					"--encrypt",
+					"--password", "pwd",
+				})
+			},
 			args:         []string{"-p", "invalid password", "-j"},
 			expectOutput: []byte("invalid password\n"),
 			isUsageErr:   true,
@@ -668,17 +711,14 @@ func TestWalletAddAddresses(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			var password []byte
-			if tc.encrypted {
-				password = []byte("pwd")
-			}
-			wlt := createTempWallet(t, "test", tc.seed, encryptOption(tc.encrypted), passwordOption(password))
+			wlt := tc.setupWallet(t)
 			id := wlt.Meta.Filename
 
 			args := append([]string{"walletAddAddresses", id}, tc.args...)
 			output, err := execCommandCombinedOutput(args...)
 			if err != nil {
-				require.EqualError(t, err, "exit status 1")
+				t.Log("err:", string(output))
+				require.EqualError(t, err, "exit status 1", "output:", string(output))
 				return
 			}
 
@@ -687,13 +727,9 @@ func TestWalletAddAddresses(t *testing.T) {
 				return
 			}
 
-			require.Equal(t, tc.expectOutput, output)
-
 			c := newClient()
 			wlt, err = c.Wallet(id)
 			require.NoError(t, err)
-
-			require.Equal(t, tc.encrypted, wlt.Meta.Encrypted)
 
 			var addrs struct {
 				Addresses []string

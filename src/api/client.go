@@ -18,6 +18,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/kvstorage"
 	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 const (
@@ -726,14 +727,29 @@ func (c *Client) CreateWalletTemp(o CreateWalletOptions) (*WalletResponse, error
 
 // NewWalletAddress makes a request to POST /api/v1/wallet/newAddress
 // if n is <= 0, defaults to 1
-func (c *Client) NewWalletAddress(id string, n int, password string) ([]string, error) {
+func (c *Client) NewWalletAddress(id string, password string, options ...wallet.Option) ([]string, error) {
 	v := url.Values{}
 	v.Add("id", id)
-	if n > 0 {
-		v.Add("num", fmt.Sprint(n))
+	if len(password) > 0 {
+		v.Add("password", password)
 	}
 
-	v.Add("password", password)
+	var opts wallet.AdvancedOptions
+	for _, f := range options {
+		f(&opts)
+	}
+
+	if opts.GenerateN > 0 {
+		v.Add("num", fmt.Sprint(opts.GenerateN))
+	}
+
+	if len(opts.PrivateKeys) > 0 {
+		keys := make([]string, 0, len(opts.PrivateKeys))
+		for _, k := range opts.PrivateKeys {
+			keys = append(keys, k.Hex())
+		}
+		v.Add("private-keys", strings.Join(keys, ","))
+	}
 
 	var obj struct {
 		Addresses []string `json:"addresses"`

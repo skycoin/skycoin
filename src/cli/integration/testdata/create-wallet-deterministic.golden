@@ -1,0 +1,19 @@
+{
+	"meta": {
+		"coin": "skycoin",
+		"filename": "",
+		"label": "test",
+		"type": "deterministic",
+		"version": "0.4",
+		"crypto_type": "scrypt-chacha20poly1305",
+		"timestamp": 0,
+		"temp": false,
+		"encrypted": false
+	},
+	"entries": [
+		{
+			"address": "qEdmRtEBtqfJ8EBtcgVazMsYeqRfUfmQbw",
+			"public_key": "034f15a79c06735c6ce828cf37065c52bf0ad3b95c96589c30e3339842d254c99e"
+		}
+	]
+}

@@ -480,6 +480,137 @@ func doHeaderCheck(t *testing.T) bool {
 
 }
 
+func TestWalletCreate(t *testing.T) {
+	if !doLiveOrStable(t) {
+		return
+	}
+
+	tt := []struct {
+		name            string
+		encrypt         bool
+		password        []byte
+		seed            string
+		args            []string
+		expectErrOutput []byte
+		goldenFile      string
+	}{
+		{
+			name:       "deterministic ok",
+			encrypt:    false,
+			seed:       "weather output penalty post diary boat fan source hole rescue seminar tape",
+			args:       []string{"--label", "test"},
+			goldenFile: "create-wallet-deterministic.golden",
+		},
+		{
+			name:       "deterministic encrypt ok",
+			encrypt:    true,
+			seed:       "chuckle control lyrics wife crack account ranch celery melt fossil congress market",
+			args:       []string{"--label", "test", "--password", "pwd"},
+			goldenFile: "create-wallet-deterministic-encrypt.golden",
+		},
+		{
+			name:       "deterministic -n 2",
+			encrypt:    false,
+			seed:       "like way cargo history earn humor neither supreme antique damp harvest excite",
+			args:       []string{"--label", "test", "-n", "2"},
+			goldenFile: "create-wallet-deterministic-n-2.golden",
+		},
+		{
+			name:       "bip44 wallet",
+			encrypt:    false,
+			seed:       "kangaroo dragon random rebel number common ancient insane annual write always mail",
+			args:       []string{"--label", "test", "--type", "bip44"},
+			goldenFile: "create-wallet-bip44.golden",
+		},
+		{
+			name:       "bip44 wallet --encrypt",
+			encrypt:    true,
+			seed:       "peace clip wreck parrot bracket error initial prosper scout egg black pet",
+			args:       []string{"--label", "test", "--type", "bip44", "--encrypt", "--password", "pwd"},
+			goldenFile: "create-wallet-bip44-encrypt.golden",
+		},
+		{
+			name:    "bip44 wallet --seed-passphrase",
+			encrypt: true,
+			seed:    "surprise video omit hire rule mirror pilot educate miracle peanut filter tribe",
+			args: []string{"--label", "test",
+				"--seed-passphrase", "pwd", "--password", "pwd", "--type", "bip44"},
+			goldenFile: "create-wallet-bip44-with-passphrase.golden",
+		},
+		{
+			name:       "xpub wallet",
+			args:       []string{"--label", "test", "--type", "xpub", "--xpub", "xpub6EHXAfAY5dgRXDQSKr8X3wQFN3AAo4TAHka9TocHCBU6WjtCvMeb6Q2UFggNPvVdWXk1tQDLvxUVQJNADxNuHEWtWiPAMBmqWn4w3DnTAJC"},
+			goldenFile: "create-wallet-xpub.golden",
+		},
+		{
+			name:            "xpub wallet err with random seed",
+			args:            []string{"--label", "test", "-r", "--type", "xpub", "--xpub", "xpub6EHXAfAY5dgRXDQSKr8X3wQFN3AAo4TAHka9TocHCBU6WjtCvMeb6Q2UFggNPvVdWXk1tQDLvxUVQJNADxNuHEWtWiPAMBmqWn4w3DnTAJC"},
+			expectErrOutput: []byte("Error: \"xpub\" type wallets do not use seeds\n"),
+		},
+		{
+			name: "xpub wallet err with mnemonic seed",
+			args: []string{"--label", "test", "-m", "glad stove dream heart shock soldier october mansion rib remind blouse medal",
+				"--type", "xpub", "--xpub", "xpub6EHXAfAY5dgRXDQSKr8X3wQFN3AAo4TAHka9TocHCBU6WjtCvMeb6Q2UFggNPvVdWXk1tQDLvxUVQJNADxNuHEWtWiPAMBmqWn4w3DnTAJC"},
+			expectErrOutput: []byte("Error: \"xpub\" type wallets do not use seeds\n"),
+		},
+		{
+			name:       "collection empty",
+			args:       []string{"--label", "test", "-t", "collection"},
+			goldenFile: "create-wallet-collection-empty.golden",
+		},
+		{
+			name:       "collection 1 entry",
+			args:       []string{"--label", "test", "-t", "collection", "--private-keys", "d27393105a594191da05c4f8eb0d797d73cdaa407e03fa7d1ea8b8b1812096a1"},
+			goldenFile: "create-wallet-collection-1.golden",
+		},
+		{
+			name:       "collection 2 entry",
+			args:       []string{"--label", "test", "-t", "collection", "--private-keys", "d27393105a594191da05c4f8eb0d797d73cdaa407e03fa7d1ea8b8b1812096a1,c863931323d0e656510869cb977a6b19a55277901bf73a4eddcd583e1fa14344"},
+			goldenFile: "create-wallet-collection-2.golden",
+		},
+		{
+			name: "collection encrypt",
+			args: []string{"--label", "test", "-t", "collection", "-e", "-p", "pwd",
+				"--private-keys", "d27393105a594191da05c4f8eb0d797d73cdaa407e03fa7d1ea8b8b1812096a1,c863931323d0e656510869cb977a6b19a55277901bf73a4eddcd583e1fa14344"},
+			goldenFile: "create-wallet-collection-encrypt.golden",
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			args := []string{"walletCreate"}
+			if len(tc.seed) > 0 {
+				args = append(args, "--seed", tc.seed)
+			}
+
+			if tc.encrypt {
+				args = append(args, "--encrypt", "--password", string(tc.password))
+			} else {
+				args = append(args, "--encrypt=false")
+			}
+
+			args = append(args, tc.args...)
+			output, err := execCommandCombinedOutput(args...)
+			if err != nil {
+				require.Equal(t, string(output), string(tc.expectErrOutput),
+					fmt.Sprintf("expect: %v, got: %v", string(tc.expectErrOutput), string(output)))
+				require.EqualError(t, err, "exit status 1")
+				return
+			}
+
+			var w api.WalletResponse
+			err = json.Unmarshal(output, &w)
+			require.NoError(t, err)
+			// set timestamp to 0 so that the result could be compared with golden file
+			w.Meta.Timestamp = 0
+			w.Meta.Filename = ""
+
+			var expect api.WalletResponse
+			checkGoldenFile(t, tc.goldenFile, TestData{w, &expect})
+		})
+	}
+}
+
 func TestWalletAddAddresses(t *testing.T) {
 	if !doLiveOrStable(t) {
 		return

@@ -1,0 +1,28 @@
+{
+	"meta": {
+		"coin": "skycoin",
+		"filename": "",
+		"label": "test",
+		"type": "bip44",
+		"version": "0.4",
+		"crypto_type": "scrypt-chacha20poly1305",
+		"timestamp": 0,
+		"temp": false,
+		"encrypted": false,
+		"bip44_coin": 8000
+	},
+	"entries": [
+		{
+			"address": "JX9hhYztxUKj1WH7oTquN6YRTLVnZPUe9V",
+			"public_key": "0374404d53ddfb1866952acea512cacd099f64f09df6c6522d915d380919ae5f0a",
+			"child_number": 0,
+			"change": 0
+		},
+		{
+			"address": "7g9m8trJdzNfFXPZjS1HjcvdE4Ldu6NiPB",
+			"public_key": "033eeedbbaa01f8cb4602b0eb19e772e3577b09170836db8521b4daa5de058d65a",
+			"child_number": 0,
+			"change": 1
+		}
+	]
+}

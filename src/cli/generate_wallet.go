@@ -191,9 +191,9 @@ func generateWalletHandler(c *cobra.Command, _ []string) error {
 		return err
 	}
 
-	pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
 	var password []byte
 	if encrypt {
+		pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
 		var err error
 		password, err = pr.Password()
 		if err != nil {

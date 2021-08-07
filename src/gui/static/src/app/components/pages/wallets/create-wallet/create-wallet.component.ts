@@ -116,7 +116,7 @@ export class CreateWalletComponent implements OnDestroy {
     this.cancelButton.setDisabled();
     this.disableDismiss = true;
 
-    this.walletsAndAddressesService.createSoftwareWallet(data.label, data.seed, data.password)
+    this.walletsAndAddressesService.createSoftwareWallet(data.loadTemporarily, data.label, data.seed, data.password)
       .subscribe(() => {
         this.busy = false;
         setTimeout(() => this.msgBarService.showDone('wallet.new.wallet-created'));

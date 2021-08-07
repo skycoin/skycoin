@@ -33,6 +33,10 @@ export class WalletBase {
    */
   encrypted = false;
   /**
+   * If the wallet is temporal.
+   */
+  temporal = false;
+  /**
    * If it is a software wallet (false) or a hw wallet (true).
    */
   isHardware = false;

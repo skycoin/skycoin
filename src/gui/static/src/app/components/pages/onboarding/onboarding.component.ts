@@ -55,7 +55,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
   // Called when the user finishes the second step.
   onPasswordCreated(password: string|null) {
     // Create the wallet.
-    this.walletsAndAddressesService.createSoftwareWallet(this.formData.label, this.formData.seed, password).subscribe(() => {
+    this.walletsAndAddressesService.createSoftwareWallet(this.formData.loadTemporarily, this.formData.label, this.formData.seed, password).subscribe(() => {
       this.router.navigate(['/wallets']);
     }, e => {
       this.msgBarService.showError(e);

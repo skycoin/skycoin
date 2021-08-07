@@ -39,7 +39,6 @@ $lock-icon-size: $normal-icon-size;
 }
 
 .seed-type-button {
-  text-align: right;
   position: relative;
   top: 2px;
 
@@ -127,4 +126,10 @@ label[for=seed] {
 .assisted-seed-spinner {
   top: -14px !important;
   left: -14px !important;
+}
+
+.-white-check ::ng-deep {
+  .mat-checkbox-checkmark-path {
+    stroke: $white !important;
+  }
 }

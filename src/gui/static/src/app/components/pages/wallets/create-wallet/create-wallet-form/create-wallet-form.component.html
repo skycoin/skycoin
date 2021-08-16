@@ -98,7 +98,7 @@
     </ng-container>
   </div>
   <!-- Password area. -->
-  <div *ngIf="!onboarding">
+  <div *ngIf="!onboarding && !loadTemporarily">
     <div>
       <!-- Password usage selector. -->
       <mat-checkbox class="-check" (change)="setEncrypt($event)" type="checkbox" id="encrypt" [checked]="true" [ngClass]="{'element-disabled' : busy}">

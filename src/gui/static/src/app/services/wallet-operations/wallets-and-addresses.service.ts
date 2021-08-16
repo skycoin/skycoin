@@ -188,7 +188,7 @@ export class WalletsAndAddressesService {
       type: 'deterministic',
     };
 
-    if (password) {
+    if (!temporal && password) {
       params['password'] = password;
       params['encrypt'] = true;
     }

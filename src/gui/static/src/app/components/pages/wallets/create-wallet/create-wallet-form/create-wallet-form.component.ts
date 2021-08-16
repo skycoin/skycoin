@@ -199,10 +199,12 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
       ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
         if (confirmationResult) {
           this.loadTemporarily = true;
+          this.form.updateValueAndValidity();
         }
       });
     } else {
       this.loadTemporarily = false;
+      this.form.updateValueAndValidity();
     }
   }
 
@@ -518,7 +520,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     }
 
     // Validate password.
-    if (this.encrypt && !this.onboarding) {
+    if (this.encrypt &&  !this.loadTemporarily && !this.onboarding) {
       let enteredPasswords = true;
 
       if (!this.form.get('password').value) {

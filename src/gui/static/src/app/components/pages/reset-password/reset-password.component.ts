@@ -52,8 +52,8 @@ export class ResetPasswordComponent implements OnDestroy {
       const wallets = result[1];
 
       const wallet = wallets.find(w => w.id === params['id']);
-      // Abort if the requested wallet does not exists.
-      if (!wallet) {
+      // Abort if the requested wallet does not exists or is temporal.
+      if (!wallet || wallet.temporal) {
         setTimeout(() => this.router.navigate([''], {skipLocationChange: true}));
 
         return;

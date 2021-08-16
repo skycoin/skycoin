@@ -15,5 +15,6 @@
   *ngIf="step === 2"
   (onPasswordCreated)="onPasswordCreated($event)"
   (onBack)="onBack()"
+  [creatingTemporal]="formData.loadTemporarily"
   #encryptForm
 ></app-onboarding-encrypt-wallet>

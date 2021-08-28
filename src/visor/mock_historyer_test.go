@@ -136,6 +136,27 @@ func (_m *MockHistoryer) GetTransactionHashesForAddresses(tx *dbutil.Tx, address
 	return r0, r1
 }
 
+// GetTransactionsNum provides a mock function with given fields: tx
+func (_m *MockHistoryer) GetTransactionsNum(tx *dbutil.Tx) (uint64, error) {
+	ret := _m.Called(tx)
+
+	var r0 uint64
+	if rf, ok := ret.Get(0).(func(*dbutil.Tx) uint64); ok {
+		r0 = rf(tx)
+	} else {
+		r0 = ret.Get(0).(uint64)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(*dbutil.Tx) error); ok {
+		r1 = rf(tx)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetUxOuts provides a mock function with given fields: tx, uxids
 func (_m *MockHistoryer) GetUxOuts(tx *dbutil.Tx, uxids []cipher.SHA256) ([]historydb.UxOut, error) {
 	ret := _m.Called(tx, uxids)

@@ -1010,6 +1010,7 @@ func walletEncryptHandler(gateway Gatewayer) http.HandlerFunc {
 			switch err {
 			case wallet.ErrWalletEncrypted,
 				wallet.ErrMissingPassword,
+				wallet.ErrEncryptTempWallet,
 				wallet.ErrInvalidPassword:
 				wh.Error400(w, err.Error())
 			case wallet.ErrWalletAPIDisabled:

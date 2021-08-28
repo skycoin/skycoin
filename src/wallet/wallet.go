@@ -104,6 +104,8 @@ var (
 
 	// ErrEntryNotFound is returned by GetEntry is the wallet does not contains the entry
 	ErrEntryNotFound = errors.New("entry not found")
+	// ErrEncryptTempWallet is returned when trying to encrypt a temporary wallet
+	ErrEncryptTempWallet = errors.New("temporary wallet does not support encryption")
 )
 
 const (

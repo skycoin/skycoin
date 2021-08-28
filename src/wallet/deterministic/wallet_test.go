@@ -187,7 +187,7 @@ func TestNewWallet(t *testing.T) {
 			},
 		},
 		{
-			name:    "ok all defaults",
+			name:    "temp wallet - ok all defaults",
 			wltName: "test.wlt",
 			label:   "test",
 			seed:    "testseed123",
@@ -205,6 +205,19 @@ func TestNewWallet(t *testing.T) {
 					"temp":     "true",
 				},
 				err: nil,
+			},
+		},
+		{
+			name:    "temp wallet - encrypt",
+			wltName: "test.wlt",
+			label:   "test",
+			seed:    "testseed123",
+			opts: []wallet.Option{
+				wallet.OptionTemp(true),
+				wallet.OptionEncrypt(true),
+			},
+			expect: expect{
+				err: wallet.ErrEncryptTempWallet,
 			},
 		},
 	}
@@ -259,9 +272,8 @@ func TestWalletLock(t *testing.T) {
 			lockPwd: []byte("pwd"),
 		},
 		{
-			name:    "password is nil",
-			lockPwd: nil,
-			err:     wallet.ErrMissingPassword,
+			name: "password is nil",
+			err:  wallet.ErrMissingPassword,
 		},
 		{
 			name: "wallet already encrypted",
@@ -271,6 +283,14 @@ func TestWalletLock(t *testing.T) {
 			},
 			lockPwd: []byte("pwd"),
 			err:     wallet.ErrWalletEncrypted,
+		},
+		{
+			name: "temp wallet encrypt",
+			opts: []wallet.Option{
+				wallet.OptionTemp(true),
+			},
+			lockPwd: []byte("pwd"),
+			err:     wallet.ErrEncryptTempWallet,
 		},
 	}
 

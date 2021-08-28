@@ -41,6 +41,10 @@ func encryptWallet(id string, pr PasswordReader) error {
 		return wallet.ErrWalletEncrypted
 	}
 
+	if wlt.Meta.Temp {
+		return wallet.ErrEncryptTempWallet
+	}
+
 	if pr == nil {
 		return wallet.ErrMissingPassword
 	}

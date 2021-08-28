@@ -188,6 +188,10 @@ func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.O
 
 	// encrypts wallet if options.Encrypt is true
 	if advOpts.Encrypt {
+		if wlt.IsTemp() {
+			return nil, wallet.ErrEncryptTempWallet
+		}
+
 		if len(advOpts.Password) == 0 {
 			return nil, errors.New("missing password for encrypting wallet")
 		}
@@ -327,6 +331,10 @@ func (w Wallet) IsEncrypted() bool {
 // Lock encrypts the wallet if it is unencrypted, return false
 // if it is already encrypted.
 func (w *Wallet) Lock(password []byte) error {
+	if w.IsTemp() {
+		return wallet.ErrEncryptTempWallet
+	}
+
 	if len(password) == 0 {
 		return wallet.ErrMissingPassword
 	}

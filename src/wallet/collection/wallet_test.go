@@ -178,6 +178,18 @@ func TestNewWallet(t *testing.T) {
 			},
 		},
 		{
+			name:    "temp wallet encrypt",
+			wltName: "test.wlt",
+			label:   "temp",
+			opts: []wallet.Option{
+				wallet.OptionTemp(true),
+				wallet.OptionEncrypt(true),
+			},
+			expect: expect{
+				err: wallet.ErrEncryptTempWallet,
+			},
+		},
+		{
 			name:    "wallet with one private key",
 			wltName: "test.wlt",
 			label:   "test",
@@ -282,6 +294,13 @@ func TestWalletLock(t *testing.T) {
 			},
 			lockPwd: []byte("pwd"),
 			err:     wallet.ErrWalletEncrypted,
+		},
+		{
+			name: "temp wallet encrypt",
+			opts: []wallet.Option{
+				wallet.OptionTemp(true),
+			},
+			err: wallet.ErrEncryptTempWallet,
 		},
 	}
 

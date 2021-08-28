@@ -85,11 +85,11 @@ func TestNewWallet(t *testing.T) {
 		{
 			name:    "ok all defaults",
 			wltName: "test.wlt",
-			label:   "",
+			label:   "test",
 			seed:    "testseed123",
 			expect: expect{
 				meta: map[string]string{
-					"label":    "",
+					"label":    "test",
 					"filename": "test.wlt",
 					"coin":     string(wallet.CoinTypeSkycoin),
 					"type":     wallet.WalletTypeDeterministic,
@@ -189,14 +189,14 @@ func TestNewWallet(t *testing.T) {
 		{
 			name:    "ok all defaults",
 			wltName: "test.wlt",
-			label:   "",
+			label:   "test",
 			seed:    "testseed123",
 			opts: []wallet.Option{
 				wallet.OptionTemp(true),
 			},
 			expect: expect{
 				meta: map[string]string{
-					"label":    "",
+					"label":    "test",
 					"filename": "test.wlt",
 					"coin":     string(wallet.CoinTypeSkycoin),
 					"type":     wallet.WalletTypeDeterministic,
@@ -286,7 +286,7 @@ func TestWalletLock(t *testing.T) {
 
 				if !w.IsEncrypted() {
 					// Generates 2 addresses
-					_, err = w.GenerateAddresses(2)
+					_, err = w.GenerateAddresses(wallet.OptionGenerateN(2))
 					require.NoError(t, err)
 				}
 
@@ -414,7 +414,7 @@ func TestLockAndUnLock(t *testing.T) {
 		t.Run(fmt.Sprintf("crypto=%v", ct), func(t *testing.T) {
 			w, err := NewWallet("wallet.wlt", "test", bip39.MustNewDefaultMnemonic(), wallet.OptionCryptoType(ct))
 			require.NoError(t, err)
-			_, err = w.GenerateAddresses(9)
+			_, err = w.GenerateAddresses(wallet.OptionGenerateN(9))
 			require.NoError(t, err)
 			el, err := w.EntriesLen()
 			require.NoError(t, err)
@@ -498,14 +498,14 @@ func TestWalletGenerateAddress(t *testing.T) {
 
 				// generate addresses
 				if !tc.oneAddressEachTime {
-					_, err = w.GenerateAddresses(tc.num)
+					_, err = w.GenerateAddresses(wallet.OptionGenerateN(tc.num))
 					require.Equal(t, tc.err, err)
 					if err != nil {
 						return
 					}
 				} else {
 					for i := uint64(0); i < tc.num; i++ {
-						_, err := w.GenerateAddresses(1)
+						_, err := w.GenerateAddresses(wallet.OptionGenerateN(1))
 						require.Equal(t, tc.err, err)
 						if err != nil {
 							return
@@ -718,7 +718,7 @@ func TestWalletSerialize(t *testing.T) {
 	w, err := NewWallet("test.wlt", "test", "test123")
 	require.NoError(t, err)
 
-	_, err = w.GenerateAddresses(5)
+	_, err = w.GenerateAddresses(wallet.OptionGenerateN(5))
 	require.NoError(t, err)
 
 	w.SetTimestamp(0)

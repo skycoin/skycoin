@@ -1,0 +1,21 @@
+{
+	"meta": {
+		"coin": "skycoin",
+		"filename": "",
+		"label": "test",
+		"type": "xpub",
+		"version": "0.4",
+		"crypto_type": "",
+		"timestamp": 0,
+		"temp": false,
+		"encrypted": false,
+		"xpub": "xpub6EHXAfAY5dgRXDQSKr8X3wQFN3AAo4TAHka9TocHCBU6WjtCvMeb6Q2UFggNPvVdWXk1tQDLvxUVQJNADxNuHEWtWiPAMBmqWn4w3DnTAJC"
+	},
+	"entries": [
+		{
+			"address": "2WBK19nu2uubTKremS9kYFUMfvVQV6HDMpK",
+			"public_key": "036ec0df9c2cfe5c8fddab321a89ed8f6d194523a440b76da798cc1a2779e32956",
+			"child_number": 0
+		}
+	]
+}

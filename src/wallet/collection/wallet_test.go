@@ -44,9 +44,32 @@ var (
 )
 
 func TestNewWallet(t *testing.T) {
+	privateKeysStr := []string{
+		"a0cc94e7b48f48637b908a773cd5d22d21d5e701ec192ffe5fc6ea9dfbb67c55",
+		"30109ea31d9aab6f21a14d39f2cd48f6bba162d629474a163f8f2e1dd11c22de",
+	}
+
+	entries := make([]wallet.Entry, 0, len(privateKeysStr))
+	sks := make([]cipher.SecKey, 0, len(privateKeysStr))
+	for _, s := range privateKeysStr {
+		sk, err := cipher.SecKeyFromHex(s)
+		require.NoError(t, err)
+		sks = append(sks, sk)
+
+		pk, err := cipher.PubKeyFromSecKey(sk)
+		require.NoError(t, err)
+
+		entries = append(entries, wallet.Entry{
+			Address: cipher.AddressFromPubKey(pk),
+			Public:  pk,
+			Secret:  sk,
+		})
+	}
+
 	type expect struct {
-		meta map[string]string
-		err  error
+		meta    map[string]string
+		entries []wallet.Entry
+		err     error
 	}
 
 	tt := []struct {
@@ -59,10 +82,10 @@ func TestNewWallet(t *testing.T) {
 		{
 			name:    "ok all defaults",
 			wltName: "test.wlt",
-			label:   "",
+			label:   "test",
 			expect: expect{
 				meta: map[string]string{
-					"label":    "",
+					"label":    "test",
 					"filename": "test.wlt",
 					"coin":     string(wallet.CoinTypeSkycoin),
 					"type":     wallet.WalletTypeCollection,
@@ -138,13 +161,13 @@ func TestNewWallet(t *testing.T) {
 		{
 			name:    "temp wallet",
 			wltName: "test.wlt",
-			label:   "",
+			label:   "temp",
 			opts: []wallet.Option{
 				wallet.OptionTemp(true),
 			},
 			expect: expect{
 				meta: map[string]string{
-					"label":    "",
+					"label":    "temp",
 					"filename": "test.wlt",
 					"coin":     string(wallet.CoinTypeSkycoin),
 					"type":     wallet.WalletTypeCollection,
@@ -152,6 +175,44 @@ func TestNewWallet(t *testing.T) {
 					"temp":     "true",
 				},
 				err: nil,
+			},
+		},
+		{
+			name:    "wallet with one private key",
+			wltName: "test.wlt",
+			label:   "test",
+			opts: []wallet.Option{
+				wallet.OptionCollectionPrivateKeys(sks[:1]),
+			},
+			expect: expect{
+				meta: map[string]string{
+					"label":    "test",
+					"filename": "test.wlt",
+					"coin":     string(wallet.CoinTypeSkycoin),
+					"type":     wallet.WalletTypeCollection,
+					"version":  wallet.Version,
+				},
+				entries: entries[:1],
+				err:     nil,
+			},
+		},
+		{
+			name:    "wallet with two private key",
+			wltName: "test.wlt",
+			label:   "test",
+			opts: []wallet.Option{
+				wallet.OptionCollectionPrivateKeys(sks[:2]),
+			},
+			expect: expect{
+				meta: map[string]string{
+					"label":    "test",
+					"filename": "test.wlt",
+					"coin":     string(wallet.CoinTypeSkycoin),
+					"type":     wallet.WalletTypeCollection,
+					"version":  wallet.Version,
+				},
+				entries: entries[:2],
+				err:     nil,
 			},
 		},
 	}

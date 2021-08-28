@@ -96,6 +96,14 @@ type ChainEntry struct {
 // NewWallet create a bip44 wallet with options
 // also, a default address will be generated
 func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.Option) (*Wallet, error) {
+	if label == "" {
+		return nil, wallet.ErrMissingLabel
+	}
+
+	if seed == "" {
+		return nil, wallet.ErrMissingSeed
+	}
+
 	wlt := &Wallet{
 		Meta: wallet.Meta{
 			wallet.MetaFilename:       filename,
@@ -114,7 +122,7 @@ func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.O
 	}
 
 	advOpts := wallet.AdvancedOptions{}
-	// applies options to wallet and AdvancedOptions
+	// apply options to wallet and AdvancedOptions
 	for _, opt := range options {
 		opt(wlt)
 		opt(&advOpts)
@@ -153,17 +161,16 @@ func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.O
 		generateN = 1
 	}
 
-	if _, err := wlt.GenerateAddresses(generateN); err != nil {
+	if _, err := wlt.GenerateAddresses(wallet.OptionGenerateN(generateN)); err != nil {
 		return nil, err
 	}
 
 	// Generate a default change address
-	if _, err := wlt.GenerateAddresses(1, wallet.OptionChange()); err != nil {
+	if _, err := wlt.GenerateAddresses(wallet.OptionGenerateN(1), wallet.OptionChange()); err != nil {
 		return nil, err
 	}
 
 	scanN := advOpts.ScanN
-	// scans addresses if options.ScanN > 0
 	if scanN > 0 {
 		if advOpts.TF == nil {
 			return nil, errors.New("missing transaction finder for scanning addresses")
@@ -680,7 +687,8 @@ func (w *Wallet) GetAddresses(options ...wallet.Option) ([]cipher.Addresser, err
 
 // GenerateAddresses generates addresses on selected account and chain,
 // if no options are provided, addresses will be generated on external chain of account 0.
-func (w *Wallet) GenerateAddresses(num uint64, options ...wallet.Option) ([]cipher.Addresser, error) {
+func (w *Wallet) GenerateAddresses(options ...wallet.Option) ([]cipher.Addresser, error) {
+	num := wallet.GetGenerateNFromOptions(options...)
 	opts := getBip44Options(options...)
 	switch opts.ChainMode {
 	case wallet.DefaultChain, wallet.ExternalChain:
@@ -780,7 +788,7 @@ func (w *Wallet) PeekChangeAddress(tf wallet.TransactionsFinder) (cipher.Address
 
 	if len(entries) == 0 {
 		// generate a new address and return
-		addrs, err := w.GenerateAddresses(1, onChangeChain)
+		addrs, err := w.GenerateAddresses(wallet.OptionGenerateN(1), onChangeChain)
 		if err != nil {
 			return nil, err
 		}
@@ -800,7 +808,7 @@ func (w *Wallet) PeekChangeAddress(tf wallet.TransactionsFinder) (cipher.Address
 	}
 
 	// generate a new address and return it
-	addrs, err := w.GenerateAddresses(1, onChangeChain)
+	addrs, err := w.GenerateAddresses(wallet.OptionGenerateN(1), onChangeChain)
 	if err != nil {
 		return nil, err
 	}

@@ -198,7 +198,6 @@ func (serv *Service) CreateWallet(wltName string, options Options) (Wallet, erro
 		wltName = serv.generateUniqueWalletFilename()
 	}
 
-	options = serv.updateOptions(options)
 	return serv.loadWallet(wltName, options)
 }
 
@@ -385,7 +384,7 @@ func (serv *Service) DecryptWallet(wltID string, password []byte) (Wallet, error
 // }
 
 // NewAddresses generate addresses
-func (serv *Service) NewAddresses(wltID string, password []byte, num uint64, options ...Option) ([]cipher.Address, error) {
+func (serv *Service) NewAddresses(wltID string, password []byte, options ...Option) ([]cipher.Address, error) {
 	serv.Lock()
 	defer serv.Unlock()
 
@@ -401,7 +400,7 @@ func (serv *Service) NewAddresses(wltID string, password []byte, num uint64, opt
 	var addrs []cipher.Addresser
 	f := func(w Wallet) error {
 		var err error
-		addrs, err = w.GenerateAddresses(num, options...)
+		addrs, err = w.GenerateAddresses(options...)
 		return err
 	}
 
@@ -771,7 +770,8 @@ func (serv *Service) View(wltID string, f func(Wallet) error) error {
 
 // RecoverWallet recovers an encrypted wallet from seed.
 // The recovered wallet will be encrypted with the new password, if provided.
-func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string, password []byte) (Wallet, error) {
+func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string,
+	password []byte) (Wallet, error) {
 	serv.Lock()
 	defer serv.Unlock()
 	if !serv.config.EnableWalletAPI {
@@ -798,6 +798,7 @@ func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string, passwor
 		Type:           w.Type(),
 		Coin:           w.Coin(),
 		Bip44Coin:      w.Bip44Coin(),
+		Label:          w.Label(),
 		Seed:           seed,
 		SeedPassphrase: seedPassphrase,
 		GenerateN:      1,
@@ -848,7 +849,7 @@ func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string, passwor
 
 		// regenerate the change addresses
 		if cl > 1 {
-			_, err := w3.GenerateAddresses(uint64(cl-1), OptionChange())
+			_, err := w3.GenerateAddresses(OptionGenerateN(uint64(cl-1)), OptionChange())
 			if err != nil {
 				return nil, err
 			}

@@ -171,20 +171,19 @@ func (_m *MockWallet) Fingerprint() string {
 	return r0
 }
 
-// GenerateAddresses provides a mock function with given fields: num, options
-func (_m *MockWallet) GenerateAddresses(num uint64, options ...Option) ([]cipher.Addresser, error) {
+// GenerateAddresses provides a mock function with given fields: options
+func (_m *MockWallet) GenerateAddresses(options ...Option) ([]cipher.Addresser, error) {
 	_va := make([]interface{}, len(options))
 	for _i := range options {
 		_va[_i] = options[_i]
 	}
 	var _ca []interface{}
-	_ca = append(_ca, num)
 	_ca = append(_ca, _va...)
 	ret := _m.Called(_ca...)
 
 	var r0 []cipher.Addresser
-	if rf, ok := ret.Get(0).(func(uint64, ...Option) []cipher.Addresser); ok {
-		r0 = rf(num, options...)
+	if rf, ok := ret.Get(0).(func(...Option) []cipher.Addresser); ok {
+		r0 = rf(options...)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]cipher.Addresser)
@@ -192,8 +191,8 @@ func (_m *MockWallet) GenerateAddresses(num uint64, options ...Option) ([]cipher
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(uint64, ...Option) error); ok {
-		r1 = rf(num, options...)
+	if rf, ok := ret.Get(1).(func(...Option) error); ok {
+		r1 = rf(options...)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -345,6 +344,20 @@ func (_m *MockWallet) HasEntry(addr cipher.Addresser, options ...Option) (bool, 
 
 // IsEncrypted provides a mock function with given fields:
 func (_m *MockWallet) IsEncrypted() bool {
+	ret := _m.Called()
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func() bool); ok {
+		r0 = rf()
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	return r0
+}
+
+// IsTemp provides a mock function with given fields:
+func (_m *MockWallet) IsTemp() bool {
 	ret := _m.Called()
 
 	var r0 bool
@@ -515,6 +528,11 @@ func (_m *MockWallet) SetFilename(_a0 string) {
 // SetLabel provides a mock function with given fields: _a0
 func (_m *MockWallet) SetLabel(_a0 string) {
 	_m.Called(_a0)
+}
+
+// SetTemp provides a mock function with given fields: temp
+func (_m *MockWallet) SetTemp(temp bool) {
+	_m.Called(temp)
 }
 
 // SetTimestamp provides a mock function with given fields: _a0

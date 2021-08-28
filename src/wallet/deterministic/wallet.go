@@ -39,6 +39,14 @@ type Wallet struct {
 
 // NewWallet creates a deterministic wallet
 func NewWallet(filename, label, seed string, options ...wallet.Option) (*Wallet, error) {
+	if label == "" {
+		return nil, wallet.ErrMissingLabel
+	}
+
+	if seed == "" {
+		return nil, wallet.ErrMissingSeed
+	}
+
 	var wlt = &Wallet{
 		Meta: wallet.Meta{
 			wallet.MetaFilename:   filename,
@@ -69,7 +77,7 @@ func NewWallet(filename, label, seed string, options ...wallet.Option) (*Wallet,
 
 	generateN := advOpts.GenerateN
 	if generateN > 0 {
-		_, err := wlt.GenerateAddresses(generateN)
+		_, err := wlt.GenerateAddresses(wallet.OptionGenerateN(generateN))
 		if err != nil {
 			return nil, err
 		}
@@ -375,7 +383,7 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 	nExistingAddrs := uint64(len(w2.entries))
 
 	// Generate the addresses to scan
-	addrs, err := w2.GenerateAddresses(scanN)
+	addrs, err := w2.GenerateAddresses(wallet.OptionGenerateN(scanN))
 	if err != nil {
 		return nil, err
 	}
@@ -402,7 +410,7 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 	//	return nil, err
 	//}
 
-	if _, err := w2.GenerateAddresses(nExistingAddrs + keepNum); err != nil {
+	if _, err := w2.GenerateAddresses(wallet.OptionGenerateN(nExistingAddrs + keepNum)); err != nil {
 		return nil, err
 	}
 
@@ -412,11 +420,12 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 }
 
 // GenerateAddresses generates N addresses
-func (w *Wallet) GenerateAddresses(num uint64, _ ...wallet.Option) ([]cipher.Addresser, error) {
+func (w *Wallet) GenerateAddresses(options ...wallet.Option) ([]cipher.Addresser, error) {
 	if w.Meta.IsEncrypted() {
 		return nil, wallet.ErrWalletEncrypted
 	}
 
+	num := wallet.GetGenerateNFromOptions(options...)
 	if num == 0 {
 		return nil, nil
 	}

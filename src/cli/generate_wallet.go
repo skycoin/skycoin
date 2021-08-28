@@ -49,6 +49,7 @@ func walletCreateCmd() *cobra.Command {
 	walletCreateCmd.Flags().BoolP("encrypt", "e", true, "Create encrypted wallet.")
 	walletCreateCmd.Flags().StringP("password", "p", "", "Wallet password")
 	walletCreateCmd.Flags().StringP("xpub", "", "", "xpub key for \"xpub\" type wallets")
+	walletCreateCmd.Flags().StringP("private-keys", "", "", "Collection private keys")
 
 	return walletCreateCmd
 }
@@ -80,8 +81,8 @@ func generateWalletHandler(c *cobra.Command, _ []string) error {
 		return errors.New("-n must > 0")
 	}
 
-	// set scan number as 1 when generate num is greater than scan number to avoid
-	// unnecessary addresses scanning for API.
+	// set scan number to 1 when generate num is greater than scan number to avoid
+	// unnecessary addresses scanning.
 	if num >= scan {
 		scan = 1
 	}
@@ -135,7 +136,10 @@ func generateWalletHandler(c *cobra.Command, _ []string) error {
 		return err
 	}
 
-	var sd string
+	var (
+		sd                    string
+		collectionPrivateKeys string
+	)
 	switch walletType {
 	case wallet.WalletTypeBip44:
 		var err error
@@ -160,6 +164,17 @@ func generateWalletHandler(c *cobra.Command, _ []string) error {
 		}
 		num = 0
 
+		// try to get private keys
+		var err error
+		collectionPrivateKeys, err = c.Flags().GetString("private-keys")
+		if err != nil {
+			return err
+		}
+		_, err = wallet.ParsePrivateKeys(collectionPrivateKeys)
+		if err != nil {
+			return wallet.ErrInvalidPrivateKeys
+		}
+
 	case wallet.WalletTypeXPub:
 		// xpub wallet does not support encryption
 		encrypt = false
@@ -176,9 +191,9 @@ func generateWalletHandler(c *cobra.Command, _ []string) error {
 		return err
 	}
 
-	pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
 	var password []byte
 	if encrypt {
+		pr := NewPasswordReader([]byte(c.Flag("password").Value.String()))
 		var err error
 		password, err = pr.Password()
 		if err != nil {
@@ -187,15 +202,16 @@ func generateWalletHandler(c *cobra.Command, _ []string) error {
 	}
 
 	opts := api.CreateWalletOptions{
-		Label:          label,
-		Seed:           sd,
-		SeedPassphrase: seedPassphrase,
-		Encrypt:        encrypt,
-		Password:       string(password),
-		Type:           walletType,
-		Bip44Coin:      bip44Coin,
-		ScanN:          scan,
-		XPub:           xpub,
+		Label:                 label,
+		Seed:                  sd,
+		SeedPassphrase:        seedPassphrase,
+		Encrypt:               encrypt,
+		Password:              string(password),
+		Type:                  walletType,
+		Bip44Coin:             bip44Coin,
+		ScanN:                 scan,
+		XPub:                  xpub,
+		CollectionPrivateKeys: collectionPrivateKeys,
 	}
 
 	wlt, err := apiClient.CreateWallet(opts)
@@ -217,7 +233,7 @@ func generateWalletHandler(c *cobra.Command, _ []string) error {
 
 	n := num - uint64(addrN)
 	if n > 0 {
-		_, err := apiClient.NewWalletAddress(id, int(n), string(password))
+		_, err := apiClient.NewWalletAddress(id, string(password), wallet.OptionGenerateN(n))
 		if err != nil {
 			return err
 		}
@@ -252,6 +268,7 @@ func walletCreateTempCmd() *cobra.Command {
 	walletCreateTempCmd.Flags().Uint64P("scan", "", 1, `Number of addresses to scan ahead for balances.`)
 	walletCreateTempCmd.Flags().StringP("type", "t", wallet.WalletTypeDeterministic, "Wallet type. Types are \"collection\", \"deterministic\", \"bip44\" or \"xpub\"")
 	walletCreateTempCmd.Flags().StringP("xpub", "", "", "xpub key for \"xpub\" type wallets")
+	walletCreateTempCmd.Flags().StringP("private-keys", "", "", "Collection private keys")
 
 	return walletCreateTempCmd
 }
@@ -333,7 +350,11 @@ func generateWalletTempHandler(c *cobra.Command, _ []string) error {
 		return err
 	}
 
-	var sd string
+	var (
+		sd                    string
+		collectionPrivateKeys string
+	)
+
 	switch walletType {
 	case wallet.WalletTypeBip44:
 		var err error
@@ -358,6 +379,11 @@ func generateWalletTempHandler(c *cobra.Command, _ []string) error {
 		}
 		num = 0
 
+		var err error
+		collectionPrivateKeys, err = c.Flags().GetString("private-keys")
+		if err != nil {
+			return err
+		}
 	case wallet.WalletTypeXPub:
 		if s != "" || random || mnemonic {
 			return fmt.Errorf("%q type wallets do not use seeds", walletType)
@@ -368,12 +394,13 @@ func generateWalletTempHandler(c *cobra.Command, _ []string) error {
 	}
 
 	opts := api.CreateWalletOptions{
-		Label:     label,
-		Seed:      sd,
-		Type:      walletType,
-		Bip44Coin: bip44Coin,
-		ScanN:     scan,
-		XPub:      xpub,
+		Label:                 label,
+		Seed:                  sd,
+		Type:                  walletType,
+		Bip44Coin:             bip44Coin,
+		ScanN:                 scan,
+		XPub:                  xpub,
+		CollectionPrivateKeys: collectionPrivateKeys,
 	}
 
 	wlt, err := apiClient.CreateWalletTemp(opts)
@@ -395,7 +422,7 @@ func generateWalletTempHandler(c *cobra.Command, _ []string) error {
 
 	n := num - uint64(addrN)
 	if n > 0 {
-		_, err := apiClient.NewWalletAddress(id, int(n), "")
+		_, err := apiClient.NewWalletAddress(id, "", wallet.OptionGenerateN(n))
 		if err != nil {
 			return err
 		}

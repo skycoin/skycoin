@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Add param `private-keys` to CLI commands `walletCreate`, `walletCreateTemp`, and `walletNewAddresses`.
+- Add param `private-keys` to APIs `/api/v1/wallet/create`, `/api/v1/wallet/createTemp`, and `/api/v1/wallet/newAddress`. 
 - Add `CLI walletCreateTemp` command to create a temporary wallet.
 - Add `POST /api/v1/wallet/createTemp` API to create a temporary wallet. Warning: The temporary wallet would not be
   persisted after restarting.

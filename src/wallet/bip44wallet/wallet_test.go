@@ -498,10 +498,10 @@ func TestWalletLock(t *testing.T) {
 
 				if !w.IsEncrypted() {
 					// Generates 2 addresses
-					_, err = w.GenerateAddresses(2)
+					_, err = w.GenerateAddresses(wallet.OptionGenerateN(2))
 					require.NoError(t, err)
 
-					_, err = w.GenerateAddresses(2, wallet.OptionChange())
+					_, err = w.GenerateAddresses(wallet.OptionGenerateN(2), wallet.OptionChange())
 					require.NoError(t, err)
 				}
 
@@ -623,7 +623,7 @@ func TestLockAndUnLock(t *testing.T) {
 	for _, ct := range crypto.TypesInsecure() {
 		w, err := NewWallet("wallet.wlt", "test", testSeed, testSeedPassphrase, wallet.OptionCryptoType(ct))
 		require.NoError(t, err)
-		_, err = w.GenerateAddresses(9)
+		_, err = w.GenerateAddresses(wallet.OptionGenerateN(9))
 		require.NoError(t, err)
 		el, err := w.EntriesLen()
 		require.NoError(t, err)
@@ -754,14 +754,14 @@ func TestWalletGenerateAddress(t *testing.T) {
 
 				// generate address
 				if !tc.oneAddressEachTime {
-					_, err := w.GenerateAddresses(tc.num)
+					_, err := w.GenerateAddresses(wallet.OptionGenerateN(tc.num))
 					require.NoError(t, err)
 					if err != nil {
 						return
 					}
 				} else {
 					for i := uint64(0); i < tc.num; i++ {
-						_, err := w.GenerateAddresses(1)
+						_, err := w.GenerateAddresses(wallet.OptionGenerateN(1))
 						require.Equal(t, tc.err, err)
 						if err != nil {
 							return

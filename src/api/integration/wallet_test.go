@@ -390,7 +390,7 @@ func TestWalletNewAddress(t *testing.T) {
 					tc.postWalletHandle(t, c, w.Meta.Filename)
 				}
 
-				addrs, err := c.NewWalletAddress(w.Meta.Filename, i, password)
+				addrs, err := c.NewWalletAddress(w.Meta.Filename, password, wallet.OptionGenerateN(uint64(i)))
 				require.Equal(t, tc.expectErr, err)
 
 				// Confirms no intermediate tmp file exists
@@ -838,7 +838,7 @@ func TestRecoverWallet(t *testing.T) {
 			})
 			defer clean()
 
-			_, err = c.NewWalletAddress(w.Meta.Filename, 10, "")
+			_, err = c.NewWalletAddress(w.Meta.Filename, "", wallet.OptionGenerateN(10))
 			require.NoError(t, err)
 
 			w, err = c.Wallet(w.Meta.Filename)
@@ -1076,7 +1076,7 @@ func prepareAndCheckWallet(t *testing.T, c *api.Client, minCoins, minCoinHours u
 	require.NoError(t, err)
 
 	if wl < 2 {
-		_, err := c.NewWalletAddress(w.Filename(), 2-wl, password)
+		_, err := c.NewWalletAddress(w.Filename(), password, wallet.OptionGenerateN(uint64(2-wl)))
 		if err != nil {
 			t.Fatalf("New wallet address failed: %v", err)
 		}

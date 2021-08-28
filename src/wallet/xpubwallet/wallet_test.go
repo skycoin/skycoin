@@ -216,7 +216,7 @@ func TestWalletGenerateAddresses(t *testing.T) {
 			// generate address
 			var addrs []cipher.Addresser
 			if !tc.oneAddressEachTime {
-				addrs, err = w.GenerateAddresses(tc.num)
+				addrs, err = w.GenerateAddresses(wallet.OptionGenerateN(tc.num))
 				require.Equal(t, tc.err, err, fmt.Sprintf("want: %v; got: %v", tc.err, err))
 				if err != nil {
 					return
@@ -224,7 +224,7 @@ func TestWalletGenerateAddresses(t *testing.T) {
 
 			} else {
 				for i := uint64(0); i < tc.num; i++ {
-					addr, err := w.GenerateAddresses(1)
+					addr, err := w.GenerateAddresses(wallet.OptionGenerateN(1))
 					require.Equal(t, tc.err, err)
 					if err != nil {
 						return
@@ -264,7 +264,7 @@ func TestWalletGetEntry(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			w, err := NewWallet("test.wlt", "test", testXPub)
 			require.NoError(t, err)
-			_, err = w.GenerateAddresses(3)
+			_, err = w.GenerateAddresses(wallet.OptionGenerateN(3))
 			require.NoError(t, err)
 
 			e, err := w.GetEntry(tc.address)
@@ -283,7 +283,7 @@ func TestWalletSerialize(t *testing.T) {
 	w, err := NewWallet("test.wlt", "test", testXPub)
 	require.NoError(t, err)
 
-	_, err = w.GenerateAddresses(5)
+	_, err = w.GenerateAddresses(wallet.OptionGenerateN(5))
 	require.NoError(t, err)
 
 	w.SetTimestamp(0)

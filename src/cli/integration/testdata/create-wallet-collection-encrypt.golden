@@ -1,0 +1,23 @@
+{
+	"meta": {
+		"coin": "skycoin",
+		"filename": "",
+		"label": "test",
+		"type": "collection",
+		"version": "0.4",
+		"crypto_type": "scrypt-chacha20poly1305",
+		"timestamp": 0,
+		"temp": false,
+		"encrypted": true
+	},
+	"entries": [
+		{
+			"address": "n1BRLU9pn8UbBWUy1o5JfLLvYDMRNrZK2M",
+			"public_key": "0201cb9dd390ee3e84642b7769d56f7f14b8b72be669886dfe586fb13b981a2500"
+		},
+		{
+			"address": "2goC8Txe4cpdyHYgMhZQrrs66FjCKCxajpj",
+			"public_key": "02eda796c03ef237e1f79af98507b8d07e4439392e623394b7288d12fb9b36170a"
+		}
+	]
+}

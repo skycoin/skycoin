@@ -209,6 +209,7 @@ func TestServiceCreateWallet(t *testing.T) {
 				require.NoError(t, err)
 
 				w, err := s.CreateWallet(tc.filename, wallet.Options{
+					Label:    "test",
 					Seed:     tc.seed,
 					Encrypt:  tc.encrypt,
 					Password: tc.password,
@@ -254,9 +255,10 @@ func TestServiceCreateWallet(t *testing.T) {
 				}
 
 				_, err = s.CreateWallet(tc.filename, wallet.Options{
-					Seed: otherSeed,
-					Type: tc.walletType,
-					XPub: otherXPub,
+					Label: "test",
+					Seed:  otherSeed,
+					Type:  tc.walletType,
+					XPub:  otherXPub,
 				})
 				require.Equal(t, err, wallet.ErrWalletNameConflict)
 
@@ -266,9 +268,10 @@ func TestServiceCreateWallet(t *testing.T) {
 					// create wallet with dup seed or xpub key
 					dupWlt := "dup_wallet.wlt"
 					_, err = s.CreateWallet(dupWlt, wallet.Options{
-						Seed: tc.seed,
-						XPub: tc.xpub,
-						Type: tc.walletType,
+						Label: "test",
+						Seed:  tc.seed,
+						XPub:  tc.xpub,
+						Type:  tc.walletType,
 					})
 					require.Equal(t, wallet.NewError(fmt.Errorf("fingerprint conflict for %q wallet", tc.walletType)), err)
 
@@ -849,7 +852,7 @@ func TestServiceNewAddresses(t *testing.T) {
 					checkNoSensitiveData(t, w)
 				}
 
-				naddrs, err := s.NewAddresses(w.Filename(), tc.pwd, tc.n)
+				naddrs, err := s.NewAddresses(w.Filename(), tc.pwd, wallet.OptionGenerateN(tc.n))
 				require.Equal(t, tc.expectErr, err)
 
 				// Confirms that no intermediate tmp file exists
@@ -915,7 +918,7 @@ func TestServiceNewAddresses(t *testing.T) {
 				}
 
 				// Wallet doesn't exist
-				_, err = s.NewAddresses("wallet_not_exist.wlt", tc.pwd, 1)
+				_, err = s.NewAddresses("wallet_not_exist.wlt", tc.pwd, wallet.OptionGenerateN(1))
 				require.Equal(t, wallet.ErrWalletNotExist, err)
 			})
 		}
@@ -1282,6 +1285,7 @@ func TestServiceEncryptWallet(t *testing.T) {
 
 				// Create a new wallet
 				opts := tc.opts
+				opts.Label = "test"
 				opts.CryptoType = ct
 				w, err := s.CreateWallet(tc.wltName, opts)
 				require.NoError(t, err)
@@ -1579,6 +1583,7 @@ func TestServiceDecryptWallet(t *testing.T) {
 					return
 				}
 
+				tc.opts.Label = "test"
 				_, err = s.CreateWallet(tc.wltName, tc.opts)
 				require.NoError(t, err)
 
@@ -1726,6 +1731,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 
 	type exp struct {
 		err      error
+		label    string
 		seed     string
 		lastSeed string
 		xpub     string
@@ -1742,12 +1748,14 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "no coins and scan 0, unencrypted",
 			opts: wallet.Options{
-				Seed: seed,
-				Type: wallet.WalletTypeDeterministic,
-				TF:   tf,
+				Label: "test",
+				Seed:  seed,
+				Type:  wallet.WalletTypeDeterministic,
+				TF:    tf,
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     seed,
 				lastSeed: childSeeds[0],
 				entryNum: 1,
@@ -1757,6 +1765,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "no coins and scan 0, encrypted",
 			opts: wallet.Options{
+				Label:    "test",
 				Seed:     seed,
 				Encrypt:  true,
 				Password: []byte("pwd"),
@@ -1765,6 +1774,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     seed,
 				lastSeed: childSeeds[0],
 				entryNum: 1,
@@ -1774,6 +1784,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "no coins and scan 1, unencrypted",
 			opts: wallet.Options{
+				Label: "test",
 				Seed:  seed,
 				ScanN: 1,
 				Type:  wallet.WalletTypeDeterministic,
@@ -1781,6 +1792,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     seed,
 				lastSeed: childSeeds[0],
 				entryNum: 1,
@@ -1790,6 +1802,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "no coins and scan 1, encrypted",
 			opts: wallet.Options{
+				Label:    "test",
 				Seed:     seed,
 				Encrypt:  true,
 				Password: []byte("pwd"),
@@ -1799,6 +1812,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     seed,
 				lastSeed: childSeeds[0],
 				entryNum: 1,
@@ -1808,6 +1822,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "no coins and scan 10, unencrypted",
 			opts: wallet.Options{
+				Label: "test",
 				Seed:  seed,
 				ScanN: 10,
 				Type:  wallet.WalletTypeDeterministic,
@@ -1815,6 +1830,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     seed,
 				lastSeed: childSeeds[0],
 				entryNum: 1,
@@ -1824,6 +1840,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "scan 1 get 1, unencrypted",
 			opts: wallet.Options{
+				Label: "test",
 				Seed:  seed,
 				ScanN: 1,
 				Type:  wallet.WalletTypeDeterministic,
@@ -1833,6 +1850,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     seed,
 				lastSeed: childSeeds[0],
 				entryNum: 1,
@@ -1842,6 +1860,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "scan 5 get 5, unencrypted",
 			opts: wallet.Options{
+				Label: "test",
 				Seed:  seed,
 				ScanN: 5,
 				Type:  wallet.WalletTypeDeterministic,
@@ -1851,6 +1870,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     seed,
 				lastSeed: childSeeds[4],
 				entryNum: 5,
@@ -1860,6 +1880,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "scan 5 get 1, unencrypted",
 			opts: wallet.Options{
+				Label: "test",
 				Seed:  seed,
 				ScanN: 5,
 				Type:  wallet.WalletTypeDeterministic,
@@ -1869,6 +1890,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     seed,
 				lastSeed: childSeeds[0],
 				entryNum: 1,
@@ -1878,6 +1900,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "scan 5 get 2, unencrypted",
 			opts: wallet.Options{
+				Label: "test",
 				Seed:  seed,
 				ScanN: 5,
 				Type:  wallet.WalletTypeDeterministic,
@@ -1887,6 +1910,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     seed,
 				lastSeed: childSeeds[1],
 				entryNum: 2,
@@ -1897,6 +1921,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "scan 5 get 3, encrypted",
 			opts: wallet.Options{
+				Label:    "test",
 				Seed:     seed,
 				Encrypt:  true,
 				Password: []byte("pwd"),
@@ -1908,6 +1933,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     seed,
 				lastSeed: childSeeds[2],
 				entryNum: 3,
@@ -1917,6 +1943,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "scan 5 get 4, unencrypted",
 			opts: wallet.Options{
+				Label: "test",
 				Seed:  seed,
 				ScanN: 5,
 				Type:  wallet.WalletTypeDeterministic,
@@ -1927,6 +1954,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     seed,
 				lastSeed: childSeeds[3],
 				entryNum: 4,
@@ -1936,6 +1964,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "scan 5 get 5, unencrypted",
 			opts: wallet.Options{
+				Label: "test",
 				Seed:  seed,
 				ScanN: 5,
 				Type:  wallet.WalletTypeDeterministic,
@@ -1946,6 +1975,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     seed,
 				lastSeed: childSeeds[4],
 				entryNum: 5,
@@ -1955,6 +1985,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "scan 0 get 1, encrypted",
 			opts: wallet.Options{
+				Label:    "test",
 				Seed:     seed,
 				Encrypt:  true,
 				Password: []byte("pwd"),
@@ -1964,6 +1995,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     seed,
 				lastSeed: childSeeds[0],
 				entryNum: 1,
@@ -1973,6 +2005,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "scan 1 get 1, encrypted",
 			opts: wallet.Options{
+				Label:    "test",
 				Seed:     seed,
 				Encrypt:  true,
 				Password: []byte("pwd"),
@@ -1984,6 +2017,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     seed,
 				lastSeed: childSeeds[0],
 				entryNum: 1,
@@ -1993,6 +2027,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "scan 2 get 1, encrypted",
 			opts: wallet.Options{
+				Label:    "test",
 				Seed:     seed,
 				Encrypt:  true,
 				Password: []byte("pwd"),
@@ -2002,6 +2037,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     seed,
 				lastSeed: childSeeds[0],
 				entryNum: 1,
@@ -2011,6 +2047,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "scan 2 get 2, encrypted",
 			opts: wallet.Options{
+				Label:    "test",
 				Seed:     seed,
 				Encrypt:  true,
 				Password: []byte("pwd"),
@@ -2022,6 +2059,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     seed,
 				lastSeed: childSeeds[1],
 				entryNum: 2,
@@ -2031,6 +2069,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "scan 5 get 5, encrypted",
 			opts: wallet.Options{
+				Label:    "test",
 				Seed:     seed,
 				Encrypt:  true,
 				Password: []byte("pwd"),
@@ -2043,6 +2082,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     seed,
 				lastSeed: childSeeds[4],
 				entryNum: 5,
@@ -2052,12 +2092,14 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "bip44 no coins and scan 0, unencrypted",
 			opts: wallet.Options{
-				Seed: bip44Seed,
-				Type: wallet.WalletTypeBip44,
-				TF:   tf,
+				Label: "test",
+				Seed:  bip44Seed,
+				Type:  wallet.WalletTypeBip44,
+				TF:    tf,
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     bip44Seed,
 				entryNum: 2,
 				addrs:    combineAddrs(bip44Addrs[:1], bip44ChangeAddrs[:1]),
@@ -2066,6 +2108,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "bip44 no coins and scan 0, encrypted",
 			opts: wallet.Options{
+				Label:    "test",
 				Seed:     bip44Seed,
 				Encrypt:  true,
 				Password: []byte("pwd"),
@@ -2074,6 +2117,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     bip44Seed,
 				entryNum: 2,
 				addrs:    combineAddrs(bip44Addrs[:1], bip44ChangeAddrs[:1]),
@@ -2082,6 +2126,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "bip44 no coins and scan 1, unencrypted",
 			opts: wallet.Options{
+				Label: "test",
 				Seed:  bip44Seed,
 				ScanN: 1,
 				Type:  wallet.WalletTypeBip44,
@@ -2089,6 +2134,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     bip44Seed,
 				entryNum: 2,
 				addrs:    combineAddrs(bip44Addrs[:1], bip44ChangeAddrs[:1]),
@@ -2097,6 +2143,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "bip44 no coins and scan 1, encrypted",
 			opts: wallet.Options{
+				Label:    "test",
 				Seed:     bip44Seed,
 				Encrypt:  true,
 				Password: []byte("pwd"),
@@ -2106,6 +2153,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     bip44Seed,
 				entryNum: 2,
 				addrs:    combineAddrs(bip44Addrs[:1], bip44ChangeAddrs[:1]),
@@ -2114,6 +2162,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "bip44 no coins and scan 10, unencrypted",
 			opts: wallet.Options{
+				Label: "test",
 				Seed:  bip44Seed,
 				ScanN: 10,
 				Type:  wallet.WalletTypeBip44,
@@ -2121,6 +2170,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     bip44Seed,
 				entryNum: 2,
 				addrs:    combineAddrs(bip44Addrs[:1], bip44ChangeAddrs[:1]),
@@ -2129,6 +2179,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "bip44 scan 0 get 1, unencrypted",
 			opts: wallet.Options{
+				Label: "test",
 				Seed:  bip44Seed,
 				ScanN: 1,
 				Type:  wallet.WalletTypeBip44,
@@ -2138,6 +2189,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     bip44Seed,
 				entryNum: 2,
 				addrs:    combineAddrs(bip44Addrs[:1], bip44ChangeAddrs[:1]),
@@ -2146,6 +2198,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "bip44 scan 0 get 1, encrypted",
 			opts: wallet.Options{
+				Label:    "test",
 				Seed:     bip44Seed,
 				ScanN:    1,
 				Type:     wallet.WalletTypeBip44,
@@ -2157,6 +2210,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     bip44Seed,
 				entryNum: 2,
 				addrs:    combineAddrs(bip44Addrs[:1], bip44ChangeAddrs[:1]),
@@ -2165,6 +2219,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "bip44 scan 1 get 1, unencrypted",
 			opts: wallet.Options{
+				Label: "test",
 				Seed:  bip44Seed,
 				ScanN: 1,
 				Type:  wallet.WalletTypeBip44,
@@ -2174,6 +2229,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     bip44Seed,
 				entryNum: 2,
 				addrs:    combineAddrs(bip44Addrs[:1], bip44ChangeAddrs[:1]),
@@ -2182,6 +2238,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "bip44 scan 1 get 1, encrypted",
 			opts: wallet.Options{
+				Label:    "test",
 				Seed:     bip44Seed,
 				ScanN:    1,
 				Type:     wallet.WalletTypeBip44,
@@ -2193,6 +2250,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     bip44Seed,
 				entryNum: 2,
 				addrs:    combineAddrs(bip44Addrs[:1], bip44ChangeAddrs[:1]),
@@ -2201,6 +2259,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "bip44 scan 2 get 2, unencrypted",
 			opts: wallet.Options{
+				Label: "test",
 				Seed:  bip44Seed,
 				ScanN: 2,
 				Type:  wallet.WalletTypeBip44,
@@ -2211,6 +2270,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     bip44Seed,
 				entryNum: 3,
 				addrs:    combineAddrs(bip44Addrs[:2], bip44ChangeAddrs[:1]),
@@ -2219,6 +2279,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "bip44 scan 2 get 2, encrypted",
 			opts: wallet.Options{
+				Label:    "test",
 				Seed:     bip44Seed,
 				ScanN:    2,
 				Type:     wallet.WalletTypeBip44,
@@ -2231,6 +2292,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     bip44Seed,
 				entryNum: 3,
 				addrs:    combineAddrs(bip44Addrs[:2], bip44ChangeAddrs[:1]),
@@ -2239,6 +2301,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "bip44 scan 5 get 1, unencrypted",
 			opts: wallet.Options{
+				Label: "test",
 				Seed:  bip44Seed,
 				ScanN: 5,
 				Type:  wallet.WalletTypeBip44,
@@ -2248,6 +2311,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     bip44Seed,
 				entryNum: 2,
 				addrs:    combineAddrs(bip44Addrs[:1], bip44ChangeAddrs[:1]),
@@ -2256,6 +2320,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "bip44 scan 5 get 2, unencrypted",
 			opts: wallet.Options{
+				Label: "test",
 				Seed:  bip44Seed,
 				ScanN: 5,
 				Type:  wallet.WalletTypeBip44,
@@ -2265,6 +2330,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     bip44Seed,
 				entryNum: 3,
 				addrs:    combineAddrs(bip44Addrs[:2], bip44ChangeAddrs[:1]),
@@ -2273,6 +2339,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "bip44 scan 5 get 5, unencrypted",
 			opts: wallet.Options{
+				Label: "test",
 				Seed:  bip44Seed,
 				ScanN: 5,
 				Type:  wallet.WalletTypeBip44,
@@ -2282,6 +2349,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     bip44Seed,
 				entryNum: 6,
 				addrs:    combineAddrs(bip44Addrs[:5], bip44ChangeAddrs[:1]),
@@ -2290,6 +2358,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "bip44 scan 5 get 5, encrypted",
 			opts: wallet.Options{
+				Label:    "test",
 				Seed:     bip44Seed,
 				Encrypt:  true,
 				Password: []byte("pwd"),
@@ -2302,6 +2371,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				seed:     bip44Seed,
 				entryNum: 6,
 				addrs:    combineAddrs(bip44Addrs[:5], bip44ChangeAddrs[:1]),
@@ -2310,12 +2380,14 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "xpub no coins and scan 0, unencrypted",
 			opts: wallet.Options{
-				XPub: xpub,
-				Type: wallet.WalletTypeXPub,
-				TF:   tf,
+				Label: "test",
+				XPub:  xpub,
+				Type:  wallet.WalletTypeXPub,
+				TF:    tf,
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				xpub:     xpub,
 				entryNum: 1,
 				addrs:    xpubAddrs,
@@ -2324,12 +2396,14 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "xpub no coins and scan 0",
 			opts: wallet.Options{
-				XPub: xpub,
-				Type: wallet.WalletTypeXPub,
-				TF:   tf,
+				Label: "test",
+				XPub:  xpub,
+				Type:  wallet.WalletTypeXPub,
+				TF:    tf,
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				xpub:     xpub,
 				entryNum: 1,
 				addrs:    xpubAddrs,
@@ -2338,6 +2412,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "xpub no coins and scan 1, unencrypted",
 			opts: wallet.Options{
+				Label: "test",
 				XPub:  xpub,
 				ScanN: 1,
 				Type:  wallet.WalletTypeXPub,
@@ -2345,6 +2420,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				xpub:     xpub,
 				entryNum: 1,
 				addrs:    xpubAddrs,
@@ -2353,6 +2429,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "xpub no coins and scan 1",
 			opts: wallet.Options{
+				Label: "test",
 				XPub:  xpub,
 				ScanN: 1,
 				Type:  wallet.WalletTypeXPub,
@@ -2360,6 +2437,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				xpub:     xpub,
 				entryNum: 1,
 				addrs:    xpubAddrs,
@@ -2368,6 +2446,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "xpub no coins and scan 10, unencrypted",
 			opts: wallet.Options{
+				Label: "test",
 				XPub:  xpub,
 				ScanN: 10,
 				Type:  wallet.WalletTypeXPub,
@@ -2375,6 +2454,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				xpub:     xpub,
 				entryNum: 1,
 				addrs:    xpubAddrs,
@@ -2383,6 +2463,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "xpub scan 0 get 1, unencrypted",
 			opts: wallet.Options{
+				Label: "test",
 				XPub:  xpub,
 				ScanN: 0,
 				Type:  wallet.WalletTypeXPub,
@@ -2392,6 +2473,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				xpub:     xpub,
 				entryNum: 1,
 				addrs:    xpubAddrs,
@@ -2400,6 +2482,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "xpub scan 0 get 1",
 			opts: wallet.Options{
+				Label: "test",
 				XPub:  xpub,
 				ScanN: 0,
 				Type:  wallet.WalletTypeXPub,
@@ -2409,6 +2492,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				xpub:     xpub,
 				entryNum: 1,
 				addrs:    xpubAddrs,
@@ -2417,6 +2501,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "xpub scan 1 get 1, unencrypted",
 			opts: wallet.Options{
+				Label: "test",
 				XPub:  xpub,
 				ScanN: 1,
 				Type:  wallet.WalletTypeXPub,
@@ -2426,6 +2511,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				xpub:     xpub,
 				entryNum: 1,
 				addrs:    xpubAddrs,
@@ -2434,6 +2520,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "xpub scan 1 get 1",
 			opts: wallet.Options{
+				Label: "test",
 				XPub:  xpub,
 				ScanN: 1,
 				Type:  wallet.WalletTypeXPub,
@@ -2443,6 +2530,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				xpub:     xpub,
 				entryNum: 1,
 				addrs:    xpubAddrs,
@@ -2451,6 +2539,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "xpub scan 2 get 1, unencrypted",
 			opts: wallet.Options{
+				Label: "test",
 				XPub:  xpub,
 				ScanN: 2,
 				Type:  wallet.WalletTypeXPub,
@@ -2460,6 +2549,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				xpub:     xpub,
 				entryNum: 1,
 				addrs:    xpubAddrs,
@@ -2468,6 +2558,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 		{
 			name: "xpub scan 2 get 1",
 			opts: wallet.Options{
+				Label: "test",
 				XPub:  xpub,
 				ScanN: 2,
 				Type:  wallet.WalletTypeXPub,
@@ -2477,6 +2568,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				xpub:     xpub,
 				entryNum: 1,
 				addrs:    xpubAddrs,
@@ -2486,6 +2578,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			name: "xpub scan 2 get 2, unencrypted",
 			opts: wallet.Options{
 				XPub:  xpub,
+				Label: "test",
 				ScanN: 2,
 				Type:  wallet.WalletTypeXPub,
 				TF: mockTxnsFinder{
@@ -2495,6 +2588,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			expect: exp{
 				err:      nil,
 				xpub:     xpub,
+				label:    "test",
 				entryNum: 2,
 				addrs:    xpubAddrs,
 			},
@@ -2504,6 +2598,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			opts: wallet.Options{
 				XPub:  xpub,
 				ScanN: 2,
+				Label: "test",
 				Type:  wallet.WalletTypeXPub,
 				TF: mockTxnsFinder{
 					xpubAddrs[1]: true,
@@ -2513,6 +2608,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				err:      nil,
 				xpub:     xpub,
 				entryNum: 2,
+				label:    "test",
 				addrs:    xpubAddrs,
 			},
 		},
@@ -2522,6 +2618,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				XPub:  xpub,
 				ScanN: 5,
 				Type:  wallet.WalletTypeXPub,
+				Label: "test",
 				TF: mockTxnsFinder{
 					xpubAddrs[4]: true,
 				},
@@ -2531,6 +2628,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				xpub:     xpub,
 				entryNum: 5,
 				addrs:    xpubAddrs,
+				label:    "test",
 			},
 		},
 		{
@@ -2538,6 +2636,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			opts: wallet.Options{
 				XPub:  xpub,
 				ScanN: 5,
+				Label: "test",
 				Type:  wallet.WalletTypeXPub,
 				TF: mockTxnsFinder{
 					xpubAddrs[1]: true,
@@ -2547,6 +2646,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			expect: exp{
 				err:      nil,
 				xpub:     xpub,
+				label:    "test",
 				entryNum: 4,
 				addrs:    xpubAddrs,
 			},
@@ -2557,6 +2657,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				XPub:  xpub,
 				ScanN: 5,
 				Type:  wallet.WalletTypeXPub,
+				Label: "test",
 				TF: mockTxnsFinder{
 					xpubAddrs[1]: true,
 					xpubAddrs[2]: true,
@@ -2566,6 +2667,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				err:      nil,
 				xpub:     xpub,
 				entryNum: 3,
+				label:    "test",
 				addrs:    xpubAddrs,
 			},
 		},
@@ -2574,6 +2676,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			opts: wallet.Options{
 				XPub:  xpub,
 				ScanN: 5,
+				Label: "test",
 				Type:  wallet.WalletTypeXPub,
 				TF: mockTxnsFinder{
 					xpubAddrs[1]: true,
@@ -2583,6 +2686,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				err:      nil,
 				xpub:     xpub,
 				entryNum: 2,
+				label:    "test",
 				addrs:    xpubAddrs,
 			},
 		},
@@ -2592,6 +2696,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				XPub:  xpub,
 				ScanN: 5,
 				Type:  wallet.WalletTypeXPub,
+				Label: "test",
 				TF: mockTxnsFinder{
 					xpubAddrs[0]: true,
 				},
@@ -2601,6 +2706,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				xpub:     xpub,
 				entryNum: 1,
 				addrs:    xpubAddrs,
+				label:    "test",
 			},
 		},
 
@@ -2609,6 +2715,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			opts: wallet.Options{
 				XPub:  xpub,
 				ScanN: 5,
+				Label: "test",
 				Type:  wallet.WalletTypeXPub,
 				TF: mockTxnsFinder{
 					xpubAddrs[1]: true,
@@ -2618,6 +2725,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 				err:      nil,
 				xpub:     xpub,
 				entryNum: 2,
+				label:    "test",
 				addrs:    xpubAddrs,
 			},
 		},
@@ -2625,6 +2733,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			name: "xpub scan 5 get 5",
 			opts: wallet.Options{
 				XPub:  xpub,
+				Label: "test",
 				ScanN: 5,
 				Type:  wallet.WalletTypeXPub,
 				TF: mockTxnsFinder{
@@ -2634,6 +2743,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			},
 			expect: exp{
 				err:      nil,
+				label:    "test",
 				xpub:     xpub,
 				entryNum: 5,
 				addrs:    xpubAddrs,
@@ -2643,6 +2753,7 @@ func TestServiceCreateWalletWithScan(t *testing.T) {
 			name: "wallet api disabled",
 			opts: wallet.Options{
 				Seed:     seed,
+				Label:    "test",
 				Encrypt:  true,
 				Password: []byte("pwd"),
 				ScanN:    5,
@@ -3728,7 +3839,7 @@ func TestServiceUpdate(t *testing.T) {
 
 					// The wallet is encrypted so it cannot generate more addresses
 					// TODO: bip44 wallet can generate address without decrypting
-					_, err := w.GenerateAddresses(1)
+					_, err := w.GenerateAddresses(wallet.OptionGenerateN(1))
 					require.Equal(t, wallet.ErrWalletEncrypted, err)
 
 					return nil
@@ -3765,7 +3876,7 @@ func TestServiceUpdate(t *testing.T) {
 
 					// The wallet is encrypted so it cannot generate more addresses
 					// TODO: bip44 wallet can generate address without decrypting
-					_, err := w.GenerateAddresses(1)
+					_, err := w.GenerateAddresses(wallet.OptionGenerateN(1))
 					require.NoError(t, err)
 
 					return nil
@@ -3800,8 +3911,8 @@ func TestServiceUpdate(t *testing.T) {
 					w.SetLabel(w.Label() + "foo")
 
 					// The wallet is encrypted so it cannot generate more addresses
-					_, err := w.GenerateAddresses(1)
-					require.Equal(t, wallet.NewError(errors.New("A collection wallet does not implement GenerateAddresses")), err)
+					_, err := w.GenerateAddresses(wallet.OptionGenerateN(1))
+					require.NoError(t, err)
 
 					return nil
 				}
@@ -3834,7 +3945,7 @@ func TestServiceUpdate(t *testing.T) {
 					w.SetLabel(w.Label() + "foo")
 
 					// The wallet is encrypted so it cannot generate more addresses
-					_, err := w.GenerateAddresses(1)
+					_, err := w.GenerateAddresses(wallet.OptionGenerateN(1))
 					require.NoError(t, err)
 
 					return nil
@@ -3985,7 +4096,7 @@ func TestServiceUpdateSecrets(t *testing.T) {
 
 					// Modify the wallet pointer in order to check that the wallet gets saved
 					w.SetLabel(w.Label() + "foo")
-					_, err := w.GenerateAddresses(1)
+					_, err := w.GenerateAddresses(wallet.OptionGenerateN(1))
 					require.NoError(t, err)
 
 					return nil
@@ -4019,7 +4130,7 @@ func TestServiceUpdateSecrets(t *testing.T) {
 
 					// Modify the wallet pointer in order to check that the wallet gets saved
 					w.SetLabel(w.Label() + "foo")
-					_, err := w.GenerateAddresses(1)
+					_, err := w.GenerateAddresses(wallet.OptionGenerateN(1))
 					require.NoError(t, err)
 
 					return nil
@@ -4058,7 +4169,7 @@ func TestServiceUpdateSecrets(t *testing.T) {
 
 					// Modify the wallet pointer in order to check that the wallet gets saved
 					w.SetLabel(w.Label() + "foo")
-					_, err := w.GenerateAddresses(1)
+					_, err := w.GenerateAddresses(wallet.OptionGenerateN(1))
 					require.NoError(t, err)
 
 					return nil
@@ -4092,7 +4203,7 @@ func TestServiceUpdateSecrets(t *testing.T) {
 
 					// Modify the wallet pointer in order to check that the wallet gets saved
 					w.SetLabel(w.Label() + "foo")
-					_, err := w.GenerateAddresses(1)
+					_, err := w.GenerateAddresses(wallet.OptionGenerateN(1))
 					require.NoError(t, err)
 
 					return nil
@@ -4127,7 +4238,7 @@ func TestServiceUpdateSecrets(t *testing.T) {
 
 					// Modify the wallet pointer in order to check that the wallet gets saved
 					w.SetLabel(w.Label() + "foo")
-					_, err := w.GenerateAddresses(1)
+					_, err := w.GenerateAddresses(wallet.OptionGenerateN(1))
 					require.NoError(t, err)
 
 					return nil

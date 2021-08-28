@@ -65,6 +65,8 @@ var (
 	ErrInvalidPassword = NewError(errors.New("invalid password"))
 	// ErrMissingSeed is returned when trying to create wallet without a seed
 	ErrMissingSeed = NewError(errors.New("missing seed"))
+	// ErrMissingLabel is returned when trying to create wallet without label
+	ErrMissingLabel = NewError(errors.New("missing label"))
 	// ErrMissingAuthenticated is returned if try to decrypt a scrypt chacha20poly1305 encrypted wallet, and find no authenticated metadata.
 	ErrMissingAuthenticated = NewError(errors.New("missing authenticated metadata"))
 	// ErrMissingXPub is returned if try to create a XPub wallet without providing xpub key
@@ -97,6 +99,8 @@ var (
 	ErrWalletTypeNotRecoverable = NewError(errors.New("wallet type is not recoverable"))
 	// ErrWalletPermission is returned when updating a wallet without writing permission
 	ErrWalletPermission = NewError(errors.New("saving wallet permission denied"))
+	// ErrInvalidPrivateKeys is returned when creating a collection wallet with invalid private keys
+	ErrInvalidPrivateKeys = NewError(errors.New("invalid private keys"))
 
 	// ErrEntryNotFound is returned by GetEntry is the wallet does not contains the entry
 	ErrEntryNotFound = errors.New("entry not found")
@@ -141,22 +145,23 @@ func NewWalletFilename() string {
 
 // Options options that could be used when creating a wallet
 type Options struct {
-	Version        string
-	Type           string            // wallet type: deterministic, collection. Refers to which key generation mechanism is used.
-	Coin           CoinType          // coin type: skycoin, bitcoin, etc. Refers to which pubkey2addr method is used.
-	Bip44Coin      *bip44.CoinType   // bip44 path coin type
-	Label          string            // wallet label
-	Seed           string            // wallet seed
-	SeedPassphrase string            // wallet seed passphrase (bip44 wallets only)
-	Encrypt        bool              // whether the wallet need to be encrypted.
-	Password       []byte            // password that would be used for encryption, and would only be used when 'Encrypt' is true.
-	CryptoType     crypto.CryptoType // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
-	ScanN          uint64            // number of addresses that're going to be scanned for a balance. The highest address with a balance will be used.
-	GenerateN      uint64            // number of addresses to generate, regardless of balance
-	XPub           string            // xpub key (xpub wallets only)
-	Decoder        Decoder
-	TF             TransactionsFinder
-	Temp           bool // whether the wallet is created temporary in memory.
+	Version               string
+	Type                  string            // wallet type: deterministic, collection. Refers to which key generation mechanism is used.
+	Coin                  CoinType          // coin type: skycoin, bitcoin, etc. Refers to which pubkey2addr method is used.
+	Bip44Coin             *bip44.CoinType   // bip44 path coin type
+	Label                 string            // wallet label
+	Seed                  string            // wallet seed
+	SeedPassphrase        string            // wallet seed passphrase (bip44 wallets only)
+	Encrypt               bool              // whether the wallet need to be encrypted.
+	Password              []byte            // password that would be used for encryption, and would only be used when 'Encrypt' is true.
+	CryptoType            crypto.CryptoType // wallet encryption type, scrypt-chacha20poly1305 or sha256-xor.
+	ScanN                 uint64            // number of addresses that're going to be scanned for a balance. The highest address with a balance will be used.
+	GenerateN             uint64            // number of addresses to generate, regardless of balance
+	XPub                  string            // xpub key (xpub wallets only)
+	Decoder               Decoder
+	TF                    TransactionsFinder
+	Temp                  bool            // whether the wallet is created temporary in memory.
+	CollectionPrivateKeys []cipher.SecKey // private keys for collection wallet
 }
 
 func (opts Options) Validate() error {
@@ -220,8 +225,8 @@ type Wallet interface {
 	// GenerateAddresses generates N addresses,
 	// for bip44 wallet, if no options are specified, addresses will be generated
 	// on external chain of account with index 0.
-	GenerateAddresses(num uint64, options ...Option) ([]cipher.Addresser, error)
-	// Entries returns entries,
+	GenerateAddresses(options ...Option) ([]cipher.Addresser, error)
+	// GetEntries returns entries,
 	// for bip44 wallet if no options are used, entries on external chain of account
 	// with index 0 will be returned.
 	GetEntries(options ...Option) (Entries, error)
@@ -569,4 +574,45 @@ func SkycoinAddresses(addrs []cipher.Addresser) []cipher.Address {
 		skyAddrs[i] = a.(cipher.Address)
 	}
 	return skyAddrs
+}
+
+// ParsePrivateKeys parse private keys from a string
+// keys must be joined with commas
+func ParsePrivateKeys(keys string) ([]cipher.SecKey, error) {
+	if keys == "" {
+		return nil, nil
+	}
+
+	ss := strings.Split(keys, ",")
+	secKeys := make([]cipher.SecKey, 0, len(ss))
+	for _, s := range ss {
+		v := strings.TrimSpace(s)
+		if len(v) > 0 {
+			sk, err := cipher.SecKeyFromHex(v)
+			if err != nil {
+				return nil, fmt.Errorf("invalid private key: %v", err)
+			}
+			secKeys = append(secKeys, sk)
+		}
+	}
+	return secKeys, nil
+}
+
+func applyAdvancedOptions(options ...Option) *AdvancedOptions {
+	var advOpts AdvancedOptions
+	for _, f := range options {
+		f(&advOpts)
+	}
+
+	return &advOpts
+}
+
+// GetGenerateNFromOptions gets generateN from options
+func GetGenerateNFromOptions(options ...Option) uint64 {
+	return applyAdvancedOptions(options...).GenerateN
+}
+
+// GetPrivateKeysFromOptions gets private keys from options
+func GetPrivateKeysFromOptions(options ...Option) []cipher.SecKey {
+	return applyAdvancedOptions(options...).PrivateKeys
 }

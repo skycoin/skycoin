@@ -14,6 +14,7 @@ import (
 
 	"encoding/json"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -915,9 +916,20 @@ func TestWalletCreateHandler(t *testing.T) {
 			name:   "400 - missing seed",
 			method: http.MethodPost,
 			body: &httpBody{
-				Type: wallet.WalletTypeDeterministic,
+				Type:  wallet.WalletTypeDeterministic,
+				ScanN: "1",
 			},
-			status:  http.StatusBadRequest,
+			options: wallet.Options{
+				Type:     wallet.WalletTypeDeterministic,
+				Password: []byte{},
+				ScanN:    1,
+			},
+			status:                 http.StatusBadRequest,
+			gatewayCreateWalletErr: wallet.ErrMissingSeed,
+			gatewayCreateWalletResult: func(_ string, _ wallet.Options) wallet.Wallet {
+				var p *deterministic.Wallet
+				return p
+			},
 			err:     "400 Bad Request - missing seed",
 			wltName: "foo",
 		},
@@ -925,10 +937,23 @@ func TestWalletCreateHandler(t *testing.T) {
 			name:   "400 - missing label",
 			method: http.MethodPost,
 			body: &httpBody{
-				Type: wallet.WalletTypeDeterministic,
-				Seed: "foo",
+				Type:  wallet.WalletTypeDeterministic,
+				Seed:  "foo",
+				ScanN: "1",
 			},
-			status:  http.StatusBadRequest,
+			options: wallet.Options{
+				Type:     wallet.WalletTypeDeterministic,
+				Seed:     "foo",
+				Password: []byte{},
+				ScanN:    1,
+			},
+			status: http.StatusBadRequest,
+
+			gatewayCreateWalletErr: wallet.ErrMissingLabel,
+			gatewayCreateWalletResult: func(_ string, _ wallet.Options) wallet.Wallet {
+				var p *deterministic.Wallet
+				return p
+			},
 			err:     "400 Bad Request - missing label",
 			wltName: "foo",
 		},
@@ -943,19 +968,6 @@ func TestWalletCreateHandler(t *testing.T) {
 			},
 			status:  http.StatusBadRequest,
 			err:     "400 Bad Request - invalid scan value",
-			wltName: "foo",
-		},
-		{
-			name:   "400 - scan must be > 0",
-			method: http.MethodPost,
-			body: &httpBody{
-				Type:  wallet.WalletTypeDeterministic,
-				Seed:  "foo",
-				Label: "bar",
-				ScanN: "0",
-			},
-			status:  http.StatusBadRequest,
-			err:     "400 Bad Request - scan must be > 0",
 			wltName: "foo",
 		},
 		{
@@ -1015,6 +1027,7 @@ func TestWalletCreateHandler(t *testing.T) {
 				Type:     wallet.WalletTypeDeterministic,
 				Label:    "bar",
 				Seed:     "foo",
+				ScanN:    1,
 				Password: []byte{},
 			},
 			gatewayCreateWalletErr: wallet.ErrSeedUsed,
@@ -1038,6 +1051,7 @@ func TestWalletCreateHandler(t *testing.T) {
 				Type:     wallet.WalletTypeDeterministic,
 				Label:    "bar",
 				Seed:     "foo",
+				ScanN:    1,
 				Password: []byte{},
 			},
 			gatewayCreateWalletErr: errors.New("gateway.CreateWallet error"),
@@ -1093,7 +1107,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			gatewayCreateWalletResult: func(_ string, _ wallet.Options) wallet.Wallet {
 				w, err := deterministic.NewWallet(
 					"filename",
-					"",
+					"test",
 					"seed",
 					wallet.OptionGenerateN(5),
 				)
@@ -1104,6 +1118,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			responseBody: WalletResponse{
 				Meta: readable.WalletMeta{
 					Coin:       "skycoin",
+					Label:      "test",
 					Filename:   "filename",
 					Type:       "deterministic",
 					Version:    "0.4",
@@ -1136,7 +1151,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			gatewayCreateWalletResult: func(_ string, _ wallet.Options) wallet.Wallet {
 				w, err := deterministic.NewWallet(
 					"filename",
-					"",
+					"test",
 					"seed",
 					wallet.OptionGenerateN(5),
 				)
@@ -1147,6 +1162,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			responseBody: WalletResponse{
 				Meta: readable.WalletMeta{
 					Coin:       "skycoin",
+					Label:      "test",
 					Filename:   "filename",
 					Type:       "deterministic",
 					Version:    "0.4",
@@ -1177,7 +1193,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			gatewayCreateWalletResult: func(_ string, _ wallet.Options) wallet.Wallet {
 				w, err := deterministic.NewWallet(
 					"filename",
-					"",
+					"test",
 					"seed",
 					wallet.OptionGenerateN(5),
 				)
@@ -1188,6 +1204,7 @@ func TestWalletCreateHandler(t *testing.T) {
 			responseBody: WalletResponse{
 				Meta: readable.WalletMeta{
 					Coin:       "skycoin",
+					Label:      "test",
 					Filename:   "filename",
 					Type:       "deterministic",
 					Version:    "0.4",
@@ -1289,9 +1306,6 @@ func TestWalletCreateHandler(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
-			if tc.options.ScanN == 0 {
-				tc.options.ScanN = 1
-			}
 			gateway.On("TransactionsFinder").Return(&visor.TransactionsFinder{})
 			tc.options.TF = gateway.TransactionsFinder()
 			gateway.On("CreateWallet", "", tc.options).Return(tc.gatewayCreateWalletResult, tc.gatewayCreateWalletErr)
@@ -1956,8 +1970,13 @@ func TestWalletNewAddressesHandler(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			mb := mock.MatchedBy(func(option wallet.Option) bool {
+				n := wallet.GetGenerateNFromOptions(option)
+				return tc.n == n
+			})
 			gateway := &MockGatewayer{}
-			gateway.On("NewAddresses", tc.walletID, []byte(tc.password), tc.n).Return(tc.gatewayNewAddressesResult, tc.gatewayNewAddressesErr)
+			gateway.On("NewAddresses", tc.walletID,
+				[]byte(tc.password), mb).Return(tc.gatewayNewAddressesResult, tc.gatewayNewAddressesErr)
 
 			endpoint := "/api/v1/wallet/newAddress"
 
@@ -2284,7 +2303,7 @@ func TestGetWalletFolderHandler(t *testing.T) {
 }
 
 func TestNewWallet(t *testing.T) {
-	w, err := deterministic.NewWallet("filename", "", "seed", wallet.OptionGenerateN(1))
+	w, err := deterministic.NewWallet("filename", "test", "seed", wallet.OptionGenerateN(1))
 	require.NoError(t, err)
 	es, err := w.GetEntries()
 	require.NoError(t, err)
@@ -2623,7 +2642,7 @@ func TestEncryptWallet(t *testing.T) {
 				w: func() wallet.Wallet {
 					wlt, err := deterministic.NewWallet(
 						"wallet.wlt",
-						"",
+						"test",
 						"seed",
 						wallet.OptionPassword([]byte("pwd")),
 						wallet.OptionGenerateN(5),
@@ -2638,6 +2657,7 @@ func TestEncryptWallet(t *testing.T) {
 				Meta: readable.WalletMeta{
 					Coin:       "skycoin",
 					Filename:   "wallet.wlt",
+					Label:      "test",
 					Type:       "deterministic",
 					Version:    "0.4",
 					CryptoType: "scrypt-chacha20poly1305",
@@ -2966,6 +2986,13 @@ func makeEntries(seed []byte, n int) ([]wallet.Entry, []readable.WalletEntry) { 
 	return entries, responseEntries
 }
 
+type mockTxnsFinder struct {
+}
+
+func (tf *mockTxnsFinder) AddressesActivity(addrs []cipher.Addresser) ([]bool, error) {
+	return nil, nil
+}
+
 func TestWalletRecover(t *testing.T) {
 	type gatewayReturnPair struct {
 		w   wallet.Wallet
@@ -2980,6 +3007,7 @@ func TestWalletRecover(t *testing.T) {
 			Type:      wallet.WalletTypeDeterministic,
 			Coin:      wallet.CoinTypeSkycoin,
 			GenerateN: 10,
+			TF:        &mockTxnsFinder{},
 		})
 	require.NoError(t, err)
 	okWalletUnencryptedResponse, err := NewWalletResponse(okWalletUnencrypted)
@@ -2996,6 +3024,7 @@ func TestWalletRecover(t *testing.T) {
 			Password:   []byte("foopassword"),
 			CryptoType: crypto.CryptoTypeScryptChacha20poly1305Insecure,
 			GenerateN:  10,
+			TF:         &mockTxnsFinder{},
 		})
 	require.NoError(t, err)
 	okWalletEncryptedResponse, err := NewWalletResponse(okWalletEncrypted)

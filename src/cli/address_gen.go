@@ -52,9 +52,13 @@ func addressGenCmd() *cobra.Command {
 				return nil
 			}
 
+			// default label
 			label, err := c.Flags().GetString("label")
 			if err != nil {
 				return nil
+			}
+			if label == "" {
+				label = "default"
 			}
 
 			hideSecrets, err := c.Flags().GetBool("hide-secrets")

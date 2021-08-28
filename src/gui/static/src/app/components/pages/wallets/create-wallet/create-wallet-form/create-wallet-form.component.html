@@ -98,7 +98,7 @@
     </ng-container>
   </div>
   <!-- Password area. -->
-  <div *ngIf="!onboarding">
+  <div *ngIf="!onboarding && !loadTemporarily">
     <div>
       <!-- Password usage selector. -->
       <mat-checkbox class="-check" (change)="setEncrypt($event)" type="checkbox" id="encrypt" [checked]="true" [ngClass]="{'element-disabled' : busy}">
@@ -141,7 +141,40 @@
       </div>
     </div>
   </div>
+
+  <!-- Temporal wallet area. -->
+  <div *ngIf="!create">
+    <div class="form-field">
+      <app-arrow-link
+        text="wallet.new.advanced-options-link"
+        (pressed)="toggleAdvancedOptions()"
+        [pointDown]="!showAdvancedOptions"
+        [noPadding]="true"
+        [whiteText]="onboarding"
+        [ngClass]="{'element-disabled' : busy}">
+      </app-arrow-link>
+    </div>
+
+    <div *ngIf="showAdvancedOptions">
+      <mat-checkbox
+        #temporalWalletCheck
+        class="-check"
+        (change)="setTemporal($event)"
+        type="checkbox"
+        [checked]="loadTemporarily"
+        [ngClass]="{'element-disabled' : busy, '-white-check': onboarding}"
+      >
+        <span class="img-label-container"><img src="assets/img/temporal-gold.png"> {{ 'wallet.new.temporal-check' | translate }}</span>
+      </mat-checkbox>
+      <div class="row -passwords">
+        <div class="col-md-12">
+          <p [ngClass]="{'-info': !onboarding, 'white-text transparent-text': onboarding}">{{ 'wallet.new.temporal-info' | translate }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+
 <!-- Alert for non-standard manually entered seeds. -->
 <div class="alert-box" *ngIf="form.valid && !customSeedIsNormal && !checkingCustomSeed && !enterSeedWithAssistance">
   <mat-icon>error</mat-icon>

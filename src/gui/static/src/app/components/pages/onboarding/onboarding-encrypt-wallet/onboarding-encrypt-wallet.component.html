@@ -3,15 +3,15 @@
   <div class="row">
     <div class="row-container">
       <div class="-header">
-        <span>{{ 'wizard.encrypt-title' | translate }}</span>
+        <span>{{ (!creatingTemporal ? 'wizard.encrypt-title' : 'wizard.finish-temporal-title') | translate }}</span>
       </div>
       <div class="-description">
-        <p>{{ 'wizard.encrypt-desc' | translate }}</p>
+        <p>{{ (!creatingTemporal ? 'wizard.encrypt-desc' : 'wizard.finish-temporal-desc') | translate }}</p>
       </div>
     </div>
   </div>
   <!-- Checkbox. -->
-  <div class="row">
+  <div class="row" *ngIf="!creatingTemporal">
     <div class="row-container -check-container">
       <mat-checkbox class="-check" (change)="setEncrypt($event)" [checked]="true" type="checkbox" id="encrypt" [ngClass]="{'element-disabled' : isWorking}">
         <span class="img-label-container">
@@ -22,7 +22,7 @@
     </div>
   </div>
   <!-- Form. -->
-  <div class="row">
+  <div class="row" *ngIf="!creatingTemporal">
     <div class="row-container">
       <form [formGroup]="form">
         <div class="form-field">
@@ -59,7 +59,7 @@
   </div>
   <!-- Button area. -->
   <div class="row -buttons-footer">
-    <app-button class="dark-button -button-min-margin" [disabled]="form.enabled && !form.valid" (action)="emitCreatedPassword()" #button>
+    <app-button class="dark-button -button-min-margin" [disabled]="!creatingTemporal && (!form || (form.enabled && !form.valid))" (action)="emitCreatedPassword()" #button>
       {{ 'wizard.finish-button' | translate }}
     </app-button>
     <app-button class="ghost-button -button-min-margin" (action)="emitBack()" [ngClass]="{ 'd-none': isWorking }">

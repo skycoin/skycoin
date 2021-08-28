@@ -172,12 +172,13 @@ export class WalletsAndAddressesService {
 
   /**
    * Adds a new wallet to the node and adds it to the wallets list.
+   * @param temporal If the wallet will be loaded temporarily.
    * @param label Name given by the user to the wallet.
    * @param seed Wallet seed.
    * @param password Wallet password, if it will be encrypted, null otherwise.
    * @returns The returned observable returns nothing, but it can fail in case of error.
    */
-  createSoftwareWallet(label: string, seed: string, password?: string): Observable<void> {
+  createSoftwareWallet(temporal: boolean, label: string, seed: string, password?: string): Observable<void> {
     seed = seed.replace(/(\n|\r\n)$/, '');
 
     const params = {
@@ -187,19 +188,20 @@ export class WalletsAndAddressesService {
       type: 'deterministic',
     };
 
-    if (password) {
+    if (!temporal && password) {
       params['password'] = password;
       params['encrypt'] = true;
     }
 
     // Ask the node to create the wallet and return the data of the newly created wallet.
-    return this.apiService.post('wallet/create', params).pipe(map(response => {
+    return this.apiService.post(!temporal ? 'wallet/create' : 'wallet/createTemp', params).pipe(map(response => {
       const wallet: WalletBase = {
         label: response.meta.label,
         // The filename is saved as the id of the wallet.
         id: response.meta.filename,
         addresses: [],
         encrypted: response.meta.encrypted,
+        temporal: temporal,
         isHardware: false,
         hasHwSecurityWarnings: false,
         stopShowingHwSecurityPopup: true,
@@ -349,6 +351,7 @@ export class WalletsAndAddressesService {
       stopShowingHwSecurityPopup: stopShowingHwSecurityPopup,
       addresses: addresses,
       encrypted: false,
+      temporal: false,
       isHardware: true,
     };
   }
@@ -367,6 +370,7 @@ export class WalletsAndAddressesService {
           id: wallet.meta.filename,
           addresses: [],
           encrypted: wallet.meta.encrypted,
+          temporal: wallet.meta.temp,
           isHardware: false,
           hasHwSecurityWarnings: false,
           stopShowingHwSecurityPopup: true,

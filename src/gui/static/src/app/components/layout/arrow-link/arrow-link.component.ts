@@ -14,6 +14,8 @@ export class ArrowLinkComponent implements OnDestroy {
   // Makes the arrow at the right to point up (false) or down (true).
   @Input() pointDown = true;
   @Input() text = '';
+  // If the link must be white.
+  @Input() whiteText: boolean;
   @Output() pressed = new EventEmitter<any>();
 
   onClick(event) {

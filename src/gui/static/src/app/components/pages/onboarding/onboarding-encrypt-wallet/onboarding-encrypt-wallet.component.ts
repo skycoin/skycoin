@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output, ViewChild, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, ViewChild, ChangeDetectorRef, OnDestroy, Input } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
 
 import { ButtonComponent } from '../../../layout/button/button.component';
@@ -20,6 +20,20 @@ export class OnboardingEncryptWalletComponent implements OnInit, OnDestroy {
   // Emits when the user presses the button for going back to the previous step of the wizard.
   @Output() onBack = new EventEmitter();
   form: FormGroup;
+
+  // If creating a temporal wallet.
+  creatingTemporal_ = false;
+  @Input() set creatingTemporal(val: boolean) {
+    this.creatingTemporal_ = val;
+    setTimeout(() => {
+      if (this.form) {
+        this.form.updateValueAndValidity();
+      }
+    });
+  }
+  get creatingTemporal(): boolean {
+    return this.creatingTemporal_;
+  }
 
   // Vars with the validation error messages.
   password1ErrorMsg = '';
@@ -53,13 +67,13 @@ export class OnboardingEncryptWalletComponent implements OnInit, OnDestroy {
 
   // Emits an event for going to the next step of the wizard.
   emitCreatedPassword() {
-    if ((this.form.enabled && !this.form.valid) || this.button.isLoading()) {
+    if ((!this.creatingTemporal && (this.form.enabled && !this.form.valid)) || this.button.isLoading()) {
       return;
     }
 
     this.button.setLoading();
 
-    this.onPasswordCreated.emit(this.form.enabled ? this.form.get('password').value : null);
+    this.onPasswordCreated.emit(!this.creatingTemporal && this.form.enabled ? this.form.get('password').value : null);
 
     this.changeDetector.detectChanges();
   }

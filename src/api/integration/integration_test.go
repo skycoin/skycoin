@@ -2135,6 +2135,21 @@ func TestStableTransaction(t *testing.T) {
 	}
 }
 
+func TestStableGetTransactionsNum(t *testing.T) {
+	if !doStable(t) {
+		return
+	}
+
+	c := newClient()
+	num, err := c.GetTransactionsNum()
+	if err != nil {
+		require.NoError(t, err)
+		return
+	}
+
+	require.Equal(t, uint64(181), num, fmt.Sprintf("expect: %v, got: %v", 181, num))
+}
+
 func TestLiveTransactionVerbose(t *testing.T) {
 	if !doLive(t) {
 		return

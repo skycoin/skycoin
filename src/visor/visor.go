@@ -1287,6 +1287,23 @@ func (vs *Visor) GetConfirmedTransaction(txnHash cipher.SHA256) (*coin.Transacti
 	return &histTxn.Txn, nil
 }
 
+// GetTransactionsNum returns the total number of transactions that have been executed
+func (vs *Visor) GetTransactionsNum() (uint64, error) {
+	var (
+		num uint64
+		err error
+	)
+
+	if err := vs.db.View("GetTransactionsNum", func(tx *dbutil.Tx) error {
+		num, err = vs.history.GetTransactionsNum(tx)
+		return err
+	}); err != nil {
+		return 0, err
+	}
+
+	return num, nil
+}
+
 // GetSignedBlockByHash get block of specific hash header, return nil on not found.
 func (vs *Visor) GetSignedBlockByHash(hash cipher.SHA256) (*coin.SignedBlock, error) {
 	var sb *coin.SignedBlock

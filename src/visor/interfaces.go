@@ -18,6 +18,7 @@ type Historyer interface {
 	GetUxOuts(tx *dbutil.Tx, uxids []cipher.SHA256) ([]historydb.UxOut, error)
 	ParseBlock(tx *dbutil.Tx, b coin.Block) error
 	GetTransaction(tx *dbutil.Tx, hash cipher.SHA256) (*historydb.Transaction, error)
+	GetTransactionsNum(tx *dbutil.Tx) (uint64, error)
 	GetOutputsForAddress(tx *dbutil.Tx, address cipher.Address) ([]historydb.UxOut, error)
 	GetTransactionHashesForAddresses(tx *dbutil.Tx, addresses []cipher.Address) ([]cipher.SHA256, error)
 	AddressSeen(tx *dbutil.Tx, address cipher.Address) (bool, error)

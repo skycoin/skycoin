@@ -327,8 +327,33 @@ func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
+// Returns total transactions number
+// Method: GET
+// URI: /api/v1/transactions/num
+func transactionsNumHandler(gateway Gatewayer) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			writeError405Response(w)
+			return
+		}
+		num, err := gateway.GetTransactionsNum()
+		if err != nil {
+			writeError500Response(w, err.Error())
+			return
+		}
+
+		var rsp = struct {
+			TxnsTotalNum uint64 `json:"txns_num"`
+		}{
+			num,
+		}
+
+		wh.SendJSONOr500(logger, w, rsp)
+	})
+}
+
 // Returns transactions that match the filters.
-// Method: GET, POST
+// Method: GET
 // URI: /api/v2/transactions
 // Args:
 //     addrs: Comma separated addresses [optional, returns all transactions if no address provided]
@@ -359,7 +384,7 @@ func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		// Initialize transaction filters
-		flts := []visor.TxFilter{}
+		var flts []visor.TxFilter
 		if len(addrs) > 0 {
 			flts = append(flts, visor.NewAddrsFilter(addrs))
 		}

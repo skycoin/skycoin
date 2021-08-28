@@ -2,7 +2,7 @@ package historydb
 
 // transaction.go mainly provides transaction corresponding buckets and apis,
 // The transactions bucket, tx hash as key, and tx as value, it's the main bucket that stores the
-// transaction value. All other buckets that index different field of transaction will only records the
+// transaction value. All other buckets that index different field of transaction will only record the
 // transaction hash, and get the tx value from transactions bucket.
 
 import (
@@ -104,4 +104,9 @@ func (txs *transactions) forEach(tx *dbutil.Tx, f func(cipher.SHA256, *Transacti
 
 		return f(hash, &txn)
 	})
+}
+
+// len returns the total number of all transactions
+func (txs *transactions) len(tx *dbutil.Tx) (uint64, error) {
+	return dbutil.Len(tx, TransactionsBkt)
 }

@@ -395,6 +395,11 @@ func (hd HistoryDB) Verify(tx *dbutil.Tx, b *coin.SignedBlock, indexesMap *Index
 	return nil
 }
 
+// GetTransactionsNum returns all transactions number
+func (hd HistoryDB) GetTransactionsNum(tx *dbutil.Tx) (uint64, error) {
+	return hd.txns.len(tx)
+}
+
 // ErrHistoryDBCorrupted is returned when found the historydb is corrupted
 type ErrHistoryDBCorrupted struct {
 	error

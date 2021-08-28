@@ -49,6 +49,7 @@ func TestBip44NewWallet(t *testing.T) {
 		label          string
 		seed           string
 		opts           []wallet.Option
+		isTemp         bool
 		seedPassphrase string
 		expect         expect
 		err            error
@@ -325,6 +326,7 @@ func TestBip44NewWallet(t *testing.T) {
 				wallet.OptionBip44Coin(&newBip44Type),
 				wallet.OptionTemp(true),
 			},
+			isTemp: true,
 			expect: expect{
 				wallet.CoinTypeSkycoin,
 				newBip44Type,
@@ -338,7 +340,7 @@ func TestBip44NewWallet(t *testing.T) {
 	for _, tc := range tt {
 		for _, encrypt := range []bool{false, true} {
 			for _, ct := range crypto.TypesInsecure() {
-				name := fmt.Sprintf("%s crypto=%v encrypt-%v", tc.name, ct, encrypt)
+				name := fmt.Sprintf("%s crypto=%v encrypt-%v temp-%v", tc.name, ct, encrypt, tc.isTemp)
 				opts := tc.opts
 				if encrypt {
 					opts = append(opts, wallet.OptionEncrypt(true))
@@ -348,8 +350,13 @@ func TestBip44NewWallet(t *testing.T) {
 
 				t.Run(name, func(t *testing.T) {
 					w, err := NewWallet(tc.filename, tc.label, tc.seed, tc.seedPassphrase, opts...)
-					require.Equal(t, tc.err, err, fmt.Sprintf("want: %v got: %v", tc.err, err))
 					if err != nil {
+						if encrypt && tc.isTemp {
+							require.Equal(t, wallet.ErrEncryptTempWallet, err)
+							return
+						}
+
+						require.Equal(t, tc.err, err, fmt.Sprintf("want: %v got: %v", tc.err, err))
 						return
 					}
 					require.Equal(t, tc.filename, w.Meta.Filename())
@@ -483,6 +490,14 @@ func TestWalletLock(t *testing.T) {
 			},
 			lockPwd: []byte("pwd"),
 			err:     wallet.ErrWalletEncrypted,
+		},
+		{
+			name: "temp wallet",
+			opts: []wallet.Option{
+				wallet.OptionTemp(true),
+			},
+			lockPwd: []byte("pwd"),
+			err:     wallet.ErrEncryptTempWallet,
 		},
 	}
 

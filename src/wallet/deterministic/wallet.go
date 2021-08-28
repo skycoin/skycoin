@@ -101,6 +101,10 @@ func NewWallet(filename, label, seed string, options ...wallet.Option) (*Wallet,
 
 	// encrypts wallet if options.Encrypt is true
 	if advOpts.Encrypt {
+		if wlt.IsTemp() {
+			return nil, wallet.ErrEncryptTempWallet
+		}
+
 		if len(advOpts.Password) == 0 {
 			return nil, wallet.ErrMissingPassword
 		}
@@ -171,6 +175,10 @@ func (w *Wallet) Deserialize(data []byte) error {
 
 // Lock encrypts the sensitive data of the wallet
 func (w *Wallet) Lock(password []byte) error {
+	if w.IsTemp() {
+		return wallet.ErrEncryptTempWallet
+	}
+
 	if len(password) == 0 {
 		return wallet.ErrMissingPassword
 	}

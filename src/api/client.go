@@ -1159,6 +1159,18 @@ func (c *Client) UnconfirmedTransactionsVerbose(addrs []string) ([]readable.Tran
 	return r, nil
 }
 
+// GetTransactionsNum makes a GET request to /api/v1/transactions/num
+func (c *Client) GetTransactionsNum() (uint64, error) {
+	var r struct {
+		TxnsNum uint64 `json:"txns_num"`
+	}
+	if err := c.Get("api/v1/transactions/num", &r); err != nil {
+		return 0, err
+	}
+
+	return r.TxnsNum, nil
+}
+
 // InjectTransaction makes a request to POST /api/v1/injectTransaction.
 func (c *Client) InjectTransaction(txn *coin.Transaction) (string, error) {
 	rawTxn, err := txn.SerializeHex()

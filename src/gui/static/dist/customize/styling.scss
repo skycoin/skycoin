@@ -2,15 +2,15 @@
 * General values for altering the appearance of the app.
 *********************/
 
-// Main color, used for links and some other UI elements.
+/* Main color, used for links and some other UI elements. */
 $app-main-color: #0072ff;
-// Colors for the app gradient, used as background on the wizard and some buttons.
+/* Colors for the app gradient, used as background on the wizard and some buttons. */
 $app-gradient-dark: #0072ff;
 $app-gradient-light: #00C3ff;
 
-// Color of the texts shown on the app header.
+/* Color of the texts shown on the app header. */
 $header-text-color: #fff;
-// Color for the small background shown behind the available hours, on the app header.
+/* Color for the small background shown behind the available hours, on the app header. */
 $header-hours-background-color: rgba(255, 255, 255, 0.3);
-// Color text with the available hours, on the app header.
+/* Color text with the available hours, on the app header. */
 $header-hours-text-color: #000;

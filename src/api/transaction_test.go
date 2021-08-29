@@ -1522,7 +1522,7 @@ func TestTransactionsHandlerV2(t *testing.T) {
 
 			gateway := &MockGatewayer{}
 
-			flts := []visor.TxFilter{}
+			var flts []visor.TxFilter
 			var page = uint64(1)
 			var pageSize = visor.DefaultTxnPageSize
 			for _, arg := range tc.args {

@@ -16,6 +16,7 @@ import (
 	"github.com/skycoin/skycoin/src/readable"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/wallet"
+	"github.com/skycoin/skycoin/src/wallet/bip44wallet"
 )
 
 // UnconfirmedTxnsResponse contains unconfirmed transaction data
@@ -1172,4 +1173,76 @@ func walletRecoverHandler(gateway Gatewayer) http.HandlerFunc {
 			Data: rlt,
 		})
 	}
+}
+
+// URI: /api/v1/wallet/xpub
+// Method: GET
+// Args:
+//  id: wallet id
+//  path: bip44 xpub path, e.g: 0/0, or 0/1
+// Gets xpub key of a given bip44 wallet in specific path
+func walletXPubKeyHandler(gateway Gatewayer) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			resp := NewHTTPErrorResponse(http.StatusMethodNotAllowed, "")
+			writeHTTPResponse(w, resp)
+			return
+		}
+
+		id := r.FormValue("id")
+		if id == "" {
+			wh.Error400(w, "missing wallet id")
+			return
+		}
+
+		path := r.FormValue("path")
+		if path == "" {
+			wh.Error400(w, "missing xpub path")
+			return
+		}
+
+		_, err := bip44wallet.ParseXPubPath(path)
+		if err != nil {
+			wh.Error400(w, err.Error())
+			return
+		}
+
+		wlt, err := gateway.GetWallet(id)
+		if err != nil {
+			switch err {
+			case wallet.ErrWalletAPIDisabled:
+				wh.Error403(w, "")
+			case wallet.ErrWalletNotExist:
+				wh.Error404(w, "")
+			default:
+				wh.Error500(w, err.Error())
+			}
+			return
+		}
+
+		if wlt.Type() != wallet.WalletTypeBip44 {
+			wh.Error400(w, fmt.Sprintf("%v type wallet does not support xpub key", wlt.Type()))
+			return
+		}
+
+		bip44Wlt, ok := wlt.(*bip44wallet.Wallet)
+		if !ok {
+			wh.Error400(w, "invalid bip44 wallet type assertion")
+			return
+		}
+
+		xpubKey, err := bip44Wlt.GetXPubKey(path)
+		if err != nil {
+			wh.Error400(w, err.Error())
+			return
+		}
+
+		var rsp = struct {
+			XpubKey string `json:"xpub_key"`
+		}{
+			xpubKey,
+		}
+
+		wh.SendJSONOr500(logger, w, rsp)
+	})
 }

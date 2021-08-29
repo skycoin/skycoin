@@ -17,6 +17,8 @@ const (
 )
 
 var (
+	testSkycoinExternalXPubKey   = "xpub6EMRsT95ntbCFRR2Z6WppnGss1SijAkarfKoRM8tft66tuJh2nt4aJi13S21hUCLZL4cbFBXgHuxipmsS7dj1DW1s4NRup3hzxWfqUdGYv7"
+	testSkycoinInternalXPubKey   = "xpub6EMRsT95ntbCGrt4gKqcJTx8rFbBLSvPzxFGfq9DVqFyA6UmDYXAoeTNFs3nmuycUhJG1hC1R5rSbEMK1EiSHotne9hYG55pyPLj8kLuutb"
 	testSkycoinExternalAddresses = []string{
 		"2JBfeo6y6FQn2rCiuhdQ8F1E6bj6rpnHo5U",
 		"28Wn9scn3wb5nkScHiTHgNmLjSUS3F2SqAj",

@@ -9,6 +9,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/params"
+	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
@@ -338,7 +339,7 @@ func (bc Blockchain) VerifyBlockTxnConstraints(tx *dbutil.Tx, txn coin.Transacti
 	if err != nil {
 		switch err.(type) {
 		case blockdb.ErrUnspentNotExist:
-			return NewErrTxnViolatesHardConstraint(err)
+			return transaction.NewErrTxnViolatesHardConstraint(err)
 		default:
 			return err
 		}
@@ -353,7 +354,7 @@ func (bc Blockchain) VerifyBlockTxnConstraints(tx *dbutil.Tx, txn coin.Transacti
 }
 
 func (bc Blockchain) verifyBlockTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction, head *coin.SignedBlock, uxIn coin.UxArray) error {
-	if err := VerifyBlockTxnConstraints(txn, head.Head, uxIn); err != nil {
+	if err := transaction.VerifyBlockTxnConstraints(txn, head.Head, uxIn); err != nil {
 		return err
 	}
 
@@ -370,7 +371,7 @@ func (bc Blockchain) verifyBlockTxnHardConstraints(tx *dbutil.Tx, txn coin.Trans
 				return err
 			} else if contains {
 				err := errors.New("New unspent collides with existing unspent")
-				return NewErrTxnViolatesHardConstraint(err)
+				return transaction.NewErrTxnViolatesHardConstraint(err)
 			}
 		}
 	}
@@ -380,14 +381,14 @@ func (bc Blockchain) verifyBlockTxnHardConstraints(tx *dbutil.Tx, txn coin.Trans
 
 // VerifySingleTxnHardConstraints checks that the transaction does not violate hard constraints.
 // for transactions that are not included in a block.
-func (bc Blockchain) VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction, signed TxnSignedFlag) error {
+func (bc Blockchain) VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction, signed transaction.TxnSignedFlag) error {
 	// NOTE: Unspent().GetArray() returns an error if not all txn.In can be found
 	// This prevents double spends
 	uxIn, err := bc.Unspent().GetArray(tx, txn.In)
 	if err != nil {
 		switch err.(type) {
 		case blockdb.ErrUnspentNotExist:
-			return NewErrTxnViolatesHardConstraint(err)
+			return transaction.NewErrTxnViolatesHardConstraint(err)
 		default:
 			return err
 		}
@@ -404,12 +405,12 @@ func (bc Blockchain) VerifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Tran
 // VerifySingleTxnSoftHardConstraints checks that the transaction does not violate hard or soft constraints,
 // for transactions that are not included in a block.
 // Hard constraints are checked before soft constraints.
-func (bc Blockchain) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, distParams params.Distribution, verifyParams params.VerifyTxn, signed TxnSignedFlag) (*coin.SignedBlock, coin.UxArray, error) {
+func (bc Blockchain) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.Transaction, distParams params.Distribution, verifyParams params.VerifyTxn, signed transaction.TxnSignedFlag) (*coin.SignedBlock, coin.UxArray, error) {
 	// NOTE: Unspent().GetArray() returns an error if not all txn.In can be found
 	// This prevents double spends
 	uxIn, err := bc.Unspent().GetArray(tx, txn.In)
 	if err != nil {
-		return nil, nil, NewErrTxnViolatesHardConstraint(err)
+		return nil, nil, transaction.NewErrTxnViolatesHardConstraint(err)
 	}
 
 	head, err := bc.Head(tx)
@@ -422,15 +423,15 @@ func (bc Blockchain) VerifySingleTxnSoftHardConstraints(tx *dbutil.Tx, txn coin.
 		return nil, nil, err
 	}
 
-	if err := VerifySingleTxnSoftConstraints(txn, head.Time(), uxIn, distParams, verifyParams); err != nil {
+	if err := transaction.VerifySingleTxnSoftConstraints(txn, head.Time(), uxIn, distParams, verifyParams); err != nil {
 		return nil, nil, err
 	}
 
 	return head, uxIn, nil
 }
 
-func (bc Blockchain) verifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction, head *coin.SignedBlock, uxIn coin.UxArray, signed TxnSignedFlag) error {
-	if err := VerifySingleTxnHardConstraints(txn, head.Head, uxIn, signed); err != nil {
+func (bc Blockchain) verifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Transaction, head *coin.SignedBlock, uxIn coin.UxArray, signed transaction.TxnSignedFlag) error {
+	if err := transaction.VerifySingleTxnHardConstraints(txn, head.Head, uxIn, signed); err != nil {
 		return err
 	}
 
@@ -447,7 +448,7 @@ func (bc Blockchain) verifySingleTxnHardConstraints(tx *dbutil.Tx, txn coin.Tran
 				return err
 			} else if contains {
 				err := errors.New("New unspent collides with existing unspent")
-				return NewErrTxnViolatesHardConstraint(err)
+				return transaction.NewErrTxnViolatesHardConstraint(err)
 			}
 		}
 	}
@@ -569,9 +570,9 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 		// signature indices and duplicate spends within itself
 		if err := bc.VerifyBlockTxnConstraints(tx, txn); err != nil {
 			switch err.(type) {
-			case ErrTxnViolatesSoftConstraint:
+			case transaction.ErrTxnViolatesSoftConstraint:
 				logger.Critical().WithError(err).Panic("bc.VerifyBlockTxnConstraints should not return a ErrTxnViolatesSoftConstraint error")
-			case ErrTxnViolatesHardConstraint:
+			case transaction.ErrTxnViolatesHardConstraint:
 				if bc.cfg.Arbitrating {
 					skip[i] = struct{}{}
 					continue

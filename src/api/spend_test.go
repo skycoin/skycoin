@@ -2020,7 +2020,7 @@ func TestWalletSignTransaction(t *testing.T) {
 			method:                    http.MethodPost,
 			body:                      validBody,
 			status:                    http.StatusBadRequest,
-			gatewaySignTransactionErr: visor.NewErrTxnViolatesHardConstraint(errors.New("bad txn")),
+			gatewaySignTransactionErr: transaction.NewErrTxnViolatesHardConstraint(errors.New("bad txn")),
 			httpResponse:              NewHTTPErrorResponse(http.StatusBadRequest, "Transaction violates hard constraint: bad txn"),
 		},
 

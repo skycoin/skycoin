@@ -9,9 +9,9 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/params"
+	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/useragent"
-	"github.com/skycoin/skycoin/src/visor"
 )
 
 func TestDivideHashes(t *testing.T) {
@@ -138,7 +138,7 @@ func TestVerifyUserTxnAgainstPeer(t *testing.T) {
 
 		{
 			name: "invalid txn size",
-			err:  visor.ErrTxnExceedsMaxBlockSize,
+			err:  transaction.ErrTxnExceedsMaxBlockSize,
 			txn: coin.Transaction{
 				Out: []coin.TransactionOutput{
 					{

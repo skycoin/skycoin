@@ -25,6 +25,7 @@ import (
 	"github.com/skycoin/skycoin/src/daemon/gnet"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/visor"
 )
 
@@ -752,7 +753,7 @@ func TestInjectTransaction(t *testing.T) {
 			err:                  "400 Bad Request - Transaction violates hard constraint: bad transaction",
 			httpBody:             string(validTxnBodyJSON),
 			injectTransactionArg: validTransaction,
-			injectTransactionError: visor.ErrTxnViolatesHardConstraint{
+			injectTransactionError: transaction.ErrTxnViolatesHardConstraint{
 				Err: errors.New("bad transaction"),
 			},
 		},
@@ -763,7 +764,7 @@ func TestInjectTransaction(t *testing.T) {
 			err:                  "400 Bad Request - Transaction violates hard constraint: bad transaction",
 			httpBody:             string(validTxnBodyNoBroadcastJSON),
 			injectTransactionArg: validTransaction,
-			injectTransactionError: visor.ErrTxnViolatesHardConstraint{
+			injectTransactionError: transaction.ErrTxnViolatesHardConstraint{
 				Err: errors.New("bad transaction"),
 			},
 		},
@@ -1709,7 +1710,7 @@ func TestVerifyTransaction(t *testing.T) {
 		status                        int
 		httpBody                      string
 		gatewayVerifyTxnVerboseArg    coin.Transaction
-		gatewayVerifyTxnVerboseSigned visor.TxnSignedFlag
+		gatewayVerifyTxnVerboseSigned transaction.TxnSignedFlag
 		gatewayVerifyTxnVerboseResult verifyTxnVerboseResult
 		httpResponse                  HTTPResponse
 		csrfDisabled                  bool
@@ -1766,10 +1767,10 @@ func TestVerifyTransaction(t *testing.T) {
 			status:                        http.StatusUnprocessableEntity,
 			httpBody:                      string(invalidTxnEmptyAddressBodyJSON),
 			gatewayVerifyTxnVerboseArg:    invalidTxnEmptyAddress.txn,
-			gatewayVerifyTxnVerboseSigned: visor.TxnSigned,
+			gatewayVerifyTxnVerboseSigned: transaction.TxnSigned,
 			gatewayVerifyTxnVerboseResult: verifyTxnVerboseResult{
 				Uxouts: invalidTxnEmptyAddress.inputs,
-				Err:    visor.NewErrTxnViolatesUserConstraint(errors.New("Transaction.Out contains an output sending to an empty address")),
+				Err:    transaction.NewErrTxnViolatesUserConstraint(errors.New("Transaction.Out contains an output sending to an empty address")),
 			},
 			httpResponse: HTTPResponse{
 				Data: newVerifyTxnResponseJSON(t, &invalidTxnEmptyAddress.txn, invalidTxnEmptyAddress.inputs, false, false),
@@ -1786,10 +1787,10 @@ func TestVerifyTransaction(t *testing.T) {
 			status:                        http.StatusUnprocessableEntity,
 			httpBody:                      string(unsignedTxnBodyJSON),
 			gatewayVerifyTxnVerboseArg:    unsignedTxnAndInputs.txn,
-			gatewayVerifyTxnVerboseSigned: visor.TxnSigned,
+			gatewayVerifyTxnVerboseSigned: transaction.TxnSigned,
 			gatewayVerifyTxnVerboseResult: verifyTxnVerboseResult{
 				Uxouts: unsignedTxnAndInputs.inputs,
-				Err:    visor.NewErrTxnViolatesUserConstraint(errors.New("Transaction.Out contains an output sending to an empty address")),
+				Err:    transaction.NewErrTxnViolatesUserConstraint(errors.New("Transaction.Out contains an output sending to an empty address")),
 			},
 			httpResponse: HTTPResponse{
 				Data: newVerifyTxnResponseJSON(t, &unsignedTxnAndInputs.txn, unsignedTxnAndInputs.inputs, false, true),
@@ -1806,7 +1807,7 @@ func TestVerifyTransaction(t *testing.T) {
 			status:                        http.StatusInternalServerError,
 			httpBody:                      string(validTxnBodyJSON),
 			gatewayVerifyTxnVerboseArg:    txnAndInputs.txn,
-			gatewayVerifyTxnVerboseSigned: visor.TxnSigned,
+			gatewayVerifyTxnVerboseSigned: transaction.TxnSigned,
 			gatewayVerifyTxnVerboseResult: verifyTxnVerboseResult{
 				Err: errors.New("verify transaction failed"),
 			},
@@ -1819,7 +1820,7 @@ func TestVerifyTransaction(t *testing.T) {
 			status:                        http.StatusUnprocessableEntity,
 			httpBody:                      string(validTxnBodyJSON),
 			gatewayVerifyTxnVerboseArg:    txnAndInputs.txn,
-			gatewayVerifyTxnVerboseSigned: visor.TxnSigned,
+			gatewayVerifyTxnVerboseSigned: transaction.TxnSigned,
 			gatewayVerifyTxnVerboseResult: verifyTxnVerboseResult{
 				Uxouts:         txnAndInputs.inputs,
 				IsTxnConfirmed: true,
@@ -1839,7 +1840,7 @@ func TestVerifyTransaction(t *testing.T) {
 			status:                        http.StatusOK,
 			httpBody:                      string(unsignedTxnBodyUnsignedJSON),
 			gatewayVerifyTxnVerboseArg:    unsignedTxnAndInputs.txn,
-			gatewayVerifyTxnVerboseSigned: visor.TxnUnsigned,
+			gatewayVerifyTxnVerboseSigned: transaction.TxnUnsigned,
 			gatewayVerifyTxnVerboseResult: verifyTxnVerboseResult{
 				Uxouts: unsignedTxnAndInputs.inputs,
 			},
@@ -1854,7 +1855,7 @@ func TestVerifyTransaction(t *testing.T) {
 			status:                        http.StatusOK,
 			httpBody:                      string(validTxnBodyJSON),
 			gatewayVerifyTxnVerboseArg:    txnAndInputs.txn,
-			gatewayVerifyTxnVerboseSigned: visor.TxnSigned,
+			gatewayVerifyTxnVerboseSigned: transaction.TxnSigned,
 			gatewayVerifyTxnVerboseResult: verifyTxnVerboseResult{
 				Uxouts: txnAndInputs.inputs,
 			},

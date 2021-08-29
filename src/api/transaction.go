@@ -14,6 +14,7 @@ import (
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/daemon"
 	"github.com/skycoin/skycoin/src/readable"
+	"github.com/skycoin/skycoin/src/transaction"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/util/mathutil"
 	"github.com/skycoin/skycoin/src/visor"
@@ -532,9 +533,9 @@ func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 		if v.NoBroadcast {
 			if err := gateway.InjectTransaction(txn); err != nil {
 				switch err.(type) {
-				case visor.ErrTxnViolatesUserConstraint,
-					visor.ErrTxnViolatesHardConstraint,
-					visor.ErrTxnViolatesSoftConstraint:
+				case transaction.ErrTxnViolatesUserConstraint,
+					transaction.ErrTxnViolatesHardConstraint,
+					transaction.ErrTxnViolatesSoftConstraint:
 					wh.Error400(w, err.Error())
 				default:
 					wh.Error500(w, err.Error())
@@ -544,9 +545,9 @@ func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 		} else {
 			if err := gateway.InjectBroadcastTransaction(txn); err != nil {
 				switch err.(type) {
-				case visor.ErrTxnViolatesUserConstraint,
-					visor.ErrTxnViolatesHardConstraint,
-					visor.ErrTxnViolatesSoftConstraint:
+				case transaction.ErrTxnViolatesUserConstraint,
+					transaction.ErrTxnViolatesHardConstraint,
+					transaction.ErrTxnViolatesSoftConstraint:
 					wh.Error400(w, err.Error())
 				default:
 					if daemon.IsBroadcastFailure(err) {
@@ -698,18 +699,18 @@ func verifyTxnHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		signed := visor.TxnSigned
+		signed := transaction.TxnSigned
 		if req.Unsigned {
-			signed = visor.TxnUnsigned
+			signed = transaction.TxnUnsigned
 		}
 
 		var resp HTTPResponse
 		inputs, isTxnConfirmed, err := gateway.VerifyTxnVerbose(txn, signed)
 		if err != nil {
 			switch err.(type) {
-			case visor.ErrTxnViolatesSoftConstraint,
-				visor.ErrTxnViolatesHardConstraint,
-				visor.ErrTxnViolatesUserConstraint:
+			case transaction.ErrTxnViolatesSoftConstraint,
+				transaction.ErrTxnViolatesHardConstraint,
+				transaction.ErrTxnViolatesUserConstraint:
 				resp.Error = &HTTPError{
 					Code:    http.StatusUnprocessableEntity,
 					Message: err.Error(),

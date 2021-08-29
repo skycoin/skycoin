@@ -74,7 +74,7 @@ type Visorer interface {
 	GetLastBlocksVerbose(num uint64) ([]coin.SignedBlock, [][][]visor.TransactionInput, error)
 	GetUnspentOutputsSummary(filters []visor.OutputsFilter) (*visor.UnspentOutputsSummary, error)
 	GetBalanceOfAddresses(addrs []cipher.Address) ([]wallet.BalancePair, error)
-	VerifyTxnVerbose(txn *coin.Transaction, signed visor.TxnSignedFlag) ([]visor.TransactionInput, bool, error)
+	VerifyTxnVerbose(txn *coin.Transaction, signed transaction.TxnSignedFlag) ([]visor.TransactionInput, bool, error)
 	AddressCount() (uint64, error)
 	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, uint64, error)
 	GetSpentOutputsForAddresses(addr []cipher.Address) ([][]historydb.UxOut, uint64, error)

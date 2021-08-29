@@ -1383,11 +1383,11 @@ func (_m *MockGatewayer) UpdateWalletLabel(wltID string, label string) error {
 }
 
 // VerifyTxnVerbose provides a mock function with given fields: txn, signed
-func (_m *MockGatewayer) VerifyTxnVerbose(txn *coin.Transaction, signed visor.TxnSignedFlag) ([]visor.TransactionInput, bool, error) {
+func (_m *MockGatewayer) VerifyTxnVerbose(txn *coin.Transaction, signed transaction.TxnSignedFlag) ([]visor.TransactionInput, bool, error) {
 	ret := _m.Called(txn, signed)
 
 	var r0 []visor.TransactionInput
-	if rf, ok := ret.Get(0).(func(*coin.Transaction, visor.TxnSignedFlag) []visor.TransactionInput); ok {
+	if rf, ok := ret.Get(0).(func(*coin.Transaction, transaction.TxnSignedFlag) []visor.TransactionInput); ok {
 		r0 = rf(txn, signed)
 	} else {
 		if ret.Get(0) != nil {
@@ -1396,14 +1396,14 @@ func (_m *MockGatewayer) VerifyTxnVerbose(txn *coin.Transaction, signed visor.Tx
 	}
 
 	var r1 bool
-	if rf, ok := ret.Get(1).(func(*coin.Transaction, visor.TxnSignedFlag) bool); ok {
+	if rf, ok := ret.Get(1).(func(*coin.Transaction, transaction.TxnSignedFlag) bool); ok {
 		r1 = rf(txn, signed)
 	} else {
 		r1 = ret.Get(1).(bool)
 	}
 
 	var r2 error
-	if rf, ok := ret.Get(2).(func(*coin.Transaction, visor.TxnSignedFlag) error); ok {
+	if rf, ok := ret.Get(2).(func(*coin.Transaction, transaction.TxnSignedFlag) error); ok {
 		r2 = rf(txn, signed)
 	} else {
 		r2 = ret.Error(2)

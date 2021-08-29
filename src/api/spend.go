@@ -722,9 +722,9 @@ func walletSignTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 				default:
 					resp = NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
 				}
-			case visor.ErrTxnViolatesSoftConstraint,
-				visor.ErrTxnViolatesHardConstraint,
-				visor.ErrTxnViolatesUserConstraint,
+			case transaction.ErrTxnViolatesSoftConstraint,
+				transaction.ErrTxnViolatesHardConstraint,
+				transaction.ErrTxnViolatesUserConstraint,
 				blockdb.ErrUnspentNotExist:
 				resp = NewHTTPErrorResponse(http.StatusBadRequest, err.Error())
 			default:

@@ -19,6 +19,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/params"
+	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/mathutil"
 	"github.com/skycoin/skycoin/src/util/timeutil"
@@ -319,9 +320,9 @@ func (vs *Visor) createBlockFromTxns(tx *dbutil.Tx, txns coin.Transactions, when
 	// Filter transactions that violate all constraints
 	var filteredTxns coin.Transactions
 	for _, txn := range txns {
-		if _, _, err := vs.blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.Distribution, vs.Config.CreateBlockVerifyTxn, TxnSigned); err != nil {
+		if _, _, err := vs.blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.Distribution, vs.Config.CreateBlockVerifyTxn, transaction.TxnSigned); err != nil {
 			switch err.(type) {
-			case ErrTxnViolatesHardConstraint, ErrTxnViolatesSoftConstraint:
+			case transaction.ErrTxnViolatesHardConstraint, transaction.ErrTxnViolatesSoftConstraint:
 				logger.Warningf("Transaction %s violates constraints: %v", txn.Hash().Hex(), err)
 			default:
 				return coin.Block{}, err
@@ -806,9 +807,9 @@ func (vs *Visor) getBlocksVerbose(tx *dbutil.Tx, getBlocks func(*dbutil.Tx) ([]c
 // If the transaction violates hard constraints, it is rejected, and error will not be nil.
 // If the transaction only violates soft constraints, it is still injected, and the soft constraint violation is returned.
 // This method is intended for transactions received over the network.
-func (vs *Visor) InjectForeignTransaction(txn coin.Transaction) (bool, *ErrTxnViolatesSoftConstraint, error) {
+func (vs *Visor) InjectForeignTransaction(txn coin.Transaction) (bool, *transaction.ErrTxnViolatesSoftConstraint, error) {
 	var known bool
-	var softErr *ErrTxnViolatesSoftConstraint
+	var softErr *transaction.ErrTxnViolatesSoftConstraint
 
 	if err := vs.db.Update("InjectForeignTransaction", func(tx *dbutil.Tx) error {
 		var err error
@@ -847,11 +848,11 @@ func (vs *Visor) InjectUserTransaction(txn coin.Transaction) (bool, *coin.Signed
 // If the transaction violates hard or soft constraints, it is rejected, and error will not be nil.
 // This method is only exported for use by the daemon gateway's InjectBroadcastTransaction method.
 func (vs *Visor) InjectUserTransactionTx(tx *dbutil.Tx, txn coin.Transaction) (bool, *coin.SignedBlock, coin.UxArray, error) {
-	if err := VerifySingleTxnUserConstraints(txn); err != nil {
+	if err := transaction.VerifySingleTxnUserConstraints(txn); err != nil {
 		return false, nil, nil, err
 	}
 
-	head, inputs, err := vs.blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.Distribution, params.UserVerifyTxn, TxnSigned)
+	head, inputs, err := vs.blockchain.VerifySingleTxnSoftHardConstraints(tx, txn, vs.Config.Distribution, params.UserVerifyTxn, transaction.TxnSigned)
 	if err != nil {
 		return false, nil, nil, err
 	}
@@ -1847,7 +1848,7 @@ func (vs *Visor) GetUnspentsOfAddrs(addrs []cipher.Address) (coin.AddressUxOuts,
 
 // VerifyTxnVerbose verifies a transaction, it returns transaction's input uxouts, whether the
 // transaction is confirmed, and error if any
-func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction, signed TxnSignedFlag) ([]TransactionInput, bool, error) {
+func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction, signed transaction.TxnSignedFlag) ([]TransactionInput, bool, error) {
 	var uxa coin.UxArray
 	var isTxnConfirmed bool
 	var feeCalcTime uint64
@@ -1873,7 +1874,7 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction, signed TxnSignedFlag) (
 
 			if len(outs) == 0 {
 				err = fmt.Errorf("transaction input of %s does not exist in either unspent pool or historydb", e.UxID)
-				return NewErrTxnViolatesHardConstraint(err)
+				return transaction.NewErrTxnViolatesHardConstraint(err)
 			}
 
 			uxa = coin.UxArray{}
@@ -1915,15 +1916,15 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction, signed TxnSignedFlag) (
 			return err
 		}
 
-		if err := VerifySingleTxnUserConstraints(*txn); err != nil {
+		if err := transaction.VerifySingleTxnUserConstraints(*txn); err != nil {
 			return err
 		}
 
-		if err := VerifySingleTxnSoftConstraints(*txn, feeCalcTime, uxa, vs.Config.Distribution, params.UserVerifyTxn); err != nil {
+		if err := transaction.VerifySingleTxnSoftConstraints(*txn, feeCalcTime, uxa, vs.Config.Distribution, params.UserVerifyTxn); err != nil {
 			return err
 		}
 
-		return VerifySingleTxnHardConstraints(*txn, head.Head, uxa, signed)
+		return transaction.VerifySingleTxnHardConstraints(*txn, head.Head, uxa, signed)
 	})
 
 	// If we were able to query the inputs, return the verbose inputs to the caller

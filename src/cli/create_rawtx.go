@@ -19,7 +19,6 @@ import (
 	"github.com/skycoin/skycoin/src/util/droplet"
 	"github.com/skycoin/skycoin/src/util/fee"
 	"github.com/skycoin/skycoin/src/util/mathutil"
-	"github.com/skycoin/skycoin/src/visor"
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
@@ -800,13 +799,13 @@ func CreateRawTxn(c GetOutputser, wlt wallet.Wallet, inAddrs []string, chgAddr s
 		return nil, err
 	}
 
-	if err := visor.VerifySingleTxnSoftConstraints(*txn, head.Time, inUxsFiltered, distParams, params.UserVerifyTxn); err != nil {
+	if err := transaction.VerifySingleTxnSoftConstraints(*txn, head.Time, inUxsFiltered, distParams, params.UserVerifyTxn); err != nil {
 		return nil, err
 	}
-	if err := visor.VerifySingleTxnHardConstraints(*txn, head, inUxsFiltered, visor.TxnSigned); err != nil {
+	if err := transaction.VerifySingleTxnHardConstraints(*txn, head, inUxsFiltered, transaction.TxnSigned); err != nil {
 		return nil, err
 	}
-	if err := visor.VerifySingleTxnUserConstraints(*txn); err != nil {
+	if err := transaction.VerifySingleTxnUserConstraints(*txn); err != nil {
 		return nil, err
 	}
 

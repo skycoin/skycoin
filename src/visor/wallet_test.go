@@ -237,8 +237,8 @@ func TestCreateTransaction(t *testing.T) {
 			getArray:       getArrayRet,
 			txn:            txn,
 			inputs:         inputs,
-			verifyErr:      NewErrTxnViolatesSoftConstraint(errors.New("Violates soft constraints")),
-			err:            NewErrTxnViolatesSoftConstraint(errors.New("Violates soft constraints")),
+			verifyErr:      transaction.NewErrTxnViolatesSoftConstraint(errors.New("Violates soft constraints")),
+			err:            transaction.NewErrTxnViolatesSoftConstraint(errors.New("Violates soft constraints")),
 		},
 
 		{
@@ -310,7 +310,7 @@ func TestCreateTransaction(t *testing.T) {
 			b.On("Unspent").Return(up)
 
 			if tc.txn != nil {
-				b.On("VerifySingleTxnSoftHardConstraints", matchDBTx, *tc.txn, params.MainNetDistribution, params.UserVerifyTxn, TxnUnsigned).Return(nil, nil, tc.verifyErr)
+				b.On("VerifySingleTxnSoftHardConstraints", matchDBTx, *tc.txn, params.MainNetDistribution, params.UserVerifyTxn, transaction.TxnUnsigned).Return(nil, nil, tc.verifyErr)
 			}
 
 			db, shutdown := prepareDB(t)
@@ -568,7 +568,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 		inputs     []TransactionInput
 		p          transaction.Params
 		wp         CreateTransactionParams
-		signed     TxnSignedFlag
+		signed     transaction.TxnSignedFlag
 		walletID   string
 		walletType string
 		seed       string
@@ -725,8 +725,8 @@ func TestWalletCreateTransaction(t *testing.T) {
 			getArray:       getArrayRet,
 			txn:            txn,
 			inputs:         inputs,
-			verifyErr:      NewErrTxnViolatesSoftConstraint(errors.New("Violates soft constraints")),
-			err:            NewErrTxnViolatesSoftConstraint(errors.New("Violates soft constraints")),
+			verifyErr:      transaction.NewErrTxnViolatesSoftConstraint(errors.New("Violates soft constraints")),
+			err:            transaction.NewErrTxnViolatesSoftConstraint(errors.New("Violates soft constraints")),
 		},
 
 		{
@@ -870,8 +870,8 @@ func TestWalletCreateTransaction(t *testing.T) {
 			getArray:       bip44GetArrayRet,
 			txn:            bip44Txn,
 			inputs:         bip44Inputs,
-			verifyErr:      NewErrTxnViolatesSoftConstraint(errors.New("Violates soft constraints")),
-			err:            NewErrTxnViolatesSoftConstraint(errors.New("Violates soft constraints")),
+			verifyErr:      transaction.NewErrTxnViolatesSoftConstraint(errors.New("Violates soft constraints")),
+			err:            transaction.NewErrTxnViolatesSoftConstraint(errors.New("Violates soft constraints")),
 		},
 	}
 
@@ -879,11 +879,11 @@ func TestWalletCreateTransaction(t *testing.T) {
 	copy(cases, baseCases)
 	copy(cases[len(baseCases):], baseCases)
 	for i := range cases[:len(baseCases)] {
-		cases[i].signed = TxnUnsigned
+		cases[i].signed = transaction.TxnUnsigned
 		cases[i].password = nil
 	}
 	for i := range cases[len(baseCases):] {
-		cases[i+len(baseCases)].signed = TxnSigned
+		cases[i+len(baseCases)].signed = transaction.TxnSigned
 		cases[i+len(baseCases)].password = []byte("foo")
 	}
 
@@ -955,14 +955,14 @@ func TestWalletCreateTransaction(t *testing.T) {
 
 			matchTxnIgnoreSigs := mock.MatchedBy(func(txn coin.Transaction) bool {
 				switch tc.signed {
-				case TxnSigned:
+				case transaction.TxnSigned:
 					if !txn.IsFullySigned() {
 						return false
 					}
 					// Unset sigs for comparison to the unsigned txn
 					txn.Sigs = make([]cipher.Sig, len(txn.Sigs))
 					return reflect.DeepEqual(txn, *tc.txn)
-				case TxnUnsigned:
+				case transaction.TxnUnsigned:
 					return reflect.DeepEqual(txn, *tc.txn)
 				default:
 					return false
@@ -990,9 +990,9 @@ func TestWalletCreateTransaction(t *testing.T) {
 			var txn *coin.Transaction
 			var inputs []TransactionInput
 			switch tc.signed {
-			case TxnSigned:
+			case transaction.TxnSigned:
 				txn, inputs, err = v.WalletCreateTransactionSigned(tc.walletID, tc.password, tc.p, tc.wp)
-			case TxnUnsigned:
+			case transaction.TxnUnsigned:
 				txn, inputs, err = v.WalletCreateTransaction(tc.walletID, tc.p, tc.wp)
 			default:
 				t.Fatal("invalid tc.signed value")
@@ -1002,7 +1002,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 				return
 			}
 
-			if tc.signed == TxnSigned {
+			if tc.signed == transaction.TxnSigned {
 				require.True(t, txn.IsFullySigned())
 				// Unset sigs for comparison to the unsigned transaction
 				txn.Sigs = make([]cipher.Sig, len(txn.Sigs))

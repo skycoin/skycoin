@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/wallet"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -326,7 +327,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	txn := makeUnspentsTxn(t, uxs, []cipher.SecKey{genSecret}, genAddress, nUnspents, params.UserVerifyTxn.MaxDropletPrecision)
 
 	var known bool
-	var softErr *ErrTxnViolatesSoftConstraint
+	var softErr *transaction.ErrTxnViolatesSoftConstraint
 	err = db.Update("", func(tx *dbutil.Tx) error {
 		var err error
 		known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, params.MainNetDistribution, v.Config.UnconfirmedVerifyTxn)
@@ -415,7 +416,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	// Inject transactions into the unconfirmed pool
 	for i, txn := range txns {
 		var known bool
-		var softErr *ErrTxnViolatesSoftConstraint
+		var softErr *transaction.ErrTxnViolatesSoftConstraint
 		err = db.Update("", func(tx *dbutil.Tx) error {
 			var err error
 			known, softErr, err = unconfirmed.InjectTransaction(tx, bc, txn, params.MainNetDistribution, v.Config.UnconfirmedVerifyTxn)
@@ -580,8 +581,8 @@ func TestVisorInjectTransaction(t *testing.T) {
 	// Check transactions with overflowing output coins fail
 	txn = makeOverflowCoinsSpendTxn(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
 	_, softErr, err = v.InjectForeignTransaction(txn)
-	require.IsType(t, ErrTxnViolatesHardConstraint{}, err)
-	testutil.RequireError(t, err.(ErrTxnViolatesHardConstraint).Err, "Output coins overflow")
+	require.IsType(t, transaction.ErrTxnViolatesHardConstraint{}, err)
+	testutil.RequireError(t, err.(transaction.ErrTxnViolatesHardConstraint).Err, "Output coins overflow")
 	require.Nil(t, softErr)
 
 	err = db.View("", func(tx *dbutil.Tx) error {
@@ -598,8 +599,8 @@ func TestVisorInjectTransaction(t *testing.T) {
 	txn = makeOverflowHoursSpendTxn(t, coin.UxArray{uxs[0]}, []cipher.SecKey{genSecret}, toAddr)
 	_, softErr, err = v.InjectForeignTransaction(txn)
 	require.Nil(t, softErr)
-	require.IsType(t, ErrTxnViolatesHardConstraint{}, err)
-	testutil.RequireError(t, err.(ErrTxnViolatesHardConstraint).Err, "Transaction output hours overflow")
+	require.IsType(t, transaction.ErrTxnViolatesHardConstraint{}, err)
+	testutil.RequireError(t, err.(transaction.ErrTxnViolatesHardConstraint).Err, "Transaction output hours overflow")
 
 	err = db.View("", func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)
@@ -631,7 +632,7 @@ func TestVisorInjectTransaction(t *testing.T) {
 	txn.Out[0].Address = cipher.Address{}
 	known, _, _, err = v.InjectUserTransaction(txn)
 	require.False(t, known)
-	require.IsType(t, ErrTxnViolatesUserConstraint{}, err)
+	require.IsType(t, transaction.ErrTxnViolatesUserConstraint{}, err)
 	testutil.RequireError(t, err, "Transaction violates user constraint: Transaction output is sent to the null address")
 }
 
@@ -2054,7 +2055,7 @@ func TestRefreshUnconfirmed(t *testing.T) {
 	_, softErr, err = v.InjectForeignTransaction(sometimesInvalidTxn)
 	require.NoError(t, err)
 	require.NotNil(t, softErr)
-	testutil.RequireError(t, softErr.Err, ErrTxnExceedsMaxBlockSize.Error())
+	testutil.RequireError(t, softErr.Err, transaction.ErrTxnExceedsMaxBlockSize.Error())
 
 	err = db.View("", func(tx *dbutil.Tx) error {
 		length, err := unconfirmed.Len(tx)
@@ -2378,7 +2379,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 		txn         coin.Transaction
 		isConfirmed bool
 		isUnsigned  bool
-		signed      TxnSignedFlag
+		signed      transaction.TxnSignedFlag
 		inputs      []TransactionInput
 		err         error
 
@@ -2402,7 +2403,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			name:        "transaction has been spent",
 			txn:         txn,
 			isConfirmed: true,
-			signed:      TxnSigned,
+			signed:      transaction.TxnSigned,
 			inputs:      spentInputs[:],
 
 			getArrayErr: blockdb.ErrUnspentNotExist{UxID: inputs[0].Hash().Hex()},
@@ -2423,7 +2424,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			name:        "transaction has been spent, get previous block error",
 			txn:         txn,
 			isConfirmed: true,
-			signed:      TxnSigned,
+			signed:      transaction.TxnSigned,
 			inputs:      nil,
 			err:         errors.New("GetSignedBlockBySeq failed"),
 
@@ -2439,7 +2440,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			name:        "transaction has been spent, previous block not found",
 			txn:         txn,
 			isConfirmed: true,
-			signed:      TxnSigned,
+			signed:      transaction.TxnSigned,
 			inputs:      nil,
 			err:         fmt.Errorf("VerifyTxnVerbose: previous block seq=%d not found", 9),
 
@@ -2456,8 +2457,8 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			name:        "transaction does not exist in either unspents or historydb",
 			txn:         txn,
 			isConfirmed: false,
-			signed:      TxnSigned,
-			err:         ErrTxnViolatesHardConstraint{fmt.Errorf("transaction input of %s does not exist in either unspent pool or historydb", inputs[0].Hash().Hex())},
+			signed:      transaction.TxnSigned,
+			err:         transaction.ErrTxnViolatesHardConstraint{fmt.Errorf("transaction input of %s does not exist in either unspent pool or historydb", inputs[0].Hash().Hex())},
 
 			getArrayErr: blockdb.ErrUnspentNotExist{UxID: inputs[0].Hash().Hex()},
 		},
@@ -2465,67 +2466,67 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			name:        "transaction violate user constratins, send to null address",
 			txn:         toNullAddrTxn,
 			isConfirmed: false,
-			signed:      TxnSigned,
-			err:         ErrTxnViolatesUserConstraint{errors.New("Transaction output is sent to the null address")},
+			signed:      transaction.TxnSigned,
+			err:         transaction.ErrTxnViolatesUserConstraint{errors.New("Transaction output is sent to the null address")},
 			inputs:      toNullAddrSpentUxBalances[:],
 
 			getArrayRet: inputs[:1],
 		},
 		{
 			name:                   "transaction violate soft constraints, transaction size bigger than max block size",
-			signed:                 TxnSigned,
+			signed:                 transaction.TxnSigned,
 			maxUserTransactionSize: 1,
 			txn:                    txn,
 			inputs:                 spentInputs[:],
-			err:                    ErrTxnViolatesSoftConstraint{errors.New("Transaction size bigger than max block size")},
+			err:                    transaction.ErrTxnViolatesSoftConstraint{errors.New("Transaction size bigger than max block size")},
 
 			getArrayRet: inputs[:1],
 		},
 		{
 			name:        "transaction violate soft constraints, Insufficient coinhours for transaction outputs",
-			signed:      TxnSigned,
+			signed:      transaction.TxnSigned,
 			txn:         inSufficientCoinHoursTxn,
-			err:         ErrTxnViolatesSoftConstraint{fee.ErrTxnInsufficientCoinHours},
+			err:         transaction.ErrTxnViolatesSoftConstraint{fee.ErrTxnInsufficientCoinHours},
 			inputs:      spentInputs[:],
 			getArrayRet: inputs[:1],
 		},
 		{
 			name:        "transaction violate soft constraints, zero fee",
-			signed:      TxnSigned,
+			signed:      transaction.TxnSigned,
 			txn:         zeroFeeTxn,
-			err:         ErrTxnViolatesSoftConstraint{fee.ErrTxnNoFee},
+			err:         transaction.ErrTxnViolatesSoftConstraint{fee.ErrTxnNoFee},
 			inputs:      spentInputs[:],
 			getArrayRet: inputs[:1],
 		},
 		{
 			name:        "transaction violate soft constraints, coin hour overflow",
-			signed:      TxnSigned,
+			signed:      transaction.TxnSigned,
 			txn:         coinHourOverflowTxn,
-			err:         ErrTxnViolatesSoftConstraint{errors.New("Transaction output hours overflow")},
+			err:         transaction.ErrTxnViolatesSoftConstraint{errors.New("Transaction output hours overflow")},
 			inputs:      spentInputs[:],
 			getArrayRet: inputs[:1],
 		},
 		{
 			name:        "transaction violate soft constraints, insufficient fee",
-			signed:      TxnSigned,
+			signed:      transaction.TxnSigned,
 			txn:         insufficientFeeTxn,
-			err:         ErrTxnViolatesSoftConstraint{fee.ErrTxnInsufficientFee},
+			err:         transaction.ErrTxnViolatesSoftConstraint{fee.ErrTxnInsufficientFee},
 			inputs:      spentInputs[:],
 			getArrayRet: inputs[:1],
 		},
 		{
 			name:        "transaction violate hard constraints, insufficient coins",
-			signed:      TxnSigned,
+			signed:      transaction.TxnSigned,
 			txn:         insufficientCoinsTxn,
-			err:         ErrTxnViolatesHardConstraint{errors.New("Insufficient coins")},
+			err:         transaction.ErrTxnViolatesHardConstraint{errors.New("Insufficient coins")},
 			inputs:      spentInputs[:],
 			getArrayRet: inputs[:1],
 		},
 		{
 			name:        "transaction violate hard constraints, bad signature",
-			signed:      TxnSigned,
+			signed:      transaction.TxnSigned,
 			txn:         badSigTxn,
-			err:         ErrTxnViolatesHardConstraint{errors.New("Signature not valid for output being spent")},
+			err:         transaction.ErrTxnViolatesHardConstraint{errors.New("Signature not valid for output being spent")},
 			getArrayRet: inputs[:2],
 			inputs:      badSigTxnSpentInputs[:],
 		},
@@ -2534,25 +2535,25 @@ func TestVerifyTxnVerbose(t *testing.T) {
 	signedOnlyCases := []testCase{
 		{
 			name:        "TxnSignedFlag=TxnSigned transaction violate hard constraints, fully unsigned",
-			signed:      TxnSigned,
+			signed:      transaction.TxnSigned,
 			isUnsigned:  true,
 			txn:         fullyUnsignedTxn,
-			err:         ErrTxnViolatesHardConstraint{errors.New("Unsigned input in transaction")},
+			err:         transaction.ErrTxnViolatesHardConstraint{errors.New("Unsigned input in transaction")},
 			inputs:      fullyUnsignedSpentInputs[:],
 			getArrayRet: inputs[:2],
 		},
 		{
 			name:        "TxnSignedFlag=TxnSigned transaction violate hard constraints, partially unsigned",
-			signed:      TxnSigned,
+			signed:      transaction.TxnSigned,
 			isUnsigned:  true,
 			txn:         partiallyUnsignedTxn,
-			err:         ErrTxnViolatesHardConstraint{errors.New("Unsigned input in transaction")},
+			err:         transaction.ErrTxnViolatesHardConstraint{errors.New("Unsigned input in transaction")},
 			inputs:      partiallyUnsignedSpentInputs[:],
 			getArrayRet: inputs[:2],
 		},
 		{
 			name:        "TxnSignedFlag=TxnSigned ok fully signed",
-			signed:      TxnSigned,
+			signed:      transaction.TxnSigned,
 			txn:         txn,
 			inputs:      spentInputs,
 			getArrayRet: inputs[:1],
@@ -2562,7 +2563,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 	unsignedOnlyCases := []testCase{
 		{
 			name:        "TxnSignedFlag=TxnUnsigned ok, fully unsigned",
-			signed:      TxnUnsigned,
+			signed:      transaction.TxnUnsigned,
 			isUnsigned:  true,
 			txn:         fullyUnsignedTxn,
 			inputs:      fullyUnsignedSpentInputs,
@@ -2570,7 +2571,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 		},
 		{
 			name:        "TxnSignedFlag=TxnUnsigned ok, partially unsigned",
-			signed:      TxnUnsigned,
+			signed:      transaction.TxnUnsigned,
 			isUnsigned:  true,
 			txn:         partiallyUnsignedTxn,
 			inputs:      partiallyUnsignedSpentInputs,
@@ -2578,9 +2579,9 @@ func TestVerifyTxnVerbose(t *testing.T) {
 		},
 		{
 			name:        "TxnSignedFlag=TxnUnsigned transaction violate hard constraints: signed",
-			signed:      TxnUnsigned,
+			signed:      transaction.TxnUnsigned,
 			txn:         txn,
-			err:         ErrTxnViolatesHardConstraint{errors.New("Unsigned transaction must contain a null signature")},
+			err:         transaction.ErrTxnViolatesHardConstraint{errors.New("Unsigned transaction must contain a null signature")},
 			inputs:      spentInputs[:],
 			getArrayRet: inputs[:1],
 		},
@@ -2591,12 +2592,12 @@ func TestVerifyTxnVerbose(t *testing.T) {
 	for _, tc := range baseCases {
 		c := tc
 		c.name = fmt.Sprintf("TxnSignedFlag=TxnSigned %s", tc.name)
-		c.signed = TxnSigned
+		c.signed = transaction.TxnSigned
 		cases = append(cases, c)
 
 		c = tc
 		c.name = fmt.Sprintf("TxnSignedFlag=TxnUnsigned %s", tc.name)
-		c.signed = TxnUnsigned
+		c.signed = transaction.TxnUnsigned
 		c.txn.Sigs = make([]cipher.Sig, len(c.txn.Sigs))
 		copy(c.txn.Sigs, tc.txn.Sigs)
 		c.txn.Sigs[0] = cipher.Sig{}
@@ -2660,11 +2661,11 @@ func TestVerifyTxnVerbose(t *testing.T) {
 
 			require.Equal(t, tc.err, err, "%v != %v", tc.err, err)
 
-			if tc.isUnsigned && tc.signed == TxnSigned {
+			if tc.isUnsigned && tc.signed == transaction.TxnSigned {
 				require.Error(t, err)
 			}
 
-			if !tc.isUnsigned && tc.signed == TxnUnsigned {
+			if !tc.isUnsigned && tc.signed == transaction.TxnUnsigned {
 				require.Error(t, err)
 			}
 		})

@@ -16,6 +16,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -62,7 +63,7 @@ func TestVerifyTransactionInvalidFee(t *testing.T) {
 	_, softErr, err := v.InjectForeignTransaction(txn)
 	require.NoError(t, err)
 	require.NotNil(t, softErr)
-	require.Equal(t, NewErrTxnViolatesSoftConstraint(fee.ErrTxnNoFee), *softErr)
+	require.Equal(t, transaction.NewErrTxnViolatesSoftConstraint(fee.ErrTxnNoFee), *softErr)
 }
 
 func TestVerifyTransactionInvalidSignature(t *testing.T) {
@@ -91,7 +92,7 @@ func TestVerifyTransactionInvalidSignature(t *testing.T) {
 
 	_, softErr, err := v.InjectForeignTransaction(txn)
 	require.Nil(t, softErr)
-	testutil.RequireError(t, err, NewErrTxnViolatesHardConstraint(errors.New("Invalid number of signatures")).Error())
+	testutil.RequireError(t, err, transaction.NewErrTxnViolatesHardConstraint(errors.New("Invalid number of signatures")).Error())
 }
 
 func TestInjectValidTransaction(t *testing.T) {
@@ -158,7 +159,7 @@ func TestInjectTransactionSoftViolationNoFee(t *testing.T) {
 	_, softErr, err := v.InjectForeignTransaction(txn)
 	require.NoError(t, err)
 	require.NotNil(t, softErr)
-	require.Equal(t, NewErrTxnViolatesSoftConstraint(fee.ErrTxnNoFee), *softErr)
+	require.Equal(t, transaction.NewErrTxnViolatesSoftConstraint(fee.ErrTxnNoFee), *softErr)
 
 	// The transaction should appear in the unconfirmed pool
 	txns, err = v.GetAllUnconfirmedTransactions()

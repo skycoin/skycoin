@@ -9,6 +9,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/testutil"
+	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/visor/blockdb"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
@@ -575,7 +576,7 @@ func TestProcessTransactions(t *testing.T) {
 					Coins:   10e6,
 				},
 			},
-			NewErrTxnViolatesHardConstraint(errors.New("Signature not valid for output being spent")),
+			transaction.NewErrTxnViolatesHardConstraint(errors.New("Signature not valid for output being spent")),
 		},
 		{
 			"dup spending",

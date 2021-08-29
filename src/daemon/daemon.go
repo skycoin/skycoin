@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/skycoin/skycoin/src/transaction"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -281,7 +282,7 @@ type daemoner interface {
 	requestBlocksFromAddr(addr string) error
 	announceAllValidTxns() error
 	pexConfig() pex.Config
-	injectTransaction(txn coin.Transaction) (bool, *visor.ErrTxnViolatesSoftConstraint, error)
+	injectTransaction(txn coin.Transaction) (bool, *transaction.ErrTxnViolatesSoftConstraint, error)
 	recordMessageEvent(m asyncMessage, c *gnet.MessageContext) error
 	connectionIntroduced(addr string, gnetID uint64, m *IntroductionMessage) (*connection, error)
 	sendRandomPeers(addr string) error
@@ -1287,7 +1288,7 @@ func verifyUserTxnAgainstPeer(txn coin.Transaction, head *coin.SignedBlock, inpu
 	}
 
 	if txnSize > verifyParams.MaxTransactionSize {
-		return visor.ErrTxnExceedsMaxBlockSize
+		return transaction.ErrTxnExceedsMaxBlockSize
 	}
 
 	// Check the coinhour burn fee
@@ -1551,7 +1552,7 @@ func (dm *Daemon) getKnownUnconfirmed(txns []cipher.SHA256) (coin.Transactions, 
 // The bool return value is whether or not the transaction was already in the pool.
 // If the transaction violates hard constraints, it is rejected, and error will not be nil.
 // If the transaction only violates soft constraints, it is still injected, and the soft constraint violation is returned.
-func (dm *Daemon) injectTransaction(txn coin.Transaction) (bool, *visor.ErrTxnViolatesSoftConstraint, error) {
+func (dm *Daemon) injectTransaction(txn coin.Transaction) (bool, *transaction.ErrTxnViolatesSoftConstraint, error) {
 	return dm.visor.InjectForeignTransaction(txn)
 }
 

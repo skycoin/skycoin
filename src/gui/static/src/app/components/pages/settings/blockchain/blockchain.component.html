@@ -29,21 +29,21 @@
             <div class="col-md-6">
               <div class="-item">
                 <div class="-key">{{ 'blockchain.current-supply-label' | translate:{coinName: appService.coinName} }}</div>
-                <div class="break-all">{{ coinSupply.currentSupply | amount:true:'first' }}</div>
+                <app-number-formatter [number]="coinSupply.currentSupply | amount:true:'first'"></app-number-formatter>
               </div>
               <div class="-item">
                 <div class="-key">{{ 'blockchain.total-supply-label' | translate:{coinName: appService.coinName} }}</div>
-                <div class="break-all">{{ coinSupply.totalSupply | amount:true:'first' }}</div>
+                <app-number-formatter [number]="coinSupply.totalSupply | amount:true:'first'"></app-number-formatter>
               </div>
             </div>
             <div class="col-md-6">
               <div class="-item">
                 <div class="-key">{{ 'blockchain.current-coinhour-supply-label' | translate:{coinHoursName: appService.hoursName} }}</div>
-                <div class="break-all">{{ coinSupply.currentCoinhourSupply | amount:false:'first' }}</div>
+                <app-number-formatter [number]="coinSupply.currentCoinhourSupply | amount:false:'first'"></app-number-formatter>
               </div>
               <div class="-item">
                 <div class="-key">{{ 'blockchain.total-coinhour-supply-label' | translate:{coinHoursName: appService.hoursName} }}</div>
-                <div class="break-all">{{ coinSupply.totalCoinhourSupply | amount:false:'first' }}</div>
+                <app-number-formatter [number]="coinSupply.totalCoinhourSupply | amount:false:'first'"></app-number-formatter>
               </div>
             </div>
           </div>

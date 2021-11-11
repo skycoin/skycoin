@@ -36,8 +36,12 @@
                     *ngIf="wallet.hasHwSecurityWarnings && wallet.isHardware">
               </div>
               <!-- Coins and hours. -->
-              <div class="-width-130 text-right">{{ (wallet.coins ? wallet.coins : 0) | amount:true:'first' }}</div>
-              <div class="-width-130 text-right grey-text">{{ (wallet.hours ? wallet.hours : 0) | amount:false:'first' }}</div>
+              <div class="-width-130 text-right">
+                <app-number-formatter [number]="(wallet.coins ? wallet.coins : 0) | amount:true:'first'"></app-number-formatter>
+              </div>
+              <div class="-width-130 text-right grey-text">
+                <app-number-formatter [number]="(wallet.hours ? wallet.hours : 0) | amount:false:'first'"></app-number-formatter>
+              </div>
               <!-- Expand icon. -->
               <div class="-width-85 -expand">
                 <img src="assets/img/chevron-right-grey.png"

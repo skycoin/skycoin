@@ -17,8 +17,11 @@
           {{ 'history.all-addresses' | translate }}
         </mat-option>
         <mat-option *ngFor="let address of wallet.addresses" [value]="address" [disabled]="wallet.allAddressesSelected">
-          {{ address.address }} - {{ address.coins | amount }}
-          ({{ address.hours | amount:false }})
+          {{ address.address }} -
+          <app-number-formatter style="font-size: 1.2em;" [number]="address.coins | amount:true:'first'"></app-number-formatter>
+          {{ address.coins | amount:true:'last' }}
+          (<app-number-formatter style="font-size: 1.2em;" [number]="address.hours | amount:false:'first'"></app-number-formatter>
+          {{ address.hours | amount:false:'last' }})
         </mat-option>
       </mat-optgroup>
       <!-- Content for showing the selected filters. -->
@@ -29,8 +32,10 @@
           <div class="filter text-truncate" *ngIf="filter.label || !filter.showingWholeWallet">
             <span *ngIf="filter.label">{{ filter.label }}</span>
             <span *ngIf="!filter.label">{{ filter.address }}</span>
-            - {{ filter.coins | amount }}
-            ({{ filter.hours | amount:false }})
+            - <app-number-formatter [number]="filter.coins | amount:true:'first'"></app-number-formatter>
+            {{ filter.coins | amount:true:'last' }}
+            (<app-number-formatter [number]="filter.hours | amount:false:'first'"></app-number-formatter>
+            {{ filter.hours | amount:false:'last' }})
           </div>
         </ng-container>
       </mat-select-trigger>
@@ -89,7 +94,10 @@
           </div>
         </div>
         <div class="-balance">
-          <h4>{{ transaction.balance.toString() | amount }}</h4>
+          <h4>
+            <app-number-formatter [number]="transaction.balance | amount:true:'first'"></app-number-formatter>
+            {{ transaction.balance | amount:true:'last' }}
+          </h4>
           <p *ngIf="price" [matTooltip]="'tx.current-rate-help' | translate">
             {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}<span>*</span>
           </p>

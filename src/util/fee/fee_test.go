@@ -13,6 +13,10 @@ import (
 	"github.com/skycoin/skycoin/src/testutil"
 )
 
+func TestMain(m *testing.M) {
+	params.UserVerifyTxn.BurnFactor = 10
+}
+
 type verifyTxnFeeTestCase struct {
 	inputHours  uint64
 	outputHours uint64

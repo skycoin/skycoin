@@ -7,11 +7,16 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/params"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/transaction"
 	"github.com/skycoin/skycoin/src/util/fee"
 )
+
+func TestMain(m *testing.M) {
+	params.UserVerifyTxn.BurnFactor = 10
+}
 
 func TestMakeChangeOut(t *testing.T) {
 	// single destination test

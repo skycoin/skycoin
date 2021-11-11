@@ -60,7 +60,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
     * Add flag `scan` to scan ahead addresses in the wallet that have history transactions.
 - CLI command walletKeyExport -p flag is replaced with --path, and -p will be used as a shorthand of --password.
 - CLI command `encryptWallet/decryptWallet` will only return none-sensitive data. Data like the seed, secrets and private keys will no longer be returned.
-- Include change addresses for a bip44 wallet of the endpoint `/api/v1/wallet`.
+- Return change addreseses in endpoint `/api/v1/wallet` for bip44 wallets as well, it used to return none change addresses only.
+- Change `coinhours` burn factor to 1 percent.
+
 
 ### Removed
 - Removed endpoint `/api/v2/metrics`. The prometheus dependency was removed, this endpoint will no long be supported. 

@@ -58,7 +58,7 @@ func createCoinCommand() cli.Command {
 			cli.StringFlag{
 				Name:  "coin",
 				Usage: "name of the coin to create",
-				Value: "skycoin",
+				Value: "privateness",
 			},
 			cli.StringFlag{
 				Name:  "template-dir, td",

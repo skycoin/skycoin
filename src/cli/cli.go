@@ -33,8 +33,8 @@ var (
 
 const (
 	walletExt         = "." + wallet.WalletExt
-	defaultCoin       = "skycoin"
-	defaultRPCAddress = "http://127.0.0.1:6420"
+	defaultCoin       = "privateness"
+	defaultRPCAddress = "http://127.0.0.1:6660"
 	defaultDataDir    = "$HOME/.$COIN/"
 )
 

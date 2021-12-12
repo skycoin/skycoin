@@ -14,6 +14,8 @@ github.com/boltdb/bolt
 github.com/cenkalti/backoff
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
+# github.com/fatih/structtag v1.2.0
+## explicit
 # github.com/fsnotify/fsnotify v1.4.7
 github.com/fsnotify/fsnotify
 # github.com/google/go-cmp v0.2.0
@@ -73,6 +75,8 @@ github.com/sirupsen/logrus
 # github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
 ## explicit
 github.com/skycoin/encodertest
+# github.com/skycoin/skyencoder v0.0.0-20190624072340-28f1af5256c7
+## explicit
 # github.com/spf13/afero v1.1.2
 github.com/spf13/afero
 github.com/spf13/afero/mem
@@ -103,14 +107,14 @@ github.com/toqueteos/webbrowser
 # github.com/urfave/cli v1.20.0
 ## explicit
 github.com/urfave/cli
-# golang.org/x/crypto v0.0.0-20181015023909-0c41d7ab0a0e
+# github.com/vektra/mockery v1.1.2
+## explicit
+# golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
 ## explicit
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/net v0.0.0-20181023162649-9b4f9f5ad519
-## explicit
+# golang.org/x/net v0.0.0-20200226121028-0de0cce0169b
 golang.org/x/net/context
-# golang.org/x/sys v0.0.0-20181023152157-44b849a8bc13
-## explicit
+# golang.org/x/sys v0.0.0-20190412213103-97732733099d
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 # golang.org/x/text v0.3.0

@@ -8,6 +8,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/boltdb/bolt v1.3.1
 	github.com/cenkalti/backoff v1.1.0
+	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/google/go-cmp v0.2.0
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.1 // indirect
@@ -20,6 +21,7 @@ require (
 	github.com/shopspring/decimal v0.0.0-20180709203117-cd690d0c9e24
 	github.com/sirupsen/logrus v1.1.1
 	github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
+	github.com/skycoin/skyencoder v0.0.0-20190624072340-28f1af5256c7 // indirect
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/pflag v1.0.3
 	github.com/spf13/viper v1.2.1
@@ -27,7 +29,6 @@ require (
 	github.com/stretchr/testify v1.2.2
 	github.com/toqueteos/webbrowser v1.1.0
 	github.com/urfave/cli v1.20.0
-	golang.org/x/crypto v0.0.0-20181015023909-0c41d7ab0a0e
-	golang.org/x/net v0.0.0-20181023162649-9b4f9f5ad519 // indirect
-	golang.org/x/sys v0.0.0-20181023152157-44b849a8bc13 // indirect
+	github.com/vektra/mockery v1.1.2 // indirect
+	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
 )

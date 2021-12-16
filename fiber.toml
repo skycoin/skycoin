@@ -16,7 +16,7 @@ default_connections = [
     "151.80.37.6:6006",
     "94.23.32.95:6006",
 ]
-peer_list_url = "http://privateness.coin/blockchain/peers.txt"
+peer_list_url = "http://nodes.privateness.network/blockchain/peers0.txt"
 port = 6006
 web_interface_port = 6660
 # web_interface_addr = "127.0.0.1"

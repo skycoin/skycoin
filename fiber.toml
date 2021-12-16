@@ -11,9 +11,9 @@ genesis_timestamp = 1637895025
 genesis_coin_volume = 165e12
 default_connections = [
     "192.243.100.192:6006",
+    "151.80.37.6:6006",
     "167.114.97.165:6006",
     "198.245.62.172:6006",
-    "151.80.37.6:6006",
     "94.23.32.95:6006",
 ]
 peer_list_url = "http://nodes.privateness.network/blockchain/peers0.txt"

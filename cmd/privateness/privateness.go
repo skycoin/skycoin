@@ -59,9 +59,9 @@ var (
 	// DefaultConnections the default trust node addresses
 	DefaultConnections = []string{
 		"192.243.100.192:6006",
+		"151.80.37.6:6006",
 		"167.114.97.165:6006",
 		"198.245.62.172:6006",
-		"151.80.37.6:6006",
 		"94.23.32.95:6006",
 	}
 
@@ -74,17 +74,17 @@ var (
 		BlockchainPubkeyStr: BlockchainPubkeyStr,
 		BlockchainSeckeyStr: BlockchainSeckeyStr,
 		DefaultConnections:  DefaultConnections,
-		PeerListURL:         "http://privateness.coin/blockchain/peers.txt",
+		PeerListURL:         "http://nodes.privateness.network/blockchain/peers0.txt",
 		Port:                6006,
 		WebInterfacePort:    6660,
 		DataDirectory:       "$HOME/.privateness",
 
 		UnconfirmedBurnFactor:          10,
 		UnconfirmedMaxTransactionSize:  32768,
-		UnconfirmedMaxDropletPrecision: 3,
+		UnconfirmedMaxDropletPrecision: 6,
 		CreateBlockBurnFactor:          10,
 		CreateBlockMaxTransactionSize:  32768,
-		CreateBlockMaxDropletPrecision: 3,
+		CreateBlockMaxDropletPrecision: 6,
 		MaxBlockTransactionsSize:       32768,
 
 		DisplayName:           "Privateness",
@@ -94,7 +94,7 @@ var (
 		CoinHoursTicker:       "NCH",
 		QrURIPrefix:           "privateness",
 		ExplorerURL:           "https://explorer.privateness.network",
-		VersionURL:            "https://version.skycoin.com/skycoin/version.txt",
+		VersionURL:            "https://nodes.privateness.network/blockchain/version.txt",
 		Bip44Coin:             8000,
 	})
 

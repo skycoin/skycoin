@@ -20,6 +20,7 @@ GO111MODULE=off go run -ldflags "${GOLDFLAGS}" $GORUNFLAGS ./cmd/privateness/...
     -enable-all-api-sets=true \
     -enable-gui=true \
     -log-level=debug \
+    -disable-pex=true \
     $@
 
 popd >/dev/null

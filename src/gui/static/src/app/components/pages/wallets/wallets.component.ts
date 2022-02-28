@@ -101,7 +101,7 @@ export class WalletsComponent implements OnInit, OnDestroy {
   // Opens the create wallet modal window, for creating a new wallet (create === true) or loading
   // an old one.
   addWallet(create: boolean) {
-    CreateWalletComponent.openDialog(this.dialog, { create });
+    CreateWalletComponent.openDialog(this.dialog, { create: create });
   }
 
   // Opens the hw wallet options modal window.

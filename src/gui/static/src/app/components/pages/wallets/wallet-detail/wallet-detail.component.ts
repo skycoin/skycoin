@@ -144,9 +144,9 @@ export class WalletDetailComponent implements OnDestroy {
     }
 
     AddressOptionsComponent.openDialog(this.dialog).afterClosed().subscribe(result => {
-      if (result === AddressOptions.new) {
+      if (result === AddressOptions.New) {
         this.newAddresses();
-      } else if (result === AddressOptions.scan) {
+      } else if (result === AddressOptions.Scan) {
         this.scanAddresses();
       }
     });

@@ -185,7 +185,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
     config.autoFocus = false;
 
     // Data for the modal window.
-    config.data = <ChildHwDialogParams> {
+    config.data = {
       // Include the current wallet, if there is one.
       wallet: this.wallet,
       walletHasPin: !this.needsPin,
@@ -203,7 +203,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
           this.customErrorMsg = error;
         }
       }),
-    };
+    } as ChildHwDialogParams;
 
     // Open the modal window.
     this.dialogSubscription = this.dialog.open(dialogType, config).afterClosed().subscribe(() => {

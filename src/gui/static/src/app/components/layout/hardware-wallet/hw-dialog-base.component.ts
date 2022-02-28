@@ -16,16 +16,16 @@ export class ResultData {
   /**
    * Text to show.
    */
-  text: String;
+  text: string;
   /**
    * Link to show after the text. Must be a valid URL.
    */
-  link?: String;
+  link?: string;
   /**
    * Text to show for the link, in case the raw value set in the "link" var is not what the
    * UI must show. If not set, the value of the "link" var is used.
    */
-  linkText?: String;
+  linkText?: string;
   /**
    * If true, the route set in the "link" var is used as an internal link, so it is not openned
    * in a new tab.

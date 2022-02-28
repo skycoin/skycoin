@@ -57,11 +57,11 @@ export class HwWalletPinService {
    * @returns The PIN entered by the user, or null if the user cancelled the operation.
    */
   requestPin(): Observable<string> {
-    return this.requestPinComponentInternal.openDialog(this.dialog, <HwPinDialogParams> {
+    return this.requestPinComponentInternal.openDialog(this.dialog, {
       changingPin: this.changingPin,
       changePinState: this.changePinState,
       signingTx: this.signingTx,
-    }).afterClosed().pipe(map(pin => {
+    } as HwPinDialogParams).afterClosed().pipe(map(pin => {
       if (this.changingPin) {
         // If setting or changing the PIN, automatically change the state to the one corresponding
         // to the next step.

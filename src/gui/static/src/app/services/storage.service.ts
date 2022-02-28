@@ -41,7 +41,7 @@ export class StorageService {
    * storage, set to the corresponding value.
    */
   get(type: StorageType, key: string|null): Observable<any> {
-    const params = <any> { type };
+    const params = { type: type } as any;
 
     if (key) {
       params.key = key;

@@ -450,7 +450,7 @@ export class WalletsAndAddressesService {
             // This is just a precaution.
             wallet.isHardware = true;
             if (!wallet.addresses) {
-              wallet.addresses = [{ address: 'invalid', confirmed: false, }];
+              wallet.addresses = [{ address: 'invalid', confirmed: false }];
             }
 
             wallet.id = wallet.addresses[0].address;
@@ -477,7 +477,7 @@ export class WalletsAndAddressesService {
    * @returns True if the address is valid or false otherwise.
    */
   verifyAddress(address: string): Observable<boolean> {
-    return this.apiService.post('address/verify', { address }, {useV2: true}).pipe(
+    return this.apiService.post('address/verify', { address: address }, {useV2: true}).pipe(
       map(() => true),
       catchError((err: OperationError) => {
         err = processServiceError(err);

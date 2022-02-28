@@ -111,9 +111,10 @@ export class BlockchainService {
     }
 
     this.ngZone.runOutsideAngular(() => {
-      this.dataSubscription = of(0).pipe(delay(delayMs), mergeMap(() => {
-        return this.apiService.get('blockchain/progress');
-      })).subscribe((response: any) => {
+      this.dataSubscription = of(0).pipe(
+        delay(delayMs),
+        mergeMap(() => this.apiService.get('blockchain/progress')),
+      ).subscribe((response: any) => {
         this.ngZone.run(() => {
           // Stop if a value is not valid.
           if (!response || !response.current || !response.highest || response.highest === 0 || response.current < this.lastCurrentBlock || response.highest < this.lastHighestBlock) {

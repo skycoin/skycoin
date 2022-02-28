@@ -16,9 +16,9 @@ export class OnboardingEncryptWalletComponent implements OnInit, OnDestroy {
   // Emits when the user presses the button for going to the next step of the wizard, after
   // filling the form. Includes the password entered by the user, or null, if the user
   // selected not to encrypt the wallet.
-  @Output() onPasswordCreated = new EventEmitter<string|null>();
+  @Output() passwordCreated = new EventEmitter<string|null>();
   // Emits when the user presses the button for going back to the previous step of the wizard.
-  @Output() onBack = new EventEmitter();
+  @Output() goBack = new EventEmitter();
   form: FormGroup;
 
   // If creating a temporal wallet.
@@ -55,14 +55,18 @@ export class OnboardingEncryptWalletComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.onPasswordCreated.complete();
-    this.onBack.complete();
+    this.passwordCreated.complete();
+    this.goBack.complete();
   }
 
   // Called after pressing the checkbox for selecting if the wallet must be encrypted with
   // a password or not.
   setEncrypt(event) {
-    event.checked ? this.form.enable() : this.form.disable();
+    if (event.checked) {
+      this.form.enable();
+    } else {
+      this.form.disable();
+    }
   }
 
   // Emits an event for going to the next step of the wizard.
@@ -73,14 +77,14 @@ export class OnboardingEncryptWalletComponent implements OnInit, OnDestroy {
 
     this.button.setLoading();
 
-    this.onPasswordCreated.emit(!this.creatingTemporal && this.form.enabled ? this.form.get('password').value : null);
+    this.passwordCreated.emit(!this.creatingTemporal && this.form.enabled ? this.form.get('password').value : null);
 
     this.changeDetector.detectChanges();
   }
 
   // Emits an event for going to the previous step of the wizard.
   emitBack() {
-    this.onBack.emit();
+    this.goBack.emit();
   }
 
   // Returns the continue button to its initial state.

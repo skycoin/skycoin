@@ -33,7 +33,7 @@
       [rightButtonText]="navBarSwitchService.rightText | translate"
       [activeButton]="navBarSwitchService.activeComponent | async"
       className="light navbar"
-      (onStateChange)="changeActiveComponent($event)"
+      (stateChange)="changeActiveComponent($event)"
     ></app-double-button>
   </div>
 </div>

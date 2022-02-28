@@ -81,6 +81,7 @@ export class HwWalletService {
   /**
    * Last modal window openned for asking the user confirmation for signing a transaction.
    */
+  /* eslint-disable @typescript-eslint/ban-types */
   private signTransactionDialog: MatDialogRef<{}, any>;
 
   // Set on AppComponent to avoid a circular reference.
@@ -124,9 +125,7 @@ export class HwWalletService {
    * Detects if there is currently a hw wallet connected.
    */
   getDeviceConnected(): Observable<boolean> {
-    return this.hwWalletDaemonService.get('/available').pipe(map((response: any) => {
-      return response.data;
-    }));
+    return this.hwWalletDaemonService.get('/available').pipe(map((response: any) => response.data));
   }
 
   /**
@@ -163,19 +162,19 @@ export class HwWalletService {
           params,
         ), null, true,
       );
-    }), mergeMap(response => {
-      // Check if the device returned valid addresses and create an appropiate error if nedded.
-      return this.verifyAddresses(response.rawResponse, 0).pipe(
-        catchError(err => {
-          const resp = new OperationError();
-          resp.originalError = err;
-          resp.type = HWOperationResults.AddressGeneratorProblem;
-          resp.translatableErrorMsg = this.hwWalletDaemonService.getHardwareWalletErrorMsg(resp.type);
-          resp.originalServerErrorMsg = '';
+    // Check if the device returned valid addresses and create an appropiate error if nedded.
+    }), mergeMap(response => this.verifyAddresses(response.rawResponse, 0).pipe(
+      catchError(err => {
+        const resp = new OperationError();
+        resp.originalError = err;
+        resp.type = HWOperationResults.AddressGeneratorProblem;
+        resp.translatableErrorMsg = this.hwWalletDaemonService.getHardwareWalletErrorMsg(resp.type);
+        resp.originalServerErrorMsg = '';
 
-          return observableThrowError(resp);
-        }), map(() => response));
-    }));
+        return observableThrowError(resp);
+      }),
+      map(() => response),
+    )));
   }
 
   /**
@@ -272,9 +271,7 @@ export class HwWalletService {
 
       // Get the version number of the lastest firmware.
       return this.http.get(AppConfig.urlForHwWalletVersionChecking, { responseType: 'text' }).pipe(
-        catchError(() => {
-          return observableThrowError('hardware-wallet.update-firmware.connection-error');
-        }),
+        catchError(() => observableThrowError('hardware-wallet.update-firmware.connection-error')),
         mergeMap((res: any) => {
           let lastestFirmwareVersion: string = res.trim();
           if (lastestFirmwareVersion.toLowerCase().startsWith('v')) {
@@ -283,9 +280,7 @@ export class HwWalletService {
 
           // Download the lastest firmware.
           return this.http.get(AppConfig.hwWalletDownloadUrlAndPrefix + lastestFirmwareVersion + '.bin', { responseType: 'arraybuffer' }).pipe(
-            catchError(() => {
-              return observableThrowError('hardware-wallet.update-firmware.connection-error');
-            }),
+            catchError(() => observableThrowError('hardware-wallet.update-firmware.connection-error')),
             mergeMap(firmware => {
               downloadCompleteCallback();
               const data = new FormData();
@@ -548,6 +543,7 @@ export class HwWalletService {
    * the daemon response before emiting it to the subscription.
    */
   private processDaemonResponse(daemonResponse: Observable<any>, successTexts: string[] = null, responseShouldBeArray = false): Observable<any> {
+    /* eslint-disable arrow-body-style */
     return daemonResponse.pipe(catchError((error: any) => {
       // Process the error to get it in an appropiate format.
       return observableThrowError(this.buildResponseObject(error, false));

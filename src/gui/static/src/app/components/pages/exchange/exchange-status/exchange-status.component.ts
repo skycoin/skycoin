@@ -93,7 +93,7 @@ export class ExchangeStatusComponent implements OnDestroy {
     return {
       text: `exchange.statuses.${status}`,
       info: `exchange.statuses.${status}-info`,
-      params,
+      params: params,
     };
   }
 
@@ -168,6 +168,7 @@ export class ExchangeStatusComponent implements OnDestroy {
       this.testStatusIndex = this.statuses.length - 1;
     }
 
+    /* eslint-disable arrow-body-style */
     this.subscription = of(0).pipe(delay(delayTime), mergeMap(() => {
       // Orders created using the sandbox methods are not saved on the backend, so a
       // predefined ID is provided if the tests mode is being used, and a simulated status.
@@ -177,7 +178,7 @@ export class ExchangeStatusComponent implements OnDestroy {
       );
     })).subscribe(order => {
       // Restore the amount of coins the user must send, as the backend may have not included it.
-      this.order = { ...order, fromAmount };
+      this.order = { ...order, fromAmount: fromAmount };
       this._orderDetails.id = order.id;
       // Remember the last viewed order.
       this.exchangeService.lastViewedOrder = this._orderDetails;

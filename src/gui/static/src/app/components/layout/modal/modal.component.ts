@@ -25,13 +25,14 @@ export class ModalComponent {
     this.dialogInternal = val;
   }
 
-  @HostListener('window:keyup.esc') onKeyUp() {
-    this.closePopup();
-  }
-
   constructor(
     private matDialog: MatDialog,
   ) { }
+
+  @HostListener('window:keyup.esc')
+  onKeyUp() {
+    this.closePopup();
+  }
 
   closePopup() {
     if (!this.disableDismiss) {

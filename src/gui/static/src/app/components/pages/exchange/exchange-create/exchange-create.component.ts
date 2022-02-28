@@ -239,9 +239,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
 
   // Updates the var with the currently selected trading pair.
   private updateActiveTradingPair() {
-    this.activeTradingPair = this.tradingPairs.find(p => {
-      return p.from === this.form.get('fromCoin').value;
-    });
+    this.activeTradingPair = this.tradingPairs.find(p => p.from === this.form.get('fromCoin').value);
 
     if (!this.activeTradingPair && this.tradingPairs.length > 0) {
       this.activeTradingPair = this.tradingPairs[0];

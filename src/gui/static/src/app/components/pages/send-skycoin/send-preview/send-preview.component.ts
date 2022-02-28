@@ -30,7 +30,7 @@ export class SendVerifyComponent implements OnDestroy {
   // Emits when the preview must be removed from the UI and the form must be shown again. The
   // boolean value indicates if the form must be cleaned before showing it (true) or if it must
   // show the previously entered data again (false).
-  @Output() onBack = new EventEmitter<boolean>();
+  @Output() goBack = new EventEmitter<boolean>();
 
   private sendSubscription: SubscriptionLike;
 
@@ -50,12 +50,12 @@ export class SendVerifyComponent implements OnDestroy {
       this.sendSubscription.unsubscribe();
     }
 
-    this.onBack.complete();
+    this.goBack.complete();
   }
 
   // Returns to the form.
   back() {
-    this.onBack.emit(false);
+    this.goBack.emit(false);
   }
 
   // Sends the transaction.
@@ -86,7 +86,7 @@ export class SendVerifyComponent implements OnDestroy {
         // a new transaction.
         ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
           if (confirmationResult) {
-            this.onBack.emit(true);
+            this.goBack.emit(true);
           }
         });
       });
@@ -144,7 +144,7 @@ export class SendVerifyComponent implements OnDestroy {
 
       this.balanceAndOutputsService.refreshBalance();
 
-      this.onBack.emit(true);
+      this.goBack.emit(true);
     }, error => {
       if (passwordDialog) {
         passwordDialog.error(error);

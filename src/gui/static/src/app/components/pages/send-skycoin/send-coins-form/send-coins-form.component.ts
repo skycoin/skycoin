@@ -331,7 +331,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
 
   // Fills the form with the provided values.
   private fillForm() {
-    this.showForManualUnsigned = this.formData.showForManualUnsigned,
+    this.showForManualUnsigned = this.formData.showForManualUnsigned;
 
     this.formSourceSelection.fill(this.formData);
     this.formMultipleDestinations.fill(this.formData);
@@ -648,7 +648,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
           },
           amount: amount,
           to: destinations.map(d => d.address),
-          transaction,
+          transaction: transaction,
           showForManualUnsigned: this.showForManualUnsigned,
         });
         this.busy = false;
@@ -681,11 +681,11 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     };
 
     if (this.autoHours && !this.hoursAddedToSimpleForm) {
-      hoursSelection = <HoursDistributionOptions> {
+      hoursSelection = {
         type: HoursDistributionTypes.Auto,
         mode: 'share',
         share_factor: this.autoShareValue,
-      };
+      } as HoursDistributionOptions;
     }
 
     return hoursSelection;

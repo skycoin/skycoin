@@ -17,6 +17,7 @@ import { OperationError, OperationErrorTypes } from '../../utils/operation-error
  */
 @Injectable()
 export class WalletsAndAddressesService {
+
   /**
    * Key used for saving the hw wallet list in persistent storage.
    */

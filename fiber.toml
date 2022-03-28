@@ -43,7 +43,7 @@ unlock_address_rate = 5
 # unlock_time_interval = 60 * 60 * 24 * 365
 # user_max_decimals = 3
 # user_max_transaction_size = 32 * 1024
-user_burn_factor = 0
+user_burn_factor = 10
 distribution_addresses = [
 "2j3MwXbaaHpDqjNuukERpmqZbAGwbw6fTSS",
 "2jYb4Jds2sJezvz3FwpRNQeSitKAWjSJ8pD",

@@ -3,6 +3,7 @@ import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dial
 
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';
+import { AppConfig } from '../../../../app.config';
 
 /**
  * Modal window for alerting the user that there is a firmware update available. If the user
@@ -21,7 +22,7 @@ export class HwUpdateAlertDialogComponent extends HwDialogBaseComponent<HwUpdate
   public static openDialog(dialog: MatDialog): MatDialogRef<HwUpdateAlertDialogComponent, any> {
     const config = new MatDialogConfig();
     config.autoFocus = false;
-    config.width = '450px';
+    config.width = AppConfig.smallModalWidth;
 
     return dialog.open(HwUpdateAlertDialogComponent, config);
   }

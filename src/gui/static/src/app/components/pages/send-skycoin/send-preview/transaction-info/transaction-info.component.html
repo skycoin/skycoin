@@ -44,7 +44,7 @@
       <!-- Transaction balance. -->
       <div class="col-md-3 -tx-price">
         <div class="-icon">
-          <img [src]="'assets/img/' + (shouldShowIncomingIcon ? 'received' : 'sent') + '-blue.png'">
+          <img [src]="'assets/img/' + transactionIcon">
         </div>
         <h4>{{ balanceToShow | amount }}</h4>
         <p *ngIf="price" [matTooltip]="!isPreview ? ('tx.current-rate-help' | translate) : ''">

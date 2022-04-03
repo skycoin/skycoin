@@ -181,7 +181,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
 
     this.removeDialogSubscription();
     const config = new MatDialogConfig();
-    config.width = '450px';
+    config.width = AppConfig.smallModalWidth;
     config.autoFocus = false;
 
     // Data for the modal window.

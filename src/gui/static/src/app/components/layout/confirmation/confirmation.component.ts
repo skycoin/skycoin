@@ -1,6 +1,8 @@
 import { Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 
+import { AppConfig } from '../../../app.config';
+
 /**
  * Predefined button combinations for ConfirmationComponent.
  */
@@ -79,7 +81,7 @@ export class ConfirmationComponent {
     const config = new MatDialogConfig();
     config.data = confirmationParams;
     config.autoFocus = false;
-    config.width = '450px';
+    config.width = AppConfig.smallModalWidth;
 
     return dialog.open(ConfirmationComponent, config);
   }

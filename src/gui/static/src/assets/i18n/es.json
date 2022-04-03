@@ -30,7 +30,7 @@
 
     "warnings": {
       "update-part1": "La actualización",
-      "update-part2": "Not used. The code adds the versión number of the lastest update here.",
+      "update-part2": "Not used. The code adds the versión number of the latest update here.",
       "update-part3": "está disponible.",
       "synchronizing": "La billetera está sincronizando. Los datos mostrados pueden estar desactualizados.",
       "pending-txs-part1": "Hay una o más",
@@ -406,7 +406,7 @@
     "outputs-title": "Salidas",
     "confirmed-transaction": "Confirmada",
     "pending-transaction": "Pendiente",
-    "current-rate-help": "Calculado a la tasa actual."
+    "current-rate-help": "Valor fiat calculado a la tasa actual."
   },
 
   "edit-note": {
@@ -489,11 +489,13 @@
     "receiving": "Recibiendo {{ coinName }}",
     "pending-indication": "Pendiente",
     "transaction-note-small-label": "Nota:",
+    "hours-burned-help": "Horas quemadas.",
     "no-txs": "Usted no tiene historial de transacciones",
     "no-txs-filter": "No hay transacciones que coincidan con los criterios de filtro actuales",
     "no-filter": "Sin filtros activos (presione para seleccionar billeteras/direcciones)",
     "filter": "Filtro activo: ",
     "filters": "Filtros activos: ",
+    "remove-filters-help": "Remover filtros.",
     "all-addresses": "Todas las direcciones",
     "view-all": "Ver todas las {{ number }} transacciones"
   },

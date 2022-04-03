@@ -436,7 +436,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
         confirmationText = 'send.sending-all-hours-waning';
       } else {
         if (coinsToSend.isEqualTo(this.availableBalance.availableCoins)) {
-          if ((this.formSourceSelection.wallet.coins.isEqualTo(this.availableBalance.availableCoins))) {
+          if (!this.showForManualUnsigned && (this.formSourceSelection.wallet.coins.isEqualTo(this.availableBalance.availableCoins))) {
             // Sending all hours in the wallet, because the user is sending all the coins it has.
             confirmationText = 'send.sending-all-hours-with-coins-waning';
           } else {
@@ -444,7 +444,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
             confirmationText = 'send.advanced-sending-all-hours-with-coins-waning';
           }
         } else {
-          if ((this.formSourceSelection.wallet.coins.isEqualTo(this.availableBalance.availableCoins))) {
+          if (!this.showForManualUnsigned && (this.formSourceSelection.wallet.coins.isEqualTo(this.availableBalance.availableCoins))) {
             // Potentially sending all hours in the selected wallet, due to the sharing factor.
             confirmationText = 'send.high-hours-share-waning';
           } else {

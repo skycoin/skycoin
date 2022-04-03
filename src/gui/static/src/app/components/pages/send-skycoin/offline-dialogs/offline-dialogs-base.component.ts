@@ -72,6 +72,15 @@ export class OfflineDialogsBaseComponent {
   }
 
   /**
+   * Marks a field as touched and then calls validate().
+   * @param fieldName Name of the field to mark as touched.
+   */
+  markAndValidate(fieldName: string) {
+    this.form.get(fieldName).markAsTouched();
+    this.validate();
+  }
+
+  /**
    * Validates the form and updates the vars with the validation errors.
    */
   private validate() {

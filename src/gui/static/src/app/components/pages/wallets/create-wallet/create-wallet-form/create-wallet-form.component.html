@@ -6,12 +6,21 @@
   </div>
   <!-- How many words the seed has (while loading only). -->
   <div class="form-field" *ngIf="!create && enterSeedWithAssistance">
-    <label for="number_of_words">{{ 'wallet.new.words-number-label' | translate}}</label>
+    <label for="number_of_words" (click)="!busy ? numberOfWords.open() : null">{{ 'wallet.new.words-number-label' | translate}}</label>
     <div class="-select">
-      <select formControlName="number_of_words" id="number_of_words" [attr.disabled]="busy ? 'true' : null">
-        <option [ngValue]="12">{{ 'wallet.new.12-words' | translate }}</option>
-        <option [ngValue]="24">{{ 'wallet.new.24-words' | translate }}</option>
-      </select>
+      <mat-select
+        #numberOfWords
+        formControlName="number_of_words"
+        id="number_of_words"
+        [attr.disabled]="busy ? 'true' : null"
+        [ngClass]="{'element-disabled' : busy}"
+      >
+        <mat-option [value]="12">{{ 'wallet.new.12-words' | translate }}</mat-option>
+        <mat-option [value]="24">{{ 'wallet.new.24-words' | translate }}</mat-option>
+        <mat-select-trigger *ngIf="form.controls['number_of_words'].value">
+          {{ this.form.controls['number_of_words'].value }}
+        </mat-select-trigger>
+      </mat-select>
     </div>
   </div>
   <div class="form-field">

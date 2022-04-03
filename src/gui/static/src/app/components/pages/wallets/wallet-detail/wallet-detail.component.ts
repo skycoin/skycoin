@@ -190,7 +190,26 @@ export class WalletDetailComponent implements OnDestroy {
         const howManyAddresses = eventData.howManyAddresses;
         const callback = eventData.callback;
 
-        let lastWithBalance = 0;
+        if (howManyAddresses >= maxAddressesGap) {
+          // Tell the user that the gap could cause problems and ask for confirmation.
+          const confirmationParams: ConfirmationParams = {
+            text: 'wallet.add-many-confirmation',
+            defaultButtons: DefaultConfirmationButtons.YesNo,
+          };
+
+          ConfirmationComponent.openDialog(this.dialog, confirmationParams).afterClosed().subscribe(confirmationResult => {
+            if (confirmationResult) {
+              callback(true);
+              this.continueNewAddress(howManyAddresses);
+            } else {
+              callback(false);
+            }
+          });
+
+          return;
+        }
+
+        let lastWithBalance = -1;
         this.wallet.addresses.forEach((address, i) => {
           if (address.coins.isGreaterThan(0)) {
             lastWithBalance = i;
@@ -219,7 +238,7 @@ export class WalletDetailComponent implements OnDestroy {
             });
 
             // Get the index of the last address with transaction history.
-            let lastWithTxs = 0;
+            let lastWithTxs = -1;
             this.wallet.addresses.forEach((address, i) => {
               if (AddressesWithTxs.has(address.address)) {
                 lastWithTxs = i;

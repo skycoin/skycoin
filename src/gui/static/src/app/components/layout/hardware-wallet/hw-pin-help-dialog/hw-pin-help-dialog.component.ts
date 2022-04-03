@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 
+import { AppConfig } from '../../../../app.config';
+
 /**
  * Shows instructions about how to use the PIN matrix.
  */
@@ -16,7 +18,7 @@ export class HwPinHelpDialogComponent {
   public static openDialog(dialog: MatDialog): MatDialogRef<HwPinHelpDialogComponent, any> {
     const config = new MatDialogConfig();
     config.autoFocus = false;
-    config.width = '450px';
+    config.width = AppConfig.smallModalWidth;
 
     return dialog.open(HwPinHelpDialogComponent, config);
   }

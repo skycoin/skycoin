@@ -5,6 +5,7 @@ import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 
 import { ChildHwDialogParams } from '../../layout/hardware-wallet/hw-options-dialog/hw-options-dialog.component';
 import { HwWipeDialogComponent } from '../../layout/hardware-wallet/hw-wipe-dialog/hw-wipe-dialog.component';
+import { AppConfig } from '../../../app.config';
 
 /**
  * Allows wipe a Skywallet. It is mainly for restoring the device when the user is not able to
@@ -24,7 +25,7 @@ export class ForceSkywalletWipeComponent {
 
   proceed() {
     const config = new MatDialogConfig();
-    config.width = '450px';
+    config.width = AppConfig.smallModalWidth;
     config.autoFocus = false;
 
     // Data for the modal window.

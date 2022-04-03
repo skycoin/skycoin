@@ -44,10 +44,10 @@
     }
   }
 
-  .x-button {
-    width: 24px;
-    height: 24px;
+  .close-button {
+    font-size: 16px;
     margin-top: 10px;
+    color: $grey;
   }
 }
 
@@ -143,9 +143,23 @@
       margin: 0 0 8px 0;
     }
 
-    p {
-      color: $grey;
+    .fiat-container {
+      margin: 0 0 7px 0;
       display: inline-block;
+    }
+
+    .burn-container {
+      display: inline-flex;
+      align-items: center;
+
+      img {
+        width: 18px;
+        height: 18px;
+      }
+    }
+
+    div {
+      color: $grey;
       margin: 0;
     }
   }

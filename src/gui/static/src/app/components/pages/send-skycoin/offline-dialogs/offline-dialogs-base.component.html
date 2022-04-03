@@ -12,24 +12,29 @@
     <div [formGroup]="form" class="modal-form-container">
       <!-- Dropdown. -->
       <div *ngIf="dropdownElements" class="form-field">
-        <label *ngIf="dropdownLabel" for="dropdown">{{ dropdownLabel | translate }}</label>
+        <label *ngIf="dropdownLabel" for="dropdown" (click)="dropdown.open()">
+          {{ dropdownLabel | translate }}
+        </label>
         <div class="-select">
-          <select
+          <mat-select
+            #dropdown
             formControlName="dropdown"
             id="dropdown"
+            [placeholder]="(defaultDropdownText ? defaultDropdownText : '') | translate"
             [attr.disabled]="working ? 'true' : null"
             [appFormFieldError]="dropdownErrorMsg"
-            (blur)="validate()"
+            [ngClass]="{'element-disabled' : working}"
+            (blur)="markAndValidate('dropdown')"
           >
-            <option *ngIf="defaultDropdownText" disabled hidden [ngValue]="''">{{ defaultDropdownText | translate }}</option>
-            <ng-container *ngIf="dropdownElements">
-              <ng-container *ngFor="let element of dropdownElements">
-                <option [ngValue]="element.value">
-                  {{ element.name }}
-                </option>
-              </ng-container>
-            </ng-container>
-          </select>
+            <mat-option *ngFor="let element of dropdownElements" [value]="element.value">
+              {{ element.name }}
+            </mat-option>
+            <mat-select-trigger>
+              <div *ngIf="this.form.get('dropdown').value">
+                {{ form.get('dropdown').value.label }}
+              </div>
+            </mat-select-trigger>
+          </mat-select>
         </div>
       </div>
       <!-- Textarea. -->

@@ -23,10 +23,11 @@
     border-radius: $input-border-radius;
     box-sizing: border-box;
     display: block;
-    font-size: $font-size-standard;
+    font-size: $font-size-standard-plus;
     line-height: 1.5;
     padding: 10px 10px;
     width: 100%;
+    font-family: inherit;
   }
 
   input {

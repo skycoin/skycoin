@@ -488,6 +488,15 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Marks a field as touched and then calls validateForm().
+   * @param fieldName Name of the field to mark as touched.
+   */
+  markAndValidate(fieldName: string) {
+    this.form.get(fieldName).markAsTouched();
+    this.validateForm();
+  }
+
+  /**
    * Validates the form and updates the vars with the validation errors.
    */
   validateForm() {

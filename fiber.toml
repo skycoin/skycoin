@@ -1,0 +1,148 @@
+
+# fiber configuration
+# Defaults are shown, commented out
+# Some values have no defaults and must be filled in
+[node]
+genesis_signature_str = "11ab0ae8b705817d952ab2741da89be0c820134c0f6501412b4a6d70075e0ccb0a16f5a95c1aa604092eb1829c14e0b5699db2869bba138d8ef773bcd88d56cd00"
+genesis_address_str = "24GJTLPMoz61sV4J4qg1n14x5qqDwXqyJJy"
+blockchain_pubkey_str = "02933015bd2fa1e0a885c05fb08eb7c647bf8c3188ed5120b51d0d09ccaf525036"
+blockchain_seckey_str = ""
+genesis_timestamp = 1637895025
+genesis_coin_volume = 165e12
+default_connections = [
+    "154.16.118.97:6006",
+    "151.80.37.6:6006",
+    "179.61.232.155:6006",
+]
+peer_list_url = "http://nodes.privateness.network/blockchain/peers1.txt"
+port = 6006
+web_interface_port = 6660
+# web_interface_addr = "127.0.0.1"
+unconfirmed_burn_factor = 5
+# unconfirmed_max_transaction_size = 32 * 1024
+unconfirmed_max_decimals = 6
+create_block_burn_factor = 5
+# create_block_max_transaction_size = 32 * 1024
+create_block_max_decimals = 6
+# max_block_transactions_size = 32 * 1024
+display_name = "Privateness"
+ticker = "NESS"
+coin_hours_display_name = "Coin Hours"
+coin_hours_display_name_singular = "Coin Hour"
+coin_hours_ticker = "NCH"
+qr_uri_prefix = "privateness"
+explorer_url = "https://explorer.privateness.network"
+version = "https://privateness.network/blockchain/version.txt"
+#bip44_coin = 8000
+
+[params]
+max_coin_supply = 165e12
+
+initial_unlocked_count = 100
+unlock_address_rate = 0
+# unlock_time_interval = 60 * 60 * 24 * 365
+user_max_decimals = 6
+# user_max_transaction_size = 32 * 1024
+user_burn_factor = 5
+distribution_addresses = [
+"2ZVr2q7rwHYGgHHWeXH1FgEg5XgmayWK6DH",
+"27kyzPdyy8pdeezEYJ6A1QJ8WCBJLAkDymH",
+"2dXFwKuKb956YL9kAEf4u1pcRYZaFecUNuQ",
+"2kJA8qj2hW7XWxs2RHozspaHvddcZm5uvJ9",
+"2ncD5HMCoLX9GriLRgAEjiVPJQ682qjsmN",
+"2MeW2ePwi1aKTVKjGJj33WJULcU8bLawNWe",
+"ZwX5jAwtFRtTtyttakrfJrpCJySKZHqDFj",
+"2JXZmiHhjcexZzJa58Y7a2s3RbGmbyNX4nj",
+"s2odY47BvNenKYY8KJ2iyybJZTgcc513Ce",
+"xm7AxQ5TS2yF4Uw55oEFEqKtT5TgBtDycz",
+"2iQqobvoE888v5r41adnYELbBV7zcamFsbS",
+"2WvNcp5odgspBVuhkiiwKNs6C6P7VEPzvgb",
+"25dzRQ4jDBNjMMkLx4cQD8Cokyk7zCFFc5d",
+"Xv1sVKtwrMajBEsBtJkmtzyzWNNFkdx3X2",
+"NoDKJVVrPrDGok5ECPguMRL4HB67hDpzMd",
+"ENv7DEdPrjoPDQNuw7dvEFvwtu1ocv33gg",
+"n9oodz7rAk1psPV86FhdwxRyzVENs58xef",
+"G1yEiSMZdHnkNismfzpK88Mt1zekAF7u8h",
+"2Cp17L4icyKLDPhJ3U2b52HWvFoHrcB6cLD",
+"2NeniRrtrBjpdum1MZC7ioaemYVvjoMdUJT",
+"rSf6HGHha1aVkP2ByDYZKASBwBUMSv5TzU",
+"2GTX9Jm9rfuGwLqcZVa761eQi27kgfycGja",
+"21ACZZJxy9vd9QmD2VXWXKpnMp3S9uGREs5",
+"257VjSSMGAbLJC5XZ3HRwkpBtGx4iZgEzta",
+"5Phg9DW9ooUnfYW8N1vR8RRDqtKnEMXcoT",
+"2KXPKDkqEVJBRzMqEoGUtJ3RLodY2EQpLG9",
+"2Sd36eNdPQSUvD9EMzG8LbmK7i4rMFYrX5Z",
+"6AZLwUsCQMcuBejEJyEUK7zJgMZGJLUojG",
+"2JJrmeX9btAUaQaJfyMgMhnTwQg2FeZT5FV",
+"2j51igVoQpA9HZaSGmWryY55n6o9sWchjk",
+"2LyVokmNeD8toA6S2y53RvZRGVoRUb6oxrj",
+"Cq26nXHxtnVaywdf1bkxE6Ys7ANLeaYaEH",
+"xJzWyTrhPrWsLpmf84CCragQGujWUYbnKa",
+"j5dkFHCR5De8SzuHYuBbC42Y8MdDwmd15",
+"2GUTSej7owrYDjXfN1aPZ5vx4GGhXcZBoDL",
+"Yh5msrtvWUEGv4Upo9dUmyRYRcCBVhpb21",
+"21DHrddrQ8XJdqyzvX5TcXwXnFrZ44yoEGf",
+"UCQ4FdbP43Y7H8dAHXjcL2sdYMWSgU5zcS",
+"XZ3ZiPgq45APbZCyDzekxHhNmVVLLLVp4j",
+"7TMoAV7CiDEBAY4cA6QdSS6PSq589QBAqy",
+"RyBn2PpFjpXCpgSSmZEzwsCv92B52kj1G9",
+"2h6c4wkynZZQEttKGWs8s7j1H4VBN2Hunhe",
+"2Uu4iyDuSTKf8p493W14JdynCVoi7Pw7P2F",
+"K312hud4vBoMZcNJ33bZzYrc1yy2uR6XyC",
+"24qBTLjEyos4ti8A7egqH8pnv1NEpdMCaFT",
+"2M3U7Kd5SaGQZxQKkHjin7KHLgCkah3DyGs",
+"RAYBy6bP1ZmMhJNKWf6Ega8oRhnDE9B9Wr",
+"JgiRWcGdoC8KfZ6LfZAyNMpJBDmVjub87F",
+"dZkTdHYPmERNbSekukLxs4jCK5GGCEU5fk",
+"BKHUevUJ73SfqLKXgkWfodrGyJHdhLmRsy",
+"gjFvMjQE3cVUFSv4Nn1AnopVmu2KmNREv8",
+"FdHyr1ZACtfhRteEAC4Z9xmbcsGmsYLE8L",
+"235f3qzBxiUZf5w4Xniiayusye1zFYZhMpb",
+"G2xhv5YydcJDHcD4W8subSaPKw7aK42Pjs",
+"2bWAgsY2UuMk7exZn38HR4MYrWYd6ZXXwFX",
+"2GGs6Cpk1Hh13NbLYtJFLXBgURr5agvhMeX",
+"oywwvFDaTdu4UxsnbpjFc9yjNhqiyY9yKo",
+"28cGK1L3BuEpEa1H9tu4Qo3CYg1CBLALon5",
+"239Sdtqcg7Lh43hcc7ERZT4V9EXnAhKFauJ",
+"23GZqQLWELq3UhVWM1KY2yYBZjmai6bWX88",
+"Kggs51Er96PAidUbqkRqMA3zrNse3cKXBk",
+"2YS8KQdbHijGBRaJhctLckiHjK1LRuhL3kY",
+"7fymYxNrj4qa7td7PUumnezn6ZUm8qia1t",
+"kB4TJuZNSXSQzknCwQBrKhCtw7i5GmjnVD",
+"ZZMPMjaS23fQsS4qz83JpNrEsYmktmbfJ7",
+"Ub893Ygix3vu7SW3FssVEsJVL8QGMVqTKF",
+"t1TUQAmdisPhGDtqik23Jb5jmzDP6tTrqc",
+"2aZxGySSyFhB7uLBgHYrc8vkCb9hBmPPxzA",
+"2ectY6kfQmLyCQYn9Ld7cQUuiGt1kDdJrGk",
+"2iDeFCGNEBDTcopYoEqTAZd2W23oT6hrjmL",
+"2KceXvgu8j6gEotLwYjGCiCU8QybhCYNmxU",
+"5DKVFGRWRyr7ShKTWAiXoNzN3huJiaXF8V",
+"cKbNZUsQb3scGfrphjJLCUrc3kCiCU6xS5",
+"tzcMbRkpzxGdHg8MexgTF2v7Rh4JYZGn7w",
+"zZnYMoyvqojHkWAHXRjTScsVuMYTnn3ySv",
+"2Uj2dcjx11Mu3C1hAH3jfGJbjuGzBPgxMXF",
+"2fF8QFWeEVoGfdiNFWc5wPa13MN9n9RBLs2",
+"f4LGjj4oC6N54SyfhaLg61ACymS5Tm6tu7",
+"MuVwQN3vD6K1ELE9tjGKCcdC61ggyW2r39",
+"qqGDwck8K1ziTF5AuhnfyJ23SgK5BMG6Du",
+"AAynDNiFvAFV5SPiZ5u1wwmxyDUKwDCdrQ",
+"SHYMxFXDMX9gV5Rrtc3y7WAd1iARXMGj2",
+"zsq2RRhNaA8seLA7KxdPgxNJXKVvP1hDWp",
+"2K1zAcJe69dXHado6SgV4imW1V8jMAMkSPX",
+"F98YfxXHhrs1aeKUcqbYL7mTickiv8L5t2",
+"XXLfNsYboCNe718SKaaDmQGuggeQLQAMhd",
+"2Zc7Swk9TfMXEJgeqYQrRy8c9bUeRLtZYuw",
+"265E5yGotGzp2M5PoRtgWfG15XsetuD8nNN",
+"2mKCM6VCogt9xiCEYJhePETtRdt8dMXiyGV",
+"2VQw6vbHk5efoyVcXkyyZ4arR1qBJUnB92i",
+"TX1ecjETLA6q8BrMjvJFCqENzqYotQvruW",
+"2ZVDRcyv9ZcTRxDZ3s7EG42T7GqZeuf6TT8",
+"2ZTyheVVjqMiMtSpdiW1BnAmfZYGPji5yY4",
+"2FvuEtPLMwWJzYP2R1zsBdnAepfHVLbiC3s",
+"M95DCLtjPbRiMSqC7did3r2E8vDHRobnqw",
+"PEMN96BAB9SfPTu2MusefnFxLF2QDo71DB",
+"2hDTgQPDpHDwG95Pvcji8eoPVQq4yoLTyLc",
+"2cfytWxUE1png5YJCFXYxKSxJXqdFShJPtr",
+"2GXbvYnWJEcq2BW97S5GNU7eLZY6SHHjH8F",
+"ucsN8dZtZjNSHc2nyRoDM6kL8u5XDEFWDu",
+]

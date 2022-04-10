@@ -27,7 +27,8 @@
         [attr.disabled]="busy ? 'true' : null"
         [appFormFieldError]="walletErrorMsg"
         [ngClass]="{'element-disabled' : busy}"
-        (blur)="markAndValidate('wallet')">
+        (openedChange)="$event ? null : markAndValidate('wallet')"
+        >
         <mat-option *ngFor="let wallet of allWallets" [value]="wallet" [disabled]="wallet.coins.isLessThanOrEqualTo(0)">
           {{ wallet.label }} - {{ (wallet.coins ? wallet.coins : 0) | amount }}
           ({{ (wallet.hours ? wallet.hours : 0) | amount:false }})

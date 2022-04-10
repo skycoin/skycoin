@@ -1,0 +1,20 @@
+<div
+  class="dashed-border non-editable-field"
+  [ngClass]="{'onboarding-version': onboarding, 'element-disabled' : busy, 'show-pointer': !showConfirmationOnly || !lastAssistedSeed}"
+  (click)="enterSeed()"
+>
+  <div class="seed-spinner" [ngClass]="{'white-mat-spinner': onboarding}" *ngIf="checkingSeed"><mat-spinner></mat-spinner></div>
+  <!-- Text if the user has not entered the seed. -->
+  <div *ngIf="!lastAssistedSeed" class="text-with-icon-container">
+    <mat-icon *ngIf="onboarding" class="white-text">touch_app</mat-icon>
+    <mat-icon *ngIf="!onboarding" class="yellow-text">touch_app</mat-icon>
+    <span [ngClass]="{'transparent-text': onboarding}">{{ emptyText | translate }}</span>
+  </div>
+  <!-- Seed entered by the user. -->
+  <span class="normal-seed-field" *ngIf="!showConfirmationOnly && lastAssistedSeed">{{ lastAssistedSeed }}</span>
+  <div *ngIf="!showConfirmationOnly && lastAssistedSeed" [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.change-seed' | translate }}</div>
+  <!-- Confirmation if the user entered the seed for confirming it. -->
+  <div *ngIf="showConfirmationOnly && lastAssistedSeed" class="text-with-icon-container">
+    <mat-icon [ngClass]="{'green-text': !onboarding, 'white-text': onboarding}">done</mat-icon> <span [ngClass]="{'transparent-text': onboarding}">{{ confirmedText | translate }}</span>
+  </div>
+</div>

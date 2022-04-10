@@ -112,6 +112,7 @@ import { FormDestinationComponent } from './components/pages/send-skycoin/form-p
 import { CopyRawTxComponent } from './components/pages/send-skycoin/offline-dialogs/implementations/copy-raw-tx.component';
 import { SignRawTxComponent } from './components/pages/send-skycoin/offline-dialogs/implementations/sign-raw-tx.component';
 import { BroadcastRawTxComponent } from './components/pages/send-skycoin/offline-dialogs/implementations/broadcast-raw-tx.component';
+import { OfflineTxPreviewComponent } from './components/pages/send-skycoin/offline-dialogs/offline-tx-preview/offline-tx-preview.component';
 import { OfflineDialogsBaseComponent } from './components/pages/send-skycoin/offline-dialogs/offline-dialogs-base.component';
 import { ArrowLinkComponent } from './components/layout/arrow-link/arrow-link.component';
 import { AddressOptionsComponent } from './components/pages/wallets/wallet-detail/address-options/address-options.component';
@@ -128,6 +129,7 @@ import { FormFieldErrorDirective } from './directives/form-field-error.directive
 import { EnterLinkComponent } from './components/pages/send-skycoin/enter-link/enter-link.component';
 import { DestinationToolsComponent } from './components/pages/send-skycoin/form-parts/form-destination/destination-tools/destination-tools.component';
 import { ForceSkywalletWipeComponent } from './components/pages/force-skywallet-wipe/force-skywallet-wipe.component';
+import { AssistedSeedFieldComponent } from './components/pages/wallets/create-wallet/create-wallet-form/assisted-seed-field/assisted-seed-field.component';
 
 @NgModule({
   declarations: [
@@ -204,6 +206,7 @@ import { ForceSkywalletWipeComponent } from './components/pages/force-skywallet-
     CopyRawTxComponent,
     SignRawTxComponent,
     BroadcastRawTxComponent,
+    OfflineTxPreviewComponent,
     OfflineDialogsBaseComponent,
     ArrowLinkComponent,
     AddressOptionsComponent,
@@ -212,6 +215,7 @@ import { ForceSkywalletWipeComponent } from './components/pages/force-skywallet-
     EnterLinkComponent,
     DestinationToolsComponent,
     ForceSkywalletWipeComponent,
+    AssistedSeedFieldComponent,
   ],
   imports: [
     AppTranslationModule,

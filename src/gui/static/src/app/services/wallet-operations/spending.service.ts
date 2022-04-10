@@ -10,7 +10,9 @@ import { StorageService, StorageType } from '../storage.service';
 import { TxEncoder } from '../../utils/tx-encoder';
 import { WalletBase } from './wallet-objects';
 import { BalanceAndOutputsService } from './balance-and-outputs.service';
-import { GeneratedTransaction } from './transaction-objects';
+import { DecodedTransaction, GeneratedTransaction } from './transaction-objects';
+import { processServiceError } from '../../utils/errors';
+import { OperationError } from '../../utils/operation-error';
 
 /**
  * Defines a destination to were coins will be sent.
@@ -305,6 +307,68 @@ export class SpendingService {
         return rawTransaction;
       }));
     }
+  }
+
+  /**
+   * Creates a DecodedTransaction instance from a raw transaction string.
+   * @param rawTransactionString Raw transaction string.
+   * @param usigned If the raw transaction is unsigned or not.
+   */
+  decodeTransaction(rawTransactionString: string, usigned: boolean): Observable<DecodedTransaction> {
+    // Make the call to the back-end.
+    return this.apiService.post(
+      'transaction/verify',
+      {
+        unsigned: usigned,
+        encoded_transaction: rawTransactionString,
+      },
+      {
+        useV2: true,
+      },
+    ).pipe(catchError((err: OperationError) => {
+      // If the node returned an error, but also the transaction, get the transaction and continue normally.
+      err = processServiceError(err);
+      if (err && err.originalError && err.originalError.status === 422 && err.originalError.error && err.originalError.error.data) {
+        return of(err.originalError.error.data);
+      }
+
+      return observableThrowError(err);
+    }),
+    map(r => {
+      if (r.data) {
+        r = r.data;
+      }
+
+      // Process the node response and create a known object.
+      let inputsInformationObtained = true;
+      const tx: DecodedTransaction = {
+        inputs: (r.transaction.inputs as any[]).map(input => {
+          if (!input.txid) {
+            inputsInformationObtained = false;
+          }
+
+          return {
+            hash: input.uxid,
+            address: input.address,
+            coins: new BigNumber(input.coins),
+            hours: new BigNumber(input.calculated_hours),
+          };
+        }),
+        outputs: (r.transaction.outputs as any[]).map(output => {
+          return {
+            hash: output.uxid,
+            address: output.address,
+            coins: new BigNumber(output.coins),
+            hours: new BigNumber(output.hours),
+          };
+        }),
+        id: r.transaction.txid,
+        hoursBurned: null,
+        inputsInformationObtained: inputsInformationObtained,
+      };
+
+      return tx;
+    }));
   }
 
   /**

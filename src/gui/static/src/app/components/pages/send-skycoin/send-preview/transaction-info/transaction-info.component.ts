@@ -21,6 +21,7 @@ export class TransactionInfoComponent implements OnDestroy {
   @Input() transaction: GeneratedTransaction|OldTransaction;
   // True if the provided transaction was created to be sent, false if it is from the history.
   @Input() isPreview: boolean;
+  @Input() isForOfflineTransaction: boolean;
   // Current price per coin, in usd.
   price: number;
   showInputsOutputs = false;

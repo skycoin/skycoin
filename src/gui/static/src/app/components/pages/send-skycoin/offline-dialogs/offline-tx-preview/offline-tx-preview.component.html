@@ -1,0 +1,16 @@
+<app-modal [headline]="'offline-transactions.confirm-tx.title'| translate" [dialog]="dialogRef">
+  <app-transaction-info
+    [transaction]="tx"
+    [isPreview]="true"
+    [isForOfflineTransaction]="true"
+  ></app-transaction-info>
+  <!-- Buttons area. -->
+  <div class="-buttons">
+    <app-button (action)="cancelPressed()">
+      {{ 'common.cancel-button' | translate }}
+    </app-button>
+    <app-button (action)="okPressed()" class="primary-button">
+      {{ 'offline-transactions.confirm-tx.confirm' | translate }}
+    </app-button>
+  </div>
+</app-modal>

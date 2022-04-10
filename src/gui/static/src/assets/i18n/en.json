@@ -370,19 +370,31 @@
       "input-label": "Transaction text",
       "send-button": "Send",
       "sent": "The transaction has been sent."
+    },
+
+    "confirm-tx": {
+      "title": "Details",
+      "confirm": "Confirm"
     }
   },
 
   "reset": {
     "title": "Reset Password",
+    "invalid-wallet": "Invalid wallet",
     "wallet-label": "Wallet",
     "seed-label": "Wallet seed",
     "seed-error-info": "You must enter a seed.",
+    "enter-seed": "Press here to enter the seed",
+    "words-number-label": "How many words the seed has",
+    "12-words": "12 words",
+    "24-words": "24 words",
     "password-label": "New password (leave empty if you want the wallet not to be encrypted)",
     "confirm-label": "Confirm new password",
     "confirm-error-info": "The two passwords must match.",
     "reset-button": "Reset",
-    "done": "Password successfully changed."
+    "done": "Password successfully changed.",
+    "remove-password-confirmation-title": "Alert",
+    "remove-password-confirmation": "You have not entered a password, so the encryption will be removed from the wallet, which will make it less secure. Are you sure you want to continue?"
   },
 
   "tx": {

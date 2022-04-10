@@ -8,6 +8,7 @@ import { MsgBarService } from '../../../../../services/msg-bar.service';
 import { AppConfig } from '../../../../../app.config';
 import { BalanceAndOutputsService } from '../../../../../services/wallet-operations/balance-and-outputs.service';
 import { SpendingService } from '../../../../../services/wallet-operations/spending.service';
+import { OfflineTxPreviewComponent } from '../offline-tx-preview/offline-tx-preview.component';
 
 /**
  * Allows to send a signed raw transaction to the network, to spend the coins.
@@ -41,6 +42,7 @@ export class BroadcastRawTxComponent extends OfflineDialogsBaseComponent impleme
 
   constructor(
     public dialogRef: MatDialogRef<BroadcastRawTxComponent>,
+    private dialog: MatDialog,
     private msgBarService: MsgBarService,
     private balanceAndOutputsService: BalanceAndOutputsService,
     private spendingService: SpendingService,
@@ -69,6 +71,44 @@ export class BroadcastRawTxComponent extends OfflineDialogsBaseComponent impleme
     if (this.working) {
       return;
     }
+
+    // TODO: reactivate after the problems with the 'transaction/verify' API endpoint are solved.
+    // this.showPreview()
+
+    // TODO: remove after the problems with the 'transaction/verify' API endpoint are solved.
+    this.finishSending();
+  }
+
+  // Decodes the transaction, shows the preview and continues if the user confirms.
+  // TODO: reactivate after the problems with the 'transaction/verify' API endpoint are solved.
+  private showPreview() {
+    this.msgBarService.hide();
+    this.working = true;
+    this.okButton.setLoading();
+
+    this.closeOperationSubscription();
+    this.operationSubscription = this.spendingService.decodeTransaction(
+      this.form.get('input').value, false,
+    ).subscribe(result => {
+      this.working = false;
+      this.okButton.resetState();
+
+      // Open the preview modal window.
+      OfflineTxPreviewComponent.openDialog(this.dialog, result).afterClosed().subscribe(r => {
+        if (r) {
+          this.finishSending();
+        }
+      });
+    }, error => {
+      this.working = false;
+      this.okButton.resetState();
+
+      this.msgBarService.showError(error);
+    });
+  }
+
+  // Sends the transaction.
+  private finishSending() {
 
     this.msgBarService.hide();
     this.working = true;

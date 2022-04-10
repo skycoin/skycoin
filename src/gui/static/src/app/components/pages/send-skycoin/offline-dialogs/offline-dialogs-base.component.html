@@ -24,7 +24,7 @@
             [attr.disabled]="working ? 'true' : null"
             [appFormFieldError]="dropdownErrorMsg"
             [ngClass]="{'element-disabled' : working}"
-            (blur)="markAndValidate('dropdown')"
+            (openedChange)="$event ? null : markAndValidate('dropdown')"
           >
             <mat-option *ngFor="let element of dropdownElements" [value]="element.value">
               {{ element.name }}

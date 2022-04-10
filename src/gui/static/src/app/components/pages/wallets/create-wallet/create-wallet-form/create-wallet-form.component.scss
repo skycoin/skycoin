@@ -13,25 +13,11 @@ $lock-icon-size: $normal-icon-size;
   border: $gray-dashed-border;
 }
 
-.show-pointer {
-  cursor: pointer;
-}
-
 .non-editable-field {
   text-align: center;
   padding: 15px;
   border-radius: $input-border-radius;
   color: $black;
-
-  .text-with-icon-container {
-    display: inline-flex;
-    align-items: center;
-
-    mat-icon {
-      margin-right: 5px;
-      opacity: 1;
-    }
-  }
 }
 
 .normal-seed-field {
@@ -113,19 +99,6 @@ label[for=seed] {
       width: 10px !important;
     }
   }
-}
-
-.white-mat-spinner {
-  ::ng-deep svg {
-    circle {
-      stroke: $white;
-    }
-  }
-}
-
-.assisted-seed-spinner {
-  top: -14px !important;
-  left: -14px !important;
 }
 
 .-white-check ::ng-deep {

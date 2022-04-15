@@ -43,7 +43,7 @@ var (
 	CoinName = "privateness"
 
 	// GenesisSignatureStr hex string of genesis signature
-	GenesisSignatureStr = "69cdfa6a51e5e97731234cc45c94a67e62cd9076d0e6b4f47b09847fdb39d4510cdd83ffb28d00420256fee96491f1acba19aee54399286fd08e1ce879ebb4b000"
+	GenesisSignatureStr = "052805bdf985499bd223ae7a45ec938c085dbdf604a0a86bcdc2cbcaf14583e00271efd72717acda4977a6039536eeafd66962bd42620813315d9580d784c4c900"
 	// GenesisAddressStr genesis address string
 	GenesisAddressStr = "24GJTLPMoz61sV4J4qg1n14x5qqDwXqyJJy"
 	// BlockchainPubkeyStr pubic key string
@@ -52,17 +52,15 @@ var (
 	BlockchainSeckeyStr = ""
 
 	// GenesisTimestamp genesis block create unix time
-	GenesisTimestamp uint64 = 1637895025
+	GenesisTimestamp uint64 = 1650046003
 	// GenesisCoinVolume represents the coin capacity
 	GenesisCoinVolume uint64 = 165000000000000
 
 	// DefaultConnections the default trust node addresses
 	DefaultConnections = []string{
-		"192.243.100.192:6006",
+		"154.16.118.97:6006",
 		"151.80.37.6:6006",
-		"167.114.97.165:6006",
-		"198.245.62.172:6006",
-		"94.23.32.95:6006",
+		"179.61.232.155:6006",
 	}
 
 	nodeConfig = skycoin.NewNodeConfig(ConfigMode, fiber.NodeConfig{
@@ -74,15 +72,15 @@ var (
 		BlockchainPubkeyStr: BlockchainPubkeyStr,
 		BlockchainSeckeyStr: BlockchainSeckeyStr,
 		DefaultConnections:  DefaultConnections,
-		PeerListURL:         "http://nodes.privateness.network/blockchain/peers0.txt",
+		PeerListURL:         "http://nodes.privateness.network/blockchain/peers2.txt",
 		Port:                6006,
 		WebInterfacePort:    6660,
 		DataDirectory:       "$HOME/.privateness",
 
-		UnconfirmedBurnFactor:          10,
+		UnconfirmedBurnFactor:          5,
 		UnconfirmedMaxTransactionSize:  32768,
 		UnconfirmedMaxDropletPrecision: 6,
-		CreateBlockBurnFactor:          10,
+		CreateBlockBurnFactor:          5,
 		CreateBlockMaxTransactionSize:  32768,
 		CreateBlockMaxDropletPrecision: 6,
 		MaxBlockTransactionsSize:       32768,

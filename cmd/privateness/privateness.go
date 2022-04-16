@@ -43,7 +43,7 @@ var (
 	CoinName = "privateness"
 
 	// GenesisSignatureStr hex string of genesis signature
-	GenesisSignatureStr = "052805bdf985499bd223ae7a45ec938c085dbdf604a0a86bcdc2cbcaf14583e00271efd72717acda4977a6039536eeafd66962bd42620813315d9580d784c4c900"
+	GenesisSignatureStr = "7d0e855edffc4cf5b4ac7c10bebc0b37e09d7d4b8453af20f8713bc177708e7548eff2f6862a4cab6b9181c0371c46f5365e3429e166621ce8f7a59bf3c7041c00"
 	// GenesisAddressStr genesis address string
 	GenesisAddressStr = "24GJTLPMoz61sV4J4qg1n14x5qqDwXqyJJy"
 	// BlockchainPubkeyStr pubic key string
@@ -52,7 +52,7 @@ var (
 	BlockchainSeckeyStr = ""
 
 	// GenesisTimestamp genesis block create unix time
-	GenesisTimestamp uint64 = 1650046003
+	GenesisTimestamp uint64 = 1650046005
 	// GenesisCoinVolume represents the coin capacity
 	GenesisCoinVolume uint64 = 165000000000000
 
@@ -77,10 +77,10 @@ var (
 		WebInterfacePort:    6660,
 		DataDirectory:       "$HOME/.privateness",
 
-		UnconfirmedBurnFactor:          5,
+		UnconfirmedBurnFactor:          20,
 		UnconfirmedMaxTransactionSize:  32768,
 		UnconfirmedMaxDropletPrecision: 6,
-		CreateBlockBurnFactor:          5,
+		CreateBlockBurnFactor:          20,
 		CreateBlockMaxTransactionSize:  32768,
 		CreateBlockMaxDropletPrecision: 6,
 		MaxBlockTransactionsSize:       32768,

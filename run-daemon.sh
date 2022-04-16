@@ -18,7 +18,7 @@ go run -ldflags "${GOLDFLAGS}" $GORUNFLAGS ./cmd/privateness/... \
     -enable-gui=false \
     -launch-browser=false \
     -log-level=debug \
-    -disable-pex=true \
+    -disable-pex \
     $@
 
 popd >/dev/null

@@ -1,5 +1,5 @@
 /*
-cli is a command line client for interacting with a skycoin node and offline wallet management
+cli is a command line client for interacting with a privateness or skycoin node and offline wallet management
 */
 package main
 

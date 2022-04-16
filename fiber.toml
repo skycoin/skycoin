@@ -3,11 +3,11 @@
 # Defaults are shown, commented out
 # Some values have no defaults and must be filled in
 [node]
-genesis_signature_str = "7d0e855edffc4cf5b4ac7c10bebc0b37e09d7d4b8453af20f8713bc177708e7548eff2f6862a4cab6b9181c0371c46f5365e3429e166621ce8f7a59bf3c7041c00"
+genesis_signature_str = "80c03cf8f9ee3ad70c4169c29a5afdf2ebc705e96463ae6442a0674deacbbb7d1c49030982b07baa27d338583265719386765d06a1dd2ca5bef4806459b9442800"
 genesis_address_str = "24GJTLPMoz61sV4J4qg1n14x5qqDwXqyJJy"
 blockchain_pubkey_str = "02933015bd2fa1e0a885c05fb08eb7c647bf8c3188ed5120b51d0d09ccaf525036"
 blockchain_seckey_str = ""
-genesis_timestamp = 1650046005
+genesis_timestamp = 1650046010
 genesis_coin_volume = 165e12
 default_connections = [
     "154.16.118.97:6006",

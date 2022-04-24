@@ -36,7 +36,7 @@ version = "https://privateness.network/blockchain/version.txt"
 #bip44_coin = 8000
 
 [params]
-max_coin_supply = 165e12
+max_coin_supply = 330e6
 
 initial_unlocked_count = 100
 unlock_address_rate = 0

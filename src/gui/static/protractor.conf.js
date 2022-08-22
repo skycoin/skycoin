@@ -6,12 +6,12 @@ const { SpecReporter } = require('jasmine-spec-reporter');
 exports.config = {
   allScriptsTimeout: 60000,
   specs: [
-    './e2e/send.e2e-spec.ts'
+    './e2e/**/*.e2e-spec.ts'
   ],
   capabilities: {
     'browserName': 'chrome',
     chromeOptions: {
-      args: ['window-size=1920,1080']
+      args: ['--no-sandbox', '--headless', '--disable-gpu', 'window-size=1920,1080']
     }
   },
   directConnect: true,

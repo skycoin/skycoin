@@ -1,4 +1,4 @@
-import { browser, by, element } from 'protractor';
+import { browser, by, element, protractor } from 'protractor';
 
 export class SendPage {
   navigateTo() {
@@ -10,27 +10,35 @@ export class SendPage {
   }
 
   getWalletsCount() {
-    return element.all(by.css('#wallet option')).count();
+    browser.actions().sendKeys(protractor.Key.ESCAPE).perform();
+    
+    return element(by.css('.mat-select')).click().then(() => {
+      return element.all(by.css('.mat-select-panel mat-option .mat-option-text')).count();
+    });
   }
 
   getWalletsWithCoins() {
-    return element.all(by.tagName('#wallet option'))
-      .filter((opt) => {
+    browser.actions().sendKeys(protractor.Key.ESCAPE).perform();
+
+    return element(by.css('.mat-select')).click().then(() => {
+      return element.all(by.css('.mat-select-panel mat-option .mat-option-text')).filter((opt) => {
         return opt.getText().then((v) => {
           return this.getCoinsFromOptionString(v) > 0;
         });
       });
+    });
   }
 
   getValidWallets() {
-    return element.all(by.tagName('#wallet option'))
-      .filter((opt) => {
+    browser.actions().sendKeys(protractor.Key.ESCAPE).perform();
+
+    return element(by.css('.mat-select')).click().then(() => {
+      return element.all(by.css('.mat-select-panel .mat-active .mat-option-text')).filter((opt) => {
         return opt.getText().then((v) => {
-          return opt.getAttribute('disabled').then(status => {
-            return status === null && this.getCoinsFromOptionString(v) > 0;
-          });
+          return this.getCoinsFromOptionString(v) > 0;
         });
       });
+    });
   }
 
   selectValidWallet() {

@@ -1,7 +1,7 @@
 import { Component, Inject, OnDestroy, OnInit, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { MatDialogRef } from '@angular/material/dialog';
-import { FormControl, FormGroup } from '@angular/forms';
+import { UntypedFormControl, UntypedFormGroup } from '@angular/forms';
 import { Subject } from 'rxjs';
 
 import { ButtonComponent } from '../button/button.component';
@@ -66,7 +66,7 @@ export interface PasswordDialogParams {
 })
 export class PasswordDialogComponent implements OnInit, OnDestroy {
   @ViewChild('button') button: ButtonComponent;
-  form: FormGroup;
+  form: UntypedFormGroup;
   passwordSubmit = new Subject<PasswordSubmitEvent>();
   working = false;
 
@@ -103,9 +103,9 @@ export class PasswordDialogComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.form = new FormGroup({});
-    this.form.addControl('password', new FormControl(''));
-    this.form.addControl('confirm_password', new FormControl(''));
+    this.form = new UntypedFormGroup({});
+    this.form.addControl('password', new UntypedFormControl(''));
+    this.form.addControl('confirm_password', new UntypedFormControl(''));
 
     if (this.data.confirm) {
       this.form.get('confirm_password').enable();

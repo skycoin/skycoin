@@ -1,5 +1,5 @@
 import { Component, EventEmitter, OnInit, Output, ViewChild, ChangeDetectorRef, OnDestroy, Input } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormControl, UntypedFormGroup } from '@angular/forms';
 
 import { ButtonComponent } from '../../../layout/button/button.component';
 
@@ -19,7 +19,7 @@ export class OnboardingEncryptWalletComponent implements OnInit, OnDestroy {
   @Output() passwordCreated = new EventEmitter<string|null>();
   // Emits when the user presses the button for going back to the previous step of the wizard.
   @Output() goBack = new EventEmitter();
-  form: FormGroup;
+  form: UntypedFormGroup;
 
   // If creating a temporal wallet.
   creatingTemporal_ = false;
@@ -40,14 +40,14 @@ export class OnboardingEncryptWalletComponent implements OnInit, OnDestroy {
   password2ErrorMsg = '';
 
   constructor(
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private changeDetector: ChangeDetectorRef,
   ) { }
 
   ngOnInit() {
     this.form = this.formBuilder.group({
-        password: new FormControl(''),
-        confirm: new FormControl(''),
+        password: new UntypedFormControl(''),
+        confirm: new UntypedFormControl(''),
       },
     );
 

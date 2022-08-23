@@ -1,6 +1,6 @@
 import { switchMap, delay, flatMap } from 'rxjs/operators';
 import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, ViewChild } from '@angular/core';
-import { FormControl, FormGroup } from '@angular/forms';
+import { UntypedFormControl, UntypedFormGroup } from '@angular/forms';
 import { SubscriptionLike, Subject, of } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { MatCheckbox } from '@angular/material/checkbox';
@@ -87,7 +87,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
   // Emits when the user asks for the wallet ot be created.
   @Output() createRequested = new EventEmitter<void>();
 
-  form: FormGroup;
+  form: UntypedFormGroup;
   // If true, the user must enter the ssed using the asisted mode.
   enterSeedWithAssistance = true;
   // If the user entered a standard seed using the manual mode.
@@ -261,13 +261,13 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     this.lastAssistedSeed = '';
     this.enterSeedWithAssistance = true;
 
-    this.form = new FormGroup({});
-    this.form.addControl('label', new FormControl(data ? data.label : ''));
-    this.form.addControl('seed', new FormControl(data ? data.lastCustomSeed : ''));
-    this.form.addControl('confirm_seed', new FormControl(data ? data.lastCustomSeed : ''));
-    this.form.addControl('password', new FormControl());
-    this.form.addControl('confirm_password', new FormControl());
-    this.form.addControl('number_of_words', new FormControl(!this.create && data && data.numberOfWords ? data.numberOfWords : 12));
+    this.form = new UntypedFormGroup({});
+    this.form.addControl('label', new UntypedFormControl(data ? data.label : ''));
+    this.form.addControl('seed', new UntypedFormControl(data ? data.lastCustomSeed : ''));
+    this.form.addControl('confirm_seed', new UntypedFormControl(data ? data.lastCustomSeed : ''));
+    this.form.addControl('password', new UntypedFormControl());
+    this.form.addControl('confirm_password', new UntypedFormControl());
+    this.form.addControl('number_of_words', new UntypedFormControl(!this.create && data && data.numberOfWords ? data.numberOfWords : 12));
 
     this.form.setValidators(this.validateForm.bind(this));
 

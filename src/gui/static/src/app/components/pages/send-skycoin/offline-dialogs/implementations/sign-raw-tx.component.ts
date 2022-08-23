@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { FormBuilder } from '@angular/forms';
+import { UntypedFormBuilder } from '@angular/forms';
 import { SubscriptionLike } from 'rxjs';
 import { first } from 'rxjs/operators';
 
@@ -55,7 +55,7 @@ export class SignRawTxComponent extends OfflineDialogsBaseComponent implements O
     private dialog: MatDialog,
     private spendingService: SpendingService,
     private walletsAndAddressesService: WalletsAndAddressesService,
-    formBuilder: FormBuilder,
+    formBuilder: UntypedFormBuilder,
   ) {
     super(formBuilder);
 

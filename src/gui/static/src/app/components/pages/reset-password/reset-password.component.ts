@@ -1,7 +1,7 @@
 import { Component, OnDestroy, ViewChild, ChangeDetectorRef, OnInit } from '@angular/core';
 import { SubscriptionLike, combineLatest } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FormGroup, FormBuilder, FormControl } from '@angular/forms';
+import { UntypedFormGroup, UntypedFormBuilder, UntypedFormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { map } from 'rxjs/operators';
 
@@ -29,7 +29,7 @@ export class ResetPasswordComponent implements OnInit, OnDestroy {
   // Component for entering the seed using the assisted mode.
   @ViewChild('assistedSeed') assistedSeed: AssistedSeedFieldComponent;
 
-  form: FormGroup;
+  form: UntypedFormGroup;
   // Allows to deactivate the form while the component is busy.
   busy = true;
   // If the id on the URL does not correspond to a valid wallet.
@@ -50,7 +50,7 @@ export class ResetPasswordComponent implements OnInit, OnDestroy {
   private hideBarWhenClosing = true;
 
   constructor(
-    public formBuilder: FormBuilder,
+    public formBuilder: UntypedFormBuilder,
     private route: ActivatedRoute,
     private router: Router,
     private msgBarService: MsgBarService,
@@ -97,12 +97,12 @@ export class ResetPasswordComponent implements OnInit, OnDestroy {
   }
 
   initForm() {
-    this.form = new FormGroup({});
-    this.form.addControl('wallet', new FormControl());
-    this.form.addControl('number_of_words', new FormControl(12));
-    this.form.addControl('seed', new FormControl(''));
-    this.form.addControl('password', new FormControl(''));
-    this.form.addControl('confirm', new FormControl(''));
+    this.form = new UntypedFormGroup({});
+    this.form.addControl('wallet', new UntypedFormControl());
+    this.form.addControl('number_of_words', new UntypedFormControl(12));
+    this.form.addControl('seed', new UntypedFormControl(''));
+    this.form.addControl('password', new UntypedFormControl(''));
+    this.form.addControl('confirm', new UntypedFormControl(''));
 
     // If assistedSeed already exists, reset it.
     if (this.assistedSeed) {

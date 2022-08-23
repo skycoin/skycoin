@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { WalletsComponent } from './components/pages/wallets/wallets.component';
 import { SendSkycoinComponent } from './components/pages/send-skycoin/send-skycoin.component';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Routes } from '@angular/router';
 import { PendingTransactionsComponent } from './components/pages/settings/pending-transactions/pending-transactions.component';
 import { OutputsComponent } from './components/pages/settings/outputs/outputs.component';
 import { BlockchainComponent } from './components/pages/settings/blockchain/blockchain.component';
@@ -15,7 +15,7 @@ import { ResetPasswordComponent } from './components/pages/reset-password/reset-
 import { ExchangeComponent } from './components/pages/exchange/exchange.component';
 
 
-const ROUTES = [
+const ROUTES: Routes = [
   {
     path: '',
     redirectTo: 'wallets',

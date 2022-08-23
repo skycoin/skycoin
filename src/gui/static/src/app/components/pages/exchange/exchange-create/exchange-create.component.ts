@@ -1,7 +1,7 @@
 import { throwError as observableThrowError, SubscriptionLike, concat, of } from 'rxjs';
 import { Component, EventEmitter, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import * as moment from 'moment';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { TranslateService } from '@ngx-translate/core';
 import { retryWhen, delay, take, mergeMap } from 'rxjs/operators';
@@ -33,7 +33,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   // Event emited when the order has been created.
   @Output() submitted = new EventEmitter<StoredExchangeOrder>();
 
-  form: FormGroup;
+  form: UntypedFormGroup;
   tradingPairs: TradingPair[];
   // Currently selected trading pair
   activeTradingPair: TradingPair;
@@ -79,7 +79,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
 
   constructor(
     private exchangeService: ExchangeService,
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private msgBarService: MsgBarService,
     private dialog: MatDialog,
     private appService: AppService,

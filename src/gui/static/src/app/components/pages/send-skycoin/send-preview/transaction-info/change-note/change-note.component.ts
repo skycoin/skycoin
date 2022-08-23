@@ -1,5 +1,5 @@
 import { Component, OnInit, Inject, ViewChild, OnDestroy } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { SubscriptionLike } from 'rxjs';
 
@@ -23,7 +23,7 @@ export class ChangeNoteComponent implements OnInit, OnDestroy {
   public static readonly MAX_NOTE_CHARS = 64;
 
   @ViewChild('button') button: ButtonComponent;
-  form: FormGroup;
+  form: UntypedFormGroup;
   maxNoteChars = ChangeNoteComponent.MAX_NOTE_CHARS;
   // Deactivates the form while the system is busy.
   busy = false;
@@ -46,7 +46,7 @@ export class ChangeNoteComponent implements OnInit, OnDestroy {
   constructor(
     public dialogRef: MatDialogRef<ChangeNoteComponent>,
     @Inject(MAT_DIALOG_DATA) private data: OldTransaction,
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private msgBarService: MsgBarService,
     private storageService: StorageService,
   ) {}

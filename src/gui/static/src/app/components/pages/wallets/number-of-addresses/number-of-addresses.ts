@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild, OnDestroy, Output, EventEmitter } from '@angular/core';
-import { FormGroup, FormControl } from '@angular/forms';
+import { UntypedFormGroup, UntypedFormControl } from '@angular/forms';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 
 import { ButtonComponent } from '../../../layout/button/button.component';
@@ -35,7 +35,7 @@ export interface NumberOfAddressesEventData {
 export class NumberOfAddressesComponent implements OnInit, OnDestroy {
   // Confirmation button.
   @ViewChild('button') button: ButtonComponent;
-  form: FormGroup;
+  form: UntypedFormGroup;
   // Emits when the user request the addresses to be added.
   @Output() createRequested = new EventEmitter<NumberOfAddressesEventData>();
 
@@ -59,8 +59,8 @@ export class NumberOfAddressesComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    this.form = new FormGroup({});
-    this.form.addControl('quantity', new FormControl(1));
+    this.form = new UntypedFormGroup({});
+    this.form.addControl('quantity', new UntypedFormControl(1));
 
     this.form.setValidators(this.validateForm.bind(this));
   }

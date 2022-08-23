@@ -2,7 +2,7 @@
   IMPORTANT: Unused for a long time, it may need changes to work properly.
 */
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { PurchaseService } from '../../../../services/purchase.service';
 import { MatDialogRef } from '@angular/material/dialog';
 import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
@@ -16,7 +16,7 @@ import { AddressBase } from '../../../../services/wallet-operations/wallet-objec
 })
 export class AddDepositAddressComponent implements OnInit, OnDestroy {
 
-  form: FormGroup;
+  form: UntypedFormGroup;
   addresses: AddressBase[] = [];
 
   private getWalletsSubscription: Subscription;
@@ -24,7 +24,7 @@ export class AddDepositAddressComponent implements OnInit, OnDestroy {
   constructor(
     public walletsAndAddressesService: WalletsAndAddressesService,
     private dialogRef: MatDialogRef<AddDepositAddressComponent>,
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private purchaseService: PurchaseService,
   ) {}
 

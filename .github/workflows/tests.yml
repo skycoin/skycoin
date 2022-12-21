@@ -24,7 +24,7 @@ jobs:
             - name: Set up node
               uses: actions/setup-node@v1
               with:
-                  node-version: 14.15
+                  node-version: 14.20
 
             - name: Test
               env:

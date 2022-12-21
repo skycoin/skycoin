@@ -1,5 +1,5 @@
 import { Component, Input, HostListener } from '@angular/core';
-import { MatDialogRef, MatDialog } from '@angular/material/dialog';
+import { MatLegacyDialogRef as MatDialogRef, MatLegacyDialog as MatDialog } from '@angular/material/legacy-dialog';
 
 /**
  * Parent component for the content of all modal windows. It provides the title, scroll

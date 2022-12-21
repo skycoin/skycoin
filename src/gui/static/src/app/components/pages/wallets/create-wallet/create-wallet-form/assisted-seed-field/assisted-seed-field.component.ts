@@ -1,5 +1,5 @@
 import { Component, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
-import { MatDialog } from '@angular/material/dialog';
+import { MatLegacyDialog as MatDialog } from '@angular/material/legacy-dialog';
 
 import { SeedWordDialogComponent, WordAskedReasons } from '../../../../../layout/seed-word-dialog/seed-word-dialog.component';
 import { MsgBarService } from '../../../../../../services/msg-bar.service';

@@ -1,6 +1,6 @@
 import { Component, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { SubscriptionLike } from 'rxjs';
-import { MatDialog } from '@angular/material/dialog';
+import { MatLegacyDialog as MatDialog } from '@angular/material/legacy-dialog';
 
 import { NavBarSwitchService } from '../../../services/nav-bar-switch.service';
 import { DoubleButtonActive } from '../../layout/double-button/double-button.component';

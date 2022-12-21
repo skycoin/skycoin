@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { UntypedFormBuilder } from '@angular/forms';
-import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { MatLegacyDialog as MatDialog, MatLegacyDialogConfig as MatDialogConfig } from '@angular/material/legacy-dialog';
 
 import { ChildHwDialogParams } from '../../layout/hardware-wallet/hw-options-dialog/hw-options-dialog.component';
 import { HwWipeDialogComponent } from '../../layout/hardware-wallet/hw-wipe-dialog/hw-wipe-dialog.component';

@@ -1,7 +1,7 @@
 import { throwError as observableThrowError, of, Observable, Subject } from 'rxjs';
 import { mergeMap, map, catchError } from 'rxjs/operators';
 import { Injectable } from '@angular/core';
-import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
+import { MatLegacyDialog as MatDialog, MatLegacyDialogConfig as MatDialogConfig, MatLegacyDialogRef as MatDialogRef } from '@angular/material/legacy-dialog';
 import { BigNumber } from 'bignumber.js';
 import { HttpClient } from '@angular/common/http';
 

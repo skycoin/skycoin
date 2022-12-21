@@ -1,6 +1,6 @@
 import { Component, Inject, ViewChild, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatLegacyDialogRef as MatDialogRef, MatLegacyDialog as MatDialog, MatLegacyDialogConfig as MatDialogConfig } from '@angular/material/legacy-dialog';
+import { MAT_LEGACY_DIALOG_DATA as MAT_DIALOG_DATA } from '@angular/material/legacy-dialog';
 import { SubscriptionLike } from 'rxjs';
 
 import { ButtonComponent } from '../../../layout/button/button.component';

@@ -1,5 +1,5 @@
 import { Component, OnDestroy, Inject } from '@angular/core';
-import { MatLegacyDialogRef as MatDialogRef, MatLegacyDialogConfig as MatDialogConfig, MatLegacyDialog as MatDialog, MAT_LEGACY_DIALOG_DATA as MAT_DIALOG_DATA } from '@angular/material/legacy-dialog';
+import { MatDialogRef, MatDialogConfig, MatDialog, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { SubscriptionLike, Observable, of } from 'rxjs';
 import { map, first, tap, mergeMap } from 'rxjs/operators';
 

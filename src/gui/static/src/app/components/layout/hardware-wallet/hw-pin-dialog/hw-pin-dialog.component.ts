@@ -1,6 +1,6 @@
 import { Component, OnInit, HostListener, Inject } from '@angular/core';
 import { UntypedFormBuilder, Validators, UntypedFormGroup } from '@angular/forms';
-import { MatLegacyDialogRef as MatDialogRef, MatLegacyDialog as MatDialog, MatLegacyDialogConfig as MatDialogConfig, MAT_LEGACY_DIALOG_DATA as MAT_DIALOG_DATA } from '@angular/material/legacy-dialog';
+import { MatDialogRef, MatDialog, MatDialogConfig, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { HwPinHelpDialogComponent } from '../hw-pin-help-dialog/hw-pin-help-dialog.component';

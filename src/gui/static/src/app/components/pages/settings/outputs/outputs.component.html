@@ -8,7 +8,7 @@
   ></app-loading-content>
 
   <div class="container" *ngIf="wallets && wallets.length > 0">
-    <div class="-table" [ngClass]="{'-top-table-margin': i !== 0}" *ngFor="let wallet of wallets">
+    <div class="-table" *ngFor="let wallet of wallets; let i = index" [ngClass]="{'-top-table-margin': i !== 0}">
       <div class="-headers">
         <div class="-flex-fill text-truncate" [attr.title]="wallet.label">{{ wallet.label }}</div>
         <div class="-width-150 text-right">{{ 'coin' | commonText }}</div>

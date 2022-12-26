@@ -2,7 +2,7 @@
 
 .-small-button ::ng-deep button {
   width: unset;
-  height: unset;
+  height: unset !important;
   padding: 0 10px 0 10px;
   min-width: 100px;
   margin: unset;

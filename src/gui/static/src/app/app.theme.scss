@@ -3,10 +3,27 @@
 @import '../customize/styling.scss';
 // Plus imports for other components in your app.
 
+// Default theme typographies.
+$custom-body-1-level-typography: mat.define-typography-level(
+  $font-weight: 400,
+  $font-size: $font-size-standard-plus,
+  $line-height: 1,
+  $letter-spacing: normal,
+);
+$custom-buttom-level-typography: mat.define-typography-level(
+  $font-size: $font-size-standard,
+  $letter-spacing: normal,
+);
+$general-typography: mat.define-typography-config(
+  $font-family: $font-family,
+  $body-1: $custom-body-1-level-typography,
+  $button: $custom-buttom-level-typography,
+);
+
 // Include the common styles for Angular Material. We include this here so that you only
 // have to load a single css file for Angular Material in your app.
 // Be sure that you only ever include this mixin once!
-@include mat.legacy-core();
+@include mat.core();
 
 // TODO(v15): As of v15 mat.legacy-core no longer includes default typography styles.
 //  The following line adds:
@@ -15,8 +32,8 @@
 //  If you specify typography styles for the components you use elsewhere, you should delete this line.
 //  If you don't need the default component typographies but still want the hierarchy styles,
 //  you can delete this line and instead use:
-//    `@include mat.legacy-typography-hierarchy(mat.define-legacy-typography-config());`
-@include mat.all-legacy-component-typographies();
+//    `@include mat.legacy-typography-hierarchy(mat.define-typography-config());`
+@include mat.all-component-typographies($general-typography);
 
 // Define the palettes for your theme using the Material Design palettes available in palette.scss
 // (imported above). For each palette, you can optionally specify a default, lighter, and darker
@@ -32,7 +49,7 @@ $mat-skycoin-primary: (
 );
 
 $mat-skycoin-accent: (
-  500: #FFC125,
+  500: $app-main-color,
   contrast: (
     500: white
   )
@@ -56,7 +73,7 @@ $candy-app-theme: mat.define-light-theme((
 // Include theme styles for core and each component used in your app.
 // Alternatively, you can import and @include the theme mixins for each component
 // that you are using.
-@include mat.all-legacy-component-themes($candy-app-theme);
+@include mat.all-component-themes($candy-app-theme);
 
 $mat-light-button-primary: (
   100: #777,
@@ -78,5 +95,5 @@ $light-button-theme: mat.define-light-theme((
 ));
 
 .light-button-theme {
-  @include mat.all-legacy-component-colors($light-button-theme);
+  @include mat.all-component-colors($light-button-theme);
 }

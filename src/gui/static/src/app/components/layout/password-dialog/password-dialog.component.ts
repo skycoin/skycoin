@@ -1,6 +1,6 @@
 import { Component, Inject, OnDestroy, OnInit, ViewChild, ChangeDetectorRef } from '@angular/core';
-import { MAT_LEGACY_DIALOG_DATA as MAT_DIALOG_DATA, MatLegacyDialog as MatDialog, MatLegacyDialogConfig as MatDialogConfig } from '@angular/material/legacy-dialog';
-import { MatLegacyDialogRef as MatDialogRef } from '@angular/material/legacy-dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { MatDialogRef } from '@angular/material/dialog';
 import { UntypedFormControl, UntypedFormGroup } from '@angular/forms';
 import { Subject } from 'rxjs';
 

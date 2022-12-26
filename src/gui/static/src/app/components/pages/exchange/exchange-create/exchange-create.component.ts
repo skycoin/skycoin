@@ -2,7 +2,7 @@ import { throwError as observableThrowError, SubscriptionLike, concat, of } from
 import { Component, EventEmitter, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import * as moment from 'moment';
 import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
-import { MatLegacyDialog as MatDialog } from '@angular/material/legacy-dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { TranslateService } from '@ngx-translate/core';
 import { retryWhen, delay, take, mergeMap } from 'rxjs/operators';
 

@@ -2,8 +2,8 @@ import { switchMap, delay, flatMap } from 'rxjs/operators';
 import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, ViewChild } from '@angular/core';
 import { UntypedFormControl, UntypedFormGroup } from '@angular/forms';
 import { SubscriptionLike, Subject, of } from 'rxjs';
-import { MatLegacyDialog as MatDialog } from '@angular/material/legacy-dialog';
-import { MatLegacyCheckbox as MatCheckbox } from '@angular/material/legacy-checkbox';
+import { MatDialog } from '@angular/material/dialog';
+import { MatCheckbox } from '@angular/material/checkbox';
 
 import { ApiService } from '../../../../../services/api.service';
 import { WordAskedReasons } from '../../../../layout/seed-word-dialog/seed-word-dialog.component';

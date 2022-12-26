@@ -1,5 +1,5 @@
 import { Component, Inject, OnDestroy, ViewChild, ElementRef } from '@angular/core';
-import { MatLegacyDialogRef as MatDialogRef, MAT_LEGACY_DIALOG_DATA as MAT_DIALOG_DATA, MatLegacyDialog as MatDialog } from '@angular/material/legacy-dialog';
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialog } from '@angular/material/dialog';
 import { UntypedFormGroup, UntypedFormBuilder, Validators } from '@angular/forms';
 
 import { HwWalletService } from '../../../../services/hw-wallet.service';

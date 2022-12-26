@@ -2,7 +2,7 @@ import { Component, Input, OnDestroy } from '@angular/core';
 import { PriceService } from '../../../../../services/price.service';
 import { SubscriptionLike } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
-import { MatLegacyDialog as MatDialog } from '@angular/material/legacy-dialog';
+import { MatDialog } from '@angular/material/dialog';
 
 import { ChangeNoteComponent } from './change-note/change-note.component';
 import { GeneratedTransaction, OldTransaction } from '../../../../../services/wallet-operations/transaction-objects';

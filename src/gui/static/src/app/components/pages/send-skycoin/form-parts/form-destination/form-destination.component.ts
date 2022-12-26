@@ -1,7 +1,7 @@
 import { SubscriptionLike } from 'rxjs';
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { UntypedFormArray, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
-import { MatLegacyDialog as MatDialog } from '@angular/material/legacy-dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { BigNumber } from 'bignumber.js';
 import { TranslateService } from '@ngx-translate/core';
 

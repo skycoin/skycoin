@@ -5,36 +5,34 @@
 
 // Limits the height to show a vertical margin.
 // (Modifies an element or class added by Angular Material)
-.mat-dialog-content {
+.mat-mdc-dialog-content {
   max-height: 90vh !important;
 }
 
 @media (max-height: 600px) {
-  .mat-dialog-content {
+  .mat-mdc-dialog-content {
     max-height: 80vh !important;
   }
 }
 
 // Rounds the corners of the modal windows.
-// (Modifies an element or class added by Angular Material)
-mat-dialog-container {
+.mat-mdc-dialog-surface {
   border-radius: $rounded-element-border-radius !important;
-  overflow: hidden;
-}
-
-// Removes the default padding.
-// (Modifies an element or class added by Angular Material)
-.mat-dialog-container {
-  padding: 0 !important;
 }
 
 // Style of the main area of the modal windows.
 .modal {
-  background-color: $white;
-  padding: 0px $modal-content-padding;
-  line-height: 1.5;
-  font-size: $font-size-standard;
-  color: $grey-dark;
+
+  mat-dialog-content {
+    font-family: $font-family !important;
+    padding: 0px $modal-content-padding !important;
+    background-color: $white !important;
+    line-height: 1.5 !important;
+    font-size: $font-size-standard !important;
+    color: $grey-dark !important;
+    font-weight: 400 !important;
+    letter-spacing: normal !important;
+  }
 
   .-buttons {
     text-align: center;
@@ -57,9 +55,22 @@ mat-dialog-container {
 
   button {
     width: 100%;
-    text-align: left;
     padding: 10px 10px;
     border-bottom: 1px solid $grey-very-light;
     cursor: pointer;
+  }
+
+  .mat-mdc-button-base {
+    height: auto !important;
+    align-items: unset !important;
+    justify-content: unset !important;
+  }
+}
+
+.hw-modal-list {
+  .mat-mdc-button-base {
+    height: auto !important;
+    align-items: unset !important;
+    justify-content: unset !important;
   }
 }

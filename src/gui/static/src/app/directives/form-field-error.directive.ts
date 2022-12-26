@@ -1,10 +1,10 @@
 import { Directive, ElementRef, Renderer2, Input, ViewContainerRef, NgZone, Inject, Optional } from '@angular/core';
 import {
-  MatLegacyTooltip as MatTooltip,
-  MAT_LEGACY_TOOLTIP_SCROLL_STRATEGY as MAT_TOOLTIP_SCROLL_STRATEGY,
-  MAT_LEGACY_TOOLTIP_DEFAULT_OPTIONS as MAT_TOOLTIP_DEFAULT_OPTIONS,
-  MatLegacyTooltipDefaultOptions as MatTooltipDefaultOptions,
-} from '@angular/material/legacy-tooltip';
+  MatTooltip,
+  MAT_TOOLTIP_SCROLL_STRATEGY,
+  MAT_TOOLTIP_DEFAULT_OPTIONS,
+  MatTooltipDefaultOptions,
+} from '@angular/material/tooltip';
 import { Overlay, ScrollDispatcher } from '@angular/cdk/overlay';
 import { Platform } from '@angular/cdk/platform';
 import { AriaDescriber, FocusMonitor } from '@angular/cdk/a11y';

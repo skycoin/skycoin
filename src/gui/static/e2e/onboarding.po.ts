@@ -30,7 +30,7 @@ export class OnboardingCreatePage {
   }
 
   acceptSafeguard() {
-   return element.all(by.css('app-modal .mat-checkbox-label')).first().click().then(() => {
+   return element.all(by.css('app-modal .mat-mdc-checkbox')).first().click().then(() => {
      return element(by.buttonText('Continue')).click().then(() => {
         return this.getSafeguardIsShown();
       });
@@ -100,11 +100,11 @@ export class OnboardingCreatePage {
   }
 
   getEncryptWalletCheckbox() {
-    return element(by.css('.mat-checkbox-input'));
+    return element(by.css('.mat-mdc-checkbox .mdc-checkbox__native-control'));
   }
 
   canContinueWithoutEncryption() {
-    return element(by.css('.mat-checkbox-label')).click().then(() => {
+    return element(by.css('.mat-mdc-checkbox')).click().then(() => {
       return element(by.buttonText('Finish')).isEnabled();
     });
   }
@@ -114,7 +114,7 @@ export class OnboardingCreatePage {
     const confirm = element(by.css('[formcontrolname="confirm"]'));
     const button = element(by.buttonText('Finish'));
 
-    return element(by.css('.mat-checkbox-label')).click().then(() => {
+    return element(by.css('.mat-mdc-checkbox')).click().then(() => {
       password.sendKeys('password');
       confirm.sendKeys('password');
 

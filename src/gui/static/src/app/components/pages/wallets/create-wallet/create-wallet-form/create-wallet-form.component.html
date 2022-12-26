@@ -18,7 +18,7 @@
         <mat-option [value]="12">{{ 'wallet.new.12-words' | translate }}</mat-option>
         <mat-option [value]="24">{{ 'wallet.new.24-words' | translate }}</mat-option>
         <mat-select-trigger *ngIf="form.controls['number_of_words'].value">
-          {{ this.form.controls['number_of_words'].value }}
+          {{ (this.form.controls['number_of_words'].value === 24 ? 'wallet.new.24-words' : 'wallet.new.12-words') | translate }}
         </mat-select-trigger>
       </mat-select>
     </div>
@@ -201,7 +201,9 @@
       type="checkbox" class="-check"
       [checked]="customSeedAccepted" (change)="onCustomSeedAcceptance($event)" [ngClass]="{'element-disabled' : busy}"
     >
-      {{ 'wallet.new.unconventional-seed-check' | translate}}
+      <div class="alert-check-text">
+        {{ 'wallet.new.unconventional-seed-check' | translate}}
+      </div>
     </mat-checkbox>
   </div>
 </div>

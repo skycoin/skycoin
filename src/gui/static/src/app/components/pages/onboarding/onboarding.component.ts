@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { SubscriptionLike } from 'rxjs';
-import { MatLegacyDialog as MatDialog } from '@angular/material/legacy-dialog';
+import { MatDialog } from '@angular/material/dialog';
 
 import { LanguageData, LanguageService } from '../../../services/language.service';
 import { WalletFormData } from '../wallets/create-wallet/create-wallet-form/create-wallet-form.component';

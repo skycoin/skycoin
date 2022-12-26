@@ -12,16 +12,16 @@ export class SendPage {
   getWalletsCount() {
     browser.actions().sendKeys(protractor.Key.ESCAPE).perform();
     
-    return element(by.css('.mat-select')).click().then(() => {
-      return element.all(by.css('.mat-select-panel mat-option .mat-option-text')).count();
+    return element(by.css('.mat-mdc-select')).click().then(() => {
+      return element.all(by.css('.mat-mdc-select-panel mat-option span')).count();
     });
   }
 
   getWalletsWithCoins() {
     browser.actions().sendKeys(protractor.Key.ESCAPE).perform();
 
-    return element(by.css('.mat-select')).click().then(() => {
-      return element.all(by.css('.mat-select-panel mat-option .mat-option-text')).filter((opt) => {
+    return element(by.css('.mat-mdc-select')).click().then(() => {
+      return element.all(by.css('.mat-mdc-select-panel mat-option span')).filter((opt) => {
         return opt.getText().then((v) => {
           return this.getCoinsFromOptionString(v) > 0;
         });
@@ -32,8 +32,8 @@ export class SendPage {
   getValidWallets() {
     browser.actions().sendKeys(protractor.Key.ESCAPE).perform();
 
-    return element(by.css('.mat-select')).click().then(() => {
-      return element.all(by.css('.mat-select-panel .mat-active .mat-option-text')).filter((opt) => {
+    return element(by.css('.mat-mdc-select')).click().then(() => {
+      return element.all(by.css('.mat-mdc-select-panel mat-option span')).filter((opt) => {
         return opt.getText().then((v) => {
           return this.getCoinsFromOptionString(v) > 0;
         });

@@ -1,5 +1,5 @@
 import { Component, Inject } from '@angular/core';
-import { MatLegacyDialogRef as MatDialogRef, MAT_LEGACY_DIALOG_DATA as MAT_DIALOG_DATA, MatLegacyDialogConfig as MatDialogConfig, MatLegacyDialog as MatDialog } from '@angular/material/legacy-dialog';
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialogConfig, MatDialog } from '@angular/material/dialog';
 
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';

@@ -1,5 +1,5 @@
 import { Component, OnDestroy } from '@angular/core';
-import { MatLegacyDialogRef as MatDialogRef, MatLegacyDialog as MatDialog, MatLegacyDialogConfig as MatDialogConfig } from '@angular/material/legacy-dialog';
+import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { SubscriptionLike, of } from 'rxjs';
 import { mergeMap, delay } from 'rxjs/operators';
 

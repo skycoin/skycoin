@@ -31,26 +31,18 @@ import { NavBarComponent } from './components/layout/header/nav-bar/nav-bar.comp
 import { WalletDetailComponent } from './components/pages/wallets/wallet-detail/wallet-detail.component';
 import { ModalComponent } from './components/layout/modal/modal.component';
 import { PasswordDialogComponent } from './components/layout/password-dialog/password-dialog.component';
-import { MatLegacyButtonModule as MatButtonModule } from '@angular/material/legacy-button';
-import { MatLegacyCardModule as MatCardModule } from '@angular/material/legacy-card';
-import { MatLegacyDialogModule as MatDialogModule } from '@angular/material/legacy-dialog';
-import { MatExpansionModule } from '@angular/material/expansion';
-import { MatGridListModule } from '@angular/material/grid-list';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { MatLegacyInputModule as MatInputModule } from '@angular/material/legacy-input';
-import { MatLegacyListModule as MatListModule } from '@angular/material/legacy-list';
-import { MatLegacyMenuModule as MatMenuModule } from '@angular/material/legacy-menu';
-import { MatLegacyProgressBarModule as MatProgressBarModule } from '@angular/material/legacy-progress-bar';
-import {
-  MatLegacyProgressSpinnerModule as MatProgressSpinnerModule, MAT_LEGACY_PROGRESS_SPINNER_DEFAULT_OPTIONS as MAT_PROGRESS_SPINNER_DEFAULT_OPTIONS,
-} from '@angular/material/legacy-progress-spinner';
-import { MatLegacySelectModule as MatSelectModule } from '@angular/material/legacy-select';
-import { MatLegacyTabsModule as MatTabsModule } from '@angular/material/legacy-tabs';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatLegacyTooltipModule as MatTooltipModule } from '@angular/material/legacy-tooltip';
-import { MatLegacyCheckboxModule as MatCheckboxModule } from '@angular/material/legacy-checkbox';
-import { MatLegacyAutocompleteModule as MatAutocompleteModule } from '@angular/material/legacy-autocomplete';
-import { MatLegacySliderModule as MatSliderModule } from '@angular/material/legacy-slider';
+import { MatInputModule } from '@angular/material/input';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatProgressSpinnerModule, MAT_PROGRESS_SPINNER_DEFAULT_OPTIONS } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatSliderModule } from '@angular/material/slider';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { HttpClientModule } from '@angular/common/http';
 import { AppService } from './services/app.service';
@@ -225,19 +217,13 @@ import { AssistedSeedFieldComponent } from './components/pages/wallets/create-wa
     BrowserModule,
     HttpClientModule,
     MatButtonModule,
-    MatCardModule,
     MatDialogModule,
-    MatExpansionModule,
-    MatGridListModule,
     MatIconModule,
     MatInputModule,
-    MatListModule,
     MatMenuModule,
     MatProgressBarModule,
     MatProgressSpinnerModule,
     MatSelectModule,
-    MatTabsModule,
-    MatToolbarModule,
     MatTooltipModule,
     MatCheckboxModule,
     MatSliderModule,

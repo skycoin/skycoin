@@ -20,7 +20,7 @@
 @import 'app/app.theme.scss';
 
 body, div, h1, h2, h3, h4, h5, h6, p, span, a, button, option, select,
-mat-panel-description, mat-panel-title, mat-option.mat-option {
+mat-panel-description, mat-panel-title, mat-option.mat-mdc-option {
   font-family: $font-family;
 }
 
@@ -50,13 +50,14 @@ body {
   font-size: $font-size-standard;
 }
 
-.mat-tooltip {
+.mdc-tooltip__surface {
   font-size: 11px !important;
-  line-height: 1.3;
+  line-height: 1.3 !important;
+  padding: 7px 10px !important;
 }
 
-.mat-select-arrow-wrapper {
-  display: none !important;
+.mat-mdc-button-base {
+  height: auto !important;
 }
 
 /**
@@ -95,8 +96,9 @@ Alerts
     margin-top: 5px;
     margin-right: 10px;
     animation: alert-blinking 1s linear infinite;
+    flex-shrink: 0;
   }
-
+  
   mat-checkbox {
     margin-top: 10px;
     display: inline-block;

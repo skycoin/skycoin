@@ -9,7 +9,7 @@
       id="filter"
     >
       <!-- Filter group. -->
-      <mat-optgroup *ngFor="let wallet of wallets" label="
+      <mat-optgroup *ngFor="let wallet of wallets" class="select-group" label="
         {{ wallet.label }} - {{ wallet.coins | amount }}
         ({{ wallet.hours | amount:false }})
       ">

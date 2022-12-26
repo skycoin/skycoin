@@ -2,7 +2,7 @@ import { SubscriptionLike, forkJoin, throwError } from 'rxjs';
 import { first, mergeMap } from 'rxjs/operators';
 import { Component, EventEmitter, Input, OnDestroy, OnInit, ViewChild, ChangeDetectorRef, Output as AgularOutput } from '@angular/core';
 import { UntypedFormGroup, UntypedFormControl } from '@angular/forms';
-import { MatLegacyDialog as MatDialog } from '@angular/material/legacy-dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { BigNumber } from 'bignumber.js';
 import { TranslateService } from '@ngx-translate/core';
 

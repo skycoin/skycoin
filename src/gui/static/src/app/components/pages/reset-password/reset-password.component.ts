@@ -2,7 +2,7 @@ import { Component, OnDestroy, ViewChild, ChangeDetectorRef, OnInit } from '@ang
 import { SubscriptionLike, combineLatest } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UntypedFormGroup, UntypedFormBuilder, UntypedFormControl } from '@angular/forms';
-import { MatLegacyDialog as MatDialog } from '@angular/material/legacy-dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { map } from 'rxjs/operators';
 
 import { ButtonComponent } from '../../layout/button/button.component';

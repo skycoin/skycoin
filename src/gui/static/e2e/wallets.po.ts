@@ -42,7 +42,7 @@ export class WalletsPage {
     const labelEl = element(by.css('[formcontrolname="label"]'));
     const seedEl = element(by.css('[formcontrolname="seed"]'));
     const btn = element(by.buttonText(confirm ? 'Create' : 'Load'));
-    const encrypt = element(by.css('.mat-checkbox-label'));
+    const encrypt = element(by.css('.mat-mdc-checkbox'));
 
     encrypt.click();
     labelEl.clear();
@@ -58,7 +58,7 @@ export class WalletsPage {
 
     if (label !== '' && (seed === confirm || (!confirm && seed !== ''))) {
       browser.sleep(1000);
-      const seedValidationCheckBox = element(by.css('.alert-box .mat-checkbox-inner-container'));
+      const seedValidationCheckBox = element(by.css('.alert-box .mat-mdc-checkbox'));
       seedValidationCheckBox.click();
     }
 

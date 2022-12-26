@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnDestroy, Output, ViewChild } from '@angular/core';
-import { MatLegacyDialog as MatDialog } from '@angular/material/legacy-dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { SubscriptionLike } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { mergeMap } from 'rxjs/operators';

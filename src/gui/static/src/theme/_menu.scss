@@ -4,11 +4,7 @@
 @import 'variables';
 
 // Modifies a class added by Angular Material.
-.mat-menu-panel {
+.mat-mdc-menu-panel {
   border-radius: $rounded-element-border-radius !important;
-  background-color: $white;
-
-  .mat-menu-item {
-    font-family: $font-family;
-  }
+  background-color: $white !important;
 }

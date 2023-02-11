@@ -1,122 +1,124 @@
-import { browser, by, element, protractor } from 'protractor';
-
 export class OnboardingCreatePage {
   navigateTo() {
-    return browser.get('/#/wizard');
+    return browser.url('/#/wizard');
   }
 
   getHeaderText() {
-    return element(by.css('.-header span')).getText();
+    return $('.-header span').getText();
   }
 
-  selectLanguage() {
-    browser.sleep(1000);
+  async selectLanguage() {
+    await browser.pause(1000);
 
-    return element(by.css('.e2e-language-modal')).isPresent().then(languageSelectionIsShown => {
+    return $('.e2e-language-modal').isExisting().then(languageSelectionIsShown => {
       if (!languageSelectionIsShown) {
         return true;
       }
 
-      return element.all(by.css('.e2e-language-modal .button')).first().click().then(() => {
-        const el = element(by.css('.e2e-language-modal'));
+      return $$('.e2e-language-modal .button')[0].click().then(() => {
+        const el = $('.e2e-language-modal');
 
-        return browser.wait(protractor.ExpectedConditions.invisibilityOf(el), 5000).then(() => true);
+        return browser.waitUntil(require("wdio-wait-for").invisibilityOf(el), {
+          timeout: 5000
+        }).then(() => true);
       });
     });
   }
 
   getSafeguardIsShown() {
-    return element(by.css('app-confirmation')).isPresent();
+    return $('app-confirmation').isExisting();
   }
 
   acceptSafeguard() {
-   return element.all(by.css('app-modal .mat-mdc-checkbox')).first().click().then(() => {
-     return element(by.buttonText('Continue')).click().then(() => {
+   return $$('app-modal .mat-mdc-checkbox')[0].click().then(() => {
+     return $("button=Continue").click().then(() => {
         return this.getSafeguardIsShown();
       });
     });
   }
 
-  createWallet(goToManualSeedMode = true) {
-    element(by.buttonText('New')).click();
+  async createWallet(goToManualSeedMode = true) {
+    await $("button=New").click();
 
     if (goToManualSeedMode) {
-      element(by.css('.seed-type-button >span')).click();
-      element(by.css('.e2e-confirm-checkbox')).click();
-      element(by.buttonText('Continue')).click();
+      await $('.seed-type-button >span').click();
+      await $('.e2e-confirm-checkbox').click();
+      await $("button=Continue").click();
     }
 
-    const label = element(by.css('[formcontrolname="label"]'));
-    const seed = element(by.css('[formcontrolname="seed"]'));
-    const confirm = element(by.css('[formcontrolname="confirm_seed"]'));
-    const btnCreate = element(by.buttonText('Create'));
+    const label = $('[formcontrolname="label"]');
+    const seed = $('[formcontrolname="seed"]');
+    const confirm = $('[formcontrolname="confirm_seed"]');
+    const btnCreate = $("button=Create");
 
-    label.clear();
-    label.sendKeys('Test onboarding wallet');
-    seed.clear();
-    seed.sendKeys('test test');
-    confirm.clear();
-    confirm.sendKeys('test test');
+    await label.clearValue();
+    await label.setValue('Test onboarding wallet');
+    await seed.clearValue();
+    await seed.setValue('test test');
+    await confirm.clearValue();
+    await confirm.setValue('test test');
 
-    browser.sleep(1000);
-    const seedValidationCheckBox = element(by.css('.-check'));
-    seedValidationCheckBox.click();
+    await browser.pause(1000);
+    const seedValidationCheckBox = $('.-check');
+    await seedValidationCheckBox.click();
 
-    return btnCreate.isEnabled().then(status => {
+    return btnCreate.isEnabled().then(async status => {
       if (status) {
-        btnCreate.click();
+        await btnCreate.click();
       }
 
       return status;
     });
   }
 
-  loadWallet() {
-    element(by.buttonText('Load')).click();
+  async loadWallet() {
+    await $("button=Load").click();
 
-    element(by.css('.seed-type-button >span')).click();
-    element(by.buttonText('Continue')).click();
+    await $('.seed-type-button >span').click();
+    await $("button=Continue").click();
 
-    const label = element(by.css('[formcontrolname="label"]'));
-    const seed = element(by.css('[formcontrolname="seed"]'));
-    const btnLoad = element(by.buttonText('Create'));
+    const label = $('[formcontrolname="label"]');
+    const seed = $('[formcontrolname="seed"]');
+    const btnLoad = $("button=Create");
 
-    label.clear();
-    label.sendKeys('Test wallet');
-    seed.clear();
-    seed.sendKeys('test test');
+    await label.clearValue();
+    await label.setValue('Test wallet');
+    await seed.clearValue();
+    await seed.setValue('test test');
 
-    browser.sleep(1000);
-    const seedValidationCheckBox = element(by.css('.-check'));
-    seedValidationCheckBox.click();
+    await browser.pause(1000);
+    const seedValidationCheckBox = $('.-check');
+    await seedValidationCheckBox.click();
 
     return btnLoad.isEnabled();
   }
 
   goBack() {
-    return element(by.buttonText('Back')).click().then(() => {
+    return $("button=Back").click().then(() => {
       return this.getHeaderText();
     });
   }
 
   getEncryptWalletCheckbox() {
-    return element(by.css('.mat-mdc-checkbox .mdc-checkbox__native-control'));
+    return $('.mat-mdc-checkbox .mdc-checkbox__native-control');
   }
 
   canContinueWithoutEncryption() {
-    return element(by.css('.mat-mdc-checkbox')).click().then(() => {
-      return element(by.buttonText('Finish')).isEnabled();
+    return $('.mat-mdc-checkbox').click().then(() => {
+      return $("button=Finish").isEnabled();
     });
   }
 
   encryptWallet() {
-    const password = element(by.css('[formcontrolname="password"]'));
-    const confirm = element(by.css('[formcontrolname="confirm"]'));
-    const button = element(by.buttonText('Finish'));
+    const password = $('[formcontrolname="password"]');
+    const confirm = $('[formcontrolname="confirm"]');
+    const button = $("button=Finish");
 
-    return element(by.css('.mat-mdc-checkbox')).click().then(() => {
-      password.sendKeys('password');
-      confirm.sendKeys('password');
+    return $('.mat-mdc-checkbox').click().then(async () => {
+      await password.click();
+      await password.setValue('password');
+      await confirm.click();
+      await confirm.setValue('password');
 
       return button.isEnabled();
     });

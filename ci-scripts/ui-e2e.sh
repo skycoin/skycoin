@@ -104,7 +104,7 @@ module.exports = PROXY_CONFIG;
 EOL
 
 # Run e2e tests
-E2E_PROXY_CONFIG=$E2E_PROXY_CONFIG npm --prefix="./src/gui/static" run e2e
+E2E_PROXY_CONFIG=$E2E_PROXY_CONFIG npm --prefix="./src/gui/static" run e2e-with-server
 
 RESULT=$?
 

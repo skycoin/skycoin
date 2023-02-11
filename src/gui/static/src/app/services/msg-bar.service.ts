@@ -114,11 +114,6 @@ export class MsgBarService {
       this.timeSubscription.unsubscribe();
     }
 
-    // This makes the e2e tests run faster.
-    if (environment.isInE2eMode) {
-      duration = 500;
-    }
-
     this.timeSubscription = of(1).pipe(delay(duration)).subscribe(() => this.hide());
   }
 }

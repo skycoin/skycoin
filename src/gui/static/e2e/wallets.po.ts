@@ -1,70 +1,69 @@
-import { browser, by, element, protractor } from 'protractor';
-
 export class WalletsPage {
   navigateTo() {
-    return browser.get('/#/wallets');
+    return browser.url('/#/wallets');
   }
 
   getHeaderText() {
-    return element(by.css('.title')).getText();
+    return $('.title').getText();
   }
 
   showAddWallet() {
-    const btnAdd = element(by.buttonText('New Wallet'));
+    const btnAdd = $("button=New Wallet");
 
-    return btnAdd.click().then(() => {
-      return element(by.css('app-create-wallet')).isPresent();
+    return btnAdd.click().then(async () => {
+      await browser.pause(500);
+      return $('app-create-wallet').isExisting();
     });
   }
 
   showLoadWallet() {
-    const btnLoad = element(by.buttonText('Load Wallet'));
+    const btnLoad = $("button=Load Wallet");
 
     return btnLoad.click().then(() => {
-      return element(by.css('app-create-wallet')).isPresent();
+      return $('app-create-wallet').isExisting();
     });
   }
 
   getWalletModalTitle() {
-    return element(by.css('app-create-wallet .-header')).getText();
+    return $('app-create-wallet .-header').getText();
   }
 
-  fillWalletForm(label: string, seed: string, confirm: string|null, goToManualSeedMode = true) {
+  async fillWalletForm(label, seed, confirm, goToManualSeedMode = true) {
 
     if (goToManualSeedMode) {
-      element(by.css('.seed-type-button >span')).click();
+      await $('.seed-type-button >span').click();
       if (confirm !== null) {
-        element(by.css('.e2e-confirm-checkbox')).click();
+        await $('.e2e-confirm-checkbox').click();
       }
-      element(by.buttonText('Continue')).click();
+      await $("button=Continue").click();
     }
 
-    const labelEl = element(by.css('[formcontrolname="label"]'));
-    const seedEl = element(by.css('[formcontrolname="seed"]'));
-    const btn = element(by.buttonText(confirm ? 'Create' : 'Load'));
-    const encrypt = element(by.css('.mat-mdc-checkbox'));
+    const labelEl = $('[formcontrolname="label"]');
+    const seedEl = $('[formcontrolname="seed"]');
+    const btn = $(`button=${confirm ? 'Create' : 'Load'}`);
+    const encrypt = $('.mat-mdc-checkbox');
 
-    encrypt.click();
-    labelEl.clear();
-    seedEl.clear();
-    labelEl.sendKeys(label);
-    seedEl.sendKeys(seed);
+    await encrypt.click();
+    await labelEl.clearValue();
+    await seedEl.clearValue();
+    await labelEl.setValue(label);
+    await seedEl.setValue(seed);
 
     if (confirm) {
-      const confirmEl = element(by.css('[formcontrolname="confirm_seed"]'));
-      confirmEl.clear();
-      confirmEl.sendKeys(confirm);
+      const confirmEl = $('[formcontrolname="confirm_seed"]');
+      await confirmEl.clearValue();
+      await confirmEl.setValue(confirm);
     }
 
     if (label !== '' && (seed === confirm || (!confirm && seed !== ''))) {
-      browser.sleep(1000);
-      const seedValidationCheckBox = element(by.css('.alert-box .mat-mdc-checkbox'));
-      seedValidationCheckBox.click();
+      browser.pause(1000);
+      const seedValidationCheckBox = $('.alert-box .mat-mdc-checkbox');
+      await seedValidationCheckBox.click();
     }
 
-    return btn.isEnabled().then(status => {
+    return btn.isEnabled().then(async status => {
       if (status) {
-        btn.click();
+        await btn.click();
       }
 
       return status;
@@ -73,31 +72,31 @@ export class WalletsPage {
 
   expandWallet() {
     return this.getWalletWithName('Test create wallet').click().then(() => {
-      return element(by.css('app-wallet-detail')).isPresent();
+      return $('app-wallet-detail').isExisting();
     });
   }
 
   showQrDialog() {
-    return browser.sleep(1000).then(() => element(by.css('app-qr-code-button')).click().then(() => {
-      return element(by.css('app-qr-code')).isPresent();
+    return browser.pause(1000).then(() => $('app-qr-code-button').click().then(() => {
+      return $('app-qr-code').isExisting();
     }));
   }
 
   hideQrDialog() {
-    return browser.sleep(1000).then(() => element(by.css('app-modal .-header img')).click().then(() => {
-      return element(by.css('app-qr-code')).isPresent();
+    return browser.pause(1000).then(() => $('app-modal .-header img').click().then(() => {
+      return $('app-qr-code').isExisting();
     }));
   }
 
   addAddress() {
-    return element.all(by.css('.-record')).count().then(originalCount => {
-      return element(by.css('.-address-options')).click().then(() => {
-        return browser.sleep(2000).then(() => {
-          return element(by.css('.top-line')).click().then(() => {
-            return browser.sleep(2000).then(() => {
-              return element(by.buttonText('Create')).click().then(() => {
-                return browser.sleep(2000).then(() => {
-                  return element.all(by.css('.-record')).count().then(newCount => {
+    return $$('.-record').length.then(originalCount => {
+      return $('.-address-options').click().then(() => {
+        return browser.pause(2000).then(() => {
+          return $('.top-line').click().then(() => {
+            return browser.pause(2000).then(() => {
+              return $("button=Create").click().then(() => {
+                return browser.pause(2000).then(() => {
+                  return $$('.-record').length.then(newCount => {
                     return newCount > originalCount;
                   });
                 });
@@ -109,31 +108,31 @@ export class WalletsPage {
     });
   }
 
-  getCountOfEmptyAddresses(clickSelector: string) {
-    return element(by.css(clickSelector)).click().then(() => {
-      return element.all(by.css('.-record > div:nth-child(3)')).filter((address) => {
+  getCountOfEmptyAddresses(clickSelector) {
+    return $(clickSelector).click().then(async () => {
+      return (await $$('.-record > div:nth-child(3)').filter((address) => {
         return address.getText().then(value => {
           return value === '0';
         });
-      }).count();
+      })).length;
     });
   }
 
   showChangeWalletName() {
-    return element(by.css('.-rename-wallet')).click().then(() => {
-      return element(by.css('app-change-name')).isPresent();
+    return $('.-rename-wallet').click().then(() => {
+      return $('app-change-name').isExisting();
     });
   }
 
   changeWalletName() {
-    const label = element(by.css('[formcontrolname="label"]'));
-    const btn = element(by.buttonText('Rename'));
+    const label = $('[formcontrolname="label"]');
+    const btn = $("button=Rename");
 
-    return label.clear().then(() => {
-      return label.sendKeys('New Wallet Name').then(() => {
+    return label.clearValue().then(() => {
+      return label.setValue('New Wallet Name').then(() => {
         return btn.click().then(() => {
-          return browser.sleep(1000).then(() => {
-            return this.getWalletWithName('New Wallet Name').isPresent();
+          return browser.pause(1000).then(() => {
+            return this.getWalletWithName('New Wallet Name').isExisting();
           });
         });
       });
@@ -141,67 +140,60 @@ export class WalletsPage {
   }
 
   canEncrypt() {
-    return element(by.css('.-enable-encryption')).click().then(() => {
-      const p1 = element(by.css('[formcontrolname="password"]'));
-      const p2 = element(by.css('[formcontrolname="confirm_password"]'));
-      const btn = element(by.buttonText('Proceed'));
+    return $('.-enable-encryption').click().then(async () => {
+      const p1 = $('[formcontrolname="password"]');
+      const p2 = $('[formcontrolname="confirm_password"]');
+      const btn = $("button=Proceed");
 
-      p1.sendKeys('password');
-      p2.sendKeys('password');
+      await p1.click();
+      await p1.setValue('password');
+      await p2.click();
+      await p2.setValue('password');
 
       return btn.click().then(() => {
-        return browser.wait(
-          protractor.ExpectedConditions.stalenessOf(element(by.css('app-password-dialog'))),
-          30000,
-          'Can not encrypt wallet',
-        ).then(() => {
-          return element(by.css('.-disable-encryption')).isPresent();
+        return browser.waitUntil(require("wdio-wait-for").stalenessOf($('app-password-dialog')), {
+          timeout: 30000,
+          timeoutMsg: 'Can not encrypt wallet'
+        }).then(() => {
+          return $('.-disable-encryption').isExisting();
         });
       });
     });
   }
 
   canDecrypt() {
-    return element(by.css('.-disable-encryption')).click().then(() => {
-      const p1 = element(by.css('[formcontrolname="password"]'));
-      const btn = element(by.buttonText('Proceed'));
+    return $('.-disable-encryption').click().then(async () => {
+      const p1 = $('[formcontrolname="password"]');
+      const btn = $("button=Proceed");
 
-      p1.clear();
-      p1.sendKeys('password');
+      await p1.click();
+      await p1.clearValue();
+      await p1.setValue('password');
 
       return btn.click().then(() => {
-        return browser.wait(
-          protractor.ExpectedConditions.stalenessOf(element(by.css('app-password-dialog'))),
-          30000,
-          'Can not decrypt wallet',
-        ).then(() => {
-          return element(by.css('.-enable-encryption')).isPresent();
+        return browser.waitUntil(require("wdio-wait-for").stalenessOf($('app-password-dialog')), {
+          timeout: 30000,
+          timeoutMsg: 'Can not decrypt wallet'
+        }).then(() => {
+          return $('.-enable-encryption').isExisting();
         });
       });
     });
   }
 
-  showPriceInformation() {
-    return element(by.css('.balance p.dollars')).getText().then(text => {
-      return this.checkHeaderPriceFormat(text);
+  async waitForWalletToBeCreated() {
+    await browser.waitUntil(require("wdio-wait-for").stalenessOf($('app-create-wallet')), {
+      timeout: 10000,
+      timeoutMsg: 'Wallet was not created'
     });
   }
 
-  waitForWalletToBeCreated() {
-    browser.wait(
-      protractor.ExpectedConditions.stalenessOf(element(by.css('app-create-wallet'))),
-      10000,
-      'Wallet was not created',
-    );
+  getWalletWithName(name) {
+    return $$('.e2e-wallets.ng-star-inserted')
+      .filter(wallet => wallet.$('.e2e-label').getText().then(text => text === name))[0];
   }
 
-  private getWalletWithName(name: string) {
-    return element.all(by.css('.e2e-wallets.ng-star-inserted'))
-      .filter(wallet => wallet.element(by.css('.e2e-label')).getText().then(text => text === name))
-      .first();
-  }
-
-  private checkHeaderPriceFormat(price: string) {
+  checkHeaderPriceFormat(price) {
     const reg = /^\$[0-9,]+.[0-9]{2}\s\(\$[0-9,]+.[0-9]{2}\)$/;
 
     return !!price.match(reg);

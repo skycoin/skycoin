@@ -69,20 +69,6 @@
                   "with": "src/environments/environment.prod.ts"
                 }
               ]
-            },
-            "e2e": {
-              "budgets": [
-                {
-                  "type": "anyComponentStyle",
-                  "maximumWarning": "6kb"
-                }
-              ],
-              "fileReplacements": [
-                {
-                  "replace": "src/environments/environment.ts",
-                  "with": "src/environments/environment.e2e.ts"
-                }
-              ]
             }
           }
         },
@@ -96,13 +82,6 @@
             "production": {
               "browserTarget": "desktopwallet:build:production"
             }
-          }
-        },
-        "serve-e2e": {
-          "builder": "@angular-devkit/build-angular:dev-server",
-          "options": {
-            "browserTarget": "desktopwallet:build:e2e",
-            "proxyConfig": "proxy.config.js"
           }
         },
         "extract-i18n": {
@@ -140,20 +119,6 @@
               "src/**/*.ts",
               "src/**/*.html"
             ]
-          }
-        }
-      }
-    },
-    "desktopwallet-e2e": {
-      "root": "e2e",
-      "sourceRoot": "e2e",
-      "projectType": "application",
-      "architect": {
-        "e2e": {
-          "builder": "@angular-devkit/build-angular:protractor",
-          "options": {
-            "protractorConfig": "./protractor.conf.js",
-            "devServerTarget": "desktopwallet:serve-e2e"
           }
         }
       }

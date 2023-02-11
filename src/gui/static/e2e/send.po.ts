@@ -1,27 +1,25 @@
-import { browser, by, element, protractor } from 'protractor';
-
 export class SendPage {
   navigateTo() {
-    return browser.get('/#/send');
+    return browser.url('/#/send');
   }
 
   getHeaderText() {
-    return element(by.css('.title')).getText();
+    return $('.title').getText();
   }
 
-  getWalletsCount() {
-    browser.actions().sendKeys(protractor.Key.ESCAPE).perform();
+  async getWalletsCount() {
+    await browser.keys("Escape");
     
-    return element(by.css('.mat-mdc-select')).click().then(() => {
-      return element.all(by.css('.mat-mdc-select-panel mat-option span')).count();
+    return $('.mat-mdc-select').click().then(() => {
+      return $$('.mat-mdc-select-panel mat-option span').length;
     });
   }
 
-  getWalletsWithCoins() {
-    browser.actions().sendKeys(protractor.Key.ESCAPE).perform();
+  async getWalletsWithCoins() {
+    await browser.keys("Escape");
 
-    return element(by.css('.mat-mdc-select')).click().then(() => {
-      return element.all(by.css('.mat-mdc-select-panel mat-option span')).filter((opt) => {
+    return $('.mat-mdc-select').click().then(() => {
+      return $$('.mat-mdc-select-panel mat-option span').filter((opt) => {
         return opt.getText().then((v) => {
           return this.getCoinsFromOptionString(v) > 0;
         });
@@ -29,11 +27,11 @@ export class SendPage {
     });
   }
 
-  getValidWallets() {
-    browser.actions().sendKeys(protractor.Key.ESCAPE).perform();
+  async getValidWallets() {
+    await browser.keys("Escape");
 
-    return element(by.css('.mat-mdc-select')).click().then(() => {
-      return element.all(by.css('.mat-mdc-select-panel mat-option span')).filter((opt) => {
+    return $('.mat-mdc-select').click().then(() => {
+      return $$('.mat-mdc-select-panel mat-option span').filter((opt) => {
         return opt.getText().then((v) => {
           return this.getCoinsFromOptionString(v) > 0;
         });
@@ -49,18 +47,22 @@ export class SendPage {
     });
   }
 
-  fillFormWithCoins(coins: string) {
-    const dest = element(by.css('[formcontrolname="address"]'));
-    const amount = element(by.css('[formcontrolname="coins"]'));
-    const btnSend = element(by.buttonText('Send'));
+  async fillFormWithCoins(coins) {
+    const dest = $('[formcontrolname="address"]');
+    const amount = $('[formcontrolname="coins"]');
+    const btnSend = $("button=Send");
 
-    dest.clear();
-    amount.clear();
+    await dest.click;
+    await dest.clearValue();
+    await amount.click;
+    await amount.clearValue();
 
-    return dest.sendKeys('2e1erPpaxNVC37PkEv3n8PESNw2DNr5aJNy').then(() => {
+    await dest.click;
+    return dest.setValue('2e1erPpaxNVC37PkEv3n8PESNw2DNr5aJNy').then(() => {
       return this.getValidWallets().then(wallets => {
-        return wallets[0].click().then(() => {
-          return amount.sendKeys(coins).then(() => {
+        return wallets[0].click().then(async () => {
+          await amount.click;
+          return amount.setValue(coins).then(() => {
             return btnSend.isEnabled();
           });
         });
@@ -68,7 +70,7 @@ export class SendPage {
     });
   }
 
-  private getCoinsFromOptionString(option: string) {
+  getCoinsFromOptionString(option) {
     const value = option.slice(option.indexOf('-') + 1, option.indexOf(' SKY'));
 
     return parseFloat(value);

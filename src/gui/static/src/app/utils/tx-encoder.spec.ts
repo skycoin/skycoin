@@ -1,11 +1,12 @@
-import { readJSON } from 'karma-read-json';
 import { TxEncoder } from './tx-encoder';
 import BigNumber from 'bignumber.js';
+
+import { EncodedTxs } from 'test-fixtures/encoded-txs';
 
 describe('TxEncoder', () => {
 
   describe('check encoding', () => {
-    const txs = readJSON('test-fixtures/encoded-txs.json').txs;
+    const txs = EncodedTxs.txs
 
     for (let i = 0; i < txs.length; i++) {
       it('encode tx ' + i, () => {

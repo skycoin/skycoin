@@ -1,5 +1,5 @@
-{
-    "txs": [
+export class EncodedTxs {
+    static txs: any[] = [
         {
             "inputs": [
                 {

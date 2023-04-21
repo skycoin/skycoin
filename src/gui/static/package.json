@@ -54,7 +54,7 @@
     "@wdio/jasmine-framework": "^8.3.5",
     "@wdio/local-runner": "^8.3.5",
     "@wdio/spec-reporter": "^8.3.0",
-    "chromedriver": "^110.0.0",
+    "chromedriver": "^112.0.0",
     "concurrently": "6.5.1",
     "eslint": "^8.28.0",
     "eslint-plugin-import": "2.25.4",

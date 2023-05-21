@@ -134,8 +134,6 @@ export class BlockchainService {
             this.nodeSynchronized = false;
           }
 
-          this.nodeSynchronized = this.nodeSynchronized;
-
           // Refresh the balance the first time the info is retrieved.
           if (!this.refreshedBalance) {
             this.balanceAndOutputsService.refreshBalance();

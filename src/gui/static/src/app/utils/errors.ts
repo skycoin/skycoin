@@ -1,5 +1,3 @@
-/* eslint-disable prefer-arrow/prefer-arrow-functions */
-
 /**
  * This file contains functions for processing the errors and make it easier to work with them.
  */

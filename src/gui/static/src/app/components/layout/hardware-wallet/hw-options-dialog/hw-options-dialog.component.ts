@@ -189,7 +189,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
       // Include the current wallet, if there is one.
       wallet: this.wallet,
       walletHasPin: !this.needsPin,
-      requestOptionsComponentRefresh: ((error: string = null, recheckSecurityOnly: boolean = false) => {
+      requestOptionsComponentRefresh: ((error: string = null, recheckSecurityOnly = false) => {
         if (!error) {
           // Set the data to be updated after closing the window, as requested.
           if (!recheckSecurityOnly) {

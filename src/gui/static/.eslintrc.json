@@ -15,8 +15,9 @@
         "createDefaultProgram": true
       },
       "extends": [
-        "plugin:@angular-eslint/ng-cli-compat",
-        "plugin:@angular-eslint/ng-cli-compat--formatting-add-on",
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
+        "plugin:@angular-eslint/recommended",
         "plugin:@angular-eslint/template/process-inline-templates"
       ],
       "rules": {
@@ -41,15 +42,24 @@
         "@typescript-eslint/member-ordering": [
           "error",
           {
-            "default": ["static-field", "instance-field", "abstract-field", "static-method", "constructor", "instance-method", "abstract-method"]
+            "default": [
+              "static-field",
+              "instance-field",
+              "abstract-field",
+              "static-method",
+              "constructor",
+              "instance-method",
+              "abstract-method"
+            ]
           }
-          
         ],
         "@typescript-eslint/naming-convention": [
           "error",
           {
             "selector": "enumMember",
-            "format": ["PascalCase"]
+            "format": [
+              "PascalCase"
+            ]
           }
         ],
         "@typescript-eslint/explicit-member-accessibility": [
@@ -92,17 +102,18 @@
           "never"
         ],
         "valid-typeof": "error",
-        "jsdoc/newline-after-description": [
-          "error",
-          "never"
-        ],
         "arrow-body-style": [
           "error",
           "as-needed",
           {
             "requireReturnForObjectLiteral": true
           }
-        ]
+        ],
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-unused-vars": "off",
+        "@typescript-eslint/no-empty-function": "off",
+        "jsdoc/newline-after-descriptio": "off",
+        "no-empty": "off"
       }
     },
     {

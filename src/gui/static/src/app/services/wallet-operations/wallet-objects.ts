@@ -1,4 +1,3 @@
-/* eslint-disable prefer-arrow/prefer-arrow-functions */
 import BigNumber from 'bignumber.js';
 
 import { Output } from './transaction-objects';

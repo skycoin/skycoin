@@ -4,7 +4,7 @@
   "license": "MIT",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "ng serve --host 0.0.0.0",
     "build": "ng build --configuration production",
     "build-travis": "ng build --configuration production --output-path=$BUILD_UI_TRAVIS_DIR",
     "test": "ng test --watch=false",

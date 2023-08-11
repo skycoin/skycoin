@@ -67,3 +67,8 @@ This will create a new directory, `testcoin`, in `cmd` folder and a `testcoin.go
 It will also use the built-in defaul options (specified above) and draw template configuration from `$GOPATH/src/github.com/skycoin/skycoin/template`
 
 This file can be used to run a "testcoin" node.
+
+#### Fibercoin setup
+
+Refer to the cx-chains documentation
+[https://www.skycoin.com/cx/chains/](https://www.skycoin.com/cx/chains/)

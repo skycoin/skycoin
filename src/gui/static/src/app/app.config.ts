@@ -21,13 +21,13 @@ export const AppConfig = {
   /**
    * ID of the coin on the coin price service. If null, the wallet will not show the USD price.
    */
-  priceApiId: 'sky-skycoin',
+  priceApiId: 'ness-privateness',
   /**
    * This wallet uses the Skycoin URI Specification (based on BIP-21) when creating QR codes and
    * requesting coins. This variable defines the prefix that will be used for creating QR codes
    * and URLs. IT MUST BE UNIQUE FOR EACH COIN.
    */
-  uriSpecificatioPrefix: 'skycoin',
+  uriSpecificatioPrefix: 'privateness',
   /**
    * Normal size for some modal windows.
    */

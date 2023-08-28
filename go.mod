@@ -27,7 +27,6 @@ require (
 	github.com/stretchr/testify v1.2.2
 	github.com/toqueteos/webbrowser v1.1.0
 	github.com/urfave/cli v1.20.0
-	golang.org/x/crypto v0.0.0-20181015023909-0c41d7ab0a0e
-	golang.org/x/net v0.0.0-20181023162649-9b4f9f5ad519 // indirect
-	golang.org/x/sys v0.0.0-20181023152157-44b849a8bc13 // indirect
+	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
+	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b // indirect
 )

@@ -30,7 +30,7 @@
 
     "warnings": {
       "update-part1": "Wallet update",
-      "update-part2": "Not used. The code adds the versión number of the lastest update here.",
+      "update-part2": "Not used. The code adds the versión number of the latest update here.",
       "update-part3": "available.",
       "synchronizing": "The wallet is synchronizing. Data you see may not be updated.",
       "pending-txs-part1": "There are some",
@@ -268,7 +268,7 @@
     "options-link": "Options",
     "coin-hours-options-link": "Hours options",
     "hours-share-factor-label": "{{ coinHoursName }} share factor",
-    "hours-share-factor-help": "This control allows to select the factor (percentage) of {{ coinHoursName }} that will be send. The higher the value, the more {{ coinHoursName }} will be sent and less will be retained.",
+    "hours-share-factor-help": "This control allows to select the factor (percentage) of {{ coinHoursName }} that will be sent. The higher the value, the more {{ coinHoursName }} will be sent and less will be retained.",
     "close-hours-share-factor-alert": "The option will be resetted to the default value. Are you sure you want to continue?",
     "preview-button": "Preview",
     "send-button": "Send",
@@ -370,19 +370,31 @@
       "input-label": "Transaction text",
       "send-button": "Send",
       "sent": "The transaction has been sent."
+    },
+
+    "confirm-tx": {
+      "title": "Details",
+      "confirm": "Confirm"
     }
   },
 
   "reset": {
     "title": "Reset Password",
+    "invalid-wallet": "Invalid wallet",
     "wallet-label": "Wallet",
     "seed-label": "Wallet seed",
     "seed-error-info": "You must enter a seed.",
+    "enter-seed": "Press here to enter the seed",
+    "words-number-label": "How many words the seed has",
+    "12-words": "12 words",
+    "24-words": "24 words",
     "password-label": "New password (leave empty if you want the wallet not to be encrypted)",
     "confirm-label": "Confirm new password",
     "confirm-error-info": "The two passwords must match.",
     "reset-button": "Reset",
-    "done": "Password successfully changed."
+    "done": "Password successfully changed.",
+    "remove-password-confirmation-title": "Alert",
+    "remove-password-confirmation": "You have not entered a password, so the encryption will be removed from the wallet, which will make it less secure. Are you sure you want to continue?"
   },
 
   "tx": {
@@ -406,7 +418,7 @@
     "outputs-title": "Outputs",
     "confirmed-transaction": "Confirmed",
     "pending-transaction": "Pending",
-    "current-rate-help": "Calculated at the current rate."
+    "current-rate-help": "Fiat value calculated at the current rate."
   },
 
   "edit-note": {
@@ -489,11 +501,13 @@
     "receiving": "Receiving {{ coinName }}",
     "pending-indication": "Pending",
     "transaction-note-small-label": "Note:",
+    "hours-burned-help": "Hours burned.",
     "no-txs": "You have no transaction history",
     "no-txs-filter": "There are no transactions matching the current filter criteria",
     "no-filter": "No filter active (press to select wallets/addresses)",
     "filter": "Active filter: ",
     "filters": "Active filters: ",
+    "remove-filters-help": "Remove filters.",
     "all-addresses": "All addresses",
     "view-all": "View all {{ number }} transactions"
   },

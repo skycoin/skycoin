@@ -1,0 +1,69 @@
+@import '../../../../../../../theme/_variables.scss';
+
+$dashed-border-size: 2px;
+$gray-dashed-border: $grey-very-light dashed $dashed-border-size;
+$white-dashed-border: rgba(255, 255, 255, 0.25) dashed $dashed-border-size;
+
+.dashed-border {
+  border: $gray-dashed-border;
+}
+
+.show-pointer {
+  cursor: pointer;
+}
+
+.non-editable-field {
+  text-align: center;
+  padding: 15px;
+  border-radius: $input-border-radius;
+  color: $black;
+
+  .text-with-icon-container {
+    display: inline-flex;
+    align-items: center;
+
+    mat-icon {
+      margin-right: 5px;
+      opacity: 1;
+    }
+  }
+}
+
+.transparent-text {
+  opacity: 0.75;
+}
+
+.normal-seed-field {
+  font-size: $font-size-standard-plus;
+}
+
+.onboarding-version {
+  border: $white-dashed-border;
+  color: $white;
+}
+
+.seed-spinner {
+  height: 0px;
+  position: relative;
+  top: -12px;
+  left: -12px;
+
+  mat-spinner {
+    position: absolute;
+    height: 10px !important;
+    width: 10px !important;
+
+    ::ng-deep svg {
+      height: 10px !important;
+      width: 10px !important;
+    }
+  }
+}
+
+.white-mat-spinner {
+  ::ng-deep svg {
+    circle {
+      stroke: $white;
+    }
+  }
+}

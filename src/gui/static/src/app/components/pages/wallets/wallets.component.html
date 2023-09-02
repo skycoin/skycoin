@@ -54,13 +54,22 @@
     <!-- Options at the bottom. -->
     <div class="action-buttons">
       <button mat-button (click)="addWallet(true)">
-        <img src="assets/img/plus-gold.png"> {{ 'wallet.add-button' | translate }}
+        <div class="inner-container">
+          <img src="assets/img/plus-gold.png">
+          <span>{{ 'wallet.add-button' | translate }}</span>
+        </div>
       </button>
       <button mat-button (click)="addWallet(false)">
-        <img src="assets/img/load-gold.png"> {{ 'wallet.load-button' | translate }}
+        <div class="inner-container">
+          <img src="assets/img/load-gold.png">
+          <span>{{ 'wallet.load-button' | translate }}</span>
+        </div>
       </button>
       <button mat-button *ngIf="hwCompatibilityActivated" (click)="adminHwWallet()">
-        <img src="assets/img/hw-gold.png"> {{ 'wallet.hardware-wallet-button' | translate }}
+        <div class="inner-container">
+          <img src="assets/img/hw-gold.png">
+          <span>{{ 'wallet.hardware-wallet-button' | translate }}</span>
+        </div>
       </button>
     </div>
   </div>

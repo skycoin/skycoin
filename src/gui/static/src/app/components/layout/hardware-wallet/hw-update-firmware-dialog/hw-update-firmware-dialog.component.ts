@@ -8,6 +8,7 @@ import { HwDialogBaseComponent } from '../hw-dialog-base.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 import { OperationError, HWOperationResults } from '../../../../utils/operation-error';
 import { processServiceError } from '../../../../utils/errors';
+import { AppConfig } from '../../../../app.config';
 
 /**
  * Allows to download and install the firmware of the hw wallet.
@@ -59,7 +60,7 @@ export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpd
   public static openDialog(dialog: MatDialog): MatDialogRef<HwUpdateFirmwareDialogComponent, any> {
     const config = new MatDialogConfig();
     config.autoFocus = false;
-    config.width = '450px';
+    config.width = AppConfig.smallModalWidth;
 
     return dialog.open(HwUpdateFirmwareDialogComponent, config);
   }

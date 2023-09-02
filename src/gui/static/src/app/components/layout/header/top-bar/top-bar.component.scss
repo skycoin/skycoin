@@ -29,19 +29,15 @@ $bar-height: 50px;
   width: $side-containers-width;
 
   .button {
-    height: $bar-height;
+    height: $bar-height !important;
     width: $bar-height;
   }
 }
 
-.mat-menu-item {
-  height: 50px;
-  line-height: 50px;
-  font-size: $font-size-standard-plus;
-}
-
 .color-primary {
-  color: $main-color;
+  ::ng-deep span {
+    color: $main-color;
+  }
 }
 
 .separator {

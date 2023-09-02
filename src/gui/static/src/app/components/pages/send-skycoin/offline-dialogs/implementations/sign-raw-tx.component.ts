@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { FormBuilder } from '@angular/forms';
+import { UntypedFormBuilder } from '@angular/forms';
 import { SubscriptionLike } from 'rxjs';
 import { first } from 'rxjs/operators';
 
@@ -12,6 +12,7 @@ import { AppConfig } from '../../../../../app.config';
 import { SpendingService } from '../../../../../services/wallet-operations/spending.service';
 import { WalletsAndAddressesService } from '../../../../../services/wallet-operations/wallets-and-addresses.service';
 import { WalletBase } from '../../../../../services/wallet-operations/wallet-objects';
+import { OfflineTxPreviewComponent } from '../offline-tx-preview/offline-tx-preview.component';
 
 /**
  * Allows to sign an unsigned raw tx. For it to be able to sign the transaction, all the
@@ -54,7 +55,7 @@ export class SignRawTxComponent extends OfflineDialogsBaseComponent implements O
     private dialog: MatDialog,
     private spendingService: SpendingService,
     private walletsAndAddressesService: WalletsAndAddressesService,
-    formBuilder: FormBuilder,
+    formBuilder: UntypedFormBuilder,
   ) {
     super(formBuilder);
 
@@ -108,8 +109,10 @@ export class SignRawTxComponent extends OfflineDialogsBaseComponent implements O
       return;
     }
 
-    this.msgBarService.hide();
+    // TODO: reactivate after the problems with the 'transaction/verify' API endpoint are solved.
+    // this.showPreview();
 
+    // TODO: remove after the problems with the 'transaction/verify' API endpoint are solved.
     // Get the wallet password, if needed, and start signing the transaction.
     if ((this.form.get('dropdown').value as WalletBase).encrypted) {
       PasswordDialogComponent.openDialog(this.dialog, { wallet: this.form.get('dropdown').value }).componentInstance.passwordSubmit
@@ -122,8 +125,46 @@ export class SignRawTxComponent extends OfflineDialogsBaseComponent implements O
     }
   }
 
+  // Decodes the transaction, shows the preview and continues if the user confirms.
+  // TODO: reactivate after the problems with the 'transaction/verify' API endpoint are solved.
+  private showPreview() {
+    this.msgBarService.hide();
+    this.working = true;
+    this.okButton.setLoading();
+
+    this.closeOperationSubscription();
+    this.operationSubscription = this.spendingService.decodeTransaction(
+      this.form.get('input').value, true,
+    ).subscribe(result => {
+      this.working = false;
+      this.okButton.resetState();
+
+      // Open the preview modal window.
+      OfflineTxPreviewComponent.openDialog(this.dialog, result).afterClosed().subscribe(r => {
+        if (r) {
+          // Get the wallet password, if needed, and start signing the transaction.
+          if ((this.form.get('dropdown').value as WalletBase).encrypted) {
+            PasswordDialogComponent.openDialog(this.dialog, { wallet: this.form.get('dropdown').value }).componentInstance.passwordSubmit
+              .subscribe(passwordDialog => {
+                passwordDialog.close();
+                this.signTransaction(passwordDialog.password);
+              });
+          } else {
+            this.signTransaction(null);
+          }
+        }
+      });
+    }, error => {
+      this.working = false;
+      this.okButton.resetState();
+
+      this.msgBarService.showError(error);
+    });
+  }
+
   // Signs the transaction with the selected wallet.
   private signTransaction(password: string) {
+    this.msgBarService.hide();
     this.working = true;
     this.okButton.setLoading();
 

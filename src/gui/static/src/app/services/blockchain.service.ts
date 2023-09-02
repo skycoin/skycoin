@@ -111,9 +111,10 @@ export class BlockchainService {
     }
 
     this.ngZone.runOutsideAngular(() => {
-      this.dataSubscription = of(0).pipe(delay(delayMs), mergeMap(() => {
-        return this.apiService.get('blockchain/progress');
-      })).subscribe((response: any) => {
+      this.dataSubscription = of(0).pipe(
+        delay(delayMs),
+        mergeMap(() => this.apiService.get('blockchain/progress')),
+      ).subscribe((response: any) => {
         this.ngZone.run(() => {
           // Stop if a value is not valid.
           if (!response || !response.current || !response.highest || response.highest === 0 || response.current < this.lastCurrentBlock || response.highest < this.lastHighestBlock) {
@@ -132,8 +133,6 @@ export class BlockchainService {
           } else if (response.current !== response.highest && this.nodeSynchronized) {
             this.nodeSynchronized = false;
           }
-
-          this.nodeSynchronized = this.nodeSynchronized;
 
           // Refresh the balance the first time the info is retrieved.
           if (!this.refreshedBalance) {

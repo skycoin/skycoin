@@ -2,18 +2,14 @@
   "extends": "../tsconfig.json",
   "compilerOptions": {
     "outDir": "../out-tsc/spec",
-    "baseUrl": "./",
+    "resolveJsonModule": true,
     "types": [
-      "jasmine",
-      "node"
+      "jasmine"
     ]
   },
-  "files": [
-    "test.ts",    "polyfills.ts"
-
-  ],
   "include": [
     "**/*.spec.ts",
-    "**/*.d.ts"
+    "**/*.d.ts",
+    "**/*.ts"
   ]
 }

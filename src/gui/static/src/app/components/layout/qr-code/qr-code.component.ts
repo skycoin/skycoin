@@ -1,7 +1,7 @@
 import { Component, Inject, ViewChild, OnDestroy, ElementRef, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { MatDialogRef } from '@angular/material/dialog';
-import { FormGroup, FormBuilder } from '@angular/forms';
+import { UntypedFormGroup, UntypedFormBuilder } from '@angular/forms';
 import { SubscriptionLike, Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { BigNumber } from 'bignumber.js';
@@ -51,7 +51,7 @@ export interface QrDialogConfig {
 export class QrCodeComponent implements OnInit, OnDestroy {
   @ViewChild('qrArea') qrArea: ElementRef;
 
-  form: FormGroup;
+  form: UntypedFormGroup;
   currentQrContent: string;
   formVisible = false;
   // For knowing if the form fields have errors.
@@ -75,7 +75,7 @@ export class QrCodeComponent implements OnInit, OnDestroy {
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: QrDialogConfig,
     public dialogRef: MatDialogRef<QrCodeComponent>,
-    public formBuilder: FormBuilder,
+    public formBuilder: UntypedFormBuilder,
     private msgBarService: MsgBarService,
     private appService: AppService,
   ) { }

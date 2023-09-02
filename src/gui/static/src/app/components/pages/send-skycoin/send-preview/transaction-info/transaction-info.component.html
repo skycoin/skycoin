@@ -5,8 +5,8 @@
     <h4 *ngIf="!isPreview">{{ 'tx.transaction-title' | translate }}</h4>
     <div class="row">
       <!-- List with the basic transaction data. The data shown depends on the transaction type. -->
-      <div class="col-md-9 -tx-meta">
-        <ng-container *ngIf="isPreview">
+      <div class="-tx-meta" [ngClass]="{'col-md-9' : !isForOfflineTransaction, 'col-md-12': isForOfflineTransaction}">
+        <ng-container *ngIf="isPreview && !isForOfflineTransaction">
           <div class="-data">
             <span>{{ 'tx.from-small-label' | translate }}</span> <span>{{ transaction.from }}</span>
           </div>
@@ -22,7 +22,7 @@
             <span>{{ 'tx.status-small-label' | translate }}</span> <span>{{ (transaction.confirmed ? 'tx.confirmed-transaction' : 'tx.pending-transaction') | translate }}</span>
           </div>
         </ng-container>
-        <div class="-data">
+        <div class="-data" *ngIf="!isForOfflineTransaction">
           <span>{{ 'tx.hours-small-label' | translate }}</span>
           <span>
             {{ sentOrReceivedHours | amount:false:'first' }} {{ hoursText | translate }}
@@ -30,7 +30,7 @@
             {{ transaction.hoursBurned | amount:false:'first' }} {{ 'tx.hours-burned' | translate }}
           </span>
         </div>
-        <div class="-data" *ngIf="!isPreview">
+        <div class="-data" *ngIf="!isPreview || isForOfflineTransaction">
           <span>{{ 'tx.id-small-label' | translate }}</span> <span>{{ transaction.id }}</span>
         </div>
         <div class="-data" *ngIf="transaction.note || !isPreview">
@@ -42,9 +42,9 @@
       </div>
 
       <!-- Transaction balance. -->
-      <div class="col-md-3 -tx-price">
+      <div class="col-md-3 -tx-price" *ngIf="!isForOfflineTransaction">
         <div class="-icon">
-          <img [src]="'assets/img/' + (shouldShowIncomingIcon ? 'received' : 'sent') + '-blue.png'">
+          <img [src]="'assets/img/' + transactionIcon">
         </div>
         <h4>{{ balanceToShow | amount }}</h4>
         <p *ngIf="price" [matTooltip]="!isPreview ? ('tx.current-rate-help' | translate) : ''">

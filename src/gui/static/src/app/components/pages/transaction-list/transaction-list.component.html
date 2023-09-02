@@ -9,7 +9,7 @@
       id="filter"
     >
       <!-- Filter group. -->
-      <mat-optgroup *ngFor="let wallet of wallets" label="
+      <mat-optgroup *ngFor="let wallet of wallets" class="select-group" label="
         {{ wallet.label }} - {{ wallet.coins | amount }}
         ({{ wallet.hours | amount:false }})
       ">
@@ -35,7 +35,12 @@
         </ng-container>
       </mat-select-trigger>
     </mat-select>
-    <img class="x-button image-button" src="assets/img/delete-grey.png" (click)="removeFilters()" *ngIf="form.get('filter').value.length > 0">
+    <mat-icon
+      *ngIf="form.get('filter').value.length > 0"
+      class="close-button image-button"
+      (click)="removeFilters()"
+      [matTooltip]="'history.remove-filters-help' | translate"
+    >clear</mat-icon>
   </div>
 
   <app-loading-content
@@ -49,7 +54,7 @@
     <ng-container *ngFor="let transaction of transactions">
       <div class="-transaction" (click)="showTransaction(transaction)">
         <div class="-icon" [ngClass]="{ '-pending': !transaction.confirmed }">
-          <img [src]="'assets/img/' + (transaction.balance.isGreaterThan(0) && !transaction.coinsMovedInternally ? 'received' : 'sent') + '-blue.png'">
+          <img [src]="'assets/img/' + transactionIcon(transaction)">
         </div>
         <div class="-address">
           <ng-container *ngIf="!transaction.coinsMovedInternally">
@@ -84,15 +89,26 @@
             <app-qr-code-button [address]="address"></app-qr-code-button>
             <span class="break-all">{{ address }}</span>
           </div>
+          <div class="-item">
+            <span class="note">{{ hoursToShow(transaction) | amount:false }}</span>
+          </div>
           <div class="-item" *ngIf="transaction.note">
             <span>{{ 'history.transaction-note-small-label' | translate }} <span class="note">{{ transaction.note }}</span></span>
           </div>
         </div>
         <div class="-balance">
           <h4>{{ transaction.balance.toString() | amount }}</h4>
-          <p *ngIf="price" [matTooltip]="'tx.current-rate-help' | translate">
-            {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}<span>*</span>
-          </p>
+          <div>
+            <div *ngIf="price" class="fiat-container" [matTooltip]="'tx.current-rate-help' | translate">
+              {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}<span>*</span>
+            </div>
+          </div>
+          <div>
+            <div class="burn-container" [matTooltip]="'history.hours-burned-help' | translate">
+              {{ transaction.hoursBurned | amount:false:'first' }}
+              <img src="assets/img/fire.png">
+            </div>
+          </div>
         </div>
       </div>
     </ng-container>

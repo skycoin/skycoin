@@ -1,5 +1,5 @@
 import { Component, OnInit, HostListener, Inject } from '@angular/core';
-import { FormBuilder, Validators, FormGroup } from '@angular/forms';
+import { UntypedFormBuilder, Validators, UntypedFormGroup } from '@angular/forms';
 import { MatDialogRef, MatDialog, MatDialogConfig, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
 import { HwWalletService } from '../../../../services/hw-wallet.service';
@@ -36,7 +36,7 @@ export interface HwPinDialogParams {
   styleUrls: ['./hw-pin-dialog.component.scss'],
 })
 export class HwPinDialogComponent extends HwDialogBaseComponent<HwPinDialogComponent> implements OnInit {
-  form: FormGroup;
+  form: UntypedFormGroup;
   changePinStates = ChangePinStates;
   buttonsContent = '•';
 
@@ -55,7 +55,7 @@ export class HwPinDialogComponent extends HwDialogBaseComponent<HwPinDialogCompo
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: HwPinDialogParams,
     public dialogRef: MatDialogRef<HwPinDialogComponent>,
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private dialog: MatDialog,
     hwWalletService: HwWalletService,
   ) {

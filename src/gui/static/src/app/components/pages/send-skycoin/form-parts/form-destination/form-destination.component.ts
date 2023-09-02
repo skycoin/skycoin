@@ -1,6 +1,6 @@
 import { SubscriptionLike } from 'rxjs';
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
-import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { UntypedFormArray, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { BigNumber } from 'bignumber.js';
 import { TranslateService } from '@ngx-translate/core';
@@ -62,9 +62,9 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   @Input() busy: boolean;
   // Emits when there have been changes in the contents of the component, so the validation
   // status could have changed.
-  @Output() onChanges = new EventEmitter<void>();
+  @Output() dataChanged = new EventEmitter<void>();
   // Emits when the user asks to open the modal window for bulk sending.
-  @Output() onBulkRequested = new EventEmitter<void>();
+  @Output() bulkRequested = new EventEmitter<void>();
   // Emits when a link is used for filling the form and it includes a note.
   @Output() newNoteRequested = new EventEmitter<string>();
   // Emits when a link is used for filling the advanced form and it includes hours. It indicates
@@ -111,7 +111,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     return this.showSimpleFormInternal;
   }
 
-  form: FormGroup;
+  form: UntypedFormGroup;
   doubleButtonActive = DoubleButtonActive;
   // Allows to know if the user is entering the values in the coin (left) or usd (right).
   selectedCurrency = DoubleButtonActive.LeftButton;
@@ -149,12 +149,12 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
   // Gets all the form field groups on the destinations array.
   get destControls() {
-    return (this.form.get('destinations') as FormArray).controls;
+    return (this.form.get('destinations') as UntypedFormArray).controls;
   }
 
   constructor(
     private appService: AppService,
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private dialog: MatDialog,
     private msgBarService: MsgBarService,
     private translate: TranslateService,
@@ -172,7 +172,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
     // Inform when there are changes on the address field, shown on the simple form.
     this.addressSubscription = this.form.get('address').valueChanges.subscribe(() => {
-      this.onChanges.emit();
+      this.dataChanged.emit();
     });
 
     // Keep the price updated.
@@ -187,8 +187,8 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     this.priceSubscription.unsubscribe();
     this.destinationSubscriptions.forEach(s => s.unsubscribe());
 
-    this.onChanges.complete();
-    this.onBulkRequested.complete();
+    this.dataChanged.complete();
+    this.bulkRequested.complete();
     this.newNoteRequested.complete();
     this.manualHoursRequested.complete();
     this.hoursAddedToSimpleForm.complete();
@@ -200,7 +200,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       this.selectedCurrency = value;
       this.askIfConvertAmount();
       this.updateValuesAndValidity();
-      (this.form.get('destinations') as FormArray).updateValueAndValidity();
+      (this.form.get('destinations') as UntypedFormArray).updateValueAndValidity();
     }
   }
 
@@ -408,8 +408,8 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
     // Update the form validity.
     setTimeout(() => {
-      (this.form.get('destinations') as FormArray).updateValueAndValidity();
-      this.onChanges.emit();
+      (this.form.get('destinations') as UntypedFormArray).updateValueAndValidity();
+      this.dataChanged.emit();
     });
   }
 
@@ -426,7 +426,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       this.updateValuesAndValidity();
     }));
 
-    (this.form.get('destinations') as FormArray).push(group);
+    (this.form.get('destinations') as UntypedFormArray).push(group);
     this.addressErrorMsgs.push('');
     this.coinsErrorMsgs.push('');
     this.hoursErrorMsgs.push('');
@@ -436,7 +436,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
   // Removes from the form the destination corresponding to the provided index.
   removeDestination(index) {
-    const destinations = this.form.get('destinations') as FormArray;
+    const destinations = this.form.get('destinations') as UntypedFormArray;
     destinations.removeAt(index);
 
     // Remove the associated entry in the error arrays, if needed.
@@ -462,16 +462,16 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
   // Opens the bulk send modal window.
   requestBulkSend() {
-    this.onBulkRequested.emit();
+    this.bulkRequested.emit();
   }
 
   // Opens a modal window for the user to select a tool for entering the destinations.
   showDestinationTools() {
     DestinationToolsComponent.openDialog(this.dialog).afterClosed().subscribe(result => {
       // Open the selected tool.
-      if (result === DestinationTools.bulk) {
+      if (result === DestinationTools.Bulk) {
         this.requestBulkSend();
-      } else if (result === DestinationTools.link) {
+      } else if (result === DestinationTools.Link) {
         this.openLinkModalWindow();
       }
     });
@@ -643,7 +643,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
    */
   setDestinations(newDestinations: Destination[]) {
     while (this.destControls.length > 0) {
-      (this.form.get('destinations') as FormArray).removeAt(0);
+      (this.form.get('destinations') as UntypedFormArray).removeAt(0);
     }
 
     newDestinations.forEach((destination, i) => {
@@ -941,7 +941,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     this.form.get('address').setValue('');
 
     while (this.destControls.length > 0) {
-      (this.form.get('destinations') as FormArray).removeAt(0);
+      (this.form.get('destinations') as UntypedFormArray).removeAt(0);
     }
 
     this.addDestination();

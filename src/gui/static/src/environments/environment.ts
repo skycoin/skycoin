@@ -7,7 +7,6 @@ export const environment = {
   nodeUrl: '/api/',
   production: false,
   tellerUrl: '/teller/',
-  isInE2eMode: false,
 
   swaplab: {
     apiKey: 'w4bxe2tbf9beb72r', // if set to null, integration will be disabled

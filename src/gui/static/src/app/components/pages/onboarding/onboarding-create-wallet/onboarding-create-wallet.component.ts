@@ -26,7 +26,7 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
   @Input() fill: WalletFormData = null;
   // Emits when the user presses the button for going to the next step of the wizard, after
   // filling the form. Includes an object with the data entered on the form.
-  @Output() onLabelAndSeedCreated = new EventEmitter<WalletFormData>();
+  @Output() labelAndSeedCreated = new EventEmitter<WalletFormData>();
 
   // Current selection on the double button for choosing if the form must be shown for
   // creating a new wallet (left) or for loading a wallet using a seed (right).
@@ -53,7 +53,7 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     // Fill the form.
-    setTimeout(() => { this.formControl.initForm(null, this.fill); });
+    setTimeout(() => this.formControl.initForm(null, this.fill));
     // Show the correct form.
     if (this.fill) {
       this.currentFormSelection = this.fill.creatingNewWallet ? DoubleButtonActive.LeftButton : DoubleButtonActive.RightButton;
@@ -62,7 +62,7 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.blockchainSubscription.unsubscribe();
-    this.onLabelAndSeedCreated.complete();
+    this.labelAndSeedCreated.complete();
   }
 
   // Changes the form currently shown on the UI.
@@ -124,6 +124,6 @@ export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
 
   // Emits an event for going to the next step of the wizard.
   private emitCreatedData() {
-    this.onLabelAndSeedCreated.emit(this.formControl.getData());
+    this.labelAndSeedCreated.emit(this.formControl.getData());
   }
 }

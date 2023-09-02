@@ -4,15 +4,11 @@
   margin: 10px $main-containers-margin;
   margin-bottom: -($main-containers-margin * 0.7);
   display: flex;
-
+  
   mat-select {
     background: transparent;
     border: 0;
     border-radius: 0;
-    ::ng-deep .mat-select-value {
-      font-size: $font-size-standard;
-      line-height: 1.7;
-    }
   
     .left-icon {
       content: 'filter_list';
@@ -24,8 +20,9 @@
       position: relative;
       top: 1px;
     }
-  
-    ::ng-deep .mat-select-placeholder {
+
+    ::ng-deep .mat-mdc-select-placeholder {
+      font-size: $font-size-standard;
       color: $grey !important;
   
       &::before {
@@ -39,15 +36,28 @@
   
     .filter {
       font-size: $font-size-standard;
+      line-height: 1.7;
       margin-left: 28px;
       color: $grey;
     }
   }
 
-  .x-button {
-    width: 24px;
-    height: 24px;
+  .close-button {
+    font-size: 16px;
     margin-top: 10px;
+    color: $grey;
+  }
+}
+
+.select-group {
+  ::ng-deep .mat-mdc-optgroup-label {
+    min-height: unset;
+
+    .mdc-list-item__primary-text {
+      opacity: 0.5;
+      font-size: 12px;
+      margin-top: 20px;
+    }
   }
 }
 
@@ -122,6 +132,8 @@
         color: $grey;
         font-size: $font-size-standard;
         line-height: 1.15;
+        position: relative;
+        top: 1px;
       }
 
       .note {
@@ -143,9 +155,23 @@
       margin: 0 0 8px 0;
     }
 
-    p {
-      color: $grey;
+    .fiat-container {
+      margin: 0 0 7px 0;
       display: inline-block;
+    }
+
+    .burn-container {
+      display: inline-flex;
+      align-items: center;
+
+      img {
+        width: 18px;
+        height: 18px;
+      }
+    }
+
+    div {
+      color: $grey;
       margin: 0;
     }
   }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 export const AppConfig = {
 
   // General settings.
@@ -32,6 +33,10 @@ export const AppConfig = {
    * Normal size for some modal windows.
    */
   mediumModalWidth: '566px',
+  /**
+   * Small size for some modal windows.
+   */
+   smallModalWidth: '450px',
 
   // Hw wallet firmware.
   ////////////////////////////////

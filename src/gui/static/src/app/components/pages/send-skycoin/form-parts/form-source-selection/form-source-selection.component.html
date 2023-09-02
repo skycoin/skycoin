@@ -15,28 +15,31 @@
   </div>
   <!-- Wallet. -->
   <div *ngIf="selectionMode !== sourceSelectionModes.Manual" class="form-field">
-    <label for="wallet">{{ (selectionMode === sourceSelectionModes.Wallet ? 'send.from-label' : 'send.wallet-label') | translate }}</label>
+    <label for="wallet" (click)="!busy ? selectWallet.open() : null">
+      {{ (selectionMode === sourceSelectionModes.Wallet ? 'send.from-label' : 'send.wallet-label') | translate }}
+    </label>
     <div class="-select">
-      <select
+      <mat-select
+        #selectWallet
         formControlName="wallet"
         id="wallet"
+        [placeholder]="'send.select-wallet' | translate"
         [attr.disabled]="busy ? 'true' : null"
         [appFormFieldError]="walletErrorMsg"
-        (blur)="validateForm()"
-      >
-        <option disabled hidden [ngValue]="''">{{ 'send.select-wallet' | translate }}</option>
-        <ng-container *ngIf="allWallets">
-          <ng-container *ngFor="let wallet of allWallets">
-            <option
-              [disabled]="!wallet.coins || wallet.coins.isLessThanOrEqualTo(0)"
-              [ngValue]="wallet"
-            >
-              {{ wallet.label }} - {{ (wallet.coins ? wallet.coins : 0) | amount }}
-              ({{ (wallet.hours ? wallet.hours : 0) | amount:false }})
-            </option>
-          </ng-container>
-        </ng-container>
-      </select>
+        [ngClass]="{'element-disabled' : busy}"
+        (openedChange)="$event ? null : markAndValidate('wallet')"
+        >
+        <mat-option *ngFor="let wallet of allWallets" [value]="wallet" [disabled]="wallet.coins.isLessThanOrEqualTo(0)">
+          {{ wallet.label }} - {{ (wallet.coins ? wallet.coins : 0) | amount }}
+          ({{ (wallet.hours ? wallet.hours : 0) | amount:false }})
+        </mat-option>
+        <mat-select-trigger>
+          <div *ngIf="wallet">
+            {{ wallet.label }} - {{ (wallet.coins ? wallet.coins : 0) | amount }}
+            ({{ (wallet.hours ? wallet.hours : 0) | amount:false }})
+          </div>
+        </mat-select-trigger>
+      </mat-select>
     </div>
   </div>
   <!-- Addresses. -->

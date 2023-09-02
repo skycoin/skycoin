@@ -72,8 +72,8 @@
         "postinstall": "electron-builder install-app-deps"
     },
     "devDependencies": {
-        "electron": "^15.2.0",
-        "electron-builder": "22.13.1"
+        "electron": "^25.3.0",
+        "electron-builder": "24.4.0"
     },
     "dependencies": {}
 }

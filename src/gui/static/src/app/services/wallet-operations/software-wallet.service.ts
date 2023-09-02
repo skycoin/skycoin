@@ -38,7 +38,7 @@ export class SoftwareWalletService {
    * @returns The returned observable returns nothing, but it can fail in case of error.
    */
   toggleEncryption(wallet: WalletBase, password: string): Observable<void> {
-    return this.apiService.post('wallet/' + (wallet.encrypted ? 'decrypt' : 'encrypt'), { id: wallet.id, password }).pipe(map(w => {
+    return this.apiService.post('wallet/' + (wallet.encrypted ? 'decrypt' : 'encrypt'), { id: wallet.id, password: password }).pipe(map(w => {
       wallet.encrypted = w.meta.encrypted;
       this.walletsAndAddressesService.informValuesUpdated(wallet);
     }));
@@ -71,6 +71,6 @@ export class SoftwareWalletService {
    * @param password Wallet password.
    */
   getWalletSeed(wallet: WalletBase, password: string): Observable<string> {
-    return this.apiService.post('wallet/seed', { id: wallet.id, password }).pipe(map(response => response.seed));
+    return this.apiService.post('wallet/seed', { id: wallet.id, password: password }).pipe(map(response => response.seed));
   }
 }

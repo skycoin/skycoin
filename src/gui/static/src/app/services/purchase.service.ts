@@ -34,14 +34,17 @@ export class PurchaseService {
 
   getConfig() {
     return this.get('config').pipe(
-      map((response: any) => ({
-        enabled: true,
-        sky_btc_exchange_rate: parseFloat(response.sky_btc_exchange_rate),
-      })))
-      .subscribe(response => this.configSubject.next(response));
+      map((response: any) => {
+        return {
+          enabled: true,
+          sky_btc_exchange_rate: parseFloat(response.sky_btc_exchange_rate),
+        };
+      }),
+    ).subscribe(response => this.configSubject.next(response));
   }
 
   generate(wallet: WalletBase): Observable<PurchaseOrder> {
+    /* eslint-disable arrow-body-style */
     return this.walletsAndAddressesService.addAddressesToWallet(wallet, 1).pipe(mergeMap(address => {
       return this.post('bind', { skyaddr: address[0].address, coin_type: 'BTC' }).pipe(
         map(response => ({

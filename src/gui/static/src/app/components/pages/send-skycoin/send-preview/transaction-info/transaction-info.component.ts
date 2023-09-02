@@ -21,6 +21,7 @@ export class TransactionInfoComponent implements OnDestroy {
   @Input() transaction: GeneratedTransaction|OldTransaction;
   // True if the provided transaction was created to be sent, false if it is from the history.
   @Input() isPreview: boolean;
+  @Input() isForOfflineTransaction: boolean;
   // Current price per coin, in usd.
   price: number;
   showInputsOutputs = false;
@@ -51,11 +52,15 @@ export class TransactionInfoComponent implements OnDestroy {
       (this.transaction as OldTransaction).hoursBalance;
   }
 
-  // If the UI must show the coins received icon (true) or the coins sent icon (false).
-  get shouldShowIncomingIcon(): boolean {
-    return !this.isPreview &&
-      (this.transaction as OldTransaction).balance.isGreaterThan(0) &&
-      !(this.transaction as OldTransaction).coinsMovedInternally;
+  // File to be used as transaction icon in the UI.
+  get transactionIcon(): string {
+    if ((this.transaction as OldTransaction).coinsMovedInternally) {
+      return 'moved-grey.png';
+    } else if (this.isPreview || (this.transaction as OldTransaction).balance.isLessThan(0)) {
+      return 'sent-blue.png';
+    }
+
+    return 'received-blue.png';
   }
 
   // Returns how many coins were moved.

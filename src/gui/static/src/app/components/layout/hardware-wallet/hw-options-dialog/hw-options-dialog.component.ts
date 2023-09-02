@@ -181,15 +181,15 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
 
     this.removeDialogSubscription();
     const config = new MatDialogConfig();
-    config.width = '450px';
+    config.width = AppConfig.smallModalWidth;
     config.autoFocus = false;
 
     // Data for the modal window.
-    config.data = <ChildHwDialogParams> {
+    config.data = {
       // Include the current wallet, if there is one.
       wallet: this.wallet,
       walletHasPin: !this.needsPin,
-      requestOptionsComponentRefresh: ((error: string = null, recheckSecurityOnly: boolean = false) => {
+      requestOptionsComponentRefresh: ((error: string = null, recheckSecurityOnly = false) => {
         if (!error) {
           // Set the data to be updated after closing the window, as requested.
           if (!recheckSecurityOnly) {
@@ -203,7 +203,7 @@ export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDia
           this.customErrorMsg = error;
         }
       }),
-    };
+    } as ChildHwDialogParams;
 
     // Open the modal window.
     this.dialogSubscription = this.dialog.open(dialogType, config).afterClosed().subscribe(() => {

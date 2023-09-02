@@ -6,12 +6,21 @@
   </div>
   <!-- How many words the seed has (while loading only). -->
   <div class="form-field" *ngIf="!create && enterSeedWithAssistance">
-    <label for="number_of_words">{{ 'wallet.new.words-number-label' | translate}}</label>
+    <label for="number_of_words" (click)="!busy ? numberOfWords.open() : null">{{ 'wallet.new.words-number-label' | translate}}</label>
     <div class="-select">
-      <select formControlName="number_of_words" id="number_of_words" [attr.disabled]="busy ? 'true' : null">
-        <option [ngValue]="12">{{ 'wallet.new.12-words' | translate }}</option>
-        <option [ngValue]="24">{{ 'wallet.new.24-words' | translate }}</option>
-      </select>
+      <mat-select
+        #numberOfWords
+        formControlName="number_of_words"
+        id="number_of_words"
+        [attr.disabled]="busy ? 'true' : null"
+        [ngClass]="{'element-disabled' : busy}"
+      >
+        <mat-option [value]="12">{{ 'wallet.new.12-words' | translate }}</mat-option>
+        <mat-option [value]="24">{{ 'wallet.new.24-words' | translate }}</mat-option>
+        <mat-select-trigger *ngIf="form.controls['number_of_words'].value">
+          {{ (this.form.controls['number_of_words'].value === 24 ? 'wallet.new.24-words' : 'wallet.new.12-words') | translate }}
+        </mat-select-trigger>
+      </mat-select>
     </div>
   </div>
   <div class="form-field">
@@ -30,23 +39,27 @@
     </label>
 
     <!-- First seed field for the assisted mode. -->
-    <ng-container *ngIf="enterSeedWithAssistance">
-      <div class="dashed-border non-editable-field" [ngClass]="{'onboarding-version': onboarding, 'show-pointer': !create, 'element-disabled' : busy}" (click)="enterSeed()">
-        <div class="seed-spinner assisted-seed-spinner" [ngClass]="{'white-mat-spinner': onboarding}" *ngIf="checkingAssistedSeed"><mat-spinner></mat-spinner></div>
-        <span class="normal-seed-field" *ngIf="create || lastAssistedSeed">{{ lastAssistedSeed }}</span>
-        <div *ngIf="!create && lastAssistedSeed" [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.change-seed' | translate }}</div>
-        <div *ngIf="!create && !lastAssistedSeed" class="text-with-icon-container">
-          <mat-icon class="yellow-text">touch_app</mat-icon><span [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.enter-seed' | translate }}</span>
-        </div>
+    <div [ngClass]="{'d-none': !enterSeedWithAssistance}">
+      <div *ngIf="create" class="dashed-border non-editable-field" [ngClass]="{'onboarding-version': onboarding, 'element-disabled' : busy}">
+        <span class="normal-seed-field">{{ lastAssistedSeed }}</span>
       </div>
+      <app-assisted-seed-field
+        *ngIf="!create"
+        #assistedSeed
+        [showConfirmationOnly]="false"
+        [onboarding]="onboarding"
+        [busy]="busy"
+        [emptyText]="'wallet.new.seed.enter-seed'"
+        [howManyWords]="form && form.value.number_of_words ? form.value.number_of_words : 0"
+        [reasonForAsking]="wordAskedReasons.RecoveringSoftwareWallet">
+      </app-assisted-seed-field>
       <div [ngClass]="{'element-disabled' : busy}" class="seed-type-button">
         <span class="link" [ngClass]="{'-white-text': onboarding}" (click)="changeSeedType()">
           <mat-icon [inline]="true">edit</mat-icon>
           {{ 'wallet.new.seed.use-custom' | translate }}
         </span>
       </div>
-    </ng-container>
-
+    </div>
     <!-- First seed field for the manual mode. -->
     <ng-container *ngIf="!enterSeedWithAssistance">
       <div class="seed-spinner" *ngIf="checkingCustomSeed"><mat-spinner></mat-spinner></div>
@@ -73,16 +86,19 @@
   <div class="form-field" *ngIf="create">
     <label for="confirm_seed">{{ 'wallet.new.confirm-seed-label' | translate}}</label>
     <!-- Second seed field for the assisted mode. -->
-    <ng-container *ngIf="enterSeedWithAssistance">
-      <div class="dashed-border non-editable-field" [ngClass]="{'onboarding-version': onboarding, 'show-pointer': !assistedSeedConfirmed, 'element-disabled' : busy}" (click)="confirmSeed()">
-        <div *ngIf="!assistedSeedConfirmed" class="text-with-icon-container">
-          <mat-icon class="yellow-text">touch_app</mat-icon><span [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.confirm-seed' | translate }}</span>
-        </div>
-        <div *ngIf="assistedSeedConfirmed" class="text-with-icon-container">
-          <mat-icon class="green-text">done</mat-icon> <span [ngClass]="{'transparent-text': onboarding}">{{ 'wallet.new.seed.confirmed-seed' | translate }}</span>
-        </div>
-      </div>
-    </ng-container>
+    <div [ngClass]="{'d-none': !enterSeedWithAssistance}">
+      <app-assisted-seed-field
+        #assistedSeed
+        [showConfirmationOnly]="true"
+        [seedToConfirm]="lastAssistedSeed"
+        [onboarding]="onboarding"
+        [busy]="busy"
+        [emptyText]="'wallet.new.seed.confirm-seed'"
+        [confirmedText]="'wallet.new.seed.confirmed-seed'"
+        [howManyWords]="numberOfAutogeneratedWords"
+        [reasonForAsking]="wordAskedReasons.CreatingSoftwareWallet">
+      </app-assisted-seed-field>
+    </div>
 
     <!-- Second seed field for the manual mode. -->
     <ng-container *ngIf="!enterSeedWithAssistance">
@@ -185,7 +201,9 @@
       type="checkbox" class="-check"
       [checked]="customSeedAccepted" (change)="onCustomSeedAcceptance($event)" [ngClass]="{'element-disabled' : busy}"
     >
-      {{ 'wallet.new.unconventional-seed-check' | translate}}
+      <div class="alert-check-text">
+        {{ 'wallet.new.unconventional-seed-check' | translate}}
+      </div>
     </mat-checkbox>
   </div>
 </div>

@@ -209,14 +209,12 @@ function createWindow(url) {
 
   // When an options request to an https endpoint is detected, asume that it is a cors request
   // and redirect it to an invalid endpoint on the node API.
-  ses.protocol.registerHttpProtocol('https', (request, callback) => {
+  ses.protocol.handle('https', (request) => {
     if (request.method.toLowerCase().includes('options') && request.url.toLowerCase().includes('swaplab.cc')) {
-      callback({ url: currentURL + '/api/v1/unused', method: 'get' });
+      return net.fetch(currentURL + '/api/v1/unused');
     } else {
-      callback({ url:request.url });
+      return request.url;
     }
-  }, (error) => {
-    if (error) console.error('Failed to register protocol')
   })
 
   // Remove the origin headers when connecting to Swaplab.

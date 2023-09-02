@@ -112,7 +112,7 @@ function duplicateAddressBase(address: AddressBase): AddressBase {
  */
 function removeAdditionalProperties(useWalletBaseAsReference: boolean, objectToClean: any) {
   const knownPropertiesMap = new Map<string, boolean>();
-  const reference: Object = useWalletBaseAsReference ? new WalletBase() : new AddressBase();
+  const reference: object = useWalletBaseAsReference ? new WalletBase() : new AddressBase();
   Object.keys(reference).forEach(property => {
     knownPropertiesMap.set(property, true);
   });

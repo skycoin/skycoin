@@ -1,7 +1,7 @@
 import { SubscriptionLike, forkJoin, throwError } from 'rxjs';
 import { first, mergeMap } from 'rxjs/operators';
 import { Component, EventEmitter, Input, OnDestroy, OnInit, ViewChild, ChangeDetectorRef, Output as AgularOutput } from '@angular/core';
-import { FormGroup, FormControl } from '@angular/forms';
+import { UntypedFormGroup, UntypedFormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { BigNumber } from 'bignumber.js';
 import { TranslateService } from '@ngx-translate/core';
@@ -115,7 +115,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
 
   // Max chars the note field can have.
   maxNoteChars = ChangeNoteComponent.MAX_NOTE_CHARS;
-  form: FormGroup;
+  form: UntypedFormGroup;
   // How many coins the user can send with the selected sources.
   availableBalance = new AvailableBalanceData();
   // If true, the hours are distributed automatically. If false, the user can manually
@@ -155,9 +155,9 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    this.form = new FormGroup({});
-    this.form.addControl('changeAddress', new FormControl(''));
-    this.form.addControl('note', new FormControl(''));
+    this.form = new UntypedFormGroup({});
+    this.form.addControl('changeAddress', new UntypedFormControl(''));
+    this.form.addControl('note', new UntypedFormControl(''));
 
     this.form.setValidators(this.validateForm.bind(this));
 
@@ -331,7 +331,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
 
   // Fills the form with the provided values.
   private fillForm() {
-    this.showForManualUnsigned = this.formData.showForManualUnsigned,
+    this.showForManualUnsigned = this.formData.showForManualUnsigned;
 
     this.formSourceSelection.fill(this.formData);
     this.formMultipleDestinations.fill(this.formData);
@@ -436,7 +436,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
         confirmationText = 'send.sending-all-hours-waning';
       } else {
         if (coinsToSend.isEqualTo(this.availableBalance.availableCoins)) {
-          if ((this.formSourceSelection.wallet.coins.isEqualTo(this.availableBalance.availableCoins))) {
+          if (!this.showForManualUnsigned && (this.formSourceSelection.wallet.coins.isEqualTo(this.availableBalance.availableCoins))) {
             // Sending all hours in the wallet, because the user is sending all the coins it has.
             confirmationText = 'send.sending-all-hours-with-coins-waning';
           } else {
@@ -444,7 +444,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
             confirmationText = 'send.advanced-sending-all-hours-with-coins-waning';
           }
         } else {
-          if ((this.formSourceSelection.wallet.coins.isEqualTo(this.availableBalance.availableCoins))) {
+          if (!this.showForManualUnsigned && (this.formSourceSelection.wallet.coins.isEqualTo(this.availableBalance.availableCoins))) {
             // Potentially sending all hours in the selected wallet, due to the sharing factor.
             confirmationText = 'send.high-hours-share-waning';
           } else {
@@ -648,7 +648,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
           },
           amount: amount,
           to: destinations.map(d => d.address),
-          transaction,
+          transaction: transaction,
           showForManualUnsigned: this.showForManualUnsigned,
         });
         this.busy = false;
@@ -681,11 +681,11 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
     };
 
     if (this.autoHours && !this.hoursAddedToSimpleForm) {
-      hoursSelection = <HoursDistributionOptions> {
+      hoursSelection = {
         type: HoursDistributionTypes.Auto,
         mode: 'share',
         share_factor: this.autoShareValue,
-      };
+      } as HoursDistributionOptions;
     }
 
     return hoursSelection;

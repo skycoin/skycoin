@@ -53,21 +53,16 @@ export class PriceService {
       this.priceSubscription.unsubscribe();
     }
 
-    if (!environment.isInE2eMode) {
-      this.ngZone.runOutsideAngular(() => {
-        this.priceSubscription = of(0).pipe(delay(delayMs), mergeMap(() => {
-          return this.http.get(`https://api.coinpaprika.com/v1/tickers/${this.PRICE_API_ID}?quotes=USD`);
-        })).subscribe((response: any) => {
-          this.ngZone.run(() => this.priceInternal.next(response.quotes.USD.price));
-          this.startDataRefreshSubscription(this.updatePeriod);
-        }, () => {
-          this.startDataRefreshSubscription(this.errorUpdatePeriod);
-        });
+    this.ngZone.runOutsideAngular(() => {
+      /* eslint-disable arrow-body-style */
+      this.priceSubscription = of(0).pipe(delay(delayMs), mergeMap(() => {
+        return this.http.get(`https://api.coinpaprika.com/v1/tickers/${this.PRICE_API_ID}?quotes=USD`);
+      })).subscribe((response: any) => {
+        this.ngZone.run(() => this.priceInternal.next(response.quotes.USD.price));
+        this.startDataRefreshSubscription(this.updatePeriod);
+      }, () => {
+        this.startDataRefreshSubscription(this.errorUpdatePeriod);
       });
-    } else {
-      // Set the price to 1 and stop making updates during e2e tests, to avoid potential
-      // problems with the remote connection.
-      this.priceInternal.next(1);
-    }
+    });
   }
 }

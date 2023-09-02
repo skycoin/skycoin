@@ -178,7 +178,7 @@ export class ExchangeService {
   exchange(pair: string, fromAmount: number, toAddress: string, price: number): Observable<ExchangeOrder> {
     let response: ExchangeOrder;
 
-    return this.post('orders', { pair, fromAmount, toAddress }).pipe(
+    return this.post('orders', { pair: pair, fromAmount: fromAmount, toAddress: toAddress }).pipe(
       mergeMap(data => {
         response = data.result;
 
@@ -199,17 +199,20 @@ export class ExchangeService {
       devForceState = 'user_waiting';
     }
 
-    return this.post('orders/status', { id }, this.TEST_MODE ? { status: devForceState } : null).pipe(
+    return this.post('orders/status', { id: id }, this.TEST_MODE ? { status: devForceState } : null).pipe(
       // Retry after a delay, unless the service says that the order does not exist.
-      retryWhen((err) => {
-        return err.pipe(mergeMap((response: OperationError) => {
+      retryWhen((err) => err.pipe(
+        mergeMap((response: OperationError) => {
           if (response.originalError && response.originalError.status && response.originalError.status === 404) {
             return observableThrowError(response);
           }
 
           return of(response);
-        }), delay(3000));
-      }), map(data => data.result));
+        }),
+        delay(3000),
+      )),
+      map(data => data.result),
+    );
   }
 
   /**
@@ -239,7 +242,7 @@ export class ExchangeService {
       responseType: 'json',
       headers: new HttpHeaders({
         'api-key': this.API_KEY,
-        'Accept': 'application/json',
+        Accept: 'application/json',
         ...headers,
       }),
     }).pipe(catchError((error: any) => observableThrowError(processServiceError(error))));

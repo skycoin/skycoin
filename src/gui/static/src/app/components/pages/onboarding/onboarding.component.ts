@@ -48,7 +48,7 @@ export class OnboardingComponent implements OnInit, OnDestroy {
 
   // Called when the user finishes the first step.
   onLabelAndSeedCreated(data: WalletFormData) {
-    this.formData = data,
+    this.formData = data;
     this.step = 2;
   }
 

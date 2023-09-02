@@ -5,7 +5,15 @@
 }
 
 .-check ::ng-deep {
-  .mat-checkbox-checkmark-path {
-    stroke: $white !important;
+  .mdc-checkbox__background {
+    border-color: white !important;
+  }
+
+  .mdc-checkbox__native-control:enabled:checked~.mdc-checkbox__background {
+    background-color: white !important;
+
+    svg {
+      color: $app-main-color
+    }
   }
 }

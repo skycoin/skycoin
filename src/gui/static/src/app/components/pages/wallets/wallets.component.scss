@@ -89,8 +89,20 @@
   button {
     color: $grey;
     font-size: $font-size-standard;
+    line-height: 1;
     margin: 0 5px;
     min-width: 140px;
+    height: 36px !important;
+
+    .inner-container {
+      display: flex;
+      align-items: center;
+
+      span {
+        position: relative;
+        top: -1px;
+      }
+    }
 
     img {
       height: 28px;

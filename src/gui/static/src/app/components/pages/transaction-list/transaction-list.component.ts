@@ -2,8 +2,9 @@ import { delay, mergeMap } from 'rxjs/operators';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { SubscriptionLike, of } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
-import { FormGroup, FormBuilder } from '@angular/forms';
+import { UntypedFormGroup, UntypedFormBuilder } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import BigNumber from 'bignumber.js';
 
 import { PriceService } from '../../../services/price.service';
 import { TransactionDetailComponent } from './transaction-detail/transaction-detail.component';
@@ -62,7 +63,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
   // All wallets the user has, for filtering.
   wallets: Wallet[];
   transactionsLoaded = false;
-  form: FormGroup;
+  form: UntypedFormGroup;
 
   // Vars for showing only some elements at the same time by default.
   readonly maxInitialElements = 40;
@@ -84,7 +85,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     public appService: AppService,
     private dialog: MatDialog,
     private priceService: PriceService,
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private historyService: HistoryService,
     balanceAndOutputsService: BalanceAndOutputsService,
     route: ActivatedRoute,
@@ -202,6 +203,31 @@ export class TransactionListComponent implements OnInit, OnDestroy {
   // Cleans the filter list.
   removeFilters() {
     this.form.get('filter').setValue([]);
+  }
+
+  /**
+   * File to be used as transaction icon in the UI.
+   * @param transaction Transaction for which the icon will be shown.
+   */
+  transactionIcon(transaction: OldTransaction): string {
+    if (transaction.coinsMovedInternally) {
+      return 'moved-grey.png';
+    } else if (transaction.balance.isLessThan(0)) {
+      return 'sent-blue.png';
+    }
+
+    return 'received-blue.png';
+  }
+
+  /**
+   * How many hours have to be shown for a tx in the UI.
+   */
+  hoursToShow(transaction: OldTransaction): BigNumber {
+    if (transaction.balance.isLessThan(0)) {
+      return transaction.hoursBalance.multipliedBy(-1);
+    }
+
+    return transaction.hoursBalance;
   }
 
   /**

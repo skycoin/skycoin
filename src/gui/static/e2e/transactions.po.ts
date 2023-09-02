@@ -1,36 +1,36 @@
-import { browser, by, element, protractor } from 'protractor';
-
 export class TransactionsPage {
   navigateTo() {
-    return browser.get('/#/transactions');
+    return browser.url('/#/transactions');
   }
 
   getHeaderText() {
-    return element(by.css('.title')).getText();
+    return $('.title').getText();
   }
 
   getTransactions() {
-    return element.all(by.css('.-transaction'));
+    return $$('.-transaction');
   }
 
   getTransactionsCount() {
-    return this.getTransactions().count();
+    return this.getTransactions().length;
   }
 
   getTransactionDetailIsShow() {
-    return element(by.css('app-transaction-detail')).isPresent();
+    return $('app-transaction-detail').isExisting();
   }
 
   showTransactionsModal() {
-    return this.getTransactions().first().click().then(() => {
+    return this.getTransactions()[0].click().then(() => {
       return this.getTransactionDetailIsShow();
     });
   }
 
   hideTransactionModal() {
-    const el = element(by.css('app-transaction-detail .-header img'));
+    const el = $('app-transaction-detail .-header img');
 
-    return browser.wait(protractor.ExpectedConditions.visibilityOf(el), 5000).then(() => el.click().then(() => {
+    return browser.waitUntil(require("wdio-wait-for").visibilityOf(el), {
+      timeout: 5000
+    }).then(() => el.click().then(() => {
       return this.getTransactionDetailIsShow();
     }));
   }

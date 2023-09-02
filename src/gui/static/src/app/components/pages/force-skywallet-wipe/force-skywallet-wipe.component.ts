@@ -1,10 +1,11 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { FormBuilder } from '@angular/forms';
+import { UntypedFormBuilder } from '@angular/forms';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 
 import { ChildHwDialogParams } from '../../layout/hardware-wallet/hw-options-dialog/hw-options-dialog.component';
 import { HwWipeDialogComponent } from '../../layout/hardware-wallet/hw-wipe-dialog/hw-wipe-dialog.component';
+import { AppConfig } from '../../../app.config';
 
 /**
  * Allows wipe a Skywallet. It is mainly for restoring the device when the user is not able to
@@ -17,26 +18,26 @@ import { HwWipeDialogComponent } from '../../layout/hardware-wallet/hw-wipe-dial
 })
 export class ForceSkywalletWipeComponent {
   constructor(
-    public formBuilder: FormBuilder,
+    public formBuilder: UntypedFormBuilder,
     private router: Router,
     private dialog: MatDialog,
   ) { }
 
   proceed() {
     const config = new MatDialogConfig();
-    config.width = '450px';
+    config.width = AppConfig.smallModalWidth;
     config.autoFocus = false;
 
     // Data for the modal window.
-    config.data = <ChildHwDialogParams> {
+    config.data = {
       wallet: null,
-      requestOptionsComponentRefresh: ((error: string = null, recheckSecurityOnly: boolean = false) => {
+      requestOptionsComponentRefresh: ((error: string = null, recheckSecurityOnly = false) => {
         if (!error) {
           // Return to the wallet list after the operation is done.
           this.router.navigate([''], {replaceUrl: true});
         }
       }),
-    };
+    } as ChildHwDialogParams;
 
     this.dialog.open(HwWipeDialogComponent, config);
   }

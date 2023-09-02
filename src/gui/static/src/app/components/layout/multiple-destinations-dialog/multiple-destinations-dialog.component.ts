@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 
 import { MsgBarService } from '../../../services/msg-bar.service';
@@ -22,7 +22,7 @@ import { Destination } from '../../pages/send-skycoin/form-parts/form-destinatio
   styleUrls: ['./multiple-destinations-dialog.component.scss'],
 })
 export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {
-  form: FormGroup;
+  form: UntypedFormGroup;
 
   // Vars with the validation error messages.
   inputErrorMsg = '';
@@ -42,7 +42,7 @@ export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {
   constructor(
     public dialogRef: MatDialogRef<MultipleDestinationsDialogComponent>,
     @Inject(MAT_DIALOG_DATA) private data: string,
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private msgBarService: MsgBarService,
   ) { }
 

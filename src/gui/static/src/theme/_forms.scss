@@ -23,10 +23,11 @@
     border-radius: $input-border-radius;
     box-sizing: border-box;
     display: block;
-    font-size: $font-size-standard;
+    font-size: $font-size-standard-plus;
     line-height: 1.5;
     padding: 10px 10px;
     width: 100%;
+    font-family: inherit;
   }
 
   input {
@@ -65,45 +66,20 @@
   mat-slider {
     @extend .field-base;
     padding: 0;
-    height: 40px;
-
-    .mat-slider-thumb, .mat-slider-thumb-label {
-      background-color: $main-color !important;
-      transform: scale(1) !important;
-      border-width: 0 !important;
-    }
-
-    .mat-slider-thumb {
-      right: -6px;
-      width: 12px;
-      height: 32px;
-      border-radius: 3px;
-    }
-
-    .mat-slider-track-fill, .mat-slider-track-background {
-      background-color: white !important;
-    }
+    margin: 0;
+    border: none;
   }
 
   mat-select {
     @extend .field-base;
-    padding: 0;
+    padding: 0px;
 
-    .mat-select-trigger {
+    .mat-mdc-select-trigger {
       padding: 10px 40px 10px 10px;
-      display: block;
-      font-size: $font-size-mini;
-      height: 100%;
-      line-height: 1.9;
     }
 
-    .mat-select-arrow {
-      border: none;
-    }
-
-    .mat-select-placeholder {
-      color: unset !important;
-      transition: unset !important;
+    .mat-mdc-select-arrow-wrapper {
+      display: none;
     }
   }
 
@@ -112,14 +88,6 @@
       cursor: not-allowed;
     }
   }
-}
-
-// Styles for the options list of mat-select.
-mat-option .mat-pseudo-checkbox-checked {
-  background: $main-color;
-}
-.mat-option-disabled .mat-pseudo-checkbox-disabled {
-  opacity: 0.5;
 }
 
 // Container for the select elements, it shows the down arrow at the right of the control.
@@ -156,7 +124,7 @@ textarea {
 // Adds a top marging for the forms inside modal windows. It is only useful when there is an info text
 // at the top of the form.
 .modal-form-container {
-  margin-top: $form-field-margin;
+  margin-top: $form-field-margin !important;
 }
 
 .-check-container {
@@ -166,6 +134,7 @@ textarea {
 
 // Style for the check boxes.
 .-check {
+
   label {
     font-size: $font-size-standard;
     max-width: 100%;
@@ -175,7 +144,7 @@ textarea {
 
     .img-label-container {
       position: relative;
-      top: 2px;
+      left: -10px;
   
       img {
         width: 38px;
@@ -183,28 +152,6 @@ textarea {
         vertical-align: middle;
       }
     }
-  }
-
-  .mat-checkbox-label {
-    position: relative;
-    top: 2px;
-  }
-
-  .mat-checkbox-checkmark-path {
-    stroke: $main-color !important;
-  }
-
-  .mat-checkbox-background, .mat-checkbox-frame {
-    width: 20px;
-    height: 20px;
-    background: $grey-very-light !important;
-    border-radius: 6px;
-    border-color: transparent;
-  }
-
-  .mat-checkbox-ripple {
-    top: -11px !important;
-    left: -11px !important;
   }
 }
 

@@ -1,5 +1,5 @@
 import { Component, ViewChild } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 
 import { ButtonComponent } from '../../../layout/button/button.component';
 
@@ -37,7 +37,7 @@ export class OfflineDialogsBaseComponent {
   @ViewChild('okButton') okButton: ButtonComponent;
   // Allows to deactivate the form while the component is busy.
   working = false;
-  form: FormGroup;
+  form: UntypedFormGroup;
   currentState: OfflineDialogsStates = OfflineDialogsStates.Loading;
   states = OfflineDialogsStates;
   validateForm = false;
@@ -61,7 +61,7 @@ export class OfflineDialogsBaseComponent {
   dropdownElements: OfflineDialogsDropdownElement[];
 
   constructor(
-    _formBuilder: FormBuilder,
+    _formBuilder: UntypedFormBuilder,
   ) {
     this.form = _formBuilder.group({
       dropdown: [''],
@@ -69,6 +69,15 @@ export class OfflineDialogsBaseComponent {
     });
 
     this.form.setValidators(this.validate.bind(this));
+  }
+
+  /**
+   * Marks a field as touched and then calls validate().
+   * @param fieldName Name of the field to mark as touched.
+   */
+  markAndValidate(fieldName: string) {
+    this.form.get(fieldName).markAsTouched();
+    this.validate();
   }
 
   /**

@@ -121,3 +121,17 @@ export interface OldTransaction extends TransactionBase {
    */
   coinsMovedInternally?: boolean;
 }
+
+/**
+ * Object for a decoded raw transactions.
+ */
+ export interface DecodedTransaction extends TransactionBase {
+  /**
+   * Id of the transaction.
+   */
+  id: string;
+  /**
+   * If the backend was able to return the complete information about the inputs.
+   */
+  inputsInformationObtained: boolean;
+}

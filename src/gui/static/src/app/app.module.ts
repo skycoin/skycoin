@@ -32,19 +32,13 @@ import { WalletDetailComponent } from './components/pages/wallets/wallet-detail/
 import { ModalComponent } from './components/layout/modal/modal.component';
 import { PasswordDialogComponent } from './components/layout/password-dialog/password-dialog.component';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 import { MatDialogModule } from '@angular/material/dialog';
-import { MatExpansionModule } from '@angular/material/expansion';
-import { MatGridListModule } from '@angular/material/grid-list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatListModule } from '@angular/material/list';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatProgressSpinnerModule, MAT_PROGRESS_SPINNER_DEFAULT_OPTIONS } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
-import { MatTabsModule } from '@angular/material/tabs';
-import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
@@ -112,6 +106,7 @@ import { FormDestinationComponent } from './components/pages/send-skycoin/form-p
 import { CopyRawTxComponent } from './components/pages/send-skycoin/offline-dialogs/implementations/copy-raw-tx.component';
 import { SignRawTxComponent } from './components/pages/send-skycoin/offline-dialogs/implementations/sign-raw-tx.component';
 import { BroadcastRawTxComponent } from './components/pages/send-skycoin/offline-dialogs/implementations/broadcast-raw-tx.component';
+import { OfflineTxPreviewComponent } from './components/pages/send-skycoin/offline-dialogs/offline-tx-preview/offline-tx-preview.component';
 import { OfflineDialogsBaseComponent } from './components/pages/send-skycoin/offline-dialogs/offline-dialogs-base.component';
 import { ArrowLinkComponent } from './components/layout/arrow-link/arrow-link.component';
 import { AddressOptionsComponent } from './components/pages/wallets/wallet-detail/address-options/address-options.component';
@@ -128,6 +123,7 @@ import { FormFieldErrorDirective } from './directives/form-field-error.directive
 import { EnterLinkComponent } from './components/pages/send-skycoin/enter-link/enter-link.component';
 import { DestinationToolsComponent } from './components/pages/send-skycoin/form-parts/form-destination/destination-tools/destination-tools.component';
 import { ForceSkywalletWipeComponent } from './components/pages/force-skywallet-wipe/force-skywallet-wipe.component';
+import { AssistedSeedFieldComponent } from './components/pages/wallets/create-wallet/create-wallet-form/assisted-seed-field/assisted-seed-field.component';
 
 @NgModule({
   declarations: [
@@ -204,6 +200,7 @@ import { ForceSkywalletWipeComponent } from './components/pages/force-skywallet-
     CopyRawTxComponent,
     SignRawTxComponent,
     BroadcastRawTxComponent,
+    OfflineTxPreviewComponent,
     OfflineDialogsBaseComponent,
     ArrowLinkComponent,
     AddressOptionsComponent,
@@ -212,6 +209,7 @@ import { ForceSkywalletWipeComponent } from './components/pages/force-skywallet-
     EnterLinkComponent,
     DestinationToolsComponent,
     ForceSkywalletWipeComponent,
+    AssistedSeedFieldComponent,
   ],
   imports: [
     AppTranslationModule,
@@ -219,19 +217,13 @@ import { ForceSkywalletWipeComponent } from './components/pages/force-skywallet-
     BrowserModule,
     HttpClientModule,
     MatButtonModule,
-    MatCardModule,
     MatDialogModule,
-    MatExpansionModule,
-    MatGridListModule,
     MatIconModule,
     MatInputModule,
-    MatListModule,
     MatMenuModule,
     MatProgressBarModule,
     MatProgressSpinnerModule,
     MatSelectModule,
-    MatTabsModule,
-    MatToolbarModule,
     MatTooltipModule,
     MatCheckboxModule,
     MatSliderModule,

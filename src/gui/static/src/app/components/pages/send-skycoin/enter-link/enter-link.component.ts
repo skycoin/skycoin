@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 
 import { AppConfig } from '../../../../app.config';
@@ -15,7 +15,7 @@ import { parseRequestLink } from '../../../../utils/general-utils';
   styleUrls: ['./enter-link.component.scss'],
 })
 export class EnterLinkComponent implements OnInit {
-  form: FormGroup;
+  form: UntypedFormGroup;
 
   // Vars with the validation error messages.
   inputErrorMsg = '';
@@ -33,7 +33,7 @@ export class EnterLinkComponent implements OnInit {
 
   constructor(
     public dialogRef: MatDialogRef<EnterLinkComponent>,
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
   ) { }
 
   ngOnInit() {

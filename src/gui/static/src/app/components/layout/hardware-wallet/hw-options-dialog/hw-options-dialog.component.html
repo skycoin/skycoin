@@ -1,4 +1,4 @@
-<app-modal [headline]="'wallet.hardware-wallet-button' | translate" [dialog]="dialogRef">
+<app-modal class="hw-modal" [headline]="'wallet.hardware-wallet-button' | translate" [dialog]="dialogRef">
   <app-hw-message *ngIf="currentState === states.ShowingResult"
     [text]="result.text | translate"
     [linkText]="result.linkText ? (result.linkText | translate) : null"
@@ -49,7 +49,7 @@
     </div>
 
     <div class="options-label">{{ 'hardware-wallet.options.options' | translate }}</div>
-    <div class="option-buttons-container light-button-theme">
+    <div class="option-buttons-container light-button-theme hw-modal-list">
       <button mat-button color="primary" (click)="update()" *ngIf="outdatedFirmware">
         <div class="label -blinking">{{ 'hardware-wallet.options.update-firmware' | translate }}</div>
       </button>

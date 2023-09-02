@@ -6,15 +6,15 @@
 <!-- First step. -->
 <app-onboarding-create-wallet
   *ngIf="step === 1"
-  (onLabelAndSeedCreated)="onLabelAndSeedCreated($event)"
+  (labelAndSeedCreated)="onLabelAndSeedCreated($event)"
   [fill]="formData"
 ></app-onboarding-create-wallet>
 
 <!-- Second step. -->
 <app-onboarding-encrypt-wallet
   *ngIf="step === 2"
-  (onPasswordCreated)="onPasswordCreated($event)"
-  (onBack)="onBack()"
+  (passwordCreated)="onPasswordCreated($event)"
+  (goBack)="onBack()"
   [creatingTemporal]="formData.loadTemporarily"
   #encryptForm
 ></app-onboarding-encrypt-wallet>

@@ -28,11 +28,11 @@ export class DoubleButtonComponent implements OnDestroy {
   // click and the "activeButton" property will have to be changed for the clicked button to
   // be selected.
   @Input() changeActiveButtonManually = false;
-  @Output() onStateChange = new EventEmitter<DoubleButtonActive>();
+  @Output() stateChange = new EventEmitter<DoubleButtonActive>();
   ButtonStates = DoubleButtonActive;
 
   ngOnDestroy() {
-    this.onStateChange.complete();
+    this.stateChange.complete();
   }
 
   onRightButtonClicked() {
@@ -40,7 +40,7 @@ export class DoubleButtonComponent implements OnDestroy {
       if (!this.changeActiveButtonManually) {
         this.activeButton = DoubleButtonActive.RightButton;
       }
-      this.onStateChange.emit(DoubleButtonActive.RightButton);
+      this.stateChange.emit(DoubleButtonActive.RightButton);
     }
   }
 
@@ -49,7 +49,7 @@ export class DoubleButtonComponent implements OnDestroy {
       if (!this.changeActiveButtonManually) {
         this.activeButton = DoubleButtonActive.LeftButton;
       }
-      this.onStateChange.emit(DoubleButtonActive.LeftButton);
+      this.stateChange.emit(DoubleButtonActive.LeftButton);
     }
   }
 }

@@ -177,15 +177,17 @@ export class BalanceAndOutputsService {
 
     if (this.savedWalletsList) {
       this.ngZone.runOutsideAngular(() => {
-        this.dataRefreshSubscription = of(0).pipe(delay(delayMs), mergeMap(() => {
-          if (updateWalletsFirst) {
-            return this.refreshBalances(this.savedWalletsList, true);
-          } else {
-            return of(0);
-          }
-        }), mergeMap(() => {
-          return this.refreshBalances(this.savedWalletsList, false);
-        })).subscribe(() => this.startDataRefreshSubscription(this.updatePeriod, false), () => this.startDataRefreshSubscription(this.errorUpdatePeriod, false));
+        this.dataRefreshSubscription = of(0).pipe(
+          delay(delayMs),
+          mergeMap(() => {
+            if (updateWalletsFirst) {
+              return this.refreshBalances(this.savedWalletsList, true);
+            } else {
+              return of(0);
+            }
+          }),
+          mergeMap(() => this.refreshBalances(this.savedWalletsList, false)),
+        ).subscribe(() => this.startDataRefreshSubscription(this.updatePeriod, false), () => this.startDataRefreshSubscription(this.errorUpdatePeriod, false));
       });
     }
   }

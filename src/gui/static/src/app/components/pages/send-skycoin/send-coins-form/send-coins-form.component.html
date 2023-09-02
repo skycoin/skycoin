@@ -6,7 +6,7 @@
     [rightButtonText]="'send.unsigned-button' | translate"
     className="light small"
     [activeButton]="!showForManualUnsigned ? doubleButtonActive.LeftButton : doubleButtonActive.RightButton"
-    (onStateChange)="changeFormType($event)"
+    (stateChange)="changeFormType($event)"
     [ngClass]="{ 'element-disabled': busy }"
   ></app-double-button>
 </div>
@@ -15,7 +15,7 @@
   <!-- Source. -->
   <app-form-source-selection
     #formSourceSelection
-    (onSelectionChanged)="sourceSelectionChanged()"
+    (selectionChanged)="sourceSelectionChanged()"
     [busy]="busy"
     [selectionMode]="showSimpleForm ? sourceSelectionModes.Wallet : (showForManualUnsigned ? sourceSelectionModes.Manual : sourceSelectionModes.All)"
     >
@@ -46,8 +46,8 @@
   <!-- Destinations. -->
   <app-form-destination
     #formMultipleDestinations
-    (onChanges)="destinationsChanged()"
-    (onBulkRequested)="openMultipleDestinationsPopup()"
+    (dataChanged)="destinationsChanged()"
+    (bulkRequested)="openMultipleDestinationsPopup()"
     (newNoteRequested)="changeNote($event)"
     (manualHoursRequested)="setManualHours()"
     (hoursAddedToSimpleForm)="changeHoursAddedToSimpleForm($event)"

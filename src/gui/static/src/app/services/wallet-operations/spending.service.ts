@@ -252,9 +252,7 @@ export class SpendingService {
         {
           useV2: true,
         },
-      ).pipe(map(response => {
-        return response.data.encoded_transaction;
-      }));
+      ).pipe(map(response => response.data.encoded_transaction));
 
     // Code for signing a hardware wallet.
     } else {

@@ -1,14 +1,14 @@
 <app-modal [headline]="'wallet.address-options.title' | translate" [dialog]="dialogRef">
   <div class="list-button-container light-button-theme">
     <!-- Add addresses. -->
-    <button class="top-line" mat-button color="primary" (click)="select(addressOptions.new)">
+    <button class="top-line" mat-button color="primary" (click)="select(addressOptions.New)">
       <div class="content">
         <img src="assets/img/plus-green.png" />
         <span>{{ 'wallet.address-options.new' | translate }}</span>
       </div>
     </button>
     <!-- Scan the addresses. -->
-    <button mat-button color="primary" (click)="select(addressOptions.scan)">
+    <button mat-button color="primary" (click)="select(addressOptions.Scan)">
       <div class="content">
         <img src="assets/img/search-gold.png" />
         <span>

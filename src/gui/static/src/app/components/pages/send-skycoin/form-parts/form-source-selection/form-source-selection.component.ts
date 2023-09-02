@@ -95,7 +95,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
   @Input() busy: boolean;
   // Event for informing when the user selection has changed or when there was a change in
   // the available balance.
-  @Output() onSelectionChanged = new EventEmitter<void>();
+  @Output() selectionChanged = new EventEmitter<void>();
 
   // Sets the mode in which the component works.
   private selectionModeInternal: SourceSelectionModes;
@@ -190,7 +190,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
         this.loadingUnspentOutputs = manualAddresses.length !== 0;
         this.errorLoadingManualOutputs = false;
         // Inform about the changes in the available balance and loading status.
-        this.onSelectionChanged.emit();
+        this.selectionChanged.emit();
       }
 
       if (manualAddresses.length !== 0 && addressesChanged) {
@@ -198,18 +198,16 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
         this.getOutputsSubscription = this.balanceAndOutputsService.getOutputs((this.form.get('manualAddresses').value as string).replace(/ /g, '')).pipe(
           // Retry if there is an error, but not if the server returns 400 as response, which
           // means the user entered at least one invalid address.
-          retryWhen((err) => {
-            return err.pipe(mergeMap((response: OperationError) => {
-              response = processServiceError(response);
-              if (response.originalError && (response.originalError as HttpErrorResponse).status && (response.originalError as HttpErrorResponse).status === 400) {
-                this.errorLoadingManualOutputs = true;
+          retryWhen((err) => err.pipe(mergeMap((response: OperationError) => {
+            response = processServiceError(response);
+            if (response.originalError && (response.originalError as HttpErrorResponse).status && (response.originalError as HttpErrorResponse).status === 400) {
+              this.errorLoadingManualOutputs = true;
 
-                return observableThrowError(response);
-              }
+              return observableThrowError(response);
+            }
 
-              return of(response);
-            }), delay(4000));
-          }),
+            return of(response);
+          }), delay(4000))),
         ).subscribe(
           result => {
             this.loadingUnspentOutputs = false;
@@ -217,12 +215,12 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
             this.unspentOutputs = this.filterUnspentOutputs();
 
             // Inform about the changes in the available balance and loading status.
-            this.onSelectionChanged.emit();
+            this.selectionChanged.emit();
           },
           () => {
             this.loadingUnspentOutputs = false;
             // Inform about the changes in the available balance and loading status.
-            this.onSelectionChanged.emit();
+            this.selectionChanged.emit();
           },
         );
       }
@@ -261,18 +259,18 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
         this.addresses = [];
       }
 
-      this.onSelectionChanged.emit();
+      this.selectionChanged.emit();
     }));
 
     this.subscriptionsGroup.push(this.form.get('addresses').valueChanges.subscribe(() => {
       this.form.get('outputs').setValue(null);
       this.unspentOutputs = this.filterUnspentOutputs();
 
-      this.onSelectionChanged.emit();
+      this.selectionChanged.emit();
     }));
 
     this.subscriptionsGroup.push(this.form.get('outputs').valueChanges.subscribe(() => {
-      this.onSelectionChanged.emit();
+      this.selectionChanged.emit();
     }));
 
     this.subscriptionsGroup.push(this.balanceAndOutputsService.walletsWithBalance.subscribe(wallets => {
@@ -290,7 +288,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.closeGetOutputsSubscription();
     this.subscriptionsGroup.forEach(sub => sub.unsubscribe());
-    this.onSelectionChanged.complete();
+    this.selectionChanged.complete();
   }
 
   resetForm() {

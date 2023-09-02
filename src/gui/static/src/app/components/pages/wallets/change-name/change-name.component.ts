@@ -215,7 +215,7 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
 
     let valid = true;
 
-    if (!this.form.get('label').value || (this.form.get('label').value as String).trim().length === 0) {
+    if (!this.form.get('label').value || (this.form.get('label').value as string).trim().length === 0) {
       valid = false;
       if (this.form.get('label').touched) {
         this.inputErrorMsg = 'wallet.rename.label-error-info';

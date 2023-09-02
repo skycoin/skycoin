@@ -28,7 +28,7 @@ export class ForceSkywalletWipeComponent {
     config.autoFocus = false;
 
     // Data for the modal window.
-    config.data = <ChildHwDialogParams> {
+    config.data = {
       wallet: null,
       requestOptionsComponentRefresh: ((error: string = null, recheckSecurityOnly: boolean = false) => {
         if (!error) {
@@ -36,7 +36,7 @@ export class ForceSkywalletWipeComponent {
           this.router.navigate([''], {replaceUrl: true});
         }
       }),
-    };
+    } as ChildHwDialogParams;
 
     this.dialog.open(HwWipeDialogComponent, config);
   }

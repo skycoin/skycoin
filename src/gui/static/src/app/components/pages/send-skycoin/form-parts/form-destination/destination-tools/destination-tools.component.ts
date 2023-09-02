@@ -4,8 +4,8 @@ import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dial
 import { AppConfig } from '../../../../../../app.config';
 
 export enum DestinationTools {
-  bulk = 'bulk',
-  link = 'link',
+  Bulk = 'bulk',
+  Link = 'link',
 }
 
 /**

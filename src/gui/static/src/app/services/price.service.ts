@@ -55,6 +55,7 @@ export class PriceService {
 
     if (!environment.isInE2eMode) {
       this.ngZone.runOutsideAngular(() => {
+        /* eslint-disable arrow-body-style */
         this.priceSubscription = of(0).pipe(delay(delayMs), mergeMap(() => {
           return this.http.get(`https://api.coinpaprika.com/v1/tickers/${this.PRICE_API_ID}?quotes=USD`);
         })).subscribe((response: any) => {

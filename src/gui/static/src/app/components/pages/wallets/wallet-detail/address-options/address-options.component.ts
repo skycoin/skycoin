@@ -7,8 +7,8 @@ import { AppConfig } from '../../../../../app.config';
  * Options available in AddressOptionsComponent.
  */
 export enum AddressOptions {
-  new = 'new',
-  scan = 'scan',
+  New = 'new',
+  Scan = 'scan',
 }
 
 /**

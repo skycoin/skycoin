@@ -31,10 +31,8 @@ export class HwWalletSeedWordService {
    * @returns The word entered by the user, or null if the user cancelled the operation.
    */
   requestWord(): Observable<string> {
-    return this.requestWordComponentInternal.openDialog(this.dialog, <SeedWordDialogParams> {
+    return this.requestWordComponentInternal.openDialog(this.dialog, {
       reason: 'HWWalletOperation',
-    }).afterClosed().pipe(map(word => {
-      return word;
-    }));
+    } as SeedWordDialogParams).afterClosed().pipe(map(word => word));
   }
 }

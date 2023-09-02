@@ -114,7 +114,7 @@ export class LanguageService {
   private loadCurrentLanguage() {
     this.storageService.get(StorageType.CLIENT, this.storageKey).subscribe(response => {
       if (response.data && this.translate.getLangs().indexOf(response.data) !== -1) {
-        setTimeout(() => { this.changeLanguage(response.data); }, 16);
+        setTimeout(() => this.changeLanguage(response.data), 16);
         this.savedSelectedLanguageLoadedInternal.next(true);
       } else {
         this.savedSelectedLanguageLoadedInternal.next(false);

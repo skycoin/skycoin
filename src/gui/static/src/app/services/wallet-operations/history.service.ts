@@ -94,32 +94,34 @@ export class HistoryService {
       return this.apiService.post('transactions', {addrs: formattedAddresses, verbose: true});
     }), mergeMap((response: any[]) => {
       // Process the response and convert it into a known object.
-      transactions = response.map<OldTransaction>(transaction => ({
-        relevantAddresses: [],
-        balance: new BigNumber(0),
-        hoursBalance: new BigNumber(0),
-        hoursBurned: new BigNumber(0),
-        block: transaction.status.block_seq,
-        confirmed: transaction.status.confirmed,
-        timestamp: transaction.txn.timestamp,
-        id: transaction.txn.txid,
-        inputs: (transaction.txn.inputs as any[]).map(input => {
-          return {
-            hash: input.uxid,
-            address: input.owner,
-            coins: new BigNumber(input.coins),
-            hours: new BigNumber(input.calculated_hours),
-          };
-        }),
-        outputs: (transaction.txn.outputs as any[]).map(output => {
-          return {
-            hash: output.uxid,
-            address: output.dst,
-            coins: new BigNumber(output.coins),
-            hours: new BigNumber(output.hours),
-          };
-        }),
-      }));
+      transactions = response.map<OldTransaction>(transaction => {
+        return {
+          relevantAddresses: [],
+          balance: new BigNumber(0),
+          hoursBalance: new BigNumber(0),
+          hoursBurned: new BigNumber(0),
+          block: transaction.status.block_seq,
+          confirmed: transaction.status.confirmed,
+          timestamp: transaction.txn.timestamp,
+          id: transaction.txn.txid,
+          inputs: (transaction.txn.inputs as any[]).map(input => {
+            return {
+              hash: input.uxid,
+              address: input.owner,
+              coins: new BigNumber(input.coins),
+              hours: new BigNumber(input.calculated_hours),
+            };
+          }),
+          outputs: (transaction.txn.outputs as any[]).map(output => {
+            return {
+              hash: output.uxid,
+              address: output.dst,
+              coins: new BigNumber(output.coins),
+              hours: new BigNumber(output.hours),
+            };
+          }),
+        };
+      });
 
       // Get the transaction notes.
       return this.storageService.get(StorageType.NOTES, null);
@@ -238,6 +240,7 @@ export class HistoryService {
           });
 
           // Build an array with the transactions affecting the user.
+          /* eslint-disable arrow-body-style */
           const userTransactions = transactions.filter(tran => {
             return tran.transaction.inputs.some(input => walletAddresses.has(input.owner)) ||
               tran.transaction.outputs.some(output => walletAddresses.has(output.dst));

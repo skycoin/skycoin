@@ -542,3 +542,16 @@ func (a *bip44Accounts) reset() {
 		act.reset()
 	}
 }
+
+func (a *bip44Accounts) getXPubKey(accountIndex, chainIndex uint32) (string, error) {
+	if int(accountIndex) >= len(a.accounts) {
+		return "", errors.New("account index out of bounds")
+	}
+	act := a.accounts[accountIndex]
+	if int(chainIndex) >= len(act.Chains) {
+		return "", errors.New("chain index out of bounds")
+	}
+
+	c := act.Chains[chainIndex]
+	return c.PubKey.String(), nil
+}

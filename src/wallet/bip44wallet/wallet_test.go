@@ -995,6 +995,44 @@ func TestScanAddresses(t *testing.T) {
 	}
 }
 
+func TestWalletGetXPubKey(t *testing.T) {
+	w, err := NewWallet(
+		"test.wlt",
+		"test",
+		testSeed,
+		testSeedPassphrase,
+		wallet.OptionCoinType(wallet.CoinTypeSkycoin))
+	require.NoError(t, err)
+
+	_, err = w.newExternalAddresses(0, 2)
+	require.NoError(t, err)
+	//require.Equal(t, testSkycoinExternalAddresses[1:3], addrsStr)
+
+	_, err = w.newChangeAddresses(0, 2)
+	require.NoError(t, err)
+	//require.Equal(t, testSkycoinChangeAddresses[1:3], addrsStr)
+
+	k1, err := w.GetXPubKey("0/0")
+	require.Equal(t, k1, testSkycoinExternalXPubKey)
+	k2, err := w.GetXPubKey("0/1")
+	require.Equal(t, k2, testSkycoinInternalXPubKey)
+
+	_, err = w.GetXPubKey("a/0")
+	require.EqualError(t, err, "invalid account index: a, err: strconv.ParseUint: parsing \"a\": invalid syntax")
+
+	_, err = w.GetXPubKey("0/a")
+	require.EqualError(t, err, "invalid chain index: a, err: strconv.ParseUint: parsing \"a\": invalid syntax")
+
+	_, err = w.GetXPubKey("10/0")
+	require.EqualError(t, err, "account index out of bounds")
+
+	_, err = w.GetXPubKey("0/10")
+	require.EqualError(t, err, "chain index out of bounds")
+
+	_, err = w.GetXPubKey("00")
+	require.EqualError(t, err, "invalid path: 00")
+}
+
 func getExternalAddrs(t *testing.T) []cipher.Addresser {
 	return skycoinAddressStringsToAddress(testSkycoinExternalAddresses)
 }

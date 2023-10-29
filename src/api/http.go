@@ -532,6 +532,9 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	webHandlerV2("/wallet/recover", walletRecoverHandler(gateway), map[string][]string{
 		http.MethodPost: {EndpointsWallet},
 	})
+	webHandlerV1("/wallet/xpub", walletXPubKeyHandler(gateway), map[string][]string{
+		http.MethodGet: {EndpointsWallet},
+	})
 
 	// Blockchain interface
 	webHandlerV1("/blockchain/metadata", blockchainMetadataHandler(gateway), map[string][]string{

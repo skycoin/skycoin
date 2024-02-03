@@ -31,6 +31,7 @@ func main() {
 	seed := flag.String("seed", "", "Seed for deterministic key generation. Will use bip39 as the seed if not provided")
 	secKeysList := flag.Bool("sec-keys-list", false, "only print a list of secret keys")
 	addrsList := flag.Bool("addrs-list", false, "only print a list of addresses")
+	keyPairs := flag.Bool("key-pairs", false, "only print pairs of public and private keys")
 	flag.Parse()
 
 	var coinType wallet.CoinType
@@ -55,7 +56,7 @@ func main() {
 		}
 	}
 
-	w, err := wallet.NewWallet("a.wlt", "", *seed, wallet.Options{
+	w, err := wallet.NewWallet("a.wlt", "address_gen", *seed, wallet.Options{
 		Type:      deterministic.WalletType,
 		Coin:      coinType,
 		GenerateN: uint64(*genCount),
@@ -80,6 +81,21 @@ func main() {
 		os.Exit(1)
 	}
 
+	if *keyPairs && *secKeysList {
+		fmt.Println("-key-pairs and -sec-keys-list can't be combined")
+		os.Exit(1)
+	}
+
+	if *keyPairs && *addrsList {
+		fmt.Println("-key-pairs and -addrs-list can't be combined")
+		os.Exit(1)
+	}
+
+	if *keyPairs && *hideSecrets {
+		fmt.Println("-key-pairs and -hide-secrets can't be combined")
+		os.Exit(1)
+	}
+
 	if *addrsList {
 		addrs, err := w.GetAddresses()
 		if err != nil {
@@ -98,6 +114,18 @@ func main() {
 
 		for _, e := range es {
 			fmt.Println(e.Secret.Hex())
+		}
+	} else if *keyPairs {
+		es, err := w.GetEntries()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		for _, e := range es {
+			fmt.Println("SK:", e.Secret.Hex())
+			fmt.Println("PK:", e.Public.Hex())
+			fmt.Print("\n")
 		}
 	} else {
 		if *hideSecrets {

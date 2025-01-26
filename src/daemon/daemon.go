@@ -1248,9 +1248,9 @@ func checkBroadcastTxnRecipients(connections *Connections, ids []uint64, txn coi
 		// that are used by v24 and earlier.
 		if c.UserAgent.Empty() {
 			if err := verifyUserTxnAgainstPeer(txn, head, inputs, params.VerifyTxn{
-				BurnFactor:          2,
+				BurnFactor:          5,
 				MaxTransactionSize:  32 * 1024,
-				MaxDropletPrecision: 3,
+				MaxDropletPrecision: 6,
 			}); err != nil {
 				logger.WithFields(logrus.Fields{
 					"addr":   c.Addr,

@@ -12,7 +12,7 @@ Embedded Files
 
 // GuiFiles is the embedded gui sources
 //
-//go:embed src/gui/static/dist/*
+//go:embed src/gui/static/*
 var GuiFiles embed.FS
 
 

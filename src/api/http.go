@@ -8,21 +8,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
-	// "io/ioutil"
 	"io/fs"
+//"os"
 	"net"
 	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
 	"unicode"
-
+"github.com/skycoin/skycoin"
 	"github.com/rs/cors"
-
 	"github.com/skycoin/skycoin/src/util/gziphandler"
 
-	"github.com/skycoin/skycoin"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/util/file"
@@ -184,11 +181,6 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		logger.Infof("Web resources directory: %s", appLoc)
 	}
 
-	//	var appHandler http.Handler
-	//	if c.EnableGUI {
-	//		appHandler = http.FileServer(http.FS(skycoin.GuiFiles))
-	//	}
-
 	if c.DisableCSRF {
 		logger.Warning("CSRF check disabled")
 	}
@@ -222,11 +214,6 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 	}
 
 	srvMux := newServerMux(mc, gateway)
-
-	//	if c.EnableGUI {
-	//		srvMux.Handle("/", appHandler)
-	//	}
-
 	srv := &http.Server{
 		Handler:      srvMux,
 		ReadTimeout:  c.ReadTimeout,
@@ -448,65 +435,72 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		webHandler(apiVersion2, "/api/v2"+endpoint, handler, methodAPISets)
 	}
 
+/*
 	indexHandler := newIndexHandler(c.appLoc, c.enableGUI)
 	if !c.disableCSP {
 		indexHandler = CSPHandler(indexHandler, ContentSecurityPolicy)
 	}
 	webHandler(apiVersion1, "/", indexHandler, nil)
-
-	/*
-		if c.enableGUI {
-			fileInfos, err := ioutil.ReadDir(c.appLoc)
-			if err != nil {
-				logger.WithError(err).Panicf("ioutil.ReadDir(%s) failed", c.appLoc)
-			}
-
-			fs := http.FileServer(http.Dir(c.appLoc))
-			if !c.disableCSP {
-				fs = CSPHandler(fs, ContentSecurityPolicy)
-			}
-
-			for _, fileInfo := range fileInfos {
-				route := fmt.Sprintf("/%s", fileInfo.Name())
-				if fileInfo.IsDir() {
-					route = route + "/"
-				}
-
-				webHandler(apiVersion1, route, fs, nil)
-			}
-		}
 	*/
 
+
+/*
 	if c.enableGUI {
-		// Use the embedded dist directory as the root for the file server
-		distDir, err := fs.Sub(skycoin.GuiFiles, "src/gui/static/dist")
+		fileInfos, err := os.ReadDir(c.appLoc)
 		if err != nil {
-			logger.WithError(err).Panic("Failed to access embedded dist directory")
+			logger.WithError(err).Panicf("os.ReadDir(%s) failed", c.appLoc)
 		}
 
-		// Read files in the embedded dist directory
-		fileInfos, err := fs.ReadDir(distDir, ".")
-		if err != nil {
-			logger.WithError(err).Panic("Failed to read embedded dist directory")
-		}
-
-		// Create the file server from the embedded dist directory
-		fs := http.FileServer(http.FS(distDir))
+		fs := http.FileServer(http.Dir(c.appLoc))
 		if !c.disableCSP {
 			fs = CSPHandler(fs, ContentSecurityPolicy)
 		}
 
-		// Set up routes for each file and directory
 		for _, fileInfo := range fileInfos {
 			route := fmt.Sprintf("/%s", fileInfo.Name())
 			if fileInfo.IsDir() {
 				route = route + "/"
 			}
+
 			webHandler(apiVersion1, route, fs, nil)
 		}
-
-		logger.Infof("Serving embedded GUI from src/gui/static/dist/")
 	}
+*/
+var subFS fs.FS
+
+if c.enableGUI {
+	// Use embedded GUI files from skycoin package
+	subFS, err := fs.Sub(skycoin.GuiFiles, "src/gui/static")
+	if err != nil {
+		logger.WithError(err).Panicf("fs.Sub() failed: %v", err)
+	}
+
+	fileInfos, err := fs.ReadDir(subFS, ".")
+	if err != nil {
+		logger.WithError(err).Panicf("fs.ReadDir() failed")
+	}
+
+	fsHandler := http.FileServer(http.FS(subFS))
+	if !c.disableCSP {
+		fsHandler = CSPHandler(fsHandler, ContentSecurityPolicy)
+	}
+
+	for _, fileInfo := range fileInfos {
+		route := fmt.Sprintf("/%s", fileInfo.Name())
+		if fileInfo.IsDir() {
+			route = route + "/"
+		}
+
+		webHandler(apiVersion1, route, fsHandler, nil)
+	}
+}
+
+indexHandler := newIndexHandler(subFS, c.enableGUI)
+if !c.disableCSP {
+	indexHandler = CSPHandler(indexHandler, ContentSecurityPolicy)
+}
+webHandler(apiVersion1, "/", indexHandler, nil)
+
 
 	// get the current CSRF token
 	csrfHandlerV1 := func(endpoint string, handler http.Handler) {
@@ -697,8 +691,9 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	return mux
 }
 
+
 // newIndexHandler returns a http.Handler for index.html, where index.html is in appLoc
-func newIndexHandler(appLoc string, enableGUI bool) http.Handler {
+func oldIndexHandler(appLoc string, enableGUI bool) http.Handler {
 	// Serves the main page
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !enableGUI {
@@ -718,6 +713,28 @@ func newIndexHandler(appLoc string, enableGUI bool) http.Handler {
 		}
 	})
 }
+
+func newIndexHandler(guiFS fs.FS, enableGUI bool) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !enableGUI || r.URL.Path != "/" {
+			wh.Error404(w, "")
+			return
+		}
+
+		data, err := fs.ReadFile(guiFS, "index.html")
+		if err != nil {
+			logger.WithError(err).Error("index.html not found in embedded GUI")
+			wh.Error404(w, "")
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(data)
+	})
+}
+
+
 
 // splitCommaString splits a string separated by commas or whitespace into tokens
 // and returns an array of unique tokens split from that string

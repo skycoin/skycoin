@@ -1,47 +1,49 @@
-// Package skycoin github.com/skycoin/skycoin/skycoin.go
-//
-package skycoin
+// cmd/skycoin-wallet/skycoin.go
+/*
+skycoin
+*/
+package main
 
 import (
-	"embed"
+	"log"
+	cc "github.com/ivanpirog/coloredcobra"
+	"github.com/spf13/cobra"
+
+	"github.com/skycoin/skycoin/cmd/skycoin-wallet/commands"
 )
 
-/*
-Embedded Files
-*/
+func init() {
+	var helpflag bool
+	commands.RootCmd.SetUsageTemplate(help)
+	commands.RootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help menu")
+	commands.RootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
+	commands.RootCmd.PersistentFlags().MarkHidden("help") //nolint
+}
 
-// GuiFiles is the embedded gui sources
-//
-//go:embed src/gui/static/dist/*
-var GuiFiles embed.FS
+func main() {
+	cc.Init(&cc.Config{
+		RootCmd:         commands.RootCmd,
+		Headings:        cc.HiBlue + cc.Bold,
+		Commands:        cc.HiBlue + cc.Bold,
+		CmdShortDescr:   cc.HiBlue,
+		Example:         cc.HiBlue + cc.Italic,
+		ExecName:        cc.HiBlue + cc.Bold,
+		Flags:           cc.HiBlue + cc.Bold,
+		FlagsDescr:      cc.HiBlue,
+		NoExtraNewlines: true,
+		NoBottomNewline: true,
+	})
+	err := commands.RootCmd.Execute()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 
-
-/*
-//TODO: embed files for use with newcoin
-
-// FiberToml is the embedded fiber.toml default node configuraion file
-//go:embed fiber.toml
-//var FiberToml []byte
-
-// CoinTemplate is embedded template/coin.template
-//go:embed template/coin.template
-//var CoinTemplate []byte
-
-// CoinTemplate is embedded template/coin_test.template
-//go:embed template/coin_test.template
-//var CoinTestTemplate []byte
-
-// CommandTemplate is embedded template/command.template
-//go:embed template/command.template
-//var CommandTemplate []byte
-
-// ParamsTemplate is embedded template/params.template
-//go:embed template/params.template
-//var ParamsTemplate []byte
-
-//TODO: embed default peers
-
-// PeersTxt is the embedded fiber.toml default node configuraion file
-//go:embed peers.txt
-//var PeersTxt []byte
-*/
+const help = "{{if .HasAvailableSubCommands}}{{end}} {{if gt (len .Aliases) 0}}\r\n\r\n" +
+	"{{.NameAndAliases}}{{end}}{{if .HasAvailableSubCommands}}" +
+	"Available Commands:{{range .Commands}}  {{if and (ne .Name \"completion\") .IsAvailableCommand}}\r\n  " +
+	"{{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}\r\n\r\n" +
+	"Flags:\r\n" +
+	"{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}\r\n\r\n" +
+	"Global Flags:\r\n" +
+	"{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}\r\n\r\n"

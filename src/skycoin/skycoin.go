@@ -493,14 +493,14 @@ func (c *Coin) createGUI(gw *api.Gateway, host string) (*api.Server, error) {
 
 		s, err = api.CreateHTTPS(host, config, gw, c.config.Node.WebInterfaceCert, c.config.Node.WebInterfaceKey)
 		if err != nil {
-			c.logger.WithError(err).Error("Failed to start web failed")
+			c.logger.WithError(err).Error("Failed to start web")
 			return nil, err
 		}
 	} else {
 		var err error
 		s, err = api.Create(host, config, gw)
 		if err != nil {
-			c.logger.WithError(err).Error("Failed to start web failed")
+			c.logger.WithError(err).Error("Failed to start web")
 			return nil, err
 		}
 	}

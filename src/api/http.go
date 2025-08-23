@@ -9,14 +9,14 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-//"os"
+	"os"
 	"net"
 	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
 	"unicode"
-"github.com/skycoin/skycoin"
+"github.com/skycoin/skycoin/src/gui"
 	"github.com/rs/cors"
 	"github.com/skycoin/skycoin/src/util/gziphandler"
 
@@ -172,7 +172,7 @@ func writeHTTPResponse(w http.ResponseWriter, resp HTTPResponse) {
 
 func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 	var appLoc string
-	if c.EnableGUI {
+	if c.EnableGUI && c.StaticDir != "" {
 		var err error
 		appLoc, err = file.DetermineResourcePath(c.StaticDir, resourceDir, devDir)
 		if err != nil {
@@ -435,49 +435,50 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		webHandler(apiVersion2, "/api/v2"+endpoint, handler, methodAPISets)
 	}
 
-/*
-	indexHandler := newIndexHandler(c.appLoc, c.enableGUI)
-	if !c.disableCSP {
-		indexHandler = CSPHandler(indexHandler, ContentSecurityPolicy)
-	}
-	webHandler(apiVersion1, "/", indexHandler, nil)
-	*/
-
-
-/*
-	if c.enableGUI {
-		fileInfos, err := os.ReadDir(c.appLoc)
-		if err != nil {
-			logger.WithError(err).Panicf("os.ReadDir(%s) failed", c.appLoc)
-		}
-
-		fs := http.FileServer(http.Dir(c.appLoc))
-		if !c.disableCSP {
-			fs = CSPHandler(fs, ContentSecurityPolicy)
-		}
-
-		for _, fileInfo := range fileInfos {
-			route := fmt.Sprintf("/%s", fileInfo.Name())
-			if fileInfo.IsDir() {
-				route = route + "/"
-			}
-
-			webHandler(apiVersion1, route, fs, nil)
-		}
-	}
-*/
 var subFS fs.FS
+var err error
+var indexHandler http.Handler
 
-if c.enableGUI {
-	// Use embedded GUI files from skycoin package
-	subFS, err := fs.Sub(skycoin.GuiFiles, "src/gui/static")
+if c.appLoc != "" && c.enableGUI {
+	fileInfos, err := os.ReadDir(c.appLoc)
 	if err != nil {
-		logger.WithError(err).Panicf("fs.Sub() failed: %v", err)
+		logger.WithError(err).Errorf("os.ReadDir(%s) failed", c.appLoc)
+	}
+
+	fs := http.FileServer(http.Dir(c.appLoc))
+	if !c.disableCSP {
+		fs = CSPHandler(fs, ContentSecurityPolicy)
+	}
+	indexHTMLFound := false
+	for _, fileInfo := range fileInfos {
+		if fileInfo.Name() == "index.html" {
+			indexHTMLFound = true
+		}
+		route := fmt.Sprintf("/%s", fileInfo.Name())
+		if fileInfo.IsDir() {
+			route = route + "/"
+		}
+		webHandler(apiVersion1, route, fs, nil)
+	}
+	if !indexHTMLFound {
+		logger.Error("index.html not found in embedded gui sources ; web interface will malfunction")
+	}
+	indexHandler = oldIndexHandler(c.appLoc, c.enableGUI)
+}
+
+if c.appLoc == "" && c.enableGUI {
+	subFS, err = fs.Sub(gui.GuiFiles, "static/dist")
+	if err != nil {
+		logger.WithError(err).Error("fs.Sub() failed")
 	}
 
 	fileInfos, err := fs.ReadDir(subFS, ".")
 	if err != nil {
-		logger.WithError(err).Panicf("fs.ReadDir() failed")
+		logger.WithError(err).Error("fs.ReadDir() failed")
+	}
+
+	if len(fileInfos) == 0 {
+		logger.Error("Embedded gui does not contain any files")
 	}
 
 	fsHandler := http.FileServer(http.FS(subFS))
@@ -485,17 +486,23 @@ if c.enableGUI {
 		fsHandler = CSPHandler(fsHandler, ContentSecurityPolicy)
 	}
 
+	indexHTMLFound := false
 	for _, fileInfo := range fileInfos {
+		if fileInfo.Name() == "index.html" {
+			indexHTMLFound = true
+		}
 		route := fmt.Sprintf("/%s", fileInfo.Name())
 		if fileInfo.IsDir() {
 			route = route + "/"
 		}
-
+		logger.Debug("route: ", route)
 		webHandler(apiVersion1, route, fsHandler, nil)
 	}
+	if !indexHTMLFound {
+		logger.Error("index.html not found in embedded gui sources ; web interface will malfunction")
+	}
+	indexHandler = newIndexHandler(subFS, c.enableGUI)
 }
-
-indexHandler := newIndexHandler(subFS, c.enableGUI)
 if !c.disableCSP {
 	indexHandler = CSPHandler(indexHandler, ContentSecurityPolicy)
 }
@@ -697,12 +704,14 @@ func oldIndexHandler(appLoc string, enableGUI bool) http.Handler {
 	// Serves the main page
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !enableGUI {
-			wh.Error404(w, "")
+			logger.Error("GUI disabled")
+			wh.Error404(w, "GUI disabled")
 			return
 		}
 
 		if r.URL.Path != "/" {
-			wh.Error404(w, "")
+			logger.Error(`r.URL.Path != "/"`)
+			wh.Error404(w, `r.URL.Path != "/"`)
 			return
 		}
 
@@ -717,14 +726,19 @@ func oldIndexHandler(appLoc string, enableGUI bool) http.Handler {
 func newIndexHandler(guiFS fs.FS, enableGUI bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !enableGUI || r.URL.Path != "/" {
-			wh.Error404(w, "")
+			logger.Error("GUI disabled")
+			wh.Error404(w, "GUI disabled")
 			return
 		}
-
+		if guiFS == nil {
+			logger.Error("guiFS == nil")
+			wh.Error404(w, `guiFS == nil`)
+			return
+		}
 		data, err := fs.ReadFile(guiFS, "index.html")
 		if err != nil {
 			logger.WithError(err).Error("index.html not found in embedded GUI")
-			wh.Error404(w, "")
+			wh.Error404(w, `index.html not found in embedded GUI`)
 			return
 		}
 

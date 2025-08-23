@@ -287,8 +287,8 @@ func NewNodeConfig(mode string, node fiber.NodeConfig) NodeConfig {
 		LaunchBrowser: false,
 		// Data directory holds app data
 		DataDirectory: node.DataDirectory,
-		// Web GUI static resources
-		GUIDirectory: "./src/gui/static/",
+		// Web GUI static resources - now embedded
+		GUIDirectory: "", //"./src/gui/static/",
 		// Logging
 		ColorLog:        true,
 		LogLevel:        "INFO",
@@ -458,7 +458,7 @@ func (c *Config) postProcess() error {
 		c.Node.LaunchBrowser = false
 	}
 
-	if c.Node.EnableGUI {
+	if c.Node.EnableGUI && c.Node.GUIDirectory != "" {
 		c.Node.GUIDirectory = file.ResolveResourceDirectory(c.Node.GUIDirectory)
 	}
 

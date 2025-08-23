@@ -36,7 +36,6 @@ var RootCmd = &cobra.Command{
 	┌─┐┬┌─┬ ┬┌─┐┌─┐┬┌┐┌
 	└─┐├┴┐└┬┘│  │ │││││
 	└─┘┴ ┴ ┴ └─┘└─┘┴┘└┘`,
-	SilenceErrors:         true,
 	SilenceUsage:          true,
 	DisableSuggestions:    true,
 	DisableFlagsInUseLine: true,

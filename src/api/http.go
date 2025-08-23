@@ -9,15 +9,17 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"os"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
 	"unicode"
-"github.com/skycoin/skycoin/src/gui"
+
 	"github.com/rs/cors"
+
+	"github.com/skycoin/skycoin/src/gui"
 	"github.com/skycoin/skycoin/src/util/gziphandler"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -435,79 +437,78 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		webHandler(apiVersion2, "/api/v2"+endpoint, handler, methodAPISets)
 	}
 
-var subFS fs.FS
-var err error
-var indexHandler http.Handler
+	var subFS fs.FS
+	var err error
+	var indexHandler http.Handler
 
-if c.appLoc != "" && c.enableGUI {
-	fileInfos, err := os.ReadDir(c.appLoc)
-	if err != nil {
-		logger.WithError(err).Errorf("os.ReadDir(%s) failed", c.appLoc)
+	if c.appLoc != "" && c.enableGUI {
+		fileInfos, err := os.ReadDir(c.appLoc)
+		if err != nil {
+			logger.WithError(err).Errorf("os.ReadDir(%s) failed", c.appLoc)
+		}
+
+		fs := http.FileServer(http.Dir(c.appLoc))
+		if !c.disableCSP {
+			fs = CSPHandler(fs, ContentSecurityPolicy)
+		}
+		indexHTMLFound := false
+		for _, fileInfo := range fileInfos {
+			if fileInfo.Name() == "index.html" {
+				indexHTMLFound = true
+			}
+			route := fmt.Sprintf("/%s", fileInfo.Name())
+			if fileInfo.IsDir() {
+				route = route + "/"
+			}
+			webHandler(apiVersion1, route, fs, nil)
+		}
+		if !indexHTMLFound {
+			logger.Error("index.html not found in embedded gui sources ; web interface will malfunction")
+		}
+		indexHandler = oldIndexHandler(c.appLoc, c.enableGUI)
 	}
 
-	fs := http.FileServer(http.Dir(c.appLoc))
+	if c.appLoc == "" && c.enableGUI {
+		subFS, err = fs.Sub(gui.GuiFiles, "static/dist")
+		if err != nil {
+			logger.WithError(err).Error("fs.Sub() failed")
+		}
+
+		fileInfos, err := fs.ReadDir(subFS, ".")
+		if err != nil {
+			logger.WithError(err).Error("fs.ReadDir() failed")
+		}
+
+		if len(fileInfos) == 0 {
+			logger.Error("Embedded gui does not contain any files")
+		}
+
+		fsHandler := http.FileServer(http.FS(subFS))
+		if !c.disableCSP {
+			fsHandler = CSPHandler(fsHandler, ContentSecurityPolicy)
+		}
+
+		indexHTMLFound := false
+		for _, fileInfo := range fileInfos {
+			if fileInfo.Name() == "index.html" {
+				indexHTMLFound = true
+			}
+			route := fmt.Sprintf("/%s", fileInfo.Name())
+			if fileInfo.IsDir() {
+				route = route + "/"
+			}
+			logger.Debug("route: ", route)
+			webHandler(apiVersion1, route, fsHandler, nil)
+		}
+		if !indexHTMLFound {
+			logger.Error("index.html not found in embedded gui sources ; web interface will malfunction")
+		}
+		indexHandler = newIndexHandler(subFS, c.enableGUI)
+	}
 	if !c.disableCSP {
-		fs = CSPHandler(fs, ContentSecurityPolicy)
+		indexHandler = CSPHandler(indexHandler, ContentSecurityPolicy)
 	}
-	indexHTMLFound := false
-	for _, fileInfo := range fileInfos {
-		if fileInfo.Name() == "index.html" {
-			indexHTMLFound = true
-		}
-		route := fmt.Sprintf("/%s", fileInfo.Name())
-		if fileInfo.IsDir() {
-			route = route + "/"
-		}
-		webHandler(apiVersion1, route, fs, nil)
-	}
-	if !indexHTMLFound {
-		logger.Error("index.html not found in embedded gui sources ; web interface will malfunction")
-	}
-	indexHandler = oldIndexHandler(c.appLoc, c.enableGUI)
-}
-
-if c.appLoc == "" && c.enableGUI {
-	subFS, err = fs.Sub(gui.GuiFiles, "static/dist")
-	if err != nil {
-		logger.WithError(err).Error("fs.Sub() failed")
-	}
-
-	fileInfos, err := fs.ReadDir(subFS, ".")
-	if err != nil {
-		logger.WithError(err).Error("fs.ReadDir() failed")
-	}
-
-	if len(fileInfos) == 0 {
-		logger.Error("Embedded gui does not contain any files")
-	}
-
-	fsHandler := http.FileServer(http.FS(subFS))
-	if !c.disableCSP {
-		fsHandler = CSPHandler(fsHandler, ContentSecurityPolicy)
-	}
-
-	indexHTMLFound := false
-	for _, fileInfo := range fileInfos {
-		if fileInfo.Name() == "index.html" {
-			indexHTMLFound = true
-		}
-		route := fmt.Sprintf("/%s", fileInfo.Name())
-		if fileInfo.IsDir() {
-			route = route + "/"
-		}
-		logger.Debug("route: ", route)
-		webHandler(apiVersion1, route, fsHandler, nil)
-	}
-	if !indexHTMLFound {
-		logger.Error("index.html not found in embedded gui sources ; web interface will malfunction")
-	}
-	indexHandler = newIndexHandler(subFS, c.enableGUI)
-}
-if !c.disableCSP {
-	indexHandler = CSPHandler(indexHandler, ContentSecurityPolicy)
-}
-webHandler(apiVersion1, "/", indexHandler, nil)
-
+	webHandler(apiVersion1, "/", indexHandler, nil)
 
 	// get the current CSRF token
 	csrfHandlerV1 := func(endpoint string, handler http.Handler) {
@@ -698,7 +699,6 @@ webHandler(apiVersion1, "/", indexHandler, nil)
 	return mux
 }
 
-
 // newIndexHandler returns a http.Handler for index.html, where index.html is in appLoc
 func oldIndexHandler(appLoc string, enableGUI bool) http.Handler {
 	// Serves the main page
@@ -744,11 +744,9 @@ func newIndexHandler(guiFS fs.FS, enableGUI bool) http.Handler {
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write(data)
+		_, _ = w.Write(data) //nolint
 	})
 }
-
-
 
 // splitCommaString splits a string separated by commas or whitespace into tokens
 // and returns an array of unique tokens split from that string

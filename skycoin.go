@@ -5,6 +5,7 @@ skycoin
 package main
 
 import (
+	"log"
 	cc "github.com/ivanpirog/coloredcobra"
 	"github.com/spf13/cobra"
 
@@ -32,7 +33,10 @@ func main() {
 		NoExtraNewlines: true,
 		NoBottomNewline: true,
 	})
-	commands.RootCmd.Execute()
+	err := commands.RootCmd.Execute()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 const help = "{{if .HasAvailableSubCommands}}{{end}} {{if gt (len .Aliases) 0}}\r\n\r\n" +

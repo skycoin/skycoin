@@ -115,7 +115,7 @@ func (c *Client) Get(endpoint string, obj interface{}) error {
 		return err
 	}
 
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint
 
 	if resp.StatusCode != http.StatusOK {
 		body, err := ioutil.ReadAll(resp.Body)
@@ -204,7 +204,7 @@ func (c *Client) Post(endpoint string, contentType string, body io.Reader, obj i
 		return err
 	}
 
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint
 
 	if resp.StatusCode != http.StatusOK {
 		body, err := ioutil.ReadAll(resp.Body)

@@ -1,0 +1,12 @@
+@import '../../../../assets/scss/_variables.scss';
+
+.disable-clicks {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.show-all {
+  color: $primary;
+  text-align: right;
+  cursor: pointer;
+}

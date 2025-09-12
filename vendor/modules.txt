@@ -1,3 +1,6 @@
+# github.com/NYTimes/gziphandler v1.1.1
+## explicit; go 1.11
+github.com/NYTimes/gziphandler
 # github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 ## explicit
 github.com/andreyvit/diff
@@ -78,6 +81,9 @@ github.com/sirupsen/logrus
 # github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
 ## explicit
 github.com/skycoin/encodertest
+# github.com/skycoin/skywire v1.3.30
+## explicit; go 1.24
+github.com/skycoin/skywire/pkg/skywire-utilities/pkg/calvin
 # github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8
 ## explicit; go 1.20
 github.com/sourcegraph/conc

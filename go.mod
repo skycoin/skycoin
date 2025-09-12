@@ -1,10 +1,11 @@
 module github.com/skycoin/skycoin
 
-go 1.23.0
+go 1.24
 
 toolchain go1.24.5
 
 require (
+	github.com/NYTimes/gziphandler v1.1.1
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/boltdb/bolt v1.3.1
@@ -16,6 +17,7 @@ require (
 	github.com/shopspring/decimal v1.4.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
+	github.com/skycoin/skywire v1.3.30
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.7
 	github.com/spf13/viper v1.20.1

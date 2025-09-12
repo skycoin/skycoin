@@ -1,0 +1,9 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.app {
+  flex-grow: 1;
+  padding-bottom: 80px;
+}

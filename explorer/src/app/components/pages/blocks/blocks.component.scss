@@ -1,0 +1,52 @@
+@import '../../../../assets/scss/_variables.scss';
+
+.-details {
+  text-align: right;
+
+  @media (max-width: $max-xs-width) {
+    & {
+      text-align: left;
+    }
+  }
+
+  p {
+    line-height: $siz-normal-text;
+    padding: 3px 0;
+    margin-bottom: 5px;
+
+    >span:first-child {
+      display: inline-block;
+    }
+
+    .-label {
+      display: block;
+      color: $gray-text;
+      float: left;
+    }
+
+    .-link {
+      color: $primary;
+      display: inline-block;
+      cursor: pointer;
+    }
+
+    .-value {
+      display: inline-block;
+      width: 120px;
+    }
+
+    @media (max-width: $max-xs-width) {
+      .-value {
+        margin-top: 5px;
+      }
+    }
+  }
+}
+
+.-small-font {
+  font-size: $siz-small-text;
+}
+
+.-small-padding {
+  padding-right: 5px;
+}

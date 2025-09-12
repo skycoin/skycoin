@@ -1,0 +1,66 @@
+@import '../../../../assets/scss/_variables.scss';
+
+.language-button {
+  display: flex;
+  align-items: center;
+  height: 42px;
+  margin-left: 15px;
+  padding: 0px 20px;
+  border-radius: 60px;
+  cursor: pointer;
+
+  &:hover{
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+
+  .flag-img {
+    height: 28px;
+  }
+
+  .arrow-img {
+    margin-left: 5px;
+  }
+}
+
+.dropdown-menu {
+  display: none;
+  flex-direction: column;
+  margin: 5px 0 0 15px;
+  position: absolute;
+  right: 0px;
+  z-index: 1000;
+  background-color: white;
+  background-clip: padding-box;
+  border-radius: 0 0 3px 3px;
+  box-shadow: 0px 2px 3px rgba(0, 0, 0, 0.3);
+  border-top: 1px solid white;
+  min-width: 150px;
+
+  &.open{
+    display: flex;
+    flex-direction: column;       
+  }
+
+  .dropdown-item{
+    margin: 10px 0 0 0;
+    padding: 0;
+    text-decoration: none;
+    white-space: nowrap;
+    padding:5px;
+    margin: 5px;
+    color: $gray-text;
+    display: flex;
+    align-items: center;
+    height: 36px;
+    cursor: pointer;
+
+    &:hover{
+      color: black;
+    }
+
+    .small-flag-img {
+      height: 20px;
+      margin-right: 5px;
+    }
+  }
+}

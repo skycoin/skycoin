@@ -1,0 +1,465 @@
+/* You can add global styles to this file, and also import other style files */
+@import './assets/scss/_variables.scss';
+
+/* Fonts */
+
+@font-face {
+  font-family: 'SkycoinLight';
+  src: url('assets/fonts/skycoin/skycoin-light-webfont.woff2') format('woff2'),
+  url('assets/fonts/skycoin/skycoin-light-webfont.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'SkycoinSansBold';
+  src: url('assets/fonts/skycoin/skycoin-bold-webfont.woff2') format('woff2'),
+  url('assets/fonts/skycoin/skycoin-bold-webfont.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'SkycoinSans';
+  src: url('assets/fonts/skycoin/skycoin-regular-webfont.woff2') format('woff2'),
+  url('assets/fonts/skycoin/skycoin-regular-webfont.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'SkycoinSansBoldItalic';
+  src: url('assets/fonts/skycoin/skycoin-bold-italic-webfont.woff2') format('woff2'),
+  url('assets/fonts/skycoin/skycoin-bold-italic-webfont.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'SkycoinSansItalic';
+  src: url('assets/fonts/skycoin/skycoin-regular-italic-webfont.woff2') format('woff2'),
+  url('assets/fonts/skycoin/skycoin-regular-italic-webfont.woff') format('woff');
+}
+
+/* General styles */
+
+h1, h2, h3, h4, h5, h6, p, a, body, div {
+  font-family: 'SkycoinSans', Verdana, sans-serif;
+}
+html {
+  -webkit-font-smoothing: antialiased;
+  height: 100%;
+}
+body {
+  color: $normal-text !important;
+  word-wrap: break-word;
+  font-family: 'SkycoinSans', Verdana, sans-serif;
+  font-size: $siz-normal-text;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+a, a:hover, a:focus {
+  color: inherit;
+}
+
+h2 {
+  color: $heading-text;
+  font-size: $siz-header-text;
+  font-weight: 700;
+  line-height: $siz-header-text * 2;
+  text-align: left;
+}
+
+/* General margin for the app */
+
+.wrapper {
+  margin: 0 auto;
+  max-width: 112rem;
+  padding: 0 3.2rem;
+  box-sizing: content-box;
+}
+
+/* Styles for the data tables at the top of the details pages (block, transaction, etc.) */
+
+.element-details-wrapper {
+
+  width: 100%;
+
+  .element-details {
+    background-color: $col-normal-background;
+    padding: $siz-normal-margin $siz-big-margin;
+    text-align: left;
+
+    > .-row {
+      border-bottom: 1px solid $col-normal-separator;
+      font-size: $siz-normal-text;
+      padding: $siz-normal-margin 0;
+
+      &:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+
+      &:first-child {
+        padding-top: 0;
+      }
+
+      > span:first-of-type {
+        display: block;
+        float: left;
+        color: $gray-text;
+        width: 130px;
+      }
+
+      > div:last-of-type {
+        display: flex;
+      }
+
+      @media (max-width: $max-xs-width) {
+        > div:last-of-type {
+          display: unset;
+        }
+      }
+
+      .-link {
+        color: $primary;
+      }
+    }
+  }
+}
+
+/* Transaction box styles. Also used for the output boxes in the unspent outputs page */
+
+.transaction {
+  margin-top: $siz-big-margin*3;
+  font-size: $siz-normal-text;
+
+  .row {
+    margin-bottom: 0;
+
+    .-row {
+      >div {
+        margin-top: 5px;
+      }
+    }
+  }
+
+  .-title {
+    background-color: $col-odd-background;
+    font-weight: 700;
+    padding: ($siz-normal-margin - 5) $siz-big-margin $siz-normal-margin $siz-big-margin;
+
+    a {
+      color: $primary;
+      margin-left: 15px;
+    }
+    .-date {
+      text-align: right;
+      margin-top: 5px;
+    }
+    .-label {
+      display: inline-block;
+      padding: 2px 15px;
+      color: white;
+    }
+
+    .address {
+      padding-right: 10px;
+    }
+
+    .-inline-block {
+      display: inline-block;
+    }
+
+    .-label {
+      margin: 5px 0px 0px 0px;
+    }
+
+    @media (min-width: (1124px)) {
+      .address-balance-line-break {
+        display: none !important;
+      }
+    }
+
+    @media (max-width: $max-sm-width) {
+      a {
+        margin-left: 0px;
+      }
+      .-date {
+        text-align: left;
+        margin-top: unset;
+      }
+      .-inline-block {
+        display: inline;
+      }
+
+      .row {
+        > div {
+          .-row {
+            border-bottom: 1px solid $col-hard-separator;
+            padding: $siz-normal-margin 0;
+          }
+          &:last-child {
+            .-row {
+              border-bottom: none;
+              padding-bottom: 0px;
+            }
+          }
+          &:first-child {
+            .-row {
+              padding-top: 0px;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .-header {
+    background-color: $col-normal-background;
+    border-bottom: 1px solid $col-normal-separator;
+    padding: $siz-normal-margin $siz-big-margin;
+
+    @media (max-width: $max-xs-width) {
+      & {
+        margin: 0px (-$siz-big-margin);
+      }
+    }
+  }
+
+  .-clear-background {
+    background-color: $col-normal-background !important;
+  }
+
+  .-data {
+    background-color: $col-odd-background;
+    padding: 0px $siz-big-margin;
+
+    @media (max-width: $max-xs-width) {
+      & {
+        padding: 0px $siz-big-margin;
+      }
+    }
+
+    .-body {
+      border-bottom: 1px solid $col-normal-separator;
+      padding: $siz-normal-margin 0;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .-balance {
+        margin-top: 5px;
+      }
+
+      .-link {
+        color: $primary;
+      }
+    }
+
+    .-balance-variation {
+      border-top: 1px solid $col-normal-separator;
+      text-align: right;
+      display: flex;
+      align-items: center;
+
+      .fee-box {
+        flex-grow: 1;
+      }
+
+      > div {
+        display: inline-block;
+        padding: 10px 0px;
+        text-align: left;
+
+        @media (max-width: $max-xs-width) {
+          width: 100%;
+          border-bottom: 1px solid $col-normal-separator;
+          padding: $siz-normal-margin 0;
+  
+          &:last-child {
+            border-bottom: none;
+          }
+        }
+  
+        &:last-child {
+          border-bottom: none;
+        }
+
+        > div:last-child {
+          display: inline-block;
+        }
+      }
+
+      .separator {
+        font-family: 'Font Awesome 5 Free';
+        font-weight: 900;
+        opacity: 0.2;
+        margin: 0 10px
+      }
+
+      @media (max-width: $max-xs-width) {
+        & {
+          border-top: none;
+          text-align: left;
+          display: unset;
+        }
+      }
+    }
+    .-transparent {
+      color: $gray-text;
+    }
+  }
+
+  .-green {
+    background-color: $green;
+  }
+  .-red {
+    background-color: $red;
+  }
+}
+
+/* Tables (like the one used for the blocks list) */
+
+.table {
+  margin-top: $siz-big-margin;
+  font-size: $siz-normal-text;
+  font-weight: normal !important;
+
+  a {
+    text-decoration: none;
+  }
+
+  .row {
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .-header {
+    background-color: $col-normal-background;
+    padding: $siz-normal-margin $siz-big-margin;
+  }
+
+  .-row {
+    background-color: $col-normal-background;
+    padding: $siz-big-margin $siz-big-margin;
+    display: block;
+    font-weight: normal;
+
+    &:nth-child(even) {
+      background-color: $col-odd-background;
+      &:hover {
+        background-color: $col-odd-background-hover;
+      }
+    }
+
+    &:hover {
+      background-color: $col-normal-background-hover;
+    }
+  }
+
+  .-fix-left {
+    padding-left: 0px;
+  }
+}
+
+/* General styles for using the copy button */ 
+
+app-copy-button {
+  display: inline-block;
+  height: 12px;
+  width: 12px;
+  overflow: visible;
+}
+
+.-copy-button-margin {
+  margin-right: 12px;
+}
+
+/* Pagination bar */ 
+
+.pagination {
+  margin-top: $siz-big-margin;
+  text-align: right;
+  font-size: $siz-normal-text;
+
+  a {
+    background-color: $col-soft-background;
+    border: 1px solid $col-normal-separator;
+    cursor: pointer;
+    display: inline-block;
+    height: 30px;
+    line-height: 28px;
+    min-width: 30px;
+    text-align: center;
+    text-decoration: none;
+    user-select: none;
+    -moz-user-select: none;
+    -khtml-user-select: none;
+    -webkit-user-select: none;
+    -o-user-select: none;
+
+    &.disabled {
+      background-color: $col-soft-background;
+      color: #cdcdcd;
+      cursor: not-allowed;
+    }
+  }
+
+  @media (max-width: $max-xs-width) {
+    .-hide-xs {
+      display: none;
+    }
+  }
+}
+
+/* Timezone styles */ 
+
+.timezone-container {
+  height: 0px;
+  position: relative;
+  top: 1px;
+  font-size: 9px;
+}
+
+.timezone-label {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 2px 4px;
+  display: inline;
+}
+
+.timezone-icon {
+  margin-right: 4px;
+  font-family: 'Font Awesome 5 Free';
+  font-size: 12px;
+  user-select: none;
+  font-weight: 600;
+  opacity: 0.25;
+}
+
+.timezone-icon-opaque {
+  opacity: 0.5 !important;
+}
+
+/* Responsive design helpers */
+
+@media (min-width: ($max-sm-width+1)) {
+  .-xs-sm-only {
+    display: none !important;
+  }
+}
+@media (min-width: ($max-xs-width+1)) {
+  .-xs-only {
+    display: none !important;
+  }
+}
+@media (max-width: $max-xs-width) {
+  .-not-xs {
+    display: none !important;
+  }
+}
+
+/* Helper classes */
+
+.-float-left {
+  float: left;
+}
+
+.-gray {
+  color: $gray-text;
+}

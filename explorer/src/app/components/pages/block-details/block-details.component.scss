@@ -1,0 +1,40 @@
+@import '../../../../assets/scss/_variables.scss';
+
+h2 {
+  flex-grow: 1;
+}
+
+.header-container {
+
+  display: flex;
+  flex-wrap: wrap;
+
+  .nav-button-container {
+
+    align-self: center;
+    height: 36px;
+
+    a {
+      color: $primary;
+      text-decoration: none;
+      text-transform: uppercase;
+    }
+
+    .nav-button {
+      display: inline-block;
+      line-height: 36px;
+      border: $primary solid 1px;
+      padding: 0px 15px;
+      border-radius: 100px;
+
+      &:hover {
+        background-color: $col-normal-separator;
+      }
+    }
+
+    .font-awesome {
+      font-family: 'Font Awesome 5 Free';
+      font-weight: 900;
+    }
+  }
+}

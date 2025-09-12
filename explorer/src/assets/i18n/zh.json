@@ -1,0 +1,110 @@
+{
+  "general": {
+    "coinIdentifier": "SKY",
+    "address": "地址",
+    "coins": "币",
+    "iniialHours": "原始币时",
+    "calculatedHours": "最终币时",
+    "currentHours": "当前币时",
+    "hours": "币时",
+    "pending": "待处理",
+    "loadingMsg": "加载...",
+    "shortLoadingErrorMsg": "加载错误",
+"longLoadingErrorMsg": "加载数据时出错，请稍后重试...",
+    "waitingData": "等待数据...",
+    "noData": "没有可显示的数据"
+  },
+  "txBoxes": {
+    "transactionID": "交易ID",
+    "inputs": "输入",
+    "outputs": "输出",
+    "date": "日期",
+    "balance": "更多信息",
+    "fee": "交易费用 (以币时计算)",
+    "initialBalance": "原始币时余额",
+    "finalBalance": "最终币余额",
+    "firstSeen": "首先看到",
+    "loadAll": "展示 {{total}} 元素",
+    "loading": "加载中, 请稍后..."
+  },
+  "blocks": {
+    "blocksTitle": "区块",
+    "statsTitle": "统计",
+    "blockHeight": "区块高度",
+    "currentSupply": "目前供应量",
+    "totalSupply": "总供应量",
+    "currentCoinhourSupply": "目前币时供应",
+    "totalCoinhourSupply": "总币时供应",
+    "explorerApi": "Explorer API",
+    "unconfirmedTransactions": "未确认交易",
+    "richList": "富豪榜",
+    "time": "时间",
+    "blockNumber": "区块数量",
+    "blockNumberSmall": "区块 #",
+    "transactions": "交易",
+    "blockhash": "区块哈希"
+  },
+  "blockDetails": {
+    "title": "区块详情",
+    "next": "下一个区块",
+    "previous": "上一个区块",
+    "height": "高度",
+    "timestamp": "时间戳",
+    "size": "大小",
+    "hash": "哈希",
+    "parentHash": "初始哈希",
+    "totalAmount": "总数值",
+    "withoutParent": "无初始哈希",
+    "doesNotExist": "区块 \"{{number}}\" 不存在"
+  },
+  "addressDetail": {
+    "title": "地址",
+    "txsNumber": "# 的交易",
+    "totalReceived": "总共收取",
+    "totalSent": "总共发出",
+    "tools": "工具",
+    "unspentOutputs": "未花费输出",
+    "withoutTransactions": "没有交易"
+  },
+  "unspentOutputs": {
+    "title": "未花费输出",
+    "address": "地址",
+    "outputsNumber": "# 的输出",
+    "totalCoins": "总币额",
+    "totalHours": "总币时",
+    "origin": "初始值",
+    "date": "日期",
+    "withoutOutputs": "没有输出"
+  },
+  "transactionDetail": {
+    "title": "交易",
+    "status": "状态",
+    "timestamp": "时间戳",
+    "size": "大小",
+    "block": "区块",
+    "confirmed": "已确认",
+    "unconfirmed": "未确认",
+    "canNotFind": "没有找到交易"
+  },
+  "unconfirmedTx": {
+    "title": "未确认交易",
+    "quantity": "数量",
+    "size": "总大小",
+    "newest": "最新的",
+    "oldest": "最旧的",
+    "withoutTransactions": "目前没有未确认交易"
+  },
+  "richlist": {
+    "title": "富豪榜"
+  },
+  "copy": {
+    "copied": "已复制"
+  },
+  "searchBar": {
+    "hint": "地址，区块哈希或数量，或交易ID"
+  },
+  "search": {
+    "title": "搜索",
+    "unableToFind": "未能找到 \"{{ term }}\""
+  }
+}

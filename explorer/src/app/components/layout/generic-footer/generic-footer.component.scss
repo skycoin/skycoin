@@ -1,0 +1,57 @@
+@import '../../../../assets/scss/_variables.scss';
+
+footer {
+  background-color: $col-generic-footer-background;
+  color: $col-generic-footer-text;
+
+  .links-row {
+    padding: 14px 0;
+    text-align: center;
+
+    .link-icon {
+      width: 19%;
+      text-align: center;
+      font-size: 0;
+      display: inline-block;
+      margin: 10px 0;
+
+      @media screen and (min-width: 40em) {
+        width: 9%;
+      }
+
+      .element {
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-family: 'Font Awesome 5 Brands';
+        font-weight: 400;
+
+        > a {
+          max-width: 30px;
+          max-height: 30px;
+          text-decoration: none;
+          overflow: hidden;
+        }
+      }
+
+    }
+  }
+
+  .top-separator {
+    width: 100%;
+    height: 2px;
+    background-color: $col-generic-footer-top-border;
+  }
+  .middle-separator {
+    border-top: 1px dashed $col-generic-footer-middle-border;
+  }
+
+  .credit-row {
+    padding: 24px 0;
+    text-align: center;
+    opacity: 0.4;
+    font-size: 13px;
+  }
+}

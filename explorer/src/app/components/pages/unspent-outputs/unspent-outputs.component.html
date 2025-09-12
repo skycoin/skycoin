@@ -1,0 +1,52 @@
+<div [ngClass]="{'disable-clicks' : disableClicks}">
+  <div class="element-details-wrapper">
+    <!-- Title -->
+    <h2>{{ 'unspentOutputs.title' | translate }}</h2>
+    <!-- Top data table -->
+    <div class="element-details">
+      <div class="-row"><span>{{ 'unspentOutputs.address' | translate }}</span><br class="-xs-only" /><div> <a [routerLink]="'/app/address/' + address" class="-link -copy-button-margin" *ngIf="address">{{ address }}{{ explorer.getAddressName(address) }}</a> <app-copy-button [text]="address" *ngIf="address"></app-copy-button> <span *ngIf="!address">{{ loadingMsg  | translate }}</span> </div></div>
+      <div class="-row"><span>{{ 'unspentOutputs.outputsNumber' | translate }}</span><br class="-xs-only" /><div> {{ outputs ? outputs.head_outputs.length : (loadingMsg  | translate) }} </div></div>
+      <div class="-row"><span>{{ 'unspentOutputs.totalCoins' | translate }}</span><br class="-xs-only" /><div> {{ coins !== null ? (coins.toString() | amount:true) : (loadingMsg  | translate) }} </div></div>
+      <div class="-row"><span>{{ 'unspentOutputs.totalHours' | translate }}</span><br class="-xs-only" /><div> {{ hours !== null ? (hours.toString() | amount:false) : (loadingMsg  | translate) }} </div></div>
+    </div>
+  </div>
+
+  <!-- Loading control -->
+  <app-loading [longErrorMsg]="longErrorMsg | translate" *ngIf="outputs === undefined"></app-loading>
+
+  <!-- Outputs list -->
+  <div *ngIf="outputs">
+    <!-- Header (origin and date) -->
+    <div class="transaction" *ngFor="let output of outputsToShow">
+      <div class="-title">
+        <div class="row">
+          <div class="col-md-9 col-sm-12">
+            <div class="-row">
+              <div class="-inline-block">{{ 'unspentOutputs.origin' | translate }}<span class="-xs-sm-only">:</span></div><br class="-xs-sm-only"/>
+              <div class="-inline-block"><a class="-copy-button-margin" [routerLink]="'/app/transaction/' + output.src_tx">{{ output.src_tx }}</a><app-copy-button [text]="output.src_tx"></app-copy-button></div>
+            </div>
+          </div>
+          <div class="col-md-3 col-sm-12 -date"><div class="-row"><span class="-xs-sm-only">{{ 'unspentOutputs.date' | translate }}:<br/></span><app-date-formatter *ngIf="output" [date]="output.time"></app-date-formatter></div></div>
+        </div>
+      </div>
+
+      <!-- Data -->
+      <div class="-data -clear-background">
+        <div class="row">
+          <div class="col-sm-12">
+            <div class="-body">
+              <div>{{ output.hash }}</div>
+              <div class="-balance"><div class="-transparent -float-left">{{ 'general.coins' | translate }}:&nbsp;</div><div> {{ output.coins | amount:true:'first' }}</div></div>
+              <div class="-balance"><div class="-transparent -float-left">{{ 'unspentOutputs.hoursWhenCreated' | translate }}:&nbsp;</div><div> {{ output.hours | amount:false:'first' }}</div></div>
+              <div class="-balance"><div class="-transparent -float-left">{{ 'unspentOutputs.currentHours' | translate }}:&nbsp;</div><div> {{ output.calculated_hours | amount:false:'first' }}</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="show-all" *ngIf="showMoreOutputs !== showMoreStatus.dontShowMore" (click)="showAll()">
+    {{ showMoreOutputs === showMoreStatus.showMore ? ('unspentOutputs.loadAll' | translate:{ total: totalOutputs }) : ('unspentOutputs.loading' | translate) }}
+  </div>
+</div>

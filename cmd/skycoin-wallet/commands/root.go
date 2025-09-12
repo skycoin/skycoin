@@ -15,6 +15,7 @@ import (
 	newcoin "github.com/skycoin/skycoin/cmd/newcoin/commands"
 	cli "github.com/skycoin/skycoin/cmd/skycoin-cli/commands"
 	skycoin "github.com/skycoin/skycoin/cmd/skycoin/commands"
+	explorer "github.com/skycoin/skycoin/cmd/explorer/commands"
 )
 
 func init() {
@@ -23,8 +24,10 @@ func init() {
 		skycoin.RootCmd,
 		cli.RootCmd,
 		newcoin.RootCmd,
+		explorer.RootCmd,
 	)
 	skycoin.RootCmd.Use = "daemon"
+	explorer.RootCmd.Use = "explorer"
 }
 
 // RootCmd contains every daemon, cli, & newcoin

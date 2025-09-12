@@ -1,0 +1,8 @@
+{
+  "/api/*": {
+    "target": "https://explorer.skycoin.com",
+    "secure": true,
+    "logLevel": "debug",
+    "changeOrigin": true
+  }
+}

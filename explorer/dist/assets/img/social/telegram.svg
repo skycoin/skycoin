@@ -1,0 +1,14 @@
+<svg width="19" height="16" viewBox="0 0 19 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<title>telegram</title>
+<desc>Created using Figma</desc>
+<g id="Canvas" transform="translate(1499 -38752)">
+<g id="telegram">
+<g id="Vector">
+<use xlink:href="#path0_fill" transform="translate(-1498.96 38752.4)" fill="#0072FF"/>
+</g>
+</g>
+</g>
+<defs>
+<path id="path0_fill" d="M 6.78047 14.209L 7.06047 9.97905L 14.7405 3.05905C 15.0805 2.74905 14.6705 2.59905 14.2205 2.86905L 4.74047 8.85905L 0.640471 7.55905C -0.239529 7.30905 -0.249529 6.69905 0.840471 6.25905L 16.8105 0.0990496C 17.5405 -0.23095 18.2405 0.27905 17.9605 1.39905L 15.2405 14.209C 15.0505 15.119 14.5005 15.3391 13.7405 14.9191L 9.60047 11.859L 7.61047 13.789C 7.38047 14.019 7.19047 14.209 6.78047 14.209Z"/>
+</defs>
+</svg>

@@ -1,0 +1,122 @@
+{
+  "general": {
+    "address": "Dirección",
+    "coins": "Monedas",
+    "hours": "Horas",
+    "loadingMsg": "Cargando...",
+    "shortLoadingErrorMsg": "Error de carga",
+    "longLoadingErrorMsg": "Error al cargar los datos. Por favor inténtelo más tarde...",
+    "waitingData": "Esperando por los datos...",
+    "noData": "No hay datos para mostrar"
+  },
+  "genericHeader": {
+    "websiteLink": "Sitio web"
+  },
+  "genericFooter": {
+    "credit": "Powered by Skyfiber"
+  },
+  "txBoxes": {
+    "pendingTransaction": "pendiente",
+    "transactionIDShortLabel": "ID de la transacción",
+    "inputs": "Entradas",
+    "outputs": "Salidas",
+    "hoursWhenCreated": "Horas Iniciales",
+    "hoursWhenUsed": "Horas Finales",
+    "date": "Fecha",
+    "moreInfo": "Más info",
+    "fee": "Tarifa de transacción (en horas)",
+    "initialBalance": "Saldo inicial de monedas",
+    "finalBalance": "Saldo final de monedas",
+    "firstSeen": "Primera vez visto",
+    "loadAll": "Mostrar los {{total}} elementos",
+    "loading": "Cargando, por favor espere..."
+  },
+  "blocks": {
+    "blocksTitle": "Bloques",
+    "statsTitle": "Estadísticas",
+    "blockHeight": "Altura",
+    "currentSupply": "Suministro Actual",
+    "totalSupply": "Suministro Total",
+    "currentCoinhourSupply": "Suministro Actual de Coinhours",
+    "totalCoinhourSupply": "Suministro Total de Coinhours",
+    "explorerApi": "API del Explorador",
+    "unconfirmedTransactions": "Transacciones Sin Confirmar",
+    "richList": "Top de Direcciones",
+    "time": "Fecha",
+    "blockNumberShortLabel": "Número de bloque",
+    "blockNumberVeryShortLabel": "#",
+    "transactionsShortLabel": "Transacciones",
+    "blockhashShortLabel": "Hash"
+  },
+  "blockDetails": {
+    "title": "Detalles del bloque",
+    "goToNext": "Bloque siguiente",
+    "goToPrevious": "Bloque anterior",
+    "height": "Altura",
+    "timestamp": "Fecha",
+    "size": "Tamaño",
+    "hash": "Hash",
+    "parentHash": "Hash Anterior",
+    "totalAmount": "Cantidad Total",
+    "withoutParent": "Sin bloque anterior",
+    "doesNotExist": "El bloque \"{{number}}\" no existe"
+  },
+  "addressDetail": {
+    "title": "Dirección",
+    "txsNumber": "# de Transacciones",
+    "totalReceived": "Total Recibido",
+    "totalSent": "Total Enviado",
+    "tools": "Herramientas",
+    "unspentOutputs": "Salidas no Gastadas",
+    "withoutTransactions": "Sin transacciones",
+    "singularPendingCoins": "{{ amount }} pendiente",
+    "pluralPendingCoins": "{{ amount }} pendientes",
+    "invalidAddress": "Dirección inválida"
+  },
+  "unspentOutputs": {
+    "title": "Salidas No Gastadas",
+    "address": "Dirección",
+    "outputsNumber": "# de salidas",
+    "totalCoins": "Monedas Totales",
+    "totalHours": "Horas Totales",
+    "origin": "Origen",
+    "date": "Fecha",
+    "withoutOutputs": "Sin salidas no gastadas",
+    "hoursWhenCreated": "Horas Iniciales",
+    "currentHours": "Horas Actuales",
+    "loadAll": "Mostrar los {{total}} elementos",
+    "loading": "Cargando, por favor espere..."
+  },
+  "transactionDetail": {
+    "title": "Transacción",
+    "status": "Estado",
+    "timestamp": "Fecha",
+    "size": "Tamaño",
+    "block": "Bloque",
+    "confirmed": "Confirmada",
+    "unconfirmed": "No confirmada",
+    "canNotFind": "No ha sido posible encontrar la transacción"
+  },
+  "unconfirmedTx": {
+    "title": "Transacciones Sin Confirmar",
+    "quantity": "Cantidad",
+    "size": "Tamaño Total",
+    "newest": "Más reciente",
+    "oldest": "Más antigua",
+    "withoutTransactions": "Actualmente no hay transacciones sin confirmar"
+  },
+  "richlist": {
+    "title": "Top de direcciones"
+  },
+  "copy": {
+    "copied": "Copiado"
+  },
+  "searchBar": {
+    "hint": "Dirección, hash/número de bloque o ID de transacción",
+    "syncAlert": "El nodo aún se está sincronizando. Los datos que ve pueden estar desactualizados."
+  },
+  "search": {
+    "title": "Buscar",
+    "unableToFind": "No se ha podido encontrar \"{{ term }}\""
+  }
+}

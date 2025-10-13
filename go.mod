@@ -15,6 +15,8 @@ require (
 	github.com/shopspring/decimal v1.4.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
+	github.com/skycoin/hardware-wallet-daemon v0.1.1-0.20251013171721-f958bfe5baff
+	github.com/skycoin/hardware-wallet-go v1.1.1-0.20251013163743-d729d92e14c3
 	github.com/skycoin/skywire v1.3.32-0.20251008181048-e232456f8799
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/pflag v1.0.10
@@ -29,6 +31,8 @@ require (
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/google/gousb v1.1.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
@@ -37,6 +41,7 @@ require (
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
 	github.com/sergi/go-diff v1.0.0 // indirect
+	github.com/skycoin/hardware-wallet-protob v0.0.0-20250805154629-410561e1bc2f // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/stretchr/objx v0.5.3 // indirect
@@ -48,3 +53,5 @@ require (
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+//replace github.com/skycoin/hardware-wallet-daemon => github.com/skycoin/hardware-wallet-daemon v0.1.1-0.20251013171721-f958bfe5baff

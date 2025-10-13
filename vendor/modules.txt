@@ -27,6 +27,9 @@ github.com/fsnotify/fsnotify/internal
 ## explicit; go 1.18
 github.com/go-viper/mapstructure/v2
 github.com/go-viper/mapstructure/v2/internal/errors
+# github.com/gogo/protobuf v1.3.2
+## explicit; go 1.15
+github.com/gogo/protobuf/proto
 # github.com/google/go-cmp v0.6.0
 ## explicit; go 1.13
 github.com/google/go-cmp/cmp
@@ -35,6 +38,9 @@ github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
+# github.com/google/gousb v1.1.3
+## explicit; go 1.16
+github.com/google/gousb
 # github.com/inconshreveable/mousetrap v1.1.0
 ## explicit; go 1.18
 github.com/inconshreveable/mousetrap
@@ -82,6 +88,22 @@ github.com/sirupsen/logrus
 # github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
 ## explicit
 github.com/skycoin/encodertest
+# github.com/skycoin/hardware-wallet-daemon v0.1.1-0.20251013171721-f958bfe5baff
+## explicit; go 1.25.1
+github.com/skycoin/hardware-wallet-daemon/src/api
+github.com/skycoin/hardware-wallet-daemon/src/daemon
+# github.com/skycoin/hardware-wallet-go v1.1.1-0.20251013163743-d729d92e14c3
+## explicit; go 1.25.1
+github.com/skycoin/hardware-wallet-go/src/cli
+github.com/skycoin/hardware-wallet-go/src/skywallet
+github.com/skycoin/hardware-wallet-go/src/skywallet/usb
+github.com/skycoin/hardware-wallet-go/src/skywallet/wire
+github.com/skycoin/hardware-wallet-go/src/usb/lowlevel/hidapi
+github.com/skycoin/hardware-wallet-go/src/usb/lowlevel/libusb
+# github.com/skycoin/hardware-wallet-protob v0.0.0-20250805154629-410561e1bc2f
+## explicit; go 1.24.5
+github.com/skycoin/hardware-wallet-protob/go
+github.com/skycoin/hardware-wallet-protob/go/google/protobuf
 # github.com/skycoin/skywire v1.3.32-0.20251008181048-e232456f8799
 ## explicit; go 1.25.1
 github.com/skycoin/skywire/pkg/skywire-utilities/pkg/calvin

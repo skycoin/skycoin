@@ -1,0 +1,398 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "new": "New",
+    "load": "Load",
+    "address": "Address",
+    "close": "Close",
+    "slow-on-mobile": "Please wait. This process may take a minute or more on some mobile devices and slow PCs."
+  },
+
+  "errors": {
+    "fetch-version": "Unable to fetch latest release version from Github",
+    "incorrect-password": "Incorrect password",
+    "api-disabled": "API disabled",
+    "no-wallet": "Wallet does not exist",
+    "no-outputs": "No unspent outputs",
+    "no-wallets": "Currently there are no wallets",
+    "loading-error": "Error trying to get the data. Please try again later.",
+    "crypto-no-available": "The web browser you are using is not compatible with this wallet (the crypto library is not available). Please update your browser or try using another."
+  },
+
+  "title": {
+    "change-coin": "Change active coin",
+    "language": "Select Language",
+    "wallets": "Wallets",
+    "send": "Send",
+    "history": "History",
+    "buy-coin": "Buy Skycoin",
+    "network": "Networking",
+    "blockchain": "Blockchain",
+    "outputs": "Outputs",
+    "transactions": "Transactions",
+    "pending-txs": "Pending Transactions",
+    "node": "Node",
+    "nodes": "Nodes",
+    "backup": "Backup Wallet",
+    "explorer": "{{ coin }} Explorer",
+    "seed": "Wallet Seed",
+    "qrcode": "QR Code",
+    "disclaimer": "Disclaimer",
+    "qr-code": "Address"
+  },
+
+  "header": {
+    "syncing-blocks": "Syncing blocks",
+    "update1": "Wallet update",
+    "update2": "available.",
+    "synchronizing": "The node is synchronizing. Data you see may not be updated.",
+    "pending-txs1": "There are some",
+    "pending-txs2": "pending transactions.",
+    "pending-txs3": "Data you see may not be updated.",
+    "loading": "Loading...",
+    "connection-error-tooltip": "There was an error while trying to refresh the balance",
+
+    "top-bar": {
+      "updated1": "Balance updated:",
+      "updated2": "min ago",
+      "less-than": "less than a",
+      "connection-error-tooltip": "Connection error, press to retry"
+    },
+
+    "errors": {
+      "no-connections": "No connections active, web client is not connected to any other nodes!",
+      "no-backend1": "Cannot reach backend. Please refresh the page and/or seek help on our",
+      "no-backend2": "Telegram.",
+      "no-backend3": "",
+      "csrf": "Security vulnerability: CSRF is not working, please exit immediately."
+    }
+  },
+
+  "password": {
+    "title": "Enter Password",
+    "label": "Password",
+    "confirm-label": "Confirm password",
+    "button": "Proceed"
+  },
+
+  "buy": {
+    "deposit-address": "Choose an address to generate a BTC deposit link for:",
+    "select-address": "Select address",
+    "generate": "Generate",
+    "deposit-location": "Deposit Location",
+    "deposit-location-desc": "Choose a wallet where you'd like us to deposit your Skycoin after we receive your Bitcoin.",
+    "make-choice": "Make a choice",
+    "wallets-desc": "Each time a new wallet and address are selected, a new BTC address is generated. A single Skycoin address can have up to 5 BTC addresses assigned to it.",
+    "send": "Send Bitcoin",
+    "send-desc": "Send Bitcoin to the address below. Once received, we will deposit the Skycoin to a new address in the wallet selected above at the current rate of {{ rate }} SKY/BTC.",
+    "fraction-warning": "Only send multiple of the SKY/BTC rate! Skycoin is sent in whole number; fractional SKY is not sent!",
+    "receive": "Receive Sky",
+    "receive-desc": "After receiving your Bitcoin, we'll send you your Skycoin. It may take anywhere between 20 minutes and an hour to receive your SKY.",
+    "status-button": "Status:",
+    "check-status-button": "Check Status",
+    "new-order-button": "New Order",
+    "otc-disabled": "Sorry, otc has currently been disabled!",
+    "purchase": "Purchase Skycoin",
+    "details": "You can buy Skycoins directly from your wallet using our Skycoin Teller service. The current rate is 0.0002 BTC per SKY. To buy SKY, request a BTC deposit address. Once you have a BTC deposit address, any BTC deposits will   automatically be added to your selected address.",
+    "sky-address": "Sky address: ",
+    "bitcoin-address": "Bitcoin address:",
+    "refresh-button": "refresh",
+    "add-deposit-address": "Add deposit address",
+    "updated-at": "updated at:"
+  },
+
+  "wizard": {
+    "wallet-desc": "If you don't have a wallet, use the generated seed to create a new one. If you already have a wallet, toggle over to \"Load Wallet\" and enter your seed.",
+    "encrypt-desc": "Increase security of your wallet by encrypting it. By entering a password below, your wallet will be encrypted. Only those with the password will be able access the wallet and remove funds.",
+    "finish-button": "Finish",
+    "skip-button": "Skip",
+    "back-button": "Back",
+
+    "confirm": {
+      "title": "Safeguard your seed!",
+      "desc": "We want to make sure that you wrote down your seed and stored it in a safe place. If you forget your seed, you WILL NOT be able to recover your wallet!",
+      "checkbox": "It’s safe, I swear.",
+      "button": "Continue"
+    }
+  },
+
+  "change-coin": {
+    "search": "Search",
+    "with-wallet": "Coins you have created wallets for:",
+    "without-wallet": "Coins you have not created wallets for:",
+    "no-results": "No coins match the search term",
+    "injecting-tx": "It is not possible to change the coin while a transaction is being sent."
+  },
+
+  "wallet": {
+    "new-address": "New Address",
+    "show-empty": "Show Empty",
+    "hide-empty": "Hide Empty",
+    "encrypt": "Encrypt Wallet",
+    "decrypt": "Decrypt Wallet",
+    "edit": "Edit Wallet",
+    "delete" : "Delete Wallet",
+    "unlock-wallet": "Unlock Wallet",
+    "options" : "Options",
+    "add": "Add Wallet",
+    "load": "Load Wallet",
+    "locked": "Locked",
+    "wallet": "Wallet",
+    "locked-tooltip": "The seed is necessary to send transactions",
+    "unlocked-tooltip": "Wallet temporarily unlocked to send transactions",
+    "delete-confirmation1": "WARNING: the wallet",
+    "delete-confirmation2": "will be deleted. If you forget your seed, you will not be able to recover this wallet! Do you want to continue?",
+    "delete-confirmation-check": "Yeah, I want to delete the wallet.",
+    "add-confirmation": "If you add more addresses, the process of unlocking the wallet to perform certain operations will take more time. Do you want to continue?",
+    "already-adding-address-error": "An address is already being added. Please wait.",
+    "adding-address": "Adding address.",
+
+    "new": {
+      "create-title": "Create Wallet",
+      "load-title": "Load Wallet",
+      "encrypt-title": "Encrypt your wallet",
+      "name-label": "Name",
+      "seed-label": "Seed",
+      "confirm-seed-label": "Confirm seed",
+      "seed-warning": "Remember this seed! Keep it in a safe place. If you forget your seed, you will not be able to recover your wallet!",
+      "create-button": "Create",
+      "load-button": "Load",
+      "skip-button": "Skip",
+      "cancel-button": "Cancel",
+      "12-words": "12 words",
+      "24-words": "24 words",
+      "generate-12-seed": "Generate 12 word seed",
+      "generate-24-seed": "Generate 24 word seed",
+      "encrypt-warning": "We suggest that you encrypt each one of your wallets with a password. If you forget your password, you can reset it with your seed. Make sure you have your seed saved somewhere safe before encrypting your wallet.",
+      "select-coin": "Select coin",
+      "unconventional-seed-title": "Possible error",
+      "unconventional-seed-text": "You introduced an unconventional seed. If you did it for any special reason, you can continue (only recommended for advanced users). However, if your intention is to use a normal system seed, you must delete all the additional text and special characters.",
+      "unconventional-seed-check": "Continue with the unconventional seed."
+    },
+
+    "scan": {
+      "connection-error": "It is not possible to connect to the server. Please try again later.",
+      "unsynchronized-node-error": "It is not possible to restore the addresses because the server is not synchronized. Please try again later.",
+      "title": "Restoring addresses",
+      "message": "Restored until now:"
+    },
+
+    "unlock": {
+      "unlock-title": "Unlock Wallet",
+      "confirmation-warning-title": "Important: without the seed you will lose access to your funds",
+      "confirmation-warning-text1": "For security reasons, this wallet will not be saved and you will need the seed to access it again after closing/refreshing the current browser tab. If you did not safeguard it, you will lose access to the funds. To confirm that you have safeguarded the seed and to be able to see the addresses of this wallet, please re-enter the seed in the box below.",
+      "confirmation-warning-text2-1": "If you do not have the seed, you can delete the wallet by clicking",
+      "confirmation-warning-text2-2": "here.",
+      "seed": "Seed",
+      "cancel-button": "Cancel",
+      "unlock-button": "Unlock"
+    },
+
+    "rename": {
+      "title": "Rename Wallet",
+      "name-label": "Name",
+      "cancel-button": "Cancel",
+      "rename-button": "Rename"
+    },
+
+    "address": {
+      "copy": "Copy",
+      "copy-address": "Copy Address",
+      "copied": "Copied!",
+      "outputs": "Unspent Outputs",
+      "history": "History"
+    }
+  },
+
+  "send": {
+    "synchronizing-warning": "The node is still synchronizing the data, so the balance shown may be incorrect. Are you sure you want to continue?",
+    "from-label": "Send from",
+    "to-label": "Send to",
+    "address-label": "Address",
+    "amount-label": "Amount",
+    "notes-label": "Notes",
+    "wallet-label": "Wallet",
+    "addresses-label": "Addresses",
+    "addresses-help": "Limit the addresses from where the coins and hours could be sent",
+    "all-addresses": "All the addresses of the selected wallet",
+    "outputs-label": "Unspent outputs",
+    "outputs-help": "Limit the unspent outputs from where the coins and hours could be sent. Only the outputs from the selected addresses are shown",
+    "all-outputs": "All the outputs of the selected addresses",
+    "available-msg-part1": "With your current selection you can send up to",
+    "available-msg-part2": "and",
+    "available-msg-part3": "(at least",
+    "available-msg-part4": "must be used for the transaction fee).",
+    "change-address-label": "Custom change address",
+    "change-address-select": "Select",
+    "change-address-help": "Address to receive change. If it's not provided, it will be chosen automatically. Click on the \"Select\" link to choose an address from one of your wallets",
+    "destinations-label": "Destinations",
+    "destinations-help1": "Destination addresses and their coins",
+    "destinations-help2": "Destination addresses, their coins and coin hours",
+    "add-destination": "Add destination",
+    "hours-allocation-label": "Automatic coin hours allocation",
+    "options-label": "Options",
+    "value-label": "Coin hours share factor",
+    "value-help": "The higher the value, the more coin hours will be sent to outputs",
+    "verify-button": "Verify",
+    "preview-button": "Preview",
+    "send-button": "Send",
+    "back-button": "Back",
+    "simple": "Simple",
+    "advanced": "Advanced",
+    "select-wallet": "Select Wallet",
+    "recipient-address": "Recipient address",
+    "your-note": "Your note here"
+  },
+
+  "tx": {
+    "transaction": "Transaction",
+    "confirm-transaction": "Confirm Transaction",
+    "from": "From",
+    "to": "To",
+    "date": "Date",
+    "status": "Status",
+    "coins": "Coins",
+    "hours": "Hours",
+    "id": "Tx ID",
+    "show-more": "Show more",
+    "hours-moved": "moved",
+    "hours-sent": "sent",
+    "hours-received": "received",
+    "hours-burned": "burned",
+    "inputs": "Inputs",
+    "outputs": "Outputs",
+    "confirmed": "Confirmed",
+    "pending": "Pending",
+    "current-rate": "Calculated at the current rate",
+    "none": "There are still no transactions to show"
+  },
+
+  "backup": {
+    "wallet-directory": "Wallet Directory:",
+    "seed-warning": "BACKUP YOUR SEED. ON PAPER. IN A SAFE PLACE. As long as you have your seed, you can recover your coins.",
+    "desc": "Use the table below to get seeds from your encrypted wallets. <br>To get seeds from unencrypted wallets, open the folder above, open the .wlt files in a text editor and recover the seeds.",
+    "close-button": "Close",
+    "wallet": "Wallet Label",
+    "filename": "Filename",
+    "seed": "Seed",
+    "show-seed": "Show seed"
+  },
+
+  "blockchain": {
+    "blocks": "Number of blocks:",
+    "time": "Timestamp of last block:",
+    "hash": "Hash of last block:",
+    "current-supply": "Current {{ coin }} supply",
+    "total-supply": "Total {{ coin }} supply"
+  },
+
+  "outputs": {
+    "hash": "Hash"
+  },
+
+  "network": {
+    "automatic-peers": "Automatic peers",
+    "default-peers": "Default peers"
+  },
+
+  "pending-txs": {
+    "timestamp": "Timestamp",
+    "txid": "Transaction ID",
+    "id": "ID",
+    "none": "Currently there are no pending transactions",
+    "my": "Mine",
+    "all": "All",
+    "transactions": "Transactions"
+  },
+
+  "nodes" : {
+    "coin": "Coin",
+    "url": "Node URL",
+    "custom-label": "Custom URL",
+    "change-url": "Change URL",
+    "nodes": "Nodes",
+
+    "change" : {
+      "url-label": "Node URL (leave empty to use the default URL)",
+      "cancel-button": "Cancel",
+      "change-button": "Change",
+      "return-button": "Return",
+      "verify-button": "Verify",
+      "connection-error": "It was not possible to connect to the node. Please check the URL and your internet connection and try again.",
+      "csrf-error": "It is not possible to connect to the specified node since it is configured to use CSRF tokens.",
+      "invalid-version-error": "The specified node is not compatible with this wallet. The node must be updated to at least version 0.24.0.",
+      "node-properties": "Node properties",
+      "coin-name": "Coin",
+      "node-version": "Node version",
+      "last-block": "Last block",
+      "hours-burn-rate": "Hours burn rate"
+    }
+  },
+
+  "history": {
+    "tx-detail": "Transaction Detail",
+    "moving": "Internally moving",
+    "moved": "Internally moved",
+    "sending": "Sending",
+    "sent": "Sent",
+    "received": "Received",
+    "receiving": "Receiving",
+    "pending": "Pending",
+    "price-tooltip": "Calculated at the current rate",
+    "no-txs": "You have no transaction history",
+    "no-txs-filter": "There are no transactions matching the current filter criteria",
+    "no-filter": "No filter active (press to select wallets/addresses)",
+    "filter": "Active filter: ",
+    "filters": "Active filters: ",
+    "all-addresses": "All addresses"
+  },
+
+  "teller": {
+    "done": "Completed",
+    "waiting-confirm": "Waiting for confirmation",
+    "waiting-deposit": "Waiting for Bitcoin deposit",
+    "waiting-send": "Waiting to send Skycoin",
+    "unknown": "Unknown"
+  },
+
+  "onboarding": {
+    "disclaimer" : {
+      "disclaimer-description": "By continuing, you understand the risks related to the use of cryptographic tokens & blockchain-based software, the Skycoin wallets, and the Skycoin cryptocurrency. You understand that this product is provided as-is, and agree to the Terms and Conditions governing the usage of this product.",
+      "disclaimer-check": "Yeah, I understand.",
+      "continue-button": "Continue"
+    }
+  },
+
+  "feature": {
+    "disclaimer": {
+      "disclaimer-desc": "IF YOU USE THIS WALLET YOU MAY LOSE COINS. TESTING PURPOSES ONLY.",
+      "disclaimer-dismiss": "Don't show this message again",
+      "dismiss-tooltip": "Dismiss warning"
+    }
+  },
+
+  "qr-code" : {
+    "copy-address": "Copy address to clipboard"
+  },
+
+  "confirmation" : {
+    "header-text": "Confirmation",
+    "confirm-button": "Yes",
+    "cancel-button": "No"
+  },
+
+  "service": {
+    "api" : {
+      "server-error": "Server error"
+    },
+    "wallet": {
+      "address-without-seed": "trying to generate address without seed!",
+      "unknown-address": "trying to update the wallet with unknown address!",
+      "wallet-exists": "A wallet already exists with this seed",
+      "not-enough-hours1": "Not enough available",
+      "not-enough-hours2": "to perform transaction!",
+      "wrong-seed": "Wrong seed",
+      "invalid-wallet": "Invalid wallet"
+    }
+  }
+}

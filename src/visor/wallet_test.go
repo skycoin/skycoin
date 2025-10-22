@@ -302,7 +302,7 @@ func TestCreateTransaction(t *testing.T) {
 			b.On("Head", matchDBTx).Return(tc.blockchainHead, tc.blockchainHeadErr)
 			up.On("GetUnspentHashesOfAddrs", matchDBTx, tc.wp.Addresses).Return(tc.getUnspentHashesOfAddrs, tc.getUnspentHashesOfAddrsErr)
 
-			ut.On("ForEach", matchDBTx, mock.MatchedBy(func(f func(cipher.SHA256, UnconfirmedTransaction) error) bool {
+			ut.On("ForEach", matchDBTx, mock.MatchedBy(func(_ func(cipher.SHA256, UnconfirmedTransaction) error) bool {
 				return true
 			})).Return(tc.forEachErr).Run(unconfirmedForEachMockRun(t, tc.unconfirmedTxns, tc.uxOuts, tc.wp.IgnoreUnconfirmed))
 
@@ -946,7 +946,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 			b.On("Head", matchDBTx).Return(tc.blockchainHead, tc.blockchainHeadErr)
 			up.On("GetUnspentHashesOfAddrs", matchDBTx, addrs).Return(tc.getUnspentHashesOfAddrs, tc.getUnspentHashesOfAddrsErr)
 
-			ut.On("ForEach", matchDBTx, mock.MatchedBy(func(f func(cipher.SHA256, UnconfirmedTransaction) error) bool {
+			ut.On("ForEach", matchDBTx, mock.MatchedBy(func(_ func(cipher.SHA256, UnconfirmedTransaction) error) bool {
 				return true
 			})).Return(tc.forEachErr).Run(unconfirmedForEachMockRun(t, tc.unconfirmedTxns, tc.uxOuts, tc.wp.IgnoreUnconfirmed))
 
@@ -1343,7 +1343,7 @@ func TestGetCreateTransactionAuxsUxOut(t *testing.T) {
 				db:          db,
 			}
 
-			unconfirmed.On("ForEach", matchDBTx, mock.MatchedBy(func(f func(cipher.SHA256, UnconfirmedTransaction) error) bool {
+			unconfirmed.On("ForEach", matchDBTx, mock.MatchedBy(func(_ func(cipher.SHA256, UnconfirmedTransaction) error) bool {
 				return true
 			})).Return(tc.forEachErr).Run(unconfirmedForEachMockRun(t, tc.unconfirmedTxns, tc.uxOuts, tc.ignoreUnconfirmed))
 
@@ -1546,7 +1546,7 @@ func TestGetCreateTransactionAuxsAddress(t *testing.T) {
 			}
 			unspent.On("GetUnspentHashesOfAddrs", matchDBTx, tc.addrs).Return(tc.getUnspentHashesOfAddrs, nil)
 
-			unconfirmed.On("ForEach", matchDBTx, mock.MatchedBy(func(f func(cipher.SHA256, UnconfirmedTransaction) error) bool {
+			unconfirmed.On("ForEach", matchDBTx, mock.MatchedBy(func(_ func(cipher.SHA256, UnconfirmedTransaction) error) bool {
 				return true
 			})).Return(tc.forEachErr).Run(unconfirmedForEachMockRun(t, tc.unconfirmedTxns, tc.getUnspentHashesOfAddrs.Flatten(), tc.ignoreUnconfirmed))
 

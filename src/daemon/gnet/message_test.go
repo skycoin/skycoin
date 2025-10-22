@@ -141,7 +141,7 @@ var DummyPrefix = MessagePrefix{'D', 'U', 'M', 'Y'}
 
 // EncodeSize implements gnet.Serializer
 func (dm *DummyMessage) EncodeSize() uint64 {
-	return uint64(encoder.Size(dm))
+	return encoder.Size(dm)
 }
 
 // Encode implements gnet.Serializer
@@ -159,7 +159,7 @@ func (dm *DummyMessage) Decode(buf []byte) (uint64, error) {
 	return encoder.DeserializeRaw(buf, dm)
 }
 
-func (dm *DummyMessage) Handle(context *MessageContext, x interface{}) error {
+func (dm *DummyMessage) Handle(_ *MessageContext, x interface{}) error {
 	return nil
 }
 
@@ -172,7 +172,7 @@ var (
 
 // EncodeSize implements gnet.Serializer
 func (em *ErrorMessage) EncodeSize() uint64 {
-	return uint64(encoder.Size(em))
+	return encoder.Size(em)
 }
 
 // Encode implements gnet.Serializer
@@ -190,7 +190,7 @@ func (em *ErrorMessage) Decode(buf []byte) (uint64, error) {
 	return encoder.DeserializeRaw(buf, em)
 }
 
-func (em *ErrorMessage) Handle(context *MessageContext, x interface{}) error {
+func (em *ErrorMessage) Handle(_ *MessageContext, x interface{}) error {
 	return ErrErrorMessageHandler
 }
 
@@ -202,7 +202,7 @@ var BytePrefix = MessagePrefix{'B', 'Y', 'T', 'E'}
 
 // EncodeSize implements gnet.Serializer
 func (bm *ByteMessage) EncodeSize() uint64 {
-	return uint64(encoder.Size(bm))
+	return encoder.Size(bm)
 }
 
 // Encode implements gnet.Serializer
@@ -220,7 +220,7 @@ func (bm *ByteMessage) Decode(buf []byte) (uint64, error) {
 	return encoder.DeserializeRaw(buf, bm)
 }
 
-func (bm *ByteMessage) Handle(c *MessageContext, x interface{}) error {
+func (bm *ByteMessage) Handle(_ *MessageContext, x interface{}) error {
 	return nil
 }
 
@@ -234,7 +234,7 @@ type PointerMessage struct {
 
 // EncodeSize implements gnet.Serializer
 func (m *PointerMessage) EncodeSize() uint64 {
-	return uint64(encoder.Size(m))
+	return encoder.Size(m)
 }
 
 // Encode implements gnet.Serializer

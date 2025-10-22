@@ -1,0 +1,50 @@
+<div class="container">
+  <div class="-buttons">
+    <div class="-button -low-opacity" routerLink="/wallets" routerLinkActive="-full-opacity">
+      <div>
+        <img src="assets/img/wallet-black.png">
+        <span>{{ 'title.wallets' | translate }}</span>
+      </div>
+    </div>
+    <div class="-button -low-opacity" routerLink="/send" routerLinkActive="-full-opacity">
+      <div>
+        <img src="assets/img/send-black.png">
+        <span>{{ 'title.send' | translate }}</span>
+      </div>
+    </div>
+    <div class="-button -low-opacity" routerLink="/history" routerLinkActive="-full-opacity">
+      <div>
+        <img src="assets/img/transactions-black.png">
+        <span>{{ 'title.history' | translate }}</span>
+      </div>
+    </div>
+    <div class="flex-fill -not-on-small-and-below"></div>
+    <div class="-button -not-on-small-and-below" *ngIf="false">
+      <img src="assets/img/money-gold.png">
+      <span class="secondary-color">{{ 'title.buy-coin' | translate }}</span>
+    </div>
+
+    <app-double-button
+      *ngIf="navbarService.switchVisible"
+      class="-switch -not-on-small-and-below"
+      [leftButtonText]="navbarService.leftText | translate"
+      [rightButtonText]="navbarService.rightText | translate"
+      [activeButton]="navbarService.activeComponent | async"
+      className="light"
+      (onStateChange)="changeActiveComponent($event)">
+    </app-double-button>
+
+  </div>
+</div>
+
+<div class="-on-small-and-below-only">
+  <app-double-button
+    *ngIf="navbarService.switchVisible"
+    class="-switch"
+    [leftButtonText]="navbarService.leftText | translate"
+    [rightButtonText]="navbarService.rightText | translate"
+    [activeButton]="navbarService.activeComponent | async"
+    className="grey"
+    (onStateChange)="changeActiveComponent($event)">
+  </app-double-button>
+</div>

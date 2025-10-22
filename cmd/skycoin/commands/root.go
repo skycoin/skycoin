@@ -6,6 +6,8 @@ package commands
 /*
 CODE GENERATED AUTOMATICALLY WITH FIBER COIN CREATOR
 AVOID EDITING THIS MANUALLY
+edit the template instead at template/coin.template
+and then run cmd/newcoin
 */
 
 import (

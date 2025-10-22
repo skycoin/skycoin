@@ -552,7 +552,7 @@ func IsValid(tx UnconfirmedTransaction) bool {
 }
 
 // All use as return all filter
-func All(tx UnconfirmedTransaction) bool {
+func All(_ UnconfirmedTransaction) bool {
 	return true
 }
 

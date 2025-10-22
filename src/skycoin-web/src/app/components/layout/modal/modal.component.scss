@@ -1,0 +1,57 @@
+@import '../../../../theme/variables';
+
+.-header {
+  background-color: $grey-lightest;
+  line-height: 50px;
+  position: relative;
+  text-align: center;
+  font-size: 16px;
+
+  @media (max-width: $max-very-small-width) {
+    & {
+      font-size: 14px;
+    }
+  }
+
+  img {
+    cursor: pointer;
+    height: 32px;
+    position: absolute;
+    right: 9px;
+    top: 9px;
+    opacity: 0.5;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
+
+.-body {
+  padding: 0px 24px;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100% - 50px);
+  background-color: #fbfbfb;
+}
+
+mat-dialog-content {
+  padding: 24px;
+  padding-bottom: 0px;
+  max-height: 100% !important;
+}
+
+mat-dialog-content:after {
+  content: "";
+  height: 24px;
+  display: block;
+}
+
+mat-progress-bar {
+  height: 3px;
+}
+
+.progress-bar-panel {
+  background-color: $grey-lightest;
+  height: 3px;
+}

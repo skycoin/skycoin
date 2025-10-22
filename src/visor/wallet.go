@@ -57,14 +57,16 @@ func (vs *Visor) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.Addr
 	var addrs []cipher.Address
 
 	if err := vs.wallets.View(wltID, func(w wallet.Wallet) error {
-		var err error
-		addrs, err = func() ([]cipher.Address, error) {
+		addrs, err := func() ([]cipher.Address, error) {
 			addrs, err := w.GetAddresses()
 			if err != nil {
 				return nil, err
 			}
 			return wallet.SkycoinAddresses(addrs), nil
 		}()
+		if err != nil {
+			return err
+		}
 
 		addrsBalanceList, err = vs.GetBalanceOfAddresses(addrs)
 		return err

@@ -1302,7 +1302,7 @@ func TestFiberAddressGen(t *testing.T) {
 				testutil.RequireFileNotExists(t, addrsFilename)
 				testutil.RequireFileNotExists(t, seedsFilename)
 			},
-			check: func(t *testing.T, v []byte) {
+			check: func(t *testing.T, _ []byte) {
 				defer os.Remove(addrsFilename)
 				defer os.Remove(seedsFilename)
 				testutil.RequireFileExists(t, addrsFilename)
@@ -1318,7 +1318,7 @@ func TestFiberAddressGen(t *testing.T) {
 				testutil.RequireFileNotExists(t, addrsFilename)
 				testutil.RequireFileNotExists(t, seedsFilename)
 			},
-			check: func(t *testing.T, v []byte) {
+			check: func(t *testing.T, _ []byte) {
 				defer os.Remove(addrsFilename)
 				defer os.Remove(seedsFilename)
 				testutil.RequireFileExists(t, addrsFilename)
@@ -1334,7 +1334,7 @@ func TestFiberAddressGen(t *testing.T) {
 				testutil.RequireFileNotExists(t, addrsFilename)
 				testutil.RequireFileNotExists(t, seedsFilename)
 			},
-			check: func(t *testing.T, v []byte) {
+			check: func(t *testing.T, _ []byte) {
 				defer os.Remove(addrsFilename)
 				defer os.Remove(seedsFilename)
 				testutil.RequireFileExists(t, addrsFilename)
@@ -1388,7 +1388,7 @@ func TestFiberAddressGen(t *testing.T) {
 				testutil.RequireFileExists(t, addrsFilename)
 				testutil.RequireFileExists(t, seedsFilename)
 			},
-			check: func(t *testing.T, v []byte) {
+			check: func(t *testing.T, _ []byte) {
 				defer os.Remove(addrsFilename)
 				defer os.Remove(seedsFilename)
 				testutil.RequireFileExists(t, addrsFilename)
@@ -1404,7 +1404,7 @@ func TestFiberAddressGen(t *testing.T) {
 				testutil.RequireFileNotExists(t, "fooaddrs.txt")
 				testutil.RequireFileNotExists(t, "fooseeds.csv")
 			},
-			check: func(t *testing.T, v []byte) {
+			check: func(t *testing.T, _ []byte) {
 				defer os.Remove("fooaddrs.txt")
 				defer os.Remove("fooseeds.csv")
 				testutil.RequireFileExists(t, "fooaddrs.txt")
@@ -2035,7 +2035,7 @@ func TestLiveCreateRawTransactionV2(t *testing.T) {
 	}{
 		{
 			name: "unsigned=true json=false",
-			args: func(t *testing.T) []string {
+			args: func(_ *testing.T) []string {
 				return []string{
 					walletFile,
 					addrs[0].String(), // to address
@@ -2045,7 +2045,7 @@ func TestLiveCreateRawTransactionV2(t *testing.T) {
 			},
 			verify: func(t *testing.T, data []byte) {
 				s := strings.TrimSuffix(string(data), "\n")
-				txn, err := coin.DeserializeTransactionHex(string(s))
+				txn, err := coin.DeserializeTransactionHex(s)
 				require.NoError(t, err)
 				require.Equal(t, 1, len(txn.Sigs))
 				require.Equal(t, cipher.Sig{}, txn.Sigs[0])
@@ -2053,7 +2053,7 @@ func TestLiveCreateRawTransactionV2(t *testing.T) {
 		},
 		{
 			name: "unsigned=true json=true",
-			args: func(t *testing.T) []string {
+			args: func(_ *testing.T) []string {
 				return []string{
 					walletFile,
 					addrs[0].String(), // to address
@@ -2098,7 +2098,7 @@ func TestLiveCreateRawTransactionV2(t *testing.T) {
 		},
 		{
 			name: "unsigned=true json=false change-address",
-			args: func(t *testing.T) []string {
+			args: func(_ *testing.T) []string {
 				return []string{
 					walletFile,
 					addrs[0].String(), // to address
@@ -2131,7 +2131,7 @@ func TestLiveCreateRawTransactionV2(t *testing.T) {
 		},
 		{
 			name: "unsigned=true json=false from-addrss",
-			args: func(t *testing.T) []string {
+			args: func(_ *testing.T) []string {
 				return []string{
 					walletFile,
 					addrs[1].String(), // to address
@@ -2157,7 +2157,7 @@ func TestLiveCreateRawTransactionV2(t *testing.T) {
 		},
 		{
 			name: "unsigned=true json=false -csv",
-			args: func(t *testing.T) []string {
+			args: func(_ *testing.T) []string {
 				return []string{
 					walletFile,
 					"--unsign",
@@ -2610,7 +2610,7 @@ func TestLiveSend(t *testing.T) {
 				return []string{"send", fn, "-a", entries[1].Address.String(),
 					entries[2].Address.String(), "1"}
 			},
-			checkTxn: func(t *testing.T, txid string) {
+			checkTxn: func(t *testing.T, _ string) {
 				// Confirms that the third address has 1 coin and 0 coin hour
 				coins, hours := getAddressBalance(t, entries[2].Address.String())
 				require.Equal(t, uint64(1e6), coins)
@@ -2786,7 +2786,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 
 				return []string{"createRawTransaction", fn, "-m", string(v)}
 			},
-			checkTxn: func(t *testing.T, txid string) {
+			checkTxn: func(t *testing.T, _ string) {
 				// Confirms the first address has at least 1 coin left.
 				coins, _ := getAddressBalance(t, entries[0].Address.String())
 				require.True(t, coins >= 1e6)
@@ -2820,7 +2820,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 
 				return []string{"createRawTransaction", fn, "--csv", tmpCSVFile}
 			},
-			checkTxn: func(t *testing.T, txid string) {
+			checkTxn: func(t *testing.T, _ string) {
 				// Confirms the first address has at least 1 coin left.
 				coins, _ := getAddressBalance(t, entries[0].Address.String())
 				require.True(t, coins >= 1e6)
@@ -3517,7 +3517,7 @@ func TestLiveGUIInjectTransaction(t *testing.T) {
 
 				return []string{"createRawTransaction", fn, "-m", string(v)}
 			},
-			checkTxn: func(t *testing.T, txid string) {
+			checkTxn: func(t *testing.T, _ string) {
 				// Confirms the first address has at least 1 coin left.
 				coins, _ := getAddressBalance(t, entries[0].Address.String())
 				require.True(t, coins >= 1e6)

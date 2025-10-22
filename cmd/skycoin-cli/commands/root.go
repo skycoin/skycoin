@@ -13,6 +13,7 @@ import (
 	"github.com/skycoin/skycoin/src/cli"
 	"github.com/skycoin/skycoin/src/util/logging"
 
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/calvin"
 	"github.com/spf13/cobra"
 
 	// register the supported wallets
@@ -36,22 +37,16 @@ func init() {
 	}
 	RootCmd = skyCLI
 	RootCmd.Use = "cli"
-	RootCmd.Short = "The skycoin command line interface"
-	RootCmd.Long = `
-	┌─┐┬┌─┬ ┬┌─┐┌─┐┬┌┐┌   ┌─┐┬  ┬
-	└─┐├┴┐└┬┘│  │ │││││───│  │  │
-	└─┘┴ ┴ ┴ └─┘└─┘┴┘└┘   └─┘┴─┘┴
-The skycoin command line interface`
+	RootCmd.Short = description
+	RootCmd.Long = calvin.AsciiFont("skycoin-cli") + "\n" + description
 
 }
+
+var description = "skycoin command line interface"
 
 // RootCmd represents the base command for the application
 var RootCmd = &cobra.Command{
 	Use:   "cli",
-	Short: "The skycoin command line interface",
-	Long: `
-	┌─┐┬┌─┬ ┬┌─┐┌─┐┬┌┐┌   ┌─┐┬  ┬
-	└─┐├┴┐└┬┘│  │ │││││───│  │  │
-	└─┘┴ ┴ ┴ └─┘└─┘┴┘└┘   └─┘┴─┘┴
-The skycoin command line interface`,
+	Short: description,
+	Long:  calvin.AsciiFont("skycoin-cli") + "\n" + description,
 }

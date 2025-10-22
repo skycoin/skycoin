@@ -641,7 +641,7 @@ func walletHandler(gateway Gatewayer) http.HandlerFunc {
 
 		wltID := r.FormValue("id")
 		if wltID == "" {
-			wh.Error400(w, fmt.Sprintf("missing wallet id"))
+			wh.Error400(w, "missing wallet id")
 			return
 		}
 

@@ -1,0 +1,63 @@
+@import '../../../../../theme/_variables.scss';
+
+.-title-small-screens {
+  background-color: $mobile-table-button-normal !important;
+  cursor: pointer;
+
+  &:hover {
+    background-color: $mobile-table-button-hover !important;
+  }
+}
+
+.-text-right {
+  text-align: right;
+}
+
+.-grey {
+  color: $grey;
+}
+
+.-hash {
+  margin-left: 27px;
+  word-break: break-all;
+
+  @media (max-width: $max-small-width) {
+    & {
+      margin-left: 0px;
+    }
+  }
+}
+
+.-address {
+  color: $grey;
+
+  img {
+    width: 17px;
+    vertical-align: sub;
+    margin-right: 10px;
+  }
+  
+}
+
+.big-screen-output-container {
+  display: flex;
+  width: 100%;
+}
+
+.small-screen-output-container {
+  width: 100%;
+
+  .output-row {
+    display: flex;
+
+    &:not(:last-child) {
+      margin-bottom: 5px;
+    }
+
+    .element-label {
+      width: 100px;
+      color: $grey;
+      flex-shrink: 0;
+    }
+  }
+}

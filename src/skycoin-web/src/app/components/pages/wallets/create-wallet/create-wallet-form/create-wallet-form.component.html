@@ -1,0 +1,53 @@
+<div [formGroup]="form">
+  <div class="form-field">
+    <label for="label">{{ 'wallet.new.name-label' | translate}}</label>
+    <input formControlName="label" id="label">
+  </div>
+  <div class="form-field" *ngIf="hasManyCoins">
+    <label for="coin">{{ 'wallet.new.select-coin' | translate}}</label>
+    <div class="-select">
+      <app-select-coin formControlName="coin" id="coin"></app-select-coin>
+    </div>
+  </div>
+  <div class="form-field -valid-seed-container" [ngClass]="{'-expand':form.get('seed').valid && !create}">
+    <label for="seed">
+      <span>{{ 'wallet.new.seed-label' | translate }}</span>
+      <span class="generators" [ngClass]="{'-white-text': whiteText}" *ngIf="create">
+        <span (click)="generateSeed(128)" [matTooltip]="'wallet.new.generate-12-seed' | translate">{{ 'wallet.new.12-words' | translate }}</span>
+        <span class="divider">|</span>
+        <span (click)="generateSeed(256)" [matTooltip]="'wallet.new.generate-24-seed' | translate">{{ 'wallet.new.24-words' | translate }}</span>
+      </span>
+    </label>
+    <div class="-valid-box">
+      <textarea formControlName="seed" id="seed" row="2"></textarea>
+      <img *ngIf="!create" class="-valid" src="assets/img/valid.png">
+    </div>
+    <p [ngClass]="{'red-disclaimer-box': !whiteText, 'white-disclaimer-box': whiteText}" *ngIf="create">
+      {{ 'wallet.new.seed-warning' | translate}}
+    </p>
+  </div>
+  <div *ngIf="create"
+        class="form-field -valid-seed-container"
+        [ngClass]="{ '-expand':form.get('confirm_seed').value === form.get('seed').value }">
+    <label for="confirm_seed">{{ 'wallet.new.confirm-seed-label' | translate}}</label>
+    <div class="-valid-box">
+      <textarea formControlName="confirm_seed" id="confirm_seed" row="2"></textarea>
+      <img class="-valid" src="assets/img/valid.png">
+    </div>
+  </div>
+</div>
+<div class="red-disclaimer-box -alert-box" [ngClass]="{'-very-small-screen-alert-box': !whiteText}" *ngIf="form.valid && !normalSeed">
+  <mat-icon class="-not-on-very-small">error</mat-icon>
+  <div>
+    <div class="title"><mat-icon class="-on-very-small-only">error</mat-icon><span>{{ 'wallet.new.unconventional-seed-title' | translate}}</span></div>
+    <div>{{ 'wallet.new.unconventional-seed-text' | translate}}</div>
+    <mat-checkbox #seedCheck
+      type="checkbox" class="-check"
+      [checked]="customSeedAccepted" (change)="onCustomSeedAcceptance($event)">
+      {{ 'wallet.new.unconventional-seed-check' | translate}}
+    </mat-checkbox>
+  </div>
+</div>
+<div class="form-field -on-small-and-below-only" *ngIf="showSlowMobileInfo">
+  <label class="slow-mobile-info">{{ 'common.slow-on-mobile' | translate}}</label>
+</div>

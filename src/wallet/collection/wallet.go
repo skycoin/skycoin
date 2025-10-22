@@ -340,7 +340,7 @@ func (w *Wallet) Validate() error {
 }
 
 // ScanAddresses is a no-op for "collection" wallets
-func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]cipher.Addresser, error) {
+func (w *Wallet) ScanAddresses(_ uint64, _ wallet.TransactionsFinder) ([]cipher.Addresser, error) {
 	return nil, wallet.NewError(errors.New("A collection wallet does not implement ScanAddresses"))
 }
 

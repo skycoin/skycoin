@@ -148,7 +148,7 @@ func TestErrMissingSignatureRecreateDB(t *testing.T) {
 		require.NoError(t, err)
 
 		// err = db.View("", func(tx *dbutil.Tx) error {
-		f := func(tx *dbutil.Tx, b *coin.SignedBlock) error {
+		f := func(_ *dbutil.Tx, b *coin.SignedBlock) error {
 			return bc.VerifySignature(b)
 		}
 
@@ -272,6 +272,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	bc, err := NewBlockchain(db, BlockchainConfig{
 		Pubkey: genPublic,
 	})
+	require.NoError(t, err)
 
 	unconfirmed, err := NewUnconfirmedTransactionPool(db)
 	require.NoError(t, err)

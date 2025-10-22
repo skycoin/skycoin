@@ -1,0 +1,201 @@
+@import '../../../../../theme/variables';
+
+$transparent-button-opacity: 0.7;
+$big-button-container-width: 230px;
+$small-button-container-width: 110px;
+
+:host {
+  display: flex;
+  color: $white;
+  width: 100%;
+  height: 50px;
+}
+
+.buttons-left {
+  display: inline-block;
+  padding: 10px 0px 10px 10px;
+  width: $big-button-container-width;
+
+  @media (max-width: $max-small-width) {
+    & {
+      width: $small-button-container-width;
+      padding: 10px 0px 10px 5px;
+    }
+  }
+}
+
+.round-button {
+  border-radius: 25px;
+  border: rgba(255, 255, 255, 0.733) 1px solid;
+  font-size: 12px;
+  line-height: 20px;
+  height: 36px;
+  overflow: hidden;
+  margin-bottom: 10px;
+  min-width: 0px !important;
+
+  @media (max-width: $max-small-width) {
+    & {
+      border: none;
+      opacity: $transparent-button-opacity;
+    }
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+
+  .coin-icon {
+    margin-left: 4px;
+    width: 20px;
+    height: 20px;
+
+    @media (max-width: $max-small-width) {
+      & {
+        margin-left: 0px;
+      }
+    }
+  }
+
+  .coin-name {
+    margin-left: 5px;
+    margin-right: 2px;
+  }
+
+  .main-container {
+    display: flex;
+    align-items: center;
+    padding-left: 3px;
+
+    @media (max-width: $max-small-width) {
+      & {
+        padding-left: 0px;
+      }
+    }
+
+    mat-icon {
+      width: 22px;
+      height: 22px;
+      font-size: 22px;
+    }
+
+    .spinner-container {
+      width: 22px;
+      height: 22px;
+
+      mat-spinner {
+        height: 18px !important;
+        width: 18px !important;
+        opacity: 0.5;
+        margin: 0 !important;
+        position: relative;
+        top: 2px;
+
+        ::ng-deep svg {
+          height: 18px !important;
+          width: 18px !important;
+        }
+      }
+    }
+  
+    .text-container {
+      height: 36px;
+      margin-left: 8px;
+      margin-right: 10px;
+      font-size: 11px;
+      text-align: left;
+
+      .first-label {
+        opacity: 0.7;
+      }
+
+      .second-label {
+        position: relative;
+        top: -7px;
+      }
+    }
+  }
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  flex: 1 1 auto;
+  letter-spacing: 1px;
+  text-align: center;
+  align-items: center;
+
+  span {
+    width: 100%;
+  }
+}
+
+.buttons-right {
+  display: inline-block;
+  text-align: right;
+  width: $big-button-container-width;
+
+  @media (max-width: $max-small-width) {
+    & {
+      width: $small-button-container-width;
+    }
+  }
+
+  .menu-button {
+    height: 50px;
+    width: 50px;
+    display: inline-block;
+    opacity: 0.9;
+    margin: 5px;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+
+  .-mobile-menu-button {
+    margin: 10px 5px;
+    opacity: $transparent-button-opacity;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
+
+.separator {
+  width: 100%;
+  height: 2px;
+  background-color: $grey-very-light;
+  margin: 8px 0px;
+}
+
+.flag {
+  width: 16px;
+  height: 16px;
+  position: relative;
+  top: 3px;
+}
+
+.color-primary {
+  color: $blue;
+}
+
+.blinking-warning-icon {
+  font-size: 18px;
+  vertical-align: middle;
+  color: orange;
+  cursor: pointer;
+  animation: blinker 2s linear infinite;
+}
+
+::ng-deep .refresh-button-tooltip {
+  width: 140px;
+
+  @media (max-width: $max-small-width) {
+    & {
+      display: none;
+    }
+  }
+}

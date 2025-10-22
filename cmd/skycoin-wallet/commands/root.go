@@ -12,21 +12,25 @@ import (
 
 	"github.com/spf13/cobra"
 
+	explorer "github.com/skycoin/skycoin/cmd/explorer/commands"
 	newcoin "github.com/skycoin/skycoin/cmd/newcoin/commands"
 	cli "github.com/skycoin/skycoin/cmd/skycoin-cli/commands"
+	web "github.com/skycoin/skycoin/cmd/skycoin-web/commands"
 	skycoin "github.com/skycoin/skycoin/cmd/skycoin/commands"
-	explorer "github.com/skycoin/skycoin/cmd/explorer/commands"
 )
 
 func init() {
 
 	RootCmd.AddCommand(
 		skycoin.RootCmd,
+		web.RootCmd,
 		cli.RootCmd,
 		newcoin.RootCmd,
 		explorer.RootCmd,
 	)
 	skycoin.RootCmd.Use = "daemon"
+	web.RootCmd.Use = "web"
+	web.RootCmd.Short = "skycoin thin client web wallet"
 	explorer.RootCmd.Use = "explorer"
 }
 

@@ -115,7 +115,7 @@ type readableBip44Account struct {
 	PrivateKey string               `json:"private_key,omitempty"`
 	Name       string               `json:"name"`      // Account name
 	Index      uint32               `json:"index"`     // Account index
-	CoinType   string               `json:"coin_type"` // Account coin type, determins the way to generate addresses
+	CoinType   string               `json:"coin_type"` // Account coin type, determines the way to generate addresses
 	Chains     []readableBip44Chain `json:"chains"`    // Chains, external chain with index value of 0, and internal(change) chain with index value of 1.
 }
 

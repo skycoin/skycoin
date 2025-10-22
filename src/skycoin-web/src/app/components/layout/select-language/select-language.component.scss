@@ -1,0 +1,47 @@
+@import '../../../../theme/_variables';
+
+.options-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+
+  .button {
+    width: 118px;
+    margin: 20px;
+    font-size: 12px;
+    line-height: unset;
+    padding: 0;
+    color: unset;
+    min-width: 0px;
+
+    @media (max-width: $max-very-small-width) {
+      & {
+        width: 80px;
+        margin: 10px;
+        font-size: 10px;
+      }
+    }
+
+    img {
+      width: 64px;
+      height: 64px;
+      margin: 10px 0px;
+
+      @media (max-width: $max-very-small-width) {
+        & {
+          width: 48px;
+          height: 48px;
+        }
+      }
+    }
+
+    .label {
+      background-color: $grey-very-light;
+      padding: 4px 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+}

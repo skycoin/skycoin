@@ -1,0 +1,21 @@
+<p *ngIf="!otcEnabled">{{ 'buy.otc-disabled' | translate }}</p>
+<mat-card *ngIf="otcEnabled">
+  <mat-card-title>{{ 'buy.purchase' | translate }}</mat-card-title>
+  <mat-card class="skycoin-details">{{ 'buy.details' | translate }}</mat-card>
+  <mat-list>
+    <ng-container *ngFor="let address of orders; let i = index">
+      <mat-divider *ngIf="i"></mat-divider>
+      <h3 mat-subheader>{{ 'buy.sky-address' | translate }} {{ address.address }}</h3>
+      <mat-list-item *ngFor="let btc of address.addresses">
+        <h4 mat-line> {{ 'buy.bitcoin-address' | translate }} {{ btc.btc }}</h4>
+        <p mat-line> {{ 'buy.status-button' | translate }} {{ btc.status | tellerStatus | translate }} ({{ 'buy.updated-at' | translate }} {{ btc.updated | dateTime }}) </p>
+        <button mat-icon-button (click)="searchDepositAddress(address.address)" [disabled]="scanning">
+          <mat-icon>{{ 'buy.refresh-button' | translate }}</mat-icon>
+        </button>
+      </mat-list-item>
+    </ng-container>
+  </mat-list>
+</mat-card>
+<div class="button-line" *ngIf="otcEnabled">
+  <a mat-raised-button color="primary" (click)="addDepositAddress()">{{ 'buy.add-deposit-address' | translate }}</a>
+</div>

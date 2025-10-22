@@ -170,7 +170,7 @@ func (addr Address) Verify(pubKey PubKey) error {
 
 // String address as Base58 encoded string
 func (addr Address) String() string {
-	return string(base58.Encode(addr.Bytes()))
+	return base58.Encode(addr.Bytes())
 }
 
 // Checksum returns Address Checksum which is the first 4 bytes of sha256(key+version)

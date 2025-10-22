@@ -80,7 +80,7 @@ The number of secret keys generated is much larger than for the other seeds.
 This file is used to test deterministic key generation more thoroughly.
 This file will not contain any signatures,
 because the filesize would be too large.`, inputTestDataFilename, manyAddressesFilename),
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		fmt.Printf("Creating output directory %s\n", outputDir)
 
 		// Create output directory

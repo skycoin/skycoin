@@ -1,0 +1,56 @@
+@import '../../../../../theme/variables';
+
+.-wrapper {
+  margin: $content-vertical-margin ($normal-content-lateral-margin - 15px);
+
+  @media (max-width: $max-small-width) {
+    & {
+      margin: $content-vertical-margin ($small-content-lateral-margin - 15px);
+    }
+  }
+
+  @media (max-width: $max-very-small-width) {
+    & {
+      margin: $content-vertical-margin ($very-small-content-lateral-margin - 15px);
+    }
+  }
+
+  .vertical-separator {
+    width: 15px;
+    height: 15px;
+    display: none;
+
+    @media (max-width: $max-small-width) {
+      & {
+        display: block;
+      }
+    }
+  }
+}
+
+.-paper {
+  padding: 20px;
+  font-size: $font-size-standard;
+  margin: 0px;
+}
+
+.-item {
+  &:not(:last-child) {
+    margin-bottom: 20px;
+  }
+
+  .-key {
+    color: $grey;
+    margin-bottom: 5px;
+  }
+
+  .-value {
+    word-break: break-all;
+  }
+}
+
+@media (max-width: $max-small-width) {
+  .-mobile-vertical-space {
+    margin-bottom: 20px;
+  }
+}

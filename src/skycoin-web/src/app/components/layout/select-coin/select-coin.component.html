@@ -1,0 +1,4 @@
+<div class="icon-container">
+  <img [src]="'assets/img/coins/' + (selectedCoin ? selectedCoin.bigIconName : '')">
+</div>
+<input readonly (click)="onInputClick()" [value]="selectedCoin ? selectedCoin.coinName : ''">

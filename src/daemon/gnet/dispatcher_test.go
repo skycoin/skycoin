@@ -187,7 +187,7 @@ func TestSendMessage(t *testing.T) {
 	RegisterMessage(BytePrefix, ByteMessage{})
 	VerifyMessages()
 	m := NewByteMessage(7)
-	sendByteMessage = func(conn net.Conn, msg []byte, tm time.Duration) error {
+	sendByteMessage = func(_ net.Conn, msg []byte, tm time.Duration) error {
 		expect := []byte{5, 0, 0, 0, 'B', 'Y', 'T', 'E', 7}
 		require.True(t, bytes.Equal(msg, expect))
 		return nil
@@ -201,7 +201,7 @@ func TestSendMessage(t *testing.T) {
 
 /* Helpers */
 
-func failingSendByteMessage(conn net.Conn, m []byte, tm time.Duration) error {
+func failingSendByteMessage(_ net.Conn, m []byte, tm time.Duration) error {
 	return errors.New("send byte message failed")
 }
 

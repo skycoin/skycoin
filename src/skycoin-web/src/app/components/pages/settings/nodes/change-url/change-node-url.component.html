@@ -1,0 +1,31 @@
+<app-modal class="modal" [headline]="'nodes.change-url' | translate" [dialog]="dialogRef" [disableDismiss]="disableDismiss">
+  <div [formGroup]="form" *ngIf="showingUrlForm">
+    <div class="form-field">
+      <label for="url">{{ 'nodes.change.url-label' | translate}}</label>
+      <input formControlName="url" id="url" (keydown.enter)="startChange()">
+    </div>
+  </div>
+  <div class="property-container" *ngIf="!showingUrlForm">
+    <h4>{{ 'nodes.change.node-properties' | translate}}</h4>
+    <div class="data" *ngIf="coinName">
+      <span>{{ 'nodes.change.coin-name' | translate }}:</span> <span>{{ coinName }}</span>
+    </div>
+    <div class="data">
+      <span>{{ 'nodes.change.node-version' | translate }}:</span> <span>{{ nodeVersion }}</span>
+    </div>
+    <div class="data">
+      <span>{{ 'nodes.change.last-block' | translate }}:</span> <span>{{ lastBlock }}</span>
+    </div>
+    <div class="data">
+      <span>{{ 'nodes.change.hours-burn-rate' | translate }}:</span> <span>{{ hoursBurnRate }}</span>
+    </div>
+  </div>
+  <div class="-buttons">
+    <app-button (action)="showingUrlForm ? closePopup() : showUrlForm()" [disabled]="disableDismiss">
+      {{ (showingUrlForm ? 'nodes.change.cancel-button' : 'nodes.change.return-button') | translate}}
+    </app-button>
+    <app-button (action)="showingUrlForm ? startChange() : completeChange()" class="primary" #action>
+      {{ (showingUrlForm ? 'nodes.change.verify-button' : 'nodes.change.change-button') | translate}}
+    </app-button>
+  </div>
+</app-modal>

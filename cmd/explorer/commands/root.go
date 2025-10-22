@@ -5,24 +5,23 @@ package commands
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
-	"log"
-	"net/url"
+	"html/template"
+	"io"
 	"io/fs"
+	"log"
 	"mime"
-"io"
+	"net/http"
+	"net/url"
 	"os"
-	"time"
 	"path/filepath"
 	"strings"
-	"net/http"
-		"html/template"
-	"encoding/json"
+	"time"
 
-	"github.com/spf13/cobra"
 	"github.com/NYTimes/gziphandler"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/calvin"
-
+	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/explorer"
 )
@@ -47,8 +46,6 @@ var (
 	verify        bool
 )
 
-
-
 func init() {
 	log.SetOutput(os.Stdout)
 
@@ -64,9 +61,9 @@ func init() {
 	}
 	skycoinAddr = buildNodeURL(skycoinAddrString)
 
-	RootCmd.Flags().StringVarP(&explorerHost, "server-host", "s", explorerHost,	"The addr:port to bind the explorer web server to\033[0m\n\r")
+	RootCmd.Flags().StringVarP(&explorerHost, "server-host", "s", explorerHost, "The addr:port to bind the explorer web server to\033[0m\n\r")
 	RootCmd.Flags().StringVarP(&skycoinAddrString, "node-addr", "n", skycoinAddr.String(), "The skycoin node's address\033[0m\n\r")
-	RootCmd.Flags().StringVarP(&uiFilesFolder, "files-folder", "f", "",	"Path for the folder with the precompiled front-end files")
+	RootCmd.Flags().StringVarP(&uiFilesFolder, "files-folder", "f", "", "Path for the folder with the precompiled front-end files")
 	RootCmd.Flags().BoolVarP(&apiOnly, "api-only", "a", false, "Only run the API, don't serve static content")
 	RootCmd.Flags().BoolVarP(&verify, "verify", "v", false, "Run init() checks and quit")
 
@@ -122,112 +119,110 @@ var RootCmd = &cobra.Command{
 	DisableSuggestions:    true,
 	DisableFlagsInUseLine: true,
 	Run: func(cmd *cobra.Command, args []string) {
-	    // Validate and adjust values
-	    if uiFilesFolder != "" && uiFilesFolder[len(uiFilesFolder)-1] != '/' {
-	        uiFilesFolder += "/"
-	    }
+		// Validate and adjust values
+		if uiFilesFolder != "" && uiFilesFolder[len(uiFilesFolder)-1] != '/' {
+			uiFilesFolder += "/"
+		}
 
-	    if verify {
-	        log.Println("Verified")
-	        return
-	    }
+		if verify {
+			log.Println("Verified")
+			return
+		}
 
-	    log.Printf("Starting explorer at %s, proxying to %s\n", explorerHost, skycoinAddr.String())
-	    log.Println("api.html output:")
-	    log.Println(docTemplateBody)
+		log.Printf("Starting explorer at %s, proxying to %s\n", explorerHost, skycoinAddr.String())
+		log.Println("api.html output:")
+		log.Println(docTemplateBody)
 
-	    mux := http.NewServeMux()
+		mux := http.NewServeMux()
 
-	    gzipHandle := func(path string, handler http.Handler) {
-	        mux.Handle(path, gziphandler.GzipHandler(handler))
-	    }
+		gzipHandle := func(path string, handler http.Handler) {
+			mux.Handle(path, gziphandler.GzipHandler(handler))
+		}
 
-	    if !apiOnly {
-	        // Needed for browsers to load JS correctly
-	        if err := mime.AddExtensionType(".js", "application/javascript"); err != nil {
-	            log.Fatalln("Unable to register js mime type.")
-	        }
+		if !apiOnly {
+			// Needed for browsers to load JS correctly
+			if err := mime.AddExtensionType(".js", "application/javascript"); err != nil {
+				log.Fatalln("Unable to register js mime type.")
+			}
 
-	        var fileServer http.Handler
-	        if uiFilesFolder != "" {
-	            // External GUI directory
-	            log.Printf("Serving GUI from local folder: %s", uiFilesFolder)
-	            fileServer = http.FileServer(http.Dir(uiFilesFolder))
-	        } else {
-	            // Embedded GUI
-	            log.Println("Serving embedded GUI")
-	            sub, err := fs.Sub(explorer.EmbeddedFiles, "dist")
-	            if err == nil {
-	                fileServer = http.FileServer(http.FS(sub))
-	            } else {
-	                // fallback if dist/ not present in FS
-	                fileServer = http.FileServer(http.FS(explorer.EmbeddedFiles))
-	            }
-	        }
+			var fileServer http.Handler
+			if uiFilesFolder != "" {
+				// External GUI directory
+				log.Printf("Serving GUI from local folder: %s", uiFilesFolder)
+				fileServer = http.FileServer(http.Dir(uiFilesFolder))
+			} else {
+				// Embedded GUI
+				log.Println("Serving embedded GUI")
+				sub, err := fs.Sub(explorer.EmbeddedFiles, "dist")
+				if err == nil {
+					fileServer = http.FileServer(http.FS(sub))
+				} else {
+					// fallback if dist/ not present in FS
+					fileServer = http.FileServer(http.FS(explorer.EmbeddedFiles))
+				}
+			}
 
-	        // Serve static files
-	        gzipHandle("/", fileServer)
+			// Serve static files
+			gzipHandle("/", fileServer)
 
-	        // Angular SPA fallback (/app/* → index.html)
-	        mux.Handle("/app/", gziphandler.GzipHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	            if uiFilesFolder != "" {
-	                http.ServeFile(w, r, filepath.Join(uiFilesFolder, "index.html"))
-	                return
-	            }
-	            f, err := explorer.EmbeddedFiles.Open("dist/index.html")
-	            if err != nil {
-	                http.Error(w, "index.html not found", http.StatusInternalServerError)
-	                return
-	            }
-	            defer f.Close()
-	            w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	            io.Copy(w, f)
-	        })))
+			// Angular SPA fallback (/app/* → index.html)
+			mux.Handle("/app/", gziphandler.GzipHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if uiFilesFolder != "" {
+					http.ServeFile(w, r, filepath.Join(uiFilesFolder, "index.html"))
+					return
+				}
+				f, err := explorer.EmbeddedFiles.Open("dist/index.html")
+				if err != nil {
+					http.Error(w, "index.html not found", http.StatusInternalServerError)
+					return
+				}
+				defer f.Close()
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				io.Copy(w, f)
+			})))
 
-	        // Backwards compatibility redirects
-	        gzipHandle("/blocks", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	            http.Redirect(w, r, "/", http.StatusMovedPermanently)
-	        }))
-	        redirectToApp := func(basePath string) {
-	            gzipHandle(basePath, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	                block := r.URL.Path[len(basePath):]
-	                path := fmt.Sprintf("/app%s%s", basePath, block)
-	                http.Redirect(w, r, path, http.StatusMovedPermanently)
-	            }))
-	        }
-	        redirectToApp("/block/")
-	        redirectToApp("/transaction/")
-	        redirectToApp("/address/")
+			// Backwards compatibility redirects
+			gzipHandle("/blocks", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				http.Redirect(w, r, "/", http.StatusMovedPermanently)
+			}))
+			redirectToApp := func(basePath string) {
+				gzipHandle(basePath, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					block := r.URL.Path[len(basePath):]
+					path := fmt.Sprintf("/app%s%s", basePath, block)
+					http.Redirect(w, r, path, http.StatusMovedPermanently)
+				}))
+			}
+			redirectToApp("/block/")
+			redirectToApp("/transaction/")
+			redirectToApp("/address/")
 
-	        gzipHandle("/api.html", http.HandlerFunc(htmlDocs))
-	    } else {
-	        log.Println("Running in api-only mode (no GUI served)")
-	    }
+			gzipHandle("/api.html", http.HandlerFunc(htmlDocs))
+		} else {
+			log.Println("Running in api-only mode (no GUI served)")
+		}
 
-	    // Register API endpoints
-	    for _, e := range apiEndpoints {
-	        gzipHandle(e.ExplorerPath, e)
-	        log.Printf("%s proxied to %s with args %v", e.ExplorerPath, e.SkycoinPath, e.QueryArgs)
-	    }
-	    gzipHandle("/api/docs", http.HandlerFunc(jsonDocs))
+		// Register API endpoints
+		for _, e := range apiEndpoints {
+			gzipHandle(e.ExplorerPath, e)
+			log.Printf("%s proxied to %s with args %v", e.ExplorerPath, e.SkycoinPath, e.QueryArgs)
+		}
+		gzipHandle("/api/docs", http.HandlerFunc(jsonDocs))
 
-	    log.Printf("Running skycoin explorer on http://%s", explorerHost)
+		log.Printf("Running skycoin explorer on http://%s", explorerHost)
 
-	    s := &http.Server{
-	        Addr:         explorerHost,
-	        Handler:      mux,
-	        ReadTimeout:  serverReadTimeout,
-	        WriteTimeout: serverWriteTimeout,
-	        IdleTimeout:  serverIdleTimeout,
-	    }
+		s := &http.Server{
+			Addr:         explorerHost,
+			Handler:      mux,
+			ReadTimeout:  serverReadTimeout,
+			WriteTimeout: serverWriteTimeout,
+			IdleTimeout:  serverIdleTimeout,
+		}
 
-	    if err := s.ListenAndServe(); err != nil {
-	        log.Println("Fatal:", err)
-	    }
+		if err := s.ListenAndServe(); err != nil {
+			log.Println("Fatal:", err)
+		}
 	},
-
 }
-
 
 // buildNodeURL converts a string to a *url.URL instance.
 func buildNodeURL(skycoinAddrString string) *url.URL {

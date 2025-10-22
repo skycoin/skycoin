@@ -245,21 +245,20 @@ func (bc *Blockchain) processBlock(tx *dbutil.Tx, b coin.SignedBlock) (coin.Sign
 			err := errors.New("Attempted to process genesis block after blockchain has genesis block")
 			logger.Warning(err.Error())
 			return coin.SignedBlock{}, err
-		} else {
-			if err := bc.verifyBlockHeader(tx, b.Block); err != nil {
-				return coin.SignedBlock{}, err
-			}
+		}
 
-			txns, err := bc.processTransactions(tx, b.Body.Transactions)
-			if err != nil {
-				return coin.SignedBlock{}, err
-			}
-			b.Body.Transactions = txns
+		if err := bc.verifyBlockHeader(tx, b.Block); err != nil {
+			return coin.SignedBlock{}, err
+		}
 
-			if err := bc.verifyUxHash(tx, b.Block); err != nil {
-				return coin.SignedBlock{}, err
-			}
+		txns, err := bc.processTransactions(tx, b.Body.Transactions)
+		if err != nil {
+			return coin.SignedBlock{}, err
+		}
+		b.Body.Transactions = txns
 
+		if err := bc.verifyUxHash(tx, b.Block); err != nil {
+			return coin.SignedBlock{}, err
 		}
 	}
 
@@ -598,9 +597,8 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 				if bc.cfg.Arbitrating {
 					skip[i] = struct{}{}
 					continue
-				} else {
-					return nil, errors.New("Duplicate unspent output across transactions")
 				}
+				return nil, errors.New("Duplicate unspent output across transactions")
 			}
 
 			if DebugLevel1 {
@@ -612,9 +610,8 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 					if bc.cfg.Arbitrating {
 						skip[i] = struct{}{}
 						continue
-					} else {
-						return nil, errors.New("Output hash is in the UnspentPool")
 					}
+					return nil, errors.New("Output hash is in the UnspentPool")
 				}
 			}
 

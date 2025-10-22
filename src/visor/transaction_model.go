@@ -469,7 +469,7 @@ func (uct unconfirmedTxnsGetter) getTxnsHashes(tx *dbutil.Tx, addrs []cipher.Add
 
 	// Return all if there's no address filter
 	if len(addrs) == 0 {
-		if err := uct.unconfirmed.ForEach(tx, func(hash cipher.SHA256, txn UnconfirmedTransaction) error {
+		if err := uct.unconfirmed.ForEach(tx, func(hash cipher.SHA256, _ UnconfirmedTransaction) error {
 			txnHashCon.Add(hash, false, 0)
 			return nil
 		}); err != nil {

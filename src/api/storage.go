@@ -49,7 +49,7 @@ func getStorageValuesHandler(w http.ResponseWriter, r *http.Request, gateway Gat
 //
 //	type: storage type to get values from
 func getAllStorageValuesHandler(w http.ResponseWriter, gateway Gatewayer, storageType kvstorage.Type) {
-	data, err := gateway.GetAllStorageValues(kvstorage.Type(storageType))
+	data, err := gateway.GetAllStorageValues(storageType)
 	if err != nil {
 		var resp HTTPResponse
 		switch err {

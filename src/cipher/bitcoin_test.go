@@ -65,7 +65,7 @@ func TestMustDecodeBase58BitcoinAddress(t *testing.T) {
 	b := a.Bytes()
 	h := string(base58.Encode(b[:len(b)/2]))
 	require.Panics(t, func() { MustDecodeBase58BitcoinAddress(h) })
-	h = string(base58.Encode(b))
+	h = base58.Encode(b)
 	require.NotPanics(t, func() { MustDecodeBase58BitcoinAddress(h) })
 	a2 := MustDecodeBase58BitcoinAddress(h)
 	require.Equal(t, a, a2)

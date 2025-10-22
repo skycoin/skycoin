@@ -216,7 +216,7 @@ func disconnectHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if err := gateway.DisconnectByGnetID(uint64(id)); err != nil {
+		if err := gateway.DisconnectByGnetID(id); err != nil {
 			switch err {
 			case daemon.ErrConnectionNotExist:
 				wh.Error404(w, "")

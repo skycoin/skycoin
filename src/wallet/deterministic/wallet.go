@@ -514,7 +514,7 @@ func (w *Wallet) reset() {
 // Loader implements the wallet.Loader interface
 type Loader struct{}
 
-// Load loads a determinisitc wallet from bytes
+// Load loads a deterministic wallet from bytes
 func (l Loader) Load(data []byte) (wallet.Wallet, error) {
 	w := &Wallet{}
 	if err := w.Deserialize(data); err != nil {

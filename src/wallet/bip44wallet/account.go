@@ -21,7 +21,7 @@ type bip44Account struct {
 	bip44.Account
 	Name     string          // Account name
 	Index    uint32          // Account index
-	CoinType wallet.CoinType // Account coin type, determins the way to generate addresses
+	CoinType wallet.CoinType // Account coin type, determines the way to generate addresses
 	Chains   []bip44Chain    // Chains, external chain with index value of 0, and internal(change) chain with index value of 1.
 }
 
@@ -383,7 +383,7 @@ func (a *bip44Accounts) newAddresses(account, chain, num uint32) ([]cipher.Addre
 
 // account returns the pinter of the account by index,
 // this should not be used outside the accounts management in case of
-// unsafe behaviour.
+// unsafe behavior.
 func (a bip44Accounts) account(index uint32) (*bip44Account, error) {
 	accountLen := len(a.accounts)
 	if int(index) >= accountLen {

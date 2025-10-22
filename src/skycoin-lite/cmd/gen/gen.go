@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
@@ -57,18 +57,28 @@ func run(cmd *cobra.Command, args []string) {
 	compileWASM()
 }
 
+func getGoRoot() string {
+	out, err := exec.Command("go", "env", "GOROOT").Output()
+	if err != nil {
+		log.Fatalf("Failed to get GOROOT: %v", err)
+	}
+	return strings.TrimSpace(string(out))
+}
+
 func copyWasmExecJS() {
 	fmt.Println("Copying wasm_exec.js files...")
 
+	goroot := getGoRoot()
+
 	// Go's wasm_exec.js
-	goWasmExec := filepath.Join(runtime.GOROOT(), "misc", "wasm", "wasm_exec.js")
+	goWasmExec := filepath.Join(goroot, "misc", "wasm", "wasm_exec.js")
 	if _, err := os.Stat(goWasmExec); os.IsNotExist(err) {
 		// Try alternate location for Go 1.21+
-		goWasmExec = filepath.Join(runtime.GOROOT(), "lib", "wasm", "wasm_exec.js")
+		goWasmExec = filepath.Join(goroot, "lib", "wasm", "wasm_exec.js")
 	}
 
 	// TinyGo's wasm_exec.js
-	tinygoRoot := strings.TrimSuffix(runtime.GOROOT(), "go") + "tinygo"
+	tinygoRoot := strings.TrimSuffix(goroot, "go") + "tinygo"
 	tinygoWasmExec := filepath.Join(tinygoRoot, "targets", "wasm_exec.js")
 
 	// Copy Go wasm_exec.js

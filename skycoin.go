@@ -6,6 +6,7 @@ package main
 
 import (
 	"log"
+
 	cc "github.com/ivanpirog/coloredcobra"
 	"github.com/spf13/cobra"
 

@@ -682,6 +682,7 @@ func TestWalletCreateAccount(t *testing.T) {
 	require.Equal(t, uint32(1), ai)
 
 	ai, err = w.NewAccount("account2")
+	require.NoError(t, err)
 	require.Equal(t, uint32(2), ai)
 
 	require.Equal(t, uint32(3), w.accountManager.len())

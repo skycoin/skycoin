@@ -46,7 +46,7 @@ func GenerateAddresses(seed string, num int) []Address {
 			panic(err)
 		}
 
-		next, keys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(decodedSeed), 1)
+		next, keys := cipher.MustGenerateDeterministicKeyPairsSeed(decodedSeed, 1)
 		nextSeed = hex.EncodeToString(next)
 		pub := cipher.MustPubKeyFromSecKey(keys[0])
 		address := Address{

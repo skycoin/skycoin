@@ -2045,7 +2045,7 @@ func TestLiveCreateRawTransactionV2(t *testing.T) {
 			},
 			verify: func(t *testing.T, data []byte) {
 				s := strings.TrimSuffix(string(data), "\n")
-				txn, err := coin.DeserializeTransactionHex(string(s))
+				txn, err := coin.DeserializeTransactionHex(s)
 				require.NoError(t, err)
 				require.Equal(t, 1, len(txn.Sigs))
 				require.Equal(t, cipher.Sig{}, txn.Sigs[0])

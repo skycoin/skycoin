@@ -134,7 +134,7 @@ func (addr BitcoinAddress) Verify(key PubKey) error {
 
 // String convert bitcoin address to hex string
 func (addr BitcoinAddress) String() string {
-	return string(base58.Encode(addr.Bytes()))
+	return base58.Encode(addr.Bytes())
 }
 
 // Checksum returns a bitcoin address Checksum which is the first 4 bytes of sha256(sha256(version+key))

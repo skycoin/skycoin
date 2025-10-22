@@ -20,7 +20,6 @@ var (
 	port    int
 	host    string
 	nodeURL string
-	version = "dev"
 )
 
 // RootCmd is the root cil command

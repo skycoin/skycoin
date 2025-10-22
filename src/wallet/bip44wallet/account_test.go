@@ -543,6 +543,7 @@ func TestAccountSyncSecrets(t *testing.T) {
 	// wipes secrets
 	a.erase()
 	nEAddrs, err := a.newAddresses(bip44.ExternalChainIndex, 2)
+	require.NoError(t, err)
 	nCAddrs, err := a.newAddresses(bip44.ChangeChainIndex, 2)
 	require.NoError(t, err)
 	require.NoError(t, a.syncSecrets(ss))

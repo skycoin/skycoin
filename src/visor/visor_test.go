@@ -272,6 +272,7 @@ func TestVisorCreateBlock(t *testing.T) {
 	bc, err := NewBlockchain(db, BlockchainConfig{
 		Pubkey: genPublic,
 	})
+	require.NoError(t, err)
 
 	unconfirmed, err := NewUnconfirmedTransactionPool(db)
 	require.NoError(t, err)

@@ -38,8 +38,7 @@ func init() {
 	RootCmd = skyCLI
 	RootCmd.Use = "cli"
 	RootCmd.Short = description
-	RootCmd.Long = calvin.AsciiFont("skycoin-cli")+"\n"+description
-
+	RootCmd.Long = calvin.AsciiFont("skycoin-cli") + "\n" + description
 
 }
 
@@ -49,5 +48,5 @@ var description = "skycoin command line interface"
 var RootCmd = &cobra.Command{
 	Use:   "cli",
 	Short: description,
-	Long: calvin.AsciiFont("skycoin-cli")+"\n"+description,
+	Long:  calvin.AsciiFont("skycoin-cli") + "\n" + description,
 }

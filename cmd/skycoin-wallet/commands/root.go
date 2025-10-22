@@ -12,11 +12,11 @@ import (
 
 	"github.com/spf13/cobra"
 
+	explorer "github.com/skycoin/skycoin/cmd/explorer/commands"
 	newcoin "github.com/skycoin/skycoin/cmd/newcoin/commands"
 	cli "github.com/skycoin/skycoin/cmd/skycoin-cli/commands"
-	skycoin "github.com/skycoin/skycoin/cmd/skycoin/commands"
 	web "github.com/skycoin/skycoin/cmd/skycoin-web/commands"
-	explorer "github.com/skycoin/skycoin/cmd/explorer/commands"
+	skycoin "github.com/skycoin/skycoin/cmd/skycoin/commands"
 )
 
 func init() {

@@ -5,8 +5,9 @@ skycoin-web thin client
 package main
 
 import (
-	"github.com/skycoin/skycoin/cmd/skycoin-web/commands"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/flags"
+
+	"github.com/skycoin/skycoin/cmd/skycoin-web/commands"
 )
 
 func init() {

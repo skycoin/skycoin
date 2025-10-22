@@ -8,11 +8,12 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/skycoin/skycoin/src/skycoin-lite/wasm-tinygo"
 	"github.com/gin-gonic/gin"
-	"github.com/skycoin/skycoin/src/skycoin-web/src/gui"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/calvin"
 	"github.com/spf13/cobra"
+
+	wasmtinygo "github.com/skycoin/skycoin/src/skycoin-lite/wasm-tinygo"
+	"github.com/skycoin/skycoin/src/skycoin-web/src/gui"
 )
 
 var (

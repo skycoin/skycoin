@@ -1,0 +1,15 @@
+<div class="-header">
+  {{ headline }} <img src="assets/img/close-grey.png" class="btn-close" (click)="closePopup()" *ngIf="!disableDismiss">
+</div>
+<div [ngClass]="{'progress-bar-panel': loadingProgress === 0}"></div>
+<mat-progress-bar
+  *ngIf="loadingProgress > 0"
+  color="primary"
+  [mode]="'determinate'"
+  [value]="loadingProgress">
+</mat-progress-bar>
+<div class="-body">
+  <mat-dialog-content>
+    <ng-content></ng-content>
+  </mat-dialog-content>
+</div>

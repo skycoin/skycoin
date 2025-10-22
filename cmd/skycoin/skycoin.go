@@ -6,6 +6,8 @@ package main
 /*
 CODE GENERATED AUTOMATICALLY WITH FIBER COIN CREATOR
 AVOID EDITING THIS MANUALLY
+edit the template instead at: template/command.template
+and then run cmd/newcoin
 */
 
 import (
@@ -13,29 +15,14 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/cmd/skycoin/commands"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/flags"
 )
 
 func init() {
-	var helpflag bool
-	commands.RootCmd.SetUsageTemplate(help)
-	commands.RootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help menu")
-	commands.RootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
-	commands.RootCmd.PersistentFlags().MarkHidden("help") //nolint
+	flags.InitFlags(commands.RootCmd, true)
 }
 
 func main() {
-	cc.Init(&cc.Config{
-		RootCmd:         commands.RootCmd,
-		Headings:        cc.HiBlue + cc.Bold,
-		Commands:        cc.HiBlue + cc.Bold,
-		CmdShortDescr:   cc.HiBlue,
-		Example:         cc.HiBlue + cc.Italic,
-		ExecName:        cc.HiBlue + cc.Bold,
-		Flags:           cc.HiBlue + cc.Bold,
-		FlagsDescr:      cc.HiBlue,
-		NoExtraNewlines: true,
-		NoBottomNewline: true,
-	})
 	commands.RootCmd.Execute()
 }
 

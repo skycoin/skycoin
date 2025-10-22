@@ -1,0 +1,75 @@
+@import '../../../../../../theme/variables';
+
+.option-buttons-container {
+  margin: -24px;
+  
+  button {
+    width: 100%;
+    text-align: left;
+    padding: 10px 10px;
+    border-bottom: 1px solid #eff0f0;
+
+    &:first-child {
+      border-top: 1px solid #eff0f0;
+    }
+
+    .label {
+      font-size: 13px;
+      line-height: 22px;
+      color: $black;
+      display: flex;
+      align-items: center;
+
+      .img {
+        content: '';
+        display: inline-block;
+        height: 32px;
+        width: 32px;
+        margin-right: 5px;
+        background-repeat: no-repeat;
+        background-size: 32px 32px;
+      }
+
+      .-btn-unlock {
+        background-image: url(../../../../../../assets/img/unlock-grey.png);
+      }
+
+      .-btn-plus {
+        background-image: url(../../../../../../assets/img/plus-grey.png);
+      }
+
+      .-btn-edit {
+        background-image: url(../../../../../../assets/img/edit-grey.png);
+      }
+
+      .-btn-delete {
+        background-image: url(../../../../../../assets/img/delete-grey.png);
+      }
+    }
+
+    &:hover {
+      .label {
+
+        .-btn-unlock {
+          background-image: url(../../../../../../assets/img/unlock-gold.png);
+        }
+
+        .-btn-plus {
+          background-image: url(../../../../../../assets/img/plus-green.png);
+        }
+  
+        .-btn-edit {
+          background-image: url(../../../../../../assets/img/edit-blue.png);
+        }
+  
+        .-btn-delete {
+          background-image: url(../../../../../../assets/img/delete-red.png);
+        }
+      }
+    }
+  }
+}
+
+.-buttons {
+  margin-top: 35px;
+}

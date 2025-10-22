@@ -1,0 +1,14 @@
+<app-modal class="modal" [headline]="data.create ? ('wallet.new.create-title' | translate) : ('wallet.new.load-title' | translate)" [dialog]="dialogRef" [disableDismiss]="disableDismiss">
+  <app-create-wallet-form
+    #formControl
+    [create]="data.create"
+    [showSlowMobileInfo]="showSlowMobileInfo"></app-create-wallet-form>
+  <div class="-buttons">
+    <app-button (action)="closePopup()" [disabled]="disableDismiss">
+      {{ 'wallet.new.cancel-button' | translate}}
+    </app-button>
+    <app-button #create (action)="createWallet()" class="primary btn-create" [disabled]="!formControl.isValid">
+      {{ data.create ? ('wallet.new.create-button' | translate) : ('wallet.new.load-button' | translate) }}
+    </app-button>
+  </div>
+</app-modal>

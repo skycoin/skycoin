@@ -1,0 +1,34 @@
+<app-modal class="modal" [headline]="'wallet.options' | translate" [dialog]="dialogRef">
+  <div class="option-buttons-container header-sel-theme">
+    <button mat-button color="accent" (click)="onUnlockWallet()" *ngIf="showUnlockOption">
+      <div class="label">
+        <div class="img -btn-unlock"></div>
+        <span>{{ 'wallet.unlock-wallet' | translate }}</span>
+      </div>
+    </button>
+    <button mat-button color="accent" (click)="onAddNewAddress()">
+      <div class="label">
+        <div class="img -btn-plus"></div>
+        <span>{{ 'wallet.new-address' | translate }}</span>
+      </div>
+    </button>
+    <button mat-button color="accent" (click)="onEditWallet()">
+      <div class="label">
+        <div class="img -btn-edit"></div>
+        <span>{{ 'wallet.edit' | translate }}</span>
+      </div>
+    </button>
+    <button mat-button color="accent" (click)="onDeleteWallet()">
+      <div class="label">
+        <div class="img -btn-delete"></div>
+        <span>{{ 'wallet.delete' | translate }}</span>
+      </div>
+    </button>
+  </div>
+
+  <div class="-buttons">
+    <app-button (action)="closePopup()" class="primary">
+      {{ 'common.close' | translate }}
+    </app-button>
+  </div>
+</app-modal>

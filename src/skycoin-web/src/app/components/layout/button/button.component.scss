@@ -1,0 +1,30 @@
+@import '../../../../theme/_variables';
+
+.button-container {
+  display: inline-block;
+}
+
+button {
+  border-radius: 25px;
+  height: 50px;
+  margin: 20px 10px 0;
+  width: 160px;
+  overflow: hidden;
+}
+
+button.enabled {
+  background-color: $grey-very-light;
+  box-shadow: none;
+  color: $grey-dark;
+}
+
+mat-icon {
+  margin-left: 10px;
+  opacity: 0.3;
+  line-height: 20px;
+}
+
+mat-spinner {
+  position: relative;
+  top: -2px;
+}

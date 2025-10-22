@@ -1,0 +1,27 @@
+@import '../../../../../../theme/variables';
+
+.property-container {
+  display: table;
+
+  h4 {
+    font-size: 14px;
+    margin: 0 0 10px;
+  }
+
+  .data {
+    font-size: 12px;
+    display: table-row;
+
+    span {
+      display: table-cell;
+    }
+
+    span:first-child {
+      color: $grey;
+      padding-right: 20px;
+    }
+    span:last-child {
+      word-break: break-all;
+    }
+  }
+}

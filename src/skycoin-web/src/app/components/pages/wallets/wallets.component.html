@@ -1,0 +1,60 @@
+<div class="sky-container sky-container-grey">
+  <app-header [headline]="'title.wallets' | translate"></app-header>
+  <div class="container">
+    <app-loading-content *ngIf="!wallets || wallets.length === 0" [isLoading]="!wallets" [noDataText]="'errors.no-wallets'"></app-loading-content>
+    <div *ngIf="!!wallets && wallets.length > 0">
+      <div class="-headers">
+        <div class="internal-container">
+          <div class="flex-fill -one-line-ellipsis -on-small-and-below-only">{{ 'wallet.wallet' | translate }}</div>
+          <div class="-width-250 -not-on-small-and-below">{{ 'wallet.wallet' | translate }}</div>
+          <div class="flex-fill -not-on-small-and-below"><span *ngIf="showLockIcons">{{ 'wallet.locked' | translate }}</span></div>
+          <div class="-width-130 -align-right">{{ currentCoin.coinSymbol }}</div>
+          <div class="-width-130 -align-right">{{ currentCoin.hoursName }}</div>
+        </div>
+      </div>
+      <div class="-wallets">
+        <ng-container *ngFor="let wallet of wallets">
+          <div class="-paper">
+            <div class="-wallet" (click)="toggleWallet(wallet)">
+              <div class="flex-fill mobile-label-container -on-small-and-below-only">
+                <div class="flex-fill -label" [attr.title]="wallet.label">{{ wallet.label }}</div>
+              </div>
+              <div class="-width-250 -one-line-ellipsis -label -not-on-small-and-below" [attr.title]="wallet.label">{{ wallet.label }}</div>
+              <div class="flex-fill -encryption -not-on-small-and-below">
+                <ng-container *ngIf="showLockIcons">
+                  <img src="assets/img/lock-gold.png"
+                    class="-lock"
+                    (click)="unlockWallet($event, wallet)"
+                    *ngIf="!wallet.seed || wallet.needSeedConfirmation"
+                    [matTooltip]="'wallet.locked-tooltip' | translate">
+                  <img src="assets/img/unlock-grey.png"
+                    *ngIf="wallet.seed && !wallet.needSeedConfirmation"
+                    [matTooltip]="'wallet.unlocked-tooltip' | translate">
+                </ng-container>
+              </div>
+              <div class="mobile-label-container">
+                <div class="-width-130 -coins">{{ (wallet.balance ? wallet.balance.decimalPlaces(6).toString() : 0) | number:'1.0-6' }}</div>
+              </div>
+              <div class="mobile-label-container">
+                <div class="-width-130 -hours">{{ (wallet.hours ? wallet.hours.decimalPlaces(0).toString() : 0) | number:'1.0-0' }}</div>
+              </div>
+              <div class="-expand">
+                <img src="assets/img/chevron-right-grey.png"
+                     [ngClass]="{'rotate-270': wallet.opened, 'rotate-90': !wallet.opened}">
+              </div>
+            </div>
+            <app-wallet-detail [wallet]="wallet" *ngIf="wallet.opened"></app-wallet-detail>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+    <div class="action-buttons">
+      <button mat-button (click)="addWallet(true)">
+        <img src="assets/img/plus-gold.png"> {{ 'wallet.add' | translate }}
+      </button>
+      <button mat-button (click)="addWallet(false)">
+        <img src="assets/img/load-gold.png"> {{ 'wallet.load' | translate }}
+      </button>
+    </div>
+  </div>
+</div>

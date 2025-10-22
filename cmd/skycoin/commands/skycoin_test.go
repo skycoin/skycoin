@@ -1,4 +1,3 @@
-//go:build testrunmain
 // +build testrunmain
 
 /*

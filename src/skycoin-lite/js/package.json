@@ -1,0 +1,24 @@
+{
+  "name": "skycoin-lite",
+  "version": "0.0.0",
+  "scripts": {
+    "test": "karma start karma.conf.js -sm=false --single-run --browsers ChromeHeadless --browserNoActivityTimeout=180000",
+    "test-extensive": "karma start karma.conf.js -sm=false --single-run --browsers ChromeHeadless --browserNoActivityTimeout=180000 --mode 1"
+  },
+  "private": true,
+  "devDependencies": {
+    "@types/jasmine": "~2.5.53",
+    "@types/jasminewd2": "~2.0.2",
+    "@types/node": "~6.0.60",
+    "jasmine-core": "~2.99.1",
+    "jasmine-spec-reporter": "~4.1.0",
+    "karma": "~2.0.0",
+    "karma-chrome-launcher": "~2.1.1",
+    "karma-cli": "~1.0.1",
+    "karma-jasmine": "~1.1.0",
+    "karma-jasmine-html-reporter": "^0.2.2",
+    "karma-read-json": "^1.1.0",
+    "karma-typescript": "3.0.12",
+    "typescript": "~2.4.2"
+  }
+}

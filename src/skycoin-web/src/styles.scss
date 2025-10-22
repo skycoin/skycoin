@@ -1,0 +1,499 @@
+@import 'theme/_variables';
+@import 'theme/_tables';
+@import 'theme/_modals';
+@import '~bootstrap/scss/bootstrap-grid.scss';
+
+/* You can add global styles to this file, and also import other style files */
+//@import '~@angular/material/prebuilt-themes/indigo-pink.css';
+@import 'app/app.theme.scss';
+
+@font-face {
+  font-family: 'Skycoin';
+  font-style: normal;
+  font-weight: 200;
+  src: url('./assets/fonts/skycoin/Skycoin-Light.woff2') format('woff2'),
+  url('./assets/fonts/skycoin/Skycoin-Light.woff') format('woff');
+}
+@font-face {
+  font-family: 'Skycoin';
+  font-style: italic;
+  font-weight: 200;
+  src: url('./assets/fonts/skycoin/Skycoin-LightItalic.woff2') format('woff2'),
+  url('./assets/fonts/skycoin/Skycoin-LightItalic.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Skycoin';
+  font-style: normal;
+  font-weight: 400;
+  src: url('./assets/fonts/skycoin/Skycoin-Regular.woff2') format('woff2'),
+  url('./assets/fonts/skycoin/Skycoin-Regular.woff') format('woff');
+}
+@font-face {
+  font-family: 'Skycoin';
+  font-style: italic;
+  font-weight: 400;
+  src: url('./assets/fonts/skycoin/Skycoin-RegularItalic.woff2') format('woff2'),
+  url('./assets/fonts/skycoin/Skycoin-RegularItalic.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'Skycoin';
+  font-style: normal;
+  font-weight: 700;
+  src: url('./assets/fonts/skycoin/Skycoin-Bold.woff2') format('woff2'),
+  url('./assets/fonts/skycoin/Skycoin-Bold.woff') format('woff');
+}
+@font-face {
+  font-family: 'Skycoin';
+  font-style: italic;
+  font-weight: 700;
+  src: url('./assets/fonts/skycoin/Skycoin-BoldItalic.woff2') format('woff2'),
+  url('./assets/fonts/skycoin/Skycoin-BoldItalic.woff') format('woff');
+}
+
+body, div, h1, h2, h3, h4, h5, h6, p, span, a, button, option, select,
+mat-panel-description, mat-panel-title, mat-option.mat-option {
+  font-family: Skycoin, sans-serif;
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  background-color: $grey-lightest;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mat-tooltip {
+  font-size: 11px;
+}
+
+.-paper {
+  background-color: $white;
+  border-radius: 10px;
+  box-shadow: 0 0 2px 2px rgba(0, 0, 0, 0.01), 1px 1px 2px 2px rgba(0, 0, 0, 0.01);
+  margin: $content-vertical-margin $normal-content-lateral-margin;
+
+  @media (max-width: $max-small-width) {
+    & {
+      margin: $content-vertical-margin $small-content-lateral-margin;
+    }
+  }
+
+  @media (max-width: $max-very-small-width) {
+    & {
+      margin: $content-vertical-margin $very-small-content-lateral-margin;
+    }
+  }
+}
+
+.default-dialog-style {
+  height: 100%;
+  padding: 20px 0px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 90vw !important;
+
+  mat-dialog-container {
+    border-radius: 5px !important;
+    padding: 0 !important;
+    display: flex !important;
+    height: auto !important;
+    max-height: 100% !important;
+
+    > :first-child {
+      width: 100%;
+    }
+  }
+}
+
+.transparent-background-dialog {
+  max-width: unset !important;
+  padding: 0;
+
+  .mat-dialog-container {
+    background-color: transparent !important;
+    box-shadow: unset;
+    overflow: hidden;
+    padding: 0;
+  }
+}
+
+.clear-dialog-background {
+  background-color: rgba(245, 245, 245, 0.976);
+  margin: -100%;
+}
+
+.cdk-overlay-dark-backdrop {
+  margin: -100%;
+}
+
+.mat-select-panel {
+  min-width: 100% !important;
+}
+
+.button-line {
+  margin-top: 40px;
+  text-align: right;
+}
+
+mat-spinner.in-button {
+  display: inline-block;
+  margin-left: 10px;
+  height: 24px !important;
+  width: 24px !important;
+
+  svg {
+    height: 24px !important;
+    width: 24px !important;
+  }
+  
+  &.small {
+    height: 18px !important;
+    width: 18px !important;
+  
+    svg {
+      height: 18px !important;
+      width: 18px !important;
+    }
+  }
+
+  circle {
+    stroke: #000;
+    opacity: 0.3;
+  }
+
+  &.big {
+    height: 36px !important;
+    width: 36px !important;
+
+    svg {
+      height: 36px !important;
+      width: 36px !important;
+    }
+  }
+}
+
+snack-bar-container {
+  background-color: rgba(255, 0, 0, 0.8) !important;
+}
+
+mat-panel-title {
+  width: 60%;
+  display: block;
+  flex-grow: 0 !important;
+}
+
+.sky-container {
+  min-width: 100%;
+  min-height: 100%;
+
+  @media (max-width: $max-small-width) {
+    & {
+      padding-bottom: $mobile-nav-bar-height;
+    }
+  }
+
+  &.sky-container-grey {
+    background-color: $grey-lightest;
+  }
+}
+
+.flex-fill {
+  flex: 1 1 auto;
+}
+
+.form-field {
+  margin-bottom: 20px;
+
+  label {
+    color: $grey-dark;
+    display: block;
+    font-size: 13px;
+    line-height: 20px;
+    margin-bottom: 2px;
+
+    &.slow-mobile-info {
+      opacity: 0.75;
+      text-align: center;
+      animation: blinker 2s linear infinite;
+    }
+  }
+
+  input {
+    border: 2px solid $grey-very-light;
+    border-radius: 6px;
+    box-sizing: border-box;
+    display: block;
+    line-height: 20px;
+    padding: 10px 10px;
+    width: 100%;
+  }
+
+  select {
+    background-color: white;
+    border: 2px solid $grey-very-light;
+    border-radius: 6px;
+    box-sizing: border-box;
+    display: block;
+    line-height: 20px;
+    padding: 10px 10px;
+    width: 100%;
+    appearance: none;
+  }
+
+  textarea {
+    border: 2px solid $grey-very-light;
+    border-radius: 6px;
+    box-sizing: border-box;
+    display: block;
+    line-height: 20px;
+    padding: 10px 10px;
+    width: 100%;
+  }
+}
+
+.primary button.enabled {
+  background: $gradient-blue-dark; /* For browsers that do not support gradients */
+  background: -webkit-linear-gradient(left top, $gradient-blue-dark, $gradient-blue-light); /* For Safari 5.1 to 6.0 */
+  background: -o-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Opera 11.1 to 12.0 */
+  background: -moz-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Firefox 3.6 to 15 */
+  background: linear-gradient(to bottom right, $gradient-blue-dark, $gradient-blue-light); /* Standard syntax */
+
+  span {
+    color: white;
+  }
+}
+
+.dark-button button.enabled {
+  background-color: $black !important;
+  span {
+    color: white;
+  }
+}
+
+.ghost button.enabled {
+  background-color: $transparent !important;
+  span {
+    color: black;
+  }
+}
+
+.-select {
+  position: relative;
+
+  &::after {
+  content: '';
+  display: block;
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: url('./assets/img/chevron-right-grey.png') no-repeat;
+  background-size: 32px 32px;
+  width: 32px;
+  height: 32px;
+  margin: 6px;
+  pointer-events: none;
+  transform: rotate(90deg);
+  }
+}
+
+.qr-code-button {
+  opacity: 0.6;
+  cursor: pointer;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+/**
+On-boarding components
+ */
+
+.onboarding-container {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  background: $gradient-blue-dark; /* For browsers that do not support gradients */
+  background: -webkit-linear-gradient(left top, $gradient-blue-dark, $gradient-blue-light); /* For Safari 5.1 to 6.0 */
+  background: -o-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Opera 11.1 to 12.0 */
+  background: -moz-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Firefox 3.6 to 15 */
+  background: linear-gradient(to bottom right, $gradient-blue-dark, $gradient-blue-light); /* Standard syntax */
+
+  label {
+    color: white;
+  }
+}
+
+.primary button.enabled {
+  background: $gradient-blue-dark; /* For browsers that do not support gradients */
+  background: -webkit-linear-gradient(left top, $gradient-blue-dark, $gradient-blue-light); /* For Safari 5.1 to 6.0 */
+  background: -o-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Opera 11.1 to 12.0 */
+  background: -moz-linear-gradient(bottom right, $gradient-blue-dark, $gradient-blue-light); /* For Firefox 3.6 to 15 */
+  background: linear-gradient(to bottom right, $gradient-blue-dark, $gradient-blue-light); /* Standard syntax */
+
+  span {
+    color: white;
+  }
+}
+
+.-check {
+  label {
+    font-family: Skycoin;
+    line-height: normal;
+    font-size: 14px;
+    white-space: normal;
+    color: $grey-dark;
+    text-align: left;
+  }
+
+  .mat-checkbox-label {
+    line-height: 20px;
+  }
+
+  .mat-checkbox-checkmark-path {
+    position: absolute;
+    width: 18px;
+    height: 8px;
+    left: 4.59px;
+    top: 9px;
+    stroke: $gradient-blue-dark !important;
+  }
+
+  .mat-checkbox-background, .mat-checkbox-frame {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    position: absolute;
+    box-sizing: border-box;
+    pointer-events: none;
+    width: 20px;
+    height: 20px;
+    background: $grey-very-light !important;
+    border-radius: 6px;
+    border-color: transparent;
+  }
+}
+
+.mat-menu-panel {
+  border-radius: 5px !important;
+  background-color: $white;
+
+  .mat-menu-item {
+    font-family: Skycoin;
+    line-height: 50px;
+  }
+
+  &.compact {
+    .mat-menu-item {
+      font-size: 13px;
+      height: 35px;
+      line-height: 35px;
+    }
+  }
+}
+
+/**
+General Helpers
+ */
+
+.rotate-90 {
+  transform: rotate(90deg);
+}
+
+.rotate-180 {
+  transform: rotate(180deg);
+}
+
+.rotate-270 {
+  transform: rotate(270deg);
+}
+
+.mouse-disabled {
+  pointer-events: none;
+}
+
+.no-overflow {
+  overflow: hidden;
+}
+
+.link {
+  color: $blue !important;
+  cursor: pointer;
+}
+
+.-one-line-ellipsis {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.-break-all {
+  word-break: break-all;
+}
+
+@keyframes blinker {
+  80% {
+    opacity: 0;
+  }
+}
+
+/**
+Responsive design
+ */
+
+@media (min-width: ($max-small-width+1)) {
+  .-on-small-and-below-only {
+    display: none !important;
+  }
+}
+@media (max-width: $max-small-width) {
+  .-not-on-small-and-below {
+    display: none !important;
+  }
+}
+@media (min-width: ($max-very-small-width+1)) {
+  .-on-very-small-only {
+    display: none !important;
+  }
+}
+@media (max-width: $max-very-small-width) {
+  .-not-on-very-small {
+    display: none !important;
+  }
+}
+
+.coin-selector-container {
+  display: inline-block;
+  margin-left: 5px;
+  margin-bottom: 5px;
+}
+
+.coins-value-label {
+  font-size: 10px;
+  margin-top: 1px;
+  padding: 3px 10px;
+  background-color: $grey-lightest;
+  border-radius: 4px;
+
+  span {
+    opacity: 0.5;
+  }
+}
+
+.red {
+  color: $red;
+}
+
+.disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}

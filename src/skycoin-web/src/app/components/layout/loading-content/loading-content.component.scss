@@ -1,0 +1,21 @@
+@import '../../../../theme/variables';
+
+.content {
+  margin: 50px 20px;
+  text-align: center;
+
+  mat-spinner {
+    margin: 0;
+  }
+
+  i {
+    color: $grey-very-light;
+    font-size: 50px;
+  }
+
+  p {
+    margin-top: 5px;
+    font-size: 14px;
+    color: $grey;
+  }
+}

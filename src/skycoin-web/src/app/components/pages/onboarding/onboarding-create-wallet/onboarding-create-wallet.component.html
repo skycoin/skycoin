@@ -1,0 +1,43 @@
+<button mat-icon-button class="language-button" (click)="changelanguage()" *ngIf="language">
+  <img [src]="'assets/img/lang/' + language.iconName" class="flag">
+</button>
+
+<div class="onboarding-container">
+  <div class="row-container">
+    <div class="-header">
+      {{ (showNewForm ? 'wallet.new.create-title' : 'wallet.new.load-title') | translate }}
+    </div>
+    <div class="-description">
+      {{ 'wizard.wallet-desc' | translate }}
+    </div>
+  </div>
+  <div class="-toggle-container" [style.visibility]="creatingWallet ? 'hidden' : 'visible'">
+    <app-double-button [rightButtonText]="'common.load' | translate"
+                        [leftButtonText]="'common.new' | translate"
+                        [activeButton]="doubleButtonActive"
+                        (onStateChange)="changeForm($event)"></app-double-button>
+  </div>
+  <div class="row-container">
+    <app-create-wallet-form
+    #formControl
+    [create]="showNewForm"
+    whiteText="true"
+    [showSlowMobileInfo]="showSlowMobileInfo"></app-create-wallet-form>
+  </div>
+  <div class="row-container -buttons-footer">
+    <app-button #create
+                class="dark-button -button-min-margin main-action-button"
+                [disabled]="!formControl.isValid"
+                [spinnerStyle]="'accent'"
+                (action)="showNewForm ? showSafe() : loadWallet()">
+      {{ (showNewForm ? 'wallet.new.create-button' : 'wallet.new.load-button') | translate }}
+    </app-button>
+    <div></div>
+    <app-button *ngIf="userHasWallets && !creatingWallet"
+                [disabled]="creatingWallet"
+                class="ghost -button-min-margin"
+                (action)="skip()">
+      {{ 'wallet.new.skip-button' | translate }}
+    </app-button>
+  </div>
+</div>

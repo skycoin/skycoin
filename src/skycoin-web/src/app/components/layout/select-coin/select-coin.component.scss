@@ -1,0 +1,19 @@
+@import '../../../../theme/_variables';
+
+input {
+  cursor: default;
+  padding-left: 48px;
+}
+
+.icon-container {
+  width: 0px;
+  height: 0px;
+
+  img {
+    position: relative;
+    top: 5px;
+    left: 10px;
+    width: 32px;
+    height: 32px;
+  }
+}

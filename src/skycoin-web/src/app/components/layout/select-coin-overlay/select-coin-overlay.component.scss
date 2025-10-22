@@ -1,0 +1,145 @@
+@import '../../../../theme/_variables';
+
+mat-dialog-content {
+  width: 100%;
+  max-height: 100% !important;
+  padding: 0;
+  margin: 0;
+}
+
+.x-container {
+  width: 0px;
+  height: 0px;
+  float: right;
+  position: relative;
+  left: -42px;
+  z-index: 1;
+
+  img {
+    width: 42px;
+    height: 42px;
+    opacity: 0.5;
+    cursor: pointer;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
+
+.container {
+  text-align: center;
+}
+
+.search-container {
+  max-width: 700px;
+  display: inline-block;
+  width: 100%;
+  font-size: 15px;
+  margin: 25px 0px;
+  text-align: center;
+
+  mat-icon {
+    width: 0px;
+    height: 0px;
+    display: block;
+    position: relative;
+    top: 10px;
+    left: 12px;
+    color: $grey-light;
+  }
+
+  .input-container {
+    margin-top: 10px;
+  }
+
+  input {
+    border: 0px solid white;
+    background-color: white;
+    border-radius: 6px;
+    box-sizing: border-box;
+    display: block;
+    line-height: 20px;
+    padding: 10px 10px;
+    width: 100%;
+    outline: none;
+    padding: 12px 48px;
+  }
+
+  input::placeholder {
+    color: $grey-light;
+  }
+
+  input:-ms-input-placeholder {
+    color: $grey-light;
+  }
+}
+
+.options-container {
+  font-size: 12px;
+
+  .title {
+    margin: 10px 0px;
+  }
+
+  .buttons-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+
+    .button {
+      width: 130px;
+      margin: 20px;
+      font-size: 12px;
+      line-height: unset;
+      padding: 0;
+      color: unset;
+      min-width: 0;
+
+      @media (max-width: $max-small-width) {
+        & {
+          width: 100px;
+          margin: 15px;
+          font-size: 11px;
+        }
+      }
+
+      @media (max-width: $max-very-small-width) {
+        & {
+          width: 80px;
+          margin: 10px;
+          font-size: 10px;
+        }
+      }
+
+      img {
+        width: 64px;
+        height: 64px;
+        margin: 10px 0px;
+
+        @media (max-width: $max-small-width) {
+          & {
+            width: 56px;
+            height: 56px;
+          }
+        }
+
+        @media (max-width: $max-very-small-width) {
+          & {
+            width: 48px;
+            height: 48px;
+          }
+        }
+      }
+
+      .label {
+        background-color: $grey-very-light;
+        padding: 4px 10px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+}

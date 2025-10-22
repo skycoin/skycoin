@@ -1,0 +1,71 @@
+<div class="-actions">
+  <div class="btn-add-address -button -not-on-small-and-below" (click)="onAddNewAddress()" [ngClass]="{ 'mouse-disabled': creatingAddress }">
+    <span [ngClass]="{ '-btn-plus -img': !creatingAddress, '-disabled-span': creatingAddress, '-enabled-span': !creatingAddress }">
+      <mat-spinner *ngIf="creatingAddress" [color]="spinnerStyle" class="in-button small"></mat-spinner>
+      {{ 'wallet.new-address' | translate }}
+    </span>
+  </div>
+  <div class="-button" (click)="onToggleEmpty()">
+    <ng-container *ngIf="!wallet.hideEmpty">
+      <span class="-img -btn-minus -hide-empty -enabled-span">{{ 'wallet.hide-empty' | translate }}</span>
+    </ng-container>
+    <ng-container *ngIf="wallet.hideEmpty">
+      <span class="-img -btn-plus -show-empty -enabled-span">{{ 'wallet.show-empty' | translate }}</span>
+    </ng-container>
+  </div>
+  <div class="flex-fill"></div>
+  <div class="-button -not-on-small-and-below" (click)="onEditWallet()">
+    <span class="-img -btn-edit -enabled-span">{{ 'wallet.edit' | translate }}</span>
+  </div>
+  <div class="btn-delete-wallet -button -not-on-small-and-below" (click)="onDeleteWallet()">
+    <span class="-img -btn-delete -enabled-span">{{ 'wallet.delete' | translate }}</span>
+  </div>
+  <div class="-button -on-small-and-below-only" (click)="onShowOptions()">
+    <span class="-img -btn-options -enabled-span">{{ 'wallet.options' | translate }}</span>
+  </div>
+</div>
+
+<div class="-records">
+  <ng-container *ngFor="let address of (wallet ? wallet.addresses : []); let i = index">
+    <div class="-record" *ngIf="!wallet.hideEmpty || address.balance.isGreaterThan(0)" #element (click)="onShowQrIfPointer(element, address)">
+      <div class="id-column -one-line-ellipsis">{{ i + 1 }}</div>
+      <div class="address-column -not-on-small-and-below">
+        <img class="qr-code-button" src="assets/img/qr-code-black.png" (click)="onShowQr(address)" >
+        <p class="click-to-copy" [ngClass]="{ copying: address.isCopying }"
+            [clipboard]="address.address" (copyEvent)="onCopySuccess(address)" (mouseleave)="address.isCopying = false">
+          {{ address.address }} <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">{{ 'wallet.address.copy' | translate }}</span>
+        </p>
+      </div>
+      <div class="address -one-line-ellipsis -on-small-and-below-only">
+        {{ address.address }}
+      </div>
+      <div class="mobile-label-container">
+        <div class="data-column -coins-column">{{ (address.balance ? address.balance.decimalPlaces(6).toString() : 0) | number:'1.0-6' }}</div>
+      </div>
+      <div class="mobile-label-container">
+        <div class="data-column -hours-column">{{ (address.hours ? address.hours.decimalPlaces(0).toString() : 0) | number:'1.0-0' }}</div>
+      </div>
+      <div class="options-column -not-on-small-and-below">
+        <mat-icon [matMenuTriggerFor]="optionsMenu">more_vert</mat-icon>
+      </div>
+    </div>
+    <mat-menu #optionsMenu="matMenu" [overlapTrigger]="false" class="compact">
+      <button mat-menu-item [clipboard]="address.address"
+        (click)="$event.stopPropagation()" (copyEvent)="onCopySuccess(address, 1000)">
+        {{ address.isCopying ? ('wallet.address.copied' | translate) : 'wallet.address.copy-address' | translate}}
+      </button>
+      <button mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address }">
+        {{ 'wallet.address.outputs' | translate }}
+      </button>
+      <button mat-menu-item routerLink="/history" [queryParams]="{ addr: address.address }">
+        {{ 'wallet.address.history' | translate }}
+      </button>
+    </mat-menu>
+  </ng-container>
+  <div class="-record -small-adding-addess-msg-container -on-small-and-below-only" *ngIf="creatingAddress">
+    <div>
+      <mat-spinner [color]="spinnerStyle" class="in-button small"></mat-spinner>
+      {{ 'wallet.adding-address' | translate }} <span *ngIf="showSlowMobileInfo">{{ 'common.slow-on-mobile' | translate}}</span>
+    </div>
+  </div>
+</div>

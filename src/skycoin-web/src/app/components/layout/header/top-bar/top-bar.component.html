@@ -1,0 +1,74 @@
+<div class="buttons-left">
+  <div class="header-sel-theme" *ngIf="hasManyCoins">
+    <button
+      mat-button
+      color="primary"
+      class="round-button"
+      (click)="changeCoin()">
+      <img class="coin-icon" [src]="'assets/img/coins/' + currentCoin.iconName" />
+      <span class="coin-name -not-on-very-small">{{ currentCoin.coinSymbol }}</span>
+      <mat-icon>expand_more</mat-icon>
+    </button>
+  </div>
+  <div class="header-sel-theme" *ngIf="balanceObtained">
+    <button
+      class="round-button"
+      mat-button
+      color="primary"
+      [matTooltip]="this.problemUpdatingBalance ? ('header.top-bar.connection-error-tooltip' | translate) : null"
+      matTooltipClass="refresh-button-tooltip"
+      (click)="refresBalance()">
+      <div class="main-container">
+        <div class="spinner-container" *ngIf="updatingBalance"><mat-spinner></mat-spinner></div>
+        <mat-icon *ngIf="!this.problemUpdatingBalance && !updatingBalance">refresh</mat-icon>
+        <mat-icon *ngIf="this.problemUpdatingBalance && !updatingBalance" class="blinking-warning-icon -not-on-small-and-below">warning</mat-icon>
+        <mat-icon *ngIf="this.problemUpdatingBalance && !updatingBalance" class="-on-small-and-below-only">refresh</mat-icon>
+        <div class="text-container -not-on-small-and-below">
+          <div class="first-label">{{ 'header.top-bar.updated1' | translate }}</div>
+          <div class="second-label">
+            {{ timeSinceLastBalanceUpdate === 0 ? ('header.top-bar.less-than' | translate ) : timeSinceLastBalanceUpdate }} {{ 'header.top-bar.updated2' | translate }}
+          </div>
+        </div>
+      </div>
+    </button>
+  </div>
+</div>
+
+<div class="title">
+  <span>{{ headline }}</span>
+</div>
+
+<div class="buttons-right">
+  <mat-menu #menuMenu="matMenu" [overlapTrigger]="false">
+    <button mat-menu-item [routerLink]="['/settings/blockchain']"> {{ 'title.blockchain' | translate}} </button>
+    <button mat-menu-item [routerLink]="['/settings/outputs']"> {{ 'title.outputs' | translate}} </button>
+    <button mat-menu-item [routerLink]="['/settings/pending-transactions']"> {{ 'title.pending-txs' | translate}} </button>
+    <button mat-menu-item [routerLink]="['/settings/node']"> {{ (hasManyCoins ? 'title.nodes' : 'title.node') | translate}} </button>
+    <a
+      *ngIf="currentCoin.coinExplorer"
+      mat-menu-item
+      [href]="currentCoin.coinExplorer"
+      class="color-primary"
+      target="_blank"
+      rel="noopener noreferrer">
+      {{ 'title.explorer' | translate:{coin: currentCoin.coinName} }}
+    </a>
+    <div class="separator"></div>
+    <div mat-menu-item *ngIf="language" (click)="changelanguage()">
+      <img [src]="'assets/img/lang/' + language.iconName" class="flag">
+      {{ language.name }}
+    </div>
+  </mat-menu>
+  <button class="menu-button -not-on-small-and-below" mat-icon-button [matMenuTriggerFor]="menuMenu">
+    <mat-icon>menu</mat-icon>
+  </button>
+  <div class="header-sel-theme">
+    <button
+      mat-button
+      color="primary"
+      class="round-button -mobile-menu-button -on-small-and-below-only"
+      [matMenuTriggerFor]="menuMenu">
+      <mat-icon>menu</mat-icon>
+    </button>
+  </div>
+</div>

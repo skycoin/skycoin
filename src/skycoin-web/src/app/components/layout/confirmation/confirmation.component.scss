@@ -1,0 +1,17 @@
+@import '../../../../theme/_variables';
+
+.red-title {
+  font-family: Skycoin;
+  line-height: 30px;
+  font-size: 14px;
+  text-align: center;
+  letter-spacing: 0.0769231em;
+  color: $red;
+}
+
+@media (max-width: $max-small-width) {
+  .small-screen-margin {
+    width: 20px;
+    height: 20px;
+  }
+}

@@ -743,7 +743,7 @@ func TestDecryptWallet(t *testing.T) {
 			expectedEntriesLen := 1
 			if walletType == wallet.WalletTypeBip44 {
 				// change address
-				expectedEntriesLen += 1
+				expectedEntriesLen++
 			}
 			require.Equal(t, expectedEntriesLen, len(les))
 

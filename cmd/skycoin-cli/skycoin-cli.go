@@ -1,3 +1,4 @@
+// Package main provides the skycoin-cli tool.
 // package main cmd/newcoin/newcoin.go
 /*
 newcoin generates a new coin cmd from a toml configuration file

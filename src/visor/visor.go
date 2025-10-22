@@ -992,7 +992,7 @@ type AddrsFilter struct {
 }
 
 // Match implements the TxFilter interface, this actually won't be used, only the 'Addrs' member is used.
-func (af AddrsFilter) Match(tx *Transaction) bool { return true }
+func (af AddrsFilter) Match(_ *Transaction) bool { return true }
 
 // ConfirmedTxFilter filters transactions base on whether they are confirmed.
 type ConfirmedTxFilter struct {
@@ -2282,7 +2282,7 @@ func (tf *TransactionsFinder) AddressesActivity(addrs []cipher.Addresser) ([]boo
 
 		// Check if the addresses appears in the unconfirmed pool
 		// NOTE: if this needs to be optimized, add an index to the unconfirmed pool
-		return tf.unconfirmed.ForEach(tx, func(h cipher.SHA256, ut UnconfirmedTransaction) error {
+		return tf.unconfirmed.ForEach(tx, func(_ cipher.SHA256, ut UnconfirmedTransaction) error {
 			// Only transaction outputs need to be checked; if the address is associated
 			// with an input, it must have appeared in a transaction in the blockchain history
 			for _, o := range ut.Transaction.Out {

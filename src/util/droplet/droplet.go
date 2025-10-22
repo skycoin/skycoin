@@ -29,18 +29,18 @@ var (
 	// ErrTooLarge is returned if a balance string is greater than math.MaxInt64
 	ErrTooLarge = errors.New("Droplet string conversion failed: Value is too large")
 
-	logger     = logging.MustGetLogger("convert")
-	maxDecimal decimal.Decimal
+	logger         = logging.MustGetLogger("convert")
+	maximumDecimal decimal.Decimal
 )
 
 func init() {
 	maxInt64 := "9223372036854775807"
-	max, err := decimal.NewFromString(maxInt64)
+	maximum, err := decimal.NewFromString(maxInt64)
 	if err != nil {
 		panic(err)
 	}
 
-	maxDecimal = max
+	maximumDecimal = maximum
 }
 
 // FromString converts a skycoin balance string with decimal places to uint64 droplets.
@@ -73,7 +73,7 @@ func FromString(b string) (uint64, error) {
 
 	// Values greater than math.MaxInt64 will overflow after conversion to int64
 	// using decimal.IntPart()
-	if e.GreaterThan(maxDecimal) {
+	if e.GreaterThan(maximumDecimal) {
 		return 0, ErrTooLarge
 	}
 

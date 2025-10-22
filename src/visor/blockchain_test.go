@@ -22,7 +22,7 @@ var (
 var genTime uint64 = 1000
 var genCoins uint64 = 1000e6
 
-func feeCalc(t *coin.Transaction) (uint64, error) {
+func feeCalc(_ *coin.Transaction) (uint64, error) {
 	return 0, nil
 }
 

@@ -43,8 +43,8 @@ func setupSimpleVisor(t *testing.T, db *dbutil.DB, bc *Blockchain) *Visor {
 func TestVerifyTransactionInvalidFee(t *testing.T) {
 	// Test that a soft constraint is enforced
 	// Full verification tests are in visor/blockchain_verify_test.go
-	db, close := prepareDB(t)
-	defer close()
+	db, cleanup := prepareDB(t)
+	defer cleanup()
 
 	// Setup blockchain
 	_, s := cipher.GenerateKeyPair()
@@ -70,8 +70,8 @@ func TestVerifyTransactionInvalidFee(t *testing.T) {
 func TestVerifyTransactionInvalidSignature(t *testing.T) {
 	// Test that a hard constraint is enforced
 	// Full verification tests are in visor/blockchain_verify_test.go
-	db, close := prepareDB(t)
-	defer close()
+	db, cleanup := prepareDB(t)
+	defer cleanup()
 
 	// Setup blockchain
 	_, s := cipher.GenerateKeyPair()
@@ -97,8 +97,8 @@ func TestVerifyTransactionInvalidSignature(t *testing.T) {
 }
 
 func TestInjectValidTransaction(t *testing.T) {
-	db, close := prepareDB(t)
-	defer close()
+	db, cleanup := prepareDB(t)
+	defer cleanup()
 
 	_, s := cipher.GenerateKeyPair()
 	// Setup blockchain
@@ -133,8 +133,8 @@ func TestInjectValidTransaction(t *testing.T) {
 }
 
 func TestInjectTransactionSoftViolationNoFee(t *testing.T) {
-	db, close := prepareDB(t)
-	defer close()
+	db, cleanup := prepareDB(t)
+	defer cleanup()
 
 	// Setup blockchain
 	_, s := cipher.GenerateKeyPair()

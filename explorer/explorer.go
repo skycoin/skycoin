@@ -1,3 +1,4 @@
+// Package main provides explorer functionality.
 package explorer
 
 import (

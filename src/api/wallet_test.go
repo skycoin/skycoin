@@ -2989,7 +2989,7 @@ func makeEntries(seed []byte, n int) ([]wallet.Entry, []readable.WalletEntry) { 
 type mockTxnsFinder struct {
 }
 
-func (tf *mockTxnsFinder) AddressesActivity(addrs []cipher.Addresser) ([]bool, error) {
+func (tf *mockTxnsFinder) AddressesActivity(_ []cipher.Addresser) ([]bool, error) {
 	return nil, nil
 }
 

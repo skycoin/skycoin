@@ -35,7 +35,7 @@ var (
 	genCoinHours uint64 = 1000 * 1000
 )
 
-func feeCalc(t *coin.Transaction) (uint64, error) {
+func feeCalc(_ *coin.Transaction) (uint64, error) {
 	return 0, nil
 }
 
@@ -72,7 +72,7 @@ func newFakeBlockTree(failedWhenSaved *bool) *fakeBlockTree {
 	}
 }
 
-func (bt *fakeBlockTree) AddBlock(tx *dbutil.Tx, b *coin.Block) error {
+func (bt *fakeBlockTree) AddBlock(_ *dbutil.Tx, b *coin.Block) error {
 	if bt.saveFailed {
 		if bt.failedWhenSaved != nil {
 			*bt.failedWhenSaved = true
@@ -83,14 +83,14 @@ func (bt *fakeBlockTree) AddBlock(tx *dbutil.Tx, b *coin.Block) error {
 	return nil
 }
 
-func (bt *fakeBlockTree) GetBlock(tx *dbutil.Tx, hash cipher.SHA256) (*coin.Block, error) {
+func (bt *fakeBlockTree) GetBlock(_ *dbutil.Tx, hash cipher.SHA256) (*coin.Block, error) {
 	if bt.failedWhenSaved != nil && *bt.failedWhenSaved {
 		return nil, nil
 	}
 	return bt.blocks[hash.Hex()], nil
 }
 
-func (bt *fakeBlockTree) GetBlockInDepth(tx *dbutil.Tx, depth uint64, filter Walker) (*coin.Block, error) {
+func (bt *fakeBlockTree) GetBlockInDepth(_ *dbutil.Tx, depth uint64, filter Walker) (*coin.Block, error) {
 	if bt.failedWhenSaved != nil && *bt.failedWhenSaved {
 		return nil, nil
 	}

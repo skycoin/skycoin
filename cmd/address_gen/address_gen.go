@@ -1,3 +1,4 @@
+// Package main provides the address generator tool.
 // package main cmd/address_gen/address_gen.go
 /*
  generate public keys and addresses

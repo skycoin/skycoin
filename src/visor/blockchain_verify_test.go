@@ -611,8 +611,8 @@ func testVerifyTransactionAddressLocking(t *testing.T, toAddr string, expectedEr
 	addr, err := cipher.DecodeBase58Address(toAddr)
 	require.NoError(t, err)
 
-	db, close := prepareDB(t)
-	defer close()
+	db, cleanup := prepareDB(t)
+	defer cleanup()
 
 	_, s := cipher.GenerateKeyPair()
 

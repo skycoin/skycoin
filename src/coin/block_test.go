@@ -24,11 +24,11 @@ func tNow() uint64 {
 	return uint64(time.Now().UTC().Unix())
 }
 
-func feeCalc(t *Transaction) (uint64, error) {
+func feeCalc(_ *Transaction) (uint64, error) {
 	return 0, nil
 }
 
-func badFeeCalc(t *Transaction) (uint64, error) {
+func badFeeCalc(_ *Transaction) (uint64, error) {
 	return 0, errors.New("Bad")
 }
 

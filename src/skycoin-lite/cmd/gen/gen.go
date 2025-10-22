@@ -1,3 +1,4 @@
+// Package main provides wasm generation tool.
 package main
 
 import (
@@ -40,7 +41,7 @@ func main() {
 	}
 }
 
-func run(cmd *cobra.Command, args []string) {
+func run(_ *cobra.Command, _ []string) {
 	// Validate source directory exists
 	if _, err := os.Stat(wasmSourceDir); os.IsNotExist(err) {
 		log.Fatalf("Source directory does not exist: %s", wasmSourceDir)

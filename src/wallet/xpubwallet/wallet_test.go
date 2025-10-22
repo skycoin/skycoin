@@ -18,11 +18,11 @@ var testXPub = "xpub6EMRsT95ntbCFRR2Z6WppnGss1SijAkarfKoRM8tft66tuJh2nt4aJi13S21
 
 type fakeWalletDecoder struct{}
 
-func (d fakeWalletDecoder) Encode(w wallet.Wallet) ([]byte, error) {
+func (d fakeWalletDecoder) Encode(_ wallet.Wallet) ([]byte, error) {
 	return nil, nil
 }
 
-func (d fakeWalletDecoder) Decode(b []byte) (wallet.Wallet, error) {
+func (d fakeWalletDecoder) Decode(_ []byte) (wallet.Wallet, error) {
 	return nil, nil
 }
 

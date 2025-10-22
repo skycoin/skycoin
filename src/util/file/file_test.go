@@ -46,7 +46,7 @@ func requireIsRegularFile(t *testing.T, filename string) {
 
 func cleanup(t *testing.T, fn string) {
 	paths := []string{fn}
-	err := filepath.Walk(".", func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(".", func(_ string, info os.FileInfo, err error) error {
 		if err != nil {
 			panic(err)
 		}

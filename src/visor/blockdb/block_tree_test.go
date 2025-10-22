@@ -24,8 +24,8 @@ type blockCase struct {
 }
 
 func testCase(t *testing.T, cases []blockCase) {
-	db, close := prepareDB(t)
-	defer close()
+	db, cleanup := prepareDB(t)
+	defer cleanup()
 
 	btree := &blockTree{}
 	blocks := make([]coin.Block, len(cases))

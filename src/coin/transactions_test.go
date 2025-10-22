@@ -1010,7 +1010,7 @@ func TestVerifyTransactionHoursSpending(t *testing.T) {
 }
 
 func TestTransactionsFees(t *testing.T) {
-	calc := func(txn *Transaction) (uint64, error) {
+	calc := func(_ *Transaction) (uint64, error) {
 		return 1, nil
 	}
 
@@ -1030,14 +1030,14 @@ func TestTransactionsFees(t *testing.T) {
 	require.Equal(t, uint64(2), fee)
 
 	// calc error
-	failingCalc := func(txn *Transaction) (uint64, error) {
+	failingCalc := func(_ *Transaction) (uint64, error) {
 		return 0, errors.New("bad calc")
 	}
 	_, err = txns.Fees(failingCalc)
 	testutil.RequireError(t, err, "bad calc")
 
 	// summing of calculated fees overflows
-	overflowCalc := func(txn *Transaction) (uint64, error) {
+	overflowCalc := func(_ *Transaction) (uint64, error) {
 		return math.MaxUint64, nil
 	}
 
@@ -1093,7 +1093,7 @@ func TestSortTransactions(t *testing.T) {
 			name:       "hash tiebreaker",
 			txns:       Transactions{hashSortedTxns[1], hashSortedTxns[0]},
 			sortedTxns: Transactions{hashSortedTxns[0], hashSortedTxns[1]},
-			feeCalc: func(txn *Transaction) (uint64, error) {
+			feeCalc: func(_ *Transaction) (uint64, error) {
 				return 1e8, nil
 			},
 		},

@@ -99,7 +99,7 @@ func TestNewConnectionAlreadyConnected(t *testing.T) {
 	require.NoError(t, err)
 
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(addr string, id uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, id uint64, solicited bool) {
 		require.False(t, solicited)
 		cc <- p.pool[1]
 	}
@@ -137,7 +137,7 @@ func TestAcceptConnections(t *testing.T) {
 
 	cc := make(chan *Connection, 1)
 	var wasSolicited *bool
-	p.Config.ConnectCallback = func(addr string, id uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, id uint64, solicited bool) {
 		wasSolicited = &solicited
 		require.False(t, solicited)
 		cc <- p.pool[1]
@@ -230,7 +230,7 @@ func TestHandleConnection(t *testing.T) {
 	// Unsolicited
 	cc := make(chan *Connection, 1)
 	var wasSolicited *bool
-	p.Config.ConnectCallback = func(addr string, id uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, id uint64, solicited bool) {
 		wasSolicited = &solicited
 		cc <- p.pool[1]
 	}
@@ -408,7 +408,7 @@ func TestDisconnect(t *testing.T) {
 	require.NoError(t, err)
 
 	err = p.strand("", func() error {
-		p.Config.DisconnectCallback = func(addr string, id uint64, reason DisconnectReason) {
+		p.Config.DisconnectCallback = func(addr string, _ uint64, reason DisconnectReason) {
 			require.Equal(t, cAddr, addr)
 		}
 		return nil
@@ -527,7 +527,7 @@ func TestConnectionReadLoopReadError(t *testing.T) {
 	require.NoError(t, err)
 
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(addr string, id uint64, solicited bool) {
+	p.Config.ConnectCallback = func(addr string, _ uint64, solicited bool) {
 		cc <- p.addresses[addr]
 	}
 
@@ -580,7 +580,7 @@ func TestConnectionReadLoopSetReadDeadlineFailed(t *testing.T) {
 	require.NoError(t, err)
 
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(addr string, id uint64, solicited bool) {
+	p.Config.ConnectCallback = func(addr string, _ uint64, solicited bool) {
 		cc <- p.addresses[addr]
 	}
 
@@ -1235,11 +1235,11 @@ func (dc *DummyConn) Close() error {
 	return nil
 }
 
-func (dc *DummyConn) Read(b []byte) (int, error) {
+func (dc *DummyConn) Read(_ []byte) (int, error) {
 	return 0, nil
 }
 
-func (dc *DummyConn) SetWriteDeadline(t time.Time) error {
+func (dc *DummyConn) SetWriteDeadline(_ time.Time) error {
 	return nil
 }
 
@@ -1274,7 +1274,7 @@ func (rec *ReadErrorConn) GetReadDeadlineSet() time.Time {
 	return rec.ReadDeadlineSet
 }
 
-func (rec *ReadErrorConn) Read(b []byte) (int, error) {
+func (rec *ReadErrorConn) Read(_ []byte) (int, error) {
 	return 0, errors.New("failed")
 }
 
@@ -1286,11 +1286,11 @@ type ReadDeadlineFailedConn struct {
 	net.Conn
 }
 
-func (c *ReadDeadlineFailedConn) Read(b []byte) (int, error) {
+func (c *ReadDeadlineFailedConn) Read(_ []byte) (int, error) {
 	return 0, nil
 }
 
-func (c *ReadDeadlineFailedConn) SetReadDeadline(t time.Time) error {
+func (c *ReadDeadlineFailedConn) SetReadDeadline(_ time.Time) error {
 	return errors.New("Failed")
 }
 

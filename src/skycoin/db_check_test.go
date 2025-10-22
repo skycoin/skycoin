@@ -112,7 +112,7 @@ func TestCheckAndUpdateDB(t *testing.T) {
 	v26, err := semver.New("0.26.0")
 	require.NoError(t, err)
 
-	matchFunc := mock.MatchedBy(func(db *dbutil.DB) bool {
+	matchFunc := mock.MatchedBy(func(_ *dbutil.DB) bool {
 		return true
 	})
 
@@ -145,7 +145,7 @@ func TestCheckAndUpdateDB(t *testing.T) {
 			db:           db,
 			dbVersion:    v26,
 			setDBVersion: v26,
-			assertCalled: func(t *testing.T, db *dbutil.DB, m *mockDbCheckCorruptResetter) {
+			assertCalled: func(t *testing.T, _ *dbutil.DB, m *mockDbCheckCorruptResetter) {
 				require.True(t, m.AssertCalled(t, "GetDBVersion", matchFunc))
 				require.True(t, m.AssertCalled(t, "SetDBVersion", matchFunc, v26))
 				require.True(t, m.AssertNotCalled(t, "CheckDatabase", matchFunc))
@@ -158,7 +158,7 @@ func TestCheckAndUpdateDB(t *testing.T) {
 			db:           db,
 			dbVersion:    nil,
 			setDBVersion: v26,
-			assertCalled: func(t *testing.T, db *dbutil.DB, m *mockDbCheckCorruptResetter) {
+			assertCalled: func(t *testing.T, _ *dbutil.DB, m *mockDbCheckCorruptResetter) {
 				require.True(t, m.AssertCalled(t, "GetDBVersion", matchFunc))
 				require.True(t, m.AssertCalled(t, "CheckDatabase", matchFunc))
 				require.True(t, m.AssertCalled(t, "SetDBVersion", matchFunc, v26))
@@ -172,7 +172,7 @@ func TestCheckAndUpdateDB(t *testing.T) {
 			dbVersion:    nil,
 			setDBVersion: v26,
 			resetedDB:    resetedDB,
-			assertCalled: func(t *testing.T, db *dbutil.DB, m *mockDbCheckCorruptResetter) {
+			assertCalled: func(t *testing.T, _ *dbutil.DB, m *mockDbCheckCorruptResetter) {
 				require.True(t, m.AssertCalled(t, "GetDBVersion", matchFunc))
 				require.True(t, m.AssertNotCalled(t, "CheckDatabase", matchFunc))
 				require.True(t, m.AssertCalled(t, "SetDBVersion", matchFunc, v26))
@@ -188,7 +188,7 @@ func TestCheckAndUpdateDB(t *testing.T) {
 			db:        db,
 			dbVersion: v25,
 			retErr:    errors.New("Cannot use newer DB version=0.25.0 with older software version=0.24.1"),
-			assertCalled: func(t *testing.T, db *dbutil.DB, m *mockDbCheckCorruptResetter) {
+			assertCalled: func(t *testing.T, _ *dbutil.DB, m *mockDbCheckCorruptResetter) {
 				require.True(t, m.AssertCalled(t, "GetDBVersion", matchFunc))
 				require.True(t, m.AssertNotCalled(t, "CheckDatabase", matchFunc))
 				require.True(t, m.AssertNotCalled(t, "SetDBVersion", matchFunc, v26))
@@ -205,7 +205,7 @@ func TestCheckAndUpdateDB(t *testing.T) {
 			dbVersion:    v241,
 			checkDBErr:   nil,
 			setDBVersion: v26,
-			assertCalled: func(t *testing.T, db *dbutil.DB, m *mockDbCheckCorruptResetter) {
+			assertCalled: func(t *testing.T, _ *dbutil.DB, m *mockDbCheckCorruptResetter) {
 				require.True(t, m.AssertCalled(t, "GetDBVersion", matchFunc))
 				require.True(t, m.AssertCalled(t, "CheckDatabase", matchFunc))
 				require.True(t, m.AssertCalled(t, "SetDBVersion", matchFunc, v26))
@@ -221,7 +221,7 @@ func TestCheckAndUpdateDB(t *testing.T) {
 			db:         readOnlyDB,
 			dbVersion:  v241,
 			checkDBErr: nil,
-			assertCalled: func(t *testing.T, db *dbutil.DB, m *mockDbCheckCorruptResetter) {
+			assertCalled: func(t *testing.T, _ *dbutil.DB, m *mockDbCheckCorruptResetter) {
 				require.True(t, m.AssertCalled(t, "GetDBVersion", matchFunc))
 				require.True(t, m.AssertCalled(t, "CheckDatabase", matchFunc))
 				require.True(t, m.AssertNotCalled(t, "SetDBVersion", matchFunc, v26))
@@ -238,7 +238,7 @@ func TestCheckAndUpdateDB(t *testing.T) {
 			dbVersion:  v241,
 			checkDBErr: errors.New("check db error"),
 			retErr:     errors.New("check db error"),
-			assertCalled: func(t *testing.T, db *dbutil.DB, m *mockDbCheckCorruptResetter) {
+			assertCalled: func(t *testing.T, _ *dbutil.DB, m *mockDbCheckCorruptResetter) {
 				require.True(t, m.AssertCalled(t, "GetDBVersion", matchFunc))
 				require.True(t, m.AssertCalled(t, "CheckDatabase", matchFunc))
 				require.True(t, m.AssertNotCalled(t, "SetDBVersion", matchFunc, v26))
@@ -256,7 +256,7 @@ func TestCheckAndUpdateDB(t *testing.T) {
 			dbVersion:    v241,
 			resetedDB:    resetedDB,
 			setDBVersion: v26,
-			assertCalled: func(t *testing.T, db *dbutil.DB, m *mockDbCheckCorruptResetter) {
+			assertCalled: func(t *testing.T, _ *dbutil.DB, m *mockDbCheckCorruptResetter) {
 				require.True(t, m.AssertCalled(t, "GetDBVersion", matchFunc))
 				require.True(t, m.AssertNotCalled(t, "CheckDatabase", matchFunc))
 				require.True(t, m.AssertCalled(t, "ResetCorruptDB", matchFunc))

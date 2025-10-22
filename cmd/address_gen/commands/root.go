@@ -46,7 +46,7 @@ var RootCmd = &cobra.Command{
 	├─┤ ││ ││├┬┘├┤ └─┐└─┐───│ ┬├┤ │││
 	┴ ┴─┴┘─┴┘┴└─└─┘└─┘└─┘   └─┘└─┘┘└┘
 	generate public keys and addresses`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		var coinType wallet.CoinType
 		if isBitcoin {
 			coinType = wallet.CoinTypeBitcoin

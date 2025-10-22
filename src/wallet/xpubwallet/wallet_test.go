@@ -444,7 +444,7 @@ func TestScanAddresses(t *testing.T) {
 				opts...)
 			require.NoError(t, err)
 
-			addrs, err := w.ScanAddresses(uint64(tc.scanN), tc.txnFinder)
+			addrs, err := w.ScanAddresses(tc.scanN, tc.txnFinder)
 			require.Equal(t, tc.err, err)
 			if err != nil {
 				return

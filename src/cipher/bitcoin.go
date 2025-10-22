@@ -153,7 +153,7 @@ func BitcoinWalletImportFormatFromSeckey(seckey SecKey) string {
 	b2 := append(b1[:], []byte{0x01}...)
 	b3 := DoubleSHA256(b2) //checksum
 	b4 := append(b2, b3[0:4]...)
-	return string(base58.Encode(b4))
+	return base58.Encode(b4)
 }
 
 // SecKeyFromBitcoinWalletImportFormat extracts a seckey from the bitcoin wallet import format

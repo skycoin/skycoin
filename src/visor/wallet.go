@@ -60,8 +60,10 @@ func (vs *Visor) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.Addr
 		addrs, err := func() ([]cipher.Address, error) {
 			addrs, err := w.GetAddresses()
 			if err != nil {
+				logger.Errorf("GetAddresses failed for wallet %s: %v", wltID, err)
 				return nil, err
 			}
+			logger.Infof("Wallet %s has %d addresses: %v", wltID, len(addrs), addrs)
 			return wallet.SkycoinAddresses(addrs), nil
 		}()
 		if err != nil {
@@ -69,6 +71,7 @@ func (vs *Visor) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.Addr
 		}
 
 		addrsBalanceList, err = vs.GetBalanceOfAddresses(addrs)
+		logger.Infof("GetBalanceOfAddresses returned %d balances for wallet %s", len(addrsBalanceList), wltID)
 		return err
 	}); err != nil {
 		return walletBalance, addressBalances, err
@@ -76,8 +79,10 @@ func (vs *Visor) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.Addr
 
 	// create map of address to balance
 	addressBalances = make(wallet.AddressBalances, len(addrs))
+	logger.Infof("Creating address balance map with %d addresses for wallet %s", len(addrs), wltID)
 	for i, addr := range addrs {
 		addressBalances[addr.String()] = addrsBalanceList[i]
+		logger.Infof("Address %s: confirmed=%d coins, %d hours", addr.String(), addrsBalanceList[i].Confirmed.Coins, addrsBalanceList[i].Confirmed.Hours)
 	}
 
 	// compute the sum of all addresses

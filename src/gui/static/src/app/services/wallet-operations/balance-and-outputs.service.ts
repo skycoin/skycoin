@@ -305,27 +305,21 @@ export class BalanceAndOutputsService {
     }
 
     return query.pipe(map(balance => {
-      console.log('Balance API response for wallet', wallet.id, ':', JSON.stringify(balance, null, 2));
       this.temporalSavedBalanceData.set(wallet.id, balance);
 
       if (balance.confirmed) {
-        console.log('Confirmed coins:', balance.confirmed.coins, 'hours:', balance.confirmed.hours);
         wallet.coins = new BigNumber(balance.confirmed.coins).dividedBy(1000000);
         wallet.hours = new BigNumber(balance.confirmed.hours);
       } else {
-        console.warn('No confirmed balance found, setting to 0. Balance object:', JSON.stringify(balance));
         wallet.coins = new BigNumber(0);
         wallet.hours = new BigNumber(0);
       }
 
       wallet.addresses.forEach(address => {
-        console.log('Looking for address', address.address, 'in balance.addresses:', JSON.stringify(balance.addresses));
         if (balance.addresses && balance.addresses[address.address]) {
-          console.log('Found balance for', address.address, ':', balance.addresses[address.address]);
           address.coins = new BigNumber(balance.addresses[address.address].confirmed.coins).dividedBy(1000000);
           address.hours = new BigNumber(balance.addresses[address.address].confirmed.hours);
         } else {
-          console.warn('No balance found for address', address.address, '. Keys in addresses:', Object.keys(balance.addresses || {}));
           address.coins = new BigNumber(0);
           address.hours = new BigNumber(0);
         }

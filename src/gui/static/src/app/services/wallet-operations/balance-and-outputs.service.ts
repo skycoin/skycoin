@@ -305,21 +305,24 @@ export class BalanceAndOutputsService {
     }
 
     return query.pipe(map(balance => {
+      console.log('Balance API response for wallet', wallet.id, ':', balance);
       this.temporalSavedBalanceData.set(wallet.id, balance);
 
       if (balance.confirmed) {
         wallet.coins = new BigNumber(balance.confirmed.coins).dividedBy(1000000);
         wallet.hours = new BigNumber(balance.confirmed.hours);
       } else {
+        console.warn('No confirmed balance found, setting to 0. Balance object:', balance);
         wallet.coins = new BigNumber(0);
         wallet.hours = new BigNumber(0);
       }
 
       wallet.addresses.forEach(address => {
-        if (balance.addresses[address.address]) {
+        if (balance.addresses && balance.addresses[address.address]) {
           address.coins = new BigNumber(balance.addresses[address.address].confirmed.coins).dividedBy(1000000);
           address.hours = new BigNumber(balance.addresses[address.address].confirmed.hours);
         } else {
+          console.warn('No balance found for address', address.address, '. Addresses in response:', balance.addresses);
           address.coins = new BigNumber(0);
           address.hours = new BigNumber(0);
         }

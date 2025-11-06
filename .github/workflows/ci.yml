@@ -25,7 +25,7 @@ jobs:
 
       - name: Install Go Tools
         run: |
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.5.0
 
       - name: Vendor Dependencies
         run: go mod vendor -v
@@ -64,7 +64,7 @@ jobs:
 
       - name: Install Go Tools
         run: |
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.5.0
 
       - name: Vendor Dependencies
         run: go mod vendor -v
@@ -98,7 +98,7 @@ jobs:
 
       - name: Install Go Tools
         run: |
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.5.0
 
       - name: Vendor Dependencies
         run: go mod vendor -v

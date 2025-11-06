@@ -190,11 +190,11 @@ func smix(b []byte, r, N int, v, xy []uint32) {
 		blockMix(&tmp, y, x, r)
 	}
 	for i := 0; i < N; i += 2 {
-		j := int(integer(x, r) & uint64(N-1))
+		j := int(integer(x, r) & uint64(N-1)) //nolint:gosec
 		blockXOR(x, v[j*(32*r):], 32*r)
 		blockMix(&tmp, x, y, r)
 
-		j = int(integer(y, r) & uint64(N-1))
+		j = int(integer(y, r) & uint64(N-1)) //nolint:gosec
 		blockXOR(y, v[j*(32*r):], 32*r)
 		blockMix(&tmp, y, x, r)
 	}

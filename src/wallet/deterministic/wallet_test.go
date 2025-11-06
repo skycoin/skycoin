@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	testSeed           = "test123"
+	testSeed           = "test123" //nolint:unused
 	testSkycoinEntries = skycoinEntries([]readableEntry{
 		{
 			Address: "B4B6Hx1a3WPUHP323Bhqydifeu8TS4Zfan",

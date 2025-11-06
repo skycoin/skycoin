@@ -215,7 +215,7 @@ func (w *Wallet) generateEntries(num uint64, initialChildIdx uint32) (wallet.Ent
 			if bip32.IsImpossibleChildError(err) {
 				logger.Critical().WithError(err).WithField("childIdx", j).Error("ImpossibleChild for xpub child element")
 				continue
-			} else {
+			} else { //nolint:revive
 				logger.Critical().WithError(err).WithField("childIdx", j).Error("NewPublicChildKey failed unexpectedly")
 				return nil, err
 			}

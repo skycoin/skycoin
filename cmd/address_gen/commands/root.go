@@ -1,7 +1,4 @@
-// package commands cmd/address_gen/commands/root.go
-/*
- generate public keys and addresses
-*/
+// Package commands provides address generation functionality.
 package commands
 
 import (
@@ -38,6 +35,7 @@ func init() {
 	RootCmd.Flags().BoolVar(&addrsList, "addrs-list", false, "Only print a list of addresses")
 }
 
+// RootCmd is the root command for address generation
 var RootCmd = &cobra.Command{
 	Use:   "address-gen",
 	Short: "generate public keys and addresses",

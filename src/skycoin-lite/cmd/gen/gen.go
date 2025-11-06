@@ -48,10 +48,10 @@ func run(_ *cobra.Command, _ []string) {
 	}
 
 	// Create output directories
-	if err := os.MkdirAll(outputGoDir, 0755); err != nil {
+	if err := os.MkdirAll(outputGoDir, 0755); err != nil { //nolint:gosec
 		log.Fatalf("Failed to create output directory: %v", err)
 	}
-	if err := os.MkdirAll(outputTinyDir, 0755); err != nil {
+	if err := os.MkdirAll(outputTinyDir, 0755); err != nil { //nolint:gosec
 		log.Fatalf("Failed to create output directory: %v", err)
 	}
 

@@ -746,7 +746,7 @@ func (serv *Service) ViewSecrets(wltID string, password []byte, f func(Wallet) e
 		return GuardView(w, password, f)
 	} else if len(password) != 0 {
 		return ErrWalletNotEncrypted
-	} else {
+	} else { //nolint:revive
 		return f(w)
 	}
 }

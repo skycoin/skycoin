@@ -200,7 +200,7 @@ type walletCreateOptions struct {
 }
 type walletCreateOptionFunc func(opt *walletCreateOptions)
 
-func encryptOption(encrypt bool) walletCreateOptionFunc {
+func encryptOption(encrypt bool) walletCreateOptionFunc { //nolint:unparam
 	return func(opts *walletCreateOptions) {
 		opts.Encrypt = encrypt
 	}
@@ -218,19 +218,19 @@ func generateNOption(n uint64) walletCreateOptionFunc {
 	}
 }
 
-func coinTypeOption(coinType string) walletCreateOptionFunc {
+func coinTypeOption(coinType string) walletCreateOptionFunc { //nolint:unused
 	return func(opts *walletCreateOptions) {
 		opts.Type = coinType
 	}
 }
 
-func xpubOption(xpub string) walletCreateOptionFunc {
+func xpubOption(xpub string) walletCreateOptionFunc { //nolint:unused
 	return func(opts *walletCreateOptions) {
 		opts.XPub = xpub
 	}
 }
 
-func seedPassphraseOption(sp string) walletCreateOptionFunc {
+func seedPassphraseOption(sp string) walletCreateOptionFunc { //nolint:unused
 	return func(opts *walletCreateOptions) {
 		opts.SeedPassphrase = sp
 	}
@@ -282,7 +282,7 @@ type readableDeterministicWallet struct {
 
 // createTempWalletDir creates a temporary wallet dir,
 // Returns wallet dir path and callback function to clean up the dir.
-func createTempWalletDir(t *testing.T) (string, func()) {
+func createTempWalletDir(t *testing.T) (string, func()) { //nolint:unused
 	dir, err := os.MkdirTemp("", "wallet-data-dir")
 	require.NoError(t, err)
 
@@ -291,7 +291,7 @@ func createTempWalletDir(t *testing.T) (string, func()) {
 	}
 }
 
-func loadJSON(t *testing.T, filename string, obj interface{}) {
+func loadJSON(t *testing.T, filename string, obj interface{}) { //nolint:unused
 	f, err := os.Open(filename)
 	require.NoError(t, err)
 	defer f.Close() //nolint:errcheck
@@ -479,7 +479,7 @@ func doHeaderCheck(t *testing.T) bool {
 
 }
 
-func createWallet(t *testing.T, label string, args []string) *api.WalletResponse {
+func createWallet(t *testing.T, label string, args []string) *api.WalletResponse { //nolint:unparam
 	args = append([]string{"walletCreate", "--label", label}, args...)
 	output, err := execCommandCombinedOutput(args...)
 	require.NoError(t, err, fmt.Sprintf("err: %s", string(output)))

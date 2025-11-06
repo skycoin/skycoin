@@ -178,7 +178,7 @@ func oldHex2Base58(val []byte) oldBase58 {
 
 	//looking for zeros at the beginning
 	i := 0
-	for i = 0; val[i] == 0 && i < len(val); i++ {
+	for i = 0; val[i] == 0 && i < len(val); i++ { //nolint:revive
 	}
 	answer := ""
 	for j := 0; j < i; j++ { //adds zeroes from the front

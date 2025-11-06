@@ -13,7 +13,7 @@ type Wallets map[string]Wallet
 // loadWallets Loads all wallets contained in wallet dir.  If any regular file in wallet
 // dir fails to load, loading is aborted and error returned.  Only files with
 // extension WalletExt are considered.
-func loadWallets(dir string, loader Loader) (Wallets, error) {
+func loadWallets(dir string, loader Loader) (Wallets, error) { //nolint:unused
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		logger.WithError(err).WithField("dir", dir).Error("loadWallets: os.ReadDir failed")

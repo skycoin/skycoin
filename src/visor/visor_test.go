@@ -90,7 +90,7 @@ func removeCorruptDBFiles(t *testing.T, badDBFile string) {
 	}
 }
 
-func addGenesisBlockToVisor(t *testing.T, vs *Visor) *coin.SignedBlock {
+func addGenesisBlockToVisor(t *testing.T, vs *Visor) *coin.SignedBlock { //nolint:unparam
 	// create genesis block
 	gb, err := coin.NewGenesisBlock(genAddress, genCoins, genTime)
 	require.NoError(t, err)

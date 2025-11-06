@@ -34,7 +34,7 @@ func NewAlphabet(s string) *Alphabet {
 		ret.decode[i] = -1
 	}
 	for i, b := range ret.encode {
-		ret.decode[b] = int8(i)
+		ret.decode[b] = int8(i) //nolint:gosec
 	}
 
 	return ret
@@ -73,7 +73,7 @@ func fastBase58EncodingAlphabet(bin []byte, alphabet *Alphabet) string {
 		high = j
 	}
 
-	for j = 0; j < size && buf[j] == 0; j++ {
+	for j = 0; j < size && buf[j] == 0; j++ { //nolint:revive
 	}
 
 	var b58 = make([]byte, size-j+zcount)
@@ -137,7 +137,7 @@ func fastBase58DecodingAlphabet(str string, alphabet *Alphabet) ([]byte, error) 
 			return nil, ErrInvalidChar
 		}
 
-		c = uint64(alphabet.decode[r])
+		c = uint64(alphabet.decode[r]) //nolint:gosec
 
 		for j := outisz - 1; j >= 0; j-- {
 			t = uint64(outi[j])*58 + c

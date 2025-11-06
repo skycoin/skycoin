@@ -15,7 +15,7 @@ type fakeWalletForGuardView struct {
 	*MockWallet
 	seed      string
 	label     string
-	n         int
+	n         int //nolint:unused
 	encrypted bool
 	isTemp    bool
 }

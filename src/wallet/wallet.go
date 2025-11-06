@@ -167,6 +167,7 @@ type Options struct {
 	CollectionPrivateKeys []cipher.SecKey // private keys for collection wallet
 }
 
+// Validate checks if the wallet options are valid
 func (opts Options) Validate() error {
 	if opts.Type == WalletTypeDeterministic && opts.SeedPassphrase != "" {
 		return ErrWalletSeedPassphrase

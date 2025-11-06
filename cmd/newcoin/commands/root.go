@@ -46,7 +46,7 @@ func init() {
 	RootCmd.AddCommand(createCoinCmd)
 }
 
-// rootCmd represents the base command for the application
+// RootCmd represents the base command for the application
 var RootCmd = &cobra.Command{
 	Use:   "newcoin",
 	Short: "newcoin is a helper tool for creating new fiber coins",

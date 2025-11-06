@@ -614,7 +614,7 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 		}
 
 		// generates the addresses  to scan
-		addrs, err := w2.accountManager.newAddresses(account, chain, uint32(scanN))
+		addrs, err := w2.accountManager.newAddresses(account, chain, uint32(scanN)) //nolint:gosec
 		if err != nil {
 			return nil, 0, 0, err
 		}
@@ -634,7 +634,7 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 			}
 		}
 
-		return addrs[:keepNum], int(nExistingAddrs), int(keepNum), nil
+		return addrs[:keepNum], int(nExistingAddrs), int(keepNum), nil //nolint:gosec
 	}
 
 	// [accounts][chains] array
@@ -700,7 +700,7 @@ func (w *Wallet) GenerateAddresses(options ...wallet.Option) ([]cipher.Addresser
 	opts := getBip44Options(options...)
 	switch opts.ChainMode {
 	case wallet.DefaultChain, wallet.ExternalChain:
-		return w.newAddresses(opts.Account, bip44.ExternalChainIndex, uint32(num))
+		return w.newAddresses(opts.Account, bip44.ExternalChainIndex, uint32(num)) //nolint:gosec
 	case wallet.ChangeChain:
 		return w.newAddresses(opts.Account, bip44.ChangeChainIndex, uint32(num))
 	case wallet.AllChains:

@@ -267,8 +267,8 @@ func TestDistributeSpendHours(t *testing.T) {
 							}
 
 							// addrHours at the beginning and end of the array should not differ by more than one
-							max := addrHours[0]
-							min := addrHours[len(addrHours)-1]
+							maxHours := addrHours[0]
+							minHours := addrHours[len(addrHours)-1]
 							require.True(t, max-min <= 1)
 						})
 					}

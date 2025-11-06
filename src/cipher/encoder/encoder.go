@@ -24,6 +24,8 @@
 // Note that maxlen does not affect serialization; it may serialize objects which could fail deserialization.
 // Callers should check their length restricted values manually prior to serialization.
 package encoder
+// Integer conversions in this file are intentional for encoding/decoding
+//nolint:gosec
 
 import (
 	"errors"
@@ -441,7 +443,7 @@ func TagOmitempty(tag string) bool {
 	return strings.Contains(tag, ",omitempty")
 }
 
-func tagName(tag string) string { //nolint:deadcode,megacheck
+func tagName(tag string) string { //nolint:unused,deadcode,megacheck
 	commaIndex := strings.Index(tag, ",")
 	if commaIndex == -1 {
 		return tag

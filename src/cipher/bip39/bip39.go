@@ -164,7 +164,7 @@ func EntropyFromMnemonic(mnemonic string) ([]byte, error) {
 			panic(fmt.Sprintf("word %q not found in reverse map", v))
 		}
 		var wordBytes [2]byte
-		binary.BigEndian.PutUint16(wordBytes[:], uint16(index))
+		binary.BigEndian.PutUint16(wordBytes[:], uint16(index)) //nolint:gosec
 		b = b.Mul(b, shift11BitsMask)
 		b = b.Or(b, big.NewInt(0).SetBytes(wordBytes[:]))
 	}
@@ -361,7 +361,7 @@ func addChecksum(data []byte) []byte {
 	firstChecksumByte := hash[0]
 
 	// len() is in bytes so we divide by 4
-	checksumBitLength := uint(len(data) / 4)
+	checksumBitLength := uint(len(data) / 4) //nolint:gosec
 
 	// For each bit of check sum we want we shift the data one the left
 	// and then set the (new) right most bit equal to checksum bit at that index

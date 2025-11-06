@@ -61,7 +61,7 @@ func TestVectors(t *testing.T) {
 		}
 
 		if len(ad) > 0 {
-			alterAdIdx := mr.Intn(len(ad))
+			alterAdIdx := mr.Intn(len(ad)) //nolint:gosec
 			ad[alterAdIdx] ^= 0x80
 			if _, err := aead.Open(nil, nonce, ct, ad); err == nil {
 				t.Errorf("#%d: Open was successful after altering additional data", i)
@@ -69,14 +69,14 @@ func TestVectors(t *testing.T) {
 			ad[alterAdIdx] ^= 0x80
 		}
 
-		alterNonceIdx := mr.Intn(aead.NonceSize())
+		alterNonceIdx := mr.Intn(aead.NonceSize()) //nolint:gosec
 		nonce[alterNonceIdx] ^= 0x80
 		if _, err := aead.Open(nil, nonce, ct, ad); err == nil {
 			t.Errorf("#%d: Open was successful after altering nonce", i)
 		}
 		nonce[alterNonceIdx] ^= 0x80
 
-		alterCtIdx := mr.Intn(len(ct))
+		alterCtIdx := mr.Intn(len(ct)) //nolint:gosec
 		ct[alterCtIdx] ^= 0x80
 		if _, err := aead.Open(nil, nonce, ct, ad); err == nil {
 			t.Errorf("#%d: Open was successful after altering ciphertext", i)
@@ -131,7 +131,7 @@ func TestRandom(t *testing.T) {
 		}
 
 		if len(ad) > 0 {
-			alterAdIdx := mr.Intn(len(ad))
+			alterAdIdx := mr.Intn(len(ad)) //nolint:gosec
 			ad[alterAdIdx] ^= 0x80
 			if _, err := aead.Open(nil, nonce[:], ct, ad); err == nil {
 				t.Errorf("Random #%d: Open was successful after altering additional data", i)
@@ -139,14 +139,14 @@ func TestRandom(t *testing.T) {
 			ad[alterAdIdx] ^= 0x80
 		}
 
-		alterNonceIdx := mr.Intn(aead.NonceSize())
+		alterNonceIdx := mr.Intn(aead.NonceSize()) //nolint:gosec
 		nonce[alterNonceIdx] ^= 0x80
 		if _, err := aead.Open(nil, nonce[:], ct, ad); err == nil {
 			t.Errorf("Random #%d: Open was successful after altering nonce", i)
 		}
 		nonce[alterNonceIdx] ^= 0x80
 
-		alterCtIdx := mr.Intn(len(ct))
+		alterCtIdx := mr.Intn(len(ct)) //nolint:gosec
 		ct[alterCtIdx] ^= 0x80
 		if _, err := aead.Open(nil, nonce[:], ct, ad); err == nil {
 			t.Errorf("Random #%d: Open was successful after altering ciphertext", i)

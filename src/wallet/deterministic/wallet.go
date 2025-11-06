@@ -441,7 +441,7 @@ func (w *Wallet) GenerateAddresses(options ...wallet.Option) ([]cipher.Addresser
 	var seckeys []cipher.SecKey
 	var seed []byte
 	if len(w.entries) == 0 {
-		seed, seckeys = cipher.MustGenerateDeterministicKeyPairsSeed([]byte(w.Meta.Seed()), int(num))
+		seed, seckeys = cipher.MustGenerateDeterministicKeyPairsSeed([]byte(w.Meta.Seed()), int(num)) //nolint:gosec
 	} else {
 		sd, err := hex.DecodeString(w.Meta.LastSeed())
 		if err != nil {

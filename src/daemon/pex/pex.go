@@ -389,7 +389,7 @@ func (px *Pex) loadCustom(fn string) error {
 	px.Lock()
 	defer px.Unlock()
 
-	f, err := os.Open(fn)
+	f, err := os.Open(fn) //nolint:gosec
 	if err != nil {
 		return err
 	}

@@ -1432,7 +1432,7 @@ var apiEndpoints = []APIEndpoint{
 	},
 }
 
-var docEndpoint APIEndpoint = APIEndpoint{
+var docEndpoint = APIEndpoint{
 	ExplorerPath:   "/api/docs",
 	Description:    "Returns this documentation as JSON",
 	ExampleRequest: "/api/docs",
@@ -1448,7 +1448,7 @@ type ParsedJSONAPIEndpoint struct {
 
 var parsedJSONAPIEndpoints []ParsedJSONAPIEndpoint
 
-func jsonDocs(w http.ResponseWriter, r *http.Request) {
+func jsonDocs(w http.ResponseWriter, _ *http.Request) {
 	wrapper := struct {
 		Endpoints []ParsedJSONAPIEndpoint `json:"endpoints"`
 	}{
@@ -1536,7 +1536,7 @@ code.inline { border-radius: 3px; padding: 0.2em; background-color: #F7FAFB; fon
 
 var docTemplateBody string
 
-func htmlDocs(w http.ResponseWriter, r *http.Request) {
+func htmlDocs(w http.ResponseWriter, _ *http.Request) {
 	if _, err := fmt.Fprintf(w, "%s", docTemplateBody); err != nil {
 		log.Printf("Error writing HTML docs: %v", err)
 	}

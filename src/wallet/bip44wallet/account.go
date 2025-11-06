@@ -131,7 +131,7 @@ func (a *bip44Account) syncSecrets(ss wallet.Secrets) error {
 	return nil
 }
 
-func (a *bip44Account) dropLastEntriesN(chain, n uint32) error {
+func (a *bip44Account) dropLastEntriesN(chain, n uint32) error { //nolint:unused
 	switch chain {
 	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
 		return a.Chains[chain].dropLastEntriesN(n)
@@ -353,7 +353,7 @@ func (c bip44Chain) clone() bip44Chain {
 	}
 }
 
-func (c *bip44Chain) dropLastEntriesN(n uint32) error {
+func (c *bip44Chain) dropLastEntriesN(n uint32) error { //nolint:unused
 	l := uint32(len(c.Entries))
 	if n > l {
 		return errors.New("bip44Chain.dropLastEntriesN param 'n' is out of range")

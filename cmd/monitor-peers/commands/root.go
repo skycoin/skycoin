@@ -178,7 +178,7 @@ func (r Report) Append(addr string, state PeerState, introduction *daemon.Introd
 	return append(r, entry)
 }
 
-func main() {
+func main() { //nolint:unused
 	peersFile := flag.String("f", defaultPeersFile, "file containing peers")
 	connectTimeoutStr := flag.String("ctimeout", defaultConnectTimeout, "connect timeout for each peer")
 	readTimeoutStr := flag.String("rtimeout", defaultReadTimeout, "read timeout for each peer")

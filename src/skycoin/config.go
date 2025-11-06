@@ -31,7 +31,7 @@ import (
 )
 
 var (
-	help = false
+	help = false //nolint:unused
 )
 
 // Config records skycoin node and build config

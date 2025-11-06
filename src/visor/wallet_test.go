@@ -384,7 +384,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 		return entries[5:8]
 	}()
 	require.Len(t, bip44Entries, 3)
-	bip44Addrs, err := func() ([]cipher.Address, error) {
+	bip44Addrs, err := func() ([]cipher.Address, error) { //nolint:unparam
 		addrs, err := w.GetAddresses()
 		require.NoError(t, err)
 		return wallet.SkycoinAddresses(addrs), nil

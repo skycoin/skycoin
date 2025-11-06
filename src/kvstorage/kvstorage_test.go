@@ -47,7 +47,7 @@ func setupEmptyTestFile(t *testing.T, fn string) {
 }
 
 func setupCorruptedTestFile(t *testing.T, fn string) {
-	f, err := os.Create(fn)
+	f, err := os.Create(fn) //nolint:gosec
 	require.NoError(t, err)
 	defer f.Close() //nolint:errcheck
 	_, err = f.Write([]byte("corrupt json file"))

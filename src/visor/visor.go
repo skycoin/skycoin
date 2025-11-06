@@ -388,7 +388,7 @@ func (vs *Visor) CreateAndExecuteBlock() (coin.SignedBlock, error) {
 
 	err := vs.db.Update("CreateAndExecuteBlock", func(tx *dbutil.Tx) error {
 		var err error
-		sb, err = vs.createBlock(tx, uint64(time.Now().UTC().Unix()))
+		sb, err = vs.createBlock(tx, uint64(time.Now().UTC().Unix())) //nolint:gosec
 		if err != nil {
 			return err
 		}

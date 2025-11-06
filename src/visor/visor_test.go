@@ -692,7 +692,7 @@ func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBl
 	var blocks []coin.SignedBlock
 	var uncfmTxns []UnconfirmedTransaction
 	for i := uint64(0); i < uint64(n); i++ {
-		tm := time.Now().UTC().Unix() + int64(i)*int64(time.Second)
+		tm := time.Now().UTC().Unix() + int64(i)*int64(time.Second) //nolint:gosec
 		txns = append(txns, historydb.Transaction{
 			BlockSeq: i,
 			Txn: coin.Transaction{

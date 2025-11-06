@@ -39,7 +39,7 @@ var genTime uint64 = 1000
 var incTime uint64 = 3600 * 1000
 var genCoins uint64 = 1000e6
 
-func feeCalc(t *coin.Transaction) (uint64, error) {
+func feeCalc(_ *coin.Transaction) (uint64, error) {
 	return 0, nil
 }
 
@@ -168,7 +168,7 @@ func (fbc *fakeBlockchain) CreateGenesisBlock(genesisAddr cipher.Address, genesi
 	return b
 }
 
-func (fbc fakeBlockchain) VerifyTransaction(tx coin.Transaction) error {
+func (fbc fakeBlockchain) VerifyTransaction(_ coin.Transaction) error {
 	return nil
 }
 
@@ -355,7 +355,7 @@ func TestProcessBlock(t *testing.T) {
 
 func testEngine(t *testing.T, tds []testData, bc *fakeBlockchain, hdb *HistoryDB, db *dbutil.DB) {
 	for i, td := range tds {
-		b, txn, err := addBlock(bc, td, incTime*(uint64(i)+1))
+		b, txn, err := addBlock(bc, td, incTime*(uint64(i)+1)) //nolint:gosec
 		require.NoError(t, err)
 
 		// update the next block test data.
@@ -380,7 +380,7 @@ func testEngine(t *testing.T, tds []testData, bc *fakeBlockchain, hdb *HistoryDB
 
 		// check outputs
 		for _, o := range td.Vouts {
-			ux, err := getUx(bc, uint64(i+1), txn.Hash(), o.ToAddr)
+			ux, err := getUx(bc, uint64(i+1), txn.Hash(), o.ToAddr) //nolint:gosec
 			require.NoError(t, err)
 
 			uxInDB := UxOut{}

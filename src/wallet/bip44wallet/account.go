@@ -1,3 +1,4 @@
+// Package bip44wallet implements BIP44 hierarchical deterministic wallets.
 package bip44wallet
 
 import (

@@ -78,7 +78,7 @@ type chainStore interface {
 }
 
 // DefaultWalker default blockchain walker
-func DefaultWalker(tx *dbutil.Tx, hps []coin.HashPair) (cipher.SHA256, bool) {
+func DefaultWalker(_ *dbutil.Tx, hps []coin.HashPair) (cipher.SHA256, bool) {
 	if len(hps) == 0 {
 		return cipher.SHA256{}, false
 	}

@@ -1112,8 +1112,8 @@ func setupNoUnspentAddrIndexDB(t *testing.T) (*dbutil.DB, func()) {
 
 	return db, func() {
 		db.Close()                //nolint:errcheck
-		tmpFile.Close()           //nolint:errcheck
-		os.Remove(tmpFile.Name()) //nolint:errcheck
+		tmpFile.Close()           //nolint:errcheck,gosec
+		os.Remove(tmpFile.Name()) //nolint:errcheck,gosec
 	}
 }
 

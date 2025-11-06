@@ -460,7 +460,7 @@ func (uct unconfirmedTxnsGetter) getTransaction(tx *dbutil.Tx, hash cipher.SHA25
 	return &Transaction{
 		Transaction: uncfmTxn.Transaction,
 		Status:      NewUnconfirmedTransactionStatus(),
-		Time:        uint64(timeutil.NanoToTime(uncfmTxn.Received).Unix()),
+		Time:        uint64(timeutil.NanoToTime(uncfmTxn.Received).Unix()), //nolint:gosec
 	}, nil
 }
 

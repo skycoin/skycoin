@@ -79,7 +79,7 @@ type fakeChainStore struct {
 	blocks []coin.SignedBlock
 }
 
-func (fcs *fakeChainStore) Head(tx *dbutil.Tx) (*coin.SignedBlock, error) {
+func (fcs *fakeChainStore) Head(_ *dbutil.Tx) (*coin.SignedBlock, error) {
 	l := len(fcs.blocks)
 	if l == 0 {
 		return nil, blockdb.ErrNoHeadBlock
@@ -99,19 +99,19 @@ func (fcs *fakeChainStore) HeadSeq(tx *dbutil.Tx) (uint64, bool, error) {
 	return h.Seq(), true, nil
 }
 
-func (fcs *fakeChainStore) Len(tx *dbutil.Tx) (uint64, error) {
+func (fcs *fakeChainStore) Len(_ *dbutil.Tx) (uint64, error) {
 	return uint64(len(fcs.blocks)), nil
 }
 
-func (fcs *fakeChainStore) AddBlock(tx *dbutil.Tx, b *coin.SignedBlock) error {
+func (fcs *fakeChainStore) AddBlock(_ *dbutil.Tx, _ *coin.SignedBlock) error {
 	return nil
 }
 
-func (fcs *fakeChainStore) GetBlockSignature(tx *dbutil.Tx, b *coin.Block) (cipher.Sig, bool, error) {
+func (fcs *fakeChainStore) GetBlockSignature(_ *dbutil.Tx, b *coin.Block) (cipher.Sig, bool, error) {
 	return cipher.Sig{}, false, nil
 }
 
-func (fcs *fakeChainStore) GetBlockByHash(tx *dbutil.Tx, hash cipher.SHA256) (*coin.Block, error) {
+func (fcs *fakeChainStore) GetBlockByHash(_ *dbutil.Tx, hash cipher.SHA256) (*coin.Block, error) {
 	return nil, nil
 }
 

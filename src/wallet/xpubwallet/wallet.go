@@ -196,7 +196,7 @@ func (w *Wallet) generateEntries(num uint64, initialChildIdx uint32) (wallet.Ent
 	var pubkeys []*bip32.PublicKey
 	var addressIndices []uint32
 	j := initialChildIdx
-	for i := uint32(0); i < uint32(num); i++ {
+	for i := uint32(0); i < uint32(num); i++ { //nolint:gosec
 		k, err := w.xpub.NewPublicChildKey(j)
 
 		var addErr error
@@ -306,7 +306,7 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 	var keepNum uint64
 	for i := len(active) - 1; i >= 0; i-- {
 		if active[i] {
-			keepNum = uint64(i + 1)
+			keepNum = uint64(i + 1) //nolint:gosec
 			break
 		}
 	}
@@ -342,7 +342,7 @@ func (w *Wallet) GenerateAddresses(options ...wallet.Option) ([]cipher.Addresser
 
 	makeAddress := wallet.ResolveAddressDecoder(w.Coin())
 
-	for i := uint32(0); i < uint32(num); i++ {
+	for i := uint32(0); i < uint32(num); i++ { //nolint:gosec
 		index := initLen + i
 		pk, err := w.xpub.NewPublicChildKey(index)
 		if err != nil {

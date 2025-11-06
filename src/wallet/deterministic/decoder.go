@@ -1,3 +1,4 @@
+// Package deterministic implements deterministic wallets.
 package deterministic
 
 import (

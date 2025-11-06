@@ -104,7 +104,7 @@ func (bt *fakeBlockTree) GetBlockInDepth(_ *dbutil.Tx, depth uint64, _ Walker) (
 	return nil, nil
 }
 
-func (bt *fakeBlockTree) ForEachBlock(_ *dbutil.Tx, f func(*coin.Block) error) error {
+func (bt *fakeBlockTree) ForEachBlock(_ *dbutil.Tx, _ func(*coin.Block) error) error {
 	return nil
 }
 
@@ -150,7 +150,7 @@ func (ss *fakeSignatureStore) Get(_ *dbutil.Tx, hash cipher.SHA256) (cipher.Sig,
 	return sig, ok, nil
 }
 
-func (ss *fakeSignatureStore) ForEach(tx *dbutil.Tx, f func(cipher.SHA256, cipher.Sig) error) error {
+func (ss *fakeSignatureStore) ForEach(_ *dbutil.Tx, _ func(cipher.SHA256, cipher.Sig) error) error {
 	return nil
 }
 
@@ -171,7 +171,7 @@ func newFakeUnspentPool(failedWhenSaved *bool) *fakeUnspentPool {
 	}
 }
 
-func (fup *fakeUnspentPool) MaybeBuildIndexes(tx *dbutil.Tx, height uint64) error {
+func (fup *fakeUnspentPool) MaybeBuildIndexes(_ *dbutil.Tx, _ uint64) error {
 	return nil
 }
 

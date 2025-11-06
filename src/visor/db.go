@@ -256,7 +256,7 @@ func copyCorruptDB(dbPath string) (string, error) { //nolint:unused,megacheck
 		return "", err
 	}
 
-	in, err := os.Open(dbPath)
+	in, err := os.Open(dbPath) //nolint:gosec
 	if err != nil {
 		return "", err
 	}
@@ -264,7 +264,7 @@ func copyCorruptDB(dbPath string) (string, error) { //nolint:unused,megacheck
 		_ = in.Close() //nolint:errcheck
 	}()
 
-	out, err := os.Create(newDBPath)
+	out, err := os.Create(newDBPath) //nolint:gosec
 	if err != nil {
 		return "", err
 	}
@@ -303,7 +303,7 @@ func makeCorruptDBPath(dbPath string) (string, error) {
 // shaFileID return the first 8 bytes of the SHA1 hash of the file,
 // hex-encoded
 func shaFileID(dbPath string) (string, error) {
-	fi, err := os.Open(dbPath)
+	fi, err := os.Open(dbPath) //nolint:gosec
 	if err != nil {
 		return "", err
 	}

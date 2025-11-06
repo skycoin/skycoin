@@ -1,3 +1,4 @@
+// Package encoderfuzz provides fuzz testing for the encoder package.
 package encoderfuzz
 
 import (

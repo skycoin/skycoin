@@ -238,7 +238,7 @@ func TestDeserializeRawToValue(t *testing.T) {
 
 	var ssd []string
 	n, err = DeserializeRawToValue(b, reflect.ValueOf(&ssd))
-	require.Equal(t, uint64(expectedLen), n)
+	require.Equal(t, uint64(expectedLen), n) //nolint:gosec
 	require.NoError(t, err)
 
 	// Not a pointer
@@ -307,20 +307,20 @@ func TestEncodeNestedSlice(t *testing.T) {
 	size := uint64(0)
 	elems := make([]Contained, 4)
 	for i := range elems {
-		elems[i].X = uint32(i)
+		elems[i].X = uint32(i) //nolint:gosec
 		size += 4
-		elems[i].Y = uint64(i)
+		elems[i].Y = uint64(i) //nolint:gosec
 		size += 8
 		elems[i].Bytes = make([]uint8, i)
 		for j := range elems[i].Bytes {
 			elems[i].Bytes[j] = uint8(j) //nolint:gosec
 		}
-		size += 4 + uint64(i*1)
+		size += 4 + uint64(i*1) //nolint:gosec
 		elems[i].Ints = make([]uint16, i)
 		for j := range elems[i].Ints {
 			elems[i].Ints[j] = uint16(j) //nolint:gosec
 		}
-		size += 4 + uint64(i*2)
+		size += 4 + uint64(i*2) //nolint:gosec
 	}
 	c := Container{elems}
 	n := datasizeWrite(reflect.ValueOf(c))

@@ -67,7 +67,7 @@ func (s Sha256Xor) Encrypt(data []byte, password []byte) ([]byte, error) {
 
 	// Sets data length prefix
 	dataLenBytes := make([]byte, sha256XorDataLengthSize)
-	binary.LittleEndian.PutUint32(dataLenBytes, uint32(len(data)))
+	binary.LittleEndian.PutUint32(dataLenBytes, uint32(len(data))) //nolint:gosec
 
 	// Prefixes data with length
 	ldata := append(dataLenBytes, data...)

@@ -1,3 +1,4 @@
+// Package wordlists provides BIP39 wordlists in various languages.
 package wordlists
 
 import (

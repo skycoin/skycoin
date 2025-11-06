@@ -558,7 +558,7 @@ func createCertFiles(certFile, keyFile string) error {
 		return err
 	}
 	if err := ioutil.WriteFile(keyFile, key, 0600); err != nil {
-		os.Remove(certFile)
+		_ = os.Remove(certFile) //nolint:errcheck
 		return err
 	}
 

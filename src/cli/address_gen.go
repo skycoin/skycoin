@@ -307,13 +307,17 @@ func fiberAddressGenCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			defer addrsF.Close()
+			defer func() {
+				_ = addrsF.Close() //nolint:errcheck
+			}()
 
 			seedsF, err := os.Create(seedsFilename)
 			if err != nil {
 				return err
 			}
-			defer seedsF.Close()
+			defer func() {
+				_ = seedsF.Close() //nolint:errcheck
+			}()
 
 			for i, a := range addrs {
 				if _, err := fmt.Fprintf(addrsF, "\"%s\",\n", a); err != nil {

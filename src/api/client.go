@@ -267,7 +267,9 @@ func (c *Client) requestV2(method, endpoint string, body io.Reader, respObj inte
 		return false, err
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close() //nolint:errcheck
+	}()
 
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -325,7 +327,9 @@ func (c *Client) CSRF() (string, error) {
 		return "", err
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close() //nolint:errcheck
+	}()
 
 	switch resp.StatusCode {
 	case http.StatusOK:

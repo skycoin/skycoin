@@ -117,7 +117,11 @@ func serve() {
 			c.String(http.StatusBadGateway, "Failed to proxy request to node: %v", err)
 			return
 		}
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				log.Printf("Error closing response body: %v", err)
+			}
+		}()
 
 		log.Printf("[PROXY] Response: %d", resp.StatusCode)
 

@@ -6,5 +6,6 @@ import (
 )
 
 // EmbeddedFiles is the embedded gui source
+//
 //go:embed dist/*
 var EmbeddedFiles embed.FS

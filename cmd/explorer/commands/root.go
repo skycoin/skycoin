@@ -176,9 +176,11 @@ var RootCmd = &cobra.Command{
 					http.Error(w, "index.html not found", http.StatusInternalServerError)
 					return
 				}
-				defer f.Close()
+				defer f.Close() //nolint:errcheck
 				w.Header().Set("Content-Type", "text/html; charset=utf-8")
-				io.Copy(w, f)
+				if _, err := io.Copy(w, f); err != nil {
+					log.Printf("Error serving index.html: %v", err)
+				}
 			})))
 
 			// Backwards compatibility redirects
@@ -331,7 +333,9 @@ func (s APIEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		fmt.Fprintf(w, "%s", cs.CurrentSupply)
+		if _, err := fmt.Fprintf(w, "%s", cs.CurrentSupply); err != nil {
+			log.Printf("Error writing response: %v", err)
+		}
 		return
 	}
 
@@ -1535,5 +1539,7 @@ code.inline { border-radius: 3px; padding: 0.2em; background-color: #F7FAFB; fon
 var docTemplateBody string
 
 func htmlDocs(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "%s", docTemplateBody)
+	if _, err := fmt.Fprintf(w, "%s", docTemplateBody); err != nil {
+		log.Printf("Error writing HTML docs: %v", err)
+	}
 }

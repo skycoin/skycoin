@@ -110,7 +110,7 @@ func LoadJSON(filename string, thing interface{}) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer file.Close() //nolint:errcheck
 
 	dec := json.NewDecoder(file)
 	dec.UseNumber()

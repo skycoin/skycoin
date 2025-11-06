@@ -46,7 +46,7 @@ func New(next http.Handler) http.Handler {
 		defer gzPool.Put(gz)
 
 		gz.Reset(w)
-		defer gz.Close()
+		defer gz.Close() //nolint:errcheck
 
 		next.ServeHTTP(&gzipResponseWriter{ResponseWriter: w, Writer: gz}, r)
 	})

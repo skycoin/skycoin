@@ -74,7 +74,7 @@ func shaFileID(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer fi.Close()
+	defer fi.Close() //nolint:errcheck
 
 	h := sha256.New()
 	if _, err := io.Copy(h, fi); err != nil {

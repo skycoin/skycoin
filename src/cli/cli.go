@@ -256,12 +256,16 @@ func printJSON(obj interface{}) error {
 // readPasswordFromTerminal promotes user to enter password and read it.
 func readPasswordFromTerminal() ([]byte, error) {
 	// Promotes to enter the wallet password
-	fmt.Fprint(os.Stdout, "enter password:")
+	if _, err := fmt.Fprint(os.Stdout, "enter password:"); err != nil {
+		return nil, err
+	}
 	bp, err := terminal.ReadPassword(int(syscall.Stdin)) //nolint:unconvert
 	if err != nil {
 		return nil, err
 	}
-	fmt.Fprintln(os.Stdout, "")
+	if _, err := fmt.Fprintln(os.Stdout, ""); err != nil {
+		return nil, err
+	}
 	return bp, nil
 }
 

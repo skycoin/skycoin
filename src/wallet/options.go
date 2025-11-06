@@ -16,8 +16,9 @@ const (
 	// ChangeChain indicates the change chain
 	ExternalChain ChainMode = 1 // indicates the external chain
 	// ChangeChain is the change chain mode
-	ChangeChain   ChainMode = 2 // indicates the change chain
-	AllChains               = 3 // indicates both external and change chains
+	ChangeChain ChainMode = 2 // indicates the change chain
+	// AllChains represents both external and change chains
+	AllChains = 3 // indicates both external and change chains
 )
 
 // Option represents the general options, it can be used to set optional

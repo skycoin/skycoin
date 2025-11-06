@@ -209,7 +209,7 @@ func (a bip44Account) entries(chain uint32) (wallet.Entries, error) {
 func (a bip44Account) entriesLen(chain uint32) (uint32, error) {
 	switch chain {
 	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
-		return uint32(len(a.Chains[chain].Entries)), nil
+		return uint32(len(a.Chains[chain].Entries)), nil //nolint:gosec // Entry count conversion
 	default:
 		return 0, fmt.Errorf("invalid chain index: %d", chain)
 	}
@@ -218,7 +218,7 @@ func (a bip44Account) entriesLen(chain uint32) (uint32, error) {
 func (a bip44Account) entryAt(chain, i uint32) (wallet.Entry, error) {
 	switch chain {
 	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
-		if i >= uint32(len(a.Chains[chain].Entries)) {
+		if i >= uint32(len(a.Chains[chain].Entries)) { //nolint:gosec // Entry index validation
 			return wallet.Entry{}, fmt.Errorf("entry index %d out of range", i)
 		}
 		return a.Chains[chain].Entries[i], nil
@@ -280,7 +280,7 @@ func (c *bip44Chain) newAddresses(num uint32, seckey *bip32.PrivateKey, addressF
 	}
 
 	var addrs []cipher.Addresser
-	initLen := uint32(len(c.Entries))
+	initLen := uint32(len(c.Entries)) //nolint:gosec // Current entries count
 	_, err := mathutil.AddUint32(initLen, num)
 	if err != nil {
 		return nil, fmt.Errorf("can not create %d more addresses, current addresses number %d, err: %v", num, initLen, err)

@@ -282,7 +282,7 @@ func Copy(dst, src string) (err error) {
 		}
 	}()
 
-	out, err := os.Create(dst)
+	out, err := os.Create(dst) //nolint:gosec // Loading user-specified file path
 	if err != nil {
 		return err
 	}
@@ -312,7 +312,7 @@ func Exists(fn string) (bool, error) {
 
 // IsWritable checks if the file is writable
 func IsWritable(name string) bool {
-	f, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	f, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600) //nolint:gosec // Loading user-specified file path
 	if err != nil && os.IsPermission(err) {
 		return false
 	}

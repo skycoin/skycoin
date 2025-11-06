@@ -1,3 +1,4 @@
+// Package xpubwallet implements extended public key wallet functionality
 package xpubwallet
 
 import (

@@ -1,3 +1,4 @@
+// Package crypto provides cryptographic types and operations for Skycoin
 package crypto
 
 import (

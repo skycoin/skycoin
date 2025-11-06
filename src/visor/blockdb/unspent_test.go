@@ -523,7 +523,7 @@ func TestUnspentProcessBlock(t *testing.T) {
 				uxHash, err := up.GetUxHash(tx)
 				require.NoError(t, err)
 
-				block, err = coin.NewBlock(coin.Block{}, uint64(time.Now().Unix()), uxHash, coin.Transactions{txn}, feeCalc)
+				block, err = coin.NewBlock(coin.Block{}, uint64(time.Now().Unix()), uxHash, coin.Transactions{txn}, feeCalc) //nolint:gosec // Time conversion
 				require.NoError(t, err)
 
 				oldUxHash, err = up.GetUxHash(tx)
@@ -1111,7 +1111,7 @@ func setupNoUnspentAddrIndexDB(t *testing.T) (*dbutil.DB, func()) {
 	db := dbutil.WrapDB(boltDB)
 
 	return db, func() {
-		db.Close()                //nolint:errcheck
+		db.Close()                //nolint:errcheck,gosec
 		tmpFile.Close()           //nolint:errcheck,gosec
 		os.Remove(tmpFile.Name()) //nolint:errcheck,gosec
 	}

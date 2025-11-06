@@ -107,11 +107,11 @@ func (fcs *fakeChainStore) AddBlock(_ *dbutil.Tx, _ *coin.SignedBlock) error {
 	return nil
 }
 
-func (fcs *fakeChainStore) GetBlockSignature(_ *dbutil.Tx, b *coin.Block) (cipher.Sig, bool, error) {
+func (fcs *fakeChainStore) GetBlockSignature(_ *dbutil.Tx, _ *coin.Block) (cipher.Sig, bool, error) {
 	return cipher.Sig{}, false, nil
 }
 
-func (fcs *fakeChainStore) GetBlockByHash(_ *dbutil.Tx, hash cipher.SHA256) (*coin.Block, error) {
+func (fcs *fakeChainStore) GetBlockByHash(_ *dbutil.Tx, _ cipher.SHA256) (*coin.Block, error) {
 	return nil, nil
 }
 

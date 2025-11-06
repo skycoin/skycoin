@@ -164,8 +164,8 @@ func (fd *Field) Normalize() {
 	t8 &= uint32(mask) //nolint:gosec
 	t7 &= uint32(mask) //nolint:gosec
 	t6 &= uint32(mask) //nolint:gosec
-	t5 &= uint32(mask)
-	t4 &= uint32(mask)
+	t5 &= uint32(mask) //nolint:gosec // Intentional conversion for secp256k1 field operations
+	t4 &= uint32(mask) //nolint:gosec // Intentional conversion for secp256k1 field operations
 	t3 &= uint32(mask)
 	t2 &= uint32(mask)
 	low -= ((mask ^ 0xFFFFFFFFFFFFFFFF) & 0xFFFFEFFFFFC2F)

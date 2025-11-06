@@ -325,18 +325,18 @@ func makeRandomUxBalances(t *testing.T) []UxBalance {
 	// Small ranges are used for Coins, Hours, BkSeq to increase likelihood
 	// that they collide and test deeper sorting comparisons
 
-	n := rand.Intn(101)
+	n := rand.Intn(101) //nolint:gosec // Weak random acceptable in tests
 	uxb := make([]UxBalance, n)
 
 	// Use a random max range for the hours' rand range to ensure enough
 	// balances have zero hours
-	hasZeroHoursRange := rand.Intn(3) + 1
+	hasZeroHoursRange := rand.Intn(3) + 1 //nolint:gosec // Weak random acceptable in tests
 
 	for i := 0; i < n; i++ {
 		ux := UxBalance{
-			Coins: uint64(rand.Intn(10) + 1), // 1-10
-			Hours: uint64(rand.Intn(hasZeroHoursRange)),
-			BkSeq: uint64(rand.Intn(11)), // 0-10
+			Coins: uint64(rand.Intn(10) + 1),            //nolint:gosec // Test data generation
+			Hours: uint64(rand.Intn(hasZeroHoursRange)), //nolint:gosec // Test data generation
+			BkSeq: uint64(rand.Intn(11)),                //nolint:gosec // Test data generation
 			Hash:  testutil.RandSHA256(t),
 		}
 

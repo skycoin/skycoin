@@ -114,7 +114,7 @@ func (c *Coin) Run() error {
 
 	if c.config.Node.HTTPProf {
 		go func() {
-			if err := http.ListenAndServe(c.config.Node.HTTPProfHost, nil); err != nil {
+			if err := http.ListenAndServe(c.config.Node.HTTPProfHost, nil); err != nil { //nolint:gosec // HTTP profiling interface, intentional use
 				c.logger.WithError(err).Errorf("Listen on HTTP profiling interface %s failed", c.config.Node.HTTPProfHost)
 			}
 		}()
@@ -325,7 +325,7 @@ func (c *Coin) initLogFile() (*os.File, error) {
 	tf := "2006-01-02-030405"
 	logfile := filepath.Join(logDir, fmt.Sprintf("%s-v%s.log", time.Now().Format(tf), c.config.Build.Version))
 
-	f, err := os.OpenFile(logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
+	f, err := os.OpenFile(logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600) //nolint:gosec // Log file creation
 	if err != nil {
 		c.logger.WithError(err).Errorf("os.OpenFile(%s) failed", logfile)
 		return nil, err

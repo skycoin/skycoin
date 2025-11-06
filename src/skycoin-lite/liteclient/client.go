@@ -1,3 +1,4 @@
+// Package liteclient implements a lightweight Skycoin client
 package liteclient
 
 import (

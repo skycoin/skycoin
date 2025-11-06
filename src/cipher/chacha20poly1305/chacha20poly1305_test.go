@@ -91,8 +91,8 @@ func TestRandom(t *testing.T) {
 		var nonce [12]byte
 		var key [32]byte
 
-		al := mr.Intn(128)
-		pl := mr.Intn(16384)
+		al := mr.Intn(128)   //nolint:gosec // Weak random acceptable in tests
+		pl := mr.Intn(16384) //nolint:gosec // Weak random acceptable in tests
 		ad := make([]byte, al)
 		plaintext := make([]byte, pl)
 		_, err := cr.Read(key[:])

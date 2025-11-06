@@ -513,7 +513,7 @@ func (bc Blockchain) GetLastBlocks(tx *dbutil.Tx, num uint64) ([]coin.SignedBloc
 		return nil, nil
 	}
 
-	start := int(end-num) + 1
+	start := int(end-num) + 1 //nolint:gosec // Intentional range calculation
 	if start < 0 {
 		start = 0
 	}

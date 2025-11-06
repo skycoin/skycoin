@@ -629,7 +629,7 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 		var keepNum uint64
 		for i := len(active) - 1; i >= 0; i-- {
 			if active[i] {
-				keepNum = uint64(i + 1)
+				keepNum = uint64(i + 1) //nolint:gosec // Address count conversion
 				break
 			}
 		}
@@ -702,7 +702,7 @@ func (w *Wallet) GenerateAddresses(options ...wallet.Option) ([]cipher.Addresser
 	case wallet.DefaultChain, wallet.ExternalChain:
 		return w.newAddresses(opts.Account, bip44.ExternalChainIndex, uint32(num)) //nolint:gosec
 	case wallet.ChangeChain:
-		return w.newAddresses(opts.Account, bip44.ChangeChainIndex, uint32(num))
+		return w.newAddresses(opts.Account, bip44.ChangeChainIndex, uint32(num)) //nolint:gosec // Chain index conversion
 	case wallet.AllChains:
 		return nil, errors.New("could not generate new addresses on both external and internal chains at once")
 	default:

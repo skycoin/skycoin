@@ -48,7 +48,7 @@ func prepareDB(t *testing.T) (*dbutil.DB, func()) {
 }
 
 func readAll(t *testing.T, f string) []byte {
-	fi, err := os.Open(f)
+	fi, err := os.Open(f) //nolint:gosec // Test file operation
 	require.NoError(t, err)
 	defer fi.Close() //nolint:errcheck
 
@@ -263,7 +263,7 @@ func TestHistorydbVerifier(t *testing.T) {
 }
 
 func TestVisorCreateBlock(t *testing.T) {
-	when := uint64(time.Now().UTC().Unix())
+	when := uint64(time.Now().UTC().Unix()) //nolint:gosec // Time conversion
 
 	db, shutdown := prepareDB(t)
 	defer shutdown()
@@ -488,7 +488,7 @@ func TestVisorCreateBlock(t *testing.T) {
 }
 
 func TestVisorInjectTransaction(t *testing.T) {
-	when := uint64(time.Now().UTC().Unix())
+	when := uint64(time.Now().UTC().Unix()) //nolint:gosec // Time conversion
 
 	db, shutdown := prepareDB(t)
 	defer shutdown()

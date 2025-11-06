@@ -325,7 +325,7 @@ func TestTransactionPushOutput(t *testing.T) {
 		require.Equal(t, txn.Out[i], TransactionOutput{
 			Address: a,
 			Coins:   uint64(i * 100), //nolint:gosec
-			Hours:   uint64(i * 50), //nolint:gosec
+			Hours:   uint64(i * 50),  //nolint:gosec
 		})
 	}
 
@@ -1050,7 +1050,7 @@ func TestSortTransactions(t *testing.T) {
 	var txns Transactions
 	for i := 0; i < n; i++ {
 		txn := Transaction{}
-		err := txn.PushOutput(makeAddress(), 1e6, uint64(i*1e3))
+		err := txn.PushOutput(makeAddress(), 1e6, uint64(i*1e3)) //nolint:gosec // Test data generation
 		require.NoError(t, err)
 		err = txn.UpdateHeader()
 		require.NoError(t, err)

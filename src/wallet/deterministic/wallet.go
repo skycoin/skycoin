@@ -406,7 +406,7 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 	var keepNum uint64
 	for i := len(active) - 1; i >= 0; i-- {
 		if active[i] {
-			keepNum = uint64(i + 1)
+			keepNum = uint64(i + 1) //nolint:gosec // Address count conversion
 			break
 		}
 	}

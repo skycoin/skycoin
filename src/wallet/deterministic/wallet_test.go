@@ -542,7 +542,7 @@ func TestWalletGenerateAddress(t *testing.T) {
 				addrs, err := w.GetAddresses()
 				require.NoError(t, err)
 
-				_, keys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(tc.seed), int(tc.num))
+				_, keys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(tc.seed), int(tc.num)) //nolint:gosec // Test data generation
 				for i, k := range keys {
 					a := cipher.MustAddressFromSecKey(k)
 					require.Equal(t, a.String(), addrs[i].String())

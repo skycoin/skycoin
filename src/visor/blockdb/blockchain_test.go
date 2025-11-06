@@ -175,11 +175,11 @@ func (fup *fakeUnspentPool) MaybeBuildIndexes(_ *dbutil.Tx, _ uint64) error {
 	return nil
 }
 
-func (fup *fakeUnspentPool) Len(tx *dbutil.Tx) (uint64, error) {
+func (fup *fakeUnspentPool) Len(_ *dbutil.Tx) (uint64, error) {
 	return uint64(len(fup.outs)), nil
 }
 
-func (fup *fakeUnspentPool) Get(tx *dbutil.Tx, h cipher.SHA256) (*coin.UxOut, error) {
+func (fup *fakeUnspentPool) Get(_ *dbutil.Tx, h cipher.SHA256) (*coin.UxOut, error) {
 	out, ok := fup.outs[h]
 	if !ok {
 		return nil, nil
@@ -187,7 +187,7 @@ func (fup *fakeUnspentPool) Get(tx *dbutil.Tx, h cipher.SHA256) (*coin.UxOut, er
 	return &out, nil
 }
 
-func (fup *fakeUnspentPool) GetAll(tx *dbutil.Tx) (coin.UxArray, error) {
+func (fup *fakeUnspentPool) GetAll(_ *dbutil.Tx) (coin.UxArray, error) {
 	outs := make(coin.UxArray, 0, len(fup.outs))
 	for _, out := range fup.outs {
 		outs = append(outs, out)
@@ -196,7 +196,7 @@ func (fup *fakeUnspentPool) GetAll(tx *dbutil.Tx) (coin.UxArray, error) {
 	return outs, nil
 }
 
-func (fup *fakeUnspentPool) GetArray(tx *dbutil.Tx, hashes []cipher.SHA256) (coin.UxArray, error) {
+func (fup *fakeUnspentPool) GetArray(_ *dbutil.Tx, hashes []cipher.SHA256) (coin.UxArray, error) {
 	outs := make(coin.UxArray, 0, len(hashes))
 	for _, h := range hashes {
 		ux, ok := fup.outs[h]
@@ -209,11 +209,11 @@ func (fup *fakeUnspentPool) GetArray(tx *dbutil.Tx, hashes []cipher.SHA256) (coi
 	return outs, nil
 }
 
-func (fup *fakeUnspentPool) GetUxHash(tx *dbutil.Tx) (cipher.SHA256, error) {
+func (fup *fakeUnspentPool) GetUxHash(_ *dbutil.Tx) (cipher.SHA256, error) {
 	return fup.uxHash, nil
 }
 
-func (fup *fakeUnspentPool) GetUnspentHashesOfAddrs(tx *dbutil.Tx, addrs []cipher.Address) (AddressHashes, error) {
+func (fup *fakeUnspentPool) GetUnspentHashesOfAddrs(_ *dbutil.Tx, addrs []cipher.Address) (AddressHashes, error) {
 	addrm := make(map[cipher.Address]struct{}, len(addrs))
 	for _, a := range addrs {
 		addrm[a] = struct{}{}

@@ -118,7 +118,7 @@ func fastBase58DecodingAlphabet(str string, alphabet *Alphabet) ([]byte, error) 
 	)
 
 	if bytesleft > 0 {
-		zmask = 0xffffffff << uint32(bytesleft*8)
+		zmask = 0xffffffff << uint32(bytesleft*8) //nolint:gosec // Intentional conversion for base58 encoding
 	} else {
 		bytesleft = 4
 	}
@@ -142,7 +142,7 @@ func fastBase58DecodingAlphabet(str string, alphabet *Alphabet) ([]byte, error) 
 		for j := outisz - 1; j >= 0; j-- {
 			t = uint64(outi[j])*58 + c
 			c = (t >> 32) & 0x3f
-			outi[j] = uint32(t & 0xffffffff)
+			outi[j] = uint32(t & 0xffffffff) //nolint:gosec // Intentional conversion for base58 encoding
 		}
 
 		// Neither of these should occur because the buffer is allocated ourselves

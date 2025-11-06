@@ -314,7 +314,7 @@ func TestWalletSignTransaction(t *testing.T) {
 }
 
 func TestWalletCreateTransaction(t *testing.T) {
-	headTime := uint64(time.Now().UTC().Unix())
+	headTime := uint64(time.Now().UTC().Unix()) //nolint:gosec // Time conversion
 	seed := []byte("seed")
 
 	// Generate first keys
@@ -770,11 +770,11 @@ func makeTransaction(t *testing.T, nInputs int) (coin.Transaction, []coin.UxOut,
 
 func makeUxOut(t *testing.T, s cipher.SecKey, coins, hours uint64) coin.UxOut { //nolint:unparam
 	body := makeUxBody(t, s, coins, hours)
-	tm := rand.Int31n(1000)
-	seq := rand.Int31n(100)
+	tm := rand.Int31n(1000) //nolint:gosec // Test data generation
+	seq := rand.Int31n(100) //nolint:gosec // Test data generation
 	return coin.UxOut{
 		Head: coin.UxHead{
-			Time:  uint64(tm), //nolint:gosec
+			Time:  uint64(tm),  //nolint:gosec
 			BkSeq: uint64(seq), //nolint:gosec
 		},
 		Body: body,

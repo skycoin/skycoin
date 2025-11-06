@@ -924,7 +924,7 @@ func (vs *Visor) getTransaction(tx *dbutil.Tx, txnHash cipher.SHA256) (*Transact
 		return &Transaction{
 			Transaction: utxn.Transaction,
 			Status:      NewUnconfirmedTransactionStatus(),
-			Time:        uint64(timeutil.NanoToTime(utxn.Received).Unix()),
+			Time:        uint64(timeutil.NanoToTime(utxn.Received).Unix()), //nolint:gosec // Time conversion
 		}, nil
 	}
 

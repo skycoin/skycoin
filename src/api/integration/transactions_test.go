@@ -1967,7 +1967,7 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 		coins := rand.Intn(int(totalCoins)) + 1                        //nolint:gosec
 		coins -= coins % int(params.UserVerifyTxn.MaxDropletDivisor()) //nolint:gosec
 		if coins == 0 {
-			coins = int(params.UserVerifyTxn.MaxDropletDivisor())
+			coins = int(params.UserVerifyTxn.MaxDropletDivisor()) //nolint:gosec
 		}
 		hours := rand.Intn(int(spendableHours + 1)) //nolint:gosec
 		nOutputs := rand.Intn(maxOutputs) + 1       //nolint:gosec
@@ -1977,7 +1977,7 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 
 		changeAddress := es[0].Address.String()
 
-		shareFactor := strconv.FormatFloat(rand.Float64(), 'f', 8, 64)
+		shareFactor := strconv.FormatFloat(rand.Float64(), 'f', 8, 64) //nolint:gosec
 
 		tLog(t, "shareFactor", shareFactor)
 
@@ -1990,29 +1990,29 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 			}
 
 			receiver := api.Receiver{}
-			receiver.Address = destAddrs[rand.Intn(len(destAddrs))].String()
+			receiver.Address = destAddrs[rand.Intn(len(destAddrs))].String() //nolint:gosec
 
 			if i == nOutputs-1 {
 				var err error
-				receiver.Coins, err = droplet.ToString(uint64(remainingCoins))
+				receiver.Coins, err = droplet.ToString(uint64(remainingCoins)) //nolint:gosec
 				require.NoError(t, err)
 				receiver.Hours = fmt.Sprint(remainingHours)
 
 				remainingCoins = 0
 				remainingHours = 0
 			} else {
-				receiverCoins := rand.Intn(remainingCoins) + 1
-				receiverCoins -= receiverCoins % int(params.UserVerifyTxn.MaxDropletDivisor())
+				receiverCoins := rand.Intn(remainingCoins) + 1                                 //nolint:gosec
+				receiverCoins -= receiverCoins % int(params.UserVerifyTxn.MaxDropletDivisor()) //nolint:gosec
 				if receiverCoins == 0 {
-					receiverCoins = int(params.UserVerifyTxn.MaxDropletDivisor())
+					receiverCoins = int(params.UserVerifyTxn.MaxDropletDivisor()) //nolint:gosec
 				}
 
 				var err error
-				receiver.Coins, err = droplet.ToString(uint64(receiverCoins))
+				receiver.Coins, err = droplet.ToString(uint64(receiverCoins)) //nolint:gosec
 				require.NoError(t, err)
 				remainingCoins -= receiverCoins
 
-				receiverHours := rand.Intn(remainingHours + 1)
+				receiverHours := rand.Intn(remainingHours + 1) //nolint:gosec
 				receiver.Hours = fmt.Sprint(receiverHours)
 				remainingHours -= receiverHours
 			}

@@ -64,7 +64,7 @@ var (
 	liveTxFull     = flag.Bool("live-tx-full", false, "run live transaction test against full blockchain")
 	testLiveWallet = flag.Bool("test-live-wallet", false, "run live wallet tests, requires wallet envvars set")
 
-	cryptoTypes = []crypto.CryptoType{crypto.CryptoTypeScryptChacha20poly1305, crypto.CryptoTypeSha256Xor}
+	cryptoTypes = []crypto.CryptoType{crypto.CryptoTypeScryptChacha20poly1305, crypto.CryptoTypeSha256Xor} //nolint:unused
 
 	validNameRegexp     = regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
 	stripCoverageReport = regexp.MustCompile(`PASS\ncoverage: [\d\.]+% of statements in github.com/skycoin/skycoin/\.\.\.\n$`)
@@ -287,12 +287,12 @@ func createTempWalletDir(t *testing.T) (string, func()) { //nolint:unused
 	require.NoError(t, err)
 
 	return dir, func() {
-		os.RemoveAll(dir) //nolint:errcheck
+		os.RemoveAll(dir) //nolint:errcheck,gosec
 	}
 }
 
 func loadJSON(t *testing.T, filename string, obj interface{}) { //nolint:unused
-	f, err := os.Open(filename)
+	f, err := os.Open(filename) //nolint:gosec
 	require.NoError(t, err)
 	defer f.Close() //nolint:errcheck
 
@@ -309,7 +309,7 @@ func loadGoldenFile(t *testing.T, filename string, testData TestData) {
 		updateGoldenFile(t, goldenFile, testData.actual)
 	}
 
-	f, err := os.Open(goldenFile)
+	f, err := os.Open(goldenFile) //nolint:gosec
 	require.NoError(t, err)
 	defer f.Close() //nolint:errcheck
 
@@ -339,7 +339,7 @@ func checkGoldenFileObjectChanges(t *testing.T, goldenFile string, td TestData) 
 
 	goldenFile = filepath.Join(testFixturesDir, goldenFile)
 
-	f, err := os.Open(goldenFile)
+	f, err := os.Open(goldenFile) //nolint:gosec
 	require.NoError(t, err)
 	defer f.Close() //nolint:errcheck
 
@@ -1199,7 +1199,7 @@ func TestFiberAddressGen(t *testing.T) {
 	}
 
 	checkAddrsFile := func(t *testing.T, fn string, n int) []string {
-		b, err := os.ReadFile(fn)
+		b, err := os.ReadFile(fn) //nolint:gosec
 		require.NoError(t, err)
 
 		addrs := strings.Split(strings.TrimSpace(string(b)), "\n")
@@ -1228,7 +1228,7 @@ func TestFiberAddressGen(t *testing.T) {
 	}
 
 	checkSeedsFile := func(t *testing.T, fn string, entropy int, addrs []string) {
-		f, err := os.Open(fn)
+		f, err := os.Open(fn) //nolint:gosec
 		require.NoError(t, err)
 		defer f.Close() //nolint:errcheck
 
@@ -1277,7 +1277,7 @@ func TestFiberAddressGen(t *testing.T) {
 	}
 
 	touch := func(t *testing.T, fn string) {
-		f, err := os.Create(fn)
+		f, err := os.Create(fn) //nolint:gosec
 		require.NoError(t, err)
 		defer f.Close() //nolint:errcheck
 		err = f.Close()
@@ -1990,7 +1990,7 @@ func prepareCSVFile(t *testing.T, toAddrs [][]string) (csvFile string, teardown 
 	require.NoError(t, err)
 	csvFile = filepath.Join(tmpDir, fn)
 
-	f, err := os.Create(csvFile)
+	f, err := os.Create(csvFile) //nolint:gosec
 	require.NoError(t, err)
 	defer f.Close() //nolint:errcheck
 	w := csv.NewWriter(f)
@@ -2291,7 +2291,7 @@ func getTxids(t *testing.T, blockNum uint64) []string {
 	// do not get all blocks in one query, which might run out of
 	// memory when blockchain becomes very huge.
 	p := 500
-	n := int(blockNum / uint64(p))
+	n := int(blockNum / uint64(p)) //nolint:gosec
 
 	// Collects all transactions' id
 	var txids []string
@@ -2299,7 +2299,7 @@ func getTxids(t *testing.T, blockNum uint64) []string {
 		txids = append(txids, getTxidsInBlocks(t, i*p+1, (i+1)*p)...)
 	}
 
-	if (blockNum % uint64(p)) > 0 {
+	if (blockNum % uint64(p)) > 0 { //nolint:gosec
 		txids = append(txids, getTxidsInBlocks(t, n*p+1, int(blockNum)-1)...) //nolint:gosec
 	}
 
@@ -2955,7 +2955,7 @@ func prepareAndCheckWallet(t *testing.T, miniCoins, miniCoinHours uint64) (walle
 
 	if el < 3 {
 		// Generates addresses
-		_, err = w.GenerateAddresses(wallet.OptionGenerateN(uint64(3 - el)))
+		_, err = w.GenerateAddresses(wallet.OptionGenerateN(uint64(3 - el))) //nolint:gosec
 		if err != nil {
 			t.Fatalf("Wallet generateAddress failed: %v", err)
 		}

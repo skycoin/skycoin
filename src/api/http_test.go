@@ -269,7 +269,7 @@ func TestEnableGUI(t *testing.T) {
 			}()
 
 			defer func() {
-				s.listener.Close() //nolint:errcheck
+				s.listener.Close() //nolint:errcheck,gosec
 				wg.Wait()
 			}()
 

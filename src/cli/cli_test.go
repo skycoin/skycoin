@@ -62,7 +62,7 @@ func TestLoadConfig(t *testing.T) {
 
 	t.Run("set DATA_DIR", func(t *testing.T) {
 		val := "/home/foo/"
-		os.Setenv("DATA_DIR", val)    //nolint:errcheck
+		os.Setenv("DATA_DIR", val)    //nolint:errcheck,gosec    //nolint:errcheck
 		defer os.Unsetenv("DATA_DIR") //nolint:errcheck
 
 		cfg, err := LoadConfig()

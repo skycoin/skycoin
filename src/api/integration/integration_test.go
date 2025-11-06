@@ -236,7 +236,7 @@ func loadGoldenFile(t *testing.T, filename string, testData TestData) {
 		updateGoldenFile(t, goldenFile, testData.actual)
 	}
 
-	f, err := os.Open(goldenFile)
+	f, err := os.Open(goldenFile) //nolint:gosec
 	require.NoError(t, err)
 	defer f.Close() //nolint:errcheck
 
@@ -267,7 +267,7 @@ func checkGoldenFile(t *testing.T, goldenFile string, td TestData) {
 
 	goldenFile = filepath.Join(testFixturesDir, goldenFile)
 
-	f, err := os.Open(goldenFile)
+	f, err := os.Open(goldenFile) //nolint:gosec
 	require.NoError(t, err)
 	defer f.Close() //nolint:errcheck
 
@@ -1450,7 +1450,7 @@ func testBlocksInRange(t *testing.T, start, end uint64) *readable.Blocks {
 		}
 
 		bHash, err := c.BlockByHash(b.Head.Hash)
-		require.Equal(t, uint64(idx)+start, b.Head.BkSeq)
+		require.Equal(t, uint64(idx)+start, b.Head.BkSeq) //nolint:gosec
 		require.NoError(t, err)
 		require.NotNil(t, bHash)
 		require.Equal(t, b, *bHash)
@@ -1565,7 +1565,7 @@ func testBlocksInRangeVerbose(t *testing.T, start, end uint64) *readable.BlocksV
 		}
 
 		bHash, err := c.BlockByHashVerbose(b.Head.Hash)
-		require.Equal(t, uint64(idx)+start, b.Head.BkSeq)
+		require.Equal(t, uint64(idx)+start, b.Head.BkSeq) //nolint:gosec
 		require.NoError(t, err)
 		require.NotNil(t, bHash)
 		require.Equal(t, b, *bHash)

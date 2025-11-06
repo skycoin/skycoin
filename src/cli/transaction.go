@@ -100,7 +100,7 @@ func encodeJSONTxnCmd() *cobra.Command {
 				err = nil
 				jsonFilePath = "<stdin>"
 			} else {
-				jsonFile, err = os.Open(jsonFilePath)
+				jsonFile, err = os.Open(jsonFilePath) //nolint:gosec
 			}
 			if err != nil {
 				return fmt.Errorf("open file failed %s: %v", jsonFilePath, err)

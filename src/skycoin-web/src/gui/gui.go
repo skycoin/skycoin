@@ -5,6 +5,7 @@ import (
 	"embed"
 )
 
-//go:embed all:dist
 // DistFS contains the embedded web UI distribution files
+//
+//go:embed all:dist
 var DistFS embed.FS

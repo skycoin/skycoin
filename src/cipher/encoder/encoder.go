@@ -24,6 +24,7 @@
 // Note that maxlen does not affect serialization; it may serialize objects which could fail deserialization.
 // Callers should check their length restricted values manually prior to serialization.
 package encoder
+
 // Integer conversions in this file are intentional for encoding/decoding
 //nolint:gosec
 

@@ -1,15 +1,16 @@
 version: "2"
-
 run:
   concurrency: 4
   modules-download-mode: vendor
   issues-exit-code: 1
   tests: true
-
 output:
-  format: colored-line-number
-  path: stdout
-
+  formats:
+    text:
+      path: stdout
+      print-linter-name: true
+      print-issued-lines: true
+      colors: true
 linters:
   default: none
   enable:
@@ -85,10 +86,8 @@ linters:
       - linters:
           - staticcheck
         text: "QF1006:" # could lift into loop condition (staticcheck)
-
 issues:
   new: false
-
 formatters:
   enable:
     - goimports

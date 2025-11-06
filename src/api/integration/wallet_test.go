@@ -220,7 +220,7 @@ func TestCreateWallet(t *testing.T) {
 					require.NotNil(t, w.Entries[i].Change)
 					// the last entry must be the change address
 					if i < len(w.Entries)-1 {
-						require.Equal(t, uint32(i), *w.Entries[i].ChildNumber)
+						require.Equal(t, uint32(i), *w.Entries[i].ChildNumber) //nolint:gosec
 						require.Equal(t, bip44.ExternalChainIndex, *w.Entries[i].Change)
 						return
 					}
@@ -229,7 +229,7 @@ func TestCreateWallet(t *testing.T) {
 					require.Equal(t, bip44.ChangeChainIndex, *w.Entries[i].Change)
 				case wallet.WalletTypeXPub:
 					require.NotNil(t, w.Entries[i].ChildNumber)
-					require.Equal(t, uint32(i), *w.Entries[i].ChildNumber)
+					require.Equal(t, uint32(i), *w.Entries[i].ChildNumber) //nolint:gosec
 					require.Nil(t, w.Entries[i].Change)
 				default:
 					require.Nil(t, w.Entries[i].ChildNumber)
@@ -342,7 +342,7 @@ func TestWalletNewAddress(t *testing.T) {
 			postWalletHandle: func(t *testing.T, c *api.Client, wltName string) {
 				dir := getWalletDir(t, c)
 				wltPath := filepath.Join(dir, wltName)
-				err := os.Chmod(wltPath, 0555) // Remove write permission
+				err := os.Chmod(wltPath, 0555) //nolint:gosec // Remove write permission
 				require.NoError(t, err)
 			},
 			expectErr: api.NewClientError("400 Bad Request", http.StatusBadRequest, "400 Bad Request - saving wallet permission denied"),
@@ -430,7 +430,7 @@ func TestWalletNewAddress(t *testing.T) {
 					require.NoError(t, err)
 
 					var as []string
-					for j := uint32(0); j < uint32(i+1); j++ {
+					for j := uint32(0); j < uint32(i+1); j++ { //nolint:gosec
 						k, err := ext.NewPrivateChildKey(j)
 						require.NoError(t, err)
 						sk := cipher.MustNewSecKey(k.Key)

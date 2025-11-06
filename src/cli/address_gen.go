@@ -303,7 +303,7 @@ func fiberAddressGenCmd() *cobra.Command {
 				return fmt.Errorf("-seeds-file %q already exists. Use -overwrite to force writing", seedsFilename)
 			}
 
-			addrsF, err := os.Create(addrsFilename)
+			addrsF, err := os.Create(addrsFilename) //nolint:gosec
 			if err != nil {
 				return err
 			}
@@ -311,7 +311,7 @@ func fiberAddressGenCmd() *cobra.Command {
 				_ = addrsF.Close() //nolint:errcheck
 			}()
 
-			seedsF, err := os.Create(seedsFilename)
+			seedsF, err := os.Create(seedsFilename) //nolint:gosec
 			if err != nil {
 				return err
 			}

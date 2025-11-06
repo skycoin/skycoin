@@ -22,6 +22,7 @@ var (
 	Version = "0.1.0"
 	// Commit is the git commit hash
 	Commit = ""
+	// Branch is the git branch
 	Branch = ""
 
 	appConfig = daemon.NewAppConfig(9510, "$HOME/.skycoin")

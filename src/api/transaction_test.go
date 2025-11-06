@@ -1375,7 +1375,7 @@ func TestTransactionsHandlerV2(t *testing.T) {
 		txn := txnAndInputs.txn
 		txns = append(txns, visor.Transaction{
 			Transaction: txn,
-			Status:      visor.TransactionStatus{Confirmed: true, BlockSeq: uint64(i + 100)},
+			Status:      visor.TransactionStatus{Confirmed: true, BlockSeq: uint64(i + 100)}, //nolint:gosec
 		})
 		txnsInputs = append(txnsInputs, txnAndInputs.inputs)
 	}
@@ -1621,7 +1621,7 @@ func prepareTxnAndInputs(t *testing.T) transactionAndInputs {
 	err = txn.UpdateHeader()
 	require.NoError(t, err)
 
-	input, err := visor.NewTransactionInput(ux, uint64(time.Now().UTC().Unix()))
+	input, err := visor.NewTransactionInput(ux, uint64(time.Now().UTC().Unix())) //nolint:gosec
 	require.NoError(t, err)
 
 	return transactionAndInputs{
@@ -1644,7 +1644,7 @@ func makeTransactionWithEmptyAddressOutput(t *testing.T) transactionAndInputs {
 	err = txn.UpdateHeader()
 	require.NoError(t, err)
 
-	input, err := visor.NewTransactionInput(ux, uint64(time.Now().UTC().Unix()))
+	input, err := visor.NewTransactionInput(ux, uint64(time.Now().UTC().Unix())) //nolint:gosec
 	require.NoError(t, err)
 
 	return transactionAndInputs{

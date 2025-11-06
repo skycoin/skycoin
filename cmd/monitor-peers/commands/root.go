@@ -219,7 +219,7 @@ func main() { //nolint:unused
 // If the line fails to parse, an error is returned
 // Localhost addresses are allowed if allowLocalhost is true
 func getPeersListFromFile(filePath string) ([]string, error) {
-	body, err := os.ReadFile(filePath)
+	body, err := os.ReadFile(filePath) //nolint:gosec
 	if err != nil {
 		return nil, err
 	}

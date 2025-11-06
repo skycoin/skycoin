@@ -144,7 +144,7 @@ func execCommand(args ...string) *exec.Cmd {
 		panic(err)
 	}
 	args = append(args, []string{fmt.Sprintf("--test.coverprofile=../../../coverage/%s", coverprofile)}...)
-	return exec.Command(binaryPath, args...)
+	return exec.Command(binaryPath, args...) //nolint:gosec
 }
 
 func execCommandCombinedOutput(args ...string) ([]byte, error) {
@@ -178,7 +178,7 @@ func TestMain(m *testing.M) {
 	// args := []string{"build", "-o", binaryPath, "../../../cmd/skycoin-cli/skycoin-cli.go"}
 	// Compile the binary with test flags enabled to get a coverage report from the binary
 	args := []string{"test", "-c", "-tags", "testrunmain", "-o", binaryPath, "-coverpkg=github.com/skycoin/skycoin/...", "../../../cmd/skycoin-cli/"}
-	if err := exec.Command("go", args...).Run(); err != nil {
+	if err := exec.Command("go", args...).Run(); err != nil { //nolint:gosec
 		fmt.Fprintf(os.Stderr, "Make %v binary failed: %v\n", binaryName, err)
 		os.Exit(1)
 	}
@@ -321,7 +321,7 @@ func updateGoldenFile(t *testing.T, filename string, content interface{}) {
 	contentJSON, err := json.MarshalIndent(content, "", "\t")
 	require.NoError(t, err)
 	contentJSON = append(contentJSON, '\n')
-	err = os.WriteFile(filename, contentJSON, 0644)
+	err = os.WriteFile(filename, contentJSON, 0644) //nolint:gosec
 	require.NoError(t, err)
 }
 
@@ -2212,7 +2212,7 @@ func getAddressOutputs(t *testing.T, address string) map[string]struct{} {
 }
 
 // TODO cli doesn't have command to querying pending transactions yet.
-func scanPendingTransactions(t *testing.T) {
+func scanPendingTransactions(_ *testing.T) {
 }
 
 // scanTransactions scans transactions against blockchain.
@@ -2238,7 +2238,7 @@ func scanTransactions(t *testing.T, fullTest bool) {
 		var ids []string
 		for len(txidMap) < randomLiveTransactionNum {
 			// get random txid
-			txid := txids[rand.Intn(l)]
+			txid := txids[rand.Intn(l)] //nolint:gosec
 			if _, ok := txidMap[txid]; !ok {
 				ids = append(ids, txid)
 				txidMap[txid] = struct{}{}
@@ -2300,7 +2300,7 @@ func getTxids(t *testing.T, blockNum uint64) []string {
 	}
 
 	if (blockNum % uint64(p)) > 0 {
-		txids = append(txids, getTxidsInBlocks(t, n*p+1, int(blockNum)-1)...)
+		txids = append(txids, getTxidsInBlocks(t, n*p+1, int(blockNum)-1)...) //nolint:gosec
 	}
 
 	return txids
@@ -2624,7 +2624,7 @@ func TestLiveSend(t *testing.T) {
 					entries[1].Address.String(), "1"}
 			},
 			errMsg:   []byte("See 'skycoin-cli send --help'\nError: Transaction has zero coinhour fee"),
-			checkTxn: func(t *testing.T, txid string) {},
+			checkTxn: func(_ *testing.T, _ string) {},
 		},
 	}
 
@@ -3181,7 +3181,7 @@ func TestStableWalletCreateXPubFlow(t *testing.T) {
 		require.Equal(t, e.Address, e2.Address)
 		require.True(t, e.Secret.Null())
 		require.True(t, e2.Secret.Null())
-		require.Equal(t, e.ChildNumber, uint32(i))
+		require.Equal(t, e.ChildNumber, uint32(i)) //nolint:gosec
 		require.Equal(t, e.ChildNumber, e2.ChildNumber)
 		require.Equal(t, e.Change, e2.Change)
 	}
@@ -3616,7 +3616,7 @@ func TestEncryptWallet(t *testing.T) {
 		{
 			name: "wallet doesn't exist",
 			args: []string{"-p", "pwd"},
-			setup: func(t *testing.T) string {
+			setup: func(_ *testing.T) string {
 				return "not-exist.wlt"
 			},
 			errWithHelp: true,
@@ -3709,7 +3709,7 @@ func TestDecryptWallet(t *testing.T) {
 		{
 			name: "wallet doesn't exist",
 			args: []string{"-p", "pwd"},
-			setup: func(t *testing.T) string {
+			setup: func(_ *testing.T) string {
 				return "not-exist.wlt"
 			},
 			errWithHelp: true,

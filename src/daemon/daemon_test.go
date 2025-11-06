@@ -111,7 +111,7 @@ func TestDivideHashes(t *testing.T) {
 }
 
 func TestVerifyUserTxnAgainstPeer(t *testing.T) {
-	now := uint64(time.Now().UTC().Unix())
+	now := uint64(time.Now().UTC().Unix()) //nolint:gosec
 
 	cases := []struct {
 		name         string

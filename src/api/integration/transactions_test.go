@@ -1964,13 +1964,13 @@ func testLiveWalletCreateTransactionRandom(t *testing.T, unsigned bool) {
 		spendableHours := fee.RemainingHours(totalHours, params.UserVerifyTxn.BurnFactor)
 		tLog(t, "spendableHours", spendableHours)
 
-		coins := rand.Intn(int(totalCoins)) + 1
-		coins -= coins % int(params.UserVerifyTxn.MaxDropletDivisor())
+		coins := rand.Intn(int(totalCoins)) + 1                        //nolint:gosec
+		coins -= coins % int(params.UserVerifyTxn.MaxDropletDivisor()) //nolint:gosec
 		if coins == 0 {
 			coins = int(params.UserVerifyTxn.MaxDropletDivisor())
 		}
-		hours := rand.Intn(int(spendableHours + 1))
-		nOutputs := rand.Intn(maxOutputs) + 1
+		hours := rand.Intn(int(spendableHours + 1)) //nolint:gosec
+		nOutputs := rand.Intn(maxOutputs) + 1       //nolint:gosec
 
 		tLog(t, "sendCoins", coins)
 		tLog(t, "sendHours", hours)

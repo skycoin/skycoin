@@ -492,8 +492,8 @@ func TestIntroductionMessage(t *testing.T) {
 
 			d := &mockDaemoner{}
 			d.On("DaemonConfig").Return(DaemonConfig{
-				ProtocolVersion:    int32(tc.mockValue.protocolVersion),
-				MinProtocolVersion: int32(tc.mockValue.minProtocolVersion),
+				ProtocolVersion:    int32(tc.mockValue.protocolVersion),    //nolint:gosec
+				MinProtocolVersion: int32(tc.mockValue.minProtocolVersion), //nolint:gosec
 				UserAgent: useragent.Data{
 					Coin:    "skycoin",
 					Version: "0.24.1",
@@ -846,7 +846,7 @@ func TestMessageEncodeDecode(t *testing.T) {
 			t.Run(tc.goldenFile, func(t *testing.T) {
 				fn := filepath.Join("testdata/", tc.goldenFile)
 
-				f, err := os.Create(fn)
+				f, err := os.Create(fn) //nolint:gosec
 				require.NoError(t, err)
 				defer f.Close() //nolint:errcheck
 
@@ -861,7 +861,7 @@ func TestMessageEncodeDecode(t *testing.T) {
 		t.Run(tc.goldenFile, func(t *testing.T) {
 			fn := filepath.Join("testdata/", tc.goldenFile)
 
-			f, err := os.Open(fn)
+			f, err := os.Open(fn) //nolint:gosec
 			require.NoError(t, err)
 			defer f.Close() //nolint:errcheck
 

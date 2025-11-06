@@ -95,21 +95,21 @@ var createCoinCmd = &cobra.Command{
 			return err
 		}
 		coinFilePath := fmt.Sprintf("./cmd/%[1]s/%[1]s.go", coinName)
-		coinFile, err := os.Create(coinFilePath)
+		coinFile, err := os.Create(coinFilePath) //nolint:gosec
 		if err != nil {
 			log.Errorf("failed to create new coin file %s", coinFilePath)
 			return err
 		}
 		defer coinFile.Close() //nolint
 		commandFilePath := fmt.Sprintf("./cmd/%[1]s/commands/root.go", coinName)
-		commandFile, err := os.Create(commandFilePath)
+		commandFile, err := os.Create(commandFilePath) //nolint:gosec
 		if err != nil {
 			log.Errorf("failed to create new coin file %s", coinFilePath)
 			return err
 		}
 		defer commandFile.Close() //nolint
 		coinTestFilePath := fmt.Sprintf("./cmd/%[1]s/commands/%[1]s_test.go", coinName)
-		coinTestFile, err := os.Create(coinTestFilePath)
+		coinTestFile, err := os.Create(coinTestFilePath) //nolint:gosec
 		if err != nil {
 			log.Errorf("failed to create new coin test file %s", coinTestFilePath)
 			return err

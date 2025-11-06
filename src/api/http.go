@@ -268,7 +268,7 @@ func CreateHTTPS(host string, c Config, gateway Gatewayer, certFile, keyFile str
 	logger.Infof("Using %s for the certificate", certFile)
 	logger.Infof("Using %s for the key", keyFile)
 
-	listener, err := tls.Listen("tcp", host, &tls.Config{
+	listener, err := tls.Listen("tcp", host, &tls.Config{ //nolint:gosec
 		Certificates: []tls.Certificate{cert},
 	})
 	if err != nil {

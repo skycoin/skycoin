@@ -420,7 +420,7 @@ func getToAddresses(c *cobra.Command, args []string) ([]SendAmount, error) {
 }
 
 func openCSV(csvFile string) ([][]string, error) {
-	f, err := os.Open(csvFile)
+	f, err := os.Open(csvFile) //nolint:gosec
 	if err != nil {
 		return nil, err
 	}

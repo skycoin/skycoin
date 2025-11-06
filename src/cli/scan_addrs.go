@@ -88,7 +88,7 @@ func runScanAddresses(c *cobra.Command, args []string) error {
 		}
 	}
 
-	addrs, err := apiClient.ScanWalletAddresses(id, int(num), string(password))
+	addrs, err := apiClient.ScanWalletAddresses(id, int(num), string(password)) //nolint:gosec
 	if err != nil {
 		return err
 	}

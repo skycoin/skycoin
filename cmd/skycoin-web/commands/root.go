@@ -1,3 +1,4 @@
+// Package commands provides commands for the skycoin web interface.
 package commands
 
 import (

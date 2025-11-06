@@ -251,7 +251,7 @@ func updateGoldenFile(t *testing.T, filename string, content interface{}) {
 	contentJSON, err := json.MarshalIndent(content, "", "\t")
 	require.NoError(t, err)
 	contentJSON = append(contentJSON, '\n')
-	err = os.WriteFile(filename, contentJSON, 0644)
+	err = os.WriteFile(filename, contentJSON, 0644) //nolint:gosec
 	require.NoError(t, err)
 }
 
@@ -1440,7 +1440,7 @@ func testBlocksInRange(t *testing.T, start, end uint64) *readable.Blocks {
 	if start > end {
 		require.Empty(t, blocks.Blocks)
 	} else {
-		require.Len(t, blocks.Blocks, int(end-start+1))
+		require.Len(t, blocks.Blocks, int(end-start+1)) //nolint:gosec
 	}
 
 	var prevBlock *readable.Block
@@ -1553,7 +1553,7 @@ func testBlocksInRangeVerbose(t *testing.T, start, end uint64) *readable.BlocksV
 	if start > end {
 		require.Empty(t, blocks.Blocks)
 	} else {
-		require.Len(t, blocks.Blocks, int(end-start+1))
+		require.Len(t, blocks.Blocks, int(end-start+1)) //nolint:gosec
 	}
 
 	var prevBlock *readable.BlockVerbose

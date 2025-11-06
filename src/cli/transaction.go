@@ -30,7 +30,7 @@ func transactionCmd() *cobra.Command {
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		Args:                  cobra.ExactArgs(1),
-		RunE: func(c *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			txid := args[0]
 			if txid == "" {
 				return errors.New("txid is empty")
@@ -61,7 +61,7 @@ func decodeRawTxnCmd() *cobra.Command {
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		Args:                  cobra.ExactArgs(1),
-		RunE: func(c *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			txn, err := coin.DeserializeTransactionHex(args[0])
 			if err != nil {
 				return fmt.Errorf("invalid raw transaction: %v", err)
@@ -283,7 +283,7 @@ func verifyTransactionCmd() *cobra.Command {
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		Args:                  cobra.MaximumNArgs(1),
-		RunE: func(c *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			encodedTxn := args[0]
 			if encodedTxn == "" {
 				return errors.New("transaction is empty")
@@ -350,7 +350,7 @@ func signTxnCmd() *cobra.Command {
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		Args:                  cobra.ExactArgs(2),
-		RunE: func(c *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			id := args[0]
 			rawTxn := args[1]
 

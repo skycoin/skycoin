@@ -382,7 +382,7 @@ func TestDisconnect(t *testing.T) {
 
 	// Setup a callback to capture the connection pointer so we can get the address
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(_ string, _ uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, _ bool) {
 		cc <- p.pool[1]
 	}
 
@@ -419,7 +419,7 @@ func TestDisconnect(t *testing.T) {
 	require.NoError(t, err)
 
 	err = p.strand("", func() error {
-		p.Config.DisconnectCallback = func(_ string, id uint64, _ DisconnectReason) {
+		p.Config.DisconnectCallback = func(_ string, _ uint64, _ DisconnectReason) {
 			t.Fatal("disconnect unknown connection should not see this")
 		}
 		return nil
@@ -514,7 +514,7 @@ func TestGetConnections(t *testing.T) {
 
 	require.Equal(t, len(m), 3)
 	for i := 1; i <= 3; i++ {
-		require.Equal(t, m[uint64(i)], p.pool[uint64(i)])
+		require.Equal(t, m[uint64(i)], p.pool[uint64(i)]) //nolint:gosec
 	}
 
 	p.Shutdown()
@@ -543,7 +543,7 @@ func TestConnectionReadLoopReadError(t *testing.T) {
 	readDataErr := "read failed: failed"
 
 	disconnectCalled := make(chan struct{})
-	p.Config.DisconnectCallback = func(_ string, id uint64, reason DisconnectReason) {
+	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
 		defer close(disconnectCalled)
 		require.Equal(t, readDataErr, reason.Error())
 	}
@@ -596,7 +596,7 @@ func TestConnectionReadLoopSetReadDeadlineFailed(t *testing.T) {
 	// 2:
 	// Use a mock net.Conn that fails on SetReadDeadline
 	disconnectCalled := make(chan struct{})
-	p.Config.DisconnectCallback = func(_ string, id uint64, reason DisconnectReason) {
+	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
 		defer close(disconnectCalled)
 		require.Equal(t, ErrDisconnectSetReadDeadlineFailed, reason)
 	}
@@ -609,7 +609,7 @@ func TestConnectionReadLoopSetReadDeadlineFailed(t *testing.T) {
 
 	<-cc
 
-	rdfconn.Close() //nolint:errcheck
+	rdfconn.Close() //nolint:errcheck,gosec
 
 	<-disconnectCalled
 
@@ -624,7 +624,7 @@ func TestConnectionReadLoopInvalidMessageLength(t *testing.T) {
 	require.NoError(t, err)
 
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(_ string, id uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, _ bool) {
 		cc <- p.addresses[addr]
 	}
 
@@ -641,7 +641,7 @@ func TestConnectionReadLoopInvalidMessageLength(t *testing.T) {
 	// Use a mock net.Conn that returns some bytes on Read
 	// Look for these bytes copied into the eventChannel
 	disconnectCalled := make(chan struct{})
-	p.Config.DisconnectCallback = func(_ string, id uint64, reason DisconnectReason) {
+	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
 		defer close(disconnectCalled)
 		require.Equal(t, ErrDisconnectInvalidMessageLength, reason)
 	}
@@ -657,7 +657,7 @@ func TestConnectionReadLoopInvalidMessageLength(t *testing.T) {
 	wait()
 	raconn.stop()
 	wait()
-	raconn.Close() //nolint:errcheck
+	raconn.Close() //nolint:errcheck,gosec
 
 	<-disconnectCalled
 
@@ -671,7 +671,7 @@ func TestConnectionReadLoopTerminates(t *testing.T) {
 	require.NoError(t, err)
 
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(_ string, id uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, _ bool) {
 		cc <- p.addresses[addr]
 	}
 
@@ -689,7 +689,7 @@ func TestConnectionReadLoopTerminates(t *testing.T) {
 	// 4: Use a mock net.Conn that successfully returns 0 bytes when read
 	rnconn := newReadNothingConn()
 	disconnectCalled := make(chan struct{})
-	p.Config.DisconnectCallback = func(_ string, id uint64, reason DisconnectReason) {
+	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
 		defer close(disconnectCalled)
 		require.Equal(t, readDataErr, reason.Error())
 	}
@@ -703,7 +703,7 @@ func TestConnectionReadLoopTerminates(t *testing.T) {
 	wait()
 	rnconn.stop()
 	wait()
-	rnconn.Close() //nolint:errcheck
+	rnconn.Close() //nolint:errcheck,gosec
 
 	<-disconnectCalled
 
@@ -726,11 +726,11 @@ func TestProcessConnectionBuffers(t *testing.T) {
 
 	// Setup a callback to capture the connection pointer so we can get the address
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(_ string, id uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, _ bool) {
 		cc <- p.addresses[addr]
 	}
 
-	p.Config.DisconnectCallback = func(_ string, id uint64, reason DisconnectReason) {
+	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
 		t.Fatalf("Unexpected disconnect address=%s reason=%v", addr, reason)
 	}
 
@@ -767,7 +767,7 @@ func TestProcessConnectionBuffers(t *testing.T) {
 	t.Logf("Pushing multiple messages, first one causing an error")
 
 	disconnectCalled := make(chan struct{})
-	p.Config.DisconnectCallback = func(_ string, id uint64, reason DisconnectReason) {
+	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
 		defer close(disconnectCalled)
 		require.Equal(t, reason, ErrErrorMessageHandler)
 	}
@@ -781,7 +781,7 @@ func TestProcessConnectionBuffers(t *testing.T) {
 		t.Fatal("disconnect did not happen, would block")
 	}
 
-	p.Config.DisconnectCallback = func(_ string, id uint64, reason DisconnectReason) {
+	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
 		fmt.Println(reason)
 		t.Fatal("should not see this")
 	}
@@ -798,7 +798,7 @@ func TestProcessConnectionBuffers(t *testing.T) {
 	require.NotNil(t, c)
 
 	disconnectCalled = make(chan struct{})
-	p.Config.DisconnectCallback = func(_ string, id uint64, reason DisconnectReason) {
+	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
 		defer close(disconnectCalled)
 		require.Equal(t, c.Addr(), addr)
 		require.Equal(t, reason, ErrDisconnectInvalidMessageLength)
@@ -829,7 +829,7 @@ func TestProcessConnectionBuffers(t *testing.T) {
 	p.Config.MaxIncomingMessageLength = 4
 	p.Config.MaxOutgoingMessageLength = 4
 	disconnectCalled = make(chan struct{})
-	p.Config.DisconnectCallback = func(_ string, id uint64, r DisconnectReason) {
+	p.Config.DisconnectCallback = func(_ string, _ uint64, r DisconnectReason) {
 		defer close(disconnectCalled)
 		require.Equal(t, ErrDisconnectInvalidMessageLength, r)
 	}
@@ -863,12 +863,12 @@ func TestConnectionWriteLoop(t *testing.T) {
 
 	// Setup a callback to capture the connection pointer so we can get the address
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(_ string, id uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, _ bool) {
 		cc <- p.pool[1]
 	}
 
 	disconnectErr := make(chan DisconnectReason, 1)
-	p.Config.DisconnectCallback = func(_ string, id uint64, reason DisconnectReason) {
+	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
 		fmt.Printf("DisconnectCallback called, address=%s reason=%v\n", addr, reason)
 		disconnectErr <- reason
 	}
@@ -964,7 +964,7 @@ func TestPoolSendMessageOK(t *testing.T) {
 
 	// Setup a callback to capture the connection pointer so we can get the address
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(_ string, id uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, _ bool) {
 		cc <- p.pool[1]
 	}
 
@@ -1003,7 +1003,7 @@ func TestPoolSendMessageWriteQueueFull(t *testing.T) {
 
 	// Setup a callback to capture the connection pointer so we can get the address
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(_ string, id uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, _ bool) {
 		cc <- p.pool[1]
 	}
 
@@ -1062,7 +1062,7 @@ func TestPoolBroadcastMessage(t *testing.T) {
 	ready := make(chan struct{})
 	var i int
 	var counterLock sync.Mutex
-	p.Config.ConnectCallback = func(_ string, id uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, _ bool) {
 		counterLock.Lock()
 		defer counterLock.Unlock()
 		i++
@@ -1367,7 +1367,7 @@ func (c *readNothingConn) Read(_ []byte) (int, error) {
 	return 0, nil
 }
 
-func (c *readNothingConn) SetReadDeadline(t time.Time) error {
+func (c *readNothingConn) SetReadDeadline(_ time.Time) error {
 	return nil
 }
 

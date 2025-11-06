@@ -3,6 +3,7 @@
 Generates testdata for the cipher test suite
 */
 
+// Package main provides the cipher testdata generator.
 package main
 
 import (

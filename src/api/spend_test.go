@@ -67,7 +67,7 @@ func TestCreateTransaction(t *testing.T) {
 		{
 			UxOut: coin.UxOut{
 				Head: coin.UxHead{
-					Time:  uint64(time.Now().UTC().Unix()),
+					Time:  uint64(time.Now().UTC().Unix()), //nolint:gosec
 					BkSeq: 9999,
 				},
 				Body: coin.UxBody{
@@ -899,7 +899,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 		{
 			UxOut: coin.UxOut{
 				Head: coin.UxHead{
-					Time:  uint64(time.Now().UTC().Unix()),
+					Time:  uint64(time.Now().UTC().Unix()), //nolint:gosec
 					BkSeq: 9999,
 				},
 				Body: coin.UxBody{
@@ -1856,7 +1856,7 @@ func TestWalletSignTransaction(t *testing.T) {
 		{
 			UxOut: coin.UxOut{
 				Head: coin.UxHead{
-					Time:  uint64(time.Now().UTC().Unix()),
+					Time:  uint64(time.Now().UTC().Unix()), //nolint:gosec
 					BkSeq: 9999,
 				},
 				Body: coin.UxBody{
@@ -1871,7 +1871,7 @@ func TestWalletSignTransaction(t *testing.T) {
 		{
 			UxOut: coin.UxOut{
 				Head: coin.UxHead{
-					Time:  uint64(time.Now().UTC().Unix()),
+					Time:  uint64(time.Now().UTC().Unix()), //nolint:gosec
 					BkSeq: 9999,
 				},
 				Body: coin.UxBody{

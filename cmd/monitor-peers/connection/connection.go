@@ -1,3 +1,4 @@
+// Package connection provides connection handling for peer monitoring.
 package connection
 
 import (

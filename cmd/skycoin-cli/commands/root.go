@@ -1,6 +1,5 @@
 // Package commands provides CLI commands for interacting with skycoin.
 package commands
-package commands
 
 import (
 	"fmt"

@@ -120,7 +120,7 @@ func VerifyMessages() {
 		// Confirm that all registered messages support the Message interface
 		// This should only be untrue if the user modified the message map
 		// directly
-		mptr := reflect.PtrTo(t)
+		mptr := reflect.PointerTo(t)
 		if !mptr.Implements(reflect.TypeOf((*Message)(nil)).Elem()) {
 			logger.Panicf("Invalid message at ID %s: Message must implement the gnet.Message interface", string(k[:]))
 		}

@@ -811,7 +811,7 @@ func (w *Wallet) PeekChangeAddress(tf wallet.TransactionsFinder) (cipher.Address
 		return nil, err
 	}
 
-	if oks[0] == false {
+	if !oks[0] {
 		return addr, nil
 	}
 

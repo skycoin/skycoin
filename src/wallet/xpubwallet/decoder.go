@@ -92,8 +92,7 @@ func (es readableXPubEntries) toXPubEntries(ad wallet.AddressDecoder) (wallet.En
 }
 
 func newReadableEntries(entries wallet.Entries) readableXPubEntries {
-	var res readableXPubEntries
-	res = make([]readableXPubEntry, len(entries))
+	res := make([]readableXPubEntry, len(entries))
 	for i, e := range entries {
 		res[i] = readableXPubEntry{
 			Address:     e.Address.String(),

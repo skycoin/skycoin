@@ -71,9 +71,7 @@ func (ep *EntropyPool) Mix256(in []byte) (out []byte) {
 func (ep *EntropyPool) Mix(in []byte) []byte {
 	length := len(in) - len(in)%32 + 32
 	buff := make([]byte, length)
-	for i := 0; i < len(in); i++ {
-		buff[i] = in[i]
-	}
+	copy(buff, in)
 	iterations := (len(in) / 32) + 1
 	for i := 0; i < iterations; i++ {
 		tmp := ep.Mix256(buff[32*i : 32+32*i]) //32 byte slice

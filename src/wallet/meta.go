@@ -340,9 +340,5 @@ func (m Meta) SetTemp(temp bool) {
 
 // IsTemp returns whether the wallet is a temporary wallet
 func (m Meta) IsTemp() bool {
-	if m[MetaTemp] == "true" {
-		return true
-	}
-
-	return false
+	return m[MetaTemp] == "true"
 }

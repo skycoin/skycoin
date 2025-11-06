@@ -6,7 +6,6 @@ package skycoin
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -554,10 +553,10 @@ func createCertFiles(certFile, keyFile string) error {
 		return err
 	}
 
-	if err := ioutil.WriteFile(certFile, cert, 0600); err != nil {
+	if err := os.WriteFile(certFile, cert, 0600); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(keyFile, key, 0600); err != nil {
+	if err := os.WriteFile(keyFile, key, 0600); err != nil {
 		_ = os.Remove(certFile) //nolint:errcheck
 		return err
 	}

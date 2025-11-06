@@ -510,10 +510,6 @@ func (c *Config) postProcess() error {
 		return errors.New("-max-decimals-create-block exceeds MaxUint8")
 	}
 
-	if c.Node.MaxLastBlocksCount > math.MaxUint64 {
-		return fmt.Errorf("-max-last-blocks-count exceeds math.MaxUint64")
-	}
-
 	c.Node.UnconfirmedVerifyTxn.BurnFactor = uint32(c.Node.unconfirmedBurnFactor)
 	c.Node.UnconfirmedVerifyTxn.MaxTransactionSize = uint32(c.Node.maxUnconfirmedTransactionSize)
 	c.Node.UnconfirmedVerifyTxn.MaxDropletPrecision = uint8(c.Node.unconfirmedMaxDropletPrecision)

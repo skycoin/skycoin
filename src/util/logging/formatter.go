@@ -12,7 +12,7 @@ import (
 
 	"github.com/mgutz/ansi"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 const defaultTimestampFormat = time.RFC3339
@@ -168,7 +168,7 @@ func (f *TextFormatter) init(entry *logrus.Entry) {
 func (f *TextFormatter) checkIfTerminal(w io.Writer) bool {
 	switch v := w.(type) {
 	case *os.File:
-		return terminal.IsTerminal(int(v.Fd()))
+		return term.IsTerminal(int(v.Fd()))
 	default:
 		return false
 	}

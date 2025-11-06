@@ -17,7 +17,7 @@ import (
 // set rand seed.
 var _ = func() int64 {
 	t := time.Now().Unix()
-	rand.Seed(t)
+	rand.Seed(t) //nolint:staticcheck // deprecated but kept for test reproducibility
 	return t
 }()
 

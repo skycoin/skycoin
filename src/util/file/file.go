@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -159,11 +158,11 @@ func SaveBinary(filename string, data []byte, mode os.FileMode) error {
 	// Write the new file to a temporary
 	dataHash := cipher.SumSHA256(data)
 	tmpname := filename + ".tmp." + dataHash.Hex()[:8]
-	if err := ioutil.WriteFile(tmpname, data, mode); err != nil {
+	if err := os.WriteFile(tmpname, data, mode); err != nil {
 		return err
 	}
 
-	if err := ioutil.WriteFile(filename, data, mode); err != nil {
+	if err := os.WriteFile(filename, data, mode); err != nil {
 		return err
 	}
 

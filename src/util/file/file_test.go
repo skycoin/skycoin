@@ -3,7 +3,6 @@ package file
 import (
 	"bytes"
 	"crypto/rand"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -75,9 +74,9 @@ func TestCleanup(t *testing.T) {
 	b := make([]byte, 128)
 	_, err := rand.Read(b)
 	require.NoError(t, err)
-	require.NoError(t, ioutil.WriteFile(fn, b, 0600))
-	require.NoError(t, ioutil.WriteFile(fn+".tmp.abc", b, 0600))
-	require.NoError(t, ioutil.WriteFile(fn+".bak.abc", b, 0600))
+	require.NoError(t, os.WriteFile(fn, b, 0600))
+	require.NoError(t, os.WriteFile(fn+".tmp.abc", b, 0600))
+	require.NoError(t, os.WriteFile(fn+".bak.abc", b, 0600))
 }
 
 //func TestBuildDataDirDotOk(t *testing.T) {

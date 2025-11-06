@@ -1112,8 +1112,8 @@ func setupNoUnspentAddrIndexDB(t *testing.T) (*dbutil.DB, func()) {
 	db := dbutil.WrapDB(boltDB)
 
 	return db, func() {
-		db.Close() //nolint:errcheck
-		tmpFile.Close() //nolint:errcheck
+		db.Close()                //nolint:errcheck
+		tmpFile.Close()           //nolint:errcheck
 		os.Remove(tmpFile.Name()) //nolint:errcheck
 	}
 }

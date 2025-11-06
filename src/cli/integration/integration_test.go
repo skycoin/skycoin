@@ -76,7 +76,6 @@ type TestData struct {
 }
 
 func init() {
-	rand.Seed(time.Now().Unix())
 }
 
 func sanitizeName(s string) (string, error) {

@@ -46,7 +46,7 @@ func feeCalc(t *coin.Transaction) (uint64, error) {
 // set rand seed.
 var _ = func() int64 {
 	t := time.Now().Unix()
-	rand.Seed(t)
+	rand.Seed(t) //nolint:staticcheck // deprecated but kept for test reproducibility
 	return t
 }()
 

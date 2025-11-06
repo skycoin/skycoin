@@ -33,7 +33,7 @@ func Example() {
 func TestLoadConfig(t *testing.T) {
 	t.Run("set COIN", func(t *testing.T) {
 		val := "foocoin"
-		os.Setenv("COIN", val) //nolint:errcheck
+		os.Setenv("COIN", val)    //nolint:errcheck
 		defer os.Unsetenv("COIN") //nolint:errcheck
 
 		cfg, err := LoadConfig()
@@ -43,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 
 	t.Run("set RPC_ADDR", func(t *testing.T) {
 		val := "http://111.22.33.44:5555"
-		os.Setenv("RPC_ADDR", val) //nolint:errcheck
+		os.Setenv("RPC_ADDR", val)    //nolint:errcheck
 		defer os.Unsetenv("RPC_ADDR") //nolint:errcheck
 
 		cfg, err := LoadConfig()
@@ -53,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 
 	t.Run("set RPC_ADDR invalid", func(t *testing.T) {
 		val := "111.22.33.44:5555"
-		os.Setenv("RPC_ADDR", val) //nolint:errcheck
+		os.Setenv("RPC_ADDR", val)    //nolint:errcheck
 		defer os.Unsetenv("RPC_ADDR") //nolint:errcheck
 
 		_, err := LoadConfig()
@@ -62,7 +62,7 @@ func TestLoadConfig(t *testing.T) {
 
 	t.Run("set DATA_DIR", func(t *testing.T) {
 		val := "/home/foo/"
-		os.Setenv("DATA_DIR", val) //nolint:errcheck
+		os.Setenv("DATA_DIR", val)    //nolint:errcheck
 		defer os.Unsetenv("DATA_DIR") //nolint:errcheck
 
 		cfg, err := LoadConfig()

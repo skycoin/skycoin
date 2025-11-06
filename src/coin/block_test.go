@@ -2,7 +2,6 @@ package coin
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 	"time"
 
@@ -65,7 +64,7 @@ func TestNewBlock(t *testing.T) {
 	txns := Transactions{Transaction{}}
 	// invalid txn fees panics
 	_, err := NewBlock(prev, 133, uxHash, txns, badFeeCalc)
-	require.EqualError(t, err, fmt.Sprintf("Invalid transaction fees: Bad"))
+	require.EqualError(t, err, "Invalid transaction fees: Bad")
 
 	// no txns panics
 	_, err = NewBlock(prev, 133, uxHash, nil, feeCalc)

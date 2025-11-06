@@ -3,7 +3,6 @@ package wallet
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -118,15 +117,15 @@ func (serv *Service) SetEnableWalletAPI(enable bool) {
 
 func (serv *Service) loadWallets() (Wallets, error) {
 	dir := serv.config.WalletDir
-	entries, err := ioutil.ReadDir(dir)
+	entries, err := os.ReadDir(dir)
 	if err != nil {
-		logger.WithError(err).WithField("dir", dir).Error("loadWallets: ioutil.ReadDir failed")
+		logger.WithError(err).WithField("dir", dir).Error("loadWallets: os.ReadDir failed")
 		return nil, err
 	}
 
 	wallets := Wallets{}
 	for _, e := range entries {
-		if e.Mode().IsRegular() {
+		if !e.IsDir() {
 			name := e.Name()
 			if !strings.HasSuffix(name, WalletExt) {
 				logger.WithField("filename", name).Info("loadWallets: skipping file")

@@ -313,12 +313,12 @@ func TestEncodeNestedSlice(t *testing.T) {
 		size += 8
 		elems[i].Bytes = make([]uint8, i)
 		for j := range elems[i].Bytes {
-			elems[i].Bytes[j] = uint8(j)
+			elems[i].Bytes[j] = uint8(j) //nolint:gosec
 		}
 		size += 4 + uint64(i*1)
 		elems[i].Ints = make([]uint16, i)
 		for j := range elems[i].Ints {
-			elems[i].Ints[j] = uint16(j)
+			elems[i].Ints[j] = uint16(j) //nolint:gosec
 		}
 		size += 4 + uint64(i*2)
 	}

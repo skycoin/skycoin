@@ -20,6 +20,7 @@ import (
 var (
 	// Version is the hardware wallet command version
 	Version = "0.1.0"
+	// Commit is the git commit hash
 	Commit  = ""
 	Branch  = ""
 

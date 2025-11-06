@@ -620,7 +620,7 @@ func (e *Encoder) Uint64(x uint64) {
 
 // ByteSlice encodes []byte
 func (e *Encoder) ByteSlice(x []byte) {
-	e.Uint32(uint32(len(x)))
+	e.Uint32(uint32(len(x))) //nolint:gosec
 	e.CopyBytes(x)
 }
 
@@ -640,12 +640,12 @@ func (d *Decoder) Int8() (int8, error) {
 		return 0, err
 	}
 
-	return int8(u), nil
+	return int8(u), nil //nolint:gosec
 }
 
 // Int8 encodes int8
 func (e *Encoder) Int8(x int8) {
-	e.Uint8(uint8(x))
+	e.Uint8(uint8(x)) //nolint:gosec
 }
 
 // Int16 decodes int16
@@ -655,12 +655,12 @@ func (d *Decoder) Int16() (int16, error) {
 		return 0, err
 	}
 
-	return int16(u), nil
+	return int16(u), nil //nolint:gosec
 }
 
 // Int16 encodes int16
 func (e *Encoder) Int16(x int16) {
-	e.Uint16(uint16(x))
+	e.Uint16(uint16(x)) //nolint:gosec
 }
 
 // Int32 decodes int32
@@ -670,12 +670,12 @@ func (d *Decoder) Int32() (int32, error) {
 		return 0, err
 	}
 
-	return int32(u), nil
+	return int32(u), nil //nolint:gosec
 }
 
 // Int32 encodes int32
 func (e *Encoder) Int32(x int32) {
-	e.Uint32(uint32(x))
+	e.Uint32(uint32(x)) //nolint:gosec
 }
 
 // Int64 decodes int64
@@ -685,12 +685,12 @@ func (d *Decoder) Int64() (int64, error) {
 		return 0, err
 	}
 
-	return int64(u), nil
+	return int64(u), nil //nolint:gosec
 }
 
 // Int64 encodes int64
 func (e *Encoder) Int64(x int64) {
-	e.Uint64(uint64(x))
+	e.Uint64(uint64(x)) //nolint:gosec
 }
 
 func (d *Decoder) value(v reflect.Value, maxlen int) error {
@@ -954,14 +954,14 @@ func (e *Encoder) value(v reflect.Value) {
 		case reflect.Uint8:
 			e.ByteSlice(v.Bytes())
 		default:
-			e.Uint32(uint32(v.Len()))
+			e.Uint32(uint32(v.Len())) //nolint:gosec
 			for i := 0; i < v.Len(); i++ {
 				e.value(v.Index(i))
 			}
 		}
 
 	case reflect.Map:
-		e.Uint32(uint32(v.Len()))
+		e.Uint32(uint32(v.Len())) //nolint:gosec
 		for _, key := range v.MapKeys() {
 			e.value(key)
 			e.value(v.MapIndex(key))
@@ -1002,18 +1002,18 @@ func (e *Encoder) value(v reflect.Value) {
 		e.ByteSlice([]byte(v.String()))
 
 	case reflect.Int8:
-		e.Int8(int8(v.Int()))
+		e.Int8(int8(v.Int())) //nolint:gosec
 	case reflect.Int16:
-		e.Int16(int16(v.Int()))
+		e.Int16(int16(v.Int())) //nolint:gosec
 	case reflect.Int32:
-		e.Int32(int32(v.Int()))
+		e.Int32(int32(v.Int())) //nolint:gosec
 	case reflect.Int64:
 		e.Int64(v.Int())
 
 	case reflect.Uint8:
-		e.Uint8(uint8(v.Uint()))
+		e.Uint8(uint8(v.Uint())) //nolint:gosec
 	case reflect.Uint16:
-		e.Uint16(uint16(v.Uint()))
+		e.Uint16(uint16(v.Uint())) //nolint:gosec
 	case reflect.Uint32:
 		e.Uint32(uint32(v.Uint()))
 	case reflect.Uint64:

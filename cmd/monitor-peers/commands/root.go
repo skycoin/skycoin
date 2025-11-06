@@ -82,6 +82,7 @@ func init() {
 	RootCmd.Flags().StringVarP(&readTimeout, "read-timeout", "r", defaultReadTimeout, "Read timeout for each peer")
 }
 
+// RootCmd is the root command for monitor-peers
 var RootCmd = &cobra.Command{
 	Use:   "monitor-peers",
 	Short: "check the status of network peers.",

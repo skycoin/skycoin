@@ -42,6 +42,7 @@ func init() {
 	RootCmd.Flags().StringVarP(&nodeURL, "node-url", "n", "https://node.skycoin.com", "node URL")
 }
 
+// Execute runs the root command
 func Execute() {
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)

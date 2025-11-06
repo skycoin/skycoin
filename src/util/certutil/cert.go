@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 // Any modifications (c) 2018 Skycoin developers
 
+// Package certutil provides certificate utilities.
 package certutil
 
 import (

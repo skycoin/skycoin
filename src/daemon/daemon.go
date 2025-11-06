@@ -149,7 +149,7 @@ func maxSizeGiveBlocksMessage(maxBlockSize uint32) uint64 {
 }
 
 // DaemonConfig configuration for the Daemon
-type DaemonConfig struct { //nolint:golint
+type DaemonConfig struct { //nolint:golint,revive
 	// Protocol version. TODO -- manage version better
 	ProtocolVersion int32
 	// Minimum accepted protocol version
@@ -410,7 +410,7 @@ func (dm *Daemon) Run() error {
 	wg.Add(1)
 	go dm.startConnPool(&wg, errC)
 
-	blockInterval := time.Duration(dm.config.BlockCreationInterval)
+	blockInterval := time.Duration(dm.config.BlockCreationInterval) //nolint:gosec
 	blockCreationTicker := time.NewTicker(time.Second * blockInterval)
 	if !dm.visor.Config.IsBlockPublisher {
 		blockCreationTicker.Stop()

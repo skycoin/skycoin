@@ -334,7 +334,7 @@ func (w *Wallet) GenerateAddresses(options ...wallet.Option) ([]cipher.Addresser
 	}
 
 	var addrs []cipher.Addresser
-	initLen := uint32(len(w.entries))
+	initLen := uint32(len(w.entries)) //nolint:gosec
 	_, err := mathutil.AddUint32(initLen, uint32(num))
 	if err != nil {
 		return nil, fmt.Errorf("generate %d more addresses failed: %v", num, err)

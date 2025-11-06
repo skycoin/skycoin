@@ -160,9 +160,9 @@ func (fd *Field) Normalize() {
 		(low < 0xFFFFEFFFFFC2F) {
 		mask = 0xFFFFFFFFFFFFFFFF
 	}
-	t9 &= uint32(mask)
-	t8 &= uint32(mask)
-	t7 &= uint32(mask)
+	t9 &= uint32(mask) //nolint:gosec
+	t8 &= uint32(mask) //nolint:gosec
+	t7 &= uint32(mask) //nolint:gosec
 	t6 &= uint32(mask)
 	t5 &= uint32(mask)
 	t4 &= uint32(mask)

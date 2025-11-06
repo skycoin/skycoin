@@ -90,7 +90,7 @@ func (bt *fakeBlockTree) GetBlock(_ *dbutil.Tx, hash cipher.SHA256) (*coin.Block
 	return bt.blocks[hash.Hex()], nil
 }
 
-func (bt *fakeBlockTree) GetBlockInDepth(_ *dbutil.Tx, depth uint64, filter Walker) (*coin.Block, error) {
+func (bt *fakeBlockTree) GetBlockInDepth(_ *dbutil.Tx, depth uint64, _ Walker) (*coin.Block, error) {
 	if bt.failedWhenSaved != nil && *bt.failedWhenSaved {
 		return nil, nil
 	}
@@ -104,7 +104,7 @@ func (bt *fakeBlockTree) GetBlockInDepth(_ *dbutil.Tx, depth uint64, filter Walk
 	return nil, nil
 }
 
-func (bt *fakeBlockTree) ForEachBlock(tx *dbutil.Tx, f func(*coin.Block) error) error {
+func (bt *fakeBlockTree) ForEachBlock(_ *dbutil.Tx, f func(*coin.Block) error) error {
 	return nil
 }
 
@@ -125,7 +125,7 @@ func newFakeSigStore(failedWhenSaved *bool) *fakeSignatureStore {
 	}
 }
 
-func (ss *fakeSignatureStore) Add(tx *dbutil.Tx, hash cipher.SHA256, sig cipher.Sig) error {
+func (ss *fakeSignatureStore) Add(_ *dbutil.Tx, hash cipher.SHA256, sig cipher.Sig) error {
 	if ss.saveFailed {
 		if ss.failedWhenSaved != nil {
 			*ss.failedWhenSaved = true
@@ -137,7 +137,7 @@ func (ss *fakeSignatureStore) Add(tx *dbutil.Tx, hash cipher.SHA256, sig cipher.
 	return nil
 }
 
-func (ss *fakeSignatureStore) Get(tx *dbutil.Tx, hash cipher.SHA256) (cipher.Sig, bool, error) {
+func (ss *fakeSignatureStore) Get(_ *dbutil.Tx, hash cipher.SHA256) (cipher.Sig, bool, error) {
 	if ss.failedWhenSaved != nil && *ss.failedWhenSaved {
 		return cipher.Sig{}, false, nil
 	}

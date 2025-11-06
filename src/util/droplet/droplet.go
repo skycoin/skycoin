@@ -77,7 +77,7 @@ func FromString(b string) (uint64, error) {
 		return 0, ErrTooLarge
 	}
 
-	return uint64(e.IntPart()), nil
+	return uint64(e.IntPart()), nil //nolint:gosec
 }
 
 // ToString converts droplets to a skycoin balance fixed-point decimal string.

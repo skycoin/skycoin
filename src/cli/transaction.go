@@ -87,7 +87,7 @@ func encodeJSONTxnCmd() *cobra.Command {
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		Args:                  cobra.ExactArgs(1),
-		RunE: func(c *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			jsonOutput, err := c.Flags().GetBool("json")
 			if err != nil {
 				return err
@@ -350,7 +350,7 @@ func signTxnCmd() *cobra.Command {
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		Args:                  cobra.ExactArgs(2),
-		RunE: func(c *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			id := args[0]
 			rawTxn := args[1]
 

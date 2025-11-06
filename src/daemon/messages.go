@@ -165,12 +165,12 @@ func (gpm *GetPeersMessage) EncodeSize() uint64 {
 }
 
 // Encode implements gnet.Serializer
-func (gpm *GetPeersMessage) Encode(buf []byte) error {
+func (gpm *GetPeersMessage) Encode(_ []byte) error {
 	return nil
 }
 
 // Decode implements gnet.Serializer
-func (gpm *GetPeersMessage) Decode(buf []byte) (uint64, error) {
+func (gpm *GetPeersMessage) Decode(_ []byte) (uint64, error) {
 	return 0, nil
 }
 
@@ -594,7 +594,7 @@ func (ping *PingMessage) EncodeSize() uint64 {
 }
 
 // Encode implements gnet.Serializer
-func (ping *PingMessage) Encode(buf []byte) error {
+func (ping *PingMessage) Encode(_ []byte) error {
 	return nil
 }
 

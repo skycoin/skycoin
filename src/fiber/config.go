@@ -81,7 +81,7 @@ type NodeConfig struct {
 	CoinName string
 	// Ascii Font rendering of CoinName
 	// CoinAscii is the ASCII art representation of the coin
-	CoinAscii     string
+	CoinAscii     string //nolint:revive
 	DataDirectory string
 }
 

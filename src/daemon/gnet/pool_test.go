@@ -271,7 +271,7 @@ func TestHandleConnection(t *testing.T) {
 
 	// Solicited
 	wasSolicited = nil
-	p.Config.ConnectCallback = func(_ string, id uint64, s bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, s bool) {
 		wasSolicited = &s
 		cc <- p.pool[2]
 	}
@@ -382,7 +382,7 @@ func TestDisconnect(t *testing.T) {
 
 	// Setup a callback to capture the connection pointer so we can get the address
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(_ string, id uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, solicited bool) {
 		cc <- p.pool[1]
 	}
 
@@ -408,7 +408,7 @@ func TestDisconnect(t *testing.T) {
 	require.NoError(t, err)
 
 	err = p.strand("", func() error {
-		p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
+		p.Config.DisconnectCallback = func(_ string, _ uint64, _ DisconnectReason) {
 			require.Equal(t, cAddr, addr)
 		}
 		return nil
@@ -419,7 +419,7 @@ func TestDisconnect(t *testing.T) {
 	require.NoError(t, err)
 
 	err = p.strand("", func() error {
-		p.Config.DisconnectCallback = func(_ string, id uint64, reason DisconnectReason) {
+		p.Config.DisconnectCallback = func(_ string, id uint64, _ DisconnectReason) {
 			t.Fatal("disconnect unknown connection should not see this")
 		}
 		return nil
@@ -442,7 +442,7 @@ func TestConnectionClose(t *testing.T) {
 
 	c.Buffer.WriteByte(7)
 	require.Equal(t, c.Buffer.Len(), 1)
-	c.Close() //nolint:errcheck
+	c.Close() //nolint:errcheck,gosec
 
 	select {
 	case <-c.WriteQueue:
@@ -527,7 +527,7 @@ func TestConnectionReadLoopReadError(t *testing.T) {
 	require.NoError(t, err)
 
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(_ string, _ uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, _ bool) {
 		cc <- p.addresses[addr]
 	}
 
@@ -562,7 +562,7 @@ func TestConnectionReadLoopReadError(t *testing.T) {
 	wait()
 
 	require.True(t, reconn.(*ReadErrorConn).GetReadDeadlineSet() != time.Time{})
-	reconn.Close() //nolint:errcheck
+	reconn.Close() //nolint:errcheck,gosec
 
 	select {
 	case <-disconnectCalled:
@@ -580,7 +580,7 @@ func TestConnectionReadLoopSetReadDeadlineFailed(t *testing.T) {
 	require.NoError(t, err)
 
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(_ string, _ uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, _ bool) {
 		cc <- p.addresses[addr]
 	}
 
@@ -829,7 +829,7 @@ func TestProcessConnectionBuffers(t *testing.T) {
 	p.Config.MaxIncomingMessageLength = 4
 	p.Config.MaxOutgoingMessageLength = 4
 	disconnectCalled = make(chan struct{})
-	p.Config.DisconnectCallback = func(addr string, id uint64, r DisconnectReason) {
+	p.Config.DisconnectCallback = func(_ string, id uint64, r DisconnectReason) {
 		defer close(disconnectCalled)
 		require.Equal(t, ErrDisconnectInvalidMessageLength, r)
 	}
@@ -1356,7 +1356,7 @@ func newReadNothingConn() *readNothingConn {
 	}
 }
 
-func (c *readNothingConn) Read(b []byte) (int, error) {
+func (c *readNothingConn) Read(_ []byte) (int, error) {
 	select {
 	case <-c.stopReading:
 		return 0, errors.New("done")

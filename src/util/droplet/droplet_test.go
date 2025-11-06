@@ -280,7 +280,7 @@ func TestToFromStringFuzz(t *testing.T) {
 	nRand := int(1e5)
 	fullRe := regexp.MustCompile(`^[1-9][0-9]{0,8}\.[0-9]{6}$`)
 	for i := 0; i < nRand; i++ {
-		x := (rand.Uint64() % ((1e8 * 1e6) - 1e6 + 1)) + 1e6 // [1e6, 1e8*1e6]
+		x := (rand.Uint64() % ((1e8 * 1e6) - 1e6 + 1)) + 1e6 //nolint:gosec // [1e6, 1e8*1e6]
 		t.Run(fmt.Sprint(x), func(t *testing.T) {
 			verify(t, x, fullRe)
 		})
@@ -289,7 +289,7 @@ func TestToFromStringFuzz(t *testing.T) {
 	// Check random values >=1 and with no droplets
 	wholeRe := regexp.MustCompile(`^[1-9][0-9]{0,8}\.0{6}$`)
 	for i := 0; i < nRand; i++ {
-		x := (rand.Uint64() % 1e8) + 1 // [1, 1e8]
+		x := (rand.Uint64() % 1e8) + 1 //nolint:gosec // [1, 1e8]
 		x = x * 1e6
 		t.Run(fmt.Sprint(x), func(t *testing.T) {
 			verify(t, x, wholeRe)

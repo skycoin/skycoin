@@ -77,5 +77,5 @@ func IntToUint32(a int) (uint32, error) {
 		return 0, ErrIntOverflowsUint32
 	}
 
-	return uint32(a), nil
+	return uint32(a), nil //nolint:gosec
 }

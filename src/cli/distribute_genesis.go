@@ -32,7 +32,7 @@ func distributeGenesisCmd() *cobra.Command {
 	return cmd
 }
 
-func distributeGenesisHandler(c *cobra.Command, args []string) error {
+func distributeGenesisHandler(_ *cobra.Command, args []string) error {
 	sk, err := cipher.SecKeyFromHex(args[0])
 	if err != nil {
 		return errors.New("invalid genesis secret key")

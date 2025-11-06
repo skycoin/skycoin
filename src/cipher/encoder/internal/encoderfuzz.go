@@ -41,7 +41,7 @@ func Fuzz(b []byte) int {
 
 	s, x, errA := encoder.DeserializeString(b, 8)
 	if errA == nil {
-		if x != uint64(len(s)+4) {
+		if x != uint64(len(s)+4) { //nolint:gosec
 			panic(fmt.Sprintf("DeserializeString x != len(s) + 4 (%d = %d, %q)", x, len(s)+4, s))
 		}
 	}

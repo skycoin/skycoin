@@ -537,7 +537,7 @@ func TestWalletGenerateAddress(t *testing.T) {
 				// check the entry number
 				l, err = w.EntriesLen()
 				require.NoError(t, err)
-				require.Equal(t, int(tc.num), l)
+				require.Equal(t, int(tc.num), l) //nolint:gosec
 
 				addrs, err := w.GetAddresses()
 				require.NoError(t, err)

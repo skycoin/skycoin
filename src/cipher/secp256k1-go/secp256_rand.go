@@ -113,7 +113,7 @@ func init() {
 
 	seed1 := []byte(strconv.FormatUint(uint64(time.Now().UnixNano()), 16)) //nolint:gosec
 	seed2 := []byte(strings.Join(os.Environ(), ""))
-	seed3 := []byte(strconv.FormatUint(uint64(os.Getpid()), 16))
+	seed3 := []byte(strconv.FormatUint(uint64(os.Getpid()), 16)) //nolint:gosec
 
 	seed4 := make([]byte, 256)
 	_, err := io.ReadFull(crand.Reader, seed4) // system secure random number generator

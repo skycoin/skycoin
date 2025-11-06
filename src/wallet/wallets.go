@@ -30,7 +30,7 @@ func loadWallets(dir string, loader Loader) (Wallets, error) { //nolint:unused
 			}
 
 			fullpath := filepath.Join(dir, name)
-			data, err := os.ReadFile(fullpath)
+			data, err := os.ReadFile(fullpath) //nolint:gosec
 			if err != nil {
 				return nil, err
 			}

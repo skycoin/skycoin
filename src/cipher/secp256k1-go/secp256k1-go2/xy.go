@@ -178,7 +178,7 @@ func (xy *XY) SetXYZ(a *XYZ) {
 }
 
 func (xy *XY) precomp(w int) []XY { //nolint:unused,megacheck
-	pre := make([]XY, (1 << (uint(w) - 2)))
+	pre := make([]XY, (1 << (uint(w) - 2))) //nolint:gosec
 	pre[0] = *xy
 	var X, d, tmp XYZ
 	X.SetXY(xy)

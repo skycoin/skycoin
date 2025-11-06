@@ -996,10 +996,10 @@ func TestScanAddresses(t *testing.T) {
 	}
 }
 
-func getExternalAddrs(_ *testing.T) []cipher.Addresser {
+func getExternalAddrs(_ *testing.T) []cipher.Addresser { //nolint:unused
 	return skycoinAddressStringsToAddress(testSkycoinExternalAddresses)
 }
 
-func getChangeAddrs(_ *testing.T) []cipher.Addresser {
+func getChangeAddrs(_ *testing.T) []cipher.Addresser { //nolint:unused
 	return skycoinAddressStringsToAddress(testSkycoinChangeAddresses)
 }

@@ -447,7 +447,7 @@ func (w *Wallet) GenerateAddresses(options ...wallet.Option) ([]cipher.Addresser
 		if err != nil {
 			return nil, fmt.Errorf("decode hex seed failed: %v", err)
 		}
-		seed, seckeys = cipher.MustGenerateDeterministicKeyPairsSeed(sd, int(num))
+		seed, seckeys = cipher.MustGenerateDeterministicKeyPairsSeed(sd, int(num)) //nolint:gosec
 	}
 
 	w.Meta.SetLastSeed(hex.EncodeToString(seed))

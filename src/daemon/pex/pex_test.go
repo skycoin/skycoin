@@ -240,7 +240,7 @@ func TestNewPexLoadCustomPeers(t *testing.T) {
 	require.NoError(t, err)
 	defer os.Remove(dir) //nolint:errcheck
 
-	fn, err := os.Create(filepath.Join(dir, "custom-peers.txt"))
+	fn, err := os.Create(filepath.Join(dir, "custom-peers.txt")) //nolint:gosec
 	require.NoError(t, err)
 	defer fn.Close() //nolint:errcheck
 

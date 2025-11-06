@@ -106,7 +106,7 @@ func (s ScryptChacha20poly1305) Encrypt(data, password []byte) ([]byte, error) {
 	}
 
 	length := make([]byte, scryptChacha20MetaLengthSize)
-	binary.LittleEndian.PutUint16(length, uint16(len(ms)))
+	binary.LittleEndian.PutUint16(length, uint16(len(ms))) //nolint:gosec
 
 	// Additional data for AEAD
 	ad := append(length, ms...)

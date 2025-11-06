@@ -391,7 +391,7 @@ func Load(filename string) (Wallet, error) {
 		return nil, nil
 	}
 
-	data, err := os.ReadFile(filename)
+	data, err := os.ReadFile(filename) //nolint:gosec
 	if err != nil {
 		return nil, err
 	}

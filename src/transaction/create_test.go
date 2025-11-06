@@ -769,7 +769,7 @@ func makeUxOut(t *testing.T, s cipher.SecKey, coins, hours uint64) coin.UxOut { 
 	seq := rand.Int31n(100)
 	return coin.UxOut{
 		Head: coin.UxHead{
-			Time:  uint64(tm), //nolint:gosec
+			Time:  uint64(tm),  //nolint:gosec
 			BkSeq: uint64(seq), //nolint:gosec
 		},
 		Body: body,

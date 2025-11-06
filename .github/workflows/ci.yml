@@ -21,7 +21,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y xvfb
+          sudo apt-get install -y xvfb libusb-1.0-0-dev
 
       - name: Vendor Dependencies
         run: go mod vendor -v

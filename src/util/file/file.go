@@ -137,7 +137,7 @@ func SaveJSONSafe(filename string, thing interface{}, mode os.FileMode) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 	n, err := f.Write(b)
 	if n != len(b) && err != nil {
 		err = errors.New("Failed to save complete file")
@@ -317,6 +317,6 @@ func IsWritable(name string) bool {
 	if err != nil && os.IsPermission(err) {
 		return false
 	}
-	f.Close()
+	_ = f.Close() //nolint:errcheck
 	return true
 }

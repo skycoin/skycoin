@@ -1,4 +1,4 @@
-version: 2
+version: "2"
 
 run:
   concurrency: 4
@@ -8,10 +8,9 @@ run:
 
 output:
   formats:
-    colored-line-number:
+    - format: colored-line-number
       path: stdout
-  print-issued-lines: true
-  print-linter-name: true
+
 linters:
   default: none
   enable:
@@ -87,8 +86,10 @@ linters:
       - linters:
           - staticcheck
         text: "QF1006:" # could lift into loop condition (staticcheck)
+
 issues:
   new: false
+
 formatters:
   enable:
     - goimports

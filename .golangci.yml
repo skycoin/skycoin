@@ -7,9 +7,8 @@ run:
   tests: true
 
 output:
-  formats:
-    - format: colored-line-number
-      path: stdout
+  format: colored-line-number
+  path: stdout
 
 linters:
   default: none

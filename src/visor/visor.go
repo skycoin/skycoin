@@ -1899,7 +1899,7 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction, signed transaction.TxnS
 			// For confirmed transactions, use the previous block time to calculate hours and fees,
 			// except for the genesis block which has no previous block and has no inputs nor fees.
 			feeCalcTime = 0
-			if historyTxn.BlockSeq > 0 {
+			if historyTxn != nil && historyTxn.BlockSeq > 0 {
 				if isTxnConfirmed {
 					prevBlock, err := vs.blockchain.GetSignedBlockBySeq(tx, historyTxn.BlockSeq-1)
 					if err != nil {

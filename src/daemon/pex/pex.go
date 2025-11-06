@@ -394,7 +394,7 @@ func (px *Pex) loadCustom(fn string) error {
 		return err
 	}
 
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 
 	data, err := ioutil.ReadAll(f)
 	if err != nil {

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -118,7 +117,7 @@ func (c *Client) Get(endpoint string, obj interface{}) error {
 	defer resp.Body.Close() //nolint
 
 	if resp.StatusCode != http.StatusOK {
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return err
 		}
@@ -207,7 +206,7 @@ func (c *Client) Post(endpoint string, contentType string, body io.Reader, obj i
 	defer resp.Body.Close() //nolint
 
 	if resp.StatusCode != http.StatusOK {
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return err
 		}
@@ -271,7 +270,7 @@ func (c *Client) requestV2(method, endpoint string, body io.Reader, respObj inte
 		_ = resp.Body.Close() //nolint:errcheck
 	}()
 
-	respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return false, err
 	}
@@ -337,7 +336,7 @@ func (c *Client) CSRF() (string, error) {
 		// CSRF is disabled on the node
 		return "", nil
 	default:
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return "", err
 		}

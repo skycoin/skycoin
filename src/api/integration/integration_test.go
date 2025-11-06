@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -252,7 +251,7 @@ func updateGoldenFile(t *testing.T, filename string, content interface{}) {
 	contentJSON, err := json.MarshalIndent(content, "", "\t")
 	require.NoError(t, err)
 	contentJSON = append(contentJSON, '\n')
-	err = ioutil.WriteFile(filename, contentJSON, 0644)
+	err = os.WriteFile(filename, contentJSON, 0644)
 	require.NoError(t, err)
 }
 
@@ -272,7 +271,7 @@ func checkGoldenFile(t *testing.T, goldenFile string, td TestData) {
 	require.NoError(t, err)
 	defer f.Close() //nolint:errcheck
 
-	c, err := ioutil.ReadAll(f)
+	c, err := io.ReadAll(f)
 	require.NoError(t, err)
 
 	sc := string(c)

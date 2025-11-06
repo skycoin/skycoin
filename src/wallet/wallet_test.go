@@ -2,7 +2,6 @@ package wallet
 
 import (
 	"html/template"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -389,6 +388,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 
 			for _, f := range tc.initFiles {
 				fw, err := os.Create(filepath.Join(dir, f.wltName))
+				require.NoError(t, err)
 				defer fw.Close() //nolint:errcheck
 				err = tmp.Execute(fw, struct{ Version string }{f.version})
 				require.NoError(t, err)
@@ -397,7 +397,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 			require.NoError(t, removeBackupFiles(dir))
 
 			// Get all remaining files
-			fs, err := ioutil.ReadDir(dir)
+			fs, err := os.ReadDir(dir)
 			require.NoError(t, err)
 			require.Len(t, fs, len(tc.expectedRemainingFiles))
 			for _, f := range fs {
@@ -409,7 +409,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 }
 
 func prepareWltDir() string {
-	dir, err := ioutil.TempDir("", "wallets")
+	dir, err := os.MkdirTemp("", "wallets")
 	if err != nil {
 		panic(err)
 	}

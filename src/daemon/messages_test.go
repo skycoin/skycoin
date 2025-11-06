@@ -1,7 +1,7 @@
 package daemon
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -504,8 +504,8 @@ func TestIntroductionMessage(t *testing.T) {
 			d.On("recordMessageEvent", tc.intro, mc).Return(tc.mockValue.recordMessageEventErr)
 			d.On("Disconnect", tc.addr, tc.mockValue.disconnectReason).Return(tc.mockValue.disconnectErr)
 			d.On("connectionIntroduced", tc.addr, tc.gnetID, mock.MatchedBy(func(m *IntroductionMessage) bool {
-				t.Logf("connectionIntroduced mock.MatchedBy unconfirmedBurnFactor=%d", m.UnconfirmedVerifyTxn.BurnFactor)
 				if m == nil {
+					t.Logf("connectionIntroduced mock.MatchedBy unconfirmedBurnFactor=%d", m.UnconfirmedVerifyTxn.BurnFactor)
 					return false
 				}
 
@@ -865,7 +865,7 @@ func TestMessageEncodeDecode(t *testing.T) {
 			require.NoError(t, err)
 			defer f.Close() //nolint:errcheck
 
-			d, err := ioutil.ReadAll(f)
+			d, err := io.ReadAll(f)
 			require.NoError(t, err)
 
 			err = encoder.DeserializeRawExact(d, tc.obj)

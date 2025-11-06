@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"reflect"
 	"sort"
 	"testing"
@@ -338,7 +338,7 @@ func TestCreateTransaction(t *testing.T) {
 }
 
 func prepareWltDir() string {
-	dir, err := ioutil.TempDir("", "wallets")
+	dir, err := os.MkdirTemp("", "wallets")
 	if err != nil {
 		panic(err)
 	}

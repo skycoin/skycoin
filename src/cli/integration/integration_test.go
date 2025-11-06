@@ -9,7 +9,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -283,7 +283,7 @@ type readableDeterministicWallet struct {
 // createTempWalletDir creates a temporary wallet dir,
 // Returns wallet dir path and callback function to clean up the dir.
 func createTempWalletDir(t *testing.T) (string, func()) {
-	dir, err := ioutil.TempDir("", "wallet-data-dir")
+	dir, err := os.MkdirTemp("", "wallet-data-dir")
 	require.NoError(t, err)
 
 	return dir, func() {
@@ -321,7 +321,7 @@ func updateGoldenFile(t *testing.T, filename string, content interface{}) {
 	contentJSON, err := json.MarshalIndent(content, "", "\t")
 	require.NoError(t, err)
 	contentJSON = append(contentJSON, '\n')
-	err = ioutil.WriteFile(filename, contentJSON, 0644)
+	err = os.WriteFile(filename, contentJSON, 0644)
 	require.NoError(t, err)
 }
 
@@ -343,7 +343,7 @@ func checkGoldenFileObjectChanges(t *testing.T, goldenFile string, td TestData) 
 	require.NoError(t, err)
 	defer f.Close() //nolint:errcheck
 
-	c, err := ioutil.ReadAll(f)
+	c, err := io.ReadAll(f)
 	require.NoError(t, err)
 
 	sc := string(c)
@@ -1199,7 +1199,7 @@ func TestFiberAddressGen(t *testing.T) {
 	}
 
 	checkAddrsFile := func(t *testing.T, fn string, n int) []string {
-		b, err := ioutil.ReadFile(fn)
+		b, err := os.ReadFile(fn)
 		require.NoError(t, err)
 
 		addrs := strings.Split(strings.TrimSpace(string(b)), "\n")
@@ -1986,7 +1986,7 @@ func TestLiveTransaction(t *testing.T) {
 
 func prepareCSVFile(t *testing.T, toAddrs [][]string) (csvFile string, teardown func(t *testing.T)) {
 	fn := "create_txn_test.csv"
-	tmpDir, err := ioutil.TempDir("", "create_raw_transaction")
+	tmpDir, err := os.MkdirTemp("", "create_raw_transaction")
 	require.NoError(t, err)
 	csvFile = filepath.Join(tmpDir, fn)
 
@@ -2802,7 +2802,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 					{entries[2].Address.String(), "0.5"},
 				}
 
-				f, err := ioutil.TempFile("", "createrawtxn")
+				f, err := os.CreateTemp("", "createrawtxn")
 				require.NoError(t, err)
 				defer f.Close() //nolint:errcheck
 

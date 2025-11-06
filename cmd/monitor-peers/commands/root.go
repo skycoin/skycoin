@@ -12,7 +12,6 @@ package commands
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"regexp"
@@ -219,7 +218,7 @@ func main() {
 // If the line fails to parse, an error is returned
 // Localhost addresses are allowed if allowLocalhost is true
 func getPeersListFromFile(filePath string) ([]string, error) {
-	body, err := ioutil.ReadFile(filePath)
+	body, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}

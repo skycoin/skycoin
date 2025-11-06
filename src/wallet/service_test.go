@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,7 +25,7 @@ import (
 )
 
 func prepareWltDir() string {
-	dir, err := ioutil.TempDir("", "wallets")
+	dir, err := os.MkdirTemp("", "wallets")
 	if err != nil {
 		panic(err)
 	}
@@ -234,7 +233,7 @@ func TestServiceCreateWallet(t *testing.T) {
 					require.False(t, os.IsNotExist(err))
 
 					// Confirms that the data saved to the disk is the same as the wallet.Deserialize()
-					data, err := ioutil.ReadFile(filepath.Join(dir, tc.filename))
+					data, err := os.ReadFile(filepath.Join(dir, tc.filename))
 					require.NoError(t, err)
 
 					sd, err := w.Serialize()
@@ -1600,7 +1599,7 @@ func TestServiceDecryptWallet(t *testing.T) {
 				}
 
 				//verify := verifyDecryptedCollectionWlt
-				verify := verifyDecryptedDeterministicWlt
+				var verify func(testCase, wallet.Wallet)
 				switch wltType {
 				case wallet.WalletTypeCollection:
 					verify = verifyDecryptedCollectionWlt

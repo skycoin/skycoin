@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -581,7 +581,7 @@ func TestWalletGetEntry(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			data, err := ioutil.ReadFile(tc.wltFile)
+			data, err := os.ReadFile(tc.wltFile)
 			require.NoError(t, err)
 			ld := Loader{}
 			w, err := ld.Load(data)
@@ -747,7 +747,7 @@ func TestWalletSerialize(t *testing.T) {
 	require.NoError(t, err)
 
 	// load wallet file and compare
-	fb, err := ioutil.ReadFile("./testdata/wallet_serialize.wlt")
+	fb, err := os.ReadFile("./testdata/wallet_serialize.wlt")
 	require.NoError(t, err)
 	require.Equal(t, bytes.TrimRight(fb, "\n"), b)
 
@@ -757,7 +757,7 @@ func TestWalletSerialize(t *testing.T) {
 }
 
 func TestWalletDeserialize(t *testing.T) {
-	b, err := ioutil.ReadFile("./testdata/wallet_serialize.wlt")
+	b, err := os.ReadFile("./testdata/wallet_serialize.wlt")
 	require.NoError(t, err)
 
 	w := Wallet{}

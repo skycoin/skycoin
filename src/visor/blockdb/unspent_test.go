@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"sort"
 	"testing"
@@ -1094,7 +1093,7 @@ func setupNoUnspentAddrIndexDB(t *testing.T) (*dbutil.DB, func()) {
 	dbFile, err := os.Open(dbFilename)
 	require.NoError(t, err)
 
-	tmpFile, err := ioutil.TempFile("", "testdb")
+	tmpFile, err := os.CreateTemp("", "testdb")
 	require.NoError(t, err)
 
 	_, err = io.Copy(tmpFile, dbFile)

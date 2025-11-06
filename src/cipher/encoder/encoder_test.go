@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math"
 	"os"
 	"reflect"
@@ -1060,7 +1060,7 @@ func TestEncodeStable(t *testing.T) {
 	require.NoError(t, err)
 	defer f.Close() //nolint:errcheck
 
-	d, err := ioutil.ReadAll(f)
+	d, err := io.ReadAll(f)
 	require.NoError(t, err)
 
 	var y hasEveryType

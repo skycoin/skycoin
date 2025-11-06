@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"os"
 	"path/filepath"
@@ -53,7 +52,7 @@ func readAll(t *testing.T, f string) []byte {
 	require.NoError(t, err)
 	defer fi.Close() //nolint:errcheck
 
-	b, err := ioutil.ReadAll(fi)
+	b, err := io.ReadAll(fi)
 	require.NoError(t, err)
 
 	return b

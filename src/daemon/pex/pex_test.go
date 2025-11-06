@@ -2,7 +2,6 @@ package pex
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -160,7 +159,7 @@ func TestValidateAddress(t *testing.T) {
 }
 
 func TestNewPex(t *testing.T) {
-	dir, err := ioutil.TempDir("", "peerlist")
+	dir, err := os.MkdirTemp("", "peerlist")
 	require.NoError(t, err)
 	defer os.Remove(dir) //nolint:errcheck
 
@@ -213,7 +212,7 @@ func TestNewPex(t *testing.T) {
 }
 
 func TestNewPexDisableTrustedPeers(t *testing.T) {
-	dir, err := ioutil.TempDir("", "peerlist")
+	dir, err := os.MkdirTemp("", "peerlist")
 	require.NoError(t, err)
 	defer os.Remove(dir) //nolint:errcheck
 
@@ -237,7 +236,7 @@ func TestNewPexDisableTrustedPeers(t *testing.T) {
 }
 
 func TestNewPexLoadCustomPeers(t *testing.T) {
-	dir, err := ioutil.TempDir("", "peerlist")
+	dir, err := os.MkdirTemp("", "peerlist")
 	require.NoError(t, err)
 	defer os.Remove(dir) //nolint:errcheck
 
@@ -362,7 +361,7 @@ func TestPexLoadPeers(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			dir, err := ioutil.TempDir("", "peerlist")
+			dir, err := os.MkdirTemp("", "peerlist")
 			require.NoError(t, err)
 			defer os.Remove(dir) //nolint:errcheck
 

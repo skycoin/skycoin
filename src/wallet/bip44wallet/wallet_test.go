@@ -463,7 +463,6 @@ func checkNoSensitiveData(t *testing.T, w *Wallet) {
 	}
 
 	require.NotEmpty(t, w.Meta.Secrets())
-	return
 }
 
 func TestWalletLock(t *testing.T) {

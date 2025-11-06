@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
 	"math"
 	"net/http"
 	"net/http/httptest"
@@ -1558,7 +1557,7 @@ func TestTransactionsHandlerV2(t *testing.T) {
 			srv := newServerMux(cfg, gateway)
 			srv.ServeHTTP(rec, req)
 
-			body, err := ioutil.ReadAll(rec.Body)
+			body, err := io.ReadAll(rec.Body)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expectStatusCode, rec.Code)

@@ -2,7 +2,7 @@ package api
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -280,7 +280,7 @@ func TestEnableGUI(t *testing.T) {
 			defer rsp.Body.Close() //nolint:errcheck
 			require.Equal(t, tc.expectCode, rsp.StatusCode)
 
-			body, err := ioutil.ReadAll(rr.Body)
+			body, err := io.ReadAll(rr.Body)
 			require.NoError(t, err)
 
 			if rsp.StatusCode != http.StatusOK {

@@ -1,7 +1,6 @@
 package kvstorage
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -18,7 +17,7 @@ const (
 )
 
 func setupTmpDir(t *testing.T) (string, func()) {
-	tmpDir, err := ioutil.TempDir("", "kvstoragetest")
+	tmpDir, err := os.MkdirTemp("", "kvstoragetest")
 	require.NoError(t, err)
 
 	if err != nil {

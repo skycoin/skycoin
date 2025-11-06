@@ -4,7 +4,7 @@ package pex
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math"
 	"math/rand"
 	"net"
@@ -396,7 +396,7 @@ func (px *Pex) loadCustom(fn string) error {
 
 	defer f.Close() //nolint:errcheck
 
-	data, err := ioutil.ReadAll(f)
+	data, err := io.ReadAll(f)
 	if err != nil {
 		return err
 	}
@@ -642,7 +642,7 @@ func downloadText(url string) (string, error) {
 	}
 	defer resp.Body.Close() //nolint:errcheck
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}

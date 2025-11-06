@@ -1,0 +1,110 @@
+on:
+  pull_request:
+    branches: [ master, develop, cobra-cli ]
+  push:
+    branches: [ master, develop, cobra-cli ]
+
+name: CI
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.25.*
+
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+
+      - name: Install Go Tools
+        run: |
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+      - name: Vendor Dependencies
+        run: go mod vendor -v
+
+      - name: Run Linters
+        run: make lint
+
+      - name: Format Check
+        run: |
+          make format
+          git diff --exit-code || (echo "Code is not formatted. Run 'make format' locally." && exit 1)
+
+      - name: Run Unit Tests
+        run: make test
+
+      - name: Run Unit Tests (386)
+        run: make test-386
+
+      - name: Run Integration Tests
+        run: |
+          Xvfb -ac :99 -screen 0 1280x1024x16 &
+          export DISPLAY=:99
+          make integration-tests-stable
+
+      - name: Check newcoin Template
+        run: make check-newcoin
+
+  darwin:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.25.*
+
+      - uses: actions/checkout@v4
+
+      - name: Install Go Tools
+        run: |
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+      - name: Vendor Dependencies
+        run: go mod vendor -v
+
+      - name: Run Linters
+        run: make lint
+
+      - name: Format Check
+        run: |
+          make format
+          git diff --exit-code || (echo "Code is not formatted. Run 'make format' locally." && exit 1)
+
+      - name: Run Unit Tests
+        run: make test
+
+      - name: Run Unit Tests (386)
+        run: make test-386
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.25.*
+
+      - uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          choco install make
+
+      - name: Install Go Tools
+        run: |
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+      - name: Vendor Dependencies
+        run: go mod vendor -v
+
+      - name: Run Unit Tests
+        run: make test
+
+      - name: Run Unit Tests (amd64)
+        run: make test-amd64

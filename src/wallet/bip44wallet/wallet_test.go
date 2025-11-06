@@ -16,7 +16,7 @@ import (
 var (
 	skycoinExternalAddrs = skycoinAddressStringsToAddress(testSkycoinExternalAddresses)
 	skycoinChangeAddrs   = skycoinAddressStringsToAddress(testSkycoinChangeAddresses)
-	bitcoinExternalAddrs = //nolint:unusedbitcoinAddressStringsToAddress(testBitcoinExternalAddresses)
+	bitcoinExternalAddrs = bitcoinAddressStringsToAddress(testBitcoinExternalAddresses) //nolint:unused
 )
 
 type mockTxnsFinder map[cipher.Addresser]bool

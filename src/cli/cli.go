@@ -19,7 +19,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/util/file"
@@ -259,7 +259,7 @@ func readPasswordFromTerminal() ([]byte, error) {
 	if _, err := fmt.Fprint(os.Stdout, "enter password:"); err != nil {
 		return nil, err
 	}
-	bp, err := terminal.ReadPassword(int(syscall.Stdin)) //nolint:unconvert
+	bp, err := term.ReadPassword(int(syscall.Stdin)) //nolint:unconvert
 	if err != nil {
 		return nil, err
 	}

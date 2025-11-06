@@ -260,9 +260,7 @@ func (auo AddressUxOuts) Keys() []cipher.Address {
 func (auo AddressUxOuts) Flatten() UxArray {
 	oxs := make(UxArray, 0, len(auo))
 	for _, uxs := range auo {
-		for i := range uxs {
-			oxs = append(oxs, uxs[i])
-		}
+		oxs = append(oxs, uxs...)
 	}
 	return oxs
 }

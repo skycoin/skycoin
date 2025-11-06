@@ -765,8 +765,8 @@ func TestCreate(t *testing.T) {
 
 func makeUxOut(t *testing.T, s cipher.SecKey, coins, hours uint64) coin.UxOut { //nolint:unparam
 	body := makeUxBody(t, s, coins, hours)
-	tm := rand.Int31n(1000)
-	seq := rand.Int31n(100)
+	tm := rand.Int31n(1000) //nolint:gosec // Weak random acceptable in tests
+	seq := rand.Int31n(100) //nolint:gosec // Weak random acceptable in tests
 	return coin.UxOut{
 		Head: coin.UxHead{
 			Time:  uint64(tm),  //nolint:gosec

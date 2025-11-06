@@ -1,3 +1,4 @@
+// Package mobile provides mobile API bindings for Skycoin
 package mobile
 
 import (

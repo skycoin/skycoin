@@ -68,7 +68,7 @@ func mustParsePubkey(t *testing.T) cipher.PubKey {
 
 func writeDBFile(t *testing.T, badDBFile string, badDBData []byte) {
 	t.Logf("Writing the original bad db file back to %s", badDBFile)
-	fi, err := os.OpenFile(badDBFile, os.O_WRONLY, 0600)
+	fi, err := os.OpenFile(badDBFile, os.O_WRONLY, 0600) //nolint:gosec // Test file operation
 	require.NoError(t, err)
 	defer fi.Close() //nolint:errcheck
 
@@ -704,7 +704,7 @@ func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBl
 			Block: coin.Block{
 				Head: coin.BlockHeader{
 					BkSeq: i,
-					Time:  uint64(tm),
+					Time:  uint64(tm), //nolint:gosec // Test data conversion
 				},
 			},
 		})
@@ -725,7 +725,7 @@ func makeUncfmUxs(txns []UnconfirmedTransaction) coin.UxArray {
 	for i := range txns {
 		uxs = append(uxs, coin.UxOut{
 			Head: coin.UxHead{
-				Time: uint64(txns[i].Received),
+				Time: uint64(txns[i].Received), //nolint:gosec // Test data conversion
 			},
 			Body: coin.UxBody{
 				SrcTransaction: txns[i].Transaction.Hash(),
@@ -765,7 +765,7 @@ func TestGetTransactions(t *testing.T) {
 		luncfmTxns = append(luncfmTxns, Transaction{
 			Transaction: uncfmTxns[i].Transaction,
 			Status:      NewUnconfirmedTransactionStatus(),
-			Time:        uint64(timeutil.NanoToTime(txn.Received).Unix()),
+			Time:        uint64(timeutil.NanoToTime(txn.Received).Unix()), //nolint:gosec // Time conversion
 		})
 	}
 

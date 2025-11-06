@@ -228,7 +228,7 @@ func (fup *fakeUnspentPool) GetUnspentHashesOfAddrs(_ *dbutil.Tx, addrs []cipher
 	return addrOutMap, nil
 }
 
-func (fup *fakeUnspentPool) GetUnspentsOfAddrs(tx *dbutil.Tx, addrs []cipher.Address) (coin.AddressUxOuts, error) {
+func (fup *fakeUnspentPool) GetUnspentsOfAddrs(_ *dbutil.Tx, addrs []cipher.Address) (coin.AddressUxOuts, error) {
 	addrm := make(map[cipher.Address]struct{}, len(addrs))
 	for _, a := range addrs {
 		addrm[a] = struct{}{}
@@ -243,7 +243,7 @@ func (fup *fakeUnspentPool) GetUnspentsOfAddrs(tx *dbutil.Tx, addrs []cipher.Add
 	return addrOutMap, nil
 }
 
-func (fup *fakeUnspentPool) ProcessBlock(tx *dbutil.Tx, b *coin.SignedBlock) error {
+func (fup *fakeUnspentPool) ProcessBlock(_ *dbutil.Tx, b *coin.SignedBlock) error {
 	if fup.saveFailed {
 		if fup.failedWhenSaved != nil {
 			*fup.failedWhenSaved = true
@@ -253,7 +253,7 @@ func (fup *fakeUnspentPool) ProcessBlock(tx *dbutil.Tx, b *coin.SignedBlock) err
 	return nil
 }
 
-func (fup *fakeUnspentPool) Contains(tx *dbutil.Tx, h cipher.SHA256) (bool, error) {
+func (fup *fakeUnspentPool) Contains(_ *dbutil.Tx, h cipher.SHA256) (bool, error) {
 	_, ok := fup.outs[h]
 	return ok, nil
 }

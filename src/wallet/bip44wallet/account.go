@@ -322,7 +322,7 @@ func (c *bip44Chain) syncSecrets(ss wallet.Secrets, privateKey *bip32.PrivateKey
 	for i, e := range c.Entries {
 		addr := e.Address.String()
 		if _, ok := ss.Get(addr); !ok {
-			k, err := secretFromPrivateKey(privateKey, c.ChainIndex, uint32(i))
+			k, err := secretFromPrivateKey(privateKey, c.ChainIndex, uint32(i)) //nolint:gosec // Index conversion
 			if err != nil {
 				return err
 			}
@@ -355,7 +355,7 @@ func (c bip44Chain) clone() bip44Chain {
 }
 
 func (c *bip44Chain) dropLastEntriesN(n uint32) error { //nolint:unused
-	l := uint32(len(c.Entries))
+	l := uint32(len(c.Entries)) //nolint:gosec // Entries count conversion
 	if n > l {
 		return errors.New("bip44Chain.dropLastEntriesN param 'n' is out of range")
 	}

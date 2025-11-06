@@ -518,7 +518,7 @@ func (bc Blockchain) GetLastBlocks(tx *dbutil.Tx, num uint64) ([]coin.SignedBloc
 		start = 0
 	}
 
-	return bc.GetBlocksInRange(tx, uint64(start), end)
+	return bc.GetBlocksInRange(tx, uint64(start), end) //nolint:gosec // Intentional range calculation
 }
 
 /* Private */

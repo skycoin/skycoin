@@ -1,3 +1,4 @@
+// Package main provides the GopherJS skycoin-lite browser implementation
 package main
 
 import (

@@ -166,12 +166,12 @@ func (fd *Field) Normalize() {
 	t6 &= uint32(mask) //nolint:gosec
 	t5 &= uint32(mask) //nolint:gosec // Intentional conversion for secp256k1 field operations
 	t4 &= uint32(mask) //nolint:gosec // Intentional conversion for secp256k1 field operations
-	t3 &= uint32(mask)
-	t2 &= uint32(mask)
+	t3 &= uint32(mask) //nolint:gosec // Intentional conversion for secp256k1 field operations
+	t2 &= uint32(mask) //nolint:gosec // Intentional conversion for secp256k1 field operations
 	low -= ((mask ^ 0xFFFFFFFFFFFFFFFF) & 0xFFFFEFFFFFC2F)
 
 	// push internal variables back
-	fd.n[0] = uint32(low) & 0x3FFFFFF
+	fd.n[0] = uint32(low) & 0x3FFFFFF //nolint:gosec // Intentional conversion for secp256k1 field operations
 	fd.n[1] = uint32(low>>26) & 0x3FFFFFF
 	fd.n[2] = t2
 	fd.n[3] = t3

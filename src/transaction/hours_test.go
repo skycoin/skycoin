@@ -148,7 +148,7 @@ func TestDistributeCoinHoursProportional(t *testing.T) {
 	maxHours := 15000000
 	coins := make([]uint64, maxCoinsLen)
 	for i := 0; i < iterations; i++ {
-		coinsLen := rand.Intn(maxCoinsLen) + 1
+		coinsLen := rand.Intn(maxCoinsLen) + 1 //nolint:gosec // Weak random acceptable in tests
 
 		maxCoins := rand.Intn(maxMaxCoins) + 1
 

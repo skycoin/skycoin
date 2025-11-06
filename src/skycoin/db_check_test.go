@@ -325,7 +325,7 @@ func TestCheckAndUpdateDB(t *testing.T) {
 			db:           db,
 			dbVersion:    v26,
 			setDBVersion: v26,
-			assertCalled: func(t *testing.T, db *dbutil.DB, m *mockDbCheckCorruptResetter) {
+			assertCalled: func(t *testing.T, _ *dbutil.DB, m *mockDbCheckCorruptResetter) {
 				require.True(t, m.AssertCalled(t, "GetDBVersion", matchFunc))
 				require.True(t, m.AssertCalled(t, "CheckDatabase", matchFunc))
 				require.True(t, m.AssertNotCalled(t, "ResetCorruptDB", matchFunc))
@@ -344,7 +344,7 @@ func TestCheckAndUpdateDB(t *testing.T) {
 			dbVersion:    v26,
 			setDBVersion: v26,
 			resetedDB:    resetedDB,
-			assertCalled: func(t *testing.T, db *dbutil.DB, m *mockDbCheckCorruptResetter) {
+			assertCalled: func(t *testing.T, _ *dbutil.DB, m *mockDbCheckCorruptResetter) {
 				require.True(t, m.AssertCalled(t, "GetDBVersion", matchFunc))
 				require.True(t, m.AssertNotCalled(t, "CheckDatabase", matchFunc))
 				require.True(t, m.AssertCalled(t, "ResetCorruptDB", matchFunc))

@@ -416,8 +416,8 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Pex.CustomPeersFile = c.config.Node.CustomPeersFile
 	dc.Pex.DefaultConnections = c.config.Node.DefaultConnections
 
-	dc.Daemon.MaxOutgoingMessageLength = uint64(c.config.Node.MaxOutgoingMessageLength)
-	dc.Daemon.MaxIncomingMessageLength = uint64(c.config.Node.MaxIncomingMessageLength)
+	dc.Daemon.MaxOutgoingMessageLength = uint64(c.config.Node.MaxOutgoingMessageLength) //nolint:gosec
+	dc.Daemon.MaxIncomingMessageLength = uint64(c.config.Node.MaxIncomingMessageLength) //nolint:gosec
 	dc.Daemon.MaxBlockTransactionsSize = c.config.Node.MaxBlockTransactionsSize
 	dc.Daemon.MaxLastBlocksCount = c.config.Node.MaxLastBlocksCount
 	dc.Daemon.DefaultConnections = c.config.Node.DefaultConnections

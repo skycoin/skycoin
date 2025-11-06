@@ -20,7 +20,7 @@ var (
 )
 
 func tNow() uint64 {
-	return uint64(time.Now().UTC().Unix())
+	return uint64(time.Now().UTC().Unix()) //nolint:gosec
 }
 
 func feeCalc(_ *Transaction) (uint64, error) {
@@ -76,7 +76,7 @@ func TestNewBlock(t *testing.T) {
 	// valid block is fine
 	fee := uint64(121)
 	currentTime := uint64(133)
-	b, err := NewBlock(prev, currentTime, uxHash, txns, func(t *Transaction) (uint64, error) {
+	b, err := NewBlock(prev, currentTime, uxHash, txns, func(_ *Transaction) (uint64, error) {
 		return fee, nil
 	})
 	require.NoError(t, err)

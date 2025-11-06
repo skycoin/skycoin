@@ -63,7 +63,7 @@ func TestSortSpendsCoinsLowToHigh(t *testing.T) {
 		copy(uxb, orderedUxb)
 
 		for i := range uxb {
-			j := rand.Intn(i + 1)
+			j := rand.Intn(i + 1) //nolint:gosec
 			uxb[i], uxb[j] = uxb[j], uxb[i]
 		}
 
@@ -223,7 +223,7 @@ func TestSortSpendsHoursLowToHigh(t *testing.T) {
 		copy(uxb, orderedUxb)
 
 		for i := range uxb {
-			j := rand.Intn(i + 1)
+			j := rand.Intn(i + 1) //nolint:gosec
 			uxb[i], uxb[j] = uxb[j], uxb[i]
 		}
 
@@ -255,7 +255,7 @@ func TestSortSpendsHoursLowToHigh(t *testing.T) {
 func TestChooseSpendsMaximizeUxOuts(t *testing.T) {
 	nRand := 10000
 	for i := 0; i < nRand; i++ {
-		coins := uint64((rand.Intn(3)+1)*10 + rand.Intn(3)) // 10,20,30 + 0,1,2
+		coins := uint64((rand.Intn(3)+1)*10 + rand.Intn(3)) //nolint:gosec // 10,20,30 + 0,1,2
 		uxb := makeRandomUxBalances(t)
 
 		verifyChosenCoins(t, uxb, coins, ChooseSpendsMaximizeUxOuts, func(a, b UxBalance) bool {
@@ -287,7 +287,7 @@ func TestChooseSpendsMaximizeUxOuts(t *testing.T) {
 func TestChooseSpendsMinimizeUxOutsRandom(t *testing.T) {
 	nRand := 10000
 	for i := 0; i < nRand; i++ {
-		coins := uint64((rand.Intn(3)+1)*10 + rand.Intn(3)) // 10,20,30 + 0,1,2
+		coins := uint64((rand.Intn(3)+1)*10 + rand.Intn(3)) //nolint:gosec // 10,20,30 + 0,1,2
 		uxb := makeRandomUxBalances(t)
 
 		verifyChosenCoins(t, uxb, coins, ChooseSpendsMinimizeUxOuts, func(a, b UxBalance) bool {

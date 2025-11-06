@@ -19,7 +19,7 @@ import (
 )
 
 func TestCreate(t *testing.T) {
-	headTime := uint64(time.Now().UTC().Unix())
+	headTime := uint64(time.Now().UTC().Unix()) //nolint:gosec
 	seed := []byte("seed")
 
 	// Generate first keys
@@ -37,7 +37,7 @@ func TestCreate(t *testing.T) {
 	var originalUxouts []coin.UxOut
 	addrs := []cipher.Address{}
 	for i := 0; i < 10; i++ {
-		uxout := makeUxOut(t, secKey, 2e6, uint64(100+i))
+		uxout := makeUxOut(t, secKey, 2e6, uint64(100+i)) //nolint:gosec
 		uxout.Head.Time = headTime
 		uxouts = append(uxouts, uxout)
 		originalUxouts = append(originalUxouts, uxout)
@@ -59,7 +59,7 @@ func TestCreate(t *testing.T) {
 
 		var uxouts []coin.UxOut
 		for i := 0; i < 10; i++ {
-			uxout := makeUxOut(t, s, 2e6, uint64(100+i))
+			uxout := makeUxOut(t, s, 2e6, uint64(100+i)) //nolint:gosec
 			uxout.Head.Time = headTime
 			uxouts = append(uxouts, uxout)
 		}

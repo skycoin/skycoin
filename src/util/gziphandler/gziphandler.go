@@ -1,3 +1,4 @@
+// Package gziphandler provides HTTP middleware for gzip compression.
 package gziphandler
 
 // https://gist.github.com/CJEnright/bc2d8b8dc0c1389a9feeddb110f822d7

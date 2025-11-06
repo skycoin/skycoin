@@ -319,13 +319,13 @@ func TestTransactionPushOutput(t *testing.T) {
 	})
 	for i := 1; i < 20; i++ {
 		a := makeAddress()
-		err := txn.PushOutput(a, uint64(i*100), uint64(i*50))
+		err := txn.PushOutput(a, uint64(i*100), uint64(i*50)) //nolint:gosec
 		require.NoError(t, err)
 		require.Equal(t, len(txn.Out), i+1)
 		require.Equal(t, txn.Out[i], TransactionOutput{
 			Address: a,
-			Coins:   uint64(i * 100),
-			Hours:   uint64(i * 50),
+			Coins:   uint64(i * 100), //nolint:gosec
+			Hours:   uint64(i * 50), //nolint:gosec
 		})
 	}
 

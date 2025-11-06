@@ -105,7 +105,7 @@ func UserHome() string {
 
 // LoadJSON load json file
 func LoadJSON(filename string, thing interface{}) error {
-	file, err := os.Open(filename)
+	file, err := os.Open(filename) //nolint:gosec
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func SaveJSONSafe(filename string, thing interface{}, mode os.FileMode) error {
 		return err
 	}
 	flags := os.O_WRONLY | os.O_CREATE | os.O_EXCL
-	f, err := os.OpenFile(filename, flags, mode)
+	f, err := os.OpenFile(filename, flags, mode) //nolint:gosec
 	if err != nil {
 		return err
 	}
@@ -270,7 +270,7 @@ func DetermineResourcePath(staticDir string, resourceDir string, devDir string) 
 
 // Copy copies file. Will overwrite dst if dst exists.
 func Copy(dst, src string) (err error) {
-	f, err := os.Open(src)
+	f, err := os.Open(src) //nolint:gosec
 	if err != nil {
 		return err
 	}

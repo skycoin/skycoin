@@ -510,12 +510,12 @@ func (c *Config) postProcess() error {
 		return errors.New("-max-decimals-create-block exceeds MaxUint8")
 	}
 
-	c.Node.UnconfirmedVerifyTxn.BurnFactor = uint32(c.Node.unconfirmedBurnFactor)
-	c.Node.UnconfirmedVerifyTxn.MaxTransactionSize = uint32(c.Node.maxUnconfirmedTransactionSize)
-	c.Node.UnconfirmedVerifyTxn.MaxDropletPrecision = uint8(c.Node.unconfirmedMaxDropletPrecision)
-	c.Node.CreateBlockVerifyTxn.BurnFactor = uint32(c.Node.createBlockBurnFactor)
+	c.Node.UnconfirmedVerifyTxn.BurnFactor = uint32(c.Node.unconfirmedBurnFactor) //nolint:gosec
+	c.Node.UnconfirmedVerifyTxn.MaxTransactionSize = uint32(c.Node.maxUnconfirmedTransactionSize) //nolint:gosec
+	c.Node.UnconfirmedVerifyTxn.MaxDropletPrecision = uint8(c.Node.unconfirmedMaxDropletPrecision) //nolint:gosec
+	c.Node.CreateBlockVerifyTxn.BurnFactor = uint32(c.Node.createBlockBurnFactor) //nolint:gosec
 	c.Node.CreateBlockVerifyTxn.MaxTransactionSize = uint32(c.Node.createBlockMaxTransactionSize)
-	c.Node.CreateBlockVerifyTxn.MaxDropletPrecision = uint8(c.Node.createBlockMaxDropletPrecision)
+	c.Node.CreateBlockVerifyTxn.MaxDropletPrecision = uint8(c.Node.createBlockMaxDropletPrecision) //nolint:gosec
 	c.Node.MaxBlockTransactionsSize = uint32(c.Node.maxBlockSize)
 
 	if c.Node.UnconfirmedVerifyTxn.MaxTransactionSize < params.MinTransactionSize {

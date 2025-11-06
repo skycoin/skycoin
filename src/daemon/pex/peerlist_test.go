@@ -587,7 +587,7 @@ func preparePeerlistFile(t *testing.T) (string, func()) {
 	require.NoError(t, err)
 
 	return f.Name(), func() {
-		os.Remove(f.Name())
+		os.Remove(f.Name()) //nolint:errcheck
 	}
 }
 
@@ -596,7 +596,7 @@ func preparePeerlistDir(t *testing.T) (string, func()) {
 	require.NoError(t, err)
 
 	return f, func() {
-		os.Remove(f)
+		os.Remove(f) //nolint:errcheck
 	}
 }
 

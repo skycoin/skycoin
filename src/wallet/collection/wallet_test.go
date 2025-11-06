@@ -318,7 +318,7 @@ func TestWalletLock(t *testing.T) {
 
 				// add entries
 				for _, e := range testSkycoinEntries {
-					w.AddEntry(e)
+					w.AddEntry(e) //nolint:errcheck
 				}
 
 				err = w.Lock(tc.lockPwd)

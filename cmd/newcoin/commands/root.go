@@ -1,7 +1,4 @@
-// package commands cmd/newcoin/commands/root.go
-/*
-newcoin generates a new coin cmd from a toml configuration file
-*/
+// Package commands implements the newcoin template generator.
 package commands
 
 import (
@@ -63,7 +60,7 @@ newcoin is a helper tool for creating new fiber coins`,
 var createCoinCmd = &cobra.Command{
 	Use:   "createcoin",
 	Short: "Create a new coin from a template file",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		if err := validateCoinName(coinName); err != nil {
 			return err
 		}

@@ -26,7 +26,7 @@ func requireFileMode(t *testing.T, filename string, mode os.FileMode) {
 func requireFileContentsBinary(t *testing.T, filename string, contents []byte) {
 	f, err := os.Open(filename)
 	require.NoError(t, err)
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 	b := make([]byte, len(contents)*16)
 	n, err := f.Read(b)
 	require.NoError(t, err)
@@ -65,7 +65,7 @@ func cleanup(t *testing.T, fn string) {
 	require.NoError(t, err)
 
 	for _, f := range paths {
-		os.Remove(f)
+		os.Remove(f) //nolint:errcheck
 	}
 }
 
@@ -152,7 +152,7 @@ func TestLoadJSON(t *testing.T) {
 	require.NoError(t, err)
 	_, err = f.WriteString("{\"key\":\"value\"}")
 	require.NoError(t, err)
-	f.Close()
+	f.Close() //nolint:errcheck
 
 	err = LoadJSON(fn, &obj)
 	require.NoError(t, err)

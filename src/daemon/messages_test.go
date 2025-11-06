@@ -848,7 +848,7 @@ func TestMessageEncodeDecode(t *testing.T) {
 
 				f, err := os.Create(fn)
 				require.NoError(t, err)
-				defer f.Close()
+				defer f.Close() //nolint:errcheck
 
 				b := encoder.Serialize(tc.msg)
 				_, err = f.Write(b)
@@ -863,7 +863,7 @@ func TestMessageEncodeDecode(t *testing.T) {
 
 			f, err := os.Open(fn)
 			require.NoError(t, err)
-			defer f.Close()
+			defer f.Close() //nolint:errcheck
 
 			d, err := ioutil.ReadAll(f)
 			require.NoError(t, err)

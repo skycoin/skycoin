@@ -51,7 +51,7 @@ func prepareDB(t *testing.T) (*dbutil.DB, func()) {
 func readAll(t *testing.T, f string) []byte {
 	fi, err := os.Open(f)
 	require.NoError(t, err)
-	defer fi.Close()
+	defer fi.Close() //nolint:errcheck
 
 	b, err := ioutil.ReadAll(fi)
 	require.NoError(t, err)
@@ -71,7 +71,7 @@ func writeDBFile(t *testing.T, badDBFile string, badDBData []byte) {
 	t.Logf("Writing the original bad db file back to %s", badDBFile)
 	fi, err := os.OpenFile(badDBFile, os.O_WRONLY, 0600)
 	require.NoError(t, err)
-	defer fi.Close()
+	defer fi.Close() //nolint:errcheck
 
 	_, err = io.Copy(fi, bytes.NewBuffer(badDBData))
 	require.NoError(t, err)

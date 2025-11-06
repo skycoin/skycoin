@@ -442,7 +442,7 @@ func TestConnectionClose(t *testing.T) {
 
 	c.Buffer.WriteByte(7)
 	require.Equal(t, c.Buffer.Len(), 1)
-	c.Close()
+	c.Close() //nolint:errcheck
 
 	select {
 	case <-c.WriteQueue:
@@ -562,7 +562,7 @@ func TestConnectionReadLoopReadError(t *testing.T) {
 	wait()
 
 	require.True(t, reconn.(*ReadErrorConn).GetReadDeadlineSet() != time.Time{})
-	reconn.Close()
+	reconn.Close() //nolint:errcheck
 
 	select {
 	case <-disconnectCalled:
@@ -609,7 +609,7 @@ func TestConnectionReadLoopSetReadDeadlineFailed(t *testing.T) {
 
 	<-cc
 
-	rdfconn.Close()
+	rdfconn.Close() //nolint:errcheck
 
 	<-disconnectCalled
 
@@ -657,7 +657,7 @@ func TestConnectionReadLoopInvalidMessageLength(t *testing.T) {
 	wait()
 	raconn.stop()
 	wait()
-	raconn.Close()
+	raconn.Close() //nolint:errcheck
 
 	<-disconnectCalled
 
@@ -703,7 +703,7 @@ func TestConnectionReadLoopTerminates(t *testing.T) {
 	wait()
 	rnconn.stop()
 	wait()
-	rnconn.Close()
+	rnconn.Close() //nolint:errcheck
 
 	<-disconnectCalled
 

@@ -31,7 +31,7 @@ var RootCmd = &cobra.Command{
 		ret += "\nThin client web wallet for Skycoin and fibercoins."
 		return ret
 	}(),
-	Run: func(_ *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		serve()
 	},
 }

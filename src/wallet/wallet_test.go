@@ -389,7 +389,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 
 			for _, f := range tc.initFiles {
 				fw, err := os.Create(filepath.Join(dir, f.wltName))
-				defer fw.Close()
+				defer fw.Close() //nolint:errcheck
 				err = tmp.Execute(fw, struct{ Version string }{f.version})
 				require.NoError(t, err)
 			}

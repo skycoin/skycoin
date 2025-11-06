@@ -1,6 +1,4 @@
-/*
-skycoin explorer
-*/
+// Package commands implements the skycoin explorer.
 package commands
 
 import (
@@ -118,7 +116,7 @@ var RootCmd = &cobra.Command{
 	SilenceUsage:          true,
 	DisableSuggestions:    true,
 	DisableFlagsInUseLine: true,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		// Validate and adjust values
 		if uiFilesFolder != "" && uiFilesFolder[len(uiFilesFolder)-1] != '/' {
 			uiFilesFolder += "/"

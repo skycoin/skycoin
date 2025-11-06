@@ -1048,7 +1048,7 @@ func TestEncodeStable(t *testing.T) {
 	if update {
 		f, err := os.Create(goldenFile)
 		require.NoError(t, err)
-		defer f.Close()
+		defer f.Close() //nolint:errcheck
 
 		b := Serialize(x)
 		_, err = f.Write(b)
@@ -1058,7 +1058,7 @@ func TestEncodeStable(t *testing.T) {
 
 	f, err := os.Open(goldenFile)
 	require.NoError(t, err)
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 
 	d, err := ioutil.ReadAll(f)
 	require.NoError(t, err)

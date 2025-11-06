@@ -50,7 +50,7 @@ func setupEmptyTestFile(t *testing.T, fn string) {
 func setupCorruptedTestFile(t *testing.T, fn string) {
 	f, err := os.Create(fn)
 	require.NoError(t, err)
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 	_, err = f.Write([]byte("corrupt json file"))
 	require.NoError(t, err)
 }

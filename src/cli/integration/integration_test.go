@@ -288,14 +288,14 @@ func createTempWalletDir(t *testing.T) (string, func()) {
 	require.NoError(t, err)
 
 	return dir, func() {
-		os.RemoveAll(dir)
+		os.RemoveAll(dir) //nolint:errcheck
 	}
 }
 
 func loadJSON(t *testing.T, filename string, obj interface{}) {
 	f, err := os.Open(filename)
 	require.NoError(t, err)
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 
 	err = json.NewDecoder(f).Decode(obj)
 	require.NoError(t, err)
@@ -312,7 +312,7 @@ func loadGoldenFile(t *testing.T, filename string, testData TestData) {
 
 	f, err := os.Open(goldenFile)
 	require.NoError(t, err)
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 
 	err = json.NewDecoder(f).Decode(testData.expected)
 	require.NoError(t, err, filename)
@@ -342,7 +342,7 @@ func checkGoldenFileObjectChanges(t *testing.T, goldenFile string, td TestData) 
 
 	f, err := os.Open(goldenFile)
 	require.NoError(t, err)
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 
 	c, err := ioutil.ReadAll(f)
 	require.NoError(t, err)
@@ -1231,7 +1231,7 @@ func TestFiberAddressGen(t *testing.T) {
 	checkSeedsFile := func(t *testing.T, fn string, entropy int, addrs []string) {
 		f, err := os.Open(fn)
 		require.NoError(t, err)
-		defer f.Close()
+		defer f.Close() //nolint:errcheck
 
 		r := csv.NewReader(f)
 		records, err := r.ReadAll()
@@ -1280,7 +1280,7 @@ func TestFiberAddressGen(t *testing.T) {
 	touch := func(t *testing.T, fn string) {
 		f, err := os.Create(fn)
 		require.NoError(t, err)
-		defer f.Close()
+		defer f.Close() //nolint:errcheck
 		err = f.Close()
 		require.NoError(t, err)
 	}
@@ -1303,8 +1303,8 @@ func TestFiberAddressGen(t *testing.T) {
 				testutil.RequireFileNotExists(t, seedsFilename)
 			},
 			check: func(t *testing.T, _ []byte) {
-				defer os.Remove(addrsFilename)
-				defer os.Remove(seedsFilename)
+				defer os.Remove(addrsFilename) //nolint:errcheck
+				defer os.Remove(seedsFilename) //nolint:errcheck
 				testutil.RequireFileExists(t, addrsFilename)
 				testutil.RequireFileExists(t, seedsFilename)
 				addrs := checkAddrsFile(t, addrsFilename, 100)
@@ -1319,8 +1319,8 @@ func TestFiberAddressGen(t *testing.T) {
 				testutil.RequireFileNotExists(t, seedsFilename)
 			},
 			check: func(t *testing.T, _ []byte) {
-				defer os.Remove(addrsFilename)
-				defer os.Remove(seedsFilename)
+				defer os.Remove(addrsFilename) //nolint:errcheck
+				defer os.Remove(seedsFilename) //nolint:errcheck
 				testutil.RequireFileExists(t, addrsFilename)
 				testutil.RequireFileExists(t, seedsFilename)
 				addrs := checkAddrsFile(t, addrsFilename, 100)
@@ -1335,8 +1335,8 @@ func TestFiberAddressGen(t *testing.T) {
 				testutil.RequireFileNotExists(t, seedsFilename)
 			},
 			check: func(t *testing.T, _ []byte) {
-				defer os.Remove(addrsFilename)
-				defer os.Remove(seedsFilename)
+				defer os.Remove(addrsFilename) //nolint:errcheck
+				defer os.Remove(seedsFilename) //nolint:errcheck
 				testutil.RequireFileExists(t, addrsFilename)
 				testutil.RequireFileExists(t, seedsFilename)
 				addrs := checkAddrsFile(t, addrsFilename, 1)
@@ -1353,8 +1353,8 @@ func TestFiberAddressGen(t *testing.T) {
 				testutil.RequireFileExists(t, addrsFilename)
 			},
 			check: func(t *testing.T, v []byte) {
-				defer os.Remove(addrsFilename)
-				defer os.Remove(seedsFilename)
+				defer os.Remove(addrsFilename) //nolint:errcheck
+				defer os.Remove(seedsFilename) //nolint:errcheck
 				testutil.RequireFileNotExists(t, seedsFilename)
 				require.Equal(t, "Error: -addrs-file \"addresses.txt\" already exists. Use -overwrite to force writing\n", string(v))
 			},
@@ -1370,8 +1370,8 @@ func TestFiberAddressGen(t *testing.T) {
 				testutil.RequireFileExists(t, seedsFilename)
 			},
 			check: func(t *testing.T, v []byte) {
-				defer os.Remove(addrsFilename)
-				defer os.Remove(seedsFilename)
+				defer os.Remove(addrsFilename) //nolint:errcheck
+				defer os.Remove(seedsFilename) //nolint:errcheck
 				testutil.RequireFileNotExists(t, addrsFilename)
 				require.Equal(t, "Error: -seeds-file \"seeds.csv\" already exists. Use -overwrite to force writing\n", string(v))
 			},
@@ -1389,8 +1389,8 @@ func TestFiberAddressGen(t *testing.T) {
 				testutil.RequireFileExists(t, seedsFilename)
 			},
 			check: func(t *testing.T, _ []byte) {
-				defer os.Remove(addrsFilename)
-				defer os.Remove(seedsFilename)
+				defer os.Remove(addrsFilename) //nolint:errcheck
+				defer os.Remove(seedsFilename) //nolint:errcheck
 				testutil.RequireFileExists(t, addrsFilename)
 				testutil.RequireFileExists(t, seedsFilename)
 				addrs := checkAddrsFile(t, addrsFilename, 100)
@@ -1405,8 +1405,8 @@ func TestFiberAddressGen(t *testing.T) {
 				testutil.RequireFileNotExists(t, "fooseeds.csv")
 			},
 			check: func(t *testing.T, _ []byte) {
-				defer os.Remove("fooaddrs.txt")
-				defer os.Remove("fooseeds.csv")
+				defer os.Remove("fooaddrs.txt") //nolint:errcheck
+				defer os.Remove("fooseeds.csv") //nolint:errcheck
 				testutil.RequireFileExists(t, "fooaddrs.txt")
 				testutil.RequireFileExists(t, "fooseeds.csv")
 				addrs := checkAddrsFile(t, "fooaddrs.txt", 100)
@@ -1993,7 +1993,7 @@ func prepareCSVFile(t *testing.T, toAddrs [][]string) (csvFile string, teardown 
 
 	f, err := os.Create(csvFile)
 	require.NoError(t, err)
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 	w := csv.NewWriter(f)
 
 	for _, to := range toAddrs {
@@ -2805,7 +2805,7 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 
 				f, err := ioutil.TempFile("", "createrawtxn")
 				require.NoError(t, err)
-				defer f.Close()
+				defer f.Close() //nolint:errcheck
 
 				w := csv.NewWriter(f)
 

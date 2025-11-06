@@ -269,7 +269,7 @@ func TestEnableGUI(t *testing.T) {
 			}()
 
 			defer func() {
-				s.listener.Close()
+				s.listener.Close() //nolint:errcheck
 				wg.Wait()
 			}()
 
@@ -277,7 +277,7 @@ func TestEnableGUI(t *testing.T) {
 			rsp, err := http.Get(url) //nolint:gosec
 			require.NoError(t, err)
 
-			defer rsp.Body.Close()
+			defer rsp.Body.Close() //nolint:errcheck
 			require.Equal(t, tc.expectCode, rsp.StatusCode)
 
 			body, err := ioutil.ReadAll(rr.Body)

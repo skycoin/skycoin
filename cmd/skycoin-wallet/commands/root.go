@@ -1,6 +1,4 @@
-/*
-skycoin daemon, cli, & newcoin
-*/
+// Package commands implements the skycoin wallet commands.
 package commands
 
 import (

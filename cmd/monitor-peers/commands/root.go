@@ -105,7 +105,7 @@ Connection made, no introduction message received.
 - introduced
 Connection made, introduction message received.
 `,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		connectDuration, err := time.ParseDuration(connectTimeout)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Bad connect timeout:", connectTimeout)

@@ -239,7 +239,7 @@ func loadGoldenFile(t *testing.T, filename string, testData TestData) {
 
 	f, err := os.Open(goldenFile)
 	require.NoError(t, err)
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 
 	d := json.NewDecoder(f)
 	d.DisallowUnknownFields()
@@ -270,7 +270,7 @@ func checkGoldenFile(t *testing.T, goldenFile string, td TestData) {
 
 	f, err := os.Open(goldenFile)
 	require.NoError(t, err)
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 
 	c, err := ioutil.ReadAll(f)
 	require.NoError(t, err)

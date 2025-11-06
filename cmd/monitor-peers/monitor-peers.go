@@ -1,17 +1,4 @@
-// Package main cmd/monitor-peers/monitor-peers.go
-/*
-monitor-peers checks the status of peers.
-
-It takes in a list of peers (ip:ports, newline separated, skipping comments and empty lines).
-The tool connects to each of the peers, waits for the introduction packet (or times out)
-and produces a report with the status of the peer (unreachable, reachable, sent_introduction, introduction_parameters).
-Introduction_parameters were added in v0.25.0 so will be absent for earlier peer versions.
-*/
-// package main cmd/cipher-testdata/cipher-testdata.go
-/*
-Generates testdata for the cipher test suite
-*/
-
+// Package main monitors the status of peers by connecting and checking their introduction packets.
 package main
 
 import (

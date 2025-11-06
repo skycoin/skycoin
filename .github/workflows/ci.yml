@@ -23,15 +23,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb
 
-      - name: Install Go Tools
-        run: |
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.5.0
-
       - name: Vendor Dependencies
         run: go mod vendor -v
 
-      - name: Run Linters
-        run: make lint
+      - uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.5.0
 
       - name: Format Check
         run: |
@@ -62,15 +59,12 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: Install Go Tools
-        run: |
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.5.0
-
       - name: Vendor Dependencies
         run: go mod vendor -v
 
-      - name: Run Linters
-        run: make lint
+      - uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.5.0
 
       - name: Format Check
         run: |
@@ -95,10 +89,6 @@ jobs:
       - name: Install Dependencies
         run: |
           choco install make
-
-      - name: Install Go Tools
-        run: |
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.5.0
 
       - name: Vendor Dependencies
         run: go mod vendor -v

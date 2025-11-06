@@ -18,7 +18,6 @@ import (
 )
 
 var (
-t// Version is the hardware wallet command version
 	// Version is the hardware wallet command version
 	Version = "0.1.0"
 	Commit  = ""

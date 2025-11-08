@@ -66,8 +66,9 @@ var (
 
 	cryptoTypes = []crypto.CryptoType{crypto.CryptoTypeScryptChacha20poly1305, crypto.CryptoTypeSha256Xor} //nolint:unused
 
-	validNameRegexp     = regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
-	stripCoverageReport = regexp.MustCompile(`PASS\ncoverage: [\d\.]+% of statements in github.com/skycoin/skycoin/\.\.\.\n$`)
+	validNameRegexp        = regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
+	stripCoverageReport    = regexp.MustCompile(`PASS\ncoverage: [\d\.]+% of statements in github.com/skycoin/skycoin/\.\.\.\n$`)
+	stripCoverageDirWarning = regexp.MustCompile(`\nwarning: GOCOVERDIR not set, no coverage data emitted\n?`)
 )
 
 type TestData struct {
@@ -150,14 +151,13 @@ func execCommand(args ...string) *exec.Cmd {
 func execCommandCombinedOutput(args ...string) ([]byte, error) {
 	cmd := execCommand(args...)
 	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return output, err
-	}
 	// Remove the trailing coverage statements that the test cli binary produces due to coverage mode, e.g.
 	// PASS
 	// coverage: 8.1% of statements in github.com/skycoin/skycoin/...
 	output = stripCoverageReport.ReplaceAll(output, nil)
-	return output, nil
+	// Remove the GOCOVERDIR warning that appears when coverage is enabled
+	output = stripCoverageDirWarning.ReplaceAll(output, nil)
+	return output, err
 }
 
 func TestMain(m *testing.M) {

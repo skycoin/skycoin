@@ -317,7 +317,7 @@ func TestBip44AccountsNewAddresses(t *testing.T) {
 				return
 			}
 
-			require.Equal(t, tc.num, uint32(len(addrs)))
+			require.Equal(t, tc.num, uint32(len(addrs))) //nolint:gosec // Test comparison
 
 			act, err := accounts.account(accountIndex)
 			require.NoError(t, err)

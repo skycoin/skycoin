@@ -249,22 +249,22 @@ func makeUnspentsTxn(t *testing.T, uxs coin.UxArray, keys []cipher.SecKey, toAdd
 	maxDivisor := params.DropletPrecisionToDivisor(maxDroplets)
 
 	// Distribute coins and hours equally to all of the new outputs
-	coins := totalCoins / uint64(nUnspents)
+	coins := totalCoins / uint64(nUnspents) //nolint:gosec // Test data conversion
 	coins = (coins / maxDivisor) * maxDivisor
 	t.Logf("Assigning %d coins to each of %d outputs", coins, nUnspents)
-	changeCoins := totalCoins - (coins * uint64(nUnspents))
+	changeCoins := totalCoins - (coins * uint64(nUnspents)) //nolint:gosec // Test data conversion
 	t.Logf("Change coins: %d", changeCoins)
 
-	hours := (totalHours / 2) / uint64(nUnspents)
-	changeHours := (totalHours / 2) - (hours * uint64(nUnspents))
+	hours := (totalHours / 2) / uint64(nUnspents)                 //nolint:gosec // Test data conversion
+	changeHours := (totalHours / 2) - (hours * uint64(nUnspents)) //nolint:gosec // Test data conversion
 
 	// Create the new outputs
-	require.True(t, uint64(nUnspents) < hours)
+	require.True(t, uint64(nUnspents) < hours) //nolint:gosec // Test data conversion
 	for i := 0; i < nUnspents; i++ {
 		// Subtract index from hours so that the outputs are not all the same,
 		// otherwise the output hashes will be duplicated and the transaction
 		// will be invalid
-		spendHours := hours - uint64(i)
+		spendHours := hours - uint64(i) //nolint:gosec // Test data conversion
 		err := spendTxn.PushOutput(toAddr, coins, spendHours)
 		require.NoError(t, err)
 	}

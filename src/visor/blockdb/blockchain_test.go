@@ -243,7 +243,7 @@ func (fup *fakeUnspentPool) GetUnspentsOfAddrs(_ *dbutil.Tx, addrs []cipher.Addr
 	return addrOutMap, nil
 }
 
-func (fup *fakeUnspentPool) ProcessBlock(_ *dbutil.Tx, b *coin.SignedBlock) error {
+func (fup *fakeUnspentPool) ProcessBlock(_ *dbutil.Tx, _ *coin.SignedBlock) error {
 	if fup.saveFailed {
 		if fup.failedWhenSaved != nil {
 			*fup.failedWhenSaved = true
@@ -258,7 +258,7 @@ func (fup *fakeUnspentPool) Contains(_ *dbutil.Tx, h cipher.SHA256) (bool, error
 	return ok, nil
 }
 
-func (fup *fakeUnspentPool) AddressCount(tx *dbutil.Tx) (uint64, error) {
+func (fup *fakeUnspentPool) AddressCount(_ *dbutil.Tx) (uint64, error) {
 	addrs := make(map[cipher.Address]struct{})
 	for _, out := range fup.outs {
 		addrs[out.Body.Address] = struct{}{}
@@ -276,7 +276,7 @@ func newFakeChainMeta() *fakeChainMeta {
 	return &fakeChainMeta{}
 }
 
-func (fcm *fakeChainMeta) GetHeadSeq(tx *dbutil.Tx) (uint64, bool, error) {
+func (fcm *fakeChainMeta) GetHeadSeq(_ *dbutil.Tx) (uint64, bool, error) {
 	if !fcm.didSetSeq {
 		return 0, false, nil
 	}
@@ -284,13 +284,13 @@ func (fcm *fakeChainMeta) GetHeadSeq(tx *dbutil.Tx) (uint64, bool, error) {
 	return fcm.headSeq, true, nil
 }
 
-func (fcm *fakeChainMeta) SetHeadSeq(tx *dbutil.Tx, seq uint64) error {
+func (fcm *fakeChainMeta) SetHeadSeq(_ *dbutil.Tx, seq uint64) error {
 	fcm.headSeq = seq
 	fcm.didSetSeq = true
 	return nil
 }
 
-func DefaultWalker(tx *dbutil.Tx, hps []coin.HashPair) (cipher.SHA256, bool) {
+func DefaultWalker(_ *dbutil.Tx, hps []coin.HashPair) (cipher.SHA256, bool) {
 	return hps[0].Hash, true
 }
 

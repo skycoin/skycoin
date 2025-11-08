@@ -139,7 +139,7 @@ func (rc readableBip44Chain) toBip44Chain(d wallet.AddressSecKeyDecoder) (*bip44
 
 	c := bip44Chain{
 		PubKey:     *pubkey,
-		ChainIndex: uint32(ci),
+		ChainIndex: uint32(ci), //nolint:gosec // Chain index conversion
 	}
 
 	for _, re := range rc.Entries {

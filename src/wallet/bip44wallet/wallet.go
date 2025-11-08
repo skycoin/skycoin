@@ -651,14 +651,14 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 
 		retAddrs = append(retAddrs, addrs...)
 
-		generateAddresses[i] = append(generateAddresses[i], uint32(initLen+keepNum))
+		generateAddresses[i] = append(generateAddresses[i], uint32(initLen+keepNum)) //nolint:gosec // Address count conversion
 
 		_, initLen, keepNum, err = scanAddresses(a.Index, bip44.ChangeChainIndex)
 		if err != nil {
 			return nil, err
 		}
 
-		generateAddresses[i] = append(generateAddresses[i], uint32(initLen+keepNum))
+		generateAddresses[i] = append(generateAddresses[i], uint32(initLen+keepNum)) //nolint:gosec // Address count conversion
 	}
 
 	w2.reset()

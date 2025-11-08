@@ -691,7 +691,7 @@ func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBl
 	var txns []historydb.Transaction
 	var blocks []coin.SignedBlock
 	var uncfmTxns []UnconfirmedTransaction
-	for i := uint64(0); i < uint64(n); i++ {
+	for i := uint64(0); i < uint64(n); i++ { //nolint:gosec // Test data conversion
 		tm := time.Now().UTC().Unix() + int64(i)*int64(time.Second) //nolint:gosec
 		txns = append(txns, historydb.Transaction{
 			BlockSeq: i,
@@ -717,7 +717,7 @@ func makeTestData(t *testing.T, n int) ([]historydb.Transaction, []coin.SignedBl
 		})
 	}
 
-	return txns, blocks, uncfmTxns, uint64(n)
+	return txns, blocks, uncfmTxns, uint64(n) //nolint:gosec // Test data conversion
 }
 
 func makeUncfmUxs(txns []UnconfirmedTransaction) coin.UxArray {
@@ -1858,7 +1858,7 @@ func TestGetTransactions(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			matchDBTx := mock.MatchedBy(func(tx *dbutil.Tx) bool {
+			matchDBTx := mock.MatchedBy(func(_ *dbutil.Tx) bool {
 				return true
 			})
 
@@ -2245,7 +2245,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 	head := coin.SignedBlock{
 		Block: coin.Block{
 			Head: coin.BlockHeader{
-				Time: uint64(time.Now().UTC().Unix()),
+				Time: uint64(time.Now().UTC().Unix()), //nolint:gosec // Test data conversion
 			},
 		},
 	}
@@ -2297,7 +2297,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 			Body: coin.UxBody{
 				Address: testutil.MakeAddress(),
 				Coins:   10e6,
-				Hours:   400 + uint64(i)*200,
+				Hours:   400 + uint64(i)*200, //nolint:gosec // Test data conversion
 			},
 		}
 	}
@@ -2609,7 +2609,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 	cases = append(cases, signedOnlyCases...)
 	cases = append(cases, unsignedOnlyCases...)
 
-	matchDBTx := mock.MatchedBy(func(tx *dbutil.Tx) bool {
+	matchDBTx := mock.MatchedBy(func(_ *dbutil.Tx) bool {
 		return true
 	})
 
@@ -2651,7 +2651,7 @@ func TestVerifyTxnVerbose(t *testing.T) {
 
 			var isConfirmed bool
 			var inputs []TransactionInput
-			err := v.db.View("VerifyTxnVerbose", func(tx *dbutil.Tx) error {
+			err := v.db.View("VerifyTxnVerbose", func(_ *dbutil.Tx) error {
 				var err error
 				inputs, isConfirmed, err = v.VerifyTxnVerbose(&tc.txn, tc.signed)
 				return err
@@ -2683,7 +2683,7 @@ func newHistoryerMock2() *historyerMock2 {
 	return &historyerMock2{}
 }
 
-func (h *historyerMock2) ForEachTxn(tx *dbutil.Tx, f func(cipher.SHA256, *historydb.Transaction) error) error {
+func (h *historyerMock2) ForEachTxn(_ *dbutil.Tx, f func(cipher.SHA256, *historydb.Transaction) error) error {
 	for i := range h.txns {
 		if err := f(h.txns[i].Hash(), &h.txns[i]); err != nil {
 			return err
@@ -2702,7 +2702,7 @@ func NewUnconfirmedTransactionPoolerMock2() *MockUnconfirmedTransactionPooler2 {
 	return &MockUnconfirmedTransactionPooler2{}
 }
 
-func (m *MockUnconfirmedTransactionPooler2) GetFiltered(tx *dbutil.Tx, f func(tx UnconfirmedTransaction) bool) ([]UnconfirmedTransaction, error) {
+func (m *MockUnconfirmedTransactionPooler2) GetFiltered(_ *dbutil.Tx, f func(tx UnconfirmedTransaction) bool) ([]UnconfirmedTransaction, error) {
 	var txns []UnconfirmedTransaction
 	for i := range m.txns {
 		if f(m.txns[i]) {

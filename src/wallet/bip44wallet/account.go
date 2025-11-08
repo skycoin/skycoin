@@ -370,7 +370,7 @@ type bip44Accounts struct {
 }
 
 func (a bip44Accounts) len() uint32 {
-	return uint32(len(a.accounts))
+	return uint32(len(a.accounts)) //nolint:gosec // Account count conversion
 }
 
 func (a *bip44Accounts) newAddresses(account, chain, num uint32) ([]cipher.Addresser, error) {
@@ -424,11 +424,11 @@ func (a *bip44Accounts) new(opts bip44AccountCreateOptions) (uint32, error) {
 func (a *bip44Accounts) nextIndex() (uint32, error) {
 	// Try to get next account index, return error if the
 	// account is full.
-	if _, err := mathutil.AddUint32(uint32(len(a.accounts)), 1); err != nil {
+	if _, err := mathutil.AddUint32(uint32(len(a.accounts)), 1); err != nil { //nolint:gosec // Account count conversion
 		return 0, errors.New("maximum bip44 account number reached")
 	}
 
-	return uint32(len(a.accounts)), nil
+	return uint32(len(a.accounts)), nil //nolint:gosec // Account count conversion
 }
 
 func (a bip44Accounts) clone() accountManager {

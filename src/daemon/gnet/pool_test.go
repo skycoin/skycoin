@@ -19,7 +19,7 @@ const (
 	addr          = "127.0.0.1:50823"
 	port          = 50823
 	address       = "127.0.0.1"
-	silenceLogger = false
+	silenceLogger = true
 )
 
 func init() {

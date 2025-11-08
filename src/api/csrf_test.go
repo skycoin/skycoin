@@ -13,7 +13,13 @@ import (
 	"sync"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/skycoin/skycoin/src/util/logging"
 )
+
+func init() {
+	logging.Disable()
+}
 
 const (
 	tokenValid            = "token_valid"

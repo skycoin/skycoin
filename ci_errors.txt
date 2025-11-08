@@ -1,742 +1,189 @@
-ok  	github.com/skycoin/skycoin/src/api/integration	93.999s
-+ API_FAIL=0
-+ [[ 0 -ne 0 ]]
-+ [[ -z '' ]]
-+ SKYCOIN_INTEGRATION_TESTS=1
-+ SKYCOIN_INTEGRATION_TEST_MODE=stable
-+ RPC_ADDR=http://127.0.0.1:1024
-+ USE_CSRF=1
-+ HEADER_CHECK=
-+ DB_NO_UNCONFIRMED=
-+ COIN=skycoin
-+ go test -count=1 ./src/cli/integration/... -timeout=10m
-[2025-11-08T21:08:55Z] INFO [api]: 200 GET /api/v1/csrf 143.879µs
-[2025-11-08T21:08:55Z] INFO [api]: 200 POST /api/v1/wallet/create 3.701577ms
-[2025-11-08T21:08:55Z] INFO [api]: 200 GET /api/v1/csrf 29.485µs
-[2025-11-08T21:08:55Z] INFO [api]: 200 POST /api/v1/wallet/newAddress 3.68682ms
-[2025-11-08T21:08:55Z] INFO [api]: 200 GET /api/v1/csrf 29.966µs
-[2025-11-08T21:08:55Z] INFO [api]: 200 POST /api/v1/wallet/create 3.734529ms
-[2025-11-08T21:08:55Z] INFO [api]: 200 GET /api/v1/csrf 18.895µs
-[2025-11-08T21:08:55Z] INFO [api]: 200 POST /api/v1/wallet/newAddress 6.449357ms
-[2025-11-08T21:08:55Z] INFO [api]: 200 GET /api/v1/wallets/folderName 20.058µs
-[2025-11-08T21:08:55Z] INFO [api]: 200 GET /api/v1/csrf 64.551µs
-[2025-11-08T21:08:55Z] INFO [api]: 200 POST /api/v1/wallet/create 3.462693ms
-[2025-11-08T21:08:55Z] INFO [api]: 200 GET /api/v1/csrf 46.426µs
-[2025-11-08T21:08:55Z] INFO [api]: 200 POST /api/v1/wallet/create 3.734499ms
-[2025-11-08T21:08:55Z] INFO [api]: 200 GET /api/v1/csrf 42.309µs
-[2025-11-08T21:08:55Z] INFO [api]: 200 POST /api/v1/wallet/create 3.297515ms
-[2025-11-08T21:08:55Z] INFO [api]: 200 GET /api/v1/csrf 65.512µs
-[2025-11-08T21:08:55Z] INFO [api]: 200 POST /api/v1/wallet/create 3.458805ms
-[2025-11-08T21:08:55Z] INFO [api]: 200 GET /api/v1/csrf 62.988µs
-[2025-11-08T21:08:55Z] INFO [api]: 200 POST /api/v1/wallet/create 3.783237ms
-[2025-11-08T21:08:55Z] INFO [api]: 200 GET /api/v1/csrf 57.136µs
-[2025-11-08T21:08:55Z] INFO [api]: 200 POST /api/v1/wallet/create 3.716696ms
-[2025-11-08T21:08:55Z] INFO [api]: 200 GET /api/v1/csrf 43.141µs
-[2025-11-08T21:08:58Z] INFO [api]: 200 POST /api/v1/wallet/create 2.448533562s
-[2025-11-08T21:08:58Z] INFO [api]: 200 GET /api/v1/csrf 71.814µs
-[2025-11-08T21:09:00Z] INFO [api]: 200 POST /api/v1/wallet/create 2.444957573s
-[2025-11-08T21:09:00Z] INFO [api]: 200 GET /api/v1/csrf 62.016µs
-[2025-11-08T21:09:00Z] INFO [api]: 200 POST /api/v1/wallet/create 4.000726ms
-[2025-11-08T21:09:00Z] INFO [api]: 200 GET /api/v1/csrf 59.26µs
-[2025-11-08T21:09:03Z] INFO [api]: 200 POST /api/v1/wallet/create 2.449929347s
---- FAIL: TestWalletCreate (0.13s)
-    --- FAIL: TestWalletCreate/deterministic_ok (0.01s)
-        integration_test.go:605:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
-            	Error:      	Not equal:
-            	            	expected: "2025/11/08 21:08:54 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
-            	            	actual  : ""
-
-            	            	Diff:
-            	            	--- Expected
-            	            	+++ Actual
-            	            	@@ -1,3 +1 @@
-            	            	-2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	-warning: GOCOVERDIR not set, no coverage data emitted
-
-            	Test:       	TestWalletCreate/deterministic_ok
-            	Messages:   	expect: , got: 2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestWalletCreate/deterministic_encrypt_ok (0.01s)
-        integration_test.go:605:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
-            	Error:      	Not equal:
-            	            	expected: "2025/11/08 21:08:54 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
-            	            	actual  : ""
-
-            	            	Diff:
-            	            	--- Expected
-            	            	+++ Actual
-            	            	@@ -1,3 +1 @@
-            	            	-2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	-warning: GOCOVERDIR not set, no coverage data emitted
-
-            	Test:       	TestWalletCreate/deterministic_encrypt_ok
-            	Messages:   	expect: , got: 2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestWalletCreate/deterministic_-n_2 (0.01s)
-        integration_test.go:605:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
-            	Error:      	Not equal:
-            	            	expected: "2025/11/08 21:08:54 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
-            	            	actual  : ""
-
-            	            	Diff:
-            	            	--- Expected
-            	            	+++ Actual
-            	            	@@ -1,3 +1 @@
-            	            	-2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	-warning: GOCOVERDIR not set, no coverage data emitted
-
-            	Test:       	TestWalletCreate/deterministic_-n_2
-            	Messages:   	expect: , got: 2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestWalletCreate/bip44_wallet (0.01s)
-        integration_test.go:605:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
-            	Error:      	Not equal:
-            	            	expected: "2025/11/08 21:08:54 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
-            	            	actual  : ""
-
-            	            	Diff:
-            	            	--- Expected
-            	            	+++ Actual
-            	            	@@ -1,3 +1 @@
-            	            	-2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	-warning: GOCOVERDIR not set, no coverage data emitted
-
-            	Test:       	TestWalletCreate/bip44_wallet
-            	Messages:   	expect: , got: 2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestWalletCreate/bip44_wallet_--encrypt (0.01s)
-        integration_test.go:605:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
-            	Error:      	Not equal:
-            	            	expected: "2025/11/08 21:08:54 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
-            	            	actual  : ""
-
-            	            	Diff:
-            	            	--- Expected
-            	            	+++ Actual
-            	            	@@ -1,3 +1 @@
-            	            	-2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	-warning: GOCOVERDIR not set, no coverage data emitted
-
-            	Test:       	TestWalletCreate/bip44_wallet_--encrypt
-            	Messages:   	expect: , got: 2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestWalletCreate/bip44_wallet_--seed-passphrase (0.01s)
-        integration_test.go:605:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
-            	Error:      	Not equal:
-            	            	expected: "2025/11/08 21:08:54 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
-            	            	actual  : ""
-
-            	            	Diff:
-            	            	--- Expected
-            	            	+++ Actual
-            	            	@@ -1,3 +1 @@
-            	            	-2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	-warning: GOCOVERDIR not set, no coverage data emitted
-
-            	Test:       	TestWalletCreate/bip44_wallet_--seed-passphrase
-            	Messages:   	expect: , got: 2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestWalletCreate/xpub_wallet (0.01s)
-        integration_test.go:605:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
-            	Error:      	Not equal:
-            	            	expected: "2025/11/08 21:08:54 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
-            	            	actual  : ""
-
-            	            	Diff:
-            	            	--- Expected
-            	            	+++ Actual
-            	            	@@ -1,3 +1 @@
-            	            	-2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	-warning: GOCOVERDIR not set, no coverage data emitted
-
-            	Test:       	TestWalletCreate/xpub_wallet
-            	Messages:   	expect: , got: 2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
+--- FAIL: TestWalletCreate (15.38s)
     --- FAIL: TestWalletCreate/xpub_wallet_err_with_random_seed (0.01s)
         integration_test.go:605:
             	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
             	Error:      	Not equal:
-            	            	expected: "2025/11/08 21:08:54 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
+            	            	expected: "Error: \"xpub\" type wallets do not use seeds\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
             	            	actual  : "Error: \"xpub\" type wallets do not use seeds\n"
 
             	            	Diff:
             	            	--- Expected
             	            	+++ Actual
             	            	@@ -1,3 +1,2 @@
-            	            	-2025/11/08 21:08:54 unknown flag: --test.coverprofile
+            	            	 Error: "xpub" type wallets do not use seeds
             	            	-warning: GOCOVERDIR not set, no coverage data emitted
-            	            	+Error: "xpub" type wallets do not use seeds
 
             	Test:       	TestWalletCreate/xpub_wallet_err_with_random_seed
             	Messages:   	expect: Error: "xpub" type wallets do not use seeds
-            	            	, got: 2025/11/08 21:08:54 unknown flag: --test.coverprofile
+            	            	, got: Error: "xpub" type wallets do not use seeds
             	            	warning: GOCOVERDIR not set, no coverage data emitted
     --- FAIL: TestWalletCreate/xpub_wallet_err_with_mnemonic_seed (0.01s)
         integration_test.go:605:
             	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
             	Error:      	Not equal:
-            	            	expected: "2025/11/08 21:08:54 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
+            	            	expected: "Error: \"xpub\" type wallets do not use seeds\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
             	            	actual  : "Error: \"xpub\" type wallets do not use seeds\n"
 
             	            	Diff:
             	            	--- Expected
             	            	+++ Actual
             	            	@@ -1,3 +1,2 @@
-            	            	-2025/11/08 21:08:54 unknown flag: --test.coverprofile
+            	            	 Error: "xpub" type wallets do not use seeds
             	            	-warning: GOCOVERDIR not set, no coverage data emitted
-            	            	+Error: "xpub" type wallets do not use seeds
 
             	Test:       	TestWalletCreate/xpub_wallet_err_with_mnemonic_seed
             	Messages:   	expect: Error: "xpub" type wallets do not use seeds
-            	            	, got: 2025/11/08 21:08:54 unknown flag: --test.coverprofile
+            	            	, got: Error: "xpub" type wallets do not use seeds
             	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestWalletCreate/collection_empty (0.01s)
-        integration_test.go:605:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
-            	Error:      	Not equal:
-            	            	expected: "2025/11/08 21:08:54 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
-            	            	actual  : ""
+--- FAIL: TestVerifyAddress (0.03s)
+    integration_test.go:784:
+        	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:784
+        	Error:      	Not equal:
+        	            	expected: "Error: Invalid checksum"
+        	            	actual  : "Error: Invalid checksum\nwarning: GOCOVERDIR not set, no coverage data emitted"
 
-            	            	Diff:
-            	            	--- Expected
-            	            	+++ Actual
-            	            	@@ -1,3 +1 @@
-            	            	-2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	-warning: GOCOVERDIR not set, no coverage data emitted
-
-            	Test:       	TestWalletCreate/collection_empty
-            	Messages:   	expect: , got: 2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestWalletCreate/collection_1_entry (0.01s)
-        integration_test.go:605:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
-            	Error:      	Not equal:
-            	            	expected: "2025/11/08 21:08:54 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
-            	            	actual  : ""
-
-            	            	Diff:
-            	            	--- Expected
-            	            	+++ Actual
-            	            	@@ -1,3 +1 @@
-            	            	-2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	-warning: GOCOVERDIR not set, no coverage data emitted
-
-            	Test:       	TestWalletCreate/collection_1_entry
-            	Messages:   	expect: , got: 2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestWalletCreate/collection_2_entry (0.01s)
-        integration_test.go:605:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
-            	Error:      	Not equal:
-            	            	expected: "2025/11/08 21:08:54 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
-            	            	actual  : ""
-
-            	            	Diff:
-            	            	--- Expected
-            	            	+++ Actual
-            	            	@@ -1,3 +1 @@
-            	            	-2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	-warning: GOCOVERDIR not set, no coverage data emitted
-
-            	Test:       	TestWalletCreate/collection_2_entry
-            	Messages:   	expect: , got: 2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestWalletCreate/collection_encrypt (0.01s)
-        integration_test.go:605:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
-            	Error:      	Not equal:
-            	            	expected: "2025/11/08 21:08:54 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
-            	            	actual  : ""
-
-            	            	Diff:
-            	            	--- Expected
-            	            	+++ Actual
-            	            	@@ -1,3 +1 @@
-            	            	-2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	-warning: GOCOVERDIR not set, no coverage data emitted
-
-            	Test:       	TestWalletCreate/collection_encrypt
-            	Messages:   	expect: , got: 2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
---- FAIL: TestWalletAddAddresses (0.06s)
-    --- FAIL: TestWalletAddAddresses/walletAddAddresses (0.01s)
-        integration_test.go:485:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:485
-            	            				/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:640
-            	            				/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:713
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestWalletAddAddresses/walletAddAddresses
-            	Messages:   	err: 2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestWalletAddAddresses/walletAddAddresses_-n_2_-j (0.01s)
-        integration_test.go:485:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:485
-            	            				/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:651
-            	            				/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:713
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestWalletAddAddresses/walletAddAddresses_-n_2_-j
-            	Messages:   	err: 2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestWalletAddAddresses/walletAddAddresses_collection_wallet (0.01s)
-        integration_test.go:485:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:485
-            	            				/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:663
-            	            				/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:713
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestWalletAddAddresses/walletAddAddresses_collection_wallet
-            	Messages:   	err: 2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestWalletAddAddresses/walletAddAddresses_-n_-2_-j (0.01s)
-        integration_test.go:485:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:485
-            	            				/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:674
-            	            				/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:713
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestWalletAddAddresses/walletAddAddresses_-n_-2_-j
-            	Messages:   	err: 2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestWalletAddAddresses/walletAddAddresses_in_encrypted_wallet (0.01s)
-        integration_test.go:485:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:485
-            	            				/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:686
-            	            				/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:713
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestWalletAddAddresses/walletAddAddresses_in_encrypted_wallet
-            	Messages:   	err: 2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestWalletAddAddresses/walletAddAddresses_in_encrypted_wallet_with_invalid_password (0.01s)
-        integration_test.go:485:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:485
-            	            				/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:699
-            	            				/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:713
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestWalletAddAddresses/walletAddAddresses_in_encrypted_wallet_with_invalid_password
-            	Messages:   	err: 2025/11/08 21:08:54 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
---- FAIL: TestVerifyAddress (0.01s)
-    integration_test.go:782:
-        	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:782
-        	Error:      	An error is expected but got nil.
+        	            	Diff:
+        	            	--- Expected
+        	            	+++ Actual
+        	            	@@ -1 +1,2 @@
+        	            	 Error: Invalid checksum
+        	            	+warning: GOCOVERDIR not set, no coverage data emitted
         	Test:       	TestVerifyAddress
-        	Messages:   	exit status 1
---- FAIL: TestDecodeRawTransaction (0.02s)
-    --- FAIL: TestDecodeRawTransaction/success (0.01s)
-        integration_test.go:820:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:820
-            	Error:      	Not equal:
-            	            	expected: []byte(nil)
-            	            	actual  : []byte{0x32, 0x30, 0x32, 0x35, 0x2f, 0x31, 0x31, 0x2f, 0x30, 0x38, 0x20, 0x32, 0x31, 0x3a, 0x30, 0x38, 0x3a, 0x35, 0x34, 0x20, 0x75, 0x6e, 0x6b, 0x6e, 0x6f, 0x77, 0x6e, 0x20, 0x66, 0x6c, 0x61, 0x67, 0x3a, 0x20, 0x2d, 0x2d, 0x74, 0x65, 0x73, 0x74, 0x2e, 0x63, 0x6f, 0x76, 0x65, 0x72, 0x70, 0x72, 0x6f, 0x66, 0x69, 0x6c, 0x65, 0xa, 0x77, 0x61, 0x72, 0x6e, 0x69, 0x6e, 0x67, 0x3a, 0x20, 0x47, 0x4f, 0x43, 0x4f, 0x56, 0x45, 0x52, 0x44, 0x49, 0x52, 0x20, 0x6e, 0x6f, 0x74, 0x20, 0x73, 0x65, 0x74, 0x2c, 0x20, 0x6e, 0x6f, 0x20, 0x63, 0x6f, 0x76, 0x65, 0x72, 0x61, 0x67, 0x65, 0x20, 0x64, 0x61, 0x74, 0x61, 0x20, 0x65, 0x6d, 0x69, 0x74, 0x74, 0x65, 0x64, 0xa}
-
-            	            	Diff:
-            	            	--- Expected
-            	            	+++ Actual
-            	            	@@ -1,2 +1,10 @@
-            	            	-([]uint8) <nil>
-            	            	+([]uint8) (len=108) {
-            	            	+ 00000000  32 30 32 35 2f 31 31 2f  30 38 20 32 31 3a 30 38  |2025/11/08 21:08|
-            	            	+ 00000010  3a 35 34 20 75 6e 6b 6e  6f 77 6e 20 66 6c 61 67  |:54 unknown flag|
-            	            	+ 00000020  3a 20 2d 2d 74 65 73 74  2e 63 6f 76 65 72 70 72  |: --test.coverpr|
-            	            	+ 00000030  6f 66 69 6c 65 0a 77 61  72 6e 69 6e 67 3a 20 47  |ofile.warning: G|
-            	            	+ 00000040  4f 43 4f 56 45 52 44 49  52 20 6e 6f 74 20 73 65  |OCOVERDIR not se|
-            	            	+ 00000050  74 2c 20 6e 6f 20 63 6f  76 65 72 61 67 65 20 64  |t, no coverage d|
-            	            	+ 00000060  61 74 61 20 65 6d 69 74  74 65 64 0a              |ata emitted.|
-            	            	+}
-
-            	Test:       	TestDecodeRawTransaction/success
+--- FAIL: TestDecodeRawTransaction (0.03s)
     --- FAIL: TestDecodeRawTransaction/invalid_raw_transaction (0.01s)
         integration_test.go:820:
             	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:820
             	Error:      	Not equal:
             	            	expected: []byte{0x45, 0x72, 0x72, 0x6f, 0x72, 0x3a, 0x20, 0x69, 0x6e, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x20, 0x72, 0x61, 0x77, 0x20, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x3a, 0x20, 0x65, 0x6e, 0x63, 0x6f, 0x64, 0x69, 0x6e, 0x67, 0x2f, 0x68, 0x65, 0x78, 0x3a, 0x20, 0x6f, 0x64, 0x64, 0x20, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x20, 0x68, 0x65, 0x78, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0xa}
-            	            	actual  : []byte{0x32, 0x30, 0x32, 0x35, 0x2f, 0x31, 0x31, 0x2f, 0x30, 0x38, 0x20, 0x32, 0x31, 0x3a, 0x30, 0x38, 0x3a, 0x35, 0x34, 0x20, 0x75, 0x6e, 0x6b, 0x6e, 0x6f, 0x77, 0x6e, 0x20, 0x66, 0x6c, 0x61, 0x67, 0x3a, 0x20, 0x2d, 0x2d, 0x74, 0x65, 0x73, 0x74, 0x2e, 0x63, 0x6f, 0x76, 0x65, 0x72, 0x70, 0x72, 0x6f, 0x66, 0x69, 0x6c, 0x65, 0xa, 0x77, 0x61, 0x72, 0x6e, 0x69, 0x6e, 0x67, 0x3a, 0x20, 0x47, 0x4f, 0x43, 0x4f, 0x56, 0x45, 0x52, 0x44, 0x49, 0x52, 0x20, 0x6e, 0x6f, 0x74, 0x20, 0x73, 0x65, 0x74, 0x2c, 0x20, 0x6e, 0x6f, 0x20, 0x63, 0x6f, 0x76, 0x65, 0x72, 0x61, 0x67, 0x65, 0x20, 0x64, 0x61, 0x74, 0x61, 0x20, 0x65, 0x6d, 0x69, 0x74, 0x74, 0x65, 0x64, 0xa}
+            	            	actual  : []byte{0x45, 0x72, 0x72, 0x6f, 0x72, 0x3a, 0x20, 0x69, 0x6e, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x20, 0x72, 0x61, 0x77, 0x20, 0x74, 0x72, 0x61, 0x6e, 0x73, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x3a, 0x20, 0x65, 0x6e, 0x63, 0x6f, 0x64, 0x69, 0x6e, 0x67, 0x2f, 0x68, 0x65, 0x78, 0x3a, 0x20, 0x6f, 0x64, 0x64, 0x20, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x20, 0x68, 0x65, 0x78, 0x20, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0xa, 0x77, 0x61, 0x72, 0x6e, 0x69, 0x6e, 0x67, 0x3a, 0x20, 0x47, 0x4f, 0x43, 0x4f, 0x56, 0x45, 0x52, 0x44, 0x49, 0x52, 0x20, 0x6e, 0x6f, 0x74, 0x20, 0x73, 0x65, 0x74, 0x2c, 0x20, 0x6e, 0x6f, 0x20, 0x63, 0x6f, 0x76, 0x65, 0x72, 0x61, 0x67, 0x65, 0x20, 0x64, 0x61, 0x74, 0x61, 0x20, 0x65, 0x6d, 0x69, 0x74, 0x74, 0x65, 0x64, 0xa}
 
             	            	Diff:
             	            	--- Expected
             	            	+++ Actual
-            	            	@@ -1,7 +1,9 @@
+            	            	@@ -1,2 +1,2 @@
             	            	-([]uint8) (len=68) {
-            	            	- 00000000  45 72 72 6f 72 3a 20 69  6e 76 61 6c 69 64 20 72  |Error: invalid r|
-            	            	- 00000010  61 77 20 74 72 61 6e 73  61 63 74 69 6f 6e 3a 20  |aw transaction: |
-            	            	- 00000020  65 6e 63 6f 64 69 6e 67  2f 68 65 78 3a 20 6f 64  |encoding/hex: od|
-            	            	- 00000030  64 20 6c 65 6e 67 74 68  20 68 65 78 20 73 74 72  |d length hex str|
+            	            	+([]uint8) (len=122) {
+            	            	  00000000  45 72 72 6f 72 3a 20 69  6e 76 61 6c 69 64 20 72  |Error: invalid r|
+            	            	@@ -5,3 +5,6 @@
+            	            	  00000030  64 20 6c 65 6e 67 74 68  20 68 65 78 20 73 74 72  |d length hex str|
             	            	- 00000040  69 6e 67 0a                                       |ing.|
-            	            	+([]uint8) (len=108) {
-            	            	+ 00000000  32 30 32 35 2f 31 31 2f  30 38 20 32 31 3a 30 38  |2025/11/08 21:08|
-            	            	+ 00000010  3a 35 34 20 75 6e 6b 6e  6f 77 6e 20 66 6c 61 67  |:54 unknown flag|
-            	            	+ 00000020  3a 20 2d 2d 74 65 73 74  2e 63 6f 76 65 72 70 72  |: --test.coverpr|
-            	            	+ 00000030  6f 66 69 6c 65 0a 77 61  72 6e 69 6e 67 3a 20 47  |ofile.warning: G|
-            	            	+ 00000040  4f 43 4f 56 45 52 44 49  52 20 6e 6f 74 20 73 65  |OCOVERDIR not se|
-            	            	+ 00000050  74 2c 20 6e 6f 20 63 6f  76 65 72 61 67 65 20 64  |t, no coverage d|
-            	            	+ 00000060  61 74 61 20 65 6d 69 74  74 65 64 0a              |ata emitted.|
+            	            	+ 00000040  69 6e 67 0a 77 61 72 6e  69 6e 67 3a 20 47 4f 43  |ing.warning: GOC|
+            	            	+ 00000050  4f 56 45 52 44 49 52 20  6e 6f 74 20 73 65 74 2c  |OVERDIR not set,|
+            	            	+ 00000060  20 6e 6f 20 63 6f 76 65  72 61 67 65 20 64 61 74  | no coverage dat|
+            	            	+ 00000070  61 20 65 6d 69 74 74 65  64 0a                    |a emitted.|
             	            	 }
             	Test:       	TestDecodeRawTransaction/invalid_raw_transaction
---- FAIL: TestEncodeJSONTransaction (0.02s)
-    --- FAIL: TestEncodeJSONTransaction/encode_success (0.01s)
-        integration_test.go:869:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:869
-            	Error:      	Not equal:
-            	            	expected: []byte(nil)
-            	            	actual  : []byte{0x32, 0x30, 0x32, 0x35, 0x2f, 0x31, 0x31, 0x2f, 0x30, 0x38, 0x20, 0x32, 0x31, 0x3a, 0x30, 0x38, 0x3a, 0x35, 0x34, 0x20, 0x75, 0x6e, 0x6b, 0x6e, 0x6f, 0x77, 0x6e, 0x20, 0x66, 0x6c, 0x61, 0x67, 0x3a, 0x20, 0x2d, 0x2d, 0x74, 0x65, 0x73, 0x74, 0x2e, 0x63, 0x6f, 0x76, 0x65, 0x72, 0x70, 0x72, 0x6f, 0x66, 0x69, 0x6c, 0x65, 0xa, 0x77, 0x61, 0x72, 0x6e, 0x69, 0x6e, 0x67, 0x3a, 0x20, 0x47, 0x4f, 0x43, 0x4f, 0x56, 0x45, 0x52, 0x44, 0x49, 0x52, 0x20, 0x6e, 0x6f, 0x74, 0x20, 0x73, 0x65, 0x74, 0x2c, 0x20, 0x6e, 0x6f, 0x20, 0x63, 0x6f, 0x76, 0x65, 0x72, 0x61, 0x67, 0x65, 0x20, 0x64, 0x61, 0x74, 0x61, 0x20, 0x65, 0x6d, 0x69, 0x74, 0x74, 0x65, 0x64, 0xa}
-
-            	            	Diff:
-            	            	--- Expected
-            	            	+++ Actual
-            	            	@@ -1,2 +1,10 @@
-            	            	-([]uint8) <nil>
-            	            	+([]uint8) (len=108) {
-            	            	+ 00000000  32 30 32 35 2f 31 31 2f  30 38 20 32 31 3a 30 38  |2025/11/08 21:08|
-            	            	+ 00000010  3a 35 34 20 75 6e 6b 6e  6f 77 6e 20 66 6c 61 67  |:54 unknown flag|
-            	            	+ 00000020  3a 20 2d 2d 74 65 73 74  2e 63 6f 76 65 72 70 72  |: --test.coverpr|
-            	            	+ 00000030  6f 66 69 6c 65 0a 77 61  72 6e 69 6e 67 3a 20 47  |ofile.warning: G|
-            	            	+ 00000040  4f 43 4f 56 45 52 44 49  52 20 6e 6f 74 20 73 65  |OCOVERDIR not se|
-            	            	+ 00000050  74 2c 20 6e 6f 20 63 6f  76 65 72 61 67 65 20 64  |t, no coverage d|
-            	            	+ 00000060  61 74 61 20 65 6d 69 74  74 65 64 0a              |ata emitted.|
-            	            	+}
-
-            	Test:       	TestEncodeJSONTransaction/encode_success
-    --- FAIL: TestEncodeJSONTransaction/encode_recompute_success (0.01s)
-        integration_test.go:869:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:869
-            	Error:      	Not equal:
-            	            	expected: []byte(nil)
-            	            	actual  : []byte{0x32, 0x30, 0x32, 0x35, 0x2f, 0x31, 0x31, 0x2f, 0x30, 0x38, 0x20, 0x32, 0x31, 0x3a, 0x30, 0x38, 0x3a, 0x35, 0x35, 0x20, 0x75, 0x6e, 0x6b, 0x6e, 0x6f, 0x77, 0x6e, 0x20, 0x66, 0x6c, 0x61, 0x67, 0x3a, 0x20, 0x2d, 0x2d, 0x74, 0x65, 0x73, 0x74, 0x2e, 0x63, 0x6f, 0x76, 0x65, 0x72, 0x70, 0x72, 0x6f, 0x66, 0x69, 0x6c, 0x65, 0xa, 0x77, 0x61, 0x72, 0x6e, 0x69, 0x6e, 0x67, 0x3a, 0x20, 0x47, 0x4f, 0x43, 0x4f, 0x56, 0x45, 0x52, 0x44, 0x49, 0x52, 0x20, 0x6e, 0x6f, 0x74, 0x20, 0x73, 0x65, 0x74, 0x2c, 0x20, 0x6e, 0x6f, 0x20, 0x63, 0x6f, 0x76, 0x65, 0x72, 0x61, 0x67, 0x65, 0x20, 0x64, 0x61, 0x74, 0x61, 0x20, 0x65, 0x6d, 0x69, 0x74, 0x74, 0x65, 0x64, 0xa}
-
-            	            	Diff:
-            	            	--- Expected
-            	            	+++ Actual
-            	            	@@ -1,2 +1,10 @@
-            	            	-([]uint8) <nil>
-            	            	+([]uint8) (len=108) {
-            	            	+ 00000000  32 30 32 35 2f 31 31 2f  30 38 20 32 31 3a 30 38  |2025/11/08 21:08|
-            	            	+ 00000010  3a 35 35 20 75 6e 6b 6e  6f 77 6e 20 66 6c 61 67  |:55 unknown flag|
-            	            	+ 00000020  3a 20 2d 2d 74 65 73 74  2e 63 6f 76 65 72 70 72  |: --test.coverpr|
-            	            	+ 00000030  6f 66 69 6c 65 0a 77 61  72 6e 69 6e 67 3a 20 47  |ofile.warning: G|
-            	            	+ 00000040  4f 43 4f 56 45 52 44 49  52 20 6e 6f 74 20 73 65  |OCOVERDIR not se|
-            	            	+ 00000050  74 2c 20 6e 6f 20 63 6f  76 65 72 61 67 65 20 64  |t, no coverage d|
-            	            	+ 00000060  61 74 61 20 65 6d 69 74  74 65 64 0a              |ata emitted.|
-            	            	+}
-
-            	Test:       	TestEncodeJSONTransaction/encode_recompute_success
---- FAIL: TestAddressGen (0.16s)
-    --- FAIL: TestAddressGen/addressGen_--mode=wallet (0.01s)
-        integration_test.go:1188:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1188
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestAddressGen/addressGen_--mode=wallet
-            	Messages:   	2025/11/08 21:08:55 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestAddressGen/addressGen__--mode=wallet_--num_2 (0.01s)
-        integration_test.go:1188:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1188
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestAddressGen/addressGen__--mode=wallet_--num_2
-            	Messages:   	2025/11/08 21:08:55 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestAddressGen/addressGen_--mode=wallet_-n_2 (0.01s)
-        integration_test.go:1188:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1188
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestAddressGen/addressGen_--mode=wallet_-n_2
-            	Messages:   	2025/11/08 21:08:55 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestAddressGen/addressGen__--mode=wallet_--hide-secrets_-n_2 (0.01s)
-        integration_test.go:1188:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1188
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestAddressGen/addressGen__--mode=wallet_--hide-secrets_-n_2
-            	Messages:   	2025/11/08 21:08:55 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestAddressGen/addressGen_-m=wallet_-i_-n_2 (0.01s)
-        integration_test.go:1188:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1188
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestAddressGen/addressGen_-m=wallet_-i_-n_2
-            	Messages:   	2025/11/08 21:08:55 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestAddressGen/addressGen_--mode=wallet--coin=bitcoin_-n_2 (0.01s)
-        integration_test.go:1188:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1188
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestAddressGen/addressGen_--mode=wallet--coin=bitcoin_-n_2
-            	Messages:   	2025/11/08 21:08:55 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestAddressGen/addressGen_--mode=wallet_-c=btc_-n_2 (0.01s)
-        integration_test.go:1188:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1188
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestAddressGen/addressGen_--mode=wallet_-c=btc_-n_2
-            	Messages:   	2025/11/08 21:08:55 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestAddressGen/addressGen_--mode=wallet_--hex (0.01s)
-        integration_test.go:1188:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1188
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestAddressGen/addressGen_--mode=wallet_--hex
-            	Messages:   	2025/11/08 21:08:55 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestAddressGen/addressGen_--mode=addresses (0.01s)
-        integration_test.go:1188:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1188
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestAddressGen/addressGen_--mode=addresses
-            	Messages:   	2025/11/08 21:08:55 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestAddressGen/addressGen_--mode=addresses_--entropy=256 (0.01s)
-        integration_test.go:1188:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1188
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestAddressGen/addressGen_--mode=addresses_--entropy=256
-            	Messages:   	2025/11/08 21:08:55 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
+--- FAIL: TestAddressGen (0.38s)
     --- FAIL: TestAddressGen/addressGen_--entropy=9 (0.01s)
         integration_test.go:1109:
             	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1109
             	            				/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1191
             	Error:      	Not equal:
             	            	expected: "Error: entropy must be 128 or 256\n"
-            	            	actual  : "2025/11/08 21:08:55 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
+            	            	actual  : "Error: entropy must be 128 or 256\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
 
             	            	Diff:
             	            	--- Expected
             	            	+++ Actual
             	            	@@ -1,2 +1,3 @@
-            	            	-Error: entropy must be 128 or 256
-            	            	+2025/11/08 21:08:55 unknown flag: --test.coverprofile
+            	            	 Error: entropy must be 128 or 256
             	            	+warning: GOCOVERDIR not set, no coverage data emitted
 
             	Test:       	TestAddressGen/addressGen_--entropy=9
-    --- FAIL: TestAddressGen/addressGen_--mode=wallet_--seed_123 (0.01s)
-        integration_test.go:1188:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1188
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestAddressGen/addressGen_--mode=wallet_--seed_123
-            	Messages:   	2025/11/08 21:08:55 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestAddressGen/addressGen_--mode=wallet_-s_123 (0.01s)
-        integration_test.go:1188:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1188
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestAddressGen/addressGen_--mode=wallet_-s_123
-            	Messages:   	2025/11/08 21:08:55 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
     --- FAIL: TestAddressGen/addressGen_--hide-secrets_--mode=secrets (0.01s)
         integration_test.go:1155:
             	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1155
             	            				/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1191
             	Error:      	Not equal:
             	            	expected: "Error: secrets mode selected but hideSecrets enabled\n"
-            	            	actual  : "2025/11/08 21:08:55 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
+            	            	actual  : "Error: secrets mode selected but hideSecrets enabled\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
 
             	            	Diff:
             	            	--- Expected
             	            	+++ Actual
             	            	@@ -1,2 +1,3 @@
-            	            	-Error: secrets mode selected but hideSecrets enabled
-            	            	+2025/11/08 21:08:55 unknown flag: --test.coverprofile
+            	            	 Error: secrets mode selected but hideSecrets enabled
             	            	+warning: GOCOVERDIR not set, no coverage data emitted
 
             	Test:       	TestAddressGen/addressGen_--hide-secrets_--mode=secrets
-    --- FAIL: TestAddressGen/addressGen_--mode=secrets (0.01s)
-        integration_test.go:1188:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1188
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestAddressGen/addressGen_--mode=secrets
-            	Messages:   	2025/11/08 21:08:55 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
-    --- FAIL: TestAddressGen/addressGen_--mode=secrets_--coin=bitcoin (0.01s)
-        integration_test.go:1188:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1188
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestAddressGen/addressGen_--mode=secrets_--coin=bitcoin
-            	Messages:   	2025/11/08 21:08:55 unknown flag: --test.coverprofile
-            	            	warning: GOCOVERDIR not set, no coverage data emitted
---- FAIL: TestFiberAddressGen (0.08s)
-    --- FAIL: TestFiberAddressGen/fiberAddressGen (0.01s)
-        integration_test.go:1438:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1438
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestFiberAddressGen/fiberAddressGen
-    --- FAIL: TestFiberAddressGen/fiberAddressGen_--entropy=256 (0.01s)
-        integration_test.go:1438:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1438
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestFiberAddressGen/fiberAddressGen_--entropy=256
-    --- FAIL: TestFiberAddressGen/fiberAddressGen_-n=1 (0.01s)
-        integration_test.go:1438:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1438
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestFiberAddressGen/fiberAddressGen_-n=1
-    --- FAIL: TestFiberAddressGen/fiberAddressGen_can't_overwrite_addrs_file (0.01s)
+--- FAIL: TestFiberAddressGen (3.22s)
+    --- FAIL: TestFiberAddressGen/fiberAddressGen_can't_overwrite_addrs_file (0.33s)
         integration_test.go:1358:
             	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1358
             	            				/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1441
             	Error:      	Not equal:
             	            	expected: "Error: -addrs-file \"addresses.txt\" already exists. Use -overwrite to force writing\n"
-            	            	actual  : "2025/11/08 21:08:55 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
+            	            	actual  : "Error: -addrs-file \"addresses.txt\" already exists. Use -overwrite to force writing\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
 
             	            	Diff:
             	            	--- Expected
             	            	+++ Actual
             	            	@@ -1,2 +1,3 @@
-            	            	-Error: -addrs-file "addresses.txt" already exists. Use -overwrite to force writing
-            	            	+2025/11/08 21:08:55 unknown flag: --test.coverprofile
+            	            	 Error: -addrs-file "addresses.txt" already exists. Use -overwrite to force writing
             	            	+warning: GOCOVERDIR not set, no coverage data emitted
 
             	Test:       	TestFiberAddressGen/fiberAddressGen_can't_overwrite_addrs_file
-    --- FAIL: TestFiberAddressGen/fiberAddressGen_can't_overwrite_seeds_file (0.01s)
+    --- FAIL: TestFiberAddressGen/fiberAddressGen_can't_overwrite_seeds_file (0.33s)
         integration_test.go:1375:
             	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1375
             	            				/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1441
             	Error:      	Not equal:
             	            	expected: "Error: -seeds-file \"seeds.csv\" already exists. Use -overwrite to force writing\n"
-            	            	actual  : "2025/11/08 21:08:55 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
+            	            	actual  : "Error: -seeds-file \"seeds.csv\" already exists. Use -overwrite to force writing\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
 
             	            	Diff:
             	            	--- Expected
             	            	+++ Actual
             	            	@@ -1,2 +1,3 @@
-            	            	-Error: -seeds-file "seeds.csv" already exists. Use -overwrite to force writing
-            	            	+2025/11/08 21:08:55 unknown flag: --test.coverprofile
+            	            	 Error: -seeds-file "seeds.csv" already exists. Use -overwrite to force writing
             	            	+warning: GOCOVERDIR not set, no coverage data emitted
 
             	Test:       	TestFiberAddressGen/fiberAddressGen_can't_overwrite_seeds_file
-    --- FAIL: TestFiberAddressGen/fiberAddressGen_--overwrite (0.01s)
-        integration_test.go:1438:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1438
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestFiberAddressGen/fiberAddressGen_--overwrite
-    --- FAIL: TestFiberAddressGen/fiberAddressGen_--addrs-file=fooaddrs.txt_--seeds-file=fooseeds.csv (0.01s)
-        integration_test.go:1438:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1438
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestFiberAddressGen/fiberAddressGen_--addrs-file=fooaddrs.txt_--seeds-file=fooseeds.csv
     --- FAIL: TestFiberAddressGen/fiberAddressGen_positional-args-not-allowed (0.01s)
-        testutil.go:135:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/testutil/testutil.go:135
-            	            				/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1419
+        integration_test.go:1421:
+            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1421
             	            				/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1441
-            	Error:      	Should be true
+            	Error:      	Not equal:
+            	            	expected: "Error: this command does not take any positional arguments\n"
+            	            	actual  : "Error: this command does not take any positional arguments\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
+
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1,2 +1,3 @@
+            	            	 Error: this command does not take any positional arguments
+            	            	+warning: GOCOVERDIR not set, no coverage data emitted
+
             	Test:       	TestFiberAddressGen/fiberAddressGen_positional-args-not-allowed
---- FAIL: TestStableListWallets (0.03s)
-    integration_test.go:1484:
-        	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1484
-        	Error:      	Received unexpected error:
-        	            	exit status 1
-        	Test:       	TestStableListWallets
-        	Messages:   	[50 48 50 53 47 49 49 47 48 56 32 50 49 58 48 56 58 53 53 32 117 110 107 110 111 119 110 32 102 108 97 103 58 32 45 45 116 101 115 116 46 99 111 118 101 114 112 114 111 102 105 108 101 10 119 97 114 110 105 110 103 58 32 71 79 67 79 86 69 82 68 73 82 32 110 111 116 32 115 101 116 44 32 110 111 32 99 111 118 101 114 97 103 101 32 100 97 116 97 32 101 109 105 116 116 101 100 10]
---- FAIL: TestStableListAddress (0.01s)
-    integration_test.go:1563:
-        	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1563
-        	Error:      	Received unexpected error:
-        	            	exit status 1
-        	Test:       	TestStableListAddress
---- FAIL: TestStableAddressBalance (0.01s)
-    integration_test.go:1603:
-        	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1603
-        	Error:      	Received unexpected error:
-        	            	exit status 1
-        	Test:       	TestStableAddressBalance
---- FAIL: TestStableWalletBalance (0.01s)
-    integration_test.go:1635:
-        	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1635
-        	Error:      	Received unexpected error:
-        	            	exit status 1
-        	Test:       	TestStableWalletBalance
-        	Messages:   	[50 48 50 53 47 49 49 47 48 56 32 50 49 58 48 56 58 53 53 32 117 110 107 110 111 119 110 32 102 108 97 103 58 32 45 45 116 101 115 116 46 99 111 118 101 114 112 114 111 102 105 108 101 10 119 97 114 110 105 110 103 58 32 71 79 67 79 86 69 82 68 73 82 32 110 111 116 32 115 101 116 44 32 110 111 32 99 111 118 101 114 97 103 101 32 100 97 116 97 32 101 109 105 116 116 101 100 10]
---- FAIL: TestStableWalletOutputs (0.01s)
-    integration_test.go:1672:
-        	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1672
-        	Error:      	Received unexpected error:
-        	            	exit status 1
-        	Test:       	TestStableWalletOutputs
-        	Messages:   	[50 48 50 53 47 49 49 47 48 56 32 50 49 58 48 56 58 53 53 32 117 110 107 110 111 119 110 32 102 108 97 103 58 32 45 45 116 101 115 116 46 99 111 118 101 114 112 114 111 102 105 108 101 10 119 97 114 110 105 110 103 58 32 71 79 67 79 86 69 82 68 73 82 32 110 111 116 32 115 101 116 44 32 110 111 32 99 111 118 101 114 97 103 101 32 100 97 116 97 32 101 109 105 116 116 101 100 10]
---- FAIL: TestStableAddressOutputs (0.03s)
-    --- FAIL: TestStableAddressOutputs/addressOutputs_one_address (0.01s)
-        integration_test.go:1739:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1739
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestStableAddressOutputs/addressOutputs_one_address
-    --- FAIL: TestStableAddressOutputs/addressOutputs_two_address (0.01s)
-        integration_test.go:1739:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1739
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestStableAddressOutputs/addressOutputs_two_address
+--- FAIL: TestStableAddressOutputs (0.05s)
     --- FAIL: TestStableAddressOutputs/addressOutputs_two_address_one_invalid (0.01s)
         integration_test.go:1735:
             	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1735
             	Error:      	Not equal:
             	            	expected: "Error: invalid address: badaddress, err: Invalid address length\n"
-            	            	actual  : "2025/11/08 21:08:55 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
+            	            	actual  : "Error: invalid address: badaddress, err: Invalid address length\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
 
             	            	Diff:
             	            	--- Expected
             	            	+++ Actual
             	            	@@ -1,2 +1,3 @@
-            	            	-Error: invalid address: badaddress, err: Invalid address length
-            	            	+2025/11/08 21:08:55 unknown flag: --test.coverprofile
+            	            	 Error: invalid address: badaddress, err: Invalid address length
             	            	+warning: GOCOVERDIR not set, no coverage data emitted
 
             	Test:       	TestStableAddressOutputs/addressOutputs_two_address_one_invalid
---- FAIL: TestStableShowConfig (0.01s)
-    integration_test.go:1770:
-        	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1770
-        	Error:      	Received unexpected error:
-        	            	exit status 1
-        	Test:       	TestStableShowConfig
---- FAIL: TestStableStatus (0.01s)
-    integration_test.go:1833:
-        	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1833
-        	Error:      	Received unexpected error:
-        	            	exit status 1
-        	Test:       	TestStableStatus
---- FAIL: TestStableTransaction (0.06s)
+--- FAIL: TestStableTransaction (3.49s)
     --- FAIL: TestStableTransaction/invalid_txid (0.01s)
         integration_test.go:1947:
             	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1947
             	Error:      	Not equal:
             	            	expected: "Error: invalid txid\n"
-            	            	actual  : "2025/11/08 21:08:55 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
+            	            	actual  : "Error: invalid txid\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
 
             	            	Diff:
             	            	--- Expected
             	            	+++ Actual
             	            	@@ -1,2 +1,3 @@
-            	            	-Error: invalid txid
-            	            	+2025/11/08 21:08:55 unknown flag: --test.coverprofile
+            	            	 Error: invalid txid
             	            	+warning: GOCOVERDIR not set, no coverage data emitted
 
             	Test:       	TestStableTransaction/invalid_txid
@@ -745,14 +192,13 @@ ok  	github.com/skycoin/skycoin/src/api/integration	93.999s
             	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1947
             	Error:      	Not equal:
             	            	expected: "Error: 404 Not Found\n"
-            	            	actual  : "2025/11/08 21:08:55 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
+            	            	actual  : "Error: 404 Not Found\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
 
             	            	Diff:
             	            	--- Expected
             	            	+++ Actual
             	            	@@ -1,2 +1,3 @@
-            	            	-Error: 404 Not Found
-            	            	+2025/11/08 21:08:55 unknown flag: --test.coverprofile
+            	            	 Error: 404 Not Found
             	            	+warning: GOCOVERDIR not set, no coverage data emitted
 
             	Test:       	TestStableTransaction/not_exist
@@ -761,305 +207,186 @@ ok  	github.com/skycoin/skycoin/src/api/integration	93.999s
             	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1947
             	Error:      	Not equal:
             	            	expected: "Error: txid is empty\n"
-            	            	actual  : "2025/11/08 21:08:55 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
+            	            	actual  : "Error: txid is empty\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
 
             	            	Diff:
             	            	--- Expected
             	            	+++ Actual
             	            	@@ -1,2 +1,3 @@
-            	            	-Error: txid is empty
-            	            	+2025/11/08 21:08:55 unknown flag: --test.coverprofile
+            	            	 Error: txid is empty
             	            	+warning: GOCOVERDIR not set, no coverage data emitted
 
             	Test:       	TestStableTransaction/empty_txid
-    --- FAIL: TestStableTransaction/genesis_transaction (0.01s)
-        integration_test.go:1951:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1951
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestStableTransaction/genesis_transaction
-    --- FAIL: TestStableTransaction/unconfirmed (0.01s)
-        integration_test.go:1951:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1951
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-+ CLI_FAIL=1
-+ [[ 1 -ne 0 ]]
-+ shutdown_node skycoin 24449 skycoin-integration-enable-csrf-header-check.test
-+ local coin=skycoin
-+ local pid=24449
-+ local bin=skycoin-integration-enable-csrf-header-check.test
-+ echo 'shutting down skycoin node'
-+ kill -s SIGINT 24449
-+ wait 24449
-            	Test:       	TestStableTransaction/unconfirmed
-    integration_test.go:2224:
-        	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:2224
-        	            				/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:1962
-        	Error:      	Received unexpected error:
-        	            	exit status 1
-        	Test:       	TestStableTransaction
---- FAIL: TestStableBlocks (0.03s)
-    --- FAIL: TestStableBlocks/blocks_0 (0.01s)
-        integration_test.go:2387:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:2387
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestStableBlocks/blocks_0
-    --- FAIL: TestStableBlocks/blocks_0_5 (0.01s)
-        integration_test.go:2387:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:2387
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestStableBlocks/blocks_0_5
-    integration_test.go:2403:
-        	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:2403
-        	            				/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:2398
-        	            				/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:2333
-        	Error:      	Received unexpected error:
-        	            	exit status 1
-        	Test:       	TestStableBlocks
---- FAIL: TestStableLastBlocks (0.03s)
-    --- FAIL: TestStableLastBlocks/lastBlocks_0 (0.01s)
-        integration_test.go:2454:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:2454
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestStableLastBlocks/lastBlocks_0
-    --- FAIL: TestStableLastBlocks/lastBlocks_1 (0.01s)
-        integration_test.go:2454:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:2454
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestStableLastBlocks/lastBlocks_1
-    --- FAIL: TestStableLastBlocks/lastBlocks_2 (0.01s)
-        integration_test.go:2454:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:2454
-            	Error:      	Received unexpected error:
-            	            	exit status 1
-            	Test:       	TestStableLastBlocks/lastBlocks_2
---- FAIL: TestStableWalletHistory (0.01s)
-    integration_test.go:3032:
-        	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:3032
-        	Error:      	Received unexpected error:
-        	            	exit status 1
-        	Test:       	TestStableWalletHistory
-        	Messages:   	[50 48 50 53 47 49 49 47 48 56 32 50 49 58 48 56 58 53 53 32 117 110 107 110 111 119 110 32 102 108 97 103 58 32 45 45 116 101 115 116 46 99 111 118 101 114 112 114 111 102 105 108 101 10 119 97 114 110 105 110 103 58 32 71 79 67 79 86 69 82 68 73 82 32 110 111 116 32 115 101 116 44 32 110 111 32 99 111 118 101 114 97 103 101 32 100 97 116 97 32 101 109 105 116 116 101 100 10]
---- FAIL: TestStableCheckDB (0.03s)
-    --- FAIL: TestStableCheckDB/no_signature (0.01s)
-        integration_test.go:3088: 2025/11/08 21:08:55 unknown flag: --test.coverprofile
+--- FAIL: TestStableCheckDB (0.30s)
+    --- FAIL: TestStableCheckDB/no_signature (0.23s)
+        integration_test.go:3088: Error: checkdb failed: Signature not found for block seq=1000 hash=71852c1a8ab5e470bd14e5fce8e1116697151181a188d4262b545542fb3d526c
             warning: GOCOVERDIR not set, no coverage data emitted
 
         integration_test.go:3089:
             	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:3089
             	Error:      	Not equal:
             	            	expected: "Error: checkdb failed: Signature not found for block seq=1000 hash=71852c1a8ab5e470bd14e5fce8e1116697151181a188d4262b545542fb3d526c\n"
-            	            	actual  : "2025/11/08 21:08:55 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
+            	            	actual  : "Error: checkdb failed: Signature not found for block seq=1000 hash=71852c1a8ab5e470bd14e5fce8e1116697151181a188d4262b545542fb3d526c\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
 
             	            	Diff:
             	            	--- Expected
             	            	+++ Actual
             	            	@@ -1,2 +1,3 @@
-            	            	-Error: checkdb failed: Signature not found for block seq=1000 hash=71852c1a8ab5e470bd14e5fce8e1116697151181a188d4262b545542fb3d526c
-            	            	+2025/11/08 21:08:55 unknown flag: --test.coverprofile
+            	            	 Error: checkdb failed: Signature not found for block seq=1000 hash=71852c1a8ab5e470bd14e5fce8e1116697151181a188d4262b545542fb3d526c
             	            	+warning: GOCOVERDIR not set, no coverage data emitted
 
             	Test:       	TestStableCheckDB/no_signature
     --- FAIL: TestStableCheckDB/invalid_database (0.01s)
-        integration_test.go:3088: 2025/11/08 21:08:55 unknown flag: --test.coverprofile
+        integration_test.go:3088: Error: open db failed: invalid database
             warning: GOCOVERDIR not set, no coverage data emitted
 
         integration_test.go:3089:
++ CLI_FAIL=1
++ [[ 1 -ne 0 ]]
++ shutdown_node skycoin 24536 skycoin-integration-enable-csrf-header-check.test
++ local coin=skycoin
++ local pid=24536
++ local bin=skycoin-integration-enable-csrf-header-check.test
++ echo 'shutting down skycoin node'
++ kill -s SIGINT 24536
++ wait 24536
             	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:3089
             	Error:      	Not equal:
             	            	expected: "Error: open db failed: invalid database\n"
-            	            	actual  : "2025/11/08 21:08:55 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
+            	            	actual  : "Error: open db failed: invalid database\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
 
             	            	Diff:
             	            	--- Expected
             	            	+++ Actual
             	            	@@ -1,2 +1,3 @@
-            	            	-Error: open db failed: invalid database
-            	            	+2025/11/08 21:08:55 unknown flag: --test.coverprofile
+            	            	 Error: open db failed: invalid database
             	            	+warning: GOCOVERDIR not set, no coverage data emitted
 
             	Test:       	TestStableCheckDB/invalid_database
-    --- FAIL: TestStableCheckDB/valid_database (0.01s)
-        integration_test.go:3088: 2025/11/08 21:08:55 unknown flag: --test.coverprofile
-            warning: GOCOVERDIR not set, no coverage data emitted
-
-        integration_test.go:3089:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:3089
-            	Error:      	Not equal:
-            	            	expected: ""
-            	            	actual  : "2025/11/08 21:08:55 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
-
-            	            	Diff:
-            	            	--- Expected
-            	            	+++ Actual
-            	            	@@ -1 +1,3 @@
-            	            	+2025/11/08 21:08:55 unknown flag: --test.coverprofile
-            	            	+warning: GOCOVERDIR not set, no coverage data emitted
-
-            	Test:       	TestStableCheckDB/valid_database
---- FAIL: TestVersion (0.01s)
-    integration_test.go:3105:
-        	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:3105
-        	Error:      	Received unexpected error:
-        	            	exit status 1
-        	Test:       	TestVersion
---- FAIL: TestStableWalletCreate (0.11s)
-    --- FAIL: TestStableWalletCreate/generate_wallet_with_-r_option (0.01s)
-        integration_test.go:3354:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:3354
-            	Error:      	Not equal:
-            	            	expected: ""
-            	            	actual  : "2025/11/08 21:08:55 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
-
-            	            	Diff:
-            	            	--- Expected
-            	            	+++ Actual
-            	            	@@ -1 +1,3 @@
-            	            	+2025/11/08 21:08:55 unknown flag: --test.coverprofile
-            	            	+warning: GOCOVERDIR not set, no coverage data emitted
-
-            	Test:       	TestStableWalletCreate/generate_wallet_with_-r_option
+--- FAIL: TestStableWalletCreate (2.86s)
     --- FAIL: TestStableWalletCreate/generate_wallet_with_-r_option_bip44 (0.01s)
         integration_test.go:3354:
             	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:3354
             	Error:      	Not equal:
             	            	expected: "Error: -r can't be used for bip44 wallets\n"
-            	            	actual  : "2025/11/08 21:08:55 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
+            	            	actual  : "Error: -r can't be used for bip44 wallets\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
 
             	            	Diff:
             	            	--- Expected
             	            	+++ Actual
             	            	@@ -1,2 +1,3 @@
-            	            	-Error: -r can't be used for bip44 wallets
-            	            	+2025/11/08 21:08:55 unknown flag: --test.coverprofile
+            	            	 Error: -r can't be used for bip44 wallets
             	            	+warning: GOCOVERDIR not set, no coverage data emitted
 
             	Test:       	TestStableWalletCreate/generate_wallet_with_-r_option_bip44
-    --- FAIL: TestStableWalletCreate/generate_wallet_with_-m_option (0.01s)
-        integration_test.go:3354:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:3354
-            	Error:      	Not equal:
-            	            	expected: ""
-            	            	actual  : "2025/11/08 21:08:55 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
-
-            	            	Diff:
-            	            	--- Expected
-            	            	+++ Actual
-            	            	@@ -1 +1,3 @@
-            	            	+2025/11/08 21:08:55 unknown flag: --test.coverprofile
-            	            	+warning: GOCOVERDIR not set, no coverage data emitted
-
-            	Test:       	TestStableWalletCreate/generate_wallet_with_-m_option
-    --- FAIL: TestStableWalletCreate/generate_wallet_with_-s_option (0.01s)
-        integration_test.go:3354:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:3354
-            	Error:      	Not equal:
-            	            	expected: ""
-            	            	actual  : "2025/11/08 21:08:55 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
-
-            	            	Diff:
-            	            	--- Expected
-            	            	+++ Actual
-            	            	@@ -1 +1,3 @@
-            	            	+2025/11/08 21:08:55 unknown flag: --test.coverprofile
-            	            	+warning: GOCOVERDIR not set, no coverage data emitted
-
-            	Test:       	TestStableWalletCreate/generate_wallet_with_-s_option
-    --- FAIL: TestStableWalletCreate/generate_wallet_with_-s_option_bip44 (0.01s)
-        integration_test.go:3354:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:3354
-            	Error:      	Not equal:
-            	            	expected: ""
-            	            	actual  : "2025/11/08 21:08:55 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
-
-            	            	Diff:
-            	            	--- Expected
-            	            	+++ Actual
-            	            	@@ -1 +1,3 @@
-            	            	+2025/11/08 21:08:55 unknown flag: --test.coverprofile
-            	            	+warning: GOCOVERDIR not set, no coverage data emitted
-
-            	Test:       	TestStableWalletCreate/generate_wallet_with_-s_option_bip44
-    --- FAIL: TestStableWalletCreate/generate_wallet_with_-s_option_and_seed-passphrase_bip44 (0.01s)
-        integration_test.go:3354:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:3354
-            	Error:      	Not equal:
-            	            	expected: ""
-            	            	actual  : "2025/11/08 21:08:55 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
-
-            	            	Diff:
-            	            	--- Expected
-            	            	+++ Actual
-            	            	@@ -1 +1,3 @@
-            	            	+2025/11/08 21:08:55 unknown flag: --test.coverprofile
-            	            	+warning: GOCOVERDIR not set, no coverage data emitted
-
-            	Test:       	TestStableWalletCreate/generate_wallet_with_-s_option_and_seed-passphrase_bip44
     --- FAIL: TestStableWalletCreate/generate_wallet_with_-s_option_and_seed-passphrase_deterministic (0.01s)
         integration_test.go:3354:
             	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:3354
             	Error:      	Not equal:
             	            	expected: "Error: 400 Bad Request - seedPassphrase is only used for \"bip44\" wallets\n"
-            	            	actual  : "2025/11/08 21:08:55 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
+            	            	actual  : "Error: 400 Bad Request - seedPassphrase is only used for \"bip44\" wallets\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
 
             	            	Diff:
             	            	--- Expected
             	            	+++ Actual
             	            	@@ -1,2 +1,3 @@
-            	            	-Error: 400 Bad Request - seedPassphrase is only used for "bip44" wallets
-            	            	+2025/11/08 21:08:55 unknown flag: --test.coverprofile
+            	            	 Error: 400 Bad Request - seedPassphrase is only used for "bip44" wallets
             	            	+warning: GOCOVERDIR not set, no coverage data emitted
 
             	Test:       	TestStableWalletCreate/generate_wallet_with_-s_option_and_seed-passphrase_deterministic
-    --- FAIL: TestStableWalletCreate/generate_wallet_with_-n_option,_bip44 (0.01s)
-        integration_test.go:3354:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:3354
-            	Error:      	Not equal:
-            	            	expected: ""
-            	            	actual  : "2025/11/08 21:08:55 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
-
-            	            	Diff:
-            	            	--- Expected
-            	            	+++ Actual
-            	            	@@ -1 +1,3 @@
-            	            	+2025/11/08 21:08:55 unknown flag: --test.coverprofile
-            	            	+warning: GOCOVERDIR not set, no coverage data emitted
-
-            	Test:       	TestStableWalletCreate/generate_wallet_with_-n_option,_bip44
-    --- FAIL: TestStableWalletCreate/generate_wallet_with_-n_option (0.01s)
-        integration_test.go:3354:
-            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:3354
-            	Error:      	Not equal:
-            	            	expected: ""
-            	            	actual  : "2025/11/08 21:08:55 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
-
-            	            	Diff:
-            	            	--- Expected
-            	            	+++ Actual
-            	            	@@ -1 +1,3 @@
-            	            	+2025/11/08 21:08:55 unknown flag: --test.coverprofile
-            	            	+warning: GOCOVERDIR not set, no coverage data emitted
-
-            	Test:       	TestStableWalletCreate/generate_wallet_with_-n_option
-    --- FAIL: TestStableWalletCreate/generate_wallet_with_duplicate_seed_for_deterministic_wallet (0.01s)
+    --- FAIL: TestStableWalletCreate/generate_wallet_with_duplicate_seed_for_deterministic_wallet (0.03s)
         integration_test.go:3354:
             	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:3354
             	Error:      	Not equal:
             	            	expected: "Error: 400 Bad Request - fingerprint conflict for \"deterministic\" wallet\n"
-            	            	actual  : "2025/11/08 21:08:55 unknown flag: --test.coverprofile\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
+            	            	actual  : "Error: 400 Bad Request - fingerprint conflict for \"deterministic\" wallet\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
 
             	            	Diff:
             	            	--- Expected
             	            	+++ Actual
             	            	@@ -1,2 +1,3 @@
-            	            	-Error: 400 Bad Request - fingerprint conflict for "deterministic" wallet
-            	            	+2025/11/08 21:08:55 unknown flag: --test.coverprofile
+            	            	 Error: 400 Bad Request - fingerprint conflict for "deterministic" wallet
             	            	+warning: GOCOVERDIR not set, no coverage data emitted
 
             	Test:       	TestStableWalletCreate/generate_wallet_with_duplicate_seed_for_deterministic_wallet
-Error: Process completed with exit code 2.
+--- FAIL: TestEncryptWallet (4.99s)
+    --- FAIL: TestEncryptWallet/name=wallet_is_encrypted (2.50s)
+        integration_test.go:3638:
+            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:3638
+            	Error:      	Not equal:
+            	            	expected: "Error: wallet is encrypted\n"
+            	            	actual  : "Error: wallet is encrypted\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
+
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1,2 +1,3 @@
+            	            	 Error: wallet is encrypted
+            	            	+warning: GOCOVERDIR not set, no coverage data emitted
+
+            	Test:       	TestEncryptWallet/name=wallet_is_encrypted
+--- FAIL: TestDecryptWallet (10.10s)
+    --- FAIL: TestDecryptWallet/wallet_is_not_encrypted (0.02s)
+        integration_test.go:3731:
+            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:3731
+            	Error:      	Not equal:
+            	            	expected: "Error: wallet is not encrypted\n"
+            	            	actual  : "Error: wallet is not encrypted\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
+
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1,2 +1,3 @@
+            	            	 Error: wallet is not encrypted
+            	            	+warning: GOCOVERDIR not set, no coverage data emitted
+
+            	Test:       	TestDecryptWallet/wallet_is_not_encrypted
+    --- FAIL: TestDecryptWallet/invalid_password (5.02s)
+        integration_test.go:3731:
+            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:3731
+            	Error:      	Not equal:
+            	            	expected: "Error: 400 Bad Request - invalid password\n"
+            	            	actual  : "Error: 400 Bad Request - invalid password\nwarning: GOCOVERDIR not set, no coverage data emitted\n"
+
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1,2 +1,3 @@
+            	            	 Error: 400 Bad Request - invalid password
+            	            	+warning: GOCOVERDIR not set, no coverage data emitted
+
+            	Test:       	TestDecryptWallet/invalid_password
+FAIL
+FAIL	github.com/skycoin/skycoin/src/cli/integration	54.839s
+FAIL
+shutting down skycoin node
+[2025-11-08T21:35:33Z] INFO [main]: Shutting down...
+[2025-11-08T21:35:33Z] INFO [main]: Closing web interface
+[2025-11-08T21:35:33Z] INFO [api]: Shutting down web interface
+[2025-11-08T21:35:33Z] INFO [api]: Web interface closed
+[2025-11-08T21:35:33Z] ERROR [main]: webInterface.Serve failed error="accept tcp 127.0.0.1:1024: use of closed network connection"
+[2025-11-08T21:35:33Z] INFO [api]: Web interface shut down
+[2025-11-08T21:35:33Z] INFO [main]: Closing daemon
+[2025-11-08T21:35:33Z] INFO [daemon]: Stopping the daemon run loop
+[2025-11-08T21:35:33Z] INFO [daemon]: Shutting down Pool
+[2025-11-08T21:35:33Z] INFO [gnet]: ConnectionPool.Shutdown called
+[2025-11-08T21:35:33Z] INFO [gnet]: ConnectionPool.Shutdown closed pool.quit
+[2025-11-08T21:35:33Z] INFO [gnet]: ConnectionPool.Shutdown waiting for strandDone
+[2025-11-08T21:35:33Z] INFO [gnet]: ConnectionPool.Shutdown closing the listener
+[2025-11-08T21:35:33Z] INFO [gnet]: ConnectionPool.Shutdown disconnecting all connections
+[2025-11-08T21:35:33Z] INFO [gnet]: ConnectionPool.Shutdown waiting for done
+[2025-11-08T21:35:33Z] INFO [daemon]: Shutting down Pex
+[2025-11-08T21:35:33Z] INFO [pex]: Shutting down pex
+[2025-11-08T21:35:33Z] INFO [pex]: Save peerlist
+[2025-11-08T21:35:33Z] INFO [daemon]: Daemon closed
+[2025-11-08T21:35:33Z] INFO [pex]: Pex.Run stopped
+[2025-11-08T21:35:33Z] INFO [pex]: Pex shutdown
+[2025-11-08T21:35:33Z] INFO [daemon]: Daemon shutdown complete
+[2025-11-08T21:35:33Z] INFO [main]: Waiting for goroutines to finish
+[2025-11-08T21:35:33Z] INFO [main]: Closing database
+[2025-11-08T21:35:33Z] INFO [main]: Goodbye
+PASS
+coverage: 39.5% of statements in github.com/skycoin/skycoin/...
++ rm skycoin-integration-enable-csrf-header-check.test
++ exit 1
+make: *** [Makefile:102: integration-test-stable] Error 1

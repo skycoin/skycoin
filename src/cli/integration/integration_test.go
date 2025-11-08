@@ -66,8 +66,8 @@ var (
 
 	cryptoTypes = []crypto.CryptoType{crypto.CryptoTypeScryptChacha20poly1305, crypto.CryptoTypeSha256Xor} //nolint:unused
 
-	validNameRegexp        = regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
-	stripCoverageReport    = regexp.MustCompile(`PASS\ncoverage: [\d\.]+% of statements in github.com/skycoin/skycoin/\.\.\.\n$`)
+	validNameRegexp         = regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
+	stripCoverageReport     = regexp.MustCompile(`PASS\ncoverage: [\d\.]+% of statements in github.com/skycoin/skycoin/\.\.\.\n$`)
 	stripCoverageDirWarning = regexp.MustCompile(`\nwarning: GOCOVERDIR not set, no coverage data emitted\n?`)
 )
 

@@ -408,8 +408,8 @@ func TestDisconnect(t *testing.T) {
 	require.NoError(t, err)
 
 	err = p.strand("", func() error {
-		p.Config.DisconnectCallback = func(_ string, _ uint64, _ DisconnectReason) {
-			require.Equal(t, cAddr, addr)
+		p.Config.DisconnectCallback = func(callbackAddr string, _ uint64, _ DisconnectReason) {
+			require.Equal(t, cAddr, callbackAddr)
 		}
 		return nil
 	})

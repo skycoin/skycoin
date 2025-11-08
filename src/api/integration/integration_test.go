@@ -3590,7 +3590,7 @@ func TestDisableWalletAPI(t *testing.T) {
 			name:      "main index.html 404 not found",
 			method:    http.MethodGet,
 			endpoint:  "/api/v1/",
-			expectErr: "404 Not Found",
+			expectErr: "404 page not found",
 			code:      http.StatusNotFound,
 		},
 		{

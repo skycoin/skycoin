@@ -90,7 +90,7 @@ COMMIT=$(git rev-parse HEAD)
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 CMDPKG=$(go list ./cmd/${COIN})
 COVERPKG=$(dirname $(dirname ${CMDPKG}))
-GOLDFLAGS="-X ${CMDPKG}.Commit=${COMMIT} -X ${CMDPKG}.Branch=${BRANCH}"
+GOLDFLAGS="-X ${CMDPKG}/commands.Commit=${COMMIT} -X ${CMDPKG}/commands.Branch=${BRANCH}"
 
 echo "checking if integration tests compile"
 go test ./src/api/integration/...

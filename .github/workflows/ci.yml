@@ -26,6 +26,9 @@ jobs:
       - name: Vendor Dependencies
         run: go mod vendor -v
 
+      - name: Install linters
+        run: make install-linters
+
       - uses: golangci/golangci-lint-action@v7
         with:
           version: v2.5.0
@@ -61,6 +64,9 @@ jobs:
 
       - name: Vendor Dependencies
         run: go mod vendor -v
+
+      - name: Install linters
+        run: make install-linters
 
       - uses: golangci/golangci-lint-action@v7
         with:

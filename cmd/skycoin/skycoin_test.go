@@ -11,11 +11,6 @@ package main
 
 import "testing"
 
-func init() {
-	// Disable flag.Parse because go's test runner calls it instead
-	parseFlags = false
-}
-
 func TestRunMain(t *testing.T) {
 	main()
 }

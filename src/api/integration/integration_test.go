@@ -3776,7 +3776,7 @@ func TestDisableGUIAPI(t *testing.T) {
 
 	c := newClient()
 	err := c.Get("/", nil)
-	assertResponseError(t, err, http.StatusNotFound, "404 Not Found")
+	assertResponseError(t, err, http.StatusNotFound, "404 page not found")
 }
 
 func TestInvalidAuth(t *testing.T) {

@@ -1,0 +1,1024 @@
+--- FAIL: TestWalletCreate (0.13s)
+    --- FAIL: TestWalletCreate/deterministic_ok (0.01s)
+        integration_test.go:605:
+            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
+            	Error:      	Not equal:
+            	            	expected: "Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:\n      --test.bench regexp                           run only benchmarks matching regexp\n      --test.benchmem                               print memory allocations for benchmarks\n      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)\n      --test.blockprofile file                      write a goroutine blocking profile to file\n      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)\n      --test.count n                                run tests and benchmarks n times (default 1)\n      --test.coverprofile file                      write a coverage profile to file\n      --test.cpu list                               comma-separated list of cpu counts to run each test with\n      --test.cpuprofile file                        write a cpu profile
+            	            	actual  : ""
+
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1,37 +1 @@
+            	            	-Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:
+            	            	-      --test.bench regexp                           run only benchmarks matching regexp
+            	            	-      --test.benchmem                               print memory allocations for benchmarks
+            	            	-      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)
+            	            	-      --test.blockprofile file                      write a goroutine blocking profile to file
+            	            	-      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+            	            	-      --test.count n                                run tests and benchmarks n times (default 1)
+            	            	-      --test.coverprofile file                      write a coverage profile to file
+            	            	-      --test.cpu list                               comma-separated list of cpu counts to run each test with
+            	            	-      --test.cpuprofile file                        write a cpu profile to file
+            	            	-      --test.failfast                               do not start new tests after the first test failure
+            	            	-      --test.fullpath                               show full file names in error messages
+            	            	-      --test.fuzz regexp                            run the fuzz test matching regexp
+            	            	-      --test.fuzzcachedir string                    directory where interesting fuzzing inputs are stored (for use only by cmd/go)
+            	            	-      --test.fuzzminimizetime durationOrCountFlag   time to spend minimizing a value after finding a failing input (default 1m0s)
+            	            	-      --test.fuzztime durationOrCountFlag           time to spend fuzzing; default is to run indefinitely (default 0s)
+            	            	-      --test.fuzzworker                             coordinate with the parent process to fuzz random values (for use only by cmd/go)
+            	            	-      --test.gocoverdir string                      write coverage intermediate files to this directory
+            	            	-      --test.list regexp                            list tests, examples, and benchmarks matching regexp then exit
+            	            	-      --test.memprofile file                        write an allocation profile to file
+            	            	-      --test.memprofilerate rate                    set memory allocation profiling rate (see runtime.MemProfileRate)
+            	            	-      --test.mutexprofile string                    write a mutex contention profile to the named file after execution
+            	            	-      --test.mutexprofilefraction int               if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+            	            	-      --test.outputdir dir                          write profiles to dir
+            	            	-      --test.paniconexit0                           panic on call to os.Exit(0)
+            	            	-      --test.parallel n                             run at most n tests in parallel (default 4)
+            	            	-      --test.run regexp                             run only tests and examples matching regexp
+            	            	-      --test.short                                  run smaller test suite to save time
+            	            	-      --test.shuffle string                         randomize the execution order of tests and benchmarks (default "off")
+            	            	-      --test.skip regexp                            do not list or run tests matching regexp
+            	            	-      --test.testlogfile file                       write test action log to file (for use only by cmd/go)
+            	            	-      --test.timeout d                              panic test binary after duration d (default 0, timeout disabled) (default 0s)
+            	            	-      --test.trace file                             write an execution trace to file
+            	            	-      --test.v chattyFlag[=true]                    verbose: print additional output
+            	            	-unknown flag: --seed
+            	            	-warning: GOCOVERDIR not set, no coverage data emitted
+
+            	Test:       	TestWalletCreate/deterministic_ok
+            	Messages:   	expect: , got: Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:
+            	            	      --test.bench regexp                           run only benchmarks matching regexp
+            	            	      --test.benchmem                               print memory allocations for benchmarks
+            	            	      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)
+            	            	      --test.blockprofile file                      write a goroutine blocking profile to file
+            	            	      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+            	            	      --test.count n                                run tests and benchmarks n times (default 1)
+            	            	      --test.coverprofile file                      write a coverage profile to file
+            	            	      --test.cpu list                               comma-separated list of cpu counts to run each test with
+            	            	      --test.cpuprofile file                        write a cpu profile to file
+            	            	      --test.failfast                               do not start new tests after the first test failure
+            	            	      --test.fullpath                               show full file names in error messages
+            	            	      --test.fuzz regexp                            run the fuzz test matching regexp
+            	            	      --test.fuzzcachedir string                    directory where interesting fuzzing inputs are stored (for use only by cmd/go)
+            	            	      --test.fuzzminimizetime durationOrCountFlag   time to spend minimizing a value after finding a failing input (default 1m0s)
+            	            	      --test.fuzztime durationOrCountFlag           time to spend fuzzing; default is to run indefinitely (default 0s)
+            	            	      --test.fuzzworker                             coordinate with the parent process to fuzz random values (for use only by cmd/go)
+            	            	      --test.gocoverdir string                      write coverage intermediate files to this directory
+            	            	      --test.list regexp                            list tests, examples, and benchmarks matching regexp then exit
+            	            	      --test.memprofile file                        write an allocation profile to file
+            	            	      --test.memprofilerate rate                    set memory allocation profiling rate (see runtime.MemProfileRate)
+            	            	      --test.mutexprofile string                    write a mutex contention profile to the named file after execution
+            	            	      --test.mutexprofilefraction int               if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+            	            	      --test.outputdir dir                          write profiles to dir
+            	            	      --test.paniconexit0                           panic on call to os.Exit(0)
+            	            	      --test.parallel n                             run at most n tests in parallel (default 4)
+            	            	      --test.run regexp                             run only tests and examples matching regexp
+            	            	      --test.short                                  run smaller test suite to save time
+            	            	      --test.shuffle string                         randomize the execution order of tests and benchmarks (default "off")
+            	            	      --test.skip regexp                            do not list or run tests matching regexp
+            	            	      --test.testlogfile file                       write test action log to file (for use only by cmd/go)
+            	            	      --test.timeout d                              panic test binary after duration d (default 0, timeout disabled) (default 0s)
+            	            	      --test.trace file                             write an execution trace to file
+            	            	      --test.v chattyFlag[=true]                    verbose: print additional output
+            	            	unknown flag: --seed
+            	            	warning: GOCOVERDIR not set, no coverage data emitted
+    --- FAIL: TestWalletCreate/deterministic_encrypt_ok (0.01s)
+        integration_test.go:605:
+            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
+            	Error:      	Not equal:
+            	            	expected: "Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:\n      --test.bench regexp                           run only benchmarks matching regexp\n      --test.benchmem                               print memory allocations for benchmarks\n      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)\n      --test.blockprofile file                      write a goroutine blocking profile to file\n      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)\n      --test.count n                                run tests and benchmarks n times (default 1)\n      --test.coverprofile file                      write a coverage profile to file\n      --test.cpu list                               comma-separated list of cpu counts to run each test with\n      --test.cpuprofile file                        write a cpu profile
+            	            	actual  : ""
+
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1,37 +1 @@
+            	            	-Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:
+            	            	-      --test.bench regexp                           run only benchmarks matching regexp
+            	            	-      --test.benchmem                               print memory allocations for benchmarks
+            	            	-      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)
+            	            	-      --test.blockprofile file                      write a goroutine blocking profile to file
+            	            	-      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+            	            	-      --test.count n                                run tests and benchmarks n times (default 1)
+            	            	-      --test.coverprofile file                      write a coverage profile to file
+            	            	-      --test.cpu list                               comma-separated list of cpu counts to run each test with
+            	            	-      --test.cpuprofile file                        write a cpu profile to file
+            	            	-      --test.failfast                               do not start new tests after the first test failure
+            	            	-      --test.fullpath                               show full file names in error messages
+            	            	-      --test.fuzz regexp                            run the fuzz test matching regexp
+            	            	-      --test.fuzzcachedir string                    directory where interesting fuzzing inputs are stored (for use only by cmd/go)
+            	            	-      --test.fuzzminimizetime durationOrCountFlag   time to spend minimizing a value after finding a failing input (default 1m0s)
+            	            	-      --test.fuzztime durationOrCountFlag           time to spend fuzzing; default is to run indefinitely (default 0s)
+            	            	-      --test.fuzzworker                             coordinate with the parent process to fuzz random values (for use only by cmd/go)
+            	            	-      --test.gocoverdir string                      write coverage intermediate files to this directory
+            	            	-      --test.list regexp                            list tests, examples, and benchmarks matching regexp then exit
+            	            	-      --test.memprofile file                        write an allocation profile to file
+            	            	-      --test.memprofilerate rate                    set memory allocation profiling rate (see runtime.MemProfileRate)
+            	            	-      --test.mutexprofile string                    write a mutex contention profile to the named file after execution
+            	            	-      --test.mutexprofilefraction int               if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+            	            	-      --test.outputdir dir                          write profiles to dir
+            	            	-      --test.paniconexit0                           panic on call to os.Exit(0)
+            	            	-      --test.parallel n                             run at most n tests in parallel (default 4)
+            	            	-      --test.run regexp                             run only tests and examples matching regexp
+            	            	-      --test.short                                  run smaller test suite to save time
+            	            	-      --test.shuffle string                         randomize the execution order of tests and benchmarks (default "off")
+            	            	-      --test.skip regexp                            do not list or run tests matching regexp
+            	            	-      --test.testlogfile file                       write test action log to file (for use only by cmd/go)
+            	            	-      --test.timeout d                              panic test binary after duration d (default 0, timeout disabled) (default 0s)
+            	            	-      --test.trace file                             write an execution trace to file
+            	            	-      --test.v chattyFlag[=true]                    verbose: print additional output
+            	            	-unknown flag: --seed
+            	            	-warning: GOCOVERDIR not set, no coverage data emitted
+
+            	Test:       	TestWalletCreate/deterministic_encrypt_ok
+            	Messages:   	expect: , got: Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:
+            	            	      --test.bench regexp                           run only benchmarks matching regexp
+            	            	      --test.benchmem                               print memory allocations for benchmarks
+            	            	      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)
+            	            	      --test.blockprofile file                      write a goroutine blocking profile to file
+            	            	      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+            	            	      --test.count n                                run tests and benchmarks n times (default 1)
+            	            	      --test.coverprofile file                      write a coverage profile to file
+            	            	      --test.cpu list                               comma-separated list of cpu counts to run each test with
+            	            	      --test.cpuprofile file                        write a cpu profile to file
+            	            	      --test.failfast                               do not start new tests after the first test failure
+            	            	      --test.fullpath                               show full file names in error messages
+            	            	      --test.fuzz regexp                            run the fuzz test matching regexp
+            	            	      --test.fuzzcachedir string                    directory where interesting fuzzing inputs are stored (for use only by cmd/go)
+            	            	      --test.fuzzminimizetime durationOrCountFlag   time to spend minimizing a value after finding a failing input (default 1m0s)
+            	            	      --test.fuzztime durationOrCountFlag           time to spend fuzzing; default is to run indefinitely (default 0s)
+            	            	      --test.fuzzworker                             coordinate with the parent process to fuzz random values (for use only by cmd/go)
+            	            	      --test.gocoverdir string                      write coverage intermediate files to this directory
+            	            	      --test.list regexp                            list tests, examples, and benchmarks matching regexp then exit
+            	            	      --test.memprofile file                        write an allocation profile to file
+            	            	      --test.memprofilerate rate                    set memory allocation profiling rate (see runtime.MemProfileRate)
+            	            	      --test.mutexprofile string                    write a mutex contention profile to the named file after execution
+            	            	      --test.mutexprofilefraction int               if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+            	            	      --test.outputdir dir                          write profiles to dir
+            	            	      --test.paniconexit0                           panic on call to os.Exit(0)
+            	            	      --test.parallel n                             run at most n tests in parallel (default 4)
+            	            	      --test.run regexp                             run only tests and examples matching regexp
+            	            	      --test.short                                  run smaller test suite to save time
+            	            	      --test.shuffle string                         randomize the execution order of tests and benchmarks (default "off")
+            	            	      --test.skip regexp                            do not list or run tests matching regexp
+            	            	      --test.testlogfile file                       write test action log to file (for use only by cmd/go)
+            	            	      --test.timeout d                              panic test binary after duration d (default 0, timeout disabled) (default 0s)
+            	            	      --test.trace file                             write an execution trace to file
+            	            	      --test.v chattyFlag[=true]                    verbose: print additional output
+            	            	unknown flag: --seed
+            	            	warning: GOCOVERDIR not set, no coverage data emitted
+    --- FAIL: TestWalletCreate/deterministic_-n_2 (0.01s)
+        integration_test.go:605:
+            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
+            	Error:      	Not equal:
+            	            	expected: "Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:\n      --test.bench regexp                           run only benchmarks matching regexp\n      --test.benchmem                               print memory allocations for benchmarks\n      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)\n      --test.blockprofile file                      write a goroutine blocking profile to file\n      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)\n      --test.count n                                run tests and benchmarks n times (default 1)\n      --test.coverprofile file                      write a coverage profile to file\n      --test.cpu list                               comma-separated list of cpu counts to run each test with\n      --test.cpuprofile file                        write a cpu profile
+            	            	actual  : ""
+
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1,37 +1 @@
+            	            	-Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:
+            	            	-      --test.bench regexp                           run only benchmarks matching regexp
+            	            	-      --test.benchmem                               print memory allocations for benchmarks
+            	            	-      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)
+            	            	-      --test.blockprofile file                      write a goroutine blocking profile to file
+            	            	-      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+            	            	-      --test.count n                                run tests and benchmarks n times (default 1)
+            	            	-      --test.coverprofile file                      write a coverage profile to file
+            	            	-      --test.cpu list                               comma-separated list of cpu counts to run each test with
+            	            	-      --test.cpuprofile file                        write a cpu profile to file
+            	            	-      --test.failfast                               do not start new tests after the first test failure
+            	            	-      --test.fullpath                               show full file names in error messages
+            	            	-      --test.fuzz regexp                            run the fuzz test matching regexp
+            	            	-      --test.fuzzcachedir string                    directory where interesting fuzzing inputs are stored (for use only by cmd/go)
+            	            	-      --test.fuzzminimizetime durationOrCountFlag   time to spend minimizing a value after finding a failing input (default 1m0s)
+            	            	-      --test.fuzztime durationOrCountFlag           time to spend fuzzing; default is to run indefinitely (default 0s)
+            	            	-      --test.fuzzworker                             coordinate with the parent process to fuzz random values (for use only by cmd/go)
+            	            	-      --test.gocoverdir string                      write coverage intermediate files to this directory
+            	            	-      --test.list regexp                            list tests, examples, and benchmarks matching regexp then exit
+            	            	-      --test.memprofile file                        write an allocation profile to file
+            	            	-      --test.memprofilerate rate                    set memory allocation profiling rate (see runtime.MemProfileRate)
+            	            	-      --test.mutexprofile string                    write a mutex contention profile to the named file after execution
+            	            	-      --test.mutexprofilefraction int               if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+            	            	-      --test.outputdir dir                          write profiles to dir
+            	            	-      --test.paniconexit0                           panic on call to os.Exit(0)
+            	            	-      --test.parallel n                             run at most n tests in parallel (default 4)
+            	            	-      --test.run regexp                             run only tests and examples matching regexp
+            	            	-      --test.short                                  run smaller test suite to save time
+            	            	-      --test.shuffle string                         randomize the execution order of tests and benchmarks (default "off")
+            	            	-      --test.skip regexp                            do not list or run tests matching regexp
+            	            	-      --test.testlogfile file                       write test action log to file (for use only by cmd/go)
+            	            	-      --test.timeout d                              panic test binary after duration d (default 0, timeout disabled) (default 0s)
+            	            	-      --test.trace file                             write an execution trace to file
+            	            	-      --test.v chattyFlag[=true]                    verbose: print additional output
+            	            	-unknown flag: --seed
+            	            	-warning: GOCOVERDIR not set, no coverage data emitted
+
+            	Test:       	TestWalletCreate/deterministic_-n_2
+            	Messages:   	expect: , got: Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:
+            	            	      --test.bench regexp                           run only benchmarks matching regexp
+            	            	      --test.benchmem                               print memory allocations for benchmarks
+            	            	      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)
+            	            	      --test.blockprofile file                      write a goroutine blocking profile to file
+            	            	      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+            	            	      --test.count n                                run tests and benchmarks n times (default 1)
+            	            	      --test.coverprofile file                      write a coverage profile to file
+            	            	      --test.cpu list                               comma-separated list of cpu counts to run each test with
+            	            	      --test.cpuprofile file                        write a cpu profile to file
+            	            	      --test.failfast                               do not start new tests after the first test failure
+            	            	      --test.fullpath                               show full file names in error messages
+            	            	      --test.fuzz regexp                            run the fuzz test matching regexp
+            	            	      --test.fuzzcachedir string                    directory where interesting fuzzing inputs are stored (for use only by cmd/go)
+            	            	      --test.fuzzminimizetime durationOrCountFlag   time to spend minimizing a value after finding a failing input (default 1m0s)
+            	            	      --test.fuzztime durationOrCountFlag           time to spend fuzzing; default is to run indefinitely (default 0s)
+            	            	      --test.fuzzworker                             coordinate with the parent process to fuzz random values (for use only by cmd/go)
+            	            	      --test.gocoverdir string                      write coverage intermediate files to this directory
+            	            	      --test.list regexp                            list tests, examples, and benchmarks matching regexp then exit
+            	            	      --test.memprofile file                        write an allocation profile to file
+            	            	      --test.memprofilerate rate                    set memory allocation profiling rate (see runtime.MemProfileRate)
+            	            	      --test.mutexprofile string                    write a mutex contention profile to the named file after execution
+            	            	      --test.mutexprofilefraction int               if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+            	            	      --test.outputdir dir                          write profiles to dir
+            	            	      --test.paniconexit0                           panic on call to os.Exit(0)
+            	            	      --test.parallel n                             run at most n tests in parallel (default 4)
+            	            	      --test.run regexp                             run only tests and examples matching regexp
+            	            	      --test.short                                  run smaller test suite to save time
+            	            	      --test.shuffle string                         randomize the execution order of tests and benchmarks (default "off")
+            	            	      --test.skip regexp                            do not list or run tests matching regexp
+            	            	      --test.testlogfile file                       write test action log to file (for use only by cmd/go)
+            	            	      --test.timeout d                              panic test binary after duration d (default 0, timeout disabled) (default 0s)
+            	            	      --test.trace file                             write an execution trace to file
+            	            	      --test.v chattyFlag[=true]                    verbose: print additional output
+            	            	unknown flag: --seed
+            	            	warning: GOCOVERDIR not set, no coverage data emitted
+    --- FAIL: TestWalletCreate/bip44_wallet (0.01s)
+        integration_test.go:605:
+            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
+            	Error:      	Not equal:
+            	            	expected: "Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:\n      --test.bench regexp                           run only benchmarks matching regexp\n      --test.benchmem                               print memory allocations for benchmarks\n      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)\n      --test.blockprofile file                      write a goroutine blocking profile to file\n      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)\n      --test.count n                                run tests and benchmarks n times (default 1)\n      --test.coverprofile file                      write a coverage profile to file\n      --test.cpu list                               comma-separated list of cpu counts to run each test with\n      --test.cpuprofile file                        write a cpu profile
+            	            	actual  : ""
+
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1,37 +1 @@
+            	            	-Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:
+            	            	-      --test.bench regexp                           run only benchmarks matching regexp
+            	            	-      --test.benchmem                               print memory allocations for benchmarks
+            	            	-      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)
+            	            	-      --test.blockprofile file                      write a goroutine blocking profile to file
+            	            	-      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+            	            	-      --test.count n                                run tests and benchmarks n times (default 1)
+            	            	-      --test.coverprofile file                      write a coverage profile to file
+            	            	-      --test.cpu list                               comma-separated list of cpu counts to run each test with
+            	            	-      --test.cpuprofile file                        write a cpu profile to file
+            	            	-      --test.failfast                               do not start new tests after the first test failure
+            	            	-      --test.fullpath                               show full file names in error messages
+            	            	-      --test.fuzz regexp                            run the fuzz test matching regexp
+            	            	-      --test.fuzzcachedir string                    directory where interesting fuzzing inputs are stored (for use only by cmd/go)
+            	            	-      --test.fuzzminimizetime durationOrCountFlag   time to spend minimizing a value after finding a failing input (default 1m0s)
+            	            	-      --test.fuzztime durationOrCountFlag           time to spend fuzzing; default is to run indefinitely (default 0s)
+            	            	-      --test.fuzzworker                             coordinate with the parent process to fuzz random values (for use only by cmd/go)
+            	            	-      --test.gocoverdir string                      write coverage intermediate files to this directory
+            	            	-      --test.list regexp                            list tests, examples, and benchmarks matching regexp then exit
+            	            	-      --test.memprofile file                        write an allocation profile to file
+            	            	-      --test.memprofilerate rate                    set memory allocation profiling rate (see runtime.MemProfileRate)
+            	            	-      --test.mutexprofile string                    write a mutex contention profile to the named file after execution
+            	            	-      --test.mutexprofilefraction int               if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+            	            	-      --test.outputdir dir                          write profiles to dir
+            	            	-      --test.paniconexit0                           panic on call to os.Exit(0)
+            	            	-      --test.parallel n                             run at most n tests in parallel (default 4)
+            	            	-      --test.run regexp                             run only tests and examples matching regexp
+            	            	-      --test.short                                  run smaller test suite to save time
+            	            	-      --test.shuffle string                         randomize the execution order of tests and benchmarks (default "off")
+            	            	-      --test.skip regexp                            do not list or run tests matching regexp
+            	            	-      --test.testlogfile file                       write test action log to file (for use only by cmd/go)
+            	            	-      --test.timeout d                              panic test binary after duration d (default 0, timeout disabled) (default 0s)
+            	            	-      --test.trace file                             write an execution trace to file
+            	            	-      --test.v chattyFlag[=true]                    verbose: print additional output
+            	            	-unknown flag: --seed
+            	            	-warning: GOCOVERDIR not set, no coverage data emitted
+
+            	Test:       	TestWalletCreate/bip44_wallet
+            	Messages:   	expect: , got: Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:
+            	            	      --test.bench regexp                           run only benchmarks matching regexp
+            	            	      --test.benchmem                               print memory allocations for benchmarks
+            	            	      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)
+            	            	      --test.blockprofile file                      write a goroutine blocking profile to file
+            	            	      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+            	            	      --test.count n                                run tests and benchmarks n times (default 1)
+            	            	      --test.coverprofile file                      write a coverage profile to file
+            	            	      --test.cpu list                               comma-separated list of cpu counts to run each test with
+            	            	      --test.cpuprofile file                        write a cpu profile to file
+            	            	      --test.failfast                               do not start new tests after the first test failure
+            	            	      --test.fullpath                               show full file names in error messages
+            	            	      --test.fuzz regexp                            run the fuzz test matching regexp
+            	            	      --test.fuzzcachedir string                    directory where interesting fuzzing inputs are stored (for use only by cmd/go)
+            	            	      --test.fuzzminimizetime durationOrCountFlag   time to spend minimizing a value after finding a failing input (default 1m0s)
+            	            	      --test.fuzztime durationOrCountFlag           time to spend fuzzing; default is to run indefinitely (default 0s)
+            	            	      --test.fuzzworker                             coordinate with the parent process to fuzz random values (for use only by cmd/go)
+            	            	      --test.gocoverdir string                      write coverage intermediate files to this directory
+            	            	      --test.list regexp                            list tests, examples, and benchmarks matching regexp then exit
+            	            	      --test.memprofile file                        write an allocation profile to file
+            	            	      --test.memprofilerate rate                    set memory allocation profiling rate (see runtime.MemProfileRate)
+            	            	      --test.mutexprofile string                    write a mutex contention profile to the named file after execution
+            	            	      --test.mutexprofilefraction int               if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+            	            	      --test.outputdir dir                          write profiles to dir
+            	            	      --test.paniconexit0                           panic on call to os.Exit(0)
+            	            	      --test.parallel n                             run at most n tests in parallel (default 4)
+            	            	      --test.run regexp                             run only tests and examples matching regexp
+            	            	      --test.short                                  run smaller test suite to save time
+            	            	      --test.shuffle string                         randomize the execution order of tests and benchmarks (default "off")
+            	            	      --test.skip regexp                            do not list or run tests matching regexp
+            	            	      --test.testlogfile file                       write test action log to file (for use only by cmd/go)
+            	            	      --test.timeout d                              panic test binary after duration d (default 0, timeout disabled) (default 0s)
+            	            	      --test.trace file                             write an execution trace to file
+            	            	      --test.v chattyFlag[=true]                    verbose: print additional output
+            	            	unknown flag: --seed
+            	            	warning: GOCOVERDIR not set, no coverage data emitted
+    --- FAIL: TestWalletCreate/bip44_wallet_--encrypt (0.01s)
+        integration_test.go:605:
+            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
+            	Error:      	Not equal:
+            	            	expected: "Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:\n      --test.bench regexp                           run only benchmarks matching regexp\n      --test.benchmem                               print memory allocations for benchmarks\n      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)\n      --test.blockprofile file                      write a goroutine blocking profile to file\n      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)\n      --test.count n                                run tests and benchmarks n times (default 1)\n      --test.coverprofile file                      write a coverage profile to file\n      --test.cpu list                               comma-separated list of cpu counts to run each test with\n      --test.cpuprofile file                        write a cpu profile
+            	            	actual  : ""
+
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1,37 +1 @@
+            	            	-Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:
+            	            	-      --test.bench regexp                           run only benchmarks matching regexp
+            	            	-      --test.benchmem                               print memory allocations for benchmarks
+            	            	-      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)
+            	            	-      --test.blockprofile file                      write a goroutine blocking profile to file
+            	            	-      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+            	            	-      --test.count n                                run tests and benchmarks n times (default 1)
+            	            	-      --test.coverprofile file                      write a coverage profile to file
+            	            	-      --test.cpu list                               comma-separated list of cpu counts to run each test with
+            	            	-      --test.cpuprofile file                        write a cpu profile to file
+            	            	-      --test.failfast                               do not start new tests after the first test failure
+            	            	-      --test.fullpath                               show full file names in error messages
+            	            	-      --test.fuzz regexp                            run the fuzz test matching regexp
+            	            	-      --test.fuzzcachedir string                    directory where interesting fuzzing inputs are stored (for use only by cmd/go)
+            	            	-      --test.fuzzminimizetime durationOrCountFlag   time to spend minimizing a value after finding a failing input (default 1m0s)
+            	            	-      --test.fuzztime durationOrCountFlag           time to spend fuzzing; default is to run indefinitely (default 0s)
+            	            	-      --test.fuzzworker                             coordinate with the parent process to fuzz random values (for use only by cmd/go)
+            	            	-      --test.gocoverdir string                      write coverage intermediate files to this directory
+            	            	-      --test.list regexp                            list tests, examples, and benchmarks matching regexp then exit
+            	            	-      --test.memprofile file                        write an allocation profile to file
+            	            	-      --test.memprofilerate rate                    set memory allocation profiling rate (see runtime.MemProfileRate)
+            	            	-      --test.mutexprofile string                    write a mutex contention profile to the named file after execution
+            	            	-      --test.mutexprofilefraction int               if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+            	            	-      --test.outputdir dir                          write profiles to dir
+            	            	-      --test.paniconexit0                           panic on call to os.Exit(0)
+            	            	-      --test.parallel n                             run at most n tests in parallel (default 4)
+            	            	-      --test.run regexp                             run only tests and examples matching regexp
+            	            	-      --test.short                                  run smaller test suite to save time
+            	            	-      --test.shuffle string                         randomize the execution order of tests and benchmarks (default "off")
+            	            	-      --test.skip regexp                            do not list or run tests matching regexp
+            	            	-      --test.testlogfile file                       write test action log to file (for use only by cmd/go)
+            	            	-      --test.timeout d                              panic test binary after duration d (default 0, timeout disabled) (default 0s)
+            	            	-      --test.trace file                             write an execution trace to file
+            	            	-      --test.v chattyFlag[=true]                    verbose: print additional output
+            	            	-unknown flag: --seed
+            	            	-warning: GOCOVERDIR not set, no coverage data emitted
+
+            	Test:       	TestWalletCreate/bip44_wallet_--encrypt
+            	Messages:   	expect: , got: Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:
+            	            	      --test.bench regexp                           run only benchmarks matching regexp
+            	            	      --test.benchmem                               print memory allocations for benchmarks
+            	            	      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)
+            	            	      --test.blockprofile file                      write a goroutine blocking profile to file
+            	            	      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+            	            	      --test.count n                                run tests and benchmarks n times (default 1)
+            	            	      --test.coverprofile file                      write a coverage profile to file
+            	            	      --test.cpu list                               comma-separated list of cpu counts to run each test with
+            	            	      --test.cpuprofile file                        write a cpu profile to file
+            	            	      --test.failfast                               do not start new tests after the first test failure
+            	            	      --test.fullpath                               show full file names in error messages
+            	            	      --test.fuzz regexp                            run the fuzz test matching regexp
+            	            	      --test.fuzzcachedir string                    directory where interesting fuzzing inputs are stored (for use only by cmd/go)
+            	            	      --test.fuzzminimizetime durationOrCountFlag   time to spend minimizing a value after finding a failing input (default 1m0s)
+            	            	      --test.fuzztime durationOrCountFlag           time to spend fuzzing; default is to run indefinitely (default 0s)
+            	            	      --test.fuzzworker                             coordinate with the parent process to fuzz random values (for use only by cmd/go)
+            	            	      --test.gocoverdir string                      write coverage intermediate files to this directory
+            	            	      --test.list regexp                            list tests, examples, and benchmarks matching regexp then exit
+            	            	      --test.memprofile file                        write an allocation profile to file
+            	            	      --test.memprofilerate rate                    set memory allocation profiling rate (see runtime.MemProfileRate)
+            	            	      --test.mutexprofile string                    write a mutex contention profile to the named file after execution
+            	            	      --test.mutexprofilefraction int               if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+            	            	      --test.outputdir dir                          write profiles to dir
+            	            	      --test.paniconexit0                           panic on call to os.Exit(0)
+            	            	      --test.parallel n                             run at most n tests in parallel (default 4)
+            	            	      --test.run regexp                             run only tests and examples matching regexp
+            	            	      --test.short                                  run smaller test suite to save time
+            	            	      --test.shuffle string                         randomize the execution order of tests and benchmarks (default "off")
+            	            	      --test.skip regexp                            do not list or run tests matching regexp
+            	            	      --test.testlogfile file                       write test action log to file (for use only by cmd/go)
+            	            	      --test.timeout d                              panic test binary after duration d (default 0, timeout disabled) (default 0s)
+            	            	      --test.trace file                             write an execution trace to file
+            	            	      --test.v chattyFlag[=true]                    verbose: print additional output
+            	            	unknown flag: --seed
+            	            	warning: GOCOVERDIR not set, no coverage data emitted
+    --- FAIL: TestWalletCreate/bip44_wallet_--seed-passphrase (0.01s)
+        integration_test.go:605:
+            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
+            	Error:      	Not equal:
+            	            	expected: "Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:\n      --test.bench regexp                           run only benchmarks matching regexp\n      --test.benchmem                               print memory allocations for benchmarks\n      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)\n      --test.blockprofile file                      write a goroutine blocking profile to file\n      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)\n      --test.count n                                run tests and benchmarks n times (default 1)\n      --test.coverprofile file                      write a coverage profile to file\n      --test.cpu list                               comma-separated list of cpu counts to run each test with\n      --test.cpuprofile file                        write a cpu profile
+            	            	actual  : ""
+
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1,37 +1 @@
+            	            	-Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:
+            	            	-      --test.bench regexp                           run only benchmarks matching regexp
+            	            	-      --test.benchmem                               print memory allocations for benchmarks
+            	            	-      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)
+            	            	-      --test.blockprofile file                      write a goroutine blocking profile to file
+            	            	-      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+            	            	-      --test.count n                                run tests and benchmarks n times (default 1)
+            	            	-      --test.coverprofile file                      write a coverage profile to file
+            	            	-      --test.cpu list                               comma-separated list of cpu counts to run each test with
+            	            	-      --test.cpuprofile file                        write a cpu profile to file
+            	            	-      --test.failfast                               do not start new tests after the first test failure
+            	            	-      --test.fullpath                               show full file names in error messages
+            	            	-      --test.fuzz regexp                            run the fuzz test matching regexp
+            	            	-      --test.fuzzcachedir string                    directory where interesting fuzzing inputs are stored (for use only by cmd/go)
+            	            	-      --test.fuzzminimizetime durationOrCountFlag   time to spend minimizing a value after finding a failing input (default 1m0s)
+            	            	-      --test.fuzztime durationOrCountFlag           time to spend fuzzing; default is to run indefinitely (default 0s)
+            	            	-      --test.fuzzworker                             coordinate with the parent process to fuzz random values (for use only by cmd/go)
+            	            	-      --test.gocoverdir string                      write coverage intermediate files to this directory
+            	            	-      --test.list regexp                            list tests, examples, and benchmarks matching regexp then exit
+            	            	-      --test.memprofile file                        write an allocation profile to file
+            	            	-      --test.memprofilerate rate                    set memory allocation profiling rate (see runtime.MemProfileRate)
+            	            	-      --test.mutexprofile string                    write a mutex contention profile to the named file after execution
+            	            	-      --test.mutexprofilefraction int               if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+            	            	-      --test.outputdir dir                          write profiles to dir
+            	            	-      --test.paniconexit0                           panic on call to os.Exit(0)
+            	            	-      --test.parallel n                             run at most n tests in parallel (default 4)
+            	            	-      --test.run regexp                             run only tests and examples matching regexp
+            	            	-      --test.short                                  run smaller test suite to save time
+            	            	-      --test.shuffle string                         randomize the execution order of tests and benchmarks (default "off")
+            	            	-      --test.skip regexp                            do not list or run tests matching regexp
+            	            	-      --test.testlogfile file                       write test action log to file (for use only by cmd/go)
+            	            	-      --test.timeout d                              panic test binary after duration d (default 0, timeout disabled) (default 0s)
+            	            	-      --test.trace file                             write an execution trace to file
+            	            	-      --test.v chattyFlag[=true]                    verbose: print additional output
+            	            	-unknown flag: --seed
+            	            	-warning: GOCOVERDIR not set, no coverage data emitted
+
+            	Test:       	TestWalletCreate/bip44_wallet_--seed-passphrase
+            	Messages:   	expect: , got: Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:
+            	            	      --test.bench regexp                           run only benchmarks matching regexp
+            	            	      --test.benchmem                               print memory allocations for benchmarks
+            	            	      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)
+            	            	      --test.blockprofile file                      write a goroutine blocking profile to file
+            	            	      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+            	            	      --test.count n                                run tests and benchmarks n times (default 1)
+            	            	      --test.coverprofile file                      write a coverage profile to file
+            	            	      --test.cpu list                               comma-separated list of cpu counts to run each test with
+            	            	      --test.cpuprofile file                        write a cpu profile to file
+            	            	      --test.failfast                               do not start new tests after the first test failure
+            	            	      --test.fullpath                               show full file names in error messages
+            	            	      --test.fuzz regexp                            run the fuzz test matching regexp
+            	            	      --test.fuzzcachedir string                    directory where interesting fuzzing inputs are stored (for use only by cmd/go)
+            	            	      --test.fuzzminimizetime durationOrCountFlag   time to spend minimizing a value after finding a failing input (default 1m0s)
+            	            	      --test.fuzztime durationOrCountFlag           time to spend fuzzing; default is to run indefinitely (default 0s)
+            	            	      --test.fuzzworker                             coordinate with the parent process to fuzz random values (for use only by cmd/go)
+            	            	      --test.gocoverdir string                      write coverage intermediate files to this directory
+            	            	      --test.list regexp                            list tests, examples, and benchmarks matching regexp then exit
+            	            	      --test.memprofile file                        write an allocation profile to file
+            	            	      --test.memprofilerate rate                    set memory allocation profiling rate (see runtime.MemProfileRate)
+            	            	      --test.mutexprofile string                    write a mutex contention profile to the named file after execution
+            	            	      --test.mutexprofilefraction int               if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+            	            	      --test.outputdir dir                          write profiles to dir
+            	            	      --test.paniconexit0                           panic on call to os.Exit(0)
+            	            	      --test.parallel n                             run at most n tests in parallel (default 4)
+            	            	      --test.run regexp                             run only tests and examples matching regexp
+            	            	      --test.short                                  run smaller test suite to save time
+            	            	      --test.shuffle string                         randomize the execution order of tests and benchmarks (default "off")
+            	            	      --test.skip regexp                            do not list or run tests matching regexp
+            	            	      --test.testlogfile file                       write test action log to file (for use only by cmd/go)
+            	            	      --test.timeout d                              panic test binary after duration d (default 0, timeout disabled) (default 0s)
+            	            	      --test.trace file                             write an execution trace to file
+            	            	      --test.v chattyFlag[=true]                    verbose: print additional output
+            	            	unknown flag: --seed
+            	            	warning: GOCOVERDIR not set, no coverage data emitted
+    --- FAIL: TestWalletCreate/xpub_wallet (0.01s)
+        integration_test.go:605:
+            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
+            	Error:      	Not equal:
+            	            	expected: "Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:\n      --test.bench regexp                           run only benchmarks matching regexp\n      --test.benchmem                               print memory allocations for benchmarks\n      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)\n      --test.blockprofile file                      write a goroutine blocking profile to file\n      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)\n      --test.count n                                run tests and benchmarks n times (default 1)\n      --test.coverprofile file                      write a coverage profile to file\n      --test.cpu list                               comma-separated list of cpu counts to run each test with\n      --test.cpuprofile file                        write a cpu profile
+            	            	actual  : ""
+
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1,37 +1 @@
+            	            	-Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:
+            	            	-      --test.bench regexp                           run only benchmarks matching regexp
+            	            	-      --test.benchmem                               print memory allocations for benchmarks
+            	            	-      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)
+            	            	-      --test.blockprofile file                      write a goroutine blocking profile to file
+            	            	-      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+            	            	-      --test.count n                                run tests and benchmarks n times (default 1)
+            	            	-      --test.coverprofile file                      write a coverage profile to file
+            	            	-      --test.cpu list                               comma-separated list of cpu counts to run each test with
+            	            	-      --test.cpuprofile file                        write a cpu profile to file
+            	            	-      --test.failfast                               do not start new tests after the first test failure
+            	            	-      --test.fullpath                               show full file names in error messages
+            	            	-      --test.fuzz regexp                            run the fuzz test matching regexp
+            	            	-      --test.fuzzcachedir string                    directory where interesting fuzzing inputs are stored (for use only by cmd/go)
+            	            	-      --test.fuzzminimizetime durationOrCountFlag   time to spend minimizing a value after finding a failing input (default 1m0s)
+            	            	-      --test.fuzztime durationOrCountFlag           time to spend fuzzing; default is to run indefinitely (default 0s)
+            	            	-      --test.fuzzworker                             coordinate with the parent process to fuzz random values (for use only by cmd/go)
+            	            	-      --test.gocoverdir string                      write coverage intermediate files to this directory
+            	            	-      --test.list regexp                            list tests, examples, and benchmarks matching regexp then exit
+            	            	-      --test.memprofile file                        write an allocation profile to file
+            	            	-      --test.memprofilerate rate                    set memory allocation profiling rate (see runtime.MemProfileRate)
+            	            	-      --test.mutexprofile string                    write a mutex contention profile to the named file after execution
+            	            	-      --test.mutexprofilefraction int               if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+            	            	-      --test.outputdir dir                          write profiles to dir
+            	            	-      --test.paniconexit0                           panic on call to os.Exit(0)
+            	            	-      --test.parallel n                             run at most n tests in parallel (default 4)
+            	            	-      --test.run regexp                             run only tests and examples matching regexp
+            	            	-      --test.short                                  run smaller test suite to save time
+            	            	-      --test.shuffle string                         randomize the execution order of tests and benchmarks (default "off")
+            	            	-      --test.skip regexp                            do not list or run tests matching regexp
+            	            	-      --test.testlogfile file                       write test action log to file (for use only by cmd/go)
+            	            	-      --test.timeout d                              panic test binary after duration d (default 0, timeout disabled) (default 0s)
+            	            	-      --test.trace file                             write an execution trace to file
+            	            	-      --test.v chattyFlag[=true]                    verbose: print additional output
+            	            	-unknown flag: --encrypt
+            	            	-warning: GOCOVERDIR not set, no coverage data emitted
+
+            	Test:       	TestWalletCreate/xpub_wallet
+            	Messages:   	expect: , got: Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:
+            	            	      --test.bench regexp                           run only benchmarks matching regexp
+            	            	      --test.benchmem                               print memory allocations for benchmarks
+            	            	      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)
+            	            	      --test.blockprofile file                      write a goroutine blocking profile to file
+            	            	      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+            	            	      --test.count n                                run tests and benchmarks n times (default 1)
+            	            	      --test.coverprofile file                      write a coverage profile to file
+            	            	      --test.cpu list                               comma-separated list of cpu counts to run each test with
+            	            	      --test.cpuprofile file                        write a cpu profile to file
+            	            	      --test.failfast                               do not start new tests after the first test failure
+            	            	      --test.fullpath                               show full file names in error messages
+            	            	      --test.fuzz regexp                            run the fuzz test matching regexp
+            	            	      --test.fuzzcachedir string                    directory where interesting fuzzing inputs are stored (for use only by cmd/go)
+            	            	      --test.fuzzminimizetime durationOrCountFlag   time to spend minimizing a value after finding a failing input (default 1m0s)
+            	            	      --test.fuzztime durationOrCountFlag           time to spend fuzzing; default is to run indefinitely (default 0s)
+            	            	      --test.fuzzworker                             coordinate with the parent process to fuzz random values (for use only by cmd/go)
+            	            	      --test.gocoverdir string                      write coverage intermediate files to this directory
+            	            	      --test.list regexp                            list tests, examples, and benchmarks matching regexp then exit
+            	            	      --test.memprofile file                        write an allocation profile to file
+            	            	      --test.memprofilerate rate                    set memory allocation profiling rate (see runtime.MemProfileRate)
+            	            	      --test.mutexprofile string                    write a mutex contention profile to the named file after execution
+            	            	      --test.mutexprofilefraction int               if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+            	            	      --test.outputdir dir                          write profiles to dir
+            	            	      --test.paniconexit0                           panic on call to os.Exit(0)
+            	            	      --test.parallel n                             run at most n tests in parallel (default 4)
+            	            	      --test.run regexp                             run only tests and examples matching regexp
+            	            	      --test.short                                  run smaller test suite to save time
+            	            	      --test.shuffle string                         randomize the execution order of tests and benchmarks (default "off")
+            	            	      --test.skip regexp                            do not list or run tests matching regexp
+            	            	      --test.testlogfile file                       write test action log to file (for use only by cmd/go)
+            	            	      --test.timeout d                              panic test binary after duration d (default 0, timeout disabled) (default 0s)
+            	            	      --test.trace file                             write an execution trace to file
+            	            	      --test.v chattyFlag[=true]                    verbose: print additional output
+            	            	unknown flag: --encrypt
+            	            	warning: GOCOVERDIR not set, no coverage data emitted
+    --- FAIL: TestWalletCreate/xpub_wallet_err_with_random_seed (0.01s)
+        integration_test.go:605:
+            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
+            	Error:      	Not equal:
+            	            	expected: "Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:\n      --test.bench regexp                           run only benchmarks matching regexp\n      --test.benchmem                               print memory allocations for benchmarks\n      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)\n      --test.blockprofile file                      write a goroutine blocking profile to file\n      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)\n      --test.count n                                run tests and benchmarks n times (default 1)\n      --test.coverprofile file                      write a coverage profile to file\n      --test.cpu list                               comma-separated list of cpu counts to run each test with\n      --test.cpuprofile file                        write a cpu profile
+            	            	actual  : "Error: \"xpub\" type wallets do not use seeds\n"
+
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1,37 +1,2 @@
+            	            	-Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:
+            	            	-      --test.bench regexp                           run only benchmarks matching regexp
+            	            	-      --test.benchmem                               print memory allocations for benchmarks
+            	            	-      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)
+            	            	-      --test.blockprofile file                      write a goroutine blocking profile to file
+            	            	-      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+            	            	-      --test.count n                                run tests and benchmarks n times (default 1)
+            	            	-      --test.coverprofile file                      write a coverage profile to file
+            	            	-      --test.cpu list                               comma-separated list of cpu counts to run each test with
+            	            	-      --test.cpuprofile file                        write a cpu profile to file
+            	            	-      --test.failfast                               do not start new tests after the first test failure
+            	            	-      --test.fullpath                               show full file names in error messages
+            	            	-      --test.fuzz regexp                            run the fuzz test matching regexp
+            	            	-      --test.fuzzcachedir string                    directory where interesting fuzzing inputs are stored (for use only by cmd/go)
+            	            	-      --test.fuzzminimizetime durationOrCountFlag   time to spend minimizing a value after finding a failing input (default 1m0s)
+            	            	-      --test.fuzztime durationOrCountFlag           time to spend fuzzing; default is to run indefinitely (default 0s)
+            	            	-      --test.fuzzworker                             coordinate with the parent process to fuzz random values (for use only by cmd/go)
+            	            	-      --test.gocoverdir string                      write coverage intermediate files to this directory
+            	            	-      --test.list regexp                            list tests, examples, and benchmarks matching regexp then exit
+            	            	-      --test.memprofile file                        write an allocation profile to file
+            	            	-      --test.memprofilerate rate                    set memory allocation profiling rate (see runtime.MemProfileRate)
+            	            	-      --test.mutexprofile string                    write a mutex contention profile to the named file after execution
+            	            	-      --test.mutexprofilefraction int               if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+            	            	-      --test.outputdir dir                          write profiles to dir
+            	            	-      --test.paniconexit0                           panic on call to os.Exit(0)
+            	            	-      --test.parallel n                             run at most n tests in parallel (default 4)
+            	            	-      --test.run regexp                             run only tests and examples matching regexp
+            	            	-      --test.short                                  run smaller test suite to save time
+            	            	-      --test.shuffle string                         randomize the execution order of tests and benchmarks (default "off")
+            	            	-      --test.skip regexp                            do not list or run tests matching regexp
+            	            	-      --test.testlogfile file                       write test action log to file (for use only by cmd/go)
+            	            	-      --test.timeout d                              panic test binary after duration d (default 0, timeout disabled) (default 0s)
+            	            	-      --test.trace file                             write an execution trace to file
+            	            	-      --test.v chattyFlag[=true]                    verbose: print additional output
+            	            	-unknown flag: --encrypt
+            	            	-warning: GOCOVERDIR not set, no coverage data emitted
+            	            	+Error: "xpub" type wallets do not use seeds
+
+            	Test:       	TestWalletCreate/xpub_wallet_err_with_random_seed
+            	Messages:   	expect: Error: "xpub" type wallets do not use seeds
+            	            	, got: Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:
+            	            	      --test.bench regexp                           run only benchmarks matching regexp
+            	            	      --test.benchmem                               print memory allocations for benchmarks
+            	            	      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)
+            	            	      --test.blockprofile file                      write a goroutine blocking profile to file
+            	            	      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+            	            	      --test.count n                                run tests and benchmarks n times (default 1)
+            	            	      --test.coverprofile file                      write a coverage profile to file
+            	            	      --test.cpu list                               comma-separated list of cpu counts to run each test with
+            	            	      --test.cpuprofile file                        write a cpu profile to file
+            	            	      --test.failfast                               do not start new tests after the first test failure
+            	            	      --test.fullpath                               show full file names in error messages
+            	            	      --test.fuzz regexp                            run the fuzz test matching regexp
+            	            	      --test.fuzzcachedir string                    directory where interesting fuzzing inputs are stored (for use only by cmd/go)
+            	            	      --test.fuzzminimizetime durationOrCountFlag   time to spend minimizing a value after finding a failing input (default 1m0s)
+            	            	      --test.fuzztime durationOrCountFlag           time to spend fuzzing; default is to run indefinitely (default 0s)
+            	            	      --test.fuzzworker                             coordinate with the parent process to fuzz random values (for use only by cmd/go)
+            	            	      --test.gocoverdir string                      write coverage intermediate files to this directory
+            	            	      --test.list regexp                            list tests, examples, and benchmarks matching regexp then exit
+            	            	      --test.memprofile file                        write an allocation profile to file
+            	            	      --test.memprofilerate rate                    set memory allocation profiling rate (see runtime.MemProfileRate)
+            	            	      --test.mutexprofile string                    write a mutex contention profile to the named file after execution
+            	            	      --test.mutexprofilefraction int               if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+            	            	      --test.outputdir dir                          write profiles to dir
+            	            	      --test.paniconexit0                           panic on call to os.Exit(0)
+            	            	      --test.parallel n                             run at most n tests in parallel (default 4)
+            	            	      --test.run regexp                             run only tests and examples matching regexp
+            	            	      --test.short                                  run smaller test suite to save time
+            	            	      --test.shuffle string                         randomize the execution order of tests and benchmarks (default "off")
+            	            	      --test.skip regexp                            do not list or run tests matching regexp
+            	            	      --test.testlogfile file                       write test action log to file (for use only by cmd/go)
+            	            	      --test.timeout d                              panic test binary after duration d (default 0, timeout disabled) (default 0s)
+            	            	      --test.trace file                             write an execution trace to file
+            	            	      --test.v chattyFlag[=true]                    verbose: print additional output
+            	            	unknown flag: --encrypt
+            	            	warning: GOCOVERDIR not set, no coverage data emitted
+    --- FAIL: TestWalletCreate/xpub_wallet_err_with_mnemonic_seed (0.01s)
+        integration_test.go:605:
+            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
+            	Error:      	Not equal:
+            	            	expected: "Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:\n      --test.bench regexp                           run only benchmarks matching regexp\n      --test.benchmem                               print memory allocations for benchmarks\n      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)\n      --test.blockprofile file                      write a goroutine blocking profile to file\n      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)\n      --test.count n                                run tests and benchmarks n times (default 1)\n      --test.coverprofile file                      write a coverage profile to file\n      --test.cpu list                               comma-separated list of cpu counts to run each test with\n      --test.cpuprofile file                        write a cpu profile
+            	            	actual  : "Error: \"xpub\" type wallets do not use seeds\n"
+
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1,37 +1,2 @@
+            	            	-Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:
+            	            	-      --test.bench regexp                           run only benchmarks matching regexp
+            	            	-      --test.benchmem                               print memory allocations for benchmarks
+            	            	-      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)
+            	            	-      --test.blockprofile file                      write a goroutine blocking profile to file
+            	            	-      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+            	            	-      --test.count n                                run tests and benchmarks n times (default 1)
+            	            	-      --test.coverprofile file                      write a coverage profile to file
+            	            	-      --test.cpu list                               comma-separated list of cpu counts to run each test with
+            	            	-      --test.cpuprofile file                        write a cpu profile to file
+            	            	-      --test.failfast                               do not start new tests after the first test failure
+            	            	-      --test.fullpath                               show full file names in error messages
+            	            	-      --test.fuzz regexp                            run the fuzz test matching regexp
+            	            	-      --test.fuzzcachedir string                    directory where interesting fuzzing inputs are stored (for use only by cmd/go)
+            	            	-      --test.fuzzminimizetime durationOrCountFlag   time to spend minimizing a value after finding a failing input (default 1m0s)
+            	            	-      --test.fuzztime durationOrCountFlag           time to spend fuzzing; default is to run indefinitely (default 0s)
+            	            	-      --test.fuzzworker                             coordinate with the parent process to fuzz random values (for use only by cmd/go)
+            	            	-      --test.gocoverdir string                      write coverage intermediate files to this directory
+            	            	-      --test.list regexp                            list tests, examples, and benchmarks matching regexp then exit
+            	            	-      --test.memprofile file                        write an allocation profile to file
+            	            	-      --test.memprofilerate rate                    set memory allocation profiling rate (see runtime.MemProfileRate)
+            	            	-      --test.mutexprofile string                    write a mutex contention profile to the named file after execution
+            	            	-      --test.mutexprofilefraction int               if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+            	            	-      --test.outputdir dir                          write profiles to dir
+            	            	-      --test.paniconexit0                           panic on call to os.Exit(0)
+            	            	-      --test.parallel n                             run at most n tests in parallel (default 4)
+            	            	-      --test.run regexp                             run only tests and examples matching regexp
+            	            	-      --test.short                                  run smaller test suite to save time
+            	            	-      --test.shuffle string                         randomize the execution order of tests and benchmarks (default "off")
+            	            	-      --test.skip regexp                            do not list or run tests matching regexp
+            	            	-      --test.testlogfile file                       write test action log to file (for use only by cmd/go)
+            	            	-      --test.timeout d                              panic test binary after duration d (default 0, timeout disabled) (default 0s)
+            	            	-      --test.trace file                             write an execution trace to file
+            	            	-      --test.v chattyFlag[=true]                    verbose: print additional output
+            	            	-unknown flag: --encrypt
+            	            	-warning: GOCOVERDIR not set, no coverage data emitted
+            	            	+Error: "xpub" type wallets do not use seeds
+
+            	Test:       	TestWalletCreate/xpub_wallet_err_with_mnemonic_seed
+            	Messages:   	expect: Error: "xpub" type wallets do not use seeds
+            	            	, got: Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:
+            	            	      --test.bench regexp                           run only benchmarks matching regexp
+            	            	      --test.benchmem                               print memory allocations for benchmarks
+            	            	      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)
+            	            	      --test.blockprofile file                      write a goroutine blocking profile to file
+            	            	      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+            	            	      --test.count n                                run tests and benchmarks n times (default 1)
+            	            	      --test.coverprofile file                      write a coverage profile to file
+            	            	      --test.cpu list                               comma-separated list of cpu counts to run each test with
+            	            	      --test.cpuprofile file                        write a cpu profile to file
+            	            	      --test.failfast                               do not start new tests after the first test failure
+            	            	      --test.fullpath                               show full file names in error messages
+            	            	      --test.fuzz regexp                            run the fuzz test matching regexp
+            	            	      --test.fuzzcachedir string                    directory where interesting fuzzing inputs are stored (for use only by cmd/go)
+            	            	      --test.fuzzminimizetime durationOrCountFlag   time to spend minimizing a value after finding a failing input (default 1m0s)
+            	            	      --test.fuzztime durationOrCountFlag           time to spend fuzzing; default is to run indefinitely (default 0s)
+            	            	      --test.fuzzworker                             coordinate with the parent process to fuzz random values (for use only by cmd/go)
+            	            	      --test.gocoverdir string                      write coverage intermediate files to this directory
+            	            	      --test.list regexp                            list tests, examples, and benchmarks matching regexp then exit
+            	            	      --test.memprofile file                        write an allocation profile to file
+            	            	      --test.memprofilerate rate                    set memory allocation profiling rate (see runtime.MemProfileRate)
+            	            	      --test.mutexprofile string                    write a mutex contention profile to the named file after execution
+            	            	      --test.mutexprofilefraction int               if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+            	            	      --test.outputdir dir                          write profiles to dir
+            	            	      --test.paniconexit0                           panic on call to os.Exit(0)
+            	            	      --test.parallel n                             run at most n tests in parallel (default 4)
+            	            	      --test.run regexp                             run only tests and examples matching regexp
+            	            	      --test.short                                  run smaller test suite to save time
+            	            	      --test.shuffle string                         randomize the execution order of tests and benchmarks (default "off")
+            	            	      --test.skip regexp                            do not list or run tests matching regexp
+            	            	      --test.testlogfile file                       write test action log to file (for use only by cmd/go)
+            	            	      --test.timeout d                              panic test binary after duration d (default 0, timeout disabled) (default 0s)
+            	            	      --test.trace file                             write an execution trace to file
+            	            	      --test.v chattyFlag[=true]                    verbose: print additional output
+            	            	unknown flag: --encrypt
+            	            	warning: GOCOVERDIR not set, no coverage data emitted
+    --- FAIL: TestWalletCreate/collection_empty (0.01s)
+        integration_test.go:605:
+            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
+            	Error:      	Not equal:
+            	            	expected: "Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:\n      --test.bench regexp                           run only benchmarks matching regexp\n      --test.benchmem                               print memory allocations for benchmarks\n      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)\n      --test.blockprofile file                      write a goroutine blocking profile to file\n      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)\n      --test.count n                                run tests and benchmarks n times (default 1)\n      --test.coverprofile file                      write a coverage profile to file\n      --test.cpu list                               comma-separated list of cpu counts to run each test with\n      --test.cpuprofile file                        write a cpu profile
+            	            	actual  : ""
+
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1,37 +1 @@
+            	            	-Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:
+            	            	-      --test.bench regexp                           run only benchmarks matching regexp
+            	            	-      --test.benchmem                               print memory allocations for benchmarks
+            	            	-      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)
+            	            	-      --test.blockprofile file                      write a goroutine blocking profile to file
+            	            	-      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+            	            	-      --test.count n                                run tests and benchmarks n times (default 1)
+            	            	-      --test.coverprofile file                      write a coverage profile to file
+            	            	-      --test.cpu list                               comma-separated list of cpu counts to run each test with
+            	            	-      --test.cpuprofile file                        write a cpu profile to file
+            	            	-      --test.failfast                               do not start new tests after the first test failure
+            	            	-      --test.fullpath                               show full file names in error messages
+            	            	-      --test.fuzz regexp                            run the fuzz test matching regexp
+            	            	-      --test.fuzzcachedir string                    directory where interesting fuzzing inputs are stored (for use only by cmd/go)
+            	            	-      --test.fuzzminimizetime durationOrCountFlag   time to spend minimizing a value after finding a failing input (default 1m0s)
+            	            	-      --test.fuzztime durationOrCountFlag           time to spend fuzzing; default is to run indefinitely (default 0s)
+            	            	-      --test.fuzzworker                             coordinate with the parent process to fuzz random values (for use only by cmd/go)
+            	            	-      --test.gocoverdir string                      write coverage intermediate files to this directory
+            	            	-      --test.list regexp                            list tests, examples, and benchmarks matching regexp then exit
+            	            	-      --test.memprofile file                        write an allocation profile to file
+            	            	-      --test.memprofilerate rate                    set memory allocation profiling rate (see runtime.MemProfileRate)
+            	            	-      --test.mutexprofile string                    write a mutex contention profile to the named file after execution
+            	            	-      --test.mutexprofilefraction int               if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+            	            	-      --test.outputdir dir                          write profiles to dir
+            	            	-      --test.paniconexit0                           panic on call to os.Exit(0)
+            	            	-      --test.parallel n                             run at most n tests in parallel (default 4)
+            	            	-      --test.run regexp                             run only tests and examples matching regexp
+            	            	-      --test.short                                  run smaller test suite to save time
+            	            	-      --test.shuffle string                         randomize the execution order of tests and benchmarks (default "off")
+            	            	-      --test.skip regexp                            do not list or run tests matching regexp
+            	            	-      --test.testlogfile file                       write test action log to file (for use only by cmd/go)
+            	            	-      --test.timeout d                              panic test binary after duration d (default 0, timeout disabled) (default 0s)
+            	            	-      --test.trace file                             write an execution trace to file
+            	            	-      --test.v chattyFlag[=true]                    verbose: print additional output
+            	            	-unknown flag: --encrypt
+            	            	-warning: GOCOVERDIR not set, no coverage data emitted
+
+            	Test:       	TestWalletCreate/collection_empty
+            	Messages:   	expect: , got: Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:
+            	            	      --test.bench regexp                           run only benchmarks matching regexp
+            	            	      --test.benchmem                               print memory allocations for benchmarks
+            	            	      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)
+            	            	      --test.blockprofile file                      write a goroutine blocking profile to file
+            	            	      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+            	            	      --test.count n                                run tests and benchmarks n times (default 1)
+            	            	      --test.coverprofile file                      write a coverage profile to file
+            	            	      --test.cpu list                               comma-separated list of cpu counts to run each test with
+            	            	      --test.cpuprofile file                        write a cpu profile to file
+            	            	      --test.failfast                               do not start new tests after the first test failure
+            	            	      --test.fullpath                               show full file names in error messages
+            	            	      --test.fuzz regexp                            run the fuzz test matching regexp
+            	            	      --test.fuzzcachedir string                    directory where interesting fuzzing inputs are stored (for use only by cmd/go)
+            	            	      --test.fuzzminimizetime durationOrCountFlag   time to spend minimizing a value after finding a failing input (default 1m0s)
+            	            	      --test.fuzztime durationOrCountFlag           time to spend fuzzing; default is to run indefinitely (default 0s)
+            	            	      --test.fuzzworker                             coordinate with the parent process to fuzz random values (for use only by cmd/go)
+            	            	      --test.gocoverdir string                      write coverage intermediate files to this directory
+            	            	      --test.list regexp                            list tests, examples, and benchmarks matching regexp then exit
+            	            	      --test.memprofile file                        write an allocation profile to file
+            	            	      --test.memprofilerate rate                    set memory allocation profiling rate (see runtime.MemProfileRate)
+            	            	      --test.mutexprofile string                    write a mutex contention profile to the named file after execution
+            	            	      --test.mutexprofilefraction int               if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+            	            	      --test.outputdir dir                          write profiles to dir
+            	            	      --test.paniconexit0                           panic on call to os.Exit(0)
+            	            	      --test.parallel n                             run at most n tests in parallel (default 4)
+            	            	      --test.run regexp                             run only tests and examples matching regexp
+            	            	      --test.short                                  run smaller test suite to save time
+            	            	      --test.shuffle string                         randomize the execution order of tests and benchmarks (default "off")
+            	            	      --test.skip regexp                            do not list or run tests matching regexp
+            	            	      --test.testlogfile file                       write test action log to file (for use only by cmd/go)
+            	            	      --test.timeout d                              panic test binary after duration d (default 0, timeout disabled) (default 0s)
+            	            	      --test.trace file                             write an execution trace to file
+            	            	      --test.v chattyFlag[=true]                    verbose: print additional output
+            	            	unknown flag: --encrypt
+            	            	warning: GOCOVERDIR not set, no coverage data emitted
+    --- FAIL: TestWalletCreate/collection_1_entry (0.01s)
+        integration_test.go:605:
+            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
+            	Error:      	Not equal:
+            	            	expected: "Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:\n      --test.bench regexp                           run only benchmarks matching regexp\n      --test.benchmem                               print memory allocations for benchmarks\n      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)\n      --test.blockprofile file                      write a goroutine blocking profile to file\n      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)\n      --test.count n                                run tests and benchmarks n times (default 1)\n      --test.coverprofile file                      write a coverage profile to file\n      --test.cpu list                               comma-separated list of cpu counts to run each test with\n      --test.cpuprofile file                        write a cpu profile
+            	            	actual  : ""
+
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1,37 +1 @@
+            	            	-Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:
+            	            	-      --test.bench regexp                           run only benchmarks matching regexp
+            	            	-      --test.benchmem                               print memory allocations for benchmarks
+            	            	-      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)
+            	            	-      --test.blockprofile file                      write a goroutine blocking profile to file
+            	            	-      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+            	            	-      --test.count n                                run tests and benchmarks n times (default 1)
+            	            	-      --test.coverprofile file                      write a coverage profile to file
+            	            	-      --test.cpu list                               comma-separated list of cpu counts to run each test with
+            	            	-      --test.cpuprofile file                        write a cpu profile to file
+            	            	-      --test.failfast                               do not start new tests after the first test failure
+            	            	-      --test.fullpath                               show full file names in error messages
+            	            	-      --test.fuzz regexp                            run the fuzz test matching regexp
+            	            	-      --test.fuzzcachedir string                    directory where interesting fuzzing inputs are stored (for use only by cmd/go)
+            	            	-      --test.fuzzminimizetime durationOrCountFlag   time to spend minimizing a value after finding a failing input (default 1m0s)
+            	            	-      --test.fuzztime durationOrCountFlag           time to spend fuzzing; default is to run indefinitely (default 0s)
+            	            	-      --test.fuzzworker                             coordinate with the parent process to fuzz random values (for use only by cmd/go)
+            	            	-      --test.gocoverdir string                      write coverage intermediate files to this directory
+            	            	-      --test.list regexp                            list tests, examples, and benchmarks matching regexp then exit
+            	            	-      --test.memprofile file                        write an allocation profile to file
+            	            	-      --test.memprofilerate rate                    set memory allocation profiling rate (see runtime.MemProfileRate)
+            	            	-      --test.mutexprofile string                    write a mutex contention profile to the named file after execution
+            	            	-      --test.mutexprofilefraction int               if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+            	            	-      --test.outputdir dir                          write profiles to dir
+            	            	-      --test.paniconexit0                           panic on call to os.Exit(0)
+            	            	-      --test.parallel n                             run at most n tests in parallel (default 4)
+            	            	-      --test.run regexp                             run only tests and examples matching regexp
+            	            	-      --test.short                                  run smaller test suite to save time
+            	            	-      --test.shuffle string                         randomize the execution order of tests and benchmarks (default "off")
+            	            	-      --test.skip regexp                            do not list or run tests matching regexp
+            	            	-      --test.testlogfile file                       write test action log to file (for use only by cmd/go)
+            	            	-      --test.timeout d                              panic test binary after duration d (default 0, timeout disabled) (default 0s)
+            	            	-      --test.trace file                             write an execution trace to file
+            	            	-      --test.v chattyFlag[=true]                    verbose: print additional output
+            	            	-unknown flag: --encrypt
+            	            	-warning: GOCOVERDIR not set, no coverage data emitted
+
+            	Test:       	TestWalletCreate/collection_1_entry
+            	Messages:   	expect: , got: Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:
+            	            	      --test.bench regexp                           run only benchmarks matching regexp
+            	            	      --test.benchmem                               print memory allocations for benchmarks
+            	            	      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)
+            	            	      --test.blockprofile file                      write a goroutine blocking profile to file
+            	            	      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+            	            	      --test.count n                                run tests and benchmarks n times (default 1)
+            	            	      --test.coverprofile file                      write a coverage profile to file
+            	            	      --test.cpu list                               comma-separated list of cpu counts to run each test with
+            	            	      --test.cpuprofile file                        write a cpu profile to file
+            	            	      --test.failfast                               do not start new tests after the first test failure
+            	            	      --test.fullpath                               show full file names in error messages
+            	            	      --test.fuzz regexp                            run the fuzz test matching regexp
+            	            	      --test.fuzzcachedir string                    directory where interesting fuzzing inputs are stored (for use only by cmd/go)
+            	            	      --test.fuzzminimizetime durationOrCountFlag   time to spend minimizing a value after finding a failing input (default 1m0s)
+            	            	      --test.fuzztime durationOrCountFlag           time to spend fuzzing; default is to run indefinitely (default 0s)
+            	            	      --test.fuzzworker                             coordinate with the parent process to fuzz random values (for use only by cmd/go)
+            	            	      --test.gocoverdir string                      write coverage intermediate files to this directory
+            	            	      --test.list regexp                            list tests, examples, and benchmarks matching regexp then exit
+            	            	      --test.memprofile file                        write an allocation profile to file
+            	            	      --test.memprofilerate rate                    set memory allocation profiling rate (see runtime.MemProfileRate)
+            	            	      --test.mutexprofile string                    write a mutex contention profile to the named file after execution
+            	            	      --test.mutexprofilefraction int               if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+            	            	      --test.outputdir dir                          write profiles to dir
+            	            	      --test.paniconexit0                           panic on call to os.Exit(0)
+            	            	      --test.parallel n                             run at most n tests in parallel (default 4)
+            	            	      --test.run regexp                             run only tests and examples matching regexp
+            	            	      --test.short                                  run smaller test suite to save time
+            	            	      --test.shuffle string                         randomize the execution order of tests and benchmarks (default "off")
+            	            	      --test.skip regexp                            do not list or run tests matching regexp
+            	            	      --test.testlogfile file                       write test action log to file (for use only by cmd/go)
+            	            	      --test.timeout d                              panic test binary after duration d (default 0, timeout disabled) (default 0s)
+            	            	      --test.trace file                             write an execution trace to file
+            	            	      --test.v chattyFlag[=true]                    verbose: print additional output
+            	            	unknown flag: --encrypt
+            	            	warning: GOCOVERDIR not set, no coverage data emitted
+    --- FAIL: TestWalletCreate/collection_2_entry (0.01s)
+        integration_test.go:605:
+            	Error Trace:	/home/runner/work/skycoin/skycoin/src/cli/integration/integration_test.go:605
+            	Error:      	Not equal:
+            	            	expected: "Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:\n      --test.bench regexp                           run only benchmarks matching regexp\n      --test.benchmem                               print memory allocations for benchmarks\n      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)\n      --test.blockprofile file                      write a goroutine blocking profile to file\n      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)\n      --test.count n                                run tests and benchmarks n times (default 1)\n      --test.coverprofile file                      write a coverage profile to file\n      --test.cpu list                               comma-separated list of cpu counts to run each test with\n      --test.cpuprofile file                        write a cpu profile
+            	            	actual  : ""
+
+            	            	Diff:
+            	            	--- Expected
+            	            	+++ Actual
+            	            	@@ -1,37 +1 @@
+            	            	-Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:
+            	            	-      --test.bench regexp                           run only benchmarks matching regexp
+            	            	-      --test.benchmem                               print memory allocations for benchmarks
+            	            	-      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)
+            	            	-      --test.blockprofile file                      write a goroutine blocking profile to file
+            	            	-      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+            	            	-      --test.count n                                run tests and benchmarks n times (default 1)
+            	            	-      --test.coverprofile file                      write a coverage profile to file
+            	            	-      --test.cpu list                               comma-separated list of cpu counts to run each test with
+            	            	-      --test.cpuprofile file                        write a cpu profile to file
+            	            	-      --test.failfast                               do not start new tests after the first test failure
+            	            	-      --test.fullpath                               show full file names in error messages
+            	            	-      --test.fuzz regexp                            run the fuzz test matching regexp
+            	            	-      --test.fuzzcachedir string                    directory where interesting fuzzing inputs are stored (for use only by cmd/go)
+            	            	-      --test.fuzzminimizetime durationOrCountFlag   time to spend minimizing a value after finding a failing input (default 1m0s)
+            	            	-      --test.fuzztime durationOrCountFlag           time to spend fuzzing; default is to run indefinitely (default 0s)
+            	            	-      --test.fuzzworker                             coordinate with the parent process to fuzz random values (for use only by cmd/go)
+            	            	-      --test.gocoverdir string                      write coverage intermediate files to this directory
+            	            	-      --test.list regexp                            list tests, examples, and benchmarks matching regexp then exit
+            	            	-      --test.memprofile file                        write an allocation profile to file
+            	            	-      --test.memprofilerate rate                    set memory allocation profiling rate (see runtime.MemProfileRate)
+            	            	-      --test.mutexprofile string                    write a mutex contention profile to the named file after execution
+            	            	-      --test.mutexprofilefraction int               if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+            	            	-      --test.outputdir dir                          write profiles to dir
+            	            	-      --test.paniconexit0                           panic on call to os.Exit(0)
+            	            	-      --test.parallel n                             run at most n tests in parallel (default 4)
+            	            	-      --test.run regexp                             run only tests and examples matching regexp
+            	            	-      --test.short                                  run smaller test suite to save time
+            	            	-      --test.shuffle string                         randomize the execution order of tests and benchmarks (default "off")
+            	            	-      --test.skip regexp                            do not list or run tests matching regexp
+            	            	-      --test.testlogfile file                       write test action log to file (for use only by cmd/go)
+            	            	-      --test.timeout d                              panic test binary after duration d (default 0, timeout disabled) (default 0s)
+            	            	-      --test.trace file                             write an execution trace to file
+            	            	-      --test.v chattyFlag[=true]                    verbose: print additional output
+            	            	-unknown flag: --encrypt
+            	            	-warning: GOCOVERDIR not set, no coverage data emitted
+
+            	Test:       	TestWalletCreate/collection_2_entry
+            	Messages:   	expect: , got: Usage of /home/runner/work/skycoin/skycoin/src/cli/integration/skycoin-cli.test:
+            	            	      --test.bench regexp                           run only benchmarks matching regexp
+            	            	      --test.benchmem                               print memory allocations for benchmarks
+            	            	      --test.benchtime d                            run each benchmark for duration d or N times if `d` is of the form Nx (default 1s)
+            	            	      --test.blockprofile file                      write a goroutine blocking profile to file
+            	            	      --test.blockprofilerate rate                  set blocking profile rate (see runtime.SetBlockProfileRate) (default 1)
+            	            	      --test.count n                                run tests and benchmarks n times (default 1)
+            	            	      --test.coverprofile file                      write a coverage profile to file
+            	            	      --test.cpu list                               comma-separated list of cpu counts to run each test with
+            	            	      --test.cpuprofile file                        write a cpu profile to file
+            	            	      --test.failfast                               do not start new tests after the first test failure
+            	            	      --test.fullpath                               show full file names in error messages
+            	            	      --test.fuzz regexp                            run the fuzz test matching regexp
+            	            	      --test.fuzzcachedir string                    directory where interesting fuzzing inputs are stored (for use only by cmd/go)
+            	            	      --test.fuzzminimizetime durationOrCountFlag   time to spend minimizing a value after finding a failing input (default 1m0s)
+            	            	      --test.fuzztime durationOrCountFlag           time to spend fuzzing; default is to run indefinitely (default 0s)
+            	            	      --test.fuzzworker                             coordinate with the parent process to fuzz random values (for use only by cmd/go)
+            	            	      --test.gocoverdir string                      write coverage intermediate files to this directory
+            	            	      --test.list regexp                            list tests, examples, and benchmarks matching regexp then exit
+            	            	      --test.memprofile file                        write an allocation profile to file
+            	            	      --test.memprofilerate rate                    set memory allocation profiling rate (see runtime.MemProfileRate)
+            	            	      --test.mutexprofile string                    write a mutex contention profile to the named file after execution
+            	            	      --test.mutexprofilefraction int               if >= 0, calls runtime.SetMutexProfileFraction() (default 1)
+            	            	      --test.outputdir dir                          write profiles to dir
+            	            	      --test.paniconexit0                           panic on call to os.Exit(0)
+            	            	      --test.parallel n                             run at most n tests in parallel (default 4)
+            	            	      --test.run regexp                             run only tests and examples matching regexp
+            	            	      --test.short                                  run smaller test suite to save time
+            	            	      --test.shuffle string                         randomize the execution order of tests and benchmarks (default "off")
+            	            	      --test.skip regexp                            do not list or run tests matching regexp
+            	            	      --test.testlogfile file                       write test action log to file (for use only by cmd/go)
+            	            	      --test.timeout d                              panic test binary after duration d (default 0, timeout disabled) (default 0s)
+            	            	      --test.trace file                             write an execution trace to file
+            	            	      --test.v chattyFlag[=true]                    verbose: print additional output
+Error: Process completed with exit code 2.

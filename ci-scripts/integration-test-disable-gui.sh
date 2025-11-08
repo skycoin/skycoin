@@ -1,5 +1,5 @@
 #!/bin/bash
-# Runs "disable-gui"-mode tests against a skycoin node configured with -enable-gui=false
+# Runs "disable-gui"-mode tests against a skycoin node configured with --enable-gui=false
 # and /api/v1/api endpoint should return 404 Not Found error
 
 # Set Script Name variable
@@ -73,19 +73,19 @@ mkdir -p coverage/
 # Run skycoin node with pinned blockchain database
 echo "starting $COIN node in background with http listener on $HOST"
 
-./"$BINARY" -disable-networking=true \
-            -web-interface-port=$PORT \
-            -download-peerlist=false \
-            -db-path=./src/api/integration/testdata/blockchain-180.db \
-            -db-read-only=true \
-            -launch-browser=false \
-            -data-dir="$DATA_DIR" \
-            -wallet-dir="$WALLET_DIR" \
-            -enable-all-api-sets=true \
-            -enable-api-sets=INSECURE_WALLET_SEED \
-            -enable-gui=false \
-            -test.run "^TestRunMain$" \
-            -test.coverprofile="${COVERAGEFILE}" \
+./"$BINARY" --disable-networking=true \
+            --web-interface-port=$PORT \
+            --download-peerlist=false \
+            --db-path=./src/api/integration/testdata/blockchain-180.db \
+            --db-read-only=true \
+            --launch-browser=false \
+            --data-dir="$DATA_DIR" \
+            --wallet-dir="$WALLET_DIR" \
+            --enable-all-api-sets=true \
+            --enable-api-sets=INSECURE_WALLET_SEED \
+            --enable-gui=false \
+            --test.run "^TestRunMain$" \
+            --test.coverprofile="${COVERAGEFILE}" \
             &
 
 SKYCOIN_PID=$!

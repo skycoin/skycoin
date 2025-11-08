@@ -24,7 +24,7 @@ UPDATE=""
 VERBOSE=""
 # run go test with -run flag
 RUN_TESTS=""
-DISABLE_CSRF="-disable-csrf"
+DISABLE_CSRF="--disable-csrf"
 USE_CSRF=""
 DISABLE_HEADER_CHECK=""
 HEADER_CHECK="1"
@@ -72,7 +72,7 @@ while getopts "h?t:r:n:uvcxdq" args; do
     v ) VERBOSE="-v";;
     d ) DB_NO_UNCONFIRMED="1"; DB_FILE="blockchain-180-no-unconfirmed.db";;
     c ) DISABLE_CSRF=""; USE_CSRF="1";;
-    x ) DISABLE_HEADER_CHECK="-disable-header-check"; HEADER_CHECK="";;
+    x ) DISABLE_HEADER_CHECK="--disable-header-check"; HEADER_CHECK="";;
     q ) TEST_QUICK="--test-quick"
   esac
 done
@@ -114,19 +114,19 @@ mkdir -p coverage/
 # Run skycoin node with pinned blockchain database
 echo "starting $COIN node in background with http listener on $HOST"
 
-./"$BINARY" -disable-networking=true \
-            -web-interface-port=$PORT \
-            -download-peerlist=false \
-            -db-path=./src/api/integration/testdata/$DB_FILE \
-            -db-read-only=true \
-            -launch-browser=false \
-            -data-dir="$DATA_DIR" \
-            -enable-all-api-sets=true \
-            -wallet-dir="$WALLET_DIR" \
+./"$BINARY" --disable-networking=true \
+            --web-interface-port=$PORT \
+            --download-peerlist=false \
+            --db-path=./src/api/integration/testdata/$DB_FILE \
+            --db-read-only=true \
+            --launch-browser=false \
+            --data-dir="$DATA_DIR" \
+            --enable-all-api-sets=true \
+            --wallet-dir="$WALLET_DIR" \
             $DISABLE_CSRF \
             $DISABLE_HEADER_CHECK \
-            -test.run "^TestRunMain$" \
-            -test.coverprofile="${COVERAGEFILE}" \
+            --test.run "^TestRunMain$" \
+            --test.coverprofile="${COVERAGEFILE}" \
             &
 
 SKYCOIN_PID=$!

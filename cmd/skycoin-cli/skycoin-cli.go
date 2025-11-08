@@ -19,6 +19,10 @@ func init() {
 }
 
 func main() {
+	// Configure Cobra to not call os.Exit itself
+	commands.RootCmd.SilenceErrors = true
+	commands.RootCmd.SilenceUsage = true
+	
 	cc.Init(&cc.Config{
 		RootCmd:         commands.RootCmd,
 		Headings:        cc.HiBlue + cc.Bold,

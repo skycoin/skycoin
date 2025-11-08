@@ -130,6 +130,13 @@ func originRefererCheck(apiVersion, host string, hostWhitelist []string, handler
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Skip origin/referer check for OPTIONS requests (CORS preflight)
+		// The CORS handler will validate these requests
+		if r.Method == http.MethodOptions {
+			handler.ServeHTTP(w, r)
+			return
+		}
+
 		origin := r.Header.Get("Origin")
 		referer := r.Header.Get("Referer")
 		toCheck := origin

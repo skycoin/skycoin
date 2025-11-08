@@ -343,8 +343,8 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		AllowedOrigins:     allowedOrigins,
 		Debug:              false,
 		AllowedMethods:     []string{http.MethodGet, http.MethodPost},
-		AllowedHeaders:     []string{"Origin", "Accept", "Content-Type", "X-Requested-With", CSRFHeaderName},
-		AllowCredentials:   false, // credentials are not used, but it would be safe to enable if necessary
+		AllowedHeaders:     []string{"*"}, // Allow all headers since we use CSRF tokens for security
+		AllowCredentials:   false,         // credentials are not used, but it would be safe to enable if necessary
 		OptionsPassthrough: false,
 	})
 

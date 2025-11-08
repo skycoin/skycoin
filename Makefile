@@ -131,15 +131,8 @@ integration-test-live-disable-networking: ## Run live integration tests against 
 	COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c -k
 
 install-linters: ## Install linters
-	# Turn off go module when install the vendoercheck, otherwise the installation
-	# will pollute the go.mod file.
-	GO111MODULE=off go get -u github.com/FiloSottile/vendorcheck
-	# For some reason this install method is not recommended, see https://github.com/golangci/golangci-lint#install
-	# However, they suggest `curl ... | bash` which we should not do
-	# go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
-	# Change to use go get -u with version when go is v1.12+
-	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(shell go env GOPATH)/bin v1.21.0
 	go install golang.org/x/tools/cmd/goimports@latest
+	go install github.com/FiloSottile/vendorcheck@latest
 
 format: ## Formats the code. Must have goimports installed (use make install-linters).
 	goimports -w -local github.com/skycoin/skycoin ./cmd

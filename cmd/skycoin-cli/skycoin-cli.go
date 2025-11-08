@@ -2,7 +2,7 @@
 package main
 
 import (
-	"log"
+	"os"
 
 	cc "github.com/ivanpirog/coloredcobra"
 	"github.com/spf13/cobra"
@@ -19,10 +19,6 @@ func init() {
 }
 
 func main() {
-	// Configure Cobra to not call os.Exit itself
-	commands.RootCmd.SilenceErrors = true
-	commands.RootCmd.SilenceUsage = true
-
 	cc.Init(&cc.Config{
 		RootCmd:         commands.RootCmd,
 		Headings:        cc.HiBlue + cc.Bold,
@@ -35,9 +31,8 @@ func main() {
 		NoExtraNewlines: true,
 		NoBottomNewline: true,
 	})
-	err := commands.RootCmd.Execute()
-	if err != nil {
-		log.Fatal(err)
+	if err := commands.RootCmd.Execute(); err != nil {
+		os.Exit(1)
 	}
 }
 

@@ -192,7 +192,7 @@ new_seckey:
 }
 
 // Secp256k1Hash double SHA256, salted with ECDH operation in curve
-func Secp256k1Hash(seed []byte) []byte { //nolint:revive //nolint:golint
+func Secp256k1Hash(seed []byte) []byte { //nolint:revive
 	hash := SumSHA256(seed)
 	_, seckey := deterministicKeyPairIteratorStep(hash) // seckey1 is usually sha256 of hash
 	pubkeySeed := SumSHA256(hash)                       // SumSHA256(hash) usually equals seckey

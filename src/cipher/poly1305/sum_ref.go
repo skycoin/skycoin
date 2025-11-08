@@ -127,13 +127,13 @@ func Sum(out *[TagSize]byte, msg []byte, key *[32]byte) {
 	// s: the s part of the key
 	// tag = (h + s) % (2^128)
 	t := uint64(h0) + uint64(binary.LittleEndian.Uint32(key[16:]))
-	h0 = uint32(t)
+	h0 = uint32(t) //nolint:gosec // G115: conversion is safe, only lower 32 bits are kept
 	t = uint64(h1) + uint64(binary.LittleEndian.Uint32(key[20:])) + (t >> 32)
-	h1 = uint32(t)
+	h1 = uint32(t) //nolint:gosec // G115: conversion is safe, only lower 32 bits are kept
 	t = uint64(h2) + uint64(binary.LittleEndian.Uint32(key[24:])) + (t >> 32)
-	h2 = uint32(t)
+	h2 = uint32(t) //nolint:gosec // G115: conversion is safe, only lower 32 bits are kept
 	t = uint64(h3) + uint64(binary.LittleEndian.Uint32(key[28:])) + (t >> 32)
-	h3 = uint32(t)
+	h3 = uint32(t) //nolint:gosec // G115: conversion is safe, only lower 32 bits are kept
 
 	binary.LittleEndian.PutUint32(out[0:], h0)
 	binary.LittleEndian.PutUint32(out[4:], h1)

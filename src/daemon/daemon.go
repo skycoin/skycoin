@@ -149,7 +149,7 @@ func maxSizeGiveBlocksMessage(maxBlockSize uint32) uint64 {
 }
 
 // DaemonConfig configuration for the Daemon
-type DaemonConfig struct { //nolint:golint,revive
+type DaemonConfig struct { //nolint:revive
 	// Protocol version. TODO -- manage version better
 	ProtocolVersion int32
 	// Minimum accepted protocol version

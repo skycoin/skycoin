@@ -15,7 +15,7 @@ import (
 	"testing"
 
 	"github.com/spf13/pflag"
-	
+
 	"github.com/skycoin/skycoin/cmd/skycoin/commands"
 )
 
@@ -32,10 +32,10 @@ func TestMain(m *testing.M) {
 	// This allows the test binary to accept both -test.* flags and application flags like -disable-networking
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
-	
+
 	// Set the parsed flags back to the standard library flag package for the test framework
 	flag.CommandLine.Parse([]string{})
-	
+
 	// Run tests
 	os.Exit(m.Run())
 }

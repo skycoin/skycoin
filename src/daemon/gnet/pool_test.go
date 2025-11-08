@@ -726,12 +726,13 @@ func TestProcessConnectionBuffers(t *testing.T) {
 
 	// Setup a callback to capture the connection pointer so we can get the address
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(_ string, _ uint64, _ bool) {
-		cc <- p.addresses[addr]
+	unexpectedDisconnect := make(chan DisconnectReason, 1)
+	p.Config.ConnectCallback = func(remoteAddr string, _ uint64, _ bool) {
+		cc <- p.addresses[remoteAddr]
 	}
 
 	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
-		t.Fatalf("Unexpected disconnect address=%s reason=%v", addr, reason)
+		unexpectedDisconnect <- reason
 	}
 
 	q := make(chan struct{})
@@ -766,24 +767,24 @@ func TestProcessConnectionBuffers(t *testing.T) {
 	// the remaining messages were unprocessed.
 	t.Logf("Pushing multiple messages, first one causing an error")
 
-	disconnectCalled := make(chan struct{})
+	disconnectCalled := make(chan DisconnectReason, 1)
+	unexpectedDisconnect2 := make(chan DisconnectReason, 1)
 	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
-		defer close(disconnectCalled)
-		require.Equal(t, reason, ErrErrorMessageHandler)
+		disconnectCalled <- reason
 	}
 
 	_, err = conn.Write([]byte{4, 0, 0, 0, 'E', 'R', 'R', 0x00})
 	require.NoError(t, err)
 
 	select {
-	case <-disconnectCalled:
+	case reason := <-disconnectCalled:
+		require.Equal(t, ErrErrorMessageHandler, reason)
 	case <-time.After(time.Second * 2):
 		t.Fatal("disconnect did not happen, would block")
 	}
 
 	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
-		fmt.Println(reason)
-		t.Fatal("should not see this")
+		unexpectedDisconnect2 <- reason
 	}
 
 	_, err = conn.Write([]byte{4, 0, 0, 0, 'D', 'U', 'M', 'Y'})
@@ -791,19 +792,30 @@ func TestProcessConnectionBuffers(t *testing.T) {
 
 	wait()
 
+	// Check for unexpected disconnects
+	select {
+	case reason := <-unexpectedDisconnect:
+		t.Fatalf("Unexpected disconnect before error test: %v", reason)
+	case <-time.After(100 * time.Millisecond):
+		// Good, no unexpected disconnect
+	}
+
+	select {
+	case reason := <-unexpectedDisconnect2:
+		t.Fatalf("Unexpected disconnect after error test: %v", reason)
+	case <-time.After(100 * time.Millisecond):
+		// Good, no unexpected disconnect
+	}
+
 	conn, err = net.Dial("tcp", addr)
 	require.NoError(t, err)
 
 	c = <-cc
 	require.NotNil(t, c)
 
-	disconnectCalled = make(chan struct{})
+	disconnectCalled = make(chan DisconnectReason, 1)
 	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
-		defer close(disconnectCalled)
-		require.Equal(t, c.Addr(), addr)
-		require.Equal(t, reason, ErrDisconnectInvalidMessageLength)
-		require.Nil(t, p.pool[1])
-		require.Nil(t, p.pool[2])
+		disconnectCalled <- reason
 	}
 
 	// Sending a length of < messagePrefixLength should cause a disconnect
@@ -813,7 +825,14 @@ func TestProcessConnectionBuffers(t *testing.T) {
 	require.NoError(t, err)
 
 	select {
-	case <-disconnectCalled:
+	case reason := <-disconnectCalled:
+		require.Equal(t, ErrDisconnectInvalidMessageLength, reason)
+		err = p.strand("", func() error {
+			require.Nil(t, p.pool[1])
+			require.Nil(t, p.pool[2])
+			return nil
+		})
+		require.NoError(t, err)
 	case <-time.After(time.Second * 2):
 		t.Fatal("disconnect did not happen, would block")
 	}
@@ -828,16 +847,16 @@ func TestProcessConnectionBuffers(t *testing.T) {
 	t.Logf("Pushing message with too large length")
 	p.Config.MaxIncomingMessageLength = 4
 	p.Config.MaxOutgoingMessageLength = 4
-	disconnectCalled = make(chan struct{})
+	disconnectCalled = make(chan DisconnectReason, 1)
 	p.Config.DisconnectCallback = func(_ string, _ uint64, r DisconnectReason) {
-		defer close(disconnectCalled)
-		require.Equal(t, ErrDisconnectInvalidMessageLength, r)
+		disconnectCalled <- r
 	}
 
 	_, err = conn.Write([]byte{5, 0, 0, 0, 'B', 'Y', 'T', 'E'})
 	require.NoError(t, err)
 
-	<-disconnectCalled
+	reason := <-disconnectCalled
+	require.Equal(t, ErrDisconnectInvalidMessageLength, reason)
 
 	err = p.strand("", func() error {
 		require.Nil(t, p.pool[1])

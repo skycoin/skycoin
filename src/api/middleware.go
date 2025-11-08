@@ -18,7 +18,7 @@ const ContentSecurityPolicy = "default-src 'self'" +
 	"; connect-src 'self' https://api.coinpaprika.com https://swaplab.cc https://version.skycoin.com https://downloads.skycoin.com http://127.0.0.1:9510" +
 	"; img-src 'self' 'unsafe-inline' data:" +
 	"; style-src 'self' 'unsafe-inline'" +
-	"; object-src	'none'" +
+	"; object-src 'none'" +
 	"; form-action 'none'" +
 	"; frame-ancestors 'none'" +
 	"; block-all-mixed-content" +

@@ -34,7 +34,7 @@ func ElapsedHandler(logger logrus.FieldLogger, handler http.Handler) http.Handle
 				// the json decoding.
 				if err != nil && strings.Contains(err.Error(), "json: cannot unmarshal") {
 					errMsg = lrw.response.String()
-				} else {
+				} else if rsp.Error != nil {
 					errMsg = rsp.Error.Message
 				}
 			}

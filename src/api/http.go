@@ -505,10 +505,12 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		}
 		indexHandler = newIndexHandler(subFS, c.enableGUI)
 	}
-	if !c.disableCSP {
+	if !c.disableCSP && indexHandler != nil {
 		indexHandler = CSPHandler(indexHandler, ContentSecurityPolicy)
 	}
-	webHandler(apiVersion1, "/", indexHandler, nil)
+	if indexHandler != nil {
+		webHandler(apiVersion1, "/", indexHandler, nil)
+	}
 
 	// get the current CSRF token
 	csrfHandlerV1 := func(endpoint string, handler http.Handler) {

@@ -208,7 +208,7 @@ func TestEnableGUI(t *testing.T) {
 			endpoint:   "/",
 			appLoc:     "",
 			expectCode: http.StatusNotFound,
-			expectBody: "404 Not Found\n",
+			expectBody: "404 page not found\n",
 		},
 		{
 			name:       "disable gui GET /invalid-path",
@@ -216,7 +216,7 @@ func TestEnableGUI(t *testing.T) {
 			endpoint:   "/invalid-path",
 			appLoc:     "",
 			expectCode: http.StatusNotFound,
-			expectBody: "404 Not Found\n",
+			expectBody: "404 page not found\n",
 		},
 		{
 			name:       "enable gui GET /",
@@ -232,7 +232,7 @@ func TestEnableGUI(t *testing.T) {
 			endpoint:   "/invalid-path",
 			appLoc:     "../gui/static",
 			expectCode: http.StatusNotFound,
-			expectBody: "404 Not Found\n",
+			expectBody: "404 page not found\n",
 		},
 	}
 

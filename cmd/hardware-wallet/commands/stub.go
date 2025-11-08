@@ -1,6 +1,6 @@
-//go:build !linux
+//go:build !linux || !amd64
 
-// Package commands provides a stub for non-Linux platforms where hardware wallet is not supported.
+// Package commands provides a stub for non-Linux/non-amd64 platforms where hardware wallet is not supported.
 package commands
 
 import (

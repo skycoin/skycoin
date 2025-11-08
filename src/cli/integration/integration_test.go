@@ -68,7 +68,7 @@ var (
 
 	validNameRegexp         = regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
 	stripCoverageReport     = regexp.MustCompile(`PASS\ncoverage: [\d\.]+% of statements in github.com/skycoin/skycoin/\.\.\.\n$`)
-	stripCoverageDirWarning = regexp.MustCompile(`\nwarning: GOCOVERDIR not set, no coverage data emitted\n?`)
+	stripCoverageDirWarning = regexp.MustCompile(`warning: GOCOVERDIR not set, no coverage data emitted\n?`)
 )
 
 type TestData struct {

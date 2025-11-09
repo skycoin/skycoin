@@ -36,13 +36,15 @@ func getFreePort(t *testing.T) int {
 	require.NoError(t, listener.Close())
 	// Wait a bit to ensure port is fully released
 	time.Sleep(10 * time.Millisecond)
+	// Ensure port is in valid range for uint16
+	require.True(t, port > 0 && port <= 65535, "port must be valid uint16")
 	return port
 }
 
 func newTestConfig(t *testing.T) Config {
 	t.Helper()
 	cfg := NewConfig()
-	cfg.Port = uint16(getFreePort(t))
+	cfg.Port = uint16(getFreePort(t)) //nolint:gosec // Port is validated in getFreePort
 	cfg.Address = address
 	cfg.MaxConnections = 24
 	cfg.MaxOutgoingConnections = 8
@@ -82,7 +84,7 @@ func TestNewConnection(t *testing.T) {
 	}()
 
 	wait()
-	addr := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	conn, err := net.Dial("tcp", addr)
 	require.NoError(t, err)
 	wait()
@@ -108,7 +110,7 @@ func TestNewConnection(t *testing.T) {
 
 func TestNewConnectionAlreadyConnected(t *testing.T) {
 	cfg := newTestConfig(t)
-	addr := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
@@ -146,7 +148,7 @@ func TestNewConnectionAlreadyConnected(t *testing.T) {
 
 func TestAcceptConnections(t *testing.T) {
 	cfg := newTestConfig(t)
-	addr := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
@@ -209,7 +211,7 @@ func TestStartListenFailed(t *testing.T) {
 
 func TestStopListen(t *testing.T) {
 	cfg := newTestConfig(t)
-	addr := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
@@ -239,7 +241,7 @@ func TestStopListen(t *testing.T) {
 
 func TestHandleConnection(t *testing.T) {
 	cfg := newTestConfig(t)
-	addr := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
@@ -329,7 +331,7 @@ func TestHandleConnection(t *testing.T) {
 
 func TestConnect(t *testing.T) {
 	cfg := newTestConfig(t)
-	addr := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
@@ -370,7 +372,7 @@ func TestConnect(t *testing.T) {
 
 func TestConnectNoTimeout(t *testing.T) {
 	cfg := newTestConfig(t)
-	addr := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	cfg.DialTimeout = 0
 	cfg.Port++
 
@@ -396,7 +398,7 @@ func TestConnectNoTimeout(t *testing.T) {
 
 func TestDisconnect(t *testing.T) {
 	cfg := newTestConfig(t)
-	addr := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
@@ -543,7 +545,7 @@ func TestGetConnections(t *testing.T) {
 
 func TestConnectionReadLoopReadError(t *testing.T) {
 	cfg := newTestConfig(t)
-	addr := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
@@ -597,7 +599,7 @@ func TestConnectionReadLoopReadError(t *testing.T) {
 
 func TestConnectionReadLoopSetReadDeadlineFailed(t *testing.T) {
 	cfg := newTestConfig(t)
-	addr := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
@@ -641,7 +643,7 @@ func TestConnectionReadLoopSetReadDeadlineFailed(t *testing.T) {
 
 func TestConnectionReadLoopInvalidMessageLength(t *testing.T) {
 	cfg := newTestConfig(t)
-	addr := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	cfg.MaxIncomingMessageLength = 1
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
@@ -690,7 +692,7 @@ func TestConnectionReadLoopInvalidMessageLength(t *testing.T) {
 
 func TestConnectionReadLoopTerminates(t *testing.T) {
 	cfg := newTestConfig(t)
-	addr := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
@@ -745,7 +747,7 @@ func TestProcessConnectionBuffers(t *testing.T) {
 	RegisterMessage(ErrorPrefix, ErrorMessage{})
 	VerifyMessages()
 	cfg := newTestConfig(t)
-	addr := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
@@ -902,7 +904,7 @@ func TestConnectionWriteLoop(t *testing.T) {
 	VerifyMessages()
 
 	cfg := newTestConfig(t)
-	addr := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
@@ -1001,7 +1003,7 @@ func TestPoolSendMessageOK(t *testing.T) {
 	VerifyMessages()
 
 	cfg := newTestConfig(t)
-	addr := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	cfg.WriteTimeout = time.Second
 	cfg.SendResultsSize = 1
 	cfg.ConnectionWriteQueueSize = 8
@@ -1060,8 +1062,8 @@ func TestPoolSendMessageWriteQueueFull(t *testing.T) {
 		require.NoError(t, err)
 	}()
 	wait()
-	
-	addr := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
+
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	_, err = net.Dial("tcp", addr)
 	require.NoError(t, err)
 
@@ -1102,7 +1104,7 @@ func TestPoolBroadcastMessage(t *testing.T) {
 	VerifyMessages()
 
 	cfg := newTestConfig(t)
-	addr := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	cfg.ConnectionWriteQueueSize = 1
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
@@ -1202,7 +1204,7 @@ func TestPoolReceiveMessage(t *testing.T) {
 	VerifyMessages()
 
 	cfg := newTestConfig(t)
-	addr := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 

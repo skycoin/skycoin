@@ -294,7 +294,7 @@ func TestWalletSerialize(t *testing.T) {
 	// load wallet file and compare
 	fb, err := os.ReadFile("./testdata/wallet_serialize.wlt")
 	require.NoError(t, err)
-	fb = bytes.TrimRight(fb, "\n")
+	fb = bytes.TrimRight(fb, "\r\n")
 
 	// Normalize line endings for cross-platform compatibility
 	fb = bytes.ReplaceAll(fb, []byte("\r\n"), []byte("\n"))

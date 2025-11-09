@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -203,7 +204,15 @@ func TestStartListenFailed(t *testing.T) {
 	require.NoError(t, err)
 	err = pp.Run()
 	require.Error(t, err)
-	require.True(t, strings.HasSuffix(err.Error(), "bind: address already in use"))
+	// Check for port binding error - message differs by OS
+	errMsg := err.Error()
+	if runtime.GOOS == "windows" {
+		// Windows: "bind: Only one usage of each socket address (protocol/network address/port) is normally permitted."
+		require.True(t, strings.Contains(errMsg, "bind:") && strings.Contains(errMsg, "socket address"))
+	} else {
+		// Unix: "bind: address already in use"
+		require.True(t, strings.HasSuffix(errMsg, "bind: address already in use"))
+	}
 
 	p.Shutdown()
 	<-q

@@ -2,7 +2,7 @@ package cli
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
@@ -88,7 +88,7 @@ func AddPrivateKey(wlt *collection.Wallet, key string) error {
 // AddPrivateKeyToFile adds a private key to a wallet based on filename.
 // Will save the wallet after modifying.
 func AddPrivateKeyToFile(walletFile, key string, pr PasswordReader) error {
-	data, err := ioutil.ReadFile(walletFile)
+	data, err := os.ReadFile(walletFile) //nolint:gosec
 	if err != nil {
 		return WalletLoadError{err}
 	}

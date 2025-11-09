@@ -3,7 +3,7 @@ package collection
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	testSeed           = "test123"
+	testSeed           = "test123" //nolint:unused
 	testSkycoinEntries = skycoinEntries([]readableEntry{
 		{
 			Address: "B4B6Hx1a3WPUHP323Bhqydifeu8TS4Zfan",
@@ -318,7 +318,7 @@ func TestWalletLock(t *testing.T) {
 
 				// add entries
 				for _, e := range testSkycoinEntries {
-					w.AddEntry(e)
+					w.AddEntry(e) //nolint:errcheck,gosec
 				}
 
 				err = w.Lock(tc.lockPwd)
@@ -598,7 +598,7 @@ func TestWalletGetEntry(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			data, err := ioutil.ReadFile(tc.wltFile)
+			data, err := os.ReadFile(tc.wltFile)
 			require.NoError(t, err)
 			ld := Loader{}
 			w, err := ld.Load(data)
@@ -629,9 +629,13 @@ func TestWalletSerialize(t *testing.T) {
 	require.NoError(t, err)
 
 	// load wallet file and compare
-	fb, err := ioutil.ReadFile("./testdata/wallet_serialize.wlt")
+	fb, err := os.ReadFile("./testdata/wallet_serialize.wlt")
 	require.NoError(t, err)
-	fb = bytes.TrimRight(fb, "\n")
+	fb = bytes.TrimRight(fb, "\r\n")
+
+	// Normalize line endings for cross-platform compatibility
+	fb = bytes.ReplaceAll(fb, []byte("\r\n"), []byte("\n"))
+	b = bytes.ReplaceAll(b, []byte("\r\n"), []byte("\n"))
 	require.Equal(t, fb, b)
 
 	wlt := Wallet{}
@@ -640,7 +644,7 @@ func TestWalletSerialize(t *testing.T) {
 }
 
 func TestWalletDeserialize(t *testing.T) {
-	b, err := ioutil.ReadFile("./testdata/wallet_serialize.wlt")
+	b, err := os.ReadFile("./testdata/wallet_serialize.wlt")
 	require.NoError(t, err)
 
 	w := Wallet{}

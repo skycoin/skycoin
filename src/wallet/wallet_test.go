@@ -2,7 +2,6 @@ package wallet
 
 import (
 	"html/template"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -16,7 +15,7 @@ type fakeWalletForGuardView struct {
 	*MockWallet
 	seed      string
 	label     string
-	n         int
+	n         int //nolint:unused
 	encrypted bool
 	isTemp    bool
 }
@@ -388,16 +387,18 @@ func TestRemoveBackupFiles(t *testing.T) {
 			require.NoError(t, err)
 
 			for _, f := range tc.initFiles {
-				fw, err := os.Create(filepath.Join(dir, f.wltName))
-				defer fw.Close()
+				fw, err := os.Create(filepath.Join(dir, f.wltName)) //nolint:gosec
+				require.NoError(t, err)
 				err = tmp.Execute(fw, struct{ Version string }{f.version})
 				require.NoError(t, err)
+				// Close immediately to avoid file locking issues on Windows
+				require.NoError(t, fw.Close())
 			}
 
 			require.NoError(t, removeBackupFiles(dir))
 
 			// Get all remaining files
-			fs, err := ioutil.ReadDir(dir)
+			fs, err := os.ReadDir(dir)
 			require.NoError(t, err)
 			require.Len(t, fs, len(tc.expectedRemainingFiles))
 			for _, f := range fs {
@@ -409,7 +410,7 @@ func TestRemoveBackupFiles(t *testing.T) {
 }
 
 func prepareWltDir() string {
-	dir, err := ioutil.TempDir("", "wallets")
+	dir, err := os.MkdirTemp("", "wallets")
 	if err != nil {
 		panic(err)
 	}

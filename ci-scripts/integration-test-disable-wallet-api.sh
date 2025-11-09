@@ -58,7 +58,7 @@ CMDPKG=$(go list ./cmd/${COIN})
 COVERPKG=$(dirname $(dirname ${CMDPKG}))
 COMMIT=$(git rev-parse HEAD)
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
-GOLDFLAGS="-X ${CMDPKG}.Commit=${COMMIT} -X ${CMDPKG}.Branch=${BRANCH}"
+GOLDFLAGS="-X ${CMDPKG}/commands.Commit=${COMMIT} -X ${CMDPKG}/commands.Branch=${BRANCH}"
 
 echo "checking if integration tests compile"
 go test ./src/api/integration/...
@@ -82,18 +82,18 @@ mkdir -p coverage/
 # Run skycoin node with pinned blockchain database
 echo "starting $COIN node in background with http listener on $HOST"
 
-./"$BINARY" -disable-networking=true \
-            -web-interface-port=$PORT \
-            -download-peerlist=false \
-            -db-path=./src/api/integration/testdata/blockchain-180.db \
-            -db-read-only=true \
-            -launch-browser=false \
-            -data-dir="$DATA_DIR" \
-            -wallet-dir="$WALLET_DIR" \
-            -enable-all-api-sets=true \
-            -disable-api-sets=WALLET \
-            -test.run "^TestRunMain$" \
-            -test.coverprofile="${COVERAGEFILE}" \
+./"$BINARY" --disable-networking=true \
+            --web-interface-port=$PORT \
+            --download-peerlist=false \
+            --db-path=./src/api/integration/testdata/blockchain-180.db \
+            --db-read-only=true \
+            --launch-browser=false \
+            --data-dir="$DATA_DIR" \
+            --wallet-dir="$WALLET_DIR" \
+            --enable-all-api-sets=true \
+            --disable-api-sets=WALLET \
+            --test.run "^TestRunMain$" \
+            --test.coverprofile="${COVERAGEFILE}" \
             &
 
 SKYCOIN_PID=$!

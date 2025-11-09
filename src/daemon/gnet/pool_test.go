@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -16,10 +17,9 @@ import (
 )
 
 const (
-	addr          = "127.0.0.1:50823"
-	port          = 50823
 	address       = "127.0.0.1"
-	silenceLogger = false
+	silenceLogger = true
+	dummyAddr     = "127.0.0.1:9999" // Used by mock connections
 )
 
 func init() {
@@ -28,9 +28,24 @@ func init() {
 	}
 }
 
-func newTestConfig() Config {
+// getFreePort gets a free port on the local machine
+func getFreePort(t *testing.T) int {
+	t.Helper()
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	port := listener.Addr().(*net.TCPAddr).Port
+	require.NoError(t, listener.Close())
+	// Wait a bit to ensure port is fully released
+	time.Sleep(10 * time.Millisecond)
+	// Ensure port is in valid range for uint16
+	require.True(t, port > 0 && port <= 65535, "port must be valid uint16")
+	return port
+}
+
+func newTestConfig(t *testing.T) Config {
+	t.Helper()
 	cfg := NewConfig()
-	cfg.Port = uint16(port)
+	cfg.Port = uint16(getFreePort(t)) //nolint:gosec // Port is validated in getFreePort
 	cfg.Address = address
 	cfg.MaxConnections = 24
 	cfg.MaxOutgoingConnections = 8
@@ -40,7 +55,7 @@ func newTestConfig() Config {
 }
 
 func TestNewConnectionPool(t *testing.T) {
-	cfg := newTestConfig()
+	cfg := newTestConfig(t)
 	cfg.MaxConnections = 108
 	cfg.DialTimeout = time.Duration(777)
 
@@ -57,7 +72,7 @@ func TestNewConnectionPool(t *testing.T) {
 }
 
 func TestNewConnection(t *testing.T) {
-	cfg := newTestConfig()
+	cfg := newTestConfig(t)
 	cfg.ConnectionWriteQueueSize = 101
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
@@ -70,6 +85,7 @@ func TestNewConnection(t *testing.T) {
 	}()
 
 	wait()
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	conn, err := net.Dial("tcp", addr)
 	require.NoError(t, err)
 	wait()
@@ -94,12 +110,13 @@ func TestNewConnection(t *testing.T) {
 }
 
 func TestNewConnectionAlreadyConnected(t *testing.T) {
-	cfg := newTestConfig()
+	cfg := newTestConfig(t)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(_ string, id uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, solicited bool) {
 		require.False(t, solicited)
 		cc <- p.pool[1]
 	}
@@ -131,13 +148,14 @@ func TestNewConnectionAlreadyConnected(t *testing.T) {
 }
 
 func TestAcceptConnections(t *testing.T) {
-	cfg := newTestConfig()
+	cfg := newTestConfig(t)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
 	cc := make(chan *Connection, 1)
 	var wasSolicited *bool
-	p.Config.ConnectCallback = func(_ string, id uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, solicited bool) {
 		wasSolicited = &solicited
 		require.False(t, solicited)
 		cc <- p.pool[1]
@@ -171,7 +189,7 @@ func TestAcceptConnections(t *testing.T) {
 }
 
 func TestStartListenFailed(t *testing.T) {
-	cfg := newTestConfig()
+	cfg := newTestConfig(t)
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 	q := make(chan struct{})
@@ -186,14 +204,23 @@ func TestStartListenFailed(t *testing.T) {
 	require.NoError(t, err)
 	err = pp.Run()
 	require.Error(t, err)
-	require.True(t, strings.HasSuffix(err.Error(), "bind: address already in use"))
+	// Check for port binding error - message differs by OS
+	errMsg := err.Error()
+	if runtime.GOOS == "windows" {
+		// Windows: "bind: Only one usage of each socket address (protocol/network address/port) is normally permitted."
+		require.True(t, strings.Contains(errMsg, "bind:") && strings.Contains(errMsg, "socket address"))
+	} else {
+		// Unix: "bind: address already in use"
+		require.True(t, strings.HasSuffix(errMsg, "bind: address already in use"))
+	}
 
 	p.Shutdown()
 	<-q
 }
 
 func TestStopListen(t *testing.T) {
-	cfg := newTestConfig()
+	cfg := newTestConfig(t)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
@@ -222,7 +249,8 @@ func TestStopListen(t *testing.T) {
 }
 
 func TestHandleConnection(t *testing.T) {
-	cfg := newTestConfig()
+	cfg := newTestConfig(t)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
@@ -230,7 +258,7 @@ func TestHandleConnection(t *testing.T) {
 	// Unsolicited
 	cc := make(chan *Connection, 1)
 	var wasSolicited *bool
-	p.Config.ConnectCallback = func(_ string, id uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, solicited bool) {
 		wasSolicited = &solicited
 		cc <- p.pool[1]
 	}
@@ -271,7 +299,7 @@ func TestHandleConnection(t *testing.T) {
 
 	// Solicited
 	wasSolicited = nil
-	p.Config.ConnectCallback = func(addr string, id uint64, s bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, s bool) {
 		wasSolicited = &s
 		cc <- p.pool[2]
 	}
@@ -311,7 +339,8 @@ func TestHandleConnection(t *testing.T) {
 }
 
 func TestConnect(t *testing.T) {
-	cfg := newTestConfig()
+	cfg := newTestConfig(t)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
@@ -351,7 +380,8 @@ func TestConnect(t *testing.T) {
 }
 
 func TestConnectNoTimeout(t *testing.T) {
-	cfg := newTestConfig()
+	cfg := newTestConfig(t)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	cfg.DialTimeout = 0
 	cfg.Port++
 
@@ -376,13 +406,14 @@ func TestConnectNoTimeout(t *testing.T) {
 }
 
 func TestDisconnect(t *testing.T) {
-	cfg := newTestConfig()
+	cfg := newTestConfig(t)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
 	// Setup a callback to capture the connection pointer so we can get the address
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(addr string, id uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, _ bool) {
 		cc <- p.pool[1]
 	}
 
@@ -408,8 +439,8 @@ func TestDisconnect(t *testing.T) {
 	require.NoError(t, err)
 
 	err = p.strand("", func() error {
-		p.Config.DisconnectCallback = func(addr string, _ uint64, reason DisconnectReason) {
-			require.Equal(t, cAddr, addr)
+		p.Config.DisconnectCallback = func(callbackAddr string, _ uint64, _ DisconnectReason) {
+			require.Equal(t, cAddr, callbackAddr)
 		}
 		return nil
 	})
@@ -419,7 +450,7 @@ func TestDisconnect(t *testing.T) {
 	require.NoError(t, err)
 
 	err = p.strand("", func() error {
-		p.Config.DisconnectCallback = func(addr string, id uint64, reason DisconnectReason) {
+		p.Config.DisconnectCallback = func(_ string, _ uint64, _ DisconnectReason) {
 			t.Fatal("disconnect unknown connection should not see this")
 		}
 		return nil
@@ -435,14 +466,14 @@ func TestDisconnect(t *testing.T) {
 
 func TestConnectionClose(t *testing.T) {
 	c := &Connection{
-		Conn:       NewDummyConn(addr),
+		Conn:       NewDummyConn(dummyAddr),
 		Buffer:     &bytes.Buffer{},
 		WriteQueue: make(chan Message),
 	}
 
 	c.Buffer.WriteByte(7)
 	require.Equal(t, c.Buffer.Len(), 1)
-	c.Close()
+	c.Close() //nolint:errcheck,gosec
 
 	select {
 	case <-c.WriteQueue:
@@ -474,7 +505,7 @@ func (f fakeAddr) String() string {
 }
 
 func TestGetConnections(t *testing.T) {
-	cfg := newTestConfig()
+	cfg := newTestConfig(t)
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
@@ -514,7 +545,7 @@ func TestGetConnections(t *testing.T) {
 
 	require.Equal(t, len(m), 3)
 	for i := 1; i <= 3; i++ {
-		require.Equal(t, m[uint64(i)], p.pool[uint64(i)])
+		require.Equal(t, m[uint64(i)], p.pool[uint64(i)]) //nolint:gosec
 	}
 
 	p.Shutdown()
@@ -522,12 +553,13 @@ func TestGetConnections(t *testing.T) {
 }
 
 func TestConnectionReadLoopReadError(t *testing.T) {
-	cfg := newTestConfig()
+	cfg := newTestConfig(t)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(addr string, _ uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, _ bool) {
 		cc <- p.addresses[addr]
 	}
 
@@ -543,7 +575,7 @@ func TestConnectionReadLoopReadError(t *testing.T) {
 	readDataErr := "read failed: failed"
 
 	disconnectCalled := make(chan struct{})
-	p.Config.DisconnectCallback = func(addr string, id uint64, reason DisconnectReason) {
+	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
 		defer close(disconnectCalled)
 		require.Equal(t, readDataErr, reason.Error())
 	}
@@ -562,7 +594,7 @@ func TestConnectionReadLoopReadError(t *testing.T) {
 	wait()
 
 	require.True(t, reconn.(*ReadErrorConn).GetReadDeadlineSet() != time.Time{})
-	reconn.Close()
+	reconn.Close() //nolint:errcheck,gosec
 
 	select {
 	case <-disconnectCalled:
@@ -575,12 +607,13 @@ func TestConnectionReadLoopReadError(t *testing.T) {
 }
 
 func TestConnectionReadLoopSetReadDeadlineFailed(t *testing.T) {
-	cfg := newTestConfig()
+	cfg := newTestConfig(t)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(addr string, _ uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, _ bool) {
 		cc <- p.addresses[addr]
 	}
 
@@ -596,7 +629,7 @@ func TestConnectionReadLoopSetReadDeadlineFailed(t *testing.T) {
 	// 2:
 	// Use a mock net.Conn that fails on SetReadDeadline
 	disconnectCalled := make(chan struct{})
-	p.Config.DisconnectCallback = func(addr string, id uint64, reason DisconnectReason) {
+	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
 		defer close(disconnectCalled)
 		require.Equal(t, ErrDisconnectSetReadDeadlineFailed, reason)
 	}
@@ -609,7 +642,7 @@ func TestConnectionReadLoopSetReadDeadlineFailed(t *testing.T) {
 
 	<-cc
 
-	rdfconn.Close()
+	rdfconn.Close() //nolint:errcheck,gosec
 
 	<-disconnectCalled
 
@@ -618,13 +651,14 @@ func TestConnectionReadLoopSetReadDeadlineFailed(t *testing.T) {
 }
 
 func TestConnectionReadLoopInvalidMessageLength(t *testing.T) {
-	cfg := newTestConfig()
+	cfg := newTestConfig(t)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	cfg.MaxIncomingMessageLength = 1
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(addr string, id uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, _ bool) {
 		cc <- p.addresses[addr]
 	}
 
@@ -641,7 +675,7 @@ func TestConnectionReadLoopInvalidMessageLength(t *testing.T) {
 	// Use a mock net.Conn that returns some bytes on Read
 	// Look for these bytes copied into the eventChannel
 	disconnectCalled := make(chan struct{})
-	p.Config.DisconnectCallback = func(addr string, id uint64, reason DisconnectReason) {
+	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
 		defer close(disconnectCalled)
 		require.Equal(t, ErrDisconnectInvalidMessageLength, reason)
 	}
@@ -657,7 +691,7 @@ func TestConnectionReadLoopInvalidMessageLength(t *testing.T) {
 	wait()
 	raconn.stop()
 	wait()
-	raconn.Close()
+	raconn.Close() //nolint:errcheck,gosec
 
 	<-disconnectCalled
 
@@ -666,12 +700,13 @@ func TestConnectionReadLoopInvalidMessageLength(t *testing.T) {
 }
 
 func TestConnectionReadLoopTerminates(t *testing.T) {
-	cfg := newTestConfig()
+	cfg := newTestConfig(t)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(addr string, id uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, _ bool) {
 		cc <- p.addresses[addr]
 	}
 
@@ -689,7 +724,7 @@ func TestConnectionReadLoopTerminates(t *testing.T) {
 	// 4: Use a mock net.Conn that successfully returns 0 bytes when read
 	rnconn := newReadNothingConn()
 	disconnectCalled := make(chan struct{})
-	p.Config.DisconnectCallback = func(addr string, id uint64, reason DisconnectReason) {
+	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
 		defer close(disconnectCalled)
 		require.Equal(t, readDataErr, reason.Error())
 	}
@@ -703,7 +738,7 @@ func TestConnectionReadLoopTerminates(t *testing.T) {
 	wait()
 	rnconn.stop()
 	wait()
-	rnconn.Close()
+	rnconn.Close() //nolint:errcheck,gosec
 
 	<-disconnectCalled
 
@@ -720,18 +755,20 @@ func TestProcessConnectionBuffers(t *testing.T) {
 	RegisterMessage(DummyPrefix, DummyMessage{})
 	RegisterMessage(ErrorPrefix, ErrorMessage{})
 	VerifyMessages()
-	cfg := newTestConfig()
+	cfg := newTestConfig(t)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
 	// Setup a callback to capture the connection pointer so we can get the address
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(addr string, id uint64, solicited bool) {
-		cc <- p.addresses[addr]
+	unexpectedDisconnect := make(chan DisconnectReason, 1)
+	p.Config.ConnectCallback = func(remoteAddr string, _ uint64, _ bool) {
+		cc <- p.addresses[remoteAddr]
 	}
 
-	p.Config.DisconnectCallback = func(addr string, id uint64, reason DisconnectReason) {
-		t.Fatalf("Unexpected disconnect address=%s reason=%v", addr, reason)
+	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
+		unexpectedDisconnect <- reason
 	}
 
 	q := make(chan struct{})
@@ -766,24 +803,24 @@ func TestProcessConnectionBuffers(t *testing.T) {
 	// the remaining messages were unprocessed.
 	t.Logf("Pushing multiple messages, first one causing an error")
 
-	disconnectCalled := make(chan struct{})
-	p.Config.DisconnectCallback = func(addr string, id uint64, reason DisconnectReason) {
-		defer close(disconnectCalled)
-		require.Equal(t, reason, ErrErrorMessageHandler)
+	disconnectCalled := make(chan DisconnectReason, 1)
+	unexpectedDisconnect2 := make(chan DisconnectReason, 1)
+	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
+		disconnectCalled <- reason
 	}
 
 	_, err = conn.Write([]byte{4, 0, 0, 0, 'E', 'R', 'R', 0x00})
 	require.NoError(t, err)
 
 	select {
-	case <-disconnectCalled:
+	case reason := <-disconnectCalled:
+		require.Equal(t, ErrErrorMessageHandler, reason)
 	case <-time.After(time.Second * 2):
 		t.Fatal("disconnect did not happen, would block")
 	}
 
-	p.Config.DisconnectCallback = func(addr string, id uint64, reason DisconnectReason) {
-		fmt.Println(reason)
-		t.Fatal("should not see this")
+	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
+		unexpectedDisconnect2 <- reason
 	}
 
 	_, err = conn.Write([]byte{4, 0, 0, 0, 'D', 'U', 'M', 'Y'})
@@ -791,19 +828,30 @@ func TestProcessConnectionBuffers(t *testing.T) {
 
 	wait()
 
+	// Check for unexpected disconnects
+	select {
+	case reason := <-unexpectedDisconnect:
+		t.Fatalf("Unexpected disconnect before error test: %v", reason)
+	case <-time.After(100 * time.Millisecond):
+		// Good, no unexpected disconnect
+	}
+
+	select {
+	case reason := <-unexpectedDisconnect2:
+		t.Fatalf("Unexpected disconnect after error test: %v", reason)
+	case <-time.After(100 * time.Millisecond):
+		// Good, no unexpected disconnect
+	}
+
 	conn, err = net.Dial("tcp", addr)
 	require.NoError(t, err)
 
 	c = <-cc
 	require.NotNil(t, c)
 
-	disconnectCalled = make(chan struct{})
-	p.Config.DisconnectCallback = func(addr string, id uint64, reason DisconnectReason) {
-		defer close(disconnectCalled)
-		require.Equal(t, c.Addr(), addr)
-		require.Equal(t, reason, ErrDisconnectInvalidMessageLength)
-		require.Nil(t, p.pool[1])
-		require.Nil(t, p.pool[2])
+	disconnectCalled = make(chan DisconnectReason, 1)
+	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
+		disconnectCalled <- reason
 	}
 
 	// Sending a length of < messagePrefixLength should cause a disconnect
@@ -813,7 +861,14 @@ func TestProcessConnectionBuffers(t *testing.T) {
 	require.NoError(t, err)
 
 	select {
-	case <-disconnectCalled:
+	case reason := <-disconnectCalled:
+		require.Equal(t, ErrDisconnectInvalidMessageLength, reason)
+		err = p.strand("", func() error {
+			require.Nil(t, p.pool[1])
+			require.Nil(t, p.pool[2])
+			return nil
+		})
+		require.NoError(t, err)
 	case <-time.After(time.Second * 2):
 		t.Fatal("disconnect did not happen, would block")
 	}
@@ -828,16 +883,16 @@ func TestProcessConnectionBuffers(t *testing.T) {
 	t.Logf("Pushing message with too large length")
 	p.Config.MaxIncomingMessageLength = 4
 	p.Config.MaxOutgoingMessageLength = 4
-	disconnectCalled = make(chan struct{})
-	p.Config.DisconnectCallback = func(addr string, id uint64, r DisconnectReason) {
-		defer close(disconnectCalled)
-		require.Equal(t, ErrDisconnectInvalidMessageLength, r)
+	disconnectCalled = make(chan DisconnectReason, 1)
+	p.Config.DisconnectCallback = func(_ string, _ uint64, r DisconnectReason) {
+		disconnectCalled <- r
 	}
 
 	_, err = conn.Write([]byte{5, 0, 0, 0, 'B', 'Y', 'T', 'E'})
 	require.NoError(t, err)
 
-	<-disconnectCalled
+	reason := <-disconnectCalled
+	require.Equal(t, ErrDisconnectInvalidMessageLength, reason)
 
 	err = p.strand("", func() error {
 		require.Nil(t, p.pool[1])
@@ -857,18 +912,19 @@ func TestConnectionWriteLoop(t *testing.T) {
 	RegisterMessage(BytePrefix, ByteMessage{})
 	VerifyMessages()
 
-	cfg := newTestConfig()
+	cfg := newTestConfig(t)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
 	// Setup a callback to capture the connection pointer so we can get the address
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(addr string, id uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, _ bool) {
 		cc <- p.pool[1]
 	}
 
 	disconnectErr := make(chan DisconnectReason, 1)
-	p.Config.DisconnectCallback = func(addr string, id uint64, reason DisconnectReason) {
+	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
 		fmt.Printf("DisconnectCallback called, address=%s reason=%v\n", addr, reason)
 		disconnectErr <- reason
 	}
@@ -955,7 +1011,8 @@ func TestPoolSendMessageOK(t *testing.T) {
 	RegisterMessage(BytePrefix, ByteMessage{})
 	VerifyMessages()
 
-	cfg := newTestConfig()
+	cfg := newTestConfig(t)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	cfg.WriteTimeout = time.Second
 	cfg.SendResultsSize = 1
 	cfg.ConnectionWriteQueueSize = 8
@@ -964,7 +1021,7 @@ func TestPoolSendMessageOK(t *testing.T) {
 
 	// Setup a callback to capture the connection pointer so we can get the address
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(addr string, id uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, _ bool) {
 		cc <- p.pool[1]
 	}
 
@@ -994,7 +1051,7 @@ func TestPoolSendMessageWriteQueueFull(t *testing.T) {
 	RegisterMessage(BytePrefix, ByteMessage{})
 	VerifyMessages()
 
-	cfg := newTestConfig()
+	cfg := newTestConfig(t)
 	cfg.WriteTimeout = time.Second
 	cfg.SendResultsSize = 1
 	cfg.ConnectionWriteQueueSize = 0
@@ -1003,7 +1060,7 @@ func TestPoolSendMessageWriteQueueFull(t *testing.T) {
 
 	// Setup a callback to capture the connection pointer so we can get the address
 	cc := make(chan *Connection, 1)
-	p.Config.ConnectCallback = func(addr string, id uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, _ bool) {
 		cc <- p.pool[1]
 	}
 
@@ -1015,6 +1072,7 @@ func TestPoolSendMessageWriteQueueFull(t *testing.T) {
 	}()
 	wait()
 
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	_, err = net.Dial("tcp", addr)
 	require.NoError(t, err)
 
@@ -1025,13 +1083,13 @@ func TestPoolSendMessageWriteQueueFull(t *testing.T) {
 	gotErr := false
 	var once sync.Once
 	m := NewByteMessage(88)
-	addr := c.Addr()
+	connAddr := c.Addr()
 	var wg sync.WaitGroup
 	wg.Add(attempts)
 	for i := 0; i < attempts; i++ {
 		go func() {
 			defer wg.Done()
-			err := p.SendMessage(addr, m)
+			err := p.SendMessage(connAddr, m)
 			if err == ErrWriteQueueFull {
 				once.Do(func() {
 					gotErr = true
@@ -1054,7 +1112,8 @@ func TestPoolBroadcastMessage(t *testing.T) {
 	RegisterMessage(BytePrefix, ByteMessage{})
 	VerifyMessages()
 
-	cfg := newTestConfig()
+	cfg := newTestConfig(t)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	cfg.ConnectionWriteQueueSize = 1
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
@@ -1062,7 +1121,7 @@ func TestPoolBroadcastMessage(t *testing.T) {
 	ready := make(chan struct{})
 	var i int
 	var counterLock sync.Mutex
-	p.Config.ConnectCallback = func(addr string, id uint64, solicited bool) {
+	p.Config.ConnectCallback = func(_ string, _ uint64, _ bool) {
 		counterLock.Lock()
 		defer counterLock.Unlock()
 		i++
@@ -1153,7 +1212,8 @@ func TestPoolReceiveMessage(t *testing.T) {
 	RegisterMessage(ErrorPrefix, ErrorMessage{})
 	VerifyMessages()
 
-	cfg := newTestConfig()
+	cfg := newTestConfig(t)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
@@ -1258,7 +1318,7 @@ func NewReadErrorConn() net.Conn {
 }
 
 func (rec *ReadErrorConn) RemoteAddr() net.Addr {
-	return NewDummyAddr(addr)
+	return NewDummyAddr(dummyAddr)
 }
 
 func (rec *ReadErrorConn) SetReadDeadline(t time.Time) error {
@@ -1295,7 +1355,7 @@ func (c *ReadDeadlineFailedConn) SetReadDeadline(_ time.Time) error {
 }
 
 func (c *ReadDeadlineFailedConn) RemoteAddr() net.Addr {
-	return NewDummyAddr(addr)
+	return NewDummyAddr(dummyAddr)
 }
 
 func (c *ReadDeadlineFailedConn) Close() error {
@@ -1314,7 +1374,7 @@ func newReadAlwaysConn() *readAlwaysConn {
 }
 
 func (c *readAlwaysConn) RemoteAddr() net.Addr {
-	return NewDummyAddr(addr)
+	return NewDummyAddr(dummyAddr)
 }
 
 func (c *readAlwaysConn) Close() error {
@@ -1337,7 +1397,7 @@ func (c *readAlwaysConn) Read(b []byte) (int, error) {
 	return 1, nil
 }
 
-func (c *readAlwaysConn) SetReadDeadline(t time.Time) error {
+func (c *readAlwaysConn) SetReadDeadline(_ time.Time) error {
 	return nil
 }
 
@@ -1356,7 +1416,7 @@ func newReadNothingConn() *readNothingConn {
 	}
 }
 
-func (c *readNothingConn) Read(b []byte) (int, error) {
+func (c *readNothingConn) Read(_ []byte) (int, error) {
 	select {
 	case <-c.stopReading:
 		return 0, errors.New("done")
@@ -1367,12 +1427,12 @@ func (c *readNothingConn) Read(b []byte) (int, error) {
 	return 0, nil
 }
 
-func (c *readNothingConn) SetReadDeadline(t time.Time) error {
+func (c *readNothingConn) SetReadDeadline(_ time.Time) error {
 	return nil
 }
 
 func (c *readNothingConn) RemoteAddr() net.Addr {
-	return NewDummyAddr(addr)
+	return NewDummyAddr(dummyAddr)
 }
 
 func (c *readNothingConn) Close() error {

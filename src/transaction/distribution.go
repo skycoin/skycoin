@@ -6,7 +6,7 @@ import (
 )
 
 // TransactionIsLocked returns true if the transaction spends locked outputs
-func TransactionIsLocked(d params.Distribution, inUxs coin.UxArray) bool {
+func TransactionIsLocked(d params.Distribution, inUxs coin.UxArray) bool { //nolint:revive
 	lockedAddrs := d.LockedAddresses()
 	lockedAddrsMap := make(map[string]struct{})
 	for _, a := range lockedAddrs {

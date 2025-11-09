@@ -12,7 +12,6 @@ package commands
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"regexp"
@@ -83,6 +82,7 @@ func init() {
 	RootCmd.Flags().StringVarP(&readTimeout, "read-timeout", "r", defaultReadTimeout, "Read timeout for each peer")
 }
 
+// RootCmd is the root command for monitor-peers
 var RootCmd = &cobra.Command{
 	Use:   "monitor-peers",
 	Short: "check the status of network peers.",
@@ -105,7 +105,7 @@ Connection made, no introduction message received.
 - introduced
 Connection made, introduction message received.
 `,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		connectDuration, err := time.ParseDuration(connectTimeout)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Bad connect timeout:", connectTimeout)
@@ -179,7 +179,7 @@ func (r Report) Append(addr string, state PeerState, introduction *daemon.Introd
 	return append(r, entry)
 }
 
-func main() {
+func main() { //nolint:unused
 	peersFile := flag.String("f", defaultPeersFile, "file containing peers")
 	connectTimeoutStr := flag.String("ctimeout", defaultConnectTimeout, "connect timeout for each peer")
 	readTimeoutStr := flag.String("rtimeout", defaultReadTimeout, "read timeout for each peer")
@@ -219,7 +219,7 @@ func main() {
 // If the line fails to parse, an error is returned
 // Localhost addresses are allowed if allowLocalhost is true
 func getPeersListFromFile(filePath string) ([]string, error) {
-	body, err := ioutil.ReadFile(filePath)
+	body, err := os.ReadFile(filePath) //nolint:gosec
 	if err != nil {
 		return nil, err
 	}

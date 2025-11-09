@@ -395,7 +395,7 @@ func (ct confirmedTxnsGetter) getTxnsHashes(tx *dbutil.Tx, addrs []cipher.Addres
 	if len(addrs) == 1 {
 		// Address indexed
 		for i, hash := range hashes {
-			hashCon.Add(hash, true, uint64(i))
+			hashCon.Add(hash, true, uint64(i)) //nolint:gosec // Index conversion
 		}
 		return hashCon, nil
 	}
@@ -460,7 +460,7 @@ func (uct unconfirmedTxnsGetter) getTransaction(tx *dbutil.Tx, hash cipher.SHA25
 	return &Transaction{
 		Transaction: uncfmTxn.Transaction,
 		Status:      NewUnconfirmedTransactionStatus(),
-		Time:        uint64(timeutil.NanoToTime(uncfmTxn.Received).Unix()),
+		Time:        uint64(timeutil.NanoToTime(uncfmTxn.Received).Unix()), //nolint:gosec
 	}, nil
 }
 
@@ -557,7 +557,7 @@ func (ft fullTxnsGetter) getTxnsHashes(tx *dbutil.Tx, addrs []cipher.Address) (*
 	lastItem, ok := txnHashCon.LastItem()
 	if ok {
 		unconfirmedTxnHashCon.Update(func(i int, item *txnHashConfirm) {
-			item.seq = lastItem.seq + 1 + uint64(i)
+			item.seq = lastItem.seq + 1 + uint64(i) //nolint:gosec // Sequence conversion
 		})
 	}
 

@@ -149,7 +149,7 @@ func maxSizeGiveBlocksMessage(maxBlockSize uint32) uint64 {
 }
 
 // DaemonConfig configuration for the Daemon
-type DaemonConfig struct { //nolint:golint
+type DaemonConfig struct { //nolint:revive
 	// Protocol version. TODO -- manage version better
 	ProtocolVersion int32
 	// Minimum accepted protocol version
@@ -256,7 +256,7 @@ func NewDaemonConfig() DaemonConfig {
 		BlockCreationInterval:        10,
 		UnconfirmedRefreshRate:       time.Minute,
 		UnconfirmedRemoveInvalidRate: time.Minute,
-		Mirror:                       rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32(),
+		Mirror:                       rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Uint32(), //nolint:gosec
 		UnconfirmedVerifyTxn:         params.UserVerifyTxn,
 		MaxOutgoingMessageLength:     256 * 1024,
 		MaxIncomingMessageLength:     1024 * 1024,
@@ -410,7 +410,7 @@ func (dm *Daemon) Run() error {
 	wg.Add(1)
 	go dm.startConnPool(&wg, errC)
 
-	blockInterval := time.Duration(dm.config.BlockCreationInterval)
+	blockInterval := time.Duration(dm.config.BlockCreationInterval) //nolint:gosec
 	blockCreationTicker := time.NewTicker(time.Second * blockInterval)
 	if !dm.visor.Config.IsBlockPublisher {
 		blockCreationTicker.Stop()

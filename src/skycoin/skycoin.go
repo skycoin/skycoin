@@ -6,7 +6,6 @@ package skycoin
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -115,7 +114,7 @@ func (c *Coin) Run() error {
 
 	if c.config.Node.HTTPProf {
 		go func() {
-			if err := http.ListenAndServe(c.config.Node.HTTPProfHost, nil); err != nil {
+			if err := http.ListenAndServe(c.config.Node.HTTPProfHost, nil); err != nil { //nolint:gosec // HTTP profiling interface, intentional use
 				c.logger.WithError(err).Errorf("Listen on HTTP profiling interface %s failed", c.config.Node.HTTPProfHost)
 			}
 		}()
@@ -326,7 +325,7 @@ func (c *Coin) initLogFile() (*os.File, error) {
 	tf := "2006-01-02-030405"
 	logfile := filepath.Join(logDir, fmt.Sprintf("%s-v%s.log", time.Now().Format(tf), c.config.Build.Version))
 
-	f, err := os.OpenFile(logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
+	f, err := os.OpenFile(logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600) //nolint:gosec // Log file creation
 	if err != nil {
 		c.logger.WithError(err).Errorf("os.OpenFile(%s) failed", logfile)
 		return nil, err
@@ -417,8 +416,8 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Pex.CustomPeersFile = c.config.Node.CustomPeersFile
 	dc.Pex.DefaultConnections = c.config.Node.DefaultConnections
 
-	dc.Daemon.MaxOutgoingMessageLength = uint64(c.config.Node.MaxOutgoingMessageLength)
-	dc.Daemon.MaxIncomingMessageLength = uint64(c.config.Node.MaxIncomingMessageLength)
+	dc.Daemon.MaxOutgoingMessageLength = uint64(c.config.Node.MaxOutgoingMessageLength) //nolint:gosec
+	dc.Daemon.MaxIncomingMessageLength = uint64(c.config.Node.MaxIncomingMessageLength) //nolint:gosec
 	dc.Daemon.MaxBlockTransactionsSize = c.config.Node.MaxBlockTransactionsSize
 	dc.Daemon.MaxLastBlocksCount = c.config.Node.MaxLastBlocksCount
 	dc.Daemon.DefaultConnections = c.config.Node.DefaultConnections
@@ -554,11 +553,11 @@ func createCertFiles(certFile, keyFile string) error {
 		return err
 	}
 
-	if err := ioutil.WriteFile(certFile, cert, 0600); err != nil {
+	if err := os.WriteFile(certFile, cert, 0600); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(keyFile, key, 0600); err != nil {
-		os.Remove(certFile)
+	if err := os.WriteFile(keyFile, key, 0600); err != nil {
+		_ = os.Remove(certFile) //nolint:errcheck
 		return err
 	}
 

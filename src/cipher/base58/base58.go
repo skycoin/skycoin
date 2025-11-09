@@ -34,7 +34,7 @@ func NewAlphabet(s string) *Alphabet {
 		ret.decode[i] = -1
 	}
 	for i, b := range ret.encode {
-		ret.decode[b] = int8(i)
+		ret.decode[b] = int8(i) //nolint:gosec
 	}
 
 	return ret
@@ -73,7 +73,7 @@ func fastBase58EncodingAlphabet(bin []byte, alphabet *Alphabet) string {
 		high = j
 	}
 
-	for j = 0; j < size && buf[j] == 0; j++ {
+	for j = 0; j < size && buf[j] == 0; j++ { //nolint:revive
 	}
 
 	var b58 = make([]byte, size-j+zcount)
@@ -118,7 +118,7 @@ func fastBase58DecodingAlphabet(str string, alphabet *Alphabet) ([]byte, error) 
 	)
 
 	if bytesleft > 0 {
-		zmask = 0xffffffff << uint32(bytesleft*8)
+		zmask = 0xffffffff << uint32(bytesleft*8) //nolint:gosec // Intentional conversion for base58 encoding
 	} else {
 		bytesleft = 4
 	}
@@ -137,12 +137,12 @@ func fastBase58DecodingAlphabet(str string, alphabet *Alphabet) ([]byte, error) 
 			return nil, ErrInvalidChar
 		}
 
-		c = uint64(alphabet.decode[r])
+		c = uint64(alphabet.decode[r]) //nolint:gosec
 
 		for j := outisz - 1; j >= 0; j-- {
 			t = uint64(outi[j])*58 + c
 			c = (t >> 32) & 0x3f
-			outi[j] = uint32(t & 0xffffffff)
+			outi[j] = uint32(t & 0xffffffff) //nolint:gosec // Intentional conversion for base58 encoding
 		}
 
 		// Neither of these should occur because the buffer is allocated ourselves

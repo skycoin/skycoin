@@ -16,7 +16,7 @@ import (
 var (
 	skycoinExternalAddrs = skycoinAddressStringsToAddress(testSkycoinExternalAddresses)
 	skycoinChangeAddrs   = skycoinAddressStringsToAddress(testSkycoinChangeAddresses)
-	bitcoinExternalAddrs = bitcoinAddressStringsToAddress(testBitcoinExternalAddresses)
+	bitcoinExternalAddrs = bitcoinAddressStringsToAddress(testBitcoinExternalAddresses) //nolint:unused
 )
 
 type mockTxnsFinder map[cipher.Addresser]bool
@@ -463,7 +463,6 @@ func checkNoSensitiveData(t *testing.T, w *Wallet) {
 	}
 
 	require.NotEmpty(t, w.Meta.Secrets())
-	return
 }
 
 func TestWalletLock(t *testing.T) {
@@ -790,7 +789,7 @@ func TestWalletGenerateAddress(t *testing.T) {
 				l, err := w.EntriesLen()
 				require.NoError(t, err)
 				// 1 default address + tc.num = wallet.EntriesLen()
-				require.Equal(t, int(tc.expectNum), l)
+				require.Equal(t, int(tc.expectNum), l) //nolint:gosec
 
 				addrs, err := w.GetAddresses()
 				require.NoError(t, err)
@@ -863,7 +862,7 @@ func skycoinAddressStringsToAddress(addrsStr []string) []cipher.Addresser {
 	return addrs
 }
 
-func bitcoinAddressStringsToAddress(addrsStr []string) []cipher.Addresser {
+func bitcoinAddressStringsToAddress(addrsStr []string) []cipher.Addresser { //nolint:unused
 	var addrs []cipher.Addresser
 	for _, addr := range addrsStr {
 		a := cipher.MustDecodeBase58BitcoinAddress(addr)
@@ -997,10 +996,10 @@ func TestScanAddresses(t *testing.T) {
 	}
 }
 
-func getExternalAddrs(t *testing.T) []cipher.Addresser {
+func getExternalAddrs(_ *testing.T) []cipher.Addresser { //nolint:unused
 	return skycoinAddressStringsToAddress(testSkycoinExternalAddresses)
 }
 
-func getChangeAddrs(t *testing.T) []cipher.Addresser {
+func getChangeAddrs(_ *testing.T) []cipher.Addresser { //nolint:unused
 	return skycoinAddressStringsToAddress(testSkycoinChangeAddresses)
 }

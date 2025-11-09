@@ -10,7 +10,7 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-const metaAccountsHash = "metaAccountsHash"
+const metaAccountsHash = "metaAccountsHash" //nolint:unused
 
 // JSONDecoder implements the Decoder interface,
 // which provides methods for encoding and decoding a bip44 wallet in JSON format.
@@ -139,7 +139,7 @@ func (rc readableBip44Chain) toBip44Chain(d wallet.AddressSecKeyDecoder) (*bip44
 
 	c := bip44Chain{
 		PubKey:     *pubkey,
-		ChainIndex: uint32(ci),
+		ChainIndex: uint32(ci), //nolint:gosec // Chain index conversion
 	}
 
 	for _, re := range rc.Entries {

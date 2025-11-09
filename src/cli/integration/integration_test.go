@@ -9,7 +9,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -64,10 +64,11 @@ var (
 	liveTxFull     = flag.Bool("live-tx-full", false, "run live transaction test against full blockchain")
 	testLiveWallet = flag.Bool("test-live-wallet", false, "run live wallet tests, requires wallet envvars set")
 
-	cryptoTypes = []crypto.CryptoType{crypto.CryptoTypeScryptChacha20poly1305, crypto.CryptoTypeSha256Xor}
+	cryptoTypes = []crypto.CryptoType{crypto.CryptoTypeScryptChacha20poly1305, crypto.CryptoTypeSha256Xor} //nolint:unused
 
-	validNameRegexp     = regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
-	stripCoverageReport = regexp.MustCompile(`PASS\ncoverage: [\d\.]+% of statements in github.com/skycoin/skycoin/\.\.\.\n$`)
+	validNameRegexp         = regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
+	stripCoverageReport     = regexp.MustCompile(`PASS\ncoverage: [\d\.]+% of statements in github.com/skycoin/skycoin/\.\.\.\n$`)
+	stripCoverageDirWarning = regexp.MustCompile(`warning: GOCOVERDIR not set, no coverage data emitted\n?`)
 )
 
 type TestData struct {
@@ -76,7 +77,6 @@ type TestData struct {
 }
 
 func init() {
-	rand.Seed(time.Now().Unix())
 }
 
 func sanitizeName(s string) (string, error) {
@@ -145,20 +145,19 @@ func execCommand(args ...string) *exec.Cmd {
 		panic(err)
 	}
 	args = append(args, []string{fmt.Sprintf("--test.coverprofile=../../../coverage/%s", coverprofile)}...)
-	return exec.Command(binaryPath, args...)
+	return exec.Command(binaryPath, args...) //nolint:gosec
 }
 
 func execCommandCombinedOutput(args ...string) ([]byte, error) {
 	cmd := execCommand(args...)
 	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return output, err
-	}
 	// Remove the trailing coverage statements that the test cli binary produces due to coverage mode, e.g.
 	// PASS
 	// coverage: 8.1% of statements in github.com/skycoin/skycoin/...
 	output = stripCoverageReport.ReplaceAll(output, nil)
-	return output, nil
+	// Remove the GOCOVERDIR warning that appears when coverage is enabled
+	output = stripCoverageDirWarning.ReplaceAll(output, nil)
+	return output, err
 }
 
 func TestMain(m *testing.M) {
@@ -179,7 +178,7 @@ func TestMain(m *testing.M) {
 	// args := []string{"build", "-o", binaryPath, "../../../cmd/skycoin-cli/skycoin-cli.go"}
 	// Compile the binary with test flags enabled to get a coverage report from the binary
 	args := []string{"test", "-c", "-tags", "testrunmain", "-o", binaryPath, "-coverpkg=github.com/skycoin/skycoin/...", "../../../cmd/skycoin-cli/"}
-	if err := exec.Command("go", args...).Run(); err != nil {
+	if err := exec.Command("go", args...).Run(); err != nil { //nolint:gosec
 		fmt.Fprintf(os.Stderr, "Make %v binary failed: %v\n", binaryName, err)
 		os.Exit(1)
 	}
@@ -201,7 +200,7 @@ type walletCreateOptions struct {
 }
 type walletCreateOptionFunc func(opt *walletCreateOptions)
 
-func encryptOption(encrypt bool) walletCreateOptionFunc {
+func encryptOption(encrypt bool) walletCreateOptionFunc { //nolint:unparam
 	return func(opts *walletCreateOptions) {
 		opts.Encrypt = encrypt
 	}
@@ -219,19 +218,19 @@ func generateNOption(n uint64) walletCreateOptionFunc {
 	}
 }
 
-func coinTypeOption(coinType string) walletCreateOptionFunc {
+func coinTypeOption(coinType string) walletCreateOptionFunc { //nolint:unused
 	return func(opts *walletCreateOptions) {
 		opts.Type = coinType
 	}
 }
 
-func xpubOption(xpub string) walletCreateOptionFunc {
+func xpubOption(xpub string) walletCreateOptionFunc { //nolint:unused
 	return func(opts *walletCreateOptions) {
 		opts.XPub = xpub
 	}
 }
 
-func seedPassphraseOption(sp string) walletCreateOptionFunc {
+func seedPassphraseOption(sp string) walletCreateOptionFunc { //nolint:unused
 	return func(opts *walletCreateOptions) {
 		opts.SeedPassphrase = sp
 	}
@@ -283,19 +282,19 @@ type readableDeterministicWallet struct {
 
 // createTempWalletDir creates a temporary wallet dir,
 // Returns wallet dir path and callback function to clean up the dir.
-func createTempWalletDir(t *testing.T) (string, func()) {
-	dir, err := ioutil.TempDir("", "wallet-data-dir")
+func createTempWalletDir(t *testing.T) (string, func()) { //nolint:unused
+	dir, err := os.MkdirTemp("", "wallet-data-dir")
 	require.NoError(t, err)
 
 	return dir, func() {
-		os.RemoveAll(dir)
+		os.RemoveAll(dir) //nolint:errcheck,gosec
 	}
 }
 
-func loadJSON(t *testing.T, filename string, obj interface{}) {
-	f, err := os.Open(filename)
+func loadJSON(t *testing.T, filename string, obj interface{}) { //nolint:unused
+	f, err := os.Open(filename) //nolint:gosec
 	require.NoError(t, err)
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 
 	err = json.NewDecoder(f).Decode(obj)
 	require.NoError(t, err)
@@ -310,9 +309,9 @@ func loadGoldenFile(t *testing.T, filename string, testData TestData) {
 		updateGoldenFile(t, goldenFile, testData.actual)
 	}
 
-	f, err := os.Open(goldenFile)
+	f, err := os.Open(goldenFile) //nolint:gosec
 	require.NoError(t, err)
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 
 	err = json.NewDecoder(f).Decode(testData.expected)
 	require.NoError(t, err, filename)
@@ -322,7 +321,7 @@ func updateGoldenFile(t *testing.T, filename string, content interface{}) {
 	contentJSON, err := json.MarshalIndent(content, "", "\t")
 	require.NoError(t, err)
 	contentJSON = append(contentJSON, '\n')
-	err = ioutil.WriteFile(filename, contentJSON, 0644)
+	err = os.WriteFile(filename, contentJSON, 0644) //nolint:gosec
 	require.NoError(t, err)
 }
 
@@ -340,11 +339,11 @@ func checkGoldenFileObjectChanges(t *testing.T, goldenFile string, td TestData) 
 
 	goldenFile = filepath.Join(testFixturesDir, goldenFile)
 
-	f, err := os.Open(goldenFile)
+	f, err := os.Open(goldenFile) //nolint:gosec
 	require.NoError(t, err)
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 
-	c, err := ioutil.ReadAll(f)
+	c, err := io.ReadAll(f)
 	require.NoError(t, err)
 
 	sc := string(c)
@@ -480,7 +479,7 @@ func doHeaderCheck(t *testing.T) bool {
 
 }
 
-func createWallet(t *testing.T, label string, args []string) *api.WalletResponse {
+func createWallet(t *testing.T, label string, args []string) *api.WalletResponse { //nolint:unparam
 	args = append([]string{"walletCreate", "--label", label}, args...)
 	output, err := execCommandCombinedOutput(args...)
 	require.NoError(t, err, fmt.Sprintf("err: %s", string(output)))
@@ -1200,7 +1199,7 @@ func TestFiberAddressGen(t *testing.T) {
 	}
 
 	checkAddrsFile := func(t *testing.T, fn string, n int) []string {
-		b, err := ioutil.ReadFile(fn)
+		b, err := os.ReadFile(fn) //nolint:gosec
 		require.NoError(t, err)
 
 		addrs := strings.Split(strings.TrimSpace(string(b)), "\n")
@@ -1229,9 +1228,9 @@ func TestFiberAddressGen(t *testing.T) {
 	}
 
 	checkSeedsFile := func(t *testing.T, fn string, entropy int, addrs []string) {
-		f, err := os.Open(fn)
+		f, err := os.Open(fn) //nolint:gosec
 		require.NoError(t, err)
-		defer f.Close()
+		defer f.Close() //nolint:errcheck
 
 		r := csv.NewReader(f)
 		records, err := r.ReadAll()
@@ -1278,9 +1277,9 @@ func TestFiberAddressGen(t *testing.T) {
 	}
 
 	touch := func(t *testing.T, fn string) {
-		f, err := os.Create(fn)
+		f, err := os.Create(fn) //nolint:gosec
 		require.NoError(t, err)
-		defer f.Close()
+		defer f.Close() //nolint:errcheck
 		err = f.Close()
 		require.NoError(t, err)
 	}
@@ -1303,8 +1302,8 @@ func TestFiberAddressGen(t *testing.T) {
 				testutil.RequireFileNotExists(t, seedsFilename)
 			},
 			check: func(t *testing.T, _ []byte) {
-				defer os.Remove(addrsFilename)
-				defer os.Remove(seedsFilename)
+				defer os.Remove(addrsFilename) //nolint:errcheck
+				defer os.Remove(seedsFilename) //nolint:errcheck
 				testutil.RequireFileExists(t, addrsFilename)
 				testutil.RequireFileExists(t, seedsFilename)
 				addrs := checkAddrsFile(t, addrsFilename, 100)
@@ -1319,8 +1318,8 @@ func TestFiberAddressGen(t *testing.T) {
 				testutil.RequireFileNotExists(t, seedsFilename)
 			},
 			check: func(t *testing.T, _ []byte) {
-				defer os.Remove(addrsFilename)
-				defer os.Remove(seedsFilename)
+				defer os.Remove(addrsFilename) //nolint:errcheck
+				defer os.Remove(seedsFilename) //nolint:errcheck
 				testutil.RequireFileExists(t, addrsFilename)
 				testutil.RequireFileExists(t, seedsFilename)
 				addrs := checkAddrsFile(t, addrsFilename, 100)
@@ -1335,8 +1334,8 @@ func TestFiberAddressGen(t *testing.T) {
 				testutil.RequireFileNotExists(t, seedsFilename)
 			},
 			check: func(t *testing.T, _ []byte) {
-				defer os.Remove(addrsFilename)
-				defer os.Remove(seedsFilename)
+				defer os.Remove(addrsFilename) //nolint:errcheck
+				defer os.Remove(seedsFilename) //nolint:errcheck
 				testutil.RequireFileExists(t, addrsFilename)
 				testutil.RequireFileExists(t, seedsFilename)
 				addrs := checkAddrsFile(t, addrsFilename, 1)
@@ -1353,8 +1352,8 @@ func TestFiberAddressGen(t *testing.T) {
 				testutil.RequireFileExists(t, addrsFilename)
 			},
 			check: func(t *testing.T, v []byte) {
-				defer os.Remove(addrsFilename)
-				defer os.Remove(seedsFilename)
+				defer os.Remove(addrsFilename) //nolint:errcheck
+				defer os.Remove(seedsFilename) //nolint:errcheck
 				testutil.RequireFileNotExists(t, seedsFilename)
 				require.Equal(t, "Error: -addrs-file \"addresses.txt\" already exists. Use -overwrite to force writing\n", string(v))
 			},
@@ -1370,8 +1369,8 @@ func TestFiberAddressGen(t *testing.T) {
 				testutil.RequireFileExists(t, seedsFilename)
 			},
 			check: func(t *testing.T, v []byte) {
-				defer os.Remove(addrsFilename)
-				defer os.Remove(seedsFilename)
+				defer os.Remove(addrsFilename) //nolint:errcheck
+				defer os.Remove(seedsFilename) //nolint:errcheck
 				testutil.RequireFileNotExists(t, addrsFilename)
 				require.Equal(t, "Error: -seeds-file \"seeds.csv\" already exists. Use -overwrite to force writing\n", string(v))
 			},
@@ -1389,8 +1388,8 @@ func TestFiberAddressGen(t *testing.T) {
 				testutil.RequireFileExists(t, seedsFilename)
 			},
 			check: func(t *testing.T, _ []byte) {
-				defer os.Remove(addrsFilename)
-				defer os.Remove(seedsFilename)
+				defer os.Remove(addrsFilename) //nolint:errcheck
+				defer os.Remove(seedsFilename) //nolint:errcheck
 				testutil.RequireFileExists(t, addrsFilename)
 				testutil.RequireFileExists(t, seedsFilename)
 				addrs := checkAddrsFile(t, addrsFilename, 100)
@@ -1405,8 +1404,8 @@ func TestFiberAddressGen(t *testing.T) {
 				testutil.RequireFileNotExists(t, "fooseeds.csv")
 			},
 			check: func(t *testing.T, _ []byte) {
-				defer os.Remove("fooaddrs.txt")
-				defer os.Remove("fooseeds.csv")
+				defer os.Remove("fooaddrs.txt") //nolint:errcheck
+				defer os.Remove("fooseeds.csv") //nolint:errcheck
 				testutil.RequireFileExists(t, "fooaddrs.txt")
 				testutil.RequireFileExists(t, "fooseeds.csv")
 				addrs := checkAddrsFile(t, "fooaddrs.txt", 100)
@@ -1987,13 +1986,13 @@ func TestLiveTransaction(t *testing.T) {
 
 func prepareCSVFile(t *testing.T, toAddrs [][]string) (csvFile string, teardown func(t *testing.T)) {
 	fn := "create_txn_test.csv"
-	tmpDir, err := ioutil.TempDir("", "create_raw_transaction")
+	tmpDir, err := os.MkdirTemp("", "create_raw_transaction")
 	require.NoError(t, err)
 	csvFile = filepath.Join(tmpDir, fn)
 
-	f, err := os.Create(csvFile)
+	f, err := os.Create(csvFile) //nolint:gosec
 	require.NoError(t, err)
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 	w := csv.NewWriter(f)
 
 	for _, to := range toAddrs {
@@ -2213,7 +2212,7 @@ func getAddressOutputs(t *testing.T, address string) map[string]struct{} {
 }
 
 // TODO cli doesn't have command to querying pending transactions yet.
-func scanPendingTransactions(t *testing.T) {
+func scanPendingTransactions(_ *testing.T) {
 }
 
 // scanTransactions scans transactions against blockchain.
@@ -2239,7 +2238,7 @@ func scanTransactions(t *testing.T, fullTest bool) {
 		var ids []string
 		for len(txidMap) < randomLiveTransactionNum {
 			// get random txid
-			txid := txids[rand.Intn(l)]
+			txid := txids[rand.Intn(l)] //nolint:gosec
 			if _, ok := txidMap[txid]; !ok {
 				ids = append(ids, txid)
 				txidMap[txid] = struct{}{}
@@ -2292,7 +2291,7 @@ func getTxids(t *testing.T, blockNum uint64) []string {
 	// do not get all blocks in one query, which might run out of
 	// memory when blockchain becomes very huge.
 	p := 500
-	n := int(blockNum / uint64(p))
+	n := int(blockNum / uint64(p)) //nolint:gosec
 
 	// Collects all transactions' id
 	var txids []string
@@ -2300,8 +2299,8 @@ func getTxids(t *testing.T, blockNum uint64) []string {
 		txids = append(txids, getTxidsInBlocks(t, i*p+1, (i+1)*p)...)
 	}
 
-	if (blockNum % uint64(p)) > 0 {
-		txids = append(txids, getTxidsInBlocks(t, n*p+1, int(blockNum)-1)...)
+	if (blockNum % uint64(p)) > 0 { //nolint:gosec
+		txids = append(txids, getTxidsInBlocks(t, n*p+1, int(blockNum)-1)...) //nolint:gosec
 	}
 
 	return txids
@@ -2625,7 +2624,7 @@ func TestLiveSend(t *testing.T) {
 					entries[1].Address.String(), "1"}
 			},
 			errMsg:   []byte("See 'skycoin-cli send --help'\nError: Transaction has zero coinhour fee"),
-			checkTxn: func(t *testing.T, txid string) {},
+			checkTxn: func(_ *testing.T, _ string) {},
 		},
 	}
 
@@ -2803,9 +2802,9 @@ func TestLiveCreateAndBroadcastRawTransaction(t *testing.T) {
 					{entries[2].Address.String(), "0.5"},
 				}
 
-				f, err := ioutil.TempFile("", "createrawtxn")
+				f, err := os.CreateTemp("", "createrawtxn")
 				require.NoError(t, err)
-				defer f.Close()
+				defer f.Close() //nolint:errcheck
 
 				w := csv.NewWriter(f)
 
@@ -2956,7 +2955,7 @@ func prepareAndCheckWallet(t *testing.T, miniCoins, miniCoinHours uint64) (walle
 
 	if el < 3 {
 		// Generates addresses
-		_, err = w.GenerateAddresses(wallet.OptionGenerateN(uint64(3 - el)))
+		_, err = w.GenerateAddresses(wallet.OptionGenerateN(uint64(3 - el))) //nolint:gosec
 		if err != nil {
 			t.Fatalf("Wallet generateAddress failed: %v", err)
 		}
@@ -3182,7 +3181,7 @@ func TestStableWalletCreateXPubFlow(t *testing.T) {
 		require.Equal(t, e.Address, e2.Address)
 		require.True(t, e.Secret.Null())
 		require.True(t, e2.Secret.Null())
-		require.Equal(t, e.ChildNumber, uint32(i))
+		require.Equal(t, e.ChildNumber, uint32(i)) //nolint:gosec
 		require.Equal(t, e.ChildNumber, e2.ChildNumber)
 		require.Equal(t, e.Change, e2.Change)
 	}
@@ -3617,7 +3616,7 @@ func TestEncryptWallet(t *testing.T) {
 		{
 			name: "wallet doesn't exist",
 			args: []string{"-p", "pwd"},
-			setup: func(t *testing.T) string {
+			setup: func(_ *testing.T) string {
 				return "not-exist.wlt"
 			},
 			errWithHelp: true,
@@ -3710,7 +3709,7 @@ func TestDecryptWallet(t *testing.T) {
 		{
 			name: "wallet doesn't exist",
 			args: []string{"-p", "pwd"},
-			setup: func(t *testing.T) string {
+			setup: func(_ *testing.T) string {
 				return "not-exist.wlt"
 			},
 			errWithHelp: true,

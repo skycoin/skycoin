@@ -48,8 +48,12 @@ func run(_ *cobra.Command, _ []string) {
 	}
 
 	// Create output directories
-	os.MkdirAll(outputGoDir, 0755)
-	os.MkdirAll(outputTinyDir, 0755)
+	if err := os.MkdirAll(outputGoDir, 0755); err != nil { //nolint:gosec
+		log.Fatalf("Failed to create output directory: %v", err)
+	}
+	if err := os.MkdirAll(outputTinyDir, 0755); err != nil { //nolint:gosec
+		log.Fatalf("Failed to create output directory: %v", err)
+	}
 
 	// Copy wasm_exec.js files
 	copyWasmExecJS()

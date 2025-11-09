@@ -67,7 +67,7 @@ func (s Sha256Xor) Encrypt(data []byte, password []byte) ([]byte, error) {
 
 	// Sets data length prefix
 	dataLenBytes := make([]byte, sha256XorDataLengthSize)
-	binary.LittleEndian.PutUint32(dataLenBytes, uint32(len(data)))
+	binary.LittleEndian.PutUint32(dataLenBytes, uint32(len(data))) //nolint:gosec
 
 	// Prefixes data with length
 	ldata := append(dataLenBytes, data...)
@@ -223,11 +223,11 @@ func (s Sha256Xor) Decrypt(data []byte, password []byte) ([]byte, error) {
 
 	l := binary.LittleEndian.Uint32(dataLenBytes)
 
-	if uint64(buf.Len()) > math.MaxUint32 {
+	if uint64(buf.Len()) > math.MaxUint32 { //nolint:gosec // Intentional conversion for size validation
 		return nil, ErrDataTooLarge
 	}
 
-	if l > uint32(buf.Len()) {
+	if l > uint32(buf.Len()) { //nolint:gosec // Intentional conversion for size validation
 		return nil, ErrInvalidDataLength
 	}
 
@@ -238,7 +238,7 @@ func (s Sha256Xor) Decrypt(data []byte, password []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	if uint32(n) != l {
+	if uint32(n) != l { //nolint:gosec // Intentional conversion for size validation
 		return nil, fmt.Errorf("read data failed, expect %d bytes, but get %d bytes", l, n)
 	}
 

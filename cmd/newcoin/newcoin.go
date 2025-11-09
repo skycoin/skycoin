@@ -3,6 +3,7 @@
 newcoin generates a new coin cmd from a toml configuration file
 */
 
+// Package main implements the newcoin template generator.
 package main
 
 import (

@@ -177,7 +177,7 @@ func TestNewBip44Account(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ba, err := newBip44Account(bip44AccountCreateOptions{
 				name:           tc.accountName,
-				index:          uint32(tc.index),
+				index:          uint32(tc.index), //nolint:gosec
 				seed:           tc.seed,
 				seedPassphrase: testSeedPassphrase,
 				coinType:       tc.coinType,
@@ -189,7 +189,7 @@ func TestNewBip44Account(t *testing.T) {
 			}
 			require.NoError(t, err)
 			require.Equal(t, tc.accountName, ba.Name)
-			require.Equal(t, uint32(tc.index), ba.Index)
+			require.Equal(t, uint32(tc.index), ba.Index) //nolint:gosec
 			require.Equal(t, tc.coinType, ba.CoinType)
 			require.Equal(t, 2, len(ba.Chains))
 
@@ -317,7 +317,7 @@ func TestBip44AccountsNewAddresses(t *testing.T) {
 				return
 			}
 
-			require.Equal(t, tc.num, uint32(len(addrs)))
+			require.Equal(t, tc.num, uint32(len(addrs))) //nolint:gosec // Test comparison
 
 			act, err := accounts.account(accountIndex)
 			require.NoError(t, err)

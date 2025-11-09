@@ -78,7 +78,7 @@ type chainStore interface {
 }
 
 // DefaultWalker default blockchain walker
-func DefaultWalker(tx *dbutil.Tx, hps []coin.HashPair) (cipher.SHA256, bool) {
+func DefaultWalker(_ *dbutil.Tx, hps []coin.HashPair) (cipher.SHA256, bool) {
 	if len(hps) == 0 {
 		return cipher.SHA256{}, false
 	}
@@ -513,12 +513,12 @@ func (bc Blockchain) GetLastBlocks(tx *dbutil.Tx, num uint64) ([]coin.SignedBloc
 		return nil, nil
 	}
 
-	start := int(end-num) + 1
+	start := int(end-num) + 1 //nolint:gosec // Intentional range calculation
 	if start < 0 {
 		start = 0
 	}
 
-	return bc.GetBlocksInRange(tx, uint64(start), end)
+	return bc.GetBlocksInRange(tx, uint64(start), end) //nolint:gosec // Intentional range calculation
 }
 
 /* Private */

@@ -83,7 +83,7 @@ func (d *digest) Write(p []byte) (nn int, err error) {
 	return
 }
 
-func (d0 *digest) Sum(in []byte) []byte { //nolint:golint
+func (d0 *digest) Sum(in []byte) []byte { //nolint:revive
 	// Make a copy of d0 so that caller can keep writing and summing.
 	d := *d0
 

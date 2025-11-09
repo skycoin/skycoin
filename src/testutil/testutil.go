@@ -5,7 +5,6 @@ package testutil
 
 import (
 	"crypto/rand"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -21,7 +20,7 @@ import (
 
 // PrepareDB creates and opens a temporary test DB and returns it with a cleanup callback
 func PrepareDB(t *testing.T) (*dbutil.DB, func()) {
-	f, err := ioutil.TempFile("", "testdb")
+	f, err := os.CreateTemp("", "testdb")
 	require.NoError(t, err)
 
 	db, err := bolt.Open(f.Name(), 0700, nil)
@@ -47,7 +46,7 @@ func PrepareDB(t *testing.T) (*dbutil.DB, func()) {
 
 // PrepareDBReadOnly creates and opens a readonly temporary test DB and returns it with a cleanup callback
 func PrepareDBReadOnly(t *testing.T) (*dbutil.DB, func()) {
-	f, err := ioutil.TempFile("", "testdb")
+	f, err := os.CreateTemp("", "testdb")
 	require.NoError(t, err)
 
 	// Open to init the DB, otherwise bolt will try to open an readonly db to init and fail.

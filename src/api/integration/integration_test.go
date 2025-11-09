@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -237,9 +236,9 @@ func loadGoldenFile(t *testing.T, filename string, testData TestData) {
 		updateGoldenFile(t, goldenFile, testData.actual)
 	}
 
-	f, err := os.Open(goldenFile)
+	f, err := os.Open(goldenFile) //nolint:gosec
 	require.NoError(t, err)
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 
 	d := json.NewDecoder(f)
 	d.DisallowUnknownFields()
@@ -252,7 +251,7 @@ func updateGoldenFile(t *testing.T, filename string, content interface{}) {
 	contentJSON, err := json.MarshalIndent(content, "", "\t")
 	require.NoError(t, err)
 	contentJSON = append(contentJSON, '\n')
-	err = ioutil.WriteFile(filename, contentJSON, 0644)
+	err = os.WriteFile(filename, contentJSON, 0644) //nolint:gosec
 	require.NoError(t, err)
 }
 
@@ -268,11 +267,11 @@ func checkGoldenFile(t *testing.T, goldenFile string, td TestData) {
 
 	goldenFile = filepath.Join(testFixturesDir, goldenFile)
 
-	f, err := os.Open(goldenFile)
+	f, err := os.Open(goldenFile) //nolint:gosec
 	require.NoError(t, err)
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 
-	c, err := ioutil.ReadAll(f)
+	c, err := io.ReadAll(f)
 	require.NoError(t, err)
 
 	sc := string(c)
@@ -1441,7 +1440,7 @@ func testBlocksInRange(t *testing.T, start, end uint64) *readable.Blocks {
 	if start > end {
 		require.Empty(t, blocks.Blocks)
 	} else {
-		require.Len(t, blocks.Blocks, int(end-start+1))
+		require.Len(t, blocks.Blocks, int(end-start+1)) //nolint:gosec
 	}
 
 	var prevBlock *readable.Block
@@ -1451,7 +1450,7 @@ func testBlocksInRange(t *testing.T, start, end uint64) *readable.Blocks {
 		}
 
 		bHash, err := c.BlockByHash(b.Head.Hash)
-		require.Equal(t, uint64(idx)+start, b.Head.BkSeq)
+		require.Equal(t, uint64(idx)+start, b.Head.BkSeq) //nolint:gosec
 		require.NoError(t, err)
 		require.NotNil(t, bHash)
 		require.Equal(t, b, *bHash)
@@ -1554,7 +1553,7 @@ func testBlocksInRangeVerbose(t *testing.T, start, end uint64) *readable.BlocksV
 	if start > end {
 		require.Empty(t, blocks.Blocks)
 	} else {
-		require.Len(t, blocks.Blocks, int(end-start+1))
+		require.Len(t, blocks.Blocks, int(end-start+1)) //nolint:gosec
 	}
 
 	var prevBlock *readable.BlockVerbose
@@ -1566,7 +1565,7 @@ func testBlocksInRangeVerbose(t *testing.T, start, end uint64) *readable.BlocksV
 		}
 
 		bHash, err := c.BlockByHashVerbose(b.Head.Hash)
-		require.Equal(t, uint64(idx)+start, b.Head.BkSeq)
+		require.Equal(t, uint64(idx)+start, b.Head.BkSeq) //nolint:gosec
 		require.NoError(t, err)
 		require.NotNil(t, bHash)
 		require.Equal(t, b, *bHash)
@@ -3591,7 +3590,7 @@ func TestDisableWalletAPI(t *testing.T) {
 			name:      "main index.html 404 not found",
 			method:    http.MethodGet,
 			endpoint:  "/api/v1/",
-			expectErr: "404 Not Found",
+			expectErr: "404 page not found",
 			code:      http.StatusNotFound,
 		},
 		{
@@ -3777,7 +3776,7 @@ func TestDisableGUIAPI(t *testing.T) {
 
 	c := newClient()
 	err := c.Get("/", nil)
-	assertResponseError(t, err, http.StatusNotFound, "404 Not Found")
+	assertResponseError(t, err, http.StatusNotFound, "404 page not found")
 }
 
 func TestInvalidAuth(t *testing.T) {

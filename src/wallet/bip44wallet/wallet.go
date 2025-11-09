@@ -614,7 +614,7 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 		}
 
 		// generates the addresses  to scan
-		addrs, err := w2.accountManager.newAddresses(account, chain, uint32(scanN))
+		addrs, err := w2.accountManager.newAddresses(account, chain, uint32(scanN)) //nolint:gosec
 		if err != nil {
 			return nil, 0, 0, err
 		}
@@ -629,12 +629,12 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 		var keepNum uint64
 		for i := len(active) - 1; i >= 0; i-- {
 			if active[i] {
-				keepNum = uint64(i + 1)
+				keepNum = uint64(i + 1) //nolint:gosec // Address count conversion
 				break
 			}
 		}
 
-		return addrs[:keepNum], int(nExistingAddrs), int(keepNum), nil
+		return addrs[:keepNum], int(nExistingAddrs), int(keepNum), nil //nolint:gosec
 	}
 
 	// [accounts][chains] array
@@ -651,14 +651,14 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 
 		retAddrs = append(retAddrs, addrs...)
 
-		generateAddresses[i] = append(generateAddresses[i], uint32(initLen+keepNum))
+		generateAddresses[i] = append(generateAddresses[i], uint32(initLen+keepNum)) //nolint:gosec // Address count conversion
 
 		_, initLen, keepNum, err = scanAddresses(a.Index, bip44.ChangeChainIndex)
 		if err != nil {
 			return nil, err
 		}
 
-		generateAddresses[i] = append(generateAddresses[i], uint32(initLen+keepNum))
+		generateAddresses[i] = append(generateAddresses[i], uint32(initLen+keepNum)) //nolint:gosec // Address count conversion
 	}
 
 	w2.reset()
@@ -700,9 +700,9 @@ func (w *Wallet) GenerateAddresses(options ...wallet.Option) ([]cipher.Addresser
 	opts := getBip44Options(options...)
 	switch opts.ChainMode {
 	case wallet.DefaultChain, wallet.ExternalChain:
-		return w.newAddresses(opts.Account, bip44.ExternalChainIndex, uint32(num))
+		return w.newAddresses(opts.Account, bip44.ExternalChainIndex, uint32(num)) //nolint:gosec
 	case wallet.ChangeChain:
-		return w.newAddresses(opts.Account, bip44.ChangeChainIndex, uint32(num))
+		return w.newAddresses(opts.Account, bip44.ChangeChainIndex, uint32(num)) //nolint:gosec // Chain index conversion
 	case wallet.AllChains:
 		return nil, errors.New("could not generate new addresses on both external and internal chains at once")
 	default:
@@ -811,7 +811,7 @@ func (w *Wallet) PeekChangeAddress(tf wallet.TransactionsFinder) (cipher.Address
 		return nil, err
 	}
 
-	if oks[0] == false {
+	if !oks[0] {
 		return addr, nil
 	}
 

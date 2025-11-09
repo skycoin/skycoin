@@ -1,3 +1,4 @@
+// Package gziphandler provides HTTP middleware for gzip compression.
 package gziphandler
 
 // https://gist.github.com/CJEnright/bc2d8b8dc0c1389a9feeddb110f822d7
@@ -5,7 +6,6 @@ package gziphandler
 import (
 	"compress/gzip"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
@@ -13,7 +13,7 @@ import (
 
 var gzPool = sync.Pool{
 	New: func() interface{} {
-		w := gzip.NewWriter(ioutil.Discard)
+		w := gzip.NewWriter(io.Discard)
 		return w
 	},
 }
@@ -46,7 +46,7 @@ func New(next http.Handler) http.Handler {
 		defer gzPool.Put(gz)
 
 		gz.Reset(w)
-		defer gz.Close()
+		defer gz.Close() //nolint:errcheck
 
 		next.ServeHTTP(&gzipResponseWriter{ResponseWriter: w, Writer: gz}, r)
 	})

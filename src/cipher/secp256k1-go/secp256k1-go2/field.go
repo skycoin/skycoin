@@ -160,19 +160,19 @@ func (fd *Field) Normalize() {
 		(low < 0xFFFFEFFFFFC2F) {
 		mask = 0xFFFFFFFFFFFFFFFF
 	}
-	t9 &= uint32(mask)
-	t8 &= uint32(mask)
-	t7 &= uint32(mask)
-	t6 &= uint32(mask)
-	t5 &= uint32(mask)
-	t4 &= uint32(mask)
-	t3 &= uint32(mask)
-	t2 &= uint32(mask)
+	t9 &= uint32(mask) //nolint:gosec
+	t8 &= uint32(mask) //nolint:gosec
+	t7 &= uint32(mask) //nolint:gosec
+	t6 &= uint32(mask) //nolint:gosec
+	t5 &= uint32(mask) //nolint:gosec // Intentional conversion for secp256k1 field operations
+	t4 &= uint32(mask) //nolint:gosec // Intentional conversion for secp256k1 field operations
+	t3 &= uint32(mask) //nolint:gosec // Intentional conversion for secp256k1 field operations
+	t2 &= uint32(mask) //nolint:gosec // Intentional conversion for secp256k1 field operations
 	low -= ((mask ^ 0xFFFFFFFFFFFFFFFF) & 0xFFFFEFFFFFC2F)
 
 	// push internal variables back
-	fd.n[0] = uint32(low) & 0x3FFFFFF
-	fd.n[1] = uint32(low>>26) & 0x3FFFFFF
+	fd.n[0] = uint32(low) & 0x3FFFFFF     //nolint:gosec // Intentional conversion for secp256k1 field operations
+	fd.n[1] = uint32(low>>26) & 0x3FFFFFF //nolint:gosec // Intentional conversion for secp256k1 field operations
 	fd.n[2] = t2
 	fd.n[3] = t3
 	fd.n[4] = t4
@@ -567,33 +567,33 @@ func (fd *Field) Mul(r, b *Field) {
 	t2 = c & 0x3FFFFFF
 	c = c >> 26
 	c = c + t3 + t12*0x400 + t13*0x3D10
-	r.n[3] = uint32(c) & 0x3FFFFFF
+	r.n[3] = uint32(c) & 0x3FFFFFF //nolint:gosec // Intentional conversion for secp256k1 field operations
 	c = c >> 26
 	c = c + t4 + t13*0x400 + t14*0x3D10
-	r.n[4] = uint32(c) & 0x3FFFFFF
+	r.n[4] = uint32(c) & 0x3FFFFFF //nolint:gosec // Intentional conversion for secp256k1 field operations
 	c = c >> 26
 	c = c + t5 + t14*0x400 + t15*0x3D10
-	r.n[5] = uint32(c) & 0x3FFFFFF
+	r.n[5] = uint32(c) & 0x3FFFFFF //nolint:gosec // Intentional conversion for secp256k1 field operations
 	c = c >> 26
 	c = c + t6 + t15*0x400 + t16*0x3D10
-	r.n[6] = uint32(c) & 0x3FFFFFF
+	r.n[6] = uint32(c) & 0x3FFFFFF //nolint:gosec // Intentional conversion for secp256k1 field operations
 	c = c >> 26
 	c = c + t7 + t16*0x400 + t17*0x3D10
-	r.n[7] = uint32(c) & 0x3FFFFFF
+	r.n[7] = uint32(c) & 0x3FFFFFF //nolint:gosec // Intentional conversion for secp256k1 field operations
 	c = c >> 26
 	c = c + t8 + t17*0x400 + t18*0x3D10
-	r.n[8] = uint32(c) & 0x3FFFFFF
+	r.n[8] = uint32(c) & 0x3FFFFFF //nolint:gosec // Intentional conversion for secp256k1 field operations
 	c = c >> 26
 	c = c + t9 + t18*0x400 + t19*0x1000003D10
-	r.n[9] = uint32(c) & 0x03FFFFF
+	r.n[9] = uint32(c) & 0x03FFFFF //nolint:gosec // Intentional conversion for secp256k1 field operations
 	c = c >> 22
 	d = t0 + c*0x3D1
-	r.n[0] = uint32(d) & 0x3FFFFFF
+	r.n[0] = uint32(d) & 0x3FFFFFF //nolint:gosec // Intentional conversion for secp256k1 field operations
 	d = d >> 26
 	d = d + t1 + c*0x40
-	r.n[1] = uint32(d) & 0x3FFFFFF
+	r.n[1] = uint32(d) & 0x3FFFFFF //nolint:gosec // Intentional conversion for secp256k1 field operations
 	d = d >> 26
-	r.n[2] = uint32(t2 + d)
+	r.n[2] = uint32(t2 + d) //nolint:gosec // Intentional conversion for secp256k1 field operations
 }
 
 // Sqr ...
@@ -708,31 +708,31 @@ func (fd *Field) Sqr(r *Field) {
 	t2 = c & 0x3FFFFFF
 	c = c >> 26
 	c = c + t3 + t12*0x400 + t13*0x3D10
-	r.n[3] = uint32(c) & 0x3FFFFFF
+	r.n[3] = uint32(c) & 0x3FFFFFF //nolint:gosec // Intentional conversion for secp256k1 field operations
 	c = c >> 26
 	c = c + t4 + t13*0x400 + t14*0x3D10
-	r.n[4] = uint32(c) & 0x3FFFFFF
+	r.n[4] = uint32(c) & 0x3FFFFFF //nolint:gosec // Intentional conversion for secp256k1 field operations
 	c = c >> 26
 	c = c + t5 + t14*0x400 + t15*0x3D10
-	r.n[5] = uint32(c) & 0x3FFFFFF
+	r.n[5] = uint32(c) & 0x3FFFFFF //nolint:gosec // Intentional conversion for secp256k1 field operations
 	c = c >> 26
 	c = c + t6 + t15*0x400 + t16*0x3D10
-	r.n[6] = uint32(c) & 0x3FFFFFF
+	r.n[6] = uint32(c) & 0x3FFFFFF //nolint:gosec // Intentional conversion for secp256k1 field operations
 	c = c >> 26
 	c = c + t7 + t16*0x400 + t17*0x3D10
-	r.n[7] = uint32(c) & 0x3FFFFFF
+	r.n[7] = uint32(c) & 0x3FFFFFF //nolint:gosec // Intentional conversion for secp256k1 field operations
 	c = c >> 26
 	c = c + t8 + t17*0x400 + t18*0x3D10
-	r.n[8] = uint32(c) & 0x3FFFFFF
+	r.n[8] = uint32(c) & 0x3FFFFFF //nolint:gosec // Intentional conversion for secp256k1 field operations
 	c = c >> 26
 	c = c + t9 + t18*0x400 + t19*0x1000003D10
-	r.n[9] = uint32(c) & 0x03FFFFF
+	r.n[9] = uint32(c) & 0x03FFFFF //nolint:gosec // Intentional conversion for secp256k1 field operations
 	c = c >> 22
 	d = t0 + c*0x3D1
-	r.n[0] = uint32(d) & 0x3FFFFFF
+	r.n[0] = uint32(d) & 0x3FFFFFF //nolint:gosec // Intentional conversion for secp256k1 field operations
 	d = d >> 26
 	d = d + t1 + c*0x40
-	r.n[1] = uint32(d) & 0x3FFFFFF
+	r.n[1] = uint32(d) & 0x3FFFFFF //nolint:gosec // Intentional conversion for secp256k1 field operations
 	d = d >> 26
-	r.n[2] = uint32(t2 + d)
+	r.n[2] = uint32(t2 + d) //nolint:gosec // Intentional conversion for secp256k1 field operations
 }

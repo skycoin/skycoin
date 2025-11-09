@@ -190,11 +190,11 @@ func smix(b []byte, r, N int, v, xy []uint32) {
 		blockMix(&tmp, y, x, r)
 	}
 	for i := 0; i < N; i += 2 {
-		j := int(integer(x, r) & uint64(N-1))
+		j := int(integer(x, r) & uint64(N-1)) //nolint:gosec
 		blockXOR(x, v[j*(32*r):], 32*r)
 		blockMix(&tmp, x, y, r)
 
-		j = int(integer(y, r) & uint64(N-1))
+		j = int(integer(y, r) & uint64(N-1)) //nolint:gosec
 		blockXOR(y, v[j*(32*r):], 32*r)
 		blockMix(&tmp, y, x, r)
 	}
@@ -227,7 +227,7 @@ func Key(password, salt []byte, N, r, p, keyLen int) ([]byte, error) {
 	if N <= 1 || N&(N-1) != 0 {
 		return nil, errors.New("scrypt: N must be > 1 and a power of 2")
 	}
-	if uint64(r)*uint64(p) >= 1<<30 || r > maxInt/128/p || r > maxInt/256 || N > maxInt/128/r {
+	if uint64(r)*uint64(p) >= 1<<30 || r > maxInt/128/p || r > maxInt/256 || N > maxInt/128/r { //nolint:gosec
 		return nil, errors.New("scrypt: parameters are too large")
 	}
 

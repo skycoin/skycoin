@@ -1,3 +1,4 @@
+// Package require provides test requirement helpers.
 package require
 
 import (

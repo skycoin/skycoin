@@ -1,3 +1,4 @@
+// Package main provides a lightweight Skycoin client implementation
 package main
 
 import (

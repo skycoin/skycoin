@@ -23,7 +23,7 @@ func xgetbv() (eax, edx uint32)
 
 var (
 	useASM  bool
-	useAVX2 bool
+	useAVX2 bool //nolint:unused
 )
 
 func init() {

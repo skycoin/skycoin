@@ -80,7 +80,8 @@ type NodeConfig struct {
 	// These fields are set by cmd/newcoin and are not configured in the fiber.toml file
 	CoinName string
 	// Ascii Font rendering of CoinName
-	CoinAscii     string
+	// CoinAscii is the ASCII art representation of the coin
+	CoinAscii     string //nolint:revive
 	DataDirectory string
 }
 

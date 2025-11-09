@@ -1,3 +1,4 @@
+// Package commands provides commands for the skycoin web interface.
 package commands
 
 import (
@@ -31,7 +32,7 @@ var RootCmd = &cobra.Command{
 		ret += "\nThin client web wallet for Skycoin and fibercoins."
 		return ret
 	}(),
-	Run: func(_ *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		serve()
 	},
 }
@@ -42,6 +43,7 @@ func init() {
 	RootCmd.Flags().StringVarP(&nodeURL, "node-url", "n", "https://node.skycoin.com", "node URL")
 }
 
+// Execute runs the root command
 func Execute() {
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -117,7 +119,11 @@ func serve() {
 			c.String(http.StatusBadGateway, "Failed to proxy request to node: %v", err)
 			return
 		}
-		defer resp.Body.Close()
+		defer func() {
+			if err := resp.Body.Close(); err != nil {
+				log.Printf("Error closing response body: %v", err)
+			}
+		}()
 
 		log.Printf("[PROXY] Response: %d", resp.StatusCode)
 

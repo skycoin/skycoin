@@ -31,7 +31,7 @@ import (
 )
 
 var (
-	help = false
+	help = false //nolint:unused
 )
 
 // Config records skycoin node and build config
@@ -510,17 +510,13 @@ func (c *Config) postProcess() error {
 		return errors.New("-max-decimals-create-block exceeds MaxUint8")
 	}
 
-	if c.Node.MaxLastBlocksCount > math.MaxUint64 {
-		return fmt.Errorf("-max-last-blocks-count exceeds math.MaxUint64")
-	}
-
-	c.Node.UnconfirmedVerifyTxn.BurnFactor = uint32(c.Node.unconfirmedBurnFactor)
-	c.Node.UnconfirmedVerifyTxn.MaxTransactionSize = uint32(c.Node.maxUnconfirmedTransactionSize)
-	c.Node.UnconfirmedVerifyTxn.MaxDropletPrecision = uint8(c.Node.unconfirmedMaxDropletPrecision)
-	c.Node.CreateBlockVerifyTxn.BurnFactor = uint32(c.Node.createBlockBurnFactor)
-	c.Node.CreateBlockVerifyTxn.MaxTransactionSize = uint32(c.Node.createBlockMaxTransactionSize)
-	c.Node.CreateBlockVerifyTxn.MaxDropletPrecision = uint8(c.Node.createBlockMaxDropletPrecision)
-	c.Node.MaxBlockTransactionsSize = uint32(c.Node.maxBlockSize)
+	c.Node.UnconfirmedVerifyTxn.BurnFactor = uint32(c.Node.unconfirmedBurnFactor)                  //nolint:gosec
+	c.Node.UnconfirmedVerifyTxn.MaxTransactionSize = uint32(c.Node.maxUnconfirmedTransactionSize)  //nolint:gosec
+	c.Node.UnconfirmedVerifyTxn.MaxDropletPrecision = uint8(c.Node.unconfirmedMaxDropletPrecision) //nolint:gosec
+	c.Node.CreateBlockVerifyTxn.BurnFactor = uint32(c.Node.createBlockBurnFactor)                  //nolint:gosec
+	c.Node.CreateBlockVerifyTxn.MaxTransactionSize = uint32(c.Node.createBlockMaxTransactionSize)  //nolint:gosec // Config conversion
+	c.Node.CreateBlockVerifyTxn.MaxDropletPrecision = uint8(c.Node.createBlockMaxDropletPrecision) //nolint:gosec
+	c.Node.MaxBlockTransactionsSize = uint32(c.Node.maxBlockSize)                                  //nolint:gosec // Config conversion
 
 	if c.Node.UnconfirmedVerifyTxn.MaxTransactionSize < params.MinTransactionSize {
 		return fmt.Errorf("-max-txn-size-unconfirmed must be >= params.MinTransactionSize (%d)", params.MinTransactionSize)

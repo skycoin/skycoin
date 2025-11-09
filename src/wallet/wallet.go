@@ -19,7 +19,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -168,6 +167,7 @@ type Options struct {
 	CollectionPrivateKeys []cipher.SecKey // private keys for collection wallet
 }
 
+// Validate checks if the wallet options are valid
 func (opts Options) Validate() error {
 	if opts.Type == WalletTypeDeterministic && opts.SeedPassphrase != "" {
 		return ErrWalletSeedPassphrase
@@ -391,7 +391,7 @@ func Load(filename string) (Wallet, error) {
 		return nil, nil
 	}
 
-	data, err := ioutil.ReadFile(filename)
+	data, err := os.ReadFile(filename) //nolint:gosec
 	if err != nil {
 		return nil, err
 	}
@@ -456,7 +456,7 @@ func loadWalletMeta(filename string) (*walletLoadMeta, error) {
 }
 
 func filterDir(dir string, suffix string) ([]string, error) {
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
 	}

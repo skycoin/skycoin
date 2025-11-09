@@ -1,13 +1,8 @@
 // Package main provides the skycoin-cli tool.
-// package main cmd/newcoin/newcoin.go
-/*
-newcoin generates a new coin cmd from a toml configuration file
-*/
-
 package main
 
 import (
-	"log"
+	"os"
 
 	cc "github.com/ivanpirog/coloredcobra"
 	"github.com/spf13/cobra"
@@ -36,9 +31,8 @@ func main() {
 		NoExtraNewlines: true,
 		NoBottomNewline: true,
 	})
-	err := commands.RootCmd.Execute()
-	if err != nil {
-		log.Fatal(err)
+	if err := commands.RootCmd.Execute(); err != nil {
+		os.Exit(1)
 	}
 }
 

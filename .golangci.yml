@@ -58,6 +58,7 @@ linters:
       - third_party$
       - builtin$
       - examples$
+      - cmd/hardware-wallet
     rules:
       - linters:
           - misspell

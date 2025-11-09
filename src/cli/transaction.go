@@ -100,7 +100,7 @@ func encodeJSONTxnCmd() *cobra.Command {
 				err = nil
 				jsonFilePath = "<stdin>"
 			} else {
-				jsonFile, err = os.Open(jsonFilePath)
+				jsonFile, err = os.Open(jsonFilePath) //nolint:gosec
 			}
 			if err != nil {
 				return fmt.Errorf("open file failed %s: %v", jsonFilePath, err)
@@ -350,7 +350,7 @@ func signTxnCmd() *cobra.Command {
 		DisableFlagsInUseLine: true,
 		SilenceUsage:          true,
 		Args:                  cobra.ExactArgs(2),
-		RunE: func(c *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			id := args[0]
 			rawTxn := args[1]
 

@@ -196,7 +196,7 @@ func (w *Wallet) generateEntries(num uint64, initialChildIdx uint32) (wallet.Ent
 	var pubkeys []*bip32.PublicKey
 	var addressIndices []uint32
 	j := initialChildIdx
-	for i := uint32(0); i < uint32(num); i++ {
+	for i := uint32(0); i < uint32(num); i++ { //nolint:gosec
 		k, err := w.xpub.NewPublicChildKey(j)
 
 		var addErr error
@@ -215,7 +215,7 @@ func (w *Wallet) generateEntries(num uint64, initialChildIdx uint32) (wallet.Ent
 			if bip32.IsImpossibleChildError(err) {
 				logger.Critical().WithError(err).WithField("childIdx", j).Error("ImpossibleChild for xpub child element")
 				continue
-			} else {
+			} else { //nolint:revive
 				logger.Critical().WithError(err).WithField("childIdx", j).Error("NewPublicChildKey failed unexpectedly")
 				return nil, err
 			}
@@ -306,7 +306,7 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 	var keepNum uint64
 	for i := len(active) - 1; i >= 0; i-- {
 		if active[i] {
-			keepNum = uint64(i + 1)
+			keepNum = uint64(i + 1) //nolint:gosec
 			break
 		}
 	}
@@ -334,7 +334,7 @@ func (w *Wallet) GenerateAddresses(options ...wallet.Option) ([]cipher.Addresser
 	}
 
 	var addrs []cipher.Addresser
-	initLen := uint32(len(w.entries))
+	initLen := uint32(len(w.entries)) //nolint:gosec
 	_, err := mathutil.AddUint32(initLen, uint32(num))
 	if err != nil {
 		return nil, fmt.Errorf("generate %d more addresses failed: %v", num, err)
@@ -342,7 +342,7 @@ func (w *Wallet) GenerateAddresses(options ...wallet.Option) ([]cipher.Addresser
 
 	makeAddress := wallet.ResolveAddressDecoder(w.Coin())
 
-	for i := uint32(0); i < uint32(num); i++ {
+	for i := uint32(0); i < uint32(num); i++ { //nolint:gosec
 		index := initLen + i
 		pk, err := w.xpub.NewPublicChildKey(index)
 		if err != nil {

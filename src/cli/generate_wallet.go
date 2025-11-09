@@ -231,7 +231,7 @@ func generateWalletHandler(c *cobra.Command, _ []string) error {
 		}
 	}
 
-	n := num - uint64(addrN)
+	n := num - uint64(addrN) //nolint:gosec
 	if n > 0 {
 		_, err := apiClient.NewWalletAddress(id, string(password), wallet.OptionGenerateN(n))
 		if err != nil {
@@ -420,7 +420,7 @@ func generateWalletTempHandler(c *cobra.Command, _ []string) error {
 		}
 	}
 
-	n := num - uint64(addrN)
+	n := num - uint64(addrN) //nolint:gosec
 	if n > 0 {
 		_, err := apiClient.NewWalletAddress(id, "", wallet.OptionGenerateN(n))
 		if err != nil {

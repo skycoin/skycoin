@@ -79,7 +79,7 @@ type fakeChainStore struct {
 	blocks []coin.SignedBlock
 }
 
-func (fcs *fakeChainStore) Head(tx *dbutil.Tx) (*coin.SignedBlock, error) {
+func (fcs *fakeChainStore) Head(_ *dbutil.Tx) (*coin.SignedBlock, error) {
 	l := len(fcs.blocks)
 	if l == 0 {
 		return nil, blockdb.ErrNoHeadBlock
@@ -99,27 +99,27 @@ func (fcs *fakeChainStore) HeadSeq(tx *dbutil.Tx) (uint64, bool, error) {
 	return h.Seq(), true, nil
 }
 
-func (fcs *fakeChainStore) Len(tx *dbutil.Tx) (uint64, error) {
+func (fcs *fakeChainStore) Len(_ *dbutil.Tx) (uint64, error) {
 	return uint64(len(fcs.blocks)), nil
 }
 
-func (fcs *fakeChainStore) AddBlock(tx *dbutil.Tx, b *coin.SignedBlock) error {
+func (fcs *fakeChainStore) AddBlock(_ *dbutil.Tx, _ *coin.SignedBlock) error {
 	return nil
 }
 
-func (fcs *fakeChainStore) GetBlockSignature(tx *dbutil.Tx, b *coin.Block) (cipher.Sig, bool, error) {
+func (fcs *fakeChainStore) GetBlockSignature(_ *dbutil.Tx, _ *coin.Block) (cipher.Sig, bool, error) {
 	return cipher.Sig{}, false, nil
 }
 
-func (fcs *fakeChainStore) GetBlockByHash(tx *dbutil.Tx, hash cipher.SHA256) (*coin.Block, error) {
+func (fcs *fakeChainStore) GetBlockByHash(_ *dbutil.Tx, _ cipher.SHA256) (*coin.Block, error) {
 	return nil, nil
 }
 
-func (fcs *fakeChainStore) GetSignedBlockByHash(tx *dbutil.Tx, hash cipher.SHA256) (*coin.SignedBlock, error) {
+func (fcs *fakeChainStore) GetSignedBlockByHash(_ *dbutil.Tx, _ cipher.SHA256) (*coin.SignedBlock, error) {
 	return nil, nil
 }
 
-func (fcs *fakeChainStore) GetSignedBlockBySeq(tx *dbutil.Tx, seq uint64) (*coin.SignedBlock, error) {
+func (fcs *fakeChainStore) GetSignedBlockBySeq(_ *dbutil.Tx, seq uint64) (*coin.SignedBlock, error) {
 	l := len(fcs.blocks)
 	if seq >= uint64(l) {
 		return nil, nil
@@ -132,14 +132,14 @@ func (fcs *fakeChainStore) UnspentPool() blockdb.UnspentPooler {
 	return nil
 }
 
-func (fcs *fakeChainStore) GetGenesisBlock(tx *dbutil.Tx) (*coin.SignedBlock, error) {
+func (fcs *fakeChainStore) GetGenesisBlock(_ *dbutil.Tx) (*coin.SignedBlock, error) {
 	if len(fcs.blocks) > 0 {
 		return &fcs.blocks[0], nil
 	}
 	return nil, nil
 }
 
-func (fcs *fakeChainStore) ForEachBlock(tx *dbutil.Tx, f func(*coin.Block) error) error {
+func (fcs *fakeChainStore) ForEachBlock(_ *dbutil.Tx, _ func(*coin.Block) error) error {
 	return nil
 }
 
@@ -159,7 +159,7 @@ func makeBlocks(t *testing.T, n int) []coin.SignedBlock {
 
 	now := genTime + 100
 	for i := 1; i < n; i++ {
-		b := makeBlock(t, *preBlock, now+uint64(i)*100)
+		b := makeBlock(t, *preBlock, now+uint64(i)*100) //nolint:gosec // Test data conversion
 		sb := coin.SignedBlock{
 			Block: *b,
 		}
@@ -675,7 +675,7 @@ func TestProcessTransactions(t *testing.T) {
 				uxs := coin.CreateUnspents(head.Head, head.Body.Transactions[spend.TxIndex])
 				txn := makeSpendTxn(t, coin.UxArray{uxs[spend.UxIndex]}, spend.Keys, spend.ToAddr, spend.Coins)
 
-				b := newBlock(t, bc, txn, tm+uint64(i*100))
+				b := newBlock(t, bc, txn, tm+uint64(i*100)) //nolint:gosec // Test data conversion
 
 				sb := &coin.SignedBlock{
 					Block: *b,

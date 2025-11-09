@@ -1,7 +1,4 @@
-// package commands cmd/skywire-cli/commands/root.go
-/*
-cli is a command line client for interacting with a skycoin node and offline wallet management
-*/
+// Package commands provides CLI commands for interacting with skycoin.
 package commands
 
 import (

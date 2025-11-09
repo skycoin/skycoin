@@ -1,7 +1,4 @@
-// package commands cmd/newcoin/commands/root.go
-/*
-newcoin generates a new coin cmd from a toml configuration file
-*/
+// Package commands implements the newcoin template generator.
 package commands
 
 import (
@@ -49,7 +46,7 @@ func init() {
 	RootCmd.AddCommand(createCoinCmd)
 }
 
-// rootCmd represents the base command for the application
+// RootCmd represents the base command for the application
 var RootCmd = &cobra.Command{
 	Use:   "newcoin",
 	Short: "newcoin is a helper tool for creating new fiber coins",
@@ -63,7 +60,7 @@ newcoin is a helper tool for creating new fiber coins`,
 var createCoinCmd = &cobra.Command{
 	Use:   "createcoin",
 	Short: "Create a new coin from a template file",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		if err := validateCoinName(coinName); err != nil {
 			return err
 		}
@@ -98,21 +95,21 @@ var createCoinCmd = &cobra.Command{
 			return err
 		}
 		coinFilePath := fmt.Sprintf("./cmd/%[1]s/%[1]s.go", coinName)
-		coinFile, err := os.Create(coinFilePath)
+		coinFile, err := os.Create(coinFilePath) //nolint:gosec
 		if err != nil {
 			log.Errorf("failed to create new coin file %s", coinFilePath)
 			return err
 		}
 		defer coinFile.Close() //nolint
 		commandFilePath := fmt.Sprintf("./cmd/%[1]s/commands/root.go", coinName)
-		commandFile, err := os.Create(commandFilePath)
+		commandFile, err := os.Create(commandFilePath) //nolint:gosec
 		if err != nil {
 			log.Errorf("failed to create new coin file %s", coinFilePath)
 			return err
 		}
 		defer commandFile.Close() //nolint
-		coinTestFilePath := fmt.Sprintf("./cmd/%[1]s/commands/%[1]s_test.go", coinName)
-		coinTestFile, err := os.Create(coinTestFilePath)
+		coinTestFilePath := fmt.Sprintf("./cmd/%[1]s/%[1]s_test.go", coinName)
+		coinTestFile, err := os.Create(coinTestFilePath) //nolint:gosec
 		if err != nil {
 			log.Errorf("failed to create new coin test file %s", coinTestFilePath)
 			return err
@@ -159,7 +156,7 @@ var createCoinCmd = &cobra.Command{
 			log.Error("failed to append help constant to command")
 			return err
 		}
-		err = t.ExecuteTemplate(coinTestFile, coinTestTemplateFile, nil)
+		err = t.ExecuteTemplate(coinTestFile, coinTestTemplateFile, config.Node)
 		if err != nil {
 			log.Error("failed to parse coin test template variables")
 			return err

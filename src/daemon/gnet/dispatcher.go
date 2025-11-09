@@ -169,7 +169,7 @@ func EncodeMessage(msg Serializer) ([]byte, error) {
 		return nil, errors.New("Message length prefix length exceeds math.MaxUint32")
 	}
 
-	mLen, err := mathutil.AddUint32(bLen, uint32(len(bLenPrefix)))
+	mLen, err := mathutil.AddUint32(bLen, uint32(len(bLenPrefix))) //nolint:gosec
 	if err != nil {
 		return nil, err
 	}

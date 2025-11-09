@@ -93,7 +93,7 @@ func CheckDatabase(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) erro
 }
 
 // backup the corrypted db first, then rebuild the history DB.
-func rebuildHistoryDB(db *dbutil.DB, history *historydb.HistoryDB, bc *Blockchain, quit chan struct{}) (*dbutil.DB, error) { //nolint:unused,megacheck
+func rebuildHistoryDB(db *dbutil.DB, history *historydb.HistoryDB, bc *Blockchain, quit chan struct{}) (*dbutil.DB, error) { //nolint:unused
 	db, err := backupDB(db)
 	if err != nil {
 		return nil, err
@@ -140,7 +140,7 @@ func rebuildHistoryDB(db *dbutil.DB, history *historydb.HistoryDB, bc *Blockchai
 }
 
 // backupDB makes a backup copy of the DB
-func backupDB(db *dbutil.DB) (*dbutil.DB, error) { //nolint:unused,megacheck
+func backupDB(db *dbutil.DB) (*dbutil.DB, error) { //nolint:unused
 	// backup the corrupted database
 	dbReadOnly := db.IsReadOnly()
 
@@ -192,7 +192,7 @@ func ResetCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*d
 	}
 }
 
-func rebuildCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*dbutil.DB, error) { //nolint:deadcode,unused,megacheck
+func rebuildCorruptDB(db *dbutil.DB, pubkey cipher.PubKey, quit chan struct{}) (*dbutil.DB, error) { //nolint:unused
 	history := historydb.New()
 	bc, err := NewBlockchain(db, BlockchainConfig{Pubkey: pubkey})
 	if err != nil {
@@ -250,23 +250,27 @@ func moveCorruptDB(dbPath string) (string, error) {
 }
 
 // copyCorruptDB copy a file to makeCorruptDBPath(dbPath)
-func copyCorruptDB(dbPath string) (string, error) { //nolint:unused,megacheck
+func copyCorruptDB(dbPath string) (string, error) { //nolint:unused
 	newDBPath, err := makeCorruptDBPath(dbPath)
 	if err != nil {
 		return "", err
 	}
 
-	in, err := os.Open(dbPath)
+	in, err := os.Open(dbPath) //nolint:gosec
 	if err != nil {
 		return "", err
 	}
-	defer in.Close()
+	defer func() {
+		_ = in.Close() //nolint:errcheck
+	}()
 
-	out, err := os.Create(newDBPath)
+	out, err := os.Create(newDBPath) //nolint:gosec
 	if err != nil {
 		return "", err
 	}
-	defer out.Close()
+	defer func() {
+		_ = out.Close() //nolint:errcheck
+	}()
 	logger.Critical().Info(out.Name())
 
 	_, err = io.Copy(in, out)
@@ -299,11 +303,13 @@ func makeCorruptDBPath(dbPath string) (string, error) {
 // shaFileID return the first 8 bytes of the SHA1 hash of the file,
 // hex-encoded
 func shaFileID(dbPath string) (string, error) {
-	fi, err := os.Open(dbPath)
+	fi, err := os.Open(dbPath) //nolint:gosec
 	if err != nil {
 		return "", err
 	}
-	defer fi.Close()
+	defer func() {
+		_ = fi.Close() //nolint:errcheck
+	}()
 
 	h := sha256.New()
 	if _, err := io.Copy(h, fi); err != nil {

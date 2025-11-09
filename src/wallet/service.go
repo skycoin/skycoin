@@ -3,7 +3,6 @@ package wallet
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -118,15 +117,15 @@ func (serv *Service) SetEnableWalletAPI(enable bool) {
 
 func (serv *Service) loadWallets() (Wallets, error) {
 	dir := serv.config.WalletDir
-	entries, err := ioutil.ReadDir(dir)
+	entries, err := os.ReadDir(dir)
 	if err != nil {
-		logger.WithError(err).WithField("dir", dir).Error("loadWallets: ioutil.ReadDir failed")
+		logger.WithError(err).WithField("dir", dir).Error("loadWallets: os.ReadDir failed")
 		return nil, err
 	}
 
 	wallets := Wallets{}
 	for _, e := range entries {
-		if e.Mode().IsRegular() {
+		if !e.IsDir() {
 			name := e.Name()
 			if !strings.HasSuffix(name, WalletExt) {
 				logger.WithField("filename", name).Info("loadWallets: skipping file")
@@ -747,7 +746,7 @@ func (serv *Service) ViewSecrets(wltID string, password []byte, f func(Wallet) e
 		return GuardView(w, password, f)
 	} else if len(password) != 0 {
 		return ErrWalletNotEncrypted
-	} else {
+	} else { //nolint:revive
 		return f(w)
 	}
 }
@@ -834,7 +833,7 @@ func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string,
 		Password:       password,
 		CryptoType:     w.CryptoType(),
 		Bip44Coin:      w.Bip44Coin(),
-		GenerateN:      uint64(l),
+		GenerateN:      uint64(l), //nolint:gosec // Address count conversion
 	})
 	if err != nil {
 		return nil, err
@@ -849,7 +848,7 @@ func (serv *Service) RecoverWallet(wltName, seed, seedPassphrase string,
 
 		// regenerate the change addresses
 		if cl > 1 {
-			_, err := w3.GenerateAddresses(OptionGenerateN(uint64(cl-1)), OptionChange())
+			_, err := w3.GenerateAddresses(OptionGenerateN(uint64(cl-1)), OptionChange()) //nolint:gosec // Address count conversion
 			if err != nil {
 				return nil, err
 			}

@@ -1,6 +1,6 @@
-/*
-skycoin hardware wallet daemon & cli
-*/
+//go:build linux && amd64
+
+// Package commands implements the skycoin hardware wallet daemon and CLI.
 package commands
 
 import (
@@ -20,9 +20,12 @@ import (
 )
 
 var (
+	// Version is the hardware wallet command version
 	Version = "0.1.0"
-	Commit  = ""
-	Branch  = ""
+	// Commit is the git commit hash
+	Commit = ""
+	// Branch is the git branch
+	Branch = ""
 
 	appConfig = daemon.NewAppConfig(9510, "$HOME/.skycoin")
 )
@@ -31,7 +34,7 @@ var daemonCmd = &cobra.Command{
 	Use:   "daemon",
 	Short: "Hardware wallet daemon for Skycoin",
 	Long:  `A daemon that provides an HTTP API for interfacing with Skycoin hardware wallets`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		logger := logging.MustGetLogger("hw-daemon")
 
 		d := daemon.NewDaemon(daemon.Config{

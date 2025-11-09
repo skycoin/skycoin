@@ -184,7 +184,7 @@ func TestDecrypt(t *testing.T) {
 		name := fmt.Sprintf("data length=%d", i)
 		t.Run(name, func(t *testing.T) {
 			data := testutil.RandBytes(t, i)
-			edata := makeEncryptedData(t, data, uint32(len(data)), []byte("pwd"))
+			edata := makeEncryptedData(t, data, uint32(len(data)), []byte("pwd")) //nolint:gosec // Test data size conversion
 			d, err := Sha256Xor{}.Decrypt(edata, []byte("pwd"))
 			require.NoError(t, err)
 			require.Equal(t, data, d)

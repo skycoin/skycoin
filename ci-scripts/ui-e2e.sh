@@ -65,16 +65,16 @@ go build -o "$BINARY" -ldflags "${GOLDFLAGS}" cmd/skycoin/skycoin.go
 # Run skycoin node with pinned blockchain database
 echo "starting skycoin node in background with http listener on $HOST"
 
-./skycoin-integration -disable-networking=true \
-                      -web-interface-port=$PORT \
-                      -download-peerlist=false \
-                      -db-path=./src/api/integration/testdata/blockchain-180.db \
-                      -db-read-only=true \
-                      -launch-browser=false \
-                      -data-dir="$DATA_DIR" \
-                      -enable-all-api-sets=true \
-                      -enable-api-sets=INSECURE_WALLET_SEED \
-                      -wallet-dir="$WALLET_DIR" \
+./skycoin-integration --disable-networking=true \
+                      --web-interface-port=$PORT \
+                      --download-peerlist=false \
+                      --db-path=./src/api/integration/testdata/blockchain-180.db \
+                      --db-read-only=true \
+                      --launch-browser=false \
+                      --data-dir="$DATA_DIR" \
+                      --enable-all-api-sets=true \
+                      --enable-api-sets=INSECURE_WALLET_SEED \
+                      --wallet-dir="$WALLET_DIR" \
                       &
 SKYCOIN_PID=$!
 

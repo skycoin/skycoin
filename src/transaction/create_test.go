@@ -19,7 +19,7 @@ import (
 )
 
 func TestCreate(t *testing.T) {
-	headTime := uint64(time.Now().UTC().Unix())
+	headTime := uint64(time.Now().UTC().Unix()) //nolint:gosec
 	seed := []byte("seed")
 
 	// Generate first keys
@@ -37,7 +37,7 @@ func TestCreate(t *testing.T) {
 	var originalUxouts []coin.UxOut
 	addrs := []cipher.Address{}
 	for i := 0; i < 10; i++ {
-		uxout := makeUxOut(t, secKey, 2e6, uint64(100+i))
+		uxout := makeUxOut(t, secKey, 2e6, uint64(100+i)) //nolint:gosec
 		uxout.Head.Time = headTime
 		uxouts = append(uxouts, uxout)
 		originalUxouts = append(originalUxouts, uxout)
@@ -59,7 +59,7 @@ func TestCreate(t *testing.T) {
 
 		var uxouts []coin.UxOut
 		for i := 0; i < 10; i++ {
-			uxout := makeUxOut(t, s, 2e6, uint64(100+i))
+			uxout := makeUxOut(t, s, 2e6, uint64(100+i)) //nolint:gosec
 			uxout.Head.Time = headTime
 			uxouts = append(uxouts, uxout)
 		}
@@ -764,22 +764,29 @@ func TestCreate(t *testing.T) {
 }
 
 func makeUxOut(t *testing.T, s cipher.SecKey, coins, hours uint64) coin.UxOut { //nolint:unparam
-	body := makeUxBody(t, s, coins, hours)
-	tm := rand.Int31n(1000)
-	seq := rand.Int31n(100)
+	tm := rand.Int31n(1000)                             //nolint:gosec // Weak random acceptable in tests
+	seq := rand.Int31n(100)                             //nolint:gosec // Weak random acceptable in tests
+	body := makeUxBody(t, s, coins, hours, uint64(seq)) //nolint:gosec
 	return coin.UxOut{
 		Head: coin.UxHead{
-			Time:  uint64(tm),
-			BkSeq: uint64(seq),
+			Time:  uint64(tm),  //nolint:gosec
+			BkSeq: uint64(seq), //nolint:gosec
 		},
 		Body: body,
 	}
 }
 
-func makeUxBody(t *testing.T, s cipher.SecKey, coins, hours uint64) coin.UxBody {
+func makeUxBody(t *testing.T, s cipher.SecKey, coins, hours, bkSeq uint64) coin.UxBody {
 	p := cipher.MustPubKeyFromSecKey(s)
+
+	// Genesis UTXOs (BkSeq=0) must have null source transaction hash
+	var srcTxn cipher.SHA256
+	if bkSeq != 0 {
+		srcTxn = cipher.SumSHA256(testutil.RandBytes(t, 128))
+	}
+
 	return coin.UxBody{
-		SrcTransaction: cipher.SumSHA256(testutil.RandBytes(t, 128)),
+		SrcTransaction: srcTxn,
 		Address:        cipher.AddressFromPubKey(p),
 		Coins:          coins,
 		Hours:          hours,

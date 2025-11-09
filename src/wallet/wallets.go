@@ -2,7 +2,7 @@ package wallet
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -13,16 +13,16 @@ type Wallets map[string]Wallet
 // loadWallets Loads all wallets contained in wallet dir.  If any regular file in wallet
 // dir fails to load, loading is aborted and error returned.  Only files with
 // extension WalletExt are considered.
-func loadWallets(dir string, loader Loader) (Wallets, error) {
-	entries, err := ioutil.ReadDir(dir)
+func loadWallets(dir string, loader Loader) (Wallets, error) { //nolint:unused
+	entries, err := os.ReadDir(dir)
 	if err != nil {
-		logger.WithError(err).WithField("dir", dir).Error("loadWallets: ioutil.ReadDir failed")
+		logger.WithError(err).WithField("dir", dir).Error("loadWallets: os.ReadDir failed")
 		return nil, err
 	}
 
 	wallets := Wallets{}
 	for _, e := range entries {
-		if e.Mode().IsRegular() {
+		if !e.IsDir() {
 			name := e.Name()
 			if !strings.HasSuffix(name, WalletExt) {
 				logger.WithField("filename", name).Info("loadWallets: skipping file")
@@ -30,7 +30,7 @@ func loadWallets(dir string, loader Loader) (Wallets, error) {
 			}
 
 			fullpath := filepath.Join(dir, name)
-			data, err := ioutil.ReadFile(fullpath)
+			data, err := os.ReadFile(fullpath) //nolint:gosec
 			if err != nil {
 				return nil, err
 			}

@@ -3,7 +3,6 @@ package pex
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -583,20 +582,20 @@ func peersEqualWithSeenAllowedDiff(t *testing.T, expected Peer, actual Peer) {
 
 // preparePeerlistFile makes peers.json in temporary dir,
 func preparePeerlistFile(t *testing.T) (string, func()) {
-	f, err := ioutil.TempFile("", PeerCacheFilename)
+	f, err := os.CreateTemp("", PeerCacheFilename)
 	require.NoError(t, err)
 
 	return f.Name(), func() {
-		os.Remove(f.Name())
+		os.Remove(f.Name()) //nolint:errcheck,gosec
 	}
 }
 
 func preparePeerlistDir(t *testing.T) (string, func()) {
-	f, err := ioutil.TempDir("", "peerlist")
+	f, err := os.MkdirTemp("", "peerlist")
 	require.NoError(t, err)
 
 	return f, func() {
-		os.Remove(f)
+		os.Remove(f) //nolint:errcheck,gosec
 	}
 }
 

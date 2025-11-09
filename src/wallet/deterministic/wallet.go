@@ -406,7 +406,7 @@ func (w *Wallet) ScanAddresses(scanN uint64, tf wallet.TransactionsFinder) ([]ci
 	var keepNum uint64
 	for i := len(active) - 1; i >= 0; i-- {
 		if active[i] {
-			keepNum = uint64(i + 1)
+			keepNum = uint64(i + 1) //nolint:gosec // Address count conversion
 			break
 		}
 	}
@@ -441,13 +441,13 @@ func (w *Wallet) GenerateAddresses(options ...wallet.Option) ([]cipher.Addresser
 	var seckeys []cipher.SecKey
 	var seed []byte
 	if len(w.entries) == 0 {
-		seed, seckeys = cipher.MustGenerateDeterministicKeyPairsSeed([]byte(w.Meta.Seed()), int(num))
+		seed, seckeys = cipher.MustGenerateDeterministicKeyPairsSeed([]byte(w.Meta.Seed()), int(num)) //nolint:gosec
 	} else {
 		sd, err := hex.DecodeString(w.Meta.LastSeed())
 		if err != nil {
 			return nil, fmt.Errorf("decode hex seed failed: %v", err)
 		}
-		seed, seckeys = cipher.MustGenerateDeterministicKeyPairsSeed(sd, int(num))
+		seed, seckeys = cipher.MustGenerateDeterministicKeyPairsSeed(sd, int(num)) //nolint:gosec
 	}
 
 	w.Meta.SetLastSeed(hex.EncodeToString(seed))

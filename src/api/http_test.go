@@ -2,7 +2,7 @@ package api
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -208,7 +208,7 @@ func TestEnableGUI(t *testing.T) {
 			endpoint:   "/",
 			appLoc:     "",
 			expectCode: http.StatusNotFound,
-			expectBody: "404 Not Found\n",
+			expectBody: "404 page not found\n",
 		},
 		{
 			name:       "disable gui GET /invalid-path",
@@ -216,7 +216,7 @@ func TestEnableGUI(t *testing.T) {
 			endpoint:   "/invalid-path",
 			appLoc:     "",
 			expectCode: http.StatusNotFound,
-			expectBody: "404 Not Found\n",
+			expectBody: "404 page not found\n",
 		},
 		{
 			name:       "enable gui GET /",
@@ -232,7 +232,7 @@ func TestEnableGUI(t *testing.T) {
 			endpoint:   "/invalid-path",
 			appLoc:     "../gui/static",
 			expectCode: http.StatusNotFound,
-			expectBody: "404 Not Found\n",
+			expectBody: "404 page not found\n",
 		},
 	}
 
@@ -269,7 +269,7 @@ func TestEnableGUI(t *testing.T) {
 			}()
 
 			defer func() {
-				s.listener.Close()
+				s.listener.Close() //nolint:errcheck,gosec
 				wg.Wait()
 			}()
 
@@ -277,10 +277,10 @@ func TestEnableGUI(t *testing.T) {
 			rsp, err := http.Get(url) //nolint:gosec
 			require.NoError(t, err)
 
-			defer rsp.Body.Close()
+			defer rsp.Body.Close() //nolint:errcheck
 			require.Equal(t, tc.expectCode, rsp.StatusCode)
 
-			body, err := ioutil.ReadAll(rr.Body)
+			body, err := io.ReadAll(rr.Body)
 			require.NoError(t, err)
 
 			if rsp.StatusCode != http.StatusOK {

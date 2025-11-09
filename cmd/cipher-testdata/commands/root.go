@@ -1,7 +1,4 @@
-// package commands cmd/cipher_testdata/commands/root.go
-/*
- Generate test data for the cipher testsuite
-*/
+// Package commands generates test data for the cipher testsuite
 package commands
 
 import (
@@ -80,7 +77,7 @@ The number of secret keys generated is much larger than for the other seeds.
 This file is used to test deterministic key generation more thoroughly.
 This file will not contain any signatures,
 because the filesize would be too large.`, inputTestDataFilename, manyAddressesFilename),
-	Run: func(_ *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		fmt.Printf("Creating output directory %s\n", outputDir)
 
 		// Create output directory

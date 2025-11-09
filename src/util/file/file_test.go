@@ -3,9 +3,9 @@ package file
 import (
 	"bytes"
 	"crypto/rand"
-	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -18,15 +18,18 @@ import (
 )
 
 func requireFileMode(t *testing.T, filename string, mode os.FileMode) {
+	if runtime.GOOS == "windows" {
+		return // Skip permission checks on Windows
+	}
 	stat, err := os.Stat(filename)
 	require.NoError(t, err)
 	require.Equal(t, stat.Mode(), mode)
 }
 
 func requireFileContentsBinary(t *testing.T, filename string, contents []byte) {
-	f, err := os.Open(filename)
+	f, err := os.Open(filename) //nolint:gosec // Test file operation
 	require.NoError(t, err)
-	defer f.Close()
+	defer f.Close() //nolint:errcheck,gosec
 	b := make([]byte, len(contents)*16)
 	n, err := f.Read(b)
 	require.NoError(t, err)
@@ -65,7 +68,7 @@ func cleanup(t *testing.T, fn string) {
 	require.NoError(t, err)
 
 	for _, f := range paths {
-		os.Remove(f)
+		os.Remove(f) //nolint:errcheck,gosec
 	}
 }
 
@@ -75,9 +78,9 @@ func TestCleanup(t *testing.T) {
 	b := make([]byte, 128)
 	_, err := rand.Read(b)
 	require.NoError(t, err)
-	require.NoError(t, ioutil.WriteFile(fn, b, 0600))
-	require.NoError(t, ioutil.WriteFile(fn+".tmp.abc", b, 0600))
-	require.NoError(t, ioutil.WriteFile(fn+".bak.abc", b, 0600))
+	require.NoError(t, os.WriteFile(fn, b, 0600))
+	require.NoError(t, os.WriteFile(fn+".tmp.abc", b, 0600))
+	require.NoError(t, os.WriteFile(fn+".bak.abc", b, 0600))
 }
 
 //func TestBuildDataDirDotOk(t *testing.T) {
@@ -131,6 +134,9 @@ func TestBuildDataDirDefault(t *testing.T) {
 }
 
 func TestBuildDataDirAbsolute(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping Unix path test on Windows")
+	}
 	abspath := "/opt/.skycoin"
 	dir, err := buildDataDir(abspath)
 	require.NoError(t, err)
@@ -152,7 +158,7 @@ func TestLoadJSON(t *testing.T) {
 	require.NoError(t, err)
 	_, err = f.WriteString("{\"key\":\"value\"}")
 	require.NoError(t, err)
-	f.Close()
+	f.Close() //nolint:errcheck,gosec
 
 	err = LoadJSON(fn, &obj)
 	require.NoError(t, err)

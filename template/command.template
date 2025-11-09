@@ -11,11 +11,9 @@ and then run cmd/newcoin
 */
 
 import (
-	cc "github.com/ivanpirog/coloredcobra"
-	"github.com/spf13/cobra"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/flags"
 
 	"github.com/skycoin/skycoin/cmd/{{.CoinName}}/commands"
-	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/flags"
 )
 
 func init() {

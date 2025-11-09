@@ -159,7 +159,7 @@ func (dm *DummyMessage) Decode(buf []byte) (uint64, error) {
 	return encoder.DeserializeRaw(buf, dm)
 }
 
-func (dm *DummyMessage) Handle(_ *MessageContext, x interface{}) error {
+func (dm *DummyMessage) Handle(_ *MessageContext, _ interface{}) error {
 	return nil
 }
 
@@ -190,7 +190,7 @@ func (em *ErrorMessage) Decode(buf []byte) (uint64, error) {
 	return encoder.DeserializeRaw(buf, em)
 }
 
-func (em *ErrorMessage) Handle(_ *MessageContext, x interface{}) error {
+func (em *ErrorMessage) Handle(_ *MessageContext, _ interface{}) error {
 	return ErrErrorMessageHandler
 }
 
@@ -220,7 +220,7 @@ func (bm *ByteMessage) Decode(buf []byte) (uint64, error) {
 	return encoder.DeserializeRaw(buf, bm)
 }
 
-func (bm *ByteMessage) Handle(_ *MessageContext, x interface{}) error {
+func (bm *ByteMessage) Handle(_ *MessageContext, _ interface{}) error {
 	return nil
 }
 

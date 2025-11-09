@@ -42,13 +42,13 @@ func Sum(out *[TagSize]byte, msg []byte, key *[32]byte) {
 		d4 := (d3 >> 26) + (uint64(h0) * r4) + (uint64(h1) * r3) + (uint64(h2) * r2) + (uint64(h3) * r1) + (uint64(h4) * r0)
 
 		// h %= p
-		h0 = uint32(d0) & 0x3ffffff
-		h1 = uint32(d1) & 0x3ffffff
-		h2 = uint32(d2) & 0x3ffffff
-		h3 = uint32(d3) & 0x3ffffff
-		h4 = uint32(d4) & 0x3ffffff
+		h0 = uint32(d0) & 0x3ffffff //nolint:gosec // G115: conversion is safe, value is masked to 26 bits
+		h1 = uint32(d1) & 0x3ffffff //nolint:gosec // G115: conversion is safe, value is masked to 26 bits
+		h2 = uint32(d2) & 0x3ffffff //nolint:gosec // G115: conversion is safe, value is masked to 26 bits
+		h3 = uint32(d3) & 0x3ffffff //nolint:gosec // G115: conversion is safe, value is masked to 26 bits
+		h4 = uint32(d4) & 0x3ffffff //nolint:gosec // G115: conversion is safe, value is masked to 26 bits
 
-		h0 += uint32(d4>>26) * 5
+		h0 += uint32(d4>>26) * 5 //nolint:gosec // G115: conversion is safe, d4>>26 is small value
 		h1 += h0 >> 26
 		h0 = h0 & 0x3ffffff
 
@@ -75,13 +75,13 @@ func Sum(out *[TagSize]byte, msg []byte, key *[32]byte) {
 		d4 := (d3 >> 26) + (uint64(h0) * r4) + (uint64(h1) * r3) + (uint64(h2) * r2) + (uint64(h3) * r1) + (uint64(h4) * r0)
 
 		// h %= p
-		h0 = uint32(d0) & 0x3ffffff
-		h1 = uint32(d1) & 0x3ffffff
-		h2 = uint32(d2) & 0x3ffffff
-		h3 = uint32(d3) & 0x3ffffff
-		h4 = uint32(d4) & 0x3ffffff
+		h0 = uint32(d0) & 0x3ffffff //nolint:gosec // G115: conversion is safe, value is masked to 26 bits
+		h1 = uint32(d1) & 0x3ffffff //nolint:gosec // G115: conversion is safe, value is masked to 26 bits
+		h2 = uint32(d2) & 0x3ffffff //nolint:gosec // G115: conversion is safe, value is masked to 26 bits
+		h3 = uint32(d3) & 0x3ffffff //nolint:gosec // G115: conversion is safe, value is masked to 26 bits
+		h4 = uint32(d4) & 0x3ffffff //nolint:gosec // G115: conversion is safe, value is masked to 26 bits
 
-		h0 += uint32(d4>>26) * 5
+		h0 += uint32(d4>>26) * 5 //nolint:gosec // G115: conversion is safe, d4>>26 is small value
 		h1 += h0 >> 26
 		h0 = h0 & 0x3ffffff
 	}
@@ -110,13 +110,13 @@ func Sum(out *[TagSize]byte, msg []byte, key *[32]byte) {
 	t3 &= 0x3ffffff
 
 	// select h if h < p else h - p
-	t_mask := (t4 >> 31) - 1
-	h_mask := ^t_mask
-	h0 = (h0 & h_mask) | (t0 & t_mask)
-	h1 = (h1 & h_mask) | (t1 & t_mask)
-	h2 = (h2 & h_mask) | (t2 & t_mask)
-	h3 = (h3 & h_mask) | (t3 & t_mask)
-	h4 = (h4 & h_mask) | (t4 & t_mask)
+	tMask := (t4 >> 31) - 1
+	hMask := ^tMask
+	h0 = (h0 & hMask) | (t0 & tMask)
+	h1 = (h1 & hMask) | (t1 & tMask)
+	h2 = (h2 & hMask) | (t2 & tMask)
+	h3 = (h3 & hMask) | (t3 & tMask)
+	h4 = (h4 & hMask) | (t4 & tMask)
 
 	// h %= 2^128
 	h0 |= h1 << 26
@@ -127,13 +127,13 @@ func Sum(out *[TagSize]byte, msg []byte, key *[32]byte) {
 	// s: the s part of the key
 	// tag = (h + s) % (2^128)
 	t := uint64(h0) + uint64(binary.LittleEndian.Uint32(key[16:]))
-	h0 = uint32(t)
+	h0 = uint32(t) //nolint:gosec // G115: conversion is safe, only lower 32 bits are kept
 	t = uint64(h1) + uint64(binary.LittleEndian.Uint32(key[20:])) + (t >> 32)
-	h1 = uint32(t)
+	h1 = uint32(t) //nolint:gosec // G115: conversion is safe, only lower 32 bits are kept
 	t = uint64(h2) + uint64(binary.LittleEndian.Uint32(key[24:])) + (t >> 32)
-	h2 = uint32(t)
+	h2 = uint32(t) //nolint:gosec // G115: conversion is safe, only lower 32 bits are kept
 	t = uint64(h3) + uint64(binary.LittleEndian.Uint32(key[28:])) + (t >> 32)
-	h3 = uint32(t)
+	h3 = uint32(t) //nolint:gosec // G115: conversion is safe, only lower 32 bits are kept
 
 	binary.LittleEndian.PutUint32(out[0:], h0)
 	binary.LittleEndian.PutUint32(out[4:], h1)

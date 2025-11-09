@@ -67,8 +67,12 @@ test: ## Run tests for Skycoin
 	COIN=$(COIN) go test -coverpkg="github.com/$(COIN)/$(COIN)/..." -coverprofile=coverage/go-test-src.coverage.out -timeout=5m ./src/...
 
 test-386: ## Run tests for Skycoin with GOARCH=386
+ifeq ($(shell go env GOOS),darwin)
+	@echo "Skipping test-386 on macOS (32-bit not supported)"
+else
 	GOARCH=386 COIN=$(COIN) go test ./cmd/... -timeout=5m
 	GOARCH=386 COIN=$(COIN) go test ./src/... -timeout=5m
+endif
 
 test-amd64: ## Run tests for Skycoin with GOARCH=amd64
 	GOARCH=amd64 COIN=$(COIN) go test ./cmd/... -timeout=5m
@@ -131,14 +135,8 @@ integration-test-live-disable-networking: ## Run live integration tests against 
 	COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c -k
 
 install-linters: ## Install linters
-	# Turn off go module when install the vendoercheck, otherwise the installation
-	# will pollute the go.mod file.
-	GO111MODULE=off go get -u github.com/FiloSottile/vendorcheck
-	# For some reason this install method is not recommended, see https://github.com/golangci/golangci-lint#install
-	# However, they suggest `curl ... | bash` which we should not do
-	# go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
-	# Change to use go get -u with version when go is v1.12+
-	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(shell go env GOPATH)/bin v1.21.0
+	go install golang.org/x/tools/cmd/goimports@latest
+	go install github.com/FiloSottile/vendorcheck@latest
 
 format: ## Formats the code. Must have goimports installed (use make install-linters).
 	goimports -w -local github.com/skycoin/skycoin ./cmd

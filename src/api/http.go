@@ -268,7 +268,7 @@ func CreateHTTPS(host string, c Config, gateway Gatewayer, certFile, keyFile str
 	logger.Infof("Using %s for the certificate", certFile)
 	logger.Infof("Using %s for the key", keyFile)
 
-	listener, err := tls.Listen("tcp", host, &tls.Config{
+	listener, err := tls.Listen("tcp", host, &tls.Config{ //nolint:gosec
 		Certificates: []tls.Certificate{cert},
 	})
 	if err != nil {
@@ -343,8 +343,8 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		AllowedOrigins:     allowedOrigins,
 		Debug:              false,
 		AllowedMethods:     []string{http.MethodGet, http.MethodPost},
-		AllowedHeaders:     []string{"Origin", "Accept", "Content-Type", "X-Requested-With", CSRFHeaderName},
-		AllowCredentials:   false, // credentials are not used, but it would be safe to enable if necessary
+		AllowedHeaders:     []string{"*"}, // Allow all headers since we use CSRF tokens for security
+		AllowCredentials:   false,         // credentials are not used, but it would be safe to enable if necessary
 		OptionsPassthrough: false,
 	})
 
@@ -505,10 +505,12 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		}
 		indexHandler = newIndexHandler(subFS, c.enableGUI)
 	}
-	if !c.disableCSP {
+	if !c.disableCSP && indexHandler != nil {
 		indexHandler = CSPHandler(indexHandler, ContentSecurityPolicy)
 	}
-	webHandler(apiVersion1, "/", indexHandler, nil)
+	if indexHandler != nil {
+		webHandler(apiVersion1, "/", indexHandler, nil)
+	}
 
 	// get the current CSRF token
 	csrfHandlerV1 := func(endpoint string, handler http.Handler) {

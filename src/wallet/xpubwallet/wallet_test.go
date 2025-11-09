@@ -294,7 +294,12 @@ func TestWalletSerialize(t *testing.T) {
 	// load wallet file and compare
 	fb, err := os.ReadFile("./testdata/wallet_serialize.wlt")
 	require.NoError(t, err)
-	require.Equal(t, bytes.TrimRight(fb, "\n"), b)
+	fb = bytes.TrimRight(fb, "\n")
+	
+	// Normalize line endings for cross-platform compatibility
+	fb = bytes.ReplaceAll(fb, []byte("\r\n"), []byte("\n"))
+	b = bytes.ReplaceAll(b, []byte("\r\n"), []byte("\n"))
+	require.Equal(t, fb, b)
 
 	wlt := Wallet{}
 	err = wlt.Deserialize(b)

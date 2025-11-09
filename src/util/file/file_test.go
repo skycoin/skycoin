@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -17,6 +18,9 @@ import (
 )
 
 func requireFileMode(t *testing.T, filename string, mode os.FileMode) {
+	if runtime.GOOS == "windows" {
+		return // Skip permission checks on Windows
+	}
 	stat, err := os.Stat(filename)
 	require.NoError(t, err)
 	require.Equal(t, stat.Mode(), mode)
@@ -130,6 +134,9 @@ func TestBuildDataDirDefault(t *testing.T) {
 }
 
 func TestBuildDataDirAbsolute(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping Unix path test on Windows")
+	}
 	abspath := "/opt/.skycoin"
 	dir, err := buildDataDir(abspath)
 	require.NoError(t, err)

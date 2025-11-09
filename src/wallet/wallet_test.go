@@ -389,9 +389,10 @@ func TestRemoveBackupFiles(t *testing.T) {
 			for _, f := range tc.initFiles {
 				fw, err := os.Create(filepath.Join(dir, f.wltName)) //nolint:gosec
 				require.NoError(t, err)
-				defer fw.Close() //nolint:errcheck
 				err = tmp.Execute(fw, struct{ Version string }{f.version})
 				require.NoError(t, err)
+				// Close immediately to avoid file locking issues on Windows
+				require.NoError(t, fw.Close())
 			}
 
 			require.NoError(t, removeBackupFiles(dir))

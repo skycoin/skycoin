@@ -18,6 +18,7 @@ import (
 const (
 	address       = "127.0.0.1"
 	silenceLogger = true
+	dummyAddr     = "127.0.0.1:9999" // Used by mock connections
 )
 
 func init() {
@@ -52,7 +53,6 @@ func newTestConfig(t *testing.T) Config {
 
 func TestNewConnectionPool(t *testing.T) {
 	cfg := newTestConfig(t)
-	addr := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
 	cfg.MaxConnections = 108
 	cfg.DialTimeout = time.Duration(777)
 
@@ -187,7 +187,6 @@ func TestAcceptConnections(t *testing.T) {
 
 func TestStartListenFailed(t *testing.T) {
 	cfg := newTestConfig(t)
-	addr := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 	q := make(chan struct{})
@@ -456,7 +455,7 @@ func TestDisconnect(t *testing.T) {
 
 func TestConnectionClose(t *testing.T) {
 	c := &Connection{
-		Conn:       NewDummyConn(addr),
+		Conn:       NewDummyConn(dummyAddr),
 		Buffer:     &bytes.Buffer{},
 		WriteQueue: make(chan Message),
 	}
@@ -496,7 +495,6 @@ func (f fakeAddr) String() string {
 
 func TestGetConnections(t *testing.T) {
 	cfg := newTestConfig(t)
-	addr := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
 
@@ -1062,7 +1060,8 @@ func TestPoolSendMessageWriteQueueFull(t *testing.T) {
 		require.NoError(t, err)
 	}()
 	wait()
-
+	
+	addr := fmt.Sprintf("%s:%d", cfg.Address, cfg.Port)
 	_, err = net.Dial("tcp", addr)
 	require.NoError(t, err)
 
@@ -1073,13 +1072,13 @@ func TestPoolSendMessageWriteQueueFull(t *testing.T) {
 	gotErr := false
 	var once sync.Once
 	m := NewByteMessage(88)
-	addr := c.Addr()
+	connAddr := c.Addr()
 	var wg sync.WaitGroup
 	wg.Add(attempts)
 	for i := 0; i < attempts; i++ {
 		go func() {
 			defer wg.Done()
-			err := p.SendMessage(addr, m)
+			err := p.SendMessage(connAddr, m)
 			if err == ErrWriteQueueFull {
 				once.Do(func() {
 					gotErr = true
@@ -1308,7 +1307,7 @@ func NewReadErrorConn() net.Conn {
 }
 
 func (rec *ReadErrorConn) RemoteAddr() net.Addr {
-	return NewDummyAddr(addr)
+	return NewDummyAddr(dummyAddr)
 }
 
 func (rec *ReadErrorConn) SetReadDeadline(t time.Time) error {
@@ -1345,7 +1344,7 @@ func (c *ReadDeadlineFailedConn) SetReadDeadline(_ time.Time) error {
 }
 
 func (c *ReadDeadlineFailedConn) RemoteAddr() net.Addr {
-	return NewDummyAddr(addr)
+	return NewDummyAddr(dummyAddr)
 }
 
 func (c *ReadDeadlineFailedConn) Close() error {
@@ -1364,7 +1363,7 @@ func newReadAlwaysConn() *readAlwaysConn {
 }
 
 func (c *readAlwaysConn) RemoteAddr() net.Addr {
-	return NewDummyAddr(addr)
+	return NewDummyAddr(dummyAddr)
 }
 
 func (c *readAlwaysConn) Close() error {
@@ -1422,7 +1421,7 @@ func (c *readNothingConn) SetReadDeadline(_ time.Time) error {
 }
 
 func (c *readNothingConn) RemoteAddr() net.Addr {
-	return NewDummyAddr(addr)
+	return NewDummyAddr(dummyAddr)
 }
 
 func (c *readNothingConn) Close() error {

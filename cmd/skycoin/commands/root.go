@@ -15,6 +15,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+
 	"github.com/skycoin/skycoin/src/fiber"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/skycoin"
@@ -102,7 +103,6 @@ var (
 		VersionURL:            "https://version.skycoin.com/skycoin/version.txt",
 		Bip44Coin:             8000,
 	})
-
 )
 
 func init() {
@@ -111,14 +111,14 @@ func init() {
 
 // RootCmd is the root command
 var RootCmd = &cobra.Command{
-	Use:     "skycoin",
-	Short:   "skycoin wallet",
+	Use:   "skycoin",
+	Short: "skycoin wallet",
 	Long: `
 ┌─┐┬┌─┬ ┬┌─┐┌─┐┬┌┐┌
 └─┐├┴┐└┬┘│  │ │││││
 └─┘┴ ┴ ┴ └─┘└─┘┴┘└┘
 	skycoin wallet`,
-	Run:  func(cmd *cobra.Command, args []string) {
+	Run: func(cmd *cobra.Command, args []string) {
 		// create a new fiber coin instance
 		coin := skycoin.NewCoin(skycoin.Config{
 			Node: nodeConfig,
@@ -139,5 +139,5 @@ var RootCmd = &cobra.Command{
 		if err := coin.Run(); err != nil {
 			os.Exit(1)
 		}
-		},
+	},
 }

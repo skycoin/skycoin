@@ -11,9 +11,6 @@ and then run cmd/newcoin
 */
 
 import (
-	cc "github.com/ivanpirog/coloredcobra"
-	"github.com/spf13/cobra"
-
 	"github.com/skycoin/skycoin/cmd/skycoin/commands"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/flags"
 )

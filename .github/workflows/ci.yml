@@ -10,11 +10,29 @@ jobs:
   linux:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/setup-go@v5
         with:
           go-version: 1.25.*
+          cache: true
+          cache-dependency-path: go.sum
 
-      - uses: actions/checkout@v4
+      - name: Cache Go tools
+        uses: actions/cache@v4
+        with:
+          path: ~/go/bin
+          key: ${{ runner.os }}-go-tools-${{ hashFiles('Makefile') }}
+          restore-keys: |
+            ${{ runner.os }}-go-tools-
+
+      - name: Cache apt packages
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt/archives
+          key: ${{ runner.os }}-apt-${{ hashFiles('.github/workflows/ci.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-apt-
 
       - name: Install Dependencies
         shell: bash
@@ -56,11 +74,21 @@ jobs:
   darwin:
     runs-on: macos-latest
     steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/setup-go@v5
         with:
           go-version: 1.25.*
+          cache: true
+          cache-dependency-path: go.sum
 
-      - uses: actions/checkout@v4
+      - name: Cache Go tools
+        uses: actions/cache@v4
+        with:
+          path: ~/go/bin
+          key: ${{ runner.os }}-go-tools-${{ hashFiles('Makefile') }}
+          restore-keys: |
+            ${{ runner.os }}-go-tools-
 
       - name: Vendor Dependencies
         run: go mod vendor -v
@@ -86,11 +114,21 @@ jobs:
   windows:
     runs-on: windows-latest
     steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/setup-go@v5
         with:
           go-version: 1.25.*
+          cache: true
+          cache-dependency-path: go.sum
 
-      - uses: actions/checkout@v4
+      - name: Cache Go tools
+        uses: actions/cache@v4
+        with:
+          path: ~/go/bin
+          key: ${{ runner.os }}-go-tools-${{ hashFiles('Makefile') }}
+          restore-keys: |
+            ${{ runner.os }}-go-tools-
 
       - name: Install Dependencies
         run: |

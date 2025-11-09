@@ -108,7 +108,7 @@ var createCoinCmd = &cobra.Command{
 			return err
 		}
 		defer commandFile.Close() //nolint
-		coinTestFilePath := fmt.Sprintf("./cmd/%[1]s/commands/%[1]s_test.go", coinName)
+		coinTestFilePath := fmt.Sprintf("./cmd/%[1]s/%[1]s_test.go", coinName)
 		coinTestFile, err := os.Create(coinTestFilePath) //nolint:gosec
 		if err != nil {
 			log.Errorf("failed to create new coin test file %s", coinTestFilePath)
@@ -156,7 +156,7 @@ var createCoinCmd = &cobra.Command{
 			log.Error("failed to append help constant to command")
 			return err
 		}
-		err = t.ExecuteTemplate(coinTestFile, coinTestTemplateFile, nil)
+		err = t.ExecuteTemplate(coinTestFile, coinTestTemplateFile, config.Node)
 		if err != nil {
 			log.Error("failed to parse coin test template variables")
 			return err

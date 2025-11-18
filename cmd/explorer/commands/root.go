@@ -37,11 +37,12 @@ const (
 )
 
 var (
-	explorerHost  string   // URL of the web server. Override with envvar EXPLORER_HOST. Must not have scheme
-	skycoinAddr   *url.URL // URL of the Skycoin node. Override with envvar SKYCOIN_ADDR. Must have scheme, e.g. http://
-	uiFilesFolder string   // Path for the folder with the precompiled front-end files
-	apiOnly       bool
-	verify        bool
+	explorerHost      string   // URL of the web server. Override with envvar EXPLORER_HOST. Must not have scheme
+	skycoinAddr       *url.URL // URL of the Skycoin node. Override with envvar SKYCOIN_ADDR. Must have scheme, e.g. http://
+	skycoinAddrString string   // String version of skycoin node URL for flag binding
+	uiFilesFolder     string   // Path for the folder with the precompiled front-end files
+	apiOnly           bool
+	verify            bool
 )
 
 func init() {
@@ -53,14 +54,14 @@ func init() {
 		explorerHost = defaultExplorerHost
 	}
 
-	skycoinAddrString := os.Getenv("SKYCOIN_ADDR")
+	skycoinAddrString = os.Getenv("SKYCOIN_ADDR")
 	if skycoinAddrString == "" {
 		skycoinAddrString = defaultSkycoinAddr
 	}
 	skycoinAddr = buildNodeURL(skycoinAddrString)
 
 	RootCmd.Flags().StringVarP(&explorerHost, "server-host", "s", explorerHost, "The addr:port to bind the explorer web server to\033[0m\n\r")
-	RootCmd.Flags().StringVarP(&skycoinAddrString, "node-addr", "n", skycoinAddr.String(), "The skycoin node's address\033[0m\n\r")
+	RootCmd.Flags().StringVarP(&skycoinAddrString, "node-addr", "n", skycoinAddrString, "The skycoin node's address\033[0m\n\r")
 	RootCmd.Flags().StringVarP(&uiFilesFolder, "files-folder", "f", "", "Path for the folder with the precompiled front-end files")
 	RootCmd.Flags().BoolVarP(&apiOnly, "api-only", "a", false, "Only run the API, don't serve static content")
 	RootCmd.Flags().BoolVarP(&verify, "verify", "v", false, "Run init() checks and quit")
@@ -117,6 +118,9 @@ var RootCmd = &cobra.Command{
 	DisableSuggestions:    true,
 	DisableFlagsInUseLine: true,
 	Run: func(_ *cobra.Command, _ []string) {
+		// Parse the node address flag
+		skycoinAddr = buildNodeURL(skycoinAddrString)
+
 		// Validate and adjust values
 		if uiFilesFolder != "" && uiFilesFolder[len(uiFilesFolder)-1] != '/' {
 			uiFilesFolder += "/"

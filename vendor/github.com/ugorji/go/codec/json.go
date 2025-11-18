@@ -630,6 +630,11 @@ func (d *jsonDecDriver[T]) nextValueBytes() []byte {
 	switch d.tok {
 	default:
 		_, d.tok = d.r.jsonReadNum()
+		// special case: trim last read token if a valid byte in stream
+		if d.tok != 0 {
+			vv := d.r.stopRecording()
+			return vv[:len(vv)-1]
+		}
 	case 'n':
 		d.checkLit3([3]byte{'u', 'l', 'l'}, d.r.readn3())
 	case 'f':

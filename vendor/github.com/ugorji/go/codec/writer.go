@@ -50,7 +50,7 @@ func (z *bufioEncWriter) resetBytes(in []byte, out *[]byte) {
 func (z *bufioEncWriter) resetIO(w io.Writer, bufsize int, blist *bytesFreeList) {
 	z.w = w
 	z.n = 0
-	// use minimum bufsize of 16, matching the array z.b and accomodating writen methods (where n <= 8)
+	// use minimum bufsize of 16, matching the array z.b and accommodating writen methods (where n <= 8)
 	bufsize = max(16, bufsize) // max(byteBufSize, bufsize)
 	if cap(z.buf) < bufsize {
 		if len(z.buf) > 0 && &z.buf[0] != &z.b[0] {

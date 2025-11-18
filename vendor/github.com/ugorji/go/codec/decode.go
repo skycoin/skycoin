@@ -171,7 +171,7 @@ func (d *decoder[T]) kInterfaceNaked(f *decFnInfo) (rvn reflect.Value) {
 	d.d.DecodeNaked()
 
 	// We cannot decode non-nil stream value into nil interface with methods (e.g. io.Reader).
-	// Howver, it is possible that the user has ways to pass in a type for a given interface
+	// However, it is possible that the user has ways to pass in a type for a given interface
 	//   - MapType
 	//   - SliceType
 	//   - Extensions
@@ -255,7 +255,7 @@ func (d *decoder[T]) kInterfaceNaked(f *decFnInfo) (rvn reflect.Value) {
 			} else {
 				rvn = reflect.New(bfn.rt)
 				if bfn.ext == SelfExt {
-					sideDecode(d.hh, &d.h.sideDecPool, func(sd decoderI) { oneOffDecode(sd, rv2i(rvn), bytes, bfn.rt, true) })
+					sideDecode(d.hh, &d.h.sideDecPool, func(sd decoderI) { oneOffDecode(sd, rv2i(rvn), bytes, bfn.rt, false) })
 				} else {
 					bfn.ext.ReadExt(rv2i(rvn), bytes)
 				}
@@ -1696,11 +1696,11 @@ func (d *decoder[T]) interfaceExtConvertAndDecode(v interface{}, ext InterfaceEx
 }
 
 func (d *decoder[T]) fn(t reflect.Type) *decFn[T] {
-	return d.dh.decFnViaBH(t, d.rtidFn, d.h, d.fp, false)
+	return d.dh.decFnViaBH(t, d.rtidFn, d.h, d.fp, true)
 }
 
 func (d *decoder[T]) fnNoExt(t reflect.Type) *decFn[T] {
-	return d.dh.decFnViaBH(t, d.rtidFnNoExt, d.h, d.fp, true)
+	return d.dh.decFnViaBH(t, d.rtidFnNoExt, d.h, d.fp, false)
 }
 
 // ----
@@ -1822,7 +1822,7 @@ func (dh helperDecDriver[T]) decFnLoad(rt reflect.Type, rtid uintptr, tinfos *Ty
 
 	// anything can be an extension except the built-in ones: time, raw and rawext.
 	// ensure we check for these types, then if extension, before checking if
-	// it implementes one of the pre-declared interfaces.
+	// it implements one of the pre-declared interfaces.
 
 	fi.addrDf = true
 

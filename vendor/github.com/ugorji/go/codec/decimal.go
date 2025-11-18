@@ -508,6 +508,7 @@ LOOP:
 		}
 	}
 
+	_ = i // no-op
 	r.ok = true
 	return
 }

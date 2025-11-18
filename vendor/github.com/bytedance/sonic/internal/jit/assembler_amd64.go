@@ -36,6 +36,7 @@ type BaseAssembler struct {
     i        int
     f        func()
     c        []byte
+    Pcdata   loader.Pcdata
     o        sync.Once
     pb       *Backend
     xrefs    map[string][]*obj.Prog
@@ -212,7 +213,7 @@ var jitLoader = loader.Loader{
 
 func (self *BaseAssembler) Load(name string, frameSize int, argSize int, argStackmap []bool, localStackmap []bool) loader.Function {
     self.build()
-    return jitLoader.LoadOne(self.c, name, frameSize, argSize, argStackmap, localStackmap)
+    return jitLoader.LoadOne(self.c, name, frameSize, argSize, argStackmap, localStackmap, self.Pcdata)
 }
 
 /** Assembler Stages **/
@@ -265,5 +266,5 @@ func (self *BaseAssembler) validate() {
 }
 
 func (self *BaseAssembler) assemble() {
-    self.c = self.pb.Assemble()
+    self.c, self.Pcdata = self.pb.Assemble()
 }

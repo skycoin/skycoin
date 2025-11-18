@@ -270,6 +270,11 @@ func TestChooseSpendsMaximizeUxOuts(t *testing.T) {
 	})
 
 	// 0 coins in a UxBalance (panic)
+	uxb = makeRandomUxBalances(t)
+	// Ensure we have at least 2 elements
+	for len(uxb) < 2 {
+		uxb = makeRandomUxBalances(t)
+	}
 	uxb[1].Coins = 0
 	require.Panics(t, func() {
 		verifyChosenCoins(t, uxb, 10, ChooseSpendsMaximizeUxOuts, func(a, b UxBalance) bool {

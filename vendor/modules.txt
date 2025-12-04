@@ -265,6 +265,7 @@ github.com/skycoin/hardware-wallet-protob/go/google/protobuf
 github.com/skycoin/skycoin-lite/liteclient
 # github.com/skycoin/skywire v1.3.32-0.20251008181048-e232456f8799
 ## explicit; go 1.25.1
+github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo
 github.com/skycoin/skywire/pkg/skywire-utilities/pkg/calvin
 github.com/skycoin/skywire/pkg/skywire-utilities/pkg/flags
 # github.com/spf13/afero v1.15.0

@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/spf13/cobra"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo"
+	"github.com/spf13/cobra"
 
 	explorer "github.com/skycoin/skycoin/cmd/explorer/commands"
 	newcoin "github.com/skycoin/skycoin/cmd/newcoin/commands"

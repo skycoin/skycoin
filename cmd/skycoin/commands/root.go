@@ -18,11 +18,12 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo"
+
 	"github.com/skycoin/skycoin/src/fiber"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/skycoin"
 	"github.com/skycoin/skycoin/src/util/logging"
-	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo"
 
 	// register the supported wallets
 	_ "github.com/skycoin/skycoin/src/wallet/bip44wallet"

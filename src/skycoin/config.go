@@ -735,6 +735,18 @@ func (c *NodeConfig) RegisterFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly, "Run on localhost and only connect to localhost peers")
 	cmd.Flags().StringVar(&c.WalletCryptoType, "wallet-crypto-type", c.WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")
 	cmd.Flags().BoolVar(&c.Version, "version", false, "show node version")
+
+	// Display/Branding flags
+	cmd.Flags().StringVar(&c.Fiber.Name, "coin-name", c.Fiber.Name, "name of the coin")
+	cmd.Flags().StringVar(&c.Fiber.Ticker, "ticker", c.Fiber.Ticker, "coin ticker symbol (e.g., SKY)")
+	cmd.Flags().StringVar(&c.Fiber.DisplayName, "display-name", c.Fiber.DisplayName, "display name of the coin")
+	cmd.Flags().StringVar(&c.Fiber.CoinHoursName, "coin-hours-name", c.Fiber.CoinHoursName, "display name for coin hours")
+	cmd.Flags().StringVar(&c.Fiber.CoinHoursNameSingular, "coin-hours-name-singular", c.Fiber.CoinHoursNameSingular, "singular display name for coin hours")
+	cmd.Flags().StringVar(&c.Fiber.CoinHoursTicker, "coin-hours-ticker", c.Fiber.CoinHoursTicker, "ticker symbol for coin hours")
+	cmd.Flags().StringVar(&c.Fiber.QrURIPrefix, "qr-uri-prefix", c.Fiber.QrURIPrefix, "prefix for QR code URIs")
+	cmd.Flags().StringVar(&c.Fiber.ExplorerURL, "explorer-url", c.Fiber.ExplorerURL, "URL of the block explorer")
+	cmd.Flags().StringVar(&c.Fiber.VersionURL, "version-url", c.Fiber.VersionURL, "URL for version checking")
+	cmd.Flags().Uint32Var((*uint32)(&c.Fiber.Bip44Coin), "bip44-coin", uint32(c.Fiber.Bip44Coin), "BIP44 coin type")
 }
 
 func (c *NodeConfig) applyConfigMode(configMode string) {
@@ -758,6 +770,144 @@ func (c *NodeConfig) applyConfigMode(configMode string) {
 		c.WebInterfacePort = 0 // randomize web interface port
 	default:
 		panic("Invalid ConfigMode")
+	}
+}
+
+// LoadFromFiberConfig loads configuration from a fiber.toml file
+// and overrides the default values in NodeConfig
+func (c *NodeConfig) LoadFromFiberConfig(configPath string) error {
+	if configPath == "" {
+		return nil // No config file specified
+	}
+
+	// Load fiber config
+	fiberCfg, err := fiber.NewConfig(filepath.Base(configPath), filepath.Dir(configPath))
+	if err != nil {
+		return fmt.Errorf("failed to load fiber config: %w", err)
+	}
+
+	// Map fiber.NodeConfig to skycoin.NodeConfig
+	c.applyFiberNodeConfig(fiberCfg.Node)
+
+	return nil
+}
+
+// applyFiberNodeConfig maps fiber.NodeConfig fields to NodeConfig
+func (c *NodeConfig) applyFiberNodeConfig(node fiber.NodeConfig) {
+	// Core blockchain parameters
+	if node.CoinName != "" {
+		c.CoinName = node.CoinName
+		c.Fiber.Name = node.CoinName
+	}
+	if node.Port != 0 {
+		c.Port = node.Port
+	}
+	if node.WebInterfacePort != 0 {
+		c.WebInterfacePort = node.WebInterfacePort
+	}
+	if node.GenesisSignatureStr != "" {
+		c.GenesisSignatureStr = node.GenesisSignatureStr
+	}
+	if node.GenesisAddressStr != "" {
+		c.GenesisAddressStr = node.GenesisAddressStr
+	}
+	if node.BlockchainPubkeyStr != "" {
+		c.BlockchainPubkeyStr = node.BlockchainPubkeyStr
+	}
+	if node.BlockchainSeckeyStr != "" {
+		c.BlockchainSeckeyStr = node.BlockchainSeckeyStr
+	}
+	if node.GenesisTimestamp != 0 {
+		c.GenesisTimestamp = node.GenesisTimestamp
+	}
+	if node.GenesisCoinVolume != 0 {
+		c.GenesisCoinVolume = node.GenesisCoinVolume
+	}
+	if len(node.DefaultConnections) > 0 {
+		c.DefaultConnections = node.DefaultConnections
+	}
+	if node.PeerListURL != "" {
+		c.PeerListURL = node.PeerListURL
+	}
+
+	// Data directory - expand $HOME
+	// If not explicitly set, derive from coin name or display name
+	if node.DataDirectory != "" {
+		dataDir := node.DataDirectory
+		home := file.UserHome()
+		dataDir = replaceHome(dataDir, home)
+		c.DataDirectory = dataDir
+	} else if c.DataDirectory == "$HOME/.skycoin" {
+		// Auto-derive data directory from coin name or display name (matches newcoin behavior)
+		home := file.UserHome()
+		derivedName := ""
+		if node.CoinName != "" {
+			derivedName = node.CoinName
+		} else if node.DisplayName != "" {
+			derivedName = node.DisplayName
+		}
+		if derivedName != "" {
+			c.DataDirectory = replaceHome("$HOME/."+strings.ToLower(derivedName), home)
+		}
+	}
+
+	// Transaction verification params
+	if node.UnconfirmedBurnFactor != 0 {
+		c.UnconfirmedVerifyTxn.BurnFactor = node.UnconfirmedBurnFactor
+		c.unconfirmedBurnFactor = uint64(node.UnconfirmedBurnFactor)
+	}
+	if node.UnconfirmedMaxTransactionSize != 0 {
+		c.UnconfirmedVerifyTxn.MaxTransactionSize = node.UnconfirmedMaxTransactionSize
+		c.maxUnconfirmedTransactionSize = uint64(node.UnconfirmedMaxTransactionSize)
+	}
+	if node.UnconfirmedMaxDropletPrecision != 0 {
+		c.UnconfirmedVerifyTxn.MaxDropletPrecision = node.UnconfirmedMaxDropletPrecision
+		c.unconfirmedMaxDropletPrecision = uint64(node.UnconfirmedMaxDropletPrecision)
+	}
+	if node.CreateBlockBurnFactor != 0 {
+		c.CreateBlockVerifyTxn.BurnFactor = node.CreateBlockBurnFactor
+		c.createBlockBurnFactor = uint64(node.CreateBlockBurnFactor)
+	}
+	if node.CreateBlockMaxTransactionSize != 0 {
+		c.CreateBlockVerifyTxn.MaxTransactionSize = node.CreateBlockMaxTransactionSize
+		c.createBlockMaxTransactionSize = uint64(node.CreateBlockMaxTransactionSize)
+	}
+	if node.CreateBlockMaxDropletPrecision != 0 {
+		c.CreateBlockVerifyTxn.MaxDropletPrecision = node.CreateBlockMaxDropletPrecision
+		c.createBlockMaxDropletPrecision = uint64(node.CreateBlockMaxDropletPrecision)
+	}
+	if node.MaxBlockTransactionsSize != 0 {
+		c.MaxBlockTransactionsSize = node.MaxBlockTransactionsSize
+		c.maxBlockSize = uint64(node.MaxBlockTransactionsSize)
+	}
+
+	// Display/Branding
+	if node.Ticker != "" {
+		c.Fiber.Ticker = node.Ticker
+	}
+	if node.DisplayName != "" {
+		c.Fiber.DisplayName = node.DisplayName
+	}
+	if node.CoinHoursName != "" {
+		c.Fiber.CoinHoursName = node.CoinHoursName
+	}
+	if node.CoinHoursNameSingular != "" {
+		c.Fiber.CoinHoursNameSingular = node.CoinHoursNameSingular
+	}
+	if node.CoinHoursTicker != "" {
+		c.Fiber.CoinHoursTicker = node.CoinHoursTicker
+	}
+	if node.QrURIPrefix != "" {
+		c.Fiber.QrURIPrefix = node.QrURIPrefix
+	}
+	if node.ExplorerURL != "" {
+		c.Fiber.ExplorerURL = node.ExplorerURL
+	}
+	if node.VersionURL != "" {
+		c.Fiber.VersionURL = node.VersionURL
+	}
+	if node.Bip44Coin != 0 {
+		c.Fiber.Bip44Coin = node.Bip44Coin
 	}
 }
 

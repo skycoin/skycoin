@@ -2,6 +2,7 @@
 package commands
 
 import (
+	"embed"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -15,6 +16,9 @@ import (
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/useragent"
 )
+
+//go:embed templates/*.template
+var templateFS embed.FS
 
 const (
 	// Version is the CLI version
@@ -62,15 +66,6 @@ var createCoinCmd = &cobra.Command{
 	Short: "Create a new coin from a template file",
 	RunE: func(_ *cobra.Command, _ []string) error {
 		if err := validateCoinName(coinName); err != nil {
-			return err
-		}
-		if _, err := os.Stat(filepath.Join(templateDir, coinTemplateFile)); os.IsNotExist(err) {
-			return err
-		}
-		if _, err := os.Stat(filepath.Join(templateDir, coinTestTemplateFile)); os.IsNotExist(err) {
-			return err
-		}
-		if _, err := os.Stat(filepath.Join(templateDir, paramsTemplateFile)); os.IsNotExist(err) {
 			return err
 		}
 		configFilepath := filepath.Join(configDir, configFile)
@@ -122,23 +117,52 @@ var createCoinCmd = &cobra.Command{
 			return err
 		}
 		defer paramsFile.Close() //nolint
-		err = os.Chdir(templateDir)
+
+		// Read embedded template files
+		coinTemplateContent, err := templateFS.ReadFile("templates/" + coinTemplateFile)
 		if err != nil {
-			log.Errorf("failed to change directory to %s", templateDir)
+			log.Errorf("failed to read embedded coin template: %v", err)
 			return err
 		}
-		templateFiles := []string{
-			coinTemplateFile,
-			commandTemplateFile,
-			coinTestTemplateFile,
-			paramsTemplateFile,
+		commandTemplateContent, err := templateFS.ReadFile("templates/" + commandTemplateFile)
+		if err != nil {
+			log.Errorf("failed to read embedded command template: %v", err)
+			return err
 		}
+		coinTestTemplateContent, err := templateFS.ReadFile("templates/" + coinTestTemplateFile)
+		if err != nil {
+			log.Errorf("failed to read embedded coin test template: %v", err)
+			return err
+		}
+		paramsTemplateContent, err := templateFS.ReadFile("templates/" + paramsTemplateFile)
+		if err != nil {
+			log.Errorf("failed to read embedded params template: %v", err)
+			return err
+		}
+
+		// Parse templates from embedded content
 		t := template.New(coinTemplateFile)
-		t, err = t.ParseFiles(templateFiles...)
+		t, err = t.Parse(string(coinTemplateContent))
 		if err != nil {
-			log.Errorf("failed to parse template files: %v", templateFiles)
+			log.Errorf("failed to parse coin template: %v", err)
 			return err
 		}
+		t, err = t.New(commandTemplateFile).Parse(string(commandTemplateContent))
+		if err != nil {
+			log.Errorf("failed to parse command template: %v", err)
+			return err
+		}
+		t, err = t.New(coinTestTemplateFile).Parse(string(coinTestTemplateContent))
+		if err != nil {
+			log.Errorf("failed to parse coin test template: %v", err)
+			return err
+		}
+		t, err = t.New(paramsTemplateFile).Parse(string(paramsTemplateContent))
+		if err != nil {
+			log.Errorf("failed to parse params template: %v", err)
+			return err
+		}
+
 		config.Node.CoinName = coinName
 		config.Node.CoinAscii = asciiFont(coinName)
 		config.Node.DataDirectory = "$HOME/." + coinName

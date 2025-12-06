@@ -11,10 +11,14 @@ and then run cmd/newcoin
 */
 
 import (
+	"fmt"
+	"log"
 	_ "net/http/pprof"
 	"os"
 
 	"github.com/spf13/cobra"
+
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo"
 
 	"github.com/skycoin/skycoin/src/fiber"
 	"github.com/skycoin/skycoin/src/readable"
@@ -42,6 +46,9 @@ var (
 	ConfigMode = ""
 
 	logger = logging.MustGetLogger("main")
+
+	bv bool
+	di bool
 
 	// CoinName name of coin
 	CoinName = "skycoin"
@@ -106,19 +113,58 @@ var (
 )
 
 func init() {
+	// Check for FIBER_TOML environment variable to load custom fibercoin config
+	// This sets the default values before flag registration, so CLI flags naturally override
+	if fiberTomlPath := os.Getenv("FIBER_TOML"); fiberTomlPath != "" {
+		if err := nodeConfig.LoadFromFiberConfig(fiberTomlPath); err != nil {
+			logger.Errorf("Failed to load FIBER_TOML config: %v", err)
+			os.Exit(1)
+		}
+		logger.Infof("Loaded fiber config from FIBER_TOML: %s", fiberTomlPath)
+	}
+
 	nodeConfig.RegisterFlags(RootCmd)
+	if fmt.Sprintf("%v", buildinfo.DebugBuildInfo()) != "" {
+		RootCmd.Flags().BoolVarP(&di, "info", "d", false, "print runtime/debug.BuildInfo")
+	}
+	if fmt.Sprintf("%v", buildinfo.DBIVersion()) != "" {
+		RootCmd.Flags().BoolVarP(&bv, "bv", "b", false, "print runtime/debug.BuildInfo.Main.Version")
+	}
 }
 
 // RootCmd is the root command
 var RootCmd = &cobra.Command{
 	Use:   "skycoin",
 	Short: "skycoin wallet",
-	Long: `
-┌─┐┬┌─┬ ┬┌─┐┌─┐┬┌┐┌
-└─┐├┴┐└┬┘│  │ │││││
-└─┘┴ ┴ ┴ └─┘└─┘┴┘└┘
-	skycoin wallet`,
+	Long: func() (ret string) {
+		ret = `
+    ┌─┐┬┌─┬ ┬┌─┐┌─┐┬┌┐┌
+    └─┐├┴┐└┬┘│  │ │││││
+    └─┘┴ ┴ ┴ └─┘└─┘┴┘└┘`
+		if buildinfo.DBIVersion() != "" {
+			ret += fmt.Sprintf("\n%v", buildinfo.DBIVersion())
+		} else {
+			ret += fmt.Sprintf("\nskycoin version %v", buildinfo.Version())
+		}
+		if buildinfo.Go() != "unknown" && buildinfo.Go() != "" {
+			ret += "\nbuilt with " + buildinfo.Go()
+		}
+		return ret
+	}(),
+	SilenceErrors:         true,
+	SilenceUsage:          true,
+	DisableSuggestions:    true,
+	DisableFlagsInUseLine: true,
+	Version:               buildinfo.Version(),
 	Run: func(cmd *cobra.Command, args []string) {
+		if di {
+			fmt.Printf("%v\n", buildinfo.DebugBuildInfo())
+			return
+		}
+		if bv {
+			fmt.Printf("%v\n", buildinfo.DBIVersion())
+			return
+		}
 		// create a new fiber coin instance
 		coin := skycoin.NewCoin(skycoin.Config{
 			Node: nodeConfig,
@@ -137,7 +183,7 @@ var RootCmd = &cobra.Command{
 
 		// run fiber coin node
 		if err := coin.Run(); err != nil {
-			os.Exit(1)
+			log.Fatal("Failed to run coin: ", err)
 		}
 	},
 }

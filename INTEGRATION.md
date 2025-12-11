@@ -221,6 +221,19 @@ which are then converted to `coinhours`, `1` coinhour = `3600` coinseconds.
 
 > Note: Coinhours don't have decimals and only show up in whole numbers.
 
+**Coinhour Time Period Conversions:**
+
+| Time Period | Coinhours (per coin) |
+|------------|---------------------|
+| 1 coin hour | 1 |
+| 1 coin day | 24 |
+| 1 coin week | 168 |
+| 1 coin month | 720 |
+| 1 coin year | 8,760 |
+| 1 coin decade | 87,600 |
+| 1 coin century | 876,000 |
+| 1 coin millennium | 8,760,000 |
+
 ##### REST API
 
 When using the REST API, the coin hours sent to the destination and change can be controlled.

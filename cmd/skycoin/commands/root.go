@@ -14,6 +14,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/calvin"
 	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/fiber"
@@ -116,6 +117,17 @@ func init() {
 		logger.Infof("Loaded fiber config from FIBER_TOML: %s", fiberTomlPath)
 	}
 
+	// Set dynamic Long description based on loaded config
+	// Use DisplayName if available (from fiber.toml), otherwise CoinName (from template)
+	coinName := nodeConfig.Fiber.DisplayName
+	if coinName == "" {
+		coinName = nodeConfig.Fiber.Name
+	}
+	if coinName == "" {
+		coinName = "skycoin"
+	}
+	RootCmd.Long = calvin.AsciiFont(coinName) + "\n " + coinName + " wallet"
+
 	nodeConfig.RegisterFlags(RootCmd)
 }
 
@@ -123,11 +135,7 @@ func init() {
 var RootCmd = &cobra.Command{
 	Use:   "skycoin",
 	Short: "skycoin wallet",
-	Long: `
-┌─┐┬┌─┬ ┬┌─┐┌─┐┬┌┐┌
-└─┐├┴┐└┬┘│  │ │││││
-└─┘┴ ┴ ┴ └─┘└─┘┴┘└┘
-	skycoin wallet`,
+	Long:  "", // Set dynamically in init()
 	Run: func(cmd *cobra.Command, args []string) {
 		// create a new fiber coin instance
 		coin := skycoin.NewCoin(skycoin.Config{

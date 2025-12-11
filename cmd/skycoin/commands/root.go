@@ -13,6 +13,7 @@ and then run cmd/newcoin
 import (
 	_ "net/http/pprof"
 	"os"
+	"strings"
 
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/calvin"
 	"github.com/spf13/cobra"
@@ -126,7 +127,9 @@ func init() {
 	if coinName == "" {
 		coinName = "skycoin"
 	}
-	RootCmd.Long = calvin.AsciiFont(coinName) + "\n " + coinName + " wallet"
+	// Use lowercase for ASCII art and wallet text
+	coinNameLower := strings.ToLower(coinName)
+	RootCmd.Long = calvin.AsciiFont(coinNameLower) + "\n " + coinNameLower + " wallet"
 
 	nodeConfig.RegisterFlags(RootCmd)
 }

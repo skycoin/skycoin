@@ -7,10 +7,11 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"text/template"
 
 	"github.com/spf13/cobra"
+
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/calvin"
 
 	"github.com/skycoin/skycoin/src/fiber"
 	"github.com/skycoin/skycoin/src/util/logging"
@@ -54,10 +55,7 @@ func init() {
 var RootCmd = &cobra.Command{
 	Use:   "newcoin",
 	Short: "newcoin is a helper tool for creating new fiber coins",
-	Long: `
-	┌┐┌┌─┐┬ ┬┌─┐┌─┐┬┌┐┌
-	│││├┤ ││││  │ │││││
-	┘└┘└─┘└┴┘└─┘└─┘┴┘└┘
+	Long: calvin.AsciiFont("newcoin") + `
 newcoin is a helper tool for creating new fiber coins`,
 }
 
@@ -164,7 +162,7 @@ var createCoinCmd = &cobra.Command{
 		}
 
 		config.Node.CoinName = coinName
-		config.Node.CoinAscii = asciiFont(coinName)
+		config.Node.CoinAscii = calvin.AsciiFont(coinName)
 		config.Node.DataDirectory = "$HOME/." + coinName
 		err = t.ExecuteTemplate(commandFile, coinTemplateFile, config.Node)
 		if err != nil {
@@ -200,50 +198,6 @@ func validateCoinName(s string) error {
 		return fmt.Errorf("invalid coin name. must only contain the characters %s", useragent.NamePattern)
 	}
 	return nil
-}
-
-var boxFont = map[rune][]string{
-	'a': {"┌─┐", "├─┤", "┴ ┴"},
-	'b': {"┌┐ ", "├┴┐", "└─┘"},
-	'c': {"┌─┐", "│  ", "└─┘"},
-	'd': {"┌┬┐", " ││", "─┴┘"},
-	'e': {"┌─┐", "├┤ ", "└─┘"},
-	'f': {"┌─┐", "├┤ ", "└  "},
-	'g': {"┌─┐", "│ ┬", "└─┘"},
-	'h': {"┬ ┬", "├─┤", "┴ ┴"},
-	'i': {"┬", "│", "┴"},
-	'j': {" ┬", " │", "└┘"},
-	'k': {"┬┌─", "├┴┐", "┴ ┴"},
-	'l': {"┬  ", "│  ", "┴─┘"},
-	'm': {"┌┬┐", "│││", "┴ ┴"},
-	'n': {"┌┐┌", "│││", "┘└┘"},
-	'o': {"┌─┐", "│ │", "└─┘"},
-	'p': {"┌─┐", "├─┘", "┴  "},
-	'q': {"┌─┐ ", "│─┼┐", "└─┘└"},
-	'r': {"┬─┐", "├┬┘", "┴└─"},
-	's': {"┌─┐", "└─┐", "└─┘"},
-	't': {"┌┬┐", " │ ", " ┴ "},
-	'u': {"┬ ┬", "│ │", "└─┘"},
-	'v': {"┬  ┬", "└┐┌┘", " └┘ "},
-	'w': {"┬ ┬", "│││", "└┴┘"},
-	'x': {"─┐ ┬", "┌┴┬┘", "┴ └─"},
-	'y': {"┬ ┬", "└┬┘", " ┴ "},
-	'z': {"┌─┐", "┌─┘", "└─┘"},
-}
-
-// ConvertToBoxFont converts a lowercase string to box drawing characters.
-func asciiFont(input string) string {
-	var output [3]string
-
-	for _, char := range input {
-		if row, ok := boxFont[char]; ok {
-			for i := 0; i < len(row); i++ {
-				output[i] += row[i]
-			}
-		}
-	}
-
-	return strings.Join(output[:], "\n")
 }
 
 const helpTemplate = `

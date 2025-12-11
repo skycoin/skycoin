@@ -15,6 +15,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/calvin"
 
 	"github.com/skycoin/skycoin/src/fiber"
 	"github.com/skycoin/skycoin/src/readable"
@@ -119,9 +120,8 @@ func init() {
 var RootCmd = &cobra.Command{
 	Use:   "{{.CoinName}}",
 	Short: "{{.CoinName}} wallet",
-	Long: `
-{{.CoinAscii}}
-	{{.CoinName}} wallet`,
+	Long: calvin.AsciiFont("{{.CoinName}}")+`
+ {{.CoinName}} wallet`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// create a new fiber coin instance
 		coin := skycoin.NewCoin(skycoin.Config{

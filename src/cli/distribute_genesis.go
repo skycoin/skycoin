@@ -32,6 +32,49 @@ func distributeGenesisCmd() *cobra.Command {
 	return cmd
 }
 
+// getDistributionFromDaemon queries the running daemon for its distribution configuration
+func getDistributionFromDaemon() (*params.Distribution, error) {
+	// Query the daemon's coinSupply endpoint which exposes distribution addresses
+	cs, err := apiClient.CoinSupply()
+	if err != nil {
+		return nil, fmt.Errorf("failed to query daemon's coin supply: %v", err)
+	}
+
+	// Combine unlocked and locked addresses
+	allAddresses := append(cs.UnlockedAddresses, cs.LockedAddresses...)
+	if len(allAddresses) == 0 {
+		return nil, errors.New("daemon has no distribution addresses configured")
+	}
+
+	// Parse max supply (it's a string in the API response)
+	maxSupply, err := droplet.FromString(cs.MaxSupply)
+	if err != nil {
+		return nil, fmt.Errorf("invalid max supply from daemon: %v", err)
+	}
+	maxSupplyCoins := maxSupply / droplet.Multiplier
+
+	// Validate that max supply divides evenly
+	if maxSupplyCoins%uint64(len(allAddresses)) != 0 {
+		return nil, errors.New("max supply must be evenly divisible by number of distribution addresses")
+	}
+
+	// Build distribution parameters
+	dist := &params.Distribution{
+		MaxCoinSupply:        maxSupplyCoins,
+		InitialUnlockedCount: uint64(len(cs.UnlockedAddresses)),
+		UnlockAddressRate:    0, // Not needed for distribution transaction
+		UnlockTimeInterval:   0, // Not needed for distribution transaction
+		Addresses:            allAddresses,
+	}
+
+	// Validate the distribution
+	if err := dist.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid distribution from daemon: %v", err)
+	}
+
+	return dist, nil
+}
+
 func distributeGenesisHandler(_ *cobra.Command, args []string) error {
 	sk, err := cipher.SecKeyFromHex(args[0])
 	if err != nil {
@@ -44,7 +87,13 @@ func distributeGenesisHandler(_ *cobra.Command, args []string) error {
 		return err
 	}
 
-	txn, err := createDistributionTransaction(uxID, sk, params.MainNetDistribution)
+	// Get distribution parameters from the running daemon's configuration
+	dist, err := getDistributionFromDaemon()
+	if err != nil {
+		return err
+	}
+
+	txn, err := createDistributionTransaction(uxID, sk, *dist)
 	if err != nil {
 		return err
 	}

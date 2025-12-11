@@ -1,406 +1,720 @@
 
-[2021# Fiber Coin Creator CLI Documention
-This tool can be used to create a new fiber coin easily from a config file.
+# Fiber Coin Creation Documentation
 
-## Usage
+Newcoin is a tool for creating new fiber coins from a [fiber.toml](../../config/fiber.toml) config file.
 
-```
-$ newcoin
+**Two workflows are supported:**
+1. **Quick Start (Recommended)**: Run fibercoins using the `skycoin` binary with environment variables - no compilation needed
+2. **Standalone Binary**: Generate coin-specific Go source code and compile a dedicated binary
 
-NAME:
-   newcoin - newcoin is a helper tool for creating new fiber coins
+---
 
-USAGE:
-   newcoin [global options] command [command options] [arguments...]
+## Quick Start - Automated Initialization (Recommended)
 
-VERSION:
-   0.1
+**Time: ~10 seconds** | No compilation required | No manual configuration
 
-COMMANDS:
-     createcoin  Create a new coin from a template file
-     help, h     Shows a list of commands or help for one command
-
-GLOBAL OPTIONS:
-   --help, -h     show help
-   --version, -v  print the version
-```
-
-#### Satisfy Dependencies
-
-requires:
+### Prerequisites
 * `git`
-* `go`
+* `go` 1.18+
 
-git clone the skycoin source code
-
-```
+Clone the skycoin source:
+```bash
 mkdir -p $HOME/go/src/github.com/skycoin
 cd $HOME/go/src/github.com/skycoin
 git clone https://github.com/skycoin/skycoin
 cd skycoin
 ```
 
-NOTE: run all commands from within that directory NOTE: the default branch should be ‘develop’ - please make sure to use develop
+### Five Simple Steps
 
+**1. Generate Genesis Wallet**
+```bash
+go run . cli addressGen > genesis.json
+```
 
-### Create New Coin
-When using the `newcoin` command, you should run it from the `$GOPATH/src/github.com/skycoin/skycoin` folder to utilise the built in default templates.
+This creates a deterministic wallet with:
+- Genesis address (where all initial coins go)
+- Blockchain public key (for block validation)
+- Blockchain secret key (for block signing - keep this secure!)
+
+**2. Create Configuration**
+```bash
+go run . newcoin config > mycoin.toml
+```
+
+Edit mycoin.toml to customize:
+- `display_name`: "My Coin"
+- `ticker`: "MYC"
+- `genesis_coin_volume`: 100000000000000
+- `port`: 6000 (network port)
+- `web_interface_port`: 6420 (web UI port)
+- `default_connections`: ["your.server.ip:6000"] (your node's IP)
+- `initial_unlocked_count`: Number of distribution addresses to unlock initially
+
+Leave these fields **BLANK** (they auto-populate):
+- `genesis_address_str` (from genesis.json)
+- `blockchain_pubkey_str` (from genesis.json)
+- `genesis_signature_str` (created automatically)
+- `distribution_addresses` (generated next)
+
+**3. Generate Distribution Addresses**
+```bash
+FIBER_TOML=mycoin.toml go run . cli fiberAddressGen -n 10
+```
+
+This automatically:
+- ✅ Generates 10 distribution addresses
+- ✅ **Updates mycoin.toml with distribution_addresses**
+- ✅ Creates `addresses.txt` (for reference)
+- ✅ Creates `seeds.csv` (for wallet import - keep secure!)
+
+**4. Initialize Blockchain**
+```bash
+GENESIS=genesis.json FIBER_TOML=mycoin.toml \
+  go run . daemon \
+    --block-publisher \
+    --download-peerlist=false \
+    --disable-default-peers \
+    --data-dir=$HOME/.mycoin
+```
+
+What happens automatically:
+- ✅ Loads genesis credentials from genesis.json
+- ✅ Loads coin configuration from mycoin.toml
+- ✅ Loads distribution addresses from mycoin.toml
+- ✅ Creates genesis block and signature
+- ✅ **Writes address/pubkey/signature back to mycoin.toml**
+- ✅ Starts the blockchain
+
+You'll see in the logs:
+```
+Loaded genesis credentials from GENESIS: genesis.json
+Loaded fiber config from FIBER_TOML: mycoin.toml
+Updated fiber.toml with genesis credentials (address, pubkey, signature)
+```
+
+**5. Distribute Genesis Coins**
+
+In a separate terminal:
+```bash
+# Get genesis secret key
+export SECRET_KEY=$(cat genesis.json | jq -r '.entries[0].secret_key')
+
+# Set RPC address
+export RPC_ADDR="http://127.0.0.1:6420"
+export COIN="mycoin"
+
+# Distribute coins to distribution addresses
+go run . cli distributeGenesis $SECRET_KEY
+```
+
+This creates block #1 distributing coins from the genesis address to all distribution addresses equally.
+
+You'll see:
+```
+INFO: Block 1 created
+INFO: Distributed 100,000,000 coins to 10 addresses (10,000,000 each)
+```
+
+**After first run**, mycoin.toml is complete with all credentials and distribution addresses populated.
+
+**Running Without GENESIS** (after initial setup):
+```bash
+# Extract secret key for block publisher
+export SECRET_KEY=$(cat genesis.json | jq -r '.entries[0].secret_key')
+
+# Run using only FIBER_TOML (genesis data now in mycoin.toml)
+FIBER_TOML=mycoin.toml go run . daemon \
+  --block-publisher \
+  --blockchain-secret-key=$SECRET_KEY
+```
+
+**Peer Node** (different port/data directory):
+```bash
+FIBER_TOML=mycoin.toml go run . daemon \
+  --port=5998 \
+  --data-dir=$HOME/.mycoin-peer \
+  --web-interface-port=6418
+```
+
+**Import Distribution Wallets:**
+
+Use the seeds from `seeds.csv` to import distribution wallets into the web interface or via CLI:
+```bash
+# Import a distribution wallet
+go run . cli walletCreate -s "seed phrase from seeds.csv" -l "Distribution 1"
+```
+
+---
+
+## Traditional Workflow - Standalone Binary
+
+If you need a standalone binary with a custom name compiled into the source code:
+
+### Steps 1-3: Same as Quick Start
+
+Follow Steps 1-3 from the Quick Start above to:
+1. Create genesis.json
+2. Configure mycoin.toml  
+3. Generate distribution addresses with `fiberAddressGen`
+
+You can run the daemon with GENESIS once to auto-populate mycoin.toml, or manually copy the values.
+
+### Step 4: Generate Coin-Specific Source Code
 
 ```bash
-$ cd $GOPATH/src/github.com/skycoin/skycoin
-$ go run cmd/newcoin/newcoin.go createcoin [command options]
+go run . newcoin createcoin --coin mycoin --config-file mycoin.toml
 ```
 
-```
-OPTIONS:
-   --coin value                             name of the coin to create (default: "skycoin")
-   --template-dir value, --td value         template directory path (default: "./template")
-   --coin-template-file value, --ct value   coin template file (default: "coin.template")
-   --visor-template-file value, --vt value  visor template file (default: "visor_parameters.template")
-   --config-dir value, --cd value           config directory path (default: "./")
-   --config-file value, --cf value          config file path (default: "fiber.toml")
-```
+This creates:
+- `cmd/mycoin/mycoin.go` - Standalone executable
+- `cmd/mycoin/commands/root.go` - CLI command definitions  
+- `src/params/params.go` - Importable parameters with **distribution addresses compiled in**
 
-#### Example
-Create a test coin using application defaults.
+**Important:** The distribution addresses from mycoin.toml are now compiled into `src/params/params.go`. Any future changes to distribution addresses require re-running `createcoin`.
+
+### Step 5: Initialize & Distribute
 
 ```bash
-$ cd $GOPATH/src/github.com/skycoin/skycoin
-$ go run cmd/newcoin/newcoin.go --coin testcoin
+# Extract secret key
+export SECRET_KEY=$(cat genesis.json | jq -r '.entries[0].secret_key')
+
+# Run block publisher
+go run cmd/mycoin/mycoin.go daemon --block-publisher --blockchain-secret-key=$SECRET_KEY
+
+# In another terminal, distribute genesis
+export RPC_ADDR="http://127.0.0.1:6420"
+export COIN="mycoin"
+go run cmd/mycoin/mycoin.go cli distributeGenesis $SECRET_KEY
 ```
 
-This will create a new directory, `testcoin`, in `cmd` folder and a `testcoin.go` file inside that folder.
-It will also use the built-in defaul options (specified above) and draw template configuration from `$GOPATH/src/github.com/skycoin/skycoin/template`
+### Step 6: Compile Distributable Binary (Optional)
 
-This file can be used to run a "testcoin" node.
-
-
-#### Coin Templates
-
-A coin template is used by the newcoin command to generate a Go source file that is used to run a fibercoin. These templates are located in the `template/` directory.
-
-The coin.template file is used to generate the `cmd/mycoin/mycoin.go` source file, while the file params.template is used to generate the file `src/params/params.go` source file. The former is used to run the peer and publisher nodes for the fibercoin, while the latter is used to hold multiple configuration parameters for the fibercoin nodes.
-Genesis Address and Genesis Private and Public Keys
-
-In order to initialize a new fibercoin, secret and public keys need to be generated to create the genesis transaction. Generating these keys is achieved by running the following command:
-
-```
-go run cmd/skycoin-cli/skycoin-cli.go addressGen
+```bash
+go build -o mycoin ./cmd/mycoin
+./mycoin daemon --block-publisher --blockchain-secret-key=$SECRET_KEY
 ```
 
-The output of this command will be similar to the one below:
+### Differences from Quick Start
+
+**Quick Start (Runtime Configuration):**
+- ✅ Distribution addresses loaded from fiber.toml at runtime
+- ✅ Change addresses by editing fiber.toml (no recompilation)
+- ✅ One binary can run multiple coins with different configs
+- ✅ Faster iteration during development
+
+**Traditional (Compiled Configuration):**
+- Distribution addresses compiled into binary
+- Changes require recompiling
+- Custom binary name for branding
+- Slightly smaller deployment (no need for fiber.toml)
+
+---
+
+## Environment Variables Reference
+
+### `GENESIS` - Genesis Wallet Credentials
+
+Points to a wallet JSON file (created by `cli addressGen`) containing:
+- Genesis address
+- Blockchain public key
+- Blockchain secret key
+
+**Usage:**
+```bash
+GENESIS=/path/to/genesis.json skycoin daemon --block-publisher
 ```
 
-{
-    "meta": {
-        "coin": "mycoin",
-        "cryptoType": "",
-        "encrypted": "false",
-        "filename": "2023_08_08_8b30.wlt",
-        "label": "",
-        "lastSeed": "13017d89a3a23193107709d06e81db4d3c787ab1044fd15189424efe8cdd128a",
-        "secrets": "",
-        "seed": "marble face march turtle essence motion expand lift honey hole bronze test",
-        "seedPassphrase": "",
-        "tm": "1691498129",
-        "type": "deterministic",
-        "version": "0.4",
-        "xpub": ""
-    },
-    "entries": [
-        {
-            "address": "mhypoFwrNE4woCAfvBr4JhmY3pw7u746hr",
-            "public_key": "032e123ad2d33f3bad388cd914bd250580c31803d0cff822b9b88ff4ce204a1acc",
-            "secret_key": "926abeadce6e4283dae8782af2b1e7549267d29d8d7517d48a4d9b0d9740e22b"
-        }
-    ]
+**Takes precedence over:** fiber.toml values for address/pubkey/seckey
+
+**Security:** The secret key from genesis.json is used but **NEVER** written to fiber.toml
+
+### `FIBER_TOML` - Coin Configuration
+
+Points to a fiber.toml file containing coin parameters.
+
+**Usage:**
+```bash
+FIBER_TOML=/path/to/mycoin.toml skycoin daemon
+```
+
+**What it does:**
+- Loads all coin configuration (display name, ports, burn factors, etc.)
+- Provides defaults for CLI flags (visible in `--help`)
+- Gets auto-updated with genesis credentials on first run
+
+### Configuration Precedence (Highest to Lowest)
+
+1. **CLI flags** - `--genesis-address`, `--blockchain-secret-key`, etc.
+2. **GENESIS env** - Credentials from genesis.json
+3. **FIBER_TOML env** - Values from fiber.toml
+4. **Template defaults** - Hardcoded in generated code
+
+---
+
+## Commands Reference
+
+### `cli fiberAddressGen` - Generate Distribution Addresses
+
+Generates addresses and seeds for distribution, with optional automatic fiber.toml update.
+
+```bash
+go run . cli fiberAddressGen [flags]
+```
+
+**Flags:**
+```
+-n, --num int              Number of addresses to generate (default 1)
+-a, --addr-file string     Output file for addresses (default "addresses.txt")
+-s, --seed-file string     Output file for seeds (default "seeds.csv")
+    --overwrite            Overwrite existing files
+```
+
+**Environment Variables:**
+- `FIBER_TOML` - If set, automatically updates the specified fiber.toml with distribution_addresses
+
+**Example (Standalone):**
+```bash
+# Generate 100 addresses to files only
+go run . cli fiberAddressGen -n 100 -a dist-addresses.txt -s dist-seeds.csv
+```
+
+**Example (Auto-update fiber.toml):**
+```bash
+# Generate 10 addresses AND update mycoin.toml
+FIBER_TOML=mycoin.toml go run . cli fiberAddressGen -n 10
+
+# Output:
+# Generated 10 addresses
+# Saved to: addresses.txt, seeds.csv
+# ✓ Updated mycoin.toml with 10 distribution addresses
+```
+
+**Files Created:**
+- `addresses.txt` - Plain text list of addresses (for reference)
+- `seeds.csv` - CSV with address,seed pairs (for wallet import - **keep secure!**)
+
+**Security:**
+- The `seeds.csv` file contains wallet seeds - treat it like private keys
+- Store offline and encrypt for production use
+- Never commit to version control
+
+### `cli distributeGenesis` - Distribute Genesis Coins
+
+Distributes genesis block coins to configured distribution addresses.
+
+```bash
+go run . cli distributeGenesis [genesis_secret_key] [flags]
+```
+
+**Prerequisites:**
+- Daemon must be running with `--block-publisher`
+- Distribution addresses must be configured in fiber.toml
+- Blockchain must be at block 0 (genesis only)
+
+**Environment Variables:**
+- `RPC_ADDR` - RPC address of running daemon (default: http://127.0.0.1:6420)
+- `COIN` - Coin name for data directory resolution
+
+**Example:**
+```bash
+export RPC_ADDR="http://127.0.0.1:6420"
+export SECRET_KEY=$(cat genesis.json | jq -r '.entries[0].secret_key')
+
+go run . cli distributeGenesis $SECRET_KEY
+```
+
+**What It Does:**
+1. Queries `/api/v1/coinSupply` from running daemon to get distribution addresses
+2. Creates transaction splitting genesis coins equally
+3. Signs transaction with genesis secret key
+4. Injects into blockchain (block publisher creates Block #1)
+
+**Validation:**
+- Checks that blockchain is at seq 0 (only genesis block exists)
+- Verifies MaxCoinSupply divides evenly by number of addresses
+- Ensures all addresses are valid
+
+### `newcoin createcoin` - Generate Source Code
+
+Generates coin-specific Go source files from fiber.toml templates.
+
+```bash
+go run . newcoin createcoin [flags]
+```
+
+**Flags:**
+```
+-c, --coin string                      name of the coin to create (default "skycoin")
+-d, --template-dir string              template directory path (default "./template")
+-e, --coin-template-file string        coin template file (importable) (default "coin.template")
+-f, --command-template-file string     command template file (executable) (default "command.template")
+-g, --coin-test-template-file string   coin test template file (default "coin_test.template")
+-i, --params-template-file string      params template file (default "params.template")
+-j, --config-dir string                config directory path (default "./")
+-k, --config-file string               config file path (default "fiber.toml")
+```
+
+**Example:**
+```bash
+go run . newcoin createcoin --coin privateness --config-file privateness.toml
+```
+
+---
+
+## Configuration
+
+### Required fiber.toml Fields (Auto-Populated)
+
+These fields are automatically populated by the automated workflow:
+
+**By GENESIS environment variable (Step 4):**
+- `genesis_address_str` - Address that receives genesis coins
+- `blockchain_pubkey_str` - Public key for block validation
+- `genesis_signature_str` - Signature of the genesis block
+
+**By fiberAddressGen with FIBER_TOML (Step 3):**
+- `distribution_addresses` - Array of addresses for coin distribution
+
+### Customizable Fields (Edit Before First Run)
+
+You should customize these in your fiber.toml:
+
+**Basic Info:**
+- `display_name` - Coin display name (e.g., "Privateness")
+- `ticker` - Price ticker symbol (e.g., "PRIV")
+- `coin_hours_display_name` - Name for coin hours
+- `coin_hours_ticker` - Ticker for coin hours
+
+**Genesis Block:**
+- `genesis_coin_volume` - Total coins in genesis block
+- `genesis_timestamp` - Genesis block timestamp (Unix time)
+
+**Network:**
+- `port` - Default network port (e.g., 6000)
+- `web_interface_port` - Default web UI port (e.g., 6420)
+- `default_connections` - Array of trusted peer addresses
+- `peer_list_url` - URL for peer discovery
+
+**Supply & Distribution:**
+- `max_coin_supply` - Maximum total supply (must divide evenly by number of distribution addresses)
+- `distribution_addresses` - Auto-populated by `fiberAddressGen` (or manually add)
+- `initial_unlocked_count` - Number of distribution addresses unlocked initially
+- `unlock_address_rate` - Addresses to unlock per time interval
+- `unlock_time_interval` - Time between unlock events (in seconds)
+- `user_burn_factor` - Coinhour burn factor for transactions
+
+**Transaction Limits:**
+- `unconfirmed_max_transaction_size` - Max size for unconfirmed txns
+- `create_block_max_transaction_size` - Max size when creating blocks
+- `max_block_transactions_size` - Max total size of txns in a block
+
+See [fiber.toml](../../config/fiber.toml) for all available options and defaults.
+
+---
+
+## Security Best Practices
+
+### Genesis Secret Key
+
+The secret key in `genesis.json` is **extremely sensitive**:
+
+⚠️ **Never:**
+- Commit genesis.json to version control
+- Share the secret key publicly
+- Store it in plain text on production servers
+- Write it to fiber.toml (the system prevents this automatically)
+
+✅ **Do:**
+- Keep genesis.json offline in secure storage
+- Use environment variables to pass the secret key at runtime
+- Use different keys for testing vs production
+- Clear your terminal history after using the secret key
+
+### Recommended Setup
+
+**Development:**
+```bash
+# Use GENESIS for easy testing
+GENESIS=genesis.json FIBER_TOML=mycoin.toml skycoin daemon --block-publisher
+```
+
+**Production:**
+```bash
+# Store secret key securely
+echo "your-secret-key-here" > /secure/path/publisher-key.txt
+chmod 600 /secure/path/publisher-key.txt
+
+# Use fiber.toml + secret key flag
+FIBER_TOML=mycoin.toml skycoin daemon \
+  --block-publisher \
+  --blockchain-secret-key=$(cat /secure/path/publisher-key.txt)
+
+# Clear history
+history -c
+```
+
+---
+
+## Distribution & Deployment
+
+### What to Distribute
+
+**Public (safe to share):**
+- `fiber.toml` (with genesis credentials populated)
+- Compiled binary (if using standalone workflow)
+- `peers.txt` file
+- Blockchain data (after distribution)
+
+**Private (keep secure):**
+- `genesis.json` (contains blockchain secret key)
+- Publisher node private key files
+- Wallet seed phrases
+
+### Production Network Infrastructure
+
+A typical production deployment includes:
+
+**Subdomains:**
+- `node.mycoin.com` - Mobile wallet node (public API)
+- `explorer.mycoin.com` - Blockchain explorer
+- `downloads.mycoin.com/blockchain/peers.txt` - Peer list
+- `version.mycoin.com/mycoin/version.txt` - Version check
+
+**Running Production Nodes:**
+
+**Mobile Wallet Node (Public):**
+```bash
+FIBER_TOML=mycoin.toml skycoin daemon \
+  --enable-all-api-sets=true \
+  --log-level=info \
+  --disable-csrf \
+  --host-whitelist node.mycoin.com \
+  --port=6000 \
+  --web-interface-port=6419
+```
+
+**Block Publisher (Internal):**
+```bash
+FIBER_TOML=mycoin.toml skycoin daemon \
+  --block-publisher=true \
+  --blockchain-secret-key=$(cat /secure/publisher-key.txt) \
+  --log-level=debug \
+  --port=6001 \
+  --web-interface-port=6418 \
+  --data-dir=$HOME/.mycoin-publisher
+```
+
+**Reverse Proxy (Caddy Example):**
+```
+node.mycoin.com {
+    reverse_proxy 127.0.0.1:6419
 }
 
+explorer.mycoin.com {
+    reverse_proxy 127.0.0.1:8003
+}
 ```
 
-The bits of interest from this output are the values of the JSON keys address, public_key and secret_key.
+---
 
-These values are used for editing the file fiber.toml, with the exception of secret_key. At the moment, the modification of this file needs to be done manually, but this process should be performed automatically in later versions of newcoin. The value of the secret key must be kept secret, as the name implies, as this key could be used to sign transactions by anyone who posseses it.
+## Blockchain Initialization & Distribution
 
-#### fiber.toml Configuration File
+### Initial Blockchain State
 
-fiber.toml is used to set parameters that are used during the initialization and operation of a fibercoin. The file already contains some values that can be considered as default, such as the genesis_timestamp or max_block_size, but other fields need to be set up with different values for every fibercoin. The following fields need to be updated:
+After starting the daemon for the first time:
+- **Block 0 (Genesis Block)**: Contains all coins in a single output to the genesis address
+- **Unspents**: 1 (the genesis output)
 
-* blockchain_pubkey_str
-* genesis_address_str
-* genesis_signature_str
+### Distributing Genesis Coins
 
- The values of the first two fields are updated with the values obtained by following the instructions in the section Genesis Transaction, while the last one is automatically generated and added to fiber.toml by initializing a blockchain
+The `distributeGenesis` command creates Block #1, distributing coins from the genesis address to all configured distribution addresses.
 
-Other fields that can be of interest in this file are:
+**Prerequisites:**
+- Daemon running with `--block-publisher` flag
+- Distribution addresses configured in fiber.toml (via `fiberAddressGen` or manual entry)
 
-* create_block_max_transaction_size
-* max_block_size
-* unconfirmed_max_transaction_size.
-
-These fields control how large a fibercoin's transactions can be. The default is set to be 5 Mb for all of these parameters.
-
-Lastly, any field related to the configuration of a cryptocurrency can be changed to alter the parameters of the fibercoin blockchain:
-
-*    genesis_coin_volume
-*    create_block_burn_factor
-*    unconfirmed_burn_factor
-*    max_coin_supply
-*    user_burn_factor
-
-#### Initializing a fibercoin
-
-In order to initialize a new fibercoin, `newcoin` needs to create the `mycoin` command (located in `cmd/mycoin`) using the parameters defined in `./fiber.toml`.
-
-The workflow is as follows:
-
-* `newcoin` is run in order to create `mycoin`
-
-```
-go run cmd/newcoin/newcoin.go createcoin --coin mycoin
-```
-
-* Create the genesis address and keys
-```
-skycoin-cli addressGen > genesis.json
-```
-the output is saved to a file called `genesis.json` (later delete this file or save offline!)
-
-Note: when troubleshooting or attempting this process multiple times in succession, start again with the next step
-
-* `mycoin` is run to initialize the blockchain. Read carefully:
-
-`$KEY` envs are obtained from `genesis.json` which was created in the previous step
-
-you can set them by using `export`
-```
-export SEC_KEY=<substituite-the-blockchain-secret-key-string-here>
-export GEN_ADD=<substituite-the-genesis-address-here>
-export PUB_KEY=<substituite-the-blockchain-public-key-here>
-```
-
-Or simply copy them into place of the following command
-```
-go run cmd/mycoin/mycoin.go --block-publisher=true --blockchain-secret-key=$SEC_KEY --blockchain-public-key=$PUB_KEY --genesis-address=$GEN_ADD
-```
-
-* run the above _for a few moments_ until you start getting `“ERROR”` messages;  then `ctrl+c` to stop the process.
-
-The output from the above command:
-```
-$ go run cmd/mycoin/mycoin.go --block-publisher=true --blockchain-secret-key=$SEC_KEY --blockchain-public-key=$PUB_KEY --genesis-address=$GEN_ADD
-[2021-02-19T11:59:21-06:00] INFO [main]: App version: 0.27.1
-[2021-02-19T11:59:21-06:00] INFO [main]: OS: linux
-[2021-02-19T11:59:21-06:00] INFO [main]: Arch: amd64
-[2021-02-19T11:59:21-06:00] INFO [main]: Opening database /home/user/.mycoin/data.db
-[2021-02-19T11:59:21-06:00] INFO [main]: DB version: 0.27.1
-[2021-02-19T11:59:21-06:00] INFO [main]: Coinhour burn factor for user transactions is 10
-[2021-02-19T11:59:21-06:00] INFO [main]: Max transaction size for user transactions is 32768
-[2021-02-19T11:59:21-06:00] INFO [main]: Max decimals for user transactions is 3
-[2021-02-19T11:59:21-06:00] INFO [main]: wallet.NewService
-[2021-02-19T11:59:21-06:00] INFO [main]: visor.New
-[2021-02-19T11:59:21-06:00] INFO [visor]: Creating new visor
-[2021-02-19T11:59:21-06:00] INFO [visor]: Visor running in block publisher mode
-[2021-02-19T11:59:21-06:00] INFO [visor]: Coinhour burn factor for unconfirmed transactions is 10
-[2021-02-19T11:59:21-06:00] INFO [visor]: Max transaction size for unconfirmed transactions is 32768
-[2021-02-19T11:59:21-06:00] INFO [visor]: Max decimals for unconfirmed transactions is 3
-[2021-02-19T11:59:21-06:00] INFO [visor]: Coinhour burn factor for transactions when creating blocks is 10
-[2021-02-19T11:59:21-06:00] INFO [visor]: Max transaction size for transactions when creating blocks is 32768
-[2021-02-19T11:59:21-06:00] INFO [visor]: Max decimals for transactions when creating blocks is 3
-[2021-02-19T11:59:21-06:00] INFO [visor]: Max block size is 32768
-[2021-02-19T11:59:21-06:00] INFO [blockdb]: Unspents.MaybeBuildIndexes
-[2021-02-19T11:59:21-06:00] INFO [blockdb]: Rebuilding unspent_pool_addr_index (addrHeightIndexExists=false, addrIndexHeight=0, headSeq=0)
-[2021-02-19T11:59:21-06:00] INFO [blockdb]: Building unspent address index
-[2021-02-19T11:59:21-06:00] INFO [blockdb]: No unspents to index
-[2021-02-19T11:59:21-06:00] INFO [visor]: Visor initHistory
-[2021-02-19T11:59:21-06:00] INFO [visor]: Resetting historyDB
-[2021-02-19T11:59:21-06:00] INFO [visor]: Visor parseHistoryTo
-[2021-02-19T11:59:21-06:00] INFO [visor]: Unconfirmed transaction pool size: 0
-[2021-02-19T11:59:21-06:00] INFO [main]: daemon.New
-[2021-02-19T11:59:21-06:00] INFO [main]: kvstorage.NewManager
-[2021-02-19T11:59:21-06:00] INFO [kvstorage]: Creating new KVStorage manager
-[2021-02-19T11:59:21-06:00] INFO [kvstorage]: KVStorage is disabled
-[2021-02-19T11:59:21-06:00] INFO [main]: api.NewGateway
-[2021-02-19T11:59:21-06:00] WARN [api]: HTTPS not in use!
-[2021-02-19T11:59:21-06:00] INFO [pex]: Trying to download peers list url="https://downloads.mycoin.net/blockchain/peers.txt"
-[2021-02-19T11:59:21-06:00] INFO [main:CRITICAL]: Full address: http://127.0.0.1:6419
-[2021-02-19T11:59:21-06:00] INFO [main]: visor.Init
-[2021-02-19T11:59:21-06:00] INFO [visor]: Visor init
-[2021-02-19T11:59:21-06:00] INFO [visor]: Visor maybeCreateGenesisBlock
-[2021-02-19T11:59:21-06:00] INFO [visor]: Create genesis block
-[2021-02-19T11:59:21-06:00] INFO [visor]: Genesis block signature=86f410b1c507e75cd9e05bfecb735c8fad366579afdd714ed0f27730369768f262ed21940c814dd522e6ce9535cebd95e05dbfbb1eb48fcd0dd91d7240f7ec1401
-[2021-02-19T11:59:21-06:00] INFO [visor]: Removed 0 invalid txns from pool
-[2021-02-19T11:59:21-06:00] INFO [main]: webInterface.Serve
-[2021-02-19T11:59:21-06:00] INFO [api]: Starting web interface on 127.0.0.1:6419
-[2021-02-19T11:59:21-06:00] INFO [main]: daemon.Run
-[2021-02-19T11:59:21-06:00] INFO [daemon]: Daemon UserAgent is mycoin:0.27.1
-[2021-02-19T11:59:21-06:00] INFO [daemon]: Daemon unconfirmed BurnFactor is 10
-[2021-02-19T11:59:21-06:00] INFO [daemon]: Daemon unconfirmed MaxTransactionSize is 32768
-[2021-02-19T11:59:21-06:00] INFO [daemon]: Daemon unconfirmed MaxDropletPrecision is 3
-[2021-02-19T11:59:21-06:00] INFO [pex]: Pex.Run started
-[2021-02-19T11:59:21-06:00] INFO [daemon]: daemon.Pool listening on port 6001
-[2021-02-19T11:59:21-06:00] INFO [gnet]: Listening for connections on :6001...
-[2021-02-19T11:59:21-06:00] WARN [daemon]: maybeConnectToTrustedPeer: connectToPeer failed addr="70.121.6.216:6001" error="Already connected to this peer"
-[2021-02-19T11:59:21-06:00] ERROR [daemon:CRITICAL]: maybeConnectToTrustedPeer error="Could not connect to any trusted peer"
-[2021-02-19T11:59:21-06:00] ERROR [pex]: waiting to retry downloadText error="Get "https://downloads.mycoin.net/blockchain/peers.txt": dial tcp: lookup downloads.mycoin.net: no such host" waitTime=719.600155ms
-[2021-02-19T11:59:22-06:00] INFO [pex]: Trying to download peers list url="https://downloads.mycoin.net/blockchain/peers.txt"
-[2021-02-19T11:59:22-06:00] ERROR [pex]: waiting to retry downloadText error="Get "https://downloads.mycoin.net/blockchain/peers.txt": dial tcp: lookup downloads.mycoin.net: no such host" waitTime=436.089288ms
-[2021-02-19T11:59:23-06:00] INFO [pex]: Trying to download peers list url="https://downloads.mycoin.net/blockchain/peers.txt"
-[2021-02-19T11:59:23-06:00] ERROR [pex]: waiting to retry downloadText error="Get "https://downloads.mycoin.net/blockchain/peers.txt": dial tcp: lookup downloads.mycoin.net: no such host" waitTime=966.087607ms
-[2021-02-19T11:59:23-06:00] INFO [pex]: Trying to download peers list url="https://downloads.mycoin.net/blockchain/peers.txt"
-[2021-02-19T11:59:23-06:00] ERROR [pex]: waiting to retry downloadText error="Get "https://downloads.mycoin.net/blockchain/peers.txt": dial tcp: lookup downloads.mycoin.net: no such host" waitTime=1.534681399s
-[2021-02-19T11:59:25-06:00] INFO [pex]: Trying to download peers list url="https://downloads.mycoin.net/blockchain/peers.txt"
-[2021-02-19T11:59:25-06:00] ERROR [pex]: waiting to retry downloadText error="Get "https://downloads.mycoin.net/blockchain/peers.txt": dial tcp: lookup downloads.mycoin.net: no such host" waitTime=1.977973304s
-^C[2021-02-19T11:59:26-06:00] INFO [main]: Shutting down...
-[2021-02-19T11:59:26-06:00] INFO [main]: Closing web interface
-[2021-02-19T11:59:26-06:00] INFO [api]: Shutting down web interface
-[2021-02-19T11:59:26-06:00] INFO [api]: Web interface closed
-[2021-02-19T11:59:26-06:00] ERROR [main]: webInterface.Serve failed error="accept tcp 127.0.0.1:6419: use of closed network connection"
-[2021-02-19T11:59:26-06:00] INFO [api]: Web interface shut down
-[2021-02-19T11:59:26-06:00] INFO [main]: Closing daemon
-[2021-02-19T11:59:26-06:00] INFO [daemon]: Stopping the daemon run loop
-[2021-02-19T11:59:26-06:00] INFO [daemon]: Shutting down Pool
-[2021-02-19T11:59:26-06:00] INFO [gnet]: ConnectionPool.Shutdown called
-[2021-02-19T11:59:26-06:00] INFO [gnet]: ConnectionPool.Shutdown closed pool.quit
-[2021-02-19T11:59:26-06:00] INFO [daemon]: Daemon closed
-[2021-02-19T11:59:26-06:00] INFO [gnet]: ConnectionPool.Shutdown waiting for strandDone
-[2021-02-19T11:59:26-06:00] INFO [gnet]: ConnectionPool.Shutdown closing the listener
-[2021-02-19T11:59:26-06:00] INFO [gnet]: Connection pool closed
-[2021-02-19T11:59:26-06:00] INFO [gnet]: ConnectionPool.Shutdown disconnecting all connections
-[2021-02-19T11:59:26-06:00] INFO [gnet]: ConnectionPool.Shutdown waiting for done
-[2021-02-19T11:59:26-06:00] INFO [daemon]: Shutting down Pex
-[2021-02-19T11:59:26-06:00] INFO [pex]: Shutting down pex
-[2021-02-19T11:59:26-06:00] INFO [pex]: Save peerlist
-[2021-02-19T11:59:26-06:00] INFO [pex]: Pex.Run stopped
-[2021-02-19T11:59:26-06:00] INFO [pex]: Pex shutdown
-[2021-02-19T11:59:26-06:00] INFO [daemon]: Daemon shutdown complete
-[2021-02-19T11:59:26-06:00] INFO [main]: Waiting for goroutines to finish
-[2021-02-19T11:59:26-06:00] INFO [main]: Closing database
-[2021-02-19T11:59:26-06:00] INFO [main]: Goodbye
-```
-
-Now, about halfway along in the above command output, the genesis signature of the blockchain was generated.
-
-__Copy the genesis signature string__
-
-* add the genesis signature from above, and the address and pubkey fields from genesis.json to fiber.toml
-
-__NOTE: if you add the secret key to fiber.toml it will show up in the help menu of the created .go file or binary. Don’t do that for a distributable binary. Run the wallet in publisher mode and explicitly specify the secret key string for a block publisher as an env and clear your terminal history__
-
-__note: the timestamp cannot be blank. Choose a recent time.__
-
-
-* use `newcoin` to regenerate the `cmd/mycoin/mycoin.go` file
-
-We could have actually used the skycoin wallet binary from the start, howeverit's more complex to do that and it may present a risk to the local copy of the existing skycoin blockchain in `~/.skycoin`
-
-Also, it's not possible to change the display name, etc. with just flags. But it will work still.
-
-The new blockchain will have hence (in this example) been created in `~/.mycoin`
-
-```
-skycoin-newcoin createcoin --coin mycoin
-```
-
-* Check the help menu of the created mycoin.go to see the defaults such as genesis address, signature, etc.
-```
-go run cmd/mycoin/mycoin.go --help
-```
-__if this is intended to produce a distributable binary, the blockchain secret key must not be included!__
-
-Remember, your blockchain currently only exists locally. `~/.mycoin` will need to be present in the production deployment environment.
-
-#### DistributeGenesis
-
-The exact process for this is pending improvement
-
-* Run a block publisher node
-```
-go run cmd/mycoin/mycoin.go --block-publisher=true --blockchain-secret-key=$SECRET_KEY
-```
-
-* Run a peer node
-
-To run a peer node on the same machine as the publisher, change the port and data directory
-```
-go run cmd/tesla/tesla.go -launch-browser=true -enable-all-api-sets=true -enable-gui=true -log-level=debug --port=5998 -data-dir=$HOME/.tesla1 -web-interface-port=6418
-```
-
-at this point, one can optionally go into the web interface of the wallet and load the genesis wallet seed. The entire coin volume should be present in the wallet.
-
-* Create the first transaction using `skycoin-cli`
-
-Export the necessary environmental variables to make skycoin-cli work with your chain
-```
-export RPC_ADDR="http://127.0.0.1:6418"
+**Command:**
+```bash
+# Set environment variables
+export RPC_ADDR="http://127.0.0.1:6420"
 export COIN="mycoin"
-export DATA_DIR=$HOME/.mycoin1/"
+
+# Get genesis secret key from genesis.json
+export SECRET_KEY=$(cat genesis.json | jq -r '.entries[0].secret_key')
+
+# Distribute genesis coins
+go run . cli distributeGenesis $SECRET_KEY
 ```
 
-At this point it would be typical to use:
+**What Happens:**
+1. Reads distribution addresses from the running daemon's configuration
+2. Creates a transaction splitting genesis coins equally among all distribution addresses
+3. Signs the transaction with the genesis secret key
+4. Injects the transaction into the blockchain
+5. Block publisher creates Block #1 containing the distribution transaction
 
+**After Distribution:**
+- **Block 1 (Distribution Block)**: Contains coins split equally to all distribution addresses
+- **Unspents**: N (where N = number of distribution addresses)
+
+**Example Output:**
 ```
-skycoin-cli distributeGenesis $SEC_KEY
+Block 0: 100,000,000 coins → genesis address
+Block 1: 100,000,000 coins → 10 addresses (10,000,000 each)
 ```
 
-This currently does not work.
-The genesis address creates a transaction to itself, showing that coins were sent and coins were received; but the coins simply vanish.
+**Verification:**
+```bash
+# Check blockchain has 2 blocks
+go run . cli status | jq '.status.blockchain.head.seq'
+# Should show: 1
 
-A workaround at this point is to create a raw transaction:
-
+# Check distribution address balance
+go run . cli addressBalance <distribution-address>
+# Should show: 10,000,000.000000 (for 10 addresses splitting 100M)
 ```
-skycoin-cli createRawTransaction '/home/user/.mycoin1/wallets/genesis.wlt' $GEN_ADD 100000000 -a $GEN_ADD
+
+### Using Distribution Wallets
+
+The distribution wallets can be imported using the seeds from `seeds.csv`:
+
+**Via Web Interface:**
+1. Open http://127.0.0.1:6420
+2. Go to "Wallets" → "Load Wallet"
+3. Paste seed from seeds.csv
+4. Label it (e.g., "Distribution 1")
+
+**Via CLI:**
+```bash
+# Import from seed
+go run . cli walletCreate -s "seed phrase from seeds.csv" -l "Distribution 1"
+
+# Check balance
+go run . cli walletBalance Distribution-1.wlt
 ```
 
-#### TROUBLESHOOTING
+### Security Notes
 
-re-initialize the blockchain:
+**Keep Secure:**
+- `genesis.json` - Contains blockchain secret key
+- `seeds.csv` - Contains distribution wallet seeds
+- Both files should be stored offline and encrypted
 
-* stop any running instances and remove everything except wallets dir from ~/.mycoin & ~/.mycoin1
+**Can Share:**
+- `mycoin.toml` - Public configuration (after genesis credentials populated)
+- `addresses.txt` - Just addresses, no keys
 
-* restart the publisher briefly, then kill it
+---
 
-* copy the signature to fiber.toml
+## Troubleshooting
 
-* update `cmd/mycoin/mycoin.go` file with `newcoin`
+### Reset/Reinitialize Blockchain
 
-* restart the publisher
+If you need to start over:
 
-* restart the peer
+```bash
+# Stop all running instances
+pkill -f "mycoin\|skycoin daemon"
 
-#### Deployment Considerations - Network
+# Remove blockchain data (keep wallets!)
+rm -rf ~/.mycoin/data.db ~/.mycoin/history.db ~/.mycoin/*.log
+rm -rf ~/.mycoin-peer/data.db ~/.mycoin-peer/history.db ~/.mycoin-peer/*.log
 
-A typical production deployment for a fibercoin, following the example of skycoin, has the following subdomains and endpoints:
+# Keep wallets directory intact
+# ls ~/.mycoin/wallets/
 
-* node.skycoin.com - mobile wallet node
-* explorer.skycoin.com - blockchain explorer
-* downloads.skycoin.com/blockchain/peers.txt - peers.txt url
-* version.skycoin.com/skycoin/version.txt - version
+# Clear genesis fields in fiber.toml
+sed -i 's/^genesis_address_str.*/genesis_address_str = ""/' mycoin.toml
+sed -i 's/^blockchain_pubkey_str.*/blockchain_pubkey_str = ""/' mycoin.toml  
+sed -i 's/^genesis_signature_str.*/genesis_signature_str = ""/' mycoin.toml
 
-It may be necessary to forward the port (referenced in peers.txt) to the machine hosting the node endpoint if the server is behind a router or firewall.
-
-LAN IP addresses can be set initially for testing purposes.
-
-#### PRODUCTION DEPLOYMENT
-
-In this example, a publisher node is run on port 6418, the node for the mobile wallets is run on port 6419 (the default port) and any other instance for testing purposes, is run on the next lower port. Specify the web interface port similarly to avoid conflicts.
-
-A copy of the data dir should be made and specified with the -data-dir flag for use with each additional instance.
-
-An HTTP server such as caddy-server may be used to reverse proxy port 6419 to the desired subdomain, for example node.mycoin.net, with the following lines in a Caddyfile:
+# Re-run with GENESIS to repopulate
+GENESIS=genesis.json FIBER_TOML=mycoin.toml skycoin daemon --block-publisher
 ```
-node.mycoin.net { reverse_proxy 127.0.0.1:6419 }
-```
-The node used by mobile wallets should be run with the following flags specified:
 
-```
--enable-all-api-sets=true -log-level=debug -disable-csrf -host-whitelist node.mycoin.net
-```
-The subdomain can now be tested with the mobile wallet, by adding node.mycoin.net as the nodeURL in the settings page of the skycoin mobile wallet.
+### Common Issues
 
-Running the skycoin explorer with your fibercoin is as simple as changing two lines in explorer.go.
+**"Failed to load GENESIS wallet"**
+- Check that genesis.json path is correct
+- Verify JSON is valid: `jq . genesis.json`
+- Ensure file has proper permissions: `chmod 600 genesis.json`
 
-The explorer.go file should similarly be changed to increment the port it serves on, and change the port it uses to connect to skycoin / fibercoins to the one you are using. The port which is served by the explorer can then be reverse-proxied to another subdomain such as:
-```
-explorer.mycoin.net { reverse_proxy 127.0.0.1:8003 }
-```
+**"Failed to load FIBER_TOML config"**
+- Check that fiber.toml path is correct
+- Validate TOML syntax
+- Ensure all required fields are present
+
+**Help menu doesn't show custom values**
+- Make sure to set environment variables BEFORE running `--help`:
+  ```bash
+  GENESIS=genesis.json FIBER_TOML=mycoin.toml skycoin --help
+  ```
+
+**"Could not connect to any trusted peer"**
+- This is normal for new coins with no network
+- Ignore ERROR messages about peer connections during initial setup
+- Set up your own peer network using `default_connections` in fiber.toml
+
+**Genesis signature not in fiber.toml after first run**
+- Check logs for "Updated fiber.toml with genesis credentials"
+- Verify fiber.toml file permissions (must be writable)
+- Ensure you're using FIBER_TOML env (so the path is tracked)
+
+---
+
+## Key Improvements Over Old Process
+
+### Before (Manual Process)
+1. ❌ Run `cli addressGen` → manually copy to terminal
+2. ❌ Manually edit fiber.toml with genesis address and pubkey
+3. ❌ **Manually generate distribution addresses** → copy into fiber.toml
+4. ❌ Run node briefly, watch debug logs
+5. ❌ **Parse genesis signature from log output** (painful!)
+6. ❌ Manually paste signature into fiber.toml
+7. ❌ Re-run newcoin to regenerate code with distribution addresses
+8. ❌ **Manually create distribution transaction** or use broken distributeGenesis
+9. ❌ Multiple restarts, many potential errors
+
+**Time: 10+ minutes** | **Error-prone** | **Tedious** | **8+ manual steps**
+
+### Now (Automated Process)
+1. ✅ Run `cli addressGen > genesis.json`
+2. ✅ Edit fiber.toml (one time)
+3. ✅ Run `fiberAddressGen` → **auto-updates fiber.toml**
+4. ✅ Run daemon with GENESIS + FIBER_TOML → **auto-populates genesis credentials**
+5. ✅ Run `distributeGenesis` → **auto-reads addresses from daemon config**
+6. ✅ Done!
+
+**Time: ~30 seconds** | **Reliable** | **Simple** | **4 commands total**
+
+### Benefits
+
+- ⚡ **Fast**: 30 seconds instead of 10+ minutes
+- 🎯 **Reliable**: Zero manual copy-paste steps
+- 🔒 **Secure**: Secret key never written to fiber.toml
+- 📦 **Portable**: Single binary can run multiple coins with different configs
+- 🔄 **Flexible**: Easy to test different configurations
+- ✅ **Auto-updating**: fiber.toml populates itself (genesis + distribution addresses)
+- 🌐 **Runtime config**: Change distribution addresses without recompiling
+- 💰 **Working distributeGenesis**: Automatically reads config from running daemon
+- 👀 **Transparent**: See actual values in `--help` output
+
+---
+
+## Additional Resources
+
+- [fiber.toml reference](../../config/fiber.toml) - Full configuration options
+- [FIBERCOIN-CONFIG.md](../../FIBERCOIN-CONFIG.md) - FIBER_TOML environment variable documentation
+- [GENESIS-ENV-IMPLEMENTATION.md](../../GENESIS-ENV-IMPLEMENTATION.md) - Technical implementation details
+- [Skycoin source](https://github.com/skycoin/skycoin) - Main repository
+- [Skycoin Wiki](https://github.com/skycoin/skycoin/wiki) - Development guides
+
+---
+
+## Getting Help
+
+For issues or questions:
+- Check [Troubleshooting](#troubleshooting) section above
+- Review [GitHub Issues](https://github.com/skycoin/skycoin/issues)
+- Ask in [Skycoin Telegram](https://t.me/skycoin)

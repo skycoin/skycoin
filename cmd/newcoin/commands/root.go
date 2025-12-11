@@ -2,7 +2,6 @@
 package commands
 
 import (
-	"embed"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,10 +15,8 @@ import (
 	"github.com/skycoin/skycoin/src/fiber"
 	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skycoin/src/util/useragent"
+	"github.com/skycoin/skycoin/templates"
 )
-
-//go:embed templates/*.template
-var templateFS embed.FS
 
 const (
 	// Version is the CLI version
@@ -41,11 +38,11 @@ var (
 func init() {
 	createCoinCmd.Flags().SortFlags = false
 	createCoinCmd.Flags().StringVarP(&coinName, "coin", "c", "skycoin", "name of the coin to create")
-	createCoinCmd.Flags().StringVarP(&templateDir, "template-dir", "d", "./template", "template directory path")
-	createCoinCmd.Flags().StringVarP(&coinTemplateFile, "coin-template-file", "e", "coin.template", "coin template file (importable)")
-	createCoinCmd.Flags().StringVarP(&commandTemplateFile, "command-template-file", "f", "command.template", "command template file (executable)")
-	createCoinCmd.Flags().StringVarP(&coinTestTemplateFile, "coin-test-template-file", "g", "coin_test.template", "coin test template file")
-	createCoinCmd.Flags().StringVarP(&paramsTemplateFile, "params-template-file", "i", "params.template", "params template file")
+	createCoinCmd.Flags().StringVarP(&templateDir, "template-dir", "d", "./templates", "template directory path")
+	createCoinCmd.Flags().StringVarP(&coinTemplateFile, "coin-template-file", "e", templates.CoinTemplate, "coin template file (importable)")
+	createCoinCmd.Flags().StringVarP(&commandTemplateFile, "command-template-file", "f", templates.CommandTemplate, "command template file (executable)")
+	createCoinCmd.Flags().StringVarP(&coinTestTemplateFile, "coin-test-template-file", "g", templates.CoinTestTemplate, "coin test template file")
+	createCoinCmd.Flags().StringVarP(&paramsTemplateFile, "params-template-file", "i", templates.ParamsTemplate, "params template file")
 	createCoinCmd.Flags().StringVarP(&configDir, "config-dir", "j", "./", "config directory path")
 	createCoinCmd.Flags().StringVarP(&configFile, "config-file", "k", "fiber.toml", "config file path")
 	RootCmd.AddCommand(createCoinCmd)
@@ -117,22 +114,22 @@ var createCoinCmd = &cobra.Command{
 		defer paramsFile.Close() //nolint
 
 		// Read embedded template files
-		coinTemplateContent, err := templateFS.ReadFile("templates/" + coinTemplateFile)
+		coinTemplateContent, err := templates.FS.ReadFile(coinTemplateFile)
 		if err != nil {
 			log.Errorf("failed to read embedded coin template: %v", err)
 			return err
 		}
-		commandTemplateContent, err := templateFS.ReadFile("templates/" + commandTemplateFile)
+		commandTemplateContent, err := templates.FS.ReadFile(commandTemplateFile)
 		if err != nil {
 			log.Errorf("failed to read embedded command template: %v", err)
 			return err
 		}
-		coinTestTemplateContent, err := templateFS.ReadFile("templates/" + coinTestTemplateFile)
+		coinTestTemplateContent, err := templates.FS.ReadFile(coinTestTemplateFile)
 		if err != nil {
 			log.Errorf("failed to read embedded coin test template: %v", err)
 			return err
 		}
-		paramsTemplateContent, err := templateFS.ReadFile("templates/" + paramsTemplateFile)
+		paramsTemplateContent, err := templates.FS.ReadFile(paramsTemplateFile)
 		if err != nil {
 			log.Errorf("failed to read embedded params template: %v", err)
 			return err

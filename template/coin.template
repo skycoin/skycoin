@@ -102,6 +102,16 @@ var (
 )
 
 func init() {
+	// Check for FIBER_TOML environment variable to load custom fibercoin config
+	// This sets the default values before flag registration, so CLI flags naturally override
+	if fiberTomlPath := os.Getenv("FIBER_TOML"); fiberTomlPath != "" {
+		if err := nodeConfig.LoadFromFiberConfig(fiberTomlPath); err != nil {
+			logger.Errorf("Failed to load FIBER_TOML config: %v", err)
+			os.Exit(1)
+		}
+		logger.Infof("Loaded fiber config from FIBER_TOML: %s", fiberTomlPath)
+	}
+
 	nodeConfig.RegisterFlags(RootCmd)
 }
 
@@ -112,16 +122,6 @@ var RootCmd = &cobra.Command{
 	Long: `
 {{.CoinAscii}}
 	{{.CoinName}} wallet`,
-	PreRun: func(cmd *cobra.Command, args []string) {
-		// Load fiber config if specified
-		if nodeConfig.FiberConfigFile != "" {
-			if err := nodeConfig.LoadFromFiberConfig(nodeConfig.FiberConfigFile); err != nil {
-				logger.Errorf("Failed to load fiber config: %v", err)
-				os.Exit(1)
-			}
-			logger.Infof("Loaded fiber config from: %s", nodeConfig.FiberConfigFile)
-		}
-	},
 	Run: func(cmd *cobra.Command, args []string) {
 		// create a new fiber coin instance
 		coin := skycoin.NewCoin(skycoin.Config{

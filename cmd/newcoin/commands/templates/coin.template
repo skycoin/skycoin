@@ -102,6 +102,16 @@ var (
 )
 
 func init() {
+	// Check for FIBER_TOML environment variable to load custom fibercoin config
+	// This sets the default values before flag registration, so CLI flags naturally override
+	if fiberTomlPath := os.Getenv("FIBER_TOML"); fiberTomlPath != "" {
+		if err := nodeConfig.LoadFromFiberConfig(fiberTomlPath); err != nil {
+			logger.Errorf("Failed to load FIBER_TOML config: %v", err)
+			os.Exit(1)
+		}
+		logger.Infof("Loaded fiber config from FIBER_TOML: %s", fiberTomlPath)
+	}
+
 	nodeConfig.RegisterFlags(RootCmd)
 }
 

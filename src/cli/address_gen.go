@@ -340,7 +340,7 @@ func fiberAddressGenCmd() *cobra.Command {
 			// If FIBER_TOML env is set, update the fiber.toml with distribution_addresses
 			if fiberTomlPath := os.Getenv("FIBER_TOML"); fiberTomlPath != "" {
 				fmt.Fprintf(os.Stderr, "Updating %s with distribution_addresses...\n", fiberTomlPath)
-				
+
 				// Read existing fiber.toml
 				data, err := os.ReadFile(fiberTomlPath)
 				if err != nil {
@@ -365,7 +365,7 @@ func fiberAddressGenCmd() *cobra.Command {
 				for i, a := range addrs {
 					addrStrings[i] = a.String()
 				}
-				
+
 				// Update distribution_addresses
 				paramsSection["distribution_addresses"] = addrStrings
 

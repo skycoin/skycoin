@@ -218,8 +218,8 @@ type NodeConfig struct {
 	Fiber readable.FiberConfig
 
 	// Paths for auto-updating fiber.toml
-	fiberTomlPath     string   // Set from FIBER_TOML env
-	genesisWalletPath string   // Set from GENESIS env
+	fiberTomlPath     string // Set from FIBER_TOML env
+	genesisWalletPath string // Set from GENESIS env
 	// Distribution addresses from fiber.toml [params] section
 	distributionAddresses      []string // Loaded from fiber.Params.DistributionAddresses
 	distributionMaxCoinSupply  uint64   // Loaded from fiber.Params.MaxCoinSupply
@@ -854,7 +854,7 @@ func (c *NodeConfig) LoadFromGenesisWallet(walletPath string) error {
 	c.GenesisAddressStr = entry.Address
 	c.BlockchainPubkeyStr = entry.PublicKey
 	c.BlockchainSeckeyStr = entry.SecretKey
-	
+
 	// Clear the genesis signature since it's not valid for this wallet
 	// The signature will be generated when the genesis block is created
 	c.GenesisSignatureStr = ""

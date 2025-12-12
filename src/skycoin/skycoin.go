@@ -237,7 +237,7 @@ func (c *Coin) Run() error {
 
 	c.logger.Info("visor.Init")
 	wasGenesisEmpty := c.config.Node.GenesisSignatureStr == ""
-	
+
 	if err := v.Init(); err != nil {
 		c.logger.WithError(err).Error("visor.Init failed")
 		return err
@@ -252,7 +252,7 @@ func (c *Coin) Run() error {
 			c.config.Node.GenesisSignatureStr = gb.Sig.Hex()
 		}
 	}
-	
+
 	// If genesis block was just created, write genesis info to fiber.toml
 	if wasGenesisEmpty && c.config.Node.GenesisSignatureStr != "" {
 		if err := c.config.Node.WriteFiberTomlGenesis(c.config.Node.GenesisSignatureStr); err != nil {

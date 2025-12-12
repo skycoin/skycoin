@@ -37,7 +37,7 @@ func init() {
 	// Configure the RootCmd with the CLI subcommands
 	RootCmd.Use = "cli"
 	RootCmd.Short = description
-	RootCmd.Long = calvin.AsciiFont("skycoin-cli") + "\n" + description+"\n"+`
+	RootCmd.Long = calvin.AsciiFont("skycoin-cli") + "\n" + description + "\n" + `
 ENVIRONMENT VARIABLES:
   RPC_ADDR: Address of RPC node. Must be in scheme://host format. Default "http://127.0.0.1:6420"
   RPC_USER: Username for RPC API, if enabled in the RPC.
@@ -61,7 +61,7 @@ var description = "skycoin command line interface"
 var RootCmd = &cobra.Command{
 	Use:   "cli",
 	Short: description,
-	Long:  calvin.AsciiFont("skycoin") + " cli\n" + description+"\n"+`
+	Long: calvin.AsciiFont("skycoin") + " cli\n" + description + "\n" + `
 ENVIRONMENT VARIABLES:
   RPC_ADDR: Address of RPC node. Must be in scheme://host format. Default "http://127.0.0.1:6420"
   RPC_USER: Username for RPC API, if enabled in the RPC.

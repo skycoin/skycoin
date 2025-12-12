@@ -1017,7 +1017,7 @@ func (c *NodeConfig) WriteFiberTomlGenesis(signature string) error {
 		return fmt.Errorf("failed to marshal fiber.toml: %w", err)
 	}
 
-	if err := os.WriteFile(c.fiberTomlPath, updatedData, 0644); err != nil {
+	if err := os.WriteFile(c.fiberTomlPath, updatedData, 0600); err != nil {
 		return fmt.Errorf("failed to write fiber.toml: %w", err)
 	}
 

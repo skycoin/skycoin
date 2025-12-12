@@ -375,7 +375,7 @@ func fiberAddressGenCmd() *cobra.Command {
 					return fmt.Errorf("failed to marshal FIBER_TOML: %w", err)
 				}
 
-				if err := os.WriteFile(fiberTomlPath, updatedData, 0644); err != nil {
+				if err := os.WriteFile(fiberTomlPath, updatedData, 0600); err != nil {
 					return fmt.Errorf("failed to write FIBER_TOML %q: %w", fiberTomlPath, err)
 				}
 

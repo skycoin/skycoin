@@ -6,6 +6,7 @@ import (
 )
 
 //go:embed *.template
+// FS embeds all template files for fibercoin generation
 var FS embed.FS
 
 // Template file names

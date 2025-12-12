@@ -6,6 +6,7 @@ import (
 )
 
 //go:embed fiber.toml
+// FS embeds the fiber.toml configuration file
 var FS embed.FS
 
 // Config file names

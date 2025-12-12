@@ -1,8 +1,8 @@
 # Skycoin Exchange Integration
 
-A Skycoin node offers a REST API on port 6420 (when running from source; if you are using the releases downloaded from the website, the port is randomized)
+A Skycoin node offers a REST API on port 6420 by default.
 
-A CLI tool is provided in `cmd/skycoin-cli/skycoin-cli.go`. This tool communicates over the REST API.
+The CLI is accessed via the `skycoin cli` subcommand. This tool communicates over the REST API.
 
 The API interfaces do not support authentication or encryption so they should only be used over localhost.
 
@@ -11,14 +11,12 @@ If your application is written in Go, you can use these client libraries to inte
 * [Skycoin REST API Client Godoc](https://godoc.org/github.com/skycoin/skycoin/src/api#Client)
 * [Skycoin CLI Godoc](https://godoc.org/github.com/skycoin/skycoin/src/cli)
 
-*Note*: The CLI interface will be deprecated and replaced with a better one in the future.
-
 The wallet APIs in the REST API operate on wallets loaded from and saved to `~/.skycoin/wallets`.
 Use the CLI tool to perform seed generation and transaction signing outside of the Skycoin node.
 
 The Skycoin node's wallet APIs can be enabled from the command line.
-`-enable-all-api-sets` will enable all of the APIs which includes the wallet APIs,
-or for more control it can specified in a list of API sets, e.g. `-enable-api-sets=READ,STATUS,WALLET`.
+`--enable-all-api-sets` will enable all of the APIs which includes the wallet APIs,
+or for more control it can specified in a list of API sets, e.g. `--enable-api-sets=READ,STATUS,WALLET`.
 See the [REST API](src/api/README.md) for information on API sets.
 
 For a node used to support another application,
@@ -75,7 +73,17 @@ and to use the CLI tool for wallet operations (seed and address generation, tran
 
 ## Running the skycoin node
 
-For integrations, the skycoin node should be run from source with `./run-daemon.sh`. This requires go1.10+ to be installed.
+For integrations, run the skycoin daemon:
+
+```sh
+# Run directly from Go
+$ go run github.com/skycoin/skycoin@develop daemon
+
+# Or after installing
+$ skycoin daemon
+```
+
+This requires Go 1.23+ to be installed. See [INSTALLATION.md](INSTALLATION.md) for Go installation instructions.
 
 ## API Documentation
 
@@ -85,7 +93,13 @@ For integrations, the skycoin node should be run from source with `./run-daemon.
 
 ### Skycoin command line interface
 
-[CLI command API](cmd/skycoin-cli/README.md).
+The CLI is accessed via `skycoin cli` subcommand. See [CLI command API](cmd/skycoin-cli/README.md) for detailed documentation.
+
+Example:
+```sh
+$ skycoin cli addressGen
+$ skycoin cli addressBalance <address>
+```
 
 ### Skycoin REST API Client Documentation
 
@@ -115,10 +129,10 @@ Another option is to check the unspent outputs for a list of known deposit addre
 
 #### Using the CLI
 
-To scan the blockchain, use `skycoin-cli lastBlocks` or `skycoin-cli blocks`. These will return block data as JSON
+To scan the blockchain, use `skycoin cli lastBlocks` or `skycoin cli blocks`. These will return block data as JSON
 and new unspent outputs sent to an address can be detected.
 
-To check address outputs, use `skycoin-cli addressOutputs`. If you only want the balance, you can use `skycoin-cli addressBalance`.
+To check address outputs, use `skycoin cli addressOutputs`. If you only want the balance, you can use `skycoin cli addressBalance`.
 
 #### Using the REST API
 
@@ -170,15 +184,15 @@ See [CLI command API](cmd/skycoin-cli/README.md) for documentation of the CLI in
 
 To perform a send, the preferred method follows these steps in a loop:
 
-* `skycoin-cli createRawTransaction $WALLET_FILE -m '[{"addr:"$addr1,"coins:"$coins1"}, ...]` - `-m` flag is send-to-many
-* `skycoin-cli broadcastTransaction` - returns `txid`
-* `skycoin-cli transaction $txid` - repeat this command until `"status"` is `"confirmed"`
+* `skycoin cli createRawTransaction $WALLET_FILE -m '[{"addr:"$addr1,"coins:"$coins1"}, ...]` - `-m` flag is send-to-many
+* `skycoin cli broadcastTransaction` - returns `txid`
+* `skycoin cli transaction $txid` - repeat this command until `"status"` is `"confirmed"`
 
 That is, create a raw transaction, broadcast it, and wait for it to confirm.
 
 #### Using the REST API
 
-The wallet APIs must be enabled with `-enable-api-sets=WALLET,READ`.
+The wallet APIs must be enabled with `--enable-api-sets=WALLET,READ`.
 
 Create a transaction with [POST /wallet/transaction](https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#create-transaction),
 then inject it to the network with [POST /injectTransaction](https://github.com/skycoin/skycoin/blob/develop/src/api/README.md#inject-raw-transaction).
@@ -206,6 +220,19 @@ Coinhours are generated at a rate of `1 coinsecond` per `second`
 which are then converted to `coinhours`, `1` coinhour = `3600` coinseconds.
 
 > Note: Coinhours don't have decimals and only show up in whole numbers.
+
+**Coinhour Time Period Conversions:**
+
+| Time Period | Coinhours (per coin) |
+|------------|---------------------|
+| 1 coin hour | 1 |
+| 1 coin day | 24 |
+| 1 coin week | 168 |
+| 1 coin month | 720 |
+| 1 coin year | 8,760 |
+| 1 coin decade | 87,600 |
+| 1 coin century | 876,000 |
+| 1 coin millennium | 8,760,000 |
 
 ##### REST API
 
@@ -238,7 +265,7 @@ will then be sent to the change address.
 #### Using the CLI
 
 ```sh
-skycoin-cli verifyAddress $addr
+$ skycoin cli verifyAddress $addr
 ```
 
 #### Using the REST API
@@ -281,12 +308,12 @@ Use the [Skycoin REST API Client](https://godoc.org/github.com/skycoin/skycoin/s
 #### Using the CLI
 
 ```sh
-skycoin-cli status
+$ skycoin cli status
 ```
 
 #### Using the REST API
 
-A method similar to `skycoin-cli status` is not implemented, but these endpoints can be used:
+A method similar to `skycoin cli status` is not implemented, but these endpoints can be used:
 
 * `GET /api/v1/health`
 * `GET /api/v1/version`
@@ -317,7 +344,7 @@ If you already have an xpub key, you can skip to step 3.
 #### Using the CLI
 
 ```sh
-skycoin-cli bip44-wallet.wlt -t bip44
+$ skycoin cli walletCreate bip44-wallet.wlt -t bip44
 ```
 
 #### Using the REST API
@@ -329,7 +356,7 @@ skycoin-cli bip44-wallet.wlt -t bip44
 #### Using the CLI
 
 ```sh
-skycoin-cli walletKeyExport bip44-wallet.wlt -k xpub --path "0/0"
+$ skycoin cli walletKeyExport bip44-wallet.wlt -k xpub --path "0/0"
 ```
 
 #### Using the REST API
@@ -341,7 +368,7 @@ Not possible
 #### Using the CLI
 
 ```sh
-skycoin-cli walletCreate xpub-wallet.wlt -t xpub --xpub $MY_XPUB_KEY
+$ skycoin cli walletCreate xpub-wallet.wlt -t xpub --xpub $MY_XPUB_KEY
 ```
 
 #### Using the REST API

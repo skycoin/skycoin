@@ -98,7 +98,9 @@ func detectOldBL(dev lowlevel.Device) (bool, error) {
 }
 
 func (b *LibUSB) Enumerate(vendorID, productID uint16) ([]Info, error) {
-	list, err := lowlevel.Get_Device_List(b.usb)
+	// Use filtered device list to only open devices matching our VID/PID
+	// This avoids permission errors when trying to open all USB devices
+	list, err := lowlevel.Get_Device_List_Filtered(b.usb, vendorID, productID)
 
 	if err != nil {
 		return nil, err
@@ -162,59 +164,64 @@ func (b *LibUSB) Has(path string) bool {
 }
 
 func (b *LibUSB) Connect(path string) (Device, error) {
-	list, err := lowlevel.Get_Device_List(b.usb)
-	if err != nil {
+	// Use filtered enumeration to avoid permission errors on irrelevant USB devices
+	// Only open devices matching supported VID/PID (Skycoin and Trezor)
+	list, err := b.usb.OpenDevices(func(desc *gousb.DeviceDesc) bool {
+		vid := uint16(desc.Vendor)
+		pid := uint16(desc.Product)
+		return b.matchVidPid(vid, pid)
+	})
+	if err != nil && len(list) == 0 {
 		return nil, err
 	}
 
-	defer func() {
-		lowlevel.Free_Device_List(list, 1) // unlink devices
-	}()
-
-	// There is a bug in libusb that makes
-	// device appear twice with the same path.
-	// This is already fixed in libusb 2.0.12;
-	// however, 2.0.12 has other problems with windows, so we
-	// patchfix it here
-	mydevs := make([]lowlevel.Device, 0)
+	// Find the device with matching path
+	var foundDev *gousb.Device
 	for _, dev := range list {
 		m, _ := b.match(dev)
 		if m && b.identify(dev) == path {
-			mydevs = append(mydevs, dev)
+			foundDev = dev
+			break
 		}
 	}
 
-	err = ErrNotFound
-	for _, dev := range mydevs {
-		res, errConn := b.connect(dev)
-		if errConn == nil {
-			return res, nil
+	// Close all devices except the one we found
+	for _, dev := range list {
+		if dev != foundDev {
+			dev.Close()
 		}
-		err = errConn
 	}
-	return nil, err
+
+	if foundDev == nil {
+		return nil, ErrNotFound
+	}
+
+	// Connect to the found device
+	res, errConn := b.connect(foundDev)
+	if errConn != nil {
+		foundDev.Close()
+		return nil, errConn
+	}
+	return res, nil
 }
 
-func (b *LibUSB) setConfiguration(d lowlevel.Device_Handle) {
+func (b *LibUSB) setConfiguration(d lowlevel.Device_Handle) (*gousb.Config, error) {
 	currConf, err := lowlevel.Get_Configuration(d)
 	if err != nil {
 		log.Errorf("current configuration err %s", err.Error())
 	}
 
 	if currConf != usbConfigNum {
-		err = lowlevel.Set_Configuration(d, usbConfigNum)
+		cfg, err := lowlevel.Set_Configuration(d, usbConfigNum)
 		if err != nil {
 			// don't abort if set configuration fails
-			// lowlevel.Close(d)
-			// return nil, err
 			log.Errorf("Warning: error at configuration set: %s", err)
+			return nil, err
 		}
-
-		currConf, err = lowlevel.Get_Configuration(d)
-		if err != nil {
-			log.Errorf("current configuration err %s", err.Error())
-		}
+		return cfg, nil
 	}
+	// Config is already set, need to get it anyway to keep reference alive
+	return lowlevel.Set_Configuration(d, usbConfigNum)
 }
 
 func (b *LibUSB) claimInterface(d lowlevel.Device_Handle) (bool, error) {
@@ -256,13 +263,30 @@ func (b *LibUSB) connect(dev lowlevel.Device) (*LibUSBDevice, error) {
 		return nil, err
 	}
 
-	b.setConfiguration(d)
+	// Note: Kernel driver detachment is handled by gousb automatically when
+	// Config() or Interface() is called. SetAutoDetach() requires elevated
+	// privileges and is not needed for basic operation.
+
+	cfg, err := b.setConfiguration(d)
+	if err != nil {
+		return nil, err
+	}
+	
+	// Claim the interface and keep it alive for the device lifetime
+	intf, err := cfg.Interface(0, 0)
+	if err != nil {
+		return nil, err
+	}
+	
 	attach, err := b.claimInterface(d)
 	if err != nil {
+		intf.Close()
 		return nil, err
 	}
 	return &LibUSBDevice{
 		dev:    d,
+		config: cfg,
+		iface:  intf,
 		closed: 0,
 		cancel: b.cancel,
 		attach: attach,
@@ -332,15 +356,20 @@ func (b *LibUSB) match(dev lowlevel.Device) (bool, DeviceType) {
 }
 
 func (b *LibUSB) matchVidPid(vid uint16, pid uint16) bool {
-	// Note: Trezor1 libusb will actually have the T2 vid/pid
+	// Check for Skycoin/Trezor1 devices (VID 0x313a)
+	skycoin := vid == VendorT1 && (pid == ProductT1Firmware)
+	// Check for Trezor2 devices (VID 0x1209)
 	trezor2 := vid == VendorT2 && (pid == ProductT2Firmware || pid == ProductT2Bootloader)
 
 	if b.only {
-		trezor1 := vid == VendorT1 && (pid == ProductT1Firmware)
-		return trezor1 || trezor2
+		// When only using libusb (not HID), accept both
+		return skycoin || trezor2
 	}
 
-	return trezor2
+	// When using both libusb and HID, we still need to accept Skycoin devices
+	// because they use libusb on Linux. Original code only checked trezor2,
+	// which caused Skycoin devices to be rejected.
+	return skycoin || trezor2
 }
 
 func (b *LibUSB) identify(dev lowlevel.Device) string {
@@ -354,7 +383,9 @@ func (b *LibUSB) identify(dev lowlevel.Device) string {
 }
 
 type LibUSBDevice struct {
-	dev lowlevel.Device_Handle
+	dev    lowlevel.Device_Handle
+	config *gousb.Config      // Keep reference to prevent GC from releasing interface
+	iface  *gousb.Interface   // Keep reference to interface for transfers
 
 	closed              int32 // atomic
 	normalTransferMutex sync.Mutex
@@ -381,16 +412,25 @@ func (d *LibUSBDevice) Close(disconnected bool) error {
 		//
 		// Finishing read queue is not necessary when we don't allow cancelling
 		// (since when we don't allow cancelling, we don't allow session stealing)
-		if !disconnected {
+		//
+		// NOTE: With gousb, Cancel_Sync_Transfers_On_Device is a no-op and
+		// finishReadQueue can hang waiting for data that will never come.
+		// Skip it for now - the interface close will handle cleanup.
+		if false && !disconnected {
 			d.finishReadQueue()
 		}
 	}
-
+	
 	iface := int(normalIface.number)
 	err := lowlevel.Release_Interface(d.dev, iface)
 	if err != nil {
 		// do not throw error, it is just release anyway
 		log.Warnf("Warning: error at releasing interface: %s", err)
+	}
+
+	// Close the interface we kept alive - do this AFTER finishReadQueue
+	if d.iface != nil {
+		d.iface.Close()
 	}
 
 	if d.attach {
@@ -422,7 +462,7 @@ func (d *LibUSBDevice) finishReadQueue() {
 	for err == nil {
 		// these transfers have timeouts => should not interfer with
 		// cancel_sync_transfers_on_device
-		_, err = lowlevel.Interrupt_Transfer(d.dev, usbEpIn, buf[:], 50)
+		_, err = lowlevel.Interrupt_Transfer(d.iface, usbEpIn, buf[:], 50)
 	}
 	d.transferMutexUnlock()
 }
@@ -435,7 +475,7 @@ func (d *LibUSBDevice) readWrite(buf []byte, endpoint uint8) (int, error) {
 		}
 
 		d.transferMutexLock()
-		p, err := lowlevel.Interrupt_Transfer(d.dev, endpoint, buf, transferTimeout)
+		p, err := lowlevel.Interrupt_Transfer(d.iface, endpoint, buf, transferTimeout)
 		d.transferMutexUnlock()
 
 		if err != nil {

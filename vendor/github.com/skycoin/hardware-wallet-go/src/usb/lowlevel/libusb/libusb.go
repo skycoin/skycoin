@@ -78,7 +78,30 @@ func Exit(ctx Context) {
 	}
 }
 
-// Get_Device_List returns a list of USB devices
+// Get_Device_List_Filtered returns a list of USB devices matching VID/PID
+// This avoids permission errors by only opening devices we actually need
+func Get_Device_List_Filtered(ctx Context, vendorID, productID uint16) ([]*gousb.Device, error) {
+	devices, err := ctx.OpenDevices(func(desc *gousb.DeviceDesc) bool {
+		match := true
+		if vendorID != 0 && uint16(desc.Vendor) != vendorID {
+			match = false
+		}
+		if productID != 0 && uint16(desc.Product) != productID {
+			match = false
+		}
+		return match
+	})
+	// OpenDevices returns (devices, error) where devices contains successfully opened devices
+	// and error is only set if NO devices could be opened at all
+	// Individual device open failures are logged but don't prevent returning other devices
+	if len(devices) == 0 && err != nil {
+		return nil, err
+	}
+	return devices, nil
+}
+
+// Get_Device_List returns a list of all USB devices
+// Prefer Get_Device_List_Filtered when possible to avoid permission errors
 func Get_Device_List(ctx Context) ([]*gousb.Device, error) {
 	devices, err := ctx.OpenDevices(func(desc *gousb.DeviceDesc) bool {
 		return true // Return all devices
@@ -114,17 +137,32 @@ func Get_Config_Descriptor(dev Device, index uint8) (*Config_Descriptor, error) 
 	}
 	
 	desc := dev.Desc
-	if int(index) >= len(desc.Configs) {
-		return nil, fmt.Errorf("config index out of range")
+	if desc == nil {
+		return nil, fmt.Errorf("device descriptor is nil")
 	}
 	
-	cfg := desc.Configs[int(index)]
+	if len(desc.Configs) == 0 {
+		return nil, fmt.Errorf("device has no configs in descriptor")
+	}
+	
+	// gousb uses map[int]ConfigDesc where key is config number (usually 1-based)
+	// For index 0, we want config number 1 (the default/first config)
+	configNum := int(index) + 1
+	cfg, ok := desc.Configs[configNum]
+	if !ok {
+		// Fallback: try index as direct key
+		cfg, ok = desc.Configs[int(index)]
+		if !ok {
+			return nil, fmt.Errorf("config index %d (or %d) not found", index, configNum)
+		}
+	}
 	
 	result := &Config_Descriptor{
 		BNumInterfaces: uint8(len(cfg.Interfaces)),
 		Interface:      make([]Interface, len(cfg.Interfaces)),
 	}
 	
+	// Build interface descriptors
 	for i, iface := range cfg.Interfaces {
 		result.Interface[i] = Interface{
 			Num_altsetting: len(iface.AltSettings),
@@ -132,17 +170,24 @@ func Get_Config_Descriptor(dev Device, index uint8) (*Config_Descriptor, error) 
 		}
 		
 		for j, alt := range iface.AltSettings {
+			numEndpoints := len(alt.Endpoints)
 			result.Interface[i].Altsetting[j] = Interface_Descriptor{
 				BInterfaceNumber:  uint8(alt.Number),
 				BAlternateSetting: uint8(alt.Alternate),
-				BNumEndpoints:     uint8(len(alt.Endpoints)),
+				BNumEndpoints:     uint8(numEndpoints),
 				BInterfaceClass:   uint8(alt.Class),
-				Endpoint:          make([]Endpoint_Descriptor, len(alt.Endpoints)),
+				Endpoint:          make([]Endpoint_Descriptor, numEndpoints),
 			}
 			
-			for k, ep := range alt.Endpoints {
-				result.Interface[i].Altsetting[j].Endpoint[k] = Endpoint_Descriptor{
-					BEndpointAddress: uint8(ep.Address),
+			// Populate endpoint descriptors from map
+			// Endpoints is map[EndpointAddress]EndpointDesc
+			epIdx := 0
+			for epAddr := range alt.Endpoints {
+				if epIdx < numEndpoints {
+					result.Interface[i].Altsetting[j].Endpoint[epIdx] = Endpoint_Descriptor{
+						BEndpointAddress: uint8(epAddr), // epAddr is the EndpointAddress key
+					}
+					epIdx++
 				}
 			}
 		}
@@ -176,10 +221,10 @@ func Get_Configuration(handle Device_Handle) (int, error) {
 	return cfg, err
 }
 
-// Set_Configuration sets the configuration value
-func Set_Configuration(handle Device_Handle, config int) error {
-	_, err := handle.Config(config)
-	return err
+// Set_Configuration sets the configuration value and returns the config object
+// IMPORTANT: The returned *gousb.Config must be kept alive to maintain the interface claim
+func Set_Configuration(handle Device_Handle, config int) (*gousb.Config, error) {
+	return handle.Config(config)
 }
 
 // Claim_Interface claims an interface
@@ -215,22 +260,11 @@ func Attach_Kernel_Driver(handle Device_Handle, iface int) error {
 }
 
 // Interrupt_Transfer performs an interrupt transfer
-func Interrupt_Transfer(handle Device_Handle, endpoint uint8, data []byte, timeout int) ([]byte, error) {
-	if handle == nil {
-		return nil, fmt.Errorf("device handle is nil")
+// intf must be a valid Interface obtained from Config.Interface() and kept alive by caller
+func Interrupt_Transfer(intf *gousb.Interface, endpoint uint8, data []byte, timeout int) ([]byte, error) {
+	if intf == nil {
+		return nil, fmt.Errorf("interface is nil")
 	}
-	
-	// Get the interface and endpoint
-	cfg, err := handle.Config(1)
-	if err != nil {
-		return nil, err
-	}
-	
-	intf, err := cfg.Interface(0, 0)
-	if err != nil {
-		return nil, err
-	}
-	defer intf.Close()
 	
 	// Determine if this is an IN or OUT endpoint
 	isIn := (endpoint & 0x80) != 0

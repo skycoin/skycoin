@@ -236,9 +236,30 @@ func (c *Coin) Run() error {
 	}
 
 	c.logger.Info("visor.Init")
+	wasGenesisEmpty := c.config.Node.GenesisSignatureStr == ""
+
 	if err := v.Init(); err != nil {
 		c.logger.WithError(err).Error("visor.Init failed")
 		return err
+	}
+
+	// If genesis signature was empty before Init, get it from the genesis block that was just created
+	if wasGenesisEmpty {
+		gb, err := v.GetBlock(0) // Genesis block is always seq 0
+		if err != nil {
+			c.logger.WithError(err).Warning("Failed to get genesis block")
+		} else if gb != nil {
+			c.config.Node.GenesisSignatureStr = gb.Sig.Hex()
+		}
+	}
+
+	// If genesis block was just created, write genesis info to fiber.toml
+	if wasGenesisEmpty && c.config.Node.GenesisSignatureStr != "" {
+		if err := c.config.Node.WriteFiberTomlGenesis(c.config.Node.GenesisSignatureStr); err != nil {
+			c.logger.WithError(err).Warning("Failed to update fiber.toml with genesis info")
+		} else {
+			c.logger.Info("Updated fiber.toml with genesis credentials (address, pubkey, signature)")
+		}
 	}
 
 	wg.Add(1)
@@ -341,7 +362,20 @@ func (c *Coin) initLogFile() (*os.File, error) {
 func (c *Coin) ConfigureVisor() visor.Config {
 	vc := visor.NewConfig()
 
-	vc.Distribution = params.MainNetDistribution
+	// Use distribution addresses from fiber.toml if available, otherwise use hardcoded MainNetDistribution
+	if len(c.config.Node.distributionAddresses) > 0 {
+		vc.Distribution = params.Distribution{
+			MaxCoinSupply:        c.config.Node.distributionMaxCoinSupply,
+			InitialUnlockedCount: c.config.Node.distributionUnlockedCount,
+			UnlockAddressRate:    c.config.Node.distributionUnlockRate,
+			UnlockTimeInterval:   c.config.Node.distributionUnlockInterval,
+			Addresses:            c.config.Node.distributionAddresses,
+		}
+		// Validate and decode addresses
+		vc.Distribution.MustValidate()
+	} else {
+		vc.Distribution = params.MainNetDistribution
+	}
 
 	vc.IsBlockPublisher = c.config.Node.RunBlockPublisher
 	vc.Arbitrating = c.config.Node.RunBlockPublisher

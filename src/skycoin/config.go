@@ -1,17 +1,17 @@
 package skycoin
 
 import (
+	"encoding/json"
 	"errors"
-	//	"flag"
 	"fmt"
 	"math"
-
-	//	"os"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
 
+	"github.com/pelletier/go-toml/v2"
 	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/cipher/crypto"
@@ -125,7 +125,7 @@ type NodeConfig struct {
 	// Launch System Default Browser after client startup
 	LaunchBrowser bool
 
-	// Data directory holds app data -- defaults to ~/.skycoin
+	// Data directory holds app data
 	DataDirectory string
 	// GUI directory contains assets for the HTML interface
 	GUIDirectory string
@@ -216,6 +216,16 @@ type NodeConfig struct {
 	blockchainSeckey cipher.SecKey
 
 	Fiber readable.FiberConfig
+
+	// Paths for auto-updating fiber.toml
+	fiberTomlPath     string // Set from FIBER_TOML env
+	genesisWalletPath string // Set from GENESIS env
+	// Distribution addresses from fiber.toml [params] section
+	distributionAddresses      []string // Loaded from fiber.Params.DistributionAddresses
+	distributionMaxCoinSupply  uint64   // Loaded from fiber.Params.MaxCoinSupply
+	distributionUnlockedCount  uint64   // Loaded from fiber.Params.InitialUnlockedCount
+	distributionUnlockRate     uint64   // Loaded from fiber.Params.UnlockAddressRate
+	distributionUnlockInterval uint64   // Loaded from fiber.Params.UnlockTimeInterval
 }
 
 // NewNodeConfig returns a new node config instance
@@ -684,8 +694,8 @@ func (c *NodeConfig) RegisterFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&c.WebInterfacePlaintextAuth, "web-interface-plaintext-auth", c.WebInterfacePlaintextAuth, "allow web interface auth without https")
 
 	cmd.Flags().BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser, "launch system default webbrowser at client startup")
-	cmd.Flags().StringVar(&c.DataDirectory, "data-dir", c.DataDirectory, "directory to store app data (defaults to ~/.skycoin)")
-	cmd.Flags().StringVar(&c.DBPath, "db-path", c.DBPath, "path of database file (defaults to ~/.skycoin/data.db)")
+	cmd.Flags().StringVar(&c.DataDirectory, "data-dir", c.DataDirectory, fmt.Sprintf("directory to store app data (defaults to %s)", c.DataDirectory))
+	cmd.Flags().StringVar(&c.DBPath, "db-path", c.DBPath, "path of database file")
 	cmd.Flags().BoolVar(&c.DBReadOnly, "db-read-only", c.DBReadOnly, "open bolt db read-only")
 	cmd.Flags().BoolVar(&c.ProfileCPU, "profile-cpu", c.ProfileCPU, "enable cpu profiling")
 	cmd.Flags().StringVar(&c.ProfileCPUFile, "profile-cpu-file", c.ProfileCPUFile, "where to write the cpu profile file")
@@ -722,8 +732,8 @@ func (c *NodeConfig) RegisterFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&c.GenesisSignatureStr, "genesis-signature", c.GenesisSignatureStr, "genesis block signature")
 	cmd.Flags().Uint64Var(&c.GenesisTimestamp, "genesis-timestamp", c.GenesisTimestamp, "genesis block timestamp")
 
-	cmd.Flags().StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory, "location of the wallet files. Defaults to ~/.skycoin/wallet/")
-	cmd.Flags().StringVar(&c.KVStorageDirectory, "storage-dir", c.KVStorageDirectory, "location of the storage data files. Defaults to ~/.skycoin/data/")
+	cmd.Flags().StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory, "location of the wallet files")
+	cmd.Flags().StringVar(&c.KVStorageDirectory, "storage-dir", c.KVStorageDirectory, "location of the storage data files")
 	cmd.Flags().IntVar(&c.MaxConnections, "max-connections", c.MaxConnections, "Maximum number of total connections allowed")
 	cmd.Flags().IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", c.MaxOutgoingConnections, "Maximum number of outgoing connections allowed")
 	cmd.Flags().IntVar(&c.MaxIncomingConnections, "max-incoming-connections", c.MaxIncomingConnections, "Maximum number of incoming connections allowed")
@@ -780,6 +790,9 @@ func (c *NodeConfig) LoadFromFiberConfig(configPath string) error {
 		return nil // No config file specified
 	}
 
+	// Store path for later writing
+	c.fiberTomlPath = configPath
+
 	// Load fiber config
 	fiberCfg, err := fiber.NewConfig(filepath.Base(configPath), filepath.Dir(configPath))
 	if err != nil {
@@ -788,6 +801,63 @@ func (c *NodeConfig) LoadFromFiberConfig(configPath string) error {
 
 	// Map fiber.NodeConfig to skycoin.NodeConfig
 	c.applyFiberNodeConfig(fiberCfg.Node)
+
+	// Store distribution parameters from fiber.ParamsConfig
+	if len(fiberCfg.Params.DistributionAddresses) > 0 {
+		c.distributionAddresses = fiberCfg.Params.DistributionAddresses
+		c.distributionMaxCoinSupply = fiberCfg.Params.MaxCoinSupply
+		c.distributionUnlockedCount = fiberCfg.Params.InitialUnlockedCount
+		c.distributionUnlockRate = fiberCfg.Params.UnlockAddressRate
+		c.distributionUnlockInterval = fiberCfg.Params.UnlockTimeInterval
+	}
+
+	return nil
+}
+
+// LoadFromGenesisWallet loads genesis credentials from a genesis wallet JSON file
+// This takes precedence over fiber.toml values for address, pubkey, and seckey
+func (c *NodeConfig) LoadFromGenesisWallet(walletPath string) error {
+	if walletPath == "" {
+		return nil
+	}
+
+	// Store path for later use
+	c.genesisWalletPath = walletPath
+
+	// Read the genesis wallet file
+	data, err := os.ReadFile(walletPath) //nolint:gosec // G304: User-specified wallet path is intentional
+	if err != nil {
+		return fmt.Errorf("failed to read genesis wallet: %w", err)
+	}
+
+	// Parse the wallet JSON
+	var wallet struct {
+		Entries []struct {
+			Address   string `json:"address"`
+			PublicKey string `json:"public_key"`
+			SecretKey string `json:"secret_key"`
+		} `json:"entries"`
+	}
+
+	if err := json.Unmarshal(data, &wallet); err != nil {
+		return fmt.Errorf("failed to parse genesis wallet JSON: %w", err)
+	}
+
+	if len(wallet.Entries) == 0 {
+		return fmt.Errorf("genesis wallet has no entries")
+	}
+
+	// Use the first entry
+	entry := wallet.Entries[0]
+
+	// Set genesis address and blockchain keys
+	c.GenesisAddressStr = entry.Address
+	c.BlockchainPubkeyStr = entry.PublicKey
+	c.BlockchainSeckeyStr = entry.SecretKey
+
+	// Clear the genesis signature since it's not valid for this wallet
+	// The signature will be generated when the genesis block is created
+	c.GenesisSignatureStr = ""
 
 	return nil
 }
@@ -909,6 +979,49 @@ func (c *NodeConfig) applyFiberNodeConfig(node fiber.NodeConfig) {
 	if node.Bip44Coin != 0 {
 		c.Fiber.Bip44Coin = node.Bip44Coin
 	}
+}
+
+// WriteFiberTomlGenesis writes genesis address, pubkey, and signature to fiber.toml
+// This is called after the genesis block is created to persist the values
+func (c *NodeConfig) WriteFiberTomlGenesis(signature string) error {
+	if c.fiberTomlPath == "" {
+		return nil // No fiber.toml path set, nothing to write
+	}
+
+	// Read the current fiber.toml
+	data, err := os.ReadFile(c.fiberTomlPath)
+	if err != nil {
+		return fmt.Errorf("failed to read fiber.toml: %w", err)
+	}
+
+	// Parse as map
+	var tomlMap map[string]interface{}
+	if err := toml.Unmarshal(data, &tomlMap); err != nil {
+		return fmt.Errorf("failed to parse fiber.toml: %w", err)
+	}
+
+	// Get or create [node] section
+	nodeSection, ok := tomlMap["node"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("missing [node] section in fiber.toml")
+	}
+
+	// Update genesis fields
+	nodeSection["genesis_address_str"] = c.GenesisAddressStr
+	nodeSection["blockchain_pubkey_str"] = c.BlockchainPubkeyStr
+	nodeSection["genesis_signature_str"] = signature
+
+	// Write back to file
+	updatedData, err := toml.Marshal(tomlMap)
+	if err != nil {
+		return fmt.Errorf("failed to marshal fiber.toml: %w", err)
+	}
+
+	if err := os.WriteFile(c.fiberTomlPath, updatedData, 0600); err != nil {
+		return fmt.Errorf("failed to write fiber.toml: %w", err)
+	}
+
+	return nil
 }
 
 func panicIfError(err error, msg string, args ...interface{}) { //nolint:unparam

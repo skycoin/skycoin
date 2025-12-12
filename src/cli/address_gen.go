@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/pelletier/go-toml/v2"
 	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -332,7 +333,56 @@ func fiberAddressGenCmd() *cobra.Command {
 				return err
 			}
 
-			return seedsF.Sync()
+			if err := seedsF.Sync(); err != nil {
+				return err
+			}
+
+			// If FIBER_TOML env is set, update the fiber.toml with distribution_addresses
+			if fiberTomlPath := os.Getenv("FIBER_TOML"); fiberTomlPath != "" {
+				fmt.Fprintf(os.Stderr, "Updating %s with distribution_addresses...\n", fiberTomlPath)
+
+				// Read existing fiber.toml
+				data, err := os.ReadFile(fiberTomlPath) //nolint:gosec // G304: User-specified FIBER_TOML path is intentional
+				if err != nil {
+					return fmt.Errorf("failed to read FIBER_TOML %q: %w", fiberTomlPath, err)
+				}
+
+				// Parse as map
+				var tomlMap map[string]interface{}
+				if err := toml.Unmarshal(data, &tomlMap); err != nil {
+					return fmt.Errorf("failed to parse FIBER_TOML %q: %w", fiberTomlPath, err)
+				}
+
+				// Get or create [params] section
+				paramsSection, ok := tomlMap["params"].(map[string]interface{})
+				if !ok {
+					paramsSection = make(map[string]interface{})
+					tomlMap["params"] = paramsSection
+				}
+
+				// Convert addresses to string slice for TOML
+				addrStrings := make([]string, len(addrs))
+				for i, a := range addrs {
+					addrStrings[i] = a.String()
+				}
+
+				// Update distribution_addresses
+				paramsSection["distribution_addresses"] = addrStrings
+
+				// Write back to file
+				updatedData, err := toml.Marshal(tomlMap)
+				if err != nil {
+					return fmt.Errorf("failed to marshal FIBER_TOML: %w", err)
+				}
+
+				if err := os.WriteFile(fiberTomlPath, updatedData, 0600); err != nil {
+					return fmt.Errorf("failed to write FIBER_TOML %q: %w", fiberTomlPath, err)
+				}
+
+				fmt.Fprintf(os.Stderr, "✓ Updated %s with %d distribution addresses\n", fiberTomlPath, len(addrs))
+			}
+
+			return nil
 		},
 	}
 

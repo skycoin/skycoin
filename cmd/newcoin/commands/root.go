@@ -44,7 +44,7 @@ func init() {
 	createCoinCmd.Flags().StringVarP(&coinTestTemplateFile, "coin-test-template-file", "g", templates.CoinTestTemplate, "coin test template file")
 	createCoinCmd.Flags().StringVarP(&paramsTemplateFile, "params-template-file", "i", templates.ParamsTemplate, "params template file")
 	createCoinCmd.Flags().StringVarP(&configDir, "config-dir", "j", "./", "config directory path")
-	createCoinCmd.Flags().StringVarP(&configFile, "config-file", "k", "fiber.toml", "config file path")
+	createCoinCmd.Flags().StringVarP(&configFile, "config-file", "k", "config/fiber.toml", "config file path")
 	RootCmd.AddCommand(createCoinCmd)
 }
 

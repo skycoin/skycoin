@@ -101,7 +101,7 @@ func _Block(md *digest, p []byte) int {
 			a, b, c, d, e = e, alpha, b, beta, d
 
 			// parallel line
-			alpha = aa + (bb | ^cc ^ dd) + x[n_[i]] + 0x6d703ef3
+			alpha = aa + (bb | ^cc ^ dd) + x[n_[i]] + 0x6d703ef3 //nolint:gosec // G602: i is bounded by loop, array access is safe
 			s = r_[i]
 			alpha = (alpha<<s | alpha>>(32-s)) + ee
 			beta = cc<<10 | cc>>22
@@ -112,14 +112,14 @@ func _Block(md *digest, p []byte) int {
 
 		// round 4
 		for i < 64 {
-			alpha = a + (b&d | c&^d) + x[_n[i]] + 0x8f1bbcdc
+			alpha = a + (b&d | c&^d) + x[_n[i]] + 0x8f1bbcdc //nolint:gosec // G602: i is bounded by loop, array access is safe
 			s := _r[i]
 			alpha = (alpha<<s | alpha>>(32-s)) + e
 			beta = c<<10 | c>>22
 			a, b, c, d, e = e, alpha, b, beta, d
 
 			// parallel line
-			alpha = aa + (bb&cc | ^bb&dd) + x[n_[i]] + 0x7a6d76e9
+			alpha = aa + (bb&cc | ^bb&dd) + x[n_[i]] + 0x7a6d76e9 //nolint:gosec // G602: i is bounded by loop, array access is safe
 			s = r_[i]
 			alpha = (alpha<<s | alpha>>(32-s)) + ee
 			beta = cc<<10 | cc>>22

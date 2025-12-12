@@ -342,7 +342,7 @@ func fiberAddressGenCmd() *cobra.Command {
 				fmt.Fprintf(os.Stderr, "Updating %s with distribution_addresses...\n", fiberTomlPath)
 
 				// Read existing fiber.toml
-				data, err := os.ReadFile(fiberTomlPath)
+				data, err := os.ReadFile(fiberTomlPath) //nolint:gosec // G304: User-specified FIBER_TOML path is intentional
 				if err != nil {
 					return fmt.Errorf("failed to read FIBER_TOML %q: %w", fiberTomlPath, err)
 				}

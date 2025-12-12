@@ -825,7 +825,7 @@ func (c *NodeConfig) LoadFromGenesisWallet(walletPath string) error {
 	c.genesisWalletPath = walletPath
 
 	// Read the genesis wallet file
-	data, err := os.ReadFile(walletPath)
+	data, err := os.ReadFile(walletPath) //nolint:gosec // G304: User-specified wallet path is intentional
 	if err != nil {
 		return fmt.Errorf("failed to read genesis wallet: %w", err)
 	}

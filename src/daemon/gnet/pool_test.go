@@ -1110,7 +1110,7 @@ func TestPoolBroadcastMessage(t *testing.T) {
 	if runtime.GOARCH == "386" {
 		t.Skip("Flaky on 32-bit architecture - see pool_test.go TestPoolBroadcastMessage")
 	}
-	
+
 	resetHandler()
 	EraseMessages()
 	RegisterMessage(BytePrefix, ByteMessage{})

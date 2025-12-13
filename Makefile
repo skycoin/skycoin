@@ -18,7 +18,7 @@
 .PHONY: integration-test-stable-auth
 .PHONY: integration-test-live integration-test-live-wallet
 .PHONY: install-linters format release clean-release clean-coverage
-.PHONY: install-deps-ui build-ui build-ui-travis help newcoin merge-coverage
+.PHONY: install-deps-ui build-ui build-ui help newcoin merge-coverage
 .PHONY: generate update-golden-files
 .PHONY: fuzz-base58 fuzz-encoder
 .PHONY: check-lang check-lang-es check-lang-zh
@@ -166,8 +166,6 @@ test-ui-e2e:  ## Run UI e2e tests
 build-ui:  ## Builds the UI
 	cd $(GUI_STATIC_DIR) && npm run build
 
-build-ui-travis:  ## Builds the UI for travis
-	cd $(GUI_STATIC_DIR) && npm run build-travis
 
 release: ## Build electron, standalone and daemon apps. Use osarch=${osarch} to specify the platform. Example: 'make release osarch=darwin/amd64', multiple platform can be supported in this way: 'make release osarch="darwin/amd64 windows/amd64"'. Supported architectures are: darwin/amd64 windows/amd64 windows/386 linux/amd64 linux/arm, the builds are located in electron/release folder.
 	cd $(ELECTRON_DIR) && ./build.sh ${osarch}

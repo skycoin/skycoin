@@ -1,8 +1,5 @@
 on:
   pull_request:
-    branches: [ master, develop, cobra-cli ]
-  push:
-    branches: [ master, develop, cobra-cli ]
 
 name: CI
 
@@ -17,6 +14,12 @@ jobs:
           go-version: 1.25.*
           cache: true
           cache-dependency-path: go.sum
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.18.1
+          cache: 'npm'
+          cache-dependency-path: src/gui/static/package-lock.json
 
       - name: Cache Go tools
         uses: actions/cache@v4
@@ -35,9 +38,7 @@ jobs:
             ${{ runner.os }}-apt-
 
       - name: Install Dependencies
-        shell: bash
         run: |
-          set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y xvfb libusb-1.0-0-dev
 
@@ -47,17 +48,31 @@ jobs:
       - name: Install linters
         run: make install-linters
 
-      - uses: golangci/golangci-lint-action@v7
-        with:
-          version: v2.5.0
+      - name: Lint Go
+        run: make lint
 
       - name: Format Check
         run: |
           make format
           git diff --exit-code || (echo "Code is not formatted. Run 'make format' locally." && exit 1)
 
-      - name: Run Unit Tests
-        run: make test
+      - name: Check newcoin Template
+        run: make check-newcoin
+
+      - name: Install UI Dependencies
+        run: make install-deps-ui
+
+      - name: Lint UI
+        run: make lint-ui
+
+      - name: Test UI
+        run: make test-ui
+
+      - name: Build UI
+        run: make build-ui-travis
+
+      - name: Run Unit Tests (amd64)
+        run: make test-amd64
 
       - name: Run Unit Tests (386)
         run: make test-386
@@ -66,10 +81,13 @@ jobs:
         run: |
           Xvfb -ac :99 -screen 0 1280x1024x16 &
           export DISPLAY=:99
-          make integration-tests-stable
-
-      - name: Check newcoin Template
-        run: make check-newcoin
+          make test-ui-e2e
+          make integration-test-stable
+          make integration-test-stable-disable-wallet-api
+          make integration-test-stable-enable-seed-api
+          make integration-test-stable-disable-gui
+          make integration-test-stable-disable-csrf
+          make integration-test-stable-auth
 
   darwin:
     runs-on: macos-latest
@@ -96,14 +114,16 @@ jobs:
       - name: Install linters
         run: make install-linters
 
-      - uses: golangci/golangci-lint-action@v7
-        with:
-          version: v2.5.0
+      - name: Lint Go
+        run: make lint
 
       - name: Format Check
         run: |
           make format
           git diff --exit-code || (echo "Code is not formatted. Run 'make format' locally." && exit 1)
+
+      - name: Check newcoin Template
+        run: make check-newcoin
 
       - name: Run Unit Tests
         run: make test
@@ -131,14 +151,16 @@ jobs:
             ${{ runner.os }}-go-tools-
 
       - name: Install Dependencies
-        run: |
-          choco install make
+        run: choco install make
 
       - name: Vendor Dependencies
         run: go mod vendor -v
 
-      - name: Run Unit Tests
-        run: make test
+      - name: Check newcoin Template
+        run: make check-newcoin
 
       - name: Run Unit Tests (amd64)
         run: make test-amd64
+
+      - name: Run Unit Tests
+        run: make test

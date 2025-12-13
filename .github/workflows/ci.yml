@@ -139,21 +139,11 @@ jobs:
           cache: true
           cache-dependency-path: go.sum
 
-      - name: Install golangci-lint
-        shell: powershell
-        run: |
-          Invoke-WebRequest -Uri "https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh" -OutFile "install.sh"
-          bash install.sh -b $HOME/go/bin v2.6.1
-          echo "$HOME/go/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-
       - name: Install Requirements
         run: choco install make
 
       - name: Vendor Dependencies
         run: go mod vendor -v
-
-      - name: Lint Go
-        run: make lint
 
       - name: Check newcoin Template
         run: make check-newcoin

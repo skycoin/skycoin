@@ -15,8 +15,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/calvin"
 	"github.com/spf13/cobra"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/calvin"
 
 	"github.com/skycoin/skycoin/src/fiber"
 	"github.com/skycoin/skycoin/src/readable"

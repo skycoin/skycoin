@@ -201,7 +201,7 @@ clean-coverage: ## Remove coverage output files
 	rm -rf ./coverage/
 
 newcoin: ## Rebuild cmd/$COIN/$COIN.go file from the template. Call like "make newcoin COIN=foo".
-	go run cmd/newcoin/newcoin.go createcoin --coin $(COIN)
+	go run -mod=mod . newcoin createcoin --coin $(COIN)
 
 generate: ## Generate test interface mocks and struct encoders
 	go generate ./src/...

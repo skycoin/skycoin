@@ -52,12 +52,18 @@ jobs:
 
       - name: Lint UI
         run: make lint-ui
+        env:
+          NODE_OPTIONS: --openssl-legacy-provider
 
       - name: Test UI
         run: make test-ui
+        env:
+          NODE_OPTIONS: --openssl-legacy-provider
 
       - name: Build UI
         run: make build-ui-travis
+        env:
+          NODE_OPTIONS: --openssl-legacy-provider
 
       - name: Run Unit Tests (amd64)
         run: make test-amd64
@@ -76,6 +82,8 @@ jobs:
           make integration-test-stable-disable-gui
           make integration-test-stable-disable-csrf
           make integration-test-stable-auth
+        env:
+          NODE_OPTIONS: --openssl-legacy-provider
 
   darwin:
     runs-on: macos-latest

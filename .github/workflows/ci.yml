@@ -29,6 +29,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb libusb-1.0-0-dev
 
+      - name: Start Xvfb
+        run: |
+          Xvfb -ac :99 -screen 0 1280x1024x16 &
+          echo "DISPLAY=:99" >> $GITHUB_ENV
+
       - name: Vendor Dependencies
         run: go mod vendor -v
 
@@ -73,8 +78,6 @@ jobs:
 
       - name: Run Integration Tests
         run: |
-          Xvfb -ac :99 -screen 0 1280x1024x16 &
-          export DISPLAY=:99
           make test-ui-e2e
           make integration-test-stable
           make integration-test-stable-disable-wallet-api

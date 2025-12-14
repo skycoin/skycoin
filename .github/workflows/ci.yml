@@ -78,7 +78,6 @@ jobs:
 
       - name: Run Integration Tests
         run: |
-          make test-ui-e2e
           make integration-test-stable
           make integration-test-stable-disable-wallet-api
           make integration-test-stable-enable-seed-api

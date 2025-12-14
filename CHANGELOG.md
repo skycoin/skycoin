@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Add `/api/v1/wallet/xpub` API endpoint to get xpub key of a bip44 wallet.
 - Add `/api/v1/transactions/num` to get total transactions number
 - Add param `private-keys` to CLI commands `walletCreate`, `walletCreateTemp`, and `walletNewAddresses`.
 - Add param `private-keys` to APIs `/api/v1/wallet/create`, `/api/v1/wallet/createTemp`, and `/api/v1/wallet/newAddress`. 

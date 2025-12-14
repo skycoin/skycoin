@@ -20,8 +20,8 @@ require (
 	github.com/shopspring/decimal v1.4.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
-	github.com/skycoin/hardware-wallet-daemon v0.1.1-0.20251212180036-5c8c719ed37a
-	github.com/skycoin/hardware-wallet-go v1.1.1-0.20251212175623-4306ea9c2149
+	github.com/skycoin/hardware-wallet-daemon v0.1.1-0.20251214205958-0632d0772c3b
+	github.com/skycoin/hardware-wallet-go v1.1.1-0.20251214205422-17746f44286f
 	github.com/skycoin/skycoin-lite v0.0.0-20190712083345-f5a3f17e6603
 	github.com/skycoin/skywire v1.3.32-0.20251008181048-e232456f8799
 	github.com/spf13/cobra v1.10.2
@@ -99,8 +99,8 @@ require (
 // Below should reflect current versions of the following deps
 // To update deps to specific commit hash:
 // 1) Uncomment one of the following lines and substituite version with desired commit hash:
-//replace github.com/skycoin/hardware-wallet-daemon => github.com/skycoin/hardware-wallet-daemon v0.1.1-0.20251212180036-5c8c719ed37a
-//replace github.com/skycoin/hardware-wallet-go => github.com/skycoin/hardware-wallet-go v1.1.1-0.20251212175623-4306ea9c2149
+//replace github.com/skycoin/hardware-wallet-daemon => github.com/skycoin/hardware-wallet-daemon v0.1.1-0.20251214205958-0632d0772c3b
+//replace github.com/skycoin/hardware-wallet-go => github.com/skycoin/hardware-wallet-go v1.1.1-0.20251214205422-17746f44286f
 //replace github.com/skycoin/skycoin-lite => github.com/skycoin/skycoin-lite v0.0.0-20190712083345-f5a3f17e6603
 //replace github.com/skycoin/skywire => github.com/skycoin/skywire v1.3.32-0.20251008181048-e232456f8799
 // 2) Run `go mod tidy && go mod vendor`

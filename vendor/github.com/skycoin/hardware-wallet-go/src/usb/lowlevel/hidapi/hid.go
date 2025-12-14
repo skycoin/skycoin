@@ -11,21 +11,13 @@
 package hidapi
 
 /*
-extern void goHidLog(const char *s);
-
-#cgo CFLAGS: -I${SRCDIR}/c
-
 #cgo darwin CFLAGS: -DOS_DARWIN
-#cgo darwin LDFLAGS: -framework CoreFoundation -framework IOKit
-#cgo windows CFLAGS: -DOS_WINDOWS
-#cgo windows LDFLAGS: -lsetupapi
+#cgo darwin LDFLAGS: -framework CoreFoundation -framework IOKit -lhidapi
+#cgo windows CFLAGS: -DOS_WINDOWS  
+#cgo windows LDFLAGS: -lhidapi -lsetupapi
 
-#ifdef OS_DARWIN
-	#include "mac/hid.c"
-#elif OS_WINDOWS
-	#include "windows/hid.c"
-#endif
-
+#include <stdlib.h>
+#include <hidapi/hidapi.h>
 */
 import "C"
 

@@ -1034,7 +1034,6 @@ func TestWalletGetXPubKey(t *testing.T) {
 	require.EqualError(t, err, "invalid path: 00")
 }
 
-
 func getExternalAddrs(_ *testing.T) []cipher.Addresser { //nolint:unused
 	return skycoinAddressStringsToAddress(testSkycoinExternalAddresses)
 }

@@ -1194,8 +1194,10 @@ func walletRecoverHandler(gateway Gatewayer) http.HandlerFunc {
 // URI: /api/v1/wallet/xpub
 // Method: GET
 // Args:
-//  id: wallet id
-//  path: bip44 xpub path, e.g: 0/0, or 0/1
+//
+//	id: wallet id
+//	path: bip44 xpub path, e.g: 0/0, or 0/1
+//
 // Gets xpub key of a given bip44 wallet in specific path
 func walletXPubKeyHandler(gateway Gatewayer) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

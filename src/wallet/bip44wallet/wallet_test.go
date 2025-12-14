@@ -1014,8 +1014,10 @@ func TestWalletGetXPubKey(t *testing.T) {
 	//require.Equal(t, testSkycoinChangeAddresses[1:3], addrsStr)
 
 	k1, err := w.GetXPubKey("0/0")
+	require.NoError(t, err)
 	require.Equal(t, k1, testSkycoinExternalXPubKey)
 	k2, err := w.GetXPubKey("0/1")
+	require.NoError(t, err)
 	require.Equal(t, k2, testSkycoinInternalXPubKey)
 
 	_, err = w.GetXPubKey("a/0")

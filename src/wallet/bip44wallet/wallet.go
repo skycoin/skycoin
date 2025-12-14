@@ -832,7 +832,8 @@ func (w *Wallet) GetXPubKey(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return w.accountManager.getXPubKey(uint32(indices[0]), uint32(indices[1]))
+	// ParseXPubPath validates indices fit in uint32 via ParseUint(_, 10, 32)
+	return w.accountManager.getXPubKey(uint32(indices[0]), uint32(indices[1])) //nolint:gosec
 }
 
 // ParseXPubPath parses xpub paths

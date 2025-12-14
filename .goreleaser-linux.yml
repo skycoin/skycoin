@@ -69,10 +69,6 @@ archives:
       - skyhw-amd64
       - skycoin-arm
       - skyhw-arm
-    files:
-      - CHANGELOG.md
-      - LICENSE
-      - README.md
     allow_different_binary_count: true
 
 checksum:

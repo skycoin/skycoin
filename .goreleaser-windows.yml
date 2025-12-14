@@ -43,10 +43,6 @@ archives:
     builds:
       - skycoin
       - skyhw
-    files:
-      - CHANGELOG.md
-      - LICENSE
-      - README.md
     allow_different_binary_count: true
 
 checksum:

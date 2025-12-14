@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Install Requirements
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libusb-1.0-0-dev
+          sudo snap install goreleaser --classic
+      
+      - name: Releasing
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: make github-release
+
+  darwin:
+    needs: linux
+    runs-on: macos-latest
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Install Requirements
+        run: |
+          brew install goreleaser
+          brew install libusb
+          brew install hidapi
+      
+      - name: Releasing
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: make github-release-darwin
+
+  windows:
+    needs: darwin
+    runs-on: windows-latest
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Install Requirements
+        shell: pwsh
+        run: |
+          Invoke-WebRequest "https://github.com/goreleaser/goreleaser/releases/download/v2.0.1/goreleaser_Windows_x86_64.zip" -OutFile goreleaser.zip
+          Expand-Archive goreleaser.zip
+          choco install make
+      
+      - name: Releasing
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: make github-release-windows

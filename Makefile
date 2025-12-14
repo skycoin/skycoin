@@ -179,6 +179,31 @@ snapshot-darwin: ## Build snapshot release for macOS only
 snapshot-windows: ## Build snapshot release for Windows only
 	goreleaser --snapshot --clean --skip=publish --config .goreleaser-windows.yml
 
+github-prepare-release:
+	$(eval GITHUB_TAG=$(shell git describe --abbrev=0 --tags | sed 's/-.*//'))
+	sed '/^## ${GITHUB_TAG}$$/,/^## .*/!d;//d;/^$$/d' ./CHANGELOG.md > releaseChangelog.md
+
+github-release: github-prepare-release ## Create GitHub release for Linux (triggered by GitHub Actions on tag push)
+	goreleaser --clean --config .goreleaser-linux.yml --release-notes releaseChangelog.md
+
+github-release-darwin: ## Create GitHub release for macOS (triggered by GitHub Actions)
+	goreleaser --clean --config .goreleaser-darwin.yml --skip=publish
+	$(eval GITHUB_TAG=$(shell git describe --abbrev=0 --tags))
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-darwin-amd64.tar.gz
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-darwin-arm64.tar.gz
+	gh release download ${GITHUB_TAG} --repo skycoin/skycoin --pattern 'checksums*'
+	cat ./dist/checksums.txt >> checksums.txt
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} --clobber ./checksums.txt
+
+github-release-windows: ## Create GitHub release for Windows (triggered by GitHub Actions)
+	.\goreleaser\goreleaser.exe --clean --config .goreleaser-windows.yml --skip=publish
+	$(eval GITHUB_TAG=$(shell git describe --abbrev=0 --tags))
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-windows-amd64.zip
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-windows-386.zip
+	gh release download ${GITHUB_TAG} --repo skycoin/skycoin --pattern 'checksums*'
+	cat ./dist/checksums.txt >> checksums.txt
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} --clobber ./checksums.txt
+
 release: ## Build electron, standalone and daemon apps. Use osarch=${osarch} to specify the platform. Example: 'make release osarch=darwin/amd64', multiple platform can be supported in this way: 'make release osarch="darwin/amd64 windows/amd64"'. Supported architectures are: darwin/amd64 windows/amd64 windows/386 linux/amd64 linux/arm, the builds are located in electron/release folder.
 	cd $(ELECTRON_DIR) && ./build.sh ${osarch}
 	@echo release files are in the folder of electron/release

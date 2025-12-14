@@ -1,0 +1,63 @@
+# GoReleaser configuration for macOS builds
+# Builds skycoin + skyhw binaries for macOS
+
+release:
+  github:
+    owner: skycoin
+    name: skycoin
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: skycoin
+    binary: skycoin
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+    main: ./cmd/skycoin/
+    ldflags: -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}}
+  
+  - id: skyhw
+    binary: skyhw
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=1
+    main: ./cmd/hardware-wallet/
+    ldflags: -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}}
+
+archives:
+  - id: archive
+    format: tar.gz
+    wrap_in_directory: false
+    name_template: 'skycoin-v{{.Version}}-{{.Os}}-{{.Arch}}'
+    builds:
+      - skycoin
+      - skyhw
+    files:
+      - CHANGELOG.md
+      - LICENSE
+      - README.md
+    allow_different_binary_count: true
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{.Tag}}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'

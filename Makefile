@@ -167,6 +167,18 @@ build-ui:  ## Builds the UI
 	cd $(GUI_STATIC_DIR) && npm run build
 
 
+snapshot: ## Build snapshot release with goreleaser (all platforms)
+	goreleaser --snapshot --clean --skip=publish --config .goreleaser-linux.yml
+
+snapshot-linux: ## Build snapshot release for Linux only
+	goreleaser --snapshot --clean --skip=publish --config .goreleaser-linux.yml
+
+snapshot-darwin: ## Build snapshot release for macOS only
+	goreleaser --snapshot --clean --skip=publish --config .goreleaser-darwin.yml
+
+snapshot-windows: ## Build snapshot release for Windows only
+	goreleaser --snapshot --clean --skip=publish --config .goreleaser-windows.yml
+
 release: ## Build electron, standalone and daemon apps. Use osarch=${osarch} to specify the platform. Example: 'make release osarch=darwin/amd64', multiple platform can be supported in this way: 'make release osarch="darwin/amd64 windows/amd64"'. Supported architectures are: darwin/amd64 windows/amd64 windows/386 linux/amd64 linux/arm, the builds are located in electron/release folder.
 	cd $(ELECTRON_DIR) && ./build.sh ${osarch}
 	@echo release files are in the folder of electron/release
@@ -187,13 +199,14 @@ release-cli: ## Build CLI apps. Use osarch=${osarch} to specify the platform. Ex
 	cd $(ELECTRON_DIR) && ./build-cli-release.sh ${osarch}
 	@echo release files are in the folder of electron/release
 
-clean-release: ## Remove all electron build artifacts
+clean-release: ## Remove all electron build artifacts and goreleaser dist
 	rm -rf $(ELECTRON_DIR)/release
 	rm -rf $(ELECTRON_DIR)/.gox_output
 	rm -rf $(ELECTRON_DIR)/.daemon_output
 	rm -rf $(ELECTRON_DIR)/.cli_output
 	rm -rf $(ELECTRON_DIR)/.standalone_output
 	rm -rf $(ELECTRON_DIR)/.electron_output
+	rm -rf ./dist
 
 clean-coverage: ## Remove coverage output files
 	rm -rf ./coverage/

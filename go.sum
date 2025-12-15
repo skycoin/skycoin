@@ -33,8 +33,8 @@ github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHk
 github.com/frankban/quicktest v1.14.6/go.mod h1:4ptaffx2x8+WTWXmUCuVU6aPUX1/Mz7zb5vbUoiM6w0=
 github.com/fsnotify/fsnotify v1.9.0 h1:2Ml+OJNzbYCTzsxtv8vKSFD9PbJjmhYF14k/jKC7S9k=
 github.com/fsnotify/fsnotify v1.9.0/go.mod h1:8jBTzvmWwFyi3Pb8djgCCO5IBqzKJ/Jwo8TRcHyHii0=
-github.com/gabriel-vasile/mimetype v1.4.11 h1:AQvxbp830wPhHTqc1u7nzoLT+ZFxGY7emj5DR5DYFik=
-github.com/gabriel-vasile/mimetype v1.4.11/go.mod h1:d+9Oxyo1wTzWdyVUPMmXFvp4F9tea18J8ufA774AB3s=
+github.com/gabriel-vasile/mimetype v1.4.12 h1:e9hWvmLYvtp846tLHam2o++qitpguFiYCKbn0w9jyqw=
+github.com/gabriel-vasile/mimetype v1.4.12/go.mod h1:d+9Oxyo1wTzWdyVUPMmXFvp4F9tea18J8ufA774AB3s=
 github.com/gin-contrib/sse v1.1.0 h1:n0w2GMuUpWDVp7qSpvze6fAu9iRxJY4Hmj6AmBOU05w=
 github.com/gin-contrib/sse v1.1.0/go.mod h1:hxRZ5gVpWMT7Z0B0gSNYqqsSCNIJMjzvm6fqCz9vjwM=
 github.com/gin-gonic/gin v1.11.0 h1:OW/6PLjyusp2PPXtyxKHU0RbX6I/l28FTdDlae5ueWk=
@@ -123,10 +123,10 @@ github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ
 github.com/sirupsen/logrus v1.9.3/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
 github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9 h1:DElGw1Fhj4amuW1KM5q8Xowosb3RiOQce0lDJw0Qv0Y=
 github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9/go.mod h1:OQz8NXVJUWEw7PWYASZ/1BIw5GXgVMTGvrCGDlZa9+k=
-github.com/skycoin/hardware-wallet-daemon v0.1.1-0.20251212180036-5c8c719ed37a h1:m30At8pasZxh3s43tl4+huAEC0fU7BWI/0wpqwcNV70=
-github.com/skycoin/hardware-wallet-daemon v0.1.1-0.20251212180036-5c8c719ed37a/go.mod h1:/KXBVRbfPNzL2p/C1T3f6iorAeCNI1yxddDJ17rAVik=
-github.com/skycoin/hardware-wallet-go v1.1.1-0.20251212175623-4306ea9c2149 h1:27Gc3y6MisMaaXx8PiS52R6SK8cqf0JgIVIWpGM5sKc=
-github.com/skycoin/hardware-wallet-go v1.1.1-0.20251212175623-4306ea9c2149/go.mod h1:B2hn3sax9grHaUZC17OFZjNIB8vtPIUzO8DWNJ9IZ+E=
+github.com/skycoin/hardware-wallet-daemon v0.1.1-0.20251214205958-0632d0772c3b h1:AOikxI498ZSA4OkHSPd5fEEP6tIkcGJrQumFATV7eDE=
+github.com/skycoin/hardware-wallet-daemon v0.1.1-0.20251214205958-0632d0772c3b/go.mod h1:yzxrmsXRFjY0BZsemDB0/wbM8wTuQtJ/4idYOMRshaY=
+github.com/skycoin/hardware-wallet-go v1.1.1-0.20251214205422-17746f44286f h1:9U4pIXNtaE6QZsfEFlC1IoHrb4ery0T6UNShTVQcsGk=
+github.com/skycoin/hardware-wallet-go v1.1.1-0.20251214205422-17746f44286f/go.mod h1:B2hn3sax9grHaUZC17OFZjNIB8vtPIUzO8DWNJ9IZ+E=
 github.com/skycoin/hardware-wallet-protob v0.0.0-20250805154629-410561e1bc2f h1:wKpqEhubs7kKtb7nqU4V8zkTxwnnwcB2797elV2z1t8=
 github.com/skycoin/hardware-wallet-protob v0.0.0-20250805154629-410561e1bc2f/go.mod h1:Dq4cqJueacNCZe0qzvcsgEkrka+Zi9MZLRoQDUPeG4k=
 github.com/skycoin/skycoin-lite v0.0.0-20190712083345-f5a3f17e6603 h1:REyOWYvI8XpSwDHy3sNBh8fdFv801wRaLUPTxtUaGKw=

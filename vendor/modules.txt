@@ -81,7 +81,7 @@ github.com/fatih/color
 ## explicit; go 1.17
 github.com/fsnotify/fsnotify
 github.com/fsnotify/fsnotify/internal
-# github.com/gabriel-vasile/mimetype v1.4.11
+# github.com/gabriel-vasile/mimetype v1.4.12
 ## explicit; go 1.21
 github.com/gabriel-vasile/mimetype
 github.com/gabriel-vasile/mimetype/internal/charset
@@ -244,11 +244,11 @@ github.com/sirupsen/logrus
 # github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
 ## explicit
 github.com/skycoin/encodertest
-# github.com/skycoin/hardware-wallet-daemon v0.1.1-0.20251212180036-5c8c719ed37a
+# github.com/skycoin/hardware-wallet-daemon v0.1.1-0.20251214205958-0632d0772c3b
 ## explicit; go 1.25.1
 github.com/skycoin/hardware-wallet-daemon/src/api
 github.com/skycoin/hardware-wallet-daemon/src/daemon
-# github.com/skycoin/hardware-wallet-go v1.1.1-0.20251212175623-4306ea9c2149
+# github.com/skycoin/hardware-wallet-go v1.1.1-0.20251214205422-17746f44286f
 ## explicit; go 1.25.1
 github.com/skycoin/hardware-wallet-go/src/cli
 github.com/skycoin/hardware-wallet-go/src/skywallet

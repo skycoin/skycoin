@@ -1,0 +1,59 @@
+# GoReleaser configuration for Windows builds  
+# Builds skycoin + skyhw binaries for Windows
+
+release:
+  github:
+    owner: skycoin
+    name: skycoin
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: skycoin
+    binary: skycoin
+    goos:
+      - windows
+    goarch:
+      - amd64
+      - 386
+    env:
+      - CGO_ENABLED=0
+    main: ./cmd/skycoin/
+    ldflags: -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}}
+  
+  - id: skyhw
+    binary: skyhw
+    goos:
+      - windows
+    goarch:
+      - amd64
+      - 386
+    env:
+      - CGO_ENABLED=1
+    main: ./cmd/hardware-wallet/
+    ldflags: -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}}
+
+archives:
+  - id: archive
+    format: zip
+    wrap_in_directory: false
+    name_template: 'skycoin-v{{.Version}}-{{.Os}}-{{.Arch}}'
+    builds:
+      - skycoin
+      - skyhw
+    allow_different_binary_count: true
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{.Tag}}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'

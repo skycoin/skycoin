@@ -1,0 +1,85 @@
+# GoReleaser configuration for Linux builds
+# Builds skycoin + skyhw binaries for multiple Linux architectures
+
+release:
+  github:
+    owner: skycoin
+    name: skycoin
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: skycoin-amd64
+    binary: skycoin
+    goos:
+      - linux
+    goarch:
+      - amd64
+    env:
+      - CGO_ENABLED=0
+    main: ./cmd/skycoin/
+    ldflags: -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}}
+  
+  - id: skyhw-amd64
+    binary: skyhw
+    goos:
+      - linux
+    goarch:
+      - amd64
+    env:
+      - CGO_ENABLED=1
+    main: ./cmd/hardware-wallet/
+    ldflags: -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}}
+
+  - id: skycoin-arm
+    binary: skycoin
+    goos:
+      - linux
+    goarch:
+      - arm
+    goarm:
+      - 7
+    env:
+      - CGO_ENABLED=0
+    main: ./cmd/skycoin/
+    ldflags: -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}}
+  
+  - id: skyhw-arm
+    binary: skyhw
+    goos:
+      - linux
+    goarch:
+      - arm
+    goarm:
+      - 7
+    env:
+      - CGO_ENABLED=1
+    main: ./cmd/hardware-wallet/
+    ldflags: -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}}
+
+archives:
+  - id: archive
+    format: tar.gz
+    wrap_in_directory: false
+    name_template: 'skycoin-v{{.Version}}-{{.Os}}-{{.Arch}}'
+    builds:
+      - skycoin-amd64
+      - skyhw-amd64
+      - skycoin-arm
+      - skyhw-arm
+    allow_different_binary_count: true
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{.Tag}}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'

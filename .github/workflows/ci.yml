@@ -90,6 +90,19 @@ jobs:
         env:
           NODE_OPTIONS: --openssl-legacy-provider
 
+      - name: Test Hardware Wallet Utilities
+        shell: bash
+        run: |
+          set -e
+          # Build hardware wallet daemon
+          go build -o skyhw-daemon ./cmd/hardware-wallet/skycoin.go
+          
+          # Test that it was compiled successfully by checking help output
+          ./skyhw-daemon help
+          ./skyhw-daemon daemon --help
+          
+          echo "Hardware wallet utilities compiled and tested successfully"
+
   darwin:
     runs-on: macos-latest
     steps:

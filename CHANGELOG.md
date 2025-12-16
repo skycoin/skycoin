@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- **Explorer & Web Wallet**
+  - `skycoin explorer` subcommand - blockchain explorer with embedded compiled UI
+  - `skycoin web` subcommand - thin client web wallet using WebAssembly (skycoin-lite)
+  - Embedded GUI sources for both wallet and explorer (Go embed directives)
+  - Explorer runs standalone on port 8001, connects to skycoin node on port 6420
+  - Web wallet provides lightweight browser-based access without full node
+
 - **Hardware Wallet Integration**
   - Hardware wallet daemon and CLI integration in `cmd/hardware-wallet/`
   - Comprehensive hardware wallet setup documentation for Linux, macOS, and Windows
@@ -58,8 +65,32 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - **Frontend/GUI**
   - Format number input fields with commas (e.g., 1,111,111 instead of 1111111)
+  - Update Chinese translations to adjust for new GUI changes
+  - Update GUI dist files (multiple frontend rebuilds)
+  - Embed bip44 account manager instead of using it as member variable
+  - Remove all unused unit test files from GUI folder
+  - General improvements for the GUI (see #2589)
   - Bump Electron from 15.2.0 to 22.3.25
   - Bump axios from 0.21.1 to 1.6.0
+  - Multiple security dependency updates:
+    - json5 from 1.0.1 to 1.0.2
+    - express from 4.17.1 to 4.18.2
+    - qs from 6.5.2 to 6.5.3
+    - decode-uri-component from 0.2.0 to 0.2.2
+    - loader-utils from 1.4.0 to 1.4.2
+    - socket.io-parser from 4.0.4 to 4.0.5
+    - moment from 2.29.1 to 2.29.4
+    - eventsource from 1.1.0 to 1.1.1
+    - nanoid from 3.1.25 to 3.3.4
+    - follow-redirects from 1.14.2 to 1.15.0
+    - async from 2.6.3 to 2.6.4
+    - minimist from 1.2.5 to 1.2.6
+    - karma from 6.3.4 to 6.3.16
+    - url-parse from 1.5.3 to 1.5.10
+    - engine.io from 4.1.1 to 4.1.2
+    - log4js from 6.3.0 to 6.4.0
+    - nth-check from 2.0.0 to 2.0.1
+    - handlebars from 4.0.11 to 4.5.3
 
 - **Flags**
   - `-max-last-blocks-count` flag to limit `/api/v1/last_blocks` results (default 256, fixes OOM panic)
@@ -91,6 +122,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - Fix newcoin config-file flag default to `config/fiber.toml`
 
 - **Frontend/GUI**
+  - Embed GUI sources into binary using Go embed directives
+  - Rebuild skycoin wallet GUI with fixes
+  - Fix embedded GUI implementation
+  - Revise embedded GUI structure
+  - Make GUI work with Node.js 12 and latest hardware wallet daemon
+  - Fix web GUI operation in Docker container
   - GUI get the uri prefix from the API
   - GUI update electron and electron builder
   - GUI General improvements for the front-end, see [#2589](https://github.com/skycoin/skycoin/pull/2589)
@@ -98,6 +135,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - Fix Node.js 20 / OpenSSL 3.0 compatibility for UI tests
   - Regenerate package-lock.json after dependency updates
   - Fix npm dependency conflict: upgrade jasmine-core to 3.10.0
+  - Update Spanish and Chinese translations
+  - Make GUI work with latest version of hardware wallet daemon
 
 - **API Changes**
   - `POST /api/v1/wallet/encrypt` encrypts wallets without 'cryptoType' field using default crypto type
@@ -134,9 +173,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **Explorer & GUI Fixes**
+  - Fix wallet balance not showing in GUI - variable shadowing bug
+  - Fix explorer opening issue in Electron
+  - Fix explorer --node-addr flag being ignored
+  - Fix missing unconfirmed transactions from `/explorer/address`
+  - Fix CalculatedHours for `/explorer/address`
+  - Fix TestDisableGUIAPI 404 message expectation
+
 - **Emergency Wipe**: #2579 Add emergency wipe option for the Skywallet
 - **Temporary Wallet Load**: #1109 Temporary wallet load feature
-- Fix explorer --node-addr flag being ignored
 - Fix CLI error message format by removing SilenceErrors
 - Fix Windows test failure in TestChooseSpendsMaximizeUxOuts
 - Fix TestPoolBroadcastMessage flaky test on 386 architecture

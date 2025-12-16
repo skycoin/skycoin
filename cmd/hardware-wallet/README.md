@@ -121,7 +121,7 @@ pkg-config --modversion libusb-1.0
    - [hidapi.dll](https://github.com/libusb/hidapi/releases)
 
 2. Place both DLLs in:
-   - Same directory as `skyhw-daemon.exe`, OR
+   - Same directory as `skyhw.exe`, OR
    - `C:\Windows\System32\`, OR
    - Any directory in your PATH
 
@@ -133,29 +133,29 @@ pkg-config --modversion libusb-1.0
 
 Run with default settings (port 9510):
 ```bash
-go run cmd/hardware-wallet/skycoin.go daemon
+skyhw daemon
 ```
 
 Run with debug logging:
 ```bash
-go run cmd/hardware-wallet/skycoin.go daemon -l debug
+skyhw daemon -l debug
 ```
 
 Specify custom port:
 ```bash
-go run cmd/hardware-wallet/skycoin.go daemon -p 9510
+skyhw daemon -p 9510
 ```
 
 ### Available Commands
 
 Show help:
 ```bash
-go run cmd/hardware-wallet/skycoin.go help
+skyhw help
 ```
 
 Show daemon help:
 ```bash
-go run cmd/hardware-wallet/skycoin.go daemon --help
+skyhw daemon --help
 ```
 
 ## Integration with Skycoin Wallet
@@ -163,7 +163,7 @@ go run cmd/hardware-wallet/skycoin.go daemon --help
 **Step 1: Start the hardware wallet daemon**
 
 ```bash
-go run cmd/hardware-wallet/skycoin.go daemon -l debug
+skyhw daemon -l debug
 ```
 
 **Step 2: Start the Skycoin wallet daemon (in another terminal)**
@@ -232,20 +232,20 @@ export CGO_CFLAGS="-I/usr/local/include"
 
 Linux/macOS:
 ```bash
-go build -o skyhw-daemon cmd/hardware-wallet/skycoin.go
+go build -o skyhw cmd/hardware-wallet/skycoin.go
 ```
 
 Windows (with MinGW):
 ```bash
 set CGO_ENABLED=1
-go build -o skyhw-daemon.exe cmd/hardware-wallet/skycoin.go
+go build -o skyhw.exe cmd/hardware-wallet/skycoin.go
 ```
 
 ### Testing
 
 Start daemon:
 ```bash
-./skyhw-daemon daemon
+skyhw daemon
 ```
 
 In another terminal, test API:

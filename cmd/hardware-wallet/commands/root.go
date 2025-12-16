@@ -17,15 +17,12 @@ import (
 	cli "github.com/skycoin/hardware-wallet-go/src/cli"
 
 	"github.com/skycoin/skycoin/src/util/logging"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo"
 )
 
 var (
-	// Version is the hardware wallet command version
-	Version = "0.1.0"
-	// Commit is the git commit hash
-	Commit = ""
-	// Branch is the git branch
-	Branch = ""
+	bv bool
+	di bool
 
 	appConfig = daemon.NewAppConfig(9510, "$HOME/.skycoin")
 )
@@ -40,9 +37,9 @@ var daemonCmd = &cobra.Command{
 		d := daemon.NewDaemon(daemon.Config{
 			App: appConfig,
 			Build: api.BuildInfo{
-				Version: Version,
-				Commit:  Commit,
-				Branch:  Branch,
+				Version: buildinfo.Version(),
+				Commit:  buildinfo.Commit(),
+				Branch:  "", // buildinfo package doesn't track branch
 			},
 		}, logger)
 
@@ -82,22 +79,54 @@ func init() {
 
 	daemonCmd.Flags().StringVarP(&appConfig.DaemonMode, "daemon-mode", "m", appConfig.DaemonMode, "Choices are: USB or EMULATOR")
 
-	daemonCmd.Version = fmt.Sprintf("%s (commit: %s, branch: %s)", Version, Commit, Branch)
+	if fmt.Sprintf("%v", buildinfo.DebugBuildInfo()) != "" {
+		RootCmd.Flags().BoolVarP(&di, "info", "d", false, "print runtime/debug.BuildInfo")
+	}
+	if fmt.Sprintf("%v", buildinfo.DBIVersion()) != "" {
+		RootCmd.Flags().BoolVarP(&bv, "bv", "b", false, "print runtime/debug.BuildInfo.Main.Version")
+	}
+	daemonCmd.Version = buildinfo.Version()
 }
 
-// RootCmd contains every daemon, cli, & newcoin
+// RootCmd contains hardware wallet daemon and CLI commands
 var RootCmd = &cobra.Command{
 	Use: func() string {
 		return strings.Split(filepath.Base(strings.ReplaceAll(strings.ReplaceAll(fmt.Sprintf("%v", os.Args), "[", ""), "]", "")), " ")[0]
 	}(),
-	Long: `
-	┌─┐┬┌─┬ ┬┌─┐┌─┐┬┌┐┌
-	└─┐├┴┐└┬┘│  │ │││││
-	└─┘┴ ┴ ┴ └─┘└─┘┴┘└┘
-	skycoin hardware wallet utilities`,
+	Long: func() (ret string) {
+		ret = `
+    ┌─┐┬┌─┬ ┬┌─┐┌─┐┬┌┐┌
+    └─┐├┴┐└┬┘│  │ │││││
+    └─┘┴ ┴ ┴ └─┘└─┘┴┘└┘
+    skycoin hardware wallet utilities`
+		if buildinfo.DBIVersion() != "" {
+			ret += fmt.Sprintf("\n%v", buildinfo.DBIVersion())
+		} else {
+			ret += fmt.Sprintf("\nversion %v", buildinfo.Version())
+		}
+		if buildinfo.Go() != "unknown" && buildinfo.Go() != "" {
+			ret += "\nbuilt with " + buildinfo.Go()
+		}
+		return ret
+	}(),
+	SilenceErrors:         true,
 	SilenceUsage:          true,
 	DisableSuggestions:    true,
 	DisableFlagsInUseLine: true,
+	Version:               buildinfo.Version(),
+	Run: func(cmd *cobra.Command, _ []string) {
+		if di {
+			fmt.Printf("%v\n", buildinfo.DebugBuildInfo())
+			return
+		}
+		if bv {
+			fmt.Printf("%v\n", buildinfo.DBIVersion())
+			return
+		}
+		if err := cmd.Help(); err != nil {
+			log.Printf("Failed to print help: %v", err)
+		}
+	},
 }
 
 // Execute executes root CLI command.

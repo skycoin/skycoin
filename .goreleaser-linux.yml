@@ -80,6 +80,19 @@ builds:
     main: ./cmd/skycoin-wallet/
     ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 
+  - id: skycoin-wallet-riscv64
+    binary: skycoin-wallet
+    goos:
+      - linux
+    goarch:
+      - riscv64
+    flags:
+      - -tags=cgo
+    env:
+      - CGO_ENABLED=1
+    main: ./cmd/skycoin-wallet/
+    ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
+
 archives:
   - id: amd64
     format: tar.gz
@@ -115,6 +128,13 @@ archives:
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
       - skycoin-wallet-386
+
+  - id: riscv64
+    format: tar.gz
+    wrap_in_directory: false
+    name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
+    builds:
+      - skycoin-wallet-riscv64
 
 checksum:
   name_template: 'checksums.txt'

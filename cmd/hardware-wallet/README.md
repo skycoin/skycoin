@@ -160,22 +160,25 @@ go run cmd/hardware-wallet/skycoin.go daemon --help
 
 ## Integration with Skycoin Wallet
 
-1. **Start the hardware wallet daemon:**
-   ```bash
-   go run cmd/hardware-wallet/skycoin.go daemon -l debug
-   ```
+**Step 1: Start the hardware wallet daemon**
 
-2. **Start the Skycoin wallet daemon** (in another terminal):
-   ```bash
-   go run . daemon --enable-gui=true --enable-all-api-sets=true
-   ```
+```bash
+go run cmd/hardware-wallet/skycoin.go daemon -l debug
+```
 
-3. **Open the wallet GUI** in your browser:
-   ```
-   http://127.0.0.1:6420
-   ```
+**Step 2: Start the Skycoin wallet daemon (in another terminal)**
 
-4. **Click "SkyWallet"** in the GUI to access hardware wallet features
+```bash
+go run . daemon --enable-gui=true --enable-all-api-sets=true
+```
+
+**Step 3: Open the wallet GUI in your browser**
+
+Navigate to: http://127.0.0.1:6420
+
+**Step 4: Access hardware wallet features**
+
+Click "SkyWallet" in the GUI
 
 ## Troubleshooting
 

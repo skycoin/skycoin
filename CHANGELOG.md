@@ -37,6 +37,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - **Newcoin/Fibercoin Enhancements**
   - `FIBER_TOML` environment variable for runtime fibercoin configuration
+  - Skycoin daemon can now run a fibercoin node by specifying `FIBER_TOML=/path/to/fibercoin/fiber.toml`
+  - Optimized newcoin and fibercoin creation process
   - Dynamic ASCII art generation using calvin.AsciiFont
   - Dynamic help menu ASCII art and coin name based on FIBER_TOML
   - Complete automated fibercoin blockchain initialization

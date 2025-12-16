@@ -16,8 +16,9 @@ import (
 	"github.com/skycoin/hardware-wallet-daemon/src/daemon"
 	cli "github.com/skycoin/hardware-wallet-go/src/cli"
 
-	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo"
+
+	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 var (

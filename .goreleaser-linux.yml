@@ -1,5 +1,5 @@
 # GoReleaser configuration for Linux builds
-# Builds skycoin + skyhw binaries for multiple Linux architectures
+# Builds skycoin-wallet binaries for multiple Linux architectures
 
 release:
   github:
@@ -11,72 +11,115 @@ before:
     - go mod tidy
 
 builds:
-  - id: skycoin-amd64
-    binary: skycoin
+  - id: skycoin-wallet-amd64
+    binary: skycoin-wallet
     goos:
       - linux
     goarch:
       - amd64
-    env:
-      - CGO_ENABLED=0
-    main: ./cmd/skycoin/
-    ldflags: -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}}
-  
-  - id: skyhw-amd64
-    binary: skyhw
-    goos:
-      - linux
-    goarch:
-      - amd64
+    flags:
+      - -tags=cgo
     env:
       - CGO_ENABLED=1
-    main: ./cmd/hardware-wallet/
-    ldflags: -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}}
+    main: ./cmd/skycoin-wallet/
+    ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 
-  - id: skycoin-arm
-    binary: skycoin
+  - id: skycoin-wallet-386
+    binary: skycoin-wallet
     goos:
       - linux
     goarch:
-      - arm
-    goarm:
-      - 7
-    env:
-      - CGO_ENABLED=0
-    main: ./cmd/skycoin/
-    ldflags: -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}}
-  
-  - id: skyhw-arm
-    binary: skyhw
-    goos:
-      - linux
-    goarch:
-      - arm
-    goarm:
-      - 7
+      - 386
+    flags:
+      - -tags=cgo
     env:
       - CGO_ENABLED=1
-    main: ./cmd/hardware-wallet/
-    ldflags: -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}}
+    main: ./cmd/skycoin-wallet/
+    ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
+
+  - id: skycoin-wallet-arm64
+    binary: skycoin-wallet
+    goos:
+      - linux
+    goarch:
+      - arm64
+    flags:
+      - -tags=cgo
+    env:
+      - CGO_ENABLED=1
+    main: ./cmd/skycoin-wallet/
+    ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
+
+  - id: skycoin-wallet-arm
+    binary: skycoin-wallet
+    goos:
+      - linux
+    goarch:
+      - arm
+    goarm:
+      - 6
+    flags:
+      - -tags=cgo
+    env:
+      - CGO_ENABLED=1
+    main: ./cmd/skycoin-wallet/
+    ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
+
+  - id: skycoin-wallet-armhf
+    binary: skycoin-wallet
+    goos:
+      - linux
+    goarch:
+      - arm
+    goarm:
+      - 7
+    flags:
+      - -tags=cgo
+    env:
+      - CGO_ENABLED=1
+    main: ./cmd/skycoin-wallet/
+    ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 
 archives:
-  - id: archive
+  - id: amd64
     format: tar.gz
     wrap_in_directory: false
-    name_template: 'skycoin-v{{.Version}}-{{.Os}}-{{.Arch}}'
+    name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
-      - skycoin-amd64
-      - skyhw-amd64
-      - skycoin-arm
-      - skyhw-arm
-    allow_different_binary_count: true
+      - skycoin-wallet-amd64
+
+  - id: arm64
+    format: tar.gz
+    wrap_in_directory: false
+    name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
+    builds:
+      - skycoin-wallet-arm64
+
+  - id: arm
+    format: tar.gz
+    wrap_in_directory: false
+    name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
+    builds:
+      - skycoin-wallet-arm
+
+  - id: armhf
+    format: tar.gz
+    wrap_in_directory: false
+    name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}hf'
+    builds:
+      - skycoin-wallet-armhf
+
+  - id: 386
+    format: tar.gz
+    wrap_in_directory: false
+    name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
+    builds:
+      - skycoin-wallet-386
 
 checksum:
   name_template: 'checksums.txt'
-
 snapshot:
-  name_template: "{{.Tag}}-next"
-
+  name_template: "{{ .Tag }}-next"
 changelog:
   sort: asc
   filters:

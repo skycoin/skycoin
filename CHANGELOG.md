@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Hardware wallet daemon and CLI integration in `cmd/hardware-wallet/`
+- Comprehensive hardware wallet setup documentation for Linux, macOS, and Windows
+- GitHub Actions workflow for automated releases on tag push
+- GoReleaser configurations for multi-platform builds (Linux, macOS, Windows)
+  - Linux: amd64, 386, arm64, arm, armhf
+  - macOS: amd64, arm64
+  - Windows: amd64, 386, arm64
+- CI testing for hardware wallet utilities with libusb dependency
+- Changelog generator script (`ci_scripts/changelog.sh`) using GitHub CLI
 - Add `/api/v1/wallet/xpub` API endpoint to get xpub key of a bip44 wallet.
 - Add `/api/v1/transactions/num` to get total transactions number
 - Add param `private-keys` to CLI commands `walletCreate`, `walletCreateTemp`, and `walletNewAddresses`.
@@ -28,13 +37,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `-max-incoming-connection` flag to control the maximum allowed incoming connections.
 - Add `qr_uri_prefix` field to `/api/v1/health` endpoint.
 
-### Fixed
+### Changed
 
-- #2579 Add emergency wipe option for the Skywallet. 
-- #1109 Temporary wallet load feature
-
-### changed
-
+- Implement buildinfo-based versioning for `cmd/skycoin-wallet/` and `cmd/hardware-wallet/`
+- Update GoReleaser configurations to match skywire release structure and naming conventions
+- Update GoReleaser ldflags to use buildinfo package for version injection
+- Remove documentation files from release archives
+- Hardware wallet binary renamed from `skyhw-daemon` to `skyhw`
 - Move package `src/wallet/crypto` to `src/cipher/crypto` as each sub-package in `src/wallet` folder
   represents a wallet type we support. Since `src/wallet/crypto` is not a wallet type, it may confuse people.
   Therefore, it will be moved to `src/cipher/crypto`.
@@ -62,6 +71,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - CLI command walletKeyExport -p flag is replaced with --path, and -p will be used as a shorthand of --password.
 - CLI command `encryptWallet/decryptWallet` will only return none-sensitive data. Data like the seed, secrets and private keys will no longer be returned.
 - Include change addresses for a bip44 wallet of the endpoint `/api/v1/wallet`.
+
+### Fixed
+
+- #2579 Add emergency wipe option for the Skywallet. 
+- #1109 Temporary wallet load feature
 
 ### Removed
 - Removed endpoint `/api/v2/metrics`. The prometheus dependency was removed, this endpoint will no long be supported. 

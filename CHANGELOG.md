@@ -16,7 +16,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   - Web wallet provides lightweight browser-based access without full node
 
 - **Hardware Wallet Integration**
-  - Hardware wallet daemon and CLI integration in `cmd/hardware-wallet/`
+  - Hardware wallet daemon and CLI integration in `cmd/hardware-wallet/` (binary: `skyhw`)
+  - Hardware wallet binary (`skyhw`) included in Linux amd64 releases
   - Comprehensive hardware wallet setup documentation for Linux, macOS, and Windows
   - CI testing for hardware wallet utilities with libusb dependency
   - Restrict hardware-wallet to linux/amd64 only (build tag)

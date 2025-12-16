@@ -1,6 +1,6 @@
-# SkyWallet Hardware Wallet Daemon
+# SkyWallet Hardware Wallet Utilities
 
-Command-line daemon for managing SkyWallet hardware wallet operations.
+Utilities for managing SkyWallet hardware wallet operations.
 
 ## Prerequisites
 
@@ -37,16 +37,19 @@ brew install libusb hidapi
 On Linux, you need udev rules to allow non-root access and unbind the kernel driver.
 
 **Quick Setup:**
-```bash
-# 1. Copy udev rules (from skycoin main repo)
-sudo cp udev/51-skywallet.rules /etc/udev/rules.d/
 
-# 2. Reload udev
-sudo udevadm control --reload-rules
-sudo udevadm trigger
+1. Copy udev rules (from skycoin main repo):
+   ```bash
+   sudo cp udev/51-skywallet.rules /etc/udev/rules.d/
+   ```
 
-# 3. Unplug and replug your SkyWallet device
-```
+2. Reload udev:
+   ```bash
+   sudo udevadm control --reload-rules
+   sudo udevadm trigger
+   ```
+
+3. Unplug and replug your SkyWallet device
 
 **Manual udev rule creation:**
 ```bash
@@ -65,21 +68,24 @@ sudo udevadm trigger
 ```
 
 **Verify setup:**
-```bash
-# Check device detected
-lsusb | grep 313a:0001
-# Should show: ID 313a:0001 SkycoinFoundation SKYWALLET
 
-# Check permissions (replace XXX/YYY with bus/device numbers from lsusb)
-ls -l /dev/bus/usb/XXX/YYY
-# Should show: crw-rw-rw- or crw-rw-r--+
-```
+1. Check device detected:
+   ```bash
+   lsusb | grep 313a:0001
+   ```
+   Should show: `ID 313a:0001 SkycoinFoundation SKYWALLET`
+
+2. Check permissions (replace XXX/YYY with bus/device numbers from lsusb):
+   ```bash
+   ls -l /dev/bus/usb/XXX/YYY
+   ```
+   Should show: `crw-rw-rw-` or `crw-rw-r--+`
 
 **Troubleshooting "libusb: bad access [code -3]":**
 
 If you still get access errors, manually unbind the kernel driver:
+
 ```bash
-# Find and unbind usbhid driver
 INTERFACE=$(find /sys/bus/usb/devices -type l -name "driver" 2>/dev/null | \
   while read link; do \
     iface=$(dirname "$link"); \
@@ -97,11 +103,14 @@ echo "$INTERFACE" | sudo tee /sys/bus/usb/drivers/usbhid/unbind
 macOS allows direct USB HID access without special permissions. Just ensure libusb and hidapi are installed via Homebrew (see Prerequisites).
 
 **If running into issues:**
-```bash
-# Verify libraries installed
-brew list libusb hidapi
 
-# Check library paths
+Verify libraries installed:
+```bash
+brew list libusb hidapi
+```
+
+Check library version:
+```bash
 pkg-config --modversion libusb-1.0
 ```
 
@@ -122,24 +131,30 @@ pkg-config --modversion libusb-1.0
 
 ### Start the daemon
 
+Run with default settings (port 9510):
 ```bash
-# Run with default settings (port 9510)
 go run cmd/hardware-wallet/skycoin.go daemon
+```
 
-# Run with debug logging
+Run with debug logging:
+```bash
 go run cmd/hardware-wallet/skycoin.go daemon -l debug
+```
 
-# Specify custom port
+Specify custom port:
+```bash
 go run cmd/hardware-wallet/skycoin.go daemon -p 9510
 ```
 
 ### Available Commands
 
+Show help:
 ```bash
-# Show help
 go run cmd/hardware-wallet/skycoin.go help
+```
 
-# Show daemon help
+Show daemon help:
+```bash
 go run cmd/hardware-wallet/skycoin.go daemon --help
 ```
 
@@ -185,11 +200,11 @@ go run cmd/hardware-wallet/skycoin.go daemon --help
 
 ### Linux: Check Kernel Driver Status
 
+Check if usbhid is still bound:
 ```bash
-# See if usbhid is still bound
 find /sys/bus/usb/devices -name "*313a*" -type d -exec ls -l {}/driver \; 2>/dev/null
-# Should show "No such file" (driver unbound) or nothing
 ```
+Should show "No such file" (driver unbound) or nothing.
 
 ### Windows: Missing DLL Errors
 
@@ -212,22 +227,26 @@ export CGO_CFLAGS="-I/usr/local/include"
 
 ### Building
 
+Linux/macOS:
 ```bash
-# Linux/macOS
 go build -o skyhw-daemon cmd/hardware-wallet/skycoin.go
+```
 
-# Windows (with MinGW)
+Windows (with MinGW):
+```bash
 set CGO_ENABLED=1
 go build -o skyhw-daemon.exe cmd/hardware-wallet/skycoin.go
 ```
 
 ### Testing
 
+Start daemon:
 ```bash
-# Start daemon
 ./skyhw-daemon daemon
+```
 
-# In another terminal, test API
+In another terminal, test API:
+```bash
 curl http://localhost:9510/api/v1/available
 ```
 
@@ -240,6 +259,5 @@ curl http://localhost:9510/api/v1/available
 
 ## Support
 
-- Hardware Wallet Repository: https://github.com/0pcom/hardware-wallet-go
-- Daemon Repository: https://github.com/0pcom/hardware-wallet-daemon
-- Skycoin Main Repository: https://github.com/0pcom/skycoin
+- Hardware Wallet Repository: https://github.com/skycoin/hardware-wallet-go
+- Daemon Repository: https://github.com/skycoin/hardware-wallet-daemon

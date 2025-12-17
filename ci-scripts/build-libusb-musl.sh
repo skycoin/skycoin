@@ -31,7 +31,7 @@ tar -xzf "${LIBUSB_VERSION}.tar.gz"
 cd "libusb-${LIBUSB_VERSION#v}"
 
 # Configure and build
-./autogen.sh --no-configure
+./autogen.sh
 ./configure \
     --host="${TOOLCHAIN_PREFIX}" \
     CC="${SYSROOT}/bin/${TOOLCHAIN_PREFIX}-gcc" \

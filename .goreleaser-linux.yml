@@ -1,6 +1,8 @@
 # GoReleaser configuration for Linux builds
 # Builds skycoin-wallet binaries for multiple Linux architectures
 
+version: 2
+
 release:
   github:
     owner: skycoin
@@ -115,7 +117,7 @@ builds:
 archives:
   - id: amd64
     format: tar.gz
-    wrap_in_directory: false
+    rlcp: true
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
       - skycoin-amd64
@@ -123,43 +125,36 @@ archives:
 
   - id: arm64
     format: tar.gz
-    wrap_in_directory: false
+    rlcp: true
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
       - skycoin-arm64
 
   - id: arm
     format: tar.gz
-    wrap_in_directory: false
+    rlcp: true
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
       - skycoin-arm
 
   - id: armhf
     format: tar.gz
-    wrap_in_directory: false
+    rlcp: true
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}hf'
     builds:
       - skycoin-armhf
 
   - id: 386
     format: tar.gz
-    wrap_in_directory: false
+    rlcp: true
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
       - skycoin-386
 
-  - id: riscv64
-    format: tar.gz
-    wrap_in_directory: false
-    name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
-    builds:
-      - skycoin-riscv64
-
 checksum:
   name_template: 'checksums.txt'
 snapshot:
-  name_template: "{{ .Tag }}-next"
+  version_template: "{{ .Tag }}-next"
 changelog:
   sort: asc
   filters:

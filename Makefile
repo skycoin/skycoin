@@ -180,26 +180,26 @@ build-ui:  ## Builds the UI
 
 
 snapshot: ## Build snapshot release with goreleaser (all platforms)
-	goreleaser --snapshot --clean --skip=publish --config .goreleaser-linux.yml
+	go run github.com/goreleaser/goreleaser/v2@main --snapshot --clean --skip=publish --config .goreleaser-linux.yml
 
 snapshot-linux: ## Build snapshot release for Linux only
-	goreleaser --snapshot --clean --skip=publish --config .goreleaser-linux.yml
+	go run github.com/goreleaser/goreleaser/v2@main --snapshot --clean --skip=publish --config .goreleaser-linux.yml
 
 snapshot-darwin: ## Build snapshot release for macOS only
-	goreleaser --snapshot --clean --skip=publish --config .goreleaser-darwin.yml
+	go run github.com/goreleaser/goreleaser/v2@main --snapshot --clean --skip=publish --config .goreleaser-darwin.yml
 
 snapshot-windows: ## Build snapshot release for Windows only
-	goreleaser --snapshot --clean --skip=publish --config .goreleaser-windows.yml
+	go run github.com/goreleaser/goreleaser/v2@main --snapshot --clean --skip=publish --config .goreleaser-windows.yml
 
 github-prepare-release:
 	$(eval GITHUB_TAG=$(shell git describe --abbrev=0 --tags | sed 's/-.*//'))
 	sed '/^## ${GITHUB_TAG}$$/,/^## .*/!d;//d;/^$$/d' ./CHANGELOG.md > releaseChangelog.md
 
 github-release: github-prepare-release ## Create GitHub release for Linux (triggered by GitHub Actions on tag push)
-	goreleaser --clean --config .goreleaser-linux.yml --release-notes releaseChangelog.md
+	go run github.com/goreleaser/goreleaser/v2@main --clean --config .goreleaser-linux.yml --release-notes releaseChangelog.md
 
 github-release-darwin: ## Create GitHub release for macOS (triggered by GitHub Actions)
-	goreleaser --clean --config .goreleaser-darwin.yml --skip=publish
+	go run github.com/goreleaser/goreleaser/v2@main --clean --config .goreleaser-darwin.yml --skip=publish
 	$(eval GITHUB_TAG=$(shell git describe --abbrev=0 --tags))
 	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-darwin-amd64.tar.gz
 	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-darwin-arm64.tar.gz
@@ -208,7 +208,7 @@ github-release-darwin: ## Create GitHub release for macOS (triggered by GitHub A
 	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} --clobber ./checksums.txt
 
 github-release-windows: ## Create GitHub release for Windows (triggered by GitHub Actions)
-	.\goreleaser\goreleaser.exe --clean --config .goreleaser-windows.yml --skip=publish
+	go run github.com/goreleaser/goreleaser/v2@main --clean --config .goreleaser-windows.yml --skip=publish
 	$(eval GITHUB_TAG=$(shell git describe --abbrev=0 --tags))
 	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-windows-amd64.zip
 	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-windows-386.zip

@@ -1,6 +1,8 @@
 # GoReleaser configuration for Windows builds  
 # Builds skycoin-wallet binaries for Windows
 
+version: 2
+
 release:
   github:
     owner: skycoin
@@ -9,6 +11,7 @@ release:
 before:
   hooks:
     - go mod tidy
+    - go mod vendor
 
 builds:
   - id: skycoin-wallet
@@ -27,7 +30,7 @@ builds:
 archives:
   - id: archive
     format: zip
-    wrap_in_directory: false
+    rlcp: true
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
       - skycoin-wallet
@@ -36,7 +39,7 @@ archives:
 checksum:
   name_template: 'checksums.txt'
 snapshot:
-  name_template: "{{ .Tag }}-next"
+  version_template: "{{ .Tag }}-next"
 changelog:
   sort: asc
   filters:

@@ -21,7 +21,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libusb-1.0-0-dev
-          sudo snap install goreleaser --classic
       
       - name: Releasing
         env:
@@ -44,7 +43,6 @@ jobs:
       
       - name: Install Requirements
         run: |
-          brew install goreleaser
           brew install libusb
           brew install hidapi
       
@@ -68,8 +66,6 @@ jobs:
       - name: Install Requirements
         shell: pwsh
         run: |
-          Invoke-WebRequest "https://github.com/goreleaser/goreleaser/releases/download/v2.0.1/goreleaser_Windows_x86_64.zip" -OutFile goreleaser.zip
-          Expand-Archive goreleaser.zip
           choco install make
       
       - name: Releasing

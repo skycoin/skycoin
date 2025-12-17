@@ -15,6 +15,9 @@ if [ -z "$ARCH" ] || [ -z "$TOOLCHAIN_PREFIX" ] || [ -z "$SYSROOT" ]; then
     exit 1
 fi
 
+# Convert SYSROOT to absolute path (configure requires absolute paths)
+SYSROOT=$(realpath "${SYSROOT}")
+
 LIBUSB_VERSION="v1.0.27"
 BUILD_DIR="/tmp/libusb-build-${ARCH}"
 

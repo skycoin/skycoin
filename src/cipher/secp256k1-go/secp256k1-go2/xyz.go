@@ -72,7 +72,7 @@ func (xyz *XYZ) Equals(b *XYZ) bool {
 
 func (xyz *XYZ) precomp(w int) (pre []XYZ) { //nolint:unparam
 	var d XYZ
-	pre = make([]XYZ, (1 << (uint(w) - 2)))
+	pre = make([]XYZ, (1 << (uint(w) - 2))) //nolint:gosec
 	pre[0] = *xyz
 	pre[0].Double(&d)
 	for i := 1; i < len(pre); i++ {

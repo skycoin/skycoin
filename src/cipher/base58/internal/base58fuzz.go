@@ -1,3 +1,4 @@
+// Package base58fuzz provides fuzz testing for base58 encoding.
 package base58fuzz
 
 import (

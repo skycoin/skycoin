@@ -1,0 +1,35 @@
+<app-modal class="modal" [headline]="'wallet.unlock.unlock-title' | translate"
+           [dialog]="dialogRef"
+           [disableDismiss]="disableDismiss"
+           [loadingProgress]="loadingProgress">
+
+  <div *ngIf="showConfirmSeedWarning" class="alert-box">
+    <div class="title">{{ 'wallet.unlock.confirmation-warning-title' | translate }}</div>
+    <div>{{ 'wallet.unlock.confirmation-warning-text1' | translate }}</div>
+    <br />
+    <div>
+      {{ 'wallet.unlock.confirmation-warning-text2-1' | translate }}
+      <span class="link" (click)="delete()">{{ 'wallet.unlock.confirmation-warning-text2-2' | translate }}</span>
+    </div>
+  </div>
+
+  <div [formGroup]="form">
+    <div class="form-field">
+      <label for="seed">{{ 'wallet.unlock.seed' | translate }}</label>
+      <textarea formControlName="seed" id="seed" row="2"></textarea>
+    </div>
+  </div>
+
+  <div class="form-field -on-small-and-below-only" *ngIf="showSlowMobileInfo">
+    <label class="slow-mobile-info">{{ 'common.slow-on-mobile' | translate}}</label>
+  </div>
+  
+  <div class="-buttons">
+    <app-button (action)="closePopup()" [disabled]="disableDismiss">
+      {{ 'wallet.unlock.cancel-button' | translate }}
+    </app-button>
+    <app-button #unlock (action)="unlockWallet()" class="primary" [disabled]="!form.valid">
+      {{ 'wallet.unlock.unlock-button' | translate }}
+    </app-button>
+  </div>
+</app-modal>

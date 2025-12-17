@@ -18,6 +18,7 @@ import (
 // URI: /api/v1/network/connections
 // Method: GET
 // Args:
+//
 //	addr - An IP:Port string
 func connectionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -68,8 +69,9 @@ func NewConnections(dconns []daemon.Connection) Connections {
 // URI: /api/v1/network/connections
 // Method: GET
 // Args:
-//	states: [optional] comma-separated list of connection states ("pending", "connected" or "introduced"). Defaults to "connected,introduced"
-//  direction: [optional] "outgoing" or "incoming". If not provided, both are included.
+//
+//		states: [optional] comma-separated list of connection states ("pending", "connected" or "introduced"). Defaults to "connected,introduced"
+//	 direction: [optional] "outgoing" or "incoming". If not provided, both are included.
 func connectionsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -193,6 +195,7 @@ func exchgConnectionsHandler(gateway Gatewayer) http.HandlerFunc {
 // URI: /api/v1/network/connection/disconnect
 // Method: POST
 // Args:
+//
 //	id: ID of the connection
 func disconnectHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -213,7 +216,7 @@ func disconnectHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
-		if err := gateway.DisconnectByGnetID(uint64(id)); err != nil {
+		if err := gateway.DisconnectByGnetID(id); err != nil {
 			switch err {
 			case daemon.ErrConnectionNotExist:
 				wh.Error404(w, "")

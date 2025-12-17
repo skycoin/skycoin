@@ -12,7 +12,7 @@ import (
 )
 
 func TestNewTransactionInputsFromUxBalance(t *testing.T) {
-	headTime := uint64(time.Now().Unix())
+	headTime := uint64(time.Now().Unix()) //nolint:gosec // Time conversion
 
 	uxa := []coin.UxOut{
 		{

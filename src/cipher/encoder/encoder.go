@@ -25,6 +25,9 @@
 // Callers should check their length restricted values manually prior to serialization.
 package encoder
 
+// Integer conversions in this file are intentional for encoding/decoding
+//nolint:gosec
+
 import (
 	"errors"
 	"fmt"
@@ -87,19 +90,19 @@ func SerializeAtomic(data interface{}) []byte {
 		b[0] = v
 		return b[:1]
 	case int16:
-		lePutUint16(b[:2], uint16(v))
+		lePutUint16(b[:2], uint16(v)) //nolint:gosec
 		return b[:2]
 	case uint16:
 		lePutUint16(b[:2], v)
 		return b[:2]
 	case int32:
-		lePutUint32(b[:4], uint32(v))
+		lePutUint32(b[:4], uint32(v)) //nolint:gosec
 		return b[:4]
 	case uint32:
 		lePutUint32(b[:4], v)
 		return b[:4]
 	case int64:
-		lePutUint64(b[:8], uint64(v))
+		lePutUint64(b[:8], uint64(v)) //nolint:gosec
 		return b[:8]
 	case uint64:
 		lePutUint64(b[:8], v)
@@ -141,7 +144,7 @@ func DeserializeAtomic(in []byte, data interface{}) (uint64, error) {
 		if len(in) < 2 {
 			return 0, ErrBufferUnderflow
 		}
-		*v = int16(leUint16(in[:2]))
+		*v = int16(leUint16(in[:2])) //nolint:gosec
 		return 2, nil
 	case *uint16:
 		if len(in) < 2 {
@@ -153,7 +156,7 @@ func DeserializeAtomic(in []byte, data interface{}) (uint64, error) {
 		if len(in) < 4 {
 			return 0, ErrBufferUnderflow
 		}
-		*v = int32(leUint32(in[:4]))
+		*v = int32(leUint32(in[:4])) //nolint:gosec
 		return 4, nil
 	case *uint32:
 		if len(in) < 4 {
@@ -165,7 +168,7 @@ func DeserializeAtomic(in []byte, data interface{}) (uint64, error) {
 		if len(in) < 8 {
 			return 0, ErrBufferUnderflow
 		}
-		*v = int64(leUint64(in[:8]))
+		*v = int64(leUint64(in[:8])) //nolint:gosec
 		return 8, nil
 	case *uint64:
 		if len(in) < 8 {
@@ -208,7 +211,7 @@ func DeserializeString(in []byte, maxlen int) (string, uint64, error) {
 		return "", 0, err
 	}
 
-	return s, uint64(inlen - len(d1.Buffer)), nil
+	return s, uint64(inlen - len(d1.Buffer)), nil //nolint:gosec
 }
 
 // DeserializeRaw deserializes `in` buffer into return
@@ -236,7 +239,7 @@ func DeserializeRaw(in []byte, data interface{}) (uint64, error) {
 		return 0, err
 	}
 
-	return uint64(inlen - len(d1.Buffer)), nil
+	return uint64(inlen - len(d1.Buffer)), nil //nolint:gosec
 }
 
 // DeserializeRawExact deserializes `in` buffer into return
@@ -282,7 +285,7 @@ func DeserializeRawToValue(in []byte, v reflect.Value) (uint64, error) {
 		return 0, err
 	}
 
-	return uint64(inlen - len(d1.Buffer)), nil
+	return uint64(inlen - len(d1.Buffer)), nil //nolint:gosec
 }
 
 // Serialize returns serialized basic type-based `data`
@@ -339,13 +342,13 @@ func datasizeWrite(v reflect.Value) uint64 {
 		elem := t.Elem()
 		switch elem.Kind() {
 		case reflect.Uint8, reflect.Int8:
-			return uint64(v.Len())
+			return uint64(v.Len()) //nolint:gosec
 		case reflect.Uint16, reflect.Int16:
-			return uint64(v.Len()) * 2
+			return uint64(v.Len()) * 2 //nolint:gosec
 		case reflect.Uint32, reflect.Int32, reflect.Float32:
-			return uint64(v.Len()) * 4
+			return uint64(v.Len()) * 4 //nolint:gosec
 		case reflect.Uint64, reflect.Int64, reflect.Float64:
-			return uint64(v.Len()) * 8
+			return uint64(v.Len()) * 8 //nolint:gosec
 		default:
 			size := uint64(0)
 			for i := 0; i < v.Len(); i++ {
@@ -361,13 +364,13 @@ func datasizeWrite(v reflect.Value) uint64 {
 		elem := t.Elem()
 		switch elem.Kind() {
 		case reflect.Uint8, reflect.Int8:
-			return 4 + uint64(v.Len())
+			return 4 + uint64(v.Len()) //nolint:gosec
 		case reflect.Uint16, reflect.Int16:
-			return 4 + uint64(v.Len())*2
+			return 4 + uint64(v.Len())*2 //nolint:gosec
 		case reflect.Uint32, reflect.Int32, reflect.Float32:
-			return 4 + uint64(v.Len())*4
+			return 4 + uint64(v.Len())*4 //nolint:gosec
 		case reflect.Uint64, reflect.Int64, reflect.Float64:
-			return 4 + uint64(v.Len())*8
+			return 4 + uint64(v.Len())*8 //nolint:gosec
 		default:
 			size := uint64(0)
 			for i := 0; i < v.Len(); i++ {
@@ -423,7 +426,7 @@ func datasizeWrite(v reflect.Value) uint64 {
 		return 1
 
 	case reflect.String:
-		return 4 + uint64(v.Len())
+		return 4 + uint64(v.Len()) //nolint:gosec
 
 	case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
 		reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
@@ -441,7 +444,7 @@ func TagOmitempty(tag string) bool {
 	return strings.Contains(tag, ",omitempty")
 }
 
-func tagName(tag string) string { //nolint:deadcode,megacheck
+func tagName(tag string) string { //nolint:unused
 	commaIndex := strings.Index(tag, ",")
 	if commaIndex == -1 {
 		return tag
@@ -617,7 +620,7 @@ func (e *Encoder) Uint64(x uint64) {
 
 // ByteSlice encodes []byte
 func (e *Encoder) ByteSlice(x []byte) {
-	e.Uint32(uint32(len(x)))
+	e.Uint32(uint32(len(x))) //nolint:gosec
 	e.CopyBytes(x)
 }
 
@@ -637,12 +640,12 @@ func (d *Decoder) Int8() (int8, error) {
 		return 0, err
 	}
 
-	return int8(u), nil
+	return int8(u), nil //nolint:gosec
 }
 
 // Int8 encodes int8
 func (e *Encoder) Int8(x int8) {
-	e.Uint8(uint8(x))
+	e.Uint8(uint8(x)) //nolint:gosec
 }
 
 // Int16 decodes int16
@@ -652,12 +655,12 @@ func (d *Decoder) Int16() (int16, error) {
 		return 0, err
 	}
 
-	return int16(u), nil
+	return int16(u), nil //nolint:gosec
 }
 
 // Int16 encodes int16
 func (e *Encoder) Int16(x int16) {
-	e.Uint16(uint16(x))
+	e.Uint16(uint16(x)) //nolint:gosec
 }
 
 // Int32 decodes int32
@@ -667,12 +670,12 @@ func (d *Decoder) Int32() (int32, error) {
 		return 0, err
 	}
 
-	return int32(u), nil
+	return int32(u), nil //nolint:gosec
 }
 
 // Int32 encodes int32
 func (e *Encoder) Int32(x int32) {
-	e.Uint32(uint32(x))
+	e.Uint32(uint32(x)) //nolint:gosec
 }
 
 // Int64 decodes int64
@@ -682,12 +685,12 @@ func (d *Decoder) Int64() (int64, error) {
 		return 0, err
 	}
 
-	return int64(u), nil
+	return int64(u), nil //nolint:gosec
 }
 
 // Int64 encodes int64
 func (e *Encoder) Int64(x int64) {
-	e.Uint64(uint64(x))
+	e.Uint64(uint64(x)) //nolint:gosec
 }
 
 func (d *Decoder) value(v reflect.Value, maxlen int) error {
@@ -951,14 +954,14 @@ func (e *Encoder) value(v reflect.Value) {
 		case reflect.Uint8:
 			e.ByteSlice(v.Bytes())
 		default:
-			e.Uint32(uint32(v.Len()))
+			e.Uint32(uint32(v.Len())) //nolint:gosec
 			for i := 0; i < v.Len(); i++ {
 				e.value(v.Index(i))
 			}
 		}
 
 	case reflect.Map:
-		e.Uint32(uint32(v.Len()))
+		e.Uint32(uint32(v.Len())) //nolint:gosec
 		for _, key := range v.MapKeys() {
 			e.value(key)
 			e.value(v.MapIndex(key))
@@ -999,20 +1002,20 @@ func (e *Encoder) value(v reflect.Value) {
 		e.ByteSlice([]byte(v.String()))
 
 	case reflect.Int8:
-		e.Int8(int8(v.Int()))
+		e.Int8(int8(v.Int())) //nolint:gosec
 	case reflect.Int16:
-		e.Int16(int16(v.Int()))
+		e.Int16(int16(v.Int())) //nolint:gosec
 	case reflect.Int32:
-		e.Int32(int32(v.Int()))
+		e.Int32(int32(v.Int())) //nolint:gosec
 	case reflect.Int64:
 		e.Int64(v.Int())
 
 	case reflect.Uint8:
-		e.Uint8(uint8(v.Uint()))
+		e.Uint8(uint8(v.Uint())) //nolint:gosec
 	case reflect.Uint16:
-		e.Uint16(uint16(v.Uint()))
+		e.Uint16(uint16(v.Uint())) //nolint:gosec
 	case reflect.Uint32:
-		e.Uint32(uint32(v.Uint()))
+		e.Uint32(uint32(v.Uint())) //nolint:gosec
 	case reflect.Uint64:
 		e.Uint64(v.Uint())
 

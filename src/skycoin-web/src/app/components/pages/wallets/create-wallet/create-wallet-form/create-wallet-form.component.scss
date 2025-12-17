@@ -1,0 +1,122 @@
+@import '../../../../../../theme/_variables.scss';
+
+.red-disclaimer-box {
+  color: $red;
+  font-size: 12px;
+  padding: 0 10px;
+  line-height: 1.5;
+}
+
+.white-disclaimer-box {
+  color: $white;
+  font-size: 12px;
+  padding: 0 10px;
+  line-height: 1.5;
+  opacity: 0.75;
+}
+
+.-valid-box{
+  display: flex;
+
+  .-valid{
+    bottom: -6px;
+    left: -7px;
+    position: relative;
+    align-self: flex-end;
+    display: none;
+  }
+}
+
+.-valid-seed-container.-expand {
+  margin-right: -14px;
+  .-valid{
+    display: block;
+  }
+}
+
+label[for=seed] {
+  display: flex;
+
+  > span:last-child {
+    flex: 1;
+  }
+
+  .generators {
+    text-align: right;
+
+    span {
+      cursor: pointer;
+      color: $blue;
+    }
+
+    mat-icon {
+      width: 13px;
+      height: 10px;
+      font-size: 13px;
+      position: relative;
+      top: 2px;
+    }
+
+    .divider {
+      padding: 0 5px;
+      color: $grey-dark;
+    }
+  }
+
+  .-white-text {
+    span {
+      color: white !important;
+    }
+  }
+}
+
+@media (max-width: $max-very-small-width) {
+  .-very-small-screen-alert-box {
+    margin: 0px -24px;
+    padding: 24px !important;
+  }
+}
+
+.-alert-box {
+  background-color: #ffdede;
+  padding: 15px;
+  margin-bottom: 20px;
+
+  @media (min-width: $max-very-small-width+1) {
+    & {
+      display: flex;
+    }
+  }
+
+  .title {
+    font-size: 20px;
+
+    @media (max-width: $max-very-small-width) {
+      >span {
+        position: relative;
+        top: -5px;
+      }
+
+      mat-icon {
+        margin-top: 0px;
+      }
+    }
+  }
+
+  mat-icon {
+    margin-right: 10px;
+    margin-top: 5px;
+    animation: blink 1s linear infinite;
+  }
+
+  @keyframes blink {
+    50% {
+      opacity: 0.2;
+    }
+  }
+
+  mat-checkbox {
+    margin-top: 10px;
+    display: inline-block;
+  }
+}

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -106,11 +105,11 @@ func UserHome() string {
 
 // LoadJSON load json file
 func LoadJSON(filename string, thing interface{}) error {
-	file, err := os.Open(filename)
+	file, err := os.Open(filename) //nolint:gosec
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer file.Close() //nolint:errcheck
 
 	dec := json.NewDecoder(file)
 	dec.UseNumber()
@@ -133,11 +132,11 @@ func SaveJSONSafe(filename string, thing interface{}, mode os.FileMode) error {
 		return err
 	}
 	flags := os.O_WRONLY | os.O_CREATE | os.O_EXCL
-	f, err := os.OpenFile(filename, flags, mode)
+	f, err := os.OpenFile(filename, flags, mode) //nolint:gosec
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 	n, err := f.Write(b)
 	if n != len(b) && err != nil {
 		err = errors.New("Failed to save complete file")
@@ -159,11 +158,11 @@ func SaveBinary(filename string, data []byte, mode os.FileMode) error {
 	// Write the new file to a temporary
 	dataHash := cipher.SumSHA256(data)
 	tmpname := filename + ".tmp." + dataHash.Hex()[:8]
-	if err := ioutil.WriteFile(tmpname, data, mode); err != nil {
+	if err := os.WriteFile(tmpname, data, mode); err != nil {
 		return err
 	}
 
-	if err := ioutil.WriteFile(filename, data, mode); err != nil {
+	if err := os.WriteFile(filename, data, mode); err != nil {
 		return err
 	}
 
@@ -271,7 +270,7 @@ func DetermineResourcePath(staticDir string, resourceDir string, devDir string) 
 
 // Copy copies file. Will overwrite dst if dst exists.
 func Copy(dst, src string) (err error) {
-	f, err := os.Open(src)
+	f, err := os.Open(src) //nolint:gosec
 	if err != nil {
 		return err
 	}
@@ -283,7 +282,7 @@ func Copy(dst, src string) (err error) {
 		}
 	}()
 
-	out, err := os.Create(dst)
+	out, err := os.Create(dst) //nolint:gosec // Loading user-specified file path
 	if err != nil {
 		return err
 	}
@@ -313,10 +312,10 @@ func Exists(fn string) (bool, error) {
 
 // IsWritable checks if the file is writable
 func IsWritable(name string) bool {
-	f, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	f, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600) //nolint:gosec // Loading user-specified file path
 	if err != nil && os.IsPermission(err) {
 		return false
 	}
-	f.Close()
+	_ = f.Close() //nolint:errcheck
 	return true
 }

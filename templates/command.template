@@ -1,0 +1,25 @@
+/*
+{{.CoinName}} daemon
+*/
+package main
+
+/*
+CODE GENERATED AUTOMATICALLY WITH FIBER COIN CREATOR
+AVOID EDITING THIS MANUALLY
+edit the template instead at: template/command.template
+and then run cmd/newcoin
+*/
+
+import (
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/flags"
+
+	"github.com/skycoin/skycoin/cmd/{{.CoinName}}/commands"
+)
+
+func init() {
+	flags.InitFlags(commands.RootCmd, true)
+}
+
+func main() {
+	commands.RootCmd.Execute()
+}

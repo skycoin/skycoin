@@ -66,7 +66,7 @@ func newCSRFTokenWithTime(expiresAt time.Time) (string, error) {
 	}
 
 	h := hmac.New(sha256.New, csrfSecretKey)
-	_, err = h.Write([]byte(tokenJSON))
+	_, err = h.Write(tokenJSON)
 	if err != nil {
 		return "", err
 	}
@@ -91,7 +91,7 @@ func verifyCSRFToken(headerToken string) error {
 	}
 
 	h := hmac.New(sha256.New, csrfSecretKey)
-	_, err = h.Write([]byte(signingString))
+	_, err = h.Write(signingString)
 	if err != nil {
 		return err
 	}
@@ -119,7 +119,8 @@ func verifyCSRFToken(headerToken string) error {
 // URI: /api/v1/csrf
 // Method: GET
 // Response:
-//  csrf_token: CSRF token to use in POST requests
+//
+//	csrf_token: CSRF token to use in POST requests
 func getCSRFToken(disabled bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {

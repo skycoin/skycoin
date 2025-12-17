@@ -1,0 +1,170 @@
+on: [pull_request]
+name: CI
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.4'
+          cache: true
+          cache-dependency-path: go.sum
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.18.1
+          cache: 'npm'
+          cache-dependency-path: src/gui/static/package-lock.json
+
+      - name: Install Dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y xvfb libusb-1.0-0-dev
+
+      - name: Start Xvfb
+        run: |
+          Xvfb -ac :99 -screen 0 1280x1024x16 &
+          echo "DISPLAY=:99" >> $GITHUB_ENV
+
+      - name: Vendor Dependencies
+        run: go mod vendor -v
+
+      - name: Install linters
+        run: make install-linters
+
+      - uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.6.1
+
+      - name: Format Check
+        run: |
+          make format
+          git diff --exit-code || (echo "Code is not formatted. Run 'make format' locally." && exit 1)
+
+      - name: Check newcoin Template
+        run: make check-newcoin
+
+      - name: Install UI Dependencies
+        run: make install-deps-ui
+
+      - name: Lint UI
+        run: make lint-ui
+        env:
+          NODE_OPTIONS: --openssl-legacy-provider
+
+      - name: Test UI
+        run: make test-ui
+        env:
+          NODE_OPTIONS: --openssl-legacy-provider
+
+      - name: Build UI
+        run: make build-ui
+        env:
+          NODE_OPTIONS: --openssl-legacy-provider
+
+      - name: Run Unit Tests (amd64)
+        run: make test-amd64
+
+      - name: Run Unit Tests (386)
+        run: make test-386
+
+      - name: Run Integration Tests
+        run: |
+          make integration-test-stable
+          make integration-test-stable-disable-wallet-api
+          make integration-test-stable-enable-seed-api
+          make integration-test-stable-disable-gui
+          make integration-test-stable-disable-csrf
+          make integration-test-stable-auth
+        env:
+          NODE_OPTIONS: --openssl-legacy-provider
+
+      - name: Test Hardware Wallet Utilities
+        shell: bash
+        run: |
+          set -e
+          # Build hardware wallet daemon
+          go build -o skyhw-daemon ./cmd/hardware-wallet/skycoin.go
+          
+          # Test that it was compiled successfully by checking help output
+          ./skyhw-daemon help
+          ./skyhw-daemon daemon --help
+          
+          echo "Hardware wallet utilities compiled and tested successfully"
+
+  darwin:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.4'
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Install golangci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
+            | sh -s -- -b $(go env GOPATH)/bin v2.6.1
+        shell: bash
+
+      - name: Vendor Dependencies
+        run: go mod vendor -v
+
+      - name: Install linters
+        run: make install-linters
+
+      - name: Lint Go
+        run: make lint
+
+      - name: Format Check
+        run: |
+          make format
+          git diff --exit-code || (echo "Code is not formatted. Run 'make format' locally." && exit 1)
+
+      - name: Check newcoin Template
+        run: make check-newcoin
+
+      - name: Run Unit Tests
+        run: make test
+
+      - name: Run Unit Tests (386)
+        run: make test-386
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.4'
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Install Requirements
+        run: choco install make
+
+      - name: Vendor Dependencies
+        run: go mod vendor -v
+
+      - name: Check newcoin Template
+        run: make check-newcoin
+
+      - name: Run Unit Tests (amd64)
+        run: make test-amd64
+
+      - name: Run Unit Tests
+        run: make test

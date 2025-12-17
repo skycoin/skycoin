@@ -1,3 +1,4 @@
+// Package bip44wallet implements BIP44 hierarchical deterministic wallets.
 package bip44wallet
 
 import (
@@ -21,7 +22,7 @@ type bip44Account struct {
 	bip44.Account
 	Name     string          // Account name
 	Index    uint32          // Account index
-	CoinType wallet.CoinType // Account coin type, determins the way to generate addresses
+	CoinType wallet.CoinType // Account coin type, determines the way to generate addresses
 	Chains   []bip44Chain    // Chains, external chain with index value of 0, and internal(change) chain with index value of 1.
 }
 
@@ -131,7 +132,7 @@ func (a *bip44Account) syncSecrets(ss wallet.Secrets) error {
 	return nil
 }
 
-func (a *bip44Account) dropLastEntriesN(chain, n uint32) error {
+func (a *bip44Account) dropLastEntriesN(chain, n uint32) error { //nolint:unused
 	switch chain {
 	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
 		return a.Chains[chain].dropLastEntriesN(n)
@@ -208,7 +209,7 @@ func (a bip44Account) entries(chain uint32) (wallet.Entries, error) {
 func (a bip44Account) entriesLen(chain uint32) (uint32, error) {
 	switch chain {
 	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
-		return uint32(len(a.Chains[chain].Entries)), nil
+		return uint32(len(a.Chains[chain].Entries)), nil //nolint:gosec // Entry count conversion
 	default:
 		return 0, fmt.Errorf("invalid chain index: %d", chain)
 	}
@@ -217,7 +218,7 @@ func (a bip44Account) entriesLen(chain uint32) (uint32, error) {
 func (a bip44Account) entryAt(chain, i uint32) (wallet.Entry, error) {
 	switch chain {
 	case bip44.ExternalChainIndex, bip44.ChangeChainIndex:
-		if i >= uint32(len(a.Chains[chain].Entries)) {
+		if i >= uint32(len(a.Chains[chain].Entries)) { //nolint:gosec // Entry index validation
 			return wallet.Entry{}, fmt.Errorf("entry index %d out of range", i)
 		}
 		return a.Chains[chain].Entries[i], nil
@@ -279,7 +280,7 @@ func (c *bip44Chain) newAddresses(num uint32, seckey *bip32.PrivateKey, addressF
 	}
 
 	var addrs []cipher.Addresser
-	initLen := uint32(len(c.Entries))
+	initLen := uint32(len(c.Entries)) //nolint:gosec // Current entries count
 	_, err := mathutil.AddUint32(initLen, num)
 	if err != nil {
 		return nil, fmt.Errorf("can not create %d more addresses, current addresses number %d, err: %v", num, initLen, err)
@@ -321,7 +322,7 @@ func (c *bip44Chain) syncSecrets(ss wallet.Secrets, privateKey *bip32.PrivateKey
 	for i, e := range c.Entries {
 		addr := e.Address.String()
 		if _, ok := ss.Get(addr); !ok {
-			k, err := secretFromPrivateKey(privateKey, c.ChainIndex, uint32(i))
+			k, err := secretFromPrivateKey(privateKey, c.ChainIndex, uint32(i)) //nolint:gosec // Index conversion
 			if err != nil {
 				return err
 			}
@@ -353,8 +354,8 @@ func (c bip44Chain) clone() bip44Chain {
 	}
 }
 
-func (c *bip44Chain) dropLastEntriesN(n uint32) error {
-	l := uint32(len(c.Entries))
+func (c *bip44Chain) dropLastEntriesN(n uint32) error { //nolint:unused
+	l := uint32(len(c.Entries)) //nolint:gosec // Entries count conversion
 	if n > l {
 		return errors.New("bip44Chain.dropLastEntriesN param 'n' is out of range")
 	}
@@ -369,7 +370,7 @@ type bip44Accounts struct {
 }
 
 func (a bip44Accounts) len() uint32 {
-	return uint32(len(a.accounts))
+	return uint32(len(a.accounts)) //nolint:gosec // Account count conversion
 }
 
 func (a *bip44Accounts) newAddresses(account, chain, num uint32) ([]cipher.Addresser, error) {
@@ -383,7 +384,7 @@ func (a *bip44Accounts) newAddresses(account, chain, num uint32) ([]cipher.Addre
 
 // account returns the pinter of the account by index,
 // this should not be used outside the accounts management in case of
-// unsafe behaviour.
+// unsafe behavior.
 func (a bip44Accounts) account(index uint32) (*bip44Account, error) {
 	accountLen := len(a.accounts)
 	if int(index) >= accountLen {
@@ -423,11 +424,11 @@ func (a *bip44Accounts) new(opts bip44AccountCreateOptions) (uint32, error) {
 func (a *bip44Accounts) nextIndex() (uint32, error) {
 	// Try to get next account index, return error if the
 	// account is full.
-	if _, err := mathutil.AddUint32(uint32(len(a.accounts)), 1); err != nil {
+	if _, err := mathutil.AddUint32(uint32(len(a.accounts)), 1); err != nil { //nolint:gosec // Account count conversion
 		return 0, errors.New("maximum bip44 account number reached")
 	}
 
-	return uint32(len(a.accounts)), nil
+	return uint32(len(a.accounts)), nil //nolint:gosec // Account count conversion
 }
 
 func (a bip44Accounts) clone() accountManager {
@@ -541,4 +542,17 @@ func (a *bip44Accounts) reset() {
 	for _, act := range a.accounts {
 		act.reset()
 	}
+}
+
+func (a *bip44Accounts) getXPubKey(accountIndex, chainIndex uint32) (string, error) {
+	if int(accountIndex) >= len(a.accounts) {
+		return "", errors.New("account index out of bounds")
+	}
+	act := a.accounts[accountIndex]
+	if int(chainIndex) >= len(act.Chains) {
+		return "", errors.New("chain index out of bounds")
+	}
+
+	c := act.Chains[chainIndex]
+	return c.PubKey.String(), nil
 }

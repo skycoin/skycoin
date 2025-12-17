@@ -88,9 +88,10 @@ func parseBoolFlag(v string) (bool, error) {
 // Method: GET
 // URI: /api/v1/block
 // Args:
-// 	hash [transaction hash string]
-//  seq [int]
-// 	Note: only one of hash or seq is allowed
+//
+//		hash [transaction hash string]
+//	 seq [int]
+//		Note: only one of hash or seq is allowed
 func blockHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -202,10 +203,11 @@ func blockHandler(gateway Gatewayer) http.HandlerFunc {
 // Method: GET, POST
 // URI: /api/v1/blocks
 // Args:
-//	start [int]
-//	end [int]
-//  seqs [comma separated list of ints]
-//  verbose [bool]
+//
+//		start [int]
+//		end [int]
+//	 seqs [comma separated list of ints]
+//	 verbose [bool]
 func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet && r.Method != http.MethodPost {
@@ -339,8 +341,9 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 // Method: GET
 // URI: /api/v1/last_blocks
 // Args:
-//	num [int]
-//  verbose [bool]
+//
+//		num [int]
+//	 verbose [bool]
 func lastBlocksHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {

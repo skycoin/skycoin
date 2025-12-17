@@ -264,6 +264,6 @@ func setHashPairInDepth(tx *dbutil.Tx, depth uint64, hps []coin.HashPair) error 
 	return dbutil.PutBucketValue(tx, TreeBkt, dbutil.Itob(depth), buf)
 }
 
-func allPairs(hp coin.HashPair) bool {
+func allPairs(_ coin.HashPair) bool {
 	return true
 }

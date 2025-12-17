@@ -1,102 +1,53 @@
-# Installing go
+# Installing Go
 
-Skycoin supports go1.14+.
+Skycoin requires **Go 1.23 or later**.
 
-## For OSX
-First you need to have `homebrew` installed, if you don't have it yet.
+## Official Installation Guide
 
-```sh
-/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-```
+Follow the official Go installation instructions for your operating system:
 
-Then, let's install go's latest version.
+**https://go.dev/doc/install**
 
-```sh
-brew install go
-```
+The official guide covers:
+- Download and installation for Windows, macOS, and Linux
+- Setting up your environment
+- Verifying your installation
+- Getting started with Go
 
-Lastly, let's install Mercurial and Bazaar
+## Quick Installation Links
 
-```sh
-brew install mercurial bzr
-```
+- **Linux/macOS/Windows:** Download from https://go.dev/dl/
+- **Package Managers:**
+  - macOS (Homebrew): `brew install go`
+  - Ubuntu/Debian: `sudo apt install golang-go` (check version meets minimum requirement)
+  - Arch Linux: `sudo pacman -S go`
+  - Fedora: `sudo dnf install golang`
 
-## For linux
-We need to install linux dependencies on the correct distribution.
+## Verify Installation
 
-#### Ubuntu and Debian
-```sh
-sudo apt-get update && sudo apt-get upgrade -y
-sudo apt-get install -y curl git mercurial make binutils gcc bzr bison libgmp3-dev screen gcc build-essential
-```
-
-#### Centos and Fedora
-```sh
-sudo yum update -y && sudo yum upgrade -y
-sudo yum install -y git curl make gcc mercurial binutils bzr bison screen
-if [[ "$(cat /etc/redhat-release | grep -o CentOS)" == "CentOS" ]]; then sudo yum install -y build-essential libgmp3-dev; else sudo yum groupinstall -y "Development Tools" "Development Libraries" && sudo yum install -y gmp; fi;
-```
-#### Archlinux
-First update the system and ensure the dependancies are met
-```sh
-sudo pacman -Syy && sudo pacman -Syu
-sudo pacman -S base-devel
-```
-
-Install the latest version of go on Archlinux with:
-```sh
-sudo pacman -S go
-```
-
-## Install Go manually
-### Install Go
-
-Let's go to home directory and declare `go`'s version that you want to download.
+After installing, verify your Go version meets the minimum requirement:
 
 ```sh
-cd ~
-export GOV=1.14 # golang version
+$ go version
+go version go1.23.0 linux/amd64  # or higher
 ```
 
-After that, let's download and uncompress golang source.
+## Module Support
 
-```sh
-curl -sS https://storage.googleapis.com/golang/go$GOV.linux-amd64.tar.gz > go$GOV.linux-amd64.tar.gz
-tar xvf go$GOV.linux-amd64.tar.gz
-rm go$GOV.linux-amd64.tar.gz
-```
+Skycoin uses Go modules, so you **do not need to set up GOPATH** or clone the repository to a specific directory. You can:
 
-lastly, let's install `go`.
+- Run directly: `go run github.com/skycoin/skycoin@develop`
+- Install to your PATH: `go install github.com/skycoin/skycoin@develop`
+- Clone anywhere: `git clone https://github.com/skycoin/skycoin && cd skycoin && go build`
 
-```sh
-sudo mv go /usr/local/go
-sudo ln -s /usr/local/go/bin/go /usr/local/bin/go
-sudo ln -s /usr/local/go/bin/godoc /usr/local/bin/godoc
-sudo ln -s /usr/local/go/bin/gofmt /usr/local/bin/gofmt
-```
+## Troubleshooting
 
-Note: Find any golang source version at [Go Website](https://golang.org/dl/)
+If you encounter issues:
 
-### Setup your GOPATH
-The $GOPATH environment variable specifies the location of your workspace. It defaults to a directory named `go` inside your home directory, so $HOME/go on Unix.
+1. Ensure Go version is 1.23 or later: `go version`
+2. Check Go is in your PATH: `which go` (Unix) or `where go` (Windows)
+3. Clear module cache if needed: `go clean -modcache`
 
-Create your workspace directory with it's respective inner folders:
-
-```sh
-mkdir -p $HOME/go
-mkdir -p $HOME/go/bin
-mkdir -p $HOME/go/src
-mkdir -p $HOME/go/pkg
-```
-
-Setup $GOPATH variable, add it to ~/.bashrc. After editing, run `source ~/.bashrc` or open a new tab.
-
-```sh
-export GOROOT=/usr/local/go
-export GOPATH=$HOME/go
-export GOBIN=$GOPATH/bin
-export PATH=$PATH:$GOBIN
-```
-
-## Test your Go installation
-Create and run the hello.go application described here: https://golang.org/doc/install#testing to check if your Go installation is working.
+For more help, see:
+- [Go Installation Troubleshooting](https://go.dev/doc/install#troubleshooting)
+- [Go FAQ](https://go.dev/doc/faq)

@@ -70,11 +70,11 @@ func makeCorruptFilePath(path string) (string, error) {
 // shaFileID return the first 8 bytes of the SHA1 hash of the file,
 // hex-encoded
 func shaFileID(path string) (string, error) {
-	fi, err := os.Open(path)
+	fi, err := os.Open(path) //nolint:gosec
 	if err != nil {
 		return "", err
 	}
-	defer fi.Close()
+	defer fi.Close() //nolint:errcheck
 
 	h := sha256.New()
 	if _, err := io.Copy(h, fi); err != nil {

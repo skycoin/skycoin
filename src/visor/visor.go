@@ -388,7 +388,7 @@ func (vs *Visor) CreateAndExecuteBlock() (coin.SignedBlock, error) {
 
 	err := vs.db.Update("CreateAndExecuteBlock", func(tx *dbutil.Tx) error {
 		var err error
-		sb, err = vs.createBlock(tx, uint64(time.Now().UTC().Unix()))
+		sb, err = vs.createBlock(tx, uint64(time.Now().UTC().Unix())) //nolint:gosec
 		if err != nil {
 			return err
 		}
@@ -924,7 +924,7 @@ func (vs *Visor) getTransaction(tx *dbutil.Tx, txnHash cipher.SHA256) (*Transact
 		return &Transaction{
 			Transaction: utxn.Transaction,
 			Status:      NewUnconfirmedTransactionStatus(),
-			Time:        uint64(timeutil.NanoToTime(utxn.Received).Unix()),
+			Time:        uint64(timeutil.NanoToTime(utxn.Received).Unix()), //nolint:gosec // Time conversion
 		}, nil
 	}
 
@@ -992,7 +992,7 @@ type AddrsFilter struct {
 }
 
 // Match implements the TxFilter interface, this actually won't be used, only the 'Addrs' member is used.
-func (af AddrsFilter) Match(tx *Transaction) bool { return true }
+func (af AddrsFilter) Match(_ *Transaction) bool { return true }
 
 // ConfirmedTxFilter filters transactions base on whether they are confirmed.
 type ConfirmedTxFilter struct {
@@ -1496,9 +1496,10 @@ func (vs Visor) GetHeadBlockTime() (uint64, error) {
 
 // GetUxOutByID gets UxOut by hash id.
 // return values:
-//   first: uxout of the provided id, return nil if does not exist, no error would be returned.
-//   second: current head block time
-//   third: error
+//
+//	first: uxout of the provided id, return nil if does not exist, no error would be returned.
+//	second: current head block time
+//	third: error
 func (vs Visor) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, uint64, error) {
 	var outs []historydb.UxOut
 	var headTime uint64
@@ -1530,9 +1531,10 @@ func (vs Visor) GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, uint64, error)
 
 // GetSpentOutputsForAddresses gets all the spent outputs of a set of addresses
 // return values:
-//   first: addresses related uxouts
-//   second: current head block time
-//   third: error
+//
+//	first: addresses related uxouts
+//	second: current head block time
+//	third: error
 func (vs Visor) GetSpentOutputsForAddresses(addresses []cipher.Address) ([][]historydb.UxOut, uint64, error) {
 	out := make([][]historydb.UxOut, len(addresses))
 	var headTime uint64
@@ -1897,7 +1899,7 @@ func (vs *Visor) VerifyTxnVerbose(txn *coin.Transaction, signed transaction.TxnS
 			// For confirmed transactions, use the previous block time to calculate hours and fees,
 			// except for the genesis block which has no previous block and has no inputs nor fees.
 			feeCalcTime = 0
-			if historyTxn.BlockSeq > 0 {
+			if historyTxn != nil && historyTxn.BlockSeq > 0 {
 				if isTxnConfirmed {
 					prevBlock, err := vs.blockchain.GetSignedBlockBySeq(tx, historyTxn.BlockSeq-1)
 					if err != nil {
@@ -2280,7 +2282,7 @@ func (tf *TransactionsFinder) AddressesActivity(addrs []cipher.Addresser) ([]boo
 
 		// Check if the addresses appears in the unconfirmed pool
 		// NOTE: if this needs to be optimized, add an index to the unconfirmed pool
-		return tf.unconfirmed.ForEach(tx, func(h cipher.SHA256, ut UnconfirmedTransaction) error {
+		return tf.unconfirmed.ForEach(tx, func(_ cipher.SHA256, ut UnconfirmedTransaction) error {
 			// Only transaction outputs need to be checked; if the address is associated
 			// with an input, it must have appeared in a transaction in the blockchain history
 			for _, o := range ut.Transaction.Out {

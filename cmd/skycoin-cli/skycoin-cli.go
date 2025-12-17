@@ -1,40 +1,43 @@
-/*
-cli is a command line client for interacting with a skycoin node and offline wallet management
-*/
+// Package main provides the skycoin-cli tool.
 package main
 
 import (
-	"fmt"
 	"os"
 
-	"github.com/sirupsen/logrus"
+	cc "github.com/ivanpirog/coloredcobra"
+	"github.com/spf13/cobra"
 
-	"github.com/skycoin/skycoin/src/cli"
-	"github.com/skycoin/skycoin/src/util/logging"
-
-	// register the supported wallets
-	_ "github.com/skycoin/skycoin/src/wallet/bip44wallet"
-	_ "github.com/skycoin/skycoin/src/wallet/collection"
-	_ "github.com/skycoin/skycoin/src/wallet/deterministic"
-	_ "github.com/skycoin/skycoin/src/wallet/xpubwallet"
+	"github.com/skycoin/skycoin/cmd/skycoin-cli/commands"
 )
 
+func init() {
+	commands.RootCmd.SetUsageTemplate(help)
+	commands.RootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
+}
+
 func main() {
-	logging.SetLevel(logrus.WarnLevel)
-
-	cfg, err := cli.LoadConfig()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	skyCLI, err := cli.NewCLI(cfg)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	if err := skyCLI.Execute(); err != nil {
+	cc.Init(&cc.Config{
+		RootCmd:         commands.RootCmd,
+		Headings:        cc.HiBlue + cc.Bold,
+		Commands:        cc.HiBlue + cc.Bold,
+		CmdShortDescr:   cc.HiBlue,
+		Example:         cc.HiBlue + cc.Italic,
+		ExecName:        cc.HiBlue + cc.Bold,
+		Flags:           cc.HiBlue + cc.Bold,
+		FlagsDescr:      cc.HiBlue,
+		NoExtraNewlines: true,
+		NoBottomNewline: true,
+	})
+	if err := commands.RootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
+
+const help = "{{if .HasAvailableSubCommands}}{{end}} {{if gt (len .Aliases) 0}}\r\n\r\n" +
+	"{{.NameAndAliases}}{{end}}{{if .HasAvailableSubCommands}}" +
+	"Available Commands:{{range .Commands}}  {{if and (ne .Name \"completion\") .IsAvailableCommand}}\r\n  " +
+	"{{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}\r\n\r\n" +
+	"Flags:\r\n" +
+	"{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}\r\n\r\n" +
+	"Global Flags:\r\n" +
+	"{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}\r\n\r\n"

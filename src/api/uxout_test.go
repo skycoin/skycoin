@@ -30,7 +30,7 @@ func TestGetUxOutByID(t *testing.T) {
 	}
 
 	// make unspent uxout
-	headTime := uint64(time.Now().UTC().Unix())
+	headTime := uint64(time.Now().UTC().Unix()) //nolint:gosec
 	uxout, _ := makeUxOutWithSecret(t)
 	unspentUxOut := historydb.UxOut{Out: uxout}
 	unspentUxOutHTTPResponse, err := readable.NewSpentOutput(&unspentUxOut, headTime)
@@ -206,7 +206,7 @@ func TestGetAddrUxOuts(t *testing.T) {
 		address string
 	}
 
-	headTime := uint64(time.Now().UTC().Unix())
+	headTime := uint64(time.Now().UTC().Unix()) //nolint:gosec
 	uxout, seckey := makeUxOutWithSecret(t)
 	addressForUxout := cipher.MustAddressFromSecKey(seckey)
 

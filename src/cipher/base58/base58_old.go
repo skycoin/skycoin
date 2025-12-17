@@ -11,7 +11,7 @@ import (
 	"math/big"
 )
 
-//alphabet used by Bitcoins
+// alphabet used by Bitcoins
 var alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
 var (
@@ -26,7 +26,7 @@ var (
 // oldBase58 type to hold the oldBase58 string
 type oldBase58 string
 
-//reverse alphabet used for quckly converting base58 strings into numbers
+// reverse alphabet used for quckly converting base58 strings into numbers
 var revalp = map[string]int{
 	"1": 0, "2": 1, "3": 2, "4": 3, "5": 4, "6": 5, "7": 6, "8": 7, "9": 8, "A": 9,
 	"B": 10, "C": 11, "D": 12, "E": 13, "F": 14, "G": 15, "H": 16, "J": 17, "K": 18, "L": 19,
@@ -76,7 +76,7 @@ func (b oldBase58) ToInt() (int, error) {
 	return answer, nil
 }
 
-//ToHex converts base58 to hex bytes
+// ToHex converts base58 to hex bytes
 func (b oldBase58) ToHex() ([]byte, error) {
 	value, err := b.ToBig() //convert to big.Int
 	if err != nil {
@@ -178,7 +178,7 @@ func oldHex2Base58(val []byte) oldBase58 {
 
 	//looking for zeros at the beginning
 	i := 0
-	for i = 0; val[i] == 0 && i < len(val); i++ {
+	for i = 0; val[i] == 0 && i < len(val); i++ { //nolint:revive
 	}
 	answer := ""
 	for j := 0; j < i; j++ { //adds zeroes from the front

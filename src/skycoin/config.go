@@ -1,8 +1,8 @@
 package skycoin
 
 import (
+	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
 	"math"
 	"os"
@@ -10,6 +10,9 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/pelletier/go-toml/v2"
+	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/cipher/crypto"
 	"github.com/skycoin/skycoin/src/coin"
@@ -28,7 +31,7 @@ import (
 )
 
 var (
-	help = false
+	help = false //nolint:unused
 )
 
 // Config records skycoin node and build config
@@ -122,7 +125,7 @@ type NodeConfig struct {
 	// Launch System Default Browser after client startup
 	LaunchBrowser bool
 
-	// Data directory holds app data -- defaults to ~/.skycoin
+	// Data directory holds app data
 	DataDirectory string
 	// GUI directory contains assets for the HTML interface
 	GUIDirectory string
@@ -213,6 +216,16 @@ type NodeConfig struct {
 	blockchainSeckey cipher.SecKey
 
 	Fiber readable.FiberConfig
+
+	// Paths for auto-updating fiber.toml
+	fiberTomlPath     string // Set from FIBER_TOML env
+	genesisWalletPath string // Set from GENESIS env
+	// Distribution addresses from fiber.toml [params] section
+	distributionAddresses      []string // Loaded from fiber.Params.DistributionAddresses
+	distributionMaxCoinSupply  uint64   // Loaded from fiber.Params.MaxCoinSupply
+	distributionUnlockedCount  uint64   // Loaded from fiber.Params.InitialUnlockedCount
+	distributionUnlockRate     uint64   // Loaded from fiber.Params.UnlockAddressRate
+	distributionUnlockInterval uint64   // Loaded from fiber.Params.UnlockTimeInterval
 }
 
 // NewNodeConfig returns a new node config instance
@@ -284,8 +297,8 @@ func NewNodeConfig(mode string, node fiber.NodeConfig) NodeConfig {
 		LaunchBrowser: false,
 		// Data directory holds app data
 		DataDirectory: node.DataDirectory,
-		// Web GUI static resources
-		GUIDirectory: "./src/gui/static/",
+		// Web GUI static resources - now embedded
+		GUIDirectory: "", //"./src/gui/static/",
 		// Logging
 		ColorLog:        true,
 		LogLevel:        "INFO",
@@ -355,10 +368,10 @@ func NewNodeConfig(mode string, node fiber.NodeConfig) NodeConfig {
 }
 
 func (c *Config) postProcess() error {
-	if help {
-		flag.Usage()
-		os.Exit(0)
-	}
+	//	if help {
+	//		flag.Usage()
+	//		os.Exit(0)
+	//	}
 
 	var err error
 	if c.Node.GenesisSignatureStr != "" {
@@ -455,7 +468,7 @@ func (c *Config) postProcess() error {
 		c.Node.LaunchBrowser = false
 	}
 
-	if c.Node.EnableGUI {
+	if c.Node.EnableGUI && c.Node.GUIDirectory != "" {
 		c.Node.GUIDirectory = file.ResolveResourceDirectory(c.Node.GUIDirectory)
 	}
 
@@ -507,17 +520,13 @@ func (c *Config) postProcess() error {
 		return errors.New("-max-decimals-create-block exceeds MaxUint8")
 	}
 
-	if c.Node.MaxLastBlocksCount > math.MaxUint64 {
-		return fmt.Errorf("-max-last-blocks-count exceeds math.MaxUint64")
-	}
-
-	c.Node.UnconfirmedVerifyTxn.BurnFactor = uint32(c.Node.unconfirmedBurnFactor)
-	c.Node.UnconfirmedVerifyTxn.MaxTransactionSize = uint32(c.Node.maxUnconfirmedTransactionSize)
-	c.Node.UnconfirmedVerifyTxn.MaxDropletPrecision = uint8(c.Node.unconfirmedMaxDropletPrecision)
-	c.Node.CreateBlockVerifyTxn.BurnFactor = uint32(c.Node.createBlockBurnFactor)
-	c.Node.CreateBlockVerifyTxn.MaxTransactionSize = uint32(c.Node.createBlockMaxTransactionSize)
-	c.Node.CreateBlockVerifyTxn.MaxDropletPrecision = uint8(c.Node.createBlockMaxDropletPrecision)
-	c.Node.MaxBlockTransactionsSize = uint32(c.Node.maxBlockSize)
+	c.Node.UnconfirmedVerifyTxn.BurnFactor = uint32(c.Node.unconfirmedBurnFactor)                  //nolint:gosec
+	c.Node.UnconfirmedVerifyTxn.MaxTransactionSize = uint32(c.Node.maxUnconfirmedTransactionSize)  //nolint:gosec
+	c.Node.UnconfirmedVerifyTxn.MaxDropletPrecision = uint8(c.Node.unconfirmedMaxDropletPrecision) //nolint:gosec
+	c.Node.CreateBlockVerifyTxn.BurnFactor = uint32(c.Node.createBlockBurnFactor)                  //nolint:gosec
+	c.Node.CreateBlockVerifyTxn.MaxTransactionSize = uint32(c.Node.createBlockMaxTransactionSize)  //nolint:gosec // Config conversion
+	c.Node.CreateBlockVerifyTxn.MaxDropletPrecision = uint8(c.Node.createBlockMaxDropletPrecision) //nolint:gosec
+	c.Node.MaxBlockTransactionsSize = uint32(c.Node.maxBlockSize)                                  //nolint:gosec // Config conversion
 
 	if c.Node.UnconfirmedVerifyTxn.MaxTransactionSize < params.MinTransactionSize {
 		return fmt.Errorf("-max-txn-size-unconfirmed must be >= params.MinTransactionSize (%d)", params.MinTransactionSize)
@@ -643,29 +652,29 @@ func validateAPISets(opt string, apiSets []string) error {
 	return nil
 }
 
-// RegisterFlags binds CLI flags to config values
-func (c *NodeConfig) RegisterFlags() {
-	flag.BoolVar(&help, "help", false, "Show help")
-	flag.BoolVar(&c.DisablePEX, "disable-pex", c.DisablePEX, "disable PEX peer discovery")
-	flag.BoolVar(&c.DownloadPeerList, "download-peerlist", c.DownloadPeerList, "download a peers.txt from -peerlist-url")
-	flag.StringVar(&c.PeerListURL, "peerlist-url", c.PeerListURL, "with -download-peerlist=true, download a peers.txt file from this url")
-	flag.BoolVar(&c.DisableOutgoingConnections, "disable-outgoing", c.DisableOutgoingConnections, "Don't make outgoing connections")
-	flag.BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't allow incoming connections")
-	flag.BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
-	flag.BoolVar(&c.EnableGUI, "enable-gui", c.EnableGUI, "Enable GUI")
-	flag.BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable CSRF check")
-	flag.BoolVar(&c.DisableHeaderCheck, "disable-header-check", c.DisableHeaderCheck, "disables the host, origin and referer header checks.")
-	flag.BoolVar(&c.DisableCSP, "disable-csp", c.DisableCSP, "disable content-security-policy in http response")
-	flag.StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
-	flag.IntVar(&c.Port, "port", c.Port, "Port to run application on")
+// RegisterFlags binds CLI flags to config values using Cobra
+func (c *NodeConfig) RegisterFlags(cmd *cobra.Command) {
+	//	cmd.Flags().BoolVar(&help, "help", false, "Show help")
+	cmd.Flags().BoolVar(&c.DisablePEX, "disable-pex", c.DisablePEX, "disable PEX peer discovery")
+	cmd.Flags().BoolVar(&c.DownloadPeerList, "download-peerlist", c.DownloadPeerList, "download a peers.txt from -peerlist-url")
+	cmd.Flags().StringVar(&c.PeerListURL, "peerlist-url", c.PeerListURL, "with -download-peerlist=true, download a peers.txt file from this url")
+	cmd.Flags().BoolVar(&c.DisableOutgoingConnections, "disable-outgoing", c.DisableOutgoingConnections, "Don't make outgoing connections")
+	cmd.Flags().BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't allow incoming connections")
+	cmd.Flags().BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
+	cmd.Flags().BoolVar(&c.EnableGUI, "enable-gui", c.EnableGUI, "Enable GUI")
+	cmd.Flags().BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable CSRF check")
+	cmd.Flags().BoolVar(&c.DisableHeaderCheck, "disable-header-check", c.DisableHeaderCheck, "disables the host, origin and referer header checks.")
+	cmd.Flags().BoolVar(&c.DisableCSP, "disable-csp", c.DisableCSP, "disable content-security-policy in http response")
+	cmd.Flags().StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
+	cmd.Flags().IntVar(&c.Port, "port", c.Port, "Port to run application on")
 
-	flag.BoolVar(&c.WebInterface, "web-interface", c.WebInterface, "enable the web interface")
-	flag.IntVar(&c.WebInterfacePort, "web-interface-port", c.WebInterfacePort, "port to serve web interface on")
-	flag.StringVar(&c.WebInterfaceAddr, "web-interface-addr", c.WebInterfaceAddr, "addr to serve web interface on")
-	flag.StringVar(&c.WebInterfaceCert, "web-interface-cert", c.WebInterfaceCert, "skycoind.cert file for web interface HTTPS. If not provided, will autogenerate or use skycoind.cert in --data-dir")
-	flag.StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "skycoind.key file for web interface HTTPS. If not provided, will autogenerate or use skycoind.key in --data-dir")
-	flag.BoolVar(&c.WebInterfaceHTTPS, "web-interface-https", c.WebInterfaceHTTPS, "enable HTTPS for web interface")
-	flag.StringVar(&c.HostWhitelist, "host-whitelist", c.HostWhitelist, "Hostnames to whitelist in the Host header check. Only applies when the web interface is bound to localhost.")
+	cmd.Flags().BoolVar(&c.WebInterface, "web-interface", c.WebInterface, "enable the web interface")
+	cmd.Flags().IntVar(&c.WebInterfacePort, "web-interface-port", c.WebInterfacePort, "port to serve web interface on")
+	cmd.Flags().StringVar(&c.WebInterfaceAddr, "web-interface-addr", c.WebInterfaceAddr, "addr to serve web interface on")
+	cmd.Flags().StringVar(&c.WebInterfaceCert, "web-interface-cert", c.WebInterfaceCert, "skycoind.cert file for web interface HTTPS. If not provided, will autogenerate or use skycoind.cert in --data-dir")
+	cmd.Flags().StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "skycoind.key file for web interface HTTPS. If not provided, will autogenerate or use skycoind.key in --data-dir")
+	cmd.Flags().BoolVar(&c.WebInterfaceHTTPS, "web-interface-https", c.WebInterfaceHTTPS, "enable HTTPS for web interface")
+	cmd.Flags().StringVar(&c.HostWhitelist, "host-whitelist", c.HostWhitelist, "Hostnames to whitelist in the Host header check. Only applies when the web interface is bound to localhost.")
 
 	allAPISets := []string{
 		api.EndpointsRead,
@@ -676,66 +685,78 @@ func (c *NodeConfig) RegisterFlags() {
 		api.EndpointsInsecureWalletSeed,
 		api.EndpointsStorage,
 	}
-	flag.StringVar(&c.EnabledAPISets, "enable-api-sets", c.EnabledAPISets, fmt.Sprintf("enable API set. Options are %s. Multiple values should be separated by comma", strings.Join(allAPISets, ", ")))
-	flag.StringVar(&c.DisabledAPISets, "disable-api-sets", c.DisabledAPISets, fmt.Sprintf("disable API set. Options are %s. Multiple values should be separated by comma", strings.Join(allAPISets, ", ")))
-	flag.BoolVar(&c.EnableAllAPISets, "enable-all-api-sets", c.EnableAllAPISets, "enable all API sets, except for deprecated or insecure sets. This option is applied before -disable-api-sets.")
+	cmd.Flags().StringVar(&c.EnabledAPISets, "enable-api-sets", c.EnabledAPISets, fmt.Sprintf("enable API set. Options are %s. Multiple values should be separated by comma", strings.Join(allAPISets, ", ")))
+	cmd.Flags().StringVar(&c.DisabledAPISets, "disable-api-sets", c.DisabledAPISets, fmt.Sprintf("disable API set. Options are %s. Multiple values should be separated by comma", strings.Join(allAPISets, ", ")))
+	cmd.Flags().BoolVar(&c.EnableAllAPISets, "enable-all-api-sets", c.EnableAllAPISets, "enable all API sets, except for deprecated or insecure sets. This option is applied before -disable-api-sets.")
 
-	flag.StringVar(&c.WebInterfaceUsername, "web-interface-username", c.WebInterfaceUsername, "username for the web interface")
-	flag.StringVar(&c.WebInterfacePassword, "web-interface-password", c.WebInterfacePassword, "password for the web interface")
-	flag.BoolVar(&c.WebInterfacePlaintextAuth, "web-interface-plaintext-auth", c.WebInterfacePlaintextAuth, "allow web interface auth without https")
+	cmd.Flags().StringVar(&c.WebInterfaceUsername, "web-interface-username", c.WebInterfaceUsername, "username for the web interface")
+	cmd.Flags().StringVar(&c.WebInterfacePassword, "web-interface-password", c.WebInterfacePassword, "password for the web interface")
+	cmd.Flags().BoolVar(&c.WebInterfacePlaintextAuth, "web-interface-plaintext-auth", c.WebInterfacePlaintextAuth, "allow web interface auth without https")
 
-	flag.BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser, "launch system default webbrowser at client startup")
-	flag.StringVar(&c.DataDirectory, "data-dir", c.DataDirectory, "directory to store app data (defaults to ~/.skycoin)")
-	flag.StringVar(&c.DBPath, "db-path", c.DBPath, "path of database file (defaults to ~/.skycoin/data.db)")
-	flag.BoolVar(&c.DBReadOnly, "db-read-only", c.DBReadOnly, "open bolt db read-only")
-	flag.BoolVar(&c.ProfileCPU, "profile-cpu", c.ProfileCPU, "enable cpu profiling")
-	flag.StringVar(&c.ProfileCPUFile, "profile-cpu-file", c.ProfileCPUFile, "where to write the cpu profile file")
-	flag.BoolVar(&c.HTTPProf, "http-prof", c.HTTPProf, "run the HTTP profiling interface")
-	flag.StringVar(&c.HTTPProfHost, "http-prof-host", c.HTTPProfHost, "hostname to bind the HTTP profiling interface to")
-	flag.StringVar(&c.LogLevel, "log-level", c.LogLevel, "Choices are: debug, info, warn, error, fatal, panic")
-	flag.BoolVar(&c.ColorLog, "color-log", c.ColorLog, "Add terminal colors to log output")
-	flag.BoolVar(&c.DisablePingPong, "no-ping-log", c.DisablePingPong, `disable "reply to ping" and "received pong" debug log messages`)
-	flag.BoolVar(&c.LogToFile, "logtofile", c.LogToFile, "log to file")
-	flag.StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory, "static content directory for the HTML interface")
+	cmd.Flags().BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser, "launch system default webbrowser at client startup")
+	cmd.Flags().StringVar(&c.DataDirectory, "data-dir", c.DataDirectory, fmt.Sprintf("directory to store app data (defaults to %s)", c.DataDirectory))
+	cmd.Flags().StringVar(&c.DBPath, "db-path", c.DBPath, "path of database file")
+	cmd.Flags().BoolVar(&c.DBReadOnly, "db-read-only", c.DBReadOnly, "open bolt db read-only")
+	cmd.Flags().BoolVar(&c.ProfileCPU, "profile-cpu", c.ProfileCPU, "enable cpu profiling")
+	cmd.Flags().StringVar(&c.ProfileCPUFile, "profile-cpu-file", c.ProfileCPUFile, "where to write the cpu profile file")
+	cmd.Flags().BoolVar(&c.HTTPProf, "http-prof", c.HTTPProf, "run the HTTP profiling interface")
+	cmd.Flags().StringVar(&c.HTTPProfHost, "http-prof-host", c.HTTPProfHost, "hostname to bind the HTTP profiling interface to")
+	cmd.Flags().StringVar(&c.LogLevel, "log-level", c.LogLevel, "Choices are: debug, info, warn, error, fatal, panic")
+	cmd.Flags().BoolVar(&c.ColorLog, "color-log", c.ColorLog, "Add terminal colors to log output")
+	cmd.Flags().BoolVar(&c.DisablePingPong, "no-ping-log", c.DisablePingPong, `disable "reply to ping" and "received pong" debug log messages`)
+	cmd.Flags().BoolVar(&c.LogToFile, "logtofile", c.LogToFile, "log to file")
+	cmd.Flags().StringVar(&c.GUIDirectory, "gui-dir", c.GUIDirectory, "static content directory for the HTML interface")
 
-	flag.BoolVar(&c.VerifyDB, "verify-db", c.VerifyDB, "check the database for corruption")
-	flag.BoolVar(&c.ResetCorruptDB, "reset-corrupt-db", c.ResetCorruptDB, "reset the database if corrupted, and continue running instead of exiting")
+	cmd.Flags().BoolVar(&c.VerifyDB, "verify-db", c.VerifyDB, "check the database for corruption")
+	cmd.Flags().BoolVar(&c.ResetCorruptDB, "reset-corrupt-db", c.ResetCorruptDB, "reset the database if corrupted, and continue running instead of exiting")
 
-	flag.BoolVar(&c.DisableDefaultPeers, "disable-default-peers", c.DisableDefaultPeers, "disable the hardcoded default peers")
-	flag.StringVar(&c.CustomPeersFile, "custom-peers-file", c.CustomPeersFile, "load custom peers from a newline separate list of ip:port in a file. Note that this is different from the peers.json file in the data directory")
+	cmd.Flags().BoolVar(&c.DisableDefaultPeers, "disable-default-peers", c.DisableDefaultPeers, "disable the hardcoded default peers")
+	cmd.Flags().StringVar(&c.CustomPeersFile, "custom-peers-file", c.CustomPeersFile, "load custom peers from a newline separate list of ip:port in a file. Note that this is different from the peers.json file in the data directory")
 
-	flag.StringVar(&c.UserAgentRemark, "user-agent-remark", c.UserAgentRemark, "additional remark to include in the user agent sent over the wire protocol")
+	cmd.Flags().StringVar(&c.UserAgentRemark, "user-agent-remark", c.UserAgentRemark, "additional remark to include in the user agent sent over the wire protocol")
 
-	flag.Uint64Var(&c.maxUnconfirmedTransactionSize, "max-txn-size-unconfirmed", uint64(c.UnconfirmedVerifyTxn.MaxTransactionSize), "maximum size of an unconfirmed transaction")
-	flag.Uint64Var(&c.unconfirmedBurnFactor, "burn-factor-unconfirmed", uint64(c.UnconfirmedVerifyTxn.BurnFactor), "coinhour burn factor applied to unconfirmed transactions")
-	flag.Uint64Var(&c.unconfirmedMaxDropletPrecision, "max-decimals-unconfirmed", uint64(c.UnconfirmedVerifyTxn.MaxDropletPrecision), "max number of decimal places applied to unconfirmed transactions")
-	flag.Uint64Var(&c.createBlockBurnFactor, "burn-factor-create-block", uint64(c.CreateBlockVerifyTxn.BurnFactor), "coinhour burn factor applied when creating blocks")
-	flag.Uint64Var(&c.createBlockMaxTransactionSize, "max-txn-size-create-block", uint64(c.CreateBlockVerifyTxn.MaxTransactionSize), "maximum size of a transaction applied when creating blocks")
-	flag.Uint64Var(&c.createBlockMaxDropletPrecision, "max-decimals-create-block", uint64(c.CreateBlockVerifyTxn.MaxDropletPrecision), "max number of decimal places applied when creating blocks")
-	flag.Uint64Var(&c.maxBlockSize, "max-block-size", uint64(c.MaxBlockTransactionsSize), "maximum total size of transactions in a block")
-	flag.Uint64Var(&c.MaxLastBlocksCount, "max-last-blocks-count", c.MaxLastBlocksCount, "Maximum number of blocks to response for API /api/v1/last_blocks")
+	cmd.Flags().Uint64Var(&c.maxUnconfirmedTransactionSize, "max-txn-size-unconfirmed", uint64(c.UnconfirmedVerifyTxn.MaxTransactionSize), "maximum size of an unconfirmed transaction")
+	cmd.Flags().Uint64Var(&c.unconfirmedBurnFactor, "burn-factor-unconfirmed", uint64(c.UnconfirmedVerifyTxn.BurnFactor), "coinhour burn factor applied to unconfirmed transactions")
+	cmd.Flags().Uint64Var(&c.unconfirmedMaxDropletPrecision, "max-decimals-unconfirmed", uint64(c.UnconfirmedVerifyTxn.MaxDropletPrecision), "max number of decimal places applied to unconfirmed transactions")
+	cmd.Flags().Uint64Var(&c.createBlockBurnFactor, "burn-factor-create-block", uint64(c.CreateBlockVerifyTxn.BurnFactor), "coinhour burn factor applied when creating blocks")
+	cmd.Flags().Uint64Var(&c.createBlockMaxTransactionSize, "max-txn-size-create-block", uint64(c.CreateBlockVerifyTxn.MaxTransactionSize), "maximum size of a transaction applied when creating blocks")
+	cmd.Flags().Uint64Var(&c.createBlockMaxDropletPrecision, "max-decimals-create-block", uint64(c.CreateBlockVerifyTxn.MaxDropletPrecision), "max number of decimal places applied when creating blocks")
+	cmd.Flags().Uint64Var(&c.maxBlockSize, "max-block-size", uint64(c.MaxBlockTransactionsSize), "maximum total size of transactions in a block")
+	cmd.Flags().Uint64Var(&c.MaxLastBlocksCount, "max-last-blocks-count", c.MaxLastBlocksCount, "Maximum number of blocks to response for API /api/v1/last_blocks")
 
-	flag.BoolVar(&c.RunBlockPublisher, "block-publisher", c.RunBlockPublisher, "run the daemon as a block publisher")
-	flag.StringVar(&c.BlockchainPubkeyStr, "blockchain-public-key", c.BlockchainPubkeyStr, "public key of the blockchain")
-	flag.StringVar(&c.BlockchainSeckeyStr, "blockchain-secret-key", c.BlockchainSeckeyStr, "secret key of the blockchain")
+	cmd.Flags().BoolVar(&c.RunBlockPublisher, "block-publisher", c.RunBlockPublisher, "run the daemon as a block publisher")
+	cmd.Flags().StringVar(&c.BlockchainPubkeyStr, "blockchain-public-key", c.BlockchainPubkeyStr, "public key of the blockchain")
+	cmd.Flags().StringVar(&c.BlockchainSeckeyStr, "blockchain-secret-key", c.BlockchainSeckeyStr, "secret key of the blockchain")
 
-	flag.StringVar(&c.GenesisAddressStr, "genesis-address", c.GenesisAddressStr, "genesis address")
-	flag.StringVar(&c.GenesisSignatureStr, "genesis-signature", c.GenesisSignatureStr, "genesis block signature")
-	flag.Uint64Var(&c.GenesisTimestamp, "genesis-timestamp", c.GenesisTimestamp, "genesis block timestamp")
+	cmd.Flags().StringVar(&c.GenesisAddressStr, "genesis-address", c.GenesisAddressStr, "genesis address")
+	cmd.Flags().StringVar(&c.GenesisSignatureStr, "genesis-signature", c.GenesisSignatureStr, "genesis block signature")
+	cmd.Flags().Uint64Var(&c.GenesisTimestamp, "genesis-timestamp", c.GenesisTimestamp, "genesis block timestamp")
 
-	flag.StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory, "location of the wallet files. Defaults to ~/.skycoin/wallet/")
-	flag.StringVar(&c.KVStorageDirectory, "storage-dir", c.KVStorageDirectory, "location of the storage data files. Defaults to ~/.skycoin/data/")
-	flag.IntVar(&c.MaxConnections, "max-connections", c.MaxConnections, "Maximum number of total connections allowed")
-	flag.IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", c.MaxOutgoingConnections, "Maximum number of outgoing connections allowed")
-	flag.IntVar(&c.MaxIncomingConnections, "max-incoming-connections", c.MaxIncomingConnections, "Maximum number of incoming connections allowd")
-	flag.IntVar(&c.MaxDefaultPeerOutgoingConnections, "max-default-peer-outgoing-connections", c.MaxDefaultPeerOutgoingConnections, "The maximum default peer outgoing connections allowed")
-	flag.IntVar(&c.PeerlistSize, "peerlist-size", c.PeerlistSize, "Max number of peers to track in peerlist")
-	flag.DurationVar(&c.OutgoingConnectionsRate, "connection-rate", c.OutgoingConnectionsRate, "How often to make an outgoing connection")
-	flag.IntVar(&c.MaxOutgoingMessageLength, "max-out-msg-len", c.MaxOutgoingMessageLength, "Maximum length of outgoing wire messages")
-	flag.IntVar(&c.MaxIncomingMessageLength, "max-in-msg-len", c.MaxIncomingMessageLength, "Maximum length of incoming wire messages")
-	flag.BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly, "Run on localhost and only connect to localhost peers")
-	flag.StringVar(&c.WalletCryptoType, "wallet-crypto-type", c.WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")
-	flag.BoolVar(&c.Version, "version", false, "show node version")
+	cmd.Flags().StringVar(&c.WalletDirectory, "wallet-dir", c.WalletDirectory, "location of the wallet files")
+	cmd.Flags().StringVar(&c.KVStorageDirectory, "storage-dir", c.KVStorageDirectory, "location of the storage data files")
+	cmd.Flags().IntVar(&c.MaxConnections, "max-connections", c.MaxConnections, "Maximum number of total connections allowed")
+	cmd.Flags().IntVar(&c.MaxOutgoingConnections, "max-outgoing-connections", c.MaxOutgoingConnections, "Maximum number of outgoing connections allowed")
+	cmd.Flags().IntVar(&c.MaxIncomingConnections, "max-incoming-connections", c.MaxIncomingConnections, "Maximum number of incoming connections allowed")
+	cmd.Flags().IntVar(&c.MaxDefaultPeerOutgoingConnections, "max-default-peer-outgoing-connections", c.MaxDefaultPeerOutgoingConnections, "The maximum default peer outgoing connections allowed")
+	cmd.Flags().IntVar(&c.PeerlistSize, "peerlist-size", c.PeerlistSize, "Max number of peers to track in peerlist")
+	cmd.Flags().DurationVar(&c.OutgoingConnectionsRate, "connection-rate", c.OutgoingConnectionsRate, "How often to make an outgoing connection")
+	cmd.Flags().IntVar(&c.MaxOutgoingMessageLength, "max-out-msg-len", c.MaxOutgoingMessageLength, "Maximum length of outgoing wire messages")
+	cmd.Flags().IntVar(&c.MaxIncomingMessageLength, "max-in-msg-len", c.MaxIncomingMessageLength, "Maximum length of incoming wire messages")
+	cmd.Flags().BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly, "Run on localhost and only connect to localhost peers")
+	cmd.Flags().StringVar(&c.WalletCryptoType, "wallet-crypto-type", c.WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")
+	cmd.Flags().BoolVar(&c.Version, "version", false, "show node version")
+
+	// Display/Branding flags
+	cmd.Flags().StringVar(&c.Fiber.Name, "coin-name", c.Fiber.Name, "name of the coin")
+	cmd.Flags().StringVar(&c.Fiber.Ticker, "ticker", c.Fiber.Ticker, "coin ticker symbol (e.g., SKY)")
+	cmd.Flags().StringVar(&c.Fiber.DisplayName, "display-name", c.Fiber.DisplayName, "display name of the coin")
+	cmd.Flags().StringVar(&c.Fiber.CoinHoursName, "coin-hours-name", c.Fiber.CoinHoursName, "display name for coin hours")
+	cmd.Flags().StringVar(&c.Fiber.CoinHoursNameSingular, "coin-hours-name-singular", c.Fiber.CoinHoursNameSingular, "singular display name for coin hours")
+	cmd.Flags().StringVar(&c.Fiber.CoinHoursTicker, "coin-hours-ticker", c.Fiber.CoinHoursTicker, "ticker symbol for coin hours")
+	cmd.Flags().StringVar(&c.Fiber.QrURIPrefix, "qr-uri-prefix", c.Fiber.QrURIPrefix, "prefix for QR code URIs")
+	cmd.Flags().StringVar(&c.Fiber.ExplorerURL, "explorer-url", c.Fiber.ExplorerURL, "URL of the block explorer")
+	cmd.Flags().StringVar(&c.Fiber.VersionURL, "version-url", c.Fiber.VersionURL, "URL for version checking")
+	cmd.Flags().Uint32Var((*uint32)(&c.Fiber.Bip44Coin), "bip44-coin", uint32(c.Fiber.Bip44Coin), "BIP44 coin type")
 }
 
 func (c *NodeConfig) applyConfigMode(configMode string) {
@@ -760,6 +781,247 @@ func (c *NodeConfig) applyConfigMode(configMode string) {
 	default:
 		panic("Invalid ConfigMode")
 	}
+}
+
+// LoadFromFiberConfig loads configuration from a fiber.toml file
+// and overrides the default values in NodeConfig
+func (c *NodeConfig) LoadFromFiberConfig(configPath string) error {
+	if configPath == "" {
+		return nil // No config file specified
+	}
+
+	// Store path for later writing
+	c.fiberTomlPath = configPath
+
+	// Load fiber config
+	fiberCfg, err := fiber.NewConfig(filepath.Base(configPath), filepath.Dir(configPath))
+	if err != nil {
+		return fmt.Errorf("failed to load fiber config: %w", err)
+	}
+
+	// Map fiber.NodeConfig to skycoin.NodeConfig
+	c.applyFiberNodeConfig(fiberCfg.Node)
+
+	// Store distribution parameters from fiber.ParamsConfig
+	if len(fiberCfg.Params.DistributionAddresses) > 0 {
+		c.distributionAddresses = fiberCfg.Params.DistributionAddresses
+		c.distributionMaxCoinSupply = fiberCfg.Params.MaxCoinSupply
+		c.distributionUnlockedCount = fiberCfg.Params.InitialUnlockedCount
+		c.distributionUnlockRate = fiberCfg.Params.UnlockAddressRate
+		c.distributionUnlockInterval = fiberCfg.Params.UnlockTimeInterval
+	}
+
+	return nil
+}
+
+// LoadFromGenesisWallet loads genesis credentials from a genesis wallet JSON file
+// This takes precedence over fiber.toml values for address, pubkey, and seckey
+func (c *NodeConfig) LoadFromGenesisWallet(walletPath string) error {
+	if walletPath == "" {
+		return nil
+	}
+
+	// Store path for later use
+	c.genesisWalletPath = walletPath
+
+	// Read the genesis wallet file
+	data, err := os.ReadFile(walletPath) //nolint:gosec // G304: User-specified wallet path is intentional
+	if err != nil {
+		return fmt.Errorf("failed to read genesis wallet: %w", err)
+	}
+
+	// Parse the wallet JSON
+	var wallet struct {
+		Entries []struct {
+			Address   string `json:"address"`
+			PublicKey string `json:"public_key"`
+			SecretKey string `json:"secret_key"`
+		} `json:"entries"`
+	}
+
+	if err := json.Unmarshal(data, &wallet); err != nil {
+		return fmt.Errorf("failed to parse genesis wallet JSON: %w", err)
+	}
+
+	if len(wallet.Entries) == 0 {
+		return fmt.Errorf("genesis wallet has no entries")
+	}
+
+	// Use the first entry
+	entry := wallet.Entries[0]
+
+	// Set genesis address and blockchain keys
+	c.GenesisAddressStr = entry.Address
+	c.BlockchainPubkeyStr = entry.PublicKey
+	c.BlockchainSeckeyStr = entry.SecretKey
+
+	// Clear the genesis signature since it's not valid for this wallet
+	// The signature will be generated when the genesis block is created
+	c.GenesisSignatureStr = ""
+
+	return nil
+}
+
+// applyFiberNodeConfig maps fiber.NodeConfig fields to NodeConfig
+func (c *NodeConfig) applyFiberNodeConfig(node fiber.NodeConfig) {
+	// Core blockchain parameters
+	if node.CoinName != "" {
+		c.CoinName = node.CoinName
+		c.Fiber.Name = node.CoinName
+	}
+	if node.Port != 0 {
+		c.Port = node.Port
+	}
+	if node.WebInterfacePort != 0 {
+		c.WebInterfacePort = node.WebInterfacePort
+	}
+	if node.GenesisSignatureStr != "" {
+		c.GenesisSignatureStr = node.GenesisSignatureStr
+	}
+	if node.GenesisAddressStr != "" {
+		c.GenesisAddressStr = node.GenesisAddressStr
+	}
+	if node.BlockchainPubkeyStr != "" {
+		c.BlockchainPubkeyStr = node.BlockchainPubkeyStr
+	}
+	if node.BlockchainSeckeyStr != "" {
+		c.BlockchainSeckeyStr = node.BlockchainSeckeyStr
+	}
+	if node.GenesisTimestamp != 0 {
+		c.GenesisTimestamp = node.GenesisTimestamp
+	}
+	if node.GenesisCoinVolume != 0 {
+		c.GenesisCoinVolume = node.GenesisCoinVolume
+	}
+	if len(node.DefaultConnections) > 0 {
+		c.DefaultConnections = node.DefaultConnections
+	}
+	if node.PeerListURL != "" {
+		c.PeerListURL = node.PeerListURL
+	}
+
+	// Data directory - expand $HOME
+	// If not explicitly set, derive from coin name or display name
+	if node.DataDirectory != "" {
+		dataDir := node.DataDirectory
+		home := file.UserHome()
+		dataDir = replaceHome(dataDir, home)
+		c.DataDirectory = dataDir
+	} else if c.DataDirectory == "$HOME/.skycoin" {
+		// Auto-derive data directory from coin name or display name (matches newcoin behavior)
+		home := file.UserHome()
+		derivedName := ""
+		if node.CoinName != "" {
+			derivedName = node.CoinName
+		} else if node.DisplayName != "" {
+			derivedName = node.DisplayName
+		}
+		if derivedName != "" {
+			c.DataDirectory = replaceHome("$HOME/."+strings.ToLower(derivedName), home)
+		}
+	}
+
+	// Transaction verification params
+	if node.UnconfirmedBurnFactor != 0 {
+		c.UnconfirmedVerifyTxn.BurnFactor = node.UnconfirmedBurnFactor
+		c.unconfirmedBurnFactor = uint64(node.UnconfirmedBurnFactor)
+	}
+	if node.UnconfirmedMaxTransactionSize != 0 {
+		c.UnconfirmedVerifyTxn.MaxTransactionSize = node.UnconfirmedMaxTransactionSize
+		c.maxUnconfirmedTransactionSize = uint64(node.UnconfirmedMaxTransactionSize)
+	}
+	if node.UnconfirmedMaxDropletPrecision != 0 {
+		c.UnconfirmedVerifyTxn.MaxDropletPrecision = node.UnconfirmedMaxDropletPrecision
+		c.unconfirmedMaxDropletPrecision = uint64(node.UnconfirmedMaxDropletPrecision)
+	}
+	if node.CreateBlockBurnFactor != 0 {
+		c.CreateBlockVerifyTxn.BurnFactor = node.CreateBlockBurnFactor
+		c.createBlockBurnFactor = uint64(node.CreateBlockBurnFactor)
+	}
+	if node.CreateBlockMaxTransactionSize != 0 {
+		c.CreateBlockVerifyTxn.MaxTransactionSize = node.CreateBlockMaxTransactionSize
+		c.createBlockMaxTransactionSize = uint64(node.CreateBlockMaxTransactionSize)
+	}
+	if node.CreateBlockMaxDropletPrecision != 0 {
+		c.CreateBlockVerifyTxn.MaxDropletPrecision = node.CreateBlockMaxDropletPrecision
+		c.createBlockMaxDropletPrecision = uint64(node.CreateBlockMaxDropletPrecision)
+	}
+	if node.MaxBlockTransactionsSize != 0 {
+		c.MaxBlockTransactionsSize = node.MaxBlockTransactionsSize
+		c.maxBlockSize = uint64(node.MaxBlockTransactionsSize)
+	}
+
+	// Display/Branding
+	if node.Ticker != "" {
+		c.Fiber.Ticker = node.Ticker
+	}
+	if node.DisplayName != "" {
+		c.Fiber.DisplayName = node.DisplayName
+	}
+	if node.CoinHoursName != "" {
+		c.Fiber.CoinHoursName = node.CoinHoursName
+	}
+	if node.CoinHoursNameSingular != "" {
+		c.Fiber.CoinHoursNameSingular = node.CoinHoursNameSingular
+	}
+	if node.CoinHoursTicker != "" {
+		c.Fiber.CoinHoursTicker = node.CoinHoursTicker
+	}
+	if node.QrURIPrefix != "" {
+		c.Fiber.QrURIPrefix = node.QrURIPrefix
+	}
+	if node.ExplorerURL != "" {
+		c.Fiber.ExplorerURL = node.ExplorerURL
+	}
+	if node.VersionURL != "" {
+		c.Fiber.VersionURL = node.VersionURL
+	}
+	if node.Bip44Coin != 0 {
+		c.Fiber.Bip44Coin = node.Bip44Coin
+	}
+}
+
+// WriteFiberTomlGenesis writes genesis address, pubkey, and signature to fiber.toml
+// This is called after the genesis block is created to persist the values
+func (c *NodeConfig) WriteFiberTomlGenesis(signature string) error {
+	if c.fiberTomlPath == "" {
+		return nil // No fiber.toml path set, nothing to write
+	}
+
+	// Read the current fiber.toml
+	data, err := os.ReadFile(c.fiberTomlPath)
+	if err != nil {
+		return fmt.Errorf("failed to read fiber.toml: %w", err)
+	}
+
+	// Parse as map
+	var tomlMap map[string]interface{}
+	if err := toml.Unmarshal(data, &tomlMap); err != nil {
+		return fmt.Errorf("failed to parse fiber.toml: %w", err)
+	}
+
+	// Get or create [node] section
+	nodeSection, ok := tomlMap["node"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("missing [node] section in fiber.toml")
+	}
+
+	// Update genesis fields
+	nodeSection["genesis_address_str"] = c.GenesisAddressStr
+	nodeSection["blockchain_pubkey_str"] = c.BlockchainPubkeyStr
+	nodeSection["genesis_signature_str"] = signature
+
+	// Write back to file
+	updatedData, err := toml.Marshal(tomlMap)
+	if err != nil {
+		return fmt.Errorf("failed to marshal fiber.toml: %w", err)
+	}
+
+	if err := os.WriteFile(c.fiberTomlPath, updatedData, 0600); err != nil {
+		return fmt.Errorf("failed to write fiber.toml: %w", err)
+	}
+
+	return nil
 }
 
 func panicIfError(err error, msg string, args ...interface{}) { //nolint:unparam

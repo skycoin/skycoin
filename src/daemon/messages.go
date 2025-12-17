@@ -165,12 +165,12 @@ func (gpm *GetPeersMessage) EncodeSize() uint64 {
 }
 
 // Encode implements gnet.Serializer
-func (gpm *GetPeersMessage) Encode(buf []byte) error {
+func (gpm *GetPeersMessage) Encode(_ []byte) error {
 	return nil
 }
 
 // Decode implements gnet.Serializer
-func (gpm *GetPeersMessage) Decode(buf []byte) (uint64, error) {
+func (gpm *GetPeersMessage) Decode(_ []byte) (uint64, error) {
 	return 0, nil
 }
 
@@ -571,7 +571,7 @@ func (intro *IntroductionMessage) Verify(dc DaemonConfig, logFields logrus.Field
 		logger.WithError(err).WithFields(logFields).WithField("userAgent", userAgent).Warning("User agent is invalid")
 		return ErrDisconnectInvalidUserAgent
 	}
-	i += int(userAgentLen)
+	i += int(userAgentLen) //nolint:gosec
 
 	remainingLen := extraLen - i
 	if remainingLen > 0 && remainingLen < len(intro.GenesisHash) {
@@ -594,12 +594,12 @@ func (ping *PingMessage) EncodeSize() uint64 {
 }
 
 // Encode implements gnet.Serializer
-func (ping *PingMessage) Encode(buf []byte) error {
+func (ping *PingMessage) Encode(_ []byte) error {
 	return nil
 }
 
 // Decode implements gnet.Serializer
-func (ping *PingMessage) Decode(buf []byte) (uint64, error) {
+func (ping *PingMessage) Decode(_ []byte) (uint64, error) {
 	return 0, nil
 }
 
@@ -634,12 +634,12 @@ func (pong *PongMessage) EncodeSize() uint64 {
 }
 
 // Encode implements gnet.Serializer
-func (pong *PongMessage) Encode(buf []byte) error {
+func (pong *PongMessage) Encode(_ []byte) error {
 	return nil
 }
 
 // Decode implements gnet.Serializer
-func (pong *PongMessage) Decode(buf []byte) (uint64, error) {
+func (pong *PongMessage) Decode(_ []byte) (uint64, error) {
 	return 0, nil
 }
 
@@ -933,7 +933,7 @@ func (m *GiveBlocksMessage) process(d daemoner) {
 
 	if headBkSeq < maxSeq {
 		logger.Critical().Warning("HeadBkSeq decreased after executing blocks")
-	} else if headBkSeq-maxSeq != uint64(processed) {
+	} else if headBkSeq-maxSeq != uint64(processed) { //nolint:gosec
 		logger.Critical().Warning("HeadBkSeq increased by %d but we processed %s blocks", headBkSeq-maxSeq, processed)
 	}
 
@@ -1085,7 +1085,7 @@ func truncateSHA256Slice(hashes []cipher.SHA256, maxLength uint64) []cipher.SHA2
 
 	size := len(hashes[0])
 
-	n := maxLength / uint64(size)
+	n := maxLength / uint64(size) //nolint:gosec
 
 	if n > uint64(len(hashes)) {
 		return hashes

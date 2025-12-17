@@ -5,17 +5,18 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/bip44"
 	"github.com/skycoin/skycoin/src/cipher/crypto"
 	"github.com/skycoin/skycoin/src/wallet"
-	"github.com/stretchr/testify/require"
 )
 
 var (
 	skycoinExternalAddrs = skycoinAddressStringsToAddress(testSkycoinExternalAddresses)
 	skycoinChangeAddrs   = skycoinAddressStringsToAddress(testSkycoinChangeAddresses)
-	bitcoinExternalAddrs = bitcoinAddressStringsToAddress(testBitcoinExternalAddresses)
+	bitcoinExternalAddrs = bitcoinAddressStringsToAddress(testBitcoinExternalAddresses) //nolint:unused
 )
 
 type mockTxnsFinder map[cipher.Addresser]bool
@@ -462,7 +463,6 @@ func checkNoSensitiveData(t *testing.T, w *Wallet) {
 	}
 
 	require.NotEmpty(t, w.Meta.Secrets())
-	return
 }
 
 func TestWalletLock(t *testing.T) {
@@ -681,6 +681,7 @@ func TestWalletCreateAccount(t *testing.T) {
 	require.Equal(t, uint32(1), ai)
 
 	ai, err = w.NewAccount("account2")
+	require.NoError(t, err)
 	require.Equal(t, uint32(2), ai)
 
 	require.Equal(t, uint32(3), w.accountManager.len())
@@ -788,7 +789,7 @@ func TestWalletGenerateAddress(t *testing.T) {
 				l, err := w.EntriesLen()
 				require.NoError(t, err)
 				// 1 default address + tc.num = wallet.EntriesLen()
-				require.Equal(t, int(tc.expectNum), l)
+				require.Equal(t, int(tc.expectNum), l) //nolint:gosec
 
 				addrs, err := w.GetAddresses()
 				require.NoError(t, err)
@@ -861,7 +862,7 @@ func skycoinAddressStringsToAddress(addrsStr []string) []cipher.Addresser {
 	return addrs
 }
 
-func bitcoinAddressStringsToAddress(addrsStr []string) []cipher.Addresser {
+func bitcoinAddressStringsToAddress(addrsStr []string) []cipher.Addresser { //nolint:unused
 	var addrs []cipher.Addresser
 	for _, addr := range addrsStr {
 		a := cipher.MustDecodeBase58BitcoinAddress(addr)
@@ -995,10 +996,50 @@ func TestScanAddresses(t *testing.T) {
 	}
 }
 
-func getExternalAddrs(t *testing.T) []cipher.Addresser {
+func TestWalletGetXPubKey(t *testing.T) {
+	w, err := NewWallet(
+		"test.wlt",
+		"test",
+		testSeed,
+		testSeedPassphrase,
+		wallet.OptionCoinType(wallet.CoinTypeSkycoin))
+	require.NoError(t, err)
+
+	_, err = w.newExternalAddresses(0, 2)
+	require.NoError(t, err)
+	//require.Equal(t, testSkycoinExternalAddresses[1:3], addrsStr)
+
+	_, err = w.newChangeAddresses(0, 2)
+	require.NoError(t, err)
+	//require.Equal(t, testSkycoinChangeAddresses[1:3], addrsStr)
+
+	k1, err := w.GetXPubKey("0/0")
+	require.NoError(t, err)
+	require.Equal(t, k1, testSkycoinExternalXPubKey)
+	k2, err := w.GetXPubKey("0/1")
+	require.NoError(t, err)
+	require.Equal(t, k2, testSkycoinInternalXPubKey)
+
+	_, err = w.GetXPubKey("a/0")
+	require.EqualError(t, err, "invalid account index: a, err: strconv.ParseUint: parsing \"a\": invalid syntax")
+
+	_, err = w.GetXPubKey("0/a")
+	require.EqualError(t, err, "invalid chain index: a, err: strconv.ParseUint: parsing \"a\": invalid syntax")
+
+	_, err = w.GetXPubKey("10/0")
+	require.EqualError(t, err, "account index out of bounds")
+
+	_, err = w.GetXPubKey("0/10")
+	require.EqualError(t, err, "chain index out of bounds")
+
+	_, err = w.GetXPubKey("00")
+	require.EqualError(t, err, "invalid path: 00")
+}
+
+func getExternalAddrs(_ *testing.T) []cipher.Addresser { //nolint:unused
 	return skycoinAddressStringsToAddress(testSkycoinExternalAddresses)
 }
 
-func getChangeAddrs(t *testing.T) []cipher.Addresser {
+func getChangeAddrs(_ *testing.T) []cipher.Addresser { //nolint:unused
 	return skycoinAddressStringsToAddress(testSkycoinChangeAddresses)
 }

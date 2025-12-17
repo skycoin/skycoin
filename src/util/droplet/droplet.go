@@ -29,18 +29,18 @@ var (
 	// ErrTooLarge is returned if a balance string is greater than math.MaxInt64
 	ErrTooLarge = errors.New("Droplet string conversion failed: Value is too large")
 
-	logger     = logging.MustGetLogger("convert")
-	maxDecimal decimal.Decimal
+	logger         = logging.MustGetLogger("convert")
+	maximumDecimal decimal.Decimal
 )
 
 func init() {
 	maxInt64 := "9223372036854775807"
-	max, err := decimal.NewFromString(maxInt64)
+	maximum, err := decimal.NewFromString(maxInt64)
 	if err != nil {
 		panic(err)
 	}
 
-	maxDecimal = max
+	maximumDecimal = maximum
 }
 
 // FromString converts a skycoin balance string with decimal places to uint64 droplets.
@@ -56,28 +56,23 @@ func FromString(b string) (uint64, error) {
 		return 0, ErrNegativeValue
 	}
 
-	// Skycoins have a maximum of 6 decimal places
-	if d.Exponent() < -Exponent {
-		return 0, ErrTooManyDecimals
-	}
-
 	// Multiply the coin balance by 1e6 to obtain droplets amount
 	e := d.Shift(Exponent)
 
-	// Check that there are no decimal places remaining. This error should not
-	// occur, because of the earlier check of Exponent()
-	if e.Exponent() < 0 {
-		logger.Critical().Errorf("Balance still has decimals after converting to droplets: %s", b)
+	// Check that there are no significant decimal places remaining
+	// Truncate to remove any insignificant trailing zeros, then check if equal
+	if !e.Equal(e.Truncate(0)) {
+		logger.Critical().Errorf("Balance has too many decimal places: %s", b)
 		return 0, ErrTooManyDecimals
 	}
 
 	// Values greater than math.MaxInt64 will overflow after conversion to int64
 	// using decimal.IntPart()
-	if e.GreaterThan(maxDecimal) {
+	if e.GreaterThan(maximumDecimal) {
 		return 0, ErrTooLarge
 	}
 
-	return uint64(e.IntPart()), nil
+	return uint64(e.IntPart()), nil //nolint:gosec
 }
 
 // ToString converts droplets to a skycoin balance fixed-point decimal string.

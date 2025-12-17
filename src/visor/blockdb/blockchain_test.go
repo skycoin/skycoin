@@ -35,7 +35,7 @@ var (
 	genCoinHours uint64 = 1000 * 1000
 )
 
-func feeCalc(t *coin.Transaction) (uint64, error) {
+func feeCalc(_ *coin.Transaction) (uint64, error) {
 	return 0, nil
 }
 
@@ -72,7 +72,7 @@ func newFakeBlockTree(failedWhenSaved *bool) *fakeBlockTree {
 	}
 }
 
-func (bt *fakeBlockTree) AddBlock(tx *dbutil.Tx, b *coin.Block) error {
+func (bt *fakeBlockTree) AddBlock(_ *dbutil.Tx, b *coin.Block) error {
 	if bt.saveFailed {
 		if bt.failedWhenSaved != nil {
 			*bt.failedWhenSaved = true
@@ -83,14 +83,14 @@ func (bt *fakeBlockTree) AddBlock(tx *dbutil.Tx, b *coin.Block) error {
 	return nil
 }
 
-func (bt *fakeBlockTree) GetBlock(tx *dbutil.Tx, hash cipher.SHA256) (*coin.Block, error) {
+func (bt *fakeBlockTree) GetBlock(_ *dbutil.Tx, hash cipher.SHA256) (*coin.Block, error) {
 	if bt.failedWhenSaved != nil && *bt.failedWhenSaved {
 		return nil, nil
 	}
 	return bt.blocks[hash.Hex()], nil
 }
 
-func (bt *fakeBlockTree) GetBlockInDepth(tx *dbutil.Tx, depth uint64, filter Walker) (*coin.Block, error) {
+func (bt *fakeBlockTree) GetBlockInDepth(_ *dbutil.Tx, depth uint64, _ Walker) (*coin.Block, error) {
 	if bt.failedWhenSaved != nil && *bt.failedWhenSaved {
 		return nil, nil
 	}
@@ -104,7 +104,7 @@ func (bt *fakeBlockTree) GetBlockInDepth(tx *dbutil.Tx, depth uint64, filter Wal
 	return nil, nil
 }
 
-func (bt *fakeBlockTree) ForEachBlock(tx *dbutil.Tx, f func(*coin.Block) error) error {
+func (bt *fakeBlockTree) ForEachBlock(_ *dbutil.Tx, _ func(*coin.Block) error) error {
 	return nil
 }
 
@@ -125,7 +125,7 @@ func newFakeSigStore(failedWhenSaved *bool) *fakeSignatureStore {
 	}
 }
 
-func (ss *fakeSignatureStore) Add(tx *dbutil.Tx, hash cipher.SHA256, sig cipher.Sig) error {
+func (ss *fakeSignatureStore) Add(_ *dbutil.Tx, hash cipher.SHA256, sig cipher.Sig) error {
 	if ss.saveFailed {
 		if ss.failedWhenSaved != nil {
 			*ss.failedWhenSaved = true
@@ -137,7 +137,7 @@ func (ss *fakeSignatureStore) Add(tx *dbutil.Tx, hash cipher.SHA256, sig cipher.
 	return nil
 }
 
-func (ss *fakeSignatureStore) Get(tx *dbutil.Tx, hash cipher.SHA256) (cipher.Sig, bool, error) {
+func (ss *fakeSignatureStore) Get(_ *dbutil.Tx, hash cipher.SHA256) (cipher.Sig, bool, error) {
 	if ss.failedWhenSaved != nil && *ss.failedWhenSaved {
 		return cipher.Sig{}, false, nil
 	}
@@ -150,7 +150,7 @@ func (ss *fakeSignatureStore) Get(tx *dbutil.Tx, hash cipher.SHA256) (cipher.Sig
 	return sig, ok, nil
 }
 
-func (ss *fakeSignatureStore) ForEach(tx *dbutil.Tx, f func(cipher.SHA256, cipher.Sig) error) error {
+func (ss *fakeSignatureStore) ForEach(_ *dbutil.Tx, _ func(cipher.SHA256, cipher.Sig) error) error {
 	return nil
 }
 
@@ -171,15 +171,15 @@ func newFakeUnspentPool(failedWhenSaved *bool) *fakeUnspentPool {
 	}
 }
 
-func (fup *fakeUnspentPool) MaybeBuildIndexes(tx *dbutil.Tx, height uint64) error {
+func (fup *fakeUnspentPool) MaybeBuildIndexes(_ *dbutil.Tx, _ uint64) error {
 	return nil
 }
 
-func (fup *fakeUnspentPool) Len(tx *dbutil.Tx) (uint64, error) {
+func (fup *fakeUnspentPool) Len(_ *dbutil.Tx) (uint64, error) {
 	return uint64(len(fup.outs)), nil
 }
 
-func (fup *fakeUnspentPool) Get(tx *dbutil.Tx, h cipher.SHA256) (*coin.UxOut, error) {
+func (fup *fakeUnspentPool) Get(_ *dbutil.Tx, h cipher.SHA256) (*coin.UxOut, error) {
 	out, ok := fup.outs[h]
 	if !ok {
 		return nil, nil
@@ -187,7 +187,7 @@ func (fup *fakeUnspentPool) Get(tx *dbutil.Tx, h cipher.SHA256) (*coin.UxOut, er
 	return &out, nil
 }
 
-func (fup *fakeUnspentPool) GetAll(tx *dbutil.Tx) (coin.UxArray, error) {
+func (fup *fakeUnspentPool) GetAll(_ *dbutil.Tx) (coin.UxArray, error) {
 	outs := make(coin.UxArray, 0, len(fup.outs))
 	for _, out := range fup.outs {
 		outs = append(outs, out)
@@ -196,7 +196,7 @@ func (fup *fakeUnspentPool) GetAll(tx *dbutil.Tx) (coin.UxArray, error) {
 	return outs, nil
 }
 
-func (fup *fakeUnspentPool) GetArray(tx *dbutil.Tx, hashes []cipher.SHA256) (coin.UxArray, error) {
+func (fup *fakeUnspentPool) GetArray(_ *dbutil.Tx, hashes []cipher.SHA256) (coin.UxArray, error) {
 	outs := make(coin.UxArray, 0, len(hashes))
 	for _, h := range hashes {
 		ux, ok := fup.outs[h]
@@ -209,11 +209,11 @@ func (fup *fakeUnspentPool) GetArray(tx *dbutil.Tx, hashes []cipher.SHA256) (coi
 	return outs, nil
 }
 
-func (fup *fakeUnspentPool) GetUxHash(tx *dbutil.Tx) (cipher.SHA256, error) {
+func (fup *fakeUnspentPool) GetUxHash(_ *dbutil.Tx) (cipher.SHA256, error) {
 	return fup.uxHash, nil
 }
 
-func (fup *fakeUnspentPool) GetUnspentHashesOfAddrs(tx *dbutil.Tx, addrs []cipher.Address) (AddressHashes, error) {
+func (fup *fakeUnspentPool) GetUnspentHashesOfAddrs(_ *dbutil.Tx, addrs []cipher.Address) (AddressHashes, error) {
 	addrm := make(map[cipher.Address]struct{}, len(addrs))
 	for _, a := range addrs {
 		addrm[a] = struct{}{}
@@ -228,7 +228,7 @@ func (fup *fakeUnspentPool) GetUnspentHashesOfAddrs(tx *dbutil.Tx, addrs []ciphe
 	return addrOutMap, nil
 }
 
-func (fup *fakeUnspentPool) GetUnspentsOfAddrs(tx *dbutil.Tx, addrs []cipher.Address) (coin.AddressUxOuts, error) {
+func (fup *fakeUnspentPool) GetUnspentsOfAddrs(_ *dbutil.Tx, addrs []cipher.Address) (coin.AddressUxOuts, error) {
 	addrm := make(map[cipher.Address]struct{}, len(addrs))
 	for _, a := range addrs {
 		addrm[a] = struct{}{}
@@ -243,7 +243,7 @@ func (fup *fakeUnspentPool) GetUnspentsOfAddrs(tx *dbutil.Tx, addrs []cipher.Add
 	return addrOutMap, nil
 }
 
-func (fup *fakeUnspentPool) ProcessBlock(tx *dbutil.Tx, b *coin.SignedBlock) error {
+func (fup *fakeUnspentPool) ProcessBlock(_ *dbutil.Tx, _ *coin.SignedBlock) error {
 	if fup.saveFailed {
 		if fup.failedWhenSaved != nil {
 			*fup.failedWhenSaved = true
@@ -253,12 +253,12 @@ func (fup *fakeUnspentPool) ProcessBlock(tx *dbutil.Tx, b *coin.SignedBlock) err
 	return nil
 }
 
-func (fup *fakeUnspentPool) Contains(tx *dbutil.Tx, h cipher.SHA256) (bool, error) {
+func (fup *fakeUnspentPool) Contains(_ *dbutil.Tx, h cipher.SHA256) (bool, error) {
 	_, ok := fup.outs[h]
 	return ok, nil
 }
 
-func (fup *fakeUnspentPool) AddressCount(tx *dbutil.Tx) (uint64, error) {
+func (fup *fakeUnspentPool) AddressCount(_ *dbutil.Tx) (uint64, error) {
 	addrs := make(map[cipher.Address]struct{})
 	for _, out := range fup.outs {
 		addrs[out.Body.Address] = struct{}{}
@@ -276,7 +276,7 @@ func newFakeChainMeta() *fakeChainMeta {
 	return &fakeChainMeta{}
 }
 
-func (fcm *fakeChainMeta) GetHeadSeq(tx *dbutil.Tx) (uint64, bool, error) {
+func (fcm *fakeChainMeta) GetHeadSeq(_ *dbutil.Tx) (uint64, bool, error) {
 	if !fcm.didSetSeq {
 		return 0, false, nil
 	}
@@ -284,13 +284,13 @@ func (fcm *fakeChainMeta) GetHeadSeq(tx *dbutil.Tx) (uint64, bool, error) {
 	return fcm.headSeq, true, nil
 }
 
-func (fcm *fakeChainMeta) SetHeadSeq(tx *dbutil.Tx, seq uint64) error {
+func (fcm *fakeChainMeta) SetHeadSeq(_ *dbutil.Tx, seq uint64) error {
 	fcm.headSeq = seq
 	fcm.didSetSeq = true
 	return nil
 }
 
-func DefaultWalker(tx *dbutil.Tx, hps []coin.HashPair) (cipher.SHA256, bool) {
+func DefaultWalker(_ *dbutil.Tx, hps []coin.HashPair) (cipher.SHA256, bool) {
 	return hps[0].Hash, true
 }
 

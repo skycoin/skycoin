@@ -1,0 +1,17 @@
+<div class="element-details-wrapper">
+  <!-- Title -->
+  <h2>{{ 'unconfirmedTx.title' | translate }}</h2>
+  <!-- Top data table -->
+  <div class="element-details">
+    <div class="-row"><span>{{ 'unconfirmedTx.quantity' | translate }}</span><br class="-xs-only" /><div> {{ transactions ? (transactions.length > 0 ? transactions.length : ('unconfirmedTx.withoutTransactions' | translate)) : (loadingMsg | translate) }} </div></div>
+    <div class="-row"><span>{{ 'unconfirmedTx.size' | translate }}</span><br class="-xs-only" /><div> {{ transactions ? (transactions.length > 0 ? (totalSize | number) + ' bytes' : ('unconfirmedTx.withoutTransactions' | translate)) : (loadingMsg | translate) }} </div></div>
+    <div class="-row"><span>{{ 'unconfirmedTx.newest' | translate }}</span><br class="-xs-only" /><div> <app-date-formatter *ngIf="transactions && transactions.length > 0" [date]="mostRecent" [dateMultiplier]="1"></app-date-formatter> <span *ngIf="transactions && transactions.length === 0">{{ 'unconfirmedTx.withoutTransactions' | translate }}</span> <span *ngIf="!transactions">{{ loadingMsg | translate }}</span> </div></div>
+    <div class="-row"><span>{{ 'unconfirmedTx.oldest' | translate }}</span><br class="-xs-only" /><div> <app-date-formatter *ngIf="transactions && transactions.length > 0" [date]="leastRecent" [dateMultiplier]="1"></app-date-formatter> <span *ngIf="transactions && transactions.length === 0">{{ 'unconfirmedTx.withoutTransactions' | translate }}</span> <span *ngIf="!transactions">{{ loadingMsg | translate }}</span> </div></div>
+  </div>
+</div>
+
+<!-- Loading control -->
+<app-loading [longErrorMsg]="longErrorMsg | translate" *ngIf="transactions === undefined"></app-loading>
+
+<!-- Transactions list -->
+<app-transaction-info *ngFor="let transaction of transactions" [transaction]="transaction" [unconfirmed]="true"></app-transaction-info>

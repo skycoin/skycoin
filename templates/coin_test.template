@@ -1,0 +1,45 @@
+//go:build testrunmain
+// +build testrunmain
+
+/*
+CODE GENERATED AUTOMATICALLY WITH FIBER COIN CREATOR
+AVOID EDITING THIS MANUALLY
+*/
+
+// This file allows us to run the entire program with test coverage enabled, useful for integration tests
+package main
+
+import (
+	"flag"
+	"os"
+	"testing"
+
+	"github.com/spf13/pflag"
+
+	"github.com/skycoin/skycoin/cmd/{{.CoinName}}/commands"
+)
+
+func init() {
+	// Merge cobra's command flags into pflag.CommandLine so the test binary recognizes them
+	// This must happen in init() before TestMain runs
+	pflag.CommandLine.AddFlagSet(commands.RootCmd.Flags())
+	pflag.CommandLine.AddFlagSet(commands.RootCmd.PersistentFlags())
+}
+
+// TestMain handles flag parsing for both test and application flags
+func TestMain(m *testing.M) {
+	// Parse flags using pflag which supports both POSIX and GNU styles
+	// This allows the test binary to accept both -test.* flags and application flags like -disable-networking
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	pflag.Parse()
+
+	// Set the parsed flags back to the standard library flag package for the test framework
+	flag.CommandLine.Parse([]string{})
+
+	// Run tests
+	os.Exit(m.Run())
+}
+
+func TestRunMain(t *testing.T) {
+	main()
+}

@@ -148,20 +148,20 @@ func TestDistributeCoinHoursProportional(t *testing.T) {
 	maxHours := 15000000
 	coins := make([]uint64, maxCoinsLen)
 	for i := 0; i < iterations; i++ {
-		coinsLen := rand.Intn(maxCoinsLen) + 1
+		coinsLen := rand.Intn(maxCoinsLen) + 1 //nolint:gosec // Weak random acceptable in tests
 
-		maxCoins := rand.Intn(maxMaxCoins) + 1
+		maxCoins := rand.Intn(maxMaxCoins) + 1 //nolint:gosec // Weak random acceptable in tests
 
 		var totalCoins uint64
 		for i := 0; i < coinsLen; i++ {
-			coins[i] = uint64(rand.Intn(maxCoins) + 1)
+			coins[i] = uint64(rand.Intn(maxCoins) + 1) //nolint:gosec // Weak random acceptable in tests
 
 			var err error
 			totalCoins, err = mathutil.AddUint64(totalCoins, coins[i])
 			require.NoError(t, err)
 		}
 
-		hours := uint64(rand.Intn(maxHours))
+		hours := uint64(rand.Intn(maxHours)) //nolint:gosec // Weak random acceptable in tests
 
 		output, err := DistributeCoinHoursProportional(coins[:coinsLen], hours)
 		require.NoError(t, err)
@@ -267,9 +267,9 @@ func TestDistributeSpendHours(t *testing.T) {
 							}
 
 							// addrHours at the beginning and end of the array should not differ by more than one
-							max := addrHours[0]
-							min := addrHours[len(addrHours)-1]
-							require.True(t, max-min <= 1)
+							maxHours := addrHours[0]
+							minHours := addrHours[len(addrHours)-1]
+							require.True(t, maxHours-minHours <= 1)
 						})
 					}
 				}

@@ -17,8 +17,9 @@
 .PHONY: integration-test-stable-db-no-unconfirmed
 .PHONY: integration-test-stable-auth
 .PHONY: integration-test-live integration-test-live-wallet
-.PHONY: install-linters format release clean-release clean-coverage
-.PHONY: install-deps-ui build-ui build-ui-travis help newcoin merge-coverage
+.PHONY: install-linters format release clean-release clean-coverage dep-github-release
+.PHONY: install-deps-ui build-ui build-ui help newcoin merge-coverage
+.PHONY: build build-skycoin build-skyhw build-skyhw-static
 .PHONY: generate update-golden-files
 .PHONY: fuzz-base58 fuzz-encoder
 .PHONY: check-lang check-lang-es check-lang-zh
@@ -67,15 +68,30 @@ test: ## Run tests for Skycoin
 	COIN=$(COIN) go test -coverpkg="github.com/$(COIN)/$(COIN)/..." -coverprofile=coverage/go-test-src.coverage.out -timeout=5m ./src/...
 
 test-386: ## Run tests for Skycoin with GOARCH=386
+ifeq ($(shell go env GOOS),darwin)
+	@echo "Skipping test-386 on macOS (32-bit not supported)"
+else
 	GOARCH=386 COIN=$(COIN) go test ./cmd/... -timeout=5m
 	GOARCH=386 COIN=$(COIN) go test ./src/... -timeout=5m
+endif
 
 test-amd64: ## Run tests for Skycoin with GOARCH=amd64
 	GOARCH=amd64 COIN=$(COIN) go test ./cmd/... -timeout=5m
 	GOARCH=amd64 COIN=$(COIN) go test ./src/... -timeout=5m
 
+build: build-skycoin build-skyhw ## Build skycoin and skyhw binaries
+
+build-skycoin: ## Build skycoin binary
+	go build -o skycoin .
+
+build-skyhw: ## Build skyhw hardware wallet binary with CGO (requires libusb-1.0-dev)
+	CGO_ENABLED=1 go build -tags=cgo -o skyhw ./cmd/hardware-wallet/
+
+build-skyhw-static: ## Build statically-linked skyhw binary (requires libusb-1.0-dev)
+	CGO_ENABLED=1 go build -tags=cgo -trimpath -ldflags '-linkmode external -extldflags "-static"' -o skyhw ./cmd/hardware-wallet/
+
 lint: ## Run linters. Use make install-linters first.
-	GO111MODULE=off vendorcheck ./...
+	go mod vendor -v
 	golangci-lint run -c .golangci.yml ./...
 	@# The govet version in golangci-lint is out of date and has spurious warnings, run it separately
 	go vet -all ./...
@@ -131,14 +147,8 @@ integration-test-live-disable-networking: ## Run live integration tests against 
 	COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c -k
 
 install-linters: ## Install linters
-	# Turn off go module when install the vendoercheck, otherwise the installation
-	# will pollute the go.mod file.
-	GO111MODULE=off go get -u github.com/FiloSottile/vendorcheck
-	# For some reason this install method is not recommended, see https://github.com/golangci/golangci-lint#install
-	# However, they suggest `curl ... | bash` which we should not do
-	# go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
-	# Change to use go get -u with version when go is v1.12+
-	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(shell go env GOPATH)/bin v1.21.0
+	go install golang.org/x/tools/cmd/goimports@latest
+	go install github.com/FiloSottile/vendorcheck@latest
 
 format: ## Formats the code. Must have goimports installed (use make install-linters).
 	goimports -w -local github.com/skycoin/skycoin ./cmd
@@ -168,8 +178,66 @@ test-ui-e2e:  ## Run UI e2e tests
 build-ui:  ## Builds the UI
 	cd $(GUI_STATIC_DIR) && npm run build
 
-build-ui-travis:  ## Builds the UI for travis
-	cd $(GUI_STATIC_DIR) && npm run build-travis
+
+snapshot: ## Build snapshot release with goreleaser (all platforms)
+	goreleaser --snapshot --clean --skip=publish --config .goreleaser-linux.yml
+
+snapshot-linux: ## Build snapshot release for Linux only
+	goreleaser --snapshot --clean --skip=publish --config .goreleaser-linux.yml
+
+snapshot-darwin: ## Build snapshot release for macOS only
+	goreleaser --snapshot --clean --skip=publish --config .goreleaser-darwin.yml
+
+snapshot-windows: ## Build snapshot release for Windows only
+	goreleaser --snapshot --clean --skip=publish --config .goreleaser-windows.yml
+
+github-prepare-release:
+	$(eval GITHUB_TAG=$(shell git describe --abbrev=0 --tags | sed 's/-.*//'))
+	sed '/^## ${GITHUB_TAG}$$/,/^## .*/!d;//d;/^$$/d' ./CHANGELOG.md > releaseChangelog.md
+
+github-release: github-prepare-release ## Create GitHub release for Linux (triggered by GitHub Actions on tag push)
+	goreleaser --clean --config .goreleaser-linux.yml --release-notes releaseChangelog.md
+
+github-release-darwin: ## Create GitHub release for macOS (triggered by GitHub Actions)
+	goreleaser --clean --config .goreleaser-darwin.yml --skip=publish
+	$(eval GITHUB_TAG=$(shell git describe --abbrev=0 --tags))
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-darwin-amd64.tar.gz
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-darwin-arm64.tar.gz
+	gh release download ${GITHUB_TAG} --repo skycoin/skycoin --pattern 'checksums*'
+	cat ./dist/checksums.txt >> checksums.txt
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} --clobber ./checksums.txt
+
+github-release-windows: ## Create GitHub release for Windows (triggered by GitHub Actions)
+	.\goreleaser\goreleaser.exe --clean --config .goreleaser-windows.yml --skip=publish
+	$(eval GITHUB_TAG=$(shell git describe --abbrev=0 --tags))
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-windows-amd64.zip
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-windows-386.zip
+	gh release download ${GITHUB_TAG} --repo skycoin/skycoin --pattern 'checksums*'
+	cat ./dist/checksums.txt >> checksums.txt
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} --clobber ./checksums.txt
+
+dep-github-release:
+	rm -rf musl-data
+	mkdir -p musl-data
+	go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/aarch64-linux-musl-cross.tgz
+	tar -xzf aarch64-linux-musl-cross.tgz -C ./musl-data && rm aarch64-linux-musl-cross.tgz
+	go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/arm-linux-musleabi-cross.tgz
+	tar -xzf arm-linux-musleabi-cross.tgz -C ./musl-data && rm arm-linux-musleabi-cross.tgz
+	go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/arm-linux-musleabihf-cross.tgz
+	tar -xzf arm-linux-musleabihf-cross.tgz -C ./musl-data && rm arm-linux-musleabihf-cross.tgz
+	go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/i686-linux-musl-cross.tgz
+	tar -xzf i686-linux-musl-cross.tgz -C ./musl-data && rm i686-linux-musl-cross.tgz
+	go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/riscv64-linux-musl-cross.tgz
+	tar -xzf riscv64-linux-musl-cross.tgz -C ./musl-data && rm riscv64-linux-musl-cross.tgz
+	go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/x86_64-linux-musl-cross.tgz
+	tar -xzf x86_64-linux-musl-cross.tgz -C ./musl-data && rm x86_64-linux-musl-cross.tgz
+	# Build libusb-1.0 static libraries for each musl target
+	./ci-scripts/build-libusb-musl.sh amd64 x86_64-linux-musl ./musl-data/x86_64-linux-musl-cross
+	./ci-scripts/build-libusb-musl.sh arm64 aarch64-linux-musl ./musl-data/aarch64-linux-musl-cross
+	./ci-scripts/build-libusb-musl.sh arm arm-linux-musleabi ./musl-data/arm-linux-musleabi-cross
+	./ci-scripts/build-libusb-musl.sh armhf arm-linux-musleabihf ./musl-data/arm-linux-musleabihf-cross
+	./ci-scripts/build-libusb-musl.sh 386 i686-linux-musl ./musl-data/i686-linux-musl-cross
+	./ci-scripts/build-libusb-musl.sh riscv64 riscv64-linux-musl ./musl-data/riscv64-linux-musl-cross
 
 release: ## Build electron, standalone and daemon apps. Use osarch=${osarch} to specify the platform. Example: 'make release osarch=darwin/amd64', multiple platform can be supported in this way: 'make release osarch="darwin/amd64 windows/amd64"'. Supported architectures are: darwin/amd64 windows/amd64 windows/386 linux/amd64 linux/arm, the builds are located in electron/release folder.
 	cd $(ELECTRON_DIR) && ./build.sh ${osarch}
@@ -191,19 +259,20 @@ release-cli: ## Build CLI apps. Use osarch=${osarch} to specify the platform. Ex
 	cd $(ELECTRON_DIR) && ./build-cli-release.sh ${osarch}
 	@echo release files are in the folder of electron/release
 
-clean-release: ## Remove all electron build artifacts
+clean-release: ## Remove all electron build artifacts and goreleaser dist
 	rm -rf $(ELECTRON_DIR)/release
 	rm -rf $(ELECTRON_DIR)/.gox_output
 	rm -rf $(ELECTRON_DIR)/.daemon_output
 	rm -rf $(ELECTRON_DIR)/.cli_output
 	rm -rf $(ELECTRON_DIR)/.standalone_output
 	rm -rf $(ELECTRON_DIR)/.electron_output
+	rm -rf ./dist
 
 clean-coverage: ## Remove coverage output files
 	rm -rf ./coverage/
 
 newcoin: ## Rebuild cmd/$COIN/$COIN.go file from the template. Call like "make newcoin COIN=foo".
-	go run cmd/newcoin/newcoin.go createcoin --coin $(COIN)
+	go run -mod=mod . newcoin createcoin --coin $(COIN)
 
 generate: ## Generate test interface mocks and struct encoders
 	go generate ./src/...

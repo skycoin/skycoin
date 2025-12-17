@@ -78,7 +78,7 @@ func (num *Number) inc() {
 }
 
 func (num *Number) rshX(bits uint) (res int) {
-	res = int(new(big.Int).And(&num.Int, new(big.Int).SetUint64((1<<bits)-1)).Uint64())
+	res = int(new(big.Int).And(&num.Int, new(big.Int).SetUint64((1<<bits)-1)).Uint64()) //nolint:gosec
 	num.Rsh(&num.Int, bits)
 	return
 }

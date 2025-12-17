@@ -8,15 +8,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io/fs"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
 	"unicode"
 
 	"github.com/rs/cors"
+
+	"github.com/skycoin/skycoin/src/gui"
 	"github.com/skycoin/skycoin/src/util/gziphandler"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -171,7 +174,7 @@ func writeHTTPResponse(w http.ResponseWriter, resp HTTPResponse) {
 
 func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 	var appLoc string
-	if c.EnableGUI {
+	if c.EnableGUI && c.StaticDir != "" {
 		var err error
 		appLoc, err = file.DetermineResourcePath(c.StaticDir, resourceDir, devDir)
 		if err != nil {
@@ -265,7 +268,7 @@ func CreateHTTPS(host string, c Config, gateway Gatewayer, certFile, keyFile str
 	logger.Infof("Using %s for the certificate", certFile)
 	logger.Infof("Using %s for the key", keyFile)
 
-	listener, err := tls.Listen("tcp", host, &tls.Config{
+	listener, err := tls.Listen("tcp", host, &tls.Config{ //nolint:gosec
 		Certificates: []tls.Certificate{cert},
 	})
 	if err != nil {
@@ -340,8 +343,8 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		AllowedOrigins:     allowedOrigins,
 		Debug:              false,
 		AllowedMethods:     []string{http.MethodGet, http.MethodPost},
-		AllowedHeaders:     []string{"Origin", "Accept", "Content-Type", "X-Requested-With", CSRFHeaderName},
-		AllowCredentials:   false, // credentials are not used, but it would be safe to enable if necessary
+		AllowedHeaders:     []string{"*"}, // Allow all headers since we use CSRF tokens for security
+		AllowCredentials:   false,         // credentials are not used, but it would be safe to enable if necessary
 		OptionsPassthrough: false,
 	})
 
@@ -434,31 +437,79 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 		webHandler(apiVersion2, "/api/v2"+endpoint, handler, methodAPISets)
 	}
 
-	indexHandler := newIndexHandler(c.appLoc, c.enableGUI)
-	if !c.disableCSP {
-		indexHandler = CSPHandler(indexHandler, ContentSecurityPolicy)
-	}
-	webHandler(apiVersion1, "/", indexHandler, nil)
+	var subFS fs.FS
+	var err error
+	var indexHandler http.Handler
 
-	if c.enableGUI {
-		fileInfos, err := ioutil.ReadDir(c.appLoc)
+	if c.appLoc != "" && c.enableGUI {
+		fileInfos, err := os.ReadDir(c.appLoc)
 		if err != nil {
-			logger.WithError(err).Panicf("ioutil.ReadDir(%s) failed", c.appLoc)
+			logger.WithError(err).Errorf("os.ReadDir(%s) failed", c.appLoc)
 		}
 
 		fs := http.FileServer(http.Dir(c.appLoc))
 		if !c.disableCSP {
 			fs = CSPHandler(fs, ContentSecurityPolicy)
 		}
-
+		indexHTMLFound := false
 		for _, fileInfo := range fileInfos {
+			if fileInfo.Name() == "index.html" {
+				indexHTMLFound = true
+			}
 			route := fmt.Sprintf("/%s", fileInfo.Name())
 			if fileInfo.IsDir() {
 				route = route + "/"
 			}
-
 			webHandler(apiVersion1, route, fs, nil)
 		}
+		if !indexHTMLFound {
+			logger.Error("index.html not found in embedded gui sources ; web interface will malfunction")
+		}
+		indexHandler = oldIndexHandler(c.appLoc, c.enableGUI)
+	}
+
+	if c.appLoc == "" && c.enableGUI {
+		subFS, err = fs.Sub(gui.GuiFiles, "static/dist")
+		if err != nil {
+			logger.WithError(err).Error("fs.Sub() failed")
+		}
+
+		fileInfos, err := fs.ReadDir(subFS, ".")
+		if err != nil {
+			logger.WithError(err).Error("fs.ReadDir() failed")
+		}
+
+		if len(fileInfos) == 0 {
+			logger.Error("Embedded gui does not contain any files")
+		}
+
+		fsHandler := http.FileServer(http.FS(subFS))
+		if !c.disableCSP {
+			fsHandler = CSPHandler(fsHandler, ContentSecurityPolicy)
+		}
+
+		indexHTMLFound := false
+		for _, fileInfo := range fileInfos {
+			if fileInfo.Name() == "index.html" {
+				indexHTMLFound = true
+			}
+			route := fmt.Sprintf("/%s", fileInfo.Name())
+			if fileInfo.IsDir() {
+				route = route + "/"
+			}
+			logger.Debug("route: ", route)
+			webHandler(apiVersion1, route, fsHandler, nil)
+		}
+		if !indexHTMLFound {
+			logger.Error("index.html not found in embedded gui sources ; web interface will malfunction")
+		}
+		indexHandler = newIndexHandler(subFS, c.enableGUI)
+	}
+	if !c.disableCSP && indexHandler != nil {
+		indexHandler = CSPHandler(indexHandler, ContentSecurityPolicy)
+	}
+	if indexHandler != nil {
+		webHandler(apiVersion1, "/", indexHandler, nil)
 	}
 
 	// get the current CSRF token
@@ -531,6 +582,9 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	})
 	webHandlerV2("/wallet/recover", walletRecoverHandler(gateway), map[string][]string{
 		http.MethodPost: {EndpointsWallet},
+	})
+	webHandlerV1("/wallet/xpub", walletXPubKeyHandler(gateway), map[string][]string{
+		http.MethodGet: {EndpointsWallet},
 	})
 
 	// Blockchain interface
@@ -651,16 +705,18 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 }
 
 // newIndexHandler returns a http.Handler for index.html, where index.html is in appLoc
-func newIndexHandler(appLoc string, enableGUI bool) http.Handler {
+func oldIndexHandler(appLoc string, enableGUI bool) http.Handler {
 	// Serves the main page
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !enableGUI {
-			wh.Error404(w, "")
+			logger.Error("GUI disabled")
+			wh.Error404(w, "GUI disabled")
 			return
 		}
 
 		if r.URL.Path != "/" {
-			wh.Error404(w, "")
+			logger.Error(`r.URL.Path != "/"`)
+			wh.Error404(w, `r.URL.Path != "/"`)
 			return
 		}
 
@@ -669,6 +725,31 @@ func newIndexHandler(appLoc string, enableGUI bool) http.Handler {
 			logger.Debugf("Serving index page: %s", page)
 			http.ServeFile(w, r, page)
 		}
+	})
+}
+
+func newIndexHandler(guiFS fs.FS, enableGUI bool) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !enableGUI || r.URL.Path != "/" {
+			logger.Error("GUI disabled")
+			wh.Error404(w, "GUI disabled")
+			return
+		}
+		if guiFS == nil {
+			logger.Error("guiFS == nil")
+			wh.Error404(w, `guiFS == nil`)
+			return
+		}
+		data, err := fs.ReadFile(guiFS, "index.html")
+		if err != nil {
+			logger.WithError(err).Error("index.html not found in embedded GUI")
+			wh.Error404(w, `index.html not found in embedded GUI`)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(data) //nolint
 	})
 }
 

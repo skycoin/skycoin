@@ -1,0 +1,63 @@
+@import '../../../../assets/scss/_variables.scss';
+
+.balance-container {
+  padding-left: 20px;
+  padding-bottom: 5px;
+  margin-top: -10px;
+
+  > div {
+    display: inline-block;
+    padding: 14px;
+    margin-right: 10px;
+    font-size: $siz-normal-text;
+    font-weight: 700;
+    border-radius: 5px;
+    background-color: $col-odd-background;
+
+    .small {
+      font-weight: 500;
+      font-size: $siz-small-text;
+    }
+
+    .coin-name {
+      font-weight: 500;
+      font-size: $siz-mini-text;
+    }
+  }
+}
+
+.-right-margin {
+  padding-right: 150px;
+
+  @media (max-width: $max-xs-width) {
+    & {
+      padding-right: 0px;
+    }
+  }
+}
+
+.-qr-code {
+  height: 1px;
+  text-align: right;
+}
+
+app-qr-code {
+  position: relative;
+  top: -131px;
+  width: 130px;
+  display: inline-block;
+
+  @media (max-width: $max-xs-width) {
+    & {
+      position: inherit;
+      display: block;
+      margin-bottom: 5px;
+    }
+  }
+}
+
+@media (min-width: ($max-xs-width+1)) {
+  .-tx-number {
+    padding-top: 0 !important;
+  }
+}

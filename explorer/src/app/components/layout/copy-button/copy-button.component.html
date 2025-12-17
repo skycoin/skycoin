@@ -1,0 +1,7 @@
+<div class="icon" (click)="copy()" unselectable="on">
+  &#xf0c5;
+  <!-- Black "Copied" message box,  -->
+  <div class="label-container">
+    <div class="label" [class.hidden]="!showLabel" [@showMessage]="animState" (@showMessage.done)="animationDone()">{{ 'copy.copied' | translate }}</div>
+  </div>
+</div>

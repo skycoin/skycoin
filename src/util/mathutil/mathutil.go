@@ -52,7 +52,7 @@ func AddUint32(a, b uint32) (uint32, error) {
 
 // Uint64ToInt64 converts a uint64 to an int64, returning an error if the uint64 value overflows int64
 func Uint64ToInt64(a uint64) (int64, error) {
-	b := int64(a)
+	b := int64(a) //nolint:gosec
 	if b < 0 {
 		return 0, ErrUint64OverflowsInt64
 	}
@@ -77,5 +77,5 @@ func IntToUint32(a int) (uint32, error) {
 		return 0, ErrIntOverflowsUint32
 	}
 
-	return uint32(a), nil
+	return uint32(a), nil //nolint:gosec
 }

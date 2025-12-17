@@ -55,9 +55,10 @@ func (vs *Visor) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.Addr
 	var walletBalance wallet.BalancePair
 	var addrsBalanceList []wallet.BalancePair
 	var addrs []cipher.Address
+	var err error
 
 	if err := vs.wallets.View(wltID, func(w wallet.Wallet) error {
-		var err error
+		// Get addresses - assign to outer addrs variable, not a new local one
 		addrs, err = func() ([]cipher.Address, error) {
 			addrs, err := w.GetAddresses()
 			if err != nil {
@@ -65,6 +66,9 @@ func (vs *Visor) GetWalletBalance(wltID string) (wallet.BalancePair, wallet.Addr
 			}
 			return wallet.SkycoinAddresses(addrs), nil
 		}()
+		if err != nil {
+			return err
+		}
 
 		addrsBalanceList, err = vs.GetBalanceOfAddresses(addrs)
 		return err

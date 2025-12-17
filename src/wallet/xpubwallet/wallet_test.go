@@ -4,24 +4,25 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"math"
+	"os"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/wallet"
-	"github.com/stretchr/testify/require"
 )
 
 var testXPub = "xpub6EMRsT95ntbCFRR2Z6WppnGss1SijAkarfKoRM8tft66tuJh2nt4aJi13S21hUCLZL4cbFBXgHuxipmsS7dj1DW1s4NRup3hzxWfqUdGYv7"
 
 type fakeWalletDecoder struct{}
 
-func (d fakeWalletDecoder) Encode(w wallet.Wallet) ([]byte, error) {
+func (d fakeWalletDecoder) Encode(_ wallet.Wallet) ([]byte, error) {
 	return nil, nil
 }
 
-func (d fakeWalletDecoder) Decode(b []byte) (wallet.Wallet, error) {
+func (d fakeWalletDecoder) Decode(_ []byte) (wallet.Wallet, error) {
 	return nil, nil
 }
 
@@ -291,9 +292,14 @@ func TestWalletSerialize(t *testing.T) {
 	require.NoError(t, err)
 
 	// load wallet file and compare
-	fb, err := ioutil.ReadFile("./testdata/wallet_serialize.wlt")
+	fb, err := os.ReadFile("./testdata/wallet_serialize.wlt")
 	require.NoError(t, err)
-	require.Equal(t, bytes.TrimRight(fb, "\n"), b)
+	fb = bytes.TrimRight(fb, "\r\n")
+
+	// Normalize line endings for cross-platform compatibility
+	fb = bytes.ReplaceAll(fb, []byte("\r\n"), []byte("\n"))
+	b = bytes.ReplaceAll(b, []byte("\r\n"), []byte("\n"))
+	require.Equal(t, fb, b)
 
 	wlt := Wallet{}
 	err = wlt.Deserialize(b)
@@ -301,7 +307,7 @@ func TestWalletSerialize(t *testing.T) {
 }
 
 func TestWalletDeserialize(t *testing.T) {
-	b, err := ioutil.ReadFile("./testdata/wallet_serialize.wlt")
+	b, err := os.ReadFile("./testdata/wallet_serialize.wlt")
 	require.NoError(t, err)
 
 	w := Wallet{}
@@ -443,7 +449,7 @@ func TestScanAddresses(t *testing.T) {
 				opts...)
 			require.NoError(t, err)
 
-			addrs, err := w.ScanAddresses(uint64(tc.scanN), tc.txnFinder)
+			addrs, err := w.ScanAddresses(tc.scanN, tc.txnFinder)
 			require.Equal(t, tc.err, err)
 			if err != nil {
 				return

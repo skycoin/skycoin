@@ -1,7 +1,6 @@
 package kvstorage
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -18,7 +17,7 @@ const (
 )
 
 func setupTmpDir(t *testing.T) (string, func()) {
-	tmpDir, err := ioutil.TempDir("", "kvstoragetest")
+	tmpDir, err := os.MkdirTemp("", "kvstoragetest")
 	require.NoError(t, err)
 
 	if err != nil {
@@ -48,9 +47,9 @@ func setupEmptyTestFile(t *testing.T, fn string) {
 }
 
 func setupCorruptedTestFile(t *testing.T, fn string) {
-	f, err := os.Create(fn)
+	f, err := os.Create(fn) //nolint:gosec
 	require.NoError(t, err)
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 	_, err = f.Write([]byte("corrupt json file"))
 	require.NoError(t, err)
 }

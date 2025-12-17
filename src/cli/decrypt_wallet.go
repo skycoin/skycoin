@@ -1,8 +1,9 @@
 package cli
 
 import (
-	"github.com/skycoin/skycoin/src/wallet"
 	"github.com/spf13/cobra"
+
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 func decryptWalletCmd() *cobra.Command {

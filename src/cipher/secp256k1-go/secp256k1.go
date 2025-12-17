@@ -64,11 +64,11 @@ new_seckey:
 
 	pubkey = pubkeyFromSeckey(seckey)
 	if pubkey == nil {
-		log.Panic("IMPOSSIBLE: pubkey invalid from valid seckey")
+		log.Panic("IMPOSSIBLE: pubkey invalid from valid seckey") //nolint:revive
 		goto new_seckey
 	}
 	if ret := secp.PubkeyIsValid(pubkey); ret != 1 {
-		log.Panicf("ERROR: Pubkey invalid, ret=%d", ret)
+		log.Panicf("ERROR: Pubkey invalid, ret=%d", ret) //nolint:revive
 		goto new_seckey
 	}
 
@@ -91,7 +91,7 @@ func PubkeyFromSeckey(seckey []byte) []byte {
 		return nil
 	}
 	if ret := secp.PubkeyIsValid(pubkey); ret != 1 {
-		log.Panicf("ERROR: Pubkey invalid, ret=%d", ret)
+		log.Panicf("ERROR: Pubkey invalid, ret=%d", ret) //nolint:revive
 		return nil
 	}
 
@@ -168,7 +168,7 @@ new_seckey:
 
 	pubkey := secp.GeneratePublicKey(seckey)
 	if pubkey == nil {
-		log.Panic("ERROR: deterministicKeyPairIteratorStep: GeneratePublicKey failed, impossible, secp.BaseMultiply always returns true")
+		log.Panic("ERROR: deterministicKeyPairIteratorStep: GeneratePublicKey failed, impossible, secp.BaseMultiply always returns true") //nolint:revive
 		goto new_seckey
 	}
 
@@ -184,7 +184,7 @@ new_seckey:
 		log.Printf("seckey= %s", hex.EncodeToString(seckey))
 		log.Printf("pubkey= %s", hex.EncodeToString(pubkey))
 
-		log.Panicf("ERROR: deterministicKeyPairIteratorStep: VerifyPubkey failed, ret=%d", ret)
+		log.Panicf("ERROR: deterministicKeyPairIteratorStep: VerifyPubkey failed, ret=%d", ret) //nolint:revive
 		goto new_seckey
 	}
 
@@ -192,7 +192,7 @@ new_seckey:
 }
 
 // Secp256k1Hash double SHA256, salted with ECDH operation in curve
-func Secp256k1Hash(seed []byte) []byte { //nolint:golint
+func Secp256k1Hash(seed []byte) []byte { //nolint:revive
 	hash := SumSHA256(seed)
 	_, seckey := deterministicKeyPairIteratorStep(hash) // seckey1 is usually sha256 of hash
 	pubkeySeed := SumSHA256(hash)                       // SumSHA256(hash) usually equals seckey

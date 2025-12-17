@@ -5,18 +5,19 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/bip39"
 	"github.com/skycoin/skycoin/src/cipher/crypto"
 	"github.com/skycoin/skycoin/src/wallet"
-	"github.com/stretchr/testify/require"
 )
 
 var (
-	testSeed           = "test123"
+	testSeed           = "test123" //nolint:unused
 	testSkycoinEntries = skycoinEntries([]readableEntry{
 		{
 			Address: "B4B6Hx1a3WPUHP323Bhqydifeu8TS4Zfan",
@@ -536,12 +537,12 @@ func TestWalletGenerateAddress(t *testing.T) {
 				// check the entry number
 				l, err = w.EntriesLen()
 				require.NoError(t, err)
-				require.Equal(t, int(tc.num), l)
+				require.Equal(t, int(tc.num), l) //nolint:gosec
 
 				addrs, err := w.GetAddresses()
 				require.NoError(t, err)
 
-				_, keys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(tc.seed), int(tc.num))
+				_, keys := cipher.MustGenerateDeterministicKeyPairsSeed([]byte(tc.seed), int(tc.num)) //nolint:gosec // Test data generation
 				for i, k := range keys {
 					a := cipher.MustAddressFromSecKey(k)
 					require.Equal(t, a.String(), addrs[i].String())
@@ -580,7 +581,7 @@ func TestWalletGetEntry(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			data, err := ioutil.ReadFile(tc.wltFile)
+			data, err := os.ReadFile(tc.wltFile)
 			require.NoError(t, err)
 			ld := Loader{}
 			w, err := ld.Load(data)
@@ -746,9 +747,14 @@ func TestWalletSerialize(t *testing.T) {
 	require.NoError(t, err)
 
 	// load wallet file and compare
-	fb, err := ioutil.ReadFile("./testdata/wallet_serialize.wlt")
+	fb, err := os.ReadFile("./testdata/wallet_serialize.wlt")
 	require.NoError(t, err)
-	require.Equal(t, bytes.TrimRight(fb, "\n"), b)
+	fb = bytes.TrimRight(fb, "\r\n")
+
+	// Normalize line endings for cross-platform compatibility
+	fb = bytes.ReplaceAll(fb, []byte("\r\n"), []byte("\n"))
+	b = bytes.ReplaceAll(b, []byte("\r\n"), []byte("\n"))
+	require.Equal(t, fb, b)
 
 	wlt := Wallet{}
 	err = wlt.Deserialize(b)
@@ -756,7 +762,7 @@ func TestWalletSerialize(t *testing.T) {
 }
 
 func TestWalletDeserialize(t *testing.T) {
-	b, err := ioutil.ReadFile("./testdata/wallet_serialize.wlt")
+	b, err := os.ReadFile("./testdata/wallet_serialize.wlt")
 	require.NoError(t, err)
 
 	w := Wallet{}

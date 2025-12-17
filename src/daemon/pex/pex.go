@@ -4,7 +4,7 @@ package pex
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math"
 	"math/rand"
 	"net"
@@ -60,7 +60,7 @@ var (
 	// instructions on how to include this log's output
 	logger = logging.MustGetLogger("pex")
 	// Default rng
-	rnum = rand.New(rand.NewSource(time.Now().Unix()))
+	rnum = rand.New(rand.NewSource(time.Now().Unix())) //nolint:gosec
 	// For removing inadvertent whitespace from addresses
 	whitespaceFilter = regexp.MustCompile(`\s`)
 )
@@ -389,14 +389,14 @@ func (px *Pex) loadCustom(fn string) error {
 	px.Lock()
 	defer px.Unlock()
 
-	f, err := os.Open(fn)
+	f, err := os.Open(fn) //nolint:gosec
 	if err != nil {
 		return err
 	}
 
-	defer f.Close()
+	defer f.Close() //nolint:errcheck
 
-	data, err := ioutil.ReadAll(f)
+	data, err := io.ReadAll(f)
 	if err != nil {
 		return err
 	}
@@ -640,9 +640,9 @@ func downloadText(url string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}

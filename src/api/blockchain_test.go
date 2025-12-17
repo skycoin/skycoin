@@ -234,7 +234,7 @@ func makeBadBlock(t *testing.T) *coin.Block {
 	}
 	err = txn.PushOutput(genAddress, math.MaxInt64+1, 255)
 	require.NoError(t, err)
-	b, err := coin.NewBlock(*preBlock, now, uxHash, coin.Transactions{txn}, func(t *coin.Transaction) (uint64, error) {
+	b, err := coin.NewBlock(*preBlock, now, uxHash, coin.Transactions{txn}, func(_ *coin.Transaction) (uint64, error) {
 		return 0, nil
 	})
 	require.NoError(t, err)

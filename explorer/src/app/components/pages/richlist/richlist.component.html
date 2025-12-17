@@ -1,0 +1,26 @@
+<!-- Title -->
+<h2>{{ 'richlist.title' | translate }}</h2>
+
+<!-- Table -->
+<div class="table">
+  <!-- Header -->
+  <div class="-header">
+    <div class="row">
+      <div class="col-sm-1 -not-xs"><div>#</div></div>
+      <div class="col-xs-6 col-sm-8"><div>{{ 'general.address' | translate }}</div></div>
+      <div class="col-xs-6 col-sm-3"><div>{{ 'general.coins' | translate }}</div></div>
+    </div>
+  </div>
+
+  <!-- Loading control -->
+  <app-loading [longErrorMsg]="longErrorMsg | translate" *ngIf="!entries.length"></app-loading>
+
+  <!-- Data list -->
+  <a class="-row" *ngFor="let entry of entries; let i = index" [routerLink]="'/app/address/' + entry.address">
+    <div class="row">
+      <div class="col-sm-1 -not-xs -gray">{{ i+1 }}</div>
+      <div class="col-xs-6 col-sm-8">{{ entry.address }}{{ explorer.getAddressName(entry.address) }}</div>
+      <div class="col-xs-6 col-sm-3">{{ entry.coins | amount:true:'first' }}</div>
+    </div>
+  </a>
+</div>

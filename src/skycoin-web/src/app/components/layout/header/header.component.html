@@ -1,0 +1,68 @@
+<div class="-container">
+  <div class="large-header" [ngStyle]="{'background-image': currentCoin.imageName ? 'url(assets/img/coins/' + currentCoin.imageName + ')' : 'none'}">
+    <div class="gradient" [style.background-image]="currentCoin.gradientName ?
+      'url(assets/img/coins/' + currentCoin.gradientName + ')' :
+      (!currentCoin.imageName ? 'url(assets/img/coins/generic.jpg)' : 'none')">
+      <app-top-bar [headline]="headline"></app-top-bar>
+      <div class="balance-container">
+        <div>
+          <p *ngIf="!highest && loading" class="loading-header">{{ 'header.loading' | translate }}</p>
+          <p *ngIf="highest && loading" class="coins"><span>{{ percentage | percent:'1.2-2' }}</span></p>
+          <p *ngIf="!loading" class="coins"><span>{{ coins.decimalPlaces(6).toString() | number:'1.0-6' }}</span> {{ currentCoin.coinSymbol }}</p>
+          <p *ngIf="!loading && balance" class="dollars">{{ balance }}</p>
+          <p *ngIf="!loading && !balance && currentCoin.priceTickerId" class="dollars">{{ 'header.loading' | translate }}</p>
+        </div>
+      </div>
+      <div class="hour-balance">
+        <p *ngIf="loading">{{ 'header.syncing-blocks' | translate }} {{ current && highest ?  '(' + current + '/'  + highest + ')' : '...' }}</p>
+        <p *ngIf="!loading">{{ hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }}</p>
+        <div class="-on-small-and-below-only">
+          <span class="blinking-warning-icon-container" *ngIf="this.problemUpdatingBalance">
+            <mat-icon
+              [matTooltip]="'header.connection-error-tooltip' | translate"
+              matTooltipPosition="right"
+              matTooltipClass="tooltip"
+              class="blinking-warning-icon">
+              warning
+            </mat-icon>
+          </span>
+          <span *ngIf="balanceObtained">
+            {{ 'header.top-bar.updated1' | translate }}
+            {{ timeSinceLastBalanceUpdate === 0 ? ('header.top-bar.less-than' | translate ) : timeSinceLastBalanceUpdate }}
+            {{ 'header.top-bar.updated2' | translate }}
+          </span>
+          <span *ngIf="!balanceObtained">-</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <app-nav-bar class="-not-on-small-and-below"></app-nav-bar>
+  <mat-progress-bar
+    [style.visibility]="loading ? 'visible' : 'hidden'"
+    class="progress-bar"
+    color="primary"
+    [mode]="!isBlockchainLoading ? 'query' : 'determinate'"
+    [value]="percentage * 100">
+  </mat-progress-bar>
+  <app-nav-bar class="-on-small-and-below-only"></app-nav-bar>
+  <mat-toolbar class="notification-bar" *ngIf="connectionError != null">
+    <div *ngIf="connectionError === connectionErrorsList.NO_ACTIVE_CONNECTIONS">
+      {{ 'header.errors.no-connections' | translate }}
+    </div>
+    <div *ngIf="connectionError === connectionErrorsList.UNAVAILABLE_BACKEND">
+      {{ 'header.errors.no-backend1' | translate }}
+      <a href="https://web.telegram.org/#/im?p=@skycoinsupport">{{ 'header.errors.no-backend2' | translate }}</a>
+      {{ 'header.errors.no-backend3' | translate }}
+    </div>
+  </mat-toolbar>
+  <mat-toolbar class="notification-bar" *ngIf="hasPendingTxs || !synchronized">
+    <div *ngIf="hasPendingTxs && synchronized">
+      {{ 'header.pending-txs1' | translate }}
+      <a routerLink="/settings/pending-transactions">{{ 'header.pending-txs2' | translate }}</a>
+      {{ 'header.pending-txs3' | translate }}
+    </div>
+    <div *ngIf="!synchronized">
+      {{ 'header.synchronizing' | translate }}
+    </div>
+  </mat-toolbar>
+</div>

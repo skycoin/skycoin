@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"reflect"
 	"sort"
 	"testing"
@@ -82,7 +82,7 @@ func TestCreateTransaction(t *testing.T) {
 	getArrayRet := coin.UxArray{
 		{
 			Head: coin.UxHead{
-				Time:  uint64(time.Now().Unix()) - 3700,
+				Time:  uint64(time.Now().Unix()) - 3700, //nolint:gosec // Test data conversion
 				BkSeq: 100,
 			},
 			Body: coin.UxBody{
@@ -125,7 +125,7 @@ func TestCreateTransaction(t *testing.T) {
 	headBlock := &coin.SignedBlock{
 		Block: coin.Block{
 			Head: coin.BlockHeader{
-				Time: uint64(time.Now().Unix()),
+				Time: uint64(time.Now().Unix()), //nolint:gosec // Test data conversion
 			},
 		},
 	}
@@ -302,7 +302,7 @@ func TestCreateTransaction(t *testing.T) {
 			b.On("Head", matchDBTx).Return(tc.blockchainHead, tc.blockchainHeadErr)
 			up.On("GetUnspentHashesOfAddrs", matchDBTx, tc.wp.Addresses).Return(tc.getUnspentHashesOfAddrs, tc.getUnspentHashesOfAddrsErr)
 
-			ut.On("ForEach", matchDBTx, mock.MatchedBy(func(f func(cipher.SHA256, UnconfirmedTransaction) error) bool {
+			ut.On("ForEach", matchDBTx, mock.MatchedBy(func(_ func(cipher.SHA256, UnconfirmedTransaction) error) bool {
 				return true
 			})).Return(tc.forEachErr).Run(unconfirmedForEachMockRun(t, tc.unconfirmedTxns, tc.uxOuts, tc.wp.IgnoreUnconfirmed))
 
@@ -338,7 +338,7 @@ func TestCreateTransaction(t *testing.T) {
 }
 
 func prepareWltDir() string {
-	dir, err := ioutil.TempDir("", "wallets")
+	dir, err := os.MkdirTemp("", "wallets")
 	if err != nil {
 		panic(err)
 	}
@@ -384,7 +384,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 		return entries[5:8]
 	}()
 	require.Len(t, bip44Entries, 3)
-	bip44Addrs, err := func() ([]cipher.Address, error) {
+	bip44Addrs, err := func() ([]cipher.Address, error) { //nolint:unparam
 		addrs, err := w.GetAddresses()
 		require.NoError(t, err)
 		return wallet.SkycoinAddresses(addrs), nil
@@ -445,7 +445,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 	getArrayRet := coin.UxArray{
 		{
 			Head: coin.UxHead{
-				Time:  uint64(time.Now().Unix()) - 3700,
+				Time:  uint64(time.Now().Unix()) - 3700, //nolint:gosec // Test data conversion
 				BkSeq: 100,
 			},
 			Body: coin.UxBody{
@@ -460,7 +460,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 
 	unknownUxOutGetArrayRet := append(getArrayRet, coin.UxOut{
 		Head: coin.UxHead{
-			Time:  uint64(time.Now().Unix()) - 3700,
+			Time:  uint64(time.Now().Unix()) - 3700, //nolint:gosec // Test data conversion
 			BkSeq: 100,
 		},
 		Body: coin.UxBody{
@@ -501,7 +501,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 	bip44GetArrayRet := coin.UxArray{
 		{
 			Head: coin.UxHead{
-				Time:  uint64(time.Now().Unix()) - 3700,
+				Time:  uint64(time.Now().Unix()) - 3700, //nolint:gosec // Test data conversion
 				BkSeq: 100,
 			},
 			Body: coin.UxBody{
@@ -516,7 +516,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 
 	bip44UnknownUxOutGetArrayRet := append(bip44GetArrayRet, coin.UxOut{
 		Head: coin.UxHead{
-			Time:  uint64(time.Now().Unix()) - 3700,
+			Time:  uint64(time.Now().Unix()) - 3700, //nolint:gosec // Time conversion
 			BkSeq: 100,
 		},
 		Body: coin.UxBody{
@@ -557,7 +557,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 	headBlock := &coin.SignedBlock{
 		Block: coin.Block{
 			Head: coin.BlockHeader{
-				Time: uint64(time.Now().Unix()),
+				Time: uint64(time.Now().Unix()), //nolint:gosec // Time conversion
 			},
 		},
 	}
@@ -946,7 +946,7 @@ func TestWalletCreateTransaction(t *testing.T) {
 			b.On("Head", matchDBTx).Return(tc.blockchainHead, tc.blockchainHeadErr)
 			up.On("GetUnspentHashesOfAddrs", matchDBTx, addrs).Return(tc.getUnspentHashesOfAddrs, tc.getUnspentHashesOfAddrsErr)
 
-			ut.On("ForEach", matchDBTx, mock.MatchedBy(func(f func(cipher.SHA256, UnconfirmedTransaction) error) bool {
+			ut.On("ForEach", matchDBTx, mock.MatchedBy(func(_ func(cipher.SHA256, UnconfirmedTransaction) error) bool {
 				return true
 			})).Return(tc.forEachErr).Run(unconfirmedForEachMockRun(t, tc.unconfirmedTxns, tc.uxOuts, tc.wp.IgnoreUnconfirmed))
 
@@ -1343,7 +1343,7 @@ func TestGetCreateTransactionAuxsUxOut(t *testing.T) {
 				db:          db,
 			}
 
-			unconfirmed.On("ForEach", matchDBTx, mock.MatchedBy(func(f func(cipher.SHA256, UnconfirmedTransaction) error) bool {
+			unconfirmed.On("ForEach", matchDBTx, mock.MatchedBy(func(_ func(cipher.SHA256, UnconfirmedTransaction) error) bool {
 				return true
 			})).Return(tc.forEachErr).Run(unconfirmedForEachMockRun(t, tc.unconfirmedTxns, tc.uxOuts, tc.ignoreUnconfirmed))
 
@@ -1546,7 +1546,7 @@ func TestGetCreateTransactionAuxsAddress(t *testing.T) {
 			}
 			unspent.On("GetUnspentHashesOfAddrs", matchDBTx, tc.addrs).Return(tc.getUnspentHashesOfAddrs, nil)
 
-			unconfirmed.On("ForEach", matchDBTx, mock.MatchedBy(func(f func(cipher.SHA256, UnconfirmedTransaction) error) bool {
+			unconfirmed.On("ForEach", matchDBTx, mock.MatchedBy(func(_ func(cipher.SHA256, UnconfirmedTransaction) error) bool {
 				return true
 			})).Return(tc.forEachErr).Run(unconfirmedForEachMockRun(t, tc.unconfirmedTxns, tc.getUnspentHashesOfAddrs.Flatten(), tc.ignoreUnconfirmed))
 
@@ -1573,7 +1573,7 @@ func TestGetCreateTransactionAuxsAddress(t *testing.T) {
 	}
 }
 
-var matchDBTx = mock.MatchedBy(func(tx *dbutil.Tx) bool {
+var matchDBTx = mock.MatchedBy(func(_ *dbutil.Tx) bool {
 	return true
 })
 

@@ -71,9 +71,7 @@ func (ep *EntropyPool) Mix256(in []byte) (out []byte) {
 func (ep *EntropyPool) Mix(in []byte) []byte {
 	length := len(in) - len(in)%32 + 32
 	buff := make([]byte, length)
-	for i := 0; i < len(in); i++ {
-		buff[i] = in[i]
-	}
+	copy(buff, in)
 	iterations := (len(in) / 32) + 1
 	for i := 0; i < iterations; i++ {
 		tmp := ep.Mix256(buff[32*i : 32+32*i]) //32 byte slice
@@ -113,9 +111,9 @@ func init() {
 		sha256HashPool <- sha256.New()
 	}
 
-	seed1 := []byte(strconv.FormatUint(uint64(time.Now().UnixNano()), 16))
+	seed1 := []byte(strconv.FormatUint(uint64(time.Now().UnixNano()), 16)) //nolint:gosec
 	seed2 := []byte(strings.Join(os.Environ(), ""))
-	seed3 := []byte(strconv.FormatUint(uint64(os.Getpid()), 16))
+	seed3 := []byte(strconv.FormatUint(uint64(os.Getpid()), 16)) //nolint:gosec
 
 	seed4 := make([]byte, 256)
 	_, err := io.ReadFull(crand.Reader, seed4) // system secure random number generator

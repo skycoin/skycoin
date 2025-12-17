@@ -103,7 +103,7 @@ func makeAddrHisArray(c *api.Client, addr string, uxOuts []readable.SpentOutput)
 			Txid:      u.SrcTx,
 			Address:   addr,
 			Amount:    amount,
-			Timestamp: time.Unix(int64(u.Time), 0).UTC(),
+			Timestamp: time.Unix(int64(u.Time), 0).UTC(), //nolint:gosec
 			Status:    1,
 			coins:     u.Coins,
 		})
@@ -221,7 +221,7 @@ func createBlkTimeFinder(c *api.Client, ss []uint64) (func(uint64) int64, error)
 	return func(seq uint64) int64 {
 		for _, b := range blocks {
 			if seq == b.Head.BkSeq {
-				return int64(b.Head.Time)
+				return int64(b.Head.Time) //nolint:gosec
 			}
 		}
 		panic("block not found")

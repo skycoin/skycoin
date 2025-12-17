@@ -1,0 +1,78 @@
+@import '../../../../theme/_variables';
+
+.-toggle ::ng-deep button {
+  width: unset;
+  height: unset;
+  padding: 0 10px 0 10px;
+  min-width: 100px;
+  margin: unset;
+  font-size: 13px;
+  box-shadow: unset;
+  background-color: $transparent !important;
+  line-height: unset !important;
+  min-height: 26px;
+
+  span {
+    color: $black;
+    line-height: unset !important;
+  }
+}
+
+.-toggle ::ng-deep button.enabled {
+  background-color: $black !important;
+  
+  span {
+    color: $white;
+  }
+}
+
+.-buttons-container {
+  width: fit-content;
+  padding: 5px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 100px;
+  margin: 0px auto;
+  text-align: center;
+}
+
+.light {
+  &.-buttons-container {
+    background: $grey-lightest;
+  }
+
+  .-toggle ::ng-deep button.enabled {
+    background-color: #fff !important;
+
+    span {
+      color: $grey-dark;
+    }
+  }
+}
+
+.grey {
+  &.-buttons-container {
+    background: rgba(30, 34, 39, 0.03);
+  }
+
+  .-toggle ::ng-deep button.enabled {
+    background-color: rgba(30, 34, 39, 0.07) !important;
+
+    span {
+      color: $grey-dark;
+    }
+  }
+}
+
+.small {
+  &.-buttons-container {
+    padding: 2px;
+    line-height: 0px;
+  }
+
+  .-small-button ::ng-deep button {
+    padding: 0 10px 0 10px;
+    min-width: 70px;
+    font-size: 9px;
+    min-height: 16px;
+  }
+}

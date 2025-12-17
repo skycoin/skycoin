@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
 	"math"
 	"net/http"
 	"net/http/httptest"
@@ -1376,7 +1375,7 @@ func TestTransactionsHandlerV2(t *testing.T) {
 		txn := txnAndInputs.txn
 		txns = append(txns, visor.Transaction{
 			Transaction: txn,
-			Status:      visor.TransactionStatus{Confirmed: true, BlockSeq: uint64(i + 100)},
+			Status:      visor.TransactionStatus{Confirmed: true, BlockSeq: uint64(i + 100)}, //nolint:gosec
 		})
 		txnsInputs = append(txnsInputs, txnAndInputs.inputs)
 	}
@@ -1558,7 +1557,7 @@ func TestTransactionsHandlerV2(t *testing.T) {
 			srv := newServerMux(cfg, gateway)
 			srv.ServeHTTP(rec, req)
 
-			body, err := ioutil.ReadAll(rec.Body)
+			body, err := io.ReadAll(rec.Body)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expectStatusCode, rec.Code)
@@ -1622,7 +1621,7 @@ func prepareTxnAndInputs(t *testing.T) transactionAndInputs {
 	err = txn.UpdateHeader()
 	require.NoError(t, err)
 
-	input, err := visor.NewTransactionInput(ux, uint64(time.Now().UTC().Unix()))
+	input, err := visor.NewTransactionInput(ux, uint64(time.Now().UTC().Unix())) //nolint:gosec
 	require.NoError(t, err)
 
 	return transactionAndInputs{
@@ -1645,7 +1644,7 @@ func makeTransactionWithEmptyAddressOutput(t *testing.T) transactionAndInputs {
 	err = txn.UpdateHeader()
 	require.NoError(t, err)
 
-	input, err := visor.NewTransactionInput(ux, uint64(time.Now().UTC().Unix()))
+	input, err := visor.NewTransactionInput(ux, uint64(time.Now().UTC().Unix())) //nolint:gosec
 	require.NoError(t, err)
 
 	return transactionAndInputs{

@@ -1,3 +1,4 @@
+// Package collection provides wallet collection management.
 package collection
 
 import (

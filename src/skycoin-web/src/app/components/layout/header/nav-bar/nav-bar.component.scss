@@ -1,0 +1,110 @@
+@import '../../../../../theme/variables';
+
+:host {
+  background-color: $white;
+  min-height: 66px;
+
+  @media (max-width: $max-small-width) {
+    & {
+      display: block;
+      background-color: transparent;
+      min-height: 0px;
+    }
+  }
+}
+
+.-buttons {
+  display: flex;
+  width: 100%;
+
+  @media (max-width: $max-small-width) {
+    & {
+      display: table;
+      position: fixed;
+      bottom: 0px;
+      left: 0px;
+      height: $mobile-nav-bar-height;
+      background-color: $white;
+      border-top: 2px solid $grey-very-light;
+      z-index: 101;
+    }
+  }
+
+  .-button {
+    cursor: pointer;
+    padding: 0 20px;
+
+    @media (max-width: $max-small-width) {
+      & {
+        display: table-cell;
+        vertical-align: middle;
+      }
+
+      > div {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+    }
+
+    img {
+      float: left;
+      height: 66px;
+      padding: 17px 0;
+      width: 32px;
+
+      @media (max-width: $max-small-width) {
+        & {
+          height: 28px;
+          width: 28px;
+          padding: 0;
+        }
+      }
+    }
+
+    span {
+      display: inline-block;
+      font-size: 14px;
+      height: 66px;
+      line-height: 66px;
+      margin: 0 5px;
+
+      @media (max-width: $max-small-width) {
+        & {
+          font-size: 11px;
+          height: auto;
+          line-height: unset;
+          margin: 0;
+        }
+      }
+    }
+  }
+
+  .-low-opacity {
+    opacity: 0.2;
+
+    &:hover {
+      opacity: 0.4;
+    }
+  }
+
+  .-full-opacity {
+    opacity: 1 !important;
+  }
+  
+  .secondary-color {
+    color: $yellow;
+  }
+}
+
+.-switch {
+  align-self: center;
+  padding: 0 20px;
+
+  @media (max-width: $max-small-width) {
+    & {
+      display: block;
+      padding: 10px 20px 0px 20px;
+    }
+  }
+}

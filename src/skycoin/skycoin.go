@@ -6,7 +6,6 @@ package skycoin
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -115,7 +114,7 @@ func (c *Coin) Run() error {
 
 	if c.config.Node.HTTPProf {
 		go func() {
-			if err := http.ListenAndServe(c.config.Node.HTTPProfHost, nil); err != nil {
+			if err := http.ListenAndServe(c.config.Node.HTTPProfHost, nil); err != nil { //nolint:gosec // HTTP profiling interface, intentional use
 				c.logger.WithError(err).Errorf("Listen on HTTP profiling interface %s failed", c.config.Node.HTTPProfHost)
 			}
 		}()
@@ -237,9 +236,30 @@ func (c *Coin) Run() error {
 	}
 
 	c.logger.Info("visor.Init")
+	wasGenesisEmpty := c.config.Node.GenesisSignatureStr == ""
+
 	if err := v.Init(); err != nil {
 		c.logger.WithError(err).Error("visor.Init failed")
 		return err
+	}
+
+	// If genesis signature was empty before Init, get it from the genesis block that was just created
+	if wasGenesisEmpty {
+		gb, err := v.GetBlock(0) // Genesis block is always seq 0
+		if err != nil {
+			c.logger.WithError(err).Warning("Failed to get genesis block")
+		} else if gb != nil {
+			c.config.Node.GenesisSignatureStr = gb.Sig.Hex()
+		}
+	}
+
+	// If genesis block was just created, write genesis info to fiber.toml
+	if wasGenesisEmpty && c.config.Node.GenesisSignatureStr != "" {
+		if err := c.config.Node.WriteFiberTomlGenesis(c.config.Node.GenesisSignatureStr); err != nil {
+			c.logger.WithError(err).Warning("Failed to update fiber.toml with genesis info")
+		} else {
+			c.logger.Info("Updated fiber.toml with genesis credentials (address, pubkey, signature)")
+		}
 	}
 
 	wg.Add(1)
@@ -326,7 +346,7 @@ func (c *Coin) initLogFile() (*os.File, error) {
 	tf := "2006-01-02-030405"
 	logfile := filepath.Join(logDir, fmt.Sprintf("%s-v%s.log", time.Now().Format(tf), c.config.Build.Version))
 
-	f, err := os.OpenFile(logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
+	f, err := os.OpenFile(logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600) //nolint:gosec // Log file creation
 	if err != nil {
 		c.logger.WithError(err).Errorf("os.OpenFile(%s) failed", logfile)
 		return nil, err
@@ -342,7 +362,20 @@ func (c *Coin) initLogFile() (*os.File, error) {
 func (c *Coin) ConfigureVisor() visor.Config {
 	vc := visor.NewConfig()
 
-	vc.Distribution = params.MainNetDistribution
+	// Use distribution addresses from fiber.toml if available, otherwise use hardcoded MainNetDistribution
+	if len(c.config.Node.distributionAddresses) > 0 {
+		vc.Distribution = params.Distribution{
+			MaxCoinSupply:        c.config.Node.distributionMaxCoinSupply,
+			InitialUnlockedCount: c.config.Node.distributionUnlockedCount,
+			UnlockAddressRate:    c.config.Node.distributionUnlockRate,
+			UnlockTimeInterval:   c.config.Node.distributionUnlockInterval,
+			Addresses:            c.config.Node.distributionAddresses,
+		}
+		// Validate and decode addresses
+		vc.Distribution.MustValidate()
+	} else {
+		vc.Distribution = params.MainNetDistribution
+	}
 
 	vc.IsBlockPublisher = c.config.Node.RunBlockPublisher
 	vc.Arbitrating = c.config.Node.RunBlockPublisher
@@ -417,8 +450,8 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Pex.CustomPeersFile = c.config.Node.CustomPeersFile
 	dc.Pex.DefaultConnections = c.config.Node.DefaultConnections
 
-	dc.Daemon.MaxOutgoingMessageLength = uint64(c.config.Node.MaxOutgoingMessageLength)
-	dc.Daemon.MaxIncomingMessageLength = uint64(c.config.Node.MaxIncomingMessageLength)
+	dc.Daemon.MaxOutgoingMessageLength = uint64(c.config.Node.MaxOutgoingMessageLength) //nolint:gosec
+	dc.Daemon.MaxIncomingMessageLength = uint64(c.config.Node.MaxIncomingMessageLength) //nolint:gosec
 	dc.Daemon.MaxBlockTransactionsSize = c.config.Node.MaxBlockTransactionsSize
 	dc.Daemon.MaxLastBlocksCount = c.config.Node.MaxLastBlocksCount
 	dc.Daemon.DefaultConnections = c.config.Node.DefaultConnections
@@ -493,14 +526,14 @@ func (c *Coin) createGUI(gw *api.Gateway, host string) (*api.Server, error) {
 
 		s, err = api.CreateHTTPS(host, config, gw, c.config.Node.WebInterfaceCert, c.config.Node.WebInterfaceKey)
 		if err != nil {
-			c.logger.WithError(err).Error("Failed to start web failed")
+			c.logger.WithError(err).Error("Failed to start web")
 			return nil, err
 		}
 	} else {
 		var err error
 		s, err = api.Create(host, config, gw)
 		if err != nil {
-			c.logger.WithError(err).Error("Failed to start web failed")
+			c.logger.WithError(err).Error("Failed to start web")
 			return nil, err
 		}
 	}
@@ -554,11 +587,11 @@ func createCertFiles(certFile, keyFile string) error {
 		return err
 	}
 
-	if err := ioutil.WriteFile(certFile, cert, 0600); err != nil {
+	if err := os.WriteFile(certFile, cert, 0600); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(keyFile, key, 0600); err != nil {
-		os.Remove(certFile)
+	if err := os.WriteFile(keyFile, key, 0600); err != nil {
+		_ = os.Remove(certFile) //nolint:errcheck
 		return err
 	}
 

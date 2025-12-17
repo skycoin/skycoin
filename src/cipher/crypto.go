@@ -270,7 +270,7 @@ func (sk SecKey) Null() bool {
 	return sk == SecKey{}
 }
 
-//ECDH generates a shared secret
+// ECDH generates a shared secret
 // A: pub1,sec1
 // B: pub2,sec2
 // person A sends their public key pub1

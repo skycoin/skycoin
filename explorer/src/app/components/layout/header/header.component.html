@@ -1,0 +1,71 @@
+<header class="page-header">
+  <div class="wrapper">
+    <div class="nav-wrapper">
+      <div class="header-inner">
+        <!-- Logo -->
+        <a href="https://www.skycoin.com/" class="logo">
+          <img src="/assets/img/logo.svg" alt="Skycoin">
+        </a>
+        <div>
+          <!-- Menu button (only visible if the window is too small) -->
+          <button class="menu-toggle-btn menu-show-btn" (click)="toggleMenu(true)"></button>
+          <!-- Menu containers (mainly for when the window is too small) -->
+          <div class="menu-overlay" *ngIf="menuVisible"></div>
+          <div class="nav">
+            <div class="nav-inner" [class.visible]="menuVisible">
+              <!-- Button for closing the menu (only visible if the window is too small) -->
+              <button class="menu-toggle-btn menu-hide-btn" (click)="toggleMenu(false)"></button>
+              <div class="nav-group">
+                <!-- This loop builds the menu. Se the "menu.ts" file for more info about the properties of the items -->
+                <div class="nav-link" *ngFor="let item of menu">
+                  <a *ngIf="!item.menu"
+                      href="{{item.href}}"
+                      [ngClass]="item.active?'active':''"
+                      target="{{item.target}}" >
+                    {{item.name}}
+                  </a>
+                  <div *ngIf="item.menu" class="nav-item dropdown">
+                    <a
+                      [ngClass]="item.active?'btn btn-secondary dropdown-toggle active':'btn btn-secondary dropdown-toggle'"
+                      type="button" id="dropdownMenuButton"
+                      data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" (click)="onClickMenuDropdown(item)">
+                      {{item.name}}<span class="font-awesome">&#xf107;</span>
+                    </a>
+                    <div [ngClass]="item.open?'dropdown-menu open':'dropdown-menu'" aria-labelledby="dropdownMenuButton">
+                      <a *ngFor="let item of item.menu"
+                        [ngClass]="item.active?'dropdown-item active':'dropdown-item'"
+                        href="{{item.href}}"
+                        target="{{item.target}}">
+                        {{item.name}}
+                        </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Additional buttons (only visible if the window is too small) -->
+              <div class="nav-group mobile">
+                <a href="https://t.me/Skycoin" target="_blank" class="nav-link">
+                  <img src="/assets/img/social/telegram.svg" alt="Telegram">
+                  <span>Telegram</span>
+                </a>
+                <!--
+                <a href="https://discordapp.com" target="_blank" class="nav-link">
+                  <img src="/assets/img/social/discord.svg" alt="Discord">
+                  <span>Discord</span>
+                </a>
+                -->
+              </div>
+              <!-- Buy button -->
+              <!--
+              <div class="nav-group">
+                <a href="https://www.skycoin.com/buy/" target="_blank" class="nav-button">Buy Skycoin</a>
+              </div>
+              -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+

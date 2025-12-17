@@ -147,10 +147,10 @@ func (e ErrTxnViolatesUserConstraint) Error() string {
 // Clients will not accept blocks that violate hard constraints, but will
 // accept blocks that violate soft constraints.
 // Checks:
-//      * That the transaction size is not greater than the max block total transaction size
-//      * That the transaction burn enough coin hours (the fee)
-//      * That if that transaction does not spend from a locked distribution address
-//      * That the transaction does not create outputs with a higher decimal precision than is allowed
+//   - That the transaction size is not greater than the max block total transaction size
+//   - That the transaction burn enough coin hours (the fee)
+//   - That if that transaction does not spend from a locked distribution address
+//   - That the transaction does not create outputs with a higher decimal precision than is allowed
 func VerifySingleTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.UxArray, distParams params.Distribution, verifyParams params.VerifyTxn) error {
 	if err := verifyTxnSoftConstraints(txn, headTime, uxIn, distParams, verifyParams); err != nil {
 		return NewErrTxnViolatesSoftConstraint(err)
@@ -197,13 +197,14 @@ func verifyTxnSoftConstraints(txn coin.Transaction, headTime uint64, uxIn coin.U
 // should not be included in any block and any block that includes such a transaction
 // should be rejected.
 // Checks:
-//      * That the inputs to the transaction exist
-//      * That the transaction does not create or destroy coins
-//      * That the signatures on the transaction are valid
-//      * That there are no duplicate ux inputs
-//      * That there are no duplicate outputs
-//      * That the transaction input and output coins do not overflow uint64
-//      * That the transaction input and output hours do not overflow uint64
+//   - That the inputs to the transaction exist
+//   - That the transaction does not create or destroy coins
+//   - That the signatures on the transaction are valid
+//   - That there are no duplicate ux inputs
+//   - That there are no duplicate outputs
+//   - That the transaction input and output coins do not overflow uint64
+//   - That the transaction input and output hours do not overflow uint64
+//
 // NOTE: Double spends are checked against the unspent output pool when querying for uxIn
 func VerifySingleTxnHardConstraints(txn coin.Transaction, head coin.BlockHeader, uxIn coin.UxArray, signed TxnSignedFlag) error {
 	// Check for output hours overflow
@@ -235,16 +236,18 @@ func VerifySingleTxnHardConstraints(txn coin.Transaction, head coin.BlockHeader,
 // should not be included in any block and any block that includes such a transaction
 // should be rejected.
 // Checks:
-//      * That the inputs to the transaction exist
-//      * That the transaction does not create or destroy coins
-//      * That the signatures on the transaction are valid
-//      * That there are no duplicate ux inputs
-//      * That there are no duplicate outputs
-//      * That the transaction input and output coins do not overflow uint64
-//      * That the transaction input hours do not overflow uint64
+//   - That the inputs to the transaction exist
+//   - That the transaction does not create or destroy coins
+//   - That the signatures on the transaction are valid
+//   - That there are no duplicate ux inputs
+//   - That there are no duplicate outputs
+//   - That the transaction input and output coins do not overflow uint64
+//   - That the transaction input hours do not overflow uint64
+//
 // NOTE: Double spends are checked against the unspent output pool when querying for uxIn
 // NOTE: output hours overflow is treated as a soft constraint for transactions inside of a block, due to a bug
-//       which allowed some blocks to be published with overflowing output hours.
+//
+//	which allowed some blocks to be published with overflowing output hours.
 func VerifyBlockTxnConstraints(txn coin.Transaction, head coin.BlockHeader, uxIn coin.UxArray) error {
 	if err := verifyTxnHardConstraints(txn, head, uxIn, TxnSigned); err != nil {
 		return NewErrTxnViolatesHardConstraint(err)

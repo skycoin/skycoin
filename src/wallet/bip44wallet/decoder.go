@@ -10,7 +10,7 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-const metaAccountsHash = "metaAccountsHash"
+const metaAccountsHash = "metaAccountsHash" //nolint:unused
 
 // JSONDecoder implements the Decoder interface,
 // which provides methods for encoding and decoding a bip44 wallet in JSON format.
@@ -115,7 +115,7 @@ type readableBip44Account struct {
 	PrivateKey string               `json:"private_key,omitempty"`
 	Name       string               `json:"name"`      // Account name
 	Index      uint32               `json:"index"`     // Account index
-	CoinType   string               `json:"coin_type"` // Account coin type, determins the way to generate addresses
+	CoinType   string               `json:"coin_type"` // Account coin type, determines the way to generate addresses
 	Chains     []readableBip44Chain `json:"chains"`    // Chains, external chain with index value of 0, and internal(change) chain with index value of 1.
 }
 
@@ -139,7 +139,7 @@ func (rc readableBip44Chain) toBip44Chain(d wallet.AddressSecKeyDecoder) (*bip44
 
 	c := bip44Chain{
 		PubKey:     *pubkey,
-		ChainIndex: uint32(ci),
+		ChainIndex: uint32(ci), //nolint:gosec // Chain index conversion
 	}
 
 	for _, re := range rc.Entries {

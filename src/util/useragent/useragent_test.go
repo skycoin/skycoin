@@ -176,7 +176,7 @@ func TestDataJSON(t *testing.T) {
 	require.Equal(t, `"skycoin:0.25.0"`, string(x))
 
 	var e Data
-	err = json.Unmarshal([]byte(x), &e)
+	err = json.Unmarshal(x, &e)
 	require.NoError(t, err)
 	require.Equal(t, d, e)
 
@@ -187,7 +187,7 @@ func TestDataJSON(t *testing.T) {
 	require.Equal(t, `"skycoin:0.25.0(foo; bar)"`, string(x))
 
 	e = Data{}
-	err = json.Unmarshal([]byte(x), &e)
+	err = json.Unmarshal(x, &e)
 	require.NoError(t, err)
 	require.Equal(t, d, e)
 

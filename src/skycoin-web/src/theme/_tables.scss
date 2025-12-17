@@ -1,0 +1,123 @@
+@import 'variables';
+
+.-table {
+  &:last-of-type {
+    margin-bottom: $content-vertical-margin;
+  }
+
+  .-headers {
+    color: $grey-light;
+    display: flex;
+    font-size: 12px;
+    font-weight: 700;
+    height: 50px;
+    line-height: 50px;
+    margin: 0 $normal-content-lateral-margin;
+
+    @media (max-width: $max-small-width) {
+      & {
+        margin: 0px $small-content-lateral-margin;
+      }
+    }
+  
+    @media (max-width: $max-very-small-width) {
+      & {
+        margin: 0px $very-small-content-lateral-margin;
+      }
+    }
+
+    > div {
+      padding: 0 20px;
+    }
+  }
+
+  .-paper {
+    margin: 0 $normal-content-lateral-margin;
+
+    @media (max-width: $max-small-width) {
+      & {
+        margin: 0px $small-content-lateral-margin;
+      }
+    }
+  
+    @media (max-width: $max-very-small-width) {
+      & {
+        margin: 0px $very-small-content-lateral-margin;
+      }
+    }
+
+    .-rounded-top {
+      border-top-left-radius: 10px;
+      border-top-right-radius: 10px;
+    }
+
+    .-row {
+      font-size: $font-size-standard;
+      padding: 15px 0;
+      background: $white;
+      display: flex;
+      align-items: center;
+
+      &:not(:last-child) {
+        border-bottom: 1px solid $grey-very-light;
+      }
+
+      &:first-child {
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+      }
+
+      &:last-child {
+        border-bottom-left-radius: 10px;
+        border-bottom-right-radius: 10px;
+      }
+
+      > div {
+        padding: 0 20px;
+      }
+    }
+  }
+
+  .-width-70 {
+    width: 70px;
+    flex-shrink: 0;
+  }
+
+  .-width-150 {
+    width: 150px;
+    flex-shrink: 0;
+  }
+
+  .-width-200 {
+    width: 200px;
+    flex-shrink: 0;
+  }
+
+  .-width-250 {
+    width: 250px;
+    flex-shrink: 0;
+  }
+}
+
+.small-screen-list-container {
+  width: 100%;
+
+  .list-row {
+    @media (min-width: $max-very-small-width+1) {
+      & {
+        display: flex;
+      }
+    }
+
+    &:not(:last-child) {
+      margin-bottom: 10px;
+    }
+
+    .element-label {
+      width: 100px;
+      color: $grey;
+      flex-shrink: 0;
+      margin-bottom: 2px;
+    }
+  }
+}

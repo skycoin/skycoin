@@ -13,8 +13,10 @@ import (
 // URI: /api/v1/outputs
 // Method: GET, POST
 // Args:
-//    addrs: comma-separated list of addresses
-//    hashes: comma-separated list of uxout hashes
+//
+//	addrs: comma-separated list of addresses
+//	hashes: comma-separated list of uxout hashes
+//
 // If neither addrs nor hashes are specificed, return all unspent outputs.
 // If only one filter is specified, then return outputs match the filter.
 // Both filters cannot be specified.

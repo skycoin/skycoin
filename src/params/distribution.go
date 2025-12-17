@@ -1,3 +1,4 @@
+// Package params defines blockchain parameters and distribution configuration.
 package params
 
 import (

@@ -1,0 +1,57 @@
+<div class="sky-container sky-container-grey">
+  <app-header [headline]="'title.outputs' | translate"></app-header>
+  <div class="container">
+    <app-loading-content
+      *ngIf="!wallets || wallets.length === 0"
+      [isLoading]="!wallets && !showError"
+      [showError]="showError"
+      [noDataText]="'errors.no-outputs'"></app-loading-content>
+    <div class="-table" *ngFor="let wallet of wallets">
+      <div class="-headers">
+        <div class="flex-fill -one-line-ellipsis">{{ wallet.label }}</div>
+        <div class="-width-150 -text-right -not-on-small-and-below">{{ currentCoin.coinSymbol }}</div>
+        <div class="-width-150 -text-right -not-on-small-and-below">{{ currentCoin.hoursName }}</div>
+      </div>
+      <div class="-paper">
+        <ng-container *ngFor="let address of wallet.addresses; let i = index">
+          <div class="-row -not-on-small-and-below">
+            <ng-container *ngTemplateOutlet="headerContents"></ng-container>
+          </div>
+          <div class="-row -title-small-screens -on-small-and-below-only" [ngClass]="{'-rounded-top': i === 0}" (click)="showQr($event, address.address)">
+            <ng-container *ngTemplateOutlet="headerContents"></ng-container>
+          </div>
+          <ng-template #headerContents>
+            <div class="flex-fill -address -one-line-ellipsis">
+              <img class="qr-code-button" src="assets/img/qr-code-black.png" (click)="showQr($event, address.address)">
+              {{ address.address }}
+            </div>
+          </ng-template>
+          <div class="-row" *ngFor="let output of address.outputs">
+            <div class="big-screen-output-container -not-on-small-and-below">
+              <div class="flex-fill -hash">{{ output.hash }}</div>
+              <div class="-width-150 -text-right">{{ output.coins | number:'1.0-6' }}</div>
+              <div class="-width-150 -text-right -grey">{{ output.calculated_hours | number:'1.0-0' }}</div>
+            </div>
+            <div class="small-screen-list-container -on-small-and-below-only">
+              <div class="list-row">
+                <div class="element-label">{{ 'outputs.hash' | translate }}:</div>
+                <div class="-break-all">{{ output.hash }}</div>
+              </div>
+              <div class="list-row">
+                <div class="element-label">{{ currentCoin.coinSymbol }}:</div>
+                <div class="-one-line-ellipsis">{{ output.coins | number:'1.0-6' }}</div>
+              </div>
+              <div class="list-row">
+                <div class="element-label">{{ currentCoin.hoursName }}:</div>
+                <div class="-one-line-ellipsis">{{ output.calculated_hours | number:'1.0-0' }}</div>
+              </div>
+            </div>
+          </div>
+          <div class="-row" *ngIf="address.outputs.length === 0">
+            <div class="flex-fill -hash">{{ 'errors.no-outputs' | translate }}</div>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+</div>

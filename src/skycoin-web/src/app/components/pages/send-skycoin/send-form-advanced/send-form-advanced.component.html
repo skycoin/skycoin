@@ -1,0 +1,206 @@
+<div [formGroup]="form">
+  <div class="form-field">
+    <label for="wallets">{{ 'send.wallet-label' | translate }}</label>
+    <div class="-select">
+      <select formControlName="wallet" id="wallets">
+        <option disabled hidden [ngValue]="''">{{ 'send.select-wallet' | translate }}</option>
+        <ng-container *ngFor="let wallet of walletService.currentWallets | async">
+          <option [disabled]="!wallet.balance || wallet.balance.isLessThanOrEqualTo(0)" [ngValue]="wallet">
+            <span class="truncated-label">{{ wallet.label }}</span> -
+            <span *ngIf="wallet.balance && wallet.hours">
+              {{ (wallet.balance ? wallet.balance.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
+              ({{ wallet.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }})
+            </span>
+          </option>
+        </ng-container>
+      </select>
+    </div>
+  </div>
+
+  <ng-container *ngIf="wallet">
+    <div class="form-field">
+      <label for="addresses" (click)="selectAddresses.open()">
+        {{ 'send.addresses-label' | translate }}
+        <mat-icon [matTooltip]="'send.addresses-help' | translate">help</mat-icon>
+      </label>
+      <div class="-select">
+        <mat-select
+          #selectAddresses multiple
+          formControlName="addresses"
+          [compareWith]="addressCompare"
+          id="addresses"
+          [placeholder]="'send.all-addresses' | translate">
+          <mat-option *ngFor="let addr of addresses" [value]="addr">
+            <span class="truncated-label">{{ addr.address }}</span> - {{ (addr.balance ? addr.balance.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
+            ({{ addr.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }})
+          </mat-option>
+          <mat-select-trigger>
+            <div *ngFor="let address of form.get('addresses').value">
+              <span class="truncated-label">{{ address.address }}</span> - {{ (address.balance ? address.balance.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
+              ({{ address.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }})
+            </div>
+          </mat-select-trigger>
+        </mat-select>
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label for="outputs" (click)="selectOutputs.open()">
+        {{ 'send.outputs-label' | translate }}
+        <mat-icon [matTooltip]="'send.outputs-help' | translate">help</mat-icon>
+        <mat-spinner *ngIf="loadingUnspentOutputs"></mat-spinner>
+      </label>
+      <div class="-select">
+        <mat-select
+          #selectOutputs multiple
+          formControlName="outputs"
+          [compareWith]="outputCompare"
+          id="outputs"
+          [placeholder]="'send.all-outputs' | translate">
+          <mat-option *ngFor="let out of unspentOutputs" [value]="out">
+            <span class="truncated-label">{{ out.hash }}</span> - {{ (out.coins ? out.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
+            ({{ out.calculated_hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }})
+          </mat-option>
+          <mat-select-trigger>
+            <div *ngFor="let out of form.get('outputs').value">
+              <span class="truncated-label">{{ out.hash }}</span> - {{ (out.coins ? out.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
+              ({{ out.calculated_hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }})
+            </div>
+          </mat-select-trigger>
+        </mat-select>
+      </div>
+    </div>
+    <div class="form-field -available-msg">
+      <span>{{ 'send.available-msg-part1' | translate }}</span>
+      <span class="value">
+        {{ availableCoins.decimalPlaces(6).toString() | number:'1.0-6' }}
+        {{ currentCoin.coinSymbol }}
+      </span>
+      <span>{{ 'send.available-msg-part2' | translate }}</span>
+      <span class="value">
+        {{ availableHours.decimalPlaces(0).toString() | number:'1.0-0' }}
+        {{ currentCoin.hoursName | translate }}
+      </span>
+      <span>{{ 'send.available-msg-part3' | translate }}</span>
+      <span class="value">
+        {{ minimumFee.decimalPlaces(0).toString() | number:'1.0-0' }}
+        {{ currentCoin.hoursName | translate }}
+      </span>
+      <span>{{ 'send.available-msg-part4' | translate }}</span>
+    </div>
+  </ng-container>
+
+  <div class="form-field">
+    <label for="destination0" class="destinations-label">
+      {{ 'send.destinations-label' | translate }}
+      <mat-icon [matTooltip]="('send.destinations-help' + (this.autoHours ? '1' : '2')) | translate">help</mat-icon>
+    </label>
+    <div class="coin-selector-container" *ngIf="price" [ngClass]="{ disabled: busy }">
+      <app-double-button
+        [leftButtonText]="currentCoin.coinSymbol"
+        [rightButtonText]="'common.usd' | translate"
+        className="light small"
+        [activeButton]="selectedCurrency"
+        (onStateChange)="changeActiveCurrency($event)"
+      ></app-double-button>
+    </div>
+
+    <div formArrayName="destinations" *ngFor="let dest of destControls; let i = index;" class="-destination">
+      <div [formGroupName]="i" class="row -inner-container">
+        <div *ngIf="i !== 0" class="-icons -on-small-and-below-only -mobile-icons">
+          <img (click)="removeDestination(i)" src="assets/img/minus-grey.png" alt="minus">
+        </div>
+        <div class="col-lg-5 col-md-4">
+          <label [for]="'destination' + i" class="-on-small-and-below-only">
+            {{ 'send.address-label' | translate }} {{ i + 1 }}
+          </label>
+          <input formControlName="address" [id]="'destination' + i">
+        </div>
+        <div class="col-md-3 -amount-container">
+          <label [for]="'amount' + i" class="-on-small-and-below-only">
+            {{ 'send.amount-label' | translate }} {{ i + 1 }}
+          </label>
+          <div class="-input-addon">
+            <input formControlName="coins" [id]="'amount' + i">
+            <span>{{ selectedCurrency === doubleButtonActive.LeftButton ? currentCoin.coinSymbol : ('common.usd' | translate) }}</span>
+          </div>
+          <div class="coins-value-label" *ngIf="price">
+            <span *ngIf="values[i] < 0">{{ 'send.invalid-amount' | translate }}</span>
+            <span *ngIf="values[i] >= 0 && selectedCurrency === doubleButtonActive.LeftButton">
+              &#x007e; {{ values[i] | number:'1.0-2' }} {{ 'common.usd' | translate }}
+            </span>
+            <span *ngIf="values[i] >= 0 && selectedCurrency === doubleButtonActive.RightButton">
+              &#x007e; {{ values[i] | number:('1.0-' + blockchainService.currentMaxDecimals) }} {{ currentCoin.coinSymbol }}
+            </span>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-4">
+          <div [ngClass]="{ '-input-addon': true, '-hidden': autoHours }" class="hours-label-container">
+            <input formControlName="hours">
+            <span>{{ currentCoin.hoursName | translate }}</span>
+          </div>
+        </div>
+        <div class="col-md-1 -icons -not-on-small-and-below">
+          <img *ngIf="i === 0" (click)="addDestination()" src="assets/img/plus-green.png" alt="plus">
+          <img *ngIf="i !== 0" (click)="removeDestination(i)" src="assets/img/minus-grey.png" alt="minus">
+        </div>
+      </div>
+    </div>
+
+    <div class="header-sel-theme -add-button -on-small-and-below-only">
+      <button
+        mat-button
+        color="accent"
+        (click)="addDestination()">
+          <div class="label">{{ 'send.add-destination' | translate }}</div>
+      </button>
+    </div>
+  </div>
+
+  <div class="form-field">
+    <label for="change-address" class="-flex">
+      {{ 'send.change-address-label' | translate }}
+      <mat-icon [matTooltip]="'send.change-address-help' | translate">help</mat-icon>
+      <span class="-options" (click)="selectChangeAddress($event)">
+        {{ 'send.change-address-select' | translate }} <mat-icon>keyboard_arrow_down</mat-icon>
+      </span>
+    </label>
+    <input formControlName="changeAddress" id="change-address" (keydown.enter)="preview()">
+  </div>
+
+  <div class="-autohours">
+    <div class="row">
+      <div class="col-xl-4 col-lg-5 col-md-7">
+        <div class="-space-between">
+          <mat-checkbox class="-check" (change)="setAutoHours($event)" [checked]="autoHours">
+            <span>{{ 'send.hours-allocation-label' | translate }}</span>
+          </mat-checkbox>
+          <span class="-options -big-left-margin" (mousedown)="$event.stopPropagation();" (click)="toggleOptions($event)" *ngIf="autoHours">
+            {{ 'send.options-label' | translate }} <mat-icon>keyboard_arrow_down</mat-icon>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div [ngClass]="{ 'row -options-wrapper': true, '-hidden': !autoOptions }">
+      <div class="col-md-5">
+        <div class="form-field">
+          <label class="-space-between" for="value">
+            <span>
+              {{ 'send.value-label' | translate }}
+              <mat-icon [matTooltip]="'send.value-help' | translate">help</mat-icon>
+            </span>
+            <span>{{ autoShareValue | number:'1.0-2' }}</span>
+          </label>
+          <mat-slider class="-slider" min="0.1" max="1" step="0.01" id="value"
+                      (input)="setShareValue($event)" [value]="autoShareValue"
+          ></mat-slider>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="-buttons">
+  <app-button #button (action)="preview()" class="primary" [disabled]="!form.valid">{{ 'send.verify-button' | translate }}</app-button>
+</div>

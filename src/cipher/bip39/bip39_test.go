@@ -190,8 +190,8 @@ func TestNewEntropy(t *testing.T) {
 }
 
 func TestIsMnemonicChecksumValidForDifferentArrayLangths(t *testing.T) {
-	max := 1000
-	for i := 0; i < max; i++ {
+	maxIterations := 1000
+	for i := 0; i < maxIterations; i++ {
 		//16, 20, 24, 28, 32
 		length := 16 + (i%5)*4
 		seed := make([]byte, length)

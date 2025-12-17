@@ -508,7 +508,7 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) erro
 			return nil
 		})
 
-		return
+		return c, err
 	}()
 
 	// TODO -- this error is not fully propagated back to a caller of Connect() so the daemon state

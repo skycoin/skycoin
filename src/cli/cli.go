@@ -19,7 +19,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 
 	"github.com/skycoin/skycoin/src/api"
 	"github.com/skycoin/skycoin/src/util/file"
@@ -256,12 +256,16 @@ func printJSON(obj interface{}) error {
 // readPasswordFromTerminal promotes user to enter password and read it.
 func readPasswordFromTerminal() ([]byte, error) {
 	// Promotes to enter the wallet password
-	fmt.Fprint(os.Stdout, "enter password:")
-	bp, err := terminal.ReadPassword(int(syscall.Stdin)) //nolint:unconvert
+	if _, err := fmt.Fprint(os.Stdout, "enter password:"); err != nil {
+		return nil, err
+	}
+	bp, err := term.ReadPassword(int(syscall.Stdin)) //nolint:unconvert
 	if err != nil {
 		return nil, err
 	}
-	fmt.Fprintln(os.Stdout, "")
+	if _, err := fmt.Fprintln(os.Stdout, ""); err != nil {
+		return nil, err
+	}
 	return bp, nil
 }
 

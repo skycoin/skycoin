@@ -78,7 +78,7 @@ type chainStore interface {
 }
 
 // DefaultWalker default blockchain walker
-func DefaultWalker(tx *dbutil.Tx, hps []coin.HashPair) (cipher.SHA256, bool) {
+func DefaultWalker(_ *dbutil.Tx, hps []coin.HashPair) (cipher.SHA256, bool) {
 	if len(hps) == 0 {
 		return cipher.SHA256{}, false
 	}
@@ -245,21 +245,20 @@ func (bc *Blockchain) processBlock(tx *dbutil.Tx, b coin.SignedBlock) (coin.Sign
 			err := errors.New("Attempted to process genesis block after blockchain has genesis block")
 			logger.Warning(err.Error())
 			return coin.SignedBlock{}, err
-		} else {
-			if err := bc.verifyBlockHeader(tx, b.Block); err != nil {
-				return coin.SignedBlock{}, err
-			}
+		}
 
-			txns, err := bc.processTransactions(tx, b.Body.Transactions)
-			if err != nil {
-				return coin.SignedBlock{}, err
-			}
-			b.Body.Transactions = txns
+		if err := bc.verifyBlockHeader(tx, b.Block); err != nil {
+			return coin.SignedBlock{}, err
+		}
 
-			if err := bc.verifyUxHash(tx, b.Block); err != nil {
-				return coin.SignedBlock{}, err
-			}
+		txns, err := bc.processTransactions(tx, b.Body.Transactions)
+		if err != nil {
+			return coin.SignedBlock{}, err
+		}
+		b.Body.Transactions = txns
 
+		if err := bc.verifyUxHash(tx, b.Block); err != nil {
+			return coin.SignedBlock{}, err
 		}
 	}
 
@@ -514,12 +513,12 @@ func (bc Blockchain) GetLastBlocks(tx *dbutil.Tx, num uint64) ([]coin.SignedBloc
 		return nil, nil
 	}
 
-	start := int(end-num) + 1
+	start := int(end-num) + 1 //nolint:gosec // Intentional range calculation
 	if start < 0 {
 		start = 0
 	}
 
-	return bc.GetBlocksInRange(tx, uint64(start), end)
+	return bc.GetBlocksInRange(tx, uint64(start), end) //nolint:gosec // Intentional range calculation
 }
 
 /* Private */
@@ -532,8 +531,8 @@ func (bc Blockchain) GetLastBlocks(tx *dbutil.Tx, num uint64) ([]coin.SignedBloc
 // array, i.e. processTransactions(processTransactions(txn, false), true)
 // should not result in an error, unless all txns are invalid.
 // TODO:
-//  - move arbitration to visor
-//  - blockchain should have strict checking
+//   - move arbitration to visor
+//   - blockchain should have strict checking
 func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (coin.Transactions, error) {
 	// copy txs so that the following code won't modify the original txns
 	txns := make(coin.Transactions, len(txs))
@@ -598,9 +597,8 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 				if bc.cfg.Arbitrating {
 					skip[i] = struct{}{}
 					continue
-				} else {
-					return nil, errors.New("Duplicate unspent output across transactions")
 				}
+				return nil, errors.New("Duplicate unspent output across transactions")
 			}
 
 			if DebugLevel1 {
@@ -612,9 +610,8 @@ func (bc Blockchain) processTransactions(tx *dbutil.Tx, txs coin.Transactions) (
 					if bc.cfg.Arbitrating {
 						skip[i] = struct{}{}
 						continue
-					} else {
-						return nil, errors.New("Output hash is in the UnspentPool")
 					}
+					return nil, errors.New("Output hash is in the UnspentPool")
 				}
 			}
 

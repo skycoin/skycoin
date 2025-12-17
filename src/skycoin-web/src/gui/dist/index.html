@@ -1,0 +1,58 @@
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="utf-8">
+  <title>Skycoin</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <style>
+    .skycoin-splash {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 100000;
+      background: #000000;
+      overflow: hidden;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    @media (max-width: 767px) {
+      .skycoin-splash-container {
+        transform: scale(0.65);
+      }
+    }
+
+    .splash-spinner {
+      width: 22px;
+      height: 22px;
+      margin-top: 35px;
+      -webkit-animation: splash-spin 3s linear infinite;
+      -moz-animation: splash-spin 3s linear infinite;
+      animation: splash-spin 3s linear infinite;
+    }
+
+    @-moz-keyframes splash-spin { 100% { -moz-transform: rotate(360deg); } }
+    @-webkit-keyframes splash-spin { 100% { -webkit-transform: rotate(360deg); } }
+    @keyframes splash-spin { 100% { -moz-transform: rotate(360deg); -webkit-transform: rotate(360deg); transform: rotate(360deg); } }
+  </style>
+  <script src="/assets/scripts/index-scripts.js"></script>
+  <script src="/assets/scripts/wasm_exec.js"></script>
+<style>html{box-sizing:border-box;-ms-overflow-style:scrollbar}*,:after,:before{box-sizing:inherit}@font-face{font-family:Skycoin;font-style:normal;font-weight:200;src:url(Skycoin-Light.7deac9998d94233208fb.woff2) format("woff2"),url(Skycoin-Light.505505f41c48c876aedf.woff) format("woff")}@font-face{font-family:Skycoin;font-style:italic;font-weight:200;src:url(Skycoin-LightItalic.15ddac97c615c7828f8f.woff2) format("woff2"),url(Skycoin-LightItalic.7e23a40070fea569bd53.woff) format("woff")}@font-face{font-family:Skycoin;font-style:normal;font-weight:400;src:url(Skycoin-Regular.c64796c4c2a077921bdf.woff2) format("woff2"),url(Skycoin-Regular.ff23a5d25bf5a5e1f0b2.woff) format("woff")}@font-face{font-family:Skycoin;font-style:italic;font-weight:400;src:url(Skycoin-RegularItalic.60d12875e8d9bd77979f.woff2) format("woff2"),url(Skycoin-RegularItalic.ddd1a49b2257fc4be9b4.woff) format("woff")}@font-face{font-family:Skycoin;font-style:normal;font-weight:700;src:url(Skycoin-Bold.0771fd4f0d45b946feff.woff2) format("woff2"),url(Skycoin-Bold.9f9f0221bba8765d8de5.woff) format("woff")}@font-face{font-family:Skycoin;font-style:italic;font-weight:700;src:url(Skycoin-BoldItalic.81dd05d91e5f1ddf43c7.woff2) format("woff2"),url(Skycoin-BoldItalic.057efcd44f19e996334c.woff) format("woff")}body,div{font-family:Skycoin,sans-serif}body,html{height:100%}body{background-color:#f7f7f7;margin:0;padding:0;-webkit-tap-highlight-color:transparent}</style><link rel="stylesheet" href="styles.57aee8f85e1b306d150a.css" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="styles.57aee8f85e1b306d150a.css"></noscript></head>
+<body>
+  <app-root></app-root>
+
+  <div id="splashScreen" class="skycoin-splash">
+    <div class="skycoin-splash-container">
+      <img src="assets/logo-splash.png">
+      <div>
+        <img class="splash-spinner" src="assets/spinner.png">
+      </div>
+    </div>
+  </div>
+<script src="runtime.a0676be640b285308e34.js" defer></script><script src="polyfills-es5.9d31004d254e7557e4ff.js" nomodule defer></script><script src="polyfills.b1e8ffee1f56ffe81bf5.js" defer></script><script src="scripts.2778e03caf146da29266.js" defer></script><script src="main.3adca3e5e2a6b00417f9.js" defer></script>
+
+</body></html>

@@ -1,0 +1,81 @@
+$white: #FBFBFB;
+
+.crypto-alert {
+  background-color: rgba(0, 0, 0, 0.85);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10000;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: white;
+  font-size: 14px;
+  line-height: 1.5;
+
+  > div {
+    margin: 0px 40px;
+    max-width: 400px;
+
+    mat-icon {
+      font-size: 50px;
+      height: 50px;
+      width: 50px;
+      opacity: 0.7;
+    }
+  }
+}
+
+mat-card {
+  max-width: 1000px;
+  margin-top: 80px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.logo {
+  max-height: 100%;
+}
+
+.fill-remaining-space {
+  flex: 1 1 auto;
+}
+
+.sky-container {
+  max-width: 1000px;
+  margin-top: 20px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+mat-toolbar span {
+  margin: 0 20px;
+}
+
+.search-field {
+  border-radius: 8px;
+  border: none;
+  background-color: #fff;
+  padding: 8px;
+}
+
+.syncing {
+  font-size: 14px;
+}
+
+.main-menu button {
+  margin-right: 20px;
+}
+
+#top-menu {
+  span {
+    color: $white;
+
+    &#version {
+      padding-top: 12px;
+    }
+  }
+}

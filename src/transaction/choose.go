@@ -85,9 +85,11 @@ func uxBalancesSub(a, b []UxBalance) []UxBalance {
 }
 
 // ChooseSpendsMinimizeUxOuts chooses uxout spends to satisfy an amount, using the least number of uxouts
-//     -- PRO: Allows more frequent spending, less waiting for confirmations, useful for exchanges.
-//     -- PRO: When transaction is volume is higher, transactions are prioritized by fee/size. Minimizing uxouts minimizes size.
-//     -- CON: Would make the unconfirmed pool grow larger.
+//
+//	-- PRO: Allows more frequent spending, less waiting for confirmations, useful for exchanges.
+//	-- PRO: When transaction is volume is higher, transactions are prioritized by fee/size. Minimizing uxouts minimizes size.
+//	-- CON: Would make the unconfirmed pool grow larger.
+//
 // Users with high transaction frequency will want to use this so that they will not need to wait as frequently
 // for unconfirmed spends to complete before sending more.
 // Alternatively, or in addition to this, they should batch sends into single transactions.

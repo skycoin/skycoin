@@ -2,15 +2,15 @@
 //
 // A skycoin user agent has the following format:
 //
-//   `$NAME:$VERSION[$GIT_HASH]($REMARK)`
+//	`$NAME:$VERSION[$GIT_HASH]($REMARK)`
 //
 // `$NAME` and `$VERSION` are required.
 //
-// * `$NAME` is the coin or application's name, e.g. `Skycoin`. It can contain the following characters: `A-Za-z0-9\-_+`.
-// * `$VERSION` must be a valid [semver](http://semver.org/) version, e.g. `1.2.3` or `1.2.3-rc1`.
-//   Semver has the option of including build metadata such as the git commit hash, but this is not included by the default client.
-// * `$REMARK` is optional. If not present, the enclosing brackets `()` should be omitted.
-//   It can contain the following characters: `A-Za-z0-9\-_+;:!$%,.=?~ ` (includes the space character).
+//   - `$NAME` is the coin or application's name, e.g. `Skycoin`. It can contain the following characters: `A-Za-z0-9\-_+`.
+//   - `$VERSION` must be a valid [semver](http://semver.org/) version, e.g. `1.2.3` or `1.2.3-rc1`.
+//     Semver has the option of including build metadata such as the git commit hash, but this is not included by the default client.
+//   - `$REMARK` is optional. If not present, the enclosing brackets `()` should be omitted.
+//     It can contain the following characters: `A-Za-z0-9\-_+;:!$%,.=?~ ` (includes the space character).
 package useragent
 
 import (

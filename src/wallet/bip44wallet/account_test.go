@@ -4,10 +4,11 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/bip44"
 	"github.com/skycoin/skycoin/src/wallet"
-	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -17,6 +18,8 @@ const (
 )
 
 var (
+	testSkycoinExternalXPubKey   = "xpub6EMRsT95ntbCFRR2Z6WppnGss1SijAkarfKoRM8tft66tuJh2nt4aJi13S21hUCLZL4cbFBXgHuxipmsS7dj1DW1s4NRup3hzxWfqUdGYv7"
+	testSkycoinInternalXPubKey   = "xpub6EMRsT95ntbCGrt4gKqcJTx8rFbBLSvPzxFGfq9DVqFyA6UmDYXAoeTNFs3nmuycUhJG1hC1R5rSbEMK1EiSHotne9hYG55pyPLj8kLuutb"
 	testSkycoinExternalAddresses = []string{
 		"2JBfeo6y6FQn2rCiuhdQ8F1E6bj6rpnHo5U",
 		"28Wn9scn3wb5nkScHiTHgNmLjSUS3F2SqAj",
@@ -176,7 +179,7 @@ func TestNewBip44Account(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ba, err := newBip44Account(bip44AccountCreateOptions{
 				name:           tc.accountName,
-				index:          uint32(tc.index),
+				index:          uint32(tc.index), //nolint:gosec
 				seed:           tc.seed,
 				seedPassphrase: testSeedPassphrase,
 				coinType:       tc.coinType,
@@ -188,7 +191,7 @@ func TestNewBip44Account(t *testing.T) {
 			}
 			require.NoError(t, err)
 			require.Equal(t, tc.accountName, ba.Name)
-			require.Equal(t, uint32(tc.index), ba.Index)
+			require.Equal(t, uint32(tc.index), ba.Index) //nolint:gosec
 			require.Equal(t, tc.coinType, ba.CoinType)
 			require.Equal(t, 2, len(ba.Chains))
 
@@ -316,7 +319,7 @@ func TestBip44AccountsNewAddresses(t *testing.T) {
 				return
 			}
 
-			require.Equal(t, tc.num, uint32(len(addrs)))
+			require.Equal(t, tc.num, uint32(len(addrs))) //nolint:gosec // Test comparison
 
 			act, err := accounts.account(accountIndex)
 			require.NoError(t, err)
@@ -542,6 +545,7 @@ func TestAccountSyncSecrets(t *testing.T) {
 	// wipes secrets
 	a.erase()
 	nEAddrs, err := a.newAddresses(bip44.ExternalChainIndex, 2)
+	require.NoError(t, err)
 	nCAddrs, err := a.newAddresses(bip44.ChangeChainIndex, 2)
 	require.NoError(t, err)
 	require.NoError(t, a.syncSecrets(ss))

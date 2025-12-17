@@ -316,7 +316,7 @@ export class BalanceAndOutputsService {
       }
 
       wallet.addresses.forEach(address => {
-        if (balance.addresses[address.address]) {
+        if (balance.addresses && balance.addresses[address.address]) {
           address.coins = new BigNumber(balance.addresses[address.address].confirmed.coins).dividedBy(1000000);
           address.hours = new BigNumber(balance.addresses[address.address].confirmed.hours);
         } else {

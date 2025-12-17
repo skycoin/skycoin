@@ -195,6 +195,7 @@ func SignTransaction(w Wallet, txn *coin.Transaction, signIndexes []int, uxOuts 
 //   - If the total amount of coins in the chosen outputs is exactly equal to the requested amount of coins,
 //     such that there would be no change output but hours remain as change, another output will be chosen to create change,
 //     if the coinhour cost of adding that output is less than the coinhours that would be lost as change
+//
 // If receiving hours are not explicitly specified, hours are allocated amongst the receiving outputs proportional to the number of coins being sent to them.
 // If the change address is not specified, the address whose bytes are lexically sorted first is chosen from the owners of the outputs being spent.
 // WARNING: This method is not concurrent-safe if operating on the same wallet. Use Service.View or Service.ViewSecrets to lock the wallet, or use your own lock.

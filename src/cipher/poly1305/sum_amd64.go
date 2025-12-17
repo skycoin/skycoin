@@ -2,11 +2,13 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build amd64 && !gccgo && !appengine
 // +build amd64,!gccgo,!appengine
 
 package poly1305
 
 // This function is implemented in sum_amd64.s
+//
 //go:noescape
 func poly1305(out *[16]byte, m *byte, mlen uint64, key *[32]byte)
 

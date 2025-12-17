@@ -1,0 +1,52 @@
+@import '../../../../assets/scss/_variables.scss';
+
+$height: 110px;
+$small-height: 80px;
+$responsive-width: 420px;
+
+header {
+  background-color: $col-generic-header-background;
+  color: $col-generic-header-text;
+
+  .nav-wrapper {
+    height: $height;
+    width: 100%;
+    border-bottom: 2px solid $col-generic-header-border;
+    display: flex;
+    @media (max-width: $responsive-width) {
+      height: $small-height;
+    }
+  }
+
+  .logo {
+    height: 100%;
+    display: flex;
+    align-items: center;
+
+    img {
+      display: block;
+      max-width: 220px;
+
+      @media (max-width: $responsive-width) {
+        max-width: 80px;
+      }
+    }
+  }
+
+  .link-box {
+    flex-grow: 1;
+    line-height: $height;
+    text-align: right;
+    font-size: $siz-normal-text;
+
+    @media (max-width: $responsive-width) {
+      line-height: $small-height;
+    }
+    
+    span {
+      font-family: 'Font Awesome 5 Free';
+      font-weight: 900;
+      padding-right: 2px;
+    }
+  }
+}

@@ -164,8 +164,9 @@ type Richlist struct {
 // Method: GET
 // URI: /richlist?n=${number}&include-distribution=${bool}
 // Args:
-//	n [int, number of results to include]
-//  include-distribution [bool, include the distribution addresses in the richlist]
+//
+//		n [int, number of results to include]
+//	 include-distribution [bool, include the distribution addresses in the richlist]
 func richlistHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {

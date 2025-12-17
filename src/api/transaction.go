@@ -24,6 +24,7 @@ import (
 // Method: GET
 // URI: /api/v1/pendingTxs
 // Args:
+//
 //	verbose: [bool] include verbose transaction input data
 func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -81,9 +82,10 @@ type TransactionEncodedResponse struct {
 // Method: GET
 // URI: /api/v1/transaction
 // Args:
-//	txid: transaction hash
-//	verbose: [bool] include verbose transaction input data
-//  encoded: [bool] return as a raw encoded transaction
+//
+//		txid: transaction hash
+//		verbose: [bool] include verbose transaction input data
+//	 encoded: [bool] return as a raw encoded transaction
 func transactionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -254,9 +256,10 @@ func NewTransactionsWithStatusVerbose(txns []visor.Transaction, inputs [][]visor
 // Method: GET, POST
 // URI: /api/v1/transactions
 // Args:
-//     addrs: Comma separated addresses [optional, returns all transactions if no address provided]
-//     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
-//	   verbose: [bool] include verbose transaction input data
+//
+//	    addrs: Comma separated addresses [optional, returns all transactions if no address provided]
+//	    confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
+//		   verbose: [bool] include verbose transaction input data
 func transactionsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet && r.Method != http.MethodPost {
@@ -357,13 +360,14 @@ func transactionsNumHandler(gateway Gatewayer) http.Handler {
 // Method: GET
 // URI: /api/v2/transactions
 // Args:
-//     addrs: Comma separated addresses [optional, returns all transactions if no address provided]
-//     confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
-//	   verbose: [bool] include verbose transaction input data
-//     page: Page number
-//     limit: the number of transactions per page [optional, default to 10, must be <= 100]
-//     sort: Sort the transactions by block seq. [optional, must be desc or asc]; if not provided, return
-//     in asc order.
+//
+//	    addrs: Comma separated addresses [optional, returns all transactions if no address provided]
+//	    confirmed: Whether the transactions should be confirmed [optional, must be 0 or 1; if not provided, returns all]
+//		   verbose: [bool] include verbose transaction input data
+//	    page: Page number
+//	    limit: the number of transactions per page [optional, default to 10, must be <= 100]
+//	    sort: Sort the transactions by block seq. [optional, must be desc or asc]; if not provided, return
+//	    in asc order.
 func transactionsHandlerV2(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -502,10 +506,11 @@ type InjectTransactionRequest struct {
 // Content-Type: application/json
 // Body: {"rawtx": "<hex encoded transaction>"}
 // Response:
-//      200 - ok, returns the transaction hash in hex as string
-//      400 - bad transaction
-//		500 - other error
-//      503 - network unavailable for broadcasting transaction
+//
+//	     200 - ok, returns the transaction hash in hex as string
+//	     400 - bad transaction
+//			500 - other error
+//	     503 - network unavailable for broadcasting transaction
 func injectTransactionHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -584,10 +589,11 @@ func NewResendResult(hashes []cipher.SHA256) ResendResult {
 // Method: POST
 // Broadcasts all unconfirmed transactions from the unconfirmed transaction pool
 // Response:
-//      200 - ok, returns the transaction hashes that were resent
-//      405 - method not POST
-//		500 - other error
-//      503 - network unavailable for broadcasting transaction
+//
+//	     200 - ok, returns the transaction hashes that were resent
+//	     405 - method not POST
+//			500 - other error
+//	     503 - network unavailable for broadcasting transaction
 func resendUnconfirmedTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -612,7 +618,9 @@ func resendUnconfirmedTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 // URI: /api/v1/rawtx
 // Method: GET
 // Args:
+//
 //	txid: transaction ID hash
+//
 // Returns the hex-encoded byte serialization of a transaction.
 // The transaction may be confirmed or unconfirmed.
 func rawTxnHandler(gateway Gatewayer) http.HandlerFunc {

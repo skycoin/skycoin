@@ -46,9 +46,10 @@ func getStorageValuesHandler(w http.ResponseWriter, r *http.Request, gateway Gat
 
 // Returns all existing storage values of a given storage type.
 // Args:
-//     type: storage type to get values from
+//
+//	type: storage type to get values from
 func getAllStorageValuesHandler(w http.ResponseWriter, gateway Gatewayer, storageType kvstorage.Type) {
-	data, err := gateway.GetAllStorageValues(kvstorage.Type(storageType))
+	data, err := gateway.GetAllStorageValues(storageType)
 	if err != nil {
 		var resp HTTPResponse
 		switch err {
@@ -72,7 +73,8 @@ func getAllStorageValuesHandler(w http.ResponseWriter, gateway Gatewayer, storag
 
 // Returns value from storage of a given type by key.
 // Args:
-//     key: key for a value to be retrieved
+//
+//	key: key for a value to be retrieved
 func getStorageValueHandler(w http.ResponseWriter, gateway Gatewayer, storageType kvstorage.Type, key string) {
 	val, err := gateway.GetStorageValue(storageType, key)
 	if err != nil {
@@ -107,9 +109,10 @@ type StorageRequest struct {
 
 // Adds the value to the storage of a given type
 // Args:
-//     type: storage type
-//     key: key
-//     val: value
+//
+//	type: storage type
+//	key: key
+//	val: value
 func addStorageValueHandler(w http.ResponseWriter, r *http.Request, gateway Gatewayer) {
 	var req StorageRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -151,8 +154,9 @@ func addStorageValueHandler(w http.ResponseWriter, r *http.Request, gateway Gate
 
 // Removes the value by key from the storage of a given type
 // Args:
-//     type: storage type
-//     key: key
+//
+//	type: storage type
+//	key: key
 func removeStorageValueHandler(w http.ResponseWriter, r *http.Request, gateway Gatewayer) {
 	storageType := r.FormValue("type")
 	if storageType == "" {

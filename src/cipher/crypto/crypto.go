@@ -1,3 +1,4 @@
+// Package crypto provides cryptographic types and operations for Skycoin
 package crypto
 
 import (
@@ -14,10 +15,10 @@ type Cryptor interface {
 }
 
 // CryptoType represents the type of crypto name
-type CryptoType string
+type CryptoType string //nolint:revive
 
 // CryptoTypeFromString converts string to CryptoType
-func CryptoTypeFromString(s string) (CryptoType, error) {
+func CryptoTypeFromString(s string) (CryptoType, error) { //nolint:revive
 	switch CryptoType(s) {
 	case CryptoTypeSha256Xor:
 		return CryptoTypeSha256Xor, nil

@@ -1,0 +1,31 @@
+<mat-dialog-content>
+  <div class="x-container">
+    <img src="assets/img/close-grey.png" (click)="close(null)">
+  </div>
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="search-container">
+          {{ 'title.change-coin' | translate }}
+          <div class="input-container">
+            <mat-icon>search</mat-icon>
+            <input #searchInput [placeholder]="'change-coin.search' | translate" >
+          </div>
+        </div>
+
+        <div class="options-container header-sel-theme" *ngFor="let section of sections">
+          <div class="title">{{ section.name | translate }}</div>
+          <div class="buttons-container">
+            <button mat-button color="accent" class="button" *ngFor="let coin of section.coins" (click)="close(coin)">
+              <img [src]="'assets/img/coins/' + coin.bigIconName">
+              <div class="label">{{ coin.coinName }}</div>
+            </button>
+          </div>
+        </div>
+
+        <app-loading-content [noDataText]="'change-coin.no-results' | translate" [isLoading]="false" *ngIf="!sections || sections.length === 0"></app-loading-content>
+        
+      </div>
+    </div>
+  </div>
+</mat-dialog-content>

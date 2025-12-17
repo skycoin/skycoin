@@ -5,11 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher/bip39"
 	"github.com/skycoin/skycoin/src/testutil"
@@ -17,7 +18,6 @@ import (
 	"github.com/skycoin/skycoin/src/wallet/collection"
 	_ "github.com/skycoin/skycoin/src/wallet/deterministic"
 	_ "github.com/skycoin/skycoin/src/wallet/xpubwallet"
-	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/crypto"
@@ -25,7 +25,7 @@ import (
 )
 
 func prepareWltDir() string {
-	dir, err := ioutil.TempDir("", "wallets")
+	dir, err := os.MkdirTemp("", "wallets")
 	if err != nil {
 		panic(err)
 	}
@@ -34,7 +34,7 @@ func prepareWltDir() string {
 }
 
 func dirIsEmpty(t *testing.T, dir string) {
-	f, err := os.Open(dir)
+	f, err := os.Open(dir) //nolint:gosec // Test directory operation
 	require.NoError(t, err)
 	names, err := f.Readdirnames(1)
 	require.Equal(t, io.EOF, err)
@@ -233,7 +233,7 @@ func TestServiceCreateWallet(t *testing.T) {
 					require.False(t, os.IsNotExist(err))
 
 					// Confirms that the data saved to the disk is the same as the wallet.Deserialize()
-					data, err := ioutil.ReadFile(filepath.Join(dir, tc.filename))
+					data, err := os.ReadFile(filepath.Join(dir, tc.filename)) //nolint:gosec // Test file read
 					require.NoError(t, err)
 
 					sd, err := w.Serialize()
@@ -266,7 +266,7 @@ func TestServiceCreateWallet(t *testing.T) {
 				case wallet.WalletTypeDeterministic,
 					wallet.WalletTypeBip44, wallet.WalletTypeXPub:
 					// create wallet with dup seed or xpub key
-					dupWlt := "dup_wallet.wlt"
+					dupWlt := "dup_wallet.wlt" //nolint:gosec // Test wallet filename, not credentials
 					_, err = s.CreateWallet(dupWlt, wallet.Options{
 						Label: "test",
 						Seed:  tc.seed,
@@ -811,7 +811,7 @@ func TestServiceNewAddresses(t *testing.T) {
 			},
 			n: 1,
 			walletFileModifier: func(fn string) {
-				err := os.Chmod(fn, 0555) // no write permission to the wallet file
+				err := os.Chmod(fn, 0555) //nolint:gosec // Test file permissions verification
 				require.NoError(t, err)
 			},
 			expectAddrNum: 1,
@@ -876,9 +876,9 @@ func TestServiceNewAddresses(t *testing.T) {
 				el, err := w.EntriesLen()
 				require.NoError(t, err)
 				if w.Type() == wallet.WalletTypeBip44 {
-					require.Equal(t, int(tc.n+2), el) // bip44 wallet has a change address
+					require.Equal(t, int(tc.n+2), el) //nolint:gosec // Test assertion
 				} else {
-					require.Equal(t, int(tc.n+1), el)
+					require.Equal(t, int(tc.n+1), el) //nolint:gosec // Test assertion
 				}
 
 				addrsInWlt, err := w.GetAddresses()
@@ -1599,7 +1599,7 @@ func TestServiceDecryptWallet(t *testing.T) {
 				}
 
 				//verify := verifyDecryptedCollectionWlt
-				verify := verifyDecryptedDeterministicWlt
+				var verify func(testCase, wallet.Wallet)
 				switch wltType {
 				case wallet.WalletTypeCollection:
 					verify = verifyDecryptedCollectionWlt

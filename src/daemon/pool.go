@@ -72,7 +72,7 @@ type Pool struct {
 func NewPool(cfg PoolConfig, d *Daemon) (*Pool, error) {
 	gnetCfg := gnet.NewConfig()
 	gnetCfg.DialTimeout = cfg.DialTimeout
-	gnetCfg.Port = uint16(cfg.port)
+	gnetCfg.Port = uint16(cfg.port) //nolint:gosec
 	gnetCfg.Address = cfg.address
 	gnetCfg.ConnectCallback = d.onGnetConnect
 	gnetCfg.DisconnectCallback = d.onGnetDisconnect

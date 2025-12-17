@@ -6,8 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/skycoin/skycoin/src/wallet"
 	"github.com/spf13/cobra"
+
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 func walletScanAddressesCmd() *cobra.Command {
@@ -87,7 +88,7 @@ func runScanAddresses(c *cobra.Command, args []string) error {
 		}
 	}
 
-	addrs, err := apiClient.ScanWalletAddresses(id, int(num), string(password))
+	addrs, err := apiClient.ScanWalletAddresses(id, int(num), string(password)) //nolint:gosec
 	if err != nil {
 		return err
 	}

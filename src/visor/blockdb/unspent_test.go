@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"sort"
 	"testing"
@@ -524,7 +523,7 @@ func TestUnspentProcessBlock(t *testing.T) {
 				uxHash, err := up.GetUxHash(tx)
 				require.NoError(t, err)
 
-				block, err = coin.NewBlock(coin.Block{}, uint64(time.Now().Unix()), uxHash, coin.Transactions{txn}, feeCalc)
+				block, err = coin.NewBlock(coin.Block{}, uint64(time.Now().Unix()), uxHash, coin.Transactions{txn}, feeCalc) //nolint:gosec // Time conversion
 				require.NoError(t, err)
 
 				oldUxHash, err = up.GetUxHash(tx)
@@ -1094,7 +1093,7 @@ func setupNoUnspentAddrIndexDB(t *testing.T) (*dbutil.DB, func()) {
 	dbFile, err := os.Open(dbFilename)
 	require.NoError(t, err)
 
-	tmpFile, err := ioutil.TempFile("", "testdb")
+	tmpFile, err := os.CreateTemp("", "testdb")
 	require.NoError(t, err)
 
 	_, err = io.Copy(tmpFile, dbFile)
@@ -1112,9 +1111,9 @@ func setupNoUnspentAddrIndexDB(t *testing.T) (*dbutil.DB, func()) {
 	db := dbutil.WrapDB(boltDB)
 
 	return db, func() {
-		db.Close()
-		tmpFile.Close()
-		os.Remove(tmpFile.Name())
+		db.Close()                //nolint:errcheck,gosec
+		tmpFile.Close()           //nolint:errcheck,gosec
+		os.Remove(tmpFile.Name()) //nolint:errcheck,gosec
 	}
 }
 

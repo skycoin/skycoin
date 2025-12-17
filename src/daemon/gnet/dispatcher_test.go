@@ -187,7 +187,7 @@ func TestSendMessage(t *testing.T) {
 	RegisterMessage(BytePrefix, ByteMessage{})
 	VerifyMessages()
 	m := NewByteMessage(7)
-	sendByteMessage = func(conn net.Conn, msg []byte, tm time.Duration) error {
+	sendByteMessage = func(_ net.Conn, msg []byte, _ time.Duration) error {
 		expect := []byte{5, 0, 0, 0, 'B', 'Y', 'T', 'E', 7}
 		require.True(t, bytes.Equal(msg, expect))
 		return nil
@@ -201,7 +201,7 @@ func TestSendMessage(t *testing.T) {
 
 /* Helpers */
 
-func failingSendByteMessage(conn net.Conn, m []byte, tm time.Duration) error {
+func failingSendByteMessage(_ net.Conn, _ []byte, _ time.Duration) error {
 	return errors.New("send byte message failed")
 }
 
@@ -220,7 +220,7 @@ func (cc *CaptureConn) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
-func (cc *CaptureConn) SetWriteDeadline(t time.Time) error {
+func (cc *CaptureConn) SetWriteDeadline(_ time.Time) error {
 	cc.WriteDeadlineSet = true
 	return nil
 }
@@ -229,7 +229,7 @@ type FailingWriteDeadlineConn struct {
 	net.Conn
 }
 
-func (c *FailingWriteDeadlineConn) SetWriteDeadline(t time.Time) error {
+func (c *FailingWriteDeadlineConn) SetWriteDeadline(_ time.Time) error {
 	return errors.New("failed")
 }
 
@@ -237,10 +237,10 @@ type FailingWriteConn struct {
 	net.Conn
 }
 
-func (c *FailingWriteConn) Write(b []byte) (int, error) {
+func (c *FailingWriteConn) Write(_ []byte) (int, error) {
 	return 0, errors.New("failed")
 }
 
-func (c *FailingWriteConn) SetWriteDeadline(t time.Time) error {
+func (c *FailingWriteConn) SetWriteDeadline(_ time.Time) error {
 	return nil
 }

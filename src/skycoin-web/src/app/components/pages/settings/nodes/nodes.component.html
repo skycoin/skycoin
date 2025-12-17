@@ -1,0 +1,50 @@
+<div class="sky-container sky-container-grey">
+  <app-header [headline]="(coins.length > 1 ? 'title.nodes' : 'title.node') | translate"></app-header>
+
+  <div class="container">
+    <div class="-table">
+      <div class="-headers">
+        <div *ngIf="coins.length > 1" class="-width-250 -not-on-small-and-below">{{ 'nodes.coin' | translate }}</div>
+        <div class="flex-fill -not-on-small-and-below">{{ 'nodes.url' | translate }}</div>
+        <div class="-width-150 -not-on-small-and-below"></div>
+        <div class="flex-fill -on-small-and-below-only">{{ 'nodes.nodes' | translate }}</div>
+      </div>
+      <div class="-paper">
+        <div class="-row  -not-on-small-and-below" *ngFor="let coin of coins">
+          <div *ngIf="coins.length > 1" class="-width-250 -label" [attr.title]="coin.coinName">{{ coin.coinName }}</div>
+          <div *ngIf="!customNodeUrls[coin.id.toString()]" class="flex-fill -label">
+            <span [attr.title]="coin.nodeUrl">{{ coin.nodeUrl }}</span>
+          </div>
+          <div *ngIf="customNodeUrls[coin.id.toString()]" class="flex-fill -label">
+            <i class="material-icons -custom-url-icon" [matTooltip]="'nodes.custom-label' | translate">announcement</i>
+            <span [attr.title]="customNodeUrls[coin.id.toString()]">{{ customNodeUrls[coin.id.toString()] }}</span>
+          </div>
+          <div *ngIf="enableCustomNodes" class="-width-150 -text-right">
+            <span class="-link" (click)="changeNodeURL(coin)">{{ 'nodes.change-url' | translate }}</span>
+          </div>
+        </div>
+        <div class="small-screen-button -row -on-small-and-below-only" *ngFor="let coin of coins" (click)="changeNodeURL(coin)">
+          <div class="small-screen-list-container">
+            <div class="list-row" *ngIf="coins.length > 1">
+              <div class="element-label">{{ 'nodes.coin' | translate }}:</div>
+              <div class="-break-all">{{ coin.coinName }}</div>
+            </div>
+            <div class="list-row">
+              <div class="element-label">{{ 'nodes.url' | translate | translate }}:</div>
+              <div class="-break-all">
+                <span *ngIf="!customNodeUrls[coin.id.toString()]">{{ coin.nodeUrl }}</span>
+                <span *ngIf="customNodeUrls[coin.id.toString()]">
+                  <i class="material-icons -custom-url-icon" [matTooltip]="'nodes.custom-label' | translate">announcement</i>
+                  {{ customNodeUrls[coin.id.toString()] }}
+                </span>
+              </div>
+            </div>
+            <div class="list-row">
+              <span class="internal-link">{{ 'nodes.change-url' | translate }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

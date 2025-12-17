@@ -62,7 +62,7 @@ func getHealthData(c muxConfig, gateway Gatewayer) (*HealthResponse, error) {
 		}
 	}
 
-	elapsedBlockTime := time.Now().UTC().Unix() - int64(metadata.HeadBlock.Head.Time)
+	elapsedBlockTime := time.Now().UTC().Unix() - int64(metadata.HeadBlock.Head.Time) //nolint:gosec
 	timeSinceLastBlock := time.Second * time.Duration(elapsedBlockTime)
 
 	_, walletAPIEnabled := c.enabledAPISets[EndpointsWallet]

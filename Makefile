@@ -227,8 +227,6 @@ dep-github-release:
 	tar -xzf arm-linux-musleabihf-cross.tgz -C ./musl-data && rm arm-linux-musleabihf-cross.tgz
 	go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/i686-linux-musl-cross.tgz
 	tar -xzf i686-linux-musl-cross.tgz -C ./musl-data && rm i686-linux-musl-cross.tgz
-	go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/riscv64-linux-musl-cross.tgz
-	tar -xzf riscv64-linux-musl-cross.tgz -C ./musl-data && rm riscv64-linux-musl-cross.tgz
 	go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/x86_64-linux-musl-cross.tgz
 	tar -xzf x86_64-linux-musl-cross.tgz -C ./musl-data && rm x86_64-linux-musl-cross.tgz
 	# Build libusb-1.0 static libraries for each musl target
@@ -237,7 +235,6 @@ dep-github-release:
 	./ci-scripts/build-libusb-musl.sh arm arm-linux-musleabi ./musl-data/arm-linux-musleabi-cross
 	./ci-scripts/build-libusb-musl.sh armhf arm-linux-musleabihf ./musl-data/arm-linux-musleabihf-cross
 	./ci-scripts/build-libusb-musl.sh 386 i686-linux-musl ./musl-data/i686-linux-musl-cross
-	./ci-scripts/build-libusb-musl.sh riscv64 riscv64-linux-musl ./musl-data/riscv64-linux-musl-cross
 
 release: ## Build electron, standalone and daemon apps. Use osarch=${osarch} to specify the platform. Example: 'make release osarch=darwin/amd64', multiple platform can be supported in this way: 'make release osarch="darwin/amd64 windows/amd64"'. Supported architectures are: darwin/amd64 windows/amd64 windows/386 linux/amd64 linux/arm, the builds are located in electron/release folder.
 	cd $(ELECTRON_DIR) && ./build.sh ${osarch}

@@ -111,22 +111,6 @@ builds:
     main: ./
     ldflags: -s -w -linkmode external -extldflags '-static' -buildid= -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 
-  - id: skycoin-riscv64
-    binary: skycoin
-    goos:
-      - linux
-    goarch:
-      - riscv64
-    flags:
-      - -tags=cgo
-      - -trimpath
-    env:
-      - CGO_ENABLED=1
-      - CC=/home/runner/work/skycoin/skycoin/musl-data/riscv64-linux-musl-cross/bin/riscv64-linux-musl-gcc
-      - PKG_CONFIG_PATH=/home/runner/work/skycoin/skycoin/musl-data/riscv64-linux-musl-cross/riscv64-linux-musl/lib/pkgconfig
-    main: ./
-    ldflags: -s -w -linkmode external -extldflags '-static' -buildid= -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
-
 archives:
   - id: amd64
     format: tar.gz

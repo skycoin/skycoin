@@ -159,3 +159,7 @@ seeds.csv
 
 histogram
 FRONTEND-MODERNIZATION-PLAN.md
+
+# Build artifacts for musl cross-compilation
+musl-data/
+releaseChangelog.md

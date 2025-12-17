@@ -9,6 +9,7 @@ release:
 before:
   hooks:
     - go mod tidy
+    - go mod vendor
 
 builds:
   - id: skycoin-amd64

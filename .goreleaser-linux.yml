@@ -20,7 +20,6 @@ builds:
     flags:
       - -tags=cgo
       - -trimpath
-      - -mod=mod
     env:
       - CGO_ENABLED=1
       - CC=/home/runner/work/skycoin/skycoin/musl-data/x86_64-linux-musl-cross/bin/x86_64-linux-musl-gcc
@@ -37,7 +36,6 @@ builds:
     flags:
       - -tags=cgo
       - -trimpath
-      - -mod=mod
     env:
       - CGO_ENABLED=1
       - CC=/home/runner/work/skycoin/skycoin/musl-data/x86_64-linux-musl-cross/bin/x86_64-linux-musl-gcc
@@ -54,7 +52,6 @@ builds:
     flags:
       - -tags=cgo
       - -trimpath
-      - -mod=mod
     env:
       - CGO_ENABLED=1
       - CC=/home/runner/work/skycoin/skycoin/musl-data/i686-linux-musl-cross/bin/i686-linux-musl-gcc
@@ -71,7 +68,6 @@ builds:
     flags:
       - -tags=cgo
       - -trimpath
-      - -mod=mod
     env:
       - CGO_ENABLED=1
       - CC=/home/runner/work/skycoin/skycoin/musl-data/aarch64-linux-musl-cross/bin/aarch64-linux-musl-gcc
@@ -90,7 +86,6 @@ builds:
     flags:
       - -tags=cgo
       - -trimpath
-      - -mod=mod
     env:
       - CGO_ENABLED=1
       - CC=/home/runner/work/skycoin/skycoin/musl-data/arm-linux-musleabi-cross/bin/arm-linux-musleabi-gcc
@@ -109,7 +104,6 @@ builds:
     flags:
       - -tags=cgo
       - -trimpath
-      - -mod=mod
     env:
       - CGO_ENABLED=1
       - CC=/home/runner/work/skycoin/skycoin/musl-data/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc
@@ -126,7 +120,6 @@ builds:
     flags:
       - -tags=cgo
       - -trimpath
-      - -mod=mod
     env:
       - CGO_ENABLED=1
       - CC=/home/runner/work/skycoin/skycoin/musl-data/riscv64-linux-musl-cross/bin/riscv64-linux-musl-gcc

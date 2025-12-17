@@ -1,150 +1,266 @@
-# SkyWallet Hardware Wallet Daemon
+# SkyWallet Hardware Wallet Utilities
 
-Command-line daemon for managing SkyWallet hardware wallet operations.
+Utilities for managing SkyWallet hardware wallet operations.
 
 ## Prerequisites
 
-- SkyWallet hardware device
-- libusb library installed on your system
-  - **Debian/Ubuntu**: `sudo apt install libusb-1.0-0-dev`
-  - **Fedora/RHEL**: `sudo dnf install libusb-devel`
-  - **Arch Linux**: `sudo pacman -S libusb`
-  - **macOS**: `brew install libusb`
+Install the required USB libraries for your platform:
 
-## USB Permissions Setup (Linux)
+### Linux
+```bash
+# Debian/Ubuntu
+sudo apt-get install libusb-1.0-0-dev libudev-dev
 
-On Linux, you need to configure udev rules to allow non-root access to the SkyWallet device.
+# Fedora/RHEL
+sudo dnf install libusb-devel systemd-devel
 
-### Quick Setup
+# Arch Linux
+sudo pacman -S libusb systemd
+```
 
-1. **Copy the udev rules file:**
+### macOS
+```bash
+brew install libusb hidapi
+```
+
+### Windows
+1. Install MinGW-w64: https://www.mingw-w64.org/
+2. Download pre-built DLLs:
+   - libusb-1.0: https://github.com/libusb/libusb/releases
+   - hidapi: https://github.com/libusb/hidapi/releases
+3. Place DLLs in same directory as executable or in system PATH
+
+## Platform Setup
+
+### Linux: USB Permissions & Driver Setup
+
+On Linux, you need udev rules to allow non-root access and unbind the kernel driver.
+
+**Quick Setup:**
+
+1. Copy udev rules (from skycoin main repo):
    ```bash
-   sudo cp ../../51-skywallet.rules /etc/udev/rules.d/
+   sudo cp udev/51-skywallet.rules /etc/udev/rules.d/
    ```
 
-2. **Reload udev rules:**
+2. Reload udev:
    ```bash
    sudo udevadm control --reload-rules
    sudo udevadm trigger
    ```
 
-3. **Unplug and replug your SkyWallet device**
+3. Unplug and replug your SkyWallet device
 
-4. **Verify the permissions:**
-   ```bash
-   # Check that the device is detected
-   lsusb | grep -i skywallet
-   # Output should show: Bus XXX Device YYY: ID 313a:0001 SkycoinFoundation SKYWALLET
-   
-   # Check device file permissions (replace XXX and YYY with values from lsusb)
-   ls -l /dev/bus/usb/XXX/YYY
-   # Should show: crw-rw-rw- ... (mode 0666, world-writable)
-   ```
+**Manual udev rule creation:**
+```bash
+sudo tee /etc/udev/rules.d/51-skywallet.rules > /dev/null <<'EOF'
+# SkyWallet Hardware Wallet - Permissions and driver unbind
+SUBSYSTEM=="usb", ATTR{idVendor}=="313a", ATTR{idProduct}=="0001", MODE="0666", TAG+="uaccess", \
+  RUN+="/bin/sh -c 'for iface in /sys/bus/usb/devices/$kernel:*; do \
+    if [ -e $iface/driver ]; then \
+      echo $kernel:$(basename $iface | cut -d: -f2) > /sys/bus/usb/drivers/usbhid/unbind; \
+    fi; \
+  done'"
+EOF
 
-### Troubleshooting Permissions
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+```
 
-If the daemon still shows "libusb: bad access [code -3]" errors:
+**Verify setup:**
 
-1. **Verify the udev rule is installed:**
-   ```bash
-   cat /etc/udev/rules.d/51-skywallet.rules
-   ```
-
-2. **Check the actual device permissions:**
+1. Check device detected:
    ```bash
    lsusb | grep 313a:0001
-   # Note the Bus and Device numbers
-   ls -l /dev/bus/usb/BUS/DEVICE
    ```
-   The file should have `rw-rw-rw-` permissions (0666).
+   Should show: `ID 313a:0001 SkycoinFoundation SKYWALLET`
 
-3. **If permissions are still wrong, try manual trigger:**
+2. Check permissions (replace XXX/YYY with bus/device numbers from lsusb):
    ```bash
-   # Find the device path
-   udevadm info --name=/dev/bus/usb/BUS/DEVICE --attribute-walk | grep KERNEL
-   
-   # Trigger udev for this device
-   sudo udevadm trigger --action=change --attr-match=idVendor=313a
+   ls -l /dev/bus/usb/XXX/YYY
    ```
+   Should show: `crw-rw-rw-` or `crw-rw-r--+`
 
-4. **As a last resort, you can temporarily change permissions manually:**
-   ```bash
-   sudo chmod 666 /dev/bus/usb/BUS/DEVICE
-   ```
-   (Note: This is temporary and will be reset when the device is unplugged)
+**Troubleshooting "libusb: bad access [code -3]":**
+
+If you still get access errors, manually unbind the kernel driver:
+
+```bash
+INTERFACE=$(find /sys/bus/usb/devices -type l -name "driver" 2>/dev/null | \
+  while read link; do \
+    iface=$(dirname "$link"); \
+    if grep -q "313a" "$iface/../idVendor" 2>/dev/null && \
+       grep -q "0001" "$iface/../idProduct" 2>/dev/null; then \
+      basename "$iface"; break; \
+    fi; \
+  done)
+
+echo "$INTERFACE" | sudo tee /sys/bus/usb/drivers/usbhid/unbind
+```
+
+### macOS: No Special Setup Required
+
+macOS allows direct USB HID access without special permissions. Just ensure libusb and hidapi are installed via Homebrew (see Prerequisites).
+
+**If running into issues:**
+
+Verify libraries installed:
+```bash
+brew list libusb hidapi
+```
+
+Check library version:
+```bash
+pkg-config --modversion libusb-1.0
+```
+
+### Windows: DLL Setup
+
+1. Download latest Windows binaries:
+   - [libusb-1.0.dll](https://github.com/libusb/libusb/releases) (from MinGW64/dll/)
+   - [hidapi.dll](https://github.com/libusb/hidapi/releases)
+
+2. Place both DLLs in:
+   - Same directory as `skyhw.exe`, OR
+   - `C:\Windows\System32\`, OR
+   - Any directory in your PATH
+
+3. For WinUSB devices, install driver using [Zadig](https://zadig.akeo.ie/) if needed
 
 ## Usage
 
 ### Start the daemon
 
+Run with default settings (port 9510):
 ```bash
-# Run with default settings
-go run cmd/hardware-wallet/skycoin.go daemon
+skyhw daemon
+```
 
-# Run with debug logging
-go run cmd/hardware-wallet/skycoin.go daemon -l debug
+Run with debug logging:
+```bash
+skyhw daemon -l debug
+```
 
-# Specify custom port
-go run cmd/hardware-wallet/skycoin.go daemon -p 9510
+Specify custom port:
+```bash
+skyhw daemon -p 9510
 ```
 
 ### Available Commands
 
+Show help:
 ```bash
-# Show help
-go run cmd/hardware-wallet/skycoin.go help
+skyhw help
+```
 
-# Show daemon help
-go run cmd/hardware-wallet/skycoin.go daemon --help
+Show daemon help:
+```bash
+skyhw daemon --help
 ```
 
 ## Integration with Skycoin Wallet
 
-1. **Start the hardware wallet daemon:**
-   ```bash
-   go run cmd/hardware-wallet/skycoin.go daemon -l debug
-   ```
+**Step 1: Start the hardware wallet daemon**
 
-2. **Start the Skycoin wallet daemon** (in another terminal):
-   ```bash
-   go run . daemon --enable-gui=true --enable-all-api-sets=true
-   ```
+```bash
+skyhw daemon -l debug
+```
 
-3. **Open the wallet GUI** in your browser:
-   ```
-   http://127.0.0.1:6420
-   ```
+**Step 2: Start the Skycoin wallet daemon (in another terminal)**
 
-4. **Click "SkyWallet"** in the GUI to access hardware wallet features
+```bash
+go run . daemon --enable-gui=true --enable-all-api-sets=true
+```
+
+**Step 3: Open the wallet GUI in your browser**
+
+Navigate to: http://127.0.0.1:6420
+
+**Step 4: Access hardware wallet features**
+
+Click "SkyWallet" in the GUI
 
 ## Troubleshooting
 
-### "libusb: bad access [code -3]" Error
+### Linux: "libusb: bad access [code -3]"
 
-This means your user doesn't have permission to access the USB device. Follow the "USB Permissions Setup" section above.
+**Cause:** User doesn't have permission to access USB device, or kernel driver still bound.
 
-### Device Not Detected
+**Solution:**
+1. Verify udev rules installed: `cat /etc/udev/rules.d/51-skywallet.rules`
+2. Reload udev and reconnect device
+3. Manually unbind kernel driver (see Linux setup section above)
+4. Add user to plugdev group: `sudo usermod -a -G plugdev $USER` (then log out/in)
 
-1. Ensure the SkyWallet is properly connected
-2. Check if it appears in lsusb: `lsusb | grep -i skywallet`
-3. Try a different USB port or cable
-4. Restart the hardware wallet daemon
+### All Platforms: Device Not Detected
 
-### libusb Library Not Found
+1. Ensure SkyWallet is properly connected
+2. Try different USB port or cable
+3. Check if device appears in system:
+   - Linux: `lsusb | grep 313a`
+   - macOS: `system_profiler SPUSBDataType | grep -A5 313a`
+   - Windows: Device Manager → Universal Serial Bus devices
 
-Install libusb development package for your distribution (see Prerequisites section).
+### Linux: Check Kernel Driver Status
+
+Check if usbhid is still bound:
+```bash
+find /sys/bus/usb/devices -name "*313a*" -type d -exec ls -l {}/driver \; 2>/dev/null
+```
+Should show "No such file" (driver unbound) or nothing.
+
+### Windows: Missing DLL Errors
+
+**Error:** "The code execution cannot proceed because libusb-1.0.dll was not found"
+
+**Solution:** Copy `libusb-1.0.dll` and `hidapi.dll` to executable directory
+
+### macOS: Build Errors
+
+**Error:** `ld: library not found for -lhidapi`
+
+**Solution:**
+```bash
+brew link libusb hidapi
+export CGO_LDFLAGS="-L/usr/local/lib"
+export CGO_CFLAGS="-I/usr/local/include"
+```
 
 ## Development
 
 ### Building
 
+Linux/macOS:
 ```bash
-go build -o skywallet-daemon cmd/hardware-wallet/skycoin.go
+go build -o skyhw cmd/hardware-wallet/skycoin.go
+```
+
+Windows (with MinGW):
+```bash
+set CGO_ENABLED=1
+go build -o skyhw.exe cmd/hardware-wallet/skycoin.go
 ```
 
 ### Testing
 
+Start daemon:
 ```bash
-# Start daemon and check it responds
+skyhw daemon
+```
+
+In another terminal, test API:
+```bash
 curl http://localhost:9510/api/v1/available
 ```
+
+## Security Notes
+
+- **Linux MODE="0666"**: Makes device accessible to all users. Safe for hardware wallets requiring physical confirmation.
+- **TAG+="uaccess"**: On systemd systems, restricts access to currently logged-in users (more secure).
+- **Windows DLLs**: Download from official sources only to avoid malware.
+- **Hardware Confirmation**: Sensitive operations require physical button press on device.
+
+## Support
+
+- Hardware Wallet Repository: https://github.com/skycoin/hardware-wallet-go
+- Daemon Repository: https://github.com/skycoin/hardware-wallet-daemon

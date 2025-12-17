@@ -19,6 +19,7 @@
 .PHONY: integration-test-live integration-test-live-wallet
 .PHONY: install-linters format release clean-release clean-coverage dep-github-release
 .PHONY: install-deps-ui build-ui build-ui help newcoin merge-coverage
+.PHONY: build build-skycoin build-skyhw build-skyhw-static
 .PHONY: generate update-golden-files
 .PHONY: fuzz-base58 fuzz-encoder
 .PHONY: check-lang check-lang-es check-lang-zh
@@ -77,6 +78,17 @@ endif
 test-amd64: ## Run tests for Skycoin with GOARCH=amd64
 	GOARCH=amd64 COIN=$(COIN) go test ./cmd/... -timeout=5m
 	GOARCH=amd64 COIN=$(COIN) go test ./src/... -timeout=5m
+
+build: build-skycoin build-skyhw ## Build skycoin and skyhw binaries
+
+build-skycoin: ## Build skycoin binary
+	go build -o skycoin .
+
+build-skyhw: ## Build skyhw hardware wallet binary with CGO (requires libusb-1.0-dev)
+	CGO_ENABLED=1 go build -tags=cgo -o skyhw ./cmd/hardware-wallet/
+
+build-skyhw-static: ## Build statically-linked skyhw binary (requires libusb-1.0-dev)
+	CGO_ENABLED=1 go build -tags=cgo -trimpath -ldflags '-linkmode external -extldflags "-static"' -o skyhw ./cmd/hardware-wallet/
 
 lint: ## Run linters. Use make install-linters first.
 	go mod vendor -v

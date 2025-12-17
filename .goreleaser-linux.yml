@@ -11,18 +11,21 @@ before:
     - go mod tidy
 
 builds:
-  - id: skycoin-wallet-amd64
-    binary: skycoin-wallet
+  - id: skycoin-amd64
+    binary: skycoin
     goos:
       - linux
     goarch:
       - amd64
     flags:
       - -tags=cgo
+      - -trimpath
     env:
       - CGO_ENABLED=1
-    main: ./cmd/skycoin-wallet/
-    ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
+      - CC=/home/runner/work/skycoin/skycoin/musl-data/x86_64-linux-musl-cross/bin/x86_64-linux-musl-gcc
+      - PKG_CONFIG_PATH=/home/runner/work/skycoin/skycoin/musl-data/x86_64-linux-musl-cross/x86_64-linux-musl/lib/pkgconfig
+    main: ./
+    ldflags: -s -w -linkmode external -extldflags '-static' -buildid= -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 
   - id: skyhw-amd64
     binary: skyhw
@@ -32,39 +35,48 @@ builds:
       - amd64
     flags:
       - -tags=cgo
+      - -trimpath
     env:
       - CGO_ENABLED=1
+      - CC=/home/runner/work/skycoin/skycoin/musl-data/x86_64-linux-musl-cross/bin/x86_64-linux-musl-gcc
+      - PKG_CONFIG_PATH=/home/runner/work/skycoin/skycoin/musl-data/x86_64-linux-musl-cross/x86_64-linux-musl/lib/pkgconfig
     main: ./cmd/hardware-wallet/
-    ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
+    ldflags: -s -w -linkmode external -extldflags '-static' -buildid= -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 
-  - id: skycoin-wallet-386
-    binary: skycoin-wallet
+  - id: skycoin-386
+    binary: skycoin
     goos:
       - linux
     goarch:
       - 386
     flags:
       - -tags=cgo
+      - -trimpath
     env:
       - CGO_ENABLED=1
-    main: ./cmd/skycoin-wallet/
-    ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
+      - CC=/home/runner/work/skycoin/skycoin/musl-data/i686-linux-musl-cross/bin/i686-linux-musl-gcc
+      - PKG_CONFIG_PATH=/home/runner/work/skycoin/skycoin/musl-data/i686-linux-musl-cross/i686-linux-musl/lib/pkgconfig
+    main: ./
+    ldflags: -s -w -linkmode external -extldflags '-static' -buildid= -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 
-  - id: skycoin-wallet-arm64
-    binary: skycoin-wallet
+  - id: skycoin-arm64
+    binary: skycoin
     goos:
       - linux
     goarch:
       - arm64
     flags:
       - -tags=cgo
+      - -trimpath
     env:
       - CGO_ENABLED=1
-    main: ./cmd/skycoin-wallet/
-    ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
+      - CC=/home/runner/work/skycoin/skycoin/musl-data/aarch64-linux-musl-cross/bin/aarch64-linux-musl-gcc
+      - PKG_CONFIG_PATH=/home/runner/work/skycoin/skycoin/musl-data/aarch64-linux-musl-cross/aarch64-linux-musl/lib/pkgconfig
+    main: ./
+    ldflags: -s -w -linkmode external -extldflags '-static' -buildid= -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 
-  - id: skycoin-wallet-arm
-    binary: skycoin-wallet
+  - id: skycoin-arm
+    binary: skycoin
     goos:
       - linux
     goarch:
@@ -73,13 +85,16 @@ builds:
       - 6
     flags:
       - -tags=cgo
+      - -trimpath
     env:
       - CGO_ENABLED=1
-    main: ./cmd/skycoin-wallet/
-    ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
+      - CC=/home/runner/work/skycoin/skycoin/musl-data/arm-linux-musleabi-cross/bin/arm-linux-musleabi-gcc
+      - PKG_CONFIG_PATH=/home/runner/work/skycoin/skycoin/musl-data/arm-linux-musleabi-cross/arm-linux-musleabi/lib/pkgconfig
+    main: ./
+    ldflags: -s -w -linkmode external -extldflags '-static' -buildid= -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 
-  - id: skycoin-wallet-armhf
-    binary: skycoin-wallet
+  - id: skycoin-armhf
+    binary: skycoin
     goos:
       - linux
     goarch:
@@ -88,23 +103,29 @@ builds:
       - 7
     flags:
       - -tags=cgo
+      - -trimpath
     env:
       - CGO_ENABLED=1
-    main: ./cmd/skycoin-wallet/
-    ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
+      - CC=/home/runner/work/skycoin/skycoin/musl-data/arm-linux-musleabihf-cross/bin/arm-linux-musleabihf-gcc
+      - PKG_CONFIG_PATH=/home/runner/work/skycoin/skycoin/musl-data/arm-linux-musleabihf-cross/arm-linux-musleabihf/lib/pkgconfig
+    main: ./
+    ldflags: -s -w -linkmode external -extldflags '-static' -buildid= -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 
-  - id: skycoin-wallet-riscv64
-    binary: skycoin-wallet
+  - id: skycoin-riscv64
+    binary: skycoin
     goos:
       - linux
     goarch:
       - riscv64
     flags:
       - -tags=cgo
+      - -trimpath
     env:
       - CGO_ENABLED=1
-    main: ./cmd/skycoin-wallet/
-    ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
+      - CC=/home/runner/work/skycoin/skycoin/musl-data/riscv64-linux-musl-cross/bin/riscv64-linux-musl-gcc
+      - PKG_CONFIG_PATH=/home/runner/work/skycoin/skycoin/musl-data/riscv64-linux-musl-cross/riscv64-linux-musl/lib/pkgconfig
+    main: ./
+    ldflags: -s -w -linkmode external -extldflags '-static' -buildid= -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 
 archives:
   - id: amd64
@@ -112,7 +133,7 @@ archives:
     wrap_in_directory: false
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
-      - skycoin-wallet-amd64
+      - skycoin-amd64
       - skyhw-amd64
 
   - id: arm64
@@ -120,35 +141,35 @@ archives:
     wrap_in_directory: false
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
-      - skycoin-wallet-arm64
+      - skycoin-arm64
 
   - id: arm
     format: tar.gz
     wrap_in_directory: false
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
-      - skycoin-wallet-arm
+      - skycoin-arm
 
   - id: armhf
     format: tar.gz
     wrap_in_directory: false
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}hf'
     builds:
-      - skycoin-wallet-armhf
+      - skycoin-armhf
 
   - id: 386
     format: tar.gz
     wrap_in_directory: false
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
-      - skycoin-wallet-386
+      - skycoin-386
 
   - id: riscv64
     format: tar.gz
     wrap_in_directory: false
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
-      - skycoin-wallet-riscv64
+      - skycoin-riscv64
 
 checksum:
   name_template: 'checksums.txt'

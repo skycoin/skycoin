@@ -17,7 +17,7 @@
 .PHONY: integration-test-stable-db-no-unconfirmed
 .PHONY: integration-test-stable-auth
 .PHONY: integration-test-live integration-test-live-wallet
-.PHONY: install-linters format release clean-release clean-coverage
+.PHONY: install-linters format release clean-release clean-coverage dep-github-release
 .PHONY: install-deps-ui build-ui build-ui help newcoin merge-coverage
 .PHONY: generate update-golden-files
 .PHONY: fuzz-base58 fuzz-encoder
@@ -203,6 +203,29 @@ github-release-windows: ## Create GitHub release for Windows (triggered by GitHu
 	gh release download ${GITHUB_TAG} --repo skycoin/skycoin --pattern 'checksums*'
 	cat ./dist/checksums.txt >> checksums.txt
 	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} --clobber ./checksums.txt
+
+dep-github-release:
+	rm -rf musl-data
+	mkdir -p musl-data
+	go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/aarch64-linux-musl-cross.tgz
+	tar -xzf aarch64-linux-musl-cross.tgz -C ./musl-data && rm aarch64-linux-musl-cross.tgz
+	go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/arm-linux-musleabi-cross.tgz
+	tar -xzf arm-linux-musleabi-cross.tgz -C ./musl-data && rm arm-linux-musleabi-cross.tgz
+	go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/arm-linux-musleabihf-cross.tgz
+	tar -xzf arm-linux-musleabihf-cross.tgz -C ./musl-data && rm arm-linux-musleabihf-cross.tgz
+	go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/i686-linux-musl-cross.tgz
+	tar -xzf i686-linux-musl-cross.tgz -C ./musl-data && rm i686-linux-musl-cross.tgz
+	go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/riscv64-linux-musl-cross.tgz
+	tar -xzf riscv64-linux-musl-cross.tgz -C ./musl-data && rm riscv64-linux-musl-cross.tgz
+	go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/x86_64-linux-musl-cross.tgz
+	tar -xzf x86_64-linux-musl-cross.tgz -C ./musl-data && rm x86_64-linux-musl-cross.tgz
+	# Build libusb-1.0 static libraries for each musl target
+	./ci-scripts/build-libusb-musl.sh amd64 x86_64-linux-musl ./musl-data/x86_64-linux-musl-cross
+	./ci-scripts/build-libusb-musl.sh arm64 aarch64-linux-musl ./musl-data/aarch64-linux-musl-cross
+	./ci-scripts/build-libusb-musl.sh arm arm-linux-musleabi ./musl-data/arm-linux-musleabi-cross
+	./ci-scripts/build-libusb-musl.sh armhf arm-linux-musleabihf ./musl-data/arm-linux-musleabihf-cross
+	./ci-scripts/build-libusb-musl.sh 386 i686-linux-musl ./musl-data/i686-linux-musl-cross
+	./ci-scripts/build-libusb-musl.sh riscv64 riscv64-linux-musl ./musl-data/riscv64-linux-musl-cross
 
 release: ## Build electron, standalone and daemon apps. Use osarch=${osarch} to specify the platform. Example: 'make release osarch=darwin/amd64', multiple platform can be supported in this way: 'make release osarch="darwin/amd64 windows/amd64"'. Supported architectures are: darwin/amd64 windows/amd64 windows/386 linux/amd64 linux/arm, the builds are located in electron/release folder.
 	cd $(ELECTRON_DIR) && ./build.sh ${osarch}

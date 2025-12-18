@@ -1,5 +1,5 @@
 # GoReleaser configuration for macOS builds
-# Builds skycoin binary for macOS
+# Builds skycoin and skyhw binaries for macOS
 
 version: 2
 
@@ -26,12 +26,25 @@ builds:
     main: ./
     ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 
+  - id: skyhw
+    binary: skyhw
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=1
+    main: ./cmd/hardware-wallet/
+    ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
+
 archives:
   - id: archive
     format: tar.gz
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
       - skycoin
+      - skyhw
     files:
       - none*
 
@@ -40,6 +53,7 @@ nfpms:
     package_name: skycoin
     builds:
       - skycoin
+      - skyhw
     vendor: Skycoin
     homepage: https://skycoin.com
     maintainer: Skycoin Team
@@ -51,6 +65,8 @@ nfpms:
     contents:
       - src: ./dist/skycoin_{{ .Os }}_{{ .Arch }}*/skycoin
         dst: /usr/local/bin/skycoin
+      - src: ./dist/skyhw_{{ .Os }}_{{ .Arch }}*/skyhw
+        dst: /usr/local/bin/skyhw
 
 checksum:
   name_template: 'checksums.txt'

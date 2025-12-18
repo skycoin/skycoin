@@ -1,5 +1,3 @@
-//go:build linux && amd64
-
 // Package commands implements the skycoin hardware wallet daemon and CLI.
 package commands
 

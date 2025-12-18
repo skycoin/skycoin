@@ -1,5 +1,5 @@
 # GoReleaser configuration for Windows builds  
-# Builds skycoin binary for Windows
+# Builds skycoin and skyhw binaries for Windows
 
 version: 2
 
@@ -27,12 +27,26 @@ builds:
     main: ./
     ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 
+  - id: skyhw
+    binary: skyhw
+    goos:
+      - windows
+    goarch:
+      - amd64
+      - 386
+      - arm64
+    env:
+      - CGO_ENABLED=1
+    main: ./cmd/hardware-wallet/
+    ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
+
 archives:
   - id: archive
     format: zip
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
       - skycoin
+      - skyhw
     files:
       - none*
 
@@ -41,6 +55,7 @@ nfpms:
     package_name: skycoin
     builds:
       - skycoin
+      - skyhw
     vendor: Skycoin
     homepage: https://skycoin.com
     maintainer: Skycoin Team

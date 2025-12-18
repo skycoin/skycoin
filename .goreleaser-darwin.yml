@@ -1,5 +1,5 @@
 # GoReleaser configuration for macOS builds
-# Builds skycoin-wallet binaries for macOS
+# Builds skycoin binary for macOS
 
 version: 2
 
@@ -14,8 +14,8 @@ before:
     - go mod vendor
 
 builds:
-  - id: skycoin-wallet
-    binary: skycoin-wallet
+  - id: skycoin
+    binary: skycoin
     goos:
       - darwin
     goarch:
@@ -23,7 +23,7 @@ builds:
       - arm64
     env:
       - CGO_ENABLED=1
-    main: ./cmd/skycoin-wallet/
+    main: ./
     ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 
 archives:
@@ -31,8 +31,26 @@ archives:
     format: tar.gz
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
-      - skycoin-wallet
-    allow_different_binary_count: true
+      - skycoin
+    files:
+      - none*
+
+nfpms:
+  - id: skycoin-pkg
+    package_name: skycoin
+    builds:
+      - skycoin
+    vendor: Skycoin
+    homepage: https://skycoin.com
+    maintainer: Skycoin Team
+    description: Skycoin digital currency
+    license: MIT
+    formats:
+      - pkg
+    file_name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
+    contents:
+      - src: ./dist/skycoin_{{ .Os }}_{{ .Arch }}*/skycoin
+        dst: /usr/local/bin/skycoin
 
 checksum:
   name_template: 'checksums.txt'

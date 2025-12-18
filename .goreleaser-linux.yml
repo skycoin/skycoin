@@ -121,30 +121,40 @@ archives:
     builds:
       - skycoin-amd64
       - skyhw-amd64
+    files:
+      - none*
 
   - id: arm64
     format: tar.gz
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
       - skycoin-arm64
+    files:
+      - none*
 
   - id: arm
     format: tar.gz
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
       - skycoin-arm
+    files:
+      - none*
 
   - id: armhf
     format: tar.gz
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}hf'
     builds:
       - skycoin-armhf
+    files:
+      - none*
 
   - id: 386
     format: tar.gz
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
       - skycoin-386
+    files:
+      - none*
 
 checksum:
   name_template: 'checksums.txt'

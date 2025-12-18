@@ -30,7 +30,6 @@ builds:
 archives:
   - id: archive
     format: zip
-    rlcp: true
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
       - skycoin-wallet

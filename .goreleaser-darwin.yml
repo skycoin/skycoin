@@ -29,7 +29,6 @@ builds:
 archives:
   - id: archive
     format: tar.gz
-    rlcp: true
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
       - skycoin-wallet

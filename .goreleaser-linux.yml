@@ -117,7 +117,6 @@ builds:
 archives:
   - id: amd64
     format: tar.gz
-    rlcp: true
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
       - skycoin-amd64
@@ -125,28 +124,24 @@ archives:
 
   - id: arm64
     format: tar.gz
-    rlcp: true
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
       - skycoin-arm64
 
   - id: arm
     format: tar.gz
-    rlcp: true
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
       - skycoin-arm
 
   - id: armhf
     format: tar.gz
-    rlcp: true
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}hf'
     builds:
       - skycoin-armhf
 
   - id: 386
     format: tar.gz
-    rlcp: true
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
       - skycoin-386

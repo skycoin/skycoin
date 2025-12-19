@@ -31,7 +31,7 @@ jobs:
 
   darwin:
     needs: linux
-    runs-on: macos-latest
+    runs-on: macos-13  # Use Intel Mac to avoid cross-compilation issues
     steps:
       - uses: actions/setup-go@v5
         with:

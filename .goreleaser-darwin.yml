@@ -22,7 +22,7 @@ builds:
       - amd64
       - arm64
     env:
-      - CGO_ENABLED=1
+      - CGO_ENABLED=0
     main: ./
     ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 
@@ -35,8 +35,8 @@ builds:
       - arm64
     env:
       - CGO_ENABLED=1
-      - CGO_CFLAGS=-I/usr/local/include -I/opt/homebrew/include
-      - CGO_LDFLAGS=-L/usr/local/lib -L/opt/homebrew/lib
+      - CGO_CFLAGS=-I/usr/local/include
+      - CGO_LDFLAGS=-L/usr/local/lib
     main: ./cmd/hardware-wallet/
     ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 

@@ -29,9 +29,9 @@ jobs:
           make dep-github-release
           make github-release
 
-  darwin:
+  darwin-amd64:
     needs: linux
-    runs-on: macos-13  # Use Intel Mac to avoid cross-compilation issues
+    runs-on: macos-15-intel
     steps:
       - uses: actions/setup-go@v5
         with:
@@ -49,10 +49,32 @@ jobs:
       - name: Releasing
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: make github-release-darwin
+        run: make github-release-darwin-amd64
+
+  darwin-arm64:
+    needs: linux
+    runs-on: macos-latest  # ARM64 runner
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Install Requirements
+        run: |
+          brew install libusb
+          brew install hidapi
+      
+      - name: Releasing
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: make github-release-darwin-arm64
 
   windows:
-    needs: darwin
+    needs: [darwin-amd64, darwin-arm64]
     runs-on: windows-latest
     steps:
       - uses: actions/setup-go@v5

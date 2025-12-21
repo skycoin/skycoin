@@ -1,0 +1,80 @@
+# GoReleaser configuration for macOS ARM builds
+# Builds skycoin and skyhw binaries for macOS arm64
+
+version: 2
+
+release:
+  github:
+    owner: skycoin
+    name: skycoin
+
+before:
+  hooks:
+    - go mod tidy
+    - go mod vendor
+
+builds:
+  - id: skycoin
+    binary: skycoin
+    goos:
+      - darwin
+    goarch:
+      - arm64
+    env:
+      - CGO_ENABLED=0
+    main: ./
+    ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
+
+  - id: skyhw
+    binary: skyhw
+    goos:
+      - darwin
+    goarch:
+      - arm64
+    env:
+      - CGO_ENABLED=1
+      - CGO_CFLAGS=-I/usr/local/include
+      - CGO_LDFLAGS=-L/usr/local/lib
+    main: ./cmd/hardware-wallet/
+    ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
+
+archives:
+  - id: archive
+    format: tar.gz
+    name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
+    builds:
+      - skycoin
+      - skyhw
+    files:
+      - none*
+
+nfpms:
+  - id: skycoin-pkg
+    package_name: skycoin
+    builds:
+      - skycoin
+      - skyhw
+    vendor: Skycoin
+    homepage: https://skycoin.com
+    maintainer: Skycoin Team
+    description: Skycoin digital currency
+    license: MIT
+    formats:
+      - pkg
+    file_name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
+    contents:
+      - src: ./dist/skycoin_{{ .Os }}_{{ .Arch }}*/skycoin
+        dst: /usr/local/bin/skycoin
+      - src: ./dist/skyhw_{{ .Os }}_{{ .Arch }}*/skyhw
+        dst: /usr/local/bin/skyhw
+
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  version_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'

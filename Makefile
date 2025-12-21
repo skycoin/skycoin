@@ -198,6 +198,24 @@ github-prepare-release:
 github-release: github-prepare-release ## Create GitHub release for Linux (triggered by GitHub Actions on tag push)
 	go run github.com/goreleaser/goreleaser/v2@main --clean --config .goreleaser-linux.yml --release-notes releaseChangelog.md
 
+github-release-darwin-amd64: ## Create GitHub release for macOS Intel (triggered by GitHub Actions)
+	go run github.com/goreleaser/goreleaser/v2@main --clean --config .goreleaser-darwin-amd64.yml --skip=publish
+	$(eval GITHUB_TAG=$(shell git describe --abbrev=0 --tags))
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-darwin-amd64.tar.gz
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-darwin-amd64.pkg || true
+	gh release download ${GITHUB_TAG} --repo skycoin/skycoin --pattern 'checksums*'
+	cat ./dist/checksums.txt >> checksums.txt
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} --clobber ./checksums.txt
+
+github-release-darwin-arm64: ## Create GitHub release for macOS ARM (triggered by GitHub Actions)
+	go run github.com/goreleaser/goreleaser/v2@main --clean --config .goreleaser-darwin-arm64.yml --skip=publish
+	$(eval GITHUB_TAG=$(shell git describe --abbrev=0 --tags))
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-darwin-arm64.tar.gz
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-darwin-arm64.pkg || true
+	gh release download ${GITHUB_TAG} --repo skycoin/skycoin --pattern 'checksums*'
+	cat ./dist/checksums.txt >> checksums.txt
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} --clobber ./checksums.txt
+
 github-release-darwin: ## Create GitHub release for macOS (triggered by GitHub Actions)
 	go run github.com/goreleaser/goreleaser/v2@main --clean --config .goreleaser-darwin.yml --skip=publish
 	$(eval GITHUB_TAG=$(shell git describe --abbrev=0 --tags))

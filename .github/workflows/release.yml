@@ -89,8 +89,9 @@ jobs:
         shell: pwsh
         run: |
           choco install make
-          # Install libusb and hidapi via msys2/mingw (compatible with Go/MinGW)
-          C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm mingw-w64-x86_64-libusb mingw-w64-x86_64-hidapi mingw-w64-i686-libusb mingw-w64-i686-hidapi"
+          # Install libusb and hidapi via msys2/mingw for x64 only
+          # 32-bit (i686) packages not available in default msys2 repos
+          C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm mingw-w64-x86_64-libusb mingw-w64-x86_64-hidapi"
       
       - name: Releasing
         env:

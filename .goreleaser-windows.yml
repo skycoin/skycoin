@@ -49,25 +49,8 @@ builds:
     goarch:
       - 386
     env:
-      - CGO_ENABLED=1
-      - PKG_CONFIG_PATH=C:/msys64/mingw32/lib/pkgconfig
-      - CGO_CFLAGS=-IC:/msys64/mingw32/include
-      - CGO_LDFLAGS=-LC:/msys64/mingw32/lib
+      - CGO_ENABLED=0
     main: ./
-    ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
-
-  - id: skyhw-386
-    binary: skyhw
-    goos:
-      - windows
-    goarch:
-      - 386
-    env:
-      - CGO_ENABLED=1
-      - PKG_CONFIG_PATH=C:/msys64/mingw32/lib/pkgconfig
-      - CGO_CFLAGS=-IC:/msys64/mingw32/include
-      - CGO_LDFLAGS=-LC:/msys64/mingw32/lib
-    main: ./cmd/hardware-wallet/
     ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 
   - id: skycoin-arm64
@@ -96,7 +79,6 @@ archives:
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     builds:
       - skycoin-386
-      - skyhw-386
     files:
       - none*
 
@@ -126,7 +108,6 @@ nfpms:
     package_name: skycoin
     builds:
       - skycoin-386
-      - skyhw-386
     vendor: Skycoin
     homepage: https://skycoin.com
     maintainer: Skycoin Team

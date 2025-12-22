@@ -48,25 +48,6 @@ archives:
     files:
       - none*
 
-nfpms:
-  - id: skycoin-pkg
-    package_name: skycoin
-    builds:
-      - skycoin
-      - skyhw
-    vendor: Skycoin
-    homepage: https://skycoin.com
-    maintainer: Skycoin Team
-    description: Skycoin digital currency
-    formats:
-      - pkg
-    file_name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
-    contents:
-      - src: ./dist/skycoin_{{ .Os }}_{{ .Arch }}_{{ .Arm }}{{ if .Amd64 }}v1{{ end }}/skycoin
-        dst: /usr/local/bin/skycoin
-      - src: ./dist/skyhw_{{ .Os }}_{{ .Arch }}_{{ .Arm }}{{ if .Amd64 }}v1{{ end }}/skyhw
-        dst: /usr/local/bin/skyhw
-
 checksum:
   name_template: 'checksums.txt'
 snapshot:

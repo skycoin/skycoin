@@ -17,6 +17,14 @@ jobs:
         with:
           go-version: '1.25'
       
+      - name: Cache musl toolchains
+        uses: actions/cache@v4
+        with:
+          path: musl-data
+          key: musl-cross-v1.3.29-${{ runner.os }}-${{ hashFiles('ci-scripts/build-libusb-musl.sh') }}
+          restore-keys: |
+            musl-cross-v1.3.29-${{ runner.os }}-
+      
       - name: Install Requirements
         run: |
           sudo apt-get update

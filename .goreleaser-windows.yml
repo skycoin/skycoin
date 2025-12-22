@@ -37,7 +37,7 @@ builds:
     env:
       - CGO_ENABLED=1
       - PKG_CONFIG_PATH=C:/msys64/mingw64/lib/pkgconfig
-      - CGO_CFLAGS=-IC:/msys64/mingw64/include
+      - CGO_CFLAGS=-IC:/msys64/mingw64/include -IC:/msys64/mingw64/include/libusb-1.0
       - CGO_LDFLAGS=-LC:/msys64/mingw64/lib
     main: ./cmd/hardware-wallet/
     ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
@@ -66,34 +66,40 @@ builds:
 
 archives:
   - id: amd64
-    format: zip
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
-    builds:
+    ids:
       - skycoin-amd64
       - skyhw-amd64
     files:
       - none*
+    format_overrides:
+      - goos: windows
+        format: zip
 
   - id: 386
-    format: zip
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
-    builds:
+    ids:
       - skycoin-386
     files:
       - none*
+    format_overrides:
+      - goos: windows
+        format: zip
 
   - id: arm64
-    format: zip
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
-    builds:
+    ids:
       - skycoin-arm64
     files:
       - none*
+    format_overrides:
+      - goos: windows
+        format: zip
 
 nfpms:
   - id: amd64-msi
     package_name: skycoin
-    builds:
+    ids:
       - skycoin-amd64
       - skyhw-amd64
     vendor: Skycoin
@@ -106,7 +112,7 @@ nfpms:
 
   - id: 386-msi
     package_name: skycoin
-    builds:
+    ids:
       - skycoin-386
     vendor: Skycoin
     homepage: https://skycoin.com
@@ -118,7 +124,7 @@ nfpms:
 
   - id: arm64-msi
     package_name: skycoin
-    builds:
+    ids:
       - skycoin-arm64
     vendor: Skycoin
     homepage: https://skycoin.com

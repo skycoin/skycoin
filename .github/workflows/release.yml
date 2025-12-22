@@ -9,13 +9,13 @@ jobs:
   linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.25'
-      
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
       
       - name: Install Requirements
         run: |
@@ -33,18 +33,18 @@ jobs:
     needs: linux
     runs-on: macos-15-intel
     steps:
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.25'
-      
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      
       - name: Install Requirements
         run: |
-          brew install libusb
-          brew install hidapi
+          brew install --quiet libusb || brew upgrade --quiet libusb
+          brew install --quiet hidapi || brew upgrade --quiet hidapi
       
       - name: Releasing
         env:
@@ -55,18 +55,18 @@ jobs:
     needs: linux
     runs-on: macos-latest  # ARM64 runner
     steps:
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.25'
-      
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      
       - name: Install Requirements
         run: |
-          brew install libusb
-          brew install hidapi
+          brew install --quiet libusb || brew upgrade --quiet libusb
+          brew install --quiet hidapi || brew upgrade --quiet hidapi
       
       - name: Releasing
         env:
@@ -77,13 +77,13 @@ jobs:
     needs: [darwin-amd64, darwin-arm64]
     runs-on: windows-latest
     steps:
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.25'
-      
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
       
       - name: Install Requirements
         shell: pwsh

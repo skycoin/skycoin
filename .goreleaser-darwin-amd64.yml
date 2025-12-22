@@ -40,9 +40,8 @@ builds:
 
 archives:
   - id: archive
-    format: tar.gz
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
-    builds:
+    ids:
       - skycoin
       - skyhw
     files:

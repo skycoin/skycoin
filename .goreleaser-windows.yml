@@ -66,73 +66,29 @@ builds:
 
 archives:
   - id: amd64
+    format: zip
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     ids:
       - skycoin-amd64
       - skyhw-amd64
     files:
       - none*
-    format_overrides:
-      - goos: windows
-        format: zip
 
   - id: 386
+    format: zip
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     ids:
       - skycoin-386
     files:
       - none*
-    format_overrides:
-      - goos: windows
-        format: zip
 
   - id: arm64
+    format: zip
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     ids:
       - skycoin-arm64
     files:
       - none*
-    format_overrides:
-      - goos: windows
-        format: zip
-
-nfpms:
-  - id: amd64-msi
-    package_name: skycoin
-    ids:
-      - skycoin-amd64
-      - skyhw-amd64
-    vendor: Skycoin
-    homepage: https://skycoin.com
-    maintainer: Skycoin Team
-    description: Skycoin digital currency
-    formats:
-      - msi
-    file_name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
-
-  - id: 386-msi
-    package_name: skycoin
-    ids:
-      - skycoin-386
-    vendor: Skycoin
-    homepage: https://skycoin.com
-    maintainer: Skycoin Team
-    description: Skycoin digital currency
-    formats:
-      - msi
-    file_name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
-
-  - id: arm64-msi
-    package_name: skycoin
-    ids:
-      - skycoin-arm64
-    vendor: Skycoin
-    homepage: https://skycoin.com
-    maintainer: Skycoin Team
-    description: Skycoin digital currency
-    formats:
-      - msi
-    file_name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
 
 checksum:
   name_template: 'checksums.txt'

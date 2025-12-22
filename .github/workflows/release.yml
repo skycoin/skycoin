@@ -30,7 +30,6 @@ jobs:
           make github-release
 
   darwin-amd64:
-    needs: linux
     runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v4
@@ -52,7 +51,6 @@ jobs:
         run: make github-release-darwin-amd64
 
   darwin-arm64:
-    needs: linux
     runs-on: macos-latest  # ARM64 runner
     steps:
       - uses: actions/checkout@v4
@@ -74,7 +72,6 @@ jobs:
         run: make github-release-darwin-arm64
 
   windows:
-    needs: [darwin-amd64, darwin-arm64]
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4

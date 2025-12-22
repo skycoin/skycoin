@@ -196,7 +196,15 @@ github-prepare-release:
 	sed '/^## ${GITHUB_TAG}$$/,/^## .*/!d;//d;/^$$/d' ./CHANGELOG.md > releaseChangelog.md
 
 github-release: github-prepare-release ## Create GitHub release for Linux (triggered by GitHub Actions on tag push)
-	go run github.com/goreleaser/goreleaser/v2@main --clean --config .goreleaser-linux.yml --release-notes releaseChangelog.md
+	go run github.com/goreleaser/goreleaser/v2@main --clean --config .goreleaser-linux.yml --release-notes releaseChangelog.md --skip=publish
+	$(eval GITHUB_TAG=$(shell git describe --abbrev=0 --tags))
+	gh release create ${GITHUB_TAG} --repo skycoin/skycoin --title ${GITHUB_TAG} --notes-file releaseChangelog.md || true
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-linux-amd64.tar.gz --clobber
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-linux-arm64.tar.gz --clobber
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-linux-386.tar.gz --clobber
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-linux-arm.tar.gz --clobber
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-linux-armhf.tar.gz --clobber
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/checksums.txt --clobber
 
 github-release-darwin-amd64: ## Create GitHub release for macOS Intel (triggered by GitHub Actions)
 	go run github.com/goreleaser/goreleaser/v2@main --clean --config .goreleaser-darwin-amd64.yml --skip=publish

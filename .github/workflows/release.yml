@@ -89,9 +89,11 @@ jobs:
         shell: pwsh
         run: |
           choco install make
-          # Install hidapi via vcpkg
+          # Install libusb and hidapi via vcpkg
           git clone https://github.com/Microsoft/vcpkg.git C:/vcpkg
           C:/vcpkg/bootstrap-vcpkg.bat
+          C:/vcpkg/vcpkg install libusb:x64-windows-static
+          C:/vcpkg/vcpkg install libusb:x86-windows-static
           C:/vcpkg/vcpkg install hidapi:x64-windows-static
           C:/vcpkg/vcpkg install hidapi:x86-windows-static
       

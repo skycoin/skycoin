@@ -22,6 +22,7 @@ builds:
       - amd64
     env:
       - CGO_ENABLED=1
+      - PKG_CONFIG_PATH=C:/vcpkg/installed/x64-windows-static/lib/pkgconfig
       - CGO_CFLAGS=-IC:/vcpkg/installed/x64-windows-static/include
       - CGO_LDFLAGS=-LC:/vcpkg/installed/x64-windows-static/lib -lhidapi -lsetupapi
     main: ./
@@ -35,6 +36,7 @@ builds:
       - amd64
     env:
       - CGO_ENABLED=1
+      - PKG_CONFIG_PATH=C:/vcpkg/installed/x64-windows-static/lib/pkgconfig
       - CGO_CFLAGS=-IC:/vcpkg/installed/x64-windows-static/include
       - CGO_LDFLAGS=-LC:/vcpkg/installed/x64-windows-static/lib -lhidapi -lsetupapi
     main: ./cmd/hardware-wallet/
@@ -48,6 +50,7 @@ builds:
       - 386
     env:
       - CGO_ENABLED=1
+      - PKG_CONFIG_PATH=C:/vcpkg/installed/x86-windows-static/lib/pkgconfig
       - CGO_CFLAGS=-IC:/vcpkg/installed/x86-windows-static/include
       - CGO_LDFLAGS=-LC:/vcpkg/installed/x86-windows-static/lib -lhidapi -lsetupapi
     main: ./
@@ -61,6 +64,7 @@ builds:
       - 386
     env:
       - CGO_ENABLED=1
+      - PKG_CONFIG_PATH=C:/vcpkg/installed/x86-windows-static/lib/pkgconfig
       - CGO_CFLAGS=-IC:/vcpkg/installed/x86-windows-static/include
       - CGO_LDFLAGS=-LC:/vcpkg/installed/x86-windows-static/lib -lhidapi -lsetupapi
     main: ./cmd/hardware-wallet/

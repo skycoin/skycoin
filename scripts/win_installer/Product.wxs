@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+
+<?if $(sys.BUILDARCH)="x86"?>
+    <?define Program_Files="ProgramFilesFolder"?>
+<?elseif $(sys.BUILDARCH)="x64"?>
+    <?define Program_Files="ProgramFiles64Folder"?>
+<?else?>
+    <?error Unsupported value of sys.BUILDARCH=$(sys.BUILDARCH)?>
+<?endif?>
+
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+   <Product Id="*" UpgradeCode="a7b5c3d1-4e6f-4a8b-9c1d-2e3f4a5b6c7d"
+            Name="Skycoin"
+            Version="skycoinVersion"
+            Manufacturer="Skycoin"
+            Language="1033">
+
+      <Package InstallerVersion="200" Compressed="yes" Comments="Windows Installer Package" InstallScope="perMachine"/>
+      <Media Id="1" Cabinet="product.cab" EmbedCab="yes"/>
+
+      <Directory Id="TARGETDIR" Name="SourceDir">
+         <Directory Id="$(var.Program_Files)">
+            <Directory Id="INSTALLDIR" Name="Skycoin">
+               <Component Id="ApplicationFiles" Guid="b8c6d4e2-5f7g-4h9i-0j1k-2l3m4n5o6p7q">
+                    <File Id="SKYCOIN" Source=".\build\skycoin.exe"/>
+                    <?if $(sys.BUILDARCH)="x64"?>
+                    <File Id="SKYHW" Source=".\build\skyhw.exe"/>
+                    <?endif?>
+               </Component>
+            </Directory>
+         </Directory>
+
+         <Component Id="ENVS" Guid="c9d7e5f3-6g8h-5i0j-1k2l-3m4n5o6p7q8r">
+          <Environment Id="ENV0"
+            Name="PATH"
+            Value="[INSTALLDIR]"
+            Permanent="yes"
+            Part="last"
+            Action="set"
+            System="yes"/>
+         </Component>
+      </Directory>
+
+      <InstallExecuteSequence>
+         <RemoveExistingProducts After="InstallValidate"/>
+      </InstallExecuteSequence>
+
+      <Feature Id="DefaultFeature" Level="1">
+         <ComponentRef Id="ENVS"/>
+         <ComponentRef Id="ApplicationFiles"/>
+      </Feature>
+
+      <UI>
+         <!-- Define the installer UI -->
+         <UIRef Id="WixUI_Minimal" />
+      </UI>
+
+      <Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
+
+   </Product>
+
+</Wix>

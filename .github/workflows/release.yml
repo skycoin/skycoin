@@ -93,4 +93,6 @@ jobs:
       - name: Releasing
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: make github-release-windows
+        run: |
+          make github-release-windows
+          make windows-installer-release

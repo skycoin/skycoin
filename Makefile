@@ -243,6 +243,16 @@ github-release-windows: ## Create GitHub release for Windows (triggered by GitHu
 	cat ./dist/checksums.txt >> checksums.txt
 	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} --clobber ./checksums.txt
 
+win-installer: ## Build the windows .msi (installer) custom version
+	@powershell '.\scripts\win_installer\script.ps1 $(CUSTOM_VERSION) amd64'
+	@powershell '.\scripts\win_installer\script.ps1 $(CUSTOM_VERSION) 386'
+
+windows-installer-release: ## Upload Windows .msi installers to GitHub release
+	$(eval GITHUB_TAG=$(shell git describe --abbrev=0 --tags))
+	make win-installer CUSTOM_VERSION=$(GITHUB_TAG)
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./skycoin-installer-${GITHUB_TAG}-windows-amd64.msi --clobber
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./skycoin-installer-${GITHUB_TAG}-windows-386.msi --clobber
+
 dep-github-release:
 	rm -rf musl-data
 	mkdir -p musl-data

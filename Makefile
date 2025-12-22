@@ -238,6 +238,10 @@ github-release-windows: ## Create GitHub release for Windows (triggered by GitHu
 	$(eval GITHUB_TAG=$(shell git describe --abbrev=0 --tags))
 	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-windows-amd64.zip --clobber
 	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-windows-386.zip --clobber
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-windows-arm64.zip --clobber
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-windows-amd64.msi --clobber || true
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-windows-386.msi --clobber || true
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-windows-arm64.msi --clobber || true
 	gh release download ${GITHUB_TAG} --repo skycoin/skycoin --pattern 'checksums*'
 	cat ./dist/checksums.txt >> checksums.txt
 	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} --clobber ./checksums.txt

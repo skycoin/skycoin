@@ -89,13 +89,8 @@ jobs:
         shell: pwsh
         run: |
           choco install make
-          # Install libusb and hidapi via vcpkg
-          git clone https://github.com/Microsoft/vcpkg.git C:/vcpkg
-          C:/vcpkg/bootstrap-vcpkg.bat
-          C:/vcpkg/vcpkg install libusb:x64-windows-static
-          C:/vcpkg/vcpkg install libusb:x86-windows-static
-          C:/vcpkg/vcpkg install hidapi:x64-windows-static
-          C:/vcpkg/vcpkg install hidapi:x86-windows-static
+          # Install libusb and hidapi via msys2/mingw (compatible with Go/MinGW)
+          C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm mingw-w64-x86_64-libusb mingw-w64-x86_64-hidapi mingw-w64-i686-libusb mingw-w64-i686-hidapi"
       
       - name: Releasing
         env:

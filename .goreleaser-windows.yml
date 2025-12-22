@@ -22,9 +22,9 @@ builds:
       - amd64
     env:
       - CGO_ENABLED=1
-      - PKG_CONFIG_PATH=C:/vcpkg/installed/x64-windows-static/lib/pkgconfig
-      - CGO_CFLAGS=-IC:/vcpkg/installed/x64-windows-static/include
-      - CGO_LDFLAGS=-LC:/vcpkg/installed/x64-windows-static/lib -lhidapi -lsetupapi
+      - PKG_CONFIG_PATH=C:/msys64/mingw64/lib/pkgconfig
+      - CGO_CFLAGS=-IC:/msys64/mingw64/include
+      - CGO_LDFLAGS=-LC:/msys64/mingw64/lib
     main: ./
     ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 
@@ -36,9 +36,9 @@ builds:
       - amd64
     env:
       - CGO_ENABLED=1
-      - PKG_CONFIG_PATH=C:/vcpkg/installed/x64-windows-static/lib/pkgconfig
-      - CGO_CFLAGS=-IC:/vcpkg/installed/x64-windows-static/include
-      - CGO_LDFLAGS=-LC:/vcpkg/installed/x64-windows-static/lib -lhidapi -lsetupapi
+      - PKG_CONFIG_PATH=C:/msys64/mingw64/lib/pkgconfig
+      - CGO_CFLAGS=-IC:/msys64/mingw64/include
+      - CGO_LDFLAGS=-LC:/msys64/mingw64/lib
     main: ./cmd/hardware-wallet/
     ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 
@@ -50,9 +50,9 @@ builds:
       - 386
     env:
       - CGO_ENABLED=1
-      - PKG_CONFIG_PATH=C:/vcpkg/installed/x86-windows-static/lib/pkgconfig
-      - CGO_CFLAGS=-IC:/vcpkg/installed/x86-windows-static/include
-      - CGO_LDFLAGS=-LC:/vcpkg/installed/x86-windows-static/lib -lhidapi -lsetupapi
+      - PKG_CONFIG_PATH=C:/msys64/mingw32/lib/pkgconfig
+      - CGO_CFLAGS=-IC:/msys64/mingw32/include
+      - CGO_LDFLAGS=-LC:/msys64/mingw32/lib
     main: ./
     ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 
@@ -64,10 +64,21 @@ builds:
       - 386
     env:
       - CGO_ENABLED=1
-      - PKG_CONFIG_PATH=C:/vcpkg/installed/x86-windows-static/lib/pkgconfig
-      - CGO_CFLAGS=-IC:/vcpkg/installed/x86-windows-static/include
-      - CGO_LDFLAGS=-LC:/vcpkg/installed/x86-windows-static/lib -lhidapi -lsetupapi
+      - PKG_CONFIG_PATH=C:/msys64/mingw32/lib/pkgconfig
+      - CGO_CFLAGS=-IC:/msys64/mingw32/include
+      - CGO_LDFLAGS=-LC:/msys64/mingw32/lib
     main: ./cmd/hardware-wallet/
+    ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
+
+  - id: skycoin-arm64
+    binary: skycoin
+    goos:
+      - windows
+    goarch:
+      - arm64
+    env:
+      - CGO_ENABLED=0
+    main: ./
     ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 
 archives:
@@ -88,6 +99,53 @@ archives:
       - skyhw-386
     files:
       - none*
+
+  - id: arm64
+    format: zip
+    name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
+    builds:
+      - skycoin-arm64
+    files:
+      - none*
+
+nfpms:
+  - id: amd64-msi
+    package_name: skycoin
+    builds:
+      - skycoin-amd64
+      - skyhw-amd64
+    vendor: Skycoin
+    homepage: https://skycoin.com
+    maintainer: Skycoin Team
+    description: Skycoin digital currency
+    formats:
+      - msi
+    file_name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
+
+  - id: 386-msi
+    package_name: skycoin
+    builds:
+      - skycoin-386
+      - skyhw-386
+    vendor: Skycoin
+    homepage: https://skycoin.com
+    maintainer: Skycoin Team
+    description: Skycoin digital currency
+    formats:
+      - msi
+    file_name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
+
+  - id: arm64-msi
+    package_name: skycoin
+    builds:
+      - skycoin-arm64
+    vendor: Skycoin
+    homepage: https://skycoin.com
+    maintainer: Skycoin Team
+    description: Skycoin digital currency
+    formats:
+      - msi
+    file_name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
 
 checksum:
   name_template: 'checksums.txt'

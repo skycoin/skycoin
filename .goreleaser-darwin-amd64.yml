@@ -40,7 +40,9 @@ builds:
 
 archives:
   - id: archive
-    format: tar.gz
+    format_overrides:
+      - goos: darwin
+        format: tar.gz
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     ids:
       - skycoin

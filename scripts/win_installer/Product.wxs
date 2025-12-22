@@ -27,18 +27,17 @@
                     <File Id="SKYHW" Source=".\build\skyhw.exe"/>
                     <?endif?>
                </Component>
+               <Component Id="ENVS" Guid="c9d7e5f3-6g8h-5i0j-1k2l-3m4n5o6p7q8r">
+                  <Environment Id="ENV0"
+                    Name="PATH"
+                    Value="[INSTALLDIR]"
+                    Permanent="yes"
+                    Part="last"
+                    Action="set"
+                    System="yes"/>
+               </Component>
             </Directory>
          </Directory>
-
-         <Component Id="ENVS" Guid="c9d7e5f3-6g8h-5i0j-1k2l-3m4n5o6p7q8r">
-          <Environment Id="ENV0"
-            Name="PATH"
-            Value="[INSTALLDIR]"
-            Permanent="yes"
-            Part="last"
-            Action="set"
-            System="yes"/>
-         </Component>
       </Directory>
 
       <InstallExecuteSequence>

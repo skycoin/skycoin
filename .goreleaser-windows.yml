@@ -66,7 +66,9 @@ builds:
 
 archives:
   - id: amd64
-    format: zip
+    format_overrides:
+      - goos: windows
+        format: zip
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     ids:
       - skycoin-amd64
@@ -75,7 +77,9 @@ archives:
       - none*
 
   - id: 386
-    format: zip
+    format_overrides:
+      - goos: windows
+        format: zip
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     ids:
       - skycoin-386
@@ -83,7 +87,9 @@ archives:
       - none*
 
   - id: arm64
-    format: zip
+    format_overrides:
+      - goos: windows
+        format: zip
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     ids:
       - skycoin-arm64

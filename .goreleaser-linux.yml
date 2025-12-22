@@ -184,7 +184,9 @@ builds:
 
 archives:
   - id: amd64
-    format: tar.gz
+    format_overrides:
+      - goos: linux
+        format: tar.gz
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     ids:
       - skycoin-amd64
@@ -193,7 +195,9 @@ archives:
       - none*
 
   - id: arm64
-    format: tar.gz
+    format_overrides:
+      - goos: linux
+        format: tar.gz
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     ids:
       - skycoin-arm64
@@ -202,7 +206,9 @@ archives:
       - none*
 
   - id: arm
-    format: tar.gz
+    format_overrides:
+      - goos: linux
+        format: tar.gz
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     ids:
       - skycoin-arm
@@ -211,7 +217,9 @@ archives:
       - none*
 
   - id: armhf
-    format: tar.gz
+    format_overrides:
+      - goos: linux
+        format: tar.gz
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}hf'
     ids:
       - skycoin-armhf
@@ -220,7 +228,9 @@ archives:
       - none*
 
   - id: 386
-    format: tar.gz
+    format_overrides:
+      - goos: linux
+        format: tar.gz
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     ids:
       - skycoin-386

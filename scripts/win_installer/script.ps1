@@ -63,8 +63,16 @@ function BuildInstaller()
     Set-Content -Path Product.wxs -Value $newContent
 
     Write-Output "#       5. Building MSI Installer...                     #"
-    .\wix\candle.exe Product.wxs -arch $wix_arch  > $null
-    .\wix\light.exe -ext WixUIExtension -ext WixUtilExtension -sacl -spdb -out skycoin.msi Product.wixobj  > $null
+    .\wix\candle.exe Product.wxs -arch $wix_arch
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "candle.exe failed with exit code $LASTEXITCODE"
+        exit $LASTEXITCODE
+    }
+    .\wix\light.exe -ext WixUIExtension -ext WixUtilExtension -sacl -spdb -out skycoin.msi Product.wixobj
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "light.exe failed with exit code $LASTEXITCODE"
+        exit $LASTEXITCODE
+    }
     Move-Item skycoin.msi ../../$msiName.msi -Force
 
     Write-Output "#          ==> Build Completed for $arch_title!                #"

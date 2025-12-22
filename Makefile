@@ -265,15 +265,25 @@ dep-github-release:
 		echo "Downloading musl toolchains..."; \
 		rm -rf musl-data; \
 		mkdir -p musl-data; \
-		go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/aarch64-linux-musl-cross.tgz; \
+		for i in 1 2 3 4 5; do \
+			go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/aarch64-linux-musl-cross.tgz && break || { echo "Retry $$i/5 failed, waiting..."; sleep 10; }; \
+		done; \
 		tar -xzf aarch64-linux-musl-cross.tgz -C ./musl-data && rm aarch64-linux-musl-cross.tgz; \
-		go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/arm-linux-musleabi-cross.tgz; \
+		for i in 1 2 3 4 5; do \
+			go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/arm-linux-musleabi-cross.tgz && break || { echo "Retry $$i/5 failed, waiting..."; sleep 10; }; \
+		done; \
 		tar -xzf arm-linux-musleabi-cross.tgz -C ./musl-data && rm arm-linux-musleabi-cross.tgz; \
-		go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/arm-linux-musleabihf-cross.tgz; \
+		for i in 1 2 3 4 5; do \
+			go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/arm-linux-musleabihf-cross.tgz && break || { echo "Retry $$i/5 failed, waiting..."; sleep 10; }; \
+		done; \
 		tar -xzf arm-linux-musleabihf-cross.tgz -C ./musl-data && rm arm-linux-musleabihf-cross.tgz; \
-		go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/i686-linux-musl-cross.tgz; \
+		for i in 1 2 3 4 5; do \
+			go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/i686-linux-musl-cross.tgz && break || { echo "Retry $$i/5 failed, waiting..."; sleep 10; }; \
+		done; \
 		tar -xzf i686-linux-musl-cross.tgz -C ./musl-data && rm i686-linux-musl-cross.tgz; \
-		go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/x86_64-linux-musl-cross.tgz; \
+		for i in 1 2 3 4 5; do \
+			go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/x86_64-linux-musl-cross.tgz && break || { echo "Retry $$i/5 failed, waiting..."; sleep 10; }; \
+		done; \
 		tar -xzf x86_64-linux-musl-cross.tgz -C ./musl-data && rm x86_64-linux-musl-cross.tgz; \
 	fi
 	# Build libusb-1.0 static libraries for each musl target

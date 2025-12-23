@@ -22,19 +22,17 @@
          <Directory Id="$(var.Program_Files)">
             <Directory Id="INSTALLDIR" Name="Skycoin">
                <Component Id="ApplicationFiles" Guid="b8c6d4e2-5f7a-4b9c-0d1e-2a3b4c5d6e7f">
-                    <File Id="SKYCOIN" Source=".\build\skycoin.exe"/>
+                    <File Id="SKYCOIN" Source=".\build\skycoin.exe" KeyPath="yes"/>
                     <?if $(sys.BUILDARCH)="x64"?>
                     <File Id="SKYHW" Source=".\build\skyhw.exe"/>
                     <?endif?>
-               </Component>
-               <Component Id="ENVS" Guid="c9d7e5f3-6a8b-5c0d-1e2f-3a4b5c6d7e8f">
-                  <Environment Id="ENV0"
-                    Name="PATH"
-                    Value="[INSTALLDIR]"
-                    Permanent="yes"
-                    Part="last"
-                    Action="set"
-                    System="yes"/>
+                    <Environment Id="ENV0"
+                      Name="PATH"
+                      Value="[INSTALLDIR]"
+                      Permanent="yes"
+                      Part="last"
+                      Action="set"
+                      System="yes"/>
                </Component>
             </Directory>
          </Directory>
@@ -45,7 +43,6 @@
       </InstallExecuteSequence>
 
       <Feature Id="DefaultFeature" Level="1">
-         <ComponentRef Id="ENVS"/>
          <ComponentRef Id="ApplicationFiles"/>
       </Feature>
 

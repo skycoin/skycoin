@@ -253,6 +253,14 @@ windows-installer-release: ## Upload Windows .msi installers to GitHub release
 	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./skycoin-installer-${GITHUB_TAG}-windows-amd64.msi --clobber
 	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./skycoin-installer-${GITHUB_TAG}-windows-386.msi --clobber
 
+mac-installer: ## Create unsigned macOS .pkg installers for both architectures
+	./scripts/mac_installer/create_installer.sh
+
+mac-installer-release: mac-installer ## Upload macOS .pkg installers to GitHub release
+	$(eval GITHUB_TAG=$(shell git describe --abbrev=0 --tags))
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./skycoin-installer-${GITHUB_TAG}-darwin-amd64.pkg --clobber
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./skycoin-installer-${GITHUB_TAG}-darwin-arm64.pkg --clobber
+
 dep-github-release:
 	@# Check if musl toolchains are already cached
 	@if [ -d "./musl-data/x86_64-linux-musl-cross" ] && \

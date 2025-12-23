@@ -53,6 +53,8 @@ jobs:
         run: |
           brew install --quiet libusb || brew upgrade --quiet libusb
           brew install --quiet hidapi || brew upgrade --quiet hidapi
+          brew install --quiet jq || brew upgrade --quiet jq
+          brew install --quiet wget || brew upgrade --quiet wget
       
       - name: Releasing
         env:
@@ -75,14 +77,34 @@ jobs:
         run: |
           brew install --quiet libusb || brew upgrade --quiet libusb
           brew install --quiet hidapi || brew upgrade --quiet hidapi
+          brew install --quiet jq || brew upgrade --quiet jq
+          brew install --quiet wget || brew upgrade --quiet wget
       
       - name: Releasing
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: make github-release-darwin-arm64
 
-  windows:
+  darwin-installer:
     needs: [darwin-amd64, darwin-arm64]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Install Requirements
+        run: |
+          brew install --quiet jq || brew upgrade --quiet jq
+          brew install --quiet wget || brew upgrade --quiet wget
+      
+      - name: Create and Upload macOS Installers
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: make mac-installer-release
+
+  windows:
+    needs: darwin-installer
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4

@@ -1,4 +1,4 @@
-//go:build !purego
+//go:build !purego && amd64
 
 #include "textflag.h"
 

@@ -410,8 +410,39 @@ func (fd *Field) InvVar(r *Field) {
 	r.SetBytes(n.Bytes())
 }
 
+// InvFast computes the modular inverse using the fast modinv32 algorithm
+// This is 5-10x faster than InvVar which uses big.Int.ModInverse
+func (fd *Field) InvFast(r *Field) {
+	// Normalize the input first (like C library does)
+	var tmp Field
+	tmp = *fd
+	tmp.Normalize()
+	
+	// Convert Field to modInv32Signed30 format
+	var x modInv32Signed30
+	fieldToModInv32(&x, &tmp)
+	
+	// Compute modular inverse
+	modInv32Var(&x, &fieldModInfo)
+	
+	// Convert back to Field format
+	modInv32ToField(r, &x)
+}
+
 // Mul ...
 func (fd *Field) Mul(r, b *Field) {
+	// Use assembly implementation on amd64 if available
+	if hasAsm {
+		fieldMulAsm(r, fd, b)
+		return
+	}
+	
+	// Fallback to pure Go implementation
+	fd.mulGeneric(r, b)
+}
+
+// mulGeneric is the pure Go implementation of Mul
+func (fd *Field) mulGeneric(r, b *Field) {
 	var c, d uint64
 	var t0, t1, t2, t3, t4, t5, t6 uint64
 	var t7, t8, t9, t10, t11, t12, t13 uint64
@@ -598,6 +629,18 @@ func (fd *Field) Mul(r, b *Field) {
 
 // Sqr ...
 func (fd *Field) Sqr(r *Field) {
+	// Use assembly implementation on amd64 if available
+	if hasAsm {
+		fieldSqrAsm(r, fd)
+		return
+	}
+	
+	// Fallback to pure Go implementation
+	fd.sqrGeneric(r)
+}
+
+// sqrGeneric is the pure Go implementation of Sqr
+func (fd *Field) sqrGeneric(r *Field) {
 	var c, d uint64
 	var t0, t1, t2, t3, t4, t5, t6 uint64
 	var t7, t8, t9, t10, t11, t12, t13 uint64

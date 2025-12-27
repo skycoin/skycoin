@@ -47,7 +47,7 @@ func (xyz *XYZ) IsValid() bool {
 
 func (xyz *XYZ) getX(r *Field) {
 	var zi2 Field
-	xyz.Z.InvVar(&zi2)
+	xyz.Z.InvFast(&zi2)
 	zi2.Sqr(&zi2)
 	xyz.X.Mul(r, &zi2)
 }
@@ -202,7 +202,7 @@ func (xyz *XYZ) Neg(r *XYZ) {
 	r.X = xyz.X
 	r.Y = xyz.Y
 	r.Z = xyz.Z
-	r.Y.Normalize()
+	r.Y.NormalizeWeak() // Magnitude 1 is sufficient for Negate()
 	r.Y.Negate(&r.Y, 1)
 }
 
@@ -216,7 +216,7 @@ func (xyz *XYZ) Double(r *XYZ) {
 	var t1, t2, t3, t4, t5 Field
 
 	t5 = xyz.Y
-	t5.Normalize()
+	t5.NormalizeWeak() // Sufficient for IsZero() check
 	if xyz.Infinity || t5.IsZero() {
 		r.Infinity = true
 		return

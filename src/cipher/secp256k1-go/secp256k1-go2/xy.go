@@ -166,7 +166,7 @@ func (xy *XY) IsValid() bool {
 // SetXYZ sets X Y Z fields
 func (xy *XY) SetXYZ(a *XYZ) {
 	var z2, z3 Field
-	a.Z.InvVar(&a.Z)
+	a.Z.InvFast(&a.Z)
 	a.Z.Sqr(&z2)
 	a.Z.Mul(&z3, &z2)
 	a.X.Mul(&a.X, &z2)

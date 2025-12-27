@@ -16,7 +16,8 @@ type modInv32Signed30 struct {
 
 // modInv32Trans2x2 is a 2x2 transition matrix
 // t = [ u  v ]
-//     [ q  r ]
+//
+//	[ q  r ]
 type modInv32Trans2x2 struct {
 	u, v, q, r int32
 }
@@ -35,16 +36,16 @@ func init() {
 	// Initialize the secp256k1 field prime in 30-bit signed limbs
 	// p = 2^256 - 2^32 - 977
 	// The C library represents this as: {{-0x3D1, -4, 0, 0, 0, 0, 0, 0, 65536}}
-	fieldModInfo.modulus.v[0] = -0x3D1   // -(2^32 + 977) mod 2^30 = -977
-	fieldModInfo.modulus.v[1] = -4       // -2^32 / 2^30 = -4
+	fieldModInfo.modulus.v[0] = -0x3D1 // -(2^32 + 977) mod 2^30 = -977
+	fieldModInfo.modulus.v[1] = -4     // -2^32 / 2^30 = -4
 	fieldModInfo.modulus.v[2] = 0
 	fieldModInfo.modulus.v[3] = 0
 	fieldModInfo.modulus.v[4] = 0
 	fieldModInfo.modulus.v[5] = 0
 	fieldModInfo.modulus.v[6] = 0
 	fieldModInfo.modulus.v[7] = 0
-	fieldModInfo.modulus.v[8] = 65536    // 2^256 / 2^240 = 2^16
-	
+	fieldModInfo.modulus.v[8] = 65536 // 2^256 / 2^240 = 2^16
+
 	// modulus^{-1} mod 2^30 (from C library)
 	fieldModInfo.modulusInv30 = 0x2DDACACF
 }

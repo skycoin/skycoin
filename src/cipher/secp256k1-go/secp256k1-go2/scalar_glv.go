@@ -15,11 +15,11 @@ import (
 var (
 	// lambda: k1 + k2*lambda = k (mod n)
 	scalarLambda = mustParseBig("5363AD4CC05C30E0A5261C028812645A122E22EA20816678DF02967C1B23BD72", 16)
-	
+
 	// minus_b1, minus_b2: used in scalar split
 	scalarMinusB1 = mustParseBig("00000000000000000000000000000000E4437ED6010E88286F547FA90ABFE4C3", 16)
 	scalarMinusB2 = mustParseBig("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE8A280AC50774346DD765CDA83DB1562C", 16)
-	
+
 	// g1, g2: precomputed for fast rounding
 	// g1 = round(2^384 * b2/n)
 	// g2 = round(2^384 * (-b1)/n)
@@ -48,23 +48,23 @@ func scalarMulShift(result, a, b *big.Int, shift uint) {
 // It's much faster than the original splitExp which uses division
 func SplitScalarFast(k1, k2, k *Number) {
 	var c1, c2, tmp big.Int
-	
+
 	// Compute c1 = round(k * g1 / 2^384) = (k * g1) >> 384
 	scalarMulShift(&c1, &k.Int, scalarG1, 384)
-	
+
 	// Compute c2 = round(k * g2 / 2^384) = (k * g2) >> 384
 	scalarMulShift(&c2, &k.Int, scalarG2, 384)
-	
+
 	// r2 = -(c1 * minus_b1 + c2 * minus_b2)
 	// Note: In C this is: r2 = c1*b1 + c2*b2
 	// But we have minus_b1, minus_b2, so: r2 = -(c1*(-b1) + c2*(-b2)) = c1*b1 + c2*b2
 	tmp.Mul(&c1, scalarMinusB1)
 	k2.Mul(&c2, scalarMinusB2)
 	k2.Add(&k2.Int, &tmp)
-	
+
 	// r2 = r2 mod n
 	k2.Mod(&k2.Int, &TheCurve.Order.Int)
-	
+
 	// r1 = k - r2 * lambda (mod n)
 	tmp.Mul(&k2.Int, scalarLambda)
 	k1.Sub(&k.Int, &tmp)

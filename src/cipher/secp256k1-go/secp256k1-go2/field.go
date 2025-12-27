@@ -417,14 +417,14 @@ func (fd *Field) InvFast(r *Field) {
 	var tmp Field
 	tmp = *fd
 	tmp.Normalize()
-	
+
 	// Convert Field to modInv32Signed30 format
 	var x modInv32Signed30
 	fieldToModInv32(&x, &tmp)
-	
+
 	// Compute modular inverse
 	modInv32Var(&x, &fieldModInfo)
-	
+
 	// Convert back to Field format
 	modInv32ToField(r, &x)
 }
@@ -436,7 +436,7 @@ func (fd *Field) Mul(r, b *Field) {
 		fieldMulAsm(r, fd, b)
 		return
 	}
-	
+
 	// Fallback to pure Go implementation
 	fd.mulGeneric(r, b)
 }
@@ -634,7 +634,7 @@ func (fd *Field) Sqr(r *Field) {
 		fieldSqrAsm(r, fd)
 		return
 	}
-	
+
 	// Fallback to pure Go implementation
 	fd.sqrGeneric(r)
 }

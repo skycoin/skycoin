@@ -414,8 +414,7 @@ func (fd *Field) InvVar(r *Field) {
 // This is 5-10x faster than InvVar which uses big.Int.ModInverse
 func (fd *Field) InvFast(r *Field) {
 	// Normalize the input first (like C library does)
-	var tmp Field
-	tmp = *fd
+	tmp := *fd //nolint:staticcheck // S1021: Intentional pattern for clarity
 	tmp.Normalize()
 
 	// Convert Field to modInv32Signed30 format

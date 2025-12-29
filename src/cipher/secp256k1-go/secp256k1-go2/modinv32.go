@@ -340,15 +340,15 @@ func modInv32UpdateFG30Var(length int, f, g *modInv32Signed30, t *modInv32Trans2
 		gi = g.v[i]
 		cf += int64(u)*int64(fi) + int64(v)*int64(gi)
 		cg += int64(q)*int64(fi) + int64(r)*int64(gi)
-		f.v[i-1] = int32(cf) & M30
-		g.v[i-1] = int32(cg) & M30
+		f.v[i-1] = int32(cf) & M30 //nolint:gosec // G115: Intentional conversion for modular arithmetic
+		g.v[i-1] = int32(cg) & M30 //nolint:gosec // G115: Intentional conversion for modular arithmetic
 		cf >>= 30
 		cg >>= 30
 	}
 
 	// What remains is limb length of t*[f,g]; store it as output limb length-1
-	f.v[length-1] = int32(cf)
-	g.v[length-1] = int32(cg)
+	f.v[length-1] = int32(cf) //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	g.v[length-1] = int32(cg) //nolint:gosec // G115: Intentional conversion for modular arithmetic
 }
 
 // modInv32Var computes the modular inverse of x modulo modinfo.modulus
@@ -397,8 +397,8 @@ func modInv32Var(x *modInv32Signed30, modinfo *modInv32ModInfo) {
 
 		// If so, reduce length, propagating the sign of f and g's top limb into the one below
 		if cond == 0 {
-			f.v[length-2] |= int32(uint32(fn) << 30)
-			g.v[length-2] |= int32(uint32(gn) << 30)
+			f.v[length-2] |= int32(uint32(fn) << 30) //nolint:gosec // G115: Intentional conversion for modular arithmetic
+			g.v[length-2] |= int32(uint32(gn) << 30) //nolint:gosec // G115: Intentional conversion for modular arithmetic
 			length--
 		}
 	}

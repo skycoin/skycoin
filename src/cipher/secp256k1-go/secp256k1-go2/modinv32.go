@@ -198,14 +198,14 @@ func modInv32Divsteps30Var(eta int32, f0, g0 uint32) (newEta int32, t modInv32Tr
 		}
 
 		// eta is now >= 0. In what follows we're going to cancel out the bottom bits of g.
-		// No more than i can be cancelled out, and no more than eta+1
+		// No more than i can be canceled out, and no more than eta+1
 		limit := int(eta) + 1
 		if limit > i {
 			limit = i
 		}
 
 		// m is a mask for the bottom min(limit, 8) bits (our table only supports 8 bits)
-		m := (uint32(0xFFFFFFFF) >> uint(32-limit)) & 255
+		m := (uint32(0xFFFFFFFF) >> uint(32-limit)) & 255 //nolint:gosec // G115: Intentional conversion for modular arithmetic
 
 		// Find what multiple of f must be added to g to cancel its bottom min(limit, 8) bits
 		w = uint16((g * uint32(modInv32Inv256[(f>>1)&127])) & m) //nolint:gosec // G115: Intentional conversion for modular arithmetic

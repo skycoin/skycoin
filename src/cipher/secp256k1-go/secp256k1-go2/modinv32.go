@@ -232,23 +232,23 @@ func fieldToModInv32(r *modInv32Signed30, a *Field) {
 	a0, a1, a2, a3, a4 := uint64(a.n[0]), uint64(a.n[1]), uint64(a.n[2]), uint64(a.n[3]), uint64(a.n[4])
 	a5, a6, a7, a8, a9 := uint64(a.n[5]), uint64(a.n[6]), uint64(a.n[7]), uint64(a.n[8]), uint64(a.n[9])
 
-	r.v[0] = int32((a0 | a1<<26) & M30)    //nolint:gosec // G115: Intentional conversion for modular arithmetic
-	r.v[1] = int32((a1>>4 | a2<<22) & M30)  //nolint:gosec // G115: Intentional conversion for modular arithmetic
-	r.v[2] = int32((a2>>8 | a3<<18) & M30)  //nolint:gosec // G115: Intentional conversion for modular arithmetic
-	r.v[3] = int32((a3>>12 | a4<<14) & M30) //nolint:gosec // G115: Intentional conversion for modular arithmetic
-	r.v[4] = int32((a4>>16 | a5<<10) & M30) //nolint:gosec // G115: Intentional conversion for modular arithmetic
-	r.v[5] = int32((a5>>20 | a6<<6) & M30)  //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	r.v[0] = int32((a0 | a1<<26) & M30)             //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	r.v[1] = int32((a1>>4 | a2<<22) & M30)          //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	r.v[2] = int32((a2>>8 | a3<<18) & M30)          //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	r.v[3] = int32((a3>>12 | a4<<14) & M30)         //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	r.v[4] = int32((a4>>16 | a5<<10) & M30)         //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	r.v[5] = int32((a5>>20 | a6<<6) & M30)          //nolint:gosec // G115: Intentional conversion for modular arithmetic
 	r.v[6] = int32((a6>>24 | a7<<2 | a8<<28) & M30) //nolint:gosec // G115: Intentional conversion for modular arithmetic
-	r.v[7] = int32((a8>>2 | a9<<24) & M30)  //nolint:gosec // G115: Intentional conversion for modular arithmetic
-	r.v[8] = int32(a9 >> 6)                 //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	r.v[7] = int32((a8>>2 | a9<<24) & M30)          //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	r.v[8] = int32(a9 >> 6)                         //nolint:gosec // G115: Intentional conversion for modular arithmetic
 }
 
 // modInv32ToField converts modInv32Signed30 back to Field format
 // Port of secp256k1_fe_from_signed30 from field_10x26_impl.h
 func modInv32ToField(r *Field, a *modInv32Signed30) {
-	const M26 = uint32(0x3FFFFFF) // 2^26 - 1
+	const M26 = uint32(0x3FFFFFF)                                                                        // 2^26 - 1
 	a0, a1, a2, a3, a4 := uint32(a.v[0]), uint32(a.v[1]), uint32(a.v[2]), uint32(a.v[3]), uint32(a.v[4]) //nolint:gosec // G115: Intentional conversion for modular arithmetic
-	a5, a6, a7, a8 := uint32(a.v[5]), uint32(a.v[6]), uint32(a.v[7]), uint32(a.v[8])                   //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	a5, a6, a7, a8 := uint32(a.v[5]), uint32(a.v[6]), uint32(a.v[7]), uint32(a.v[8])                     //nolint:gosec // G115: Intentional conversion for modular arithmetic
 
 	r.n[0] = a0 & M26
 	r.n[1] = (a0>>26 | a1<<4) & M26

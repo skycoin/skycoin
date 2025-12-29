@@ -87,6 +87,9 @@ linters:
       - linters:
           - staticcheck
         text: "QF1006:" # could lift into loop condition (staticcheck)
+      - linters:
+          - typecheck
+        path: cmd/hardware-wallet # Skip typecheck for hardware wallet (requires C dependencies)
 issues:
   new: false
 formatters:

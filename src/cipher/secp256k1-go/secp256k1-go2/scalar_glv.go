@@ -14,22 +14,22 @@ import (
 // These are ported from bitcoin-core/secp256k1/src/scalar_impl.h
 var (
 	// lambda: k1 + k2*lambda = k (mod n)
-	scalarLambda = mustParseBig("5363AD4CC05C30E0A5261C028812645A122E22EA20816678DF02967C1B23BD72", 16)
+	scalarLambda = mustParseBig("5363AD4CC05C30E0A5261C028812645A122E22EA20816678DF02967C1B23BD72")
 
 	// minus_b1, minus_b2: used in scalar split
-	scalarMinusB1 = mustParseBig("00000000000000000000000000000000E4437ED6010E88286F547FA90ABFE4C3", 16)
-	scalarMinusB2 = mustParseBig("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE8A280AC50774346DD765CDA83DB1562C", 16)
+	scalarMinusB1 = mustParseBig("00000000000000000000000000000000E4437ED6010E88286F547FA90ABFE4C3")
+	scalarMinusB2 = mustParseBig("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE8A280AC50774346DD765CDA83DB1562C")
 
 	// g1, g2: precomputed for fast rounding
 	// g1 = round(2^384 * b2/n)
 	// g2 = round(2^384 * (-b1)/n)
-	scalarG1 = mustParseBig("3086D221A7D46BCDE86C90E49284EB153DAA8A1471E8CA7FE893209A45DBB031", 16)
-	scalarG2 = mustParseBig("E4437ED6010E88286F547FA90ABFE4C4221208AC9DF506C61571B4AE8AC47F71", 16)
+	scalarG1 = mustParseBig("3086D221A7D46BCDE86C90E49284EB153DAA8A1471E8CA7FE893209A45DBB031")
+	scalarG2 = mustParseBig("E4437ED6010E88286F547FA90ABFE4C4221208AC9DF506C61571B4AE8AC47F71")
 )
 
-func mustParseBig(s string, base int) *big.Int {
+func mustParseBig(s string) *big.Int {
 	n := new(big.Int)
-	n, ok := n.SetString(s, base)
+	n, ok := n.SetString(s, 16) // Always use base 16 for hex strings
 	if !ok {
 		panic("failed to parse big int: " + s)
 	}

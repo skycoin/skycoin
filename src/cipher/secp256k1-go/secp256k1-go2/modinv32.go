@@ -176,7 +176,7 @@ func modInv32Divsteps30Var(eta int32, f0, g0 uint32) (newEta int32, t modInv32Tr
 
 	for {
 		// Use a sentinel bit to count zeros only up to i
-		zeros := ctz32Var(g | (0xFFFFFFFF << uint(i)))
+		zeros := ctz32Var(g | (0xFFFFFFFF << uint(i))) //nolint:gosec // G115: Intentional conversion for modular arithmetic
 		// Perform zeros divsteps at once; they all just divide g by two
 		g >>= uint(zeros)   //nolint:gosec // G115: Intentional conversion for modular arithmetic
 		u <<= uint(zeros)   //nolint:gosec // G115: Intentional conversion for modular arithmetic
@@ -232,23 +232,23 @@ func fieldToModInv32(r *modInv32Signed30, a *Field) {
 	a0, a1, a2, a3, a4 := uint64(a.n[0]), uint64(a.n[1]), uint64(a.n[2]), uint64(a.n[3]), uint64(a.n[4])
 	a5, a6, a7, a8, a9 := uint64(a.n[5]), uint64(a.n[6]), uint64(a.n[7]), uint64(a.n[8]), uint64(a.n[9])
 
-	r.v[0] = int32((a0 | a1<<26) & M30)   //nolint:gosec // G115: Intentional conversion for modular arithmetic
-	r.v[1] = int32((a1>>4 | a2<<22) & M30) //nolint:gosec // G115: Intentional conversion for modular arithmetic
-	r.v[2] = int32((a2>>8 | a3<<18) & M30)
-	r.v[3] = int32((a3>>12 | a4<<14) & M30)
-	r.v[4] = int32((a4>>16 | a5<<10) & M30)
-	r.v[5] = int32((a5>>20 | a6<<6) & M30)
-	r.v[6] = int32((a6>>24 | a7<<2 | a8<<28) & M30)
-	r.v[7] = int32((a8>>2 | a9<<24) & M30)
-	r.v[8] = int32(a9 >> 6)
+	r.v[0] = int32((a0 | a1<<26) & M30)    //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	r.v[1] = int32((a1>>4 | a2<<22) & M30)  //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	r.v[2] = int32((a2>>8 | a3<<18) & M30)  //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	r.v[3] = int32((a3>>12 | a4<<14) & M30) //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	r.v[4] = int32((a4>>16 | a5<<10) & M30) //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	r.v[5] = int32((a5>>20 | a6<<6) & M30)  //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	r.v[6] = int32((a6>>24 | a7<<2 | a8<<28) & M30) //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	r.v[7] = int32((a8>>2 | a9<<24) & M30)  //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	r.v[8] = int32(a9 >> 6)                 //nolint:gosec // G115: Intentional conversion for modular arithmetic
 }
 
 // modInv32ToField converts modInv32Signed30 back to Field format
 // Port of secp256k1_fe_from_signed30 from field_10x26_impl.h
 func modInv32ToField(r *Field, a *modInv32Signed30) {
 	const M26 = uint32(0x3FFFFFF) // 2^26 - 1
-	a0, a1, a2, a3, a4 := uint32(a.v[0]), uint32(a.v[1]), uint32(a.v[2]), uint32(a.v[3]), uint32(a.v[4])
-	a5, a6, a7, a8 := uint32(a.v[5]), uint32(a.v[6]), uint32(a.v[7]), uint32(a.v[8])
+	a0, a1, a2, a3, a4 := uint32(a.v[0]), uint32(a.v[1]), uint32(a.v[2]), uint32(a.v[3]), uint32(a.v[4]) //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	a5, a6, a7, a8 := uint32(a.v[5]), uint32(a.v[6]), uint32(a.v[7]), uint32(a.v[8])                   //nolint:gosec // G115: Intentional conversion for modular arithmetic
 
 	r.n[0] = a0 & M26
 	r.n[1] = (a0>>26 | a1<<4) & M26
@@ -284,8 +284,8 @@ func modInv32UpdateDE30(d, e *modInv32Signed30, t *modInv32Trans2x2, modinfo *mo
 	ce = int64(q)*int64(di) + int64(r)*int64(ei)
 
 	// Correct md,me so that t*[d,e]+modulus*[md,me] has 30 zero bottom bits
-	md -= int32((modinfo.modulusInv30*uint32(cd) + uint32(md)) & uint32(M30))
-	me -= int32((modinfo.modulusInv30*uint32(ce) + uint32(me)) & uint32(M30))
+	md -= int32((modinfo.modulusInv30*uint32(cd) + uint32(md)) & uint32(M30)) //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	me -= int32((modinfo.modulusInv30*uint32(ce) + uint32(me)) & uint32(M30)) //nolint:gosec // G115: Intentional conversion for modular arithmetic
 
 	// Update the beginning of computation for t*[d,e]+modulus*[md,me] now md,me are known
 	cd += int64(modinfo.modulus.v[0]) * int64(md)
@@ -304,15 +304,15 @@ func modInv32UpdateDE30(d, e *modInv32Signed30, t *modInv32Trans2x2, modinfo *mo
 		ce += int64(q)*int64(di) + int64(r)*int64(ei)
 		cd += int64(modinfo.modulus.v[i]) * int64(md)
 		ce += int64(modinfo.modulus.v[i]) * int64(me)
-		d.v[i-1] = int32(cd) & M30
-		e.v[i-1] = int32(ce) & M30
+		d.v[i-1] = int32(cd) & M30 //nolint:gosec // G115: Intentional conversion for modular arithmetic
+		e.v[i-1] = int32(ce) & M30 //nolint:gosec // G115: Intentional conversion for modular arithmetic
 		cd >>= 30
 		ce >>= 30
 	}
 
 	// What remains is limb 9 of t*[d,e]+modulus*[md,me]; store it as output limb 8
-	d.v[8] = int32(cd)
-	e.v[8] = int32(ce)
+	d.v[8] = int32(cd) //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	e.v[8] = int32(ce) //nolint:gosec // G115: Intentional conversion for modular arithmetic
 }
 
 // modInv32UpdateFG30Var updates f and g using the transition matrix t (variable time)
@@ -367,7 +367,7 @@ func modInv32Var(x *modInv32Signed30, modinfo *modInv32ModInfo) {
 	for {
 		// Compute transition matrix and new eta after 30 divsteps
 		var t modInv32Trans2x2
-		eta, t = modInv32Divsteps30Var(eta, uint32(f.v[0]), uint32(g.v[0]))
+		eta, t = modInv32Divsteps30Var(eta, uint32(f.v[0]), uint32(g.v[0])) //nolint:gosec // G115: Intentional conversion for modular arithmetic
 
 		// Update d,e using that transition matrix
 		modInv32UpdateDE30(&d, &e, &t, modinfo)
@@ -391,7 +391,7 @@ func modInv32Var(x *modInv32Signed30, modinfo *modInv32ModInfo) {
 		// Determine if length>1 and limb (length-1) of both f and g is 0 or -1
 		fn := f.v[length-1]
 		gn := g.v[length-1]
-		cond := (int32(length) - 2) >> 31
+		cond := (int32(length) - 2) >> 31 //nolint:gosec // G115: Intentional conversion for modular arithmetic
 		cond |= fn ^ (fn >> 31)
 		cond |= gn ^ (gn >> 31)
 

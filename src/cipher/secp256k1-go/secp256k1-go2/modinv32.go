@@ -178,10 +178,10 @@ func modInv32Divsteps30Var(eta int32, f0, g0 uint32) (newEta int32, t modInv32Tr
 		// Use a sentinel bit to count zeros only up to i
 		zeros := ctz32Var(g | (0xFFFFFFFF << uint(i)))
 		// Perform zeros divsteps at once; they all just divide g by two
-		g >>= uint(zeros)
-		u <<= uint(zeros)
-		v <<= uint(zeros)
-		eta -= int32(zeros)
+		g >>= uint(zeros)   //nolint:gosec // G115: Intentional conversion for modular arithmetic
+		u <<= uint(zeros)   //nolint:gosec // G115: Intentional conversion for modular arithmetic
+		v <<= uint(zeros)   //nolint:gosec // G115: Intentional conversion for modular arithmetic
+		eta -= int32(zeros) //nolint:gosec // G115: Intentional conversion for modular arithmetic
 		i -= zeros
 
 		// We're done once we've done 30 divsteps
@@ -208,7 +208,7 @@ func modInv32Divsteps30Var(eta int32, f0, g0 uint32) (newEta int32, t modInv32Tr
 		m := (uint32(0xFFFFFFFF) >> uint(32-limit)) & 255
 
 		// Find what multiple of f must be added to g to cancel its bottom min(limit, 8) bits
-		w = uint16((g * uint32(modInv32Inv256[(f>>1)&127])) & m)
+		w = uint16((g * uint32(modInv32Inv256[(f>>1)&127])) & m) //nolint:gosec // G115: Intentional conversion for modular arithmetic
 
 		// Do so
 		g += f * uint32(w)
@@ -217,10 +217,10 @@ func modInv32Divsteps30Var(eta int32, f0, g0 uint32) (newEta int32, t modInv32Tr
 	}
 
 	// Return data in t and return value
-	t.u = int32(u)
-	t.v = int32(v)
-	t.q = int32(q)
-	t.r = int32(r)
+	t.u = int32(u) //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	t.v = int32(v) //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	t.q = int32(q) //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	t.r = int32(r) //nolint:gosec // G115: Intentional conversion for modular arithmetic
 
 	return eta, t
 }
@@ -232,8 +232,8 @@ func fieldToModInv32(r *modInv32Signed30, a *Field) {
 	a0, a1, a2, a3, a4 := uint64(a.n[0]), uint64(a.n[1]), uint64(a.n[2]), uint64(a.n[3]), uint64(a.n[4])
 	a5, a6, a7, a8, a9 := uint64(a.n[5]), uint64(a.n[6]), uint64(a.n[7]), uint64(a.n[8]), uint64(a.n[9])
 
-	r.v[0] = int32((a0 | a1<<26) & M30)
-	r.v[1] = int32((a1>>4 | a2<<22) & M30)
+	r.v[0] = int32((a0 | a1<<26) & M30)   //nolint:gosec // G115: Intentional conversion for modular arithmetic
+	r.v[1] = int32((a1>>4 | a2<<22) & M30) //nolint:gosec // G115: Intentional conversion for modular arithmetic
 	r.v[2] = int32((a2>>8 | a3<<18) & M30)
 	r.v[3] = int32((a3>>12 | a4<<14) & M30)
 	r.v[4] = int32((a4>>16 | a5<<10) & M30)

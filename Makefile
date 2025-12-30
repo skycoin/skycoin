@@ -92,7 +92,7 @@ build-skyhw-static: ## Build statically-linked skyhw binary (requires libusb-1.0
 
 lint: ## Run linters. Use make install-linters first.
 	go mod vendor -v
-	golangci-lint run -c .golangci.yml --skip-dirs cmd/hardware-wallet ./...
+	golangci-lint run -c .golangci.yml $$(go list ./... | grep -v '/hardware-wallet')
 	@# The govet version in golangci-lint is out of date and has spurious warnings, run it separately
 	go vet -all $$(go list ./... | grep -v '/hardware-wallet')
 

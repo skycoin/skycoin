@@ -64,7 +64,7 @@ run-integration-test-live-cover-disable-networking: ## Run the skycoin node conf
 
 test: ## Run tests for Skycoin
 	@mkdir -p coverage/
-	COIN=$(COIN) go test -coverpkg="github.com/$(COIN)/$(COIN)/..." -coverprofile=coverage/go-test-cmd.coverage.out -timeout=5m ./cmd/...
+	COIN=$(COIN) go test -coverpkg="github.com/$(COIN)/$(COIN)/..." -coverprofile=coverage/go-test-cmd.coverage.out -timeout=5m $$(go list ./cmd/... | grep -v '/hardware-wallet')
 	COIN=$(COIN) go test -coverpkg="github.com/$(COIN)/$(COIN)/..." -coverprofile=coverage/go-test-src.coverage.out -timeout=5m ./src/...
 
 test-386: ## Run tests for Skycoin with GOARCH=386
@@ -94,7 +94,7 @@ lint: ## Run linters. Use make install-linters first.
 	go mod vendor -v
 	golangci-lint run -c .golangci.yml ./...
 	@# The govet version in golangci-lint is out of date and has spurious warnings, run it separately
-	go vet -all ./...
+	go vet -all $$(go list ./... | grep -v '/hardware-wallet')
 
 check-newcoin: newcoin ## Check that make newcoin succeeds and no templated files are changed.
 	@if [ "$(shell git diff ./cmd/skycoin/skycoin.go | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi

@@ -114,6 +114,11 @@ jobs:
           cache: true
           cache-dependency-path: go.sum
 
+      - name: Install Dependencies
+        run: |
+          brew install --quiet libusb || brew upgrade --quiet libusb
+          brew install --quiet hidapi || brew upgrade --quiet hidapi
+
       - name: Install golangci-lint
         run: |
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
@@ -155,7 +160,11 @@ jobs:
           cache-dependency-path: go.sum
 
       - name: Install Requirements
-        run: choco install make
+        shell: pwsh
+        run: |
+          choco install make
+          # Install libusb and hidapi via msys2/mingw for x64
+          C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm mingw-w64-x86_64-libusb mingw-w64-x86_64-hidapi"
 
       - name: Vendor Dependencies
         run: go mod vendor -v

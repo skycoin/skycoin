@@ -1,5 +1,13 @@
+//go:build !386
+// +build !386
+
 /*
 skycoin hardware wallet daemon & cli
+
+Note: Hardware wallet support is disabled on 386 architecture due to
+limitations in the github.com/google/gousb library which lacks proper
+32-bit support. The library's CGO bindings to libusb fail to compile
+on 386 with undefined type errors.
 */
 package main
 

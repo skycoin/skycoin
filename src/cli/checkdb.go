@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/boltdb/bolt"
 	"github.com/spf13/cobra"
+	"go.etcd.io/bbolt"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util/apputil"
@@ -19,7 +19,7 @@ const (
 )
 
 // wrapDB calls dbutil.WrapDB and disables all logging
-func wrapDB(db *bolt.DB) *dbutil.DB {
+func wrapDB(db *bbolt.DB) *dbutil.DB {
 	wdb := dbutil.WrapDB(db)
 	wdb.ViewLog = false
 	wdb.ViewTrace = false
@@ -58,7 +58,7 @@ func checkDB(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("db file: %v does not exist", dbPath)
 	}
 
-	db, err := bolt.Open(dbPath, 0600, &bolt.Options{
+	db, err := bbolt.Open(dbPath, 0600, &bbolt.Options{
 		Timeout:  5 * time.Second,
 		ReadOnly: true,
 	})
@@ -115,7 +115,7 @@ func checkDBDecoding(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("db file: %v does not exist", dbPath)
 	}
 
-	db, err := bolt.Open(dbPath, 0600, &bolt.Options{
+	db, err := bbolt.Open(dbPath, 0600, &bbolt.Options{
 		Timeout:  5 * time.Second,
 		ReadOnly: true,
 	})

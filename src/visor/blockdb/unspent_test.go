@@ -1105,7 +1105,7 @@ func setupNoUnspentAddrIndexDB(t *testing.T) (*dbutil.DB, func()) {
 	err = tmpFile.Sync()
 	require.NoError(t, err)
 
-	boltDB, err := bolt.Open(tmpFile.Name(), 0700, nil)
+	boltDB, err := bbolt.Open(tmpFile.Name(), 0700, nil)
 	require.NoError(t, err)
 
 	db := dbutil.WrapDB(boltDB)

@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"go.etcd.io/bbolt"
 	"github.com/stretchr/testify/require"
+	"go.etcd.io/bbolt"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"

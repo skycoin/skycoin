@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	"go.etcd.io/bbolt"
 	"github.com/spf13/cobra"
+	"go.etcd.io/bbolt"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/util/apputil"

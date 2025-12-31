@@ -121,12 +121,6 @@ jobs:
           echo "CGO_CFLAGS=-I$(brew --prefix)/include" >> $GITHUB_ENV
           echo "CGO_LDFLAGS=-L$(brew --prefix)/lib" >> $GITHUB_ENV
 
-      - name: Install golangci-lint
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
-            | sh -s -- -b $(go env GOPATH)/bin v2.6.1
-        shell: bash
-
       - name: Vendor Dependencies
         run: go mod vendor -v
 

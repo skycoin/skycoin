@@ -118,6 +118,8 @@ jobs:
         run: |
           brew install --quiet libusb || brew upgrade --quiet libusb
           brew install --quiet hidapi || brew upgrade --quiet hidapi
+          echo "CGO_CFLAGS=-I$(brew --prefix)/include" >> $GITHUB_ENV
+          echo "CGO_LDFLAGS=-L$(brew --prefix)/lib" >> $GITHUB_ENV
 
       - name: Install golangci-lint
         run: |
@@ -165,6 +167,10 @@ jobs:
           choco install make
           # Install libusb and hidapi via msys2/mingw for x64
           C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm mingw-w64-x86_64-libusb mingw-w64-x86_64-hidapi"
+          # Add msys2 mingw64 to PATH for finding libraries
+          echo "C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          echo "CGO_CFLAGS=-IC:/msys64/mingw64/include" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "CGO_LDFLAGS=-LC:/msys64/mingw64/lib" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Vendor Dependencies
         run: go mod vendor -v

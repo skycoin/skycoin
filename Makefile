@@ -204,6 +204,7 @@ github-release: github-prepare-release ## Create GitHub release for Linux (trigg
 	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-linux-386.tar.gz --clobber
 	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-linux-arm.tar.gz --clobber
 	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-linux-armhf.tar.gz --clobber
+	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/skycoin-${GITHUB_TAG}-linux-riscv64.tar.gz --clobber
 	gh release upload --repo skycoin/skycoin ${GITHUB_TAG} ./dist/checksums.txt --clobber
 
 github-release-darwin-amd64: ## Create GitHub release for macOS Intel (triggered by GitHub Actions)
@@ -267,7 +268,8 @@ dep-github-release:
 	    [ -d "./musl-data/aarch64-linux-musl-cross" ] && \
 	    [ -d "./musl-data/arm-linux-musleabi-cross" ] && \
 	    [ -d "./musl-data/arm-linux-musleabihf-cross" ] && \
-	    [ -d "./musl-data/i686-linux-musl-cross" ]; then \
+	    [ -d "./musl-data/i686-linux-musl-cross" ] && \
+	    [ -d "./musl-data/riscv64-linux-musl-cross" ]; then \
 		echo "Using cached musl toolchains..."; \
 	else \
 		echo "Downloading musl toolchains..."; \
@@ -303,6 +305,12 @@ dep-github-release:
 			tar -xzf x86_64-linux-musl-cross.tgz -C ./musl-data && rm x86_64-linux-musl-cross.tgz && break || \
 			{ [ $$i -lt 5 ] && { echo "Failed, retrying in 10 seconds..."; sleep 10; } || { echo "All retries failed"; exit 1; }; }; \
 		done; \
+		for i in 1 2 3 4 5; do \
+			echo "Attempt $$i/5: Downloading riscv64-linux-musl-cross.tgz..."; \
+			go run github.com/melbahja/got/cmd/got@latest https://github.com/skycoin/skywire/releases/download/v1.3.29/riscv64-linux-musl-cross.tgz && \
+			tar -xzf riscv64-linux-musl-cross.tgz -C ./musl-data && rm riscv64-linux-musl-cross.tgz && break || \
+			{ [ $$i -lt 5 ] && { echo "Failed, retrying in 10 seconds..."; sleep 10; } || { echo "All retries failed"; exit 1; }; }; \
+		done; \
 	fi
 	# Build libusb-1.0 static libraries for each musl target
 	./ci-scripts/build-libusb-musl.sh amd64 x86_64-linux-musl ./musl-data/x86_64-linux-musl-cross
@@ -310,6 +318,7 @@ dep-github-release:
 	./ci-scripts/build-libusb-musl.sh arm arm-linux-musleabi ./musl-data/arm-linux-musleabi-cross
 	./ci-scripts/build-libusb-musl.sh armhf arm-linux-musleabihf ./musl-data/arm-linux-musleabihf-cross
 	./ci-scripts/build-libusb-musl.sh 386 i686-linux-musl ./musl-data/i686-linux-musl-cross
+	./ci-scripts/build-libusb-musl.sh riscv64 riscv64-linux-musl ./musl-data/riscv64-linux-musl-cross
 
 release: ## Build electron, standalone and daemon apps. Use osarch=${osarch} to specify the platform. Example: 'make release osarch=darwin/amd64', multiple platform can be supported in this way: 'make release osarch="darwin/amd64 windows/amd64"'. Supported architectures are: darwin/amd64 windows/amd64 windows/386 linux/amd64 linux/arm, the builds are located in electron/release folder.
 	cd $(ELECTRON_DIR) && ./build.sh ${osarch}

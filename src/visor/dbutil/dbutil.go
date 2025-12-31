@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/boltdb/bolt"
+	"go.etcd.io/bbolt"
 
 	"github.com/skycoin/skycoin/src/cipher/encoder"
 	"github.com/skycoin/skycoin/src/util/logging"
@@ -30,7 +30,7 @@ var (
 
 // Tx wraps a Tx
 type Tx struct {
-	*bolt.Tx
+	*bbolt.Tx
 }
 
 // String is implemented to prevent a panic when mocking methods with *Tx arguments.
@@ -49,7 +49,7 @@ type DB struct {
 	DurationLog                bool
 	DurationReportingThreshold time.Duration
 
-	*bolt.DB
+	*bbolt.DB
 
 	// shutdownLock is added to prevent closing the database while a View transaction is in progress
 	// bolt.DB will block for Update transactions but not for View transactions, and if
@@ -61,7 +61,7 @@ type DB struct {
 }
 
 // WrapDB returns WrapDB
-func WrapDB(db *bolt.DB) *DB {
+func WrapDB(db *bbolt.DB) *DB {
 	return &DB{
 		ViewLog:                    txViewLog,
 		UpdateLog:                  txUpdateLog,
@@ -73,7 +73,7 @@ func WrapDB(db *bolt.DB) *DB {
 	}
 }
 
-// View wraps *bolt.DB.View to add logging
+// View wraps *bbolt.DB.View to add logging
 func (db *DB) View(name string, f func(*Tx) error) error {
 	db.shutdownLock.RLock()
 	defer db.shutdownLock.RUnlock()
@@ -88,7 +88,7 @@ func (db *DB) View(name string, f func(*Tx) error) error {
 
 	t0 := time.Now()
 
-	err := db.DB.View(func(tx *bolt.Tx) error {
+	err := db.DB.View(func(tx *bbolt.Tx) error {
 		return f(&Tx{tx})
 	})
 
@@ -101,7 +101,7 @@ func (db *DB) View(name string, f func(*Tx) error) error {
 	return err
 }
 
-// Update wraps *bolt.DB.Update to add logging
+// Update wraps *bbolt.DB.Update to add logging
 func (db *DB) Update(name string, f func(*Tx) error) error {
 	db.shutdownLock.RLock()
 	defer db.shutdownLock.RUnlock()
@@ -116,7 +116,7 @@ func (db *DB) Update(name string, f func(*Tx) error) error {
 
 	t0 := time.Now()
 
-	err := db.DB.Update(func(tx *bolt.Tx) error {
+	err := db.DB.Update(func(tx *bbolt.Tx) error {
 		return f(&Tx{tx})
 	})
 
@@ -129,7 +129,7 @@ func (db *DB) Update(name string, f func(*Tx) error) error {
 	return err
 }
 
-// Close closes the underlying *bolt.DB
+// Close closes the underlying *bbolt.DB
 func (db *DB) Close() error {
 	db.shutdownLock.Lock()
 	defer db.shutdownLock.Unlock()

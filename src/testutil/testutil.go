@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/boltdb/bolt"
+	"go.etcd.io/bbolt"
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -23,7 +23,7 @@ func PrepareDB(t *testing.T) (*dbutil.DB, func()) {
 	f, err := os.CreateTemp("", "testdb")
 	require.NoError(t, err)
 
-	db, err := bolt.Open(f.Name(), 0700, nil)
+	db, err := bbolt.Open(f.Name(), 0700, nil)
 	require.NoError(t, err)
 
 	return dbutil.WrapDB(db), func() {
@@ -49,12 +49,12 @@ func PrepareDBReadOnly(t *testing.T) (*dbutil.DB, func()) {
 	f, err := os.CreateTemp("", "testdb")
 	require.NoError(t, err)
 
-	// Open to init the DB, otherwise bolt will try to open an readonly db to init and fail.
-	db, err := bolt.Open(f.Name(), 0700, nil)
+	// Open to init the DB, otherwise bbolt will try to open an readonly db to init and fail.
+	db, err := bbolt.Open(f.Name(), 0700, nil)
 	require.NoError(t, err)
 	require.NoError(t, db.Close())
 
-	db, err = bolt.Open(f.Name(), 0600, &bolt.Options{ReadOnly: true})
+	db, err = bbolt.Open(f.Name(), 0600, &bbolt.Options{ReadOnly: true})
 	require.NoError(t, err)
 
 	return dbutil.WrapDB(db), func() {

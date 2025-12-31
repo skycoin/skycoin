@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/boltdb/bolt"
+	"go.etcd.io/bbolt"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/encoder"
@@ -223,7 +223,7 @@ func resetCorruptDB(db *dbutil.DB) (*dbutil.DB, error) {
 
 // OpenDB opens the blockdb
 func OpenDB(dbFile string, readOnly bool) (*dbutil.DB, error) {
-	db, err := bolt.Open(dbFile, 0600, &bolt.Options{
+	db, err := bbolt.Open(dbFile, 0600, &bbolt.Options{
 		Timeout:  5000 * time.Millisecond,
 		ReadOnly: readOnly,
 	})

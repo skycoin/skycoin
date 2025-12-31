@@ -7,7 +7,6 @@ require (
 	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 	github.com/bitfield/script v0.24.1
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/boltdb/bolt v1.3.1
 	github.com/briandowns/spinner v1.23.2
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/gin-gonic/gin v1.11.0
@@ -29,6 +28,7 @@ require (
 	github.com/spf13/viper v1.21.0
 	github.com/stretchr/testify v1.11.1
 	github.com/toqueteos/webbrowser v1.2.1
+	go.etcd.io/bbolt v1.4.3
 	golang.org/x/term v0.38.0
 )
 

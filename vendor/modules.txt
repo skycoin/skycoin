@@ -241,18 +241,6 @@ github.com/sirupsen/logrus
 # github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
 ## explicit
 github.com/skycoin/encodertest
-# github.com/skycoin/hardware-wallet-daemon v0.1.1-0.20251214205958-0632d0772c3b
-## explicit; go 1.25.1
-github.com/skycoin/hardware-wallet-daemon/src/api
-github.com/skycoin/hardware-wallet-daemon/src/daemon
-# github.com/skycoin/hardware-wallet-go v1.1.1-0.20251214205422-17746f44286f
-## explicit; go 1.25.1
-github.com/skycoin/hardware-wallet-go/src/cli
-github.com/skycoin/hardware-wallet-go/src/skywallet
-github.com/skycoin/hardware-wallet-go/src/skywallet/usb
-github.com/skycoin/hardware-wallet-go/src/skywallet/wire
-github.com/skycoin/hardware-wallet-go/src/usb/lowlevel/hidapi
-github.com/skycoin/hardware-wallet-go/src/usb/lowlevel/libusb
 # github.com/skycoin/hardware-wallet-protob v0.0.0-20250805154629-410561e1bc2f
 ## explicit; go 1.24.5
 github.com/skycoin/hardware-wallet-protob/go

@@ -1,11 +1,12 @@
-// Package calvin pkg/skywire-utilities/pkg/calvin/calvin.go
 /*
+Package calvin pkg/skywire-utilities/pkg/calvin/calvin.go
 convert text to ascii art font i.e.:
 go run pkg/skywire-utilities/calvin/cmd/calvin@develop convert text to ascii art font
 ┌─┐┌─┐┌┐┌┬  ┬┌─┐┬─┐┌┬┐  ┌┬┐┌─┐─┐ ┬┌┬┐  ┌┬┐┌─┐  ┌─┐┌─┐┌─┐┬┬  ┌─┐┬─┐┌┬┐  ┌─┐┌─┐┌┐┌┌┬┐
 │  │ ││││└┐┌┘├┤ ├┬┘ │    │ ├┤ ┌┴┬┘ │    │ │ │  ├─┤└─┐│  ││  ├─┤├┬┘ │   ├┤ │ ││││ │
 └─┘└─┘┘└┘ └┘ └─┘┴└─ ┴    ┴ └─┘┴ └─ ┴    ┴ └─┘  ┴ ┴└─┘└─┘┴┴  ┴ ┴┴└─ ┴   └  └─┘┘└┘ ┴
 */
+
 package calvin
 
 import (
@@ -84,7 +85,9 @@ var boxFont = map[rune][]string{
 }
 
 // AsciiFont converts a string to box drawing characters.
-func AsciiFont(input string) string { //nolint
+//
+//nolint:revive
+func AsciiFont(input string) string {
 	var output [3]string
 
 	for _, char := range input {

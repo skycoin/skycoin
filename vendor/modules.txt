@@ -87,6 +87,15 @@ github.com/gabriel-vasile/mimetype/internal/json
 github.com/gabriel-vasile/mimetype/internal/magic
 github.com/gabriel-vasile/mimetype/internal/markup
 github.com/gabriel-vasile/mimetype/internal/scan
+# github.com/gdamore/encoding v1.0.1
+## explicit; go 1.9
+github.com/gdamore/encoding
+# github.com/gdamore/tcell/v3 v3.1.1
+## explicit; go 1.24.0
+github.com/gdamore/tcell/v3
+github.com/gdamore/tcell/v3/color
+github.com/gdamore/tcell/v3/tty
+github.com/gdamore/tcell/v3/vt
 # github.com/gin-contrib/sse v1.1.0
 ## explicit; go 1.23
 github.com/gin-contrib/sse
@@ -173,6 +182,9 @@ github.com/klauspost/cpuid/v2
 ## explicit; go 1.18
 github.com/leodido/go-urn
 github.com/leodido/go-urn/scim/schema
+# github.com/lucasb-eyer/go-colorful v1.3.0
+## explicit; go 1.12
+github.com/lucasb-eyer/go-colorful
 # github.com/mattn/go-colorable v0.1.14
 ## explicit; go 1.18
 github.com/mattn/go-colorable
@@ -221,6 +233,9 @@ github.com/quic-go/quic-go/qlog
 github.com/quic-go/quic-go/qlogwriter
 github.com/quic-go/quic-go/qlogwriter/jsontext
 github.com/quic-go/quic-go/quicvarint
+# github.com/rivo/uniseg v0.4.7
+## explicit; go 1.18
+github.com/rivo/uniseg
 # github.com/rs/cors v1.11.1
 ## explicit; go 1.13
 github.com/rs/cors

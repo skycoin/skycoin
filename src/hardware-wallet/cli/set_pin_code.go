@@ -54,9 +54,12 @@ var setPinCode = &cobra.Command{
 					fmt.Println(failMsg)
 					return nil
 				case uint16(messages.MessageType_MessageType_PinMatrixRequest):
-					var pinEnc string
-					fmt.Printf("PinMatrixRequest response: ")
-					fmt.Scanln(&pinEnc)
+					pinEnc, err := PinMatrixSimple()
+					if err != nil {
+						// User cancelled - send Cancel to device to abort operation
+						device.Cancel()
+						return fmt.Errorf("PIN entry cancelled: %v", err)
+					}
 					msg, err = device.PinMatrixAck(pinEnc)
 					if err != nil {
 						return err

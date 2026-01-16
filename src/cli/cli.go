@@ -216,6 +216,7 @@ func NewCLI(cfg Config) (*cobra.Command, error) {
 		pendingTransactionsCmd(),
 		addresscountCmd(),
 		distributeGenesisCmd(),
+		unusedAddressesCmd(),
 	}
 
 	skyCLI.Version = Version

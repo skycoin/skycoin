@@ -90,18 +90,23 @@ jobs:
         env:
           NODE_OPTIONS: --openssl-legacy-provider
 
-      - name: Test Hardware Wallet Utilities
+      - name: Test Hardware Wallet Libraries
+        run: make test-skyhw
+
+      - name: Lint Hardware Wallet Code
+        run: make lint-skyhw
+
+      - name: Build Hardware Wallet Binary
+        run: make build-skyhw
+
+      - name: Test Hardware Wallet CLI
         shell: bash
         run: |
           set -e
-          # Build hardware wallet daemon
-          go build -o skyhw-daemon ./cmd/hardware-wallet/skycoin.go
-          
-          # Test that it was compiled successfully by checking help output
-          ./skyhw-daemon help
-          ./skyhw-daemon daemon --help
-          
-          echo "Hardware wallet utilities compiled and tested successfully"
+          ./skyhw help
+          ./skyhw daemon --help
+          ./skyhw cli --help
+          echo "Hardware wallet CLI compiled and tested successfully"
 
   darwin:
     runs-on: macos-latest
@@ -144,6 +149,12 @@ jobs:
       - name: Run Unit Tests (386)
         run: make test-386
 
+      - name: Test Hardware Wallet Libraries
+        run: make test-skyhw
+
+      - name: Build Hardware Wallet Binary
+        run: make build-skyhw
+
   windows:
     runs-on: windows-latest
     steps:
@@ -177,3 +188,9 @@ jobs:
 
       - name: Run Unit Tests
         run: make test
+
+      - name: Test Hardware Wallet Libraries
+        run: make test-skyhw
+
+      - name: Build Hardware Wallet Binary
+        run: make build-skyhw

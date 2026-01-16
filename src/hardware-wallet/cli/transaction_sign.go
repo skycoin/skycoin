@@ -39,11 +39,11 @@ var transactionSignCmd = &cobra.Command{
 				return err
 			}
 			if coinType != skyWallet.SkycoinCoinType && len(inputHash) > 0 {
-				return fmt.Errorf("coin type %s doesn't need input hash", coinType)
+				return fmt.Errorf("coin type %v doesn't need input hash", coinType)
 			}
 
 			if coinType != skyWallet.BitcoinCoinType && len(prevHash) > 0 {
-				return fmt.Errorf("coin type %s doesn't need previous hash", coinType)
+				return fmt.Errorf("coin type %v doesn't need previous hash", coinType)
 			}
 
 			device := skyWallet.NewDevice(skyWallet.DeviceTypeFromString(deviceType))
@@ -75,7 +75,7 @@ var transactionSignCmd = &cobra.Command{
 					return err
 				}
 			default:
-				return fmt.Errorf("TransactionSign is not implemented for %s yet", coinType)
+				return fmt.Errorf("TransactionSign is not implemented for %v yet", coinType)
 			}
 			return nil
 		},

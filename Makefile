@@ -20,6 +20,7 @@
 .PHONY: install-linters format release clean-release clean-coverage dep-github-release
 .PHONY: install-deps-ui build-ui build-ui help newcoin merge-coverage
 .PHONY: build build-skycoin build-skyhw build-skyhw-static
+.PHONY: test-skyhw test-skyhw-race lint-skyhw check-skyhw
 .PHONY: generate update-golden-files
 .PHONY: fuzz-base58 fuzz-encoder
 .PHONY: check-lang check-lang-es check-lang-zh
@@ -89,6 +90,19 @@ build-skyhw: ## Build skyhw hardware wallet binary with CGO (requires libusb-1.0
 
 build-skyhw-static: ## Build statically-linked skyhw binary (requires libusb-1.0-dev)
 	CGO_ENABLED=1 go build -tags=cgo -trimpath -ldflags '-linkmode external -extldflags "-static"' -o skyhw ./cmd/hardware-wallet/
+
+test-skyhw: ## Run hardware wallet unit tests
+	@mkdir -p coverage/
+	go test -v -coverprofile=coverage/skyhw.coverage.out -timeout=2m ./src/hardware-wallet/...
+
+test-skyhw-race: ## Run hardware wallet unit tests with race detector
+	go test -v -race -timeout=2m ./src/hardware-wallet/...
+
+lint-skyhw: ## Run linters on hardware wallet code
+	go vet ./src/hardware-wallet/...
+	go vet ./cmd/hardware-wallet/...
+
+check-skyhw: lint-skyhw test-skyhw build-skyhw ## Run all hardware wallet checks (lint, test, build)
 
 lint: ## Run linters. Use make install-linters first.
 	go mod vendor -v

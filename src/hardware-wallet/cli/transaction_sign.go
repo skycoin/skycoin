@@ -12,6 +12,8 @@ import (
 
 	messages "github.com/skycoin/hardware-wallet-protob/go"
 
+	"github.com/skycoin/skycoin/src/cipher"
+	"github.com/skycoin/skycoin/src/coin"
 	skyWallet "github.com/skycoin/skycoin/src/hardware-wallet/skywallet"
 )
 
@@ -36,7 +38,7 @@ var transactionSignCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			if coinType != skyWallet.SkycoinCoinType && len(inputs) > 0 {
+			if coinType != skyWallet.SkycoinCoinType && len(inputHash) > 0 {
 				return fmt.Errorf("coin type %s doesn't need input hash", coinType)
 			}
 
@@ -57,18 +59,18 @@ var transactionSignCmd = &cobra.Command{
 				}
 			}
 
-			if len(outputs) != len(coins) {
+			if len(outputAddress) != len(coins) {
 				return fmt.Errorf("every given output should have a coin value")
 			}
 
 			switch coinType {
 			case skyWallet.SkycoinCoinType:
-				err = transactionSkycoinSign(device, inputs, outputs, coins, hours, inputIndex, addressIndex)
+				err = transactionSkycoinSign(device, inputHash, outputAddress, coins, hours, inputIndex, addressIndex)
 				if err != nil {
 					return err
 				}
 			case skyWallet.BitcoinCoinType:
-				err = transactionBitcoinSign(device, prevHash, outputs, coins, inputIndex, addressIndex)
+				err = transactionBitcoinSign(device, prevHash, outputAddress, coins, inputIndex, addressIndex)
 				if err != nil {
 					return err
 				}
@@ -117,8 +119,56 @@ func transactionSkycoinSign(device *skyWallet.Device, inputs, outputs []string, 
 	if err != nil {
 		return err
 	}
-	fmt.Println(signatures)
-	return err
+
+	// Construct full transaction
+	txn := coin.Transaction{
+		Type: 0,
+	}
+
+	// Parse input hashes (UTXO hashes being spent)
+	for _, inputHashStr := range inputs {
+		hash, err := cipher.SHA256FromHex(inputHashStr)
+		if err != nil {
+			return fmt.Errorf("invalid input hash %s: %v", inputHashStr, err)
+		}
+		txn.In = append(txn.In, hash)
+	}
+
+	// Parse output addresses and create outputs
+	for i, outputAddr := range outputs {
+		addr, err := cipher.DecodeBase58Address(outputAddr)
+		if err != nil {
+			return fmt.Errorf("invalid output address %s: %v", outputAddr, err)
+		}
+		txn.Out = append(txn.Out, coin.TransactionOutput{
+			Address: addr,
+			Coins:   uint64(coins[i]),
+			Hours:   uint64(hours[i]),
+		})
+	}
+
+	// Parse signatures from device
+	for _, sigHex := range signatures {
+		sigBytes, err := hex.DecodeString(sigHex)
+		if err != nil {
+			return fmt.Errorf("invalid signature hex %s: %v", sigHex, err)
+		}
+		var sig cipher.Sig
+		copy(sig[:], sigBytes)
+		txn.Sigs = append(txn.Sigs, sig)
+	}
+
+	// Compute inner hash and update transaction
+	txn.UpdateHeader()
+
+	// Serialize to hex
+	txnHex, err := txn.SerializeHex()
+	if err != nil {
+		return fmt.Errorf("failed to serialize transaction: %v", err)
+	}
+
+	fmt.Println(txnHex)
+	return nil
 }
 
 func transactionBitcoinSign(device *skyWallet.Device, prevHashes, outputs []string, coins []int64, inputIndex, addressIndex []int) error {

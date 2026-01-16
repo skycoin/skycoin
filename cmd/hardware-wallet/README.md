@@ -253,14 +253,115 @@ In another terminal, test API:
 curl http://localhost:9510/api/v1/available
 ```
 
+## CLI Commands
+
+### Get Device Features
+
+Check device status and firmware version:
+```bash
+skyhw cli features
+```
+
+### Generate Addresses
+
+Generate addresses from the device seed:
+```bash
+# Generate 1 address starting at index 0
+skyhw cli addressGen --addressN 1
+
+# Generate 5 addresses starting at index 10
+skyhw cli addressGen --addressN 5 --startIndex 10
+```
+
+### Transaction Signing
+
+Sign a transaction using the hardware wallet. The device will display the transaction details for confirmation.
+
+**Step 1: Get UTXO information**
+
+First, find the unspent outputs (UTXOs) for the address you want to spend from:
+```bash
+curl -s "http://localhost:6420/api/v1/outputs?addrs=YOUR_ADDRESS" | jq '.head_outputs'
+```
+
+Note the `hash` field - this is the UTXO hash (inputHash) you'll need.
+
+**Step 2: Sign the transaction**
+
+```bash
+skyhw cli transactionSign \
+  --inputHash <UTXO_HASH> \
+  --inputIndex <ADDRESS_INDEX_IN_WALLET> \
+  --outputAddress <DESTINATION_ADDRESS> \
+  --coins <AMOUNT_IN_DROPLETS> \
+  --hours <COIN_HOURS_TO_SEND>
+```
+
+**Parameters:**
+- `--inputHash`: The UTXO hash being spent (from step 1)
+- `--inputIndex`: The index of the spending address in the wallet (0, 1, 2, etc.)
+- `--outputAddress`: Destination address(es)
+- `--coins`: Amount in droplets (1 SKY = 1,000,000 droplets)
+- `--hours`: Coin hours to send (at least 50% of available hours are burned as fee)
+
+**Example - Send 0.001 SKY:**
+```bash
+skyhw cli transactionSign \
+  --inputHash 23cc595a3c3766ed444a976455f2ea2c00f715dba4e7da65867a252011f0c364 \
+  --inputIndex 1 \
+  --outputAddress 2UVcVJ3SKLmqnqZhgCP5xSEcLx3kF86p32t \
+  --coins 1000 \
+  --hours 100000000
+```
+
+**Step 3: Broadcast the signed transaction**
+
+The command outputs a hex-encoded signed raw transaction. Broadcast it:
+```bash
+skycoin cli broadcastTransaction <HEX_OUTPUT>
+```
+
+### Firmware Update
+
+Update device firmware from a file:
+```bash
+# Put device in bootloader mode first (hold buttons while plugging in USB)
+skyhw cli firmwareUpdate --file /path/to/firmware.bin
+```
+
+Update from embedded firmware:
+```bash
+# List available embedded firmwares
+skyhw cli firmwareUpdate --list
+
+# Flash specific embedded firmware
+skyhw cli firmwareUpdate --embedded "C (dev)"
+```
+
+## C Firmware Limitations
+
+The official C firmware has several known limitations:
+
+### Stack Overflow with Many Addresses
+- Address generation causes stack overflow at approximately **23-26 addresses**
+- Each address derivation adds ~365ms (linear time complexity)
+- Generating address index N requires computing all addresses 0 to N
+
+### Transaction Output Limit
+- **Maximum 8 outputs per transaction**
+- This is a hard-coded limit in the C firmware (`checkOutputs` function)
+- Transactions with more outputs will fail with "Cannot have more than 8 outputs"
+
+### Workarounds
+- For address generation: Generate addresses in smaller batches
+- For transactions: Split large transactions into multiple smaller ones (note: this burns more coin hours)
+
+### TinyGo Firmware
+The TinyGo firmware currently in development aims to remove these limitations and provide a more maintainable codebase.
+
 ## Security Notes
 
 - **Linux MODE="0666"**: Makes device accessible to all users. Safe for hardware wallets requiring physical confirmation.
 - **TAG+="uaccess"**: On systemd systems, restricts access to currently logged-in users (more secure).
 - **Windows DLLs**: Download from official sources only to avoid malware.
 - **Hardware Confirmation**: Sensitive operations require physical button press on device.
-
-## Support
-
-- Hardware Wallet Repository: https://github.com/skycoin/hardware-wallet-go
-- Daemon Repository: https://github.com/skycoin/hardware-wallet-daemon

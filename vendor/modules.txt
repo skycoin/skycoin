@@ -260,6 +260,9 @@ github.com/skycoin/encodertest
 ## explicit; go 1.24.5
 github.com/skycoin/hardware-wallet-protob/go
 github.com/skycoin/hardware-wallet-protob/go/google/protobuf
+# github.com/skycoin/hardware-wallet/firmware v0.0.0-00010101000000-000000000000 => ../hardware-wallet/firmware
+## explicit; go 1.21
+github.com/skycoin/hardware-wallet/firmware
 # github.com/skycoin/skycoin-lite v0.0.0-20190712083345-f5a3f17e6603
 ## explicit
 github.com/skycoin/skycoin-lite/liteclient
@@ -411,3 +414,4 @@ mvdan.cc/sh/v3/fileutil
 mvdan.cc/sh/v3/pattern
 mvdan.cc/sh/v3/shell
 mvdan.cc/sh/v3/syntax
+# github.com/skycoin/hardware-wallet/firmware => ../hardware-wallet/firmware

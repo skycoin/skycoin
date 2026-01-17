@@ -201,7 +201,17 @@ func (drv *Driver) GetDeviceInfos() ([]usb.Info, error) {
 	return nil, errors.New("reading device info make sense for physical devices only")
 }
 
-func sendToDeviceNoAnswer(dev usb.Device, chunks [][64]byte) error {
+func sendToDeviceNoAnswer(dev usb.Device, chunks [][64]byte) (retErr error) {
+	// Recover from USB library panics (e.g., nil interface internals)
+	defer func() {
+		if r := recover(); r != nil {
+			retErr = fmt.Errorf("USB panic recovered: %v", r)
+		}
+	}()
+
+	if dev == nil {
+		return errors.New("device is nil")
+	}
 	for _, element := range chunks {
 		_, err := dev.Write(element[:])
 		if err != nil {
@@ -211,7 +221,17 @@ func sendToDeviceNoAnswer(dev usb.Device, chunks [][64]byte) error {
 	return nil
 }
 
-func sendToDevice(dev usb.Device, chunks [][64]byte) (wire.Message, error) {
+func sendToDevice(dev usb.Device, chunks [][64]byte) (result wire.Message, retErr error) {
+	// Recover from USB library panics (e.g., nil interface internals)
+	defer func() {
+		if r := recover(); r != nil {
+			retErr = fmt.Errorf("USB panic recovered: %v", r)
+		}
+	}()
+
+	if dev == nil {
+		return wire.Message{}, errors.New("device is nil")
+	}
 	var msg *wire.Message
 	var err error
 	for _, element := range chunks {

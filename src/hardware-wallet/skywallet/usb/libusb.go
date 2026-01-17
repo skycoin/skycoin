@@ -474,6 +474,11 @@ func (d *LibUSBDevice) readWrite(buf []byte, endpoint uint8) (int, error) {
 			return 0, ErrClosedDevice
 		}
 
+		// Check if interface is valid before attempting transfer
+		if d.iface == nil {
+			return 0, ErrClosedDevice
+		}
+
 		d.transferMutexLock()
 		p, err := lowlevel.Interrupt_Transfer(d.iface, endpoint, buf, transferTimeout)
 		d.transferMutexUnlock()

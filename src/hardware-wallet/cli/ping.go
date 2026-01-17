@@ -41,6 +41,13 @@ Special test commands (prefix with TEST:):
 		}
 		defer device.Close()
 
+		// Check that device is in firmware mode (not bootloader)
+		if err := requireFirmwareMode(device); err != nil {
+			fmt.Printf("Error: %v\n", err)
+			fmt.Println("Hint: The device may be in bootloader mode. Flash firmware first, or use --skip to bypass this check")
+			return err
+		}
+
 		if os.Getenv("AUTO_PRESS_BUTTONS") == "1" && device.Driver.DeviceType() == skyWallet.DeviceTypeEmulator && runtime.GOOS == "linux" {
 			err := device.SetAutoPressButton(true, skyWallet.ButtonRight)
 			if err != nil {

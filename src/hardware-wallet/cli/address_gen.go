@@ -21,26 +21,33 @@ func init() {
 
 }
 var addressGenCmd = &cobra.Command{
-		Use:   "addressGen",
-		Short: "Generate skycoin addresses using the firmware",
-		RunE: func(_ *cobra.Command, _ []string) error {
-			coinType, err := skyWallet.CoinTypeFromString(coinTypeStr)
+	Use:   "addressGen",
+	Short: "Generate skycoin addresses using the firmware",
+	RunE: func(_ *cobra.Command, _ []string) error {
+		coinType, err := skyWallet.CoinTypeFromString(coinTypeStr)
+		if err != nil {
+			return err
+		}
+
+		device := skyWallet.NewDevice(skyWallet.DeviceTypeFromString(deviceType))
+		if device == nil {
+			return fmt.Errorf("failed to create device")
+		}
+		defer device.Close()
+
+		// Check that device is in firmware mode (not bootloader)
+		if err := requireFirmwareMode(device); err != nil {
+			fmt.Printf("Error: %v\n", err)
+			fmt.Println("Hint: The device may be in bootloader mode. Flash firmware first, or use --skip to bypass this check")
+			return err
+		}
+
+		if os.Getenv("AUTO_PRESS_BUTTONS") == "1" && device.Driver.DeviceType() == skyWallet.DeviceTypeEmulator && runtime.GOOS == "linux" {
+			err := device.SetAutoPressButton(true, skyWallet.ButtonRight)
 			if err != nil {
 				return err
 			}
-
-			device := skyWallet.NewDevice(skyWallet.DeviceTypeFromString(deviceType))
-			if device == nil {
-				return fmt.Errorf("failed to create device")
-			}
-			defer device.Close()
-
-			if os.Getenv("AUTO_PRESS_BUTTONS") == "1" && device.Driver.DeviceType() == skyWallet.DeviceTypeEmulator && runtime.GOOS == "linux" {
-				err := device.SetAutoPressButton(true, skyWallet.ButtonRight)
-				if err != nil {
-					return err
-				}
-			}
+		}
 
 			var pinEnc string
 			msg, err := device.AddressGen(uint32(addressN), uint32(startIndex), confirmAddress, coinType)

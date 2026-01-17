@@ -168,9 +168,14 @@ func (d *Device) Disconnect() error {
 	d.Lock()
 	defer d.Unlock()
 	if d.connected {
-		err := d.dev.Close(false)
-		if err == nil {
-			d.dev = nil
+		if d.dev != nil {
+			err := d.dev.Close(false)
+			if err == nil {
+				d.dev = nil
+				d.connected = false
+			}
+		} else {
+			// Device was nil but marked as connected - reset state
 			d.connected = false
 		}
 		return nil

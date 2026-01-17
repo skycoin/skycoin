@@ -163,3 +163,6 @@ FRONTEND-MODERNIZATION-PLAN.md
 # Build artifacts for musl cross-compilation
 musl-data/
 releaseChangelog.md
+src/hardware-wallet/cli/skyhw
+skyhw
+genesis.json

@@ -192,6 +192,8 @@ type DaemonConfig struct { //nolint:revive
 	LocalhostOnly bool
 	// Log ping and pong messages
 	LogPings bool
+	// Allow connections from legacy peers that don't send blockchain pubkey in introduction
+	LegacyPeerCompat bool
 	// How often to request blocks from peers
 	BlocksRequestRate time.Duration
 	// How often to announce our blocks to peers

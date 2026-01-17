@@ -510,6 +510,10 @@ func (intro *IntroductionMessage) Verify(dc DaemonConfig, logFields logrus.Field
 	// v27 would require and check the genesis hash
 	extraLen := len(intro.Extra)
 	if extraLen == 0 {
+		if dc.LegacyPeerCompat {
+			logger.WithFields(logFields).Info("Legacy peer mode: accepting peer without blockchain pubkey")
+			return nil
+		}
 		logger.WithFields(logFields).Warning("Blockchain pubkey is not provided")
 		return ErrDisconnectBlockchainPubkeyNotProvided
 	}

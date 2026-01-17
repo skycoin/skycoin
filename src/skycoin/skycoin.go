@@ -458,6 +458,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	dc.Daemon.DisableOutgoingConnections = c.config.Node.DisableOutgoingConnections
 	dc.Daemon.DisableIncomingConnections = c.config.Node.DisableIncomingConnections
 	dc.Daemon.DisableNetworking = c.config.Node.DisableNetworking
+	dc.Daemon.LegacyPeerCompat = c.config.Node.LegacyPeerCompat
 	dc.Daemon.Port = c.config.Node.Port
 	dc.Daemon.Address = c.config.Node.Address
 	dc.Daemon.LocalhostOnly = c.config.Node.LocalhostOnly

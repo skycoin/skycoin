@@ -205,7 +205,7 @@ func (d *Device) AddressGen(addressN, startIndex uint32, confirmAddress bool, co
 	if err := d.Connect(); err != nil {
 		return wire.Message{}, err
 	}
-	defer d.Disconnect()
+	defer func() { _ = d.Disconnect() }()
 
 	if addressN == 0 {
 		return wire.Message{}, ErrAddressNZero
@@ -335,7 +335,7 @@ func (d *Device) SaveDeviceEntropyInFile(outFile string, entropyBytes uint32, ge
 				log.Error(err)
 			}
 		}()
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 
 		processBytes = func(buf []byte) error {
 			var wroteBytes = 0
@@ -396,7 +396,7 @@ func (d *Device) ApplySettings(usePassphrase *bool, label string, language strin
 	if err := d.Connect(); err != nil {
 		return wire.Message{}, err
 	}
-	defer d.Disconnect()
+	defer func() { _ = d.Disconnect() }()
 
 	applySettingsChunks, err := MessageApplySettings(usePassphrase, label, language)
 	if err != nil {
@@ -411,7 +411,7 @@ func (d *Device) Backup() (msg wire.Message, err error) {
 	if err := d.Connect(); err != nil {
 		return wire.Message{}, err
 	}
-	defer d.Disconnect()
+	defer func() { _ = d.Disconnect() }()
 	backupChunks, err := MessageBackup()
 	if err != nil {
 		return wire.Message{}, err
@@ -428,7 +428,7 @@ func (d *Device) Cancel() (wire.Message, error) {
 	if err := d.Connect(); err != nil {
 		return wire.Message{}, err
 	}
-	defer d.Disconnect()
+	defer func() { _ = d.Disconnect() }()
 
 	cancelChunks, err := MessageCancel()
 	if err != nil {
@@ -443,7 +443,7 @@ func (d *Device) CheckMessageSignature(message, signature, address string) (wire
 	if err := d.Connect(); err != nil {
 		return wire.Message{}, err
 	}
-	defer d.Disconnect()
+	defer func() { _ = d.Disconnect() }()
 
 	// Send CheckMessageSignature
 	checkMessageSignatureChunks, err := MessageCheckMessageSignature(message, signature, address)
@@ -474,7 +474,7 @@ func (d *Device) ChangePin(removePin *bool) (wire.Message, error) {
 	if err := d.Connect(); err != nil {
 		return wire.Message{}, err
 	}
-	defer d.Disconnect()
+	defer func() { _ = d.Disconnect() }()
 
 	if removePin == nil {
 		return wire.Message{}, ErrRemovePinNil
@@ -574,7 +574,7 @@ func (d *Device) FirmwareUpload(payload []byte, hash [32]byte) error {
 	if err := d.Connect(); err != nil {
 		return err
 	}
-	defer d.Disconnect()
+	defer func() { _ = d.Disconnect() }()
 
 	if err := Initialize(d.dev); err != nil {
 		return err
@@ -657,7 +657,7 @@ func (d *Device) GetFeatures() (wire.Message, error) {
 	if err := d.Connect(); err != nil {
 		return wire.Message{}, err
 	}
-	defer d.Disconnect()
+	defer func() { _ = d.Disconnect() }()
 
 	getFeaturesChunks, err := MessageGetFeatures()
 	if err != nil {
@@ -672,7 +672,7 @@ func (d *Device) Ping(msg string) (wire.Message, error) {
 	if err := d.Connect(); err != nil {
 		return wire.Message{}, err
 	}
-	defer d.Disconnect()
+	defer func() { _ = d.Disconnect() }()
 
 	pingChunks, err := MessagePing(msg)
 	if err != nil {
@@ -687,7 +687,7 @@ func (d *Device) GenerateMnemonic(wordCount uint32, usePassphrase bool) (wire.Me
 	if err := d.Connect(); err != nil {
 		return wire.Message{}, err
 	}
-	defer d.Disconnect()
+	defer func() { _ = d.Disconnect() }()
 
 	if wordCount != 12 && wordCount != 24 {
 		return wire.Message{}, ErrInvalidWordCount
@@ -711,7 +711,7 @@ func (d *Device) Recovery(wordCount uint32, usePassphrase *bool, dryRun bool) (w
 	if err := d.Connect(); err != nil {
 		return wire.Message{}, err
 	}
-	defer d.Disconnect()
+	defer func() { _ = d.Disconnect() }()
 
 	if wordCount != 12 && wordCount != 24 {
 		return wire.Message{}, ErrInvalidWordCount
@@ -737,7 +737,7 @@ func (d *Device) SetMnemonic(mnemonic string) (wire.Message, error) {
 	if err := d.Connect(); err != nil {
 		return wire.Message{}, err
 	}
-	defer d.Disconnect()
+	defer func() { _ = d.Disconnect() }()
 
 	// Send SetMnemonic
 	setMnemonicChunks, err := MessageSetMnemonic(mnemonic)
@@ -757,7 +757,7 @@ func (d *Device) SignMessage(addressIndex int, message string) (wire.Message, er
 	if err := d.Connect(); err != nil {
 		return wire.Message{}, err
 	}
-	defer d.Disconnect()
+	defer func() { _ = d.Disconnect() }()
 
 	signMessageChunks, err := MessageSignMessage(addressIndex, message)
 	if err != nil {
@@ -777,7 +777,7 @@ func (d *Device) TransactionSign(inputs []*messages.SkycoinTransactionInput, out
 	if err := d.Connect(); err != nil {
 		return wire.Message{}, err
 	}
-	defer d.Disconnect()
+	defer func() { _ = d.Disconnect() }()
 
 	var transactionInputs []*messages.TxAck_TransactionType_TxInputType
 	var transactionOutputs []*messages.TxAck_TransactionType_TxOutputType
@@ -834,7 +834,7 @@ func (d *Device) SignTx(outputsCount int, inputsCount int, coinName string, vers
 	if err := d.Connect(); err != nil {
 		return wire.Message{}, err
 	}
-	defer d.Disconnect()
+	defer func() { _ = d.Disconnect() }()
 
 	signTxChunks, err := MessageSignTx(outputsCount, inputsCount, coinName, version, lockTime, txHash)
 
@@ -850,7 +850,7 @@ func (d *Device) TxAck(inputs []*messages.TxAck_TransactionType_TxInputType, out
 	if err := d.Connect(); err != nil {
 		return wire.Message{}, err
 	}
-	defer d.Disconnect()
+	defer func() { _ = d.Disconnect() }()
 	txAckChunks, err := MessageTxAck(inputs, outputs, version, lockTime)
 	if err != nil {
 		return wire.Message{}, err
@@ -864,7 +864,7 @@ func (d *Device) BitcoinTxAck(inputs []*messages.BitcoinTransactionInput, output
 	if err := d.Connect(); err != nil {
 		return wire.Message{}, err
 	}
-	defer d.Disconnect()
+	defer func() { _ = d.Disconnect() }()
 	txAckChunks, err := BitcoinMessageTxAck(inputs, outputs)
 	if err != nil {
 		return wire.Message{}, err
@@ -878,7 +878,7 @@ func (d *Device) Wipe() (wire.Message, error) {
 	if err := d.Connect(); err != nil {
 		return wire.Message{}, err
 	}
-	defer d.Disconnect()
+	defer func() { _ = d.Disconnect() }()
 
 	wipeChunks, err := MessageWipe()
 	if err != nil {
@@ -899,7 +899,7 @@ func (d *Device) ButtonAck() (wire.Message, error) {
 	if err := d.Connect(); err != nil {
 		return wire.Message{}, err
 	}
-	defer d.Disconnect()
+	defer func() { _ = d.Disconnect() }()
 
 	// Send ButtonAck
 	buttonChunks, err := MessageButtonAck()
@@ -959,7 +959,7 @@ func (d *Device) PassphraseAck(passphrase string) (wire.Message, error) {
 	if err := d.Connect(); err != nil {
 		return wire.Message{}, err
 	}
-	defer d.Disconnect()
+	defer func() { _ = d.Disconnect() }()
 
 	passphraseChunks, err := MessagePassphraseAck(passphrase)
 	if err != nil {
@@ -974,7 +974,7 @@ func (d *Device) WordAck(word string) (wire.Message, error) {
 	if err := d.Connect(); err != nil {
 		return wire.Message{}, err
 	}
-	defer d.Disconnect()
+	defer func() { _ = d.Disconnect() }()
 
 	wordAckChunks, err := MessageWordAck(word)
 	if err != nil {
@@ -990,7 +990,7 @@ func (d *Device) PinMatrixAck(p string) (wire.Message, error) {
 	if err := d.Connect(); err != nil {
 		return wire.Message{}, err
 	}
-	defer d.Disconnect()
+	defer func() { _ = d.Disconnect() }()
 
 	log.Printf("Setting pin: %s\n", p)
 

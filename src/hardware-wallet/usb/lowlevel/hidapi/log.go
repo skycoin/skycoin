@@ -15,6 +15,6 @@ func SetLogWriter(l io.Writer) {
 //export goHidLog
 func goHidLog(s *C.char) {
 	if writer != nil {
-		writer.Write([]byte(C.GoString(s)))
+		_, _ = writer.Write([]byte(C.GoString(s)))
 	}
 }

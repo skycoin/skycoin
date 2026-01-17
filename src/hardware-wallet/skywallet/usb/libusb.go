@@ -188,7 +188,7 @@ func (b *LibUSB) Connect(path string) (Device, error) {
 	// Close all devices except the one we found
 	for _, dev := range list {
 		if dev != foundDev {
-			dev.Close()
+			_ = dev.Close()
 		}
 	}
 
@@ -199,7 +199,7 @@ func (b *LibUSB) Connect(path string) (Device, error) {
 	// Connect to the found device
 	res, errConn := b.connect(foundDev)
 	if errConn != nil {
-		foundDev.Close()
+		_ = foundDev.Close()
 		return nil, errConn
 	}
 	return res, nil

@@ -74,7 +74,7 @@ func Init(ctx *Context) error {
 // Exit closes the libusb context
 func Exit(ctx Context) {
 	if ctx != nil {
-		ctx.Close()
+		_ = ctx.Close()
 	}
 }
 
@@ -116,7 +116,7 @@ func Get_Device_List(ctx Context) ([]*gousb.Device, error) {
 func Free_Device_List(list []*gousb.Device, unref int) {
 	for _, dev := range list {
 		if dev != nil {
-			dev.Close()
+			_ = dev.Close()
 		}
 	}
 }
@@ -211,7 +211,7 @@ func Open(dev Device) (Device_Handle, error) {
 // Close closes a device handle
 func Close(handle Device_Handle) {
 	if handle != nil {
-		handle.Close()
+		_ = handle.Close()
 	}
 }
 

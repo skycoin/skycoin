@@ -9,9 +9,10 @@ import (
 	"github.com/skycoin/skycoin/src/hardware-wallet/skywallet/wire"
 
 	"github.com/gogo/protobuf/proto"
-	skyWallet "github.com/skycoin/skycoin/src/hardware-wallet/skywallet"
 	messages "github.com/skycoin/hardware-wallet-protob/go"
+
 	"github.com/skycoin/skycoin/src/cipher"
+	skyWallet "github.com/skycoin/skycoin/src/hardware-wallet/skywallet"
 	"github.com/skycoin/skycoin/src/util/droplet"
 )
 

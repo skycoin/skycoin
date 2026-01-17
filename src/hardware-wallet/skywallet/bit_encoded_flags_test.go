@@ -84,12 +84,12 @@ func TestFirmwareFeaturesMarshal(t *testing.T) {
 
 func TestFirmwareFeaturesUnmarshal(t *testing.T) {
 	tests := []struct {
-		name                     string
-		flags                    uint64
-		wantRequireEntropy       bool
-		wantEntropyEnabled       bool
-		wantEmulator             bool
-		wantRdpLevel             uint8
+		name               string
+		flags              uint64
+		wantRequireEntropy bool
+		wantEntropyEnabled bool
+		wantEmulator       bool
+		wantRdpLevel       uint8
 	}{
 		{
 			name:  "all zero",

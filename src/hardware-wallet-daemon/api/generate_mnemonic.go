@@ -38,7 +38,7 @@ func generateMnemonic(gateway Gatewayer) http.HandlerFunc {
 			writeHTTPResponse(w, resp)
 			return
 		}
-		defer r.Body.Close()
+		defer func() { _ = r.Body.Close() }()
 
 		if req.WordCount != 12 && req.WordCount != 24 {
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

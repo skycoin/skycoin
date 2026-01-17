@@ -14,7 +14,8 @@ const (
 // URI: /api/v1/firmware_update
 // Method: PUT
 // Args:
-//  file: firmware file
+//
+//	file: firmware file
 func firmwareUpdate(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
@@ -36,7 +37,7 @@ func firmwareUpdate(gateway Gatewayer) http.HandlerFunc {
 			writeHTTPResponse(w, resp)
 			return
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 
 		fileBytes, err := ioutil.ReadAll(file)
 		if err != nil {

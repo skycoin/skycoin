@@ -29,58 +29,56 @@ func init() {
 	transactionSignCmd.Flags().StringVar(&coinTypeStr, "coinTypeStr", "SKY", "Coin type to use on hardware-wallet.")
 }
 
-
 var transactionSignCmd = &cobra.Command{
-		Use:   "transactionSign",
-		Short: "Ask the device to sign a transaction using the provided information.",
-		RunE: func(_ *cobra.Command, _ []string) error {
-			coinType, err := skyWallet.CoinTypeFromString(coinTypeStr)
+	Use:   "transactionSign",
+	Short: "Ask the device to sign a transaction using the provided information.",
+	RunE: func(_ *cobra.Command, _ []string) error {
+		coinType, err := skyWallet.CoinTypeFromString(coinTypeStr)
+		if err != nil {
+			return err
+		}
+		if coinType != skyWallet.SkycoinCoinType && len(inputHash) > 0 {
+			return fmt.Errorf("coin type %v doesn't need input hash", coinType)
+		}
+
+		if coinType != skyWallet.BitcoinCoinType && len(prevHash) > 0 {
+			return fmt.Errorf("coin type %v doesn't need previous hash", coinType)
+		}
+
+		device := skyWallet.NewDevice(skyWallet.DeviceTypeFromString(deviceType))
+		if device == nil {
+			return fmt.Errorf("failed to create device")
+		}
+		defer device.Close()
+
+		if os.Getenv("AUTO_PRESS_BUTTONS") == "1" && device.Driver.DeviceType() == skyWallet.DeviceTypeEmulator && runtime.GOOS == "linux" {
+			err := device.SetAutoPressButton(true, skyWallet.ButtonRight)
 			if err != nil {
 				return err
 			}
-			if coinType != skyWallet.SkycoinCoinType && len(inputHash) > 0 {
-				return fmt.Errorf("coin type %v doesn't need input hash", coinType)
-			}
+		}
 
-			if coinType != skyWallet.BitcoinCoinType && len(prevHash) > 0 {
-				return fmt.Errorf("coin type %v doesn't need previous hash", coinType)
-			}
+		if len(outputAddress) != len(coins) {
+			return fmt.Errorf("every given output should have a coin value")
+		}
 
-			device := skyWallet.NewDevice(skyWallet.DeviceTypeFromString(deviceType))
-			if device == nil {
-				return fmt.Errorf("failed to create device")
+		switch coinType {
+		case skyWallet.SkycoinCoinType:
+			err = transactionSkycoinSign(device, inputHash, outputAddress, coins, hours, inputIndex, addressIndex)
+			if err != nil {
+				return err
 			}
-			defer device.Close()
-
-			if os.Getenv("AUTO_PRESS_BUTTONS") == "1" && device.Driver.DeviceType() == skyWallet.DeviceTypeEmulator && runtime.GOOS == "linux" {
-				err := device.SetAutoPressButton(true, skyWallet.ButtonRight)
-				if err != nil {
-					return err
-				}
+		case skyWallet.BitcoinCoinType:
+			err = transactionBitcoinSign(device, prevHash, outputAddress, coins, inputIndex, addressIndex)
+			if err != nil {
+				return err
 			}
-
-			if len(outputAddress) != len(coins) {
-				return fmt.Errorf("every given output should have a coin value")
-			}
-
-			switch coinType {
-			case skyWallet.SkycoinCoinType:
-				err = transactionSkycoinSign(device, inputHash, outputAddress, coins, hours, inputIndex, addressIndex)
-				if err != nil {
-					return err
-				}
-			case skyWallet.BitcoinCoinType:
-				err = transactionBitcoinSign(device, prevHash, outputAddress, coins, inputIndex, addressIndex)
-				if err != nil {
-					return err
-				}
-			default:
-				return fmt.Errorf("TransactionSign is not implemented for %v yet", coinType)
-			}
-			return nil
-		},
-	}
-
+		default:
+			return fmt.Errorf("TransactionSign is not implemented for %v yet", coinType)
+		}
+		return nil
+	},
+}
 
 func transactionSkycoinSign(device *skyWallet.Device, inputs, outputs []string, coins, hours []int64, inputIndex, addressIndex []int) error {
 	if len(inputs) != len(inputIndex) {
@@ -159,7 +157,9 @@ func transactionSkycoinSign(device *skyWallet.Device, inputs, outputs []string, 
 	}
 
 	// Compute inner hash and update transaction
-	txn.UpdateHeader()
+	if err := txn.UpdateHeader(); err != nil {
+		return fmt.Errorf("failed to update transaction header: %v", err)
+	}
 
 	// Serialize to hex
 	txnHex, err := txn.SerializeHex()

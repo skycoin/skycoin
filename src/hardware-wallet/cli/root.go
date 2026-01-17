@@ -5,6 +5,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	messages "github.com/skycoin/hardware-wallet-protob/go"
+
 	skyWallet "github.com/skycoin/skycoin/src/hardware-wallet/skywallet"
 )
 

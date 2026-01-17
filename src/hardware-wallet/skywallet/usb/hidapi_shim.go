@@ -1,3 +1,4 @@
+//go:build linux || freebsd
 // +build linux freebsd
 
 // shim for linux and freebsd so that daemon.go builds

@@ -26,8 +26,8 @@ func TestValidate(t *testing.T) {
 		{
 			name: "valid string field",
 			buf: []byte{
-				0x0a,                         // field 1, wire type 2 (length-delimited)
-				0x05,                         // length 5
+				0x0a,                    // field 1, wire type 2 (length-delimited)
+				0x05,                    // length 5
 				'h', 'e', 'l', 'l', 'o', // data
 			},
 			wantErr: false,
@@ -116,8 +116,8 @@ func TestValidateRealProtobufMessages(t *testing.T) {
 		{
 			name: "Ping message with string",
 			buf: []byte{
-				0x0a,                            // field 1 (message), wire type 2
-				0x0b,                            // length 11
+				0x0a, // field 1 (message), wire type 2
+				0x0b, // length 11
 				'h', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd',
 			},
 			wantErr: false,

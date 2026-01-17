@@ -26,7 +26,7 @@ func pinMatrixRequestHandler(gateway Gatewayer) http.HandlerFunc {
 			writeHTTPResponse(w, resp)
 			return
 		}
-		defer r.Body.Close()
+		defer func() { _ = r.Body.Close() }()
 
 		var msg wire.Message
 		var err error
@@ -82,7 +82,7 @@ func passphraseRequestHandler(gateway Gatewayer) http.HandlerFunc {
 			writeHTTPResponse(w, resp)
 			return
 		}
-		defer r.Body.Close()
+		defer func() { _ = r.Body.Close() }()
 
 		var msg wire.Message
 		var err error
@@ -138,7 +138,7 @@ func wordRequestHandler(gateway Gatewayer) http.HandlerFunc {
 			writeHTTPResponse(w, resp)
 			return
 		}
-		defer r.Body.Close()
+		defer func() { _ = r.Body.Close() }()
 
 		var msg wire.Message
 		var err error

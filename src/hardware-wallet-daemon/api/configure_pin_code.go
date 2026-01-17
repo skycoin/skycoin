@@ -37,7 +37,7 @@ func configurePinCode(gateway Gatewayer) http.HandlerFunc {
 			writeHTTPResponse(w, resp)
 			return
 		}
-		defer r.Body.Close()
+		defer func() { _ = r.Body.Close() }()
 
 		// for integration tests
 		if autoPressEmulatorButtons {

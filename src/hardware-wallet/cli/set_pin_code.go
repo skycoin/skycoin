@@ -7,6 +7,7 @@ import (
 
 	messages "github.com/skycoin/hardware-wallet-protob/go"
 	"github.com/spf13/cobra"
+
 	skyWallet "github.com/skycoin/skycoin/src/hardware-wallet/skywallet"
 )
 
@@ -15,61 +16,61 @@ func init() {
 }
 
 var setPinCode = &cobra.Command{
-		Use:   "setPinCode",
-		Short: "Configure a PIN code on a device.",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			device := skyWallet.NewDevice(skyWallet.DeviceTypeFromString(deviceType))
-			if device == nil {
-				return fmt.Errorf("failed to create device")
-			}
-			defer device.Close()
+	Use:   "setPinCode",
+	Short: "Configure a PIN code on a device.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		device := skyWallet.NewDevice(skyWallet.DeviceTypeFromString(deviceType))
+		if device == nil {
+			return fmt.Errorf("failed to create device")
+		}
+		defer device.Close()
 
-			if os.Getenv("AUTO_PRESS_BUTTONS") == "1" && device.Driver.DeviceType() == skyWallet.DeviceTypeEmulator && runtime.GOOS == "linux" {
-				err := device.SetAutoPressButton(true, skyWallet.ButtonRight)
+		if os.Getenv("AUTO_PRESS_BUTTONS") == "1" && device.Driver.DeviceType() == skyWallet.DeviceTypeEmulator && runtime.GOOS == "linux" {
+			err := device.SetAutoPressButton(true, skyWallet.ButtonRight)
+			if err != nil {
+				return err
+			}
+		}
+
+		removePin := false
+		msg, err := device.ChangePin(&removePin)
+		if err != nil {
+			return err
+		}
+
+		for {
+			switch msg.Kind {
+			case uint16(messages.MessageType_MessageType_Success):
+				responseMsg, err := skyWallet.DecodeSuccessOrFailMsg(msg)
+				if err != nil {
+					return err
+				}
+				fmt.Println(responseMsg)
+				return nil
+			case uint16(messages.MessageType_MessageType_Failure):
+				failMsg, err := skyWallet.DecodeFailMsg(msg)
+				if err != nil {
+					return err
+				}
+				fmt.Println(failMsg)
+				return nil
+			case uint16(messages.MessageType_MessageType_PinMatrixRequest):
+				pinEnc, err := PinMatrixSimple()
+				if err != nil {
+					// User cancelled - send Cancel to device to abort operation
+					_, _ = device.Cancel()
+					return fmt.Errorf("PIN entry cancelled: %v", err)
+				}
+				msg, err = device.PinMatrixAck(pinEnc)
+				if err != nil {
+					return err
+				}
+			case uint16(messages.MessageType_MessageType_ButtonRequest):
+				msg, err = device.ButtonAck()
 				if err != nil {
 					return err
 				}
 			}
-
-			removePin := false
-			msg, err := device.ChangePin(&removePin)
-			if err != nil {
-				return err
-			}
-
-			for {
-				switch msg.Kind {
-				case uint16(messages.MessageType_MessageType_Success):
-					responseMsg, err := skyWallet.DecodeSuccessOrFailMsg(msg)
-					if err != nil {
-						return err
-					}
-					fmt.Println(responseMsg)
-					return nil
-				case uint16(messages.MessageType_MessageType_Failure):
-					failMsg, err := skyWallet.DecodeFailMsg(msg)
-					if err != nil {
-						return err
-					}
-					fmt.Println(failMsg)
-					return nil
-				case uint16(messages.MessageType_MessageType_PinMatrixRequest):
-					pinEnc, err := PinMatrixSimple()
-					if err != nil {
-						// User cancelled - send Cancel to device to abort operation
-						device.Cancel()
-						return fmt.Errorf("PIN entry cancelled: %v", err)
-					}
-					msg, err = device.PinMatrixAck(pinEnc)
-					if err != nil {
-						return err
-					}
-				case uint16(messages.MessageType_MessageType_ButtonRequest):
-					msg, err = device.ButtonAck()
-					if err != nil {
-						return err
-					}
-				}
-			}
-		},
-	}
+		}
+	},
+}

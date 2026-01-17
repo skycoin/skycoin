@@ -17,42 +17,34 @@ func init() {
 }
 
 var backupCmd = &cobra.Command{
-		Use:   "backup",
-		Short: "Ask the device to perform the seed backup procedure.",
-		RunE: func(_ *cobra.Command, _ []string) error {
-			device := skyWallet.NewDevice(skyWallet.DeviceTypeFromString(deviceType))
-			if device == nil {
-				return fmt.Errorf("failed to create device")
-			}
-			defer device.Close()
+	Use:   "backup",
+	Short: "Ask the device to perform the seed backup procedure.",
+	RunE: func(_ *cobra.Command, _ []string) error {
+		device := skyWallet.NewDevice(skyWallet.DeviceTypeFromString(deviceType))
+		if device == nil {
+			return fmt.Errorf("failed to create device")
+		}
+		defer device.Close()
 
-			if os.Getenv("AUTO_PRESS_BUTTONS") == "1" && device.Driver.DeviceType() == skyWallet.DeviceTypeEmulator && runtime.GOOS == "linux" {
-				err := device.SetAutoPressButton(true, skyWallet.ButtonRight)
-				if err != nil {
-					return err
-				}
-			}
-
-			msg, err := device.Backup()
+		if os.Getenv("AUTO_PRESS_BUTTONS") == "1" && device.Driver.DeviceType() == skyWallet.DeviceTypeEmulator && runtime.GOOS == "linux" {
+			err := device.SetAutoPressButton(true, skyWallet.ButtonRight)
 			if err != nil {
 				return err
 			}
+		}
 
-			if msg.Kind == uint16(messages.MessageType_MessageType_PinMatrixRequest) {
-				var pinEnc string
-				fmt.Printf("PinMatrixRequest response: ")
-				fmt.Scanln(&pinEnc)
-				msg, err := device.PinMatrixAck(pinEnc)
-				if err != nil {
-					return err
-				}
+		msg, err := device.Backup()
+		if err != nil {
+			return err
+		}
 
-				for msg.Kind == uint16(messages.MessageType_MessageType_ButtonRequest) {
-					msg, err = device.ButtonAck()
-					if err != nil {
-						return err
-					}
-				}
+		if msg.Kind == uint16(messages.MessageType_MessageType_PinMatrixRequest) {
+			var pinEnc string
+			fmt.Printf("PinMatrixRequest response: ")
+			_, _ = fmt.Scanln(&pinEnc)
+			msg, err := device.PinMatrixAck(pinEnc)
+			if err != nil {
+				return err
 			}
 
 			for msg.Kind == uint16(messages.MessageType_MessageType_ButtonRequest) {
@@ -61,13 +53,21 @@ var backupCmd = &cobra.Command{
 					return err
 				}
 			}
+		}
 
-			responseMsg, err := skyWallet.DecodeSuccessOrFailMsg(msg)
+		for msg.Kind == uint16(messages.MessageType_MessageType_ButtonRequest) {
+			msg, err = device.ButtonAck()
 			if err != nil {
 				return err
 			}
+		}
 
-			fmt.Println(responseMsg)
-			return nil
-		},
-	}
+		responseMsg, err := skyWallet.DecodeSuccessOrFailMsg(msg)
+		if err != nil {
+			return err
+		}
+
+		fmt.Println(responseMsg)
+		return nil
+	},
+}

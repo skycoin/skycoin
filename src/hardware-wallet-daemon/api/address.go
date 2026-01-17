@@ -40,7 +40,7 @@ func generateAddresses(gateway Gatewayer) http.HandlerFunc {
 			writeHTTPResponse(w, resp)
 			return
 		}
-		defer r.Body.Close()
+		defer func() { _ = r.Body.Close() }()
 
 		if req.AddressN == 0 {
 			resp := NewHTTPErrorResponse(http.StatusUnprocessableEntity, "address_n cannot be 0")

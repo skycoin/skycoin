@@ -10,6 +10,7 @@ import (
 
 	"github.com/NYTimes/gziphandler"
 	"github.com/rs/cors"
+
 	skyWallet "github.com/skycoin/skycoin/src/hardware-wallet/skywallet"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/util/logging"

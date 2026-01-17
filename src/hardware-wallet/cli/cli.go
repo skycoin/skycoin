@@ -1,8 +1,9 @@
 package cli
 
 import (
-	"github.com/skycoin/skycoin/src/util/logging"
 	"github.com/spf13/cobra"
+
+	"github.com/skycoin/skycoin/src/util/logging"
 )
 
 const (

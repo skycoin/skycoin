@@ -7,6 +7,7 @@ import (
 	"runtime"
 
 	"github.com/spf13/cobra"
+
 	skyWallet "github.com/skycoin/skycoin/src/hardware-wallet/skywallet"
 )
 
@@ -16,38 +17,38 @@ func init() {
 }
 
 var getMixedEntropyCmd = &cobra.Command{
-		Use:   "getMixedEntropy",
-		Short: "Get device internal mixed entropy and write it down to a file",
-		RunE: func(_ *cobra.Command, _ []string) error {
-			device := skyWallet.NewDevice(skyWallet.DeviceTypeFromString(deviceType))
-			if device == nil {
-				return fmt.Errorf("failed to create device")
-			}
-			defer device.Close()
+	Use:   "getMixedEntropy",
+	Short: "Get device internal mixed entropy and write it down to a file",
+	RunE: func(_ *cobra.Command, _ []string) error {
+		device := skyWallet.NewDevice(skyWallet.DeviceTypeFromString(deviceType))
+		if device == nil {
+			return fmt.Errorf("failed to create device")
+		}
+		defer device.Close()
 
-			if os.Getenv("AUTO_PRESS_BUTTONS") == "1" && device.Driver.DeviceType() == skyWallet.DeviceTypeEmulator && runtime.GOOS == "linux" {
-				err := device.SetAutoPressButton(true, skyWallet.ButtonRight)
-				if err != nil {
-					return err
-				}
-			}
-
-			entropy, err := skyWallet.MessageDeviceGetMixedEntropy(uint32(entropyBytes))
+		if os.Getenv("AUTO_PRESS_BUTTONS") == "1" && device.Driver.DeviceType() == skyWallet.DeviceTypeEmulator && runtime.GOOS == "linux" {
+			err := device.SetAutoPressButton(true, skyWallet.ButtonRight)
 			if err != nil {
 				return err
 			}
+		}
 
-			var entropyData []byte
-			for _, chunk := range entropy {
-				entropyData = append(entropyData, chunk[:]...)
-			}
+		entropy, err := skyWallet.MessageDeviceGetMixedEntropy(uint32(entropyBytes))
+		if err != nil {
+			return err
+		}
 
-			err = ioutil.WriteFile("/tmp/entropy.dump", entropyData, 0644)
-			if err != nil {
-				return err
-			}
+		var entropyData []byte
+		for _, chunk := range entropy {
+			entropyData = append(entropyData, chunk[:]...)
+		}
 
-			fmt.Println("Mixed entropy dumped to: /tmp/entropy.dump")
-			return nil
-		},
-	}
+		err = ioutil.WriteFile("/tmp/entropy.dump", entropyData, 0644)
+		if err != nil {
+			return err
+		}
+
+		fmt.Println("Mixed entropy dumped to: /tmp/entropy.dump")
+		return nil
+	},
+}

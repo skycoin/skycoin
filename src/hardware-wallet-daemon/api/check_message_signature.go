@@ -6,8 +6,8 @@ import (
 
 	"github.com/skycoin/skycoin/src/hardware-wallet/skywallet/wire"
 
-	skyWallet "github.com/skycoin/skycoin/src/hardware-wallet/skywallet"
 	"github.com/skycoin/skycoin/src/cipher"
+	skyWallet "github.com/skycoin/skycoin/src/hardware-wallet/skywallet"
 )
 
 // CheckMessageSignatureRequest is request data for /api/v1/check_message_signature
@@ -41,7 +41,7 @@ func checkMessageSignature(gateway Gatewayer) http.HandlerFunc {
 			writeHTTPResponse(w, resp)
 			return
 		}
-		defer r.Body.Close()
+		defer func() { _ = r.Body.Close() }()
 
 		if req.Address == "" {
 			resp := NewHTTPErrorResponse(http.StatusBadRequest, "address is required")

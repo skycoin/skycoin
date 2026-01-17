@@ -1,3 +1,4 @@
+//go:build (darwin && !ios && cgo) || (windows && cgo)
 // +build darwin,!ios,cgo windows,cgo
 
 package usb

@@ -271,13 +271,13 @@ func (b *LibUSB) connect(dev lowlevel.Device) (*LibUSBDevice, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Claim the interface and keep it alive for the device lifetime
 	intf, err := cfg.Interface(0, 0)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	attach, err := b.claimInterface(d)
 	if err != nil {
 		intf.Close()
@@ -384,8 +384,8 @@ func (b *LibUSB) identify(dev lowlevel.Device) string {
 
 type LibUSBDevice struct {
 	dev    lowlevel.Device_Handle
-	config *gousb.Config      // Keep reference to prevent GC from releasing interface
-	iface  *gousb.Interface   // Keep reference to interface for transfers
+	config *gousb.Config    // Keep reference to prevent GC from releasing interface
+	iface  *gousb.Interface // Keep reference to interface for transfers
 
 	closed              int32 // atomic
 	normalTransferMutex sync.Mutex
@@ -420,7 +420,7 @@ func (d *LibUSBDevice) Close(disconnected bool) error {
 			d.finishReadQueue()
 		}
 	}
-	
+
 	iface := int(normalIface.number)
 	err := lowlevel.Release_Interface(d.dev, iface)
 	if err != nil {

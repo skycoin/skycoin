@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/gogo/protobuf/proto"
+
+	"github.com/skycoin/skycoin/src/cipher"
 
 	messages "github.com/skycoin/hardware-wallet-protob/go"
 )

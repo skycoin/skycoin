@@ -42,11 +42,11 @@ type Interface struct {
 }
 
 type Interface_Descriptor struct {
-	BInterfaceNumber   uint8
-	BAlternateSetting  uint8
-	BNumEndpoints      uint8
-	BInterfaceClass    uint8
-	Endpoint           []Endpoint_Descriptor
+	BInterfaceNumber  uint8
+	BAlternateSetting uint8
+	BNumEndpoints     uint8
+	BInterfaceClass   uint8
+	Endpoint          []Endpoint_Descriptor
 }
 
 type Endpoint_Descriptor struct {
@@ -57,7 +57,7 @@ type Endpoint_Descriptor struct {
 const (
 	CLASS_HID         = uint8(gousb.ClassHID)
 	CLASS_VENDOR_SPEC = uint8(gousb.ClassVendorSpec)
-	
+
 	ERROR_IO        = -1
 	ERROR_NO_DEVICE = -4
 	ERROR_OTHER     = -99
@@ -135,16 +135,16 @@ func Get_Config_Descriptor(dev Device, index uint8) (*Config_Descriptor, error) 
 	if dev == nil {
 		return nil, fmt.Errorf("device is nil")
 	}
-	
+
 	desc := dev.Desc
 	if desc == nil {
 		return nil, fmt.Errorf("device descriptor is nil")
 	}
-	
+
 	if len(desc.Configs) == 0 {
 		return nil, fmt.Errorf("device has no configs in descriptor")
 	}
-	
+
 	// gousb uses map[int]ConfigDesc where key is config number (usually 1-based)
 	// For index 0, we want config number 1 (the default/first config)
 	configNum := int(index) + 1
@@ -156,19 +156,19 @@ func Get_Config_Descriptor(dev Device, index uint8) (*Config_Descriptor, error) 
 			return nil, fmt.Errorf("config index %d (or %d) not found", index, configNum)
 		}
 	}
-	
+
 	result := &Config_Descriptor{
 		BNumInterfaces: uint8(len(cfg.Interfaces)),
 		Interface:      make([]Interface, len(cfg.Interfaces)),
 	}
-	
+
 	// Build interface descriptors
 	for i, iface := range cfg.Interfaces {
 		result.Interface[i] = Interface{
 			Num_altsetting: len(iface.AltSettings),
 			Altsetting:     make([]Interface_Descriptor, len(iface.AltSettings)),
 		}
-		
+
 		for j, alt := range iface.AltSettings {
 			numEndpoints := len(alt.Endpoints)
 			result.Interface[i].Altsetting[j] = Interface_Descriptor{
@@ -178,7 +178,7 @@ func Get_Config_Descriptor(dev Device, index uint8) (*Config_Descriptor, error) 
 				BInterfaceClass:   uint8(alt.Class),
 				Endpoint:          make([]Endpoint_Descriptor, numEndpoints),
 			}
-			
+
 			// Populate endpoint descriptors from map
 			// Endpoints is map[EndpointAddress]EndpointDesc
 			epIdx := 0
@@ -192,7 +192,7 @@ func Get_Config_Descriptor(dev Device, index uint8) (*Config_Descriptor, error) 
 			}
 		}
 	}
-	
+
 	return result, nil
 }
 
@@ -265,10 +265,10 @@ func Interrupt_Transfer(intf *gousb.Interface, endpoint uint8, data []byte, time
 	if intf == nil {
 		return nil, fmt.Errorf("interface is nil")
 	}
-	
+
 	// Determine if this is an IN or OUT endpoint
 	isIn := (endpoint & 0x80) != 0
-	
+
 	if isIn {
 		epIn, err := intf.InEndpoint(int(endpoint & 0x7F))
 		if err != nil {
@@ -297,15 +297,15 @@ func Get_Port_Numbers(dev Device, ports []byte) ([]byte, error) {
 	if dev == nil {
 		return nil, fmt.Errorf("device is nil")
 	}
-	
+
 	// Create a unique identifier from bus and address
 	bus, addr := dev.Desc.Bus, dev.Desc.Address
 	result := []byte{byte(bus), byte(addr)}
-	
+
 	if len(result) > len(ports) {
 		result = result[:len(ports)]
 	}
-	
+
 	copy(ports, result)
 	return result, nil
 }

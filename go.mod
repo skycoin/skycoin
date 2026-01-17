@@ -23,7 +23,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/skycoin/encodertest v0.0.0-20190217072920-14c2e31898b9
 	github.com/skycoin/hardware-wallet-protob v0.0.0-20250805154629-410561e1bc2f
-	github.com/skycoin/hardware-wallet/firmware v0.0.0-00010101000000-000000000000
+	github.com/skycoin/hardware-wallet/firmware v0.0.0-20260117000250-43c66b2bf1d2
 	github.com/skycoin/skycoin-lite v0.0.0-20190712083345-f5a3f17e6603
 	github.com/skycoin/skywire v1.3.33
 	github.com/spf13/cobra v1.10.2
@@ -98,7 +98,7 @@ require (
 //replace github.com/skycoin/hardware-wallet-daemon => ../hardware-wallet-daemon
 //replace github.com/skycoin/skycoin-lite => ../skycoin-lite
 //replace github.com/skycoin/skywire => ../skywire
-replace github.com/skycoin/hardware-wallet/firmware => ../hardware-wallet/firmware
+//replace github.com/skycoin/hardware-wallet/firmware => ../hardware-wallet/firmware
 
 // Below should reflect current versions of the following deps
 // To update deps to specific commit hash:

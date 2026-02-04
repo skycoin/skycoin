@@ -18,16 +18,20 @@ const (
 	hidapiPrefix = "hid"
 	hidUsagePage = 0xFF00
 	hidTimeout   = 50
-	HIDUse       = true
+	// HIDUse indicates whether HID is available on this platform.
+	HIDUse = true
 )
 
+// HIDAPI provides HID-based device communication on supported platforms.
 type HIDAPI struct {
 }
 
+// InitHIDAPI initializes a new HIDAPI instance.
 func InitHIDAPI() (*HIDAPI, error) {
 	return &HIDAPI{}, nil
 }
 
+// Enumerate lists all matching HID devices.
 func (b *HIDAPI) Enumerate(vendorID, productID uint16) ([]Info, error) {
 	var infos []Info
 
@@ -46,10 +50,12 @@ func (b *HIDAPI) Enumerate(vendorID, productID uint16) ([]Info, error) {
 	return infos, nil
 }
 
+// Has returns true if the path belongs to an HID device.
 func (b *HIDAPI) Has(path string) bool {
 	return strings.HasPrefix(path, hidapiPrefix)
 }
 
+// Connect opens a connection to the HID device at the given path.
 func (b *HIDAPI) Connect(path string) (Device, error) {
 	devs := lowlevel.HidEnumerate(0, 0)
 
@@ -86,10 +92,12 @@ func (b *HIDAPI) identify(dev *lowlevel.HidDeviceInfo) string {
 	return hidapiPrefix + hex.EncodeToString(digest[:])
 }
 
+// Close releases HID resources.
 func (b *HIDAPI) Close() {
 	// nothing
 }
 
+// HID represents an open HID device connection.
 type HID struct {
 	dev     *lowlevel.HidDevice
 	prepend bool // on windows, see detectPrepend
@@ -100,6 +108,7 @@ type HID struct {
 	// otherwise it segfaults on windows
 }
 
+// Close closes the HID device.
 func (d *HID) Close(disconnected bool) error {
 	atomic.StoreInt32(&d.closed, 1)
 

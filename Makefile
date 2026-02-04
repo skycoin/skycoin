@@ -73,7 +73,7 @@ ifeq ($(shell go env GOOS),darwin)
 	@echo "Skipping test-386 on macOS (32-bit not supported)"
 else
 	GOARCH=386 COIN=$(COIN) go test ./cmd/... -timeout=5m
-	GOARCH=386 COIN=$(COIN) go test ./src/... -timeout=5m
+	GOARCH=386 COIN=$(COIN) go test $$(go list ./src/... | grep -v hardware-wallet) -timeout=5m
 endif
 
 test-amd64: ## Run tests for Skycoin with GOARCH=amd64

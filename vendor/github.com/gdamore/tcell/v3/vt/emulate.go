@@ -1,8 +1,8 @@
 // Copyright 2026 The TCell Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use file except in compliance with the License.
-// You may obtain a copy of the license at
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
 //    http://www.apache.org/licenses/LICENSE-2.0
 //
@@ -16,6 +16,7 @@ package vt
 
 import (
 	"bytes"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -158,6 +159,9 @@ func NewEmulator(be Backend) Emulator {
 			PmAutoMargin:      ModeOn,
 			PmVT52:            ModeOnLocked, // we never support VT52 mode (note ON means ANSI mode)
 			PmLeftRightMargin: ModeOff,
+			PmShowCursor:      ModeOn,
+			PmBlinkCursor:     ModeOn,
+			PmWin32Input:      ModeOff,
 		},
 		mouseReports: MouseDisabled,
 	}
@@ -183,6 +187,8 @@ func NewEmulator(be Backend) Emulator {
 	em.cells = make([]Cell, int(em.size.X)*int(em.size.Y))
 	close(stopQ)
 	em.inb = em.inbInit
+	em.cursor = BlinkingBlock
+	em.be.SetCursor(em.cursor)
 	return em
 }
 
@@ -200,8 +206,10 @@ type emulator struct {
 	defaultStyle Style
 	utfLen       int
 	pos          Coord
+	buffering    uint           // reference count - number of (re-entrant) buffering calls
 	autoWrap     bool           // next character will wrap (auto margin, deferred until char emitted)
 	sevenOnly    bool           // only allow 7-bit escapes (needed for KOI8, ShiftJIS, etc.)
+	appKeyPad    bool           // use application key pad keys?
 	name         string         // name of this emulator (used for extended attributes)
 	vers         string         // version string of this emulator (used for extended attributes)
 	savedPos     Coord          // saved via DECSC
@@ -216,6 +224,7 @@ type emulator struct {
 	botMargin    Row            // bottom margin, scrollable region includes this row
 	ltMargin     Col            // left margin, scrollable region to the right
 	rtMargin     Col            // right margin, scrollable region to the left
+	cursor       CursorStyle    // current cursor style (visibility, blink, shape)
 
 	localModes map[PrivateMode]ModeStatus // some modes we handle locally
 	ansiModes  map[AnsiMode]ModeStatus    // some modes we handle locally
@@ -242,6 +251,20 @@ func (em *emulator) restoreCursor() {
 	em.setPosition(em.saved.pos)
 	em.autoWrap = em.saved.autoWrap
 	em.style = em.saved.style
+}
+
+func (em *emulator) bufferingStart() {
+	em.buffering++
+	if em.buffering == 1 {
+		em.be.Buffering(true)
+	}
+}
+
+func (em *emulator) bufferingEnd() {
+	em.buffering--
+	if em.buffering == 0 {
+		em.be.Buffering(false)
+	}
 }
 
 // inbInit processes bytes received in the "default" state. Most often these are just
@@ -312,6 +335,7 @@ func (em *emulator) inbInit(b byte) {
 
 // inbEsc processes the next byte after an escape character is seen.
 func (em *emulator) inbEsc(b byte) {
+
 	// By default, reset to init state. Other states will be set explicitly as needed.
 	em.inb = em.inbInit
 	em.lastIndex = 0
@@ -329,6 +353,10 @@ func (em *emulator) inbEsc(b byte) {
 		em.inb = em.inbStr
 	case '_': // application program command (APC)
 		em.inb = em.inbStr
+	case '=':
+		em.appKeyPad = true
+	case '>':
+		em.appKeyPad = false
 	case 'D': // down one line (IND)
 		em.processIndex()
 	case 'E': // next line (NEL)
@@ -800,6 +828,9 @@ func (em *emulator) processCursorBackTab(str string) {
 // processEraseDisplay implements ED.
 func (em *emulator) processEraseDisplay(str string) {
 	if pi, err := numericParams(str, 1); err == nil {
+		em.bufferingStart()
+		defer em.bufferingEnd()
+
 		switch pi[0] {
 		case 0: // erase below
 			em.eraseBelow()
@@ -815,6 +846,9 @@ func (em *emulator) processEraseDisplay(str string) {
 // processEraseLine implements EL.
 func (em *emulator) processEraseLine(str string) {
 	if pi, err := numericParams(str, 1); err == nil {
+		em.bufferingStart()
+		defer em.bufferingEnd()
+
 		switch pi[0] {
 		case 0:
 			em.eraseToLineEnd()
@@ -833,7 +867,10 @@ func (em *emulator) processEraseCharacter(str string) {
 		em.autoWrap = false
 		pos := em.pos
 		// TODO: delete wide character if we are splitting it at the start
+		em.bufferingStart()
+		defer em.bufferingEnd()
 		for range max(1, pi[0]) {
+
 			em.eraseCell(pos)
 			pos.X++
 			if pos.X >= em.size.X {
@@ -846,6 +883,8 @@ func (em *emulator) processEraseCharacter(str string) {
 // processScrollUp implements SU (VT420.)
 func (em *emulator) processScrollUp(str string) {
 	if pi, err := numericParams(str, 1); err == nil {
+		em.bufferingStart()
+		defer em.bufferingEnd()
 		for range max(pi[0], 1) {
 			// TODO: consider faster jump scroll.
 			// This should be something tunable as well.
@@ -857,6 +896,8 @@ func (em *emulator) processScrollUp(str string) {
 // processScrollDown implements SD (VT420.)
 func (em *emulator) processScrollDown(str string) {
 	if pi, err := numericParams(str, 1); err == nil {
+		em.bufferingStart()
+		defer em.bufferingEnd()
 		for range max(pi[0], 1) {
 			// TODO: consider faster jump scroll.
 			// This should be something tunable as well.
@@ -1031,6 +1072,9 @@ func (em *emulator) processDeleteCharacter(str string) {
 		em.pos.Y < em.topMargin || em.pos.Y > em.botMargin {
 		return
 	}
+	em.bufferingStart()
+	defer em.bufferingEnd()
+
 	if pi, err := numericParams(str, 1); err == nil {
 		em.autoWrap = false
 		num := Col(max(1, pi[0]))
@@ -1071,6 +1115,8 @@ func (em *emulator) processInsertCharacter(str string) {
 		em.pos.Y < em.topMargin || em.pos.Y > em.botMargin {
 		return
 	}
+	em.bufferingStart()
+	defer em.bufferingEnd()
 	if pi, err := numericParams(str, 1); err == nil {
 		num := Col(max(1, pi[0]))
 		num = min(num, em.rtMargin-em.pos.X+1)
@@ -1204,8 +1250,35 @@ func (em *emulator) processExtendedAttributes(str string) {
 	}
 }
 
+// processCursorStyle implements DECSCUSR (set cursor style).
+func (em *emulator) processCursorStyle(str string) {
+	// get previous visibility state, as we don't change it with this call.
+	visible := em.cursor.IsVisible()
+	if pi, err := numericParams(str, 1); err == nil {
+		switch pi[0] {
+		case 0, 1:
+			em.cursor = BlinkingBlock
+		case 2:
+			em.cursor = SteadyBlock
+		case 3:
+			em.cursor = BlinkingUnderline
+		case 4:
+			em.cursor = SteadyUnderline
+		case 5:
+			em.cursor = BlinkingBar
+		case 6:
+			em.cursor = SteadyBar
+		}
+		if !visible {
+			em.cursor = em.cursor.Hide()
+		}
+		em.be.SetCursor(em.cursor)
+	}
+}
+
 // processCsi processes CSI sequences.
 func (em *emulator) processCsi(final byte) {
+
 	// CSI sequences are supported in several different possible ways:
 	// parameters may have a prefix character that is not numeric, typically
 	// indicating a whole different mode of operation than the final byte.
@@ -1288,6 +1361,8 @@ func (em *emulator) processCsi(final byte) {
 		em.processVerticalMargins(str)
 	case "s":
 		em.processHorizontalMargins(str)
+	case " q":
+		em.processCursorStyle(str)
 	case "?W":
 		em.processTabReset(str)
 	case "?h":
@@ -1303,9 +1378,63 @@ func (em *emulator) processCsi(final byte) {
 	}
 }
 
+// processClipboard handles OSC 52 commands.
+func (em *emulator) processClipboard(str string) {
+	clipper, ok := em.be.(Clipboard)
+	if !ok {
+		return
+	}
+
+	// first parameter is the target.  We only have a single
+	// target, and alias all possibilities to the same.
+	parts := strings.SplitN(str, ";", 2)
+	if len(parts) != 2 {
+		return
+	}
+
+	if parts[1] == "?" {
+		// request for clipboard content
+		data := clipper.GetClipboard()
+		if data != nil {
+			em.SendRaw(fmt.Appendf(nil, "\x1b]52;c;%s\x1b\\", base64.StdEncoding.EncodeToString(data)))
+		}
+		return
+	}
+
+	buf := make([]byte, base64.StdEncoding.DecodedLen(len(parts[1])))
+	if n, err := base64.StdEncoding.Decode(buf, []byte(parts[1])); err == nil {
+		clipper.SetClipboard(buf[:n])
+		return
+	}
+
+	clipper.SetClipboard([]byte{})
+}
+
+// processHyperLink handles OSC 8 commands.
+func (em *emulator) processHyperLink(str string) {
+	// format is params;URI params are colon separated key value pairs.
+	// if the URI is absent, then the link is terminated.
+	parts := strings.SplitN(str, ";", 2)
+	if len(parts) == 2 {
+		if parts[1] == "" {
+			// No URI
+			em.style = em.style.WithUrl("", "")
+			return
+		}
+		url := parts[1]
+		id := ""
+		for pair := range strings.SplitSeq(parts[0], ":") {
+			if val, ok := strings.CutPrefix(pair, "id="); ok {
+				id = val
+			}
+		}
+		em.style = em.style.WithUrl(url, id)
+	}
+}
+
 // processOSC processes an operating system command.
-// TODO: add support for these - e.g. OSC 8 for hyperlinks, OSC 52 for clipboard access, etc.
 func (em *emulator) processOSC() {
+
 	// Every OSC we support has a number, semicolon, then string.
 	ns, str, ok := strings.Cut(em.inBuf.String(), ";")
 	if !ok {
@@ -1318,8 +1447,14 @@ func (em *emulator) processOSC() {
 		case 2: // Set window title
 			if t, ok := em.be.(Titler); ok {
 				// TODO: possibly validate the UTF-8 content?
+				em.bufferingStart()
+				defer em.bufferingEnd()
 				t.SetWindowTitle(str)
 			}
+		case 8:
+			em.processHyperLink(str)
+		case 52:
+			em.processClipboard(str)
 		}
 	}
 }
@@ -1423,6 +1558,9 @@ func (em *emulator) nextLine() {
 
 // blit performs a data move operation.  It does ignores margins.
 func (em *emulator) blit(src, dst, dim Coord) {
+
+	em.bufferingStart()
+	defer em.bufferingEnd()
 
 	// save the source and destination for the backend blit
 	bsrc := src
@@ -1780,6 +1918,7 @@ func (em *emulator) softReset() {
 	em.botMargin = em.size.Y - 1
 	em.ltMargin = 0
 	em.rtMargin = em.size.X - 1
+	em.appKeyPad = false
 	em.be.Reset()
 	// start by resetting all modes
 	for am := range em.ansiModes {
@@ -1791,6 +1930,10 @@ func (em *emulator) softReset() {
 	// and set any that should reset on (auto-margin)
 	em.setPrivateMode(PmAutoMargin, ModeOn)
 	em.setPrivateMode(PmShowCursor, ModeOn)
+	em.setPrivateMode(PmBlinkCursor, ModeOn)
+	// set default cursor - matches VT defaults
+	em.cursor = BlinkingBlock
+	em.be.SetCursor(em.cursor)
 	em.setPosition(Coord{0, 0})
 	em.eraseAll()
 }
@@ -1800,11 +1943,13 @@ func (em *emulator) sendDA() {
 	buf := &bytes.Buffer{}
 	_, _ = fmt.Fprintf(buf, "\x1b[?63")
 	if em.be.Colors() > 0 {
-		fmt.Fprintf(buf, ";22")
+		_, _ = fmt.Fprintf(buf, ";22")
+	}
+	if _, ok := em.be.(Clipboard); ok {
+		_, _ = fmt.Fprintf(buf, ";52")
 	}
 	// 9 for NRC?
 	// 15 for graphics?
-	// 52 for clipboard access?
 	buf.WriteRune('c')
 	em.SendRaw(buf.Bytes())
 }
@@ -1861,6 +2006,21 @@ func (em *emulator) setPrivateMode(pm PrivateMode, ms ModeStatus) {
 		switch pm {
 		case PmMouseButton, PmMouseDrag, PmMouseMotion, PmMouseSgr, PmMouseSgrPixel, PmMouseX10:
 			em.updateMouseReporting()
+		case PmShowCursor:
+			if ms == ModeOn {
+				em.cursor = em.cursor.Show()
+			} else {
+				em.cursor = em.cursor.Hide()
+			}
+			em.be.SetCursor(em.cursor)
+		case PmBlinkCursor:
+			if ms == ModeOn {
+				em.cursor = em.cursor.Blink()
+			} else {
+				em.cursor = em.cursor.Steady()
+
+			}
+			em.be.SetCursor(em.cursor)
 		}
 	} else if em.be.GetPrivateMode(pm).Changeable() {
 		_ = em.be.SetPrivateMode(pm, ms)
@@ -1898,6 +2058,12 @@ func (em *emulator) SendRaw(b []byte) {
 
 // KeyEvent injects a keyboard event into the emulator
 func (em *emulator) KeyEvent(ev KeyEvent) {
+	// eliminate "control" keys (which keyboard maps provide) from consideration.
+	// (We handle control keys explicitly.)
+	if ev.Utf != "" && ev.Utf[0] < ' ' {
+		ev.Utf = ""
+	}
+
 	// TODO: more add support for other keyboard protocols, right now we only do legacy
 	em.keyLegacy(ev)
 }
@@ -1912,77 +2078,90 @@ func (em *emulator) ResizeEvent(size Coord) {
 	}
 }
 
-var legacyKeys = map[KeyCode]struct {
+var legacyKeys = map[Key]struct {
 	K  string // unmodified key
 	A  string // unmodified in application cursor mode (smkx)
 	S  string // with shift (if empty use regular modifier)
 	C  string // with control (if empty use regular modifier)
 	CS string // with ctrl-shift
 }{
-	KcF1:        {K: "\x1bOP"}, // SS3 P
-	KcF2:        {K: "\x1bOQ"}, // SS3 Q
-	KcF3:        {K: "\x1bOR"}, // SS3 R
-	KcF4:        {K: "\x1bOS"}, // SS3 S
-	KcF5:        {K: "\x1b[15~"},
-	KcF6:        {K: "\x1b[17~"},
-	KcF7:        {K: "\x1b[18~"},
-	KcF8:        {K: "\x1b[19~"},
-	KcF9:        {K: "\x1b[20~"},
-	KcF10:       {K: "\x1b[21~"},
-	KcF11:       {K: "\x1b[23~"},
-	KcF12:       {K: "\x1b[24~"},
-	KcF13:       {K: "\x1b[25~"},
-	KcF14:       {K: "\x1b[26~"},
-	KcF15:       {K: "\x1b[28~"},
-	KcF16:       {K: "\x1b[29~"},
-	KcF17:       {K: "\x1b[31~"},
-	KcF18:       {K: "\x1b[32~"},
-	KcF19:       {K: "\x1b[33~"},
-	KcF20:       {K: "\x1b[34~"},
-	KcUp:        {K: "\x1b[A", A: "\x1bOA"},
-	KcDown:      {K: "\x1b[B", A: "\x1bOB"},
-	KcRight:     {K: "\x1b[C", A: "\x1bOC"},
-	KcLeft:      {K: "\x1b[D", A: "\x1bOD"},
-	KcHome:      {K: "\x1b[H", A: "\x1bOH"},
-	KcEnd:       {K: "\x1b[F", A: "\x1bOF"},
-	KcPgUp:      {K: "\x1b[5~"},
-	KcPgDn:      {K: "\x1b[6~"},
-	KcDel:       {K: "\x1b[3~"},
-	KcIns:       {K: "\x1b[2~"},
-	KcHelp:      {K: "\x1b[28~"}, // also F15
-	KcMenu:      {K: "\x1b[29~"}, // also F16
-	KcTab:       {K: "\t", S: "\x1b[Z", CS: "\x1b[Z"},
-	KcBackspace: {K: "\x7f", S: "\x7f", C: "\x08", CS: "\x08"},
-	KcDelete:    {K: "\x08", S: "\x08", C: "\x7f", CS: "\x7f"},
-	KcSpace:     {K: " ", S: " ", C: "\x00", CS: "\x00"},
-	KcReturn:    {K: "\r", S: "\r", CS: "\r"},
-	KcEsc:       {K: "\x1b", S: "\x1b", C: "\x1b"},
-
-	// These ones are weird legacy control sequences that we mostly
-	// do not care about.  We don't include shifted variants.
-	KeyCode('2'): {K: "2", C: "\x00"},
-	KeyCode('3'): {K: "3", C: "\x1b"},
-	KeyCode('4'): {K: "4", C: "\x1c"},
-	KeyCode('5'): {K: "5", C: "\x1d"},
-	KeyCode('6'): {K: "6", C: "\x1e"},
-	KeyCode('7'): {K: "7", C: "\x1f"},
-	KeyCode('8'): {K: "8", C: "\x7f"},
-	KeyCode('['): {K: "[", C: "\x1b"},
-	KeyCode('/'): {K: "/", C: "\x1c"},
-	KeyCode(']'): {K: "]", C: "\x1d"},
-	KeyCode('~'): {K: "~", C: "\x1e"},
-	KeyCode('?'): {K: "?", C: "\x1f"},
+	KeyF1:        {K: "\x1bOP"}, // SS3 P
+	KeyF2:        {K: "\x1bOQ"}, // SS3 Q
+	KeyF3:        {K: "\x1bOR"}, // SS3 R
+	KeyF4:        {K: "\x1bOS"}, // SS3 S
+	KeyF5:        {K: "\x1b[15~"},
+	KeyF6:        {K: "\x1b[17~"},
+	KeyF7:        {K: "\x1b[18~"},
+	KeyF8:        {K: "\x1b[19~"},
+	KeyF9:        {K: "\x1b[20~"},
+	KeyF10:       {K: "\x1b[21~"},
+	KeyF11:       {K: "\x1b[23~"},
+	KeyF12:       {K: "\x1b[24~"},
+	KeyF13:       {K: "\x1b[25~"},
+	KeyF14:       {K: "\x1b[26~"},
+	KeyF15:       {K: "\x1b[28~"},
+	KeyF16:       {K: "\x1b[29~"},
+	KeyF17:       {K: "\x1b[31~"},
+	KeyF18:       {K: "\x1b[32~"},
+	KeyF19:       {K: "\x1b[33~"},
+	KeyF20:       {K: "\x1b[34~"},
+	KeyUp:        {K: "\x1b[A", A: "\x1bOA"},
+	KeyDown:      {K: "\x1b[B", A: "\x1bOB"},
+	KeyRight:     {K: "\x1b[C", A: "\x1bOC"},
+	KeyLeft:      {K: "\x1b[D", A: "\x1bOD"},
+	KeyHome:      {K: "\x1b[H", A: "\x1bOH"},
+	KeyEnd:       {K: "\x1b[F", A: "\x1bOF"},
+	KeyPgUp:      {K: "\x1b[5~"},
+	KeyPgDn:      {K: "\x1b[6~"},
+	KeyDelete:    {K: "\x1b[3~"},
+	KeyInsert:    {K: "\x1b[2~"},
+	KeyMenu:      {K: "\x1b[29~"}, // also F16
+	KeyTab:       {K: "\t", S: "\x1b[Z", CS: "\x1b[Z"},
+	KeyBackspace: {K: "\x7f", S: "\x7f", C: "\x08", CS: "\x08"},
+	KeySpace:     {K: " ", S: " ", C: "\x00", CS: "\x00"},
+	KeyEnter:     {K: "\r", S: "\r", CS: "\r"}, // NB: consider using kitty encoding here
+	KeyPadEnter:  {K: "\r", S: "\r", CS: "\r"}, // NB: consider using kitty encoding here
+	KeyEsc:       {K: "\x1b", S: "\x1b", C: "\x1b"},
 }
 
-// toASCIIUpper returns the equivalent upper case ASCII (and true),
-// if the input is an ASCII letter.  Otherwise it returns 0, false.
-func toASCIIUpper(r rune) (rune, bool) {
-	if r >= 'a' && r <= 'z' {
-		return (r - 32), true
-	} else if r >= 'A' && r <= 'Z' {
-		return r, true
-	}
-	return 0, false
+var legacyControls = map[Key]string{
+	// These ones are weird legacy control sequences that we mostly
+	// do not care about.  We don't include shifted variants.
+	Key2:      "\x00",
+	Key3:      "\x1b",
+	Key4:      "\x1c",
+	Key5:      "\x1d",
+	Key6:      "\x1e",
+	Key7:      "\x1f",
+	Key8:      "\x7f",
+	KeyLBrace: "\x1b",
+	KeySlash:  "\x1c",
+	KeyRBrace: "\x1d",
+}
+
+// legacyPadKeys are keys that are on the keypad, when not in numeric keypad mode.
+// Note that num lock overrides this.
+var legacyPadKeys = map[Key]struct {
+	app string
+	num string
+}{
+	KeyPadEnter: {"\x1bOM", "\r"},
+	KeyPadMul:   {"\x1bOj", "*"},
+	KeyPadAdd:   {"\x1bOk", "+"},
+	KeyPadSub:   {"\x1bOm", "-"},
+	KeyPadDiv:   {"\x1bOo", "/"},
+	KeyPadDec:   {"\x1b[3~", "."}, // Del
+	KeyPad0:     {"\x1b[2~", "0"}, // Ins
+	KeyPad1:     {"\x1bOF", "1"},  // End
+	KeyPad2:     {"\x1b[B", "2"},  // Down
+	KeyPad3:     {"\x1b[6~", "3"}, // PgDn
+	KeyPad4:     {"\x1b[D", "4"},  // Left
+	KeyPad5:     {"\x1b[E", "5"},  // Clear/Begin
+	KeyPad6:     {"\x1b[C", "6"},  // Right
+	KeyPad7:     {"\x1bOH", "7"},  // Home
+	KeyPad8:     {"\x1b[A", "8"},  // Up
+	KeyPad9:     {"\x1b[5~", "9"}, // PgUp
+	KeyPadEqual: {"\x1bOX", "="},
 }
 
 // keyLegacy handles a keyboard event when in legacy vt220 style mode.
@@ -1994,7 +2173,53 @@ func (em *emulator) keyLegacy(ev KeyEvent) {
 		return
 	}
 
-	if v, ok := legacyKeys[ev.Code]; ok {
+	// Shift-Ctrl keys are never sent in the legacy protocol.  We do have to ensure
+	// that if we are sending other Utf (for example with AltGr), then we still might
+	// send it, but this is only an issue for non-ASCII runes. Also, this filter only
+	// applies for "regular" keys (i.e. not function keys, cursor keys, etc.)
+	if ev.Mod&(ModCtrl|ModShift) == (ModCtrl|ModShift) && (ev.Utf == "" || ev.Utf[0] < 0x80) {
+		if base := ev.Key.KittyBase(); base >= ' ' && base < 0x80 {
+			return
+		}
+	}
+
+	// keypad sequences
+	if v, ok := legacyPadKeys[ev.Key]; ok {
+		if ev.Mod&ModNumLock == 0 {
+			if em.appKeyPad {
+				em.SendRaw([]byte(v.app))
+			} else {
+				em.SendRaw([]byte(v.num))
+			}
+			return
+		} else {
+			ev.Utf = v.num
+		}
+	}
+
+	// For control keys (e.g. control-J) we never emit a rune directly -- but we might later
+	// add after decoding the key accordingly.
+	if ev.Utf != "" && (ev.Mod == ModCtrl || ev.Utf[0] < ' ') {
+		ev.Utf = ""
+	}
+
+	if ev.Utf != "" {
+		if ev.Utf[0] < 0x80 && ev.Mod&ModAlt != 0 { // ASCII might get alt
+			em.SendRaw(fmt.Appendf(nil, "\x1b%s", ev.Utf))
+			return
+		} else { // otherwise send the UTF as-is
+			em.SendRaw([]byte(ev.Utf))
+			return
+		}
+	}
+
+	// some weird number control sequences - legacy compatibility
+	if v, ok := legacyControls[ev.Key]; ok && ev.Mod == ModCtrl {
+		em.SendRaw([]byte(v))
+		return
+	}
+
+	if v, ok := legacyKeys[ev.Key]; ok {
 		str := ""
 		match := false
 		switch ev.Mod & (ModShift | ModCtrl) {
@@ -2050,21 +2275,13 @@ func (em *emulator) keyLegacy(ev KeyEvent) {
 	}
 
 	// fallback control key handling
-	if u, ok := toASCIIUpper(rune(ev.Code)); ok && ev.Mod&ModCtrl != 0 {
-		b := byte(u) - 'A' + 1
+	if ev.Key >= KeyA && ev.Key <= KeyZ && ev.Mod&ModCtrl != 0 {
+		b := byte(ev.Key-KeyA) + 1 /* ctrl-A */
 		if ev.Mod&ModAlt != 0 {
 			em.SendRaw([]byte{'\x1b', b})
 		} else {
 			em.SendRaw([]byte{b})
 		}
-		return
-	}
-
-	if ev.Code > KcSpace && ev.Code < 0x7F && ev.Mod&ModCtrl == ModNone {
-		if ev.Mod&ModAlt != 0 {
-			em.SendRaw([]byte{'\x1b'})
-		}
-		em.SendRaw([]byte{byte(ev.Code)})
 		return
 	}
 }

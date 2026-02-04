@@ -139,7 +139,16 @@ func init() {
 	}
 	// Use lowercase for ASCII art and wallet text
 	coinNameLower := strings.ToLower(coinName)
-	RootCmd.Long = calvin.AsciiFont(coinNameLower) + "\n " + coinNameLower + " wallet"
+	RootCmd.Long = calvin.AsciiFont(coinNameLower) + "\n " + coinNameLower + " wallet" + `
+
+Environment variables:
+  FIBER_TOML             Path to a fiber.toml file to load custom fibercoin configuration.
+                         Sets default values before CLI flags are applied; flags override.
+  GENESIS                Path to a genesis wallet JSON file (address, pubkey, seckey).
+                         Takes precedence over fiber.toml genesis values.
+  USER_BURN_FACTOR       Coinhour burn factor for user-created transactions.
+  USER_MAX_TXN_SIZE      Maximum transaction size in bytes for user-created transactions.
+  USER_MAX_DECIMALS      Maximum decimal places for droplet precision (max 6).`
 
 	nodeConfig.RegisterFlags(RootCmd)
 }

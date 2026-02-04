@@ -228,8 +228,8 @@ func walletCreateHandler(gateway Gatewayer) http.HandlerFunc {
 
 		walletType := r.FormValue("type")
 		if walletType == "" {
-			wh.Error400(w, "missing type")
-			return
+			// Default to deterministic for backwards compatibility with older GUIs
+			walletType = wallet.WalletTypeDeterministic
 		}
 
 		seed := r.FormValue("seed")
@@ -363,8 +363,8 @@ func walletCreateTempHandler(gateway Gatewayer) http.HandlerFunc {
 
 		walletType := r.FormValue("type")
 		if walletType == "" {
-			wh.Error400(w, "missing type")
-			return
+			// Default to deterministic for backwards compatibility with older GUIs
+			walletType = wallet.WalletTypeDeterministic
 		}
 
 		seed := r.FormValue("seed")

@@ -201,6 +201,15 @@ only for the nil-values).
 
 	Usage: omitnil
 
+# Omit Zero
+
+Allows to skip the validation if the value is a zero value.
+For pointers, it checks if the pointer is nil or the underlying value is a zero value.
+For slices and maps, it checks if the value is nil or empty.
+Otherwise, behaves the same as omitempty.
+
+	Usage: omitzero
+
 # Dive
 
 This tells the validator to dive into a slice, array or map and validate that
@@ -1268,6 +1277,15 @@ This validates that a string value contains a valid resolvable v6 IP Address.
 This validates that a string value contains a valid Unix Address.
 
 	Usage: unix_addr
+
+# Unix Domain Socket Exists
+
+This validates that a Unix domain socket file exists at the specified path.
+It checks both filesystem-based sockets and Linux abstract sockets (prefixed with @).
+For filesystem sockets, it verifies the path exists and is a socket file.
+For abstract sockets on Linux, it checks /proc/net/unix.
+
+	Usage: uds_exists
 
 # Media Access Control Address MAC
 

@@ -1,0 +1,53 @@
+package cli
+
+import (
+	"fmt"
+	"os"
+	"runtime"
+
+	"github.com/spf13/cobra"
+
+	skyWallet "github.com/skycoin/skycoin/src/hardware-wallet/skywallet"
+)
+
+func init() {
+	getMixedEntropyCmd.Flags().IntVar(&entropyBytes, "entropyBytes", 1048576, "Number of how many bytes of entropy to read.")
+	getMixedEntropyCmd.Flags().StringVar(&deviceType, "deviceType", "USB", "Device type to send instructions to, hardware wallet (USB) or emulator.")
+}
+
+var getMixedEntropyCmd = &cobra.Command{
+	Use:   "getMixedEntropy",
+	Short: "Get device internal mixed entropy and write it down to a file",
+	RunE: func(_ *cobra.Command, _ []string) error {
+		device := skyWallet.NewDevice(skyWallet.DeviceTypeFromString(deviceType))
+		if device == nil {
+			return fmt.Errorf("failed to create device")
+		}
+		defer device.Close()
+
+		if os.Getenv("AUTO_PRESS_BUTTONS") == "1" && device.Driver.DeviceType() == skyWallet.DeviceTypeEmulator && runtime.GOOS == "linux" {
+			err := device.SetAutoPressButton(true, skyWallet.ButtonRight)
+			if err != nil {
+				return err
+			}
+		}
+
+		entropy, err := skyWallet.MessageDeviceGetMixedEntropy(uint32(entropyBytes))
+		if err != nil {
+			return err
+		}
+
+		var entropyData []byte
+		for _, chunk := range entropy {
+			entropyData = append(entropyData, chunk[:]...)
+		}
+
+		err = os.WriteFile("/tmp/entropy.dump", entropyData, 0600) //nolint:gosec // writing entropy dump to well-known tmp path is intentional
+		if err != nil {
+			return err
+		}
+
+		fmt.Println("Mixed entropy dumped to: /tmp/entropy.dump")
+		return nil
+	},
+}

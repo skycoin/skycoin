@@ -1,3 +1,4 @@
+// Package daemon provides the hardware wallet daemon server.
 package daemon
 
 import (

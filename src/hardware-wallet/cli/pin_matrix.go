@@ -27,11 +27,11 @@ func PinMatrix() (string, error) {
 
 	// Style definitions
 	defStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.ColorReset)
-	boxStyle := tcell.StyleDefault.Background(tcell.ColorDarkBlue).Foreground(tcell.ColorWhite)
-	selectedStyle := tcell.StyleDefault.Background(tcell.ColorGreen).Foreground(tcell.ColorBlack)
-	titleStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.ColorYellow).Bold(true)
-	pinStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.ColorGreen)
-	helpStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.ColorGray)
+	boxStyle := tcell.StyleDefault.Background(tcell.NewRGBColor(0, 0, 139)).Foreground(tcell.NewRGBColor(255, 255, 255))
+	selectedStyle := tcell.StyleDefault.Background(tcell.NewRGBColor(0, 128, 0)).Foreground(tcell.NewRGBColor(0, 0, 0))
+	titleStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.NewRGBColor(255, 255, 0)).Bold(true)
+	pinStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.NewRGBColor(0, 128, 0))
+	helpStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.NewRGBColor(128, 128, 128))
 
 	screen.SetStyle(defStyle)
 	screen.Clear()
@@ -157,7 +157,7 @@ func PinMatrix() (string, error) {
 		case *tcell.EventKey:
 			switch ev.Key() {
 			case tcell.KeyEscape:
-				return "", fmt.Errorf("cancelled")
+				return "", fmt.Errorf("canceled")
 
 			case tcell.KeyEnter, tcell.KeyCtrlJ:
 				if len(pin) < 9 {
@@ -202,7 +202,7 @@ func PinMatrix() (string, error) {
 							pin += string(posToDigit[cursorPos])
 						}
 					case 'q', 'Q':
-						return "", fmt.Errorf("cancelled")
+						return "", fmt.Errorf("canceled")
 					case '1', '2', '3', '4', '5', '6', '7', '8', '9':
 						// Direct digit entry (for testing/convenience)
 						if len(pin) < 9 {
@@ -238,11 +238,11 @@ func PinMatrixSimple() (string, error) {
 	screen.EnableMouse()
 
 	defStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.ColorReset)
-	boxStyle := tcell.StyleDefault.Background(tcell.ColorDarkBlue).Foreground(tcell.ColorWhite)
-	selectedStyle := tcell.StyleDefault.Background(tcell.ColorGreen).Foreground(tcell.ColorBlack)
-	titleStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.ColorYellow).Bold(true)
-	pinStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.ColorGreen)
-	helpStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.ColorGray)
+	boxStyle := tcell.StyleDefault.Background(tcell.NewRGBColor(0, 0, 139)).Foreground(tcell.NewRGBColor(255, 255, 255))
+	selectedStyle := tcell.StyleDefault.Background(tcell.NewRGBColor(0, 128, 0)).Foreground(tcell.NewRGBColor(0, 0, 0))
+	titleStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.NewRGBColor(255, 255, 0)).Bold(true)
+	pinStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.NewRGBColor(0, 128, 0))
+	helpStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.NewRGBColor(128, 128, 128))
 
 	screen.SetStyle(defStyle)
 
@@ -381,7 +381,7 @@ func PinMatrixSimple() (string, error) {
 		case *tcell.EventKey:
 			switch ev.Key() {
 			case tcell.KeyEscape:
-				return "", fmt.Errorf("cancelled")
+				return "", fmt.Errorf("canceled")
 			case tcell.KeyEnter:
 				if len(pin) > 0 {
 					submitted = true
@@ -415,7 +415,7 @@ func PinMatrixSimple() (string, error) {
 							pin += string(posToDigit[cursorPos])
 						}
 					case 'q', 'Q':
-						return "", fmt.Errorf("cancelled")
+						return "", fmt.Errorf("canceled")
 					}
 				}
 			}

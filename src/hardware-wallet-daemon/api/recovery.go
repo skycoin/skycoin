@@ -40,7 +40,7 @@ func recovery(gateway Gatewayer) http.HandlerFunc {
 			writeHTTPResponse(w, resp)
 			return
 		}
-		defer func() { _ = r.Body.Close() }()
+		defer r.Body.Close() //nolint:errcheck
 
 		// for integration tests
 		if autoPressEmulatorButtons {

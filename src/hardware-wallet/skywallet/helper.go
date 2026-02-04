@@ -278,7 +278,7 @@ func sendToDevice(dev usb.Device, chunks [][64]byte) (result wire.Message, retEr
 		if err != nil {
 			return wire.Message{}, err
 		}
-		if success.MsgType != nil && *success.MsgType == messages.MessageType(messages.MessageType_MessageType_EntropyAck) {
+		if success.MsgType != nil && *success.MsgType == messages.MessageType_MessageType_EntropyAck {
 			msg, err = wire.ReadFrom(dev)
 			if err != nil {
 				return wire.Message{}, err
@@ -301,8 +301,8 @@ func binaryWrite(message io.Writer, data interface{}) {
 func makeSkyWalletMessage(data []byte, msgID messages.MessageType) [][64]byte {
 	message := new(bytes.Buffer)
 	binaryWrite(message, []byte("##"))
-	binaryWrite(message, uint16(msgID))
-	binaryWrite(message, uint32(len(data)))
+	binaryWrite(message, uint16(msgID))     //nolint:gosec // protocol message IDs fit in uint16
+	binaryWrite(message, uint32(len(data))) //nolint:gosec // data length fits in uint32
 	binaryWrite(message, []byte("\n"))
 	if len(data) > 0 {
 		binaryWrite(message, data[1:])

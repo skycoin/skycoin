@@ -92,18 +92,18 @@ func transactionSkycoinSign(device *skyWallet.Device, inputs, outputs []string, 
 
 	for i, input := range inputs {
 		transactionInputs = append(transactionInputs, &messages.TxAck_TransactionType_TxInputType{
-			AddressN: []uint32{*proto.Uint32(uint32((inputIndex)[i]))},
+			AddressN: []uint32{*proto.Uint32(uint32((inputIndex)[i]))}, //nolint:gosec // index fits in uint32
 			HashIn:   proto.String(input),
 		})
 	}
 	for i, output := range outputs {
 		transactionOutputs = append(transactionOutputs, &messages.TxAck_TransactionType_TxOutputType{
 			Address: proto.String(output),
-			Coins:   proto.Uint64(uint64((coins)[i])),
-			Hours:   proto.Uint64(uint64((hours)[i])),
+			Coins:   proto.Uint64(uint64((coins)[i])), //nolint:gosec // coin values from CLI args are validated
+			Hours:   proto.Uint64(uint64((hours)[i])), //nolint:gosec // hour values from CLI args are validated
 		})
 		if i < len(addressIndex) {
-			transactionOutputs[len(transactionOutputs)-1].AddressN = []uint32{uint32((addressIndex)[i])}
+			transactionOutputs[len(transactionOutputs)-1].AddressN = []uint32{uint32((addressIndex)[i])} //nolint:gosec // index fits in uint32
 		}
 	}
 	signer := skyWallet.SkycoinTransactionSigner{
@@ -140,8 +140,8 @@ func transactionSkycoinSign(device *skyWallet.Device, inputs, outputs []string, 
 		}
 		txn.Out = append(txn.Out, coin.TransactionOutput{
 			Address: addr,
-			Coins:   uint64(coins[i]),
-			Hours:   uint64(hours[i]),
+			Coins:   uint64(coins[i]), //nolint:gosec // coin values from CLI args
+			Hours:   uint64(hours[i]), //nolint:gosec // hour values from CLI args
 		})
 	}
 
@@ -180,7 +180,7 @@ func transactionBitcoinSign(device *skyWallet.Device, prevHashes, outputs []stri
 	var transactionOutputs []*messages.BitcoinTransactionOutput
 	for i, prevHash := range prevHashes {
 		var transactionInput messages.BitcoinTransactionInput
-		transactionInput.AddressN = proto.Uint32(uint32(inputIndex[i]))
+		transactionInput.AddressN = proto.Uint32(uint32(inputIndex[i])) //nolint:gosec // index fits in uint32
 		decoded, err := hex.DecodeString(prevHash)
 		if err != nil {
 			return err
@@ -191,9 +191,9 @@ func transactionBitcoinSign(device *skyWallet.Device, prevHashes, outputs []stri
 	for i, output := range outputs {
 		var transactionOutput messages.BitcoinTransactionOutput
 		transactionOutput.Address = proto.String(output)
-		transactionOutput.Coin = proto.Uint64(uint64(coins[i]))
+		transactionOutput.Coin = proto.Uint64(uint64(coins[i])) //nolint:gosec // coin values from CLI args
 		if i < len(addressIndex) {
-			transactionOutput.AddressIndex = proto.Uint32(uint32(addressIndex[i]))
+			transactionOutput.AddressIndex = proto.Uint32(uint32(addressIndex[i])) //nolint:gosec // index fits in uint32
 		}
 		transactionOutputs = append(transactionOutputs, &transactionOutput)
 	}

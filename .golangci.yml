@@ -59,7 +59,16 @@ linters:
       - builtin$
       - examples$
       - cmd/hardware-wallet
+      - src/hardware-wallet/usb/lowlevel/
+      - src/cipher/debug_
+      - src/cipher/secp256k1-go/debug_
     rules:
+      - linters:
+          - revive
+        text: "var-naming: avoid meaningless package names"
+      - linters:
+          - revive
+        text: "var-naming: avoid package names that conflict with Go standard library"
       - linters:
           - misspell
         path: src/cipher/bip39/wordlists/

@@ -183,6 +183,18 @@ func (d *Device) Disconnect() error {
 	return nil
 }
 
+// ReadResponse reads the next message from the device (for streaming responses)
+func (d *Device) ReadResponse() (wire.Message, error) {
+	if d.dev == nil {
+		return wire.Message{}, errors.New("device not connected")
+	}
+	msg, err := wire.ReadFrom(d.dev)
+	if err != nil {
+		return wire.Message{}, err
+	}
+	return *msg, nil
+}
+
 // GetUsbInfo returns information from the attached usb
 func (d *Device) GetUsbInfo() ([]usb.Info, error) {
 	if d.Driver.DeviceType() == DeviceTypeUSB {
@@ -219,13 +231,36 @@ func (d *Device) AddressGen(addressN, startIndex uint32, confirmAddress bool, co
 	return d.Driver.SendToDevice(d.dev, addressGenChunks)
 }
 
+// AddressGenStart starts streaming address generation. Returns first response.
+// Caller must call ReadResponse() for subsequent addresses and Disconnect() when done.
+func (d *Device) AddressGenStart(addressN, startIndex uint32, confirmAddress bool, coinType CoinType) (wire.Message, error) {
+	if err := d.Connect(); err != nil {
+		return wire.Message{}, err
+	}
+	// Note: No defer Disconnect - caller manages connection for streaming
+
+	if addressN == 0 {
+		return wire.Message{}, ErrAddressNZero
+	}
+
+	addressGenChunks, err := MessageAddressGen(addressN, startIndex, confirmAddress, coinType)
+	if err != nil {
+		_ = d.Disconnect() //nolint:errcheck // best-effort cleanup on error
+		return wire.Message{}, err
+	}
+
+	msg, err := d.Driver.SendToDevice(d.dev, addressGenChunks)
+	if err != nil {
+		_ = d.Disconnect() //nolint:errcheck // best-effort cleanup on error
+		return wire.Message{}, err
+	}
+	return msg, nil
+}
+
 // SaveDeviceEntropyInFile Ask the device to generate entropy and save it in a file
 // if `outFile` is the "-" string, the output file is considered stdout
 func (d *Device) SaveDeviceEntropyInFile(outFile string, entropyBytes uint32, getEntropyMsgBuilder func(entropyBytes uint32) ([][64]byte, error)) error {
-	usingStdout := false
-	if outFile == "-" {
-		usingStdout = true
-	}
+	usingStdout := outFile == "-"
 	if !usingStdout {
 		log.Infoln("Saving entropy to", outFile)
 	}
@@ -320,18 +355,17 @@ func (d *Device) SaveDeviceEntropyInFile(outFile string, entropyBytes uint32, ge
 			}
 		}()
 		if _, err := os.Stat(outFile); err == nil {
-			// nolint: gosec
-			if err = os.Chmod(outFile, 0777); err != nil {
+			if err = os.Chmod(outFile, 0600); err != nil { //nolint:gosec // need write access to overwrite existing entropy file
 				log.Errorf("error with %s %s", outFile, err)
 			}
 		}
-		file, err := os.Create(outFile)
+		file, err := os.Create(outFile) //nolint:gosec // outFile is user-specified entropy output path
 		if err != nil {
 			log.Errorf("error creating output file %s", err)
 			return err
 		}
 		defer func() {
-			if err := os.Chmod(outFile, 0444); err != nil {
+			if err := os.Chmod(outFile, 0444); err != nil { //nolint:gosec // intentionally setting read-only permissions on entropy file
 				log.Error(err)
 			}
 		}()
@@ -370,7 +404,7 @@ func (d *Device) SaveDeviceEntropyInFile(outFile string, entropyBytes uint32, ge
 		return err
 	}
 
-	receivedEntropyBytes = uint32(len(entropy.GetEntropy()))
+	receivedEntropyBytes = uint32(len(entropy.GetEntropy())) //nolint:gosec // entropy length fits in uint32
 	if err := processBytes(entropy.GetEntropy()); err != nil {
 		log.Errorf("error writing file %s.\n %s", outFile, err.Error())
 		return err
@@ -382,7 +416,7 @@ func (d *Device) SaveDeviceEntropyInFile(outFile string, entropyBytes uint32, ge
 			log.Error(err)
 			return err
 		}
-		receivedEntropyBytes += uint32(len(entropy.GetEntropy()))
+		receivedEntropyBytes += uint32(len(entropy.GetEntropy())) //nolint:gosec // entropy length fits in uint32
 		if err := processBytes(entropy.GetEntropy()); err != nil {
 			log.Errorf("error writing file %s.\n %s", outFile, err.Error())
 			return err
@@ -580,7 +614,7 @@ func (d *Device) FirmwareUpload(payload []byte, hash [32]byte) error {
 		return err
 	}
 
-	log.Printf("Length of firmware %d", uint32(len(payload)))
+	log.Printf("Length of firmware %d", uint32(len(payload))) //nolint:gosec // payload length fits in uint32
 
 	chunks, err := MessageFirmwareErase(payload)
 	if err != nil {

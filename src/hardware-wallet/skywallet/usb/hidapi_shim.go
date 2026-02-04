@@ -5,42 +5,53 @@
 
 package usb
 
+// HIDUse indicates whether HID is available on this platform.
 const HIDUse = false
 
+// HIDAPI is a stub HID API for platforms where HID is not supported.
 type HIDAPI struct {
 }
 
+// InitHIDAPI returns a stub HIDAPI instance.
 func InitHIDAPI() (*HIDAPI, error) {
 	return &HIDAPI{}, nil
 }
 
-func (b *HIDAPI) Enumerate(vendorID, productID uint16) ([]Info, error) {
+// Enumerate is not implemented on this platform.
+func (b *HIDAPI) Enumerate(_, _ uint16) ([]Info, error) {
 	panic("not implemented for linux and freebsd")
 }
 
-func (b *HIDAPI) Has(path string) bool {
+// Has is not implemented on this platform.
+func (b *HIDAPI) Has(_ string) bool {
 	panic("not implemented for linux and freebsd")
 }
 
-func (b *HIDAPI) Connect(path string) (Device, error) {
+// Connect is not implemented on this platform.
+func (b *HIDAPI) Connect(_ string) (Device, error) {
 	return &HID{}, nil
 }
 
+// HID is a stub HID device for platforms where HID is not supported.
 type HID struct {
 }
 
-func (d *HID) Close(disconnected bool) error {
+// Close is not implemented on this platform.
+func (d *HID) Close(_ bool) error {
 	panic("not implemented for linux and freebsd")
 }
 
-func (d *HID) Write(buf []byte) (int, error) {
+// Write is not implemented on this platform.
+func (d *HID) Write(_ []byte) (int, error) {
 	panic("not implemented for linux and freebsd")
 }
 
-func (d *HID) Read(buf []byte) (int, error) {
+// Read is not implemented on this platform.
+func (d *HID) Read(_ []byte) (int, error) {
 	panic("not implemented for linux and freebsd")
 }
 
+// Close is not implemented on this platform.
 func (b *HIDAPI) Close() {
 	panic("not implemented for linux and freebsd")
 }

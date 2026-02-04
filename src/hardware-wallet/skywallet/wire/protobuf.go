@@ -1,3 +1,4 @@
+// Package wire implements the hardware wallet wire protocol.
 package wire
 
 import (
@@ -11,9 +12,11 @@ const (
 )
 
 var (
+	// ErrMalformedProtobuf indicates a malformed protobuf message.
 	ErrMalformedProtobuf = errors.New("malformed protobuf")
 )
 
+// Validate checks that buf contains valid protobuf wire format data.
 func Validate(buf []byte) error {
 	const (
 		wireVarint   = 0               // int32, int64, uint32, uint64, sint32, sint64, bool, enum

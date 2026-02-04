@@ -1,3 +1,4 @@
+// Package cli provides the hardware wallet CLI commands.
 package cli
 
 import (
@@ -12,12 +13,15 @@ import (
 	skyWallet "github.com/skycoin/skycoin/src/hardware-wallet/skywallet"
 )
 
+var addressNewline bool
+
 func init() {
 	addressGenCmd.Flags().IntVar(&addressN, "addressN", 1, "Number of addresses to generate. Assume 1 if not set.")
 	addressGenCmd.Flags().IntVar(&startIndex, "startIndex", 0, "Index where deterministic key generation will start from. Assume 0 if not set.")
 	addressGenCmd.Flags().BoolVar(&confirmAddress, "confirmAddress", false, "If requesting one address it will be sent only if user confirms operation by pressing device's button.")
 	addressGenCmd.Flags().StringVar(&deviceType, "deviceType", "USB", "Device type to send instructions to, hardware wallet (USB) or emulator.")
 	addressGenCmd.Flags().StringVar(&coinTypeStr, "coinTypeStr", "SKY", "Coin type to use on hardware-wallet.")
+	addressGenCmd.Flags().BoolVar(&addressNewline, "newline", false, "Print each address on its own line instead of space-separated.")
 
 }
 
@@ -59,7 +63,7 @@ var addressGenCmd = &cobra.Command{
 		for msg.Kind != uint16(messages.MessageType_MessageType_ResponseSkycoinAddress) && msg.Kind != uint16(messages.MessageType_MessageType_Failure) {
 			if msg.Kind == uint16(messages.MessageType_MessageType_PinMatrixRequest) {
 				fmt.Printf("PinMatrixRequest response: ")
-				_, _ = fmt.Scanln(&pinEnc)
+				_, _ = fmt.Scanln(&pinEnc) //nolint:errcheck // interactive user input
 				pinAckResponse, err := device.PinMatrixAck(pinEnc)
 				if err != nil {
 					return err
@@ -71,12 +75,12 @@ var addressGenCmd = &cobra.Command{
 			if msg.Kind == uint16(messages.MessageType_MessageType_PassphraseRequest) {
 				var passphrase string
 				fmt.Printf("Input passphrase: ")
-				_, _ = fmt.Scanln(&passphrase)
+				_, _ = fmt.Scanln(&passphrase) //nolint:errcheck // interactive user input
 				passphraseAckResponse, err := device.PassphraseAck(passphrase)
 				if err != nil {
 					return err
 				}
-				log.Infof("PinMatrixAck response: %s", passphraseAckResponse)
+				log.Infof("PassphraseAck response: %s", passphraseAckResponse)
 				continue
 			}
 
@@ -94,7 +98,14 @@ var addressGenCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			fmt.Println(addresses)
+			// Print addresses - with newline flag, print each on its own line
+			if addressNewline {
+				for _, addr := range addresses {
+					fmt.Println(addr)
+				}
+			} else {
+				fmt.Println(addresses)
+			}
 		} else {
 			failMsg, err := skyWallet.DecodeFailMsg(msg)
 			if err != nil {

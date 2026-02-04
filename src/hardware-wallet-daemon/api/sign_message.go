@@ -43,7 +43,7 @@ func signMessage(gateway Gatewayer) http.HandlerFunc {
 			writeHTTPResponse(w, resp)
 			return
 		}
-		defer func() { _ = r.Body.Close() }()
+		defer r.Body.Close() //nolint:errcheck
 
 		if req.AddressN < 0 {
 			resp := NewHTTPErrorResponse(http.StatusUnprocessableEntity, "address_n cannot be negative")

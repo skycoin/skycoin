@@ -124,7 +124,7 @@ func (b *HIDAPI) detectPrepend(dev *lowlevel.HidDevice) (bool, error) {
 	}
 
 	// first test newer version
-	w, _ := dev.Write(buf, true)
+	w, _ := dev.Write(buf, true) //nolint:errcheck // intentionally testing write length, error checked in fallback
 	if w == 65 {
 		return true, nil
 	}

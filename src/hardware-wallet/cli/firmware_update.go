@@ -65,7 +65,7 @@ The device must be in bootloader mode (hold buttons while plugging in USB).`,
 		} else if firmwareFile != "" {
 			// Use firmware from file
 			var err error
-			fileBytes, err = os.ReadFile(firmwareFile)
+			fileBytes, err = os.ReadFile(firmwareFile) //nolint:gosec // user-specified firmware file path is intentional
 			if err != nil {
 				fmt.Printf("Error: failed to read firmware file: %v\n", err)
 				return err

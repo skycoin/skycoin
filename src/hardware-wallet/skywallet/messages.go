@@ -195,7 +195,7 @@ func MessageConnected() ([][64]byte, error) {
 // MessageFirmwareErase prepare MessageFirmwareErase request
 func MessageFirmwareErase(payload []byte) ([][64]byte, error) {
 	deviceFirmwareErase := &messages.FirmwareErase{
-		Length: proto.Uint32(uint32(len(payload))),
+		Length: proto.Uint32(uint32(len(payload))), //nolint:gosec // payload length fits in uint32
 	}
 
 	erasedata, err := proto.Marshal(deviceFirmwareErase)
@@ -288,7 +288,7 @@ func MessageSetMnemonic(mnemonic string) ([][64]byte, error) {
 // MessageSignMessage prepare MessageSignMessage request
 func MessageSignMessage(addressIndex int, message string) ([][64]byte, error) {
 	skycoinSignMessage := &messages.SkycoinSignMessage{
-		AddressN: proto.Uint32(uint32(addressIndex)),
+		AddressN: proto.Uint32(uint32(addressIndex)), //nolint:gosec // address index fits in uint32
 		Message:  proto.String(message),
 	}
 
@@ -304,8 +304,8 @@ func MessageSignMessage(addressIndex int, message string) ([][64]byte, error) {
 // MessageTransactionSign prepare MessageTransactionSign request
 func MessageTransactionSign(inputs []*messages.SkycoinTransactionInput, outputs []*messages.SkycoinTransactionOutput) ([][64]byte, error) {
 	skycoinTransactionSignMessage := &messages.TransactionSign{
-		NbIn:           proto.Uint32(uint32(len(inputs))),
-		NbOut:          proto.Uint32(uint32(len(outputs))),
+		NbIn:           proto.Uint32(uint32(len(inputs))),  //nolint:gosec // input count fits in uint32
+		NbOut:          proto.Uint32(uint32(len(outputs))), //nolint:gosec // output count fits in uint32
 		TransactionIn:  inputs,
 		TransactionOut: outputs,
 	}
@@ -323,11 +323,11 @@ func MessageTransactionSign(inputs []*messages.SkycoinTransactionInput, outputs 
 // MessageSignTx prepare MessageSignTx request
 func MessageSignTx(outputsCount int, inputsCount int, coinName string, version int, lockTime int, txHash string) ([][64]byte, error) {
 	signTxMessage := &messages.SignTx{
-		OutputsCount: proto.Uint32(uint32(outputsCount)),
-		InputsCount:  proto.Uint32(uint32(inputsCount)),
+		OutputsCount: proto.Uint32(uint32(outputsCount)), //nolint:gosec // output count fits in uint32
+		InputsCount:  proto.Uint32(uint32(inputsCount)),  //nolint:gosec // input count fits in uint32
 		CoinName:     proto.String(coinName),
-		Version:      proto.Uint32(uint32(version)),
-		LockTime:     proto.Uint32(uint32(lockTime)),
+		Version:      proto.Uint32(uint32(version)),  //nolint:gosec // version fits in uint32
+		LockTime:     proto.Uint32(uint32(lockTime)), //nolint:gosec // lock time fits in uint32
 		TxHash:       proto.String(txHash),
 	}
 	log.Println(signTxMessage)
@@ -346,8 +346,8 @@ func MessageTxAck(inputs []*messages.TxAck_TransactionType_TxInputType, outputs 
 	tx := &messages.TxAck_TransactionType{
 		Inputs:   inputs,
 		Outputs:  outputs,
-		LockTime: proto.Uint32(uint32(lockTime)),
-		Version:  proto.Uint32(uint32(version)),
+		LockTime: proto.Uint32(uint32(lockTime)), //nolint:gosec // lock time fits in uint32
+		Version:  proto.Uint32(uint32(version)),  //nolint:gosec // version fits in uint32
 	}
 	txAckMessage := &messages.TxAck{
 		Tx: tx,

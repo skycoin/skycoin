@@ -1,3 +1,4 @@
+// Package skywallet provides hardware wallet device communication.
 package skywallet
 
 import (

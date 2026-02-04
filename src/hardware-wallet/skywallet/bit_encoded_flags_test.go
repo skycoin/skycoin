@@ -289,7 +289,7 @@ func TestBitHelperFunctions(t *testing.T) {
 	}
 
 	// Test setBitInByte
-	var b uint8 = 0
+	var b uint8
 	setBitInByte(&b, true, 0)
 	if b != 1 {
 		t.Errorf("setBitInByte set bit 0: got %d, want 1", b)

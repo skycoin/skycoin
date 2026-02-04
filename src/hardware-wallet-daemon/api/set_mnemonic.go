@@ -38,7 +38,7 @@ func setMnemonic(gateway Gatewayer) http.HandlerFunc {
 			writeHTTPResponse(w, resp)
 			return
 		}
-		defer func() { _ = r.Body.Close() }()
+		defer r.Body.Close() //nolint:errcheck
 
 		if err := bip39.ValidateMnemonic(req.Mnemonic); err != nil {
 			resp := NewHTTPErrorResponse(http.StatusUnprocessableEntity, "seed is not a valid bip39 seed")

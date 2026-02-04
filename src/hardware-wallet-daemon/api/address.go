@@ -1,3 +1,4 @@
+// Package api provides the hardware wallet daemon HTTP API.
 package api
 
 import (
@@ -40,7 +41,7 @@ func generateAddresses(gateway Gatewayer) http.HandlerFunc {
 			writeHTTPResponse(w, resp)
 			return
 		}
-		defer func() { _ = r.Body.Close() }()
+		defer r.Body.Close() //nolint:errcheck
 
 		if req.AddressN == 0 {
 			resp := NewHTTPErrorResponse(http.StatusUnprocessableEntity, "address_n cannot be 0")
@@ -83,7 +84,7 @@ func generateAddresses(gateway Gatewayer) http.HandlerFunc {
 		ctx := r.Context()
 
 		go func() {
-			msg, err = gateway.AddressGen(uint32(req.AddressN), uint32(req.StartIndex), req.ConfirmAddress, skyWallet.SkycoinCoinType)
+			msg, err = gateway.AddressGen(uint32(req.AddressN), uint32(req.StartIndex), req.ConfirmAddress, skyWallet.SkycoinCoinType) //nolint:gosec // validated positive above
 			if err != nil {
 				errCH <- 1
 				return

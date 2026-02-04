@@ -2,7 +2,7 @@ package api
 
 import (
 	"crypto/sha256"
-	"io/ioutil"
+	"io"
 	"net/http"
 )
 
@@ -37,9 +37,9 @@ func firmwareUpdate(gateway Gatewayer) http.HandlerFunc {
 			writeHTTPResponse(w, resp)
 			return
 		}
-		defer func() { _ = file.Close() }()
+		defer file.Close() //nolint:errcheck
 
-		fileBytes, err := ioutil.ReadAll(file)
+		fileBytes, err := io.ReadAll(file)
 		if err != nil {
 			resp := NewHTTPErrorResponse(http.StatusUnprocessableEntity, err.Error())
 			writeHTTPResponse(w, resp)

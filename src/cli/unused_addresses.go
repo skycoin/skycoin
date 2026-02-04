@@ -84,10 +84,10 @@ func findUnusedAddresses(c *cobra.Command, args []string) error {
 	// If we need more addresses and --generate is set
 	if generate && num > 0 && len(unusedAddrs) < num {
 		needed := num - len(unusedAddrs)
-		_, _ = fmt.Fprintf(c.ErrOrStderr(), "Generating %d new address(es)...\n", needed)
+		_, _ = fmt.Fprintf(c.ErrOrStderr(), "Generating %d new address(es)...\n", needed) //nolint:errcheck
 
 		// Generate new addresses via API (empty password for unencrypted wallets)
-		newAddrs, err := apiClient.NewWalletAddress(walletID, "", wallet.OptionGenerateN(uint64(needed)))
+		newAddrs, err := apiClient.NewWalletAddress(walletID, "", wallet.OptionGenerateN(uint64(needed))) //nolint:gosec // needed is guaranteed positive by preceding checks
 		if err != nil {
 			return fmt.Errorf("failed to generate new addresses: %w", err)
 		}

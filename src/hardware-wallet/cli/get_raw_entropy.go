@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"runtime"
 
@@ -43,7 +42,7 @@ var getRawEntropyCmd = &cobra.Command{
 			entropyData = append(entropyData, chunk[:]...)
 		}
 
-		err = ioutil.WriteFile("/tmp/entropy.dump", entropyData, 0644)
+		err = os.WriteFile("/tmp/entropy.dump", entropyData, 0600) //nolint:gosec // writing entropy dump to well-known tmp path is intentional
 		if err != nil {
 			return err
 		}

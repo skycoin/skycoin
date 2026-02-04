@@ -41,7 +41,7 @@ func checkMessageSignature(gateway Gatewayer) http.HandlerFunc {
 			writeHTTPResponse(w, resp)
 			return
 		}
-		defer func() { _ = r.Body.Close() }()
+		defer r.Body.Close() //nolint:errcheck
 
 		if req.Address == "" {
 			resp := NewHTTPErrorResponse(http.StatusBadRequest, "address is required")

@@ -55,7 +55,7 @@ var recoveryCmd = &cobra.Command{
 		for msg.Kind == uint16(messages.MessageType_MessageType_WordRequest) {
 			var word string
 			fmt.Printf("Word: ")
-			_, _ = fmt.Scanln(&word)
+			_, _ = fmt.Scanln(&word) //nolint:errcheck // interactive user input
 			msg, err = device.WordAck(word)
 			if err != nil {
 				return err

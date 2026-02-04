@@ -159,6 +159,6 @@ func BenchmarkValidate(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = Validate(buf)
+		_ = Validate(buf) //nolint:errcheck // benchmark intentionally discards error
 	}
 }

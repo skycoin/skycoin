@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"runtime"
+	"time"
 
 	"github.com/NYTimes/gziphandler"
 	"github.com/rs/cors"
@@ -27,9 +28,6 @@ const (
 
 var (
 	logger = logging.MustGetLogger("daemon-api")
-
-	// custom lock to help with serializing requests
-	ongoingOperation chan struct{}
 )
 
 // corsRegex matches all localhost origin headers
@@ -45,9 +43,6 @@ func init() {
 	if err != nil {
 		logger.Panic(err)
 	}
-
-	// set size to 1 to allow only 1 request at a time
-	ongoingOperation = make(chan struct{}, 1)
 
 	apb := os.Getenv("AUTO_PRESS_BUTTONS")
 	if apb == "1" && runtime.GOOS == "linux" {
@@ -119,7 +114,8 @@ func create(host string, c Config, gateway *Gateway) *Server {
 	srvMux := newServerMux(mc, gateway.Device)
 
 	srv := &http.Server{
-		Handler: srvMux,
+		Handler:           srvMux,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 	return &Server{

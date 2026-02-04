@@ -12,16 +12,18 @@ const (
 	packetLen = 64
 )
 
+// Message represents a hardware wallet wire protocol message.
 type Message struct {
 	Kind uint16
 	Data []byte
 }
 
+// WriteTo writes the message to the given writer in wire protocol format.
 func (m *Message) WriteTo(w io.Writer) (int64, error) {
 	var (
 		rep  [packetLen]byte
 		kind = m.Kind
-		size = uint32(len(m.Data))
+		size = uint32(len(m.Data)) //nolint:gosec // message data length fits in uint32
 	)
 	// pack header
 	rep[0] = repMarker
@@ -61,9 +63,11 @@ func (m *Message) WriteTo(w io.Writer) (int64, error) {
 }
 
 var (
+	// ErrMalformedMessage indicates a malformed wire format message.
 	ErrMalformedMessage = errors.New("malformed wire format")
 )
 
+// ReadFrom reads a wire protocol message from the reader.
 func ReadFrom(r io.Reader) (*Message, error) {
 	var (
 		rep  [packetLen]byte
@@ -91,7 +95,7 @@ func ReadFrom(r io.Reader) (*Message, error) {
 	)
 	data = append(data, rep[9:]...) // read data after header
 
-	for uint32(len(data)) < size {
+	for uint32(len(data)) < size { //nolint:gosec // data length fits in uint32
 		n, err := r.Read(rep[:])
 		if err != nil {
 			return nil, err

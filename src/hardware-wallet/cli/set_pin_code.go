@@ -18,7 +18,7 @@ func init() {
 var setPinCode = &cobra.Command{
 	Use:   "setPinCode",
 	Short: "Configure a PIN code on a device.",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		device := skyWallet.NewDevice(skyWallet.DeviceTypeFromString(deviceType))
 		if device == nil {
 			return fmt.Errorf("failed to create device")
@@ -57,9 +57,9 @@ var setPinCode = &cobra.Command{
 			case uint16(messages.MessageType_MessageType_PinMatrixRequest):
 				pinEnc, err := PinMatrixSimple()
 				if err != nil {
-					// User cancelled - send Cancel to device to abort operation
-					_, _ = device.Cancel()
-					return fmt.Errorf("PIN entry cancelled: %v", err)
+					// User canceled - send Cancel to device to abort operation
+					_, _ = device.Cancel() //nolint:errcheck // best-effort cancel on user abort
+					return fmt.Errorf("PIN entry canceled: %v", err)
 				}
 				msg, err = device.PinMatrixAck(pinEnc)
 				if err != nil {

@@ -7,6 +7,7 @@ import (
 )
 
 const (
+	// Version is the CLI version string.
 	Version = "1.7.0"
 )
 

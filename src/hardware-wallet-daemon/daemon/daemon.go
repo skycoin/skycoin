@@ -79,7 +79,11 @@ func (d *Daemon) Run() error {
 
 	if d.config.App.HTTPProf {
 		go func() {
-			if err := http.ListenAndServe(d.config.App.HTTPProfHost, nil); err != nil {
+			pprofServer := &http.Server{
+				Addr:              d.config.App.HTTPProfHost,
+				ReadHeaderTimeout: 10 * time.Second,
+			}
+			if err := pprofServer.ListenAndServe(); err != nil {
 				d.logger.WithError(err).Errorf("Listen on HTTP profiling interface %s failed", d.config.App.HTTPProfHost)
 			}
 		}()
@@ -151,7 +155,7 @@ func (d *Daemon) initLogFile() (*os.File, error) {
 	tf := "2006-01-02-030405"
 	logfile := filepath.Join(logDir, fmt.Sprintf("%s.log", time.Now().Format(tf)))
 
-	f, err := os.OpenFile(logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
+	f, err := os.OpenFile(logfile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600) //nolint:gosec // log file path is constructed from config, not user input
 	if err != nil {
 		d.logger.Errorf("os.OpenFile(%s) failed: %v", logfile, err)
 		return nil, err

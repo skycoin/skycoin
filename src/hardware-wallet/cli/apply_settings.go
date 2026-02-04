@@ -52,7 +52,7 @@ var applySettingsCmd = &cobra.Command{
 			if msg.Kind == uint16(messages.MessageType_MessageType_PinMatrixRequest) {
 				var pinEnc string
 				fmt.Printf("PinMatrixRequest response: ")
-				_, _ = fmt.Scanln(&pinEnc)
+				_, _ = fmt.Scanln(&pinEnc) //nolint:errcheck // interactive user input
 				pinAckResponse, err := device.PinMatrixAck(pinEnc)
 				if err != nil {
 					return err

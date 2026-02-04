@@ -43,6 +43,7 @@ var oldBLIface = libusbIfaceData{
 	epOut:      0x02,
 }
 
+// LibUSB provides device communication via the libusb library.
 type LibUSB struct {
 	usb    lowlevel.Context
 	only   bool
@@ -50,6 +51,7 @@ type LibUSB struct {
 	detach bool
 }
 
+// InitLibUSB initializes a new LibUSB bus with the given options.
 func InitLibUSB(onlyLibusb, allowCancel, detach bool) (*LibUSB, error) {
 	var usb lowlevel.Context
 	err := lowlevel.Init(&usb)
@@ -67,6 +69,7 @@ Original error: %v`, err)
 	}, nil
 }
 
+// Close releases the libusb context.
 func (b *LibUSB) Close() {
 	lowlevel.Exit(b.usb)
 }
@@ -94,9 +97,10 @@ func hasIface(dev lowlevel.Device, dIface libusbIfaceData, dClass uint8) (bool, 
 }
 
 func detectOldBL(dev lowlevel.Device) (bool, error) {
-	return hasIface(dev, oldBLIface, uint8(lowlevel.CLASS_HID))
+	return hasIface(dev, oldBLIface, lowlevel.CLASS_HID)
 }
 
+// Enumerate lists all matching USB devices.
 func (b *LibUSB) Enumerate(vendorID, productID uint16) ([]Info, error) {
 	// Use filtered device list to only open devices matching our VID/PID
 	// This avoids permission errors when trying to open all USB devices
@@ -159,10 +163,12 @@ func (b *LibUSB) Enumerate(vendorID, productID uint16) ([]Info, error) {
 	return infos, nil
 }
 
+// Has returns true if the path belongs to a libusb device.
 func (b *LibUSB) Has(path string) bool {
 	return strings.HasPrefix(path, libusbPrefix)
 }
 
+// Connect opens a connection to the device at the given path.
 func (b *LibUSB) Connect(path string) (Device, error) {
 	// Use filtered enumeration to avoid permission errors on irrelevant USB devices
 	// Only open devices matching supported VID/PID (Skycoin and Trezor)
@@ -382,6 +388,7 @@ func (b *LibUSB) identify(dev lowlevel.Device) string {
 	return libusbPrefix + hex.EncodeToString(p)
 }
 
+// LibUSBDevice represents an open libusb device connection.
 type LibUSBDevice struct {
 	dev    lowlevel.Device_Handle
 	config *gousb.Config    // Keep reference to prevent GC from releasing interface
@@ -389,7 +396,6 @@ type LibUSBDevice struct {
 
 	closed              int32 // atomic
 	normalTransferMutex sync.Mutex
-	debugTransferMutex  sync.Mutex
 	// two interrupt_transfers should not happen at the same time
 
 	cancel bool
@@ -397,6 +403,7 @@ type LibUSBDevice struct {
 	oldBL  bool
 }
 
+// Close closes the device, optionally handling a disconnect scenario.
 func (d *LibUSBDevice) Close(disconnected bool) error {
 	atomic.StoreInt32(&d.closed, 1)
 
@@ -410,8 +417,8 @@ func (d *LibUSBDevice) Close(disconnected bool) error {
 		// reading recently disconnected device sometimes causes weird issues
 		// => if we *know* it is disconnected, don't finish read queue
 		//
-		// Finishing read queue is not necessary when we don't allow cancelling
-		// (since when we don't allow cancelling, we don't allow session stealing)
+		// Finishing read queue is not necessary when we don't allow canceling
+		// (since when we don't allow canceling, we don't allow session stealing)
 		//
 		// NOTE: With gousb, Cancel_Sync_Transfers_On_Device is a no-op and
 		// finishReadQueue can hang waiting for data that will never come.

@@ -20,14 +20,11 @@ var (
 	usePassphrase  bool
 	wordCount      int
 	mnemonic       string
-	passphrase     string
 	label          string
 	language       string
-	inputs         []string
 	inputHash      []string
 	prevHash       []string
 	inputIndex     []int
-	outputs        []string
 	outputAddress  []string
 	coins          []int64
 	hours          []int64
@@ -41,26 +38,28 @@ var (
 type DeviceMode int
 
 const (
+	// DeviceModeUnknown indicates the device mode could not be determined.
 	DeviceModeUnknown DeviceMode = iota
+	// DeviceModeFirmware indicates the device is running firmware.
 	DeviceModeFirmware
+	// DeviceModeBootloader indicates the device is in bootloader mode.
 	DeviceModeBootloader
 )
 
 // checkDeviceMode checks if the device is in the expected mode
-// Returns the actual mode found and an error if the check fails
-func checkDeviceMode(device *skyWallet.Device, expectedMode DeviceMode) (DeviceMode, error) {
+func checkDeviceMode(device *skyWallet.Device, expectedMode DeviceMode) error {
 	msg, err := device.GetFeatures()
 	if err != nil {
-		return DeviceModeUnknown, fmt.Errorf("failed to get device features: %w", err)
+		return fmt.Errorf("failed to get device features: %w", err)
 	}
 
 	if msg.Kind != uint16(messages.MessageType_MessageType_Features) {
-		return DeviceModeUnknown, fmt.Errorf("unexpected response type: %s", messages.MessageType(msg.Kind))
+		return fmt.Errorf("unexpected response type: %s", messages.MessageType(msg.Kind))
 	}
 
 	features := &messages.Features{}
 	if err := proto.Unmarshal(msg.Data, features); err != nil {
-		return DeviceModeUnknown, fmt.Errorf("failed to decode features: %w", err)
+		return fmt.Errorf("failed to decode features: %w", err)
 	}
 
 	actualMode := DeviceModeFirmware
@@ -77,10 +76,10 @@ func checkDeviceMode(device *skyWallet.Device, expectedMode DeviceMode) (DeviceM
 		if actualMode == DeviceModeBootloader {
 			actualStr = "bootloader"
 		}
-		return actualMode, fmt.Errorf("device is in %s mode, but %s mode is required", actualStr, expectedStr)
+		return fmt.Errorf("device is in %s mode, but %s mode is required", actualStr, expectedStr)
 	}
 
-	return actualMode, nil
+	return nil
 }
 
 // requireFirmwareMode checks that the device is in firmware mode (not bootloader)
@@ -89,8 +88,7 @@ func requireFirmwareMode(device *skyWallet.Device) error {
 	if skipModeCheck {
 		return nil
 	}
-	_, err := checkDeviceMode(device, DeviceModeFirmware)
-	return err
+	return checkDeviceMode(device, DeviceModeFirmware)
 }
 
 // requireBootloaderMode checks that the device is in bootloader mode
@@ -99,6 +97,5 @@ func requireBootloaderMode(device *skyWallet.Device) error {
 	if skipModeCheck {
 		return nil
 	}
-	_, err := checkDeviceMode(device, DeviceModeBootloader)
-	return err
+	return checkDeviceMode(device, DeviceModeBootloader)
 }

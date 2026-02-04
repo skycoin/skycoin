@@ -163,15 +163,3 @@ func HandleFirmwareResponseMessages(w http.ResponseWriter, msg wire.Message) {
 		writeHTTPResponse(w, resp)
 	}
 }
-
-func newStrPtr(s string) *string {
-	return &s
-}
-
-func newUint32Ptr(n uint32) *uint32 {
-	return &n
-}
-
-func newBoolPtr(b bool) *bool {
-	return &b
-}

@@ -109,7 +109,7 @@ type HID struct {
 }
 
 // Close closes the HID device.
-func (d *HID) Close(disconnected bool) error {
+func (d *HID) Close(_ bool) error {
 	atomic.StoreInt32(&d.closed, 1)
 
 	d.transferMutex.Lock()

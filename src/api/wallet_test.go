@@ -905,11 +905,20 @@ func TestWalletCreateHandler(t *testing.T) {
 			wltName: "foo",
 		},
 		{
-			name:    "400 - missing type",
-			method:  http.MethodPost,
-			body:    &httpBody{},
-			status:  http.StatusBadRequest,
-			err:     "400 Bad Request - missing type",
+			name:   "400 - missing type defaults to deterministic, then missing seed",
+			method: http.MethodPost,
+			body:   &httpBody{},
+			options: wallet.Options{
+				Type:     wallet.WalletTypeDeterministic,
+				Password: []byte{},
+			},
+			status:                 http.StatusBadRequest,
+			gatewayCreateWalletErr: wallet.ErrMissingSeed,
+			gatewayCreateWalletResult: func(_ string, _ wallet.Options) wallet.Wallet {
+				var p *deterministic.Wallet
+				return p
+			},
+			err:     "400 Bad Request - missing seed",
 			wltName: "foo",
 		},
 		{

@@ -1,8 +1,8 @@
 // Copyright 2026 The TCell Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use file except in compliance with the License.
-// You may obtain a copy of the license at
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
 //    http://www.apache.org/licenses/LICENSE-2.0
 //
@@ -15,6 +15,7 @@
 package vt
 
 import (
+	"slices"
 	"sync"
 	"time"
 
@@ -26,6 +27,7 @@ import (
 type mockTerm struct {
 	mb MockBackend
 	em Emulator
+	ks *KeyboardState
 }
 
 // Stop the terminal.
@@ -93,19 +95,48 @@ func (mt *mockTerm) Bells() int {
 	return mt.mb.Bells()
 }
 
+// KeyEvent is used to inject a key event.  Call this to inject
+// a synthetic, fully specified key event.  Most uses should just use
+// the KeyPress, KeyRelease, or even simpler KeyTap APIs.
 func (mt *mockTerm) KeyEvent(ev KeyEvent) {
 	mt.em.KeyEvent(ev)
-	if ev.Code == KcEsc {
+	if ev.Key == KeyEsc {
 		// Inject a delay to simulate human typing.
 		// Necessary to disambiguate Escape from other sequences.
 		time.Sleep(time.Millisecond * 150)
 	}
 }
 
+// KeyPress implements MockTerm.KeyPress.
+func (mt *mockTerm) KeyPress(k Key) {
+	if event := mt.ks.Pressed(k); event != nil {
+		mt.KeyEvent(*event)
+	}
+}
+
+// KeyRelease implements MockTerm.KeyRelease.
+func (mt *mockTerm) KeyRelease(k Key) {
+	if event := mt.ks.Released(k); event != nil {
+		mt.KeyEvent(*event)
+	}
+}
+
+// KeyTap implements MockTerm.KeyTap.
+func (mt *mockTerm) KeyTap(keys ...Key) {
+	for _, k := range keys {
+		mt.KeyPress(k)
+	}
+	for _, k := range slices.Backward(keys) {
+		mt.KeyRelease(k)
+	}
+}
+
+// MouseEvent implements MockTerm.MouseEvent.
 func (mt *mockTerm) MouseEvent(ev MouseEvent) {
 	mt.em.MouseEvent(ev)
 }
 
+// FocusEvent implements MockTerm.FocusEvent.
 func (mt *mockTerm) FocusEvent(focused bool) {
 	mt.em.FocusEvent(focused)
 }
@@ -132,6 +163,11 @@ func (mt *mockTerm) SendRaw(data []byte) {
 	mt.em.SendRaw(data)
 }
 
+// SetLayout sets the keyboard layout.
+func (mt *mockTerm) SetLayout(km *Layout) {
+	mt.ks.SetLayout(km)
+}
+
 // MockTerm is a mock terminal (emulator).  It can be used to
 // test the emulator itself, or to test applications (or tcell) that
 // uses the terminal.  It also implements the Tty interface used
@@ -149,8 +185,22 @@ type MockTerm interface {
 	// Bells returns the number of times the bell has been rung.
 	Bells() int
 
-	// Inject a keyboard event.
+	// Inject a keyboard event - this is a full event, and bypasses
+	// the layout and keyboard state processor.
 	KeyEvent(KeyEvent)
+
+	// Inject a key press
+	KeyPress(Key)
+
+	// Inject a key release
+	KeyRelease(Key)
+
+	// Inject one or more key press and releases.
+	// The keys are pressed in the order, and released in reverse order.
+	// Thus modifiers should be listed first.  This should not be used
+	// to simulate typing a sequence (e.g. a word), but if you wanted to
+	// test say N-Key rollover you could do that here.
+	KeyTap(...Key)
 
 	// Inject a mouse event.
 	MouseEvent(MouseEvent)
@@ -170,6 +220,10 @@ type MockTerm interface {
 
 	// Backend returns the backend (used for testing).
 	Backend() MockBackend
+
+	// SetLayout sets the keyboard layout to use.
+	// If not specified, a US standard ANSI keyboard will be assumed.
+	SetLayout(*Layout)
 }
 
 type noMockBlit struct {
@@ -189,7 +243,8 @@ func NewMockTerm(opts ...MockOpt) MockTerm {
 		}
 	}
 	mt.em = NewEmulator(be)
-	mt.em.SetId("TcellMock", "1.0")
+	mt.em.SetId("TCellMock", "1.0")
+	mt.ks = &KeyboardState{}
 	return mt
 }
 
@@ -211,6 +266,15 @@ type MockBackend interface {
 	// SetSize is used to resize the window.
 	// Newly added cells are empty, and content in old cells that out of range is lost.
 	SetSize(Coord)
+
+	// GetCursor is used to obtain the current cursor style.
+	GetCursor() CursorStyle
+
+	// SetClipboard sets the clipboard contents (copy buffer).
+	SetClipboard([]byte)
+
+	// GetClipboard returns the clipboard (copy buffer).
+	GetClipboard() []byte
 }
 
 // mockBackend is a mock of a backend device for use with the emulator.
@@ -230,6 +294,8 @@ type mockBackend struct {
 	bells        int
 	errs         int
 	title        string
+	clipboard    []byte
+	cursor       CursorStyle
 	lock         sync.Mutex
 }
 
@@ -432,6 +498,7 @@ func (mb *mockBackend) Reset() {
 	mb.bells = 0
 	mb.pos = Coord{X: 0, Y: 0}
 	mb.modes[PmShowCursor] = ModeOn
+	mb.modes[PmBlinkCursor] = ModeOn
 	mb.modes[PmGraphemeClusters] = ModeOff
 }
 
@@ -497,6 +564,29 @@ func (mb *mockBackend) Blit(src, dst, dim Coord) {
 	}
 }
 
+// Buffering is not supported by the mockBackend, and there is little point in it.
+func (mb *mockBackend) Buffering(bool) {}
+
+// SetCursor is used to set how the cursor is displayed.
+func (mb *mockBackend) SetCursor(cs CursorStyle) {
+	mb.cursor = cs
+}
+
+// GetCursor returns the current cursor style.
+func (mb *mockBackend) GetCursor() CursorStyle {
+	return mb.cursor
+}
+
+// SetClipboard sets the current clipboard contents.
+func (mb *mockBackend) SetClipboard(data []byte) {
+	mb.clipboard = data
+}
+
+// GetClipboard gets the current clipboard contents.
+func (mb *mockBackend) GetClipboard() []byte {
+	return mb.clipboard
+}
+
 // MockOpt is an interface by which options can change the behavior of the mocked terminal.
 // This is intended to permit easier testing.
 type MockOpt interface{ SetMockOpt(mb *mockBackend) }
@@ -524,11 +614,11 @@ func NewMockBackend(options ...MockOpt) MockBackend {
 		colors:       256,
 		style:        BaseStyle,
 		defaultStyle: BaseStyle.WithFg(color.Silver).WithBg(color.Black),
+		cursor:       BlinkingBlock,
 	}
 
 	for _, opt := range options {
 		opt.SetMockOpt(mb)
-		// TODO: possibly be could be "filtered" for some options (e.g. to hide colorer API, etc.)
 	}
 
 	if mb.colors > 0 {
@@ -541,6 +631,8 @@ func NewMockBackend(options ...MockOpt) MockBackend {
 
 	mb.modes = make(map[PrivateMode]ModeStatus)
 	mb.modes[PmShowCursor] = ModeOn
+	mb.modes[PmBlinkCursor] = ModeOn
 	mb.modes[PmGraphemeClusters] = ModeOff
+	mb.modes[PmSyncOutput] = ModeOff
 	return mb
 }

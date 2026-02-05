@@ -1,8 +1,8 @@
 // Copyright 2026 The TCell Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use file except in compliance with the License.
-// You may obtain a copy of the license at
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
 //    http://www.apache.org/licenses/LICENSE-2.0
 //
@@ -55,6 +55,16 @@ type Backend interface {
 	// The backend is responsible for sending a signal (if needed) to child processes as part of this
 	// function.  (The emulation layer knows nothing of child processes.)
 	RaiseResize()
+
+	// Buffering is called by the emulator to indicate that the backend should buffer contents because
+	// multiple updates are taking place.  This should be treated in addition to mode 2026, if the backend
+	// supports it.  (Mode 2026 should only be supported by the backend if it actually supports true
+	// double buffering.)
+	Buffering(bool)
+
+	// SetCursor is used to set the current cursor style.  If the backend does not support changing
+	// the cursor shape, it should implement at least hidden, steady, and blinking (typically as a block).
+	SetCursor(CursorStyle)
 }
 
 // Beeper can be implemented by a backend to indicate it can ring the bell or beep.
@@ -100,4 +110,32 @@ type Mouser interface {
 // to the visible dimensions.
 type Blitter interface {
 	Blit(src, dst, dim Coord)
+}
+
+// Clipboard implements a clipboard or copy buffer for copy/paste activity.
+// The backend may prevent sending clipboard data by returning an empty string
+// for the clipboard.  Frequently this is done for security reasons.
+type Clipboard interface {
+
+	// SetClipboard sets the contents of the clipboard.
+	SetClipboard([]byte)
+
+	// GetClipboard gets the contents of the clipboard.
+	// It will return nil if the operation is not supported.
+	// An empty clipboard will be []byte{}
+	GetClipboard() []byte
+}
+
+type KeyboardMode byte
+
+const (
+	KeyboardLegacy KeyboardMode = 1 << iota // KeyboardLegacy uses simple reporting in the VT220 fashion
+	KeyboardWin32                           // Win32 input mode, reports both key release and press, includes scan codes and vk
+	KeyboardKitty                           // Kitty simple protocol, only disambiguation
+	KeyboardEvents                          // Kitty keyboard but reports events (press, release, repeat)
+)
+
+type AdvancedKeyboard interface {
+	SetKeyboardMode(KeyboardMode) error
+	GetKeyboardMode() KeyboardMode
 }

@@ -658,8 +658,8 @@ func validateAPISets(opt string, apiSets []string) error {
 func (c *NodeConfig) RegisterFlags(cmd *cobra.Command) {
 	//	cmd.Flags().BoolVar(&help, "help", false, "Show help")
 	cmd.Flags().BoolVar(&c.DisablePEX, "disable-pex", c.DisablePEX, "disable PEX peer discovery")
-	cmd.Flags().BoolVar(&c.DownloadPeerList, "download-peerlist", c.DownloadPeerList, "download a peers.txt from -peerlist-url")
-	cmd.Flags().StringVar(&c.PeerListURL, "peerlist-url", c.PeerListURL, "with -download-peerlist=true, download a peers.txt file from this url")
+	cmd.Flags().BoolVar(&c.DownloadPeerList, "download-peerlist", c.DownloadPeerList, "download a peers.txt from the peerlist URL")
+	cmd.Flags().StringVar(&c.PeerListURL, "peerlist-url", c.PeerListURL, "URL to download peers.txt from (requires peerlist download enabled)")
 	cmd.Flags().BoolVar(&c.DisableOutgoingConnections, "disable-outgoing", c.DisableOutgoingConnections, "Don't make outgoing connections")
 	cmd.Flags().BoolVar(&c.DisableIncomingConnections, "disable-incoming", c.DisableIncomingConnections, "Don't allow incoming connections")
 	cmd.Flags().BoolVar(&c.DisableNetworking, "disable-networking", c.DisableNetworking, "Disable all network activity")
@@ -667,15 +667,15 @@ func (c *NodeConfig) RegisterFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&c.EnableGUI, "enable-gui", c.EnableGUI, "Enable GUI")
 	cmd.Flags().BoolVar(&c.DisableCSRF, "disable-csrf", c.DisableCSRF, "disable CSRF check")
 	cmd.Flags().BoolVar(&c.DisableHeaderCheck, "disable-header-check", c.DisableHeaderCheck, "disables the host, origin and referer header checks.")
-	cmd.Flags().BoolVar(&c.DisableCSP, "disable-csp", c.DisableCSP, "disable content-security-policy in http response")
+	cmd.Flags().BoolVar(&c.DisableCSP, "disable-csp", c.DisableCSP, "disable Content Security Policy in http response")
 	cmd.Flags().StringVar(&c.Address, "address", c.Address, "IP Address to run application on. Leave empty to default to a public interface")
 	cmd.Flags().IntVar(&c.Port, "port", c.Port, "Port to run application on")
 
 	cmd.Flags().BoolVar(&c.WebInterface, "web-interface", c.WebInterface, "enable the web interface")
 	cmd.Flags().IntVar(&c.WebInterfacePort, "web-interface-port", c.WebInterfacePort, "port to serve web interface on")
 	cmd.Flags().StringVar(&c.WebInterfaceAddr, "web-interface-addr", c.WebInterfaceAddr, "addr to serve web interface on")
-	cmd.Flags().StringVar(&c.WebInterfaceCert, "web-interface-cert", c.WebInterfaceCert, "skycoind.cert file for web interface HTTPS. If not provided, will autogenerate or use skycoind.cert in --data-dir")
-	cmd.Flags().StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "skycoind.key file for web interface HTTPS. If not provided, will autogenerate or use skycoind.key in --data-dir")
+	cmd.Flags().StringVar(&c.WebInterfaceCert, "web-interface-cert", c.WebInterfaceCert, "skycoind.cert file for web interface HTTPS. If not provided, will autogenerate or use skycoind.cert in data dir")
+	cmd.Flags().StringVar(&c.WebInterfaceKey, "web-interface-key", c.WebInterfaceKey, "skycoind.key file for web interface HTTPS. If not provided, will autogenerate or use skycoind.key in data dir")
 	cmd.Flags().BoolVar(&c.WebInterfaceHTTPS, "web-interface-https", c.WebInterfaceHTTPS, "enable HTTPS for web interface")
 	cmd.Flags().StringVar(&c.HostWhitelist, "host-whitelist", c.HostWhitelist, "Hostnames to whitelist in the Host header check. Only applies when the web interface is bound to localhost.")
 
@@ -690,7 +690,7 @@ func (c *NodeConfig) RegisterFlags(cmd *cobra.Command) {
 	}
 	cmd.Flags().StringVar(&c.EnabledAPISets, "enable-api-sets", c.EnabledAPISets, fmt.Sprintf("enable API set. Options are %s. Multiple values should be separated by comma", strings.Join(allAPISets, ", ")))
 	cmd.Flags().StringVar(&c.DisabledAPISets, "disable-api-sets", c.DisabledAPISets, fmt.Sprintf("disable API set. Options are %s. Multiple values should be separated by comma", strings.Join(allAPISets, ", ")))
-	cmd.Flags().BoolVar(&c.EnableAllAPISets, "enable-all-api-sets", c.EnableAllAPISets, "enable all API sets, except for deprecated or insecure sets. This option is applied before -disable-api-sets.")
+	cmd.Flags().BoolVar(&c.EnableAllAPISets, "enable-all-api-sets", c.EnableAllAPISets, "enable all API sets except deprecated or insecure. Applied before the disable API sets flag.")
 
 	cmd.Flags().StringVar(&c.WebInterfaceUsername, "web-interface-username", c.WebInterfaceUsername, "username for the web interface")
 	cmd.Flags().StringVar(&c.WebInterfacePassword, "web-interface-password", c.WebInterfacePassword, "password for the web interface")
@@ -699,7 +699,7 @@ func (c *NodeConfig) RegisterFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&c.LaunchBrowser, "launch-browser", c.LaunchBrowser, "launch system default webbrowser at client startup")
 	cmd.Flags().StringVar(&c.DataDirectory, "data-dir", c.DataDirectory, fmt.Sprintf("directory to store app data (defaults to %s)", c.DataDirectory))
 	cmd.Flags().StringVar(&c.DBPath, "db-path", c.DBPath, "path of database file")
-	cmd.Flags().BoolVar(&c.DBReadOnly, "db-read-only", c.DBReadOnly, "open bolt db read-only")
+	cmd.Flags().BoolVar(&c.DBReadOnly, "db-read-only", c.DBReadOnly, "open bolt db in read only mode")
 	cmd.Flags().BoolVar(&c.ProfileCPU, "profile-cpu", c.ProfileCPU, "enable cpu profiling")
 	cmd.Flags().StringVar(&c.ProfileCPUFile, "profile-cpu-file", c.ProfileCPUFile, "where to write the cpu profile file")
 	cmd.Flags().BoolVar(&c.HTTPProf, "http-prof", c.HTTPProf, "run the HTTP profiling interface")
@@ -746,7 +746,7 @@ func (c *NodeConfig) RegisterFlags(cmd *cobra.Command) {
 	cmd.Flags().IntVar(&c.MaxOutgoingMessageLength, "max-out-msg-len", c.MaxOutgoingMessageLength, "Maximum length of outgoing wire messages")
 	cmd.Flags().IntVar(&c.MaxIncomingMessageLength, "max-in-msg-len", c.MaxIncomingMessageLength, "Maximum length of incoming wire messages")
 	cmd.Flags().BoolVar(&c.LocalhostOnly, "localhost-only", c.LocalhostOnly, "Run on localhost and only connect to localhost peers")
-	cmd.Flags().StringVar(&c.WalletCryptoType, "wallet-crypto-type", c.WalletCryptoType, "wallet crypto type. Can be sha256-xor or scrypt-chacha20poly1305")
+	cmd.Flags().StringVar(&c.WalletCryptoType, "wallet-crypto-type", c.WalletCryptoType, "wallet encryption type (see default for format options)\n\r")
 	cmd.Flags().BoolVar(&c.Version, "version", false, "show node version")
 
 	// Display/Branding flags

@@ -1,8 +1,8 @@
 // Copyright 2026 The TCell Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use file except in compliance with the License.
-// You may obtain a copy of the license at
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
 //    http://www.apache.org/licenses/LICENSE-2.0
 //
@@ -49,6 +49,7 @@ const (
 	PmSyncOutput       PrivateMode = 2026 // Buffer output when enabled, updating screen when reset.
 	PmGraphemeClusters PrivateMode = 2027 // Support for grapheme cluster handling.
 	PmResizeReports    PrivateMode = 2048 // Send in-band resize reports.
+	PmWin32Input       PrivateMode = 9001 // Use Win32-Input-Mode for keyboard reports
 )
 
 // Enable returns the string used to enable this private mode.

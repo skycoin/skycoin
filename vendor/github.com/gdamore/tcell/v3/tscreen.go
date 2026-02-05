@@ -1,8 +1,8 @@
 // Copyright 2026 The TCell Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use file except in compliance with the License.
-// You may obtain a copy of the license at
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
 //
 //    http://www.apache.org/licenses/LICENSE-2.0
 //
@@ -173,6 +173,7 @@ type tScreen struct {
 	truecolor     bool
 	noColor       bool
 	legacy        bool
+	hasClipboard  bool // true if OSC 52 reported via DA1
 	finiOnce      sync.Once
 	enterUrl      string
 	exitUrl       string
@@ -338,6 +339,7 @@ func (t *tScreen) processInitQ() {
 				if ev.Clipboard && t.setClipboard == "" {
 					t.setClipboard = setClipboard
 				}
+				t.hasClipboard = ev.Clipboard
 				t.initted = true
 				return
 			case *eventTermName:
@@ -704,7 +706,7 @@ func (t *tScreen) drawCell(x, y int) int {
 		width = 1
 		str = " "
 	}
-	if width > 1 {
+	if width > 1 && x+width < t.w {
 		// Clobber over any content in the next cell.
 		// This fixes a problem with some terminals where overwriting two
 		// adjacent single cells with a wide rune would leave an image
@@ -1054,9 +1056,14 @@ func (t *tScreen) buildAcsMap() {
 }
 
 func (t *tScreen) scanInput(buf *bytes.Buffer) {
+	// The end of the buffer isn't necessarily the end of the input, because
+	// large inputs are chunked. Set atEOF to false so the UTF-8 validating decoder
+	// returns ErrShortSrc instead of ErrInvalidUTF8 for incomplete multi-byte codepoints.
+	const atEOF = false
+
 	for buf.Len() > 0 {
 		utf := make([]byte, min(8, max(buf.Len()*2, 128)))
-		nOut, nIn, e := t.decoder.Transform(utf, buf.Bytes(), true)
+		nOut, nIn, e := t.decoder.Transform(utf, buf.Bytes(), atEOF)
 		_ = buf.Next(nIn)
 		t.input.ScanUTF8(utf[:nOut])
 		if e == transform.ErrShortSrc {
@@ -1361,6 +1368,10 @@ func (t *tScreen) GetClipboard() {
 		t.Printf(t.setClipboard, "?")
 	}
 	t.Unlock()
+}
+
+func (t *tScreen) HasClipboard() bool {
+	return t.hasClipboard
 }
 
 func (t *tScreen) ShowNotification(title string, body string) {

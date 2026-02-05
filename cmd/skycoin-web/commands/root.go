@@ -13,14 +13,19 @@ import (
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/calvin"
 	"github.com/spf13/cobra"
 
+	"github.com/skycoin/skycoin/src/cipher/bip44"
+	"github.com/skycoin/skycoin/src/cipher/crypto"
 	wasmtinygo "github.com/skycoin/skycoin/src/skycoin-lite/wasm-tinygo"
 	"github.com/skycoin/skycoin/src/skycoin-web/src/gui"
+	"github.com/skycoin/skycoin/src/wallet"
 )
 
 var (
-	port    int
-	host    string
-	nodeURL string
+	port          int
+	host          string
+	nodeURL       string
+	walletDir     string
+	enableSeedAPI bool
 )
 
 // RootCmd is the root cil command
@@ -41,6 +46,8 @@ func init() {
 	RootCmd.Flags().IntVarP(&port, "port", "p", 8001, "Port to serve on")
 	RootCmd.Flags().StringVarP(&host, "host", "H", "127.0.0.1", "Host to bind to")
 	RootCmd.Flags().StringVarP(&nodeURL, "node-url", "n", "https://node.skycoin.com", "node URL")
+	RootCmd.Flags().StringVarP(&walletDir, "wallet-dir", "w", "", "Local wallet directory (enables disk-based wallet management)")
+	RootCmd.Flags().BoolVar(&enableSeedAPI, "enable-seed-api", false, "Enable the wallet seed API (requires --wallet-dir)")
 }
 
 // Execute runs the root command
@@ -54,6 +61,27 @@ func Execute() {
 func serve() {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
+
+	// Initialize wallet service if --wallet-dir is set
+	var wltService *wallet.Service
+	if walletDir != "" {
+		bc := bip44.CoinTypeSkycoin
+		cfg := wallet.Config{
+			WalletDir:       walletDir,
+			CryptoType:      crypto.DefaultCryptoType,
+			EnableWalletAPI: true,
+			EnableSeedAPI:   enableSeedAPI,
+			Bip44Coin:       &bc,
+		}
+
+		var err error
+		wltService, err = wallet.NewService(cfg)
+		if err != nil {
+			log.Fatalf("Failed to initialize wallet service: %v", err)
+		}
+
+		log.Printf("Wallet service initialized: %s", walletDir)
+	}
 
 	// Get the embedded dist directory
 	distSub, err := fs.Sub(gui.DistFS, "dist")
@@ -72,7 +100,8 @@ func serve() {
 		c.Data(http.StatusOK, "application/javascript", wasmtinygo.WasmExecJS)
 	})
 
-	// Proxy all /api/* requests to the configured node
+	// Proxy all /api/* requests to the configured node,
+	// with local interception for wallet endpoints when --wallet-dir is set
 	router.Any("/api/*path", func(c *gin.Context) {
 		// Set CORS headers first
 		c.Header("Access-Control-Allow-Origin", "*")
@@ -85,65 +114,16 @@ func serve() {
 			return
 		}
 
-		// Build target URL: nodeURL + request path
-		targetURL := nodeURL + c.Request.URL.Path
-		if c.Request.URL.RawQuery != "" {
-			targetURL += "?" + c.Request.URL.RawQuery
-		}
-
-		log.Printf("[PROXY] %s %s -> %s", c.Request.Method, c.Request.URL.Path, targetURL)
-
-		// Create proxy request
-		proxyReq, err := http.NewRequest(c.Request.Method, targetURL, c.Request.Body)
-		if err != nil {
-			log.Printf("[PROXY] Failed to create request: %v", err)
-			c.String(http.StatusInternalServerError, "Failed to create proxy request")
-			return
-		}
-
-		for name, values := range c.Request.Header {
-			// Skip headers that could trigger CSRF/CORS issues
-			if name == "Referer" || name == "Origin" || name == "Host" {
-				continue
-			}
-			for _, value := range values {
-				proxyReq.Header.Add(name, value)
+		// If wallet service is enabled, try to handle wallet API requests locally
+		if wltService != nil {
+			apiPath := c.Param("path")
+			if handleWalletAPI(c, apiPath, wltService, nodeURL) {
+				return
 			}
 		}
 
-		// Execute request to node
-		client := &http.Client{}
-		resp, err := client.Do(proxyReq)
-		if err != nil {
-			log.Printf("[PROXY] Request failed: %v", err)
-			c.String(http.StatusBadGateway, "Failed to proxy request to node: %v", err)
-			return
-		}
-		defer func() {
-			if err := resp.Body.Close(); err != nil {
-				log.Printf("Error closing response body: %v", err)
-			}
-		}()
-
-		log.Printf("[PROXY] Response: %d", resp.StatusCode)
-
-		for name, values := range resp.Header {
-			if name != "Access-Control-Allow-Origin" && name != "Access-Control-Allow-Methods" && name != "Access-Control-Allow-Headers" {
-				for _, value := range values {
-					c.Header(name, value)
-				}
-			}
-		}
-
-		// Read response body
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Printf("[PROXY] Failed to read response: %v", err)
-			c.String(http.StatusInternalServerError, "Failed to read proxy response")
-			return
-		}
-
-		c.Data(resp.StatusCode, resp.Header.Get("Content-Type"), body)
+		// Proxy to remote node
+		proxyToNode(c, nodeURL)
 	})
 
 	// Serve static files from embedded dist directory
@@ -162,10 +142,76 @@ func serve() {
 	fmt.Printf("Skycoin Web Wallet starting...\n")
 	fmt.Printf("Server listening on http://%s\n", addr)
 	fmt.Printf("Proxying to node: %s\n", nodeURL)
+	if wltService != nil {
+		fmt.Printf("Local wallet dir: %s\n", walletDir)
+	}
 	fmt.Printf("Open your browser and navigate to the address above\n")
 	fmt.Printf("Press Ctrl+C to stop the server\n\n")
 
 	if err := router.Run(addr); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
+}
+
+// proxyToNode forwards an API request to the remote node
+func proxyToNode(c *gin.Context, remoteNodeURL string) {
+	// Build target URL: nodeURL + request path
+	targetURL := remoteNodeURL + c.Request.URL.Path
+	if c.Request.URL.RawQuery != "" {
+		targetURL += "?" + c.Request.URL.RawQuery
+	}
+
+	log.Printf("[PROXY] %s %s -> %s", c.Request.Method, c.Request.URL.Path, targetURL)
+
+	// Create proxy request
+	proxyReq, err := http.NewRequest(c.Request.Method, targetURL, c.Request.Body)
+	if err != nil {
+		log.Printf("[PROXY] Failed to create request: %v", err)
+		c.String(http.StatusInternalServerError, "Failed to create proxy request")
+		return
+	}
+
+	for name, values := range c.Request.Header {
+		// Skip headers that could trigger CSRF/CORS issues
+		if name == "Referer" || name == "Origin" || name == "Host" {
+			continue
+		}
+		for _, value := range values {
+			proxyReq.Header.Add(name, value)
+		}
+	}
+
+	// Execute request to node
+	client := &http.Client{}
+	resp, err := client.Do(proxyReq)
+	if err != nil {
+		log.Printf("[PROXY] Request failed: %v", err)
+		c.String(http.StatusBadGateway, "Failed to proxy request to node: %v", err)
+		return
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("Error closing response body: %v", err)
+		}
+	}()
+
+	log.Printf("[PROXY] Response: %d", resp.StatusCode)
+
+	for name, values := range resp.Header {
+		if name != "Access-Control-Allow-Origin" && name != "Access-Control-Allow-Methods" && name != "Access-Control-Allow-Headers" {
+			for _, value := range values {
+				c.Header(name, value)
+			}
+		}
+	}
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("[PROXY] Failed to read response: %v", err)
+		c.String(http.StatusInternalServerError, "Failed to read proxy response")
+		return
+	}
+
+	c.Data(resp.StatusCode, resp.Header.Get("Content-Type"), body)
 }

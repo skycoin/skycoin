@@ -34,7 +34,7 @@ func main() {
 		NoExtraNewlines: true,
 		NoBottomNewline: true,
 	})
-	commands.RootCmd.Execute() //nolint:errcheck
+	commands.RootCmd.Execute() //nolint:errcheck,gosec
 }
 
 const help = "{{if .HasAvailableSubCommands}}{{end}} {{if gt (len .Aliases) 0}}\r\n\r\n" +

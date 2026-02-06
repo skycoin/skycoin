@@ -58,7 +58,7 @@ Thumbs.db
 *.orig
 
 .cache
-release
+/release
 .bin
 
 .skycoin

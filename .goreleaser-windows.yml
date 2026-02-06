@@ -1,5 +1,6 @@
-# GoReleaser configuration for Windows builds  
-# Builds skycoin and skyhw binaries for Windows
+# GoReleaser configuration for Windows builds
+# Builds skycoin binaries for Windows
+# amd64 includes hardware wallet utilities, 386 and arm64 do not
 
 version: 2
 
@@ -23,23 +24,9 @@ builds:
     env:
       - CGO_ENABLED=1
       - PKG_CONFIG_PATH=C:/msys64/mingw64/lib/pkgconfig
-      - CGO_CFLAGS=-IC:/msys64/mingw64/include
-      - CGO_LDFLAGS=-LC:/msys64/mingw64/lib
-    main: ./
-    ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
-
-  - id: skyhw-amd64
-    binary: skyhw
-    goos:
-      - windows
-    goarch:
-      - amd64
-    env:
-      - CGO_ENABLED=1
-      - PKG_CONFIG_PATH=C:/msys64/mingw64/lib/pkgconfig
       - CGO_CFLAGS=-IC:/msys64/mingw64/include -IC:/msys64/mingw64/include/libusb-1.0
       - CGO_LDFLAGS=-LC:/msys64/mingw64/lib
-    main: ./cmd/hardware-wallet/
+    main: ./cmd/release/
     ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 
   - id: skycoin-386
@@ -50,7 +37,7 @@ builds:
       - 386
     env:
       - CGO_ENABLED=0
-    main: ./
+    main: ./cmd/release/
     ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 
   - id: skycoin-arm64
@@ -61,7 +48,7 @@ builds:
       - arm64
     env:
       - CGO_ENABLED=0
-    main: ./
+    main: ./cmd/release/
     ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 
 archives:
@@ -71,7 +58,6 @@ archives:
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     ids:
       - skycoin-amd64
-      - skyhw-amd64
     files:
       - none*
 

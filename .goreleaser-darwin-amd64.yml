@@ -1,5 +1,5 @@
 # GoReleaser configuration for macOS Intel builds
-# Builds skycoin and skyhw binaries for macOS amd64
+# Builds skycoin binary with hardware wallet utilities for macOS amd64
 
 version: 2
 
@@ -21,21 +21,10 @@ builds:
     goarch:
       - amd64
     env:
-      - CGO_ENABLED=0
-    main: ./
-    ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
-
-  - id: skyhw
-    binary: skyhw
-    goos:
-      - darwin
-    goarch:
-      - amd64
-    env:
       - CGO_ENABLED=1
       - CGO_CFLAGS=-I/usr/local/include
       - CGO_LDFLAGS=-L/usr/local/lib
-    main: ./cmd/hardware-wallet/
+    main: ./cmd/release/
     ldflags: -s -w -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=v{{.Version}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit={{.ShortCommit}} -X github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date={{.Date}}
 
 archives:
@@ -45,7 +34,6 @@ archives:
     name_template: 'skycoin-v{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     ids:
       - skycoin
-      - skyhw
     files:
       - none*
 

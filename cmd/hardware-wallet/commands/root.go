@@ -1,5 +1,6 @@
-//go:build !386
+//go:build !386 && !(windows && arm64)
 // +build !386
+// +build !windows !arm64
 
 // Package commands implements the skycoin hardware wallet daemon and CLI.
 //

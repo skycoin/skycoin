@@ -2,24 +2,27 @@
 <div class="container">
   <div class="paper">
     <!-- Forms. -->
-    <app-send-coins-form
-      *ngIf="showForm && activeForm === activeForms.LeftButton"
-      [formData]="formData"
-      [showSimpleForm]="true"
-      (onFormSubmitted)="onFormSubmitted($event)"
-    ></app-send-coins-form>
-    <app-send-coins-form
-      *ngIf="showForm && activeForm === activeForms.RightButton"
-      [formData]="formData"
-      [showSimpleForm]="false"
-      (onFormSubmitted)="onFormSubmitted($event)"
-    ></app-send-coins-form>
+    @if (showForm && activeForm === activeForms.LeftButton) {
+      <app-send-coins-form
+        [formData]="formData"
+        [showSimpleForm]="true"
+        (onFormSubmitted)="onFormSubmitted($event)"
+      ></app-send-coins-form>
+    }
+    @if (showForm && activeForm === activeForms.RightButton) {
+      <app-send-coins-form
+        [formData]="formData"
+        [showSimpleForm]="false"
+        (onFormSubmitted)="onFormSubmitted($event)"
+      ></app-send-coins-form>
+    }
     <!-- Transaction preview. -->
-    <app-send-preview
-      *ngIf="!showForm"
-      [transaction]="formData.transaction"
-      (onBack)="onBack($event)"
-    ></app-send-preview>
+    @if (!showForm) {
+      <app-send-preview
+        [transaction]="formData.transaction"
+        (onBack)="onBack($event)"
+      ></app-send-preview>
+    }
   </div>
   <!-- Links at the bottom. -->
   <div class="-links">

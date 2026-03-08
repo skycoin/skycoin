@@ -8,9 +8,10 @@ import { WalletService, ScanProgressData } from '../../../../services/wallet/wal
 import { config } from '../../../../app.config';
 
 @Component({
-  selector: 'app-scan-addresses',
-  templateUrl: './scan-addresses.component.html',
-  styleUrls: ['./scan-addresses.component.scss'],
+    selector: 'app-scan-addresses',
+    templateUrl: './scan-addresses.component.html',
+    styleUrls: ['./scan-addresses.component.scss'],
+    standalone: false
 })
 export class ScanAddressesComponent implements OnInit, OnDestroy {
   progress = new ScanProgressData();

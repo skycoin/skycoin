@@ -1,6 +1,6 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { FormBuilder } from '@angular/forms';
+import { UntypedFormBuilder } from '@angular/forms';
 
 import { OfflineDialogsBaseComponent, OfflineDialogsStates } from '../offline-dialogs-base.component';
 import { copyTextToClipboard } from '../../../../../utils/general-utils';
@@ -25,9 +25,10 @@ export interface CopyRawTxData {
  * Allows to see and copy a raw transaction, which is a hex string.
  */
 @Component({
-  selector: 'app-copy-raw-tx',
-  templateUrl: '../offline-dialogs-base.component.html',
-  styleUrls: ['../offline-dialogs-base.component.scss'],
+    selector: 'app-copy-raw-tx',
+    templateUrl: '../offline-dialogs-base.component.html',
+    styleUrls: ['../offline-dialogs-base.component.scss'],
+    standalone: false
 })
 export class CopyRawTxComponent extends OfflineDialogsBaseComponent implements OnInit {
   // Set the contents of some of the UI elements.
@@ -51,7 +52,7 @@ export class CopyRawTxComponent extends OfflineDialogsBaseComponent implements O
     @Inject(MAT_DIALOG_DATA) private data: CopyRawTxData,
     public dialogRef: MatDialogRef<CopyRawTxComponent>,
     private msgBarService: MsgBarService,
-    formBuilder: FormBuilder,
+    formBuilder: UntypedFormBuilder,
   ) {
     super(formBuilder);
 

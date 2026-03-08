@@ -16,9 +16,10 @@ import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent }
  * order at creation time.
  */
 @Component({
-  selector: 'app-exchange-status',
-  templateUrl: './exchange-status.component.html',
-  styleUrls: ['./exchange-status.component.scss'],
+    selector: 'app-exchange-status',
+    templateUrl: './exchange-status.component.html',
+    styleUrls: ['./exchange-status.component.scss'],
+    standalone: false
 })
 export class ExchangeStatusComponent implements OnDestroy {
   // If the page must work in test mode. If true, the page will use the sandbox API endpoints

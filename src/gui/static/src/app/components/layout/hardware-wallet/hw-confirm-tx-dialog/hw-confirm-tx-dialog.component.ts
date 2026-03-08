@@ -8,9 +8,10 @@ import { HwDialogBaseComponent } from '../hw-dialog-base.component';
  * Allow the user to confirm a transaction before sending it.
  */
 @Component({
-  selector: 'app-hw-confirm-tx-dialog',
-  templateUrl: './hw-confirm-tx-dialog.component.html',
-  styleUrls: ['./hw-confirm-tx-dialog.component.scss'],
+    selector: 'app-hw-confirm-tx-dialog',
+    templateUrl: './hw-confirm-tx-dialog.component.html',
+    styleUrls: ['./hw-confirm-tx-dialog.component.scss'],
+    standalone: false
 })
 export class HwConfirmTxDialogComponent extends HwDialogBaseComponent<HwConfirmTxDialogComponent> {
   /**

@@ -26,8 +26,9 @@ import { ExplorerService } from '../services/explorer/explorer.service';
  * shown. The default value is an empty string, so both parts are shown.
  */
 @Pipe({
-  name: 'amount',
-  pure: false,
+    name: 'amount',
+    pure: false,
+    standalone: false
 })
 export class AmountPipe implements PipeTransform {
 

@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { MockBackend } from '@angular/http/testing';
 import { XHRBackend } from '@angular/http';
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 import { PriceService } from './price.service';
 import { CoinService } from './coin.service';
@@ -12,15 +12,16 @@ describe('PriceService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [ HttpClientModule ],
-      providers: [
+    imports: [],
+    providers: [
         PriceService,
         { provide: XHRBackend, useClass: MockBackend },
-        { provide: CoinService, useClass: MockCoinService }
-      ]
-    });
+        { provide: CoinService, useClass: MockCoinService },
+        provideHttpClient(withInterceptorsFromDi())
+    ]
+});
 
-    priceService = TestBed.get(PriceService);
+    priceService = TestBed.inject(PriceService);
   });
 
   it('should be created', () => {

@@ -7,9 +7,10 @@ import { FooterConfig } from 'app/app.config';
  * must be true. Read the docs for more information.
  */
 @Component({
-  selector: 'app-generic-footer',
-  templateUrl: './generic-footer.component.html',
-  styleUrls: ['./generic-footer.component.scss']
+    selector: 'app-generic-footer',
+    templateUrl: './generic-footer.component.html',
+    styleUrls: ['./generic-footer.component.scss'],
+    standalone: false
 })
 export class GenericFooterComponent {
   /**

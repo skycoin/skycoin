@@ -22,18 +22,21 @@
       <span>{{ 'exchange.title-and-button' | translate:{coinName: appService.coinName} }}</span>
     </a>
     -->
-    <a class="-button" *ngIf="otcEnabled">
-      <img src="assets/img/money-gold.png">
-      <span>{{ 'buy.title-and-button' | translate }}</span>
-    </a>
-    <app-double-button
-      *ngIf="navBarSwitchService.switchVisible"
-      [ngClass]="{'-switch': true, 'element-disabled': navBarSwitchService.switchDiabled}"
-      [leftButtonText]="navBarSwitchService.leftText | translate"
-      [rightButtonText]="navBarSwitchService.rightText | translate"
-      [activeButton]="navBarSwitchService.activeComponent | async"
-      className="light navbar"
-      (onStateChange)="changeActiveComponent($event)"
-    ></app-double-button>
+    @if (otcEnabled) {
+      <a class="-button">
+        <img src="assets/img/money-gold.png">
+        <span>{{ 'buy.title-and-button' | translate }}</span>
+      </a>
+    }
+    @if (navBarSwitchService.switchVisible) {
+      <app-double-button
+        [ngClass]="{'-switch': true, 'element-disabled': navBarSwitchService.switchDiabled}"
+        [leftButtonText]="navBarSwitchService.leftText | translate"
+        [rightButtonText]="navBarSwitchService.rightText | translate"
+        [activeButton]="navBarSwitchService.activeComponent | async"
+        className="light navbar"
+        (onStateChange)="changeActiveComponent($event)"
+      ></app-double-button>
+    }
   </div>
 </div>

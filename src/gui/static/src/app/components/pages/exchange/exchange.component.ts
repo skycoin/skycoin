@@ -11,9 +11,10 @@ import { environment } from '../../../../environments/environment';
  * Allows to buy coins using the Swaplab service.
  */
 @Component({
-  selector: 'app-exchange',
-  templateUrl: './exchange.component.html',
-  styleUrls: ['./exchange.component.scss'],
+    selector: 'app-exchange',
+    templateUrl: './exchange.component.html',
+    styleUrls: ['./exchange.component.scss'],
+    standalone: false
 })
 export class ExchangeComponent implements OnInit, OnDestroy {
   // Order for which the status must be shown. If null, the form for creating a new order is shown.

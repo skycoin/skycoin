@@ -13,8 +13,9 @@ import { dataValidityTime } from 'app/app.config';
  * Main page. Shows some details about the blockchain and a list of blocks.
  */
 @Component({
-  templateUrl: './blocks.component.html',
-  styleUrls: ['./blocks.component.scss']
+    templateUrl: './blocks.component.html',
+    styleUrls: ['./blocks.component.scss'],
+    standalone: false
 })
 export class BlocksComponent extends PageBaseComponent implements OnInit, OnDestroy {
   // Keys for persisting the server data, to be able to restore the state after navigation.

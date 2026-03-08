@@ -18,9 +18,10 @@ import { config } from '../../../../app.config';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 
 @Component({
-  selector: 'app-onboarding-create-wallet',
-  templateUrl: './onboarding-create-wallet.component.html',
-  styleUrls: ['./onboarding-create-wallet.component.scss'],
+    selector: 'app-onboarding-create-wallet',
+    templateUrl: './onboarding-create-wallet.component.html',
+    styleUrls: ['./onboarding-create-wallet.component.scss'],
+    standalone: false
 })
 export class OnboardingCreateWalletComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('formControl') formControl: CreateWalletFormComponent;

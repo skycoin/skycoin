@@ -1,11 +1,11 @@
-import { Directive, ElementRef, Renderer2, Input, ViewContainerRef, NgZone, Inject, Optional } from '@angular/core';
+import { Directive, ElementRef, Renderer2, Input, ViewContainerRef, NgZone, Inject, Optional, DOCUMENT } from '@angular/core';
 import { MatTooltip, MAT_TOOLTIP_SCROLL_STRATEGY, MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipDefaultOptions } from '@angular/material/tooltip';
 import { Overlay, ScrollDispatcher } from '@angular/cdk/overlay';
 import { Platform } from '@angular/cdk/platform';
 import { AriaDescriber, FocusMonitor } from '@angular/cdk/a11y';
 import { Directionality } from '@angular/cdk/bidi';
 import { TranslateService } from '@ngx-translate/core';
-import { DOCUMENT } from '@angular/common';
+
 
 /**
  * Makes a form field show red boders and text, as well as a tooltip, if there is a
@@ -13,7 +13,8 @@ import { DOCUMENT } from '@angular/common';
  * using the directive like this: '[appFormFieldError]="Msg"'.
  */
 @Directive({
-  selector: '[appFormFieldError]',
+    selector: '[appFormFieldError]',
+    standalone: false
 })
 export class FormFieldErrorDirective extends MatTooltip {
   // Error msg.

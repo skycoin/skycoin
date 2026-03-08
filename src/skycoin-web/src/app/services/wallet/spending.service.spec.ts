@@ -56,11 +56,11 @@ describe('SpendingService', () => {
       ]
     });
 
-    spendingService = TestBed.get(SpendingService);
-    walletService = TestBed.get(WalletService);
-    spyApiService = TestBed.get(ApiService);
-    spyCipherProvider = TestBed.get(CipherProvider);
-    spyTranslateService = TestBed.get(TranslateService);
+    spendingService = TestBed.inject(SpendingService);
+    walletService = TestBed.inject(WalletService);
+    spyApiService = TestBed.inject(ApiService);
+    spyCipherProvider = TestBed.inject(CipherProvider);
+    spyTranslateService = TestBed.inject(TranslateService);
   });
 
   afterEach(() => {

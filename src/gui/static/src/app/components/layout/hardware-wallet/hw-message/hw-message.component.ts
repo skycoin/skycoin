@@ -21,9 +21,10 @@ export enum MessageIcons {
  * and various text with different format. All properties are optional.
  */
 @Component({
-  selector: 'app-hw-message',
-  templateUrl: './hw-message.component.html',
-  styleUrls: ['./hw-message.component.scss'],
+    selector: 'app-hw-message',
+    templateUrl: './hw-message.component.html',
+    styleUrls: ['./hw-message.component.scss'],
+    standalone: false
 })
 export class HwMessageComponent implements OnDestroy {
   // Icon to show at the left.

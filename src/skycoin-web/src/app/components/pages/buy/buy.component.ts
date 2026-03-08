@@ -7,9 +7,10 @@ import { AddDepositAddressComponent } from './add-deposit-address/add-deposit-ad
 import { CustomMatDialogService } from '../../../services/custom-mat-dialog.service';
 
 @Component({
-  selector: 'app-buy',
-  templateUrl: './buy.component.html',
-  styleUrls: ['./buy.component.css'],
+    selector: 'app-buy',
+    templateUrl: './buy.component.html',
+    styleUrls: ['./buy.component.css'],
+    standalone: false
 })
 export class BuyComponent implements OnInit {
 

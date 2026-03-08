@@ -43,9 +43,10 @@ export class CachedAddressDetails {
  * of an exchange.
  */
 @Component({
-  selector: 'app-address-detail',
-  templateUrl: './address-detail.component.html',
-  styleUrls: ['./address-detail.component.scss']
+    selector: 'app-address-detail',
+    templateUrl: './address-detail.component.html',
+    styleUrls: ['./address-detail.component.scss'],
+    standalone: false
 })
 export class AddressDetailComponent extends PageBaseComponent implements OnInit, OnDestroy {
   // Keys for persisting the server data, to be able to restore the state after navigation.

@@ -10,9 +10,10 @@ import { WalletWithOutputs } from '../../../../services/wallet-operations/wallet
  * limited to one address by setting the"addr" param, on the URL, to the desired address.
  */
 @Component({
-  selector: 'app-outputs',
-  templateUrl: './outputs.component.html',
-  styleUrls: ['./outputs.component.scss'],
+    selector: 'app-outputs',
+    templateUrl: './outputs.component.html',
+    styleUrls: ['./outputs.component.scss'],
+    standalone: false
 })
 export class OutputsComponent implements OnDestroy {
   wallets: WalletWithOutputs[]|null;

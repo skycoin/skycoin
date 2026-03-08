@@ -5,12 +5,24 @@
   <div class="element-details">
     <div class="-row"><span>{{ 'transactionDetail.status' | translate }}</span><br class="-xs-only" /><div> {{ transaction ? (transaction.status ? ('transactionDetail.confirmed' | translate) : ('transactionDetail.unconfirmed' | translate)) : (loadingMsg | translate) }} </div></div>
     <div class="-row"><span>{{ 'transactionDetail.size' | translate }}</span><br class="-xs-only" /><div> {{ transaction ? (transaction.length | number) + ' bytes' : (loadingMsg | translate) }} </div></div>
-    <div class="-row" *ngIf="!transaction || transaction.status"><span>{{ 'transactionDetail.block' | translate }}</span><br class="-xs-only" /><div> <a [routerLink]="'/app/block/' + transaction.block" class="-link -copy-button-margin" *ngIf="transaction">{{ transaction.block }}</a> <app-copy-button [text]="transaction.block" *ngIf="transaction"></app-copy-button> <span *ngIf="!transaction">{{ loadingMsg | translate }}</span> </div></div>
-  </div>
+    @if (!transaction || transaction.status) {
+      <div class="-row"><span>{{ 'transactionDetail.block' | translate }}</span><br class="-xs-only" /><div> @if (transaction) {
+      <a [routerLink]="'/app/block/' + transaction.block" class="-link -copy-button-margin">{{ transaction.block }}</a>
+      } @if (transaction) {
+      <app-copy-button [text]="transaction.block"></app-copy-button>
+      } @if (!transaction) {
+      <span>{{ loadingMsg | translate }}</span>
+    } </div></div>
+  }
+</div>
 </div>
 
 <!-- Loading control -->
-<app-loading [longErrorMsg]="longErrorMsg | translate" *ngIf="transaction === undefined"></app-loading>
+@if (transaction === undefined) {
+  <app-loading [longErrorMsg]="longErrorMsg | translate"></app-loading>
+}
 
 <!-- Transaction details -->
-<app-transaction-info *ngIf="transaction" [maxInitialElements]="32" [transaction]="transaction"></app-transaction-info>
+@if (transaction) {
+  <app-transaction-info [maxInitialElements]="32" [transaction]="transaction"></app-transaction-info>
+}

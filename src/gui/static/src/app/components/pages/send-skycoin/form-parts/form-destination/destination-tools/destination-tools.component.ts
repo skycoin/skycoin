@@ -14,9 +14,10 @@ export enum DestinationTools {
  * DestinationTools enum is returned in the "afterClosed" event.
  */
 @Component({
-  selector: 'app-destination-tools',
-  templateUrl: './destination-tools.component.html',
-  styleUrls: ['./destination-tools.component.scss'],
+    selector: 'app-destination-tools',
+    templateUrl: './destination-tools.component.html',
+    styleUrls: ['./destination-tools.component.scss'],
+    standalone: false
 })
 export class DestinationToolsComponent {
   destinationTools = DestinationTools;

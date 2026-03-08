@@ -1,6 +1,6 @@
 import { Component, Inject, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialog } from '@angular/material/dialog';
-import { FormGroup, FormBuilder, Validators } from '@angular/forms';
+import { UntypedFormGroup, UntypedFormBuilder, Validators } from '@angular/forms';
 
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { ChildHwDialogParams } from '../hw-options-dialog/hw-options-dialog.component';
@@ -18,14 +18,15 @@ import { HardwareWalletService } from '../../../../services/wallet-operations/ha
  * for being oppenend by the hw wallet options modal window.
  */
 @Component({
-  selector: 'app-hw-added-dialog',
-  templateUrl: './hw-added-dialog.component.html',
-  styleUrls: ['./hw-added-dialog.component.scss'],
+    selector: 'app-hw-added-dialog',
+    templateUrl: './hw-added-dialog.component.html',
+    styleUrls: ['./hw-added-dialog.component.scss'],
+    standalone: false
 })
 export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogComponent> implements OnDestroy {
   @ViewChild('input') input: ElementRef;
   wallet: WalletBase;
-  form: FormGroup;
+  form: UntypedFormGroup;
   maxHwWalletLabelLength = HwWalletService.maxLabelLength;
 
   // Vars with the validation error messages.
@@ -38,7 +39,7 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
     @Inject(MAT_DIALOG_DATA) private data: ChildHwDialogParams,
     public dialogRef: MatDialogRef<HwAddedDialogComponent>,
     hwWalletService: HwWalletService,
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private dialog: MatDialog,
     private msgBarService: MsgBarService,
     private walletsAndAddressesService: WalletsAndAddressesService,

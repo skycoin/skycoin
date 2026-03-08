@@ -1,6 +1,6 @@
 import { SubscriptionLike } from 'rxjs';
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
-import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { UntypedFormArray, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { BigNumber } from 'bignumber.js';
 import { TranslateService } from '@ngx-translate/core';
@@ -45,9 +45,10 @@ export interface Destination {
  * coins and hours to send to each one.
  */
 @Component({
-  selector: 'app-form-destination',
-  templateUrl: './form-destination.component.html',
-  styleUrls: ['./form-destination.component.scss'],
+    selector: 'app-form-destination',
+    templateUrl: './form-destination.component.html',
+    styleUrls: ['./form-destination.component.scss'],
+    standalone: false
 })
 export class FormDestinationComponent implements OnInit, OnDestroy {
   /**
@@ -111,7 +112,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     return this.showSimpleFormInternal;
   }
 
-  form: FormGroup;
+  form: UntypedFormGroup;
   doubleButtonActive = DoubleButtonActive;
   // Allows to know if the user is entering the values in the coin (left) or usd (right).
   selectedCurrency = DoubleButtonActive.LeftButton;
@@ -149,12 +150,12 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
   // Gets all the form field groups on the destinations array.
   get destControls() {
-    return (this.form.get('destinations') as FormArray).controls;
+    return (this.form.get('destinations') as UntypedFormArray).controls;
   }
 
   constructor(
     private appService: AppService,
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private dialog: MatDialog,
     private msgBarService: MsgBarService,
     private translate: TranslateService,
@@ -200,7 +201,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       this.selectedCurrency = value;
       this.askIfConvertAmount();
       this.updateValuesAndValidity();
-      (this.form.get('destinations') as FormArray).updateValueAndValidity();
+      (this.form.get('destinations') as UntypedFormArray).updateValueAndValidity();
     }
   }
 
@@ -408,7 +409,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
     // Update the form validity.
     setTimeout(() => {
-      (this.form.get('destinations') as FormArray).updateValueAndValidity();
+      (this.form.get('destinations') as UntypedFormArray).updateValueAndValidity();
       this.onChanges.emit();
     });
   }
@@ -426,7 +427,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       this.updateValuesAndValidity();
     }));
 
-    (this.form.get('destinations') as FormArray).push(group);
+    (this.form.get('destinations') as UntypedFormArray).push(group);
     this.addressErrorMsgs.push('');
     this.coinsErrorMsgs.push('');
     this.hoursErrorMsgs.push('');
@@ -436,7 +437,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
   // Removes from the form the destination corresponding to the provided index.
   removeDestination(index) {
-    const destinations = this.form.get('destinations') as FormArray;
+    const destinations = this.form.get('destinations') as UntypedFormArray;
     destinations.removeAt(index);
 
     // Remove the associated entry in the error arrays, if needed.
@@ -643,7 +644,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
    */
   setDestinations(newDestinations: Destination[]) {
     while (this.destControls.length > 0) {
-      (this.form.get('destinations') as FormArray).removeAt(0);
+      (this.form.get('destinations') as UntypedFormArray).removeAt(0);
     }
 
     newDestinations.forEach((destination, i) => {
@@ -941,7 +942,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     this.form.get('address').setValue('');
 
     while (this.destControls.length > 0) {
-      (this.form.get('destinations') as FormArray).removeAt(0);
+      (this.form.get('destinations') as UntypedFormArray).removeAt(0);
     }
 
     this.addDestination();

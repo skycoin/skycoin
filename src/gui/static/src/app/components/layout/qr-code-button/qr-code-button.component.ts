@@ -7,9 +7,10 @@ import { QrCodeComponent, QrDialogConfig } from '../qr-code/qr-code.component';
  * Simple inline img button which opens the QR code modal window when pressed.
  */
 @Component({
-  selector: 'app-qr-code-button',
-  templateUrl: './qr-code-button.component.html',
-  styleUrls: ['./qr-code-button.component.scss'],
+    selector: 'app-qr-code-button',
+    templateUrl: './qr-code-button.component.html',
+    styleUrls: ['./qr-code-button.component.scss'],
+    standalone: false
 })
 export class QrCodeButtonComponent {
   // Address the QR code modal window will show.

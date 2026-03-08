@@ -11,9 +11,10 @@ import { HwDialogBaseComponent } from '../hw-dialog-base.component';
  * created for being oppenend by the hw wallet options modal window.
  */
 @Component({
-  selector: 'app-hw-change-pin-dialog',
-  templateUrl: './hw-change-pin-dialog.component.html',
-  styleUrls: ['./hw-change-pin-dialog.component.scss'],
+    selector: 'app-hw-change-pin-dialog',
+    templateUrl: './hw-change-pin-dialog.component.html',
+    styleUrls: ['./hw-change-pin-dialog.component.scss'],
+    standalone: false
 })
 export class HwChangePinDialogComponent extends HwDialogBaseComponent<HwChangePinDialogComponent> {
   // If true, the device already has a PIN code and the operation is for changing it. If

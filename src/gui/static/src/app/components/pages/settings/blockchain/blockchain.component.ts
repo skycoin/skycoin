@@ -9,9 +9,10 @@ import { AppService } from '../../../../services/app.service';
  * Shows the state of the the blockchain on the node.
  */
 @Component({
-  selector: 'app-blockchain',
-  templateUrl: './blockchain.component.html',
-  styleUrls: ['./blockchain.component.scss'],
+    selector: 'app-blockchain',
+    templateUrl: './blockchain.component.html',
+    styleUrls: ['./blockchain.component.scss'],
+    standalone: false
 })
 export class BlockchainComponent implements OnInit, OnDestroy {
   block: BasicBlockInfo;

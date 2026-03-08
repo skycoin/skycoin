@@ -11,52 +11,56 @@
     </div>
   </div>
   <!-- Checkbox. -->
-  <div class="row" *ngIf="!creatingTemporal">
-    <div class="row-container -check-container">
-      <mat-checkbox class="-check" (change)="setEncrypt($event)" [checked]="true" type="checkbox" id="encrypt" [ngClass]="{'element-disabled' : isWorking}">
-        <span class="img-label-container">
-          <img src="assets/img/lock-gold.png" />
-          {{ 'wallet.new.encrypt-check' | translate }}
-        </span>
-      </mat-checkbox>
+  @if (!creatingTemporal) {
+    <div class="row">
+      <div class="row-container -check-container">
+        <mat-checkbox class="-check" (change)="setEncrypt($event)" [checked]="true" type="checkbox" id="encrypt" [ngClass]="{'element-disabled' : isWorking}">
+          <span class="img-label-container">
+            <img src="assets/img/lock-gold.png" />
+            {{ 'wallet.new.encrypt-check' | translate }}
+          </span>
+        </mat-checkbox>
+      </div>
     </div>
-  </div>
+  }
   <!-- Form. -->
-  <div class="row" *ngIf="!creatingTemporal">
-    <div class="row-container">
-      <form [formGroup]="form">
-        <div class="form-field">
-          <label for="password">{{ 'password.password-label' | translate }}</label>
-          <input
-            class="-input"
-            type="password"
-            appDontSavePassword
-            formControlName="password"
-            id="password"
-            [attr.disabled]="isWorking ? 'true' : null"
-            [ngClass]="{ 'element-disabled': form.disabled }"
-            [appFormFieldError]="password1ErrorMsg"
-            (blur)="validateForm()"
-          >
-        </div>
-        <div class="form-field">
-          <label for="confirm">{{ 'password.confirm-password-label' | translate }}</label>
-          <input
-            class="-input"
-            type="password"
-            appDontSavePassword
-            formControlName="confirm"
-            id="confirm"
-            [attr.disabled]="isWorking ? 'true' : null"
-            [ngClass]="{ 'element-disabled': form.disabled }"
-            (keydown.enter)="emitCreatedPassword()"
-            [appFormFieldError]="password2ErrorMsg"
-            (blur)="validateForm()"
-          >
-        </div>
-      </form>
+  @if (!creatingTemporal) {
+    <div class="row">
+      <div class="row-container">
+        <form [formGroup]="form">
+          <div class="form-field">
+            <label for="password">{{ 'password.password-label' | translate }}</label>
+            <input
+              class="-input"
+              type="password"
+              appDontSavePassword
+              formControlName="password"
+              id="password"
+              [attr.disabled]="isWorking ? 'true' : null"
+              [ngClass]="{ 'element-disabled': form.disabled }"
+              [appFormFieldError]="password1ErrorMsg"
+              (blur)="validateForm()"
+              >
+          </div>
+          <div class="form-field">
+            <label for="confirm">{{ 'password.confirm-password-label' | translate }}</label>
+            <input
+              class="-input"
+              type="password"
+              appDontSavePassword
+              formControlName="confirm"
+              id="confirm"
+              [attr.disabled]="isWorking ? 'true' : null"
+              [ngClass]="{ 'element-disabled': form.disabled }"
+              (keydown.enter)="emitCreatedPassword()"
+              [appFormFieldError]="password2ErrorMsg"
+              (blur)="validateForm()"
+              >
+          </div>
+        </form>
+      </div>
     </div>
-  </div>
+  }
   <!-- Button area. -->
   <div class="row -buttons-footer">
     <app-button class="dark-button -button-min-margin" [disabled]="!creatingTemporal && (!form || (form.enabled && !form.valid))" (action)="emitCreatedPassword()" #button>

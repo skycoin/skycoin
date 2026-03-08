@@ -11,9 +11,10 @@ declare let QRCode: any; // eslint-disable-line @typescript-eslint/naming-conven
  * Shows a QR code.
  */
 @Component({
-  selector: 'app-qr-code',
-  templateUrl: './qr-code.component.html',
-  styleUrls: ['./qr-code.component.scss']
+    selector: 'app-qr-code',
+    templateUrl: './qr-code.component.html',
+    styleUrls: ['./qr-code.component.scss'],
+    standalone: false
 })
 export class QrCodeComponent implements OnInit {
   /**

@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MatDialogConfig } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
-import { FormGroup, FormBuilder } from '@angular/forms';
+import { UntypedFormGroup, UntypedFormBuilder } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 
 import { PriceService } from '../../../services/price.service';
@@ -30,9 +30,10 @@ export class Address {
 }
 
 @Component({
-  selector: 'app-history',
-  templateUrl: './history.component.html',
-  styleUrls: ['./history.component.scss'],
+    selector: 'app-history',
+    templateUrl: './history.component.html',
+    styleUrls: ['./history.component.scss'],
+    standalone: false
 })
 export class HistoryComponent implements OnInit, OnDestroy {
   currentCoin: BaseCoin;
@@ -42,7 +43,7 @@ export class HistoryComponent implements OnInit, OnDestroy {
   transactions: NormalTransaction[];
   price: number;
   wallets: Wallet[];
-  form: FormGroup;
+  form: UntypedFormGroup;
 
   private requestedAddress: string;
   private walletsLoaded = false;
@@ -58,7 +59,7 @@ export class HistoryComponent implements OnInit, OnDestroy {
     private priceService: PriceService,
     private dialog: CustomMatDialogService,
     private coinService: CoinService,
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private walletService: WalletService,
     route: ActivatedRoute,
   ) {

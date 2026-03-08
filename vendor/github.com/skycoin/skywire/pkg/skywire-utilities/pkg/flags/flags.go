@@ -18,6 +18,11 @@ func InitFlags(cmd *cobra.Command, usage bool) {
 	cmd.SetHelpCommand(&cobra.Command{Hidden: true})
 	cmd.PersistentFlags().MarkHidden("help") //nolint:errcheck,gosec
 
+	// Set help template BEFORE cc.Init() so coloredcobra can colorize it
+	if !usage {
+		cmd.SetHelpTemplate(helpTemplateNoUsage)
+	}
+
 	cc.Init(&cc.Config{
 		RootCmd:         cmd,
 		Headings:        cc.HiBlue + cc.Bold,
@@ -30,24 +35,21 @@ func InitFlags(cmd *cobra.Command, usage bool) {
 		NoExtraNewlines: true,
 		NoBottomNewline: true,
 	})
-
-	// Set help template AFTER cc.Init() to ensure it's not overridden
-	if !usage {
-		cmd.SetHelpTemplate(helpTemplateNoUsage)
-	}
 }
 
 const helpTemplateNoUsage = `{{with (or .Long .Short)}}{{. | trimTrailingWhitespaces}}
 
-{{end}}{{if .HasAvailableSubCommands}}Available Commands:{{range .Commands}}{{if and (ne .Name "completion") .IsAvailableCommand}}
-  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}
+{{end}}{{if .HasAvailableSubCommands}}{{HeadingStyle "Available Commands:"}}{{range .Commands}}{{if and (ne .Name "completion") .IsAvailableCommand}}
+  {{rpad (CommandStyle .Name) (sum .NamePadding 12) }} {{CmdShortStyle .Short}}{{end}}{{end}}
 
-{{end}}{{if .HasAvailableLocalFlags}}Flags:
-{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
+{{end}}{{if .HasAvailableLocalFlags}}{{HeadingStyle "Flags:"}}
+{{FlagStyle .LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
 
-Global Flags:
-{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}`
+{{HeadingStyle "Global Flags:"}}
+{{FlagStyle .InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}
+`
 
+// help is used as usage template (coloredcobra will add colors to it)
 const help = `{{if gt (len .Aliases) 0}}{{.NameAndAliases}}{{end}}{{if .HasAvailableSubCommands}}Available Commands:{{range .Commands}}{{if and (ne .Name "completion") .IsAvailableCommand}}
   {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
 

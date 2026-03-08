@@ -1,36 +1,72 @@
 <div class="content">
   <!-- Icons. -->
-  <div class="icon-container" *ngIf="icon !== icons.None">
-    <mat-spinner *ngIf="icon == icons.Spinner"></mat-spinner>
-    <i *ngIf="icon == icons.Success" class="material-icons green-text">done</i>
-    <i *ngIf="icon == icons.Error" class="material-icons red-text">error_outline</i>
-    <i *ngIf="icon == icons.Usb" class="material-icons grey-light-text">usb</i>
-    <i *ngIf="icon == icons.HardwareWallet" class="material-icons yellow-text">memory</i>
-    <i *ngIf="icon == icons.Warning" class="material-icons red-text -blinking">error</i>
-    <i *ngIf="icon == icons.Confirm" class="material-icons yellow-text">touch_app</i>
-  </div>
+  @if (icon !== icons.None) {
+    <div class="icon-container">
+      @if (icon == icons.Spinner) {
+        <mat-spinner></mat-spinner>
+      }
+      @if (icon == icons.Success) {
+        <i class="material-icons green-text">done</i>
+      }
+      @if (icon == icons.Error) {
+        <i class="material-icons red-text">error_outline</i>
+      }
+      @if (icon == icons.Usb) {
+        <i class="material-icons grey-light-text">usb</i>
+      }
+      @if (icon == icons.HardwareWallet) {
+        <i class="material-icons yellow-text">memory</i>
+      }
+      @if (icon == icons.Warning) {
+        <i class="material-icons red-text -blinking">error</i>
+      }
+      @if (icon == icons.Confirm) {
+        <i class="material-icons yellow-text">touch_app</i>
+      }
+    </div>
+  }
   <!-- Texts. -->
   <div class="text-container">
-    <div *ngIf="upperBigText">
-      <span class="big-text">{{ upperBigText }}</span>
-    </div>
-    <span *ngIf="text">{{ text }}</span>
-    <span *ngIf="link && !linkIsUrl" class="link" (click)="activateLink()">{{ linkText ? linkText : link }}</span>
-    <span *ngIf="link && linkIsUrl && !linkIsInternal"><a class="link" [href]="link" target="_blank" rel="noreferrer nofollow noopener">{{ linkText ? linkText : link }}</a></span>
-    <span *ngIf="link && linkIsUrl && linkIsInternal"><a class="link" [href]="link">{{ linkText ? linkText : link }}</a></span>
-    <div *ngIf="outputsList" class="list">
-      <div *ngFor="let output of outputsList" class="list-element">
-        <span>• {{ output.coins | amount }}</span>
-        <span>{{ 'hardware-wallet.create-tx.separator-for-coins-and-hours' | translate }} {{ output.hours | amount:false }}</span>
-        <span>{{ 'hardware-wallet.create-tx.separator-to-destination' | translate }} {{ output.address }}</span>
+    @if (upperBigText) {
+      <div>
+        <span class="big-text">{{ upperBigText }}</span>
       </div>
-    </div>
-    <span *ngIf="lowerText">{{ lowerText }}</span>
-    <div *ngIf="lowerBigText">
-      <span class="big-text">{{ lowerBigText }}</span>
-    </div>
-    <div *ngIf="lowerLightText">
-      <span class="grey-light-text">{{ lowerLightText }}</span>
-    </div>
+    }
+    @if (text) {
+      <span>{{ text }}</span>
+    }
+    @if (link && !linkIsUrl) {
+      <span class="link" (click)="activateLink()">{{ linkText ? linkText : link }}</span>
+    }
+    @if (link && linkIsUrl && !linkIsInternal) {
+      <span><a class="link" [href]="link" target="_blank" rel="noreferrer nofollow noopener">{{ linkText ? linkText : link }}</a></span>
+    }
+    @if (link && linkIsUrl && linkIsInternal) {
+      <span><a class="link" [href]="link">{{ linkText ? linkText : link }}</a></span>
+    }
+    @if (outputsList) {
+      <div class="list">
+        @for (output of outputsList; track output) {
+          <div class="list-element">
+            <span>• {{ output.coins | amount }}</span>
+            <span>{{ 'hardware-wallet.create-tx.separator-for-coins-and-hours' | translate }} {{ output.hours | amount:false }}</span>
+            <span>{{ 'hardware-wallet.create-tx.separator-to-destination' | translate }} {{ output.address }}</span>
+          </div>
+        }
+      </div>
+    }
+    @if (lowerText) {
+      <span>{{ lowerText }}</span>
+    }
+    @if (lowerBigText) {
+      <div>
+        <span class="big-text">{{ lowerBigText }}</span>
+      </div>
+    }
+    @if (lowerLightText) {
+      <div>
+        <span class="grey-light-text">{{ lowerLightText }}</span>
+      </div>
+    }
   </div>
 </div>

@@ -7,9 +7,10 @@ import { BaseCoin } from '../../../../../coins/basecoin';
 import { CoinService } from '../../../../../services/coin.service';
 
 @Component({
-  selector: 'app-select-address',
-  templateUrl: './select-address.html',
-  styleUrls: ['./select-address.scss'],
+    selector: 'app-select-address',
+    templateUrl: './select-address.html',
+    styleUrls: ['./select-address.scss'],
+    standalone: false
 })
 export class SelectAddressComponent {
 

@@ -7,9 +7,10 @@ import { CoinService } from '../../../../../services/coin.service';
 import { BaseCoin } from '../../../../../coins/basecoin';
 
 @Component({
-  selector: 'app-transaction-info',
-  templateUrl: './transaction-info.component.html',
-  styleUrls: ['./transaction-info.component.scss'],
+    selector: 'app-transaction-info',
+    templateUrl: './transaction-info.component.html',
+    styleUrls: ['./transaction-info.component.scss'],
+    standalone: false
 })
 export class TransactionInfoComponent implements OnInit, OnDestroy {
   @Input() transaction: Transaction;

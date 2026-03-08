@@ -5,55 +5,90 @@
       <app-top-bar [headline]="headline"></app-top-bar>
       <div class="balance-container">
         <div class="balance">
-          <p *ngIf="!synchronizationInfoObtained || (synchronized && !balanceObtained)" class="loading-header">{{ 'common.loading' | translate }}</p>
-          <p *ngIf="synchronizationInfoObtained && !synchronized" class="coins"><span>{{ synchronizationPercentage | percent:'1.2-2' }}</span></p>
-          <p *ngIf="synchronized && balanceObtained" class="coins"><span>{{ coins | amount:true:'first' }}</span> {{ coins | amount:true:'last' }}</p>
-          <p class="dollars" *ngIf="showPrice">
-            <span *ngIf="price">
-              <span *ngIf="synchronized && balanceObtained">{{ (coins * price) | currency:'USD':'symbol':'1.2-2' }}</span>
-              <span *ngIf="!synchronized || !balanceObtained">-</span>
-              ({{ price | currency:'USD':'symbol':'1.2-2' }})
-            </span>
-            <span *ngIf="!price">{{ 'common.loading' | translate }}</span>
-          </p>
+          @if (!synchronizationInfoObtained || (synchronized && !balanceObtained)) {
+            <p class="loading-header">{{ 'common.loading' | translate }}</p>
+          }
+          @if (synchronizationInfoObtained && !synchronized) {
+            <p class="coins"><span>{{ synchronizationPercentage | percent:'1.2-2' }}</span></p>
+          }
+          @if (synchronized && balanceObtained) {
+            <p class="coins"><span>{{ coins | amount:true:'first' }}</span> {{ coins | amount:true:'last' }}</p>
+          }
+          @if (showPrice) {
+            <p class="dollars">
+              @if (price) {
+                <span>
+                  @if (synchronized && balanceObtained) {
+                    <span>{{ (coins * price) | currency:'USD':'symbol':'1.2-2' }}</span>
+                  }
+                  @if (!synchronized || !balanceObtained) {
+                    <span>-</span>
+                  }
+                  ({{ price | currency:'USD':'symbol':'1.2-2' }})
+                </span>
+              }
+              @if (!price) {
+                <span>{{ 'common.loading' | translate }}</span>
+              }
+            </p>
+          }
         </div>
       </div>
       <div class="hour-balance">
-        <p *ngIf="!synchronizationInfoObtained || (synchronized && !balanceObtained)">{{ 'common.loading' | translate }}</p>
-        <p *ngIf="synchronizationInfoObtained && !synchronized">{{ 'header.syncing-blocks' | translate }} {{ '(' + currentBlock + '/'  + highestBlock + ')' }}</p>
-        <p *ngIf="synchronized && balanceObtained">{{ hours | amount:false }}</p>
+        @if (!synchronizationInfoObtained || (synchronized && !balanceObtained)) {
+          <p>{{ 'common.loading' | translate }}</p>
+        }
+        @if (synchronizationInfoObtained && !synchronized) {
+          <p>{{ 'header.syncing-blocks' | translate }} {{ '(' + currentBlock + '/'  + highestBlock + ')' }}</p>
+        }
+        @if (synchronized && balanceObtained) {
+          <p>{{ hours | amount:false }}</p>
+        }
       </div>
     </div>
   </div>
   <app-nav-bar></app-nav-bar>
-  <mat-progress-bar
-    *ngIf="!synchronized && synchronizationInfoObtained"
-    color="primary"
-    [mode]="'determinate'"
-    [value]="synchronizationPercentage * 100"></mat-progress-bar
-  >
-  <!-- Errors area. -->
-  <div class="notification-bar" *ngIf="appService.updateAvailable">
-    <div>
-      {{ 'header.warnings.update-part1' | translate }}
-      <a [href]="walletDownloadUrl" target="_blank" rel="noreferrer nofollow noopener">v{{ appService.lastestVersion }}</a>
-      {{ 'header.warnings.update-part3' | translate }}
-    </div>
+  @if (!synchronized && synchronizationInfoObtained) {
+    <mat-progress-bar
+      color="primary"
+      [mode]="'determinate'"
+      [value]="synchronizationPercentage * 100"></mat-progress-bar
+      >
+    }
+    <!-- Errors area. -->
+    @if (appService.updateAvailable) {
+      <div class="notification-bar">
+        <div>
+          {{ 'header.warnings.update-part1' | translate }}
+          <a [href]="walletDownloadUrl" target="_blank" rel="noreferrer nofollow noopener">v{{ appService.lastestVersion }}</a>
+          {{ 'header.warnings.update-part3' | translate }}
+        </div>
+      </div>
+    }
+    @if (appService.csrfDisabled) {
+      <div class="notification-bar">
+        <div>{{ 'header.warnings.csrf' | translate }}</div>
+      </div>
+    }
+    @if (!appService.csrfDisabled && networkService.noConnections) {
+      <div class="notification-bar">
+        <div>{{ 'header.warnings.no-connections' | translate }}</div>
+      </div>
+    }
+    @if (hasPendingTxs || (!synchronized && synchronizationInfoObtained)) {
+      <div class="notification-bar">
+        @if (hasPendingTxs) {
+          <div>
+            {{ 'header.warnings.pending-txs-part1' | translate }}
+            <a routerLink='/settings/pending-transactions'>{{ 'header.warnings.pending-txs-part2' | translate }}</a>
+            {{ 'header.warnings.pending-txs-part3' | translate }}
+          </div>
+        }
+        @if (!synchronized && synchronizationInfoObtained && !hasPendingTxs) {
+          <div>
+            {{ 'header.warnings.synchronizing' | translate }}
+          </div>
+        }
+      </div>
+    }
   </div>
-  <div class="notification-bar" *ngIf="appService.csrfDisabled">
-    <div>{{ 'header.warnings.csrf' | translate }}</div>
-  </div>
-  <div class="notification-bar" *ngIf="!appService.csrfDisabled && networkService.noConnections">
-    <div>{{ 'header.warnings.no-connections' | translate }}</div>
-  </div>
-  <div class="notification-bar" *ngIf="hasPendingTxs || (!synchronized && synchronizationInfoObtained)">
-    <div *ngIf="hasPendingTxs">
-      {{ 'header.warnings.pending-txs-part1' | translate }}
-      <a routerLink='/settings/pending-transactions'>{{ 'header.warnings.pending-txs-part2' | translate }}</a>
-      {{ 'header.warnings.pending-txs-part3' | translate }}
-    </div>
-    <div *ngIf="!synchronized && synchronizationInfoObtained && !hasPendingTxs">
-      {{ 'header.warnings.synchronizing' | translate }}
-    </div>
-  </div>
-</div>

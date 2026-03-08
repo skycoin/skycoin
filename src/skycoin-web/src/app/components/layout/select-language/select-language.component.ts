@@ -4,9 +4,10 @@ import { MatDialogRef } from '@angular/material/dialog';
 import { LanguageData, LanguageService } from '../../../services/language.service';
 
 @Component({
-  selector: 'app-select-language',
-  templateUrl: './select-language.component.html',
-  styleUrls: ['./select-language.component.scss'],
+    selector: 'app-select-language',
+    templateUrl: './select-language.component.html',
+    styleUrls: ['./select-language.component.scss'],
+    standalone: false
 })
 export class SelectLanguageComponent implements OnInit {
 

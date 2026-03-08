@@ -1,8 +1,8 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material';
-import { FormBuilder } from '@angular/forms';
-import { HttpClientModule } from '@angular/common/http';
+import { UntypedFormBuilder } from '@angular/forms';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { TranslateService } from '@ngx-translate/core';
 
 import { ChangeNodeURLComponent } from './change-node-url.component';
@@ -16,21 +16,22 @@ describe('ChangeNodeURLComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ ChangeNodeURLComponent, MockTranslatePipe ],
-      imports: [ HttpClientModule ],
-      schemas: [ NO_ERRORS_SCHEMA ],
-      providers: [
-        FormBuilder,
+    declarations: [ChangeNodeURLComponent, MockTranslatePipe],
+    schemas: [NO_ERRORS_SCHEMA],
+    imports: [],
+    providers: [
+        UntypedFormBuilder,
         { provide: CoinService, useClass: MockCoinService },
         { provide: MatDialogRef, useValue: {} },
         { provide: MAT_DIALOG_DATA, useValue: {} },
         {
-          provide: TranslateService,
-          useValue: jasmine.createSpyObj('TranslateService', ['instant'])
+            provide: TranslateService,
+            useValue: jasmine.createSpyObj('TranslateService', ['instant'])
         },
         { provide: MsgBarService, useClass: MockMsgBarService },
-      ]
-    })
+        provideHttpClient(withInterceptorsFromDi()),
+    ]
+})
     .compileComponents();
   }));
 

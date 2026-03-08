@@ -1,30 +1,35 @@
 <div>
   <app-header [headline]="'pending-txs.title' | translate"></app-header>
 
-  <app-loading-content
-    [isLoading]="!transactions"
-    noDataText="pending-txs.none"
-    *ngIf="!transactions || transactions.length === 0"
-  ></app-loading-content>
+  @if (!transactions || transactions.length === 0) {
+    <app-loading-content
+      [isLoading]="!transactions"
+      noDataText="pending-txs.none"
+    ></app-loading-content>
+  }
 
-  <div class="container" *ngIf="transactions && transactions.length > 0">
-    <div class="-table">
-      <div class="-headers">
-        <div class="-flex-fill">{{ 'pending-txs.txid-table-label' | translate }}</div>
-        <div class="-width-150 text-right">{{ 'coin' | commonText }}</div>
-        <div class="-width-150 text-right">{{ 'hours' | commonText }}</div>
-        <div class="-width-150">{{ 'pending-txs.timestamp-table-label' | translate }}</div>
-      </div>
-      <div class="-body">
-        <div class="-row" *ngFor="let tx of transactions">
-          <div class="-flex-fill break-all">{{ tx.id }}</div>
-          <div class="-width-150 text-right">{{ tx.coins | amount:true:'first' }}</div>
-          <div class="-width-150 text-right">{{ tx.hours | amount:false:'first' }}</div>
-          <div class="-width-150 grey-text">{{ tx.timestamp | dateTime }}</div>
+  @if (transactions && transactions.length > 0) {
+    <div class="container">
+      <div class="-table">
+        <div class="-headers">
+          <div class="-flex-fill">{{ 'pending-txs.txid-table-label' | translate }}</div>
+          <div class="-width-150 text-right">{{ 'coin' | commonText }}</div>
+          <div class="-width-150 text-right">{{ 'hours' | commonText }}</div>
+          <div class="-width-150">{{ 'pending-txs.timestamp-table-label' | translate }}</div>
+        </div>
+        <div class="-body">
+          @for (tx of transactions; track tx) {
+            <div class="-row">
+              <div class="-flex-fill break-all">{{ tx.id }}</div>
+              <div class="-width-150 text-right">{{ tx.coins | amount:true:'first' }}</div>
+              <div class="-width-150 text-right">{{ tx.hours | amount:false:'first' }}</div>
+              <div class="-width-150 grey-text">{{ tx.timestamp | dateTime }}</div>
+            </div>
+          }
         </div>
       </div>
     </div>
-  </div>
+  }
   <!-- Needed to force Chrome respect any previous bottom margin. -->
   <div class="final-element"></div>
 </div>

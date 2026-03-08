@@ -1,100 +1,131 @@
 <app-modal [headline]="'wallet.hardware-wallet-button' | translate" [dialog]="dialogRef">
-  <app-hw-message *ngIf="currentState === states.ShowingResult"
-    [text]="result.text | translate"
-    [linkText]="result.linkText ? (result.linkText | translate) : null"
-    [link]="result.link"
-    [linkIsUrl]="true"
-    [linkIsInternal]="result.linkIsInternal"
-    [icon]="result.icon"
-  ></app-hw-message>
-
-  <app-hw-message *ngIf="currentState === states.Other && !otherStateBecauseWrongPin"
-    [text]="('hardware-wallet.errors.refused' | translate) + ' ' + ('hardware-wallet.options.forgotten-pin-part1' | translate)"
-    [linkText]="'hardware-wallet.options.forgotten-pin-part2' | translate"
-    [icon]="msgIcons.Error"
-    (linkClicked)="wipe()"
-  ></app-hw-message>
-
-  <app-hw-message *ngIf="currentState === states.Other && otherStateBecauseWrongPin"
-    [text]="('hardware-wallet.errors.incorrect-pin' | translate) + ' ' + ('hardware-wallet.options.forgotten-pin-part1' | translate)"
-    [linkText]="'hardware-wallet.options.forgotten-pin-part2' | translate"
-    [icon]="msgIcons.Error"
-    (linkClicked)="wipe()"
-  ></app-hw-message>
-
-  <div *ngIf="currentState === states.Finished" [ngClass]="{'disabled' : refreshingWarnings}">
-    <app-hw-message *ngIf="newWalletConnected"
-      [upperBigText]="'hardware-wallet.options.unconfigured-detected-title' | translate"
-      [lowerLightText]="('hardware-wallet.options.firmware-version' | translate) + ' ' + firmwareVersion"
-      [text]="'hardware-wallet.options.unconfigured-detected' | translate"
-      [icon]="msgIcons.HardwareWallet"
+  @if (currentState === states.ShowingResult) {
+    <app-hw-message
+      [text]="result.text | translate"
+      [linkText]="result.linkText ? (result.linkText | translate) : null"
+      [link]="result.link"
+      [linkIsUrl]="true"
+      [linkIsInternal]="result.linkIsInternal"
+      [icon]="result.icon"
     ></app-hw-message>
+  }
 
-    <app-hw-message *ngIf="!newWalletConnected"
-      [text]="'hardware-wallet.options.configured-detected' | translate"
-      [lowerLightText]="('hardware-wallet.options.firmware-version' | translate) + ' ' + firmwareVersion"
-      [lowerBigText]="wallet.label"
-      [icon]="msgIcons.HardwareWallet"
+  @if (currentState === states.Other && !otherStateBecauseWrongPin) {
+    <app-hw-message
+      [text]="('hardware-wallet.errors.refused' | translate) + ' ' + ('hardware-wallet.options.forgotten-pin-part1' | translate)"
+      [linkText]="'hardware-wallet.options.forgotten-pin-part2' | translate"
+      [icon]="msgIcons.Error"
+      (linkClicked)="wipe()"
     ></app-hw-message>
+  }
 
-    <div class="alert-box" *ngIf="securityWarnings.length > 0">
-      <mat-icon>error</mat-icon>
-      <div>
-        <div class="title">{{ (securityWarnings.length > 1 ? 'hardware-wallet.options.security-warnings-title' : 'hardware-wallet.options.security-warning-title') | translate}}</div>
-        <ng-container *ngFor="let warning of securityWarnings; let i = index">
-          <div>{{ securityWarnings.length > 1 ? ((i + 1) + ')') : '' }} {{ warning | translate}}</div>
-          <br *ngIf="i < securityWarnings.length - 1"/>
-        </ng-container>
+  @if (currentState === states.Other && otherStateBecauseWrongPin) {
+    <app-hw-message
+      [text]="('hardware-wallet.errors.incorrect-pin' | translate) + ' ' + ('hardware-wallet.options.forgotten-pin-part1' | translate)"
+      [linkText]="'hardware-wallet.options.forgotten-pin-part2' | translate"
+      [icon]="msgIcons.Error"
+      (linkClicked)="wipe()"
+    ></app-hw-message>
+  }
+
+  @if (currentState === states.Finished) {
+    <div [ngClass]="{'disabled' : refreshingWarnings}">
+      @if (newWalletConnected) {
+        <app-hw-message
+          [upperBigText]="'hardware-wallet.options.unconfigured-detected-title' | translate"
+          [lowerLightText]="('hardware-wallet.options.firmware-version' | translate) + ' ' + firmwareVersion"
+          [text]="'hardware-wallet.options.unconfigured-detected' | translate"
+          [icon]="msgIcons.HardwareWallet"
+        ></app-hw-message>
+      }
+      @if (!newWalletConnected) {
+        <app-hw-message
+          [text]="'hardware-wallet.options.configured-detected' | translate"
+          [lowerLightText]="('hardware-wallet.options.firmware-version' | translate) + ' ' + firmwareVersion"
+          [lowerBigText]="wallet.label"
+          [icon]="msgIcons.HardwareWallet"
+        ></app-hw-message>
+      }
+      @if (securityWarnings.length > 0) {
+        <div class="alert-box">
+          <mat-icon>error</mat-icon>
+          <div>
+            <div class="title">{{ (securityWarnings.length > 1 ? 'hardware-wallet.options.security-warnings-title' : 'hardware-wallet.options.security-warning-title') | translate}}</div>
+            @for (warning of securityWarnings; track warning; let i = $index) {
+              <div>{{ securityWarnings.length > 1 ? ((i + 1) + ')') : '' }} {{ warning | translate}}</div>
+              @if (i < securityWarnings.length - 1) {
+                <br/>
+              }
+            }
+          </div>
+        </div>
+      }
+      <div class="options-label">{{ 'hardware-wallet.options.options' | translate }}</div>
+      <div class="option-buttons-container light-button-theme">
+        @if (outdatedFirmware) {
+          <button mat-button color="primary" (click)="update()">
+            <div class="label -blinking">{{ 'hardware-wallet.options.update-firmware' | translate }}</div>
+          </button>
+        }
+        @if (newWalletConnected) {
+          <div>
+            <button mat-button color="primary" (click)="generateMnemonic()">
+              <div class="label">{{ 'hardware-wallet.options.configure-automatically' | translate }}</div>
+            </button>
+            <button mat-button color="primary" (click)="restoreMnemonic()">
+              <div class="label">{{ 'hardware-wallet.options.restore-backup' | translate }}</div>
+            </button>
+          </div>
+        }
+        @if (!newWalletConnected) {
+          <div>
+            @if (needsBackup) {
+              <button mat-button color="primary" (click)="backup()">
+                <div class="label">{{ 'hardware-wallet.options.create-backup' | translate }}</div>
+              </button>
+            }
+            @if (!needsBackup) {
+              <button mat-button color="primary" (click)="confirmSeed()">
+                <div class="label">{{ 'hardware-wallet.options.confirm-seed' | translate }}</div>
+              </button>
+            }
+            <button mat-button color="primary" (click)="changePin()">
+              <div class="label">{{ (!needsPin ? 'hardware-wallet.options.change-pin' : 'hardware-wallet.options.create-pin') | translate }}</div>
+            </button>
+            @if (!needsPin) {
+              <button mat-button color="primary" (click)="removePin()">
+                <div class="label red-text">{{ 'hardware-wallet.options.delete-pin' | translate }}</div>
+              </button>
+            }
+            <button mat-button color="primary" (click)="wipe()">
+              <div class="label red-text">{{ 'hardware-wallet.options.wipe' | translate }}</div>
+            </button>
+          </div>
+        }
       </div>
     </div>
+  }
 
-    <div class="options-label">{{ 'hardware-wallet.options.options' | translate }}</div>
-    <div class="option-buttons-container light-button-theme">
-      <button mat-button color="primary" (click)="update()" *ngIf="outdatedFirmware">
-        <div class="label -blinking">{{ 'hardware-wallet.options.update-firmware' | translate }}</div>
-      </button>
-      <div *ngIf="newWalletConnected">
-        <button mat-button color="primary" (click)="generateMnemonic()">
-          <div class="label">{{ 'hardware-wallet.options.configure-automatically' | translate }}</div>
-        </button>
-        <button mat-button color="primary" (click)="restoreMnemonic()">
-          <div class="label">{{ 'hardware-wallet.options.restore-backup' | translate }}</div>
-        </button>
-      </div>
-      <div *ngIf="!newWalletConnected">
-        <button mat-button color="primary" (click)="backup()" *ngIf="needsBackup">
-          <div class="label">{{ 'hardware-wallet.options.create-backup' | translate }}</div>
-        </button>
-        <button mat-button color="primary" (click)="confirmSeed()" *ngIf="!needsBackup">
-          <div class="label">{{ 'hardware-wallet.options.confirm-seed' | translate }}</div>
-        </button>
-        <button mat-button color="primary" (click)="changePin()">
-          <div class="label">{{ (!needsPin ? 'hardware-wallet.options.change-pin' : 'hardware-wallet.options.create-pin') | translate }}</div>
-        </button>
-        <button mat-button color="primary" (click)="removePin()" *ngIf="!needsPin">
-          <div class="label red-text">{{ 'hardware-wallet.options.delete-pin' | translate }}</div>
-        </button>
-        <button mat-button color="primary" (click)="wipe()">
-          <div class="label red-text">{{ 'hardware-wallet.options.wipe' | translate }}</div>
-        </button>
-      </div>
+  @if (currentState === states.Finished && refreshingWarnings) {
+    <div class="loading-indicator">
+      <mat-spinner></mat-spinner>
+      {{ 'common.loading' | translate }}
     </div>
-  </div>
+  }
 
-  <div class="loading-indicator" *ngIf="currentState === states.Finished && refreshingWarnings">
-    <mat-spinner></mat-spinner>
-    {{ 'common.loading' | translate }}
-  </div>
+  @if (currentState === states.Finished) {
+    <div class="-buttons" [ngClass]="{'disabled' : refreshingWarnings}">
+      <app-button (action)="closeModal()" class="primary-button">
+        {{ 'common.close-button' | translate }}
+      </app-button>
+    </div>
+  }
 
-  <div class="-buttons" *ngIf="currentState === states.Finished" [ngClass]="{'disabled' : refreshingWarnings}">
-    <app-button (action)="closeModal()" class="primary-button">
-      {{ 'common.close-button' | translate }}
-    </app-button>
-  </div>
-
-  <div class="-buttons" *ngIf="currentState !== states.Finished">
-    <app-button (action)="closeModal()" class="primary-button" #closeButton>
-      {{ 'common.close-button' | translate }}
-    </app-button>
-  </div>
+  @if (currentState !== states.Finished) {
+    <div class="-buttons">
+      <app-button (action)="closeModal()" class="primary-button" #closeButton>
+        {{ 'common.close-button' | translate }}
+      </app-button>
+    </div>
+  }
 </app-modal>

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"runtime"
 	"runtime/debug"
 	"strings"
 )
@@ -138,12 +139,38 @@ func DebugBuildInfo() *debug.BuildInfo {
 
 // Get returns a summary of build information.
 func Get() *Info {
+	// Build complete version string with commit
+	ver := Version()
+	if c := Commit(); c != "" && c != unknown && !strings.Contains(ver, c) {
+		// Append commit to version if not already present
+		if len(c) > 12 {
+			c = c[:12]
+		}
+		ver = ver + "-" + c
+	}
+	// Note: Go's module system already adds +dirty to version when built from dirty repo
 	return &Info{
-		Version: Version(),
+		Version: ver,
 		Commit:  Commit(),
 		Date:    Date(),
 		Go:      Go(),
+		OS:      runtime.GOOS,
+		Arch:    runtime.GOARCH,
 	}
+}
+
+// DepVersion returns the version of a specific dependency module.
+// modulePath should be something like "github.com/skycoin/skycoin"
+func DepVersion(modulePath string) string {
+	if bi == nil {
+		return ""
+	}
+	for _, dep := range bi.Deps {
+		if dep.Path == modulePath {
+			return dep.Version
+		}
+	}
+	return ""
 }
 
 // Info represents build metadata.
@@ -152,6 +179,8 @@ type Info struct {
 	Version string `json:"version"`
 	Commit  string `json:"commit"`
 	Date    string `json:"date"`
+	OS      string `json:"os"`
+	Arch    string `json:"arch"`
 }
 
 // WriteTo writes build info summary to an io.Writer.

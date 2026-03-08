@@ -19,32 +19,36 @@
       </div>
     </div>
     <div class="flex-fill -not-on-small-and-below"></div>
-    <div class="-button -not-on-small-and-below" *ngIf="false">
-      <img src="assets/img/money-gold.png">
-      <span class="secondary-color">{{ 'title.buy-coin' | translate }}</span>
-    </div>
+    @if (false) {
+      <div class="-button -not-on-small-and-below">
+        <img src="assets/img/money-gold.png">
+        <span class="secondary-color">{{ 'title.buy-coin' | translate }}</span>
+      </div>
+    }
 
-    <app-double-button
-      *ngIf="navbarService.switchVisible"
-      class="-switch -not-on-small-and-below"
-      [leftButtonText]="navbarService.leftText | translate"
-      [rightButtonText]="navbarService.rightText | translate"
-      [activeButton]="navbarService.activeComponent | async"
-      className="light"
-      (onStateChange)="changeActiveComponent($event)">
-    </app-double-button>
+    @if (navbarService.switchVisible) {
+      <app-double-button
+        class="-switch -not-on-small-and-below"
+        [leftButtonText]="navbarService.leftText | translate"
+        [rightButtonText]="navbarService.rightText | translate"
+        [activeButton]="navbarService.activeComponent | async"
+        className="light"
+        (onStateChange)="changeActiveComponent($event)">
+      </app-double-button>
+    }
 
   </div>
 </div>
 
 <div class="-on-small-and-below-only">
-  <app-double-button
-    *ngIf="navbarService.switchVisible"
-    class="-switch"
-    [leftButtonText]="navbarService.leftText | translate"
-    [rightButtonText]="navbarService.rightText | translate"
-    [activeButton]="navbarService.activeComponent | async"
-    className="grey"
-    (onStateChange)="changeActiveComponent($event)">
-  </app-double-button>
+  @if (navbarService.switchVisible) {
+    <app-double-button
+      class="-switch"
+      [leftButtonText]="navbarService.leftText | translate"
+      [rightButtonText]="navbarService.rightText | translate"
+      [activeButton]="navbarService.activeComponent | async"
+      className="grey"
+      (onStateChange)="changeActiveComponent($event)">
+    </app-double-button>
+  }
 </div>

@@ -1,22 +1,23 @@
 import { Component, OnInit, ViewChild, Output, EventEmitter } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
 
 import { ButtonComponent } from '../../../layout/button/button.component';
 
 @Component({
-  selector: 'app-onboarding-encrypt-wallet',
-  templateUrl: './onboarding-encrypt-wallet.component.html',
-  styleUrls: ['./onboarding-encrypt-wallet.component.scss'],
+    selector: 'app-onboarding-encrypt-wallet',
+    templateUrl: './onboarding-encrypt-wallet.component.html',
+    styleUrls: ['./onboarding-encrypt-wallet.component.scss'],
+    standalone: false
 })
 export class OnboardingEncryptWalletComponent implements OnInit {
   @ViewChild('button') button: ButtonComponent;
   @Output() onPasswordCreated = new EventEmitter<string|null>();
   @Output() onBack = new EventEmitter();
 
-  form: FormGroup;
+  form: UntypedFormGroup;
 
   constructor(
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
   ) { }
 
   get isWorking() {
@@ -29,8 +30,8 @@ export class OnboardingEncryptWalletComponent implements OnInit {
 
   initEncryptForm() {
     this.form = this.formBuilder.group({
-        password: new FormControl('', Validators.compose([Validators.required, Validators.minLength(2)])),
-        confirm: new FormControl('',
+        password: new UntypedFormControl('', Validators.compose([Validators.required, Validators.minLength(2)])),
+        confirm: new UntypedFormControl('',
           Validators.compose([
             Validators.required,
             Validators.minLength(2),
@@ -61,7 +62,7 @@ export class OnboardingEncryptWalletComponent implements OnInit {
     this.onBack.emit();
   }
 
-  private passwordMatchValidator(g: FormGroup) {
+  private passwordMatchValidator(g: UntypedFormGroup) {
     return g.get('password').value === g.get('confirm').value
       ? null : { mismatch: true };
   }

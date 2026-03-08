@@ -1,11 +1,19 @@
-<div class="main-container" *ngIf="visible">
-  <div [class]="'internal-container ' + (config.color ? config.color : 'red-background')">
-    <div class="icon-container" *ngIf="config.icon"><mat-icon>{{ config.icon }}</mat-icon></div>
-    <div class="text-container">
-      <div class="title" *ngIf="config.title">{{ config.title | translate }}</div>
-      <div class="text">{{ config.text | translate }}
-      <a *ngIf="config.link" class="link" [href]="config.link" target="_blank" rel="noreferrer nofollow noopener">{{ config.link }}</a></div>
+@if (visible) {
+  <div class="main-container">
+    <div [class]="'internal-container ' + (config.color ? config.color : 'red-background')">
+      @if (config.icon) {
+        <div class="icon-container"><mat-icon>{{ config.icon }}</mat-icon></div>
+      }
+      <div class="text-container">
+        @if (config.title) {
+          <div class="title">{{ config.title | translate }}</div>
+        }
+        <div class="text">{{ config.text | translate }}
+          @if (config.link) {
+            <a class="link" [href]="config.link" target="_blank" rel="noreferrer nofollow noopener">{{ config.link }}</a>
+          }</div>
+        </div>
+        <div class="close-container"><mat-icon class="image-button" (click)="hide()">close</mat-icon></div>
+      </div>
     </div>
-    <div class="close-container"><mat-icon class="image-button" (click)="hide()">close</mat-icon></div>
-  </div>
-</div>
+  }

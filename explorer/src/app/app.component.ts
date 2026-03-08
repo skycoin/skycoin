@@ -7,9 +7,10 @@ import { ExplorerService } from 'app/services/explorer/explorer.service';
 import { ApiService } from './services/api/api.service';
 
 @Component({
-  selector: 'app-root',
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss']
+    selector: 'app-root',
+    templateUrl: './app.component.html',
+    styleUrls: ['./app.component.scss'],
+    standalone: false
 })
 export class AppComponent {
   // Get the settings for the generic header and the generic footer.

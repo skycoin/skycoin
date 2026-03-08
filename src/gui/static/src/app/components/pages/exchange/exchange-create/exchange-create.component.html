@@ -1,118 +1,122 @@
-<app-loading-content
-  [isLoading]="!tradingPairs && !problemGettingPairs"
-  [noDataText]="problemGettingPairs ? 'exchange.problem-connecting' : 'exchange.offline'"
-  *ngIf="!activeTradingPair"
-></app-loading-content>
+@if (!activeTradingPair) {
+  <app-loading-content
+    [isLoading]="!tradingPairs && !problemGettingPairs"
+    [noDataText]="problemGettingPairs ? 'exchange.problem-connecting' : 'exchange.offline'"
+  ></app-loading-content>
+}
 
-<div class="-create" *ngIf="activeTradingPair">
-  <!-- Form column. -->
-  <div [formGroup]="form" class="-form">
-    <!-- Coins that will be sent. -->
-    <div class="form-field">
-      <label for="fromAmount">
-        {{ 'exchange.label-you-send' | translate }}
-        <span *ngIf="amountTooLow" class="-error">
-          {{ 'exchange.min-amount' | translate }} {{ activeTradingPair.min }}
-        </span>
-        <span *ngIf="amountTooHight" class="-error">
-          {{ 'exchange.max-amount' | translate }} {{ this.activeTradingPair.max }}
-        </span>
-      </label>
-      <div class="-inputs">
+@if (activeTradingPair) {
+  <div class="-create">
+    <!-- Form column. -->
+    <div [formGroup]="form" class="-form">
+      <!-- Coins that will be sent. -->
+      <div class="form-field">
+        <label for="fromAmount">
+          {{ 'exchange.label-you-send' | translate }}
+          @if (amountTooLow) {
+            <span class="-error">
+              {{ 'exchange.min-amount' | translate }} {{ activeTradingPair.min }}
+            </span>
+          }
+          @if (amountTooHight) {
+            <span class="-error">
+              {{ 'exchange.max-amount' | translate }} {{ this.activeTradingPair.max }}
+            </span>
+          }
+        </label>
+        <div class="-inputs">
+          <input
+            type="text"
+            formControlName="fromAmount"
+            id="fromAmount"
+            [attr.disabled]="busy ? 'true' : null"
+            [appFormFieldError]="amountErrorMsg"
+            (blur)="validateForm()"
+            >
+          <div class="-select">
+            <select
+              formControlName="fromCoin"
+              [attr.disabled]="busy ? 'true' : null"
+              [appFormFieldError]="coinErrorMsg"
+              (blur)="validateForm()"
+              >
+              @for (pair of tradingPairs; track pair) {
+                <option [value]="pair.from">{{ pair.from }}</option>
+              }
+            </select>
+          </div>
+        </div>
+      </div>
+      <!-- Coins that will be received. -->
+      <div class="form-field">
+        <label for="toAmount">{{ 'exchange.label-you-get' | translate }}</label>
+        <div class="-inputs -not-allowed">
+          <input type="text" [value]="toAmount" readonly id="toAmount" [ngClass]="{'element-disabled' : busy}">
+          <div class="-input">
+            <input type="text" [value]="toCoin" readonly [ngClass]="{'element-disabled' : busy}">
+          </div>
+        </div>
+      </div>
+      <!-- Address. -->
+      <div class="form-field">
+        <label for="toAddress">
+          <span>{{ 'exchange.label-to-address' | translate:{coin: toCoin} }}</span>
+          <app-arrow-link
+            [text]="'exchange.destination-select-from-list-link'"
+            (pressed)="selectAddress($event)">
+          </app-arrow-link>
+        </label>
         <input
           type="text"
-          formControlName="fromAmount"
-          id="fromAmount"
+          formControlName="toAddress"
+          id="toAddress"
           [attr.disabled]="busy ? 'true' : null"
-          [appFormFieldError]="amountErrorMsg"
+          [appFormFieldError]="addressErrorMsg"
           (blur)="validateForm()"
-        >
-        <div class="-select">
-          <select
-            formControlName="fromCoin"
-            [attr.disabled]="busy ? 'true' : null"
-            [appFormFieldError]="coinErrorMsg"
-            (blur)="validateForm()"
           >
-            <option *ngFor="let pair of tradingPairs" [value]="pair.from">{{ pair.from }}</option>
-          </select>
-        </div>
+      </div>
+      <!-- Agreement. -->
+      <div class="-buttons">
+        <mat-checkbox class="-check" (change)="setAgreement($event)" type="checkbox" [ngClass]="{'element-disabled' : busy}">
+          {{ 'exchange.agree-part1' | translate }}
+          <a class="link" href="https://swaplab.cc/terms" target="_blank" rel="noreferrer nofollow noopener">
+            {{ 'exchange.agree-part2' | translate }}
+          </a>
+          {{ 'exchange.agree-part3' | translate }}
+          <a class="link" href="https://swaplab.cc/privacy" target="_blank" rel="noreferrer nofollow noopener">
+            {{ 'exchange.agree-part4' | translate }}
+          </a>
+        </mat-checkbox>
+        <!-- Button. -->
+        <app-button class="primary-button" #exchangeButton (action)="exchange()" [disabled]="!form.valid">
+          {{ 'exchange.exchange-button' | translate }}
+        </app-button>
       </div>
     </div>
-    <!-- Coins that will be received. -->
-    <div class="form-field">
-      <label for="toAmount">{{ 'exchange.label-you-get' | translate }}</label>
-      <div class="-inputs -not-allowed">
-        <input type="text" [value]="toAmount" readonly id="toAmount" [ngClass]="{'element-disabled' : busy}">
-        <div class="-input">
-          <input type="text" [value]="toCoin" readonly [ngClass]="{'element-disabled' : busy}">
+    <!-- Info column. -->
+    @if (activeTradingPair) {
+      <div class="-info">
+        <div class="-item">
+          <div class="-key">{{ 'exchange.label-you-send' | translate }}</div>
+          <div class="break-all">{{ sendAmount }} {{ form.get('fromCoin').value }}</div>
+        </div>
+        <div class="-item">
+          <div class="-key">{{ 'exchange.label-you-get' | translate }}</div>
+          <div class="break-all">&asymp; {{ toAmount }} {{ toCoin }}</div>
+        </div>
+        <div class="-item">
+          <div class="-key">{{ 'exchange.label-to-address' | translate:{coin: toCoin} }}</div>
+          <div class="break-all">{{ form.get('toAddress').value || '-' }}</div>
+        </div>
+        <div class="-item">
+          <div class="-key">{{ 'exchange.label-price' | translate }}</div>
+          <div class="break-all">1 {{ form.get('fromCoin').value }} &asymp; {{ activeTradingPair.price.toFixed(6) }} {{ toCoin }}</div>
+        </div>
+        <div class="-item">
+          <div class="-key">{{ 'exchange.label-stimate-transaction-time' | translate }}</div>
+          <div class="break-all">&asymp; 15 minutes</div>
         </div>
       </div>
-    </div>
-    <!-- Address. -->
-    <div class="form-field">
-      <label for="toAddress">
-        <span>{{ 'exchange.label-to-address' | translate:{coin: toCoin} }}</span>
-        <app-arrow-link
-          [text]="'exchange.destination-select-from-list-link'"
-          (pressed)="selectAddress($event)">
-        </app-arrow-link>
-      </label>
-      <input
-        type="text"
-        formControlName="toAddress"
-        id="toAddress"
-        [attr.disabled]="busy ? 'true' : null"
-        [appFormFieldError]="addressErrorMsg"
-        (blur)="validateForm()"
-      >
-    </div>
-
-    <!-- Agreement. -->
-    <div class="-buttons">
-      <mat-checkbox class="-check" (change)="setAgreement($event)" type="checkbox" [ngClass]="{'element-disabled' : busy}">
-        {{ 'exchange.agree-part1' | translate }}
-        <a class="link" href="https://swaplab.cc/terms" target="_blank" rel="noreferrer nofollow noopener">
-          {{ 'exchange.agree-part2' | translate }}
-        </a>
-        {{ 'exchange.agree-part3' | translate }}
-        <a class="link" href="https://swaplab.cc/privacy" target="_blank" rel="noreferrer nofollow noopener">
-          {{ 'exchange.agree-part4' | translate }}
-        </a>
-      </mat-checkbox>
-
-      <!-- Button. -->
-      <app-button class="primary-button" #exchangeButton (action)="exchange()" [disabled]="!form.valid">
-        {{ 'exchange.exchange-button' | translate }}
-      </app-button>
-    </div>
+    }
   </div>
-
-  <!-- Info column. -->
-  <div class="-info" *ngIf="activeTradingPair">
-    <div class="-item">
-      <div class="-key">{{ 'exchange.label-you-send' | translate }}</div>
-      <div class="break-all">{{ sendAmount }} {{ form.get('fromCoin').value }}</div>
-    </div>
-
-    <div class="-item">
-      <div class="-key">{{ 'exchange.label-you-get' | translate }}</div>
-      <div class="break-all">&asymp; {{ toAmount }} {{ toCoin }}</div>
-    </div>
-
-    <div class="-item">
-      <div class="-key">{{ 'exchange.label-to-address' | translate:{coin: toCoin} }}</div>
-      <div class="break-all">{{ form.get('toAddress').value || '-' }}</div>
-    </div>
-
-    <div class="-item">
-      <div class="-key">{{ 'exchange.label-price' | translate }}</div>
-      <div class="break-all">1 {{ form.get('fromCoin').value }} &asymp; {{ activeTradingPair.price.toFixed(6) }} {{ toCoin }}</div>
-    </div>
-
-    <div class="-item">
-      <div class="-key">{{ 'exchange.label-stimate-transaction-time' | translate }}</div>
-      <div class="break-all">&asymp; 15 minutes</div>
-    </div>
-  </div>
-</div>
+}

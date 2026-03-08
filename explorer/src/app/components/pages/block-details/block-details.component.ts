@@ -14,9 +14,10 @@ import { dataValidityTime } from 'app/app.config';
  * Page for showing info about a specific block.
  */
 @Component({
-  selector: 'app-block-details',
-  templateUrl: './block-details.component.html',
-  styleUrls: ['./block-details.component.scss']
+    selector: 'app-block-details',
+    templateUrl: './block-details.component.html',
+    styleUrls: ['./block-details.component.scss'],
+    standalone: false
 })
 export class BlockDetailsComponent extends PageBaseComponent implements OnInit, OnDestroy {
   // Keys for persisting the server data, to be able to restore the state after navigation.

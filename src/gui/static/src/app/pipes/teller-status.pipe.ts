@@ -7,7 +7,8 @@ import { Pipe, PipeTransform } from '@angular/core';
  * is returned.
  */
 @Pipe({
-  name: 'tellerStatus',
+    name: 'tellerStatus',
+    standalone: false
 })
 export class TellerStatusPipe implements PipeTransform {
   private statuses = ['done', 'waiting_confirm', 'waiting_deposit', 'waiting_send'];

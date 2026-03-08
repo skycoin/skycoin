@@ -1,21 +1,27 @@
 <app-modal [headline]="'hardware-wallet.confirm-address.title' | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Initial">
   <!-- Initial instructions. -->
-  <app-hw-message *ngIf="currentState === states.Initial"
-    [text]="'hardware-wallet.confirm-address.instructions' | translate"
-    [lowerBigText]="data.wallet.addresses[data.addressIndex].address"
-    [icon]="msgIcons.Confirm"
-  ></app-hw-message>
+  @if (currentState === states.Initial) {
+    <app-hw-message
+      [text]="'hardware-wallet.confirm-address.instructions' | translate"
+      [lowerBigText]="data.wallet.addresses[data.addressIndex].address"
+      [icon]="msgIcons.Confirm"
+    ></app-hw-message>
+  }
 
   <!-- Result. -->
-  <app-hw-message *ngIf="currentState === states.ShowingResult"
-    [text]="result.text | translate"
-    [icon]="result.icon"
-  ></app-hw-message>
+  @if (currentState === states.ShowingResult) {
+    <app-hw-message
+      [text]="result.text | translate"
+      [icon]="result.icon"
+    ></app-hw-message>
+  }
 
   <!-- Buttons area. -->
-  <div class="-buttons" *ngIf="currentState !== states.Initial">
-    <app-button (action)="closeModal()" class="primary-button" #closeButton>
-      {{ 'common.close-button' | translate }}
-    </app-button>
-  </div>
+  @if (currentState !== states.Initial) {
+    <div class="-buttons">
+      <app-button (action)="closeModal()" class="primary-button" #closeButton>
+        {{ 'common.close-button' | translate }}
+      </app-button>
+    </div>
+  }
 </app-modal>

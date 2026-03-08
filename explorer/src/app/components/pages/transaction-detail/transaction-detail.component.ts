@@ -12,9 +12,10 @@ import { dataValidityTime } from 'app/app.config';
  * Page for showing info about a specific transaction.
  */
 @Component({
-  selector: 'app-transaction-detail',
-  templateUrl: './transaction-detail.component.html',
-  styleUrls: ['./transaction-detail.component.scss']
+    selector: 'app-transaction-detail',
+    templateUrl: './transaction-detail.component.html',
+    styleUrls: ['./transaction-detail.component.scss'],
+    standalone: false
 })
 export class TransactionDetailComponent extends PageBaseComponent implements OnInit, OnDestroy {
   // Keys for persisting the server data, to be able to restore the state after navigation.

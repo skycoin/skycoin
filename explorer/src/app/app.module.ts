@@ -10,7 +10,7 @@ import { LoadingComponent } from './components/layout/loading/loading.component'
 import { BlocksComponent } from './components/pages/blocks/blocks.component';
 import { UnconfirmedTransactionsComponent } from './components/pages/unconfirmed-transactions/unconfirmed-transactions.component';
 import { ApiService } from './services/api/api.service';
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { BlockDetailsComponent } from './components/pages/block-details/block-details.component';
 import { TransactionDetailComponent } from './components/pages/transaction-detail/transaction-detail.component';
 import { AddressDetailComponent } from './components/pages/address-detail/address-detail.component';
@@ -99,52 +99,46 @@ const ROUTES: Routes = [
   },
 ];
 
-@NgModule({
-  declarations: [
-    AddressDetailComponent,
-    AppComponent,
-    BlockDetailsComponent,
-    BlocksComponent,
-    UnconfirmedTransactionsComponent,
-    FooterComponent,
-    HeaderComponent,
-    GenericFooterComponent,
-    GenericHeaderComponent,
-    LoadingComponent,
-    QrCodeComponent,
-    SearchBarComponent,
-    TransactionDetailComponent,
-    RichlistComponent,
-    UnspentOutputsComponent,
-    CopyButtonComponent,
-    DateFormatterComponent,
-    SearchComponent,
-    TransactionInfoComponent,
-    LanguageSelectionComponent,
-    AmountPipe,
-    NodeUrlComponent,
-  ],
-  imports: [
-    BrowserModule,
-    BrowserAnimationsModule,
-    HttpClientModule,
-    RouterModule.forRoot(ROUTES, {}),
-    TranslateModule.forRoot({
-      loader: {
-        provide: TranslateLoader,
-        useClass: AppTranslateLoader
-      }
-    })
-  ],
-  providers: [
-    ApiService,
-    ExplorerService,
-    SearchService,
-    LanguageService,
-    {provide: RouteReuseStrategy, useClass: AppReuseStrategy},
-    DatePipe,
-    DecimalPipe,
-  ],
-  bootstrap: [AppComponent]
-})
+@NgModule({ declarations: [
+        AddressDetailComponent,
+        AppComponent,
+        BlockDetailsComponent,
+        BlocksComponent,
+        UnconfirmedTransactionsComponent,
+        FooterComponent,
+        HeaderComponent,
+        GenericFooterComponent,
+        GenericHeaderComponent,
+        LoadingComponent,
+        QrCodeComponent,
+        SearchBarComponent,
+        TransactionDetailComponent,
+        RichlistComponent,
+        UnspentOutputsComponent,
+        CopyButtonComponent,
+        DateFormatterComponent,
+        SearchComponent,
+        TransactionInfoComponent,
+        LanguageSelectionComponent,
+        AmountPipe,
+        NodeUrlComponent,
+    ],
+    bootstrap: [AppComponent], imports: [BrowserModule,
+        BrowserAnimationsModule,
+        RouterModule.forRoot(ROUTES, {}),
+        TranslateModule.forRoot({
+            loader: {
+                provide: TranslateLoader,
+                useClass: AppTranslateLoader
+            }
+        })], providers: [
+        ApiService,
+        ExplorerService,
+        SearchService,
+        LanguageService,
+        { provide: RouteReuseStrategy, useClass: AppReuseStrategy },
+        DatePipe,
+        DecimalPipe,
+        provideHttpClient(withInterceptorsFromDi()),
+    ] })
 export class AppModule { }

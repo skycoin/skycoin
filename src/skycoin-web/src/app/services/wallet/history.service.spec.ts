@@ -37,9 +37,9 @@ describe('HistoryService', () => {
       ]
     });
 
-    historyService = TestBed.get(HistoryService);
-    walletService = TestBed.get(WalletService);
-    spyApiService = TestBed.get(ApiService);
+    historyService = TestBed.inject(HistoryService);
+    walletService = TestBed.inject(WalletService);
+    spyApiService = TestBed.inject(ApiService);
   });
 
   afterEach(() => {

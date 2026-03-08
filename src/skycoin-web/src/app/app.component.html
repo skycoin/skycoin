@@ -1,8 +1,10 @@
-<div class="crypto-alert" *ngIf="!browserCompatibleWithWasm || !wasmFileLoaded">
-  <div>
-    <mat-icon>error</mat-icon>
-    <div>{{ (!browserCompatibleWithWasm ? 'errors.wasm-no-available' : 'errors.wasm-not-downloaded') | translate }}</div>
+@if (!browserCompatibleWithWasm || !wasmFileLoaded) {
+  <div class="crypto-alert">
+    <div>
+      <mat-icon>error</mat-icon>
+      <div>{{ (!browserCompatibleWithWasm ? 'errors.wasm-no-available' : 'errors.wasm-not-downloaded') | translate }}</div>
+    </div>
   </div>
-</div>
+}
 <router-outlet></router-outlet>
 <app-msg-bar #msgBar></app-msg-bar>

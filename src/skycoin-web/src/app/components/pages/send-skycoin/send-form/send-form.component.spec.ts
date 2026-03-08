@@ -1,6 +1,6 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { FormBuilder } from '@angular/forms';
+import { UntypedFormBuilder } from '@angular/forms';
 
 import { SendFormComponent } from './send-form.component';
 import { WalletService } from '../../../../services/wallet/wallet.service';
@@ -30,7 +30,7 @@ describe('SendFormComponent', () => {
       declarations: [ SendFormComponent, MockTranslatePipe ],
       schemas: [ NO_ERRORS_SCHEMA ],
       providers: [
-        FormBuilder,
+        UntypedFormBuilder,
         { provide: WalletService, useClass: MockWalletService },
         { provide: SpendingService, useClass: MockSpendingService },
         { provide: CoinService, useClass: MockCoinService },

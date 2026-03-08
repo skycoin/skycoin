@@ -2,7 +2,7 @@ import { TestBed, fakeAsync } from '@angular/core/testing';
 import { Observable } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { BigNumber } from 'bignumber.js';
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 import { WalletService } from './wallet.service';
 import { SpendingService, HoursSelectionTypes } from './spending.service';
@@ -28,34 +28,35 @@ describe('WalletService with cipher:', () => {
     spyOn(localStorage, 'getItem').and.callFake((key) => store[key]);
 
     TestBed.configureTestingModule({
-      imports: [ HttpClientModule ],
-      providers: [
+    imports: [],
+    providers: [
         WalletService,
         CipherProvider,
         SpendingService,
         BlockchainService,
         BalanceService,
         {
-          provide: ApiService,
-          useValue: jasmine.createSpyObj('ApiService', {
-            'getOutputs': Observable.of([]),
-            'postTransaction': Observable.of(''),
-            'get': Observable.of([])
-          })
+            provide: ApiService,
+            useValue: jasmine.createSpyObj('ApiService', {
+                'getOutputs': Observable.of([]),
+                'postTransaction': Observable.of(''),
+                'get': Observable.of([])
+            })
         },
         {
-          provide: TranslateService,
-          useValue: jasmine.createSpyObj('TranslateService', ['instant'])
+            provide: TranslateService,
+            useValue: jasmine.createSpyObj('TranslateService', ['instant'])
         },
         { provide: CoinService, useClass: MockCoinService },
-        { provide: GlobalsService, useClass: MockGlobalsService }
-      ]
-    });
+        { provide: GlobalsService, useClass: MockGlobalsService },
+        provideHttpClient(withInterceptorsFromDi())
+    ]
+});
 
-    walletService = TestBed.get(WalletService);
-    spendingService = TestBed.get(SpendingService);
-    cipherProvider = TestBed.get(CipherProvider);
-    spyApiService = TestBed.get(ApiService);
+    walletService = TestBed.inject(WalletService);
+    spendingService = TestBed.inject(SpendingService);
+    cipherProvider = TestBed.inject(CipherProvider);
+    spyApiService = TestBed.inject(ApiService);
   });
 
   afterEach(() => {

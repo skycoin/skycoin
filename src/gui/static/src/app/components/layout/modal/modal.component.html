@@ -1,6 +1,8 @@
 <div class="-header" [ngClass]="{'red-title': useRedTitle}">
   {{ headline }}
-  <img class="image-button" src="assets/img/delete-grey.png" (click)="closePopup()" *ngIf="!disableDismiss">
+  @if (!disableDismiss) {
+    <img class="image-button" src="assets/img/delete-grey.png" (click)="closePopup()">
+  }
 </div>
 <div class="modal">
   <mat-dialog-content>

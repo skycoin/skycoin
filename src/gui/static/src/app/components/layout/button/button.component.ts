@@ -10,9 +10,10 @@ enum ButtonStates {
  * Normal rounded button used in most parts of the app.
  */
 @Component({
-  selector: 'app-button',
-  templateUrl: 'button.component.html',
-  styleUrls: ['button.component.scss'],
+    selector: 'app-button',
+    templateUrl: 'button.component.html',
+    styleUrls: ['button.component.scss'],
+    standalone: false
 })
 export class ButtonComponent implements OnDestroy {
   @Input() disabled: boolean;

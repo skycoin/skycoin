@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, Input } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
 import * as Bip39 from 'bip39';
 import { Subscription } from 'rxjs';
 
@@ -14,16 +14,17 @@ export class FormData {
 }
 
 @Component({
-  selector: 'app-create-wallet-form',
-  templateUrl: './create-wallet-form.component.html',
-  styleUrls: ['./create-wallet-form.component.scss'],
+    selector: 'app-create-wallet-form',
+    templateUrl: './create-wallet-form.component.html',
+    styleUrls: ['./create-wallet-form.component.scss'],
+    standalone: false
 })
 export class CreateWalletFormComponent implements OnInit, OnDestroy {
   @Input() create: boolean;
   @Input() whiteText: boolean;
   @Input() showSlowMobileInfo: boolean;
 
-  form: FormGroup;
+  form: UntypedFormGroup;
   hasManyCoins: boolean;
   normalSeed = false;
   customSeedAccepted = false;
@@ -31,7 +32,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
   private statusSubscription: Subscription;
 
   constructor(
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private coinService: CoinService,
     private bip39WordListService: Bip39WordListService
   ) { }
@@ -65,10 +66,10 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     create = create !== null ? create : this.create;
 
     this.form = this.formBuilder.group({
-        label: new FormControl('', [ Validators.required ]),
-        coin: new FormControl(defaultCoin, [ Validators.required ]),
-        seed: new FormControl('', [ Validators.required ]),
-        confirm_seed: new FormControl(),
+        label: new UntypedFormControl('', [ Validators.required ]),
+        coin: new UntypedFormControl(defaultCoin, [ Validators.required ]),
+        seed: new UntypedFormControl('', [ Validators.required ]),
+        confirm_seed: new UntypedFormControl(),
       },
       {
         validator: create ? this.seedMatchValidator.bind(this) : null,
@@ -111,7 +112,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     return true;
   }
 
-  private seedMatchValidator(formGroup: FormGroup) {
+  private seedMatchValidator(formGroup: UntypedFormGroup) {
     return formGroup.get('seed').value === formGroup.get('confirm_seed').value ? null : { NotEqual: true };
   }
 }

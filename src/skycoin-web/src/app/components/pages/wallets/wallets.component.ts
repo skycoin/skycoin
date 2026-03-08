@@ -13,9 +13,10 @@ import { CustomMatDialogService } from '../../../services/custom-mat-dialog.serv
 import { environment } from '../../../../environments/environment';
 
 @Component({
-  selector: 'app-wallets',
-  templateUrl: './wallets.component.html',
-  styleUrls: ['./wallets.component.scss'],
+    selector: 'app-wallets',
+    templateUrl: './wallets.component.html',
+    styleUrls: ['./wallets.component.scss'],
+    standalone: false
 })
 export class WalletsComponent implements OnInit, OnDestroy {
 

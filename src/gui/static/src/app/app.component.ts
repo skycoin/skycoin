@@ -20,9 +20,10 @@ import { redirectToErrorPage } from './utils/errors';
  * Main component for the app.
  */
 @Component({
-  selector: 'app-root',
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss'],
+    selector: 'app-root',
+    templateUrl: './app.component.html',
+    styleUrls: ['./app.component.scss'],
+    standalone: false
 })
 export class AppComponent implements OnInit {
   // Single MsgBarComponent instance used on the app.

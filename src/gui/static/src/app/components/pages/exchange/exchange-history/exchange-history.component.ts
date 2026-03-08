@@ -10,9 +10,10 @@ import { AppConfig } from '../../../../app.config';
  * the modal window is closed and the selected order is returned in the "afterClosed" event.
  */
 @Component({
-  selector: 'app-exchange-history',
-  templateUrl: './exchange-history.component.html',
-  styleUrls: ['./exchange-history.component.scss'],
+    selector: 'app-exchange-history',
+    templateUrl: './exchange-history.component.html',
+    styleUrls: ['./exchange-history.component.scss'],
+    standalone: false
 })
 export class ExchangeHistoryComponent implements OnInit {
   // List of saved orders.

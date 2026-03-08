@@ -1,6 +1,6 @@
 import { Component, ElementRef, Inject, OnInit, ViewChild, OnDestroy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogConfig } from '@angular/material/dialog';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { Subject } from 'rxjs';
 import { Subscription } from 'rxjs';
 
@@ -28,14 +28,15 @@ export interface QrDialogConfig {
 }
 
 @Component({
-  selector: 'app-qr-code',
-  templateUrl: './qr-code.component.html',
-  styleUrls: ['./qr-code.component.scss'],
+    selector: 'app-qr-code',
+    templateUrl: './qr-code.component.html',
+    styleUrls: ['./qr-code.component.scss'],
+    standalone: false
 })
 export class QrCodeComponent implements OnInit, OnDestroy {
   @ViewChild('qr') qr: ElementRef;
 
-  form: FormGroup;
+  form: UntypedFormGroup;
   currentQrContent: string;
   showForm = false;
   invalidCoins = false;
@@ -56,7 +57,7 @@ export class QrCodeComponent implements OnInit, OnDestroy {
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: QrDialogConfig,
     public dialogRef: MatDialogRef<QrCodeComponent>,
-    public formBuilder: FormBuilder,
+    public formBuilder: UntypedFormBuilder,
     private coinService: CoinService,
     private msgBarService: MsgBarService,
     private clipboardService: ClipboardService,

@@ -14,9 +14,10 @@ import { WalletsAndAddressesService } from '../../../services/wallet-operations/
  * Wizard for creating the first wallet.
  */
 @Component({
-  selector: 'app-onboarding',
-  templateUrl: './onboarding.component.html',
-  styleUrls: ['./onboarding.component.scss'],
+    selector: 'app-onboarding',
+    templateUrl: './onboarding.component.html',
+    styleUrls: ['./onboarding.component.scss'],
+    standalone: false
 })
 export class OnboardingComponent implements OnInit, OnDestroy {
   @ViewChild('encryptForm') encryptForm: OnboardingEncryptWalletComponent;

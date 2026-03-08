@@ -12,9 +12,10 @@ export enum WalletOptionsResponses {
 }
 
 @Component({
-  selector: 'app-wallet-options',
-  templateUrl: './wallet-options.component.html',
-  styleUrls: ['./wallet-options.component.scss'],
+    selector: 'app-wallet-options',
+    templateUrl: './wallet-options.component.html',
+    styleUrls: ['./wallet-options.component.scss'],
+    standalone: false
 })
 export class WalletOptionsComponent {
 

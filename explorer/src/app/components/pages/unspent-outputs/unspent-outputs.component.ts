@@ -32,9 +32,10 @@ enum ShowMoreStatus {
  * Page for showing the list of unspent outputs of a specific address.
  */
 @Component({
-  selector: 'app-unspent-outputs',
-  templateUrl: './unspent-outputs.component.html',
-  styleUrls: ['./unspent-outputs.component.scss']
+    selector: 'app-unspent-outputs',
+    templateUrl: './unspent-outputs.component.html',
+    styleUrls: ['./unspent-outputs.component.scss'],
+    standalone: false
 })
 export class UnspentOutputsComponent extends PageBaseComponent implements OnInit, OnDestroy {
   // Keys for persisting the server data, to be able to restore the state after navigation.

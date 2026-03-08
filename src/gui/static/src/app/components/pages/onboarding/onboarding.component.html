@@ -1,20 +1,24 @@
 <!-- Change lang button. -->
-<button mat-icon-button (click)="changelanguage()" *ngIf="language">
-  <img [src]="'assets/img/lang/' + language.iconName" class="flag">
-</button>
+@if (language) {
+  <button mat-icon-button (click)="changelanguage()">
+    <img [src]="'assets/img/lang/' + language.iconName" class="flag">
+  </button>
+}
 
 <!-- First step. -->
-<app-onboarding-create-wallet
-  *ngIf="step === 1"
-  (onLabelAndSeedCreated)="onLabelAndSeedCreated($event)"
-  [fill]="formData"
-></app-onboarding-create-wallet>
+@if (step === 1) {
+  <app-onboarding-create-wallet
+    (onLabelAndSeedCreated)="onLabelAndSeedCreated($event)"
+    [fill]="formData"
+  ></app-onboarding-create-wallet>
+}
 
 <!-- Second step. -->
-<app-onboarding-encrypt-wallet
-  *ngIf="step === 2"
-  (onPasswordCreated)="onPasswordCreated($event)"
-  (onBack)="onBack()"
-  [creatingTemporal]="formData.loadTemporarily"
-  #encryptForm
-></app-onboarding-encrypt-wallet>
+@if (step === 2) {
+  <app-onboarding-encrypt-wallet
+    (onPasswordCreated)="onPasswordCreated($event)"
+    (onBack)="onBack()"
+    [creatingTemporal]="formData.loadTemporarily"
+    #encryptForm
+  ></app-onboarding-encrypt-wallet>
+}

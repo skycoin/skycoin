@@ -14,9 +14,10 @@ import { config } from '../../../../app.config';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 
 @Component({
-  selector: 'app-wallet-detail',
-  templateUrl: './wallet-detail.component.html',
-  styleUrls: ['./wallet-detail.component.scss'],
+    selector: 'app-wallet-detail',
+    templateUrl: './wallet-detail.component.html',
+    styleUrls: ['./wallet-detail.component.scss'],
+    standalone: false
 })
 export class WalletDetailComponent implements OnDestroy {
   @Input() wallet: Wallet;

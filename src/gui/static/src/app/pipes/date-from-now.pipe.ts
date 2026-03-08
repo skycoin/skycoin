@@ -8,8 +8,9 @@ import { TranslateService } from '@ngx-translate/core';
  * argument.
  */
 @Pipe({
-  name: 'dateFromNow',
-  pure: false,
+    name: 'dateFromNow',
+    pure: false,
+    standalone: false
 })
 export class DateFromNowPipe implements PipeTransform {
   constructor(

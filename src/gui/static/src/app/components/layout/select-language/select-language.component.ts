@@ -7,9 +7,10 @@ import { LanguageData, LanguageService } from '../../../services/language.servic
  * Allows to change the language displayed by the UI.
  */
 @Component({
-  selector: 'app-select-language',
-  templateUrl: './select-language.component.html',
-  styleUrls: ['./select-language.component.scss'],
+    selector: 'app-select-language',
+    templateUrl: './select-language.component.html',
+    styleUrls: ['./select-language.component.scss'],
+    standalone: false
 })
 export class SelectLanguageComponent implements OnInit {
   languages: LanguageData[];

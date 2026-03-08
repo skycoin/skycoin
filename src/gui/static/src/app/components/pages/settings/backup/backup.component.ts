@@ -13,9 +13,10 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
  * Allows to create a backup of the seed of an encrypted software wallet.
  */
 @Component({
-  selector: 'app-backup',
-  templateUrl: './backup.component.html',
-  styleUrls: ['./backup.component.scss'],
+    selector: 'app-backup',
+    templateUrl: './backup.component.html',
+    styleUrls: ['./backup.component.scss'],
+    standalone: false
 })
 export class BackupComponent implements OnInit, OnDestroy {
   // Path of the folder which contains the software wallet files.

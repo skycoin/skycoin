@@ -7,9 +7,10 @@ import { MatDialogRef, MatDialog } from '@angular/material/dialog';
  * wrapping the content.
  */
 @Component({
-  selector: 'app-modal',
-  templateUrl: './modal.component.html',
-  styleUrls: ['./modal.component.scss'],
+    selector: 'app-modal',
+    templateUrl: './modal.component.html',
+    styleUrls: ['./modal.component.scss'],
+    standalone: false
 })
 export class ModalComponent {
   @Input() useRedTitle = false;

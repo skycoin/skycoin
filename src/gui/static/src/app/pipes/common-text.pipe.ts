@@ -10,8 +10,9 @@ import { AppService } from '../services/app.service';
  * The pipe expects the value to be exactly one of the previously listed strings.
  */
 @Pipe({
-  name: 'commonText',
-  pure: false,
+    name: 'commonText',
+    pure: false,
+    standalone: false
 })
 export class CommonTextPipe implements PipeTransform {
 

@@ -12,7 +12,9 @@
     <p><span><span class="-label">{{ 'blocks.totalSupply' | translate }}:</span><br class="-xs-only"/> <span class="-value">{{ totalSupply ? (totalSupply | amount:true:'first') : (loadingCoinSupplyMsg | translate) }}</span></span></p>
     <p><span><span class="-label">{{ 'blocks.currentCoinhourSupply' | translate }}:</span><br class="-xs-only"/> <span class="-value">{{ currentCoinhourSupply ? (currentCoinhourSupply | amount:false:'first') : (loadingCoinSupplyMsg | translate) }}</span></span></p>
     <p><span><span class="-label">{{ 'blocks.totalCoinhourSupply' | translate }}:</span><br class="-xs-only"/> <span class="-value">{{ totalCoinhourSupply ? (totalCoinhourSupply | amount:false:'first') : (loadingCoinSupplyMsg | translate) }}</span></span></p>
-    <p *ngIf="!usingLocalNode"><a href="https://explorer.skycoin.com/api.html" class="-link">{{ 'blocks.explorerApi' | translate }}</a></p>
+    @if (!usingLocalNode) {
+      <p><a href="https://explorer.skycoin.com/api.html" class="-link">{{ 'blocks.explorerApi' | translate }}</a></p>
+    }
     <p><a routerLink="/app/unconfirmedtransactions" class="-link">{{ 'blocks.unconfirmedTransactions' | translate }}</a></p>
     <p><a routerLink="/app/richlist" class="-link">{{ 'blocks.richList' | translate }}</a></p>
   </div>
@@ -35,45 +37,60 @@
   </div>
 
   <!-- Loading control -->
-  <app-loading [longErrorMsg]="longErrorMsg | translate" *ngIf="!blocks.length"></app-loading>
+  @if (!blocks.length) {
+    <app-loading [longErrorMsg]="longErrorMsg | translate"></app-loading>
+  }
 
   <!-- Blocks -->
-  <a class="-row -link" *ngFor="let block of blocks" [routerLink]="'/app/block/' + block.id">
-    <div class="row">
-      <div class="col-sm-2 col-xs-4 -small-padding">
-        <!-- Block timestamp (big windows only) -->
-        <div class="-not-xs">
-          <app-date-formatter [date]="block.timestamp"></app-date-formatter>
-        </div>
-        <!-- Block timestamp (small windows only). As it is not using "app-date-formatter", it
+  @for (block of blocks; track block) {
+    <a class="-row -link" [routerLink]="'/app/block/' + block.id">
+      <div class="row">
+        <div class="col-sm-2 col-xs-4 -small-padding">
+          <!-- Block timestamp (big windows only) -->
+          <div class="-not-xs">
+            <app-date-formatter [date]="block.timestamp"></app-date-formatter>
+          </div>
+          <!-- Block timestamp (small windows only). As it is not using "app-date-formatter", it
           must check mouse events to shown the timezone when the mouse is over the timestamp.
           The "mouseOver" var helps keep track of those events. -->
-        <div class="-xs-only" (mouseenter)="mouseOver = block.id" (mouseleave)="mouseOver === block.id ? mouseOver = -1 : null">
-          <span class="-gray"><span class="timezone-icon" [ngClass]="{'timezone-icon-opaque': mouseOver === block.id}" >&#xf0ac;</span>{{ block.timestamp * 1000 | date:'yyyy' }}</span><br/>
-          <span class="-small-font">{{ (block.timestamp * 1000 | date:'MMM dd').toUpperCase() }}</span><br/>
-          <span class="-small-font">{{ block.timestamp * 1000 | date:'HH:mm' }}</span>
-          <div *ngIf="mouseOver === block.id" class="timezone-container">
-            <div class="timezone-label">{{ block.timestamp * 1000 | date:'OOOO' }}</div>
+          <div class="-xs-only" (mouseenter)="mouseOver = block.id" (mouseleave)="mouseOver === block.id ? mouseOver = -1 : null">
+            <span class="-gray"><span class="timezone-icon" [ngClass]="{'timezone-icon-opaque': mouseOver === block.id}" >&#xf0ac;</span>{{ block.timestamp * 1000 | date:'yyyy' }}</span><br/>
+            <span class="-small-font">{{ (block.timestamp * 1000 | date:'MMM dd').toUpperCase() }}</span><br/>
+            <span class="-small-font">{{ block.timestamp * 1000 | date:'HH:mm' }}</span>
+            @if (mouseOver === block.id) {
+              <div class="timezone-container">
+                <div class="timezone-label">{{ block.timestamp * 1000 | date:'OOOO' }}</div>
+              </div>
+            }
           </div>
         </div>
+        <div class="col-sm-2 col-xs-4">{{ block.id }}</div>
+        <div class="col-sm-2 col-xs-4 -gray">{{ block.transactions.length }}</div>
+        <div class="col-sm-6 -fix-left -not-xs">{{ block.hash }}</div>
       </div>
-
-      <div class="col-sm-2 col-xs-4">{{ block.id }}</div>
-      <div class="col-sm-2 col-xs-4 -gray">{{ block.transactions.length }}</div>
-      <div class="col-sm-6 -fix-left -not-xs">{{ block.hash }}</div>
-    </div>
-  </a>
+    </a>
+  }
 </div>
 
 <!-- Page selection bar -->
-<div class="pagination" *ngIf="blocks && blocks.length > 0">
-  <a class="-first" [ngClass]="{ disabled: pageIndex <= 0 }" routerLink="/app/blocks/1">«</a>
-  <a class="-previous" [ngClass]="{ disabled: pageIndex <= 0 }" routerLink="/app/blocks/{{ pageIndex > 0 ? pageIndex : 1}}">‹</a>
-  <a class="-page -hide-xs" *ngIf="pageIndex > 1" routerLink="/app/blocks/{{pageIndex - 1}}">{{ pageIndex - 1 }}</a>
-  <a class="-page" *ngIf="pageIndex > 0" routerLink="/app/blocks/{{pageIndex}}">{{ pageIndex }}</a>
-  <a class="-page disabled">{{ pageIndex + 1 }}</a>
-  <a class="-page" *ngIf="pageIndex < pageCount - 1" routerLink="/app/blocks/{{pageIndex + 2}}">{{ pageIndex + 2 }}</a>
-  <a class="-page -hide-xs" *ngIf="pageIndex < pageCount - 2" routerLink="/app/blocks/{{pageIndex + 3}}">{{ pageIndex + 3 }}</a>
-  <a class="-next" [ngClass]="{ disabled: pageIndex >= pageCount - 1 }" routerLink="/app/blocks/{{ pageIndex + 2 < pageCount ? pageIndex + 2 : pageCount }}">›</a>
-  <a class="-last" [ngClass]="{ disabled: pageIndex >= pageCount - 1 }" routerLink="/app/blocks/{{ pageCount }}">»</a>
-</div>
+@if (blocks && blocks.length > 0) {
+  <div class="pagination">
+    <a class="-first" [ngClass]="{ disabled: pageIndex <= 0 }" routerLink="/app/blocks/1">«</a>
+    <a class="-previous" [ngClass]="{ disabled: pageIndex <= 0 }" routerLink="/app/blocks/{{ pageIndex > 0 ? pageIndex : 1}}">‹</a>
+    @if (pageIndex > 1) {
+      <a class="-page -hide-xs" routerLink="/app/blocks/{{pageIndex - 1}}">{{ pageIndex - 1 }}</a>
+    }
+    @if (pageIndex > 0) {
+      <a class="-page" routerLink="/app/blocks/{{pageIndex}}">{{ pageIndex }}</a>
+    }
+    <a class="-page disabled">{{ pageIndex + 1 }}</a>
+    @if (pageIndex < pageCount - 1) {
+      <a class="-page" routerLink="/app/blocks/{{pageIndex + 2}}">{{ pageIndex + 2 }}</a>
+    }
+    @if (pageIndex < pageCount - 2) {
+      <a class="-page -hide-xs" routerLink="/app/blocks/{{pageIndex + 3}}">{{ pageIndex + 3 }}</a>
+    }
+    <a class="-next" [ngClass]="{ disabled: pageIndex >= pageCount - 1 }" routerLink="/app/blocks/{{ pageIndex + 2 < pageCount ? pageIndex + 2 : pageCount }}">›</a>
+    <a class="-last" [ngClass]="{ disabled: pageIndex >= pageCount - 1 }" routerLink="/app/blocks/{{ pageCount }}">»</a>
+  </div>
+}

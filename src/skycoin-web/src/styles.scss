@@ -1,10 +1,10 @@
 @import 'theme/_variables';
 @import 'theme/_tables';
 @import 'theme/_modals';
-@import '~bootstrap/scss/bootstrap-grid.scss';
+@import 'bootstrap/scss/bootstrap-grid.scss';
 
 /* You can add global styles to this file, and also import other style files */
-//@import '~@angular/material/prebuilt-themes/indigo-pink.css';
+//@import '@angular/material/prebuilt-themes/indigo-pink.css';
 @import 'app/app.theme.scss';
 
 @font-face {

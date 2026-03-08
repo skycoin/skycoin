@@ -1,5 +1,5 @@
 import { Component, EventEmitter, OnInit, Output, ViewChild, ChangeDetectorRef, OnDestroy, Input } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormControl, UntypedFormGroup } from '@angular/forms';
 
 import { ButtonComponent } from '../../../layout/button/button.component';
 
@@ -7,9 +7,10 @@ import { ButtonComponent } from '../../../layout/button/button.component';
  * Shows the second step of the wizard, which allows the user to set the password.
  */
 @Component({
-  selector: 'app-onboarding-encrypt-wallet',
-  templateUrl: './onboarding-encrypt-wallet.component.html',
-  styleUrls: ['./onboarding-encrypt-wallet.component.scss'],
+    selector: 'app-onboarding-encrypt-wallet',
+    templateUrl: './onboarding-encrypt-wallet.component.html',
+    styleUrls: ['./onboarding-encrypt-wallet.component.scss'],
+    standalone: false
 })
 export class OnboardingEncryptWalletComponent implements OnInit, OnDestroy {
   @ViewChild('button') button: ButtonComponent;
@@ -19,7 +20,7 @@ export class OnboardingEncryptWalletComponent implements OnInit, OnDestroy {
   @Output() onPasswordCreated = new EventEmitter<string|null>();
   // Emits when the user presses the button for going back to the previous step of the wizard.
   @Output() onBack = new EventEmitter();
-  form: FormGroup;
+  form: UntypedFormGroup;
 
   // If creating a temporal wallet.
   creatingTemporal_ = false;
@@ -40,14 +41,14 @@ export class OnboardingEncryptWalletComponent implements OnInit, OnDestroy {
   password2ErrorMsg = '';
 
   constructor(
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private changeDetector: ChangeDetectorRef,
   ) { }
 
   ngOnInit() {
     this.form = this.formBuilder.group({
-        password: new FormControl(''),
-        confirm: new FormControl(''),
+        password: new UntypedFormControl(''),
+        confirm: new UntypedFormControl(''),
       },
     );
 

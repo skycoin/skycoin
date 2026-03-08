@@ -11,11 +11,11 @@
 @import 'theme/text';
 @import 'theme/menu';
 
-@import "~bootstrap/scss/mixins";
-@import '~bootstrap/scss/bootstrap-grid.scss';
-@import '~bootstrap/scss/utilities/_display.scss';
-@import "~bootstrap/scss/utilities/_text.scss";
-@import "~bootstrap/scss/utilities/_spacing.scss";
+@import "bootstrap/scss/mixins";
+@import 'bootstrap/scss/bootstrap-grid.scss';
+@import 'bootstrap/scss/utilities/_display.scss';
+@import "bootstrap/scss/utilities/_text.scss";
+@import "bootstrap/scss/utilities/_spacing.scss";
 
 @import 'app/app.theme.scss';
 

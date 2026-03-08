@@ -17,9 +17,10 @@ export enum AddressOptions {
  * is returned in the "afterClosed" event.
  */
 @Component({
-  selector: 'app-address-options',
-  templateUrl: './address-options.component.html',
-  styleUrls: ['./address-options.component.scss'],
+    selector: 'app-address-options',
+    templateUrl: './address-options.component.html',
+    styleUrls: ['./address-options.component.scss'],
+    standalone: false
 })
 export class AddressOptionsComponent {
   addressOptions = AddressOptions;

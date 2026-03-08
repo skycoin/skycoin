@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { Observable, SubscriptionLike } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
@@ -40,12 +40,13 @@ export interface SeedWordDialogParams {
  * null, if the operation was cancelled.
  */
 @Component({
-  selector: 'app-seed-word-dialog',
-  templateUrl: './seed-word-dialog.component.html',
-  styleUrls: ['./seed-word-dialog.component.scss'],
+    selector: 'app-seed-word-dialog',
+    templateUrl: './seed-word-dialog.component.html',
+    styleUrls: ['./seed-word-dialog.component.scss'],
+    standalone: false
 })
 export class SeedWordDialogComponent implements OnInit, OnDestroy {
-  form: FormGroup;
+  form: UntypedFormGroup;
   filteredOptions: Observable<string[]>;
 
   msgIcons = MessageIcons;
@@ -73,7 +74,7 @@ export class SeedWordDialogComponent implements OnInit, OnDestroy {
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: SeedWordDialogParams,
     public dialogRef: MatDialogRef<SeedWordDialogComponent>,
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private bip38WordList: Bip39WordListService,
     private msgBarService: MsgBarService,
     private translateService: TranslateService,

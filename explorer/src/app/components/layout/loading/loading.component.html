@@ -1,10 +1,13 @@
 <div class="row -msg-container">
   <div class="col-sm-12">
     <!-- Loading animation and message -->
-    <span *ngIf="!longErrorMsg; else error_msg">
-      {{ loadingMsg | translate }} <i class="fa fa-spinner fa-spin fa-fw"></i>
-    </span>
+    @if (!longErrorMsg) {
+      <span>
+        {{ loadingMsg | translate }} <i class="fa fa-spinner fa-spin fa-fw"></i>
+      </span>
+    } @else {
+      {{ longErrorMsg }}
+    }
     <!-- Error message -->
-    <ng-template #error_msg>{{ longErrorMsg }}</ng-template>
   </div>
 </div>

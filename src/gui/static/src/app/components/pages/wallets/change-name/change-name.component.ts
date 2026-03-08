@@ -1,5 +1,5 @@
 import { Component, OnInit, Inject, ViewChild, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { SubscriptionLike } from 'rxjs';
 
@@ -59,14 +59,15 @@ export class ChangeNameErrorResponse {
  * ChangeNameErrorResponse instance is returned in the "afterClosed" event
  */
 @Component({
-  selector: 'app-change-name',
-  templateUrl: './change-name.component.html',
-  styleUrls: ['./change-name.component.scss'],
+    selector: 'app-change-name',
+    templateUrl: './change-name.component.html',
+    styleUrls: ['./change-name.component.scss'],
+    standalone: false
 })
 export class ChangeNameComponent implements OnInit, OnDestroy {
   // Confirmation button.
   @ViewChild('button') button: ButtonComponent;
-  form: FormGroup;
+  form: UntypedFormGroup;
   currentState: States = States.Initial;
   states = States;
   msgIcons = MessageIcons;
@@ -95,7 +96,7 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
   constructor(
     public dialogRef: MatDialogRef<ChangeNameComponent>,
     @Inject(MAT_DIALOG_DATA) public data: ChangeNameData,
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private hwWalletService: HwWalletService,
     private msgBarService: MsgBarService,
     private softwareWalletService: SoftwareWalletService,

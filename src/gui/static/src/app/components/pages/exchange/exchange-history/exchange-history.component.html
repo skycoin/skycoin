@@ -1,12 +1,14 @@
 <app-modal [headline]="'exchange.history-window.title' | translate" [dialog]="dialogRef">
   <!-- List elements. -->
-  <div class="light-button-theme list-button-container" *ngFor="let order of orders">
-    <button class="top-line" mat-button color="primary" (click)="select(order)">
-      <div class="info">
-        <div>{{ order.fromAmount }} {{ getFromCoin(order.pair) }} <mat-icon>play_arrow</mat-icon> &asymp;{{ order.toAmount | amount:true:'first' }} {{ getToCoin(order.pair) }}</div>
-        <div><span class="grey-text">{{ 'exchange.history-window.address' | translate }}</span> {{ order.address }}</div>
-        <div><span class="grey-text">{{ 'exchange.history-window.date' | translate }}</span> {{ order.timestamp | dateTime }}</div>
-      </div>
-    </button>
-  </div>
+  @for (order of orders; track order) {
+    <div class="light-button-theme list-button-container">
+      <button class="top-line" mat-button color="primary" (click)="select(order)">
+        <div class="info">
+          <div>{{ order.fromAmount }} {{ getFromCoin(order.pair) }} <mat-icon>play_arrow</mat-icon> &asymp;{{ order.toAmount | amount:true:'first' }} {{ getToCoin(order.pair) }}</div>
+          <div><span class="grey-text">{{ 'exchange.history-window.address' | translate }}</span> {{ order.address }}</div>
+          <div><span class="grey-text">{{ 'exchange.history-window.date' | translate }}</span> {{ order.timestamp | dateTime }}</div>
+        </div>
+      </button>
+    </div>
+  }
 </app-modal>

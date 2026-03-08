@@ -21,9 +21,10 @@ export class MsgBarConfig {
 }
 
 @Component({
-  selector: 'app-msg-bar',
-  templateUrl: './msg-bar.component.html',
-  styleUrls: ['./msg-bar.component.scss'],
+    selector: 'app-msg-bar',
+    templateUrl: './msg-bar.component.html',
+    styleUrls: ['./msg-bar.component.scss'],
+    standalone: false
 })
 export class MsgBarComponent implements OnInit {
   config = new MsgBarConfig();

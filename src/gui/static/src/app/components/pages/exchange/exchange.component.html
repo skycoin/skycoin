@@ -2,32 +2,37 @@
 <div class="container">
   <div class="paper">
     <!-- Loading animation. -->
-    <app-loading-content
-      [isLoading]="false"
-      noDataText="exchange.unavailable"
-      *ngIf="unavailable"
-    ></app-loading-content>
+    @if (unavailable) {
+      <app-loading-content
+        [isLoading]="false"
+        noDataText="exchange.unavailable"
+      ></app-loading-content>
+    }
 
     <!-- Order creation form. -->
-    <app-exchange-create
-      *ngIf="!currentOrderDetails && !loading"
-      (submitted)="showStatus($event)"
-    ></app-exchange-create>
+    @if (!currentOrderDetails && !loading) {
+      <app-exchange-create
+        (submitted)="showStatus($event)"
+      ></app-exchange-create>
+    }
 
     <!-- Order status. -->
-    <app-exchange-status
-      *ngIf="currentOrderDetails && !loading"
-      [orderDetails]="currentOrderDetails"
-      (goBack)="goBack()"
-    ></app-exchange-status>
+    @if (currentOrderDetails && !loading) {
+      <app-exchange-status
+        [orderDetails]="currentOrderDetails"
+        (goBack)="goBack()"
+      ></app-exchange-status>
+    }
   </div>
   <!-- Footer. -->
   <div class="-contact">
     <!-- History link. -->
     <div>
-      <span *ngIf="hasHistory" class="history">
-        <a class="link" href="#" (click)="showHistory($event)"><mat-icon>history</mat-icon> <span class="history-text">{{ 'exchange.history' | translate }}</span></a>
-      </span>
+      @if (hasHistory) {
+        <span class="history">
+          <a class="link" href="#" (click)="showHistory($event)"><mat-icon>history</mat-icon> <span class="history-text">{{ 'exchange.history' | translate }}</span></a>
+        </span>
+      }
     </div>
     <!-- Contact links. -->
     <div>

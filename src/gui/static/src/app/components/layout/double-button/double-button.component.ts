@@ -12,10 +12,11 @@ export enum DoubleButtonActive {
  * Bar with 2 buttons, one active and other inactive. Used to select between two options.
  */
 @Component({
-  selector: 'app-double-button',
-  templateUrl: './double-button.component.html',
-  styleUrls: ['./double-button.component.scss'],
-  encapsulation: ViewEncapsulation.Emulated,
+    selector: 'app-double-button',
+    templateUrl: './double-button.component.html',
+    styleUrls: ['./double-button.component.scss'],
+    encapsulation: ViewEncapsulation.Emulated,
+    standalone: false
 })
 export class DoubleButtonComponent implements OnDestroy {
   @Input() rightButtonText: string;

@@ -1,6 +1,6 @@
 import { Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { FormGroup, FormBuilder, Validators } from '@angular/forms';
+import { UntypedFormGroup, UntypedFormBuilder, Validators } from '@angular/forms';
 
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { ChildHwDialogParams } from '../hw-options-dialog/hw-options-dialog.component';
@@ -11,18 +11,19 @@ import { HwDialogBaseComponent } from '../hw-dialog-base.component';
  * created for being oppenend by the hw wallet options modal window.
  */
 @Component({
-  selector: 'app-hw-generate-seed-dialog',
-  templateUrl: './hw-generate-seed-dialog.component.html',
-  styleUrls: ['./hw-generate-seed-dialog.component.scss'],
+    selector: 'app-hw-generate-seed-dialog',
+    templateUrl: './hw-generate-seed-dialog.component.html',
+    styleUrls: ['./hw-generate-seed-dialog.component.scss'],
+    standalone: false
 })
 export class HwGenerateSeedDialogComponent extends HwDialogBaseComponent<HwGenerateSeedDialogComponent> {
-  form: FormGroup;
+  form: UntypedFormGroup;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: ChildHwDialogParams,
     public dialogRef: MatDialogRef<HwGenerateSeedDialogComponent>,
     private hwWalletService: HwWalletService,
-    formBuilder: FormBuilder,
+    formBuilder: UntypedFormBuilder,
   ) {
     super(hwWalletService, dialogRef);
 

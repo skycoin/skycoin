@@ -48,9 +48,9 @@ describe('WalletService', () => {
       ]
     });
 
-    walletService = TestBed.get(WalletService);
-    spyCipherProvider = TestBed.get(CipherProvider);
-    spyTranslateService = TestBed.get(TranslateService);
+    walletService = TestBed.inject(WalletService);
+    spyCipherProvider = TestBed.inject(CipherProvider);
+    spyTranslateService = TestBed.inject(TranslateService);
   });
 
   afterEach(() => {

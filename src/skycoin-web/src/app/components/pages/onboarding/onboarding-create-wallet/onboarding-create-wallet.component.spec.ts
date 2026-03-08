@@ -1,7 +1,7 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { RouterTestingModule } from '@angular/router/testing';
-import { FormBuilder } from '@angular/forms';
+import { UntypedFormBuilder } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { TranslateService } from '@ngx-translate/core';
 
@@ -32,7 +32,7 @@ describe('OnboardingCreateWalletComponent', () => {
         BrowserAnimationsModule,
       ],
       providers: [
-        FormBuilder,
+        UntypedFormBuilder,
         { provide: WalletService, useClass: MockWalletService },
         { provide: CoinService, useClass: MockCoinService },
         { provide: LanguageService, useClass: MockLanguageService },

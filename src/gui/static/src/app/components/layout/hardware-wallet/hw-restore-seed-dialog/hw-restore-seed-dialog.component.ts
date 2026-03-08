@@ -1,6 +1,6 @@
 import { Component, Inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { FormGroup, FormBuilder, Validators } from '@angular/forms';
+import { UntypedFormGroup, UntypedFormBuilder, Validators } from '@angular/forms';
 
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { ChildHwDialogParams } from '../hw-options-dialog/hw-options-dialog.component';
@@ -12,12 +12,13 @@ import { HwDialogBaseComponent } from '../hw-dialog-base.component';
  * modal window was created for being oppenend by the hw wallet options modal window.
  */
 @Component({
-  selector: 'app-hw-restore-seed-dialog',
-  templateUrl: './hw-restore-seed-dialog.component.html',
-  styleUrls: ['./hw-restore-seed-dialog.component.scss'],
+    selector: 'app-hw-restore-seed-dialog',
+    templateUrl: './hw-restore-seed-dialog.component.html',
+    styleUrls: ['./hw-restore-seed-dialog.component.scss'],
+    standalone: false
 })
 export class HwRestoreSeedDialogComponent extends HwDialogBaseComponent<HwRestoreSeedDialogComponent> {
-  form: FormGroup;
+  form: UntypedFormGroup;
   // If true, the seed entered by the user will not be loaded on the device, the operation will
   // just compare it to the one on the device.
   justCheckingSeed: boolean;
@@ -26,7 +27,7 @@ export class HwRestoreSeedDialogComponent extends HwDialogBaseComponent<HwRestor
     @Inject(MAT_DIALOG_DATA) public data: ChildHwDialogParams,
     public dialogRef: MatDialogRef<HwRestoreSeedDialogComponent>,
     private hwWalletService: HwWalletService,
-    formBuilder: FormBuilder,
+    formBuilder: UntypedFormBuilder,
   ) {
     super(hwWalletService, dialogRef);
 

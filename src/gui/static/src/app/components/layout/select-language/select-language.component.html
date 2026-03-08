@@ -1,8 +1,10 @@
 <app-modal class="e2e-language-modal" [headline]="'language.title' | translate" [disableDismiss]="disableDismiss" [dialog]="dialogRef">
   <div class="options-container light-button-theme">
-    <button mat-button color="primary" class="button" *ngFor="let language of languages" (click)="closePopup(language)">
-      <img [src]="'assets/img/lang/' + language.iconName">
-      <div class="label">{{ language.name }}</div>
-    </button>
+    @for (language of languages; track language) {
+      <button mat-button color="primary" class="button" (click)="closePopup(language)">
+        <img [src]="'assets/img/lang/' + language.iconName">
+        <div class="label">{{ language.name }}</div>
+      </button>
+    }
   </div>
 </app-modal>

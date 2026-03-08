@@ -4,32 +4,64 @@
       <!-- Title -->
       <h2>{{ 'blockDetails.title' | translate }}</h2>
       <!-- Navigation buttons -->
-      <div class="nav-button-container" *ngIf="blockCount && block !== undefined">
-        <a [routerLink]="'/app/block/' + (block.id - 1)" class="nav-button" *ngIf="block.id > 0">
-          <span class="font-awesome">&#xf104;</span><span class="-not-xs">&nbsp;</span><span class="-not-xs btn-text-e2e">{{ 'blockDetails.goToPrevious' | translate }}</span>
-        </a>
-        <span *ngIf="block.id > 0 && block.id < blockCount">&nbsp;<span class="-not-xs">&nbsp;&nbsp;</span></span>
-        <a [routerLink]="'/app/block/' + (block.id + 1)" class="nav-button" *ngIf="block.id < blockCount">
-          <span class="-not-xs btn-text-e2e">{{ 'blockDetails.goToNext' | translate }}</span><span class="-not-xs">&nbsp;</span><span class="font-awesome">&#xf105;</span>
-        </a>
-      </div>
+      @if (blockCount && block !== undefined) {
+        <div class="nav-button-container">
+          @if (block.id > 0) {
+            <a [routerLink]="'/app/block/' + (block.id - 1)" class="nav-button">
+              <span class="font-awesome">&#xf104;</span><span class="-not-xs">&nbsp;</span><span class="-not-xs btn-text-e2e">{{ 'blockDetails.goToPrevious' | translate }}</span>
+            </a>
+          }
+          @if (block.id > 0 && block.id < blockCount) {
+            <span>&nbsp;<span class="-not-xs">&nbsp;&nbsp;</span></span>
+          }
+          @if (block.id < blockCount) {
+            <a [routerLink]="'/app/block/' + (block.id + 1)" class="nav-button">
+              <span class="-not-xs btn-text-e2e">{{ 'blockDetails.goToNext' | translate }}</span><span class="-not-xs">&nbsp;</span><span class="font-awesome">&#xf105;</span>
+            </a>
+          }
+        </div>
+      }
     </div>
   </div>
   <!-- Top data table -->
   <div class="element-details">
     <div class="-row"><span>{{ 'blockDetails.height' | translate }}</span><br class="-xs-only" /><div> {{ block ? block.id : (loadingMsg | translate) }} </div></div>
-    <div class="-row"><span>{{ 'blockDetails.timestamp' | translate }}</span><br class="-xs-only" /><div> <app-date-formatter *ngIf="block" [date]="block.timestamp"></app-date-formatter> <span *ngIf="!block">{{ loadingMsg | translate }}</span> </div></div>
-    <div class="-row"><span>{{ 'blockDetails.size' | translate }}</span><br class="-xs-only" /><div> {{ block ? (block.size | number) + ' bytes' : (loadingMsg | translate) }} </div></div>
-    <div class="-row"><span>{{ 'blockDetails.hash' | translate }}</span><br class="-xs-only" /><div> <a [routerLink]="'/app/block/' + block.id" class="-link -copy-button-margin" *ngIf="block">{{ block.hash }}</a> <app-copy-button [text]="block.hash" *ngIf="block"></app-copy-button> <span *ngIf="!block">{{ loadingMsg | translate }}</span> </div></div>
-    <div class="-row"><span>{{ 'blockDetails.parentHash' | translate }}</span><br class="-xs-only" /><div> <a [routerLink]="'/app/block/' + (block.id-1)" class="-link -copy-button-margin" *ngIf="block && block.id !== 0">{{ block.parent_hash }}</a> <app-copy-button [text]="block.parent_hash" *ngIf="block && block.id !== 0"></app-copy-button> <span *ngIf="block && block.id === 0">{{ 'blockDetails.withoutParent' | translate }}</span> <span *ngIf="!block">{{ loadingMsg | translate }}</span> </div></div>
-    <div class="-row"><span>{{ 'blockDetails.totalAmount' | translate }}</span><br class="-xs-only" /><div> {{ block ? (totalAmount.toString() | amount) : (loadingMsg | translate) }} </div></div>
-  </div>
+    <div class="-row"><span>{{ 'blockDetails.timestamp' | translate }}</span><br class="-xs-only" /><div> @if (block) {
+    <app-date-formatter [date]="block.timestamp"></app-date-formatter>
+    } @if (!block) {
+    <span>{{ loadingMsg | translate }}</span>
+  } </div></div>
+  <div class="-row"><span>{{ 'blockDetails.size' | translate }}</span><br class="-xs-only" /><div> {{ block ? (block.size | number) + ' bytes' : (loadingMsg | translate) }} </div></div>
+  <div class="-row"><span>{{ 'blockDetails.hash' | translate }}</span><br class="-xs-only" /><div> @if (block) {
+  <a [routerLink]="'/app/block/' + block.id" class="-link -copy-button-margin">{{ block.hash }}</a>
+  } @if (block) {
+  <app-copy-button [text]="block.hash"></app-copy-button>
+  } @if (!block) {
+  <span>{{ loadingMsg | translate }}</span>
+} </div></div>
+<div class="-row"><span>{{ 'blockDetails.parentHash' | translate }}</span><br class="-xs-only" /><div> @if (block && block.id !== 0) {
+<a [routerLink]="'/app/block/' + (block.id-1)" class="-link -copy-button-margin">{{ block.parent_hash }}</a>
+} @if (block && block.id !== 0) {
+<app-copy-button [text]="block.parent_hash"></app-copy-button>
+} @if (block && block.id === 0) {
+<span>{{ 'blockDetails.withoutParent' | translate }}</span>
+} @if (!block) {
+<span>{{ loadingMsg | translate }}</span>
+} </div></div>
+<div class="-row"><span>{{ 'blockDetails.totalAmount' | translate }}</span><br class="-xs-only" /><div> {{ block ? (totalAmount.toString() | amount) : (loadingMsg | translate) }} </div></div>
+</div>
 </div>
 
 <!-- Loading control -->
-<app-loading [longErrorMsg]="longErrorMsg | translate:{number: blockID}" *ngIf="block === undefined"></app-loading>
+@if (block === undefined) {
+  <app-loading [longErrorMsg]="longErrorMsg | translate:{number: blockID}"></app-loading>
+}
 
 <!-- Transactions list -->
-<div *ngIf="block">
-  <app-transaction-info *ngFor="let transaction of block.transactions" [transaction]="transaction"></app-transaction-info>
-</div>
+@if (block) {
+  <div>
+    @for (transaction of block.transactions; track transaction) {
+      <app-transaction-info [transaction]="transaction"></app-transaction-info>
+    }
+  </div>
+}

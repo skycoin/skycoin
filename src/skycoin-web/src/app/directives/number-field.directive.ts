@@ -2,7 +2,8 @@ import { Directive, HostListener } from '@angular/core';
 
 // --- Allows an input to accept only numbers. Currently, the paste option is failing, it needs some more testing 2.222
 @Directive({
-  selector: 'input[appNumberField]'
+    selector: 'input[appNumberField]',
+    standalone: false
 })
 export class NumberFieldDirective {
   @HostListener('keydown', ['$event']) onKeyDown(event) {

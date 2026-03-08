@@ -56,9 +56,10 @@ export interface ChildHwDialogParams {
  * to the wallet list. This behavior allows the user to just add a wallet while on the wizard.
  */
 @Component({
-  selector: 'app-hw-options-dialog',
-  templateUrl: './hw-options-dialog.component.html',
-  styleUrls: ['./hw-options-dialog.component.scss'],
+    selector: 'app-hw-options-dialog',
+    templateUrl: './hw-options-dialog.component.html',
+    styleUrls: ['./hw-options-dialog.component.scss'],
+    standalone: false
 })
 export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDialogComponent> implements OnDestroy {
   closeIfHwDisconnected = false;

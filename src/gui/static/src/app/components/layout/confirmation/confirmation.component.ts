@@ -63,9 +63,10 @@ export interface ConfirmationParams {
  * the modal window is closed and "true" is returned in the "afterClosed" event.
  */
 @Component({
-  selector: 'app-confirmation',
-  templateUrl: './confirmation.component.html',
-  styleUrls: ['./confirmation.component.scss'],
+    selector: 'app-confirmation',
+    templateUrl: './confirmation.component.html',
+    styleUrls: ['./confirmation.component.scss'],
+    standalone: false
 })
 export class ConfirmationComponent {
   // If the user checked the checkbox.

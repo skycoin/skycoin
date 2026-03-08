@@ -7,9 +7,10 @@ import { AppConfig } from '../../../../../app.config';
  * Modal window for displaying the seed of a wallet, for making a backup.
  */
 @Component({
-  selector: 'app-seed-modal',
-  templateUrl: './seed-modal.component.html',
-  styleUrls: ['./seed-modal.component.scss'],
+    selector: 'app-seed-modal',
+    templateUrl: './seed-modal.component.html',
+    styleUrls: ['./seed-modal.component.scss'],
+    standalone: false
 })
 export class SeedModalComponent {
   /**

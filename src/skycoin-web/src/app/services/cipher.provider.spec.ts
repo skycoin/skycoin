@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 import { CipherProvider, InitializationResults } from './cipher.provider';
 import { Address, TransactionInput, TransactionOutput } from '../app.datatypes';
@@ -10,13 +10,14 @@ describe('CipherProvider', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [ HttpClientModule ],
-      providers: [
-        CipherProvider
-      ]
-    });
+    imports: [],
+    providers: [
+        CipherProvider,
+        provideHttpClient(withInterceptorsFromDi())
+    ]
+});
 
-    cipherProvider = TestBed.get(CipherProvider);
+    cipherProvider = TestBed.inject(CipherProvider);
   });
 
   it('should be created', () => {

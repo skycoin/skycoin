@@ -30,9 +30,10 @@ export class AddressConfirmationParams {
  * Allows the user to confirm the desktop and hw wallets show the same address.
  */
 @Component({
-  selector: 'app-hw-confirm-address-dialog',
-  templateUrl: './hw-confirm-address-dialog.component.html',
-  styleUrls: ['./hw-confirm-address-dialog.component.scss'],
+    selector: 'app-hw-confirm-address-dialog',
+    templateUrl: './hw-confirm-address-dialog.component.html',
+    styleUrls: ['./hw-confirm-address-dialog.component.scss'],
+    standalone: false
 })
 export class HwConfirmAddressDialogComponent extends HwDialogBaseComponent<HwConfirmAddressDialogComponent> {
   /**

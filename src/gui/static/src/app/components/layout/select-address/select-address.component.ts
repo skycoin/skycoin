@@ -17,9 +17,10 @@ class ElementAddress {
 }
 
 @Component({
-  selector: 'app-select-address',
-  templateUrl: './select-address.component.html',
-  styleUrls: ['./select-address.component.scss'],
+    selector: 'app-select-address',
+    templateUrl: './select-address.component.html',
+    styleUrls: ['./select-address.component.scss'],
+    standalone: false
 })
 export class SelectAddressComponent {
 

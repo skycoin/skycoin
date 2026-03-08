@@ -1,7 +1,7 @@
 import { throwError as observableThrowError, SubscriptionLike, of } from 'rxjs';
 import { retryWhen, delay, mergeMap, debounceTime } from 'rxjs/operators';
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { BigNumber } from 'bignumber.js';
 import { HttpErrorResponse } from '@angular/common/http';
 
@@ -86,9 +86,10 @@ export enum SourceSelectionModes {
  * which allow different levels of control.
  */
 @Component({
-  selector: 'app-form-source-selection',
-  templateUrl: './form-source-selection.component.html',
-  styleUrls: ['./form-source-selection.component.scss'],
+    selector: 'app-form-source-selection',
+    templateUrl: './form-source-selection.component.html',
+    styleUrls: ['./form-source-selection.component.scss'],
+    standalone: false
 })
 export class FormSourceSelectionComponent implements OnInit, OnDestroy {
   // Allows to deactivate the form while the system is busy.
@@ -111,7 +112,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
   }
 
   sourceSelectionModes = SourceSelectionModes;
-  form: FormGroup;
+  form: UntypedFormGroup;
   // All available wallets.
   allWallets: WalletWithBalance[];
   // Wallet selected by the user.
@@ -140,7 +141,7 @@ export class FormSourceSelectionComponent implements OnInit, OnDestroy {
 
   constructor(
     private appService: AppService,
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private balanceAndOutputsService: BalanceAndOutputsService,
   ) { }
 

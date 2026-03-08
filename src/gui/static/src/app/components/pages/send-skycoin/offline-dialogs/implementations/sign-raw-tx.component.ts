@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { FormBuilder } from '@angular/forms';
+import { UntypedFormBuilder } from '@angular/forms';
 import { SubscriptionLike } from 'rxjs';
 import { first } from 'rxjs/operators';
 
@@ -19,9 +19,10 @@ import { WalletBase } from '../../../../../services/wallet-operations/wallet-obj
  * the transaction, it opens a new modal window for showing the signed raw tx.
  */
 @Component({
-  selector: 'app-sign-raw-tx',
-  templateUrl: '../offline-dialogs-base.component.html',
-  styleUrls: ['../offline-dialogs-base.component.scss'],
+    selector: 'app-sign-raw-tx',
+    templateUrl: '../offline-dialogs-base.component.html',
+    styleUrls: ['../offline-dialogs-base.component.scss'],
+    standalone: false
 })
 export class SignRawTxComponent extends OfflineDialogsBaseComponent implements OnInit, OnDestroy {
   // Configure the UI.
@@ -54,7 +55,7 @@ export class SignRawTxComponent extends OfflineDialogsBaseComponent implements O
     private dialog: MatDialog,
     private spendingService: SpendingService,
     private walletsAndAddressesService: WalletsAndAddressesService,
-    formBuilder: FormBuilder,
+    formBuilder: UntypedFormBuilder,
   ) {
     super(formBuilder);
 

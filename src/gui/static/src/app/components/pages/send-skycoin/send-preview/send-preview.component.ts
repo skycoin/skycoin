@@ -18,9 +18,10 @@ import { GeneratedTransaction } from '../../../../services/wallet-operations/tra
  * Shows the preview of a transaction before sending it to the network.
  */
 @Component({
-  selector: 'app-send-preview',
-  templateUrl: './send-preview.component.html',
-  styleUrls: ['./send-preview.component.scss'],
+    selector: 'app-send-preview',
+    templateUrl: './send-preview.component.html',
+    styleUrls: ['./send-preview.component.scss'],
+    standalone: false
 })
 export class SendVerifyComponent implements OnDestroy {
   @ViewChild('sendButton') sendButton: ButtonComponent;

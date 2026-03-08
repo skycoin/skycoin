@@ -3,8 +3,9 @@ import { EventEmitter } from '@angular/core';
 import { ClipboardService } from '../services/clipboard.service';
 
 @Directive({
-  /* tslint:disable:directive-selector */
-  selector: '[clipboard]',
+    /* tslint:disable:directive-selector */
+    selector: '[clipboard]',
+    standalone: false
 })
 export class ClipboardDirective {
   @Output() copyEvent: EventEmitter<string>;

@@ -15,9 +15,10 @@ import { GlobalsService } from '../../../../services/globals.service';
 import { isEqualOrSuperiorVersion } from '../../../../utils/semver';
 
 @Component({
-  selector: 'app-pending-transactions',
-  templateUrl: './pending-transactions.component.html',
-  styleUrls: ['./pending-transactions.component.scss']
+    selector: 'app-pending-transactions',
+    templateUrl: './pending-transactions.component.html',
+    styleUrls: ['./pending-transactions.component.scss'],
+    standalone: false
 })
 export class PendingTransactionsComponent implements OnInit, OnDestroy {
   isLoading = false;

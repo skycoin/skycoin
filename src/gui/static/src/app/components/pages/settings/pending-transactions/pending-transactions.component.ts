@@ -11,9 +11,10 @@ import { HistoryService, PendingTransactionData } from '../../../../services/wal
  * all pending tx or just the pending tx affecting the user.
  */
 @Component({
-  selector: 'app-pending-transactions',
-  templateUrl: './pending-transactions.component.html',
-  styleUrls: ['./pending-transactions.component.scss'],
+    selector: 'app-pending-transactions',
+    templateUrl: './pending-transactions.component.html',
+    styleUrls: ['./pending-transactions.component.scss'],
+    standalone: false
 })
 export class PendingTransactionsComponent implements OnInit, OnDestroy {
   // Transactions to show on the UI.

@@ -6,9 +6,11 @@
   </div>
   <!-- Menu -->
   <div class="dropdown-menu" [ngClass]="{open: showLangs}">
-    <div *ngFor="let lang of langs" class="dropdown-item" (click)="changeLanguage(lang)">
-      <img [src]="'/assets/img/lang/' + lang.iconName" class="small-flag-img" />
-      {{ lang.name }}
-    </div>
+    @for (lang of langs; track lang) {
+      <div class="dropdown-item" (click)="changeLanguage(lang)">
+        <img [src]="'/assets/img/lang/' + lang.iconName" class="small-flag-img" />
+        {{ lang.name }}
+      </div>
+    }
   </div>
 </div>

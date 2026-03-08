@@ -16,9 +16,10 @@ import { WalletWithBalance } from '../../../services/wallet-operations/wallet-ob
  * Shows the wallet list and options related to it.
  */
 @Component({
-  selector: 'app-wallets',
-  templateUrl: './wallets.component.html',
-  styleUrls: ['./wallets.component.scss'],
+    selector: 'app-wallets',
+    templateUrl: './wallets.component.html',
+    styleUrls: ['./wallets.component.scss'],
+    standalone: false
 })
 export class WalletsComponent implements OnInit, OnDestroy {
   /**

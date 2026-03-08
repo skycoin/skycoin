@@ -20,9 +20,10 @@ export class LocalValueData {
  * and provides functions for saving data on the browser history state.
  */
 @Component({
-  selector: 'app-page-base',
-  template: '',
-  styles: [],
+    selector: 'app-page-base',
+    template: '',
+    styles: [],
+    standalone: false
 })
 export class PageBaseComponent implements OnInit {
   // Key for saving the scroll position.

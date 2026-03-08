@@ -10,9 +10,10 @@ import { HwDialogBaseComponent } from '../hw-dialog-base.component';
  * being oppenend by the hw wallet options modal window.
  */
 @Component({
-  selector: 'app-hw-remove-pin-dialog',
-  templateUrl: './hw-remove-pin-dialog.component.html',
-  styleUrls: ['./hw-remove-pin-dialog.component.scss'],
+    selector: 'app-hw-remove-pin-dialog',
+    templateUrl: './hw-remove-pin-dialog.component.html',
+    styleUrls: ['./hw-remove-pin-dialog.component.scss'],
+    standalone: false
 })
 export class HwRemovePinDialogComponent extends HwDialogBaseComponent<HwRemovePinDialogComponent> {
   // If the user has confirmed the operation with the checkbox.

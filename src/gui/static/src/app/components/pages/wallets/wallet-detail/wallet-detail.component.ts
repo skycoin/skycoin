@@ -26,9 +26,10 @@ import { WalletsComponent } from '../wallets.component';
  * Shows the option buttons and address list of a wallet on the wallet list.
  */
 @Component({
-  selector: 'app-wallet-detail',
-  templateUrl: './wallet-detail.component.html',
-  styleUrls: ['./wallet-detail.component.scss'],
+    selector: 'app-wallet-detail',
+    templateUrl: './wallet-detail.component.html',
+    styleUrls: ['./wallet-detail.component.scss'],
+    standalone: false
 })
 export class WalletDetailComponent implements OnDestroy {
   @Input() wallet: WalletWithBalance;

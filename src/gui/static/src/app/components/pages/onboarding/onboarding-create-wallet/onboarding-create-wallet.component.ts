@@ -16,9 +16,10 @@ import { AppService } from '../../../../services/app.service';
  * a wallet using a seed.
  */
 @Component({
-  selector: 'app-onboarding-create-wallet',
-  templateUrl: './onboarding-create-wallet.component.html',
-  styleUrls: ['./onboarding-create-wallet.component.scss'],
+    selector: 'app-onboarding-create-wallet',
+    templateUrl: './onboarding-create-wallet.component.html',
+    styleUrls: ['./onboarding-create-wallet.component.scss'],
+    standalone: false
 })
 export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {
   @ViewChild('formControl') formControl: CreateWalletFormComponent;

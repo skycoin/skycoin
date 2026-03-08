@@ -1,7 +1,11 @@
 <div class="app">
   <!-- App header -->
-  <app-header *ngIf="!headerConfig.useGenericHeader"></app-header>
-  <app-generic-header *ngIf="headerConfig.useGenericHeader"></app-generic-header>
+  @if (!headerConfig.useGenericHeader) {
+    <app-header></app-header>
+  }
+  @if (headerConfig.useGenericHeader) {
+    <app-generic-header></app-generic-header>
+  }
   <div class="wrapper">
     <app-search-bar></app-search-bar>
     <!-- Main page content -->
@@ -9,5 +13,9 @@
   </div>
 </div>
 <!-- App footer -->
-<app-footer *ngIf="!footerConfig.useGenericFooter"></app-footer>
-<app-generic-footer *ngIf="footerConfig.useGenericFooter"></app-generic-footer>
+@if (!footerConfig.useGenericFooter) {
+  <app-footer></app-footer>
+}
+@if (footerConfig.useGenericFooter) {
+  <app-generic-footer></app-generic-footer>
+}

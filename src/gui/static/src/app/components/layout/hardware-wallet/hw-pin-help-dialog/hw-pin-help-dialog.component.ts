@@ -5,9 +5,10 @@ import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dial
  * Shows instructions about how to use the PIN matrix.
  */
 @Component({
-  selector: 'app-hw-added-dialog',
-  templateUrl: './hw-pin-help-dialog.component.html',
-  styleUrls: ['./hw-pin-help-dialog.component.scss'],
+    selector: 'app-hw-added-dialog',
+    templateUrl: './hw-pin-help-dialog.component.html',
+    styleUrls: ['./hw-pin-help-dialog.component.scss'],
+    standalone: false
 })
 export class HwPinHelpDialogComponent {
   /**

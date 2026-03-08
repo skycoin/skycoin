@@ -38,9 +38,10 @@ export class MsgBarConfig {
  * and added to the UI just after starting the app and being controlled by a service.
  */
 @Component({
-  selector: 'app-msg-bar',
-  templateUrl: './msg-bar.component.html',
-  styleUrls: ['./msg-bar.component.scss'],
+    selector: 'app-msg-bar',
+    templateUrl: './msg-bar.component.html',
+    styleUrls: ['./msg-bar.component.scss'],
+    standalone: false
 })
 export class MsgBarComponent {
   config = new MsgBarConfig();

@@ -1,7 +1,7 @@
 import { SubscriptionLike, forkJoin, throwError } from 'rxjs';
 import { first, mergeMap } from 'rxjs/operators';
 import { Component, EventEmitter, Input, OnDestroy, OnInit, ViewChild, ChangeDetectorRef, Output as AgularOutput } from '@angular/core';
-import { FormGroup, FormControl } from '@angular/forms';
+import { UntypedFormGroup, UntypedFormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { BigNumber } from 'bignumber.js';
 import { TranslateService } from '@ngx-translate/core';
@@ -89,9 +89,10 @@ export interface FormData {
  * Form for sending coins.
  */
 @Component({
-  selector: 'app-send-coins-form',
-  templateUrl: './send-coins-form.component.html',
-  styleUrls: ['./send-coins-form.component.scss'],
+    selector: 'app-send-coins-form',
+    templateUrl: './send-coins-form.component.html',
+    styleUrls: ['./send-coins-form.component.scss'],
+    standalone: false
 })
 export class SendCoinsFormComponent implements OnInit, OnDestroy {
   // Default factor used for automatically distributing the coins.
@@ -115,7 +116,7 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
 
   // Max chars the note field can have.
   maxNoteChars = ChangeNoteComponent.MAX_NOTE_CHARS;
-  form: FormGroup;
+  form: UntypedFormGroup;
   // How many coins the user can send with the selected sources.
   availableBalance = new AvailableBalanceData();
   // If true, the hours are distributed automatically. If false, the user can manually
@@ -155,9 +156,9 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    this.form = new FormGroup({});
-    this.form.addControl('changeAddress', new FormControl(''));
-    this.form.addControl('note', new FormControl(''));
+    this.form = new UntypedFormGroup({});
+    this.form.addControl('changeAddress', new UntypedFormControl(''));
+    this.form.addControl('note', new UntypedFormControl(''));
 
     this.form.setValidators(this.validateForm.bind(this));
 

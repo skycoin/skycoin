@@ -1,20 +1,22 @@
 <app-modal [headline]="'select-address.title' | translate" [dialog]="dialogRef">
-  <div class="wallet-container list-button-container light-button-theme" *ngFor="let element of listElements">
-    <div class="title" title="{{ element.label }}">{{ element.label }}</div>
-    <ng-container *ngIf="element.addresses.length > 0">
-      <ng-container *ngFor="let address of element.addresses">
-        <button mat-button color="primary" (click)="select(address.address)">
-          <div class="address">{{ address.address }}</div>
-          <div class="balance">{{ address.coins | amount:true:'first' }}
-            <span class="grey-text">{{ address.coins | amount:true:'last' }} | </span>
-            {{ address.hours | amount:false:'first' }}
-            <span class="grey-text">{{ address.hours | amount:false:'last' }}</span>
-          </div>
-        </button>
-      </ng-container>
-    </ng-container>
-    <ng-container *ngIf="element.addresses.length === 0">
-      <div class="no-addresses-msg"><mat-icon [inline]="true">error</mat-icon>{{ 'select-address.no-addresses' | translate }}</div>
-    </ng-container>
-  </div>
+  @for (element of listElements; track element) {
+    <div class="wallet-container list-button-container light-button-theme">
+      <div class="title" title="{{ element.label }}">{{ element.label }}</div>
+      @if (element.addresses.length > 0) {
+        @for (address of element.addresses; track address) {
+          <button mat-button color="primary" (click)="select(address.address)">
+            <div class="address">{{ address.address }}</div>
+            <div class="balance">{{ address.coins | amount:true:'first' }}
+              <span class="grey-text">{{ address.coins | amount:true:'last' }} | </span>
+              {{ address.hours | amount:false:'first' }}
+              <span class="grey-text">{{ address.hours | amount:false:'last' }}</span>
+            </div>
+          </button>
+        }
+      }
+      @if (element.addresses.length === 0) {
+        <div class="no-addresses-msg"><mat-icon [inline]="true">error</mat-icon>{{ 'select-address.no-addresses' | translate }}</div>
+      }
+    </div>
+  }
 </app-modal>

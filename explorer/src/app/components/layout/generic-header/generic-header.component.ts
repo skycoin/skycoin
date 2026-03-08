@@ -7,9 +7,10 @@ import { HeaderConfig } from 'app/app.config';
  * must be true. Read the docs for more information.
  */
 @Component({
-  selector: 'app-generic-header',
-  templateUrl: './generic-header.component.html',
-  styleUrls: ['./generic-header.component.scss']
+    selector: 'app-generic-header',
+    templateUrl: './generic-header.component.html',
+    styleUrls: ['./generic-header.component.scss'],
+    standalone: false
 })
 export class GenericHeaderComponent {
   /**

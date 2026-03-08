@@ -1,36 +1,43 @@
 <div>
   <app-header [headline]="'outputs.title' | translate"></app-header>
 
-  <app-loading-content
-    [isLoading]="!wallets"
-    noDataText="outputs.error-no-outputs"
-    *ngIf="!wallets || wallets.length === 0 || wallets[0].addresses[0].outputs.length === 0"
-  ></app-loading-content>
+  @if (!wallets || wallets.length === 0 || wallets[0].addresses[0].outputs.length === 0) {
+    <app-loading-content
+      [isLoading]="!wallets"
+      noDataText="outputs.error-no-outputs"
+    ></app-loading-content>
+  }
 
-  <div class="container" *ngIf="wallets && wallets.length > 0">
-    <div class="-table" *ngFor="let wallet of wallets">
-      <div class="-headers">
-        <div class="-flex-fill text-truncate" [attr.title]="wallet.label">{{ wallet.label }}</div>
-        <div class="-width-150 text-right">{{ 'coin' | commonText }}</div>
-        <div class="-width-150 text-right">{{ 'hours' | commonText }}</div>
-      </div>
-      <div class="-body">
-        <ng-container *ngFor="let address of wallet.addresses">
-          <div class="-row">
-            <div class="-flex-fill grey-text text-truncate">
-              <app-qr-code-button [address]="address.address"></app-qr-code-button>
-              <span class="address">{{ address.address }}</span>
-            </div>
+  @if (wallets && wallets.length > 0) {
+    <div class="container">
+      @for (wallet of wallets; track wallet) {
+        <div class="-table">
+          <div class="-headers">
+            <div class="-flex-fill text-truncate" [attr.title]="wallet.label">{{ wallet.label }}</div>
+            <div class="-width-150 text-right">{{ 'coin' | commonText }}</div>
+            <div class="-width-150 text-right">{{ 'hours' | commonText }}</div>
           </div>
-          <div class="-row" *ngFor="let output of address.outputs">
-            <div class="-flex-fill -hash">{{ output.hash }}</div>
-            <div class="-width-150 text-right">{{ output.coins | amount:true:'first' }}</div>
-            <div class="-width-150 text-right grey-text">{{ output.hours | amount:false:'first' }}</div>
+          <div class="-body">
+            @for (address of wallet.addresses; track address) {
+              <div class="-row">
+                <div class="-flex-fill grey-text text-truncate">
+                  <app-qr-code-button [address]="address.address"></app-qr-code-button>
+                  <span class="address">{{ address.address }}</span>
+                </div>
+              </div>
+              @for (output of address.outputs; track output) {
+                <div class="-row">
+                  <div class="-flex-fill -hash">{{ output.hash }}</div>
+                  <div class="-width-150 text-right">{{ output.coins | amount:true:'first' }}</div>
+                  <div class="-width-150 text-right grey-text">{{ output.hours | amount:false:'first' }}</div>
+                </div>
+              }
+            }
           </div>
-        </ng-container>
-      </div>
+        </div>
+      }
     </div>
-  </div>
+  }
   <!-- Needed to force Chrome respect any previous bottom margin. -->
   <div class="final-element"></div>
 </div>

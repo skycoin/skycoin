@@ -5,9 +5,10 @@ import { Component, Input } from '@angular/core';
  * separating the date from the hour and showing timezone info.
  */
 @Component({
-  selector: 'app-date-formatter',
-  templateUrl: './date-formatter.component.html',
-  styleUrls: ['./date-formatter.component.scss']
+    selector: 'app-date-formatter',
+    templateUrl: './date-formatter.component.html',
+    styleUrls: ['./date-formatter.component.scss'],
+    standalone: false
 })
 export class DateFormatterComponent {
   /**

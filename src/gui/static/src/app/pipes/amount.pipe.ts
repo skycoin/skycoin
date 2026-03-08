@@ -14,8 +14,9 @@ import { AppService } from '../services/app.service';
  * only the last part of the amount (the coin or hours name).
  */
 @Pipe({
-  name: 'amount',
-  pure: false,
+    name: 'amount',
+    pure: false,
+    standalone: false
 })
 export class AmountPipe implements PipeTransform {
 

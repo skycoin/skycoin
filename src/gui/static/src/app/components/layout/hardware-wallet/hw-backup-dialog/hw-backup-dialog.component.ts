@@ -10,9 +10,10 @@ import { HwDialogBaseComponent } from '../hw-dialog-base.component';
  * oppenend by the hw wallet options modal window.
  */
 @Component({
-  selector: 'app-hw-backup-dialog',
-  templateUrl: './hw-backup-dialog.component.html',
-  styleUrls: ['./hw-backup-dialog.component.scss'],
+    selector: 'app-hw-backup-dialog',
+    templateUrl: './hw-backup-dialog.component.html',
+    styleUrls: ['./hw-backup-dialog.component.scss'],
+    standalone: false
 })
 export class HwBackupDialogComponent extends HwDialogBaseComponent<HwBackupDialogComponent> {
   constructor(

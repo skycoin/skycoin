@@ -7,9 +7,10 @@ import { OldTransaction } from '../../../../services/wallet-operations/transacti
  * Modal window for showing the details of a transaction from the transaction history.
  */
 @Component({
-  selector: 'app-transaction-detail',
-  templateUrl: './transaction-detail.component.html',
-  styleUrls: ['./transaction-detail.component.scss'],
+    selector: 'app-transaction-detail',
+    templateUrl: './transaction-detail.component.html',
+    styleUrls: ['./transaction-detail.component.scss'],
+    standalone: false
 })
 export class TransactionDetailComponent {
   /**

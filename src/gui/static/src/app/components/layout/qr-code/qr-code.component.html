@@ -5,42 +5,53 @@
   </div>
   <!-- Info. -->
   <div class="separator"></div>
-  <div class="data-container" *ngIf="!data.showAddressOnly">
-    <div class="title">{{ 'qr.data-label' | translate }}</div>
-    <div class="data" (click)="copyText(currentQrContent)"><span class="text">{{ currentQrContent }}</span><span class="fa copy">&#xf0c5;</span></div>
-  </div>
+  @if (!data.showAddressOnly) {
+    <div class="data-container">
+      <div class="title">{{ 'qr.data-label' | translate }}</div>
+      <div class="data" (click)="copyText(currentQrContent)"><span class="text">{{ currentQrContent }}</span><span class="fa copy">&#xf0c5;</span></div>
+    </div>
+  }
   <div class="data-container">
     <div class="title">{{ 'qr.address-label' | translate }}</div>
     <div class="data" (click)="copyText(data.address)"><span class="text">{{ data.address }}</span><span class="fa copy">&#xf0c5;</span></div>
   </div>
 
-  <app-arrow-link
-    *ngIf="!formVisible && !data.showAddressOnly"
-    [text]="'qr.request-link'"
-    (pressed)="showForm()"
-    [noPadding]="true">
-  </app-arrow-link>
+  @if (!formVisible && !data.showAddressOnly) {
+    <app-arrow-link
+      [text]="'qr.request-link'"
+      (pressed)="showForm()"
+      [noPadding]="true">
+    </app-arrow-link>
+  }
 
   <!-- Form. -->
-  <div class="separator form-separator" *ngIf="formVisible"></div>
-  <div [formGroup]="form" *ngIf="formVisible">
-    <div class="form-field">
-      <label for="coins">
-        {{ 'qr.amount-label' | translate }} <span class="red-text" *ngIf="invalidCoins">{{ 'qr.invalid' | translate }}</span>
+  @if (formVisible) {
+    <div class="separator form-separator"></div>
+  }
+  @if (formVisible) {
+    <div [formGroup]="form">
+      <div class="form-field">
+        <label for="coins">
+          {{ 'qr.amount-label' | translate }} @if (invalidCoins) {
+          <span class="red-text">{{ 'qr.invalid' | translate }}</span>
+        }
       </label>
       <input appFormatNumber maxlength="20" formControlName="coins" id="coins">
     </div>
     <div class="form-field">
       <label for="hours">
-        {{ 'qr.hours-label' | translate }} <span class="red-text" *ngIf="invalidHours">{{ 'qr.invalid' | translate }}</span>
-      </label>
-      <input appFormatNumber maxlength="20" formControlName="hours" id="hours">
-    </div>
-    <div class="form-field">
-      <label for="note">
-        {{ 'qr.message-label' | translate }}
-      </label>
-      <input maxlength="100" formControlName="note" id="note">
-    </div>
+        {{ 'qr.hours-label' | translate }} @if (invalidHours) {
+        <span class="red-text">{{ 'qr.invalid' | translate }}</span>
+      }
+    </label>
+    <input appFormatNumber maxlength="20" formControlName="hours" id="hours">
   </div>
+  <div class="form-field">
+    <label for="note">
+      {{ 'qr.message-label' | translate }}
+    </label>
+    <input maxlength="100" formControlName="note" id="note">
+  </div>
+</div>
+}
 </app-modal>

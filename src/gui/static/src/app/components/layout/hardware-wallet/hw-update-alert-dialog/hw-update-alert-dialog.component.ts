@@ -10,9 +10,10 @@ import { HwDialogBaseComponent } from '../hw-dialog-base.component';
  * "afterClosed" event.
  */
 @Component({
-  selector: 'app-hw-update-alert-dialog',
-  templateUrl: './hw-update-alert-dialog.component.html',
-  styleUrls: ['./hw-update-alert-dialog.component.scss'],
+    selector: 'app-hw-update-alert-dialog',
+    templateUrl: './hw-update-alert-dialog.component.html',
+    styleUrls: ['./hw-update-alert-dialog.component.scss'],
+    standalone: false
 })
 export class HwUpdateAlertDialogComponent extends HwDialogBaseComponent<HwUpdateAlertDialogComponent> {
   /**

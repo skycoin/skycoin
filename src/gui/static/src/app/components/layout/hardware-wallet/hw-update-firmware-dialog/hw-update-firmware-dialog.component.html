@@ -1,53 +1,62 @@
 <app-modal [headline]="this.title | translate" [dialog]="dialogRef" [disableDismiss]="currentState === states.Processing">
   <!-- Initial instructions and warnings. -->
-  <div *ngIf="currentState === states.Initial">
-    <app-hw-message
-      [text]="(text | translate)"
-      [icon]="deviceHasFirmware ? msgIcons.Warning : msgIcons.HardwareWallet"
-    ></app-hw-message>
-
-    <div class="-check-container" *ngIf="deviceHasFirmware">
-      <mat-checkbox type="checkbox"
-                    class="-check"
-                    [checked]="confirmed"
-                    (change)="setConfirmed($event)">{{ 'common.generic-confirmation-check' | translate }}
-      </mat-checkbox>
+  @if (currentState === states.Initial) {
+    <div>
+      <app-hw-message
+        [text]="(text | translate)"
+        [icon]="deviceHasFirmware ? msgIcons.Warning : msgIcons.HardwareWallet"
+      ></app-hw-message>
+      @if (deviceHasFirmware) {
+        <div class="-check-container">
+          <mat-checkbox type="checkbox"
+            class="-check"
+            [checked]="confirmed"
+            (change)="setConfirmed($event)">{{ 'common.generic-confirmation-check' | translate }}
+          </mat-checkbox>
+        </div>
+      }
+      <div class="-buttons">
+        <app-button (action)="closeModal()">
+          {{ 'common.cancel-button' | translate }}
+        </app-button>
+        <app-button (action)="startUpdating()" class="primary-button" [disabled]="deviceHasFirmware && !confirmed">
+          {{ 'common.continue-button' | translate }}
+        </app-button>
+      </div>
     </div>
+  }
 
-    <div class="-buttons">
-      <app-button (action)="closeModal()">
-        {{ 'common.cancel-button' | translate }}
-      </app-button>
-      <app-button (action)="startUpdating()" class="primary-button" [disabled]="deviceHasFirmware && !confirmed">
-        {{ 'common.continue-button' | translate }}
-      </app-button>
+  @if (currentState !== states.Initial) {
+    <div>
+      <!-- Initial connection animation. -->
+      @if (currentState === states.Connecting) {
+        <app-hw-message
+          [text]="'hardware-wallet.update-firmware.title-connecting' | translate"
+          [icon]="msgIcons.Spinner"
+        ></app-hw-message>
+      }
+      <!-- Install instructions. -->
+      @if (currentState === states.Processing) {
+        <app-hw-message
+          [text]="'hardware-wallet.update-firmware.follow' | translate"
+          [icon]="msgIcons.Confirm"
+        ></app-hw-message>
+      }
+      <!-- Result. -->
+      @if (currentState === states.ShowingResult) {
+        <app-hw-message
+          [text]="result.text | translate"
+          [icon]="result.icon"
+        ></app-hw-message>
+      }
+      <!-- Buttons area. -->
+      @if (currentState !== states.Processing) {
+        <div class="-buttons">
+          <app-button (action)="closeModal()" class="primary-button" #closeButton>
+            {{ 'common.close-button' | translate }}
+          </app-button>
+        </div>
+      }
     </div>
-  </div>
-
-  <div *ngIf="currentState !== states.Initial">
-    <!-- Initial connection animation. -->
-    <app-hw-message *ngIf="currentState === states.Connecting"
-      [text]="'hardware-wallet.update-firmware.title-connecting' | translate"
-      [icon]="msgIcons.Spinner"
-    ></app-hw-message>
-
-    <!-- Install instructions. -->
-    <app-hw-message *ngIf="currentState === states.Processing"
-      [text]="'hardware-wallet.update-firmware.follow' | translate"
-      [icon]="msgIcons.Confirm"
-    ></app-hw-message>
-
-    <!-- Result. -->
-    <app-hw-message *ngIf="currentState === states.ShowingResult"
-      [text]="result.text | translate"
-      [icon]="result.icon"
-    ></app-hw-message>
-
-    <!-- Buttons area. -->
-    <div class="-buttons" *ngIf="currentState !== states.Processing">
-      <app-button (action)="closeModal()" class="primary-button" #closeButton>
-        {{ 'common.close-button' | translate }}
-      </app-button>
-    </div>
-  </div>
+  }
 </app-modal>

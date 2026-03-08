@@ -12,9 +12,10 @@ import { GeneratedTransaction, OldTransaction } from '../../../../../services/wa
  * from the history.
  */
 @Component({
-  selector: 'app-transaction-info',
-  templateUrl: './transaction-info.component.html',
-  styleUrls: ['./transaction-info.component.scss'],
+    selector: 'app-transaction-info',
+    templateUrl: './transaction-info.component.html',
+    styleUrls: ['./transaction-info.component.scss'],
+    standalone: false
 })
 export class TransactionInfoComponent implements OnDestroy {
   // Transaction which is going to be shown.

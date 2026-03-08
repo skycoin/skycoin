@@ -11,7 +11,8 @@ import { Subscription } from 'rxjs';
  * with the search term, checks what the final URL should be and redirects the user.
  */
 @Component({
-  templateUrl: './search.component.html',
+    templateUrl: './search.component.html',
+    standalone: false
 })
 export class SearchComponent implements OnInit, OnDestroy {
 

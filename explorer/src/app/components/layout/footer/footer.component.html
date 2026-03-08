@@ -7,37 +7,47 @@
       </a>
       <div class="footer-links">
         <!-- This loop builds the menu. Se the "menu.ts" file in the "header" folder for more info about the properties of the items -->
-        <div class="nav-link" *ngFor="let item of getMenu()">
-          <a *ngIf="!item.menu"
-              href="{{item.href}}"
-              [ngClass]="item.active?'active':''"
-              target="{{item.target}}" >
-            {{item.name}}
-          </a>
-          <div *ngIf="item.menu" class="nav-item dropdown">
-            <a class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-              {{item.name}}
-              <span class="font-awesome">&#xf107;</span>
-            </a>
-            <div class="dropdown-menu dark" aria-labelledby="dropdownMenuButton">
-              <a *ngFor="let item of item.menu"
-                [ngClass]="item.active?'dropdown-item active':'dropdown-item'"
+        @for (item of getMenu(); track item) {
+          <div class="nav-link">
+            @if (!item.menu) {
+              <a
                 href="{{item.href}}"
-                target="{{item.target}}">
+                [ngClass]="item.active?'active':''"
+                target="{{item.target}}" >
                 {{item.name}}
+              </a>
+            }
+            @if (item.menu) {
+              <div class="nav-item dropdown">
+                <a class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  {{item.name}}
+                  <span class="font-awesome">&#xf107;</span>
                 </a>
-            </div>
+                <div class="dropdown-menu dark" aria-labelledby="dropdownMenuButton">
+                  @for (item of item.menu; track item) {
+                    <a
+                      [ngClass]="item.active?'dropdown-item active':'dropdown-item'"
+                      href="{{item.href}}"
+                      target="{{item.target}}">
+                      {{item.name}}
+                    </a>
+                  }
+                </div>
+              </div>
+            }
           </div>
-        </div>
+        }
       </div>
     </div>
     <!-- Contact icons -->
     <div class="footer-second-row">
-      <div class="social-link" *ngFor="let link of links">
-        <a href={{link.href}} target="_blank" rel="noopener">
-          <img alt="" src="/assets/img/social/{{link.img}}">
-        </a>
-      </div>
+      @for (link of links; track link) {
+        <div class="social-link">
+          <a href={{link.href}} target="_blank" rel="noopener">
+            <img alt="" src="/assets/img/social/{{link.img}}">
+          </a>
+        </div>
+      }
     </div>
     <!-- Credits and mail -->
     <div class="footer-third-row">
@@ -46,7 +56,7 @@
       </div>
       <div class="contact">
         <p>
-          <a href="mailto:contact@skycoin.com">contact@skycoin.com</a>
+          <a href="mailto:contact@skycoin.com">contact&#64;skycoin.com</a>
         </p>
       </div>
     </div>

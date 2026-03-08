@@ -13,9 +13,10 @@ import { processServiceError } from '../../../../utils/errors';
  * Allows to download and install the firmware of the hw wallet.
  */
 @Component({
-  selector: 'app-hw-update-firmware-dialog',
-  templateUrl: './hw-update-firmware-dialog.component.html',
-  styleUrls: ['./hw-update-firmware-dialog.component.scss'],
+    selector: 'app-hw-update-firmware-dialog',
+    templateUrl: './hw-update-firmware-dialog.component.html',
+    styleUrls: ['./hw-update-firmware-dialog.component.scss'],
+    standalone: false
 })
 export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpdateFirmwareDialogComponent> implements OnDestroy {
   closeIfHwDisconnected = false;

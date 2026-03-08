@@ -4,7 +4,7 @@
 import { filter, first } from 'rxjs/operators';
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { PurchaseService } from '../../../services/purchase.service';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { PurchaseOrder } from '../../../app.datatypes';
 import { ButtonComponent } from '../../layout/button/button.component';
 import { SubscriptionLike } from 'rxjs';
@@ -13,23 +13,24 @@ import { WalletBase, AddressBase } from '../../../services/wallet-operations/wal
 import { WalletsAndAddressesService } from '../../../services/wallet-operations/wallets-and-addresses.service';
 
 @Component({
-  selector: 'app-buy',
-  templateUrl: './buy.component.html',
-  styleUrls: ['./buy.component.scss'],
+    selector: 'app-buy',
+    templateUrl: './buy.component.html',
+    styleUrls: ['./buy.component.scss'],
+    standalone: false
 })
 export class BuyComponent implements OnInit, OnDestroy {
   @ViewChild('button') button: ButtonComponent;
 
   address: AddressBase;
   config: any;
-  form: FormGroup;
+  form: UntypedFormGroup;
   order: PurchaseOrder;
   wallets: WalletBase[];
 
   private subscriptionsGroup: SubscriptionLike[] = [];
 
   constructor(
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private purchaseService: PurchaseService,
     private msgBarService: MsgBarService,
     private walletsAndAddressesService: WalletsAndAddressesService,

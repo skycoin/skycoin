@@ -12,9 +12,10 @@ import { SendCoinsData } from './send-coins-form/send-coins-form.component';
  * Shows the form which allows the user to send coins.
  */
 @Component({
-  selector: 'app-send-skycoin',
-  templateUrl: './send-skycoin.component.html',
-  styleUrls: ['./send-skycoin.component.scss'],
+    selector: 'app-send-skycoin',
+    templateUrl: './send-skycoin.component.html',
+    styleUrls: ['./send-skycoin.component.scss'],
+    standalone: false
 })
 export class SendSkycoinComponent implements OnDestroy {
   // If true, the form for sending coins is shown. If false, the tx preview is shown.

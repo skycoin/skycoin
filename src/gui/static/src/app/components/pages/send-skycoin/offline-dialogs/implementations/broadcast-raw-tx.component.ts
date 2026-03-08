@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { FormBuilder } from '@angular/forms';
+import { UntypedFormBuilder } from '@angular/forms';
 import { SubscriptionLike } from 'rxjs';
 
 import { OfflineDialogsBaseComponent, OfflineDialogsStates } from '../offline-dialogs-base.component';
@@ -13,9 +13,10 @@ import { SpendingService } from '../../../../../services/wallet-operations/spend
  * Allows to send a signed raw transaction to the network, to spend the coins.
  */
 @Component({
-  selector: 'app-broadcast-raw-tx',
-  templateUrl: '../offline-dialogs-base.component.html',
-  styleUrls: ['../offline-dialogs-base.component.scss'],
+    selector: 'app-broadcast-raw-tx',
+    templateUrl: '../offline-dialogs-base.component.html',
+    styleUrls: ['../offline-dialogs-base.component.scss'],
+    standalone: false
 })
 export class BroadcastRawTxComponent extends OfflineDialogsBaseComponent implements OnInit, OnDestroy {
   // Configure the UI.
@@ -44,7 +45,7 @@ export class BroadcastRawTxComponent extends OfflineDialogsBaseComponent impleme
     private msgBarService: MsgBarService,
     private balanceAndOutputsService: BalanceAndOutputsService,
     private spendingService: SpendingService,
-    formBuilder: FormBuilder,
+    formBuilder: UntypedFormBuilder,
   ) {
     super(formBuilder);
 

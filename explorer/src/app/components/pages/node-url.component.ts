@@ -12,8 +12,9 @@ import { ExplorerService } from 'app/services/explorer/explorer.service';
  * saving the URL, the browser is redirected to the main page.
  */
 @Component({
-  selector: 'app-node-url',
-  template: '',
+    selector: 'app-node-url',
+    template: '',
+    standalone: false
 })
 export class NodeUrlComponent implements OnInit, OnDestroy {
   // Subscriptions that will be cleaned when closing the page.

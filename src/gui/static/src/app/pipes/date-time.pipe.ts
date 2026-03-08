@@ -7,7 +7,8 @@ import * as moment from 'moment';
  * a number or a numeric string as argument.
  */
 @Pipe({
-  name: 'dateTime',
+    name: 'dateTime',
+    standalone: false
 })
 export class DateTimePipe implements PipeTransform {
   transform(value: number) {

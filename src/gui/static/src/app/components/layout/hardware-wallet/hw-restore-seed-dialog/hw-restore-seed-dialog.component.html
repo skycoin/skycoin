@@ -4,50 +4,57 @@
   [disableDismiss]="currentState === states.Processing">
 
   <!-- Initial instructions and form. -->
-  <div *ngIf="currentState === states.Initial">
-    <app-hw-message
-      [text]="(justCheckingSeed ? 'hardware-wallet.restore-seed.check-text' : 'hardware-wallet.restore-seed.text') | translate"
-    ></app-hw-message>
-
-    <div class="modal-form-container" [formGroup]="form">
-      <div class="form-field">
-        <div class="-select">
-          <select formControlName="words" id="words">
-            <option [ngValue]="12">{{ 'wallet.new.12-words' | translate }}</option>
-            <option [ngValue]="24">{{ 'wallet.new.24-words' | translate }}</option>
-          </select>
+  @if (currentState === states.Initial) {
+    <div>
+      <app-hw-message
+        [text]="(justCheckingSeed ? 'hardware-wallet.restore-seed.check-text' : 'hardware-wallet.restore-seed.text') | translate"
+      ></app-hw-message>
+      <div class="modal-form-container" [formGroup]="form">
+        <div class="form-field">
+          <div class="-select">
+            <select formControlName="words" id="words">
+              <option [ngValue]="12">{{ 'wallet.new.12-words' | translate }}</option>
+              <option [ngValue]="24">{{ 'wallet.new.24-words' | translate }}</option>
+            </select>
+          </div>
         </div>
       </div>
+      @if (!justCheckingSeed) {
+        <div class="warning">{{ 'hardware-wallet.restore-seed.warning' | translate }}</div>
+      }
+      <div class="-buttons">
+        <app-button (action)="closeModal()">
+          {{ 'common.cancel-button' | translate }}
+        </app-button>
+        <app-button (action)="startOperation()" class="primary-button">
+          {{ 'common.continue-button' | translate }}
+        </app-button>
+      </div>
     </div>
-
-    <div class="warning" *ngIf="!justCheckingSeed">{{ 'hardware-wallet.restore-seed.warning' | translate }}</div>
-
-    <div class="-buttons">
-      <app-button (action)="closeModal()">
-        {{ 'common.cancel-button' | translate }}
-      </app-button>
-      <app-button (action)="startOperation()" class="primary-button">
-        {{ 'common.continue-button' | translate }}
-      </app-button>
-    </div>
-  </div>
+  }
 
   <!-- Instructions after using the form. -->
-  <app-hw-message *ngIf="currentState === states.Processing"
-    [text]="(justCheckingSeed ? 'hardware-wallet.general.follow' : 'hardware-wallet.general.confirm-and-more') | translate"
-    [icon]="msgIcons.Confirm"
-  ></app-hw-message>
+  @if (currentState === states.Processing) {
+    <app-hw-message
+      [text]="(justCheckingSeed ? 'hardware-wallet.general.follow' : 'hardware-wallet.general.confirm-and-more') | translate"
+      [icon]="msgIcons.Confirm"
+    ></app-hw-message>
+  }
 
   <!-- Result. -->
-  <app-hw-message *ngIf="currentState === states.ShowingResult"
-    [text]="result.text | translate"
-    [icon]="result.icon"
-  ></app-hw-message>
+  @if (currentState === states.ShowingResult) {
+    <app-hw-message
+      [text]="result.text | translate"
+      [icon]="result.icon"
+    ></app-hw-message>
+  }
 
   <!-- Buttons area. -->
-  <div class="-buttons" *ngIf="currentState !== states.Initial && currentState !== states.Processing">
-    <app-button (action)="closeModal()" class="primary-button" #closeButton>
-      {{ 'common.close-button' | translate }}
-    </app-button>
-  </div>
+  @if (currentState !== states.Initial && currentState !== states.Processing) {
+    <div class="-buttons">
+      <app-button (action)="closeModal()" class="primary-button" #closeButton>
+        {{ 'common.close-button' | translate }}
+      </app-button>
+    </div>
+  }
 </app-modal>

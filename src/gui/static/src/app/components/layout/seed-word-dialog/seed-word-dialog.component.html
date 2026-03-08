@@ -1,20 +1,24 @@
 <app-modal [headline]="(data.reason === wordAskedReasons.HWWalletOperation ? 'hardware-wallet.seed-word.title' : 'wallet.new.seed-label') | translate" [dialog]="dialogRef">
   <!-- Instructions. -->
-  <app-hw-message
-    [upperBigText]="'hardware-wallet.seed-word.enter-word' | translate"
-    [text]="'hardware-wallet.seed-word.info' | translate"
-    *ngIf="data.reason === wordAskedReasons.HWWalletOperation"
-  ></app-hw-message>
-  <app-hw-message
-    [upperBigText]="'wallet.new.seed.enter-word' | translate:{number: data.wordNumber}"
-    [text]="(data.reason === wordAskedReasons.CreatingSoftwareWallet ? 'wallet.new.seed.new-seed-info' : 'wallet.new.seed.recover-seed-info') | translate"
-    *ngIf="data.reason !== wordAskedReasons.HWWalletOperation"
-  ></app-hw-message>
+  @if (data.reason === wordAskedReasons.HWWalletOperation) {
+    <app-hw-message
+      [upperBigText]="'hardware-wallet.seed-word.enter-word' | translate"
+      [text]="'hardware-wallet.seed-word.info' | translate"
+    ></app-hw-message>
+  }
+  @if (data.reason !== wordAskedReasons.HWWalletOperation) {
+    <app-hw-message
+      [upperBigText]="'wallet.new.seed.enter-word' | translate:{number: data.wordNumber}"
+      [text]="(data.reason === wordAskedReasons.CreatingSoftwareWallet ? 'wallet.new.seed.new-seed-info' : 'wallet.new.seed.recover-seed-info') | translate"
+    ></app-hw-message>
+  }
 
   <!-- Form. -->
   <div [formGroup]="form" class="modal-form-container">
     <div class="form-field">
-      <label for="word" *ngIf="data.reason === wordAskedReasons.HWWalletOperation">{{ 'hardware-wallet.seed-word.word-label' | translate }}</label>
+      @if (data.reason === wordAskedReasons.HWWalletOperation) {
+        <label for="word">{{ 'hardware-wallet.seed-word.word-label' | translate }}</label>
+      }
       <input
         matInput
         [matAutocomplete]="auto"
@@ -23,9 +27,11 @@
         (keydown.enter)="sendWord()"
         [appFormFieldError]="inputErrorMsg"
         (blur)="validateForm()"
-      >
+        >
       <mat-autocomplete #auto="matAutocomplete" [autoActiveFirstOption]="true">
-        <mat-option class="option" *ngFor="let option of filteredOptions | async" [value]="option" (click)="sendWord()">{{option}}</mat-option>
+        @for (option of filteredOptions | async; track option) {
+          <mat-option class="option" [value]="option" (click)="sendWord()">{{option}}</mat-option>
+        }
       </mat-autocomplete>
     </div>
   </div>

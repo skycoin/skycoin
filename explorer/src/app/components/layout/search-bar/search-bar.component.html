@@ -1,15 +1,21 @@
 <div class="general-container">
   <div class="search-bar-container">
     <!-- Search icon -->
-    <img src="/assets/img/search.png" (click)="search()" *ngIf="!searching" />
+    @if (!searching) {
+      <img src="/assets/img/search.png" (click)="search()" />
+    }
     <!-- Busy animation -->
-    <i class="fa fa-spinner fa-spin fa-fw" *ngIf="searching"></i>
+    @if (searching) {
+      <i class="fa fa-spinner fa-spin fa-fw"></i>
+    }
     <input name="query" placeholder="{{ 'searchBar.hint' | translate }}" (keydown.enter)="search()" #input>
   </div>
   <!-- Language button -->
   <app-language-selection></app-language-selection>
 </div>
 <!-- Sync warning -->
-<div class="sync-warning" *ngIf="showSyncWarning">
-  <div>{{ 'searchBar.syncAlert' | translate }}</div>
-</div>
+@if (showSyncWarning) {
+  <div class="sync-warning">
+    <div>{{ 'searchBar.syncAlert' | translate }}</div>
+  </div>
+}

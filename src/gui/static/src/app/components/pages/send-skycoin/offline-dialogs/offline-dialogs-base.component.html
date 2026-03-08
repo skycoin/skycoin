@@ -1,50 +1,62 @@
 <app-modal [headline]="title | translate" [dialog]="dialogRef" [disableDismiss]="working">
   <!-- Loading animation. -->
-  <app-loading-content
-    [isLoading]="currentState === states.Loading"
-    [noDataText]="'offline-transactions.loading-problem'"
-    *ngIf="currentState === states.Loading || currentState === states.ErrorLoading"
-  ></app-loading-content>
+  @if (currentState === states.Loading || currentState === states.ErrorLoading) {
+    <app-loading-content
+      [isLoading]="currentState === states.Loading"
+      [noDataText]="'offline-transactions.loading-problem'"
+    ></app-loading-content>
+  }
 
-  <ng-container *ngIf="currentState === states.ShowingForm">
+  @if (currentState === states.ShowingForm) {
     <!-- Instructions. -->
     {{ text | translate }}
     <div [formGroup]="form" class="modal-form-container">
       <!-- Dropdown. -->
-      <div *ngIf="dropdownElements" class="form-field">
-        <label *ngIf="dropdownLabel" for="dropdown">{{ dropdownLabel | translate }}</label>
-        <div class="-select">
-          <select
-            formControlName="dropdown"
-            id="dropdown"
-            [attr.disabled]="working ? 'true' : null"
-            [appFormFieldError]="dropdownErrorMsg"
-            (blur)="validate()"
-          >
-            <option *ngIf="defaultDropdownText" disabled hidden [ngValue]="''">{{ defaultDropdownText | translate }}</option>
-            <ng-container *ngIf="dropdownElements">
-              <ng-container *ngFor="let element of dropdownElements">
-                <option [ngValue]="element.value">
-                  {{ element.name }}
-                </option>
-              </ng-container>
-            </ng-container>
-          </select>
+      @if (dropdownElements) {
+        <div class="form-field">
+          @if (dropdownLabel) {
+            <label for="dropdown">{{ dropdownLabel | translate }}</label>
+          }
+          <div class="-select">
+            <select
+              formControlName="dropdown"
+              id="dropdown"
+              [attr.disabled]="working ? 'true' : null"
+              [appFormFieldError]="dropdownErrorMsg"
+              (blur)="validate()"
+              >
+              @if (defaultDropdownText) {
+                <option disabled hidden [ngValue]="''">{{ defaultDropdownText | translate }}</option>
+              }
+              @if (dropdownElements) {
+                @for (element of dropdownElements; track element) {
+                  <option [ngValue]="element.value">
+                    {{ element.name }}
+                  </option>
+                }
+              }
+            </select>
+          </div>
         </div>
-      </div>
+      }
       <!-- Textarea. -->
       <div class="form-field">
-        <label *ngIf="inputLabel" for="input">{{ inputLabel | translate }}</label>
-        <textarea *ngIf="!!contents" [readonly]="true" rows="5">{{ contents }}</textarea>
-        <textarea
-          *ngIf="!contents"
-          formControlName="input"
-          id="input"
-          [attr.disabled]="working ? 'true' : null"
-          rows="5"
-          [appFormFieldError]="inputErrorMsg"
-          (blur)="validate()"
-        ></textarea>
+        @if (inputLabel) {
+          <label for="input">{{ inputLabel | translate }}</label>
+        }
+        @if (!!contents) {
+          <textarea [readonly]="true" rows="5">{{ contents }}</textarea>
+        }
+        @if (!contents) {
+          <textarea
+            formControlName="input"
+            id="input"
+            [attr.disabled]="working ? 'true' : null"
+            rows="5"
+            [appFormFieldError]="inputErrorMsg"
+            (blur)="validate()"
+          ></textarea>
+        }
       </div>
     </div>
     <!-- Buttons area. -->
@@ -56,5 +68,5 @@
         {{ okButtonText | translate }}
       </app-button>
     </div>
-  </ng-container>
+  }
 </app-modal>

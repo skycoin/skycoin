@@ -1,47 +1,56 @@
 <div>
   <app-header [headline]="'network.title' | translate"></app-header>
 
-  <app-loading-content
-    [isLoading]="!peers"
-    noDataText="network.error-no-connections"
-    *ngIf="!peers || peers.length === 0"
-  ></app-loading-content>
+  @if (!peers || peers.length === 0) {
+    <app-loading-content
+      [isLoading]="!peers"
+      noDataText="network.error-no-connections"
+    ></app-loading-content>
+  }
 
-  <div class="container" *ngIf="peers && peers.length > 0">
-    <div class="-table">
-      <div class="-headers">
-        <div class="-direction-cell"></div>
-        <div class="-address-cell">{{ 'network.peer-small-table-label' | translate }}</div>
-        <div class="-flex-fill">{{ 'network.source-small-table-label' | translate }}</div>
-        <div class="d-none d-lg-block -block-cell">{{ 'network.block-height-small-table-label' | translate }}</div>
-        <div class="d-lg-none -block-cell">{{ 'network.block-height-short-small-table-label' | translate }}</div>
-        <div class="-last-seen-cell">{{ 'network.last-seen-small-table-label' | translate }}</div>
-      </div>
-      <div class="-body">
-        <div class="-row" *ngFor="let peer of peers">
-          <div class="-direction-cell -direction-container">
-            <img *ngIf="peer.outgoing" src="assets/img/sent-blue.png" [matTooltip]="'network.out-help' | translate">
-            <img *ngIf="!peer.outgoing" src="assets/img/received-blue.png" [matTooltip]="'network.in-help' | translate">
-          </div>
-          <div class="-address-cell break-all">
-            {{ peer.address.split(':')[0] }}<span class="grey-text">:{{ peer.listenPort }}</span>
-          </div>
-          <div class="-flex-fill grey-text">{{ ('network.sources.' + peer.source) | translate }}</div>
-          <div class="-block-cell break-all">{{ peer.height }}</div>
-          <div class="-last-seen-cell -last-seen-container grey-text">
-            <div class="text-truncate">
-              <mat-icon [matTooltip]="'network.last-sent-help' | translate">keyboard_arrow_up</mat-icon>
-              {{ peer.lastSent | dateFromNow }}
+  @if (peers && peers.length > 0) {
+    <div class="container">
+      <div class="-table">
+        <div class="-headers">
+          <div class="-direction-cell"></div>
+          <div class="-address-cell">{{ 'network.peer-small-table-label' | translate }}</div>
+          <div class="-flex-fill">{{ 'network.source-small-table-label' | translate }}</div>
+          <div class="d-none d-lg-block -block-cell">{{ 'network.block-height-small-table-label' | translate }}</div>
+          <div class="d-lg-none -block-cell">{{ 'network.block-height-short-small-table-label' | translate }}</div>
+          <div class="-last-seen-cell">{{ 'network.last-seen-small-table-label' | translate }}</div>
+        </div>
+        <div class="-body">
+          @for (peer of peers; track peer) {
+            <div class="-row">
+              <div class="-direction-cell -direction-container">
+                @if (peer.outgoing) {
+                  <img src="assets/img/sent-blue.png" [matTooltip]="'network.out-help' | translate">
+                }
+                @if (!peer.outgoing) {
+                  <img src="assets/img/received-blue.png" [matTooltip]="'network.in-help' | translate">
+                }
+              </div>
+              <div class="-address-cell break-all">
+                {{ peer.address.split(':')[0] }}<span class="grey-text">:{{ peer.listenPort }}</span>
+              </div>
+              <div class="-flex-fill grey-text">{{ ('network.sources.' + peer.source) | translate }}</div>
+              <div class="-block-cell break-all">{{ peer.height }}</div>
+              <div class="-last-seen-cell -last-seen-container grey-text">
+                <div class="text-truncate">
+                  <mat-icon [matTooltip]="'network.last-sent-help' | translate">keyboard_arrow_up</mat-icon>
+                  {{ peer.lastSent | dateFromNow }}
+                </div>
+                <div class="text-truncate">
+                  <mat-icon [matTooltip]="'network.last-received-help' | translate">keyboard_arrow_down</mat-icon>
+                  {{ peer.lastReceived | dateFromNow }}
+                </div>
+              </div>
             </div>
-            <div class="text-truncate">
-              <mat-icon [matTooltip]="'network.last-received-help' | translate">keyboard_arrow_down</mat-icon>
-              {{ peer.lastReceived | dateFromNow }}
-            </div>
-          </div>
+          }
         </div>
       </div>
     </div>
-  </div>
+  }
   <!-- Needed to force Chrome respect any previous bottom margin. -->
   <div class="final-element"></div>
 </div>

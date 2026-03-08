@@ -1,7 +1,7 @@
 import { Component, OnDestroy, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { SubscriptionLike, combineLatest } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FormGroup, FormBuilder, FormControl } from '@angular/forms';
+import { UntypedFormGroup, UntypedFormBuilder, UntypedFormControl } from '@angular/forms';
 import { map } from 'rxjs/operators';
 
 import { ButtonComponent } from '../../layout/button/button.component';
@@ -16,14 +16,15 @@ import { WalletBase } from '../../../services/wallet-operations/wallet-objects';
  * to which the password will be changed.
  */
 @Component({
-  selector: 'app-reset-password',
-  templateUrl: './reset-password.component.html',
-  styleUrls: ['./reset-password.component.scss'],
+    selector: 'app-reset-password',
+    templateUrl: './reset-password.component.html',
+    styleUrls: ['./reset-password.component.scss'],
+    standalone: false
 })
 export class ResetPasswordComponent implements OnDestroy {
   @ViewChild('resetButton') resetButton: ButtonComponent;
 
-  form: FormGroup;
+  form: UntypedFormGroup;
   // Allows to deactivate the form while the component is busy.
   busy = true;
 
@@ -37,7 +38,7 @@ export class ResetPasswordComponent implements OnDestroy {
   private hideBarWhenClosing = true;
 
   constructor(
-    public formBuilder: FormBuilder,
+    public formBuilder: UntypedFormBuilder,
     private route: ActivatedRoute,
     private router: Router,
     private msgBarService: MsgBarService,
@@ -74,11 +75,11 @@ export class ResetPasswordComponent implements OnDestroy {
   }
 
   initForm() {
-    this.form = new FormGroup({});
-    this.form.addControl('wallet', new FormControl());
-    this.form.addControl('seed', new FormControl(''));
-    this.form.addControl('password', new FormControl(''));
-    this.form.addControl('confirm', new FormControl(''));
+    this.form = new UntypedFormGroup({});
+    this.form.addControl('wallet', new UntypedFormControl());
+    this.form.addControl('seed', new UntypedFormControl(''));
+    this.form.addControl('password', new UntypedFormControl(''));
+    this.form.addControl('confirm', new UntypedFormControl(''));
 
     this.form.setValidators(this.validateForm.bind(this));
   }

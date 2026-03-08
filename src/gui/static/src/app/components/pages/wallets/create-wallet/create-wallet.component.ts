@@ -26,9 +26,10 @@ export class CreateWalletParams {
  * Modal window for creating a new software wallet or loading a software wallet using a seed.
  */
 @Component({
-  selector: 'app-create-wallet',
-  templateUrl: './create-wallet.component.html',
-  styleUrls: ['./create-wallet.component.scss'],
+    selector: 'app-create-wallet',
+    templateUrl: './create-wallet.component.html',
+    styleUrls: ['./create-wallet.component.scss'],
+    standalone: false
 })
 export class CreateWalletComponent implements OnDestroy {
   @ViewChild('formControl') formControl: CreateWalletFormComponent;

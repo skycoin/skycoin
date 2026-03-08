@@ -11,9 +11,10 @@ import { WalletsAndAddressesService } from '../../../../services/wallet-operatio
  * created for being oppenend by the hw wallet options modal window.
  */
 @Component({
-  selector: 'app-hw-wipe-dialog',
-  templateUrl: './hw-wipe-dialog.component.html',
-  styleUrls: ['./hw-wipe-dialog.component.scss'],
+    selector: 'app-hw-wipe-dialog',
+    templateUrl: './hw-wipe-dialog.component.html',
+    styleUrls: ['./hw-wipe-dialog.component.scss'],
+    standalone: false
 })
 export class HwWipeDialogComponent extends HwDialogBaseComponent<HwWipeDialogComponent> {
   showDeleteFromList = true;

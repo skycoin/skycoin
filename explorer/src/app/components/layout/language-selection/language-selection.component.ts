@@ -8,9 +8,10 @@ import { Subscription } from 'rxjs';
  * the language. It includes the language selection menu.
  */
 @Component({
-  selector: 'app-language-selection',
-  templateUrl: './language-selection.component.html',
-  styleUrls: ['./language-selection.component.scss']
+    selector: 'app-language-selection',
+    templateUrl: './language-selection.component.html',
+    styleUrls: ['./language-selection.component.scss'],
+    standalone: false
 })
 export class LanguageSelectionComponent implements OnDestroy {
   /**

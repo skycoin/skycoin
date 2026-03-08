@@ -1,5 +1,5 @@
 import { Component, OnInit, Inject, ViewChild, OnDestroy } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { SubscriptionLike } from 'rxjs';
 
@@ -14,16 +14,17 @@ import { OldTransaction } from '../../../../../../services/wallet-operations/tra
  * changed, the modal window is closed and new note is returned in the "afterClosed" event.
  */
 @Component({
-  selector: 'app-change-note',
-  templateUrl: './change-note.component.html',
-  styleUrls: ['./change-note.component.scss'],
+    selector: 'app-change-note',
+    templateUrl: './change-note.component.html',
+    styleUrls: ['./change-note.component.scss'],
+    standalone: false
 })
 export class ChangeNoteComponent implements OnInit, OnDestroy {
   // Max chars the note can have.
   public static readonly MAX_NOTE_CHARS = 64;
 
   @ViewChild('button') button: ButtonComponent;
-  form: FormGroup;
+  form: UntypedFormGroup;
   maxNoteChars = ChangeNoteComponent.MAX_NOTE_CHARS;
   // Deactivates the form while the system is busy.
   busy = false;
@@ -46,7 +47,7 @@ export class ChangeNoteComponent implements OnInit, OnDestroy {
   constructor(
     public dialogRef: MatDialogRef<ChangeNoteComponent>,
     @Inject(MAT_DIALOG_DATA) private data: OldTransaction,
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private msgBarService: MsgBarService,
     private storageService: StorageService,
   ) {}

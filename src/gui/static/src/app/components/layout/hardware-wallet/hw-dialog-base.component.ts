@@ -59,7 +59,8 @@ export enum States {
  * The type expected by this class is just the class implementing it.
  */
 @Component({
-  template: '',
+    template: '',
+    standalone: false
 })
 export class HwDialogBaseComponent<T> implements OnDestroy {
   // Reference to the close button. For it to work the implementation must have "#closeButton"

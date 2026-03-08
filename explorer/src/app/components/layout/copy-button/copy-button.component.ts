@@ -5,31 +5,32 @@ import { trigger, state, style, transition, animate } from '@angular/animations'
  * Button that allow the user to copy text.
  */
 @Component({
-  selector: 'app-copy-button',
-  templateUrl: './copy-button.component.html',
-  styleUrls: ['./copy-button.component.scss'],
-  animations: [
-    trigger('showMessage', [
-      state('show', style({
-        opacity: 1.0,
-        transform: 'translateY(-25px)'
-      })),
-      state('hide', style({
-        opacity: 0.0,
-        transform: 'translateY(-35px)'
-      })),
-      state('reset', style({
-        opacity: 0.0,
-        transform: 'translateY(-15px)'
-      })),
-      transition('* => show', [
-        animate('200ms 0ms ease-out')
-      ]),
-      transition('* => hide', [
-        animate('200ms 500ms ease-in')
-      ]),
-    ])
-  ]
+    selector: 'app-copy-button',
+    templateUrl: './copy-button.component.html',
+    styleUrls: ['./copy-button.component.scss'],
+    animations: [
+        trigger('showMessage', [
+            state('show', style({
+                opacity: 1.0,
+                transform: 'translateY(-25px)'
+            })),
+            state('hide', style({
+                opacity: 0.0,
+                transform: 'translateY(-35px)'
+            })),
+            state('reset', style({
+                opacity: 0.0,
+                transform: 'translateY(-15px)'
+            })),
+            transition('* => show', [
+                animate('200ms 0ms ease-out')
+            ]),
+            transition('* => hide', [
+                animate('200ms 500ms ease-in')
+            ]),
+        ])
+    ],
+    standalone: false
 })
 export class CopyButtonComponent {
 

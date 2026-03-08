@@ -7,11 +7,15 @@
     (click)="this.state !== buttonStates.Loading ? onClick() : null"
     [ngClass]="{ enabled: !disabled }"
     #button
-  >
+    >
     <div class="content-container">
       <span class="content"><ng-content></ng-content></span>
-      <mat-icon *ngIf="state === buttonStates.Success">done</mat-icon>
-      <mat-spinner *ngIf="state === buttonStates.Loading"></mat-spinner>
+      @if (state === buttonStates.Success) {
+        <mat-icon>done</mat-icon>
+      }
+      @if (state === buttonStates.Loading) {
+        <mat-spinner></mat-spinner>
+      }
     </div>
   </button>
 </div>

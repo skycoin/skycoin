@@ -1,98 +1,118 @@
 <div [formGroup]="form">
   <!-- Manual addresses. -->
-  <div *ngIf="selectionMode === sourceSelectionModes.Manual" class="form-field">
-    <label for="manualAddresses">
-      {{ 'send.addresses-label' | translate }}
-      <mat-icon class="help-icon" [matTooltip]="'send.addresses-manual-help' | translate">help</mat-icon>
-    </label>
-    <input
-      formControlName="manualAddresses"
-      id="manualAddresses"
-      [attr.disabled]="busy ? 'true' : null"
-      [appFormFieldError]="manualAddressesErrorMsg"
-      (blur)="validateForm()"
-    >
-  </div>
-  <!-- Wallet. -->
-  <div *ngIf="selectionMode !== sourceSelectionModes.Manual" class="form-field">
-    <label for="wallet">{{ (selectionMode === sourceSelectionModes.Wallet ? 'send.from-label' : 'send.wallet-label') | translate }}</label>
-    <div class="-select">
-      <select
-        formControlName="wallet"
-        id="wallet"
+  @if (selectionMode === sourceSelectionModes.Manual) {
+    <div class="form-field">
+      <label for="manualAddresses">
+        {{ 'send.addresses-label' | translate }}
+        <mat-icon class="help-icon" [matTooltip]="'send.addresses-manual-help' | translate">help</mat-icon>
+      </label>
+      <input
+        formControlName="manualAddresses"
+        id="manualAddresses"
         [attr.disabled]="busy ? 'true' : null"
-        [appFormFieldError]="walletErrorMsg"
+        [appFormFieldError]="manualAddressesErrorMsg"
         (blur)="validateForm()"
-      >
-        <option disabled hidden [ngValue]="''">{{ 'send.select-wallet' | translate }}</option>
-        <ng-container *ngIf="allWallets">
-          <ng-container *ngFor="let wallet of allWallets">
-            <option
-              [disabled]="!wallet.coins || wallet.coins.isLessThanOrEqualTo(0)"
-              [ngValue]="wallet"
-            >
-              {{ wallet.label }} - {{ (wallet.coins ? wallet.coins : 0) | amount }}
-              ({{ (wallet.hours ? wallet.hours : 0) | amount:false }})
-            </option>
-          </ng-container>
-        </ng-container>
-      </select>
+        >
     </div>
-  </div>
+  }
+  <!-- Wallet. -->
+  @if (selectionMode !== sourceSelectionModes.Manual) {
+    <div class="form-field">
+      <label for="wallet">{{ (selectionMode === sourceSelectionModes.Wallet ? 'send.from-label' : 'send.wallet-label') | translate }}</label>
+      <div class="-select">
+        <select
+          formControlName="wallet"
+          id="wallet"
+          [attr.disabled]="busy ? 'true' : null"
+          [appFormFieldError]="walletErrorMsg"
+          (blur)="validateForm()"
+          >
+          <option disabled hidden [ngValue]="''">{{ 'send.select-wallet' | translate }}</option>
+          @if (allWallets) {
+            @for (wallet of allWallets; track wallet) {
+              <option
+                [disabled]="!wallet.coins || wallet.coins.isLessThanOrEqualTo(0)"
+                [ngValue]="wallet"
+                >
+                {{ wallet.label }} - {{ (wallet.coins ? wallet.coins : 0) | amount }}
+                ({{ (wallet.hours ? wallet.hours : 0) | amount:false }})
+              </option>
+            }
+          }
+        </select>
+      </div>
+    </div>
+  }
   <!-- Addresses. -->
-  <div *ngIf="selectionMode === sourceSelectionModes.All" class="form-field">
-    <label [for]="!busy ? 'addresses' : ''" (click)="!busy ? selectAddresses.open() : null">
-      {{ 'send.addresses-label' | translate }}
-      <mat-icon class="help-icon" [matTooltip]="'send.addresses-help' | translate">help</mat-icon>
-    </label>
-    <div class="-select">
-      <mat-select
-        #selectAddresses multiple
-        formControlName="addresses"
-        id="addresses"
-        [placeholder]="addressessPlaceholder | translate"
-        [attr.disabled]="(busy || (addresses && addresses.length === 0)) ? 'true' : null"
-        [ngClass]="{'element-disabled' : (busy || (addresses && addresses.length === 0))}">
-        <mat-option *ngFor="let addr of addresses" [value]="addr">
-          {{ addr.address }} - {{ (addr.coins ? addr.coins : 0) | amount }}
-          ({{ addr.hours | amount:false }})
-        </mat-option>
-        <mat-select-trigger>
-          <div *ngFor="let address of form.get('addresses').value">
-            {{ address.address }} - {{ (address.coins ? address.coins : 0) | amount }}
-            ({{ address.hours | amount:false }})
-          </div>
-        </mat-select-trigger>
-      </mat-select>
+  @if (selectionMode === sourceSelectionModes.All) {
+    <div class="form-field">
+      <label [for]="!busy ? 'addresses' : ''" (click)="!busy ? selectAddresses.open() : null">
+        {{ 'send.addresses-label' | translate }}
+        <mat-icon class="help-icon" [matTooltip]="'send.addresses-help' | translate">help</mat-icon>
+      </label>
+      <div class="-select">
+        <mat-select
+          #selectAddresses multiple
+          formControlName="addresses"
+          id="addresses"
+          [placeholder]="addressessPlaceholder | translate"
+          [attr.disabled]="(busy || (addresses && addresses.length === 0)) ? 'true' : null"
+          [ngClass]="{'element-disabled' : (busy || (addresses && addresses.length === 0))}">
+          @for (addr of addresses; track addr) {
+            <mat-option [value]="addr">
+              {{ addr.address }} - {{ (addr.coins ? addr.coins : 0) | amount }}
+              ({{ addr.hours | amount:false }})
+            </mat-option>
+          }
+          <mat-select-trigger>
+            @for (address of form.get('addresses').value; track address) {
+              <div>
+                {{ address.address }} - {{ (address.coins ? address.coins : 0) | amount }}
+                ({{ address.hours | amount:false }})
+              </div>
+            }
+          </mat-select-trigger>
+        </mat-select>
+      </div>
     </div>
-  </div>
+  }
   <!-- Outputs. -->
-  <div *ngIf="selectionMode !== sourceSelectionModes.Wallet" class="form-field">
-    <label [for]="!busy ? 'outputs' : null" (click)="!busy ? selectOutputs.open() : null">
-      {{ 'send.outputs-label' | translate }}
-      <mat-icon class="help-icon" [matTooltip]="'send.outputs-help' | translate">help</mat-icon>
-      <mat-icon *ngIf="errorLoadingManualOutputs" [matTooltip]="'send.outputs-error' | translate" class="help-icon red-text">error</mat-icon>
-      <mat-spinner *ngIf="loadingUnspentOutputs"></mat-spinner>
-    </label>
-    <div class="-select">
-      <mat-select
-        #selectOutputs multiple
-        formControlName="outputs"
-        id="outputs"
-        [placeholder]="outputsPlaceholder | translate"
-        [attr.disabled]="(busy || (unspentOutputs && unspentOutputs.length === 0)) ? 'true' : null"
-        [ngClass]="{'element-disabled' : (busy || (unspentOutputs && unspentOutputs.length === 0))}">
-        <mat-option *ngFor="let out of unspentOutputs" [value]="out">
-          {{ out.hash }} - {{ (out.coins ? out.coins : 0) | amount }}
-          ({{ out.hours | amount:false }})
-        </mat-option>
-        <mat-select-trigger>
-          <div *ngFor="let out of form.get('outputs').value">
-            {{ out.hash }} - {{ (out.coins ? out.coins : 0) | amount }}
-            ({{ out.hours | amount:false }})
-          </div>
-        </mat-select-trigger>
-      </mat-select>
+  @if (selectionMode !== sourceSelectionModes.Wallet) {
+    <div class="form-field">
+      <label [for]="!busy ? 'outputs' : null" (click)="!busy ? selectOutputs.open() : null">
+        {{ 'send.outputs-label' | translate }}
+        <mat-icon class="help-icon" [matTooltip]="'send.outputs-help' | translate">help</mat-icon>
+        @if (errorLoadingManualOutputs) {
+          <mat-icon [matTooltip]="'send.outputs-error' | translate" class="help-icon red-text">error</mat-icon>
+        }
+        @if (loadingUnspentOutputs) {
+          <mat-spinner></mat-spinner>
+        }
+      </label>
+      <div class="-select">
+        <mat-select
+          #selectOutputs multiple
+          formControlName="outputs"
+          id="outputs"
+          [placeholder]="outputsPlaceholder | translate"
+          [attr.disabled]="(busy || (unspentOutputs && unspentOutputs.length === 0)) ? 'true' : null"
+          [ngClass]="{'element-disabled' : (busy || (unspentOutputs && unspentOutputs.length === 0))}">
+          @for (out of unspentOutputs; track out) {
+            <mat-option [value]="out">
+              {{ out.hash }} - {{ (out.coins ? out.coins : 0) | amount }}
+              ({{ out.hours | amount:false }})
+            </mat-option>
+          }
+          <mat-select-trigger>
+            @for (out of form.get('outputs').value; track out) {
+              <div>
+                {{ out.hash }} - {{ (out.coins ? out.coins : 0) | amount }}
+                ({{ out.hours | amount:false }})
+              </div>
+            }
+          </mat-select-trigger>
+        </mat-select>
+      </div>
     </div>
-  </div>
+  }
 </div>

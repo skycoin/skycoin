@@ -7,78 +7,92 @@
           <div class="-inline-block">{{ 'txBoxes.transactionIDShortLabel' | translate }}<span class="-xs-sm-only">:</span></div><br class="-xs-sm-only"/>
           <div class="address -inline-block"><a class="-copy-button-margin" [routerLink]="'/app/transaction/' + transaction.id">{{ transaction.id }}</a><app-copy-button [text]="transaction.id"></app-copy-button></div>
           <!-- Variation in the address balance (if in the address page) -->
-          <ng-container *ngIf="transaction.balance">
+          @if (transaction.balance) {
             <br class="address-balance-line-break" />
             <div class="-label" [ngClass]="{'-red' : transaction.balance.isLessThan(0), '-green' : transaction.balance.isGreaterThanOrEqualTo(0)}">
-              {{ (transaction.balance<0?"":"+")+(transaction.balance.toString() | amount) }} <ng-container *ngIf="!transaction.status">({{ 'txBoxes.pendingTransaction' | translate }})</ng-container>
-            </div>
-          </ng-container>
-        </div>
+              {{ (transaction.balance<0?"":"+")+(transaction.balance.toString() | amount) }} @if (!transaction.status) {
+              ({{ 'txBoxes.pendingTransaction' | translate }})
+            }
+          </div>
+        }
       </div>
-      <div class="col-md-2 col-sm-12 -date" *ngIf="transaction.timestamp && !unconfirmed"><div class="-row"><span class="-xs-sm-only">{{ 'txBoxes.date' | translate }}:<br/></span><app-date-formatter [date]="transaction.timestamp"></app-date-formatter></div></div>
-      <div class="col-md-2 col-sm-12 -date" *ngIf="transaction.timestamp && unconfirmed"><div class="-row"><span class="-xs-sm-only">{{ 'txBoxes.firstSeen' | translate }}:<br/></span><app-date-formatter [date]="transaction.timestamp" [dateMultiplier]="1"></app-date-formatter></div></div>
     </div>
+    @if (transaction.timestamp && !unconfirmed) {
+      <div class="col-md-2 col-sm-12 -date"><div class="-row"><span class="-xs-sm-only">{{ 'txBoxes.date' | translate }}:<br/></span><app-date-formatter [date]="transaction.timestamp"></app-date-formatter></div></div>
+    }
+    @if (transaction.timestamp && unconfirmed) {
+      <div class="col-md-2 col-sm-12 -date"><div class="-row"><span class="-xs-sm-only">{{ 'txBoxes.firstSeen' | translate }}:<br/></span><app-date-formatter [date]="transaction.timestamp" [dateMultiplier]="1"></app-date-formatter></div></div>
+    }
   </div>
+</div>
 
-  <!-- Inputs/outputs subtitle (only for big windows) -->
-  <div class="-header -not-xs">
-    <div class="row">
-      <div class="col-sm-6"><div>{{ 'txBoxes.inputs' | translate }}</div></div>
-      <div class="col-sm-6"><div>{{ 'txBoxes.outputs' | translate }}</div></div>
-    </div>
+<!-- Inputs/outputs subtitle (only for big windows) -->
+<div class="-header -not-xs">
+  <div class="row">
+    <div class="col-sm-6"><div>{{ 'txBoxes.inputs' | translate }}</div></div>
+    <div class="col-sm-6"><div>{{ 'txBoxes.outputs' | translate }}</div></div>
   </div>
-  <div class="-data">
-    <div class="row">
-      <!-- Inputs -->
-      <div class="col-sm-6">
-        <div class="-header -xs-only">{{ 'txBoxes.inputs' | translate }}</div>
-        <div class="-body" *ngFor="let input of inputsToShow">
+</div>
+<div class="-data">
+  <div class="row">
+    <!-- Inputs -->
+    <div class="col-sm-6">
+      <div class="-header -xs-only">{{ 'txBoxes.inputs' | translate }}</div>
+      @for (input of inputsToShow; track input) {
+        <div class="-body">
           <a class="-link -copy-button-margin" [routerLink]="'/app/address/' + input.owner">{{ input.owner }}{{ explorer.getAddressName(input.owner) }}</a><app-copy-button [text]="input.owner"></app-copy-button>
           <div class="-balance"><div class="-transparent -float-left">{{ 'general.coins' | translate }}:&nbsp;</div><div> {{ input.coins.toString() | amount:true:'first' }}</div></div>
           <div class="-balance"><div class="-transparent -float-left">{{ 'txBoxes.hoursWhenCreated' | translate }}:&nbsp;</div><div> {{ input.hours.toString() | amount:false:'first' }}</div></div>
           <div class="-balance"><div class="-transparent -float-left">{{ 'txBoxes.hoursWhenUsed' | translate }}:&nbsp;</div><div> {{ input.calculatedHours.toString() | amount:false:'first' }}</div></div>
         </div>
-        <!-- Link for showing all elements (If required) -->
-        <div class="-body" *ngIf="showMoreInputs !== showMoreStatus.dontShowMore">
+      }
+      <!-- Link for showing all elements (If required) -->
+      @if (showMoreInputs !== showMoreStatus.dontShowMore) {
+        <div class="-body">
           <a class="-link pointer" (click)="startShowingAllInputs()">{{ showMoreInputs === showMoreStatus.showMore ? ('txBoxes.loadAll' | translate:{ total: totalInputs }) : ('txBoxes.loading' | translate) }}</a>
         </div>
-      </div>
-      <!-- Outputs -->
-      <div class="col-sm-6">
-        <div class="-header -xs-only">{{ 'txBoxes.outputs' | translate }}</div>
-        <div class="-body" *ngFor="let output of outputsToShow">
+      }
+    </div>
+    <!-- Outputs -->
+    <div class="col-sm-6">
+      <div class="-header -xs-only">{{ 'txBoxes.outputs' | translate }}</div>
+      @for (output of outputsToShow; track output) {
+        <div class="-body">
           <a class="-link -copy-button-margin" [routerLink]="'/app/address/' + output.address">{{ output.address }}{{ explorer.getAddressName(output.address) }}</a><app-copy-button [text]="output.address"></app-copy-button>
           <div class="-balance"><div class="-transparent -float-left">{{ 'general.coins' | translate }}:&nbsp;</div><div> {{ output.coins.toString() | amount:true:'first' }}</div></div>
           <div class="-balance"><div class="-transparent -float-left">{{ 'general.hours' | translate }}:&nbsp;</div><div> {{ output.hours.toString() | amount:false:'first' }}</div></div>
         </div>
-        <!-- Link for showing all elements (If required) -->
-        <div class="-body" *ngIf="showMoreOutputs !== showMoreStatus.dontShowMore">
+      }
+      <!-- Link for showing all elements (If required) -->
+      @if (showMoreOutputs !== showMoreStatus.dontShowMore) {
+        <div class="-body">
           <a class="-link pointer" (click)="startShowingAllOutputs()">{{ showMoreOutputs === showMoreStatus.showMore ? ('txBoxes.loadAll' | translate:{ total: totalOutputs }) : ('txBoxes.loading' | translate) }}</a>
         </div>
-      </div>
+      }
     </div>
-    <!-- Additional info (fee and balance variation) -->
-    <div class="row">
-      <div class="col-sm-12">
-        <div class="-header -xs-only">{{ 'txBoxes.moreInfo' | translate }}</div>
-        <div class="-balance-variation">
-          <div class="fee-box">
-            <div class="-transparent -float-left">{{ 'txBoxes.fee' | translate }}:&nbsp;</div>
-            <div>{{ transaction.fee.toString() | amount:false:'first' }}</div>
-          </div>
-          <ng-container *ngIf="transaction.initialBalance">
-            <div>
-              <div class="-transparent -float-left">{{ 'txBoxes.initialBalance' | translate }}:&nbsp;</div>
-              <div>{{ transaction.initialBalance.toString() | amount:true:'first' }}</div>
-            </div>
-            <span class="separator -not-xs">&#xf105;</span>
-            <div>
-              <div class="-transparent -float-left">{{ 'txBoxes.finalBalance' | translate }}:&nbsp;</div>
-              <div>{{ transaction.finalBalance.toString() | amount:true:'first' }}</div>
-            </div>
-          </ng-container>
+  </div>
+  <!-- Additional info (fee and balance variation) -->
+  <div class="row">
+    <div class="col-sm-12">
+      <div class="-header -xs-only">{{ 'txBoxes.moreInfo' | translate }}</div>
+      <div class="-balance-variation">
+        <div class="fee-box">
+          <div class="-transparent -float-left">{{ 'txBoxes.fee' | translate }}:&nbsp;</div>
+          <div>{{ transaction.fee.toString() | amount:false:'first' }}</div>
         </div>
+        @if (transaction.initialBalance) {
+          <div>
+            <div class="-transparent -float-left">{{ 'txBoxes.initialBalance' | translate }}:&nbsp;</div>
+            <div>{{ transaction.initialBalance.toString() | amount:true:'first' }}</div>
+          </div>
+          <span class="separator -not-xs">&#xf105;</span>
+          <div>
+            <div class="-transparent -float-left">{{ 'txBoxes.finalBalance' | translate }}:&nbsp;</div>
+            <div>{{ transaction.finalBalance.toString() | amount:true:'first' }}</div>
+          </div>
+        }
       </div>
     </div>
   </div>
+</div>
 </div>

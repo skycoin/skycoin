@@ -4,9 +4,10 @@ import { Component, Input, Output, EventEmitter, OnDestroy } from '@angular/core
  * Shows a link-like text with an arrow at the right. Used for showing more options or a list.
  */
 @Component({
-  selector: 'app-arrow-link',
-  templateUrl: 'arrow-link.component.html',
-  styleUrls: ['arrow-link.component.scss'],
+    selector: 'app-arrow-link',
+    templateUrl: 'arrow-link.component.html',
+    styleUrls: ['arrow-link.component.scss'],
+    standalone: false
 })
 export class ArrowLinkComponent implements OnDestroy {
   // Removes the padding at the left.

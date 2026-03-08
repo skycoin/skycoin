@@ -10,9 +10,10 @@ import { ApiService } from 'app/services/api/api.service';
  * Page for showing the list of unconfirmed (pending) transactions.
  */
 @Component({
-  selector: 'app-unconfirmed-transactions',
-  templateUrl: './unconfirmed-transactions.component.html',
-  styleUrls: ['./unconfirmed-transactions.component.scss']
+    selector: 'app-unconfirmed-transactions',
+    templateUrl: './unconfirmed-transactions.component.html',
+    styleUrls: ['./unconfirmed-transactions.component.scss'],
+    standalone: false
 })
 export class UnconfirmedTransactionsComponent extends PageBaseComponent implements OnInit, OnDestroy {
   // Keys for persisting the server data, to be able to restore the state after navigation.

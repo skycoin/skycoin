@@ -1,12 +1,12 @@
-@use '~@angular/material' as mat;
-@import '~@angular/material/theming';
+@use '@angular/material' as mat;
 @import '../customize/styling.scss';
 // Plus imports for other components in your app.
 
 // Include the common styles for Angular Material. We include this here so that you only
 // have to load a single css file for Angular Material in your app.
 // Be sure that you only ever include this mixin once!
-@include mat.core();
+@include mat.elevation-classes();
+@include mat.app-background();
 
 // Define the palettes for your theme using the Material Design palettes available in palette.scss
 // (imported above). For each palette, you can optionally specify a default, lighter, and darker
@@ -28,14 +28,20 @@ $mat-skycoin-accent: (
   )
 );
 
-$candy-app-primary: mat.define-palette($mat-skycoin-primary, 500, 100, 500);
-$candy-app-accent:  mat.define-palette($mat-skycoin-accent, 500, 500, 500);
+$candy-app-primary: mat.m2-define-palette($mat-skycoin-primary, 500, 100, 500);
+$candy-app-accent:  mat.m2-define-palette($mat-skycoin-accent, 500, 500, 500);
 
 // The warn palette is optional (defaults to red).
-$candy-app-warn:    mat.define-palette(mat.$red-palette);
+$candy-app-warn:    mat.m2-define-palette(mat.$m2-red-palette);
 
 // Create the theme object (a Sass map containing all of the palettes).
-$candy-app-theme: mat.define-light-theme($candy-app-primary, $candy-app-accent, $candy-app-warn);
+$candy-app-theme: mat.m2-define-light-theme((
+  color: (
+    primary: $candy-app-primary,
+    accent: $candy-app-accent,
+    warn: $candy-app-warn,
+  ),
+));
 
 // Include theme styles for core and each component used in your app.
 // Alternatively, you can import and @include the theme mixins for each component
@@ -43,17 +49,46 @@ $candy-app-theme: mat.define-light-theme($candy-app-primary, $candy-app-accent, 
 @include mat.all-component-themes($candy-app-theme);
 
 $mat-light-button-primary: (
-  100: #777,
+  50: #999,
+  100: #888,
+  200: #888,
+  300: #888,
+  400: #777,
   500: #777,
+  600: #666,
+  700: #666,
+  800: #555,
+  900: #555,
+  A100: #888,
+  A200: #777,
+  A400: #666,
+  A700: #555,
   contrast: (
-    100: #777,
-    500: #777,
+    50: white,
+    100: white,
+    200: white,
+    300: white,
+    400: white,
+    500: white,
+    600: white,
+    700: white,
+    800: white,
+    900: white,
+    A100: white,
+    A200: white,
+    A400: white,
+    A700: white,
   )
 );
 
-$light-button-primary: mat.define-palette($mat-light-button-primary);
-$light-button-theme: mat.define-light-theme($light-button-primary, $candy-app-accent);
+$light-button-primary: mat.m2-define-palette($mat-light-button-primary);
+$light-button-theme: mat.m2-define-light-theme((
+  color: (
+    primary: $light-button-primary,
+    accent: $candy-app-accent,
+  ),
+));
 
 .light-button-theme {
-  @include mat.all-component-themes($light-button-theme);
+  @include mat.all-component-colors($light-button-theme);
 }

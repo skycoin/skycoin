@@ -2,7 +2,7 @@ import { delay, mergeMap } from 'rxjs/operators';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { SubscriptionLike, of } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
-import { FormGroup, FormBuilder } from '@angular/forms';
+import { UntypedFormGroup, UntypedFormBuilder } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 
 import { PriceService } from '../../../services/price.service';
@@ -50,9 +50,10 @@ class Address {
  * separated string) or a list of addresses, respectively.
  */
 @Component({
-  selector: 'app-transaction-list',
-  templateUrl: './transaction-list.component.html',
-  styleUrls: ['./transaction-list.component.scss'],
+    selector: 'app-transaction-list',
+    templateUrl: './transaction-list.component.html',
+    styleUrls: ['./transaction-list.component.scss'],
+    standalone: false
 })
 export class TransactionListComponent implements OnInit, OnDestroy {
   // Contains all transactions on the user history.
@@ -62,7 +63,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
   // All wallets the user has, for filtering.
   wallets: Wallet[];
   transactionsLoaded = false;
-  form: FormGroup;
+  form: UntypedFormGroup;
 
   // Vars for showing only some elements at the same time by default.
   readonly maxInitialElements = 40;
@@ -84,7 +85,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
     public appService: AppService,
     private dialog: MatDialog,
     private priceService: PriceService,
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private historyService: HistoryService,
     balanceAndOutputsService: BalanceAndOutputsService,
     route: ActivatedRoute,

@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { FormBuilder } from '@angular/forms';
+import { UntypedFormBuilder } from '@angular/forms';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 
 import { ChildHwDialogParams } from '../../layout/hardware-wallet/hw-options-dialog/hw-options-dialog.component';
@@ -11,13 +11,14 @@ import { HwWipeDialogComponent } from '../../layout/hardware-wallet/hw-wipe-dial
  * use it because the operations are always cancelled for inactivity.
  */
 @Component({
-  selector: 'app-force-skywallet-wipe',
-  templateUrl: './force-skywallet-wipe.component.html',
-  styleUrls: ['./force-skywallet-wipe.component.scss'],
+    selector: 'app-force-skywallet-wipe',
+    templateUrl: './force-skywallet-wipe.component.html',
+    styleUrls: ['./force-skywallet-wipe.component.scss'],
+    standalone: false
 })
 export class ForceSkywalletWipeComponent {
   constructor(
-    public formBuilder: FormBuilder,
+    public formBuilder: UntypedFormBuilder,
     private router: Router,
     private dialog: MatDialog,
   ) { }

@@ -6,7 +6,8 @@ import BigNumber from 'bignumber.js';
  * invalid characters.
  */
 @Directive({
-  selector: '[appFormatNumber]',
+    selector: '[appFormatNumber]',
+    standalone: false
 })
 export class FormatNumberDirective {
   /**

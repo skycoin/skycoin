@@ -24,9 +24,10 @@ enum ShowMoreStatus {
  * Generic control for showing the details of a transaction (ID, date, inputs, etc).
  */
 @Component({
-  selector: 'app-transaction-info',
-  templateUrl: './transaction-info.component.html',
-  styleUrls: ['./transaction-info.component.scss']
+    selector: 'app-transaction-info',
+    templateUrl: './transaction-info.component.html',
+    styleUrls: ['./transaction-info.component.scss'],
+    standalone: false
 })
 export class TransactionInfoComponent {
   /**

@@ -1,27 +1,31 @@
 <div class="row">
   <div class="col-md-12">
     <!-- Title. -->
-    <h4 *ngIf="isPreview">{{ 'tx.confirm-transaction-title' | translate }}</h4>
-    <h4 *ngIf="!isPreview">{{ 'tx.transaction-title' | translate }}</h4>
+    @if (isPreview) {
+      <h4>{{ 'tx.confirm-transaction-title' | translate }}</h4>
+    }
+    @if (!isPreview) {
+      <h4>{{ 'tx.transaction-title' | translate }}</h4>
+    }
     <div class="row">
       <!-- List with the basic transaction data. The data shown depends on the transaction type. -->
       <div class="col-md-9 -tx-meta">
-        <ng-container *ngIf="isPreview">
+        @if (isPreview) {
           <div class="-data">
             <span>{{ 'tx.from-small-label' | translate }}</span> <span>{{ transaction.from }}</span>
           </div>
           <div class="-data">
             <span>{{ 'tx.to-small-label' | translate }}</span> <span>{{ transaction.to }}</span>
           </div>
-        </ng-container>
-        <ng-container *ngIf="!isPreview">
+        }
+        @if (!isPreview) {
           <div class="-data">
             <span>{{ 'tx.date-small-label' | translate }}</span> <span>{{ transaction.timestamp | dateTime }}</span>
           </div>
           <div class="-data">
             <span>{{ 'tx.status-small-label' | translate }}</span> <span>{{ (transaction.confirmed ? 'tx.confirmed-transaction' : 'tx.pending-transaction') | translate }}</span>
           </div>
-        </ng-container>
+        }
         <div class="-data">
           <span>{{ 'tx.hours-small-label' | translate }}</span>
           <span>
@@ -30,15 +34,25 @@
             {{ transaction.hoursBurned | amount:false:'first' }} {{ 'tx.hours-burned' | translate }}
           </span>
         </div>
-        <div class="-data" *ngIf="!isPreview">
-          <span>{{ 'tx.id-small-label' | translate }}</span> <span>{{ transaction.id }}</span>
-        </div>
-        <div class="-data" *ngIf="transaction.note || !isPreview">
-          <span>{{ 'tx.note-small-label' | translate }}</span>
-          <span *ngIf="transaction.note">{{ transaction.note }}</span>
-          <span *ngIf="!transaction.note" class="grey-text">{{ 'tx.without-note' | translate }}</span>
-          <mat-icon class="edit-button image-button" (click)="editNote()" *ngIf="!isPreview">edit</mat-icon>
-        </div>
+        @if (!isPreview) {
+          <div class="-data">
+            <span>{{ 'tx.id-small-label' | translate }}</span> <span>{{ transaction.id }}</span>
+          </div>
+        }
+        @if (transaction.note || !isPreview) {
+          <div class="-data">
+            <span>{{ 'tx.note-small-label' | translate }}</span>
+            @if (transaction.note) {
+              <span>{{ transaction.note }}</span>
+            }
+            @if (!transaction.note) {
+              <span class="grey-text">{{ 'tx.without-note' | translate }}</span>
+            }
+            @if (!isPreview) {
+              <mat-icon class="edit-button image-button" (click)="editNote()">edit</mat-icon>
+            }
+          </div>
+        }
       </div>
 
       <!-- Transaction balance. -->
@@ -47,29 +61,35 @@
           <img [src]="'assets/img/' + (shouldShowIncomingIcon ? 'received' : 'sent') + '-blue.png'">
         </div>
         <h4>{{ balanceToShow | amount }}</h4>
-        <p *ngIf="price" [matTooltip]="!isPreview ? ('tx.current-rate-help' | translate) : ''">
-          {{ balanceToShow.multipliedBy(price).toString() | currency:'USD':'symbol':'1.2-2' }}<span *ngIf="!isPreview">*</span>
+        @if (price) {
+          <p [matTooltip]="!isPreview ? ('tx.current-rate-help' | translate) : ''">
+            {{ balanceToShow.multipliedBy(price).toString() | currency:'USD':'symbol':'1.2-2' }}@if (!isPreview) {
+            <span>*</span>
+          }
         </p>
-      </div>
+      }
     </div>
+  </div>
 
-    <!-- Link to show the list with the inputs and outputs. -->
-    <div class="-data -more" *ngIf="!showInputsOutputs">
+  <!-- Link to show the list with the inputs and outputs. -->
+  @if (!showInputsOutputs) {
+    <div class="-data -more">
       <app-arrow-link
         [noPadding]="true"
         [text]="'tx.show-more-link'"
         (pressed)="toggleInputsOutputs($event)">
       </app-arrow-link>
     </div>
-  </div>
+  }
+</div>
 
-  <!-- List with the inputs and outputs. -->
-  <ng-container *ngIf="showInputsOutputs">
-    <!-- Inputs -->
-    <div class="col-md-6 -margin-top">
-      <h4>{{ 'tx.inputs-title' | translate }}</h4>
-
-      <div class="-item" *ngFor="let input of transaction.inputs; let i = index">
+<!-- List with the inputs and outputs. -->
+@if (showInputsOutputs) {
+  <!-- Inputs -->
+  <div class="col-md-6 -margin-top">
+    <h4>{{ 'tx.inputs-title' | translate }}</h4>
+    @for (input of transaction.inputs; track input; let i = $index) {
+      <div class="-item">
         <div class="-number">{{ i + 1 }}</div>
         <div class="-info">
           <div class="-address">{{ input.address }}</div>
@@ -81,12 +101,13 @@
           </div>
         </div>
       </div>
-    </div>
-    <!-- Outputs -->
-    <div class="col-md-6 -margin-top">
-      <h4>{{ 'tx.outputs-title' | translate }}</h4>
-
-      <div class="-item" *ngFor="let output of transaction.outputs; let i = index">
+    }
+  </div>
+  <!-- Outputs -->
+  <div class="col-md-6 -margin-top">
+    <h4>{{ 'tx.outputs-title' | translate }}</h4>
+    @for (output of transaction.outputs; track output; let i = $index) {
+      <div class="-item">
         <div class="-number">{{ i + 1 }}</div>
         <div class="-info">
           <div class="-address">{{ output.address }}</div>
@@ -98,6 +119,7 @@
           </div>
         </div>
       </div>
-    </div>
-  </ng-container>
+    }
+  </div>
+}
 </div>

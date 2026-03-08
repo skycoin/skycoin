@@ -13,14 +13,18 @@
   </div>
 
   <!-- Loading control -->
-  <app-loading [longErrorMsg]="longErrorMsg | translate" *ngIf="!entries.length"></app-loading>
+  @if (!entries.length) {
+    <app-loading [longErrorMsg]="longErrorMsg | translate"></app-loading>
+  }
 
   <!-- Data list -->
-  <a class="-row" *ngFor="let entry of entries; let i = index" [routerLink]="'/app/address/' + entry.address">
-    <div class="row">
-      <div class="col-sm-1 -not-xs -gray">{{ i+1 }}</div>
-      <div class="col-xs-6 col-sm-8">{{ entry.address }}{{ explorer.getAddressName(entry.address) }}</div>
-      <div class="col-xs-6 col-sm-3">{{ entry.coins | amount:true:'first' }}</div>
-    </div>
-  </a>
+  @for (entry of entries; track entry; let i = $index) {
+    <a class="-row" [routerLink]="'/app/address/' + entry.address">
+      <div class="row">
+        <div class="col-sm-1 -not-xs -gray">{{ i+1 }}</div>
+        <div class="col-xs-6 col-sm-8">{{ entry.address }}{{ explorer.getAddressName(entry.address) }}</div>
+        <div class="col-xs-6 col-sm-3">{{ entry.coins | amount:true:'first' }}</div>
+      </div>
+    </a>
+  }
 </div>

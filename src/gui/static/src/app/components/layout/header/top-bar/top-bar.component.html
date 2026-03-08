@@ -11,12 +11,16 @@
     <button mat-menu-item [routerLink]="['/settings/backup']">{{ 'backup.title' | translate }}</button>
     <a mat-menu-item [href]="appService.explorerUrl" class="color-primary" target="_blank" rel="noreferrer nofollow noopener">{{ 'header.explorer-link' | translate:{coinName: appService.fullCoinName} }}</a>
     <div class="separator"></div>
-    <button mat-menu-item *ngIf="language" (click)="changelanguage()">
-      <img [src]="'assets/img/lang/' + language.iconName" class="flag">
-      {{ language.name }}
-    </button>
+    @if (language) {
+      <button mat-menu-item (click)="changelanguage()">
+        <img [src]="'assets/img/lang/' + language.iconName" class="flag">
+        {{ language.name }}
+      </button>
+    }
     <div class="separator"></div>
-    <button mat-menu-item [disabled]="true" *ngIf="appService.nodeVersion"> v{{ appService.nodeVersion }} </button>
+    @if (appService.nodeVersion) {
+      <button mat-menu-item [disabled]="true"> v{{ appService.nodeVersion }} </button>
+    }
   </mat-menu>
   <button class="button" mat-icon-button [matMenuTriggerFor]="menuMenu">
     <mat-icon>menu</mat-icon>

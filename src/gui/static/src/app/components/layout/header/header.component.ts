@@ -15,9 +15,10 @@ import { AddressWithBalance } from '../../../services/wallet-operations/wallet-o
  * Header shown at the top of most pages.
  */
 @Component({
-  selector: 'app-header',
-  templateUrl: './header.component.html',
-  styleUrls: ['./header.component.scss'],
+    selector: 'app-header',
+    templateUrl: './header.component.html',
+    styleUrls: ['./header.component.scss'],
+    standalone: false
 })
 export class HeaderComponent implements OnInit, OnDestroy {
   @Input() headline: string;

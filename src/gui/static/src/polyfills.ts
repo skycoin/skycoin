@@ -34,18 +34,8 @@
 // import 'core-js/es6/weak-map';
 // import 'core-js/es6/set';
 
-/** IE10 and IE11 requires the following for NgClass support on SVG elements */
-// import 'classlist.js';  // Run `npm install --save classlist.js`.
-
 /** Evergreen browsers require these. **/
 import 'core-js/es6/reflect';
-
-
-/**
- * Required to support Web Animations `@angular/animation`.
- * Needed for: All but Chrome, Firefox and Opera. http://caniuse.com/#feat=web-animation
- **/
-// import 'web-animations-js';  // Run `npm install --save web-animations-js`.
 
 
 
@@ -74,3 +64,7 @@ import 'zone.js';  // Included with Angular CLI.
  * ERROR FIX
  */
 (window as any).global = window;
+
+// Buffer polyfill for libraries that depend on Node.js buffer
+import { Buffer } from 'buffer';
+(window as any).Buffer = Buffer;

@@ -12,8 +12,9 @@ import { dataValidityTime } from 'app/app.config';
  * Page for showing the list of unlocked addresses with most coins.
  */
 @Component({
-  templateUrl: './richlist.component.html',
-  styleUrls: ['./richlist.component.scss']
+    templateUrl: './richlist.component.html',
+    styleUrls: ['./richlist.component.scss'],
+    standalone: false
 })
 export class RichlistComponent extends PageBaseComponent implements OnInit, OnDestroy {
   // Keys for persisting the server data, to be able to restore the state after navigation.

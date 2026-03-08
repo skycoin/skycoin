@@ -6,15 +6,21 @@
   <div [formGroup]="form">
     <div class="form-field text-center">
       <div>
-        <span *ngIf="data.signingTx && !data.changingPin">
-          {{ 'hardware-wallet.enter-pin.instructions-tx' | translate }}
-        </span>
-        <span *ngIf="data.changingPin && data.changePinState === changePinStates.RequestingNewPin">
-          {{ 'hardware-wallet.enter-pin.instructions-change' | translate }}
-        </span>
-        <span *ngIf="!data.signingTx && (!data.changingPin || data.changePinState !== changePinStates.RequestingNewPin)">
-          {{ 'hardware-wallet.enter-pin.instructions-generic' | translate }}
-        </span>
+        @if (data.signingTx && !data.changingPin) {
+          <span>
+            {{ 'hardware-wallet.enter-pin.instructions-tx' | translate }}
+          </span>
+        }
+        @if (data.changingPin && data.changePinState === changePinStates.RequestingNewPin) {
+          <span>
+            {{ 'hardware-wallet.enter-pin.instructions-change' | translate }}
+          </span>
+        }
+        @if (!data.signingTx && (!data.changingPin || data.changePinState !== changePinStates.RequestingNewPin)) {
+          <span>
+            {{ 'hardware-wallet.enter-pin.instructions-generic' | translate }}
+          </span>
+        }
         <span class="link" (click)="openHelp()">{{ 'hardware-wallet.enter-pin.help' | translate }}</span>
       </div>
       <input formControlName="pin" id="pin" type="password" readonly>

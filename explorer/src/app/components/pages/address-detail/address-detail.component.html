@@ -6,107 +6,143 @@
   <!-- Balance boxes. -->
   <div class="balance-container">
     <div>
-      <ng-container *ngIf="!dataLoaded">
+      @if (!dataLoaded) {
         {{ loadingMsg | translate }}
-      </ng-container>
-      <ng-container *ngIf="dataLoaded">
+      }
+      @if (dataLoaded) {
         {{ balance.toString() | amount:true:'first' }}
         <span class="coin-name">{{ balance.toString() | amount:true:'last' }}</span>
-        <div *ngIf="pendingCoins && !pendingCoins.isEqualTo(0)" class="small">
-          {{
+        @if (pendingCoins && !pendingCoins.isEqualTo(0)) {
+          <div class="small">
+            {{
             ('addressDetail.' + (pendingCoins.isEqualTo(1) || pendingCoins.isEqualTo(-1) ? 'singular' : 'plural' ) + 'PendingCoins') | translate:{ amount:
-              (pendingCoins.isGreaterThan(0) ? '+' : '') + (pendingCoins.toString() | amount:true:'first')
-            }
+            (pendingCoins.isGreaterThan(0) ? '+' : '') + (pendingCoins.toString() | amount:true:'first')
+          }
           }}
         </div>
-      </ng-container>
-    </div>
-    <div>
-      <ng-container *ngIf="!dataLoaded">
-        {{ loadingMsg | translate }}
-      </ng-container>
-      <ng-container *ngIf="dataLoaded">
-        {{ hoursBalance.toString() | amount:false:'first' }}
-        <span class="coin-name">{{ hoursBalance.toString() | amount:false:'last' }}</span>
-        <div *ngIf="pendingHours && !pendingHours.isEqualTo(0)" class="small">
+      }
+    }
+  </div>
+  <div>
+    @if (!dataLoaded) {
+      {{ loadingMsg | translate }}
+    }
+    @if (dataLoaded) {
+      {{ hoursBalance.toString() | amount:false:'first' }}
+      <span class="coin-name">{{ hoursBalance.toString() | amount:false:'last' }}</span>
+      @if (pendingHours && !pendingHours.isEqualTo(0)) {
+        <div class="small">
           {{
-            ('addressDetail.' + (pendingHours.isEqualTo(1) || pendingHours.isEqualTo(-1) ? 'singular' : 'plural' ) + 'PendingCoins') | translate:{ amount:
-              (pendingHours.isGreaterThan(0) ? '+' : '') + (pendingHours.toString() | amount:true:'first')
-            }
-          }}
-        </div>
-      </ng-container>
-      <div *ngIf="false" class="small">+5 pending</div>
-    </div>
-  </div>
+          ('addressDetail.' + (pendingHours.isEqualTo(1) || pendingHours.isEqualTo(-1) ? 'singular' : 'plural' ) + 'PendingCoins') | translate:{ amount:
+          (pendingHours.isGreaterThan(0) ? '+' : '') + (pendingHours.toString() | amount:true:'first')
+        }
+        }}
+      </div>
+    }
+  }
+  @if (false) {
+    <div class="small">+5 pending</div>
+  }
+</div>
+</div>
 
-  <!-- Top data table -->
-  <div class="element-details">
-    <!-- QR code (small windows only) -->
-    <div class="-row -xs-only">
-      <app-qr-code [string]="address" *ngIf="address"></app-qr-code>
-      <span>{{ 'general.address' | translate }}</span><br class="-xs-only" /> <span>
-        {{ address ? address : (loadingMsg | translate) }}
-        {{ address ? explorer.getAddressName(address) : '' }}
-      </span>
-    </div>
+<!-- Top data table -->
+<div class="element-details">
+  <!-- QR code (small windows only) -->
+  <div class="-row -xs-only">
+    @if (address) {
+      <app-qr-code [string]="address"></app-qr-code>
+    }
+    <span>{{ 'general.address' | translate }}</span><br class="-xs-only" /> <span>
+    {{ address ? address : (loadingMsg | translate) }}
+    {{ address ? explorer.getAddressName(address) : '' }}
+  </span>
+</div>
 
-    <div class="-row -tx-number"><span>{{ 'addressDetail.txsNumber' | translate }}</span><br class="-xs-only" /><div> {{ dataLoaded ? totalTransactionsCount : (loadingMsg | translate) }} </div></div>
-    <div class="-row" *ngIf="!hasManyTransactions">
-      <span>{{ 'addressDetail.totalReceived' | translate }}</span><br class="-xs-only" />
-      <div>
-        <ng-container *ngIf="!dataLoaded">
-          {{ loadingMsg | translate }}
-        </ng-container>
-        <ng-container *ngIf="dataLoaded">
-          <span>{{ totalReceived.toString() | amount }}</span>&nbsp;
-          <span *ngIf="pendingIncomingCoins && pendingIncomingCoins.isGreaterThan(0)">({{
+<div class="-row -tx-number"><span>{{ 'addressDetail.txsNumber' | translate }}</span><br class="-xs-only" /><div> {{ dataLoaded ? totalTransactionsCount : (loadingMsg | translate) }} </div></div>
+@if (!hasManyTransactions) {
+  <div class="-row">
+    <span>{{ 'addressDetail.totalReceived' | translate }}</span><br class="-xs-only" />
+    <div>
+      @if (!dataLoaded) {
+        {{ loadingMsg | translate }}
+      }
+      @if (dataLoaded) {
+        <span>{{ totalReceived.toString() | amount }}</span>&nbsp;
+        @if (pendingIncomingCoins && pendingIncomingCoins.isGreaterThan(0)) {
+          <span>({{
             ('addressDetail.' + (pendingIncomingCoins.isEqualTo(1) || pendingIncomingCoins.isEqualTo(-1) ? 'singular' : 'plural' ) + 'PendingCoins') | translate:{ amount:
-              (pendingIncomingCoins.isGreaterThan(0) ? '+' : '') + (pendingIncomingCoins.toString() | amount:true:'first')
-            }
-          }})</span>
-        </ng-container>
-      </div>
-    </div>
-    <div class="-row" *ngIf="!hasManyTransactions">
-      <span>{{ 'addressDetail.totalSent' | translate }}</span><br class="-xs-only" />
-      <div>
-        <ng-container *ngIf="!dataLoaded">
-          {{ loadingMsg | translate }}
-        </ng-container>
-        <ng-container *ngIf="dataLoaded">
-          <span>{{ totalSent.toString() | amount }}</span>&nbsp;
-          <span *ngIf="pendingOutgoingCoins && pendingOutgoingCoins.isGreaterThan(0)">({{
-            ('addressDetail.' + (pendingOutgoingCoins.isEqualTo(1) || pendingOutgoingCoins.isEqualTo(-1) ? 'singular' : 'plural' ) + 'PendingCoins') | translate:{ amount:
-              (pendingOutgoingCoins.isGreaterThan(0) ? '+' : '') + (pendingOutgoingCoins.toString() | amount:true:'first')
-            }
-          }})</span>
-        </ng-container>
-      </div>
-    </div>
-    <div class="-row"><span>{{ 'addressDetail.tools' | translate }}</span><br class="-xs-only" /><div> <a [routerLink]="'/app/unspent/' + address" class="-link" *ngIf="address">{{ 'addressDetail.unspentOutputs' | translate }}</a> <span *ngIf="!address">{{ loadingMsg }}</span> </div></div>
+            (pendingIncomingCoins.isGreaterThan(0) ? '+' : '') + (pendingIncomingCoins.toString() | amount:true:'first')
+          }
+        }})</span>
+      }
+    }
   </div>
+</div>
+}
+@if (!hasManyTransactions) {
+  <div class="-row">
+    <span>{{ 'addressDetail.totalSent' | translate }}</span><br class="-xs-only" />
+    <div>
+      @if (!dataLoaded) {
+        {{ loadingMsg | translate }}
+      }
+      @if (dataLoaded) {
+        <span>{{ totalSent.toString() | amount }}</span>&nbsp;
+        @if (pendingOutgoingCoins && pendingOutgoingCoins.isGreaterThan(0)) {
+          <span>({{
+            ('addressDetail.' + (pendingOutgoingCoins.isEqualTo(1) || pendingOutgoingCoins.isEqualTo(-1) ? 'singular' : 'plural' ) + 'PendingCoins') | translate:{ amount:
+            (pendingOutgoingCoins.isGreaterThan(0) ? '+' : '') + (pendingOutgoingCoins.toString() | amount:true:'first')
+          }
+        }})</span>
+      }
+    }
+  </div>
+</div>
+}
+<div class="-row"><span>{{ 'addressDetail.tools' | translate }}</span><br class="-xs-only" /><div> @if (address) {
+<a [routerLink]="'/app/unspent/' + address" class="-link">{{ 'addressDetail.unspentOutputs' | translate }}</a>
+} @if (!address) {
+<span>{{ loadingMsg }}</span>
+} </div></div>
+</div>
 </div>
 <!-- QR code (big windows only) -->
 <div class="-qr-code -not-xs">
-  <app-qr-code [string]="address" *ngIf="address"></app-qr-code>
+  @if (address) {
+    <app-qr-code [string]="address"></app-qr-code>
+  }
 </div>
 
 <!-- Loading control -->
-<app-loading [longErrorMsg]="longErrorMsg | translate" *ngIf="!dataLoaded || longErrorMsg"></app-loading>
+@if (!dataLoaded || longErrorMsg) {
+  <app-loading [longErrorMsg]="longErrorMsg | translate"></app-loading>
+}
 
 <!-- Transactions list -->
-<app-transaction-info *ngFor="let transaction of pageTransactions" [transaction]="transaction"></app-transaction-info>
+@for (transaction of pageTransactions; track transaction) {
+  <app-transaction-info [transaction]="transaction"></app-transaction-info>
+}
 
 <!-- Page selection bar -->
-<div class="pagination" *ngIf="pageCount > 1">
-  <a class="-first" [ngClass]="{ disabled: pageIndex <= 0 }" [routerLink]="'/app/address/' + address + '/1'">«</a>
-  <a class="-previous" [ngClass]="{ disabled: pageIndex <= 0 }" [routerLink]="'/app/address/' + address + '/' + (pageIndex > 0 ? pageIndex : 1)">‹</a>
-  <a class="-page -hide-xs" *ngIf="pageIndex > 1" [routerLink]="'/app/address/' + address + '/' + (pageIndex - 1)">{{ pageIndex - 1 }}</a>
-  <a class="-page" *ngIf="pageIndex > 0" [routerLink]="'/app/address/' + address + '/' + pageIndex">{{ pageIndex }}</a>
-  <a class="-page disabled">{{ pageIndex + 1 }}</a>
-  <a class="-page" *ngIf="pageIndex < pageCount - 1" [routerLink]="'/app/address/' + address + '/' + (pageIndex + 2)">{{ pageIndex + 2 }}</a>
-  <a class="-page -hide-xs" *ngIf="pageIndex < pageCount - 2" [routerLink]="'/app/address/' + address + '/' + (pageIndex + 3)">{{ pageIndex + 3 }}</a>
-  <a class="-next" [ngClass]="{ disabled: pageIndex >= pageCount - 1 }" [routerLink]="'/app/address/' + address + '/' + (pageIndex + 2 < pageCount ? pageIndex + 2 : pageCount)">›</a>
-  <a class="-last" [ngClass]="{ disabled: pageIndex >= pageCount - 1 }" [routerLink]="'/app/address/' + address + '/' + pageCount">»</a>
-</div>
+@if (pageCount > 1) {
+  <div class="pagination">
+    <a class="-first" [ngClass]="{ disabled: pageIndex <= 0 }" [routerLink]="'/app/address/' + address + '/1'">«</a>
+    <a class="-previous" [ngClass]="{ disabled: pageIndex <= 0 }" [routerLink]="'/app/address/' + address + '/' + (pageIndex > 0 ? pageIndex : 1)">‹</a>
+    @if (pageIndex > 1) {
+      <a class="-page -hide-xs" [routerLink]="'/app/address/' + address + '/' + (pageIndex - 1)">{{ pageIndex - 1 }}</a>
+    }
+    @if (pageIndex > 0) {
+      <a class="-page" [routerLink]="'/app/address/' + address + '/' + pageIndex">{{ pageIndex }}</a>
+    }
+    <a class="-page disabled">{{ pageIndex + 1 }}</a>
+    @if (pageIndex < pageCount - 1) {
+      <a class="-page" [routerLink]="'/app/address/' + address + '/' + (pageIndex + 2)">{{ pageIndex + 2 }}</a>
+    }
+    @if (pageIndex < pageCount - 2) {
+      <a class="-page -hide-xs" [routerLink]="'/app/address/' + address + '/' + (pageIndex + 3)">{{ pageIndex + 3 }}</a>
+    }
+    <a class="-next" [ngClass]="{ disabled: pageIndex >= pageCount - 1 }" [routerLink]="'/app/address/' + address + '/' + (pageIndex + 2 < pageCount ? pageIndex + 2 : pageCount)">›</a>
+    <a class="-last" [ngClass]="{ disabled: pageIndex >= pageCount - 1 }" [routerLink]="'/app/address/' + address + '/' + pageCount">»</a>
+  </div>
+}

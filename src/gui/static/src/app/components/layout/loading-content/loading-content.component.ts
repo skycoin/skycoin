@@ -6,9 +6,10 @@ import { Component, Input } from '@angular/core';
  * loading the data.
  */
 @Component({
-  selector: 'app-loading-content',
-  templateUrl: './loading-content.component.html',
-  styleUrls: ['./loading-content.component.scss'],
+    selector: 'app-loading-content',
+    templateUrl: './loading-content.component.html',
+    styleUrls: ['./loading-content.component.scss'],
+    standalone: false
 })
 export class LoadingContentComponent {
   // When true, the loading animation and a predefined loading msg is shown.

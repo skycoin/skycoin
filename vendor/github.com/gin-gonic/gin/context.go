@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/fs"
 	"log"
+	"maps"
 	"math"
 	"mime/multipart"
 	"net"
@@ -38,6 +39,8 @@ const (
 	MIMEYAML              = binding.MIMEYAML
 	MIMEYAML2             = binding.MIMEYAML2
 	MIMETOML              = binding.MIMETOML
+	MIMEPROTOBUF          = binding.MIMEPROTOBUF
+	MIMEBSON              = binding.MIMEBSON
 )
 
 // BodyBytesKey indicates a default body bytes key.
@@ -130,11 +133,8 @@ func (c *Context) Copy() *Context {
 	cp.fullPath = c.fullPath
 
 	cKeys := c.Keys
-	cp.Keys = make(map[any]any, len(cKeys))
 	c.mu.RLock()
-	for k, v := range cKeys {
-		cp.Keys[k] = v
-	}
+	cp.Keys = maps.Clone(cKeys)
 	c.mu.RUnlock()
 
 	cParams := c.Params
@@ -187,7 +187,7 @@ func (c *Context) FullPath() string {
 // See example in GitHub.
 func (c *Context) Next() {
 	c.index++
-	for c.index < int8(len(c.handlers)) {
+	for c.index < safeInt8(len(c.handlers)) {
 		if c.handlers[c.index] != nil {
 			c.handlers[c.index](c)
 		}
@@ -272,7 +272,7 @@ func (c *Context) Error(err error) *Error {
 /************************************/
 
 // Set is used to store a new key/value pair exclusively for this context.
-// It also lazy initializes  c.Keys if it was not used previously.
+// It also lazy initializes c.Keys if it was not used previously.
 func (c *Context) Set(key any, value any) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -308,163 +308,183 @@ func getTyped[T any](c *Context, key any) (res T) {
 }
 
 // GetString returns the value associated with the key as a string.
-func (c *Context) GetString(key any) (s string) {
+func (c *Context) GetString(key any) string {
 	return getTyped[string](c, key)
 }
 
 // GetBool returns the value associated with the key as a boolean.
-func (c *Context) GetBool(key any) (b bool) {
+func (c *Context) GetBool(key any) bool {
 	return getTyped[bool](c, key)
 }
 
 // GetInt returns the value associated with the key as an integer.
-func (c *Context) GetInt(key any) (i int) {
+func (c *Context) GetInt(key any) int {
 	return getTyped[int](c, key)
 }
 
 // GetInt8 returns the value associated with the key as an integer 8.
-func (c *Context) GetInt8(key any) (i8 int8) {
+func (c *Context) GetInt8(key any) int8 {
 	return getTyped[int8](c, key)
 }
 
 // GetInt16 returns the value associated with the key as an integer 16.
-func (c *Context) GetInt16(key any) (i16 int16) {
+func (c *Context) GetInt16(key any) int16 {
 	return getTyped[int16](c, key)
 }
 
 // GetInt32 returns the value associated with the key as an integer 32.
-func (c *Context) GetInt32(key any) (i32 int32) {
+func (c *Context) GetInt32(key any) int32 {
 	return getTyped[int32](c, key)
 }
 
 // GetInt64 returns the value associated with the key as an integer 64.
-func (c *Context) GetInt64(key any) (i64 int64) {
+func (c *Context) GetInt64(key any) int64 {
 	return getTyped[int64](c, key)
 }
 
 // GetUint returns the value associated with the key as an unsigned integer.
-func (c *Context) GetUint(key any) (ui uint) {
+func (c *Context) GetUint(key any) uint {
 	return getTyped[uint](c, key)
 }
 
 // GetUint8 returns the value associated with the key as an unsigned integer 8.
-func (c *Context) GetUint8(key any) (ui8 uint8) {
+func (c *Context) GetUint8(key any) uint8 {
 	return getTyped[uint8](c, key)
 }
 
 // GetUint16 returns the value associated with the key as an unsigned integer 16.
-func (c *Context) GetUint16(key any) (ui16 uint16) {
+func (c *Context) GetUint16(key any) uint16 {
 	return getTyped[uint16](c, key)
 }
 
 // GetUint32 returns the value associated with the key as an unsigned integer 32.
-func (c *Context) GetUint32(key any) (ui32 uint32) {
+func (c *Context) GetUint32(key any) uint32 {
 	return getTyped[uint32](c, key)
 }
 
 // GetUint64 returns the value associated with the key as an unsigned integer 64.
-func (c *Context) GetUint64(key any) (ui64 uint64) {
+func (c *Context) GetUint64(key any) uint64 {
 	return getTyped[uint64](c, key)
 }
 
 // GetFloat32 returns the value associated with the key as a float32.
-func (c *Context) GetFloat32(key any) (f32 float32) {
+func (c *Context) GetFloat32(key any) float32 {
 	return getTyped[float32](c, key)
 }
 
 // GetFloat64 returns the value associated with the key as a float64.
-func (c *Context) GetFloat64(key any) (f64 float64) {
+func (c *Context) GetFloat64(key any) float64 {
 	return getTyped[float64](c, key)
 }
 
 // GetTime returns the value associated with the key as time.
-func (c *Context) GetTime(key any) (t time.Time) {
+func (c *Context) GetTime(key any) time.Time {
 	return getTyped[time.Time](c, key)
 }
 
 // GetDuration returns the value associated with the key as a duration.
-func (c *Context) GetDuration(key any) (d time.Duration) {
+func (c *Context) GetDuration(key any) time.Duration {
 	return getTyped[time.Duration](c, key)
 }
 
+// GetError returns the value associated with the key as an error.
+func (c *Context) GetError(key any) error {
+	return getTyped[error](c, key)
+}
+
 // GetIntSlice returns the value associated with the key as a slice of integers.
-func (c *Context) GetIntSlice(key any) (is []int) {
+func (c *Context) GetIntSlice(key any) []int {
 	return getTyped[[]int](c, key)
 }
 
 // GetInt8Slice returns the value associated with the key as a slice of int8 integers.
-func (c *Context) GetInt8Slice(key any) (i8s []int8) {
+func (c *Context) GetInt8Slice(key any) []int8 {
 	return getTyped[[]int8](c, key)
 }
 
 // GetInt16Slice returns the value associated with the key as a slice of int16 integers.
-func (c *Context) GetInt16Slice(key any) (i16s []int16) {
+func (c *Context) GetInt16Slice(key any) []int16 {
 	return getTyped[[]int16](c, key)
 }
 
 // GetInt32Slice returns the value associated with the key as a slice of int32 integers.
-func (c *Context) GetInt32Slice(key any) (i32s []int32) {
+func (c *Context) GetInt32Slice(key any) []int32 {
 	return getTyped[[]int32](c, key)
 }
 
 // GetInt64Slice returns the value associated with the key as a slice of int64 integers.
-func (c *Context) GetInt64Slice(key any) (i64s []int64) {
+func (c *Context) GetInt64Slice(key any) []int64 {
 	return getTyped[[]int64](c, key)
 }
 
 // GetUintSlice returns the value associated with the key as a slice of unsigned integers.
-func (c *Context) GetUintSlice(key any) (uis []uint) {
+func (c *Context) GetUintSlice(key any) []uint {
 	return getTyped[[]uint](c, key)
 }
 
 // GetUint8Slice returns the value associated with the key as a slice of uint8 integers.
-func (c *Context) GetUint8Slice(key any) (ui8s []uint8) {
+func (c *Context) GetUint8Slice(key any) []uint8 {
 	return getTyped[[]uint8](c, key)
 }
 
 // GetUint16Slice returns the value associated with the key as a slice of uint16 integers.
-func (c *Context) GetUint16Slice(key any) (ui16s []uint16) {
+func (c *Context) GetUint16Slice(key any) []uint16 {
 	return getTyped[[]uint16](c, key)
 }
 
 // GetUint32Slice returns the value associated with the key as a slice of uint32 integers.
-func (c *Context) GetUint32Slice(key any) (ui32s []uint32) {
+func (c *Context) GetUint32Slice(key any) []uint32 {
 	return getTyped[[]uint32](c, key)
 }
 
 // GetUint64Slice returns the value associated with the key as a slice of uint64 integers.
-func (c *Context) GetUint64Slice(key any) (ui64s []uint64) {
+func (c *Context) GetUint64Slice(key any) []uint64 {
 	return getTyped[[]uint64](c, key)
 }
 
 // GetFloat32Slice returns the value associated with the key as a slice of float32 numbers.
-func (c *Context) GetFloat32Slice(key any) (f32s []float32) {
+func (c *Context) GetFloat32Slice(key any) []float32 {
 	return getTyped[[]float32](c, key)
 }
 
 // GetFloat64Slice returns the value associated with the key as a slice of float64 numbers.
-func (c *Context) GetFloat64Slice(key any) (f64s []float64) {
+func (c *Context) GetFloat64Slice(key any) []float64 {
 	return getTyped[[]float64](c, key)
 }
 
 // GetStringSlice returns the value associated with the key as a slice of strings.
-func (c *Context) GetStringSlice(key any) (ss []string) {
+func (c *Context) GetStringSlice(key any) []string {
 	return getTyped[[]string](c, key)
 }
 
+// GetErrorSlice returns the value associated with the key as a slice of errors.
+func (c *Context) GetErrorSlice(key any) []error {
+	return getTyped[[]error](c, key)
+}
+
 // GetStringMap returns the value associated with the key as a map of interfaces.
-func (c *Context) GetStringMap(key any) (sm map[string]any) {
+func (c *Context) GetStringMap(key any) map[string]any {
 	return getTyped[map[string]any](c, key)
 }
 
 // GetStringMapString returns the value associated with the key as a map of strings.
-func (c *Context) GetStringMapString(key any) (sms map[string]string) {
+func (c *Context) GetStringMapString(key any) map[string]string {
 	return getTyped[map[string]string](c, key)
 }
 
 // GetStringMapStringSlice returns the value associated with the key as a map to a slice of strings.
-func (c *Context) GetStringMapStringSlice(key any) (smss map[string][]string) {
+func (c *Context) GetStringMapStringSlice(key any) map[string][]string {
 	return getTyped[map[string][]string](c, key)
+}
+
+// Delete deletes the key from the Context's Key map, if it exists.
+// This operation is safe to be used by concurrent go-routines
+func (c *Context) Delete(key any) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.Keys != nil {
+		delete(c.Keys, key)
+	}
 }
 
 /************************************/
@@ -731,8 +751,8 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string, perm 
 //	"application/json" --> JSON binding
 //	"application/xml"  --> XML binding
 //
-// It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
-// It decodes the json payload into the struct specified as a pointer.
+// It parses the request's body based on the Content-Type (e.g., JSON or XML).
+// It decodes the payload into the struct specified as a pointer.
 // It writes a 400 error and sets Content-Type header "text/plain" in the response if input is not valid.
 func (c *Context) Bind(obj any) error {
 	b := binding.Default(c.Request.Method, c.ContentType())
@@ -812,8 +832,8 @@ func (c *Context) MustBindWith(obj any, b binding.Binding) error {
 //	"application/json" --> JSON binding
 //	"application/xml"  --> XML binding
 //
-// It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
-// It decodes the json payload into the struct specified as a pointer.
+// It parses the request's body based on the Content-Type (e.g., JSON or XML).
+// It decodes the payload into the struct specified as a pointer.
 // Like c.Bind() but this method does not set the response status code to 400 or abort if input is not valid.
 func (c *Context) ShouldBind(obj any) error {
 	b := binding.Default(c.Request.Method, c.ContentType())
@@ -821,41 +841,71 @@ func (c *Context) ShouldBind(obj any) error {
 }
 
 // ShouldBindJSON is a shortcut for c.ShouldBindWith(obj, binding.JSON).
+//
+// Example:
+//
+//	POST /user
+//	Content-Type: application/json
+//
+//	Request Body:
+//	{
+//		"name": "Manu",
+//		"age": 20
+//	}
+//
+//	type User struct {
+//		Name string `json:"name"`
+//		Age  int    `json:"age"`
+//	}
+//
+//	var user User
+//	if err := c.ShouldBindJSON(&user); err != nil {
+//		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+//		return
+//	}
+//	c.JSON(http.StatusOK, user)
 func (c *Context) ShouldBindJSON(obj any) error {
 	return c.ShouldBindWith(obj, binding.JSON)
 }
 
 // ShouldBindXML is a shortcut for c.ShouldBindWith(obj, binding.XML).
+// It works like ShouldBindJSON but binds the request body as XML data.
 func (c *Context) ShouldBindXML(obj any) error {
 	return c.ShouldBindWith(obj, binding.XML)
 }
 
 // ShouldBindQuery is a shortcut for c.ShouldBindWith(obj, binding.Query).
+// It works like ShouldBindJSON but binds query parameters from the URL.
 func (c *Context) ShouldBindQuery(obj any) error {
 	return c.ShouldBindWith(obj, binding.Query)
 }
 
 // ShouldBindYAML is a shortcut for c.ShouldBindWith(obj, binding.YAML).
+// It works like ShouldBindJSON but binds the request body as YAML data.
 func (c *Context) ShouldBindYAML(obj any) error {
 	return c.ShouldBindWith(obj, binding.YAML)
 }
 
 // ShouldBindTOML is a shortcut for c.ShouldBindWith(obj, binding.TOML).
+// It works like ShouldBindJSON but binds the request body as TOML data.
 func (c *Context) ShouldBindTOML(obj any) error {
 	return c.ShouldBindWith(obj, binding.TOML)
 }
 
 // ShouldBindPlain is a shortcut for c.ShouldBindWith(obj, binding.Plain).
+// It works like ShouldBindJSON but binds plain text data from the request body.
 func (c *Context) ShouldBindPlain(obj any) error {
 	return c.ShouldBindWith(obj, binding.Plain)
 }
 
 // ShouldBindHeader is a shortcut for c.ShouldBindWith(obj, binding.Header).
+// It works like ShouldBindJSON but binds values from HTTP headers.
 func (c *Context) ShouldBindHeader(obj any) error {
 	return c.ShouldBindWith(obj, binding.Header)
 }
 
 // ShouldBindUri binds the passed struct pointer using the specified binding engine.
+// It works like ShouldBindJSON but binds parameters from the URI.
 func (c *Context) ShouldBindUri(obj any) error {
 	m := make(map[string][]string, len(c.Params))
 	for _, v := range c.Params {
@@ -939,18 +989,32 @@ func (c *Context) ClientIP() string {
 		}
 	}
 
-	// It also checks if the remoteIP is a trusted proxy or not.
-	// In order to perform this validation, it will see if the IP is contained within at least one of the CIDR blocks
-	// defined by Engine.SetTrustedProxies()
-	remoteIP := net.ParseIP(c.RemoteIP())
-	if remoteIP == nil {
-		return ""
+	var (
+		trusted  bool
+		remoteIP net.IP
+	)
+	// If gin is listening a unix socket, always trust it.
+	localAddr, ok := c.Request.Context().Value(http.LocalAddrContextKey).(net.Addr)
+	if ok && strings.HasPrefix(localAddr.Network(), "unix") {
+		trusted = true
 	}
-	trusted := c.engine.isTrustedProxy(remoteIP)
+
+	// Fallback
+	if !trusted {
+		// It also checks if the remoteIP is a trusted proxy or not.
+		// In order to perform this validation, it will see if the IP is contained within at least one of the CIDR blocks
+		// defined by Engine.SetTrustedProxies()
+		remoteIP = net.ParseIP(c.RemoteIP())
+		if remoteIP == nil {
+			return ""
+		}
+		trusted = c.engine.isTrustedProxy(remoteIP)
+	}
 
 	if trusted && c.engine.ForwardedByClientIP && c.engine.RemoteIPHeaders != nil {
 		for _, headerName := range c.engine.RemoteIPHeaders {
-			ip, valid := c.engine.validateHeader(c.requestHeader(headerName))
+			headerValue := strings.Join(c.Request.Header.Values(headerName), ",")
+			ip, valid := c.engine.validateHeader(headerValue)
 			if valid {
 				return ip
 			}
@@ -992,9 +1056,10 @@ func (c *Context) requestHeader(key string) string {
 /************************************/
 
 // bodyAllowedForStatus is a copy of http.bodyAllowedForStatus non-exported function.
+// Uses http.StatusContinue constant for better code clarity.
 func bodyAllowedForStatus(status int) bool {
 	switch {
-	case status >= 100 && status <= 199:
+	case status >= http.StatusContinue && status < http.StatusOK:
 		return false
 	case status == http.StatusNoContent:
 		return false
@@ -1174,6 +1239,11 @@ func (c *Context) ProtoBuf(code int, obj any) {
 	c.Render(code, render.ProtoBuf{Data: obj})
 }
 
+// BSON serializes the given struct as BSON into the response body.
+func (c *Context) BSON(code int, obj any) {
+	c.Render(code, render.BSON{Data: obj})
+}
+
 // String writes the given string into the response body.
 func (c *Context) String(code int, format string, values ...any) {
 	c.Render(code, render.String{Format: format, Data: values})
@@ -1272,14 +1342,16 @@ func (c *Context) Stream(step func(w io.Writer) bool) bool {
 
 // Negotiate contains all negotiations data.
 type Negotiate struct {
-	Offered  []string
-	HTMLName string
-	HTMLData any
-	JSONData any
-	XMLData  any
-	YAMLData any
-	Data     any
-	TOMLData any
+	Offered      []string
+	HTMLName     string
+	HTMLData     any
+	JSONData     any
+	XMLData      any
+	YAMLData     any
+	Data         any
+	TOMLData     any
+	PROTOBUFData any
+	BSONData     any
 }
 
 // Negotiate calls different Render according to acceptable Accept format.
@@ -1304,6 +1376,14 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 	case binding.MIMETOML:
 		data := chooseData(config.TOMLData, config.Data)
 		c.TOML(code, data)
+
+	case binding.MIMEPROTOBUF:
+		data := chooseData(config.PROTOBUFData, config.Data)
+		c.ProtoBuf(code, data)
+
+	case binding.MIMEBSON:
+		data := chooseData(config.BSONData, config.Data)
+		c.BSON(code, data)
 
 	default:
 		c.AbortWithError(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server")) //nolint: errcheck

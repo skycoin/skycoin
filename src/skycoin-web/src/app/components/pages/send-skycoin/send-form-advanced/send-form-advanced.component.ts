@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
-import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { UntypedFormArray, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { MatDialogConfig } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
@@ -25,16 +25,17 @@ import { SendFormComponent } from '../send-form/send-form.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 
 @Component({
-  selector: 'app-send-form-advanced',
-  templateUrl: './send-form-advanced.component.html',
-  styleUrls: ['./send-form-advanced.component.scss'],
+    selector: 'app-send-form-advanced',
+    templateUrl: './send-form-advanced.component.html',
+    styleUrls: ['./send-form-advanced.component.scss'],
+    standalone: false
 })
 export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   @ViewChild('button') button: ButtonComponent;
   @Input() formData: any;
   @Output() onFormSubmitted = new EventEmitter<any>();
 
-  form: FormGroup;
+  form: UntypedFormGroup;
   wallet: Wallet;
   addresses = [];
   allUnspentOutputs: UnspentOutput[] = [];
@@ -61,7 +62,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   constructor(
     public walletService: WalletService,
     private spendingService: SpendingService,
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private dialog: CustomMatDialogService,
     private navbarService: NavBarService,
     private blockchainService: BlockchainService,
@@ -162,7 +163,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   changeActiveCurrency(value) {
     this.selectedCurrency = value;
     this.updateValues();
-    (this.form.get('destinations') as FormArray).updateValueAndValidity();
+    (this.form.get('destinations') as UntypedFormArray).updateValueAndValidity();
   }
 
   private updateValues() {
@@ -252,13 +253,13 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   }
 
   addDestination() {
-    const destinations = this.form.get('destinations') as FormArray;
+    const destinations = this.form.get('destinations') as UntypedFormArray;
     destinations.push(this.createDestinationFormGroup());
     this.updateValues();
   }
 
   removeDestination(index) {
-    const destinations = this.form.get('destinations') as FormArray;
+    const destinations = this.form.get('destinations') as UntypedFormArray;
     destinations.removeAt(index);
 
     this.destinationSubscriptions[index].unsubscribe();
@@ -266,8 +267,8 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.updateValues();
   }
 
-  setShareValue(event) {
-    this.autoShareValue = parseFloat(event.value).toFixed(2);
+  setShareValue(value: number) {
+    this.autoShareValue = value.toFixed(2);
   }
 
   selectChangeAddress(event) {
@@ -345,7 +346,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   }
 
   get destControls() {
-    return (this.form.get('destinations') as FormArray).controls;
+    return (this.form.get('destinations') as UntypedFormArray).controls;
   }
 
   private validateDestinations() {
@@ -502,7 +503,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.form.get('changeAddress').setValue('');
 
     while (this.destControls.length > 0) {
-      (this.form.get('destinations') as FormArray).removeAt(0);
+      (this.form.get('destinations') as UntypedFormArray).removeAt(0);
     }
 
     this.addDestination();

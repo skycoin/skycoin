@@ -8,9 +8,10 @@ import { parseResponseMessage } from './../../../../utils/errors';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 
 @Component({
-  selector: 'app-send-verify',
-  templateUrl: './send-verify.component.html',
-  styleUrls: ['./send-verify.component.scss'],
+    selector: 'app-send-verify',
+    templateUrl: './send-verify.component.html',
+    styleUrls: ['./send-verify.component.scss'],
+    standalone: false
 })
 export class SendVerifyComponent implements OnDestroy {
   @ViewChild('sendButton') sendButton: ButtonComponent;

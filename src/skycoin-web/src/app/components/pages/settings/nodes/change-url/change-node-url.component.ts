@@ -1,5 +1,5 @@
 import { Component, Inject, OnInit, ViewChild, OnDestroy } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
 import BigNumber from 'bignumber.js';
@@ -12,16 +12,17 @@ import { isEqualOrSuperiorVersion } from '../../../../../utils/semver';
 import { MsgBarService } from '../../../../../services/msg-bar.service';
 
 @Component({
-  selector: 'app-change-node-url',
-  templateUrl: './change-node-url.component.html',
-  styleUrls: ['./change-node-url.component.scss'],
+    selector: 'app-change-node-url',
+    templateUrl: './change-node-url.component.html',
+    styleUrls: ['./change-node-url.component.scss'],
+    standalone: false
 })
 export class ChangeNodeURLComponent implements OnInit, OnDestroy {
   @ViewChild('action') actionButton: ButtonComponent;
 
   disableDismiss = false;
   showingUrlForm = true;
-  form: FormGroup;
+  form: UntypedFormGroup;
 
   nodeVersion: string;
   lastBlock: number;
@@ -35,7 +36,7 @@ export class ChangeNodeURLComponent implements OnInit, OnDestroy {
   constructor(
     @Inject(MAT_DIALOG_DATA) private data: {coinId: number, url: string},
     public dialogRef: MatDialogRef<ChangeNodeURLComponent>,
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private coinService: CoinService,
     private http: HttpClient,
     private translate: TranslateService,

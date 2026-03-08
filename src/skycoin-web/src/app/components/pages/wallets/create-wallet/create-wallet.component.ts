@@ -18,9 +18,10 @@ import { config } from '../../../../app.config';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 
 @Component({
-  selector: 'app-create-wallet',
-  templateUrl: './create-wallet.component.html',
-  styleUrls: ['./create-wallet.component.scss'],
+    selector: 'app-create-wallet',
+    templateUrl: './create-wallet.component.html',
+    styleUrls: ['./create-wallet.component.scss'],
+    standalone: false
 })
 export class CreateWalletComponent implements OnDestroy {
   @ViewChild('formControl') formControl: CreateWalletFormComponent;

@@ -7,14 +7,15 @@ import { openChangeCoinModal } from '../../../utils';
 import { CustomMatDialogService } from '../../../services/custom-mat-dialog.service';
 
 @Component({
-  selector: 'app-select-coin',
-  templateUrl: 'select-coin.component.html',
-  styleUrls: ['select-coin.component.scss'],
-  providers: [{
-    provide: NG_VALUE_ACCESSOR,
-    useExisting: forwardRef(() => SelectCoinComponent),
-    multi: true
-  }]
+    selector: 'app-select-coin',
+    templateUrl: 'select-coin.component.html',
+    styleUrls: ['select-coin.component.scss'],
+    providers: [{
+            provide: NG_VALUE_ACCESSOR,
+            useExisting: forwardRef(() => SelectCoinComponent),
+            multi: true
+        }],
+    standalone: false
 })
 export class SelectCoinComponent implements ControlValueAccessor {
   @Output() onCoinChanged = new EventEmitter<BaseCoin>();

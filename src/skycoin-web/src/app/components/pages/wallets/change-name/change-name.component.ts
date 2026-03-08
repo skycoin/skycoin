@@ -1,5 +1,5 @@
 import { Component, Inject, OnInit, ViewChild, OnDestroy } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 import { Wallet } from '../../../../app.datatypes';
@@ -8,18 +8,19 @@ import { ButtonComponent } from '../../../layout/button/button.component';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 
 @Component({
-  selector: 'app-change-name',
-  templateUrl: './change-name.component.html',
-  styleUrls: ['./change-name.component.scss'],
+    selector: 'app-change-name',
+    templateUrl: './change-name.component.html',
+    styleUrls: ['./change-name.component.scss'],
+    standalone: false
 })
 export class ChangeNameComponent implements OnInit, OnDestroy {
   @ViewChild('button') button: ButtonComponent;
-  form: FormGroup;
+  form: UntypedFormGroup;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) private data: Wallet,
     public dialogRef: MatDialogRef<ChangeNameComponent>,
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private walletService: WalletService,
     private msgBarService: MsgBarService,
   ) {}

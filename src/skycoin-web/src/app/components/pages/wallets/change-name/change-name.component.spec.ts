@@ -1,7 +1,7 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material';
-import { FormBuilder } from '@angular/forms';
+import { UntypedFormBuilder } from '@angular/forms';
 
 import { ChangeNameComponent } from './change-name.component';
 import { WalletService } from '../../../../services/wallet/wallet.service';
@@ -17,7 +17,7 @@ describe('ChangeNameComponent', () => {
       declarations: [ ChangeNameComponent, MockTranslatePipe ],
       schemas: [ NO_ERRORS_SCHEMA ],
       providers: [
-        FormBuilder,
+        UntypedFormBuilder,
         { provide: WalletService, useClass: MockWalletService },
         { provide: MatDialogRef, useValue: {} },
         { provide: MAT_DIALOG_DATA, useValue: {} },

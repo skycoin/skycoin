@@ -2,7 +2,7 @@ import { TestBed, inject } from '@angular/core/testing';
 import { MockBackend } from '@angular/http/testing';
 import { XHRBackend } from '@angular/http';
 import { TranslateService } from '@ngx-translate/core';
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 import { ApiService } from './api.service';
 import { MockTranslateService, MockCoinService } from '../utils/test-mocks';
@@ -14,14 +14,15 @@ describe('ApiService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [ HttpClientModule ],
-      providers: [
+    imports: [],
+    providers: [
         ApiService,
         { provide: XHRBackend, useClass: MockBackend },
         { provide: TranslateService, useClass: MockTranslateService },
-        { provide: CoinService, useClass: MockCoinService }
-      ]
-    });
+        { provide: CoinService, useClass: MockCoinService },
+        provideHttpClient(withInterceptorsFromDi())
+    ]
+});
   });
 
   beforeEach(inject([ApiService, XHRBackend], (serv, mock) => {

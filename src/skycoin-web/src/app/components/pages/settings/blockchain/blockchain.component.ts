@@ -7,8 +7,9 @@ import { CoinService } from '../../../../services/coin.service';
 import { BaseCoin } from '../../../../coins/basecoin';
 
 @Component({
-  templateUrl: './blockchain.component.html',
-  styleUrls: ['./blockchain.component.scss']
+    templateUrl: './blockchain.component.html',
+    styleUrls: ['./blockchain.component.scss'],
+    standalone: false
 })
 export class BlockchainComponent implements OnInit, OnDestroy {
   block: any;

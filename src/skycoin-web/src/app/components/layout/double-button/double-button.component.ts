@@ -3,10 +3,11 @@ import { Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation } fro
 export enum DoubleButtonActive {RightButton, LeftButton}
 
 @Component({
-  selector: 'app-double-button',
-  templateUrl: './double-button.component.html',
-  styleUrls: ['./double-button.component.scss'],
-  encapsulation: ViewEncapsulation.Emulated,
+    selector: 'app-double-button',
+    templateUrl: './double-button.component.html',
+    styleUrls: ['./double-button.component.scss'],
+    encapsulation: ViewEncapsulation.Emulated,
+    standalone: false
 })
 export class DoubleButtonComponent {
   @Input() rightButtonText: string;

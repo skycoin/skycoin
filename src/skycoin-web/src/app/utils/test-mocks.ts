@@ -10,29 +10,39 @@ import { BalanceEvent, BalanceStates } from '../services/wallet/balance.service'
 
 // -- Components
 @Component({
-  template: `
+    template: `
     <span clipboard="test data"></span>
-    <input type="text" appNumberField>`
+    <input type="text" appNumberField>`,
+    standalone: false
 })
 export class TestComponent {
 }
 
 // --- Pipes
-@Pipe({name: 'translate'})
+@Pipe({
+    name: 'translate',
+    standalone: false
+})
 export class MockTranslatePipe implements PipeTransform {
   transform() {
     return 'translated value';
   }
 }
 
-@Pipe({name: 'tellerStatus'})
+@Pipe({
+    name: 'tellerStatus',
+    standalone: false
+})
 export class MockTellerStatusPipe implements PipeTransform {
   transform() {
     return 'transformed value';
   }
 }
 
-@Pipe({ name: 'dateTime' })
+@Pipe({
+    name: 'dateTime',
+    standalone: false
+})
 export class MockDateTimePipe implements PipeTransform {
   transform() {
     return 'transformed value';

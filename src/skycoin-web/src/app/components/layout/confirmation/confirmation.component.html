@@ -3,21 +3,25 @@
     {{ data.text | translate }}
   </div>
 
-  <div class="-check-container" *ngIf="data.checkboxText">
-    <mat-checkbox type="checkbox"
-                  class="-check-text -check"
-                  id="terms"
-                  [checked]="accepted"
-                  (change)="setAccept($event)">{{ data.checkboxText | translate }}
-    </mat-checkbox>
-  </div>
+  @if (data.checkboxText) {
+    <div class="-check-container">
+      <mat-checkbox type="checkbox"
+        class="-check-text -check"
+        id="terms"
+        [checked]="accepted"
+        (change)="setAccept($event)">{{ data.checkboxText | translate }}
+      </mat-checkbox>
+    </div>
+  }
 
   <div class="small-screen-margin"></div>
 
   <div class="-buttons">
-    <app-button (action)="closeModal(false)" *ngIf="data.cancelButtonText">
-      {{ data.cancelButtonText | translate }}
-    </app-button>
+    @if (data.cancelButtonText) {
+      <app-button (action)="closeModal(false)">
+        {{ data.cancelButtonText | translate }}
+      </app-button>
+    }
     <app-button (action)="closeModal(true)" class="primary" [disabled]="data.checkboxText && !accepted">
       {{ data.confirmButtonText | translate }}
     </app-button>

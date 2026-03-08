@@ -1,99 +1,141 @@
 <div class="sky-container sky-container-grey">
   <app-header [headline]="'title.transactions' | translate"></app-header>
   <div class="container">
-    <div [formGroup]="form" class="form-field" *ngIf="allTransactions">
-      <mat-select
-        multiple
-        [ngClass]="{ 'bottom-line': !transactions || transactions.length === 0 }"
-        formControlName="filter"
-        [placeholder]="'history.no-filter' | translate"
-        id="filter"
-      >
-        <mat-optgroup *ngFor="let wallet of wallets" label="
+    @if (allTransactions) {
+      <div [formGroup]="form" class="form-field">
+        <mat-select
+          multiple
+          [ngClass]="{ 'bottom-line': !transactions || transactions.length === 0 }"
+          formControlName="filter"
+          [placeholder]="'history.no-filter' | translate"
+          id="filter"
+          >
+          @for (wallet of wallets; track wallet) {
+<mat-optgroup label="
           {{ wallet.label }} - {{ wallet.coins | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
           ({{ wallet.hours | number:'1.0-0' }} {{ currentCoin.hoursName }})
         ">
-          <mat-option *ngIf="wallet.addresses.length > 1" [value]="wallet">
-            {{ 'history.all-addresses' | translate }}
-          </mat-option>
-          <mat-option *ngFor="let address of wallet.addresses" [value]="address" [disabled]="wallet.allAddressesSelected">
-            <span class="truncated-filter-label">{{ address.address }}</span> - {{ address.coins | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
-            ({{ address.hours | number:'1.0-0' }} {{ currentCoin.hoursName }})
-          </mat-option>
-        </mat-optgroup>
-        <mat-select-trigger>
-          <span *ngIf="form.get('filter').value.length === 1">{{ 'history.filter' | translate }}</span>
-          <span *ngIf="form.get('filter').value.length > 1">{{ 'history.filters' | translate }}</span>
-          <ng-container *ngFor="let filter of form.get('filter').value; let i = index">
-            <div class="filter" *ngIf="filter.label || !filter.showingWholeWallet">
-              <span *ngIf="filter.label" class="truncated-filter-label">{{ filter.label }}</span>
-              <span *ngIf="!filter.label" class="truncated-filter-label">{{ filter.address }}</span>
-              - {{ filter.coins | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
-              ({{ filter.hours | number:'1.0-0' }} {{ currentCoin.hoursName }})
-            </div>
-          </ng-container>
-        </mat-select-trigger>
-      </mat-select>
-      <img class="x-button" src="assets/img/close-grey.png" (click)="removeFilters()" *ngIf="form.get('filter').value.length > 0">
-    </div>
+              @if (wallet.addresses.length > 1) {
+                <mat-option [value]="wallet">
+                  {{ 'history.all-addresses' | translate }}
+                </mat-option>
+              }
+              @for (address of wallet.addresses; track address) {
+                <mat-option [value]="address" [disabled]="wallet.allAddressesSelected">
+                  <span class="truncated-filter-label">{{ address.address }}</span> - {{ address.coins | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
+                  ({{ address.hours | number:'1.0-0' }} {{ currentCoin.hoursName }})
+                </mat-option>
+              }
+            </mat-optgroup>
+          }
+          <mat-select-trigger>
+            @if (form.get('filter').value.length === 1) {
+              <span>{{ 'history.filter' | translate }}</span>
+            }
+            @if (form.get('filter').value.length > 1) {
+              <span>{{ 'history.filters' | translate }}</span>
+            }
+            @for (filter of form.get('filter').value; track filter; let i = $index) {
+              @if (filter.label || !filter.showingWholeWallet) {
+                <div class="filter">
+                  @if (filter.label) {
+                    <span class="truncated-filter-label">{{ filter.label }}</span>
+                  }
+                  @if (!filter.label) {
+                    <span class="truncated-filter-label">{{ filter.address }}</span>
+                  }
+                  - {{ filter.coins | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
+                  ({{ filter.hours | number:'1.0-0' }} {{ currentCoin.hoursName }})
+                </div>
+              }
+            }
+          </mat-select-trigger>
+        </mat-select>
+        @if (form.get('filter').value.length > 0) {
+          <img class="x-button" src="assets/img/close-grey.png" (click)="removeFilters()">
+        }
+      </div>
+    }
 
-    <app-loading-content
-      [isLoading]="!allTransactions"
-      [noDataText]="!allTransactions || allTransactions.length === 0 ? 'history.no-txs' : 'history.no-txs-filter'"
-      [showError]="showError"
-      *ngIf="!transactions || transactions.length === 0"></app-loading-content>
-    <div *ngIf="!!transactions && transactions.length > 0" class="-paper">
-      <ng-container *ngFor="let transaction of transactions">
-        <div class="-transaction" (click)="showTransaction(transaction)">
-          <div class="-icon" [ngClass]="{ '-incoming': transaction.balance.isGreaterThan(0) && !transaction.coinsMovedInternally, '-pending': !transaction.confirmed }">
-            <img src="assets/img/send-blue.png">
-          </div>
-          <div class="-address">
-            <ng-container *ngIf="!transaction.coinsMovedInternally">
-              <h4 *ngIf="transaction.balance.isLessThan(0) && transaction.confirmed">
-                {{ 'history.sent' | translate }} {{ currentCoin.coinSymbol }}
-                <span class="-timestamp">{{ transaction.timestamp | dateTime }}</span>
-              </h4>
-              <h4 *ngIf="transaction.balance.isLessThan(0) && !transaction.confirmed">
-                {{ 'history.sending' | translate }} {{ currentCoin.coinSymbol }}
-                <span class="-pending">{{ 'history.pending' | translate }}</span>
-              </h4>
-              <h4 *ngIf="transaction.balance.isGreaterThan(0) && transaction.confirmed">
-                {{ 'history.received' | translate }}  {{ currentCoin.coinSymbol }}
-                <span class="-timestamp">{{ transaction.timestamp | dateTime }}</span>
-              </h4>
-              <h4 *ngIf="transaction.balance.isGreaterThan(0) && !transaction.confirmed">
-                {{ 'history.receiving' | translate }} {{ currentCoin.coinSymbol }}
-                <span class="-pending">{{ 'history.pending' | translate }}</span>
-              </h4>
-            </ng-container>
-            <ng-container *ngIf="transaction.coinsMovedInternally">
-              <h4 *ngIf="transaction.confirmed">
-                {{ 'history.moved' | translate }} {{ currentCoin.coinSymbol }}
-                <span class="-timestamp">{{ transaction.timestamp | dateTime }}</span>
-              </h4>
-              <h4 *ngIf="!transaction.confirmed">
-                {{ 'history.moving' | translate }} {{ currentCoin.coinSymbol }}
-                <span class="-pending">{{ 'history.pending' | translate }}</span>
-              </h4>
-            </ng-container>
-            <div class="-detail" *ngFor="let address of transaction.addresses">
-              <div>
-                <img class="qr-code-button -not-on-small-and-below" src="assets/img/qr-code-black.png" (click)="showQr($event, address)">
-                <p class="-one-line-ellipsis">{{ address }}</p>
-              </div>
+    @if (!transactions || transactions.length === 0) {
+      <app-loading-content
+        [isLoading]="!allTransactions"
+        [noDataText]="!allTransactions || allTransactions.length === 0 ? 'history.no-txs' : 'history.no-txs-filter'"
+        [showError]="showError"
+      ></app-loading-content>
+    }
+    @if (!!transactions && transactions.length > 0) {
+      <div class="-paper">
+        @for (transaction of transactions; track transaction) {
+          <div class="-transaction" (click)="showTransaction(transaction)">
+            <div class="-icon" [ngClass]="{ '-incoming': transaction.balance.isGreaterThan(0) && !transaction.coinsMovedInternally, '-pending': !transaction.confirmed }">
+              <img src="assets/img/send-blue.png">
+            </div>
+            <div class="-address">
+              @if (!transaction.coinsMovedInternally) {
+                @if (transaction.balance.isLessThan(0) && transaction.confirmed) {
+                  <h4>
+                    {{ 'history.sent' | translate }} {{ currentCoin.coinSymbol }}
+                    <span class="-timestamp">{{ transaction.timestamp | dateTime }}</span>
+                  </h4>
+                }
+                @if (transaction.balance.isLessThan(0) && !transaction.confirmed) {
+                  <h4>
+                    {{ 'history.sending' | translate }} {{ currentCoin.coinSymbol }}
+                    <span class="-pending">{{ 'history.pending' | translate }}</span>
+                  </h4>
+                }
+                @if (transaction.balance.isGreaterThan(0) && transaction.confirmed) {
+                  <h4>
+                    {{ 'history.received' | translate }}  {{ currentCoin.coinSymbol }}
+                    <span class="-timestamp">{{ transaction.timestamp | dateTime }}</span>
+                  </h4>
+                }
+                @if (transaction.balance.isGreaterThan(0) && !transaction.confirmed) {
+                  <h4>
+                    {{ 'history.receiving' | translate }} {{ currentCoin.coinSymbol }}
+                    <span class="-pending">{{ 'history.pending' | translate }}</span>
+                  </h4>
+                }
+              }
+              @if (transaction.coinsMovedInternally) {
+                @if (transaction.confirmed) {
+                  <h4>
+                    {{ 'history.moved' | translate }} {{ currentCoin.coinSymbol }}
+                    <span class="-timestamp">{{ transaction.timestamp | dateTime }}</span>
+                  </h4>
+                }
+                @if (!transaction.confirmed) {
+                  <h4>
+                    {{ 'history.moving' | translate }} {{ currentCoin.coinSymbol }}
+                    <span class="-pending">{{ 'history.pending' | translate }}</span>
+                  </h4>
+                }
+              }
+              @for (address of transaction.addresses; track address) {
+                <div class="-detail">
+                  <div>
+                    <img class="qr-code-button -not-on-small-and-below" src="assets/img/qr-code-black.png" (click)="showQr($event, address)">
+                    <p class="-one-line-ellipsis">{{ address }}</p>
+                  </div>
+                </div>
+              }
+            </div>
+            <div class="flex-fill"></div>
+            <div class="-balance">
+              <h4 class="-one-line-ellipsis">{{ transaction.balance.decimalPlaces(6).toString() | number:'1.0-6' }} {{ currentCoin.coinSymbol }}</h4>
+              @if (price) {
+                <p class="-one-line-ellipsis" [matTooltip]="'history.price-tooltip' | translate">
+                  {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}<span>*</span>
+                </p>
+              }
             </div>
           </div>
-          <div class="flex-fill"></div>
-          <div class="-balance">
-            <h4 class="-one-line-ellipsis">{{ transaction.balance.decimalPlaces(6).toString() | number:'1.0-6' }} {{ currentCoin.coinSymbol }}</h4>
-            <p class="-one-line-ellipsis" *ngIf="price" [matTooltip]="'history.price-tooltip' | translate">
-             {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}<span>*</span>
-            </p>
-          </div>
-        </div>
-      </ng-container>
-    </div>
-    <div *ngIf="!!transactions && transactions.length > 0" class="footer -on-small-and-below-only">* {{ 'history.price-tooltip' | translate }}</div>
+        }
+      </div>
+    }
+    @if (!!transactions && transactions.length > 0) {
+      <div class="footer -on-small-and-below-only">* {{ 'history.price-tooltip' | translate }}</div>
+    }
   </div>
 </div>

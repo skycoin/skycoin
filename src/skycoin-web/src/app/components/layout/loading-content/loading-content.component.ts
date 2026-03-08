@@ -1,9 +1,10 @@
 import { Component, Input } from '@angular/core';
 
 @Component({
-  selector: 'app-loading-content',
-  templateUrl: './loading-content.component.html',
-  styleUrls: ['./loading-content.component.scss']
+    selector: 'app-loading-content',
+    templateUrl: './loading-content.component.html',
+    styleUrls: ['./loading-content.component.scss'],
+    standalone: false
 })
 export class LoadingContentComponent {
   @Input() isLoading = true;

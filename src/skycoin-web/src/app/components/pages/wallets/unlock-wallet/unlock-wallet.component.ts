@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Inject, OnInit, Output, ViewChild, OnDestroy } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormGroup, Validators, FormControl } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
 import { Observable } from 'rxjs';
@@ -14,15 +14,16 @@ export class ConfirmSeedParams {
 }
 
 @Component({
-  selector: 'app-unlock-wallet',
-  templateUrl: './unlock-wallet.component.html',
-  styleUrls: ['./unlock-wallet.component.scss'],
+    selector: 'app-unlock-wallet',
+    templateUrl: './unlock-wallet.component.html',
+    styleUrls: ['./unlock-wallet.component.scss'],
+    standalone: false
 })
 export class UnlockWalletComponent implements OnInit, OnDestroy {
   @Output() onWalletUnlocked = new EventEmitter<void>();
   @Output() onDeleteClicked = new EventEmitter<void>();
   @ViewChild('unlock') unlockButton;
-  form: FormGroup;
+  form: UntypedFormGroup;
   disableDismiss = false;
   loadingProgress = 0;
   showConfirmSeedWarning;
@@ -36,7 +37,7 @@ export class UnlockWalletComponent implements OnInit, OnDestroy {
   constructor(
     @Inject(MAT_DIALOG_DATA) private data,
     public dialogRef: MatDialogRef<UnlockWalletComponent>,
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private walletService: WalletService,
     private msgBarService: MsgBarService,
   ) {

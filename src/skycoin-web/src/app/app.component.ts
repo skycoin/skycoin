@@ -1,6 +1,7 @@
 import { Component, OnInit, Renderer2, ViewChild } from '@angular/core';
 import { LanguageService } from './services/language.service';
-import { Router, RouterEvent, NavigationEnd } from '@angular/router';
+import { Router, NavigationEnd, Event } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { TranslateService } from '@ngx-translate/core';
 
 import { config } from './app.config';
@@ -12,9 +13,10 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
 import { MsgBarService } from './services/msg-bar.service';
 
 @Component({
-  selector: 'app-root',
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss'],
+    selector: 'app-root',
+    templateUrl: './app.component.html',
+    styleUrls: ['./app.component.scss'],
+    standalone: false
 })
 export class AppComponent implements OnInit {
   @ViewChild('msgBar') msgBar: MsgBarComponent;
@@ -35,10 +37,10 @@ export class AppComponent implements OnInit {
     private bip38WordList: Bip39WordListService,
     private msgBarService: MsgBarService,
   ) {
-    router.events.subscribe((event: RouterEvent) => {
-      if (event instanceof NavigationEnd) {
-        window.scrollTo(0, 0);
-      }
+    router.events.pipe(
+      filter((event: Event): event is NavigationEnd => event instanceof NavigationEnd)
+    ).subscribe(() => {
+      window.scrollTo(0, 0);
     });
 
     cipherProvider.initialize().subscribe(response => {

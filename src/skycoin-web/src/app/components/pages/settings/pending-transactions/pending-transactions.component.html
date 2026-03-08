@@ -1,49 +1,57 @@
 <div class="sky-container sky-container-grey">
   <app-header [headline]="'title.pending-txs' | translate"></app-header>
   <div class="container">
-    <app-loading-content
-      [isLoading]="isLoading && !showError"
-      [showError]="showError"
-      [noDataText]="'pending-txs.none'"
-      *ngIf="isLoading || transactions.length === 0"></app-loading-content>
-    <div *ngIf="!!transactions && transactions.length > 0" class="-table">
-      <div class="-headers">
-        <div class="flex-fill -not-on-small-and-below">{{ 'pending-txs.txid' | translate }}</div>
-        <div class="-width-150 -not-on-small-and-below">{{ currentCoin.coinSymbol }}</div>
-        <div class="-width-150 -not-on-small-and-below">{{ currentCoin.hoursName }}</div>
-        <div class="-width-150 -not-on-small-and-below">{{ 'pending-txs.timestamp' | translate }}</div>
-        <div class="flex-fill -on-small-and-below-only">{{ 'pending-txs.transactions' | translate }}</div>
+    @if (isLoading || transactions.length === 0) {
+      <app-loading-content
+        [isLoading]="isLoading && !showError"
+        [showError]="showError"
+        [noDataText]="'pending-txs.none'"
+      ></app-loading-content>
+    }
+    @if (!!transactions && transactions.length > 0) {
+      <div class="-table">
+        <div class="-headers">
+          <div class="flex-fill -not-on-small-and-below">{{ 'pending-txs.txid' | translate }}</div>
+          <div class="-width-150 -not-on-small-and-below">{{ currentCoin.coinSymbol }}</div>
+          <div class="-width-150 -not-on-small-and-below">{{ currentCoin.hoursName }}</div>
+          <div class="-width-150 -not-on-small-and-below">{{ 'pending-txs.timestamp' | translate }}</div>
+          <div class="flex-fill -on-small-and-below-only">{{ 'pending-txs.transactions' | translate }}</div>
+        </div>
+        <div class="-paper">
+          @if (transactions.length) {
+            @for (transaction of transactions; track transaction) {
+              <div class="-row -not-on-small-and-below">
+                <div class="flex-fill -txid">{{ transaction.txid }}</div>
+                <div class="-width-150">{{ (transaction.amount ? transaction.amount.decimalPlaces(6).toString() : 0) | number:'1.0-6' }}</div>
+                <div class="-width-150">{{ (transaction.hours ? transaction.hours.decimalPlaces(0).toString() : 0) | number:'1.0-0' }}</div>
+                <div class="-width-150 -timestamp">{{ transaction.timestamp | dateTime }}</div>
+              </div>
+            }
+            @for (transaction of transactions; track transaction) {
+              <div class="-row -on-small-and-below-only">
+                <div class="small-screen-list-container">
+                  <div class="list-row">
+                    <div class="element-label">{{ 'pending-txs.id' | translate }}:</div>
+                    <div class="-break-all">{{ transaction.txid }}</div>
+                  </div>
+                  <div class="list-row">
+                    <div class="element-label">{{ currentCoin.coinSymbol }}:</div>
+                    <div class="-one-line-ellipsis">{{ (transaction.amount ? transaction.amount.decimalPlaces(6).toString() : 0) | number:'1.0-6' }}</div>
+                  </div>
+                  <div class="list-row">
+                    <div class="element-label">{{ currentCoin.hoursName }}:</div>
+                    <div class="-one-line-ellipsis">{{ (transaction.hours ? transaction.hours.decimalPlaces(0).toString() : 0) | number:'1.0-0' }}</div>
+                  </div>
+                  <div class="list-row">
+                    <div class="element-label">{{ 'pending-txs.timestamp' | translate }}:</div>
+                    <div class="-one-line-ellipsis">{{ transaction.timestamp | dateTime }}</div>
+                  </div>
+                </div>
+              </div>
+            }
+          }
+        </div>
       </div>
-      <div class="-paper">
-        <ng-container *ngIf="transactions.length">
-          <div class="-row -not-on-small-and-below" *ngFor="let transaction of transactions">
-            <div class="flex-fill -txid">{{ transaction.txid }}</div>
-            <div class="-width-150">{{ (transaction.amount ? transaction.amount.decimalPlaces(6).toString() : 0) | number:'1.0-6' }}</div>
-            <div class="-width-150">{{ (transaction.hours ? transaction.hours.decimalPlaces(0).toString() : 0) | number:'1.0-0' }}</div>
-            <div class="-width-150 -timestamp">{{ transaction.timestamp | dateTime }}</div>
-          </div>
-          <div class="-row -on-small-and-below-only" *ngFor="let transaction of transactions">
-            <div class="small-screen-list-container">
-              <div class="list-row">
-                <div class="element-label">{{ 'pending-txs.id' | translate }}:</div>
-                <div class="-break-all">{{ transaction.txid }}</div>
-              </div>
-              <div class="list-row">
-                <div class="element-label">{{ currentCoin.coinSymbol }}:</div>
-                <div class="-one-line-ellipsis">{{ (transaction.amount ? transaction.amount.decimalPlaces(6).toString() : 0) | number:'1.0-6' }}</div>
-              </div>
-              <div class="list-row">
-                <div class="element-label">{{ currentCoin.hoursName }}:</div>
-                <div class="-one-line-ellipsis">{{ (transaction.hours ? transaction.hours.decimalPlaces(0).toString() : 0) | number:'1.0-0' }}</div>
-              </div>
-              <div class="list-row">
-                <div class="element-label">{{ 'pending-txs.timestamp' | translate }}:</div>
-                <div class="-one-line-ellipsis">{{ transaction.timestamp | dateTime }}</div>
-              </div>
-            </div>
-          </div>
-        </ng-container>
-      </div>
-    </div>
+    }
   </div>
 </div>

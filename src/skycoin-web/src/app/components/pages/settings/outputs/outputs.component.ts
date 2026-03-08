@@ -10,9 +10,10 @@ import { openQrModal } from '../../../../utils';
 import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.service';
 
 @Component({
-  selector: 'app-outputs',
-  templateUrl: './outputs.component.html',
-  styleUrls: ['./outputs.component.scss']
+    selector: 'app-outputs',
+    templateUrl: './outputs.component.html',
+    styleUrls: ['./outputs.component.scss'],
+    standalone: false
 })
 export class OutputsComponent implements OnInit, OnDestroy {
   wallets: Wallet[];

@@ -1,67 +1,177 @@
-@import '~@angular/material/theming';
+@use '@angular/material' as mat;
 // Plus imports for other components in your app.
 
 // Include the common styles for Angular Material. We include this here so that you only
 // have to load a single css file for Angular Material in your app.
 // Be sure that you only ever include this mixin once!
-@include mat-core();
+@include mat.elevation-classes();
+@include mat.app-background();
 
 // Define the palettes for your theme using the Material Design palettes available in palette.scss
 // (imported above). For each palette, you can optionally specify a default, lighter, and darker
 // hue.
 
 $mat-skycoin-primary: (
-  100: #00C3FF,
+  50: #E0F7FF,
+  100: #B3EBFF,
+  200: #80DEFF,
+  300: #4DD1FF,
+  400: #26C7FF,
   500: #0072FF,
+  600: #006AE6,
+  700: #005FCC,
+  800: #0054B3,
+  900: #004080,
+  A100: #00C3FF,
+  A200: #0099FF,
+  A400: #0072FF,
+  A700: #0066E6,
   contrast: (
-    100: white,
+    50: black,
+    100: black,
+    200: black,
+    300: black,
+    400: black,
     500: white,
+    600: white,
+    700: white,
+    800: white,
+    900: white,
+    A100: black,
+    A200: black,
+    A400: white,
+    A700: white,
   )
 );
 
 $mat-skycoin-accent: (
+  50: #FFF8E0,
+  100: #FFEDB3,
+  200: #FFE180,
+  300: #FFD54D,
+  400: #FFCC26,
   500: #FFC125,
+  600: #E6AD21,
+  700: #CC991D,
+  800: #B38519,
+  900: #806012,
+  A100: #FFE680,
+  A200: #FFD94D,
+  A400: #FFC125,
+  A700: #E6AD21,
   contrast: (
-    500: white
+    50: black,
+    100: black,
+    200: black,
+    300: black,
+    400: black,
+    500: black,
+    600: black,
+    700: black,
+    800: white,
+    900: white,
+    A100: black,
+    A200: black,
+    A400: black,
+    A700: black,
   )
 );
 
-$candy-app-primary: mat-palette($mat-skycoin-primary, 500, 100, 500);
-$candy-app-accent:  mat-palette($mat-skycoin-accent, 500, 500, 500);
+$candy-app-primary: mat.m2-define-palette($mat-skycoin-primary, 500, 100, 700);
+$candy-app-accent:  mat.m2-define-palette($mat-skycoin-accent, 500, 100, 700);
 
 // The warn palette is optional (defaults to red).
-$candy-app-warn:    mat-palette($mat-red);
+$candy-app-warn:    mat.m2-define-palette(mat.$m2-red-palette);
 
 // Create the theme object (a Sass map containing all of the palettes).
-$candy-app-theme: mat-light-theme($candy-app-primary, $candy-app-accent, $candy-app-warn);
+$candy-app-theme: mat.m2-define-light-theme((
+  color: (
+    primary: $candy-app-primary,
+    accent: $candy-app-accent,
+    warn: $candy-app-warn,
+  ),
+));
 
 // Include theme styles for core and each component used in your app.
 // Alternatively, you can import and @include the theme mixins for each component
 // that you are using.
-@include angular-material-theme($candy-app-theme);
+@include mat.all-component-themes($candy-app-theme);
 
 $mat-header-sel-primary: (
-  100: white,
-  500: white,
+  50: #FFFFFF,
+  100: #FFFFFF,
+  200: #FFFFFF,
+  300: #FFFFFF,
+  400: #FFFFFF,
+  500: #FFFFFF,
+  600: #F5F5F5,
+  700: #EEEEEE,
+  800: #E0E0E0,
+  900: #BDBDBD,
+  A100: #FFFFFF,
+  A200: #FFFFFF,
+  A400: #FFFFFF,
+  A700: #F5F5F5,
   contrast: (
-    100: white,
-    500: white,
+    50: black,
+    100: black,
+    200: black,
+    300: black,
+    400: black,
+    500: black,
+    600: black,
+    700: black,
+    800: black,
+    900: black,
+    A100: black,
+    A200: black,
+    A400: black,
+    A700: black,
   )
 );
 
 $mat-header-sel-accent: (
-  100: #cccccc,
-  500: #cccccc,
+  50: #F5F5F5,
+  100: #EEEEEE,
+  200: #E0E0E0,
+  300: #D5D5D5,
+  400: #CCCCCC,
+  500: #CCCCCC,
+  600: #BDBDBD,
+  700: #9E9E9E,
+  800: #757575,
+  900: #616161,
+  A100: #EEEEEE,
+  A200: #E0E0E0,
+  A400: #CCCCCC,
+  A700: #9E9E9E,
   contrast: (
-    100: #cccccc,
-    500: #cccccc,
+    50: black,
+    100: black,
+    200: black,
+    300: black,
+    400: black,
+    500: black,
+    600: black,
+    700: black,
+    800: white,
+    900: white,
+    A100: black,
+    A200: black,
+    A400: black,
+    A700: black,
   )
 );
 
-$header-sel-primary: mat-palette($mat-header-sel-primary);
-$header-sel-accent: mat-palette($mat-header-sel-accent);
-$header-sel-theme:   mat-light-theme($header-sel-primary, $header-sel-accent);
+$header-sel-primary: mat.m2-define-palette($mat-header-sel-primary);
+$header-sel-accent: mat.m2-define-palette($mat-header-sel-accent);
+$header-sel-theme: mat.m2-define-light-theme((
+  color: (
+    primary: $header-sel-primary,
+    accent: $header-sel-accent,
+  ),
+));
 
 .header-sel-theme {
-  @include angular-material-theme($header-sel-theme);
+  @include mat.all-component-colors($header-sel-theme);
 }

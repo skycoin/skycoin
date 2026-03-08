@@ -13,9 +13,10 @@ import { SpendingService } from '../../../services/wallet/spending.service';
 import { MsgBarService } from '../../../services/msg-bar.service';
 
 @Component({
-  selector: 'app-select-coin-overlay',
-  templateUrl: './select-coin-overlay.component.html',
-  styleUrls: ['./select-coin-overlay.component.scss'],
+    selector: 'app-select-coin-overlay',
+    templateUrl: './select-coin-overlay.component.html',
+    styleUrls: ['./select-coin-overlay.component.scss'],
+    standalone: false
 })
 export class SelectCoinOverlayComponent implements OnInit, OnDestroy {
 

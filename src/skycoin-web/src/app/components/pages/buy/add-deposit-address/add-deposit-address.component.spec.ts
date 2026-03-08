@@ -1,5 +1,5 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-import { FormBuilder } from '@angular/forms';
+import { UntypedFormBuilder } from '@angular/forms';
 import { MatSelectModule, MatDialogRef } from '@angular/material';
 import { NO_ERRORS_SCHEMA, Pipe, PipeTransform } from '@angular/core';
 import { Observable } from 'rxjs';
@@ -18,7 +18,7 @@ describe('AddDepositAddressComponent', () => {
       declarations: [ AddDepositAddressComponent, MockTranslatePipe ],
       imports: [ MatSelectModule ],
       providers: [
-        FormBuilder,
+        UntypedFormBuilder,
         { provide: WalletService, useClass: MockWalletService },
         { provide: PurchaseService, useClass: MockPurchaseService },
         { provide: MatDialogRef, useValue: {} }

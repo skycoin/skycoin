@@ -3,9 +3,10 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { ConfirmationData } from '../../../app.datatypes';
 
 @Component({
-  selector: 'app-confirmation',
-  templateUrl: './confirmation.component.html',
-  styleUrls: ['./confirmation.component.scss']
+    selector: 'app-confirmation',
+    templateUrl: './confirmation.component.html',
+    styleUrls: ['./confirmation.component.scss'],
+    standalone: false
 })
 export class ConfirmationComponent {
   accepted = false;

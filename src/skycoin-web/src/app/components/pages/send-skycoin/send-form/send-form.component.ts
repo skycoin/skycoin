@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import 'rxjs/add/operator/delay';
 import 'rxjs/add/operator/filter';
@@ -22,9 +22,10 @@ import { PriceService } from '../../../../services/price.service';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 
 @Component({
-  selector: 'app-send-form',
-  templateUrl: './send-form.component.html',
-  styleUrls: ['./send-form.component.scss'],
+    selector: 'app-send-form',
+    templateUrl: './send-form.component.html',
+    styleUrls: ['./send-form.component.scss'],
+    standalone: false
 })
 export class SendFormComponent implements OnInit, OnDestroy {
 
@@ -35,7 +36,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
   @Output() onFormSubmitted = new EventEmitter<any>();
 
   showSlowMobileInfo = false;
-  form: FormGroup;
+  form: UntypedFormGroup;
   wallets: Wallet[];
   currentCoin: BaseCoin;
   doubleButtonActive = DoubleButtonActive;
@@ -50,7 +51,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
   constructor(
     public blockchainService: BlockchainService,
-    private formBuilder: FormBuilder,
+    private formBuilder: UntypedFormBuilder,
     private walletService: WalletService,
     private spendingService: SpendingService,
     private dialog: CustomMatDialogService,
@@ -136,7 +137,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
       return;
     }
-    if (!this.form || this.validateAmount(this.form.get('amount') as FormControl) !== null || this.form.get('amount').value * 1 === 0) {
+    if (!this.form || this.validateAmount(this.form.get('amount') as UntypedFormControl) !== null || this.form.get('amount').value * 1 === 0) {
       this.value = -1;
 
       return;
@@ -263,7 +264,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
     }));
   }
 
-  private validateAmount(amountControl: FormControl) {
+  private validateAmount(amountControl: UntypedFormControl) {
     if (!amountControl.value || isNaN(amountControl.value) || parseFloat(amountControl.value) <= 0) {
       return { Invalid: true };
     }
@@ -283,7 +284,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
     return null;
   }
 
-  private validateAmountWithValue(amountControl: FormControl) {
+  private validateAmountWithValue(amountControl: UntypedFormControl) {
     const firstValidation = this.validateAmount(amountControl);
     if (firstValidation) {
       return firstValidation;

@@ -8,9 +8,10 @@ import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.s
 import { environment } from '../../../../../environments/environment';
 
 @Component({
-  selector: 'app-nodes',
-  templateUrl: './nodes.component.html',
-  styleUrls: ['./nodes.component.scss'],
+    selector: 'app-nodes',
+    templateUrl: './nodes.component.html',
+    styleUrls: ['./nodes.component.scss'],
+    standalone: false
 })
 export class NodesComponent implements OnInit {
   coins: BaseCoin[];

@@ -12,8 +12,14 @@
     [ngClass]="{ enabled: !disabled }"
     #tooltip="matTooltip">
     <ng-content></ng-content>
-    <mat-icon *ngIf="state === 1">done</mat-icon>
-    <mat-icon *ngIf="state === 2">error</mat-icon>
-    <mat-spinner *ngIf="state === 0" [color]="spinnerStyle" class="in-button"></mat-spinner>
+    @if (state === 1) {
+      <mat-icon>done</mat-icon>
+    }
+    @if (state === 2) {
+      <mat-icon>error</mat-icon>
+    }
+    @if (state === 0) {
+      <mat-spinner [color]="spinnerStyle" class="in-button"></mat-spinner>
+    }
   </button>
 </div>

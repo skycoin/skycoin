@@ -6,9 +6,10 @@ import { DoubleButtonActive } from '../../layout/double-button/double-button.com
 import { NavBarService } from '../../../services/nav-bar.service';
 
 @Component({
-  selector: 'app-send-skycoin',
-  templateUrl: './send-skycoin.component.html',
-  styleUrls: ['./send-skycoin.component.scss'],
+    selector: 'app-send-skycoin',
+    templateUrl: './send-skycoin.component.html',
+    styleUrls: ['./send-skycoin.component.scss'],
+    standalone: false
 })
 export class SendSkycoinComponent implements OnInit, OnDestroy {
   showForm = true;

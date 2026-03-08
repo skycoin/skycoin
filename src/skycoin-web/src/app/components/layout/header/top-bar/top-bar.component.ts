@@ -12,9 +12,10 @@ import { LanguageService, LanguageData } from '../../../../services/language.ser
 import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.service';
 
 @Component({
-  selector: 'app-top-bar',
-  templateUrl: './top-bar.component.html',
-  styleUrls: ['./top-bar.component.scss'],
+    selector: 'app-top-bar',
+    templateUrl: './top-bar.component.html',
+    styleUrls: ['./top-bar.component.scss'],
+    standalone: false
 })
 export class TopBarComponent implements OnInit, OnDestroy {
   @Input() headline: string;

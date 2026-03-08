@@ -2,9 +2,10 @@ import { Component, EventEmitter, Input, Output, ViewChild } from '@angular/core
 import { MatTooltip } from '@angular/material/tooltip';
 
 @Component({
-  selector: 'app-button',
-  templateUrl: 'button.component.html',
-  styleUrls: ['button.component.scss'],
+    selector: 'app-button',
+    templateUrl: 'button.component.html',
+    styleUrls: ['button.component.scss'],
+    standalone: false
 })
 
 export class ButtonComponent {

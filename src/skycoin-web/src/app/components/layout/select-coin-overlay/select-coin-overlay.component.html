@@ -13,18 +13,24 @@
           </div>
         </div>
 
-        <div class="options-container header-sel-theme" *ngFor="let section of sections">
-          <div class="title">{{ section.name | translate }}</div>
-          <div class="buttons-container">
-            <button mat-button color="accent" class="button" *ngFor="let coin of section.coins" (click)="close(coin)">
-              <img [src]="'assets/img/coins/' + coin.bigIconName">
-              <div class="label">{{ coin.coinName }}</div>
-            </button>
+        @for (section of sections; track section) {
+          <div class="options-container header-sel-theme">
+            <div class="title">{{ section.name | translate }}</div>
+            <div class="buttons-container">
+              @for (coin of section.coins; track coin) {
+                <button mat-button color="accent" class="button" (click)="close(coin)">
+                  <img [src]="'assets/img/coins/' + coin.bigIconName">
+                  <div class="label">{{ coin.coinName }}</div>
+                </button>
+              }
+            </div>
           </div>
-        </div>
+        }
 
-        <app-loading-content [noDataText]="'change-coin.no-results' | translate" [isLoading]="false" *ngIf="!sections || sections.length === 0"></app-loading-content>
-        
+        @if (!sections || sections.length === 0) {
+          <app-loading-content [noDataText]="'change-coin.no-results' | translate" [isLoading]="false"></app-loading-content>
+        }
+
       </div>
     </div>
   </div>

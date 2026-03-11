@@ -470,7 +470,9 @@
     "txid-table-label": "Transaction ID",
     "none": "No pending transactions",
     "my-transactions-button": "Mine",
-    "all-transactions-button": "All"
+    "all-transactions-button": "All",
+    "delete-button": "Delete pending transaction",
+    "delete-confirm": "Are you sure you want to remove this pending transaction from the local pool? This cannot be undone."
   },
 
   "outputs": {

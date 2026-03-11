@@ -629,7 +629,8 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 
 	// Transaction related endpoints
 	webHandlerV1("/pendingTxs", pendingTxnsHandler(gateway), map[string][]string{
-		http.MethodGet: {EndpointsRead},
+		http.MethodGet:    {EndpointsRead},
+		http.MethodDelete: {EndpointsTransaction},
 	})
 	webHandlerV1("/transaction", transactionHandler(gateway), map[string][]string{
 		http.MethodGet: {EndpointsRead},

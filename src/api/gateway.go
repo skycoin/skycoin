@@ -79,6 +79,7 @@ type Visorer interface {
 	GetUxOutByID(id cipher.SHA256) (*historydb.UxOut, uint64, error)
 	GetSpentOutputsForAddresses(addr []cipher.Address) ([][]historydb.UxOut, uint64, error)
 	GetRichlist(includeDistribution bool) (visor.Richlist, error)
+	RemoveUnconfirmedTransaction(txid cipher.SHA256) error
 	GetAllUnconfirmedTransactions() ([]visor.UnconfirmedTransaction, error)
 	GetAllUnconfirmedTransactionsVerbose() ([]visor.UnconfirmedTransaction, [][]visor.TransactionInput, error)
 	GetTransaction(txid cipher.SHA256) (*visor.Transaction, error)

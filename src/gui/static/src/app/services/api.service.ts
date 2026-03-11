@@ -89,6 +89,22 @@ export class ApiService {
   }
 
   /**
+   * Sends a DELETE request to the node API.
+   * @param url URL to send the request to. You must omit the "http://x:x/api/vx/" part.
+   * @param params Object with the key/value pairs to be sent as query params.
+   */
+  delete(url: string, params: any = null): Observable<any> {
+    return this.getCsrf().pipe(first(), mergeMap(csrf => {
+      const options = this.createDefaultRequestOptions();
+      return this.http.delete(
+        this.getUrl(url, params, options.useV2),
+        this.returnRequestOptions(options, csrf),
+      ).pipe(
+        catchError((error: any) => this.processConnectionError(error)));
+    }));
+  }
+
+  /**
    * Creates a NodeApiRequestOptions instance with the default values.
    */
   private createDefaultRequestOptions(): NodeApiRequestOptions {

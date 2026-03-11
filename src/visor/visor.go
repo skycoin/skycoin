@@ -13,7 +13,6 @@ package visor
 import (
 	"errors"
 	"fmt"
-
 	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
@@ -147,7 +146,7 @@ func (vs *Visor) Init() error {
 		if err != nil {
 			return err
 		}
-		logger.Infof("Removed %d invalid txns from pool", len(removed))
+		logger.Infof("Removed %d invalid or expired txns from pool", len(removed))
 
 		return nil
 	})
@@ -271,6 +270,13 @@ func (vs *Visor) RefreshUnconfirmed() ([]cipher.SHA256, error) {
 	}
 
 	return hashes, nil
+}
+
+// RemoveUnconfirmedTransaction removes an unconfirmed transaction by hash
+func (vs *Visor) RemoveUnconfirmedTransaction(txid cipher.SHA256) error {
+	return vs.db.Update("RemoveUnconfirmedTransaction", func(tx *dbutil.Tx) error {
+		return vs.unconfirmed.RemoveTransactions(tx, []cipher.SHA256{txid})
+	})
 }
 
 // RemoveInvalidUnconfirmed removes transactions that become permanently invalid

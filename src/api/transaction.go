@@ -20,54 +20,84 @@ import (
 	"github.com/skycoin/skycoin/src/visor"
 )
 
-// pendingTxnsHandler returns pending (unconfirmed) transactions
-// Method: GET
+// pendingTxnsHandler returns pending (unconfirmed) transactions or deletes one
+// Method: GET, DELETE
 // URI: /api/v1/pendingTxs
 // Args:
 //
-//	verbose: [bool] include verbose transaction input data
+//	verbose: [bool] include verbose transaction input data (GET only)
+//	txid: [string] transaction hash to delete (DELETE only)
 func pendingTxnsHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
+		switch r.Method {
+		case http.MethodGet:
+			getPendingTxns(gateway, w, r)
+		case http.MethodDelete:
+			deletePendingTxn(gateway, w, r)
+		default:
 			wh.Error405(w)
-			return
 		}
+	}
+}
 
-		verbose, err := parseBoolFlag(r.FormValue("verbose"))
+// deletePendingTxn removes an unconfirmed transaction from the pool
+func deletePendingTxn(gateway Gatewayer, w http.ResponseWriter, r *http.Request) {
+	txid := r.FormValue("txid")
+	if txid == "" {
+		wh.Error400(w, "txid is required")
+		return
+	}
+
+	hash, err := cipher.SHA256FromHex(txid)
+	if err != nil {
+		wh.Error400(w, "invalid txid")
+		return
+	}
+
+	if err := gateway.RemoveUnconfirmedTransaction(hash); err != nil {
+		wh.Error500(w, err.Error())
+		return
+	}
+
+	wh.SendJSONOr500(logger, w, struct{}{})
+}
+
+// getPendingTxns returns all pending (unconfirmed) transactions
+func getPendingTxns(gateway Gatewayer, w http.ResponseWriter, r *http.Request) {
+	verbose, err := parseBoolFlag(r.FormValue("verbose"))
+	if err != nil {
+		wh.Error400(w, "Invalid value for verbose")
+		return
+	}
+
+	if verbose {
+		txns, inputs, err := gateway.GetAllUnconfirmedTransactionsVerbose()
 		if err != nil {
-			wh.Error400(w, "Invalid value for verbose")
+			wh.Error500(w, err.Error())
 			return
 		}
 
-		if verbose {
-			txns, inputs, err := gateway.GetAllUnconfirmedTransactionsVerbose()
-			if err != nil {
-				wh.Error500(w, err.Error())
-				return
-			}
-
-			vb, err := readable.NewUnconfirmedTransactionsVerbose(txns, inputs)
-			if err != nil {
-				wh.Error500(w, err.Error())
-				return
-			}
-
-			wh.SendJSONOr500(logger, w, vb)
-		} else {
-			txns, err := gateway.GetAllUnconfirmedTransactions()
-			if err != nil {
-				wh.Error500(w, err.Error())
-				return
-			}
-
-			ret, err := readable.NewUnconfirmedTransactions(txns)
-			if err != nil {
-				wh.Error500(w, err.Error())
-				return
-			}
-
-			wh.SendJSONOr500(logger, w, ret)
+		vb, err := readable.NewUnconfirmedTransactionsVerbose(txns, inputs)
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
 		}
+
+		wh.SendJSONOr500(logger, w, vb)
+	} else {
+		txns, err := gateway.GetAllUnconfirmedTransactions()
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+
+		ret, err := readable.NewUnconfirmedTransactions(txns)
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+
+		wh.SendJSONOr500(logger, w, ret)
 	}
 }
 

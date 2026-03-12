@@ -281,7 +281,11 @@ func serve() {
 		}
 	}
 	for _, svc := range wltServices {
-		dir, _ := svc.WalletDir()
+		dir, err := svc.WalletDir()
+		if err != nil {
+			log.Printf("[WARN] Could not get wallet dir: %v", err)
+			continue
+		}
 		fmt.Printf("Local wallet dir: %s\n", dir)
 	}
 	fmt.Printf("Open your browser and navigate to the address above\n")
@@ -318,10 +322,6 @@ func handleMultiWalletAPI(c *gin.Context, apiPath string, services []*wallet.Ser
 	// For wallet operations that need to find a wallet by ID, search all services
 	if needsWalletLookup(path, method) {
 		wltID := c.Request.FormValue("id")
-		if wltID == "" && method == http.MethodPost {
-			// Try JSON body for v2 endpoints
-			// For v2 endpoints, the primary service handles creation
-		}
 		if wltID != "" {
 			for _, svc := range services {
 				if _, err := svc.GetWallet(wltID); err == nil {

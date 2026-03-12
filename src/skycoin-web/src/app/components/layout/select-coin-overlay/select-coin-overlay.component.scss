@@ -31,56 +31,14 @@ mat-dialog-content {
   text-align: center;
 }
 
-.search-container {
-  max-width: 700px;
-  display: inline-block;
-  width: 100%;
+.title-container {
   font-size: 15px;
   margin: 25px 0px;
   text-align: center;
-
-  mat-icon {
-    width: 0px;
-    height: 0px;
-    display: block;
-    position: relative;
-    top: 10px;
-    left: 12px;
-    color: $grey-light;
-  }
-
-  .input-container {
-    margin-top: 10px;
-  }
-
-  input {
-    border: 0px solid white;
-    background-color: white;
-    border-radius: 6px;
-    box-sizing: border-box;
-    display: block;
-    line-height: 20px;
-    padding: 10px 10px;
-    width: 100%;
-    outline: none;
-    padding: 12px 48px;
-  }
-
-  input::placeholder {
-    color: $grey-light;
-  }
-
-  input:-ms-input-placeholder {
-    color: $grey-light;
-  }
 }
 
 .options-container {
   font-size: 12px;
-
-  .title {
-    margin: 10px 0px;
-  }
 
   .buttons-container {
     display: flex;

@@ -7,7 +7,6 @@ export class BaseCoin {
   priceTickerId: string;
   priceTickerSource: string;
   coinExplorer: string;
-  hasWallets: boolean;
   imageName: string;
   gradientName: string;
   iconName: string;
@@ -29,7 +28,6 @@ export class BaseCoin {
     coin.priceTickerId = data.priceTickerId || '';
     coin.priceTickerSource = data.priceTickerSource || 'coinpaprika';
     coin.coinExplorer = data.coinExplorer || '';
-    coin.hasWallets = !!data.hasWallets;
     // Use generic/skycoin assets as fallback for dynamically discovered coins
     coin.imageName = '';
     coin.gradientName = '';

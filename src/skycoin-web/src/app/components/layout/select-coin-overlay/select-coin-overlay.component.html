@@ -5,29 +5,22 @@
   <div class="container">
     <div class="row">
       <div class="col-md-12">
-        <div class="search-container">
+        <div class="title-container">
           {{ 'title.change-coin' | translate }}
-          <div class="input-container">
-            <mat-icon>search</mat-icon>
-            <input #searchInput [placeholder]="'change-coin.search' | translate" >
+        </div>
+
+        <div class="options-container header-sel-theme">
+          <div class="buttons-container">
+            @for (coin of coins; track coin) {
+              <button mat-button color="accent" class="button" (click)="close(coin)">
+                <img [src]="'assets/img/coins/' + coin.bigIconName">
+                <div class="label">{{ coin.coinName }} ({{ coin.coinSymbol }})</div>
+              </button>
+            }
           </div>
         </div>
 
-        @for (section of sections; track section) {
-          <div class="options-container header-sel-theme">
-            <div class="title">{{ section.name | translate }}</div>
-            <div class="buttons-container">
-              @for (coin of section.coins; track coin) {
-                <button mat-button color="accent" class="button" (click)="close(coin)">
-                  <img [src]="'assets/img/coins/' + coin.bigIconName">
-                  <div class="label">{{ coin.coinName }}</div>
-                </button>
-              }
-            </div>
-          </div>
-        }
-
-        @if (!sections || sections.length === 0) {
+        @if (!coins || coins.length === 0) {
           <app-loading-content [noDataText]="'change-coin.no-results' | translate" [isLoading]="false"></app-loading-content>
         }
 

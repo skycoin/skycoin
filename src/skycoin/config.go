@@ -995,6 +995,12 @@ func (c *NodeConfig) applyFiberNodeConfig(node fiber.NodeConfig) {
 	if node.Bip44Coin != 0 {
 		c.Fiber.Bip44Coin = node.Bip44Coin
 	}
+	if node.PriceTickerID != "" {
+		c.Fiber.PriceTickerID = node.PriceTickerID
+	}
+	if node.PriceTickerSource != "" {
+		c.Fiber.PriceTickerSource = node.PriceTickerSource
+	}
 }
 
 // WriteFiberTomlGenesis writes genesis address, pubkey, and signature to fiber.toml

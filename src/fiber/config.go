@@ -77,6 +77,11 @@ type NodeConfig struct {
 	// Bip44Coin is the default "coin" value of the bip44 path
 	Bip44Coin bip44.CoinType `mapstructure:"bip44_coin"`
 
+	// PriceTickerID is the coin ID used for price lookups (e.g. "sky-skycoin" for CoinPaprika, "aixexchange" for CoinGecko)
+	PriceTickerID string `mapstructure:"price_ticker_id"`
+	// PriceTickerSource is the price API source: "coinpaprika" or "coingecko"
+	PriceTickerSource string `mapstructure:"price_ticker_source"`
+
 	// These fields are set by cmd/newcoin and are not configured in the fiber.toml file
 	CoinName string
 	// Ascii Font rendering of CoinName
@@ -167,6 +172,8 @@ func setDefaults() {
 	viper.SetDefault("node.explorer_url", "https://explorer.skycoin.com")
 	viper.SetDefault("node.version_url", "https://version.skycoin.com/skycoin/version.txt")
 	viper.SetDefault("node.bip44_coin", bip44.CoinTypeSkycoin)
+	viper.SetDefault("node.price_ticker_id", "sky-skycoin")
+	viper.SetDefault("node.price_ticker_source", "coinpaprika")
 
 	// build defaults
 	viper.SetDefault("build.commit", "")

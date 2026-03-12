@@ -235,10 +235,12 @@ func serve() {
 		coin := coins[coinIndex]
 		apiPath := c.Param("path")
 
-		// Intercept balance requests — convert POST to GET to avoid CSRF issues
-		if strings.TrimSuffix(apiPath, "/") == "/v1/balance" && c.Request.Method == http.MethodPost {
-			handleBalanceProxy(c, coin.remoteNodeURL)
-			return
+		// Intercept read-only POST requests — convert to GET to avoid CSRF issues
+		if c.Request.Method == http.MethodPost {
+			trimmed := strings.TrimSuffix(apiPath, "/")
+			if handled := handleReadOnlyPost(c, trimmed, coin.remoteNodeURL); handled {
+				return
+			}
 		}
 
 		// Try local wallet handling first
@@ -269,14 +271,14 @@ func serve() {
 			return
 		}
 
-		// Intercept balance requests — convert POST to GET to avoid CSRF issues
-		if strings.TrimSuffix(apiPath, "/") == "/v1/balance" && c.Request.Method == http.MethodPost {
+		// Intercept read-only POST requests — convert to GET to avoid CSRF issues
+		if c.Request.Method == http.MethodPost {
+			trimmed := strings.TrimSuffix(apiPath, "/")
 			if len(coins) > 0 {
-				handleBalanceProxy(c, coins[0].remoteNodeURL)
-			} else {
-				c.String(http.StatusBadGateway, "no nodes configured")
+				if handled := handleReadOnlyPost(c, trimmed, coins[0].remoteNodeURL); handled {
+					return
+				}
 			}
-			return
 		}
 
 		// Wallet endpoints served locally (legacy route uses coin 0's wallet services)
@@ -430,36 +432,86 @@ func handleWalletFolderMulti(c *gin.Context, services []*wallet.Service) {
 	c.JSON(http.StatusOK, gin.H{"address": addr})
 }
 
-// handleBalanceProxy handles /api/v1/balance requests by converting POST to GET.
-// The daemon requires CSRF tokens for POST requests, so we always query via GET.
-func handleBalanceProxy(c *gin.Context, nodeURL string) {
-	addrs := c.Request.FormValue("addrs")
-	if addrs == "" {
-		errBadRequest(c, "missing addrs")
-		return
+// handleReadOnlyPost converts read-only POST requests to GET to avoid CSRF issues.
+// Returns true if the request was handled, false otherwise.
+func handleReadOnlyPost(c *gin.Context, trimmedPath string, nodeURL string) bool {
+	// Map of read-only POST endpoints and the form fields to forward as query params
+	type readOnlyEndpoint struct {
+		fields []string
+	}
+	endpoints := map[string]readOnlyEndpoint{
+		"/v1/balance":      {fields: []string{"addrs"}},
+		"/v1/transactions": {fields: []string{"addrs", "verbose"}},
+		"/v1/outputs":      {fields: []string{"addrs", "hashes"}},
 	}
 
-	balanceURL := fmt.Sprintf("%s/api/v1/balance?addrs=%s", nodeURL, addrs)
-	log.Printf("[PROXY] Balance query -> %s", balanceURL)
+	ep, ok := endpoints[trimmedPath]
+	if !ok {
+		return false
+	}
 
-	resp, err := http.Get(balanceURL) //nolint:gosec
+	apiPath := trimmedPath
+	query := ""
+	for _, field := range ep.fields {
+		val := c.Request.FormValue(field)
+		if val != "" {
+			if query != "" {
+				query += "&"
+			}
+			query += field + "=" + val
+		}
+	}
+
+	getURL := fmt.Sprintf("%s/api%s", nodeURL, apiPath)
+	if query != "" {
+		getURL += "?" + query
+	}
+	log.Printf("[PROXY] POST→GET %s -> %s", c.Request.URL.Path, getURL)
+
+	resp, err := http.Get(getURL) //nolint:gosec
 	if err != nil {
-		errInternal(c, fmt.Sprintf("failed to query node balance: %v", err))
-		return
+		errInternal(c, fmt.Sprintf("failed to query node: %v", err))
+		return true
 	}
 	defer func() {
 		if cerr := resp.Body.Close(); cerr != nil {
-			log.Printf("Error closing balance response body: %v", cerr)
+			log.Printf("Error closing response body: %v", cerr)
 		}
 	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		errInternal(c, fmt.Sprintf("failed to read balance response: %v", err))
-		return
+		errInternal(c, fmt.Sprintf("failed to read response: %v", err))
+		return true
 	}
 
 	c.Data(resp.StatusCode, resp.Header.Get("Content-Type"), body)
+	return true
+}
+
+// fetchCSRFToken fetches a CSRF token from the remote node
+func fetchCSRFToken(nodeURL string) (string, error) {
+	resp, err := http.Get(nodeURL + "/api/v1/csrf") //nolint:gosec
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch CSRF token: %v", err)
+	}
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			log.Printf("Error closing CSRF response body: %v", cerr)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("CSRF endpoint returned status %d", resp.StatusCode)
+	}
+
+	var result struct {
+		Token string `json:"csrf_token"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", fmt.Errorf("failed to decode CSRF response: %v", err)
+	}
+	return result.Token, nil
 }
 
 // proxyToNode forwards an API request to the remote node
@@ -489,6 +541,16 @@ func proxyToNodeWithBase(c *gin.Context, remoteNodeURL string, targetPath string
 		}
 		for _, value := range values {
 			proxyReq.Header.Add(name, value)
+		}
+	}
+
+	// For POST/PUT/DELETE requests, fetch a CSRF token from the node
+	if c.Request.Method != http.MethodGet && c.Request.Method != http.MethodHead {
+		csrfToken, err := fetchCSRFToken(remoteNodeURL)
+		if err != nil {
+			log.Printf("[PROXY] Warning: could not fetch CSRF token: %v", err)
+		} else if csrfToken != "" {
+			proxyReq.Header.Set("X-CSRF-Token", csrfToken)
 		}
 	}
 

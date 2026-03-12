@@ -239,10 +239,11 @@ func TestStopListen(t *testing.T) {
 	// Use a retry loop instead of a fixed sleep to handle slow CI environments.
 	require.Eventually(t, func() bool {
 		var poolLen int
-		_ = p.strand("", func() error {
+		err = p.strand("", func() error {
 			poolLen = len(p.pool)
 			return nil
 		})
+		require.NoError(t, err)
 		return poolLen == 1
 	}, 5*time.Second, 50*time.Millisecond, "expected pool to have 1 connection")
 

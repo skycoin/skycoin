@@ -153,7 +153,9 @@ export class AppService {
    * this.updateAvailableInternal to true.
    */
   private detectUpdateAvailable(versionUrl?: string) {
-    const url = versionUrl || AppConfig.urlForVersionChecking;
+    // If versionUrl was explicitly provided (even as empty string), use it;
+    // only fall back to AppConfig if it was undefined (not in health response)
+    const url = versionUrl !== undefined ? versionUrl : AppConfig.urlForVersionChecking;
     if (url) {
       this.http.get(url, { responseType: 'text' })
         .pipe(retryWhen(errors => errors.pipe(delay(30000))))

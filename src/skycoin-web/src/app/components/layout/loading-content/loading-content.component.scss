@@ -1,4 +1,4 @@
-@import '../../../../theme/variables';
+@use '../../../../theme/variables' as *;
 
 .content {
   margin: 50px 20px;

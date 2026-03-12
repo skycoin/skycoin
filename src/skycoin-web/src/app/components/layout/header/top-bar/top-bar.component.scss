@@ -1,4 +1,4 @@
-@import '../../../../../theme/variables';
+@use '../../../../../theme/variables' as *;
 
 $transparent-button-opacity: 0.7;
 $big-button-container-width: 230px;

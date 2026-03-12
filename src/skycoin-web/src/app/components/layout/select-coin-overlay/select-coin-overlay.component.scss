@@ -1,4 +1,4 @@
-@import '../../../../theme/_variables';
+@use '../../../../theme/_variables' as *;
 
 mat-dialog-content {
   width: 100%;

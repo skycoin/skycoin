@@ -1,4 +1,5 @@
-@import '../../../../../theme/variables';
+@use 'sass:color';
+@use '../../../../../theme/variables' as *;
 
 @media (max-width: $max-small-width) {
   .truncated-label {
@@ -252,7 +253,7 @@ mat-option ::ng-deep .mat-pseudo-checkbox-checked {
 label mat-icon {
   display: inline;
   font-size: 14px;
-  color: lighten($grey, 40%);
+  color: color.adjust($grey, $lightness: 40%);
   vertical-align: text-bottom;
   padding-left: 5px;
 }

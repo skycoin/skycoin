@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -31,6 +32,37 @@ var (
 	walletDirs    []string
 	enableSeedAPI bool
 )
+
+// proxyCache caches responses for slow read-only endpoints (e.g. transactions)
+type proxyCache struct {
+	mu      sync.RWMutex
+	entries map[string]proxyCacheEntry
+}
+
+type proxyCacheEntry struct {
+	body        []byte
+	contentType string
+	statusCode  int
+	cachedAt    time.Time
+}
+
+var queryCache = &proxyCache{entries: make(map[string]proxyCacheEntry)}
+
+func (pc *proxyCache) get(key string, maxAge time.Duration) (proxyCacheEntry, bool) {
+	pc.mu.RLock()
+	defer pc.mu.RUnlock()
+	entry, ok := pc.entries[key]
+	if !ok || time.Since(entry.cachedAt) > maxAge {
+		return proxyCacheEntry{}, false
+	}
+	return entry, true
+}
+
+func (pc *proxyCache) set(key string, entry proxyCacheEntry) {
+	pc.mu.Lock()
+	defer pc.mu.Unlock()
+	pc.entries[key] = entry
+}
 
 // discoveredCoin represents a fibercoin discovered from a node's health endpoint
 type discoveredCoin struct {
@@ -466,6 +498,17 @@ func handleReadOnlyPost(c *gin.Context, trimmedPath string, nodeURL string) bool
 	if query != "" {
 		getURL += "?" + query
 	}
+
+	// Cache transaction queries for 30 seconds to avoid slow repeated lookups
+	cacheKey := getURL
+	if trimmedPath == "/v1/transactions" {
+		if entry, ok := queryCache.get(cacheKey, 30*time.Second); ok {
+			log.Printf("[PROXY] POST→GET %s -> cached (%s ago)", c.Request.URL.Path, time.Since(entry.cachedAt).Round(time.Second))
+			c.Data(entry.statusCode, entry.contentType, entry.body)
+			return true
+		}
+	}
+
 	log.Printf("[PROXY] POST→GET %s -> %s", c.Request.URL.Path, getURL)
 
 	resp, err := http.Get(getURL) //nolint:gosec
@@ -483,6 +526,16 @@ func handleReadOnlyPost(c *gin.Context, trimmedPath string, nodeURL string) bool
 	if err != nil {
 		errInternal(c, fmt.Sprintf("failed to read response: %v", err))
 		return true
+	}
+
+	// Cache successful responses
+	if trimmedPath == "/v1/transactions" && resp.StatusCode == http.StatusOK {
+		queryCache.set(cacheKey, proxyCacheEntry{
+			body:        body,
+			contentType: resp.Header.Get("Content-Type"),
+			statusCode:  resp.StatusCode,
+			cachedAt:    time.Now(),
+		})
 	}
 
 	c.Data(resp.StatusCode, resp.Header.Get("Content-Type"), body)

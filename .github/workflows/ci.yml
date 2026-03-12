@@ -58,6 +58,9 @@ jobs:
       - name: Install UI Dependencies
         run: make install-deps-ui
 
+      - name: Test UI
+        run: make test-ui
+
       - name: Build UI
         run: make build-ui
 

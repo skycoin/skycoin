@@ -132,8 +132,12 @@
               "src/assets/fonts/material-icons/material-icons.css",
               "src/styles.scss"
             ],
+            "stylePreprocessorOptions": {
+              "includePaths": ["src", "."]
+            },
             "assets": [
               "src/assets",
+              "src/customize",
               "src/favicon.ico",
               "src/app/current-skycoin.json"
             ]

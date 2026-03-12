@@ -20,6 +20,9 @@ export class ApiService {
               private coinService: CoinService) {
     this.coinService.currentCoin
       .subscribe((coin: BaseCoin) => {
+        if (!coin) {
+          return;
+        }
         const customUrl = coinService.customNodeUrls[coin.id.toString()];
         this.url = customUrl ? customUrl : coin.nodeUrl;
         if (this.url.endsWith('/')) {

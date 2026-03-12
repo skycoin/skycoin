@@ -1,11 +1,9 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, ReplaySubject } from 'rxjs';
 
 import { BaseCoin } from '../coins/basecoin';
 import { SkycoinCoin } from '../coins/skycoin.coin';
-import { TestCoin } from '../coins/test.coin';
-import { defaultCoinId } from '../constants/coins-id.const';
-import { environment } from '../../environments/environment';
 import { TranslateService } from '@ngx-translate/core';
 
 export enum TemporarilyAllowCoinResult {
@@ -21,14 +19,20 @@ export class CoinService {
   coins: BaseCoin[] = [];
   customNodeUrls: object;
 
-  private readonly correntCoinStorageKey = 'currentCoin';
+  /**
+   * Emits true once coins have been loaded (from server or fallback).
+   */
+  coinsLoaded: ReplaySubject<boolean> = new ReplaySubject<boolean>(1);
+
+  private readonly currentCoinStorageKey = 'currentCoin';
   private readonly nodeUrlsStorageKey = 'nodeUrls';
 
-  constructor(private translate: TranslateService) {
-    this.loadAvailableCoins();
+  constructor(
+    private translate: TranslateService,
+    private http: HttpClient
+  ) {
     this.loadNodeUrls();
-    this.loadCurrentCoin();
-    sessionStorage.setItem(this.correntCoinStorageKey, this.currentCoin.getValue().id.toString());
+    this.loadCoinsFromServer();
   }
 
   changeCoin(coin: BaseCoin) {
@@ -86,6 +90,44 @@ export class CoinService {
     }
   }
 
+  private loadCoinsFromServer() {
+    this.http.get('/api/v1/coins').subscribe(
+      (serverCoins: any[]) => {
+        if (serverCoins && serverCoins.length > 0) {
+          this.coins = serverCoins.map(data => BaseCoin.fromServerData(data));
+        } else {
+          this.loadFallbackCoins();
+        }
+        this.finishCoinLoading();
+      },
+      () => {
+        // Server not available — use fallback hardcoded coin
+        this.loadFallbackCoins();
+        this.finishCoinLoading();
+      }
+    );
+  }
+
+  private loadFallbackCoins() {
+    this.coins = [new SkycoinCoin()];
+  }
+
+  private finishCoinLoading() {
+    this.validateCoinIds();
+    this.loadCurrentCoin();
+    this.coinsLoaded.next(true);
+  }
+
+  private validateCoinIds() {
+    const IDs = new Map<number, boolean>();
+    this.coins.forEach((value: BaseCoin) => {
+      if (IDs.has(value.id)) {
+        throw new Error('More than one coin with the same ID');
+      }
+      IDs.set(value.id, true);
+    });
+  }
+
   private loadNodeUrls() {
     if (!window['isElectron']) {
       const savedUrls: object = JSON.parse(localStorage.getItem(this.nodeUrlsStorageKey));
@@ -97,30 +139,26 @@ export class CoinService {
   }
 
   private loadCurrentCoin() {
-    const storedCoinId = sessionStorage.getItem(this.correntCoinStorageKey) || localStorage.getItem(this.correntCoinStorageKey);
-    const coinId = storedCoinId ? +storedCoinId : defaultCoinId;
-    const coin = this.coins.find((c: BaseCoin) => c.id === coinId);
-    this.currentCoin.next(coin);
+    const storedCoinId = sessionStorage.getItem(this.currentCoinStorageKey) || localStorage.getItem(this.currentCoinStorageKey);
+    let coin: BaseCoin;
+
+    if (storedCoinId) {
+      coin = this.coins.find((c: BaseCoin) => c.id === +storedCoinId);
+    }
+
+    // Fall back to first available coin
+    if (!coin && this.coins.length > 0) {
+      coin = this.coins[0];
+    }
+
+    if (coin) {
+      this.currentCoin.next(coin);
+      sessionStorage.setItem(this.currentCoinStorageKey, coin.id.toString());
+    }
   }
 
   private saveCoin(coinId: number) {
-    localStorage.setItem(this.correntCoinStorageKey, coinId.toString());
-    sessionStorage.setItem(this.correntCoinStorageKey, coinId.toString());
-  }
-
-  private loadAvailableCoins() {
-    this.coins.push(new SkycoinCoin());
-
-    if (!environment.production) {
-      this.coins.push(new TestCoin());
-    }
-
-    const IDs = new Map<number, boolean>();
-    this.coins.forEach((value: BaseCoin) => {
-      if (IDs[value.id]) {
-        throw new Error('More than one coin with the same ID');
-      }
-      IDs[value.id] = true;
-    });
+    localStorage.setItem(this.currentCoinStorageKey, coinId.toString());
+    sessionStorage.setItem(this.currentCoinStorageKey, coinId.toString());
   }
 }

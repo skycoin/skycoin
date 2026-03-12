@@ -1,16 +1,24 @@
 import { BaseCoin } from './basecoin';
-import { coinsId } from '../constants/coins-id.const';
+import { defaultCoinId } from '../constants/coins-id.const';
 
+/**
+ * Fallback Skycoin coin definition used when the server is not available.
+ */
 export class SkycoinCoin extends BaseCoin {
-  id = coinsId.sky;
-  nodeUrl = '';  // Empty - will use server proxy
-  coinName = 'Skycoin';
-  coinSymbol = 'SKY';
-  hoursName = 'Coin Hours';
-  priceTickerId = 'sky-skycoin';
-  coinExplorer = 'https://explorer.skycoin.net';
-  imageName = 'skycoin-header.jpg';
-  gradientName = 'skycoin-gradient.png';
-  iconName = 'skycoin-icon.png';
-  bigIconName = 'skycoin-icon-b.png';
+  constructor() {
+    super({
+      id: defaultCoinId,
+      nodeUrl: '',
+      coinName: 'Skycoin',
+      coinSymbol: 'SKY',
+      hoursName: 'Coin Hours',
+      priceTickerId: 'sky-skycoin',
+      priceTickerSource: 'coinpaprika',
+      coinExplorer: 'https://explorer.skycoin.net',
+      imageName: 'skycoin-header.jpg',
+      gradientName: 'skycoin-gradient.png',
+      iconName: 'skycoin-icon.png',
+      bigIconName: 'skycoin-icon-b.png',
+    });
+  }
 }

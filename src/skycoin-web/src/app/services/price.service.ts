@@ -23,21 +23,19 @@ export class PriceService {
     private coinService: CoinService
   ) {
     this.coinService.currentCoin.subscribe((coin: BaseCoin) => {
+      if (!coin) {
+        return;
+      }
       this.priceTickerId = coin.priceTickerId;
+      this.priceTickerSource = coin.priceTickerSource || 'coinpaprika';
       this.loadConfigAndStart();
     });
   }
 
   private loadConfigAndStart() {
-    this.http.get('/api/v1/health').subscribe((response: any) => {
-      if (response.fiber && response.fiber.price_ticker_id) {
-        this.priceTickerId = response.fiber.price_ticker_id;
-        this.priceTickerSource = response.fiber.price_ticker_source || 'coinpaprika';
-      }
-      this.startDataRefreshSubscription(0);
-    }, () => {
-      this.startDataRefreshSubscription(0);
-    });
+    // Price ticker config is already provided by the coin discovery.
+    // Just start the refresh subscription.
+    this.startDataRefreshSubscription(0);
   }
 
   private startDataRefreshSubscription(delayMs: number) {

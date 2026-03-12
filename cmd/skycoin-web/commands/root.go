@@ -42,6 +42,7 @@ type discoveredCoin struct {
 	PriceTickerID     string `json:"priceTickerId"`
 	PriceTickerSource string `json:"priceTickerSource"`
 	CoinExplorer      string `json:"coinExplorer"`
+	HasWallets        bool   `json:"hasWallets"`
 	// internal: the actual remote node URL (not exposed to frontend)
 	remoteNodeURL string
 }
@@ -192,6 +193,19 @@ func serve() {
 	} else if len(wltServices) > 0 {
 		for i := range coins {
 			coinWltServices[i] = wltServices
+		}
+	}
+
+	// Mark coins that have wallet services with wallets
+	for i, coin := range coins {
+		if services, ok := coinWltServices[i]; ok {
+			for _, svc := range services {
+				wlts, err := svc.GetWallets()
+				if err == nil && len(wlts) > 0 {
+					coin.HasWallets = true
+					break
+				}
+			}
 		}
 	}
 

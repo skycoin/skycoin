@@ -36,6 +36,14 @@ export class SelectCoinOverlayComponent implements OnInit, AfterViewInit, OnDest
   ) { }
 
   ngOnInit() {
+    // In production mode, use the hasWallets flag from server discovery.
+    // In dev mode, check the client-side wallet list.
+    this.coinService.coins.forEach((coin: BaseCoin) => {
+      if (coin.hasWallets) {
+        this.coinsWithWallets[coin.id] = true;
+      }
+    });
+
     const currentWallets = this.walletService.wallets.value;
     if (currentWallets) {
       currentWallets.forEach(value => {

@@ -7,3 +7,18 @@
 .-timestamp {
   color: $grey;
 }
+
+.-width-80 {
+  width: 80px;
+  min-width: 80px;
+}
+
+.delete-icon {
+  cursor: pointer;
+  color: $grey;
+  font-size: 18px;
+
+  &:hover {
+    color: $red;
+  }
+}

@@ -34,6 +34,11 @@ export class ApiService {
       .catch((error: any) => this.getErrorMessage(error));
   }
 
+  delete(url, params = null, options = {}): Observable<any> {
+    return this.http.delete(this.getUrl(url), this.getRequestOptions(options, params))
+      .catch((error: any) => this.getErrorMessage(error));
+  }
+
   post(url, body = {}, options: any = {}, useV2 = false): Observable<any> {
     if (useV2) {
       options.json = true;

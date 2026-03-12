@@ -167,6 +167,10 @@ export class HistoryService {
     });
   }
 
+  deletePendingTransaction(txid: string): Observable<any> {
+    return this.apiService.delete('pendingTxs', { txid });
+  }
+
   getTransactionDetails(uxid: string): Observable<any> {
     return this.apiService.get('uxout', { uxid: uxid });
   }

@@ -304,7 +304,9 @@
     "none": "Actualmente no hay transacciones pendientes",
     "my": "Mías",
     "all": "Todas",
-    "transactions": "Transacciones"
+    "transactions": "Transacciones",
+    "delete-button": "Eliminar transacción pendiente",
+    "delete-confirm": "¿Estás seguro de que quieres eliminar esta transacción pendiente del pool local? Esta acción no se puede deshacer."
   },
 
   "nodes" : {

@@ -229,6 +229,12 @@ func serve() {
 		coin := coins[coinIndex]
 		apiPath := c.Param("path")
 
+		// Intercept balance requests — convert POST to GET to avoid CSRF issues
+		if strings.TrimSuffix(apiPath, "/") == "/v1/balance" && c.Request.Method == http.MethodPost {
+			handleBalanceProxy(c, coin.remoteNodeURL)
+			return
+		}
+
 		// Try local wallet handling first
 		if services, ok := coinWltServices[coinIndex]; ok && len(services) > 0 {
 			if handleMultiWalletAPI(c, apiPath, services, coin.remoteNodeURL) {
@@ -254,6 +260,16 @@ func serve() {
 		// Coins discovery endpoint
 		if apiPath == "/v1/coins" && c.Request.Method == http.MethodGet {
 			c.JSON(http.StatusOK, coins)
+			return
+		}
+
+		// Intercept balance requests — convert POST to GET to avoid CSRF issues
+		if strings.TrimSuffix(apiPath, "/") == "/v1/balance" && c.Request.Method == http.MethodPost {
+			if len(coins) > 0 {
+				handleBalanceProxy(c, coins[0].remoteNodeURL)
+			} else {
+				c.String(http.StatusBadGateway, "no nodes configured")
+			}
 			return
 		}
 
@@ -406,6 +422,38 @@ func handleWalletFolderMulti(c *gin.Context, services []*wallet.Service) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"address": addr})
+}
+
+// handleBalanceProxy handles /api/v1/balance requests by converting POST to GET.
+// The daemon requires CSRF tokens for POST requests, so we always query via GET.
+func handleBalanceProxy(c *gin.Context, nodeURL string) {
+	addrs := c.Request.FormValue("addrs")
+	if addrs == "" {
+		errBadRequest(c, "missing addrs")
+		return
+	}
+
+	balanceURL := fmt.Sprintf("%s/api/v1/balance?addrs=%s", nodeURL, addrs)
+	log.Printf("[PROXY] Balance query -> %s", balanceURL)
+
+	resp, err := http.Get(balanceURL) //nolint:gosec
+	if err != nil {
+		errInternal(c, fmt.Sprintf("failed to query node balance: %v", err))
+		return
+	}
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			log.Printf("Error closing balance response body: %v", cerr)
+		}
+	}()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		errInternal(c, fmt.Sprintf("failed to read balance response: %v", err))
+		return
+	}
+
+	c.Data(resp.StatusCode, resp.Header.Get("Content-Type"), body)
 }
 
 // proxyToNode forwards an API request to the remote node

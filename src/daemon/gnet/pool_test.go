@@ -234,13 +234,17 @@ func TestStopListen(t *testing.T) {
 
 	_, err = net.Dial("tcp", addr)
 	require.NoError(t, err)
-	wait()
 
-	err = p.strand("", func() error {
-		require.Equal(t, len(p.pool), 1)
-		return nil
-	})
-	require.NoError(t, err)
+	// Wait for the connection to be registered in the pool.
+	// Use a retry loop instead of a fixed sleep to handle slow CI environments.
+	require.Eventually(t, func() bool {
+		var poolLen int
+		_ = p.strand("", func() error {
+			poolLen = len(p.pool)
+			return nil
+		})
+		return poolLen == 1
+	}, 5*time.Second, 50*time.Millisecond, "expected pool to have 1 connection")
 
 	p.Shutdown()
 	<-q

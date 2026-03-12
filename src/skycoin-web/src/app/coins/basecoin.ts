@@ -28,10 +28,11 @@ export class BaseCoin {
     coin.priceTickerId = data.priceTickerId || '';
     coin.priceTickerSource = data.priceTickerSource || 'coinpaprika';
     coin.coinExplorer = data.coinExplorer || '';
-    coin.imageName = 'default-header.jpg';
-    coin.gradientName = 'default-gradient.png';
-    coin.iconName = 'default-icon.png';
-    coin.bigIconName = 'default-icon-b.png';
+    // Use generic/skycoin assets as fallback for dynamically discovered coins
+    coin.imageName = '';
+    coin.gradientName = '';
+    coin.iconName = 'skycoin-icon.png';
+    coin.bigIconName = 'skycoin-icon-b.png';
     return coin;
   }
 }

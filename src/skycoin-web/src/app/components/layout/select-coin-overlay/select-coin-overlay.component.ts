@@ -1,4 +1,4 @@
-import { Component, Input, HostListener, ViewChild, ElementRef, OnInit, OnDestroy } from '@angular/core';
+import { Component, Input, HostListener, ViewChild, ElementRef, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
 import { Observable } from 'rxjs';
 import 'rxjs/add/observable/fromEvent';
@@ -18,11 +18,11 @@ import { MsgBarService } from '../../../services/msg-bar.service';
     styleUrls: ['./select-coin-overlay.component.scss'],
     standalone: false
 })
-export class SelectCoinOverlayComponent implements OnInit, OnDestroy {
+export class SelectCoinOverlayComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @ViewChild('searchInput') private searchInput: ElementRef;
   private searchSuscription: Subscription;
-  private coinsWithWallets = new Map<number, boolean>();
+  private coinsWithWallets: { [key: number]: boolean } = {};
 
   sections: Section[] = [];
 
@@ -36,21 +36,24 @@ export class SelectCoinOverlayComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-
     const currentWallets = this.walletService.wallets.value;
     if (currentWallets) {
       currentWallets.forEach(value => {
-        if (!this.coinsWithWallets[value.coinId]) {
+        if (value.coinId !== undefined && value.coinId !== null) {
           this.coinsWithWallets[value.coinId] = true;
         }
       });
     }
 
-    this.searchSuscription = Observable.fromEvent(this.searchInput.nativeElement, 'keyup')
-      .debounceTime(500)
-      .subscribe(() => this.search());
-
     this.createSections(this.coinService.coins);
+  }
+
+  ngAfterViewInit() {
+    if (this.searchInput) {
+      this.searchSuscription = Observable.fromEvent(this.searchInput.nativeElement, 'keyup')
+        .debounceTime(500)
+        .subscribe(() => this.search());
+    }
   }
 
   search() {
@@ -94,7 +97,9 @@ export class SelectCoinOverlayComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.searchSuscription.unsubscribe();
+    if (this.searchSuscription) {
+      this.searchSuscription.unsubscribe();
+    }
     this.msgBarService.hide();
   }
 

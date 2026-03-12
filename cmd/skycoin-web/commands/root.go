@@ -181,6 +181,20 @@ func serve() {
 		log.Printf("[WALLET] Wallet service initialized: %s", dir)
 	}
 
+	// Map wallet services to coins by index.
+	// If counts match, wallet dir i is used for coin i.
+	// Otherwise, all wallet services are shared across all coins.
+	coinWltServices := make(map[int][]*wallet.Service)
+	if len(wltServices) == len(coins) {
+		for i, svc := range wltServices {
+			coinWltServices[i] = []*wallet.Service{svc}
+		}
+	} else if len(wltServices) > 0 {
+		for i := range coins {
+			coinWltServices[i] = wltServices
+		}
+	}
+
 	// Get the embedded dist directory
 	distSub, err := fs.Sub(gui.DistFS, "dist")
 	if err != nil {
@@ -216,8 +230,8 @@ func serve() {
 		apiPath := c.Param("path")
 
 		// Try local wallet handling first
-		if len(wltServices) > 0 {
-			if handleMultiWalletAPI(c, apiPath, wltServices, coin.remoteNodeURL) {
+		if services, ok := coinWltServices[coinIndex]; ok && len(services) > 0 {
+			if handleMultiWalletAPI(c, apiPath, services, coin.remoteNodeURL) {
 				return
 			}
 		}
@@ -243,13 +257,13 @@ func serve() {
 			return
 		}
 
-		// Wallet endpoints served locally
-		if len(wltServices) > 0 {
+		// Wallet endpoints served locally (legacy route uses coin 0's wallet services)
+		if services, ok := coinWltServices[0]; ok && len(services) > 0 {
 			defaultNodeURL := ""
 			if len(coins) > 0 {
 				defaultNodeURL = coins[0].remoteNodeURL
 			}
-			if handleMultiWalletAPI(c, apiPath, wltServices, defaultNodeURL) {
+			if handleMultiWalletAPI(c, apiPath, services, defaultNodeURL) {
 				return
 			}
 		}

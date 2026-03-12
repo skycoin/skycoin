@@ -37,11 +37,14 @@ export class SelectCoinOverlayComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
 
-    this.walletService.wallets.value.forEach(value => {
-      if (!this.coinsWithWallets[value.coinId]) {
-        this.coinsWithWallets[value.coinId] = true;
-      }
-    });
+    const currentWallets = this.walletService.wallets.value;
+    if (currentWallets) {
+      currentWallets.forEach(value => {
+        if (!this.coinsWithWallets[value.coinId]) {
+          this.coinsWithWallets[value.coinId] = true;
+        }
+      });
+    }
 
     this.searchSuscription = Observable.fromEvent(this.searchInput.nativeElement, 'keyup')
       .debounceTime(500)

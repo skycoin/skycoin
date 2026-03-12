@@ -1,6 +1,7 @@
 import { Injectable, EventEmitter, Injector } from '@angular/core';
 import 'rxjs/add/operator/mergeMap';
-import { BehaviorSubject } from 'rxjs';
+import 'rxjs/add/operator/filter';
+import { BehaviorSubject, Subscription } from 'rxjs';
 import { Observable } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { BigNumber } from 'bignumber.js';
@@ -21,9 +22,10 @@ export class ScanProgressData {
 
 @Injectable()
 export class WalletService {
-  wallets: BehaviorSubject<Wallet[]> = new BehaviorSubject<Wallet[]>([]);
+  wallets: BehaviorSubject<Wallet[]> = new BehaviorSubject<Wallet[]>(null);
 
   private currentCoin: BaseCoin;
+  private coinSubscription: Subscription;
 
   constructor(
     private cipherProvider: CipherProvider,
@@ -36,13 +38,23 @@ export class WalletService {
   }
 
   get haveWallets(): Observable<boolean> {
-    return this.wallets.map(wallets => wallets ? wallets.length > 0 : false);
+    return this.wallets
+      .filter(wallets => wallets !== null)
+      .map(wallets => wallets.length > 0);
   }
 
   get currentWallets(): Observable<Wallet[]> {
     return this.wallets
+      .filter(wallets => wallets !== null)
       .flatMap(wallets => this.coinService.currentCoin
-        .map((coin: BaseCoin) => wallets.filter(wallet => wallet.coinId === coin.id))
+        .filter((coin: BaseCoin) => coin !== null)
+        .map((coin: BaseCoin) => {
+          if (environment.production) {
+            // In production, wallets are fetched per-coin from the server
+            return wallets;
+          }
+          return wallets.filter(wallet => wallet.coinId === coin.id);
+        })
       ).map(wallets => wallets ? wallets : []);
   }
 
@@ -81,7 +93,7 @@ export class WalletService {
           coinId: coinId
         };
 
-        if (this.wallets.value.some((wlt: Wallet) =>
+        if ((this.wallets.value || []).some((wlt: Wallet) =>
             wlt.addresses[0].address === wallet.addresses[0].address &&
             wlt.coinId === wallet.coinId)) {
           throw new Error(this.translate.instant('service.wallet.wallet-exists'));
@@ -148,9 +160,10 @@ export class WalletService {
   }
 
   saveWallets() {
+    const currentWallets = this.wallets.value || [];
     if (!environment.production) {
       const strippedWallets: Wallet[] = [];
-      this.wallets.value.forEach(wallet => {
+      currentWallets.forEach(wallet => {
         const strippedAddresses: Address[] = [];
         wallet.addresses.forEach(address => strippedAddresses.push({ address: address.address }));
         strippedWallets.push({ coinId: wallet.coinId, needSeedConfirmation: wallet.needSeedConfirmation, label: wallet.label, addresses: strippedAddresses });
@@ -158,7 +171,7 @@ export class WalletService {
       localStorage.setItem('wallets', JSON.stringify(strippedWallets));
     }
 
-    this.wallets.next(this.wallets.value);
+    this.wallets.next(currentWallets);
   }
 
   private loadWallets() {
@@ -172,10 +185,42 @@ export class WalletService {
         });
 
         this.wallets.next(wallets);
+      } else {
+        this.wallets.next([]);
       }
     } else {
-      this.wallets.next([]);
+      // Production mode: fetch wallets from the backend API.
+      // Wait for coins to load so the ApiService has a valid base URL.
+      this.coinService.coinsLoaded.first().subscribe(() => {
+        this.loadWalletsFromServer();
+
+        // Re-fetch wallets when the user switches coins
+        this.coinSubscription = this.coinService.currentCoin
+          .filter((coin: BaseCoin) => coin !== null)
+          .subscribe(() => {
+            this.loadWalletsFromServer();
+          });
+      });
     }
+  }
+
+  private loadWalletsFromServer() {
+    this.apiService.get('wallets').subscribe(
+      (serverWallets: any[]) => {
+        if (serverWallets && serverWallets.length > 0) {
+          const wallets: Wallet[] = serverWallets.map(w => ({
+            label: w.meta.label,
+            addresses: (w.entries || []).map(e => ({ address: e.address })),
+            coinId: this.currentCoin ? this.currentCoin.id : defaultCoinId,
+            encrypted: w.meta.encrypted,
+          }));
+          this.wallets.next(wallets);
+        } else {
+          this.wallets.next([]);
+        }
+      },
+      () => this.wallets.next([])
+    );
   }
 
   private getCleanSeed(seed: string): string {

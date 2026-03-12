@@ -130,6 +130,12 @@ func discoverCoin(index int, nodeURL string) (*discoveredCoin, error) {
 		coin.CoinSymbol = strings.ToUpper(f.Name)
 	}
 
+	// Apply default price ticker for Skycoin nodes that don't include it in health response
+	if coin.PriceTickerID == "" && strings.EqualFold(f.Name, "skycoin") {
+		coin.PriceTickerID = "sky-skycoin"
+		coin.PriceTickerSource = "coinpaprika"
+	}
+
 	return coin, nil
 }
 

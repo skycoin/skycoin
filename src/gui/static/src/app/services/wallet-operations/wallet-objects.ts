@@ -50,6 +50,10 @@ export class WalletBase {
    * popup when hasHwSecurityWarnings is true. Only valid for hw wallets.
    */
   stopShowingHwSecurityPopup = false;
+  /**
+   * The wallet type: 'deterministic' or 'bip44'. Only valid for software wallets.
+   */
+  walletType = 'deterministic';
 }
 
 /**

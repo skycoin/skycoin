@@ -53,7 +53,9 @@
 			"qr_uri_prefix": "skycoin",
 			"explorer_url": "https://explorer.skycoin.com",
 			"version_url": "https://version.skycoin.com/skycoin/version.txt",
-			"bip44_coin": 8000
+			"bip44_coin": 8000,
+			"price_ticker_id": "",
+			"price_ticker_source": ""
 		}
 	},
 	"cli_config": {

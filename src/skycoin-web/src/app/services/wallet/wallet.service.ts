@@ -77,12 +77,16 @@ export class WalletService {
       });
   }
 
-  create(label: string, seed: string, coinId: number, save = true): Observable<Wallet> {
+  create(label: string, seed: string, coinId: number, save = true, walletType = 'deterministic', seedPassphrase?: string): Observable<Wallet> {
     seed = this.getCleanSeed(seed);
+
+    if (walletType === 'bip44' && environment.production) {
+      return this.createBip44Wallet(label, seed, coinId, save, seedPassphrase);
+    }
 
     return this.cipherProvider.generateAddress(convertAsciiToHexa(seed))
       .map((response: GenerateAddressResponse) => {
-        const wallet = {
+        const wallet: Wallet = {
           label: label,
           seed: seed,
           needSeedConfirmation: true,
@@ -90,7 +94,8 @@ export class WalletService {
           hours: new BigNumber('0'),
           addresses: [response.address],
           nextSeed: response.nextSeed,
-          coinId: coinId
+          coinId: coinId,
+          walletType: 'deterministic',
         };
 
         if ((this.wallets.value || []).some((wlt: Wallet) =>
@@ -98,6 +103,37 @@ export class WalletService {
             wlt.coinId === wallet.coinId)) {
           throw new Error(this.translate.instant('service.wallet.wallet-exists'));
         }
+
+        if (save) {
+          this.add(wallet);
+        }
+
+        return wallet;
+      });
+  }
+
+  private createBip44Wallet(label: string, seed: string, coinId: number, save: boolean, seedPassphrase?: string): Observable<Wallet> {
+    const params: any = {
+      label: label || 'undefined',
+      seed: seed,
+      scan: 100,
+      type: 'bip44',
+    };
+
+    if (seedPassphrase) {
+      params['seed-passphrase'] = seedPassphrase;
+    }
+
+    return this.apiService.post('wallet/create', params)
+      .map((response: any) => {
+        const wallet: Wallet = {
+          label: response.meta.label,
+          balance: new BigNumber('0'),
+          hours: new BigNumber('0'),
+          addresses: (response.entries || []).map(e => ({ address: e.address })),
+          coinId: coinId,
+          walletType: 'bip44',
+        };
 
         if (save) {
           this.add(wallet);
@@ -213,6 +249,7 @@ export class WalletService {
             addresses: (w.entries || []).map(e => ({ address: e.address })),
             coinId: this.currentCoin ? this.currentCoin.id : defaultCoinId,
             encrypted: w.meta.encrypted,
+            walletType: w.meta.type || 'deterministic',
           }));
           this.wallets.next(wallets);
         } else {

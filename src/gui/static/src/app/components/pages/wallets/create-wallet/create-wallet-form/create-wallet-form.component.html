@@ -4,6 +4,16 @@
     <label for="label">{{ 'wallet.new.name-label' | translate}}</label>
     <input formControlName="label" id="label" [attr.disabled]="busy ? 'true' : null" [appFormFieldError]="labelErrorMsg" (blur)="validateForm()">
   </div>
+  <!-- Wallet type selector. -->
+  <div class="form-field">
+    <label for="wallet_type">{{ 'wallet.new.type-label' | translate}}</label>
+    <div class="-select">
+      <select formControlName="wallet_type" id="wallet_type" [attr.disabled]="busy ? 'true' : null">
+        <option value="deterministic">{{ 'wallet.new.type-deterministic' | translate }}</option>
+        <option value="bip44">{{ 'wallet.new.type-bip44' | translate }}</option>
+      </select>
+    </div>
+  </div>
   <!-- How many words the seed has (while loading only). -->
   @if (!create && enterSeedWithAssistance) {
     <div class="form-field">
@@ -118,6 +128,21 @@
           (blur)="validateForm()"
         ></textarea>
       }
+    </div>
+  }
+  <!-- Seed passphrase for BIP44 wallets. -->
+  @if (form.get('wallet_type').value === 'bip44') {
+    <div class="form-field">
+      <label for="seed_passphrase">{{ 'wallet.new.seed-passphrase-label' | translate}}</label>
+      <input
+        formControlName="seed_passphrase"
+        id="seed_passphrase"
+        type="password"
+        appDontSavePassword
+        [attr.disabled]="busy ? 'true' : null"
+        [placeholder]="'wallet.new.seed-passphrase-placeholder' | translate"
+        >
+      <p class="-info">{{ 'wallet.new.seed-passphrase-info' | translate }}</p>
     </div>
   }
   <!-- Password area. -->

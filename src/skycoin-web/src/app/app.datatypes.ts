@@ -12,6 +12,7 @@ export interface Wallet {
   hideEmpty?: boolean;
   coinId?: number;
   nextSeed?: string;
+  walletType?: string;
 }
 
 export interface Address {

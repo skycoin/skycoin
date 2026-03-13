@@ -11,6 +11,17 @@
       </div>
     </div>
   }
+  @if (isProduction) {
+    <div class="form-field">
+      <label for="wallet_type">{{ 'wallet.new.type-label' | translate}}</label>
+      <div class="-select">
+        <select formControlName="wallet_type" id="wallet_type">
+          <option value="deterministic">{{ 'wallet.new.type-deterministic' | translate }}</option>
+          <option value="bip44">{{ 'wallet.new.type-bip44' | translate }}</option>
+        </select>
+      </div>
+    </div>
+  }
   <div class="form-field -valid-seed-container" [ngClass]="{'-expand':form.get('seed').valid && !create}">
     <label for="seed">
       <span>{{ 'wallet.new.seed-label' | translate }}</span>
@@ -43,6 +54,13 @@
         <textarea formControlName="confirm_seed" id="confirm_seed" row="2"></textarea>
         <img class="-valid" src="assets/img/valid.png">
       </div>
+    </div>
+  }
+  @if (isProduction && form.get('wallet_type').value === 'bip44') {
+    <div class="form-field">
+      <label for="seed_passphrase">{{ 'wallet.new.seed-passphrase-label' | translate}}</label>
+      <input formControlName="seed_passphrase" id="seed_passphrase" type="password" [placeholder]="'wallet.new.seed-passphrase-placeholder' | translate">
+      <p class="-info">{{ 'wallet.new.seed-passphrase-info' | translate }}</p>
     </div>
   }
 </div>

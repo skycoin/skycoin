@@ -20,5 +20,10 @@ getTestBed().initTestEnvironment(
     teardown: { destroyAfterEach: false }
 },
 );
+// Import test specs explicitly.
+import './app/utils/general-utils.spec';
+import './app/utils/errors.spec';
+import './app/utils/tx-encoder.spec';
+
 // Finally, start Karma to run the tests.
 __karma__.start();

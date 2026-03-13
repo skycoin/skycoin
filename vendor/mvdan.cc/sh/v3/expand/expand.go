@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"strings"
 
+	"mvdan.cc/sh/v3/internal"
 	"mvdan.cc/sh/v3/pattern"
 	"mvdan.cc/sh/v3/syntax"
 )
@@ -49,9 +50,6 @@ type Config struct {
 	CmdSubst func(io.Writer, *syntax.CmdSubst) error
 
 	// ProcSubst expands a process substitution node.
-	//
-	// Note that this feature is a work in progress, and the signature of
-	// this field might change until #451 is completely fixed.
 	ProcSubst func(*syntax.ProcSubst) (string, error)
 
 	// TODO(v4): replace ReadDir with ReadDir2.
@@ -66,21 +64,28 @@ type Config struct {
 	// Use [os.ReadDir] to use the filesystem directly.
 	ReadDir2 func(string) ([]fs.DirEntry, error)
 
-	// GlobStar corresponds to the shell option that allows globbing with
-	// "**".
+	// GlobStar corresponds to the shell option which allows globbing with "**".
 	GlobStar bool
 
-	// NoCaseGlob corresponds to the shell option that causes case-insensitive
+	// DotGlob corresponds to the shell option which allows filenames beginning
+	// with a dot to be matched by a pattern which does not begin with a dot.
+	DotGlob bool
+
+	// NoCaseGlob corresponds to the shell option which causes case-insensitive
 	// pattern matching in pathname expansion.
 	NoCaseGlob bool
 
-	// NullGlob corresponds to the shell option that allows globbing
+	// NullGlob corresponds to the shell option which allows globbing
 	// patterns which match nothing to result in zero fields.
 	NullGlob bool
 
-	// NoUnset corresponds to the shell option that treats unset variables
+	// NoUnset corresponds to the shell option which treats unset variables
 	// as errors.
 	NoUnset bool
+
+	// ExtGlob corresponds to the shell option which allows using extended
+	// pattern matching features when performing pathname expansion (globbing).
+	ExtGlob bool
 
 	bufferAlloc strings.Builder
 	fieldAlloc  [4]fieldPart
@@ -233,6 +238,9 @@ func Pattern(cfg *Config, word *syntax.Word) (string, error) {
 // shell's format specifications. These include printf(1), among others.
 //
 // The resulting string is returned, along with the number of arguments used.
+// Note that the resulting string may contain null bytes, for example
+// if the format string used `\x00`. The caller should terminate the string
+// at the first null byte if needed, such as when expanding for `$'foo\x00bar'`.
 //
 // The config specifies shell expansion options; nil behaves the same as an
 // empty config.
@@ -252,13 +260,12 @@ func formatInto(sb *strings.Builder, format string, args []string) (int, error) 
 	var fmts []byte
 	initialArgs := len(args)
 
-formatLoop:
 	for i := 0; i < len(format); i++ {
 		// readDigits reads from 0 to max digits, either octal or
 		// hexadecimal.
 		readDigits := func(max int, hex bool) string {
 			j := 0
-			for ; j < max; j++ {
+			for ; j < max && i+j < len(format); j++ {
 				c := format[i+j]
 				if (c >= '0' && c <= '9') ||
 					(hex && c >= 'a' && c <= 'f') ||
@@ -276,6 +283,10 @@ formatLoop:
 		switch {
 		case c == '\\': // escaped
 			i++
+			if i >= len(format) {
+				sb.WriteByte('\\')
+				break
+			}
 			switch c = format[i]; c {
 			case 'a': // bell
 				sb.WriteByte('\a')
@@ -313,11 +324,6 @@ formatLoop:
 				if len(digits) > 0 {
 					// can't error
 					n, _ := strconv.ParseUint(digits, 16, 32)
-					if n == 0 {
-						// If we're about to print \x00,
-						// stop the entire loop, like bash.
-						break formatLoop
-					}
 					if c == 'x' {
 						// always as a single byte
 						sb.WriteByte(byte(n))
@@ -449,7 +455,7 @@ func Fields(cfg *Config, words ...*syntax.Word) ([]string, error) {
 
 // FieldsSeq expands a number of words as if they were arguments in a shell
 // command. This includes brace expansion, tilde expansion, parameter expansion,
-// command substitution, arithmetic expansion, and quote removal.
+// command substitution, arithmetic expansion, quote removal, and globbing.
 func FieldsSeq(cfg *Config, words ...*syntax.Word) iter.Seq2[string, error] {
 	cfg = prepareConfig(cfg)
 	dir := cfg.envGet("PWD")
@@ -544,12 +550,13 @@ func (cfg *Config) wordField(wps []syntax.WordPart, ql quoteLevel) ([]fieldPart,
 				}
 				s = sb.String()
 			}
-			s, _, _ = strings.Cut(s, "\x00")
+			s, _, _ = strings.Cut(s, "\x00") // TODO: why is this needed?
 			field = append(field, fieldPart{val: s})
 		case *syntax.SglQuoted:
 			fp := fieldPart{quote: quoteSingle, val: wp.Value}
 			if wp.Dollar {
 				fp.val, _, _ = Format(cfg, fp.val, nil)
+				fp.val, _, _ = strings.Cut(fp.val, "\x00") // cut the string if format included \x00
 			}
 			field = append(field, fp)
 		case *syntax.DblQuoted:
@@ -586,7 +593,10 @@ func (cfg *Config) wordField(wps []syntax.WordPart, ql quoteLevel) ([]fieldPart,
 			}
 			field = append(field, fieldPart{val: path})
 		case *syntax.ExtGlob:
-			return nil, fmt.Errorf("extended globbing is not supported")
+			// Like how [Config.wordFields] deals with [syntax.ExtGlob],
+			// except that we allow these through even when [Config.ExtGlob]
+			// is false, as it only applies to pathname expansion.
+			field = append(field, fieldPart{val: wp.Op.String() + wp.Pattern.Value + ")"})
 		default:
 			panic(fmt.Sprintf("unhandled word part: %T", wp))
 		}
@@ -669,6 +679,7 @@ func (cfg *Config) wordFields(wps []syntax.WordPart) ([][]fieldPart, error) {
 			fp := fieldPart{quote: quoteSingle, val: wp.Value}
 			if wp.Dollar {
 				fp.val, _, _ = Format(cfg, fp.val, nil)
+				fp.val, _, _ = strings.Cut(fp.val, "\x00") // cut the string if format included \x00
 			}
 			curField = append(curField, fp)
 		case *syntax.DblQuoted:
@@ -721,7 +732,17 @@ func (cfg *Config) wordFields(wps []syntax.WordPart) ([][]fieldPart, error) {
 			}
 			splitAdd(path)
 		case *syntax.ExtGlob:
-			return nil, fmt.Errorf("extended globbing is not supported")
+			if !cfg.ExtGlob {
+				return nil, fmt.Errorf("extended globbing operator used without the \"extglob\" option set")
+			}
+			// We don't translate or interpret the pattern here in any way;
+			// that's done later when globbing takes place via [pattern.Regexp].
+			// Here, all we do is keep the extended globbing expression in string form.
+			//
+			// TODO(v4): perhaps the syntax parser should keep extended globbing expressions
+			// as plain literal strings, because a custom node is not particularly helpful.
+			// It's not like other globbing operators like `*` or `**` get their own nodes.
+			curField = append(curField, fieldPart{val: wp.Op.String() + wp.Pattern.Value + ")"})
 		default:
 			panic(fmt.Sprintf("unhandled word part: %T", wp))
 		}
@@ -736,7 +757,7 @@ func (cfg *Config) wordFields(wps []syntax.WordPart) ([][]fieldPart, error) {
 // quotedElemFields returns the list of elements resulting from a quoted
 // parameter expansion that should be treated especially, like "${foo[@]}".
 func (cfg *Config) quotedElemFields(pe *syntax.ParamExp) []string {
-	if pe == nil || pe.Length || pe.Width {
+	if pe == nil || pe.Length || pe.Width || pe.IsSet {
 		return nil
 	}
 	name := pe.Param.Value
@@ -765,25 +786,72 @@ func (cfg *Config) quotedElemFields(pe *syntax.ParamExp) []string {
 		return nil
 	}
 	switch name {
-	case "*": // "${*}"
-		return []string{cfg.ifsJoin(cfg.Env.Get(name).List)}
-	case "@": // "${@}"
-		return cfg.Env.Get(name).List
+	case "*": // "${*}" or "${*:offset:length}"
+		return []string{cfg.ifsJoin(cfg.sliceElems(pe, cfg.Env.Get(name).List, true))}
+	case "@": // "${@}" or "${@:offset:length}"
+		return cfg.sliceElems(pe, cfg.Env.Get(name).List, true)
 	}
 	switch nodeLit(pe.Index) {
 	case "@": // "${name[@]}"
-		switch vr := cfg.Env.Get(name); vr.Kind {
+		vr := cfg.Env.Get(name)
+		switch vr.Kind {
 		case Indexed:
-			return vr.List
+			return cfg.sliceElems(pe, vr.List, false)
 		case Associative:
 			return slices.Collect(maps.Values(vr.Map))
+		case Unknown:
+			if !vr.IsSet() {
+				// An unset variable expanded as "${name[@]}" produces
+				// zero fields, just like an empty array.
+				return []string{}
+			}
 		}
 	case "*": // "${name[*]}"
 		if vr := cfg.Env.Get(name); vr.Kind == Indexed {
-			return []string{cfg.ifsJoin(vr.List)}
+			return []string{cfg.ifsJoin(cfg.sliceElems(pe, vr.List, false))}
 		}
 	}
 	return nil
+}
+
+// sliceElems applies ${var:offset:length} slicing to a list of elements.
+// When positional is true, $0 is prepended to the list before slicing.
+// In bash, positional parameter offsets ($@ and $*) are 1-based and
+// offset 0 includes $0 (the shell or script name). Negative offsets
+// count from $# + 1, so $0 is reachable via large enough negative values.
+func (cfg *Config) sliceElems(pe *syntax.ParamExp, elems []string, positional bool) []string {
+	if pe.Slice == nil {
+		return elems
+	}
+	if positional {
+		elems = append([]string{cfg.Env.Get("0").Str}, elems...)
+	}
+	slicePos := func(n int) int {
+		if n < 0 {
+			n = len(elems) + n
+			if n < 0 {
+				n = len(elems)
+			}
+		} else if n > len(elems) {
+			n = len(elems)
+		}
+		return n
+	}
+	if pe.Slice.Offset != nil {
+		offset, err := Arithm(cfg, pe.Slice.Offset)
+		if err != nil {
+			return elems
+		}
+		elems = elems[slicePos(offset):]
+	}
+	if pe.Slice.Length != nil {
+		length, err := Arithm(cfg, pe.Slice.Length)
+		if err != nil {
+			return elems
+		}
+		elems = elems[:slicePos(length)]
+	}
+	return elems
 }
 
 func (cfg *Config) expandUser(field string, moreFields bool) (prefix, rest string) {
@@ -843,7 +911,10 @@ func findAllIndex(pat, name string, n int) [][]int {
 	return rx.FindAllStringIndex(name, n)
 }
 
-var rxGlobStar = regexp.MustCompile(".*")
+var (
+	rxGlobStar        = regexp.MustCompile(`^[^/.][^/]*$`)
+	rxGlobStarDotGlob = regexp.MustCompile(`^[^/]*$`)
+)
 
 // pathJoin2 is a simpler version of [filepath.Join] without cleaning the result,
 // since that's needed for globbing.
@@ -940,7 +1011,7 @@ func (cfg *Config) glob(base, pat string) ([]string, error) {
 			stack := make([]string, 0, len(matches))
 			for _, match := range slices.Backward(matches) {
 				// "a/**" should match "a/ a/b a/b/cfg ...";
-				// note how the zero-match case has a trailing separator.
+				// note how the zero-match case there has a trailing separator.
 				stack = append(stack, pathJoin2(match, ""))
 			}
 			matches = matches[:0]
@@ -948,15 +1019,15 @@ func (cfg *Config) glob(base, pat string) ([]string, error) {
 			for len(stack) > 0 {
 				dir := stack[len(stack)-1]
 				stack = stack[:len(stack)-1]
-
-				// Don't include the original "" match as it's not a valid path.
-				if dir != "" {
-					matches = append(matches, dir)
-				}
+				matches = append(matches, dir)
 
 				// If dir is not a directory, we keep the stack as-is and continue.
 				newMatches = newMatches[:0]
-				newMatches, _ = cfg.globDir(base, dir, rxGlobStar, wantDir, newMatches)
+				rx := rxGlobStar.MatchString
+				if cfg.DotGlob {
+					rx = rxGlobStarDotGlob.MatchString
+				}
+				newMatches, _ = cfg.globDir(base, dir, rx, wantDir, newMatches)
 				for _, match := range slices.Backward(newMatches) {
 					stack = append(stack, match)
 				}
@@ -967,24 +1038,36 @@ func (cfg *Config) glob(base, pat string) ([]string, error) {
 		if cfg.NoCaseGlob {
 			mode |= pattern.NoGlobCase
 		}
-		expr, err := pattern.Regexp(part, mode)
+		if cfg.DotGlob {
+			mode |= pattern.GlobLeadingDot
+		}
+		if cfg.ExtGlob {
+			mode |= pattern.ExtendedOperators
+		}
+		matcher, err := internal.ExtendedPatternMatcher(part, mode)
 		if err != nil {
 			return nil, err
 		}
-		rx := regexp.MustCompile(expr)
 		var newMatches []string
 		for _, dir := range matches {
-			newMatches, err = cfg.globDir(base, dir, rx, wantDir, newMatches)
+			newMatches, err = cfg.globDir(base, dir, matcher, wantDir, newMatches)
 			if err != nil {
 				return nil, err
 			}
 		}
 		matches = newMatches
 	}
+	// Note that the results need to be sorted.
+	// TODO: above we do a BFS; if we did a DFS, the matches would already be sorted.
+	slices.Sort(matches)
+	// Remove any empty matches left behind from "**".
+	if len(matches) > 0 && matches[0] == "" {
+		matches = matches[1:]
+	}
 	return matches, nil
 }
 
-func (cfg *Config) globDir(base, dir string, rx *regexp.Regexp, wantDir bool, matches []string) ([]string, error) {
+func (cfg *Config) globDir(base, dir string, matcher func(string) bool, wantDir bool, matches []string) ([]string, error) {
 	fullDir := dir
 	if !filepath.IsAbs(dir) {
 		fullDir = filepath.Join(base, dir)
@@ -1011,7 +1094,7 @@ func (cfg *Config) globDir(base, dir string, rx *regexp.Regexp, wantDir bool, ma
 			// Not a symlink nor a directory.
 			continue
 		}
-		if rx.MatchString(name) {
+		if matcher(name) {
 			matches = append(matches, pathJoin2(dir, name))
 		}
 	}

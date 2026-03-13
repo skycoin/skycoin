@@ -814,6 +814,20 @@ func (c *NodeConfig) LoadFromFiberConfig(configPath string) error {
 		c.distributionUnlockInterval = fiberCfg.Params.UnlockTimeInterval
 	}
 
+	// Apply user transaction verification params from fiber config.
+	// These override the hardcoded defaults in params.UserVerifyTxn,
+	// which controls how transactions are created (burn factor, size, precision).
+	// Environment variables (USER_BURN_FACTOR, etc.) take precedence over fiber config.
+	if fiberCfg.Params.UserBurnFactor != 0 && os.Getenv("USER_BURN_FACTOR") == "" {
+		params.UserVerifyTxn.BurnFactor = uint32(fiberCfg.Params.UserBurnFactor) //nolint:gosec
+	}
+	if fiberCfg.Params.UserMaxTransactionSize != 0 && os.Getenv("USER_MAX_TXN_SIZE") == "" {
+		params.UserVerifyTxn.MaxTransactionSize = uint32(fiberCfg.Params.UserMaxTransactionSize) //nolint:gosec
+	}
+	if fiberCfg.Params.UserMaxDropletPrecision != 0 && os.Getenv("USER_MAX_DECIMALS") == "" {
+		params.UserVerifyTxn.MaxDropletPrecision = uint8(fiberCfg.Params.UserMaxDropletPrecision) //nolint:gosec
+	}
+
 	return nil
 }
 
@@ -976,11 +990,16 @@ func (c *NodeConfig) applyFiberNodeConfig(node fiber.NodeConfig) {
 	if node.ExplorerURL != "" {
 		c.Fiber.ExplorerURL = node.ExplorerURL
 	}
-	if node.VersionURL != "" {
-		c.Fiber.VersionURL = node.VersionURL
-	}
+	// Always apply VersionURL, even if empty, to allow fibercoins to disable version checking
+	c.Fiber.VersionURL = node.VersionURL
 	if node.Bip44Coin != 0 {
 		c.Fiber.Bip44Coin = node.Bip44Coin
+	}
+	if node.PriceTickerID != "" {
+		c.Fiber.PriceTickerID = node.PriceTickerID
+	}
+	if node.PriceTickerSource != "" {
+		c.Fiber.PriceTickerSource = node.PriceTickerSource
 	}
 }
 

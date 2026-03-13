@@ -16,6 +16,7 @@
           <div class="-width-150 text-right">{{ 'coin' | commonText }}</div>
           <div class="-width-150 text-right">{{ 'hours' | commonText }}</div>
           <div class="-width-150">{{ 'pending-txs.timestamp-table-label' | translate }}</div>
+          <div class="-width-80"></div>
         </div>
         <div class="-body">
           @for (tx of transactions; track tx) {
@@ -24,6 +25,10 @@
               <div class="-width-150 text-right">{{ tx.coins | amount:true:'first' }}</div>
               <div class="-width-150 text-right">{{ tx.hours | amount:false:'first' }}</div>
               <div class="-width-150 grey-text">{{ tx.timestamp | dateTime }}</div>
+              <div class="-width-80 text-right">
+                <mat-icon class="delete-icon" (click)="deleteTransaction(tx.id)"
+                  [matTooltip]="'pending-txs.delete-button' | translate">delete</mat-icon>
+              </div>
             </div>
           }
         </div>

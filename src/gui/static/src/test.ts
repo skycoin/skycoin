@@ -1,11 +1,6 @@
 // This file is required by karma.conf.js and loads recursively all the .spec and framework files
 
-import 'zone.js/dist/long-stack-trace-zone';
-import 'zone.js/dist/proxy.js';
-import 'zone.js/dist/sync-test';
-import 'zone.js/dist/jasmine-patch';
-import 'zone.js/dist/async-test';
-import 'zone.js/dist/fake-async-test';
+import 'zone.js/testing';
 import { getTestBed } from '@angular/core/testing';
 import {
   BrowserDynamicTestingModule,
@@ -25,5 +20,10 @@ getTestBed().initTestEnvironment(
     teardown: { destroyAfterEach: false }
 },
 );
+// Import test specs explicitly.
+import './app/utils/general-utils.spec';
+import './app/utils/errors.spec';
+import './app/utils/tx-encoder.spec';
+
 // Finally, start Karma to run the tests.
 __karma__.start();

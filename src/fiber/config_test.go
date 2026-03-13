@@ -47,6 +47,8 @@ func TestNewConfig(t *testing.T) {
 			ExplorerURL:                    "https://explorer.testcoin.com",
 			VersionURL:                     "https://version.testcoin.com/testcoin/version.txt",
 			Bip44Coin:                      bip44.CoinTypeSkycoin,
+			PriceTickerID:                  "sky-skycoin",
+			PriceTickerSource:              "coinpaprika",
 		},
 		Params: ParamsConfig{
 			MaxCoinSupply:           1e8,

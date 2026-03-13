@@ -302,7 +302,9 @@
     "none": "Currently there are no pending transactions",
     "my": "Mine",
     "all": "All",
-    "transactions": "Transactions"
+    "transactions": "Transactions",
+    "delete-button": "Delete pending transaction",
+    "delete-confirm": "Are you sure you want to remove this pending transaction from the local pool? This cannot be undone."
   },
 
   "nodes" : {

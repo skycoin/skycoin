@@ -127,8 +127,6 @@ export class AppService {
       this.burnRateInternal = new BigNumber(response.user_verify_transaction.burn_factor);
       this.currentMaxDecimalsInternal = response.user_verify_transaction.max_decimals;
 
-      this.detectUpdateAvailable();
-
       this.fullCoinNameInternal = response.fiber.display_name;
       this.coinNameInternal = response.fiber.ticker;
       this.hoursNameInternal = response.fiber.coin_hours_display_name;
@@ -139,6 +137,9 @@ export class AppService {
       if (this.explorerUrlInternal.endsWith('/')) {
         this.explorerUrlInternal = this.explorerUrlInternal.substr(0, this.explorerUrl.length - 1);
       }
+
+      // Use version_url from fiber config; if empty, skip version checking
+      this.detectUpdateAvailable(response.fiber.version_url);
 
       if (!response.csrf_enabled) {
         this.csrfDisabledInternal = true;
@@ -151,9 +152,12 @@ export class AppService {
    * value of this.lastestVersionInternal. If there is an update available, it sets
    * this.updateAvailableInternal to true.
    */
-  private detectUpdateAvailable() {
-    if (AppConfig.urlForVersionChecking) {
-      this.http.get(AppConfig.urlForVersionChecking, { responseType: 'text' })
+  private detectUpdateAvailable(versionUrl?: string) {
+    // If versionUrl was explicitly provided (even as empty string), use it;
+    // only fall back to AppConfig if it was undefined (not in health response)
+    const url = versionUrl !== undefined ? versionUrl : AppConfig.urlForVersionChecking;
+    if (url) {
+      this.http.get(url, { responseType: 'text' })
         .pipe(retryWhen(errors => errors.pipe(delay(30000))))
         .subscribe((response: string) => {
           this.lastestVersionInternal = response.trim();

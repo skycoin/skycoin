@@ -15,6 +15,7 @@
           <div class="-width-150 -not-on-small-and-below">{{ currentCoin.coinSymbol }}</div>
           <div class="-width-150 -not-on-small-and-below">{{ currentCoin.hoursName }}</div>
           <div class="-width-150 -not-on-small-and-below">{{ 'pending-txs.timestamp' | translate }}</div>
+          <div class="-width-80 -not-on-small-and-below"></div>
           <div class="flex-fill -on-small-and-below-only">{{ 'pending-txs.transactions' | translate }}</div>
         </div>
         <div class="-paper">
@@ -25,6 +26,10 @@
                 <div class="-width-150">{{ (transaction.amount ? transaction.amount.decimalPlaces(6).toString() : 0) | number:'1.0-6' }}</div>
                 <div class="-width-150">{{ (transaction.hours ? transaction.hours.decimalPlaces(0).toString() : 0) | number:'1.0-0' }}</div>
                 <div class="-width-150 -timestamp">{{ transaction.timestamp | dateTime }}</div>
+                <div class="-width-80 text-right">
+                  <mat-icon class="delete-icon" (click)="deleteTransaction(transaction.txid)"
+                    [matTooltip]="'pending-txs.delete-button' | translate">delete</mat-icon>
+                </div>
               </div>
             }
             @for (transaction of transactions; track transaction) {
@@ -45,6 +50,10 @@
                   <div class="list-row">
                     <div class="element-label">{{ 'pending-txs.timestamp' | translate }}:</div>
                     <div class="-one-line-ellipsis">{{ transaction.timestamp | dateTime }}</div>
+                  </div>
+                  <div class="list-row text-right">
+                    <mat-icon class="delete-icon" (click)="deleteTransaction(transaction.txid)"
+                      [matTooltip]="'pending-txs.delete-button' | translate">delete</mat-icon>
                   </div>
                 </div>
               </div>

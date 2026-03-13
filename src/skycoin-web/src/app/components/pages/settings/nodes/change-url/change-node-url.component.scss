@@ -1,4 +1,4 @@
-@import '../../../../../../theme/variables';
+@use '../../../../../../theme/variables' as *;
 
 .property-container {
   display: table;

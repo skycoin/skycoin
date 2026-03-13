@@ -1,9 +1,7 @@
 import { Injectable, NgZone } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject } from 'rxjs';
-import { Observable } from 'rxjs';
-import 'rxjs/add/observable/timer';
-import { Subscription } from 'rxjs';
+import { BehaviorSubject, of, Subscription, Observable } from 'rxjs';
+import { delay, mergeMap } from 'rxjs/operators';
 
 import { CoinService } from './coin.service';
 import { BaseCoin } from '../coins/basecoin';
@@ -14,9 +12,10 @@ export class PriceService {
   price = new BehaviorSubject<number>(null);
 
   private readonly updatePeriod = 10 * 60 * 1000;
+  private readonly errorUpdatePeriod = 30 * 1000;
   private priceTickerId: string | null = null;
-  private lastPriceSubscription: Subscription;
-  private timerSubscriptions: Subscription[];
+  private priceTickerSource: string = 'coinpaprika';
+  private priceSubscription: Subscription;
 
   constructor(
     private http: HttpClient,
@@ -24,42 +23,55 @@ export class PriceService {
     private coinService: CoinService
   ) {
     this.coinService.currentCoin.subscribe((coin: BaseCoin) => {
+      if (!coin) {
+        return;
+      }
       this.priceTickerId = coin.priceTickerId;
-      this.startTimer();
+      this.priceTickerSource = coin.priceTickerSource || 'coinpaprika';
+      this.loadConfigAndStart();
     });
   }
 
-  private startTimer(firstConnectionDelay = 0) {
-    if (this.timerSubscriptions) {
-      this.timerSubscriptions.forEach(sub => sub.unsubscribe());
-    }
-
-    this.timerSubscriptions = [];
-
-    this.ngZone.runOutsideAngular(() => {
-      this.timerSubscriptions.push(Observable.timer(this.updatePeriod, this.updatePeriod)
-        .subscribe(() => this.ngZone.run(() => !this.lastPriceSubscription ? this.loadPrice() : null )));
-    });
-
-    this.timerSubscriptions.push(
-      Observable.of(1).delay(firstConnectionDelay).subscribe(() => this.loadPrice())
-    );
+  private loadConfigAndStart() {
+    // Price ticker config is already provided by the coin discovery.
+    // Just start the refresh subscription.
+    this.startDataRefreshSubscription(0);
   }
 
-  private loadPrice() {
+  private startDataRefreshSubscription(delayMs: number) {
     if (!this.priceTickerId) {
       return;
     }
 
-    if (this.lastPriceSubscription) {
-      this.lastPriceSubscription.unsubscribe();
+    if (this.priceSubscription) {
+      this.priceSubscription.unsubscribe();
     }
 
-    this.lastPriceSubscription = this.http.get(`https://api.coinpaprika.com/v1/tickers/${this.priceTickerId}?quotes=USD`)
-      .subscribe((response: any) => {
-        this.lastPriceSubscription = null;
-        this.price.next(response.quotes.USD.price);
-      },
-      () => this.startTimer(60000));
+    this.ngZone.runOutsideAngular(() => {
+      this.priceSubscription = of(0).pipe(delay(delayMs), mergeMap(() => {
+        return this.fetchPrice();
+      })).subscribe((price: number) => {
+        this.ngZone.run(() => this.price.next(price));
+        this.startDataRefreshSubscription(this.updatePeriod);
+      }, () => {
+        this.startDataRefreshSubscription(this.errorUpdatePeriod);
+      });
+    });
+  }
+
+  private fetchPrice(): Observable<number> {
+    if (this.priceTickerSource === 'coingecko') {
+      return this.http.get(
+        `https://api.coingecko.com/api/v3/simple/price?ids=${this.priceTickerId}&vs_currencies=usd`
+      ).pipe(mergeMap((response: any) => {
+        return of(response[this.priceTickerId].usd);
+      }));
+    } else {
+      return this.http.get(
+        `https://api.coinpaprika.com/v1/tickers/${this.priceTickerId}?quotes=USD`
+      ).pipe(mergeMap((response: any) => {
+        return of(response.quotes.USD.price);
+      }));
+    }
   }
 }

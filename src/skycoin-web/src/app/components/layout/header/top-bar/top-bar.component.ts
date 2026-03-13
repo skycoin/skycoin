@@ -1,13 +1,12 @@
 import { Component, Input, OnInit, OnDestroy, Renderer2, ViewChild, NgZone } from '@angular/core';
 import 'rxjs/add/observable/interval';
 import { Subscription } from 'rxjs';
-import { Overlay } from '@angular/cdk/overlay';
 import { Observable } from 'rxjs';
 
 import { BalanceService, BalanceStates } from '../../../../services/wallet/balance.service';
 import { CoinService } from '../../../../services/coin.service';
 import { BaseCoin } from '../../../../coins/basecoin';
-import { openChangeCoinModal, openChangeLanguageModal, getTimeSinceLastBalanceUpdate } from '../../../../utils';
+import { openChangeLanguageModal, getTimeSinceLastBalanceUpdate } from '../../../../utils';
 import { LanguageService, LanguageData } from '../../../../services/language.service';
 import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.service';
 
@@ -27,13 +26,13 @@ export class TopBarComponent implements OnInit, OnDestroy {
   currentCoin: BaseCoin;
   language: LanguageData;
   hasManyCoins: boolean;
+  availableCoins: BaseCoin[] = [];
 
   private subscriptionsGroup: Subscription[] = [];
 
   constructor(private balanceService: BalanceService,
               private coinService: CoinService,
               private dialog: CustomMatDialogService,
-              private overlay: Overlay,
               private renderer: Renderer2,
               private languageService: LanguageService,
               private _ngZone: NgZone) {
@@ -44,6 +43,7 @@ export class TopBarComponent implements OnInit, OnDestroy {
       .subscribe(lang => this.language = lang));
 
     this.hasManyCoins = this.coinService.coins.length > 1;
+    this.availableCoins = this.coinService.coins;
 
     this.subscriptionsGroup.push(
       this.coinService.currentCoin.subscribe((coin: BaseCoin) => {
@@ -80,13 +80,10 @@ export class TopBarComponent implements OnInit, OnDestroy {
     this.balanceService.startGettingBalances();
   }
 
-  changeCoin() {
-    openChangeCoinModal(this.dialog, this.renderer, this.overlay)
-      .subscribe(response => {
-        if (response) {
-          this.coinService.changeCoin(response);
-        }
-      });
+  selectCoin(coin: BaseCoin) {
+    if (coin && coin.id !== this.currentCoin.id) {
+      this.coinService.changeCoin(coin);
+    }
   }
 
   changelanguage() {

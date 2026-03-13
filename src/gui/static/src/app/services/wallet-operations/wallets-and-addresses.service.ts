@@ -178,15 +178,19 @@ export class WalletsAndAddressesService {
    * @param password Wallet password, if it will be encrypted, null otherwise.
    * @returns The returned observable returns nothing, but it can fail in case of error.
    */
-  createSoftwareWallet(temporal: boolean, label: string, seed: string, password?: string): Observable<void> {
+  createSoftwareWallet(temporal: boolean, label: string, seed: string, password?: string, walletType = 'deterministic', seedPassphrase?: string): Observable<void> {
     seed = seed.replace(/(\n|\r\n)$/, '');
 
     const params = {
       label: label ? label : 'undefined',
       seed: seed,
       scan: 100,
-      type: 'deterministic',
+      type: walletType,
     };
+
+    if (walletType === 'bip44' && seedPassphrase) {
+      params['seed-passphrase'] = seedPassphrase;
+    }
 
     if (!temporal && password) {
       params['password'] = password;
@@ -205,6 +209,7 @@ export class WalletsAndAddressesService {
         isHardware: false,
         hasHwSecurityWarnings: false,
         stopShowingHwSecurityPopup: true,
+        walletType: response.meta.type || 'deterministic',
       };
 
       (response.entries as any[]).forEach(entry => wallet.addresses.push({address: entry.address, confirmed: true}));
@@ -353,6 +358,7 @@ export class WalletsAndAddressesService {
       encrypted: false,
       temporal: false,
       isHardware: true,
+      walletType: 'deterministic',
     };
   }
 
@@ -374,6 +380,7 @@ export class WalletsAndAddressesService {
           isHardware: false,
           hasHwSecurityWarnings: false,
           stopShowingHwSecurityPopup: true,
+          walletType: wallet.meta.type || 'deterministic',
         };
 
         if (wallet.entries) {

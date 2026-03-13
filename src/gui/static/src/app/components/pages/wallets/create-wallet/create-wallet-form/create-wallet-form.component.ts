@@ -63,6 +63,14 @@ export class WalletFormData {
    * If the user selected that the wallet must be loaded temporarily.
    */
   loadTemporarily = false;
+  /**
+   * The wallet type: 'deterministic' or 'bip44'.
+   */
+  walletType = 'deterministic';
+  /**
+   * Optional seed passphrase for BIP44 wallets.
+   */
+  seedPassphrase: string;
 }
 
 /**
@@ -223,6 +231,8 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
       customSeedIsNormal: this.customSeedIsNormal,
       advancedOptionsShown: this.showAdvancedOptions,
       loadTemporarily: this.loadTemporarily,
+      walletType: this.form.value.wallet_type || 'deterministic',
+      seedPassphrase: this.form.value.seed_passphrase || '',
     };
   }
 
@@ -349,6 +359,8 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     this.form.addControl('password', new UntypedFormControl());
     this.form.addControl('confirm_password', new UntypedFormControl());
     this.form.addControl('number_of_words', new UntypedFormControl(!this.create && data && data.numberOfWords ? data.numberOfWords : 12));
+    this.form.addControl('wallet_type', new UntypedFormControl(data ? data.walletType || 'deterministic' : 'deterministic'));
+    this.form.addControl('seed_passphrase', new UntypedFormControl(data ? data.seedPassphrase || '' : ''));
 
     this.form.setValidators(this.validateForm.bind(this));
 

@@ -11,8 +11,6 @@ import { environment } from '../../environments/environment';
  */
 @Injectable()
 export class PriceService {
-  private readonly PRICE_API_ID = AppConfig.priceApiId;
-
   /**
    * Allows to know the current USD price of the coin.
    */
@@ -31,11 +29,44 @@ export class PriceService {
   private readonly errorUpdatePeriod = 30 * 1000;
   private priceSubscription: Subscription;
 
+  private priceTickerId: string = null;
+  private priceTickerSource: string = null;
+  private configLoaded = false;
+
   constructor(
     private http: HttpClient,
     private ngZone: NgZone,
   ) {
-    this.startDataRefreshSubscription(0);
+    this.loadConfigAndStart();
+  }
+
+  /**
+   * Loads price ticker config from the health API, then starts price updates.
+   */
+  private loadConfigAndStart() {
+    if (environment.isInE2eMode) {
+      this.priceInternal.next(1);
+      return;
+    }
+
+    this.http.get('/api/v1/health').subscribe((response: any) => {
+      if (response.fiber && response.fiber.price_ticker_id) {
+        this.priceTickerId = response.fiber.price_ticker_id;
+        this.priceTickerSource = response.fiber.price_ticker_source || 'coinpaprika';
+      } else {
+        // Fallback to hardcoded AppConfig for backwards compatibility
+        this.priceTickerId = AppConfig.priceApiId;
+        this.priceTickerSource = 'coinpaprika';
+      }
+      this.configLoaded = true;
+      this.startDataRefreshSubscription(0);
+    }, () => {
+      // If health API fails, fall back to AppConfig
+      this.priceTickerId = AppConfig.priceApiId;
+      this.priceTickerSource = 'coinpaprika';
+      this.configLoaded = true;
+      this.startDataRefreshSubscription(0);
+    });
   }
 
   /**
@@ -45,7 +76,7 @@ export class PriceService {
    */
   private startDataRefreshSubscription(delayMs: number) {
     // If there is no API ID for getting the price, nothing is done.
-    if (!this.PRICE_API_ID) {
+    if (!this.priceTickerId) {
       return;
     }
 
@@ -53,21 +84,35 @@ export class PriceService {
       this.priceSubscription.unsubscribe();
     }
 
-    if (!environment.isInE2eMode) {
-      this.ngZone.runOutsideAngular(() => {
-        this.priceSubscription = of(0).pipe(delay(delayMs), mergeMap(() => {
-          return this.http.get(`https://api.coinpaprika.com/v1/tickers/${this.PRICE_API_ID}?quotes=USD`);
-        })).subscribe((response: any) => {
-          this.ngZone.run(() => this.priceInternal.next(response.quotes.USD.price));
-          this.startDataRefreshSubscription(this.updatePeriod);
-        }, () => {
-          this.startDataRefreshSubscription(this.errorUpdatePeriod);
-        });
+    this.ngZone.runOutsideAngular(() => {
+      this.priceSubscription = of(0).pipe(delay(delayMs), mergeMap(() => {
+        return this.fetchPrice();
+      })).subscribe((price: number) => {
+        this.ngZone.run(() => this.priceInternal.next(price));
+        this.startDataRefreshSubscription(this.updatePeriod);
+      }, () => {
+        this.startDataRefreshSubscription(this.errorUpdatePeriod);
       });
+    });
+  }
+
+  /**
+   * Fetches the current price from the configured API source.
+   */
+  private fetchPrice(): Observable<number> {
+    if (this.priceTickerSource === 'coingecko') {
+      return this.http.get(
+        `https://api.coingecko.com/api/v3/simple/price?ids=${this.priceTickerId}&vs_currencies=usd`
+      ).pipe(mergeMap((response: any) => {
+        return of(response[this.priceTickerId].usd);
+      }));
     } else {
-      // Set the price to 1 and stop making updates during e2e tests, to avoid potential
-      // problems with the remote connection.
-      this.priceInternal.next(1);
+      // Default: coinpaprika
+      return this.http.get(
+        `https://api.coinpaprika.com/v1/tickers/${this.priceTickerId}?quotes=USD`
+      ).pipe(mergeMap((response: any) => {
+        return of(response.quotes.USD.price);
+      }));
     }
   }
 }

@@ -334,7 +334,11 @@ func TestCheckBroadcastTxnRecipients(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			accepts, err := checkBroadcastTxnRecipients(tc.connections, tc.ids, tc.txn, tc.head, tc.inputs)
+			accepts, err := checkBroadcastTxnRecipients(tc.connections, tc.ids, tc.txn, tc.head, tc.inputs, params.VerifyTxn{
+				BurnFactor:          2,
+				MaxTransactionSize:  32 * 1024,
+				MaxDropletPrecision: 3,
+			})
 			require.Equal(t, tc.err, err)
 			require.Equal(t, tc.accepts, accepts)
 		})

@@ -1,6 +1,7 @@
 import { Injectable, EventEmitter, Injector } from '@angular/core';
 import 'rxjs/add/operator/mergeMap';
-import { BehaviorSubject } from 'rxjs';
+import 'rxjs/add/operator/filter';
+import { BehaviorSubject, Subscription } from 'rxjs';
 import { Observable } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { BigNumber } from 'bignumber.js';
@@ -21,9 +22,10 @@ export class ScanProgressData {
 
 @Injectable()
 export class WalletService {
-  wallets: BehaviorSubject<Wallet[]> = new BehaviorSubject<Wallet[]>([]);
+  wallets: BehaviorSubject<Wallet[]> = new BehaviorSubject<Wallet[]>(null);
 
   private currentCoin: BaseCoin;
+  private coinSubscription: Subscription;
 
   constructor(
     private cipherProvider: CipherProvider,
@@ -36,13 +38,23 @@ export class WalletService {
   }
 
   get haveWallets(): Observable<boolean> {
-    return this.wallets.map(wallets => wallets ? wallets.length > 0 : false);
+    return this.wallets
+      .filter(wallets => wallets !== null)
+      .map(wallets => wallets.length > 0);
   }
 
   get currentWallets(): Observable<Wallet[]> {
     return this.wallets
+      .filter(wallets => wallets !== null)
       .flatMap(wallets => this.coinService.currentCoin
-        .map((coin: BaseCoin) => wallets.filter(wallet => wallet.coinId === coin.id))
+        .filter((coin: BaseCoin) => coin !== null)
+        .map((coin: BaseCoin) => {
+          if (environment.production) {
+            // In production, wallets are fetched per-coin from the server
+            return wallets;
+          }
+          return wallets.filter(wallet => wallet.coinId === coin.id);
+        })
       ).map(wallets => wallets ? wallets : []);
   }
 
@@ -65,12 +77,16 @@ export class WalletService {
       });
   }
 
-  create(label: string, seed: string, coinId: number, save = true): Observable<Wallet> {
+  create(label: string, seed: string, coinId: number, save = true, walletType = 'deterministic', seedPassphrase?: string): Observable<Wallet> {
     seed = this.getCleanSeed(seed);
+
+    if (walletType === 'bip44' && environment.production) {
+      return this.createBip44Wallet(label, seed, coinId, save, seedPassphrase);
+    }
 
     return this.cipherProvider.generateAddress(convertAsciiToHexa(seed))
       .map((response: GenerateAddressResponse) => {
-        const wallet = {
+        const wallet: Wallet = {
           label: label,
           seed: seed,
           needSeedConfirmation: true,
@@ -78,14 +94,46 @@ export class WalletService {
           hours: new BigNumber('0'),
           addresses: [response.address],
           nextSeed: response.nextSeed,
-          coinId: coinId
+          coinId: coinId,
+          walletType: 'deterministic',
         };
 
-        if (this.wallets.value.some((wlt: Wallet) =>
+        if ((this.wallets.value || []).some((wlt: Wallet) =>
             wlt.addresses[0].address === wallet.addresses[0].address &&
             wlt.coinId === wallet.coinId)) {
           throw new Error(this.translate.instant('service.wallet.wallet-exists'));
         }
+
+        if (save) {
+          this.add(wallet);
+        }
+
+        return wallet;
+      });
+  }
+
+  private createBip44Wallet(label: string, seed: string, coinId: number, save: boolean, seedPassphrase?: string): Observable<Wallet> {
+    const params: any = {
+      label: label || 'undefined',
+      seed: seed,
+      scan: 100,
+      type: 'bip44',
+    };
+
+    if (seedPassphrase) {
+      params['seed-passphrase'] = seedPassphrase;
+    }
+
+    return this.apiService.post('wallet/create', params)
+      .map((response: any) => {
+        const wallet: Wallet = {
+          label: response.meta.label,
+          balance: new BigNumber('0'),
+          hours: new BigNumber('0'),
+          addresses: (response.entries || []).map(e => ({ address: e.address })),
+          coinId: coinId,
+          walletType: 'bip44',
+        };
 
         if (save) {
           this.add(wallet);
@@ -148,9 +196,10 @@ export class WalletService {
   }
 
   saveWallets() {
+    const currentWallets = this.wallets.value || [];
     if (!environment.production) {
       const strippedWallets: Wallet[] = [];
-      this.wallets.value.forEach(wallet => {
+      currentWallets.forEach(wallet => {
         const strippedAddresses: Address[] = [];
         wallet.addresses.forEach(address => strippedAddresses.push({ address: address.address }));
         strippedWallets.push({ coinId: wallet.coinId, needSeedConfirmation: wallet.needSeedConfirmation, label: wallet.label, addresses: strippedAddresses });
@@ -158,7 +207,7 @@ export class WalletService {
       localStorage.setItem('wallets', JSON.stringify(strippedWallets));
     }
 
-    this.wallets.next(this.wallets.value);
+    this.wallets.next(currentWallets);
   }
 
   private loadWallets() {
@@ -172,10 +221,43 @@ export class WalletService {
         });
 
         this.wallets.next(wallets);
+      } else {
+        this.wallets.next([]);
       }
     } else {
-      this.wallets.next([]);
+      // Production mode: fetch wallets from the backend API.
+      // Wait for coins to load so the ApiService has a valid base URL.
+      this.coinService.coinsLoaded.first().subscribe(() => {
+        this.loadWalletsFromServer();
+
+        // Re-fetch wallets when the user switches coins
+        this.coinSubscription = this.coinService.currentCoin
+          .filter((coin: BaseCoin) => coin !== null)
+          .subscribe(() => {
+            this.loadWalletsFromServer();
+          });
+      });
     }
+  }
+
+  private loadWalletsFromServer() {
+    this.apiService.get('wallets').subscribe(
+      (serverWallets: any[]) => {
+        if (serverWallets && serverWallets.length > 0) {
+          const wallets: Wallet[] = serverWallets.map(w => ({
+            label: w.meta.label,
+            addresses: (w.entries || []).map(e => ({ address: e.address })),
+            coinId: this.currentCoin ? this.currentCoin.id : defaultCoinId,
+            encrypted: w.meta.encrypted,
+            walletType: w.meta.type || 'deterministic',
+          }));
+          this.wallets.next(wallets);
+        } else {
+          this.wallets.next([]);
+        }
+      },
+      () => this.wallets.next([])
+    );
   }
 
   private getCleanSeed(seed: string): string {

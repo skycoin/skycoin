@@ -173,6 +173,12 @@
       "unconventional-seed-title": "Possible error",
       "unconventional-seed-text": "You introduced an unconventional seed. If you did it for any special reason, you can continue (only recommended for advanced users). However, if your intention is to use a normal system seed, you must delete all the additional text and special characters.",
       "unconventional-seed-check": "Continue with the unconventional seed.",
+      "type-label": "Wallet type",
+      "type-deterministic": "Deterministic",
+      "type-bip44": "BIP44 (HD Wallet)",
+      "seed-passphrase-label": "Seed passphrase (optional)",
+      "seed-passphrase-placeholder": "Enter an optional passphrase",
+      "seed-passphrase-info": "An optional passphrase adds an extra layer of security. You will need both the seed and the passphrase to recover the wallet.",
       "wallet-created": "The wallet has been added to the list."
     },
 
@@ -323,7 +329,9 @@
     "none": "Currently there are no pending transactions",
     "my": "Mine",
     "all": "All",
-    "transactions": "Transactions"
+    "transactions": "Transactions",
+    "delete-button": "Delete pending transaction",
+    "delete-confirm": "Are you sure you want to remove this pending transaction from the local pool? This cannot be undone."
   },
 
   "nodes" : {

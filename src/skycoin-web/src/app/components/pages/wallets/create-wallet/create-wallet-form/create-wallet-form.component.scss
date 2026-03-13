@@ -1,4 +1,4 @@
-@import '../../../../../../theme/_variables.scss';
+@use '../../../../../../theme/_variables.scss' as *;
 
 .red-disclaimer-box {
   color: $red;

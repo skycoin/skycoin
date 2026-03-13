@@ -1211,7 +1211,7 @@ func (dm *Daemon) BroadcastUserTransaction(txn coin.Transaction, head *coin.Sign
 		return err
 	}
 
-	accepts, err := checkBroadcastTxnRecipients(dm.connections, ids, txn, head, inputs)
+	accepts, err := checkBroadcastTxnRecipients(dm.connections, ids, txn, head, inputs, dm.config.UnconfirmedVerifyTxn)
 	if err != nil {
 		logger.WithError(err).Error("BroadcastUserTransaction")
 		return err
@@ -1226,12 +1226,14 @@ func (dm *Daemon) BroadcastUserTransaction(txn coin.Transaction, head *coin.Sign
 // based upon their reported txn verification parameters.
 // If no recipient would accept the txn, an error is returned.
 // The number of recipients that claim to accept the transaction is returned.
-func checkBroadcastTxnRecipients(connections *Connections, ids []uint64, txn coin.Transaction, head *coin.SignedBlock, inputs coin.UxArray) (int, error) {
+func checkBroadcastTxnRecipients(connections *Connections, ids []uint64, txn coin.Transaction, head *coin.SignedBlock, inputs coin.UxArray, unconfirmedVerifyTxn params.VerifyTxn) (int, error) {
 	// Check if the connections will accept our transaction as valid.
 	// Clients v24 and earlier do not propagate soft-invalid transactions.
 	// Clients v24 and earlier do not advertise a user agent.
-	// Clients v24 and earlier do not advertise their transaction verification parameters,
-	// but will use defaults of BurnFactor=2, MaxTransactionSize=32768, MaxDropletPrecision=3.
+	// Clients v24 and earlier do not advertise their transaction verification parameters.
+	// For legacy peers, use the node's own unconfirmed verification params as the best
+	// estimate of what the peer will accept, since fibercoin networks may use different
+	// defaults than Skycoin mainnet.
 	// If none of the connections will propagate our transaction, return an error.
 	accepts := 0
 
@@ -1247,14 +1249,10 @@ func checkBroadcastTxnRecipients(connections *Connections, ids []uint64, txn coi
 
 		// If the peer has not set their user agent, they are v24 or earlier.
 		// v24 and earlier will not propagate a transaction that does not pass soft-validation.
-		// Check if our transaction would pass their soft-validation, using the hardcoded defaults
-		// that are used by v24 and earlier.
+		// Use the node's own unconfirmed verification params as the best estimate of
+		// what the legacy peer will accept.
 		if c.UserAgent.Empty() {
-			if err := verifyUserTxnAgainstPeer(txn, head, inputs, params.VerifyTxn{
-				BurnFactor:          2,
-				MaxTransactionSize:  32 * 1024,
-				MaxDropletPrecision: 3,
-			}); err != nil {
+			if err := verifyUserTxnAgainstPeer(txn, head, inputs, unconfirmedVerifyTxn); err != nil {
 				logger.WithFields(logrus.Fields{
 					"addr":   c.Addr,
 					"gnetID": c.gnetID,

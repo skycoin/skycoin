@@ -17,6 +17,8 @@
     ],
     "module": "es2020",
     "baseUrl": "./",
-    "useDefineForClassFields": false
+    "useDefineForClassFields": false,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true
   }
 }

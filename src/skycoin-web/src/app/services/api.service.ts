@@ -20,6 +20,9 @@ export class ApiService {
               private coinService: CoinService) {
     this.coinService.currentCoin
       .subscribe((coin: BaseCoin) => {
+        if (!coin) {
+          return;
+        }
         const customUrl = coinService.customNodeUrls[coin.id.toString()];
         this.url = customUrl ? customUrl : coin.nodeUrl;
         if (this.url.endsWith('/')) {
@@ -31,6 +34,11 @@ export class ApiService {
 
   get(url, params = null, options = {}): Observable<any> {
     return this.http.get(this.getUrl(url), this.getRequestOptions(options, params))
+      .catch((error: any) => this.getErrorMessage(error));
+  }
+
+  delete(url, params = null, options = {}): Observable<any> {
+    return this.http.delete(this.getUrl(url), this.getRequestOptions(options, params))
       .catch((error: any) => this.getErrorMessage(error));
   }
 

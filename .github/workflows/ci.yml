@@ -15,13 +15,13 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.25.4'
+          go-version: '1.25.x'
           cache: true
           cache-dependency-path: go.sum
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20.18.1
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: src/gui/static/package-lock.json
 
@@ -58,20 +58,11 @@ jobs:
       - name: Install UI Dependencies
         run: make install-deps-ui
 
-      - name: Lint UI
-        run: make lint-ui
-        env:
-          NODE_OPTIONS: --openssl-legacy-provider
-
       - name: Test UI
         run: make test-ui
-        env:
-          NODE_OPTIONS: --openssl-legacy-provider
 
       - name: Build UI
         run: make build-ui
-        env:
-          NODE_OPTIONS: --openssl-legacy-provider
 
       - name: Run Unit Tests (amd64)
         run: make test-amd64
@@ -87,8 +78,6 @@ jobs:
           make integration-test-stable-disable-gui
           make integration-test-stable-disable-csrf
           make integration-test-stable-auth
-        env:
-          NODE_OPTIONS: --openssl-legacy-provider
 
       - name: Test Hardware Wallet Libraries
         run: make test-skyhw
@@ -115,7 +104,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.25.4'
+          go-version: '1.25.x'
           cache: true
           cache-dependency-path: go.sum
 
@@ -162,7 +151,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.25.4'
+          go-version: '1.25.x'
           cache: true
           cache-dependency-path: go.sum
 

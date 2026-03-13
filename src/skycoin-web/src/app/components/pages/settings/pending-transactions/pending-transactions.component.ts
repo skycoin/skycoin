@@ -1,18 +1,21 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import * as moment from 'moment';
-import { Subscription } from 'rxjs';
+import { Subscription, of } from 'rxjs';
+import { delay, mergeMap, first } from 'rxjs/operators';
 import { BigNumber } from 'bignumber.js';
+import { MatDialog } from '@angular/material/dialog';
 
 import { WalletService } from '../../../../services/wallet/wallet.service';
 import { HistoryService } from '../../../../services/wallet/history.service';
 import { NavBarService } from '../../../../services/nav-bar.service';
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
-import { Wallet } from '../../../../app.datatypes';
-import { Observable } from 'rxjs';
+import { Wallet, ConfirmationData } from '../../../../app.datatypes';
+import { Observable, forkJoin } from 'rxjs';
 import { BaseCoin } from '../../../../coins/basecoin';
 import { CoinService } from '../../../../services/coin.service';
 import { GlobalsService } from '../../../../services/globals.service';
 import { isEqualOrSuperiorVersion } from '../../../../utils/semver';
+import { ConfirmationComponent } from '../../../layout/confirmation/confirmation.component';
 
 @Component({
     selector: 'app-pending-transactions',
@@ -29,13 +32,18 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
   private navbarSubscription: Subscription;
   private coinSubscription: Subscription;
   private dataSubscription: Subscription;
+  private selectedNavbarOption: number;
+
+  private readonly updatePeriod = 10 * 1000;
+  private readonly errorUpdatePeriod = 2 * 1000;
 
   constructor(
     private walletService: WalletService,
     private historyService: HistoryService,
     private navbarService: NavBarService,
     private coinService: CoinService,
-    private globalsService: GlobalsService
+    private globalsService: GlobalsService,
+    private dialog: MatDialog
   ) { }
 
   ngOnInit() {
@@ -48,7 +56,9 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
     this.navbarService.showSwitch('pending-txs.my', 'pending-txs.all', DoubleButtonActive.LeftButton);
 
     this.navbarSubscription = this.navbarService.activeComponent.subscribe(value => {
-      this.loadTransactions(value);
+      this.selectedNavbarOption = value;
+      this.transactions = [];
+      this.startDataRefreshSubscription(0);
     });
   }
 
@@ -60,23 +70,59 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
     this.navbarService.hideSwitch();
   }
 
-  private loadTransactions(value: number) {
+  deleteTransaction(txid: string) {
+    const confirmationData: ConfirmationData = {
+      text: 'pending-txs.delete-confirm',
+      headerText: 'confirmation.header-text',
+      confirmButtonText: 'confirmation.confirm-button',
+      cancelButtonText: 'confirmation.cancel-button',
+      redTitle: true,
+    };
+
+    const dialogRef = this.dialog.open(ConfirmationComponent, {
+      width: '450px',
+      data: confirmationData,
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.historyService.deletePendingTransaction(txid).subscribe(() => {
+          this.transactions = [];
+          this.startDataRefreshSubscription(0);
+        });
+      }
+    });
+  }
+
+  private startDataRefreshSubscription(delayMs: number) {
+    this.closeDataSubscription();
+
+    this.dataSubscription = of(0).pipe(
+      delay(delayMs),
+      mergeMap(() => this.loadTransactions(this.selectedNavbarOption))
+    ).subscribe(transactions => {
+      this.transactions = transactions;
+      this.isLoading = false;
+      this.startDataRefreshSubscription(this.updatePeriod);
+    }, () => {
+      this.showError = true;
+      this.startDataRefreshSubscription(this.errorUpdatePeriod);
+    });
+  }
+
+  private loadTransactions(value: number): Observable<any[]> {
     this.isLoading = true;
-    this.transactions = [];
     this.showError = false;
 
     const showAllTransactions = value === DoubleButtonActive.RightButton;
-    this.closeDataSubscription();
-    this.dataSubscription = this.historyService.getAllPendingTransactions()
-      .delay(32)
-      .flatMap((transactions: any) => {
-        return showAllTransactions ? Observable.of(transactions) : this.getWalletsTransactions(transactions);
-      })
-      .subscribe(transactions => {
-        this.transactions = this.mapTransactions(transactions);
-        this.isLoading = false;
-      },
-      () => this.showError = true);
+
+    return this.historyService.getAllPendingTransactions().pipe(
+      delay(32),
+      mergeMap((transactions: any) => {
+        return showAllTransactions ? of(transactions) : this.getWalletsTransactions(transactions);
+      }),
+      mergeMap(transactions => of(this.mapTransactions(transactions)))
+    );
   }
 
   private mapTransactions(transactions) {
@@ -98,45 +144,47 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
 
   private getWalletsTransactions(transactions: any): Observable<any> {
     if (transactions.length === 0) {
-      return Observable.of([]);
+      return of([]);
     }
 
-    return this.globalsService.getValidNodeVersion().flatMap (version => {
+    return this.globalsService.getValidNodeVersion().pipe(mergeMap(version => {
       let allTransactions: Observable<any>;
       if (isEqualOrSuperiorVersion(version, '0.25.0')) {
-        allTransactions = Observable.of(transactions);
+        allTransactions = of(transactions);
       } else {
         allTransactions = this.getUpdatedTransactions(transactions);
       }
 
-      return Observable.forkJoin(allTransactions, this.walletService.currentWallets.first(), (trans: any, wallets: Wallet[]) => {
-        const walletAddresses = new Set<string>();
-        wallets.forEach(wallet => {
-          wallet.addresses.forEach(address => walletAddresses.add(address.address));
-        });
+      return forkJoin([allTransactions, this.walletService.currentWallets.pipe(first())]).pipe(
+        mergeMap(([trans, wallets]: [any, Wallet[]]) => {
+          const walletAddresses = new Set<string>();
+          wallets.forEach(wallet => {
+            wallet.addresses.forEach(address => walletAddresses.add(address.address));
+          });
 
-        return trans.filter(tran => {
-          if (isEqualOrSuperiorVersion(version, '0.25.0')) {
-            return tran.transaction.inputs.some(input => walletAddresses.has(input.owner)) ||
-            tran.transaction.outputs.some(output => walletAddresses.has(output.dst));
-          } else {
-            return tran.owner_addressses.some(address => walletAddresses.has(address)) ||
-            tran.transaction.outputs.some(output => walletAddresses.has(output.dst));
-          }
-        });
-      });
-    });
+          return of(trans.filter(tran => {
+            if (isEqualOrSuperiorVersion(version, '0.25.0')) {
+              return tran.transaction.inputs.some(input => walletAddresses.has(input.owner)) ||
+              tran.transaction.outputs.some(output => walletAddresses.has(output.dst));
+            } else {
+              return tran.owner_addressses.some(address => walletAddresses.has(address)) ||
+              tran.transaction.outputs.some(output => walletAddresses.has(output.dst));
+            }
+          }));
+        })
+      );
+    }));
   }
 
   private getUpdatedTransactions(transactions: any): Observable<any> {
-    return Observable.forkJoin(transactions.map((transaction: any) => {
-      return Observable.forkJoin(transaction.transaction.inputs
-        .map(input => this.historyService.getTransactionDetails(input)
-          .map(inputDetails => inputDetails.owner_address)))
-        .map((addresses) => {
-          transaction.owner_addressses = addresses;
-          return transaction;
-        });
+    return forkJoin(transactions.map((transaction: any) => {
+      return forkJoin(transaction.transaction.inputs
+        .map(input => this.historyService.getTransactionDetails(input))).pipe(
+        mergeMap((inputDetails: any[]) => {
+          transaction.owner_addressses = inputDetails.map(d => d.owner_address);
+          return of(transaction);
+        })
+      );
     }));
   }
 

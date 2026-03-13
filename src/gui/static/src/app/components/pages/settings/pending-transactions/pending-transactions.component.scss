@@ -1,0 +1,14 @@
+.delete-icon {
+  cursor: pointer;
+  font-size: 18px;
+  opacity: 0.5;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+.-width-80 {
+  width: 80px;
+  min-width: 80px;
+}

@@ -1,11 +1,19 @@
 <div class="buttons-left">
-  @if (hasManyCoins) {
+  @if (hasManyCoins && currentCoin) {
     <div class="header-sel-theme">
+      <mat-menu #coinMenu="matMenu" [overlapTrigger]="false">
+        @for (coin of availableCoins; track coin.id) {
+          <button mat-menu-item (click)="selectCoin(coin)" [class.active-coin]="coin.id === currentCoin.id">
+            <img class="coin-menu-icon" [src]="'assets/img/coins/' + coin.iconName" />
+            {{ coin.coinName }} ({{ coin.coinSymbol }})
+          </button>
+        }
+      </mat-menu>
       <button
         mat-button
         color="primary"
         class="round-button"
-        (click)="changeCoin()">
+        [matMenuTriggerFor]="coinMenu">
         <img class="coin-icon" [src]="'assets/img/coins/' + currentCoin.iconName" />
         <span class="coin-name -not-on-very-small">{{ currentCoin.coinSymbol }}</span>
         <mat-icon>expand_more</mat-icon>

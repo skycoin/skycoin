@@ -14,4 +14,6 @@ type FiberConfig struct {
 	ExplorerURL           string         `json:"explorer_url"`
 	VersionURL            string         `json:"version_url"`
 	Bip44Coin             bip44.CoinType `json:"bip44_coin"`
+	PriceTickerID         string         `json:"price_ticker_id"`
+	PriceTickerSource     string         `json:"price_ticker_source"`
 }

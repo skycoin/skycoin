@@ -215,6 +215,20 @@ func (_m *MockGatewayer) GetAllStorageValues(storageType kvstorage.Type) (map[st
 	return r0, r1
 }
 
+// RemoveUnconfirmedTransaction provides a mock function with given fields: txid
+func (_m *MockGatewayer) RemoveUnconfirmedTransaction(txid cipher.SHA256) error {
+	ret := _m.Called(txid)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(cipher.SHA256) error); ok {
+		r0 = rf(txid)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // GetAllUnconfirmedTransactions provides a mock function with given fields:
 func (_m *MockGatewayer) GetAllUnconfirmedTransactions() ([]visor.UnconfirmedTransaction, error) {
 	ret := _m.Called()

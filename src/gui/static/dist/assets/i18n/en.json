@@ -109,6 +109,7 @@
     "encryption-enabled": "Encryption enabled.",
     "encryption-disabled": "Encryption disabled.",
     "temporal": "Temporal wallet.",
+    "bip44-tooltip": "This is a BIP44 hierarchical deterministic wallet.",
     "warning-hw-security": "Possible security risk. Access the Skywallet options (by pressing the \"Skywallet\" button below the wallets list) while the device is connected for more information.",
     "wallet-table-label": "Wallet",
     "hardware-wallet-table-label": "Skywallet",
@@ -145,6 +146,12 @@
       "unconventional-seed-text": "You introduced an unconventional seed. If you did it for any special reason, you can continue (only recommended for advanced users). However, if your intention is to use a normal system seed, you must delete all the additional text and special characters.",
       "unconventional-seed-check": "Continue with the unconventional seed",
       "synchronizing-warning-text": "The wallet is still synchronizing and the operation could not restore all the addresses. If some addresses are not restored, you will have to wait for the wallet to be fully synchronized and use the \"Scan Addresses\" function or add them again manually.",
+      "type-label": "Wallet type",
+      "type-deterministic": "Deterministic",
+      "type-bip44": "BIP44 (HD Wallet)",
+      "seed-passphrase-label": "Seed passphrase (optional)",
+      "seed-passphrase-placeholder": "Enter an optional passphrase",
+      "seed-passphrase-info": "An optional passphrase adds an extra layer of security. You will need both the seed and the passphrase to recover the wallet.",
       "wallet-created": "The wallet has been added to the list.",
 
       "seed": {
@@ -470,7 +477,9 @@
     "txid-table-label": "Transaction ID",
     "none": "No pending transactions",
     "my-transactions-button": "Mine",
-    "all-transactions-button": "All"
+    "all-transactions-button": "All",
+    "delete-button": "Delete pending transaction",
+    "delete-confirm": "Are you sure you want to remove this pending transaction from the local pool? This cannot be undone."
   },
 
   "outputs": {

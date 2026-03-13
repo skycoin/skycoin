@@ -6,11 +6,14 @@ import { Subscription } from 'rxjs';
 import { CoinService } from '../../../../../services/coin.service';
 import { BaseCoin } from '../../../../../coins/basecoin';
 import { Bip39WordListService } from '../../../../../services/bip39-word-list.service';
+import { environment } from '../../../../../../environments/environment';
 
 export class FormData {
   label: string;
   seed: string;
   coin: BaseCoin;
+  walletType: string;
+  seedPassphrase: string;
 }
 
 @Component({
@@ -28,6 +31,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
   hasManyCoins: boolean;
   normalSeed = false;
   customSeedAccepted = false;
+  isProduction = environment.production;
 
   private statusSubscription: Subscription;
 
@@ -58,7 +62,9 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     return {
       label: this.form.value.label,
       seed: this.form.value.seed,
-      coin: this.form.value.coin
+      coin: this.form.value.coin,
+      walletType: this.form.value.wallet_type || 'deterministic',
+      seedPassphrase: this.form.value.seed_passphrase || '',
     };
   }
 
@@ -70,6 +76,8 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
         coin: new UntypedFormControl(defaultCoin, [ Validators.required ]),
         seed: new UntypedFormControl('', [ Validators.required ]),
         confirm_seed: new UntypedFormControl(),
+        wallet_type: new UntypedFormControl('deterministic'),
+        seed_passphrase: new UntypedFormControl(''),
       },
       {
         validator: create ? this.seedMatchValidator.bind(this) : null,

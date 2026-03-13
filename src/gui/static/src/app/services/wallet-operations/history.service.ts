@@ -252,6 +252,14 @@ export class HistoryService {
   }
 
   /**
+   * Deletes a pending transaction from the unconfirmed pool.
+   * @param txid Transaction ID to delete.
+   */
+  deletePendingTransaction(txid: string): Observable<any> {
+    return this.apiService.delete('pendingTxs', { txid });
+  }
+
+  /**
    * Converts a pending transaction returned by the server to a PendingTransactionData instance.
    * @param transaction Transaction returned by the server.
    */

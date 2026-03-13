@@ -46,6 +46,7 @@
 
     .-encryption {
       padding-left: 20px !important;
+      align-items: center;
 
       img {
         border-radius: 50%;
@@ -54,6 +55,18 @@
         height: 38px;
         padding: 3px;
         width: 38px;
+      }
+
+      .bip44-badge {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: bold;
+        color: $grey;
+        background-color: $grey-lightest;
+        border-radius: 3px;
+        padding: 2px 6px;
+        margin-left: 8px;
+        line-height: normal;
       }
     }
 

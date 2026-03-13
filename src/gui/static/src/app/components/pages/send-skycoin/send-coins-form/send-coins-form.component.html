@@ -163,9 +163,8 @@
         <span>{{ autoShareValue | number:'1.0-2' }}</span>
       </label>
       <mat-slider min="0" max="1" step="0.01" id="value"
-        (input)="setShareValue($event)" [value]="autoShareValue"
         [ngClass]="{'element-disabled' : busy}"
-      ></mat-slider>
+      ><input matSliderThumb [value]="autoShareValue" (valueChange)="setShareValue($event)" /></mat-slider>
     </div>
   </div>
 </ng-template>

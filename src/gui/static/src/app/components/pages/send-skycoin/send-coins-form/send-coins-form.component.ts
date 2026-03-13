@@ -226,8 +226,8 @@ export class SendCoinsFormComponent implements OnInit, OnDestroy {
   }
 
   // Sets the factor that will be used for distributing the hours.
-  setShareValue(event) {
-    this.autoShareValue = parseFloat(event.value).toFixed(2);
+  setShareValue(value: number) {
+    this.autoShareValue = value.toFixed(2);
   }
 
   // Opens a modal window for selecting the change address.

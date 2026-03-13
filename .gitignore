@@ -166,3 +166,6 @@ releaseChangelog.md
 src/hardware-wallet/cli/skyhw
 skyhw
 genesis.json
+
+# Claude
+CLAUDE.md

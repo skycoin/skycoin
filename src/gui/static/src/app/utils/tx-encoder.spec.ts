@@ -1,12 +1,12 @@
 import { TxEncoder } from './tx-encoder';
 import BigNumber from 'bignumber.js';
 
-import * as encodedTxsFixture from '../../../test-fixtures/encoded-txs.json';
+import encodedTxsFixture from '../../../test-fixtures/encoded-txs.json';
 
 describe('TxEncoder', () => {
 
   describe('check encoding', () => {
-    const txs = (encodedTxsFixture as any).txs;
+    const txs = encodedTxsFixture.txs;
 
     for (let i = 0; i < txs.length; i++) {
       it('encode tx ' + i, () => {

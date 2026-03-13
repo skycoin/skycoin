@@ -15,7 +15,7 @@ describe('TxEncoder', () => {
           output.hours = new BigNumber(output.hours).toString();
         });
 
-        expect(TxEncoder.encode(txs[i].inputs, txs[i].outputs, txs[i].signatures, txs[i].innerHash)).toBe(txs[i].raw);
+        expect(TxEncoder.encode(txs[i].inputs as any, txs[i].outputs as any, txs[i].signatures, txs[i].innerHash)).toBe(txs[i].raw);
       });
     }
   });

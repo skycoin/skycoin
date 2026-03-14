@@ -30,6 +30,7 @@
     "@angular/router": "^21.2.4",
     "@ngx-translate/core": "^17.0.0",
     "@ngx-translate/http-loader": "^17.0.0",
+    "@popperjs/core": "^2.11.8",
     "axios": "^1.13.6",
     "bignumber.js": "^10.0.2",
     "bip39": "^3.1.0",

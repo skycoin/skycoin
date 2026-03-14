@@ -63,7 +63,7 @@ export class OutputsComponent implements OnInit, OnDestroy {
         return;
       }
 
-      this.wallets = !!address
+      this.wallets = address
         ? this.getOutputsForSpecificAddress(wallets, address)
         : this.getOutputs(wallets);
     },

@@ -136,16 +136,13 @@
             ]
           }
         },
-        "e2e": {
-          "builder": "@angular-devkit/build-angular:protractor",
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
           "options": {
-            "protractorConfig": "./protractor.conf.js",
-            "devServerTarget": "desktopwallet:serve"
-          },
-          "configurations": {
-            "production": {
-              "devServerTarget": "desktopwallet:serve:production"
-            }
+            "lintFilePatterns": [
+              "src/**/*.ts",
+              "src/**/*.html"
+            ]
           }
         }
       }

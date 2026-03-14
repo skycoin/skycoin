@@ -5,7 +5,7 @@ import { QrConfig } from 'app/app.config';
 /**
  * Allows to access the QRcode generator located on src/js/qrcode.min.js.
  */
-declare let QRCode: any; // eslint-disable-line @typescript-eslint/naming-convention
+declare let QRCode: any;  
 
 /**
  * Shows a QR code.

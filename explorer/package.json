@@ -44,17 +44,14 @@
     "@types/jasmine": "~6.0.0",
     "@types/jasminewd2": "~2.0.13",
     "@types/node": "^25.5.0",
-    "@typescript-eslint/eslint-plugin": "^5.43.0",
-    "@typescript-eslint/parser": "^5.43.0",
-    "@wdio/cli": "^8.3.3",
-    "@wdio/jasmine-framework": "^8.3.3",
-    "@wdio/local-runner": "^8.3.3",
-    "@wdio/spec-reporter": "^8.3.0",
-    "chromedriver": "^110.0.0",
-    "eslint": "^8.28.0",
-    "eslint-plugin-import": "2.32.0",
-    "eslint-plugin-jsdoc": "37.9.4",
-    "eslint-plugin-prefer-arrow": "1.2.3",
+    "@typescript-eslint/eslint-plugin": "^8.57.0",
+    "@typescript-eslint/parser": "^8.57.0",
+    "@wdio/cli": "^9.25.0",
+    "@wdio/jasmine-framework": "^9.25.0",
+    "@wdio/local-runner": "^9.25.0",
+    "@wdio/spec-reporter": "^9.25.0",
+    "angular-eslint": "^21.3.0",
+    "eslint": "^9.39.4",
     "jasmine-core": "~6.1.0",
     "jasmine-spec-reporter": "~7.0.0",
     "karma": "^6.4.4",
@@ -67,6 +64,6 @@
     "protractor": "^7.0.0",
     "ts-node": "^10.9.2",
     "typescript": "~5.9.3",
-    "wdio-chromedriver-service": "^8.0.1"
+    "typescript-eslint": "^8.57.0"
   }
 }

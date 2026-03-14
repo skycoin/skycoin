@@ -6,7 +6,7 @@ interface NodeModule {
 /**
  * Needed for using System in app.translate-loader.ts.
  */
-declare let System: System; // eslint-disable-line @typescript-eslint/naming-convention
+declare let System: System;  
 interface System {
   import(request: string): Promise<any>;
 }

@@ -43,8 +43,7 @@ export class HistoryService {
           } else {
             TxObsv = forkJoin(addresses.map(address => this.retrieveAddressTransactions(address))).pipe(
               map(transactions => {
-                return []
-                  .concat.apply([], transactions)
+                return [].concat(...transactions)
                   .reduce((array, item) => {
                     if (!array.find(trans => trans.txid === item.txid)) {
                       array.push(item);

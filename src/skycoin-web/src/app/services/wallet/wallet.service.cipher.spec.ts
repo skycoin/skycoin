@@ -1,5 +1,5 @@
 import { TestBed, fakeAsync } from '@angular/core/testing';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { BigNumber } from 'bignumber.js';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
@@ -38,9 +38,9 @@ describe('WalletService with cipher:', () => {
         {
             provide: ApiService,
             useValue: jasmine.createSpyObj('ApiService', {
-                'getOutputs': Observable.of([]),
-                'postTransaction': Observable.of(''),
-                'get': Observable.of([])
+                'getOutputs': of([]),
+                'postTransaction': of(''),
+                'get': of([])
             })
         },
         {
@@ -99,7 +99,7 @@ describe('WalletService with cipher:', () => {
       expectedWallet.addresses.push(newAddress);
 
       spyApiService.get.and.callFake(() => {
-        return Observable.of(createBalance());
+        return of(createBalance());
       });
 
       walletService.addAddress(wallet)
@@ -130,7 +130,7 @@ describe('WalletService with cipher:', () => {
         createOutput(addresses[0].address, amount, new BigNumber(1)),
       ];
 
-      spyApiService.get.and.returnValue(Observable.of({ head_outputs: outputs }));
+      spyApiService.get.and.returnValue(of({ head_outputs: outputs }));
 
       spendingService.createTransaction(
         wallet,
@@ -166,7 +166,7 @@ describe('WalletService with cipher:', () => {
         createOutput(addresses[0].address, amount, new BigNumber(1)),
       ];
 
-      spyApiService.get.and.returnValue(Observable.of({ head_outputs: outputs }));
+      spyApiService.get.and.returnValue(of({ head_outputs: outputs }));
 
       spendingService.createTransaction(
         wallet,

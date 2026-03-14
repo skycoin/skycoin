@@ -1,10 +1,8 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
-import { Subscription } from 'rxjs';
-import 'rxjs/add/operator/delay';
-import 'rxjs/add/operator/filter';
+import { Subscription, of } from 'rxjs';
+import { delay, first } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
-import { Observable } from 'rxjs';
 
 import { WalletService } from '../../../../services/wallet/wallet.service';
 import { SpendingService, HoursSelectionTypes } from '../../../../services/wallet/spending.service';
@@ -119,7 +117,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
       this.removeProcessSubscription();
 
       this.processSubscription = openUnlockWalletModal(wallet, this.dialog).componentInstance
-        .onWalletUnlocked.first().subscribe(() => this.checkBeforeSending());
+        .onWalletUnlocked.pipe(first()).subscribe(() => this.checkBeforeSending());
     } else {
       this.checkBeforeSending();
     }
@@ -168,7 +166,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
   }
 
   private checkBeforeSending() {
-    this.blockchainService.synchronized.first().subscribe(synchronized => {
+    this.blockchainService.synchronized.pipe(first()).subscribe(synchronized => {
       if (synchronized) {
         this.createTransaction(this.form.value.wallet);
       } else {
@@ -195,7 +193,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
   private createTransaction(wallet: Wallet) {
     this.button.setLoading();
 
-    this.slowInfoSubscription = Observable.of(1).delay(config.timeBeforeSlowMobileInfo)
+    this.slowInfoSubscription = of(1).pipe(delay(config.timeBeforeSlowMobileInfo))
       .subscribe(() => this.showSlowMobileInfo = true);
 
     this.removeProcessSubscription();

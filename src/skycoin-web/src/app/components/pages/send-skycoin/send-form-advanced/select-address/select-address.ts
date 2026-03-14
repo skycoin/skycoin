@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
 
+import { first } from 'rxjs';
+
 import { Wallet } from '../../../../../app.datatypes';
 import { WalletService } from '../../../../../services/wallet/wallet.service';
 import { BaseCoin } from '../../../../../coins/basecoin';
@@ -22,9 +24,9 @@ export class SelectAddressComponent {
     public walletService: WalletService,
     private coinService: CoinService,
   ) {
-    this.walletService.currentWallets.first().subscribe(wallets => this.wallets = wallets);
+    this.walletService.currentWallets.pipe(first()).subscribe(wallets => this.wallets = wallets);
 
-    this.coinService.currentCoin.first().subscribe((coin: BaseCoin) => this.currentCoin = coin);
+    this.coinService.currentCoin.pipe(first()).subscribe((coin: BaseCoin) => this.currentCoin = coin);
   }
 
   closePopup() {

@@ -1,4 +1,4 @@
-import { switchMap, delay, flatMap } from 'rxjs/operators';
+import { switchMap, delay, mergeMap } from 'rxjs';
 import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, ViewChild } from '@angular/core';
 import { UntypedFormControl, UntypedFormGroup } from '@angular/forms';
 import { SubscriptionLike, Subject, of } from 'rxjs';
@@ -445,7 +445,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
       if (!this.enterSeedWithAssistance && seed.trim().length > 0 && (!this.create || this.seedsAreEqual())) {
         this.checkingCustomSeed = true;
 
-        return of(0).pipe(delay(500), flatMap(() => this.apiService.post('wallet/seed/verify', {seed}, {useV2: true})));
+        return of(0).pipe(delay(500), mergeMap(() => this.apiService.post('wallet/seed/verify', {seed}, {useV2: true})));
       } else {
         return of(0);
       }

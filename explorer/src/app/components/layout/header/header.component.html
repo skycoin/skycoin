@@ -34,7 +34,7 @@
                         <a
                           [ngClass]="item.active?'btn btn-secondary dropdown-toggle active':'btn btn-secondary dropdown-toggle'"
                           type="button" id="dropdownMenuButton"
-                          data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" (click)="onClickMenuDropdown(item)">
+                          data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" (click)="onClickMenuDropdown(item)">
                           {{item.name}}<span class="font-awesome">&#xf107;</span>
                         </a>
                         <div [ngClass]="item.open?'dropdown-menu open':'dropdown-menu'" aria-labelledby="dropdownMenuButton">

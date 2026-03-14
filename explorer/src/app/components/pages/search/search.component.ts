@@ -1,4 +1,4 @@
-import { first } from 'rxjs/operators';
+import { first } from 'rxjs';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Params, Router } from '@angular/router';
 

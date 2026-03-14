@@ -1,5 +1,5 @@
 import { Observable, Subscription, of } from 'rxjs';
-import { map, mergeMap, delay } from 'rxjs/operators';
+import { map, mergeMap, delay } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { BigNumber } from 'bignumber.js';
 

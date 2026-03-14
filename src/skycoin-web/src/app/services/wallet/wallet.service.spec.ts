@@ -1,7 +1,5 @@
 import { TestBed, fakeAsync } from '@angular/core/testing';
-import 'rxjs/add/observable/of';
-import { Observable } from 'rxjs';
-import { BehaviorSubject } from 'rxjs';
+import { Observable, of, BehaviorSubject } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { BigNumber } from 'bignumber.js';
 
@@ -40,7 +38,7 @@ describe('WalletService', () => {
         {
           provide: ApiService,
           useValue: jasmine.createSpyObj('ApiService', {
-            'get': Observable.of([])
+            'get': of([])
           })
         },
         { provide: CoinService, useClass: MockCoinService },
@@ -78,7 +76,7 @@ describe('WalletService', () => {
       const newAddress = createAddress('new address');
       expectedWallet.addresses.push(newAddress);
 
-      spyCipherProvider.generateAddress.and.returnValue(Observable.of({ address: newAddress, nextSeed: 'next seed' }));
+      spyCipherProvider.generateAddress.and.returnValue(of({ address: newAddress, nextSeed: 'next seed' }));
 
       walletService.addAddress(wallet)
         .subscribe(() => {
@@ -104,7 +102,7 @@ describe('WalletService', () => {
         nextSeed: 'next seed'
       };
 
-      spyCipherProvider.generateAddress.and.returnValue(Observable.of({ address: walletAddress, nextSeed: 'next seed' }));
+      spyCipherProvider.generateAddress.and.returnValue(of({ address: walletAddress, nextSeed: 'next seed' }));
 
       walletService.create(walletLabel, walletSeed, walletCoinId)
         .subscribe(() => expect(walletService.wallets.value[0]).toEqual(expectedWallet));
@@ -126,7 +124,7 @@ describe('WalletService', () => {
       const inputWallet: Wallet = createWallet('wallet', 'no seed');
       const correctSeed = 'seed';
 
-      spyCipherProvider.generateAddress.and.returnValue(Observable.of({ address: createAddress(), nextSeed: 'next seed' }));
+      spyCipherProvider.generateAddress.and.returnValue(of({ address: createAddress(), nextSeed: 'next seed' }));
       walletService.unlockWallet(inputWallet, correctSeed, new EventEmitter<number>())
         .subscribe(() => expect(inputWallet.seed).toEqual(correctSeed));
     }));
@@ -135,7 +133,7 @@ describe('WalletService', () => {
       const wallet: Wallet = createWallet();
       const wrongSeedAddress: Address = createAddress('wrong address');
 
-      spyCipherProvider.generateAddress.and.returnValue(Observable.of({ address: wrongSeedAddress, nextSeed: 'next seed' }));
+      spyCipherProvider.generateAddress.and.returnValue(of({ address: wrongSeedAddress, nextSeed: 'next seed' }));
       spyTranslateService.instant.and.returnValue('Wrong seed');
 
       walletService.unlockWallet(wallet, 'wrong seed', new EventEmitter<number>())

@@ -1,4 +1,4 @@
-import { delay, retryWhen } from 'rxjs/operators';
+import { delay, retryWhen } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { BigNumber } from 'bignumber.js';
 import { HttpClient } from '@angular/common/http';

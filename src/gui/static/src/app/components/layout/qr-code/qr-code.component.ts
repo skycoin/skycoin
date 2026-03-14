@@ -3,7 +3,7 @@ import { MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/d
 import { MatDialogRef } from '@angular/material/dialog';
 import { UntypedFormGroup, UntypedFormBuilder } from '@angular/forms';
 import { SubscriptionLike, Subject } from 'rxjs';
-import { debounceTime } from 'rxjs/operators';
+import { debounceTime } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
 
 import { copyTextToClipboard, removeCommas } from '../../../utils/general-utils';

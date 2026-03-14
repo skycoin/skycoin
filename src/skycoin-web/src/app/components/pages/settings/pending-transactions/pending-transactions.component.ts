@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import * as moment from 'moment';
 import { Subscription, of } from 'rxjs';
-import { delay, mergeMap, first } from 'rxjs/operators';
+import { delay, mergeMap, first } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
 import { MatDialog } from '@angular/material/dialog';
 

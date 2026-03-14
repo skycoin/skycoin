@@ -3,7 +3,7 @@ import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { Observable, SubscriptionLike } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
-import { map } from 'rxjs/operators';
+import { map } from 'rxjs';
 
 import { Bip39WordListService } from '../../../services/bip39-word-list.service';
 import { MsgBarService } from '../../../services/msg-bar.service';

@@ -4,7 +4,7 @@ import * as moment from 'moment';
 import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { TranslateService } from '@ngx-translate/core';
-import { retryWhen, delay, take, mergeMap } from 'rxjs/operators';
+import { retryWhen, delay, take, mergeMap } from 'rxjs';
 
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { ExchangeService, StoredExchangeOrder, TradingPair, ExchangeOrder } from '../../../../services/exchange.service';

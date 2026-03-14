@@ -1,4 +1,4 @@
-import { filter } from 'rxjs/operators';
+import { filter } from 'rxjs';
 import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { SubscriptionLike } from 'rxjs';
 import { BigNumber } from 'bignumber.js';

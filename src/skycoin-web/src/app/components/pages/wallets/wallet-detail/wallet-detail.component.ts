@@ -1,13 +1,12 @@
 import { Component, Input, OnDestroy } from '@angular/core';
 import { MatDialogConfig } from '@angular/material/dialog';
 import { TranslateService } from '@ngx-translate/core';
-import { Observable } from 'rxjs';
+import { of, Subscription, delay, first } from 'rxjs';
 
 import { ConfirmationData, Wallet, Address } from '../../../../app.datatypes';
 import { WalletService } from '../../../../services/wallet/wallet.service';
 import { ChangeNameComponent } from '../change-name/change-name.component';
 import { openUnlockWalletModal, openQrModal, showConfirmationModal, openDeleteWalletModal } from '../../../../utils/index';
-import { Subscription } from 'rxjs';
 import { WalletOptionsComponent, WalletOptionsResponses } from './wallet-options/wallet-options.component';
 import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.service';
 import { config } from '../../../../app.config';
@@ -123,7 +122,7 @@ export class WalletDetailComponent implements OnDestroy {
     if (!this.wallet.seed || !this.wallet.nextSeed) {
       this.removeUnlockSubscription();
 
-      this.unlockSubscription = openUnlockWalletModal(this.wallet, this.dialog).componentInstance.onWalletUnlocked.first()
+      this.unlockSubscription = openUnlockWalletModal(this.wallet, this.dialog).componentInstance.onWalletUnlocked.pipe(first())
         .subscribe(() => this.addNewAddress());
     } else {
       this.addNewAddress();
@@ -139,7 +138,7 @@ export class WalletDetailComponent implements OnDestroy {
 
     this.creatingAddress = true;
 
-    this.slowInfoSubscription = Observable.of(1).delay(config.timeBeforeSlowMobileInfo)
+    this.slowInfoSubscription = of(1).pipe(delay(config.timeBeforeSlowMobileInfo))
       .subscribe(() => this.showSlowMobileInfo = true);
 
     setTimeout(() => {

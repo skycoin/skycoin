@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import 'rxjs/add/observable/forkJoin';
-import { Observable } from 'rxjs';
+import { Observable, forkJoin, of } from 'rxjs';
+import { mergeMap, map, first } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
 
 import { ApiService } from '../api.service';
@@ -23,28 +23,27 @@ export class HistoryService {
     const addressesMap: Map<string, boolean> = new Map<string, boolean>();
 
 
-    return this.walletService.wallets.first().flatMap(w => {
+    return this.walletService.wallets.pipe(first(), mergeMap(w => {
       wallets = w;
 
-      return this.walletService.addresses.first();
-    }).flatMap(addresses => {
+      return this.walletService.addresses.pipe(first());
+    }), mergeMap(addresses => {
         if (addresses.length === 0) {
-          return Observable.of([]);
+          return of([]);
         }
 
         addresses.map(add => addressesMap.set(add.address, true));
 
-        return this.globalsService.getValidNodeVersion().flatMap (version => {
+        return this.globalsService.getValidNodeVersion().pipe(mergeMap(version => {
           let TxObsv: Observable<any>;
           if (isEqualOrSuperiorVersion(version, '0.25.0')) {
-            TxObsv = this.retrieveAddressesTransactions(addresses).map(transactions => {
+            TxObsv = this.retrieveAddressesTransactions(addresses).pipe(map(transactions => {
               return transactions.sort((a, b) =>  b.timestamp - a.timestamp);
-            });
+            }));
           } else {
-            TxObsv = Observable.forkJoin(addresses.map(address => this.retrieveAddressTransactions(address)))
-              .map(transactions => {
-                return []
-                  .concat.apply([], transactions)
+            TxObsv = forkJoin(addresses.map(address => this.retrieveAddressTransactions(address))).pipe(
+              map(transactions => {
+                return [].concat(...transactions)
                   .reduce((array, item) => {
                     if (!array.find(trans => trans.txid === item.txid)) {
                       array.push(item);
@@ -53,10 +52,10 @@ export class HistoryService {
                     return array;
                   }, [])
                   .sort((a, b) =>  b.timestamp - a.timestamp);
-              });
+              }));
           }
 
-          return TxObsv.map(transactions => {
+          return TxObsv.pipe(map(transactions => {
             return transactions.map(transaction => {
               const outgoing = transaction.inputs.some(input => addressesMap.has(input.owner));
 
@@ -122,14 +121,14 @@ export class HistoryService {
 
               return transaction;
             });
-          });
-        });
-      });
+          }));
+        }));
+      }));
   }
 
   retrieveAddressTransactions(address: Address): Observable<NormalTransaction[]> {
-    return this.apiService.get('explorer/address', { address: address.address })
-      .map(transactions => transactions.map(transaction => ({
+    return this.apiService.get('explorer/address', { address: address.address }).pipe(
+      map(transactions => transactions.map(transaction => ({
         addresses: [],
         balance: new BigNumber('0'),
         block: transaction.status.block_seq,
@@ -138,14 +137,14 @@ export class HistoryService {
         txid: transaction.txid,
         inputs: transaction.inputs,
         outputs: transaction.outputs,
-      })));
+      }))));
   }
 
   retrieveAddressesTransactions(addresses: Address[]): Observable<NormalTransaction[]> {
     const formattedAddresses = addresses.map(a => a.address).join(',');
 
-    return this.apiService.post('transactions', { addrs: formattedAddresses, verbose: true })
-      .map(transactions => transactions.map(transaction => ({
+    return this.apiService.post('transactions', { addrs: formattedAddresses, verbose: true }).pipe(
+      map(transactions => transactions.map(transaction => ({
         addresses: [],
         balance: new BigNumber('0'),
         block: transaction.status.block_seq,
@@ -154,17 +153,17 @@ export class HistoryService {
         txid: transaction.txn.txid,
         inputs: transaction.txn.inputs,
         outputs: transaction.txn.outputs,
-      })));
+      }))));
   }
 
   getAllPendingTransactions(): Observable<any> {
-    return this.globalsService.getValidNodeVersion().flatMap (version => {
+    return this.globalsService.getValidNodeVersion().pipe(mergeMap(version => {
       if (isEqualOrSuperiorVersion(version, '0.25.0')) {
         return this.apiService.get('pendingTxs', { verbose: true });
       } else {
         return this.apiService.get('pendingTxs');
       }
-    });
+    }));
   }
 
   deletePendingTransaction(txid: string): Observable<any> {

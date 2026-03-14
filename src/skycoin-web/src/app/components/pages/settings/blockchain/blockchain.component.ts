@@ -1,6 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Observable } from 'rxjs';
-import { Subscription } from 'rxjs';
+import { forkJoin, Subscription } from 'rxjs';
 
 import { BlockchainService } from '../../../../services/blockchain.service';
 import { CoinService } from '../../../../services/coin.service';
@@ -34,7 +33,7 @@ export class BlockchainComponent implements OnInit, OnDestroy {
         this.showError = false;
 
         this.closeDataSubscription();
-        this.dataSubscription = Observable.forkJoin(
+        this.dataSubscription = forkJoin(
           this.blockchainService.lastBlock(),
           this.blockchainService.coinSupply())
           .subscribe(([block, coinSupply]) => {

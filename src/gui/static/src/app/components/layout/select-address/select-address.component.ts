@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { first } from 'rxjs/operators';
+import { first } from 'rxjs';
 import { AppConfig } from '../../../app.config';
 import BigNumber from 'bignumber.js';
 import { BalanceAndOutputsService } from '../../../services/wallet-operations/balance-and-outputs.service';

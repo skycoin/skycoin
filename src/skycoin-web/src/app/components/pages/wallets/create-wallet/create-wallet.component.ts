@@ -2,8 +2,8 @@ import { Component, Inject, ViewChild, OnDestroy } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { TranslateService } from '@ngx-translate/core';
-import { Subscription } from 'rxjs';
-import { Observable } from 'rxjs';
+import { Subscription, of } from 'rxjs';
+import { delay } from 'rxjs';
 
 import { WalletService } from '../../../../services/wallet/wallet.service';
 import { ButtonComponent } from '../../../layout/button/button.component';
@@ -56,7 +56,7 @@ export class CreateWalletComponent implements OnDestroy {
     this.createButton.setLoading();
     this.disableDismiss = true;
 
-    this.slowInfoSubscription = Observable.of(1).delay(config.timeBeforeSlowMobileInfo)
+    this.slowInfoSubscription = of(1).pipe(delay(config.timeBeforeSlowMobileInfo))
       .subscribe(() => this.showSlowMobileInfo = true);
 
     const data = this.formControl.getData();

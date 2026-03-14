@@ -1,5 +1,5 @@
 import { Subscription, of, Observable, ReplaySubject } from 'rxjs';
-import { delay,  map, mergeMap } from 'rxjs/operators';
+import { delay,  map, mergeMap } from 'rxjs';
 import { Injectable, NgZone } from '@angular/core';
 
 import { ApiService } from './api.service';

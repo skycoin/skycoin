@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MatDialogConfig } from '@angular/material/dialog';
-import { Subscription } from 'rxjs';
+import { Subscription, delay, first } from 'rxjs';
 import { UntypedFormGroup, UntypedFormBuilder } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 
@@ -158,7 +158,7 @@ export class HistoryComponent implements OnInit, OnDestroy {
       this.walletsSubscription.unsubscribe();
     }
 
-    this.walletsSubscription = this.walletService.currentWallets.delay(100).first().subscribe(wallets => {
+    this.walletsSubscription = this.walletService.currentWallets.pipe(delay(100), first()).subscribe(wallets => {
       this.wallets = [];
       let incompleteData = false;
 

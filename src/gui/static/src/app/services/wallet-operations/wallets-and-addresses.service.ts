@@ -1,5 +1,5 @@
 import { of, Subject, Observable, ReplaySubject, BehaviorSubject, throwError as observableThrowError, Subscription, throwError } from 'rxjs';
-import { mergeMap, map, catchError } from 'rxjs/operators';
+import { mergeMap, map, catchError } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { Injectable } from '@angular/core';
 

@@ -1,5 +1,5 @@
 import { of, Observable } from 'rxjs';
-import { first, mergeMap, map } from 'rxjs/operators';
+import { first, mergeMap, map } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { BigNumber } from 'bignumber.js';
 

@@ -1,5 +1,5 @@
 import { forkJoin as observableForkJoin, of, Observable, ReplaySubject, Subscription, BehaviorSubject } from 'rxjs';
-import { mergeMap, map, switchMap, tap, delay } from 'rxjs/operators';
+import { mergeMap, map, switchMap, tap, delay } from 'rxjs';
 import { Injectable, NgZone } from '@angular/core';
 import { BigNumber } from 'bignumber.js';
 

@@ -7,7 +7,7 @@ import { Subject, BehaviorSubject, Observable } from 'rxjs';
 import { PurchaseOrder, TellerConfig } from '../app.datatypes';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../environments/environment';
-import { map, mergeMap } from 'rxjs/operators';
+import { map, mergeMap } from 'rxjs';
 import { WalletBase } from './wallet-operations/wallet-objects';
 import { WalletsAndAddressesService } from './wallet-operations/wallets-and-addresses.service';
 

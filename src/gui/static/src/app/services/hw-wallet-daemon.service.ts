@@ -1,5 +1,5 @@
 import { throwError as observableThrowError, of, Observable, SubscriptionLike, BehaviorSubject } from 'rxjs';
-import { delay, timeout, mergeMap, catchError } from 'rxjs/operators';
+import { delay, timeout, mergeMap, catchError } from 'rxjs';
 import { Injectable, NgZone } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
 

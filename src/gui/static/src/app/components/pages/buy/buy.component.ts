@@ -1,7 +1,7 @@
 /*
   IMPORTANT: Unused for a long time, it may need changes to work properly.
 */
-import { filter, first } from 'rxjs/operators';
+import { filter, first } from 'rxjs';
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { PurchaseService } from '../../../services/purchase.service';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';

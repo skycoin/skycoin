@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { BehaviorSubject } from 'rxjs';
+import { Observable, BehaviorSubject, filter, first } from 'rxjs';
 
 // Add vars and functions to this file when having problems with circular dependencies
 @Injectable()
@@ -12,6 +11,6 @@ export class GlobalsService {
   }
 
   getValidNodeVersion(): Observable<string> {
-    return this.nodeVersion.filter(version => version !== null).first();
+    return this.nodeVersion.pipe(filter(version => version !== null), first());
   }
 }

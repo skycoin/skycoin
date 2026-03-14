@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, Input } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
-import * as Bip39 from 'bip39';
+import { generateMnemonic } from 'bip39';
 import { Subscription } from 'rxjs';
 
 import { CoinService } from '../../../../../services/coin.service';
@@ -95,7 +95,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
   }
 
   private generateSeed(entropy: number) {
-    this.form.controls.seed.setValue(Bip39.generateMnemonic(entropy));
+    this.form.controls.seed.setValue(generateMnemonic(entropy));
   }
 
   private validateSeed(seed: string): boolean {

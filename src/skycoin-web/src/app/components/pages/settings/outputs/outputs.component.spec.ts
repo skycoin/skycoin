@@ -1,6 +1,6 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { Observable } from 'rxjs';
+import { of } from 'rxjs';
 import { ActivatedRoute } from '@angular/router';
 
 import { OutputsComponent } from './outputs.component';
@@ -18,7 +18,7 @@ describe('OutputsComponent', () => {
       declarations: [ OutputsComponent, MockTranslatePipe ],
       schemas: [ NO_ERRORS_SCHEMA ],
       providers: [
-        { provide: ActivatedRoute, useValue: { queryParams: Observable.of({}) } },
+        { provide: ActivatedRoute, useValue: { queryParams: of({}) } },
         { provide: SpendingService, useClass: MockSpendingService },
         { provide: CoinService, useClass: MockCoinService },
         { provide: CustomMatDialogService, useClass: MockCustomMatDialogService }

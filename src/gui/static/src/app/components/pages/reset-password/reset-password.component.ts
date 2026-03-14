@@ -2,7 +2,7 @@ import { Component, OnDestroy, ViewChild, ChangeDetectorRef } from '@angular/cor
 import { SubscriptionLike, combineLatest } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UntypedFormGroup, UntypedFormBuilder, UntypedFormControl } from '@angular/forms';
-import { map } from 'rxjs/operators';
+import { map } from 'rxjs';
 
 import { ButtonComponent } from '../../layout/button/button.component';
 import { MsgBarService } from '../../../services/msg-bar.service';

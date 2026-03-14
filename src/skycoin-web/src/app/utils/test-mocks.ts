@@ -1,8 +1,6 @@
 import { Pipe, PipeTransform, Component } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
-import { Observable } from 'rxjs';
-import { Subject } from 'rxjs';
-import { ReplaySubject } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, ReplaySubject, of } from 'rxjs';
+import { filter, first } from 'rxjs';
 
 import { BaseCoin } from '../coins/basecoin';
 import { Wallet } from '../app.datatypes';
@@ -69,13 +67,13 @@ export class MockGlobalsService {
   }
 
   getValidNodeVersion(): Observable<string> {
-    return this.nodeVersion.filter(version => version !== null).first();
+    return this.nodeVersion.pipe(filter(version => version !== null), first());
   }
 }
 
 export class MockPurchaseService {
   all(): Observable<any[]> {
-    return Observable.of([]);
+    return of([]);
   }
 }
 
@@ -101,40 +99,40 @@ export class MockCoinService {
 }
 
 export class MockWalletService {
-  haveWallets: Observable<boolean> = Observable.of(true);
+  haveWallets: Observable<boolean> = of(true);
 
   get addresses(): Observable<any[]> {
-    return Observable.of([]);
+    return of([]);
   }
 
   wallets = new BehaviorSubject<any[]>([]);
 
   get currentWallets(): Observable<Wallet[]> {
-    return Observable.of([]);
+    return of([]);
   }
 
   scanAddresses(wallet, onProgressChanged): Observable<void> {
-    return Observable.of();
+    return of();
   }
 }
 
 export class MockHistoryService {
   transactions(): Observable<any[]> {
-    return Observable.of([]);
+    return of([]);
   }
 
   getAllPendingTransactions() {
-    return Observable.of([]);
+    return of([]);
   }
 
   getTransactionDetails() {
-    return Observable.of({});
+    return of({});
   }
 }
 
 export class MockSpendingService {
   outputsWithWallets() {
-    return Observable.of([]);
+    return of([]);
   }
 }
 
@@ -159,7 +157,7 @@ export class MockPriceService {
 
 export class MockBlockchainService {
   get progress() {
-    return Observable.of();
+    return of();
   }
 
   get currentMaxDecimals() {
@@ -171,11 +169,11 @@ export class MockBlockchainService {
   }
 
   lastBlock(): Observable<any> {
-    return Observable.of({});
+    return of({});
   }
 
   coinSupply(): Observable<any> {
-    return Observable.of({});
+    return of({});
   }
 
   loadBlockchainBlocks() {
@@ -192,10 +190,10 @@ export class MockMsgBarService {
 }
 
 export class MockTranslateService {
-  onLangChange = Observable.of({});
+  onLangChange = of({});
 
   get(key: string | Array<string>, interpolateParams?: Object): Observable<string | any> {
-    return Observable.of({});
+    return of({});
   }
 
   addLangs(langs: Array<string>): void {
@@ -205,16 +203,16 @@ export class MockTranslateService {
   }
 
   use(lang: string): Observable<any> {
-    return Observable.of({});
+    return of({});
   }
 }
 
 export class MockApiService {
   get(url: string) {
     if (url === 'network/connections') {
-      return Observable.of({ connections: [] });
+      return of({ connections: [] });
     } else {
-      return Observable.of({});
+      return of({});
     }
   }
 }
@@ -231,7 +229,7 @@ export class MockLanguageService {
 
 export class MockCustomMatDialogService {
   get showingDialog() {
-    return Observable.of(false);
+    return of(false);
   }
 }
 

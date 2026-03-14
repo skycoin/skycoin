@@ -1,6 +1,5 @@
 import { TestBed, fakeAsync } from '@angular/core/testing';
-import 'rxjs/add/observable/of';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
 
 import { HistoryService } from './history.service';
@@ -31,7 +30,7 @@ describe('HistoryService', () => {
         {
           provide: ApiService,
           useValue: jasmine.createSpyObj('ApiService', {
-            'get': Observable.of([])
+            'get': of([])
           })
         }
       ]
@@ -55,7 +54,7 @@ describe('HistoryService', () => {
       const apiResponse = createAddressTransactions('owner address', 'destination address');
       const expectedTransaction = createTransaction([], 'owner address', 'destination address');
 
-      spyApiService.get.and.returnValue( Observable.of([apiResponse]) );
+      spyApiService.get.and.returnValue( of([apiResponse]) );
 
       historyService.retrieveAddressTransactions( createAddress() )
         .subscribe((transactions: NormalTransaction[]) => {
@@ -67,11 +66,11 @@ describe('HistoryService', () => {
   describe('transactions', () => {
     it('should return an outgoing transaction', fakeAsync(() => {
       const ownerAddress: Address = createAddress('owner address');
-      spyOnProperty(walletService, 'addresses', 'get').and.returnValue( Observable.of([ownerAddress]) );
+      spyOnProperty(walletService, 'addresses', 'get').and.returnValue( of([ownerAddress]) );
 
       const destinationAddress = 'destination address';
       const apiResponse = createAddressTransactions(ownerAddress.address, destinationAddress, 13);
-      spyApiService.get.and.returnValue( Observable.of([apiResponse]) );
+      spyApiService.get.and.returnValue( of([apiResponse]) );
 
       const expectedTransaction: NormalTransaction = createTransaction([ownerAddress.address], ownerAddress.address, destinationAddress, 13, new BigNumber(-13));
       expectedTransaction['hoursSent'] = new BigNumber(NaN);
@@ -85,11 +84,11 @@ describe('HistoryService', () => {
 
     it('should return an incoming transaction', fakeAsync(() => {
       const destinationAddress: Address = createAddress('destination address');
-      spyOnProperty(walletService, 'addresses', 'get').and.returnValue( Observable.of([destinationAddress]) );
+      spyOnProperty(walletService, 'addresses', 'get').and.returnValue( of([destinationAddress]) );
 
       const ownerAddress = 'owner address';
       const apiResponse = createAddressTransactions(ownerAddress, destinationAddress.address, 13);
-      spyApiService.get.and.returnValue( Observable.of([apiResponse]) );
+      spyApiService.get.and.returnValue( of([apiResponse]) );
 
       const expectedTransaction: NormalTransaction = createTransaction([destinationAddress.address], ownerAddress, destinationAddress.address, 13, new BigNumber(13));
       expectedTransaction['hoursSent'] = new BigNumber(NaN);

@@ -1,7 +1,5 @@
 import { Component, Input, OnInit, OnDestroy, Renderer2, ViewChild, NgZone } from '@angular/core';
-import 'rxjs/add/observable/interval';
-import { Subscription } from 'rxjs';
-import { Observable } from 'rxjs';
+import { Subscription, interval } from 'rxjs';
 
 import { BalanceService, BalanceStates } from '../../../../services/wallet/balance.service';
 import { CoinService } from '../../../../services/coin.service';
@@ -67,7 +65,7 @@ export class TopBarComponent implements OnInit, OnDestroy {
 
     this._ngZone.runOutsideAngular(() => {
       this.subscriptionsGroup.push(
-        Observable.interval(5000).subscribe(() => this._ngZone.run(() => this.timeSinceLastBalanceUpdate = getTimeSinceLastBalanceUpdate(this.balanceService)))
+        interval(5000).subscribe(() => this._ngZone.run(() => this.timeSinceLastBalanceUpdate = getTimeSinceLastBalanceUpdate(this.balanceService)))
       );
     });
   }

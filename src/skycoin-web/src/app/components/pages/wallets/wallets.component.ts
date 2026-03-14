@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MatDialogConfig } from '@angular/material/dialog';
-import { Subscription } from 'rxjs';
+import { Subscription, first } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 
 import { Wallet } from '../../../app.datatypes';
@@ -73,13 +73,13 @@ export class WalletsComponent implements OnInit, OnDestroy {
 
       const unlockDialog = openUnlockWalletModal({wallet: wallet}, this.dialog, false).componentInstance;
 
-      this.confirmSeedSubscription = unlockDialog.onWalletUnlocked.first().subscribe(() => {
+      this.confirmSeedSubscription = unlockDialog.onWalletUnlocked.pipe(first()).subscribe(() => {
         wallet.needSeedConfirmation = false;
         this.walletService.saveWallets();
         wallet.opened ? wallet.opened = false : wallet.opened = true;
       });
 
-      this.deleteWalletSubscription = unlockDialog.onDeleteClicked.first().subscribe(() => {
+      this.deleteWalletSubscription = unlockDialog.onDeleteClicked.pipe(first()).subscribe(() => {
         openDeleteWalletModal(this.dialog, wallet, this.translateService, this.walletService);
       });
     } else {

@@ -1,4 +1,4 @@
-import { delay, mergeMap } from 'rxjs/operators';
+import { delay, mergeMap } from 'rxjs';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { SubscriptionLike, of } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';

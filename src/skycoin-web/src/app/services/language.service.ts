@@ -59,7 +59,7 @@ export class LanguageService {
 
   private loadCurrentLanguage() {
     const storedLang = localStorage.getItem(this.storageKey);
-    const currentLang = !!storedLang ? storedLang : config.defaultLanguage;
+    const currentLang = storedLang ? storedLang : config.defaultLanguage;
     this.translate.use(currentLang);
   }
 }

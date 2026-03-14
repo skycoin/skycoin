@@ -1,7 +1,7 @@
 import { Component, OnDestroy, Inject } from '@angular/core';
 import { MatDialogRef, MatDialogConfig, MatDialog, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { SubscriptionLike, Observable, of } from 'rxjs';
-import { map, first, tap, mergeMap } from 'rxjs/operators';
+import { map, first, tap, mergeMap } from 'rxjs';
 
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { HwWipeDialogComponent } from '../hw-wipe-dialog/hw-wipe-dialog.component';

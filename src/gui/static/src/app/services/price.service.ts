@@ -1,7 +1,7 @@
 import { Injectable, NgZone } from '@angular/core';
 import { Subject, BehaviorSubject, of, Subscription, Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
-import { delay, mergeMap } from 'rxjs/operators';
+import { delay, mergeMap } from 'rxjs';
 
 import { AppConfig } from '../app.config';
 import { environment } from '../../environments/environment';

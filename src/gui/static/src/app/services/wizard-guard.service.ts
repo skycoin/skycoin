@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { ActivatedRouteSnapshot, Router, RouterStateSnapshot } from '@angular/router';
-import { first } from 'rxjs/operators';
+import { first } from 'rxjs';
 
 import { WalletsAndAddressesService } from './wallet-operations/wallets-and-addresses.service';
 

@@ -1,9 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import 'rxjs/add/observable/throw';
-import 'rxjs/add/operator/catch';
-import 'rxjs/add/operator/map';
+import { Observable, throwError } from 'rxjs';
+import { catchError, mergeMap } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 
 import { CoinService } from './coin.service';
@@ -33,13 +31,13 @@ export class ApiService {
   }
 
   get(url, params = null, options = {}): Observable<any> {
-    return this.http.get(this.getUrl(url), this.getRequestOptions(options, params))
-      .catch((error: any) => this.getErrorMessage(error));
+    return this.http.get(this.getUrl(url), this.getRequestOptions(options, params)).pipe(
+      catchError((error: any) => this.getErrorMessage(error)));
   }
 
   delete(url, params = null, options = {}): Observable<any> {
-    return this.http.delete(this.getUrl(url), this.getRequestOptions(options, params))
-      .catch((error: any) => this.getErrorMessage(error));
+    return this.http.delete(this.getUrl(url), this.getRequestOptions(options, params)).pipe(
+      catchError((error: any) => this.getErrorMessage(error)));
   }
 
   post(url, body = {}, options: any = {}, useV2 = false): Observable<any> {
@@ -51,7 +49,7 @@ export class ApiService {
       this.getUrl(url, useV2),
       options.json ? JSON.stringify(body) : this.getQueryString(body),
       this.getRequestOptions(options)
-    ).catch((error: any) => this.getErrorMessage(error));
+    ).pipe(catchError((error: any) => this.getErrorMessage(error)));
   }
 
   private getQueryString(parameters = null) {
@@ -101,19 +99,19 @@ export class ApiService {
   private getErrorMessage(error: any): Observable<string> {
     if (error) {
       if (typeof error['_body'] === 'string') {
-        return Observable.throw(new Error(parseResponseMessage(error)));
+        return throwError(() => new Error(parseResponseMessage(error)));
       }
 
       if (error.error && typeof error.error === 'string') {
-        return Observable.throw(new Error(parseResponseMessage(error.error.trim())));
+        return throwError(() => new Error(parseResponseMessage(error.error.trim())));
       } else if (error.error && error.error.error && error.error.error.message) {
-        return Observable.throw(new Error(parseResponseMessage(error.error.error.message.trim())));
+        return throwError(() => new Error(parseResponseMessage(error.error.error.message.trim())));
       } else if (error.message) {
-        return Observable.throw(new Error(parseResponseMessage(error.message.trim())));
+        return throwError(() => new Error(parseResponseMessage(error.message.trim())));
       }
     }
 
-    return this.translate.get('service.api.server-error')
-      .flatMap(message => Observable.throw(new Error(message)));
+    return this.translate.get('service.api.server-error').pipe(
+      mergeMap(message => throwError(() => new Error(message))));
   }
 }

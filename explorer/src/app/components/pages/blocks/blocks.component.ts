@@ -1,4 +1,4 @@
-import { first, switchMap } from 'rxjs/operators';
+import { first, switchMap } from 'rxjs';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of, Subscription } from 'rxjs';

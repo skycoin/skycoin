@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { UntypedFormBuilder } from '@angular/forms';
 import { SubscriptionLike } from 'rxjs';
-import { first } from 'rxjs/operators';
+import { first } from 'rxjs';
 
 import { OfflineDialogsBaseComponent, OfflineDialogsStates } from '../offline-dialogs-base.component';
 import { MsgBarService } from '../../../../../services/msg-bar.service';

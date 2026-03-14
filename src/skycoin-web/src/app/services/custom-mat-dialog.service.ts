@@ -1,14 +1,13 @@
 import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
 import { TemplateRef, Injectable } from '@angular/core';
 import { ComponentType } from '@angular/cdk/overlay';
-import { Observable } from 'rxjs';
-import { BehaviorSubject } from 'rxjs';
+import { Observable, BehaviorSubject, map } from 'rxjs';
 
 @Injectable()
 export class CustomMatDialogService extends MatDialog {
 
   get showingDialog(): Observable<boolean> {
-    return this.dialogsDisplayed.asObservable().map(value => value !== 0);
+    return this.dialogsDisplayed.asObservable().pipe(map(value => value !== 0));
   }
 
   private dialogsDisplayed: BehaviorSubject<number> = new BehaviorSubject<number>(0);

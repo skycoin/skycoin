@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
-import 'rxjs/add/operator/do';
-import { Subject } from 'rxjs';
-import { BehaviorSubject } from 'rxjs';
+import { Subject, BehaviorSubject } from 'rxjs';
+import { tap, map, first } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 
 @Injectable()
@@ -23,9 +22,9 @@ export class PurchaseService {
   }
 
   generate(address: string) {
-    return this.post('bind', { skyaddr: address })
-      .do(response => {
-        this.purchaseOrders.first().subscribe(orders => {
+    return this.post('bind', { skyaddr: address }).pipe(
+      tap(response => {
+        this.purchaseOrders.pipe(first()).subscribe(orders => {
           let index = orders.findIndex(order => order.address === address);
           if (index === -1) {
             orders.push({address: address, addresses: []});
@@ -40,12 +39,13 @@ export class PurchaseService {
           });
           this.updatePurchaseOrders(orders);
         });
-      });
+      }),
+    );
   }
 
   scan(address: string) {
-    return this.get('status?skyaddr=' + address).do(response => {
-      this.purchaseOrders.first().subscribe(orders => {
+    return this.get('status?skyaddr=' + address).pipe(tap(response => {
+      this.purchaseOrders.pipe(first()).subscribe(orders => {
         const index = orders.findIndex(order => order.address === address);
         // Sort addresses ascending by creation date to match teller status response
         orders[index].addresses.sort((a, b) =>  b.created - a.created);
@@ -58,17 +58,17 @@ export class PurchaseService {
 
         this.updatePurchaseOrders(orders);
       });
-    });
+    }));
   }
 
   private get(url) {
-    return this.http.get(this.purchaseUrl + url)
-      .map((res: any) => res.json());
+    return this.http.get(this.purchaseUrl + url).pipe(
+      map((res: any) => res.json()));
   }
 
   private post(url, parameters = {}) {
-    return this.http.post(this.purchaseUrl + url, parameters)
-      .map((res: any) => res.json());
+    return this.http.post(this.purchaseUrl + url, parameters).pipe(
+      map((res: any) => res.json()));
   }
 
   private retrievePurchaseOrders() {

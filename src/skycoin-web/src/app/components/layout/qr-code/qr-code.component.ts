@@ -1,8 +1,7 @@
 import { Component, ElementRef, Inject, OnInit, ViewChild, OnDestroy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogConfig } from '@angular/material/dialog';
 import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
-import { Subject } from 'rxjs';
-import { Subscription } from 'rxjs';
+import { Subject, Subscription, debounceTime } from 'rxjs';
 
 import { CoinService } from '../../../services/coin.service';
 import { CustomMatDialogService } from '../../../services/custom-mat-dialog.service';
@@ -101,7 +100,7 @@ export class QrCodeComponent implements OnInit, OnDestroy {
     this.subscriptionsGroup.push(this.form.get('hours').valueChanges.subscribe(this.reportValueChanged.bind(this)));
     this.subscriptionsGroup.push(this.form.get('note').valueChanges.subscribe(this.reportValueChanged.bind(this)));
 
-    this.subscriptionsGroup.push(this.updateQrEvent.debounceTime(500).subscribe(() => {
+    this.subscriptionsGroup.push(this.updateQrEvent.pipe(debounceTime(500)).subscribe(() => {
       this.updateQrContent();
     }));
   }

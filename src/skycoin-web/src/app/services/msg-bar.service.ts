@@ -1,8 +1,8 @@
 import { Injectable, NgZone } from '@angular/core';
 import { MsgBarConfig, MsgBarComponent, MsgBarIcons, MsgBarColors } from '../components/layout/msg-bar/msg-bar.component';
 import { parseResponseMessage } from '../utils/errors';
-import { Subscription } from 'rxjs';
-import { Observable } from 'rxjs';
+import { Subscription, of } from 'rxjs';
+import { delay } from 'rxjs';
 
 @Injectable()
 export class MsgBarService {
@@ -70,7 +70,7 @@ export class MsgBarService {
     }
 
     this._ngZone.runOutsideAngular(() => {
-      this.timeSubscription = Observable.of(1).delay(duration).subscribe(() => this._ngZone.run(() => this.hide()));
+      this.timeSubscription = of(1).pipe(delay(duration)).subscribe(() => this._ngZone.run(() => this.hide()));
     });
   }
 }

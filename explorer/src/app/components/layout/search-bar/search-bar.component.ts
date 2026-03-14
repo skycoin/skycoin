@@ -2,7 +2,7 @@ import { Component, ElementRef, ViewChild, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { Subscription, of } from 'rxjs';
-import { delay, mergeMap } from 'rxjs/operators';
+import { delay, mergeMap } from 'rxjs';
 
 import { SearchService, SearchError } from '../../../services/search/search.service';
 import { ApiService } from '../../../services/api/api.service';

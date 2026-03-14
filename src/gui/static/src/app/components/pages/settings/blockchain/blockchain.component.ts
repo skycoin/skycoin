@@ -1,4 +1,4 @@
-import { mergeMap, delay } from 'rxjs/operators';
+import { mergeMap, delay } from 'rxjs';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { SubscriptionLike, of } from 'rxjs';
 

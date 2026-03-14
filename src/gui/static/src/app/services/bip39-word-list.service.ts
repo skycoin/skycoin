@@ -1,4 +1,4 @@
-import { debounceTime, map } from 'rxjs/operators';
+import { debounceTime, map } from 'rxjs';
 import { Subject, Observable, from } from 'rxjs';
 import { Injectable } from '@angular/core';
 

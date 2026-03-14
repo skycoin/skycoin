@@ -1,8 +1,7 @@
 import { Component, OnInit, ViewChild, OnDestroy, AfterViewInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
-import { Subscription } from 'rxjs';
-import { Observable } from 'rxjs';
+import { Subscription, of, delay, first } from 'rxjs';
 
 import { WalletService } from '../../../../services/wallet/wallet.service';
 import { DoubleButtonActive } from '../../../layout/double-button/double-button.component';
@@ -130,7 +129,7 @@ export class OnboardingCreateWalletComponent implements OnInit, AfterViewInit, O
   }
 
   private checkUserWallets() {
-    this.walletService.haveWallets.first().subscribe(result => {
+    this.walletService.haveWallets.pipe(first()).subscribe(result => {
       if (!result) {
         this.userHasWallets = false;
         this.showLanguageModal();
@@ -144,7 +143,7 @@ export class OnboardingCreateWalletComponent implements OnInit, AfterViewInit, O
     this.createButton.setLoading();
     this.creatingWallet = true;
 
-    this.slowInfoSubscription = Observable.of(1).delay(config.timeBeforeSlowMobileInfo)
+    this.slowInfoSubscription = of(1).pipe(delay(config.timeBeforeSlowMobileInfo))
       .subscribe(() => this.showSlowMobileInfo = true);
 
     const data = this.formControl.getData();

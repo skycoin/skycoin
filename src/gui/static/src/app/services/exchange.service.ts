@@ -1,5 +1,5 @@
 import { throwError as observableThrowError, Observable, BehaviorSubject, SubscriptionLike, of } from 'rxjs';
-import { map, mergeMap, retryWhen, delay, catchError, tap } from 'rxjs/operators';
+import { map, mergeMap, retryWhen, delay, catchError, tap } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import * as moment from 'moment';

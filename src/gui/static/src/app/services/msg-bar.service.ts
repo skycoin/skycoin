@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { SubscriptionLike, of } from 'rxjs';
-import { delay } from 'rxjs/operators';
+import { delay } from 'rxjs';
 
 import { MsgBarConfig, MsgBarComponent, MsgBarIcons, MsgBarColors } from '../components/layout/msg-bar/msg-bar.component';
 import { processServiceError } from '../utils/errors';

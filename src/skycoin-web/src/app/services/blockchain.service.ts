@@ -1,9 +1,6 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
-import { Observable } from 'rxjs';
-import { Subscription } from 'rxjs';
-import 'rxjs/add/operator/startWith';
-import 'rxjs/add/operator/takeWhile';
+import { BehaviorSubject, Observable, Subscription, of } from 'rxjs';
+import { map, mergeMap, delay } from 'rxjs';
 import BigNumber from 'bignumber.js';
 
 import { ApiService } from './api.service';
@@ -65,8 +62,8 @@ export class BlockchainService {
   }
 
   lastBlock(): Observable<any> {
-    return this.apiService.get('last_blocks', { num: 1 })
-      .map(response => response.blocks[0]);
+    return this.apiService.get('last_blocks', { num: 1 }).pipe(
+      map(response => response.blocks[0]));
   }
 
   coinSupply(): Observable<any> {
@@ -91,10 +88,11 @@ export class BlockchainService {
       );
   }
 
-  private checkBlockchainProgress(delay: number) {
-    this.connectionsSubscription = Observable.of(1)
-      .delay(delay)
-      .flatMap(() => this.getBlockchainProgress())
+  private checkBlockchainProgress(delayMs: number) {
+    this.connectionsSubscription = of(1).pipe(
+      delay(delayMs),
+      mergeMap(() => this.getBlockchainProgress()),
+    )
       .subscribe(
         (response: any) => this.onBlockchainProgress(response),
         () => this.onLoadBlockchainError()
@@ -127,15 +125,15 @@ export class BlockchainService {
   }
 
   private checkConnectionState(): Observable<any> {
-    return this.apiService.get('network/connections')
-      .map((status: any) => {
+    return this.apiService.get('network/connections').pipe(
+      map((status: any) => {
         if ((!status.connections || status.connections.length === 0) && !environment.e2eTest) {
           this.onLoadBlockchainError(ConnectionError.NO_ACTIVE_CONNECTIONS);
           throw { reported: true };
         }
-      })
-      .flatMap(() => this.apiService.get('health'))
-      .map ((response: any) => {
+      }),
+      mergeMap(() => this.apiService.get('health')),
+      map((response: any) => {
         this.globalsService.setNodeVersion(response.version.version);
         if (isEqualOrSuperiorVersion(response.version.version, '0.25.0')) {
           this.maxDecimals = response.user_verify_transaction.max_decimals;
@@ -144,6 +142,7 @@ export class BlockchainService {
           this.maxDecimals = 6;
           this.burnRateInternal = new BigNumber(2);
         }
-      });
+      }),
+    );
   }
 }

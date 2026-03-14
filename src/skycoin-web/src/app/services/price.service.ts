@@ -1,7 +1,7 @@
 import { Injectable, NgZone } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, of, Subscription, Observable } from 'rxjs';
-import { delay, mergeMap } from 'rxjs/operators';
+import { delay, mergeMap } from 'rxjs';
 
 import { CoinService } from './coin.service';
 import { BaseCoin } from '../coins/basecoin';

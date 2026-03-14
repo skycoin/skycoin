@@ -1,7 +1,7 @@
 import { Component, OnDestroy } from '@angular/core';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { SubscriptionLike, of } from 'rxjs';
-import { mergeMap, delay } from 'rxjs/operators';
+import { mergeMap, delay } from 'rxjs';
 
 import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { HwDialogBaseComponent } from '../hw-dialog-base.component';

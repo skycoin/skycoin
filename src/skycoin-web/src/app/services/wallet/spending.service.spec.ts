@@ -1,6 +1,5 @@
 import { TestBed, fakeAsync } from '@angular/core/testing';
-import 'rxjs/add/observable/of';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import BigNumber from 'bignumber.js';
 
@@ -39,7 +38,7 @@ describe('SpendingService', () => {
         {
           provide: ApiService,
           useValue: jasmine.createSpyObj('ApiService', {
-            'get': Observable.of([])
+            'get': of([])
           })
         },
         {
@@ -91,8 +90,8 @@ describe('SpendingService', () => {
         createOutput('address2', 'hash4', new BigNumber(5), new BigNumber(0))
       ];
 
-      spyApiService.get.and.returnValue(Observable.of({ head_outputs: outputs }));
-      spyCipherProvider.prepareTransaction.and.returnValue(Observable.of('preparedTransaction'));
+      spyApiService.get.and.returnValue(of({ head_outputs: outputs }));
+      spyCipherProvider.prepareTransaction.and.returnValue(of('preparedTransaction'));
       spyTranslateService.instant.and.callFake((param) => {
         if (param === 'service.wallet.not-enough-hours1') {
           return 'Not enough available';
@@ -651,13 +650,13 @@ describe('SpendingService', () => {
       const walletAddress3 = 'address 3';
       const wallet2: Wallet = Object.assign(createWallet(), { addresses: [ createAddress(walletAddress3) ] });
 
-      spyOnProperty(walletService, 'currentWallets', 'get').and.returnValue( Observable.of([wallet1, wallet2]) );
+      spyOnProperty(walletService, 'currentWallets', 'get').and.returnValue( of([wallet1, wallet2]) );
 
       const output1 = createRequestOutput('hash3', walletAddress3, '33', 3 );
       const output2 = createRequestOutput('hash2', walletAddress2, '22', 2 );
       const output3 = createRequestOutput('hash1', walletAddress1, '11', 1 );
 
-      spyApiService.get.and.returnValue(Observable.of({ head_outputs: [ output1, output2, output3 ] }));
+      spyApiService.get.and.returnValue(of({ head_outputs: [ output1, output2, output3 ] }));
 
       const expectedWallet1 = Object.assign(createWallet(), { addresses: [ createAddress(walletAddress1), createAddress(walletAddress2) ] });
       const expectedWallet2 = Object.assign(createWallet(), { addresses: [ createAddress(walletAddress3) ] });

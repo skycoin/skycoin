@@ -1,4 +1,4 @@
-import { switchMap, filter, first, retryWhen, delay } from 'rxjs/operators';
+import { switchMap, filter, first, retryWhen, delay } from 'rxjs';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { Observable, of, Subscription } from 'rxjs';

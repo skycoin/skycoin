@@ -10,13 +10,10 @@
 import { Injectable, NgZone } from '@angular/core';
 import { ApiService } from './api.service';
 import { Http, RequestOptions, Headers } from '@angular/http';
-import { Observable } from 'rxjs/Observable';
+import { Observable, BehaviorSubject, Subject } from 'rxjs';
 import { HwWalletPinService } from './hw-wallet-pin.service';
 import { HwWalletSeedWordService } from './hw-wallet-seed-word.service';
-import { ISubscription } from 'rxjs/Subscription';
-import { BehaviorSubject } from 'rxjs/BehaviorSubject';
-import 'rxjs/add/operator/timeout';
-import { Subject } from 'rxjs/Subject';
+import { Subscription } from 'rxjs';
 
 @Injectable()
 export class HwWalletDaemonService {

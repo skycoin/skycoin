@@ -1,7 +1,8 @@
 import { MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
 import { Renderer2 } from '@angular/core';
 import { Overlay } from '@angular/cdk/overlay';
-import { Observable } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
+import { filter, first, map, mergeMap } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 
 import { Wallet, ConfirmationData } from '../app.datatypes';
@@ -38,11 +39,11 @@ export function openChangeCoinModal (dialog: CustomMatDialogService, renderer: R
   config.backdropClass = 'clear-dialog-background';
   config.autoFocus = false;
 
-  return dialog.open(SelectCoinOverlayComponent, config, true).afterClosed()
-    .map(response => {
+  return dialog.open(SelectCoinOverlayComponent, config, true).afterClosed().pipe(
+    map(response => {
       renderer.removeClass(document.body, 'no-overflow');
       return response;
-    });
+    }));
 }
 
 export function openChangeLanguageModal (dialog: CustomMatDialogService, disableClose = false): Observable<any> {
@@ -88,15 +89,15 @@ export function openDeleteWalletModal (dialog: CustomMatDialogService, wallet: W
 }
 
 export function scanAddresses(dialog: CustomMatDialogService, wallet: Wallet, blockchainService: BlockchainService, translate: TranslateService): Observable<any> {
-  return blockchainService.progress
-    .filter(event => event.state === ProgressStates.Progress || event.state === ProgressStates.Error)
-    .first()
-    .flatMap(event => {
+  return blockchainService.progress.pipe(
+    filter(event => event.state === ProgressStates.Progress || event.state === ProgressStates.Error),
+    first(),
+    mergeMap(event => {
       if (event.state === ProgressStates.Error) {
-        return Observable.throw(new Error(translate.instant('wallet.scan.connection-error')));
+        return throwError(() => new Error(translate.instant('wallet.scan.connection-error')));
       }
       if (event.highestBlock - event.currentBlock > 2) {
-        return Observable.throw(new Error(translate.instant('wallet.scan.unsynchronized-node-error')));
+        return throwError(() => new Error(translate.instant('wallet.scan.unsynchronized-node-error')));
       }
 
       return dialog.open(ScanAddressesComponent, <MatDialogConfig>{
@@ -104,7 +105,7 @@ export function scanAddresses(dialog: CustomMatDialogService, wallet: Wallet, bl
         data: wallet,
         autoFocus: false
       }).afterClosed();
-    });
+    }));
 }
 
 export function getTimeSinceLastBalanceUpdate(balanceService: BalanceService): number {

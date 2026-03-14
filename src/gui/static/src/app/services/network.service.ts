@@ -1,4 +1,4 @@
-import { mergeMap, delay } from 'rxjs/operators';
+import { mergeMap, delay } from 'rxjs';
 import { Injectable, NgZone } from '@angular/core';
 import { Subject, BehaviorSubject, Observable, of, Subscription } from 'rxjs';
 

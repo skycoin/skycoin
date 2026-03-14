@@ -2,7 +2,7 @@ import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { UntypedFormBuilder } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { Observable } from 'rxjs';
+import { of } from 'rxjs';
 
 import { HistoryComponent } from './history.component';
 import { HistoryService } from '../../../services/wallet/history.service';
@@ -22,7 +22,7 @@ describe('HistoryComponent', () => {
       providers: [
         UntypedFormBuilder,
         { provide: WalletService, useClass: MockWalletService },
-        { provide: ActivatedRoute, useValue: { queryParams: Observable.of({}) } },
+        { provide: ActivatedRoute, useValue: { queryParams: of({}) } },
         { provide: HistoryService, useClass: MockHistoryService },
         { provide: PriceService, useClass: MockPriceService },
         { provide: CoinService, useClass: MockCoinService },

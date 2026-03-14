@@ -1,5 +1,5 @@
 import { throwError as observableThrowError, of as observableOf,  Observable } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, map } from 'rxjs';
 import { Injectable } from '@angular/core';
 
 import { ExplorerService } from '../explorer/explorer.service';

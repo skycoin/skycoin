@@ -1,10 +1,6 @@
 import { Injectable, NgZone } from '@angular/core';
-import 'rxjs/add/operator/mergeMap';
-import 'rxjs/add/operator/first';
-import { BehaviorSubject } from 'rxjs';
-import { Observable } from 'rxjs';
-import { Subscription } from 'rxjs';
-import { ReplaySubject } from 'rxjs';
+import { BehaviorSubject, Observable, Subscription, ReplaySubject, of } from 'rxjs';
+import { mergeMap, map, first, delay } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
 
 import { ApiService } from '../api.service';
@@ -62,13 +58,14 @@ export class BalanceService {
     }
   }
 
-  private scheduleUpdate(delay: number) {
+  private scheduleUpdate(delayMs: number) {
     this._ngZone.runOutsideAngular(() => {
       this.removeSubscription();
 
-      this.schedulerSubscription = Observable.of(1)
-        .delay(delay)
-        .flatMap(() => this.getBalance())
+      this.schedulerSubscription = of(1).pipe(
+        delay(delayMs),
+        mergeMap(() => this.getBalance()),
+      )
         .subscribe(
           hasPendingTxs => this.scheduleUpdate(hasPendingTxs ? this.shortUpdatePeriod : this.longUpdatePeriod),
           () => {
@@ -85,29 +82,29 @@ export class BalanceService {
 
   private getBalance(): Observable<boolean> {
     this.sendTotalBalanceEvent({state: BalanceStates.Updating});
-    return this.walletService.addresses.first().flatMap((addresses: Address[]) => {
+    return this.walletService.addresses.pipe(first(), mergeMap((addresses: Address[]) => {
       if (addresses.length === 0) {
         this.lastBalancesUpdateTime = new Date();
         this.sendTotalBalanceEvent({state: BalanceStates.Obtained, balance: { coins: new BigNumber('0'), hours: new BigNumber('0') }});
-        return Observable.of(false);
+        return of(false);
       }
 
-      return this.retrieveAddressesBalance(addresses).flatMap((balance) => {
-        return this.walletService.currentWallets.first().map(wallets => this.calculateBalance(wallets, balance));
-      });
-    });
+      return this.retrieveAddressesBalance(addresses).pipe(mergeMap((balance) => {
+        return this.walletService.currentWallets.pipe(first(), map(wallets => this.calculateBalance(wallets, balance)));
+      }));
+    }));
   }
 
   private retrieveAddressesBalance(addresses: Address[]): Observable<Balance> {
     const formattedAddresses = addresses.map(a => a.address).join(',');
 
-    return this.globalsService.getValidNodeVersion().flatMap (version => {
+    return this.globalsService.getValidNodeVersion().pipe(mergeMap(version => {
       if (isEqualOrSuperiorVersion(version, '0.25.0')) {
         return this.apiService.post('balance', { addrs: formattedAddresses });
       } else {
         return this.apiService.get('balance', { addrs: formattedAddresses });
       }
-    });
+    }));
   }
 
   private calculateBalance(wallets: Wallet[], balance: Balance): boolean {

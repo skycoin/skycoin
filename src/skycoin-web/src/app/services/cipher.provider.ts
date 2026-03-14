@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, from, throwError, of } from 'rxjs';
+import { catchError, mergeMap, map } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
-import 'rxjs/add/observable/fromPromise';
 
 import { Address, TransactionInput, TransactionOutput } from '../app.datatypes';
 
@@ -31,7 +31,7 @@ export class CipherProvider {
       if (window['WebAssembly'] && window['WebAssembly'].instantiateStreaming) {
         console.log('[WASM] Starting WASM streaming instantiation...');
         const go = new Go();
-        return Observable.fromPromise(
+        return from(
           window['WebAssembly'].instantiateStreaming(fetch('/assets/scripts/skycoin-lite.wasm'), go.importObject)
             .then((result: any) => {
               console.log('[WASM] WASM module instantiated, running...');
@@ -46,29 +46,33 @@ export class CipherProvider {
         );
       } else if (window['WebAssembly'] && window['WebAssembly'].instantiate) {
         console.log('[WASM] Starting WASM download (fallback mode)...');
-        return this.http.get('/assets/scripts/skycoin-lite.wasm', { responseType: 'arraybuffer' })
-          .catch((err) => {
+        return this.http.get('/assets/scripts/skycoin-lite.wasm', { responseType: 'arraybuffer' }).pipe(
+          catchError((err) => {
             console.error('[WASM] Failed to download WASM file:', err);
-            return Observable.throw(InitializationResults.ErrorLoadingWasmFile);
-          })
-          .flatMap((response: ArrayBuffer) => {
+            return throwError(() => InitializationResults.ErrorLoadingWasmFile);
+          }),
+          mergeMap((response: ArrayBuffer) => {
             console.log('[WASM] WASM file downloaded, size:', response.byteLength);
             const go = new Go();
             console.log('[WASM] Instantiating WASM module...');
-            return Observable.fromPromise((window['WebAssembly'].instantiate(response, go.importObject) as Promise<any>)).map(result => {
-              console.log('[WASM] WASM module instantiated, running...');
-              go.run(result.instance);
-              console.log('[WASM] Initialization complete!');
+            return from((window['WebAssembly'].instantiate(response, go.importObject) as Promise<any>)).pipe(
+              map(result => {
+                console.log('[WASM] WASM module instantiated, running...');
+                go.run(result.instance);
+                console.log('[WASM] Initialization complete!');
 
-              return InitializationResults.Ok;
-            }).catch(err => {
-              console.error('[WASM] Failed to instantiate WASM module:', err);
-              return Observable.throw(InitializationResults.ErrorLoadingWasmFile);
-            });
-          });
+                return InitializationResults.Ok;
+              }),
+              catchError(err => {
+                console.error('[WASM] Failed to instantiate WASM module:', err);
+                return throwError(() => InitializationResults.ErrorLoadingWasmFile);
+              }),
+            );
+          }),
+        );
       } else {
         console.error('[WASM] Browser does not support WebAssembly');
-        return Observable.throw(InitializationResults.BrowserIncompatibleWithWasm);
+        return throwError(() => InitializationResults.BrowserIncompatibleWithWasm);
       }
     }
 
@@ -79,9 +83,9 @@ export class CipherProvider {
     const address = window['SkycoinCipher'].generateAddress(seed);
 
     if (!address.error) {
-      return Observable.of(this.convertToAddress(address));
+      return of(this.convertToAddress(address));
     } else {
-      return Observable.throw(new Error(address.error));
+      return throwError(() => new Error(address.error));
     }
   }
 
@@ -89,9 +93,9 @@ export class CipherProvider {
     const tx = window['SkycoinCipher'].prepareTransaction(JSON.stringify(inputs), JSON.stringify(outputs));
 
     if (!tx.error) {
-      return Observable.of(tx);
+      return of(tx);
     } else {
-      return Observable.throw(new Error(tx.error));
+      return throwError(() => new Error(tx.error));
     }
   }
 

@@ -1,5 +1,3 @@
-import 'rxjs/add/operator/debounceTime';
-
 export class Bip39WordListService {
 
   private wordMap: Map<string, boolean>;

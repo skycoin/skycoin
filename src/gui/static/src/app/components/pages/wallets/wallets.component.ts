@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { SubscriptionLike } from 'rxjs';
-import { first } from 'rxjs/operators';
+import { first } from 'rxjs';
 import { Router } from '@angular/router';
 
 import { CreateWalletComponent } from './create-wallet/create-wallet.component';

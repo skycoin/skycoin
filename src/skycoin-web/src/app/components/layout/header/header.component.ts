@@ -1,7 +1,6 @@
 import { Component, Input, OnDestroy, OnInit, NgZone } from '@angular/core';
-import { Subscription } from 'rxjs';
+import { Subscription, interval, filter } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
-import { Observable } from 'rxjs';
 
 import { PriceService } from '../../../services/price.service';
 import { BalanceService, BalanceStates } from '../../../services/wallet/balance.service';
@@ -66,7 +65,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
     this.subscriptionsGroup.push(
       this.blockchainService.progress
-        .filter(response => !!response)
+        .pipe(filter(response => !!response))
         .subscribe(response => {
           this.updateBlockchainProgress(response);
 
@@ -104,7 +103,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
     this._ngZone.runOutsideAngular(() => {
       this.subscriptionsGroup.push(
-        Observable.interval(5000).subscribe(() => this._ngZone.run(() => this.timeSinceLastBalanceUpdate = getTimeSinceLastBalanceUpdate(this.balanceService)))
+        interval(5000).subscribe(() => this._ngZone.run(() => this.timeSinceLastBalanceUpdate = getTimeSinceLastBalanceUpdate(this.balanceService)))
       );
     });
 

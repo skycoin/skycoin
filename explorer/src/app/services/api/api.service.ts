@@ -1,5 +1,5 @@
 import { throwError as observableThrowError,  Observable, ReplaySubject } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, map } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 

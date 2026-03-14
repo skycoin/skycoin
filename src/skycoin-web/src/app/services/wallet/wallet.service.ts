@@ -1,8 +1,6 @@
 import { Injectable, EventEmitter, Injector } from '@angular/core';
-import 'rxjs/add/operator/mergeMap';
-import 'rxjs/add/operator/filter';
-import { BehaviorSubject, Subscription } from 'rxjs';
-import { Observable } from 'rxjs';
+import { BehaviorSubject, Subscription, Observable, of, throwError } from 'rxjs';
+import { mergeMap, map, filter, first, catchError } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { BigNumber } from 'bignumber.js';
 
@@ -38,28 +36,29 @@ export class WalletService {
   }
 
   get haveWallets(): Observable<boolean> {
-    return this.wallets
-      .filter(wallets => wallets !== null)
-      .map(wallets => wallets.length > 0);
+    return this.wallets.pipe(
+      filter(wallets => wallets !== null),
+      map(wallets => wallets.length > 0));
   }
 
   get currentWallets(): Observable<Wallet[]> {
-    return this.wallets
-      .filter(wallets => wallets !== null)
-      .flatMap(wallets => this.coinService.currentCoin
-        .filter((coin: BaseCoin) => coin !== null)
-        .map((coin: BaseCoin) => {
+    return this.wallets.pipe(
+      filter(wallets => wallets !== null),
+      mergeMap(wallets => this.coinService.currentCoin.pipe(
+        filter((coin: BaseCoin) => coin !== null),
+        map((coin: BaseCoin) => {
           if (environment.production) {
             // In production, wallets are fetched per-coin from the server
             return wallets;
           }
           return wallets.filter(wallet => wallet.coinId === coin.id);
         })
-      ).map(wallets => wallets ? wallets : []);
+      )),
+      map(wallets => wallets ? wallets : []));
   }
 
   get addresses(): Observable<Address[]> {
-    return this.currentWallets.map(wallets => wallets.reduce((array, wallet) => array.concat(wallet.addresses), []));
+    return this.currentWallets.pipe(map(wallets => wallets.reduce((array, wallet) => array.concat(wallet.addresses), [])));
   }
 
   addAddress(wallet: Wallet, saveWallet = true): Observable<void> {
@@ -67,14 +66,14 @@ export class WalletService {
       throw new Error(this.translate.instant('service.wallet.address-without-seed'));
     }
 
-    return this.cipherProvider.generateAddress(wallet.nextSeed)
-      .map((response: GenerateAddressResponse) => {
+    return this.cipherProvider.generateAddress(wallet.nextSeed).pipe(
+      map((response: GenerateAddressResponse) => {
         wallet.nextSeed = response.nextSeed;
         wallet.addresses.push(response.address);
         if (saveWallet) {
           this.saveWallets();
         }
-      });
+      }));
   }
 
   create(label: string, seed: string, coinId: number, save = true, walletType = 'deterministic', seedPassphrase?: string): Observable<Wallet> {
@@ -84,8 +83,8 @@ export class WalletService {
       return this.createBip44Wallet(label, seed, coinId, save, seedPassphrase);
     }
 
-    return this.cipherProvider.generateAddress(convertAsciiToHexa(seed))
-      .map((response: GenerateAddressResponse) => {
+    return this.cipherProvider.generateAddress(convertAsciiToHexa(seed)).pipe(
+      map((response: GenerateAddressResponse) => {
         const wallet: Wallet = {
           label: label,
           seed: seed,
@@ -109,7 +108,7 @@ export class WalletService {
         }
 
         return wallet;
-      });
+      }));
   }
 
   private createBip44Wallet(label: string, seed: string, coinId: number, save: boolean, seedPassphrase?: string): Observable<Wallet> {
@@ -124,8 +123,8 @@ export class WalletService {
       params['seed-passphrase'] = seedPassphrase;
     }
 
-    return this.apiService.post('wallet/create', params)
-      .map((response: any) => {
+    return this.apiService.post('wallet/create', params).pipe(
+      map((response: any) => {
         const wallet: Wallet = {
           label: response.meta.label,
           balance: new BigNumber('0'),
@@ -140,7 +139,7 @@ export class WalletService {
         }
 
         return wallet;
-      });
+      }));
   }
 
   add(wallet: Wallet) {
@@ -164,35 +163,35 @@ export class WalletService {
 
     const InitialNextSeed = wallet.nextSeed;
 
-    return this.checkWalletAddresses(wallet, 0, onProgressChanged, InitialNextSeed)
-      .map(lastIndexWithTxs => {
+    return this.checkWalletAddresses(wallet, 0, onProgressChanged, InitialNextSeed).pipe(
+      map(lastIndexWithTxs => {
         const unnecessaryAddresses = wallet.addresses.length - 1 - lastIndexWithTxs;
         if (unnecessaryAddresses > 0) {
           wallet.addresses.splice(lastIndexWithTxs + 1, unnecessaryAddresses);
         }
         this.saveWallets();
-      })
-      .catch(error => {
+      }),
+      catchError(error => {
         if (wallet.addresses.length > 1) {
           wallet.addresses.splice(1, wallet.addresses.length - 1);
           wallet.nextSeed = InitialNextSeed;
         }
-        return Observable.throw(error);
-      });
+        return throwError(() => error);
+      }));
   }
 
   unlockWallet(wallet: Wallet, seed: string, onProgressChanged: EventEmitter<number>): Observable<void> {
     seed = this.getCleanSeed(seed);
     const currentSeed = convertAsciiToHexa(seed);
 
-    return this.unlockWalletAddresses(currentSeed, wallet, 0, onProgressChanged)
-      .map((res: boolean) => {
+    return this.unlockWalletAddresses(currentSeed, wallet, 0, onProgressChanged).pipe(
+      map((res: boolean) => {
         if (!res) {
           throw new Error(this.translate.instant('service.wallet.wrong-seed'));
         }
 
         wallet.seed = seed;
-      });
+      }));
   }
 
   saveWallets() {
@@ -227,13 +226,13 @@ export class WalletService {
     } else {
       // Production mode: fetch wallets from the backend API.
       // Wait for coins to load so the ApiService has a valid base URL.
-      this.coinService.coinsLoaded.first().subscribe(() => {
+      this.coinService.coinsLoaded.pipe(first()).subscribe(() => {
         this.loadWalletsFromServer();
 
         // Re-fetch wallets when the user switches coins
-        this.coinSubscription = this.coinService.currentCoin
-          .filter((coin: BaseCoin) => coin !== null)
-          .subscribe(() => {
+        this.coinSubscription = this.coinService.currentCoin.pipe(
+          filter((coin: BaseCoin) => coin !== null),
+        ).subscribe(() => {
             this.loadWalletsFromServer();
           });
       });
@@ -268,9 +267,9 @@ export class WalletService {
     const minAdrressesToScan = environment.e2eTest ? 2 : 10;
     const maxAdrressesToScan = environment.e2eTest ? 2 : 100;
 
-    return this.addAddress(wallet, false)
-      .flatMap(() => this.apiService.get('transactions', { addrs: wallet.addresses[wallet.addresses.length - 1].address }))
-      .flatMap(transactions => {
+    return this.addAddress(wallet, false).pipe(
+      mergeMap(() => this.apiService.get('transactions', { addrs: wallet.addresses[wallet.addresses.length - 1].address })),
+      mergeMap(transactions => {
         if (transactions && transactions.length > 0) {
           lastIndexWithTxs = wallet.addresses.length - 1;
           nextSeed = wallet.nextSeed;
@@ -284,19 +283,19 @@ export class WalletService {
         });
 
         if (lastIndexWithTxs + minAdrressesToScan === wallet.addresses.length - 1 || wallet.addresses.length === maxAdrressesToScan) {
-          return Observable.of(lastIndexWithTxs);
+          return of(lastIndexWithTxs);
         } else {
           return this.checkWalletAddresses(wallet, lastIndexWithTxs, onProgressChanged, nextSeed);
         }
-      });
+      }));
   }
 
   private unlockWalletAddresses(currentSeed: string, wallet: Wallet, index: number, onProgressChanged: EventEmitter<number>): Observable<boolean> {
-    return this.cipherProvider.generateAddress(currentSeed)
-      .flatMap((response: GenerateAddressResponse) => {
+    return this.cipherProvider.generateAddress(currentSeed).pipe(
+      mergeMap((response: GenerateAddressResponse) => {
         if (response.address.address !== wallet.addresses[index].address) {
           onProgressChanged.emit(0);
-          return Observable.of(false);
+          return of(false);
         }
 
         onProgressChanged.emit((index + 1) / wallet.addresses.length * 100);
@@ -306,10 +305,10 @@ export class WalletService {
         index++;
 
         if (index === wallet.addresses.length) {
-          return Observable.of(true);
+          return of(true);
         }
 
         return this.unlockWalletAddresses(response.nextSeed, wallet, index, onProgressChanged);
-      });
+      }));
   }
 }

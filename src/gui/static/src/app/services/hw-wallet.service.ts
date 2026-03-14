@@ -1,5 +1,5 @@
 import { throwError as observableThrowError, of, Observable, Subject } from 'rxjs';
-import { mergeMap, map, catchError } from 'rxjs/operators';
+import { mergeMap, map, catchError } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
 import { BigNumber } from 'bignumber.js';

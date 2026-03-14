@@ -1,7 +1,7 @@
 import { Component, OnInit, Renderer2, ViewChild } from '@angular/core';
 import { LanguageService } from './services/language.service';
 import { Router, NavigationEnd, Event } from '@angular/router';
-import { filter } from 'rxjs/operators';
+import { filter } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 
 import { config } from './app.config';

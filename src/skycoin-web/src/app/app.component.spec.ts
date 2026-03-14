@@ -2,7 +2,7 @@ import { TestBed, async, ComponentFixture } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA, Renderer2 } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { Router } from '@angular/router';
-import { Observable } from 'rxjs';
+import { of } from 'rxjs';
 
 import { AppComponent } from './app.component';
 import { MockLanguageService, MockTranslatePipe, MockTranslateService, MockCustomMatDialogService, MockMsgBarService } from './utils/test-mocks';
@@ -23,9 +23,9 @@ describe('AppComponent', () => {
       providers: [
         { provide: LanguageService, useClass: MockLanguageService },
         { provide: TranslateService, useClass: MockTranslateService },
-        { provide: Router, useValue: { events: Observable.of({}) } },
+        { provide: Router, useValue: { events: of({}) } },
         { provide: CipherProvider, useValue: {
-          initialize() { return Observable.of(InitializationResults.Ok); },
+          initialize() { return of(InitializationResults.Ok); },
         } },
         { provide: Renderer2, useValue: { addClass: null, removeClass: null } },
         { provide: CustomMatDialogService, useClass: MockCustomMatDialogService },

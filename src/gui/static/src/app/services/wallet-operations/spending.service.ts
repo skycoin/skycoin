@@ -1,5 +1,5 @@
 import { throwError as observableThrowError, of, Observable, concat } from 'rxjs';
-import { delay, retryWhen, take, mergeMap, catchError, map } from 'rxjs/operators';
+import { delay, retryWhen, take, mergeMap, catchError, map } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { BigNumber } from 'bignumber.js';
 import { TranslateService } from '@ngx-translate/core';

@@ -3,7 +3,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { TranslateService } from '@ngx-translate/core';
 import { Observable, SubscriptionLike } from 'rxjs';
 import { Router } from '@angular/router';
-import { mergeMap, first } from 'rxjs/operators';
+import { mergeMap, first } from 'rxjs';
 
 import { ChangeNameComponent, ChangeNameData } from '../change-name/change-name.component';
 import { PasswordDialogComponent, PasswordDialogParams, PasswordSubmitEvent } from '../../../layout/password-dialog/password-dialog.component';

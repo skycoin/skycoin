@@ -1,6 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { SubscriptionLike, of } from 'rxjs';
-import { delay, mergeMap } from 'rxjs/operators';
+import { delay, mergeMap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 
 import { NavBarSwitchService } from '../../../../services/nav-bar-switch.service';

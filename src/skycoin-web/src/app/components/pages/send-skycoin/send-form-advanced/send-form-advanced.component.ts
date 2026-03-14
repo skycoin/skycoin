@@ -1,12 +1,9 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { UntypedFormArray, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { MatDialogConfig } from '@angular/material/dialog';
-import { Subscription } from 'rxjs';
+import { Subscription, throwError, concat } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
-import { Observable } from 'rxjs';
-import 'rxjs/add/operator/retryWhen';
-import 'rxjs/add/operator/concat';
-import 'rxjs/add/operator/take';
+import { retryWhen, delay, take, first } from 'rxjs';
 
 import { ButtonComponent } from '../../../layout/button/button.component';
 import { NavBarService } from '../../../../services/nav-bar.service';
@@ -93,8 +90,8 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       this.unspentOutputs = [];
       this.loadingUnspentOutputs = true;
 
-      this.getOutputsSubscriptions = this.spendingService.getWalletUnspentOutputs(wallet)
-        .retryWhen(errors => errors.delay(1000).take(10).concat(Observable.throw('')))
+      this.getOutputsSubscriptions = this.spendingService.getWalletUnspentOutputs(wallet).pipe(
+        retryWhen(errors => errors.pipe(delay(1000), take(10), o => concat(o, throwError(() => '')))))
         .subscribe(
           result => {
             this.loadingUnspentOutputs = false;
@@ -221,14 +218,14 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       this.removeUnlockSubscription();
 
       this.unlockSubscription = openUnlockWalletModal(wallet, this.dialog).componentInstance
-        .onWalletUnlocked.first().subscribe(() => this.checkBeforeSending());
+        .onWalletUnlocked.pipe(first()).subscribe(() => this.checkBeforeSending());
     } else {
       this.checkBeforeSending();
     }
   }
 
   private checkBeforeSending() {
-    this.blockchainService.synchronized.first().subscribe(synchronized => {
+    this.blockchainService.synchronized.pipe(first()).subscribe(synchronized => {
       if (synchronized) {
         this.createTransaction();
       } else {

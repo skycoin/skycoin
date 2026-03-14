@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, mergeMap } from 'rxjs';
 
 import { SpendingService } from '../../../../services/wallet/spending.service';
 import { Wallet } from '../../../../app.datatypes';
@@ -32,10 +32,10 @@ export class OutputsComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    this.subscription = this.route.queryParams.flatMap (params => {
+    this.subscription = this.route.queryParams.pipe(mergeMap(params => {
       this.urlParams = params;
       return this.coinService.currentCoin;
-    }).subscribe((coin: BaseCoin) => {
+    })).subscribe((coin: BaseCoin) => {
       this.wallets = null;
       this.currentCoin = coin;
       this.getWalletsOutputs();

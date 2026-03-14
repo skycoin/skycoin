@@ -26,7 +26,7 @@
     "@ngx-translate/http-loader": "^17.0.0",
     "bignumber.js": "^10.0.2",
     "disable-scroll": "^0.4.0",
-    "rxjs": "^6.5.5",
+    "rxjs": "^7.8.2",
     "tslib": "^2.8.1",
     "zone.js": "~0.16.1"
   },

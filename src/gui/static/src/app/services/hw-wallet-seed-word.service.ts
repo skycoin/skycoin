@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map } from 'rxjs';
 
 import { SeedWordDialogParams } from '../components/layout/seed-word-dialog/seed-word-dialog.component';
 

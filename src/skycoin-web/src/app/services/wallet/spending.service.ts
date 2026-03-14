@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
-import 'rxjs/add/observable/forkJoin';
-import 'rxjs/add/observable/of';
-import { Observable } from 'rxjs';
+import { Observable, forkJoin, of, throwError } from 'rxjs';
+import { mergeMap, map, catchError, first } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { BigNumber } from 'bignumber.js';
 
@@ -59,7 +58,7 @@ export class SpendingService {
     hoursSelection: HoursSelection,
     changeAddress: string|null): Observable<Transaction> {
 
-    return this.globalsService.getValidNodeVersion().flatMap (version => {
+    return this.globalsService.getValidNodeVersion().pipe(mergeMap(version => {
       if (isEqualOrSuperiorVersion(version, '0.26.0')) {
         if (unspents) {
           addresses = null;
@@ -108,7 +107,7 @@ export class SpendingService {
             json: true,
           },
           true,
-        ).flatMap(transaction => {
+        ).pipe(mergeMap(transaction => {
           const data = transaction.data;
 
           let hoursSent = new BigNumber('0');
@@ -136,17 +135,17 @@ export class SpendingService {
             });
           });
 
-          return this.generateRawTransaction(txInputs, txOutputs)
-            .flatMap((rawTransaction: string) => {
-              return Observable.of({
+          return this.generateRawTransaction(txInputs, txOutputs).pipe(
+            map((rawTransaction: string) => {
+              return {
                 inputs: txInputs,
                 outputs: txOutputs,
                 hoursSent: hoursSent,
                 hoursBurned: new BigNumber(data.transaction.fee),
                 encoded: rawTransaction
-              });
-            });
-        });
+              };
+            }));
+        }));
 
         return response;
 
@@ -155,8 +154,8 @@ export class SpendingService {
         // Legacy code for 0.25.1 and previous versions
         const unburnedHoursRatio = new BigNumber(1).minus(new BigNumber(1).dividedBy(this.blockchainService.burnRate));
 
-        return this.getOutputs(wallet, addresses, unspents)
-          .flatMap((outputs: Output[]) => {
+        return this.getOutputs(wallet, addresses, unspents).pipe(
+          mergeMap((outputs: Output[]) => {
             // Calculate how many coins should be sent.
             let amount = new BigNumber(0);
             destinations.map(destination => amount = amount.plus(new BigNumber(destination.coins)));
@@ -209,47 +208,49 @@ export class SpendingService {
               }
             }
 
-            return this.generateRawTransaction(tx.inputs, tx.outputs)
-              .flatMap((rawTransaction: string) => {
-                return Observable.of({
+            return this.generateRawTransaction(tx.inputs, tx.outputs).pipe(
+              map((rawTransaction: string) => {
+                return {
                   inputs: tx.inputs,
                   outputs: tx.outputs,
                   hoursSent: tx.hoursSent,
                   hoursBurned: tx.hoursBurned,
                   encoded: rawTransaction
-                });
-              });
-          });
+                };
+              }));
+          }));
       }
-    });
+    }));
   }
 
   injectTransaction(encodedTransaction: string): Observable<string> {
     this.isInjectingTx = true;
-    return this.postTransaction(encodedTransaction)
-      .map(response => {
+    return this.postTransaction(encodedTransaction).pipe(
+      map(response => {
         this.isInjectingTx = false;
         return response;
-      }).catch(err => {
+      }),
+      catchError(err => {
         this.isInjectingTx = false;
-        return Observable.throw(err);
-      });
+        return throwError(() => err);
+      }),
+    );
   }
 
   outputsWithWallets(): Observable<Wallet[]> {
-    return Observable.forkJoin(
-      this.walletService.currentWallets.first(),
-      this.getAddressesAsString().flatMap(addresses => addresses ? this.getRequestOutputs(addresses) : Observable.of([])).first(),
-      (wallets: Wallet[], outputs: GetOutputsRequestOutput[]) => {
-        return wallets.map(wallet => {
-          wallet.addresses = wallet.addresses.map(address => {
-            address.outputs = outputs.filter(output => output.address === address.address);
+    return forkJoin([
+      this.walletService.currentWallets.pipe(first()),
+      this.getAddressesAsString().pipe(mergeMap(addresses => addresses ? this.getRequestOutputs(addresses) : of([])), first()),
+    ]).pipe(map(([wallets, outputs]: [Wallet[], GetOutputsRequestOutput[]]) => {
+      return wallets.map(wallet => {
+        wallet.addresses = wallet.addresses.map(address => {
+          address.outputs = outputs.filter(output => output.address === address.address);
 
-            return address;
-          });
-          return wallet;
+          return address;
         });
+        return wallet;
       });
+    }));
   }
 
   getWalletUnspentOutputs(wallet: Wallet): Observable<Output[]> {
@@ -358,16 +359,16 @@ export class SpendingService {
   }
 
   private getAddressesAsString(): Observable<string> {
-    return this.walletService.currentWallets.map(wallets => wallets.map(wallet => {
+    return this.walletService.currentWallets.pipe(map(wallets => wallets.map(wallet => {
       return wallet.addresses.map(address => address.address).join(',');
-    }).join(','));
+    }).join(',')));
   }
 
   private getOutputs(wallet: Wallet, addresses: string[]|null, unspents: string[]|null): Observable<Output[]> {
     if (!wallet) {
-      return Observable.of([]);
+      return of([]);
     } else {
-      return this.globalsService.getValidNodeVersion().flatMap (version => {
+      return this.globalsService.getValidNodeVersion().pipe(mergeMap(version => {
         const requestedAddresses = addresses ? addresses.join(',') : wallet.addresses.map(a => a.address).join(',');
 
         let outputsRequest: Observable<any>;
@@ -387,7 +388,7 @@ export class SpendingService {
           addresses.map(address => addressesMap.set(address, true));
         }
 
-        return outputsRequest.map((response: GetOutputsRequest) => {
+        return outputsRequest.pipe(map((response: GetOutputsRequest) => {
           const outputs: Output[] = [];
           response.head_outputs.forEach(output => {
             let addOutput = false;
@@ -410,16 +411,16 @@ export class SpendingService {
           });
 
           return outputs;
-        });
-      });
+        }));
+      }));
     }
   }
 
   private getRequestOutputs(addresses): Observable<GetOutputsRequestOutput[]> {
     if (!addresses) {
-      return Observable.of([]);
+      return of([]);
     } else {
-      return this.globalsService.getValidNodeVersion().flatMap (version => {
+      return this.globalsService.getValidNodeVersion().pipe(mergeMap(version => {
         let outputsRequest: Observable<any>;
         if (isEqualOrSuperiorVersion(version, '0.25.0')) {
           outputsRequest = this.apiService.post('outputs', { addrs: addresses });
@@ -427,8 +428,8 @@ export class SpendingService {
           outputsRequest = this.apiService.get('outputs', { addrs: addresses });
         }
 
-        return outputsRequest.map(response => response.head_outputs as GetOutputsRequestOutput[]);
-      });
+        return outputsRequest.pipe(map(response => response.head_outputs as GetOutputsRequestOutput[]));
+      }));
     }
   }
 

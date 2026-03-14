@@ -156,8 +156,7 @@ func (s *simplifier) inlineSimpleParams(x ArithmExpr) ArithmExpr {
 		// Not a parameter expansion, or not a valid name, like $3.
 		return x
 	}
-	if pe.Excl || pe.Length || pe.Width || pe.Slice != nil ||
-		pe.Repl != nil || pe.Exp != nil || pe.Index != nil {
+	if !pe.simple() {
 		// A complex parameter expansion can't be simplified.
 		//
 		// Note that index expressions can't generally be simplified
@@ -172,7 +171,7 @@ func (s *simplifier) inlineSimpleParams(x ArithmExpr) ArithmExpr {
 func (s *simplifier) inlineSubshell(stmts []*Stmt) []*Stmt {
 	for len(stmts) == 1 {
 		st := stmts[0]
-		if st.Negated || st.Background || st.Coprocess ||
+		if st.Negated || st.Background || st.Coprocess || st.Disown ||
 			len(st.Redirs) > 0 {
 			break
 		}

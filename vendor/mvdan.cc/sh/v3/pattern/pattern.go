@@ -29,16 +29,36 @@ func (e SyntaxError) Error() string { return e.msg }
 
 func (e SyntaxError) Unwrap() error { return e.err }
 
+// NegExtGlobGroup represents the byte offset range of a single !(expr) group
+// within a pattern string. Start is the offset of '!', End is one past ')'.
+type NegExtGlobGroup struct {
+	Start, End int
+}
+
+// NegExtGlobError is returned by [Regexp] when an extglob negation operator
+// !(pattern-list) is encountered, as Go's [regexp] package does not support
+// negative lookahead. Callers can handle this by negating the result of
+// matching the inner pattern.
+type NegExtGlobError struct {
+	Groups []NegExtGlobGroup
+}
+
+func (e *NegExtGlobError) Error() string {
+	return "extglob !(...) is not supported in this scenario"
+}
+
 // TODO(v4): flip NoGlobStar to be opt-in via GlobStar, matching bash
 // TODO(v4): flip EntireString to be opt-out via PartialMatch, as EntireString causes subtle bugs when forgotten
 // TODO(v4): rename NoGlobCase to CaseInsensitive for readability
 
 const (
-	Shortest     Mode = 1 << iota // prefer the shortest match.
-	Filenames                     // "*" and "?" don't match slashes; only "**" does
-	EntireString                  // match the entire string using ^$ delimiters
-	NoGlobCase                    // Do case-insensitive match (that is, use (?i) in the regexp)
-	NoGlobStar                    // Do not support "**"
+	Shortest          Mode = 1 << iota // prefer the shortest match.
+	Filenames                          // "*" and "?" don't match slashes; only "**" does; only makes sense with EntireString too
+	EntireString                       // match the entire string using ^$ delimiters
+	NoGlobCase                         // do case-insensitive match (that is, use (?i) in the regexp); shopt "nocaseglob"
+	NoGlobStar                         // do not support "**"; negated shopt "globstar"
+	GlobLeadingDot                     // let wildcards match leading dots in filenames; shopt "dotglob"
+	ExtendedOperators                  // support extended pattern matching operators; shopt "extglob" for pathname expansion
 )
 
 // Regexp turns a shell pattern into a regular expression that can be used with
@@ -73,27 +93,35 @@ func Regexp(pat string, mode Mode) (string, error) {
 	}
 	var sb strings.Builder
 	// Enable matching `\n` with the `.` metacharacter as globs match `\n`
-	sb.WriteString("(?s")
+	sb.WriteString(`(?s`)
 	if mode&NoGlobCase != 0 {
-		sb.WriteString("i")
+		sb.WriteString(`i`)
 	}
 	if mode&Shortest != 0 {
-		sb.WriteString("U")
+		sb.WriteString(`U`)
 	}
-	sb.WriteString(")")
+	sb.WriteString(`)`)
 	if mode&EntireString != 0 {
-		sb.WriteString("^")
+		sb.WriteString(`^`)
 	}
 	sl := stringLexer{s: pat}
+	var negGroups []NegExtGlobGroup
 	for {
 		if err := regexpNext(&sb, &sl, mode); err == io.EOF {
 			break
 		} else if err != nil {
-			return "", err
+			negErr, ok := err.(*NegExtGlobError)
+			if !ok {
+				return "", err
+			}
+			negGroups = append(negGroups, negErr.Groups...)
 		}
 	}
+	if len(negGroups) > 0 {
+		return "", &NegExtGlobError{Groups: negGroups}
+	}
 	if mode&EntireString != 0 {
-		sb.WriteString("$")
+		sb.WriteString(`$`)
 	}
 	return sb.String(), nil
 }
@@ -134,13 +162,53 @@ func (sl *stringLexer) peekRest() string {
 }
 
 func regexpNext(sb *strings.Builder, sl *stringLexer, mode Mode) error {
-	switch c := sl.next(); c {
+	c := sl.next()
+	if mode&ExtendedOperators != 0 {
+		// Handle extended pattern matching operators separately,
+		// given that they can be one of many two-character prefixes.
+		// Note that we recurse into the same function in a loop,
+		// as each of the patterns in the list separated by '|' is a regular pattern.
+		switch op := c; op {
+		case '!', '?', '*', '+', '@':
+			if sl.peekNext() != '(' {
+				break
+			}
+			start := sl.i - 1       // position of the operator
+			sb.WriteByte(sl.next()) // (
+		nestedLoop:
+			for {
+				switch sl.peekNext() {
+				case ')':
+					break nestedLoop
+				case '|':
+					// extended operators support a list of "or" separated expressions
+					sb.WriteByte(sl.next())
+					continue
+				}
+				if err := regexpNext(sb, sl, mode); err == io.EOF {
+					break
+				} else if err != nil {
+					return err
+				}
+			}
+			sb.WriteByte(sl.next()) // )
+			if op == '!' {
+				return &NegExtGlobError{Groups: []NegExtGlobGroup{{Start: start, End: sl.i}}}
+			}
+			if op != '@' {
+				// @( is [syntax.GlobOne] for matching once; no suffix needed
+				sb.WriteByte(op)
+			}
+			return nil
+		}
+	}
+	switch c {
 	case '\x00':
 		return io.EOF
 	case '*':
 		if mode&Filenames == 0 {
 			// * - matches anything when not in filename mode
-			sb.WriteString(".*")
+			sb.WriteString(`.*`)
 			break
 		}
 		// "**" only acts as globstar if it is alone as a path element.
@@ -149,27 +217,37 @@ func regexpNext(sb *strings.Builder, sl *stringLexer, mode Mode) error {
 			sl.i++
 			singleAfter := sl.i == len(sl.s) || sl.peekNext() == '/'
 			if mode&NoGlobStar == 0 && singleBefore && singleAfter {
-				if sl.peekNext() == '/' {
+				// ** - match any number of slashes or "*" path elements
+				slashSuffix := sl.peekNext() == '/'
+				if slashSuffix {
 					// **/ - like "**" but requiring a trailing slash when matching
 					sl.i++
-					sb.WriteString("((/|[^/.][^/]*)*/)?")
+					// wrap the expression to ensure that any match has a slash suffix
+					sb.WriteString(`(`)
+				}
+				if mode&GlobLeadingDot == 0 {
+					sb.WriteString(`(/|[^/.][^/]*)*`)
 				} else {
-					// ** - match any number of slashes or "*" path elements
-					sb.WriteString("(/|[^/.][^/]*)*")
+					// with GlobLeadingDot (dotglob), match anything at all
+					sb.WriteString(`.*`)
+				}
+				if slashSuffix {
+					sb.WriteString(`/)?`)
 				}
 				break
 			}
 			// foo**, **bar, or NoGlobStar - behaves like "*" below
 		}
 		// * - matches anything except slashes and leading dots
-		if singleBefore {
-			sb.WriteString("([^/.][^/]*)?")
+		if singleBefore && mode&GlobLeadingDot == 0 {
+			sb.WriteString(`([^/.][^/]*)?`)
 		} else {
-			sb.WriteString("[^/]*")
+			// with GlobLeadingDot (dotglob), match anything except slashes
+			sb.WriteString(`[^/]*`)
 		}
 	case '?':
 		if mode&Filenames != 0 {
-			sb.WriteString("[^/]")
+			sb.WriteString(`[^/]`)
 		} else {
 			sb.WriteByte('.')
 		}
@@ -190,11 +268,11 @@ func regexpNext(sb *strings.Builder, sl *stringLexer, mode Mode) error {
 			break
 		}
 		if mode&Filenames != 0 {
-			for _, c := range sl.peekRest() {
-				if c == ']' {
+			for i, c := range sl.peekRest() {
+				if i > 0 && c == ']' {
 					break
 				} else if c == '/' {
-					sb.WriteString("\\[")
+					sb.WriteString(`\[`)
 					return nil
 				}
 			}

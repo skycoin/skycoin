@@ -37,6 +37,7 @@ module.exports = tseslint.config(
       "@angular-eslint/prefer-inject": "off",
       "@angular-eslint/prefer-standalone": "off",
       "no-constant-binary-expression": "off",
+      "no-useless-assignment": "off",
       "no-empty": "off",
       "no-var": "off",
       "no-self-assign": "off",

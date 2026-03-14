@@ -11,17 +11,10 @@
     "build-for-electron": "NODE_OPTIONS=--openssl-legacy-provider ng build --prod --environment local-prod",
     "build-for-local-fs": "NODE_OPTIONS=--openssl-legacy-provider ng build --prod --environment local-prod --base-href ./index.html",
     "lint": "ng lint",
-    "e2e": "ng e2e --proxy-config proxy.config.js --environment e2e --delete-output-path false --suite dev",
-    "e2e-prod": "ng e2e --prod --proxy-config proxy.config.js --environment e2e-prod --delete-output-path false --suite prod",
-    "snyk-protect": "snyk protect",
-    "protractor": "protractor protractor.conf.js",
     "test": "ng test -sm=false --watch=false --browsers ChromeHeadlessNoSandbox",
     "cipher-test": "ng test -sm=false --watch=false --browsers ChromeHeadlessNoSandbox --browserNoActivityTimeout=180000 --cipher",
     "test:watch": "ng test -sm=false --browsers Chrome",
-    "prepare": "npm run snyk-protect",
-    "start-docker": "ng serve --proxy-config docker-proxy.config.js --delete-output-path false",
-    "e2e-docker": "ng e2e --proxy-config docker-proxy.config.js --environment e2e --delete-output-path false --suite dev",
-    "e2e-docker-prod": "ng e2e --prod --proxy-config docker-proxy.config.js --environment e2e-prod --delete-output-path false --suite prod"
+    "start-docker": "ng serve --proxy-config docker-proxy.config.js --delete-output-path false"
   },
   "private": true,
   "dependencies": {
@@ -48,7 +41,6 @@
     "lodash": "^4.17.23",
     "moment": "^2.30.1",
     "rxjs": "^7.8.2",
-    "snyk": "^1.73.0",
     "svgo": "^4.0.1",
     "tslib": "^2.8.1",
     "zone.js": "~0.16.1"
@@ -88,6 +80,5 @@
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.57.0",
     "webpack": "^5.105.4"
-  },
-  "snyk": true
+  }
 }

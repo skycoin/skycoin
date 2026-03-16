@@ -13,7 +13,7 @@
             <p class="coins"><span>{{ percentage | percent:'1.2-2' }}</span></p>
           }
           @if (!loading) {
-            <p class="coins"><span>{{ coins.decimalPlaces(6).toString() | number:'1.0-6' }}</span> {{ currentCoin.coinSymbol }}</p>
+            <p class="coins"><span>{{ coins.decimalPlaces(currentCoin.coinDecimals).toString() | number:('1.0-' + currentCoin.coinDecimals) }}</span> {{ currentCoin.coinSymbol }}</p>
           }
           @if (!loading && balance) {
             <p class="dollars">{{ balance }}</p>
@@ -27,7 +27,7 @@
         @if (loading) {
           <p>{{ 'header.syncing-blocks' | translate }} {{ current && highest ?  '(' + current + '/'  + highest + ')' : '...' }}</p>
         }
-        @if (!loading) {
+        @if (!loading && currentCoin.hasHours()) {
           <p>{{ hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }}</p>
         }
         <div class="-on-small-and-below-only">

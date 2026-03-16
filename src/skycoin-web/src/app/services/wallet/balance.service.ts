@@ -4,10 +4,12 @@ import { mergeMap, map, first, delay } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
 
 import { ApiService } from '../api.service';
+import { CoinService } from '../coin.service';
 import { Address, Wallet, TotalBalance, Balance } from '../../app.datatypes';
 import { WalletService } from './wallet.service';
 import { isEqualOrSuperiorVersion } from '../../utils/semver';
 import { GlobalsService } from '../globals.service';
+import { BaseCoin } from '../../coins/basecoin';
 
 export enum BalanceStates {
   Obtained,
@@ -28,17 +30,23 @@ export class BalanceService {
 
   private canGetBalance = false;
   private schedulerSubscription: Subscription;
+  private currentCoin: BaseCoin;
 
-  private readonly coinsMultiplier = 1000000;
   private readonly shortUpdatePeriod = 10 * 1000;
   private readonly longUpdatePeriod = 300 * 1000;
+
+  private get coinsMultiplier(): number {
+    return this.currentCoin ? this.currentCoin.coinsMultiplier : 1000000;
+  }
 
   constructor(
     private apiService: ApiService,
     private walletService: WalletService,
     private globalsService: GlobalsService,
+    private coinService: CoinService,
     private _ngZone: NgZone
   ) {
+    coinService.currentCoin.subscribe(coin => this.currentCoin = coin);
     walletService.wallets.subscribe(() => this.canGetBalance ? this.scheduleUpdate(0) : null);
   }
 
@@ -98,6 +106,10 @@ export class BalanceService {
   private retrieveAddressesBalance(addresses: Address[]): Observable<Balance> {
     const formattedAddresses = addresses.map(a => a.address).join(',');
 
+    if (this.currentCoin && this.currentCoin.isBitcoin()) {
+      return this.apiService.get('btc/balance', { addrs: formattedAddresses });
+    }
+
     return this.globalsService.getValidNodeVersion().pipe(mergeMap(version => {
       if (isEqualOrSuperiorVersion(version, '0.25.0')) {
         return this.apiService.post('balance', { addrs: formattedAddresses });
@@ -108,6 +120,8 @@ export class BalanceService {
   }
 
   private calculateBalance(wallets: Wallet[], balance: Balance): boolean {
+    const isBtc = this.currentCoin && this.currentCoin.isBitcoin();
+
     if (balance.addresses) {
       wallets.map((wallet: Wallet) => {
         wallet.balance = new BigNumber('0');
@@ -116,7 +130,7 @@ export class BalanceService {
         wallet.addresses.map((address: Address) => {
           if (balance.addresses[address.address]) {
             address.balance = new BigNumber(balance.addresses[address.address].confirmed.coins).dividedBy(this.coinsMultiplier);
-            address.hours = new BigNumber(balance.addresses[address.address].confirmed.hours);
+            address.hours = isBtc ? new BigNumber('0') : new BigNumber(balance.addresses[address.address].confirmed.hours || 0);
             wallet.balance = wallet.balance.plus(address.balance);
             wallet.hours = wallet.hours.plus(address.hours);
           }
@@ -127,14 +141,17 @@ export class BalanceService {
     this.lastBalancesUpdateTime = new Date();
     this.sendTotalBalanceEvent({
       state: BalanceStates.Obtained,
-      balance: { coins: new BigNumber(balance.confirmed.coins).dividedBy(this.coinsMultiplier), hours: new BigNumber(balance.confirmed.hours) }
+      balance: {
+        coins: new BigNumber(balance.confirmed.coins).dividedBy(this.coinsMultiplier),
+        hours: isBtc ? new BigNumber('0') : new BigNumber(balance.confirmed.hours || 0),
+      }
     });
     return this.refreshPendingTransactions(balance);
   }
 
   private refreshPendingTransactions(balance: Balance) {
     const hasPendingTxs = balance.confirmed.coins !== balance.predicted.coins ||
-      balance.confirmed.hours !== balance.predicted.hours;
+      (!this.currentCoin?.isBitcoin() && balance.confirmed.hours !== balance.predicted.hours);
 
     this.hasPendingTransactions.next(hasPendingTxs);
     return hasPendingTxs;

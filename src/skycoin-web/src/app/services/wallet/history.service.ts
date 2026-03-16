@@ -4,19 +4,25 @@ import { mergeMap, map, first } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
 
 import { ApiService } from '../api.service';
+import { CoinService } from '../coin.service';
 import { Address, NormalTransaction, Wallet } from '../../app.datatypes';
+import { BaseCoin } from '../../coins/basecoin';
 import { WalletService } from './wallet.service';
 import { GlobalsService } from '../globals.service';
 import { isEqualOrSuperiorVersion } from '../../utils/semver';
 
 @Injectable()
 export class HistoryService {
+  private currentCoin: BaseCoin;
 
   constructor(
     private apiService: ApiService,
     private walletService: WalletService,
-    private globalsService: GlobalsService
-  ) { }
+    private globalsService: GlobalsService,
+    coinService: CoinService
+  ) {
+    coinService.currentCoin.subscribe(coin => this.currentCoin = coin);
+  }
 
   transactions(): Observable<any[]> {
     let wallets: Wallet[];
@@ -33,6 +39,11 @@ export class HistoryService {
         }
 
         addresses.map(add => addressesMap.set(add.address, true));
+
+        // Bitcoin uses its own history endpoint
+        if (this.currentCoin && this.currentCoin.isBitcoin()) {
+          return this.retrieveBitcoinHistory(addresses, addressesMap);
+        }
 
         return this.globalsService.getValidNodeVersion().pipe(mergeMap(version => {
           let TxObsv: Observable<any>;
@@ -124,6 +135,46 @@ export class HistoryService {
           }));
         }));
       }));
+  }
+
+  private retrieveBitcoinHistory(addresses: Address[], addressesMap: Map<string, boolean>): Observable<any[]> {
+    const formattedAddresses = addresses.map(a => a.address).join(',');
+    return this.apiService.get('btc/history', { addrs: formattedAddresses }).pipe(
+      map((transactions: any[]) => {
+        return (transactions || []).map(tx => {
+          const outgoing = tx.inputs && tx.inputs.some((input: any) => addressesMap.has(input.address));
+
+          let balance = new BigNumber('0');
+          if (!outgoing) {
+            (tx.outputs || []).forEach((output: any) => {
+              if (addressesMap.has(output.address)) {
+                balance = balance.plus(new BigNumber(output.value));
+              }
+            });
+          } else {
+            (tx.outputs || []).forEach((output: any) => {
+              if (!addressesMap.has(output.address)) {
+                balance = balance.minus(new BigNumber(output.value));
+              }
+            });
+          }
+
+          return {
+            txid: tx.txid,
+            addresses: [],
+            balance: balance,
+            timestamp: tx.timestamp || 0,
+            block: tx.block_height || 0,
+            confirmed: (tx.confirmations || 0) > 0,
+            inputs: tx.inputs || [],
+            outputs: tx.outputs || [],
+            hoursSent: new BigNumber('0'),
+            hoursBurned: new BigNumber('0'),
+            fee: tx.fee || 0,
+          };
+        }).sort((a: any, b: any) => b.timestamp - a.timestamp);
+      })
+    );
   }
 
   retrieveAddressTransactions(address: Address): Observable<NormalTransaction[]> {

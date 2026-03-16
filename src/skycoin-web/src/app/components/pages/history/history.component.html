@@ -12,8 +12,7 @@
           >
           @for (wallet of wallets; track wallet) {
 <mat-optgroup label="
-          {{ wallet.label }} - {{ wallet.coins | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
-          ({{ wallet.hours | number:'1.0-0' }} {{ currentCoin.hoursName }})
+          {{ wallet.label }} - {{ wallet.coins | number:('1.0-' + currentCoin.coinDecimals) }} {{ currentCoin.coinSymbol }}{{ currentCoin.hasHours() ? ' (' + (wallet.hours | number:'1.0-0') + ' ' + currentCoin.hoursName + ')' : '' }}
         ">
               @if (wallet.addresses.length > 1) {
                 <mat-option [value]="wallet">
@@ -22,8 +21,7 @@
               }
               @for (address of wallet.addresses; track address) {
                 <mat-option [value]="address" [disabled]="wallet.allAddressesSelected">
-                  <span class="truncated-filter-label">{{ address.address }}</span> - {{ address.coins | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
-                  ({{ address.hours | number:'1.0-0' }} {{ currentCoin.hoursName }})
+                  <span class="truncated-filter-label">{{ address.address }}</span> - {{ address.coins | number:('1.0-' + currentCoin.coinDecimals) }} {{ currentCoin.coinSymbol }}{{ currentCoin.hasHours() ? ' (' + (address.hours | number:'1.0-0') + ' ' + currentCoin.hoursName + ')' : '' }}
                 </mat-option>
               }
             </mat-optgroup>
@@ -44,8 +42,7 @@
                   @if (!filter.label) {
                     <span class="truncated-filter-label">{{ filter.address }}</span>
                   }
-                  - {{ filter.coins | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
-                  ({{ filter.hours | number:'1.0-0' }} {{ currentCoin.hoursName }})
+                  - {{ filter.coins | number:('1.0-' + currentCoin.coinDecimals) }} {{ currentCoin.coinSymbol }}{{ currentCoin.hasHours() ? ' (' + (filter.hours | number:'1.0-0') + ' ' + currentCoin.hoursName + ')' : '' }}
                 </div>
               }
             }

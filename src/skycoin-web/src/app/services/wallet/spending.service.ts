@@ -36,7 +36,10 @@ export class SpendingService {
   isInjectingTx = false;
 
   private currentCoin: BaseCoin;
-  private readonly coinsMultiplier = 1000000;
+
+  private get coinsMultiplier(): number {
+    return this.currentCoin ? this.currentCoin.coinsMultiplier : 1000000;
+  }
 
   constructor(
     private apiService: ApiService,
@@ -48,6 +51,22 @@ export class SpendingService {
     coinService: CoinService,
   ) {
     coinService.currentCoin.subscribe((coin) => this.currentCoin = coin);
+  }
+
+  sendBitcoin(
+    wallet: Wallet,
+    destinations: Destination[],
+    feeRate: number): Observable<string> {
+    const body = {
+      wallet_id: wallet['filename'] || wallet.label,
+      destinations: destinations.map(d => ({
+        address: d.address,
+        coins: d.coins.multipliedBy(this.currentCoin.coinsMultiplier).integerValue().toNumber(),
+      })),
+      fee_rate: feeRate,
+    };
+
+    return this.apiService.post('btc/send', body, { json: true });
   }
 
   createTransaction(

@@ -4,6 +4,8 @@ import { TranslateService } from '@ngx-translate/core';
 import { of, Subscription, delay, first } from 'rxjs';
 
 import { ConfirmationData, Wallet, Address } from '../../../../app.datatypes';
+import { BaseCoin } from '../../../../coins/basecoin';
+import { CoinService } from '../../../../services/coin.service';
 import { WalletService } from '../../../../services/wallet/wallet.service';
 import { ChangeNameComponent } from '../change-name/change-name.component';
 import { openUnlockWalletModal, openQrModal, showConfirmationModal, openDeleteWalletModal } from '../../../../utils/index';
@@ -21,23 +23,31 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
 export class WalletDetailComponent implements OnDestroy {
   @Input() wallet: Wallet;
 
+  currentCoin: BaseCoin;
   creatingAddress = false;
   showSlowMobileInfo = false;
 
   private unlockSubscription: Subscription;
   private slowInfoSubscription: Subscription;
+  private coinSubscription: Subscription;
 
   constructor(
     private walletService: WalletService,
     private dialog: CustomMatDialogService,
     private translateService: TranslateService,
     private msgBarService: MsgBarService,
-  ) {}
+    coinService: CoinService,
+  ) {
+    this.coinSubscription = coinService.currentCoin.subscribe(coin => this.currentCoin = coin);
+  }
 
   ngOnDestroy() {
     this.msgBarService.hide();
     this.removeUnlockSubscription();
     this.removeSlowInfoSubscription();
+    if (this.coinSubscription) {
+      this.coinSubscription.unsubscribe();
+    }
   }
 
   onShowQr(address: Address) {

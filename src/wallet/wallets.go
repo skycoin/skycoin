@@ -53,8 +53,8 @@ func loadWallets(dir string, loader Loader) (Wallets, error) { //nolint:unused
 		// 	return nil, err
 		// }
 
-		if w.Coin() != CoinTypeSkycoin {
-			err := fmt.Errorf("LoadWallets only support skycoin wallets, %s is a %s wallet", name, w.Coin())
+		if w.Coin() != CoinTypeSkycoin && w.Coin() != CoinTypeBitcoin {
+			err := fmt.Errorf("LoadWallets only supports skycoin and bitcoin wallets, %s is a %s wallet", name, w.Coin())
 			logger.WithError(err).WithField("name", name).Error()
 			return nil, err
 		}

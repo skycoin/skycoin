@@ -43,11 +43,13 @@
           {{ address.address }}
         </div>
         <div class="mobile-label-container">
-          <div class="data-column -coins-column">{{ (address.balance ? address.balance.decimalPlaces(6).toString() : 0) | number:'1.0-6' }}</div>
+          <div class="data-column -coins-column">{{ (address.balance ? address.balance.decimalPlaces(currentCoin?.coinDecimals || 6).toString() : 0) | number:('1.0-' + (currentCoin?.coinDecimals || 6)) }}</div>
         </div>
-        <div class="mobile-label-container">
-          <div class="data-column -hours-column">{{ (address.hours ? address.hours.decimalPlaces(0).toString() : 0) | number:'1.0-0' }}</div>
-        </div>
+        @if (currentCoin?.hasHours()) {
+          <div class="mobile-label-container">
+            <div class="data-column -hours-column">{{ (address.hours ? address.hours.decimalPlaces(0).toString() : 0) | number:'1.0-0' }}</div>
+          </div>
+        }
         <div class="options-column -not-on-small-and-below">
           <mat-icon [matMenuTriggerFor]="optionsMenu">more_vert</mat-icon>
         </div>

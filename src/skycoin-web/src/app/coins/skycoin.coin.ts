@@ -15,6 +15,7 @@ export class SkycoinCoin extends BaseCoin {
       priceTickerId: 'sky-skycoin',
       priceTickerSource: 'coinpaprika',
       coinExplorer: 'https://explorer.skycoin.net',
+      coinType: 'skycoin',
       imageName: 'skycoin-header.jpg',
       gradientName: 'skycoin-gradient.png',
       iconName: 'skycoin-icon.png',

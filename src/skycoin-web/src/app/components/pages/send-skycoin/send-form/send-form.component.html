@@ -9,10 +9,12 @@
             [disabled]="!wallet.balance || wallet.balance.isLessThanOrEqualTo(0)"
             [ngValue]="wallet">
             {{ wallet.label }} —
-            @if (wallet.balance && wallet.hours) {
+            @if (wallet.balance) {
               <span>
-                {{ (wallet.balance ? wallet.balance.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
-                ({{ (wallet.hours ? wallet.hours.decimalPlaces(0).toString() : 0) | number:'1.0-0' }} {{ currentCoin.hoursName }})
+                {{ (wallet.balance ? wallet.balance.decimalPlaces(currentCoin.coinDecimals).toString() : 0) | number:('1.0-' + currentCoin.coinDecimals) }} {{ currentCoin.coinSymbol }}
+                @if (currentCoin.hasHours() && wallet.hours) {
+                  ({{ wallet.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }})
+                }
               </span>
             }
           </option>

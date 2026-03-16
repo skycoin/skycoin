@@ -151,8 +151,8 @@ func (serv *Service) loadWallets() (Wallets, error) {
 	}
 
 	for name, w := range wallets {
-		if w.Coin() != CoinTypeSkycoin {
-			err := fmt.Errorf("LoadWallets only support skycoin wallets, %s is a %s wallet", name, w.Coin())
+		if w.Coin() != CoinTypeSkycoin && w.Coin() != CoinTypeBitcoin {
+			err := fmt.Errorf("LoadWallets only supports skycoin and bitcoin wallets, %s is a %s wallet", name, w.Coin())
 			logger.WithError(err).WithField("name", name).Error()
 			return nil, err
 		}
@@ -176,6 +176,16 @@ func (serv *Service) updateOptions(opts Options) Options {
 	if opts.Type == WalletTypeBip44 && opts.Bip44Coin == nil && serv.config.Bip44Coin != nil {
 		c := *serv.config.Bip44Coin
 		opts.Bip44Coin = &c
+	}
+
+	// Derive coin type from configured Bip44Coin when not explicitly set
+	if opts.Coin == "" && serv.config.Bip44Coin != nil {
+		switch *serv.config.Bip44Coin {
+		case bip44.CoinTypeBitcoin:
+			opts.Coin = CoinTypeBitcoin
+		default:
+			opts.Coin = CoinTypeSkycoin
+		}
 	}
 
 	// generate one default address if options.GenerateN is 0

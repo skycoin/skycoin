@@ -326,6 +326,8 @@ func ResolveCoinType(s string) (CoinType, error) {
 		return CoinTypeSkycoin, nil
 	case "btc", "bitcoin":
 		return CoinTypeBitcoin, nil
+	case "bitcoin-segwit":
+		return CoinTypeBitcoinSegwit, nil
 	default:
 		return CoinType(""), errors.New("invalid coin type")
 	}

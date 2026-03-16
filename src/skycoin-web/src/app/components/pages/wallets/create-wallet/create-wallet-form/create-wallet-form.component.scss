@@ -120,3 +120,16 @@ label[for=seed] {
     display: inline-block;
   }
 }
+
+.-segwit-toggle {
+  mat-checkbox {
+    display: inline-block;
+  }
+
+  .-info {
+    margin: 4px 0 0;
+    font-size: 11px;
+    color: $grey;
+    line-height: 1.4;
+  }
+}

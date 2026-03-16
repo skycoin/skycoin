@@ -36,7 +36,6 @@ var (
 	// Bitcoin flags
 	btcNodeURL     string
 	btcElectrumURL string
-	btcWalletDir   string
 )
 
 // proxyCache caches responses for slow read-only endpoints (e.g. transactions)
@@ -81,6 +80,7 @@ type discoveredCoin struct {
 	PriceTickerSource string `json:"priceTickerSource"`
 	CoinExplorer      string `json:"coinExplorer"`
 	CoinType          string `json:"coinType"`
+	ServerWallets     bool   `json:"serverWallets"`
 	// internal: the actual remote node URL (not exposed to frontend)
 	remoteNodeURL string
 }
@@ -103,13 +103,13 @@ func init() {
 	RootCmd.Flags().IntVarP(&port, "port", "p", 8001, "Port to serve on")
 	RootCmd.Flags().StringVarP(&host, "host", "H", "127.0.0.1", "Host to bind to")
 	RootCmd.Flags().StringArrayVarP(&nodeURLs, "node-url", "n", []string{"https://node.skycoin.com"}, "Node URL (can be specified multiple times)")
-	RootCmd.Flags().StringArrayVarP(&walletDirs, "wallet-dir", "w", nil, "Local wallet directory (can be specified multiple times)")
+	RootCmd.Flags().StringArrayVarP(&walletDirs, "wallet-dir", "w", nil, "Local wallet directory (e.g. ~/.skycoin/wallets)")
 	RootCmd.Flags().BoolVar(&enableSeedAPI, "enable-seed-api", false, "Enable the wallet seed API (requires --wallet-dir)")
 
-	// Bitcoin flags
+	// Bitcoin flags (mutually exclusive)
 	RootCmd.Flags().StringVar(&btcNodeURL, "btc-node-url", "", "Bitcoin Core RPC URL (e.g. http://user:pass@127.0.0.1:8332)")
 	RootCmd.Flags().StringVar(&btcElectrumURL, "btc-electrum-url", "", "Electrum server URL (e.g. ssl://electrum.blockstream.info:50002)")
-	RootCmd.Flags().StringVar(&btcWalletDir, "btc-wallet-dir", "", "Bitcoin wallet directory (required for BTC wallet management)")
+	RootCmd.MarkFlagsMutuallyExclusive("btc-node-url", "btc-electrum-url")
 }
 
 // Execute runs the root command
@@ -192,6 +192,9 @@ func serve() {
 	var coins []*discoveredCoin
 	for i, rawURL := range nodeURLs {
 		nodeURL := strings.TrimRight(rawURL, "/")
+		if nodeURL == "" {
+			continue
+		}
 		coin, err := discoverCoin(i, nodeURL)
 		if err != nil {
 			log.Printf("[WARN] Could not discover coin from %s: %v (will use as unconfigured node)", nodeURL, err)
@@ -235,7 +238,7 @@ func serve() {
 
 	// Initialize Bitcoin backend if configured
 	var btcBackend btc.Backend
-	var btcWltService *wallet.Service
+	var btcWltServices []*wallet.Service
 	if btcNodeURL != "" || btcElectrumURL != "" {
 		// Initialize Bitcoin backend
 		var berr error
@@ -256,28 +259,30 @@ func serve() {
 		}
 
 		if btcBackend != nil {
-			// Initialize Bitcoin wallet service only if --btc-wallet-dir is provided
-			if btcWalletDir != "" {
-				if err := os.MkdirAll(btcWalletDir, 0700); err != nil {
-					log.Fatalf("Failed to create Bitcoin wallet directory %s: %v", btcWalletDir, err)
+			// Create Bitcoin wallet services using the same --wallet-dir directories.
+			// The wallet service filters by coin type, so BTC and SKY wallets coexist
+			// in the same directory without conflict.
+			for _, dir := range walletDirs {
+				if dir == "" {
+					continue
 				}
-
 				btcBip44Coin := bip44.CoinTypeBitcoin
 				btcCfg := wallet.Config{
-					WalletDir:       btcWalletDir,
+					WalletDir:       dir,
 					CryptoType:      crypto.DefaultCryptoType,
 					EnableWalletAPI: true,
 					EnableSeedAPI:   enableSeedAPI,
 					Bip44Coin:       &btcBip44Coin,
 				}
-				var btcWltErr error
-				btcWltService, btcWltErr = wallet.NewService(btcCfg)
-				if btcWltErr != nil {
-					log.Fatalf("Failed to initialize Bitcoin wallet service for %s: %v", btcWalletDir, btcWltErr)
+				btcSvc, btcErr := wallet.NewService(btcCfg)
+				if btcErr != nil {
+					log.Fatalf("Failed to initialize Bitcoin wallet service for %s: %v", dir, btcErr)
 				}
-				log.Printf("[BTC] Bitcoin wallet service initialized: %s", btcWalletDir)
-			} else {
-				log.Printf("[BTC] No --btc-wallet-dir specified, Bitcoin wallet management disabled (web-only mode)")
+				btcWltServices = append(btcWltServices, btcSvc)
+				log.Printf("[BTC] Bitcoin wallet service initialized: %s", dir)
+			}
+			if len(walletDirs) == 0 {
+				log.Printf("[BTC] No --wallet-dir specified, Bitcoin wallet management disabled (web-only mode)")
 			}
 
 			// Add Bitcoin as a discovered coin
@@ -312,17 +317,26 @@ func serve() {
 		}
 	}
 
-	// Map Bitcoin wallet service and handler to the Bitcoin coin
+	// Map Bitcoin wallet services and handler to the Bitcoin coin
 	btcHandlers := make(map[int]*btcHandler)
-	if btcBackend != nil && btcWltService != nil {
+	if btcBackend != nil {
 		for i, coin := range coins {
 			if coin.CoinType == "bitcoin" {
-				coinWltServices[i] = []*wallet.Service{btcWltService}
-				btcHandlers[i] = &btcHandler{
-					backend:    btcBackend,
-					wltService: btcWltService,
+				if len(btcWltServices) > 0 {
+					coinWltServices[i] = btcWltServices
+					btcHandlers[i] = &btcHandler{
+						backend:    btcBackend,
+						wltService: btcWltServices[0],
+					}
 				}
 			}
+		}
+	}
+
+	// Mark coins that have server-side wallet management
+	for i := range coins {
+		if _, ok := coinWltServices[i]; ok {
+			coins[i].ServerWallets = true
 		}
 	}
 

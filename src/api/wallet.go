@@ -37,8 +37,9 @@ type BalanceResponse struct {
 
 // WalletResponse wallet response struct for http apis
 type WalletResponse struct {
-	Meta    readable.WalletMeta    `json:"meta"`
-	Entries []readable.WalletEntry `json:"entries"`
+	Meta     readable.WalletMeta      `json:"meta"`
+	Entries  []readable.WalletEntry   `json:"entries"`
+	Accounts []readable.WalletAccount `json:"accounts,omitempty"`
 }
 
 // NewWalletResponse creates WalletResponse struct from wallet.Wallet
@@ -66,6 +67,30 @@ func NewWalletResponse(w wallet.Wallet) (*WalletResponse, error) {
 
 		// get entries on both external and change chains
 		options = append(options, wallet.OptionExternal(), wallet.OptionChange())
+
+		// Populate per-account structure
+		accounts := w.Accounts()
+		wr.Accounts = make([]readable.WalletAccount, len(accounts))
+		for ai, acct := range accounts {
+			wa := readable.WalletAccount{
+				Name:  acct.Name,
+				Index: acct.Index,
+			}
+
+			extEntries, err := w.GetEntries(wallet.OptionAccount(acct.Index), wallet.OptionExternal())
+			if err != nil {
+				return nil, fmt.Errorf("failed to get external entries for account %d: %v", acct.Index, err)
+			}
+			wa.ExternalEntries = walletEntriesToReadable(extEntries)
+
+			chgEntries, err := w.GetEntries(wallet.OptionAccount(acct.Index), wallet.OptionChange())
+			if err != nil {
+				return nil, fmt.Errorf("failed to get change entries for account %d: %v", acct.Index, err)
+			}
+			wa.ChangeEntries = walletEntriesToReadable(chgEntries)
+
+			wr.Accounts[ai] = wa
+		}
 	case wallet.WalletTypeXPub:
 		wr.Meta.XPub = w.XPub()
 	}
@@ -99,6 +124,22 @@ func NewWalletResponse(w wallet.Wallet) (*WalletResponse, error) {
 	}
 
 	return &wr, nil
+}
+
+// walletEntriesToReadable converts wallet entries to readable format with child number info
+func walletEntriesToReadable(entries wallet.Entries) []readable.WalletEntry {
+	result := make([]readable.WalletEntry, len(entries))
+	for i, e := range entries {
+		childNumber := e.ChildNumber
+		change := e.Change
+		result[i] = readable.WalletEntry{
+			Address:     e.Address.String(),
+			Public:      e.Public.Hex(),
+			ChildNumber: &childNumber,
+			Change:      &change,
+		}
+	}
+	return result
 }
 
 // Returns the wallet's balance, both confirmed and predicted.  The predicted

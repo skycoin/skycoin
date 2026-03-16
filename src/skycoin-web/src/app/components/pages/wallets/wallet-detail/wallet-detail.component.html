@@ -16,6 +16,11 @@
     }
   </div>
   <div class="flex-fill"></div>
+  @if (isBip44) {
+    <div class="-button -not-on-small-and-below" (click)="onAddAccount()">
+      <span class="-img -btn-plus -enabled-span">{{ 'wallet.add-account' | translate }}</span>
+    </div>
+  }
   <div class="-button -not-on-small-and-below" (click)="onEditWallet()">
     <span class="-img -btn-edit -enabled-span">{{ 'wallet.edit' | translate }}</span>
   </div>
@@ -27,55 +32,171 @@
   </div>
 </div>
 
-<div class="-records">
-  @for (address of (wallet ? wallet.addresses : []); track address; let i = $index) {
-    @if (!wallet.hideEmpty || address.balance.isGreaterThan(0)) {
-      <div class="-record" #element (click)="onShowQrIfPointer(element, address)">
-        <div class="id-column -one-line-ellipsis">{{ i + 1 }}</div>
-        <div class="address-column -not-on-small-and-below">
-          <img class="qr-code-button" src="assets/img/qr-code-black.png" (click)="onShowQr(address)" >
-          <p class="click-to-copy" [ngClass]="{ copying: address.isCopying }"
-            [clipboard]="address.address" (copyEvent)="onCopySuccess(address)" (mouseleave)="address.isCopying = false">
-            {{ address.address }} <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">{{ 'wallet.address.copy' | translate }}</span>
+@if (isBip44 && wallet.accounts) {
+  <!-- BIP44 account-structured view -->
+  @for (account of wallet.accounts; track account.index) {
+    <div class="-bip44-account">
+      <div class="-account-header" (click)="onToggleXpub(account)">
+        <span class="-account-name">{{ account.name || ('Account ' + account.index) }}</span>
+        <span class="-account-toggle">{{ account.showXpub ? 'Hide' : 'Show' }} xPub</span>
+      </div>
+      @if (account.showXpub && account.xpubKey) {
+        <div class="-xpub-display">
+          <span class="-xpub-label">xPub Key:</span>
+          <p class="click-to-copy -xpub-key" [clipboard]="account.xpubKey" (copyEvent)="onCopySuccess({address: account.xpubKey, isCopying: false})">
+            {{ account.xpubKey }}
           </p>
         </div>
-        <div class="address -one-line-ellipsis -on-small-and-below-only">
-          {{ address.address }}
+      }
+
+      <div class="-chain-label">Receiving Addresses</div>
+      <div class="-records">
+        @for (address of account.externalAddresses; track address; let i = $index) {
+          @if (!wallet.hideEmpty || address.balance?.isGreaterThan(0)) {
+            <div class="-record" #element (click)="onShowQrIfPointer(element, address)">
+              <div class="id-column -one-line-ellipsis">{{ i + 1 }}</div>
+              <div class="address-column -not-on-small-and-below">
+                <img class="qr-code-button" src="assets/img/qr-code-black.png" (click)="onShowQr(address)" >
+                <p class="click-to-copy" [ngClass]="{ copying: address.isCopying }"
+                  [clipboard]="address.address" (copyEvent)="onCopySuccess(address)" (mouseleave)="address.isCopying = false">
+                  {{ address.address }} <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">{{ 'wallet.address.copy' | translate }}</span>
+                </p>
+              </div>
+              <div class="address -one-line-ellipsis -on-small-and-below-only">
+                {{ address.address }}
+              </div>
+              <div class="mobile-label-container">
+                <div class="data-column -coins-column">{{ (address.balance ? address.balance.decimalPlaces(currentCoin?.coinDecimals || 6).toString() : 0) | number:('1.0-' + (currentCoin?.coinDecimals || 6)) }}</div>
+              </div>
+              @if (currentCoin?.hasHours()) {
+                <div class="mobile-label-container">
+                  <div class="data-column -hours-column">{{ (address.hours ? address.hours.decimalPlaces(0).toString() : 0) | number:'1.0-0' }}</div>
+                </div>
+              }
+              <div class="options-column -not-on-small-and-below">
+                <mat-icon [matMenuTriggerFor]="extMenu">more_vert</mat-icon>
+              </div>
+            </div>
+          }
+          <mat-menu #extMenu="matMenu" [overlapTrigger]="false" class="compact">
+            <button mat-menu-item [clipboard]="address.address"
+              (click)="$event.stopPropagation()" (copyEvent)="onCopySuccess(address, 1000)">
+              {{ address.isCopying ? ('wallet.address.copied' | translate) : 'wallet.address.copy-address' | translate}}
+            </button>
+            <button mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address }">
+              {{ 'wallet.address.outputs' | translate }}
+            </button>
+            <button mat-menu-item routerLink="/history" [queryParams]="{ addr: address.address }">
+              {{ 'wallet.address.history' | translate }}
+            </button>
+          </mat-menu>
+        }
+      </div>
+
+      @if (account.changeAddresses?.length > 0) {
+        <div class="-chain-label -change-label" (click)="onToggleChangeAddresses(account)">
+          Change Addresses ({{ account.changeAddresses.length }})
+          <mat-icon class="-toggle-icon">{{ account.showChangeAddresses ? 'expand_less' : 'expand_more' }}</mat-icon>
         </div>
-        <div class="mobile-label-container">
-          <div class="data-column -coins-column">{{ (address.balance ? address.balance.decimalPlaces(currentCoin?.coinDecimals || 6).toString() : 0) | number:('1.0-' + (currentCoin?.coinDecimals || 6)) }}</div>
-        </div>
-        @if (currentCoin?.hasHours()) {
-          <div class="mobile-label-container">
-            <div class="data-column -hours-column">{{ (address.hours ? address.hours.decimalPlaces(0).toString() : 0) | number:'1.0-0' }}</div>
+        @if (account.showChangeAddresses) {
+          <div class="-records">
+            @for (address of account.changeAddresses; track address; let i = $index) {
+              @if (!wallet.hideEmpty || address.balance?.isGreaterThan(0)) {
+                <div class="-record" #chgElement (click)="onShowQrIfPointer(chgElement, address)">
+                  <div class="id-column -one-line-ellipsis">{{ i + 1 }}</div>
+                  <div class="address-column -not-on-small-and-below">
+                    <img class="qr-code-button" src="assets/img/qr-code-black.png" (click)="onShowQr(address)" >
+                    <p class="click-to-copy" [ngClass]="{ copying: address.isCopying }"
+                      [clipboard]="address.address" (copyEvent)="onCopySuccess(address)" (mouseleave)="address.isCopying = false">
+                      {{ address.address }} <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">{{ 'wallet.address.copy' | translate }}</span>
+                    </p>
+                  </div>
+                  <div class="address -one-line-ellipsis -on-small-and-below-only">
+                    {{ address.address }}
+                  </div>
+                  <div class="mobile-label-container">
+                    <div class="data-column -coins-column">{{ (address.balance ? address.balance.decimalPlaces(currentCoin?.coinDecimals || 6).toString() : 0) | number:('1.0-' + (currentCoin?.coinDecimals || 6)) }}</div>
+                  </div>
+                  @if (currentCoin?.hasHours()) {
+                    <div class="mobile-label-container">
+                      <div class="data-column -hours-column">{{ (address.hours ? address.hours.decimalPlaces(0).toString() : 0) | number:'1.0-0' }}</div>
+                    </div>
+                  }
+                  <div class="options-column -not-on-small-and-below">
+                    <mat-icon [matMenuTriggerFor]="chgMenu">more_vert</mat-icon>
+                  </div>
+                </div>
+              }
+              <mat-menu #chgMenu="matMenu" [overlapTrigger]="false" class="compact">
+                <button mat-menu-item [clipboard]="address.address"
+                  (click)="$event.stopPropagation()" (copyEvent)="onCopySuccess(address, 1000)">
+                  {{ address.isCopying ? ('wallet.address.copied' | translate) : 'wallet.address.copy-address' | translate}}
+                </button>
+                <button mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address }">
+                  {{ 'wallet.address.outputs' | translate }}
+                </button>
+                <button mat-menu-item routerLink="/history" [queryParams]="{ addr: address.address }">
+                  {{ 'wallet.address.history' | translate }}
+                </button>
+              </mat-menu>
+            }
           </div>
         }
-        <div class="options-column -not-on-small-and-below">
-          <mat-icon [matMenuTriggerFor]="optionsMenu">more_vert</mat-icon>
-        </div>
-      </div>
-    }
-    <mat-menu #optionsMenu="matMenu" [overlapTrigger]="false" class="compact">
-      <button mat-menu-item [clipboard]="address.address"
-        (click)="$event.stopPropagation()" (copyEvent)="onCopySuccess(address, 1000)">
-        {{ address.isCopying ? ('wallet.address.copied' | translate) : 'wallet.address.copy-address' | translate}}
-      </button>
-      <button mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address }">
-        {{ 'wallet.address.outputs' | translate }}
-      </button>
-      <button mat-menu-item routerLink="/history" [queryParams]="{ addr: address.address }">
-        {{ 'wallet.address.history' | translate }}
-      </button>
-    </mat-menu>
-  }
-  @if (creatingAddress) {
-    <div class="-record -small-adding-addess-msg-container -on-small-and-below-only">
-      <div>
-        <mat-spinner [color]="spinnerStyle" class="in-button small"></mat-spinner>
-        {{ 'wallet.adding-address' | translate }} @if (showSlowMobileInfo) {
-        <span>{{ 'common.slow-on-mobile' | translate}}</span>
       }
     </div>
+  }
+} @else {
+  <!-- Deterministic flat address list -->
+  <div class="-records">
+    @for (address of (wallet ? wallet.addresses : []); track address; let i = $index) {
+      @if (!wallet.hideEmpty || address.balance.isGreaterThan(0)) {
+        <div class="-record" #element (click)="onShowQrIfPointer(element, address)">
+          <div class="id-column -one-line-ellipsis">{{ i + 1 }}</div>
+          <div class="address-column -not-on-small-and-below">
+            <img class="qr-code-button" src="assets/img/qr-code-black.png" (click)="onShowQr(address)" >
+            <p class="click-to-copy" [ngClass]="{ copying: address.isCopying }"
+              [clipboard]="address.address" (copyEvent)="onCopySuccess(address)" (mouseleave)="address.isCopying = false">
+              {{ address.address }} <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">{{ 'wallet.address.copy' | translate }}</span>
+            </p>
+          </div>
+          <div class="address -one-line-ellipsis -on-small-and-below-only">
+            {{ address.address }}
+          </div>
+          <div class="mobile-label-container">
+            <div class="data-column -coins-column">{{ (address.balance ? address.balance.decimalPlaces(currentCoin?.coinDecimals || 6).toString() : 0) | number:('1.0-' + (currentCoin?.coinDecimals || 6)) }}</div>
+          </div>
+          @if (currentCoin?.hasHours()) {
+            <div class="mobile-label-container">
+              <div class="data-column -hours-column">{{ (address.hours ? address.hours.decimalPlaces(0).toString() : 0) | number:'1.0-0' }}</div>
+            </div>
+          }
+          <div class="options-column -not-on-small-and-below">
+            <mat-icon [matMenuTriggerFor]="optionsMenu">more_vert</mat-icon>
+          </div>
+        </div>
+      }
+      <mat-menu #optionsMenu="matMenu" [overlapTrigger]="false" class="compact">
+        <button mat-menu-item [clipboard]="address.address"
+          (click)="$event.stopPropagation()" (copyEvent)="onCopySuccess(address, 1000)">
+          {{ address.isCopying ? ('wallet.address.copied' | translate) : 'wallet.address.copy-address' | translate}}
+        </button>
+        <button mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address }">
+          {{ 'wallet.address.outputs' | translate }}
+        </button>
+        <button mat-menu-item routerLink="/history" [queryParams]="{ addr: address.address }">
+          {{ 'wallet.address.history' | translate }}
+        </button>
+      </mat-menu>
+    }
+    @if (creatingAddress) {
+      <div class="-record -small-adding-addess-msg-container -on-small-and-below-only">
+        <div>
+          <mat-spinner [color]="spinnerStyle" class="in-button small"></mat-spinner>
+          {{ 'wallet.adding-address' | translate }} @if (showSlowMobileInfo) {
+          <span>{{ 'common.slow-on-mobile' | translate}}</span>
+        }
+      </div>
+    </div>
+  }
   </div>
 }
-</div>

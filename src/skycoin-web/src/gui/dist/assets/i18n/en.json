@@ -131,6 +131,7 @@
 
   "wallet": {
     "new-address": "New Address",
+    "add-account": "Add Account",
     "show-empty": "Show Empty",
     "hide-empty": "Hide Empty",
     "encrypt": "Encrypt Wallet",
@@ -179,6 +180,8 @@
       "seed-passphrase-label": "Seed passphrase (optional)",
       "seed-passphrase-placeholder": "Enter an optional passphrase",
       "seed-passphrase-info": "An optional passphrase adds an extra layer of security. You will need both the seed and the passphrase to recover the wallet.",
+      "segwit-label": "Native Segwit (bech32)",
+      "segwit-info": "Generate bc1q... addresses (BIP84). Recommended for lower fees. Uncheck for legacy P2PKH addresses.",
       "wallet-created": "The wallet has been added to the list."
     },
 

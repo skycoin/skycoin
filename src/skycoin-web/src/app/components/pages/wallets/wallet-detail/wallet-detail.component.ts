@@ -3,7 +3,7 @@ import { MatDialogConfig } from '@angular/material/dialog';
 import { TranslateService } from '@ngx-translate/core';
 import { of, Subscription, delay, first } from 'rxjs';
 
-import { ConfirmationData, Wallet, Address } from '../../../../app.datatypes';
+import { ConfirmationData, Wallet, Address, Bip44Account } from '../../../../app.datatypes';
 import { BaseCoin } from '../../../../coins/basecoin';
 import { CoinService } from '../../../../services/coin.service';
 import { WalletService } from '../../../../services/wallet/wallet.service';
@@ -122,6 +122,43 @@ export class WalletDetailComponent implements OnDestroy {
 
   onToggleEmpty() {
     this.wallet.hideEmpty = !this.wallet.hideEmpty;
+  }
+
+  get isBip44(): boolean {
+    return this.wallet.walletType === 'bip44';
+  }
+
+  onToggleXpub(account: Bip44Account) {
+    if (account.showXpub) {
+      account.showXpub = false;
+      return;
+    }
+
+    if (account.xpubKey) {
+      account.showXpub = true;
+      return;
+    }
+
+    // Fetch xpub key for external chain (account/0)
+    this.walletService.getXPubKey(this.wallet, account.index, 0).subscribe(
+      (xpub) => {
+        account.xpubKey = xpub;
+        account.showXpub = true;
+      },
+      (error) => this.msgBarService.showError(error.message)
+    );
+  }
+
+  onToggleChangeAddresses(account: Bip44Account) {
+    account.showChangeAddresses = !account.showChangeAddresses;
+  }
+
+  onAddAccount() {
+    const name = `Account ${(this.wallet.accounts || []).length}`;
+    this.walletService.addAccount(this.wallet, name).subscribe(
+      () => {},
+      (error) => this.msgBarService.showError(error.message)
+    );
   }
 
   onDeleteWallet() {

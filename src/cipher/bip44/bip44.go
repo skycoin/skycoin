@@ -23,6 +23,14 @@ var (
 // CoinType is the coin_type part of the bip44 path
 type CoinType uint32
 
+// Purpose constants for BIP43 purpose field
+const (
+	// PurposeBIP44 is the purpose for BIP44 wallets (P2PKH)
+	PurposeBIP44 uint32 = 44
+	// PurposeBIP84 is the purpose for BIP84 wallets (P2WPKH native segwit)
+	PurposeBIP84 uint32 = 84
+)
+
 const (
 	// CoinTypeBitcoin is the coin_type for Bitcoin
 	CoinTypeBitcoin CoinType = 0
@@ -42,13 +50,20 @@ type Coin struct {
 	*bip32.PrivateKey
 }
 
-// NewCoin creates a bip32 node at the `coin_type` level of a bip44 path
+// NewCoin creates a bip32 node at the `coin_type` level of a bip44 path (m/44'/coin_type')
 func NewCoin(seed []byte, coinType CoinType) (*Coin, error) {
+	return NewCoinWithPurpose(seed, coinType, PurposeBIP44)
+}
+
+// NewCoinWithPurpose creates a bip32 node at the `coin_type` level with a specific BIP43 purpose.
+// Use PurposeBIP44 (44) for standard BIP44 P2PKH addresses.
+// Use PurposeBIP84 (84) for BIP84 native segwit (P2WPKH) addresses.
+func NewCoinWithPurpose(seed []byte, coinType CoinType, purpose uint32) (*Coin, error) {
 	if uint32(coinType) >= bip32.FirstHardenedChild {
 		return nil, ErrInvalidCoinType
 	}
 
-	path := fmt.Sprintf("m/44'/%d'", coinType)
+	path := fmt.Sprintf("m/%d'/%d'", purpose, coinType)
 	pk, err := bip32.NewPrivateKeyFromPath(seed, path)
 	if err != nil {
 		return nil, err

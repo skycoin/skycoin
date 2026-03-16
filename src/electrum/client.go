@@ -257,22 +257,38 @@ func (c *Client) GetTransactionVerbose(txid string) (json.RawMessage, error) {
 	return result, nil
 }
 
-// AddressToScriptHash converts a Bitcoin P2PKH address to the Electrum script hash format.
-// The script hash is the reversed SHA256 of the P2PKH output script (OP_DUP OP_HASH160 <hash160> OP_EQUALVERIFY OP_CHECKSIG).
+// AddressToScriptHash converts a Bitcoin address to the Electrum script hash format.
+// Supports both P2PKH (1...) and P2WPKH (bc1q...) addresses.
+// The script hash is the reversed SHA256 of the output script.
 func AddressToScriptHash(address string) (string, error) {
-	addr, err := cipher.DecodeBase58BitcoinAddress(address)
-	if err != nil {
-		return "", fmt.Errorf("invalid bitcoin address %q: %w", address, err)
-	}
+	var script []byte
 
-	// Build P2PKH output script: OP_DUP OP_HASH160 <20-byte hash> OP_EQUALVERIFY OP_CHECKSIG
-	script := make([]byte, 25)
-	script[0] = 0x76 // OP_DUP
-	script[1] = 0xa9 // OP_HASH160
-	script[2] = 0x14 // Push 20 bytes
-	copy(script[3:23], addr.Key[:])
-	script[23] = 0x88 // OP_EQUALVERIFY
-	script[24] = 0xac // OP_CHECKSIG
+	if strings.HasPrefix(strings.ToLower(address), "bc1") || strings.HasPrefix(strings.ToLower(address), "tb1") {
+		// Native segwit (bech32) P2WPKH address
+		segAddr, err := cipher.DecodeBech32BitcoinAddress(address)
+		if err != nil {
+			return "", fmt.Errorf("invalid bech32 bitcoin address %q: %w", address, err)
+		}
+		// P2WPKH output script: OP_0 <20-byte witness program>
+		script = make([]byte, 22)
+		script[0] = 0x00 // OP_0 (witness version 0)
+		script[1] = 0x14 // Push 20 bytes
+		copy(script[2:22], segAddr.Key[:])
+	} else {
+		// Legacy P2PKH address
+		addr, err := cipher.DecodeBase58BitcoinAddress(address)
+		if err != nil {
+			return "", fmt.Errorf("invalid bitcoin address %q: %w", address, err)
+		}
+		// P2PKH output script: OP_DUP OP_HASH160 <20-byte hash> OP_EQUALVERIFY OP_CHECKSIG
+		script = make([]byte, 25)
+		script[0] = 0x76 // OP_DUP
+		script[1] = 0xa9 // OP_HASH160
+		script[2] = 0x14 // Push 20 bytes
+		copy(script[3:23], addr.Key[:])
+		script[23] = 0x88 // OP_EQUALVERIFY
+		script[24] = 0xac // OP_CHECKSIG
+	}
 
 	// SHA256 of the script
 	hash := sha256.Sum256(script)
@@ -285,8 +301,8 @@ func AddressToScriptHash(address string) (string, error) {
 	return hex.EncodeToString(hash[:]), nil
 }
 
-// AddressToScriptHashFromRaw converts a raw 20-byte pubkey hash to Electrum script hash format.
-// This is useful when you have the hash160 directly from a cipher.BitcoinAddress.
+// AddressToScriptHashFromRaw converts a raw 20-byte pubkey hash to Electrum script hash format
+// using P2PKH output script.
 func AddressToScriptHashFromRaw(pubKeyHash []byte) (string, error) {
 	if len(pubKeyHash) != 20 {
 		return "", fmt.Errorf("pubkey hash must be 20 bytes, got %d", len(pubKeyHash))
@@ -300,6 +316,27 @@ func AddressToScriptHashFromRaw(pubKeyHash []byte) (string, error) {
 	copy(script[3:23], pubKeyHash)
 	script[23] = 0x88
 	script[24] = 0xac
+
+	hash := sha256.Sum256(script)
+	for i, j := 0, len(hash)-1; i < j; i, j = i+1, j-1 {
+		hash[i], hash[j] = hash[j], hash[i]
+	}
+
+	return hex.EncodeToString(hash[:]), nil
+}
+
+// SegwitAddressToScriptHashFromRaw converts a raw 20-byte witness program to Electrum script hash format
+// using P2WPKH output script.
+func SegwitAddressToScriptHashFromRaw(witnessProgram []byte) (string, error) {
+	if len(witnessProgram) != 20 {
+		return "", fmt.Errorf("witness program must be 20 bytes, got %d", len(witnessProgram))
+	}
+
+	// Build P2WPKH output script: OP_0 <20-byte witness program>
+	script := make([]byte, 22)
+	script[0] = 0x00 // OP_0
+	script[1] = 0x14 // Push 20 bytes
+	copy(script[2:22], witnessProgram)
 
 	hash := sha256.Sum256(script)
 	for i, j := 0, len(hash)-1; i < j; i, j = i+1, j-1 {

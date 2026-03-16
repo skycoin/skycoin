@@ -47,8 +47,8 @@ export class WalletService {
       mergeMap(wallets => this.coinService.currentCoin.pipe(
         filter((coin: BaseCoin) => coin !== null),
         map((coin: BaseCoin) => {
-          if (environment.production) {
-            // In production, wallets are fetched per-coin from the server
+          if (coin.serverWallets) {
+            // Server-managed wallets are fetched per-coin from the backend
             return wallets;
           }
           return wallets.filter(wallet => wallet.coinId === coin.id);
@@ -76,11 +76,12 @@ export class WalletService {
       }));
   }
 
-  create(label: string, seed: string, coinId: number, save = true, walletType = 'deterministic', seedPassphrase?: string): Observable<Wallet> {
+  create(label: string, seed: string, coinId: number, save = true, walletType = 'deterministic', seedPassphrase?: string, segwit?: boolean): Observable<Wallet> {
     seed = this.getCleanSeed(seed);
 
-    if (walletType === 'bip44' && environment.production) {
-      return this.createBip44Wallet(label, seed, coinId, save, seedPassphrase);
+    // When the backend has wallet management, create via the API so wallets persist to disk
+    if (this.currentCoin && this.currentCoin.serverWallets) {
+      return this.createServerWallet(label, seed, coinId, save, walletType, seedPassphrase, segwit);
     }
 
     return this.cipherProvider.generateAddress(convertAsciiToHexa(seed)).pipe(
@@ -111,16 +112,24 @@ export class WalletService {
       }));
   }
 
-  private createBip44Wallet(label: string, seed: string, coinId: number, save: boolean, seedPassphrase?: string): Observable<Wallet> {
+  private createServerWallet(label: string, seed: string, coinId: number, save: boolean, walletType: string, seedPassphrase?: string, segwit?: boolean): Observable<Wallet> {
     const params: any = {
       label: label || 'undefined',
       seed: seed,
-      scan: 100,
-      type: 'bip44',
+      type: walletType,
     };
+
+    if (walletType === 'bip44') {
+      params.scan = 100;
+    }
 
     if (seedPassphrase) {
       params['seed-passphrase'] = seedPassphrase;
+    }
+
+    // For Bitcoin BIP44 wallets, signal segwit preference to the backend
+    if (segwit !== undefined) {
+      params.segwit = segwit;
     }
 
     return this.apiService.post('wallet/create', params).pipe(
@@ -131,7 +140,7 @@ export class WalletService {
           hours: new BigNumber('0'),
           addresses: (response.entries || []).map(e => ({ address: e.address })),
           coinId: coinId,
-          walletType: 'bip44',
+          walletType: response.meta.type || walletType,
         };
 
         if (save) {
@@ -196,7 +205,8 @@ export class WalletService {
 
   saveWallets() {
     const currentWallets = this.wallets.value || [];
-    if (!environment.production) {
+    // Only persist to localStorage for client-side wallets
+    if (!(this.currentCoin && this.currentCoin.serverWallets)) {
       const strippedWallets: Wallet[] = [];
       currentWallets.forEach(wallet => {
         const strippedAddresses: Address[] = [];
@@ -210,32 +220,40 @@ export class WalletService {
   }
 
   private loadWallets() {
-    if (!environment.production) {
-      const storedWallets: string = localStorage.getItem('wallets');
-      if (storedWallets) {
-        const wallets: Wallet[] = JSON.parse(storedWallets);
+    // Wait for coins to load so we know whether to use server or client-side wallets.
+    // This prevents the wallet wizard from opening before the current coin is known.
+    this.coinService.coinsLoaded.pipe(first()).subscribe(() => {
+      const coin = this.coinService.currentCoin.getValue();
 
-        wallets.filter(wallet => !wallet.coinId).forEach((wallet) => {
-          wallet.coinId = defaultCoinId;
-        });
-
-        this.wallets.next(wallets);
-      } else {
-        this.wallets.next([]);
-      }
-    } else {
-      // Production mode: fetch wallets from the backend API.
-      // Wait for coins to load so the ApiService has a valid base URL.
-      this.coinService.coinsLoaded.pipe(first()).subscribe(() => {
+      if (coin && coin.serverWallets) {
         this.loadWalletsFromServer();
+      } else {
+        this.loadWalletsFromLocalStorage();
+      }
 
-        // Re-fetch wallets when the user switches coins
-        this.coinSubscription = this.coinService.currentCoin.pipe(
-          filter((coin: BaseCoin) => coin !== null),
-        ).subscribe(() => {
-            this.loadWalletsFromServer();
-          });
+      // Re-fetch wallets when the user switches coins
+      this.coinSubscription = this.coinService.currentCoin.pipe(
+        filter((c: BaseCoin) => c !== null),
+      ).subscribe((c) => {
+        if (c.serverWallets) {
+          this.loadWalletsFromServer();
+        } else {
+          this.loadWalletsFromLocalStorage();
+        }
       });
+    });
+  }
+
+  private loadWalletsFromLocalStorage() {
+    const storedWallets: string = localStorage.getItem('wallets');
+    if (storedWallets) {
+      const wallets: Wallet[] = JSON.parse(storedWallets);
+      wallets.filter(wallet => !wallet.coinId).forEach((wallet) => {
+        wallet.coinId = defaultCoinId;
+      });
+      this.wallets.next(wallets);
+    } else {
+      this.wallets.next([]);
     }
   }
 
@@ -243,13 +261,28 @@ export class WalletService {
     this.apiService.get('wallets').subscribe(
       (serverWallets: any[]) => {
         if (serverWallets && serverWallets.length > 0) {
-          const wallets: Wallet[] = serverWallets.map(w => ({
-            label: w.meta.label,
-            addresses: (w.entries || []).map(e => ({ address: e.address })),
-            coinId: this.currentCoin ? this.currentCoin.id : defaultCoinId,
-            encrypted: w.meta.encrypted,
-            walletType: w.meta.type || 'deterministic',
-          }));
+          const wallets: Wallet[] = serverWallets.map(w => {
+            const wlt: Wallet = {
+              label: w.meta.label,
+              addresses: (w.entries || []).map(e => ({ address: e.address })),
+              coinId: this.currentCoin ? this.currentCoin.id : defaultCoinId,
+              encrypted: w.meta.encrypted,
+              walletType: w.meta.type || 'deterministic',
+              filename: w.meta.filename,
+            };
+
+            // Parse BIP44 account structure
+            if (w.meta.type === 'bip44' && w.accounts) {
+              wlt.accounts = w.accounts.map(a => ({
+                name: a.name,
+                index: a.index,
+                externalAddresses: (a.external_entries || []).map(e => ({ address: e.address })),
+                changeAddresses: (a.change_entries || []).map(e => ({ address: e.address })),
+              }));
+            }
+
+            return wlt;
+          });
           this.wallets.next(wallets);
         } else {
           this.wallets.next([]);
@@ -257,6 +290,33 @@ export class WalletService {
       },
       () => this.wallets.next([])
     );
+  }
+
+  getXPubKey(wallet: Wallet, accountIndex: number, chainIndex: number): Observable<string> {
+    return this.apiService.get('wallet/xpub', {
+      id: wallet.filename,
+      path: `${accountIndex}/${chainIndex}`,
+    }).pipe(map((response: any) => response.xpub_key));
+  }
+
+  addAccount(wallet: Wallet, name: string): Observable<Wallet> {
+    return this.apiService.post('wallet/newAccount', {
+      id: wallet.filename,
+      name: name,
+    }).pipe(map((response: any) => {
+      // Update wallet with new account structure
+      if (response.accounts) {
+        wallet.accounts = response.accounts.map(a => ({
+          name: a.name,
+          index: a.index,
+          externalAddresses: (a.external_entries || []).map(e => ({ address: e.address })),
+          changeAddresses: (a.change_entries || []).map(e => ({ address: e.address })),
+        }));
+      }
+      wallet.addresses = (response.entries || []).map(e => ({ address: e.address }));
+      this.saveWallets();
+      return wallet;
+    }));
   }
 
   private getCleanSeed(seed: string): string {

@@ -8,6 +8,7 @@ export class BaseCoin {
   priceTickerSource: string;
   coinExplorer: string;
   coinType: string;
+  serverWallets: boolean;
   imageName: string;
   gradientName: string;
   iconName: string;
@@ -20,23 +21,23 @@ export class BaseCoin {
   }
 
   hasHours(): boolean {
-    return this.coinType !== 'bitcoin';
+    return !this.isBitcoin();
   }
 
   isBitcoin(): boolean {
-    return this.coinType === 'bitcoin';
+    return this.coinType === 'bitcoin' || this.coinType === 'bitcoin-segwit';
   }
 
   get coinsMultiplier(): number {
-    return this.coinType === 'bitcoin' ? 100000000 : 1000000;
+    return this.isBitcoin() ? 100000000 : 1000000;
   }
 
   get coinDecimals(): number {
-    return this.coinType === 'bitcoin' ? 8 : 6;
+    return this.isBitcoin() ? 8 : 6;
   }
 
   static fromServerData(data: any): BaseCoin {
-    const isBtc = data.coinType === 'bitcoin';
+    const isBtc = data.coinType === 'bitcoin' || data.coinType === 'bitcoin-segwit';
     const coin = new BaseCoin();
     coin.id = data.id;
     coin.nodeUrl = data.nodeUrl || '';
@@ -47,6 +48,7 @@ export class BaseCoin {
     coin.priceTickerSource = data.priceTickerSource || 'coinpaprika';
     coin.coinExplorer = data.coinExplorer || '';
     coin.coinType = data.coinType || 'skycoin';
+    coin.serverWallets = !!data.serverWallets;
     // Use generic/skycoin assets as fallback for dynamically discovered coins
     coin.imageName = '';
     coin.gradientName = '';

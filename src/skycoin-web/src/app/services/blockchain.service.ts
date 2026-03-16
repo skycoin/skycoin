@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, Subscription, of } from 'rxjs';
-import { map, mergeMap, delay } from 'rxjs';
+import { map, mergeMap, delay, filter } from 'rxjs';
 import BigNumber from 'bignumber.js';
 
 import { ApiService } from './api.service';
 import { BalanceService } from './wallet/balance.service';
 import { ConnectionError } from '../enums/connection-error.enum';
+import { BaseCoin } from '../coins/basecoin';
 import { CoinService } from './coin.service';
 import { environment } from '../../environments/environment';
 import { GlobalsService } from './globals.service';
@@ -50,13 +51,18 @@ export class BlockchainService {
     return this.burnRateInternal;
   }
 
+  private currentCoin: BaseCoin;
+
   constructor (
     private apiService: ApiService,
     private balanceService: BalanceService,
     private globalsService: GlobalsService,
     coinService: CoinService
   ) {
-    coinService.currentCoin.subscribe(() => {
+    coinService.currentCoin.pipe(
+      filter((coin) => coin !== null),
+    ).subscribe((coin) => {
+      this.currentCoin = coin;
       this.startCheckingNode();
     });
   }
@@ -125,6 +131,17 @@ export class BlockchainService {
   }
 
   private checkConnectionState(): Observable<any> {
+    // Bitcoin doesn't use Skycoin's peer-to-peer connections; skip the check
+    if (this.currentCoin && this.currentCoin.isBitcoin()) {
+      return this.apiService.get('health').pipe(
+        map((response: any) => {
+          this.globalsService.setNodeVersion(response.version?.version || '0.28.0');
+          this.maxDecimals = this.currentCoin.coinDecimals;
+          this.burnRateInternal = new BigNumber(0);
+        }),
+      );
+    }
+
     return this.apiService.get('network/connections').pipe(
       map((status: any) => {
         if ((!status.connections || status.connections.length === 0) && !environment.e2eTest) {

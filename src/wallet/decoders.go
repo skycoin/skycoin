@@ -15,8 +15,9 @@ type addressSecKeyDecoders struct {
 func initAddressSecKeyDecoders() addressSecKeyDecoders {
 	return addressSecKeyDecoders{
 		adapters: map[CoinType]AddressSecKeyDecoder{
-			CoinTypeSkycoin: skycoinDecoder{},
-			CoinTypeBitcoin: bitcoinDecoder{},
+			CoinTypeSkycoin:       skycoinDecoder{},
+			CoinTypeBitcoin:       bitcoinDecoder{},
+			CoinTypeBitcoinSegwit: bitcoinSegwitDecoder{},
 		},
 	}
 }
@@ -110,5 +111,23 @@ func (b bitcoinDecoder) SecKeyToHex(secKey cipher.SecKey) string {
 }
 
 func (b bitcoinDecoder) SecKeyFromHex(secKey string) (cipher.SecKey, error) {
+	return cipher.SecKeyFromBitcoinWalletImportFormat(secKey)
+}
+
+type bitcoinSegwitDecoder struct{}
+
+func (b bitcoinSegwitDecoder) AddressFromPubKey(key cipher.PubKey) cipher.Addresser {
+	return cipher.BitcoinSegwitAddressFromPubKey(key)
+}
+
+func (b bitcoinSegwitDecoder) DecodeBase58Address(addr string) (cipher.Addresser, error) {
+	return cipher.DecodeBech32BitcoinAddress(addr)
+}
+
+func (b bitcoinSegwitDecoder) SecKeyToHex(secKey cipher.SecKey) string {
+	return cipher.BitcoinWalletImportFormatFromSeckey(secKey)
+}
+
+func (b bitcoinSegwitDecoder) SecKeyFromHex(secKey string) (cipher.SecKey, error) {
 	return cipher.SecKeyFromBitcoinWalletImportFormat(secKey)
 }

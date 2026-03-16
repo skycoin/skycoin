@@ -13,6 +13,19 @@ export interface Wallet {
   coinId?: number;
   nextSeed?: string;
   walletType?: string;
+  filename?: string;
+  encrypted?: boolean;
+  accounts?: Bip44Account[];
+}
+
+export interface Bip44Account {
+  name: string;
+  index: number;
+  externalAddresses: Address[];
+  changeAddresses: Address[];
+  xpubKey?: string;
+  showXpub?: boolean;
+  showChangeAddresses?: boolean;
 }
 
 export interface Address {

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"strings"
 
 	"github.com/skycoin/skycoin/src/cipher"
 )
@@ -18,10 +19,23 @@ type TxDestination struct {
 	Value   int64 // satoshis
 }
 
-// EstimatedTxSize estimates the size of a P2PKH transaction in bytes.
-// P2PKH input: ~148 bytes, P2PKH output: ~34 bytes, overhead: ~10 bytes
+// EstimatedTxSize estimates the virtual size of a transaction in vbytes.
+// For P2PKH: input ~148 bytes, output ~34 bytes, overhead ~10 bytes.
+// For P2WPKH: input ~68 vbytes (witness discounted), output ~31 bytes, overhead ~10.75 bytes.
 func EstimatedTxSize(numInputs, numOutputs int) int {
 	return 10 + numInputs*148 + numOutputs*34
+}
+
+// EstimatedSegwitTxVSize estimates the virtual size of a segwit P2WPKH transaction.
+func EstimatedSegwitTxVSize(numInputs, numOutputs int) int {
+	// Non-witness: 10 + 41*inputs + 31*outputs
+	// Witness: 1 + 107*inputs (approx)
+	// vsize = (non_witness_weight*4 + witness_weight) / 4
+	nonWitness := 10 + 41*numInputs + 31*numOutputs
+	witness := 1 + 107*numInputs
+	weight := nonWitness*4 + witness
+	vsize := (weight + 3) / 4 // round up
+	return vsize
 }
 
 // SelectUTXOs selects UTXOs using a largest-first algorithm.
@@ -84,75 +98,103 @@ func BuildTransaction(inputs []UTXO, destinations []TxDestination, changeAddr st
 			ErrInsufficientFunds, totalOut+fee, fee, totalIn)
 	}
 
-	// Build outputs
+	// Determine if any inputs are segwit
+	hasSegwit := false
+	for _, input := range inputs {
+		if isSegwitAddress(input.Address) {
+			hasSegwit = true
+			break
+		}
+	}
+
+	// Build outputs (supports both P2PKH and P2WPKH destinations)
 	var outputs []txOut
 
 	for _, dest := range destinations {
-		script, err := p2pkhScript(dest.Address)
+		script, err := outputScript(dest.Address)
 		if err != nil {
 			return "", fmt.Errorf("destination address %s: %w", dest.Address, err)
 		}
 		outputs = append(outputs, txOut{value: dest.Value, script: script})
 	}
 
-	// Add change output if dust threshold is met (546 satoshis)
-	if change >= 546 {
-		changeScript, err := p2pkhScript(changeAddr)
+	// Add change output if dust threshold is met (546 satoshis for P2PKH, 294 for P2WPKH)
+	dustThreshold := int64(546)
+	if isSegwitAddress(changeAddr) {
+		dustThreshold = 294
+	}
+	if change >= dustThreshold {
+		changeScript, err := outputScript(changeAddr)
 		if err != nil {
 			return "", fmt.Errorf("change address %s: %w", changeAddr, err)
 		}
 		outputs = append(outputs, txOut{value: change, script: changeScript})
 	}
 
-	// Build the unsigned transaction for signing
-	// Bitcoin transaction format:
-	// version (4 bytes, little-endian)
-	// input count (varint)
-	// inputs
-	// output count (varint)
-	// outputs
-	// locktime (4 bytes)
+	// Sign each input
+	type inputSigning struct {
+		txid      string
+		vout      uint32
+		scriptSig []byte
+		witness   [][]byte // nil for non-segwit inputs
+	}
 
-	// First, serialize the unsigned tx template (for signing each input)
-	// For P2PKH signing, each input is signed individually with SIGHASH_ALL
-	var signedInputs []signedInput
+	var signedInputs []inputSigning
 	for i, input := range inputs {
 		key, ok := keys[input.Address]
 		if !ok {
 			return "", fmt.Errorf("no key found for input address %s", input.Address)
 		}
 
-		// Create the script for the input being signed (the previous output's P2PKH script)
-		prevScript, err := p2pkhScript(input.Address)
-		if err != nil {
-			return "", fmt.Errorf("input address %s: %w", input.Address, err)
-		}
-
-		// Build the transaction with the current input's scriptPubKey for signing
-		sigHash, err := computeSigHash(inputs, outputs, i, prevScript)
-		if err != nil {
-			return "", fmt.Errorf("compute sighash for input %d: %w", i, err)
-		}
-
-		// Sign the hash
-		sig, err := cipher.SignHash(sigHash, key)
-		if err != nil {
-			return "", fmt.Errorf("sign input %d: %w", i, err)
-		}
-
-		// Convert the 65-byte recoverable signature to DER format
-		derSig := sigToDER(sig)
-		// Append SIGHASH_ALL byte
-		derSig = append(derSig, 0x01)
-
-		// Get the compressed public key
 		pubKey := cipher.MustPubKeyFromSecKey(key)
 
-		signedInputs = append(signedInputs, signedInput{
-			txid:      input.TxID,
-			vout:      input.Vout,
-			scriptSig: buildP2PKHScriptSig(derSig, pubKey[:]),
-		})
+		if isSegwitAddress(input.Address) {
+			// BIP143 segwit signing for P2WPKH
+			sigHash, err := computeSegwitSigHash(inputs, outputs, i, input.Value, pubKey)
+			if err != nil {
+				return "", fmt.Errorf("compute segwit sighash for input %d: %w", i, err)
+			}
+
+			sig, err := cipher.SignHash(sigHash, key)
+			if err != nil {
+				return "", fmt.Errorf("sign input %d: %w", i, err)
+			}
+
+			derSig := sigToDER(sig)
+			derSig = append(derSig, 0x01) // SIGHASH_ALL
+
+			signedInputs = append(signedInputs, inputSigning{
+				txid:      input.TxID,
+				vout:      input.Vout,
+				scriptSig: nil, // empty scriptSig for native segwit
+				witness:   [][]byte{derSig, pubKey[:]},
+			})
+		} else {
+			// Legacy P2PKH signing
+			prevScript, err := p2pkhScript(input.Address)
+			if err != nil {
+				return "", fmt.Errorf("input address %s: %w", input.Address, err)
+			}
+
+			sigHash, err := computeSigHash(inputs, outputs, i, prevScript)
+			if err != nil {
+				return "", fmt.Errorf("compute sighash for input %d: %w", i, err)
+			}
+
+			sig, err := cipher.SignHash(sigHash, key)
+			if err != nil {
+				return "", fmt.Errorf("sign input %d: %w", i, err)
+			}
+
+			derSig := sigToDER(sig)
+			derSig = append(derSig, 0x01) // SIGHASH_ALL
+
+			signedInputs = append(signedInputs, inputSigning{
+				txid:      input.TxID,
+				vout:      input.Vout,
+				scriptSig: buildP2PKHScriptSig(derSig, pubKey[:]),
+			})
+		}
 	}
 
 	// Serialize the final signed transaction
@@ -161,18 +203,27 @@ func BuildTransaction(inputs []UTXO, destinations []TxDestination, changeAddr st
 	// Version
 	writeUint32LE(&buf, 1)
 
+	// Segwit marker and flag (if any segwit inputs)
+	if hasSegwit {
+		buf.WriteByte(0x00) // marker
+		buf.WriteByte(0x01) // flag
+	}
+
 	// Input count
 	writeVarInt(&buf, uint64(len(signedInputs)))
 
 	// Inputs
 	for _, in := range signedInputs {
 		txidBytes, _ := hex.DecodeString(in.txid)
-		// Reverse txid (Bitcoin uses internal byte order)
 		reverseBytes(txidBytes)
 		buf.Write(txidBytes)
 		writeUint32LE(&buf, in.vout)
-		writeVarInt(&buf, uint64(len(in.scriptSig)))
-		buf.Write(in.scriptSig)
+		if in.scriptSig != nil {
+			writeVarInt(&buf, uint64(len(in.scriptSig)))
+			buf.Write(in.scriptSig)
+		} else {
+			writeVarInt(&buf, 0) // empty scriptSig for segwit
+		}
 		writeUint32LE(&buf, 0xffffffff) // sequence
 	}
 
@@ -186,6 +237,21 @@ func BuildTransaction(inputs []UTXO, destinations []TxDestination, changeAddr st
 		buf.Write(out.script)
 	}
 
+	// Witness data (if segwit)
+	if hasSegwit {
+		for _, in := range signedInputs {
+			if in.witness != nil {
+				writeVarInt(&buf, uint64(len(in.witness)))
+				for _, item := range in.witness {
+					writeVarInt(&buf, uint64(len(item)))
+					buf.Write(item)
+				}
+			} else {
+				writeVarInt(&buf, 0) // empty witness for non-segwit inputs
+			}
+		}
+	}
+
 	// Locktime
 	writeUint32LE(&buf, 0)
 
@@ -197,10 +263,13 @@ type txOut struct {
 	script []byte
 }
 
-type signedInput struct {
-	txid      string
-	vout      uint32
-	scriptSig []byte
+// outputScript creates the appropriate output script for a Bitcoin address.
+// Supports both P2PKH (1...) and P2WPKH (bc1q...) addresses.
+func outputScript(address string) ([]byte, error) {
+	if strings.HasPrefix(strings.ToLower(address), "bc1") || strings.HasPrefix(strings.ToLower(address), "tb1") {
+		return p2wpkhScript(address)
+	}
+	return p2pkhScript(address)
 }
 
 // p2pkhScript creates a P2PKH output script for a Bitcoin address
@@ -219,6 +288,27 @@ func p2pkhScript(address string) ([]byte, error) {
 	script[23] = 0x88 // OP_EQUALVERIFY
 	script[24] = 0xac // OP_CHECKSIG
 	return script, nil
+}
+
+// p2wpkhScript creates a P2WPKH output script for a bech32 segwit address
+func p2wpkhScript(address string) ([]byte, error) {
+	segAddr, err := cipher.DecodeBech32BitcoinAddress(address)
+	if err != nil {
+		return nil, fmt.Errorf("invalid segwit address: %w", err)
+	}
+
+	// OP_0 <20-byte witness program>
+	script := make([]byte, 22)
+	script[0] = 0x00 // OP_0 (witness version 0)
+	script[1] = 0x14 // Push 20 bytes
+	copy(script[2:22], segAddr.Key[:])
+	return script, nil
+}
+
+// isSegwitAddress returns true if the address is a bech32 segwit address
+func isSegwitAddress(address string) bool {
+	lower := strings.ToLower(address)
+	return strings.HasPrefix(lower, "bc1") || strings.HasPrefix(lower, "tb1")
 }
 
 // computeSigHash computes the signature hash for a P2PKH input (SIGHASH_ALL)
@@ -272,6 +362,109 @@ func computeSigHash(inputs []UTXO, outputs []txOut, sigIndex int, prevScript []b
 	first := sha256.Sum256(buf.Bytes())
 	second := sha256.Sum256(first[:])
 	return cipher.SHA256(second), nil
+}
+
+// computeSegwitSigHash computes the BIP143 signature hash for a P2WPKH input.
+func computeSegwitSigHash(inputs []UTXO, outputs []txOut, sigIndex int, inputValue int64, pubKey cipher.PubKey) (cipher.SHA256, error) {
+	// BIP143 defines a new digest algorithm for segwit:
+	// Double SHA256 of the serialization of:
+	//  1. nVersion (4 bytes LE)
+	//  2. hashPrevouts (32 bytes)
+	//  3. hashSequence (32 bytes)
+	//  4. outpoint (32+4 bytes)
+	//  5. scriptCode (varint + script)
+	//  6. value (8 bytes LE)
+	//  7. nSequence (4 bytes LE)
+	//  8. hashOutputs (32 bytes)
+	//  9. nLockTime (4 bytes LE)
+	// 10. nHashType (4 bytes LE)
+
+	// hashPrevouts = SHA256(SHA256(all input outpoints))
+	var prevoutsData bytes.Buffer
+	for _, input := range inputs {
+		txidBytes, err := hex.DecodeString(input.TxID)
+		if err != nil {
+			return cipher.SHA256{}, fmt.Errorf("decode txid: %w", err)
+		}
+		reverseBytes(txidBytes)
+		prevoutsData.Write(txidBytes)
+		writeUint32LE(&prevoutsData, input.Vout)
+	}
+	hashPrevouts := doubleSHA256(prevoutsData.Bytes())
+
+	// hashSequence = SHA256(SHA256(all input sequences))
+	var seqData bytes.Buffer
+	for range inputs {
+		writeUint32LE(&seqData, 0xffffffff)
+	}
+	hashSequence := doubleSHA256(seqData.Bytes())
+
+	// hashOutputs = SHA256(SHA256(all outputs))
+	var outputsData bytes.Buffer
+	for _, out := range outputs {
+		writeUint64LE(&outputsData, uint64(out.value))
+		writeVarInt(&outputsData, uint64(len(out.script)))
+		outputsData.Write(out.script)
+	}
+	hashOutputs := doubleSHA256(outputsData.Bytes())
+
+	// scriptCode for P2WPKH is OP_DUP OP_HASH160 <20-byte-key-hash> OP_EQUALVERIFY OP_CHECKSIG
+	keyHash := cipher.BitcoinPubKeyRipemd160(pubKey)
+	scriptCode := make([]byte, 25)
+	scriptCode[0] = 0x76
+	scriptCode[1] = 0xa9
+	scriptCode[2] = 0x14
+	copy(scriptCode[3:23], keyHash[:])
+	scriptCode[23] = 0x88
+	scriptCode[24] = 0xac
+
+	// Build the preimage
+	var buf bytes.Buffer
+
+	// 1. nVersion
+	writeUint32LE(&buf, 1)
+
+	// 2. hashPrevouts
+	buf.Write(hashPrevouts[:])
+
+	// 3. hashSequence
+	buf.Write(hashSequence[:])
+
+	// 4. outpoint (the input being signed)
+	txidBytes, err := hex.DecodeString(inputs[sigIndex].TxID)
+	if err != nil {
+		return cipher.SHA256{}, fmt.Errorf("decode txid: %w", err)
+	}
+	reverseBytes(txidBytes)
+	buf.Write(txidBytes)
+	writeUint32LE(&buf, inputs[sigIndex].Vout)
+
+	// 5. scriptCode
+	writeVarInt(&buf, uint64(len(scriptCode)))
+	buf.Write(scriptCode)
+
+	// 6. value of the input
+	writeUint64LE(&buf, uint64(inputValue))
+
+	// 7. nSequence
+	writeUint32LE(&buf, 0xffffffff)
+
+	// 8. hashOutputs
+	buf.Write(hashOutputs[:])
+
+	// 9. nLockTime
+	writeUint32LE(&buf, 0)
+
+	// 10. nHashType (SIGHASH_ALL)
+	writeUint32LE(&buf, 1)
+
+	result := doubleSHA256(buf.Bytes())
+	return cipher.SHA256(result), nil
+}
+
+func doubleSHA256(data []byte) [32]byte {
+	first := sha256.Sum256(data)
+	return sha256.Sum256(first[:])
 }
 
 // sigToDER converts a 65-byte recoverable signature (R[32] || S[32] || V[1]) to DER format

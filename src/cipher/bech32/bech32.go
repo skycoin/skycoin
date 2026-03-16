@@ -24,9 +24,9 @@ func polymod(values []int) uint32 {
 	chk := uint32(1)
 	for _, v := range values {
 		b := chk >> 25
-		chk = ((chk & 0x1ffffff) << 5) ^ uint32(v)
+		chk = ((chk & 0x1ffffff) << 5) ^ uint32(v) //nolint:gosec // v is a 5-bit value (0-31)
 		for i := 0; i < 5; i++ {
-			if (b>>uint(i))&1 == 1 {
+			if (b>>uint(i))&1 == 1 { //nolint:gosec // i is 0-4
 				chk ^= gen[i]
 			}
 		}
@@ -57,7 +57,7 @@ func createChecksum(hrp string, data []int) []int {
 	mod := polymod(values) ^ 1
 	ret := make([]int, 6)
 	for i := 0; i < 6; i++ {
-		ret[i] = int((mod >> uint(5*(5-i))) & 31)
+		ret[i] = int((mod >> uint(5*(5-i))) & 31) //nolint:gosec // result fits in int
 	}
 	return ret
 }

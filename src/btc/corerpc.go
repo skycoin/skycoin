@@ -70,7 +70,7 @@ func (c *CoreRPCClient) call(method string, params []any, result any) error {
 	if err != nil {
 		return fmt.Errorf("HTTP request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {

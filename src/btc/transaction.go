@@ -214,7 +214,10 @@ func BuildTransaction(inputs []UTXO, destinations []TxDestination, changeAddr st
 
 	// Inputs
 	for _, in := range signedInputs {
-		txidBytes, _ := hex.DecodeString(in.txid)
+		txidBytes, err := hex.DecodeString(in.txid)
+		if err != nil {
+			return "", fmt.Errorf("invalid txid hex %q: %w", in.txid, err)
+		}
 		reverseBytes(txidBytes)
 		buf.Write(txidBytes)
 		writeUint32LE(&buf, in.vout)
@@ -232,7 +235,7 @@ func BuildTransaction(inputs []UTXO, destinations []TxDestination, changeAddr st
 
 	// Outputs
 	for _, out := range outputs {
-		writeUint64LE(&buf, uint64(out.value))
+		writeUint64LE(&buf, uint64(out.value)) //nolint:gosec // satoshi amounts are non-negative
 		writeVarInt(&buf, uint64(len(out.script)))
 		buf.Write(out.script)
 	}
@@ -347,7 +350,7 @@ func computeSigHash(inputs []UTXO, outputs []txOut, sigIndex int, prevScript []b
 
 	// Outputs
 	for _, out := range outputs {
-		writeUint64LE(&buf, uint64(out.value))
+		writeUint64LE(&buf, uint64(out.value)) //nolint:gosec // satoshi amounts are non-negative
 		writeVarInt(&buf, uint64(len(out.script)))
 		buf.Write(out.script)
 	}
@@ -402,7 +405,7 @@ func computeSegwitSigHash(inputs []UTXO, outputs []txOut, sigIndex int, inputVal
 	// hashOutputs = SHA256(SHA256(all outputs))
 	var outputsData bytes.Buffer
 	for _, out := range outputs {
-		writeUint64LE(&outputsData, uint64(out.value))
+		writeUint64LE(&outputsData, uint64(out.value)) //nolint:gosec // satoshi amounts are non-negative
 		writeVarInt(&outputsData, uint64(len(out.script)))
 		outputsData.Write(out.script)
 	}

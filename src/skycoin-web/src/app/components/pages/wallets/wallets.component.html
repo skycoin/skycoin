@@ -26,7 +26,12 @@
                 <div class="flex-fill mobile-label-container -on-small-and-below-only">
                   <div class="flex-fill -label" [attr.title]="wallet.label">{{ wallet.label }}</div>
                 </div>
-                <div class="-width-250 -one-line-ellipsis -label -not-on-small-and-below" [attr.title]="wallet.label">{{ wallet.label }}</div>
+                <div class="-width-250 -one-line-ellipsis -label -not-on-small-and-below" [attr.title]="wallet.label">
+                  @if (wallet.isHardware) {
+                    <mat-icon class="hw-icon">memory</mat-icon>
+                  }
+                  {{ wallet.label }}
+                </div>
                 <div class="flex-fill -encryption -not-on-small-and-below">
                   @if (showLockIcons) {
                     @if (!wallet.seed || wallet.needSeedConfirmation) {
@@ -68,6 +73,9 @@
       </button>
       <button mat-button (click)="addWallet(false)">
         <img src="assets/img/load-gold.png"> {{ 'wallet.load' | translate }}
+      </button>
+      <button mat-button (click)="addHardwareWallet()" [disabled]="addingHwWallet">
+        <mat-icon>memory</mat-icon> {{ 'wallet.add-hardware' | translate }}
       </button>
     </div>
   </div>

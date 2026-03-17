@@ -1,0 +1,46 @@
+<div class="hw-message-content">
+  @if (icon !== icons.None) {
+    <div class="icon-container">
+      @if (icon == icons.Spinner) {
+        <mat-spinner></mat-spinner>
+      }
+      @if (icon == icons.Success) {
+        <i class="material-icons green-text">done</i>
+      }
+      @if (icon == icons.Error) {
+        <i class="material-icons red-text">error_outline</i>
+      }
+      @if (icon == icons.Usb) {
+        <i class="material-icons grey-light-text">usb</i>
+      }
+      @if (icon == icons.HardwareWallet) {
+        <i class="material-icons yellow-text">memory</i>
+      }
+      @if (icon == icons.Warning) {
+        <i class="material-icons red-text">error</i>
+      }
+      @if (icon == icons.Confirm) {
+        <i class="material-icons yellow-text">touch_app</i>
+      }
+    </div>
+  }
+  <div class="text-container">
+    @if (text) {
+      <span>{{ text }}</span>
+    }
+    @if (outputsList) {
+      <div class="list">
+        @for (output of outputsList; track output) {
+          <div class="list-element">
+            <span>{{ output.coins }} {{ 'hardware-wallet.create-tx.coins' | translate }}</span>
+            <span> {{ 'hardware-wallet.create-tx.and' | translate }} {{ output.hours }} {{ 'hardware-wallet.create-tx.hours' | translate }}</span>
+            <span> {{ 'hardware-wallet.create-tx.to' | translate }} {{ output.address }}</span>
+          </div>
+        }
+      </div>
+    }
+    @if (lowerText) {
+      <span>{{ lowerText }}</span>
+    }
+  </div>
+</div>

@@ -16,6 +16,7 @@ export interface Wallet {
   filename?: string;
   encrypted?: boolean;
   accounts?: Bip44Account[];
+  isHardware?: boolean;
 }
 
 export interface Bip44Account {

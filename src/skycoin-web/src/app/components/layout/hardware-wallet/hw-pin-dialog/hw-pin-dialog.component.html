@@ -1,0 +1,54 @@
+<app-modal
+  [headline]="title | translate"
+  [dialog]="dialogRef">
+
+  <div [formGroup]="form">
+    <div class="form-field text-center">
+      <div>
+        @if (data.signingTx && !data.changingPin) {
+          <span>
+            {{ 'hardware-wallet.enter-pin.instructions-tx' | translate }}
+          </span>
+        }
+        @if (data.changingPin && data.changePinState === changePinStates.RequestingNewPin) {
+          <span>
+            {{ 'hardware-wallet.enter-pin.instructions-change' | translate }}
+          </span>
+        }
+        @if (!data.signingTx && (!data.changingPin || data.changePinState !== changePinStates.RequestingNewPin)) {
+          <span>
+            {{ 'hardware-wallet.enter-pin.instructions-generic' | translate }}
+          </span>
+        }
+      </div>
+      <input formControlName="pin" id="pin" type="password" readonly>
+    </div>
+  </div>
+
+  <div class="num-pad">
+    <div class="num-pad-row">
+      <button mat-button color="primary" (click)="addNumber('7')"><span>{{ buttonsContent }}</span></button>
+      <button mat-button color="primary" (click)="addNumber('8')"><span>{{ buttonsContent }}</span></button>
+      <button mat-button color="primary" (click)="addNumber('9')"><span>{{ buttonsContent }}</span></button>
+    </div>
+    <div class="num-pad-row">
+      <button mat-button color="primary" (click)="addNumber('4')"><span>{{ buttonsContent }}</span></button>
+      <button mat-button color="primary" (click)="addNumber('5')"><span>{{ buttonsContent }}</span></button>
+      <button mat-button color="primary" (click)="addNumber('6')"><span>{{ buttonsContent }}</span></button>
+    </div>
+    <div class="num-pad-row">
+      <button mat-button color="primary" (click)="addNumber('1')"><span>{{ buttonsContent }}</span></button>
+      <button mat-button color="primary" (click)="addNumber('2')"><span>{{ buttonsContent }}</span></button>
+      <button mat-button color="primary" (click)="addNumber('3')"><span>{{ buttonsContent }}</span></button>
+    </div>
+    <div class="num-pad-row">
+      <button mat-button color="primary" (click)="removeNumber()"><span class="material-icons">backspace</span></button>
+    </div>
+  </div>
+
+  <div class="-buttons">
+    <app-button (action)="sendPin()" class="primary-button" [disabled]="!form.valid">
+      {{ 'hardware-wallet.enter-pin.continue-button' | translate }}
+    </app-button>
+  </div>
+</app-modal>

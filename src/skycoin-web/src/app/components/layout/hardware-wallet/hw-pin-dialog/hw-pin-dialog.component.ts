@@ -1,0 +1,86 @@
+import { Component, OnInit, HostListener, Inject } from '@angular/core';
+import { UntypedFormBuilder, Validators, UntypedFormGroup } from '@angular/forms';
+import { MatDialogRef, MatDialog, MatDialogConfig, MAT_DIALOG_DATA } from '@angular/material/dialog';
+
+import { ChangePinStates } from '../../../../services/hw-wallet-pin.service';
+
+export interface HwPinDialogParams {
+  signingTx: boolean;
+  changingPin: boolean;
+  changePinState: ChangePinStates;
+}
+
+@Component({
+    selector: 'app-hw-pin-dialog',
+    templateUrl: './hw-pin-dialog.component.html',
+    styleUrls: ['./hw-pin-dialog.component.scss'],
+    standalone: false
+})
+export class HwPinDialogComponent implements OnInit {
+  form: UntypedFormGroup;
+  changePinStates = ChangePinStates;
+  buttonsContent = '\u2022';
+
+  public static openDialog(dialog: MatDialog, params: HwPinDialogParams): MatDialogRef<HwPinDialogComponent, any> {
+    const config = new MatDialogConfig();
+    config.data = params;
+    config.autoFocus = false;
+    config.width = '350px';
+
+    return dialog.open(HwPinDialogComponent, config);
+  }
+
+  constructor(
+    @Inject(MAT_DIALOG_DATA) public data: HwPinDialogParams,
+    public dialogRef: MatDialogRef<HwPinDialogComponent>,
+    private formBuilder: UntypedFormBuilder,
+  ) { }
+
+  ngOnInit() {
+    this.form = this.formBuilder.group({
+      pin: ['', Validators.compose([Validators.required, Validators.minLength(4)])],
+    });
+  }
+
+  get title(): string {
+    if (!this.data.changingPin) {
+      return 'hardware-wallet.enter-pin.title';
+    } else if (this.data.changePinState === ChangePinStates.RequestingNewPin) {
+      return 'hardware-wallet.enter-pin.title-change-new';
+    } else if (this.data.changePinState === ChangePinStates.ConfirmingNewPin) {
+      return 'hardware-wallet.enter-pin.title-change-confirm';
+    } else {
+      return 'hardware-wallet.enter-pin.title-change-current';
+    }
+  }
+
+  @HostListener('window:keyup', ['$event'])
+  keyEvent(event: KeyboardEvent) {
+    const key = parseInt(event.key, 10);
+    if (key > 0 && key < 10) {
+      this.addNumber(key.toString());
+    } else if (event.keyCode === 8) {
+      this.removeNumber();
+    } else if (event.keyCode === 13) {
+      this.sendPin();
+    }
+  }
+
+  addNumber(number: string) {
+    const currentValue: string = this.form.value.pin;
+    if (currentValue.length < 8) {
+      this.form.get('pin').setValue(currentValue + number);
+    }
+  }
+
+  removeNumber() {
+    const currentValue: string = this.form.value.pin;
+    this.form.get('pin').setValue(currentValue.substring(0, currentValue.length - 1));
+  }
+
+  sendPin() {
+    if (this.form.valid) {
+      this.dialogRef.close(this.form.value.pin);
+    }
+  }
+}

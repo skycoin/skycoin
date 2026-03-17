@@ -113,7 +113,10 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
     const wallet = this.form.value.wallet;
 
-    if (!wallet.seed) {
+    // Hardware wallets don't need to be unlocked
+    if (wallet.isHardware) {
+      this.checkBeforeSending();
+    } else if (!wallet.seed) {
       this.removeProcessSubscription();
 
       this.processSubscription = openUnlockWalletModal(wallet, this.dialog).componentInstance

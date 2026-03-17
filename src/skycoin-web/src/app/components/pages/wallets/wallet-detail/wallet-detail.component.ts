@@ -1,7 +1,7 @@
 import { Component, Input, OnDestroy } from '@angular/core';
 import { MatDialogConfig } from '@angular/material/dialog';
 import { TranslateService } from '@ngx-translate/core';
-import { of, Subscription, delay, first } from 'rxjs';
+import { of, Subscription, delay, first, mergeMap } from 'rxjs';
 
 import { ConfirmationData, Wallet, Address, Bip44Account } from '../../../../app.datatypes';
 import { BaseCoin } from '../../../../coins/basecoin';
@@ -11,6 +11,7 @@ import { ChangeNameComponent } from '../change-name/change-name.component';
 import { openUnlockWalletModal, openQrModal, showConfirmationModal, openDeleteWalletModal } from '../../../../utils/index';
 import { WalletOptionsComponent, WalletOptionsResponses } from './wallet-options/wallet-options.component';
 import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.service';
+import { HwWalletService } from '../../../../services/hw-wallet.service';
 import { config } from '../../../../app.config';
 import { MsgBarService } from '../../../../services/msg-bar.service';
 
@@ -36,6 +37,7 @@ export class WalletDetailComponent implements OnDestroy {
     private dialog: CustomMatDialogService,
     private translateService: TranslateService,
     private msgBarService: MsgBarService,
+    private hwWalletService: HwWalletService,
     coinService: CoinService,
   ) {
     this.coinSubscription = coinService.currentCoin.subscribe(coin => this.currentCoin = coin);
@@ -166,7 +168,9 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   private verifyBeforeAddingNewAddress() {
-    if (!this.wallet.seed || !this.wallet.nextSeed) {
+    if (this.wallet.isHardware) {
+      this.addHwAddress();
+    } else if (!this.wallet.seed || !this.wallet.nextSeed) {
       this.removeUnlockSubscription();
 
       this.unlockSubscription = openUnlockWalletModal(this.wallet, this.dialog).componentInstance.onWalletUnlocked.pipe(first())
@@ -174,6 +178,31 @@ export class WalletDetailComponent implements OnDestroy {
     } else {
       this.addNewAddress();
     }
+  }
+
+  private addHwAddress() {
+    if (this.creatingAddress) {
+      this.msgBarService.showError('wallet.already-adding-address-error');
+      return;
+    }
+
+    this.creatingAddress = true;
+
+    // Verify the correct device is connected, then generate the next address
+    this.hwWalletService.checkIfCorrectHwConnected(this.wallet.addresses[0].address).pipe(
+      mergeMap(() => this.hwWalletService.getAddresses(1, this.wallet.addresses.length))
+    ).subscribe(
+      (result) => {
+        const address = Array.isArray(result.rawResponse) ? result.rawResponse[0] : result.rawResponse;
+        this.wallet.addresses.push({ address: address });
+        this.walletService.saveWallets();
+        this.creatingAddress = false;
+      },
+      (error) => {
+        this.creatingAddress = false;
+        this.msgBarService.showError(error.translatableErrorMsg || error.message);
+      }
+    );
   }
 
   private addNewAddress() {

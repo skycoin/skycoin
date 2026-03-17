@@ -99,6 +99,20 @@ export class CipherProvider {
     }
   }
 
+  prepareTransactionWithSignatures(inputs: TransactionInput[], outputs: TransactionOutput[], signatures: string[]): Observable<string> {
+    const tx = window['SkycoinCipher'].prepareTransactionWithSignatures(
+      JSON.stringify(inputs),
+      JSON.stringify(outputs),
+      JSON.stringify(signatures)
+    );
+
+    if (!tx.error) {
+      return of(tx);
+    } else {
+      return throwError(() => new Error(tx.error));
+    }
+  }
+
   private convertToAddress(address): GenerateAddressResponse {
     return {
       nextSeed: address.nextSeed,

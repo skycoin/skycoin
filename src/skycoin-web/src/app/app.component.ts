@@ -11,6 +11,10 @@ import { CustomMatDialogService } from './services/custom-mat-dialog.service';
 import { Bip39WordListService } from './services/bip39-word-list.service';
 import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
 import { MsgBarService } from './services/msg-bar.service';
+import { HwWalletPinService } from './services/hw-wallet-pin.service';
+import { HwWalletService } from './services/hw-wallet.service';
+import { HwPinDialogComponent } from './components/layout/hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
+import { HwConfirmTxDialogComponent } from './components/layout/hardware-wallet/hw-confirm-tx-dialog/hw-confirm-tx-dialog.component';
 
 @Component({
     selector: 'app-root',
@@ -36,7 +40,12 @@ export class AppComponent implements OnInit {
     renderer: Renderer2,
     private bip38WordList: Bip39WordListService,
     private msgBarService: MsgBarService,
+    hwWalletPinService: HwWalletPinService,
+    hwWalletService: HwWalletService,
   ) {
+    // Set component references to avoid circular dependencies
+    hwWalletPinService.requestPinComponent = HwPinDialogComponent;
+    hwWalletService.signTransactionConfirmationComponent = HwConfirmTxDialogComponent;
     router.events.pipe(
       filter((event: Event): event is NavigationEnd => event instanceof NavigationEnd)
     ).subscribe(() => {

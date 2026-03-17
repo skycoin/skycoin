@@ -211,7 +211,7 @@ export class WalletService {
       currentWallets.forEach(wallet => {
         const strippedAddresses: Address[] = [];
         wallet.addresses.forEach(address => strippedAddresses.push({ address: address.address }));
-        strippedWallets.push({ coinId: wallet.coinId, needSeedConfirmation: wallet.needSeedConfirmation, label: wallet.label, addresses: strippedAddresses });
+        strippedWallets.push({ coinId: wallet.coinId, needSeedConfirmation: wallet.needSeedConfirmation, label: wallet.label, addresses: strippedAddresses, isHardware: wallet.isHardware });
       });
       localStorage.setItem('wallets', JSON.stringify(strippedWallets));
     }

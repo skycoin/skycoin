@@ -14,6 +14,7 @@ import { WalletService } from './wallet.service';
 import { GlobalsService } from '../globals.service';
 import { isEqualOrSuperiorVersion } from '../../utils/semver';
 import { BlockchainService } from '../blockchain.service';
+import { HwWalletService, HwInput, HwOutput } from '../hw-wallet.service';
 
 export class Destination {
   address: string;
@@ -48,6 +49,7 @@ export class SpendingService {
     private walletService: WalletService,
     private globalsService: GlobalsService,
     private blockchainService: BlockchainService,
+    private hwWalletService: HwWalletService,
     coinService: CoinService,
   ) {
     coinService.currentCoin.subscribe((coin) => this.currentCoin = coin);
@@ -138,7 +140,7 @@ export class SpendingService {
           data.transaction.inputs.forEach(input => {
             txInputs.push({
               hash: input.uxid,
-              secret: wallet.addresses.find(a => a.address === input.address).secret_key,
+              secret: wallet.isHardware ? '' : (wallet.addresses.find(a => a.address === input.address) || {}).secret_key,
               address: input.address,
               calculated_hours: input.calculated_hours,
               coins: input.coins,
@@ -153,6 +155,10 @@ export class SpendingService {
               hours: new BigNumber(output.hours).toNumber(),
             });
           });
+
+          if (wallet.isHardware) {
+            return this.signWithHardwareWallet(wallet, txInputs, txOutputs, hoursSent, new BigNumber(data.transaction.fee));
+          }
 
           return this.generateRawTransaction(txInputs, txOutputs).pipe(
             map((rawTransaction: string) => {
@@ -274,6 +280,60 @@ export class SpendingService {
 
   getWalletUnspentOutputs(wallet: Wallet): Observable<Output[]> {
     return this.getOutputs(wallet, null, null);
+  }
+
+  private signWithHardwareWallet(
+    wallet: Wallet,
+    txInputs: TransactionInput[],
+    txOutputs: TransactionOutput[],
+    hoursSent: BigNumber,
+    hoursBurned: BigNumber): Observable<Transaction> {
+
+    // Convert inputs to HW daemon format
+    const hwInputs: HwInput[] = txInputs.map(input => ({
+      hash: input.hash,
+      index: wallet.addresses.findIndex(a => a.address === input.address),
+    }));
+
+    // Convert outputs to HW daemon format
+    const hwOutputs: HwOutput[] = txOutputs.map(output => {
+      const hwOutput: HwOutput = {
+        address: output.address,
+        coins: new BigNumber(output.coins).multipliedBy(this.coinsMultiplier).toFixed(0),
+        hours: output.hours.toString(),
+      };
+
+      // Mark change outputs with address_index so HW device doesn't ask for confirmation
+      const addressIndex = wallet.addresses.findIndex(a => a.address === output.address);
+      if (addressIndex !== -1) {
+        hwOutput.address_index = addressIndex;
+      }
+
+      return hwOutput;
+    });
+
+    // First verify the correct HW is connected, then sign
+    return this.hwWalletService.checkIfCorrectHwConnected(wallet.addresses[0].address).pipe(
+      mergeMap(() => this.hwWalletService.signTransaction(hwInputs, hwOutputs)),
+      mergeMap(signResult => {
+        const signatures: string[] = Array.isArray(signResult.rawResponse) ? signResult.rawResponse : [signResult.rawResponse];
+
+        const convertedOutputs: TransactionOutput[] = txOutputs.map(output => ({
+          ...output,
+          coins: parseInt(new BigNumber(output.coins).multipliedBy(this.coinsMultiplier).toFixed(0), 10)
+        }));
+
+        return this.cipherProvider.prepareTransactionWithSignatures(txInputs, convertedOutputs, signatures).pipe(
+          map((rawTransaction: string) => ({
+            inputs: txInputs,
+            outputs: txOutputs,
+            hoursSent: hoursSent,
+            hoursBurned: hoursBurned,
+            encoded: rawTransaction,
+          }))
+        );
+      })
+    );
   }
 
   private buildTransaction(

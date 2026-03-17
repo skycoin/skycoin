@@ -486,8 +486,10 @@ func TestExplorerAddress(t *testing.T) {
 		},
 		Time: 1518878675,
 	}
-	txn.Transaction.PushOutput(testutil.MakeAddress(), 125000000, 51925)
-	txn.Transaction.UpdateHeader()
+	err := txn.Transaction.PushOutput(testutil.MakeAddress(), 125000000, 51925)
+	require.NoError(t, err)
+	err = txn.Transaction.UpdateHeader()
+	require.NoError(t, err)
 
 	inputs := []visor.TransactionInput{
 		{

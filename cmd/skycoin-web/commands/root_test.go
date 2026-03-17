@@ -32,7 +32,7 @@ func TestHandleReadOnlyPost_BalanceEndpoint(t *testing.T) {
 		switch r.URL.Path {
 		case "/api/v1/csrf":
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]string{"csrf_token": "test-csrf-token"}) //nolint:errcheck
+			json.NewEncoder(w).Encode(map[string]string{"csrf_token": "test-csrf-token"}) //nolint:errcheck,gosec,gosec
 		case "/api/v1/balance":
 			require.Equal(t, http.MethodPost, r.Method, "should forward as POST")
 			require.Equal(t, "test-csrf-token", r.Header.Get("X-CSRF-Token"), "should attach CSRF token")
@@ -47,7 +47,7 @@ func TestHandleReadOnlyPost_BalanceEndpoint(t *testing.T) {
 			require.Equal(t, "addr1,addr2,addr3", vals.Get("addrs"))
 
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"confirmed":{"coins":3000000,"hours":150}}`)) //nolint:errcheck
+			w.Write([]byte(`{"confirmed":{"coins":3000000,"hours":150}}`)) //nolint:errcheck,gosec,gosec
 		default:
 			t.Fatalf("unexpected request to %s", r.URL.Path)
 		}
@@ -74,11 +74,11 @@ func TestHandleReadOnlyPost_TransactionsEndpoint(t *testing.T) {
 		switch r.URL.Path {
 		case "/api/v1/csrf":
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]string{"csrf_token": "csrf123"}) //nolint:errcheck
+			json.NewEncoder(w).Encode(map[string]string{"csrf_token": "csrf123"}) //nolint:errcheck,gosec
 		case "/api/v1/transactions":
 			require.Equal(t, http.MethodPost, r.Method)
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`[{"txid":"abc123"}]`)) //nolint:errcheck
+			w.Write([]byte(`[{"txid":"abc123"}]`)) //nolint:errcheck,gosec
 		default:
 			t.Fatalf("unexpected request to %s", r.URL.Path)
 		}
@@ -107,11 +107,11 @@ func TestHandleReadOnlyPost_TransactionsCaching(t *testing.T) {
 		switch r.URL.Path {
 		case "/api/v1/csrf":
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]string{"csrf_token": "csrf"}) //nolint:errcheck
+			json.NewEncoder(w).Encode(map[string]string{"csrf_token": "csrf"}) //nolint:errcheck,gosec
 		case "/api/v1/transactions":
 			callCount++
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`[{"txid":"cached"}]`)) //nolint:errcheck
+			w.Write([]byte(`[{"txid":"cached"}]`)) //nolint:errcheck,gosec
 		default:
 			t.Fatalf("unexpected request to %s", r.URL.Path)
 		}
@@ -149,11 +149,11 @@ func TestHandleReadOnlyPost_OutputsEndpoint(t *testing.T) {
 		switch r.URL.Path {
 		case "/api/v1/csrf":
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]string{"csrf_token": "csrf"}) //nolint:errcheck
+			json.NewEncoder(w).Encode(map[string]string{"csrf_token": "csrf"}) //nolint:errcheck,gosec
 		case "/api/v1/outputs":
 			require.Equal(t, http.MethodPost, r.Method)
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"head_outputs":[]}`)) //nolint:errcheck
+			w.Write([]byte(`{"head_outputs":[]}`)) //nolint:errcheck,gosec
 		default:
 			t.Fatalf("unexpected request to %s", r.URL.Path)
 		}
@@ -179,13 +179,19 @@ func TestHandleReadOnlyPost_LongAddressList(t *testing.T) {
 		switch r.URL.Path {
 		case "/api/v1/csrf":
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]string{"csrf_token": "csrf"}) //nolint:errcheck
+			json.NewEncoder(w).Encode(map[string]string{"csrf_token": "csrf"}) //nolint:errcheck,gosec
 		case "/api/v1/balance":
-			body, _ := io.ReadAll(r.Body)
-			vals, _ := url.ParseQuery(string(body))
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			vals, err := url.ParseQuery(string(body))
+			if err != nil {
+				t.Fatal(err)
+			}
 			receivedAddrs = vals.Get("addrs")
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"confirmed":{"coins":0,"hours":0}}`)) //nolint:errcheck
+			w.Write([]byte(`{"confirmed":{"coins":0,"hours":0}}`)) //nolint:errcheck,gosec
 		default:
 			t.Fatalf("unexpected request to %s", r.URL.Path)
 		}

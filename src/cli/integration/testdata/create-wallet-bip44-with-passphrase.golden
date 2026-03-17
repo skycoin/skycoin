@@ -24,5 +24,27 @@
 			"child_number": 0,
 			"change": 1
 		}
+	],
+	"accounts": [
+		{
+			"name": "default",
+			"index": 0,
+			"external_entries": [
+				{
+					"address": "cswW3EQMf1uWHzTgx2752AiNfyqtK5UWM3",
+					"public_key": "02691fbb52956156494674614aaa08633571b394586932e6cbfc80d19a41d3b2bb",
+					"child_number": 0,
+					"change": 0
+				}
+			],
+			"change_entries": [
+				{
+					"address": "2A4XhpdPhP4pZds8uzuu7TsGtiCBAodr33H",
+					"public_key": "02a10fffae18852e9454a6d0e06fea13405a9e844bffb8a526c587c6b2e9fb50dc",
+					"child_number": 0,
+					"change": 1
+				}
+			]
+		}
 	]
 }

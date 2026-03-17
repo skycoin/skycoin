@@ -620,54 +620,59 @@ func handleWalletFolderMulti(c *gin.Context, services []*wallet.Service) {
 	c.JSON(http.StatusOK, gin.H{"address": addr})
 }
 
-// handleReadOnlyPost converts read-only POST requests to GET to avoid CSRF issues.
+// handleReadOnlyPost forwards read-only POST requests to the node as POST with CSRF token.
+// This preserves form body data (e.g. long address lists) that would exceed URI length
+// limits if converted to GET query parameters.
 // Returns true if the request was handled, false otherwise.
 func handleReadOnlyPost(c *gin.Context, trimmedPath string, nodeURL string) bool {
-	// Map of read-only POST endpoints and the form fields to forward as query params
-	type readOnlyEndpoint struct {
-		fields []string
-	}
-	endpoints := map[string]readOnlyEndpoint{
-		"/v1/balance":      {fields: []string{"addrs"}},
-		"/v1/transactions": {fields: []string{"addrs", "verbose"}},
-		"/v1/outputs":      {fields: []string{"addrs", "hashes"}},
+	readOnlyEndpoints := map[string]bool{
+		"/v1/balance":      true,
+		"/v1/transactions": true,
+		"/v1/outputs":      true,
 	}
 
-	ep, ok := endpoints[trimmedPath]
-	if !ok {
+	if !readOnlyEndpoints[trimmedPath] {
 		return false
 	}
 
-	apiPath := trimmedPath
-	query := ""
-	for _, field := range ep.fields {
-		val := c.Request.FormValue(field)
-		if val != "" {
-			if query != "" {
-				query += "&"
-			}
-			query += field + "=" + val
-		}
-	}
-
-	getURL := fmt.Sprintf("%s/api%s", nodeURL, apiPath)
-	if query != "" {
-		getURL += "?" + query
-	}
+	targetURL := fmt.Sprintf("%s/api%s", nodeURL, trimmedPath)
 
 	// Cache transaction queries for 30 seconds to avoid slow repeated lookups
-	cacheKey := getURL
 	if trimmedPath == "/v1/transactions" {
+		cacheKey := targetURL + "?" + c.Request.FormValue("addrs")
 		if entry, ok := queryCache.get(cacheKey, 30*time.Second); ok {
-			log.Printf("[PROXY] POST→GET %s -> cached (%s ago)", c.Request.URL.Path, time.Since(entry.cachedAt).Round(time.Second))
+			log.Printf("[PROXY] POST %s -> cached (%s ago)", c.Request.URL.Path, time.Since(entry.cachedAt).Round(time.Second))
 			c.Data(entry.statusCode, entry.contentType, entry.body)
 			return true
 		}
 	}
 
-	log.Printf("[PROXY] POST→GET %s -> %s", c.Request.URL.Path, getURL)
+	log.Printf("[PROXY] POST %s -> %s", c.Request.URL.Path, targetURL)
 
-	resp, err := http.Get(getURL) //nolint:gosec
+	// Build form body from the original request
+	if err := c.Request.ParseForm(); err != nil {
+		errInternal(c, fmt.Sprintf("failed to parse form: %v", err))
+		return true
+	}
+	formData := c.Request.PostForm.Encode()
+
+	req, err := http.NewRequest(http.MethodPost, targetURL, strings.NewReader(formData))
+	if err != nil {
+		errInternal(c, fmt.Sprintf("failed to create request: %v", err))
+		return true
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	// Fetch and attach CSRF token
+	csrfToken, err := fetchCSRFToken(nodeURL)
+	if err != nil {
+		log.Printf("[PROXY] Warning: could not fetch CSRF token: %v", err)
+	} else if csrfToken != "" {
+		req.Header.Set("X-CSRF-Token", csrfToken)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		errInternal(c, fmt.Sprintf("failed to query node: %v", err))
 		return true
@@ -684,8 +689,9 @@ func handleReadOnlyPost(c *gin.Context, trimmedPath string, nodeURL string) bool
 		return true
 	}
 
-	// Cache successful responses
+	// Cache successful transaction responses
 	if trimmedPath == "/v1/transactions" && resp.StatusCode == http.StatusOK {
+		cacheKey := targetURL + "?" + c.Request.FormValue("addrs")
 		queryCache.set(cacheKey, proxyCacheEntry{
 			body:        body,
 			contentType: resp.Header.Get("Content-Type"),

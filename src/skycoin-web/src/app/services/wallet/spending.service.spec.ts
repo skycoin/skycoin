@@ -673,6 +673,77 @@ describe('SpendingService', () => {
         });
     }));
   });
+
+  describe('chunkedOutputsGet (via private access)', () => {
+    let chunkedOutputsGetFn: (addressesCsv: string) => Observable<any>;
+
+    beforeEach(() => {
+      chunkedOutputsGetFn = (spendingService as any).chunkedOutputsGet.bind(spendingService);
+    });
+
+    it('should make a single GET request when addresses fit in one chunk', fakeAsync(() => {
+      const mockResponse = {
+        head_outputs: [createRequestOutput('hash1', 'addr1')],
+        outgoing_outputs: [],
+        incoming_outputs: [],
+      };
+      spyApiService.get.and.returnValue(of(mockResponse));
+
+      chunkedOutputsGetFn('addr1,addr2').subscribe((result: any) => {
+        expect(result).toEqual(mockResponse);
+        expect(spyApiService.get).toHaveBeenCalledWith('outputs', { addrs: 'addr1,addr2' });
+      });
+    }));
+
+    it('should merge head_outputs from multiple chunks', fakeAsync(() => {
+      const response1 = {
+        head_outputs: [createRequestOutput('hash1', 'addr1')],
+        outgoing_outputs: [createRequestOutput('hash2', 'addr1')],
+        incoming_outputs: [],
+      };
+      const response2 = {
+        head_outputs: [createRequestOutput('hash3', 'addr2')],
+        outgoing_outputs: [],
+        incoming_outputs: [createRequestOutput('hash4', 'addr2')],
+      };
+      spyApiService.get.and.returnValues(of(response1), of(response2));
+
+      // Create a CSV string long enough to force splitting (> 1800 chars)
+      const addr = '2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6';
+      const longCsv = Array(60).fill(addr).join(',');
+
+      chunkedOutputsGetFn(longCsv).subscribe((result: any) => {
+        expect(result.head_outputs.length).toEqual(2);
+        expect(result.outgoing_outputs.length).toEqual(1);
+        expect(result.incoming_outputs.length).toEqual(1);
+        expect(result.head_outputs[0].hash).toEqual('hash1');
+        expect(result.head_outputs[1].hash).toEqual('hash3');
+      });
+    }));
+
+    it('should handle empty output arrays in responses', fakeAsync(() => {
+      const response1 = {
+        head_outputs: [],
+        outgoing_outputs: [],
+        incoming_outputs: [],
+      };
+      const response2 = {
+        head_outputs: [createRequestOutput('hash1', 'addr1')],
+        outgoing_outputs: null,
+        incoming_outputs: null,
+      };
+      spyApiService.get.and.returnValues(of(response1), of(response2));
+
+      const addr = '2jBbGxZRGoQG1mqhPBnXnLTxK6oxsTf8os6';
+      const longCsv = Array(60).fill(addr).join(',');
+
+      chunkedOutputsGetFn(longCsv).subscribe((result: any) => {
+        expect(result.head_outputs.length).toEqual(1);
+        expect(result.outgoing_outputs.length).toEqual(0);
+        expect(result.incoming_outputs.length).toEqual(0);
+      });
+    }));
+  });
 });
 
 function createOutput(address: string, hash: string, coins: BigNumber = new BigNumber(10), calculated_hours: BigNumber = new BigNumber(100)): Output {

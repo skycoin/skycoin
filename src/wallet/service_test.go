@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/skycoin/skycoin/src/cipher/bip39"
+	"github.com/skycoin/skycoin/src/cipher/bip44"
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/wallet/bip44wallet"
 	"github.com/skycoin/skycoin/src/wallet/collection"
@@ -111,6 +112,108 @@ func TestNewServiceEmptyWallet(t *testing.T) {
 			testutil.RequireError(t, err, fmt.Sprintf("empty wallet file found: %q", tc.fn))
 		})
 	}
+}
+
+func TestNewServiceCoinTypeFiltering(t *testing.T) {
+	seed := "voyage say extend find sheriff surge priority merit ignore maple cash argue"
+
+	t.Run("bitcoin service skips skycoin wallets", func(t *testing.T) {
+		dir := prepareWltDir()
+
+		// Create a Skycoin wallet using a Skycoin-configured service
+		skyService, err := wallet.NewService(wallet.Config{
+			WalletDir:       dir,
+			CryptoType:      "scrypt-chacha20poly1305",
+			EnableWalletAPI: true,
+		})
+		require.NoError(t, err)
+
+		_, err = skyService.CreateWallet("sky-test.wlt", wallet.Options{
+			Label: "sky wallet",
+			Seed:  seed,
+			Type:  wallet.WalletTypeBip44,
+		})
+		require.NoError(t, err)
+
+		wlts, err := skyService.GetWallets()
+		require.NoError(t, err)
+		require.Equal(t, 1, len(wlts))
+
+		// Now create a Bitcoin-configured service pointing at the same directory
+		btcCoin := bip44.CoinTypeBitcoin
+		btcService, err := wallet.NewService(wallet.Config{
+			WalletDir:       dir,
+			CryptoType:      "scrypt-chacha20poly1305",
+			EnableWalletAPI: true,
+			Bip44Coin:       &btcCoin,
+		})
+		require.NoError(t, err)
+
+		// Bitcoin service should skip the Skycoin wallet
+		btcWlts, err := btcService.GetWallets()
+		require.NoError(t, err)
+		require.Equal(t, 0, len(btcWlts))
+	})
+
+	t.Run("bitcoin service loads bitcoin wallets", func(t *testing.T) {
+		dir := prepareWltDir()
+		btcCoin := bip44.CoinTypeBitcoin
+
+		btcService, err := wallet.NewService(wallet.Config{
+			WalletDir:       dir,
+			CryptoType:      "scrypt-chacha20poly1305",
+			EnableWalletAPI: true,
+			Bip44Coin:       &btcCoin,
+		})
+		require.NoError(t, err)
+
+		// Create a Bitcoin wallet
+		w, err := btcService.CreateWallet("btc-test.wlt", wallet.Options{
+			Label: "btc wallet",
+			Seed:  seed,
+			Type:  wallet.WalletTypeBip44,
+		})
+		require.NoError(t, err)
+		require.Equal(t, wallet.CoinTypeBitcoinSegwit, w.Coin())
+
+		wlts, err := btcService.GetWallets()
+		require.NoError(t, err)
+		require.Equal(t, 1, len(wlts))
+	})
+
+	t.Run("skycoin service skips bitcoin wallets", func(t *testing.T) {
+		dir := prepareWltDir()
+		btcCoin := bip44.CoinTypeBitcoin
+
+		// Create a Bitcoin wallet first
+		btcService, err := wallet.NewService(wallet.Config{
+			WalletDir:       dir,
+			CryptoType:      "scrypt-chacha20poly1305",
+			EnableWalletAPI: true,
+			Bip44Coin:       &btcCoin,
+		})
+		require.NoError(t, err)
+
+		_, err = btcService.CreateWallet("btc-test.wlt", wallet.Options{
+			Label: "btc wallet",
+			Seed:  seed,
+			Type:  wallet.WalletTypeBip44,
+		})
+		require.NoError(t, err)
+
+		// Now create a Skycoin service pointing at the same directory
+		skyService, err := wallet.NewService(wallet.Config{
+			WalletDir:       dir,
+			CryptoType:      "scrypt-chacha20poly1305",
+			EnableWalletAPI: true,
+		})
+		require.NoError(t, err)
+
+		// Skycoin service should skip the Bitcoin wallet
+		skyWlts, err := skyService.GetWallets()
+		require.NoError(t, err)
+		require.Equal(t, 0, len(skyWlts))
+	})
 }
 
 func TestServiceCreateWallet(t *testing.T) {

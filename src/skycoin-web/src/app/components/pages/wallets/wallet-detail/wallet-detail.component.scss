@@ -371,6 +371,25 @@ mat-spinner {
   background-color: color.adjust($white, $lightness: -4%);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.-account-add-address {
+  cursor: pointer;
+  color: $blue;
+  font-size: 11px;
+  text-transform: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &.mouse-disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
 }
 
 .-change-label {

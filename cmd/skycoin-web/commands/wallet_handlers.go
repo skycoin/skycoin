@@ -403,6 +403,16 @@ func handleNewAddresses(c *gin.Context, s *wallet.Service) {
 		opts = append(opts, wallet.OptionGenerateN(n))
 	}
 
+	account := c.Request.FormValue("account")
+	if account != "" {
+		a, err := strconv.ParseUint(account, 10, 32)
+		if err != nil {
+			errBadRequest(c, "invalid account value")
+			return
+		}
+		opts = append(opts, wallet.OptionAccount(uint32(a))) //nolint:gosec
+	}
+
 	password := c.Request.FormValue("password")
 	defer func() { password = "" }()
 

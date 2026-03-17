@@ -90,9 +90,13 @@ export class WalletDetailComponent implements OnDestroy {
     });
   }
 
-  onAddNewAddress() {
-    if (this.wallet.addresses.length < 5) {
-      this.verifyBeforeAddingNewAddress();
+  onAddNewAddress(accountIndex?: number) {
+    const addressCount = accountIndex !== undefined
+      ? (this.wallet.accounts?.[accountIndex]?.externalAddresses?.length || 0)
+      : this.wallet.addresses.length;
+
+    if (addressCount < 5) {
+      this.verifyBeforeAddingNewAddress(accountIndex);
     } else {
       const confirmationData: ConfirmationData = {
         text: 'wallet.add-confirmation',
@@ -103,7 +107,7 @@ export class WalletDetailComponent implements OnDestroy {
 
       showConfirmationModal(this.dialog, confirmationData).afterClosed().subscribe(result => {
         if (result) {
-          this.verifyBeforeAddingNewAddress();
+          this.verifyBeforeAddingNewAddress(accountIndex);
         }
       });
     }
@@ -167,16 +171,19 @@ export class WalletDetailComponent implements OnDestroy {
     openDeleteWalletModal(this.dialog, this.wallet, this.translateService, this.walletService);
   }
 
-  private verifyBeforeAddingNewAddress() {
+  private verifyBeforeAddingNewAddress(accountIndex?: number) {
     if (this.wallet.isHardware) {
       this.addHwAddress();
+    } else if (this.currentCoin && this.currentCoin.serverWallets && this.wallet.filename) {
+      // Server-managed wallets don't need seed entry
+      this.addNewAddress(accountIndex);
     } else if (!this.wallet.seed || !this.wallet.nextSeed) {
       this.removeUnlockSubscription();
 
       this.unlockSubscription = openUnlockWalletModal(this.wallet, this.dialog).componentInstance.onWalletUnlocked.pipe(first())
         .subscribe(() => this.addNewAddress());
     } else {
-      this.addNewAddress();
+      this.addNewAddress(accountIndex);
     }
   }
 
@@ -205,7 +212,7 @@ export class WalletDetailComponent implements OnDestroy {
     );
   }
 
-  private addNewAddress() {
+  private addNewAddress(accountIndex?: number) {
     if (this.creatingAddress === true) {
       this.msgBarService.showError('wallet.already-adding-address-error');
 
@@ -218,7 +225,7 @@ export class WalletDetailComponent implements OnDestroy {
       .subscribe(() => this.showSlowMobileInfo = true);
 
     setTimeout(() => {
-      this.walletService.addAddress(this.wallet)
+      this.walletService.addAddress(this.wallet, true, accountIndex)
         .subscribe(
           () => {
             this.showSlowMobileInfo = false;

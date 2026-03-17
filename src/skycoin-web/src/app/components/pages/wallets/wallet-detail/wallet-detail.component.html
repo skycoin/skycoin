@@ -49,7 +49,12 @@
         </div>
       }
 
-      <div class="-chain-label">Receiving Addresses</div>
+      <div class="-chain-label">
+        Receiving Addresses
+        <span class="-account-add-address" (click)="onAddNewAddress(account.index)" [ngClass]="{ 'mouse-disabled': creatingAddress }">
+          + {{ 'wallet.new-address' | translate }}
+        </span>
+      </div>
       <div class="-records">
         @for (address of account.externalAddresses; track address; let i = $index) {
           @if (!wallet.hideEmpty || address.balance?.isGreaterThan(0)) {

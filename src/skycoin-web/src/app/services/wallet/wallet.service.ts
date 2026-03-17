@@ -61,7 +61,12 @@ export class WalletService {
     return this.currentWallets.pipe(map(wallets => wallets.reduce((array, wallet) => array.concat(wallet.addresses), [])));
   }
 
-  addAddress(wallet: Wallet, saveWallet = true): Observable<void> {
+  addAddress(wallet: Wallet, saveWallet = true, accountIndex?: number): Observable<void> {
+    // Server-managed wallets generate addresses via the backend API
+    if (this.currentCoin && this.currentCoin.serverWallets && wallet.filename) {
+      return this.addServerAddress(wallet, accountIndex);
+    }
+
     if (!wallet.seed || !wallet.nextSeed) {
       throw new Error(this.translate.instant('service.wallet.address-without-seed'));
     }
@@ -73,6 +78,34 @@ export class WalletService {
         if (saveWallet) {
           this.saveWallets();
         }
+      }));
+  }
+
+  private addServerAddress(wallet: Wallet, accountIndex?: number): Observable<void> {
+    const params: any = {
+      id: wallet.filename,
+      num: '1',
+    };
+    if (accountIndex !== undefined) {
+      params.account = accountIndex.toString();
+    }
+
+    return this.apiService.post('wallet/newAddress', params).pipe(
+      mergeMap(() => {
+        // Reload wallet from server to get updated addresses and accounts
+        return this.apiService.get('wallet', { id: wallet.filename }).pipe(
+          map((response: any) => {
+            wallet.addresses = (response.entries || []).map(e => ({ address: e.address }));
+            if (response.meta.type === 'bip44' && response.accounts) {
+              wallet.accounts = response.accounts.map(a => ({
+                name: a.name,
+                index: a.index,
+                externalAddresses: (a.external_entries || []).map(e => ({ address: e.address })),
+                changeAddresses: (a.change_entries || []).map(e => ({ address: e.address })),
+              }));
+            }
+            this.saveWallets();
+          }));
       }));
   }
 

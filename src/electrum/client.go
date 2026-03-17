@@ -99,7 +99,7 @@ func NewClient(serverURL string, timeout time.Duration) (*Client, error) {
 
 	// Perform handshake
 	if err := client.handshake(); err != nil {
-		_ = conn.Close()
+		conn.Close() //nolint:errcheck
 		return nil, fmt.Errorf("handshake failed: %w", err)
 	}
 

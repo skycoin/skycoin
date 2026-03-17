@@ -447,7 +447,7 @@ func computeSegwitSigHash(inputs []UTXO, outputs []txOut, sigIndex int, inputVal
 	buf.Write(scriptCode)
 
 	// 6. value of the input
-	writeUint64LE(&buf, uint64(inputValue))
+	writeUint64LE(&buf, uint64(inputValue)) //nolint:gosec // inputValue validated non-negative before call
 
 	// 7. nSequence
 	writeUint32LE(&buf, 0xffffffff)

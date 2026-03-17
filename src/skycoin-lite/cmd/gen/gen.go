@@ -127,7 +127,7 @@ func compileWASM() {
 
 	tinyOutput := filepath.Join(outputTinyDir, wasmFileName)
 	tinyGoBuildCmd := fmt.Sprintf(
-		`bash -c 'cd %s || exit 1 ; time GOOS=js GOARCH=wasm tinygo build -target=wasm --no-debug -o ../%s . && cd .. && du -h %s'`,
+		`bash -c 'cd %s || exit 1 ; time GOOS=js GOARCH=wasm tinygo build -target=wasm --no-debug -opt=z -o ../%s . && cd .. && du -h %s'`,
 		wasmSourceDir, tinyOutput, tinyOutput,
 	)
 	fmt.Println("\nRunning:", tinyGoBuildCmd)

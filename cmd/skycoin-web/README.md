@@ -29,7 +29,7 @@ One may only conclude that the usefulness of the `skycoin web` wallet in the spe
 
 In the latter part of 2025, the `skycoin web` wallet source code was migrated to the [github.com/skycoin/skycoin](https://github.com/skycoin/skycoin) repo, around the same time as many other utilities underwent similar migration and updates.
 
-The `skycoin web` wallet was updated to use a WASM binary compiled from Go, and all necessary resources were embedded in Go libraries.
+The `skycoin web` wallet was updated to use a WASM binary compiled with TinyGo (for smaller binary size), and all necessary resources were embedded in Go libraries. A standard Go WASM binary is also compiled and embedded as a fallback.
 
 The `skycoin web` wallet was included in the default compilation of skycoin from the [github.com/skycoin/skycoin](https://github.com/skycoin/skycoin) repository root.
 
@@ -76,7 +76,7 @@ Browser  <-->  skycoin-web proxy  <-->  Skycoin/fibercoin nodes
 - **Coin discovery**: On startup, queries each node's `/api/v1/health` endpoint to discover coin name, ticker, and configuration.
 - **Per-coin routing**: The frontend accesses each coin via `/coin/{index}/api/*` routes. The proxy forwards requests to the corresponding node.
 - **Wallet management**: Wallet create/list/encrypt/decrypt operations are handled locally using `wallet.Service`. No wallet data is sent to the remote nodes.
-- **Transaction signing**: Transactions are signed client-side in the browser via WebAssembly (skycoin-lite).
+- **Transaction signing**: Transactions are signed client-side in the browser via WebAssembly (skycoin-lite, compiled with TinyGo).
 - **CSRF handling**: Read-only POST endpoints (`balance`, `transactions`, `outputs`) are converted to GET requests. Mutating POST requests (`injectTransaction`) are forwarded with a CSRF token fetched from the target node.
 - **Price ticker**: Each coin can specify a `price_ticker_id` and `price_ticker_source` (coinpaprika or coingecko) in its fiber config. The frontend fetches prices directly from these APIs.
 
@@ -91,10 +91,13 @@ cd src/skycoin-web
 npx ng build --configuration production
 ```
 
-To rebuild the WASM cryptographic module:
+To rebuild the WASM cryptographic modules (both Go and TinyGo variants):
 
 ```bash
-GOOS=js GOARCH=wasm go build -o src/skycoin-web/src/assets/scripts/skycoin-lite.wasm ./src/skycoin-lite/wasm/
+cd src/skycoin-lite
+make build-wasm
 ```
 
-Then rebuild the Go binary from the repository root with `go build .`
+This compiles both `wasm-go/skycoin-lite.wasm` (standard Go, ~4.5M) and `wasm-tinygo/skycoin-lite.wasm` (TinyGo, ~1.6M), and copies the corresponding `wasm_exec.js` from each compiler's installation. The TinyGo variant is served in production. Requires both `go` and `tinygo` to be installed.
+
+Then rebuild the Go binary from the repository root.

@@ -85,6 +85,10 @@ export class WalletDetailComponent implements OnDestroy {
           this.onEditWallet();
         } else if (response === WalletOptionsResponses.DeleteWallet) {
           this.onDeleteWallet();
+        } else if (response === WalletOptionsResponses.EncryptWallet) {
+          this.onEncryptWallet();
+        } else if (response === WalletOptionsResponses.DecryptWallet) {
+          this.onDecryptWallet();
         }
       }
     });
@@ -164,6 +168,41 @@ export class WalletDetailComponent implements OnDestroy {
     this.walletService.addAccount(this.wallet, name).subscribe(
       () => {},
       (error) => this.msgBarService.showError(error.message)
+    );
+  }
+
+  onEncryptWallet() {
+    const password = window.prompt(this.translateService.instant('password.title'));
+    if (!password) {
+      return;
+    }
+    const confirm = window.prompt(this.translateService.instant('password.confirm-label'));
+    if (password !== confirm) {
+      this.msgBarService.showError('Passwords do not match');
+      return;
+    }
+
+    this.walletService.encryptWallet(this.wallet, password).subscribe(
+      () => {
+        this.wallet.encrypted = true;
+        this.msgBarService.showDone('Wallet encrypted successfully');
+      },
+      (error) => this.msgBarService.showError(error.message || error)
+    );
+  }
+
+  onDecryptWallet() {
+    const password = window.prompt(this.translateService.instant('password.title'));
+    if (!password) {
+      return;
+    }
+
+    this.walletService.decryptWallet(this.wallet, password).subscribe(
+      () => {
+        this.wallet.encrypted = false;
+        this.msgBarService.showDone('Wallet decrypted successfully');
+      },
+      (error) => this.msgBarService.showError(error.message || error)
     );
   }
 

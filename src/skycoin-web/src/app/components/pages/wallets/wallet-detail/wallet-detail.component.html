@@ -21,6 +21,17 @@
       <span class="-img -btn-plus -enabled-span">{{ 'wallet.add-account' | translate }}</span>
     </div>
   }
+  @if (currentCoin?.serverWallets && wallet.filename) {
+    @if (!wallet.encrypted) {
+      <div class="-button -not-on-small-and-below" (click)="onEncryptWallet()">
+        <span class="-img -btn-lock -enabled-span">{{ 'wallet.encrypt' | translate }}</span>
+      </div>
+    } @else {
+      <div class="-button -not-on-small-and-below" (click)="onDecryptWallet()">
+        <span class="-img -btn-unlock -enabled-span">{{ 'wallet.decrypt' | translate }}</span>
+      </div>
+    }
+  }
   <div class="-button -not-on-small-and-below" (click)="onEditWallet()">
     <span class="-img -btn-edit -enabled-span">{{ 'wallet.edit' | translate }}</span>
   </div>

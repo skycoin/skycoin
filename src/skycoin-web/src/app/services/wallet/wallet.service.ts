@@ -352,6 +352,20 @@ export class WalletService {
     }));
   }
 
+  encryptWallet(wallet: Wallet, password: string): Observable<void> {
+    return this.apiService.post('wallet/encrypt', {
+      id: wallet.filename,
+      password: password,
+    }).pipe(map(() => {}));
+  }
+
+  decryptWallet(wallet: Wallet, password: string): Observable<void> {
+    return this.apiService.post('wallet/decrypt', {
+      id: wallet.filename,
+      password: password,
+    }).pipe(map(() => {}));
+  }
+
   private getCleanSeed(seed: string): string {
     return seed.replace(/(\n|\r\n)$/, '');
   }

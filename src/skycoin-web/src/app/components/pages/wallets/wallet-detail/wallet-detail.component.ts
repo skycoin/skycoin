@@ -182,13 +182,25 @@ export class WalletDetailComponent implements OnDestroy {
       return;
     }
 
-    this.walletService.encryptWallet(this.wallet, password).subscribe(
-      () => {
-        this.wallet.encrypted = true;
-        this.msgBarService.showDone('Wallet encrypted successfully');
-      },
-      (error) => this.msgBarService.showError(error.message || error)
-    );
+    if (this.currentCoin && this.currentCoin.serverWallets && this.wallet.filename) {
+      // Server-managed wallet encryption
+      this.walletService.encryptWallet(this.wallet, password).subscribe(
+        () => {
+          this.wallet.encrypted = true;
+          this.msgBarService.showDone('Wallet encrypted successfully');
+        },
+        (error) => this.msgBarService.showError(error.message || error)
+      );
+    } else {
+      // Browser-only wallet: encrypt seed in localStorage
+      if (!this.wallet.seed) {
+        this.removeUnlockSubscription();
+        this.unlockSubscription = openUnlockWalletModal(this.wallet, this.dialog).componentInstance.onWalletUnlocked.pipe(first())
+          .subscribe(() => this.encryptBrowserWallet(password));
+      } else {
+        this.encryptBrowserWallet(password);
+      }
+    }
   }
 
   onDecryptWallet() {
@@ -197,11 +209,25 @@ export class WalletDetailComponent implements OnDestroy {
       return;
     }
 
-    this.walletService.decryptWallet(this.wallet, password).subscribe(
-      () => {
-        this.wallet.encrypted = false;
-        this.msgBarService.showDone('Wallet decrypted successfully');
-      },
+    if (this.currentCoin && this.currentCoin.serverWallets && this.wallet.filename) {
+      // Server-managed wallet decryption
+      this.walletService.decryptWallet(this.wallet, password).subscribe(
+        () => {
+          this.wallet.encrypted = false;
+          this.msgBarService.showDone('Wallet decrypted successfully');
+        },
+        (error) => this.msgBarService.showError(error.message || error)
+      );
+    } else {
+      // Browser-only wallet: remove encrypted seed from localStorage
+      this.walletService.removeWalletPassword(this.wallet);
+      this.msgBarService.showDone('Wallet password removed');
+    }
+  }
+
+  private encryptBrowserWallet(password: string) {
+    this.walletService.setWalletPassword(this.wallet, password).subscribe(
+      () => this.msgBarService.showDone('Wallet encrypted successfully'),
       (error) => this.msgBarService.showError(error.message || error)
     );
   }

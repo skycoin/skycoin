@@ -180,6 +180,141 @@
   }
 }
 
+.-bip44-account {
+  margin-bottom: 10px;
+
+  &:not(:first-of-type) {
+    border-top: 2px solid $grey-very-light;
+    padding-top: 10px;
+  }
+}
+
+.-account-header {
+  display: flex;
+  align-items: center;
+  padding: 12px $main-containers-small-padding;
+  cursor: pointer;
+  background-color: lighten($grey-very-light, 5%);
+
+  &:hover {
+    background-color: $grey-very-light;
+  }
+
+  .-account-name {
+    font-weight: bold;
+    font-size: $font-size-standard;
+    flex-grow: 1;
+  }
+
+  .-account-toggle {
+    color: $main-color;
+    font-size: $font-size-standard-minus;
+  }
+}
+
+.-xpub-display {
+  padding: 8px $main-containers-small-padding;
+  background-color: lighten($grey-very-light, 8%);
+
+  .-xpub-label {
+    font-size: $font-size-standard-minus;
+    color: $grey;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  p {
+    font-size: $font-size-standard-minus;
+    word-break: break-all;
+    margin: 0;
+  }
+}
+
+.-chain-label {
+  display: flex;
+  align-items: center;
+  padding: 8px $main-containers-small-padding;
+  font-size: $font-size-standard-minus;
+  font-weight: bold;
+  color: $grey;
+  border-bottom: 1px solid $grey-very-light;
+
+  .-account-add-address {
+    margin-left: 15px;
+    color: $main-color;
+    font-weight: normal;
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &.-change-label {
+    cursor: pointer;
+
+    &:hover {
+      background-color: lighten($grey-very-light, 5%);
+    }
+  }
+
+  .-toggle-icon {
+    font-size: 18px;
+    height: 18px;
+    width: 18px;
+    margin-left: 4px;
+  }
+}
+
+.-records {
+  .-record {
+    display: flex;
+    font-size: $font-size-standard;
+    padding: 21px 0 16px $main-containers-small-padding;
+    align-items: center;
+    color: $black;
+
+    &:not(:last-of-type) {
+      border-bottom: 1px solid $grey-very-light;
+    }
+
+    .address-column {
+      color: $grey;
+      display: flex;
+      align-items: center;
+
+      app-qr-code-button {
+        margin-right: 10px;
+      }
+
+      p {
+        margin: 0;
+        word-break: break-all;
+
+        &:hover .copy-label {
+          opacity: .999 !important;
+        }
+      }
+    }
+
+    .options-column {
+      display: flex;
+      justify-content: flex-end;
+      flex-shrink: 0;
+      padding-right: $main-containers-small-padding !important;
+
+      mat-icon {
+        cursor: pointer;
+        color: lighten($grey, 30%);
+
+        &:hover {
+          color: $main-color;
+        }
+      }
+    }
+  }
+}
+
 @keyframes floatup {
   50% {
     opacity: 1;

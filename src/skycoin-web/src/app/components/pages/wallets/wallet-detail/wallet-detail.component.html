@@ -21,8 +21,8 @@
       <span class="-img -btn-plus -enabled-span">{{ 'wallet.add-account' | translate }}</span>
     </div>
   }
-  @if (currentCoin?.serverWallets && wallet.filename) {
-    @if (!wallet.encrypted) {
+  @if ((currentCoin?.serverWallets && wallet.filename) || (!wallet.isHardware && !currentCoin?.serverWallets)) {
+    @if (!wallet.encrypted && !wallet.encryptedSeed) {
       <div class="-button -not-on-small-and-below" (click)="onEncryptWallet()">
         <span class="-img -btn-lock -enabled-span">{{ 'wallet.encrypt' | translate }}</span>
       </div>

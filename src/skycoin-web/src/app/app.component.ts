@@ -11,6 +11,7 @@ import { CustomMatDialogService } from './services/custom-mat-dialog.service';
 import { Bip39WordListService } from './services/bip39-word-list.service';
 import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
 import { MsgBarService } from './services/msg-bar.service';
+import { CoinService } from './services/coin.service';
 import { HwWalletPinService } from './services/hw-wallet-pin.service';
 import { HwWalletService } from './services/hw-wallet.service';
 import { HwPinDialogComponent } from './components/layout/hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
@@ -40,6 +41,7 @@ export class AppComponent implements OnInit {
     renderer: Renderer2,
     private bip38WordList: Bip39WordListService,
     private msgBarService: MsgBarService,
+    private coinService: CoinService,
     hwWalletPinService: HwWalletPinService,
     hwWalletService: HwWalletService,
   ) {
@@ -70,7 +72,10 @@ export class AppComponent implements OnInit {
     this.languageService.loadLanguageSettings();
 
     window.onbeforeunload = (e) => {
-      if (environment.production && !environment.e2eTest && !window['isElectron']) {
+      // Only warn about leaving when wallets are browser-only (no --wallet-dir).
+      // When server manages wallets, nothing is lost on reload.
+      const coin = this.coinService.currentCoin.getValue();
+      if (environment.production && !environment.e2eTest && !window['isElectron'] && !(coin && coin.serverWallets)) {
         e.preventDefault();
         e.returnValue = '';
       }

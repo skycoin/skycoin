@@ -54,6 +54,23 @@ export class WalletBase {
    * The wallet type: 'deterministic' or 'bip44'. Only valid for software wallets.
    */
   walletType = 'deterministic';
+  /**
+   * BIP44 account structure. Only populated for bip44 wallet type.
+   */
+  accounts: Bip44Account[] = [];
+}
+
+/**
+ * Represents a BIP44 account within a wallet.
+ */
+export class Bip44Account {
+  name = '';
+  index = 0;
+  externalAddresses: AddressBase[] = [];
+  changeAddresses: AddressBase[] = [];
+  xpubKey: string = null;
+  showXpub = false;
+  showChangeAddresses = false;
 }
 
 /**
@@ -89,6 +106,18 @@ export function duplicateWalletBase(wallet: WalletBase, duplicateAddresses: bool
   if (duplicateAddresses) {
     wallet.addresses.forEach(address => {
       response.addresses.push(duplicateAddressBase(address));
+    });
+  }
+
+  response.accounts = [];
+  if (duplicateAddresses && wallet.accounts) {
+    wallet.accounts.forEach(account => {
+      const dupAccount = new Bip44Account();
+      dupAccount.name = account.name;
+      dupAccount.index = account.index;
+      dupAccount.externalAddresses = account.externalAddresses.map(a => duplicateAddressBase(a));
+      dupAccount.changeAddresses = account.changeAddresses.map(a => duplicateAddressBase(a));
+      response.accounts.push(dupAccount);
     });
   }
 

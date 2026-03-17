@@ -90,6 +90,7 @@ import { MsgBarService } from './services/msg-bar.service';
 import { HwWalletPinService } from './services/hw-wallet-pin.service';
 import { HwWalletDaemonService } from './services/hw-wallet-daemon.service';
 import { HwWalletService } from './services/hw-wallet.service';
+import { EncryptionService } from './services/encryption.service';
 import { HwPinDialogComponent } from './components/layout/hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
 import { HwMessageComponent } from './components/layout/hardware-wallet/hw-message/hw-message.component';
 import { HwConfirmTxDialogComponent } from './components/layout/hardware-wallet/hw-confirm-tx-dialog/hw-confirm-tx-dialog.component';
@@ -193,6 +194,7 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
         HwWalletPinService,
         HwWalletDaemonService,
         HwWalletService,
+        EncryptionService,
         provideHttpClient(withInterceptorsFromDi()),
     ] })
 export class AppModule { }

@@ -11,6 +11,7 @@ import { defaultCoinId } from '../../constants/coins-id.const';
 import { BaseCoin } from '../../coins/basecoin';
 import { CoinService } from '../coin.service';
 import { ApiService } from '../api.service';
+import { EncryptionService } from '../encryption.service';
 import { environment } from '../../../environments/environment';
 
 export class ScanProgressData {
@@ -30,6 +31,7 @@ export class WalletService {
     private translate: TranslateService,
     private coinService: CoinService,
     private apiService: ApiService,
+    private encryptionService: EncryptionService,
   ) {
     this.loadWallets();
     this.coinService.currentCoin.subscribe((coin) => this.currentCoin = coin);
@@ -236,6 +238,69 @@ export class WalletService {
       }));
   }
 
+  setWalletPassword(wallet: Wallet, password: string): Observable<void> {
+    if (!wallet.seed) {
+      return throwError(() => new Error('Wallet must be unlocked before setting a password'));
+    }
+
+    return new Observable<void>(observer => {
+      Promise.all([
+        this.encryptionService.encrypt(wallet.seed, password),
+        wallet.nextSeed ? this.encryptionService.encrypt(wallet.nextSeed, password) : Promise.resolve(null),
+      ]).then(([encSeed, encNextSeed]) => {
+        wallet.encryptedSeed = encSeed;
+        if (encNextSeed) {
+          wallet.encryptedNextSeed = encNextSeed;
+        }
+        this.saveWallets();
+        observer.next();
+        observer.complete();
+      }).catch(err => observer.error(err));
+    });
+  }
+
+  unlockWalletWithPassword(wallet: Wallet, password: string, onProgressChanged: EventEmitter<number>): Observable<void> {
+    if (!wallet.encryptedSeed) {
+      return throwError(() => new Error('Wallet does not have an encrypted seed'));
+    }
+
+    return new Observable<void>(observer => {
+      const decryptPromises = [
+        this.encryptionService.decrypt(wallet.encryptedSeed, password),
+        wallet.encryptedNextSeed ? this.encryptionService.decrypt(wallet.encryptedNextSeed, password) : Promise.resolve(null),
+      ];
+
+      Promise.all(decryptPromises).then(([seed, nextSeed]) => {
+        const cleanSeed = this.getCleanSeed(seed);
+        const currentSeed = convertAsciiToHexa(cleanSeed);
+
+        this.unlockWalletAddresses(currentSeed, wallet, 0, onProgressChanged).subscribe(
+          (res: boolean) => {
+            if (!res) {
+              observer.error(new Error(this.translate.instant('service.wallet.wrong-seed')));
+              return;
+            }
+            wallet.seed = cleanSeed;
+            if (nextSeed) {
+              wallet.nextSeed = nextSeed;
+            }
+            observer.next();
+            observer.complete();
+          },
+          err => observer.error(err)
+        );
+      }).catch(() => {
+        observer.error(new Error('Incorrect password'));
+      });
+    });
+  }
+
+  removeWalletPassword(wallet: Wallet): void {
+    wallet.encryptedSeed = undefined;
+    wallet.encryptedNextSeed = undefined;
+    this.saveWallets();
+  }
+
   saveWallets() {
     const currentWallets = this.wallets.value || [];
     // Only persist to localStorage for client-side wallets
@@ -244,7 +309,20 @@ export class WalletService {
       currentWallets.forEach(wallet => {
         const strippedAddresses: Address[] = [];
         wallet.addresses.forEach(address => strippedAddresses.push({ address: address.address }));
-        strippedWallets.push({ coinId: wallet.coinId, needSeedConfirmation: wallet.needSeedConfirmation, label: wallet.label, addresses: strippedAddresses, isHardware: wallet.isHardware });
+        const stripped: Wallet = {
+          coinId: wallet.coinId,
+          needSeedConfirmation: wallet.needSeedConfirmation,
+          label: wallet.label,
+          addresses: strippedAddresses,
+          isHardware: wallet.isHardware,
+        };
+        if (wallet.encryptedSeed) {
+          stripped.encryptedSeed = wallet.encryptedSeed;
+        }
+        if (wallet.encryptedNextSeed) {
+          stripped.encryptedNextSeed = wallet.encryptedNextSeed;
+        }
+        strippedWallets.push(stripped);
       });
       localStorage.setItem('wallets', JSON.stringify(strippedWallets));
     }

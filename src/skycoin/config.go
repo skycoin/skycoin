@@ -611,8 +611,9 @@ func buildAPISets(c NodeConfig) (map[string]struct{}, error) {
 		api.EndpointsTransaction,
 		api.EndpointsNetCtrl,
 		api.EndpointsStorage,
-		// Do not include insecure or deprecated API sets, they must always
-		// be explicitly enabled through -enable-api-sets
+		// Do not include insecure, deprecated, or opt-in API sets.
+		// EXPLORER and INSECURE_WALLET_SEED must always be explicitly
+		// enabled through -enable-api-sets.
 	}
 
 	if c.EnableAllAPISets {
@@ -644,7 +645,8 @@ func validateAPISets(opt string, apiSets []string) error {
 			api.EndpointsWallet,
 			api.EndpointsInsecureWalletSeed,
 			api.EndpointsNetCtrl,
-			api.EndpointsStorage:
+			api.EndpointsStorage,
+			api.EndpointsExplorer:
 		case "":
 			continue
 		default:
@@ -687,6 +689,7 @@ func (c *NodeConfig) RegisterFlags(cmd *cobra.Command) {
 		api.EndpointsNetCtrl,
 		api.EndpointsInsecureWalletSeed,
 		api.EndpointsStorage,
+		api.EndpointsExplorer,
 	}
 	cmd.Flags().StringVar(&c.EnabledAPISets, "enable-api-sets", c.EnabledAPISets, fmt.Sprintf("enable API set. Options are %s. Multiple values should be separated by comma", strings.Join(allAPISets, ", ")))
 	cmd.Flags().StringVar(&c.DisabledAPISets, "disable-api-sets", c.DisabledAPISets, fmt.Sprintf("disable API set. Options are %s. Multiple values should be separated by comma", strings.Join(allAPISets, ", ")))

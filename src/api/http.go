@@ -61,6 +61,9 @@ const (
 	EndpointsNetCtrl = "NET_CTRL"
 	// EndpointsStorage endpoints implement interface for key-value storage for arbitrary data
 	EndpointsStorage = "STORAGE"
+	// EndpointsExplorer re-enables the deprecated /api/v1/explorer/address endpoint for
+	// backwards compatibility with exchanges and services that depend on the old API format
+	EndpointsExplorer = "EXPLORER"
 )
 
 // Server exposes an HTTP API
@@ -693,6 +696,12 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	})
 	webHandlerV1("/addresscount", addressCountHandler(gateway), map[string][]string{
 		http.MethodGet: {EndpointsRead},
+	})
+
+	// Deprecated explorer/address endpoint, re-enabled via EXPLORER API set for backwards compatibility.
+	// Removed in v0.26.0, equivalent to /api/v1/transactions?verbose=1 but with a flattened response format.
+	webHandlerV1("/explorer/address", explorerAddressHandler(gateway), map[string][]string{
+		http.MethodGet: {EndpointsExplorer},
 	})
 
 	// Storage endpoint

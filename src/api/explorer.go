@@ -10,6 +10,7 @@ import (
 	"github.com/skycoin/skycoin/src/util/droplet"
 	wh "github.com/skycoin/skycoin/src/util/http"
 	"github.com/skycoin/skycoin/src/util/mathutil"
+	"github.com/skycoin/skycoin/src/visor"
 )
 
 // CoinSupply records the coin supply info
@@ -239,5 +240,53 @@ func addressCountHandler(gateway Gatewayer) http.HandlerFunc {
 		}
 
 		wh.SendJSONOr500(logger, w, &map[string]uint64{"count": addrCount})
+	}
+}
+
+// explorerAddressHandler returns transactions for a single address in the old
+// /api/v1/explorer/address format (deprecated in v0.25.0, removed in v0.26.0).
+// This is re-enabled via the EXPLORER API set for backwards compatibility with
+// exchanges and services that depend on the old flattened response format.
+// Method: GET
+// URI: /api/v1/explorer/address?address=<address>
+func explorerAddressHandler(gateway Gatewayer) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			wh.Error405(w)
+			return
+		}
+
+		addr := r.FormValue("address")
+		if addr == "" {
+			wh.Error400(w, "address is required")
+			return
+		}
+
+		cipherAddr, err := cipher.DecodeBase58Address(addr)
+		if err != nil {
+			wh.Error400(w, fmt.Sprintf("invalid address: %v", err))
+			return
+		}
+
+		flts := []visor.TxFilter{visor.NewAddrsFilter([]cipher.Address{cipherAddr})}
+		txns, inputs, _, err := gateway.GetTransactionsWithInputs(flts, visor.AscOrder, nil)
+		if err != nil {
+			wh.Error500(w, err.Error())
+			return
+		}
+
+		// Build the old flattened response format: an array of TransactionVerbose
+		// (status + timestamp + length/type/txid/inner_hash/fee/sigs/inputs/outputs)
+		result := make([]readable.TransactionVerbose, 0, len(txns))
+		for i, txn := range txns {
+			rTxn, err := readable.NewTransactionVerbose(txn, inputs[i])
+			if err != nil {
+				wh.Error500(w, err.Error())
+				return
+			}
+			result = append(result, rTxn)
+		}
+
+		wh.SendJSONOr500(logger, w, result)
 	}
 }

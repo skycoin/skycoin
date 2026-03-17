@@ -1,5 +1,5 @@
 import { Injectable, NgZone } from '@angular/core';
-import { BehaviorSubject, Observable, Subscription, ReplaySubject, of } from 'rxjs';
+import { BehaviorSubject, Observable, Subscription, ReplaySubject, of, forkJoin } from 'rxjs';
 import { mergeMap, map, first, delay } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
 
@@ -114,9 +114,56 @@ export class BalanceService {
       if (isEqualOrSuperiorVersion(version, '0.25.0')) {
         return this.apiService.post('balance', { addrs: formattedAddresses });
       } else {
-        return this.apiService.get('balance', { addrs: formattedAddresses });
+        return this.chunkedBalanceGet(addresses);
       }
     }));
+  }
+
+  // Splits addresses into chunks for GET requests to avoid URI length limits on older nodes.
+  private chunkedBalanceGet(addresses: Address[]): Observable<Balance> {
+    const chunks = this.chunkAddresses(addresses);
+
+    if (chunks.length === 1) {
+      return this.apiService.get('balance', { addrs: chunks[0] });
+    }
+
+    return forkJoin(chunks.map(chunk => this.apiService.get('balance', { addrs: chunk }))).pipe(
+      map((results: Balance[]) => {
+        const merged: Balance = {
+          confirmed: { coins: 0, hours: 0 },
+          predicted: { coins: 0, hours: 0 },
+          addresses: {},
+        };
+        results.forEach(r => {
+          merged.confirmed.coins += r.confirmed.coins;
+          merged.confirmed.hours += r.confirmed.hours;
+          merged.predicted.coins += r.predicted.coins;
+          merged.predicted.hours += r.predicted.hours;
+          if (r.addresses) {
+            Object.assign(merged.addresses, r.addresses);
+          }
+        });
+        return merged;
+      })
+    );
+  }
+
+  private chunkAddresses(addresses: Address[], maxChars = 1800): string[] {
+    const chunks: string[] = [];
+    let current = '';
+    addresses.forEach(a => {
+      const addr = a.address;
+      if (current.length > 0 && current.length + 1 + addr.length > maxChars) {
+        chunks.push(current);
+        current = addr;
+      } else {
+        current = current ? current + ',' + addr : addr;
+      }
+    });
+    if (current) {
+      chunks.push(current);
+    }
+    return chunks;
   }
 
   private calculateBalance(wallets: Wallet[], balance: Balance): boolean {

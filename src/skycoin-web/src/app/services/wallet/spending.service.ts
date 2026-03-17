@@ -454,7 +454,7 @@ export class SpendingService {
         if (isEqualOrSuperiorVersion(version, '0.25.0')) {
           outputsRequest = this.apiService.post('outputs', { addrs: requestedAddresses });
         } else {
-          outputsRequest = this.apiService.get('outputs', { addrs: requestedAddresses });
+          outputsRequest = this.chunkedOutputsGet(requestedAddresses);
         }
 
         let unspentsMap: Map<string, boolean>;
@@ -504,12 +504,51 @@ export class SpendingService {
         if (isEqualOrSuperiorVersion(version, '0.25.0')) {
           outputsRequest = this.apiService.post('outputs', { addrs: addresses });
         } else {
-          outputsRequest = this.apiService.get('outputs', { addrs: addresses });
+          outputsRequest = this.chunkedOutputsGet(addresses);
         }
 
         return outputsRequest.pipe(map(response => response.head_outputs as GetOutputsRequestOutput[]));
       }));
     }
+  }
+
+  // Splits a comma-separated address string into chunks for GET requests
+  // to avoid URI length limits on older nodes.
+  private chunkedOutputsGet(addressesCsv: string): Observable<GetOutputsRequest> {
+    const addrs = addressesCsv.split(',');
+    const chunks: string[] = [];
+    let current = '';
+    addrs.forEach(addr => {
+      if (current.length > 0 && current.length + 1 + addr.length > 1800) {
+        chunks.push(current);
+        current = addr;
+      } else {
+        current = current ? current + ',' + addr : addr;
+      }
+    });
+    if (current) {
+      chunks.push(current);
+    }
+
+    if (chunks.length === 1) {
+      return this.apiService.get('outputs', { addrs: chunks[0] });
+    }
+
+    return forkJoin(chunks.map(chunk => this.apiService.get('outputs', { addrs: chunk }))).pipe(
+      map((results: GetOutputsRequest[]) => {
+        const merged: GetOutputsRequest = {
+          head_outputs: [],
+          outgoing_outputs: [],
+          incoming_outputs: [],
+        };
+        results.forEach(r => {
+          merged.head_outputs = merged.head_outputs.concat(r.head_outputs || []);
+          merged.outgoing_outputs = merged.outgoing_outputs.concat(r.outgoing_outputs || []);
+          merged.incoming_outputs = merged.incoming_outputs.concat(r.incoming_outputs || []);
+        });
+        return merged;
+      })
+    );
   }
 
   private postTransaction(rawTransaction: string): Observable<string> {

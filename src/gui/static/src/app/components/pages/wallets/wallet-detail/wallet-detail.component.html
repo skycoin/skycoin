@@ -21,6 +21,11 @@
     </div>
   }
   <div class="flex-fill"></div>
+  @if (isBip44) {
+    <div class="-button" (click)="addAccount()">
+      <span class="-img -address-options">{{ 'wallet.add-account' | translate }}</span>
+    </div>
+  }
   @if (!wallet.temporal && !wallet.isHardware) {
     <div class="-button" (click)="toggleEncryption()">
       <span [ngClass]="{ '-img': true, '-enable-encryption': !wallet.encrypted, '-disable-encryption': wallet.encrypted }">
@@ -38,65 +43,175 @@
   </div>
 </div>
 
-<!-- Address list. -->
-@for (address of wallet.addresses; track address; let i = $index) {
-  @if (!hideEmpty || address.coins.isGreaterThan(0)) {
-    <div class="-record">
-      <!-- Address number. -->
-      <div class="-width-50 grey-text">{{ i + 1 }}</div>
-      <!-- Address. -->
-      <div class="-flex-fill address-column">
-        <!-- For confirmed addresses. -->
-        @if (!wallet.isHardware || address.confirmed) {
-          <app-qr-code-button [address]="address.address"></app-qr-code-button>
-          <p class="click-to-copy" [ngClass]="{ copying: copying.has(address.address) }" (click)="copyAddress($event, address)" (mouseleave)="copying.delete(address.address)">
-            {{ address.address }}
-            @if (confirmingIndex === i) {
-              <mat-spinner></mat-spinner>
-            }
+@if (isBip44 && wallet.accounts?.length > 0) {
+  <!-- BIP44 account-structured view -->
+  @for (account of wallet.accounts; track account.index) {
+    <div class="-bip44-account">
+      <div class="-account-header" (click)="toggleXpub(account)">
+        <span class="-account-name">{{ account.name || ('Account ' + account.index) }}</span>
+        <span class="-account-toggle">{{ account.showXpub ? 'Hide' : 'Show' }} xPub</span>
+      </div>
+      @if (account.showXpub && account.xpubKey) {
+        <div class="-xpub-display">
+          <span class="-xpub-label">xPub Key:</span>
+          <p class="click-to-copy" [ngClass]="{ copying: copying.has(account.xpubKey) }"
+            (click)="copyAddress($event, {address: account.xpubKey, confirmed: true})"
+            (mouseleave)="copying.delete(account.xpubKey)">
+            {{ account.xpubKey }}
             <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">
               {{ 'wallet.address.copy' | translate }}
             </span>
           </p>
+        </div>
+      }
+
+      <div class="-chain-label">
+        Receiving Addresses
+        <span class="-account-add-address" (click)="newAddressesForAccount(account.index)"
+          [ngClass]="{ '-disabled-span': workingWithAddresses }">
+          + {{ 'wallet.address-options.new' | translate }}
+        </span>
+      </div>
+      <div class="-records">
+        @for (address of account.externalAddresses; track address.address; let i = $index) {
+          @if (!hideEmpty || (address.coins && address.coins.isGreaterThan(0))) {
+            <div class="-record">
+              <div class="-width-50 grey-text">{{ i + 1 }}</div>
+              <div class="-flex-fill address-column">
+                <app-qr-code-button [address]="address.address"></app-qr-code-button>
+                <p class="click-to-copy" [ngClass]="{ copying: copying.has(address.address) }" (click)="copyAddress($event, address)" (mouseleave)="copying.delete(address.address)">
+                  {{ address.address }}
+                  <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">
+                    {{ 'wallet.address.copy' | translate }}
+                  </span>
+                </p>
+              </div>
+              <div class="-width-130 text-right">{{ (address.coins ? address.coins : 0) | amount:true:'first' }}</div>
+              <div class="-width-130 text-right grey-text">{{ (address.hours ? address.hours : 0) | amount:false:'first' }}</div>
+              <div class="-width-85 options-column">
+                <mat-icon [matMenuTriggerFor]="extMenu">more_vert</mat-icon>
+                <mat-menu #extMenu="matMenu" [overlapTrigger]="false">
+                  <button mat-menu-item (click)="copyAddress($event, address, 1000)">
+                    {{ 'wallet.address.' + (copying.has(address.address) ? 'copied': 'copy-address') | translate }}
+                  </button>
+                  <button mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address }">
+                    {{ 'wallet.address.outputs' | translate }}
+                  </button>
+                  <button mat-menu-item routerLink="/transactions" [queryParams]="{ addr: address.address }">
+                    {{ 'wallet.address.history' | translate }}
+                  </button>
+                </mat-menu>
+              </div>
+            </div>
+          }
         }
-        <!-- For unconfirmed addresses. -->
-        @if (wallet.isHardware && !address.confirmed) {
-          <p class="click-to-copy" (click)="confirmAddress(wallet, i, true)">
-            <span class="small-preview">{{ address.address }}</span>
-            <span class="copy-label unconfirmed-label">
-              {{ 'wallet.address.show' | translate }}
+      </div>
+
+      @if (account.changeAddresses?.length > 0) {
+        <div class="-chain-label -change-label" (click)="toggleChangeAddresses(account)">
+          Change Addresses ({{ account.changeAddresses.length }})
+          <mat-icon class="-toggle-icon">{{ account.showChangeAddresses ? 'expand_less' : 'expand_more' }}</mat-icon>
+        </div>
+        @if (account.showChangeAddresses) {
+          <div class="-records">
+            @for (address of account.changeAddresses; track address.address; let i = $index) {
+              @if (!hideEmpty || (address.coins && address.coins.isGreaterThan(0))) {
+                <div class="-record">
+                  <div class="-width-50 grey-text">{{ i + 1 }}</div>
+                  <div class="-flex-fill address-column">
+                    <app-qr-code-button [address]="address.address"></app-qr-code-button>
+                    <p class="click-to-copy" [ngClass]="{ copying: copying.has(address.address) }" (click)="copyAddress($event, address)" (mouseleave)="copying.delete(address.address)">
+                      {{ address.address }}
+                      <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">
+                        {{ 'wallet.address.copy' | translate }}
+                      </span>
+                    </p>
+                  </div>
+                  <div class="-width-130 text-right">{{ (address.coins ? address.coins : 0) | amount:true:'first' }}</div>
+                  <div class="-width-130 text-right grey-text">{{ (address.hours ? address.hours : 0) | amount:false:'first' }}</div>
+                  <div class="-width-85 options-column">
+                    <mat-icon [matMenuTriggerFor]="chgMenu">more_vert</mat-icon>
+                    <mat-menu #chgMenu="matMenu" [overlapTrigger]="false">
+                      <button mat-menu-item (click)="copyAddress($event, address, 1000)">
+                        {{ 'wallet.address.' + (copying.has(address.address) ? 'copied': 'copy-address') | translate }}
+                      </button>
+                      <button mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address }">
+                        {{ 'wallet.address.outputs' | translate }}
+                      </button>
+                      <button mat-menu-item routerLink="/transactions" [queryParams]="{ addr: address.address }">
+                        {{ 'wallet.address.history' | translate }}
+                      </button>
+                    </mat-menu>
+                  </div>
+                </div>
+              }
+            }
+          </div>
+        }
+      }
+    </div>
+  }
+} @else {
+  <!-- Deterministic flat address list -->
+  @for (address of wallet.addresses; track address; let i = $index) {
+    @if (!hideEmpty || address.coins.isGreaterThan(0)) {
+      <div class="-record">
+        <!-- Address number. -->
+        <div class="-width-50 grey-text">{{ i + 1 }}</div>
+        <!-- Address. -->
+        <div class="-flex-fill address-column">
+          <!-- For confirmed addresses. -->
+          @if (!wallet.isHardware || address.confirmed) {
+            <app-qr-code-button [address]="address.address"></app-qr-code-button>
+            <p class="click-to-copy" [ngClass]="{ copying: copying.has(address.address) }" (click)="copyAddress($event, address)" (mouseleave)="copying.delete(address.address)">
+              {{ address.address }}
               @if (confirmingIndex === i) {
                 <mat-spinner></mat-spinner>
               }
-            </span>
-          </p>
-        }
-      </div>
-      <!-- Coins and hours. -->
-      <div class="-width-130 text-right">{{ (address.coins ? address.coins : 0) | amount:true:'first' }}</div>
-      <div class="-width-130 text-right grey-text">{{ (address.hours ? address.hours : 0) | amount:false:'first' }}</div>
-      <!-- Options. -->
-      <div class="-width-85 options-column">
-        <mat-icon [matMenuTriggerFor]="optionsMenu">more_vert</mat-icon>
-        <mat-menu #optionsMenu="matMenu" [overlapTrigger]="false">
-          @if (!wallet.isHardware || address.confirmed) {
-            <button mat-menu-item (click)="copyAddress($event, address, 1000)">
-              {{ 'wallet.address.' + (copying.has(address.address) ? 'copied': 'copy-address') | translate }}
-            </button>
+              <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">
+                {{ 'wallet.address.copy' | translate }}
+              </span>
+            </p>
           }
-          @if (wallet.isHardware) {
-            <button mat-menu-item (click)="confirmAddress(wallet, i, !address.confirmed)">
-              {{ 'wallet.address.confirm' | translate }}
-            </button>
+          <!-- For unconfirmed addresses. -->
+          @if (wallet.isHardware && !address.confirmed) {
+            <p class="click-to-copy" (click)="confirmAddress(wallet, i, true)">
+              <span class="small-preview">{{ address.address }}</span>
+              <span class="copy-label unconfirmed-label">
+                {{ 'wallet.address.show' | translate }}
+                @if (confirmingIndex === i) {
+                  <mat-spinner></mat-spinner>
+                }
+              </span>
+            </p>
           }
-          <button mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address }">
-            {{ 'wallet.address.outputs' | translate }}
-          </button>
-          <button mat-menu-item routerLink="/transactions" [queryParams]="{ addr: address.address }">
-            {{ 'wallet.address.history' | translate }}
-          </button>
-        </mat-menu>
+        </div>
+        <!-- Coins and hours. -->
+        <div class="-width-130 text-right">{{ (address.coins ? address.coins : 0) | amount:true:'first' }}</div>
+        <div class="-width-130 text-right grey-text">{{ (address.hours ? address.hours : 0) | amount:false:'first' }}</div>
+        <!-- Options. -->
+        <div class="-width-85 options-column">
+          <mat-icon [matMenuTriggerFor]="optionsMenu">more_vert</mat-icon>
+          <mat-menu #optionsMenu="matMenu" [overlapTrigger]="false">
+            @if (!wallet.isHardware || address.confirmed) {
+              <button mat-menu-item (click)="copyAddress($event, address, 1000)">
+                {{ 'wallet.address.' + (copying.has(address.address) ? 'copied': 'copy-address') | translate }}
+              </button>
+            }
+            @if (wallet.isHardware) {
+              <button mat-menu-item (click)="confirmAddress(wallet, i, !address.confirmed)">
+                {{ 'wallet.address.confirm' | translate }}
+              </button>
+            }
+            <button mat-menu-item routerLink="/settings/outputs" [queryParams]="{ addr: address.address }">
+              {{ 'wallet.address.outputs' | translate }}
+            </button>
+            <button mat-menu-item routerLink="/transactions" [queryParams]="{ addr: address.address }">
+              {{ 'wallet.address.history' | translate }}
+            </button>
+          </mat-menu>
+        </div>
       </div>
-    </div>
+    }
   }
 }

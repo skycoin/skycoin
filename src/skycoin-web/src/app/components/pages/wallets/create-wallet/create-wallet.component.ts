@@ -61,7 +61,7 @@ export class CreateWalletComponent implements OnDestroy {
 
     const data = this.formControl.getData();
 
-    this.walletService.create(data.label, data.seed, data.coin.id, this.data.create, data.walletType, data.seedPassphrase)
+    this.walletService.create(data.label, data.seed, data.coin.id, this.data.create, data.walletType, data.seedPassphrase, data.segwit)
       .subscribe(
         wallet => this.onCreateSuccess(wallet, data.coin),
         (error) => this.onCreateError(error.message)

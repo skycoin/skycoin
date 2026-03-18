@@ -22,8 +22,9 @@ import (
 
 // walletResponse mirrors api.WalletResponse for the thin client
 type walletResponse struct {
-	Meta    readable.WalletMeta    `json:"meta"`
-	Entries []readable.WalletEntry `json:"entries"`
+	Meta     readable.WalletMeta      `json:"meta"`
+	Entries  []readable.WalletEntry   `json:"entries"`
+	Accounts []readable.WalletAccount `json:"accounts,omitempty"`
 }
 
 func newWalletResponse(w wallet.Wallet) (*walletResponse, error) {
@@ -48,6 +49,30 @@ func newWalletResponse(w wallet.Wallet) (*walletResponse, error) {
 		}
 		wr.Meta.Bip44Coin = bip44Coin
 		options = append(options, wallet.OptionExternal(), wallet.OptionChange())
+
+		// Populate per-account structure
+		accounts := w.Accounts()
+		wr.Accounts = make([]readable.WalletAccount, len(accounts))
+		for ai, acct := range accounts {
+			wa := readable.WalletAccount{
+				Name:  acct.Name,
+				Index: acct.Index,
+			}
+
+			extEntries, err := w.GetEntries(wallet.OptionAccount(acct.Index), wallet.OptionExternal())
+			if err != nil {
+				return nil, fmt.Errorf("failed to get external entries for account %d: %v", acct.Index, err)
+			}
+			wa.ExternalEntries = walletEntriesToReadable(extEntries)
+
+			chgEntries, err := w.GetEntries(wallet.OptionAccount(acct.Index), wallet.OptionChange())
+			if err != nil {
+				return nil, fmt.Errorf("failed to get change entries for account %d: %v", acct.Index, err)
+			}
+			wa.ChangeEntries = walletEntriesToReadable(chgEntries)
+
+			wr.Accounts[ai] = wa
+		}
 	case wallet.WalletTypeXPub:
 		wr.Meta.XPub = w.XPub()
 	}
@@ -77,6 +102,22 @@ func newWalletResponse(w wallet.Wallet) (*walletResponse, error) {
 	}
 
 	return &wr, nil
+}
+
+// walletEntriesToReadable converts wallet entries to readable format with child number info
+func walletEntriesToReadable(entries wallet.Entries) []readable.WalletEntry {
+	result := make([]readable.WalletEntry, len(entries))
+	for i, e := range entries {
+		childNumber := e.ChildNumber
+		change := e.Change
+		result[i] = readable.WalletEntry{
+			Address:     e.Address.String(),
+			Public:      e.Public.Hex(),
+			ChildNumber: &childNumber,
+			Change:      &change,
+		}
+	}
+	return result
 }
 
 // handleWalletAPI handles wallet-related API requests locally when --wallet-dir is set.
@@ -117,6 +158,8 @@ func handleWalletAPI(c *gin.Context, apiPath string, wltService *wallet.Service,
 		handleRecoverWallet(c, wltService)
 	case path == "/v1/wallet/xpub" && method == http.MethodGet:
 		handleWalletXPub(c, wltService)
+	case path == "/v1/wallet/newAccount" && method == http.MethodPost:
+		handleNewAccount(c, wltService)
 
 	// Hybrid endpoints: resolve wallet addresses locally, query remote node
 	case path == "/v1/wallet/balance" && method == http.MethodGet:
@@ -238,12 +281,22 @@ func handleCreateWallet(c *gin.Context, s *wallet.Service) {
 		}
 	}()
 
+	// Determine coin type based on segwit preference.
+	// The wallet service defaults new BTC BIP44 wallets to segwit.
+	// If the user explicitly unchecks segwit, override to legacy.
+	var coinType wallet.CoinType
+	segwitStr := c.Request.FormValue("segwit")
+	if segwitStr == "false" && walletType == wallet.WalletTypeBip44 {
+		coinType = wallet.CoinTypeBitcoin
+	}
+
 	wlt, err := s.CreateWallet("", wallet.Options{
 		Seed:                  seed,
 		Label:                 label,
 		Encrypt:               encrypt,
 		Password:              []byte(password),
 		Type:                  walletType,
+		Coin:                  coinType,
 		SeedPassphrase:        c.Request.FormValue("seed-passphrase"),
 		Bip44Coin:             bip44Coin,
 		XPub:                  c.Request.FormValue("xpub"),
@@ -348,6 +401,16 @@ func handleNewAddresses(c *gin.Context, s *wallet.Service) {
 			return
 		}
 		opts = append(opts, wallet.OptionGenerateN(n))
+	}
+
+	account := c.Request.FormValue("account")
+	if account != "" {
+		a, err := strconv.ParseUint(account, 10, 32)
+		if err != nil {
+			errBadRequest(c, "invalid account value")
+			return
+		}
+		opts = append(opts, wallet.OptionAccount(uint32(a))) //nolint:gosec
 	}
 
 	password := c.Request.FormValue("password")
@@ -783,4 +846,48 @@ func handleWalletBalance(c *gin.Context, s *wallet.Service, nodeURL string) {
 
 	// Pass through the response from the remote node
 	c.Data(resp.StatusCode, resp.Header.Get("Content-Type"), body)
+}
+
+// POST /api/v1/wallet/newAccount
+func handleNewAccount(c *gin.Context, s *wallet.Service) {
+	wltID := c.Request.FormValue("id")
+	if wltID == "" {
+		errBadRequest(c, "missing wallet id")
+		return
+	}
+
+	name := c.Request.FormValue("name")
+
+	var resultWlt wallet.Wallet
+	err := s.Update(wltID, func(w wallet.Wallet) error {
+		bip44Wlt, ok := w.(*bip44wallet.Wallet)
+		if !ok {
+			return fmt.Errorf("wallet %s is not a bip44 wallet", wltID)
+		}
+
+		acctIndex, err := bip44Wlt.NewAccount(name)
+		if err != nil {
+			return fmt.Errorf("failed to create account: %v", err)
+		}
+
+		// Generate a default address on the new account's external chain
+		_, err = bip44Wlt.GenerateAddresses(wallet.OptionAccount(acctIndex), wallet.OptionExternal())
+		if err != nil {
+			return fmt.Errorf("failed to generate address for new account: %v", err)
+		}
+
+		resultWlt = w
+		return nil
+	})
+	if err != nil {
+		errInternal(c, err.Error())
+		return
+	}
+
+	rlt, err := newWalletResponse(resultWlt)
+	if err != nil {
+		errInternal(c, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, rlt)
 }

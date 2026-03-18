@@ -14,6 +14,7 @@ import { WalletService } from './wallet.service';
 import { GlobalsService } from '../globals.service';
 import { isEqualOrSuperiorVersion } from '../../utils/semver';
 import { BlockchainService } from '../blockchain.service';
+import { HwWalletService, HwInput, HwOutput } from '../hw-wallet.service';
 
 export class Destination {
   address: string;
@@ -36,7 +37,10 @@ export class SpendingService {
   isInjectingTx = false;
 
   private currentCoin: BaseCoin;
-  private readonly coinsMultiplier = 1000000;
+
+  private get coinsMultiplier(): number {
+    return this.currentCoin ? this.currentCoin.coinsMultiplier : 1000000;
+  }
 
   constructor(
     private apiService: ApiService,
@@ -45,9 +49,26 @@ export class SpendingService {
     private walletService: WalletService,
     private globalsService: GlobalsService,
     private blockchainService: BlockchainService,
+    private hwWalletService: HwWalletService,
     coinService: CoinService,
   ) {
     coinService.currentCoin.subscribe((coin) => this.currentCoin = coin);
+  }
+
+  sendBitcoin(
+    wallet: Wallet,
+    destinations: Destination[],
+    feeRate: number): Observable<string> {
+    const body = {
+      wallet_id: wallet['filename'] || wallet.label,
+      destinations: destinations.map(d => ({
+        address: d.address,
+        coins: d.coins.multipliedBy(this.currentCoin.coinsMultiplier).integerValue().toNumber(),
+      })),
+      fee_rate: feeRate,
+    };
+
+    return this.apiService.post('btc/send', body, { json: true });
   }
 
   createTransaction(
@@ -119,7 +140,7 @@ export class SpendingService {
           data.transaction.inputs.forEach(input => {
             txInputs.push({
               hash: input.uxid,
-              secret: wallet.addresses.find(a => a.address === input.address).secret_key,
+              secret: wallet.isHardware ? '' : (wallet.addresses.find(a => a.address === input.address) || {}).secret_key,
               address: input.address,
               calculated_hours: input.calculated_hours,
               coins: input.coins,
@@ -134,6 +155,10 @@ export class SpendingService {
               hours: new BigNumber(output.hours).toNumber(),
             });
           });
+
+          if (wallet.isHardware) {
+            return this.signWithHardwareWallet(wallet, txInputs, txOutputs, hoursSent, new BigNumber(data.transaction.fee));
+          }
 
           return this.generateRawTransaction(txInputs, txOutputs).pipe(
             map((rawTransaction: string) => {
@@ -257,6 +282,60 @@ export class SpendingService {
     return this.getOutputs(wallet, null, null);
   }
 
+  private signWithHardwareWallet(
+    wallet: Wallet,
+    txInputs: TransactionInput[],
+    txOutputs: TransactionOutput[],
+    hoursSent: BigNumber,
+    hoursBurned: BigNumber): Observable<Transaction> {
+
+    // Convert inputs to HW daemon format
+    const hwInputs: HwInput[] = txInputs.map(input => ({
+      hash: input.hash,
+      index: wallet.addresses.findIndex(a => a.address === input.address),
+    }));
+
+    // Convert outputs to HW daemon format
+    const hwOutputs: HwOutput[] = txOutputs.map(output => {
+      const hwOutput: HwOutput = {
+        address: output.address,
+        coins: new BigNumber(output.coins).multipliedBy(this.coinsMultiplier).toFixed(0),
+        hours: output.hours.toString(),
+      };
+
+      // Mark change outputs with address_index so HW device doesn't ask for confirmation
+      const addressIndex = wallet.addresses.findIndex(a => a.address === output.address);
+      if (addressIndex !== -1) {
+        hwOutput.address_index = addressIndex;
+      }
+
+      return hwOutput;
+    });
+
+    // First verify the correct HW is connected, then sign
+    return this.hwWalletService.checkIfCorrectHwConnected(wallet.addresses[0].address).pipe(
+      mergeMap(() => this.hwWalletService.signTransaction(hwInputs, hwOutputs)),
+      mergeMap(signResult => {
+        const signatures: string[] = Array.isArray(signResult.rawResponse) ? signResult.rawResponse : [signResult.rawResponse];
+
+        const convertedOutputs: TransactionOutput[] = txOutputs.map(output => ({
+          ...output,
+          coins: parseInt(new BigNumber(output.coins).multipliedBy(this.coinsMultiplier).toFixed(0), 10)
+        }));
+
+        return this.cipherProvider.prepareTransactionWithSignatures(txInputs, convertedOutputs, signatures).pipe(
+          map((rawTransaction: string) => ({
+            inputs: txInputs,
+            outputs: txOutputs,
+            hoursSent: hoursSent,
+            hoursBurned: hoursBurned,
+            encoded: rawTransaction,
+          }))
+        );
+      })
+    );
+  }
+
   private buildTransaction(
     unburnedHoursRatio: BigNumber,
     minRequiredOutputs: Output[],
@@ -375,7 +454,7 @@ export class SpendingService {
         if (isEqualOrSuperiorVersion(version, '0.25.0')) {
           outputsRequest = this.apiService.post('outputs', { addrs: requestedAddresses });
         } else {
-          outputsRequest = this.apiService.get('outputs', { addrs: requestedAddresses });
+          outputsRequest = this.chunkedOutputsGet(requestedAddresses);
         }
 
         let unspentsMap: Map<string, boolean>;
@@ -425,12 +504,51 @@ export class SpendingService {
         if (isEqualOrSuperiorVersion(version, '0.25.0')) {
           outputsRequest = this.apiService.post('outputs', { addrs: addresses });
         } else {
-          outputsRequest = this.apiService.get('outputs', { addrs: addresses });
+          outputsRequest = this.chunkedOutputsGet(addresses);
         }
 
         return outputsRequest.pipe(map(response => response.head_outputs as GetOutputsRequestOutput[]));
       }));
     }
+  }
+
+  // Splits a comma-separated address string into chunks for GET requests
+  // to avoid URI length limits on older nodes.
+  private chunkedOutputsGet(addressesCsv: string): Observable<GetOutputsRequest> {
+    const addrs = addressesCsv.split(',');
+    const chunks: string[] = [];
+    let current = '';
+    addrs.forEach(addr => {
+      if (current.length > 0 && current.length + 1 + addr.length > 1800) {
+        chunks.push(current);
+        current = addr;
+      } else {
+        current = current ? current + ',' + addr : addr;
+      }
+    });
+    if (current) {
+      chunks.push(current);
+    }
+
+    if (chunks.length === 1) {
+      return this.apiService.get('outputs', { addrs: chunks[0] });
+    }
+
+    return forkJoin(chunks.map(chunk => this.apiService.get('outputs', { addrs: chunk }))).pipe(
+      map((results: GetOutputsRequest[]) => {
+        const merged: GetOutputsRequest = {
+          head_outputs: [],
+          outgoing_outputs: [],
+          incoming_outputs: [],
+        };
+        results.forEach(r => {
+          merged.head_outputs = merged.head_outputs.concat(r.head_outputs || []);
+          merged.outgoing_outputs = merged.outgoing_outputs.concat(r.outgoing_outputs || []);
+          merged.incoming_outputs = merged.incoming_outputs.concat(r.incoming_outputs || []);
+        });
+        return merged;
+      })
+    );
   }
 
   private postTransaction(rawTransaction: string): Observable<string> {

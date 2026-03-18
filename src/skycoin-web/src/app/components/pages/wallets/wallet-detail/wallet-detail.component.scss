@@ -305,3 +305,106 @@ mat-spinner {
     }
   }
 }
+
+// BIP44 account structure
+.-bip44-account {
+  margin-bottom: 8px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.-account-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: color.adjust($white, $lightness: -5%);
+  cursor: pointer;
+  font-weight: 500;
+
+  &:hover {
+    background-color: color.adjust($white, $lightness: -8%);
+  }
+}
+
+.-account-name {
+  font-size: $font-size-standard;
+}
+
+.-account-toggle {
+  font-size: 11px;
+  color: $grey;
+  text-decoration: underline;
+}
+
+.-xpub-display {
+  padding: 8px 20px;
+  background-color: color.adjust($white, $lightness: -3%);
+  border-bottom: 1px solid color.adjust($white, $lightness: -10%);
+}
+
+.-xpub-label {
+  font-size: 11px;
+  color: $grey;
+  font-weight: 500;
+}
+
+.-xpub-key {
+  font-family: monospace;
+  font-size: 11px;
+  word-break: break-all;
+  margin: 4px 0 0;
+  cursor: pointer;
+
+  &:hover {
+    color: $blue;
+  }
+}
+
+.-chain-label {
+  padding: 6px 20px;
+  font-size: 11px;
+  font-weight: 500;
+  color: $grey;
+  background-color: color.adjust($white, $lightness: -4%);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.-account-add-address {
+  cursor: pointer;
+  color: $blue;
+  font-size: 11px;
+  text-transform: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &.mouse-disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+}
+
+.-change-label {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  &:hover {
+    background-color: color.adjust($white, $lightness: -6%);
+  }
+}
+
+.-toggle-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}

@@ -472,6 +472,140 @@ func TestGetRichlist(t *testing.T) {
 	}
 }
 
+func TestExplorerAddress(t *testing.T) {
+	addr := testutil.MakeAddress()
+
+	txn := visor.Transaction{
+		Transaction: coin.Transaction{
+			In: []cipher.SHA256{testutil.RandSHA256(t)},
+		},
+		Status: visor.TransactionStatus{
+			Confirmed: true,
+			BlockSeq:  100,
+			Height:    500,
+		},
+		Time: 1518878675,
+	}
+	err := txn.Transaction.PushOutput(testutil.MakeAddress(), 125000000, 51925)
+	require.NoError(t, err)
+	err = txn.Transaction.UpdateHeader()
+	require.NoError(t, err)
+
+	inputs := []visor.TransactionInput{
+		{
+			UxOut: coin.UxOut{
+				Body: coin.UxBody{
+					Address: addr,
+					Coins:   125000000,
+					Hours:   34596,
+				},
+			},
+			CalculatedHours: 178174,
+		},
+	}
+
+	tt := []struct {
+		name            string
+		method          string
+		address         string
+		status          int
+		err             string
+		gatewayTxns     []visor.Transaction
+		gatewayInputs   [][]visor.TransactionInput
+		gatewayErr      error
+		expectResultLen int
+	}{
+		{
+			name:   "405 - POST not allowed",
+			method: http.MethodPost,
+			status: http.StatusMethodNotAllowed,
+			err:    "405 Method Not Allowed",
+		},
+		{
+			name:   "400 - missing address",
+			method: http.MethodGet,
+			status: http.StatusBadRequest,
+			err:    "400 Bad Request - address is required",
+		},
+		{
+			name:    "400 - invalid address",
+			method:  http.MethodGet,
+			address: "invalidaddr",
+			status:  http.StatusBadRequest,
+			err:     "400 Bad Request - invalid address: Invalid base58 character",
+		},
+		{
+			name:       "500 - gateway error",
+			method:     http.MethodGet,
+			address:    addr.String(),
+			status:     http.StatusInternalServerError,
+			err:        "500 Internal Server Error - gateway error",
+			gatewayErr: errors.New("gateway error"),
+		},
+		{
+			name:            "200 - success with transactions",
+			method:          http.MethodGet,
+			address:         addr.String(),
+			status:          http.StatusOK,
+			gatewayTxns:     []visor.Transaction{txn},
+			gatewayInputs:   [][]visor.TransactionInput{inputs},
+			expectResultLen: 1,
+		},
+		{
+			name:            "200 - no transactions",
+			method:          http.MethodGet,
+			address:         addr.String(),
+			status:          http.StatusOK,
+			gatewayTxns:     []visor.Transaction{},
+			gatewayInputs:   [][]visor.TransactionInput{},
+			expectResultLen: 0,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			gateway := &MockGatewayer{}
+			gateway.On("GetTransactionsWithInputs", mock.Anything, visor.AscOrder, (*visor.PageIndex)(nil)).Return(
+				tc.gatewayTxns, tc.gatewayInputs, uint64(0), tc.gatewayErr)
+
+			endpoint := "/api/v1/explorer/address"
+			if tc.address != "" {
+				endpoint += "?address=" + tc.address
+			}
+
+			req, err := http.NewRequest(tc.method, endpoint, nil)
+			require.NoError(t, err)
+
+			setCSRFParameters(t, tokenValid, req)
+
+			rr := httptest.NewRecorder()
+			handler := newServerMux(defaultMuxConfig(), gateway)
+			handler.ServeHTTP(rr, req)
+
+			require.Equal(t, tc.status, rr.Code, "status: got %d, want %d; body: %s", rr.Code, tc.status, rr.Body.String())
+
+			if tc.status != http.StatusOK {
+				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()))
+			} else {
+				var result []readable.TransactionVerbose
+				err = json.Unmarshal(rr.Body.Bytes(), &result)
+				require.NoError(t, err)
+				require.Len(t, result, tc.expectResultLen)
+
+				if tc.expectResultLen > 0 {
+					// Verify the flattened format has the expected fields
+					r := result[0]
+					require.NotEmpty(t, r.Hash) // txid
+					require.NotNil(t, r.Status)
+					require.True(t, r.Status.Confirmed)
+					require.NotEmpty(t, r.In)
+					require.NotEmpty(t, r.Out)
+				}
+			}
+		})
+	}
+}
+
 func TestGetAddressCount(t *testing.T) {
 	type Result struct {
 		Count uint64

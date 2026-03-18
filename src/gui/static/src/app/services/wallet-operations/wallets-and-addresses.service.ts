@@ -6,7 +6,7 @@ import { Injectable } from '@angular/core';
 import { ApiService } from '../api.service';
 import { HwWalletService } from '../hw-wallet.service';
 import { AppConfig } from '../../app.config';
-import { WalletBase, AddressBase, duplicateWalletBase } from './wallet-objects';
+import { WalletBase, AddressBase, Bip44Account, duplicateWalletBase } from './wallet-objects';
 import { processServiceError, redirectToErrorPage } from '../../utils/errors';
 import { StorageService, StorageType } from '../storage.service';
 import { OperationError, OperationErrorTypes } from '../../utils/operation-error';
@@ -62,7 +62,7 @@ export class WalletsAndAddressesService {
    * @param password Wallet password, if the wallet is encrypted.
    * @returns An array with the newly created addresses.
    */
-  addAddressesToWallet(wallet: WalletBase, num: number, password?: string): Observable<AddressBase[]> {
+  addAddressesToWallet(wallet: WalletBase, num: number, password?: string, accountIndex?: number): Observable<AddressBase[]> {
     if (!wallet.isHardware) {
       const params = new Object();
       params['id'] = wallet.id;
@@ -70,22 +70,39 @@ export class WalletsAndAddressesService {
       if (password) {
         params['password'] = password;
       }
+      if (accountIndex !== undefined) {
+        params['account'] = accountIndex;
+      }
 
-      // Add the addresses on the backend.
-      return this.apiService.post('wallet/newAddress', params).pipe(map((response: any) => {
-        // Find the affected wallet on the local list and add the addresses to it.
-        const affectedWallet = this.walletsList.find(w => w.id === wallet.id);
-        const newAddresses: AddressBase[] = [];
-        (response.addresses as any[]).forEach(value => {
-          const newAddress: AddressBase = {address: value, confirmed: true};
-          newAddresses.push(newAddress);
-          affectedWallet.addresses.push(newAddress);
-        });
+      // Add the addresses on the backend, then reload the full wallet to get updated account structure.
+      return this.apiService.post('wallet/newAddress', params).pipe(
+        mergeMap(() => this.apiService.get('wallet', { id: wallet.id })),
+        map((response: any) => {
+          const affectedWallet = this.walletsList.find(w => w.id === wallet.id);
+          const newAddresses: AddressBase[] = [];
 
-        this.informDataUpdated();
+          // Update flat address list
+          const oldAddressSet = new Set(affectedWallet.addresses.map(a => a.address));
+          affectedWallet.addresses = [];
+          if (response.entries) {
+            (response.entries as any[]).forEach(entry => {
+              const addr: AddressBase = { address: entry.address, confirmed: true };
+              affectedWallet.addresses.push(addr);
+              if (!oldAddressSet.has(entry.address)) {
+                newAddresses.push(addr);
+              }
+            });
+          }
 
-        return newAddresses;
-      }));
+          // Update BIP44 account structure
+          if (response.meta.type === 'bip44' && response.accounts) {
+            affectedWallet.accounts = this.parseAccounts(response.accounts);
+          }
+
+          this.informDataUpdated();
+
+          return newAddresses;
+        }));
     } else {
       // Generate the new addresses on the device.
       return this.hwWalletService.getAddresses(num, wallet.addresses.length).pipe(map(response => {
@@ -210,9 +227,17 @@ export class WalletsAndAddressesService {
         hasHwSecurityWarnings: false,
         stopShowingHwSecurityPopup: true,
         walletType: response.meta.type || 'deterministic',
+        accounts: [],
       };
 
-      (response.entries as any[]).forEach(entry => wallet.addresses.push({address: entry.address, confirmed: true}));
+      if (response.entries) {
+        (response.entries as any[]).forEach(entry => wallet.addresses.push({address: entry.address, confirmed: true}));
+      }
+
+      // Parse BIP44 account structure
+      if (response.meta.type === 'bip44' && response.accounts) {
+        wallet.accounts = this.parseAccounts(response.accounts);
+      }
 
       this.walletsList.push(wallet);
 
@@ -359,6 +384,7 @@ export class WalletsAndAddressesService {
       temporal: false,
       isHardware: true,
       walletType: 'deterministic',
+      accounts: [],
     };
   }
 
@@ -381,6 +407,7 @@ export class WalletsAndAddressesService {
           hasHwSecurityWarnings: false,
           stopShowingHwSecurityPopup: true,
           walletType: wallet.meta.type || 'deterministic',
+          accounts: [],
         };
 
         if (wallet.entries) {
@@ -390,6 +417,11 @@ export class WalletsAndAddressesService {
               confirmed: true,
             };
           });
+        }
+
+        // Parse BIP44 account structure
+        if (wallet.meta.type === 'bip44' && wallet.accounts) {
+          processedWallet.accounts = this.parseAccounts(wallet.accounts);
         }
 
         softwareWallets.push(processedWallet);
@@ -469,6 +501,54 @@ export class WalletsAndAddressesService {
         return [];
       }),
     );
+  }
+
+  /**
+   * Adds a new account to a BIP44 wallet.
+   * @param wallet The BIP44 wallet to add an account to.
+   * @param name Name for the new account.
+   */
+  addAccount(wallet: WalletBase, name: string): Observable<void> {
+    return this.apiService.post('wallet/newAccount', {
+      id: wallet.id,
+      name: name,
+    }).pipe(map((response: any) => {
+      const affectedWallet = this.walletsList.find(w => w.id === wallet.id);
+      if (response.accounts) {
+        affectedWallet.accounts = this.parseAccounts(response.accounts);
+      }
+      if (response.entries) {
+        affectedWallet.addresses = (response.entries as any[]).map(e => ({ address: e.address, confirmed: true }));
+      }
+      this.informDataUpdated();
+    }));
+  }
+
+  /**
+   * Gets the extended public key for a BIP44 wallet account chain.
+   * @param wallet The BIP44 wallet.
+   * @param accountIndex The account index.
+   * @param chainIndex The chain index (0 = external, 1 = change).
+   */
+  getXPubKey(wallet: WalletBase, accountIndex: number, chainIndex: number): Observable<string> {
+    return this.apiService.get('wallet/xpub', {
+      id: wallet.id,
+      path: `${accountIndex}/${chainIndex}`,
+    }).pipe(map((response: any) => response.xpub_key));
+  }
+
+  /**
+   * Parses BIP44 account data from an API response.
+   */
+  private parseAccounts(accounts: any[]): Bip44Account[] {
+    return accounts.map(a => {
+      const account = new Bip44Account();
+      account.name = a.name;
+      account.index = a.index;
+      account.externalAddresses = (a.external_entries || []).map(e => ({ address: e.address, confirmed: true }));
+      account.changeAddresses = (a.change_entries || []).map(e => ({ address: e.address, confirmed: true }));
+      return account;
+    });
   }
 
   /**

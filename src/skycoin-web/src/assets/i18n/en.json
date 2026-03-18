@@ -131,6 +131,7 @@
 
   "wallet": {
     "new-address": "New Address",
+    "add-account": "Add Account",
     "show-empty": "Show Empty",
     "hide-empty": "Hide Empty",
     "encrypt": "Encrypt Wallet",
@@ -179,6 +180,8 @@
       "seed-passphrase-label": "Seed passphrase (optional)",
       "seed-passphrase-placeholder": "Enter an optional passphrase",
       "seed-passphrase-info": "An optional passphrase adds an extra layer of security. You will need both the seed and the passphrase to recover the wallet.",
+      "segwit-label": "Native Segwit (bech32)",
+      "segwit-info": "Generate bc1q... addresses (BIP84). Recommended for lower fees. Uncheck for legacy P2PKH addresses.",
       "wallet-created": "The wallet has been added to the list."
     },
 
@@ -432,6 +435,42 @@
       "not-enough-hours2": "to perform transaction!",
       "wrong-seed": "Wrong seed",
       "invalid-wallet": "Invalid wallet"
+    }
+  },
+
+  "hardware-wallet": {
+    "add": "Add Hardware Wallet",
+    "added": "Hardware wallet added successfully.",
+    "already-added": "A hardware wallet with this device is already added.",
+    "general-error": "Error communicating with the hardware wallet. Please make sure it is connected and try again.",
+
+    "errors": {
+      "failed-or-refused": "The operation was cancelled or refused on the device.",
+      "incorrect-pin": "The PIN you entered is incorrect.",
+      "pin-mismatch": "The PINs you entered do not match.",
+      "without-seed": "The device does not have a seed. Please configure it first.",
+      "incorrect-wallet": "The connected hardware wallet does not match the expected wallet.",
+      "daemon-connection": "Unable to connect to the hardware wallet daemon. Make sure it is running on port 9510.",
+      "disconnected": "The hardware wallet was disconnected.",
+      "timeout": "The operation timed out. Please try again.",
+      "not-in-bootloader-mode": "The device is in bootloader mode. Please restart it in normal mode.",
+      "address-generator-problem": "There was a problem verifying the generated addresses."
+    },
+
+    "enter-pin": {
+      "title": "Enter PIN",
+      "title-change-current": "Enter Current PIN",
+      "title-change-new": "Enter New PIN",
+      "title-change-confirm": "Confirm New PIN",
+      "instructions": "Enter your PIN using the button positions shown on the device screen."
+    },
+
+    "confirm-tx": {
+      "title": "Confirm Transaction",
+      "instructions": "Please confirm the following transaction on your device:",
+      "recipient": "Recipient",
+      "coins": "Coins",
+      "hours": "Hours"
     }
   }
 }

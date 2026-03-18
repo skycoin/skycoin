@@ -1,0 +1,35 @@
+.text-center {
+  text-align: center;
+}
+
+input#pin {
+  text-align: center;
+  font-size: 20px;
+  letter-spacing: 8px;
+  margin-top: 10px;
+}
+
+.num-pad {
+  margin: 10px 0;
+
+  .num-pad-row {
+    display: flex;
+    justify-content: center;
+    margin: 2px 0;
+
+    button {
+      min-width: 60px;
+      height: 60px;
+      margin: 0 2px;
+      font-size: 24px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+  }
+}
+
+.-buttons {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}

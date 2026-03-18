@@ -135,7 +135,7 @@ func NewWallet(filename, label, seed, seedPassphrase string, options ...wallet.O
 		switch wlt.Coin() {
 		case wallet.CoinTypeSkycoin:
 			wlt.SetBip44Coin(bip44.CoinTypeSkycoin)
-		case wallet.CoinTypeBitcoin:
+		case wallet.CoinTypeBitcoin, wallet.CoinTypeBitcoinSegwit:
 			wlt.SetBip44Coin(bip44.CoinTypeBitcoin)
 		default:
 			return nil, errors.New("bip44 coin type not set")
@@ -247,12 +247,17 @@ func (w *Wallet) SetDecoder(d wallet.Decoder) {
 // NewAccount create a bip44 wallet account, returns account index and
 // error, if any.
 func (w *Wallet) NewAccount(name string) (uint32, error) {
+	purpose := bip44.PurposeBIP44
+	if w.Coin() == wallet.CoinTypeBitcoinSegwit {
+		purpose = bip44.PurposeBIP84
+	}
 	return w.accountManager.new(bip44AccountCreateOptions{
 		name:           name,
 		seed:           w.Seed(),
 		seedPassphrase: w.SeedPassphrase(),
 		coinType:       w.Coin(),
 		bip44CoinType:  w.Bip44Coin(),
+		purpose:        purpose,
 	})
 }
 

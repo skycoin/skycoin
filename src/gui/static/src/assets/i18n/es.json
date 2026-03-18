@@ -117,6 +117,7 @@
     "max-hardware-wallets-error": "Ya ha alcanzado el número máximo de direcciones que se puede agregar a la Skywallet.",
     "add-many-confirmation": "ADVERTENCIA: si agrega demasiadas direcciones sin usar las anteriores o si usa las últimas y no las primeras, es posible que algunas direcciones no se recuperen automáticamente si intenta restaurar la billetera con la semilla (tendrá que agregarlas manualmente). ¿Desea continuar?",
     "busy-error": "Por favor espere a que se complete la operación anterior.",
+    "add-account": "Agregar Cuenta",
 
     "new": {
       "create-title": "Crear Billetera",

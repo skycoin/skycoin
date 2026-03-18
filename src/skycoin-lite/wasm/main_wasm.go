@@ -56,6 +56,27 @@ func main() {
 		return txHex
 	}))
 
+	// prepareTransactionWithSignatures function (for hardware wallet signing)
+	skycoinCipher.Set("prepareTransactionWithSignatures", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		if len(args) < 3 {
+			return map[string]interface{}{"error": "inputs, outputs, and signatures parameters required"}
+		}
+
+		inputsJSON := args[0].String()
+		outputsJSON := args[1].String()
+		signaturesJSON := args[2].String()
+
+		defer func() {
+			if r := recover(); r != nil {
+				// Convert panic to error return
+			}
+		}()
+
+		txHex := liteclient.PrepareTransactionWithSignatures(inputsJSON, outputsJSON, signaturesJSON)
+
+		return txHex
+	}))
+
 	// Set SkycoinCipher on global window object
 	js.Global().Set("SkycoinCipher", skycoinCipher)
 

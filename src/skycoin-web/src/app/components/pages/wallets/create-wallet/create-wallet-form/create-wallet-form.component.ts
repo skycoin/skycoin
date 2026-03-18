@@ -14,6 +14,7 @@ export class FormData {
   coin: BaseCoin;
   walletType: string;
   seedPassphrase: string;
+  segwit: boolean;
 }
 
 @Component({
@@ -32,6 +33,8 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
   normalSeed = false;
   customSeedAccepted = false;
   isProduction = environment.production;
+  showWalletType = false;
+  isBitcoinCoin = false;
 
   private statusSubscription: Subscription;
 
@@ -65,19 +68,27 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
       coin: this.form.value.coin,
       walletType: this.form.value.wallet_type || 'deterministic',
       seedPassphrase: this.form.value.seed_passphrase || '',
+      segwit: !!this.form.value.segwit,
     };
   }
 
   initForm(defaultCoin: BaseCoin, create: boolean = null) {
     create = create !== null ? create : this.create;
 
+    this.isBitcoinCoin = defaultCoin ? defaultCoin.isBitcoin() : false;
+    this.showWalletType = defaultCoin ? defaultCoin.serverWallets : this.isProduction;
+
+    // Bitcoin defaults to bip44 (segwit); Skycoin defaults to deterministic
+    const defaultWalletType = this.isBitcoinCoin ? 'bip44' : 'deterministic';
+
     this.form = this.formBuilder.group({
         label: new UntypedFormControl('', [ Validators.required ]),
         coin: new UntypedFormControl(defaultCoin, [ Validators.required ]),
         seed: new UntypedFormControl('', [ Validators.required ]),
         confirm_seed: new UntypedFormControl(),
-        wallet_type: new UntypedFormControl('deterministic'),
+        wallet_type: new UntypedFormControl(defaultWalletType),
         seed_passphrase: new UntypedFormControl(''),
+        segwit: new UntypedFormControl(true),
       },
       {
         validator: create ? this.seedMatchValidator.bind(this) : null,
@@ -87,6 +98,20 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     if (create) {
       this.generateSeed(128);
     }
+
+    // Update coin-dependent state when coin selection changes
+    this.form.get('coin').valueChanges.subscribe((coin: BaseCoin) => {
+      if (coin) {
+        this.isBitcoinCoin = coin.isBitcoin();
+        this.showWalletType = coin.serverWallets;
+        if (this.isBitcoinCoin) {
+          this.form.get('wallet_type').setValue('bip44');
+          this.form.get('segwit').setValue(true);
+        } else {
+          this.form.get('wallet_type').setValue('deterministic');
+        }
+      }
+    });
 
     this.statusSubscription = this.form.statusChanges.subscribe(() => {
       this.customSeedAccepted = false;

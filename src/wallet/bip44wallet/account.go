@@ -33,6 +33,7 @@ type bip44AccountCreateOptions struct {
 	seedPassphrase string
 	coinType       wallet.CoinType
 	bip44CoinType  *bip44.CoinType
+	purpose        uint32 // BIP43 purpose (44 for BIP44, 84 for BIP84 segwit)
 }
 
 func newBip44Account(opts bip44AccountCreateOptions) (*bip44Account, error) {
@@ -46,7 +47,11 @@ func newBip44Account(opts bip44AccountCreateOptions) (*bip44Account, error) {
 		return nil, errors.New("newBip44Account missing bip44 coin type")
 	}
 
-	c, err := bip44.NewCoin(seed, *opts.bip44CoinType)
+	purpose := opts.purpose
+	if purpose == 0 {
+		purpose = bip44.PurposeBIP44
+	}
+	c, err := bip44.NewCoinWithPurpose(seed, *opts.bip44CoinType, purpose)
 	if err != nil {
 		logger.Critical().WithError(err).Error("Failed to derive the bip44 purpose node")
 		if bip32.IsImpossibleChildError(err) {

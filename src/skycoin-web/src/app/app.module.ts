@@ -87,6 +87,13 @@ import { Bip39WordListService } from './services/bip39-word-list.service';
 import { SendFormAdvancedComponent } from './components/pages/send-skycoin/send-form-advanced/send-form-advanced.component';
 import { SelectAddressComponent } from './components/pages/send-skycoin/send-form-advanced/select-address/select-address';
 import { MsgBarService } from './services/msg-bar.service';
+import { HwWalletPinService } from './services/hw-wallet-pin.service';
+import { HwWalletDaemonService } from './services/hw-wallet-daemon.service';
+import { HwWalletService } from './services/hw-wallet.service';
+import { EncryptionService } from './services/encryption.service';
+import { HwPinDialogComponent } from './components/layout/hardware-wallet/hw-pin-dialog/hw-pin-dialog.component';
+import { HwMessageComponent } from './components/layout/hardware-wallet/hw-message/hw-message.component';
+import { HwConfirmTxDialogComponent } from './components/layout/hardware-wallet/hw-confirm-tx-dialog/hw-confirm-tx-dialog.component';
 import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
 
 @NgModule({ declarations: [
@@ -134,6 +141,9 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
         SendFormAdvancedComponent,
         SelectAddressComponent,
         MsgBarComponent,
+        HwPinDialogComponent,
+        HwMessageComponent,
+        HwConfirmTxDialogComponent,
     ],
     bootstrap: [AppComponent], imports: [BrowserModule,
         MatButtonModule,
@@ -181,6 +191,10 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
         CustomMatDialogService,
         Bip39WordListService,
         MsgBarService,
+        HwWalletPinService,
+        HwWalletDaemonService,
+        HwWalletService,
+        EncryptionService,
         provideHttpClient(withInterceptorsFromDi()),
     ] })
 export class AppModule { }

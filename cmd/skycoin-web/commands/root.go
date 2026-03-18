@@ -17,6 +17,7 @@ import (
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/calvin"
 	"github.com/spf13/cobra"
 
+	"github.com/skycoin/skycoin/src/btc"
 	"github.com/skycoin/skycoin/src/cipher/bip44"
 	"github.com/skycoin/skycoin/src/cipher/crypto"
 	"github.com/skycoin/skycoin/src/readable"
@@ -31,6 +32,10 @@ var (
 	nodeURLs      []string
 	walletDirs    []string
 	enableSeedAPI bool
+
+	// Bitcoin flags
+	btcNodeURL     string
+	btcElectrumURL string
 )
 
 // proxyCache caches responses for slow read-only endpoints (e.g. transactions)
@@ -74,6 +79,8 @@ type discoveredCoin struct {
 	PriceTickerID     string `json:"priceTickerId"`
 	PriceTickerSource string `json:"priceTickerSource"`
 	CoinExplorer      string `json:"coinExplorer"`
+	CoinType          string `json:"coinType"`
+	ServerWallets     bool   `json:"serverWallets"`
 	// internal: the actual remote node URL (not exposed to frontend)
 	remoteNodeURL string
 }
@@ -96,8 +103,13 @@ func init() {
 	RootCmd.Flags().IntVarP(&port, "port", "p", 8001, "Port to serve on")
 	RootCmd.Flags().StringVarP(&host, "host", "H", "127.0.0.1", "Host to bind to")
 	RootCmd.Flags().StringArrayVarP(&nodeURLs, "node-url", "n", []string{"https://node.skycoin.com"}, "Node URL (can be specified multiple times)")
-	RootCmd.Flags().StringArrayVarP(&walletDirs, "wallet-dir", "w", nil, "Local wallet directory (can be specified multiple times)")
+	RootCmd.Flags().StringArrayVarP(&walletDirs, "wallet-dir", "w", nil, "Local wallet directory (e.g. ~/.skycoin/wallets)")
 	RootCmd.Flags().BoolVar(&enableSeedAPI, "enable-seed-api", false, "Enable the wallet seed API (requires --wallet-dir)")
+
+	// Bitcoin flags (mutually exclusive)
+	RootCmd.Flags().StringVar(&btcNodeURL, "btc-node-url", "", "Bitcoin Core RPC URL (e.g. http://user:pass@127.0.0.1:8332)")
+	RootCmd.Flags().StringVar(&btcElectrumURL, "btc-electrum-url", "", "Electrum server URL (e.g. ssl://electrum.blockstream.info:50002)")
+	RootCmd.MarkFlagsMutuallyExclusive("btc-node-url", "btc-electrum-url")
 }
 
 // Execute runs the root command
@@ -149,6 +161,7 @@ func discoverCoin(index int, nodeURL string) (*discoveredCoin, error) {
 		PriceTickerID:     f.PriceTickerID,
 		PriceTickerSource: f.PriceTickerSource,
 		CoinExplorer:      f.ExplorerURL,
+		CoinType:          "skycoin",
 		remoteNodeURL:     nodeURL,
 	}
 
@@ -179,6 +192,9 @@ func serve() {
 	var coins []*discoveredCoin
 	for i, rawURL := range nodeURLs {
 		nodeURL := strings.TrimRight(rawURL, "/")
+		if nodeURL == "" {
+			continue
+		}
 		coin, err := discoverCoin(i, nodeURL)
 		if err != nil {
 			log.Printf("[WARN] Could not discover coin from %s: %v (will use as unconfigured node)", nodeURL, err)
@@ -189,6 +205,7 @@ func serve() {
 				CoinName:      fmt.Sprintf("Node %d", i),
 				CoinSymbol:    fmt.Sprintf("N%d", i),
 				HoursName:     "Coin Hours",
+				CoinType:      "skycoin",
 				remoteNodeURL: nodeURL,
 			}
 		}
@@ -219,6 +236,73 @@ func serve() {
 		log.Printf("[WALLET] Wallet service initialized: %s", dir)
 	}
 
+	// Initialize Bitcoin backend if configured
+	var btcBackend btc.Backend
+	var btcWltServices []*wallet.Service
+	if btcNodeURL != "" || btcElectrumURL != "" {
+		// Initialize Bitcoin backend
+		var berr error
+		if btcElectrumURL != "" {
+			btcBackend, berr = btc.NewElectrumBackend(btcElectrumURL)
+			if berr != nil {
+				log.Printf("[WARN] Failed to connect to Electrum server %s: %v", btcElectrumURL, berr)
+			} else {
+				log.Printf("[BTC] Connected to Electrum server: %s", btcElectrumURL)
+			}
+		} else {
+			btcBackend, berr = btc.NewCoreBackend(btcNodeURL)
+			if berr != nil {
+				log.Printf("[WARN] Failed to connect to Bitcoin Core %s: %v", btcNodeURL, berr)
+			} else {
+				log.Printf("[BTC] Connected to Bitcoin Core: %s", btcNodeURL)
+			}
+		}
+
+		if btcBackend != nil {
+			// Create Bitcoin wallet services using the same --wallet-dir directories.
+			// The wallet service filters by coin type, so BTC and SKY wallets coexist
+			// in the same directory without conflict.
+			for _, dir := range walletDirs {
+				if dir == "" {
+					continue
+				}
+				btcBip44Coin := bip44.CoinTypeBitcoin
+				btcCfg := wallet.Config{
+					WalletDir:       dir,
+					CryptoType:      crypto.DefaultCryptoType,
+					EnableWalletAPI: true,
+					EnableSeedAPI:   enableSeedAPI,
+					Bip44Coin:       &btcBip44Coin,
+				}
+				btcSvc, btcErr := wallet.NewService(btcCfg)
+				if btcErr != nil {
+					log.Fatalf("Failed to initialize Bitcoin wallet service for %s: %v", dir, btcErr)
+				}
+				btcWltServices = append(btcWltServices, btcSvc)
+				log.Printf("[BTC] Bitcoin wallet service initialized: %s", dir)
+			}
+			if len(walletDirs) == 0 {
+				log.Printf("[BTC] No --wallet-dir specified, Bitcoin wallet management disabled (web-only mode)")
+			}
+
+			// Add Bitcoin as a discovered coin
+			btcCoinIndex := len(coins)
+			btcCoin := &discoveredCoin{
+				ID:                btcCoinIndex,
+				NodeURL:           fmt.Sprintf("/coin/%d", btcCoinIndex),
+				CoinName:          "Bitcoin",
+				CoinSymbol:        "BTC",
+				HoursName:         "",
+				PriceTickerID:     "btc-bitcoin",
+				PriceTickerSource: "coinpaprika",
+				CoinExplorer:      "https://blockchair.com/bitcoin",
+				CoinType:          "bitcoin",
+			}
+			coins = append(coins, btcCoin)
+			log.Printf("[COIN] Added Bitcoin at index %d", btcCoinIndex)
+		}
+	}
+
 	// Map wallet services to coins by index.
 	// If counts match, wallet dir i is used for coin i.
 	// Otherwise, all wallet services are shared across all coins.
@@ -230,6 +314,29 @@ func serve() {
 	} else if len(wltServices) > 0 {
 		for i := range coins {
 			coinWltServices[i] = wltServices
+		}
+	}
+
+	// Map Bitcoin wallet services and handler to the Bitcoin coin
+	btcHandlers := make(map[int]*btcHandler)
+	if btcBackend != nil {
+		for i, coin := range coins {
+			if coin.CoinType == "bitcoin" {
+				if len(btcWltServices) > 0 {
+					coinWltServices[i] = btcWltServices
+					btcHandlers[i] = &btcHandler{
+						backend:    btcBackend,
+						wltService: btcWltServices[0],
+					}
+				}
+			}
+		}
+	}
+
+	// Mark coins that have server-side wallet management
+	for i := range coins {
+		if _, ok := coinWltServices[i]; ok {
+			coins[i].ServerWallets = true
 		}
 	}
 
@@ -266,6 +373,29 @@ func serve() {
 
 		coin := coins[coinIndex]
 		apiPath := c.Param("path")
+
+		// Bitcoin coins are handled by the btcHandler, not proxied to a node
+		if coin.CoinType == "bitcoin" {
+			// Return stub responses for Skycoin-specific endpoints the frontend calls on all coins
+			if handleBtcStubEndpoints(c, apiPath) {
+				return
+			}
+
+			if handler, ok := btcHandlers[coinIndex]; ok {
+				// Try BTC-specific API endpoints first
+				if handler.handleBtcAPI(c, apiPath) {
+					return
+				}
+			}
+			// Try wallet endpoints (create, list, etc.)
+			if services, ok := coinWltServices[coinIndex]; ok && len(services) > 0 {
+				if handleMultiWalletAPI(c, apiPath, services, "") {
+					return
+				}
+			}
+			c.String(http.StatusNotFound, "endpoint not available for bitcoin")
+			return
+		}
 
 		// Intercept read-only POST requests — convert to GET to avoid CSRF issues
 		if c.Request.Method == http.MethodPost {
@@ -366,6 +496,32 @@ func serve() {
 	}
 }
 
+// handleBtcStubEndpoints returns stub responses for Skycoin-specific endpoints
+// that the frontend calls on all coins (network/connections, health, blockchain/progress, etc.)
+func handleBtcStubEndpoints(c *gin.Context, apiPath string) bool {
+	path := strings.TrimSuffix(apiPath, "/")
+	switch path {
+	case "/v1/network/connections":
+		c.JSON(http.StatusOK, gin.H{"connections": []any{}})
+	case "/v1/health":
+		c.JSON(http.StatusOK, gin.H{
+			"blockchain":       gin.H{"head": gin.H{"seq": 0, "timestamp": 0}},
+			"version":          gin.H{"version": "0.27.0", "commit": "bitcoin"},
+			"open_connections": 0,
+			"uptime":           "0s",
+		})
+	case "/v1/blockchain/progress":
+		c.JSON(http.StatusOK, gin.H{"current": 1, "highest": 1, "peers": []any{}})
+	case "/v1/blockchain/metadata":
+		c.JSON(http.StatusOK, gin.H{"head": gin.H{"seq": 0, "fee": 0}})
+	case "/v1/csrf":
+		c.JSON(http.StatusOK, gin.H{"csrf_token": ""})
+	default:
+		return false
+	}
+	return true
+}
+
 func setCORSHeaders(c *gin.Context) {
 	c.Header("Access-Control-Allow-Origin", "*")
 	c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
@@ -464,54 +620,59 @@ func handleWalletFolderMulti(c *gin.Context, services []*wallet.Service) {
 	c.JSON(http.StatusOK, gin.H{"address": addr})
 }
 
-// handleReadOnlyPost converts read-only POST requests to GET to avoid CSRF issues.
+// handleReadOnlyPost forwards read-only POST requests to the node as POST with CSRF token.
+// This preserves form body data (e.g. long address lists) that would exceed URI length
+// limits if converted to GET query parameters.
 // Returns true if the request was handled, false otherwise.
 func handleReadOnlyPost(c *gin.Context, trimmedPath string, nodeURL string) bool {
-	// Map of read-only POST endpoints and the form fields to forward as query params
-	type readOnlyEndpoint struct {
-		fields []string
-	}
-	endpoints := map[string]readOnlyEndpoint{
-		"/v1/balance":      {fields: []string{"addrs"}},
-		"/v1/transactions": {fields: []string{"addrs", "verbose"}},
-		"/v1/outputs":      {fields: []string{"addrs", "hashes"}},
+	readOnlyEndpoints := map[string]bool{
+		"/v1/balance":      true,
+		"/v1/transactions": true,
+		"/v1/outputs":      true,
 	}
 
-	ep, ok := endpoints[trimmedPath]
-	if !ok {
+	if !readOnlyEndpoints[trimmedPath] {
 		return false
 	}
 
-	apiPath := trimmedPath
-	query := ""
-	for _, field := range ep.fields {
-		val := c.Request.FormValue(field)
-		if val != "" {
-			if query != "" {
-				query += "&"
-			}
-			query += field + "=" + val
-		}
-	}
-
-	getURL := fmt.Sprintf("%s/api%s", nodeURL, apiPath)
-	if query != "" {
-		getURL += "?" + query
-	}
+	targetURL := fmt.Sprintf("%s/api%s", nodeURL, trimmedPath)
 
 	// Cache transaction queries for 30 seconds to avoid slow repeated lookups
-	cacheKey := getURL
 	if trimmedPath == "/v1/transactions" {
+		cacheKey := targetURL + "?" + c.Request.FormValue("addrs")
 		if entry, ok := queryCache.get(cacheKey, 30*time.Second); ok {
-			log.Printf("[PROXY] POST→GET %s -> cached (%s ago)", c.Request.URL.Path, time.Since(entry.cachedAt).Round(time.Second))
+			log.Printf("[PROXY] POST %s -> cached (%s ago)", c.Request.URL.Path, time.Since(entry.cachedAt).Round(time.Second))
 			c.Data(entry.statusCode, entry.contentType, entry.body)
 			return true
 		}
 	}
 
-	log.Printf("[PROXY] POST→GET %s -> %s", c.Request.URL.Path, getURL)
+	log.Printf("[PROXY] POST %s -> %s", c.Request.URL.Path, targetURL)
 
-	resp, err := http.Get(getURL) //nolint:gosec
+	// Build form body from the original request
+	if err := c.Request.ParseForm(); err != nil {
+		errInternal(c, fmt.Sprintf("failed to parse form: %v", err))
+		return true
+	}
+	formData := c.Request.PostForm.Encode()
+
+	req, err := http.NewRequest(http.MethodPost, targetURL, strings.NewReader(formData))
+	if err != nil {
+		errInternal(c, fmt.Sprintf("failed to create request: %v", err))
+		return true
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	// Fetch and attach CSRF token
+	csrfToken, err := fetchCSRFToken(nodeURL)
+	if err != nil {
+		log.Printf("[PROXY] Warning: could not fetch CSRF token: %v", err)
+	} else if csrfToken != "" {
+		req.Header.Set("X-CSRF-Token", csrfToken)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		errInternal(c, fmt.Sprintf("failed to query node: %v", err))
 		return true
@@ -528,8 +689,9 @@ func handleReadOnlyPost(c *gin.Context, trimmedPath string, nodeURL string) bool
 		return true
 	}
 
-	// Cache successful responses
+	// Cache successful transaction responses
 	if trimmedPath == "/v1/transactions" && resp.StatusCode == http.StatusOK {
+		cacheKey := targetURL + "?" + c.Request.FormValue("addrs")
 		queryCache.set(cacheKey, proxyCacheEntry{
 			body:        body,
 			contentType: resp.Header.Get("Content-Type"),

@@ -148,7 +148,7 @@ export class OnboardingCreateWalletComponent implements OnInit, AfterViewInit, O
 
     const data = this.formControl.getData();
 
-    this.walletService.create(data.label, data.seed, data.coin.id, this.showNewForm, data.walletType, data.seedPassphrase)
+    this.walletService.create(data.label, data.seed, data.coin.id, this.showNewForm, data.walletType, data.seedPassphrase, data.segwit)
       .subscribe(
         wallet => this.onCreateSuccess(wallet, data.coin),
         (error) => this.onCreateError(error.message)

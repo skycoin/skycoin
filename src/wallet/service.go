@@ -150,11 +150,23 @@ func (serv *Service) loadWallets() (Wallets, error) {
 		}
 	}
 
+	// Determine which coin types this service expects
+	expectedCoins := map[CoinType]bool{CoinTypeSkycoin: true}
+	if serv.config.Bip44Coin != nil {
+		switch *serv.config.Bip44Coin {
+		case bip44.CoinTypeBitcoin:
+			expectedCoins = map[CoinType]bool{
+				CoinTypeBitcoin:       true,
+				CoinTypeBitcoinSegwit: true,
+			}
+		}
+	}
+
 	for name, w := range wallets {
-		if w.Coin() != CoinTypeSkycoin {
-			err := fmt.Errorf("LoadWallets only support skycoin wallets, %s is a %s wallet", name, w.Coin())
-			logger.WithError(err).WithField("name", name).Error()
-			return nil, err
+		if !expectedCoins[w.Coin()] {
+			logger.WithField("name", name).WithField("walletCoin", w.Coin()).
+				Info("loadWallets: skipping wallet with different coin type")
+			delete(wallets, name)
 		}
 	}
 
@@ -176,6 +188,17 @@ func (serv *Service) updateOptions(opts Options) Options {
 	if opts.Type == WalletTypeBip44 && opts.Bip44Coin == nil && serv.config.Bip44Coin != nil {
 		c := *serv.config.Bip44Coin
 		opts.Bip44Coin = &c
+	}
+
+	// Derive coin type from configured Bip44Coin when not explicitly set
+	if opts.Coin == "" && serv.config.Bip44Coin != nil {
+		switch *serv.config.Bip44Coin {
+		case bip44.CoinTypeBitcoin:
+			// Default new Bitcoin wallets to segwit (bech32) addresses
+			opts.Coin = CoinTypeBitcoinSegwit
+		default:
+			opts.Coin = CoinTypeSkycoin
+		}
 	}
 
 	// generate one default address if options.GenerateN is 0

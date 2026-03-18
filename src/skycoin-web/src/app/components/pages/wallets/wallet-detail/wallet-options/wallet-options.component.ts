@@ -3,12 +3,16 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
 import { environment } from '../../../../../../environments/environment';
 import { Wallet } from '../../../../../app.datatypes';
+import { BaseCoin } from '../../../../../coins/basecoin';
+import { CoinService } from '../../../../../services/coin.service';
 
 export enum WalletOptionsResponses {
   UnlockWallet,
   AddNewAddress,
   EditWallet,
   DeleteWallet,
+  EncryptWallet,
+  DecryptWallet,
 }
 
 @Component({
@@ -19,13 +23,20 @@ export enum WalletOptionsResponses {
 })
 export class WalletOptionsComponent {
 
-
   showUnlockOption: boolean;
+  showEncryptOption: boolean;
+  isEncrypted: boolean;
+
   constructor(
     @Inject(MAT_DIALOG_DATA) data: Wallet,
-    public dialogRef: MatDialogRef<WalletOptionsComponent>
+    public dialogRef: MatDialogRef<WalletOptionsComponent>,
+    coinService: CoinService,
   ) {
     this.showUnlockOption = !environment.production && !data.seed;
+    const coin = coinService.currentCoin.getValue();
+    // Show encrypt option for server-managed wallets OR browser-only wallets (not hardware)
+    this.showEncryptOption = !!(coin && coin.serverWallets && data.filename) || (!data.isHardware && !(coin && coin.serverWallets));
+    this.isEncrypted = !!data.encrypted || !!data.encryptedSeed;
   }
 
   onUnlockWallet() {
@@ -42,6 +53,14 @@ export class WalletOptionsComponent {
 
   onDeleteWallet() {
     this.closePopup(WalletOptionsResponses.DeleteWallet);
+  }
+
+  onEncryptWallet() {
+    this.closePopup(WalletOptionsResponses.EncryptWallet);
+  }
+
+  onDecryptWallet() {
+    this.closePopup(WalletOptionsResponses.DecryptWallet);
   }
 
   closePopup(response: WalletOptionsResponses = null) {

@@ -127,6 +127,7 @@
 
   "wallet": {
     "new-address": "Nueva Dirección",
+    "add-account": "Agregar Cuenta",
     "show-empty": "Mostrar Vacías",
     "hide-empty": "Ocultar Vacías",
     "encrypt": "Encriptar Billetera",

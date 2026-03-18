@@ -54,6 +54,14 @@ type WalletEntry struct {
 	Change      *uint32 `json:"change,omitempty"`       // For bip44
 }
 
+// WalletAccount represents a BIP44 account with entries split by chain
+type WalletAccount struct {
+	Name            string        `json:"name"`
+	Index           uint32        `json:"index"`
+	ExternalEntries []WalletEntry `json:"external_entries"`
+	ChangeEntries   []WalletEntry `json:"change_entries"`
+}
+
 // WalletMeta the wallet meta struct
 type WalletMeta struct {
 	Coin       wallet.CoinType   `json:"coin"`

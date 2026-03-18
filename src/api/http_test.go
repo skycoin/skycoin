@@ -22,6 +22,7 @@ var allAPISetsEnabled = map[string]struct{}{
 	EndpointsInsecureWalletSeed: struct{}{},
 	EndpointsNetCtrl:            struct{}{},
 	EndpointsStorage:            struct{}{},
+	EndpointsExplorer:           struct{}{},
 }
 
 func defaultMuxConfig() muxConfig {
@@ -59,6 +60,9 @@ var endpointsMethods = map[string][]string{
 		http.MethodPost,
 	},
 	"/api/v1/coinSupply": []string{
+		http.MethodGet,
+	},
+	"/api/v1/explorer/address": []string{
 		http.MethodGet,
 	},
 	"/api/v1/health": []string{

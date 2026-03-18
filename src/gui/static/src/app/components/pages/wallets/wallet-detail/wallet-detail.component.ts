@@ -16,7 +16,7 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
 import { AddressOptionsComponent, AddressOptions } from './address-options/address-options.component';
 import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent } from '../../../layout/confirmation/confirmation.component';
 import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
-import { WalletWithBalance, AddressWithBalance } from '../../../../services/wallet-operations/wallet-objects';
+import { WalletWithBalance, AddressWithBalance, Bip44Account } from '../../../../services/wallet-operations/wallet-objects';
 import { SoftwareWalletService } from '../../../../services/wallet-operations/software-wallet.service';
 import { HardwareWalletService } from '../../../../services/wallet-operations/hardware-wallet.service';
 import { HistoryService } from '../../../../services/wallet-operations/history.service';
@@ -259,6 +259,98 @@ export class WalletDetailComponent implements OnDestroy {
   // Switches between showing and hiding the addresses without balance.
   toggleEmpty() {
     this.hideEmpty = !this.hideEmpty;
+  }
+
+  // Returns true if this is a BIP44 wallet.
+  get isBip44(): boolean {
+    return this.wallet.walletType === 'bip44';
+  }
+
+  // Toggles xPub key visibility for an account.
+  toggleXpub(account: Bip44Account) {
+    if (account.showXpub) {
+      account.showXpub = false;
+      return;
+    }
+
+    if (account.xpubKey) {
+      account.showXpub = true;
+      return;
+    }
+
+    this.walletsAndAddressesService.getXPubKey(this.wallet, account.index, 0).subscribe(
+      (xpub) => {
+        account.xpubKey = xpub;
+        account.showXpub = true;
+      },
+      (err) => this.msgBarService.showError(err)
+    );
+  }
+
+  // Toggles change address visibility for an account.
+  toggleChangeAddresses(account: Bip44Account) {
+    account.showChangeAddresses = !account.showChangeAddresses;
+  }
+
+  // Adds a new BIP44 account to the wallet.
+  addAccount() {
+    if (WalletsComponent.busy) {
+      this.msgBarService.showError('wallet.busy-error');
+      return;
+    }
+
+    const name = `Account ${(this.wallet.accounts || []).length}`;
+    WalletsComponent.busy = true;
+
+    this.walletsAndAddressesService.addAccount(this.wallet, name).subscribe(
+      () => {
+        WalletsComponent.busy = false;
+        this.msgBarService.showDone('common.changes-made');
+      },
+      (err) => {
+        WalletsComponent.busy = false;
+        this.msgBarService.showError(err);
+      }
+    );
+  }
+
+  // Adds new addresses to a specific BIP44 account.
+  newAddressesForAccount(accountIndex: number) {
+    if (this.workingWithAddresses) {
+      return;
+    }
+
+    if (WalletsComponent.busy) {
+      this.msgBarService.showError('wallet.busy-error');
+      return;
+    }
+
+    this.workingWithAddresses = true;
+    WalletsComponent.busy = true;
+
+    if (this.wallet.encrypted) {
+      const dialogRef = PasswordDialogComponent.openDialog(this.dialog, { wallet: this.wallet });
+      dialogRef.afterClosed().subscribe(() => {
+        this.workingWithAddresses = false;
+        WalletsComponent.busy = false;
+      });
+      dialogRef.componentInstance.passwordSubmit.subscribe(passwordDialog => {
+        this.addAddressesSubscription = this.walletsAndAddressesService.addAddressesToWallet(this.wallet, 1, passwordDialog.password, accountIndex).subscribe(() => {
+          passwordDialog.close();
+          setTimeout(() => this.msgBarService.showDone('common.changes-made'));
+        }, error => passwordDialog.error(error));
+      });
+    } else {
+      this.addAddressesSubscription = this.walletsAndAddressesService.addAddressesToWallet(this.wallet, 1, null, accountIndex).subscribe(() => {
+        this.workingWithAddresses = false;
+        WalletsComponent.busy = false;
+        this.msgBarService.showDone('common.changes-made');
+      }, err => {
+        this.msgBarService.showError(err);
+        this.workingWithAddresses = false;
+        WalletsComponent.busy = false;
+      });
+    }
   }
 
   // Deletes a hw wallet.

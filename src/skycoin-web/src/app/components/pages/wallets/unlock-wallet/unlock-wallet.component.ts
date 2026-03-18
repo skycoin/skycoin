@@ -28,6 +28,7 @@ export class UnlockWalletComponent implements OnInit, OnDestroy {
   loadingProgress = 0;
   showConfirmSeedWarning;
   showSlowMobileInfo = false;
+  hasEncryptedSeed = false;
 
   private wallet: Wallet;
   private unlockSubscription: Subscription;
@@ -48,6 +49,7 @@ export class UnlockWalletComponent implements OnInit, OnDestroy {
       this.showConfirmSeedWarning = false;
       this.wallet = data;
     }
+    this.hasEncryptedSeed = !!this.wallet.encryptedSeed;
   }
 
   ngOnInit() {
@@ -80,11 +82,19 @@ export class UnlockWalletComponent implements OnInit, OnDestroy {
       });
     }
 
-    this.unlockSubscription = this.walletService.unlockWallet(this.wallet, this.form.value.seed, onProgressChanged)
-      .subscribe(
-        () => this.onUnlockSuccess(),
-        (error: Error) => this.onUnlockError(error)
-      );
+    if (this.hasEncryptedSeed) {
+      this.unlockSubscription = this.walletService.unlockWalletWithPassword(this.wallet, this.form.value.password, onProgressChanged)
+        .subscribe(
+          () => this.onUnlockSuccess(),
+          (error: Error) => this.onUnlockError(error)
+        );
+    } else {
+      this.unlockSubscription = this.walletService.unlockWallet(this.wallet, this.form.value.seed, onProgressChanged)
+        .subscribe(
+          () => this.onUnlockSuccess(),
+          (error: Error) => this.onUnlockError(error)
+        );
+    }
   }
 
   delete() {
@@ -93,9 +103,15 @@ export class UnlockWalletComponent implements OnInit, OnDestroy {
   }
 
   private initForm() {
-    this.form = this.formBuilder.group({
-      seed: ['', Validators.required],
-    });
+    if (this.hasEncryptedSeed) {
+      this.form = this.formBuilder.group({
+        password: ['', Validators.required],
+      });
+    } else {
+      this.form = this.formBuilder.group({
+        seed: ['', Validators.required],
+      });
+    }
   }
 
   private onUnlockSuccess() {
@@ -103,6 +119,18 @@ export class UnlockWalletComponent implements OnInit, OnDestroy {
     this.removeSlowInfoSubscription();
     this.removeProgressSubscriptions();
     this.unlockButton.setSuccess();
+
+    // After seed-based unlock, offer to set a password for future convenience
+    if (!this.hasEncryptedSeed && this.wallet.seed) {
+      const password = window.prompt('Set a password to avoid entering your seed next time (leave empty to skip):');
+      if (password) {
+        const confirm = window.prompt('Confirm password:');
+        if (password === confirm) {
+          this.walletService.setWalletPassword(this.wallet, password).subscribe();
+        }
+      }
+    }
+
     this.closePopup();
     this.onWalletUnlocked.emit();
   }

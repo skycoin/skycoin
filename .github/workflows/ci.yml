@@ -79,6 +79,9 @@ jobs:
           make integration-test-stable-disable-csrf
           make integration-test-stable-auth
 
+      - name: Run Fibercoin Integration Test
+        run: make integration-test-fibercoin
+
       - name: Test Hardware Wallet Libraries
         run: make test-skyhw
 

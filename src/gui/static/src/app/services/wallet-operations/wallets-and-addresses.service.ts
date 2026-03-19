@@ -60,9 +60,11 @@ export class WalletsAndAddressesService {
    * @param wallet Wallet to which the addresses will be added.
    * @param num Number of addresses to create.
    * @param password Wallet password, if the wallet is encrypted.
+   * @param accountIndex BIP44 account index.
+   * @param chainIndex BIP44 chain index (0 = external, 1 = change).
    * @returns An array with the newly created addresses.
    */
-  addAddressesToWallet(wallet: WalletBase, num: number, password?: string, accountIndex?: number): Observable<AddressBase[]> {
+  addAddressesToWallet(wallet: WalletBase, num: number, password?: string, accountIndex?: number, chainIndex?: number): Observable<AddressBase[]> {
     if (!wallet.isHardware) {
       const params = new Object();
       params['id'] = wallet.id;
@@ -72,6 +74,9 @@ export class WalletsAndAddressesService {
       }
       if (accountIndex !== undefined) {
         params['account'] = accountIndex;
+      }
+      if (chainIndex !== undefined) {
+        params['chain'] = chainIndex === 1 ? 'change' : 'external';
       }
 
       // Add the addresses on the backend, then reload the full wallet to get updated account structure.

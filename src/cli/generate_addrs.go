@@ -25,7 +25,8 @@ func walletAddAddressesCmd() *cobra.Command {
     if you load the wallet from seed elsewhere. In that case, you'll have to manually
     generate addresses to cover the gap of unused addresses in the sequence.
 
-    BIP44 wallets generate their addresses on the external (0'/0) chain.
+    BIP44 wallets generate addresses on the external (0'/0) chain by default.
+    Use --chain=change to generate on the change (0'/1) chain instead.
 
     Use caution when using the "-p" command. If you have command
     history enabled your wallet encryption password can be recovered from the
@@ -38,6 +39,7 @@ func walletAddAddressesCmd() *cobra.Command {
 	walletAddAddressesCmd.Flags().StringP("password", "p", "", "wallet password")
 	walletAddAddressesCmd.Flags().BoolP("json", "j", false, "Returns the results in JSON format")
 	walletAddAddressesCmd.Flags().StringP("private-keys", "", "", "wallet private keys for collection wallet")
+	walletAddAddressesCmd.Flags().StringP("chain", "c", "external", "BIP44 chain to generate addresses on (external or change)")
 
 	return walletAddAddressesCmd
 }
@@ -80,6 +82,22 @@ func generateAddrs(c *cobra.Command, args []string) error {
 		}
 
 		opts = append(opts, wallet.OptionGenerateN(num))
+	}
+
+	// Parse chain flag for BIP44 wallets
+	if wlt.Meta.Type == wallet.WalletTypeBip44 {
+		chain, err := c.Flags().GetString("chain")
+		if err != nil {
+			return err
+		}
+		switch strings.ToLower(chain) {
+		case "external", "0":
+			opts = append(opts, wallet.OptionExternal())
+		case "change", "1":
+			opts = append(opts, wallet.OptionChange())
+		default:
+			return errors.New("invalid --chain value, must be external or change")
+		}
 	}
 
 	var pwd []byte

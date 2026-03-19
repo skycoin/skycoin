@@ -315,7 +315,8 @@ export class WalletDetailComponent implements OnDestroy {
   }
 
   // Adds new addresses to a specific BIP44 account.
-  newAddressesForAccount(accountIndex: number) {
+  // chainIndex: 0 = external (default), 1 = change
+  newAddressesForAccount(accountIndex: number, chainIndex: number = 0) {
     if (this.workingWithAddresses) {
       return;
     }
@@ -335,13 +336,13 @@ export class WalletDetailComponent implements OnDestroy {
         WalletsComponent.busy = false;
       });
       dialogRef.componentInstance.passwordSubmit.subscribe(passwordDialog => {
-        this.addAddressesSubscription = this.walletsAndAddressesService.addAddressesToWallet(this.wallet, 1, passwordDialog.password, accountIndex).subscribe(() => {
+        this.addAddressesSubscription = this.walletsAndAddressesService.addAddressesToWallet(this.wallet, 1, passwordDialog.password, accountIndex, chainIndex).subscribe(() => {
           passwordDialog.close();
           setTimeout(() => this.msgBarService.showDone('common.changes-made'));
         }, error => passwordDialog.error(error));
       });
     } else {
-      this.addAddressesSubscription = this.walletsAndAddressesService.addAddressesToWallet(this.wallet, 1, null, accountIndex).subscribe(() => {
+      this.addAddressesSubscription = this.walletsAndAddressesService.addAddressesToWallet(this.wallet, 1, null, accountIndex, chainIndex).subscribe(() => {
         this.workingWithAddresses = false;
         WalletsComponent.busy = false;
         this.msgBarService.showDone('common.changes-made');

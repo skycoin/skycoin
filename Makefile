@@ -18,6 +18,7 @@
 .PHONY: integration-test-stable-auth
 .PHONY: integration-test-live integration-test-live-wallet
 .PHONY: integration-test-fibercoin
+.PHONY: update-dep sync-upstream-develop
 .PHONY: install-linters format release clean-release clean-coverage dep-github-release
 .PHONY: install-deps-ui build-ui build-ui help newcoin merge-coverage
 .PHONY: build build-skycoin build-skyhw build-skyhw-static
@@ -406,6 +407,54 @@ fuzz-base58: ## Fuzz the base58 package. Requires https://github.com/dvyukov/go-
 fuzz-encoder: ## Fuzz the encoder package. Requires https://github.com/dvyukov/go-fuzz
 	go-fuzz-build github.com/skycoin/skycoin/src/cipher/encoder/internal
 	go-fuzz -bin=encoderfuzz-fuzz.zip -workdir=src/cipher/encoder/internal
+
+update-dep: ## Update vendor deps, commit, and push
+	go get -v -u ./...
+	go mod tidy
+	go mod vendor
+	git add go.mod go.sum vendor
+	git commit -m "update deps"
+	git push
+
+## Sync local develop branch with upstream skycoin/skycoin develop.
+## Requires: origin = your fork, upstream = skycoin/skycoin
+sync-upstream-develop: ## Sync develop branch with upstream develop branch for forks
+	@normalize() { \
+		echo "$$1" | sed \
+			-e 's|git@github.com:|https://github.com/|' \
+			-e 's|\.git$$||' \
+			-e 's|https://github.com/||' \
+			| tr '[:upper:]' '[:lower:]'; \
+	}; \
+	UPSTREAM_URL=$$(git remote get-url upstream 2>/dev/null); \
+	if [ -z "$$UPSTREAM_URL" ]; then \
+		echo "[error] no 'upstream' remote found. Add it with:"; \
+		echo "  git remote add upstream https://github.com/skycoin/skycoin.git"; \
+		exit 1; \
+	fi; \
+	UPSTREAM_NORM=$$(normalize "$$UPSTREAM_URL"); \
+	if [ "$$UPSTREAM_NORM" != "skycoin/skycoin" ]; then \
+		echo "[error] upstream remote does not point to skycoin/skycoin."; \
+		echo "  Found: $$UPSTREAM_URL"; \
+		exit 1; \
+	fi; \
+	ORIGIN_URL=$$(git remote get-url origin 2>/dev/null); \
+	if [ -z "$$ORIGIN_URL" ]; then \
+		echo "[error] no 'origin' remote found."; \
+		exit 1; \
+	fi; \
+	ORIGIN_NORM=$$(normalize "$$ORIGIN_URL"); \
+	if [ "$$ORIGIN_NORM" = "skycoin/skycoin" ]; then \
+		echo "[error] origin points to skycoin/skycoin directly."; \
+		echo "  This target must be run from a fork, not a clone of the canonical repo."; \
+		exit 1; \
+	fi; \
+	echo "[ok] origin is a fork ($$ORIGIN_NORM), upstream is skycoin/skycoin — syncing develop..."; \
+	git checkout develop && \
+	git pull && \
+	git fetch upstream && \
+	git merge upstream/develop && \
+	git push
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

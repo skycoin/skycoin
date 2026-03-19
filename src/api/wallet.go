@@ -488,7 +488,7 @@ func walletCreateTempHandler(gateway Gatewayer) http.HandlerFunc {
 	}
 }
 
-// Genreates new addresses
+// Generates new addresses
 // URI: /api/v1/wallet/newAddress
 // Method: POST
 // Args:
@@ -496,6 +496,8 @@ func walletCreateTempHandler(gateway Gatewayer) http.HandlerFunc {
 //	id: wallet id [required]
 //	num: number of address need to create [optional, if not set the default value is 1]
 //	password: wallet password [optional, must be provided if the wallet is encrypted]
+//	chain: chain to generate addresses on for BIP44 wallets [optional, "external" or "0" for external (default), "change" or "1" for change]
+//	account: BIP44 account index [optional, default 0]
 func walletNewAddressesHandler(gateway Gatewayer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -519,6 +521,31 @@ func walletNewAddressesHandler(gateway Gatewayer) http.HandlerFunc {
 				return
 			}
 			opts = append(opts, wallet.OptionGenerateN(n))
+		}
+
+		// Parse chain parameter for BIP44 wallets
+		chain := r.FormValue("chain")
+		if chain != "" {
+			switch chain {
+			case "external", "0":
+				opts = append(opts, wallet.OptionExternal())
+			case "change", "1":
+				opts = append(opts, wallet.OptionChange())
+			default:
+				wh.Error400(w, "invalid chain value, must be external, change, 0, or 1")
+				return
+			}
+		}
+
+		// Parse account parameter for BIP44 wallets
+		account := r.FormValue("account")
+		if account != "" {
+			a, err := strconv.ParseUint(account, 10, 32)
+			if err != nil {
+				wh.Error400(w, "invalid account value")
+				return
+			}
+			opts = append(opts, wallet.OptionAccount(uint32(a))) //nolint:gosec
 		}
 
 		password := r.FormValue("password")

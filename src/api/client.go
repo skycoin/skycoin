@@ -738,8 +738,10 @@ func (c *Client) NewWalletAddress(id string, password string, options ...wallet.
 	}
 
 	var opts wallet.AdvancedOptions
+	var bip44Opts wallet.Bip44EntriesOptions
 	for _, f := range options {
 		f(&opts)
+		f(&bip44Opts)
 	}
 
 	if opts.GenerateN > 0 {
@@ -752,6 +754,19 @@ func (c *Client) NewWalletAddress(id string, password string, options ...wallet.
 			keys = append(keys, k.Hex())
 		}
 		v.Add("private-keys", strings.Join(keys, ","))
+	}
+
+	// Pass BIP44 chain selection
+	switch bip44Opts.ChainMode {
+	case wallet.ExternalChain:
+		v.Add("chain", "external")
+	case wallet.ChangeChain:
+		v.Add("chain", "change")
+	}
+
+	// Pass BIP44 account index
+	if bip44Opts.Account > 0 {
+		v.Add("account", fmt.Sprint(bip44Opts.Account))
 	}
 
 	var obj struct {

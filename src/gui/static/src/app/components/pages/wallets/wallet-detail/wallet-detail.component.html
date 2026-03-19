@@ -107,11 +107,15 @@
         }
       </div>
 
+      <div class="-chain-label -change-label" (click)="toggleChangeAddresses(account)">
+        Change Addresses ({{ account.changeAddresses?.length || 0 }})
+        <span class="-account-add-address" (click)="$event.stopPropagation(); newAddressesForAccount(account.index, 1)"
+          [ngClass]="{ '-disabled-span': workingWithAddresses }">
+          + {{ 'wallet.address-options.new' | translate }}
+        </span>
+        <mat-icon class="-toggle-icon">{{ account.showChangeAddresses ? 'expand_less' : 'expand_more' }}</mat-icon>
+      </div>
       @if (account.changeAddresses?.length > 0) {
-        <div class="-chain-label -change-label" (click)="toggleChangeAddresses(account)">
-          Change Addresses ({{ account.changeAddresses.length }})
-          <mat-icon class="-toggle-icon">{{ account.showChangeAddresses ? 'expand_less' : 'expand_more' }}</mat-icon>
-        </div>
         @if (account.showChangeAddresses) {
           <div class="-records">
             @for (address of account.changeAddresses; track address.address; let i = $index) {

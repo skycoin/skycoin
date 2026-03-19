@@ -34,7 +34,11 @@ func Example() {
 	}
 
 	fmt.Println(account.PrivateKey)
-	fmt.Println(account.PublicKey())
+	accountPub, err := account.PublicKey()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(accountPub)
 
 	// Create an external address node
 	fmt.Println("m/44'/0'/0'/0")
@@ -44,7 +48,11 @@ func Example() {
 	}
 
 	fmt.Println(external)
-	fmt.Println(external.PublicKey())
+	externalPub, err := external.PublicKey()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(externalPub)
 
 	// Create the first child of the external address chain
 	fmt.Println("m/44'/0'/0'/0/0")
@@ -53,7 +61,11 @@ func Example() {
 		panic(err)
 	}
 
-	fmt.Println("pubkey:", hex.EncodeToString(external0.PublicKey().Key))
+	external0Pub, err := external0.PublicKey()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("pubkey:", hex.EncodeToString(external0Pub.Key))
 
 	// Create the second child of the external address chain
 	fmt.Println("m/44'/0'/0'/0/1")
@@ -62,7 +74,11 @@ func Example() {
 		panic(err)
 	}
 
-	fmt.Println("pubkey:", hex.EncodeToString(external1.PublicKey().Key))
+	external1Pub, err := external1.PublicKey()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("pubkey:", hex.EncodeToString(external1Pub.Key))
 
 	// Create a change address node
 	fmt.Println("m/44'/0'/0'/1")
@@ -72,7 +88,11 @@ func Example() {
 	}
 
 	fmt.Println(change)
-	fmt.Println(change.PublicKey())
+	changePub, err := change.PublicKey()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(changePub)
 
 	// Create the first child of the change address chain
 	fmt.Println("m/44'/0'/0'/1/0")
@@ -81,7 +101,11 @@ func Example() {
 		panic(err)
 	}
 
-	fmt.Println("pubkey:", hex.EncodeToString(change0.PublicKey().Key))
+	change0Pub, err := change0.PublicKey()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("pubkey:", hex.EncodeToString(change0Pub.Key))
 
 	// Create the second child of the change address chain
 	fmt.Println("m/44'/0'/0'/1/1")
@@ -90,7 +114,11 @@ func Example() {
 		panic(err)
 	}
 
-	fmt.Println("pubkey:", hex.EncodeToString(change1.PublicKey().Key))
+	change1Pub, err := change1.PublicKey()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("pubkey:", hex.EncodeToString(change1Pub.Key))
 
 	// Output: bip39 seed
 	// 24e563fb095d766df3862c70432cc1b2210b24d232da69af7af09d2ec86d28782ce58035bae29994c84081836aebe36a9b46af1578262fefc53e37efbe94be57

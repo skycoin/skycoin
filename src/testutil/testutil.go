@@ -146,5 +146,7 @@ func RandXPub(t *testing.T) *bip32.PublicKey {
 	require.NoError(t, err)
 	e, err := x.External()
 	require.NoError(t, err)
-	return e.PublicKey()
+	pub, err := e.PublicKey()
+	require.NoError(t, err)
+	return pub
 }

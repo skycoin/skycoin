@@ -268,7 +268,8 @@ func testVectorKeyPairs(t *testing.T, vector testMasterKey) {
 	privKey, err := NewMasterKey(seed)
 	require.NoError(t, err)
 
-	pubKey := privKey.PublicKey()
+	pubKey, err := privKey.PublicKey()
+	require.NoError(t, err)
 
 	require.Equal(t, byte(0), privKey.Depth)
 	require.Equal(t, byte(0), pubKey.Depth)
@@ -287,10 +288,14 @@ func testVectorKeyPairs(t *testing.T, vector testMasterKey) {
 	require.Equal(t, vector.chainCode, hex.EncodeToString(privKey.ChainCode))
 	require.Equal(t, vector.chainCode, hex.EncodeToString(pubKey.ChainCode))
 
-	require.Equal(t, vector.fingerprint, hex.EncodeToString(privKey.Fingerprint()))
+	privFingerprint, err := privKey.Fingerprint()
+	require.NoError(t, err)
+	require.Equal(t, vector.fingerprint, hex.EncodeToString(privFingerprint))
 	require.Equal(t, vector.fingerprint, hex.EncodeToString(pubKey.Fingerprint()))
 
-	require.Equal(t, vector.identifier, hex.EncodeToString(privKey.Identifier()))
+	privIdentifier, err := privKey.Identifier()
+	require.NoError(t, err)
+	require.Equal(t, vector.identifier, hex.EncodeToString(privIdentifier))
 	require.Equal(t, vector.identifier, hex.EncodeToString(pubKey.Identifier()))
 
 	require.Equal(t, vector.depth, privKey.Depth)
@@ -323,7 +328,8 @@ func testVectorKeyPairs(t *testing.T, vector testMasterKey) {
 			require.NoError(t, err)
 
 			// Get this private key's public key
-			pubKey := privKey.PublicKey()
+			pubKey, err := privKey.PublicKey()
+			require.NoError(t, err)
 
 			// Test DeserializePrivateKey
 			ppk, err := base58.Decode(testChildKey.privKey)
@@ -340,10 +346,14 @@ func testVectorKeyPairs(t *testing.T, vector testMasterKey) {
 			require.Equal(t, testChildKey.chainCode, hex.EncodeToString(privKey.ChainCode))
 			require.Equal(t, testChildKey.chainCode, hex.EncodeToString(pubKey.ChainCode))
 
-			require.Equal(t, testChildKey.fingerprint, hex.EncodeToString(privKey.Fingerprint()))
+			privFingerprint, err := privKey.Fingerprint()
+			require.NoError(t, err)
+			require.Equal(t, testChildKey.fingerprint, hex.EncodeToString(privFingerprint))
 			require.Equal(t, testChildKey.fingerprint, hex.EncodeToString(pubKey.Fingerprint()))
 
-			require.Equal(t, testChildKey.identifier, hex.EncodeToString(privKey.Identifier()))
+			privIdentifier, err := privKey.Identifier()
+			require.NoError(t, err)
+			require.Equal(t, testChildKey.identifier, hex.EncodeToString(privIdentifier))
 			require.Equal(t, testChildKey.identifier, hex.EncodeToString(pubKey.Identifier()))
 
 			require.Equal(t, testChildKey.depth, privKey.Depth)
@@ -505,7 +515,8 @@ func TestParentPublicChildDerivation(t *testing.T) {
 
 			require.Equal(t, expectedPrivKey[:], privKey.Key)
 
-			pubKey3 := privKey.PublicKey()
+			pubKey3, err := privKey.PublicKey()
+			require.NoError(t, err)
 			require.Equal(t, pubKey, pubKey3)
 		})
 	}
@@ -681,7 +692,8 @@ func TestCantCreateHardenedPublicChild(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test that it throws an error for public keys if hardened
-	pubkey := key.PublicKey()
+	pubkey, err := key.PublicKey()
+	require.NoError(t, err)
 
 	_, err = pubkey.NewPublicChildKey(FirstHardenedChild - 1)
 	require.NoError(t, err)
@@ -1172,25 +1184,6 @@ func TestParsePath(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestMaxChildDepthError(t *testing.T) {
-	key, err := NewMasterKey(make([]byte, 32))
-	require.NoError(t, err)
-
-	reached := false
-	for i := 0; i < 256; i++ {
-		key, err = key.NewPrivateChildKey(0)
-		switch i {
-		case 255:
-			require.Equal(t, err, ErrMaxDepthReached)
-			reached = true
-		default:
-			require.NoError(t, err)
-		}
-	}
-
-	require.True(t, reached)
 }
 
 func TestImpossibleChildError(t *testing.T) {

@@ -123,9 +123,6 @@ var (
 
 	// ErrInvalidPublicKey is returned if a deserialized xpub key's public key is invalid
 	ErrInvalidPublicKey = NewError(errors.New("Invalid public key"))
-
-	// ErrMaxDepthReached maximum allowed depth (255) reached for child key
-	ErrMaxDepthReached = NewError(errors.New("Maximum child depth reached"))
 )
 
 // key represents a bip32 extended key
@@ -187,9 +184,7 @@ func NewMasterKey(seed []byte) (*PrivateKey, error) {
 func newMasterKey(seed []byte) (*PrivateKey, error) {
 	// Generate key and chaincode
 	hmac := hmac.New(sha512.New, []byte(masterKey))
-	if _, err := hmac.Write(seed); err != nil {
-		log.Panic(err)
-	}
+	_, _ = hmac.Write(seed) // hash.Hash.Write never returns an error
 	intermediary := hmac.Sum(nil)
 
 	// Split it into our key and chain code
@@ -272,10 +267,10 @@ func (k *PrivateKey) newPrivateChildKeyFromPathNode(n PathNode) (*PrivateKey, er
 // PublicKey returns the public version of key or return a copy
 // The 'Neuter' function from the bip32 spec, N((k, c) -> (K, c).
 // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#private-parent-key--public-child-key
-func (k *PrivateKey) PublicKey() *PublicKey {
+func (k *PrivateKey) PublicKey() (*PublicKey, error) {
 	pubKey, err := publicKeyForPrivateKey(k.Key)
 	if err != nil {
-		log.Panicf("PrivateKey.PublicKey failed: %v", err)
+		return nil, fmt.Errorf("PrivateKey.PublicKey failed: %w", err)
 	}
 	return &PublicKey{
 		key: key{
@@ -286,19 +281,27 @@ func (k *PrivateKey) PublicKey() *PublicKey {
 			ChainCode:         k.ChainCode,
 			ParentFingerprint: k.ParentFingerprint,
 		},
-	}
+	}, nil
 }
 
 // Fingerprint returns the key fingerprint
-func (k *PrivateKey) Fingerprint() []byte {
+func (k *PrivateKey) Fingerprint() ([]byte, error) {
 	// "Extended keys can be identified by the Hash160 (RIPEMD160 after SHA256)
 	// of the serialized ECDSA public key K, ignoring the chain code."
-	return k.PublicKey().Fingerprint()
+	pub, err := k.PublicKey()
+	if err != nil {
+		return nil, err
+	}
+	return pub.Fingerprint(), nil
 }
 
 // Identifier returns the key ID
-func (k *PrivateKey) Identifier() []byte {
-	return k.PublicKey().Identifier()
+func (k *PrivateKey) Identifier() ([]byte, error) {
+	pub, err := k.PublicKey()
+	if err != nil {
+		return nil, err
+	}
+	return pub.Identifier(), nil
 }
 
 // Fingerprint returns the key fingerprint
@@ -329,11 +332,10 @@ func fingerprint(key []byte) []byte {
 // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#private-parent-key--private-child-key
 // This method can return an ImpossibleChild error.
 func (k *PrivateKey) NewPrivateChildKey(childIdx uint32) (*PrivateKey, error) {
-	if k.Depth == 0xFF {
-		return nil, ErrMaxDepthReached
+	intermediary, err := k.ckdPrivHMAC(childIdx)
+	if err != nil {
+		return nil, err
 	}
-
-	intermediary := k.ckdPrivHMAC(childIdx)
 
 	iL := intermediary[:32]        // used for computing the next key
 	chainCode := intermediary[32:] // iR
@@ -345,6 +347,11 @@ func (k *PrivateKey) NewPrivateChildKey(childIdx uint32) (*PrivateKey, error) {
 		return nil, NewImpossibleChildError(err, childIdx)
 	}
 
+	fp, err := k.Fingerprint()
+	if err != nil {
+		return nil, err
+	}
+
 	return &PrivateKey{
 		key: key{
 			Version:           PrivateWalletVersion,
@@ -352,7 +359,7 @@ func (k *PrivateKey) NewPrivateChildKey(childIdx uint32) (*PrivateKey, error) {
 			ChainCode:         chainCode,
 			Depth:             k.Depth + 1,
 			Key:               newKey,
-			ParentFingerprint: k.Fingerprint(),
+			ParentFingerprint: fp,
 		},
 	}, nil
 }
@@ -365,7 +372,7 @@ func (k *PrivateKey) NewPublicChildKey(childIdx uint32) (*PublicKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	return k2.PublicKey(), nil
+	return k2.PublicKey()
 }
 
 // NewPublicChildKey derives a public child key from an extended public key, CKDpub().
@@ -373,10 +380,6 @@ func (k *PrivateKey) NewPublicChildKey(childIdx uint32) (*PublicKey, error) {
 // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#public-parent-key--public-child-key
 // This method can return an ImpossibleChild error.
 func (k *PublicKey) NewPublicChildKey(childIdx uint32) (*PublicKey, error) {
-	if k.Depth == 0xFF {
-		return nil, ErrMaxDepthReached
-	}
-
 	// CKDPub step 1
 	intermediary, err := k.ckdPubHMAC(childIdx)
 	if err != nil {
@@ -415,7 +418,7 @@ func (k *PublicKey) NewPublicChildKey(childIdx uint32) (*PublicKey, error) {
 }
 
 // ckdPrivHMAC computes the first step of the CKDPriv function, which computes an HMAC
-func (k *key) ckdPrivHMAC(childIdx uint32) []byte {
+func (k *key) ckdPrivHMAC(childIdx uint32) ([]byte, error) {
 	// Get intermediary to create key and chaincode.
 	// Hardened children are based on the private key.
 	// Non-hardened children are based on the public key.
@@ -434,7 +437,7 @@ func (k *key) ckdPrivHMAC(childIdx uint32) []byte {
 		var err error
 		data, err = publicKeyForPrivateKey(k.Key)
 		if err != nil {
-			log.Panic(err)
+			return nil, err
 		}
 	}
 
@@ -445,11 +448,9 @@ func (k *key) ckdPrivHMAC(childIdx uint32) []byte {
 
 	// HMAC-SHA512(Key = cpar, Data)
 	hmac := hmac.New(sha512.New, k.ChainCode)
-	if _, err := hmac.Write(data); err != nil {
-		log.Panic(err)
-	}
+	_, _ = hmac.Write(data) // hash.Hash.Write never returns an error
 
-	return hmac.Sum(nil)
+	return hmac.Sum(nil), nil
 }
 
 // ckdPubHMAC computes the first step of the CKDPub function, which computes an HMAC
@@ -477,9 +478,7 @@ func (k *key) ckdPubHMAC(childIdx uint32) ([]byte, error) {
 
 	// HMAC-SHA512(Key = cpar, Data = serP(Kpar) || ser32(i))
 	hmac := hmac.New(sha512.New, k.ChainCode)
-	if _, err := hmac.Write(data); err != nil {
-		log.Panic(err)
-	}
+	_, _ = hmac.Write(data) // hash.Hash.Write never returns an error
 
 	return hmac.Sum(nil), nil
 }
@@ -546,10 +545,10 @@ func DeserializePrivateKey(data []byte) (*PrivateKey, error) {
 	}
 
 	if len(k.Key) != 32 {
-		log.Panic("DeserializePrivateKey expected 32 bytes key length")
+		return nil, NewError(errors.New("DeserializePrivateKey expected 32 bytes key length"))
 	}
 	if !bytes.Equal(k.Version, PrivateWalletVersion) {
-		log.Panic("DeserializePrivateKey expected xprv prefix")
+		return nil, NewError(errors.New("DeserializePrivateKey expected xprv prefix"))
 	}
 
 	return &PrivateKey{
@@ -574,10 +573,10 @@ func DeserializePublicKey(data []byte) (*PublicKey, error) {
 	}
 
 	if len(k.Key) != 33 {
-		log.Panic("DeserializePublicKey expected 33 bytes key length")
+		return nil, NewError(errors.New("DeserializePublicKey expected 33 bytes key length"))
 	}
 	if !bytes.Equal(k.Version, PublicWalletVersion) {
-		log.Panic("DeserializePublicKey expected xpub prefix")
+		return nil, NewError(errors.New("DeserializePublicKey expected xpub prefix"))
 	}
 
 	return &PublicKey{

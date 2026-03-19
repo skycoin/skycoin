@@ -17,6 +17,7 @@
 .PHONY: integration-test-stable-db-no-unconfirmed
 .PHONY: integration-test-stable-auth
 .PHONY: integration-test-live integration-test-live-wallet
+.PHONY: integration-test-fibercoin
 .PHONY: install-linters format release clean-release clean-coverage dep-github-release
 .PHONY: install-deps-ui build-ui build-ui help newcoin merge-coverage
 .PHONY: build build-skycoin build-skyhw build-skyhw-static
@@ -144,6 +145,9 @@ integration-test-stable-db-no-unconfirmed: ## Run stable tests against the stabl
 
 integration-test-stable-auth: ## Run stable tests with HTTP Basic auth enabled
 	COIN=$(COIN) ./ci-scripts/integration-test-auth.sh
+
+integration-test-fibercoin: ## Run fibercoin genesis creation and distribution integration test
+	COIN=$(COIN) ./ci-scripts/integration-test-fibercoin.sh
 
 integration-test-live: ## Run live integration tests
 	COIN=$(COIN) ./ci-scripts/integration-test-live.sh -c

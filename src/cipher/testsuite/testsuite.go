@@ -334,11 +334,19 @@ func (k *Bip32KeysTestData) ToJSON() *Bip32KeysTestDataJSON {
 		sigs[i] = s.Hex()
 	}
 
+	xPub, err := k.XPriv.PublicKey()
+	if err != nil {
+		panic(fmt.Sprintf("ToJSON PublicKey failed: %v", err))
+	}
+	xPrivIdentifier, err := k.XPriv.Identifier()
+	if err != nil {
+		panic(fmt.Sprintf("ToJSON Identifier failed: %v", err))
+	}
 	return &Bip32KeysTestDataJSON{
 		Path:        k.Path,
 		XPriv:       k.XPriv.String(),
-		XPub:        k.XPriv.PublicKey().String(),
-		Identifier:  hex.EncodeToString(k.XPriv.Identifier()),
+		XPub:        xPub.String(),
+		Identifier:  hex.EncodeToString(xPrivIdentifier),
 		Depth:       k.XPriv.Depth,
 		ChildNumber: k.XPriv.ChildNumber(),
 
@@ -401,7 +409,11 @@ func Bip32KeysTestDataFromJSON(d *Bip32KeysTestDataJSON) (*Bip32KeysTestData, er
 		return nil, err
 	}
 
-	if !bytes.Equal(xPriv.Identifier(), identifier) {
+	xPrivIdentifier, err := xPriv.Identifier()
+	if err != nil {
+		return nil, fmt.Errorf("xpriv Identifier failed: %w", err)
+	}
+	if !bytes.Equal(xPrivIdentifier, identifier) {
 		return nil, errors.New("xpriv identifier does not match identifier")
 	}
 
@@ -409,7 +421,11 @@ func Bip32KeysTestDataFromJSON(d *Bip32KeysTestDataJSON) (*Bip32KeysTestData, er
 		return nil, errors.New("xpriv depth does not match depth")
 	}
 
-	if xPriv.PublicKey().String() != d.XPub {
+	xPub, err := xPriv.PublicKey()
+	if err != nil {
+		return nil, fmt.Errorf("xpriv PublicKey failed: %w", err)
+	}
+	if xPub.String() != d.XPub {
 		return nil, errors.New("xpub derived from xpriv does not match xpub")
 	}
 
@@ -516,7 +532,11 @@ func validateBip32KeyTestData(inputData *InputTestData, basePath string, seed []
 		return errors.New("xpriv generated with NewPrivateChildKey differs from xpriv generated with NewPrivateKeyFromPath")
 	}
 
-	pubKey := cipher.MustNewPubKey(s.PublicKey().Key)
+	sPub, err := s.PublicKey()
+	if err != nil {
+		return fmt.Errorf("PublicKey failed: %w", err)
+	}
+	pubKey := cipher.MustNewPubKey(sPub.Key)
 	secKey := cipher.MustNewSecKey(s.Key)
 
 	if cipher.MustPubKeyFromSecKey(secKey) != pubKey {

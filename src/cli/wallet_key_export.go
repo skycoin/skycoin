@@ -151,11 +151,19 @@ func printKey(kt string, k *bip32.PrivateKey) error {
 
 	switch kt {
 	case "xpub":
-		fmt.Println(k.PublicKey().String())
+		pub, err := k.PublicKey()
+		if err != nil {
+			return err
+		}
+		fmt.Println(pub.String())
 	case "xprv":
 		fmt.Println(k.String())
 	case "pub":
-		fmt.Println(cipher.MustNewPubKey(k.PublicKey().Key).Hex())
+		pub, err := k.PublicKey()
+		if err != nil {
+			return err
+		}
+		fmt.Println(cipher.MustNewPubKey(pub.Key).Hex())
 	case "prv":
 		fmt.Println(cipher.MustNewSecKey(k.Key).Hex())
 	default:

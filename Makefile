@@ -18,6 +18,7 @@
 .PHONY: integration-test-stable-auth
 .PHONY: integration-test-live integration-test-live-wallet
 .PHONY: integration-test-fibercoin
+.PHONY: check-newcoin-templates check-release-nocgo
 .PHONY: update-dep sync-upstream-develop
 .PHONY: install-linters format release clean-release clean-coverage dep-github-release
 .PHONY: install-deps-ui build-ui build-ui help newcoin merge-coverage
@@ -116,6 +117,22 @@ check-newcoin: newcoin ## Check that make newcoin succeeds and no templated file
 	@if [ "$(shell git diff ./cmd/skycoin/skycoin.go | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
 	@if [ "$(shell git diff ./cmd/skycoin/skycoin_test.go | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
 	@if [ "$(shell git diff ./src/params/params.go | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after make newcoin' ; exit 2 ; fi
+
+check-newcoin-templates: ## Verify newcoin templates export and round-trip with --template-dir
+	@TMPDIR=$$(mktemp -d) && \
+	go run . newcoin templates "$$TMPDIR" && \
+	go run . newcoin createcoin --coin skycoin --template-dir "$$TMPDIR" && \
+	FAIL=0; \
+	if [ "$$(git diff ./cmd/skycoin/skycoin.go | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after template round-trip in cmd/skycoin/skycoin.go' ; FAIL=1 ; fi; \
+	if [ "$$(git diff ./cmd/skycoin/skycoin_test.go | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after template round-trip in cmd/skycoin/skycoin_test.go' ; FAIL=1 ; fi; \
+	if [ "$$(git diff ./src/params/params.go | wc -l | tr -d ' ')" != "0" ] ; then echo 'Changes detected after template round-trip in src/params/params.go' ; FAIL=1 ; fi; \
+	rm -rf "$$TMPDIR"; \
+	if [ "$$FAIL" = "1" ] ; then exit 2 ; fi; \
+	echo "newcoin templates round-trip OK"
+
+check-release-nocgo: ## Verify cmd/release builds without CGO (no hardware wallet)
+	CGO_ENABLED=0 go build -o /dev/null ./cmd/release/
+	@echo "cmd/release builds OK with CGO_ENABLED=0"
 
 check: lint clean-coverage test test-386 integration-tests-stable check-newcoin ## Run tests and linters
 

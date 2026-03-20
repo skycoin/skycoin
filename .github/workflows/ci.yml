@@ -55,6 +55,12 @@ jobs:
       - name: Check newcoin Template
         run: make check-newcoin
 
+      - name: Check newcoin Templates Round-Trip
+        run: make check-newcoin-templates
+
+      - name: Check cmd/release Builds Without CGO
+        run: make check-release-nocgo
+
       - name: Install UI Dependencies
         run: make install-deps-ui
 

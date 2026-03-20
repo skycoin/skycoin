@@ -732,12 +732,12 @@ func (dm *Daemon) connectToPeer(p pex.Peer) error {
 	}
 
 	if c := dm.connections.get(p.Addr); c != nil {
-		return errors.New("Already connected to this peer")
+		return nil // already connected, not an error
 	}
 
 	cnt := dm.connections.IPCount(a)
 	if !dm.config.LocalhostOnly && cnt != 0 {
-		return errors.New("Already connected to a peer with this base IP")
+		return nil // already connected to this IP, not an error
 	}
 
 	logger.WithField("addr", p.Addr).Debug("Establishing outgoing connection")

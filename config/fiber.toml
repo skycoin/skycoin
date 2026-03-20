@@ -34,7 +34,10 @@ peer_list_url = "https://downloads.skycoin.com/blockchain/peers.txt"
 # coin_hours_ticker = "SCH"
 # qr_uri_prefix = "skycoin"
 # explorer_url = "https://explorer.skycoin.com"
+# version_url = "https://version.skycoin.com/skycoin/version.txt"
 # bip44_coin = 8000
+# price_ticker_id = "sky-skycoin"
+# price_ticker_source = "coinpaprika"
 
 [params]
 # max_coin_supply = 1e8

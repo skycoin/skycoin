@@ -1,7 +1,8 @@
-// Package commands implements the skycoin release commands with hardware wallet support.
+// Package commands implements the skycoin release commands.
 //
-// Note: On 386 architecture, the hardware wallet subcommand is a stub due to
-// limitations in the github.com/google/gousb library.
+// Hardware wallet support is included when building with CGO enabled
+// (automatically via the cgo build tag), except on 386 and Windows ARM64
+// where gousb/libusb are not supported.
 package commands
 
 import (
@@ -15,7 +16,6 @@ import (
 	"github.com/spf13/cobra"
 
 	explorer "github.com/skycoin/skycoin/cmd/explorer/commands"
-	skyhw "github.com/skycoin/skycoin/cmd/hardware-wallet/commands"
 	newcoin "github.com/skycoin/skycoin/cmd/newcoin/commands"
 	cli "github.com/skycoin/skycoin/cmd/skycoin-cli/commands"
 	web "github.com/skycoin/skycoin/cmd/skycoin-web/commands"
@@ -34,14 +34,11 @@ func init() {
 		cli.RootCmd,
 		newcoin.RootCmd,
 		explorer.RootCmd,
-		skyhw.RootCmd,
 	)
 	skycoin.RootCmd.Use = "daemon"
 	web.RootCmd.Use = "web"
 	web.RootCmd.Short = "skycoin thin client web wallet"
 	explorer.RootCmd.Use = "explorer"
-	skyhw.RootCmd.Use = "skyhw"
-	skyhw.RootCmd.Short = "skycoin hardware wallet utilities"
 
 	if fmt.Sprintf("%v", buildinfo.DebugBuildInfo()) != "" {
 		RootCmd.Flags().BoolVarP(&di, "info", "d", false, "print runtime/debug.BuildInfo")

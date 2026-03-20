@@ -38,7 +38,7 @@ var (
 func init() {
 	createCoinCmd.Flags().SortFlags = false
 	createCoinCmd.Flags().StringVarP(&coinName, "coin", "c", "skycoin", "name of the coin to create")
-	createCoinCmd.Flags().StringVarP(&templateDir, "template-dir", "d", "./templates", "template directory path")
+	createCoinCmd.Flags().StringVarP(&templateDir, "template-dir", "d", "", "template directory path (uses embedded templates if empty)")
 	createCoinCmd.Flags().StringVarP(&coinTemplateFile, "coin-template-file", "e", templates.CoinTemplate, "coin template file (importable)")
 	createCoinCmd.Flags().StringVarP(&commandTemplateFile, "command-template-file", "f", templates.CommandTemplate, "command template file (executable)")
 	createCoinCmd.Flags().StringVarP(&coinTestTemplateFile, "coin-test-template-file", "g", templates.CoinTestTemplate, "coin test template file")
@@ -113,25 +113,37 @@ var createCoinCmd = &cobra.Command{
 		}
 		defer paramsFile.Close() //nolint
 
-		// Read embedded template files
-		coinTemplateContent, err := templates.FS.ReadFile(coinTemplateFile)
+		// Read template files — from --template-dir if provided, otherwise from embedded FS
+		readTemplate := func(name string) ([]byte, error) {
+			if templateDir != "" {
+				path := filepath.Join(templateDir, name)
+				data, err := os.ReadFile(path) //nolint:gosec
+				if err != nil {
+					return nil, fmt.Errorf("failed to read template %s from %s: %w", name, templateDir, err)
+				}
+				return data, nil
+			}
+			return templates.FS.ReadFile(name)
+		}
+
+		coinTemplateContent, err := readTemplate(coinTemplateFile)
 		if err != nil {
-			log.Errorf("failed to read embedded coin template: %v", err)
+			log.Errorf("failed to read coin template: %v", err)
 			return err
 		}
-		commandTemplateContent, err := templates.FS.ReadFile(commandTemplateFile)
+		commandTemplateContent, err := readTemplate(commandTemplateFile)
 		if err != nil {
-			log.Errorf("failed to read embedded command template: %v", err)
+			log.Errorf("failed to read command template: %v", err)
 			return err
 		}
-		coinTestTemplateContent, err := templates.FS.ReadFile(coinTestTemplateFile)
+		coinTestTemplateContent, err := readTemplate(coinTestTemplateFile)
 		if err != nil {
-			log.Errorf("failed to read embedded coin test template: %v", err)
+			log.Errorf("failed to read coin test template: %v", err)
 			return err
 		}
-		paramsTemplateContent, err := templates.FS.ReadFile(paramsTemplateFile)
+		paramsTemplateContent, err := readTemplate(paramsTemplateFile)
 		if err != nil {
-			log.Errorf("failed to read embedded params template: %v", err)
+			log.Errorf("failed to read params template: %v", err)
 			return err
 		}
 

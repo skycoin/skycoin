@@ -7,7 +7,8 @@
 #   5. Verify genesis block was created
 #   6. Distribute genesis coins
 #   7. Verify distribution
-#   8. Cleanup
+#   8. Test BIP44 chain selection
+#   9. Cleanup
 
 set -euxo pipefail
 
@@ -241,6 +242,80 @@ echo "PASS: Genesis address balance is 0 after distribution"
 COIN_SUPPLY=$(curl -s "$HOST/api/v1/coinSupply")
 TOTAL_SUPPLY=$(echo "$COIN_SUPPLY" | python3 -c "import json,sys; b=json.load(sys.stdin); print(b['total_supply'])")
 echo "Total supply: $TOTAL_SUPPLY"
+
+# ─── Step 8: Test BIP44 chain selection ─────────────────────────────────────
+echo "=== Step 8: Test BIP44 chain selection ==="
+
+BIP44_SEED="abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
+
+# Create a BIP44 wallet
+BIP44_CREATE=$(curl -s -X POST "$HOST/api/v1/wallet/create" \
+    -d "type=bip44" \
+    -d "seed=$BIP44_SEED" \
+    -d "label=test-bip44")
+echo "BIP44 wallet create response: $BIP44_CREATE"
+
+BIP44_WALLET_ID=$(echo "$BIP44_CREATE" | python3 -c "import json,sys; w=json.load(sys.stdin); print(w['meta']['filename'])")
+if [[ -z "$BIP44_WALLET_ID" ]]; then
+    echo "FAIL: Could not create BIP44 wallet"
+    exit 1
+fi
+echo "PASS: Created BIP44 wallet: $BIP44_WALLET_ID"
+
+# Generate an address on the external chain
+EXT_RESP=$(curl -s -X POST "$HOST/api/v1/wallet/newAddress" \
+    -d "id=$BIP44_WALLET_ID" \
+    -d "num=1" \
+    -d "chain=external")
+echo "External chain address response: $EXT_RESP"
+
+EXT_ADDR=$(echo "$EXT_RESP" | python3 -c "import json,sys; r=json.load(sys.stdin); print(r['addresses'][0])")
+if [[ -z "$EXT_ADDR" ]]; then
+    echo "FAIL: Could not generate external chain address"
+    exit 1
+fi
+echo "PASS: Generated external chain address: $EXT_ADDR"
+
+# Generate an address on the change chain
+CHG_RESP=$(curl -s -X POST "$HOST/api/v1/wallet/newAddress" \
+    -d "id=$BIP44_WALLET_ID" \
+    -d "num=1" \
+    -d "chain=change")
+echo "Change chain address response: $CHG_RESP"
+
+CHG_ADDR=$(echo "$CHG_RESP" | python3 -c "import json,sys; r=json.load(sys.stdin); print(r['addresses'][0])")
+if [[ -z "$CHG_ADDR" ]]; then
+    echo "FAIL: Could not generate change chain address"
+    exit 1
+fi
+echo "PASS: Generated change chain address: $CHG_ADDR"
+
+# Get wallet details and verify chain entries
+BIP44_WALLET=$(curl -s "$HOST/api/v1/wallet?id=$BIP44_WALLET_ID")
+echo "BIP44 wallet details: $BIP44_WALLET"
+
+# Verify external_entries exist in account 0
+EXT_ENTRY_COUNT=$(echo "$BIP44_WALLET" | python3 -c "import json,sys; w=json.load(sys.stdin); print(len(w['accounts'][0]['external_entries']))")
+if [[ "$EXT_ENTRY_COUNT" -lt 1 ]]; then
+    echo "FAIL: BIP44 wallet account 0 has no external_entries"
+    exit 1
+fi
+echo "PASS: BIP44 wallet has $EXT_ENTRY_COUNT external entry/entries"
+
+# Verify change_entries exist in account 0
+CHG_ENTRY_COUNT=$(echo "$BIP44_WALLET" | python3 -c "import json,sys; w=json.load(sys.stdin); print(len(w['accounts'][0]['change_entries']))")
+if [[ "$CHG_ENTRY_COUNT" -lt 1 ]]; then
+    echo "FAIL: BIP44 wallet account 0 has no change_entries"
+    exit 1
+fi
+echo "PASS: BIP44 wallet has $CHG_ENTRY_COUNT change entry/entries"
+
+# Verify external and change addresses are different
+if [[ "$EXT_ADDR" == "$CHG_ADDR" ]]; then
+    echo "FAIL: External address and change address are the same: $EXT_ADDR"
+    exit 1
+fi
+echo "PASS: External ($EXT_ADDR) and change ($CHG_ADDR) addresses are different"
 
 echo ""
 echo "============================================"

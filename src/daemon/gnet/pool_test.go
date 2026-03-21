@@ -1262,7 +1262,7 @@ func TestPoolReceiveMessage(t *testing.T) {
 // Helpers
 
 func wait() {
-	time.Sleep(time.Millisecond * 150)
+	time.Sleep(time.Millisecond * 500)
 }
 
 type DummyAddr struct {

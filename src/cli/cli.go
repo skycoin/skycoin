@@ -17,6 +17,7 @@ import (
 
 	"os"
 
+	"github.com/pelletier/go-toml/v2"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"golang.org/x/term"
@@ -104,10 +105,23 @@ func LoadConfig() (Config, error) {
 		coin = defaultCoin
 	}
 
-	// get rpc address from env
+	// get rpc address from env, or derive from FIBER_TOML
 	rpcAddr := os.Getenv("RPC_ADDR")
 	if rpcAddr == "" {
 		rpcAddr = defaultRPCAddress
+		// If FIBER_TOML is set, use its web_interface_port for the default RPC address
+		if fiberTomlPath := os.Getenv("FIBER_TOML"); fiberTomlPath != "" {
+			if data, err := os.ReadFile(fiberTomlPath); err == nil { //nolint:gosec
+				var cfg struct {
+					Node struct {
+						WebInterfacePort int `toml:"web_interface_port"`
+					} `toml:"node"`
+				}
+				if err := toml.Unmarshal(data, &cfg); err == nil && cfg.Node.WebInterfacePort != 0 {
+					rpcAddr = fmt.Sprintf("http://127.0.0.1:%d", cfg.Node.WebInterfacePort)
+				}
+			}
+		}
 	}
 
 	if _, err := url.Parse(rpcAddr); err != nil {

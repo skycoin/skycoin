@@ -271,8 +271,8 @@ func New(cfg Config) (*Pex, error) {
 		return nil, err
 	}
 
-	// Download peers from remote peers list if networking is enabled
-	if pex.Config.DownloadPeerList && !pex.Config.NetworkDisabled {
+	// Download peers from remote peers list if networking is enabled and URL is set
+	if pex.Config.DownloadPeerList && !pex.Config.NetworkDisabled && pex.Config.PeerListURL != "" {
 		go func() {
 			if err := pex.downloadPeers(); err != nil {
 				logger.WithError(err).Error("Failed to download peers list")

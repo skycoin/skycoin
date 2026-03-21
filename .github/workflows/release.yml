@@ -5,23 +5,20 @@ on:
     tags:
       - '*'
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: '1.25'
       
       - name: Cache musl toolchains
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: musl-data
           key: musl-cross-v1.3.29-${{ runner.os }}-${{ hashFiles('ci-scripts/build-libusb-musl.sh') }}
@@ -44,11 +41,11 @@ jobs:
     needs: linux
     runs-on: macos-15-intel
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: '1.25'
       
@@ -68,11 +65,11 @@ jobs:
     needs: linux
     runs-on: macos-latest  # ARM64 runner
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: '1.25'
       
@@ -92,7 +89,7 @@ jobs:
     needs: [darwin-amd64, darwin-arm64]
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       
@@ -110,11 +107,11 @@ jobs:
     needs: darwin-installer
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: '1.25'
       

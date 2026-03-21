@@ -913,12 +913,9 @@ func (c *NodeConfig) applyFiberNodeConfig(node fiber.NodeConfig) {
 	if node.GenesisCoinVolume != 0 {
 		c.GenesisCoinVolume = node.GenesisCoinVolume
 	}
-	if len(node.DefaultConnections) > 0 {
-		c.DefaultConnections = node.DefaultConnections
-	}
-	if node.PeerListURL != "" {
-		c.PeerListURL = node.PeerListURL
-	}
+	// Always apply these — they may intentionally be empty to disable features
+	c.DefaultConnections = node.DefaultConnections
+	c.PeerListURL = node.PeerListURL
 
 	// Data directory - expand $HOME
 	// If not explicitly set, derive from coin name or display name
@@ -987,23 +984,16 @@ func (c *NodeConfig) applyFiberNodeConfig(node fiber.NodeConfig) {
 	if node.CoinHoursTicker != "" {
 		c.Fiber.CoinHoursTicker = node.CoinHoursTicker
 	}
-	if node.QrURIPrefix != "" {
-		c.Fiber.QrURIPrefix = node.QrURIPrefix
-	}
-	if node.ExplorerURL != "" {
-		c.Fiber.ExplorerURL = node.ExplorerURL
-	}
-	// Always apply VersionURL, even if empty, to allow fibercoins to disable version checking
+	// Always apply these — viper provides defaults for unset fields,
+	// and empty values may be intentional to disable features
+	c.Fiber.QrURIPrefix = node.QrURIPrefix
+	c.Fiber.ExplorerURL = node.ExplorerURL
 	c.Fiber.VersionURL = node.VersionURL
 	if node.Bip44Coin != 0 {
 		c.Fiber.Bip44Coin = node.Bip44Coin
 	}
-	if node.PriceTickerID != "" {
-		c.Fiber.PriceTickerID = node.PriceTickerID
-	}
-	if node.PriceTickerSource != "" {
-		c.Fiber.PriceTickerSource = node.PriceTickerSource
-	}
+	c.Fiber.PriceTickerID = node.PriceTickerID
+	c.Fiber.PriceTickerSource = node.PriceTickerSource
 }
 
 // WriteFiberTomlGenesis writes genesis address, pubkey, and signature to fiber.toml

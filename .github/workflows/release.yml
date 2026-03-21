@@ -1,131 +1,406 @@
 name: Release
-
 on:
   push:
     tags:
-      - '*'
+      - 'v*'
+
+env:
+  GO_VERSION: '1.26'
+  MUSL_RELEASE: 'v1.3.29'
+  MODULE: github.com/skycoin/skycoin
 
 jobs:
-  linux:
+  create-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --repo ${{ github.repository }} \
+            --title "${{ github.ref_name }}" \
+            --draft \
+            --generate-notes || true
+
+  linux:
+    needs: create-release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            goarch: amd64
+            toolchain: x86_64-linux-musl
+            toolchain_file: x86_64-linux-musl-cross.tgz
+          - arch: arm64
+            goarch: arm64
+            toolchain: aarch64-linux-musl
+            toolchain_file: aarch64-linux-musl-cross.tgz
+          - arch: arm
+            goarch: arm
+            goarm: "6"
+            toolchain: arm-linux-musleabi
+            toolchain_file: arm-linux-musleabi-cross.tgz
+          - arch: armhf
+            goarch: arm
+            goarm: "7"
+            toolchain: arm-linux-musleabihf
+            toolchain_file: arm-linux-musleabihf-cross.tgz
+          - arch: 386
+            goarch: "386"
+            toolchain: i686-linux-musl
+            toolchain_file: i686-linux-musl-cross.tgz
+          - arch: riscv64
+            goarch: riscv64
+            toolchain: riscv64-linux-musl
+            toolchain_file: riscv64-linux-musl-cross.tgz
+    steps:
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
-      
-      - name: Cache musl toolchains
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y wget tar libusb-1.0-0-dev autoconf automake libtool
+
+      - name: Fetch build-libusb-musl.sh
+        run: |
+          curl -sL "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/ci-scripts/build-libusb-musl.sh" -o build-libusb-musl.sh
+          chmod +x build-libusb-musl.sh
+
+      - name: Cache musl toolchain
+        id: cache-toolchain
         uses: actions/cache@v5
         with:
           path: musl-data
-          key: musl-cross-v1.3.29-${{ runner.os }}-${{ hashFiles('ci-scripts/build-libusb-musl.sh') }}
-          restore-keys: |
-            musl-cross-v1.3.29-${{ runner.os }}-
-      
-      - name: Install Requirements
+          key: musl-${{ env.MUSL_RELEASE }}-${{ matrix.toolchain }}
+
+      - name: Download musl toolchain
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libusb-1.0-0-dev
-      
-      - name: Releasing
+          mkdir -p musl-data
+          wget -q "https://github.com/skycoin/skywire/releases/download/${{ env.MUSL_RELEASE }}/${{ matrix.toolchain_file }}"
+          tar -xzf "${{ matrix.toolchain_file }}" -C ./musl-data
+          rm "${{ matrix.toolchain_file }}"
+
+      - name: Build libusb for musl target
+        run: ./build-libusb-musl.sh ${{ matrix.arch }} ${{ matrix.toolchain }} ./musl-data/${{ matrix.toolchain }}-cross
+
+      - name: Build skycoin release binary
+        env:
+          GOPROXY: direct
+          GOSUMDB: "off"
+          CGO_ENABLED: "1"
+          CC: ${{ github.workspace }}/musl-data/${{ matrix.toolchain }}-cross/bin/${{ matrix.toolchain }}-gcc
+          PKG_CONFIG_PATH: ${{ github.workspace }}/musl-data/${{ matrix.toolchain }}-cross/${{ matrix.toolchain }}/lib/pkgconfig
+          GOOS: linux
+          GOARCH: ${{ matrix.goarch }}
+          GOARM: ${{ matrix.goarm }}
+        run: |
+          go install -tags=cgo -trimpath \
+            -ldflags "-s -w -linkmode external -extldflags '-static' -buildid=" \
+            ${{ env.MODULE }}/cmd/release@${{ github.ref_name }}
+
+          mkdir -p bin
+          GOPATH_BIN="$(go env GOPATH)/bin"
+          if [ -f "${GOPATH_BIN}/linux_${{ matrix.goarch }}/release" ]; then
+            cp "${GOPATH_BIN}/linux_${{ matrix.goarch }}/release" bin/skycoin
+          elif [ -f "${GOPATH_BIN}/release" ]; then
+            cp "${GOPATH_BIN}/release" bin/skycoin
+          else
+            echo "Binary not found in expected locations"
+            find "${GOPATH_BIN}" -name "release*" -type f
+            exit 1
+          fi
+
+          if [ "${{ matrix.arch }}" = "amd64" ]; then
+            ./bin/skycoin --version || true
+          fi
+
+      - name: Create archive
+        run: |
+          ARCHIVE_NAME="skycoin-${{ github.ref_name }}-linux-${{ matrix.arch }}"
+          mkdir -p dist
+          cp bin/skycoin dist/
+          cd dist
+          tar -czvf "${ARCHIVE_NAME}.tar.gz" skycoin
+          sha256sum "${ARCHIVE_NAME}.tar.gz" > "${ARCHIVE_NAME}.tar.gz.sha256"
+
+      - name: Upload to release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          make dep-github-release
-          make github-release
+          gh release upload "${{ github.ref_name }}" \
+            dist/skycoin-${{ github.ref_name }}-linux-${{ matrix.arch }}.tar.gz \
+            dist/skycoin-${{ github.ref_name }}-linux-${{ matrix.arch }}.tar.gz.sha256 \
+            --repo ${{ github.repository }} \
+            --clobber
 
   darwin-amd64:
-    needs: linux
+    needs: create-release
     runs-on: macos-15-intel
     steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
-      
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+
       - name: Install Requirements
         run: |
           brew install --quiet libusb || brew upgrade --quiet libusb
           brew install --quiet hidapi || brew upgrade --quiet hidapi
-          brew install --quiet jq || brew upgrade --quiet jq
-          brew install --quiet wget || brew upgrade --quiet wget
-      
-      - name: Releasing
+
+      - name: Build skycoin
+        env:
+          GOPROXY: direct
+          GOSUMDB: "off"
+          CGO_ENABLED: "1"
+          CGO_CFLAGS: -I/usr/local/include -I/opt/homebrew/include -I/opt/homebrew/opt/hidapi/include -I/opt/homebrew/opt/libusb/include
+          CGO_LDFLAGS: -L/usr/local/lib -L/opt/homebrew/lib -L/opt/homebrew/opt/hidapi/lib -L/opt/homebrew/opt/libusb/lib
+        run: |
+          go install -trimpath -ldflags "-s -w" \
+            ${{ env.MODULE }}/cmd/release@${{ github.ref_name }}
+
+          mkdir -p bin
+          cp "$(go env GOPATH)/bin/release" bin/skycoin
+          ./bin/skycoin --version
+
+      - name: Create archive
+        run: |
+          ARCHIVE_NAME="skycoin-${{ github.ref_name }}-darwin-amd64"
+          mkdir -p dist
+          cp bin/skycoin dist/
+          cd dist
+          tar -czvf "${ARCHIVE_NAME}.tar.gz" skycoin
+          shasum -a 256 "${ARCHIVE_NAME}.tar.gz" > "${ARCHIVE_NAME}.tar.gz.sha256"
+
+      - name: Create macOS package
+        run: |
+          PKG_NAME="skycoin-${{ github.ref_name }}-darwin-amd64"
+          mkdir -p pkg-root/usr/local/bin
+          cp bin/skycoin pkg-root/usr/local/bin/
+          pkgbuild --root pkg-root \
+            --identifier com.skycoin.skycoin \
+            --version "${{ github.ref_name }}" \
+            --install-location / \
+            "dist/${PKG_NAME}.pkg"
+          shasum -a 256 "dist/${PKG_NAME}.pkg" > "dist/${PKG_NAME}.pkg.sha256"
+
+      - name: Upload to release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: make github-release-darwin-amd64
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            dist/skycoin-${{ github.ref_name }}-darwin-amd64.tar.gz \
+            dist/skycoin-${{ github.ref_name }}-darwin-amd64.tar.gz.sha256 \
+            dist/skycoin-${{ github.ref_name }}-darwin-amd64.pkg \
+            dist/skycoin-${{ github.ref_name }}-darwin-amd64.pkg.sha256 \
+            --repo ${{ github.repository }} \
+            --clobber
 
   darwin-arm64:
-    needs: linux
-    runs-on: macos-latest  # ARM64 runner
+    needs: create-release
+    runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
-      
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+
       - name: Install Requirements
         run: |
           brew install --quiet libusb || brew upgrade --quiet libusb
           brew install --quiet hidapi || brew upgrade --quiet hidapi
-          brew install --quiet jq || brew upgrade --quiet jq
-          brew install --quiet wget || brew upgrade --quiet wget
-      
-      - name: Releasing
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: make github-release-darwin-arm64
 
-  darwin-installer:
-    needs: [darwin-amd64, darwin-arm64]
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      
-      - name: Install Requirements
+      - name: Build skycoin
+        env:
+          GOPROXY: direct
+          GOSUMDB: "off"
+          CGO_ENABLED: "1"
+          CGO_CFLAGS: -I/opt/homebrew/include -I/opt/homebrew/opt/hidapi/include -I/opt/homebrew/opt/libusb/include
+          CGO_LDFLAGS: -L/opt/homebrew/lib -L/opt/homebrew/opt/hidapi/lib -L/opt/homebrew/opt/libusb/lib
         run: |
-          brew install --quiet jq || brew upgrade --quiet jq
-          brew install --quiet wget || brew upgrade --quiet wget
-      
-      - name: Create and Upload macOS Installers
+          go install -trimpath -ldflags "-s -w" \
+            ${{ env.MODULE }}/cmd/release@${{ github.ref_name }}
+
+          mkdir -p bin
+          cp "$(go env GOPATH)/bin/release" bin/skycoin
+          ./bin/skycoin --version
+
+      - name: Create archive
+        run: |
+          ARCHIVE_NAME="skycoin-${{ github.ref_name }}-darwin-arm64"
+          mkdir -p dist
+          cp bin/skycoin dist/
+          cd dist
+          tar -czvf "${ARCHIVE_NAME}.tar.gz" skycoin
+          shasum -a 256 "${ARCHIVE_NAME}.tar.gz" > "${ARCHIVE_NAME}.tar.gz.sha256"
+
+      - name: Create macOS package
+        run: |
+          PKG_NAME="skycoin-${{ github.ref_name }}-darwin-arm64"
+          mkdir -p pkg-root/usr/local/bin
+          cp bin/skycoin pkg-root/usr/local/bin/
+          pkgbuild --root pkg-root \
+            --identifier com.skycoin.skycoin \
+            --version "${{ github.ref_name }}" \
+            --install-location / \
+            "dist/${PKG_NAME}.pkg"
+          shasum -a 256 "dist/${PKG_NAME}.pkg" > "dist/${PKG_NAME}.pkg.sha256"
+
+      - name: Upload to release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: make mac-installer-release
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            dist/skycoin-${{ github.ref_name }}-darwin-arm64.tar.gz \
+            dist/skycoin-${{ github.ref_name }}-darwin-arm64.tar.gz.sha256 \
+            dist/skycoin-${{ github.ref_name }}-darwin-arm64.pkg \
+            dist/skycoin-${{ github.ref_name }}-darwin-arm64.pkg.sha256 \
+            --repo ${{ github.repository }} \
+            --clobber
 
   windows:
-    needs: darwin-installer
+    needs: create-release
     runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            goarch: amd64
+            wix_arch: x64
+            cgo_enabled: "1"
+          - arch: "386"
+            goarch: "386"
+            wix_arch: x86
+            cgo_enabled: "0"
+          - arch: arm64
+            goarch: arm64
+            wix_arch: x64
+            cgo_enabled: "0"
     steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
-      
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+
       - name: Install Requirements
+        if: matrix.cgo_enabled == '1'
         shell: pwsh
         run: |
-          choco install make
-          # Install libusb and hidapi via msys2/mingw for x64 only
-          # 32-bit (i686) packages not available in default msys2 repos
-          C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm mingw-w64-x86_64-libusb mingw-w64-x86_64-hidapi"
-      
-      - name: Releasing
+          C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm mingw-w64-x86_64-libusb mingw-w64-x86_64-hidapi mingw-w64-x86_64-pkg-config"
+
+      - name: Fetch Windows installer files
+        if: matrix.arch != 'arm64'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "scripts\win_installer"
+          Invoke-WebRequest "https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/scripts/win_installer/Product.wxs" -OutFile "scripts\win_installer\Product.wxs"
+
+      - name: Build skycoin
+        env:
+          GOPROXY: direct
+          GOSUMDB: "off"
+          CGO_ENABLED: ${{ matrix.cgo_enabled }}
+          CGO_CFLAGS: -IC:/msys64/mingw64/include -IC:/msys64/mingw64/include/libusb-1.0
+          CGO_LDFLAGS: -LC:/msys64/mingw64/lib
+          GOOS: windows
+          GOARCH: ${{ matrix.goarch }}
+        shell: pwsh
+        run: |
+          go install -trimpath -ldflags "-s -w" "${{ env.MODULE }}/cmd/release@${{ github.ref_name }}"
+
+          New-Item -ItemType Directory -Force -Path "bin"
+          $gopath = go env GOPATH
+          $crossPath = "$gopath\bin\windows_${{ matrix.goarch }}\release.exe"
+          $nativePath = "$gopath\bin\release.exe"
+
+          if (Test-Path $crossPath) {
+            Copy-Item $crossPath "bin\skycoin.exe"
+          } elseif (Test-Path $nativePath) {
+            Copy-Item $nativePath "bin\skycoin.exe"
+          } else {
+            Write-Error "Binary not found"
+            Get-ChildItem -Recurse "$gopath\bin" -Filter "release*"
+            exit 1
+          }
+
+          if ("${{ matrix.arch }}" -eq "amd64") {
+            & "bin\skycoin.exe" --version
+          }
+
+      - name: Create archive
+        shell: pwsh
+        run: |
+          $ARCHIVE_NAME = "skycoin-${{ github.ref_name }}-windows-${{ matrix.arch }}"
+          New-Item -ItemType Directory -Force -Path "dist"
+          Copy-Item "bin\skycoin.exe" "dist\"
+          Compress-Archive -Path "dist\skycoin.exe" -DestinationPath "dist\$ARCHIVE_NAME.zip"
+          Get-FileHash "dist\$ARCHIVE_NAME.zip" -Algorithm SHA256 | ForEach-Object { "$($_.Hash)  $ARCHIVE_NAME.zip" } > "dist\$ARCHIVE_NAME.zip.sha256"
+          Remove-Item "dist\skycoin.exe"
+
+      - name: Create MSI installer
+        if: matrix.arch != 'arm64'
+        shell: pwsh
+        run: |
+          $MSI_NAME = "skycoin-installer-${{ github.ref_name }}-windows-${{ matrix.arch }}"
+          $VERSION = "${{ github.ref_name }}" -replace '(^v|-.+$)', ''
+
+          # Download WiX 3.11
+          Invoke-WebRequest "https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311-binaries.zip" -OutFile wix.zip
+          Expand-Archive wix.zip -DestinationPath wix
+
+          # Prepare build directory
+          Set-Location scripts\win_installer
+          New-Item -ItemType Directory -Force -Path "build"
+          Copy-Item ..\..\bin\skycoin.exe build\skycoin.exe
+
+          # Update version in Product.wxs
+          $productWxs = Get-Content -Path Product.wxs -Raw
+          $productWxs = $productWxs -replace "skycoinVersion", $VERSION
+          Set-Content -Path Product.wxs -Value $productWxs
+
+          # Build MSI
+          ..\..\wix\candle.exe Product.wxs -arch ${{ matrix.wix_arch }}
+          ..\..\wix\light.exe -ext WixUIExtension -ext WixUtilExtension -sacl -spdb -out skycoin.msi Product.wixobj
+          Move-Item skycoin.msi ..\..\dist\$MSI_NAME.msi
+
+          Set-Location ..\..
+          Get-FileHash "dist\$MSI_NAME.msi" -Algorithm SHA256 | ForEach-Object { "$($_.Hash)  $MSI_NAME.msi" } > "dist\$MSI_NAME.msi.sha256"
+
+      - name: Upload to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          $files = @(
+            "dist\skycoin-${{ github.ref_name }}-windows-${{ matrix.arch }}.zip",
+            "dist\skycoin-${{ github.ref_name }}-windows-${{ matrix.arch }}.zip.sha256"
+          )
+          $msi = "dist\skycoin-installer-${{ github.ref_name }}-windows-${{ matrix.arch }}.msi"
+          $msiSha = "dist\skycoin-installer-${{ github.ref_name }}-windows-${{ matrix.arch }}.msi.sha256"
+          if (Test-Path $msi) {
+            $files += $msi
+            $files += $msiSha
+          }
+          gh release upload "${{ github.ref_name }}" @files --repo ${{ github.repository }} --clobber
+
+  create-checksums:
+    needs: [linux, darwin-amd64, darwin-arm64, windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all checksums and create combined file
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          make github-release-windows
-          make windows-installer-release
+          gh release download "${{ github.ref_name }}" --repo ${{ github.repository }} --pattern "*.sha256"
+          cat *.sha256 > checksums.txt
+
+      - name: Upload combined checksums
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.ref_name }}" checksums.txt \
+            --repo ${{ github.repository }} \
+            --clobber

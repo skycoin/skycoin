@@ -1,6 +1,6 @@
 module github.com/skycoin/skycoin
 
-go 1.25.6
+go 1.26.1
 
 require (
 	github.com/NYTimes/gziphandler v1.1.1

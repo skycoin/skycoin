@@ -56,6 +56,7 @@ The operation without any flags was described above in the [history](#history) s
 | `--port` | `-p` | `8001` | Port to serve on. |
 | `--host` | `-H` | `127.0.0.1` | Host to bind to. |
 | `--enable-seed-api` | | `false` | Enable the wallet seed API (requires `--wallet-dir`). |
+| `--gui-dir` | `-g` | _(embedded)_ | Custom GUI directory. Overrides the embedded GUI for re-skinning. |
 | `--btc-node-url` | | _(none)_ | Bitcoin Core RPC URL (e.g. `http://user:pass@127.0.0.1:8332`). |
 | `--btc-electrum-url` | | _(none)_ | Electrum server URL (e.g. `ssl://electrum.blockstream.info:50002`). |
 

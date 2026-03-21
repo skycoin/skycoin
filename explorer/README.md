@@ -121,7 +121,18 @@ Replace the `{NODE_URL}` part with the URL of the node, including the `http://` 
 
 If you want to run the server in api-only mode (it will respond to API calls but will not serve the frontend), replace the `make run` with `make run-api`.
 
-You can also configure the node and server addresses with CLI flags, run `go run explorer.go -h` to see the options.
+You can also configure the node and server addresses with CLI flags, run `skycoin explorer --help` to see the options.
+
+### Flags
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--server-host` | `-s` | `127.0.0.1:8001` | The addr:port to bind the explorer web server to |
+| `--node-addr` | `-n` | `http://127.0.0.1:6420` | The skycoin node's address |
+| `--files-folder` | `-f` | _(embedded)_ | Path for a custom precompiled front-end (overrides embedded GUI) |
+| `--api-only` | `-a` | `false` | Only run the API, don't serve static content |
+
+Set `FIBER_TOML` to customize the explorer for a fibercoin (changes the ASCII art and description in the help menu).
 
 ### Open the frontend
 

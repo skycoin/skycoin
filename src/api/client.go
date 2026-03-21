@@ -1334,6 +1334,11 @@ func (c *Client) Health() (*HealthResponse, error) {
 	return &r, nil
 }
 
+// Shutdown makes a request to POST /api/v1/shutdown to shut down the node
+func (c *Client) Shutdown() error {
+	return c.PostForm("/api/v1/shutdown", nil, nil)
+}
+
 // EncryptWallet makes a request to POST /api/v1/wallet/encrypt to encrypt a specific wallet with the given password
 func (c *Client) EncryptWallet(id, password string) (*WalletResponse, error) {
 	v := url.Values{}

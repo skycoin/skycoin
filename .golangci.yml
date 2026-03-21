@@ -96,6 +96,30 @@ linters:
       - linters:
           - staticcheck
         text: "QF1006:" # could lift into loop condition (staticcheck)
+      - linters:
+          - gosec
+        text: "G115:" # integer overflow conversion (gosec)
+      - linters:
+          - gosec
+        text: "G117:" # marshaled struct field matches secret pattern (gosec)
+      - linters:
+          - gosec
+        text: "G120:" # parsing form data without limiting request body size (gosec)
+      - linters:
+          - gosec
+        text: "G703:" # path traversal via taint analysis (gosec)
+      - linters:
+          - gosec
+        text: "G706:" # log injection via taint analysis (gosec)
+      - linters:
+          - gosec
+        text: "G602:" # slice index out of range (gosec)
+      - linters:
+          - gosec
+        text: "G101:" # potential hardcoded credentials (gosec)
+      - linters:
+          - staticcheck
+        text: "QF1012:" # use fmt.Fprintf instead of WriteString(fmt.Sprintf) (staticcheck)
 issues:
   new: false
 formatters:

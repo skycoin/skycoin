@@ -4,10 +4,13 @@ package commands
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/skycoin/skycoin/src/cli"
+	"github.com/skycoin/skycoin/src/fiber"
 	"github.com/skycoin/skycoin/src/util/logging"
 
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/calvin"
@@ -34,17 +37,37 @@ func init() {
 		os.Exit(1)
 	}
 
+	// Determine coin name from FIBER_TOML or default
+	coinName := "skycoin"
+	rpcDefault := "http://127.0.0.1:6420"
+	if fiberTomlPath := os.Getenv("FIBER_TOML"); fiberTomlPath != "" {
+		if absPath, err := filepath.Abs(fiberTomlPath); err == nil {
+			fiberTomlPath = absPath
+		}
+		if fiberCfg, err := fiber.NewConfig(filepath.Base(fiberTomlPath), filepath.Dir(fiberTomlPath)); err == nil {
+			if fiberCfg.Node.DisplayName != "" {
+				coinName = fiberCfg.Node.DisplayName
+			}
+			if fiberCfg.Node.WebInterfacePort != 0 {
+				rpcDefault = fmt.Sprintf("http://127.0.0.1:%d", fiberCfg.Node.WebInterfacePort)
+			}
+		}
+	}
+	coinNameLower := strings.ToLower(coinName)
+
+	description := fmt.Sprintf("%s command line interface", coinNameLower)
+
 	// Configure the RootCmd with the CLI subcommands
 	RootCmd.Use = "cli"
 	RootCmd.Short = description
-	RootCmd.Long = calvin.AsciiFont("skycoin-cli") + "\n" + description + "\n" + `
+	RootCmd.Long = calvin.AsciiFont(coinNameLower+"-cli") + "\n" + description + "\n" + fmt.Sprintf(`
 ENVIRONMENT VARIABLES:
-  RPC_ADDR: Address of RPC node. Must be in scheme://host format. Default "http://127.0.0.1:6420"
+  RPC_ADDR: Address of RPC node. Must be in scheme://host format. Default "%s"
   RPC_USER: Username for RPC API, if enabled in the RPC.
   RPC_PASS: Password for RPC API, if enabled in the RPC.
-  COIN: Name of the coin. Default "skycoin"
+  COIN: Name of the coin. Default "%s"
   DATA_DIR: Directory where everything is stored. Default "$HOME/.$COIN/"
-`
+`, rpcDefault, coinNameLower)
 
 	// Add all CLI subcommands to RootCmd
 	for _, cmd := range cliCmd.Commands() {
@@ -55,18 +78,8 @@ ENVIRONMENT VARIABLES:
 	flags.InitFlags(RootCmd, true)
 }
 
-var description = "skycoin command line interface"
-
 // RootCmd represents the base command for the application
 var RootCmd = &cobra.Command{
 	Use:   "cli",
-	Short: description,
-	Long: calvin.AsciiFont("skycoin") + " cli\n" + description + "\n" + `
-ENVIRONMENT VARIABLES:
-  RPC_ADDR: Address of RPC node. Must be in scheme://host format. Default "http://127.0.0.1:6420"
-  RPC_USER: Username for RPC API, if enabled in the RPC.
-  RPC_PASS: Password for RPC API, if enabled in the RPC.
-  COIN: Name of the coin. Default "skycoin"
-  DATA_DIR: Directory where everything is stored. Default "$HOME/.$COIN/"
-`,
+	Short: "command line interface",
 }

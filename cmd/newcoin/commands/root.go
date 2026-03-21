@@ -51,9 +51,9 @@ func init() {
 // RootCmd represents the base command for the application
 var RootCmd = &cobra.Command{
 	Use:   "newcoin",
-	Short: "newcoin is a helper tool for creating new fiber coins",
+	Short: "create a new fibercoin",
 	Long: calvin.AsciiFont("newcoin") + `
-newcoin is a helper tool for creating new fiber coins`,
+create a new fibercoin`,
 }
 
 var createCoinCmd = &cobra.Command{

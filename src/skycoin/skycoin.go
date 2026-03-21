@@ -225,7 +225,7 @@ func (c *Coin) Run() error {
 	gw = api.NewGateway(d, v, w, s)
 
 	if c.config.Node.WebInterface {
-		webInterface, err = c.createGUI(gw, host)
+		webInterface, err = c.createGUI(gw, host, quit)
 		if err != nil {
 			c.logger.WithError(err).Error("c.createGUI failed")
 			return err
@@ -479,7 +479,7 @@ func (c *Coin) ConfigureDaemon() daemon.Config {
 	return dc
 }
 
-func (c *Coin) createGUI(gw *api.Gateway, host string) (*api.Server, error) {
+func (c *Coin) createGUI(gw *api.Gateway, host string, quit chan struct{}) (*api.Server, error) {
 	config := api.Config{
 		StaticDir:          c.config.Node.GUIDirectory,
 		DisableCSRF:        c.config.Node.DisableCSRF,
@@ -501,8 +501,9 @@ func (c *Coin) createGUI(gw *api.Gateway, host string) (*api.Server, error) {
 			DaemonUserAgent: c.config.Node.userAgent,
 			BlockPublisher:  c.config.Node.RunBlockPublisher,
 		},
-		Username: c.config.Node.WebInterfaceUsername,
-		Password: c.config.Node.WebInterfacePassword,
+		Username:     c.config.Node.WebInterfaceUsername,
+		Password:     c.config.Node.WebInterfacePassword,
+		ShutdownChan: quit,
 	}
 
 	var s *api.Server

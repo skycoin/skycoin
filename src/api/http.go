@@ -88,6 +88,7 @@ type Config struct {
 	EnabledAPISets     map[string]struct{}
 	Username           string
 	Password           string
+	ShutdownChan       chan struct{} // when closed, triggers daemon shutdown
 }
 
 // HealthConfig configuration data exposed in /health
@@ -110,6 +111,7 @@ type muxConfig struct {
 	username           string
 	password           string
 	health             HealthConfig
+	shutdownChan       chan struct{}
 }
 
 // HTTPResponse represents the http response struct
@@ -216,6 +218,7 @@ func create(host string, c Config, gateway Gatewayer) (*Server, error) {
 		hostWhitelist:      c.HostWhitelist,
 		username:           c.Username,
 		password:           c.Password,
+		shutdownChan:       c.ShutdownChan,
 	}
 
 	srvMux := newServerMux(mc, gateway)
@@ -703,6 +706,13 @@ func newServerMux(c muxConfig, gateway Gatewayer) *http.ServeMux {
 	webHandlerV1("/explorer/address", explorerAddressHandler(gateway), map[string][]string{
 		http.MethodGet: {EndpointsExplorer},
 	})
+
+	// Shutdown endpoint
+	if c.shutdownChan != nil {
+		webHandlerV1("/shutdown", shutdownHandler(c.shutdownChan), map[string][]string{
+			http.MethodPost: {EndpointsNetCtrl},
+		})
+	}
 
 	// Storage endpoint
 	webHandlerV2("/data", storageHandler(gateway), map[string][]string{

@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/explorer"
+	"github.com/skycoin/skycoin/src/fiber"
 )
 
 const (
@@ -112,8 +113,21 @@ var RootCmd = &cobra.Command{
 	Use: func() string {
 		return strings.Split(filepath.Base(strings.ReplaceAll(strings.ReplaceAll(fmt.Sprintf("%v", os.Args), "[", ""), "]", "")), " ")[0]
 	}(),
-	Short:                 "skycoin blockchain explorer",
-	Long:                  calvin.AsciiFont("explorer"),
+	Short: "blockchain explorer",
+	Long: func() string {
+		coinName := "skycoin"
+		if fiberTomlPath := os.Getenv("FIBER_TOML"); fiberTomlPath != "" {
+			if absPath, err := filepath.Abs(fiberTomlPath); err == nil {
+				fiberTomlPath = absPath
+			}
+			if fiberCfg, err := fiber.NewConfig(filepath.Base(fiberTomlPath), filepath.Dir(fiberTomlPath)); err == nil {
+				if fiberCfg.Node.DisplayName != "" {
+					coinName = fiberCfg.Node.DisplayName
+				}
+			}
+		}
+		return calvin.AsciiFont(strings.ToLower(coinName) + "-explorer")
+	}(),
 	SilenceUsage:          true,
 	DisableSuggestions:    true,
 	DisableFlagsInUseLine: true,

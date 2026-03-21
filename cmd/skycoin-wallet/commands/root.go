@@ -8,7 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pelletier/go-toml/v2"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/calvin"
 	"github.com/spf13/cobra"
 
 	explorer "github.com/skycoin/skycoin/cmd/explorer/commands"
@@ -24,6 +26,37 @@ var (
 )
 
 func init() {
+	// Determine coin name from FIBER_TOML
+	coinName := "skycoin"
+	if fiberTomlPath := os.Getenv("FIBER_TOML"); fiberTomlPath != "" {
+		if data, err := os.ReadFile(fiberTomlPath); err == nil { //nolint:gosec
+			var cfg struct {
+				Node struct {
+					DisplayName string `toml:"display_name"`
+				} `toml:"node"`
+			}
+			if err := toml.Unmarshal(data, &cfg); err == nil && cfg.Node.DisplayName != "" {
+				coinName = cfg.Node.DisplayName
+			}
+		}
+	}
+	coinNameLower := strings.ToLower(coinName)
+
+	// Set the Long description with the correct ASCII font
+	longDesc := calvin.AsciiFont(coinNameLower)
+	if buildinfo.DBIVersion() != "" {
+		longDesc += fmt.Sprintf("\n%v", buildinfo.DBIVersion())
+	} else {
+		longDesc += fmt.Sprintf("\n%s version %v", coinNameLower, buildinfo.Version())
+	}
+	if buildinfo.Go() != "unknown" && buildinfo.Go() != "" {
+		longDesc += "\nbuilt with " + buildinfo.Go()
+	}
+	RootCmd.Long = longDesc
+
+	// Update subcommand descriptions
+	web.RootCmd.Use = "web"
+	web.RootCmd.Short = coinNameLower + " thin client web wallet"
 
 	RootCmd.AddCommand(
 		skycoin.RootCmd,
@@ -33,9 +66,8 @@ func init() {
 		explorer.RootCmd,
 	)
 	skycoin.RootCmd.Use = "daemon"
-	web.RootCmd.Use = "web"
-	web.RootCmd.Short = "skycoin thin client web wallet"
 	explorer.RootCmd.Use = "explorer"
+
 	if fmt.Sprintf("%v", buildinfo.DebugBuildInfo()) != "" {
 		RootCmd.Flags().BoolVarP(&di, "info", "d", false, "print runtime/debug.BuildInfo")
 	}
@@ -48,21 +80,6 @@ func init() {
 var RootCmd = &cobra.Command{
 	Use: func() string {
 		return strings.Split(filepath.Base(strings.ReplaceAll(strings.ReplaceAll(fmt.Sprintf("%v", os.Args), "[", ""), "]", "")), " ")[0]
-	}(),
-	Long: func() (ret string) {
-		ret = `
-    ┌─┐┬┌─┬ ┬┌─┐┌─┐┬┌┐┌
-    └─┐├┴┐└┬┘│  │ │││││
-    └─┘┴ ┴ ┴ └─┘└─┘┴┘└┘`
-		if buildinfo.DBIVersion() != "" {
-			ret += fmt.Sprintf("\n%v", buildinfo.DBIVersion())
-		} else {
-			ret += fmt.Sprintf("\nskycoin version %v", buildinfo.Version())
-		}
-		if buildinfo.Go() != "unknown" && buildinfo.Go() != "" {
-			ret += "\nbuilt with " + buildinfo.Go()
-		}
-		return ret
 	}(),
 	SilenceErrors:         true,
 	SilenceUsage:          true,

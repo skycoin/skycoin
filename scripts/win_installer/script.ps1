@@ -52,10 +52,6 @@ function BuildInstaller()
     Set-Location .\scripts\win_installer
     mkdir -p ".\build" > $null
     Copy-Item ..\..\archive\skycoin.exe .\build\skycoin.exe
-    # Only copy skyhw for amd64
-    if ($arch -eq "amd64" -and (Test-Path "..\..\archive\skyhw.exe")) {
-        Copy-Item ..\..\archive\skyhw.exe .\build\skyhw.exe
-    }
     
     $installerVersion = $version -replace '(^v|-.+$)', ''
     $productWxs = Get-Content -Path Product.wxs

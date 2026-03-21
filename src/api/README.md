@@ -977,9 +977,12 @@ Args:
     id: wallet file name
     num: the number you want to generate
     password: wallet password
+    chain: [optional] BIP44 chain to generate on: "external" or "0" (default), "change" or "1"
+    account: [optional] BIP44 account index (default 0)
 ```
 
-For `bip44` type wallets, the new addresses will be generated on the `external` chain (`change=0`).
+For `bip44` type wallets, the new addresses will be generated on the `external` chain by default.
+Use `chain=change` to generate addresses on the change chain instead.
 
 Example:
 
@@ -989,6 +992,16 @@ curl -X POST http://127.0.0.1:6420/api/v1/wallet/newAddress \
  -d 'id=2017_05_09_d554.wlt' \
  -d 'num=2' \
  -d 'password=$password'
+```
+
+Example (BIP44 change chain):
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v1/wallet/newAddress \
+ -H 'Content-Type: x-www-form-urlencoded' \
+ -d 'id=2017_05_09_d554.wlt' \
+ -d 'num=1' \
+ -d 'chain=change'
 ```
 
 Result:
@@ -4387,6 +4400,31 @@ Result:
 
 ```json
 {}
+```
+
+### Shutdown the node
+
+API sets: `NET_CTRL`
+
+```
+URI: /api/v1/shutdown
+Method: POST
+```
+
+Initiates a graceful shutdown of the node.
+
+Example:
+
+```sh
+curl -X POST http://127.0.0.1:6420/api/v1/shutdown
+```
+
+Result:
+
+```json
+{
+    "message": "shutting down"
+}
 ```
 
 ## Migrating from the unversioned API

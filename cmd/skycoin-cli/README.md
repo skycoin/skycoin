@@ -127,9 +127,11 @@ Available Commands:
   encodeJsonTransaction Encode JSON transaction
   encryptWallet        Encrypt wallet
   fiberAddressGen      Generate addresses and seeds for a new fiber coin
+  halt                 Shut down the running node
   lastBlocks           Displays the content of the most recently N generated blocks
   listAddresses        Lists all addresses in a given wallet
   listWallets          Lists all wallets stored in the wallet directory
+  nextAddress          Derive the next address from an xpub key
   pendingTransactions  Get all unconfirmed transactions
   richlist             Get skycoin richlist
   send                 Send skycoin from a wallet or an address to a recipient address
@@ -140,6 +142,8 @@ Available Commands:
   transaction          Show detail info of specific transaction
   verifyAddress        Verify a skycoin address
   verifyTransaction    Verify if the specific transaction is spendable
+  unusedAddresses      Show addresses in a wallet that have no transaction history
+  verifyXpub           Verify an xpub key is valid
   version              List the current version of Skycoin components
   walletAddAddresses   Generate additional addresses for a deterministic, bip44 or xpub wallet
   walletBalance        Check the balance of a wallet

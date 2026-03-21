@@ -260,7 +260,31 @@ Queries daemon for distribution addresses, creates transaction splitting genesis
 skycoin newcoin createcoin --coin <name> --config-file <path> [flags]
 ```
 
-Generates coin-specific Go source files from fiber.toml templates. See `skycoin newcoin createcoin --help` for all flags.
+Generates coin-specific Go source files from fiber.toml templates. Use `--template-dir` to specify a custom template directory instead of the embedded templates. See `skycoin newcoin createcoin --help` for all flags.
+
+### `newcoin templates` - Export Templates
+
+```bash
+# Print all templates to stdout
+skycoin newcoin templates
+
+# Export templates to a directory for customization
+skycoin newcoin templates ./my-templates
+```
+
+Exports the embedded newcoin templates to a directory so they can be customized. After editing, use them with `createcoin`:
+
+```bash
+skycoin newcoin createcoin --coin mycoin --template-dir ./my-templates
+```
+
+### `newcoin config` - Print Default Config
+
+```bash
+skycoin newcoin config > mycoin.toml
+```
+
+Prints the embedded default fiber.toml configuration to stdout.
 
 ---
 

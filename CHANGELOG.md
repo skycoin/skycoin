@@ -4,6 +4,74 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## 0.28.5
+
+### Added
+
+- **BIP44 Chain Selection**
+  - `/api/v1/wallet/newAddress` now accepts `chain` parameter (`external`/`change`) and `account` parameter for BIP44 wallets
+  - CLI `walletAddAddresses` has `--chain` flag for generating on external or change chain
+  - GUI wallet shows "New Address" button for both external and change address sections
+
+- **Node Shutdown API**
+  - `POST /api/v1/shutdown` endpoint for graceful node shutdown (NET_CTRL API set)
+  - CLI `halt` command to shut down a running node via RPC
+
+- **FIBER_TOML Help Menus**
+  - All help menus (top-level, daemon, cli, web, explorer) dynamically update ASCII art and descriptions based on `FIBER_TOML` env var
+  - Default RPC port in CLI help reflects the fibercoin's configured `web_interface_port`
+
+- **Newcoin Templates**
+  - `newcoin templates` subcommand to export embedded templates for customization
+  - `--template-dir` flag in `createcoin` now functional (was dead code)
+
+- **Fibercoin Integration Test**
+  - CI test exercising full fibercoin lifecycle: genesis wallet, fiber.toml, distribution, block publishing
+  - Tests BIP44 chain selection via API
+  - Tests `distributeGenesis` end-to-end
+
+- **Custom GUI Override**
+  - `skycoin web` now has `--gui-dir` flag to serve custom GUI instead of embedded
+
+### Changed
+
+- **Release Workflow**
+  - Replaced goreleaser with direct `go install` builds for proper version embedding
+  - All platforms build in parallel with matrix strategy
+  - No repository checkout needed for builds (only specific files fetched when needed)
+  - macOS `.pkg` installers built inline via `pkgbuild`
+  - Updated to Go 1.26
+
+- **API Client**
+  - Removed `DisallowUnknownFields()` from JSON decoders for forward compatibility (older clients can talk to newer nodes)
+
+- **Peer Connection Logging**
+  - "Already connected to this peer" no longer logged as a warning (silently skipped)
+
+### Fixed
+
+- **fiber.toml Empty String Overrides**
+  - Setting `peer_list_url = ""`, `explorer_url = ""`, `default_connections = []`, etc. in fiber.toml now correctly overrides hardcoded defaults (previously ignored empty values)
+
+- **Windows Release Build**
+  - Added msys2 mingw64 to PATH for `pkg-config` to find `libusb-1.0.pc`
+  - Fixed MSI installer expecting separate `skyhw.exe` (now included in combined binary)
+
+- **cmd/release CGO Split**
+  - Hardware wallet import behind `cgo` build tag so `cmd/release` builds with `CGO_ENABLED=0`
+
+- **Flaky Windows Test**
+  - Increased `wait()` timeout in `TestStopListen` for slow CI runners
+
+### Security
+
+- Bumped `fast-xml-parser` to 5.5.7 in `/explorer`
+- Bumped `flatted` to 3.4.2 in `/src/gui/static` and `/src/skycoin-web`
+- Removed deprecated `protractor` from `/explorer` (eliminated 10 vulnerabilities)
+- Ran `npm audit fix` across all npm directories
+- Updated golangci-lint to v2.11.3 for Go 1.26 compatibility
+- Updated GitHub Actions to Node.js 24 compatible versions
+
 ## 0.28.1
 
 ### Added

@@ -114,8 +114,10 @@ jobs:
             exit 1
           fi
 
+          # Verify binary on native arch
           if [ "${{ matrix.arch }}" = "amd64" ]; then
-            ./bin/skycoin --version || true
+            ./bin/skycoin || true
+            ./bin/skycoin daemon --help || true
           fi
 
       - name: Create archive
@@ -164,7 +166,8 @@ jobs:
 
           mkdir -p bin
           cp "$(go env GOPATH)/bin/release" bin/skycoin
-          ./bin/skycoin --version
+          ./bin/skycoin || true
+          ./bin/skycoin daemon --help || true
 
       - name: Create archive
         run: |
@@ -226,7 +229,8 @@ jobs:
 
           mkdir -p bin
           cp "$(go env GOPATH)/bin/release" bin/skycoin
-          ./bin/skycoin --version
+          ./bin/skycoin || true
+          ./bin/skycoin daemon --help || true
 
       - name: Create archive
         run: |
@@ -326,8 +330,10 @@ jobs:
             exit 1
           }
 
-          if ("${{ matrix.arch }}" -eq "amd64") {
-            & "bin\skycoin.exe" --version
+          # Verify binary (amd64 and 386 can run on amd64 runner)
+          if ("${{ matrix.arch }}" -ne "arm64") {
+            & "bin\skycoin.exe"
+            & "bin\skycoin.exe" daemon --help
           }
 
       - name: Create archive

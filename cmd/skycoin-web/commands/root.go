@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -20,6 +21,7 @@ import (
 	"github.com/skycoin/skycoin/src/btc"
 	"github.com/skycoin/skycoin/src/cipher/bip44"
 	"github.com/skycoin/skycoin/src/cipher/crypto"
+	"github.com/skycoin/skycoin/src/fiber"
 	"github.com/skycoin/skycoin/src/readable"
 	wasmtinygo "github.com/skycoin/skycoin/src/skycoin-lite/wasm-tinygo"
 	"github.com/skycoin/skycoin/src/skycoin-web/src/gui"
@@ -90,8 +92,19 @@ var RootCmd = &cobra.Command{
 	Use:   "skycoin-web",
 	Short: "Skycoin Web Wallet",
 	Long: func() (ret string) {
-		ret = calvin.AsciiFont("skycoin-web")
-		ret += "\nThin client web wallet for Skycoin and fibercoins."
+		coinName := "skycoin"
+		if fiberTomlPath := os.Getenv("FIBER_TOML"); fiberTomlPath != "" {
+			if absPath, err := filepath.Abs(fiberTomlPath); err == nil {
+				fiberTomlPath = absPath
+			}
+			if fiberCfg, err := fiber.NewConfig(filepath.Base(fiberTomlPath), filepath.Dir(fiberTomlPath)); err == nil {
+				if fiberCfg.Node.DisplayName != "" {
+					coinName = fiberCfg.Node.DisplayName
+				}
+			}
+		}
+		ret = calvin.AsciiFont(strings.ToLower(coinName) + "-web")
+		ret += fmt.Sprintf("\nThin client web wallet for %s and fibercoins.", coinName)
 		return ret
 	}(),
 	Run: func(_ *cobra.Command, _ []string) {

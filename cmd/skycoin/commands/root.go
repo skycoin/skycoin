@@ -139,6 +139,7 @@ func init() {
 	}
 	// Use lowercase for ASCII art and wallet text
 	coinNameLower := strings.ToLower(coinName)
+	RootCmd.Short = coinNameLower + " wallet"
 	RootCmd.Long = calvin.AsciiFont(coinNameLower) + "\n " + coinNameLower + " wallet" + `
 
 Environment variables:

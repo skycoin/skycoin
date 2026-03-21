@@ -35,6 +35,8 @@ var (
 	walletDirs    []string
 	enableSeedAPI bool
 
+	guiDir string // custom GUI directory, overrides embedded GUI
+
 	// Bitcoin flags
 	btcNodeURL     string
 	btcElectrumURL string
@@ -118,6 +120,7 @@ func init() {
 	RootCmd.Flags().StringArrayVarP(&nodeURLs, "node-url", "n", []string{"https://node.skycoin.com"}, "Node URL (can be specified multiple times)")
 	RootCmd.Flags().StringArrayVarP(&walletDirs, "wallet-dir", "w", nil, "Local wallet directory (e.g. ~/.skycoin/wallets)")
 	RootCmd.Flags().BoolVar(&enableSeedAPI, "enable-seed-api", false, "Enable the wallet seed API (requires --wallet-dir)")
+	RootCmd.Flags().StringVarP(&guiDir, "gui-dir", "g", "", "Custom GUI directory (overrides embedded GUI)")
 
 	// Bitcoin flags (mutually exclusive)
 	RootCmd.Flags().StringVar(&btcNodeURL, "btc-node-url", "", "Bitcoin Core RPC URL (e.g. http://user:pass@127.0.0.1:8332)")
@@ -353,10 +356,18 @@ func serve() {
 		}
 	}
 
-	// Get the embedded dist directory
-	distSub, err := fs.Sub(gui.DistFS, "dist")
-	if err != nil {
-		log.Fatalf("Failed to get dist subdirectory: %v", err)
+	// Get GUI filesystem — custom directory or embedded
+	var guiFS fs.FS
+	if guiDir != "" {
+		log.Printf("Serving GUI from local folder: %s", guiDir)
+		guiFS = os.DirFS(guiDir)
+	} else {
+		log.Println("Serving embedded GUI")
+		var err error
+		guiFS, err = fs.Sub(gui.DistFS, "dist")
+		if err != nil {
+			log.Fatalf("Failed to get dist subdirectory: %v", err)
+		}
 	}
 
 	// Serve embedded WASM files from skycoin-lite
@@ -475,12 +486,12 @@ func serve() {
 		}
 	})
 
-	// Serve static files from embedded dist directory
+	// Serve static files from GUI filesystem
 	router.NoRoute(func(c *gin.Context) {
 		if c.Request.URL.Path != "/" && c.Request.URL.Path != "/favicon.ico" {
 			log.Printf("[STATIC] %s %s", c.Request.Method, c.Request.URL.Path)
 		}
-		fileServer := http.FileServer(http.FS(distSub))
+		fileServer := http.FileServer(http.FS(guiFS))
 		fileServer.ServeHTTP(c.Writer, c.Request)
 	})
 

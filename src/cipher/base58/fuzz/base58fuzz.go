@@ -10,11 +10,11 @@ import (
 // To use the fuzzer:
 // Follow the install instructions from https://github.com/dvyukov/go-fuzz
 // Then, from the repo root,
-// $ go-fuzz-build github.com/skycoin/skycoin/src/cipher/base58/internal
+// $ go-fuzz-build github.com/skycoin/skycoin/src/cipher/base58/fuzz
 // This creates a file base58fuzz-fuzz.zip
 // Then,
-// $ go-fuzz -bin=base58fuzz-fuzz.zip -workdir=src/cipher/base58/internal
-// New corpus and crash objects will be put in src/cipher/base58/internal
+// $ go-fuzz -bin=base58fuzz-fuzz.zip -workdir=src/cipher/base58/fuzz
+// New corpus and crash objects will be put in src/cipher/base58/fuzz
 
 // Fuzz is the entrypoint for go-fuzz
 func Fuzz(b []byte) int {

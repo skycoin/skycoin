@@ -289,8 +289,8 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: false
 
-      - name: Install Requirements
-        if: matrix.cgo_enabled == '1'
+      - name: Install CGO Requirements
+        if: matrix.arch == 'amd64'
         shell: pwsh
         run: |
           C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm mingw-w64-x86_64-libusb mingw-w64-x86_64-hidapi mingw-w64-x86_64-pkg-config"
@@ -337,15 +337,50 @@ jobs:
             & "bin\skycoin.exe" daemon --help
           }
 
+      - name: Build hardware wallet utility
+        if: matrix.arch == 'amd64'
+        env:
+          GOPROXY: direct
+          GOSUMDB: "off"
+          CGO_ENABLED: "1"
+          CGO_CFLAGS: -IC:/msys64/mingw64/include -IC:/msys64/mingw64/include/libusb-1.0
+          CGO_LDFLAGS: -LC:/msys64/mingw64/lib
+          GOOS: windows
+          GOARCH: amd64
+        shell: pwsh
+        run: |
+          go install -trimpath -ldflags "-s -w" "${{ env.MODULE }}/cmd/hardware-wallet@${{ github.ref_name }}"
+
+          $gopath = go env GOPATH
+          $hwPath = "$gopath\bin\hardware-wallet.exe"
+          if (Test-Path $hwPath) {
+            Copy-Item $hwPath "bin\skyhw.exe"
+          } else {
+            Write-Warning "Hardware wallet binary not found, skipping"
+          }
+
       - name: Create archive
         shell: pwsh
         run: |
           $ARCHIVE_NAME = "skycoin-${{ github.ref_name }}-windows-${{ matrix.arch }}"
           New-Item -ItemType Directory -Force -Path "dist"
           Copy-Item "bin\skycoin.exe" "dist\"
-          Compress-Archive -Path "dist\skycoin.exe" -DestinationPath "dist\$ARCHIVE_NAME.zip"
+
+          # Include hardware wallet binary and required DLLs if present
+          if (Test-Path "bin\skyhw.exe") {
+            Copy-Item "bin\skyhw.exe" "dist\"
+            $dllDir = "C:\msys64\mingw64\bin"
+            foreach ($dll in @("libhidapi-0.dll", "libusb-1.0.dll")) {
+              $dllPath = "$dllDir\$dll"
+              if (Test-Path $dllPath) {
+                Copy-Item $dllPath "dist\"
+              }
+            }
+          }
+
+          Compress-Archive -Path "dist\*" -DestinationPath "dist\$ARCHIVE_NAME.zip"
           Get-FileHash "dist\$ARCHIVE_NAME.zip" -Algorithm SHA256 | ForEach-Object { "$($_.Hash)  $ARCHIVE_NAME.zip" } > "dist\$ARCHIVE_NAME.zip.sha256"
-          Remove-Item "dist\skycoin.exe"
+          Get-ChildItem "dist\" -Exclude "*.zip","*.sha256" | Remove-Item
 
       - name: Create MSI installer
         if: matrix.arch != 'arm64'

@@ -1,4 +1,4 @@
-//go:build cgo && !386 && !(windows && arm64)
+//go:build cgo && !386 && !windows
 
 package commands
 

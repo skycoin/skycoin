@@ -71,8 +71,8 @@ github.com/cloudwego/base64x/internal/rt
 # github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 ## explicit
 github.com/davecgh/go-spew/spew
-# github.com/fatih/color v1.18.0
-## explicit; go 1.17
+# github.com/fatih/color v1.19.0
+## explicit; go 1.25.0
 github.com/fatih/color
 # github.com/fsnotify/fsnotify v1.9.0
 ## explicit; go 1.17
@@ -244,8 +244,8 @@ github.com/rs/cors/internal
 ## explicit; go 1.23.0
 github.com/sagikazarmark/locafero
 github.com/sagikazarmark/locafero/internal/queue
-# github.com/sergi/go-diff v1.0.0
-## explicit
+# github.com/sergi/go-diff v1.4.0
+## explicit; go 1.13
 github.com/sergi/go-diff/diffmatchpatch
 # github.com/shopspring/decimal v1.4.0
 ## explicit; go 1.10
@@ -266,8 +266,8 @@ github.com/skycoin/hardware-wallet/firmware
 # github.com/skycoin/skycoin-lite v0.0.0-20190712083345-f5a3f17e6603
 ## explicit
 github.com/skycoin/skycoin-lite/liteclient
-# github.com/skycoin/skywire v1.3.36
-## explicit; go 1.25.6
+# github.com/skycoin/skywire v1.3.37
+## explicit; go 1.26.1
 github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo
 github.com/skycoin/skywire/pkg/skywire-utilities/pkg/calvin
 github.com/skycoin/skywire/pkg/skywire-utilities/pkg/flags

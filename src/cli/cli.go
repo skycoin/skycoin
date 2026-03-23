@@ -17,12 +17,12 @@ import (
 
 	"os"
 
-	"github.com/pelletier/go-toml/v2"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"golang.org/x/term"
 
 	"github.com/skycoin/skycoin/src/api"
+	"github.com/skycoin/skycoin/src/fiber"
 	"github.com/skycoin/skycoin/src/util/file"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -111,14 +111,12 @@ func LoadConfig() (Config, error) {
 		rpcAddr = defaultRPCAddress
 		// If FIBER_TOML is set, use its web_interface_port for the default RPC address
 		if fiberTomlPath := os.Getenv("FIBER_TOML"); fiberTomlPath != "" {
-			if data, err := os.ReadFile(fiberTomlPath); err == nil { //nolint:gosec
-				var cfg struct {
-					Node struct {
-						WebInterfacePort int `toml:"web_interface_port"`
-					} `toml:"node"`
-				}
-				if err := toml.Unmarshal(data, &cfg); err == nil && cfg.Node.WebInterfacePort != 0 {
-					rpcAddr = fmt.Sprintf("http://127.0.0.1:%d", cfg.Node.WebInterfacePort)
+			if absPath, err := filepath.Abs(fiberTomlPath); err == nil {
+				fiberTomlPath = absPath
+			}
+			if fiberCfg, err := fiber.NewConfig(filepath.Base(fiberTomlPath), filepath.Dir(fiberTomlPath)); err == nil {
+				if fiberCfg.Node.WebInterfacePort != 0 {
+					rpcAddr = fmt.Sprintf("http://127.0.0.1:%d", fiberCfg.Node.WebInterfacePort)
 				}
 			}
 		}

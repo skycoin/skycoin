@@ -882,116 +882,67 @@ func (c *NodeConfig) LoadFromGenesisWallet(walletPath string) error {
 	return nil
 }
 
-// applyFiberNodeConfig maps fiber.NodeConfig fields to NodeConfig
+// applyFiberNodeConfig maps fiber.NodeConfig fields to NodeConfig.
+// Since fiber.NewConfig() uses an isolated viper instance with defaults,
+// all fields from the fiber config are applied unconditionally.
+// Fields not set in fiber.toml will have viper's defaults (e.g. port=6000).
 func (c *NodeConfig) applyFiberNodeConfig(node fiber.NodeConfig) {
 	// Core blockchain parameters
 	if node.CoinName != "" {
 		c.CoinName = node.CoinName
 		c.Fiber.Name = node.CoinName
 	}
-	if node.Port != 0 {
-		c.Port = node.Port
-	}
-	if node.WebInterfacePort != 0 {
-		c.WebInterfacePort = node.WebInterfacePort
-	}
-	if node.GenesisSignatureStr != "" {
-		c.GenesisSignatureStr = node.GenesisSignatureStr
-	}
-	if node.GenesisAddressStr != "" {
-		c.GenesisAddressStr = node.GenesisAddressStr
-	}
-	if node.BlockchainPubkeyStr != "" {
-		c.BlockchainPubkeyStr = node.BlockchainPubkeyStr
-	}
-	if node.BlockchainSeckeyStr != "" {
-		c.BlockchainSeckeyStr = node.BlockchainSeckeyStr
-	}
-	if node.GenesisTimestamp != 0 {
-		c.GenesisTimestamp = node.GenesisTimestamp
-	}
-	if node.GenesisCoinVolume != 0 {
-		c.GenesisCoinVolume = node.GenesisCoinVolume
-	}
-	// Always apply these — they may intentionally be empty to disable features
+	c.Port = node.Port
+	c.WebInterfacePort = node.WebInterfacePort
+	c.GenesisSignatureStr = node.GenesisSignatureStr
+	c.GenesisAddressStr = node.GenesisAddressStr
+	c.BlockchainPubkeyStr = node.BlockchainPubkeyStr
+	c.BlockchainSeckeyStr = node.BlockchainSeckeyStr
+	c.GenesisTimestamp = node.GenesisTimestamp
+	c.GenesisCoinVolume = node.GenesisCoinVolume
 	c.DefaultConnections = node.DefaultConnections
 	c.PeerListURL = node.PeerListURL
 
 	// Data directory - expand $HOME
-	// If not explicitly set, derive from coin name or display name
 	if node.DataDirectory != "" {
-		dataDir := node.DataDirectory
-		home := file.UserHome()
-		dataDir = replaceHome(dataDir, home)
-		c.DataDirectory = dataDir
-	} else if c.DataDirectory == "$HOME/.skycoin" {
-		// Auto-derive data directory from coin name or display name (matches newcoin behavior)
-		home := file.UserHome()
-		derivedName := ""
-		if node.CoinName != "" {
-			derivedName = node.CoinName
-		} else if node.DisplayName != "" {
+		c.DataDirectory = replaceHome(node.DataDirectory, file.UserHome())
+	} else {
+		// Auto-derive data directory from coin name or display name
+		derivedName := node.CoinName
+		if derivedName == "" {
 			derivedName = node.DisplayName
 		}
 		if derivedName != "" {
-			c.DataDirectory = replaceHome("$HOME/."+strings.ToLower(derivedName), home)
+			c.DataDirectory = replaceHome("$HOME/."+strings.ToLower(derivedName), file.UserHome())
 		}
 	}
 
 	// Transaction verification params
-	if node.UnconfirmedBurnFactor != 0 {
-		c.UnconfirmedVerifyTxn.BurnFactor = node.UnconfirmedBurnFactor
-		c.unconfirmedBurnFactor = uint64(node.UnconfirmedBurnFactor)
-	}
-	if node.UnconfirmedMaxTransactionSize != 0 {
-		c.UnconfirmedVerifyTxn.MaxTransactionSize = node.UnconfirmedMaxTransactionSize
-		c.maxUnconfirmedTransactionSize = uint64(node.UnconfirmedMaxTransactionSize)
-	}
-	if node.UnconfirmedMaxDropletPrecision != 0 {
-		c.UnconfirmedVerifyTxn.MaxDropletPrecision = node.UnconfirmedMaxDropletPrecision
-		c.unconfirmedMaxDropletPrecision = uint64(node.UnconfirmedMaxDropletPrecision)
-	}
-	if node.CreateBlockBurnFactor != 0 {
-		c.CreateBlockVerifyTxn.BurnFactor = node.CreateBlockBurnFactor
-		c.createBlockBurnFactor = uint64(node.CreateBlockBurnFactor)
-	}
-	if node.CreateBlockMaxTransactionSize != 0 {
-		c.CreateBlockVerifyTxn.MaxTransactionSize = node.CreateBlockMaxTransactionSize
-		c.createBlockMaxTransactionSize = uint64(node.CreateBlockMaxTransactionSize)
-	}
-	if node.CreateBlockMaxDropletPrecision != 0 {
-		c.CreateBlockVerifyTxn.MaxDropletPrecision = node.CreateBlockMaxDropletPrecision
-		c.createBlockMaxDropletPrecision = uint64(node.CreateBlockMaxDropletPrecision)
-	}
-	if node.MaxBlockTransactionsSize != 0 {
-		c.MaxBlockTransactionsSize = node.MaxBlockTransactionsSize
-		c.maxBlockSize = uint64(node.MaxBlockTransactionsSize)
-	}
+	c.UnconfirmedVerifyTxn.BurnFactor = node.UnconfirmedBurnFactor
+	c.unconfirmedBurnFactor = uint64(node.UnconfirmedBurnFactor)
+	c.UnconfirmedVerifyTxn.MaxTransactionSize = node.UnconfirmedMaxTransactionSize
+	c.maxUnconfirmedTransactionSize = uint64(node.UnconfirmedMaxTransactionSize)
+	c.UnconfirmedVerifyTxn.MaxDropletPrecision = node.UnconfirmedMaxDropletPrecision
+	c.unconfirmedMaxDropletPrecision = uint64(node.UnconfirmedMaxDropletPrecision)
+	c.CreateBlockVerifyTxn.BurnFactor = node.CreateBlockBurnFactor
+	c.createBlockBurnFactor = uint64(node.CreateBlockBurnFactor)
+	c.CreateBlockVerifyTxn.MaxTransactionSize = node.CreateBlockMaxTransactionSize
+	c.createBlockMaxTransactionSize = uint64(node.CreateBlockMaxTransactionSize)
+	c.CreateBlockVerifyTxn.MaxDropletPrecision = node.CreateBlockMaxDropletPrecision
+	c.createBlockMaxDropletPrecision = uint64(node.CreateBlockMaxDropletPrecision)
+	c.MaxBlockTransactionsSize = node.MaxBlockTransactionsSize
+	c.maxBlockSize = uint64(node.MaxBlockTransactionsSize)
 
 	// Display/Branding
-	if node.Ticker != "" {
-		c.Fiber.Ticker = node.Ticker
-	}
-	if node.DisplayName != "" {
-		c.Fiber.DisplayName = node.DisplayName
-	}
-	if node.CoinHoursName != "" {
-		c.Fiber.CoinHoursName = node.CoinHoursName
-	}
-	if node.CoinHoursNameSingular != "" {
-		c.Fiber.CoinHoursNameSingular = node.CoinHoursNameSingular
-	}
-	if node.CoinHoursTicker != "" {
-		c.Fiber.CoinHoursTicker = node.CoinHoursTicker
-	}
-	// Always apply these — viper provides defaults for unset fields,
-	// and empty values may be intentional to disable features
+	c.Fiber.DisplayName = node.DisplayName
+	c.Fiber.Ticker = node.Ticker
+	c.Fiber.CoinHoursName = node.CoinHoursName
+	c.Fiber.CoinHoursNameSingular = node.CoinHoursNameSingular
+	c.Fiber.CoinHoursTicker = node.CoinHoursTicker
 	c.Fiber.QrURIPrefix = node.QrURIPrefix
 	c.Fiber.ExplorerURL = node.ExplorerURL
 	c.Fiber.VersionURL = node.VersionURL
-	if node.Bip44Coin != 0 {
-		c.Fiber.Bip44Coin = node.Bip44Coin
-	}
+	c.Fiber.Bip44Coin = node.Bip44Coin
 	c.Fiber.PriceTickerID = node.PriceTickerID
 	c.Fiber.PriceTickerSource = node.PriceTickerSource
 }

@@ -18,59 +18,57 @@ type Config struct {
 	Params ParamsConfig `mapstructure:"params"`
 }
 
-// NodeConfig configures the default CLI options for the skycoin node.
-// These parameters are loaded via cmd/skycoin/skycoin.go into src/skycoin/skycoin.go.
+// NodeConfig records the node's configuration from fiber.toml
 type NodeConfig struct {
-	// Port is the default port that the wire protocol communicates over
-	Port int `mapstructure:"port"`
-	// WebInterfacePort is the default port that the web/gui interface serves on
-	WebInterfacePort int `mapstructure:"web_interface_port"`
-	// GenesisSignatureStr is a hex-encoded signature of the genesis block input
+	// GenesisSignatureStr is the signature of the genesis block
 	GenesisSignatureStr string `mapstructure:"genesis_signature_str"`
-	// GenesisAddressStr is the skycoin address that the genesis coins were sent to in the genesis block
+	// GenesisAddressStr is the skycoin address string of the genesis block
 	GenesisAddressStr string `mapstructure:"genesis_address_str"`
-	// BlockchainPubkeyStr is a hex-encoded public key used to validate published blocks
+	// BlockchainPubkeyStr is the public key of the blockchain
 	BlockchainPubkeyStr string `mapstructure:"blockchain_pubkey_str"`
-	// BlockchainSeckey is a hex-encoded secret key required for block publishing.
-	// It must correspond to BlockchainPubkeyStr
+	// BlockchainSeckeyStr is the secret key of the blockchain
 	BlockchainSeckeyStr string `mapstructure:"blockchain_seckey_str"`
-	// GenesisTimestamp is the timestamp of the genesis block
+	// GenesisTimestamp is the genesis block creation unix timestamp
 	GenesisTimestamp uint64 `mapstructure:"genesis_timestamp"`
-	// GenesisCoinVolume is the total number of coins in the genesis block
+	// GenesisCoinVolume is the total number of coins in genesis block
 	GenesisCoinVolume uint64 `mapstructure:"genesis_coin_volume"`
-	// DefaultConnections are the default "trusted" connections a node will try to connect to for bootstrapping
+	// DefaultConnections are the default peer connections
 	DefaultConnections []string `mapstructure:"default_connections"`
-	// PeerlistURL is a URL pointing to a newline-separated list of ip:ports that are used for bootstrapping (but they are not "trusted")
+	// PeerListURL is the URL to download the peer list from
 	PeerListURL string `mapstructure:"peer_list_url"`
+	// Port is the port that the wire protocol listens on
+	Port int `mapstructure:"port"`
+	// WebInterfacePort is the port the web/api interface listens on
+	WebInterfacePort int `mapstructure:"web_interface_port"`
 
 	// UnconfirmedBurnFactor is the burn factor to apply when verifying unconfirmed transactions
 	UnconfirmedBurnFactor uint32 `mapstructure:"unconfirmed_burn_factor"`
 	// UnconfirmedMaxTransactionSize is the maximum size of an unconfirmed transaction
 	UnconfirmedMaxTransactionSize uint32 `mapstructure:"unconfirmed_max_transaction_size"`
-	// UnconfirmedMaxDropletPrecision is the maximum number of decimals allowed in an unconfirmed transaction
+	// UnconfirmedMaxDropletPrecision is the maximum number of decimal places for an unconfirmed transaction
 	UnconfirmedMaxDropletPrecision uint8 `mapstructure:"unconfirmed_max_decimals"`
-	// CreateBlockBurnFactor is the burn factor to apply to transactions when publishing blocks
+	// CreateBlockBurnFactor is the burn factor to apply when creating blocks
 	CreateBlockBurnFactor uint32 `mapstructure:"create_block_burn_factor"`
-	// CreateBlockMaxTransactionSize is the maximum size of an transaction when publishing blocks
+	// CreateBlockMaxTransactionSize is the maximum size of a transaction when creating a block
 	CreateBlockMaxTransactionSize uint32 `mapstructure:"create_block_max_transaction_size"`
-	// CreateBlockMaxDropletPrecision is the maximum number of decimals allowed in a transaction when publishing blocks
+	// CreateBlockMaxDropletPrecision is the maximum number of decimal places when creating a block
 	CreateBlockMaxDropletPrecision uint8 `mapstructure:"create_block_max_decimals"`
-	// MaxBlockTransactionsSize is the maximum total size of transactions in a block when publishing a block
+	// MaxBlockTransactionsSize is the maximum total size of transactions in a block
 	MaxBlockTransactionsSize uint32 `mapstructure:"max_block_transactions_size"`
 
 	// DisplayName is the display name of the coin in the wallet e.g. Skycoin
 	DisplayName string `mapstructure:"display_name"`
-	// Ticker is the coin's price ticker, e.g. SKY
+	// Ticker is the coin's ticker e.g. SKY
 	Ticker string `mapstructure:"ticker"`
-	// CoinHoursName is the name of the coinhour asset type, e.g. Coin Hours
+	// CoinHoursName is the display name of coin hours e.g. "Coin Hours"
 	CoinHoursName string `mapstructure:"coin_hours_display_name"`
-	// CoinHoursNameSingular is the singular form of the name of the coinhour asset type, e.g. Coin Hour
+	// CoinHoursNameSingular is the singular form of the coin hours display name e.g. "Coin Hour"
 	CoinHoursNameSingular string `mapstructure:"coin_hours_display_name_singular"`
-	// CoinHoursTicker is the name of the coinhour asset type's price ticker, e.g. SCH (Skycoin Coin Hours)
+	// CoinHoursTicker is the ticker of coin hours e.g. SCH
 	CoinHoursTicker string `mapstructure:"coin_hours_ticker"`
-	// QrURIPrefix is the prefix name of a QR url, e.g. skycoin:[address], the skycoin is the prefix.
+	// QrURIPrefix is the prefix for QR code URIs
 	QrURIPrefix string `mapstructure:"qr_uri_prefix"`
-	// ExplorerURL is the URL of the public explorer
+	// ExplorerURL is the URL of the blockchain explorer
 	ExplorerURL string `mapstructure:"explorer_url"`
 	// VersionURL is the URL for wallet to check the latest version number
 	VersionURL string `mapstructure:"version_url"`
@@ -96,7 +94,7 @@ type NodeConfig struct {
 type ParamsConfig struct {
 	// MaxCoinSupply is the maximum supply of coins
 	MaxCoinSupply uint64 `mapstructure:"max_coin_supply"`
-	// InitialUnlockedCount is the initial number of unlocked addresses
+	// InitialUnlockedCount is the initial number of unlocked distribution addresses
 	InitialUnlockedCount uint64 `mapstructure:"initial_unlocked_count"`
 	// UnlockAddressRate is the number of addresses to unlock per unlock time interval
 	UnlockAddressRate uint64 `mapstructure:"unlock_address_rate"`
@@ -114,77 +112,79 @@ type ParamsConfig struct {
 	UserBurnFactor uint64 `mapstructure:"user_burn_factor"`
 }
 
-// NewConfig loads blockchain config parameters from a config file
+// NewConfig loads blockchain config parameters from a config file.
+// Uses an isolated viper instance to avoid polluting global state.
 // default file is: fiber.toml in the project root
 // JSON, toml or yaml file can be used (toml preferred).
 func NewConfig(configName, appDir string) (Config, error) {
-	// set viper parameters
+	v := viper.New()
+
 	// check that file is of supported type
 	confNameSplit := strings.Split(configName, ".")
 	fileType := confNameSplit[len(confNameSplit)-1]
 	switch fileType {
 	case "toml", "json", "yaml", "yml":
-		viper.SetConfigType(confNameSplit[len(confNameSplit)-1])
+		v.SetConfigType(confNameSplit[len(confNameSplit)-1])
 	default:
 		return Config{}, fmt.Errorf("invalid blockchain config file type: %s", fileType)
 	}
 
 	configName = configName[:len(configName)-(len(fileType)+1)]
-	viper.SetConfigName(configName)
+	v.SetConfigName(configName)
 
-	viper.AddConfigPath(appDir)
-	viper.AddConfigPath(".")
+	v.AddConfigPath(appDir)
+	v.AddConfigPath(".")
 
 	// set defaults
-	setDefaults()
+	setDefaultsOn(v)
 
 	params := Config{}
 
-	if err := viper.ReadInConfig(); err != nil {
+	if err := v.ReadInConfig(); err != nil {
 		return params, err
 	}
 
-	if err := viper.Unmarshal(&params); err != nil {
+	if err := v.Unmarshal(&params); err != nil {
 		return params, err
 	}
 
 	return params, nil
 }
 
-func setDefaults() {
+func setDefaultsOn(v *viper.Viper) {
 	// node defaults
-	viper.SetDefault("node.genesis_coin_volume", 100e12)
-	viper.SetDefault("node.port", 6000)
-	viper.SetDefault("node.web_interface_port", 6420)
-	viper.SetDefault("node.unconfirmed_burn_factor", 10)
-	viper.SetDefault("node.unconfirmed_max_transaction_size", 32*1024)
-	viper.SetDefault("node.unconfirmed_max_decimals", 3)
-	viper.SetDefault("node.create_block_burn_factor", 10)
-	viper.SetDefault("node.create_block_max_transaction_size", 32*1024)
-	viper.SetDefault("node.create_block_max_decimals", 3)
-	viper.SetDefault("node.max_block_transactions_size", 32*1024)
-	viper.SetDefault("node.display_name", "Skycoin")
-	viper.SetDefault("node.ticker", "SKY")
-	viper.SetDefault("node.coin_hours_display_name", "Coin Hours")
-	viper.SetDefault("node.coin_hours_display_name_singular", "Coin Hour")
-	viper.SetDefault("node.coin_hours_ticker", "SCH")
-	viper.SetDefault("node.qr_uri_prefix", "skycoin")
-	viper.SetDefault("node.explorer_url", "https://explorer.skycoin.com")
-	viper.SetDefault("node.version_url", "https://version.skycoin.com/skycoin/version.txt")
-	viper.SetDefault("node.bip44_coin", bip44.CoinTypeSkycoin)
-	viper.SetDefault("node.price_ticker_id", "sky-skycoin")
-	viper.SetDefault("node.price_ticker_source", "coinpaprika")
+	v.SetDefault("node.genesis_coin_volume", 100e12)
+	v.SetDefault("node.port", 6000)
+	v.SetDefault("node.web_interface_port", 6420)
+	v.SetDefault("node.unconfirmed_burn_factor", 10)
+	v.SetDefault("node.unconfirmed_max_transaction_size", 32*1024)
+	v.SetDefault("node.unconfirmed_max_decimals", 3)
+	v.SetDefault("node.create_block_burn_factor", 10)
+	v.SetDefault("node.create_block_max_transaction_size", 32*1024)
+	v.SetDefault("node.create_block_max_decimals", 3)
+	v.SetDefault("node.max_block_transactions_size", 32*1024)
+	v.SetDefault("node.display_name", "Skycoin")
+	v.SetDefault("node.ticker", "SKY")
+	v.SetDefault("node.coin_hours_display_name", "Coin Hours")
+	v.SetDefault("node.coin_hours_display_name_singular", "Coin Hour")
+	v.SetDefault("node.coin_hours_ticker", "SCH")
+	v.SetDefault("node.qr_uri_prefix", "skycoin")
+	v.SetDefault("node.explorer_url", "https://explorer.skycoin.com")
+	v.SetDefault("node.version_url", "https://version.skycoin.com/skycoin/version.txt")
+	v.SetDefault("node.bip44_coin", bip44.CoinTypeSkycoin)
+	v.SetDefault("node.price_ticker_id", "sky-skycoin")
+	v.SetDefault("node.price_ticker_source", "coinpaprika")
 
 	// build defaults
-	viper.SetDefault("build.commit", "")
-	viper.SetDefault("build.branch", "")
+	v.SetDefault("build.commit", "")
+	v.SetDefault("build.branch", "")
 
 	// params defaults
-	viper.SetDefault("params.max_coin_supply", 1e8)
-	viper.SetDefault("params.initial_unlocked_count", 25)
-	viper.SetDefault("params.unlock_address_rate", 5)
-	viper.SetDefault("params.unlock_time_interval", 60*60*24*365)
-	viper.SetDefault("params.user_max_decimals", 3)
-	viper.SetDefault("params.user_burn_factor", 10)
-	viper.SetDefault("params.user_max_transaction_size", 32*1024)
+	v.SetDefault("params.max_coin_supply", 1e8)
+	v.SetDefault("params.initial_unlocked_count", 25)
+	v.SetDefault("params.unlock_address_rate", 5)
+	v.SetDefault("params.unlock_time_interval", 60*60*24*365)
+	v.SetDefault("params.user_max_decimals", 3)
+	v.SetDefault("params.user_burn_factor", 10)
+	v.SetDefault("params.user_max_transaction_size", 32*1024)
 }

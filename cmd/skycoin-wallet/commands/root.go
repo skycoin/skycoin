@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pelletier/go-toml/v2"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/calvin"
 	"github.com/spf13/cobra"
@@ -18,6 +17,7 @@ import (
 	cli "github.com/skycoin/skycoin/cmd/skycoin-cli/commands"
 	web "github.com/skycoin/skycoin/cmd/skycoin-web/commands"
 	skycoin "github.com/skycoin/skycoin/cmd/skycoin/commands"
+	"github.com/skycoin/skycoin/src/fiber"
 )
 
 var (
@@ -29,14 +29,12 @@ func init() {
 	// Determine coin name from FIBER_TOML
 	coinName := "skycoin"
 	if fiberTomlPath := os.Getenv("FIBER_TOML"); fiberTomlPath != "" {
-		if data, err := os.ReadFile(fiberTomlPath); err == nil { //nolint:gosec
-			var cfg struct {
-				Node struct {
-					DisplayName string `toml:"display_name"`
-				} `toml:"node"`
-			}
-			if err := toml.Unmarshal(data, &cfg); err == nil && cfg.Node.DisplayName != "" {
-				coinName = cfg.Node.DisplayName
+		if absPath, err := filepath.Abs(fiberTomlPath); err == nil {
+			fiberTomlPath = absPath
+		}
+		if fiberCfg, err := fiber.NewConfig(filepath.Base(fiberTomlPath), filepath.Dir(fiberTomlPath)); err == nil {
+			if fiberCfg.Node.DisplayName != "" {
+				coinName = fiberCfg.Node.DisplayName
 			}
 		}
 	}

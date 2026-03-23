@@ -444,15 +444,6 @@ func TagOmitempty(tag string) bool {
 	return strings.Contains(tag, ",omitempty")
 }
 
-func tagName(tag string) string { //nolint:unused
-	commaIndex := strings.Index(tag, ",")
-	if commaIndex == -1 {
-		return tag
-	}
-
-	return tag[:commaIndex]
-}
-
 // TagMaxLen returns the maxlen value tagged on a struct. Returns 0 if no tag is present.
 func TagMaxLen(tag string) int {
 	maxlenIndex := strings.Index(tag, ",maxlen=")

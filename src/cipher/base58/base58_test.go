@@ -8,7 +8,6 @@ package base58
 // http://www.strongasanox.co.uk/2011/03/11/base58-encoding-in-python/
 
 import (
-	"bytes"
 	"crypto/rand"
 	"testing"
 
@@ -27,19 +26,6 @@ func BenchmarkEncode(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		_, _ = Decode(benchmarkAddr) //nolint:errcheck
-	}
-}
-
-func BenchmarkEncodeOld(b *testing.B) {
-	b.ReportAllocs()
-	if _, err := oldBase582Hex(benchmarkAddr); err != nil {
-		b.Fail()
-	}
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		_, _ = oldBase582Hex(benchmarkAddr) //nolint:errcheck
 	}
 }
 
@@ -62,49 +48,11 @@ func BenchmarkDecode(b *testing.B) {
 	}
 }
 
-func BenchmarkDecodeOld(b *testing.B) {
-	b.ReportAllocs()
-	d, err := oldBase582Hex(benchmarkAddr)
-	if err != nil {
-		b.Fail()
-	}
-
-	e := oldHex2Base58(d)
-	if string(e) != benchmarkAddr {
-		b.Fail()
-	}
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		_ = oldHex2Base58(d)
-	}
-}
-
 func testEncodeDecode(t *testing.T, a string) {
 	bin, err := Decode(a)
 	require.NoError(t, err)
 	chk := Encode(bin)
 	require.Equal(t, a, chk)
-
-	// The old base58 package cannot decode strings of all 1s
-	allZeros := true
-	for _, c := range a {
-		if c != '1' {
-			allZeros = false
-			break
-		}
-	}
-	if allZeros {
-		return
-	}
-
-	bin2, err := oldBase582Hex(a)
-	require.NoError(t, err)
-	require.True(t, bytes.Equal(bin, bin2))
-
-	chk2 := oldHex2Base58(bin)
-	require.Equal(t, chk, string(chk2))
 }
 
 func randBase58String(t *testing.T, n int) string {

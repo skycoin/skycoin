@@ -770,8 +770,8 @@ func makeTransaction(t *testing.T, nInputs int) (coin.Transaction, []coin.UxOut,
 
 func makeUxOut(t *testing.T, s cipher.SecKey, coins, hours uint64) coin.UxOut { //nolint:unparam
 	body := makeUxBody(t, s, coins, hours)
-	tm := rand.Int31n(1000) //nolint:gosec // Test data generation
-	seq := rand.Int31n(100) //nolint:gosec // Test data generation
+	tm := rand.Int31n(1000)     //nolint:gosec // Test data generation
+	seq := rand.Int31n(100) + 1 //nolint:gosec // Test data generation; +1 to avoid BkSeq=0 (genesis block has different invariants)
 	return coin.UxOut{
 		Head: coin.UxHead{
 			Time:  uint64(tm),  //nolint:gosec

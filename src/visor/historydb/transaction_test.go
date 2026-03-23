@@ -2,9 +2,7 @@ package historydb
 
 import (
 	"errors"
-	"math/rand"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -13,13 +11,6 @@ import (
 	"github.com/skycoin/skycoin/src/testutil"
 	"github.com/skycoin/skycoin/src/visor/dbutil"
 )
-
-// set rand seed.
-var _ = func() int64 {
-	t := time.Now().Unix()
-	rand.Seed(t) //nolint:staticcheck // deprecated but kept for test reproducibility
-	return t
-}()
 
 func TestTransactionGet(t *testing.T) {
 	txns := make([]Transaction, 0, 3)

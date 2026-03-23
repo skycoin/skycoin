@@ -30,10 +30,6 @@ import (
 	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
-var (
-	help = false //nolint:unused
-)
-
 // Config records skycoin node and build config
 type Config struct {
 	Node  NodeConfig
@@ -370,11 +366,29 @@ func NewNodeConfig(mode string, node fiber.NodeConfig) NodeConfig {
 }
 
 func (c *Config) postProcess() error {
-	//	if help {
-	//		flag.Usage()
-	//		os.Exit(0)
-	//	}
+	c.parseBlockchainKeys()
 
+	if err := c.initDirectories(); err != nil {
+		return err
+	}
+
+	if err := c.initUserAgent(); err != nil {
+		return err
+	}
+
+	if err := c.initAPISets(); err != nil {
+		return err
+	}
+
+	if err := c.validateNetworkConfig(); err != nil {
+		return err
+	}
+
+	return c.validateTransactionParams()
+}
+
+// parseBlockchainKeys parses hex-encoded blockchain keys and computes the genesis hash.
+func (c *Config) parseBlockchainKeys() {
 	var err error
 	if c.Node.GenesisSignatureStr != "" {
 		c.Node.genesisSignature, err = cipher.SigFromHex(c.Node.GenesisSignatureStr)
@@ -386,7 +400,6 @@ func (c *Config) postProcess() error {
 		panicIfError(err, "Invalid Address")
 	}
 
-	// Compute genesis block hash
 	gb, err := coin.NewGenesisBlock(c.Node.genesisAddress, c.Node.GenesisCoinVolume, c.Node.GenesisTimestamp)
 	if err != nil {
 		panicIfError(err, "Create genesis hash failed")
@@ -402,37 +415,29 @@ func (c *Config) postProcess() error {
 		panicIfError(err, "Invalid Seckey")
 		c.Node.BlockchainSeckeyStr = ""
 	}
-	if c.Node.BlockchainSeckeyStr != "" {
-		c.Node.blockchainSeckey = cipher.SecKey{}
-	}
+}
 
+// initDirectories resolves and creates data, wallet, storage, and DB directories.
+func (c *Config) initDirectories() error {
 	home := file.UserHome()
+
+	var err error
 	c.Node.DataDirectory, err = file.InitDataDir(replaceHome(c.Node.DataDirectory, home))
 	panicIfError(err, "Invalid DataDirectory")
 
-	if c.Node.WebInterfaceCert == "" {
-		c.Node.WebInterfaceCert = filepath.Join(c.Node.DataDirectory, "skycoind.cert")
-	} else {
-		c.Node.WebInterfaceCert = replaceHome(c.Node.WebInterfaceCert, home)
+	resolveOrDefault := func(path, defaultSubdir string) string {
+		if path == "" {
+			return filepath.Join(c.Node.DataDirectory, defaultSubdir)
+		}
+		return replaceHome(path, home)
 	}
 
-	if c.Node.WebInterfaceKey == "" {
-		c.Node.WebInterfaceKey = filepath.Join(c.Node.DataDirectory, "skycoind.key")
-	} else {
-		c.Node.WebInterfaceKey = replaceHome(c.Node.WebInterfaceKey, home)
-	}
+	c.Node.WebInterfaceCert = resolveOrDefault(c.Node.WebInterfaceCert, "skycoind.cert")
+	c.Node.WebInterfaceKey = resolveOrDefault(c.Node.WebInterfaceKey, "skycoind.key")
+	c.Node.WalletDirectory = resolveOrDefault(c.Node.WalletDirectory, "wallets")
+	c.Node.KVStorageDirectory = resolveOrDefault(c.Node.KVStorageDirectory, "data")
+	c.Node.DBPath = resolveOrDefault(c.Node.DBPath, "data.db")
 
-	if c.Node.WalletDirectory == "" {
-		c.Node.WalletDirectory = filepath.Join(c.Node.DataDirectory, "wallets")
-	} else {
-		c.Node.WalletDirectory = replaceHome(c.Node.WalletDirectory, home)
-	}
-
-	if c.Node.KVStorageDirectory == "" {
-		c.Node.KVStorageDirectory = filepath.Join(c.Node.DataDirectory, "data")
-	} else {
-		c.Node.KVStorageDirectory = replaceHome(c.Node.KVStorageDirectory, home)
-	}
 	if len(c.Node.EnabledStorageTypes) == 0 {
 		c.Node.EnabledStorageTypes = []kvstorage.Type{
 			kvstorage.TypeGeneral,
@@ -440,12 +445,15 @@ func (c *Config) postProcess() error {
 		}
 	}
 
-	if c.Node.DBPath == "" {
-		c.Node.DBPath = filepath.Join(c.Node.DataDirectory, "data.db")
-	} else {
-		c.Node.DBPath = replaceHome(c.Node.DBPath, home)
+	if c.Node.EnableGUI && c.Node.GUIDirectory != "" {
+		c.Node.GUIDirectory = file.ResolveResourceDirectory(c.Node.GUIDirectory)
 	}
 
+	return nil
+}
+
+// initUserAgent builds and validates the user agent string.
+func (c *Config) initUserAgent() error {
 	userAgentData := useragent.Data{
 		Coin:    c.Node.CoinName,
 		Version: c.Build.Version,
@@ -457,23 +465,27 @@ func (c *Config) postProcess() error {
 	}
 
 	c.Node.userAgent = userAgentData
+	return nil
+}
 
+// initAPISets builds the enabled API sets and disables GUI if wallet API is off.
+func (c *Config) initAPISets() error {
 	apiSets, err := buildAPISets(c.Node)
 	if err != nil {
 		return err
 	}
 
-	// Don't open browser to load wallets if wallet apis are disabled.
 	c.Node.enabledAPISets = apiSets
 	if _, ok := c.Node.enabledAPISets[api.EndpointsWallet]; !ok {
 		c.Node.EnableGUI = false
 		c.Node.LaunchBrowser = false
 	}
 
-	if c.Node.EnableGUI && c.Node.GUIDirectory != "" {
-		c.Node.GUIDirectory = file.ResolveResourceDirectory(c.Node.GUIDirectory)
-	}
+	return nil
+}
 
+// validateNetworkConfig validates network, connection, and auth settings.
+func (c *Config) validateNetworkConfig() error {
 	if c.Node.DisableDefaultPeers {
 		c.Node.DefaultConnections = nil
 	}
@@ -493,15 +505,19 @@ func (c *Config) postProcess() error {
 	if c.Node.MaxConnections < c.Node.MaxOutgoingConnections+c.Node.MaxIncomingConnections {
 		return errors.New("-max-connections must be >= -max-outgoing-connections + -max-incoming-connections")
 	}
-
 	if c.Node.MaxOutgoingConnections > c.Node.MaxConnections {
 		return errors.New("-max-outgoing-connections cannot be higher than -max-connections")
 	}
-
 	if c.Node.MaxIncomingConnections > c.Node.MaxConnections {
 		return errors.New("-max-incoming-connections cannot be higher than -max-connections")
 	}
 
+	return nil
+}
+
+// validateTransactionParams validates and converts transaction verification parameters.
+func (c *Config) validateTransactionParams() error {
+	// Validate overflow bounds
 	if c.Node.maxBlockSize > math.MaxUint32 {
 		return errors.New("-max-block-size exceeds MaxUint32")
 	}
@@ -514,7 +530,6 @@ func (c *Config) postProcess() error {
 	if c.Node.createBlockBurnFactor > math.MaxUint32 {
 		return errors.New("-burn-factor-create-block exceeds MaxUint32")
 	}
-
 	if c.Node.unconfirmedMaxDropletPrecision > math.MaxUint8 {
 		return errors.New("-max-decimals-unconfirmed exceeds MaxUint8")
 	}
@@ -522,14 +537,16 @@ func (c *Config) postProcess() error {
 		return errors.New("-max-decimals-create-block exceeds MaxUint8")
 	}
 
+	// Convert to final types
 	c.Node.UnconfirmedVerifyTxn.BurnFactor = uint32(c.Node.unconfirmedBurnFactor)                  //nolint:gosec
 	c.Node.UnconfirmedVerifyTxn.MaxTransactionSize = uint32(c.Node.maxUnconfirmedTransactionSize)  //nolint:gosec
 	c.Node.UnconfirmedVerifyTxn.MaxDropletPrecision = uint8(c.Node.unconfirmedMaxDropletPrecision) //nolint:gosec
 	c.Node.CreateBlockVerifyTxn.BurnFactor = uint32(c.Node.createBlockBurnFactor)                  //nolint:gosec
-	c.Node.CreateBlockVerifyTxn.MaxTransactionSize = uint32(c.Node.createBlockMaxTransactionSize)  //nolint:gosec // Config conversion
+	c.Node.CreateBlockVerifyTxn.MaxTransactionSize = uint32(c.Node.createBlockMaxTransactionSize)  //nolint:gosec
 	c.Node.CreateBlockVerifyTxn.MaxDropletPrecision = uint8(c.Node.createBlockMaxDropletPrecision) //nolint:gosec
-	c.Node.MaxBlockTransactionsSize = uint32(c.Node.maxBlockSize)                                  //nolint:gosec // Config conversion
+	c.Node.MaxBlockTransactionsSize = uint32(c.Node.maxBlockSize)                                  //nolint:gosec
 
+	// Validate transaction sizes
 	if c.Node.UnconfirmedVerifyTxn.MaxTransactionSize < params.MinTransactionSize {
 		return fmt.Errorf("-max-txn-size-unconfirmed must be >= params.MinTransactionSize (%d)", params.MinTransactionSize)
 	}
@@ -542,7 +559,6 @@ func (c *Config) postProcess() error {
 	if c.Node.CreateBlockVerifyTxn.MaxTransactionSize < params.UserVerifyTxn.MaxTransactionSize {
 		return fmt.Errorf("-max-txn-size-create-block must be >= params.UserVerifyTxn.MaxTransactionSize (%d)", params.UserVerifyTxn.MaxTransactionSize)
 	}
-
 	if c.Node.MaxBlockTransactionsSize < params.MinTransactionSize {
 		return fmt.Errorf("-max-block-size must be >= params.MinTransactionSize (%d)", params.MinTransactionSize)
 	}
@@ -556,13 +572,13 @@ func (c *Config) postProcess() error {
 		return errors.New("-max-block-size must be >= -max-txn-size-create-block")
 	}
 
+	// Validate burn factors
 	if c.Node.UnconfirmedVerifyTxn.BurnFactor < params.MinBurnFactor {
 		return fmt.Errorf("-burn-factor-unconfirmed must be >= params.MinBurnFactor (%d)", params.MinBurnFactor)
 	}
 	if c.Node.UnconfirmedVerifyTxn.BurnFactor < params.UserVerifyTxn.BurnFactor {
 		return fmt.Errorf("-burn-factor-unconfirmed must be >= params.UserVerifyTxn.BurnFactor (%d)", params.UserVerifyTxn.BurnFactor)
 	}
-
 	if c.Node.CreateBlockVerifyTxn.BurnFactor < params.MinBurnFactor {
 		return fmt.Errorf("-burn-factor-create-block must be >= params.MinBurnFactor (%d)", params.MinBurnFactor)
 	}
@@ -570,13 +586,13 @@ func (c *Config) postProcess() error {
 		return fmt.Errorf("-burn-factor-create-block must be >= params.UserVerifyTxn.BurnFactor (%d)", params.UserVerifyTxn.BurnFactor)
 	}
 
+	// Validate droplet precision
 	if c.Node.UnconfirmedVerifyTxn.MaxDropletPrecision > droplet.Exponent {
 		return fmt.Errorf("-max-decimals-unconfirmed must be <= droplet.Exponent (%d)", droplet.Exponent)
 	}
 	if c.Node.UnconfirmedVerifyTxn.MaxDropletPrecision < params.UserVerifyTxn.MaxDropletPrecision {
 		return fmt.Errorf("-max-decimals-unconfirmed must be >= params.UserVerifyTxn.MaxDropletPrecision (%d)", params.UserVerifyTxn.MaxDropletPrecision)
 	}
-
 	if c.Node.CreateBlockVerifyTxn.MaxDropletPrecision > droplet.Exponent {
 		return fmt.Errorf("-max-decimals-create-block must be <= droplet.Exponent (%d)", droplet.Exponent)
 	}
@@ -882,116 +898,67 @@ func (c *NodeConfig) LoadFromGenesisWallet(walletPath string) error {
 	return nil
 }
 
-// applyFiberNodeConfig maps fiber.NodeConfig fields to NodeConfig
+// applyFiberNodeConfig maps fiber.NodeConfig fields to NodeConfig.
+// Since fiber.NewConfig() uses an isolated viper instance with defaults,
+// all fields from the fiber config are applied unconditionally.
+// Fields not set in fiber.toml will have viper's defaults (e.g. port=6000).
 func (c *NodeConfig) applyFiberNodeConfig(node fiber.NodeConfig) {
 	// Core blockchain parameters
 	if node.CoinName != "" {
 		c.CoinName = node.CoinName
 		c.Fiber.Name = node.CoinName
 	}
-	if node.Port != 0 {
-		c.Port = node.Port
-	}
-	if node.WebInterfacePort != 0 {
-		c.WebInterfacePort = node.WebInterfacePort
-	}
-	if node.GenesisSignatureStr != "" {
-		c.GenesisSignatureStr = node.GenesisSignatureStr
-	}
-	if node.GenesisAddressStr != "" {
-		c.GenesisAddressStr = node.GenesisAddressStr
-	}
-	if node.BlockchainPubkeyStr != "" {
-		c.BlockchainPubkeyStr = node.BlockchainPubkeyStr
-	}
-	if node.BlockchainSeckeyStr != "" {
-		c.BlockchainSeckeyStr = node.BlockchainSeckeyStr
-	}
-	if node.GenesisTimestamp != 0 {
-		c.GenesisTimestamp = node.GenesisTimestamp
-	}
-	if node.GenesisCoinVolume != 0 {
-		c.GenesisCoinVolume = node.GenesisCoinVolume
-	}
-	// Always apply these — they may intentionally be empty to disable features
+	c.Port = node.Port
+	c.WebInterfacePort = node.WebInterfacePort
+	c.GenesisSignatureStr = node.GenesisSignatureStr
+	c.GenesisAddressStr = node.GenesisAddressStr
+	c.BlockchainPubkeyStr = node.BlockchainPubkeyStr
+	c.BlockchainSeckeyStr = node.BlockchainSeckeyStr
+	c.GenesisTimestamp = node.GenesisTimestamp
+	c.GenesisCoinVolume = node.GenesisCoinVolume
 	c.DefaultConnections = node.DefaultConnections
 	c.PeerListURL = node.PeerListURL
 
 	// Data directory - expand $HOME
-	// If not explicitly set, derive from coin name or display name
 	if node.DataDirectory != "" {
-		dataDir := node.DataDirectory
-		home := file.UserHome()
-		dataDir = replaceHome(dataDir, home)
-		c.DataDirectory = dataDir
-	} else if c.DataDirectory == "$HOME/.skycoin" {
-		// Auto-derive data directory from coin name or display name (matches newcoin behavior)
-		home := file.UserHome()
-		derivedName := ""
-		if node.CoinName != "" {
-			derivedName = node.CoinName
-		} else if node.DisplayName != "" {
+		c.DataDirectory = replaceHome(node.DataDirectory, file.UserHome())
+	} else {
+		// Auto-derive data directory from coin name or display name
+		derivedName := node.CoinName
+		if derivedName == "" {
 			derivedName = node.DisplayName
 		}
 		if derivedName != "" {
-			c.DataDirectory = replaceHome("$HOME/."+strings.ToLower(derivedName), home)
+			c.DataDirectory = replaceHome("$HOME/."+strings.ToLower(derivedName), file.UserHome())
 		}
 	}
 
 	// Transaction verification params
-	if node.UnconfirmedBurnFactor != 0 {
-		c.UnconfirmedVerifyTxn.BurnFactor = node.UnconfirmedBurnFactor
-		c.unconfirmedBurnFactor = uint64(node.UnconfirmedBurnFactor)
-	}
-	if node.UnconfirmedMaxTransactionSize != 0 {
-		c.UnconfirmedVerifyTxn.MaxTransactionSize = node.UnconfirmedMaxTransactionSize
-		c.maxUnconfirmedTransactionSize = uint64(node.UnconfirmedMaxTransactionSize)
-	}
-	if node.UnconfirmedMaxDropletPrecision != 0 {
-		c.UnconfirmedVerifyTxn.MaxDropletPrecision = node.UnconfirmedMaxDropletPrecision
-		c.unconfirmedMaxDropletPrecision = uint64(node.UnconfirmedMaxDropletPrecision)
-	}
-	if node.CreateBlockBurnFactor != 0 {
-		c.CreateBlockVerifyTxn.BurnFactor = node.CreateBlockBurnFactor
-		c.createBlockBurnFactor = uint64(node.CreateBlockBurnFactor)
-	}
-	if node.CreateBlockMaxTransactionSize != 0 {
-		c.CreateBlockVerifyTxn.MaxTransactionSize = node.CreateBlockMaxTransactionSize
-		c.createBlockMaxTransactionSize = uint64(node.CreateBlockMaxTransactionSize)
-	}
-	if node.CreateBlockMaxDropletPrecision != 0 {
-		c.CreateBlockVerifyTxn.MaxDropletPrecision = node.CreateBlockMaxDropletPrecision
-		c.createBlockMaxDropletPrecision = uint64(node.CreateBlockMaxDropletPrecision)
-	}
-	if node.MaxBlockTransactionsSize != 0 {
-		c.MaxBlockTransactionsSize = node.MaxBlockTransactionsSize
-		c.maxBlockSize = uint64(node.MaxBlockTransactionsSize)
-	}
+	c.UnconfirmedVerifyTxn.BurnFactor = node.UnconfirmedBurnFactor
+	c.unconfirmedBurnFactor = uint64(node.UnconfirmedBurnFactor)
+	c.UnconfirmedVerifyTxn.MaxTransactionSize = node.UnconfirmedMaxTransactionSize
+	c.maxUnconfirmedTransactionSize = uint64(node.UnconfirmedMaxTransactionSize)
+	c.UnconfirmedVerifyTxn.MaxDropletPrecision = node.UnconfirmedMaxDropletPrecision
+	c.unconfirmedMaxDropletPrecision = uint64(node.UnconfirmedMaxDropletPrecision)
+	c.CreateBlockVerifyTxn.BurnFactor = node.CreateBlockBurnFactor
+	c.createBlockBurnFactor = uint64(node.CreateBlockBurnFactor)
+	c.CreateBlockVerifyTxn.MaxTransactionSize = node.CreateBlockMaxTransactionSize
+	c.createBlockMaxTransactionSize = uint64(node.CreateBlockMaxTransactionSize)
+	c.CreateBlockVerifyTxn.MaxDropletPrecision = node.CreateBlockMaxDropletPrecision
+	c.createBlockMaxDropletPrecision = uint64(node.CreateBlockMaxDropletPrecision)
+	c.MaxBlockTransactionsSize = node.MaxBlockTransactionsSize
+	c.maxBlockSize = uint64(node.MaxBlockTransactionsSize)
 
 	// Display/Branding
-	if node.Ticker != "" {
-		c.Fiber.Ticker = node.Ticker
-	}
-	if node.DisplayName != "" {
-		c.Fiber.DisplayName = node.DisplayName
-	}
-	if node.CoinHoursName != "" {
-		c.Fiber.CoinHoursName = node.CoinHoursName
-	}
-	if node.CoinHoursNameSingular != "" {
-		c.Fiber.CoinHoursNameSingular = node.CoinHoursNameSingular
-	}
-	if node.CoinHoursTicker != "" {
-		c.Fiber.CoinHoursTicker = node.CoinHoursTicker
-	}
-	// Always apply these — viper provides defaults for unset fields,
-	// and empty values may be intentional to disable features
+	c.Fiber.DisplayName = node.DisplayName
+	c.Fiber.Ticker = node.Ticker
+	c.Fiber.CoinHoursName = node.CoinHoursName
+	c.Fiber.CoinHoursNameSingular = node.CoinHoursNameSingular
+	c.Fiber.CoinHoursTicker = node.CoinHoursTicker
 	c.Fiber.QrURIPrefix = node.QrURIPrefix
 	c.Fiber.ExplorerURL = node.ExplorerURL
 	c.Fiber.VersionURL = node.VersionURL
-	if node.Bip44Coin != 0 {
-		c.Fiber.Bip44Coin = node.Bip44Coin
-	}
+	c.Fiber.Bip44Coin = node.Bip44Coin
 	c.Fiber.PriceTickerID = node.PriceTickerID
 	c.Fiber.PriceTickerSource = node.PriceTickerSource
 }

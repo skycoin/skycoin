@@ -1188,7 +1188,7 @@ func TestPoolBroadcastMessage(t *testing.T) {
 
 	// Spam the connections with so much data that their write queue overflows,
 	// which will cause ErrNoReachableConnections
-	attempts := 1000
+	attempts := 5000
 	gotErr := false
 	var once sync.Once
 	var wg sync.WaitGroup

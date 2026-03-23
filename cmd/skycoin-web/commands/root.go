@@ -200,11 +200,8 @@ func discoverCoin(index int, nodeURL string) (*discoveredCoin, error) {
 	return coin, nil
 }
 
-func serve() {
-	gin.SetMode(gin.ReleaseMode)
-	router := gin.Default()
-
-	// Discover coins from configured nodes
+// discoverCoins queries each configured node URL and returns discovered coins.
+func discoverCoins() []*discoveredCoin {
 	var coins []*discoveredCoin
 	for i, rawURL := range nodeURLs {
 		nodeURL := strings.TrimRight(rawURL, "/")
@@ -228,8 +225,11 @@ func serve() {
 		coins = append(coins, coin)
 		log.Printf("[COIN] Discovered %s (%s) at %s → proxy /coin/%d", coin.CoinName, coin.CoinSymbol, coin.remoteNodeURL, i)
 	}
+	return coins
+}
 
-	// Initialize wallet services for each --wallet-dir
+// initWalletServices initializes Skycoin wallet services for each configured wallet directory.
+func initWalletServices() []*wallet.Service {
 	var wltServices []*wallet.Service
 	for _, dir := range walletDirs {
 		if dir == "" {
@@ -251,74 +251,86 @@ func serve() {
 		wltServices = append(wltServices, svc)
 		log.Printf("[WALLET] Wallet service initialized: %s", dir)
 	}
+	return wltServices
+}
 
-	// Initialize Bitcoin backend if configured
+// initBitcoinBackend initializes the Bitcoin backend and wallet services if configured.
+// It also appends a Bitcoin coin entry to the provided coins slice.
+func initBitcoinBackend(coins []*discoveredCoin) (btc.Backend, []*wallet.Service, []*discoveredCoin) {
 	var btcBackend btc.Backend
 	var btcWltServices []*wallet.Service
-	if btcNodeURL != "" || btcElectrumURL != "" {
-		// Initialize Bitcoin backend
-		var berr error
-		if btcElectrumURL != "" {
-			btcBackend, berr = btc.NewElectrumBackend(btcElectrumURL)
-			if berr != nil {
-				log.Printf("[WARN] Failed to connect to Electrum server %s: %v", btcElectrumURL, berr)
-			} else {
-				log.Printf("[BTC] Connected to Electrum server: %s", btcElectrumURL)
-			}
+	if btcNodeURL == "" && btcElectrumURL == "" {
+		return nil, nil, coins
+	}
+
+	// Initialize Bitcoin backend
+	var berr error
+	if btcElectrumURL != "" {
+		btcBackend, berr = btc.NewElectrumBackend(btcElectrumURL)
+		if berr != nil {
+			log.Printf("[WARN] Failed to connect to Electrum server %s: %v", btcElectrumURL, berr)
 		} else {
-			btcBackend, berr = btc.NewCoreBackend(btcNodeURL)
-			if berr != nil {
-				log.Printf("[WARN] Failed to connect to Bitcoin Core %s: %v", btcNodeURL, berr)
-			} else {
-				log.Printf("[BTC] Connected to Bitcoin Core: %s", btcNodeURL)
-			}
+			log.Printf("[BTC] Connected to Electrum server: %s", btcElectrumURL)
 		}
-
-		if btcBackend != nil {
-			// Create Bitcoin wallet services using the same --wallet-dir directories.
-			// The wallet service filters by coin type, so BTC and SKY wallets coexist
-			// in the same directory without conflict.
-			for _, dir := range walletDirs {
-				if dir == "" {
-					continue
-				}
-				btcBip44Coin := bip44.CoinTypeBitcoin
-				btcCfg := wallet.Config{
-					WalletDir:       dir,
-					CryptoType:      crypto.DefaultCryptoType,
-					EnableWalletAPI: true,
-					EnableSeedAPI:   enableSeedAPI,
-					Bip44Coin:       &btcBip44Coin,
-				}
-				btcSvc, btcErr := wallet.NewService(btcCfg)
-				if btcErr != nil {
-					log.Fatalf("Failed to initialize Bitcoin wallet service for %s: %v", dir, btcErr)
-				}
-				btcWltServices = append(btcWltServices, btcSvc)
-				log.Printf("[BTC] Bitcoin wallet service initialized: %s", dir)
-			}
-			if len(walletDirs) == 0 {
-				log.Printf("[BTC] No --wallet-dir specified, Bitcoin wallet management disabled (web-only mode)")
-			}
-
-			// Add Bitcoin as a discovered coin
-			btcCoinIndex := len(coins)
-			btcCoin := &discoveredCoin{
-				ID:                btcCoinIndex,
-				NodeURL:           fmt.Sprintf("/coin/%d", btcCoinIndex),
-				CoinName:          "Bitcoin",
-				CoinSymbol:        "BTC",
-				HoursName:         "",
-				PriceTickerID:     "btc-bitcoin",
-				PriceTickerSource: "coinpaprika",
-				CoinExplorer:      "https://blockchair.com/bitcoin",
-				CoinType:          "bitcoin",
-			}
-			coins = append(coins, btcCoin)
-			log.Printf("[COIN] Added Bitcoin at index %d", btcCoinIndex)
+	} else {
+		btcBackend, berr = btc.NewCoreBackend(btcNodeURL)
+		if berr != nil {
+			log.Printf("[WARN] Failed to connect to Bitcoin Core %s: %v", btcNodeURL, berr)
+		} else {
+			log.Printf("[BTC] Connected to Bitcoin Core: %s", btcNodeURL)
 		}
 	}
 
+	if btcBackend != nil {
+		// Create Bitcoin wallet services using the same --wallet-dir directories.
+		// The wallet service filters by coin type, so BTC and SKY wallets coexist
+		// in the same directory without conflict.
+		for _, dir := range walletDirs {
+			if dir == "" {
+				continue
+			}
+			btcBip44Coin := bip44.CoinTypeBitcoin
+			btcCfg := wallet.Config{
+				WalletDir:       dir,
+				CryptoType:      crypto.DefaultCryptoType,
+				EnableWalletAPI: true,
+				EnableSeedAPI:   enableSeedAPI,
+				Bip44Coin:       &btcBip44Coin,
+			}
+			btcSvc, btcErr := wallet.NewService(btcCfg)
+			if btcErr != nil {
+				log.Fatalf("Failed to initialize Bitcoin wallet service for %s: %v", dir, btcErr)
+			}
+			btcWltServices = append(btcWltServices, btcSvc)
+			log.Printf("[BTC] Bitcoin wallet service initialized: %s", dir)
+		}
+		if len(walletDirs) == 0 {
+			log.Printf("[BTC] No --wallet-dir specified, Bitcoin wallet management disabled (web-only mode)")
+		}
+
+		// Add Bitcoin as a discovered coin
+		btcCoinIndex := len(coins)
+		btcCoin := &discoveredCoin{
+			ID:                btcCoinIndex,
+			NodeURL:           fmt.Sprintf("/coin/%d", btcCoinIndex),
+			CoinName:          "Bitcoin",
+			CoinSymbol:        "BTC",
+			HoursName:         "",
+			PriceTickerID:     "btc-bitcoin",
+			PriceTickerSource: "coinpaprika",
+			CoinExplorer:      "https://blockchair.com/bitcoin",
+			CoinType:          "bitcoin",
+		}
+		coins = append(coins, btcCoin)
+		log.Printf("[COIN] Added Bitcoin at index %d", btcCoinIndex)
+	}
+
+	return btcBackend, btcWltServices, coins
+}
+
+// mapWalletsToCoin maps wallet services to coin indices and sets up Bitcoin handlers.
+// It also marks coins that have server-side wallet management.
+func mapWalletsToCoin(coins []*discoveredCoin, wltServices []*wallet.Service, btcBackend btc.Backend, btcWltServices []*wallet.Service) (map[int][]*wallet.Service, map[int]*btcHandler) {
 	// Map wallet services to coins by index.
 	// If counts match, wallet dir i is used for coin i.
 	// Otherwise, all wallet services are shared across all coins.
@@ -356,19 +368,32 @@ func serve() {
 		}
 	}
 
-	// Get GUI filesystem — custom directory or embedded
-	var guiFS fs.FS
+	return coinWltServices, btcHandlers
+}
+
+// initGUIFS returns the GUI filesystem, either from a custom directory or embedded.
+func initGUIFS() fs.FS {
 	if guiDir != "" {
 		log.Printf("Serving GUI from local folder: %s", guiDir)
-		guiFS = os.DirFS(guiDir)
-	} else {
-		log.Println("Serving embedded GUI")
-		var err error
-		guiFS, err = fs.Sub(gui.DistFS, "dist")
-		if err != nil {
-			log.Fatalf("Failed to get dist subdirectory: %v", err)
-		}
+		return os.DirFS(guiDir)
 	}
+	log.Println("Serving embedded GUI")
+	guiFS, err := fs.Sub(gui.DistFS, "dist")
+	if err != nil {
+		log.Fatalf("Failed to get dist subdirectory: %v", err)
+	}
+	return guiFS
+}
+
+func serve() {
+	gin.SetMode(gin.ReleaseMode)
+	router := gin.Default()
+
+	coins := discoverCoins()
+	wltServices := initWalletServices()
+	btcBackend, btcWltServices, coins := initBitcoinBackend(coins)
+	coinWltServices, btcHandlers := mapWalletsToCoin(coins, wltServices, btcBackend, btcWltServices)
+	guiFS := initGUIFS()
 
 	// Serve embedded WASM files from skycoin-lite
 	router.GET("/assets/scripts/skycoin-lite.wasm", func(c *gin.Context) {

@@ -95,129 +95,11 @@ func addressGenCmd() *cobra.Command {
 			// Streaming mode: generate and print addresses one at a time
 			// Also used for infinite mode (numAddresses == 0)
 			if stream || numAddresses == 0 {
-				switch strings.ToLower(mode) {
-				case "addrs", "addresses":
-					// Create wallet with no initial addresses
-					w, err := wallet.NewWallet(wallet.NewWalletFilename(), label, seed, wallet.Options{
-						Coin:       coinType,
-						CryptoType: crypto.DefaultCryptoType,
-						GenerateN:  0,
-						Type:       wallet.WalletTypeDeterministic,
-					})
-					if err != nil {
-						return err
-					}
-
-					// Generate and print addresses one at a time
-					// If numAddresses == 0, generate infinitely
-					for i := 0; numAddresses == 0 || i < numAddresses; i++ {
-						addrs, err := w.GenerateAddresses(wallet.OptionGenerateN(1))
-						if err != nil {
-							return err
-						}
-						for _, addr := range addrs {
-							fmt.Println(addr.String())
-						}
-					}
-					return nil
-				case "secrets":
-					if hideSecrets {
-						return errors.New("secrets mode selected but hideSecrets enabled")
-					}
-					// Create wallet with no initial addresses
-					w, err := wallet.NewWallet(wallet.NewWalletFilename(), label, seed, wallet.Options{
-						Coin:       coinType,
-						CryptoType: crypto.DefaultCryptoType,
-						GenerateN:  0,
-						Type:       wallet.WalletTypeDeterministic,
-					})
-					if err != nil {
-						return err
-					}
-
-					// Generate and print secrets one at a time
-					// If numAddresses == 0, generate infinitely
-					for i := 0; numAddresses == 0 || i < numAddresses; i++ {
-						_, err := w.GenerateAddresses(wallet.OptionGenerateN(1))
-						if err != nil {
-							return err
-						}
-						es, err := w.GetEntries()
-						if err != nil {
-							return err
-						}
-						// Print only the last entry (just generated)
-						e := es[len(es)-1]
-						switch coinType {
-						case wallet.CoinTypeSkycoin:
-							fmt.Println(e.Secret.Hex())
-						case wallet.CoinTypeBitcoin:
-							fmt.Println(cipher.BitcoinWalletImportFormatFromSeckey(e.Secret))
-						}
-					}
-					return nil
-				default:
-					return errors.New("infinite/streaming mode only supports 'addresses' or 'secrets' mode")
-				}
+				return addressGenStreaming(mode, label, seed, coinType, hideSecrets, numAddresses)
 			}
 
 			// Non-streaming mode: generate all addresses at once
-			w, err := wallet.NewWallet(wallet.NewWalletFilename(), label, seed, wallet.Options{
-				Coin:       coinType,
-				Encrypt:    encrypt,
-				Password:   password,
-				CryptoType: crypto.DefaultCryptoType,
-				GenerateN:  uint64(numAddresses),
-				Type:       wallet.WalletTypeDeterministic,
-			})
-			if err != nil {
-				return err
-			}
-
-			if hideSecrets {
-				w.Erase()
-			}
-
-			//rw := w.ToReadable()
-
-			switch strings.ToLower(mode) {
-			case "json", "wallet":
-				output, err := w.Serialize()
-				if err != nil {
-					return err
-				}
-
-				fmt.Println(string(output))
-			case "addrs", "addresses":
-				es, err := w.GetEntries()
-				if err != nil {
-					return err
-				}
-				for _, e := range es {
-					fmt.Println(e.Address)
-				}
-			case "secrets":
-				if hideSecrets {
-					return errors.New("secrets mode selected but hideSecrets enabled")
-				}
-				es, err := w.GetEntries()
-				if err != nil {
-					return err
-				}
-
-				for _, e := range es {
-					switch coinType {
-					case wallet.CoinTypeSkycoin:
-						fmt.Println(e.Secret.Hex())
-					case wallet.CoinTypeBitcoin:
-						fmt.Println(cipher.BitcoinWalletImportFormatFromSeckey(e.Secret))
-					}
-				}
-			default:
-				return errors.New("invalid mode")
-			}
-
-			return nil
+			return addressGenBatch(mode, label, seed, coinType, hideSecrets, encrypt, password, numAddresses)
 		},
 	}
 
@@ -234,6 +116,125 @@ func addressGenCmd() *cobra.Command {
 	addressGenCmd.Flags().Bool("stream", false, "Stream output: generate and print each address as it's generated (only for addresses/secrets mode)")
 
 	return addressGenCmd
+}
+
+// addressGenStreaming generates addresses one at a time, printing each as it's generated.
+func addressGenStreaming(mode, label, seed string, coinType wallet.CoinType, hideSecrets bool, numAddresses int) error {
+	switch strings.ToLower(mode) {
+	case "addrs", "addresses":
+		w, err := wallet.NewWallet(wallet.NewWalletFilename(), label, seed, wallet.Options{
+			Coin:       coinType,
+			CryptoType: crypto.DefaultCryptoType,
+			GenerateN:  0,
+			Type:       wallet.WalletTypeDeterministic,
+		})
+		if err != nil {
+			return err
+		}
+
+		for i := 0; numAddresses == 0 || i < numAddresses; i++ {
+			addrs, err := w.GenerateAddresses(wallet.OptionGenerateN(1))
+			if err != nil {
+				return err
+			}
+			for _, addr := range addrs {
+				fmt.Println(addr.String())
+			}
+		}
+		return nil
+
+	case "secrets":
+		if hideSecrets {
+			return errors.New("secrets mode selected but hideSecrets enabled")
+		}
+		w, err := wallet.NewWallet(wallet.NewWalletFilename(), label, seed, wallet.Options{
+			Coin:       coinType,
+			CryptoType: crypto.DefaultCryptoType,
+			GenerateN:  0,
+			Type:       wallet.WalletTypeDeterministic,
+		})
+		if err != nil {
+			return err
+		}
+
+		for i := 0; numAddresses == 0 || i < numAddresses; i++ {
+			_, err := w.GenerateAddresses(wallet.OptionGenerateN(1))
+			if err != nil {
+				return err
+			}
+			es, err := w.GetEntries()
+			if err != nil {
+				return err
+			}
+			e := es[len(es)-1]
+			printSecretKey(e, coinType)
+		}
+		return nil
+
+	default:
+		return errors.New("infinite/streaming mode only supports 'addresses' or 'secrets' mode")
+	}
+}
+
+// addressGenBatch generates all addresses at once and prints them.
+func addressGenBatch(mode, label, seed string, coinType wallet.CoinType, hideSecrets, encrypt bool, password []byte, numAddresses int) error {
+	w, err := wallet.NewWallet(wallet.NewWalletFilename(), label, seed, wallet.Options{
+		Coin:       coinType,
+		Encrypt:    encrypt,
+		Password:   password,
+		CryptoType: crypto.DefaultCryptoType,
+		GenerateN:  uint64(numAddresses),
+		Type:       wallet.WalletTypeDeterministic,
+	})
+	if err != nil {
+		return err
+	}
+
+	if hideSecrets {
+		w.Erase()
+	}
+
+	switch strings.ToLower(mode) {
+	case "json", "wallet":
+		output, err := w.Serialize()
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(output))
+	case "addrs", "addresses":
+		es, err := w.GetEntries()
+		if err != nil {
+			return err
+		}
+		for _, e := range es {
+			fmt.Println(e.Address)
+		}
+	case "secrets":
+		if hideSecrets {
+			return errors.New("secrets mode selected but hideSecrets enabled")
+		}
+		es, err := w.GetEntries()
+		if err != nil {
+			return err
+		}
+		for _, e := range es {
+			printSecretKey(e, coinType)
+		}
+	default:
+		return errors.New("invalid mode")
+	}
+
+	return nil
+}
+
+// printSecretKey prints a wallet entry's secret key in the appropriate format for the coin type.
+func printSecretKey(e wallet.Entry, coinType wallet.CoinType) {
+	switch coinType {
+	case wallet.CoinTypeSkycoin:
+		fmt.Println(e.Secret.Hex())
+	case wallet.CoinTypeBitcoin:
+		fmt.Println(cipher.BitcoinWalletImportFormatFromSeckey(e.Secret))
+	}
 }
 
 func resolveSeed(c *cobra.Command) (string, error) {

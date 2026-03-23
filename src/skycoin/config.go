@@ -370,11 +370,29 @@ func NewNodeConfig(mode string, node fiber.NodeConfig) NodeConfig {
 }
 
 func (c *Config) postProcess() error {
-	//	if help {
-	//		flag.Usage()
-	//		os.Exit(0)
-	//	}
+	c.parseBlockchainKeys()
 
+	if err := c.initDirectories(); err != nil {
+		return err
+	}
+
+	if err := c.initUserAgent(); err != nil {
+		return err
+	}
+
+	if err := c.initAPISets(); err != nil {
+		return err
+	}
+
+	if err := c.validateNetworkConfig(); err != nil {
+		return err
+	}
+
+	return c.validateTransactionParams()
+}
+
+// parseBlockchainKeys parses hex-encoded blockchain keys and computes the genesis hash.
+func (c *Config) parseBlockchainKeys() {
 	var err error
 	if c.Node.GenesisSignatureStr != "" {
 		c.Node.genesisSignature, err = cipher.SigFromHex(c.Node.GenesisSignatureStr)
@@ -386,7 +404,6 @@ func (c *Config) postProcess() error {
 		panicIfError(err, "Invalid Address")
 	}
 
-	// Compute genesis block hash
 	gb, err := coin.NewGenesisBlock(c.Node.genesisAddress, c.Node.GenesisCoinVolume, c.Node.GenesisTimestamp)
 	if err != nil {
 		panicIfError(err, "Create genesis hash failed")
@@ -402,37 +419,29 @@ func (c *Config) postProcess() error {
 		panicIfError(err, "Invalid Seckey")
 		c.Node.BlockchainSeckeyStr = ""
 	}
-	if c.Node.BlockchainSeckeyStr != "" {
-		c.Node.blockchainSeckey = cipher.SecKey{}
-	}
+}
 
+// initDirectories resolves and creates data, wallet, storage, and DB directories.
+func (c *Config) initDirectories() error {
 	home := file.UserHome()
+
+	var err error
 	c.Node.DataDirectory, err = file.InitDataDir(replaceHome(c.Node.DataDirectory, home))
 	panicIfError(err, "Invalid DataDirectory")
 
-	if c.Node.WebInterfaceCert == "" {
-		c.Node.WebInterfaceCert = filepath.Join(c.Node.DataDirectory, "skycoind.cert")
-	} else {
-		c.Node.WebInterfaceCert = replaceHome(c.Node.WebInterfaceCert, home)
+	resolveOrDefault := func(path, defaultSubdir string) string {
+		if path == "" {
+			return filepath.Join(c.Node.DataDirectory, defaultSubdir)
+		}
+		return replaceHome(path, home)
 	}
 
-	if c.Node.WebInterfaceKey == "" {
-		c.Node.WebInterfaceKey = filepath.Join(c.Node.DataDirectory, "skycoind.key")
-	} else {
-		c.Node.WebInterfaceKey = replaceHome(c.Node.WebInterfaceKey, home)
-	}
+	c.Node.WebInterfaceCert = resolveOrDefault(c.Node.WebInterfaceCert, "skycoind.cert")
+	c.Node.WebInterfaceKey = resolveOrDefault(c.Node.WebInterfaceKey, "skycoind.key")
+	c.Node.WalletDirectory = resolveOrDefault(c.Node.WalletDirectory, "wallets")
+	c.Node.KVStorageDirectory = resolveOrDefault(c.Node.KVStorageDirectory, "data")
+	c.Node.DBPath = resolveOrDefault(c.Node.DBPath, "data.db")
 
-	if c.Node.WalletDirectory == "" {
-		c.Node.WalletDirectory = filepath.Join(c.Node.DataDirectory, "wallets")
-	} else {
-		c.Node.WalletDirectory = replaceHome(c.Node.WalletDirectory, home)
-	}
-
-	if c.Node.KVStorageDirectory == "" {
-		c.Node.KVStorageDirectory = filepath.Join(c.Node.DataDirectory, "data")
-	} else {
-		c.Node.KVStorageDirectory = replaceHome(c.Node.KVStorageDirectory, home)
-	}
 	if len(c.Node.EnabledStorageTypes) == 0 {
 		c.Node.EnabledStorageTypes = []kvstorage.Type{
 			kvstorage.TypeGeneral,
@@ -440,12 +449,15 @@ func (c *Config) postProcess() error {
 		}
 	}
 
-	if c.Node.DBPath == "" {
-		c.Node.DBPath = filepath.Join(c.Node.DataDirectory, "data.db")
-	} else {
-		c.Node.DBPath = replaceHome(c.Node.DBPath, home)
+	if c.Node.EnableGUI && c.Node.GUIDirectory != "" {
+		c.Node.GUIDirectory = file.ResolveResourceDirectory(c.Node.GUIDirectory)
 	}
 
+	return nil
+}
+
+// initUserAgent builds and validates the user agent string.
+func (c *Config) initUserAgent() error {
 	userAgentData := useragent.Data{
 		Coin:    c.Node.CoinName,
 		Version: c.Build.Version,
@@ -457,23 +469,27 @@ func (c *Config) postProcess() error {
 	}
 
 	c.Node.userAgent = userAgentData
+	return nil
+}
 
+// initAPISets builds the enabled API sets and disables GUI if wallet API is off.
+func (c *Config) initAPISets() error {
 	apiSets, err := buildAPISets(c.Node)
 	if err != nil {
 		return err
 	}
 
-	// Don't open browser to load wallets if wallet apis are disabled.
 	c.Node.enabledAPISets = apiSets
 	if _, ok := c.Node.enabledAPISets[api.EndpointsWallet]; !ok {
 		c.Node.EnableGUI = false
 		c.Node.LaunchBrowser = false
 	}
 
-	if c.Node.EnableGUI && c.Node.GUIDirectory != "" {
-		c.Node.GUIDirectory = file.ResolveResourceDirectory(c.Node.GUIDirectory)
-	}
+	return nil
+}
 
+// validateNetworkConfig validates network, connection, and auth settings.
+func (c *Config) validateNetworkConfig() error {
 	if c.Node.DisableDefaultPeers {
 		c.Node.DefaultConnections = nil
 	}
@@ -493,15 +509,19 @@ func (c *Config) postProcess() error {
 	if c.Node.MaxConnections < c.Node.MaxOutgoingConnections+c.Node.MaxIncomingConnections {
 		return errors.New("-max-connections must be >= -max-outgoing-connections + -max-incoming-connections")
 	}
-
 	if c.Node.MaxOutgoingConnections > c.Node.MaxConnections {
 		return errors.New("-max-outgoing-connections cannot be higher than -max-connections")
 	}
-
 	if c.Node.MaxIncomingConnections > c.Node.MaxConnections {
 		return errors.New("-max-incoming-connections cannot be higher than -max-connections")
 	}
 
+	return nil
+}
+
+// validateTransactionParams validates and converts transaction verification parameters.
+func (c *Config) validateTransactionParams() error {
+	// Validate overflow bounds
 	if c.Node.maxBlockSize > math.MaxUint32 {
 		return errors.New("-max-block-size exceeds MaxUint32")
 	}
@@ -514,7 +534,6 @@ func (c *Config) postProcess() error {
 	if c.Node.createBlockBurnFactor > math.MaxUint32 {
 		return errors.New("-burn-factor-create-block exceeds MaxUint32")
 	}
-
 	if c.Node.unconfirmedMaxDropletPrecision > math.MaxUint8 {
 		return errors.New("-max-decimals-unconfirmed exceeds MaxUint8")
 	}
@@ -522,14 +541,16 @@ func (c *Config) postProcess() error {
 		return errors.New("-max-decimals-create-block exceeds MaxUint8")
 	}
 
+	// Convert to final types
 	c.Node.UnconfirmedVerifyTxn.BurnFactor = uint32(c.Node.unconfirmedBurnFactor)                  //nolint:gosec
 	c.Node.UnconfirmedVerifyTxn.MaxTransactionSize = uint32(c.Node.maxUnconfirmedTransactionSize)  //nolint:gosec
 	c.Node.UnconfirmedVerifyTxn.MaxDropletPrecision = uint8(c.Node.unconfirmedMaxDropletPrecision) //nolint:gosec
 	c.Node.CreateBlockVerifyTxn.BurnFactor = uint32(c.Node.createBlockBurnFactor)                  //nolint:gosec
-	c.Node.CreateBlockVerifyTxn.MaxTransactionSize = uint32(c.Node.createBlockMaxTransactionSize)  //nolint:gosec // Config conversion
+	c.Node.CreateBlockVerifyTxn.MaxTransactionSize = uint32(c.Node.createBlockMaxTransactionSize)  //nolint:gosec
 	c.Node.CreateBlockVerifyTxn.MaxDropletPrecision = uint8(c.Node.createBlockMaxDropletPrecision) //nolint:gosec
-	c.Node.MaxBlockTransactionsSize = uint32(c.Node.maxBlockSize)                                  //nolint:gosec // Config conversion
+	c.Node.MaxBlockTransactionsSize = uint32(c.Node.maxBlockSize)                                  //nolint:gosec
 
+	// Validate transaction sizes
 	if c.Node.UnconfirmedVerifyTxn.MaxTransactionSize < params.MinTransactionSize {
 		return fmt.Errorf("-max-txn-size-unconfirmed must be >= params.MinTransactionSize (%d)", params.MinTransactionSize)
 	}
@@ -542,7 +563,6 @@ func (c *Config) postProcess() error {
 	if c.Node.CreateBlockVerifyTxn.MaxTransactionSize < params.UserVerifyTxn.MaxTransactionSize {
 		return fmt.Errorf("-max-txn-size-create-block must be >= params.UserVerifyTxn.MaxTransactionSize (%d)", params.UserVerifyTxn.MaxTransactionSize)
 	}
-
 	if c.Node.MaxBlockTransactionsSize < params.MinTransactionSize {
 		return fmt.Errorf("-max-block-size must be >= params.MinTransactionSize (%d)", params.MinTransactionSize)
 	}
@@ -556,13 +576,13 @@ func (c *Config) postProcess() error {
 		return errors.New("-max-block-size must be >= -max-txn-size-create-block")
 	}
 
+	// Validate burn factors
 	if c.Node.UnconfirmedVerifyTxn.BurnFactor < params.MinBurnFactor {
 		return fmt.Errorf("-burn-factor-unconfirmed must be >= params.MinBurnFactor (%d)", params.MinBurnFactor)
 	}
 	if c.Node.UnconfirmedVerifyTxn.BurnFactor < params.UserVerifyTxn.BurnFactor {
 		return fmt.Errorf("-burn-factor-unconfirmed must be >= params.UserVerifyTxn.BurnFactor (%d)", params.UserVerifyTxn.BurnFactor)
 	}
-
 	if c.Node.CreateBlockVerifyTxn.BurnFactor < params.MinBurnFactor {
 		return fmt.Errorf("-burn-factor-create-block must be >= params.MinBurnFactor (%d)", params.MinBurnFactor)
 	}
@@ -570,13 +590,13 @@ func (c *Config) postProcess() error {
 		return fmt.Errorf("-burn-factor-create-block must be >= params.UserVerifyTxn.BurnFactor (%d)", params.UserVerifyTxn.BurnFactor)
 	}
 
+	// Validate droplet precision
 	if c.Node.UnconfirmedVerifyTxn.MaxDropletPrecision > droplet.Exponent {
 		return fmt.Errorf("-max-decimals-unconfirmed must be <= droplet.Exponent (%d)", droplet.Exponent)
 	}
 	if c.Node.UnconfirmedVerifyTxn.MaxDropletPrecision < params.UserVerifyTxn.MaxDropletPrecision {
 		return fmt.Errorf("-max-decimals-unconfirmed must be >= params.UserVerifyTxn.MaxDropletPrecision (%d)", params.UserVerifyTxn.MaxDropletPrecision)
 	}
-
 	if c.Node.CreateBlockVerifyTxn.MaxDropletPrecision > droplet.Exponent {
 		return fmt.Errorf("-max-decimals-create-block must be <= droplet.Exponent (%d)", droplet.Exponent)
 	}

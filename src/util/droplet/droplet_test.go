@@ -6,17 +6,9 @@ import (
 	"math/rand"
 	"regexp"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 )
-
-// set rand seed.
-var _ = func() int64 {
-	t := time.Now().Unix()
-	rand.Seed(t) //nolint:staticcheck // deprecated but kept for test reproducibility
-	return t
-}()
 
 func TestFromString(t *testing.T) {
 	t.Parallel()

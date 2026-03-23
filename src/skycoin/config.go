@@ -30,10 +30,6 @@ import (
 	"github.com/skycoin/skycoin/src/util/useragent"
 )
 
-var (
-	help = false //nolint:unused
-)
-
 // Config records skycoin node and build config
 type Config struct {
 	Node  NodeConfig

@@ -10,8 +10,6 @@ import (
 	"github.com/skycoin/skycoin/src/wallet"
 )
 
-const metaAccountsHash = "metaAccountsHash" //nolint:unused
-
 // JSONDecoder implements the Decoder interface,
 // which provides methods for encoding and decoding a bip44 wallet in JSON format.
 type JSONDecoder struct{}

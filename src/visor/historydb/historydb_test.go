@@ -4,9 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"math/rand"
 	"testing"
-	"time"
 
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/coin"
@@ -42,13 +40,6 @@ var genCoins uint64 = 1000e6
 func feeCalc(_ *coin.Transaction) (uint64, error) {
 	return 0, nil
 }
-
-// set rand seed.
-var _ = func() int64 {
-	t := time.Now().Unix()
-	rand.Seed(t) //nolint:staticcheck // deprecated but kept for test reproducibility
-	return t
-}()
 
 // Blockchainer interface for isolating the detail of blockchain.
 type Blockchainer interface {

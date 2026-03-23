@@ -23,6 +23,11 @@
             <Directory Id="INSTALLDIR" Name="Skycoin">
                <Component Id="ApplicationFiles" Guid="b8c6d4e2-5f7a-4b9c-0d1e-2a3b4c5d6e7f">
                     <File Id="SKYCOIN" Source=".\build\skycoin.exe" KeyPath="yes"/>
+                    <?if $(sys.BUILDARCH)="x64"?>
+                    <File Id="SKYHW" Source=".\build\skyhw.exe"/>
+                    <File Id="LIBHIDAPI" Source=".\build\libhidapi-0.dll"/>
+                    <File Id="LIBUSB" Source=".\build\libusb-1.0.dll"/>
+                    <?endif?>
                     <Environment Id="ENV0"
                       Name="PATH"
                       Value="[INSTALLDIR]"

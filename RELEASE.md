@@ -72,7 +72,7 @@ Windows amd64 is the only Windows architecture with CGO enabled. libusb and hida
 
 The amd64 archive includes a standalone `skyhw.exe` binary and the required DLLs (`libhidapi-0.dll`, `libusb-1.0.dll`) for hardware wallet operations.
 
-MSI installers are built using WiX 3.11 for amd64 and 386 architectures. The installer adds `skycoin.exe` to the system PATH. No MSI installer is produced for arm64.
+MSI installers are built using WiX 3.11 for amd64 and 386 architectures. The amd64 MSI includes `skycoin.exe`, `skyhw.exe`, and the required DLLs. The 386 MSI includes only `skycoin.exe`. Both installers add the install directory to the system PATH. No MSI installer is produced for arm64.
 
 ## Release Artifacts
 

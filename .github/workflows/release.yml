@@ -398,6 +398,18 @@ jobs:
           New-Item -ItemType Directory -Force -Path "build"
           Copy-Item ..\..\bin\skycoin.exe build\skycoin.exe
 
+          # Include hardware wallet binary and DLLs for amd64
+          if (Test-Path "..\..\bin\skyhw.exe") {
+            Copy-Item ..\..\bin\skyhw.exe build\skyhw.exe
+            $dllDir = "C:\msys64\mingw64\bin"
+            foreach ($dll in @("libhidapi-0.dll", "libusb-1.0.dll")) {
+              $dllPath = "$dllDir\$dll"
+              if (Test-Path $dllPath) {
+                Copy-Item $dllPath build\
+              }
+            }
+          }
+
           # Update version in Product.wxs
           $productWxs = Get-Content -Path Product.wxs -Raw
           $productWxs = $productWxs -replace "skycoinVersion", $VERSION

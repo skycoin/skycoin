@@ -11,6 +11,7 @@ import (
 	"log"
 	"mime"
 	"net/http"
+	nethttppprof "net/http/pprof" //nolint:gosec
 	"net/url"
 	"os"
 	"path/filepath"
@@ -44,6 +45,8 @@ var (
 	uiFilesFolder     string   // Path for the folder with the precompiled front-end files
 	apiOnly           bool
 	verify            bool
+	pprofMode         string // pprof profiling mode
+	pprofAddr         string // pprof HTTP server address
 )
 
 func init() {
@@ -66,6 +69,8 @@ func init() {
 	RootCmd.Flags().StringVarP(&uiFilesFolder, "files-folder", "f", "", "Path for the folder with the precompiled front-end files")
 	RootCmd.Flags().BoolVarP(&apiOnly, "api-only", "a", false, "Only run the API, don't serve static content")
 	RootCmd.Flags().BoolVarP(&verify, "verify", "v", false, "Run init() checks and quit")
+	RootCmd.Flags().StringVarP(&pprofMode, "pprofmode", "q", "", "[ cpu | mem | mutex | block | trace | http ]")
+	RootCmd.Flags().StringVarP(&pprofAddr, "pprofaddr", "r", "localhost:6060", "pprof http port")
 
 	parsedJSONAPIEndpoints = make([]ParsedJSONAPIEndpoint, len(apiEndpoints)+1)
 
@@ -132,6 +137,9 @@ var RootCmd = &cobra.Command{
 	DisableSuggestions:    true,
 	DisableFlagsInUseLine: true,
 	Run: func(_ *cobra.Command, _ []string) {
+		stopPProf := initPProf(pprofMode, pprofAddr)
+		defer stopPProf()
+
 		// Parse the node address flag
 		skycoinAddr = buildNodeURL(skycoinAddrString)
 
@@ -1558,4 +1566,30 @@ func htmlDocs(w http.ResponseWriter, _ *http.Request) {
 	if _, err := fmt.Fprintf(w, "%s", docTemplateBody); err != nil {
 		log.Printf("Error writing HTML docs: %v", err)
 	}
+}
+
+func initPProf(profMode string, profAddr string) (stop func()) {
+	stop = func() {}
+	switch profMode {
+	case "http":
+		go func() {
+			mux := http.NewServeMux()
+			mux.HandleFunc("/debug/pprof/", nethttppprof.Index)
+			mux.HandleFunc("/debug/pprof/cmdline", nethttppprof.Cmdline)
+			mux.HandleFunc("/debug/pprof/profile", nethttppprof.Profile)
+			mux.HandleFunc("/debug/pprof/symbol", nethttppprof.Symbol)
+			mux.HandleFunc("/debug/pprof/trace", nethttppprof.Trace)
+			srv := &http.Server{ //nolint:gosec
+				Addr:              profAddr,
+				Handler:           mux,
+				ReadHeaderTimeout: 5 * time.Second,
+				WriteTimeout:      30 * time.Second,
+			}
+			log.Printf("Serving pprof on http://%s/debug/pprof/", profAddr)
+			if err := srv.ListenAndServe(); err != nil {
+				log.Printf("pprof http server stopped: %v", err)
+			}
+		}()
+	}
+	return stop
 }

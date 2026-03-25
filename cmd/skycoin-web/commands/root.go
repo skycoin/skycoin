@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	nethttppprof "net/http/pprof" //nolint:gosec
 	"os"
 	"path/filepath"
 	"strings"
@@ -36,6 +37,10 @@ var (
 	enableSeedAPI bool
 
 	guiDir string // custom GUI directory, overrides embedded GUI
+
+	// Profiling flags
+	pprofMode string
+	pprofAddr string
 
 	// Bitcoin flags
 	btcNodeURL     string
@@ -121,6 +126,10 @@ func init() {
 	RootCmd.Flags().StringArrayVarP(&walletDirs, "wallet-dir", "w", nil, "Local wallet directory (e.g. ~/.skycoin/wallets)")
 	RootCmd.Flags().BoolVar(&enableSeedAPI, "enable-seed-api", false, "Enable the wallet seed API (requires --wallet-dir)")
 	RootCmd.Flags().StringVarP(&guiDir, "gui-dir", "g", "", "Custom GUI directory (overrides embedded GUI)")
+
+	// Profiling flags
+	RootCmd.Flags().StringVarP(&pprofMode, "pprofmode", "q", "", "[ cpu | mem | mutex | block | trace | http ]")
+	RootCmd.Flags().StringVarP(&pprofAddr, "pprofaddr", "r", "localhost:6060", "pprof http port")
 
 	// Bitcoin flags (mutually exclusive)
 	RootCmd.Flags().StringVar(&btcNodeURL, "btc-node-url", "", "Bitcoin Core RPC URL (e.g. http://user:pass@127.0.0.1:8332)")
@@ -386,6 +395,9 @@ func initGUIFS() fs.FS {
 }
 
 func serve() {
+	stopPProf := initPProf(pprofMode, pprofAddr)
+	defer stopPProf()
+
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 
@@ -849,4 +861,30 @@ func proxyToNodeWithBase(c *gin.Context, remoteNodeURL string, targetPath string
 	}
 
 	c.Data(resp.StatusCode, resp.Header.Get("Content-Type"), body)
+}
+
+func initPProf(profMode string, profAddr string) (stop func()) {
+	stop = func() {}
+	switch profMode {
+	case "http":
+		go func() {
+			mux := http.NewServeMux()
+			mux.HandleFunc("/debug/pprof/", nethttppprof.Index)
+			mux.HandleFunc("/debug/pprof/cmdline", nethttppprof.Cmdline)
+			mux.HandleFunc("/debug/pprof/profile", nethttppprof.Profile)
+			mux.HandleFunc("/debug/pprof/symbol", nethttppprof.Symbol)
+			mux.HandleFunc("/debug/pprof/trace", nethttppprof.Trace)
+			srv := &http.Server{ //nolint:gosec
+				Addr:              profAddr,
+				Handler:           mux,
+				ReadHeaderTimeout: 5 * time.Second,
+				WriteTimeout:      30 * time.Second,
+			}
+			log.Printf("Serving pprof on http://%s/debug/pprof/", profAddr)
+			if err := srv.ListenAndServe(); err != nil {
+				log.Printf("pprof http server stopped: %v", err)
+			}
+		}()
+	}
+	return stop
 }

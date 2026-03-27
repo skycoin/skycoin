@@ -310,6 +310,25 @@ export class WalletDetailComponent implements OnDestroy {
     }, 0);
   }
 
+  onAddNewChangeAddress(accountIndex: number) {
+    if (this.creatingAddress) {
+      this.msgBarService.showError('wallet.already-adding-address-error');
+      return;
+    }
+
+    this.creatingAddress = true;
+
+    setTimeout(() => {
+      this.walletService.addAddress(this.wallet, true, accountIndex, 1)
+        .subscribe(
+          () => {
+            this.creatingAddress = false;
+          },
+          (error: Error) => this.onAddAddressError(error)
+        );
+    }, 0);
+  }
+
   private onAddAddressError(error: Error) {
     this.showSlowMobileInfo = false;
     this.removeSlowInfoSubscription();

@@ -93,11 +93,11 @@ export class AddressBase {
   /**
    * BIP44 child index (derivation index within the chain). Only set for BIP44 wallets.
    */
-  childNumber: number = null;
+  childNumber?: number = null;
   /**
    * BIP44 chain indicator: 0 = external, 1 = change. Only set for BIP44 wallets.
    */
-  change: number = null;
+  change?: number = null;
 }
 
 /**

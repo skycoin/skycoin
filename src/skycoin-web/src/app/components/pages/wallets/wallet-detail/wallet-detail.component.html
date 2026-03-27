@@ -51,33 +51,33 @@
         <span class="-account-name">{{ account.name || ('Account ' + account.index) }}</span>
         <span class="-account-toggle">{{ account.showXpub ? 'Hide' : 'Show' }} xPub</span>
       </div>
-      @if (account.showXpub && account.accountXpubKey) {
+      @if (account.showXpub && account.externalXpubKey) {
         <div class="-xpub-display">
-          <span class="-xpub-label">Account xPub (m/44'/coin'/{{ account.index }}'):</span>
-          <p class="click-to-copy -xpub-key" [clipboard]="account.accountXpubKey" (copyEvent)="onCopySuccess({address: account.accountXpubKey, isCopying: false})">
-            {{ account.accountXpubKey }}
+          <span class="-xpub-label">External Chain xPub (m/44'/coin'/{{ account.index }}'/0):</span>
+          <p class="click-to-copy -xpub-key" [clipboard]="account.externalXpubKey" (copyEvent)="onCopySuccess({address: account.externalXpubKey, isCopying: false})">
+            {{ account.externalXpubKey }}
           </p>
         </div>
-        @if (account.externalXpubKey) {
+        @if (account.changeXpubKey) {
           <div class="-xpub-display">
-            <span class="-xpub-label">External Chain xPub (m/.../0):</span>
-            <p class="click-to-copy -xpub-key" [clipboard]="account.externalXpubKey" (copyEvent)="onCopySuccess({address: account.externalXpubKey, isCopying: false})">
-              {{ account.externalXpubKey }}
+            <span class="-xpub-label">Change Chain xPub (m/44'/coin'/{{ account.index }}'/1):</span>
+            <p class="click-to-copy -xpub-key" [clipboard]="account.changeXpubKey" (copyEvent)="onCopySuccess({address: account.changeXpubKey, isCopying: false})">
+              {{ account.changeXpubKey }}
             </p>
           </div>
         }
-        @if (account.changeXpubKey) {
+        @if (account.accountXpubKey) {
           <div class="-xpub-display">
-            <span class="-xpub-label">Change Chain xPub (m/.../1):</span>
-            <p class="click-to-copy -xpub-key" [clipboard]="account.changeXpubKey" (copyEvent)="onCopySuccess({address: account.changeXpubKey, isCopying: false})">
-              {{ account.changeXpubKey }}
+            <span class="-xpub-label">Account xPub (m/44'/coin'/{{ account.index }}') — derives both chains:</span>
+            <p class="click-to-copy -xpub-key" [clipboard]="account.accountXpubKey" (copyEvent)="onCopySuccess({address: account.accountXpubKey, isCopying: false})">
+              {{ account.accountXpubKey }}
             </p>
           </div>
         }
       }
 
       <div class="-chain-label">
-        Receiving Addresses
+        Receiving Addresses (m/.../0/i)
         <span class="-account-add-address" (click)="onAddNewAddress(account.index)" [ngClass]="{ 'mouse-disabled': creatingAddress }">
           + {{ 'wallet.new-address' | translate }}
         </span>
@@ -86,7 +86,7 @@
         @for (address of account.externalAddresses; track address; let i = $index) {
           @if (!wallet.hideEmpty || address.balance?.isGreaterThan(0)) {
             <div class="-record" #element (click)="onShowQrIfPointer(element, address)">
-              <div class="id-column -one-line-ellipsis">{{ i + 1 }}</div>
+              <div class="id-column -one-line-ellipsis" [title]="'Child index: ' + (address.child_number != null ? address.child_number : i)">{{ address.child_number != null ? address.child_number : i + 1 }}</div>
               <div class="address-column -not-on-small-and-below">
                 <img class="qr-code-button" src="assets/img/qr-code-black.png" (click)="onShowQr(address)" >
                 <p class="click-to-copy" [ngClass]="{ copying: address.isCopying }"

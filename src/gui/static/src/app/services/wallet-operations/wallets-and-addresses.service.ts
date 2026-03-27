@@ -549,8 +549,14 @@ export class WalletsAndAddressesService {
       const account = new Bip44Account();
       account.name = a.name;
       account.index = a.index;
-      account.externalAddresses = (a.external_entries || []).map(e => ({ address: e.address, confirmed: true }));
-      account.changeAddresses = (a.change_entries || []).map(e => ({ address: e.address, confirmed: true }));
+      account.externalAddresses = (a.external_entries || []).map(e => ({
+        address: e.address, confirmed: true,
+        childNumber: e.child_number, change: e.change
+      }));
+      account.changeAddresses = (a.change_entries || []).map(e => ({
+        address: e.address, confirmed: true,
+        childNumber: e.child_number, change: e.change
+      }));
       return account;
     });
   }

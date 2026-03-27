@@ -68,7 +68,9 @@ export class Bip44Account {
   index = 0;
   externalAddresses: AddressBase[] = [];
   changeAddresses: AddressBase[] = [];
-  xpubKey: string = null;
+  accountXpubKey: string = null;  // m/44'/coin'/account' — derives both chains
+  externalXpubKey: string = null; // m/44'/coin'/account'/0 — external chain only
+  changeXpubKey: string = null;   // m/44'/coin'/account'/1 — change chain only
   showXpub = false;
   showChangeAddresses = false;
 }

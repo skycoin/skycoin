@@ -51,13 +51,29 @@
         <span class="-account-name">{{ account.name || ('Account ' + account.index) }}</span>
         <span class="-account-toggle">{{ account.showXpub ? 'Hide' : 'Show' }} xPub</span>
       </div>
-      @if (account.showXpub && account.xpubKey) {
+      @if (account.showXpub && account.accountXpubKey) {
         <div class="-xpub-display">
-          <span class="-xpub-label">xPub Key:</span>
-          <p class="click-to-copy -xpub-key" [clipboard]="account.xpubKey" (copyEvent)="onCopySuccess({address: account.xpubKey, isCopying: false})">
-            {{ account.xpubKey }}
+          <span class="-xpub-label">Account xPub (m/44'/coin'/{{ account.index }}'):</span>
+          <p class="click-to-copy -xpub-key" [clipboard]="account.accountXpubKey" (copyEvent)="onCopySuccess({address: account.accountXpubKey, isCopying: false})">
+            {{ account.accountXpubKey }}
           </p>
         </div>
+        @if (account.externalXpubKey) {
+          <div class="-xpub-display">
+            <span class="-xpub-label">External Chain xPub (m/.../0):</span>
+            <p class="click-to-copy -xpub-key" [clipboard]="account.externalXpubKey" (copyEvent)="onCopySuccess({address: account.externalXpubKey, isCopying: false})">
+              {{ account.externalXpubKey }}
+            </p>
+          </div>
+        }
+        @if (account.changeXpubKey) {
+          <div class="-xpub-display">
+            <span class="-xpub-label">Change Chain xPub (m/.../1):</span>
+            <p class="click-to-copy -xpub-key" [clipboard]="account.changeXpubKey" (copyEvent)="onCopySuccess({address: account.changeXpubKey, isCopying: false})">
+              {{ account.changeXpubKey }}
+            </p>
+          </div>
+        }
       }
 
       <div class="-chain-label">

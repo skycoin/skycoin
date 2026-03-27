@@ -403,10 +403,10 @@ export class WalletService {
     );
   }
 
-  getXPubKey(wallet: Wallet, accountIndex: number, chainIndex: number): Observable<string> {
+  getXPubKey(wallet: Wallet, path: string): Observable<string> {
     return this.apiService.get('wallet/xpub', {
       id: wallet.filename,
-      path: `${accountIndex}/${chainIndex}`,
+      path: path,
     }).pipe(map((response: any) => response.xpub_key));
   }
 

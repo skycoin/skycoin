@@ -144,17 +144,25 @@ export class WalletDetailComponent implements OnDestroy {
       return;
     }
 
-    if (account.xpubKey) {
+    if (account.accountXpubKey) {
       account.showXpub = true;
       return;
     }
 
-    // Fetch xpub key for external chain (account/0)
-    this.walletService.getXPubKey(this.wallet, account.index, 0).subscribe(
+    // Fetch all three xpub levels
+    this.walletService.getXPubKey(this.wallet, `${account.index}`).subscribe(
       (xpub) => {
-        account.xpubKey = xpub;
+        account.accountXpubKey = xpub;
         account.showXpub = true;
       },
+      (error) => this.msgBarService.showError(error.message)
+    );
+    this.walletService.getXPubKey(this.wallet, `${account.index}/0`).subscribe(
+      (xpub) => account.externalXpubKey = xpub,
+      (error) => this.msgBarService.showError(error.message)
+    );
+    this.walletService.getXPubKey(this.wallet, `${account.index}/1`).subscribe(
+      (xpub) => account.changeXpubKey = xpub,
       (error) => this.msgBarService.showError(error.message)
     );
   }

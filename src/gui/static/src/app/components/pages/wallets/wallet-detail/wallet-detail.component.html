@@ -51,18 +51,44 @@
         <span class="-account-name">{{ account.name || ('Account ' + account.index) }}</span>
         <span class="-account-toggle">{{ account.showXpub ? 'Hide' : 'Show' }} xPub</span>
       </div>
-      @if (account.showXpub && account.xpubKey) {
+      @if (account.showXpub && account.accountXpubKey) {
         <div class="-xpub-display">
-          <span class="-xpub-label">xPub Key:</span>
-          <p class="click-to-copy" [ngClass]="{ copying: copying.has(account.xpubKey) }"
-            (click)="copyAddress($event, {address: account.xpubKey, confirmed: true})"
-            (mouseleave)="copying.delete(account.xpubKey)">
-            {{ account.xpubKey }}
+          <span class="-xpub-label">Account xPub (m/44'/coin'/{{ account.index }}'):</span>
+          <p class="click-to-copy" [ngClass]="{ copying: copying.has(account.accountXpubKey) }"
+            (click)="copyAddress($event, {address: account.accountXpubKey, confirmed: true})"
+            (mouseleave)="copying.delete(account.accountXpubKey)">
+            {{ account.accountXpubKey }}
             <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">
               {{ 'wallet.address.copy' | translate }}
             </span>
           </p>
         </div>
+        @if (account.externalXpubKey) {
+          <div class="-xpub-display">
+            <span class="-xpub-label">External Chain xPub (m/.../0):</span>
+            <p class="click-to-copy" [ngClass]="{ copying: copying.has(account.externalXpubKey) }"
+              (click)="copyAddress($event, {address: account.externalXpubKey, confirmed: true})"
+              (mouseleave)="copying.delete(account.externalXpubKey)">
+              {{ account.externalXpubKey }}
+              <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">
+                {{ 'wallet.address.copy' | translate }}
+              </span>
+            </p>
+          </div>
+        }
+        @if (account.changeXpubKey) {
+          <div class="-xpub-display">
+            <span class="-xpub-label">Change Chain xPub (m/.../1):</span>
+            <p class="click-to-copy" [ngClass]="{ copying: copying.has(account.changeXpubKey) }"
+              (click)="copyAddress($event, {address: account.changeXpubKey, confirmed: true})"
+              (mouseleave)="copying.delete(account.changeXpubKey)">
+              {{ account.changeXpubKey }}
+              <span [attr.data-label]="'wallet.address.copied' | translate" class="copy-label">
+                {{ 'wallet.address.copy' | translate }}
+              </span>
+            </p>
+          </div>
+        }
       }
 
       <div class="-chain-label">

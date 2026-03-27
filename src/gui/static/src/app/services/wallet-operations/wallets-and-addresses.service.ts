@@ -530,15 +530,14 @@ export class WalletsAndAddressesService {
   }
 
   /**
-   * Gets the extended public key for a BIP44 wallet account chain.
+   * Gets the extended public key for a BIP44 wallet at a given path.
    * @param wallet The BIP44 wallet.
-   * @param accountIndex The account index.
-   * @param chainIndex The chain index (0 = external, 1 = change).
+   * @param path The BIP44 sub-path: "0" for account xpub, "0/0" for external chain, "0/1" for change chain.
    */
-  getXPubKey(wallet: WalletBase, accountIndex: number, chainIndex: number): Observable<string> {
+  getXPubKey(wallet: WalletBase, path: string): Observable<string> {
     return this.apiService.get('wallet/xpub', {
       id: wallet.id,
-      path: `${accountIndex}/${chainIndex}`,
+      path: path,
     }).pipe(map((response: any) => response.xpub_key));
   }
 
@@ -550,8 +549,14 @@ export class WalletsAndAddressesService {
       const account = new Bip44Account();
       account.name = a.name;
       account.index = a.index;
-      account.externalAddresses = (a.external_entries || []).map(e => ({ address: e.address, confirmed: true }));
-      account.changeAddresses = (a.change_entries || []).map(e => ({ address: e.address, confirmed: true }));
+      account.externalAddresses = (a.external_entries || []).map(e => ({
+        address: e.address, confirmed: true,
+        childNumber: e.child_number, change: e.change
+      }));
+      account.changeAddresses = (a.change_entries || []).map(e => ({
+        address: e.address, confirmed: true,
+        childNumber: e.child_number, change: e.change
+      }));
       return account;
     });
   }

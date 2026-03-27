@@ -561,3 +561,17 @@ func (a *bip44Accounts) getXPubKey(accountIndex, chainIndex uint32) (string, err
 	c := act.Chains[chainIndex]
 	return c.PubKey.String(), nil
 }
+
+// getAccountXPubKey returns the account-level xpub key (m/44'/coin'/account').
+// This key can derive both external and change chain addresses.
+func (a *bip44Accounts) getAccountXPubKey(accountIndex uint32) (string, error) {
+	if int(accountIndex) >= len(a.accounts) {
+		return "", errors.New("account index out of bounds")
+	}
+	act := a.accounts[accountIndex]
+	pub, err := act.Account.PublicKey()
+	if err != nil {
+		return "", fmt.Errorf("failed to derive account public key: %v", err)
+	}
+	return pub.String(), nil
+}

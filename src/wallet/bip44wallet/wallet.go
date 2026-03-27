@@ -89,6 +89,8 @@ type accountManager interface {
 	reset()
 	// getXPubKey returns the xPub key string of specific account/chain path
 	getXPubKey(accountIndex, chainIndex uint32) (string, error)
+	// getAccountXPubKey returns the account-level xPub key (derives both chains)
+	getAccountXPubKey(accountIndex uint32) (string, error)
 }
 
 // ChainEntry represents an item on the bip44 wallet chain
@@ -831,36 +833,42 @@ func (w *Wallet) PeekChangeAddress(tf wallet.TransactionsFinder) (cipher.Address
 	return addrs[0], nil
 }
 
-// GetXPubKey returns the xPub key of the given path
+// GetXPubKey returns the xPub key of the given path.
+// Path can be:
+//   - "0" — account-level xpub (m/44'/coin'/0')
+//   - "0/0" — external chain xpub (m/44'/coin'/0'/0)
+//   - "0/1" — change chain xpub (m/44'/coin'/0'/1)
 func (w *Wallet) GetXPubKey(path string) (string, error) {
 	indices, err := ParseXPubPath(path)
 	if err != nil {
 		return "", err
 	}
-	// ParseXPubPath validates indices fit in uint32 via ParseUint(_, 10, 32)
+	if len(indices) == 1 {
+		// Account-level xpub
+		return w.accountManager.getAccountXPubKey(uint32(indices[0])) //nolint:gosec
+	}
+	// Chain-level xpub
 	return w.accountManager.getXPubKey(uint32(indices[0]), uint32(indices[1])) //nolint:gosec
 }
 
-// ParseXPubPath parses xpub paths
+// ParseXPubPath parses xpub paths.
+// Accepts 1 element (account index) or 2 elements (account/chain index).
 func ParseXPubPath(path string) ([]uint64, error) {
-	// parse the path
 	indices := strings.Split(path, "/")
-	// the path needs at least two value, such as 0/0 or 0/1
-	if len(indices) != 2 {
-		return nil, fmt.Errorf("invalid path: %v", path)
+	if len(indices) < 1 || len(indices) > 2 {
+		return nil, fmt.Errorf("invalid path: %v (expected account or account/chain)", path)
 	}
 
-	ai, err := strconv.ParseUint(indices[0], 10, 32)
-	if err != nil {
-		return nil, fmt.Errorf("invalid account index: %v, err: %v", indices[0], err)
+	result := make([]uint64, len(indices))
+	for i, idx := range indices {
+		v, err := strconv.ParseUint(idx, 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("invalid index at position %d: %v, err: %v", i, idx, err)
+		}
+		result[i] = v
 	}
 
-	ci, err := strconv.ParseUint(indices[1], 10, 32)
-	if err != nil {
-		return nil, fmt.Errorf("invalid chain index: %v, err: %v", indices[1], err)
-	}
-
-	return []uint64{ai, ci}, nil
+	return result, nil
 }
 
 func makeChainPubKeys(a *bip44.Account) (*bip32.PublicKey, *bip32.PublicKey, error) {

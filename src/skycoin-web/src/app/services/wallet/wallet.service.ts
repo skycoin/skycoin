@@ -63,10 +63,10 @@ export class WalletService {
     return this.currentWallets.pipe(map(wallets => wallets.reduce((array, wallet) => array.concat(wallet.addresses), [])));
   }
 
-  addAddress(wallet: Wallet, saveWallet = true, accountIndex?: number): Observable<void> {
+  addAddress(wallet: Wallet, saveWallet = true, accountIndex?: number, chainIndex?: number): Observable<void> {
     // Server-managed wallets generate addresses via the backend API
     if (this.currentCoin && this.currentCoin.serverWallets && wallet.filename) {
-      return this.addServerAddress(wallet, accountIndex);
+      return this.addServerAddress(wallet, accountIndex, chainIndex);
     }
 
     if (!wallet.seed || !wallet.nextSeed) {
@@ -83,13 +83,16 @@ export class WalletService {
       }));
   }
 
-  private addServerAddress(wallet: Wallet, accountIndex?: number): Observable<void> {
+  private addServerAddress(wallet: Wallet, accountIndex?: number, chainIndex?: number): Observable<void> {
     const params: any = {
       id: wallet.filename,
       num: '1',
     };
     if (accountIndex !== undefined) {
       params.account = accountIndex.toString();
+    }
+    if (chainIndex !== undefined) {
+      params.chain = chainIndex === 1 ? 'change' : 'external';
     }
 
     return this.apiService.post('wallet/newAddress', params).pipe(
@@ -403,10 +406,10 @@ export class WalletService {
     );
   }
 
-  getXPubKey(wallet: Wallet, accountIndex: number, chainIndex: number): Observable<string> {
+  getXPubKey(wallet: Wallet, path: string): Observable<string> {
     return this.apiService.get('wallet/xpub', {
       id: wallet.filename,
-      path: `${accountIndex}/${chainIndex}`,
+      path: path,
     }).pipe(map((response: any) => response.xpub_key));
   }
 

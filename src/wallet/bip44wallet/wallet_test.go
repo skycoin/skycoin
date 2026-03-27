@@ -1020,11 +1020,19 @@ func TestWalletGetXPubKey(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, k2, testSkycoinInternalXPubKey)
 
+	// Test account-level xpub (single-element path)
+	k3, err := w.GetXPubKey("0")
+	require.NoError(t, err)
+	require.NotEmpty(t, k3)
+	// Account xpub should be different from both chain xpubs
+	require.NotEqual(t, k3, k1)
+	require.NotEqual(t, k3, k2)
+
 	_, err = w.GetXPubKey("a/0")
-	require.EqualError(t, err, "invalid account index: a, err: strconv.ParseUint: parsing \"a\": invalid syntax")
+	require.EqualError(t, err, "invalid index at position 0: a, err: strconv.ParseUint: parsing \"a\": invalid syntax")
 
 	_, err = w.GetXPubKey("0/a")
-	require.EqualError(t, err, "invalid chain index: a, err: strconv.ParseUint: parsing \"a\": invalid syntax")
+	require.EqualError(t, err, "invalid index at position 1: a, err: strconv.ParseUint: parsing \"a\": invalid syntax")
 
 	_, err = w.GetXPubKey("10/0")
 	require.EqualError(t, err, "account index out of bounds")
@@ -1032,8 +1040,8 @@ func TestWalletGetXPubKey(t *testing.T) {
 	_, err = w.GetXPubKey("0/10")
 	require.EqualError(t, err, "chain index out of bounds")
 
-	_, err = w.GetXPubKey("00")
-	require.EqualError(t, err, "invalid path: 00")
+	_, err = w.GetXPubKey("10")
+	require.EqualError(t, err, "account index out of bounds")
 }
 
 func getExternalAddrs(_ *testing.T) []cipher.Addresser { //nolint:unused

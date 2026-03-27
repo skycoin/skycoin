@@ -68,7 +68,9 @@ export class Bip44Account {
   index = 0;
   externalAddresses: AddressBase[] = [];
   changeAddresses: AddressBase[] = [];
-  xpubKey: string = null;
+  accountXpubKey: string = null;  // m/44'/coin'/account' — derives both chains
+  externalXpubKey: string = null; // m/44'/coin'/account'/0 — external chain only
+  changeXpubKey: string = null;   // m/44'/coin'/account'/1 — change chain only
   showXpub = false;
   showChangeAddresses = false;
 }
@@ -88,6 +90,14 @@ export class AddressBase {
    * Only valid if the address is in a hw wallet.
    */
   confirmed = false;
+  /**
+   * BIP44 child index (derivation index within the chain). Only set for BIP44 wallets.
+   */
+  childNumber?: number = null;
+  /**
+   * BIP44 chain indicator: 0 = external, 1 = change. Only set for BIP44 wallets.
+   */
+  change?: number = null;
 }
 
 /**

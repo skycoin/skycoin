@@ -26,7 +26,9 @@ export interface Bip44Account {
   index: number;
   externalAddresses: Address[];
   changeAddresses: Address[];
-  xpubKey?: string;
+  accountXpubKey?: string;   // m/44'/coin'/account' — derives both chains
+  externalXpubKey?: string;  // m/44'/coin'/account'/0 — external chain only
+  changeXpubKey?: string;    // m/44'/coin'/account'/1 — change chain only
   showXpub?: boolean;
   showChangeAddresses?: boolean;
 }

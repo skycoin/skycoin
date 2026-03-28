@@ -115,13 +115,7 @@ export class SpendingService {
 
         const isServerWallet = !!wallet['filename'];
 
-        // Server-managed wallets: POST /wallet/transaction with wallet_id
-        //   → node creates AND signs the transaction using stored keys
-        //   → returns signed encoded_transaction ready to broadcast
-        // In-memory/hardware wallets: POST /transaction (v2)
-        //   → node creates unsigned transaction
-        //   → client signs with WASM (in-memory) or hardware device
-        const params: any = {
+        const params = {
           hours_selection: processedHours,
           addresses: addresses,
           unspents: unspents,
@@ -129,26 +123,14 @@ export class SpendingService {
           change_address: changeAddress,
         };
 
-        let txnEndpoint: string;
-        let txnUseV2: boolean;
-
-        if (isServerWallet) {
-          params.wallet_id = wallet['filename'];
-          txnEndpoint = 'wallet/transaction';
-          txnUseV2 = false;
-        } else {
-          txnEndpoint = 'transaction';
-          txnUseV2 = true;
-        }
-
+        // All modes: create unsigned transaction on the remote node via POST /transaction (v2)
         const response: Observable<Transaction> = this.apiService.post(
-          txnEndpoint,
+          'transaction',
           params,
           { json: true },
-          txnUseV2,
+          true,
         ).pipe(mergeMap(transaction => {
-          // v1 returns data directly, v2 wraps in { data: ... }
-          const data = txnUseV2 ? transaction.data : transaction;
+          const data = transaction.data;
 
           let hoursSent = new BigNumber('0');
           data.transaction.outputs
@@ -179,15 +161,26 @@ export class SpendingService {
             return this.signWithHardwareWallet(wallet, txInputs, txOutputs, hoursSent, new BigNumber(data.transaction.fee));
           }
 
-          // Server-managed wallets: transaction is already signed
+          // Server-managed wallets: sign locally via skycoin-web's wallet handler
+          // The wallet keys are on disk, managed by skycoin-web (not the remote node)
           if (isServerWallet) {
-            return of({
-              inputs: txInputs,
-              outputs: txOutputs,
-              hoursSent: hoursSent,
-              hoursBurned: new BigNumber(data.transaction.fee),
-              encoded: data.encoded_transaction,
-            });
+            const signBody = {
+              wallet_id: wallet['filename'],
+              encoded_transaction: data.encoded_transaction,
+              input_addresses: txInputs.map(i => i.address),
+            };
+
+            return this.apiService.post('wallet/transaction/sign', signBody, { json: true }, true).pipe(
+              map((signResponse: any) => {
+                return {
+                  inputs: txInputs,
+                  outputs: txOutputs,
+                  hoursSent: hoursSent,
+                  hoursBurned: new BigNumber(data.transaction.fee),
+                  encoded: signResponse.data.encoded_transaction,
+                };
+              })
+            );
           }
 
           // In-memory wallets: sign client-side with WASM

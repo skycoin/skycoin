@@ -15,6 +15,7 @@ import (
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/bip39"
 	"github.com/skycoin/skycoin/src/cipher/bip44"
+	"github.com/skycoin/skycoin/src/coin"
 	"github.com/skycoin/skycoin/src/readable"
 	"github.com/skycoin/skycoin/src/wallet"
 	"github.com/skycoin/skycoin/src/wallet/bip44wallet"
@@ -160,6 +161,10 @@ func handleWalletAPI(c *gin.Context, apiPath string, wltService *wallet.Service,
 		handleWalletXPub(c, wltService)
 	case path == "/v1/wallet/newAccount" && method == http.MethodPost:
 		handleNewAccount(c, wltService)
+
+	// Transaction signing: sign locally using wallet's stored keys
+	case path == "/v2/wallet/transaction/sign" && method == http.MethodPost:
+		handleSignTransaction(c, wltService)
 
 	// Hybrid endpoints: resolve wallet addresses locally, query remote node
 	case path == "/v1/wallet/balance" && method == http.MethodGet:
@@ -890,4 +895,106 @@ func handleNewAccount(c *gin.Context, s *wallet.Service) {
 		return
 	}
 	c.JSON(http.StatusOK, rlt)
+}
+
+// handleSignTransaction signs an unsigned transaction using the local wallet's keys.
+// POST /api/v2/wallet/transaction/sign
+// JSON body: { "wallet_id": "...", "encoded_transaction": "...", "input_addresses": ["addr1", ...], "password": "..." }
+// input_addresses must be in the same order as the transaction inputs.
+func handleSignTransaction(c *gin.Context, wltService *wallet.Service) {
+	var req struct {
+		WalletID           string   `json:"wallet_id"`
+		EncodedTransaction string   `json:"encoded_transaction"`
+		InputAddresses     []string `json:"input_addresses"`
+		Password           string   `json:"password"`
+	}
+
+	body, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		errBadRequest(c, "failed to read request body")
+		return
+	}
+	if err := json.Unmarshal(body, &req); err != nil {
+		errBadRequest(c, "invalid JSON")
+		return
+	}
+
+	if req.WalletID == "" {
+		errBadRequest(c, "wallet_id is required")
+		return
+	}
+	if req.EncodedTransaction == "" {
+		errBadRequest(c, "encoded_transaction is required")
+		return
+	}
+
+	// Deserialize the unsigned transaction
+	txn, err := coin.DeserializeTransactionHex(req.EncodedTransaction)
+	if err != nil {
+		errBadRequest(c, fmt.Sprintf("failed to deserialize transaction: %v", err))
+		return
+	}
+
+	if len(req.InputAddresses) != len(txn.In) {
+		errBadRequest(c, fmt.Sprintf("input_addresses length (%d) must match transaction inputs length (%d)", len(req.InputAddresses), len(txn.In)))
+		return
+	}
+
+	// Get the wallet
+	wlt, err := wltService.GetWallet(req.WalletID)
+	if err != nil {
+		if err == wallet.ErrWalletNotExist {
+			c.String(http.StatusNotFound, "404 Not Found - wallet not found")
+		} else {
+			errInternal(c, err.Error())
+		}
+		return
+	}
+
+	// Sign the transaction using wallet entries matched by address
+	signFunc := func(w wallet.Wallet) error {
+		seckeys := make([]cipher.SecKey, len(txn.In))
+		for i, addrStr := range req.InputAddresses {
+			addr, err := cipher.DecodeBase58Address(addrStr)
+			if err != nil {
+				return fmt.Errorf("invalid input address %q: %v", addrStr, err)
+			}
+
+			entry, err := w.GetEntry(addr)
+			if err != nil {
+				return fmt.Errorf("address %s not found in wallet: %v", addrStr, err)
+			}
+
+			seckeys[i] = entry.Secret
+		}
+
+		txn.SignInputs(seckeys)
+		return txn.UpdateHeader()
+	}
+
+	if wlt.IsEncrypted() {
+		if err := wallet.GuardUpdate(wlt, []byte(req.Password), func(w wallet.Wallet) error {
+			return signFunc(w)
+		}); err != nil {
+			errBadRequest(c, err.Error())
+			return
+		}
+	} else {
+		if err := signFunc(wlt); err != nil {
+			errBadRequest(c, err.Error())
+			return
+		}
+	}
+
+	signedHex, err := txn.SerializeHex()
+	if err != nil {
+		errInternal(c, fmt.Sprintf("failed to serialize signed transaction: %v", err))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": gin.H{
+			"encoded_transaction": signedHex,
+		},
+	})
 }

@@ -113,7 +113,15 @@ export class SpendingService {
           processedHours['share_factor'] = hoursSelection.ShareFactor;
         }
 
-        const params = {
+        const isServerWallet = !!wallet['filename'];
+
+        // Server-managed wallets: POST /wallet/transaction with wallet_id
+        //   → node creates AND signs the transaction using stored keys
+        //   → returns signed encoded_transaction ready to broadcast
+        // In-memory/hardware wallets: POST /transaction (v2)
+        //   → node creates unsigned transaction
+        //   → client signs with WASM (in-memory) or hardware device
+        const params: any = {
           hours_selection: processedHours,
           addresses: addresses,
           unspents: unspents,
@@ -121,15 +129,26 @@ export class SpendingService {
           change_address: changeAddress,
         };
 
+        let txnEndpoint: string;
+        let txnUseV2: boolean;
+
+        if (isServerWallet) {
+          params.wallet_id = wallet['filename'];
+          txnEndpoint = 'wallet/transaction';
+          txnUseV2 = false;
+        } else {
+          txnEndpoint = 'transaction';
+          txnUseV2 = true;
+        }
+
         const response: Observable<Transaction> = this.apiService.post(
-          'transaction',
+          txnEndpoint,
           params,
-          {
-            json: true,
-          },
-          true,
+          { json: true },
+          txnUseV2,
         ).pipe(mergeMap(transaction => {
-          const data = transaction.data;
+          // v1 returns data directly, v2 wraps in { data: ... }
+          const data = txnUseV2 ? transaction.data : transaction;
 
           let hoursSent = new BigNumber('0');
           data.transaction.outputs
@@ -140,7 +159,7 @@ export class SpendingService {
           data.transaction.inputs.forEach(input => {
             txInputs.push({
               hash: input.uxid,
-              secret: wallet.isHardware ? '' : (wallet.addresses.find(a => a.address === input.address) || {}).secret_key,
+              secret: (wallet.isHardware || isServerWallet) ? '' : (wallet.addresses.find(a => a.address === input.address) || {}).secret_key,
               address: input.address,
               calculated_hours: input.calculated_hours,
               coins: input.coins,
@@ -160,9 +179,15 @@ export class SpendingService {
             return this.signWithHardwareWallet(wallet, txInputs, txOutputs, hoursSent, new BigNumber(data.transaction.fee));
           }
 
-          // Server-managed wallets: sign via server API
-          if (wallet['filename']) {
-            return this.signWithServer(wallet, data.transaction.encoded_transaction, txInputs, txOutputs, hoursSent, new BigNumber(data.transaction.fee));
+          // Server-managed wallets: transaction is already signed
+          if (isServerWallet) {
+            return of({
+              inputs: txInputs,
+              outputs: txOutputs,
+              hoursSent: hoursSent,
+              hoursBurned: new BigNumber(data.transaction.fee),
+              encoded: data.encoded_transaction,
+            });
           }
 
           // In-memory wallets: sign client-side with WASM
@@ -286,32 +311,6 @@ export class SpendingService {
 
   getWalletUnspentOutputs(wallet: Wallet): Observable<Output[]> {
     return this.getOutputs(wallet, null, null);
-  }
-
-  private signWithServer(
-    wallet: Wallet,
-    encodedTransaction: string,
-    txInputs: TransactionInput[],
-    txOutputs: TransactionOutput[],
-    hoursSent: BigNumber,
-    hoursBurned: BigNumber): Observable<Transaction> {
-
-    const body = {
-      wallet_id: wallet['filename'],
-      encoded_transaction: encodedTransaction,
-    };
-
-    return this.apiService.post('wallet/transaction/sign', body, { json: true }, true).pipe(
-      map((response: any) => {
-        return {
-          inputs: txInputs,
-          outputs: txOutputs,
-          hoursSent: hoursSent,
-          hoursBurned: hoursBurned,
-          encoded: response.data.encoded_transaction,
-        };
-      })
-    );
   }
 
   private signWithHardwareWallet(

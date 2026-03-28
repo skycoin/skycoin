@@ -43,6 +43,30 @@ Subsequent improvements were made which include:
   - Segwit wallet support
 * Hardware wallet support (Skycoin hardware wallet via daemon on port 9510)
 
+## Security Considerations
+
+### Web-only mode (no --wallet-dir)
+
+In web-only mode, wallet seeds are generated and used entirely within the browser. The seed never leaves the browser — it is entered each time a transaction needs to be signed. The server (skycoin-web process) never sees wallet seeds or private keys. Transaction signing is performed client-side using WebAssembly.
+
+**Risk:** If you are connecting to a skycoin-web instance hosted by someone else, you are entering your seed into their webpage. There is no way to guarantee the hosted code has not been modified to capture seeds. **Only use web-only mode on a skycoin-web instance you are personally running.**
+
+### Server-managed mode (--wallet-dir)
+
+When `--wallet-dir` is specified, wallets are stored on disk and managed by the skycoin node that skycoin-web connects to. Transaction signing is performed by the node using the wallet's stored private keys — no seed entry is required in the browser.
+
+**Important security implications:**
+
+- **Wallet files and private keys are managed locally by skycoin-web.** The `--wallet-dir` wallets are read and managed by the skycoin-web process itself, not by the remote node. Private keys never leave the skycoin-web process. Transaction signing happens locally within skycoin-web.
+- **The remote node you connect to sees your wallet addresses.** When skycoin-web queries balances, transaction history, and creates transactions, it sends your addresses to the connected node. The node operator can see which addresses belong to you and track your balances and activity.
+- **A malicious node could return false balance or transaction data.** The remote node provides blockchain data that skycoin-web displays. A compromised node could show incorrect balances, hide transactions, or provide manipulated transaction data. However, it cannot steal your coins because it does not have access to your private keys.
+- **Wallet files contain private keys.** The wallet directory contains unencrypted (or password-encrypted) wallet files with private keys. Protect this directory with appropriate filesystem permissions. Anyone with access to these files can spend your coins.
+- **Run skycoin-web locally.** Since skycoin-web reads wallet files from disk, it should be run on the same machine where the wallet files reside. Do not expose skycoin-web's web interface to untrusted networks when `--wallet-dir` is configured.
+
+### Hardware wallet mode
+
+When using a Skycoin hardware wallet, transaction signing is performed on the hardware device. Neither the browser nor the node ever sees the private keys. This is the most secure mode for signing transactions.
+
 ## Operation
 
 The operation without any flags was described above in the [history](#history) section.

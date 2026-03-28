@@ -113,6 +113,8 @@ export class SpendingService {
           processedHours['share_factor'] = hoursSelection.ShareFactor;
         }
 
+        const isServerWallet = !!wallet['filename'];
+
         const params = {
           hours_selection: processedHours,
           addresses: addresses,
@@ -121,12 +123,11 @@ export class SpendingService {
           change_address: changeAddress,
         };
 
+        // All modes: create unsigned transaction on the remote node via POST /transaction (v2)
         const response: Observable<Transaction> = this.apiService.post(
           'transaction',
           params,
-          {
-            json: true,
-          },
+          { json: true },
           true,
         ).pipe(mergeMap(transaction => {
           const data = transaction.data;
@@ -140,7 +141,7 @@ export class SpendingService {
           data.transaction.inputs.forEach(input => {
             txInputs.push({
               hash: input.uxid,
-              secret: wallet.isHardware ? '' : (wallet.addresses.find(a => a.address === input.address) || {}).secret_key,
+              secret: (wallet.isHardware || isServerWallet) ? '' : (wallet.addresses.find(a => a.address === input.address) || {}).secret_key,
               address: input.address,
               calculated_hours: input.calculated_hours,
               coins: input.coins,
@@ -160,9 +161,26 @@ export class SpendingService {
             return this.signWithHardwareWallet(wallet, txInputs, txOutputs, hoursSent, new BigNumber(data.transaction.fee));
           }
 
-          // Server-managed wallets: sign via server API
-          if (wallet['filename']) {
-            return this.signWithServer(wallet, data.transaction.encoded_transaction, txInputs, txOutputs, hoursSent, new BigNumber(data.transaction.fee));
+          // Server-managed wallets: sign locally via skycoin-web's wallet handler
+          // The wallet keys are on disk, managed by skycoin-web (not the remote node)
+          if (isServerWallet) {
+            const signBody = {
+              wallet_id: wallet['filename'],
+              encoded_transaction: data.encoded_transaction,
+              input_addresses: txInputs.map(i => i.address),
+            };
+
+            return this.apiService.post('wallet/transaction/sign', signBody, { json: true }, true).pipe(
+              map((signResponse: any) => {
+                return {
+                  inputs: txInputs,
+                  outputs: txOutputs,
+                  hoursSent: hoursSent,
+                  hoursBurned: new BigNumber(data.transaction.fee),
+                  encoded: signResponse.data.encoded_transaction,
+                };
+              })
+            );
           }
 
           // In-memory wallets: sign client-side with WASM
@@ -286,32 +304,6 @@ export class SpendingService {
 
   getWalletUnspentOutputs(wallet: Wallet): Observable<Output[]> {
     return this.getOutputs(wallet, null, null);
-  }
-
-  private signWithServer(
-    wallet: Wallet,
-    encodedTransaction: string,
-    txInputs: TransactionInput[],
-    txOutputs: TransactionOutput[],
-    hoursSent: BigNumber,
-    hoursBurned: BigNumber): Observable<Transaction> {
-
-    const body = {
-      wallet_id: wallet['filename'],
-      encoded_transaction: encodedTransaction,
-    };
-
-    return this.apiService.post('wallet/transaction/sign', body, { json: true }, true).pipe(
-      map((response: any) => {
-        return {
-          inputs: txInputs,
-          outputs: txOutputs,
-          hoursSent: hoursSent,
-          hoursBurned: hoursBurned,
-          encoded: response.data.encoded_transaction,
-        };
-      })
-    );
   }
 
   private signWithHardwareWallet(

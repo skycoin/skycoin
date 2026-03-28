@@ -160,6 +160,12 @@ export class SpendingService {
             return this.signWithHardwareWallet(wallet, txInputs, txOutputs, hoursSent, new BigNumber(data.transaction.fee));
           }
 
+          // Server-managed wallets: sign via server API
+          if (wallet['filename']) {
+            return this.signWithServer(wallet, data.transaction.encoded_transaction, txInputs, txOutputs, hoursSent, new BigNumber(data.transaction.fee));
+          }
+
+          // In-memory wallets: sign client-side with WASM
           return this.generateRawTransaction(txInputs, txOutputs).pipe(
             map((rawTransaction: string) => {
               return {
@@ -280,6 +286,32 @@ export class SpendingService {
 
   getWalletUnspentOutputs(wallet: Wallet): Observable<Output[]> {
     return this.getOutputs(wallet, null, null);
+  }
+
+  private signWithServer(
+    wallet: Wallet,
+    encodedTransaction: string,
+    txInputs: TransactionInput[],
+    txOutputs: TransactionOutput[],
+    hoursSent: BigNumber,
+    hoursBurned: BigNumber): Observable<Transaction> {
+
+    const body = {
+      wallet_id: wallet['filename'],
+      encoded_transaction: encodedTransaction,
+    };
+
+    return this.apiService.post('wallet/transaction/sign', body, { json: true }, true).pipe(
+      map((response: any) => {
+        return {
+          inputs: txInputs,
+          outputs: txOutputs,
+          hoursSent: hoursSent,
+          hoursBurned: hoursBurned,
+          encoded: response.data.encoded_transaction,
+        };
+      })
+    );
   }
 
   private signWithHardwareWallet(

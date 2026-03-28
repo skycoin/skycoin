@@ -651,7 +651,7 @@ func needsWalletLookup(path, method string) bool {
 
 // handleGetWalletsMulti aggregates wallets from all services
 func handleGetWalletsMulti(c *gin.Context, services []*wallet.Service) {
-	var allWallets []*walletResponse
+	var allWallets []*readable.WalletResponse
 	for _, svc := range services {
 		wlts, err := svc.GetWallets()
 		if err != nil {
@@ -666,7 +666,7 @@ func handleGetWalletsMulti(c *gin.Context, services []*wallet.Service) {
 		}
 	}
 	if allWallets == nil {
-		allWallets = make([]*walletResponse, 0)
+		allWallets = make([]*readable.WalletResponse, 0)
 	}
 	c.JSON(http.StatusOK, allWallets)
 }

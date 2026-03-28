@@ -4,7 +4,6 @@ package api
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -35,111 +34,13 @@ type BalanceResponse struct {
 	Addresses readable.AddressBalances `json:"addresses"`
 }
 
-// WalletResponse wallet response struct for http apis
-type WalletResponse struct {
-	Meta     readable.WalletMeta      `json:"meta"`
-	Entries  []readable.WalletEntry   `json:"entries"`
-	Accounts []readable.WalletAccount `json:"accounts,omitempty"`
-}
+// WalletResponse is an alias for readable.WalletResponse for API compatibility.
+type WalletResponse = readable.WalletResponse
 
-// NewWalletResponse creates WalletResponse struct from wallet.Wallet
+// NewWalletResponse creates WalletResponse struct from wallet.Wallet.
+// Delegates to readable.NewWalletResponse.
 func NewWalletResponse(w wallet.Wallet) (*WalletResponse, error) {
-	var wr WalletResponse
-
-	wr.Meta.Coin = w.Coin()
-	wr.Meta.Filename = w.Filename()
-	wr.Meta.Label = w.Label()
-	wr.Meta.Type = w.Type()
-	wr.Meta.Version = w.Version()
-	wr.Meta.CryptoType = w.CryptoType()
-	wr.Meta.Encrypted = w.IsEncrypted()
-	wr.Meta.Timestamp = w.Timestamp()
-	wr.Meta.Temp = w.IsTemp()
-
-	var options []wallet.Option
-	switch w.Type() {
-	case wallet.WalletTypeBip44:
-		bip44Coin := w.Bip44Coin()
-		if bip44Coin == nil {
-			return nil, errors.New("Wallet has no Bip44Coin meta data")
-		}
-		wr.Meta.Bip44Coin = bip44Coin
-
-		// get entries on both external and change chains
-		options = append(options, wallet.OptionExternal(), wallet.OptionChange())
-
-		// Populate per-account structure
-		accounts := w.Accounts()
-		wr.Accounts = make([]readable.WalletAccount, len(accounts))
-		for ai, acct := range accounts {
-			wa := readable.WalletAccount{
-				Name:  acct.Name,
-				Index: acct.Index,
-			}
-
-			extEntries, err := w.GetEntries(wallet.OptionAccount(acct.Index), wallet.OptionExternal())
-			if err != nil {
-				return nil, fmt.Errorf("failed to get external entries for account %d: %v", acct.Index, err)
-			}
-			wa.ExternalEntries = walletEntriesToReadable(extEntries)
-
-			chgEntries, err := w.GetEntries(wallet.OptionAccount(acct.Index), wallet.OptionChange())
-			if err != nil {
-				return nil, fmt.Errorf("failed to get change entries for account %d: %v", acct.Index, err)
-			}
-			wa.ChangeEntries = walletEntriesToReadable(chgEntries)
-
-			wr.Accounts[ai] = wa
-		}
-	case wallet.WalletTypeXPub:
-		wr.Meta.XPub = w.XPub()
-	}
-
-	entries, err := w.GetEntries(options...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get wallet entries: %v", err)
-	}
-	wr.Entries = make([]readable.WalletEntry, len(entries))
-
-	for i, e := range entries {
-		wr.Entries[i] = readable.WalletEntry{
-			Address: e.Address.String(),
-			Public:  e.Public.Hex(),
-		}
-
-		switch w.Type() {
-		// Copy these values to another ref to avoid having a pointer
-		// to an element of Entry which could affect GC of the Entry,
-		// which could cause retention/copying of secret data in the Entry.
-		// This is speculative. I don't know if this matters to the go runtime
-		case wallet.WalletTypeBip44:
-			childNumber := e.ChildNumber
-			wr.Entries[i].ChildNumber = &childNumber
-			change := e.Change
-			wr.Entries[i].Change = &change
-		case wallet.WalletTypeXPub:
-			childNumber := e.ChildNumber
-			wr.Entries[i].ChildNumber = &childNumber
-		}
-	}
-
-	return &wr, nil
-}
-
-// walletEntriesToReadable converts wallet entries to readable format with child number info
-func walletEntriesToReadable(entries wallet.Entries) []readable.WalletEntry {
-	result := make([]readable.WalletEntry, len(entries))
-	for i, e := range entries {
-		childNumber := e.ChildNumber
-		change := e.Change
-		result[i] = readable.WalletEntry{
-			Address:     e.Address.String(),
-			Public:      e.Public.Hex(),
-			ChildNumber: &childNumber,
-			Change:      &change,
-		}
-	}
-	return result
+	return readable.NewWalletResponse(w)
 }
 
 // Returns the wallet's balance, both confirmed and predicted.  The predicted

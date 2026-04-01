@@ -144,7 +144,7 @@ export class ApiService {
   getBlocks(startNumber: number, endNumber: number): Observable<GetBlocksResponse> {
     const url = !this.nodeUrl() ? 'blocks' : 'v1/blocks';
 
-    return this.get(url, { start: startNumber, end: endNumber });
+    return this.get(url, { start: startNumber, end: endNumber, verbose: 1 });
   }
 
   /**

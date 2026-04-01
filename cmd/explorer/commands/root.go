@@ -345,10 +345,9 @@ func (s APIEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	w.WriteHeader(resp.StatusCode)
-
 	if s.ExplorerPath == "/api/coinmarketcap" {
 		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(resp.StatusCode)
 		var cs CoinSupply
 		if err := json.NewDecoder(resp.Body).Decode(&cs); err != nil {
 			msg := "Decode CoinSupply result failed"
@@ -364,6 +363,7 @@ func (s APIEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(resp.StatusCode)
 
 	if n, err := io.Copy(w, resp.Body); err != nil {
 		msg := "Copying response from skycoin node to client failed"

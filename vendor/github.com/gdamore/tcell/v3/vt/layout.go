@@ -33,10 +33,8 @@ import (
 // shift states (modifier states). A layout may have many of these, and they
 // are searched until a match is fine.
 type ModifierMap struct {
-	Mod    Modifier     // Mod is the modifiers that should be set to match, after applying Mask.
-	Mask   Modifier     // Mask is the set of modifiers that are considered when matching.
-	Invert bool         // Invert changes the matching sense via a logical NOT.
-	Map    map[Key]rune // Map is the mapping from Key to specific rune when this map matches.
+	When func(Modifier) bool // Map only applies if this returns true
+	Map  map[Key]rune        // Map is the mapping from Key to specific rune when this map matches.
 }
 
 // KeyboardState represents the current state of the keyboard.
@@ -44,6 +42,10 @@ type ModifierMap struct {
 // get the associated events from their operating system do not need to
 // make use of this, but this structure makes it possible to build an emulator
 // with a keyboard layout that is not known to the operating system.
+//
+// The keyboard state is assumed to be "single threaded", meaning only a single
+// caller will operate on it at any given time.  Typically there is just a single
+// keyboard polling thread or goroutine.
 type KeyboardState struct {
 	deadKey        map[rune]DeadKey // current dead key state
 	mod            Modifier
@@ -52,12 +54,14 @@ type KeyboardState struct {
 	lastRune       rune          // last rune for last key
 	repeating      bool          // true if we are repeating
 	repeatStart    time.Time     // when we started repeating
+	repeatTime     time.Time     // last time we checked
 	repeatDelay    time.Duration // delay before starting repeat
 	repeatInterval time.Duration // duration between repeats
 	pressed        map[Key]bool
 	initialized    bool
 }
 
+// initialize the keyboard, lazily.
 func (ks *KeyboardState) initialize() {
 	if !ks.initialized {
 		ks.pressed = make(map[Key]bool)
@@ -70,6 +74,7 @@ func (ks *KeyboardState) initialize() {
 	}
 }
 
+// reset the keyboard state.
 func (ks *KeyboardState) reset() {
 	ks.clearRepeat()
 	ks.mod = 0
@@ -77,16 +82,35 @@ func (ks *KeyboardState) reset() {
 	ks.pressed = make(map[Key]bool)
 }
 
+// clear repeat clears any repeating key.
 func (ks *KeyboardState) clearRepeat() {
 	ks.repeating = false
 	ks.repeatStart = time.Time{}
+	ks.repeatTime = time.Time{}
 	ks.lastRune = 0
 	ks.lastKey = 0
+}
+
+// SetRepeat sets the repeat parameters. Note that this will only have any meaningful
+// impact if the caller calls the Pressed function repeatedly (periodically) while
+// a key is depressed.
+//
+// The repeat starts after a key has been held for for delay, with a new repeat
+// added every interval.
+//
+// The caller should usually call this before processing keyboard events.  It must
+// not be called concurrently with either of the Pressed or Release functions.
+func (ks *KeyboardState) SetRepeat(delay time.Duration, interval time.Duration) {
+	ks.initialize()
+	ks.repeatDelay = delay
+	ks.repeatInterval = interval
+	ks.clearRepeat()
 }
 
 // SetLayout sets the layout this keyboard should use.
 // This also resets the keyboard state.
 func (ks *KeyboardState) SetLayout(km *Layout) {
+	ks.initialize()
 	ks.reset()
 	ks.layout = km
 }
@@ -103,17 +127,17 @@ func (ks *KeyboardState) Pressed(k Key) *KeyEvent {
 	}
 	// if another key was pressed, then clear the repeat state
 	lastKey := ks.lastKey
-	if lastKey != k {
+	if lastKey != k && ks.repeatInterval != 0 {
 		ks.clearRepeat()
+		ks.repeatStart = time.Now().Add(ks.repeatDelay)
+		ks.repeatTime = ks.repeatStart
 	}
 	wasPressed := ks.pressed[k]
 	ks.pressed[k] = true
 	ks.lastKey = k
-	if !ks.repeating {
-		ks.repeatStart = time.Now().Add(ks.repeatDelay)
-	}
 
 	l := ks.layout
+	event.VK = l.Virtual[k]
 	if mod, ok := l.Locking[k]; ok {
 		// locking modifiers never repeat
 		if wasPressed {
@@ -165,14 +189,16 @@ func (ks *KeyboardState) Pressed(k Key) *KeyEvent {
 		event.Utf = string(r)
 	}
 
-	if lastKey == k && wasPressed {
+	if lastKey == k && wasPressed && ks.repeatInterval > 0 {
 		ks.repeating = true
-		now := time.Now()
-		if now.After(ks.repeatStart) {
-			deltaT := now.Sub(ks.repeatStart)
-			event.Repeat = int(deltaT / max(10*time.Millisecond, ks.repeatInterval))
-			remain := deltaT % ks.repeatInterval
-			ks.repeatStart = now.Add(-remain)
+		if time.Now().After(ks.repeatStart) {
+			deltaT := time.Since(ks.repeatTime).Truncate(ks.repeatInterval)
+			event.Repeat = int(deltaT / ks.repeatInterval)
+			if ks.repeatTime == ks.repeatStart {
+				// fence post - count the first one!
+				event.Repeat++
+			}
+			ks.repeatTime = ks.repeatTime.Add(deltaT)
 			// if we polled before the repeat interval then report nothing
 			if event.Repeat == 0 {
 				return nil
@@ -193,9 +219,14 @@ func (ks *KeyboardState) Released(k Key) *KeyEvent {
 		Base: k.KittyBase(),
 		Mod:  ks.mod,
 	}
-	ks.clearRepeat()
+	if ks.lastKey == k {
+		ks.clearRepeat()
+	}
 	wasPressed := ks.pressed[k]
 	delete(ks.pressed, k)
+
+	l := ks.layout
+	event.VK = l.Virtual[k]
 
 	if mod, ok := ks.layout.Modifiers[k]; ok {
 		if !wasPressed {
@@ -204,19 +235,14 @@ func (ks *KeyboardState) Released(k Key) *KeyEvent {
 		}
 		ks.mod &^= mod
 
-		// Re-apply modifiers still held down (preserves locking bits already in ks.mod).
-		// For example, if both shift buttons are held down, but only one of them is released.
-		// Enumerating the pressed map should be *fast* as there should not be many of them.
-		for key, down := range ks.pressed {
-			if down {
-				if m, ok := ks.layout.Modifiers[key]; ok {
-					ks.mod |= m
-				}
-			}
-		}
-
 		event.Mod = ks.mod
 		return event
+	}
+
+	if _, ok := ks.layout.Locking[k]; !ok {
+		if r := l.KeyToUTF(k, ks.mod); r != 0 {
+			event.Utf = string(r)
+		}
 	}
 
 	// no real point in looking up UTF for key release, so we don't
@@ -276,14 +302,8 @@ type Layout struct {
 
 func (km *Layout) KeyToUTF(k Key, m Modifier) rune {
 	for _, mm := range km.Maps {
-		if mm.Invert {
-			if m&mm.Mask == mm.Mod {
-				continue
-			}
-		} else {
-			if m&mm.Mask != mm.Mod {
-				continue
-			}
+		if mm.When != nil && !mm.When(m) {
+			continue
 		}
 		if u, ok := mm.Map[k]; ok {
 			return u
@@ -521,8 +541,7 @@ var KeyboardANSI = &Layout{
 	Maps: []ModifierMap{
 		// Specials - without control
 		{
-			Mask: ModCtrl,
-			Mod:  ModNone,
+			When: func(m Modifier) bool { return !m.IsCtrl() },
 			Map: map[Key]rune{
 				KeyTab:       '\t',
 				KeyEnter:     '\r',
@@ -534,8 +553,7 @@ var KeyboardANSI = &Layout{
 		},
 		// Specials - with control (but without shift)
 		{
-			Mask: ModCtrl | ModShift,
-			Mod:  ModCtrl,
+			When: func(m Modifier) bool { return m.IsCtrl() && !m.IsShift() },
 			Map: map[Key]rune{
 				KeyTab:       '\t',
 				KeyEnter:     '\n',
@@ -547,26 +565,22 @@ var KeyboardANSI = &Layout{
 		},
 		// Key pad operators
 		{
-			Mod:  ModNone,
-			Mask: ModAlt,
+			When: func(m Modifier) bool { return !m.IsAlt() },
 			Map:  KeysPadOps,
 		},
 		// Numeric keypad when num lock is engaged
 		{
-			Mask: ModNumLock,
-			Mod:  ModNumLock,
+			When: func(m Modifier) bool { return m.IsNumLock() },
 			Map:  KeysPadDigits,
 		},
 		// Numbers - without shift
 		{
-			Mask: ModShift | ModCtrl,
-			Mod:  ModNone,
+			When: func(m Modifier) bool { return !m.IsShift() && !m.IsCtrl() },
 			Map:  KeysDigits,
 		},
 		// Numbers - with shift - this is locale sensitive usually
 		{
-			Mask: ModShift | ModCtrl,
-			Mod:  ModShift,
+			When: func(m Modifier) bool { return m.IsShift() && !m.IsCtrl() },
 			Map: map[Key]rune{
 				Key1: '!',
 				Key2: '@',
@@ -582,42 +596,26 @@ var KeyboardANSI = &Layout{
 		},
 		// Special shift-control cases
 		{
-			Mask: ModCtrl | ModShift,
-			Mod:  ModCtrl | ModShift,
+			When: func(m Modifier) bool { return m.IsCtrl() && m.IsShift() },
 			Map: map[Key]rune{
 				Key2:     0,
 				Key6:     '\x1e',
 				KeyMinus: '\x1f',
 			},
 		},
-		// Letters - base
+		// Letters - base (lower case)
 		{
-			Mask: ModShift | ModCtrl | ModCapsLock,
-			Mod:  ModNone,
+			When: func(m Modifier) bool { return !m.IsCtrl() && !m.IsCapitals() },
 			Map:  KeysUsLower,
 		},
-		// Letters - shift (capitals)
+		// Letters - capitals (either caps lock or shift, but not both)
 		{
-			Mask: ModShift | ModCtrl | ModCapsLock,
-			Mod:  ModShift,
+			When: func(m Modifier) bool { return !m.IsCtrl() && m.IsCapitals() },
 			Map:  KeysUsUpper,
-		},
-		// Letters - caps lock
-		{
-			Mask: ModShift | ModCtrl | ModCapsLock,
-			Mod:  ModCapsLock,
-			Map:  KeysUsUpper,
-		},
-		// Letters - caps lock + shift (i.e. lower)
-		{
-			Mask: ModShift | ModCtrl | ModCapsLock,
-			Mod:  ModCapsLock | ModShift,
-			Map:  KeysUsLower,
 		},
 		// OEM keys - base
 		{
-			Mask: ModShift | ModCtrl,
-			Mod:  ModNone,
+			When: func(m Modifier) bool { return !m.IsShift() && !m.IsCtrl() },
 			Map: map[Key]rune{
 				KeySemi:         ';',
 				KeyEqual:        '=',
@@ -635,8 +633,7 @@ var KeyboardANSI = &Layout{
 		},
 		// OEM keys - shift
 		{
-			Mask: ModShift | ModCtrl,
-			Mod:  ModShift,
+			When: func(m Modifier) bool { return m.IsShift() && !m.IsCtrl() },
 			Map: map[Key]rune{
 				KeySemi:         ':',
 				KeyEqual:        '+',
@@ -654,8 +651,7 @@ var KeyboardANSI = &Layout{
 		},
 		// OEM keys - control (odd balls)
 		{
-			Mask: ModShift | ModCtrl,
-			Mod:  ModCtrl,
+			When: func(m Modifier) bool { return m.IsCtrl() && !m.IsShift() },
 			Map: map[Key]rune{
 				KeyLBrace:       '\x1b',
 				KeyBackslash:    '\x1c',
@@ -665,16 +661,16 @@ var KeyboardANSI = &Layout{
 		},
 	},
 	Modifiers: map[Key]Modifier{
-		KeyLShift: ModShift,
-		KeyRShift: ModShift,
-		KeyLCtrl:  ModCtrl,
-		KeyRCtrl:  ModCtrl,
-		KeyLAlt:   ModAlt,
-		KeyRAlt:   ModAlt,
-		KeyRMeta:  ModMeta,
-		KeyLMeta:  ModMeta,
-		KeyRHyper: ModHyper,
-		KeyLHyper: ModHyper,
+		KeyLShift: ModLShift,
+		KeyRShift: ModRShift,
+		KeyLCtrl:  ModLCtrl,
+		KeyRCtrl:  ModRCtrl,
+		KeyLAlt:   ModLAlt,
+		KeyRAlt:   ModRAlt,
+		KeyRMeta:  ModRMeta,
+		KeyLMeta:  ModLMeta,
+		KeyRHyper: ModRHyper,
+		KeyLHyper: ModLHyper,
 	},
 	Locking: map[Key]Modifier{
 		KeyNumLock:  ModNumLock,

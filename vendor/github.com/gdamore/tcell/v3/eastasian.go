@@ -1,4 +1,4 @@
-// Copyright 2025 The TCell Authors
+// Copyright 2026 The TCell Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,16 +15,7 @@
 package tcell
 
 import (
-	"os"
-	"strings"
-
-	"github.com/rivo/uniseg"
+	"github.com/gdamore/tcell/v3/internal/widthutil"
 )
 
-func init() {
-	if rw := strings.ToLower(os.Getenv("RUNEWIDTH_EASTASIAN")); rw == "1" || rw == "true" || rw == "yes" {
-		uniseg.EastAsianAmbiguousWidth = 2
-	} else {
-		uniseg.EastAsianAmbiguousWidth = 1
-	}
-}
+var textWidthOptions = widthutil.Options()

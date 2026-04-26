@@ -146,6 +146,7 @@ var csiAllKeys = map[csiParamMode]keyMap{
 	{M: 'B'}:         {Key: KeyDown},
 	{M: 'C'}:         {Key: KeyRight},
 	{M: 'D'}:         {Key: KeyLeft},
+	{M: 'E'}:         {Key: KeyClear},
 	{M: 'F'}:         {Key: KeyEnd},
 	{M: 'H'}:         {Key: KeyHome},
 	{M: 'L'}:         {Key: KeyInsert},
@@ -414,6 +415,7 @@ var ss3Keys = map[rune]Key{
 	'B': KeyDown,
 	'C': KeyRight,
 	'D': KeyLeft,
+	'E': KeyClear,
 	'F': KeyEnd,
 	'H': KeyHome,
 	'P': KeyF1,
@@ -544,7 +546,12 @@ func (ip *inputParser) scan() {
 			// the terminal to the host (queries in the other direction can use it.)
 			// However, this is only true if the first parameter does not have a "?",
 			// because it *does* collide with DEC private mode queries otherwise.
-			if r >= 0x30 && r <= 0x3F { // parameter bytes
+			if r == '\x1b' {
+				// Per ECMA-48 §5.3.1, ESC restarts the escape
+				// sequence machine from any intermediate state.
+				ip.state = istEsc
+				ip.escChar = 0
+			} else if r >= 0x30 && r <= 0x3F { // parameter bytes
 				ip.csiParams = append(ip.csiParams, byte(r))
 			} else if r == '$' && len(ip.csiParams) > 0 && ip.csiParams[0] != '?' { // rxvt non-standard
 				ip.handleCsi(r, ip.csiParams, ip.csiInterm)
@@ -563,7 +570,12 @@ func (ip *inputParser) scan() {
 		case istSs3: // typically application mode keys or older terminals
 			ip.state = istInit
 			// some SS3 sequences (old VTE) encode modifiers here just like CSI
-			if r >= 0x30 && r <= 0x3F {
+			if r == '\x1b' {
+				// Per ECMA-48 §5.3.1, ESC restarts the escape
+				// sequence machine from any intermediate state.
+				ip.state = istEsc
+				ip.escChar = 0
+			} else if r >= 0x30 && r <= 0x3F {
 				ip.csiParams = append(ip.csiParams, byte(r))
 				ip.state = istSs3
 			} else if k, ok := ss3Keys[r]; ok {
@@ -767,6 +779,13 @@ func (ip *inputParser) handleMouse(mode rune, params []int) {
 		}
 
 	case 'M':
+		if btn&0x20 != 0 && button != ButtonNone && (ip.btnsDown&button) == 0 {
+			// Ghostty may send out motion signals that indicate a button has
+			// been pressed, even when the button is not actually pressed.
+			// Do not create a synthetic button-down state from these packets.
+			button = ip.btnsDown
+			break
+		}
 		// record this press
 		ip.btnsDown |= button
 		// and use the full set so can see chords
@@ -931,6 +950,27 @@ func (ip *inputParser) handlePrivateModeResponse(params []int) {
 	}
 }
 
+func (ip *inputParser) handleKittyMode(params []int) {
+	if len(params) == 1 && params[0] >= 0 && params[0] < 32 {
+		ev := &eventKittyKbdMode{
+			Mode: KittyKbdMode(params[0] & 0xffff),
+		}
+		ip.post(ev)
+	}
+}
+
+func (ip *inputParser) handleXTermMode(params []int) {
+	if len(params) >= 1 && params[0] == 4 {
+		if len(params) == 1 {
+			params = append(params, 0)
+		}
+		ev := &eventXTermKbdMode{
+			Mode: XtermKbdMode(params[1] & 0x3),
+		}
+		ip.post(ev)
+	}
+}
+
 func (ip *inputParser) handleCsi(mode rune, params []byte, intermediate []byte) {
 
 	// reset state
@@ -940,6 +980,7 @@ func (ip *inputParser) handleCsi(mode rune, params []byte, intermediate []byte) 
 	var P []int
 	hasLT := false
 	hasQM := false
+	hasGT := false
 	pstr := string(params)
 	// extract numeric parameters
 	if strings.HasPrefix(pstr, "<") {
@@ -947,6 +988,9 @@ func (ip *inputParser) handleCsi(mode rune, params []byte, intermediate []byte) 
 		pstr = pstr[1:]
 	} else if strings.HasPrefix(pstr, "?") {
 		hasQM = true
+		pstr = pstr[1:]
+	} else if strings.HasPrefix(pstr, ">") {
+		hasGT = true
 		pstr = pstr[1:]
 	}
 
@@ -983,6 +1027,19 @@ func (ip *inputParser) handleCsi(mode rune, params []byte, intermediate []byte) 
 		case 'y':
 			if string(intermediate) == "$" {
 				ip.handlePrivateModeResponse(P)
+			}
+		case 'u':
+			if len(intermediate) == 0 {
+				ip.handleKittyMode(P)
+			}
+		}
+		return
+	}
+	if hasGT {
+		switch mode {
+		case 'm':
+			if len(intermediate) == 0 {
+				ip.handleXTermMode(P)
 			}
 		}
 		return
@@ -1139,7 +1196,7 @@ type eventPrimaryAttributes struct {
 	Greek         bool // Greek (DA 23)
 	Turkish       bool // Turkish (DA 24)
 	Latin2        bool // ISO Latin-2 (DA 42)
-	Clipboard     bool // OSC-52 support (DA 52)
+	Clipboard     bool // OSC 52 support (DA 52)
 }
 
 // eventTermName is for extended attributes
@@ -1151,6 +1208,36 @@ type eventTermName struct {
 
 type eventPrivateMode struct {
 	EventTime
-	Mode   vt.PrivateMode // numeric mode e.g. 7 for automargin, 1006 for SGR mouse reports, etc
+	Mode   vt.PrivateMode // numeric mode e.g. 7 for auto-margin, 1006 for SGR mouse reports, etc
 	Status vt.ModeStatus  // value of status
+}
+
+type KittyKbdMode uint16
+
+const (
+	KittyKbdModeOff       = KittyKbdMode(0)  // Disable Kitty keyboard mode
+	KittyKbdModeBase      = KittyKbdMode(1)  // Enable disambiguated keys
+	KittyKbdModeEvents    = KittyKbdMode(2)  // Report event types (e.g. key release)
+	KittyKbdModeAlternate = KittyKbdMode(4)  // Report alternate keys
+	KittyKbdModeAll       = KittyKbdMode(8)  // Report all keys using kitty keyboard protocol
+	KittyKbdModeText      = KittyKbdMode(16) // Report associated text
+)
+
+type eventKittyKbdMode struct {
+	EventTime
+	Mode KittyKbdMode
+}
+
+type XtermKbdMode uint16
+
+const (
+	XtermKbdModeOff  = XtermKbdMode(0) // Disabled
+	XtermKbdModeBase = XtermKbdMode(1) // Enabled except for ones with legacy behavior
+	XtermKbdModeExt  = XtermKbdMode(2) // Enabled for all modified keys
+	XtermKbdModeAll  = XtermKbdMode(3) // Send all keys (including unmodified)
+)
+
+type eventXTermKbdMode struct {
+	EventTime
+	Mode XtermKbdMode
 }

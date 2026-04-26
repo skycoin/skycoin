@@ -1,4 +1,4 @@
-// Copyright 2025 The TCell Authors
+// Copyright 2026 The TCell Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ package tcell
 
 import (
 	"strings"
+	"unicode/utf8"
 
 	"github.com/gdamore/tcell/v3/color"
 )
@@ -40,6 +41,31 @@ type Style struct {
 type urlInfo struct {
 	url string
 	id  string
+}
+
+func stripOSCControls(s string) string {
+	var b strings.Builder
+	b.Grow(len(s))
+	for i := 0; i < len(s); {
+		r, size := utf8.DecodeRuneInString(s[i:])
+		if r == utf8.RuneError && size == 1 {
+			c := s[i]
+			if c <= 0x1f || c == 0x7f || (c >= 0x80 && c <= 0x9f) {
+				i++
+				continue
+			}
+			_ = b.WriteByte(c)
+			i++
+			continue
+		}
+		if r <= 0x1f || r == 0x7f || (r >= 0x80 && r <= 0x9f) {
+			i += size
+			continue
+		}
+		b.WriteString(s[i : i+size])
+		i += size
+	}
+	return b.String()
 }
 
 // StyleDefault represents a default style, based upon the context.
@@ -201,7 +227,7 @@ func (s Style) GetAttributes() AttrMask {
 func (s Style) Url(url string) Style {
 
 	s2 := s
-	s2.url = &urlInfo{url: url}
+	s2.url = &urlInfo{url: stripOSCControls(url)}
 	if s.url != nil {
 		s2.url.id = s.url.id
 	}
@@ -215,7 +241,7 @@ func (s Style) Url(url string) Style {
 func (s Style) UrlId(id string) Style {
 	s2 := s
 	s2.url = &urlInfo{
-		id: "id=" + id,
+		id: "id=" + stripOSCControls(id),
 	}
 	if s.url != nil {
 		s2.url.url = s.url.url

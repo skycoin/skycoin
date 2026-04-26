@@ -1,4 +1,4 @@
-// Package buildinfo pkg/skywire-utilities/pkg/buildinfo/buildinfo.go
+// Package buildinfo src/util/buildinfo/buildinfo.go
 package buildinfo
 
 import (
@@ -14,7 +14,7 @@ import (
 const unknown = "unknown"
 
 // Variables set via -ldflags during build
-// $ go build -mod=vendor -ldflags="-X 'github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.version=$(git describe)' -X 'github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date=$(date -u "+%Y-%m-%dT%H:%M:%SZ")' -X 'github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.commit=$(git rev-list -1 HEAD)'" .
+// $ go build -mod=vendor -ldflags="-X 'github.com/skycoin/skycoin/src/util/buildinfo.version=$(git describe)' -X 'github.com/skycoin/skycoin/src/util/buildinfo.date=$(date -u "+%Y-%m-%dT%H:%M:%SZ")' -X 'github.com/skycoin/skycoin/src/util/buildinfo.commit=$(git rev-list -1 HEAD)'" .
 var (
 	version   = unknown
 	commit    = unknown
@@ -25,9 +25,8 @@ var (
 // format hint: bi.Main.Version = v1.3.29-rc7.0.20250410212328-dc5d22b7ab2a
 var bi *debug.BuildInfo
 
-// TODO: deprecate?
-// $ go build -ldflags="-X 'github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.golist=$(go list -m -json -mod=mod github.com/skycoin/<repo>@<branch>)' -X 'github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo.date=$(date -u "+%Y-%m-%dT%H:%M:%SZ")'" .
 // ldflags-provided module info (`go list -m -json`)
+// $ go build -ldflags="-X 'github.com/skycoin/skycoin/src/util/buildinfo.golist=$(go list -m -json -mod=mod github.com/skycoin/<repo>@<branch>)' -X 'github.com/skycoin/skycoin/src/util/buildinfo.date=$(date -u "+%Y-%m-%dT%H:%M:%SZ")'" .
 var golist string
 
 // ModuleInfo represents the JSON structure returned by `go list -m -json`.
@@ -43,6 +42,11 @@ var commitRegex = regexp.MustCompile(`[a-f0-9]{12,}$`) // <-- match commit from 
 var dateRegex = regexp.MustCompile(`\d{14}`)           // <-- match date anywhere
 
 func init() {
+	// Always read build info — needed for DepVersion even when version
+	// is provided via ldflags.
+	var ok bool
+	bi, ok = debug.ReadBuildInfo()
+
 	// Use ldflags-provided `golist` info if available
 	if golist != "" {
 		var mInfo ModuleInfo
@@ -58,8 +62,6 @@ func init() {
 
 	// If version is still unknown, try reading from runtime build info
 	if version == unknown || version == "" {
-		var ok bool
-		bi, ok = debug.ReadBuildInfo()
 		if ok {
 			if bi.Main.Version != "" {
 				parseVersionInfo(bi.Main.Version)

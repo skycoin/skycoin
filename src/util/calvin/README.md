@@ -18,7 +18,7 @@ library usage example
 package main
 
 import (
-	"github.com/skycoin/skywire/pkg/skywire-utilities/calvin"
+	"github.com/skycoin/skycoin/src/util/calvin"
 )
 
 func main() {

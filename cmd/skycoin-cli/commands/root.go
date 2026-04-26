@@ -13,8 +13,8 @@ import (
 	"github.com/skycoin/skycoin/src/fiber"
 	"github.com/skycoin/skycoin/src/util/logging"
 
-	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/calvin"
-	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/flags"
+	"github.com/skycoin/skycoin/src/util/calvin"
+	"github.com/skycoin/skycoin/src/util/flags"
 	"github.com/spf13/cobra"
 
 	// register the supported wallets

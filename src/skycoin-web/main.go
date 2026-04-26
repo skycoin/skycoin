@@ -5,7 +5,7 @@ skycoin-web thin client
 package main
 
 import (
-	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/flags"
+	"github.com/skycoin/skycoin/src/util/flags"
 
 	"github.com/skycoin/skycoin/cmd/skycoin-web/commands"
 )

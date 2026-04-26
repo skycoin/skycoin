@@ -501,7 +501,7 @@ type Parser struct {
 	pos Pos // position of tok
 
 	quote   quoteState // current lexer state
-	eqlOffs int        // position of '=' in [Parser.val] (a literal)
+	eqlOffs int        // position of '=' in [Parser.val] when [Parser.tok].isLit is true
 
 	keepComments bool
 	lang         LangVariant
@@ -1156,8 +1156,7 @@ func (p *Parser) getWord() *Word {
 }
 
 func (p *Parser) getLit() *Lit {
-	switch p.tok {
-	case _Lit, _LitWord, _LitRedir:
+	if p.tok.isLit() {
 		l := p.lit(p.pos, p.val)
 		p.next()
 		return l
@@ -1459,27 +1458,24 @@ func (p *Parser) paramExp() *ParamExp {
 		// Note that in Zsh, the short form like $#name is allowed too.
 		switch p.r {
 		case '#':
-			if r := p.peek(); r == utf8.RuneSelf || singleRuneParam(r) || paramNameRune(r) || r == '"' {
+			if p.paramNameStart() {
 				pe.Length = true
-				p.rune()
 			}
 		case '%':
-			if r := p.peek(); r == utf8.RuneSelf || singleRuneParam(r) || paramNameRune(r) || r == '"' {
+			if p.paramNameStart() {
 				p.checkLang(pe.Pos(), LangMirBSDKorn, "`${%%foo}`")
 				pe.Width = true
-				p.rune()
 			}
 		case '!':
-			if r := p.peek(); r == utf8.RuneSelf || singleRuneParam(r) || paramNameRune(r) || r == '"' {
+			// Unlike the others, zsh has no $!foo prefix.
+			if !pe.Short && p.paramNameStart() {
 				p.checkLang(pe.Pos(), langBashLike|LangMirBSDKorn, "`${!foo}`")
 				pe.Excl = true
-				p.rune()
 			}
 		case '+':
-			if r := p.peek(); r == utf8.RuneSelf || singleRuneParam(r) || paramNameRune(r) || r == '"' {
+			if p.paramNameStart() {
 				p.checkLang(pe.Pos(), LangZsh, "`${+foo}`")
 				pe.IsSet = true
-				p.rune()
 			}
 		}
 	}
@@ -1488,9 +1484,9 @@ func (p *Parser) paramExp() *ParamExp {
 		return nil // just "$"
 	}
 	// In short mode, any indexing or suffixes is not allowed, and we don't require '}'.
-	// Zsh is an exception: $foo[1] and $foo[1,3] are valid.
+	// Zsh is an exception: $foo[1] and $foo[1,3] are valid. Note that $1[x] does not qualify.
 	if pe.Short {
-		if p.lang.in(LangZsh) && p.r == '[' {
+		if p.lang.in(LangZsh) && p.r == '[' && (len(p.val) != 1 || !positionalRuneParam(p.val[0])) {
 			p.pos = p.nextPos()
 			p.rune()
 			pe.Index = p.eitherIndex()
@@ -1503,7 +1499,9 @@ func (p *Parser) paramExp() *ParamExp {
 	// like ${foo[@]//replace/with}.
 	if p.r == '[' {
 		p.checkLang(p.nextPos(), langBashLike|LangMirBSDKorn|LangZsh, "arrays")
-		if pe.Param != nil && !ValidName(pe.Param.Value) {
+		// In zsh some of these like ${@[-1]} or ${*[1,3]} work,
+		// so we don't do this sort of check at all.
+		if !p.lang.in(LangZsh) && pe.Param != nil && !ValidName(pe.Param.Value) {
 			p.posErr(p.nextPos(), "cannot index a special parameter name")
 		}
 		p.pos = p.nextPos()
@@ -1616,6 +1614,15 @@ func (p *Parser) paramExp() *ParamExp {
 	return pe
 }
 
+func (p *Parser) paramNameStart() bool {
+	r := p.peek()
+	if r == utf8.RuneSelf || singleRuneParam(r) || paramNameRune(r) || r == '"' {
+		p.rune()
+		return true
+	}
+	return false
+}
+
 func (p *Parser) nestedParameterStart(pe *ParamExp) (left token, quotePos Pos) {
 	if pe.Short {
 		return illegalTok, Pos{}
@@ -1715,6 +1722,10 @@ func (p *Parser) paramExpParameter(pe *ParamExp) *ParamExp {
 				if pe.Short {
 					return nil // just "$"
 				}
+				if p.lang.in(LangZsh) && p.val == "" {
+					// Zsh allows omitting the parameter name, e.g. ${:-word}.
+					return pe
+				}
 				p.posErr(pos, "invalid parameter name")
 			}
 		}
@@ -1732,9 +1743,7 @@ func (p *Parser) paramExpExp() *Expansion {
 	p.quote = paramExpExp
 	p.next()
 	if op == OtherParamOps {
-		switch p.tok {
-		case _Lit, _LitWord:
-		default:
+		if !p.tok.isLit() {
 			p.curErr("@ expansion operator requires a literal")
 		}
 		switch p.val {
@@ -1834,7 +1843,7 @@ func numberLiteral[T string | []byte](val T) bool {
 }
 
 func (p *Parser) hasValidIdent() bool {
-	if p.tok != _Lit && p.tok != _LitWord {
+	if !p.tok.isLit() {
 		return false
 	}
 	if end := p.eqlOffs; end > 0 {
@@ -2681,7 +2690,7 @@ func (p *Parser) declClause(s *Stmt) {
 	for !p.stopToken() && !p.peekRedir() {
 		if p.hasValidIdent() {
 			ds.Args = append(ds.Args, p.getAssign(false))
-		} else if p.eqlOffs > 0 && !strings.Contains(p.val[:p.eqlOffs], "{") {
+		} else if p.tok.isLit() && p.eqlOffs > 0 && !strings.Contains(p.val[:p.eqlOffs], "{") {
 			p.curErr("invalid var name")
 		} else if p.tok == _LitWord && ValidName(p.val) {
 			ds.Args = append(ds.Args, &Assign{

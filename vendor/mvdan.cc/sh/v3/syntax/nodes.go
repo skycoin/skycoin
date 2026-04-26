@@ -621,13 +621,16 @@ type ParamExp struct {
 	Width  bool // mksh's ${%a}
 	IsSet  bool // ${+a} with [LangZsh]
 
-	// Only one of these is set at a time.
+	// Only one of these is set at a time,
+	// or neither with [LangZsh] when the name is omitted.
 	// TODO(v4): consider joining Param and NestedParam into a single field,
 	// even if that would be mildly annoying to non-Zsh users.
 	Param *Lit
 	// A nested parameter expression in the form of [*ParamExp] or [*CmdSubst],
 	// or either of those in a [*DblQuoted]. Only possible with [LangZsh].
 	NestedParam WordPart
+
+	// TODO(v4): rename Index to Subscript, which better matches bash and zsh terminology
 
 	Index ArithmExpr // ${a[i]}, ${a["k"]}, or a ${a[i,j]} slice with [LangZsh]
 
@@ -645,7 +648,7 @@ type ParamExp struct {
 // simple returns true if the parameter expansion is of the form $name or ${name},
 // only expanding a name without any further logic.
 func (p *ParamExp) simple() bool {
-	return p.Flags == nil &&
+	return p.Param != nil && p.Flags == nil &&
 		!p.Excl && !p.Length && !p.Width && !p.IsSet &&
 		p.NestedParam == nil && p.Index == nil &&
 		len(p.Modifiers) == 0 && p.Slice == nil &&

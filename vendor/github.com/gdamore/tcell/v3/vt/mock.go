@@ -131,6 +131,12 @@ func (mt *mockTerm) KeyTap(keys ...Key) {
 	}
 }
 
+// SetRepeat sets the repeat interval for the keyboard.
+// Set the interval to zero to disable repeat.
+func (mt *mockTerm) SetRepeat(delay, interval time.Duration) {
+	mt.ks.SetRepeat(delay, interval)
+}
+
 // MouseEvent implements MockTerm.MouseEvent.
 func (mt *mockTerm) MouseEvent(ev MouseEvent) {
 	mt.em.MouseEvent(ev)
@@ -189,11 +195,16 @@ type MockTerm interface {
 	// the layout and keyboard state processor.
 	KeyEvent(KeyEvent)
 
-	// Inject a key press
+	// Inject a key press.
 	KeyPress(Key)
 
-	// Inject a key release
+	// Inject a key release.
 	KeyRelease(Key)
+
+	// SetRepeat configures keyboard repeating. Repeat keystrokes
+	// will be assumed after the key has been held for at least delay,
+	// with new keys added each interval.
+	SetRepeat(delay, interval time.Duration)
 
 	// Inject one or more key press and releases.
 	// The keys are pressed in the order, and released in reverse order.
@@ -275,6 +286,9 @@ type MockBackend interface {
 
 	// GetClipboard returns the clipboard (copy buffer).
 	GetClipboard() []byte
+
+	// IsAdvancedKeyboard returns true, as we always support the full keyboard protocol.
+	IsAdvancedKeyboard() bool
 }
 
 // mockBackend is a mock of a backend device for use with the emulator.
@@ -299,8 +313,19 @@ type mockBackend struct {
 	lock         sync.Mutex
 }
 
-func (mb *mockBackend) GetSize() Coord          { mb.checkSize(); return mb.size }
-func (mb *mockBackend) Beep()                   { mb.bells++ }
+func (mb *mockBackend) GetSize() Coord {
+	mb.lock.Lock()
+	defer mb.lock.Unlock()
+	mb.checkSize()
+	return mb.size
+}
+
+func (mb *mockBackend) Beep() {
+	mb.lock.Lock()
+	mb.bells++
+	mb.lock.Unlock()
+}
+
 func (mb *mockBackend) SetMouse(MouseReporting) {}
 
 func (mb *mockBackend) GetPrivateMode(pm PrivateMode) ModeStatus {
@@ -464,6 +489,7 @@ func (mb *mockBackend) checkSize() {
 	mb.size = size
 	mb.pos.X = min(mb.pos.X, size.X-1)
 	mb.pos.Y = min(mb.pos.Y, size.Y-1)
+	mb.resized = false
 }
 
 func (mb *mockBackend) RaiseResize() {
@@ -569,23 +595,35 @@ func (mb *mockBackend) Buffering(bool) {}
 
 // SetCursor is used to set how the cursor is displayed.
 func (mb *mockBackend) SetCursor(cs CursorStyle) {
+	mb.lock.Lock()
+	defer mb.lock.Unlock()
 	mb.cursor = cs
 }
 
 // GetCursor returns the current cursor style.
 func (mb *mockBackend) GetCursor() CursorStyle {
+	mb.lock.Lock()
+	defer mb.lock.Unlock()
 	return mb.cursor
 }
 
 // SetClipboard sets the current clipboard contents.
 func (mb *mockBackend) SetClipboard(data []byte) {
+	mb.lock.Lock()
+	defer mb.lock.Unlock()
 	mb.clipboard = data
 }
 
 // GetClipboard gets the current clipboard contents.
 func (mb *mockBackend) GetClipboard() []byte {
+	mb.lock.Lock()
+	defer mb.lock.Unlock()
 	return mb.clipboard
 }
+
+// IsAdvancedKeyboard returns true - we always implement
+// the raw keyboard protocol.
+func (mb *mockBackend) IsAdvancedKeyboard() bool { return true }
 
 // MockOpt is an interface by which options can change the behavior of the mocked terminal.
 // This is intended to permit easier testing.

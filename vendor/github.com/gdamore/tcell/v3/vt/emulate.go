@@ -24,9 +24,11 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"unicode"
+	"unicode/utf8"
 
+	"github.com/clipperhouse/uax29/v2/graphemes"
 	"github.com/gdamore/tcell/v3/color"
-	"github.com/rivo/uniseg"
 )
 
 // Emulator is a terminal emulator API. It implements the state machinery
@@ -105,6 +107,87 @@ type styleStruct struct {
 
 var BaseStyle = &styleStruct{}
 
+var asciiRuneStrings = func() [utf8.RuneSelf]string {
+	var table [utf8.RuneSelf]string
+	for i := 0; i < utf8.RuneSelf; i++ {
+		table[i] = string(rune(i))
+	}
+	return table
+}()
+
+const (
+	runeStringCacheSize      = 32
+	clusterStringCacheSize   = 32
+	clusterStringCacheMaxLen = 128
+)
+
+type runeStringCache struct {
+	entries [runeStringCacheSize]runeStringCacheEntry
+	n       int
+}
+
+type runeStringCacheEntry struct {
+	r rune
+	s string
+}
+
+func (c *runeStringCache) stringFor(r rune) string {
+	for i := 0; i < c.n; i++ {
+		if c.entries[i].r == r {
+			return c.entries[i].s
+		}
+	}
+
+	s := string(r)
+	n := c.n
+	if n < len(c.entries) {
+		n++
+	}
+	copy(c.entries[1:n], c.entries[:n-1])
+	c.entries[0] = runeStringCacheEntry{r: r, s: s}
+	c.n = n
+	return s
+}
+
+type clusterStringCache struct {
+	entries [clusterStringCacheSize]clusterStringCacheEntry
+	n       int
+}
+
+type clusterStringCacheEntry struct {
+	n int
+	b [clusterStringCacheMaxLen]byte
+	s string
+}
+
+func (c *clusterStringCache) stringFor(cluster []byte) string {
+	if len(cluster) == 0 {
+		return ""
+	}
+	if len(cluster) > clusterStringCacheMaxLen {
+		return string(cluster)
+	}
+	for i := 0; i < c.n; i++ {
+		e := &c.entries[i]
+		if e.n == len(cluster) && bytes.Equal(e.b[:e.n], cluster) {
+			return e.s
+		}
+	}
+
+	s := string(cluster)
+	n := c.n
+	if n < len(c.entries) {
+		n++
+	}
+	copy(c.entries[1:n], c.entries[:n-1])
+	e := &c.entries[0]
+	e.n = len(cluster)
+	copy(e.b[:], cluster)
+	e.s = s
+	c.n = n
+	return s
+}
+
 func (ss *styleStruct) Fg() color.Color              { return ss.fg }
 func (ss *styleStruct) Bg() color.Color              { return ss.bg }
 func (ss *styleStruct) Uc() color.Color              { return ss.uc }
@@ -157,6 +240,7 @@ func NewEmulator(be Backend) Emulator {
 		localModes: map[PrivateMode]ModeStatus{
 			PmAppCursor:       ModeOff,
 			PmAutoMargin:      ModeOn,
+			PmAutoRepeat:      ModeOn,
 			PmVT52:            ModeOnLocked, // we never support VT52 mode (note ON means ANSI mode)
 			PmLeftRightMargin: ModeOff,
 			PmShowCursor:      ModeOn,
@@ -179,12 +263,17 @@ func NewEmulator(be Backend) Emulator {
 		em.localModes[PmFocusReports] = ModeOff
 	}
 
+	if ak, ok := be.(AdvancedKeyboard); ok && ak.IsAdvancedKeyboard() {
+		em.localModes[PmWin32Input] = ModeOff
+	}
+
 	em.size = em.be.GetSize()
 	em.topMargin = 0
 	em.botMargin = em.size.Y - 1
 	em.ltMargin = 0
 	em.rtMargin = em.size.X - 1
 	em.cells = make([]Cell, int(em.size.X)*int(em.size.Y))
+	em.graphemeIter = *graphemes.FromBytes(nil)
 	close(stopQ)
 	em.inb = em.inbInit
 	em.cursor = BlinkingBlock
@@ -196,35 +285,39 @@ func NewEmulator(be Backend) Emulator {
 // a Backend.  It implements the common escape sequence handling and high
 // level functionality that a real terminal emulator, or a mock, would need.
 type emulator struct {
-	stopQ        chan bool
-	writeQ       chan any // queues data from application to emulator
-	readQ        chan any // queues data from emulator to application
-	be           Backend
-	inBuf        *bytes.Buffer // buffer queued for input
-	inb          func(byte)    // input byte function (faster than state switch)
-	style        Style
-	defaultStyle Style
-	utfLen       int
-	pos          Coord
-	buffering    uint           // reference count - number of (re-entrant) buffering calls
-	autoWrap     bool           // next character will wrap (auto margin, deferred until char emitted)
-	sevenOnly    bool           // only allow 7-bit escapes (needed for KOI8, ShiftJIS, etc.)
-	appKeyPad    bool           // use application key pad keys?
-	name         string         // name of this emulator (used for extended attributes)
-	vers         string         // version string of this emulator (used for extended attributes)
-	savedPos     Coord          // saved via DECSC
-	saved        savedCursor    // data saved by save cursor (DECSC)
-	sendLock     sync.Mutex     // ensures that send data cannot be intermixed
-	tabStops     []Col          // tab stops, ordered. if nil every 8th position is used
-	lastIndex    int            // index of last cell written + 1 (for grapheme clustering) (zero means none)
-	cells        []Cell         // content of cells, we have to maintain our own copy (backend might or might not)
-	mouseReports MouseReporting // whether we have enabled mouse reports
-	size         Coord          // physical window size
-	topMargin    Row            // top margin, scrollable region includes this row
-	botMargin    Row            // bottom margin, scrollable region includes this row
-	ltMargin     Col            // left margin, scrollable region to the right
-	rtMargin     Col            // right margin, scrollable region to the left
-	cursor       CursorStyle    // current cursor style (visibility, blink, shape)
+	stopQ          chan bool
+	writeQ         chan any // queues data from application to emulator
+	readQ          chan any // queues data from emulator to application
+	be             Backend
+	inBuf          *bytes.Buffer // buffer queued for input
+	inb            func(byte)    // input byte function (faster than state switch)
+	style          Style
+	defaultStyle   Style
+	utfLen         int
+	pos            Coord
+	buffering      uint         // reference count - number of (re-entrant) buffering calls
+	autoWrap       bool         // next character will wrap (auto margin, deferred until char emitted)
+	sevenOnly      bool         // only allow 7-bit escapes (needed for KOI8, ShiftJIS, etc.)
+	appKeyPad      bool         // use application key pad keys?
+	name           string       // name of this emulator (used for extended attributes)
+	vers           string       // version string of this emulator (used for extended attributes)
+	saved          savedCursor  // data saved by save cursor (DECSC)
+	sendLock       sync.Mutex   // ensures that send data cannot be intermixed
+	modeLock       sync.RWMutex // protects localModes/ansiModes and related derived state
+	tabStops       []Col        // tab stops, ordered. if nil every 8th position is used
+	lastIndex      int          // index of last cell written + 1 (for grapheme clustering) (zero means none)
+	graphemeBuf    []byte       // scratch buffer for grapheme clustering checks
+	graphemeIter   graphemes.Iterator[[]byte]
+	runeStrings    runeStringCache
+	clusterStrings clusterStringCache
+	cells          []Cell         // content of cells, we have to maintain our own copy (backend might or might not)
+	mouseReports   MouseReporting // whether we have enabled mouse reports
+	size           Coord          // physical window size
+	topMargin      Row            // top margin, scrollable region includes this row
+	botMargin      Row            // bottom margin, scrollable region includes this row
+	ltMargin       Col            // left margin, scrollable region to the right
+	rtMargin       Col            // right margin, scrollable region to the left
+	cursor         CursorStyle    // current cursor style (visibility, blink, shape)
 
 	localModes map[PrivateMode]ModeStatus // some modes we handle locally
 	ansiModes  map[AnsiMode]ModeStatus    // some modes we handle locally
@@ -906,6 +999,28 @@ func (em *emulator) processScrollDown(str string) {
 	}
 }
 
+// processWindowOps handles CSI ... t window operations.
+func (em *emulator) processWindowOps(str string) {
+	if pi, err := numericParams(str, 3); err == nil {
+		switch pi[0] {
+		case 8: // Resize window: CSI 8 ; rows ; cols t
+			rows := pi[1]
+			cols := pi[2]
+			if rows < 1 || cols < 1 {
+				return
+			}
+			size := Coord{X: Col(cols), Y: Row(rows)}
+			if ws, ok := em.be.(interface{ SetSize(Coord) }); ok {
+				ws.SetSize(size)
+				em.applyResize(size)
+			}
+
+		case 18: // Report text area size: CSI 8 ; rows ; cols t
+			em.SendRaw(fmt.Appendf(nil, "\x1b[8;%d;%dt", em.size.Y, em.size.X))
+		}
+	}
+}
+
 // processVerticalMargins implements DECSTBM (set top and bottom margins, VT220.)
 func (em *emulator) processVerticalMargins(str string) {
 	if pi, err := numericParams(str, 2); err == nil {
@@ -1361,6 +1476,8 @@ func (em *emulator) processCsi(final byte) {
 		em.processVerticalMargins(str)
 	case "s":
 		em.processHorizontalMargins(str)
+	case "t":
+		em.processWindowOps(str)
 	case " q":
 		em.processCursorStyle(str)
 	case "?W":
@@ -1766,30 +1883,60 @@ func (em *emulator) putRune(r rune) {
 	if lastIdx := em.lastIndex; lastIdx != 0 {
 		lastIdx--
 		if pm := em.getPrivateMode(PmGraphemeClusters); pm == ModeOn || pm == ModeOnLocked {
-			// maybe we need to update the last index
-			str := em.cells[lastIdx].C + string(r)
-			if cs, rest, width, _ := uniseg.FirstGraphemeClusterInString(str, -1); rest == "" {
-				// we are adding to a cluster
-				em.cells[lastIdx].C = cs
-				em.cells[lastIdx].W = width
-				col := Col(lastIdx) % dim.X
-				row := Row(lastIdx / int(dim.X))
-				// we may have to move position if this switches to wide, so recalculate expected end
-				end := (col + Col(width)) % dim.X
-				if em.getPrivateMode(PmAutoMargin) == ModeOn && end >= dim.X {
-					em.autoWrap = true
+			// ASCII-to-ASCII pairs cannot extend a grapheme cluster, except CRLF.
+			prev := em.cells[lastIdx].C
+			if len(prev) == 1 && prev[0] < utf8.RuneSelf && !shouldCheckGrapheme(prev[0], r) {
+				// fall through to the normal single-rune path
+			} else {
+				// maybe we need to update the last index
+				buf := em.graphemeBuf[:0]
+				need := len(prev) + utf8.UTFMax
+				if cap(buf) < need {
+					buf = make([]byte, 0, need)
 				}
-				if width == 2 && col < dim.X-1 && em.cells[lastIdx+1].W != 0 {
-					// erase the next cell before putting down a character
-					em.cells[lastIdx+1].C = ""
-					em.cells[lastIdx+1].S = em.cells[lastIdx].S
-					em.cells[lastIdx+1].W = 0
-					em.be.Put(Coord{X: col + 1, Y: row}, em.cells[lastIdx+1])
+				buf = append(buf, prev...)
+				buf = utf8.AppendRune(buf, r)
+				em.graphemeIter.SetText(buf)
+				if em.graphemeIter.Next() && len(em.graphemeIter.Value()) == len(buf) {
+					// we are adding to a cluster
+					cluster := em.graphemeIter.Value()
+					width := em.cells[lastIdx].W
+					if w := textWidthOptions.Rune(r); w > width {
+						width = w
+					}
+					if isRegionalIndicator(r) && width < 2 {
+						width = 2
+					}
+					if r == '\uFE0F' && width < 2 {
+						width = 2
+					}
+					em.cells[lastIdx].C = em.clusterString(cluster)
+					em.cells[lastIdx].W = width
+					col := Col(lastIdx) % dim.X
+					row := Row(lastIdx / int(dim.X))
+					// we may have to move position if this switches to wide, so recalculate expected end
+					next := col + Col(width)
+					if em.getPrivateMode(PmAutoMargin) == ModeOn && next >= dim.X {
+						em.autoWrap = true
+					}
+					end := next
+					if end >= dim.X {
+						end = dim.X - 1
+					}
+					if width == 2 && col < dim.X-1 && em.cells[lastIdx+1].W != 0 {
+						// erase the next cell before putting down a character
+						em.cells[lastIdx+1].C = ""
+						em.cells[lastIdx+1].S = em.cells[lastIdx].S
+						em.cells[lastIdx+1].W = 0
+						em.be.Put(Coord{X: col + 1, Y: row}, em.cells[lastIdx+1])
+					}
+					// we leave the em.lastIndex for now, we might keep extending this cluster
+					em.be.Put(Coord{X: col, Y: row}, em.cells[lastIdx])
+					em.setPosition(Coord{X: end, Y: row})
+					em.graphemeBuf = buf[:0]
+					return
 				}
-				// we leave the em.lastIndex for now, we might keep extending this cluster
-				em.be.Put(Coord{X: col, Y: row}, em.cells[lastIdx])
-				em.setPosition(Coord{X: end, Y: row})
-				return
+				em.graphemeBuf = buf[:0]
 			}
 		}
 	}
@@ -1801,12 +1948,12 @@ func (em *emulator) putRune(r rune) {
 	autoMargin := em.getPrivateMode(PmAutoMargin) == ModeOn
 
 	pos := em.getPosition()
-	w := uniseg.StringWidth(string(r))
+	w := textWidthOptions.Rune(r)
 	if autoMargin && pos.X+Col(w) >= dim.X {
 		em.autoWrap = true
 	}
 	index := em.index(pos)
-	em.cells[index].C = string(r)
+	em.cells[index].C = em.runeString(r)
 	em.cells[index].S = em.style
 	em.cells[index].W = w
 	em.be.Put(em.pos, em.cells[index])
@@ -1822,6 +1969,42 @@ func (em *emulator) putRune(r rune) {
 	// Note that if auto margin is enabled, we will have set
 	// autoWrap above if we were at the margin already.
 	em.moveRightN(Col(w))
+}
+
+func (em *emulator) runeString(r rune) string {
+	if r < utf8.RuneSelf {
+		return asciiRuneStrings[r]
+	}
+	return em.runeStrings.stringFor(r)
+}
+
+func (em *emulator) clusterString(cluster []byte) string {
+	return em.clusterStrings.stringFor(cluster)
+}
+
+func shouldCheckGrapheme(prev byte, r rune) bool {
+	if r < utf8.RuneSelf {
+		return prev == '\r' && r == '\n'
+	}
+
+	if unicode.Is(unicode.M, r) {
+		return true
+	}
+	if r == '\u200d' {
+		return true
+	}
+	if r >= 0xFE00 && r <= 0xFE0F {
+		return true
+	}
+	if r >= 0xE0100 && r <= 0xE01EF {
+		return true
+	}
+
+	return false
+}
+
+func isRegionalIndicator(r rune) bool {
+	return r >= 0x1F1E6 && r <= 0x1F1FF
 }
 
 // eraseCell erases a single cell at the given offset.
@@ -1921,14 +2104,15 @@ func (em *emulator) softReset() {
 	em.appKeyPad = false
 	em.be.Reset()
 	// start by resetting all modes
-	for am := range em.ansiModes {
+	for _, am := range em.ansiModeKeys() {
 		em.setAnsiMode(am, ModeOff) // NB: No effect for non-changeable modes
 	}
-	for pm := range em.localModes {
+	for _, pm := range em.privateModeKeys() {
 		em.setPrivateMode(pm, ModeOff) // NB: No effect for non-changeable modes
 	}
 	// and set any that should reset on (auto-margin)
 	em.setPrivateMode(PmAutoMargin, ModeOn)
+	em.setPrivateMode(PmAutoRepeat, ModeOn)
 	em.setPrivateMode(PmShowCursor, ModeOn)
 	em.setPrivateMode(PmBlinkCursor, ModeOn)
 	// set default cursor - matches VT defaults
@@ -1936,6 +2120,28 @@ func (em *emulator) softReset() {
 	em.be.SetCursor(em.cursor)
 	em.setPosition(Coord{0, 0})
 	em.eraseAll()
+}
+
+func (em *emulator) ansiModeKeys() []AnsiMode {
+	em.modeLock.RLock()
+	defer em.modeLock.RUnlock()
+
+	keys := make([]AnsiMode, 0, len(em.ansiModes))
+	for am := range em.ansiModes {
+		keys = append(keys, am)
+	}
+	return keys
+}
+
+func (em *emulator) privateModeKeys() []PrivateMode {
+	em.modeLock.RLock()
+	defer em.modeLock.RUnlock()
+
+	keys := make([]PrivateMode, 0, len(em.localModes))
+	for pm := range em.localModes {
+		keys = append(keys, pm)
+	}
+	return keys
 }
 
 // sendDA ends the primary device attributes.
@@ -1959,20 +2165,27 @@ func (em *emulator) setAnsiMode(mode AnsiMode, ms ModeStatus) {
 	if !ms.Changeable() {
 		return
 	}
+	em.modeLock.Lock()
+	defer em.modeLock.Unlock()
 	if old, ok := em.ansiModes[mode]; ok && old.Changeable() {
 		em.ansiModes[mode] = ms
 	}
 }
 
 func (em *emulator) getAnsiMode(mode AnsiMode) ModeStatus {
+	em.modeLock.RLock()
+	defer em.modeLock.RUnlock()
 	return em.ansiModes[mode]
 }
 
 // getPrivateMode returns the value of a DEC private mode.
 func (em *emulator) getPrivateMode(pm PrivateMode) ModeStatus {
+	em.modeLock.RLock()
 	if ms, ok := em.localModes[pm]; ok {
+		em.modeLock.RUnlock()
 		return ms
 	}
+	em.modeLock.RUnlock()
 	return em.be.GetPrivateMode(pm)
 }
 
@@ -1981,19 +2194,10 @@ func (em *emulator) updateMouseReporting() {
 	if !ok {
 		return
 	}
-	if em.localModes[PmMouseButton] == ModeOn {
-		em.mouseReports = MouseButtons
-		if em.localModes[PmMouseMotion] == ModeOn {
-			em.mouseReports = MouseMotion
-		} else if em.localModes[PmMouseDrag] == ModeOn {
-			em.mouseReports = MouseDrag
-		}
-	} else if em.localModes[PmMouseX10] == ModeOn {
-		em.mouseReports = MouseButtons
-	} else {
-		em.mouseReports = MouseDisabled
-	}
-	mi.SetMouse(em.mouseReports)
+	em.modeLock.RLock()
+	report := em.mouseReportingLocked()
+	em.modeLock.RUnlock()
+	mi.SetMouse(report)
 }
 
 // setPrivateMode sets the DEC private mode.
@@ -2001,18 +2205,30 @@ func (em *emulator) setPrivateMode(pm PrivateMode, ms ModeStatus) {
 	if !ms.Changeable() {
 		return
 	}
-	if old, ok := em.localModes[pm]; ok && old.Changeable() {
+	em.modeLock.Lock()
+	old, ok := em.localModes[pm]
+	if ok && old.Changeable() {
 		em.localModes[pm] = ms
+
+		var (
+			setMouse  bool
+			report    MouseReporting
+			setCursor bool
+			cursor    CursorStyle
+		)
+
 		switch pm {
 		case PmMouseButton, PmMouseDrag, PmMouseMotion, PmMouseSgr, PmMouseSgrPixel, PmMouseX10:
-			em.updateMouseReporting()
+			report = em.mouseReportingLocked()
+			setMouse = true
 		case PmShowCursor:
 			if ms == ModeOn {
 				em.cursor = em.cursor.Show()
 			} else {
 				em.cursor = em.cursor.Hide()
 			}
-			em.be.SetCursor(em.cursor)
+			cursor = em.cursor
+			setCursor = true
 		case PmBlinkCursor:
 			if ms == ModeOn {
 				em.cursor = em.cursor.Blink()
@@ -2020,11 +2236,43 @@ func (em *emulator) setPrivateMode(pm PrivateMode, ms ModeStatus) {
 				em.cursor = em.cursor.Steady()
 
 			}
-			em.be.SetCursor(em.cursor)
+			cursor = em.cursor
+			setCursor = true
 		}
-	} else if em.be.GetPrivateMode(pm).Changeable() {
+		em.modeLock.Unlock()
+
+		if setMouse {
+			if mi, ok := em.be.(Mouser); ok {
+				mi.SetMouse(report)
+			}
+		}
+		if setCursor {
+			em.be.SetCursor(cursor)
+		}
+		return
+	}
+	em.modeLock.Unlock()
+
+	if em.be.GetPrivateMode(pm).Changeable() {
 		_ = em.be.SetPrivateMode(pm, ms)
 	}
+}
+
+func (em *emulator) mouseReportingLocked() MouseReporting {
+	switch {
+	case em.localModes[PmMouseButton] == ModeOn:
+		em.mouseReports = MouseButtons
+		if em.localModes[PmMouseMotion] == ModeOn {
+			em.mouseReports = MouseMotion
+		} else if em.localModes[PmMouseDrag] == ModeOn {
+			em.mouseReports = MouseDrag
+		}
+	case em.localModes[PmMouseX10] == ModeOn:
+		em.mouseReports = MouseButtons
+	default:
+		em.mouseReports = MouseDisabled
+	}
+	return em.mouseReports
 }
 
 // SendRaw allows raw data to be sent to the application.
@@ -2058,14 +2306,18 @@ func (em *emulator) SendRaw(b []byte) {
 
 // KeyEvent injects a keyboard event into the emulator
 func (em *emulator) KeyEvent(ev KeyEvent) {
-	// eliminate "control" keys (which keyboard maps provide) from consideration.
-	// (We handle control keys explicitly.)
-	if ev.Utf != "" && ev.Utf[0] < ' ' {
-		ev.Utf = ""
-	}
 
-	// TODO: more add support for other keyboard protocols, right now we only do legacy
-	em.keyLegacy(ev)
+	if em.getPrivateMode(PmWin32Input) == ModeOn {
+		em.keyWin32IM(ev)
+	} else {
+		// eliminate "control" keys (which keyboard maps provide) from consideration.
+		// (We handle control keys explicitly.)
+		if ev.Utf != "" && ev.Utf[0] < ' ' {
+			ev.Utf = ""
+		}
+		// TODO: more add support for kitty, and maybe modify other keys
+		em.keyLegacy(ev)
+	}
 }
 
 // ResizeEvent is called by the backend when a resize occurs.  A real backend with a child
@@ -2076,6 +2328,29 @@ func (em *emulator) ResizeEvent(size Coord) {
 	case em.writeQ <- size:
 	case <-em.stopQ:
 	}
+}
+
+func (em *emulator) applyResize(size Coord) {
+	// resize clobbers our content, until it is redrawn
+	em.size = size
+	// resizing resets the margins
+	em.topMargin = 0
+	em.botMargin = em.size.Y - 1
+	em.ltMargin = 0
+	em.rtMargin = em.size.X - 1
+	em.cells = make([]Cell, int(em.size.X)*int(em.size.Y))
+	for i := range em.cells {
+		em.cells[i].S = em.defaultStyle
+	}
+
+	em.pos = em.getPosition()
+	if em.getPrivateMode(PmResizeReports) == ModeOn { // NB: we never support "ModeOnLocked"
+		// NB: for now we do not support pixel sizes
+		em.SendRaw(fmt.Appendf(nil, "\x1b[48;%d;%d;0;0t", em.size.Y, em.size.X))
+	}
+
+	// Send a SIGWINCH or similar.
+	em.be.RaiseResize()
 }
 
 var legacyKeys = map[Key]struct {
@@ -2164,12 +2439,34 @@ var legacyPadKeys = map[Key]struct {
 	KeyPadEqual: {"\x1bOX", "="},
 }
 
+// repeatRaw is called to provide key repeat.  We limit key repeating to just 40,
+// and we ensure that at least one is included.  We only repeat if key repeat is enabled.
+func (em *emulator) repeatRaw(ev KeyEvent, data []byte) {
+	if pm := em.getPrivateMode(PmAutoRepeat); pm == ModeOn || pm == ModeOnLocked {
+		for range min(max(1, ev.Repeat), 40) {
+			em.SendRaw(data)
+		}
+	} else {
+		if ev.Repeat == 0 {
+			em.SendRaw(data)
+		}
+	}
+}
+
+// noRepeatRaw is used to send a key that should never repeat.
+// It will only send if the repeat count is zero.
+func (em *emulator) noRepeatRaw(ev KeyEvent, data []byte) {
+	if ev.Repeat == 0 {
+		em.SendRaw(data)
+	}
+}
+
 // keyLegacy handles a keyboard event when in legacy vt220 style mode.
 func (em *emulator) keyLegacy(ev KeyEvent) {
 	if !ev.Down { // legacy protocol does not support key release
 		return
 	}
-	if ev.Mod&(ModHyper|ModMeta) != 0 { // legacy protocol does not support these
+	if ev.Mod.IsMeta() || ev.Mod.IsHyper() { // legacy protocol does not support these
 		return
 	}
 
@@ -2177,7 +2474,7 @@ func (em *emulator) keyLegacy(ev KeyEvent) {
 	// that if we are sending other Utf (for example with AltGr), then we still might
 	// send it, but this is only an issue for non-ASCII runes. Also, this filter only
 	// applies for "regular" keys (i.e. not function keys, cursor keys, etc.)
-	if ev.Mod&(ModCtrl|ModShift) == (ModCtrl|ModShift) && (ev.Utf == "" || ev.Utf[0] < 0x80) {
+	if ev.Mod.IsShift() && ev.Mod.IsCtrl() && (ev.Utf == "" || ev.Utf[0] < 0x80) {
 		if base := ev.Key.KittyBase(); base >= ' ' && base < 0x80 {
 			return
 		}
@@ -2187,9 +2484,9 @@ func (em *emulator) keyLegacy(ev KeyEvent) {
 	if v, ok := legacyPadKeys[ev.Key]; ok {
 		if ev.Mod&ModNumLock == 0 {
 			if em.appKeyPad {
-				em.SendRaw([]byte(v.app))
+				em.repeatRaw(ev, []byte(v.app))
 			} else {
-				em.SendRaw([]byte(v.num))
+				em.repeatRaw(ev, []byte(v.num))
 			}
 			return
 		} else {
@@ -2199,31 +2496,30 @@ func (em *emulator) keyLegacy(ev KeyEvent) {
 
 	// For control keys (e.g. control-J) we never emit a rune directly -- but we might later
 	// add after decoding the key accordingly.
-	if ev.Utf != "" && (ev.Mod == ModCtrl || ev.Utf[0] < ' ') {
+	if ev.Utf != "" && (ev.Mod == ModLCtrl || ev.Mod == ModRCtrl || ev.Utf[0] < ' ') {
 		ev.Utf = ""
 	}
 
 	if ev.Utf != "" {
-		if ev.Utf[0] < 0x80 && ev.Mod&ModAlt != 0 { // ASCII might get alt
-			em.SendRaw(fmt.Appendf(nil, "\x1b%s", ev.Utf))
-			return
+		if ev.Utf[0] < 0x80 && ev.Mod.IsAlt() { // ASCII might get alt
+			em.noRepeatRaw(ev, fmt.Appendf(nil, "\x1b%s", ev.Utf))
 		} else { // otherwise send the UTF as-is
-			em.SendRaw([]byte(ev.Utf))
-			return
+			em.repeatRaw(ev, []byte(ev.Utf))
 		}
+		return
 	}
 
 	// some weird number control sequences - legacy compatibility
-	if v, ok := legacyControls[ev.Key]; ok && ev.Mod == ModCtrl {
-		em.SendRaw([]byte(v))
+	// We do not repeat these.
+	if v, ok := legacyControls[ev.Key]; ok && (ev.Mod == ModLCtrl || ev.Mod == ModRCtrl) {
+		em.noRepeatRaw(ev, []byte(v))
 		return
 	}
 
 	if v, ok := legacyKeys[ev.Key]; ok {
 		str := ""
 		match := false
-		switch ev.Mod & (ModShift | ModCtrl) {
-		case ModNone:
+		if !ev.Mod.IsShift() && !ev.Mod.IsCtrl() {
 			if em.getPrivateMode(PmAppCursor) == ModeOn && v.A != "" {
 				str = v.A
 			} else {
@@ -2234,15 +2530,15 @@ func (em *emulator) keyLegacy(ev KeyEvent) {
 				str = "\r\n"
 			}
 			match = true
-		case ModShift:
+		} else if ev.Mod.IsShift() && !ev.Mod.IsCtrl() {
 			if str = v.S; str != "" {
 				match = true
 			}
-		case ModCtrl:
+		} else if ev.Mod.IsCtrl() && !ev.Mod.IsShift() {
 			if str = v.C; str != "" {
 				match = true
 			}
-		case ModCtrl | ModShift:
+		} else { // IsCtrl & IsShift
 			if str = v.CS; str != "" {
 				match = true
 			}
@@ -2254,10 +2550,10 @@ func (em *emulator) keyLegacy(ev KeyEvent) {
 			// Note: legacy encoding does not use modifiers for alt or super - alt will be
 			// determined by sending an escape prefix.
 			mod := 0
-			if ev.Mod&ModShift != 0 {
+			if ev.Mod.IsShift() {
 				mod |= 1
 			}
-			if ev.Mod&ModCtrl != 0 {
+			if ev.Mod.IsCtrl() {
 				mod |= 4
 			}
 			if strings.HasPrefix(v.K, "\x1bO") {
@@ -2266,24 +2562,114 @@ func (em *emulator) keyLegacy(ev KeyEvent) {
 				str = fmt.Sprintf("%s;%d%c", v.K[:len(v.K)-1], mod+1, v.K[len(v.K)-1])
 			}
 		}
-		if ev.Mod&ModAlt != 0 {
-			em.SendRaw(append([]byte{'\x1b'}, []byte(str)...)) // alt sends leading escape
+		if ev.Mod.IsAlt() {
+			// no repeating ALT sequences
+			em.noRepeatRaw(ev, append([]byte{'\x1b'}, []byte(str)...)) // alt sends leading escape
+		} else if ev.Mod.IsCtrl() {
+			// no repeating CTRL sequences
+			em.noRepeatRaw(ev, []byte(str))
 		} else {
-			em.SendRaw([]byte(str))
+			// but other sequences (should just be shifted or unmodified)
+			// are fine.  (E.g. we want to allow repeats of cursor keys)
+			em.repeatRaw(ev, []byte(str))
 		}
 		return
 	}
 
 	// fallback control key handling
-	if ev.Key >= KeyA && ev.Key <= KeyZ && ev.Mod&ModCtrl != 0 {
+	if ev.Key >= KeyA && ev.Key <= KeyZ && ev.Mod.IsCtrl() {
 		b := byte(ev.Key-KeyA) + 1 /* ctrl-A */
-		if ev.Mod&ModAlt != 0 {
-			em.SendRaw([]byte{'\x1b', b})
+		if ev.Mod.IsAlt() {
+			em.noRepeatRaw(ev, []byte{'\x1b', b})
 		} else {
-			em.SendRaw([]byte{b})
+			em.noRepeatRaw(ev, []byte{b})
 		}
 		return
 	}
+}
+
+var win32NoRepeat = map[Key]bool{
+	KeyLShift:   true,
+	KeyRShift:   true,
+	KeyLCtrl:    true,
+	KeyRCtrl:    true,
+	KeyLAlt:     true,
+	KeyRAlt:     true,
+	KeyLMeta:    true,
+	KeyRMeta:    true,
+	KeyCapsLock: true,
+	KeyNumLock:  true,
+	KeyEnter:    true,
+	KeyScrLock:  true,
+	KeyPause:    true,
+	KeyPrtScr:   true,
+}
+
+// keyWin32IM generates the sequence for a key event when in Win32 input mode.
+// Win32 input mode is ESC [ Vk ; Sc ; Uc ; Kd ; Cs ; Rc _
+// Note that we specifically do NOT doubly encode non-keyboard events -- those
+// are already unambiguously handled within the protocol.  (Windows Terminal behaves
+// the same way, but most 3rd party terminals do doubly encode.)
+func (em *emulator) keyWin32IM(ev KeyEvent) {
+	// Some keys that never repeat
+	if pm := em.getPrivateMode(PmAutoRepeat); pm == ModeOff || pm == ModeOffLocked {
+		if ev.Repeat != 0 {
+			return
+		}
+	}
+	r := rune(0)
+	if ev.Utf != "" {
+		runes := []rune(ev.Utf)
+		if len(runes) == 1 {
+			r = runes[0]
+		}
+	}
+	kd := 0
+	if ev.Down {
+		kd = 1
+	}
+	cs := 0
+	// Modifiers
+	if ev.Mod&ModRAlt != 0 {
+		cs |= 0x01
+	}
+	if ev.Mod&ModLAlt != 0 {
+		cs |= 0x02
+	}
+	if ev.Mod&ModRCtrl != 0 {
+		cs |= 0x04
+	}
+	if ev.Mod&ModLCtrl != 0 {
+		cs |= 0x08
+	}
+	if ev.Mod.IsShift() {
+		cs |= 0x10
+	}
+	if ev.Mod.IsNumLock() {
+		cs |= 0x20
+	}
+	// NB: 0x40 is for scroll lock, we don't support it for now
+	if ev.Mod.IsCapsLock() {
+		cs |= 0x80
+	}
+	switch ev.Key {
+	case KeyPadEnter:
+	case KeyPadDiv:
+	case KeyInsert:
+	case KeyDelete:
+	case KeyHome:
+	case KeyEnd:
+	case KeyPgUp:
+	case KeyPgDn:
+		cs |= 0x100 // enhanced
+	}
+	if win32NoRepeat[ev.Key] {
+		if ev.Repeat > 0 {
+			return
+		}
+		ev.Repeat = 1
+	}
+	em.SendRaw(fmt.Appendf(nil, "\x1b[%d;%d;%d;%d;%d;%d_", ev.VK, ev.SC, r, kd, cs, max(1, ev.Repeat)))
 }
 
 func (em *emulator) MouseEvent(ev MouseEvent) {
@@ -2311,7 +2697,7 @@ func (em *emulator) MouseEvent(ev MouseEvent) {
 			// to be released.  (Please use SGR mode if at all possible.)
 			// Further, this mode is not CSI compliant as the encoded values that arrive ahead of
 			// the final character may be within the range of technically legal CSI final bytes.
-			if ev.Down == false {
+			if !ev.Down {
 				ev.Button = NoButton
 			}
 			btn := ev.encodeButton()
@@ -2474,28 +2860,7 @@ func (em *emulator) run(stopQ <-chan bool) {
 				close(d)
 
 			case Coord: // resize notification
-				// reload our position it may have changed
-
-				// resize clobbers our content, until it is redrawn
-				em.size = d
-				// resizing resets the margins
-				em.topMargin = 0
-				em.botMargin = em.size.Y - 1
-				em.ltMargin = 0
-				em.rtMargin = em.size.X - 1
-				em.cells = make([]Cell, int(em.size.X)*int(em.size.Y))
-				for i := range em.cells {
-					em.cells[i].S = em.defaultStyle
-				}
-
-				em.pos = em.getPosition()
-				if em.getPrivateMode(PmResizeReports) == ModeOn { // NB: we never support "ModeOnLocked"
-					// NB: for now we do not support pixel sizes
-					em.SendRaw(fmt.Appendf(nil, "\x1b[48;%d;%d;0;0t", em.size.Y, em.size.X))
-				}
-
-				// Send a SIGWINCH or similar.
-				em.be.RaiseResize()
+				em.applyResize(d)
 			}
 		case <-stopQ:
 			return

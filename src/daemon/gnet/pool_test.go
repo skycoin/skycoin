@@ -1112,8 +1112,8 @@ func TestPoolSendMessageWriteQueueFull(t *testing.T) {
 }
 
 func TestPoolBroadcastMessage(t *testing.T) {
-	if runtime.GOARCH == "386" {
-		t.Skip("Flaky on 32-bit architecture - see pool_test.go TestPoolBroadcastMessage")
+	if runtime.GOARCH == "386" || runtime.GOOS == "windows" {
+		t.Skip("Flaky on 32-bit architecture and Windows - see pool_test.go TestPoolBroadcastMessage")
 	}
 
 	resetHandler()

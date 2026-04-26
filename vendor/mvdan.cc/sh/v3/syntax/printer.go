@@ -719,7 +719,9 @@ func (p *Printer) wroteIndex(index ArithmExpr) bool {
 	p.w.WriteByte('[')
 	// Note that e.g. foo[1,3]=$bar in Zsh does not allow any spaces around the comma,
 	// as that breaks the assignment word.
-	p.arithmExpr(index, true, false)
+	binary, ok := index.(*BinaryArithm)
+	compact := ok && binary.Op == Comma
+	p.arithmExpr(index, compact, false)
 	p.w.WriteByte(']')
 	return true
 }
@@ -749,9 +751,10 @@ func (p *Printer) paramExp(pe *ParamExp) {
 	case pe.Excl:
 		p.w.WriteByte('!')
 	}
-	if pe.Param != nil {
+	switch {
+	case pe.Param != nil:
 		p.writeLit(pe.Param.Value)
-	} else {
+	case pe.NestedParam != nil:
 		// Note that Zsh supports ${${nested}} but not ${$nested},
 		// so we need to avoid that simplification here.
 		saved := p.minify
@@ -1297,14 +1300,10 @@ func (p *Printer) command(cmd Command, redirs []*Redirect) (startRedirs int) {
 				p.wantSpace = spaceNotRequired
 			}
 
-			bodyPos := stmtsPos(ci.Stmts, ci.Last)
-			bodyEnd := stmtsEnd(ci.Stmts, ci.Last)
-			sep := len(ci.Stmts) > 1 || bodyPos.Line() > p.line ||
-				(bodyEnd.IsValid() && ci.OpPos.Line() > bodyEnd.Line())
 			p.nestedStmts(ci.Stmts, ci.Last, ci.OpPos)
 			p.level++
 			if !p.minify || i != len(cmd.Items)-1 {
-				if sep {
+				if p.wantsNewline(ci.OpPos, false) {
 					p.newlines(ci.OpPos)
 					p.wantNewline = true
 				}

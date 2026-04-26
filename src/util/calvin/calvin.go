@@ -6,7 +6,6 @@ go run github.com/skycoin/skywire/pkg/skywire-utilities/calvin/cmd/calvin@develo
 │  │ ││││└┐┌┘├┤ ├┬┘ │    │ ├┤ ┌┴┬┘ │    │ │ │  ├─┤└─┐│  ││  ├─┤├┬┘ │   ├┤ │ ││││ │
 └─┘└─┘┘└┘ └┘ └─┘┴└─ ┴    ┴ └─┘┴ └─ ┴    ┴ └─┘  ┴ ┴└─┘└─┘┴┴  ┴ ┴┴└─ ┴   └  └─┘┘└┘ ┴
 */
-
 package calvin
 
 import (

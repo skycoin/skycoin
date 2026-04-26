@@ -12,9 +12,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/spf13/cobra"
+
 	"github.com/skycoin/skycoin/src/util/buildinfo"
 	"github.com/skycoin/skycoin/src/util/calvin"
-	"github.com/spf13/cobra"
 
 	explorer "github.com/skycoin/skycoin/cmd/explorer/commands"
 	newcoin "github.com/skycoin/skycoin/cmd/newcoin/commands"

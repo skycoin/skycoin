@@ -25,7 +25,6 @@ require (
 	github.com/skycoin/hardware-wallet-protob v0.0.0-20250805154629-410561e1bc2f
 	github.com/skycoin/hardware-wallet/firmware v0.0.0-20260117000250-43c66b2bf1d2
 	github.com/skycoin/skycoin-lite v0.0.0-20190712083345-f5a3f17e6603
-	github.com/skycoin/skywire v1.3.37
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
@@ -82,6 +81,7 @@ require (
 	golang.org/x/net v0.52.0 // indirect
 	golang.org/x/sys v0.42.0 // indirect
 	golang.org/x/text v0.35.0 // indirect
+	golang.org/x/tools v0.43.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	mvdan.cc/sh/v3 v3.13.0 // indirect

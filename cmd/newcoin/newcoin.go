@@ -9,7 +9,7 @@ package main
 import (
 	"log"
 
-	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/flags"
+	"github.com/skycoin/skycoin/src/util/flags"
 
 	"github.com/skycoin/skycoin/cmd/newcoin/commands"
 )

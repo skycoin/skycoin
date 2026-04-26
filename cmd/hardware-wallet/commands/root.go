@@ -23,7 +23,7 @@ import (
 	"github.com/skycoin/skycoin/src/hardware-wallet-daemon/daemon"
 	cli "github.com/skycoin/skycoin/src/hardware-wallet/cli"
 
-	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo"
+	"github.com/skycoin/skycoin/src/util/buildinfo"
 
 	"github.com/skycoin/skycoin/src/util/logging"
 )

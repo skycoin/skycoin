@@ -497,19 +497,18 @@ func (pool *ConnectionPool) handleConnection(conn net.Conn, solicited bool) erro
 		err = pool.strand("handleConnection", func() error {
 			var err error
 			c, err = pool.newConnection(conn, solicited)
-			if err != nil {
-				return err
-			}
-
-			if pool.Config.ConnectCallback != nil {
-				pool.Config.ConnectCallback(c.Addr(), c.ID, solicited)
-			}
-
-			return nil
+			return err
 		})
 
 		return c, err
 	}()
+
+	// ConnectCallback is invoked outside the strand so that callbacks which
+	// block on downstream channels (e.g. daemon.events) cannot deadlock the
+	// strand worker.
+	if err == nil && pool.Config.ConnectCallback != nil {
+		pool.Config.ConnectCallback(c.Addr(), c.ID, solicited)
+	}
 
 	// TODO -- this error is not fully propagated back to a caller of Connect() so the daemon state
 	// can get stuck in pending
@@ -845,9 +844,12 @@ func (pool *ConnectionPool) Connect(address string) error {
 	return nil
 }
 
-// Disconnect removes a connection from the pool by address and invokes DisconnectCallback
+// Disconnect removes a connection from the pool by address and invokes DisconnectCallback.
+// The DisconnectCallback is invoked outside the strand so that callbacks which block on
+// downstream channels (e.g. daemon.events) cannot deadlock the strand worker.
 func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
-	return pool.strand("Disconnect", func() error {
+	var conn *Connection
+	err := pool.strand("Disconnect", func() error {
 		logger.WithFields(logrus.Fields{
 			"addr":   addr,
 			"reason": r,
@@ -861,7 +863,7 @@ func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
 			}
 		}
 
-		conn := pool.disconnect(addr, r)
+		conn = pool.disconnect(addr, r)
 
 		if conn == nil {
 			return errors.New("Disconnect: connection does not exist")
@@ -872,12 +874,17 @@ func (pool *ConnectionPool) Disconnect(addr string, r DisconnectReason) error {
 			logger.Debugf("%d/%d default connections in use", l, pool.Config.MaxDefaultPeerOutgoingConnections)
 		}
 
-		if pool.Config.DisconnectCallback != nil {
-			pool.Config.DisconnectCallback(addr, conn.ID, r)
-		}
-
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+
+	if pool.Config.DisconnectCallback != nil {
+		pool.Config.DisconnectCallback(addr, conn.ID, r)
+	}
+
+	return nil
 }
 
 func (pool *ConnectionPool) disconnect(addr string, r DisconnectReason) *Connection {

@@ -1,0 +1,97 @@
+name: Docs
+
+# Builds the MkDocs site from sources spread across the repo (docs/,
+# top-level guides, src/api, cmd/skycoin-cli and selected package/client
+# READMEs) and deploys it to the gh-pages branch, which GitHub Pages
+# serves at https://skycoin.github.io/skycoin/.
+#
+# Triggers:
+#   - push to develop: build + deploy
+#   - pull_request:    build only (catches broken config / staging errors
+#                      before merge; doesn't touch gh-pages)
+#   - workflow_dispatch: manual rebuild button
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'scripts/docs-prepare.sh'
+      - 'scripts/docs-prepare.py'
+      - '.github/workflows/docs.yml'
+      - 'INSTALLATION.md'
+      - 'INTEGRATION.md'
+      - 'DEVELOPMENT.md'
+      - 'DOCKER.md'
+      - 'FIBERCOIN-CONFIG.md'
+      - 'RELEASE.md'
+      - 'CHANGELOG.md'
+      - 'src/api/README.md'
+      - 'cmd/skycoin-cli/README.md'
+      - 'src/cipher/**/README.md'
+      - 'src/daemon/**/README.md'
+      - 'src/gui/static/README.md'
+      - 'src/skycoin-web/README.md'
+      - 'src/skycoin-lite/README.md'
+      - 'explorer/README.md'
+      - 'electron/README.md'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'scripts/docs-prepare.sh'
+      - 'scripts/docs-prepare.py'
+      - '.github/workflows/docs.yml'
+      - 'INSTALLATION.md'
+      - 'INTEGRATION.md'
+      - 'DEVELOPMENT.md'
+      - 'DOCKER.md'
+      - 'FIBERCOIN-CONFIG.md'
+      - 'RELEASE.md'
+      - 'CHANGELOG.md'
+      - 'src/api/README.md'
+      - 'cmd/skycoin-cli/README.md'
+      - 'src/cipher/**/README.md'
+      - 'src/daemon/**/README.md'
+      - 'src/gui/static/README.md'
+      - 'src/skycoin-web/README.md'
+      - 'src/skycoin-lite/README.md'
+      - 'explorer/README.md'
+      - 'electron/README.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          cache: pip
+          cache-dependency-path: docs/requirements.txt
+
+      - name: Install MkDocs + plugins
+        run: pip install -r docs/requirements.txt
+
+      - name: Stage doc sources under docs/
+        run: bash scripts/docs-prepare.sh
+
+      - name: Build
+        # No --strict: mkdocs.yml sets strict: false because a few of the
+        # staged READMEs contain relative links that assume their original
+        # in-tree location. Warnings are still printed to the build log so
+        # a content-cleanup follow-up can address them.
+        run: mkdocs build
+
+      - name: Deploy to gh-pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          mkdocs gh-deploy --force --message "Deploy docs from {sha}"

@@ -1,0 +1,138 @@
+# MkDocs configuration for the Skycoin documentation site.
+#
+# Hand-written source markdown lives in docs/ on the develop branch.
+# Additional pages are assembled at build time from markdown that
+# already lives elsewhere in the tree (top-level guides, src/api,
+# cmd/skycoin-cli, and a handful of package READMEs) by
+# scripts/docs-prepare.sh, which copies them under docs/ where they
+# are gitignored. This keeps each file's canonical location intact
+# while letting MkDocs render everything as one unified site.
+#
+# The site is built by .github/workflows/docs.yml on every push to
+# develop and deployed to the gh-pages branch, which GitHub Pages
+# serves at https://skycoin.github.io/skycoin/.
+#
+# Local preview: `make docs-serve` (runs the prepare step + mkdocs
+# serve). Open http://127.0.0.1:8000.
+
+site_name: Skycoin
+site_description: Skycoin — a next-generation cryptocurrency and distributed network platform
+site_url: https://skycoin.github.io/skycoin/
+repo_url: https://github.com/skycoin/skycoin
+repo_name: skycoin/skycoin
+edit_uri: edit/develop/docs/
+copyright: Copyright &copy; Skycoin
+
+docs_dir: docs
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.action.edit
+    - toc.follow
+  palette:
+    # Auto light/dark toggle via system preference, then manual override.
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+# Top-level nav. The leaf pages under api/, cli/, guides/ and the
+# package/client sections are copied into place by docs-prepare.sh at
+# build time (gitignored), so they only exist after that script runs.
+nav:
+  - Home: index.md
+  - Guides:
+      - Overview: guides/index.md
+      - Installation: guides/installation.md
+      - Exchange Integration: guides/integration.md
+      - Development: guides/development.md
+      - Docker: guides/docker.md
+      - Custom Fibercoins: guides/fibercoin-config.md
+      - Release Process: guides/release.md
+      - Changelog: guides/changelog.md
+  - REST API: api/index.md
+  - CLI: cli/index.md
+  - Packages:
+      - Overview: packages/index.md
+      - cipher/bip32: packages/cipher-bip32.md
+      - cipher/bip39: packages/cipher-bip39.md
+      - cipher/base58: packages/cipher-base58.md
+      - cipher/encoder: packages/cipher-encoder.md
+      - cipher/secp256k1-go: packages/cipher-secp256k1.md
+      - daemon/pex: packages/daemon-pex.md
+      - daemon/gnet: packages/daemon-gnet.md
+  - Clients:
+      - Overview: clients/index.md
+      - Desktop (GUI): clients/desktop.md
+      - Web client: clients/web.md
+      - Lite client: clients/lite.md
+      - Explorer: clients/explorer.md
+      - Electron build: clients/electron.md
+  - Dependency Graph: dependency-graph.md
+
+plugins:
+  - search
+  - awesome-pages
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      permalink_title: Permalink
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/skycoin/skycoin
+      name: skycoin/skycoin on GitHub
+    - icon: fontawesome/brands/telegram
+      link: https://t.me/skycoin
+      name: Skycoin on Telegram
+
+# Strict mode fails the build on broken internal links. scripts/docs-prepare.py
+# rewrites the imported READMEs' relative links to either in-site pages or
+# absolute github.com URLs, so the only remaining notes are INFO-level
+# (package-relative absolute links and a few dangling anchors in upstream
+# source), which do not fail strict.
+strict: true

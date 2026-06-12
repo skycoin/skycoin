@@ -1,0 +1,25 @@
+# Pages staged at build time by scripts/docs-prepare.sh from markdown that
+# lives elsewhere in the tree. Their canonical source is the original file
+# (top-level guides, src/api, cmd/skycoin-cli, package READMEs); do not
+# commit the staged copies.
+/guides/installation.md
+/guides/integration.md
+/guides/development.md
+/guides/docker.md
+/guides/fibercoin-config.md
+/guides/release.md
+/guides/changelog.md
+/api/index.md
+/cli/index.md
+/packages/cipher-bip32.md
+/packages/cipher-bip39.md
+/packages/cipher-base58.md
+/packages/cipher-encoder.md
+/packages/cipher-secp256k1.md
+/packages/daemon-pex.md
+/packages/daemon-gnet.md
+/clients/desktop.md
+/clients/web.md
+/clients/lite.md
+/clients/explorer.md
+/clients/electron.md

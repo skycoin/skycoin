@@ -21,6 +21,7 @@
 .PHONY: check-newcoin-templates check-release-nocgo
 .PHONY: update-dep sync-upstream-develop
 .PHONY: install-linters format release clean-release clean-coverage dep-github-release
+.PHONY: docs-install docs-serve docs-build
 .PHONY: install-deps-ui build-ui build-ui help newcoin merge-coverage
 .PHONY: build build-skycoin build-skyhw build-skyhw-static
 .PHONY: test-skyhw test-skyhw-race lint-skyhw check-skyhw
@@ -189,6 +190,17 @@ install-linters: ## Install linters
 format: ## Formats the code. Must have goimports installed (use make install-linters).
 	goimports -w -local github.com/skycoin/skycoin ./cmd
 	goimports -w -local github.com/skycoin/skycoin ./src
+
+docs-install: ## Install the MkDocs toolchain used to build the documentation site
+	pip install -r docs/requirements.txt
+
+docs-serve: ## Stage doc sources and serve the documentation site locally at http://127.0.0.1:8000
+	bash scripts/docs-prepare.sh
+	mkdocs serve
+
+docs-build: ## Stage doc sources and build the static documentation site into site/
+	bash scripts/docs-prepare.sh
+	mkdocs build
 
 install-deps-ui:  ## Install the UI dependencies
 	cd $(GUI_STATIC_DIR) && npm ci

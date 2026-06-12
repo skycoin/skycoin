@@ -169,3 +169,6 @@ genesis.json
 
 # Claude
 CLAUDE.md
+
+# MkDocs build output (`make docs-build`)
+/site/

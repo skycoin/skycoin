@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -67,16 +66,7 @@ type Client struct {
 
 // NewClient creates a Client
 func NewClient(addr string) *Client {
-	transport := &http.Transport{
-		Dial: (&net.Dialer{
-			Timeout: dialTimeout,
-		}).Dial,
-		TLSHandshakeTimeout: tlsHandshakeTimeout,
-	}
-	httpClient := &http.Client{
-		Transport: transport,
-		Timeout:   httpClientTimeout,
-	}
+	httpClient := newHTTPClient()
 	addr = strings.TrimRight(addr, "/")
 	addr += "/"
 

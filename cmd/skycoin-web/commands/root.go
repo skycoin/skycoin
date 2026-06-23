@@ -1,3 +1,5 @@
+//go:build !tinygo
+
 // Package commands provides commands for the skycoin web interface.
 package commands
 
@@ -8,7 +10,6 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
-	nethttppprof "net/http/pprof" //nolint:gosec
 	"os"
 	"path/filepath"
 	"strings"
@@ -870,11 +871,7 @@ func initPProf(profMode string, profAddr string) (stop func()) {
 	case "http":
 		go func() {
 			mux := http.NewServeMux()
-			mux.HandleFunc("/debug/pprof/", nethttppprof.Index)
-			mux.HandleFunc("/debug/pprof/cmdline", nethttppprof.Cmdline)
-			mux.HandleFunc("/debug/pprof/profile", nethttppprof.Profile)
-			mux.HandleFunc("/debug/pprof/symbol", nethttppprof.Symbol)
-			mux.HandleFunc("/debug/pprof/trace", nethttppprof.Trace)
+			registerPprofHandlers(mux)
 			srv := &http.Server{ //nolint:gosec
 				Addr:              profAddr,
 				Handler:           mux,

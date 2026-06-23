@@ -11,7 +11,6 @@ and then run cmd/newcoin
 */
 
 import (
-	_ "net/http/pprof"
 	"os"
 	"strings"
 

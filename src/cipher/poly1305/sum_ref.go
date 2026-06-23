@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build (!amd64 && !arm) || gccgo || appengine || nacl
-// +build !amd64,!arm gccgo appengine nacl
+//go:build (!amd64 && !arm) || gccgo || appengine || nacl || tinygo
+// +build !amd64,!arm gccgo appengine nacl tinygo
 
 package poly1305
 

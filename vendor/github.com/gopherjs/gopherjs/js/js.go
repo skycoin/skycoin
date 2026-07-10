@@ -260,6 +260,16 @@ type M map[string]any
 // S is a simple slice type. It is intended as a shorthand for JavaScript arrays (before conversion).
 type S []any
 
+// MakeUint64 will take the high and low parts to construct a uint64 number.
+// Since JS doesn't have a 64-bit integer we store it as a high and low 32-bit integers.
+func MakeUint64(hi, lo float64) uint64 { return 0 }
+
+// Uint64High will get the high 32-bit integer used when storing uint64.
+func Uint64High(x uint64) uint32 { return 0 }
+
+// Uint64Low will get the low 32-bit integer used when storing uint64.
+func Uint64Low(x uint64) uint32 { return 0 }
+
 func init() {
 	// Avoid dead code elimination.
 	e := Error{}

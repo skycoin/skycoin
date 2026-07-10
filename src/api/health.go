@@ -33,6 +33,7 @@ type HealthResponse struct {
 	WalletAPIEnabled     bool                 `json:"wallet_api_enabled"`
 	GUIEnabled           bool                 `json:"gui_enabled"`
 	BlockPublisher       bool                 `json:"block_publisher"`
+	BlockchainPubkey     string               `json:"blockchain_pubkey"`
 	UserVerifyTxn        readable.VerifyTxn   `json:"user_verify_transaction"`
 	UnconfirmedVerifyTxn readable.VerifyTxn   `json:"unconfirmed_verify_transaction"`
 	StartedAt            int64                `json:"started_at"`
@@ -89,6 +90,7 @@ func getHealthData(c muxConfig, gateway Gatewayer) (*HealthResponse, error) {
 		CSPEnabled:           !c.disableCSP,
 		GUIEnabled:           c.enableGUI,
 		BlockPublisher:       c.health.BlockPublisher,
+		BlockchainPubkey:     c.health.BlockchainPubkey.Hex(),
 		WalletAPIEnabled:     walletAPIEnabled,
 		UserVerifyTxn:        readable.NewVerifyTxn(params.UserVerifyTxn),
 		UnconfirmedVerifyTxn: readable.NewVerifyTxn(gateway.DaemonConfig().UnconfirmedVerifyTxn),

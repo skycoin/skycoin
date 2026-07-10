@@ -97,6 +97,11 @@ type HealthConfig struct {
 	Fiber           readable.FiberConfig
 	DaemonUserAgent useragent.Data
 	BlockPublisher  bool
+	// BlockchainPubkey is the block-publisher public key that signs this chain —
+	// the authoritative chain identifier. Surfaced in /health so a remote
+	// consumer (e.g. a skywire visor advertising this node in service discovery)
+	// can identify the chain by key rather than by the spoofable coin name.
+	BlockchainPubkey cipher.PubKey
 }
 
 type muxConfig struct {

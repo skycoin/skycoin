@@ -36,6 +36,7 @@ var (
 	nodeURLs      []string
 	walletDirs    []string
 	enableSeedAPI bool
+	socks5Proxy   string
 
 	guiDir string // custom GUI directory, overrides embedded GUI
 
@@ -113,9 +114,21 @@ var RootCmd = &cobra.Command{
 		}
 		ret = calvin.AsciiFont(strings.ToLower(coinName) + "-web")
 		ret += fmt.Sprintf("\nThin client web wallet for %s and fibercoins.", coinName)
+		ret += "\n\nNodes may be reached over a skywire mesh: pass --socks5-proxy (or set\n" +
+			"HTTP(S)_PROXY) to a resolving SOCKS5 proxy and use a mesh --node-url, e.g.\n" +
+			"  --socks5-proxy socks5://127.0.0.1:4443 --node-url http://<name>.<pk>.dmsg\n" +
+			"The proxy does remote DNS, so the .dmsg/.skynet hostname resolves through it."
 		return ret
 	}(),
 	Run: func(_ *cobra.Command, _ []string) {
+		if socks5Proxy != "" {
+			p := socks5Proxy
+			if !strings.Contains(p, "://") {
+				p = "socks5://" + p
+			}
+			os.Setenv("HTTP_PROXY", p)
+			os.Setenv("HTTPS_PROXY", p)
+		}
 		serve()
 	},
 }
@@ -126,6 +139,7 @@ func init() {
 	RootCmd.Flags().StringArrayVarP(&nodeURLs, "node-url", "n", []string{"https://node.skycoin.com"}, "Node URL (can be specified multiple times)")
 	RootCmd.Flags().StringArrayVarP(&walletDirs, "wallet-dir", "w", nil, "Local wallet directory (e.g. ~/.skycoin/wallets)")
 	RootCmd.Flags().BoolVar(&enableSeedAPI, "enable-seed-api", false, "Enable the wallet seed API (requires --wallet-dir)")
+	RootCmd.Flags().StringVar(&socks5Proxy, "socks5-proxy", "", "SOCKS5 proxy for node connections (e.g. socks5://127.0.0.1:4443)")
 	RootCmd.Flags().StringVarP(&guiDir, "gui-dir", "g", "", "Custom GUI directory (overrides embedded GUI)")
 
 	// Profiling flags

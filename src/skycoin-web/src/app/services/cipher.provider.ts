@@ -32,7 +32,7 @@ export class CipherProvider {
         console.log('[WASM] Starting WASM streaming instantiation...');
         const go = new Go();
         return from(
-          window['WebAssembly'].instantiateStreaming(fetch('/assets/scripts/skycoin-lite.wasm'), go.importObject)
+          window['WebAssembly'].instantiateStreaming(fetch('assets/scripts/skycoin-lite.wasm'), go.importObject)
             .then((result: any) => {
               console.log('[WASM] WASM module instantiated, running...');
               go.run(result.instance);
@@ -46,7 +46,7 @@ export class CipherProvider {
         );
       } else if (window['WebAssembly'] && window['WebAssembly'].instantiate) {
         console.log('[WASM] Starting WASM download (fallback mode)...');
-        return this.http.get('/assets/scripts/skycoin-lite.wasm', { responseType: 'arraybuffer' }).pipe(
+        return this.http.get('assets/scripts/skycoin-lite.wasm', { responseType: 'arraybuffer' }).pipe(
           catchError((err) => {
             console.error('[WASM] Failed to download WASM file:', err);
             return throwError(() => InitializationResults.ErrorLoadingWasmFile);

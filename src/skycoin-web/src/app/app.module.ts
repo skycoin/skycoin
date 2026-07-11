@@ -1,4 +1,4 @@
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi, withFetch } from '@angular/common/http';
 import { NgModule } from '@angular/core';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { MatSliderModule } from '@angular/material/slider';
@@ -195,6 +195,6 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
         HwWalletDaemonService,
         HwWalletService,
         EncryptionService,
-        provideHttpClient(withInterceptorsFromDi()),
+        provideHttpClient(withInterceptorsFromDi(), withFetch()),
     ] })
 export class AppModule { }

@@ -154,6 +154,8 @@
       "name-label": "Name",
       "seed-label": "Seed",
       "confirm-seed-label": "Confirm seed",
+      "password-label": "Password (optional)",
+      "password-info": "Encrypt your seed with a password. Leave blank to keep it stored unencrypted in this browser — you can add or change a password later from the wallet.",
       "seed-warning": "Remember this seed! Keep it in a safe place. If you forget your seed, you will not be able to recover your wallet!",
       "create-button": "Create",
       "load-button": "Load",

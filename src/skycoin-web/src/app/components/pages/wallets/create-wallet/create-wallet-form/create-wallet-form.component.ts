@@ -15,6 +15,9 @@ export class FormData {
   walletType: string;
   seedPassphrase: string;
   segwit: boolean;
+  // Optional password entered at creation. When set, the new wallet's seed is
+  // encrypted right after it's created; blank leaves it stored unencrypted.
+  password: string;
 }
 
 @Component({
@@ -69,6 +72,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
       walletType: this.form.value.wallet_type || 'deterministic',
       seedPassphrase: this.form.value.seed_passphrase || '',
       segwit: !!this.form.value.segwit,
+      password: this.form.value.password || '',
     };
   }
 
@@ -89,6 +93,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
         wallet_type: new UntypedFormControl(defaultWalletType),
         seed_passphrase: new UntypedFormControl(''),
         segwit: new UntypedFormControl(true),
+        password: new UntypedFormControl(''),
       },
       {
         validator: create ? this.seedMatchValidator.bind(this) : null,

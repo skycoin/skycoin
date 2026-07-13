@@ -31,6 +31,9 @@ export class CreateWalletComponent implements OnDestroy {
   disableDismiss = false;
 
   private slowInfoSubscription: Subscription;
+  // Optional password captured from the create form; when set, the new wallet's
+  // seed is encrypted right after it is created (before the dialog closes).
+  private pendingPassword = '';
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data,
@@ -60,6 +63,7 @@ export class CreateWalletComponent implements OnDestroy {
       .subscribe(() => this.showSlowMobileInfo = true);
 
     const data = this.formControl.getData();
+    this.pendingPassword = this.data.create ? (data.password || '') : '';
 
     this.walletService.create(data.label, data.seed, data.coin.id, this.data.create, data.walletType, data.seedPassphrase, data.segwit)
       .subscribe(
@@ -79,6 +83,14 @@ export class CreateWalletComponent implements OnDestroy {
       scanAddresses(this.dialog, wallet, this.blockchainService, this.translate).subscribe(
         response => this.processScanResponse(initialCoin, wallet, false, response),
         error => this.processScanResponse(initialCoin, wallet, true, error)
+      );
+    } else if (this.pendingPassword) {
+      // Optional creation-time password: encrypt the freshly-created wallet's
+      // seed (setWalletPassword persists it), then finish. On error, surface it
+      // but the wallet itself was already created.
+      this.walletService.setWalletPassword(wallet, this.pendingPassword).subscribe(
+        () => this.finish(),
+        err => this.onCreateError(err && err.message ? err.message : String(err)),
       );
     } else {
       this.finish();

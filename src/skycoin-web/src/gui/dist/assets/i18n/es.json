@@ -156,6 +156,8 @@
       "name-label": "Nombre",
       "seed-label": "Semilla",
       "confirm-seed-label": "Confirmar semilla",
+      "password-label": "Contraseña (opcional)",
+      "password-info": "Cifra tu semilla con una contraseña. Déjalo en blanco para mantenerla sin cifrar en este navegador — puedes añadir o cambiar la contraseña más tarde desde la cartera.",
       "seed-warning": "¡Recuerde esta semilla! Manténgala en un lugar seguro. ¡Si olvida su semilla, no podrá recuperar la billetera!",
       "create-button": "Crear",
       "load-button": "Cargar",

@@ -66,6 +66,13 @@
       </div>
     </div>
   }
+  @if (create) {
+    <div class="form-field">
+      <label for="wallet_password">{{ 'wallet.new.password-label' | translate }}</label>
+      <input formControlName="password" id="wallet_password" type="password" autocomplete="new-password">
+      <p class="-info">{{ 'wallet.new.password-info' | translate }}</p>
+    </div>
+  }
   @if (showWalletType && form.get('wallet_type').value === 'bip44') {
     <div class="form-field">
       <label for="seed_passphrase">{{ 'wallet.new.seed-passphrase-label' | translate}}</label>

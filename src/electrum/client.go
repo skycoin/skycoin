@@ -52,11 +52,33 @@ type rpcError struct {
 	Message string `json:"message"`
 }
 
-// NewClient creates a new Electrum client connected to the given server URL.
+// DialFunc dials a raw stream to a "host:port" address. Supplied to
+// NewClientWithDialer to route the Electrum connection through a tunnel/proxy
+// (e.g. skywire's skysocks-client over the mesh, or a dmsg stream) instead of
+// the stdlib clearnet dialer. For ssl:// URLs the TLS handshake still runs
+// client-side on top of the returned conn, so the tunnel can't read the stream.
+type DialFunc func(network, addr string) (net.Conn, error)
+
+// NewClient creates a new Electrum client connected to the given server URL,
+// dialing over the clearnet with the standard library.
 // URL format: "ssl://host:port" for TLS or "tcp://host:port" for plain TCP.
 func NewClient(serverURL string, timeout time.Duration) (*Client, error) {
+	return NewClientWithDialer(serverURL, timeout, nil)
+}
+
+// NewClientWithDialer is NewClient with a caller-supplied raw dialer. When
+// dial is nil it behaves exactly like NewClient (net.DialTimeout). This lets a
+// caller carry the Electrum connection over an arbitrary transport — the whole
+// point being that a skywire visor can reach an ssl:// Electrum server through
+// skysocks/dmsg while the TLS handshake is still performed end-to-end here.
+func NewClientWithDialer(serverURL string, timeout time.Duration, dial DialFunc) (*Client, error) {
 	if timeout == 0 {
 		timeout = DefaultTimeout
+	}
+	if dial == nil {
+		dial = func(network, addr string) (net.Conn, error) {
+			return net.DialTimeout(network, addr, timeout)
+		}
 	}
 
 	var conn net.Conn
@@ -68,18 +90,22 @@ func NewClient(serverURL string, timeout time.Duration) (*Client, error) {
 		if herr != nil {
 			return nil, fmt.Errorf("invalid server address %q: %w", addr, herr)
 		}
-		conn, err = tls.DialWithDialer(
-			&net.Dialer{Timeout: timeout},
-			"tcp",
-			addr,
-			&tls.Config{
-				ServerName: host,
-				MinVersion: tls.VersionTLS12,
-			},
-		)
+		raw, derr := dial("tcp", addr)
+		if derr != nil {
+			return nil, fmt.Errorf("failed to connect to %s: %w", serverURL, derr)
+		}
+		tlsConn := tls.Client(raw, &tls.Config{
+			ServerName: host,
+			MinVersion: tls.VersionTLS12,
+		})
+		if herr := tlsConn.Handshake(); herr != nil {
+			raw.Close() //nolint:errcheck,gosec
+			return nil, fmt.Errorf("tls handshake with %s: %w", serverURL, herr)
+		}
+		conn = tlsConn
 	} else if strings.HasPrefix(serverURL, "tcp://") {
 		addr := strings.TrimPrefix(serverURL, "tcp://")
-		conn, err = net.DialTimeout("tcp", addr, timeout)
+		conn, err = dial("tcp", addr)
 	} else {
 		return nil, fmt.Errorf("unsupported protocol in URL %q (use ssl:// or tcp://)", serverURL)
 	}

@@ -15,7 +15,15 @@ type ElectrumBackend struct {
 
 // NewElectrumBackend creates a new Electrum backend connected to the given server URL
 func NewElectrumBackend(serverURL string) (*ElectrumBackend, error) {
-	client, err := electrum.NewClient(serverURL, 30*time.Second)
+	return NewElectrumBackendWithDialer(serverURL, nil)
+}
+
+// NewElectrumBackendWithDialer is NewElectrumBackend with a caller-supplied
+// dialer, so the Electrum connection can be carried over an arbitrary transport
+// (e.g. a Skywire mesh tunnel) rather than the stdlib clearnet dialer. dial==nil
+// behaves exactly like NewElectrumBackend.
+func NewElectrumBackendWithDialer(serverURL string, dial electrum.DialFunc) (*ElectrumBackend, error) {
+	client, err := electrum.NewClientWithDialer(serverURL, 30*time.Second, dial)
 	if err != nil {
 		return nil, fmt.Errorf("connect to electrum server: %w", err)
 	}

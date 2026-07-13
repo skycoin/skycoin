@@ -44,12 +44,38 @@ type jsonRPCResponse struct {
 	JSONRPC string          `json:"jsonrpc"`
 	ID      int64           `json:"id"`
 	Result  json.RawMessage `json:"result"`
-	Error   *rpcError       `json:"error"`
+	// Error is parsed leniently: Electrum servers encode the JSON-RPC error
+	// field inconsistently — null/absent/empty on success, a {code,message}
+	// object, or (e.g. blockstream's electrs on listunspent/history) a bare
+	// string. A fixed *struct type made the whole response fail to unmarshal.
+	Error json.RawMessage `json:"error"`
 }
 
 type rpcError struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
+}
+
+// rpcErrorString returns a human error from the JSON-RPC error field, or "" when
+// there is no error (null/absent/empty string). Accepts both the {code,message}
+// object form and the bare-string form servers use interchangeably.
+func rpcErrorString(raw json.RawMessage) string {
+	s := strings.TrimSpace(string(raw))
+	if s == "" || s == "null" || s == `""` {
+		return ""
+	}
+	var obj rpcError
+	if err := json.Unmarshal(raw, &obj); err == nil && (obj.Code != 0 || obj.Message != "") {
+		return fmt.Sprintf("RPC error %d: %s", obj.Code, obj.Message)
+	}
+	var str string
+	if err := json.Unmarshal(raw, &str); err == nil {
+		if strings.TrimSpace(str) == "" {
+			return ""
+		}
+		return "RPC error: " + str
+	}
+	return "RPC error: " + s
 }
 
 // DialFunc dials a raw stream to a "host:port" address. Supplied to
@@ -175,8 +201,8 @@ func (c *Client) call(method string, params []any, result any) error {
 		return fmt.Errorf("unmarshal response: %w", err)
 	}
 
-	if resp.Error != nil {
-		return fmt.Errorf("RPC error %d: %s", resp.Error.Code, resp.Error.Message)
+	if es := rpcErrorString(resp.Error); es != "" {
+		return fmt.Errorf("%s", es)
 	}
 
 	if result != nil {

@@ -321,9 +321,18 @@ export class WalletService {
         };
         if (wallet.encryptedSeed) {
           stripped.encryptedSeed = wallet.encryptedSeed;
-        }
-        if (wallet.encryptedNextSeed) {
-          stripped.encryptedNextSeed = wallet.encryptedNextSeed;
+          if (wallet.encryptedNextSeed) {
+            stripped.encryptedNextSeed = wallet.encryptedNextSeed;
+          }
+        } else if (wallet.seed) {
+          // No password → persist the plaintext seed so the wallet survives a
+          // refresh WITHOUT forcing a seed re-entry. Set a password to encrypt
+          // the seed at rest (then only encryptedSeed is stored). This is the
+          // convenience default for the in-browser client-side wallet.
+          stripped.seed = wallet.seed;
+          if (wallet.nextSeed) {
+            stripped.nextSeed = wallet.nextSeed;
+          }
         }
         strippedWallets.push(stripped);
       });
@@ -362,8 +371,17 @@ export class WalletService {
     const storedWallets: string = localStorage.getItem('wallets');
     if (storedWallets) {
       const wallets: Wallet[] = JSON.parse(storedWallets);
-      wallets.filter(wallet => !wallet.coinId).forEach((wallet) => {
-        wallet.coinId = defaultCoinId;
+      wallets.forEach((wallet) => {
+        if (!wallet.coinId) {
+          wallet.coinId = defaultCoinId;
+        }
+        // A persisted plaintext seed means the wallet is usable immediately, so
+        // clear the seed-confirmation gate — the re-entry prompt is only for
+        // wallets whose seed we don't hold (encrypted-and-locked, or a legacy
+        // addresses-only entry created before seeds were persisted).
+        if (wallet.seed) {
+          wallet.needSeedConfirmation = false;
+        }
       });
       this.wallets.next(wallets);
     } else {

@@ -77,6 +77,11 @@ type Backend interface {
 	BroadcastTransaction(rawTx string) (txid string, err error)
 	// EstimateFee returns the estimated fee in satoshis per byte for the given confirmation target
 	EstimateFee(confirmBlocks int) (satPerByte int64, err error)
+	// Health probes the backend for liveness and returns the current chain tip
+	// height. A non-nil error means the backend is unreachable — callers use it
+	// as an availability/connection-health signal (e.g. the wallet's node-status
+	// indicator and coin-availability gating).
+	Health() (tipHeight int, err error)
 	// Close shuts down the backend connection
 	Close() error
 }

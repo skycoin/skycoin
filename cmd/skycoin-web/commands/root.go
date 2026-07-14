@@ -127,8 +127,12 @@ var RootCmd = &cobra.Command{
 			if !strings.Contains(p, "://") {
 				p = "socks5://" + p
 			}
-			os.Setenv("HTTP_PROXY", p)
-			os.Setenv("HTTPS_PROXY", p)
+			if err := os.Setenv("HTTP_PROXY", p); err != nil {
+				log.Printf("[WARN] Failed to set HTTP_PROXY: %v", err)
+			}
+			if err := os.Setenv("HTTPS_PROXY", p); err != nil {
+				log.Printf("[WARN] Failed to set HTTPS_PROXY: %v", err)
+			}
 		}
 		// cmd.Context() is background for the standalone CLI (blocks until
 		// Ctrl+C); an embedder using ExecuteContext(ctx) can cancel to stop.
@@ -578,6 +582,7 @@ func serve(ctx context.Context) error {
 	// host cancels ctx to stop it. Returns errors instead of os.Exit-ing so
 	// it can't take down an embedding process.
 	srv := &http.Server{Addr: addr, Handler: router, ReadHeaderTimeout: 10 * time.Second}
+	//nolint:gosec // G118 false positive: the shutdown ctx MUST be a fresh, non-canceled context precisely because the parent ctx is already Done at this point.
 	go func() {
 		<-ctx.Done()
 		shutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

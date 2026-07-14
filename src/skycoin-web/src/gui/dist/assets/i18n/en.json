@@ -1,4 +1,13 @@
 {
+  "nodeStatus": {
+    "connecting": "Connecting to node…",
+    "nodeOk": "node connected · block {{height}}",
+    "nodeDown": "node unreachable",
+    "electrumOk": "electrum connected · tip {{height}}",
+    "electrumDown": "electrum unreachable",
+    "unavailable": "backend unavailable",
+    "checking": "checking…"
+  },
   "common": {
     "usd": "USD",
     "loading": "Loading...",
@@ -173,6 +182,7 @@
       "generate-24-seed": "Generate 24 word seed",
       "encrypt-warning": "We suggest that you encrypt each one of your wallets with a password. If you forget your password, you can reset it with your seed. Make sure you have your seed saved somewhere safe before encrypting your wallet.",
       "select-coin": "Select coin",
+      "backend-unavailable-info": "you can still create the wallet, but it won't sync until the connection is restored",
       "unconventional-seed-title": "Possible error",
       "unconventional-seed-text": "You introduced an unconventional seed. If you did it for any special reason, you can continue (only recommended for advanced users). However, if your intention is to use a normal system seed, you must delete all the additional text and special characters.",
       "unconventional-seed-check": "Continue with the unconventional seed.",

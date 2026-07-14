@@ -298,6 +298,25 @@ func (c *Client) EstimateFee(numBlocks int) (float64, error) {
 	return fee, nil
 }
 
+// HeaderTip is the current best block header reported by
+// blockchain.headers.subscribe.
+type HeaderTip struct {
+	Height int    `json:"height"`
+	Hex    string `json:"hex"`
+}
+
+// HeadersSubscribe returns the server's current best block header. It doubles as
+// a lightweight liveness probe: a successful call proves the Electrum connection
+// works and reports the chain tip height. The subscription side effect (future
+// header notifications) is harmless — this synchronous client just ignores them.
+func (c *Client) HeadersSubscribe() (*HeaderTip, error) {
+	var tip HeaderTip
+	if err := c.call("blockchain.headers.subscribe", []any{}, &tip); err != nil {
+		return nil, err
+	}
+	return &tip, nil
+}
+
 // GetTransaction returns the raw transaction hex for a given txid
 func (c *Client) GetTransaction(txid string) (string, error) {
 	var rawTx string

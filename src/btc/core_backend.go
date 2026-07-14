@@ -1,6 +1,7 @@
 package btc
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
@@ -179,6 +180,23 @@ func (b *CoreBackend) EstimateFee(confirmBlocks int) (int64, error) {
 		satPerByte = 1
 	}
 	return satPerByte, nil
+}
+
+// Health probes the Bitcoin Core node for liveness and returns the current
+// block height (getblockchaininfo → blocks). A non-nil error means the node is
+// unreachable.
+func (b *CoreBackend) Health() (int, error) {
+	raw, err := b.client.GetBlockchainInfo()
+	if err != nil {
+		return 0, err
+	}
+	var info struct {
+		Blocks int `json:"blocks"`
+	}
+	if err := json.Unmarshal(raw, &info); err != nil {
+		return 0, fmt.Errorf("parse getblockchaininfo: %w", err)
+	}
+	return info.Blocks, nil
 }
 
 // Close closes the backend (no-op for HTTP-based client)

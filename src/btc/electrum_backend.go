@@ -197,6 +197,17 @@ func (b *ElectrumBackend) EstimateFee(confirmBlocks int) (int64, error) {
 	return satPerByte, nil
 }
 
+// Health probes the Electrum server for liveness and returns the current chain
+// tip height (via blockchain.headers.subscribe). A non-nil error means the
+// server is unreachable.
+func (b *ElectrumBackend) Health() (int, error) {
+	tip, err := b.client.HeadersSubscribe()
+	if err != nil {
+		return 0, err
+	}
+	return tip.Height, nil
+}
+
 // Close closes the backend connection
 func (b *ElectrumBackend) Close() error {
 	return b.client.Close()

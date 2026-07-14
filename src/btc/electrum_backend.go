@@ -23,7 +23,12 @@ func NewElectrumBackend(serverURL string) (*ElectrumBackend, error) {
 // (e.g. a Skywire mesh tunnel) rather than the stdlib clearnet dialer. dial==nil
 // behaves exactly like NewElectrumBackend.
 func NewElectrumBackendWithDialer(serverURL string, dial electrum.DialFunc) (*ElectrumBackend, error) {
-	client, err := electrum.NewClientWithDialer(serverURL, 30*time.Second, dial)
+	// 90s (vs 30s default): a mesh-tunnel dialer carries the Electrum connection
+	// over a multihop Skywire route + skysocks + in-tab TLS, so the initial
+	// handshake (server.version) has several high-latency round-trips and the
+	// 30s deadline is easily hit ("i/o deadline reached"). Clearnet is unaffected
+	// (it completes in well under a second).
+	client, err := electrum.NewClientWithDialer(serverURL, 90*time.Second, dial)
 	if err != nil {
 		return nil, fmt.Errorf("connect to electrum server: %w", err)
 	}

@@ -123,6 +123,13 @@ func NewClientWithDialer(serverURL string, timeout time.Duration, dial DialFunc)
 		tlsConn := tls.Client(raw, &tls.Config{
 			ServerName: host,
 			MinVersion: tls.VersionTLS12,
+			// Electrum servers conventionally present SELF-SIGNED certificates —
+			// the Electrum protocol uses TLS for transport encryption, not CA
+			// authentication (the reference Electrum client accepts self-signed
+			// certs / pins them out of band). CA verification here rejects nearly
+			// every public electrum server ("x509: certificate is not valid for
+			// any names"), so skip it; ServerName is still sent as SNI.
+			InsecureSkipVerify: true, //nolint:gosec // electrum uses self-signed certs by design
 		})
 		if herr := tlsConn.Handshake(); herr != nil {
 			raw.Close() //nolint:errcheck,gosec

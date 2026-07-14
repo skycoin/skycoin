@@ -1,13 +1,9 @@
-//go:build !tinygo
-
 // Package commands implements the skycoin explorer.
 package commands
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"io"
 	"io/fs"
 	"log"
@@ -101,18 +97,11 @@ func init() {
 			}
 		}
 	}
-	t := template.Must(template.New("docs").Parse(docTemplate))
-
 	endpoints := []APIEndpoint{}
 	endpoints = append(endpoints, apiEndpoints...)
 	endpoints = append(endpoints, docEndpoint)
 
-	b := &bytes.Buffer{}
-	if err := t.Execute(b, endpoints); err != nil {
-		log.Panic(err)
-	}
-
-	docTemplateBody = b.String()
+	docTemplateBody = renderDocs(endpoints)
 }
 
 // RootCmd is skycoin blockchain explorer

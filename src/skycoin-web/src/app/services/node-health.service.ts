@@ -4,6 +4,7 @@ import { Observable, of, timer } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs';
 
 import { BaseCoin } from '../coins/basecoin';
+import { CoinService } from './coin.service';
 
 /**
  * CoinHealth is the connection/chain-status of a single coin's backend, from the
@@ -34,7 +35,7 @@ export interface CoinHealth {
  */
 @Injectable()
 export class NodeHealthService {
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, private coinService: CoinService) { }
 
   /** One-shot health probe for a single coin's backend. Never throws. */
   check(coin: BaseCoin): Observable<CoinHealth> {
@@ -52,7 +53,12 @@ export class NodeHealthService {
       );
     }
 
-    let url = (coin.nodeUrl || '').trim();
+    // Probe the EFFECTIVE node: a per-coin custom node URL set in Settings →
+    // Nodes (coinService.customNodeUrls) overrides the coin default, exactly as
+    // ApiService resolves it for the wallet's own calls — so the health bar
+    // reflects the node the wallet is actually talking to, not the default.
+    const custom = this.coinService.customNodeUrls && this.coinService.customNodeUrls[coin.id.toString()];
+    let url = ((custom || coin.nodeUrl) || '').trim();
     if (url.endsWith('/')) {
       url = url.substring(0, url.length - 1);
     }

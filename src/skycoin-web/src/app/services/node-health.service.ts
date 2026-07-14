@@ -15,9 +15,24 @@ import { CoinService } from './coin.service';
 export interface CoinHealth {
   coinId: number;
   coinName: string;
+  /** Ticker/symbol, e.g. SKY / BTC. */
+  coinSymbol?: string;
   isBitcoin: boolean;
   available: boolean;
+  /** Blockchain head seq (skycoin/fiber) or electrum tip height (bitcoin). */
   height: number;
+  /**
+   * The block-publisher public key that signs this fiber chain — the canonical
+   * identity that distinguishes one fiber coin's node from another's. Empty for
+   * bitcoin (electrum has no such notion). From /api/v1/health blockchain_pubkey.
+   */
+  blockchainPubkey?: string;
+  /** Blockchain head block hash (chain-tip identifier). */
+  headHash?: string;
+  /** Node/daemon version string, when reported. */
+  version?: string;
+  /** The effective node/electrum URL actually probed (for display). */
+  nodeUrl?: string;
   error?: string;
 }
 
@@ -30,8 +45,9 @@ export interface CoinHealth {
  * gate the coin-type selector by which backends are actually available. It uses
  * the same request paths the rest of the wallet does, so the visor's fetch shim
  * routes them over the mesh transparently:
- *   - skycoin/fiber: GET <nodeUrl>/api/v1/health  → blockchain.head.seq
- *   - bitcoin:       GET /v1/btc/health           → tip_height (electrum)
+ *   - skycoin/fiber: GET <nodeUrl>/api/v1/health  → head seq, coin name,
+ *                    blockchain_pubkey, head hash, version (chain identity)
+ *   - bitcoin:       GET <electrumUrl>/v1/btc/health → tip_height (electrum)
  */
 @Injectable()
 export class NodeHealthService {
@@ -42,31 +58,38 @@ export class NodeHealthService {
     if (!coin) {
       return of({ coinId: 0, coinName: '', isBitcoin: false, available: false, height: 0, error: 'no coin' });
     }
-    const base: CoinHealth = {
-      coinId: coin.id, coinName: coin.coinName, isBitcoin: coin.isBitcoin(), available: false, height: 0,
-    };
-
-    if (coin.isBitcoin()) {
-      return this.http.get('/v1/btc/health').pipe(
-        map((r: any) => ({ ...base, available: true, height: (r && r.tip_height) || 0 })),
-        catchError(err => of({ ...base, error: this.msg(err) })),
-      );
-    }
-
-    // Probe the EFFECTIVE node: a per-coin custom node URL set in Settings →
-    // Nodes (coinService.customNodeUrls) overrides the coin default, exactly as
-    // ApiService resolves it for the wallet's own calls — so the health bar
-    // reflects the node the wallet is actually talking to, not the default.
+    // The EFFECTIVE backend: a per-coin custom URL set in Settings → Nodes
+    // (coinService.customNodeUrls) overrides the coin default, exactly as
+    // ApiService resolves it for the wallet's own calls — so the status bar
+    // reflects the node/electrum the wallet is actually talking to. For bitcoin
+    // that URL is the ssl:// electrum server; the visor's BTC gateway reads it
+    // straight from the request origin, so prefixing it here keeps health and
+    // the balance/history calls pointed at the same electrum.
     const custom = this.coinService.customNodeUrls && this.coinService.customNodeUrls[coin.id.toString()];
     let url = ((custom || coin.nodeUrl) || '').trim();
     if (url.endsWith('/')) {
       url = url.substring(0, url.length - 1);
     }
+    const base: CoinHealth = {
+      coinId: coin.id, coinName: coin.coinName, coinSymbol: coin.coinSymbol,
+      isBitcoin: coin.isBitcoin(), available: false, height: 0, nodeUrl: url,
+    };
+
+    if (coin.isBitcoin()) {
+      return this.http.get(url + '/v1/btc/health').pipe(
+        map((r: any) => ({ ...base, available: true, height: (r && r.tip_height) || 0 })),
+        catchError(err => of({ ...base, error: this.msg(err) })),
+      );
+    }
+
     return this.http.get(url + '/api/v1/health').pipe(
       map((r: any) => ({
         ...base,
         available: true,
         height: (r && r.blockchain && r.blockchain.head && r.blockchain.head.seq) || 0,
+        blockchainPubkey: (r && r.blockchain_pubkey) || '',
+        headHash: (r && r.blockchain && r.blockchain.head && r.blockchain.head.block_hash) || '',
+        version: (r && r.version && r.version.version) || '',
       })),
       catchError(err => of({ ...base, error: this.msg(err) })),
     );

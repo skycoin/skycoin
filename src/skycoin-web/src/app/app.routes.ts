@@ -37,6 +37,16 @@ export const AppRoutes: Routes = [
     component: BuyComponent,
     canActivate: [WizardGuardService],
   },
+  // Node settings are intentionally NOT behind the wizard guard: choosing/
+  // verifying the backing node is inherently a pre-wallet concern — you need a
+  // reachable, correct node before you can create or scan a wallet, and if the
+  // default node is down you would otherwise be deadlocked in the wizard. This
+  // more-specific route is declared before the guarded `settings` block so it
+  // wins the match.
+  {
+    path: 'settings/node',
+    component: NodesComponent,
+  },
   {
     path: 'settings',
     children: [
@@ -51,10 +61,6 @@ export const AppRoutes: Routes = [
       {
         path: 'pending-transactions',
         component: PendingTransactionsComponent,
-      },
-      {
-        path: 'node',
-        component: NodesComponent,
       },
     ],
     canActivate: [WizardGuardService],

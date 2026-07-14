@@ -1,20 +1,30 @@
 <div class="node-status"
      [class.ok]="health?.available"
      [class.bad]="health && !health.available"
-     [class.checking]="!health">
+     [class.checking]="!health"
+     [attr.title]="tooltip()"
+     (click)="openNodeSettings()">
   <span class="dot"></span>
   @if (!health) {
     <span class="txt">{{ 'nodeStatus.connecting' | translate }}</span>
   } @else if (health.available) {
     <span class="txt">
-      {{ health.coinName }}:
+      <span class="coin">{{ health.coinName }}@if (health.coinSymbol) { ({{ health.coinSymbol }})}</span>
+      <span class="sep">·</span>
       {{ (health.isBitcoin ? 'nodeStatus.electrumOk' : 'nodeStatus.nodeOk') | translate:{ height: (health.height | number) } }}
+      @if (health.blockchainPubkey) {
+        <span class="sep">·</span>
+        <span class="pk">{{ short(health.blockchainPubkey) }}</span>
+      }
     </span>
+    <span class="cog material-icons" aria-hidden="true">settings</span>
   } @else {
     <span class="txt">
-      {{ health.coinName }}:
+      <span class="coin">{{ health.coinName }}@if (health.coinSymbol) { ({{ health.coinSymbol }})}</span>
+      <span class="sep">·</span>
       {{ (health.isBitcoin ? 'nodeStatus.electrumDown' : 'nodeStatus.nodeDown') | translate }}
       @if (health.error) { <span class="err">· {{ health.error }}</span> }
     </span>
+    <span class="cog material-icons" aria-hidden="true">settings</span>
   }
 </div>

@@ -4,6 +4,7 @@ import { generateMnemonic } from 'bip39';
 import { Subscription } from 'rxjs';
 
 import { CoinService } from '../../../../../services/coin.service';
+import { NodeHealthService, CoinHealth } from '../../../../../services/node-health.service';
 import { BaseCoin } from '../../../../../coins/basecoin';
 import { Bip39WordListService } from '../../../../../services/bip39-word-list.service';
 import { environment } from '../../../../../../environments/environment';
@@ -39,11 +40,19 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
   showWalletType = false;
   isBitcoinCoin = false;
 
+  // Backend connection health of the currently-selected coin, so the create
+  // screen can gate the coin choice by whether its node/electrum is actually
+  // reachable (shown even for the default coin when no wallet exists yet).
+  selectedCoinHealth: CoinHealth = null;
+  checkingCoinHealth = false;
+
   private statusSubscription: Subscription;
+  private healthSubscription: Subscription;
 
   constructor(
     private formBuilder: UntypedFormBuilder,
     private coinService: CoinService,
+    private nodeHealthService: NodeHealthService,
     private bip39WordListService: Bip39WordListService
   ) { }
 
@@ -54,6 +63,32 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.statusSubscription.unsubscribe();
+    if (this.healthSubscription) {
+      this.healthSubscription.unsubscribe();
+    }
+  }
+
+  /**
+   * Probes the given coin's backend so the create form can show whether the
+   * node/electrum for the chosen coin is reachable. Wallet creation itself is
+   * client-side, so an unavailable backend does not block creation — it only
+   * warns the user the wallet won't sync until the connection is restored.
+   */
+  private probeCoinHealth(coin: BaseCoin) {
+    if (this.healthSubscription) {
+      this.healthSubscription.unsubscribe();
+    }
+    this.selectedCoinHealth = null;
+    this.checkingCoinHealth = true;
+    this.healthSubscription = this.nodeHealthService.check(coin).subscribe(health => {
+      this.selectedCoinHealth = health;
+      this.checkingCoinHealth = false;
+    });
+  }
+
+  /** True when we have a probe result and the selected coin's backend is down. */
+  get selectedCoinUnavailable(): boolean {
+    return !!this.selectedCoinHealth && !this.selectedCoinHealth.available;
   }
 
   get isValid(): boolean {
@@ -81,6 +116,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
 
     this.isBitcoinCoin = defaultCoin ? defaultCoin.isBitcoin() : false;
     this.showWalletType = defaultCoin ? defaultCoin.serverWallets : this.isProduction;
+    this.probeCoinHealth(defaultCoin);
 
     // Bitcoin defaults to bip44 (segwit); Skycoin defaults to deterministic
     const defaultWalletType = this.isBitcoinCoin ? 'bip44' : 'deterministic';
@@ -109,6 +145,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
       if (coin) {
         this.isBitcoinCoin = coin.isBitcoin();
         this.showWalletType = coin.serverWallets;
+        this.probeCoinHealth(coin);
         if (this.isBitcoinCoin) {
           this.form.get('wallet_type').setValue('bip44');
           this.form.get('segwit').setValue(true);

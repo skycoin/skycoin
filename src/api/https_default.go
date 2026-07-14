@@ -1,5 +1,3 @@
-//go:build !tinygo
-
 package api
 
 import "crypto/tls"

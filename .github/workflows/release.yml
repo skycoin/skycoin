@@ -40,6 +40,11 @@ jobs:
           - { arch: "386", goarch: "386" }
           - { arch: riscv64, goarch: riscv64 }
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
@@ -54,18 +59,8 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
           GOARM: ${{ matrix.goarm }}
         run: |
-          go install -trimpath -ldflags "-s -w -buildid=" \
-            ${{ env.MODULE }}@${{ github.ref_name }}
-
           mkdir -p bin
-          GOPATH_BIN="$(go env GOPATH)/bin"
-          if [ -f "${GOPATH_BIN}/linux_${{ matrix.goarch }}/skycoin" ]; then
-            cp "${GOPATH_BIN}/linux_${{ matrix.goarch }}/skycoin" bin/skycoin
-          elif [ -f "${GOPATH_BIN}/skycoin" ]; then
-            cp "${GOPATH_BIN}/skycoin" bin/skycoin
-          else
-            echo "Binary not found"; find "${GOPATH_BIN}" -name "skycoin*" -type f; exit 1
-          fi
+          go build -trimpath -ldflags "-s -w -buildid=" -o bin/skycoin .
           if [ "${{ matrix.arch }}" = "amd64" ]; then ./bin/skycoin --help || true; fi
 
       - name: Create archive
@@ -105,6 +100,11 @@ jobs:
             toolchain: aarch64-linux-musl
             toolchain_file: aarch64-linux-musl-cross.tgz
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
@@ -146,19 +146,10 @@ jobs:
           GOOS: linux
           GOARCH: ${{ matrix.goarch }}
         run: |
-          go install -tags=cgo -trimpath \
-            -ldflags "-s -w -linkmode external -extldflags '-static' -buildid=" \
-            ${{ env.MODULE }}/cmd/hardware-wallet@${{ github.ref_name }}
-
           mkdir -p bin
-          GOPATH_BIN="$(go env GOPATH)/bin"
-          if [ -f "${GOPATH_BIN}/linux_${{ matrix.goarch }}/hardware-wallet" ]; then
-            cp "${GOPATH_BIN}/linux_${{ matrix.goarch }}/hardware-wallet" bin/skyhw
-          elif [ -f "${GOPATH_BIN}/hardware-wallet" ]; then
-            cp "${GOPATH_BIN}/hardware-wallet" bin/skyhw
-          else
-            echo "Binary not found"; find "${GOPATH_BIN}" -name "hardware-wallet*" -type f; exit 1
-          fi
+          go build -tags=cgo -trimpath \
+            -ldflags "-s -w -linkmode external -extldflags '-static' -buildid=" \
+            -o bin/skyhw ./cmd/hardware-wallet
 
       - name: Create archive
         run: |
@@ -249,6 +240,10 @@ jobs:
 
   darwin-amd64:
     needs: create-release
+    # go install @tag resolves the upstream module path, so these platform
+    # builds only run for the canonical repo (not fork alpha tags). Linux is
+    # built from a checkout and runs everywhere.
+    if: github.repository == 'skycoin/skycoin'
     runs-on: macos-15-intel
     steps:
       - uses: actions/setup-go@v6
@@ -312,6 +307,10 @@ jobs:
 
   darwin-arm64:
     needs: create-release
+    # go install @tag resolves the upstream module path, so these platform
+    # builds only run for the canonical repo (not fork alpha tags). Linux is
+    # built from a checkout and runs everywhere.
+    if: github.repository == 'skycoin/skycoin'
     runs-on: macos-latest
     steps:
       - uses: actions/setup-go@v6
@@ -375,6 +374,10 @@ jobs:
 
   windows:
     needs: create-release
+    # go install @tag resolves the upstream module path, so these platform
+    # builds only run for the canonical repo (not fork alpha tags). Linux is
+    # built from a checkout and runs everywhere.
+    if: github.repository == 'skycoin/skycoin'
     runs-on: windows-latest
     strategy:
       matrix:
@@ -550,6 +553,7 @@ jobs:
 
   create-checksums:
     needs: [linux, linux-hardware-wallet, linux-tinygo, darwin-amd64, darwin-arm64, windows]
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - name: Download all checksums and create combined file

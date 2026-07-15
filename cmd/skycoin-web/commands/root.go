@@ -1,6 +1,3 @@
-//go:build !tinygo
-
-// Package commands provides commands for the skycoin web interface.
 package commands
 
 import (
@@ -16,7 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/util/calvin"
@@ -396,12 +392,33 @@ func initGUIFS() fs.FS {
 	return guiFS
 }
 
+// parseCoinPath parses a "/coin/{index}/api/{sub}" request path into the coin
+// index string and the API sub-path (with leading slash, e.g. "/v1/health"),
+// mirroring gin's "/coin/:coinIndex/api/*path". It reports false if the path is
+// not a well-formed per-coin API route.
+func parseCoinPath(urlPath string) (coinIndex, apiPath string, ok bool) {
+	rest := strings.TrimPrefix(urlPath, "/coin/")
+	if rest == urlPath {
+		return "", "", false
+	}
+	idx := strings.IndexByte(rest, '/')
+	if idx < 0 {
+		return "", "", false
+	}
+	coinIndex = rest[:idx]
+	sub := rest[idx:] // begins with "/"
+	if sub != "/api" && !strings.HasPrefix(sub, "/api/") {
+		return "", "", false
+	}
+	apiPath = strings.TrimPrefix(sub, "/api")
+	return coinIndex, apiPath, true
+}
+
 func serve() {
 	stopPProf := initPProf(pprofMode, pprofAddr)
 	defer stopPProf()
 
-	gin.SetMode(gin.ReleaseMode)
-	router := gin.Default()
+	mux := http.NewServeMux()
 
 	coins := discoverCoins()
 	wltServices := initWalletServices()
@@ -409,19 +426,35 @@ func serve() {
 	coinWltServices, btcHandlers := mapWalletsToCoin(coins, wltServices, btcBackend, btcWltServices)
 	guiFS := initGUIFS()
 
-	// Serve embedded WASM files from skycoin-lite
-	router.GET("/assets/scripts/skycoin-lite.wasm", func(c *gin.Context) {
+	// Serve embedded WASM files from skycoin-lite. These are exact-match
+	// patterns, which take precedence over the "/" static handler in both the
+	// standard-library and TinyGo ServeMux implementations.
+	mux.HandleFunc("/assets/scripts/skycoin-lite.wasm", func(w http.ResponseWriter, r *http.Request) {
+		c := newCtx(w, r)
 		c.Header("Content-Type", "application/wasm")
 		c.Data(http.StatusOK, "application/wasm", wasmtinygo.WasmFile)
 	})
 
-	router.GET("/assets/scripts/wasm_exec.js", func(c *gin.Context) {
+	mux.HandleFunc("/assets/scripts/wasm_exec.js", func(w http.ResponseWriter, r *http.Request) {
+		c := newCtx(w, r)
 		c.Header("Content-Type", "application/javascript")
 		c.Data(http.StatusOK, "application/javascript", wasmtinygo.WasmExecJS)
 	})
 
 	// Per-coin proxy routes: /coin/{index}/api/*
-	router.Any("/coin/:coinIndex/api/*path", func(c *gin.Context) {
+	//
+	// This is registered as a "/coin/" subtree rather than with {wildcard}
+	// path patterns, so that routing behaves identically under the standard
+	// library and TinyGo (whose ServeMux does not implement Go 1.22 pattern
+	// matching). The coin index and API sub-path are parsed from the URL below.
+	mux.HandleFunc("/coin/", func(w http.ResponseWriter, r *http.Request) {
+		c := newCtx(w, r)
+		coinIndexStr, apiPath, ok := parseCoinPath(r.URL.Path)
+		if !ok {
+			http.NotFound(w, r)
+			return
+		}
+		c.params = map[string]string{"coinIndex": coinIndexStr, "path": apiPath}
 		setCORSHeaders(c)
 		if c.Request.Method == "OPTIONS" {
 			c.Status(http.StatusOK)
@@ -435,7 +468,6 @@ func serve() {
 		}
 
 		coin := coins[coinIndex]
-		apiPath := c.Param("path")
 
 		// Bitcoin coins are handled by the btcHandler, not proxied to a node
 		if coin.CoinType == "bitcoin" {
@@ -480,8 +512,11 @@ func serve() {
 	})
 
 	// Legacy /api/* route — proxies to the first node for backwards compatibility
-	// Also serves the /api/v1/coins discovery endpoint
-	router.Any("/api/*path", func(c *gin.Context) {
+	// Also serves the /api/v1/coins discovery endpoint. Registered as an "/api/"
+	// subtree (see the /coin/ note above) for cross-toolchain routing parity.
+	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
+		c := newCtx(w, r)
+		c.params = map[string]string{"path": strings.TrimPrefix(r.URL.Path, "/api")}
 		setCORSHeaders(c)
 		if c.Request.Method == "OPTIONS" {
 			c.Status(http.StatusOK)
@@ -525,13 +560,15 @@ func serve() {
 		}
 	})
 
-	// Serve static files from GUI filesystem
-	router.NoRoute(func(c *gin.Context) {
-		if c.Request.URL.Path != "/" && c.Request.URL.Path != "/favicon.ico" {
-			log.Printf("[STATIC] %s %s", c.Request.Method, c.Request.URL.Path)
+	// Serve static files from GUI filesystem. The "/" pattern is the lowest
+	// priority in the ServeMux, so it only matches requests not claimed by the
+	// API/asset routes above — the net/http equivalent of gin's NoRoute.
+	fileServer := http.FileServer(http.FS(guiFS))
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" && r.URL.Path != "/favicon.ico" {
+			log.Printf("[STATIC] %s %s", r.Method, r.URL.Path)
 		}
-		fileServer := http.FileServer(http.FS(guiFS))
-		fileServer.ServeHTTP(c.Writer, c.Request)
+		fileServer.ServeHTTP(w, r)
 	})
 
 	addr := fmt.Sprintf("%s:%d", host, port)
@@ -554,38 +591,42 @@ func serve() {
 	fmt.Printf("Open your browser and navigate to the address above\n")
 	fmt.Printf("Press Ctrl+C to stop the server\n\n")
 
-	if err := router.Run(addr); err != nil {
+	srv := &http.Server{ //nolint:gosec
+		Addr:    addr,
+		Handler: recoverMiddleware(mux),
+	}
+	if err := srv.ListenAndServe(); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }
 
 // handleBtcStubEndpoints returns stub responses for Skycoin-specific endpoints
 // that the frontend calls on all coins (network/connections, health, blockchain/progress, etc.)
-func handleBtcStubEndpoints(c *gin.Context, apiPath string) bool {
+func handleBtcStubEndpoints(c *webCtx, apiPath string) bool {
 	path := strings.TrimSuffix(apiPath, "/")
 	switch path {
 	case "/v1/network/connections":
-		c.JSON(http.StatusOK, gin.H{"connections": []any{}})
+		c.JSON(http.StatusOK, H{"connections": []any{}})
 	case "/v1/health":
-		c.JSON(http.StatusOK, gin.H{
-			"blockchain":       gin.H{"head": gin.H{"seq": 0, "timestamp": 0}},
-			"version":          gin.H{"version": "0.27.0", "commit": "bitcoin"},
+		c.JSON(http.StatusOK, H{
+			"blockchain":       H{"head": H{"seq": 0, "timestamp": 0}},
+			"version":          H{"version": "0.27.0", "commit": "bitcoin"},
 			"open_connections": 0,
 			"uptime":           "0s",
 		})
 	case "/v1/blockchain/progress":
-		c.JSON(http.StatusOK, gin.H{"current": 1, "highest": 1, "peers": []any{}})
+		c.JSON(http.StatusOK, H{"current": 1, "highest": 1, "peers": []any{}})
 	case "/v1/blockchain/metadata":
-		c.JSON(http.StatusOK, gin.H{"head": gin.H{"seq": 0, "fee": 0}})
+		c.JSON(http.StatusOK, H{"head": H{"seq": 0, "fee": 0}})
 	case "/v1/csrf":
-		c.JSON(http.StatusOK, gin.H{"csrf_token": ""})
+		c.JSON(http.StatusOK, H{"csrf_token": ""})
 	default:
 		return false
 	}
 	return true
 }
 
-func setCORSHeaders(c *gin.Context) {
+func setCORSHeaders(c *webCtx) {
 	c.Header("Access-Control-Allow-Origin", "*")
 	c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 	c.Header("Access-Control-Allow-Headers", "Content-Type, X-CSRF-Token")
@@ -594,7 +635,7 @@ func setCORSHeaders(c *gin.Context) {
 // handleMultiWalletAPI dispatches wallet API requests across all configured wallet services.
 // For read operations, it aggregates results from all services.
 // For write operations, it uses the first (primary) service.
-func handleMultiWalletAPI(c *gin.Context, apiPath string, services []*wallet.Service, nodeURL string) bool {
+func handleMultiWalletAPI(c *webCtx, apiPath string, services []*wallet.Service, nodeURL string) bool {
 	path := strings.TrimSuffix(apiPath, "/")
 	method := c.Request.Method
 
@@ -652,7 +693,7 @@ func needsWalletLookup(path, method string) bool {
 }
 
 // handleGetWalletsMulti aggregates wallets from all services
-func handleGetWalletsMulti(c *gin.Context, services []*wallet.Service) {
+func handleGetWalletsMulti(c *webCtx, services []*wallet.Service) {
 	var allWallets []*readable.WalletResponse
 	for _, svc := range services {
 		wlts, err := svc.GetWallets()
@@ -674,20 +715,20 @@ func handleGetWalletsMulti(c *gin.Context, services []*wallet.Service) {
 }
 
 // handleWalletFolderMulti returns the primary wallet directory
-func handleWalletFolderMulti(c *gin.Context, services []*wallet.Service) {
+func handleWalletFolderMulti(c *webCtx, services []*wallet.Service) {
 	addr, err := services[0].WalletDir()
 	if err != nil {
 		handleWalletError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"address": addr})
+	c.JSON(http.StatusOK, H{"address": addr})
 }
 
 // handleReadOnlyPost forwards read-only POST requests to the node as POST with CSRF token.
 // This preserves form body data (e.g. long address lists) that would exceed URI length
 // limits if converted to GET query parameters.
 // Returns true if the request was handled, false otherwise.
-func handleReadOnlyPost(c *gin.Context, trimmedPath string, nodeURL string) bool {
+func handleReadOnlyPost(c *webCtx, trimmedPath string, nodeURL string) bool {
 	readOnlyEndpoints := map[string]bool{
 		"/v1/balance":      true,
 		"/v1/transactions": true,
@@ -793,12 +834,12 @@ func fetchCSRFToken(nodeURL string) (string, error) {
 }
 
 // proxyToNode forwards an API request to the remote node
-func proxyToNode(c *gin.Context, remoteNodeURL string) {
+func proxyToNode(c *webCtx, remoteNodeURL string) {
 	proxyToNodeWithBase(c, remoteNodeURL, c.Request.URL.Path)
 }
 
 // proxyToNodeWithBase forwards a request with a custom target path
-func proxyToNodeWithBase(c *gin.Context, remoteNodeURL string, targetPath string) {
+func proxyToNodeWithBase(c *webCtx, remoteNodeURL string, targetPath string) {
 	targetURL := remoteNodeURL + targetPath
 	if c.Request.URL.RawQuery != "" {
 		targetURL += "?" + c.Request.URL.RawQuery

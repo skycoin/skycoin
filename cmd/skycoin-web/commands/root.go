@@ -22,7 +22,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/crypto"
 	"github.com/skycoin/skycoin/src/fiber"
 	"github.com/skycoin/skycoin/src/readable"
-	wasmtinygo "github.com/skycoin/skycoin/src/skycoin-lite/wasm-tinygo"
 	"github.com/skycoin/skycoin/src/skycoin-web/src/gui"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -432,13 +431,13 @@ func serve() {
 	mux.HandleFunc("/assets/scripts/skycoin-lite.wasm", func(w http.ResponseWriter, r *http.Request) {
 		c := newCtx(w, r)
 		c.Header("Content-Type", "application/wasm")
-		c.Data(http.StatusOK, "application/wasm", wasmtinygo.WasmFile)
+		c.Data(http.StatusOK, "application/wasm", wasmFile)
 	})
 
 	mux.HandleFunc("/assets/scripts/wasm_exec.js", func(w http.ResponseWriter, r *http.Request) {
 		c := newCtx(w, r)
 		c.Header("Content-Type", "application/javascript")
-		c.Data(http.StatusOK, "application/javascript", wasmtinygo.WasmExecJS)
+		c.Data(http.StatusOK, "application/javascript", wasmExecJS)
 	})
 
 	// Per-coin proxy routes: /coin/{index}/api/*

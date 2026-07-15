@@ -23,7 +23,74 @@ jobs:
             --draft \
             --generate-notes || true
 
+  # Main skycoin binary: pure Go (CGO disabled), built from the repository root
+  # (github.com/skycoin/skycoin). No hardware-wallet (that is cgo/libusb, built
+  # separately below) and no musl toolchain needed. Matches the TinyGo build's
+  # feature set. Cross-compiles to every arch with plain GOOS/GOARCH.
   linux:
+    needs: create-release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - { arch: amd64, goarch: amd64 }
+          - { arch: arm64, goarch: arm64 }
+          - { arch: arm, goarch: arm, goarm: "6" }
+          - { arch: armhf, goarch: arm, goarm: "7" }
+          - { arch: "386", goarch: "386" }
+          - { arch: riscv64, goarch: riscv64 }
+    steps:
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+
+      - name: Build skycoin (pure Go, from repo root)
+        env:
+          GOPROXY: direct
+          GOSUMDB: "off"
+          CGO_ENABLED: "0"
+          GOOS: linux
+          GOARCH: ${{ matrix.goarch }}
+          GOARM: ${{ matrix.goarm }}
+        run: |
+          go install -trimpath -ldflags "-s -w -buildid=" \
+            ${{ env.MODULE }}@${{ github.ref_name }}
+
+          mkdir -p bin
+          GOPATH_BIN="$(go env GOPATH)/bin"
+          if [ -f "${GOPATH_BIN}/linux_${{ matrix.goarch }}/skycoin" ]; then
+            cp "${GOPATH_BIN}/linux_${{ matrix.goarch }}/skycoin" bin/skycoin
+          elif [ -f "${GOPATH_BIN}/skycoin" ]; then
+            cp "${GOPATH_BIN}/skycoin" bin/skycoin
+          else
+            echo "Binary not found"; find "${GOPATH_BIN}" -name "skycoin*" -type f; exit 1
+          fi
+          if [ "${{ matrix.arch }}" = "amd64" ]; then ./bin/skycoin --help || true; fi
+
+      - name: Create archive
+        run: |
+          ARCHIVE_NAME="skycoin-${{ github.ref_name }}-linux-${{ matrix.arch }}"
+          mkdir -p dist
+          cp bin/skycoin dist/
+          cd dist
+          tar -czvf "${ARCHIVE_NAME}.tar.gz" skycoin
+          sha256sum "${ARCHIVE_NAME}.tar.gz" > "${ARCHIVE_NAME}.tar.gz.sha256"
+
+      - name: Upload to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            dist/skycoin-${{ github.ref_name }}-linux-${{ matrix.arch }}.tar.gz \
+            dist/skycoin-${{ github.ref_name }}-linux-${{ matrix.arch }}.tar.gz.sha256 \
+            --repo ${{ github.repository }} \
+            --clobber
+
+  # Hardware-wallet utilities: cgo/libusb, statically linked against musl, in
+  # their own "skyhw" archive (separate from the main skycoin binary). This is
+  # the one piece that keeps the musl cross-toolchain machinery.
+  linux-hardware-wallet:
     needs: create-release
     runs-on: ubuntu-latest
     strategy:
@@ -37,24 +104,6 @@ jobs:
             goarch: arm64
             toolchain: aarch64-linux-musl
             toolchain_file: aarch64-linux-musl-cross.tgz
-          - arch: arm
-            goarch: arm
-            goarm: "6"
-            toolchain: arm-linux-musleabi
-            toolchain_file: arm-linux-musleabi-cross.tgz
-          - arch: armhf
-            goarch: arm
-            goarm: "7"
-            toolchain: arm-linux-musleabihf
-            toolchain_file: arm-linux-musleabihf-cross.tgz
-          - arch: 386
-            goarch: "386"
-            toolchain: i686-linux-musl
-            toolchain_file: i686-linux-musl-cross.tgz
-          - arch: riscv64
-            goarch: riscv64
-            toolchain: riscv64-linux-musl
-            toolchain_file: riscv64-linux-musl-cross.tgz
     steps:
       - uses: actions/setup-go@v6
         with:
@@ -87,7 +136,7 @@ jobs:
       - name: Build libusb for musl target
         run: ./build-libusb-musl.sh ${{ matrix.arch }} ${{ matrix.toolchain }} ./musl-data/${{ matrix.toolchain }}-cross
 
-      - name: Build skycoin release binary
+      - name: Build hardware-wallet utility (musl static)
         env:
           GOPROXY: direct
           GOSUMDB: "off"
@@ -96,37 +145,28 @@ jobs:
           PKG_CONFIG_PATH: ${{ github.workspace }}/musl-data/${{ matrix.toolchain }}-cross/${{ matrix.toolchain }}/lib/pkgconfig
           GOOS: linux
           GOARCH: ${{ matrix.goarch }}
-          GOARM: ${{ matrix.goarm }}
         run: |
           go install -tags=cgo -trimpath \
             -ldflags "-s -w -linkmode external -extldflags '-static' -buildid=" \
-            ${{ env.MODULE }}/cmd/release@${{ github.ref_name }}
+            ${{ env.MODULE }}/cmd/hardware-wallet@${{ github.ref_name }}
 
           mkdir -p bin
           GOPATH_BIN="$(go env GOPATH)/bin"
-          if [ -f "${GOPATH_BIN}/linux_${{ matrix.goarch }}/release" ]; then
-            cp "${GOPATH_BIN}/linux_${{ matrix.goarch }}/release" bin/skycoin
-          elif [ -f "${GOPATH_BIN}/release" ]; then
-            cp "${GOPATH_BIN}/release" bin/skycoin
+          if [ -f "${GOPATH_BIN}/linux_${{ matrix.goarch }}/hardware-wallet" ]; then
+            cp "${GOPATH_BIN}/linux_${{ matrix.goarch }}/hardware-wallet" bin/skyhw
+          elif [ -f "${GOPATH_BIN}/hardware-wallet" ]; then
+            cp "${GOPATH_BIN}/hardware-wallet" bin/skyhw
           else
-            echo "Binary not found in expected locations"
-            find "${GOPATH_BIN}" -name "release*" -type f
-            exit 1
-          fi
-
-          # Verify binary on native arch
-          if [ "${{ matrix.arch }}" = "amd64" ]; then
-            ./bin/skycoin || true
-            ./bin/skycoin daemon --help || true
+            echo "Binary not found"; find "${GOPATH_BIN}" -name "hardware-wallet*" -type f; exit 1
           fi
 
       - name: Create archive
         run: |
-          ARCHIVE_NAME="skycoin-${{ github.ref_name }}-linux-${{ matrix.arch }}"
+          ARCHIVE_NAME="skyhw-${{ github.ref_name }}-linux-${{ matrix.arch }}"
           mkdir -p dist
-          cp bin/skycoin dist/
+          cp bin/skyhw dist/
           cd dist
-          tar -czvf "${ARCHIVE_NAME}.tar.gz" skycoin
+          tar -czvf "${ARCHIVE_NAME}.tar.gz" skyhw
           sha256sum "${ARCHIVE_NAME}.tar.gz" > "${ARCHIVE_NAME}.tar.gz.sha256"
 
       - name: Upload to release
@@ -134,8 +174,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload "${{ github.ref_name }}" \
-            dist/skycoin-${{ github.ref_name }}-linux-${{ matrix.arch }}.tar.gz \
-            dist/skycoin-${{ github.ref_name }}-linux-${{ matrix.arch }}.tar.gz.sha256 \
+            dist/skyhw-${{ github.ref_name }}-linux-${{ matrix.arch }}.tar.gz \
+            dist/skyhw-${{ github.ref_name }}-linux-${{ matrix.arch }}.tar.gz.sha256 \
             --repo ${{ github.repository }} \
             --clobber
 
@@ -230,10 +270,10 @@ jobs:
           CGO_LDFLAGS: -L/usr/local/lib -L/opt/homebrew/lib -L/opt/homebrew/opt/hidapi/lib -L/opt/homebrew/opt/libusb/lib
         run: |
           go install -trimpath -ldflags "-s -w" \
-            ${{ env.MODULE }}/cmd/release@${{ github.ref_name }}
+            ${{ env.MODULE }}@${{ github.ref_name }}
 
           mkdir -p bin
-          cp "$(go env GOPATH)/bin/release" bin/skycoin
+          cp "$(go env GOPATH)/bin/skycoin" bin/skycoin
           ./bin/skycoin || true
           ./bin/skycoin daemon --help || true
 
@@ -293,10 +333,10 @@ jobs:
           CGO_LDFLAGS: -L/opt/homebrew/lib -L/opt/homebrew/opt/hidapi/lib -L/opt/homebrew/opt/libusb/lib
         run: |
           go install -trimpath -ldflags "-s -w" \
-            ${{ env.MODULE }}/cmd/release@${{ github.ref_name }}
+            ${{ env.MODULE }}@${{ github.ref_name }}
 
           mkdir -p bin
-          cp "$(go env GOPATH)/bin/release" bin/skycoin
+          cp "$(go env GOPATH)/bin/skycoin" bin/skycoin
           ./bin/skycoin || true
           ./bin/skycoin daemon --help || true
 
@@ -382,12 +422,12 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
         shell: pwsh
         run: |
-          go install -trimpath -ldflags "-s -w" "${{ env.MODULE }}/cmd/release@${{ github.ref_name }}"
+          go install -trimpath -ldflags "-s -w" "${{ env.MODULE }}@${{ github.ref_name }}"
 
           New-Item -ItemType Directory -Force -Path "bin"
           $gopath = go env GOPATH
-          $crossPath = "$gopath\bin\windows_${{ matrix.goarch }}\release.exe"
-          $nativePath = "$gopath\bin\release.exe"
+          $crossPath = "$gopath\bin\windows_${{ matrix.goarch }}\skycoin.exe"
+          $nativePath = "$gopath\bin\skycoin.exe"
 
           if (Test-Path $crossPath) {
             Copy-Item $crossPath "bin\skycoin.exe"
@@ -509,7 +549,7 @@ jobs:
           gh release upload "${{ github.ref_name }}" @files --repo ${{ github.repository }} --clobber
 
   create-checksums:
-    needs: [linux, darwin-amd64, darwin-arm64, windows]
+    needs: [linux, linux-hardware-wallet, linux-tinygo, darwin-amd64, darwin-arm64, windows]
     runs-on: ubuntu-latest
     steps:
       - name: Download all checksums and create combined file

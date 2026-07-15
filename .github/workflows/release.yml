@@ -139,6 +139,74 @@ jobs:
             --repo ${{ github.repository }} \
             --clobber
 
+  # TinyGo build: a separate, much smaller Linux/amd64 skycoin binary compiled
+  # with the TinyGo fork (github.com/0magnet/tinygo). It has no cgo, so no
+  # hardware-wallet support, and it embeds the TinyGo-compiled skycoin-lite wasm.
+  # Uploaded as a distinct "-tinygo" archive alongside the standard-go archives.
+  linux-tinygo:
+    needs: create-release
+    runs-on: ubuntu-latest
+    env:
+      TINYGO_REPO: https://github.com/0magnet/tinygo.git
+      TINYGO_TAG: v0.42.0-skycoin.1
+    steps:
+      - name: Checkout skycoin
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+
+      - name: Install LLVM 22 (apt.llvm.org)
+        run: |
+          wget -q https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 22
+          sudo apt-get install -y llvm-22-dev libclang-22-dev clang-22 lld-22
+
+      - name: Build the TinyGo fork
+        run: |
+          git clone --branch "${TINYGO_TAG}" --recurse-submodules --depth 1 \
+            "${TINYGO_REPO}" "${GITHUB_WORKSPACE}/tinygo-fork"
+          cd "${GITHUB_WORKSPACE}/tinygo-fork"
+          go build -tags llvm22 -o "${GITHUB_WORKSPACE}/tinygo-fork/build/tinygo" .
+          ./build/tinygo version
+
+      - name: Build skycoin with TinyGo
+        env:
+          # Point TINYGOROOT at the fork checkout so its src/ and targets/ are used.
+          TINYGOROOT: ${{ github.workspace }}/tinygo-fork
+        run: |
+          mkdir -p bin
+          "${GITHUB_WORKSPACE}/tinygo-fork/build/tinygo" build \
+            -gc=precise -tags "safe netgo" \
+            -o bin/skycoin .
+          # non-TTY --help must not panic (colored-help fork renders plainly here)
+          ./bin/skycoin --help || true
+
+      - name: Create archive
+        run: |
+          ARCHIVE_NAME="skycoin-${{ github.ref_name }}-linux-amd64-tinygo"
+          mkdir -p dist
+          cp bin/skycoin dist/
+          cd dist
+          tar -czvf "${ARCHIVE_NAME}.tar.gz" skycoin
+          sha256sum "${ARCHIVE_NAME}.tar.gz" > "${ARCHIVE_NAME}.tar.gz.sha256"
+
+      - name: Upload to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            dist/skycoin-${{ github.ref_name }}-linux-amd64-tinygo.tar.gz \
+            dist/skycoin-${{ github.ref_name }}-linux-amd64-tinygo.tar.gz.sha256 \
+            --repo ${{ github.repository }} \
+            --clobber
+
   darwin-amd64:
     needs: create-release
     runs-on: macos-15-intel

@@ -12,7 +12,7 @@ on 386 with undefined type errors.
 package main
 
 import (
-	cc "github.com/ivanpirog/coloredcobra"
+	cc "github.com/0magnet/coloredcobra"
 	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/cmd/hardware-wallet/commands"

@@ -1,0 +1,20 @@
+<div class="node-status"
+     [class.ok]="health?.available"
+     [class.bad]="health && !health.available"
+     [class.checking]="!health">
+  <span class="dot"></span>
+  @if (!health) {
+    <span class="txt">{{ 'nodeStatus.connecting' | translate }}</span>
+  } @else if (health.available) {
+    <span class="txt">
+      {{ health.coinName }}:
+      {{ (health.isBitcoin ? 'nodeStatus.electrumOk' : 'nodeStatus.nodeOk') | translate:{ height: (health.height | number) } }}
+    </span>
+  } @else {
+    <span class="txt">
+      {{ health.coinName }}:
+      {{ (health.isBitcoin ? 'nodeStatus.electrumDown' : 'nodeStatus.nodeDown') | translate }}
+      @if (health.error) { <span class="err">· {{ health.error }}</span> }
+    </span>
+  }
+</div>

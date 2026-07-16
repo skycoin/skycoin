@@ -2,6 +2,7 @@
   <app-header [headline]="(coins.length > 1 ? 'title.nodes' : 'title.node') | translate"></app-header>
 
   <div class="container">
+    <p class="node-help">{{ 'nodes.help' | translate }}</p>
     <div class="-table">
       <div class="-headers">
         @if (coins.length > 1) {

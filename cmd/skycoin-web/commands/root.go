@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -32,6 +33,7 @@ var (
 	nodeURLs      []string
 	walletDirs    []string
 	enableSeedAPI bool
+	socks5Proxy   string
 
 	guiDir string // custom GUI directory, overrides embedded GUI
 
@@ -109,10 +111,30 @@ var RootCmd = &cobra.Command{
 		}
 		ret = calvin.AsciiFont(strings.ToLower(coinName) + "-web")
 		ret += fmt.Sprintf("\nThin client web wallet for %s and fibercoins.", coinName)
+		ret += "\n\nNodes may be reached over a skywire mesh: pass --socks5-proxy (or set\n" +
+			"HTTP(S)_PROXY) to a resolving SOCKS5 proxy and use a mesh --node-url, e.g.\n" +
+			"  --socks5-proxy socks5://127.0.0.1:4443 --node-url http://<name>.<pk>.dmsg\n" +
+			"The proxy does remote DNS, so the .dmsg/.skynet hostname resolves through it."
 		return ret
 	}(),
-	Run: func(_ *cobra.Command, _ []string) {
-		serve()
+	Run: func(cmd *cobra.Command, _ []string) {
+		if socks5Proxy != "" {
+			p := socks5Proxy
+			if !strings.Contains(p, "://") {
+				p = "socks5://" + p
+			}
+			if err := os.Setenv("HTTP_PROXY", p); err != nil {
+				log.Printf("[WARN] Failed to set HTTP_PROXY: %v", err)
+			}
+			if err := os.Setenv("HTTPS_PROXY", p); err != nil {
+				log.Printf("[WARN] Failed to set HTTPS_PROXY: %v", err)
+			}
+		}
+		// cmd.Context() is background for the standalone CLI (blocks until
+		// Ctrl+C); an embedder using ExecuteContext(ctx) can cancel to stop.
+		if err := serve(cmd.Context()); err != nil {
+			log.Fatalf("Server failed: %v", err)
+		}
 	},
 }
 
@@ -122,6 +144,7 @@ func init() {
 	RootCmd.Flags().StringArrayVarP(&nodeURLs, "node-url", "n", []string{"https://node.skycoin.com"}, "Node URL (can be specified multiple times)")
 	RootCmd.Flags().StringArrayVarP(&walletDirs, "wallet-dir", "w", nil, "Local wallet directory (e.g. ~/.skycoin/wallets)")
 	RootCmd.Flags().BoolVar(&enableSeedAPI, "enable-seed-api", false, "Enable the wallet seed API (requires --wallet-dir)")
+	RootCmd.Flags().StringVar(&socks5Proxy, "socks5-proxy", "", "SOCKS5 proxy for node connections (e.g. socks5://127.0.0.1:4443)")
 	RootCmd.Flags().StringVarP(&guiDir, "gui-dir", "g", "", "Custom GUI directory (overrides embedded GUI)")
 
 	// Profiling flags
@@ -392,8 +415,9 @@ func initGUIFS() fs.FS {
 }
 
 // parseCoinPath parses a "/coin/{index}/api/{sub}" request path into the coin
-// index string and the API sub-path (with leading slash, e.g. "/v1/health"),
-// mirroring gin's "/coin/:coinIndex/api/*path". It reports false if the path is
+// index string and the API sub-path (with leading slash, e.g. "/v1/health").
+// The web wallet runs on net/http (not gin) so it also builds under TinyGo; this
+// mirrors gin's "/coin/:coinIndex/api/*path". It reports false if the path is
 // not a well-formed per-coin API route.
 func parseCoinPath(urlPath string) (coinIndex, apiPath string, ok bool) {
 	rest := strings.TrimPrefix(urlPath, "/coin/")
@@ -413,7 +437,7 @@ func parseCoinPath(urlPath string) (coinIndex, apiPath string, ok bool) {
 	return coinIndex, apiPath, true
 }
 
-func serve() {
+func serve(ctx context.Context) error {
 	stopPProf := initPProf(pprofMode, pprofAddr)
 	defer stopPProf()
 
@@ -590,13 +614,28 @@ func serve() {
 	fmt.Printf("Open your browser and navigate to the address above\n")
 	fmt.Printf("Press Ctrl+C to stop the server\n\n")
 
+	// Graceful, context-cancellable serve so skycoin-web can run either as
+	// this standalone command (ctx = background, never cancels → Ctrl+C) or
+	// embedded in-process (e.g. a skywire internal launcher app), where the
+	// host cancels ctx to stop it. Returns errors instead of os.Exit-ing so
+	// it can't take down an embedding process. Uses the net/http mux (so the
+	// web wallet also builds under TinyGo) wrapped in the recovery middleware.
 	srv := &http.Server{ //nolint:gosec
-		Addr:    addr,
-		Handler: recoverMiddleware(mux),
+		Addr:              addr,
+		Handler:           recoverMiddleware(mux),
+		ReadHeaderTimeout: 10 * time.Second,
 	}
-	if err := srv.ListenAndServe(); err != nil {
-		log.Fatalf("Server failed to start: %v", err)
+	//nolint:gosec // G118 false positive: the shutdown ctx MUST be a fresh, non-canceled context precisely because the parent ctx is already Done at this point.
+	go func() {
+		<-ctx.Done()
+		shutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = srv.Shutdown(shutCtx) //nolint:errcheck // best-effort graceful shutdown
+	}()
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		return err
 	}
+	return nil
 }
 
 // handleBtcStubEndpoints returns stub responses for Skycoin-specific endpoints

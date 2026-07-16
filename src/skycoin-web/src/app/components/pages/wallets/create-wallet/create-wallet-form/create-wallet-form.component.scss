@@ -133,3 +133,40 @@ label[for=seed] {
     line-height: 1.4;
   }
 }
+
+// Per-coin backend health note under the coin selector on the create screen.
+// The create form renders on either a white card OR the onboarding blue
+// gradient (whiteText), so this uses a self-contained dark translucent chip
+// with white text + a bright state dot — legible on both backgrounds.
+.coin-health {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 12px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #fff;
+  background-color: rgba(20, 25, 40, 0.32);
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex: 0 0 auto;
+    background-color: #f0b429; // checking (default)
+  }
+
+  &.ok .dot {
+    background-color: #43c463;
+  }
+
+  &.bad {
+    background-color: rgba(120, 24, 24, 0.34);
+
+    .dot {
+      background-color: #ff6b6b;
+    }
+  }
+}

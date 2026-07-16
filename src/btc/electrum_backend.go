@@ -15,7 +15,20 @@ type ElectrumBackend struct {
 
 // NewElectrumBackend creates a new Electrum backend connected to the given server URL
 func NewElectrumBackend(serverURL string) (*ElectrumBackend, error) {
-	client, err := electrum.NewClient(serverURL, 30*time.Second)
+	return NewElectrumBackendWithDialer(serverURL, nil)
+}
+
+// NewElectrumBackendWithDialer is NewElectrumBackend with a caller-supplied
+// dialer, so the Electrum connection can be carried over an arbitrary transport
+// (e.g. a Skywire mesh tunnel) rather than the stdlib clearnet dialer. dial==nil
+// behaves exactly like NewElectrumBackend.
+func NewElectrumBackendWithDialer(serverURL string, dial electrum.DialFunc) (*ElectrumBackend, error) {
+	// 90s (vs 30s default): a mesh-tunnel dialer carries the Electrum connection
+	// over a multihop Skywire route + skysocks + in-tab TLS, so the initial
+	// handshake (server.version) has several high-latency round-trips and the
+	// 30s deadline is easily hit ("i/o deadline reached"). Clearnet is unaffected
+	// (it completes in well under a second).
+	client, err := electrum.NewClientWithDialer(serverURL, 90*time.Second, dial)
 	if err != nil {
 		return nil, fmt.Errorf("connect to electrum server: %w", err)
 	}
@@ -182,6 +195,17 @@ func (b *ElectrumBackend) EstimateFee(confirmBlocks int) (int64, error) {
 		satPerByte = 1
 	}
 	return satPerByte, nil
+}
+
+// Health probes the Electrum server for liveness and returns the current chain
+// tip height (via blockchain.headers.subscribe). A non-nil error means the
+// server is unreachable.
+func (b *ElectrumBackend) Health() (int, error) {
+	tip, err := b.client.HeadersSubscribe()
+	if err != nil {
+		return 0, err
+	}
+	return tip.Height, nil
 }
 
 // Close closes the backend connection

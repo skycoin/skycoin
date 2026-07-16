@@ -44,7 +44,11 @@ type jsonRPCResponse struct {
 	JSONRPC string          `json:"jsonrpc"`
 	ID      int64           `json:"id"`
 	Result  json.RawMessage `json:"result"`
-	Error   *rpcError       `json:"error"`
+	// Error is parsed leniently: Electrum servers encode the JSON-RPC error
+	// field inconsistently — null/absent/empty on success, a {code,message}
+	// object, or (e.g. blockstream's electrs on listunspent/history) a bare
+	// string. A fixed *struct type made the whole response fail to unmarshal.
+	Error json.RawMessage `json:"error"`
 }
 
 type rpcError struct {
@@ -52,11 +56,55 @@ type rpcError struct {
 	Message string `json:"message"`
 }
 
-// NewClient creates a new Electrum client connected to the given server URL.
+// rpcErrorString returns a human error from the JSON-RPC error field, or "" when
+// there is no error (null/absent/empty string). Accepts both the {code,message}
+// object form and the bare-string form servers use interchangeably.
+func rpcErrorString(raw json.RawMessage) string {
+	s := strings.TrimSpace(string(raw))
+	if s == "" || s == "null" || s == `""` {
+		return ""
+	}
+	var obj rpcError
+	if err := json.Unmarshal(raw, &obj); err == nil && (obj.Code != 0 || obj.Message != "") {
+		return fmt.Sprintf("RPC error %d: %s", obj.Code, obj.Message)
+	}
+	var str string
+	if err := json.Unmarshal(raw, &str); err == nil {
+		if strings.TrimSpace(str) == "" {
+			return ""
+		}
+		return "RPC error: " + str
+	}
+	return "RPC error: " + s
+}
+
+// DialFunc dials a raw stream to a "host:port" address. Supplied to
+// NewClientWithDialer to route the Electrum connection through a tunnel/proxy
+// (e.g. skywire's skysocks-client over the mesh, or a dmsg stream) instead of
+// the stdlib clearnet dialer. For ssl:// URLs the TLS handshake still runs
+// client-side on top of the returned conn, so the tunnel can't read the stream.
+type DialFunc func(network, addr string) (net.Conn, error)
+
+// NewClient creates a new Electrum client connected to the given server URL,
+// dialing over the clearnet with the standard library.
 // URL format: "ssl://host:port" for TLS or "tcp://host:port" for plain TCP.
 func NewClient(serverURL string, timeout time.Duration) (*Client, error) {
+	return NewClientWithDialer(serverURL, timeout, nil)
+}
+
+// NewClientWithDialer is NewClient with a caller-supplied raw dialer. When
+// dial is nil it behaves exactly like NewClient (net.DialTimeout). This lets a
+// caller carry the Electrum connection over an arbitrary transport — the whole
+// point being that a skywire visor can reach an ssl:// Electrum server through
+// skysocks/dmsg while the TLS handshake is still performed end-to-end here.
+func NewClientWithDialer(serverURL string, timeout time.Duration, dial DialFunc) (*Client, error) {
 	if timeout == 0 {
 		timeout = DefaultTimeout
+	}
+	if dial == nil {
+		dial = func(network, addr string) (net.Conn, error) {
+			return net.DialTimeout(network, addr, timeout)
+		}
 	}
 
 	var conn net.Conn
@@ -68,18 +116,29 @@ func NewClient(serverURL string, timeout time.Duration) (*Client, error) {
 		if herr != nil {
 			return nil, fmt.Errorf("invalid server address %q: %w", addr, herr)
 		}
-		conn, err = tls.DialWithDialer(
-			&net.Dialer{Timeout: timeout},
-			"tcp",
-			addr,
-			&tls.Config{
-				ServerName: host,
-				MinVersion: tls.VersionTLS12,
-			},
-		)
+		raw, derr := dial("tcp", addr)
+		if derr != nil {
+			return nil, fmt.Errorf("failed to connect to %s: %w", serverURL, derr)
+		}
+		tlsConn := tls.Client(raw, &tls.Config{
+			ServerName: host,
+			MinVersion: tls.VersionTLS12,
+			// Electrum servers conventionally present SELF-SIGNED certificates —
+			// the Electrum protocol uses TLS for transport encryption, not CA
+			// authentication (the reference Electrum client accepts self-signed
+			// certs / pins them out of band). CA verification here rejects nearly
+			// every public electrum server ("x509: certificate is not valid for
+			// any names"), so skip it; ServerName is still sent as SNI.
+			InsecureSkipVerify: true, //nolint:gosec // electrum uses self-signed certs by design
+		})
+		if herr := tlsConn.Handshake(); herr != nil {
+			raw.Close() //nolint:errcheck,gosec
+			return nil, fmt.Errorf("tls handshake with %s: %w", serverURL, herr)
+		}
+		conn = tlsConn
 	} else if strings.HasPrefix(serverURL, "tcp://") {
 		addr := strings.TrimPrefix(serverURL, "tcp://")
-		conn, err = net.DialTimeout("tcp", addr, timeout)
+		conn, err = dial("tcp", addr)
 	} else {
 		return nil, fmt.Errorf("unsupported protocol in URL %q (use ssl:// or tcp://)", serverURL)
 	}
@@ -149,8 +208,8 @@ func (c *Client) call(method string, params []any, result any) error {
 		return fmt.Errorf("unmarshal response: %w", err)
 	}
 
-	if resp.Error != nil {
-		return fmt.Errorf("RPC error %d: %s", resp.Error.Code, resp.Error.Message)
+	if es := rpcErrorString(resp.Error); es != "" {
+		return fmt.Errorf("%s", es)
 	}
 
 	if result != nil {
@@ -237,6 +296,25 @@ func (c *Client) EstimateFee(numBlocks int) (float64, error) {
 		return 0, err
 	}
 	return fee, nil
+}
+
+// HeaderTip is the current best block header reported by
+// blockchain.headers.subscribe.
+type HeaderTip struct {
+	Height int    `json:"height"`
+	Hex    string `json:"hex"`
+}
+
+// HeadersSubscribe returns the server's current best block header. It doubles as
+// a lightweight liveness probe: a successful call proves the Electrum connection
+// works and reports the chain tip height. The subscription side effect (future
+// header notifications) is harmless — this synchronous client just ignores them.
+func (c *Client) HeadersSubscribe() (*HeaderTip, error) {
+	var tip HeaderTip
+	if err := c.call("blockchain.headers.subscribe", []any{}, &tip); err != nil {
+		return nil, err
+	}
+	return &tip, nil
 }
 
 // GetTransaction returns the raw transaction hex for a given txid

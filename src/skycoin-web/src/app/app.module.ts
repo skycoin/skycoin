@@ -1,4 +1,4 @@
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi, withFetch } from '@angular/common/http';
 import { NgModule } from '@angular/core';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { MatSliderModule } from '@angular/material/slider';
@@ -29,6 +29,7 @@ import { ButtonComponent } from './components/layout/button/button.component';
 import { DoubleButtonComponent } from './components/layout/double-button/double-button.component';
 import { HeaderComponent } from './components/layout/header/header.component';
 import { NavBarComponent } from './components/layout/header/nav-bar/nav-bar.component';
+import { NodeStatusBarComponent } from './components/layout/node-status-bar/node-status-bar.component';
 import { TopBarComponent } from './components/layout/header/top-bar/top-bar.component';
 import { ModalComponent } from './components/layout/modal/modal.component';
 import { QrCodeComponent } from './components/layout/qr-code/qr-code.component';
@@ -67,6 +68,7 @@ import { ConfirmationComponent } from './components/layout/confirmation/confirma
 import { DisclaimerWarningComponent } from './components/layout/disclaimer-warning/disclaimer-warning.component';
 import { NavBarService } from './services/nav-bar.service';
 import { CoinService } from './services/coin.service';
+import { NodeHealthService } from './services/node-health.service';
 import { LoadingContentComponent } from './components/layout/loading-content/loading-content.component';
 import { SelectCoinComponent } from './components/layout/select-coin/select-coin.component';
 import { LanguageService } from './services/language.service';
@@ -112,6 +114,7 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
         HistoryComponent,
         ModalComponent,
         NavBarComponent,
+        NodeStatusBarComponent,
         OutputsComponent,
         OnboardingCreateWalletComponent,
         OnboardingEncryptWalletComponent,
@@ -182,6 +185,7 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
         CipherProvider,
         NavBarService,
         CoinService,
+        NodeHealthService,
         LanguageService,
         WalletService,
         BalanceService,
@@ -195,6 +199,6 @@ import { MsgBarComponent } from './components/layout/msg-bar/msg-bar.component';
         HwWalletDaemonService,
         HwWalletService,
         EncryptionService,
-        provideHttpClient(withInterceptorsFromDi()),
+        provideHttpClient(withInterceptorsFromDi(), withFetch()),
     ] })
 export class AppModule { }

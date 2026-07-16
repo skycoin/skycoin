@@ -1,4 +1,13 @@
 {
+  "nodeStatus": {
+    "connecting": "Connecting to node…",
+    "nodeOk": "node connected · block {{height}}",
+    "nodeDown": "node unreachable",
+    "electrumOk": "electrum connected · tip {{height}}",
+    "electrumDown": "electrum unreachable",
+    "unavailable": "backend unavailable",
+    "checking": "checking…"
+  },
   "common": {
     "usd": "USD",
     "loading": "Loading...",
@@ -160,6 +169,8 @@
       "name-label": "Name",
       "seed-label": "Seed",
       "confirm-seed-label": "Confirm seed",
+      "password-label": "Password (optional)",
+      "password-info": "Encrypt your seed with a password. Leave blank to keep it stored unencrypted in this browser — you can add or change a password later from the wallet.",
       "seed-warning": "Remember this seed! Keep it in a safe place. If you forget your seed, you will not be able to recover your wallet!",
       "create-button": "Create",
       "load-button": "Load",
@@ -171,6 +182,7 @@
       "generate-24-seed": "Generate 24 word seed",
       "encrypt-warning": "We suggest that you encrypt each one of your wallets with a password. If you forget your password, you can reset it with your seed. Make sure you have your seed saved somewhere safe before encrypting your wallet.",
       "select-coin": "Select coin",
+      "backend-unavailable-info": "you can still create the wallet, but it won't sync until the connection is restored",
       "unconventional-seed-title": "Possible error",
       "unconventional-seed-text": "You introduced an unconventional seed. If you did it for any special reason, you can continue (only recommended for advanced users). However, if your intention is to use a normal system seed, you must delete all the additional text and special characters.",
       "unconventional-seed-check": "Continue with the unconventional seed.",
@@ -343,6 +355,7 @@
     "custom-label": "Custom URL",
     "change-url": "Change URL",
     "nodes": "Nodes",
+    "help": "The node each coin queries for chain data (wallets, keys and signing stay in this browser). Point it at a Skywire mesh node with an http://<name>.<base32-pk>.dmsg URL — it's routed over the mesh, no IP or DNS needed — or a clearnet http(s):// URL. Leave a coin on its default to use the built-in node.",
 
     "change" : {
       "url-label": "Node URL (leave empty to use the default URL)",

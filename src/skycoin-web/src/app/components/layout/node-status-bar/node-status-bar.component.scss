@@ -1,0 +1,66 @@
+// Thin always-visible connection strip at the very top of the wallet. The
+// wallet is light-themed ($grey-lightest body), so this uses a light strip with
+// dark text and a colored state dot; the whole strip tints green/red/amber so
+// the connection state reads at a glance even behind the seed-entry screen.
+.node-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #3b4256;
+  background-color: #eef0f4;
+  border-bottom: 1px solid #dfe3ea;
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #b0b6c3;
+    flex: 0 0 auto;
+  }
+
+  .txt {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .err {
+    opacity: 0.75;
+  }
+
+  &.ok {
+    background-color: #eaf6ee;
+
+    .dot {
+      background-color: #2e9e4f;
+    }
+  }
+
+  &.bad {
+    background-color: #fbeceb;
+    color: #8a2c2c;
+
+    .dot {
+      background-color: #d64550;
+    }
+  }
+
+  &.checking {
+    .dot {
+      background-color: #d9971c;
+      animation: nodeStatusPulse 1.2s ease-in-out infinite;
+    }
+  }
+}
+
+@keyframes nodeStatusPulse {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+}

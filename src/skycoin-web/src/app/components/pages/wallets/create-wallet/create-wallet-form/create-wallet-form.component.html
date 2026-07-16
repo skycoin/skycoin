@@ -11,6 +11,19 @@
       </div>
     </div>
   }
+  <div class="coin-health"
+       [class.ok]="selectedCoinHealth?.available"
+       [class.bad]="selectedCoinUnavailable"
+       [class.checking]="checkingCoinHealth">
+    <span class="dot"></span>
+    @if (checkingCoinHealth) {
+      <span>{{ 'nodeStatus.checking' | translate }}</span>
+    } @else if (selectedCoinHealth?.available) {
+      <span>{{ (selectedCoinHealth.isBitcoin ? 'nodeStatus.electrumOk' : 'nodeStatus.nodeOk') | translate:{ height: (selectedCoinHealth.height | number) } }}</span>
+    } @else if (selectedCoinUnavailable) {
+      <span>{{ (selectedCoinHealth.isBitcoin ? 'nodeStatus.electrumDown' : 'nodeStatus.nodeDown') | translate }} — {{ 'wallet.new.backend-unavailable-info' | translate }}</span>
+    }
+  </div>
   @if (showWalletType) {
     <div class="form-field">
       <label for="wallet_type">{{ 'wallet.new.type-label' | translate}}</label>
@@ -64,6 +77,13 @@
         <textarea formControlName="confirm_seed" id="confirm_seed" row="2"></textarea>
         <img class="-valid" src="assets/img/valid.png">
       </div>
+    </div>
+  }
+  @if (create) {
+    <div class="form-field">
+      <label for="wallet_password">{{ 'wallet.new.password-label' | translate }}</label>
+      <input formControlName="password" id="wallet_password" type="password" autocomplete="new-password">
+      <p class="-info">{{ 'wallet.new.password-info' | translate }}</p>
     </div>
   }
   @if (showWalletType && form.get('wallet_type').value === 'bip44') {

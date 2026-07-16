@@ -74,10 +74,10 @@ func (c *webCtx) String(code int, format string, args ...any) {
 	c.Writer.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	c.Writer.WriteHeader(code)
 	if len(args) == 0 {
-		_, _ = c.Writer.Write([]byte(format))
+		_, _ = c.Writer.Write([]byte(format)) //nolint:errcheck
 		return
 	}
-	_, _ = fmt.Fprintf(c.Writer, format, args...)
+	_, _ = fmt.Fprintf(c.Writer, format, args...) //nolint:errcheck,gosec
 }
 
 // Data writes a raw response body with the given content type.
@@ -86,7 +86,7 @@ func (c *webCtx) Data(code int, contentType string, data []byte) {
 		c.Writer.Header().Set("Content-Type", contentType)
 	}
 	c.Writer.WriteHeader(code)
-	_, _ = c.Writer.Write(data)
+	_, _ = c.Writer.Write(data) //nolint:errcheck
 }
 
 // JSON marshals obj and writes it as an application/json response.
@@ -95,12 +95,12 @@ func (c *webCtx) JSON(code int, obj any) {
 	if err != nil {
 		c.Writer.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		c.Writer.WriteHeader(http.StatusInternalServerError)
-		_, _ = fmt.Fprintf(c.Writer, "500 Internal Server Error - json marshal: %v", err)
+		_, _ = fmt.Fprintf(c.Writer, "500 Internal Server Error - json marshal: %v", err) //nolint:errcheck
 		return
 	}
 	c.Writer.Header().Set("Content-Type", "application/json; charset=utf-8")
 	c.Writer.WriteHeader(code)
-	_, _ = c.Writer.Write(b)
+	_, _ = c.Writer.Write(b) //nolint:errcheck
 }
 
 // recoverMiddleware wraps a handler so a panic becomes a 500 rather than a
@@ -111,7 +111,7 @@ func recoverMiddleware(next http.Handler) http.Handler {
 			if rec := recover(); rec != nil {
 				w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 				w.WriteHeader(http.StatusInternalServerError)
-				_, _ = fmt.Fprintf(w, "500 Internal Server Error - %v", rec)
+				_, _ = fmt.Fprintf(w, "500 Internal Server Error - %v", rec) //nolint:errcheck
 			}
 		}()
 		next.ServeHTTP(w, r)

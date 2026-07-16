@@ -798,7 +798,7 @@ func handleReadOnlyPost(c *webCtx, trimmedPath string, nodeURL string) bool {
 	}
 	formData := c.Request.PostForm.Encode()
 
-	req, err := http.NewRequest(http.MethodPost, targetURL, strings.NewReader(formData))
+	req, err := http.NewRequest(http.MethodPost, targetURL, strings.NewReader(formData)) //nolint:gosec // G704: proxies to operator-configured node URLs, not user input
 	if err != nil {
 		errInternal(c, fmt.Sprintf("failed to create request: %v", err))
 		return true
@@ -814,7 +814,7 @@ func handleReadOnlyPost(c *webCtx, trimmedPath string, nodeURL string) bool {
 	}
 
 	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := client.Do(req) //nolint:gosec // G704: request targets an operator-configured node URL
 	if err != nil {
 		errInternal(c, fmt.Sprintf("failed to query node: %v", err))
 		return true
@@ -885,7 +885,7 @@ func proxyToNodeWithBase(c *webCtx, remoteNodeURL string, targetPath string) {
 
 	log.Printf("[PROXY] %s %s -> %s", c.Request.Method, c.Request.URL.Path, targetURL)
 
-	proxyReq, err := http.NewRequest(c.Request.Method, targetURL, c.Request.Body)
+	proxyReq, err := http.NewRequest(c.Request.Method, targetURL, c.Request.Body) //nolint:gosec // G704: proxies to operator-configured node URLs, not user input
 	if err != nil {
 		log.Printf("[PROXY] Failed to create request: %v", err)
 		c.String(http.StatusInternalServerError, "Failed to create proxy request")
@@ -912,7 +912,7 @@ func proxyToNodeWithBase(c *webCtx, remoteNodeURL string, targetPath string) {
 	}
 
 	client := &http.Client{}
-	resp, err := client.Do(proxyReq)
+	resp, err := client.Do(proxyReq) //nolint:gosec // G704: proxies to an operator-configured node URL
 	if err != nil {
 		log.Printf("[PROXY] Request failed: %v", err)
 		c.String(http.StatusBadGateway, "Failed to proxy request to node: %v", err)

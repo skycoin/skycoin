@@ -230,8 +230,9 @@ jobs:
           TINYGOROOT: ${{ github.workspace }}/tinygo-fork
         run: |
           mkdir -p bin
+          # -opt=z (optimize for size) + --no-debug for the smallest binary.
           "${GITHUB_WORKSPACE}/tinygo-fork/build/tinygo" build \
-            -gc=precise -tags "safe netgo" \
+            -gc=precise -opt=z --no-debug -tags "safe netgo" \
             -o bin/skycoin .
           # non-TTY --help must not panic (colored-help fork renders plainly here)
           ./bin/skycoin --help || true

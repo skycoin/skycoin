@@ -10,8 +10,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/cipher/bip39"
 	"github.com/skycoin/skycoin/src/cipher/bip44"
@@ -28,7 +26,7 @@ func newWalletResponse(w wallet.Wallet) (*readable.WalletResponse, error) {
 
 // handleWalletAPI handles wallet-related API requests locally when --wallet-dir is set.
 // Returns true if the request was handled, false if it should be proxied to the remote node.
-func handleWalletAPI(c *gin.Context, apiPath string, wltService *wallet.Service, nodeURL string) bool {
+func handleWalletAPI(c *webCtx, apiPath string, wltService *wallet.Service, nodeURL string) bool {
 	path := strings.TrimSuffix(apiPath, "/")
 	method := c.Request.Method
 
@@ -82,23 +80,23 @@ func handleWalletAPI(c *gin.Context, apiPath string, wltService *wallet.Service,
 }
 
 // error response helpers matching the daemon API format
-func errBadRequest(c *gin.Context, msg string) {
+func errBadRequest(c *webCtx, msg string) {
 	c.String(http.StatusBadRequest, "400 Bad Request - %s", msg)
 }
 
-func errForbidden(c *gin.Context) {
+func errForbidden(c *webCtx) {
 	c.String(http.StatusForbidden, "403 Forbidden")
 }
 
-func errNotFound(c *gin.Context) {
+func errNotFound(c *webCtx) {
 	c.String(http.StatusNotFound, "404 Not Found")
 }
 
-func errInternal(c *gin.Context, msg string) {
+func errInternal(c *webCtx, msg string) {
 	c.String(http.StatusInternalServerError, "500 Internal Server Error - %s", msg)
 }
 
-func handleWalletError(c *gin.Context, err error) {
+func handleWalletError(c *webCtx, err error) {
 	switch err {
 	case wallet.ErrWalletNotExist:
 		errNotFound(c)
@@ -110,7 +108,7 @@ func handleWalletError(c *gin.Context, err error) {
 }
 
 // GET /api/v1/wallet
-func handleGetWallet(c *gin.Context, s *wallet.Service) {
+func handleGetWallet(c *webCtx, s *wallet.Service) {
 	wltID := c.Request.FormValue("id")
 	if wltID == "" {
 		errBadRequest(c, "missing wallet id")
@@ -132,7 +130,7 @@ func handleGetWallet(c *gin.Context, s *wallet.Service) {
 }
 
 // POST /api/v1/wallet/create
-func handleCreateWallet(c *gin.Context, s *wallet.Service) {
+func handleCreateWallet(c *webCtx, s *wallet.Service) {
 	walletType := c.Request.FormValue("type")
 	if walletType == "" {
 		walletType = wallet.WalletTypeDeterministic
@@ -231,7 +229,7 @@ func handleCreateWallet(c *gin.Context, s *wallet.Service) {
 }
 
 // POST /api/v1/wallet/createTemp
-func handleCreateTempWallet(c *gin.Context, s *wallet.Service) {
+func handleCreateTempWallet(c *webCtx, s *wallet.Service) {
 	walletType := c.Request.FormValue("type")
 	if walletType == "" {
 		walletType = wallet.WalletTypeDeterministic
@@ -295,7 +293,7 @@ func handleCreateTempWallet(c *gin.Context, s *wallet.Service) {
 }
 
 // POST /api/v1/wallet/newAddress
-func handleNewAddresses(c *gin.Context, s *wallet.Service) {
+func handleNewAddresses(c *webCtx, s *wallet.Service) {
 	wltID := c.Request.FormValue("id")
 	if wltID == "" {
 		errBadRequest(c, "missing wallet id")
@@ -351,7 +349,7 @@ func handleNewAddresses(c *gin.Context, s *wallet.Service) {
 }
 
 // POST /api/v1/wallet/update
-func handleUpdateWallet(c *gin.Context, s *wallet.Service) {
+func handleUpdateWallet(c *webCtx, s *wallet.Service) {
 	wltID := c.Request.FormValue("id")
 	if wltID == "" {
 		errBadRequest(c, "missing wallet id")
@@ -373,7 +371,7 @@ func handleUpdateWallet(c *gin.Context, s *wallet.Service) {
 }
 
 // GET /api/v1/wallets
-func handleGetWallets(c *gin.Context, s *wallet.Service) {
+func handleGetWallets(c *webCtx, s *wallet.Service) {
 	wlts, err := s.GetWallets()
 	if err != nil {
 		handleWalletError(c, err)
@@ -398,17 +396,17 @@ func handleGetWallets(c *gin.Context, s *wallet.Service) {
 }
 
 // GET /api/v1/wallets/folderName
-func handleWalletFolder(c *gin.Context, s *wallet.Service) {
+func handleWalletFolder(c *webCtx, s *wallet.Service) {
 	addr, err := s.WalletDir()
 	if err != nil {
 		handleWalletError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"address": addr})
+	c.JSON(http.StatusOK, H{"address": addr})
 }
 
 // POST /api/v1/wallet/unload
-func handleUnloadWallet(c *gin.Context, s *wallet.Service) {
+func handleUnloadWallet(c *webCtx, s *wallet.Service) {
 	id := c.Request.FormValue("id")
 	if id == "" {
 		errBadRequest(c, "missing wallet id")
@@ -421,7 +419,7 @@ func handleUnloadWallet(c *gin.Context, s *wallet.Service) {
 }
 
 // POST /api/v1/wallet/encrypt
-func handleEncryptWallet(c *gin.Context, s *wallet.Service) {
+func handleEncryptWallet(c *webCtx, s *wallet.Service) {
 	id := c.Request.FormValue("id")
 	if id == "" {
 		errBadRequest(c, "missing wallet id")
@@ -458,7 +456,7 @@ func handleEncryptWallet(c *gin.Context, s *wallet.Service) {
 }
 
 // POST /api/v1/wallet/decrypt
-func handleDecryptWallet(c *gin.Context, s *wallet.Service) {
+func handleDecryptWallet(c *webCtx, s *wallet.Service) {
 	id := c.Request.FormValue("id")
 	if id == "" {
 		errBadRequest(c, "missing wallet id")
@@ -494,7 +492,7 @@ func handleDecryptWallet(c *gin.Context, s *wallet.Service) {
 }
 
 // POST /api/v1/wallet/seed
-func handleWalletSeed(c *gin.Context, s *wallet.Service) {
+func handleWalletSeed(c *webCtx, s *wallet.Service) {
 	id := c.Request.FormValue("id")
 	if id == "" {
 		errBadRequest(c, "missing wallet id")
@@ -521,14 +519,14 @@ func handleWalletSeed(c *gin.Context, s *wallet.Service) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	c.JSON(http.StatusOK, H{
 		"seed":            seed,
 		"seed_passphrase": seedPassphrase,
 	})
 }
 
 // GET /api/v1/wallet/newSeed
-func handleNewSeed(c *gin.Context) {
+func handleNewSeed(c *webCtx) {
 	entropyValue := c.Request.FormValue("entropy")
 	if entropyValue == "" {
 		entropyValue = "128"
@@ -557,34 +555,34 @@ func handleNewSeed(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"seed": mnemonic})
+	c.JSON(http.StatusOK, H{"seed": mnemonic})
 }
 
 // POST /api/v2/wallet/seed/verify
-func handleVerifySeed(c *gin.Context) {
+func handleVerifySeed(c *webCtx) {
 	var req struct {
 		Seed string `json:"seed"`
 	}
 	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"message": err.Error(), "code": http.StatusBadRequest}})
+		c.JSON(http.StatusBadRequest, H{"error": H{"message": err.Error(), "code": http.StatusBadRequest}})
 		return
 	}
 
 	if req.Seed == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"message": "seed is required", "code": http.StatusBadRequest}})
+		c.JSON(http.StatusBadRequest, H{"error": H{"message": "seed is required", "code": http.StatusBadRequest}})
 		return
 	}
 
 	if err := bip39.ValidateMnemonic(req.Seed); err != nil {
-		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": gin.H{"message": err.Error(), "code": http.StatusUnprocessableEntity}})
+		c.JSON(http.StatusUnprocessableEntity, H{"error": H{"message": err.Error(), "code": http.StatusUnprocessableEntity}})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": struct{}{}})
+	c.JSON(http.StatusOK, H{"data": struct{}{}})
 }
 
 // POST /api/v2/wallet/recover
-func handleRecoverWallet(c *gin.Context, s *wallet.Service) {
+func handleRecoverWallet(c *webCtx, s *wallet.Service) {
 	var req struct {
 		ID             string `json:"id"`
 		Seed           string `json:"seed"`
@@ -592,17 +590,17 @@ func handleRecoverWallet(c *gin.Context, s *wallet.Service) {
 		Password       string `json:"password"`
 	}
 	if err := json.NewDecoder(c.Request.Body).Decode(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"message": err.Error(), "code": http.StatusBadRequest}})
+		c.JSON(http.StatusBadRequest, H{"error": H{"message": err.Error(), "code": http.StatusBadRequest}})
 		return
 	}
 
 	if req.ID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"message": "id is required", "code": http.StatusBadRequest}})
+		c.JSON(http.StatusBadRequest, H{"error": H{"message": "id is required", "code": http.StatusBadRequest}})
 		return
 	}
 
 	if req.Seed == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"message": "seed is required", "code": http.StatusBadRequest}})
+		c.JSON(http.StatusBadRequest, H{"error": H{"message": "seed is required", "code": http.StatusBadRequest}})
 		return
 	}
 
@@ -624,29 +622,29 @@ func handleRecoverWallet(c *gin.Context, s *wallet.Service) {
 		case wallet.Error:
 			switch err {
 			case wallet.ErrWalletNotExist:
-				c.JSON(http.StatusNotFound, gin.H{"error": gin.H{"message": "wallet not found", "code": http.StatusNotFound}})
+				c.JSON(http.StatusNotFound, H{"error": H{"message": "wallet not found", "code": http.StatusNotFound}})
 			case wallet.ErrWalletAPIDisabled:
-				c.JSON(http.StatusForbidden, gin.H{"error": gin.H{"message": "wallet API disabled", "code": http.StatusForbidden}})
+				c.JSON(http.StatusForbidden, H{"error": H{"message": "wallet API disabled", "code": http.StatusForbidden}})
 			default:
-				c.JSON(http.StatusBadRequest, gin.H{"error": gin.H{"message": err.Error(), "code": http.StatusBadRequest}})
+				c.JSON(http.StatusBadRequest, H{"error": H{"message": err.Error(), "code": http.StatusBadRequest}})
 			}
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": err.Error(), "code": http.StatusInternalServerError}})
+			c.JSON(http.StatusInternalServerError, H{"error": H{"message": err.Error(), "code": http.StatusInternalServerError}})
 		}
 		return
 	}
 
 	rlt, err := newWalletResponse(wlt)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": gin.H{"message": err.Error(), "code": http.StatusInternalServerError}})
+		c.JSON(http.StatusInternalServerError, H{"error": H{"message": err.Error(), "code": http.StatusInternalServerError}})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": rlt})
+	c.JSON(http.StatusOK, H{"data": rlt})
 }
 
 // GET /api/v1/wallet/xpub
-func handleWalletXPub(c *gin.Context, s *wallet.Service) {
+func handleWalletXPub(c *webCtx, s *wallet.Service) {
 	id := c.Request.FormValue("id")
 	if id == "" {
 		errBadRequest(c, "missing wallet id")
@@ -687,11 +685,11 @@ func handleWalletXPub(c *gin.Context, s *wallet.Service) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"xpub_key": xpubKey})
+	c.JSON(http.StatusOK, H{"xpub_key": xpubKey})
 }
 
 // GET /api/v1/wallet/balance (hybrid: local wallet addresses -> remote balance query)
-func handleWalletBalance(c *gin.Context, s *wallet.Service, nodeURL string) {
+func handleWalletBalance(c *webCtx, s *wallet.Service, nodeURL string) {
 	wltID := c.Request.FormValue("id")
 	if wltID == "" {
 		errBadRequest(c, "missing wallet id")
@@ -718,10 +716,10 @@ func handleWalletBalance(c *gin.Context, s *wallet.Service, nodeURL string) {
 
 	if len(addrs) == 0 {
 		// No addresses, return zero balance
-		c.JSON(http.StatusOK, gin.H{
-			"confirmed": gin.H{"coins": 0, "hours": 0},
-			"predicted": gin.H{"coins": 0, "hours": 0},
-			"addresses": gin.H{},
+		c.JSON(http.StatusOK, H{
+			"confirmed": H{"coins": 0, "hours": 0},
+			"predicted": H{"coins": 0, "hours": 0},
+			"addresses": H{},
 		})
 		return
 	}
@@ -759,7 +757,7 @@ func handleWalletBalance(c *gin.Context, s *wallet.Service, nodeURL string) {
 }
 
 // POST /api/v1/wallet/newAccount
-func handleNewAccount(c *gin.Context, s *wallet.Service) {
+func handleNewAccount(c *webCtx, s *wallet.Service) {
 	wltID := c.Request.FormValue("id")
 	if wltID == "" {
 		errBadRequest(c, "missing wallet id")
@@ -806,7 +804,7 @@ func handleNewAccount(c *gin.Context, s *wallet.Service) {
 // POST /api/v2/wallet/transaction/sign
 // JSON body: { "wallet_id": "...", "encoded_transaction": "...", "input_addresses": ["addr1", ...], "password": "..." }
 // input_addresses must be in the same order as the transaction inputs.
-func handleSignTransaction(c *gin.Context, wltService *wallet.Service) {
+func handleSignTransaction(c *webCtx, wltService *wallet.Service) {
 	var req struct {
 		WalletID           string   `json:"wallet_id"`
 		EncodedTransaction string   `json:"encoded_transaction"`
@@ -897,8 +895,8 @@ func handleSignTransaction(c *gin.Context, wltService *wallet.Service) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"data": gin.H{
+	c.JSON(http.StatusOK, H{
+		"data": H{
 			"encoded_transaction": signedHex,
 		},
 	})

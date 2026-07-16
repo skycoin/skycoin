@@ -9,6 +9,10 @@ env:
   MUSL_RELEASE: 'v1.3.29'
   MODULE: github.com/skycoin/skycoin
 
+# Needed for gh release create / upload with the default GITHUB_TOKEN.
+permissions:
+  contents: write
+
 jobs:
   create-release:
     runs-on: ubuntu-latest
@@ -23,10 +27,74 @@ jobs:
             --draft \
             --generate-notes || true
 
+  # Main skycoin binary: pure Go (CGO disabled), built from the repository root
+  # (github.com/skycoin/skycoin). No hardware-wallet (that is cgo/libusb, built
+  # separately below) and no musl toolchain needed. Matches the TinyGo build's
+  # feature set. Cross-compiles to every arch with plain GOOS/GOARCH.
   linux:
     needs: create-release
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: amd64, goarch: amd64 }
+          - { arch: arm64, goarch: arm64 }
+          - { arch: arm, goarch: arm, goarm: "6" }
+          - { arch: armhf, goarch: arm, goarm: "7" }
+          - { arch: "386", goarch: "386" }
+          - { arch: riscv64, goarch: riscv64 }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+
+      - name: Build skycoin (pure Go, from repo root)
+        env:
+          GOPROXY: direct
+          GOSUMDB: "off"
+          CGO_ENABLED: "0"
+          GOOS: linux
+          GOARCH: ${{ matrix.goarch }}
+          GOARM: ${{ matrix.goarm }}
+        run: |
+          mkdir -p bin
+          go build -trimpath -ldflags "-s -w -buildid=" -o bin/skycoin .
+          if [ "${{ matrix.arch }}" = "amd64" ]; then ./bin/skycoin --help || true; fi
+
+      - name: Create archive
+        run: |
+          ARCHIVE_NAME="skycoin-${{ github.ref_name }}-linux-${{ matrix.arch }}"
+          mkdir -p dist
+          cp bin/skycoin dist/
+          cd dist
+          tar -czvf "${ARCHIVE_NAME}.tar.gz" skycoin
+          sha256sum "${ARCHIVE_NAME}.tar.gz" > "${ARCHIVE_NAME}.tar.gz.sha256"
+
+      - name: Upload to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            dist/skycoin-${{ github.ref_name }}-linux-${{ matrix.arch }}.tar.gz \
+            dist/skycoin-${{ github.ref_name }}-linux-${{ matrix.arch }}.tar.gz.sha256 \
+            --repo ${{ github.repository }} \
+            --clobber
+
+  # Hardware-wallet utilities: cgo/libusb, statically linked against musl, in
+  # their own "skyhw" archive (separate from the main skycoin binary). This is
+  # the one piece that keeps the musl cross-toolchain machinery.
+  linux-hardware-wallet:
+    needs: create-release
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
       matrix:
         include:
           - arch: amd64
@@ -37,25 +105,12 @@ jobs:
             goarch: arm64
             toolchain: aarch64-linux-musl
             toolchain_file: aarch64-linux-musl-cross.tgz
-          - arch: arm
-            goarch: arm
-            goarm: "6"
-            toolchain: arm-linux-musleabi
-            toolchain_file: arm-linux-musleabi-cross.tgz
-          - arch: armhf
-            goarch: arm
-            goarm: "7"
-            toolchain: arm-linux-musleabihf
-            toolchain_file: arm-linux-musleabihf-cross.tgz
-          - arch: 386
-            goarch: "386"
-            toolchain: i686-linux-musl
-            toolchain_file: i686-linux-musl-cross.tgz
-          - arch: riscv64
-            goarch: riscv64
-            toolchain: riscv64-linux-musl
-            toolchain_file: riscv64-linux-musl-cross.tgz
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
       - uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
@@ -87,7 +142,7 @@ jobs:
       - name: Build libusb for musl target
         run: ./build-libusb-musl.sh ${{ matrix.arch }} ${{ matrix.toolchain }} ./musl-data/${{ matrix.toolchain }}-cross
 
-      - name: Build skycoin release binary
+      - name: Build hardware-wallet utility (musl static)
         env:
           GOPROXY: direct
           GOSUMDB: "off"
@@ -96,33 +151,95 @@ jobs:
           PKG_CONFIG_PATH: ${{ github.workspace }}/musl-data/${{ matrix.toolchain }}-cross/${{ matrix.toolchain }}/lib/pkgconfig
           GOOS: linux
           GOARCH: ${{ matrix.goarch }}
-          GOARM: ${{ matrix.goarm }}
         run: |
-          go install -tags=cgo -trimpath \
-            -ldflags "-s -w -linkmode external -extldflags '-static' -buildid=" \
-            ${{ env.MODULE }}/cmd/release@${{ github.ref_name }}
-
           mkdir -p bin
-          GOPATH_BIN="$(go env GOPATH)/bin"
-          if [ -f "${GOPATH_BIN}/linux_${{ matrix.goarch }}/release" ]; then
-            cp "${GOPATH_BIN}/linux_${{ matrix.goarch }}/release" bin/skycoin
-          elif [ -f "${GOPATH_BIN}/release" ]; then
-            cp "${GOPATH_BIN}/release" bin/skycoin
-          else
-            echo "Binary not found in expected locations"
-            find "${GOPATH_BIN}" -name "release*" -type f
-            exit 1
-          fi
-
-          # Verify binary on native arch
-          if [ "${{ matrix.arch }}" = "amd64" ]; then
-            ./bin/skycoin || true
-            ./bin/skycoin daemon --help || true
-          fi
+          go build -tags=cgo -trimpath \
+            -ldflags "-s -w -linkmode external -extldflags '-static' -buildid=" \
+            -o bin/skyhw ./cmd/hardware-wallet
 
       - name: Create archive
         run: |
-          ARCHIVE_NAME="skycoin-${{ github.ref_name }}-linux-${{ matrix.arch }}"
+          ARCHIVE_NAME="skyhw-${{ github.ref_name }}-linux-${{ matrix.arch }}"
+          mkdir -p dist
+          cp bin/skyhw dist/
+          cd dist
+          tar -czvf "${ARCHIVE_NAME}.tar.gz" skyhw
+          sha256sum "${ARCHIVE_NAME}.tar.gz" > "${ARCHIVE_NAME}.tar.gz.sha256"
+
+      - name: Upload to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.ref_name }}" \
+            dist/skyhw-${{ github.ref_name }}-linux-${{ matrix.arch }}.tar.gz \
+            dist/skyhw-${{ github.ref_name }}-linux-${{ matrix.arch }}.tar.gz.sha256 \
+            --repo ${{ github.repository }} \
+            --clobber
+
+  # TinyGo build: a separate, much smaller Linux/amd64 skycoin binary compiled
+  # with the TinyGo fork (github.com/0magnet/tinygo). It has no cgo, so no
+  # hardware-wallet support, and it embeds the TinyGo-compiled skycoin-lite wasm.
+  # Uploaded as a distinct "-tinygo" archive alongside the standard-go archives.
+  linux-tinygo:
+    needs: create-release
+    runs-on: ubuntu-latest
+    env:
+      TINYGO_REPO: https://github.com/0magnet/tinygo.git
+      TINYGO_TAG: v0.42.0-skycoin.1
+    steps:
+      - name: Checkout skycoin
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+
+      - name: Install LLVM 22 (apt.llvm.org)
+        run: |
+          wget -q https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 22
+          sudo apt-get install -y llvm-22-dev libclang-22-dev clang-22 lld-22
+
+      - name: Build the TinyGo fork
+        run: |
+          git clone --branch "${TINYGO_TAG}" --recurse-submodules --depth 1 \
+            "${TINYGO_REPO}" "${GITHUB_WORKSPACE}/tinygo-fork"
+          cd "${GITHUB_WORKSPACE}/tinygo-fork"
+          go build -tags llvm22 -o "${GITHUB_WORKSPACE}/tinygo-fork/build/tinygo" .
+          ./build/tinygo version
+
+      - name: Fetch compiler-rt builtins
+        run: |
+          # compiler-rt is not a submodule; the TinyGo release packaging copies
+          # its builtins into lib/compiler-rt-builtins. Reproduce that for a
+          # source checkout so `tinygo build` can find them.
+          git clone --filter=blob:none --sparse --depth 1 -b tinygo_20.x \
+            https://github.com/tinygo-org/llvm-project.git /tmp/llvm-project
+          git -C /tmp/llvm-project sparse-checkout set compiler-rt/lib/builtins
+          cp -rp /tmp/llvm-project/compiler-rt/lib/builtins \
+            "${GITHUB_WORKSPACE}/tinygo-fork/lib/compiler-rt-builtins"
+
+      - name: Build skycoin with TinyGo
+        env:
+          # Point TINYGOROOT at the fork checkout so its src/ and targets/ are used.
+          TINYGOROOT: ${{ github.workspace }}/tinygo-fork
+        run: |
+          mkdir -p bin
+          # -opt=z (optimize for size) + --no-debug for the smallest binary.
+          "${GITHUB_WORKSPACE}/tinygo-fork/build/tinygo" build \
+            -gc=precise -opt=z --no-debug -tags "safe netgo" \
+            -o bin/skycoin .
+          # non-TTY --help must not panic (colored-help fork renders plainly here)
+          ./bin/skycoin --help || true
+
+      - name: Create archive
+        run: |
+          ARCHIVE_NAME="skycoin-${{ github.ref_name }}-linux-amd64-tinygo"
           mkdir -p dist
           cp bin/skycoin dist/
           cd dist
@@ -134,13 +251,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload "${{ github.ref_name }}" \
-            dist/skycoin-${{ github.ref_name }}-linux-${{ matrix.arch }}.tar.gz \
-            dist/skycoin-${{ github.ref_name }}-linux-${{ matrix.arch }}.tar.gz.sha256 \
+            dist/skycoin-${{ github.ref_name }}-linux-amd64-tinygo.tar.gz \
+            dist/skycoin-${{ github.ref_name }}-linux-amd64-tinygo.tar.gz.sha256 \
             --repo ${{ github.repository }} \
             --clobber
 
   darwin-amd64:
     needs: create-release
+    # go install @tag resolves the upstream module path, so these platform
+    # builds only run for the canonical repo (not fork alpha tags). Linux is
+    # built from a checkout and runs everywhere.
+    if: github.repository == 'skycoin/skycoin'
     runs-on: macos-15-intel
     steps:
       - uses: actions/setup-go@v6
@@ -162,10 +283,10 @@ jobs:
           CGO_LDFLAGS: -L/usr/local/lib -L/opt/homebrew/lib -L/opt/homebrew/opt/hidapi/lib -L/opt/homebrew/opt/libusb/lib
         run: |
           go install -trimpath -ldflags "-s -w" \
-            ${{ env.MODULE }}/cmd/release@${{ github.ref_name }}
+            ${{ env.MODULE }}@${{ github.ref_name }}
 
           mkdir -p bin
-          cp "$(go env GOPATH)/bin/release" bin/skycoin
+          cp "$(go env GOPATH)/bin/skycoin" bin/skycoin
           ./bin/skycoin || true
           ./bin/skycoin daemon --help || true
 
@@ -204,6 +325,10 @@ jobs:
 
   darwin-arm64:
     needs: create-release
+    # go install @tag resolves the upstream module path, so these platform
+    # builds only run for the canonical repo (not fork alpha tags). Linux is
+    # built from a checkout and runs everywhere.
+    if: github.repository == 'skycoin/skycoin'
     runs-on: macos-latest
     steps:
       - uses: actions/setup-go@v6
@@ -225,10 +350,10 @@ jobs:
           CGO_LDFLAGS: -L/opt/homebrew/lib -L/opt/homebrew/opt/hidapi/lib -L/opt/homebrew/opt/libusb/lib
         run: |
           go install -trimpath -ldflags "-s -w" \
-            ${{ env.MODULE }}/cmd/release@${{ github.ref_name }}
+            ${{ env.MODULE }}@${{ github.ref_name }}
 
           mkdir -p bin
-          cp "$(go env GOPATH)/bin/release" bin/skycoin
+          cp "$(go env GOPATH)/bin/skycoin" bin/skycoin
           ./bin/skycoin || true
           ./bin/skycoin daemon --help || true
 
@@ -267,8 +392,13 @@ jobs:
 
   windows:
     needs: create-release
+    # go install @tag resolves the upstream module path, so these platform
+    # builds only run for the canonical repo (not fork alpha tags). Linux is
+    # built from a checkout and runs everywhere.
+    if: github.repository == 'skycoin/skycoin'
     runs-on: windows-latest
     strategy:
+      fail-fast: false
       matrix:
         include:
           - arch: amd64
@@ -314,12 +444,12 @@ jobs:
           GOARCH: ${{ matrix.goarch }}
         shell: pwsh
         run: |
-          go install -trimpath -ldflags "-s -w" "${{ env.MODULE }}/cmd/release@${{ github.ref_name }}"
+          go install -trimpath -ldflags "-s -w" "${{ env.MODULE }}@${{ github.ref_name }}"
 
           New-Item -ItemType Directory -Force -Path "bin"
           $gopath = go env GOPATH
-          $crossPath = "$gopath\bin\windows_${{ matrix.goarch }}\release.exe"
-          $nativePath = "$gopath\bin\release.exe"
+          $crossPath = "$gopath\bin\windows_${{ matrix.goarch }}\skycoin.exe"
+          $nativePath = "$gopath\bin\skycoin.exe"
 
           if (Test-Path $crossPath) {
             Copy-Item $crossPath "bin\skycoin.exe"
@@ -441,7 +571,8 @@ jobs:
           gh release upload "${{ github.ref_name }}" @files --repo ${{ github.repository }} --clobber
 
   create-checksums:
-    needs: [linux, darwin-amd64, darwin-arm64, windows]
+    needs: [linux, linux-hardware-wallet, linux-tinygo, darwin-amd64, darwin-arm64, windows]
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - name: Download all checksums and create combined file

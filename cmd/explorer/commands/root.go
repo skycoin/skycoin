@@ -2,16 +2,13 @@
 package commands
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"io"
 	"io/fs"
 	"log"
 	"mime"
 	"net/http"
-	nethttppprof "net/http/pprof" //nolint:gosec
 	"net/url"
 	"os"
 	"path/filepath"
@@ -100,18 +97,11 @@ func init() {
 			}
 		}
 	}
-	t := template.Must(template.New("docs").Parse(docTemplate))
-
 	endpoints := []APIEndpoint{}
 	endpoints = append(endpoints, apiEndpoints...)
 	endpoints = append(endpoints, docEndpoint)
 
-	b := &bytes.Buffer{}
-	if err := t.Execute(b, endpoints); err != nil {
-		log.Panic(err)
-	}
-
-	docTemplateBody = b.String()
+	docTemplateBody = renderDocs(endpoints)
 }
 
 // RootCmd is skycoin blockchain explorer
@@ -1575,11 +1565,7 @@ func initPProf(profMode string, profAddr string) (stop func()) {
 	case "http":
 		go func() {
 			mux := http.NewServeMux()
-			mux.HandleFunc("/debug/pprof/", nethttppprof.Index)
-			mux.HandleFunc("/debug/pprof/cmdline", nethttppprof.Cmdline)
-			mux.HandleFunc("/debug/pprof/profile", nethttppprof.Profile)
-			mux.HandleFunc("/debug/pprof/symbol", nethttppprof.Symbol)
-			mux.HandleFunc("/debug/pprof/trace", nethttppprof.Trace)
+			registerPprofHandlers(mux)
 			srv := &http.Server{ //nolint:gosec
 				Addr:              profAddr,
 				Handler:           mux,

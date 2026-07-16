@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/skycoin/skycoin/src/btc"
 	"github.com/skycoin/skycoin/src/cipher"
 	"github.com/skycoin/skycoin/src/wallet"
@@ -21,7 +19,7 @@ type btcHandler struct {
 }
 
 // handleBtcAPI routes Bitcoin-specific API requests
-func (h *btcHandler) handleBtcAPI(c *gin.Context, apiPath string) bool {
+func (h *btcHandler) handleBtcAPI(c *webCtx, apiPath string) bool {
 	path := strings.TrimSuffix(apiPath, "/")
 	method := c.Request.Method
 
@@ -47,10 +45,10 @@ func (h *btcHandler) handleBtcAPI(c *gin.Context, apiPath string) bool {
 }
 
 // getBalance returns balances for comma-separated addresses
-func (h *btcHandler) getBalance(c *gin.Context) {
+func (h *btcHandler) getBalance(c *webCtx) {
 	addrsParam := c.Query("addrs")
 	if addrsParam == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "addrs parameter required"})
+		c.JSON(http.StatusBadRequest, H{"error": "addrs parameter required"})
 		return
 	}
 
@@ -58,7 +56,7 @@ func (h *btcHandler) getBalance(c *gin.Context) {
 	balances, err := h.backend.GetBalance(addresses)
 	if err != nil {
 		log.Printf("[BTC] GetBalance error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, H{"error": err.Error()})
 		return
 	}
 
@@ -72,18 +70,18 @@ func (h *btcHandler) getBalance(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"confirmed": gin.H{"coins": totalConfirmed},
-		"predicted": gin.H{"coins": totalConfirmed},
+	c.JSON(http.StatusOK, H{
+		"confirmed": H{"coins": totalConfirmed},
+		"predicted": H{"coins": totalConfirmed},
 		"addresses": addrBalances,
 	})
 }
 
 // getUTXOs returns unspent outputs for comma-separated addresses
-func (h *btcHandler) getUTXOs(c *gin.Context) {
+func (h *btcHandler) getUTXOs(c *webCtx) {
 	addrsParam := c.Query("addrs")
 	if addrsParam == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "addrs parameter required"})
+		c.JSON(http.StatusBadRequest, H{"error": "addrs parameter required"})
 		return
 	}
 
@@ -91,7 +89,7 @@ func (h *btcHandler) getUTXOs(c *gin.Context) {
 	utxos, err := h.backend.ListUnspent(addresses)
 	if err != nil {
 		log.Printf("[BTC] ListUnspent error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, H{"error": err.Error()})
 		return
 	}
 
@@ -99,10 +97,10 @@ func (h *btcHandler) getUTXOs(c *gin.Context) {
 }
 
 // getHistory returns transaction history for comma-separated addresses
-func (h *btcHandler) getHistory(c *gin.Context) {
+func (h *btcHandler) getHistory(c *webCtx) {
 	addrsParam := c.Query("addrs")
 	if addrsParam == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "addrs parameter required"})
+		c.JSON(http.StatusBadRequest, H{"error": "addrs parameter required"})
 		return
 	}
 
@@ -110,7 +108,7 @@ func (h *btcHandler) getHistory(c *gin.Context) {
 	history, err := h.backend.GetHistory(addresses)
 	if err != nil {
 		log.Printf("[BTC] GetHistory error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, H{"error": err.Error()})
 		return
 	}
 
@@ -118,37 +116,37 @@ func (h *btcHandler) getHistory(c *gin.Context) {
 }
 
 // sendTransaction builds, signs, and broadcasts a Bitcoin transaction
-func (h *btcHandler) sendTransaction(c *gin.Context) {
+func (h *btcHandler) sendTransaction(c *webCtx) {
 	var req btc.SendRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid request: %v", err)})
+		c.JSON(http.StatusBadRequest, H{"error": fmt.Sprintf("invalid request: %v", err)})
 		return
 	}
 
 	if req.WalletID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "wallet_id required"})
+		c.JSON(http.StatusBadRequest, H{"error": "wallet_id required"})
 		return
 	}
 	if len(req.Destinations) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "at least one destination required"})
+		c.JSON(http.StatusBadRequest, H{"error": "at least one destination required"})
 		return
 	}
 	if req.FeeRate <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "fee_rate must be positive"})
+		c.JSON(http.StatusBadRequest, H{"error": "fee_rate must be positive"})
 		return
 	}
 
 	// Get wallet
 	wlt, err := h.wltService.GetWallet(req.WalletID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("wallet not found: %v", err)})
+		c.JSON(http.StatusBadRequest, H{"error": fmt.Sprintf("wallet not found: %v", err)})
 		return
 	}
 
 	// Collect addresses and keys from wallet
 	entries, err := wlt.GetEntries()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("get wallet entries: %v", err)})
+		c.JSON(http.StatusInternalServerError, H{"error": fmt.Sprintf("get wallet entries: %v", err)})
 		return
 	}
 
@@ -174,7 +172,7 @@ func (h *btcHandler) sendTransaction(c *gin.Context) {
 	// Get UTXOs
 	utxos, err := h.backend.ListUnspent(addresses)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("list unspent: %v", err)})
+		c.JSON(http.StatusInternalServerError, H{"error": fmt.Sprintf("list unspent: %v", err)})
 		return
 	}
 
@@ -182,7 +180,7 @@ func (h *btcHandler) sendTransaction(c *gin.Context) {
 	estimatedFee := int64(btc.EstimatedTxSize(1, len(destinations)+1)) * req.FeeRate
 	selectedUTXOs, _, err := btc.SelectUTXOs(utxos, totalNeeded+estimatedFee)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "insufficient funds"})
+		c.JSON(http.StatusBadRequest, H{"error": "insufficient funds"})
 		return
 	}
 
@@ -192,22 +190,22 @@ func (h *btcHandler) sendTransaction(c *gin.Context) {
 	// Build and sign transaction
 	rawTx, err := btc.BuildTransaction(selectedUTXOs, destinations, changeAddr, req.FeeRate, keys)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("build transaction: %v", err)})
+		c.JSON(http.StatusInternalServerError, H{"error": fmt.Sprintf("build transaction: %v", err)})
 		return
 	}
 
 	// Broadcast
 	txid, err := h.backend.BroadcastTransaction(rawTx)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("broadcast failed: %v", err)})
+		c.JSON(http.StatusInternalServerError, H{"error": fmt.Sprintf("broadcast failed: %v", err)})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"txid": txid})
+	c.JSON(http.StatusOK, H{"txid": txid})
 }
 
 // estimateFee returns fee estimation for a given confirmation target
-func (h *btcHandler) estimateFee(c *gin.Context) {
+func (h *btcHandler) estimateFee(c *webCtx) {
 	blocksStr := c.DefaultQuery("blocks", "6")
 	blocks, err := strconv.Atoi(blocksStr)
 	if err != nil || blocks < 1 {
@@ -217,11 +215,11 @@ func (h *btcHandler) estimateFee(c *gin.Context) {
 	satPerByte, err := h.backend.EstimateFee(blocks)
 	if err != nil {
 		log.Printf("[BTC] EstimateFee error: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	c.JSON(http.StatusOK, H{
 		"sat_per_byte": satPerByte,
 		"blocks":       blocks,
 	})

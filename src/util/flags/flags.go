@@ -2,7 +2,7 @@
 package flags
 
 import (
-	cc "github.com/ivanpirog/coloredcobra"
+	cc "github.com/0magnet/coloredcobra"
 	"github.com/spf13/cobra"
 )
 

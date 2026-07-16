@@ -1,4 +1,3 @@
-// Package commands provides commands for the skycoin web interface.
 package commands
 
 import (
@@ -9,14 +8,12 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
-	nethttppprof "net/http/pprof" //nolint:gosec
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skycoin/src/util/calvin"
@@ -26,7 +23,6 @@ import (
 	"github.com/skycoin/skycoin/src/cipher/crypto"
 	"github.com/skycoin/skycoin/src/fiber"
 	"github.com/skycoin/skycoin/src/readable"
-	wasmtinygo "github.com/skycoin/skycoin/src/skycoin-lite/wasm-tinygo"
 	"github.com/skycoin/skycoin/src/skycoin-web/src/gui"
 	"github.com/skycoin/skycoin/src/wallet"
 )
@@ -418,12 +414,34 @@ func initGUIFS() fs.FS {
 	return guiFS
 }
 
+// parseCoinPath parses a "/coin/{index}/api/{sub}" request path into the coin
+// index string and the API sub-path (with leading slash, e.g. "/v1/health").
+// The web wallet runs on net/http (not gin) so it also builds under TinyGo; this
+// mirrors gin's "/coin/:coinIndex/api/*path". It reports false if the path is
+// not a well-formed per-coin API route.
+func parseCoinPath(urlPath string) (coinIndex, apiPath string, ok bool) {
+	rest := strings.TrimPrefix(urlPath, "/coin/")
+	if rest == urlPath {
+		return "", "", false
+	}
+	idx := strings.IndexByte(rest, '/')
+	if idx < 0 {
+		return "", "", false
+	}
+	coinIndex = rest[:idx]
+	sub := rest[idx:] // begins with "/"
+	if sub != "/api" && !strings.HasPrefix(sub, "/api/") {
+		return "", "", false
+	}
+	apiPath = strings.TrimPrefix(sub, "/api")
+	return coinIndex, apiPath, true
+}
+
 func serve(ctx context.Context) error {
 	stopPProf := initPProf(pprofMode, pprofAddr)
 	defer stopPProf()
 
-	gin.SetMode(gin.ReleaseMode)
-	router := gin.Default()
+	mux := http.NewServeMux()
 
 	coins := discoverCoins()
 	wltServices := initWalletServices()
@@ -431,19 +449,35 @@ func serve(ctx context.Context) error {
 	coinWltServices, btcHandlers := mapWalletsToCoin(coins, wltServices, btcBackend, btcWltServices)
 	guiFS := initGUIFS()
 
-	// Serve embedded WASM files from skycoin-lite
-	router.GET("/assets/scripts/skycoin-lite.wasm", func(c *gin.Context) {
+	// Serve embedded WASM files from skycoin-lite. These are exact-match
+	// patterns, which take precedence over the "/" static handler in both the
+	// standard-library and TinyGo ServeMux implementations.
+	mux.HandleFunc("/assets/scripts/skycoin-lite.wasm", func(w http.ResponseWriter, r *http.Request) {
+		c := newCtx(w, r)
 		c.Header("Content-Type", "application/wasm")
-		c.Data(http.StatusOK, "application/wasm", wasmtinygo.WasmFile)
+		c.Data(http.StatusOK, "application/wasm", wasmFile)
 	})
 
-	router.GET("/assets/scripts/wasm_exec.js", func(c *gin.Context) {
+	mux.HandleFunc("/assets/scripts/wasm_exec.js", func(w http.ResponseWriter, r *http.Request) {
+		c := newCtx(w, r)
 		c.Header("Content-Type", "application/javascript")
-		c.Data(http.StatusOK, "application/javascript", wasmtinygo.WasmExecJS)
+		c.Data(http.StatusOK, "application/javascript", wasmExecJS)
 	})
 
 	// Per-coin proxy routes: /coin/{index}/api/*
-	router.Any("/coin/:coinIndex/api/*path", func(c *gin.Context) {
+	//
+	// This is registered as a "/coin/" subtree rather than with {wildcard}
+	// path patterns, so that routing behaves identically under the standard
+	// library and TinyGo (whose ServeMux does not implement Go 1.22 pattern
+	// matching). The coin index and API sub-path are parsed from the URL below.
+	mux.HandleFunc("/coin/", func(w http.ResponseWriter, r *http.Request) {
+		c := newCtx(w, r)
+		coinIndexStr, apiPath, ok := parseCoinPath(r.URL.Path)
+		if !ok {
+			http.NotFound(w, r)
+			return
+		}
+		c.params = map[string]string{"coinIndex": coinIndexStr, "path": apiPath}
 		setCORSHeaders(c)
 		if c.Request.Method == "OPTIONS" {
 			c.Status(http.StatusOK)
@@ -457,7 +491,6 @@ func serve(ctx context.Context) error {
 		}
 
 		coin := coins[coinIndex]
-		apiPath := c.Param("path")
 
 		// Bitcoin coins are handled by the btcHandler, not proxied to a node
 		if coin.CoinType == "bitcoin" {
@@ -502,8 +535,11 @@ func serve(ctx context.Context) error {
 	})
 
 	// Legacy /api/* route — proxies to the first node for backwards compatibility
-	// Also serves the /api/v1/coins discovery endpoint
-	router.Any("/api/*path", func(c *gin.Context) {
+	// Also serves the /api/v1/coins discovery endpoint. Registered as an "/api/"
+	// subtree (see the /coin/ note above) for cross-toolchain routing parity.
+	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
+		c := newCtx(w, r)
+		c.params = map[string]string{"path": strings.TrimPrefix(r.URL.Path, "/api")}
 		setCORSHeaders(c)
 		if c.Request.Method == "OPTIONS" {
 			c.Status(http.StatusOK)
@@ -547,13 +583,15 @@ func serve(ctx context.Context) error {
 		}
 	})
 
-	// Serve static files from GUI filesystem
-	router.NoRoute(func(c *gin.Context) {
-		if c.Request.URL.Path != "/" && c.Request.URL.Path != "/favicon.ico" {
-			log.Printf("[STATIC] %s %s", c.Request.Method, c.Request.URL.Path)
+	// Serve static files from GUI filesystem. The "/" pattern is the lowest
+	// priority in the ServeMux, so it only matches requests not claimed by the
+	// API/asset routes above — the net/http equivalent of gin's NoRoute.
+	fileServer := http.FileServer(http.FS(guiFS))
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" && r.URL.Path != "/favicon.ico" {
+			log.Printf("[STATIC] %s %s", r.Method, r.URL.Path)
 		}
-		fileServer := http.FileServer(http.FS(guiFS))
-		fileServer.ServeHTTP(c.Writer, c.Request)
+		fileServer.ServeHTTP(w, r)
 	})
 
 	addr := fmt.Sprintf("%s:%d", host, port)
@@ -580,8 +618,13 @@ func serve(ctx context.Context) error {
 	// this standalone command (ctx = background, never cancels → Ctrl+C) or
 	// embedded in-process (e.g. a skywire internal launcher app), where the
 	// host cancels ctx to stop it. Returns errors instead of os.Exit-ing so
-	// it can't take down an embedding process.
-	srv := &http.Server{Addr: addr, Handler: router, ReadHeaderTimeout: 10 * time.Second}
+	// it can't take down an embedding process. Uses the net/http mux (so the
+	// web wallet also builds under TinyGo) wrapped in the recovery middleware.
+	srv := &http.Server{ //nolint:gosec
+		Addr:              addr,
+		Handler:           recoverMiddleware(mux),
+		ReadHeaderTimeout: 10 * time.Second,
+	}
 	//nolint:gosec // G118 false positive: the shutdown ctx MUST be a fresh, non-canceled context precisely because the parent ctx is already Done at this point.
 	go func() {
 		<-ctx.Done()
@@ -597,31 +640,31 @@ func serve(ctx context.Context) error {
 
 // handleBtcStubEndpoints returns stub responses for Skycoin-specific endpoints
 // that the frontend calls on all coins (network/connections, health, blockchain/progress, etc.)
-func handleBtcStubEndpoints(c *gin.Context, apiPath string) bool {
+func handleBtcStubEndpoints(c *webCtx, apiPath string) bool {
 	path := strings.TrimSuffix(apiPath, "/")
 	switch path {
 	case "/v1/network/connections":
-		c.JSON(http.StatusOK, gin.H{"connections": []any{}})
+		c.JSON(http.StatusOK, H{"connections": []any{}})
 	case "/v1/health":
-		c.JSON(http.StatusOK, gin.H{
-			"blockchain":       gin.H{"head": gin.H{"seq": 0, "timestamp": 0}},
-			"version":          gin.H{"version": "0.27.0", "commit": "bitcoin"},
+		c.JSON(http.StatusOK, H{
+			"blockchain":       H{"head": H{"seq": 0, "timestamp": 0}},
+			"version":          H{"version": "0.27.0", "commit": "bitcoin"},
 			"open_connections": 0,
 			"uptime":           "0s",
 		})
 	case "/v1/blockchain/progress":
-		c.JSON(http.StatusOK, gin.H{"current": 1, "highest": 1, "peers": []any{}})
+		c.JSON(http.StatusOK, H{"current": 1, "highest": 1, "peers": []any{}})
 	case "/v1/blockchain/metadata":
-		c.JSON(http.StatusOK, gin.H{"head": gin.H{"seq": 0, "fee": 0}})
+		c.JSON(http.StatusOK, H{"head": H{"seq": 0, "fee": 0}})
 	case "/v1/csrf":
-		c.JSON(http.StatusOK, gin.H{"csrf_token": ""})
+		c.JSON(http.StatusOK, H{"csrf_token": ""})
 	default:
 		return false
 	}
 	return true
 }
 
-func setCORSHeaders(c *gin.Context) {
+func setCORSHeaders(c *webCtx) {
 	c.Header("Access-Control-Allow-Origin", "*")
 	c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 	c.Header("Access-Control-Allow-Headers", "Content-Type, X-CSRF-Token")
@@ -630,7 +673,7 @@ func setCORSHeaders(c *gin.Context) {
 // handleMultiWalletAPI dispatches wallet API requests across all configured wallet services.
 // For read operations, it aggregates results from all services.
 // For write operations, it uses the first (primary) service.
-func handleMultiWalletAPI(c *gin.Context, apiPath string, services []*wallet.Service, nodeURL string) bool {
+func handleMultiWalletAPI(c *webCtx, apiPath string, services []*wallet.Service, nodeURL string) bool {
 	path := strings.TrimSuffix(apiPath, "/")
 	method := c.Request.Method
 
@@ -688,7 +731,7 @@ func needsWalletLookup(path, method string) bool {
 }
 
 // handleGetWalletsMulti aggregates wallets from all services
-func handleGetWalletsMulti(c *gin.Context, services []*wallet.Service) {
+func handleGetWalletsMulti(c *webCtx, services []*wallet.Service) {
 	var allWallets []*readable.WalletResponse
 	for _, svc := range services {
 		wlts, err := svc.GetWallets()
@@ -710,20 +753,20 @@ func handleGetWalletsMulti(c *gin.Context, services []*wallet.Service) {
 }
 
 // handleWalletFolderMulti returns the primary wallet directory
-func handleWalletFolderMulti(c *gin.Context, services []*wallet.Service) {
+func handleWalletFolderMulti(c *webCtx, services []*wallet.Service) {
 	addr, err := services[0].WalletDir()
 	if err != nil {
 		handleWalletError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"address": addr})
+	c.JSON(http.StatusOK, H{"address": addr})
 }
 
 // handleReadOnlyPost forwards read-only POST requests to the node as POST with CSRF token.
 // This preserves form body data (e.g. long address lists) that would exceed URI length
 // limits if converted to GET query parameters.
 // Returns true if the request was handled, false otherwise.
-func handleReadOnlyPost(c *gin.Context, trimmedPath string, nodeURL string) bool {
+func handleReadOnlyPost(c *webCtx, trimmedPath string, nodeURL string) bool {
 	readOnlyEndpoints := map[string]bool{
 		"/v1/balance":      true,
 		"/v1/transactions": true,
@@ -755,7 +798,7 @@ func handleReadOnlyPost(c *gin.Context, trimmedPath string, nodeURL string) bool
 	}
 	formData := c.Request.PostForm.Encode()
 
-	req, err := http.NewRequest(http.MethodPost, targetURL, strings.NewReader(formData))
+	req, err := http.NewRequest(http.MethodPost, targetURL, strings.NewReader(formData)) //nolint:gosec // G704: proxies to operator-configured node URLs, not user input
 	if err != nil {
 		errInternal(c, fmt.Sprintf("failed to create request: %v", err))
 		return true
@@ -771,7 +814,7 @@ func handleReadOnlyPost(c *gin.Context, trimmedPath string, nodeURL string) bool
 	}
 
 	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := client.Do(req) //nolint:gosec // G704: request targets an operator-configured node URL
 	if err != nil {
 		errInternal(c, fmt.Sprintf("failed to query node: %v", err))
 		return true
@@ -829,12 +872,12 @@ func fetchCSRFToken(nodeURL string) (string, error) {
 }
 
 // proxyToNode forwards an API request to the remote node
-func proxyToNode(c *gin.Context, remoteNodeURL string) {
+func proxyToNode(c *webCtx, remoteNodeURL string) {
 	proxyToNodeWithBase(c, remoteNodeURL, c.Request.URL.Path)
 }
 
 // proxyToNodeWithBase forwards a request with a custom target path
-func proxyToNodeWithBase(c *gin.Context, remoteNodeURL string, targetPath string) {
+func proxyToNodeWithBase(c *webCtx, remoteNodeURL string, targetPath string) {
 	targetURL := remoteNodeURL + targetPath
 	if c.Request.URL.RawQuery != "" {
 		targetURL += "?" + c.Request.URL.RawQuery
@@ -842,7 +885,7 @@ func proxyToNodeWithBase(c *gin.Context, remoteNodeURL string, targetPath string
 
 	log.Printf("[PROXY] %s %s -> %s", c.Request.Method, c.Request.URL.Path, targetURL)
 
-	proxyReq, err := http.NewRequest(c.Request.Method, targetURL, c.Request.Body)
+	proxyReq, err := http.NewRequest(c.Request.Method, targetURL, c.Request.Body) //nolint:gosec // G704: proxies to operator-configured node URLs, not user input
 	if err != nil {
 		log.Printf("[PROXY] Failed to create request: %v", err)
 		c.String(http.StatusInternalServerError, "Failed to create proxy request")
@@ -869,7 +912,7 @@ func proxyToNodeWithBase(c *gin.Context, remoteNodeURL string, targetPath string
 	}
 
 	client := &http.Client{}
-	resp, err := client.Do(proxyReq)
+	resp, err := client.Do(proxyReq) //nolint:gosec // G704: proxies to an operator-configured node URL
 	if err != nil {
 		log.Printf("[PROXY] Request failed: %v", err)
 		c.String(http.StatusBadGateway, "Failed to proxy request to node: %v", err)
@@ -907,11 +950,7 @@ func initPProf(profMode string, profAddr string) (stop func()) {
 	case "http":
 		go func() {
 			mux := http.NewServeMux()
-			mux.HandleFunc("/debug/pprof/", nethttppprof.Index)
-			mux.HandleFunc("/debug/pprof/cmdline", nethttppprof.Cmdline)
-			mux.HandleFunc("/debug/pprof/profile", nethttppprof.Profile)
-			mux.HandleFunc("/debug/pprof/symbol", nethttppprof.Symbol)
-			mux.HandleFunc("/debug/pprof/trace", nethttppprof.Trace)
+			registerPprofHandlers(mux)
 			srv := &http.Server{ //nolint:gosec
 				Addr:              profAddr,
 				Handler:           mux,

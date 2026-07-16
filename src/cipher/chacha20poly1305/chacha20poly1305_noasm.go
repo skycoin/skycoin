@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build !amd64 || !go1.7 || gccgo || appengine
-// +build !amd64 !go1.7 gccgo appengine
+//go:build !amd64 || !go1.7 || gccgo || appengine || tinygo
+// +build !amd64 !go1.7 gccgo appengine tinygo
 
 package chacha20poly1305
 

@@ -9,17 +9,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
 
-func init() {
-	gin.SetMode(gin.TestMode)
-}
-
 func TestHandleReadOnlyPost_UnrecognizedEndpoint(t *testing.T) {
 	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
+	c := newCtx(w, nil)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/unknown", nil)
 
 	handled := handleReadOnlyPost(c, "/v1/unknown", "http://localhost:6420")
@@ -55,7 +50,7 @@ func TestHandleReadOnlyPost_BalanceEndpoint(t *testing.T) {
 	defer mockNode.Close()
 
 	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
+	c := newCtx(w, nil)
 
 	form := url.Values{}
 	form.Set("addrs", "addr1,addr2,addr3")
@@ -89,7 +84,7 @@ func TestHandleReadOnlyPost_TransactionsEndpoint(t *testing.T) {
 	queryCache = &proxyCache{entries: make(map[string]proxyCacheEntry)}
 
 	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
+	c := newCtx(w, nil)
 	form := url.Values{}
 	form.Set("addrs", "testaddr")
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/transactions", strings.NewReader(form.Encode()))
@@ -123,7 +118,7 @@ func TestHandleReadOnlyPost_TransactionsCaching(t *testing.T) {
 
 	makeRequest := func() *httptest.ResponseRecorder {
 		w := httptest.NewRecorder()
-		c, _ := gin.CreateTestContext(w)
+		c := newCtx(w, nil)
 		form := url.Values{}
 		form.Set("addrs", "cacheaddr")
 		c.Request = httptest.NewRequest(http.MethodPost, "/v1/transactions", strings.NewReader(form.Encode()))
@@ -161,7 +156,7 @@ func TestHandleReadOnlyPost_OutputsEndpoint(t *testing.T) {
 	defer mockNode.Close()
 
 	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
+	c := newCtx(w, nil)
 	form := url.Values{}
 	form.Set("addrs", "outputaddr")
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/outputs", strings.NewReader(form.Encode()))
@@ -207,7 +202,7 @@ func TestHandleReadOnlyPost_LongAddressList(t *testing.T) {
 	require.Greater(t, len(addrStr), 1700, "address string should be long enough to exceed typical GET URI limits")
 
 	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
+	c := newCtx(w, nil)
 	form := url.Values{}
 	form.Set("addrs", addrStr)
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/balance", strings.NewReader(form.Encode()))

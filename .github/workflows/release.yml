@@ -5,7 +5,7 @@ on:
       - 'v*'
 
 env:
-  GO_VERSION: '1.26'
+  GO_VERSION: '1.26.5'
   MUSL_RELEASE: 'v1.3.29'
   MODULE: github.com/skycoin/skycoin
 

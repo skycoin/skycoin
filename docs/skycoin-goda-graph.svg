@@ -240,10 +240,10 @@
 <!-- github.com/skycoin/skycoin/cmd/explorer/commands -->
 <g id="node7" class="node">
 <title>github.com/skycoin/skycoin/cmd/explorer/commands</title>
-<g id="a_node7"><a xlink:href="https://pkg.go.dev/github.com/skycoin/skycoin/cmd/explorer/commands" xlink:title="github.com/skycoin/skycoin/cmd/explorer/commands\l1510 / 62.4KB\l" target="_graphviz">
+<g id="a_node7"><a xlink:href="https://pkg.go.dev/github.com/skycoin/skycoin/cmd/explorer/commands" xlink:title="github.com/skycoin/skycoin/cmd/explorer/commands\l1527 / 62.7KB\l" target="_graphviz">
 <polygon fill="none" stroke="#071591" stroke-width="2" stroke-opacity="0.698039" points="1314,-4241 1026,-4241 1026,-4205 1314,-4205 1314,-4241"/>
 <text xml:space="preserve" text-anchor="start" x="1034" y="-4226.25" font-family="Times,serif" font-size="10.00">github.com/skycoin/skycoin/cmd/explorer/commands</text>
-<text xml:space="preserve" text-anchor="start" x="1034" y="-4213.5" font-family="Times,serif" font-size="10.00">1510 / 62.4KB</text>
+<text xml:space="preserve" text-anchor="start" x="1034" y="-4213.5" font-family="Times,serif" font-size="10.00">1527 / 62.7KB</text>
 </a>
 </g>
 </g>
@@ -524,10 +524,10 @@
 <!-- github.com/skycoin/skycoin/src/util/iputil -->
 <g id="node102" class="node">
 <title>github.com/skycoin/skycoin/src/util/iputil</title>
-<g id="a_node102"><a xlink:href="https://pkg.go.dev/github.com/skycoin/skycoin/src/util/iputil" xlink:title="github.com/skycoin/skycoin/src/util/iputil\l58 / 1.5KB\l" target="_graphviz">
+<g id="a_node102"><a xlink:href="https://pkg.go.dev/github.com/skycoin/skycoin/src/util/iputil" xlink:title="github.com/skycoin/skycoin/src/util/iputil\l61 / 1.6KB\l" target="_graphviz">
 <polygon fill="none" stroke="#379107" stroke-width="2" stroke-opacity="0.698039" points="4770,-3884 4518,-3884 4518,-3848 4770,-3848 4770,-3884"/>
 <text xml:space="preserve" text-anchor="start" x="4526" y="-3869.25" font-family="Times,serif" font-size="10.00">github.com/skycoin/skycoin/src/util/iputil</text>
-<text xml:space="preserve" text-anchor="start" x="4526" y="-3856.5" font-family="Times,serif" font-size="10.00">58 / 1.5KB</text>
+<text xml:space="preserve" text-anchor="start" x="4526" y="-3856.5" font-family="Times,serif" font-size="10.00">61 / 1.6KB</text>
 </a>
 </g>
 </g>
@@ -708,10 +708,10 @@
 <!-- github.com/skycoin/skycoin/cmd/skycoin&#45;web/commands -->
 <g id="node23" class="node">
 <title>github.com/skycoin/skycoin/cmd/skycoin&#45;web/commands</title>
-<g id="a_node23"><a xlink:href="https://pkg.go.dev/github.com/skycoin/skycoin/cmd/skycoin-web/commands" xlink:title="github.com/skycoin/skycoin/cmd/skycoin&#45;web/commands\l1774 / 56.5KB\l" target="_graphviz">
+<g id="a_node23"><a xlink:href="https://pkg.go.dev/github.com/skycoin/skycoin/cmd/skycoin-web/commands" xlink:title="github.com/skycoin/skycoin/cmd/skycoin&#45;web/commands\l1978 / 64.7KB\l" target="_graphviz">
 <polygon fill="none" stroke="#299107" stroke-width="2" stroke-opacity="0.698039" points="1764,-1235 1440,-1235 1440,-1199 1764,-1199 1764,-1235"/>
 <text xml:space="preserve" text-anchor="start" x="1448" y="-1220.25" font-family="Times,serif" font-size="10.00">github.com/skycoin/skycoin/cmd/skycoin&#45;web/commands</text>
-<text xml:space="preserve" text-anchor="start" x="1448" y="-1207.5" font-family="Times,serif" font-size="10.00">1774 / 56.5KB</text>
+<text xml:space="preserve" text-anchor="start" x="1448" y="-1207.5" font-family="Times,serif" font-size="10.00">1978 / 64.7KB</text>
 </a>
 </g>
 </g>
@@ -724,10 +724,10 @@
 <!-- github.com/skycoin/skycoin/cmd/skycoin/commands -->
 <g id="node24" class="node">
 <title>github.com/skycoin/skycoin/cmd/skycoin/commands</title>
-<g id="a_node24"><a xlink:href="https://pkg.go.dev/github.com/skycoin/skycoin/cmd/skycoin/commands" xlink:title="github.com/skycoin/skycoin/cmd/skycoin/commands\l162 / 6.1KB\l" target="_graphviz">
+<g id="a_node24"><a xlink:href="https://pkg.go.dev/github.com/skycoin/skycoin/cmd/skycoin/commands" xlink:title="github.com/skycoin/skycoin/cmd/skycoin/commands\l168 / 6.4KB\l" target="_graphviz">
 <polygon fill="none" stroke="#7b0791" stroke-width="2" stroke-opacity="0.698039" points="1314,-948 1026,-948 1026,-912 1314,-912 1314,-948"/>
 <text xml:space="preserve" text-anchor="start" x="1034" y="-933.25" font-family="Times,serif" font-size="10.00">github.com/skycoin/skycoin/cmd/skycoin/commands</text>
-<text xml:space="preserve" text-anchor="start" x="1034" y="-920.5" font-family="Times,serif" font-size="10.00">162 / 6.1KB</text>
+<text xml:space="preserve" text-anchor="start" x="1034" y="-920.5" font-family="Times,serif" font-size="10.00">168 / 6.4KB</text>
 </a>
 </g>
 </g>
@@ -976,10 +976,10 @@
 <!-- github.com/skycoin/skycoin/src/btc -->
 <g id="node30" class="node">
 <title>github.com/skycoin/skycoin/src/btc</title>
-<g id="a_node30"><a xlink:href="https://pkg.go.dev/github.com/skycoin/skycoin/src/btc" xlink:title="github.com/skycoin/skycoin/src/btc\l1045 / 33.0KB\l" target="_graphviz">
+<g id="a_node30"><a xlink:href="https://pkg.go.dev/github.com/skycoin/skycoin/src/btc" xlink:title="github.com/skycoin/skycoin/src/btc\l1089 / 34.9KB\l" target="_graphviz">
 <polygon fill="none" stroke="#910751" stroke-width="2" stroke-opacity="0.698039" points="5166,-1594 4950,-1594 4950,-1558 5166,-1558 5166,-1594"/>
 <text xml:space="preserve" text-anchor="start" x="4958" y="-1579.25" font-family="Times,serif" font-size="10.00">github.com/skycoin/skycoin/src/btc</text>
-<text xml:space="preserve" text-anchor="start" x="4958" y="-1566.5" font-family="Times,serif" font-size="10.00">1045 / 33.0KB</text>
+<text xml:space="preserve" text-anchor="start" x="4958" y="-1566.5" font-family="Times,serif" font-size="10.00">1089 / 34.9KB</text>
 </a>
 </g>
 </g>
@@ -1071,21 +1071,21 @@
 <path fill="none" stroke="#072291" stroke-width="2" stroke-opacity="0.698039" d="M1764,-1217C1860.2,-1217 2124.25,-1180.92 2196,-1245 2398.74,-1426.07 2170.23,-1610.37 2304,-1847 2332.12,-1896.75 2384.58,-1937.62 2421.97,-1962.32"/>
 <polygon fill="#072291" fill-opacity="0.698039" stroke="#072291" stroke-width="2" stroke-opacity="0.698039" points="2419.72,-1965.03 2430.02,-1967.51 2423.51,-1959.15 2419.72,-1965.03"/>
 </g>
-<!-- github.com/skycoin/skycoin/src/skycoin&#45;lite/wasm&#45;tinygo -->
-<g id="node83" class="node">
-<title>github.com/skycoin/skycoin/src/skycoin&#45;lite/wasm&#45;tinygo</title>
-<g id="a_node83"><a xlink:href="https://pkg.go.dev/github.com/skycoin/skycoin/src/skycoin-lite/wasm-tinygo" xlink:title="github.com/skycoin/skycoin/src/skycoin&#45;lite/wasm&#45;tinygo\l11 / 326B\l" target="_graphviz">
-<polygon fill="none" stroke="#911307" stroke-width="2" stroke-opacity="0.698039" points="2196,-1344 1872,-1344 1872,-1308 2196,-1308 2196,-1344"/>
-<text xml:space="preserve" text-anchor="start" x="1880" y="-1329.25" font-family="Times,serif" font-size="10.00">github.com/skycoin/skycoin/src/skycoin&#45;lite/wasm&#45;tinygo</text>
-<text xml:space="preserve" text-anchor="start" x="1880" y="-1316.5" font-family="Times,serif" font-size="10.00">11 / 326B</text>
+<!-- github.com/skycoin/skycoin/src/skycoin&#45;lite/wasm&#45;go -->
+<g id="node82" class="node">
+<title>github.com/skycoin/skycoin/src/skycoin&#45;lite/wasm&#45;go</title>
+<g id="a_node82"><a xlink:href="https://pkg.go.dev/github.com/skycoin/skycoin/src/skycoin-lite/wasm-go" xlink:title="github.com/skycoin/skycoin/src/skycoin&#45;lite/wasm&#45;go\l11 / 304B\l" target="_graphviz">
+<polygon fill="none" stroke="#730791" stroke-width="2" stroke-opacity="0.698039" points="2178,-1344 1890,-1344 1890,-1308 2178,-1308 2178,-1344"/>
+<text xml:space="preserve" text-anchor="start" x="1898" y="-1329.25" font-family="Times,serif" font-size="10.00">github.com/skycoin/skycoin/src/skycoin&#45;lite/wasm&#45;go</text>
+<text xml:space="preserve" text-anchor="start" x="1898" y="-1316.5" font-family="Times,serif" font-size="10.00">11 / 304B</text>
 </a>
 </g>
 </g>
-<!-- github.com/skycoin/skycoin/cmd/skycoin&#45;web/commands&#45;&gt;github.com/skycoin/skycoin/src/skycoin&#45;lite/wasm&#45;tinygo -->
+<!-- github.com/skycoin/skycoin/cmd/skycoin&#45;web/commands&#45;&gt;github.com/skycoin/skycoin/src/skycoin&#45;lite/wasm&#45;go -->
 <g id="edge83" class="edge">
-<title>github.com/skycoin/skycoin/cmd/skycoin&#45;web/commands:e&#45;&gt;github.com/skycoin/skycoin/src/skycoin&#45;lite/wasm&#45;tinygo</title>
-<path fill="none" stroke="#911307" stroke-width="2" stroke-opacity="0.698039" d="M1764,-1217C1824.27,-1217 1816.67,-1275.1 1872,-1299 1875.18,-1300.38 1878.43,-1301.68 1881.73,-1302.92"/>
-<polygon fill="#911307" fill-opacity="0.698039" stroke="#911307" stroke-width="2" stroke-opacity="0.698039" points="1880.4,-1306.17 1891,-1306.13 1882.69,-1299.55 1880.4,-1306.17"/>
+<title>github.com/skycoin/skycoin/cmd/skycoin&#45;web/commands:e&#45;&gt;github.com/skycoin/skycoin/src/skycoin&#45;lite/wasm&#45;go</title>
+<path fill="none" stroke="#730791" stroke-width="2" stroke-opacity="0.698039" d="M1764,-1217C1824.27,-1217 1816.67,-1275.1 1872,-1299 1875.18,-1300.38 1878.43,-1301.68 1881.73,-1302.92"/>
+<polygon fill="#730791" fill-opacity="0.698039" stroke="#730791" stroke-width="2" stroke-opacity="0.698039" points="1880.4,-1306.17 1891,-1306.13 1882.69,-1299.55 1880.4,-1306.17"/>
 </g>
 <!-- github.com/skycoin/skycoin/src/skycoin&#45;web/src/gui -->
 <g id="node86" class="node">
@@ -1136,10 +1136,10 @@
 <!-- github.com/skycoin/skycoin/src/skycoin -->
 <g id="node76" class="node">
 <title>github.com/skycoin/skycoin/src/skycoin</title>
-<g id="a_node76"><a xlink:href="https://pkg.go.dev/github.com/skycoin/skycoin/src/skycoin" xlink:title="github.com/skycoin/skycoin/src/skycoin\l1571 / 64.6KB\l" target="_graphviz">
+<g id="a_node76"><a xlink:href="https://pkg.go.dev/github.com/skycoin/skycoin/src/skycoin" xlink:title="github.com/skycoin/skycoin/src/skycoin\l1572 / 64.6KB\l" target="_graphviz">
 <polygon fill="none" stroke="#779107" stroke-width="2" stroke-opacity="0.698039" points="1710,-2700 1494,-2700 1494,-2664 1710,-2664 1710,-2700"/>
 <text xml:space="preserve" text-anchor="start" x="1502" y="-2685.25" font-family="Times,serif" font-size="10.00">github.com/skycoin/skycoin/src/skycoin</text>
-<text xml:space="preserve" text-anchor="start" x="1502" y="-2672.5" font-family="Times,serif" font-size="10.00">1571 / 64.6KB</text>
+<text xml:space="preserve" text-anchor="start" x="1502" y="-2672.5" font-family="Times,serif" font-size="10.00">1572 / 64.6KB</text>
 </a>
 </g>
 </g>
@@ -1198,10 +1198,10 @@
 <!-- github.com/skycoin/skycoin/src/api -->
 <g id="node28" class="node">
 <title>github.com/skycoin/skycoin/src/api</title>
-<g id="a_node28"><a xlink:href="https://pkg.go.dev/github.com/skycoin/skycoin/src/api" xlink:title="github.com/skycoin/skycoin/src/api\l6232 / 192.3KB\l" target="_graphviz">
+<g id="a_node28"><a xlink:href="https://pkg.go.dev/github.com/skycoin/skycoin/src/api" xlink:title="github.com/skycoin/skycoin/src/api\l6250 / 193.0KB\l" target="_graphviz">
 <polygon fill="none" stroke="#918407" stroke-width="2" stroke-opacity="0.698039" points="2142,-2309 1926,-2309 1926,-2273 2142,-2273 2142,-2309"/>
 <text xml:space="preserve" text-anchor="start" x="1934" y="-2294.25" font-family="Times,serif" font-size="10.00">github.com/skycoin/skycoin/src/api</text>
-<text xml:space="preserve" text-anchor="start" x="1934" y="-2281.5" font-family="Times,serif" font-size="10.00">6232 / 192.3KB</text>
+<text xml:space="preserve" text-anchor="start" x="1934" y="-2281.5" font-family="Times,serif" font-size="10.00">6250 / 193.0KB</text>
 </a>
 </g>
 </g>
@@ -1238,10 +1238,10 @@
 <!-- github.com/skycoin/skycoin/src/gui -->
 <g id="node63" class="node">
 <title>github.com/skycoin/skycoin/src/gui</title>
-<g id="a_node63"><a xlink:href="https://pkg.go.dev/github.com/skycoin/skycoin/src/gui" xlink:title="github.com/skycoin/skycoin/src/gui\l9 / 158B\l" target="_graphviz">
+<g id="a_node63"><a xlink:href="https://pkg.go.dev/github.com/skycoin/skycoin/src/gui" xlink:title="github.com/skycoin/skycoin/src/gui\l16 / 628B\l" target="_graphviz">
 <polygon fill="none" stroke="#07912b" stroke-width="2" stroke-opacity="0.698039" points="2574,-1838 2358,-1838 2358,-1802 2574,-1802 2574,-1838"/>
 <text xml:space="preserve" text-anchor="start" x="2366" y="-1823.25" font-family="Times,serif" font-size="10.00">github.com/skycoin/skycoin/src/gui</text>
-<text xml:space="preserve" text-anchor="start" x="2366" y="-1810.5" font-family="Times,serif" font-size="10.00">9 / 158B</text>
+<text xml:space="preserve" text-anchor="start" x="2366" y="-1810.5" font-family="Times,serif" font-size="10.00">16 / 628B</text>
 </a>
 </g>
 </g>
@@ -1488,10 +1488,10 @@
 <!-- github.com/skycoin/skycoin/src/electrum -->
 <g id="node61" class="node">
 <title>github.com/skycoin/skycoin/src/electrum</title>
-<g id="a_node61"><a xlink:href="https://pkg.go.dev/github.com/skycoin/skycoin/src/electrum" xlink:title="github.com/skycoin/skycoin/src/electrum\l297 / 9.4KB\l" target="_graphviz">
+<g id="a_node61"><a xlink:href="https://pkg.go.dev/github.com/skycoin/skycoin/src/electrum" xlink:title="github.com/skycoin/skycoin/src/electrum\l370 / 13.0KB\l" target="_graphviz">
 <polygon fill="none" stroke="#7a9107" stroke-width="2" stroke-opacity="0.698039" points="5634,-1594 5382,-1594 5382,-1558 5634,-1558 5634,-1594"/>
 <text xml:space="preserve" text-anchor="start" x="5390" y="-1579.25" font-family="Times,serif" font-size="10.00">github.com/skycoin/skycoin/src/electrum</text>
-<text xml:space="preserve" text-anchor="start" x="5390" y="-1566.5" font-family="Times,serif" font-size="10.00">297 / 9.4KB</text>
+<text xml:space="preserve" text-anchor="start" x="5390" y="-1566.5" font-family="Times,serif" font-size="10.00">370 / 13.0KB</text>
 </a>
 </g>
 </g>
@@ -2705,13 +2705,13 @@
 <path fill="none" stroke="#075291" stroke-width="2" stroke-opacity="0.698039" d="M4788,-1142C4843.54,-1142 4904.89,-1133.96 4954.97,-1125.28"/>
 <polygon fill="#075291" fill-opacity="0.698039" stroke="#075291" stroke-width="2" stroke-opacity="0.698039" points="4955.57,-1128.73 4964.8,-1123.53 4954.34,-1121.83 4955.57,-1128.73"/>
 </g>
-<!-- github.com/skycoin/skycoin/src/skycoin&#45;lite/wasm&#45;go -->
-<g id="node82" class="node">
-<title>github.com/skycoin/skycoin/src/skycoin&#45;lite/wasm&#45;go</title>
-<g id="a_node82"><a xlink:href="https://pkg.go.dev/github.com/skycoin/skycoin/src/skycoin-lite/wasm-go" xlink:title="github.com/skycoin/skycoin/src/skycoin&#45;lite/wasm&#45;go\l11 / 304B\l" target="_graphviz">
-<polygon fill="none" stroke="#730791" stroke-width="2" stroke-opacity="0.698039" points="378,-4677 90,-4677 90,-4641 378,-4641 378,-4677"/>
-<text xml:space="preserve" text-anchor="start" x="98" y="-4662.25" font-family="Times,serif" font-size="10.00">github.com/skycoin/skycoin/src/skycoin&#45;lite/wasm&#45;go</text>
-<text xml:space="preserve" text-anchor="start" x="98" y="-4649.5" font-family="Times,serif" font-size="10.00">11 / 304B</text>
+<!-- github.com/skycoin/skycoin/src/skycoin&#45;lite/wasm&#45;tinygo -->
+<g id="node83" class="node">
+<title>github.com/skycoin/skycoin/src/skycoin&#45;lite/wasm&#45;tinygo</title>
+<g id="a_node83"><a xlink:href="https://pkg.go.dev/github.com/skycoin/skycoin/src/skycoin-lite/wasm-tinygo" xlink:title="github.com/skycoin/skycoin/src/skycoin&#45;lite/wasm&#45;tinygo\l11 / 326B\l" target="_graphviz">
+<polygon fill="none" stroke="#911307" stroke-width="2" stroke-opacity="0.698039" points="396,-4677 72,-4677 72,-4641 396,-4641 396,-4677"/>
+<text xml:space="preserve" text-anchor="start" x="80" y="-4662.25" font-family="Times,serif" font-size="10.00">github.com/skycoin/skycoin/src/skycoin&#45;lite/wasm&#45;tinygo</text>
+<text xml:space="preserve" text-anchor="start" x="80" y="-4649.5" font-family="Times,serif" font-size="10.00">11 / 326B</text>
 </a>
 </g>
 </g>

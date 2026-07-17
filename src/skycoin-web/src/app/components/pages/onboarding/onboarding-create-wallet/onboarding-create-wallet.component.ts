@@ -132,11 +132,29 @@ export class OnboardingCreateWalletComponent implements OnInit, AfterViewInit, O
     this.walletService.haveWallets.pipe(first()).subscribe(result => {
       if (!result) {
         this.userHasWallets = false;
-        this.showLanguageModal();
+        // When embedded in a Skywire visor (served under <base href="/wallet/">),
+        // skip the language + disclaimer onboarding modals: the visor surfaces its
+        // own combined Skywire/Skycoin disclaimer in the tour, and forcing a
+        // separate blocking modal there is redundant. Standalone skycoin-web (base
+        // href "/") keeps the full onboarding.
+        if (!this.isSkywireEmbedded()) {
+          this.showLanguageModal();
+        }
       } else {
         this.userHasWallets = true;
       }
     });
+  }
+
+  // isSkywireEmbedded reports whether the wallet is running inside a Skywire
+  // visor, which mounts it at <base href="/wallet/"> (standalone is "/").
+  private isSkywireEmbedded(): boolean {
+    try {
+      const base = document.getElementsByTagName('base')[0];
+      return !!base && /\/wallet\/?$/.test(base.getAttribute('href') || '');
+    } catch (e) {
+      return false;
+    }
   }
 
   private createWallet() {

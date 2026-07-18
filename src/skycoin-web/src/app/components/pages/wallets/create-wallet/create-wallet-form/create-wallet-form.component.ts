@@ -48,6 +48,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
 
   private statusSubscription: Subscription;
   private healthSubscription: Subscription;
+  private coinsLoadedSub: Subscription;
 
   constructor(
     private formBuilder: UntypedFormBuilder,
@@ -57,12 +58,26 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
-    this.hasManyCoins = this.coinService.coins.length > 1;
-    this.initForm(this.coinService.currentCoin.getValue());
+    // Build the form only once the coin list has loaded. Coins arrive
+    // asynchronously (server request), so reading coins/currentCoin
+    // synchronously here would see an empty list — hiding both the coin
+    // selector (hasManyCoins) and the wallet-type selector, and leaving a
+    // bare deterministic-only create form. coinsLoaded is a ReplaySubject(1):
+    // it fires immediately if coins are already loaded, else when they arrive.
+    this.coinsLoadedSub = this.coinService.coinsLoaded.subscribe(() => {
+      this.hasManyCoins = this.coinService.coins.length > 1;
+      const coin = this.coinService.currentCoin.getValue() || this.coinService.coins[0] || null;
+      this.initForm(coin);
+    });
   }
 
   ngOnDestroy() {
-    this.statusSubscription.unsubscribe();
+    if (this.coinsLoadedSub) {
+      this.coinsLoadedSub.unsubscribe();
+    }
+    if (this.statusSubscription) {
+      this.statusSubscription.unsubscribe();
+    }
     if (this.healthSubscription) {
       this.healthSubscription.unsubscribe();
     }
@@ -115,7 +130,14 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     create = create !== null ? create : this.create;
 
     this.isBitcoinCoin = defaultCoin ? defaultCoin.isBitcoin() : false;
-    this.showWalletType = defaultCoin ? defaultCoin.serverWallets : this.isProduction;
+    // Show the wallet-TYPE selector (deterministic / bip44 / segwit) whenever a
+    // coin is selected. The type is independent of serverWallets (server-side vs
+    // browser custody): a browser wallet (serverWallets=false, e.g. the skywire
+    // embedded wallet) still creates deterministic OR bip44 (and Bitcoin bip44
+    // can be segwit). Gating on serverWallets wrongly hid every type option for
+    // client-side wallets. The individual options are already coin-gated in the
+    // template (deterministic only for non-BTC; segwit only for BTC bip44).
+    this.showWalletType = !!defaultCoin;
     this.probeCoinHealth(defaultCoin);
 
     // Bitcoin defaults to bip44 (segwit); Skycoin defaults to deterministic
@@ -144,7 +166,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     this.form.get('coin').valueChanges.subscribe((coin: BaseCoin) => {
       if (coin) {
         this.isBitcoinCoin = coin.isBitcoin();
-        this.showWalletType = coin.serverWallets;
+        this.showWalletType = true; // type selector is coin-type-gated in the template, not serverWallets-gated
         this.probeCoinHealth(coin);
         if (this.isBitcoinCoin) {
           this.form.get('wallet_type').setValue('bip44');

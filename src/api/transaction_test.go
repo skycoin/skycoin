@@ -823,9 +823,9 @@ func TestInjectTransaction(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
 					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				expectedResponse, err := json.MarshalIndent(tc.httpResponse, "", "    ")
+				expectedResponse, err := json.Marshal(tc.httpResponse)
 				require.NoError(t, err)
-				require.Equal(t, string(expectedResponse), rr.Body.String(), tc.name)
+				require.Equal(t, string(expectedResponse), strings.TrimSpace(rr.Body.String()), tc.name)
 			}
 		})
 	}
@@ -1048,9 +1048,9 @@ func TestGetRawTxn(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
 					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				expectedResponse, err := json.MarshalIndent(tc.httpResponse, "", "    ")
+				expectedResponse, err := json.Marshal(tc.httpResponse)
 				require.NoError(t, err)
-				require.Equal(t, string(expectedResponse), rr.Body.String(), tc.name)
+				require.Equal(t, string(expectedResponse), strings.TrimSpace(rr.Body.String()), tc.name)
 			}
 		})
 	}

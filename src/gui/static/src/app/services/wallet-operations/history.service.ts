@@ -54,6 +54,60 @@ export class HistoryService {
   ) { }
 
   /**
+   * Number of transactions requested per page from the node. The node caps the
+   * verbose transactions endpoint at 100 per page (visor.MaxTxnPageSize).
+   */
+  private static readonly transactionsPageSize = 100;
+
+  /**
+   * Gets the verbose transaction history for a set of addresses, requesting it
+   * one page at a time and returning the complete list once every page has been
+   * retrieved.
+   *
+   * The node builds the entire verbose response in memory before sending it, so
+   * asking for every transaction at once (as the v1 /transactions endpoint does)
+   * can cost hundreds of MB and get a TinyGo-compiled node OOM-killed while
+   * serving the history view. The paginated v2 endpoint bounds each request to a
+   * single page, keeping node memory flat regardless of history size. Pages are
+   * fetched sequentially so the node only ever materializes one page at a time.
+   * @param addrs Comma separated list of addresses. If empty, an empty list is
+   * returned, because an empty value would make the node return every
+   * transaction in the blockchain.
+   */
+  private getVerboseTransactions(addrs: string): Observable<any[]> {
+    if (!addrs) {
+      return of([]);
+    }
+
+    const accumulated: any[] = [];
+
+    const requestPage = (page: number): Observable<any[]> => {
+      const params = {
+        addrs: addrs,
+        verbose: true,
+        sort: 'desc',
+        limit: HistoryService.transactionsPageSize,
+        page: page,
+      };
+
+      return this.apiService.get('transactions', params, { useV2: true }).pipe(mergeMap(response => {
+        const data = response && response.data ? response.data : {};
+        const txns: any[] = data.txns ? data.txns : [];
+        accumulated.push(...txns);
+
+        const totalPages = data.page_info && data.page_info.total_pages ? data.page_info.total_pages : 0;
+        if (page < totalPages) {
+          return requestPage(page + 1);
+        }
+
+        return of(accumulated);
+      }));
+    };
+
+    return requestPage(1);
+  }
+
+  /**
    * Gets the transaction history of all the wallets or a specific wallet.
    * @param wallet Specific wallet for which the transaction history will be returned. If null,
    * the transactions of all wallets will be returned.
@@ -91,7 +145,7 @@ export class HistoryService {
       // Get the transactions for all addresses.
       const formattedAddresses = addresses.map(a => a.address).join(',');
 
-      return this.apiService.post('transactions', {addrs: formattedAddresses, verbose: true});
+      return this.getVerboseTransactions(formattedAddresses);
     }), mergeMap((response: any[]) => {
       // Process the response and convert it into a known object.
       transactions = response.map<OldTransaction>(transaction => ({

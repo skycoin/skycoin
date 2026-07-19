@@ -635,7 +635,7 @@ func TestUpdateWalletLabelHandler(t *testing.T) {
 				require.Equal(t, tc.err, strings.TrimSpace(rr.Body.String()), "got `%v`| %d, want `%v`",
 					strings.TrimSpace(rr.Body.String()), status, tc.err)
 			} else {
-				require.Equal(t, tc.responseBody, rr.Body.String(), tc.name)
+				require.Equal(t, tc.responseBody, strings.TrimSpace(rr.Body.String()), tc.name)
 			}
 		})
 	}

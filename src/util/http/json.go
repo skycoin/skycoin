@@ -15,17 +15,25 @@ import (
 )
 
 // SendJSONOr500 writes an object as JSON, writing a 500 error if it fails
+//
+// The response is streamed directly to the client rather than marshaled into
+// an intermediate buffer. Buffering was expensive for large responses: the
+// verbose transaction history of a busy wallet is tens of megabytes, and
+// json.MarshalIndent materializes it twice (once compact, once indented)
+// before a single byte is written. On memory constrained systems that was
+// enough to get the node OOM-killed while serving the history view.
+//
+// Output is compact for the same reason; indenting a response of that size
+// added roughly 80% to it in whitespace alone.
+//
+// Because encoding happens while writing, the status and headers are already
+// committed by the time an encoding error can be observed, so such an error is
+// logged rather than turned into a 500.
 func SendJSONOr500(log *logging.Logger, w http.ResponseWriter, m interface{}) {
-	out, err := json.MarshalIndent(m, "", "    ")
-	if err != nil {
-		Error500(w, "json.MarshalIndent failed")
-		return
-	}
-
 	w.Header().Add("Content-Type", "application/json")
 
-	if _, err := w.Write(out); err != nil {
-		log.WithError(err).Error("http Write failed")
+	if err := json.NewEncoder(w).Encode(m); err != nil {
+		log.WithError(err).Error("json encode failed")
 	}
 }
 

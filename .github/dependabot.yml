@@ -1,0 +1,72 @@
+# Dependabot configuration.
+#
+# Updates are grouped so each ecosystem/directory produces a small number of
+# batched PRs instead of one PR per dependency. Security updates are always
+# raised individually by Dependabot regardless of grouping.
+version: 2
+updates:
+  # Go modules (root)
+  - package-ecosystem: gomod
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      go-dependencies:
+        patterns:
+          - "*"
+
+  # GitHub Actions workflows
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # Desktop app packaging
+  - package-ecosystem: npm
+    directory: "/electron"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      electron-npm:
+        patterns:
+          - "*"
+
+  # Blockchain explorer web app
+  - package-ecosystem: npm
+    directory: "/explorer"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      explorer-npm:
+        patterns:
+          - "*"
+
+  # Skycoin web wallet
+  - package-ecosystem: npm
+    directory: "/src/skycoin-web"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      skycoin-web-npm:
+        patterns:
+          - "*"
+
+  # Desktop GUI (Angular)
+  - package-ecosystem: npm
+    directory: "/src/gui/static"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      gui-npm:
+        patterns:
+          - "*"

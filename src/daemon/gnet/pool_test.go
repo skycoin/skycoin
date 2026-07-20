@@ -386,9 +386,14 @@ func TestConnect(t *testing.T) {
 
 func TestConnectNoTimeout(t *testing.T) {
 	cfg := newTestConfig(t)
-	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	cfg.DialTimeout = 0
-	cfg.Port++
+	// The pool listens on cfg.Port, which newTestConfig already verified is
+	// free. addr points at a separate free port with nothing listening on it,
+	// so that once the pool is shut down Connect(addr) is guaranteed to fail.
+	// (Previously this did cfg.Port++, binding the pool to an unchecked port
+	// that could already be in use, causing flaky "address already in use"
+	// failures in CI.)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", getFreePort(t)))
 
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)

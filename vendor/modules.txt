@@ -41,7 +41,7 @@ github.com/fsnotify/fsnotify/internal
 # github.com/gdamore/encoding v1.0.1
 ## explicit; go 1.9
 github.com/gdamore/encoding
-# github.com/gdamore/tcell/v3 v3.4.0
+# github.com/gdamore/tcell/v3 v3.4.1
 ## explicit; go 1.25.0
 github.com/gdamore/tcell/v3
 github.com/gdamore/tcell/v3/color
@@ -92,8 +92,8 @@ github.com/lucasb-eyer/go-colorful
 # github.com/mattn/go-colorable v0.1.15
 ## explicit; go 1.18
 github.com/mattn/go-colorable
-# github.com/mattn/go-isatty v0.0.22
-## explicit; go 1.21
+# github.com/mattn/go-isatty v0.0.23
+## explicit; go 1.20
 github.com/mattn/go-isatty
 # github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 ## explicit

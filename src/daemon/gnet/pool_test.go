@@ -386,9 +386,14 @@ func TestConnect(t *testing.T) {
 
 func TestConnectNoTimeout(t *testing.T) {
 	cfg := newTestConfig(t)
-	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
 	cfg.DialTimeout = 0
-	cfg.Port++
+	// The pool listens on cfg.Port, which newTestConfig already verified is
+	// free. addr points at a separate free port with nothing listening on it,
+	// so that once the pool is shut down Connect(addr) is guaranteed to fail.
+	// (Previously this did cfg.Port++, binding the pool to an unchecked port
+	// that could already be in use, causing flaky "address already in use"
+	// failures in CI.)
+	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", getFreePort(t)))
 
 	p, err := NewConnectionPool(cfg, nil)
 	require.NoError(t, err)
@@ -1112,8 +1117,13 @@ func TestPoolSendMessageWriteQueueFull(t *testing.T) {
 }
 
 func TestPoolBroadcastMessage(t *testing.T) {
-	if runtime.GOARCH == "386" || runtime.GOOS == "windows" {
-		t.Skip("Flaky on 32-bit architecture and Windows - see pool_test.go TestPoolBroadcastMessage")
+	if runtime.GOARCH == "386" || runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
+		// This test forces ErrNoReachableConnections by spamming broadcasts until
+		// a size-1 write queue overflows, which only happens once the OS socket
+		// send buffer fills. On these platforms the loopback send buffer is large
+		// enough that the fixed number of spam messages never fills it, so no
+		// broadcast errors and the test flakes. Remains active on linux/amd64.
+		t.Skip("Flaky on 32-bit architecture, Windows and macOS - see pool_test.go TestPoolBroadcastMessage")
 	}
 
 	resetHandler()

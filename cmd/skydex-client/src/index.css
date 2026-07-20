@@ -1,0 +1,351 @@
+/* Client theme — matches the operator dashboard (cmd/apps/skydex-market
+   static/index.html): same navy/blue palette, panels, muted text, pill badges,
+   monospace inputs. */
+:root {
+  --sky-navy: #101F34;
+  --sky-white: #FFFFFF;
+  --sky-blue: #0273FF;
+  --panel: rgba(255, 255, 255, 0.04);
+  --border: rgba(2, 115, 255, 0.35);
+  --muted: rgba(255, 255, 255, 0.6);
+
+  /* Drive Bootstrap's own theme tokens so every Bootstrap component (body,
+     cards, modals, dropdown option menus) inherits the dark navy palette
+     instead of Bootstrap's default light theme. */
+  --bs-body-bg: var(--sky-navy);
+  --bs-body-color: var(--sky-white);
+  --bs-border-color: var(--border);
+  /* Bootstrap 5.3 tables/emphasis derive their text color from
+     --bs-emphasis-color, which defaults to black in the light theme. Force it
+     white so table cells aren't black-on-dark (only flipping white on hover). */
+  --bs-emphasis-color: var(--sky-white);
+  --bs-emphasis-color-rgb: 255, 255, 255;
+  color-scheme: dark;
+}
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--sky-navy);
+  color: var(--sky-white);
+}
+#root { min-height: 100vh; background-color: var(--sky-navy); }
+
+.text-muted { color: var(--muted) !important; }
+code { color: var(--sky-blue); }
+
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  background-color: var(--sky-navy);
+  border-bottom: 2px solid var(--sky-blue);
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.brand { font-size: 1.15rem; font-weight: 600; }
+.brand span { color: var(--sky-blue); }
+.header-right { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+
+.status-indicator { display: flex; align-items: center; gap: 0.5rem; }
+.status-text { font-size: 0.85rem; color: var(--muted); }
+.status-dot { width: 10px; height: 10px; border-radius: 50%; background-color: #dc3545; }
+.status-dot.connected { background-color: #28a745; }
+
+.market-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--sky-white);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.market-pubkey {
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  color: var(--sky-blue);
+}
+
+/* Tabs (custom tabbar) */
+.tabbar { border-bottom: 1px solid var(--border); padding: 0 1.5rem; overflow-x: auto; }
+.tabbar-inner { display: flex; gap: 0.25rem; max-width: 1400px; margin: 0 auto; }
+.tab-link {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  padding: 0.8rem 1.1rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+.tab-link:hover { color: var(--sky-white); border-bottom-color: var(--border); }
+.tab-link.active { color: var(--sky-white); border-bottom-color: var(--sky-blue); font-weight: 600; }
+
+.content { flex: 1; padding: 1.5rem; max-width: 1400px; margin: 0 auto; width: 100%; }
+.content h2 { font-size: 1.4rem; }
+
+/* Panels / cards */
+.panel, .card {
+  background-color: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+.panel-title { color: var(--sky-blue); margin-top: 0; font-size: 1.05rem; }
+.card.product-card { transition: border-color 0.2s ease, background-color 0.2s ease; }
+.card.product-card:hover { border-color: var(--sky-blue); background-color: rgba(255, 255, 255, 0.07); }
+
+/* Buttons */
+.btn-primary, .btn-connect {
+  background-color: var(--sky-blue);
+  border-color: var(--sky-blue);
+  color: var(--sky-white);
+  font-weight: 600;
+}
+.btn-primary:hover, .btn-connect:hover:not(:disabled) {
+  background-color: #0259cc;
+  border-color: #0259cc;
+  color: var(--sky-white);
+}
+.btn-outline-light, .btn-outline-secondary {
+  border-color: var(--border);
+  color: var(--sky-white);
+}
+.btn-outline-light:hover, .btn-outline-secondary:hover {
+  border-color: var(--sky-blue);
+  background-color: rgba(2, 115, 255, 0.12);
+  color: var(--sky-white);
+}
+
+/* Inputs */
+.form-control, .form-select {
+  background-color: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+  color: var(--sky-white);
+  font-family: 'Courier New', monospace;
+}
+.form-control:focus, .form-select:focus {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-color: var(--sky-blue);
+  color: var(--sky-white);
+  box-shadow: 0 0 0 0.2rem rgba(2, 115, 255, 0.2);
+}
+.form-control::placeholder { color: rgba(255, 255, 255, 0.4); }
+.form-select option { background-color: var(--sky-navy); }
+.form-label { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.25rem; }
+
+/* Trade builder (create sell order) — "You sell → You receive" */
+.trade-builder .trade-leg {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+}
+.trade-leg .leg-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  flex: 0 0 84px;
+}
+.trade-leg .leg-amount {
+  flex: 1 1 140px;
+  font-size: 1.35rem;
+  font-weight: 700;
+  background: transparent;
+  border: none;
+  padding-left: 0;
+}
+.trade-leg .leg-amount:focus { background: transparent; box-shadow: none; }
+.trade-leg .leg-coin { flex: 0 0 140px; font-weight: 600; }
+.trade-arrow { text-align: center; color: var(--sky-blue); font-size: 1.1rem; margin: 0.35rem 0; }
+.trade-summary { color: var(--muted); font-size: 0.85rem; margin: 1rem 0 0.25rem; }
+.trade-summary strong { color: var(--sky-white); }
+
+/* Product cards */
+.product-price { font-size: 1.5rem; font-weight: 700; color: var(--sky-blue); }
+.product-amount { font-size: 1.1rem; color: var(--sky-white); }
+
+/* Badges (pills) */
+.badge { padding: 0.35rem 0.7rem; font-weight: 600; border-radius: 20px; font-size: 0.72rem; }
+
+/* Tables */
+.table { --bs-table-color: var(--sky-white); color: var(--sky-white); }
+.table > :not(caption) > * > * { color: var(--sky-white); }
+.table.table-dark { --bs-table-bg: transparent; }
+.table > :not(caption) > * > * { border-bottom-color: var(--border); }
+.table thead th { color: var(--muted); font-weight: 600; border-bottom-color: var(--border); }
+.table-hover > tbody > tr:hover > * { background-color: rgba(2, 115, 255, 0.08); color: var(--sky-white); }
+.progress { background-color: rgba(255, 255, 255, 0.1); }
+
+/* Alerts */
+.alert { border-radius: 6px; }
+.alert-info { background-color: rgba(2, 115, 255, 0.12); border: 1px solid var(--sky-blue); color: var(--sky-white); }
+.alert-warning { background-color: rgba(255, 193, 7, 0.12); border: 1px solid #ffc107; color: var(--sky-white); }
+.alert-danger { background-color: rgba(220, 53, 69, 0.12); border: 1px solid #dc3545; color: var(--sky-white); }
+.alert-success { background-color: rgba(40, 167, 69, 0.12); border: 1px solid #28a745; color: var(--sky-white); }
+.alert-secondary { background-color: var(--panel); border: 1px solid var(--border); color: var(--muted); }
+
+/* Badge status variants (History + others) */
+.badge.enabled, .badge.completed, .badge.active { background: #1e7e34; color: #fff; }
+.badge.disabled, .badge.expired { background: #6c757d; color: #fff; }
+.badge.cancelled, .badge.canceled { background: #b33; color: #fff; }
+.badge.pending, .badge.pending_payment, .badge.frozen { background: #b8860b; color: #fff; }
+.badge.paid, .badge.confirmed { background: #0257c4; color: #fff; }
+.badge.buy { background: var(--sky-blue); color: #fff; }
+.badge.sell { background: #0a7d76; color: #fff; }
+
+/* Page + section headers */
+.page-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.page-head h2 { margin: 0; }
+.section-title { margin: 0 0 1rem; font-size: 1.05rem; }
+
+/* Onboarding / readiness banners */
+.banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+  padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.9rem;
+}
+.banner .btn { flex-shrink: 0; }
+.banner-info { background: rgba(2, 115, 255, 0.12); border: 1px solid var(--sky-blue); }
+.banner-warn { background: rgba(255, 193, 7, 0.12); border: 1px solid #ffc107; }
+
+/* Forms + grids */
+.field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.75rem 1rem; }
+.req { color: #ff6b6b; }
+.hint { font-size: 0.75rem; color: var(--muted); }
+
+/* Product grid */
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
+.card-grid .product-card { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0; }
+.card-grid .product-seller { margin-bottom: 0.5rem; }
+.card-grid .product-card .btn { margin-top: auto; }
+
+/* Scrollable table container */
+.table-wrap { overflow-x: auto; }
+
+/* Deposit instructions (post-create) + copyable escrow address */
+.deposit-box { border-color: var(--sky-blue); background: rgba(2, 115, 255, 0.08); }
+.deposit-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.5rem; }
+.deposit-close {
+  background: transparent; border: none; color: var(--muted);
+  font-size: 1rem; line-height: 1; cursor: pointer; padding: 0.15rem 0.4rem; border-radius: 4px;
+}
+.deposit-close:hover { color: var(--sky-white); background: rgba(255, 255, 255, 0.08); }
+.copy-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.addr-box {
+  display: inline-block;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  font-family: 'Courier New', monospace;
+  color: var(--sky-blue);
+  word-break: break-all;
+}
+.addr-box.addr-sm {
+  font-size: 0.78rem;
+  padding: 0.25rem 0.45rem;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* QR code: small trigger next to an address, full-size code in a modal. */
+.btn.btn-sm.qr-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0.3rem 0.45rem; line-height: 1;
+}
+.qr-backdrop {
+  position: fixed; inset: 0; z-index: 1050;
+  display: flex; align-items: center; justify-content: center; padding: 1rem;
+  background: rgba(0, 0, 0, 0.65);
+}
+.qr-modal {
+  background: var(--sky-navy);
+  border: 1px solid var(--sky-blue);
+  border-radius: 10px;
+  padding: 1.25rem;
+  width: 100%; max-width: 360px;
+  max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+.qr-amount { color: var(--muted); }
+/* The code itself stays dark-on-white in this dark theme — inverted QR codes
+   are unreliable for phone scanners. */
+.qr-canvas {
+  display: flex; justify-content: center;
+  background: #fff; border-radius: 8px; padding: 0.75rem;
+}
+.qr-toggle { margin-top: 0.75rem; font-size: 0.82rem; color: var(--muted); }
+.qr-addr { margin-top: 0.75rem; }
+.qr-addr .addr-box { display: block; font-size: 0.78rem; }
+.qr-actions { margin-top: 0.5rem; }
+
+/* Small button (banner CTA) */
+.btn.btn-sm {
+  background: var(--sky-blue); color: #fff; border: none;
+  padding: 0.3rem 0.8rem; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;
+}
+
+/* Connection gate */
+.connect-card {
+  background-color: var(--panel);
+  border: 1px solid var(--sky-blue);
+  border-radius: 10px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+}
+.connect-card .form-control { font-family: 'Courier New', monospace; }
+
+/* Recent markets list (ConnectGate) */
+.recent-markets { margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+.recent-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+.recent-title { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.link-btn {
+  background: none; border: none; color: var(--sky-blue); cursor: pointer;
+  font-size: 0.8rem; padding: 0.15rem 0.3rem; border-radius: 4px;
+}
+.link-btn:hover:not(:disabled) { text-decoration: underline; }
+.link-btn:disabled { color: var(--muted); cursor: default; }
+.recent-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
+.recent-item { display: flex; align-items: stretch; gap: 0.4rem; }
+.recent-connect {
+  flex: 1; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  background: rgba(0, 0, 0, 0.25); border: 1px solid var(--border); border-radius: 6px;
+  padding: 0.5rem 0.7rem; cursor: pointer; text-align: left; transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.recent-connect:hover:not(:disabled) { border-color: var(--sky-blue); background: rgba(2, 115, 255, 0.12); }
+.recent-connect:disabled { cursor: default; opacity: 0.7; }
+.recent-main { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.recent-name { color: var(--sky-white); font-weight: 600; font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recent-pk { color: var(--sky-blue); font-family: 'Courier New', monospace; font-size: 0.85rem; }
+.recent-time { color: var(--muted); font-size: 0.72rem; white-space: nowrap; }
+.recent-del {
+  flex: 0 0 auto; background: transparent; border: 1px solid var(--border); border-radius: 6px;
+  color: var(--muted); cursor: pointer; padding: 0 0.6rem; font-size: 0.85rem; line-height: 1;
+}
+.recent-del:hover:not(:disabled) { border-color: #dc3545; color: #ff6b6b; background: rgba(220, 53, 69, 0.1); }
+.recent-del:disabled { cursor: default; opacity: 0.6; }

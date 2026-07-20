@@ -192,3 +192,22 @@ jobs:
 
       - name: Build Hardware Wallet Binary
         run: make build-skyhw
+
+  # Guards the skydex-client trading UI embed. The Go binary ships the UI via
+  # //go:embed of cmd/skydex-client/commands/static, whose contents are a
+  # committed Vite build. This lane rebuilds the UI and fails if the committed
+  # embed drifts from a fresh build — so a PR that edits the React source but
+  # forgets to rebuild can't ship a stale UI.
+  skydex-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: cmd/skydex-client/package-lock.json
+
+      - name: Verify skydex-client UI embed is current
+        run: make check-skydex-ui

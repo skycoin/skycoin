@@ -23,6 +23,7 @@
 .PHONY: install-linters format release clean-release clean-coverage dep-github-release
 .PHONY: docs-install docs-serve docs-build
 .PHONY: install-deps-ui build-ui build-ui help newcoin merge-coverage
+.PHONY: install-deps-skydex-ui build-skydex-ui check-skydex-ui
 .PHONY: build build-skycoin build-skyhw build-skyhw-static
 .PHONY: test-skyhw test-skyhw-race lint-skyhw check-skyhw
 .PHONY: generate update-golden-files
@@ -33,6 +34,10 @@ COIN ?= skycoin
 
 # Static files directory
 GUI_STATIC_DIR = src/gui/static
+# skydex-client trading UI: Vite builds straight into the Go embed dir
+# (cmd/skydex-client/commands/static, per its vite.config.js) — no separate copy step.
+SKYDEX_UI_DIR = cmd/skydex-client
+SKYDEX_UI_EMBED_DIR = cmd/skydex-client/commands/static
 
 # Electron files directory
 ELECTRON_DIR = electron
@@ -226,6 +231,23 @@ test-ui-e2e:  ## Run UI e2e tests
 build-ui:  ## Builds the UI
 	cd $(GUI_STATIC_DIR) && npm run build
 
+
+# skydex-client trading UI (React/Vite, embedded via //go:embed static)
+install-deps-skydex-ui:  ## Install the skydex-client UI dependencies
+	cd $(SKYDEX_UI_DIR) && npm ci
+
+build-skydex-ui: install-deps-skydex-ui  ## Build the skydex-client UI into the Go embed (commands/static)
+	cd $(SKYDEX_UI_DIR) && npm run build
+
+check-skydex-ui: install-deps-skydex-ui  ## Fail if the committed skydex-client UI embed is stale vs a fresh build
+	cd $(SKYDEX_UI_DIR) && npm run build
+	@git diff --quiet -- $(SKYDEX_UI_EMBED_DIR) || { \
+		echo "ERROR: the committed skydex-client UI embed is stale."; \
+		echo "Run 'make build-skydex-ui' and commit $(SKYDEX_UI_EMBED_DIR)."; \
+		git --no-pager diff --stat -- $(SKYDEX_UI_EMBED_DIR); \
+		exit 1; \
+	}
+	@echo "skydex-client UI embed is up to date."
 
 snapshot: ## Build snapshot release with goreleaser (all platforms)
 	go run github.com/goreleaser/goreleaser/v2@latest --snapshot --clean --skip=publish --config .goreleaser-linux.yml

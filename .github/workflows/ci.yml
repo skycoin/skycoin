@@ -23,7 +23,9 @@ jobs:
         with:
           node-version: '24'
           cache: 'npm'
-          cache-dependency-path: src/gui/static/package-lock.json
+          cache-dependency-path: |
+            src/gui/static/package-lock.json
+            cmd/skydex-client/package-lock.json
 
       - name: Install Dependencies
         shell: bash
@@ -69,6 +71,9 @@ jobs:
 
       - name: Build UI
         run: make build-ui
+
+      - name: Verify skydex-client UI embed is current
+        run: make check-skydex-ui
 
       - name: Run Unit Tests (amd64)
         run: make test-amd64

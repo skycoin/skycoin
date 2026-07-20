@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SkyDEX - Market — Operator</title>
+  <style>
+    :root {
+      --sky-navy: #101F34;
+      --sky-white: #FFFFFF;
+      --sky-blue: #0273FF;
+      --panel: rgba(255, 255, 255, 0.04);
+      --border: rgba(2, 115, 255, 0.35);
+      --muted: rgba(255, 255, 255, 0.6);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--sky-navy);
+      color: var(--sky-white);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    header {
+      border-bottom: 2px solid var(--sky-blue);
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    header h1 { font-size: 1.15rem; margin: 0; }
+    header h1 span { color: var(--sky-blue); }
+    .pk { font-family: 'Courier New', monospace; font-size: 0.8rem; color: var(--sky-blue); word-break: break-all; }
+    .pk button {
+      margin-left: 0.5rem; font-size: 0.7rem; padding: 0.1rem 0.5rem;
+      background: transparent; color: var(--sky-white);
+      border: 1px solid var(--border); border-radius: 4px; cursor: pointer;
+    }
+    nav { display: flex; gap: 0.25rem; padding: 0 1.5rem; border-bottom: 1px solid var(--border); }
+    nav button {
+      background: transparent; border: none; color: var(--muted);
+      padding: 0.75rem 1rem; cursor: pointer; font-size: 0.95rem;
+      border-bottom: 2px solid transparent;
+    }
+    nav button.active { color: var(--sky-white); border-bottom-color: var(--sky-blue); }
+    /* Full-width responsive content: fills the viewport (minus padding) up to a
+       generous cap, instead of a narrow fixed column. */
+    main { padding: 1.5rem; width: 100%; max-width: 1600px; margin: 0 auto; }
+    .panel {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 8px; padding: 1.25rem; margin-bottom: 1.25rem;
+    }
+    .panel h2 { margin-top: 0; font-size: 1rem; color: var(--sky-blue); }
+    .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+    .panel-head h2 { margin: 0; }
+    label { display: block; font-size: 0.85rem; margin: 0.75rem 0 0.25rem; }
+    .hint { font-size: 0.75rem; color: var(--muted); margin-top: 0.15rem; }
+    input, select {
+      width: 100%; padding: 0.5rem 0.65rem; border-radius: 6px;
+      border: 1px solid var(--border); background: rgba(0,0,0,0.25);
+      color: var(--sky-white); font-family: 'Courier New', monospace; font-size: 0.85rem;
+    }
+    input[readonly] { opacity: 0.6; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.5rem 1rem; }
+    button.primary {
+      background: var(--sky-blue); color: var(--sky-white); border: none;
+      padding: 0.6rem 1.2rem; border-radius: 6px; font-weight: 600; cursor: pointer;
+    }
+    button.primary:disabled { opacity: 0.5; cursor: default; }
+    .btn {
+      background: transparent; color: var(--sky-white); border: 1px solid var(--border);
+      padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem;
+    }
+    .btn:hover { border-color: var(--sky-blue); }
+    .btn.danger { border-color: #dc3545; }
+    .btn.danger:hover { border-color: #dc3545; background: rgba(220,53,69,0.15); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 600; }
+    td code { color: var(--sky-blue); }
+    .badge { padding: 0.15rem 0.5rem; border-radius: 10px; font-size: 0.72rem; background: rgba(255,255,255,0.12); white-space: nowrap; }
+    .badge.active, .badge.completed, .badge.enabled { background: #1e7e34; }
+    .badge.frozen, .badge.pending_payment, .badge.pending { background: #b8860b; }
+    .badge.sold { background: #0257c4; }
+    .badge.expired, .badge.cancelled, .badge.disabled { background: #6c757d; }
+    .msg { padding: 0.6rem 0.85rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.85rem; }
+    .msg.ok { background: rgba(30,126,52,0.25); border: 1px solid #1e7e34; }
+    .msg.err { background: rgba(220,53,69,0.25); border: 1px solid #dc3545; }
+    .empty { color: var(--muted); font-size: 0.9rem; padding: 0.75rem 0; }
+    .tab { display: none; }
+    .tab.active { display: block; }
+    /* Coin list item (sell + payment coins) */
+    .coin-item {
+      display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+      border: 1px solid var(--border); border-radius: 6px; padding: 0.6rem 0.85rem; margin-bottom: 0.5rem;
+    }
+    .coin-item .sym { font-weight: 600; font-size: 0.95rem; }
+    .coin-item .meta { color: var(--muted); font-size: 0.78rem; font-family: 'Courier New', monospace; word-break: break-all; flex: 1 1 200px; }
+    .coin-item .actions { display: flex; gap: 0.4rem; margin-left: auto; flex-wrap: wrap; }
+    .toggle { display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; font-size: 0.85rem; }
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 50; }
+    .modal-overlay[hidden] { display: none; }
+    .modal { background: var(--sky-navy); border: 1px solid var(--sky-blue); border-radius: 10px; padding: 1.25rem; width: 100%; max-width: 620px; max-height: 90vh; overflow: auto; }
+    .modal h2 { margin-top: 0; color: var(--sky-blue); font-size: 1.05rem; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.25rem; }
+    /* Login gate. z-index above the modal layer so nothing can render over it. */
+    #login-overlay {
+      position: fixed; inset: 0; background: var(--sky-navy);
+      display: flex; align-items: center; justify-content: center; padding: 1rem; z-index: 100;
+    }
+    #login-overlay[hidden] { display: none; }
+    #login-form {
+      background: rgba(255,255,255,0.04); border: 1px solid var(--sky-blue);
+      border-radius: 10px; padding: 1.5rem; width: 100%; max-width: 400px;
+    }
+    #login-form h2 { margin-top: 0; color: var(--sky-blue); font-size: 1.05rem; }
+    .login-hint { color: var(--muted); font-size: 0.82rem; line-height: 1.5; }
+    #login-otp {
+      width: 100%; margin-top: 0.5rem; padding: 0.7rem 0.85rem;
+      background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 6px;
+      color: var(--sky-white); font-family: 'Courier New', monospace;
+      font-size: 1.35rem; letter-spacing: 4px; text-align: center; text-transform: uppercase;
+    }
+    #login-btn { width: 100%; margin-top: 0.85rem; padding: 0.6rem; }
+    #login-msg:not(:empty) {
+      margin-top: 0.75rem; font-size: 0.85rem; color: #ff6b6b;
+      border: 1px solid rgba(255,107,107,0.4); border-radius: 6px; padding: 0.5rem 0.65rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- Login gate. Covers the panel until an OTP is exchanged for a token.
+       Deliberately not dismissible: there is nothing to see behind it. -->
+  <div id="login-overlay">
+    <form id="login-form" autocomplete="off">
+      <h2>Operator login</h2>
+      <p class="login-hint">
+        Enter the 5-digit one-time code shown for <strong>skydex-market</strong>
+        in your hypervisor's app list. Each code works once — after logging in, a
+        new one is generated, and reloading this page will require it. A wrong
+        code also replaces it, so check the app list again after a failed attempt.
+      </p>
+      <input
+        id="login-otp"
+        name="otp"
+        type="text"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        autocomplete="off"
+        spellcheck="false"
+        maxlength="5"
+        placeholder="00000"
+        aria-label="One-time code"
+        required />
+      <div id="login-msg"></div>
+      <button type="submit" class="primary" id="login-btn">Log in</button>
+    </form>
+  </div>
+
+  <header>
+    <h1>SkyDEX <span>Market</span> — Operator</h1>
+    <div class="pk">
+      <span id="market-pk">loading…</span>
+      <button id="copy-pk" title="Copy public key">copy</button>
+    </div>
+  </header>
+
+  <nav>
+    <button data-tab="config" class="active">Configuration</button>
+    <button data-tab="products">Products</button>
+    <button data-tab="orders">Orders</button>
+    <button data-tab="bans">Banned Users</button>
+  </nav>
+
+  <main>
+    <!-- Configuration -->
+    <section id="tab-config" class="tab active">
+      <div id="config-msg"></div>
+
+      <!-- Sell coins -->
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Sell coins</h2>
+          <button type="button" class="primary" id="sellcoin-add-btn">+ Add sell coin</button>
+        </div>
+        <div class="hint">SKY and any Skycoin fibercoins you accept on the sell side. Each has its own fullnode + escrow hot wallet (seed + address); spends are signed locally and the seed never leaves this process.</div>
+        <div id="sellcoin-rows" style="margin-top:.85rem"><div class="empty">Loading…</div></div>
+      </div>
+
+      <!-- Payment coins -->
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Payment coins</h2>
+          <button type="button" class="primary" id="payment-add-btn">+ Add payment coin</button>
+        </div>
+        <div class="hint">Coins a buyer may pay with, verified via a block explorer. BTC and LTC have a built-in explorer; other coins need an Esplora-compatible URL. (A sell coin can also be paid with another sell coin — that needs no explorer and is handled automatically.)</div>
+        <div id="currency-rows" style="margin-top:.85rem"><div class="empty">Loading…</div></div>
+      </div>
+
+      <!-- Rules -->
+      <form id="config-form">
+        <div class="panel">
+          <h2>Market identity</h2>
+          <div class="grid">
+            <div><label>Market name (shown to clients)</label><input name="market_name" type="text" maxlength="60" placeholder="e.g. Alice's SKY Exchange"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <h2>Rules</h2>
+          <div class="grid">
+            <div><label>Freeze violations before ban</label><input name="freeze_violations_limit" type="number" min="1"></div>
+            <div><label>Ban duration (days)</label><input name="ban_duration_days" type="number" min="1"></div>
+            <div><label>Buy cancels before product block (min 2)</label><input name="buy_cancel_limit" type="number" min="2"></div>
+            <div><label>Listing expiry (minutes)</label><input name="listing_expiry_minutes" type="number" min="1"></div>
+            <div><label>Order expiry (minutes)</label><input name="order_expiry_minutes" type="number" min="1"></div>
+            <div><label>Cleanup after (days)</label><input name="cleanup_days" type="number" min="1"></div>
+            <div><label>Payment confirmations required</label><input name="confirmations_required" type="number" min="1"></div>
+            <div><label>Min trade (sell-coin units, 0 = none)</label><input name="min_trade_sky" type="number" min="0" step="0.001"></div>
+            <div><label>Max trade (sell-coin units, 0 = no cap)</label><input name="max_trade_sky" type="number" min="0" step="0.001"></div>
+            <div><label>Commission rate (% of amount)</label><input name="commission_rate_percent" type="number" min="0" step="0.01"></div>
+            <div><label>Commission min (sell-coin units)</label><input name="commission_min_sky" type="number" min="0" step="0.001"></div>
+            <div><label>Commission max (0 = no cap)</label><input name="commission_max_sky" type="number" min="0" step="0.001"></div>
+          </div>
+        </div>
+        <button type="submit" class="primary" id="save-btn">Save rules</button>
+      </form>
+    </section>
+
+    <!-- Products -->
+    <section id="tab-products" class="tab">
+      <div class="panel">
+        <h2>Products</h2>
+        <div id="products-body"><div class="empty">Loading…</div></div>
+      </div>
+    </section>
+
+    <!-- Orders -->
+    <section id="tab-orders" class="tab">
+      <div class="panel">
+        <h2>Orders</h2>
+        <div id="orders-body"><div class="empty">Loading…</div></div>
+      </div>
+    </section>
+
+    <!-- Bans -->
+    <section id="tab-bans" class="tab">
+      <div class="panel">
+        <h2>Temporarily banned users</h2>
+        <p class="hint">Users banned for repeated freeze violations. Unban to let them trade again immediately.</p>
+        <div id="bans-body"><div class="empty">Loading…</div></div>
+      </div>
+      <div class="panel">
+        <h2>Blocked from re-buying a product</h2>
+        <p class="hint" id="blocks-hint">Buyers who reached the buy-cancel limit for a product. Clear a block to let them buy that product again.</p>
+        <div id="blocks-body"><div class="empty">Loading…</div></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Shared add/edit modal -->
+  <div class="modal-overlay" id="modal" hidden>
+    <div class="modal">
+      <h2 id="modal-title"></h2>
+      <div id="modal-body"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="modal-cancel">Cancel</button>
+        <button type="button" class="primary" id="modal-save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const CONFIG_FIELDS = [
+      'market_name',
+      'freeze_violations_limit','ban_duration_days','buy_cancel_limit','listing_expiry_minutes',
+      'order_expiry_minutes','cleanup_days','confirmations_required',
+      'min_trade_sky','max_trade_sky',
+      'commission_rate_percent','commission_min_sky','commission_max_sky'
+    ];
+
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"]/g, (c) =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    }
+    function shorten(s) { s = String(s || ''); return s.length > 16 ? s.slice(0, 10) + '…' + s.slice(-4) : s; }
+    function badge(status) { return '<span class="badge ' + esc(status) + '">' + esc(status) + '</span>'; }
+    function fmt(t) { return t ? new Date(t).toLocaleString() : '-'; }
+    function field(label, inputHTML) { return '<div><label>' + esc(label) + '</label>' + inputHTML + '</div>'; }
+    function flash(msg, isErr) {
+      $('#config-msg').innerHTML = '<div class="msg ' + (isErr ? 'err' : 'ok') + '">' + esc(msg) + '</div>';
+      setTimeout(() => { $('#config-msg').innerHTML = ''; }, 4000);
+    }
+
+    // --- Auth ---
+    // The session token lives in this variable and nowhere else: no cookie, no
+    // localStorage, no sessionStorage. That is the point — with no ambient
+    // credential a hostile page cannot make the browser replay it, so CSRF is
+    // structurally impossible. The cost is that a reload logs you out and needs
+    // a fresh OTP from the hypervisor app list.
+    let authToken = null;
+    let pollTimer = null;
+
+    function showLogin(msg) {
+      authToken = null;
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+      $('#login-msg').textContent = msg || '';
+      $('#login-overlay').hidden = false;
+      $('#login-otp').value = '';
+      $('#login-otp').focus();
+    }
+
+    // authFetch attaches the bearer token and funnels every 401 back to the
+    // login gate, so an expired session can't leave the page silently broken.
+    async function authFetch(url, opts) {
+      opts = opts || {};
+      const headers = Object.assign({}, opts.headers);
+      if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+      const r = await fetch(url, Object.assign({}, opts, { headers }));
+      if (r.status === 401) {
+        showLogin('Session expired. Enter a new code from the hypervisor app list.');
+        throw new Error('unauthorized');
+      }
+      return r;
+    }
+
+    async function getJSON(url) { const r = await authFetch(url); return r.json(); }
+    async function postJSON(url, body) {
+      const r = await authFetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      return r.json();
+    }
+
+    $('#login-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const btn = $('#login-btn');
+      const otp = $('#login-otp').value.trim();
+      if (!otp) return;
+      btn.disabled = true;
+      $('#login-msg').textContent = '';
+      try {
+        // Not authFetch: a 401 here means a bad code, not an expired session.
+        const r = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ otp }),
+        });
+        const data = await r.json();
+        if (!r.ok || !data.token) {
+          $('#login-msg').textContent = (data && data.error) || 'Login failed.';
+          $('#login-otp').value = '';
+          $('#login-otp').focus();
+          return;
+        }
+        authToken = data.token;
+        $('#login-overlay').hidden = true;
+        start();
+      } catch (err) {
+        $('#login-msg').textContent = 'Could not reach the market.';
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+    // --- Modal framework ---
+    const modal = $('#modal');
+    let modalSave = null;
+    function openModal(title, bodyHTML, onSave) {
+      $('#modal-title').textContent = title;
+      $('#modal-body').innerHTML = bodyHTML;
+      modalSave = onSave;
+      modal.hidden = false;
+    }
+    function closeModal() { modal.hidden = true; modalSave = null; }
+    $('#modal-cancel').onclick = closeModal;
+    $('#modal-save').onclick = async () => {
+      if (!modalSave) return;
+      const btn = $('#modal-save'); btn.disabled = true;
+      try { if ((await modalSave()) !== false) closeModal(); }
+      finally { btn.disabled = false; }
+    };
+    modal.onclick = (e) => { if (e.target === modal) closeModal(); };
+
+    // Tabs
+    let current = 'config';
+    document.querySelectorAll('nav button').forEach((b) => {
+      b.onclick = () => {
+        current = b.dataset.tab;
+        document.querySelectorAll('nav button').forEach((x) => x.classList.toggle('active', x === b));
+        document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.id === 'tab-' + current));
+        refresh();
+      };
+    });
+
+    // Market public key. Loaded by start(), not at parse time — before login
+    // there is no token and the request would just 401.
+    function loadInfo() {
+      return getJSON('/api/info').then((d) => { $('#market-pk').textContent = d.public_key || 'unknown'; });
+    }
+
+    // Copy helper with a fallback for non-secure (plain http) contexts, where
+    // navigator.clipboard is unavailable — the operator UI is served over http.
+    async function copyText(text) {
+      if (!text) return false;
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+          return true;
+        }
+      } catch (e) { /* fall through to legacy path */ }
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.top = '-1000px';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        return ok;
+      } catch (e) { return false; }
+    }
+    $('#copy-pk').onclick = async () => {
+      const btn = $('#copy-pk');
+      const ok = await copyText($('#market-pk').textContent);
+      const prev = btn.textContent;
+      btn.textContent = ok ? 'copied ✓' : 'failed';
+      setTimeout(() => { btn.textContent = prev; }, 1500);
+    };
+
+    // --- Sell coins (SKY + fibercoins): list + add/edit modal, enable/disable, delete ---
+    let sellCoinCache = [];
+    async function loadSellCoins() {
+      const d = await getJSON('/api/sellcoins');
+      sellCoinCache = d.sellcoins || [];
+      $('#sellcoin-rows').innerHTML = sellCoinCache.length ? sellCoinCache.map((c) =>
+        '<div class="coin-item" data-sym="' + esc(c.symbol) + '">' +
+          '<span class="sym">' + esc(c.symbol) + (c.name ? ' · ' + esc(c.name) : '') + '</span>' +
+          badge(c.enabled ? 'enabled' : 'disabled') +
+          '<span class="meta">' + esc(c.node_url || '(no fullnode URL)') + (c.has_seed ? ' · seed set' : ' · no seed') + '</span>' +
+          '<span class="actions">' +
+            '<button class="btn" data-act="toggle">' + (c.enabled ? 'Disable' : 'Enable') + '</button>' +
+            '<button class="btn" data-act="edit">Edit</button>' +
+            '<button class="btn danger" data-act="del">Delete</button>' +
+          '</span></div>').join('') : '<div class="empty">No sell coins yet. Click “+ Add sell coin”.</div>';
+      $('#sellcoin-rows').querySelectorAll('.coin-item').forEach((row) => {
+        const coin = sellCoinCache.find((c) => c.symbol === row.dataset.sym);
+        row.querySelector('[data-act=toggle]').onclick = async () => {
+          const res = await postJSON('/api/sellcoins/enable', { symbol: coin.symbol, enabled: !coin.enabled });
+          if (res && res.error) { flash(res.error, true); return; }
+          await loadSellCoins(); flash('Sell coin ' + (coin.enabled ? 'disabled' : 'enabled') + '.');
+        };
+        row.querySelector('[data-act=edit]').onclick = () => openSellCoinModal(coin);
+        row.querySelector('[data-act=del]').onclick = () => {
+          if (!confirm('Delete sell coin ' + coin.symbol + '? In-flight trades using it may fail to settle.')) return;
+          postJSON('/api/sellcoins/delete', { symbol: coin.symbol }).then(async (res) => {
+            if (res && res.error) { flash(res.error, true); return; }
+            await loadSellCoins(); flash('Sell coin removed.');
+          });
+        };
+      });
+    }
+    function openSellCoinModal(c) {
+      const editing = !!c;
+      c = c || {};
+      const seedPh = c.has_seed ? '(seed set — leave blank to keep)' : 'deterministic seed';
+      const checked = (editing ? c.enabled : true) ? ' checked' : '';
+      const body = '<div class="grid">' +
+        field('Symbol', '<input id="m-symbol" value="' + esc(c.symbol || '') + '" ' + (editing ? 'readonly' : 'placeholder="e.g. MDL"') + '>') +
+        field('Name', '<input id="m-name" value="' + esc(c.name || '') + '" placeholder="e.g. Mobile Wallet">') +
+        field('Fullnode URL', '<input id="m-node" value="' + esc(c.node_url || '') + '" placeholder="http://host:6420">') +
+        field('Escrow wallet address', '<input id="m-addr" value="' + esc(c.wallet_addr || '') + '" placeholder="deposit / escrow address">') +
+        field('Escrow wallet seed', '<input id="m-seed" type="password" placeholder="' + seedPh + '">') +
+        field('Confirmations', '<input id="m-confs" type="number" min="1" value="' + esc(c.confirmations || 1) + '">') +
+        '</div>' +
+        '<label class="toggle" style="margin-top:.85rem"><input type="checkbox" id="m-enabled"' + checked + '> Enabled (accept this coin for sell listings)</label>';
+      openModal(editing ? 'Edit sell coin — ' + esc(c.symbol) : 'Add sell coin', body, async () => {
+        const symbol = $('#m-symbol').value.trim();
+        if (!symbol) { flash('Symbol is required.', true); return false; }
+        const res = await postJSON('/api/sellcoins', {
+          symbol, name: $('#m-name').value.trim(), node_url: $('#m-node').value.trim(),
+          wallet_addr: $('#m-addr').value.trim(), wallet_seed: $('#m-seed').value,
+          confirmations: parseInt($('#m-confs').value, 10) || 1, enabled: $('#m-enabled').checked,
+        });
+        if (res && res.error) { flash(res.error, true); return false; }
+        await loadSellCoins(); flash('Sell coin saved.'); return true;
+      });
+    }
+    $('#sellcoin-add-btn').onclick = () => openSellCoinModal(null);
+
+    // --- Payment coins (external explorer coins): list + add/edit modal, delete ---
+    let currencyCache = [];
+    async function loadCurrencies() {
+      const d = await getJSON('/api/currencies');
+      currencyCache = d.currencies || [];
+      const added = currencyCache.filter((c) => c.available);
+      $('#currency-rows').innerHTML = added.length ? added.map((c) => {
+        const meta = c.url ? c.url : (c.default_url ? 'built-in: ' + c.default_url : '(no URL)');
+        return '<div class="coin-item" data-sym="' + esc(c.code) + '">' +
+          '<span class="sym">' + esc(c.code) + '</span>' +
+          '<span class="meta">' + esc(c.provider || '') + ' · ' + esc(meta) + '</span>' +
+          '<span class="actions">' +
+            '<button class="btn" data-act="edit">Edit</button>' +
+            '<button class="btn danger" data-act="del">Delete</button>' +
+          '</span></div>';
+      }).join('') : '<div class="empty">No payment coins yet. Click “+ Add payment coin”.</div>';
+      $('#currency-rows').querySelectorAll('.coin-item').forEach((row) => {
+        const c = currencyCache.find((x) => x.code === row.dataset.sym);
+        row.querySelector('[data-act=edit]').onclick = () => openPaymentModal(c);
+        row.querySelector('[data-act=del]').onclick = () => deletePayment(c.code);
+      });
+    }
+    function openPaymentModal(c) {
+      const editing = !!c;
+      // Add: free-text symbol for ANY coin (Esplora is universal). Edit: locked.
+      const symbolField = editing
+        ? field('Coin symbol', '<input id="m-symbol" value="' + esc(c.code) + '" readonly>')
+        : field('Coin symbol', '<input id="m-symbol" placeholder="e.g. GRS, ZEC, any UTXO coin">');
+      const body = '<div class="grid">' + symbolField +
+        field('Explorer URL', '<input id="m-url" value="' + esc(editing ? (c.url || '') : '') + '" placeholder="Esplora-compatible URL (BTC/LTC have a built-in default)">') +
+        // Write-only: the server never returns a stored key, so this starts
+        // blank and blank means "keep the existing one".
+        field('API key (optional)', '<input id="m-key" value="" placeholder="' +
+          (editing && c.has_key ? 'stored — leave blank to keep' : 'none set') + '">') +
+        '</div>' +
+        '<div class="hint" style="margin-top:.5rem">Any UTXO coin works as long as you point it at an Esplora-compatible explorer URL. BTC and LTC have a built-in explorer, so their URL can be left blank.</div>';
+      openModal(editing ? 'Edit payment coin — ' + esc(c.code) : 'Add payment coin', body, async () => {
+        const code = $('#m-symbol').value.trim().toUpperCase();
+        if (!code) { flash('Coin symbol is required.', true); return false; }
+        const meta = currencyCache.find((x) => x.code === code) || {};
+        const provider = (meta.providers || [])[0] || 'esplora';
+        const url = $('#m-url').value.trim();
+        if (!meta.default_url && !url) { flash(code + ' has no built-in explorer — an explorer URL is required.', true); return false; }
+        const p = 'explorer_' + code.toLowerCase() + '_';
+        const payload = {};
+        payload[p + 'provider'] = provider;
+        payload[p + 'url'] = url;
+        payload[p + 'key'] = $('#m-key').value.trim();
+        const res = await postJSON('/api/config', payload);
+        if (res && res.error) { flash(res.error, true); return false; }
+        await loadCurrencies(); flash('Payment coin saved.'); return true;
+      });
+    }
+    function deletePayment(code) {
+      if (!confirm('Delete payment coin ' + code + '?')) return;
+      const p = 'explorer_' + code.toLowerCase() + '_';
+      const payload = {};
+      payload[p + 'provider'] = ''; payload[p + 'url'] = ''; payload[p + 'key'] = '';
+      postJSON('/api/config', payload).then(async (res) => {
+        if (res && res.error) { flash(res.error, true); return; }
+        await loadCurrencies(); flash('Payment coin removed.');
+      });
+    }
+    $('#payment-add-btn').onclick = () => openPaymentModal(null);
+
+    // --- Rules config ---
+    async function loadConfig() {
+      // Response is { config, secrets_set } — secret values are blanked server
+      // side and reported only as booleans.
+      const data = await getJSON('/api/config');
+      const cfg = (data && data.config) || {};
+      CONFIG_FIELDS.forEach((k) => { const el = document.querySelector('[name="' + k + '"]'); if (el) el.value = cfg[k] || ''; });
+      await loadSellCoins();
+      await loadCurrencies();
+    }
+    $('#config-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const btn = $('#save-btn'); btn.disabled = true;
+      const body = {};
+      CONFIG_FIELDS.forEach((k) => { const el = document.querySelector('[name="' + k + '"]'); if (el) body[k] = el.value.trim(); });
+      try {
+        const res = await authFetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'save failed');
+        flash('Rules saved.');
+      } catch (err) {
+        flash(err.message, true);
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+    async function loadProducts() {
+      const d = await getJSON('/api/products');
+      const rows = (d.products || []).map((p) =>
+        '<tr><td><code>' + esc(shorten(p.id)) + '</code></td><td><code>' + esc(shorten(p.seller_pubkey)) +
+        '</code></td><td>' + esc(p.amount) + ' ' + esc(p.sell_coin || 'SKY') + '</td><td>' + esc(p.price) + ' ' + esc(p.payment_currency) +
+        '</td><td>' + badge(p.status) + '</td><td>' + fmt(p.created_at) + '</td></tr>').join('');
+      $('#products-body').innerHTML = rows
+        ? '<table><thead><tr><th>ID</th><th>Seller</th><th>Amount</th><th>Price</th><th>Status</th><th>Created</th></tr></thead><tbody>' + rows + '</tbody></table>'
+        : '<div class="empty">No products.</div>';
+    }
+
+    async function loadOrders() {
+      const d = await getJSON('/api/orders');
+      const rows = (d.orders || []).map((o) =>
+        '<tr><td><code>' + esc(shorten(o.id)) + '</code></td><td><code>' + esc(shorten(o.buyer_pubkey)) +
+        '</code></td><td>' + esc(o.amount) + ' ' + esc(o.sell_coin || 'SKY') + '</td><td>' + esc(o.price) + ' ' + esc(o.payment_currency) +
+        '</td><td>' + badge(o.status) + '</td><td>' + esc(o.confirmations) + '</td><td>' + esc(o.commission || 0) + ' ' + esc(o.sell_coin || 'SKY') + '</td><td>' + fmt(o.expires_at) + '</td></tr>').join('');
+      $('#orders-body').innerHTML = rows
+        ? '<table><thead><tr><th>ID</th><th>Buyer</th><th>Amount</th><th>Price</th><th>Status</th><th>Conf.</th><th>Commission</th><th>Expires</th></tr></thead><tbody>' + rows + '</tbody></table>'
+        : '<div class="empty">No orders.</div>';
+    }
+
+    async function loadBans() {
+      const d = await getJSON('/api/bans');
+      const rows = (d.bans || []).map((b) =>
+        '<tr data-pk="' + esc(b.pubkey) + '"><td><code title="' + esc(b.pubkey) + '">' + esc(shorten(b.pubkey)) + '</code></td><td>' + esc(b.violations) +
+        '</td><td>' + fmt(b.ban_until) + '</td><td><button class="btn" data-act="unban">Unban</button></td></tr>').join('');
+      $('#bans-body').innerHTML = rows
+        ? '<table><thead><tr><th>Public Key</th><th>Violations</th><th>Banned Until</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>'
+        : '<div class="empty">No banned users.</div>';
+      $('#bans-body').querySelectorAll('tr[data-pk]').forEach((row) => {
+        row.querySelector('[data-act=unban]').onclick = async () => {
+          if (!confirm('Unban this user? They will be able to trade again immediately.')) return;
+          const res = await postJSON('/api/bans/unban', { pubkey: row.dataset.pk });
+          if (res && res.error) { flash(res.error, true); return; }
+          await loadBans(); flash('User unbanned.');
+        };
+      });
+    }
+
+    async function loadBlocks() {
+      const d = await getJSON('/api/blocks');
+      if (typeof d.limit === 'number') {
+        $('#blocks-hint').textContent =
+          'Buyers who canceled ' + d.limit + ' or more orders for a product are blocked from re-buying it. Clear a block to let them buy that product again.';
+      }
+      const rows = (d.blocks || []).map((b) =>
+        '<tr data-pk="' + esc(b.buyer_pubkey) + '" data-pid="' + esc(b.product_id) + '">' +
+        '<td><code title="' + esc(b.buyer_pubkey) + '">' + esc(shorten(b.buyer_pubkey)) + '</code></td>' +
+        '<td><code title="' + esc(b.product_id) + '">' + esc(shorten(b.product_id)) + '</code></td>' +
+        '<td>' + esc(b.cancels) + '</td>' +
+        '<td><button class="btn" data-act="clear">Clear block</button></td></tr>').join('');
+      $('#blocks-body').innerHTML = rows
+        ? '<table><thead><tr><th>Buyer</th><th>Product</th><th>Cancels</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>'
+        : '<div class="empty">No blocked buyers.</div>';
+      $('#blocks-body').querySelectorAll('tr[data-pk]').forEach((row) => {
+        row.querySelector('[data-act=clear]').onclick = async () => {
+          if (!confirm("Clear this buyer's block for this product? They will be able to buy it again.")) return;
+          const res = await postJSON('/api/blocks/clear', { pubkey: row.dataset.pk, product_id: row.dataset.pid });
+          if (res && res.error) { flash(res.error, true); return; }
+          await loadBlocks(); flash('Block cleared.');
+        };
+      });
+    }
+
+    function refresh() {
+      // Swallow rejections: authFetch already redirects to the login gate on
+      // 401, and an unhandled rejection inside setInterval helps nobody.
+      const quiet = (p) => { if (p && p.catch) p.catch(() => {}); };
+      if (current === 'config') quiet(loadConfig());
+      else if (current === 'products') quiet(loadProducts());
+      else if (current === 'orders') quiet(loadOrders());
+      else if (current === 'bans') { quiet(loadBans()); quiet(loadBlocks()); }
+    }
+
+    // start runs only after a successful login — nothing hits the API before
+    // there is a token, so the panel never renders half-loaded behind the gate.
+    function start() {
+      loadInfo().catch(() => {});
+      loadConfig().catch(() => {});
+      // Auto-refresh monitoring tabs only (never clobber a config form being edited).
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(() => { if (current !== 'config') refresh(); }, 5000);
+    }
+
+    showLogin();
+  </script>
+</body>
+</html>

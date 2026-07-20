@@ -1117,8 +1117,13 @@ func TestPoolSendMessageWriteQueueFull(t *testing.T) {
 }
 
 func TestPoolBroadcastMessage(t *testing.T) {
-	if runtime.GOARCH == "386" || runtime.GOOS == "windows" {
-		t.Skip("Flaky on 32-bit architecture and Windows - see pool_test.go TestPoolBroadcastMessage")
+	if runtime.GOARCH == "386" || runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
+		// This test forces ErrNoReachableConnections by spamming broadcasts until
+		// a size-1 write queue overflows, which only happens once the OS socket
+		// send buffer fills. On these platforms the loopback send buffer is large
+		// enough that the fixed number of spam messages never fills it, so no
+		// broadcast errors and the test flakes. Remains active on linux/amd64.
+		t.Skip("Flaky on 32-bit architecture, Windows and macOS - see pool_test.go TestPoolBroadcastMessage")
 	}
 
 	resetHandler()

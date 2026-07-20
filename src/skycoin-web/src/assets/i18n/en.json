@@ -6,7 +6,14 @@
     "electrumOk": "electrum connected · tip {{height}}",
     "electrumDown": "electrum unreachable",
     "unavailable": "backend unavailable",
-    "checking": "checking…"
+    "checking": "checking…",
+    "tooltip": {
+      "url": "Node:",
+      "pubkey": "Blockchain pubkey:",
+      "head": "Head block:",
+      "version": "Version:",
+      "change": "Click to view or change the node"
+    }
   },
   "common": {
     "usd": "USD",

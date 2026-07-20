@@ -91,6 +91,26 @@ export class ChangeNodeURLComponent implements OnInit, OnDestroy {
 
       this.removeVerificationSubscription();
 
+      // Bitcoin's "node" is an ssl:// electrum server reached through the visor's
+      // BTC gateway, which serves /v1/btc/health (tip height) — not the skycoin
+      // /api/v1/health. Verify it there and skip the skycoin-specific version /
+      // csrf / burn-rate checks.
+      const coin = this.coinService.coins.find(c => c.id === this.data.coinId);
+      if (coin && coin.isBitcoin()) {
+        this.verificationSubscription = this.http.get(this.newUrl + '/v1/btc/health').subscribe((response: any) => {
+          this.coinName = coin.coinName;
+          this.nodeVersion = null;
+          this.hoursBurnRate = null;
+          this.lastBlock = (response && response.tip_height) || 0;
+
+          this.actionButton.resetState();
+          this.disableDismiss = false;
+          this.showingUrlForm = false;
+        }, () => this.cancelChange(false, false));
+
+        return;
+      }
+
       this.verificationSubscription = this.http.get(this.newUrl + '/api/v1/health').subscribe((response: any) => {
         this.nodeVersion = response.version.version;
         this.lastBlock = response.blockchain.head.seq;

@@ -15,15 +15,19 @@
           <span>{{ 'nodes.change.coin-name' | translate }}:</span> <span>{{ coinName }}</span>
         </div>
       }
-      <div class="data">
-        <span>{{ 'nodes.change.node-version' | translate }}:</span> <span>{{ nodeVersion }}</span>
-      </div>
+      @if (nodeVersion) {
+        <div class="data">
+          <span>{{ 'nodes.change.node-version' | translate }}:</span> <span>{{ nodeVersion }}</span>
+        </div>
+      }
       <div class="data">
         <span>{{ 'nodes.change.last-block' | translate }}:</span> <span>{{ lastBlock }}</span>
       </div>
-      <div class="data">
-        <span>{{ 'nodes.change.hours-burn-rate' | translate }}:</span> <span>{{ hoursBurnRate }}</span>
-      </div>
+      @if (hoursBurnRate) {
+        <div class="data">
+          <span>{{ 'nodes.change.hours-burn-rate' | translate }}:</span> <span>{{ hoursBurnRate }}</span>
+        </div>
+      }
     </div>
   }
   <div class="-buttons">

@@ -12,6 +12,11 @@
   color: #3b4256;
   background-color: #eef0f4;
   border-bottom: 1px solid #dfe3ea;
+  cursor: pointer; // the whole strip links to Settings → Node
+
+  &:hover .cog {
+    opacity: 0.9;
+  }
 
   .dot {
     width: 8px;
@@ -25,6 +30,28 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .coin {
+    font-weight: 600;
+  }
+
+  .sep {
+    opacity: 0.4;
+    margin: 0 2px;
+  }
+
+  .pk {
+    font-family: monospace;
+    opacity: 0.85;
+  }
+
+  .cog {
+    font-size: 15px;
+    opacity: 0.45;
+    flex: 0 0 auto;
   }
 
   .err {

@@ -261,7 +261,7 @@ func (g *authGate) currentOTP() string {
 // would bias the draw; crypto/rand.Int rejection-samples internally and stays
 // uniform for any alphabet size.
 func randomCode(alphabet string, n int) (string, error) {
-	max := big.NewInt(int64(len(alphabet)))
+	max := big.NewInt(int64(len(alphabet))) //nolint
 	b := make([]byte, n)
 	for i := range b {
 		idx, err := rand.Int(rand.Reader, max)

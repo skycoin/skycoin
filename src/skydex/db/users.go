@@ -27,7 +27,7 @@ func (d *Database) CreateUser(user *User) error {
 			wallet_usdt_trc20 = excluded.wallet_usdt_trc20,
 			updated_at = excluded.updated_at
 	`, user.PubKey, user.WalletSKY, user.WalletBTC, user.WalletBCH, user.WalletLTC,
-		user.WalletUSDT_ERC20, user.WalletUSDT_TRC20, user.UpdatedAt)
+		user.WalletUSDTERC20, user.WalletUSDTTRC20, user.UpdatedAt)
 
 	if err != nil {
 		return fmt.Errorf("failed to create/update user: %w", err)
@@ -47,7 +47,7 @@ func (d *Database) GetUser(pubkey string) (*User, error) {
 		FROM users
 		WHERE pubkey = ?
 	`, pubkey).Scan(&user.PubKey, &user.WalletSKY, &user.WalletBTC, &user.WalletBCH,
-		&user.WalletLTC, &user.WalletUSDT_ERC20, &user.WalletUSDT_TRC20, &user.UpdatedAt)
+		&user.WalletLTC, &user.WalletUSDTERC20, &user.WalletUSDTTRC20, &user.UpdatedAt)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -120,9 +120,9 @@ func (d *Database) getUserPayout(pubkey, currency string) (string, error) {
 	case "LTC":
 		return u.WalletLTC, nil
 	case "USDT_ERC20":
-		return u.WalletUSDT_ERC20, nil
+		return u.WalletUSDTERC20, nil
 	case "USDT_TRC20":
-		return u.WalletUSDT_TRC20, nil
+		return u.WalletUSDTTRC20, nil
 	}
 	return "", nil
 }

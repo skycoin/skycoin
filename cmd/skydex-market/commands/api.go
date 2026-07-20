@@ -201,7 +201,7 @@ func registerOperatorAPI(mux *http.ServeMux, database *db.Database, host Host) {
 	})
 
 	// GET /api/products — all products with status.
-	mux.HandleFunc("/api/products", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/products", func(w http.ResponseWriter, _ *http.Request) {
 		products, err := database.GetAllProducts()
 		if err != nil {
 			mWriteError(w, http.StatusInternalServerError, err.Error())
@@ -211,7 +211,7 @@ func registerOperatorAPI(mux *http.ServeMux, database *db.Database, host Host) {
 	})
 
 	// GET /api/orders — all orders.
-	mux.HandleFunc("/api/orders", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/orders", func(w http.ResponseWriter, _ *http.Request) {
 		orders, err := database.GetAllOrders()
 		if err != nil {
 			mWriteError(w, http.StatusInternalServerError, err.Error())
@@ -410,7 +410,7 @@ func registerOperatorAPI(mux *http.ServeMux, database *db.Database, host Host) {
 	})
 
 	// GET /api/bans — currently active (temporary) bans.
-	mux.HandleFunc("/api/bans", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/bans", func(w http.ResponseWriter, _ *http.Request) {
 		bans, err := database.GetActiveBans()
 		if err != nil {
 			mWriteError(w, http.StatusInternalServerError, err.Error())
@@ -441,7 +441,7 @@ func registerOperatorAPI(mux *http.ServeMux, database *db.Database, host Host) {
 
 	// GET /api/blocks — buyers blocked from re-buying a product (buy-cancel limit
 	// reached). Includes the current limit so the UI can explain the rule.
-	mux.HandleFunc("/api/blocks", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/blocks", func(w http.ResponseWriter, _ *http.Request) {
 		limit := database.GetBuyCancelLimit()
 		blocks, err := database.ListBuyerProductBlocks(limit)
 		if err != nil {

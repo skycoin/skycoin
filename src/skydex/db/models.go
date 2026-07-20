@@ -6,14 +6,14 @@ import "time"
 // User represents a user (buyer or seller) in the exchange.
 // Users are identified by their Skywire Visor public key.
 type User struct {
-	PubKey           string    `json:"pubkey" db:"pubkey"`
-	WalletSKY        string    `json:"wallet_sky" db:"wallet_sky"`
-	WalletBTC        string    `json:"wallet_btc,omitempty" db:"wallet_btc"`
-	WalletBCH        string    `json:"wallet_bch,omitempty" db:"wallet_bch"`
-	WalletLTC        string    `json:"wallet_ltc,omitempty" db:"wallet_ltc"`
-	WalletUSDT_ERC20 string    `json:"wallet_usdt_erc20,omitempty" db:"wallet_usdt_erc20"`
-	WalletUSDT_TRC20 string    `json:"wallet_usdt_trc20,omitempty" db:"wallet_usdt_trc20"`
-	UpdatedAt        time.Time `json:"updated_at" db:"updated_at"`
+	PubKey          string    `json:"pubkey" db:"pubkey"`
+	WalletSKY       string    `json:"wallet_sky" db:"wallet_sky"`
+	WalletBTC       string    `json:"wallet_btc,omitempty" db:"wallet_btc"`
+	WalletBCH       string    `json:"wallet_bch,omitempty" db:"wallet_bch"`
+	WalletLTC       string    `json:"wallet_ltc,omitempty" db:"wallet_ltc"`
+	WalletUSDTERC20 string    `json:"wallet_usdt_erc20,omitempty" db:"wallet_usdt_erc20"`
+	WalletUSDTTRC20 string    `json:"wallet_usdt_trc20,omitempty" db:"wallet_usdt_trc20"`
+	UpdatedAt       time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // PendingListing represents a sell order that is waiting for the seller to

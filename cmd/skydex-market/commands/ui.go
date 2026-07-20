@@ -1,4 +1,4 @@
-// Package commands: operator UI for the skydex-market app.
+// Package commands operator UI for the skydex-market app.
 package commands
 
 import (
@@ -43,7 +43,7 @@ func serveUI(ctx context.Context, host Host, database *db.Database, addr string)
 		host.Log().Errorf("skydex-market: failed to load operator UI: %v", err)
 		return
 	}
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		_, _ = w.Write(index) //nolint:errcheck
 	})

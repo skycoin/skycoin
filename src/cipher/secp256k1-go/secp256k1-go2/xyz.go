@@ -70,14 +70,24 @@ func (xyz *XYZ) Equals(b *XYZ) bool {
 	return xyz.X.Equals(&b.X) && xyz.Y.Equals(&b.Y) && xyz.Z.Equals(&b.Z)
 }
 
-func (xyz *XYZ) precomp(w int) (pre []XYZ) { //nolint:unparam
+// precompInto fills pre with the odd multiples of xyz (pre[0]=xyz, then
+// successive additions of 2*xyz). len(pre) must equal 1<<(w-2) for the window
+// size w the caller uses. Separated from allocation so hot callers can supply a
+// stack-allocated fixed-size array and skip a per-call heap allocation — see
+// ECmult, which runs once per ECDH/scalar-mult and was allocating two of these
+// tables on every call (a significant share of allocation churn under load).
+func (xyz *XYZ) precompInto(pre []XYZ) {
 	var d XYZ
-	pre = make([]XYZ, (1 << (uint(w) - 2))) //nolint:gosec
 	pre[0] = *xyz
 	pre[0].Double(&d)
 	for i := 1; i < len(pre); i++ {
 		d.Add(&pre[i], &pre[i-1])
 	}
+}
+
+func (xyz *XYZ) precomp(w int) (pre []XYZ) { //nolint:unparam
+	pre = make([]XYZ, (1 << (uint(w) - 2))) //nolint:gosec
+	xyz.precompInto(pre)
 	return
 }
 
@@ -130,9 +140,16 @@ func (xyz *XYZ) ECmult(r *XYZ, na, ng *Number) {
 	var aLam XYZ
 	xyz.mulLambda(&aLam)
 
-	// calculate odd multiples of a and a_lam
-	preA1 := xyz.precomp(winA)
-	preALam := aLam.precomp(winA)
+	// calculate odd multiples of a and a_lam.
+	// winA is a compile-time constant, so these tables are a fixed 1<<(winA-2)
+	// elements and can live on the stack — no per-call heap allocation. ECmult
+	// runs once per ECDH; the two make([]XYZ)s here were a notable share of
+	// allocation churn (e.g. the dmsg-discovery handshake load).
+	var preA1arr, preALamArr [1 << (winA - 2)]XYZ
+	preA1 := preA1arr[:]
+	preALam := preALamArr[:]
+	xyz.precompInto(preA1)
+	aLam.precompInto(preALam)
 
 	bits := bitsNa1
 	if bitsNaLam > bits {

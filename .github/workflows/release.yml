@@ -45,12 +45,12 @@ jobs:
           - { arch: "386", goarch: "386" }
           - { arch: riscv64, goarch: riscv64 }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
 
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: false
@@ -106,12 +106,12 @@ jobs:
             toolchain: aarch64-linux-musl
             toolchain_file: aarch64-linux-musl-cross.tgz
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
 
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: false
@@ -126,7 +126,7 @@ jobs:
 
       - name: Cache musl toolchain
         id: cache-toolchain
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: musl-data
           key: musl-${{ env.MUSL_RELEASE }}-${{ matrix.toolchain }}
@@ -188,12 +188,12 @@ jobs:
       TINYGO_TAG: v0.42.0-skycoin.1
     steps:
       - name: Checkout skycoin
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
 
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: false
@@ -264,7 +264,7 @@ jobs:
     if: github.repository == 'skycoin/skycoin'
     runs-on: macos-15-intel
     steps:
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: false
@@ -331,7 +331,7 @@ jobs:
     if: github.repository == 'skycoin/skycoin'
     runs-on: macos-latest
     steps:
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: false
@@ -414,7 +414,7 @@ jobs:
             wix_arch: x64
             cgo_enabled: "0"
     steps:
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: false

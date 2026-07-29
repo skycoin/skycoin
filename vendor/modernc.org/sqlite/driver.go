@@ -53,6 +53,38 @@ func newDriver() *Driver { return d }
 // keyword added for you). May be specified more than once, '&'-separated. For more
 // information on supported PRAGMAs see: https://www.sqlite.org/pragma.html
 //
+// The following shorthand keys set common PRAGMAs for easier DSN compatibility
+// when migrating from github.com/mattn/go-sqlite3. Each value is validated
+// against the same set github.com/mattn/go-sqlite3 accepts (case-insensitive);
+// an unrecognized value fails the connection with an error instead of being
+// silently ignored. The keys are applied in a fixed order, independent of the
+// order they appear in the DSN: _busy_timeout and _auto_vacuum first (auto_vacuum
+// must be set before the database is first written), then the _pragma values,
+// then the remaining keys, and _query_only last. Where a shorthand key and a
+// _pragma set the same PRAGMA, whichever is applied later in that order wins. If
+// a key and its alias are both supplied, the alias (the second name below) wins,
+// matching github.com/mattn/go-sqlite3; supplying the alias with an empty value
+// therefore suppresses the PRAGMA rather than deferring to the primary key.
+// Accepted values:
+//
+//	_busy_timeout, _timeout   -> PRAGMA busy_timeout   (an integer)
+//	_foreign_keys, _fk        -> PRAGMA foreign_keys   (0 1 false true no yes off on)
+//	_journal_mode, _journal   -> PRAGMA journal_mode   (DELETE TRUNCATE PERSIST MEMORY WAL OFF)
+//	_synchronous, _sync       -> PRAGMA synchronous    (0 OFF 1 NORMAL 2 FULL 3 EXTRA)
+//	_auto_vacuum, _vacuum     -> PRAGMA auto_vacuum    (0 NONE 1 FULL 2 INCREMENTAL)
+//	_query_only               -> PRAGMA query_only     (0 1 false true no yes off on)
+//
+// All DSN parameters that can be validated are validated before any of them is
+// applied, so a DSN carrying a typo fails without having executed the PRAGMAs
+// that precede it -- a rejected DSN does not leave the database converted to WAL
+// or with auto_vacuum already set.
+//
+// Unlike these validated shorthand keys, each _pragma value is executed verbatim
+// (with PRAGMA prepended) and is not validated, so a DSN that includes _pragma
+// must come from a trusted source. It is also the one case that can still fail
+// partway: a bad _pragma is only rejected by SQLite as it runs, after any
+// earlier _pragma in the list has taken effect.
+//
 // _time_format: The name of a format to use when writing time values to the database.
 // The currently supported values are (1) "sqlite" for YYYY-MM-DD HH:MM:SS.SSS[+-]HH:MM
 // (format 4 from https://www.sqlite.org/lang_datefunc.html#time_values with sub-second

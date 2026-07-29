@@ -70,3 +70,14 @@ updates:
       gui-npm:
         patterns:
           - "*"
+
+  # SkyDEX trading UI (React/Vite)
+  - package-ecosystem: npm
+    directory: "/cmd/skydex-client"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      skydex-client-npm:
+        patterns:
+          - "*"

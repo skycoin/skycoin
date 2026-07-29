@@ -29,6 +29,12 @@ export class ChangeNodeURLComponent implements OnInit, OnDestroy {
   hoursBurnRate: string;
   coinName: string;
 
+  // Known-good default servers offered in the dropdown. Selecting one just
+  // populates the free-text field below (which stays editable); Verify keeps
+  // working with whatever ends up in the field. Coin-aware: BTC gets a few
+  // public ssl:// Electrum servers, other coins only the built-in default.
+  nodeOptions: {label: string, value: string}[] = [];
+
   private newUrl: string;
   private verificationSubscription: Subscription;
   private initialURL: string;
@@ -47,6 +53,7 @@ export class ChangeNodeURLComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.initForm();
+    this.initNodeOptions();
   }
 
   ngOnDestroy() {
@@ -182,5 +189,30 @@ export class ChangeNodeURLComponent implements OnInit, OnDestroy {
     this.form = this.formBuilder.group({
       url: [this.data.url],
     });
+  }
+
+  // Writes the option chosen in the dropdown into the free-text field. The
+  // field stays editable, so the user can tweak the value afterwards.
+  onSelectPreset(value: string) {
+    this.form.get('url').setValue(value);
+  }
+
+  // Builds the coin-aware list of default servers. The first entry always maps
+  // to an empty value ("Default (built-in)") so the coin falls back to the
+  // built-in node. For Bitcoin we add a few public ssl:// Electrum servers.
+  private initNodeOptions() {
+    const defaultOption = { label: this.translate.instant('nodes.change.preset-default'), value: '' };
+
+    const coin = this.coinService.coins.find(c => c.id === this.data.coinId);
+    if (coin && coin.isBitcoin()) {
+      this.nodeOptions = [
+        defaultOption,
+        { label: 'ssl://electrum.blockstream.info:50002', value: 'ssl://electrum.blockstream.info:50002' },
+        { label: 'ssl://fortress.qtornado.com:443', value: 'ssl://fortress.qtornado.com:443' },
+        { label: 'ssl://electrum.emzy.de:50002', value: 'ssl://electrum.emzy.de:50002' },
+      ];
+    } else {
+      this.nodeOptions = [defaultOption];
+    }
   }
 }

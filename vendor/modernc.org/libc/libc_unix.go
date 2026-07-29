@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build unix && !(linux && (amd64 || arm64 || loong64))
+//go:build unix && !(linux && (amd64 || arm64 || loong64 || ppc64le || s390x || riscv64 || 386 || arm))
 
 package libc // import "modernc.org/libc"
 
@@ -18,7 +18,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 	"unsafe"
 
@@ -43,49 +42,51 @@ func init() {
 	atExit = append(atExit, func() { closePasswd(&staticGetpwnam) })
 }
 
+var (
+	signalCh   chan os.Signal
+	signalTls  *TLS
+	signalInit sync.Once
+)
+
+func startSignalHandler() {
+	signalCh = make(chan os.Signal, 10)
+	signalTls = NewTLS()
+	go func() {
+		for sig := range signalCh {
+			if s, ok := sig.(unix.Signal); ok {
+				signum := int32(s)
+				signalsMu.Lock()
+				handler := signals[signum]
+				signalsMu.Unlock()
+				if handler != 0 && handler != signal.SIG_DFL && handler != signal.SIG_IGN {
+					var f func(*TLS, int32)
+					*(*uintptr)(unsafe.Pointer(&f)) = handler
+					f(signalTls, signum)
+				}
+			}
+		}
+	}()
+}
+
 // sighandler_t signal(int signum, sighandler_t handler);
 func Xsignal(t *TLS, signum int32, handler uintptr) uintptr { //TODO use sigaction?
 	if __ccgo_strace {
 		trc("t=%v signum=%v handler=%v, (%v:)", t, signum, handler, origin(2))
 	}
-	signalsMu.Lock()
+	signalInit.Do(startSignalHandler)
 
+	signalsMu.Lock()
 	defer signalsMu.Unlock()
 
 	r := signals[signum]
 	signals[signum] = handler
 	switch handler {
 	case signal.SIG_DFL:
-		panic(todo("%v %#x", syscall.Signal(signum), handler))
+		gosignal.Reset(unix.Signal(signum))
 	case signal.SIG_IGN:
-		switch r {
-		case signal.SIG_DFL:
-			gosignal.Ignore(syscall.Signal(signum)) //TODO
-		case signal.SIG_IGN:
-			gosignal.Ignore(syscall.Signal(signum))
-		default:
-			panic(todo("%v %#x", syscall.Signal(signum), handler))
-		}
+		gosignal.Ignore(unix.Signal(signum))
 	default:
-		switch r {
-		case signal.SIG_DFL:
-			c := make(chan os.Signal, 1)
-			gosignal.Notify(c, syscall.Signal(signum))
-			go func() { //TODO mechanism to stop/cancel
-				for {
-					<-c
-					var f func(*TLS, int32)
-					*(*uintptr)(unsafe.Pointer(&f)) = handler
-					tls := NewTLS()
-					f(tls, signum)
-					tls.Close()
-				}
-			}()
-		case signal.SIG_IGN:
-			panic(todo("%v %#x", syscall.Signal(signum), handler))
-		default:
-			panic(todo("%v %#x", syscall.Signal(signum), handler))
-		}
+		gosignal.Notify(signalCh, unix.Signal(signum))
 	}
 	return r
 }
@@ -140,7 +141,11 @@ func Xremove(t *TLS, pathname uintptr) int32 {
 	if __ccgo_strace {
 		trc("t=%v pathname=%v, (%v:)", t, pathname, origin(2))
 	}
-	panic(todo(""))
+	if err := os.Remove(GoString(pathname)); err != nil {
+		t.setErrno(err)
+		return -1
+	}
+	return 0
 }
 
 // long pathconf(const char *path, int name);
@@ -961,16 +966,19 @@ func Xuuid_unparse(t *TLS, uu, out uintptr) {
 	*(*byte)(unsafe.Pointer(out + uintptr(len(s)))) = 0
 }
 
-// no longer used?
-// var staticRandomData = &rand.Rand{}
-
 // char *initstate(unsigned seed, char *state, size_t size);
 func Xinitstate(t *TLS, seed uint32, statebuf uintptr, statelen types.Size_t) uintptr {
 	if __ccgo_strace {
 		trc("t=%v seed=%v statebuf=%v statelen=%v, (%v:)", t, seed, statebuf, statelen, origin(2))
 	}
-	// staticRandomData = rand.New(rand.NewSource(int64(seed)))
-	_ = rand.New(rand.NewSource(int64(seed)))
+	// random(3) is modeled here by a single global math/rand generator (see
+	// randomGen / Xrandom), so the caller-supplied state buffer cannot be
+	// honored. Mirror musl's primary effect by (re)seeding that generator,
+	// matching Xsrandomdev. NULL is returned as there is no previous state
+	// buffer to hand back.
+	randomMu.Lock()
+	randomGen.Seed(int64(seed))
+	randomMu.Unlock()
 	return 0
 }
 
@@ -979,8 +987,11 @@ func Xsetstate(t *TLS, state uintptr) uintptr {
 	if __ccgo_strace {
 		trc("t=%v state=%v, (%v:)", t, state, origin(2))
 	}
-	t.setErrno(errno.EINVAL) //TODO
-	return 0
+	// random(3) is modeled by a single global generator (see randomGen /
+	// Xrandom), so there is no independent saved stream to switch to. Treat
+	// setstate as a no-op rather than failing the caller; return the passed
+	// pointer (non-NULL) to signal success.
+	return state
 }
 
 // The initstate_r() function is like initstate(3) except that it initializes
@@ -1293,21 +1304,6 @@ func Xstrftime(tls *TLS, s uintptr, n size_t, f uintptr, tm uintptr) (r size_t) 
 	}
 	return r
 
-}
-
-func Xgmtime_r(tls *TLS, t uintptr, tm uintptr) (r uintptr) {
-	if __ccgo_strace {
-		trc("tls=%v t=%v tm=%v, (%v:)", tls, t, tm, origin(2))
-		defer func() { trc("-> %v", r) }()
-	}
-	if x___secs_to_tm(tls, int64(*(*time_t)(unsafe.Pointer(t))), tm) < 0 {
-		*(*int32)(unsafe.Pointer(X__errno_location(tls))) = int32(errno.EOVERFLOW)
-		return uintptr(0)
-	}
-	(*ctime.Tm)(unsafe.Pointer(tm)).Ftm_isdst = 0
-	(*ctime.Tm)(unsafe.Pointer(tm)).Ftm_gmtoff = 0
-	(*ctime.Tm)(unsafe.Pointer(tm)).Ftm_zone = uintptr(unsafe.Pointer(&x___utc))
-	return tm
 }
 
 func x___secs_to_tm(tls *TLS, t int64, tm uintptr) (r int32) {

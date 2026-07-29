@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build linux && (amd64 || arm64 || loong64)
+//go:build linux && (amd64 || arm64 || loong64 || ppc64le || s390x || riscv64 || 386 || arm)
 
 package libc // import "modernc.org/libc"
 
@@ -38,24 +38,21 @@ func a_store_16(addr uintptr, val uint16) {
 	*(*uint16)(unsafe.Pointer(addr)) = val
 }
 
-// static inline int a_ctz_l(unsigned long x)
-func _a_ctz_l(tls *TLS, x ulong) int32 {
-	if unsafe.Sizeof(x) == 8 {
-		return int32(mbits.TrailingZeros64(x))
-	}
-
-	return int32(mbits.TrailingZeros32(uint32(x)))
-}
-
 // static inline int a_ctz_64(uint64_t x)
 func _a_ctz_64(tls *TLS, x uint64) int32 {
 	return int32(mbits.TrailingZeros64(x))
 }
 
 func AtomicAddFloat32(addr *float32, delta float32) (new float32) {
-	v := AtomicLoadFloat32(addr) + delta
-	AtomicStoreFloat32(addr, v)
-	return v
+	for {
+		oldBits := atomic.LoadUint32((*uint32)(unsafe.Pointer(addr)))
+		oldVal := math.Float32frombits(oldBits)
+		newVal := oldVal + delta
+		newBits := math.Float32bits(newVal)
+		if atomic.CompareAndSwapUint32((*uint32)(unsafe.Pointer(addr)), oldBits, newBits) {
+			return newVal
+		}
+	}
 }
 
 func AtomicLoadFloat32(addr *float32) (val float32) {
@@ -67,9 +64,15 @@ func AtomicStoreFloat32(addr *float32, val float32) {
 }
 
 func AtomicAddFloat64(addr *float64, delta float64) (new float64) {
-	v := AtomicLoadFloat64(addr) + delta
-	AtomicStoreFloat64(addr, v)
-	return v
+	for {
+		oldBits := atomic.LoadUint64((*uint64)(unsafe.Pointer(addr)))
+		oldVal := math.Float64frombits(oldBits)
+		newVal := oldVal + delta
+		newBits := math.Float64bits(newVal)
+		if atomic.CompareAndSwapUint64((*uint64)(unsafe.Pointer(addr)), oldBits, newBits) {
+			return newVal
+		}
+	}
 }
 
 func AtomicLoadFloat64(addr *float64) (val float64) {

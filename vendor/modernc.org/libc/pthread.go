@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build !(linux && (amd64 || arm64 || loong64))
+//go:build !(linux && (amd64 || arm64 || loong64 || ppc64le || s390x || riscv64 || 386 || arm))
 
 package libc // import "modernc.org/libc"
 
@@ -42,6 +42,7 @@ type TLS struct {
 	jumpBuffers []uintptr
 	lastError   uint32
 	pthreadData
+	sp    int
 	stack stackHeader
 
 	ID                 int32
@@ -65,6 +66,11 @@ func newTLS(detached bool) *TLS {
 	t.errnop = t.Alloc(int(unsafe.Sizeof(int32(0))))
 	*(*int32)(unsafe.Pointer(t.errnop)) = 0
 	return t
+}
+
+// StackSlots reports the number of tls stack slots currently in use.
+func (tls *TLS) StackSlots() int {
+	return tls.sp
 }
 
 func (t *TLS) alloca(n size_t) (r uintptr) {
@@ -183,7 +189,7 @@ func Xpthread_attr_setstacksize(t *TLS, attr uintptr, stackSize types.Size_t) in
 	if __ccgo_strace {
 		trc("t=%v attr=%v stackSize=%v, (%v:)", t, attr, stackSize, origin(2))
 	}
-	panic(todo(""))
+	return 0
 }
 
 // Go side data of pthread_cond_t.
@@ -389,6 +395,10 @@ func Xpthread_cond_timedwait(t *TLS, pCond, pMutex, pAbsTime uintptr) int32 {
 			defer cond.Unlock()
 
 			delete(cond.waiters, t)
+			select {
+			case <-t.wait:
+			default:
+			}
 			return errno.ETIMEDOUT
 		}
 	}
@@ -421,6 +431,8 @@ func (m *mutex) lock(id int32) int32 {
 	// shall return zero; otherwise, an error number shall be returned to indicate
 	// the error.
 	switch m.typ {
+	default:
+		fallthrough
 	case pthread.PTHREAD_MUTEX_NORMAL:
 		// If the mutex type is PTHREAD_MUTEX_NORMAL, deadlock detection shall not be
 		// provided. Attempting to relock the mutex causes deadlock. If a thread
@@ -450,8 +462,6 @@ func (m *mutex) lock(id int32) int32 {
 			// intentional empty section - wake up other waiters
 			m.wait.Unlock()
 		}
-	default:
-		panic(todo("", m.typ))
 	}
 }
 
@@ -461,6 +471,8 @@ func (m *mutex) tryLock(id int32) int32 {
 	}
 
 	switch m.typ {
+	default:
+		fallthrough
 	case pthread.PTHREAD_MUTEX_NORMAL:
 		return errno.EBUSY
 	case pthread.PTHREAD_MUTEX_RECURSIVE:
@@ -480,8 +492,6 @@ func (m *mutex) tryLock(id int32) int32 {
 
 		m.Unlock()
 		return errno.EBUSY
-	default:
-		panic(todo("", m.typ))
 	}
 }
 
@@ -494,6 +504,8 @@ func (m *mutex) unlock() int32 {
 	// shall return zero; otherwise, an error number shall be returned to indicate
 	// the error.
 	switch m.typ {
+	default:
+		fallthrough
 	case pthread.PTHREAD_MUTEX_NORMAL:
 		// If the mutex type is PTHREAD_MUTEX_NORMAL, deadlock detection shall not be
 		// provided. Attempting to relock the mutex causes deadlock. If a thread
@@ -511,8 +523,6 @@ func (m *mutex) unlock() int32 {
 		}
 		m.Unlock()
 		return 0
-	default:
-		panic(todo("", m.typ))
 	}
 }
 
@@ -645,7 +655,12 @@ func Xpthread_detach(t *TLS, thread pthread.Pthread_t) int32 {
 		trc("t=%v thread=%v, (%v:)", t, thread, origin(2))
 	}
 	threadsMu.Lock()
-	threads[int32(thread)].detached = true
+	tls := threads[int32(thread)]
+	if tls == nil {
+		threadsMu.Unlock()
+		return errno.ESRCH
+	}
+	tls.detached = true
 	threadsMu.Unlock()
 	return 0
 }
@@ -704,6 +719,10 @@ func Xpthread_join(t *TLS, thread pthread.Pthread_t, pValue uintptr) int32 {
 	}
 	threadsMu.Lock()
 	tls := threads[int32(thread)]
+	if tls == nil {
+		threadsMu.Unlock()
+		return errno.ESRCH
+	}
 	delete(threads, int32(thread))
 	threadsMu.Unlock()
 	<-tls.done

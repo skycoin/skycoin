@@ -5,9 +5,9 @@
 package libc // import "modernc.org/libc"
 
 import (
+	"golang.org/x/sys/windows"
 	"os"
 	"strings"
-	"syscall"
 	gotime "time"
 	"unsafe"
 
@@ -235,7 +235,7 @@ func Xlseek64(t *TLS, fd int32, offset types.Off_t, whence int32) types.Off_t {
 		return -1
 	}
 
-	n, err := syscall.Seek(f.Handle, offset, int(whence))
+	n, err := windows.Seek(f.Handle, offset, int(whence))
 	if err != nil {
 		if dmesgs {
 			dmesg("%v: fd %v, off %#x, whence %v: %v", origin(1), f._fd, offset, whenceStr(whence), n)
@@ -366,7 +366,7 @@ func Xunlink(t *TLS, pathname uintptr) int32 {
 	if __ccgo_strace {
 		trc("t=%v pathname=%v, (%v:)", t, pathname, origin(2))
 	}
-	err := syscall.DeleteFile((*uint16)(unsafe.Pointer(pathname)))
+	err := windows.DeleteFile((*uint16)(unsafe.Pointer(pathname)))
 	if err != nil {
 		t.setErrno(err)
 		return -1
@@ -505,7 +505,7 @@ func Xfopen64(t *TLS, pathname, mode uintptr) uintptr {
 		panic(m)
 	}
 	//TODO- flags |= fcntl.O_LARGEFILE
-	h, err := syscall.Open(GoString(pathname), int(flags), uint32(0666))
+	h, err := windows.Open(GoString(pathname), int(flags), uint32(0666))
 	if err != nil {
 		t.setErrno(err)
 		return 0
@@ -515,7 +515,7 @@ func Xfopen64(t *TLS, pathname, mode uintptr) uintptr {
 	if p != 0 {
 		return p
 	}
-	_ = syscall.Close(h)
+	_ = windows.Close(h)
 	t.setErrno(errno.ENOMEM)
 	return 0
 }
@@ -615,8 +615,8 @@ func X_localtime32(_ *TLS, sourceTime uintptr) uintptr {
 
 // struct tm *_gmtime32( const __time32_t *sourceTime );
 func X_gmtime32(t *TLS, sourceTime uintptr) uintptr {
-	r0, _, err := syscall.SyscallN(procGmtime32.Addr(), uintptr(sourceTime))
-	if err != 0 {
+	r0, _, err := procGmtime32.Call(uintptr(sourceTime))
+	if err != windows.NOERROR {
 		t.setErrno(err)
 	}
 	return uintptr(r0)
@@ -681,8 +681,8 @@ func X_fstat(t *TLS, fd int32, buffer uintptr) int32 {
 		return -1
 	}
 
-	var d syscall.ByHandleFileInformation
-	err := syscall.GetFileInformationByHandle(f.Handle, &d)
+	var d windows.ByHandleFileInformation
+	err := windows.GetFileInformationByHandle(f.Handle, &d)
 	if err != nil {
 		t.setErrno(EBADF)
 		return -1
@@ -726,4 +726,16 @@ func Xstrspn(tls *TLS, s uintptr, c uintptr) size_t { /* strspn.c:6:8: */
 	for ; *(*int8)(unsafe.Pointer(s)) != 0 && *(*size_t)(unsafe.Pointer(bp + uintptr(size_t(*(*uint8)(unsafe.Pointer(s)))/(uint32(8)*uint32(unsafe.Sizeof(size_t(0)))))*4))&(size_t(size_t(1))<<(size_t(*(*uint8)(unsafe.Pointer(s)))%(uint32(8)*uint32(unsafe.Sizeof(size_t(0)))))) != 0; s++ {
 	}
 	return size_t((int32(s) - int32(a)) / 1)
+}
+
+// Defined in libc_windows_386.s
+func callStrtod(fn uintptr, s uintptr, p uintptr) float64
+
+func Xstrtod(t *TLS, s uintptr, p uintptr) float64 {
+	if __ccgo_strace {
+		trc("tls=%v s=%v p=%v, (%v:)", t, s, p, origin(2))
+	}
+	// We use the assembly bridge to call the function pointer directly.
+	// This ensures we capture the float return value from ST(0).
+	return callStrtod(procStrtod.Addr(), s, p)
 }

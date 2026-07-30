@@ -191,7 +191,12 @@ func PubkeyIsValid(pubkey []byte) int {
 	}
 
 	if !bytes.Equal(pubkey1.Bytes(), pubkey) {
-		log.Panic("pubkey parses but serialize/deserialize roundtrip fails")
+		// The parse/serialize round-trip fails when the encoded X coordinate is
+		// not the canonical (reduced mod p) representation, i.e. X >= the field
+		// prime. Such a public key is invalid; report it as invalid rather than
+		// panicking, because pubkey bytes can come from untrusted input (wallet
+		// files, xpub imports) and must not be able to crash the process.
+		return -4
 	}
 
 	if !pubkey1.IsValid() {

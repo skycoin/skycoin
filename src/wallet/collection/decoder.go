@@ -98,7 +98,7 @@ func newEntryFromReadable(coinType wallet.CoinType, re *readableEntry) (*wallet.
 	case wallet.CoinTypeBitcoin:
 		a, err = cipher.DecodeBase58BitcoinAddress(re.Address)
 	default:
-		panic(fmt.Errorf("invalid coin type %q", coinType))
+		return nil, fmt.Errorf("invalid coin type %q", coinType)
 	}
 
 	if err != nil {
@@ -119,7 +119,7 @@ func newEntryFromReadable(coinType wallet.CoinType, re *readableEntry) (*wallet.
 		case wallet.CoinTypeBitcoin:
 			secret, err = cipher.SecKeyFromBitcoinWalletImportFormat(re.Secret)
 		default:
-			panic(fmt.Errorf("invalid coin type %q", coinType))
+			return nil, fmt.Errorf("invalid coin type %q", coinType)
 		}
 		if err != nil {
 			return nil, err

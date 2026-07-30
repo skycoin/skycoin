@@ -278,6 +278,21 @@ func blocksHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 		}
 
+		// Bound the number of blocks a single request can materialize. Without
+		// this a request such as start=0&end=<huge> forces the whole chain to be
+		// loaded and JSON-encoded in memory, exhausting RAM. Reuse the same
+		// configurable limit as /last_blocks.
+		maxCount := gateway.DaemonConfig().MaxLastBlocksCount
+		if len(seqs) > 0 {
+			if uint64(len(seqs)) > maxCount {
+				wh.Error400(w, fmt.Sprintf("too many sequences requested, max is %d", maxCount))
+				return
+			}
+		} else if end >= start && end-start >= maxCount {
+			wh.Error400(w, fmt.Sprintf("too many blocks requested, max is %d", maxCount))
+			return
+		}
+
 		if verbose {
 			var blocks []coin.SignedBlock
 			var inputs [][][]visor.TransactionInput

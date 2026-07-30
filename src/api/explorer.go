@@ -275,6 +275,14 @@ func explorerAddressHandler(gateway Gatewayer) http.HandlerFunc {
 			return
 		}
 
+		// Guard the inputs[i] indexing below (the v1/v2 transaction handlers make
+		// the same check) so a length mismatch returns an error rather than panicking.
+		if len(txns) != len(inputs) {
+			wh.Error500(w, "server error")
+			logger.Critical().Errorf("explorerAddressHandler: len(txns)=%d != len(inputs)=%d", len(txns), len(inputs))
+			return
+		}
+
 		// Build the old flattened response format: an array of TransactionVerbose
 		// (status + timestamp + length/type/txid/inner_hash/fee/sigs/inputs/outputs)
 		result := make([]readable.TransactionVerbose, 0, len(txns))

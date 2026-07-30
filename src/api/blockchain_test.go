@@ -956,6 +956,7 @@ func TestGetBlocks(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			gateway := &MockGatewayer{}
+			gateway.On("DaemonConfig").Return(daemon.DaemonConfig{MaxLastBlocksCount: 256})
 			gateway.On("GetBlocksInRange", tc.start, tc.end).Return(tc.gatewayGetBlocksInRangeResult, tc.gatewayGetBlocksInRangeError)
 			gateway.On("GetBlocksInRangeVerbose", tc.start, tc.end).Return(tc.gatewayGetBlocksInRangeVerboseResult.Blocks,
 				tc.gatewayGetBlocksInRangeVerboseResult.Inputs, tc.gatewayGetBlocksInRangeVerboseError)

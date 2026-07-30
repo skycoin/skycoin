@@ -112,6 +112,8 @@ func (serv *Service) WalletDir() (string, error) {
 
 // SetEnableWalletAPI sets whether or not enables the wallet related APIs
 func (serv *Service) SetEnableWalletAPI(enable bool) {
+	serv.Lock()
+	defer serv.Unlock()
 	serv.config.EnableWalletAPI = enable
 }
 

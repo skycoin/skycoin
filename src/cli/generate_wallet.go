@@ -231,8 +231,12 @@ func generateWalletHandler(c *cobra.Command, _ []string) error {
 		}
 	}
 
-	n := num - uint64(addrN) //nolint:gosec
-	if n > 0 {
+	// Only request more addresses when num exceeds what CreateWallet already
+	// generated. Guard the subtraction: for collection wallets num is 0 while
+	// addrN is >= 1, so an unguarded num-addrN underflows to a huge uint64 and
+	// asks the node to generate ~2^64 addresses.
+	if num > uint64(addrN) {
+		n := num - uint64(addrN)
 		_, err := apiClient.NewWalletAddress(id, string(password), wallet.OptionGenerateN(n))
 		if err != nil {
 			return err

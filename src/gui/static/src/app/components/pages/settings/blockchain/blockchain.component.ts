@@ -1,5 +1,5 @@
 import { mergeMap, delay } from 'rxjs';
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { SubscriptionLike, of } from 'rxjs';
 
 import { BlockchainService, BasicBlockInfo, CoinSupply } from '../../../../services/blockchain.service';
@@ -12,6 +12,7 @@ import { AppService } from '../../../../services/app.service';
     selector: 'app-blockchain',
     templateUrl: './blockchain.component.html',
     styleUrls: ['./blockchain.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class BlockchainComponent implements OnInit, OnDestroy {

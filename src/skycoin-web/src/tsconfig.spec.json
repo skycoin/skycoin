@@ -16,5 +16,8 @@
     "**/*.spec.ts",
     "**/*.d.ts",
     "./app/utils/test-mocks.ts"
-  ]
+  ],
+  "angularCompilerOptions": {
+    "strictTemplates": false
+  }
 }

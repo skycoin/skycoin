@@ -1,4 +1,4 @@
-import { Component, Input, OnDestroy, OnInit } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { Subscription } from 'rxjs';
 
 import { Transaction } from '../../../../../app.datatypes';
@@ -10,6 +10,7 @@ import { BaseCoin } from '../../../../../coins/basecoin';
     selector: 'app-transaction-info',
     templateUrl: './transaction-info.component.html',
     styleUrls: ['./transaction-info.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class TransactionInfoComponent implements OnInit, OnDestroy {

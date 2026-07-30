@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation, ChangeDetectionStrategy } from '@angular/core';
 
 export enum DoubleButtonActive {RightButton, LeftButton}
 
@@ -7,6 +7,7 @@ export enum DoubleButtonActive {RightButton, LeftButton}
     templateUrl: './double-button.component.html',
     styleUrls: ['./double-button.component.scss'],
     encapsulation: ViewEncapsulation.Emulated,
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class DoubleButtonComponent {

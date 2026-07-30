@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { UntypedFormArray, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { MatDialogConfig } from '@angular/material/dialog';
 import { Subscription, throwError, concat } from 'rxjs';
@@ -25,6 +25,7 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
     selector: 'app-send-form-advanced',
     templateUrl: './send-form-advanced.component.html',
     styleUrls: ['./send-form-advanced.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class SendFormAdvancedComponent implements OnInit, OnDestroy {

@@ -1,4 +1,4 @@
-import { Component, Input, HostListener } from '@angular/core';
+import { Component, Input, HostListener, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MatDialog } from '@angular/material/dialog';
 
 /**
@@ -10,6 +10,7 @@ import { MatDialogRef, MatDialog } from '@angular/material/dialog';
     selector: 'app-modal',
     templateUrl: './modal.component.html',
     styleUrls: ['./modal.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class ModalComponent {

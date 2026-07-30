@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnDestroy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 
 import { HwWalletTxRecipientData } from '../../../../services/hw-wallet.service';
 
@@ -17,6 +17,7 @@ export enum MessageIcons {
     selector: 'app-hw-message',
     templateUrl: './hw-message.component.html',
     styleUrls: ['./hw-message.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class HwMessageComponent implements OnDestroy {

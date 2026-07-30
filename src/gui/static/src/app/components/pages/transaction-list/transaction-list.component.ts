@@ -1,5 +1,5 @@
 import { delay, mergeMap } from 'rxjs';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { SubscriptionLike, of } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { UntypedFormGroup, UntypedFormBuilder } from '@angular/forms';
@@ -53,6 +53,7 @@ class Address {
     selector: 'app-transaction-list',
     templateUrl: './transaction-list.component.html',
     styleUrls: ['./transaction-list.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class TransactionListComponent implements OnInit, OnDestroy {

@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, ViewChild, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, Inject, ViewChild, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { SubscriptionLike } from 'rxjs';
@@ -62,6 +62,7 @@ export class ChangeNameErrorResponse {
     selector: 'app-change-name',
     templateUrl: './change-name.component.html',
     styleUrls: ['./change-name.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class ChangeNameComponent implements OnInit, OnDestroy {

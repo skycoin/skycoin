@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
 import { environment } from '../../../../../../environments/environment';
@@ -19,6 +19,7 @@ export enum WalletOptionsResponses {
     selector: 'app-wallet-options',
     templateUrl: './wallet-options.component.html',
     styleUrls: ['./wallet-options.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class WalletOptionsComponent {

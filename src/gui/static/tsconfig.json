@@ -4,7 +4,8 @@
     "preserveWhitespaces": true
   },
   "compilerOptions": {
-    "downlevelIteration": true,
+    "ignoreDeprecations": "6.0",
+    "strict": false,
     "importHelpers": true,
     "outDir": "./dist/out-tsc",
     "sourceMap": true,

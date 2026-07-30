@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, ViewChild, OnDestroy } from '@angular/core';
+import { Component, Inject, OnInit, ViewChild, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
@@ -15,6 +15,7 @@ import { MsgBarService } from '../../../../../services/msg-bar.service';
     selector: 'app-change-node-url',
     templateUrl: './change-node-url.component.html',
     styleUrls: ['./change-node-url.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class ChangeNodeURLComponent implements OnInit, OnDestroy {

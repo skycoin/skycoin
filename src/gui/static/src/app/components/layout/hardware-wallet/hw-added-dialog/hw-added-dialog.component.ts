@@ -1,4 +1,4 @@
-import { Component, Inject, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Component, Inject, OnDestroy, ViewChild, ElementRef, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialog } from '@angular/material/dialog';
 import { UntypedFormGroup, UntypedFormBuilder, Validators } from '@angular/forms';
 
@@ -21,6 +21,7 @@ import { HardwareWalletService } from '../../../../services/wallet-operations/ha
     selector: 'app-hw-added-dialog',
     templateUrl: './hw-added-dialog.component.html',
     styleUrls: ['./hw-added-dialog.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogComponent> implements OnDestroy {

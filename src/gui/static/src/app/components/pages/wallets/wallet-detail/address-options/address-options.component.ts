@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 
 import { AppConfig } from '../../../../../app.config';
@@ -20,6 +20,7 @@ export enum AddressOptions {
     selector: 'app-address-options',
     templateUrl: './address-options.component.html',
     styleUrls: ['./address-options.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class AddressOptionsComponent {

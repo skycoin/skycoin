@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 
 /**
  * Icons the msg bar can show.
@@ -41,6 +41,7 @@ export class MsgBarConfig {
     selector: 'app-msg-bar',
     templateUrl: './msg-bar.component.html',
     styleUrls: ['./msg-bar.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class MsgBarComponent {

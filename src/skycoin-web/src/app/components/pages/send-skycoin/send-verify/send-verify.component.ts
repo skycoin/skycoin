@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 
 import { PreviewTransaction } from '../../../../app.datatypes';
 import { BalanceService } from '../../../../services/wallet/balance.service';
@@ -11,6 +11,7 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
     selector: 'app-send-verify',
     templateUrl: './send-verify.component.html',
     styleUrls: ['./send-verify.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class SendVerifyComponent implements OnDestroy {

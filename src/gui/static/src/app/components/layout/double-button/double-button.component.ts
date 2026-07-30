@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, ViewEncapsulation, OnDestroy } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ViewEncapsulation, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 
 /**
  * Identifies the active button of a DoubleButtonComponent.
@@ -16,6 +16,7 @@ export enum DoubleButtonActive {
     templateUrl: './double-button.component.html',
     styleUrls: ['./double-button.component.scss'],
     encapsulation: ViewEncapsulation.Emulated,
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class DoubleButtonComponent implements OnDestroy {

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { first } from 'rxjs';
 import { AppConfig } from '../../../app.config';
@@ -20,6 +20,7 @@ class ElementAddress {
     selector: 'app-select-address',
     templateUrl: './select-address.component.html',
     styleUrls: ['./select-address.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class SelectAddressComponent {

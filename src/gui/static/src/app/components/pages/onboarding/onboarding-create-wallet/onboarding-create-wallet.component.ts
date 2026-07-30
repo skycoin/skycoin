@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, ViewChild, OnDestroy } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ViewChild, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { SubscriptionLike } from 'rxjs';
@@ -19,6 +19,7 @@ import { AppService } from '../../../../services/app.service';
     selector: 'app-onboarding-create-wallet',
     templateUrl: './onboarding-create-wallet.component.html',
     styleUrls: ['./onboarding-create-wallet.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class OnboardingCreateWalletComponent implements OnInit, OnDestroy {

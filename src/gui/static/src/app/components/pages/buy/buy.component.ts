@@ -2,7 +2,7 @@
   IMPORTANT: Unused for a long time, it may need changes to work properly.
 */
 import { filter, first } from 'rxjs';
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { PurchaseService } from '../../../services/purchase.service';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { PurchaseOrder } from '../../../app.datatypes';
@@ -16,6 +16,7 @@ import { WalletsAndAddressesService } from '../../../services/wallet-operations/
     selector: 'app-buy',
     templateUrl: './buy.component.html',
     styleUrls: ['./buy.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class BuyComponent implements OnInit, OnDestroy {

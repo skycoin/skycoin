@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { SubscriptionLike } from 'rxjs';
 import { first } from 'rxjs';
@@ -19,6 +19,7 @@ import { WalletWithBalance } from '../../../services/wallet-operations/wallet-ob
     selector: 'app-wallets',
     templateUrl: './wallets.component.html',
     styleUrls: ['./wallets.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class WalletsComponent implements OnInit, OnDestroy {

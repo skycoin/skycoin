@@ -2,7 +2,7 @@ import { TestBed, fakeAsync } from '@angular/core/testing';
 import { Observable, of } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { BigNumber } from 'bignumber.js';
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi, withXhr } from '@angular/common/http';
 
 import { WalletService } from './wallet.service';
 import { SpendingService, HoursSelectionTypes } from './spending.service';
@@ -49,7 +49,7 @@ describe('WalletService with cipher:', () => {
         },
         { provide: CoinService, useClass: MockCoinService },
         { provide: GlobalsService, useClass: MockGlobalsService },
-        provideHttpClient(withInterceptorsFromDi())
+        provideHttpClient(withXhr(), withInterceptorsFromDi())
     ]
 });
 

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
 
 import { first } from 'rxjs';
@@ -12,6 +12,7 @@ import { CoinService } from '../../../../../services/coin.service';
     selector: 'app-select-address',
     templateUrl: './select-address.html',
     styleUrls: ['./select-address.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class SelectAddressComponent {

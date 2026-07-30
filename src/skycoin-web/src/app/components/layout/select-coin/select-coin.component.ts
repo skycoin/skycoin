@@ -1,4 +1,4 @@
-import { Component, forwardRef, Output, EventEmitter, Input, Renderer2 } from '@angular/core';
+import { Component, forwardRef, Output, EventEmitter, Input, Renderer2, ChangeDetectionStrategy } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { Overlay } from '@angular/cdk/overlay';
 
@@ -15,6 +15,7 @@ import { CustomMatDialogService } from '../../../services/custom-mat-dialog.serv
             useExisting: forwardRef(() => SelectCoinComponent),
             multi: true
         }],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class SelectCoinComponent implements ControlValueAccessor {

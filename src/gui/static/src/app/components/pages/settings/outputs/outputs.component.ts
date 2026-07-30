@@ -1,4 +1,4 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { SubscriptionLike } from 'rxjs';
 
@@ -13,6 +13,7 @@ import { WalletWithOutputs } from '../../../../services/wallet-operations/wallet
     selector: 'app-outputs',
     templateUrl: './outputs.component.html',
     styleUrls: ['./outputs.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class OutputsComponent implements OnDestroy {

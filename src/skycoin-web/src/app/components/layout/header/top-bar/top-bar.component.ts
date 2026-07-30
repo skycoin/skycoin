@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnDestroy, Renderer2, ViewChild, NgZone } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, Renderer2, ViewChild, NgZone, ChangeDetectionStrategy } from '@angular/core';
 import { Subscription, interval } from 'rxjs';
 
 import { BalanceService, BalanceStates } from '../../../../services/wallet/balance.service';
@@ -12,6 +12,7 @@ import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.s
     selector: 'app-top-bar',
     templateUrl: './top-bar.component.html',
     styleUrls: ['./top-bar.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class TopBarComponent implements OnInit, OnDestroy {

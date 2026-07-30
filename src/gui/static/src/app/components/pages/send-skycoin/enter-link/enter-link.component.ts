@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 
@@ -13,6 +13,7 @@ import { parseRequestLink } from '../../../../utils/general-utils';
     selector: 'app-enter-link',
     templateUrl: './enter-link.component.html',
     styleUrls: ['./enter-link.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class EnterLinkComponent implements OnInit {

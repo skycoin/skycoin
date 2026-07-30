@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, ViewChild, OnDestroy } from '@angular/core';
+import { Component, OnInit, Inject, ViewChild, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { SubscriptionLike } from 'rxjs';
@@ -17,6 +17,7 @@ import { OldTransaction } from '../../../../../../services/wallet-operations/tra
     selector: 'app-change-note',
     templateUrl: './change-note.component.html',
     styleUrls: ['./change-note.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class ChangeNoteComponent implements OnInit, OnDestroy {

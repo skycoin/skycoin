@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { SubscriptionLike } from 'rxjs';
 
@@ -14,6 +14,7 @@ import { environment } from '../../../../environments/environment';
     selector: 'app-exchange',
     templateUrl: './exchange.component.html',
     styleUrls: ['./exchange.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class ExchangeComponent implements OnInit, OnDestroy {

@@ -1,4 +1,4 @@
-import { Component, Inject, ViewChild, OnDestroy } from '@angular/core';
+import { Component, Inject, ViewChild, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { TranslateService } from '@ngx-translate/core';
@@ -21,6 +21,7 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
     selector: 'app-create-wallet',
     templateUrl: './create-wallet.component.html',
     styleUrls: ['./create-wallet.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class CreateWalletComponent implements OnDestroy {

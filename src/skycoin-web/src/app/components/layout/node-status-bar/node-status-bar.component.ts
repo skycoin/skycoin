@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { Subscription } from 'rxjs';
@@ -26,6 +26,7 @@ import { BaseCoin } from '../../../coins/basecoin';
   selector: 'app-node-status-bar',
   templateUrl: './node-status-bar.component.html',
   styleUrls: ['./node-status-bar.component.scss'],
+  changeDetection: ChangeDetectionStrategy.Eager,
   standalone: false,
 })
 export class NodeStatusBarComponent implements OnInit, OnDestroy {

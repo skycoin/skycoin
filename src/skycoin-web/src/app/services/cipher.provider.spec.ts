@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi, withXhr } from '@angular/common/http';
 
 import { CipherProvider, InitializationResults } from './cipher.provider';
 import { Address, TransactionInput, TransactionOutput } from '../app.datatypes';
@@ -13,7 +13,7 @@ describe('CipherProvider', () => {
     imports: [],
     providers: [
         CipherProvider,
-        provideHttpClient(withInterceptorsFromDi())
+        provideHttpClient(withXhr(), withInterceptorsFromDi())
     ]
 });
 

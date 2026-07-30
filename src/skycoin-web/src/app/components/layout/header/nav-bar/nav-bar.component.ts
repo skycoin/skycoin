@@ -1,4 +1,4 @@
-import { Component} from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 
 import { NavBarService } from '../../../../services/nav-bar.service';
 
@@ -6,6 +6,7 @@ import { NavBarService } from '../../../../services/nav-bar.service';
     selector: 'app-nav-bar',
     templateUrl: './nav-bar.component.html',
     styleUrls: ['./nav-bar.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class NavBarComponent {

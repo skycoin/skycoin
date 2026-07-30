@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 
 import { AppConfig } from '../../../../../../app.config';
@@ -17,6 +17,7 @@ export enum DestinationTools {
     selector: 'app-destination-tools',
     templateUrl: './destination-tools.component.html',
     styleUrls: ['./destination-tools.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class DestinationToolsComponent {

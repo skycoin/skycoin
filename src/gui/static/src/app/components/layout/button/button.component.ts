@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, ViewChild, OnDestroy } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ViewChild, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 
 enum ButtonStates {
   Normal = 'Normal',
@@ -13,6 +13,7 @@ enum ButtonStates {
     selector: 'app-button',
     templateUrl: 'button.component.html',
     styleUrls: ['button.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class ButtonComponent implements OnDestroy {

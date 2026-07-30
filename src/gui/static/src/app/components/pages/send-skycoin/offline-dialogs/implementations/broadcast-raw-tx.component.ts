@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { UntypedFormBuilder } from '@angular/forms';
 import { SubscriptionLike } from 'rxjs';
@@ -16,6 +16,7 @@ import { SpendingService } from '../../../../../services/wallet-operations/spend
     selector: 'app-broadcast-raw-tx',
     templateUrl: '../offline-dialogs-base.component.html',
     styleUrls: ['../offline-dialogs-base.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class BroadcastRawTxComponent extends OfflineDialogsBaseComponent implements OnInit, OnDestroy {

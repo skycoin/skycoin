@@ -1,5 +1,5 @@
 import BigNumber from 'bignumber.js';
-import * as Base58 from 'base-x';
+import Base58 from 'base-x';
 
 import { HwInput, HwOutput } from '../services/hw-wallet.service';
 

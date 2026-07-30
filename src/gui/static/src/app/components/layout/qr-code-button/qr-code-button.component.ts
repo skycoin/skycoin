@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 
 import { QrCodeComponent, QrDialogConfig } from '../qr-code/qr-code.component';
@@ -10,6 +10,7 @@ import { QrCodeComponent, QrDialogConfig } from '../qr-code/qr-code.component';
     selector: 'app-qr-code-button',
     templateUrl: './qr-code-button.component.html',
     styleUrls: ['./qr-code-button.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class QrCodeButtonComponent {

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, Inject, ChangeDetectionStrategy } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 
@@ -20,6 +20,7 @@ import { Destination } from '../../pages/send-skycoin/form-parts/form-destinatio
     selector: 'app-multiple-destinations-dialog',
     templateUrl: './multiple-destinations-dialog.component.html',
     styleUrls: ['./multiple-destinations-dialog.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {

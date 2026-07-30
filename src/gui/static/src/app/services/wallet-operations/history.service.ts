@@ -3,7 +3,7 @@ import { first, mergeMap, map } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { BigNumber } from 'bignumber.js';
 
-import * as moment from 'moment';
+import moment from 'moment';
 
 import { ApiService } from '../api.service';
 import { StorageService, StorageType } from '../storage.service';

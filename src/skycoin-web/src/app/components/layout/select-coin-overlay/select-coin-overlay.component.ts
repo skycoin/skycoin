@@ -1,4 +1,4 @@
-import { Component, HostListener, OnDestroy } from '@angular/core';
+import { Component, HostListener, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
 import { TranslateService } from '@ngx-translate/core';
 
@@ -11,6 +11,7 @@ import { MsgBarService } from '../../../services/msg-bar.service';
     selector: 'app-select-coin-overlay',
     templateUrl: './select-coin-overlay.component.html',
     styleUrls: ['./select-coin-overlay.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class SelectCoinOverlayComponent implements OnDestroy {

@@ -1,5 +1,5 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
-import * as moment from 'moment';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import moment from 'moment';
 import { Subscription, of } from 'rxjs';
 import { delay, mergeMap, first } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
@@ -21,6 +21,7 @@ import { ConfirmationComponent } from '../../../layout/confirmation/confirmation
     selector: 'app-pending-transactions',
     templateUrl: './pending-transactions.component.html',
     styleUrls: ['./pending-transactions.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class PendingTransactionsComponent implements OnInit, OnDestroy {

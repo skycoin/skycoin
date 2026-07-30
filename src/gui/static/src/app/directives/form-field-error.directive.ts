@@ -1,9 +1,5 @@
-import { Directive, ElementRef, Renderer2, Input, ViewContainerRef, NgZone, Inject, Optional, DOCUMENT } from '@angular/core';
-import { MatTooltip, MAT_TOOLTIP_SCROLL_STRATEGY, MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipDefaultOptions } from '@angular/material/tooltip';
-import { Overlay, ScrollDispatcher } from '@angular/cdk/overlay';
-import { Platform } from '@angular/cdk/platform';
-import { AriaDescriber, FocusMonitor } from '@angular/cdk/a11y';
-import { Directionality } from '@angular/cdk/bidi';
+import { Directive, ElementRef, Renderer2, Input } from '@angular/core';
+import { MatTooltip } from '@angular/material/tooltip';
 import { TranslateService } from '@ngx-translate/core';
 
 
@@ -28,36 +24,15 @@ export class FormFieldErrorDirective extends MatTooltip {
     this.updateField();
   }
 
+  // As of Angular Material 22 MatTooltip resolves its own dependencies with
+  // inject() and its constructor takes no arguments, so we only inject what this
+  // directive itself needs and call super() with no positional dependencies.
   constructor(
     private translate: TranslateService,
     private renderer: Renderer2,
     private elementRef: ElementRef,
-    overlay: Overlay,
-    scrollDispatcher: ScrollDispatcher,
-    viewContainerRef: ViewContainerRef,
-    ngZone: NgZone,
-    platform: Platform,
-    ariaDescriber: AriaDescriber,
-    focusMonitor: FocusMonitor,
-    @Inject(MAT_TOOLTIP_SCROLL_STRATEGY) scrollStrategy: any,
-    @Optional() dir: Directionality,
-    @Optional() @Inject(MAT_TOOLTIP_DEFAULT_OPTIONS) defaultOptions: MatTooltipDefaultOptions,
-    @Inject(DOCUMENT) document: HTMLDocument,
   ) {
-    super(
-      overlay,
-      elementRef,
-      scrollDispatcher,
-      viewContainerRef,
-      ngZone,
-      platform,
-      ariaDescriber,
-      focusMonitor,
-      scrollStrategy,
-      dir,
-      defaultOptions,
-      document,
-    );
+    super();
 
     this.tooltipClass = 'error-tooltip';
   }

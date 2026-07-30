@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
 import { UntypedFormBuilder } from '@angular/forms';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
@@ -14,6 +14,7 @@ import { HwWipeDialogComponent } from '../../layout/hardware-wallet/hw-wipe-dial
     selector: 'app-force-skywallet-wipe',
     templateUrl: './force-skywallet-wipe.component.html',
     styleUrls: ['./force-skywallet-wipe.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class ForceSkywalletWipeComponent {

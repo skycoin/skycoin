@@ -1,5 +1,5 @@
 import { mergeMap } from 'rxjs';
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
 import { HwWalletService } from '../../../../services/hw-wallet.service';
@@ -14,6 +14,7 @@ import { HwDialogBaseComponent } from '../hw-dialog-base.component';
     selector: 'app-hw-change-pin-dialog',
     templateUrl: './hw-change-pin-dialog.component.html',
     styleUrls: ['./hw-change-pin-dialog.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class HwChangePinDialogComponent extends HwDialogBaseComponent<HwChangePinDialogComponent> {

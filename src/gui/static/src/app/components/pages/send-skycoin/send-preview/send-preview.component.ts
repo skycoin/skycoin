@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { SubscriptionLike } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
@@ -21,6 +21,7 @@ import { GeneratedTransaction } from '../../../../services/wallet-operations/tra
     selector: 'app-send-preview',
     templateUrl: './send-preview.component.html',
     styleUrls: ['./send-preview.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class SendVerifyComponent implements OnDestroy {

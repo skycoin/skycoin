@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { forkJoin, Subscription } from 'rxjs';
 
 import { BlockchainService } from '../../../../services/blockchain.service';
@@ -8,6 +8,7 @@ import { BaseCoin } from '../../../../coins/basecoin';
 @Component({
     templateUrl: './blockchain.component.html',
     styleUrls: ['./blockchain.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class BlockchainComponent implements OnInit, OnDestroy {

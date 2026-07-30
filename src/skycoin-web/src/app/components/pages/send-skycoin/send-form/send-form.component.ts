@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
 import { Subscription, of } from 'rxjs';
 import { delay, first } from 'rxjs';
@@ -23,6 +23,7 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
     selector: 'app-send-form',
     templateUrl: './send-form.component.html',
     styleUrls: ['./send-form.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class SendFormComponent implements OnInit, OnDestroy {

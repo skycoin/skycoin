@@ -1,4 +1,4 @@
-import { Component, OnDestroy, ViewChild, ChangeDetectorRef } from '@angular/core';
+import { Component, OnDestroy, ViewChild, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { SubscriptionLike, combineLatest } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UntypedFormGroup, UntypedFormBuilder, UntypedFormControl } from '@angular/forms';
@@ -19,6 +19,7 @@ import { WalletBase } from '../../../services/wallet-operations/wallet-objects';
     selector: 'app-reset-password',
     templateUrl: './reset-password.component.html',
     styleUrls: ['./reset-password.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class ResetPasswordComponent implements OnDestroy {

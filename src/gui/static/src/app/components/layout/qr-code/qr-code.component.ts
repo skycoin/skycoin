@@ -1,4 +1,4 @@
-import { Component, Inject, ViewChild, OnDestroy, ElementRef, OnInit } from '@angular/core';
+import { Component, Inject, ViewChild, OnDestroy, ElementRef, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { MatDialogRef } from '@angular/material/dialog';
 import { UntypedFormGroup, UntypedFormBuilder } from '@angular/forms';
@@ -47,6 +47,7 @@ export interface QrDialogConfig {
     selector: 'app-qr-code',
     templateUrl: './qr-code.component.html',
     styleUrls: ['./qr-code.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class QrCodeComponent implements OnInit, OnDestroy {

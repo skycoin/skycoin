@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnDestroy } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 
 /**
  * Shows a link-like text with an arrow at the right. Used for showing more options or a list.
@@ -7,6 +7,7 @@ import { Component, Input, Output, EventEmitter, OnDestroy } from '@angular/core
     selector: 'app-arrow-link',
     templateUrl: 'arrow-link.component.html',
     styleUrls: ['arrow-link.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class ArrowLinkComponent implements OnDestroy {

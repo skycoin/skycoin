@@ -666,7 +666,14 @@ func (pool *ConnectionPool) sendLoop(conn *Connection, timeout time.Duration, ma
 			return nil
 		case <-qc:
 			return nil
-		case m := <-conn.WriteQueue:
+		case m, ok := <-conn.WriteQueue:
+			if !ok {
+				// conn.Close() closed WriteQueue; the connection is shutting
+				// down. Return instead of busy-looping: a closed channel case
+				// is always ready in a select, so without this the loop would
+				// spin at 100% CPU until qc/pool.quit is also closed.
+				return nil
+			}
 			elapser.Register(fmt.Sprintf("conn.WriteQueue address=%s", conn.Addr()))
 			if m == nil {
 				continue

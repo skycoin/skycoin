@@ -114,6 +114,20 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     this.customSeedAccepted = event.checked;
   }
 
+  /**
+   * The wallet type new wallets should default to for the given coin. bip44
+   * (HD, multicoin-capable) whenever it is actually honored — Bitcoin (always,
+   * segwit/bech32) and any server-managed coin (the node derives real bip44
+   * accounts + xpub) — otherwise deterministic, for a pure client-side non-BTC
+   * coin whose in-browser create path only ever produces deterministic wallets.
+   */
+  private defaultTypeForCoin(coin: BaseCoin): string {
+    if (!coin) {
+      return 'deterministic';
+    }
+    return (coin.isBitcoin() || coin.serverWallets) ? 'bip44' : 'deterministic';
+  }
+
   getData(): FormData {
     return {
       label: this.form.value.label,
@@ -140,8 +154,13 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     this.showWalletType = !!defaultCoin;
     this.probeCoinHealth(defaultCoin);
 
-    // Bitcoin defaults to bip44 (segwit); Skycoin defaults to deterministic
-    const defaultWalletType = this.isBitcoinCoin ? 'bip44' : 'deterministic';
+    // Default new wallets to bip44 (HD) wherever bip44 is actually honored:
+    // Bitcoin (always bip44 — segwit/bech32 by default) and any server-managed
+    // coin, whose node performs real bip44 derivation (HD accounts + xpub). Fall
+    // back to deterministic only for a pure client-side non-BTC coin, where the
+    // in-browser create path always produces a deterministic wallet regardless
+    // of the selected type — so a bip44 default there would mislead.
+    const defaultWalletType = this.defaultTypeForCoin(defaultCoin);
 
     this.form = this.formBuilder.group({
         label: new UntypedFormControl('', [ Validators.required ]),
@@ -168,11 +187,9 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
         this.isBitcoinCoin = coin.isBitcoin();
         this.showWalletType = true; // type selector is coin-type-gated in the template, not serverWallets-gated
         this.probeCoinHealth(coin);
+        this.form.get('wallet_type').setValue(this.defaultTypeForCoin(coin));
         if (this.isBitcoinCoin) {
-          this.form.get('wallet_type').setValue('bip44');
           this.form.get('segwit').setValue(true);
-        } else {
-          this.form.get('wallet_type').setValue('deterministic');
         }
       }
     });

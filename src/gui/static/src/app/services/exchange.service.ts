@@ -2,7 +2,7 @@ import { throwError as observableThrowError, Observable, BehaviorSubject, Subscr
 import { map, mergeMap, retryWhen, delay, catchError, tap } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import * as moment from 'moment';
+import moment from 'moment';
 
 import { StorageService, StorageType } from './storage.service';
 import { environment } from '../../environments/environment';

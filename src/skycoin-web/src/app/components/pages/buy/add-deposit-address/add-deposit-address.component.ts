@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { MatDialogRef } from '@angular/material/dialog';
 
@@ -9,6 +9,7 @@ import { WalletService } from '../../../../services/wallet/wallet.service';
     selector: 'app-add-deposit-address',
     templateUrl: './add-deposit-address.component.html',
     styleUrls: ['./add-deposit-address.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class AddDepositAddressComponent implements OnInit {

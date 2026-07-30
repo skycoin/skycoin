@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { UntypedFormBuilder } from '@angular/forms';
 import { SubscriptionLike } from 'rxjs';
@@ -22,6 +22,7 @@ import { WalletBase } from '../../../../../services/wallet-operations/wallet-obj
     selector: 'app-sign-raw-tx',
     templateUrl: '../offline-dialogs-base.component.html',
     styleUrls: ['../offline-dialogs-base.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class SignRawTxComponent extends OfflineDialogsBaseComponent implements OnInit, OnDestroy {

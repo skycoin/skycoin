@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, OnDestroy, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, ViewChild, OnDestroy, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
 import { UntypedFormGroup, UntypedFormControl } from '@angular/forms';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 
@@ -31,6 +31,7 @@ export interface NumberOfAddressesEventData {
     selector: 'app-number-of-addresses',
     templateUrl: './number-of-addresses.html',
     styleUrls: ['./number-of-addresses.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class NumberOfAddressesComponent implements OnInit, OnDestroy {

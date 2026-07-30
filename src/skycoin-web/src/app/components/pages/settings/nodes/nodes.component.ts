@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogConfig } from '@angular/material/dialog';
 
 import { CoinService } from '../../../../services/coin.service';
@@ -11,6 +11,7 @@ import { environment } from '../../../../../environments/environment';
     selector: 'app-nodes',
     templateUrl: './nodes.component.html',
     styleUrls: ['./nodes.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class NodesComponent implements OnInit {

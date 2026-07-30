@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { Subscription } from 'rxjs';
 
 import { CoinService } from '../../../services/coin.service';
@@ -9,6 +9,7 @@ import { NavBarService } from '../../../services/nav-bar.service';
     selector: 'app-send-skycoin',
     templateUrl: './send-skycoin.component.html',
     styleUrls: ['./send-skycoin.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class SendSkycoinComponent implements OnInit, OnDestroy {

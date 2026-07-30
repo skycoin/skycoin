@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogConfig, MatDialog } from '@angular/material/dialog';
 
 import { HwWalletTxRecipientData } from '../../../../services/hw-wallet.service';
@@ -8,6 +8,7 @@ import { MessageIcons } from '../hw-message/hw-message.component';
     selector: 'app-hw-confirm-tx-dialog',
     templateUrl: './hw-confirm-tx-dialog.component.html',
     styleUrls: ['./hw-confirm-tx-dialog.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class HwConfirmTxDialogComponent {

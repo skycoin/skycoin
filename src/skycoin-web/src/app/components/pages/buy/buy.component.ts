@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogConfig } from '@angular/material/dialog';
 
 import { config } from '../../../app.config';
@@ -10,6 +10,7 @@ import { CustomMatDialogService } from '../../../services/custom-mat-dialog.serv
     selector: 'app-buy',
     templateUrl: './buy.component.html',
     styleUrls: ['./buy.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class BuyComponent implements OnInit {

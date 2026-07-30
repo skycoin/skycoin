@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { SubscriptionLike } from 'rxjs';
 
 import { NetworkService, Connection } from '../../../../services/network.service';
@@ -10,6 +10,7 @@ import { NetworkService, Connection } from '../../../../services/network.service
     selector: 'app-network',
     templateUrl: './network.component.html',
     styleUrls: ['./network.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class NetworkComponent implements OnInit, OnDestroy {

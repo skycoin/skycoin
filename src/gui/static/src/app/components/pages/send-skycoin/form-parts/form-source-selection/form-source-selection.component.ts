@@ -1,6 +1,6 @@
 import { throwError as observableThrowError, SubscriptionLike, of } from 'rxjs';
 import { retryWhen, delay, mergeMap, debounceTime } from 'rxjs';
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { BigNumber } from 'bignumber.js';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -89,6 +89,7 @@ export enum SourceSelectionModes {
     selector: 'app-form-source-selection',
     templateUrl: './form-source-selection.component.html',
     styleUrls: ['./form-source-selection.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class FormSourceSelectionComponent implements OnInit, OnDestroy {

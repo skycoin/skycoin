@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 
 import { LanguageData, LanguageService } from '../../../services/language.service';
@@ -10,6 +10,7 @@ import { LanguageData, LanguageService } from '../../../services/language.servic
     selector: 'app-select-language',
     templateUrl: './select-language.component.html',
     styleUrls: ['./select-language.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class SelectLanguageComponent implements OnInit {

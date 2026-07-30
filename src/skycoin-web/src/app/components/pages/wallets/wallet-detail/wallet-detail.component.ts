@@ -1,4 +1,4 @@
-import { Component, Input, OnDestroy } from '@angular/core';
+import { Component, Input, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogConfig } from '@angular/material/dialog';
 import { TranslateService } from '@ngx-translate/core';
 import { of, Subscription, delay, first, mergeMap } from 'rxjs';
@@ -19,6 +19,7 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
     selector: 'app-wallet-detail',
     templateUrl: './wallet-detail.component.html',
     styleUrls: ['./wallet-detail.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class WalletDetailComponent implements OnDestroy {

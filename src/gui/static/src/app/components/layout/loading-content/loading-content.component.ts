@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ChangeDetectionStrategy } from '@angular/core';
 
 /**
  * Shows a loading animation. When the animation is not active, it shows an info msg and an
@@ -9,6 +9,7 @@ import { Component, Input } from '@angular/core';
     selector: 'app-loading-content',
     templateUrl: './loading-content.component.html',
     styleUrls: ['./loading-content.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class LoadingContentComponent {

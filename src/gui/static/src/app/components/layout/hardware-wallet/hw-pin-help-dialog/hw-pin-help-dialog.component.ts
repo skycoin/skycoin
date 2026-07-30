@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 
 /**
@@ -8,6 +8,7 @@ import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dial
     selector: 'app-hw-added-dialog',
     templateUrl: './hw-pin-help-dialog.component.html',
     styleUrls: ['./hw-pin-help-dialog.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class HwPinHelpDialogComponent {

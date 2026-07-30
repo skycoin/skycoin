@@ -1,6 +1,6 @@
 import { SubscriptionLike, forkJoin, throwError } from 'rxjs';
 import { first, mergeMap } from 'rxjs';
-import { Component, EventEmitter, Input, OnDestroy, OnInit, ViewChild, ChangeDetectorRef, Output as AgularOutput } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, ViewChild, ChangeDetectorRef, Output as AgularOutput, ChangeDetectionStrategy } from '@angular/core';
 import { UntypedFormGroup, UntypedFormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { BigNumber } from 'bignumber.js';
@@ -92,6 +92,7 @@ export interface FormData {
     selector: 'app-send-coins-form',
     templateUrl: './send-coins-form.component.html',
     styleUrls: ['./send-coins-form.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class SendCoinsFormComponent implements OnInit, OnDestroy {

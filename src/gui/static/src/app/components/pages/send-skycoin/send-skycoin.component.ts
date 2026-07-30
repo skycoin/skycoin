@@ -1,4 +1,4 @@
-import { Component, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { SubscriptionLike } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 
@@ -15,6 +15,7 @@ import { SendCoinsData } from './send-coins-form/send-coins-form.component';
     selector: 'app-send-skycoin',
     templateUrl: './send-skycoin.component.html',
     styleUrls: ['./send-skycoin.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class SendSkycoinComponent implements OnDestroy {

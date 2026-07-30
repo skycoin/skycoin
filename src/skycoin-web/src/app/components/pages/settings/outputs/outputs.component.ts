@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Params } from '@angular/router';
 import { Subscription, mergeMap } from 'rxjs';
 
@@ -13,6 +13,7 @@ import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.s
     selector: 'app-outputs',
     templateUrl: './outputs.component.html',
     styleUrls: ['./outputs.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class OutputsComponent implements OnInit, OnDestroy {

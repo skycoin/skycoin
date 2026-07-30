@@ -1,5 +1,5 @@
 import { Pipe, PipeTransform } from '@angular/core';
-import * as moment from 'moment';
+import moment from 'moment';
 
 /**
  * Takes an Unix date (UTC seconds since the Epoch) and converts it to a readable date-time

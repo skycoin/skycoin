@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, Inject, ChangeDetectionStrategy } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { Observable, SubscriptionLike } from 'rxjs';
@@ -43,6 +43,7 @@ export interface SeedWordDialogParams {
     selector: 'app-seed-word-dialog',
     templateUrl: './seed-word-dialog.component.html',
     styleUrls: ['./seed-word-dialog.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class SeedWordDialogComponent implements OnInit, OnDestroy {

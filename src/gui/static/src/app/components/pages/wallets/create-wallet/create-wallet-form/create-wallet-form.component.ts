@@ -1,5 +1,5 @@
 import { switchMap, delay, mergeMap } from 'rxjs';
-import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { UntypedFormControl, UntypedFormGroup } from '@angular/forms';
 import { SubscriptionLike, Subject, of } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
@@ -80,6 +80,7 @@ export class WalletFormData {
     selector: 'app-create-wallet-form',
     templateUrl: './create-wallet-form.component.html',
     styleUrls: ['./create-wallet-form.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class CreateWalletFormComponent implements OnInit, OnDestroy {

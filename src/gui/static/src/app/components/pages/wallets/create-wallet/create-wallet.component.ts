@@ -1,4 +1,4 @@
-import { Component, Inject, ViewChild, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, Inject, ViewChild, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { SubscriptionLike } from 'rxjs';
@@ -29,6 +29,7 @@ export class CreateWalletParams {
     selector: 'app-create-wallet',
     templateUrl: './create-wallet.component.html',
     styleUrls: ['./create-wallet.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class CreateWalletComponent implements OnDestroy {

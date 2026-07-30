@@ -1,6 +1,6 @@
 import { throwError as observableThrowError, SubscriptionLike, concat, of } from 'rxjs';
-import { Component, EventEmitter, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
-import * as moment from 'moment';
+import { Component, EventEmitter, OnDestroy, OnInit, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
+import moment from 'moment';
 import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { TranslateService } from '@ngx-translate/core';
@@ -20,6 +20,7 @@ import { WalletsAndAddressesService } from '../../../../services/wallet-operatio
     selector: 'app-exchange-create',
     templateUrl: './exchange-create.component.html',
     styleUrls: ['./exchange-create.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class ExchangeCreateComponent implements OnInit, OnDestroy {

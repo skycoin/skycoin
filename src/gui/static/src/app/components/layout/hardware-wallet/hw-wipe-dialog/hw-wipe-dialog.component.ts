@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
 import { HwWalletService } from '../../../../services/hw-wallet.service';
@@ -14,6 +14,7 @@ import { WalletsAndAddressesService } from '../../../../services/wallet-operatio
     selector: 'app-hw-wipe-dialog',
     templateUrl: './hw-wipe-dialog.component.html',
     styleUrls: ['./hw-wipe-dialog.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class HwWipeDialogComponent extends HwDialogBaseComponent<HwWipeDialogComponent> {

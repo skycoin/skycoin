@@ -10,5 +10,8 @@
     "test.ts",
     "**/*.spec.ts",
     "./app/utils/test-mocks.ts"
-  ]
+  ],
+  "angularCompilerOptions": {
+    "strictTemplates": false
+  }
 }

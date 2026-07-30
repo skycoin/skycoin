@@ -1,4 +1,4 @@
-import { Component, Input, OnDestroy, OnInit, NgZone } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit, NgZone, ChangeDetectionStrategy } from '@angular/core';
 import { Subscription, interval, filter } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
 
@@ -14,6 +14,7 @@ import { getTimeSinceLastBalanceUpdate } from '../../../utils';
     selector: 'app-header',
     templateUrl: './header.component.html',
     styleUrls: ['./header.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class HeaderComponent implements OnInit, OnDestroy {

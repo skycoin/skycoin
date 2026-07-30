@@ -1,4 +1,4 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { SubscriptionLike, of } from 'rxjs';
 import { mergeMap, delay } from 'rxjs';
@@ -16,6 +16,7 @@ import { processServiceError } from '../../../../utils/errors';
     selector: 'app-hw-update-firmware-dialog',
     templateUrl: './hw-update-firmware-dialog.component.html',
     styleUrls: ['./hw-update-firmware-dialog.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class HwUpdateFirmwareDialogComponent extends HwDialogBaseComponent<HwUpdateFirmwareDialogComponent> implements OnDestroy {

@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 
 import { AppConfig } from '../../../../../app.config';
@@ -10,6 +10,7 @@ import { AppConfig } from '../../../../../app.config';
     selector: 'app-seed-modal',
     templateUrl: './seed-modal.component.html',
     styleUrls: ['./seed-modal.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class SeedModalComponent {

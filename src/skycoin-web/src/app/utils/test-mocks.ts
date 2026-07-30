@@ -1,4 +1,4 @@
-import { Pipe, PipeTransform, Component } from '@angular/core';
+import { Pipe, PipeTransform, Component, ChangeDetectionStrategy } from '@angular/core';
 import { BehaviorSubject, Observable, Subject, ReplaySubject, of } from 'rxjs';
 import { filter, first } from 'rxjs';
 
@@ -11,6 +11,7 @@ import { BalanceEvent, BalanceStates } from '../services/wallet/balance.service'
     template: `
     <span clipboard="test data"></span>
     <input type="text" appNumberField>`,
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class TestComponent {

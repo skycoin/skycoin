@@ -1,4 +1,4 @@
-import { Component, OnDestroy, Inject } from '@angular/core';
+import { Component, OnDestroy, Inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MatDialogConfig, MatDialog, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { SubscriptionLike, Observable, of } from 'rxjs';
 import { map, first, tap, mergeMap } from 'rxjs';
@@ -59,6 +59,7 @@ export interface ChildHwDialogParams {
     selector: 'app-hw-options-dialog',
     templateUrl: './hw-options-dialog.component.html',
     styleUrls: ['./hw-options-dialog.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class HwOptionsDialogComponent extends HwDialogBaseComponent<HwOptionsDialogComponent> implements OnDestroy {

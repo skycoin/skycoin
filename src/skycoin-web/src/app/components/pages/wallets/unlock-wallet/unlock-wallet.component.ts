@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Inject, OnInit, Output, ViewChild, OnDestroy } from '@angular/core';
+import { Component, EventEmitter, Inject, OnInit, Output, ViewChild, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup, Validators, FormControl } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Subscription, of } from 'rxjs';
@@ -17,6 +17,7 @@ export class ConfirmSeedParams {
     selector: 'app-unlock-wallet',
     templateUrl: './unlock-wallet.component.html',
     styleUrls: ['./unlock-wallet.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class UnlockWalletComponent implements OnInit, OnDestroy {

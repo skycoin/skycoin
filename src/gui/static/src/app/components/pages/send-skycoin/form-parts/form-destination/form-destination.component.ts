@@ -1,5 +1,5 @@
 import { SubscriptionLike } from 'rxjs';
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ChangeDetectionStrategy } from '@angular/core';
 import { UntypedFormArray, UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { BigNumber } from 'bignumber.js';
@@ -48,6 +48,7 @@ export interface Destination {
     selector: 'app-form-destination',
     templateUrl: './form-destination.component.html',
     styleUrls: ['./form-destination.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class FormDestinationComponent implements OnInit, OnDestroy {

@@ -1,7 +1,7 @@
 /*
   IMPORTANT: Unused for a long time, it may need changes to work properly.
 */
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { PurchaseService } from '../../../../services/purchase.service';
 import { MatDialogRef } from '@angular/material/dialog';
@@ -13,6 +13,7 @@ import { AddressBase } from '../../../../services/wallet-operations/wallet-objec
     selector: 'app-add-deposit-address',
     templateUrl: './add-deposit-address.component.html',
     styleUrls: ['./add-deposit-address.component.css'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class AddDepositAddressComponent implements OnInit, OnDestroy {

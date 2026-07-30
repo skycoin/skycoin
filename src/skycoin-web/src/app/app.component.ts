@@ -1,4 +1,4 @@
-import { Component, OnInit, Renderer2, ViewChild } from '@angular/core';
+import { Component, OnInit, Renderer2, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { LanguageService } from './services/language.service';
 import { Router, NavigationEnd, Event } from '@angular/router';
 import { filter } from 'rxjs';
@@ -21,6 +21,7 @@ import { HwConfirmTxDialogComponent } from './components/layout/hardware-wallet/
     selector: 'app-root',
     templateUrl: './app.component.html',
     styleUrls: ['./app.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class AppComponent implements OnInit {

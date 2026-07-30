@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, EventEmitter, Inject, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Subscription, of } from 'rxjs';
 import { delay } from 'rxjs';
@@ -11,6 +11,7 @@ import { config } from '../../../../app.config';
     selector: 'app-scan-addresses',
     templateUrl: './scan-addresses.component.html',
     styleUrls: ['./scan-addresses.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class ScanAddressesComponent implements OnInit, OnDestroy {

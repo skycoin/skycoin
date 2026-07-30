@@ -1,4 +1,4 @@
-import { Component, Input, OnDestroy } from '@angular/core';
+import { Component, Input, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { PriceService } from '../../../../../services/price.service';
 import { SubscriptionLike } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
@@ -15,6 +15,7 @@ import { GeneratedTransaction, OldTransaction } from '../../../../../services/wa
     selector: 'app-transaction-info',
     templateUrl: './transaction-info.component.html',
     styleUrls: ['./transaction-info.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class TransactionInfoComponent implements OnDestroy {

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output, ViewChild, ChangeDetectorRef, OnDestroy, Input } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, ViewChild, ChangeDetectorRef, OnDestroy, Input, ChangeDetectionStrategy } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormControl, UntypedFormGroup } from '@angular/forms';
 
 import { ButtonComponent } from '../../../layout/button/button.component';
@@ -10,6 +10,7 @@ import { ButtonComponent } from '../../../layout/button/button.component';
     selector: 'app-onboarding-encrypt-wallet',
     templateUrl: './onboarding-encrypt-wallet.component.html',
     styleUrls: ['./onboarding-encrypt-wallet.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class OnboardingEncryptWalletComponent implements OnInit, OnDestroy {

@@ -2,7 +2,7 @@ import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material';
 import { UntypedFormBuilder } from '@angular/forms';
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi, withXhr } from '@angular/common/http';
 import { TranslateService } from '@ngx-translate/core';
 
 import { ChangeNodeURLComponent } from './change-node-url.component';
@@ -29,7 +29,7 @@ describe('ChangeNodeURLComponent', () => {
             useValue: jasmine.createSpyObj('TranslateService', ['instant'])
         },
         { provide: MsgBarService, useClass: MockMsgBarService },
-        provideHttpClient(withInterceptorsFromDi()),
+        provideHttpClient(withXhr(), withInterceptorsFromDi()),
     ]
 })
     .compileComponents();

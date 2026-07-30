@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 
 import { ExchangeService, StoredExchangeOrder } from '../../../../services/exchange.service';
@@ -13,6 +13,7 @@ import { AppConfig } from '../../../../app.config';
     selector: 'app-exchange-history',
     templateUrl: './exchange-history.component.html',
     styleUrls: ['./exchange-history.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class ExchangeHistoryComponent implements OnInit {

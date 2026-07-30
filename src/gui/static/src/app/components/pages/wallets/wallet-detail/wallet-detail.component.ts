@@ -1,4 +1,4 @@
-import { Component, Input, OnDestroy } from '@angular/core';
+import { Component, Input, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { TranslateService } from '@ngx-translate/core';
 import { Observable, SubscriptionLike } from 'rxjs';
@@ -29,6 +29,7 @@ import { WalletsComponent } from '../wallets.component';
     selector: 'app-wallet-detail',
     templateUrl: './wallet-detail.component.html',
     styleUrls: ['./wallet-detail.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class WalletDetailComponent implements OnDestroy {

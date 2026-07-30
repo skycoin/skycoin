@@ -1,4 +1,4 @@
-import { Component, Input, OnDestroy, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnDestroy, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { SubscriptionLike, of } from 'rxjs';
 import { delay, mergeMap } from 'rxjs';
@@ -19,6 +19,7 @@ import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent }
     selector: 'app-exchange-status',
     templateUrl: './exchange-status.component.html',
     styleUrls: ['./exchange-status.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class ExchangeStatusComponent implements OnDestroy {

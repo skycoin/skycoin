@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, ChangeDetectionStrategy } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialog, MatDialogConfig } from '@angular/material/dialog';
 
 import { OldTransaction } from '../../../../services/wallet-operations/transaction-objects';
@@ -10,6 +10,7 @@ import { OldTransaction } from '../../../../services/wallet-operations/transacti
     selector: 'app-transaction-detail',
     templateUrl: './transaction-detail.component.html',
     styleUrls: ['./transaction-detail.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class TransactionDetailComponent {

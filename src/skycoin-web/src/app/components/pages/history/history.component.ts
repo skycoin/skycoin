@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogConfig } from '@angular/material/dialog';
 import { Subscription, delay, first } from 'rxjs';
 import { UntypedFormGroup, UntypedFormBuilder } from '@angular/forms';
@@ -33,6 +33,7 @@ export class Address {
     selector: 'app-history',
     templateUrl: './history.component.html',
     styleUrls: ['./history.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class HistoryComponent implements OnInit, OnDestroy {

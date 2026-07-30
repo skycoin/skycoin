@@ -1,4 +1,4 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 
 import { ButtonComponent } from '../../../layout/button/button.component';
@@ -32,6 +32,7 @@ export interface OfflineDialogsDropdownElement {
  */
 @Component({
     template: '',
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class OfflineDialogsBaseComponent {

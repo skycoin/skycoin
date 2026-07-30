@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { MockBackend } from '@angular/http/testing';
 import { XHRBackend } from '@angular/http';
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi, withXhr } from '@angular/common/http';
 
 import { PriceService } from './price.service';
 import { CoinService } from './coin.service';
@@ -17,7 +17,7 @@ describe('PriceService', () => {
         PriceService,
         { provide: XHRBackend, useClass: MockBackend },
         { provide: CoinService, useClass: MockCoinService },
-        provideHttpClient(withInterceptorsFromDi())
+        provideHttpClient(withXhr(), withInterceptorsFromDi())
     ]
 });
 

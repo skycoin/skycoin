@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { SubscriptionLike, of } from 'rxjs';
 import { delay, mergeMap } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
@@ -16,6 +16,7 @@ import { ConfirmationComponent, DefaultConfirmationButtons } from '../../../layo
     selector: 'app-pending-transactions',
     templateUrl: './pending-transactions.component.html',
     styleUrls: ['./pending-transactions.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class PendingTransactionsComponent implements OnInit, OnDestroy {

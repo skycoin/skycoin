@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Input } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, ChangeDetectionStrategy } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
 import { generateMnemonic } from 'bip39';
 import { Subscription } from 'rxjs';
@@ -25,6 +25,7 @@ export class FormData {
     selector: 'app-create-wallet-form',
     templateUrl: './create-wallet-form.component.html',
     styleUrls: ['./create-wallet-form.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     standalone: false
 })
 export class CreateWalletFormComponent implements OnInit, OnDestroy {

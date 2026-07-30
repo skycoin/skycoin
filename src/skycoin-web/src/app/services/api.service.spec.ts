@@ -2,7 +2,7 @@ import { TestBed, inject } from '@angular/core/testing';
 import { MockBackend } from '@angular/http/testing';
 import { XHRBackend } from '@angular/http';
 import { TranslateService } from '@ngx-translate/core';
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi, withXhr } from '@angular/common/http';
 
 import { ApiService } from './api.service';
 import { MockTranslateService, MockCoinService } from '../utils/test-mocks';
@@ -20,7 +20,7 @@ describe('ApiService', () => {
         { provide: XHRBackend, useClass: MockBackend },
         { provide: TranslateService, useClass: MockTranslateService },
         { provide: CoinService, useClass: MockCoinService },
-        provideHttpClient(withInterceptorsFromDi())
+        provideHttpClient(withXhr(), withInterceptorsFromDi())
     ]
 });
   });

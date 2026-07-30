@@ -845,7 +845,10 @@ func TestProcessConnectionBuffers(t *testing.T) {
 	}
 
 	// Writing to the now-closed connection must not trigger a further disconnect.
-	_, _ = conn.Write([]byte{4, 0, 0, 0, 'D', 'U', 'M', 'Y'})
+	// The write itself may fail if the peer has already closed; that is expected here.
+	if _, werr := conn.Write([]byte{4, 0, 0, 0, 'D', 'U', 'M', 'Y'}); werr != nil {
+		t.Logf("write to closed connection returned: %v", werr)
+	}
 	wait()
 	assertNoDisconnect(t, disconnects)
 

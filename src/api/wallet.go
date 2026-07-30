@@ -18,6 +18,11 @@ import (
 	"github.com/skycoin/skycoin/src/wallet/bip44wallet"
 )
 
+// maxAddressGenerateNum bounds how many addresses a single /wallet/newAddress or
+// /wallet/scan request may generate, so a large num value cannot tie the node up
+// in EC key derivation.
+const maxAddressGenerateNum = 65536
+
 // UnconfirmedTxnsResponse contains unconfirmed transaction data
 type UnconfirmedTxnsResponse struct {
 	Transactions []readable.UnconfirmedTransactions `json:"transactions"`
@@ -421,6 +426,10 @@ func walletNewAddressesHandler(gateway Gatewayer) http.HandlerFunc {
 				wh.Error400(w, "invalid num value")
 				return
 			}
+			if n > maxAddressGenerateNum {
+				wh.Error400(w, fmt.Sprintf("num must be <= %d", maxAddressGenerateNum))
+				return
+			}
 			opts = append(opts, wallet.OptionGenerateN(n))
 		}
 
@@ -519,6 +528,10 @@ func walletScanAddressesHandler(gateway Gatewayer) http.HandlerFunc {
 			}
 			if n <= 0 {
 				wh.Error400(w, "invalid num value, must be > 0")
+				return
+			}
+			if n > maxAddressGenerateNum {
+				wh.Error400(w, fmt.Sprintf("num must be <= %d", maxAddressGenerateNum))
 				return
 			}
 		}

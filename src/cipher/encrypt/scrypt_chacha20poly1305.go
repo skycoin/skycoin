@@ -144,6 +144,12 @@ func (s ScryptChacha20poly1305) Decrypt(data, password []byte) ([]byte, error) {
 	}
 	encData = encData[:n]
 
+	// The metadata length prefix must be present; without this check a short
+	// (e.g. empty) input slices out of range and panics.
+	if len(encData) < scryptChacha20MetaLengthSize {
+		return nil, errors.New("invalid encrypted data length")
+	}
+
 	length := binary.LittleEndian.Uint16(encData[:scryptChacha20MetaLengthSize])
 	if int(scryptChacha20MetaLengthSize+length) > len(encData) {
 		return nil, errors.New("invalid metadata length")
@@ -151,6 +157,14 @@ func (s ScryptChacha20poly1305) Decrypt(data, password []byte) ([]byte, error) {
 
 	var m meta
 	if err := json.Unmarshal(encData[scryptChacha20MetaLengthSize:scryptChacha20MetaLengthSize+length], &m); err != nil {
+		return nil, err
+	}
+
+	// The scrypt parameters come from the (as yet unauthenticated) metadata, so
+	// they must be bounded before being handed to scrypt.Key, which allocates
+	// roughly 128*N*r bytes. Otherwise a crafted blob can request tens of GB and
+	// OOM the process on a decrypt attempt.
+	if err := validateScryptParams(m.N, m.R, m.P, m.KeyLen); err != nil {
 		return nil, err
 	}
 
@@ -167,5 +181,40 @@ func (s ScryptChacha20poly1305) Decrypt(data, password []byte) ([]byte, error) {
 		return nil, err
 	}
 
+	// chacha20poly1305.Open panics on a wrong-length nonce; the nonce is
+	// attacker-controlled metadata, so validate it first.
+	if len(m.Nonce) != chacha20poly1305.NonceSize {
+		return nil, errors.New("invalid nonce length")
+	}
+
 	return aead.Open(nil, m.Nonce, encData[scryptChacha20MetaLengthSize+length:], ad)
+}
+
+// maxScryptMemory bounds the memory scrypt.Key may allocate when deriving a key
+// from untrusted metadata. The default parameters (N=1<<20, r=8) use about
+// 1 GiB, so this 2 GiB limit leaves headroom for them while rejecting the tens
+// of GiB an attacker could otherwise request via a crafted encrypted blob.
+const maxScryptMemory = 2 << 30
+
+// validateScryptParams rejects scrypt parameters that are non-positive or that
+// would drive scrypt.Key to allocate more than maxScryptMemory. scrypt.Key
+// itself only rejects non-power-of-2 and astronomically large N, so realistic
+// OOM-inducing values (e.g. N=1<<24, r=8 ⇒ ~16 GiB) pass it unchecked.
+func validateScryptParams(N, r, p, keyLen int) error {
+	if N <= 1 || r <= 0 || p <= 0 || keyLen <= 0 {
+		return errors.New("invalid scrypt parameters")
+	}
+	const maxUnit = maxScryptMemory / 128 // per-factor bound that also prevents product overflow
+	if uint64(N) > maxUnit || uint64(r) > maxUnit || uint64(p) > maxUnit {
+		return errors.New("scrypt parameters exceed memory limit")
+	}
+	if keyLen > 1<<20 {
+		return errors.New("scrypt keyLen too large")
+	}
+	// scrypt allocates ~128*N*r bytes (the V array) and ~128*r*p bytes (B).
+	if uint64(128)*uint64(N)*uint64(r) > maxScryptMemory ||
+		uint64(128)*uint64(r)*uint64(p) > maxScryptMemory {
+		return errors.New("scrypt parameters exceed memory limit")
+	}
+	return nil
 }

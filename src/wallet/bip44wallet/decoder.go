@@ -57,6 +57,12 @@ func newReadableBip44WalletNew(w *Wallet) (*readableBip44WalletNew, error) {
 
 // toWallet converts the readable bip44 wallet to a bip44 wallet
 func (rw readableBip44WalletNew) toWallet() (*Wallet, error) {
+	// Validate the metadata before use so a malformed wallet file returns an
+	// error here instead of panicking later in Meta.IsEncrypted()/Bip44Coin().
+	if err := rw.Meta.Validate(); err != nil {
+		return nil, err
+	}
+
 	// resolve the coin adapter base on coin type
 	d := wallet.ResolveAddressSecKeyDecoder(rw.Coin())
 

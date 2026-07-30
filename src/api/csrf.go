@@ -98,7 +98,9 @@ func verifyCSRFToken(headerToken string) error {
 
 	sig := base64.RawURLEncoding.EncodeToString(h.Sum(nil))
 
-	if sig != tokenParts[1] {
+	// Constant-time comparison to avoid a timing side-channel on the signature,
+	// consistent with the basic-auth check in middleware.go.
+	if !hmac.Equal([]byte(sig), []byte(tokenParts[1])) {
 		return ErrCSRFInvalidSignature
 	}
 

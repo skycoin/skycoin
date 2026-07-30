@@ -316,6 +316,15 @@ func (m Meta) Validate() error {
 			return errors.New("secrets should not be in unencrypted wallets")
 		}
 	}
+
+	// Validate the bip44 coin type here so that a malformed value returns an
+	// error instead of later panicking in Meta.Bip44Coin() (which is called on
+	// essentially every wallet operation).
+	if c, ok := m[MetaBip44Coin]; ok {
+		if _, err := strconv.ParseUint(c, 10, 32); err != nil {
+			return errors.New("invalid bip44Coin value")
+		}
+	}
 	return nil
 }
 

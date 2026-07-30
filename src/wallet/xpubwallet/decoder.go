@@ -36,6 +36,12 @@ type readableWallet struct {
 }
 
 func (w readableWallet) toWallet() (*Wallet, error) {
+	// Validate the metadata before use so a malformed wallet file returns an
+	// error here instead of panicking later in Meta.IsEncrypted().
+	if err := w.Meta.Validate(); err != nil {
+		return nil, err
+	}
+
 	ad := wallet.ResolveAddressDecoder(w.Coin())
 	entries, err := w.Entries.toXPubEntries(ad)
 	if err != nil {

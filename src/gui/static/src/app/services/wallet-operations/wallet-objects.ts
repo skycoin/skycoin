@@ -68,9 +68,9 @@ export class Bip44Account {
   index = 0;
   externalAddresses: AddressBase[] = [];
   changeAddresses: AddressBase[] = [];
-  accountXpubKey: string = null;  // m/44'/coin'/account' — derives both chains
-  externalXpubKey: string = null; // m/44'/coin'/account'/0 — external chain only
-  changeXpubKey: string = null;   // m/44'/coin'/account'/1 — change chain only
+  accountXpubKey: string | null = null;  // m/44'/coin'/account' — derives both chains
+  externalXpubKey: string | null = null; // m/44'/coin'/account'/0 — external chain only
+  changeXpubKey: string | null = null;   // m/44'/coin'/account'/1 — change chain only
   showXpub = false;
   showChangeAddresses = false;
 }
@@ -93,11 +93,11 @@ export class AddressBase {
   /**
    * BIP44 child index (derivation index within the chain). Only set for BIP44 wallets.
    */
-  childNumber?: number = null;
+  childNumber?: number | null = null;
   /**
    * BIP44 chain indicator: 0 = external, 1 = change. Only set for BIP44 wallets.
    */
-  change?: number = null;
+  change?: number | null = null;
 }
 
 /**

@@ -15,7 +15,7 @@ import { OperationError, HWOperationResults } from '../utils/operation-error';
 @Injectable()
 export class MsgBarService {
 
-  private timeSubscription: SubscriptionLike;
+  private timeSubscription!: SubscriptionLike;
 
   /**
    * Sets the component which will be used as the app msg bar.
@@ -23,7 +23,7 @@ export class MsgBarService {
   set msgBarComponent(value: MsgBarComponent) {
     this.msgBarComponentInternal = value;
   }
-  private msgBarComponentInternal: MsgBarComponent;
+  private msgBarComponentInternal!: MsgBarComponent;
 
   /**
    * Hides the msg bar.

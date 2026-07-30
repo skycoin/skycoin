@@ -15,7 +15,7 @@ import { QrCodeComponent, QrDialogConfig } from '../qr-code/qr-code.component';
 })
 export class QrCodeButtonComponent {
   // Address the QR code modal window will show.
-  @Input() address: string;
+  @Input() address!: string;
   // If true, the QR code modal window will not show the coin request form and the addreess
   // will not have the BIP21 prefix.
   @Input() showAddressOnly = false;
@@ -24,7 +24,7 @@ export class QrCodeButtonComponent {
     private dialog: MatDialog,
   ) { }
 
-  showQrCode(event) {
+  showQrCode(event: any) {
     event.stopPropagation();
 
     const config: QrDialogConfig = {

@@ -39,7 +39,7 @@ export class HwWipeDialogComponent extends HwDialogBaseComponent<HwWipeDialogCom
   }
 
   // Changes the option which indicates if the wallet must be removed from the wallet list.
-  setDeleteFromList(event) {
+  setDeleteFromList(event: any) {
     this.deleteFromList = event.checked;
   }
 
@@ -59,7 +59,7 @@ export class HwWipeDialogComponent extends HwDialogBaseComponent<HwWipeDialogCom
 
         // Remove the wallet from the list, if requested.
         if (this.deleteFromList) {
-          this.walletsAndAddressesService.deleteHardwareWallet(this.data.wallet.id);
+          this.walletsAndAddressesService.deleteHardwareWallet(this.data.wallet!.id);
         }
       },
       err => this.processHwOperationError(err),

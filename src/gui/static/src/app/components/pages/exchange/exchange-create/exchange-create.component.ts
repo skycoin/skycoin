@@ -31,14 +31,14 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   // Coin the user will receive.
   readonly toCoin = 'SKY';
 
-  @ViewChild('exchangeButton') exchangeButton: ButtonComponent;
+  @ViewChild('exchangeButton') exchangeButton!: ButtonComponent;
   // Event emited when the order has been created.
   @Output() submitted = new EventEmitter<StoredExchangeOrder>();
 
-  form: UntypedFormGroup;
-  tradingPairs: TradingPair[];
+  form!: UntypedFormGroup;
+  tradingPairs!: TradingPair[];
   // Currently selected trading pair
-  activeTradingPair: TradingPair;
+  activeTradingPair: TradingPair | undefined;
   problemGettingPairs = false;
   // If true, the form is shown deactivated.
   busy = false;
@@ -54,8 +54,8 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   private agreement = false;
 
   private subscriptionsGroup: SubscriptionLike[] = [];
-  private exchangeSubscription: SubscriptionLike;
-  private priceUpdateSubscription: SubscriptionLike;
+  private exchangeSubscription!: SubscriptionLike;
+  private priceUpdateSubscription!: SubscriptionLike;
 
   // Approximately how many coins will be received for the amount of coins the user will send,
   // as per the value entered on the form and the current price.
@@ -64,17 +64,17 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
       return '0';
     }
 
-    const fromAmount = this.form.get('fromAmount').value;
+    const fromAmount = this.form.get('fromAmount')!.value;
     if (isNaN(fromAmount)) {
       return '0';
     } else {
-      return (this.form.get('fromAmount').value * this.activeTradingPair.price).toFixed(this.appService.currentMaxDecimals);
+      return (this.form.get('fromAmount')!.value * this.activeTradingPair.price).toFixed(this.appService.currentMaxDecimals);
     }
   }
 
   // How many coins the user will send, converted to a valid number.
   get sendAmount(): number {
-    const val = this.form.get('fromAmount').value;
+    const val = this.form.get('fromAmount')!.value;
 
     return isNaN(parseFloat(val)) ? 0 : val;
   }
@@ -103,19 +103,19 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   }
 
   // Called when the user presses the checkbox for acepting the agreement.
-  setAgreement(event) {
+  setAgreement(event: any) {
     this.agreement = event.checked;
     this.form.updateValueAndValidity();
   }
 
   // Opens the modal window for selecting one of the addresses the user has.
-  selectAddress(event) {
+  selectAddress(event: any) {
     event.stopPropagation();
     event.preventDefault();
 
     SelectAddressComponent.openDialog(this.dialog).afterClosed().subscribe(address => {
       if (address) {
-        this.form.get('toAddress').setValue(address);
+        this.form.get('toAddress')!.setValue(address);
       }
     });
   }
@@ -133,9 +133,9 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
     this.exchangeButton.setLoading();
     this.exchangeButton.setDisabled();
 
-    const amount = parseFloat(this.form.get('fromAmount').value);
+    const amount = parseFloat(this.form.get('fromAmount')!.value);
 
-    const toAddress = (this.form.get('toAddress').value as string).trim();
+    const toAddress = (this.form.get('toAddress')!.value as string).trim();
 
     // Check if the address is valid.
     this.removeExchangeSubscription();
@@ -143,21 +143,21 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
       if (addressIsValid) {
         // Create the order.
         this.exchangeSubscription = this.exchangeService.exchange(
-          this.activeTradingPair.pair,
+          this.activeTradingPair!.pair,
           amount,
           toAddress,
-          this.activeTradingPair.price,
+          this.activeTradingPair!.price,
         ).subscribe((order: ExchangeOrder) => {
           this.busy = false;
           // Emit the event.
           this.submitted.emit({
             id: order.id,
             pair: order.pair,
-            fromAmount: order.fromAmount,
+            fromAmount: order.fromAmount!,
             toAmount: order.toAmount,
             address: order.toAddress,
             timestamp: moment().unix(),
-            price: this.activeTradingPair.price,
+            price: this.activeTradingPair!.price,
           });
         }, err => {
           this.busy = false;
@@ -192,7 +192,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
 
     this.form.setValidators(this.validateForm.bind(this));
 
-    this.subscriptionsGroup.push(this.form.get('fromCoin').valueChanges.subscribe(() => {
+    this.subscriptionsGroup.push(this.form.get('fromCoin')!.valueChanges.subscribe(() => {
       this.updateActiveTradingPair();
     }));
   }
@@ -242,12 +242,12 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
   // Updates the var with the currently selected trading pair.
   private updateActiveTradingPair() {
     this.activeTradingPair = this.tradingPairs.find(p => {
-      return p.from === this.form.get('fromCoin').value;
+      return p.from === this.form.get('fromCoin')!.value;
     });
 
     if (!this.activeTradingPair && this.tradingPairs.length > 0) {
       this.activeTradingPair = this.tradingPairs[0];
-      this.form.get('fromCoin').setValue(this.activeTradingPair.from);
+      this.form.get('fromCoin')!.setValue(this.activeTradingPair.from);
     }
   }
 
@@ -267,12 +267,12 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
 
     let valid = true;
 
-    const fromAmount = this.form.get('fromAmount').value;
+    const fromAmount = this.form.get('fromAmount')!.value;
 
     // There must be a from amount.
     if (!fromAmount || isNaN(fromAmount)) {
       valid = false;
-      if (this.form.get('fromAmount').touched) {
+      if (this.form.get('fromAmount')!.touched) {
         this.amountErrorMsg = 'exchange.invalid-value-error-info';
       }
     } else {
@@ -281,7 +281,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
       // If there is a from amount, it must not have more than 6 decimals.
       if (parts.length > 1 && parts[1].length > 6) {
         valid = false;
-        if (this.form.get('fromAmount').touched) {
+        if (this.form.get('fromAmount')!.touched) {
           this.amountErrorMsg = 'exchange.invalid-value-error-info';
         }
       }
@@ -292,7 +292,7 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
       if (fromAmount < this.activeTradingPair.min) {
         this.amountTooLow = true;
         valid = false;
-        if (this.form.get('fromAmount').touched) {
+        if (this.form.get('fromAmount')!.touched) {
           this.amountErrorMsg = 'exchange.invalid-value-error-info';
         }
       }
@@ -300,25 +300,25 @@ export class ExchangeCreateComponent implements OnInit, OnDestroy {
       if (fromAmount > this.activeTradingPair.max) {
         this.amountTooHight = true;
         valid = false;
-        if (this.form.get('fromAmount').touched) {
+        if (this.form.get('fromAmount')!.touched) {
           this.amountErrorMsg = 'exchange.invalid-value-error-info';
         }
       }
     }
 
     // There must be a selected coin for the from amount.
-    if (!this.form.get('fromCoin').value) {
+    if (!this.form.get('fromCoin')!.value) {
       valid = false;
-      if (this.form.get('fromCoin').touched) {
+      if (this.form.get('fromCoin')!.touched) {
         this.coinErrorMsg = 'exchange.from-coin-error-info';
       }
     }
 
     // There must be a valid destination address.
-    const address = this.form.get('toAddress').value as string;
+    const address = this.form.get('toAddress')!.value as string;
     if (!address || address.length < 20) {
       valid = false;
-      if (this.form.get('toAddress').touched) {
+      if (this.form.get('toAddress')!.touched) {
         this.addressErrorMsg = 'exchange.address-error-info';
       }
     }

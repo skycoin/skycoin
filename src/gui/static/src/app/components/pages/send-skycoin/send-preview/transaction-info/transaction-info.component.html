@@ -12,18 +12,18 @@
       <div class="col-md-9 -tx-meta">
         @if (isPreview) {
           <div class="-data">
-            <span>{{ 'tx.from-small-label' | translate }}</span> <span>{{ transaction.from }}</span>
+            <span>{{ 'tx.from-small-label' | translate }}</span> <span>{{ $any(transaction).from }}</span>
           </div>
           <div class="-data">
-            <span>{{ 'tx.to-small-label' | translate }}</span> <span>{{ transaction.to }}</span>
+            <span>{{ 'tx.to-small-label' | translate }}</span> <span>{{ $any(transaction).to }}</span>
           </div>
         }
         @if (!isPreview) {
           <div class="-data">
-            <span>{{ 'tx.date-small-label' | translate }}</span> <span>{{ transaction.timestamp | dateTime }}</span>
+            <span>{{ 'tx.date-small-label' | translate }}</span> <span>{{ $any(transaction).timestamp | dateTime }}</span>
           </div>
           <div class="-data">
-            <span>{{ 'tx.status-small-label' | translate }}</span> <span>{{ (transaction.confirmed ? 'tx.confirmed-transaction' : 'tx.pending-transaction') | translate }}</span>
+            <span>{{ 'tx.status-small-label' | translate }}</span> <span>{{ ($any(transaction).confirmed ? 'tx.confirmed-transaction' : 'tx.pending-transaction') | translate }}</span>
           </div>
         }
         <div class="-data">
@@ -36,7 +36,7 @@
         </div>
         @if (!isPreview) {
           <div class="-data">
-            <span>{{ 'tx.id-small-label' | translate }}</span> <span>{{ transaction.id }}</span>
+            <span>{{ 'tx.id-small-label' | translate }}</span> <span>{{ $any(transaction).id }}</span>
           </div>
         }
         @if (transaction.note || !isPreview) {

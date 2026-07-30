@@ -13,7 +13,7 @@ export class FormatNumberDirective {
   /**
    * Last moment in which the backspace key was pressed.
    */
-  private lastBackspaceDate = 0;
+  private lastBackspaceDate: number | null = 0;
 
   constructor(
     private el: ElementRef,
@@ -30,7 +30,7 @@ export class FormatNumberDirective {
 
       // Return the caret as many positions as commas and invalid characters are found before it.
       let charactersRemovedBeforePos = 0;
-      for (let i = 0; i < cursorPos; i++) {
+      for (let i = 0; i < cursorPos!; i++) {
         if (
           value.charAt(i) !== '0' &&
           value.charAt(i) !== '1' &&
@@ -47,7 +47,7 @@ export class FormatNumberDirective {
           charactersRemovedBeforePos += 1;
         }
       }
-      cursorPos -= charactersRemovedBeforePos;
+      cursorPos! -= charactersRemovedBeforePos;
 
       // Remove all invalid characters and commas from the text.
       value = value.replace(/[^0-9.]/gi, '');
@@ -62,23 +62,23 @@ export class FormatNumberDirective {
             leftPart = leftPart.substr(0, i) + ',' + leftPart.substr(i);
 
             // Move the caret if the comma was added at the left.
-            if (i <= cursorPos) {
-              cursorPos += 1;
+            if (i <= cursorPos!) {
+              cursorPos! += 1;
             }
           }
 
           // If the function was called because the user pressed the backspace key to delete a comma,
           // move the caret one space back, to allow it to pass the comma character..
           let spacesToReturn = 0;
-          if (this.lastBackspaceDate && (new Date()).getTime() - this.lastBackspaceDate < 30 && leftPart.charAt(cursorPos - 1) === ',') {
+          if (this.lastBackspaceDate && (new Date()).getTime() - this.lastBackspaceDate < 30 && leftPart.charAt(cursorPos! - 1) === ',') {
             spacesToReturn += 1;
           }
 
           // Update the value.
           (this.el.nativeElement as HTMLInputElement).value = leftPart + (numberParts.length > 1 ? ('.' + numberParts[1]) : '');
           // Update the caret position.
-          (this.el.nativeElement as HTMLInputElement).selectionStart = cursorPos - spacesToReturn;
-          (this.el.nativeElement as HTMLInputElement).selectionEnd = cursorPos - spacesToReturn;
+          (this.el.nativeElement as HTMLInputElement).selectionStart = cursorPos! - spacesToReturn;
+          (this.el.nativeElement as HTMLInputElement).selectionEnd = cursorPos! - spacesToReturn;
         }
       } else {
         // Just update the field with the filtered string.

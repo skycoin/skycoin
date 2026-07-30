@@ -47,8 +47,8 @@ export interface SeedWordDialogParams {
     standalone: false
 })
 export class SeedWordDialogComponent implements OnInit, OnDestroy {
-  form: UntypedFormGroup;
-  filteredOptions: Observable<string[]>;
+  form!: UntypedFormGroup;
+  filteredOptions!: Observable<string[]>;
 
   msgIcons = MessageIcons;
   wordAskedReasons = WordAskedReasons;
@@ -57,8 +57,8 @@ export class SeedWordDialogComponent implements OnInit, OnDestroy {
   inputErrorMsg = '';
 
   private sendingWord = false;
-  private valueChangeSubscription: SubscriptionLike;
-  private hwConnectionSubscription: SubscriptionLike;
+  private valueChangeSubscription!: SubscriptionLike;
+  private hwConnectionSubscription!: SubscriptionLike;
 
   /**
    * Opens the modal window. Please use this function instead of opening the window "by hand".
@@ -148,9 +148,9 @@ export class SeedWordDialogComponent implements OnInit, OnDestroy {
 
     let valid = true;
 
-    if (!this.form.get('word').value) {
+    if (!this.form.get('word')!.value) {
       valid = false;
-      if (this.form.get('word').touched) {
+      if (this.form.get('word')!.touched) {
         this.inputErrorMsg = 'wallet.new.seed.word-error-info';
       }
     }

@@ -16,7 +16,7 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
 import { AddressOptionsComponent, AddressOptions } from './address-options/address-options.component';
 import { ConfirmationParams, DefaultConfirmationButtons, ConfirmationComponent } from '../../../layout/confirmation/confirmation.component';
 import { WalletsAndAddressesService } from '../../../../services/wallet-operations/wallets-and-addresses.service';
-import { WalletWithBalance, AddressWithBalance, Bip44Account } from '../../../../services/wallet-operations/wallet-objects';
+import { WalletWithBalance, AddressBase, Bip44Account } from '../../../../services/wallet-operations/wallet-objects';
 import { SoftwareWalletService } from '../../../../services/wallet-operations/software-wallet.service';
 import { HardwareWalletService } from '../../../../services/wallet-operations/hardware-wallet.service';
 import { HistoryService } from '../../../../services/wallet-operations/history.service';
@@ -33,11 +33,11 @@ import { WalletsComponent } from '../wallets.component';
     standalone: false
 })
 export class WalletDetailComponent implements OnDestroy {
-  @Input() wallet: WalletWithBalance;
+  @Input() wallet!: WalletWithBalance;
 
   // Index of the address currently being confirmed. Used for showing the loading animation
   // on the UI.
-  confirmingIndex = null;
+  confirmingIndex: number | null = null;
   // If there is currently an operation with the addresses being done.
   workingWithAddresses = false;
   // If the preparations for renaming the wallet are being done.
@@ -47,12 +47,12 @@ export class WalletDetailComponent implements OnDestroy {
   // Allows to know which addresses are being copied, so the UI can show an indication.
   copying = new Map<string, boolean>();
 
-  private renameSubscription: SubscriptionLike;
-  private confirmSubscription: SubscriptionLike;
-  private txHistorySubscription: SubscriptionLike;
-  private scanSubscription: SubscriptionLike;
-  private numberOfAddressesSubscription: SubscriptionLike;
-  private addAddressesSubscription: SubscriptionLike;
+  private renameSubscription!: SubscriptionLike;
+  private confirmSubscription!: SubscriptionLike;
+  private txHistorySubscription!: SubscriptionLike;
+  private scanSubscription!: SubscriptionLike;
+  private numberOfAddressesSubscription!: SubscriptionLike;
+  private addAddressesSubscription!: SubscriptionLike;
 
   constructor(
     private dialog: MatDialog,
@@ -356,7 +356,7 @@ export class WalletDetailComponent implements OnDestroy {
         }, error => passwordDialog.error(error));
       });
     } else {
-      this.addAddressesSubscription = this.walletsAndAddressesService.addAddressesToWallet(this.wallet, 1, null, accountIndex, chainIndex).subscribe(() => {
+      this.addAddressesSubscription = this.walletsAndAddressesService.addAddressesToWallet(this.wallet, 1, undefined, accountIndex, chainIndex).subscribe(() => {
         this.workingWithAddresses = false;
         WalletsComponent.busy = false;
         this.msgBarService.showDone('common.changes-made');
@@ -474,7 +474,7 @@ export class WalletDetailComponent implements OnDestroy {
 
   // Copies an address to the clipboard and sets it as being copied for the time set on
   // the "duration" param.
-  copyAddress(event, address: AddressWithBalance, duration = 500) {
+  copyAddress(event: any, address: AddressBase, duration = 500) {
     event.stopPropagation();
 
     if (this.copying.has(address.address)) {
@@ -525,7 +525,7 @@ export class WalletDetailComponent implements OnDestroy {
 
   // Asks the node to scan the addresses of the wallet again.
   private continueScanningAddresses(passwordSubmitEvent?: PasswordSubmitEvent) {
-    const password = passwordSubmitEvent ? passwordSubmitEvent.password : null;
+    const password = passwordSubmitEvent ? passwordSubmitEvent.password : undefined;
 
     this.workingWithAddresses = true;
     WalletsComponent.busy = true;

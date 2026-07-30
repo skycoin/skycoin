@@ -24,7 +24,7 @@ import { Destination } from '../../pages/send-skycoin/form-parts/form-destinatio
     standalone: false
 })
 export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {
-  form: UntypedFormGroup;
+  form!: UntypedFormGroup;
 
   // Vars with the validation error messages.
   inputErrorMsg = '';
@@ -100,7 +100,7 @@ export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {
         const data: Destination = {
           address: entryDataParts[0].trim(),
           coins: entryDataParts[1].trim(),
-          originalAmount: null,
+          originalAmount: null as any,
         };
         data.hours = entryDataParts.length === 3 ? entryDataParts[2].trim() : undefined;
         processedEntries.push(data);
@@ -132,9 +132,9 @@ export class MultipleDestinationsDialogComponent implements OnInit, OnDestroy {
 
     let valid = true;
 
-    if (!this.form.get('data').value || !this.form.get('data').value.trim()) {
+    if (!this.form.get('data')!.value || !this.form.get('data')!.value.trim()) {
       valid = false;
-      if (this.form.get('data').touched) {
+      if (this.form.get('data')!.touched) {
         this.inputErrorMsg = 'send.bulk-send.data-error-info';
       }
     }

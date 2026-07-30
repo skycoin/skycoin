@@ -15,14 +15,14 @@ import { Output } from './transaction-objects';
 @Injectable()
 export class BalanceAndOutputsService {
   // The list of wallets with balance and the subject used for informing when the list has been modified.
-  private walletsWithBalanceList: WalletWithBalance[];
+  private walletsWithBalanceList!: WalletWithBalance[];
   private walletsWithBalanceSubject: ReplaySubject<WalletWithBalance[]> = new ReplaySubject<WalletWithBalance[]>(1);
 
   private hasPendingTransactionsSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
   private firstFullUpdateMadeSubject: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
-  private dataRefreshSubscription: Subscription;
-  private gettingBalanceSubscription: Subscription;
+  private dataRefreshSubscription!: Subscription;
+  private gettingBalanceSubscription!: Subscription;
 
   /**
    * Time interval in which periodic data updates will be made.
@@ -46,7 +46,7 @@ export class BalanceAndOutputsService {
   /**
    * Saves the lastest, most updated, wallet list obtained from the wallets service.
    */
-  private savedWalletsList: WalletBase[];
+  private savedWalletsList!: WalletBase[];
 
   constructor(
     private walletsAndAddressesService: WalletsAndAddressesService,
@@ -125,7 +125,7 @@ export class BalanceAndOutputsService {
     } else {
       return this.apiService.post('outputs', { addrs: addresses }).pipe(map((response) => {
         const outputs: Output[] = [];
-        response.head_outputs.forEach(output => {
+        response.head_outputs.forEach((output: any) => {
           const processedOutput: Output = {
             address: output.address,
             coins: new BigNumber(output.coins),

@@ -97,8 +97,8 @@ export class ConfirmationComponent {
 
     // Use a default buttons combination, if requested.
     if (data.defaultButtons) {
-      data.confirmButtonText = null;
-      data.cancelButtonText = null;
+      data.confirmButtonText = undefined;
+      data.cancelButtonText = undefined;
 
       if (data.defaultButtons === DefaultConfirmationButtons.Close) {
         data.confirmButtonText = 'common.close-button';
@@ -123,7 +123,7 @@ export class ConfirmationComponent {
   }
 
   // Used by the checkbox.
-  setAccept(event) {
+  setAccept(event: any) {
     this.accepted = event.checked ? true : false;
   }
 }

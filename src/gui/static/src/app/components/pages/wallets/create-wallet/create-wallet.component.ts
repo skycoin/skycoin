@@ -19,7 +19,7 @@ export class CreateWalletParams {
    * If the modal window is for creating a new wallet (true) or for loading a wallet
    * using a seed (false).
    */
-  create: boolean;
+  create!: boolean;
 }
 
 /**
@@ -33,9 +33,9 @@ export class CreateWalletParams {
     standalone: false
 })
 export class CreateWalletComponent implements OnDestroy {
-  @ViewChild('formControl') formControl: CreateWalletFormComponent;
-  @ViewChild('createButton') createButton: ButtonComponent;
-  @ViewChild('cancelButton') cancelButton: ButtonComponent;
+  @ViewChild('formControl') formControl!: CreateWalletFormComponent;
+  @ViewChild('createButton') createButton!: ButtonComponent;
+  @ViewChild('cancelButton') cancelButton!: ButtonComponent;
 
   // If the normal ways for closing the modal window must be deactivated.
   disableDismiss = false;
@@ -59,7 +59,7 @@ export class CreateWalletComponent implements OnDestroy {
   }
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) public data,
+    @Inject(MAT_DIALOG_DATA) public data: any,
     public dialogRef: MatDialogRef<CreateWalletComponent>,
     private dialog: MatDialog,
     private msgBarService: MsgBarService,

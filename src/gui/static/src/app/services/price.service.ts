@@ -17,7 +17,7 @@ export class PriceService {
   get price(): Observable<number> {
     return this.priceInternal.asObservable();
   }
-  private priceInternal: Subject<number> = new BehaviorSubject<number>(null);
+  private priceInternal: Subject<number> = new BehaviorSubject<number>(null!);
 
   /**
    * Time interval in which periodic data updates will be made.
@@ -27,10 +27,10 @@ export class PriceService {
    * Time interval in which the periodic data updates will be restarted after an error.
    */
   private readonly errorUpdatePeriod = 30 * 1000;
-  private priceSubscription: Subscription;
+  private priceSubscription!: Subscription;
 
-  private priceTickerId: string = null;
-  private priceTickerSource: string = null;
+  private priceTickerId: string | null = null;
+  private priceTickerSource: string | null = null;
   private configLoaded = false;
 
   constructor(
@@ -104,7 +104,7 @@ export class PriceService {
       return this.http.get(
         `https://api.coingecko.com/api/v3/simple/price?ids=${this.priceTickerId}&vs_currencies=usd`
       ).pipe(mergeMap((response: any) => {
-        return of(response[this.priceTickerId].usd);
+        return of(response[this.priceTickerId!].usd);
       }));
     } else {
       // Default: coinpaprika

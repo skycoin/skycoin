@@ -25,16 +25,16 @@ import { HardwareWalletService } from '../../../../services/wallet-operations/ha
     standalone: false
 })
 export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogComponent> implements OnDestroy {
-  @ViewChild('input') input: ElementRef;
-  wallet: WalletBase;
-  form: UntypedFormGroup;
+  @ViewChild('input') input!: ElementRef;
+  wallet!: WalletBase;
+  form!: UntypedFormGroup;
   maxHwWalletLabelLength = HwWalletService.maxLabelLength;
 
   // Vars with the validation error messages.
   inputErrorMsg = '';
 
   // Saves the initial label of the device, to know if the user tried to change it.
-  private initialLabel: string;
+  private initialLabel!: string;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) private data: ChildHwDialogParams,
@@ -113,9 +113,9 @@ export class HwAddedDialogComponent extends HwDialogBaseComponent<HwAddedDialogC
 
     let valid = true;
 
-    if (!this.form.get('label').value) {
+    if (!this.form.get('label')!.value) {
       valid = false;
-      if (this.form.get('label').touched) {
+      if (this.form.get('label')!.touched) {
         this.inputErrorMsg = 'hardware-wallet.added.added-error-info';
       }
     }

@@ -65,7 +65,7 @@
             </mat-option>
           }
           <mat-select-trigger>
-            @for (address of form.get('addresses').value; track address) {
+            @for (address of form.get('addresses')!.value; track address) {
               <div>
                 {{ address.address }} - {{ (address.coins ? address.coins : 0) | amount }}
                 ({{ address.hours | amount:false }})
@@ -104,7 +104,7 @@
             </mat-option>
           }
           <mat-select-trigger>
-            @for (out of form.get('outputs').value; track out) {
+            @for (out of form.get('outputs')!.value; track out) {
               <div>
                 {{ out.hash }} - {{ (out.coins ? out.coins : 0) | amount }}
                 ({{ out.hours | amount:false }})

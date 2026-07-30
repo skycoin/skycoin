@@ -17,7 +17,7 @@ import { parseRequestLink } from '../../../../utils/general-utils';
     standalone: false
 })
 export class EnterLinkComponent implements OnInit {
-  form: UntypedFormGroup;
+  form!: UntypedFormGroup;
 
   // Vars with the validation error messages.
   inputErrorMsg = '';
@@ -58,7 +58,7 @@ export class EnterLinkComponent implements OnInit {
       return;
     }
 
-    this.dialogRef.close(this.form.get('link').value);
+    this.dialogRef.close(this.form.get('link')!.value);
   }
 
   /**
@@ -70,9 +70,9 @@ export class EnterLinkComponent implements OnInit {
     let valid = true;
 
     // The link must be valid.
-    if (!parseRequestLink(this.form.get('link').value)) {
+    if (!parseRequestLink(this.form.get('link')!.value)) {
       valid = false;
-      if (this.form.get('link').touched) {
+      if (this.form.get('link')!.touched) {
         this.inputErrorMsg = 'send.fill-with-link.link-error-info';
       }
     }

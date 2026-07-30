@@ -59,9 +59,9 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   private static readonly MaxUsdDecimals = 6;
 
   // Balance available to send.
-  @Input() availableBalance: AvailableBalanceData;
+  @Input() availableBalance!: AvailableBalanceData;
   // Allows to deactivate the form while the system is busy.
-  @Input() busy: boolean;
+  @Input() busy!: boolean;
   // Emits when there have been changes in the contents of the component, so the validation
   // status could have changed.
   @Output() onChanges = new EventEmitter<void>();
@@ -77,13 +77,13 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   @Output() hoursAddedToSimpleForm = new EventEmitter<boolean>();
 
   // If the manual hours field must be shown.
-  private showHourFieldsInternal: boolean;
+  private showHourFieldsInternal!: boolean;
   @Input() set showHourFields(val: boolean) {
     if (val !== this.showHourFieldsInternal) {
       this.showHourFieldsInternal = val;
       if (this.form) {
         this.destControls.forEach(dest => {
-          dest.get('hours').setValue('');
+          dest.get('hours')!.setValue('');
         });
       }
     }
@@ -94,34 +94,34 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
   // If true, the form only allows to enter one destination and the amount of coins to send
   // to it. If false, the form allows multiple destinations, with their coins and hours.
-  private showSimpleFormInternal: boolean;
+  private showSimpleFormInternal!: boolean;
   @Input() set showSimpleForm(val: boolean) {
     this.showSimpleFormInternal = val;
 
     if (this.form) {
       if (val) {
-        this.form.get('address').setValidators(Validators.required);
+        this.form.get('address')!.setValidators(Validators.required);
       } else {
-        this.form.get('address').clearValidators();
+        this.form.get('address')!.clearValidators();
       }
 
-      this.form.get('address').updateValueAndValidity();
-      this.form.get('destinations').updateValueAndValidity();
+      this.form.get('address')!.updateValueAndValidity();
+      this.form.get('destinations')!.updateValueAndValidity();
     }
   }
   get showSimpleForm(): boolean {
     return this.showSimpleFormInternal;
   }
 
-  form: UntypedFormGroup;
+  form!: UntypedFormGroup;
   doubleButtonActive = DoubleButtonActive;
   // Allows to know if the user is entering the values in the coin (left) or usd (right).
   selectedCurrency = DoubleButtonActive.LeftButton;
   // If the user is entering the values in USD, it contains the coins value of each destination.
   // if the user is entering the values in coins, it contains the USD value of each destination.
-  values: BigNumber[];
+  values!: BigNumber[];
   // Current USD price per coin.
-  price: number;
+  price!: number;
   // Total amount of coins that will be sent to all destinations.
   totalCoins = new BigNumber(0);
   // Total usd value that will be sent to all destinations.
@@ -130,7 +130,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   totalHours = new BigNumber(0);
   // Indicates the specific hours that must be sent with the simple form. It gets a value if
   // the user enters a request link with hours.
-  simpleFormSpecificHours: BigNumber;
+  simpleFormSpecificHours!: BigNumber | null;
 
   // Vars with the validation error messages.
   addressErrorMsgs: string[] = [];
@@ -143,10 +143,10 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
   // List for knowing which destination addresses were indentified as valid by the server,
   // by index.
-  validAddressesList: boolean[];
+  validAddressesList!: boolean[] | null;
 
-  private priceSubscription: SubscriptionLike;
-  private addressSubscription: SubscriptionLike;
+  private priceSubscription!: SubscriptionLike;
+  private addressSubscription!: SubscriptionLike;
   private destinationSubscriptions: SubscriptionLike[] = [];
 
   // Gets all the form field groups on the destinations array.
@@ -173,7 +173,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     this.addDestination();
 
     // Inform when there are changes on the address field, shown on the simple form.
-    this.addressSubscription = this.form.get('address').valueChanges.subscribe(() => {
+    this.addressSubscription = this.form.get('address')!.valueChanges.subscribe(() => {
       this.onChanges.emit();
     });
 
@@ -213,7 +213,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     // Before asking, check if there are valid values to convert.
     let validAmounts = 0;
     this.destControls.forEach(dest => {
-      let value: string = removeCommas(dest.get('coins').value);
+      let value: string = removeCommas(dest.get('coins')!.value);
       value = value ? value.trim() : value;
       const currentValue = new BigNumber(value);
 
@@ -266,7 +266,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     let valuesWithPrecisionErrors = 0;
 
     this.destControls.forEach(dest => {
-      let value: string = removeCommas(dest.get('coins').value);
+      let value: string = removeCommas(dest.get('coins')!.value);
       value = value ? value.trim() : value;
       const currentValue = new BigNumber(value);
 
@@ -285,7 +285,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
             valuesWithPrecisionErrors += 1;
           }
 
-          dest.get('coins').setValue(newValue.toString());
+          dest.get('coins')!.setValue(newValue.toString());
         } else {
           const newValue = currentValue.multipliedBy(this.price).decimalPlaces(FormDestinationComponent.MaxUsdDecimals, BigNumber.ROUND_FLOOR);
           const recoveredValue = newValue.dividedBy(this.price).decimalPlaces(this.appService.currentMaxDecimals);
@@ -293,7 +293,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
             valuesWithPrecisionErrors += 1;
           }
 
-          dest.get('coins').setValue(newValue.toString());
+          dest.get('coins')!.setValue(newValue.toString());
         }
       }
     });
@@ -332,7 +332,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     // Subtract to the available balance all the values already asigned to the other destinations.
     this.destControls.forEach((dest, i) => {
       if (i !== index) {
-        const value = this.getAmount(removeCommas(dest.get('coins').value).trim(), true);
+        const value = this.getAmount(removeCommas(dest.get('coins')!.value).trim(), true);
         if (!value || value.isNaN()) {
           return;
         } else {
@@ -352,7 +352,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     if (availableBalance.isLessThanOrEqualTo(0)) {
       this.msgBarService.showError(this.translate.instant('send.no-coins-left-error'));
     } else {
-      this.destControls[index].get('coins').setValue(availableBalance.toString());
+      this.destControls[index].get('coins')!.setValue(availableBalance.toString());
     }
   }
 
@@ -373,7 +373,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
     this.destControls.forEach((dest, i) => {
       // Update the coin values.
-      let stringValue: string = removeCommas(dest.get('coins').value);
+      let stringValue: string = removeCommas(dest.get('coins')!.value);
       let value = this.getAmount(stringValue, true);
 
       if (!value) {
@@ -400,7 +400,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
       // Update the hour values.
       if (this.showHourFields) {
-        stringValue = removeCommas(dest.get('hours').value);
+        stringValue = removeCommas(dest.get('hours')!.value);
         value = this.getAmount(stringValue, false);
         if (value) {
           this.totalHours = this.totalHours.plus(value);
@@ -437,7 +437,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   }
 
   // Removes from the form the destination corresponding to the provided index.
-  removeDestination(index) {
+  removeDestination(index: any) {
     const destinations = this.form.get('destinations') as UntypedFormArray;
     destinations.removeAt(index);
 
@@ -518,19 +518,19 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     let dataWillBeChanged = false;
 
     if (this.showSimpleForm) {
-      if (this.form.get('address').value) {
+      if (this.form.get('address')!.value) {
         dataWillBeChanged = true;
       }
     } else {
-      if (this.destControls[0].get('address').value) {
+      if (this.destControls[0].get('address')!.value) {
         dataWillBeChanged = true;
       }
-      if (requestLinkParams.hours && this.destControls[0].get('hours').value) {
+      if (requestLinkParams.hours && this.destControls[0].get('hours')!.value) {
         dataWillBeChanged = true;
       }
     }
 
-    if (requestLinkParams.coins && this.destControls[0].get('coins').value) {
+    if (requestLinkParams.coins && this.destControls[0].get('coins')!.value) {
       dataWillBeChanged = true;
     }
 
@@ -555,8 +555,8 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   // Adds the data from a transaction link to the form.
   private finishUsingRequestLink(requestLinkParams: RequestLinkParams) {
     if (this.showSimpleForm) {
-      this.form.get('address').setValue(requestLinkParams.address);
-      this.form.get('address').markAsTouched();
+      this.form.get('address')!.setValue(requestLinkParams.address);
+      this.form.get('address')!.markAsTouched();
 
       if (requestLinkParams.hours) {
         this.simpleFormSpecificHours = this.getAmount(requestLinkParams.hours, false);
@@ -565,21 +565,21 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
         this.hoursAddedToSimpleForm.next(false);
       }
     } else {
-      this.destControls[0].get('address').setValue(requestLinkParams.address);
-      this.destControls[0].get('address').markAsTouched();
+      this.destControls[0].get('address')!.setValue(requestLinkParams.address);
+      this.destControls[0].get('address')!.markAsTouched();
 
       if (requestLinkParams.hours) {
         this.manualHoursRequested.next();
         setTimeout(() => {
-          this.destControls[0].get('hours').setValue(requestLinkParams.hours);
-          this.destControls[0].get('hours').markAsTouched();
+          this.destControls[0].get('hours')!.setValue(requestLinkParams.hours);
+          this.destControls[0].get('hours')!.markAsTouched();
         });
       }
     }
 
     if (requestLinkParams.coins) {
-      this.destControls[0].get('coins').setValue(requestLinkParams.coins);
-      this.destControls[0].get('coins').markAsTouched();
+      this.destControls[0].get('coins')!.setValue(requestLinkParams.coins);
+      this.destControls[0].get('coins')!.markAsTouched();
     }
 
     if (requestLinkParams.message) {
@@ -619,11 +619,11 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       }
 
       this.destControls.forEach((destControl, i) => {
-        destControl.get('address').setValue(formData.form.destinations[i]['address']);
-        destControl.get('coins').setValue(formData.form.destinations[i].originalAmount);
+        destControl.get('address')!.setValue(formData.form.destinations[i]['address']);
+        destControl.get('coins')!.setValue(formData.form.destinations[i].originalAmount);
 
         if (this.showSimpleForm) {
-          this.form.get('address').setValue(formData.form.destinations[i]['address']);
+          this.form.get('address')!.setValue(formData.form.destinations[i]['address']);
 
           if (formData.form.destinations[i]['hours']) {
             this.simpleFormSpecificHours = this.getAmount(formData.form.destinations[i]['hours'], false);
@@ -632,7 +632,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
             this.hoursAddedToSimpleForm.next(false);
           }
         } else {
-          destControl.get('hours').setValue(formData.form.destinations[i]['hours']);
+          destControl.get('hours')!.setValue(formData.form.destinations[i]['hours']);
         }
       });
 
@@ -650,10 +650,10 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
     newDestinations.forEach((destination, i) => {
       this.addDestination();
-      this.destControls[i].get('address').setValue(destination.address);
-      this.destControls[i].get('coins').setValue(destination.coins);
+      this.destControls[i].get('address')!.setValue(destination.address);
+      this.destControls[i].get('coins')!.setValue(destination.coins);
       if (destination.hours) {
-        this.destControls[i].get('hours').setValue(destination.hours);
+        this.destControls[i].get('hours')!.setValue(destination.hours);
       }
     });
   }
@@ -678,7 +678,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
    * @param list Validity list. It must include if the address is valid for the index of
    * each destination. It can be null, to show all addresses as valid.
    */
-  setValidAddressesList(list: boolean[]) {
+  setValidAddressesList(list: boolean[] | null) {
     this.validAddressesList = list;
 
     if (this.validAddressesList && this.validAddressesList.length > this.destControls.length) {
@@ -751,10 +751,10 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   getDestinations(cleanNumbers: boolean): Destination[] {
     return this.destControls.map((destControl, i) => {
       // Get the string values.
-      const destination = {
-        address: this.showSimpleForm ? ((this.form.get('address').value) as string).trim() : ((destControl.get('address').value) as string).trim(),
-        coins: ((this.selectedCurrency === DoubleButtonActive.LeftButton ? removeCommas(destControl.get('coins').value) : this.values[i].toString()) as string).trim(),
-        originalAmount: removeCommas(destControl.get('coins').value),
+      const destination: any = {
+        address: this.showSimpleForm ? ((this.form.get('address')!.value) as string).trim() : ((destControl.get('address')!.value) as string).trim(),
+        coins: ((this.selectedCurrency === DoubleButtonActive.LeftButton ? removeCommas(destControl.get('coins')!.value) : this.values[i].toString()) as string).trim(),
+        originalAmount: removeCommas(destControl.get('coins')!.value),
       };
 
       // Clean the values.
@@ -764,7 +764,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
       }
 
       if (this.showHourFields || this.simpleFormSpecificHours) {
-        destination['hours'] = this.simpleFormSpecificHours ? this.simpleFormSpecificHours.toString() : removeCommas(destControl.get('hours').value);
+        destination['hours'] = this.simpleFormSpecificHours ? this.simpleFormSpecificHours.toString() : removeCommas(destControl.get('hours')!.value);
         if (cleanNumbers) {
           destination['hours'] = new BigNumber(destination['hours']).toString();
         }
@@ -806,10 +806,10 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
 
     if (this.showSimpleForm) {
       // Check the address field of the simple form.
-      const address = this.form.get('address').value as string;
+      const address = this.form.get('address')!.value as string;
       if (!address || address.length < 20) {
         valid = false;
-        if (this.form.get('address').touched) {
+        if (this.form.get('address')!.touched) {
           this.singleAddressErrorMsg = 'send.address-error-info';
         }
       }
@@ -825,30 +825,30 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     this.destControls.forEach((control, i) => {
       // Check the address, but not if showing the simple form.
       if (!this.showSimpleForm) {
-        const address = control.get('address').value as string;
+        const address = control.get('address')!.value as string;
         if (!address || address.length < 20) {
           valid = false;
-          if (control.get('address').touched) {
+          if (control.get('address')!.touched) {
             this.addressErrorMsgs[i] = 'send.address-error-info';
           }
         }
       }
 
       // Check the coins.
-      const coinsValue: string = removeCommas(control.get('coins').value);
+      const coinsValue: string = removeCommas(control.get('coins')!.value);
       if (this.getAmount(coinsValue, true) === null) {
         valid = false;
-        if (control.get('coins').touched) {
+        if (control.get('coins')!.touched) {
           this.coinsErrorMsgs[i] = 'send.invalid-value-error-info';
         }
       }
 
       // Check the hours, if showing the hours field.
       if (this.showHourFields) {
-        const hoursValue: string = removeCommas(control.get('hours').value);
+        const hoursValue: string = removeCommas(control.get('hours')!.value);
         if (this.getAmount(hoursValue, false) === null) {
           valid = false;
-          if (control.get('hours').touched) {
+          if (control.get('hours')!.touched) {
             this.hoursErrorMsgs[i] = 'send.invalid-value-error-info';
           }
         }
@@ -859,7 +859,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     let destinationsCoins = new BigNumber(0);
     if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
       this.destControls.map(control => {
-        const value = new BigNumber(removeCommas(control.get('coins').value));
+        const value = new BigNumber(removeCommas(control.get('coins')!.value));
         if (!value.isNaN()) {
           destinationsCoins = destinationsCoins.plus(value);
         }
@@ -875,7 +875,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
     let destinationsHours = new BigNumber(0);
     if (this.showHourFields) {
       this.destControls.map(control => {
-        const value = new BigNumber(removeCommas(control.get('hours').value));
+        const value = new BigNumber(removeCommas(control.get('hours')!.value));
         if (!value.isNaN()) {
           destinationsHours = destinationsHours.plus(value);
         }
@@ -902,7 +902,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
    * @param checkingCoins If the function must treat the value as coins or hours while checking
    * for validity.
    */
-  private getAmount(stringValue: string, checkingCoins: boolean): BigNumber {
+  private getAmount(stringValue: string, checkingCoins: boolean): BigNumber | null {
     stringValue = stringValue ? stringValue.trim() : stringValue;
     const value = new BigNumber(stringValue);
 
@@ -940,7 +940,7 @@ export class FormDestinationComponent implements OnInit, OnDestroy {
   }
 
   resetForm() {
-    this.form.get('address').setValue('');
+    this.form.get('address')!.setValue('');
 
     while (this.destControls.length > 0) {
       (this.form.get('destinations') as UntypedFormArray).removeAt(0);

@@ -19,7 +19,7 @@ IMPORTANT: Unused for a long time, it may need changes to work properly.
                   <option disabled selected>{{ 'buy.make-choice' | translate }}</option>
                   @for (wallet of wallets; track wallet) {
                     <option [value]="wallet.id">
-                      {{ wallet.label }} - <span class="-coins">{{ wallet.coins | amount }}</span>
+                      {{ wallet.label }} - <span class="-coins">{{ $any(wallet).coins | amount }}</span>
                     </option>
                   }
                 </select>

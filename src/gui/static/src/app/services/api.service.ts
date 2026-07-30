@@ -48,7 +48,7 @@ export class ApiService {
    * the querystring.
    * @param options Request options.
    */
-  get(url: string, params: any = null, options: NodeApiRequestOptions = null): Observable<any> {
+  get(url: string, params: any = null, options: NodeApiRequestOptions | null = null): Observable<any> {
     if (!options) {
       options = this.createDefaultRequestOptions();
     } else {
@@ -66,7 +66,7 @@ export class ApiService {
    * x-www-form-urlencoded or JSON, as defined in the options param.
    * @param options Request options.
    */
-  post(url: string, params: any = null, options: NodeApiRequestOptions = null): Observable<any> {
+  post(url: string, params: any = null, options: NodeApiRequestOptions | null = null): Observable<any> {
     if (!options) {
       options = this.createDefaultRequestOptions();
     } else {
@@ -127,7 +127,7 @@ export class ApiService {
    * @param csrfToken Csrf token to be added on a header, for being able to make
    * POST requests.
    */
-  private returnRequestOptions(options: NodeApiRequestOptions, csrfToken: string): any {
+  private returnRequestOptions(options: NodeApiRequestOptions, csrfToken: string | null): any {
     const requestOptions: any = {};
 
     requestOptions.headers = new HttpHeaders();
@@ -151,7 +151,7 @@ export class ApiService {
       return '';
     }
 
-    return Object.keys(parameters).reduce((array, key) => {
+    return Object.keys(parameters).reduce((array: string[], key) => {
       array.push(key + '=' + encodeURIComponent(parameters[key]));
 
       return array;

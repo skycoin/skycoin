@@ -20,9 +20,9 @@ export enum DoubleButtonActive {
     standalone: false
 })
 export class DoubleButtonComponent implements OnDestroy {
-  @Input() rightButtonText: string;
-  @Input() leftButtonText: string;
-  @Input() activeButton: DoubleButtonActive;
+  @Input() rightButtonText!: string;
+  @Input() leftButtonText!: string;
+  @Input() activeButton!: DoubleButtonActive | null;
   // Allows to add classes to the component.
   @Input() className = '';
   // If true, when the user clicks one of the buttons the newly selected button will not

@@ -22,11 +22,11 @@ export enum ChangePinStates {
 export class HwWalletPinService {
 
   // Set on AppComponent to avoid a circular reference.
-  private requestPinComponentInternal;
+  private requestPinComponentInternal: any;
   /**
    * Sets the class of the modal window used for entering the hw wallet PIN.
    */
-  set requestPinComponent(value) {
+  set requestPinComponent(value: any) {
     this.requestPinComponentInternal = value;
   }
 
@@ -38,15 +38,15 @@ export class HwWalletPinService {
    * If the modal window will be openned the next time for setting or changing the PIN
    * (true) or just for checking the current PIN (false).
    */
-  changingPin: boolean;
+  changingPin!: boolean;
   /**
    * If the modal window will be openned the next time for signing a transaction or not.
    */
-  signingTx: boolean;
+  signingTx!: boolean;
   /**
    * State in which the modal window will be shown the next time if changingPin is true.
    */
-  changePinState: ChangePinStates;
+  changePinState!: ChangePinStates;
 
   constructor(
     private dialog: MatDialog,

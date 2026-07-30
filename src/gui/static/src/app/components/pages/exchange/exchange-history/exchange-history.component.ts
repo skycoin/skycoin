@@ -18,7 +18,7 @@ import { AppConfig } from '../../../../app.config';
 })
 export class ExchangeHistoryComponent implements OnInit {
   // List of saved orders.
-  orders: StoredExchangeOrder[];
+  orders!: StoredExchangeOrder[];
 
   /**
    * Opens the modal window. Please use this function instead of opening the window "by hand".

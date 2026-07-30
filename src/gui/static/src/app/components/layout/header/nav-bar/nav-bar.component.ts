@@ -24,7 +24,7 @@ export class NavBarComponent {
     public navBarSwitchService: NavBarSwitchService,
   ) { }
 
-  changeActiveComponent(value) {
+  changeActiveComponent(value: any) {
     this.navBarSwitchService.setActiveComponent(value);
   }
 }

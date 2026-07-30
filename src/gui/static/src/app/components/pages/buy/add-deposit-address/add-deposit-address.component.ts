@@ -18,10 +18,10 @@ import { AddressBase } from '../../../../services/wallet-operations/wallet-objec
 })
 export class AddDepositAddressComponent implements OnInit, OnDestroy {
 
-  form: UntypedFormGroup;
+  form!: UntypedFormGroup;
   addresses: AddressBase[] = [];
 
-  private getWalletsSubscription: Subscription;
+  private getWalletsSubscription!: Subscription;
 
   constructor(
     public walletsAndAddressesService: WalletsAndAddressesService,

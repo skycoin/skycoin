@@ -23,12 +23,12 @@ export class WalletsAndAddressesService {
   private readonly hwWalletsDataStorageKey = 'hw-wallets';
 
   // Wallet list and the subject used for informing when the list has been modified.
-  private walletsList: WalletBase[];
+  private walletsList!: WalletBase[];
   private walletsSubject: Subject<WalletBase[]> = new ReplaySubject<WalletBase[]>(1);
   // Indicates if the initial load failed.
   private initialLoadFailed: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
-  private savingHwWalletDataSubscription: Subscription;
+  private savingHwWalletDataSubscription!: Subscription;
 
   constructor(
     private apiService: ApiService,
@@ -66,7 +66,7 @@ export class WalletsAndAddressesService {
    */
   addAddressesToWallet(wallet: WalletBase, num: number, password?: string, accountIndex?: number, chainIndex?: number): Observable<AddressBase[]> {
     if (!wallet.isHardware) {
-      const params = new Object();
+      const params: any = {};
       params['id'] = wallet.id;
       params['num'] = num;
       if (password) {
@@ -83,7 +83,7 @@ export class WalletsAndAddressesService {
       return this.apiService.post('wallet/newAddress', params).pipe(
         mergeMap(() => this.apiService.get('wallet', { id: wallet.id })),
         map((response: any) => {
-          const affectedWallet = this.walletsList.find(w => w.id === wallet.id);
+          const affectedWallet = this.walletsList.find(w => w.id === wallet.id)!;
           const newAddresses: AddressBase[] = [];
 
           // Update flat address list
@@ -112,7 +112,7 @@ export class WalletsAndAddressesService {
       // Generate the new addresses on the device.
       return this.hwWalletService.getAddresses(num, wallet.addresses.length).pipe(map(response => {
         // Find the affected wallet on the local list and add the addresses to it.
-        const affectedWallet = this.walletsList.find(w => w.id === wallet.id);
+        const affectedWallet = this.walletsList.find(w => w.id === wallet.id)!;
         const newAddresses: AddressBase[] = [];
         (response.rawResponse as any[]).forEach(value => {
           const newAddress: AddressBase = {address: value, confirmed: false};
@@ -138,7 +138,7 @@ export class WalletsAndAddressesService {
    */
   scanAddresses(wallet: WalletBase, password?: string): Observable<boolean> {
     if (!wallet.isHardware) {
-      const params = new Object();
+      const params: any = {};
       params['id'] = wallet.id;
       if (password) {
         params['password'] = password;
@@ -147,7 +147,7 @@ export class WalletsAndAddressesService {
       // Request the backend to scan the addresses.
       return this.apiService.post('wallet/scan', params).pipe(map((response: any) => {
         // Find the affected wallet on the local list and add the addresses to it.
-        const affectedWallet = this.walletsList.find(w => w.id === wallet.id);
+        const affectedWallet = this.walletsList.find(w => w.id === wallet.id)!;
         const newAddresses: string[] = response.addresses;
         if (newAddresses && newAddresses.length > 0) {
           newAddresses.forEach(address => {
@@ -200,10 +200,10 @@ export class WalletsAndAddressesService {
    * @param password Wallet password, if it will be encrypted, null otherwise.
    * @returns The returned observable returns nothing, but it can fail in case of error.
    */
-  createSoftwareWallet(temporal: boolean, label: string, seed: string, password?: string, walletType = 'deterministic', seedPassphrase?: string): Observable<void> {
+  createSoftwareWallet(temporal: boolean, label: string, seed: string, password?: string | null, walletType = 'deterministic', seedPassphrase?: string): Observable<void> {
     seed = seed.replace(/(\n|\r\n)$/, '');
 
-    const params = {
+    const params: any = {
       label: label ? label : 'undefined',
       seed: seed,
       scan: 100,
@@ -286,8 +286,8 @@ export class WalletsAndAddressesService {
       return this.apiService.post('transactions', { addrs: addressesString });
     }), map(response => {
       // Get the index of the last address of the list with transaction.
-      response.forEach(tx => {
-        tx.txn.outputs.forEach(output => {
+      response.forEach((tx: any) => {
+        tx.txn.outputs.forEach((output: any) => {
           if (addressesMap.has(output.dst)) {
             addressesWithTxMap.set(output.dst, true);
           }
@@ -368,7 +368,7 @@ export class WalletsAndAddressesService {
     this.savingHwWalletDataSubscription =
       this.storageService.store(StorageType.CLIENT, this.hwWalletsDataStorageKey, JSON.stringify(hardwareWallets))
         .subscribe({
-          next: null,
+          next: () => {},
           error: () => redirectToErrorPage(3),
         });
 
@@ -487,7 +487,7 @@ export class WalletsAndAddressesService {
               }
             });
             propertiesToRemove.forEach(property => {
-              delete wallet[property];
+              delete (wallet as any)[property];
             });
 
             // The wallet must be identified as a hw wallet and have at least one address.
@@ -518,7 +518,7 @@ export class WalletsAndAddressesService {
       id: wallet.id,
       name: name,
     }).pipe(map((response: any) => {
-      const affectedWallet = this.walletsList.find(w => w.id === wallet.id);
+      const affectedWallet = this.walletsList.find(w => w.id === wallet.id)!;
       if (response.accounts) {
         affectedWallet.accounts = this.parseAccounts(response.accounts);
       }
@@ -549,11 +549,11 @@ export class WalletsAndAddressesService {
       const account = new Bip44Account();
       account.name = a.name;
       account.index = a.index;
-      account.externalAddresses = (a.external_entries || []).map(e => ({
+      account.externalAddresses = (a.external_entries || []).map((e: any) => ({
         address: e.address, confirmed: true,
         childNumber: e.child_number, change: e.change
       }));
-      account.changeAddresses = (a.change_entries || []).map(e => ({
+      account.changeAddresses = (a.change_entries || []).map((e: any) => ({
         address: e.address, confirmed: true,
         childNumber: e.child_number, change: e.change
       }));

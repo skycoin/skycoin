@@ -17,12 +17,12 @@ enum ButtonStates {
     standalone: false
 })
 export class ButtonComponent implements OnDestroy {
-  @Input() disabled: boolean;
+  @Input() disabled!: boolean;
   // If true, the button will send click events even when disabled.
   @Input() forceEmitEvents = false;
   // Click event.
   @Output() action = new EventEmitter();
-  @ViewChild('button') button: HTMLButtonElement;
+  @ViewChild('button') button!: HTMLButtonElement;
 
   state = ButtonStates.Normal;
   buttonStates = ButtonStates;

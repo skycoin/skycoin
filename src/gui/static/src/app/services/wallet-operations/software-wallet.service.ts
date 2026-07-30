@@ -52,7 +52,7 @@ export class SoftwareWalletService {
    * unencrypted after finishing the operation.
    */
   resetPassword(wallet: WalletBase, seed: string, password: string|null): Observable<void> {
-    const params = new Object();
+    const params: any = {};
     params['id'] = wallet.id;
     params['seed'] = seed;
     if (password) {

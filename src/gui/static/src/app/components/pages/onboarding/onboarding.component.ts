@@ -21,16 +21,16 @@ import { WalletsAndAddressesService } from '../../../services/wallet-operations/
     standalone: false
 })
 export class OnboardingComponent implements OnInit, OnDestroy {
-  @ViewChild('encryptForm') encryptForm: OnboardingEncryptWalletComponent;
+  @ViewChild('encryptForm') encryptForm!: OnboardingEncryptWalletComponent;
 
   // Current stept to show.
   step = 1;
   // Data entered on the form of the first step.
-  formData: WalletFormData;
+  formData!: WalletFormData;
   // Currently selected language.
-  language: LanguageData;
+  language!: LanguageData;
 
-  private subscription: SubscriptionLike;
+  private subscription!: SubscriptionLike;
 
   constructor(
     private router: Router,

@@ -28,7 +28,7 @@ export class BroadcastRawTxComponent extends OfflineDialogsBaseComponent impleme
   okButtonText = 'offline-transactions.broadcast-tx.send-button';
   validateForm = true;
 
-  private operationSubscription: SubscriptionLike;
+  private operationSubscription!: SubscriptionLike;
 
   /**
    * Opens the modal window. Please use this function instead of opening the window "by hand".
@@ -55,7 +55,7 @@ export class BroadcastRawTxComponent extends OfflineDialogsBaseComponent impleme
 
   ngOnInit() {
     // Needed for making the form validation work.
-    this.form.get('dropdown').setValue('dummy');
+    this.form.get('dropdown')!.setValue('dummy');
   }
 
   ngOnDestroy() {
@@ -77,7 +77,7 @@ export class BroadcastRawTxComponent extends OfflineDialogsBaseComponent impleme
     this.okButton.setLoading();
 
     this.closeOperationSubscription();
-    this.operationSubscription = this.spendingService.injectTransaction(this.form.get('input').value, null).subscribe(() => {
+    this.operationSubscription = this.spendingService.injectTransaction(this.form.get('input')!.value, null).subscribe(() => {
       this.balanceAndOutputsService.refreshBalance();
 
       this.msgBarService.showDone('offline-transactions.broadcast-tx.sent');

@@ -19,7 +19,7 @@ import { environment } from '../../../../environments/environment';
 })
 export class ExchangeComponent implements OnInit, OnDestroy {
   // Order for which the status must be shown. If null, the form for creating a new order is shown.
-  currentOrderDetails: StoredExchangeOrder;
+  currentOrderDetails: StoredExchangeOrder | null = null;
   // If there are previously created orders saved on the persistent storage.
   hasHistory = false;
   // If the page is loading the initial data needed for starting to show anything.
@@ -27,8 +27,8 @@ export class ExchangeComponent implements OnInit, OnDestroy {
   // If the service is not available.
   unavailable = false;
 
-  private lastViewedSubscription: SubscriptionLike;
-  private historySubscription: SubscriptionLike;
+  private lastViewedSubscription!: SubscriptionLike;
+  private historySubscription!: SubscriptionLike;
 
   constructor(
     public appService: AppService,
@@ -78,10 +78,10 @@ export class ExchangeComponent implements OnInit, OnDestroy {
   }
 
   // Opens the modal window with the list of previously created orders.
-  showHistory(event) {
+  showHistory(event: any) {
     event.preventDefault();
 
-    ExchangeHistoryComponent.openDialog(this.dialog).afterClosed().subscribe((oldOrder: StoredExchangeOrder) => {
+    ExchangeHistoryComponent.openDialog(this.dialog).afterClosed().subscribe((oldOrder: StoredExchangeOrder | undefined) => {
       if (oldOrder) {
         this.currentOrderDetails = oldOrder;
       }

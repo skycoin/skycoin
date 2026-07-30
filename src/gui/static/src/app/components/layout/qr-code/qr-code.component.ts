@@ -51,10 +51,10 @@ export interface QrDialogConfig {
     standalone: false
 })
 export class QrCodeComponent implements OnInit, OnDestroy {
-  @ViewChild('qrArea') qrArea: ElementRef;
+  @ViewChild('qrArea') qrArea!: ElementRef;
 
-  form: UntypedFormGroup;
-  currentQrContent: string;
+  form!: UntypedFormGroup;
+  currentQrContent!: string;
   formVisible = false;
   // For knowing if the form fields have errors.
   invalidCoins = false;
@@ -98,7 +98,7 @@ export class QrCodeComponent implements OnInit, OnDestroy {
     this.formVisible = true;
   }
 
-  copyText(text) {
+  copyText(text: any) {
     copyTextToClipboard(text);
     this.msgBarService.showDone('common.copied', 4000);
   }
@@ -111,9 +111,9 @@ export class QrCodeComponent implements OnInit, OnDestroy {
     });
 
     // Each time a field is updated, update the content of the QR, but wait a prudential time.
-    this.subscriptionsGroup.push(this.form.get('coins').valueChanges.subscribe(this.reportValueChanged.bind(this)));
-    this.subscriptionsGroup.push(this.form.get('hours').valueChanges.subscribe(this.reportValueChanged.bind(this)));
-    this.subscriptionsGroup.push(this.form.get('note').valueChanges.subscribe(this.reportValueChanged.bind(this)));
+    this.subscriptionsGroup.push(this.form.get('coins')!.valueChanges.subscribe(this.reportValueChanged.bind(this)));
+    this.subscriptionsGroup.push(this.form.get('hours')!.valueChanges.subscribe(this.reportValueChanged.bind(this)));
+    this.subscriptionsGroup.push(this.form.get('note')!.valueChanges.subscribe(this.reportValueChanged.bind(this)));
     this.subscriptionsGroup.push(this.updateQrEvent.pipe(debounceTime(500)).subscribe(() => {
       this.updateQrContent();
     }));
@@ -144,9 +144,9 @@ export class QrCodeComponent implements OnInit, OnDestroy {
     let nextSeparator = '?';
 
     // Add the coins or alert if the value is not valid.
-    if (this.form.get('coins').value) {
-      const coins = new BigNumber(removeCommas(this.form.get('coins').value));
-      if (!coins.isNaN() && coins.isGreaterThan(0) && coins.decimalPlaces() <= this.appService.currentMaxDecimals) {
+    if (this.form.get('coins')!.value) {
+      const coins = new BigNumber(removeCommas(this.form.get('coins')!.value));
+      if (!coins.isNaN() && coins.isGreaterThan(0) && coins.decimalPlaces()! <= this.appService.currentMaxDecimals) {
         this.currentQrContent += nextSeparator + 'amount=' + coins.toString();
         nextSeparator = '&';
       } else {
@@ -155,8 +155,8 @@ export class QrCodeComponent implements OnInit, OnDestroy {
     }
 
     // Add the hours or alert if the value is not valid.
-    if (this.form.get('hours').value) {
-      const hours = new BigNumber(removeCommas(this.form.get('hours').value));
+    if (this.form.get('hours')!.value) {
+      const hours = new BigNumber(removeCommas(this.form.get('hours')!.value));
       if (!hours.isNaN() && hours.isGreaterThan(0) && hours.decimalPlaces() === 0) {
         this.currentQrContent += nextSeparator + 'hours=' + hours.toString();
         nextSeparator = '&';
@@ -166,7 +166,7 @@ export class QrCodeComponent implements OnInit, OnDestroy {
     }
 
     // Add the note.
-    const note = this.form.get('note').value;
+    const note = this.form.get('note')!.value;
     if (note) {
       this.currentQrContent += nextSeparator + 'message=' + encodeURIComponent(note);
     }

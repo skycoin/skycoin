@@ -86,7 +86,7 @@ export function processServiceError(error: any): OperationError {
     } else if (convertedError.status === 0 || convertedError.status === 403) {
       response.type = OperationErrorTypes.ApiDisabled;
       response.translatableErrorMsg = 'service.api.api-disabled-error';
-    } else if (convertedError.status === 400 && response.originalServerErrorMsg.toUpperCase().indexOf('Invalid password'.toUpperCase()) !== -1) {
+    } else if (convertedError.status === 400 && (response.originalServerErrorMsg || '').toUpperCase().indexOf('Invalid password'.toUpperCase()) !== -1) {
       response.type = OperationErrorTypes.Unauthorized;
       response.translatableErrorMsg = 'service.api.incorrect-password-error';
     }
@@ -110,7 +110,7 @@ export function processServiceError(error: any): OperationError {
  * @param error Error to process.
  * @returns The error msg, or null, if it was not possible to retrieve the error msg.
  */
-export function getErrorMsg(error: any): string {
+export function getErrorMsg(error: any): string | null {
   if (error) {
     // Check different posibilities, testing a normal error object and different
     // known ubications in which the error msg could be located.
@@ -155,10 +155,10 @@ export function redirectToErrorPage(errorCode: number) {
  * @returns If the string is known, the translatable var for showing the error in the UI. If
  * not, null is returned.
  */
-function checkIfKnownErrorStrings(errorString: string): string {
+function checkIfKnownErrorStrings(errorString: string): string | null {
   errorString = errorString.toUpperCase();
 
-  let translatableVar: string = null;
+  let translatableVar: string | null = null;
 
   if (errorString.includes('CHANGEADDRESS MUST NOT BE THE NULL ADDRESS')) {
     translatableVar = 'null-change-address-error';

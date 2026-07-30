@@ -47,7 +47,7 @@ export class BlockchainService {
    */
   private refreshedBalance = false;
 
-  private dataSubscription: Subscription;
+  private dataSubscription!: Subscription;
 
   /**
    * Time interval in which periodic data updates will be made.

@@ -23,9 +23,9 @@ import { WalletBase } from '../../../services/wallet-operations/wallet-objects';
     standalone: false
 })
 export class ResetPasswordComponent implements OnDestroy {
-  @ViewChild('resetButton') resetButton: ButtonComponent;
+  @ViewChild('resetButton') resetButton!: ButtonComponent;
 
-  form: UntypedFormGroup;
+  form!: UntypedFormGroup;
   // Allows to deactivate the form while the component is busy.
   busy = true;
 
@@ -34,7 +34,7 @@ export class ResetPasswordComponent implements OnDestroy {
   passwordErrorMsg = '';
 
   private subscription: SubscriptionLike;
-  private wallet: WalletBase;
+  private wallet!: WalletBase;
   private done = false;
   private hideBarWhenClosing = true;
 
@@ -62,7 +62,7 @@ export class ResetPasswordComponent implements OnDestroy {
       }
 
       this.wallet = wallet;
-      this.form.get('wallet').setValue(wallet.label);
+      this.form.get('wallet')!.setValue(wallet.label);
       // Activate the form.
       this.busy = false;
     })).subscribe();
@@ -129,17 +129,17 @@ export class ResetPasswordComponent implements OnDestroy {
 
     let valid = true;
 
-    if (!this.form.get('seed').value) {
+    if (!this.form.get('seed')!.value) {
       valid = false;
-      if (this.form.get('seed').touched) {
+      if (this.form.get('seed')!.touched) {
         this.seedErrorMsg = 'reset.seed-error-info';
       }
     }
 
     // Check if the 2 passwords entered by the user are equal.
-    if (this.form.get('password').value !== this.form.get('confirm').value) {
+    if (this.form.get('password')!.value !== this.form.get('confirm')!.value) {
       valid = false;
-      if (this.form.get('confirm').touched) {
+      if (this.form.get('confirm')!.touched) {
         this.passwordErrorMsg = 'reset.confirm-error-info';
       }
     }

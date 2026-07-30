@@ -21,12 +21,12 @@ import { ConfirmationComponent, DefaultConfirmationButtons } from '../../../layo
 })
 export class PendingTransactionsComponent implements OnInit, OnDestroy {
   // Transactions to show on the UI.
-  transactions: PendingTransactionData[] = null;
+  transactions: PendingTransactionData[] | null = null;
 
-  private transactionsSubscription: SubscriptionLike;
+  private transactionsSubscription!: SubscriptionLike;
   private navbarSubscription: SubscriptionLike;
 
-  private selectedNavbarOption: DoubleButtonActive;
+  private selectedNavbarOption!: DoubleButtonActive;
 
   // Time interval in which periodic data updates will be made.
   private readonly updatePeriod = 10 * 1000;

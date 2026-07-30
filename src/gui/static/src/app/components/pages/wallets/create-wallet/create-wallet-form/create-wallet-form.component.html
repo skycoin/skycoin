@@ -131,7 +131,7 @@
     </div>
   }
   <!-- Seed passphrase for BIP44 wallets. -->
-  @if (form.get('wallet_type').value === 'bip44') {
+  @if (form.get('wallet_type')!.value === 'bip44') {
     <div class="form-field">
       <label for="seed_passphrase">{{ 'wallet.new.seed-passphrase-label' | translate}}</label>
       <input

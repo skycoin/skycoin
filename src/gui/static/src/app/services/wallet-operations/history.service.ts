@@ -136,7 +136,7 @@ export class HistoryService {
           // There could be more than one wallet with the address. This would happen if the wallet is repeated
           // (like when using the same seed for a software and a hardware wallet). In that case, the wallet
           // with most addresses is considered "the most complete one" and is used.
-          if (!addressesMap.has(add.address) || addressesMap.get(add.address).addresses.length < w.addresses.length) {
+          if (!addressesMap.has(add.address) || addressesMap.get(add.address)!.addresses.length < w.addresses.length) {
             addressesMap.set(add.address, w);
           }
         });
@@ -212,7 +212,7 @@ export class HistoryService {
             transaction.inputs.map(input => {
               if (addressesMap.has(input.address)) {
                 involvedLocalAddresses.set(input.address, true);
-                addressesMap.get(input.address).addresses.map(add => possibleReturnAddressesMap.set(add.address, true));
+                addressesMap.get(input.address)!.addresses.map(add => possibleReturnAddressesMap.set(add.address, true));
               }
             });
 
@@ -293,8 +293,8 @@ export class HistoryService {
 
           // Build an array with the transactions affecting the user.
           const userTransactions = transactions.filter(tran => {
-            return tran.transaction.inputs.some(input => walletAddresses.has(input.owner)) ||
-              tran.transaction.outputs.some(output => walletAddresses.has(output.dst));
+            return tran.transaction.inputs.some((input: any) => walletAddresses.has(input.owner)) ||
+              tran.transaction.outputs.some((output: any) => walletAddresses.has(output.dst));
           });
 
           return {
@@ -320,7 +320,7 @@ export class HistoryService {
   private processTransactionData(transaction: any): PendingTransactionData {
     let coins = new BigNumber('0');
     let hours = new BigNumber('0');
-    transaction.transaction.outputs.map(output => {
+    transaction.transaction.outputs.map((output: any) => {
       coins = coins.plus(output.coins);
       hours = hours.plus(output.hours);
     });

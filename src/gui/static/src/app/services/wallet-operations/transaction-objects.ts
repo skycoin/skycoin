@@ -70,7 +70,7 @@ export interface GeneratedTransaction extends TransactionBase {
   /**
    * Wallet used to create the transaction, if an specific wallet was used.
    */
-  wallet?: WalletBase;
+  wallet?: WalletBase | null;
   /**
    * How many coins the transaction is going to send.
    */

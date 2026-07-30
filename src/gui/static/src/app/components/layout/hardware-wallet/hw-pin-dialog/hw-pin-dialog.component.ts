@@ -38,7 +38,7 @@ export interface HwPinDialogParams {
     standalone: false
 })
 export class HwPinDialogComponent extends HwDialogBaseComponent<HwPinDialogComponent> implements OnInit {
-  form: UntypedFormGroup;
+  form!: UntypedFormGroup;
   changePinStates = ChangePinStates;
   buttonsContent = '•';
 
@@ -108,7 +108,7 @@ export class HwPinDialogComponent extends HwDialogBaseComponent<HwPinDialogCompo
   addNumber(number: string) {
     const currentValue: string = this.form.value.pin;
     if (currentValue.length < 8) {
-      this.form.get('pin').setValue(currentValue + number);
+      this.form.get('pin')!.setValue(currentValue + number);
     }
   }
 
@@ -117,7 +117,7 @@ export class HwPinDialogComponent extends HwDialogBaseComponent<HwPinDialogCompo
    */
   removeNumber() {
     const currentValue: string = this.form.value.pin;
-    this.form.get('pin').setValue(currentValue.substring(0, currentValue.length - 1));
+    this.form.get('pin')!.setValue(currentValue.substring(0, currentValue.length - 1));
   }
 
   sendPin() {

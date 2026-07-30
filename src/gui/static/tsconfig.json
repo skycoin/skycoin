@@ -5,7 +5,7 @@
   },
   "compilerOptions": {
     "ignoreDeprecations": "6.0",
-    "strict": false,
+    "strict": true,
     "importHelpers": true,
     "outDir": "./dist/out-tsc",
     "sourceMap": true,

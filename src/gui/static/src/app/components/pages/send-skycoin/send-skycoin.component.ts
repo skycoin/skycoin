@@ -22,9 +22,9 @@ export class SendSkycoinComponent implements OnDestroy {
   // If true, the form for sending coins is shown. If false, the tx preview is shown.
   showForm = true;
   // Saves the last data entered on the form.
-  formData: SendCoinsData;
+  formData!: SendCoinsData | null;
   // If the page must show the simple form (left) or the advanced one (right).
-  activeForm: DoubleButtonActive;
+  activeForm!: DoubleButtonActive;
   activeForms = DoubleButtonActive;
 
   private subscription: SubscriptionLike;
@@ -57,7 +57,7 @@ export class SendSkycoinComponent implements OnDestroy {
   }
 
   // Returns from the tx preview to the form.
-  onBack(deleteFormData) {
+  onBack(deleteFormData: any) {
     // Erase the form data if requested.
     if (deleteFormData) {
       this.formData = null;

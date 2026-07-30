@@ -98,7 +98,7 @@
       <div class="-info">
         <div class="-item">
           <div class="-key">{{ 'exchange.label-you-send' | translate }}</div>
-          <div class="break-all">{{ sendAmount }} {{ form.get('fromCoin').value }}</div>
+          <div class="break-all">{{ sendAmount }} {{ form.get('fromCoin')!.value }}</div>
         </div>
         <div class="-item">
           <div class="-key">{{ 'exchange.label-you-get' | translate }}</div>
@@ -106,11 +106,11 @@
         </div>
         <div class="-item">
           <div class="-key">{{ 'exchange.label-to-address' | translate:{coin: toCoin} }}</div>
-          <div class="break-all">{{ form.get('toAddress').value || '-' }}</div>
+          <div class="break-all">{{ form.get('toAddress')!.value || '-' }}</div>
         </div>
         <div class="-item">
           <div class="-key">{{ 'exchange.label-price' | translate }}</div>
-          <div class="break-all">1 {{ form.get('fromCoin').value }} &asymp; {{ activeTradingPair.price.toFixed(6) }} {{ toCoin }}</div>
+          <div class="break-all">1 {{ form.get('fromCoin')!.value }} &asymp; {{ activeTradingPair.price.toFixed(6) }} {{ toCoin }}</div>
         </div>
         <div class="-item">
           <div class="-key">{{ 'exchange.label-stimate-transaction-time' | translate }}</div>

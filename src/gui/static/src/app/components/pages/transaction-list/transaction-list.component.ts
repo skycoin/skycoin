@@ -16,32 +16,32 @@ import { OldTransaction } from '../../../services/wallet-operations/transaction-
  * Represents a wallet, to be used as filter.
  */
 class Wallet {
-  id: string;
-  label: string;
-  coins: string;
-  hours: string;
-  addresses: Address[];
+  id!: string;
+  label!: string;
+  coins!: string;
+  hours!: string;
+  addresses!: Address[];
   /**
    * If true, the user selected the option for showing all transactions affecting the wallet,
    * which means all addresses must be considered selected.
    */
-  allAddressesSelected: boolean;
+  allAddressesSelected!: boolean;
 }
 
 /**
  * Represents an address, to be used as filter.
  */
 class Address {
-  walletID: string;
-  address: string;
-  coins: string;
-  hours: string;
+  walletID!: string;
+  address!: string;
+  coins!: string;
+  hours!: string;
   /**
    * If true, the user selected the option for showing all transactions affecting the wallet,
    * which means this address must be considered selected, even if the user did not select
    * it directly.
    */
-  showingWholeWallet: boolean;
+  showingWholeWallet!: boolean;
 }
 
 /**
@@ -58,11 +58,11 @@ class Address {
 })
 export class TransactionListComponent implements OnInit, OnDestroy {
   // Contains all transactions on the user history.
-  allTransactions: OldTransaction[];
+  allTransactions!: OldTransaction[];
   // Contains the filtered transaction list.
-  transactions: OldTransaction[];
+  transactions!: OldTransaction[];
   // All wallets the user has, for filtering.
-  wallets: Wallet[];
+  wallets!: Wallet[];
   transactionsLoaded = false;
   form: UntypedFormGroup;
 
@@ -70,16 +70,16 @@ export class TransactionListComponent implements OnInit, OnDestroy {
   readonly maxInitialElements = 40;
   viewAll = false;
   viewingTruncatedList = false;
-  totalElements: number;
+  totalElements!: number;
 
-  price: number;
+  price!: number;
 
-  private requestedFilters: string[];
+  private requestedFilters: string[] | null | undefined;
 
-  private priceSubscription: SubscriptionLike;
-  private filterSubscription: SubscriptionLike;
+  private priceSubscription!: SubscriptionLike;
+  private filterSubscription!: SubscriptionLike;
   private walletsSubscription: SubscriptionLike;
-  private transactionsSubscription: SubscriptionLike;
+  private transactionsSubscription!: SubscriptionLike;
   private routeSubscription: SubscriptionLike;
 
   constructor(
@@ -118,7 +118,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
       // Save the currently selected filters on 2 maps.
       const selectedAddresses: Map<string, boolean> = new Map<string, boolean>();
       const selectedWallets: Map<string, boolean> = new Map<string, boolean>();
-      const selectedfilters: (Wallet|Address)[] = this.form.get('filter').value;
+      const selectedfilters: (Wallet|Address)[] = this.form.get('filter')!.value;
       selectedfilters.forEach(filter => {
         if ((filter as Wallet).addresses) {
           selectedWallets.set((filter as Wallet).id, true);
@@ -166,7 +166,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
         });
       });
 
-      this.form.get('filter').setValue(newFilters, { emitEvent: false });
+      this.form.get('filter')!.setValue(newFilters, { emitEvent: false });
 
       this.loadTransactions(0);
     });
@@ -175,7 +175,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.priceSubscription = this.priceService.price.subscribe(price => this.price = price);
 
-    this.filterSubscription = this.form.get('filter').valueChanges.subscribe(() => {
+    this.filterSubscription = this.form.get('filter')!.valueChanges.subscribe(() => {
       this.viewAll = false;
       this.filterTransactions();
     });
@@ -203,7 +203,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
 
   // Cleans the filter list.
   removeFilters() {
-    this.form.get('filter').setValue([]);
+    this.form.get('filter')!.setValue([]);
   }
 
   /**
@@ -231,7 +231,7 @@ export class TransactionListComponent implements OnInit, OnDestroy {
    * Updates the list of transaction which will be shown on the UI.
    */
   private filterTransactions() {
-    const selectedfilters: (Wallet|Address)[] = this.form.get('filter').value;
+    const selectedfilters: (Wallet|Address)[] = this.form.get('filter')!.value;
     // Removes the selection status of the wallets and addresses. It is updated below, if needed.
     this.wallets.forEach(wallet => {
       wallet.allAddressesSelected = false;
@@ -305,9 +305,9 @@ export class TransactionListComponent implements OnInit, OnDestroy {
         });
       });
 
-      this.form.get('filter').setValue(filters);
+      this.form.get('filter')!.setValue(filters);
     } else {
-      this.form.get('filter').setValue([]);
+      this.form.get('filter')!.setValue([]);
     }
 
     this.requestedFilters = null;

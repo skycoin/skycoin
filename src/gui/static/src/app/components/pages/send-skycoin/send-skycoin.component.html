@@ -4,14 +4,14 @@
     <!-- Forms. -->
     @if (showForm && activeForm === activeForms.LeftButton) {
       <app-send-coins-form
-        [formData]="formData"
+        [formData]="formData!"
         [showSimpleForm]="true"
         (onFormSubmitted)="onFormSubmitted($event)"
       ></app-send-coins-form>
     }
     @if (showForm && activeForm === activeForms.RightButton) {
       <app-send-coins-form
-        [formData]="formData"
+        [formData]="formData!"
         [showSimpleForm]="false"
         (onFormSubmitted)="onFormSubmitted($event)"
       ></app-send-coins-form>
@@ -19,7 +19,7 @@
     <!-- Transaction preview. -->
     @if (!showForm) {
       <app-send-preview
-        [transaction]="formData.transaction"
+        [transaction]="formData!.transaction"
         (onBack)="onBack($event)"
       ></app-send-preview>
     }

@@ -34,13 +34,13 @@ export class ChangeNameData {
   /**
    * Wallet whose label will be changed.
    */
-  wallet: WalletBase;
+  wallet!: WalletBase;
   /**
    * New label. If provided, the form for entering the new label will not be shown and the
    * procedure will start immediately. NOTE: only for hw wallets. If the operation fails, the
    * error will be returned after closing the modal window.
    */
-  newName: string;
+  newName!: string;
 }
 
 /**
@@ -48,7 +48,7 @@ export class ChangeNameData {
  * configuration and the operation failed .
  */
 export class ChangeNameErrorResponse {
-  errorMsg: string;
+  errorMsg!: string;
 }
 
 /**
@@ -67,8 +67,8 @@ export class ChangeNameErrorResponse {
 })
 export class ChangeNameComponent implements OnInit, OnDestroy {
   // Confirmation button.
-  @ViewChild('button') button: ButtonComponent;
-  form: UntypedFormGroup;
+  @ViewChild('button') button!: ButtonComponent;
+  form!: UntypedFormGroup;
   currentState: States = States.Initial;
   states = States;
   msgIcons = MessageIcons;
@@ -79,8 +79,8 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
   // Vars with the validation error messages.
   inputErrorMsg = '';
 
-  private hwConnectionSubscription: SubscriptionLike;
-  private operationSubscription: SubscriptionLike;
+  private hwConnectionSubscription!: SubscriptionLike;
+  private operationSubscription!: SubscriptionLike;
 
   /**
    * Opens the modal window. Please use this function instead of opening the window "by hand".
@@ -217,9 +217,9 @@ export class ChangeNameComponent implements OnInit, OnDestroy {
 
     let valid = true;
 
-    if (!this.form.get('label').value || (this.form.get('label').value as String).trim().length === 0) {
+    if (!this.form.get('label')!.value || (this.form.get('label')!.value as String).trim().length === 0) {
       valid = false;
-      if (this.form.get('label').touched) {
+      if (this.form.get('label')!.touched) {
         this.inputErrorMsg = 'wallet.rename.label-error-info';
       }
     }

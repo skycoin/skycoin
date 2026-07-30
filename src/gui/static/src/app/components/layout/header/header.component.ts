@@ -22,24 +22,24 @@ import { AddressWithBalance } from '../../../services/wallet-operations/wallet-o
     standalone: false
 })
 export class HeaderComponent implements OnInit, OnDestroy {
-  @Input() headline: string;
+  @Input() headline!: string;
 
   // Data about the synchronization status of the node.
   synchronizationInfoObtained = false;
-  synchronizationPercentage: number;
+  synchronizationPercentage!: number;
   // Use synchronizationInfoObtained to know if the value has been already updated.
   synchronized = false;
-  currentBlock: number;
-  highestBlock: number;
+  currentBlock!: number;
+  highestBlock!: number;
 
   // Data about the balance.
-  coins: string;
-  hours: string;
+  coins!: string;
+  hours!: string;
 
   showPrice = !!AppConfig.priceApiId;
-  price: number;
+  price!: number;
   // If the node has pending transactions potentially affecting the user balance.
-  hasPendingTxs: boolean;
+  hasPendingTxs!: boolean;
   // If the app already got the balance from the node.
   balanceObtained = false;
   walletDownloadUrl = AppConfig.walletDownloadUrl;
@@ -80,7 +80,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
             // wallet can report 0 coins while the node is reporting some coins on the same
             // addresses on the previously created software wallet.
             const previouslySavedAddress = addresses.get(address.address);
-            if (previouslySavedAddress.coins.isLessThan(address.coins)) {
+            if (previouslySavedAddress!.coins.isLessThan(address.coins)!) {
               addresses.set(address.address, address);
             }
           }

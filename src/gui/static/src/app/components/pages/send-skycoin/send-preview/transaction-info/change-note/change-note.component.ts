@@ -24,14 +24,14 @@ export class ChangeNoteComponent implements OnInit, OnDestroy {
   // Max chars the note can have.
   public static readonly MAX_NOTE_CHARS = 64;
 
-  @ViewChild('button') button: ButtonComponent;
-  form: UntypedFormGroup;
+  @ViewChild('button') button!: ButtonComponent;
+  form!: UntypedFormGroup;
   maxNoteChars = ChangeNoteComponent.MAX_NOTE_CHARS;
   // Deactivates the form while the system is busy.
   busy = false;
 
-  private OperationSubscription: SubscriptionLike;
-  private originalNote: string;
+  private OperationSubscription!: SubscriptionLike;
+  private originalNote!: string;
 
   /**
    * Opens the modal window. Please use this function instead of opening the window "by hand".

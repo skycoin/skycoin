@@ -21,7 +21,7 @@ import { UnspentOutputsComponent } from 'app/components/pages/unspent-outputs/un
 import { CopyButtonComponent } from 'app/components/layout/copy-button/copy-button.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { AppReuseStrategy } from 'app/app.reuse-strategy';
-import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
+import { provideTranslateService, provideTranslateLoader, TranslatePipe, TranslateDirective } from '@ngx-translate/core';
 import { AppTranslateLoader } from 'app/app.translate-loader';
 import { GenericHeaderComponent } from 'app/components/layout/generic-header/generic-header.component';
 import { GenericFooterComponent } from 'app/components/layout/generic-footer/generic-footer.component';
@@ -126,12 +126,8 @@ const ROUTES: Routes = [
     bootstrap: [AppComponent], imports: [BrowserModule,
         BrowserAnimationsModule,
         RouterModule.forRoot(ROUTES, {}),
-        TranslateModule.forRoot({
-            loader: {
-                provide: TranslateLoader,
-                useClass: AppTranslateLoader
-            }
-        })], providers: [
+        TranslatePipe,
+        TranslateDirective], providers: [
         ApiService,
         ExplorerService,
         SearchService,
@@ -140,5 +136,8 @@ const ROUTES: Routes = [
         DatePipe,
         DecimalPipe,
         provideHttpClient(withInterceptorsFromDi()),
+        provideTranslateService({
+            loader: provideTranslateLoader(AppTranslateLoader),
+        }),
     ] })
 export class AppModule { }

@@ -18,7 +18,7 @@ export class AppReuseStrategy implements RouteReuseStrategy {
     return false;
   }
 
-  retrieve(route: ActivatedRouteSnapshot): DetachedRouteHandle {
+  retrieve(route: ActivatedRouteSnapshot): DetachedRouteHandle | null {
     return null;
   }
 

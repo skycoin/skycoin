@@ -24,9 +24,9 @@ export class QrCodeComponent implements OnInit {
     this.stringInternal = val;
     this.updateQR();
   }
-  private stringInternal: string;
+  private stringInternal!: string;
 
-  @ViewChild('qr', { static: true }) qr: ElementRef;
+  @ViewChild('qr', { static: true }) qr!: ElementRef;
 
   // Size in pixels.
   size = 130;

@@ -21,7 +21,7 @@ export class LanguageSelectionComponent implements OnDestroy {
   /**
    * Currently selected language.
    */
-  currentLanguage: LanguageData;
+  currentLanguage!: LanguageData;
   /**
    * If the language selection menu should be visible.
    */

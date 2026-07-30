@@ -30,7 +30,7 @@ export class ApiService {
   /**
    * Subject for emitting every time the local node URL is changed or removed.
    */
-  private localNodeUrlSubject: ReplaySubject<string> = new ReplaySubject<string>(1);
+  private localNodeUrlSubject: ReplaySubject<string | null> = new ReplaySubject<string | null>(1);
 
   constructor(
     private http: HttpClient
@@ -43,7 +43,7 @@ export class ApiService {
     // Get the URL of the local node that must be used as backend, if an URL was saved before.
     const localNodeUrl = localStorage.getItem(ApiService.localNodeUrlKey);
     if (localNodeUrl) {
-      window[ApiService.localNodeUrlKey] = localNodeUrl;
+      (window as any)[ApiService.localNodeUrlKey] = localNodeUrl;
     }
 
     this.localNodeUrlSubject.next(localNodeUrl);
@@ -53,8 +53,8 @@ export class ApiService {
    * Sets the URL of the local node that must be used as backend. If the URL is null, any
    * previously saved URL is removed.
    */
-  setNodeUrl(url: string) {
-    window[ApiService.localNodeUrlKey] = url;
+  setNodeUrl(url: string | null) {
+    (window as any)[ApiService.localNodeUrlKey] = url;
 
     if (url) {
       localStorage.setItem(ApiService.localNodeUrlKey, url);
@@ -68,7 +68,7 @@ export class ApiService {
   /**
    * Emits every time the local node URL is changed or removed.
    */
-  get localNodeUrl(): Observable<string> {
+  get localNodeUrl(): Observable<string | null> {
     return this.localNodeUrlSubject.asObservable();
   }
 
@@ -227,7 +227,7 @@ export class ApiService {
    * @param url URL segment (the URL of the API endpont after the "/api/" part).
    * @param options Arguments to send as URL params.
    */
-  private get(url: string, options: object = null): any {
+  private get(url: string, options: object | null = null): any {
     return this.http.get(this.getUrl(url, options)).pipe(
       catchError((error: any) => observableThrowError(error || 'Server error'))
     );
@@ -239,13 +239,13 @@ export class ApiService {
    *
    * @param parameters Object with params and values to build the querystring.
    */
-  private getQueryString(parameters: object = null): string {
+  private getQueryString(parameters: object | null = null): string {
     if (!parameters) {
       return '';
     }
 
-    return Object.keys(parameters).reduce((array, key) => {
-      array.push(key + '=' + encodeURIComponent(parameters[key]));
+    return Object.keys(parameters).reduce((array: string[], key) => {
+      array.push(key + '=' + encodeURIComponent((parameters as { [key: string]: any })[key]));
       return array;
     }, []).join('&');
   }
@@ -256,7 +256,7 @@ export class ApiService {
    * @param url URL segment (the URL of the API endpont after the "/api/" part).
    * @param options Arguments to send as URL params.
    */
-  private getUrl(url: string, options: object = null): string {
+  private getUrl(url: string, options: object | null = null): string {
     // Ensure that there is no a '/' at the beginning.
     if (url.startsWith('/')) {
       url = url.substr(1, url.length - 1);
@@ -275,6 +275,6 @@ export class ApiService {
    * valid value, the explorer must use as backend the Go intermediate server included with it.
    */
   private nodeUrl() {
-    return window[ApiService.localNodeUrlKey];
+    return (window as any)[ApiService.localNodeUrlKey];
   }
 }

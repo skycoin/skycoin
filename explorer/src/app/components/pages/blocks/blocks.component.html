@@ -55,7 +55,7 @@
           The "mouseOver" var helps keep track of those events. -->
           <div class="-xs-only" (mouseenter)="mouseOver = block.id" (mouseleave)="mouseOver === block.id ? mouseOver = -1 : null">
             <span class="-gray"><span class="timezone-icon" [ngClass]="{'timezone-icon-opaque': mouseOver === block.id}" >&#xf0ac;</span>{{ block.timestamp * 1000 | date:'yyyy' }}</span><br/>
-            <span class="-small-font">{{ (block.timestamp * 1000 | date:'MMM dd').toUpperCase() }}</span><br/>
+            <span class="-small-font">{{ (block.timestamp * 1000 | date:'MMM dd')?.toUpperCase() }}</span><br/>
             <span class="-small-font">{{ block.timestamp * 1000 | date:'HH:mm' }}</span>
             @if (mouseOver === block.id) {
               <div class="timezone-container">

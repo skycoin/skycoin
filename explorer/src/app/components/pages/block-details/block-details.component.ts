@@ -27,15 +27,15 @@ export class BlockDetailsComponent extends PageBaseComponent implements OnInit, 
   /**
    * Current block.
    */
-  block: Block;
+  block!: Block;
   /**
    * Total number of coins sent in all the outputs of all transactions in the block.
    */
-  totalAmount: BigNumber;
+  totalAmount!: BigNumber;
   /**
    * How many blocks the blockchain currently has.
    */
-  blockCount: number;
+  blockCount!: number;
   /**
    * ID (sequence number) of the current block.
    */
@@ -48,7 +48,7 @@ export class BlockDetailsComponent extends PageBaseComponent implements OnInit, 
   /**
    * Error message to be shown in the loading control if there is a problem.
    */
-  longErrorMsg: string;
+  longErrorMsg!: string;
 
   /**
    * Observable subscriptions that will be cleaned when closing the page.
@@ -103,7 +103,7 @@ export class BlockDetailsComponent extends PageBaseComponent implements OnInit, 
   private loadBlockData(checkSavedData: boolean) {
     let oldSavedDataUsed = false;
 
-    let savedData;
+    let savedData: any;
 
     // Get the URL params.
     this.pageSubscriptions.push(this.route.params.pipe(filter(params => +params['id'] !== null),

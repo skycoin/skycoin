@@ -58,7 +58,7 @@ export class CopyButtonComponent {
   /**
    * Text to be copied when clicking this button.
    */
-  @Input() text: string;
+  @Input() text!: string;
 
   /**
    * Function for copying the text.

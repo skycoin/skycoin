@@ -11,18 +11,18 @@ export class LanguageData {
   /**
    * Language code, for TranslateService (ngx-translate).
    */
-  code: string;
+  code!: string;
   /**
    * Languege name (written in the language itself).
    */
-  name: string;
+  name!: string;
   /**
    * Name of the file with the icon flag, with the file extension. The file must be inside
    * the assets/img/lang folder.
    */
-  iconName: string;
+  iconName!: string;
 
-  constructor(langObj) {
+  constructor(langObj: any) {
     Object.assign(this, langObj);
   }
 }
@@ -104,7 +104,7 @@ export class LanguageService {
    */
   private onLanguageChanged(event: LangChangeEvent) {
     // Update the currently selected language and save it in localStorage.
-    this.currentLanguageInternal.next(this.languages.find(val => val.code === event.lang));
+    this.currentLanguageInternal.next(this.languages.find(val => val.code === event.lang)!);
     localStorage.setItem(this.storageKey, event.lang);
   }
 }

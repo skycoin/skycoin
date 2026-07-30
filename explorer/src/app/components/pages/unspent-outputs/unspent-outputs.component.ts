@@ -67,11 +67,11 @@ export class UnspentOutputsComponent extends PageBaseComponent implements OnInit
   /**
    * Current address.
    */
-  address: string;
+  address!: string;
   /**
    * Unspent outputs of the current address.
    */
-  outputs: GetCurrentBalanceResponse;
+  outputs!: GetCurrentBalanceResponse;
   /**
    * Outputs that will be shown in the UI.
    */
@@ -79,11 +79,11 @@ export class UnspentOutputsComponent extends PageBaseComponent implements OnInit
   /**
    * Total number of coins in the unspent outputs.
    */
-  coins: BigNumber = null;
+  coins: BigNumber | null = null;
   /**
    * Total number of hours in the unspent outputs.
    */
-  hours: BigNumber = null;
+  hours: BigNumber | null = null;
   /**
    * Small text to be shown in variaous parts (not in the loading control) while loading the data.
    * It may also contain small error messages.
@@ -92,7 +92,7 @@ export class UnspentOutputsComponent extends PageBaseComponent implements OnInit
   /**
    * Error message to be shown in the loading control if there is a problem.
    */
-  longErrorMsg: string;
+  longErrorMsg!: string;
 
   /**
    * Observable subscriptions that will be cleaned when closing the page.
@@ -116,7 +116,7 @@ export class UnspentOutputsComponent extends PageBaseComponent implements OnInit
   private loadData(checkSavedData: boolean) {
     let oldSavedDataUsed = false;
 
-    let savedData;
+    let savedData: any;
 
     // Get the URL params.
     this.pageSubscriptions.push(this.route.params.pipe(switchMap((params: Params) => {
@@ -143,9 +143,9 @@ export class UnspentOutputsComponent extends PageBaseComponent implements OnInit
       // Calculate the total number of coins and hours.
       this.coins = new BigNumber(0);
       this.hours = new BigNumber(0);
-      response.head_outputs.map(o => {
-        this.coins = this.coins.plus(o.coins);
-        this.hours = this.hours.plus(o.calculated_hours);
+      response.head_outputs.map((o: any) => {
+        this.coins = this.coins!.plus(o.coins);
+        this.hours = this.hours!.plus(o.calculated_hours);
       });
 
       if (this.outputs.head_outputs.length > this.maxInitialElements) {

@@ -22,7 +22,7 @@
         {{ data.cancelButtonText | translate }}
       </app-button>
     }
-    <app-button (action)="closeModal(true)" class="primary" [disabled]="data.checkboxText && !accepted">
+    <app-button (action)="closeModal(true)" class="primary" [disabled]="!!(data.checkboxText && !accepted)">
       {{ data.confirmButtonText | translate }}
     </app-button>
   </div>

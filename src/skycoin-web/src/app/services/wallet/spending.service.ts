@@ -17,8 +17,8 @@ import { BlockchainService } from '../blockchain.service';
 import { HwWalletService, HwInput, HwOutput } from '../hw-wallet.service';
 
 export class Destination {
-  address: string;
-  coins: BigNumber;
+  address!: string;
+  coins!: BigNumber;
   hours?: BigNumber;
 }
 
@@ -28,7 +28,7 @@ export enum HoursSelectionTypes {
 }
 
 export class HoursSelection {
-  type: HoursSelectionTypes;
+  type!: HoursSelectionTypes;
   ShareFactor?: BigNumber;
 }
 
@@ -36,7 +36,7 @@ export class HoursSelection {
 export class SpendingService {
   isInjectingTx = false;
 
-  private currentCoin: BaseCoin;
+  private currentCoin!: BaseCoin;
 
   private get coinsMultiplier(): number {
     return this.currentCoin ? this.currentCoin.coinsMultiplier : 1000000;
@@ -88,11 +88,11 @@ export class SpendingService {
         if (!unspents && !addresses) {
           addresses = [];
           wallet.addresses.forEach(address => {
-            addresses.push(address.address);
+            addresses!.push(address.address);
           });
         }
 
-        const processedDestinations = [];
+        const processedDestinations: any[] = [];
         destinations.forEach(destination => {
           processedDestinations.push({
             address: destination.address,
@@ -104,7 +104,7 @@ export class SpendingService {
           }
         });
 
-        const processedHours = {
+        const processedHours: any = {
           type: hoursSelection.type,
         };
 
@@ -134,14 +134,14 @@ export class SpendingService {
 
           let hoursSent = new BigNumber('0');
           data.transaction.outputs
-            .filter(o => destinations.find(dest => dest.address === o.address))
-            .map(o => hoursSent = hoursSent.plus(new BigNumber(o.hours)));
+            .filter((o: any) => destinations.find(dest => dest.address === o.address))
+            .map((o: any) => hoursSent = hoursSent.plus(new BigNumber(o.hours)));
 
           const txInputs: TransactionInput[] = [];
-          data.transaction.inputs.forEach(input => {
+          data.transaction.inputs.forEach((input: any) => {
             txInputs.push({
               hash: input.uxid,
-              secret: (wallet.isHardware || isServerWallet) ? '' : (wallet.addresses.find(a => a.address === input.address) || {}).secret_key,
+              secret: (wallet.isHardware || isServerWallet) ? '' : (wallet.addresses.find(a => a.address === input.address) || ({} as any)).secret_key,
               address: input.address,
               calculated_hours: input.calculated_hours,
               coins: input.coins,
@@ -149,7 +149,7 @@ export class SpendingService {
           });
 
           const txOutputs: TransactionOutput[] = [];
-          data.transaction.outputs.forEach(output => {
+          data.transaction.outputs.forEach((output: any) => {
             txOutputs.push({
               address: output.address,
               coins: new BigNumber(output.coins).toNumber(),
@@ -213,7 +213,7 @@ export class SpendingService {
             // inputs must have to satisfy the requirement and the fee.
             let minimumHours = new BigNumber(0);
             if (hoursSelection.type === HoursSelectionTypes.Manual) {
-              destinations.map(destination => minimumHours = minimumHours.plus(new BigNumber(destination.hours)));
+              destinations.map(destination => minimumHours = minimumHours.plus(new BigNumber(destination.hours!)));
             }
             minimumHours = minimumHours.multipliedBy(new BigNumber(1).dividedBy(unburnedHoursRatio));
 
@@ -249,8 +249,8 @@ export class SpendingService {
                 minimumHours
               );
 
-              const hoursLossedInTx = tx.hoursBurned.plus(tx.hoursSent);
-              const hoursLossedInTxExtra = txExtra.hoursBurned.plus(txExtra.hoursSent);
+              const hoursLossedInTx = tx.hoursBurned!.plus(tx.hoursSent!);
+              const hoursLossedInTxExtra = txExtra.hoursBurned!.plus(txExtra.hoursSent!);
 
               if (hoursLossedInTx.isGreaterThan(hoursLossedInTxExtra)) {
                 tx = txExtra;
@@ -392,13 +392,13 @@ export class SpendingService {
 
     if (hoursSelection.type === HoursSelectionTypes.Auto) {
       if (changeCoins.isGreaterThan(0)) {
-        hoursToSend = sendableHours.multipliedBy(hoursSelection.ShareFactor).decimalPlaces(0, BigNumber.ROUND_FLOOR);
+        hoursToSend = sendableHours.multipliedBy(hoursSelection.ShareFactor!).decimalPlaces(0, BigNumber.ROUND_FLOOR);
       } else {
         hoursToSend = sendableHours;
       }
     } else {
       hoursToSend = new BigNumber(0);
-      destinations.map(destination => hoursToSend = hoursToSend.plus(new BigNumber(destination.hours)));
+      destinations.map(destination => hoursToSend = hoursToSend.plus(new BigNumber(destination.hours!)));
     }
 
     let sendedHours = new BigNumber(0);
@@ -413,7 +413,7 @@ export class SpendingService {
       if (hoursSelection.type === HoursSelectionTypes.Auto) {
         hours = hoursToSend.multipliedBy(dest.coins.dividedBy(amount)).decimalPlaces(0, BigNumber.ROUND_FLOOR);
       } else {
-        hours = dest.hours;
+        hours = dest.hours!;
       }
       sendedHours = sendedHours.plus(hours);
 
@@ -446,7 +446,7 @@ export class SpendingService {
     minRequiredOutputs.forEach(input => {
       txInputs.push({
         hash: input.hash,
-        secret: wallet.addresses.find(a => a.address === input.address).secret_key,
+        secret: wallet.addresses.find(a => a.address === input.address)!.secret_key!,
         address: input.address,
         calculated_hours: input.calculated_hours.toNumber(),
         coins: input.coins.toNumber()
@@ -519,7 +519,7 @@ export class SpendingService {
     }
   }
 
-  private getRequestOutputs(addresses): Observable<GetOutputsRequestOutput[]> {
+  private getRequestOutputs(addresses: any): Observable<GetOutputsRequestOutput[]> {
     if (!addresses) {
       return of([]);
     } else {
@@ -555,10 +555,10 @@ export class SpendingService {
     }
 
     if (chunks.length === 1) {
-      return this.apiService.get('outputs', { addrs: chunks[0] });
+      return this.apiService.get('outputs', { addrs: chunks[0] } as any);
     }
 
-    return forkJoin(chunks.map(chunk => this.apiService.get('outputs', { addrs: chunk }))).pipe(
+    return forkJoin(chunks.map(chunk => this.apiService.get('outputs', { addrs: chunk } as any))).pipe(
       map((results: GetOutputsRequest[]) => {
         const merged: GetOutputsRequest = {
           head_outputs: [],

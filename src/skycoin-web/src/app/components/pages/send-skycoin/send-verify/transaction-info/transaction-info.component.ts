@@ -14,13 +14,13 @@ import { BaseCoin } from '../../../../../coins/basecoin';
     standalone: false
 })
 export class TransactionInfoComponent implements OnInit, OnDestroy {
-  @Input() transaction: Transaction;
-  @Input() isPreview: boolean;
-  price: number;
+  @Input() transaction!: Transaction;
+  @Input() isPreview!: boolean;
+  price!: number;
   showInputsOutputs = false;
-  currentCoin: BaseCoin;
+  currentCoin!: BaseCoin;
 
-  private subscription: Subscription;
+  private subscription!: Subscription;
 
   constructor(
     private priceService: PriceService,
@@ -35,7 +35,7 @@ export class TransactionInfoComponent implements OnInit, OnDestroy {
     if (!this.isPreview) {
       if ((this.transaction as any).coinsMovedInternally) {
         return 'tx.hours-moved';
-      } else if (this.transaction.balance.isGreaterThan(0)) {
+      } else if (this.transaction.balance!.isGreaterThan(0)) {
         return 'tx.hours-received';
       }
     }
@@ -54,7 +54,7 @@ export class TransactionInfoComponent implements OnInit, OnDestroy {
     this.subscription.unsubscribe();
   }
 
-  toggleInputsOutputs(event) {
+  toggleInputsOutputs(event: any) {
     event.preventDefault();
 
     this.showInputsOutputs = !this.showInputsOutputs;

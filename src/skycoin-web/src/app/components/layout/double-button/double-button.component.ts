@@ -11,9 +11,9 @@ export enum DoubleButtonActive {RightButton, LeftButton}
     standalone: false
 })
 export class DoubleButtonComponent {
-  @Input() rightButtonText: string;
-  @Input() leftButtonText: string;
-  @Input() activeButton: DoubleButtonActive;
+  @Input() rightButtonText!: string;
+  @Input() leftButtonText!: string;
+  @Input() activeButton!: DoubleButtonActive;
   @Input() className = '';
   @Output() onStateChange = new EventEmitter();
   doubleButtonActive = DoubleButtonActive;

@@ -13,7 +13,7 @@ export class HwWalletDaemonService {
   private readonly timeoutMs = 55000;
 
   private connectionEventSubject = new BehaviorSubject<boolean>(false);
-  private checkHwSubscription: SubscriptionLike;
+  private checkHwSubscription!: SubscriptionLike;
   private hwConnected = false;
 
   private disconnectedChecks = 0;
@@ -134,7 +134,7 @@ export class HwWalletDaemonService {
         }
 
         response.originalServerErrorMsg = getHwErrorMsg(error);
-        response.type = this.getHardwareWalletErrorType(response.originalServerErrorMsg);
+        response.type = this.getHardwareWalletErrorType(response.originalServerErrorMsg || '');
         response.translatableErrorMsg = this.getHardwareWalletErrorMsg(response.type);
 
         return observableThrowError(response);
@@ -161,7 +161,7 @@ export class HwWalletDaemonService {
         delay(wait ? (this.hwConnected || this.disconnectedChecks < this.maxFastDisconnectedChecks ? this.fastUpdatePeriod : this.updatePeriod) : 0),
         mergeMap(() => this.get('/available')))
         .subscribe({
-          next: null,
+          next: undefined,
           error: () => this.ngZone.run(() => this.updateHwConnected(false)),
         });
     });

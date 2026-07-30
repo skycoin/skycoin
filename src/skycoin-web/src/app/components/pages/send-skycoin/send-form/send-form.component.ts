@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild, ChangeDetectionStrategy } from '@angular/core';
-import { UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, Validators } from '@angular/forms';
+import { UntypedFormBuilder, UntypedFormControl, UntypedFormGroup, Validators, ValidatorFn } from '@angular/forms';
 import { Subscription, of } from 'rxjs';
 import { delay, first } from 'rxjs';
 import { BigNumber } from 'bignumber.js';
@@ -30,23 +30,23 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
   public static readonly MaxUsdDecimal = 6;
 
-  @ViewChild('button') button: ButtonComponent;
+  @ViewChild('button') button!: ButtonComponent;
   @Input() formData: any;
   @Output() onFormSubmitted = new EventEmitter<any>();
 
   showSlowMobileInfo = false;
-  form: UntypedFormGroup;
-  wallets: Wallet[];
-  currentCoin: BaseCoin;
+  form!: UntypedFormGroup;
+  wallets!: Wallet[];
+  currentCoin!: BaseCoin;
   doubleButtonActive = DoubleButtonActive;
   selectedCurrency = DoubleButtonActive.LeftButton;
-  value: number;
+  value!: number;
   valueGreaterThanBalance = false;
-  price: number;
+  price!: number;
 
-  private processSubscription: Subscription;
+  private processSubscription!: Subscription;
   private subscriptionsGroup: Subscription[] = [];
-  private slowInfoSubscription: Subscription;
+  private slowInfoSubscription!: Subscription;
 
   constructor(
     public blockchainService: BlockchainService,
@@ -84,7 +84,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
     if (this.formData) {
       Object.keys(this.form.controls).forEach(control => {
         if (this.form.get(control)) {
-          this.form.get(control).setValue(this.formData.form[control]);
+          this.form.get(control)!.setValue(this.formData.form[control]);
         }
 
         this.selectedCurrency = this.formData.form.currency;
@@ -100,7 +100,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
     this.msgBarService.hide();
   }
 
-  onVerify(event = null) {
+  onVerify(event: any = null) {
     if (event) {
       event.preventDefault();
     }
@@ -128,35 +128,35 @@ export class SendFormComponent implements OnInit, OnDestroy {
     }
   }
 
-  changeActiveCurrency(value) {
+  changeActiveCurrency(value: any) {
     this.selectedCurrency = value;
     this.updateValue();
-    this.form.get('amount').updateValueAndValidity();
+    this.form.get('amount')!.updateValueAndValidity();
   }
 
   private updateValue() {
     if (!this.price) {
-      this.value = null;
+      this.value = null!;
 
       return;
     }
-    if (!this.form || this.validateAmount(this.form.get('amount') as UntypedFormControl) !== null || this.form.get('amount').value * 1 === 0) {
+    if (!this.form || this.validateAmount(this.form.get('amount') as UntypedFormControl) !== null || this.form.get('amount')!.value * 1 === 0) {
       this.value = -1;
 
       return;
     }
 
-    const coinsInWallet = this.form.get('wallet').value && (this.form.get('wallet').value as Wallet).balance ?
-      (this.form.get('wallet').value as Wallet).balance.toNumber() : -1;
+    const coinsInWallet = this.form.get('wallet')!.value && (this.form.get('wallet')!.value as Wallet).balance ?
+      (this.form.get('wallet')!.value as Wallet).balance!.toNumber() : -1;
 
     this.valueGreaterThanBalance = false;
     if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
-      this.value = new BigNumber(this.form.get('amount').value).multipliedBy(this.price).decimalPlaces(2).toNumber();
-      if (coinsInWallet > 0 && parseFloat(this.form.get('amount').value) > coinsInWallet) {
+      this.value = new BigNumber(this.form.get('amount')!.value).multipliedBy(this.price).decimalPlaces(2).toNumber();
+      if (coinsInWallet > 0 && parseFloat(this.form.get('amount')!.value) > coinsInWallet) {
         this.valueGreaterThanBalance = true;
       }
     } else {
-      this.value = new BigNumber(this.form.get('amount').value).dividedBy(this.price).decimalPlaces(this.blockchainService.currentMaxDecimals).toNumber();
+      this.value = new BigNumber(this.form.get('amount')!.value).dividedBy(this.price).decimalPlaces(this.blockchainService.currentMaxDecimals).toNumber();
       if (coinsInWallet > 0 && this.value > coinsInWallet) {
         this.valueGreaterThanBalance = true;
       }
@@ -164,9 +164,9 @@ export class SendFormComponent implements OnInit, OnDestroy {
   }
 
   private resetForm() {
-    this.form.get('wallet').setValue('', { emitEvent: false });
-    this.form.get('address').setValue('');
-    this.form.get('amount').setValue('');
+    this.form.get('wallet')!.setValue('', { emitEvent: false });
+    this.form.get('address')!.setValue('');
+    this.form.get('amount')!.setValue('');
     this.selectedCurrency = DoubleButtonActive.LeftButton;
   }
 
@@ -221,7 +221,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
       );
   }
 
-  private onTransactionCreated(transaction) {
+  private onTransactionCreated(transaction: any) {
     this.showSlowMobileInfo = false;
     this.removeSlowInfoSubscription();
     this.onFormSubmitted.emit({
@@ -237,7 +237,7 @@ export class SendFormComponent implements OnInit, OnDestroy {
     });
   }
 
-  private onError(error) {
+  private onError(error: any) {
     this.showSlowMobileInfo = false;
     this.removeSlowInfoSubscription();
     this.msgBarService.showError(error.message);
@@ -256,13 +256,13 @@ export class SendFormComponent implements OnInit, OnDestroy {
 
       this.form.controls.amount.setValidators([
         Validators.required,
-        this.validateAmountWithValue.bind(this),
+        this.validateAmountWithValue.bind(this) as ValidatorFn,
       ]);
 
       this.form.controls.amount.updateValueAndValidity();
     }));
 
-    this.subscriptionsGroup.push(this.form.get('amount').valueChanges.subscribe(value => {
+    this.subscriptionsGroup.push(this.form.get('amount')!.valueChanges.subscribe(value => {
       this.updateValue();
     }));
   }
@@ -293,8 +293,8 @@ export class SendFormComponent implements OnInit, OnDestroy {
       return firstValidation;
     }
 
-    const coinsInWallet = this.form.get('wallet').value && (this.form.get('wallet').value as Wallet).balance ?
-      (this.form.get('wallet').value as Wallet).balance.toNumber() : -1;
+    const coinsInWallet = this.form.get('wallet')!.value && (this.form.get('wallet')!.value as Wallet).balance ?
+      (this.form.get('wallet')!.value as Wallet).balance!.toNumber() : -1;
 
     if (this.selectedCurrency === DoubleButtonActive.LeftButton) {
       if (parseFloat(amountControl.value) > coinsInWallet) {

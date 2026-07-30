@@ -4,7 +4,7 @@
       <div class="form-field">
         <label for="node-preset">{{ 'nodes.change.preset-label' | translate}}</label>
         <div class="-select">
-          <select id="node-preset" [value]="form.get('url').value" (change)="onSelectPreset($any($event.target).value)">
+          <select id="node-preset" [value]="form.get('url')!.value" (change)="onSelectPreset($any($event.target).value)">
             @for (option of nodeOptions; track option.value) {
               <option [value]="option.value">{{ option.label }}</option>
             }

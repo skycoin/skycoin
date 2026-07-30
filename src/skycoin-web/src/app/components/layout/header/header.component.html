@@ -62,7 +62,7 @@
     class="progress-bar"
     color="primary"
     [mode]="!isBlockchainLoading ? 'query' : 'determinate'"
-    [value]="percentage * 100">
+    [value]="percentage! * 100">
   </mat-progress-bar>
   <app-nav-bar class="-on-small-and-below-only"></app-nav-bar>
   @if (connectionError != null) {

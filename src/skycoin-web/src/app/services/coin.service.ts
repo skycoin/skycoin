@@ -15,9 +15,9 @@ export enum TemporarilyAllowCoinResult {
 @Injectable()
 export class CoinService {
 
-  currentCoin: BehaviorSubject<BaseCoin> = new BehaviorSubject<BaseCoin>(null);
+  currentCoin: BehaviorSubject<BaseCoin> = new BehaviorSubject<BaseCoin>(null as any);
   coins: BaseCoin[] = [];
-  customNodeUrls: object;
+  customNodeUrls!: object;
 
   /**
    * Emits true once coins have been loaded (from server or fallback).
@@ -43,7 +43,7 @@ export class CoinService {
   }
 
   temporarilyAllowCoin(id: number, url: string): TemporarilyAllowCoinResult {
-    if (window['isElectron']) {
+    if ((window as any)['isElectron']) {
       const params = {
         id: id,
         url: url,
@@ -52,15 +52,15 @@ export class CoinService {
         confirmationOk: this.translate.instant('nodes.change.confirmation.ok'),
         confirmationCancel: this.translate.instant('nodes.change.confirmation.cancel'),
       };
-      return window['ipcRenderer'].sendSync('temporarilyAllowCoinSync', params);
+      return (window as any)['ipcRenderer'].sendSync('temporarilyAllowCoinSync', params);
     } else {
       return TemporarilyAllowCoinResult.OK;
     }
   }
 
   removeTemporarilyAllowedCoin() {
-    if (window['isElectron']) {
-      window['ipcRenderer'].sendSync('removeTemporarilyAllowedCoinSync');
+    if ((window as any)['isElectron']) {
+      (window as any)['ipcRenderer'].sendSync('removeTemporarilyAllowedCoinSync');
     }
   }
 
@@ -70,18 +70,18 @@ export class CoinService {
     }
 
     if (url.length > 0) {
-      this.customNodeUrls[coinId.toString()] = url;
+      (this.customNodeUrls as any)[coinId.toString()] = url;
     } else {
-      delete this.customNodeUrls[coinId.toString()];
+      delete (this.customNodeUrls as any)[coinId.toString()];
     }
 
-    if (!window['isElectron']) {
+    if (!(window as any)['isElectron']) {
       localStorage.setItem(this.nodeUrlsStorageKey, JSON.stringify(this.customNodeUrls));
     } else {
       if (url !== '') {
-        window['ipcRenderer'].sendSync('acceptTemporarilyAllowedCoinSync');
+        (window as any)['ipcRenderer'].sendSync('acceptTemporarilyAllowedCoinSync');
       } else {
-        window['ipcRenderer'].sendSync('removeAllowedCoinSync', coinId);
+        (window as any)['ipcRenderer'].sendSync('removeAllowedCoinSync', coinId);
       }
     }
 
@@ -92,9 +92,9 @@ export class CoinService {
 
   private loadCoinsFromServer() {
     this.http.get('/api/v1/coins').subscribe(
-      (serverCoins: any[]) => {
+      (serverCoins: any) => {
         if (serverCoins && serverCoins.length > 0) {
-          this.coins = serverCoins.map(data => BaseCoin.fromServerData(data));
+          this.coins = serverCoins.map((data: any) => BaseCoin.fromServerData(data));
         } else {
           this.loadFallbackCoins();
         }
@@ -129,18 +129,18 @@ export class CoinService {
   }
 
   private loadNodeUrls() {
-    if (!window['isElectron']) {
-      const savedUrls: object = JSON.parse(localStorage.getItem(this.nodeUrlsStorageKey));
+    if (!(window as any)['isElectron']) {
+      const savedUrls: object = JSON.parse(localStorage.getItem(this.nodeUrlsStorageKey)!);
       this.customNodeUrls = savedUrls ? savedUrls : {};
     } else {
-      const savedUrls = window['ipcRenderer'].sendSync('loadNodeUrlsSync');
+      const savedUrls = (window as any)['ipcRenderer'].sendSync('loadNodeUrlsSync');
       this.customNodeUrls = savedUrls ? JSON.parse(savedUrls) : {};
     }
   }
 
   private loadCurrentCoin() {
     const storedCoinId = sessionStorage.getItem(this.currentCoinStorageKey) || localStorage.getItem(this.currentCoinStorageKey);
-    let coin: BaseCoin;
+    let coin: BaseCoin | undefined;
 
     if (storedCoinId) {
       coin = this.coins.find((c: BaseCoin) => c.id === +storedCoinId);

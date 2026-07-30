@@ -15,7 +15,7 @@ import { CustomMatDialogService } from '../../../services/custom-mat-dialog.serv
 })
 export class BuyComponent implements OnInit {
 
-  orders: any[];
+  orders!: any[];
   otcEnabled: boolean;
   scanning = false;
 

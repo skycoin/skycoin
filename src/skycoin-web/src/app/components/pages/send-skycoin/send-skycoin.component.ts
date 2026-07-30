@@ -16,11 +16,11 @@ export class SendSkycoinComponent implements OnInit, OnDestroy {
   showForm = true;
   restarting = false;
   formData: any;
-  activeForm: DoubleButtonActive;
+  activeForm!: DoubleButtonActive;
   activeForms = DoubleButtonActive;
 
   private subscription: Subscription;
-  private coinSubscription: Subscription;
+  private coinSubscription!: Subscription;
 
   constructor(
     private coinService: CoinService,
@@ -44,14 +44,14 @@ export class SendSkycoinComponent implements OnInit, OnDestroy {
     this.coinSubscription.unsubscribe();
   }
 
-  onFormSubmitted(data) {
+  onFormSubmitted(data: any) {
     this.formData = data;
     this.showForm = false;
 
     this.goUp();
   }
 
-  onBack(deleteFormData) {
+  onBack(deleteFormData: any) {
     if (deleteFormData) {
       this.formData = null;
     }

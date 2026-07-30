@@ -34,10 +34,10 @@ export interface QrDialogConfig {
     standalone: false
 })
 export class QrCodeComponent implements OnInit, OnDestroy {
-  @ViewChild('qr') qr: ElementRef;
+  @ViewChild('qr') qr!: ElementRef;
 
-  form: UntypedFormGroup;
-  currentQrContent: string;
+  form!: UntypedFormGroup;
+  currentQrContent!: string;
   showForm = false;
   invalidCoins = false;
   invalidHours = false;
@@ -97,9 +97,9 @@ export class QrCodeComponent implements OnInit, OnDestroy {
       note: [''],
     });
 
-    this.subscriptionsGroup.push(this.form.get('coins').valueChanges.subscribe(this.reportValueChanged.bind(this)));
-    this.subscriptionsGroup.push(this.form.get('hours').valueChanges.subscribe(this.reportValueChanged.bind(this)));
-    this.subscriptionsGroup.push(this.form.get('note').valueChanges.subscribe(this.reportValueChanged.bind(this)));
+    this.subscriptionsGroup.push(this.form.get('coins')!.valueChanges.subscribe(this.reportValueChanged.bind(this)));
+    this.subscriptionsGroup.push(this.form.get('hours')!.valueChanges.subscribe(this.reportValueChanged.bind(this)));
+    this.subscriptionsGroup.push(this.form.get('note')!.valueChanges.subscribe(this.reportValueChanged.bind(this)));
 
     this.subscriptionsGroup.push(this.updateQrEvent.pipe(debounceTime(500)).subscribe(() => {
       this.updateQrContent();
@@ -118,27 +118,27 @@ export class QrCodeComponent implements OnInit, OnDestroy {
 
     let nextSeparator = '?';
 
-    const coins = this.form.get('coins').value;
+    const coins = this.form.get('coins')!.value;
     if (coins) {
       if (Number.parseFloat(coins).toString() === coins && Number.parseFloat(coins) > 0) {
-        this.currentQrContent += nextSeparator + 'amount=' + this.form.get('coins').value;
+        this.currentQrContent += nextSeparator + 'amount=' + this.form.get('coins')!.value;
         nextSeparator = '&';
       } else {
         this.invalidCoins = true;
       }
     }
 
-    const hours = this.form.get('hours').value;
+    const hours = this.form.get('hours')!.value;
     if (hours) {
       if (Number.parseInt(hours).toString() === hours && Number.parseInt(hours) > 0) {
-        this.currentQrContent += nextSeparator + 'hours=' + this.form.get('hours').value;
+        this.currentQrContent += nextSeparator + 'hours=' + this.form.get('hours')!.value;
         nextSeparator = '&';
       } else {
         this.invalidHours = true;
       }
     }
 
-    const note = this.form.get('note').value;
+    const note = this.form.get('note')!.value;
     if (note) {
       this.currentQrContent += nextSeparator + 'message=' + encodeURIComponent(note);
     }

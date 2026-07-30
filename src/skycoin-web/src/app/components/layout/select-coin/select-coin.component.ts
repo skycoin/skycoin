@@ -20,7 +20,7 @@ import { CustomMatDialogService } from '../../../services/custom-mat-dialog.serv
 })
 export class SelectCoinComponent implements ControlValueAccessor {
   @Output() onCoinChanged = new EventEmitter<BaseCoin>();
-  @Input() selectedCoin: BaseCoin;
+  @Input() selectedCoin!: BaseCoin;
 
   constructor(private dialog: CustomMatDialogService,
     private overlay: Overlay,

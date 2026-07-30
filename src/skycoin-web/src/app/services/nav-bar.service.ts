@@ -5,8 +5,8 @@ import { BehaviorSubject } from 'rxjs';
 export class NavBarService {
   switchVisible = false;
   activeComponent = new BehaviorSubject(1);
-  leftText: string;
-  rightText: string;
+  leftText!: string;
+  rightText!: string;
 
   setActiveComponent(value = 1) {
     this.activeComponent.next(value);

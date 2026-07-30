@@ -13,9 +13,9 @@ import { PriceService } from '../../../../services/price.service';
 })
 export class TransactionDetailComponent implements OnInit, OnDestroy {
 
-  price: number;
+  price!: number;
 
-  private priceSubscription: Subscription;
+  private priceSubscription!: Subscription;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public transaction: any,

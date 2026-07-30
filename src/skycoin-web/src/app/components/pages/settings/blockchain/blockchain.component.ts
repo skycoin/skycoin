@@ -14,11 +14,11 @@ import { BaseCoin } from '../../../../coins/basecoin';
 export class BlockchainComponent implements OnInit, OnDestroy {
   block: any;
   coinSupply: any;
-  currentCoin: BaseCoin;
+  currentCoin!: BaseCoin;
   showError = false;
 
-  private coinSubscription: Subscription;
-  private dataSubscription: Subscription;
+  private coinSubscription!: Subscription;
+  private dataSubscription!: Subscription;
 
   constructor(
     private blockchainService: BlockchainService,

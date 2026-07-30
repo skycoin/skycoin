@@ -12,8 +12,8 @@ import { LanguageData, LanguageService } from '../../../services/language.servic
 })
 export class SelectLanguageComponent implements OnInit {
 
-  languages: LanguageData[];
-  disableDismiss: boolean;
+  languages!: LanguageData[];
+  disableDismiss!: boolean;
 
   constructor(
     public dialogRef: MatDialogRef<SelectLanguageComponent>,
@@ -21,11 +21,11 @@ export class SelectLanguageComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    this.disableDismiss = this.dialogRef.disableClose;
+    this.disableDismiss = this.dialogRef.disableClose!;
     this.languages = this.languageService.languages;
   }
 
-  closePopup(language: LanguageData = null) {
+  closePopup(language: LanguageData | null = null) {
     this.dialogRef.close(language ? language.code : undefined);
   }
 

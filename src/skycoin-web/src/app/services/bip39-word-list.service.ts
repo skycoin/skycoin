@@ -1,6 +1,6 @@
 export class Bip39WordListService {
 
-  private wordMap: Map<string, boolean>;
+  private wordMap!: Map<string, boolean>;
 
   constructor() {
     import(`../../assets/bip39-word-list.json`).then ((result: any) => {

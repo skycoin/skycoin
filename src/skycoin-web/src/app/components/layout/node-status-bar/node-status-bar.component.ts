@@ -30,8 +30,8 @@ import { BaseCoin } from '../../../coins/basecoin';
   standalone: false,
 })
 export class NodeStatusBarComponent implements OnInit, OnDestroy {
-  health: CoinHealth = null;
-  private subscription: Subscription;
+  health: CoinHealth | null = null;
+  private subscription!: Subscription;
 
   constructor(
     private coinService: CoinService,

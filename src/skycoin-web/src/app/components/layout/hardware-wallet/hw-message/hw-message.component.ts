@@ -22,9 +22,9 @@ export enum MessageIcons {
 })
 export class HwMessageComponent implements OnDestroy {
   @Input() icon: MessageIcons = MessageIcons.None;
-  @Input() text: string;
-  @Input() outputsList: HwWalletTxRecipientData[];
-  @Input() lowerText: string;
+  @Input() text!: string;
+  @Input() outputsList!: HwWalletTxRecipientData[];
+  @Input() lowerText!: string;
   @Output() linkClicked = new EventEmitter();
 
   icons = MessageIcons;

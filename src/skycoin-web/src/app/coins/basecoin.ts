@@ -1,18 +1,18 @@
 export class BaseCoin {
-  id: number;
-  nodeUrl: string;
-  coinName: string;
-  coinSymbol: string;
-  hoursName: string;
-  priceTickerId: string;
-  priceTickerSource: string;
-  coinExplorer: string;
-  coinType: string;
-  serverWallets: boolean;
-  imageName: string;
-  gradientName: string;
-  iconName: string;
-  bigIconName: string;
+  id!: number;
+  nodeUrl!: string;
+  coinName!: string;
+  coinSymbol!: string;
+  hoursName!: string;
+  priceTickerId!: string;
+  priceTickerSource!: string;
+  coinExplorer!: string;
+  coinType!: string;
+  serverWallets!: boolean;
+  imageName!: string;
+  gradientName!: string;
+  iconName!: string;
+  bigIconName!: string;
 
   constructor(data?: Partial<BaseCoin>) {
     if (data) {

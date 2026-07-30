@@ -24,7 +24,7 @@ export class ConfirmationComponent {
     this.dialogRef.close(isConfirmed);
   }
 
-  setAccept(event) {
+  setAccept(event: any) {
     this.accepted = event.checked ? true : false;
   }
 }

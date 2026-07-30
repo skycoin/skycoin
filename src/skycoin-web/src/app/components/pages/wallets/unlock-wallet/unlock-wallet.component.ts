@@ -8,9 +8,10 @@ import { Wallet } from '../../../../app.datatypes';
 import { WalletService } from '../../../../services/wallet/wallet.service';
 import { config } from '../../../../app.config';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { ButtonComponent } from '../../../layout/button/button.component';
 
 export class ConfirmSeedParams {
-  wallet: Wallet;
+  wallet!: Wallet;
 }
 
 @Component({
@@ -23,8 +24,8 @@ export class ConfirmSeedParams {
 export class UnlockWalletComponent implements OnInit, OnDestroy {
   @Output() onWalletUnlocked = new EventEmitter<void>();
   @Output() onDeleteClicked = new EventEmitter<void>();
-  @ViewChild('unlock') unlockButton;
-  form: UntypedFormGroup;
+  @ViewChild('unlock') unlockButton!: ButtonComponent;
+  form!: UntypedFormGroup;
   disableDismiss = false;
   loadingProgress = 0;
   showConfirmSeedWarning;
@@ -32,12 +33,12 @@ export class UnlockWalletComponent implements OnInit, OnDestroy {
   hasEncryptedSeed = false;
 
   private wallet: Wallet;
-  private unlockSubscription: Subscription;
-  private progressSubscription: Subscription;
-  private slowInfoSubscription: Subscription;
+  private unlockSubscription!: Subscription;
+  private progressSubscription!: Subscription;
+  private slowInfoSubscription!: Subscription;
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) private data,
+    @Inject(MAT_DIALOG_DATA) private data: any,
     public dialogRef: MatDialogRef<UnlockWalletComponent>,
     private formBuilder: UntypedFormBuilder,
     private walletService: WalletService,

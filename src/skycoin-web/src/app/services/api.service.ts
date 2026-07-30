@@ -11,7 +11,7 @@ import { parseResponseMessage } from '../utils/errors';
 @Injectable()
 export class ApiService {
 
-  private url: string;
+  private url!: string;
 
   constructor(private http: HttpClient,
               private translate: TranslateService,
@@ -21,7 +21,7 @@ export class ApiService {
         if (!coin) {
           return;
         }
-        const customUrl = coinService.customNodeUrls[coin.id.toString()];
+        const customUrl = (coinService.customNodeUrls as any)[coin.id.toString()];
         this.url = customUrl ? customUrl : coin.nodeUrl;
         if (this.url.endsWith('/')) {
           this.url = this.url.substring(0, this.url.length - 1);
@@ -30,17 +30,17 @@ export class ApiService {
       });
   }
 
-  get(url, params = null, options = {}): Observable<any> {
+  get(url: any, params: any = null, options = {}): Observable<any> {
     return this.http.get(this.getUrl(url), this.getRequestOptions(options, params)).pipe(
       catchError((error: any) => this.getErrorMessage(error)));
   }
 
-  delete(url, params = null, options = {}): Observable<any> {
+  delete(url: any, params = null, options = {}): Observable<any> {
     return this.http.delete(this.getUrl(url), this.getRequestOptions(options, params)).pipe(
       catchError((error: any) => this.getErrorMessage(error)));
   }
 
-  post(url, body = {}, options: any = {}, useV2 = false): Observable<any> {
+  post(url: any, body = {}, options: any = {}, useV2 = false): Observable<any> {
     if (useV2) {
       options.json = true;
     }
@@ -52,7 +52,7 @@ export class ApiService {
     ).pipe(catchError((error: any) => this.getErrorMessage(error)));
   }
 
-  private getQueryString(parameters = null) {
+  private getQueryString(parameters: any = null) {
     if (!parameters) {
       return '';
     }
@@ -61,7 +61,7 @@ export class ApiService {
       array.push(key + '=' + encodeURIComponent(parameters[key]));
 
       return array;
-    }, []).join('&');
+    }, [] as string[]).join('&');
   }
 
   private getRequestOptions(additionalOptions: any, parameters: any = null): any {

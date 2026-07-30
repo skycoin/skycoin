@@ -21,10 +21,10 @@ export class ScanProgressData {
 
 @Injectable()
 export class WalletService {
-  wallets: BehaviorSubject<Wallet[]> = new BehaviorSubject<Wallet[]>(null);
+  wallets: BehaviorSubject<Wallet[]> = new BehaviorSubject<Wallet[]>(null as any);
 
-  private currentCoin: BaseCoin;
-  private coinSubscription: Subscription;
+  private currentCoin!: BaseCoin;
+  private coinSubscription!: Subscription;
 
   constructor(
     private cipherProvider: CipherProvider,
@@ -60,7 +60,7 @@ export class WalletService {
   }
 
   get addresses(): Observable<Address[]> {
-    return this.currentWallets.pipe(map(wallets => wallets.reduce((array, wallet) => array.concat(wallet.addresses), [])));
+    return this.currentWallets.pipe(map(wallets => wallets.reduce((array, wallet) => array.concat(wallet.addresses), [] as Address[])));
   }
 
   addAddress(wallet: Wallet, saveWallet = true, accountIndex?: number, chainIndex?: number): Observable<void> {
@@ -98,15 +98,15 @@ export class WalletService {
     return this.apiService.post('wallet/newAddress', params).pipe(
       mergeMap(() => {
         // Reload wallet from server to get updated addresses and accounts
-        return this.apiService.get('wallet', { id: wallet.filename }).pipe(
+        return this.apiService.get('wallet', { id: wallet.filename } as any).pipe(
           map((response: any) => {
-            wallet.addresses = (response.entries || []).map(e => ({ address: e.address }));
+            wallet.addresses = (response.entries || []).map((e: any) => ({ address: e.address }));
             if (response.meta.type === 'bip44' && response.accounts) {
-              wallet.accounts = response.accounts.map(a => ({
+              wallet.accounts = response.accounts.map((a: any) => ({
                 name: a.name,
                 index: a.index,
-                externalAddresses: (a.external_entries || []).map(e => ({ address: e.address })),
-                changeAddresses: (a.change_entries || []).map(e => ({ address: e.address })),
+                externalAddresses: (a.external_entries || []).map((e: any) => ({ address: e.address })),
+                changeAddresses: (a.change_entries || []).map((e: any) => ({ address: e.address })),
               }));
             }
             this.saveWallets();
@@ -176,7 +176,7 @@ export class WalletService {
           label: response.meta.label,
           balance: new BigNumber('0'),
           hours: new BigNumber('0'),
-          addresses: (response.entries || []).map(e => ({ address: e.address })),
+          addresses: (response.entries || []).map((e: any) => ({ address: e.address })),
           coinId: coinId,
           walletType: response.meta.type || walletType,
         };
@@ -210,7 +210,7 @@ export class WalletService {
 
     const InitialNextSeed = wallet.nextSeed;
 
-    return this.checkWalletAddresses(wallet, 0, onProgressChanged, InitialNextSeed).pipe(
+    return this.checkWalletAddresses(wallet, 0, onProgressChanged, InitialNextSeed!).pipe(
       map(lastIndexWithTxs => {
         const unnecessaryAddresses = wallet.addresses.length - 1 - lastIndexWithTxs;
         if (unnecessaryAddresses > 0) {
@@ -248,7 +248,7 @@ export class WalletService {
 
     return new Observable<void>(observer => {
       Promise.all([
-        this.encryptionService.encrypt(wallet.seed, password),
+        this.encryptionService.encrypt(wallet.seed!, password),
         wallet.nextSeed ? this.encryptionService.encrypt(wallet.nextSeed, password) : Promise.resolve(null),
       ]).then(([encSeed, encNextSeed]) => {
         wallet.encryptedSeed = encSeed;
@@ -269,12 +269,12 @@ export class WalletService {
 
     return new Observable<void>(observer => {
       const decryptPromises = [
-        this.encryptionService.decrypt(wallet.encryptedSeed, password),
+        this.encryptionService.decrypt(wallet.encryptedSeed!, password),
         wallet.encryptedNextSeed ? this.encryptionService.decrypt(wallet.encryptedNextSeed, password) : Promise.resolve(null),
       ];
 
       Promise.all(decryptPromises).then(([seed, nextSeed]) => {
-        const cleanSeed = this.getCleanSeed(seed);
+        const cleanSeed = this.getCleanSeed(seed!);
         const currentSeed = convertAsciiToHexa(cleanSeed);
 
         this.unlockWalletAddresses(currentSeed, wallet, 0, onProgressChanged).subscribe(
@@ -368,7 +368,7 @@ export class WalletService {
   }
 
   private loadWalletsFromLocalStorage() {
-    const storedWallets: string = localStorage.getItem('wallets');
+    const storedWallets: string | null = localStorage.getItem('wallets');
     if (storedWallets) {
       const wallets: Wallet[] = JSON.parse(storedWallets);
       wallets.forEach((wallet) => {
@@ -396,7 +396,7 @@ export class WalletService {
           const wallets: Wallet[] = serverWallets.map(w => {
             const wlt: Wallet = {
               label: w.meta.label,
-              addresses: (w.entries || []).map(e => ({ address: e.address })),
+              addresses: (w.entries || []).map((e: any) => ({ address: e.address })),
               coinId: this.currentCoin ? this.currentCoin.id : defaultCoinId,
               encrypted: w.meta.encrypted,
               walletType: w.meta.type || 'deterministic',
@@ -405,11 +405,11 @@ export class WalletService {
 
             // Parse BIP44 account structure
             if (w.meta.type === 'bip44' && w.accounts) {
-              wlt.accounts = w.accounts.map(a => ({
+              wlt.accounts = w.accounts.map((a: any) => ({
                 name: a.name,
                 index: a.index,
-                externalAddresses: (a.external_entries || []).map(e => ({ address: e.address })),
-                changeAddresses: (a.change_entries || []).map(e => ({ address: e.address })),
+                externalAddresses: (a.external_entries || []).map((e: any) => ({ address: e.address })),
+                changeAddresses: (a.change_entries || []).map((e: any) => ({ address: e.address })),
               }));
             }
 
@@ -428,7 +428,7 @@ export class WalletService {
     return this.apiService.get('wallet/xpub', {
       id: wallet.filename,
       path: path,
-    }).pipe(map((response: any) => response.xpub_key));
+    } as any).pipe(map((response: any) => response.xpub_key));
   }
 
   addAccount(wallet: Wallet, name: string): Observable<Wallet> {
@@ -438,14 +438,14 @@ export class WalletService {
     }).pipe(map((response: any) => {
       // Update wallet with new account structure
       if (response.accounts) {
-        wallet.accounts = response.accounts.map(a => ({
+        wallet.accounts = response.accounts.map((a: any) => ({
           name: a.name,
           index: a.index,
-          externalAddresses: (a.external_entries || []).map(e => ({ address: e.address })),
-          changeAddresses: (a.change_entries || []).map(e => ({ address: e.address })),
+          externalAddresses: (a.external_entries || []).map((e: any) => ({ address: e.address })),
+          changeAddresses: (a.change_entries || []).map((e: any) => ({ address: e.address })),
         }));
       }
-      wallet.addresses = (response.entries || []).map(e => ({ address: e.address }));
+      wallet.addresses = (response.entries || []).map((e: any) => ({ address: e.address }));
       this.saveWallets();
       return wallet;
     }));
@@ -474,11 +474,11 @@ export class WalletService {
     const maxAdrressesToScan = environment.e2eTest ? 2 : 100;
 
     return this.addAddress(wallet, false).pipe(
-      mergeMap(() => this.apiService.get('transactions', { addrs: wallet.addresses[wallet.addresses.length - 1].address })),
+      mergeMap(() => this.apiService.get('transactions', { addrs: wallet.addresses[wallet.addresses.length - 1].address } as any)),
       mergeMap(transactions => {
         if (transactions && transactions.length > 0) {
           lastIndexWithTxs = wallet.addresses.length - 1;
-          nextSeed = wallet.nextSeed;
+          nextSeed = wallet.nextSeed!;
         } else {
           wallet.nextSeed = nextSeed;
         }

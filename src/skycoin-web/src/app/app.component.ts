@@ -25,12 +25,12 @@ import { HwConfirmTxDialogComponent } from './components/layout/hardware-wallet/
     standalone: false
 })
 export class AppComponent implements OnInit {
-  @ViewChild('msgBar') msgBar: MsgBarComponent;
+  @ViewChild('msgBar') msgBar!: MsgBarComponent;
 
-  current: number;
-  highest: number;
-  otcEnabled: boolean;
-  version: string;
+  current!: number;
+  highest!: number;
+  otcEnabled!: boolean;
+  version!: string;
   browserCompatibleWithWasm = true;
   wasmFileLoaded = true;
 
@@ -76,7 +76,7 @@ export class AppComponent implements OnInit {
       // Only warn about leaving when wallets are browser-only (no --wallet-dir).
       // When server manages wallets, nothing is lost on reload.
       const coin = this.coinService.currentCoin.getValue();
-      if (environment.production && !environment.e2eTest && !window['isElectron'] && !(coin && coin.serverWallets)) {
+      if (environment.production && !environment.e2eTest && !(window as any)['isElectron'] && !(coin && coin.serverWallets)) {
         e.preventDefault();
         e.returnValue = '';
       }
@@ -89,9 +89,9 @@ export class AppComponent implements OnInit {
     return !this.current || !this.highest || this.current !== this.highest;
   }
 
-  private checkCipherProviderResponse(response) {
-    if (window['removeSplash']) {
-      setTimeout(() => window['removeSplash']());
+  private checkCipherProviderResponse(response: any) {
+    if ((window as any)['removeSplash']) {
+      setTimeout(() => (window as any)['removeSplash']());
     }
     if (response !== InitializationResults.Ok) {
       if (response === InitializationResults.ErrorLoadingWasmFile) {

@@ -27,13 +27,13 @@ import { ConfirmationComponent } from '../../../layout/confirmation/confirmation
 export class PendingTransactionsComponent implements OnInit, OnDestroy {
   isLoading = false;
   transactions: any[] = [];
-  currentCoin: BaseCoin;
+  currentCoin!: BaseCoin;
   showError = false;
 
-  private navbarSubscription: Subscription;
-  private coinSubscription: Subscription;
-  private dataSubscription: Subscription;
-  private selectedNavbarOption: number;
+  private navbarSubscription!: Subscription;
+  private coinSubscription!: Subscription;
+  private dataSubscription!: Subscription;
+  private selectedNavbarOption!: number;
 
   private readonly updatePeriod = 10 * 1000;
   private readonly errorUpdatePeriod = 2 * 1000;
@@ -126,15 +126,15 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
     );
   }
 
-  private mapTransactions(transactions) {
-    return transactions.map(transaction => {
+  private mapTransactions(transactions: any) {
+    return transactions.map((transaction: any) => {
       transaction.transaction.timestamp = moment(transaction.received).unix();
       return transaction.transaction;
     })
-      .map(transaction => {
+      .map((transaction: any) => {
         transaction.amount = new BigNumber('0');
         transaction.hours = new BigNumber('0');
-        transaction.outputs.map(output => {
+        transaction.outputs.map((output: any) => {
           transaction.amount = transaction.amount.plus(output.coins);
           transaction.hours = transaction.hours.plus(output.hours);
         });
@@ -163,13 +163,13 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
             wallet.addresses.forEach(address => walletAddresses.add(address.address));
           });
 
-          return of(trans.filter(tran => {
+          return of(trans.filter((tran: any) => {
             if (isEqualOrSuperiorVersion(version, '0.25.0')) {
-              return tran.transaction.inputs.some(input => walletAddresses.has(input.owner)) ||
-              tran.transaction.outputs.some(output => walletAddresses.has(output.dst));
+              return tran.transaction.inputs.some((input: any) => walletAddresses.has(input.owner)) ||
+              tran.transaction.outputs.some((output: any) => walletAddresses.has(output.dst));
             } else {
-              return tran.owner_addressses.some(address => walletAddresses.has(address)) ||
-              tran.transaction.outputs.some(output => walletAddresses.has(output.dst));
+              return tran.owner_addressses.some((address: any) => walletAddresses.has(address)) ||
+              tran.transaction.outputs.some((output: any) => walletAddresses.has(output.dst));
             }
           }));
         })
@@ -180,9 +180,9 @@ export class PendingTransactionsComponent implements OnInit, OnDestroy {
   private getUpdatedTransactions(transactions: any): Observable<any> {
     return forkJoin(transactions.map((transaction: any) => {
       return forkJoin(transaction.transaction.inputs
-        .map(input => this.historyService.getTransactionDetails(input))).pipe(
-        mergeMap((inputDetails: any[]) => {
-          transaction.owner_addressses = inputDetails.map(d => d.owner_address);
+        .map((input: any) => this.historyService.getTransactionDetails(input))).pipe(
+        mergeMap((inputDetails: any) => {
+          transaction.owner_addressses = inputDetails.map((d: any) => d.owner_address);
           return of(transaction);
         })
       );

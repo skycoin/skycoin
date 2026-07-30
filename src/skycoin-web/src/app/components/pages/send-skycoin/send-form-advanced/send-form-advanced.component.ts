@@ -29,13 +29,13 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
     standalone: false
 })
 export class SendFormAdvancedComponent implements OnInit, OnDestroy {
-  @ViewChild('button') button: ButtonComponent;
+  @ViewChild('button') button!: ButtonComponent;
   @Input() formData: any;
   @Output() onFormSubmitted = new EventEmitter<any>();
 
-  form: UntypedFormGroup;
-  wallet: Wallet;
-  addresses = [];
+  form!: UntypedFormGroup;
+  wallet!: Wallet | null;
+  addresses: Address[] = [];
   allUnspentOutputs: UnspentOutput[] = [];
   unspentOutputs: UnspentOutput[] = [];
   loadingUnspentOutputs = false;
@@ -45,16 +45,16 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   autoHours = true;
   autoOptions = false;
   autoShareValue = '0.5';
-  previewTx: boolean;
-  currentCoin: BaseCoin;
+  previewTx!: boolean;
+  currentCoin!: BaseCoin;
   doubleButtonActive = DoubleButtonActive;
   selectedCurrency = DoubleButtonActive.LeftButton;
-  values: number[];
-  price: number;
+  values!: number[];
+  price!: number;
 
   private subscriptionsGroup: Subscription[] = [];
-  private getOutputsSubscriptions: Subscription;
-  private unlockSubscription: Subscription;
+  private getOutputsSubscriptions!: Subscription;
+  private unlockSubscription!: Subscription;
   private destinationSubscriptions: Subscription[] = [];
 
   constructor(
@@ -63,7 +63,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     private formBuilder: UntypedFormBuilder,
     private dialog: CustomMatDialogService,
     private navbarService: NavBarService,
-    private blockchainService: BlockchainService,
+    public blockchainService: BlockchainService,
     private coinService: CoinService,
     private priceService: PriceService,
     private msgBarService: MsgBarService,
@@ -83,7 +83,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       ),
     });
 
-    this.subscriptionsGroup.push(this.form.get('wallet').valueChanges.subscribe((wallet: Wallet) => {
+    this.subscriptionsGroup.push(this.form.get('wallet')!.valueChanges.subscribe((wallet: Wallet) => {
       this.wallet = wallet;
 
       this.closeGetOutputsSubscriptions();
@@ -102,25 +102,25 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
           () => this.loadingUnspentOutputs = false,
         );
 
-      this.addresses = wallet.addresses.filter(addr => addr.balance.isGreaterThan(0));
-      this.form.get('addresses').setValue(null);
-      this.form.get('outputs').setValue(null);
+      this.addresses = wallet.addresses.filter(addr => addr.balance!.isGreaterThan(0));
+      this.form.get('addresses')!.setValue(null);
+      this.form.get('outputs')!.setValue(null);
 
       this.updateAvailableBalance();
-      this.form.get('destinations').updateValueAndValidity();
+      this.form.get('destinations')!.updateValueAndValidity();
     }));
 
-    this.subscriptionsGroup.push(this.form.get('addresses').valueChanges.subscribe(() => {
-      this.form.get('outputs').setValue(null);
+    this.subscriptionsGroup.push(this.form.get('addresses')!.valueChanges.subscribe(() => {
+      this.form.get('outputs')!.setValue(null);
       this.unspentOutputs = this.filterUnspentOutputs();
 
       this.updateAvailableBalance();
-      this.form.get('destinations').updateValueAndValidity();
+      this.form.get('destinations')!.updateValueAndValidity();
     }));
 
-    this.subscriptionsGroup.push(this.form.get('outputs').valueChanges.subscribe(() => {
+    this.subscriptionsGroup.push(this.form.get('outputs')!.valueChanges.subscribe(() => {
       this.updateAvailableBalance();
-      this.form.get('destinations').updateValueAndValidity();
+      this.form.get('destinations')!.updateValueAndValidity();
     }));
 
     this.subscriptionsGroup.push(this.coinService.currentCoin
@@ -158,7 +158,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.unlockAndSend();
   }
 
-  changeActiveCurrency(value) {
+  changeActiveCurrency(value: any) {
     this.selectedCurrency = value;
     this.updateValues();
     (this.form.get('destinations') as UntypedFormArray).updateValueAndValidity();
@@ -166,7 +166,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
   private updateValues() {
     if (!this.price) {
-      this.values = null;
+      this.values = null!;
 
       return;
     }
@@ -174,7 +174,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.values = [];
 
     this.destControls.forEach((dest, i) => {
-      const value = dest.get('coins').value !== undefined ? dest.get('coins').value.replace(' ', '=') : '';
+      const value = dest.get('coins')!.value !== undefined ? dest.get('coins')!.value.replace(' ', '=') : '';
 
       if (isNaN(value) || value.trim() === '' || parseFloat(value) <= 0 || value * 1 === 0) {
         this.values[i] = -1;
@@ -256,7 +256,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.updateValues();
   }
 
-  removeDestination(index) {
+  removeDestination(index: any) {
     const destinations = this.form.get('destinations') as UntypedFormArray;
     destinations.removeAt(index);
 
@@ -269,27 +269,27 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.autoShareValue = value.toFixed(2);
   }
 
-  selectChangeAddress(event) {
+  selectChangeAddress(event: any) {
     const config = new MatDialogConfig();
     config.width = '566px';
     config.autoFocus = false;
     this.dialog.open(SelectAddressComponent, config).afterClosed().subscribe(response => {
       if (response) {
-        this.form.get('changeAddress').setValue(response);
+        this.form.get('changeAddress')!.setValue(response);
       }
     });
   }
 
-  toggleOptions(event) {
+  toggleOptions(event: any) {
     event.stopPropagation();
     event.preventDefault();
 
     this.autoOptions = !this.autoOptions;
   }
 
-  setAutoHours(event) {
+  setAutoHours(event: any) {
     this.autoHours = event.checked;
-    this.form.get('destinations').updateValueAndValidity();
+    this.form.get('destinations')!.updateValueAndValidity();
 
     if (!this.autoHours) {
       this.autoOptions = false;
@@ -300,7 +300,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.addresses = this.formData.form.wallet.addresses;
 
     ['wallet', 'addresses', 'changeAddress'].forEach(name => {
-      this.form.get(name).setValue(this.formData.form[name]);
+      this.form.get(name)!.setValue(this.formData.form[name]);
     });
 
     for (let i = 0; i < this.formData.form.destinations.length - 1; i++) {
@@ -309,9 +309,9 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
     this.destControls.forEach((destControl, i) => {
       ['address', 'hours'].forEach(name => {
-        destControl.get(name).setValue(this.formData.form.destinations[i][name]);
+        destControl.get(name)!.setValue(this.formData.form.destinations[i][name]);
       });
-      destControl.get('coins').setValue(this.formData.form.destinations[i].originalAmount);
+      destControl.get('coins')!.setValue(this.formData.form.destinations[i].originalAmount);
     });
 
     if (this.formData.form.hoursSelection.type === HoursSelectionTypes.Auto) {
@@ -329,17 +329,17 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       this.allUnspentOutputs = this.formData.form.allUnspentOutputs;
       this.unspentOutputs = this.filterUnspentOutputs();
 
-      this.form.get('outputs').setValue(this.formData.form.outputs);
+      this.form.get('outputs')!.setValue(this.formData.form.outputs);
     }
 
     this.selectedCurrency = this.formData.form.currency;
   }
 
-  addressCompare(a, b) {
+  addressCompare(a: any, b: any) {
     return a && b && a.address === b.address;
   }
 
-  outputCompare(a, b) {
+  outputCompare(a: any, b: any) {
     return a && b && a.hash === b.hash;
   }
 
@@ -360,8 +360,8 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       }
 
       return checkControls.map(name => {
-        const value = control.get(name).value !== undefined
-          ? String(control.get(name).value).replace(' ', '=')
+        const value = control.get(name)!.value !== undefined
+          ? String(control.get(name)!.value).replace(' ', '=')
           : '';
 
         if (isNaN((value as any)) || value.trim() === '') {
@@ -426,7 +426,7 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       hours: '',
     });
 
-    this.destinationSubscriptions.push(group.get('coins').valueChanges.subscribe(value => {
+    this.destinationSubscriptions.push(group.get('coins')!.valueChanges.subscribe(value => {
       this.updateValues();
     }));
 
@@ -440,19 +440,19 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       this.button.setLoading();
     }
 
-    const selectedAddresses = this.form.get('addresses').value && (this.form.get('addresses').value as Address[]).length > 0 ?
-      this.form.get('addresses').value.map(addr => addr.address) : null;
+    const selectedAddresses = this.form.get('addresses')!.value && (this.form.get('addresses')!.value as Address[]).length > 0 ?
+      this.form.get('addresses')!.value.map((addr: any) => addr.address) : null;
 
-    const selectedOutputs = this.form.get('outputs').value && (this.form.get('outputs').value as UnspentOutput[]).length > 0 ?
-      this.form.get('outputs').value.map(addr => addr.hash) : null;
+    const selectedOutputs = this.form.get('outputs')!.value && (this.form.get('outputs')!.value as UnspentOutput[]).length > 0 ?
+      this.form.get('outputs')!.value.map((addr: any) => addr.hash) : null;
 
     this.spendingService.createTransaction(
-      this.form.get('wallet').value,
+      this.form.get('wallet')!.value,
       selectedAddresses,
       selectedOutputs,
       this.destinations,
       this.hoursSelection,
-      this.form.get('changeAddress').value ? this.form.get('changeAddress').value : null,
+      this.form.get('changeAddress')!.value ? this.form.get('changeAddress')!.value : null,
     )
       .toPromise()
       .then(transaction => {
@@ -465,14 +465,14 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
 
         this.onFormSubmitted.emit({
           form: {
-            wallet: this.form.get('wallet').value,
-            addresses: this.form.get('addresses').value,
-            changeAddress: this.form.get('changeAddress').value,
+            wallet: this.form.get('wallet')!.value,
+            addresses: this.form.get('addresses')!.value,
+            changeAddress: this.form.get('changeAddress')!.value,
             destinations: this.destinations,
             hoursSelection: this.hoursSelection,
             autoOptions: this.autoOptions,
             allUnspentOutputs: this.loadingUnspentOutputs ? null : this.allUnspentOutputs,
-            outputs: this.form.get('outputs').value,
+            outputs: this.form.get('outputs')!.value,
             currency: this.selectedCurrency,
           },
           amount: amount,
@@ -495,10 +495,10 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   }
 
   private resetForm() {
-    this.form.get('wallet').setValue('', { emitEvent: false });
-    this.form.get('addresses').setValue(null);
-    this.form.get('outputs').setValue(null);
-    this.form.get('changeAddress').setValue('');
+    this.form.get('wallet')!.setValue('', { emitEvent: false });
+    this.form.get('addresses')!.setValue(null);
+    this.form.get('outputs')!.setValue(null);
+    this.form.get('changeAddress')!.setValue('');
 
     while (this.destControls.length > 0) {
       (this.form.get('destinations') as UntypedFormArray).removeAt(0);
@@ -515,13 +515,13 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   private get destinations(): Destination[] {
     return this.destControls.map((destControl, i) => {
       const destination = {
-        address: destControl.get('address').value,
-        coins: this.selectedCurrency === DoubleButtonActive.LeftButton ? new BigNumber(destControl.get('coins').value) : new BigNumber(this.values[i].toString()),
-        originalAmount: destControl.get('coins').value,
+        address: destControl.get('address')!.value,
+        coins: this.selectedCurrency === DoubleButtonActive.LeftButton ? new BigNumber(destControl.get('coins')!.value) : new BigNumber(this.values[i].toString()),
+        originalAmount: destControl.get('coins')!.value,
       };
 
       if (!this.autoHours) {
-        destination['hours'] = new BigNumber(destControl.get('hours').value);
+        (destination as any)['hours'] = new BigNumber(destControl.get('hours')!.value);
       }
 
       return destination;
@@ -548,12 +548,12 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
     this.availableHours = new BigNumber(0);
     this.minimumFee = new BigNumber(0);
 
-    if (!this.form.get('wallet').value) {
+    if (!this.form.get('wallet')!.value) {
       return;
     }
 
-    const outputs: UnspentOutput[] = this.form.get('outputs').value;
-    const addresses: Address[] = this.form.get('addresses').value;
+    const outputs: UnspentOutput[] = this.form.get('outputs')!.value;
+    const addresses: Address[] = this.form.get('addresses')!.value;
 
     if (outputs && outputs.length > 0) {
       outputs.map(control => {
@@ -562,13 +562,13 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
       });
     } else if (addresses && addresses.length > 0) {
       addresses.map(control => {
-        this.availableCoins = this.availableCoins.plus(control.balance);
-        this.availableHours = this.availableHours.plus(control.hours);
+        this.availableCoins = this.availableCoins.plus(control.balance!);
+        this.availableHours = this.availableHours.plus(control.hours!);
       });
     } else {
-      const wallet: Wallet = this.form.get('wallet').value;
-      this.availableCoins = wallet.balance;
-      this.availableHours = wallet.hours;
+      const wallet: Wallet = this.form.get('wallet')!.value;
+      this.availableCoins = wallet.balance!;
+      this.availableHours = wallet.hours!;
     }
 
     const unburnedHoursRatio = new BigNumber(1).minus(new BigNumber(1).dividedBy(this.blockchainService.burnRate));
@@ -580,10 +580,10 @@ export class SendFormAdvancedComponent implements OnInit, OnDestroy {
   private filterUnspentOutputs(): UnspentOutput[] {
     if (this.allUnspentOutputs.length === 0) {
       return [];
-    } else if (!this.form.get('addresses').value || (this.form.get('addresses').value as Address[]).length === 0) {
+    } else if (!this.form.get('addresses')!.value || (this.form.get('addresses')!.value as Address[]).length === 0) {
       return this.allUnspentOutputs;
     } else {
-      return this.allUnspentOutputs.filter(out => (this.form.get('addresses').value as Address[]).some(addr => addr.address === out.address));
+      return this.allUnspentOutputs.filter(out => (this.form.get('addresses')!.value as Address[]).some(addr => addr.address === out.address));
     }
   }
 

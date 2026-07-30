@@ -11,11 +11,11 @@ import { ButtonComponent } from '../../../layout/button/button.component';
     standalone: false
 })
 export class OnboardingEncryptWalletComponent implements OnInit {
-  @ViewChild('button') button: ButtonComponent;
+  @ViewChild('button') button!: ButtonComponent;
   @Output() onPasswordCreated = new EventEmitter<string|null>();
   @Output() onBack = new EventEmitter();
 
-  form: UntypedFormGroup;
+  form!: UntypedFormGroup;
 
   constructor(
     private formBuilder: UntypedFormBuilder,
@@ -46,7 +46,7 @@ export class OnboardingEncryptWalletComponent implements OnInit {
     this.form.disable();
   }
 
-  setEncrypt(event) {
+  setEncrypt(event: any) {
     event.checked ? this.form.enable() : this.form.disable();
   }
 
@@ -56,7 +56,7 @@ export class OnboardingEncryptWalletComponent implements OnInit {
     }
 
     this.button.setLoading();
-    this.onPasswordCreated.emit(this.form.enabled ? this.form.get('password').value : null);
+    this.onPasswordCreated.emit(this.form.enabled ? this.form.get('password')!.value : null);
   }
 
   emitBack() {
@@ -64,7 +64,7 @@ export class OnboardingEncryptWalletComponent implements OnInit {
   }
 
   private passwordMatchValidator(g: UntypedFormGroup) {
-    return g.get('password').value === g.get('confirm').value
+    return g.get('password')!.value === g.get('confirm')!.value
       ? null : { mismatch: true };
   }
 }

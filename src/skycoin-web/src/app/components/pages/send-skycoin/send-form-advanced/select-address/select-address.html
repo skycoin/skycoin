@@ -5,9 +5,9 @@
       @for (address of wallet.addresses; track address) {
         <button mat-button color="primary" (click)="select(address.address)">
           <div class="address">{{ address.address }}</div>
-          <div class="balance">{{ address.balance.decimalPlaces(6).toString() | number:'1.0-6' }}
+          <div class="balance">{{ address.balance!.decimalPlaces(6).toString() | number:'1.0-6' }}
             <span class="grey">{{ currentCoin.coinSymbol }} | </span>
-            {{ address.hours.decimalPlaces(0).toString() | number:'1.0-0' }}
+            {{ address.hours!.decimalPlaces(0).toString() | number:'1.0-0' }}
             <span class="grey">{{ currentCoin.hoursName }}</span>
           </div>
         </button>

@@ -15,18 +15,18 @@ import { NormalTransaction } from '../../../app.datatypes';
 import { WalletService } from '../../../services/wallet/wallet.service';
 
 export class Wallet {
-  label: string;
-  coins: string;
-  hours: string;
-  addresses: Address[];
-  allAddressesSelected: boolean;
+  label!: string;
+  coins!: string;
+  hours!: string;
+  addresses!: Address[];
+  allAddressesSelected!: boolean;
 }
 
 export class Address {
-  address: string;
-  coins: string;
-  hours: string;
-  showingWholeWallet: boolean;
+  address!: string;
+  coins!: string;
+  hours!: string;
+  showingWholeWallet!: boolean;
 }
 
 @Component({
@@ -37,22 +37,22 @@ export class Address {
     standalone: false
 })
 export class HistoryComponent implements OnInit, OnDestroy {
-  currentCoin: BaseCoin;
+  currentCoin!: BaseCoin;
   showError = false;
 
-  allTransactions: NormalTransaction[];
-  transactions: NormalTransaction[];
-  price: number;
-  wallets: Wallet[];
+  allTransactions!: NormalTransaction[] | null;
+  transactions!: NormalTransaction[] | null;
+  price!: number;
+  wallets!: Wallet[];
   form: UntypedFormGroup;
 
-  private requestedAddress: string;
+  private requestedAddress!: string;
   private walletsLoaded = false;
   private transactionsLoaded = false;
   private subscriptionsGroup: Subscription[] = [];
-  private transactionsSubscription: Subscription;
-  private filterSubscription: Subscription;
-  private walletsSubscription: Subscription;
+  private transactionsSubscription!: Subscription;
+  private filterSubscription!: Subscription;
+  private walletsSubscription!: Subscription;
   private routeSubscription: Subscription;
 
   constructor(
@@ -82,7 +82,7 @@ export class HistoryComponent implements OnInit, OnDestroy {
       this.showError = false;
       this.transactionsLoaded = false;
       this.walletsLoaded = false;
-      this.form.get('filter').setValue([]);
+      this.form.get('filter')!.setValue([]);
 
       this.loadWallets();
 
@@ -98,8 +98,8 @@ export class HistoryComponent implements OnInit, OnDestroy {
       );
     }));
 
-    this.filterSubscription = this.form.get('filter').valueChanges.subscribe(() => {
-      const selectedfilters: (Wallet|Address)[] = this.form.get('filter').value;
+    this.filterSubscription = this.form.get('filter')!.valueChanges.subscribe(() => {
+      const selectedfilters: (Wallet|Address)[] = this.form.get('filter')!.value;
       this.wallets.forEach(wallet => {
         wallet.allAddressesSelected = false;
         wallet.addresses.forEach(address => address.showingWholeWallet = false);
@@ -121,7 +121,7 @@ export class HistoryComponent implements OnInit, OnDestroy {
           }
         });
 
-        this.transactions = this.allTransactions.filter(tx =>
+        this.transactions = this.allTransactions!.filter(tx =>
           tx.inputs.some(input => selectedAddresses.has(input.owner)) || tx.outputs.some(output => selectedAddresses.has(output.dst)),
         );
       }
@@ -145,13 +145,13 @@ export class HistoryComponent implements OnInit, OnDestroy {
     this.dialog.open(TransactionDetailComponent, config);
   }
 
-  showQr(event, address) {
+  showQr(event: any, address: any) {
     event.stopPropagation();
     openQrModal(this.dialog, address);
   }
 
   removeFilters() {
-    this.form.get('filter').setValue([]);
+    this.form.get('filter')!.setValue([]);
   }
 
   private loadWallets() {
@@ -222,7 +222,7 @@ export class HistoryComponent implements OnInit, OnDestroy {
     }
 
     if (this.requestedAddress) {
-      let addressFound: Address;
+      let addressFound: Address | undefined = undefined;
       this.wallets.forEach(wallet => {
         const found = wallet.addresses.find(address => address.address === this.requestedAddress);
         if (found) {
@@ -231,10 +231,10 @@ export class HistoryComponent implements OnInit, OnDestroy {
       });
 
       if (addressFound) {
-        this.form.get('filter').setValue([addressFound]);
+        this.form.get('filter')!.setValue([addressFound]);
       }
     } else {
-      this.form.get('filter').setValue([]);
+      this.form.get('filter')!.setValue([]);
     }
   }
 }

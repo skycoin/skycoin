@@ -18,27 +18,27 @@ import { getTimeSinceLastBalanceUpdate } from '../../../utils';
     standalone: false
 })
 export class HeaderComponent implements OnInit, OnDestroy {
-  @Input() headline: string;
+  @Input() headline!: string;
 
   coins: BigNumber = new BigNumber('0');
-  hours: BigNumber;
-  balance: string;
-  hasPendingTxs: boolean;
-  connectionError: ConnectionError = null;
+  hours!: BigNumber;
+  balance!: string | null;
+  hasPendingTxs!: boolean;
+  connectionError: ConnectionError | null = null;
   connectionErrorsList = ConnectionError;
-  percentage: number;
+  percentage!: number | null;
   isBlockchainLoading = false;
-  current: number;
-  highest: number;
-  currentCoin: BaseCoin;
+  current!: number | null;
+  highest!: number | null;
+  currentCoin!: BaseCoin;
   balanceObtained = false;
   timeSinceLastBalanceUpdate = 0;
-  problemUpdatingBalance: boolean;
+  problemUpdatingBalance!: boolean;
   synchronized = true;
 
-  private price: number;
+  private price!: number | null;
   private subscriptionsGroup: Subscription[] = [];
-  private synchronizedSubscription: Subscription;
+  private synchronizedSubscription!: Subscription | null;
 
   get loading() {
     return this.isBlockchainLoading || !this.balanceObtained;
@@ -90,8 +90,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
       this.balanceService.totalBalance
         .subscribe(balance => {
           if (balance && balance.state === BalanceStates.Obtained) {
-            this.coins = balance.balance.coins;
-            this.hours = balance.balance.hours;
+            this.coins = balance.balance!.coins;
+            this.hours = balance.balance!.hours;
             this.balanceObtained = true;
 
             this.calculateBalance();
@@ -139,7 +139,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
         break;
       }
       case ProgressStates.Error: {
-        this.setConnectionError(response.error);
+        this.setConnectionError(response.error!);
         break;
       }
       case ProgressStates.Progress: {
@@ -147,11 +147,11 @@ export class HeaderComponent implements OnInit, OnDestroy {
         this.isBlockchainLoading = response.highestBlock !== response.currentBlock;
 
         if (this.isBlockchainLoading) {
-          this.highest = response.highestBlock;
-          this.current = response.currentBlock;
+          this.highest = response.highestBlock!;
+          this.current = response.currentBlock!;
         }
 
-        this.percentage = response.currentBlock / response.highestBlock;
+        this.percentage = response.currentBlock! / response.highestBlock!;
         break;
       }
     }

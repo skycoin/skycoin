@@ -18,7 +18,7 @@ import { CoinService } from '../../../../../services/coin.service';
 export class SelectAddressComponent {
 
   wallets: Wallet[] = [];
-  currentCoin: BaseCoin;
+  currentCoin!: BaseCoin;
 
   constructor(
     public dialogRef: MatDialogRef<SelectAddressComponent>,

@@ -17,13 +17,13 @@ import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.s
     standalone: false
 })
 export class OutputsComponent implements OnInit, OnDestroy {
-  wallets: Wallet[];
-  currentCoin: BaseCoin;
+  wallets!: Wallet[] | null;
+  currentCoin!: BaseCoin;
   showError = false;
 
-  private subscription: Subscription;
-  private dataSubscription: Subscription;
-  private urlParams: Params;
+  private subscription!: Subscription;
+  private dataSubscription!: Subscription;
+  private urlParams!: Params;
 
   constructor(
     private route: ActivatedRoute,
@@ -48,7 +48,7 @@ export class OutputsComponent implements OnInit, OnDestroy {
     this.closeDataSubscription();
   }
 
-  showQr(event, address) {
+  showQr(event: any, address: any) {
     event.stopPropagation();
     openQrModal(this.dialog, address);
   }
@@ -71,12 +71,12 @@ export class OutputsComponent implements OnInit, OnDestroy {
     () => this.showError = true);
   }
 
-  private getOutputsForSpecificAddress(wallets, address: string) {
-    const filteredWallets: Wallet[]  = wallets.filter(wallet => {
-      return wallet.addresses.find((addr) => {
+  private getOutputsForSpecificAddress(wallets: any, address: string) {
+    const filteredWallets: Wallet[]  = wallets.filter((wallet: any) => {
+      return wallet.addresses.find((addr: any) => {
         return addr.address === address;
       });
-    }).map(wallet => {
+    }).map((wallet: any) => {
       return Object.assign({}, wallet);
     });
 
@@ -86,11 +86,11 @@ export class OutputsComponent implements OnInit, OnDestroy {
     });
   }
 
-  private getOutputs(wallets) {
-    const copiedWallets = wallets.map(wallet => Object.assign({}, wallet));
+  private getOutputs(wallets: any) {
+    const copiedWallets = wallets.map((wallet: any) => Object.assign({}, wallet));
 
-    return copiedWallets.filter(wallet => {
-      wallet.addresses = wallet.addresses.filter(addr => addr.outputs.length > 0);
+    return copiedWallets.filter((wallet: any) => {
+      wallet.addresses = wallet.addresses.filter((addr: any) => addr.outputs.length > 0);
       return wallet.addresses.length > 0;
     });
   }

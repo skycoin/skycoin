@@ -23,14 +23,15 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
     standalone: false
 })
 export class WalletDetailComponent implements OnDestroy {
-  @Input() wallet: Wallet;
+  @Input() wallet!: Wallet;
 
-  currentCoin: BaseCoin;
+  currentCoin!: BaseCoin;
   creatingAddress = false;
   showSlowMobileInfo = false;
+  spinnerStyle: any;
 
-  private unlockSubscription: Subscription;
-  private slowInfoSubscription: Subscription;
+  private unlockSubscription!: Subscription;
+  private slowInfoSubscription!: Subscription;
   private coinSubscription: Subscription;
 
   constructor(

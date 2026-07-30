@@ -15,9 +15,9 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
     standalone: false
 })
 export class SendVerifyComponent implements OnDestroy {
-  @ViewChild('sendButton') sendButton: ButtonComponent;
-  @ViewChild('backButton') backButton: ButtonComponent;
-  @Input() transaction: PreviewTransaction;
+  @ViewChild('sendButton') sendButton!: ButtonComponent;
+  @ViewChild('backButton') backButton!: ButtonComponent;
+  @Input() transaction!: PreviewTransaction;
   @Output() onBack = new EventEmitter<boolean>();
 
   constructor(
@@ -53,7 +53,7 @@ export class SendVerifyComponent implements OnDestroy {
     this.onBack.emit(true);
   }
 
-  private onError(error) {
+  private onError(error: any) {
     const errorMessage = error.message ? error.message : parseResponseMessage(error['_body']);
     this.msgBarService.showError(errorMessage);
     this.sendButton.resetState();

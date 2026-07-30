@@ -16,15 +16,15 @@ import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.s
     standalone: false
 })
 export class TopBarComponent implements OnInit, OnDestroy {
-  @Input() headline: string;
+  @Input() headline!: string;
 
   timeSinceLastBalanceUpdate = 0;
   balanceObtained = false;
-  problemUpdatingBalance: boolean;
+  problemUpdatingBalance!: boolean;
   updatingBalance = false;
-  currentCoin: BaseCoin;
-  language: LanguageData;
-  hasManyCoins: boolean;
+  currentCoin!: BaseCoin;
+  language!: LanguageData;
+  hasManyCoins!: boolean;
   availableCoins: BaseCoin[] = [];
 
   private subscriptionsGroup: Subscription[] = [];

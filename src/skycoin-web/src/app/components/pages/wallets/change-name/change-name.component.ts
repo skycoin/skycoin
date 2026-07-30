@@ -15,8 +15,8 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
     standalone: false
 })
 export class ChangeNameComponent implements OnInit, OnDestroy {
-  @ViewChild('button') button: ButtonComponent;
-  form: UntypedFormGroup;
+  @ViewChild('button') button!: ButtonComponent;
+  form!: UntypedFormGroup;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) private data: Wallet,

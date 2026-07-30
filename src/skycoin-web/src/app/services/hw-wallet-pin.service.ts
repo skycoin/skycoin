@@ -14,14 +14,14 @@ export enum ChangePinStates {
 @Injectable()
 export class HwWalletPinService {
 
-  private requestPinComponentInternal;
-  set requestPinComponent(value) {
+  private requestPinComponentInternal: any;
+  set requestPinComponent(value: any) {
     this.requestPinComponentInternal = value;
   }
 
-  changingPin: boolean;
-  signingTx: boolean;
-  changePinState: ChangePinStates;
+  changingPin!: boolean;
+  signingTx!: boolean;
+  changePinState!: ChangePinStates;
 
   constructor(
     private dialog: MatDialog,

@@ -765,155 +765,136 @@ func TestProcessConnectionBuffers(t *testing.T) {
 	RegisterMessage(DummyPrefix, DummyMessage{})
 	RegisterMessage(ErrorPrefix, ErrorMessage{})
 	VerifyMessages()
-	cfg := newTestConfig(t)
-	addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
-	p, err := NewConnectionPool(cfg, nil)
-	require.NoError(t, err)
 
-	// Setup a callback to capture the connection pointer so we can get the address
-	cc := make(chan *Connection, 1)
-	unexpectedDisconnect := make(chan DisconnectReason, 1)
-	p.Config.ConnectCallback = func(remoteAddr string, _ uint64, _ bool) {
-		cc <- p.addresses[remoteAddr]
-	}
-
-	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
-		unexpectedDisconnect <- reason
-	}
-
-	q := make(chan struct{})
-	go func() {
-		defer close(q)
-		err := p.Run()
+	// newPool starts a fresh, fully-configured pool. Configuring each scenario's
+	// pool before Run() (rather than mutating a live pool's Config) keeps Config
+	// immutable for the lifetime of its connections, which matches production and
+	// avoids a data race between the test and the connection goroutines that read
+	// Config directly (e.g. MaxIncomingMessageLength/MaxOutgoingMessageLength).
+	newPool := func(t *testing.T, configure func(*Config)) (*ConnectionPool, string, <-chan *Connection, <-chan DisconnectReason, func()) {
+		cfg := newTestConfig(t)
+		if configure != nil {
+			configure(&cfg)
+		}
+		addr := net.JoinHostPort(cfg.Address, fmt.Sprintf("%d", cfg.Port))
+		p, err := NewConnectionPool(cfg, nil)
 		require.NoError(t, err)
-	}()
-	wait()
+
+		cc := make(chan *Connection, 1)
+		disconnects := make(chan DisconnectReason, 8)
+		p.Config.ConnectCallback = func(remoteAddr string, _ uint64, _ bool) {
+			cc <- p.addresses[remoteAddr]
+		}
+		p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
+			disconnects <- reason
+		}
+
+		q := make(chan struct{})
+		go func() {
+			defer close(q)
+			require.NoError(t, p.Run())
+		}()
+		wait()
+
+		return p, addr, cc, disconnects, func() {
+			p.Shutdown()
+			<-q
+		}
+	}
+
+	// assertNoDisconnect confirms that no disconnect callback fires within a short window.
+	assertNoDisconnect := func(t *testing.T, disconnects <-chan DisconnectReason) {
+		select {
+		case reason := <-disconnects:
+			t.Fatalf("Unexpected disconnect: %v", reason)
+		case <-time.After(100 * time.Millisecond):
+		}
+	}
+
+	// Scenarios that use the default message-length configuration.
+	p, addr, cc, disconnects, shutdown := newPool(t, nil)
+	defer shutdown()
 
 	conn, err := net.Dial("tcp", addr)
 	require.NoError(t, err)
-
 	c := <-cc
 	require.NotNil(t, c)
 
-	// Write DummyMessage
+	// A valid DummyMessage is processed and does not disconnect.
 	_, err = conn.Write([]byte{4, 0, 0, 0})
 	require.NoError(t, err)
 	_, err = conn.Write([]byte{'D', 'U', 'M', 'Y'})
 	require.NoError(t, err)
-
 	wait()
-
-	err = p.strand("", func() error {
+	require.NoError(t, p.strand("", func() error {
 		require.NotEqual(t, c.LastReceived, time.Time{})
 		return nil
-	})
-	require.NoError(t, err)
+	}))
+	assertNoDisconnect(t, disconnects)
 
-	// Push multiple messages, the first causing an error, and confirm that
-	// the remaining messages were unprocessed.
+	// A message whose handler returns an error disconnects the peer, and the
+	// remaining messages are left unprocessed.
 	t.Logf("Pushing multiple messages, first one causing an error")
-
-	disconnectCalled := make(chan DisconnectReason, 1)
-	unexpectedDisconnect2 := make(chan DisconnectReason, 1)
-	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
-		disconnectCalled <- reason
-	}
-
 	_, err = conn.Write([]byte{4, 0, 0, 0, 'E', 'R', 'R', 0x00})
 	require.NoError(t, err)
-
 	select {
-	case reason := <-disconnectCalled:
+	case reason := <-disconnects:
 		require.Equal(t, ErrErrorMessageHandler, reason)
 	case <-time.After(time.Second * 2):
 		t.Fatal("disconnect did not happen, would block")
 	}
 
-	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
-		unexpectedDisconnect2 <- reason
+	// Writing to the now-closed connection must not trigger a further disconnect.
+	// The write itself may fail if the peer has already closed; that is expected here.
+	if _, werr := conn.Write([]byte{4, 0, 0, 0, 'D', 'U', 'M', 'Y'}); werr != nil {
+		t.Logf("write to closed connection returned: %v", werr)
 	}
-
-	_, err = conn.Write([]byte{4, 0, 0, 0, 'D', 'U', 'M', 'Y'})
-	require.NoError(t, err)
-
 	wait()
+	assertNoDisconnect(t, disconnects)
 
-	// Check for unexpected disconnects
-	select {
-	case reason := <-unexpectedDisconnect:
-		t.Fatalf("Unexpected disconnect before error test: %v", reason)
-	case <-time.After(100 * time.Millisecond):
-		// Good, no unexpected disconnect
-	}
-
-	select {
-	case reason := <-unexpectedDisconnect2:
-		t.Fatalf("Unexpected disconnect after error test: %v", reason)
-	case <-time.After(100 * time.Millisecond):
-		// Good, no unexpected disconnect
-	}
-
+	// Sending a length of < messagePrefixLength should cause a disconnect.
+	t.Logf("Pushing message with too small length")
 	conn, err = net.Dial("tcp", addr)
 	require.NoError(t, err)
-
 	c = <-cc
 	require.NotNil(t, c)
-
-	disconnectCalled = make(chan DisconnectReason, 1)
-	p.Config.DisconnectCallback = func(_ string, _ uint64, reason DisconnectReason) {
-		disconnectCalled <- reason
-	}
-
-	// Sending a length of < messagePrefixLength should cause a disconnect
-	t.Logf("Pushing message with too small length")
-
 	_, err = conn.Write([]byte{messagePrefixLength - 1, 0, 0, 0, 'B', 'Y', 'T', 'E'})
 	require.NoError(t, err)
-
 	select {
-	case reason := <-disconnectCalled:
+	case reason := <-disconnects:
 		require.Equal(t, ErrDisconnectInvalidMessageLength, reason)
-		err = p.strand("", func() error {
+		require.NoError(t, p.strand("", func() error {
 			require.Nil(t, p.pool[1])
 			require.Nil(t, p.pool[2])
 			return nil
-		})
-		require.NoError(t, err)
+		}))
 	case <-time.After(time.Second * 2):
 		t.Fatal("disconnect did not happen, would block")
 	}
 
-	// Sending a length > MaxIncomingMessageLength should cause a disconnect
-	conn, err = net.Dial("tcp", addr)
-	require.NoError(t, err)
-
-	c = <-cc
-	require.NotNil(t, c)
-
+	// Sending a length > MaxIncomingMessageLength should cause a disconnect. Use
+	// a separate pool configured with a small max length so Config need not be
+	// mutated while connections are live.
 	t.Logf("Pushing message with too large length")
-	p.Config.MaxIncomingMessageLength = 4
-	p.Config.MaxOutgoingMessageLength = 4
-	disconnectCalled = make(chan DisconnectReason, 1)
-	p.Config.DisconnectCallback = func(_ string, _ uint64, r DisconnectReason) {
-		disconnectCalled <- r
-	}
+	p2, addr2, cc2, disconnects2, shutdown2 := newPool(t, func(cfg *Config) {
+		cfg.MaxIncomingMessageLength = 4
+		cfg.MaxOutgoingMessageLength = 4
+	})
+	defer shutdown2()
+
+	conn, err = net.Dial("tcp", addr2)
+	require.NoError(t, err)
+	c = <-cc2
+	require.NotNil(t, c)
 
 	_, err = conn.Write([]byte{5, 0, 0, 0, 'B', 'Y', 'T', 'E'})
 	require.NoError(t, err)
-
-	reason := <-disconnectCalled
+	reason := <-disconnects2
 	require.Equal(t, ErrDisconnectInvalidMessageLength, reason)
-
-	err = p.strand("", func() error {
-		require.Nil(t, p.pool[1])
-		require.Nil(t, p.pool[2])
-		require.Nil(t, p.pool[3])
+	require.NoError(t, p2.strand("", func() error {
+		require.Nil(t, p2.pool[1])
 		return nil
-	})
-	require.NoError(t, err)
-
-	p.Shutdown()
-	<-q
+	}))
 }
 
 func TestConnectionWriteLoop(t *testing.T) {

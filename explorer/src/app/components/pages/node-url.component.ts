@@ -18,7 +18,7 @@ import { ExplorerService } from 'app/services/explorer/explorer.service';
 })
 export class NodeUrlComponent implements OnInit, OnDestroy {
   // Subscriptions that will be cleaned when closing the page.
-  private navParamsSubscription: Subscription;
+  private navParamsSubscription!: Subscription;
 
   constructor(
     private route: ActivatedRoute,
@@ -30,10 +30,10 @@ export class NodeUrlComponent implements OnInit, OnDestroy {
   ngOnInit() {
     // Check the URL params to detect the URL of the local node.
     this.navParamsSubscription = this.route.params.subscribe(params => {
-      let nodeUrl: string = params['url'];
+      let nodeUrl: string | null = params['url'];
 
       // If the url is "null", convert the value to a real null.
-      if (nodeUrl.toUpperCase() === 'null'.toUpperCase()) {
+      if (nodeUrl && nodeUrl.toUpperCase() === 'null'.toUpperCase()) {
         nodeUrl = null;
       }
 

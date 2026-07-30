@@ -27,7 +27,7 @@ export class RichlistComponent extends PageBaseComponent implements OnInit, OnDe
   /**
    * Error message to be shown in the loading control if there is a problem.
    */
-  longErrorMsg: string;
+  longErrorMsg!: string;
 
   /**
    * Observable subscriptions that will be cleaned when closing the page.

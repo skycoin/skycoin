@@ -21,7 +21,7 @@ export class SearchBarComponent implements OnDestroy {
   /**
    * Search field.
    */
-  @ViewChild('input', { static: true }) input: ElementRef;
+  @ViewChild('input', { static: true }) input!: ElementRef;
 
   /**
    * If true, it is not possible to start another search and the UI is shown busy.
@@ -33,8 +33,8 @@ export class SearchBarComponent implements OnDestroy {
   showSyncWarning = false;
 
   private nodeUrlSubscription: Subscription;
-  private syncSubscription: Subscription;
-  private operationSubscription: Subscription;
+  private syncSubscription!: Subscription;
+  private operationSubscription!: Subscription;
 
   constructor(
     public searchService: SearchService,

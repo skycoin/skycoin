@@ -22,19 +22,19 @@ export class UnconfirmedTransactionsComponent extends PageBaseComponent implemen
   /**
    * Transactions list.
    */
-  transactions: Transaction[];
+  transactions!: Transaction[];
   /**
    * Date of the oldest unconfirmed transaction.
    */
-  leastRecent: number;
+  leastRecent!: number;
   /**
    * Date of the most recent unconfirmed transaction.
    */
-  mostRecent: number;
+  mostRecent!: number;
   /**
    * Combined size (in bytes) of all unconfirmed transactions.
    */
-  totalSize: number;
+  totalSize!: number;
   /**
    * Small text to be shown in variaous parts (not in the loading control) while loading the data.
    * It may also contain small error messages.
@@ -43,7 +43,7 @@ export class UnconfirmedTransactionsComponent extends PageBaseComponent implemen
   /**
    * Error message to be shown in the loading control if there is a problem.
    */
-  longErrorMsg: string;
+  longErrorMsg!: string;
 
   /**
    * Observable subscriptions that will be cleaned when closing the page.
@@ -79,15 +79,15 @@ export class UnconfirmedTransactionsComponent extends PageBaseComponent implemen
         this.saveLocalValue(this.persistentServerUnconfirmedTxsResponseKey, transactions);
       }
 
-      transactions = transactions.map(rawTx => parseGetUnconfirmedTransaction(rawTx));
+      transactions = transactions.map((rawTx: any) => parseGetUnconfirmedTransaction(rawTx));
       this.transactions = transactions;
       //this.transactions = transactions.map(rawTx => parseGetUnconfirmedTransaction(rawTx))
       // If there are unconfirmed transactions, calculate the values to be shown in the UI.
       if (transactions.length > 0) {
-        const orderedList = transactions.sort((a, b) => b.timestamp - a.timestamp);
+        const orderedList = transactions.sort((a: Transaction, b: Transaction) => b.timestamp - a.timestamp);
         this.mostRecent = orderedList[0].timestamp;
         this.leastRecent = orderedList[orderedList.length - 1].timestamp;
-        this.totalSize = orderedList.map(tx => tx.length).reduce((sum, current) => sum + current);
+        this.totalSize = orderedList.map((tx: Transaction) => tx.length).reduce((sum: number, current: number) => sum + current);
       }
 
       // If old saved data was used, repeat the operation, ignoring the saved data.

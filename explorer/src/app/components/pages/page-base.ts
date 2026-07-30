@@ -12,7 +12,7 @@ export class LocalValueData {
    * Moment in which the value was updated for the last time. It is the value
    * of new Date().getTime().
    */
-  date: number;
+  date!: number;
 }
 
 /**

@@ -21,7 +21,7 @@ export class SearchComponent implements OnInit, OnDestroy {
    * Error text that must be shown if there is a problem trying to find were the user must be
    * redirected to.
    */
-  errorMsg: string;
+  errorMsg!: string;
 
   /**
    * Observable subscriptions that will be cleaned when closing the page.

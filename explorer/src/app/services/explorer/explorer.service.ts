@@ -57,8 +57,8 @@ export class ExplorerService {
     return this.internalMaxDecimals;
   }
 
-  private nodeUrlSubscription: Subscription;
-  private initializationSubscription: Subscription;
+  private nodeUrlSubscription!: Subscription;
+  private initializationSubscription!: Subscription;
 
   constructor(
     private api: ApiService,
@@ -213,18 +213,18 @@ export class ExplorerService {
 
   processTransactionListFromServer(transactionList: any, address: string, hasManyTransactions: boolean): Transaction[] {
     // Sort to get the lastest transactions last (it will be reversed below).
-    let response = transactionList.sort((a, b) => a.txn.timestamp - b.txn.timestamp);
+    let response = transactionList.sort((a: any, b: any) => a.txn.timestamp - b.txn.timestamp);
 
     // Process the response.
     let currentBalance = new BigNumber('0');
-    response = response.map(rawTx => {
+    response = response.map((rawTx: any) => {
       const parsedTx = parseGetTransaction(rawTx, address);
 
       // Calculate the balance variation after every transaction, if all transactions
       // are in memory.
       if (!hasManyTransactions) {
         parsedTx.initialBalance = currentBalance;
-        currentBalance = currentBalance.plus(parsedTx.balance);
+        currentBalance = currentBalance.plus(parsedTx.balance!);
         parsedTx.finalBalance = currentBalance;
       }
 

@@ -17,7 +17,7 @@ export class HeaderComponent implements OnInit {
   /**
    * If the window is too small, indicates if the menu must me shown.
    */
-  menuVisible: boolean;
+  menuVisible!: boolean;
   /**
    * Data for building the navigation menu.
    */
@@ -63,7 +63,7 @@ export class HeaderComponent implements OnInit {
    *
    * @param item Submenu that was clicked.
    */
-  onClickMenuDropdown(item) {
+  onClickMenuDropdown(item: any) {
     item.open = !item.open;
   }
 }

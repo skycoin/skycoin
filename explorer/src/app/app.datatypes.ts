@@ -14,51 +14,51 @@ import { BigNumber } from 'bignumber.js';
  */
 
 export class Block {
-  id: number;
-  hash: string;
-  parent_hash: string;
-  timestamp: number;
-  transactions: Transaction[];
-  size: number;
+  id!: number;
+  hash!: string;
+  parent_hash!: string;
+  timestamp!: number;
+  transactions!: Transaction[];
+  size!: number;
 }
 
 export class Blockchain {
-  blocks: number;
+  blocks!: number;
 }
 
 export class Input {
-  owner: string;
-  coins: BigNumber;
-  uxid: string;
-  hours: BigNumber;
-  calculatedHours: BigNumber;
+  owner!: string;
+  coins!: BigNumber;
+  uxid!: string;
+  hours!: BigNumber;
+  calculatedHours!: BigNumber;
 }
 
 export class Output {
-  address: string;
-  coins: BigNumber;
-  hash: string;
-  hours: BigNumber;
+  address!: string;
+  coins!: BigNumber;
+  hash!: string;
+  hours!: BigNumber;
 }
 
 export class Transaction {
-  block: number;
-  id: string;
-  inputs: Input[];
-  outputs: Output[];
-  status: boolean;
-  timestamp: number;
-  balance: BigNumber;
-  initialBalance: BigNumber;
-  finalBalance: BigNumber;
-  length: number;
-  fee: BigNumber;
+  block!: number | null;
+  id!: string;
+  inputs!: Input[];
+  outputs!: Output[];
+  status!: boolean | null;
+  timestamp!: number;
+  balance!: BigNumber | null;
+  initialBalance!: BigNumber | null;
+  finalBalance!: BigNumber | null;
+  length!: number;
+  fee!: BigNumber;
 }
 
 export class RichlistEntry {
-  address: string;
-  coins: string;
-  locked: boolean;
+  address!: string;
+  coins!: string;
+  locked!: boolean;
 }
 
 /**
@@ -66,45 +66,45 @@ export class RichlistEntry {
  */
 
 export class GenericBlockResponse {
-  header: GenericBlockHeaderResponse;
-  body: GenericBlockBodyResponse;
-  size: number;
+  header!: GenericBlockHeaderResponse;
+  body!: GenericBlockBodyResponse;
+  size!: number;
 }
 
 class GenericBlockHeaderResponse {
-  block_hash: string;
-  previous_block_hash: string;
-  seq: number;
-  timestamp: number;
+  block_hash!: string;
+  previous_block_hash!: string;
+  seq!: number;
+  timestamp!: number;
 }
 
 class GenericBlockBodyResponse {
-  txns: GenericTransactionResponse[];
+  txns!: GenericTransactionResponse[];
 }
 
 export class GenericTransactionResponse {
-  inputs: GenericTransactionInputResponse[];
-  outputs: GenericTransactionOutputResponse[];
+  inputs!: GenericTransactionInputResponse[];
+  outputs!: GenericTransactionOutputResponse[];
   status: any;
-  timestamp: number;
-  txid: string;
-  length: number;
-  fee: number;
+  timestamp!: number;
+  txid!: string;
+  length!: number;
+  fee!: number;
 }
 
 class GenericTransactionInputResponse {
-  uxid: string;
-  owner: string;
-  coins: string;
-  hours: number;
-  calculated_hours: number;
+  uxid!: string;
+  owner!: string;
+  coins!: string;
+  hours!: number;
+  calculated_hours!: number;
 }
 
 class GenericTransactionOutputResponse {
-  coins: string;
-  dst: string;
-  hours: number;
-  uxid: string;
+  coins!: string;
+  dst!: string;
+  hours!: number;
+  uxid!: string;
 }
 
 export function parseGenericBlock(block: GenericBlockResponse): Block {
@@ -118,8 +118,8 @@ export function parseGenericBlock(block: GenericBlockResponse): Block {
   };
 }
 
-export function parseGenericTransaction(raw: GenericTransactionResponse, address: string = null): Transaction {
-  let balance = null;
+export function parseGenericTransaction(raw: GenericTransactionResponse, address: string | null = null): Transaction {
+  let balance: BigNumber | null = null;
   if (address) {
     balance = new BigNumber('0');
     for (const input of raw.inputs) {
@@ -134,7 +134,7 @@ export function parseGenericTransaction(raw: GenericTransactionResponse, address
     }
   }
 
-  const response = {
+  const response: Transaction = {
     block: null,
     id: raw.txid,
     timestamp: raw.timestamp,
@@ -185,9 +185,9 @@ function parseGenericTransactionOutput(raw: GenericTransactionOutputResponse): O
  */
 
 export class GetUnconfirmedTransactionResponse {
-  transaction: GenericTransactionResponse;
-  received: string;
-  is_valid: boolean;
+  transaction!: GenericTransactionResponse;
+  received!: string;
+  is_valid!: boolean;
 }
 
 export function parseGetUnconfirmedTransaction(raw: GetUnconfirmedTransactionResponse): Transaction {
@@ -198,61 +198,61 @@ export function parseGetUnconfirmedTransaction(raw: GetUnconfirmedTransactionRes
 }
 
 export class GetBlocksResponse {
-  blocks: GenericBlockResponse[];
+  blocks!: GenericBlockResponse[];
 }
 
 export class GetBlockchainMetadataResponse {
-  head: GetBlockchainMetadataResponseHead;
+  head!: GetBlockchainMetadataResponseHead;
 }
 
 class GetBlockchainMetadataResponseHead {
-  seq: number;
+  seq!: number;
 }
 
 export class GetBalanceResponse {
-  confirmed: GetBalanceResponseElement;
-  predicted: GetBalanceResponseElement;
+  confirmed!: GetBalanceResponseElement;
+  predicted!: GetBalanceResponseElement;
 }
 
 class GetBalanceResponseElement {
-  coins: number;
-  hours: number;
+  coins!: number;
+  hours!: number;
 }
 
 export class GetCurrentBalanceResponse {
-  head_outputs: GetCurrentBalanceResponseOutput[];
+  head_outputs!: GetCurrentBalanceResponseOutput[];
 }
 
 class GetCurrentBalanceResponseOutput {
-  hash: string;
-  src_tx: string;
-  address: string;
-  coins: string;
-  hours: number;
-  calculated_hours: number;
+  hash!: string;
+  src_tx!: string;
+  address!: string;
+  coins!: string;
+  hours!: number;
+  calculated_hours!: number;
 }
 
 export class GetTransactionResponse {
   status: any;
-  time: number;
-  txn: GenericTransactionResponse;
+  time!: number;
+  txn!: GenericTransactionResponse;
 }
 
 export class GetSyncStateResponse {
-  current: number;
-  highest: number;
+  current!: number;
+  highest!: number;
 }
 
-export function parseGetTransaction(raw: GetTransactionResponse, address: string = null): Transaction {
+export function parseGetTransaction(raw: GetTransactionResponse, address: string | null = null): Transaction {
   raw.txn.status = raw.status;
   return parseGenericTransaction(raw.txn, address);
 }
 
 export class GetUxoutResponse {
-  coins: number;
-  hours: number;
-  owner_address: string;
-  uxid: string;
+  coins!: number;
+  hours!: number;
+  owner_address!: string;
+  uxid!: string;
 }
 
 export function parseGetUxout(raw: GetUxoutResponse): Output {

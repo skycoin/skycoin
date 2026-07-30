@@ -14,7 +14,7 @@ export class DateFormatterComponent {
   /**
    * Date to be displayed. It should expresed in time since the epoch.
    */
-  @Input()date;
+  @Input() date!: number;
 
   /**
    * Number with which the value of "date" must be multiplied to convert it into milliseconds since

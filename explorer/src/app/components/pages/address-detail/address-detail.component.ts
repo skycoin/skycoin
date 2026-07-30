@@ -18,19 +18,19 @@ export class CachedAddressDetails {
   /**
    * Address the data belongs to.
    */
-  address: string;
+  address!: string;
   /**
    * Response obtained when the address transactions were requested.
    */
-  transactionsResponse: AddressTransactionsResponse;
+  transactionsResponse!: AddressTransactionsResponse;
   /**
    * Response obtained when the address balance was requested.
    */
-  balanceResponse: GetBalanceResponse;
+  balanceResponse!: GetBalanceResponse;
   /**
    * Response obtained when the unconfirmed transactions were requested.
    */
-  unconfirmedResponse: GetUnconfirmedTransactionResponse[];
+  unconfirmedResponse!: GetUnconfirmedTransactionResponse[];
 }
 
 /**
@@ -63,7 +63,7 @@ export class AddressDetailComponent extends PageBaseComponent implements OnInit,
   /**
    * Current address.
    */
-  address: string;
+  address!: string;
   /**
    * Indicates if the data has been loaded.
    */
@@ -71,43 +71,43 @@ export class AddressDetailComponent extends PageBaseComponent implements OnInit,
   /**
    * How many transactions the address has.
    */
-  totalTransactionsCount: number;
+  totalTransactionsCount!: number;
   /**
    * Total amount of coins received by the address.
    */
-  totalReceived: BigNumber;
+  totalReceived!: BigNumber;
   /**
    * Total amount of coins sent from the address.
    */
-  totalSent: BigNumber;
+  totalSent!: BigNumber;
   /**
    * Current address coin balance.
    */
-  balance: BigNumber;
+  balance!: BigNumber;
   /**
    * Current address coin hour balance.
    */
-  hoursBalance: BigNumber;
+  hoursBalance!: BigNumber;
   /**
    * How many incoming coins are in unconfirmed transactions.
    */
-  pendingIncomingCoins: BigNumber;
+  pendingIncomingCoins!: BigNumber;
   /**
    * How many outgoing coins are in unconfirmed transactions.
    */
-  pendingOutgoingCoins: BigNumber;
+  pendingOutgoingCoins!: BigNumber;
   /**
    * Total amount of pending coins (pendingIncomingCoins - pendingOutgoingCoins).
    */
-  pendingCoins: BigNumber;
+  pendingCoins!: BigNumber;
   /**
    * Total amount of pending coin hours.
    */
-  pendingHours: BigNumber;
+  pendingHours!: BigNumber;
   /**
    * Transactions to be shown in the current page.
    */
-  pageTransactions: any[];
+  pageTransactions!: any[];
   /**
    * Current page.
    */
@@ -128,7 +128,7 @@ export class AddressDetailComponent extends PageBaseComponent implements OnInit,
   /**
    * Error message to be shown in the loading control if there is a problem.
    */
-  longErrorMsg: string;
+  longErrorMsg!: string;
   /**
    * If true, the address has few transactions and all of them are stored in memory. If false,
    * only the transactions of the current page are in memory and no information about how
@@ -137,8 +137,8 @@ export class AddressDetailComponent extends PageBaseComponent implements OnInit,
   hasManyTransactions = false;
 
   // Subscriptions that will be cleaned when closing the page.
-  private navParamsSubscription: Subscription;
-  private operationSubscription: Subscription;
+  private navParamsSubscription!: Subscription;
+  private operationSubscription!: Subscription;
 
   constructor(
     private api: ApiService,
@@ -234,10 +234,10 @@ export class AddressDetailComponent extends PageBaseComponent implements OnInit,
         // Calculate the number of received and sent coins (counting the confirmed
         // transactions only).
         this.totalReceived = new BigNumber(0);
-        response.recoveredTransactions.map(tx => this.totalReceived = this.totalReceived.plus(tx.balance.isGreaterThan(0) && tx.status ? tx.balance : 0));
+        response.recoveredTransactions.map(tx => this.totalReceived = this.totalReceived.plus(tx.balance!.isGreaterThan(0) && tx.status ? tx.balance! : 0));
 
         this.totalSent = new BigNumber(0);
-        response.recoveredTransactions.map(tx => this.totalSent = this.totalSent.plus(tx.balance.isLessThan(0) && tx.status ? tx.balance : 0));
+        response.recoveredTransactions.map(tx => this.totalSent = this.totalSent.plus(tx.balance!.isLessThan(0) && tx.status ? tx.balance! : 0));
         this.totalSent = this.totalSent.negated();
 
         // Update the list of transactions that will be displayed in the UI.

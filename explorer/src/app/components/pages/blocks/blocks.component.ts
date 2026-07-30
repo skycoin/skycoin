@@ -30,19 +30,19 @@ export class BlocksComponent extends PageBaseComponent implements OnInit, OnDest
   /**
    * Current coin supply.
    */
-  currentSupply: number;
+  currentSupply!: number;
   /**
    * Max coin supply.
    */
-  totalSupply: number;
+  totalSupply!: number;
   /**
    * Current hour coin supply.
    */
-  currentCoinhourSupply: number;
+  currentCoinhourSupply!: number;
   /**
    * Max coin hour supply.
    */
-  totalCoinhourSupply: number;
+  totalCoinhourSupply!: number;
   /**
    * How many blocks the blockchain currently has.
    */
@@ -68,7 +68,7 @@ export class BlocksComponent extends PageBaseComponent implements OnInit, OnDest
   /**
    * Error message to be shown in the loading control if there is a problem.
    */
-  longErrorMsg: string;
+  longErrorMsg!: string;
   /**
    * If the app is using a local node as backend.
    */
@@ -136,7 +136,7 @@ export class BlocksComponent extends PageBaseComponent implements OnInit, OnDest
       return this.route.paramMap.pipe(first());
     }), switchMap(params => {
       // Calculate the values of the current page.
-      this.pageIndex = parseInt(params.get('page'), 10) - 1;
+      this.pageIndex = parseInt(params.get('page')!, 10) - 1;
       const end = this.blockCount - (this.pageIndex * this.pageSize);
       const begin = end - this.pageSize + 1;
 

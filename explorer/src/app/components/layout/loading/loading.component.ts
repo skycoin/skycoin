@@ -18,5 +18,5 @@ export class LoadingComponent {
   /**
    * Message to show in case of error. If set, the loading animation is removed.
    */
-  @Input() longErrorMsg: string;
+  @Input() longErrorMsg!: string;
 }

@@ -13,11 +13,11 @@ export class ResultNavCommandsResponse {
    * Observable for getting the navigation commands needed by Router.navigate for sending the
    * user to the page with the requested data. This Observable may fail due to different reasons.
    */
-  resultNavCommands: Observable<string[]>;
+  resultNavCommands!: Observable<string[]>;
   /**
    * Error returned if the function was not able to process the search term.
    */
-  error: SearchError;
+  error!: SearchError;
 }
 
 /**

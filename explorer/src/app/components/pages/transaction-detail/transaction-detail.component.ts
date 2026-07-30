@@ -24,7 +24,7 @@ export class TransactionDetailComponent extends PageBaseComponent implements OnI
   /**
    * Current transaction.
    */
-  transaction: Transaction;
+  transaction!: Transaction;
   /**
    * Small text to be shown in variaous parts (not in the loading control) while loading the data.
    * It may also contain small error messages.
@@ -33,7 +33,7 @@ export class TransactionDetailComponent extends PageBaseComponent implements OnI
   /**
    * Error message to be shown in the loading control if there is a problem.
    */
-  longErrorMsg: string;
+  longErrorMsg!: string;
 
   /**
    * Observable subscriptions that will be cleaned when closing the page.
@@ -72,7 +72,7 @@ export class TransactionDetailComponent extends PageBaseComponent implements OnI
   private loadData(checkSavedData: boolean) {
     let oldSavedDataUsed = false;
 
-    let savedData;
+    let savedData: any;
 
     // Get the URL params and request the data.
     this.pageSubscriptions.push(this.route.params.pipe(

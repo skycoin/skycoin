@@ -45,7 +45,7 @@ export class AmountPipe implements PipeTransform {
     if (partToReturn !== 'last') {
       // Use the standard decimalPipe for limiting the decimal places. The max number of decimal
       // places for the coins is obtained from the node. Coin hours never have decimal places.
-      firstPart = this.decimalPipe.transform(value, showingCoins ? ('1.0-' + this.explorerService.maxDecimals) : '1.0-0');
+      firstPart = this.decimalPipe.transform(value, showingCoins ? ('1.0-' + this.explorerService.maxDecimals) : '1.0-0') ?? '';
       response = firstPart;
       if (partToReturn !== 'first') {
         response += ' ';

@@ -9,7 +9,7 @@
       <div class="-row"><span>{{ 'transactionDetail.block' | translate }}</span><br class="-xs-only" /><div> @if (transaction) {
       <a [routerLink]="'/app/block/' + transaction.block" class="-link -copy-button-margin">{{ transaction.block }}</a>
       } @if (transaction) {
-      <app-copy-button [text]="transaction.block"></app-copy-button>
+      <app-copy-button [text]="transaction.block + ''"></app-copy-button>
       } @if (!transaction) {
       <span>{{ loadingMsg | translate }}</span>
     } </div></div>

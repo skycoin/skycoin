@@ -14,10 +14,10 @@
       "node_modules/@types"
     ],
     "useDefineForClassFields": false,
-    "strict": false
+    "strict": true
   },
   "angularCompilerOptions": {
-    "strictTemplates": false,
-    "strictInjectionParameters": false
+    "strictTemplates": true,
+    "strictInjectionParameters": true
   }
 }

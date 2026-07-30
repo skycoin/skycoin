@@ -15,21 +15,21 @@
       <div class="col-md-9 -tx-meta">
         @if (isPreview) {
           <div class="-data">
-            <span>{{ 'tx.from' | translate }}:</span> <span>{{ transaction.from }}</span>
+            <span>{{ 'tx.from' | translate }}:</span> <span>{{ $any(transaction).from }}</span>
           </div>
           <div class="-data">
-            <span>{{ 'tx.to' | translate }}:</span> <span>{{ transaction.to.join(', ') }}</span>
+            <span>{{ 'tx.to' | translate }}:</span> <span>{{ $any(transaction).to.join(', ') }}</span>
           </div>
         }
         @if (!isPreview) {
           <div class="-data">
-            <span>{{ 'tx.id' | translate }}:</span> <span>{{ transaction.txid }}</span>
+            <span>{{ 'tx.id' | translate }}:</span> <span>{{ $any(transaction).txid }}</span>
           </div>
           <div class="-data">
-            <span>{{ 'tx.date' | translate }}:</span> <span>{{ transaction.timestamp | dateTime }}</span>
+            <span>{{ 'tx.date' | translate }}:</span> <span>{{ $any(transaction).timestamp | dateTime }}</span>
           </div>
           <div class="-data">
-            <span>{{ 'tx.status' | translate }}:</span> <span>{{ transaction.confirmed ? ('tx.confirmed' | translate) : ('tx.pending' | translate) }}</span>
+            <span>{{ 'tx.status' | translate }}:</span> <span>{{ $any(transaction).confirmed ? ('tx.confirmed' | translate) : ('tx.pending' | translate) }}</span>
           </div>
         }
         <div class="-data">
@@ -38,7 +38,7 @@
             <span>
               {{ transaction.hoursSent.decimalPlaces(0).toString() | number:'1.0-0' }} {{ hoursText | translate }}
               |
-              {{ transaction.hoursBurned.decimalPlaces(0).toString() | number:'1.0-0' }} {{ 'tx.hours-burned' | translate }}
+              {{ transaction.hoursBurned!.decimalPlaces(0).toString() | number:'1.0-0' }} {{ 'tx.hours-burned' | translate }}
             </span>
           }
         </div>
@@ -57,7 +57,7 @@
         }
         @if (price) {
           <p [matTooltip]="!isPreview ? ('history.price-tooltip' | translate) : ''">
-            {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}@if (!isPreview) {
+            {{ $any(transaction.balance) * price | currency:'USD':'symbol':'1.2-2' }}@if (!isPreview) {
             <span>*</span>
           }
         </p>

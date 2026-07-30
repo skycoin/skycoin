@@ -1,4 +1,4 @@
-export function convertAsciiToHexa(str): string {
+export function convertAsciiToHexa(str: any): string {
   const arr1: string[] = [];
   for (let n = 0, l = str.length; n < l; n ++) {
     const hex = Number(str.charCodeAt(n)).toString(16);

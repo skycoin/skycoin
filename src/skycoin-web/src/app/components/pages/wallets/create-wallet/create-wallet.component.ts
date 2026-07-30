@@ -25,19 +25,19 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
     standalone: false
 })
 export class CreateWalletComponent implements OnDestroy {
-  @ViewChild('formControl') formControl: CreateWalletFormComponent;
-  @ViewChild('create') createButton: ButtonComponent;
+  @ViewChild('formControl') formControl!: CreateWalletFormComponent;
+  @ViewChild('create') createButton!: ButtonComponent;
 
   showSlowMobileInfo = false;
   disableDismiss = false;
 
-  private slowInfoSubscription: Subscription;
+  private slowInfoSubscription!: Subscription;
   // Optional password captured from the create form; when set, the new wallet's
   // seed is encrypted right after it is created (before the dialog closes).
   private pendingPassword = '';
 
   constructor(
-    @Inject(MAT_DIALOG_DATA) public data,
+    @Inject(MAT_DIALOG_DATA) public data: any,
     public dialogRef: MatDialogRef<CreateWalletComponent>,
     private walletService: WalletService,
     private coinService: CoinService,
@@ -98,7 +98,7 @@ export class CreateWalletComponent implements OnDestroy {
     }
   }
 
-  private processScanResponse(initialCoin: BaseCoin, wallet: Wallet, isError: boolean, response) {
+  private processScanResponse(initialCoin: BaseCoin, wallet: Wallet, isError: boolean, response: any) {
     if (isError || response !== null) {
       this.coinService.changeCoin(initialCoin);
       this.onCreateError(response.message ? response.message : response.toString());

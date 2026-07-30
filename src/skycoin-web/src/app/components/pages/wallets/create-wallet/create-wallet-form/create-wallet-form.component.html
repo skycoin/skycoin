@@ -19,9 +19,9 @@
     @if (checkingCoinHealth) {
       <span>{{ 'nodeStatus.checking' | translate }}</span>
     } @else if (selectedCoinHealth?.available) {
-      <span>{{ (selectedCoinHealth.isBitcoin ? 'nodeStatus.electrumOk' : 'nodeStatus.nodeOk') | translate:{ height: (selectedCoinHealth.height | number) } }}</span>
+      <span>{{ (selectedCoinHealth!.isBitcoin ? 'nodeStatus.electrumOk' : 'nodeStatus.nodeOk') | translate:{ height: (selectedCoinHealth!.height | number) } }}</span>
     } @else if (selectedCoinUnavailable) {
-      <span>{{ (selectedCoinHealth.isBitcoin ? 'nodeStatus.electrumDown' : 'nodeStatus.nodeDown') | translate }} — {{ 'wallet.new.backend-unavailable-info' | translate }}</span>
+      <span>{{ (selectedCoinHealth!.isBitcoin ? 'nodeStatus.electrumDown' : 'nodeStatus.nodeDown') | translate }} — {{ 'wallet.new.backend-unavailable-info' | translate }}</span>
     }
   </div>
   @if (showWalletType) {
@@ -36,7 +36,7 @@
         </select>
       </div>
     </div>
-    @if (isBitcoinCoin && form.get('wallet_type').value === 'bip44') {
+    @if (isBitcoinCoin && form.get('wallet_type')!.value === 'bip44') {
       <div class="form-field -segwit-toggle">
         <mat-checkbox formControlName="segwit">
           {{ 'wallet.new.segwit-label' | translate }}
@@ -45,7 +45,7 @@
       </div>
     }
   }
-  <div class="form-field -valid-seed-container" [ngClass]="{'-expand':form.get('seed').valid && !create}">
+  <div class="form-field -valid-seed-container" [ngClass]="{'-expand':form.get('seed')!.valid && !create}">
     <label for="seed">
       <span>{{ 'wallet.new.seed-label' | translate }}</span>
       @if (create) {
@@ -71,7 +71,7 @@
   @if (create) {
     <div
       class="form-field -valid-seed-container"
-      [ngClass]="{ '-expand':form.get('confirm_seed').value === form.get('seed').value }">
+      [ngClass]="{ '-expand':form.get('confirm_seed')!.value === form.get('seed')!.value }">
       <label for="confirm_seed">{{ 'wallet.new.confirm-seed-label' | translate}}</label>
       <div class="-valid-box">
         <textarea formControlName="confirm_seed" id="confirm_seed" row="2"></textarea>
@@ -86,7 +86,7 @@
       <p class="-info">{{ 'wallet.new.password-info' | translate }}</p>
     </div>
   }
-  @if (showWalletType && form.get('wallet_type').value === 'bip44') {
+  @if (showWalletType && form.get('wallet_type')!.value === 'bip44') {
     <div class="form-field">
       <label for="seed_passphrase">{{ 'wallet.new.seed-passphrase-label' | translate}}</label>
       <input formControlName="seed_passphrase" id="seed_passphrase" type="password" [placeholder]="'wallet.new.seed-passphrase-placeholder' | translate">

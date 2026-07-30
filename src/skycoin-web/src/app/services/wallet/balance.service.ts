@@ -18,7 +18,7 @@ export enum BalanceStates {
 }
 
 export class BalanceEvent {
-  state: BalanceStates;
+  state!: BalanceStates;
   balance?: TotalBalance;
 }
 
@@ -29,8 +29,8 @@ export class BalanceService {
   hasPendingTransactions: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
   private canGetBalance = false;
-  private schedulerSubscription: Subscription;
-  private currentCoin: BaseCoin;
+  private schedulerSubscription!: Subscription;
+  private currentCoin!: BaseCoin;
 
   private readonly shortUpdatePeriod = 10 * 1000;
   private readonly longUpdatePeriod = 300 * 1000;
@@ -107,7 +107,7 @@ export class BalanceService {
     const formattedAddresses = addresses.map(a => a.address).join(',');
 
     if (this.currentCoin && this.currentCoin.isBitcoin()) {
-      return this.apiService.get('btc/balance', { addrs: formattedAddresses });
+      return this.apiService.get('btc/balance', { addrs: formattedAddresses } as any);
     }
 
     return this.globalsService.getValidNodeVersion().pipe(mergeMap(version => {
@@ -124,10 +124,10 @@ export class BalanceService {
     const chunks = this.chunkAddresses(addresses);
 
     if (chunks.length === 1) {
-      return this.apiService.get('balance', { addrs: chunks[0] });
+      return this.apiService.get('balance', { addrs: chunks[0] } as any);
     }
 
-    return forkJoin(chunks.map(chunk => this.apiService.get('balance', { addrs: chunk }))).pipe(
+    return forkJoin(chunks.map(chunk => this.apiService.get('balance', { addrs: chunk } as any))).pipe(
       map((results: Balance[]) => {
         const merged: Balance = {
           confirmed: { coins: 0, hours: 0 },
@@ -178,8 +178,8 @@ export class BalanceService {
           if (balance.addresses[address.address]) {
             address.balance = new BigNumber(balance.addresses[address.address].confirmed.coins).dividedBy(this.coinsMultiplier);
             address.hours = isBtc ? new BigNumber('0') : new BigNumber(balance.addresses[address.address].confirmed.hours || 0);
-            wallet.balance = wallet.balance.plus(address.balance);
-            wallet.hours = wallet.hours.plus(address.hours);
+            wallet.balance = wallet.balance!.plus(address.balance);
+            wallet.hours = wallet.hours!.plus(address.hours);
           }
         });
       });

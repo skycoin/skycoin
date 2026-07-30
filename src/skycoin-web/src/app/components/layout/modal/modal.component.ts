@@ -9,10 +9,10 @@ import { MatDialogRef } from '@angular/material/dialog';
     standalone: false
 })
 export class ModalComponent {
-  @Input() headline: string;
-  @Input() loadingProgress: number;
+  @Input() headline!: string;
+  @Input() loadingProgress!: number;
 
-  private dialogInternal: MatDialogRef<any>;
+  private dialogInternal!: MatDialogRef<any>;
   private disableDismissInternal = false;
 
   @Input() set dialog(value: MatDialogRef<any>) {

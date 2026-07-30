@@ -18,6 +18,6 @@
     "./app/utils/test-mocks.ts"
   ],
   "angularCompilerOptions": {
-    "strictTemplates": false
+    "strictTemplates": true
   }
 }

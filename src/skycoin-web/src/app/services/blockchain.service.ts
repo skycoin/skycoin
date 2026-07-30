@@ -19,7 +19,7 @@ export enum ProgressStates {
 }
 
 export class ProgressEvent {
-  state: ProgressStates;
+  state!: ProgressStates;
   error?: ConnectionError;
   currentBlock?: number;
   highestBlock?: number;
@@ -27,9 +27,9 @@ export class ProgressEvent {
 
 @Injectable()
 export class BlockchainService {
-  private progressSubject: BehaviorSubject<ProgressEvent> = new BehaviorSubject<ProgressEvent>(null);
+  private progressSubject: BehaviorSubject<ProgressEvent> = new BehaviorSubject<ProgressEvent>(null as any);
   private synchronizedSubject: BehaviorSubject<any> = new BehaviorSubject<boolean>(false);
-  private connectionsSubscription: Subscription;
+  private connectionsSubscription!: Subscription;
   private maxDecimals = 6;
   private readonly defaultPeriod = 90000;
   private readonly shortPeriod = 5000;
@@ -51,7 +51,7 @@ export class BlockchainService {
     return this.burnRateInternal;
   }
 
-  private currentCoin: BaseCoin;
+  private currentCoin!: BaseCoin;
 
   constructor (
     private apiService: ApiService,

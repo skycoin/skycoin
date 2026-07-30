@@ -19,16 +19,16 @@ import { MsgBarService } from '../../../../../services/msg-bar.service';
     standalone: false
 })
 export class ChangeNodeURLComponent implements OnInit, OnDestroy {
-  @ViewChild('action') actionButton: ButtonComponent;
+  @ViewChild('action') actionButton!: ButtonComponent;
 
   disableDismiss = false;
   showingUrlForm = true;
-  form: UntypedFormGroup;
+  form!: UntypedFormGroup;
 
-  nodeVersion: string;
-  lastBlock: number;
-  hoursBurnRate: string;
-  coinName: string;
+  nodeVersion!: string | null;
+  lastBlock!: number;
+  hoursBurnRate!: string | null;
+  coinName!: string | null;
 
   // Known-good default servers offered in the dropdown. Selecting one just
   // populates the free-text field below (which stays editable); Verify keeps
@@ -36,8 +36,8 @@ export class ChangeNodeURLComponent implements OnInit, OnDestroy {
   // public ssl:// Electrum servers, other coins only the built-in default.
   nodeOptions: {label: string, value: string}[] = [];
 
-  private newUrl: string;
-  private verificationSubscription: Subscription;
+  private newUrl!: string;
+  private verificationSubscription!: Subscription;
   private initialURL: string;
 
   constructor(
@@ -123,7 +123,7 @@ export class ChangeNodeURLComponent implements OnInit, OnDestroy {
         this.nodeVersion = response.version.version;
         this.lastBlock = response.blockchain.head.seq;
 
-        if (!isEqualOrSuperiorVersion(this.nodeVersion, '0.24.0')) {
+        if (!isEqualOrSuperiorVersion(this.nodeVersion!, '0.24.0')) {
           this.cancelChange(true, false);
           return;
         } else if (response.csrf_enabled) {
@@ -131,7 +131,7 @@ export class ChangeNodeURLComponent implements OnInit, OnDestroy {
           return;
         }
 
-        if (isEqualOrSuperiorVersion(this.nodeVersion, '0.25.0')) {
+        if (isEqualOrSuperiorVersion(this.nodeVersion!, '0.25.0')) {
           this.hoursBurnRate = new BigNumber(100).dividedBy(response.user_verify_transaction.burn_factor).decimalPlaces(3, BigNumber.ROUND_FLOOR).toString() + '%';
           this.coinName = response.coin;
         } else {
@@ -195,7 +195,7 @@ export class ChangeNodeURLComponent implements OnInit, OnDestroy {
   // Writes the option chosen in the dropdown into the free-text field. The
   // field stays editable, so the user can tweak the value afterwards.
   onSelectPreset(value: string) {
-    this.form.get('url').setValue(value);
+    this.form.get('url')!.setValue(value);
   }
 
   // Builds the coin-aware list of default servers. The first entry always maps

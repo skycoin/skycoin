@@ -7,7 +7,7 @@
         [showError]="showError"
       [noDataText]="'errors.no-outputs'"></app-loading-content>
     }
-    @for (wallet of wallets; track wallet) {
+    @for (wallet of wallets!; track wallet) {
       <div class="-table">
         <div class="-headers">
           <div class="flex-fill -one-line-ellipsis">{{ wallet.label }}</div>
@@ -51,7 +51,7 @@
                 </div>
               </div>
             }
-            @if (address.outputs.length === 0) {
+            @if (address.outputs!.length === 0) {
               <div class="-row">
                 <div class="flex-fill -hash">{{ 'errors.no-outputs' | translate }}</div>
               </div>

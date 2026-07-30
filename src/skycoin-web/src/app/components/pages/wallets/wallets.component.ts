@@ -23,13 +23,13 @@ import { environment } from '../../../../environments/environment';
 })
 export class WalletsComponent implements OnInit, OnDestroy {
 
-  wallets: Wallet[];
-  currentCoin: BaseCoin;
+  wallets!: Wallet[];
+  currentCoin!: BaseCoin;
   showLockIcons: boolean;
 
   private subscriptionsGroup: Subscription[] = [];
-  private confirmSeedSubscription: Subscription;
-  private deleteWalletSubscription: Subscription;
+  private confirmSeedSubscription!: Subscription;
+  private deleteWalletSubscription!: Subscription;
 
   addingHwWallet = false;
 
@@ -67,7 +67,7 @@ export class WalletsComponent implements OnInit, OnDestroy {
     this.dialog.open(CreateWalletComponent, config);
   }
 
-  unlockWallet(event, wallet: Wallet) {
+  unlockWallet(event: any, wallet: Wallet) {
     if (!wallet.needSeedConfirmation) {
       event.stopPropagation();
       openUnlockWalletModal(wallet, this.dialog);

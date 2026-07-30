@@ -15,7 +15,7 @@ export enum MsgBarColors {
 
 export class MsgBarConfig {
   title?: string;
-  text: string;
+  text!: string;
   icon?: MsgBarIcons;
   color?: MsgBarColors;
 }

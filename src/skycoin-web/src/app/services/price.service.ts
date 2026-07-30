@@ -9,13 +9,13 @@ import { BaseCoin } from '../coins/basecoin';
 @Injectable()
 export class PriceService {
 
-  price = new BehaviorSubject<number>(null);
+  price = new BehaviorSubject<number>(null as any);
 
   private readonly updatePeriod = 10 * 60 * 1000;
   private readonly errorUpdatePeriod = 30 * 1000;
   private priceTickerId: string | null = null;
   private priceTickerSource: string = 'coinpaprika';
-  private priceSubscription: Subscription;
+  private priceSubscription!: Subscription;
 
   constructor(
     private http: HttpClient,
@@ -64,7 +64,7 @@ export class PriceService {
       return this.http.get(
         `https://api.coingecko.com/api/v3/simple/price?ids=${this.priceTickerId}&vs_currencies=usd`
       ).pipe(mergeMap((response: any) => {
-        return of(response[this.priceTickerId].usd);
+        return of(response[this.priceTickerId!].usd);
       }));
     } else {
       return this.http.get(

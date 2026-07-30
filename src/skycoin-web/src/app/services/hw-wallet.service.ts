@@ -11,13 +11,13 @@ import { OperationError, HWOperationResults } from '../utils/operation-error';
 import { getHwErrorMsg } from '../utils/hw-errors';
 
 export class HwWalletTxRecipientData {
-  address: string;
-  coins: BigNumber;
-  hours: BigNumber;
+  address!: string;
+  coins!: BigNumber;
+  hours!: BigNumber;
 }
 
 export class OperationResult {
-  result: HWOperationResults;
+  result!: HWOperationResults;
   rawResponse: any;
 }
 
@@ -40,10 +40,10 @@ export class HwWalletService {
   showOptionsWhenPossible = false;
 
   private walletConnectedSubject: Subject<boolean> = new Subject<boolean>();
-  private signTransactionDialog: MatDialogRef<{}, any>;
+  private signTransactionDialog!: MatDialogRef<{}, any> | null;
 
-  private signTransactionConfirmationComponentInternal;
-  set signTransactionConfirmationComponent(value) {
+  private signTransactionConfirmationComponentInternal: any;
+  set signTransactionConfirmationComponent(value: any) {
     this.signTransactionConfirmationComponentInternal = value;
   }
 
@@ -317,7 +317,7 @@ export class HwWalletService {
     }
   }
 
-  private processDaemonResponse(daemonResponse: Observable<any>, successTexts: string[] = null, responseShouldBeArray = false): Observable<any> {
+  private processDaemonResponse(daemonResponse: Observable<any>, successTexts: string[] | null = null, responseShouldBeArray = false): Observable<any> {
     return daemonResponse.pipe(catchError((error: any) => {
       return observableThrowError(this.buildResponseObject(error, false));
     }), mergeMap(result => {

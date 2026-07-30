@@ -6,7 +6,7 @@ import { Directive, HostListener } from '@angular/core';
     standalone: false
 })
 export class NumberFieldDirective {
-  @HostListener('keydown', ['$event']) onKeyDown(event) {
+  @HostListener('keydown', ['$event']) onKeyDown(event: any) {
     const e = <KeyboardEvent> event;
     if ([46, 8, 9, 27, 13, 110, 190].indexOf(e.keyCode) !== -1 ||
       // Allow: Ctrl+A
@@ -29,10 +29,10 @@ export class NumberFieldDirective {
     }
   }
 
-  @HostListener('paste', ['$event']) blockPaste(event) {
+  @HostListener('paste', ['$event']) blockPaste(event: any) {
     const pastedValue = event.clipboardData
       ? event.clipboardData.getData('text/plain')
-      : window['clipboardData'].getData('text');
+      : (window as any)['clipboardData'].getData('text');
 
     if (!pastedValue || !pastedValue.match(/^\d+(\.\d+)*$/)) {
       event.preventDefault();

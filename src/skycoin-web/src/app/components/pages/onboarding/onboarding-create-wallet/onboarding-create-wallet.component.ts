@@ -15,6 +15,7 @@ import { BlockchainService } from '../../../../services/blockchain.service';
 import { CustomMatDialogService } from '../../../../services/custom-mat-dialog.service';
 import { config } from '../../../../app.config';
 import { MsgBarService } from '../../../../services/msg-bar.service';
+import { ButtonComponent } from '../../../layout/button/button.component';
 
 @Component({
     selector: 'app-onboarding-create-wallet',
@@ -24,18 +25,18 @@ import { MsgBarService } from '../../../../services/msg-bar.service';
     standalone: false
 })
 export class OnboardingCreateWalletComponent implements OnInit, AfterViewInit, OnDestroy {
-  @ViewChild('formControl') formControl: CreateWalletFormComponent;
-  @ViewChild('create') createButton;
+  @ViewChild('formControl') formControl!: CreateWalletFormComponent;
+  @ViewChild('create') createButton!: ButtonComponent;
 
   showSlowMobileInfo = false;
   showNewForm = true;
   doubleButtonActive = DoubleButtonActive.LeftButton;
   userHasWallets = false;
   creatingWallet = false;
-  language: LanguageData;
+  language!: LanguageData;
 
-  private slowInfoSubscription: Subscription;
-  private subscription: Subscription;
+  private slowInfoSubscription!: Subscription;
+  private subscription!: Subscription;
 
   constructor(
     private dialog: CustomMatDialogService,
@@ -191,7 +192,7 @@ export class OnboardingCreateWalletComponent implements OnInit, AfterViewInit, O
     }
   }
 
-  private processScanResponse(initialCoin: BaseCoin, wallet: Wallet, isError: boolean, response) {
+  private processScanResponse(initialCoin: BaseCoin, wallet: Wallet, isError: boolean, response: any) {
     if (isError || response !== null) {
       this.coinService.changeCoin(initialCoin);
       this.onCreateError(response.message ? response.message : response.toString());

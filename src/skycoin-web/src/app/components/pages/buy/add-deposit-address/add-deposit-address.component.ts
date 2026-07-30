@@ -14,8 +14,8 @@ import { WalletService } from '../../../../services/wallet/wallet.service';
 })
 export class AddDepositAddressComponent implements OnInit {
 
-  form: UntypedFormGroup;
-  addresses: any[];
+  form!: UntypedFormGroup;
+  addresses!: any[];
 
   constructor(
     private walletService: WalletService,

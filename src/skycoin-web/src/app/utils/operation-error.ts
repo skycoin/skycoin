@@ -18,8 +18,8 @@ export enum HWOperationResults {
 }
 
 export class OperationError {
-  type: HWOperationResults;
+  type!: HWOperationResults;
   originalError: any;
-  originalServerErrorMsg: string;
-  translatableErrorMsg: string;
+  originalServerErrorMsg!: string | null;
+  translatableErrorMsg!: string;
 }

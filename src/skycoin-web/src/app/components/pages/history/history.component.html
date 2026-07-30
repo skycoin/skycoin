@@ -27,13 +27,13 @@
             </mat-optgroup>
           }
           <mat-select-trigger>
-            @if (form.get('filter').value.length === 1) {
+            @if (form.get('filter')!.value.length === 1) {
               <span>{{ 'history.filter' | translate }}</span>
             }
-            @if (form.get('filter').value.length > 1) {
+            @if (form.get('filter')!.value.length > 1) {
               <span>{{ 'history.filters' | translate }}</span>
             }
-            @for (filter of form.get('filter').value; track filter; let i = $index) {
+            @for (filter of form.get('filter')!.value; track filter; let i = $index) {
               @if (filter.label || !filter.showingWholeWallet) {
                 <div class="filter">
                   @if (filter.label) {
@@ -48,7 +48,7 @@
             }
           </mat-select-trigger>
         </mat-select>
-        @if (form.get('filter').value.length > 0) {
+        @if (form.get('filter')!.value.length > 0) {
           <img class="x-button" src="assets/img/close-grey.png" (click)="removeFilters()">
         }
       </div>
@@ -65,30 +65,30 @@
       <div class="-paper">
         @for (transaction of transactions; track transaction) {
           <div class="-transaction" (click)="showTransaction(transaction)">
-            <div class="-icon" [ngClass]="{ '-incoming': transaction.balance.isGreaterThan(0) && !transaction.coinsMovedInternally, '-pending': !transaction.confirmed }">
+            <div class="-icon" [ngClass]="{ '-incoming': transaction.balance!.isGreaterThan(0) && !transaction.coinsMovedInternally, '-pending': !transaction.confirmed }">
               <img src="assets/img/send-blue.png">
             </div>
             <div class="-address">
               @if (!transaction.coinsMovedInternally) {
-                @if (transaction.balance.isLessThan(0) && transaction.confirmed) {
+                @if (transaction.balance!.isLessThan(0) && transaction.confirmed) {
                   <h4>
                     {{ 'history.sent' | translate }} {{ currentCoin.coinSymbol }}
                     <span class="-timestamp">{{ transaction.timestamp | dateTime }}</span>
                   </h4>
                 }
-                @if (transaction.balance.isLessThan(0) && !transaction.confirmed) {
+                @if (transaction.balance!.isLessThan(0) && !transaction.confirmed) {
                   <h4>
                     {{ 'history.sending' | translate }} {{ currentCoin.coinSymbol }}
                     <span class="-pending">{{ 'history.pending' | translate }}</span>
                   </h4>
                 }
-                @if (transaction.balance.isGreaterThan(0) && transaction.confirmed) {
+                @if (transaction.balance!.isGreaterThan(0) && transaction.confirmed) {
                   <h4>
                     {{ 'history.received' | translate }}  {{ currentCoin.coinSymbol }}
                     <span class="-timestamp">{{ transaction.timestamp | dateTime }}</span>
                   </h4>
                 }
-                @if (transaction.balance.isGreaterThan(0) && !transaction.confirmed) {
+                @if (transaction.balance!.isGreaterThan(0) && !transaction.confirmed) {
                   <h4>
                     {{ 'history.receiving' | translate }} {{ currentCoin.coinSymbol }}
                     <span class="-pending">{{ 'history.pending' | translate }}</span>
@@ -120,10 +120,10 @@
             </div>
             <div class="flex-fill"></div>
             <div class="-balance">
-              <h4 class="-one-line-ellipsis">{{ transaction.balance.decimalPlaces(6).toString() | number:'1.0-6' }} {{ currentCoin.coinSymbol }}</h4>
+              <h4 class="-one-line-ellipsis">{{ transaction.balance!.decimalPlaces(6).toString() | number:'1.0-6' }} {{ currentCoin.coinSymbol }}</h4>
               @if (price) {
                 <p class="-one-line-ellipsis" [matTooltip]="'history.price-tooltip' | translate">
-                  {{ transaction.balance * price | currency:'USD':'symbol':'1.2-2' }}<span>*</span>
+                  {{ $any(transaction.balance) * price | currency:'USD':'symbol':'1.2-2' }}<span>*</span>
                 </p>
               }
             </div>

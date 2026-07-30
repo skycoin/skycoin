@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 
 import { OperationError, HWOperationResults } from './operation-error';
 
-export function getHwErrorMsg(error: any): string {
+export function getHwErrorMsg(error: any): string | null {
   if (error) {
     if (typeof error['_body'] === 'string') {
       return error['_body'];
@@ -38,7 +38,7 @@ export function processHwServiceError(error: any): OperationError {
     return response;
   }
 
-  response.originalServerErrorMsg = getHwErrorMsg(error);
+  response.originalServerErrorMsg = getHwErrorMsg(error)!;
 
   const convertedError = error as HttpErrorResponse;
   if (convertedError.status !== null && convertedError.status !== undefined) {

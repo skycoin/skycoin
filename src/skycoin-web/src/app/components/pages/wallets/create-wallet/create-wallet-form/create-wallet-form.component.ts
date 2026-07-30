@@ -10,15 +10,15 @@ import { Bip39WordListService } from '../../../../../services/bip39-word-list.se
 import { environment } from '../../../../../../environments/environment';
 
 export class FormData {
-  label: string;
-  seed: string;
-  coin: BaseCoin;
-  walletType: string;
-  seedPassphrase: string;
-  segwit: boolean;
+  label!: string;
+  seed!: string;
+  coin!: BaseCoin;
+  walletType!: string;
+  seedPassphrase!: string;
+  segwit!: boolean;
   // Optional password entered at creation. When set, the new wallet's seed is
   // encrypted right after it's created; blank leaves it stored unencrypted.
-  password: string;
+  password!: string;
 }
 
 @Component({
@@ -29,12 +29,12 @@ export class FormData {
     standalone: false
 })
 export class CreateWalletFormComponent implements OnInit, OnDestroy {
-  @Input() create: boolean;
-  @Input() whiteText: boolean;
-  @Input() showSlowMobileInfo: boolean;
+  @Input() create!: boolean;
+  @Input() whiteText!: boolean;
+  @Input() showSlowMobileInfo!: boolean;
 
-  form: UntypedFormGroup;
-  hasManyCoins: boolean;
+  form!: UntypedFormGroup;
+  hasManyCoins!: boolean;
   normalSeed = false;
   customSeedAccepted = false;
   isProduction = environment.production;
@@ -44,12 +44,12 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
   // Backend connection health of the currently-selected coin, so the create
   // screen can gate the coin choice by whether its node/electrum is actually
   // reachable (shown even for the default coin when no wallet exists yet).
-  selectedCoinHealth: CoinHealth = null;
+  selectedCoinHealth: CoinHealth | null = null;
   checkingCoinHealth = false;
 
-  private statusSubscription: Subscription;
-  private healthSubscription: Subscription;
-  private coinsLoadedSub: Subscription;
+  private statusSubscription!: Subscription;
+  private healthSubscription!: Subscription;
+  private coinsLoadedSub!: Subscription;
 
   constructor(
     private formBuilder: UntypedFormBuilder,
@@ -111,7 +111,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     return this.form.valid && (this.normalSeed || this.customSeedAccepted);
   }
 
-  onCustomSeedAcceptance(event) {
+  onCustomSeedAcceptance(event: any) {
     this.customSeedAccepted = event.checked;
   }
 
@@ -141,7 +141,7 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     };
   }
 
-  initForm(defaultCoin: BaseCoin, create: boolean = null) {
+  initForm(defaultCoin: BaseCoin, create: boolean | null = null) {
     create = create !== null ? create : this.create;
 
     this.isBitcoinCoin = defaultCoin ? defaultCoin.isBitcoin() : false;
@@ -183,25 +183,25 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
     }
 
     // Update coin-dependent state when coin selection changes
-    this.form.get('coin').valueChanges.subscribe((coin: BaseCoin) => {
+    this.form.get('coin')!.valueChanges.subscribe((coin: BaseCoin) => {
       if (coin) {
         this.isBitcoinCoin = coin.isBitcoin();
         this.showWalletType = true; // type selector is coin-type-gated in the template, not serverWallets-gated
         this.probeCoinHealth(coin);
-        this.form.get('wallet_type').setValue(this.defaultTypeForCoin(coin));
+        this.form.get('wallet_type')!.setValue(this.defaultTypeForCoin(coin));
         if (this.isBitcoinCoin) {
-          this.form.get('segwit').setValue(true);
+          this.form.get('segwit')!.setValue(true);
         }
       }
     });
 
     this.statusSubscription = this.form.statusChanges.subscribe(() => {
       this.customSeedAccepted = false;
-      this.normalSeed = this.validateSeed(this.form.get('seed').value);
+      this.normalSeed = this.validateSeed(this.form.get('seed')!.value);
     });
   }
 
-  private generateSeed(entropy: number) {
+  generateSeed(entropy: number) {
     this.form.controls.seed.setValue(generateMnemonic(entropy));
   }
 
@@ -228,6 +228,6 @@ export class CreateWalletFormComponent implements OnInit, OnDestroy {
   }
 
   private seedMatchValidator(formGroup: UntypedFormGroup) {
-    return formGroup.get('seed').value === formGroup.get('confirm_seed').value ? null : { NotEqual: true };
+    return formGroup.get('seed')!.value === formGroup.get('confirm_seed')!.value ? null : { NotEqual: true };
   }
 }

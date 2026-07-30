@@ -28,7 +28,7 @@ export class CipherProvider {
   initialize(): Observable<InitializationResults> {
     if (!this.initialized) {
       this.initialized = true;
-      if (window['WebAssembly'] && window['WebAssembly'].instantiateStreaming) {
+      if (window['WebAssembly'] && (window['WebAssembly'] as any).instantiateStreaming) {
         console.log('[WASM] Starting WASM streaming instantiation...');
         const go = new Go();
         return from(
@@ -44,7 +44,7 @@ export class CipherProvider {
               throw InitializationResults.ErrorLoadingWasmFile;
             })
         );
-      } else if (window['WebAssembly'] && window['WebAssembly'].instantiate) {
+      } else if (window['WebAssembly'] && (window['WebAssembly'] as any).instantiate) {
         console.log('[WASM] Starting WASM download (fallback mode)...');
         return this.http.get('assets/scripts/skycoin-lite.wasm', { responseType: 'arraybuffer' }).pipe(
           catchError((err) => {
@@ -76,11 +76,11 @@ export class CipherProvider {
       }
     }
 
-    return null;
+    return null as any;
   }
 
-  generateAddress(seed): Observable<GenerateAddressResponse> {
-    const address = window['SkycoinCipher'].generateAddress(seed);
+  generateAddress(seed: any): Observable<GenerateAddressResponse> {
+    const address = (window as any)['SkycoinCipher'].generateAddress(seed);
 
     if (!address.error) {
       return of(this.convertToAddress(address));
@@ -90,7 +90,7 @@ export class CipherProvider {
   }
 
   prepareTransaction(inputs: TransactionInput[], outputs: TransactionOutput[]): Observable<string> {
-    const tx = window['SkycoinCipher'].prepareTransaction(JSON.stringify(inputs), JSON.stringify(outputs));
+    const tx = (window as any)['SkycoinCipher'].prepareTransaction(JSON.stringify(inputs), JSON.stringify(outputs));
 
     if (!tx.error) {
       return of(tx);
@@ -100,7 +100,7 @@ export class CipherProvider {
   }
 
   prepareTransactionWithSignatures(inputs: TransactionInput[], outputs: TransactionOutput[], signatures: string[]): Observable<string> {
-    const tx = window['SkycoinCipher'].prepareTransactionWithSignatures(
+    const tx = (window as any)['SkycoinCipher'].prepareTransactionWithSignatures(
       JSON.stringify(inputs),
       JSON.stringify(outputs),
       JSON.stringify(signatures)
@@ -113,7 +113,7 @@ export class CipherProvider {
     }
   }
 
-  private convertToAddress(address): GenerateAddressResponse {
+  private convertToAddress(address: any): GenerateAddressResponse {
     return {
       nextSeed: address.nextSeed,
       address: {

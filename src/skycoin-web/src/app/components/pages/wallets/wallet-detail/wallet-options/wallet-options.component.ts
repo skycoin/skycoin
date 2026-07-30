@@ -64,7 +64,7 @@ export class WalletOptionsComponent {
     this.closePopup(WalletOptionsResponses.DecryptWallet);
   }
 
-  closePopup(response: WalletOptionsResponses = null) {
+  closePopup(response: WalletOptionsResponses | null = null) {
     this.dialogRef.close(response);
   }
 }

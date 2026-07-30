@@ -31,7 +31,7 @@
         class="-switch -not-on-small-and-below"
         [leftButtonText]="navbarService.leftText | translate"
         [rightButtonText]="navbarService.rightText | translate"
-        [activeButton]="navbarService.activeComponent | async"
+        [activeButton]="(navbarService.activeComponent | async)!"
         className="light"
         (onStateChange)="changeActiveComponent($event)">
       </app-double-button>
@@ -46,7 +46,7 @@
       class="-switch"
       [leftButtonText]="navbarService.leftText | translate"
       [rightButtonText]="navbarService.rightText | translate"
-      [activeButton]="navbarService.activeComponent | async"
+      [activeButton]="(navbarService.activeComponent | async)!"
       className="grey"
       (onStateChange)="changeActiveComponent($event)">
     </app-double-button>

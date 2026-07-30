@@ -13,7 +13,7 @@ import { isEqualOrSuperiorVersion } from '../../utils/semver';
 
 @Injectable()
 export class HistoryService {
-  private currentCoin: BaseCoin;
+  private currentCoin!: BaseCoin;
 
   constructor(
     private apiService: ApiService,
@@ -49,33 +49,33 @@ export class HistoryService {
           let TxObsv: Observable<any>;
           if (isEqualOrSuperiorVersion(version, '0.25.0')) {
             TxObsv = this.retrieveAddressesTransactions(addresses).pipe(map(transactions => {
-              return transactions.sort((a, b) =>  b.timestamp - a.timestamp);
+              return transactions.sort((a: any, b: any) =>  b.timestamp - a.timestamp);
             }));
           } else {
             TxObsv = forkJoin(addresses.map(address => this.retrieveAddressTransactions(address))).pipe(
               map(transactions => {
-                return [].concat(...transactions)
+                return ([] as any[]).concat(...transactions)
                   .reduce((array, item) => {
-                    if (!array.find(trans => trans.txid === item.txid)) {
+                    if (!array.find((trans: any) => trans.txid === item.txid)) {
                       array.push(item);
                     }
 
                     return array;
                   }, [])
-                  .sort((a, b) =>  b.timestamp - a.timestamp);
+                  .sort((a: any, b: any) =>  b.timestamp - a.timestamp);
               }));
           }
 
           return TxObsv.pipe(map(transactions => {
-            return transactions.map(transaction => {
-              const outgoing = transaction.inputs.some(input => addressesMap.has(input.owner));
+            return transactions.map((transaction: any) => {
+              const outgoing = transaction.inputs.some((input: any) => addressesMap.has(input.owner));
 
               const relevantAddresses: Map<string, boolean> = new Map<string, boolean>();
               transaction.balance = new BigNumber('0');
               transaction.hoursSent = new BigNumber('0');
 
               if (!outgoing) {
-                transaction.outputs.map(output => {
+                transaction.outputs.map((output: any) => {
                   if (addressesMap.has(output.dst)) {
                     relevantAddresses.set(output.dst, true);
                     transaction.balance = transaction.balance.plus(output.coins);
@@ -84,7 +84,7 @@ export class HistoryService {
                 });
               } else {
                 const possibleReturnAddressesMap: Map<string, boolean> = new Map<string, boolean>();
-                transaction.inputs.map(input => {
+                transaction.inputs.map((input: any) => {
                   if (addressesMap.has(input.owner)) {
                     relevantAddresses.set(input.owner, true);
                     wallets.map(wallet => {
@@ -95,7 +95,7 @@ export class HistoryService {
                   }
                 });
 
-                transaction.outputs.map(output => {
+                transaction.outputs.map((output: any) => {
                   if (!possibleReturnAddressesMap.has(output.dst)) {
                     transaction.balance = transaction.balance.minus(output.coins);
                     transaction.hoursSent = transaction.hoursSent.plus(output.hours);
@@ -106,11 +106,11 @@ export class HistoryService {
                   transaction.coinsMovedInternally = true;
                   const inputAddressesMap: Map<string, boolean> = new Map<string, boolean>();
 
-                  transaction.inputs.map(input => {
+                  transaction.inputs.map((input: any) => {
                     inputAddressesMap.set(input.owner, true);
                   });
 
-                  transaction.outputs.map(output => {
+                  transaction.outputs.map((output: any) => {
                     if (!inputAddressesMap.has(output.dst)) {
                       relevantAddresses.set(output.dst, true);
                       transaction.balance = transaction.balance.plus(output.coins);
@@ -125,9 +125,9 @@ export class HistoryService {
               });
 
               let inputsHours = new BigNumber('0');
-              transaction.inputs.map(input => inputsHours = inputsHours.plus(new BigNumber(input.calculated_hours)));
+              transaction.inputs.map((input: any) => inputsHours = inputsHours.plus(new BigNumber(input.calculated_hours)));
               let outputsHours = new BigNumber('0');
-              transaction.outputs.map(output => outputsHours = outputsHours.plus(new BigNumber(output.hours)));
+              transaction.outputs.map((output: any) => outputsHours = outputsHours.plus(new BigNumber(output.hours)));
               transaction.hoursBurned = inputsHours.minus(outputsHours);
 
               return transaction;
@@ -139,7 +139,7 @@ export class HistoryService {
 
   private retrieveBitcoinHistory(addresses: Address[], addressesMap: Map<string, boolean>): Observable<any[]> {
     const formattedAddresses = addresses.map(a => a.address).join(',');
-    return this.apiService.get('btc/history', { addrs: formattedAddresses }).pipe(
+    return this.apiService.get('btc/history', { addrs: formattedAddresses } as any).pipe(
       map((transactions: any[]) => {
         return (transactions || []).map(tx => {
           const outgoing = tx.inputs && tx.inputs.some((input: any) => addressesMap.has(input.address));
@@ -178,8 +178,8 @@ export class HistoryService {
   }
 
   retrieveAddressTransactions(address: Address): Observable<NormalTransaction[]> {
-    return this.apiService.get('explorer/address', { address: address.address }).pipe(
-      map(transactions => transactions.map(transaction => ({
+    return this.apiService.get('explorer/address', { address: address.address } as any).pipe(
+      map(transactions => transactions.map((transaction: any) => ({
         addresses: [],
         balance: new BigNumber('0'),
         block: transaction.status.block_seq,
@@ -195,7 +195,7 @@ export class HistoryService {
     const formattedAddresses = addresses.map(a => a.address).join(',');
 
     return this.apiService.post('transactions', { addrs: formattedAddresses, verbose: true }).pipe(
-      map(transactions => transactions.map(transaction => ({
+      map(transactions => transactions.map((transaction: any) => ({
         addresses: [],
         balance: new BigNumber('0'),
         block: transaction.status.block_seq,
@@ -210,7 +210,7 @@ export class HistoryService {
   getAllPendingTransactions(): Observable<any> {
     return this.globalsService.getValidNodeVersion().pipe(mergeMap(version => {
       if (isEqualOrSuperiorVersion(version, '0.25.0')) {
-        return this.apiService.get('pendingTxs', { verbose: true });
+        return this.apiService.get('pendingTxs', { verbose: true } as any);
       } else {
         return this.apiService.get('pendingTxs');
       }
@@ -218,10 +218,10 @@ export class HistoryService {
   }
 
   deletePendingTransaction(txid: string): Observable<any> {
-    return this.apiService.delete('pendingTxs', { txid });
+    return this.apiService.delete('pendingTxs', { txid } as any);
   }
 
   getTransactionDetails(uxid: string): Observable<any> {
-    return this.apiService.get('uxout', { uxid: uxid });
+    return this.apiService.get('uxout', { uxid: uxid } as any);
   }
 }

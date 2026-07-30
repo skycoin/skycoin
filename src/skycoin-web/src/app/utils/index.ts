@@ -96,7 +96,7 @@ export function scanAddresses(dialog: CustomMatDialogService, wallet: Wallet, bl
       if (event.state === ProgressStates.Error) {
         return throwError(() => new Error(translate.instant('wallet.scan.connection-error')));
       }
-      if (event.highestBlock - event.currentBlock > 2) {
+      if (event.highestBlock! - event.currentBlock! > 2) {
         return throwError(() => new Error(translate.instant('wallet.scan.unsynchronized-node-error')));
       }
 

@@ -7,9 +7,9 @@ import { delay } from 'rxjs';
 @Injectable()
 export class MsgBarService {
 
-  private timeSubscription: Subscription;
+  private timeSubscription!: Subscription;
 
-  private msgBarComponentInternal: MsgBarComponent;
+  private msgBarComponentInternal!: MsgBarComponent;
   set msgBarComponent(value: MsgBarComponent) {
     this.msgBarComponentInternal = value;
   }

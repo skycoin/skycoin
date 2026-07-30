@@ -10,14 +10,14 @@ import { MatTooltip } from '@angular/material/tooltip';
 })
 
 export class ButtonComponent {
-  @Input() disabled: boolean;
+  @Input() disabled!: boolean;
   @Input() forceEmitEvents = false;
   @Input() spinnerStyle = 'primary';
   @Output() action = new EventEmitter();
-  @ViewChild('tooltip') tooltip: MatTooltip;
+  @ViewChild('tooltip') tooltip!: MatTooltip;
 
-  error: string;
-  state: number;
+  error!: string;
+  state!: number | null;
   mouseOver = false;
 
   onClick() {

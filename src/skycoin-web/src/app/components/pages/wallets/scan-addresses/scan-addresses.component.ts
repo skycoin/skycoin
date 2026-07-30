@@ -19,7 +19,7 @@ export class ScanAddressesComponent implements OnInit, OnDestroy {
   showSlowMobileInfo = false;
 
   private subscriptionsGroup: Subscription[] = [];
-  private slowInfoSubscription: Subscription;
+  private slowInfoSubscription!: Subscription;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) private data: Wallet,
@@ -36,7 +36,7 @@ export class ScanAddressesComponent implements OnInit, OnDestroy {
     this.removeSlowInfoSubscription();
   }
 
-  closePopup(result = null) {
+  closePopup(result: Error | null = null) {
     this.dialogRef.close(result);
   }
 

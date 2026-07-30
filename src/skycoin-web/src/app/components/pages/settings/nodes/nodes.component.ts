@@ -15,8 +15,8 @@ import { environment } from '../../../../../environments/environment';
     standalone: false
 })
 export class NodesComponent implements OnInit {
-  coins: BaseCoin[];
-  customNodeUrls: object;
+  coins!: BaseCoin[];
+  customNodeUrls!: any;
   enableCustomNodes = environment.enableCustomNodes;
 
   constructor(

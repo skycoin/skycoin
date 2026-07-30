@@ -5,11 +5,11 @@ import { ReplaySubject } from 'rxjs';
 import { config } from '../app.config';
 
 export class LanguageData {
-  code: string;
-  name: string;
-  iconName: string;
+  code!: string;
+  name!: string;
+  iconName!: string;
 
-  constructor(coinObj) {
+  constructor(coinObj: any) {
     Object.assign(this, coinObj);
   }
 }
@@ -53,7 +53,7 @@ export class LanguageService {
   }
 
   private onLanguageChanged(event: LangChangeEvent) {
-    this.currentLanguage.next(this.languages.find(val => val.code === event.lang));
+    this.currentLanguage.next(this.languages.find(val => val.code === event.lang)!);
     localStorage.setItem(this.storageKey, event.lang);
   }
 

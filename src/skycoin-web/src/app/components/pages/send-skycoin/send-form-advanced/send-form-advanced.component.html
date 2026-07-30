@@ -35,11 +35,11 @@
           @for (addr of addresses; track addr) {
             <mat-option [value]="addr">
               <span class="truncated-label">{{ addr.address }}</span> - {{ (addr.balance ? addr.balance.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
-              ({{ addr.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }})
+              ({{ addr.hours!.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }})
             </mat-option>
           }
           <mat-select-trigger>
-            @for (address of form.get('addresses').value; track address) {
+            @for (address of form.get('addresses')!.value; track address) {
               <div>
                 <span class="truncated-label">{{ address.address }}</span> - {{ (address.balance ? address.balance.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
                 ({{ address.hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }})
@@ -71,7 +71,7 @@
             </mat-option>
           }
           <mat-select-trigger>
-            @for (out of form.get('outputs').value; track out) {
+            @for (out of form.get('outputs')!.value; track out) {
               <div>
                 <span class="truncated-label">{{ out.hash }}</span> - {{ (out.coins ? out.coins.decimalPlaces(6).toString() : 0) | number:'1.0-6' }} {{ currentCoin.coinSymbol }}
                 ({{ out.calculated_hours.decimalPlaces(0).toString() | number:'1.0-0' }} {{ currentCoin.hoursName }})
@@ -107,7 +107,7 @@
       <mat-icon [matTooltip]="('send.destinations-help' + (this.autoHours ? '1' : '2')) | translate">help</mat-icon>
     </label>
     @if (price) {
-      <div class="coin-selector-container" [ngClass]="{ disabled: busy }">
+      <div class="coin-selector-container" [ngClass]="{ disabled: $any(this).busy }">
         <app-double-button
           [leftButtonText]="currentCoin.coinSymbol"
           [rightButtonText]="'common.usd' | translate"
@@ -152,7 +152,7 @@
                 }
                 @if (values[i] >= 0 && selectedCurrency === doubleButtonActive.RightButton) {
                   <span>
-                    &#x007e; {{ values[i] | number:('1.0-' + blockchainService.currentMaxDecimals) }} {{ currentCoin.coinSymbol }}
+                    &#x007e; {{ values[i] | number:('1.0-' + this.blockchainService.currentMaxDecimals) }} {{ currentCoin.coinSymbol }}
                   </span>
                 }
               </div>

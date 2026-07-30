@@ -65,7 +65,7 @@ export class NodeHealthService {
     // that URL is the ssl:// electrum server; the visor's BTC gateway reads it
     // straight from the request origin, so prefixing it here keeps health and
     // the balance/history calls pointed at the same electrum.
-    const custom = this.coinService.customNodeUrls && this.coinService.customNodeUrls[coin.id.toString()];
+    const custom = this.coinService.customNodeUrls && (this.coinService.customNodeUrls as any)[coin.id.toString()];
     let url = ((custom || coin.nodeUrl) || '').trim();
     if (url.endsWith('/')) {
       url = url.substring(0, url.length - 1);

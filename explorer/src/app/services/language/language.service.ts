@@ -78,7 +78,7 @@ export class LanguageService {
 
     // Initialize ngx-translate.
     this.translate.addLangs(langs);
-    this.translate.setDefaultLang(languageConfig.defaultLanguage);
+    this.translate.setFallbackLang(languageConfig.defaultLanguage);
     this.translate.onLangChange.subscribe(this.onLanguageChanged.bind(this));
 
     // Load the last saved language.

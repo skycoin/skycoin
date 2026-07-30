@@ -365,6 +365,8 @@
     "help": "The node each coin queries for chain data (wallets, keys and signing stay in this browser). Point it at a Skywire mesh node with an http://<name>.<base32-pk>.dmsg URL — it's routed over the mesh, no IP or DNS needed — or a clearnet http(s):// URL. Leave a coin on its default to use the built-in node.",
 
     "change" : {
+      "preset-label": "Known servers",
+      "preset-default": "Default (built-in)",
       "url-label": "Node URL (leave empty to use the default URL)",
       "url-error": "The entered host is already in use for this or another coin.",
       "cancelled-error": "Operation cancelled.",
